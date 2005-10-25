@@ -222,6 +222,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
 \#define TOKEN_PASTE(x,y) x\#\#y
 \#define HAVE_STDARG_PROTOTYPES 1
 \#define NORETURN(x) x
+\#define RUBY_EXTERN extern __declspec(dllimport)
 \#define HAVE_DECL_SYS_NERR 1
 \#define HAVE_LIMITS_H 1
 \#define HAVE_FCNTL_H 1

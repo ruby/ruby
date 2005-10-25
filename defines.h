@@ -191,11 +191,8 @@ void xfree _((void*));
 #include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
 
+#ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
-#if defined _WIN32 && !defined __GNUC__
-# ifndef RUBY_EXPORT
-#  define RUBY_EXTERN extern __declspec(dllimport)
-# endif
 #endif
 
 #ifndef RUBY_EXTERN
