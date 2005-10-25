@@ -1,3 +1,8 @@
+Tue Oct 25 14:21:46 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* gc.c (garbage_collect): sorry, previous commit was incorrect.
+	  [ruby-core:6386]
+
 Tue Oct 25 13:40:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* gc.c (garbage_collect): return now whether there're rooms for new
