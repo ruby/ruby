@@ -129,6 +129,7 @@ def extmake(target)
         then
 	  ok = false
           init_mkmf
+          $defs << "-DRUBY_EXPORT" if $static
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")

@@ -223,6 +223,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/wince/Makefile.sub
 #define DEPRECATED(x) __declspec(deprecated) x
 #define NOINLINE(x) __declspec(noinline) x
 !endif
+#define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1

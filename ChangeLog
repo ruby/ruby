@@ -1,3 +1,13 @@
+Wed Oct 26 01:58:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_EXTERN): macro to export symbols in shared
+	  library.  [ruby-core:05528]
+
+	* defines.h, {bcc32,win32,wince}/Makefile.sub (RUBY_EXTERN): moved to
+	  configuration pass.
+
+	* ext/extmk.rb (extmake): RUBY_EXTERN for static linked extensions.
+
 Tue Oct 25 20:06:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.h (Qfalse, Qtrue, Qnil, Qundef): make sure these immediate
