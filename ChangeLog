@@ -1,3 +1,11 @@
+Tue Oct 25 15:32:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rational.rb: applied documentation patch from Gavin Sinclair
+	  <gsinclair@gmail.com>.  [ruby-core:06364]
+
+	* lib/irb.rb (IRB::Irb::eval_input): handle prompts with newlines
+	  in irb auto-indentation mode.  [ruby-core:06358]
+
 Tue Oct 25 02:12:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/markup/simple_markup.rb (SM::SimpleMarkup::LABEL_LIST_RE):
