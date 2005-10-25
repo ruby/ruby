@@ -1,3 +1,8 @@
+Tue Oct 25 13:40:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* gc.c (garbage_collect): return now whether there're rooms for new
+	  objects, rather than whether GC run. fixed: [ruby-core:6376]
+
 Tue Oct 25 02:12:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/markup/simple_markup.rb (SM::SimpleMarkup::LABEL_LIST_RE):

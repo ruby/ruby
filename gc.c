@@ -1280,10 +1280,10 @@ garbage_collect(void)
     if (dont_gc || during_gc) {
 	if (!freelist) {
 	    add_heap();
+	    return Qtrue;
 	}
 	return Qfalse;
     }
-    if (during_gc) return Qfalse;
     during_gc++;
 
     init_mark_stack();
