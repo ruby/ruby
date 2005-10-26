@@ -1,3 +1,11 @@
+Wed Oct 26 09:04:51 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ruby.h (Qfalse, Qtrue, Qnil, Qundef): make sure these immediate
+	  values have VALUE type. there is an environment where sizeof(VALUE)
+	  != sizeof(int) like IA64. if 32bit integer (Qtrue) is passed to ANYARGS
+	  and received by 64bit integer (VALUE), upper bits may have garbage value.
+	  [ruby-dev:27513]
+
 Wed Oct 26 01:58:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_EXTERN): macro to export symbols in shared

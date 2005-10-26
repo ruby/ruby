@@ -170,10 +170,10 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 #define SYM2ID(x) RSHIFT((long)x,8)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
-#define Qfalse 0
-#define Qtrue  2
-#define Qnil   4
-#define Qundef 6		/* undefined value for placeholder */
+#define Qfalse ((VALUE)0)
+#define Qtrue  ((VALUE)2)
+#define Qnil   ((VALUE)4)
+#define Qundef ((VALUE)6)	/* undefined value for placeholder */
 
 #define RTEST(v) (((VALUE)(v) & ~Qnil) != 0)
 #define NIL_P(v) ((VALUE)(v) == Qnil)
