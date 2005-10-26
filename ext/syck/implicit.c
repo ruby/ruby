@@ -2481,7 +2481,7 @@ yy244:	++YYCURSOR;
 	goto yy245;
 yy245:
 #line 174 "implicit.re"
-{   return type_id; }
+{   return syck_strndup( type_id, strlen( type_id ) ); }
 #line 2485 "<stdout>"
 yy246:	yych = *++YYCURSOR;
 	switch(yych){
@@ -2928,7 +2928,7 @@ yy264:	++YYCURSOR;
 	goto yy265;
 yy265:
 #line 172 "implicit.re"
-{   return type_id; }
+{   return syck_strndup( type_id, strlen( type_id ) ); }
 #line 2932 "<stdout>"
 yy266:	yych = *++YYCURSOR;
 	switch(yych){
