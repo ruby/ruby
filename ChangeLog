@@ -1,3 +1,9 @@
+Wed Oct 26 09:27:27 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/implicit.c (syck_type_id_to_uri): should return
+	  newly allocated memory. otherwise, type_id will be freed
+	  twice. [ruby-dev:27384] [ruby-core:6385]
+
 Wed Oct 26 09:04:51 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.h (Qfalse, Qtrue, Qnil, Qundef): make sure these immediate
