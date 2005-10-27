@@ -25,6 +25,7 @@ matrix.rb
 observer.rb
 optionparser.rb
 pathname.rb
+pstore.rb
 rational.rb
 set.rb
 shellwords.rb

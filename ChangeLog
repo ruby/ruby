@@ -1,3 +1,8 @@
+Thu Oct 27 16:45:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (scan_once): wrong condition to use mbclen2().
+	  [ruby-dev:27535]
+
 Wed Oct 26 09:27:27 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/implicit.c (syck_type_id_to_uri): should return

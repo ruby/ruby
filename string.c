@@ -4189,7 +4189,7 @@ scan_once(str, pat, start)
 	    /*
 	     * Always consume at least one character of the input string
 	     */
-	    if (RSTRING(str)->len < END(0))
+	    if (RSTRING(str)->len > END(0))
 		*start = END(0)+mbclen2(RSTRING(str)->ptr[END(0)],pat);
 	    else
 		*start = END(0)+1;
