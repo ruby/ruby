@@ -1,3 +1,8 @@
+Thu Oct 27 11:53:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* missing.h, missing/memcmp.c, missing/memmove.c:
+	  ANSI compatible interface.
+
 Wed Oct 26 09:15:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/implicit.c (syck_type_id_to_uri): should return

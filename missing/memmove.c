@@ -1,22 +1,21 @@
 /* public domain rewrite of memcmp(3) */
 
+#include <stddef.h>
+
 void *
-memmove (d, s, n)
-    void *d, *s;
-    int n;
+memmove(void *d, const void *s, size_t n)
 {
-    char *dst = d;
-    char *src = s;
-    void *ret = dst;
+    char *dst = (char *)d;
+    const char *src = (const char *)s;
 
     if (src < dst) {
 	src += n;
 	dst += n;
-	while (n--)
+	for (; n; --n)
 	    *--dst = *--src;
     }
     else if (dst < src)
-	while (n--)
+	for (; n; --n)
 	    *dst++ = *src++;
-    return ret;
+    return d;
 }

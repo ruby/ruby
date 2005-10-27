@@ -1,16 +1,15 @@
 /* public domain rewrite of memcmp(3) */
 
+#include <stddef.h>
+
 int
-memcmp(s1,s2,len)
-    char *s1;
-    char *s2;
-    register int len;
+memcmp(const void *s1, const void *s2, size_t len)
 {
     register unsigned char *a = (unsigned char*)s1;
     register unsigned char *b = (unsigned char*)s2;
     register int tmp;
 
-    while (len--) {
+    for (; len; --len) {
 	if (tmp = *a++ - *b++)
 	    return tmp;
     }

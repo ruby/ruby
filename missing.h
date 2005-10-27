@@ -76,12 +76,12 @@ extern int isnan(double);
 
 /*
 #ifndef HAVE_MEMCMP
-extern int memcmp(char *, char *, int);
+extern int memcmp(const void *, const void *, size_t);
 #endif
 */
 
 #ifndef HAVE_MEMMOVE
-extern void *memmove(void *, void *, int);
+extern void *memmove(void *, const void *, size_t);
 #endif
 
 /*
