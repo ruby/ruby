@@ -26,6 +26,8 @@ net
 observer.rb
 optionparser.rb
 pathname.rb
+pstore.rb
+rational.rb
 resolv.rb
 set.rb
 shellwords.rb

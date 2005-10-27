@@ -1487,6 +1487,109 @@ time_wday(VALUE time)
     return INT2FIX(tobj->tm.tm_wday);
 }
 
+#define wday_p(n) {\
+    struct time_object *tobj;\
+    GetTimeval(time, tobj);\
+    if (tobj->tm_got == 0) {\
+	time_get_tm(time, tobj->gmt);\
+    }\
+    return (tobj->tm.tm_wday == (n)) ? Qtrue : Qfalse;\
+}
+
+/*
+ *  call-seq:
+ *     time.sunday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Sunday.
+ *     
+ *     t = Time.now   #=> Sun Oct 23 00:14:54 UTC 2005
+ *     t.sunday?      #=> true
+ */
+
+static VALUE
+time_sunday(VALUE time)
+{
+    wday_p(0);
+}
+
+/*
+ *  call-seq:
+ *     time.monday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Monday.
+ */
+
+static VALUE
+time_monday(VALUE time)
+{
+    wday_p(1);
+}
+
+/*
+ *  call-seq:
+ *     time.tuesday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Tuesday.
+ */
+
+static VALUE
+time_tuesday(VALUE time)
+{
+    wday_p(2);
+}
+
+/*
+ *  call-seq:
+ *     time.wednesday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Wednesday.
+ */
+
+static VALUE
+time_wednesday(VALUE time)
+{
+    wday_p(3);
+}
+
+/*
+ *  call-seq:
+ *     time.thursday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Thursday.
+ */
+
+static VALUE
+time_thursday(VALUE time)
+{
+    wday_p(4);
+}
+
+/*
+ *  call-seq:
+ *     time.friday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Friday.
+ */
+
+static VALUE
+time_friday(VALUE time)
+{
+    wday_p(5);
+}
+
+/*
+ *  call-seq:
+ *     time.saturday? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents Saturday.
+ */
+
+static VALUE
+time_saturday(VALUE time)
+{
+    wday_p(6);
+}
+
 /*
  *  call-seq:
  *     time.yday => fixnum
@@ -2017,6 +2120,14 @@ Init_Time(void)
 
     rb_define_method(rb_cTime, "utc?", time_utc_p, 0);
     rb_define_method(rb_cTime, "gmt?", time_utc_p, 0);
+
+    rb_define_method(rb_cTime, "sunday?", time_sunday, 0);
+    rb_define_method(rb_cTime, "monday?", time_monday, 0);
+    rb_define_method(rb_cTime, "tuesday?", time_tuesday, 0);
+    rb_define_method(rb_cTime, "wednesday?", time_wednesday, 0);
+    rb_define_method(rb_cTime, "thursday?", time_thursday, 0);
+    rb_define_method(rb_cTime, "friday?", time_friday, 0);
+    rb_define_method(rb_cTime, "saturday?", time_saturday, 0);
 
     rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);

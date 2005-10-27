@@ -1,3 +1,8 @@
+Thu Oct 27 16:45:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (scan_once): wrong condition to use mbclen2().
+	  [ruby-dev:27535]
+
 Thu Oct 27 11:53:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* missing.h, missing/memcmp.c, missing/memmove.c:
@@ -26,6 +31,14 @@ Tue Oct 25 20:06:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  != sizeof(int) like IA64. if 32bit integer (Qtrue) is passed to ANYARGS
 	  and received by 64bit integer (VALUE), upper bits may have garbage value.
 	  [ruby-dev:27513]
+
+Tue Oct 25 15:32:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rational.rb: applied documentation patch from Gavin Sinclair
+	  <gsinclair@gmail.com>.  [ruby-core:06364]
+
+	* lib/irb.rb (IRB::Irb::eval_input): handle prompts with newlines
+	  in irb auto-indentation mode.  [ruby-core:06358]
 
 Tue Oct 25 14:21:46 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -65,9 +78,26 @@ Mon Oct 24 11:01:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/menu.rb (TkMenuEntryConfig::__item_val2ruby_optkeys):
 	  ditto.  [ruby-core:06359]
 
+Mon Oct 24 07:57:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/tk/lib/tk/canvas.rb (TkCanvasItemConfig::__item_val2ruby_optkeys): 
+	  typo fixed.  [ruby-talk:162187]
+
+	* ext/tk/lib/tk/menu.rb (TkMenuEntryConfig::__item_val2ruby_optkeys):
+	  ditto.  [ruby-core:06359]
+
+	* lib/matrix.rb (Matrix::initialize): use funcall instead of send
+	  to allow private methods to be called.  A report from
+	  Jean-Claude Arbaut <jcarbaut@laposte.net>.  [ruby-core:06359]
+
+Mon Oct 24 00:41:18 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_sunday): added predicate methods for the days of the
+	  week.  [ruby-list:41340]
+
 Sun Oct 23 07:11:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/extconf.rb: improbe messages [ruby-core:06325].
+	* ext/tk/extconf.rb: improve messages [ruby-core:06325].
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/canvas.rb, ext/tk/lib/tk/entry.rb,
 	  ext/tk/lib/tk/frame.rb, ext/tk/lib/tk/image.rb,
@@ -102,7 +132,7 @@ Sat Oct 22 14:25:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  scan_{oct,hex})
 
 	* util.c: almostly ANSI styled. (except for functions depending on
-	  macro and K&R tecknique)
+	  macro and K&R technique)
 
 Sat Oct 22 13:26:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
