@@ -257,7 +257,7 @@ static VALUE
 enumerator_allocate(VALUE klass)
 {
     struct enumerator *ptr;
-    return Data_Make_Struct(rb_cEnumerator, struct enumerator,
+    return Data_Make_Struct(klass, struct enumerator,
 			    enumerator_mark, -1, ptr);
 }
 

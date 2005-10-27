@@ -1,3 +1,7 @@
+Thu Oct 27 20:34:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_allocate): allow subclassing.
+
 Thu Oct 27 16:45:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (scan_once): wrong condition to use mbclen2().
@@ -80,7 +84,7 @@ Mon Oct 24 11:01:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Mon Oct 24 07:57:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/tk/lib/tk/canvas.rb (TkCanvasItemConfig::__item_val2ruby_optkeys): 
+	* ext/tk/lib/tk/canvas.rb (TkCanvasItemConfig::__item_val2ruby_optkeys):
 	  typo fixed.  [ruby-talk:162187]
 
 	* ext/tk/lib/tk/menu.rb (TkMenuEntryConfig::__item_val2ruby_optkeys):
