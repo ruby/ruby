@@ -1,7 +1,7 @@
 # = PStore -- Transactional File Storage for Ruby Objects
 #
 # pstore.rb -
-#   by unknown
+#   originally by matz
 #   documentation by Kev Jackson and James Edward Gray II
 #
 # See PStore for documentation.
