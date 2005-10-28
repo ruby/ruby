@@ -1,3 +1,10 @@
+Sat Oct 29 01:58:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c: document update from mathew <meta@pobox.com>.
+	  [ruby-core:06473]
+
+	* ext/fcntl/fcntl.c: ditto.
+
 Thu Oct 27 16:45:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (scan_once): wrong condition to use mbclen2().

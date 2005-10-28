@@ -34,6 +34,11 @@ char *getenv();
 #endif
 char *getlogin();
 
+/* Returns the short user name of the currently logged in user.
+ *
+ * e.g.
+ *   Etc.getlogin -> 'guest'
+ */
 static VALUE
 etc_getlogin(obj)
     VALUE obj;
@@ -104,6 +109,15 @@ setup_passwd(pwd)
 }
 #endif
 
+/* Returns the /etc/passwd information for the user with specified integer
+ * user id (uid).
+ *
+ * The information is returned as a Struct::Passwd; see getpwent above for
+ * details.
+ *
+ * e.g.  * Etc.getpwuid(0) -> #<struct Struct::Passwd name="root",
+ * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ */
 static VALUE
 etc_getpwuid(argc, argv, obj)
     int argc;
@@ -130,6 +144,14 @@ etc_getpwuid(argc, argv, obj)
 #endif
 }
 
+/* Returns the /etc/passwd information for the user with specified login name.
+ *
+ * The information is returned as a Struct::Passwd; see getpwent above for
+ * details.
+ *
+ * e.g.  * Etc.getpwnam('root') -> #<struct Struct::Passwd name="root",
+ * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
+ */
 static VALUE
 etc_getpwnam(obj, nam)
     VALUE obj, nam;
@@ -169,6 +191,21 @@ passwd_iterate()
 }
 #endif
 
+/* Provides a convenient Ruby iterator which executes a block for each entry 
+ * in the /etc/passwd file.
+ *
+ * The code block is passed an Etc::Passwd struct; see getpwent above for 
+ * details.
+ *
+ * Example:
+ *
+ *     require 'etc'
+ *
+ *     Etc.passwd {|u|
+ *       puts u.name + " = " + u.gecos
+ *     }
+ *
+ */
 static VALUE
 etc_passwd(obj)
     VALUE obj;
@@ -191,6 +228,9 @@ etc_passwd(obj)
     return Qnil;
 }
 
+/* Resets the process of reading the /etc/passwd file, so that the next call
+ * to getpwent will return the first entry again.
+ */
 static VALUE
 etc_setpwent(obj)
     VALUE obj;
@@ -201,6 +241,9 @@ etc_setpwent(obj)
     return Qnil;
 }
 
+/* Ends the process of scanning through the /etc/passwd file begun with
+ * getpwent, and closes the file.
+ */
 static VALUE
 etc_endpwent(obj)
     VALUE obj;
@@ -211,6 +254,32 @@ etc_endpwent(obj)
     return Qnil;
 }
 
+/* Returns an entry from the /etc/passwd file. The first time it is called it
+ * opens the file and returns the first entry; each successive call returns 
+ * the next entry, or nil if the end of the file has been reached.
+ *
+ * To close the file when processing is complete, call endpwent.
+ *
+ * Each entry is returned as a Struct::Passwd:
+ *
+ * - Passwd#name contains the short login name of the user as a String.
+ *
+ * - Passwd#passwd contains the encrypted password of the user as a String.
+ *   an 'x' is returned if shadow passwords are in use. An '*' is returned
+ *   if the user cannot log in using a password.
+ *
+ * - Passwd#uid contains the integer user ID (uid) of the user.
+ *
+ * - Passwd#gid contains the integer group ID (gid) of the user's primary group.
+ *
+ * - Passwd#gecos contains a longer String description of the user, such as 
+ *   a full name. Some Unix systems provide structured information in the 
+ *   gecos field, but this is system-dependent.
+ *
+ * - Passwd#dir contains the path to the home directory of the user as a String.
+ *
+ * - Passwd#shell contains the path to the login shell of the user as a String.
+ */
 static VALUE
 etc_getpwent(obj)
     VALUE obj;
@@ -249,6 +318,16 @@ setup_group(grp)
 }
 #endif
 
+/* Returns information about the group with specified integer group id (gid), 
+ * as found in /etc/group.
+ *
+ * The information is returned as a Struct::Group; see getgrent above for
+ * details.
+ *
+ * e.g.  Etc.getgrgid(100) -> #<struct Struct::Group name="users", passwd="x",
+ * gid=100, mem=["meta", "root"]>
+ *
+ */
 static VALUE
 etc_getgrgid(obj, id)
     VALUE obj, id;
@@ -267,6 +346,16 @@ etc_getgrgid(obj, id)
 #endif
 }
 
+/* Returns information about the group with specified String name, as found 
+ * in /etc/group.
+ *
+ * The information is returned as a Struct::Group; see getgrent above for
+ * details.
+ *
+ * e.g.  Etc.getgrnam('users') -> #<struct Struct::Group name="users",
+ * passwd="x", gid=100, mem=["meta", "root"]>
+ *
+ */
 static VALUE
 etc_getgrnam(obj, nam)
     VALUE obj, nam;
@@ -307,6 +396,21 @@ group_iterate()
 }
 #endif
 
+/* Provides a convenient Ruby iterator which executes a block for each entry 
+ * in the /etc/group file.
+ *
+ * The code block is passed an Etc::Group struct; see getgrent above for 
+ * details.
+ *
+ * Example:
+ *
+ *     require 'etc'
+ *
+ *     Etc.group {|g|
+ *       puts g.name + ": " + g.mem.join(', ')
+ *     }
+ *
+ */
 static VALUE
 etc_group(obj)
     VALUE obj;
@@ -329,6 +433,9 @@ etc_group(obj)
     return Qnil;
 }
 
+/* Resets the process of reading the /etc/group file, so that the next call
+ * to getgrent will return the first entry again.
+ */
 static VALUE
 etc_setgrent(obj)
     VALUE obj;
@@ -339,6 +446,9 @@ etc_setgrent(obj)
     return Qnil;
 }
 
+/* Ends the process of scanning through the /etc/group file begun by 
+ * getgrent, and closes the file.
+ */
 static VALUE
 etc_endgrent(obj)
     VALUE obj;
@@ -349,6 +459,26 @@ etc_endgrent(obj)
     return Qnil;
 }
 
+/* Returns an entry from the /etc/group file. The first time it is called it
+ * opens the file and returns the first entry; each successive call returns 
+ * the next entry, or nil if the end of the file has been reached.
+ *
+ * To close the file when processing is complete, call endgrent.
+ *
+ * Each entry is returned as a Struct::Group:
+ *
+ * - Group#name contains the name of the group as a String.
+ *
+ * - Group#passwd contains the encrypted password as a String. An 'x' is
+ *   returned if password access to the group is not available; an empty 
+ *   string is returned if no password is needed to obtain membership of 
+ *   the group.
+ *
+ * - Group#gid contains the group's numeric ID as an integer.
+ *
+ * - Group#mem is an Array of Strings containing the short login names of the 
+ *   members of the group.
+ */
 static VALUE
 etc_getgrent(obj)
     VALUE obj;
@@ -365,6 +495,11 @@ etc_getgrent(obj)
 
 static VALUE mEtc;
 
+/* The etc module provides access to information from the /etc/passwd and
+ * /etc/group files on Linux and Unix systems.
+ *
+ * Documented by mathew <meta@pobox.com>.
+ */
 void
 Init_etc()
 {
