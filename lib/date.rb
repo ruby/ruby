@@ -839,6 +839,10 @@ class Date
 
   once :wday
 
+  DAYNAMES.each_with_index do |n, i|
+    define_method(n.downcase + '?'){wday == i}
+  end
+
   # Is the current date old-style (Julian Calendar)?
   def os? () self.class.os?(jd, @sg) end
 
@@ -968,6 +972,9 @@ class Date
   # than the last day of the target month, the day-of-the-month
   # of the returned Date will be the last day of the target month.
   def << (n) self >> -n end
+
+  def next_month(n=1) self >> n end
+  def prev_month(n=1) self << n end
 
   # Step the current date forward +step+ days at a
   # time (or backward, if +step+ is negative) until

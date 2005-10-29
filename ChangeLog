@@ -1,3 +1,10 @@
+Sat Oct 29 16:56:03 2005  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: added seven predicates sunday? to saturday?.
+
+	* lib/date.rb: added two methods {prev,next}_month,
+	  that are almost same as << and >>.
+
 Thu Oct 27 20:34:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_allocate): allow subclassing.
