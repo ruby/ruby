@@ -40,10 +40,10 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_precision
-    #s = "3.7517675036461267e+17"
-    #assert(s == sprintf("%.16e", s.to_f))
-    f = 3.7517675036461267e+17
-    assert_equal(f, sprintf("%.16e", f).to_f)
+    u = 3.7517675036461267e+17
+    v = sprintf("%.16e", u).to_f
+    assert_in_delta(u, v, u.abs * Float::EPSILON)
+    assert_in_delta(u, v, v.abs * Float::EPSILON)
   end
 
   def test_symmetry_bignum # [ruby-bugs-ja:118]

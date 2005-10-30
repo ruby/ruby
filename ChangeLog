@@ -1,3 +1,8 @@
+Mon Oct 31 02:31:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_float.rb (test_precision): test by assert_in_delta.
+	  [ruby-dev:27575]
+
 Sat Oct 29 16:56:03 2005  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: added seven predicates sunday? to saturday?.
