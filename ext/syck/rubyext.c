@@ -770,6 +770,7 @@ syck_parser_initialize(argc, argv, self)
         Check_Type(options, T_HASH);
     }
     rb_ivar_set(self, s_options, options);
+    rb_ivar_set(self, s_input, Qnil);
     return self;
 }
 

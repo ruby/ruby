@@ -1,3 +1,13 @@
+Mon Oct 31 03:19:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): type check.
+	  [ruby-core:6089] 
+
+	* numeric.c (fix_rshift): RDoc fix.  [ruby-core:6351]
+
+	* util.h (strtod): add #undef for platforms defines strtod()
+	  macro.   [ruby-dev:27563]
+
 Mon Oct 31 02:35:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb (test_precision): test by assert_in_delta.

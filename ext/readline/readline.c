@@ -69,10 +69,12 @@ readline_readline(argc, argv, self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
 
+    Check_Type(rb_stdout, T_FILE);
     GetOpenFile(rb_stdout, ofp);
-    rl_outstream = ofp->f;
+    rl_outstream = GetWriteFile(ofp);
+    Check_Type(rb_stdin, T_FILE);
     GetOpenFile(rb_stdin, ifp);
-    rl_instream = ifp->f;
+    rl_instream = GetReadFile(ifp);
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);
     if (status) {
