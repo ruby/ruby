@@ -1,3 +1,10 @@
+Mon Oct 31 05:46:08 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_update): input data must
+	  not be empty. [ruby-talk:161220]
+
+	* test/openssl/test_cipher.rb: add test for Cipher#update("").
+
 Mon Oct 31 05:38:26 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb
