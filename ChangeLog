@@ -1,3 +1,15 @@
+Mon Oct 31 05:38:26 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb
+	  (WEBrick::HTTPServlet::CGIHandler#do_GET): the value of Set-Cookie:
+	  header field should be splited into each cookie.  [ruby-Bugs:2199]
+
+	* lib/webrick/cookie.rb (WEBrick::Cookie.parse_set_cookie): new method
+	  to parse the value of Set-Cookie: header field.
+
+	* test/webrick/test_cookie.rb, test/webrick/test_cgi.rb,
+	  test/webrick/webrick.cgi: add some test for cookie.
+
 Mon Oct 31 02:31:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb (test_precision): test by assert_in_delta.

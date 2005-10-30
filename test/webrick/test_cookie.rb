@@ -53,4 +53,21 @@ class TestWEBrickCookie < Test::Unit::TestCase
     assert_equal("__div__session", cookies[1].name)
     assert_equal("9865ecfd514be7f7", cookies[1].value)
   end
+
+  def test_parse_set_cookie
+    data = %(Customer="WILE_E_COYOTE"; Version="1"; Path="/acme")
+    cookie = WEBrick::Cookie.parse_set_cookie(data)
+    assert_equal("Customer", cookie.name)
+    assert_equal("WILE_E_COYOTE", cookie.value)
+    assert_equal(1, cookie.version)
+    assert_equal("/acme", cookie.path)
+    
+    data = %(Shipping="FedEx"; Version="1"; Path="/acme"; Secure)
+    cookie = WEBrick::Cookie.parse_set_cookie(data)
+    assert_equal("Shipping", cookie.name)
+    assert_equal("FedEx", cookie.value)
+    assert_equal(1, cookie.version)
+    assert_equal("/acme", cookie.path)
+    assert_equal(true, cookie.secure)
+  end
 end
