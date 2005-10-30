@@ -1,3 +1,8 @@
+Mon Oct 31 02:35:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_float.rb (test_precision): test by assert_in_delta.
+	  [ruby-dev:27575]
+
 Sat Oct 29 01:58:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/etc/etc.c: document update from mathew <meta@pobox.com>.
