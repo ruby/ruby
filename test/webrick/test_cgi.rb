@@ -51,6 +51,28 @@ class TestWEBrickCGI < Test::Unit::TestCase
         assert_match(%r{/$}, ary[0])
         assert_match(%r{/webrick.cgi$}, ary[1])
       }
+
+      req = Net::HTTP::Get.new("/webrick.cgi")
+      req["Cookie"] = "CUSTOMER=WILE_E_COYOTE; PART_NUMBER=ROCKET_LAUNCHER_0001"
+      http.request(req){|res|
+        assert_equal(
+          "CUSTOMER=WILE_E_COYOTE\nPART_NUMBER=ROCKET_LAUNCHER_0001\n",
+          res.body)
+      }
+
+      req = Net::HTTP::Get.new("/webrick.cgi")
+      cookie =  %{$Version="1"; }
+      cookie << %{Customer="WILE_E_COYOTE"; $Path="/acme"; }
+      cookie << %{Part_Number="Rocket_Launcher_0001"; $Path="/acme"; }
+      cookie << %{Shipping="FedEx"; $Path="/acme"}
+      req["Cookie"] = cookie
+      http.request(req){|res|
+        assert_equal("Customer=WILE_E_COYOTE, Shipping=FedEx",
+                     res["Set-Cookie"])
+        assert_equal("Customer=WILE_E_COYOTE\n" +
+                     "Part_Number=Rocket_Launcher_0001\n" +
+                     "Shipping=FedEx\n", res.body)
+      }
     }
   end
 end

@@ -85,6 +85,12 @@ module WEBrick
             res.status = $1.to_i
             header.delete('status')
           end
+          if header.has_key?('set-cookie')
+            header['set-cookie'].each{|k|
+              res.cookies << Cookie.parse_set_cookie(k)
+            }
+            header.delete('set-cookie')
+          end
           header.each{|key, val| res[key] = val.join(", ") }
         rescue => ex
           raise HTTPStatus::InternalServerError, ex.message

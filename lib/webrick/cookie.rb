@@ -76,5 +76,29 @@ module WEBrick
       end
     end
 
+    def self.parse_set_cookie(str)
+      cookie_elem = str.split(/;/)
+      first_elem = cookie_elem.shift
+      first_elem.strip!
+      key, value = first_elem.split(/=/, 2)
+      cookie = new(key, HTTPUtils.dequote(value))
+      cookie_elem.each{|pair|
+        pair.strip!
+        key, value = pair.split(/=/, 2)
+        if value
+          value = HTTPUtils.dequote(value.strip)
+        end
+        case key.downcase
+        when "domain"  then cookie.domain  = value
+        when "path"    then cookie.path    = value
+        when "expires" then cookie.expires = value
+        when "max-age" then cookie.max_age = Integer(value)
+        when "comment" then cookie.comment = value
+        when "version" then cookie.version = Integer(value)
+        when "secure"  then cookie.secure = true
+        end
+      }
+      return cookie
+    end
   end
 end
