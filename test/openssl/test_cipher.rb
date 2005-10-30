@@ -57,6 +57,11 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     s2 = @c1.update(@data) + @c1.final
     assert_equal(s1, s2, "encrypt reset")
   end
+
+  def test_empty_data
+    @c1.encrypt
+    assert_raises(ArgumentError){ @c1.update("") }
+  end
 end
 
 end
