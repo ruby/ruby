@@ -981,7 +981,11 @@ if test "$with_dln_a_out" != yes; then
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
     LIBPATHFLAG=" -L'%1\$-s'"
-    RPATHFLAG=" -Wl,-R'%1\$-s'"
+    if test "$GCC" = yes; then
+       RPATHFLAG=" -Wl,-R'%1\$-s'"
+    else
+       RPATHFLAG=" -R'%1\$-s'"
+    fi
   fi
 fi
 AC_SUBST(LINK_SO)
