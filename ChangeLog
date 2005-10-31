@@ -1,3 +1,8 @@
+Mon Oct 31 11:27:22 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/gdbm/test_gdbm.rb, test/sdbm/test_sdbm.rb (test_s_open_error):
+	  skip on Win32/DOS platforms.
+
 Mon Oct 31 05:49:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_update): input data must

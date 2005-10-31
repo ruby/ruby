@@ -118,6 +118,7 @@ class TestSDBM < Test::Unit::TestCase
   end
 
   def test_s_open_error
+    return if /(ms|bcc)win|mingw|djgpp/ =~ RUBY_PLATFORM
     assert_instance_of(SDBM, sdbm = SDBM.open("tmptest_sdbm", 0))
     assert_raise(Errno::EACCES) {
       SDBM.open("tmptest_sdbm", 0)

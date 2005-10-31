@@ -195,6 +195,7 @@ if defined? GDBM
     end
 
     def test_s_open_error
+      return if /(ms|bcc)win|mingw|djgpp/ =~ RUBY_PLATFORM
       assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm", 0))
       assert_raise(Errno::EACCES) {
         GDBM.open("tmptest_gdbm", 0)
