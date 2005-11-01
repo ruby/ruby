@@ -1,3 +1,10 @@
+Tue Nov 01 10:50:17 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: should check ERR_peek_last_error().
+	  [ruby-dev:27597]
+
+	* ext/openssl/ossl.c (ossl_raise): ditto.
+
 Mon Oct 31 17:34:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: use proper option for Sun linker. A patch from
