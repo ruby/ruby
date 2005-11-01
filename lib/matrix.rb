@@ -602,7 +602,7 @@ class Matrix
       
       for i in 0 .. size
         next if i == k
-        q = a[i][k] / akk
+        q = a[i][k].quo(akk)
         a[i][k] = 0
         
         (k + 1).upto(size) do   
@@ -617,11 +617,11 @@ class Matrix
       
       (k + 1).upto(size) do
         |j|
-        a[k][j] /= akk
+        a[k][j] = a[k][j].quo(akk)
       end
       0.upto(size) do
         |j|
-        @rows[k][j] /= akk
+        @rows[k][j] = @rows[k][j].quo(akk)
       end
     end
     self
@@ -692,7 +692,7 @@ class Matrix
       end
       (k + 1).upto(size) do
         |i|
-        q = a[i][k] / akk
+        q = a[i][k].quo(akk)
         (k + 1).upto(size) do
           |j|
           a[i][j] -= a[k][j] * q
@@ -758,7 +758,7 @@ class Matrix
       end
       (k + 1).upto(a_row_size - 1) do
         |i|
-        q = a[i][k] / akk
+        q = a[i][k].quo(akk)
         (k + 1).upto(a_column_size - 1) do
           |j|
           a[i][j] -= a[k][j] * q
@@ -925,7 +925,7 @@ class Matrix
         self * _M.inverse
       else
         x, y = other.coerce(self)
-        x / y
+        x.quo(y)
       end
     end
     

@@ -1,9 +1,22 @@
+Tue Nov  1 14:20:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call_super): should call method_missing if super is
+	  called from Kernel method.
+
+	* eval.c (exec_under): frame during eval should preserve external
+	  information.
+
 Tue Nov 01 10:48:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check ERR_peek_last_error().
 	  [ruby-dev:27597]
 
 	* ext/openssl/ossl.c (ossl_raise): ditto.
+
+Mon Oct 31 17:34:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: use proper option for Sun linker. A patch from
+	  Shinya Kuwamura <kuwa@labs.fujitsu.com>.  [ruby-dev:27603]
 
 Mon Oct 31 05:46:08 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -24,10 +37,24 @@ Mon Oct 31 05:38:26 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* test/webrick/test_cookie.rb, test/webrick/test_cgi.rb,
 	  test/webrick/webrick.cgi: add some test for cookie.
 
+Mon Oct 31 02:33:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_rshift): RDoc fix.  [ruby-core:6351]
+
+	* util.h (strtod): add #undef for platforms defines strtod()
+	  macro.   [ruby-dev:27563]
+
 Mon Oct 31 02:31:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb (test_precision): test by assert_in_delta.
 	  [ruby-dev:27575]
+
+Sat Oct 29 01:58:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c: document update from mathew <meta@pobox.com>.
+	  [ruby-core:06473]
+
+	* ext/fcntl/fcntl.c: ditto.
 
 Sat Oct 29 16:56:03 2005  Tadayoshi Funaba  <tadf@dotrb.org>
 

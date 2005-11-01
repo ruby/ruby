@@ -2467,7 +2467,7 @@ fix_lshift(VALUE x, VALUE y)
  * call-seq:
  *   fix >> count     => integer
  *
- * Shifts _fix_ left _count_ positions (right if _count_ is negative).
+ * Shifts _fix_ right _count_ positions (left if _count_ is negative).
  */
 
 static VALUE

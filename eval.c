@@ -5914,6 +5914,9 @@ rb_call_super(int argc, const VALUE *argv)
 
     self = ruby_frame->self;
     klass = ruby_frame->this_class;
+    if (RCLASS(klass)->super == 0) {
+	return method_missing(self, ruby_frame->this_func, argc, argv, CSTAT_SUPER);
+    }
 
     PUSH_ITER(ruby_iter->iter ? ITER_PRE : ITER_NOT);
     result = rb_call(RCLASS(klass)->super, self, ruby_frame->this_func, argc, argv, 3);
@@ -6256,14 +6259,15 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE cbase, VALUE args)
     VALUE val = Qnil;		/* OK */
     int state;
     int mode;
+    struct FRAME *f = ruby_frame->prev;
 
     PUSH_CLASS(under);
     PUSH_FRAME();
-    ruby_frame->self = _frame.prev->self;
-    ruby_frame->callee = _frame.prev->callee;
-    ruby_frame->this_func = _frame.prev->this_func;
-    ruby_frame->this_class = _frame.prev->this_class;
-    ruby_frame->argc = _frame.prev->argc;
+    ruby_frame->self = f->self;
+    ruby_frame->callee = f->callee;
+    ruby_frame->this_func = f->this_func;
+    ruby_frame->this_class = f->this_class;
+    ruby_frame->argc = f->argc;
     if (cbase) {
 	PUSH_CREF(cbase);
     }
