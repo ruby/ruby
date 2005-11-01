@@ -1,3 +1,11 @@
+Tue Nov  1 14:20:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call_super): should call method_missing if super is
+	  called from Kernel method.
+
+	* eval.c (exec_under): frame during eval should preserve external
+	  information.
+
 Tue Nov 01 10:50:17 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check ERR_peek_last_error().

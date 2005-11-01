@@ -6080,6 +6080,9 @@ rb_call_super(argc, argv)
 
     self = ruby_frame->self;
     klass = ruby_frame->last_class;
+    if (RCLASS(klass)->super == 0) {
+	return method_missing(self, ruby_frame->last_func, argc, argv, CSTAT_SUPER);
+    }
 
     PUSH_ITER(ruby_iter->iter ? ITER_PRE : ITER_NOT);
     result = rb_call(RCLASS(klass)->super, self, ruby_frame->orig_func, argc, argv, 3);
@@ -6439,14 +6442,16 @@ exec_under(func, under, cbase, args)
     VALUE val = Qnil;		/* OK */
     int state;
     int mode;
+    struct FRAME *f = ruby_frame->prev;
 
     PUSH_CLASS(under);
     PUSH_FRAME();
-    ruby_frame->self = _frame.prev->self;
-    ruby_frame->last_func = _frame.prev->last_func;
-    ruby_frame->last_class = _frame.prev->last_class;
-    ruby_frame->argc = _frame.prev->argc;
-    ruby_frame->argv = _frame.prev->argv;
+    ruby_frame->self = f->self;
+    ruby_frame->last_func = f->last_func;
+    ruby_frame->orig_func = f->orig_func;
+    ruby_frame->last_class = f->last_class;
+    ruby_frame->argc = f->argc;
+    ruby_frame->argv = f->argv;
     if (cbase) {
 	PUSH_CREF(cbase);
     }

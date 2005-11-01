@@ -436,6 +436,7 @@ class RubyLex
   def_exception(:SyntaxError, "%s")
   
   include RubyToken
+  include IRB
 
   attr_reader :continue
   attr_reader :lex_state
