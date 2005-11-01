@@ -1,3 +1,10 @@
+Tue Nov 01 10:48:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: should check ERR_peek_last_error().
+	  [ruby-dev:27597]
+
+	* ext/openssl/ossl.c (ossl_raise): ditto.
+
 Mon Oct 31 05:46:08 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_update): input data must

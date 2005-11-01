@@ -278,9 +278,14 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     va_list args;
     char buf[BUFSIZ];
     const char *msg;
-    long e = ERR_peek_last_error();
+    long e;
     int len = 0;
 
+#ifdef HAVE_ERR_PEEK_LAST_ERROR
+    e = ERR_peek_last_error();
+#else
+    e = ERR_peek_error();
+#endif
     if (fmt) {
 	va_start(args, fmt);
 	len = vsnprintf(buf, BUFSIZ, fmt, args);
