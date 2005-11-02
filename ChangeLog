@@ -1,3 +1,8 @@
+Wed Nov  2 20:25:28 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: ext/tk/extconf.rb: change the check parameter
+	  for Win32.
+
 Wed Nov  2 20:14:53 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib: merge into ext/tk and remove.
