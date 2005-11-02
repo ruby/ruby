@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-07-28"
+#define TKUTIL_RELEASE_DATE "2005-11-02"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -368,7 +368,7 @@ ary2list(ary, enc_flag, self)
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
         for(idx = 0; idx < RARRAY(dst)->len; idx++) {
             str_val = RARRAY(dst)->ptr[idx];
-            if (rb_respond_to(self, ID_toUTF8)) {
+            if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
@@ -462,7 +462,7 @@ ary2list2(ary, enc_flag, self)
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
         for(idx = 0; idx < RARRAY(dst)->len; idx++) {
             str_val = RARRAY(dst)->ptr[idx];
-            if (rb_respond_to(self, ID_toUTF8)) {
+            if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
@@ -781,7 +781,7 @@ get_eval_string_core(obj, enc_flag, self)
 
     case T_STRING:
         if (RTEST(enc_flag)) {
-            if (rb_respond_to(self, ID_toUTF8)) {
+            if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 return rb_funcall(self, ID_toUTF8, 1, obj);
             } else {
                 return fromDefaultEnc_toUTF8(obj, self);
@@ -792,7 +792,7 @@ get_eval_string_core(obj, enc_flag, self)
 
     case T_SYMBOL:
         if (RTEST(enc_flag)) {
-            if (rb_respond_to(self, ID_toUTF8)) {
+            if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 return rb_funcall(self, ID_toUTF8, 1, 
                                   rb_str_new2(rb_id2name(SYM2ID(obj))));
             } else {
@@ -834,7 +834,7 @@ get_eval_string_core(obj, enc_flag, self)
         if (rb_obj_is_kind_of(obj, rb_cProc)
             || rb_obj_is_kind_of(obj, cMethod)
             || rb_obj_is_kind_of(obj, cTkCallbackEntry)) {
-            if (rb_respond_to(self, ID_install_cmd)) {
+            if (rb_obj_respond_to(self, ID_install_cmd, Qtrue)) {
                 return rb_funcall(self, ID_install_cmd, 1, obj);
             } else {
                 return tk_install_cmd_core(obj);
@@ -843,15 +843,15 @@ get_eval_string_core(obj, enc_flag, self)
 
         if (obj == TK_None)  return Qnil;
 
-        if (rb_respond_to(obj, ID_to_eval)) {
+        if (rb_obj_respond_to(obj, ID_to_eval, Qtrue)) {
             /* return rb_funcall(obj, ID_to_eval, 0, 0); */
             return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0), 
                                         enc_flag, self);
-        } else if (rb_respond_to(obj, ID_path)) {
+        } else if (rb_obj_respond_to(obj, ID_path, Qtrue)) {
             /* return rb_funcall(obj, ID_path, 0, 0); */
             return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
                                         enc_flag, self);
-        } else if (rb_respond_to(obj, ID_to_s)) {
+        } else if (rb_obj_respond_to(obj, ID_to_s, Qtrue)) {
             return rb_funcall(obj, ID_to_s, 0, 0);
         }
     }
