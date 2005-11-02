@@ -1,3 +1,8 @@
+Thu Nov  3 07:57:39 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/open-uri.rb (open_loop): find_proxy should return nil when
+	  proxy does not exist. [ruby-dev:27630]
+
 Wed Nov  2 20:25:28 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: ext/tk/extconf.rb: change the check parameter
