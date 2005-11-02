@@ -207,7 +207,7 @@ EOF
   end
 
   # check pthread mode
-  if (macro_defined?('HAVE_LIBPTHREAD', '#include "ruby.h"'))
+  if (macro_defined?('HAVE_NATIVETHREAD', '#include "ruby.h"'))
     # ruby -> enable
     unless tcl_enable_thread
       # ruby -> enable && tcl -> disable
