@@ -1,3 +1,10 @@
+Wed Nov  2 19:03:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_rbUpdateObjCmd, 
+	  ip_rb_threadUpdateObjCmd): passed improper flags to DoOneEvent().
+
+	* ext/tk/tkutil.c: use rb_obj_respond_to() instead of rb_respond_to().
+
 Tue Nov  1 14:20:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call_super): should call method_missing if super is

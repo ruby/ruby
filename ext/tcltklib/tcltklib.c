@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-09-28"
+#define TCLTKLIB_RELEASE_DATE "2005-11-02"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -2758,7 +2758,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 #endif
 
     if (objc == 1) {
-        flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
+        flags = TCL_DONT_WAIT;
 
     } else if (objc == 2) {
 #if TCL_MAJOR_VERSION >= 8
@@ -2768,7 +2768,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
         }
         switch ((enum updateOptions) optionIndex) {
             case REGEXP_IDLETASKS: {
-                flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+                flags = TCL_IDLE_EVENTS;
                 break;
             }
             default: {
@@ -2781,7 +2781,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
                     "\": must be idletasks", (char *) NULL);
             return TCL_ERROR;
         }
-        flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+        flags = TCL_IDLE_EVENTS;
 #endif
     } else {
 #ifdef Tcl_WrongNumArgs
@@ -2919,7 +2919,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     DUMP1("start Ruby's 'thread_update' body");
 
     if (objc == 1) {
-        flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
+        flags = TCL_DONT_WAIT;
 
     } else if (objc == 2) {
 #if TCL_MAJOR_VERSION >= 8
@@ -2929,7 +2929,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
         }
         switch ((enum updateOptions) optionIndex) {
             case REGEXP_IDLETASKS: {
-                flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+                flags = TCL_IDLE_EVENTS;
                 break;
             }
             default: {
@@ -2942,7 +2942,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
                     "\": must be idletasks", (char *) NULL);
             return TCL_ERROR;
         }
-        flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+        flags = TCL_IDLE_EVENTS;
 #endif
     } else {
 #ifdef Tcl_WrongNumArgs
