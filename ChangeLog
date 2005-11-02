@@ -1,3 +1,7 @@
+Wed Nov  2 20:14:53 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib: merge into ext/tk and remove.
+
 Wed Nov  2 19:03:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_rbUpdateObjCmd, 
