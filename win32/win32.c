@@ -2009,11 +2009,11 @@ is_readable_console(SOCKET sock) /* call this for console only */
 }
 
 static void catch_interrupt(void);
-static long 
+static int
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             struct timeval *timeout)
 {
-    long r = 0;
+    int r = 0;
 
     if (nfds == 0) {
 	if (timeout)
@@ -2056,11 +2056,11 @@ subst(struct timeval *rest, const struct timeval *wait)
     return 1;
 }
 
-long 
+int WSAAPI
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-	      struct timeval *timeout)
+	       struct timeval *timeout)
 {
-    long r;
+    int r;
     fd_set pipe_rd;
     fd_set cons_rd;
     fd_set else_rd;
@@ -2194,7 +2194,7 @@ StartSockets(void)
 
 #undef accept
 
-int
+int WSAAPI
 rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
@@ -2217,7 +2217,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 
 #undef bind
 
-int 
+int WSAAPI
 rb_w32_bind(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
@@ -2235,7 +2235,7 @@ rb_w32_bind(int s, const struct sockaddr *addr, int addrlen)
 
 #undef connect
 
-int 
+int WSAAPI
 rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
@@ -2261,7 +2261,7 @@ rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
 
 #undef getpeername
 
-int 
+int WSAAPI
 rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
@@ -2278,7 +2278,7 @@ rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 
 #undef getsockname
 
-int 
+int WSAAPI
 rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
@@ -2293,7 +2293,7 @@ rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
     return r;
 }
 
-int 
+int WSAAPI
 rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 {
     int r;
@@ -2310,7 +2310,7 @@ rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 
 #undef ioctlsocket
 
-int 
+int WSAAPI
 rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 {
     int r;
@@ -2327,7 +2327,7 @@ rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 
 #undef listen
 
-int 
+int WSAAPI
 rb_w32_listen(int s, int backlog)
 {
     int r;
@@ -2344,7 +2344,7 @@ rb_w32_listen(int s, int backlog)
 
 #undef recv
 
-int 
+int WSAAPI
 rb_w32_recv(int s, char *buf, int len, int flags)
 {
     int r;
@@ -2361,9 +2361,9 @@ rb_w32_recv(int s, char *buf, int len, int flags)
 
 #undef recvfrom
 
-int 
-rb_w32_recvfrom(int s, char *buf, int len, int flags, 
-		struct sockaddr *from, int *fromlen)
+int WSAAPI
+rb_w32_recvfrom(int s, char *buf, int len, int flags,
+		 struct sockaddr *from, int *fromlen)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2379,7 +2379,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
 
 #undef send
 
-int 
+int WSAAPI
 rb_w32_send(int s, const char *buf, int len, int flags)
 {
     int r;
@@ -2396,7 +2396,7 @@ rb_w32_send(int s, const char *buf, int len, int flags)
 
 #undef sendto
 
-int 
+int WSAAPI
 rb_w32_sendto(int s, const char *buf, int len, int flags, 
 	      const struct sockaddr *to, int tolen)
 {
@@ -2414,7 +2414,7 @@ rb_w32_sendto(int s, const char *buf, int len, int flags,
 
 #undef setsockopt
 
-int 
+int WSAAPI
 rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
 {
     int r;
@@ -2431,7 +2431,7 @@ rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
     
 #undef shutdown
 
-int 
+int WSAAPI
 rb_w32_shutdown(int s, int how)
 {
     int r;
@@ -2488,7 +2488,7 @@ open_ifs_socket(int af, int type, int protocol)
 
 #undef socket
 
-int 
+int WSAAPI
 rb_w32_socket(int af, int type, int protocol)
 {
     SOCKET s;
@@ -2512,8 +2512,8 @@ rb_w32_socket(int af, int type, int protocol)
 
 #undef gethostbyaddr
 
-struct hostent *
-rb_w32_gethostbyaddr (const char *addr, int len, int type)
+struct hostent * WSAAPI
+rb_w32_gethostbyaddr(const char *addr, int len, int type)
 {
     struct hostent *r;
     if (!NtSocketsInitialized) {
@@ -2529,8 +2529,8 @@ rb_w32_gethostbyaddr (const char *addr, int len, int type)
 
 #undef gethostbyname
 
-struct hostent *
-rb_w32_gethostbyname (const char *name)
+struct hostent * WSAAPI
+rb_w32_gethostbyname(const char *name)
 {
     struct hostent *r;
     if (!NtSocketsInitialized) {
@@ -2546,8 +2546,8 @@ rb_w32_gethostbyname (const char *name)
 
 #undef gethostname
 
-int
-rb_w32_gethostname (char *name, int len)
+int WSAAPI
+rb_w32_gethostname(char *name, int len)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2563,8 +2563,8 @@ rb_w32_gethostname (char *name, int len)
 
 #undef getprotobyname
 
-struct protoent *
-rb_w32_getprotobyname (const char *name)
+struct protoent * WSAAPI
+rb_w32_getprotobyname(const char *name)
 {
     struct protoent *r;
     if (!NtSocketsInitialized) {
@@ -2580,8 +2580,8 @@ rb_w32_getprotobyname (const char *name)
 
 #undef getprotobynumber
 
-struct protoent *
-rb_w32_getprotobynumber (int num)
+struct protoent * WSAAPI
+rb_w32_getprotobynumber(int num)
 {
     struct protoent *r;
     if (!NtSocketsInitialized) {
@@ -2597,8 +2597,8 @@ rb_w32_getprotobynumber (int num)
 
 #undef getservbyname
 
-struct servent *
-rb_w32_getservbyname (const char *name, const char *proto)
+struct servent * WSAAPI
+rb_w32_getservbyname(const char *name, const char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized) {
@@ -2614,8 +2614,8 @@ rb_w32_getservbyname (const char *name, const char *proto)
 
 #undef getservbyport
 
-struct servent *
-rb_w32_getservbyport (int port, const char *proto)
+struct servent * WSAAPI
+rb_w32_getservbyport(int port, const char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized) {
@@ -3444,6 +3444,12 @@ rb_w32_main_context(int arg, void (*handler)(int))
 
 int
 rb_w32_sleep(unsigned long msec)
+{
+    return rb_w32_Sleep(msec);
+}
+
+int WINAPI
+rb_w32_Sleep(unsigned long msec)
 {
     DWORD ret;
     RUBY_CRITICAL(ret = wait_events(NULL, msec));

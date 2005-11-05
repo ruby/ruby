@@ -28,6 +28,7 @@ WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(@:$(EXEEXT)=.res.@OBJEXT@)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
+RUBYDEF = $(RUBY_SO_NAME).def
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -61,6 +62,11 @@ GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 
 ifeq (@target_os@,mingw32)
 $(OBJS) $(MAINOBJ): win32/win32.h
+
+$(LIBRUBY_SO): $(RUBYDEF)
+
+$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
+	$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 endif
 
 ifeq (@target_os@,cygwin)

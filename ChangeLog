@@ -1,3 +1,13 @@
+Sat Nov  5 13:42:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, cygwin/GNUmakefile.in (mingw): use def file to alias
+	  symbols.  [ruby-dev:27532]
+
+	* bcc32/mkexports.rb, win32/mkexports.rb: make aliases in DLL.
+
+	* win32/win32.c, win32/win32.h: replace symbols only when RUBY_EXPORT
+	  is defined.
+
 Thu Nov  3 07:57:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/open-uri.rb (open_loop): find_proxy should return nil when
