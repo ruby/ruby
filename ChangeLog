@@ -1,3 +1,7 @@
+Mon Nov  7 00:06:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/yaml.rb: removed :nodoc: to generate Kernel doc. [ruby-core:6324]
+
 Sun Nov  6 23:39:13 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Iconv::BrokenLibrary): exception when detected a
