@@ -1,3 +1,8 @@
+Sun Nov  6 23:39:13 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (Iconv::BrokenLibrary): exception when detected a
+	  bug of underlying library.
+
 Sun Nov  6 21:46:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/stubs.c (ruby_tcl_create_ip_and_stubs_init): should touch
