@@ -1,3 +1,8 @@
+Sun Nov  6 21:46:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/stubs.c (ruby_tcl_create_ip_and_stubs_init): should touch
+	  interpreter after initialization is done. [ruby-dev:27638]
+
 Sun Nov  6 20:13:27 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_readlink): readlink(2) on AIX fails with ERANGE if

@@ -237,13 +237,13 @@ ruby_tcl_create_ip_and_stubs_init(st)
             return (Tcl_Interp*)NULL;
         }
 
-        _nativethread_consistency_check(tcl_ip);
-
         if (!Tcl_InitStubs(tcl_ip, "8.1", 0)) {
             if (st) *st = FAIL_Tcl_InitStubs;
             (*p_Tcl_DeleteInterp)(tcl_ip);
             return (Tcl_Interp*)NULL;
         }
+
+        _nativethread_consistency_check(tcl_ip);
 
         return tcl_ip;
     }
