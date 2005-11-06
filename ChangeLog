@@ -1,3 +1,8 @@
+Sun Nov  6 20:13:27 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_readlink): readlink(2) on AIX fails with ERANGE if
+	  buffer size is less than required.  fixed: [ruby-dev:27634]
+
 Wed Nov  2 20:25:28 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: ext/tk/extconf.rb: change the check parameter
@@ -9,7 +14,7 @@ Wed Nov  2 20:14:53 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Wed Nov  2 19:03:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_rbUpdateObjCmd, 
+	* ext/tcltklib/tcltklib.c (ip_rbUpdateObjCmd,
 	  ip_rb_threadUpdateObjCmd): passed improper flags to DoOneEvent().
 
 	* ext/tk/tkutil.c: use rb_obj_respond_to() instead of rb_respond_to().
@@ -61,7 +66,7 @@ Mon Oct 31 05:37:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Oct 31 03:19:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): type check.
-	  [ruby-core:6089] 
+	  [ruby-core:6089]
 
 	* numeric.c (fix_rshift): RDoc fix.  [ruby-core:6351]
 
