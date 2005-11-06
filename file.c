@@ -1982,7 +1982,13 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     rb_secure(2);
     FilePathValue(path);
     buf = xmalloc(size);
-    while ((rv = readlink(StringValueCStr(path), buf, size)) == size) {
+    for (;;) {
+	rv = readlink(RSTRING(path)->ptr, buf, size);
+#ifndef _AIX
+	if (rv != size) break;
+#else
+	if (rv > 0 || errno != ERANGE) break;
+#endif
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
