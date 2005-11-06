@@ -88,6 +88,7 @@ static VALUE rb_eIconvFailure;
 static VALUE rb_eIconvIllegalSeq;
 static VALUE rb_eIconvInvalidChar;
 static VALUE rb_eIconvOutOfRange;
+static VALUE rb_eIconvBrokenLibrary;
 
 static ID rb_success, rb_failed;
 static VALUE iconv_fail _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg));
@@ -207,7 +208,10 @@ iconv_try(iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *
 #else
 #define ICONV_INPTR_CAST (char **)
 #endif
-    size_t ret = iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen);
+    size_t ret;
+
+    errno = 0;
+    ret = iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen);
     if (ret == (size_t)-1) {
 	if (!*inlen)
 	    return Qfalse;
@@ -219,6 +223,8 @@ iconv_try(iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *
 	    return rb_eIconvIllegalSeq;
 	  case EINVAL:
 	    return rb_eIconvInvalidChar;
+	  case 0:
+	    return rb_eIconvBrokenLibrary;
 	  default:
 	    rb_sys_fail("iconv");
 	}
@@ -768,6 +774,13 @@ iconv_failure_inspect(VALUE self)
  * Iconv library internal error.  Must not occur.
  */
 
+/*
+ * Document-class: Iconv::BrokenLibrary
+ * 
+ * Detected a bug of underlying iconv(3) libray.
+ * * returns an error without setting errno properly
+ */
+
 void
 Init_iconv(void)
 {
@@ -792,10 +805,12 @@ Init_iconv(void)
     rb_eIconvIllegalSeq = rb_define_class_under(rb_cIconv, "IllegalSequence", rb_eArgError);
     rb_eIconvInvalidChar = rb_define_class_under(rb_cIconv, "InvalidCharacter", rb_eArgError);
     rb_eIconvOutOfRange = rb_define_class_under(rb_cIconv, "OutOfRange", rb_eRuntimeError);
+    rb_eIconvBrokenLibrary = rb_define_class_under(rb_cIconv, "BrokenLibrary", rb_eRuntimeError);
     rb_include_module(rb_eIconvInvalidEncoding, rb_eIconvFailure);
     rb_include_module(rb_eIconvIllegalSeq, rb_eIconvFailure);
     rb_include_module(rb_eIconvInvalidChar, rb_eIconvFailure);
     rb_include_module(rb_eIconvOutOfRange, rb_eIconvFailure);
+    rb_include_module(rb_eIconvBrokenLibrary, rb_eIconvFailure);
 
     rb_success = rb_intern("success");
     rb_failed = rb_intern("failed");
