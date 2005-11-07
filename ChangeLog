@@ -1,3 +1,13 @@
+Mon Nov  7 13:43:51 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/stubs.c (_nativethread_consistency_check): use simpler 
+	  (low cost) way to check whether the Tcl interpreter was compiled
+	  with threads enabled of not. 
+
+	* ext/tk/tcltklib.c: reduce warnings.
+
+	* ext/tk/tkutil/tkutil.c: ditto.
+
 Mon Nov  7 00:06:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/yaml.rb: removed :nodoc: to generate Kernel doc. [ruby-core:6324]

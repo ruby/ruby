@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-11-02"
+#define TCLTKLIB_RELEASE_DATE "2005-11-07"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -1632,11 +1632,13 @@ VALUE
 lib_eventloop_main(args)
     VALUE args;
 {
+    return lib_eventloop_main_core(args);
+
+#if 0
     volatile VALUE ret;
     int status = 0;
 
-    /* ret = rb_protect(lib_eventloop_main_core, args, &status); */
-    ret = lib_eventloop_main_core(args);
+    ret = rb_protect(lib_eventloop_main_core, args, &status);
 
     switch (status) {
     case TAG_RAISE:
@@ -1658,6 +1660,7 @@ lib_eventloop_main(args)
     }
 
     return ret;
+#endif
 }
 
 VALUE
@@ -1674,7 +1677,7 @@ lib_eventloop_ensure(args)
         return Qnil;
     }
 
-    while(eventloop_thread = rb_ary_pop(eventloop_stack)) {
+    while((eventloop_thread = rb_ary_pop(eventloop_stack))) {
         DUMP2("eventloop-ensure: new eventloop-thread -> %lx", 
               eventloop_thread);
 
@@ -1712,7 +1715,6 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
     int *check_var;
 {
     volatile VALUE parent_evloop = eventloop_thread;
-    int depth = rbtk_eventloop_depth;
     struct evloop_params *args = ALLOC(struct evloop_params);
 
     tcl_stubs_check();
@@ -1742,7 +1744,11 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
     args->update_flag = update_flag;
     args->check_var   = check_var;
 
+#if 0
     return rb_ensure(lib_eventloop_main, (VALUE)args, 
+                     lib_eventloop_ensure, (VALUE)args);
+#endif
+    return rb_ensure(lib_eventloop_main_core, (VALUE)args, 
                      lib_eventloop_ensure, (VALUE)args);
 }
 
@@ -2743,7 +2749,6 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
     int  flags = 0;
     static CONST char *updateOptions[] = {"idletasks", (char *) NULL};
     enum updateOptions {REGEXP_IDLETASKS};
-    int  dummy;
 
     DUMP1("Ruby's 'update' is called");
     if (interp == (Tcl_Interp*)NULL) {
@@ -2788,6 +2793,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
         Tcl_WrongNumArgs(interp, 1, objv, "[ idletasks ]");
 #else
 # if TCL_MAJOR_VERSION >= 8
+        int  dummy;
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
                          Tcl_GetStringFromObj(objv[0], &dummy), 
                          " [ idletasks ]\"", 
@@ -2885,9 +2891,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 #endif
 {
     int  optionIndex;
-    int  ret;
     int  flags = 0;
-    int  dummy;
     struct th_update_param *param;
     static CONST char *updateOptions[] = {"idletasks", (char *) NULL};
     enum updateOptions {REGEXP_IDLETASKS};
@@ -2949,6 +2953,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
         Tcl_WrongNumArgs(interp, 1, objv, "[ idletasks ]");
 #else
 # if TCL_MAJOR_VERSION >= 8
+        int  dummy;
         Tcl_AppendResult(interp, "wrong number of arguments: should be \"",
                          Tcl_GetStringFromObj(objv[0], &dummy), 
                          " [ idletasks ]\"", 
@@ -4374,7 +4379,7 @@ ip_free(ptr)
 {
     int  thr_crit_bup;
 
-    DUMP2("free Tcl Interp %lx", ptr->ip);
+    DUMP2("free Tcl Interp %lx", (unsigned long)ptr->ip);
     if (ptr) {
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
@@ -4383,8 +4388,10 @@ ip_free(ptr)
              && !Tcl_InterpDeleted(ptr->ip)
              && Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL 
              && !Tcl_InterpDeleted(Tcl_GetMaster(ptr->ip)) ) {
-            DUMP2("parent IP(%lx) is not deleted", Tcl_GetMaster(ptr->ip));
-            DUMP2("slave IP(%lx) should not be deleted", ptr->ip);
+            DUMP2("parent IP(%lx) is not deleted", 
+                  (unsigned long)Tcl_GetMaster(ptr->ip));
+            DUMP2("slave IP(%lx) should not be deleted", 
+                  (unsigned long)ptr->ip);
             free(ptr);
             rb_thread_critical = thr_crit_bup;
             return;
@@ -4578,8 +4585,7 @@ ip_CallWhenDeleted(clientData, ip)
     Tcl_Interp *ip;
 {
     int  thr_crit_bup;
-    Tcl_CmdInfo info;
-    Tk_Window main_win = (Tk_Window) clientData;
+    /* Tk_Window main_win = (Tk_Window) clientData; */
 
     DUMP1("start ip_CallWhenDeleted");
     thr_crit_bup = rb_thread_critical;
@@ -5144,7 +5150,6 @@ ip_delete(self)
 {
     int  thr_crit_bup;
     struct tcltkip *ptr = get_ip(self);
-    Tcl_CmdInfo info;
 
     if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL) {
         DUMP1("delete deleted IP");
@@ -5794,7 +5799,6 @@ lib_restart_core(interp, argc, argv)
     volatile VALUE exc;
     struct tcltkip *ptr = get_ip(interp);
     int  thr_crit_bup;
-    int  st;
 
     /* rb_secure(4); */ /* already checked */
 
@@ -5852,9 +5856,7 @@ static VALUE
 lib_restart(self)
     VALUE self;
 {
-    volatile VALUE exc;
     struct tcltkip *ptr = get_ip(self);
-    int  thr_crit_bup;
 
     rb_secure(4);
 
@@ -6384,21 +6386,22 @@ ip_invoke_core(interp, argc, argv)
 #endif
 {
     struct tcltkip *ptr;
-    int i;
     Tcl_CmdInfo info;
     char *cmd;
-    char *s;
     int  len;
     int  thr_crit_bup;
+    int unknown_flag = 0;
+
+#if 1 /* wrap tcl-proc call */
     struct invoke_info inf;
     int status;
-    int unknown_flag = 0;
     VALUE ret;
-
+#else
 #if TCL_MAJOR_VERSION >= 8
     int argc = objc;
     char **argv = (char **)NULL;
-    Tcl_Obj *resultPtr;
+    /* Tcl_Obj *resultPtr; */
+#endif
 #endif
 
     /* get the command name string */
@@ -6518,6 +6521,8 @@ ip_invoke_core(interp, argc, argv)
     /* memory allocation for arguments of this command */
 #if TCL_MAJOR_VERSION >= 8
     if (!info.isNativeObjectProc) {
+        int i;
+
         /* string interface */
         argv = (char **)ALLOC_N(char *, argc+1);
         for (i = 0; i < argc; ++i) {
@@ -6773,9 +6778,6 @@ ip_invoke_with_position(argc, argv, obj, position)
     Tcl_QueuePosition position;
 {
     struct invoke_queue *ivq;
-    char *s;
-    int  len;
-    int  i;
     int  *alloc_done;
     int  thr_crit_bup;
     volatile VALUE current = rb_thread_current();
@@ -6902,6 +6904,8 @@ ip_invoke_immediate(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
+    /* POTENTIALY INSECURE : can create infinite loop */
+    rb_secure(4);
     return ip_invoke_with_position(argc, argv, obj, TCL_QUEUE_HEAD);
 }
 
@@ -7611,7 +7615,6 @@ tcltklib_compile_info()
 void
 Init_tcltklib()
 {
-    int  thr_crit_bup;
     int  ret;
 
     VALUE lib = rb_define_module("TclTkLib");
@@ -7777,6 +7780,7 @@ Init_tcltklib()
     rb_define_method(ip, "_thread_vwait", ip_thread_vwait, 1);
     rb_define_method(ip, "_thread_tkwait", ip_thread_tkwait, 2);
     rb_define_method(ip, "_invoke", ip_invoke, -1);
+    rb_define_method(ip, "_immediate_invoke", ip_invoke_immediate, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
 
     rb_define_method(ip, "_create_console", ip_create_console, 0);

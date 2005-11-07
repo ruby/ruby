@@ -34,7 +34,9 @@ _nativethread_consistency_check(ip)
         return;
     }
 
-    if (Tcl_Eval(ip, "set ::tcl_platform(threaded)") == TCL_OK) {
+    /* If the variable "tcl_platform(threaded)" exists,  
+       then the Tcl interpreter was compiled with threads enabled. */
+    if (Tcl_GetVar2(ip, "tcl_platform", "threaded", TCL_GLOBAL_ONLY) != (char*)NULL) {
 #ifdef HAVE_NATIVETHREAD
         /* consistent */
 #else
