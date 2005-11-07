@@ -83,6 +83,14 @@ struct iconv_env_t
     VALUE (*append)_((VALUE, VALUE));
 };
 
+struct rb_iconv_opt_t
+{
+    VALUE transliterate;
+    VALUE discard_ilseq;
+};
+
+static ID id_transliterate, id_discard_ilseq;
+
 static VALUE rb_eIconvInvalidEncoding;
 static VALUE rb_eIconvFailure;
 static VALUE rb_eIconvIllegalSeq;
@@ -96,20 +104,21 @@ static VALUE iconv_failure_initialize _((VALUE error, VALUE mesg, VALUE success,
 static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
 
-static iconv_t iconv_create _((VALUE to, VALUE from));
+static iconv_t iconv_create _((VALUE to, VALUE from, struct rb_iconv_opt_t *opt));
 static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
 static VALUE rb_str_derive _((VALUE str, const char* ptr, int len));
 static VALUE iconv_convert _((iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env));
 static VALUE iconv_s_allocate _((VALUE klass));
-static VALUE iconv_initialize _((VALUE self, VALUE to, VALUE from));
-static VALUE iconv_s_open _((VALUE self, VALUE to, VALUE from));
+static VALUE iconv_initialize _((int argc, VALUE *argv, VALUE self));
+static VALUE iconv_s_open _((int argc, VALUE *argv, VALUE self));
 static VALUE iconv_s_convert _((struct iconv_env_t* env));
 static VALUE iconv_s_iconv _((int argc, VALUE *argv, VALUE self));
 static VALUE iconv_init_state _((VALUE cd));
 static VALUE iconv_finish _((VALUE self));
 static VALUE iconv_iconv _((int argc, VALUE *argv, VALUE self));
+static VALUE iconv_conv _((int argc, VALUE *argv, VALUE self));
 
 static VALUE charset_map;
 
@@ -140,7 +149,7 @@ map_charset(VALUE *code)
 }
 
 static iconv_t
-iconv_create(VALUE to, VALUE from)
+iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt)
 {
     const char* tocode = map_charset(&to);
     const char* fromcode = map_charset(&from);
@@ -169,6 +178,24 @@ iconv_create(VALUE to, VALUE from)
 	    iconv_fail(rb_eIconvInvalidEncoding,
 		       Qnil, rb_ary_new3(2, to, from), NULL, s);
 	}
+    }
+
+    if (opt) {
+	int flag;
+#ifdef ICONV_SET_TRANSLITERATE
+	if (opt->transliterate != Qundef) {
+	    flag = RTEST(opt->transliterate);
+	    if (iconvctl(cd, ICONV_SET_TRANSLITERATE, (void *)&flag))
+		rb_sys_fail("ICONV_SET_TRANSLITERATE");
+	}
+#endif
+#ifdef ICONV_SET_DISCARD_ILSEQ
+	if (opt->discard_ilseq != Qundef) {
+	    flag = RTEST(opt->discard_ilseq);
+	    if (iconvctl(cd, ICONV_SET_DISCARD_ILSEQ, (void *)&flag))
+		rb_sys_fail("ICONV_SET_DISCARD_ILSEQ");
+	}
+#endif
     }
 
     return cd;
@@ -436,9 +463,76 @@ iconv_s_allocate(VALUE klass)
     return Data_Wrap_Struct(klass, 0, ICONV_FREE, 0);
 }
 
+static VALUE
+get_iconv_opt_i(VALUE i, VALUE arg)
+{
+    struct rb_iconv_opt_t *opt = (struct rb_iconv_opt_t *)arg;
+    VALUE name, val;
+    i = rb_Array(i);
+    name = rb_ary_entry(i, 0);
+    val = rb_ary_entry(i, 1);
+    do {
+	if (SYMBOL_P(name)) {
+	    ID id = SYM2ID(name);
+	    if (id == id_transliterate) {
+#ifdef ICONV_SET_TRANSLITERATE
+		opt->transliterate = val;
+#else
+		rb_notimplement();
+#endif
+		break;
+	    }
+	    if (id == id_discard_ilseq) {
+#ifdef ICONV_SET_DISCARD_ILSEQ
+		opt->discard_ilseq = val;
+#else
+		rb_notimplement();
+#endif
+		break;
+	    }
+	}
+	else {
+	    const char *s = StringValueCStr(name);
+	    if (strcmp(s, "transliterate") == 0) {
+#ifdef ICONV_SET_TRANSLITERATE
+		opt->transliterate = val;
+#else
+		rb_notimplement();
+#endif
+		break;
+	    }
+	    if (strcmp(s, "discard_ilseq") == 0) {
+#ifdef ICONV_SET_DISCARD_ILSEQ
+		opt->discard_ilseq = val;
+#else
+		rb_notimplement();
+#endif
+		break;
+	    }
+	}
+	name = rb_inspect(name);
+	rb_raise(rb_eArgError, "unknown option - %s", StringValueCStr(name));
+    } while (0);
+    return Qnil;
+}
+
+static void
+get_iconv_opt(struct rb_iconv_opt_t *opt, VALUE options)
+{
+    opt->transliterate = Qundef;
+    opt->discard_ilseq = Qundef;
+    if (!NIL_P(options)) {
+	rb_iterate(rb_each, options, get_iconv_opt_i, (VALUE)opt);
+    }
+}
+
+#define iconv_ctl(self, func, val) (\
+	iconvctl(VALUE2ICONV(check_iconv(self)), func, (void *)&(val)) ? \
+	rb_sys_fail(#func) : (void)0)
+
 /*
  * Document-method: new
- * call-seq: Iconv.new(to, from)
+ * call-seq: Iconv.new(to, from, [options])
  *
  * Creates new code converter from a coding-system designated with +from+
  * to another one designated with +to+.
@@ -447,6 +541,7 @@ iconv_s_allocate(VALUE klass)
  *
  * +to+::   encoding name for destination
  * +from+:: encoding name for source
+ * +options+:: options for converter
  *
  * === Exceptions
  *
@@ -455,11 +550,16 @@ iconv_s_allocate(VALUE klass)
  * SystemCallError:: if <tt>iconv_open(3)</tt> fails
  */
 static VALUE
-iconv_initialize(VALUE self, VALUE to, VALUE from)
+iconv_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE to, from, options;
+    struct rb_iconv_opt_t opt;
+
+    rb_scan_args(argc, argv, "21", &to, &from, &options);
+    get_iconv_opt(&opt, options);
     iconv_free(check_iconv(self));
     DATA_PTR(self) = NULL;
-    DATA_PTR(self) = (void *)ICONV2VALUE(iconv_create(to, from));
+    DATA_PTR(self) = (void *)ICONV2VALUE(iconv_create(to, from, &opt));
     return self;
 }
 
@@ -472,9 +572,14 @@ iconv_initialize(VALUE self, VALUE to, VALUE from)
  * returned from the block.
  */
 static VALUE
-iconv_s_open(VALUE self, VALUE to, VALUE from)
+iconv_s_open(int argc, VALUE *argv, VALUE self)
 {
-    VALUE cd = ICONV2VALUE(iconv_create(to, from));
+    VALUE to, from, options, cd;
+    struct rb_iconv_opt_t opt;
+
+    rb_scan_args(argc, argv, "21", &to, &from, &options);
+    get_iconv_opt(&opt, options);
+    cd = ICONV2VALUE(iconv_create(to, from, &opt));
 
     self = Data_Wrap_Struct(self, NULL, ICONV_FREE, (void *)cd);
     if (rb_block_given_p()) {
@@ -534,7 +639,7 @@ iconv_s_iconv(int argc, VALUE *argv, VALUE self)
     arg.argv = argv + 2;
     arg.append = rb_ary_push;
     arg.ret = rb_ary_new2(argc);
-    arg.cd = iconv_create(argv[0], argv[1]);
+    arg.cd = iconv_create(argv[0], argv[1], NULL);
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
@@ -555,7 +660,7 @@ iconv_s_conv(VALUE self, VALUE to, VALUE from, VALUE str)
     arg.argv = &str;
     arg.append = rb_str_append;
     arg.ret = rb_str_new(0, 0);
-    arg.cd = iconv_create(to, from);
+    arg.cd = iconv_create(to, from, NULL);
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
@@ -694,6 +799,160 @@ iconv_iconv(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Document-method: conv
+ * call-seq: conv(str...)
+ *
+ * Equivalent to
+ *
+ *   iconv(nil, str..., nil).join
+ */
+static VALUE
+iconv_conv(int argc, VALUE *argv, VALUE self)
+{
+    iconv_t cd = VALUE2ICONV(check_iconv(self));
+    VALUE str, s;
+
+    str = iconv_convert(cd, Qnil, 0, 0, NULL);
+    if (argc > 0) {
+	do {
+	    s = iconv_convert(cd, *argv++, 0, -1, NULL);
+	    if (RSTRING(s)->len)
+		rb_str_buf_append(str, s);
+	    else
+		str = s;
+	} while (--argc);
+	s = iconv_convert(cd, Qnil, 0, 0, NULL);
+	if (RSTRING(s)->len)
+	    rb_str_buf_append(str, s);
+	else
+	    str = s;
+    }
+
+    return str;
+}
+
+/*
+ * Document-method: trivial?
+ * call-seq: trivial?
+ *
+ * Returns trivial flag.
+ */
+static VALUE
+iconv_trivialp(VALUE self)
+{
+#ifdef ICONV_TRIVIALP
+    int trivial = 0;
+    iconv_ctl(self, ICONV_TRIVIALP, trivial);
+    if (trivial) return Qtrue;
+#else
+    rb_notimplement();
+#endif
+    return Qfalse;
+}
+
+/*
+ * Document-method: transliterate?
+ * call-seq: transliterate?
+ *
+ * Returns transliterate flag.
+ */
+static VALUE
+iconv_get_transliterate(VALUE self)
+{
+#ifdef ICONV_GET_TRANSLITERATE
+    int trans = 0;
+    iconv_ctl(self, ICONV_GET_TRANSLITERATE, trans);
+    if (trans) return Qtrue;
+#else
+    rb_notimplement();
+#endif
+    return Qfalse;
+}
+
+/*
+ * Document-method: transliterate=
+ * call-seq: cd.transliterate = flag
+ *
+ * Sets transliterate flag.
+ */
+static VALUE
+iconv_set_transliterate(VALUE self, VALUE transliterate)
+{
+#ifdef ICONV_SET_TRANSLITERATE
+    int trans = RTEST(transliterate);
+    iconv_ctl(self, ICONV_SET_TRANSLITERATE, trans);
+#else
+    rb_notimplement();
+#endif
+    return self;
+}
+
+/*
+ * Document-method: discard_ilseq?
+ * call-seq: discard_ilseq?
+ *
+ * Returns discard_ilseq flag.
+ */
+static VALUE
+iconv_get_discard_ilseq(VALUE self)
+{
+#ifdef ICONV_GET_DISCARD_ILSEQ
+    int dis = 0;
+    iconv_ctl(self, ICONV_GET_DISCARD_ILSEQ, dis);
+    if (dis) return Qtrue;
+#else
+    rb_notimplement();
+#endif
+    return Qfalse;
+}
+
+/*
+ * Document-method: discard_ilseq=
+ * call-seq: cd.discard_ilseq = flag
+ *
+ * Sets discard_ilseq flag.
+ */
+static VALUE
+iconv_set_discard_ilseq(VALUE self, VALUE discard_ilseq)
+{
+#ifdef ICONV_SET_DISCARD_ILSEQ
+    int dis = RTEST(discard_ilseq);
+    iconv_ctl(self, ICONV_SET_DISCARD_ILSEQ, dis);
+#else
+    rb_notimplement();
+#endif
+    return self;
+}
+
+/*
+ * Document-method: ctlmethods
+ * call-seq: Iconv.ctlmethods => array
+ *
+ * Returns available iconvctl() method list.
+ */
+static VALUE
+iconv_s_ctlmethods(VALUE klass)
+{
+    VALUE ary = rb_ary_new();
+#ifdef ICONV_TRIVIALP
+    rb_ary_push(ary, ID2SYM(rb_intern("trivial?")));
+#endif
+#ifdef ICONV_GET_TRANSLITERATE
+    rb_ary_push(ary, ID2SYM(rb_intern("transliterate?")));
+#endif
+#ifdef ICONV_SET_TRANSLITERATE
+    rb_ary_push(ary, ID2SYM(rb_intern("transliterate=")));
+#endif
+#ifdef ICONV_GET_DISCARD_ILSEQ
+    rb_ary_push(ary, ID2SYM(rb_intern("discard_ilseq?")));
+#endif
+#ifdef ICONV_SET_DISCARD_ILSEQ
+    rb_ary_push(ary, ID2SYM(rb_intern("discard_ilseq=")));
+#endif
+    return ary;
+}
+
+/*
  * Document-class: Iconv::Failure
  *
  * Base attributes for Iconv exceptions.
@@ -787,13 +1046,20 @@ Init_iconv(void)
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
 
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
-    rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, 2);
+    rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, -1);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);
     rb_define_singleton_method(rb_cIconv, "conv", iconv_s_conv, 3);
     rb_define_singleton_method(rb_cIconv, "list", iconv_s_list, 0);
-    rb_define_method(rb_cIconv, "initialize", iconv_initialize, 2);
+    rb_define_singleton_method(rb_cIconv, "ctlmethods", iconv_s_ctlmethods, 0);
+    rb_define_method(rb_cIconv, "initialize", iconv_initialize, -1);
     rb_define_method(rb_cIconv, "close", iconv_finish, 0);
     rb_define_method(rb_cIconv, "iconv", iconv_iconv, -1);
+    rb_define_method(rb_cIconv, "conv", iconv_conv, -1);
+    rb_define_method(rb_cIconv, "trivial?", iconv_trivialp, 0);
+    rb_define_method(rb_cIconv, "transliterate?", iconv_get_transliterate, 0);
+    rb_define_method(rb_cIconv, "transliterate=", iconv_set_transliterate, 1);
+    rb_define_method(rb_cIconv, "discard_ilseq?", iconv_get_discard_ilseq, 0);
+    rb_define_method(rb_cIconv, "discard_ilseq=", iconv_set_discard_ilseq, 1);
 
     rb_eIconvFailure = rb_define_module_under(rb_cIconv, "Failure");
     rb_define_method(rb_eIconvFailure, "initialize", iconv_failure_initialize, 3);
@@ -814,6 +1080,8 @@ Init_iconv(void)
 
     rb_success = rb_intern("success");
     rb_failed = rb_intern("failed");
+    id_transliterate = rb_intern("transliterate");
+    id_discard_ilseq = rb_intern("discard_ilseq");
 
     charset_map = rb_hash_new();
     rb_gc_register_address(&charset_map);
