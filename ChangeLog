@@ -1,3 +1,8 @@
+Mon Nov  7 16:23:23 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl.h: need to include winsock2.h before including
+	  windows.h by some openssl headers.
+
 Mon Nov  7 13:43:51 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/stubs.c (_nativethread_consistency_check): use simpler 
