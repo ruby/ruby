@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-11-02"
+#define TKUTIL_RELEASE_DATE "2005-11-07"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -78,9 +78,7 @@ tk_eval_cmd(argc, argv, self)
     VALUE argv[];
     VALUE self;
 {
-    volatile VALUE cmd, rest, arg;
-    volatile VALUE ret;
-    int status;
+    volatile VALUE cmd, rest;
 
     rb_scan_args(argc, argv, "1*", &cmd, &rest);
     return rb_eval_cmd(cmd, rest, 0);
@@ -1145,7 +1143,6 @@ cbsubst_initialize(argc, argv, self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    volatile VALUE proc;
     int idx;
 
     Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO), 
@@ -1515,8 +1512,6 @@ const char tkutil_release_date[] = TKUTIL_RELEASE_DATE;
 void
 Init_tkutil()
 {
-    volatile VALUE tmp;
-
     VALUE cTK = rb_define_class("TkKernel", rb_cObject);
     VALUE mTK = rb_define_module("TkUtil");
 
