@@ -10014,7 +10014,7 @@ static VALUE th_raise_exception;
 static NODE *th_raise_node;
 static VALUE th_cmd;
 static int   th_sig, th_safe;
-static char *th_signm;
+static const char   *th_signm;
 
 #define RESTORE_NORMAL		1
 #define RESTORE_FATAL		2
@@ -12101,7 +12101,7 @@ rb_thread_interrupt(void)
 }
 
 void
-rb_thread_signal_raise(char *sig)
+rb_thread_signal_raise(const char *sig)
 {
     if (sig == 0) return;	/* should not happen */
     rb_thread_critical = 0;
@@ -12115,7 +12115,7 @@ rb_thread_signal_raise(char *sig)
 	    return;
 	}
     }
-    th_signm = sig;
+    th_signm = sig;	/* should be literal */
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_SIGNAL);
 }

@@ -1,3 +1,9 @@
+Tue Nov  8 17:35:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* intern.h, eval.c (rb_thread_signal_raise): costified.
+
+	* signal.c: cosmetic change.
+
 Tue Nov  8 15:32:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/drb/ssl.rb (DRb::SSLConfig#accept): fixed typo.

@@ -273,7 +273,7 @@ VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
 void rb_thread_interrupt(void);
 void rb_thread_trap_eval(VALUE, int, int);
-void rb_thread_signal_raise(char*);
+void rb_thread_signal_raise(const char*); /* should pass literal */
 void rb_thread_signal_exit(void);
 int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 void rb_thread_wait_for(struct timeval);

@@ -30,7 +30,7 @@
 #endif
 
 static struct signals {
-    char *signm;
+    const char *signm;
     int  signo;
 } siglist [] = {
     {"EXIT", 0},
@@ -169,7 +169,7 @@ static struct signals {
 };
 
 static int
-signm2signo(char *nm)
+signm2signo(const char *nm)
 {
     struct signals *sigs;
 
@@ -179,7 +179,7 @@ signm2signo(char *nm)
     return 0;
 }
 
-static char*
+static const char*
 signo2signm(int no)
 {
     struct signals *sigs;
@@ -325,9 +325,7 @@ typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef POSIX_SIGNAL
 static sighandler_t
-ruby_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
+ruby_signal(int signum, sighandler_t handler)
 {
     struct sigaction sigact, old;
 
@@ -345,18 +343,14 @@ ruby_signal(signum, handler)
 }
 
 void
-posix_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
+posix_signal(int signum, sighandler_t handler)
 {
     ruby_signal(signum, handler);
 }
 
 #ifdef HAVE_NATIVETHREAD
 static sighandler_t
-ruby_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
+ruby_nativethread_signal(int signum, sighandler_t handler)
 {
     sighandler_t old;
 
@@ -366,9 +360,7 @@ ruby_nativethread_signal(signum, handler)
 }
 
 void
-posix_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
+posix_nativethread_signal(int signum, sighandler_t handler)
 {
     ruby_nativethread_signal(signum, handler);
 }
@@ -445,7 +437,6 @@ sigsend_to_ruby_thread(int sig)
 }
 #endif
 
-static RETSIGTYPE sighandler(int);
 static RETSIGTYPE
 sighandler(int sig)
 {
@@ -707,8 +698,7 @@ trap(struct trap_arg *arg)
 
 #ifndef _WIN32
 static VALUE
-trap_ensure(arg)
-    struct trap_arg *arg;
+trap_ensure(struct trap_arg *arg)
 {
     /* enable interrupt */
 #ifdef HAVE_SIGPROCMASK
