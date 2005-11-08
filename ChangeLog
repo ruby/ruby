@@ -1,3 +1,8 @@
+Tue Nov  8 15:32:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/drb/ssl.rb (DRb::SSLConfig#accept): fixed typo.
+	  [ruby-dev:27560] [ruby-core:4627]
+
 Mon Nov  7 13:43:51 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/stubs.c (_nativethread_consistency_check): use simpler 
