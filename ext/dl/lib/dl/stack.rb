@@ -22,7 +22,7 @@ module DL
       case SIZEOF_VOIDP
       when SIZEOF_LONG
         ary.pack(@template).unpack('l!*')
-      when SIZEOF_LONG
+      when SIZEOF_LONG_LONG
         ary.pack(@template).unpack('q*')
       else
         raise(RuntimeError, "sizeof(void*)?")
