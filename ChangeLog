@@ -1,3 +1,7 @@
+Wed Nov  9 08:39:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/shellwords.rb: refactored.  [ruby-core:06581]
+
 Tue Nov  8 17:35:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* intern.h, eval.c (rb_thread_signal_raise): costified.

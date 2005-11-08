@@ -28,31 +28,20 @@ module Shellwords
   def shellwords(line)
     line = String.new(line) rescue
       raise(ArgumentError, "Argument must be a string")
-    line.lstrip!
     words = []
-    until line.empty?
-      field = ''
-      loop do
-	if line.sub!(/\A"(([^"\\]|\\.)*)"/, '') then
-	  snippet = $1.gsub(/\\(.)/, '\1')
-	elsif line =~ /\A"/ then
-	  raise ArgumentError, "Unmatched double quote: #{line}"
-	elsif line.sub!(/\A'([^']*)'/, '') then
-	  snippet = $1
-	elsif line =~ /\A'/ then
-	  raise ArgumentError, "Unmatched single quote: #{line}"
-	elsif line.sub!(/\A\\(.)?/, '') then
-	  snippet = $1 || '\\'
-	elsif line.sub!(/\A([^\s\\'"]+)/, '') then
-	  snippet = $1
-	else
-	  line.lstrip!
-	  break
-	end
-	field.concat(snippet)
+    field = ''
+    last = 0
+    sep = nil
+    line.scan(/\G\s*(?:([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?))(\s+|\z)?/m) do
+      last = $~.end(0)
+      sep = $~.begin(5)
+      field << ($1 || $2 || ($3 || $4).gsub(/\\(?=.)/, ''))
+      if sep
+        words << field
+        field = ''
       end
-      words.push(field)
     end
+    raise ArgumentError, "Unmatched double quote: #{line}" if line[last]
     words
   end
 
