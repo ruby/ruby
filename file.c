@@ -64,6 +64,33 @@ VALUE rb_time_new(time_t, time_t);
 #define lstat stat
 #endif
 
+#ifdef __BEOS__ /* should not change ID if -1 */
+static int
+be_chown(const char *path, uid_t owner, gid_t group)
+{
+    if (owner == -1 || group == -1) {
+	struct stat st;
+	if (stat(path, &st) < 0) return -1;
+	if (owner == -1) owner = st.st_uid;
+	if (group == -1) group = st.st_gid;
+    }
+    return chown(path, owner, group);
+}
+#define chown be_chown
+static int
+be_fchown(int fd, uid_t owner, gid_t group)
+{
+    if (owner == -1 || group == -1) {
+	struct stat st;
+	if (fstat(fd, &st) < 0) return -1;
+	if (owner == -1) owner = st.st_uid;
+	if (group == -1) group = st.st_gid;
+    }
+    return fchown(fd, owner, group);
+}
+#define fchown be_fchown
+#endif /* __BEOS__ */
+
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE rb_cStat;

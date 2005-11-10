@@ -1,3 +1,13 @@
+Fri Nov 11 07:39:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* configure.in: undef HAVE_LINK on BeOS. (link(2) always returns
+	  EINVAL, and this causes error in test/fileutils.)
+
+	* file.c: overwride chown(2) and fchown(2) on BeOS. (these functions
+	  should not change user/group id if -1 is passed as corresponding
+	  argument, and this causes error in test/fileutils too)
+	  [ruby-dev:27672]
+
 Thu Nov 10 21:05:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/shellwords.rb: fix for blank but not empty string.
