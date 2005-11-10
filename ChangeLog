@@ -1,3 +1,8 @@
+Thu Nov 10 21:05:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/shellwords.rb: fix for blank but not empty string.
+	  fixed: [ruby-dev:27663]
+
 Wed Nov  9 08:39:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/shellwords.rb: refactored.  [ruby-core:06581]

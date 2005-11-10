@@ -26,22 +26,18 @@ module Shellwords
   # See the +Shellwords+ module documentation for an example.
   #
   def shellwords(line)
-    line = String.new(line) rescue
-      raise(ArgumentError, "Argument must be a string")
     words = []
     field = ''
-    last = 0
-    sep = nil
-    line.scan(/\G\s*(?:([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?))(\s+|\z)?/m) do
-      last = $~.end(0)
-      sep = $~.begin(5)
-      field << ($1 || $2 || ($3 || $4).gsub(/\\(?=.)/, ''))
+    word = sq = dq = esc = garbage = sep = nil
+    line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
+      |word, sq, dq, esc, garbage, sep|
+      raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
+      field << (word || sq || (dq || esc).gsub(/\\(?=.)/, ''))
       if sep
         words << field
         field = ''
       end
     end
-    raise ArgumentError, "Unmatched double quote: #{line}" if line[last]
     words
   end
 
