@@ -1,3 +1,15 @@
+Fri Nov 11 07:44:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* configure.in: undef HAVE_LINK on BeOS. (link(2) always returns
+	  EINVAL, and this causes error in test/fileutils.)
+
+	* file.c: overwride chown(2) and fchown(2) on BeOS. (these functions
+	  should not change user/group id if -1 is passed as corresponding
+	  argument, and this causes error in test/fileutils too)
+	  [ruby-dev:27672]
+
+	* file.c (rb_file_s_link): checks HAVE_LINK.
+
 Tue Nov  8 15:32:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/drb/ssl.rb (DRb::SSLConfig#accept): fixed typo.
