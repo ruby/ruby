@@ -1,3 +1,9 @@
+Fri Nov 11 08:20:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (OUTFLAG): keep trailing spaces.  [ruby-dev:27666]
+
+	* mkconfig.rb: substitution refereces added.
+
 Fri Nov 11 07:39:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* configure.in: undef HAVE_LINK on BeOS. (link(2) always returns
