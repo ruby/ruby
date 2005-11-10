@@ -1,3 +1,9 @@
+Fri Nov 11 08:20:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (OUTFLAG): keep trailing spaces.  [ruby-dev:27666]
+
+	* mkconfig.rb: substitution refereces added.
+
 Fri Nov 11 07:44:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* configure.in: undef HAVE_LINK on BeOS. (link(2) always returns
@@ -17,9 +23,9 @@ Tue Nov  8 15:32:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Mon Nov  7 13:43:51 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/stubs.c (_nativethread_consistency_check): use simpler 
+	* ext/tk/stubs.c (_nativethread_consistency_check): use simpler
 	  (low cost) way to check whether the Tcl interpreter was compiled
-	  with threads enabled of not. 
+	  with threads enabled of not.
 
 	* ext/tk/tcltklib.c: reduce warnings.
 

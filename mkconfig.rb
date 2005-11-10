@@ -16,10 +16,10 @@ unless File.directory?(dir = File.dirname(rbconfig_rb))
 end
 
 version = RUBY_VERSION
-rbconfig_rb_tmp = rbconfig_rb + '.tmp'
-config = open(rbconfig_rb_tmp, "w")
-$orgout = $stdout.dup
-$stdout.reopen(config)
+def (config = "").write(arg)
+  concat(arg.to_s)
+end
+$stdout = config
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 print %[
@@ -119,10 +119,13 @@ print <<EOS
     val.gsub!(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do |var|
       if !(v = $1 || $2)
 	'$'
-      elsif key = config[v]
+      elsif key = config[v = v[/\\A[^:]+(?=(?::(.*?)=(.*))?\\z)/]]
+	pat, sub = $1, $2
 	config[v] = false
 	Config::expand(key, config)
 	config[v] = key
+	key = key.gsub(/\#{Regexp.quote(pat)}(?=\\s|\\z)/n) {sub} if pat
+	key
       else
 	var
       end
@@ -135,17 +138,19 @@ print <<EOS
 end
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
-$stdout.flush
-$stdout.reopen($orgout)
-config.close
-if $timestamp and
-   File.exist?(rbconfig_rb) and
-   FileUtils.compare_file(rbconfig_rb, rbconfig_rb_tmp)
-  puts "#{rbconfig_rb} unchanged"
-  File.unlink(rbconfig_rb_tmp)
-else
-  puts "#{rbconfig_rb} updated"
-  File.rename(rbconfig_rb_tmp, rbconfig_rb)
+
+$stdout = STDOUT
+mode = IO::RDWR|IO::CREAT
+mode |= IO::BINARY if defined?(IO::BINARY)
+open(rbconfig_rb, mode) do |f|
+  if $timestamp and f.stat.size == config.size and f.read == config
+    puts "#{rbconfig_rb} unchanged"
+  else
+    puts "#{rbconfig_rb} updated"
+    f.rewind
+    f.truncate(0)
+    f.print(config)
+  end
 end
 if String === $timestamp
   FileUtils.touch($timestamp)
