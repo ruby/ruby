@@ -166,16 +166,28 @@ static VALUE lineno = INT2FIX(0);
      }\
 } while(0)
 
+#ifndef S_ISSOCK
+#  ifdef _S_ISSOCK
+#    define S_ISSOCK(m) _S_ISSOCK(m)
+#  else
+#    ifdef _S_IFSOCK
+#      define S_ISSOCK(m) ((m & S_IFMT) == _S_IFSOCK)
+#    else
+#      ifdef S_IFSOCK
+#	 define S_ISSOCK(m) ((m & S_IFMT) == S_IFSOCK)
+#      endif
+#    endif
+#  endif
+#endif
+
 #if defined(_WIN32)
 #define is_socket(fd, path)	rb_w32_is_socket(fd)
-#elif defined(__DJGPP__)
+#elif !defined(S_ISSOCK)
 #define is_socket(fd, path)	0
 #define shutdown(a,b)	0
 #else
 static int
-is_socket(fd, path)
-    int fd;
-    const char *path;
+is_socket(int fd, const char *path)
 {
     struct stat sbuf;
     if (fstat(fd, &sbuf) < 0)
@@ -2817,7 +2829,7 @@ pipe_open(int argc, VALUE *argv, char *mode)
     int pid = 0;
     OpenFile *fptr;
     VALUE port, prog;
-#if defined(HAVE_FORK)
+#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     int status;
     struct popen_arg arg;
     volatile int doexec;
@@ -2835,7 +2847,7 @@ pipe_open(int argc, VALUE *argv, char *mode)
 	prog = argv[0];
     }
 
-#if defined(HAVE_FORK)
+#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     cmd = StringValueCStr(prog);
     doexec = (strcmp("-", cmd) != 0);
     if (!doexec) {

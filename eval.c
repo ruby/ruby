@@ -9546,7 +9546,7 @@ enum thread_status {
 # endif
 #endif
 
-#ifdef NFDBITS
+#if defined(NFDBITS) && defined(howmany)
 void
 rb_fd_init(fds)
     volatile rb_fdset_t *fds;

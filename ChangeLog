@@ -1,3 +1,12 @@
+Fri Nov 11 19:53:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* eval.c, intern.h: failed to compile where NFDBITS is defined but
+	  howmany() is not defined. [ruby-dev:27680]
+
+	* io.c (is_socket): failed to compile where S_ISSOCK is not defined.
+
+	* io.c (pipe_open): failed to compile where socketpair is not supported.
+
 Fri Nov 11 08:20:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (OUTFLAG): keep trailing spaces.  [ruby-dev:27666]
