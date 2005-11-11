@@ -1,3 +1,7 @@
+Fri Nov 11 10:31:44 2005  Zach Dennis  <zdennis@mktec.com>
+
+	* ext/socket/socket.c: Socket Documentation. [ruby-core:6580]
+
 Fri Nov 11 08:20:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (OUTFLAG): keep trailing spaces.  [ruby-dev:27666]

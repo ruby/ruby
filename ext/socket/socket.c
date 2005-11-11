@@ -2069,6 +2069,117 @@ unix_s_socketpair(argc, argv, klass)
 }
 #endif
 
+/*
+ * call-seq:
+ * 	socket.connect( sockaddr ) => 0
+ * 
+ * Requests a connection to be made on the given +sockaddr+. Returns 0 if
+ * successful, otherwise an exception is raised.
+ *  
+ * === Parameter
+ * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ * 
+ * === Example:
+ * 	# Pull down Google's web page
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
+ * 	socket.connect( sockaddr )
+ * 	socket.write( "GET / HTTP/1.0\n\n" )
+ * 	results = socket.read 
+ * 
+ * === Unix-based Exceptions
+ * On unix-based systems the following system exceptions may be raised if 
+ * the call to _connect_ fails:
+ * * Errno::EACCES - search permission is denied for a component of the prefix
+ *   path or write access to the +socket+ is denided
+ * * Errno::EADDRINUSE - the _sockaddr_ is already in use
+ * * Errno::EADDRNOTAVAIL - the specified _sockaddr_ is not available from the
+ *   local machine
+ * * Errno::EAFNOSUPPORT - the specified _sockaddr_ is not a valid address for 
+ *   the address family of the specified +socket+
+ * * Errno::EALREADY - a connection is already in progress for the specified
+ *   socket
+ * * Errno::EBADF - the +socket+ is not a valid file descriptor
+ * * Errno::ECONNREFUSED - the target _sockaddr_ was not listening for connections
+ *   refused the connection request
+ * * Errno::ECONNRESET - the remote host reset the connection request
+ * * Errno::EFAULT - the _sockaddr_ cannot be accessed
+ * * Errno::EHOSTUNREACH - the destination host cannot be reached (probably 
+ *   because the host is down or a remote router cannot reach it)
+ * * Errno::EINPROGRESS - the O_NONBLOCK is set for the +socket+ and the
+ *   connection cnanot be immediately established; the connection will be
+ *   established asynchronously
+ * * Errno::EINTR - the attempt to establish the connection was interrupted by
+ *   delivery of a signal that was caught; the connection will be established
+ *   asynchronously
+ * * Errno::EISCONN - the specified +socket+ is already connected
+ * * Errno::EINVAL - the address length used for the _sockaddr_ is not a valid
+ *   length for the address family or there is an invalid family in _sockaddr_ 
+ * * Errno::ENAMETOOLONG - the pathname resolved had a length which exceeded
+ *   PATH_MAX
+ * * Errno::ENETDOWN - the local interface used to reach the destination is down
+ * * Errno::ENETUNREACH - no route to the network is present
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOSR - there were insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
+ * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
+ * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket 
+ *   bound to the specified peer address
+ * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ *   was made.
+ * 
+ * On unix-based systems if the address family of the calling +socket+ is
+ * AF_UNIX the follow exceptions may be raised if the call to _connect_
+ * fails:
+ * * Errno::EIO - an i/o error occured while reading from or writing to the 
+ *   file system
+ * * Errno::ELOOP - too many symbolic links were encountered in translating
+ *   the pathname in _sockaddr_
+ * * Errno::ENAMETOOLLONG - a component of a pathname exceeded NAME_MAX 
+ *   characters, or an entired pathname exceeded PATH_MAX characters
+ * * Errno::ENOENT - a component of the pathname does not name an existing file
+ *   or the pathname is an empty string
+ * * Errno::ENOTDIR - a component of the path prefix of the pathname in _sockaddr_
+ *   is not a directory 
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _connect_ fails:
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::EADDRINUSE - the socket's local address is already in use
+ * * Errno::EINTR - the socket was cancelled
+ * * Errno::EINPROGRESS - a blocking socket is in progress or the service provider
+ *   is still processing a callback function. Or a nonblocking connect call is 
+ *   in progress on the +socket+.
+ * * Errno::EALREADY - see Errno::EINVAL
+ * * Errno::EADDRNOTAVAIL - the remote address is not a valid address, such as 
+ *   ADDR_ANY TODO check ADDRANY TO INADDR_ANY
+ * * Errno::EAFNOSUPPORT - addresses in the specified family cannot be used with
+ *   with this +socket+
+ * * Errno::ECONNREFUSED - the target _sockaddr_ was not listening for connections
+ *   refused the connection request
+ * * Errno::EFAULT - the socket's internal address or address length parameter
+ *   is too small or is not a valid part of the user space address
+ * * Errno::EINVAL - the +socket+ is a listening socket
+ * * Errno::EISCONN - the +socket+ is already connected
+ * * Errno::ENETUNREACH - the network cannot be reached from this host at this time
+ * * Errno::EHOSTUNREACH - no route to the network is present
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
+ * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ *   was made.
+ * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the 
+ *   connection cannot be completed immediately
+ * * Errno::EACCES - the attempt to connect the datagram socket to the 
+ *   broadcast address failed
+ * 
+ * === See
+ * * connect manual pages on unix-based systems
+ * * connect function in Microsoft's Winsock functions reference
+ */
 static VALUE
 sock_connect(sock, addr)
     VALUE sock, addr;
@@ -2087,6 +2198,85 @@ sock_connect(sock, addr)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ * 	socket.bind( sockaddr ) => 0
+ * 
+ * Binds to the given +struct+ sockaddr.
+ * 
+ * === Parameter
+ * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ *
+ * === Example
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ *  
+ * === Unix-based Exceptions
+ * On unix-based based systems the following system exceptions may be raised if 
+ * the call to _bind_ fails:
+ * * Errno::EACCES - the specified _sockaddr_ is protected and the current
+ *   user does not have permission to bind to it
+ * * Errno::EADDRINUSE - the specified _sockaddr_ is already in use
+ * * Errno::EADDRNOTAVAIL - the specified _sockaddr_ is not available from the
+ *   local machine
+ * * Errno::EAFNOSUPPORT - the specified _sockaddr_ isnot a valid address for
+ *   the family of the calling +socket+
+ * * Errno::EBADF - the _sockaddr_ specified is not a valid file descriptor
+ * * Errno::EFAULT - the _sockaddr_ argument cannot be accessed
+ * * Errno::EINVAL - the +socket+ is already bound to an address, and the 
+ *   protocol does not support binding to the new _sockaddr_ or the +socket+
+ *   has been shut down.
+ * * Errno::EINVAL - the address length is not a valid length for the address
+ *   family
+ * * Errno::ENAMETOOLONG - the pathname resolved had a length which exceeded
+ *   PATH_MAX
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOSR - there were insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENOTSOCK - the +socket+ does not refer to a socket
+ * * Errno::EOPNOTSUPP - the socket type of the +socket+ does not support 
+ *   binding to an address
+ * 
+ * On unix-based based systems if the address family of the calling +socket+ is
+ * Socket::AF_UNIX the follow exceptions may be raised if the call to _bind_
+ * fails:
+ * * Errno::EACCES - search permission is denied for a component of the prefix
+ *   path or write access to the +socket+ is denided
+ * * Errno::EDESTADDRREQ - the _sockaddr_ argument is a null pointer
+ * * Errno::EISDIR - same as Errno::EDESTADDRREQ
+ * * Errno::EIO - an i/o error occurred
+ * * Errno::ELOOP - too many symbolic links were encountered in translating
+ *   the pathname in _sockaddr_
+ * * Errno::ENAMETOOLLONG - a component of a pathname exceeded NAME_MAX 
+ *   characters, or an entired pathname exceeded PATH_MAX characters
+ * * Errno::ENOENT - a component of the pathname does not name an existing file
+ *   or the pathname is an empty string
+ * * Errno::ENOTDIR - a component of the path prefix of the pathname in _sockaddr_
+ *   is not a directory
+ * * Errno::EROFS - the name would reside on a read only filesystem
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _bind_ fails:
+ * * Errno::ENETDOWN-- the network is down
+ * * Errno::EACCES - the attempt to connect the datagram socket to the 
+ *   broadcast address failed
+ * * Errno::EADDRINUSE - the socket's local address is already in use
+ * * Errno::EADDRNOTAVAIL - the specified address is not a valid address for this
+ *   computer
+ * * Errno::EFAULT - the socket's internal address or address length parameter
+ *   is too small or is not a valid part of the user space addressed
+ * * Errno::EINVAL - the +socket+ is already bound to an address
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
+ * 
+ * === See
+ * * bind manual pages on unix-based systems
+ * * bind function in Microsoft's Winsock functions reference
+ */ 
 static VALUE
 sock_bind(sock, addr)
     VALUE sock, addr;
@@ -2101,6 +2291,76 @@ sock_bind(sock, addr)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ * 	socket.listen( int ) => 0
+ * 
+ * Listens for connections, using the specified +int+ as the backlog. A call
+ * to _listen_ only applies if the +socket+ is of type SOCK_STREAM or 
+ * SOCK_SEQPACKET.
+ * 
+ * === Parameter
+ * * +backlog+ - the maximum length of the queue for pending connections.
+ * 
+ * === Example 1
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 
+ * === Example 2 (listening on an arbitary port, unix-based systems only):
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	socket.listen( 1 )
+ * 
+ * === Unix-based Exceptions
+ * On unix based systems the above will work because a new +sockaddr+ struct
+ * is created on the address ADDR_ANY, for an arbitrary port number as handed
+ * off by the kernel. It will not work on Windows, because Windows requires that
+ * the +socket+ is bound by calling _bind_ before it can _listen_.
+ * 
+ * If the _backlog_ amount exceeds the implementation-dependent maximum
+ * queue length, the implementation's maximum queue length will be used.
+ * 
+ * On unix-based based systems the following system exceptions may be raised if the
+ * call to _listen_ fails:
+ * * Errno::EBADF - the _socket_ argument is not a valid file descriptor
+ * * Errno::EDESTADDRREQ - the _socket_ is not bound to a local address, and 
+ *   the protocol does not support listening on an unbound socket
+ * * Errno::EINVAL - the _socket_ is already connected
+ * * Errno::ENOTSOCK - the _socket_ argument does not refer to a socket
+ * * Errno::EOPNOTSUPP - the _socket_ protocol does not support listen
+ * * Errno::EACCES - the calling process does not have approriate privileges
+ * * Errno::EINVAL - the _socket_ has been shut down
+ * * Errno::ENOBUFS - insufficient resources are available in the system to 
+ *   complete the call
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _listen_ fails:
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::EADDRINUSE - the socket's local address is already in use. This 
+ *   usually occurs during the execution of _bind_ but could be delayed
+ *   if the call to _bind_ was to a partially wildcard address (involving
+ *   ADDR_ANY) and if a specific address needs to be commmitted at the 
+ *   time of the call to _listen_
+ * * Errno::EINPROGRESS - a Windows Sockets 1.1 call is in progress or the
+ *   service provider is still processing a callback function
+ * * Errno::EINVAL - the +socket+ has not been bound with a call to _bind_.
+ * * Errno::EISCONN - the +socket+ is already connected
+ * * Errno::EMFILE - no more socket descriptors are available
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOTSOC - +socket+ is not a socket
+ * * Errno::EOPNOTSUPP - the referenced +socket+ is not a type that supports
+ *   the _listen_ method
+ * 
+ * === See
+ * * listen manual pages on unix-based systems
+ * * listen function in Microsoft's Winsock functions reference
+ */
 static VALUE
 sock_listen(sock, log)
     VALUE sock, log;
@@ -2117,6 +2377,111 @@ sock_listen(sock, log)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ * 	socket.recvfrom( len ) => [ data, sender ]
+ * 	socket.recvfrom( len, flags ) => [ data, sender ]
+ * 
+ * Receives up to _len_ bytes from +socket+. _flags_ is zero or more
+ * of the +MSG_+ options. The first element of the results is the data
+ * received. The second element contains protocol-specific information
+ * on the snder
+ * 
+ * === Parameters
+ * * +len+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	# In one file, start this first
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 	client, client_sockaddr = socket.accept
+ * 	data = client.recvfrom( 20 )[0].chomp
+ * 	puts "I only received 20 bytes '#{data}'"
+ * 	sleep 1
+ * 	socket.close
+ * 
+ * 	# In another file, start this second
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.connect( sockaddr )
+ * 	socket.puts "Watch this get cut short!"
+ * 	socket.close 
+ * 
+ * === Unix-based Exceptions
+ * On unix-based based systems the following system exceptions may be raised if the
+ * call to _recvfrom_ fails:
+ * * Errno::EAGAIN - the +socket+ file descriptor is marked as O_NONBLOCK and no
+ *   data is waiting to be received; or MSG_OOB is set and no out-of-band data
+ *   is available and either the +socket+ file descriptor is marked as 
+ *   O_NONBLOCK or the +socket+ does not support blocking to wait for 
+ *   out-of-band-data
+ * * Errno::EWOULDBLOCK - see Errno::EAGAIN
+ * * Errno::EBADF - the +socket+ is not a valid file descriptor
+ * * Errno::ECONNRESET - a connection was forcibly closed by a peer
+ * * Errno::EFAULT - the socket's internal buffer, address or address length 
+ *   cannot be accessed or written
+ * * Errno::EINTR - a signal interupted _recvfrom_ before any data was available
+ * * Errno::EINVAL - the MSG_OOB flag is set and no out-of-band data is available
+ * * Errno::EIO - an i/o error occurred while reading from or writing to the 
+ *   filesystem
+ * * Errno::ENOBUFS - insufficient resources were available in the system to 
+ *   perform the operation
+ * * Errno::ENOMEM - insufficient memory was available to fulfill the request
+ * * Errno::ENOSR - there were insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENOTCONN - a receive is attempted on a connection-mode socket that
+ *   is not connected
+ * * Errno::ENOTSOCK - the +socket+ does not refer to a socket
+ * * Errno::EOPNOTSUPP - the specified flags are not supported for this socket type
+ * * Errno::ETIMEDOUT - the connection timed out during connection establishment
+ *   or due to a transmission timeout on an active connection
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _recvfrom_ fails:
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::EFAULT - the internal buffer and from parameters on +socket+ are not
+ *   part of the user address space, or the internal fromlen parameter is
+ *   too small to accomodate the peer address
+ * * Errno::EINTR - the (blocking) call was cancelled by an internal call to
+ *   the WinSock function WSACancelBlockingCall
+ * * Errno::EINPROGRESS - a blocking Windows Sockets 1.1 call is in progress or 
+ *   the service provider is still processing a callback function
+ * * Errno::EINVAL - +socket+ has not been bound with a call to _bind_, or an
+ *   unknown flag was specified, or MSG_OOB was specified for a socket with
+ *   SO_OOBINLINE enabled, or (for byte stream-style sockets only) the internal
+ *   len parameter on +socket+ was zero or negative
+ * * Errno::EISCONN - +socket+ is already connected. The call to _recvfrom_ is
+ *   not permitted with a connected socket on a socket that is connetion 
+ *   oriented or connectionless.
+ * * Errno::ENETRESET - the connection has been broken due to the keep-alive 
+ *   activity detecting a failure while the operation was in progress.
+ * * Errno::EOPNOTSUPP - MSG_OOB was specified, but +socket+ is not stream-style
+ *   such as type SOCK_STREAM. OOB data is not supported in the communication
+ *   domain associated with +socket+, or +socket+ is unidirectional and 
+ *   supports only send operations
+ * * Errno::ESHUTDOWN - +socket+ has been shutdown. It is not possible to 
+ *   call _recvfrom_ on a socket after _shutdown_ has been invoked.
+ * * Errno::EWOULDBLOCK - +socket+ is marked as nonblocking and a  call to 
+ *   _recvfrom_ would block.
+ * * Errno::EMSGSIZE - the message was too large to fit into the specified buffer
+ *   and was truncated.
+ * * Errno::ETIMEDOUT - the connection has been dropped, because of a network
+ *   failure or because the system on the other end went down without
+ *   notice
+ * * Errno::ECONNRESET - the virtual circuit was reset by the remote side 
+ *   executing a hard or abortive close. The application should close the
+ *   socket; it is no longer usable. On a UDP-datagram socket this error
+ *   indicates a previous send operation resulted in an ICMP Port Unreachable
+ *   message.
+ */
 static VALUE
 sock_recvfrom(argc, argv, sock)
     int argc;
@@ -2126,6 +2491,88 @@ sock_recvfrom(argc, argv, sock)
     return s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
+/*
+ * call-seq:
+ * 	socket.accept => [ socket, string ]
+ * 
+ * Accepts an incoming connection returning an array containing a new
+ * Socket object and a string holding the +struct+ sockaddr information about 
+ * the caller.
+ * 
+ * === Example
+ * 	# In one script, start this first
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 	client, client_sockaddr = socket.accept
+ * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	client.puts "Hello from script one!"
+ * 	socket.close
+ * 
+ * 	# In another script, start this second
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.connect( sockaddr )
+ * 	socket.puts "Hello from script 2." 
+ * 	puts "The server said, '#{socket.readline.chomp}'"
+ * 	socket.close 
+ * 
+ * === Unix-based Exceptions
+ * On unix-based based systems the following system exceptions may be raised if the
+ * call to _accept_ fails:
+ * * Errno::EAGAIN - O_NONBLOCK is set for the +socket+ file descriptor and no 
+ *   connections are parent to be accepted
+ * * Errno::EWOULDBLOCK - same as Errno::EAGAIN
+ * * Errno::EBADF - the +socket+ is not a valid file descriptor
+ * * Errno::ECONNABORTED - a connection has been aborted
+ * * Errno::EFAULT - the socket's internal address or address length parameter 
+ *   cannot be access or written
+ * * Errno::EINTR - the _accept_ method was interrupted by a signal that was 
+ *   caught before a valid connection arrived
+ * * Errno::EINVAL - the +socket+ is not accepting connections
+ * * Errno::EMFILE - OPEN_MAX file descriptors are currently open in the calling 
+ *   process
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOMEM - there was insufficient memory available to complete the
+ *   operation
+ * * Errno::ENOSR - there was insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENFILE - the maximum number of file descriptors in the system are 
+ *   already open
+ * * Errno::ENOTSOCK - the +socket+ does not refer to a socket
+ * * Errno::EOPNOTSUPP - the socket type for the calling +socket+ does not 
+ *   support accept connections
+ * * Errno::EPROTO - a protocol error has occurred
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _accept_ fails:
+ * * Errno::ECONNRESET - an incoming connection was indicated, but was 
+ *   terminated by the remote peer prior to accepting the connection
+ * * Errno::EFAULT - the socket's internal address or address length parameter
+ *   is too small or is not a valid part of the user space address
+ * * Errno::EINVAL - the _listen_ method was not invoked prior to calling _accept_
+ * * Errno::EINPROGRESS - a blocking Windows Sockets 1.1 call is in progress or
+ *   the service provider is still processing a callback function
+ * * Errno::EMFILE - the queue is not empty, upong etry to _accept_ and there are
+ *   no socket descriptors available
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOTSOCK - +socket+ is not a socket
+ * * Errno::EOPNOTSUPP - +socket+ is not a type that supports connection-oriented
+ *   service.
+ * * Errno::EWOULDBLOCK - +socket+ is marked as nonblocking and no connections are
+ *   present to be accepted
+ * 
+ * === See
+ * * accept manual pages on unix-based systems
+ * * accept function in Microsoft's Winsock functions reference
+ */
 static VALUE
 sock_accept(sock)
     VALUE sock;
@@ -2141,6 +2588,44 @@ sock_accept(sock)
     return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
+/*
+ * call-seq:
+ * 	socket.sysaccept => [ socket_fd, address ]
+ * 
+ * Accepts an incoming connection returnings an array containg the (integer)
+ * file descriptor for the incoming connection and a string that contains the
+ * +struct+ sockaddr information about the caller.
+ * 
+ * === Example
+ * 	# In one script, start this first
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 	client_fd, client_sockaddr = socket.sysaccept
+ * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	client_socket = Socket.for_fd( client_fd )
+ * 	client_socket.puts "Hello from script one!"
+ * 	socket.close
+ * 
+ * 	# In another script, start this second
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.connect( sockaddr )
+ * 	socket.puts "Hello from script 2." 
+ * 	puts "The server said, '#{socket.readline.chomp}'"
+ * 	socket.close
+ * 
+ * Refer to Socket#accept for the exceptions that may be thrown if the call
+ * to _sysaccept_ fails. 
+ * 
+ * === See
+ * * Socket#accept
+ */
 static VALUE
 sock_sysaccept(sock)
     VALUE sock;
@@ -2620,6 +3105,31 @@ sock_define_const(name, value)
     rb_define_const(mConst, name, INT2FIX(value));
 }
 
+/*
+ * Class +Socket+ provides access to the underlying operating system
+ * socket implementations. It can be used to provide more operating system
+ * specific functionality than the protocol-specific socket classes but at the
+ * expense of greater complexity. In particular, the class handles addresses
+ * using +struct+ sockaddr structures packed into Ruby strings, which can be
+ * a joy to manipulate.
+ * 
+ * === Exception Handling
+ * Ruby's implementation of +Socket+ causes an exception to be raised
+ * based on the error generated by the system dependent implementation.
+ * This is why the methods are documented in a way that isolate
+ * Unix-based system exceptions from Windows based exceptions. If more
+ * information on particular exception is needed please refer to the 
+ * Unix manual pages or the Windows WinSock reference.
+ * 
+ * 
+ * === Documentation by
+ * * Zach Dennis
+ * * Sam Roberts
+ * * <em>Programming Ruby</em> from The Pragmatic Bookshelf.  
+ * 
+ * Much material in this documentation is taken with permission from  
+ * <em>Programming Ruby</em> from The Pragmatic Bookshelf.  
+ */
 void
 Init_socket()
 {
