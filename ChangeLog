@@ -1,6 +1,8 @@
-Sat Nov 12 02:10:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov 12 08:36:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, eval.c, intern.h: check fd_mask type.
+
+	* configure.in (socketpair): need to be checked.
 
 Fri Nov 11 19:53:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
