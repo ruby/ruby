@@ -161,13 +161,11 @@ NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
 void rb_check_frozen(VALUE);
 /* eval.c */
-#if defined(NFDBITS) && defined(howmany)
+#if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {
     int maxfd;
     fd_set *fdset;
 } rb_fdset_t;
-
-#define HAVE_RB_FD_INIT 1
 
 void rb_fd_init(volatile rb_fdset_t *);
 void rb_fd_term(rb_fdset_t *);

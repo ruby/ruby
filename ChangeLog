@@ -1,3 +1,7 @@
+Sat Nov 12 02:10:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, eval.c, intern.h: check fd_mask type.
+
 Fri Nov 11 19:53:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* eval.c, intern.h: failed to compile where NFDBITS is defined but

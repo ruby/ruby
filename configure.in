@@ -476,6 +476,8 @@ AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
 
+AC_CHECK_TYPE(fd_mask, [AC_DEFINE(HAVE_RB_FD_INIT, 1)])
+
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
 [rb_cv_stack_end_address=no
 for addr in __libc_stack_end _SEND; do
