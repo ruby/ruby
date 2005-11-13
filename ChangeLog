@@ -1,3 +1,8 @@
+Sun Nov 13 10:55:24 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/uri/common.rb (escape): regard second argument as a
+	  character set. [ruby-dev:27692]
+
 Sat Nov 12 08:36:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, eval.c, intern.h: check fd_mask type.

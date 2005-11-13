@@ -261,6 +261,7 @@ module URI
     # +unsafe+::
     #   Regexp that matches all symbols that must be replaced with codes.
     #   By default uses <tt>REGEXP::UNSAFE</tt>.
+    #   When this argument is a String, it represents a character set.
     #
     # == Description
     #
@@ -277,10 +278,13 @@ module URI
     #   p URI.unescape(enc_uri)
     #   # => "http://example.com/?a=\t\r"
     #
+    #   p URI.escape("@?@!", "!?")
+    #   # => "@%3F@%21"
+    #
     def escape(str, unsafe = UNSAFE)
       unless unsafe.kind_of?(Regexp)
         # perhaps unsafe is String object
-        unsafe = Regexp.new(Regexp.quote(unsafe), false, 'N')
+        unsafe = Regexp.new("[#{Regexp.quote(unsafe)}]", false, 'N')
       end
       str.gsub(unsafe) do |us|
         tmp = ''
