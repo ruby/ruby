@@ -1,3 +1,8 @@
+Mon Nov 14 17:36:22 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_first): RDoc update from Daniel Berger
+	  <djberg96@yahoo.com>.  [ruby-core:06577].
+
 Fri Nov 11 10:31:44 2005  Zach Dennis  <zdennis@mktec.com>
 
 	* ext/socket/socket.c: Socket Documentation. [ruby-core:6580]
