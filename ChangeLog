@@ -1,6 +1,7 @@
 Mon Nov 14 23:49:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_readlink): ERANGE will occur only on GPFS.
+	  [ruby-dev:27699]
 
 Mon Nov 14 17:36:22 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
