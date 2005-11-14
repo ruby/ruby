@@ -776,10 +776,11 @@ rb_ary_at(VALUE ary, VALUE pos)
 /*
  *  call-seq:
  *     array.first     ->   obj or nil
- *     array.first(n)  ->   an_array
- *  
- *  Returns the first element of the array. If the array is empty,
- *  returns <code>nil</code>.
+ *     array.first(n)  -> an_array
+ *
+ *  Returns the first element, or the first +n+ elements, of the array.
+ *  If the array is empty, the first form returns <code>nil</code>, and the
+ *  second form returns an empty array.
  *     
  *     a = [ "q", "r", "s", "t" ]
  *     a.first     #=> "q"

@@ -1,3 +1,8 @@
+Mon Nov 14 17:36:22 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_first): RDoc update from Daniel Berger
+	  <djberg96@yahoo.com>.  [ruby-core:06577].
+
 Sun Nov 13 10:55:24 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/uri/common.rb (escape): regard second argument as a
