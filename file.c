@@ -2009,13 +2009,11 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     rb_secure(2);
     FilePathValue(path);
     buf = xmalloc(size);
-    for (;;) {
-	rv = readlink(RSTRING(path)->ptr, buf, size);
-#ifndef _AIX
-	if (rv != size) break;
-#else
-	if (rv > 0 || errno != ERANGE) break;
+    while ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size
+#ifdef _AIX
+	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
 #endif
+	) {
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
