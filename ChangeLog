@@ -1,3 +1,9 @@
+Wed Nov 16 01:29:31 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/trackback.rb: added TrackBack prefix.
+
+	* lib/rss/maker/trackback.rb: ditto.
+
 Wed Nov 16 01:26:13 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.5 -> 0.1.6.

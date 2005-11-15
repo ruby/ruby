@@ -41,7 +41,7 @@ module RSS
         def_array_element("abouts")
         
         def new_about
-          about = self.class::About.new(@maker)
+          about = self.class::TrackBackAbout.new(@maker)
           @abouts << about 
           about
         end
@@ -52,7 +52,7 @@ module RSS
           end
         end
         
-        class AboutBase
+        class TrackBackAboutBase
           include Base
 
           attr_accessor :value
@@ -79,10 +79,10 @@ module RSS
       class Items
         class Item
           class TrackBackAbouts < TrackBackAboutsBase
-            class About < AboutBase
+            class TrackBackAbout < TrackBackAboutBase
               def to_rss(rss, current)
                 if resource
-                  about = ::RSS::TrackBackModel10::About.new(resource)
+                  about = ::RSS::TrackBackModel10::TrackBackAbout.new(resource)
                   current.trackback_abouts << about
                 end
               end
@@ -98,7 +98,7 @@ module RSS
           class TrackBackAbouts < TrackBackAboutsBase
             def to_rss(*args)
             end
-            class About < AboutBase
+            class TrackBackAbout < TrackBackAboutBase
             end
           end
         end
@@ -109,10 +109,10 @@ module RSS
       class Items
         class Item
           class TrackBackAbouts < TrackBackAboutsBase
-            class About < AboutBase
+            class TrackBackAbout < TrackBackAboutBase
               def to_rss(rss, current)
                 if content
-                  about = ::RSS::TrackBackModel20::About.new(content)
+                  about = ::RSS::TrackBackModel20::TrackBackAbout.new(content)
                   current.trackback_abouts << about
                 end
               end
