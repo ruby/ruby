@@ -3956,7 +3956,7 @@ is_macos_native_path(const char *path)
 static int
 file_load_ok(const char *path)
 {
-    return eaccess(path, R_OK);
+    return eaccess(path, R_OK) == 0;
 }
 
 extern VALUE rb_load_path;

@@ -1,3 +1,8 @@
+Tue Nov 15 23:54:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_load_ok): eaccess() returns 0 on success.
+	  fixed: [ruby-dev:27713]
+
 Tue Nov 15 16:36:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c (rb_ary_fill): previous commit disabled this usage:
