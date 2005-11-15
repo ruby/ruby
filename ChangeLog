@@ -1,3 +1,10 @@
+Tue Nov 15 16:04:10 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* array.c (rb_ary_fill): tail elements were vanished when the middle
+	  part of array was filled. (ie: [0,1,2,3,4].fill(-1,2,1) => [0,1,-1])
+
+	* test/ruby/test_array.rb (test_fill): added.
+
 Tue Nov 15 14:39:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_fill): should adjust array length correctly when

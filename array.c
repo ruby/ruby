@@ -2261,9 +2261,13 @@ rb_ary_fill(argc, argv, ary)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, end);
 	    RARRAY(ary)->aux.capa = end;
 	}
-	if (beg > RARRAY(ary)->len) {
-	    rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, end - RARRAY(ary)->len);
-	}
+	RARRAY(ary)->len = end;
+    }
+    if (beg > RARRAY(ary)->len) {
+	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, end - RARRAY(ary)->len);
+    }
+    else {
+	rb_mem_clear(RARRAY(ary)->ptr + beg, end - beg);
     }
 
     if (block_p) {
@@ -2274,11 +2278,9 @@ rb_ary_fill(argc, argv, ary)
 	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY(ary)->len) break;
 	    RARRAY(ary)->ptr[i] = v;
-	    RARRAY(ary)->len = i+1;
 	}
     }
     else {
-	RARRAY(ary)->len = end;
 	p = RARRAY(ary)->ptr + beg;
 	pend = p + len;
 	while (p < pend) {
