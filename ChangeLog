@@ -1,3 +1,8 @@
+Tue Nov 15 14:39:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_fill): should adjust array length correctly when
+	  an array is expanded in the fill process.  [ruby-core:06625]
+
 Mon Nov 14 23:49:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_readlink): ERANGE will occur only on GPFS.

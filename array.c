@@ -1088,6 +1088,7 @@ rb_ary_insert(argc, argv, ary)
 {
     long pos;
 
+    if (argc == 1) return ary;
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
@@ -1095,11 +1096,9 @@ rb_ary_insert(argc, argv, ary)
     if (pos == -1) {
 	pos = RARRAY(ary)->len;
     }
-    else if (pos < 0) {
+    if (pos < 0) {
 	pos++;
     }
-
-    if (argc == 1) return ary;
     rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
     return ary;
 }
@@ -2265,7 +2264,6 @@ rb_ary_fill(argc, argv, ary)
 	if (beg > RARRAY(ary)->len) {
 	    rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, end - RARRAY(ary)->len);
 	}
-	RARRAY(ary)->len = end;
     }
 
     if (block_p) {
@@ -2276,9 +2274,11 @@ rb_ary_fill(argc, argv, ary)
 	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY(ary)->len) break;
 	    RARRAY(ary)->ptr[i] = v;
+	    RARRAY(ary)->len = i+1;
 	}
     }
     else {
+	RARRAY(ary)->len = end;
 	p = RARRAY(ary)->ptr + beg;
 	pend = p + len;
 	while (p < pend) {
