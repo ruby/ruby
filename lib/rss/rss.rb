@@ -59,7 +59,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.5"
+  VERSION = "0.1.6"
 
   URI = "http://purl.org/rss/1.0/"
 

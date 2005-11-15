@@ -1,3 +1,9 @@
+Wed Nov 16 01:26:13 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::VERSION): 0.1.5 -> 0.1.6.
+
+	* test/rss/test_version.rb (RSS::TestVersion#test_version): ditto.
+
 Tue Nov 15 23:54:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_load_ok): eaccess() returns 0 on success.
