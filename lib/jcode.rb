@@ -188,6 +188,15 @@ class String
     (str = self.dup).tr_s!(from,to) or str
   end
 
+  def reverse
+    self.split(//).reverse.join
+  end
+
+  def reverse!
+    self.replace(self.reverse)
+    self
+  end
+
   def chop!
     self.gsub!(/(?:.|\r?\n)\z/, '')
   end

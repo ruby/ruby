@@ -1,3 +1,11 @@
+Tue Nov 15 16:15:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (file_load_ok): use eaccess() instead of actually opening
+	  the file.  [ruby-talk:156378]
+
+	* lib/jcode.rb (String::reverse): add new methods.
+	  [ruby-list:41245]
+
 Tue Nov 15 15:49:34 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c (rb_ary_fill): tail elements were vanished when the middle
