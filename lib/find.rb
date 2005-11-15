@@ -36,8 +36,8 @@ module Find
     paths.collect!{|d| d.dup}
     while file = paths.shift
       catch(:prune) do
-        next unless File.exist? file
 	yield file.dup.taint
+        next unless File.exist? file
 	begin
 	  if File.lstat(file).directory? then
 	    d = Dir.open(file)
@@ -57,7 +57,7 @@ module Find
 	      d.close
 	    end
 	  end
-       rescue Errno::ENOENT, Errno::EACCES
+        rescue Errno::ENOENT, Errno::EACCES
 	end
       end
     end

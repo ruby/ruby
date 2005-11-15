@@ -1,3 +1,8 @@
+Tue Nov 15 23:46:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/find.rb (Find::find): should not ignore symbolic links to
+	  non-existing files.  [ruby-talk:165866]
+
 Tue Nov 15 16:23:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c (rb_ary_fill): previous commit disabled this usage:
