@@ -2137,13 +2137,8 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, end);
 	    RARRAY(ary)->aux.capa = end;
 	}
-	RARRAY(ary)->len = end;
-    }
-    if (beg > RARRAY(ary)->len) {
 	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, end - RARRAY(ary)->len);
-    }
-    else {
-	rb_mem_clear(RARRAY(ary)->ptr + beg, end - beg);
+	RARRAY(ary)->len = end;
     }
 
     if (block_p) {
