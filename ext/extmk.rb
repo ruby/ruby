@@ -217,8 +217,7 @@ def parse_args()
       if ($extstatic = v) == false
         $extstatic = []
       elsif v
-        $force_static = true
-        $extstatic.delete("static")
+        $force_static = true if $extstatic.delete("static")
         $extstatic = nil if $extstatic.empty?
       end
     end
@@ -232,6 +231,7 @@ def parse_args()
       $make = v || 'make'
     end
     opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+      v.grep(/\A([-\w]+)=(.*)/) {$configure_args["--#{$1}"] = $2}
       if arg = v.first
         arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
       end
@@ -326,7 +326,7 @@ end
 for dir in ["ext", File::join($top_srcdir, "ext")]
   setup = File::join(dir, CONFIG['setup'])
   if File.file? setup
-    f = open(setup) 
+    f = open(setup)
     while line = f.gets()
       line.chomp!
       line.sub!(/#.*$/, '')
@@ -458,9 +458,11 @@ SRC
   $mflags.concat(conf)
 end
 rubies = []
-%w[RUBY RUBYW].each {|r|
+%w[RUBY RUBYW STATIC_RUBY].each {|r|
+  n = r
   if r = arg_config("--"+r.downcase) || config_string(r+"_INSTALL_NAME")
     rubies << r+EXEEXT
+    $mflags << "#{n}=#{r}"
   end
 }
 

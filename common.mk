@@ -4,6 +4,8 @@ dll: $(LIBRUBY_SO);
 
 RUBYOPT       =
 
+STATIC_RUBY   = static-ruby
+
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 
@@ -68,9 +70,9 @@ $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(ARCHFILE)
 
-static-ruby: $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A)
+$(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
-	$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@
+	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(LIBRUBY_A)
 	@$(NM) -Pgp $(LIBRUBY_A) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@

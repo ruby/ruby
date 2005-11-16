@@ -1,3 +1,12 @@
+Wed Nov 16 23:24:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (static-ruby): overridable.
+
+	* ext/extmk.rb (parse_args): force to link extensions statically only
+	  if static is given for extstatic.
+
+	* ext/extmk.rb (RUBY, RUBYW): overridable.
+
 Tue Nov 15 23:46:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/find.rb (Find::find): should not ignore symbolic links to
