@@ -1,3 +1,12 @@
+Wed Nov 16 23:24:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (static-ruby): overridable.
+
+	* ext/extmk.rb (parse_args): force to link extensions statically only
+	  if static is given for extstatic.
+
+	* ext/extmk.rb (RUBY, RUBYW): overridable.
+
 Wed Nov 16 01:29:31 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/trackback.rb: added TrackBack prefix.
