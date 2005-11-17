@@ -1,3 +1,9 @@
+Thu Nov 17 17:53:30 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/taxonomy.rb: implemented taxonomy module.
+
+	* test/rss/test_taxonomy.rb: added tests for taxonomy support.
+
 Thu Nov 17 17:40:19 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/1.0.rb: added rdf:Bag.
