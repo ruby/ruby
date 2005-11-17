@@ -1,3 +1,9 @@
+Thu Nov 17 13:52:00 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb : removed needless argument 'prefix'.
+
+	* lib/rss/parser.rb: ditto.
+
 Wed Nov 16 23:24:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (static-ruby): overridable.

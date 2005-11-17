@@ -665,7 +665,7 @@ EOC
       end
     end
 
-    def set_next_element(prefix, tag_name, next_element)
+    def set_next_element(tag_name, next_element)
       klass = next_element.class
       prefix = ""
       prefix << "#{klass.required_prefix}_" if klass.required_prefix
