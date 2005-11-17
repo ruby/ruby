@@ -86,6 +86,16 @@ module RSS
         end
       end
 
+      def resources
+        if @Bag
+          @Bag.lis.collect do |li|
+            li.resource
+          end
+        else
+          []
+        end
+      end
+      
       private
       def children
         [@Bag]

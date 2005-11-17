@@ -1,3 +1,13 @@
+Thu Nov 17 17:58:00 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/1.0.rb: added convenience method 'resources'.
+
+	* lib/rss/taxonomy.rb: ditto.
+
+	* test/rss/rss-assertions.rb: added test for 'resources'.
+
+	* test/rss/test_taxonomy.rb: ditto.
+
 Thu Nov 17 17:53:30 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/taxonomy.rb: implemented taxonomy module.
