@@ -709,8 +709,11 @@ class TkTreeCtrl_demo
     systemHighlight  = @SystemHighlight
     systemHighlightText = @SystemHighlightText
 
+    def master._pub_display_styles_in_item(item)
+      display_styles_in_item(item)
+    end
     proc_disp_styles_in_item = proc{|item| 
-      master.funcall(:display_styles_in_item, item)
+      master._pub_display_styles_in_item(item)
     }
 
     @demo_scripts.instance_eval{

@@ -75,13 +75,25 @@ module Tk
 
     ##########################################
 
-    def self.new(name, keys=nil)
-      unless obj = Tk_IMGTBL["::icon::#{name}"]
-        obj = allocate()
-        obj.funcall(:initialize, name, keys)
+    class << self
+      alias _new new
+
+      def new(name, keys=nil)
+        if obj = Tk_IMGTBL["::icon::#{name}"]
+          if keys
+            keys = _symbolkey2str(keys)
+            unless keys.delete('without_creating')
+              tk_call('::icons::icons', 'create', *(hash_kv(keys) << obj.name))
+            end
+          end
+        else
+          obj = _new(name, keys)
+        end
+        obj
       end
-      obj
     end
+
+    ##########################################
 
     def initialize(name, keys=nil)
       if name.kind_of?(String) && name =~ /^::icon::(.+)$/

@@ -488,6 +488,19 @@ class TkFont
     create_compoundfont(ltn, knj, keys)
   end
 
+  def initialize_copy(font)
+    unless font.kind_of?(TkFont)
+      fail TypeError, '"initialize_copy should take same class object'
+    end
+    if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      keys = {}
+      font.configinfo.each{|key,value| keys[key] = value }
+      initialize(font.latin_font_id, font.kanji_font_id, keys)
+    else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      initialize(font.latin_font_id, font.kanji_font_id, font.configinfo)
+    end
+  end
+
   def _get_font_info_from_hash(font)
     font = _symbolkey2str(font)
     foundry  = (info = font['foundry'] .to_s)?  info: '*'
@@ -1184,24 +1197,12 @@ class TkFont
   ###################################
 =begin
   def dup
-    src = self
-    obj = super()
-    obj.funcall(:initialize, src)
-    obj
+    TkFont.new(self)
   end
   def clone
-    src = self
-    obj = super()
-    obj.funcall(:initialize, src)
-    obj
+    TkFont.new(self)
   end
 =end
-  def dup
-    TkFont.new(self)
-  end
-  def clone
-    TkFont.new(self)
-  end
 end
 
 module TkFont::CoreMethods

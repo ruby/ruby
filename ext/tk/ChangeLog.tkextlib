@@ -1,77 +1,82 @@
+2005-11-19  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* sample/tkextlib/treectrl/demo.rb: remove dependency on Ruby's 
+	  version (1.8 or 1.9).
+
 2005-10-23  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/*: update to support ActiveTcl8.4.11.2
+	* lib/tkextlib/*: update to support ActiveTcl8.4.11.2
 
-	* ext/tk/lib/tkextlib/trofs/*: support Trofs 0.4.3
+	* lib/tkextlib/trofs/*: support Trofs 0.4.3
 
-	* ext/tk/lib/tkextlib/tile/*: support Tile 0.7.2
+	* lib/tkextlib/tile/*: support Tile 0.7.2
 
-	* ext/tk/lib/tkextlib/vu/*: support vu 2.3.0
+	* lib/tkextlib/vu/*: support vu 2.3.0
 
-	* ext/tk/lib/tkextlib/tcllib/*: support Tcllib 1.8 (Tklib 0.3)
+	* lib/tkextlib/tcllib/*: support Tcllib 1.8 (Tklib 0.3 part only)
 
-	* ext/tk/lib/tkextlib/*: improve conversion of option values
+	* lib/tkextlib/*: improve conversion of option values
 
 2005-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/tktable/tktable.rb: border_* instance methods
+	* lib/tkextlib/tktable/tktable.rb: border_* instance methods
 	  don't call 'border' subcommands.
 
 2005-08-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt/component.rb: didn't check
+	* lib/tkextlib/blt/component.rb: didn't check
 	  __item_ruby2val_optkeys().
 
 2005-08-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/blt/barchart.rb: support to treat tkvariable-type
+	* lib/tkextlib/blt/barchart.rb: support to treat tkvariable-type
 	  configure options.
 
-	* ext/tk/lib/tkextlib/blt/component.rb: ditto.
+	* lib/tkextlib/blt/component.rb: ditto.
 
-	* ext/tk/lib/tkextlib/blt/dragdrop.rb: ditto.
+	* lib/tkextlib/blt/dragdrop.rb: ditto.
 
-	* ext/tk/lib/tkextlib/blt/treeview.rb: ditto.
+	* lib/tkextlib/blt/treeview.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/button.rb: ditto.
+	* lib/tkextlib/bwidget/button.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/entry.rb: ditto.
+	* lib/tkextlib/bwidget/entry.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/label.rb: ditto.
+	* lib/tkextlib/bwidget/label.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/labelentry.rb: ditto.
+	* lib/tkextlib/bwidget/labelentry.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/labelframe.rb: ditto.
+	* lib/tkextlib/bwidget/labelframe.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/mainframe.rb: ditto.
+	* lib/tkextlib/bwidget/mainframe.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/passwddlg.rb: ditto.
+	* lib/tkextlib/bwidget/passwddlg.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/spinbox.rb: ditto.
+	* lib/tkextlib/bwidget/spinbox.rb: ditto.
 
-	* ext/tk/lib/tkextlib/bwidget/tree.rb: ditto.
+	* lib/tkextlib/bwidget/tree.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/calendar.rb: ditto.
+	* lib/tkextlib/iwidgets/calendar.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/entryfield.rb: ditto.
+	* lib/tkextlib/iwidgets/entryfield.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/hierarchy.rb: ditto.
+	* lib/tkextlib/iwidgets/hierarchy.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/labeledframe.rb: ditto.
+	* lib/tkextlib/iwidgets/labeledframe.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/labeledwidget.rb: ditto.
+	* lib/tkextlib/iwidgets/labeledwidget.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/menubar.rb: ditto.
+	* lib/tkextlib/iwidgets/menubar.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb: ditto.
+	* lib/tkextlib/iwidgets/scrolledlistbox.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/spinner.rb: ditto.
+	* lib/tkextlib/iwidgets/spinner.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/toolbar.rb: ditto.
+	* lib/tkextlib/iwidgets/toolbar.rb: ditto.
 
-	* ext/tk/lib/tkextlib/tkimg/pixmap.rb: ditto.
+	* lib/tkextlib/tkimg/pixmap.rb: ditto.
 
-	* ext/tk/lib/tkextlib/tktable/tktable.rb: ditto.
+	* lib/tkextlib/tktable/tktable.rb: ditto.
 
 2005-08-06  ocean  <ocean@ruby-lang.org>
 
