@@ -14,6 +14,14 @@ class TkNamespace < TkObject
   Tk_Namespace_ID_TBL = TkCore::INTERP.create_table
   Tk_Namespace_ID = ["ns".freeze, "00000".taint].freeze
 
+  TkCore::INTERP.init_ip_env{ Tk_Namespace_ID_TBL.clear }
+
+  def TkNamespace.id2obj(id)
+    Tk_Namespace_ID_TBL[id]? Tk_Namespace_ID_TBL[id]: id
+  end
+
+  #####################################
+
   class Ensemble < TkObject
     def __cget_cmd
       ['namespace', 'ensemble', 'configure', self.path]
@@ -107,6 +115,8 @@ class TkNamespace < TkObject
     end
   end
 
+  #####################################
+
   class ScopeArgs < Array
     include Tk
 
@@ -139,6 +149,8 @@ class TkNamespace < TkObject
     end
   end
 
+  #####################################
+
   class NsCode < TkObject
     def initialize(scope)
       @scope = scope + ' '
@@ -152,6 +164,18 @@ class TkNamespace < TkObject
     def call(*args)
       TkCore::INTERP._eval_without_enc(@scope + array2tk_list(args))
     end
+  end
+
+  #####################################
+
+  def install_cmd(cmd)
+    lst = tk_split_simplelist(super(cmd), false, false)
+    if lst[1] =~ /^::/
+      lst[1] = @fullname
+    else
+      lst.insert(1, @fullname)
+    end
+    TkCore::INTERP._merge_tklist(*lst)
   end
 
   alias __tk_call             tk_call
@@ -252,17 +276,37 @@ class TkNamespace < TkObject
                                                 _get_eval_string(cmd, false)))
   end
 
-  def self.current
+  def self.current_path
     tk_call('namespace', 'current')
+  end
+  def current_path
+    @fullname
+  end
+
+  def self.current
+    ns = self.current_path
+    if Tk_Namespace_ID_TBL.key?(ns)
+      Tk_Namespace_ID_TBL[ns]
+    else
+      ns
+    end
   end
   def current_namespace
     # ns_tk_call('namespace', 'current')
-    @fullname
+    # @fullname
+    self
   end
   alias current current_namespace
 
   def self.delete(*ns_list)
     tk_call('namespace', 'delete', *ns_list)
+    ns_list.each{|ns|
+      if ns.kind_of?(TkNamespace)
+        Tk_Namespace_ID_TBL.delete(ns.path)
+      else
+        Tk_Namespace_ID_TBL.delete(ns.to_s)
+      end
+    }
   end
   def delete
     TkNamespece.delete(@fullname)
@@ -302,14 +346,14 @@ class TkNamespace < TkObject
     ret = code_obj.call(*args)
     # uninstall_cmd(TkCore::INTERP._split_tklist(code_obj.path)[-1])
     uninstall_cmd(_fromUTF8(TkCore::INTERP._split_tklist(_toUTF8(code_obj.path))[-1]))
-    ret
+    tk_tcl2ruby(ret)
   end
 
   def self.exist?(ns)
     bool(tk_call('namespace', 'exists', ns))
   end
   def exist?
-    TkNamespece.delete(@fullname)
+    TkNamespece.exist?(@fullname)
   end
 
   def self.export(*patterns)
@@ -349,7 +393,7 @@ class TkNamespace < TkObject
     tk_call('namespace', 'inscope', namespace, script, *args)
   end
   def inscope(script, *args)
-    TkNamespace(@fullname, script, *args)
+    TkNamespace.inscope(@fullname, script, *args)
   end
 
   def self.origin(cmd)
@@ -396,3 +440,5 @@ class TkNamespace < TkObject
     tk_call('namespace', 'which', '-variable', name)
   end
 end
+
+TkNamespace::Global = TkNamespace.new('::')

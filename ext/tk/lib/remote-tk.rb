@@ -66,6 +66,11 @@ class RemoteTkIp
     end
 
     @interp = MultiTkIp.__getip
+    if @interp.safe?
+      fail SecurityError, "safe-IP cannot create RemoteTkIp"
+    end
+
+
     @interp.allow_ruby_exit = false
     @appname = @interp._invoke('tk', 'appname')
     @remote = remote_ip.to_s.dup.freeze
@@ -127,11 +132,26 @@ class RemoteTkIp
     self.freeze  # defend against modification
   end
 
+  def manipulable?
+    return true if (Thread.current.group == ThreadGroup::Default)
+    MultiTkIp.__getip == @interp && ! @interp.safe?
+  end
+  def self.manipulable?
+    true
+  end
+
+  def _is_master_of?(tcltkip_obj)
+    tcltkip_obj == @interp
+  end
+  protected :_is_master_of?
+
   def _ip_id_
     @ip_id
   end
 
   def _available_check(timeout = 5)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     return nil if timeout < 1
     @ret_val.value = ''
     @interp._invoke('send', '-async', @remote, 
@@ -150,6 +170,8 @@ class RemoteTkIp
   private :_available_check
 
   def _create_connection
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     ip_id = '_' + @interp._invoke('send', @remote, <<-'EOS') + '_'
       if {[catch {set _rubytk_control_ip_id_} ret] != 0} {
         set _rubytk_control_ip_id_ 0
@@ -170,6 +192,8 @@ class RemoteTkIp
   private :_create_connection
 
   def _appsend(enc_mode, async, *cmds)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     p ['_appsend', [@remote, @displayof], enc_mode, async, cmds] if $DEBUG
     if $SAFE >= 4
       fail SecurityError, "cannot send commands at level 4"
@@ -210,6 +234,8 @@ class RemoteTkIp
   end
 
   def appsend(async, *args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     if async != true && async != false && async != nil
       args.unshift(async)
       async = false
@@ -222,6 +248,8 @@ class RemoteTkIp
   end
 
   def rb_appsend(async, *args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     if async != true && async != false && async != nil
       args.unshift(async)
       async = false
@@ -267,6 +295,8 @@ class RemoteTkIp
   end
 
   def deleted?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     if @displayof
       lst = @interp._invoke_without_enc('winfo', 'interps', 
                                         '-displayof', @displayof)
@@ -282,6 +312,8 @@ class RemoteTkIp
   end
 
   def has_mainwindow?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     begin
       inf = @interp._invoke_without_enc('info', 'command', '.')
     rescue Exception
@@ -333,10 +365,12 @@ class RemoteTkIp
   end
 
   def _toUTF8(str, encoding=nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._toUTF8(str, encoding)
   end
 
   def _fromUTF8(str, encoding=nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._fromUTF8(str, encoding)
   end
 
@@ -349,6 +383,7 @@ class RemoteTkIp
   end
 
   def _return_value
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._return_value
   end
 
@@ -401,14 +436,17 @@ class RemoteTkIp
   end
 
   def _split_tklist(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._split_tklist(str)
   end
 
   def _merge_tklist(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._merge_tklist(*args)
   end
 
   def _conv_listelement(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._conv_listelement(str)
   end
 
