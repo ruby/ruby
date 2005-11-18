@@ -223,6 +223,10 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #endif
 #endif
 
+#if !defined S_IFIFO && defined _S_IFIFO
+#define S_IFIFO _S_IFIFO
+#endif
+
 #ifdef __BORLANDC__
 #undef S_ISDIR
 #undef S_ISFIFO
