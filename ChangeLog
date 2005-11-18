@@ -1,3 +1,8 @@
+Fri Nov 18 12:19:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.h (S_IFIFO): r,w = IO.pipe; r.stat.pipe? now
+	  returns true on VisualC++6.
+
 Thu Nov 17 17:58:00 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/1.0.rb: added convenience method 'resources'.
@@ -57,8 +62,8 @@ Tue Nov 15 16:36:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	    a = [0,1,2,3,4,5,6,7,8,9]
 	    a.fill {|i| a[i] * 10} #=> [nil, nil, ...., nil]
 
-	  previous commit has advantange for early garbage collection, but
-	  potensially would break some script. so I reverted behavior.
+	  previous commit has the advantage of early garbage collection, but
+	  potensially this would break some script. so I reverted behavior.
 
 Tue Nov 15 16:15:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
