@@ -1,3 +1,12 @@
+Sat Nov 19 07:34:32 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/font.rb: remove dependency on Ruby's version (1.8
+	  or 1.9).
+
+	* ext/tk/lib/tkextlib/ICONS/icons.rb: ditto.
+
+	* ext/tk/sample/tkextlib/treectrl/demo.rb: ditto.
+
 Fri Nov 18 17:57:08 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_file_s_dirname): should use skipprefix for UNC path.
