@@ -1,3 +1,8 @@
+Fri Nov 18 18:07:05 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_file_s_dirname): should use skipprefix for UNC path.
+	  pointed out by nobu ([ruby-dev:27744]). fixed: [ruby-core:5076]
+
 Fri Nov 18 17:35:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add restriction to access the entried
@@ -16,7 +21,7 @@ Fri Nov 18 17:35:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Fri Nov 18 16:47:33 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* file.c (file_s_dirname): added checks for some patterns with drive
+	* file.c (rb_file_s_dirname): added checks for some patterns with drive
 	  letter. fixed: [ruby-dev:27738]
 
 	* test/ruby/test_path.rb (test_dirname): added tests for above

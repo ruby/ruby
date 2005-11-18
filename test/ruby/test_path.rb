@@ -95,23 +95,31 @@ class TestPath < Test::Unit::TestCase
     if /(bcc|ms|cyg)win|mingw|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_UNC
       assert_equal('//', File.dirname('//'))
-      assert_equal('//', File.dirname('//a'))
-      assert_equal('//', File.dirname('//a/'))
-      assert_equal('//a', File.dirname('//a/b'))
+      assert_equal('//a', File.dirname('//a'))
+      assert_equal('//a/', File.dirname('//a/'))
+      assert_equal('//a/b', File.dirname('//a/b'))
+      assert_equal('//a/b', File.dirname('//a/b/'))
+      assert_equal('//a/b', File.dirname('//a/b/c'))
       assert_equal('//', File.dirname('///'))
-      assert_equal('//', File.dirname('///a'))
-      assert_equal('//', File.dirname('///a/'))
-      assert_equal('//a', File.dirname('///a/b'))
+      assert_equal('//a', File.dirname('///a'))
+      assert_equal('//a/', File.dirname('///a/'))
+      assert_equal('//a/b', File.dirname('///a/b'))
+      assert_equal('//a/b', File.dirname('///a/b/'))
+      assert_equal('//a/b', File.dirname('///a/b/c'))
     else
       # others
       assert_equal('/', File.dirname('//'))
       assert_equal('/', File.dirname('//a'))
       assert_equal('/', File.dirname('//a/'))
       assert_equal('/a', File.dirname('//a/b'))
+      assert_equal('/a', File.dirname('//a/b/'))
+      assert_equal('/a/b', File.dirname('//a/b/c'))
       assert_equal('/', File.dirname('///'))
       assert_equal('/', File.dirname('///a'))
       assert_equal('/', File.dirname('///a/'))
       assert_equal('/a', File.dirname('///a/b'))
+      assert_equal('/a', File.dirname('///a/b/'))
+      assert_equal('/a/b', File.dirname('///a/b/c'))
     end
   end
 end

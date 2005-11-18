@@ -2626,8 +2626,8 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
     name = StringValueCStr(fname);
     root = skiproot(name);
 #ifdef DOSISH_UNC
-    if (root > name + 2 && isdirsep(*name))
-	name = root - 2;
+    if (root > name + 1 && isdirsep(*name))
+	root = skipprefix(name = root - 2);
 #else
     if (root > name + 1)
 	name = root - 1;
