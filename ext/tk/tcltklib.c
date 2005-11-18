@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-11-07"
+#define TCLTKLIB_RELEASE_DATE "2005-11-18"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -93,6 +93,8 @@ static VALUE eTkLocalJumpError;
 static VALUE eTkCallbackRetry;
 static VALUE eTkCallbackRedo;
 static VALUE eTkCallbackThrow;
+
+static VALUE tcltkip_class;
 
 static ID ID_at_enc;
 static ID ID_at_interp;
@@ -4926,6 +4928,25 @@ ip_create_slave(argc, argv, self)
     return tk_funcall(ip_create_slave_core, 2, callargv, self);
 }
 
+
+/* self is slave of master? */
+static VALUE
+ip_is_slave_of_p(self, master)
+    VALUE self, master;
+{
+    if (!rb_obj_is_kind_of(master, tcltkip_class)) {
+        rb_raise(rb_eArgError, "expected TclTkIp object");
+    }
+
+    if (Tcl_GetMaster(get_ip(self)->ip) == get_ip(master)->ip) {
+      return Qtrue;
+    } else {
+      return Qfalse;
+    }
+}
+
+
+/* create console (if supported) */
 #if defined(MAC_TCL) || defined(__WIN32__)
 #if TCL_MAJOR_VERSION < 8 \
     || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0) \
@@ -7625,6 +7646,10 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
+    tcltkip_class = ip;
+
+    /* --------------------------------------------------------------- */
+
     rb_global_variable(&eTkCallbackReturn);
     rb_global_variable(&eTkCallbackBreak);
     rb_global_variable(&eTkCallbackContinue);
@@ -7766,6 +7791,7 @@ Init_tcltklib()
     rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, -1);
     rb_define_method(ip, "create_slave", ip_create_slave, -1);
+    rb_define_method(ip, "slave_of?", ip_is_slave_of_p, 1);
     rb_define_method(ip, "make_safe", ip_make_safe, 0);
     rb_define_method(ip, "safe?", ip_is_safe_p, 0);
     rb_define_method(ip, "allow_ruby_exit?", ip_allow_ruby_exit_p, 0);

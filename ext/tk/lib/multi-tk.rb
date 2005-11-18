@@ -63,7 +63,82 @@ class MultiTkIp
 
   @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
 
-  @@TK_CMD_TBL = {}.taint unless defined?(@@TK_CMD_TBL)
+  unless defined?(@@TK_CMD_TBL)
+    @@TK_CMD_TBL = Object.new.taint
+
+    @@TK_CMD_TBL.instance_variable_set('@tbl', {}.taint)
+
+    class << @@TK_CMD_TBL
+      allow = [
+        '__send__', '__id__', 'freeze', 'inspect', 'kind_of?', 
+        '[]', '[]=', 'delete', 'each', 'has_key?'
+      ]
+      instance_methods.each{|m| undef_method(m) unless allow.index(m)}
+
+      def kind_of?(klass)
+        @tbl.kind_of?(klass)
+      end
+
+      def inspect
+        if Thread.current.group == ThreadGroup::Default
+          @tbl.inspect
+        else
+          ip = MultiTkIp.__getip
+          @tbl.reject{|idx, ent| ent.respond_to?(:ip) && ent.ip != ip}.inspect
+        end
+      end
+
+      def [](idx)
+        return unless (ent = @tbl[idx])
+        if Thread.current.group == ThreadGroup::Default
+          ent
+        elsif ent.respond_to?(:ip)
+          (ent.ip == MultiTkIp.__getip)? ent: nil
+        else
+          ent
+        end
+      end
+
+      def []=(idx,val)
+        if self.has_key?(idx) && Thread.current.group != ThreadGroup::Default
+          fail SecurityError,"cannot change the entried command"
+        end
+        @tbl[idx] = val
+      end
+
+      def delete(idx, &blk)
+        # if gets an entry, is permited to delete
+        if self[idx]
+          @tbl.delete(idx) 
+        elsif blk
+          blk.call(idx)
+        else
+          nil
+        end
+      end
+
+      def each(&blk)
+        if Thread.current.group == ThreadGroup::Default
+          @tbl.each(&blk)
+        else
+          ip = MultiTkIp.__getip
+          @tbl.each{|idx, ent|
+            blk.call(idx, ent) unless ent.respond_to?(:ip) && ent.ip != ip
+          }
+        end
+        self
+      end
+
+      def has_key?(k)
+        @tbl.has_key?(k)
+      end
+      alias include? has_key?
+      alias key? has_key?
+      alias member? has_key?
+    end
+
+    @@TK_CMD_TBL.freeze
+  end
 
   ######################################
 
@@ -876,6 +951,8 @@ class MultiTkIp
   private :__create_safetk_frame
 
   def __create_safe_slave_obj(safe_opts, app_name, tk_opts)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     # safe interpreter
     ip_name = _create_slave_ip_name
     slave_ip = @interp.create_slave(ip_name, true)
@@ -917,6 +994,8 @@ class MultiTkIp
   end
 
   def __create_trusted_slave_obj(name, keys)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     ip_name = _create_slave_ip_name
     slave_ip = @interp.create_slave(ip_name, false)
     slave_ip._invoke('set', 'argv0', name) if name.kind_of?(String)
@@ -929,6 +1008,8 @@ class MultiTkIp
   ######################################
 
   def _create_slave_object(keys={})
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     ip = MultiTkIp.new_slave(self, keys={})
     @slave_ip_tbl[ip.name] = ip
   end
@@ -1056,6 +1137,7 @@ class MultiTkIp
   ######################################
 
   def _default_delete_hook(slave)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @slave_ip_tbl.delete(slave)
     top = @slave_ip_top.delete(slave)
     if top.kind_of?(String)
@@ -1090,6 +1172,7 @@ class MultiTkIp
     __getip._ip_id_
   end
   def _ip_id_
+    # for RemoteTkIp
     ''
   end
 
@@ -1192,19 +1275,21 @@ end
 class MultiTkIp
   def inspect
     s = self.to_s.chop!
-    if master?
-      if @interp.deleted?
-        s << ':deleted-master'
+    if self.manipulable?
+      if master?
+        if @interp.deleted?
+          s << ':deleted-master'
+        else
+          s << ':master'
+        end
       else
-        s << ':master'
-      end
-    else
-      if @interp.deleted?
-        s << ':deleted-slave'
-      elsif @interp.safe?
-        s << ':safe-slave'
-      else
-        s << ':trusted-slave'
+        if @interp.deleted?
+          s << ':deleted-slave'
+        elsif @interp.safe?
+          s << ':safe-slave'
+        else
+          s << ':trusted-slave'
+        end
       end
     end
     s << '>'
@@ -1229,6 +1314,7 @@ class MultiTkIp
   end
 
   def alive?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     begin
       return false unless @cmd_receiver.alive?
       return false if @interp.deleted?
@@ -1262,6 +1348,7 @@ class MultiTkIp
   end
 
   def slaves(all = false)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp','slaves').split.map!{|name| 
       if @slave_ip_tbl.key?(name)
         @slave_ip_tbl[name]
@@ -1275,6 +1362,20 @@ class MultiTkIp
   def self.slaves(all = false)
     __getip.slaves(all)
   end
+
+  def manipulable?
+    return true if (Thread.current.group == ThreadGroup::Default)
+    ip = MultiTkIp.__getip
+    (ip == self) || ip._is_master_of?(@interp)
+  end
+  def self.manipulable?
+    true
+  end
+
+  def _is_master_of?(tcltkip_obj)
+    tcltkip_obj.slave_of?(@interp)
+  end
+  protected :_is_master_of?
 end
 
 
@@ -1403,6 +1504,7 @@ class MultiTkIp
   # instance method
   def eval_proc_core(req_val, cmd, *args)
     # check
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     unless cmd.kind_of?(Proc) || cmd.kind_of?(Method)
       raise RuntimeError, "A Proc/Method object is expected for the 'cmd' argument"
     end
@@ -1870,6 +1972,7 @@ end
 # depend on TclTkIp
 class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     #return self if self.slave?
     #return self if self != @@DEFAULT_MASTER
     if self != @@DEFAULT_MASTER
@@ -1978,26 +2081,32 @@ class MultiTkIp
   end
 
   def make_safe
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.make_safe
   end
 
   def safe?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.safe?
   end
 
   def safe_base?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @safe_base
   end
 
   def allow_ruby_exit?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.allow_ruby_exit?
   end
 
   def allow_ruby_exit= (mode)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.allow_ruby_exit = mode
   end
 
   def delete
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @slave_ip_tbl.each{|name, subip|
       _destroy_slaves_of_slaveIP(subip)
 =begin
@@ -2060,19 +2169,23 @@ class MultiTkIp
   end
 
   def deleted?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.deleted?
   end
 
   def has_mainwindow?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.has_mainwindow?
   end
 
   def invalid_namespace?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.invalid_namespace?
   end
 
   def abort(msg = nil)
-    if master?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+    if master? && !safe? && allow_ruby_exit?
       if msg
         Kernel.abort(msg)
       else
@@ -2086,7 +2199,8 @@ class MultiTkIp
   end
 
   def exit(st = true)
-    if master?
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+    if master? && !safe? && allow_ruby_exit?
       Kernel.exit(st)
     else
       delete
@@ -2095,6 +2209,7 @@ class MultiTkIp
   end
 
   def exit!(st = false)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if master? && !safe? && allow_ruby_exit?
       Kernel.exit!(st)
     else
@@ -2104,6 +2219,8 @@ class MultiTkIp
   end
 
   def restart(app_name = nil, keys = {})
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     _init_ip_internal(@@INIT_IP_ENV, @@ADD_TK_PROCS)
 
     @interp._invoke('set', 'argv0', app_name) if app_name
@@ -2115,102 +2232,130 @@ class MultiTkIp
   end
 
   def __eval(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.__eval(str)
   end
 
   def __invoke(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.__invoke(*args)
   end
 
   def _eval(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._eval(str)
   end
 
   def _invoke(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke(*args)
   end
 
   def _eval_without_enc(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._eval_without_enc(str)
   end
 
   def _invoke_without_enc(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke_without_enc(*args)
   end
 
   def _eval_with_enc(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._eval_with_enc(str)
   end
 
   def _invoke_with_enc(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke_with_enc(*args)
   end
 
   def _toUTF8(str, encoding=nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._toUTF8(str, encoding)
   end
 
   def _fromUTF8(str, encoding=nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._fromUTF8(str, encoding)
   end
 
   def _thread_vwait(var)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._thread_vwait(var)
   end
 
   def _thread_tkwait(mode, target)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._thread_tkwait(mode, target)
   end
 
   def _return_value
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._return_value
   end
 
   def _get_variable(var, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._get_variable(var, flag)
   end
   def _get_variable2(var, idx, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._get_variable2(var, idx, flag)
   end
   def _set_variable(var, value, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._set_variable(var, value, flag)
   end
   def _set_variable2(var, idx, value, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._set_variable2(var, idx, value, flag)
   end
   def _unset_variable(var, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._unset_variable(var, flag)
   end
   def _unset_variable2(var, idx, flag)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._unset_variable2(var, idx, flag)
   end
 
   def _get_global_var(var)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._get_global_var(var)
   end
   def _get_global_var2(var, idx)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._get_global_var2(var, idx)
   end
   def _set_global_var(var, value)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._set_global_var(var, value)
   end
   def _set_global_var2(var, idx, value)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._set_global_var2(var, idx, value)
   end
   def _unset_global_var(var)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._unset_global_var(var)
   end
   def _unset_global_var2(var, idx)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._unset_global_var2(var, idx)
   end
 
   def _split_tklist(str)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._split_tklist(str)
   end
   def _merge_tklist(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._merge_tklist(*args)
   end
   def _conv_listelement(arg)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._conv_listelement(arg)
   end
 end
@@ -2261,6 +2406,7 @@ class MultiTkIp
   private :_slavearg
 
   def alias_info(slave, cmd_name)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     _lst2ary(@interp._invoke('interp', 'alias', _slavearg(slave), cmd_name))
   end
   def self.alias_info(slave, cmd_name)
@@ -2268,6 +2414,7 @@ class MultiTkIp
   end
 
   def alias_delete(slave, cmd_name)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'alias', _slavearg(slave), cmd_name, '')
     self
   end
@@ -2277,6 +2424,7 @@ class MultiTkIp
   end
 
   def def_alias(slave, new_cmd, org_cmd, *args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     ret = @interp._invoke('interp', 'alias', _slavearg(slave), new_cmd, 
                           '', org_cmd, *args)
     (ret == new_cmd)? self: nil
@@ -2287,6 +2435,7 @@ class MultiTkIp
   end
 
   def aliases(slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     _lst2ary(@interp._invoke('interp', 'aliases', _slavearg(slave)))
   end
   def self.aliases(slave = '')
@@ -2294,6 +2443,7 @@ class MultiTkIp
   end
 
   def delete_slaves(*args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     slaves = args.collect{|s| _slavearg(s)}
     @interp._invoke('interp', 'delete', *slaves) if slaves.size > 0
     self
@@ -2304,6 +2454,7 @@ class MultiTkIp
   end
 
   def exist?(slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     ret = @interp._invoke('interp', 'exists', _slavearg(slave))
     (ret == '1')? true: false
   end
@@ -2312,6 +2463,7 @@ class MultiTkIp
   end
 
   def delete_cmd(slave, cmd)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     slave_invoke = @interp._invoke('list', 'rename', cmd, '')
     @interp._invoke('interp', 'eval', _slavearg(slave), slave_invoke)
     self
@@ -2322,6 +2474,7 @@ class MultiTkIp
   end
 
   def expose_cmd(slave, cmd, aliasname = nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if aliasname
       @interp._invoke('interp', 'expose', _slavearg(slave), cmd, aliasname)
     else
@@ -2335,6 +2488,7 @@ class MultiTkIp
   end
 
   def hide_cmd(slave, cmd, aliasname = nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if aliasname
       @interp._invoke('interp', 'hide', _slavearg(slave), cmd, aliasname)
     else
@@ -2348,6 +2502,7 @@ class MultiTkIp
   end
 
   def hidden_cmds(slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     _lst2ary(@interp._invoke('interp', 'hidden', _slavearg(slave)))
   end
   def self.hidden_cmds(slave = '')
@@ -2355,6 +2510,7 @@ class MultiTkIp
   end
 
   def invoke_hidden(slave, cmd, *args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if args[-1].kind_of?(Hash)
       keys = _symbolkey2str(args.pop)
     else
@@ -2374,6 +2530,7 @@ class MultiTkIp
   end
 
   def invoke_hidden_on_global(slave, cmd, *args)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if args[-1].kind_of?(Hash)
       keys = _symbolkey2str(args.pop)
     else
@@ -2395,6 +2552,7 @@ class MultiTkIp
 
   def invoke_hidden_on_namespace(slave, ns, cmd, *args)
     # for Tcl8.5 or later
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     if args[-1].kind_of?(Hash)
       keys = _symbolkey2str(args.pop)
     else
@@ -2411,6 +2569,7 @@ class MultiTkIp
   end
 
   def mark_trusted(slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'marktrusted', _slavearg(slave))
     self
   end
@@ -2420,6 +2579,8 @@ class MultiTkIp
   end
 
   def set_bgerror_handler(cmd = Proc.new, slave = nil, &b)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     unless TkComm._callback_entry?(cmd)
       if !slave && b
         slave = cmd
@@ -2435,6 +2596,7 @@ class MultiTkIp
   end
 
   def get_bgerror_handler(slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     procedure(@interp._invoke('interp', 'bgerror', _slavearg(slave)))
   end
   def self.bgerror(slave = '')
@@ -2442,6 +2604,7 @@ class MultiTkIp
   end
 
   def set_limit(limit_type, slave = '', opts = {})
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'limit', _slavearg(slave), limit_type, opts)
   end
   def self.set_limit(limit_type, slave = '', opts = {})
@@ -2449,6 +2612,8 @@ class MultiTkIp
   end
 
   def get_limit(limit_type, slave = '', slot = nil)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
     if slot
       num_or_str(@interp._invoke('interp', 'limit', _slavearg(slave), 
                                  limit_type, slot))
@@ -2472,6 +2637,7 @@ class MultiTkIp
   end
 
   def recursion_limit(slave = '', limit = None)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     number(@interp._invoke('interp', 'recursionlimit', 
                            _slavearg(slave), limit))
   end
@@ -2480,6 +2646,7 @@ class MultiTkIp
   end
 
   def alias_target(aliascmd, slave = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'target', _slavearg(slave), aliascmd)
   end
   def self.alias_target(aliascmd, slave = '')
@@ -2487,6 +2654,7 @@ class MultiTkIp
   end
 
   def share_stdin(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'share', src, 'stdin', dist)
     self
   end
@@ -2496,6 +2664,7 @@ class MultiTkIp
   end
 
   def share_stdout(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'share', src, 'stdout', dist)
     self
   end
@@ -2505,6 +2674,7 @@ class MultiTkIp
   end
 
   def share_stderr(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'share', src, 'stderr', dist)
     self
   end
@@ -2514,6 +2684,7 @@ class MultiTkIp
   end
 
   def transfer_stdin(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'transfer', src, 'stdin', dist)
     self
   end
@@ -2523,6 +2694,7 @@ class MultiTkIp
   end
 
   def transfer_stdout(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'transfer', src, 'stdout', dist)
     self
   end
@@ -2532,6 +2704,7 @@ class MultiTkIp
   end
 
   def transfer_stderr(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'transfer', src, 'stderr', dist)
     self
   end
@@ -2541,6 +2714,7 @@ class MultiTkIp
   end
 
   def share_stdio(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'share', src, 'stdin',  dist)
     @interp._invoke('interp', 'share', src, 'stdout', dist)
     @interp._invoke('interp', 'share', src, 'stderr', dist)
@@ -2552,6 +2726,7 @@ class MultiTkIp
   end
 
   def transfer_stdio(dist, src = '')
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._invoke('interp', 'transfer', src, 'stdin',  dist)
     @interp._invoke('interp', 'transfer', src, 'stdout', dist)
     @interp._invoke('interp', 'transfer', src, 'stderr', dist)
@@ -2586,8 +2761,12 @@ class MultiTkIp
       conf = _lst2ary(ip._eval("::safe::interpConfigure " + 
                                @ip_name + " -#{slot}"))
       if conf[0] == '-deleteHook'
+=begin
         if conf[1] =~ /^rb_out\S* (c(_\d+_)?\d+)/
           ret[conf[0][1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
+=end
+        if conf[1] =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+          ret[conf[0][1..-1]] = MultiTkIp._tk_cmd_tbl[$4]
         else
           ret[conf[0][1..-1]] = conf[1]
         end
@@ -2598,8 +2777,12 @@ class MultiTkIp
       Hash[*_lst2ary(ip._eval("::safe::interpConfigure " + 
                               @ip_name))].each{|k, v|
         if k == '-deleteHook'
+=begin
           if v =~ /^rb_out\S* (c(_\d+_)?\d+)/
             ret[k[1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
+=end
+          if v =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+            ret[k[1..-1]] = MultiTkIp._tk_cmd_tbl[$4]
           else
             ret[k[1..-1]] = v
           end
@@ -2636,18 +2819,22 @@ end
 # encoding convert
 class MultiTkIp
   def encoding
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.encoding
   end
   def encoding=(enc)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.encoding = enc
   end
 
   def encoding_convertfrom(str, enc=None)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.encoding_convertfrom(str, enc)
   end
   alias encoding_convert_from encoding_convertfrom
 
   def encoding_convertto(str, enc=None)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp.encoding_convertto(str, enc)
   end
   alias encoding_convert_to encoding_convertto

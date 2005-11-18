@@ -1,3 +1,19 @@
+Fri Nov 18 17:35:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: add restriction to access the entried
+	  command table and manipulate other IPs (for reason of security).
+	  Now, a IP object can be controlled by only its master IP or the 
+	  default IP. 
+
+	* ext/tk/lib/remote-tk.rb: add restriction to manipulate.
+
+	* ext/tk/tcltklib.c (ip_is_slave_of_p): add TclTkIp#slave_of?(ip) 
+	  to check manipulability. 
+
+	* ext/tk/lib/tk.rb: bug fix on handling of Tcl's namespaces.
+
+	* ext/tk/lib/tk/namespace.rb: ditto.
+
 Fri Nov 18 16:47:33 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (file_s_dirname): added checks for some patterns with drive

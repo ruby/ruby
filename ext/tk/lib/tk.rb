@@ -16,6 +16,7 @@ class TclTkIp
   alias _invoke_without_enc _invoke
 
   def _ip_id_
+    # for RemoteTkIp
     ''
   end
 end
@@ -189,6 +190,7 @@ module TkComm
   module_function :_at
 
   def tk_tcl2ruby(val, enc_mode = false, listobj = true)
+=begin
     if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #return Tk_CMDTBL[$1]
       return TkCore::INTERP.tk_cmd_tbl[$1]
@@ -198,6 +200,10 @@ module TkComm
       #else
       #  cmd_obj.cmd
       #end
+    end
+=end
+    if val =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+      return TkCore::INTERP.tk_cmd_tbl[$4]
     end
     #if val.include? ?\s
     #  return val.split.collect{|v| tk_tcl2ruby(v)}
@@ -601,10 +607,14 @@ end
     end
   end
   def procedure(val)
+=begin
     if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #Tk_CMDTBL[$1]
       #TkCore::INTERP.tk_cmd_tbl[$1]
       TkCore::INTERP.tk_cmd_tbl[$1].cmd
+=end
+    if val =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+      return TkCore::INTERP.tk_cmd_tbl[$4].cmd
     else
       #nil
       val
@@ -783,6 +793,13 @@ end
 
   def install_cmd(cmd)
     return '' if cmd == ''
+    begin
+      ns = TkCore::INTERP._invoke_without_enc('namespace', 'current')
+      ns = nil if ns == '::' # for backward compatibility
+    rescue
+      # probably, Tcl7.6
+      ns = nil
+    end
     id = _next_cmd_id
     #Tk_CMDTBL[id] = cmd
     if cmd.kind_of?(TkCallbackEntry)
@@ -794,10 +811,15 @@ end
     @cmdtbl.taint unless @cmdtbl.tainted?
     @cmdtbl.push id
     #return Kernel.format("rb_out %s", id);
-    return 'rb_out' + TkCore::INTERP._ip_id_ + ' ' + id
+    if ns
+      'rb_out' << TkCore::INTERP._ip_id_ << ' ' << ns << ' ' << id
+    else
+      'rb_out' << TkCore::INTERP._ip_id_ << ' ' << id
+    end
   end
   def uninstall_cmd(id)
-    id = $1 if /rb_out\S* (c(_\d+_)?\d+)/ =~ id
+    #id = $1 if /rb_out\S* (c(_\d+_)?\d+)/ =~ id
+    id = $4 if id =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
     #Tk_CMDTBL.delete(id)
     TkCore::INTERP.tk_cmd_tbl.delete(id)
   end
@@ -915,9 +937,13 @@ module TkComm
   def _bindinfo(what, context=nil)
     if context
       tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]) .collect {|cmdline|
+=begin
         if cmdline =~ /^rb_out\S* (c(?:_\d+_)?\d+)\s+(.*)$/
           #[Tk_CMDTBL[$1], $2]
           [TkCore::INTERP.tk_cmd_tbl[$1], $2]
+=end
+        if cmdline =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+          [TkCore::INTERP.tk_cmd_tbl[$4], $5]
         else
           cmdline
         end
@@ -1081,6 +1107,13 @@ module TkCore
 
     INTERP.instance_eval{
       @tk_cmd_tbl = {}.taint
+      def @tk_cmd_tbl.[]=(idx,val)
+        if self.has_key?(idx) && Thread.current.group != ThreadGroup::Default
+          fail SecurityError,"cannot change the entried command"
+        end
+        super(idx,val)
+      end
+
       @tk_windows = {}.taint
 
       @tk_table_list = [].taint
@@ -1190,6 +1223,28 @@ module TkCore
   INTERP.add_tk_procs(TclTkLib::FINALIZE_PROC_NAME, '', 
                       "bind all <#{WIDGET_DESTROY_HOOK}> {}")
 
+  INTERP.add_tk_procs('rb_out', 'ns args', <<-'EOL')
+    if [regexp {^::} $ns] {
+      set cmd {namespace eval $ns {ruby_cmd TkCore callback} $args}
+    } else {
+      set cmd {eval {ruby_cmd TkCore callback} $ns $args}
+    }
+    if {[set st [catch $cmd ret]] != 0} {
+       #return -code $st $ret
+       set idx [string first "\n\n" $ret]
+       if {$idx > 0} {
+          return -code $st \
+                 -errorinfo [string range $ret [expr $idx + 2] \
+                                               [string length $ret]] \
+                 [string range $ret 0 [expr $idx - 1]]
+       } else {
+          return -code $st $ret
+       }
+    } else {
+        return $ret
+    }
+  EOL
+=begin
   INTERP.add_tk_procs('rb_out', 'args', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkCore callback} $args} ret]] != 0} {
        #return -code $st $ret
@@ -1206,6 +1261,7 @@ module TkCore
         return $ret
     }
   EOL
+=end
 =begin
   INTERP.add_tk_procs('rb_out', 'args', <<-'EOL')
     #regsub -all {\\} $args {\\\\} args
@@ -4443,7 +4499,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-10-24'.freeze
+  RELEASE_DATE = '2005-11-18'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
