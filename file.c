@@ -2689,7 +2689,7 @@ rb_file_s_dirname(klass, fname)
     root = skiproot(name);
 #ifdef DOSISH_UNC
     if (root > name + 1 && isdirsep(*name))
-	root = skipprefix(name = root - 2);
+	name = root - 2;
 #else
     if (root > name + 1)
 	name = root - 1;
@@ -2700,9 +2700,16 @@ rb_file_s_dirname(klass, fname)
     }
     if (p == name)
 	return rb_str_new2(".");
+#ifdef DOSISH_DRIVE_LETTER
+    if (has_drive_letter(name) && isdirsep(*(name + 2))) {
+	dirname = rb_str_new(name, 3);
+	rb_str_cat(dirname, skiproot(name + 2), p - skiproot(name + 2));
+    }
+    else
+#endif
     dirname = rb_str_new(name, p - name);
 #ifdef DOSISH_DRIVE_LETTER
-    if (root == name + 2 && name[1] == ':')
+    if (has_drive_letter(name) && root == name + 2 && p - name == 2)
 	rb_str_cat(dirname, ".", 1);
 #endif
     OBJ_INFECT(dirname, fname);

@@ -43,4 +43,75 @@ class TestPath < Test::Unit::TestCase
     assert_equal("//", File.expand_path(".", "//"))
     assert_equal("//sub", File.expand_path("sub", "//"))
   end
+
+  def test_dirname # [ruby-dev:27738]
+    if /(bcc|ms)win\d|mingw|cygwin|djgpp|human|emx/ =~ RUBY_PLATFORM
+      # DOSISH_DRIVE_LETTER
+      assert_equal('C:.', File.dirname('C:'))
+      assert_equal('C:.', File.dirname('C:a'))
+      assert_equal('C:.', File.dirname('C:a/'))
+      assert_equal('C:a', File.dirname('C:a/b'))
+      assert_equal('C:/', File.dirname('C:/'))
+      assert_equal('C:/', File.dirname('C://'))
+      assert_equal('C:/', File.dirname('C:///'))
+      assert_equal('C:/', File.dirname('C:/a'))
+      assert_equal('C:/', File.dirname('C://a'))
+      assert_equal('C:/', File.dirname('C:///a'))
+      assert_equal('C:/', File.dirname('C:/a/'))
+      assert_equal('C:/', File.dirname('C://a/'))
+      assert_equal('C:/', File.dirname('C:///a/'))
+      assert_equal('C:/a', File.dirname('C:/a/b'))
+      assert_equal('C:/a', File.dirname('C://a/b'))
+      assert_equal('C:/a', File.dirname('C:///a/b'))
+    else
+      # others
+      assert_equal('.', File.dirname('C:'))
+      assert_equal('.', File.dirname('C:a'))
+      assert_equal('.', File.dirname('C:a/'))
+      assert_equal('C:a', File.dirname('C:a/b'))
+      assert_equal('.', File.dirname('C:/'))
+      assert_equal('.', File.dirname('C://'))
+      assert_equal('.', File.dirname('C:///'))
+      assert_equal('C:', File.dirname('C:/a'))
+      assert_equal('C:', File.dirname('C://a'))
+      assert_equal('C:', File.dirname('C:///a'))
+      assert_equal('C:', File.dirname('C:/a/'))
+      assert_equal('C:', File.dirname('C://a/'))
+      assert_equal('C:', File.dirname('C:///a/'))
+      assert_equal('C:/a', File.dirname('C:/a/b'))
+      # these show current implementation, but they are not spec.
+      #assert_equal('C://a', File.dirname('C://a/b'))
+      #assert_equal('C:///a', File.dirname('C:///a/b'))
+    end
+
+    assert_equal('.', File.dirname(''))
+    assert_equal('.', File.dirname('a'))
+    assert_equal('.', File.dirname('a/'))
+    assert_equal('a', File.dirname('a/b'))
+    assert_equal('/', File.dirname('/'))
+    assert_equal('/', File.dirname('/a'))
+    assert_equal('/', File.dirname('/a/'))
+    assert_equal('/a', File.dirname('/a/b'))
+    if /(bcc|ms|cyg)win|mingw|djgpp|human|emx/ =~ RUBY_PLATFORM
+      # DOSISH_UNC
+      assert_equal('//', File.dirname('//'))
+      assert_equal('//', File.dirname('//a'))
+      assert_equal('//', File.dirname('//a/'))
+      assert_equal('//a', File.dirname('//a/b'))
+      assert_equal('//', File.dirname('///'))
+      assert_equal('//', File.dirname('///a'))
+      assert_equal('//', File.dirname('///a/'))
+      assert_equal('//a', File.dirname('///a/b'))
+    else
+      # others
+      assert_equal('/', File.dirname('//'))
+      assert_equal('/', File.dirname('//a'))
+      assert_equal('/', File.dirname('//a/'))
+      assert_equal('/a', File.dirname('//a/b'))
+      assert_equal('/', File.dirname('///'))
+      assert_equal('/', File.dirname('///a'))
+      assert_equal('/', File.dirname('///a/'))
+      assert_equal('/a', File.dirname('///a/b'))
+    end
+  end
 end
