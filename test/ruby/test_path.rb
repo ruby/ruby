@@ -44,7 +44,7 @@ class TestPath < Test::Unit::TestCase
     assert_equal("//sub", File.expand_path("sub", "//"))
   end
 
-  def test_dirname_special # [ruby-dev:27738]
+  def test_dirname # [ruby-dev:27738]
     if /(bcc|ms)win\d|mingw|cygwin|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_DRIVE_LETTER
       assert_equal('C:.', File.dirname('C:'))
