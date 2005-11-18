@@ -2638,9 +2638,16 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
     }
     if (p == name)
 	return rb_str_new2(".");
+#ifdef DOSISH_DRIVE_LETTER
+    if (has_drive_letter(name) && isdirsep(*(name + 2))) {
+	dirname = rb_str_new(name, 3);
+	rb_str_cat(dirname, skiproot(name + 2), p - skiproot(name + 2));
+    }
+    else
+#endif
     dirname = rb_str_new(name, p - name);
 #ifdef DOSISH_DRIVE_LETTER
-    if (root == name + 2 && name[1] == ':')
+    if (has_drive_letter(name) && root == name + 2 && p - name == 2)
 	rb_str_cat(dirname, ".", 1);
 #endif
     OBJ_INFECT(dirname, fname);
