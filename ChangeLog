@@ -1,3 +1,8 @@
+Sat Nov 19 19:57:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::ln): ln documentation fix.
+	  [ruby-core:06661]
+
 Sat Nov 19 08:19:38 2005  Zach Dennis  <zdennis@mktec.com>
 
 	* ext/socket/socket.c: Socket Documentation. [ruby-core:6580]
