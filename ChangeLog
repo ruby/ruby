@@ -1,3 +1,8 @@
+Sat Nov 19 19:57:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::ln): ln documentation fix.
+	  [ruby-core:06661]
+
 Sat Nov 19 07:34:32 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/font.rb: remove dependency on Ruby's version (1.8
