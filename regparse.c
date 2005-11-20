@@ -2621,6 +2621,8 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
   tok->type = TK_CHAR;
   tok->base = 0;
   tok->u.c  = c;
+  tok->escaped = 0;
+
   if (c == ']') {
     tok->type = TK_CC_CLOSE;
   }

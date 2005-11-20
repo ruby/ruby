@@ -1,3 +1,8 @@
+Sun Nov 20 21:39:27 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+
+	* regparse.c (fetch_token_in_cc): tok->escaped should be
+	  initialized.  [ruby-dev:27763]
+
 Sun Nov 20 22:34:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_symname_p): [ not followed by ] is not valid symbol.
