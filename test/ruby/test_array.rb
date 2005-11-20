@@ -97,6 +97,17 @@ class TestArray < Test::Unit::TestCase
     x = [1,2,3]
     x.concat(x)
     assert_equal([1,2,3,1,2,3], x)
+
+    x = [1,2,3]
+    x.clear
+    assert_equal([], x)
+
+    x = [1,2,3]
+    y = x.dup
+    x << 4
+    y << 5
+    assert_equal([1,2,3,4], x)
+    assert_equal([1,2,3,5], y)
   end
 
   def test_find_all
