@@ -5956,7 +5956,8 @@ rb_symname_p(name)
 	break;
 
       case '[':
-	if (*++m == ']' && *++m == '=') ++m;
+	if (*++m != ']') return Qfalse;
+	if (*++m == '=') ++m;
 	break;
 
       default:
