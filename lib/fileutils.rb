@@ -274,7 +274,7 @@ module FileUtils
   # <b><tt>ln(old, new, options = {})</tt></b>
   #
   # Creates a hard link +new+ which points to +old+.
-  # If +new+ already exists and it is a directory, creates a symbolic link +new/old+.
+  # If +new+ already exists and it is a directory, creates a link +new/old+.
   # If +new+ already exists and it is not a directory, raises Errno::EEXIST.
   # But if :force option is set, overwrite +new+.
   # 
