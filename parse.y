@@ -8373,7 +8373,8 @@ rb_symname_p(const char *name)
 	break;
 
       case '[':
-	if (*++m == ']' && *++m == '=') ++m;
+	if (*++m != ']') return Qfalse;
+	if (*++m == '=') ++m;
 	break;
 
       default:

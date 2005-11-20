@@ -1,3 +1,8 @@
+Sun Nov 20 22:34:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_symname_p): [ not followed by ] is not valid symbol.
+	  fixed: [ruby-talk:166520]
+
 Sat Nov 19 19:57:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::ln): ln documentation fix.
@@ -25,13 +30,13 @@ Fri Nov 18 17:35:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add restriction to access the entried
 	  command table and manipulate other IPs (for reason of security).
-	  Now, a IP object can be controlled by only its master IP or the 
-	  default IP. 
+	  Now, a IP object can be controlled by only its master IP or the
+	  default IP.
 
 	* ext/tk/lib/remote-tk.rb: add restriction to manipulate.
 
-	* ext/tk/tcltklib.c (ip_is_slave_of_p): add TclTkIp#slave_of?(ip) 
-	  to check manipulability. 
+	* ext/tk/tcltklib.c (ip_is_slave_of_p): add TclTkIp#slave_of?(ip)
+	  to check manipulability.
 
 	* ext/tk/lib/tk.rb: bug fix on handling of Tcl's namespaces.
 
