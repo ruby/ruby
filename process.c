@@ -1256,6 +1256,9 @@ rb_f_exec(argc, argv)
  *  of its children or use <code>Process.detach</code> to register
  *  disinterest in their status; otherwise, the operating system
  *  may accumulate zombie processes.
+ *
+ *  The thread calling fork is the only thread in the created child process.
+ *  fork doesn't copy other threads.
  */
 
 static VALUE
