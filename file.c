@@ -2634,7 +2634,7 @@ rb_file_s_basename(argc, argv)
 {
     VALUE fname, fext, basename;
     char *name, *p;
-#ifdef DOSISH
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     char *root;
 #endif
     int f;
@@ -2646,7 +2646,7 @@ rb_file_s_basename(argc, argv)
     if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
 	return fname;
     name = skipprefix(name);
-#ifdef DOSISH
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     root = name;
 #endif
     while (isdirsep(*name))
@@ -2654,7 +2654,7 @@ rb_file_s_basename(argc, argv)
     if (!*name) {
 	p = name - 1;
 	f = 1;
-#ifdef DOSISH
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
 	if (name != root) {
 	    /* has slashes */
 	}
