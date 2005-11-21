@@ -20,7 +20,7 @@ Sat Nov 19 19:57:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Nov 19 08:19:38 2005  Zach Dennis  <zdennis@mktec.com>
 
-	* ext/socket/socket.c: Socket Documentation. [ruby-core:6580]
+	* ext/socket/socket.c: Socket Documentation. [ruby-core:6552]
 
 Sat Nov 19 07:34:32 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
