@@ -28,6 +28,7 @@ optionparser.rb
 pathname.rb
 pstore.rb
 rational.rb
+rinda
 resolv.rb
 set.rb
 shellwords.rb
@@ -37,5 +38,6 @@ test/unit.rb
 thread.rb
 thwait.rb
 time.rb
+timeout.rb
 uri
 yaml.rb
