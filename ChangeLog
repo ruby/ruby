@@ -1,3 +1,8 @@
+Tue Nov 22 01:45:21 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_basename): DOSISH_UNC is defined on cygwin but
+	  DOSISH is not.  fixed: [ruby-dev:27797]
+
 Mon Nov 21 22:50:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_path_skip_prefix, rb_file_s_basename): UNC without path
