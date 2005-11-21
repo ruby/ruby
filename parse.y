@@ -3864,12 +3864,19 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 			    yyerror("empty symbol literal");
 			}
 			else {
+			    VALUE lit;
+
 			    switch (nd_type($$)) {
 			      case NODE_DSTR:
 				nd_set_type($$, NODE_DSYM);
 				break;
 			      case NODE_STR:
-				if (strlen(RSTRING($$->nd_lit)->ptr) == RSTRING($$->nd_lit)->len) {
+				lit = $$->nd_lit;
+				if (RSTRING(lit)->len == 0) {
+				    yyerror("empty symbol literal");
+				    break;
+				}
+				if (strlen(RSTRING(lit)->ptr) == RSTRING(lit)->len) {
 				    $$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
 				    nd_set_type($$, NODE_LIT);
 				    break;
