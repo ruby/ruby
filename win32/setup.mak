@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 	@del rtname.*
 
 -version-: nul
-	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" | findstr /v /r ^^$$ >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >>$(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
@@ -140,7 +140,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 -epilogue-: nul
 !if exist(confargs.c)
-	@$(CPP) confargs.c | findstr /v /r ^^$$ >> $(MAKEFILE)
+	@$(CPP) confargs.c >> $(MAKEFILE)
 	@del confargs.c
 !endif
 	@type << >>$(MAKEFILE)
