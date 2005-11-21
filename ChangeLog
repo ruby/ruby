@@ -1,7 +1,10 @@
-Mon Nov 21 22:19:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Nov 21 22:50:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_path_skip_prefix, rb_file_s_basename): UNC without path
 	  should not be splitted.  fixed: [ruby-dev:27776] [ruby-dev:27786]
+
+	* parse.y (dsym): prohibit empty symbol literal by interpolation.
+	  fixed: [ruby-talk:166529]
 
 Mon Nov 21 16:03:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
