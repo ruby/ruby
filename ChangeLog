@@ -1,3 +1,8 @@
+Mon Nov 21 16:03:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/setup.mk: findstr doesn't exist on win9x.
+	  fixed: [ruby-dev:27756]
+
 Sun Nov 20 22:34:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_symname_p): [ not followed by ] is not valid symbol.
