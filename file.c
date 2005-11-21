@@ -2266,7 +2266,11 @@ rb_path_next(s)
     return (char *)s;
 }
 
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 #define skipprefix rb_path_skip_prefix
+#else
+#define skipprefix(path) (path)
+#endif
 char *
 rb_path_skip_prefix(path)
     const char *path;
@@ -2274,7 +2278,7 @@ rb_path_skip_prefix(path)
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 #ifdef DOSISH_UNC
     if (isdirsep(path[0]) && isdirsep(path[1])) {
-	if (*(path = nextdirsep(path + 2)))
+	if (*(path = nextdirsep(path + 2)) && path[1] && !isdirsep(path[1]))
 	    path = nextdirsep(path + 1);
 	return (char *)path;
     }
@@ -2630,6 +2634,9 @@ rb_file_s_basename(argc, argv)
 {
     VALUE fname, fext, basename;
     char *name, *p;
+#ifdef DOSISH
+    char *root;
+#endif
     int f;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
@@ -2638,14 +2645,30 @@ rb_file_s_basename(argc, argv)
     StringValue(fname);
     if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
 	return fname;
-    if (!*(name = skiproot(name))) {
+    name = skipprefix(name);
+#ifdef DOSISH
+    root = name;
+#endif
+    while (isdirsep(*name))
+	name++;
+    if (!*name) {
 	p = name - 1;
 	f = 1;
+#ifdef DOSISH
+	if (name != root) {
+	    /* has slashes */
+	}
 #ifdef DOSISH_DRIVE_LETTER
-	if (*p == ':') {
+	else if (*p == ':') {
 	    p++;
 	    f = 0;
 	}
+#endif
+#ifdef DOSISH_UNC
+	else {
+	    p = "/";
+	}
+#endif
 #endif
     }
     else if (!(p = strrdirsep(name))) {
