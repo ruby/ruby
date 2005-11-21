@@ -14,6 +14,7 @@ require 'tkextlib/tile/setup.rb'
 # load package
 # TkPackage.require('tile', '0.4')
 # TkPackage.require('tile', '0.6')
+# TkPackage.require('tile', '0.7')
 verstr = TkPackage.require('tile')
 ver = verstr.split('.')
 if ver[0].to_i == 0 && ver[1].to_i <= 4
@@ -21,6 +22,7 @@ if ver[0].to_i == 0 && ver[1].to_i <= 4
   module Tk
     module Tile
       USE_TILE_NAMESPACE = true
+      USE_TTK_NAMESPACE  = false
       TILE_SPEC_VERSION_ID = 0
     end
   end
@@ -29,6 +31,7 @@ elsif ver[0].to_i == 0 && ver[1].to_i <= 6
   module Tk
     module Tile
       USE_TILE_NAMESPACE = true
+      USE_TTK_NAMESPACE  = true
       TILE_SPEC_VERSION_ID = 5
     end
   end
@@ -37,6 +40,7 @@ else
   module Tk
     module Tile
       USE_TILE_NAMESPACE = false
+      USE_TTK_NAMESPACE  = true
       TILE_SPEC_VERSION_ID = 7
     end
   end
@@ -61,7 +65,7 @@ module Tk
     end
 
     def self.__Import_Tile_Widgets__!
-      Tk.tk_call('namespace', 'import', 'ttk::*')
+      Tk.tk_call('namespace', 'import', '-force', 'ttk::*')
     end
 
     def self.load_images(imgdir, pat=TkComm::None)
