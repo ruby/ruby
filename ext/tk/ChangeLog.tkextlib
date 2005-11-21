@@ -1,3 +1,8 @@
+2005-11-22  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/tile.rb: bug fix (Tk::Tile::USE_TTK_NAMESPACE
+	  is not defined).
+
 2005-11-19  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* sample/tkextlib/treectrl/demo.rb: remove dependency on Ruby's 
