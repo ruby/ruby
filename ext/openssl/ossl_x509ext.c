@@ -26,9 +26,12 @@
     OSSL_Check_Kind(obj, cX509Ext); \
     GetX509Ext(obj, ext); \
 } while (0)
-
-#define MakeX509ExtFactory(klass, obj, ctx) \
-    obj = Data_Make_Struct(klass, X509V3_CTX, 0, ossl_x509extfactory_free, ctx)
+#define MakeX509ExtFactory(klass, obj, ctx) do { \
+    if (!(ctx = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
+        ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
+    X509V3_set_ctx(ctx, NULL, NULL, NULL, NULL, 0); \
+    obj = Data_Wrap_Struct(klass, 0, ossl_x509extfactory_free, ctx); \
+} while (0)
 #define GetX509ExtFactory(obj, ctx) do { \
     Data_Get_Struct(obj, X509V3_CTX, ctx); \
     if (!ctx) { \
@@ -214,6 +217,12 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     X509_EXTENSION *ext;
     VALUE oid, value, critical, valstr, obj;
     int nid;
+#ifdef HAVE_X509V3_EXT_NCONF_NID
+    VALUE rconf;
+    CONF *conf;
+#else
+    static LHASH *empty_lhash;
+#endif
 
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
     StringValue(oid);
@@ -226,7 +235,14 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
     GetX509ExtFactory(self, ctx);
-    ext = X509V3_EXT_conf_nid(NULL, ctx, nid, RSTRING(valstr)->ptr);
+#ifdef HAVE_X509V3_EXT_NCONF_NID
+    rconf = rb_iv_get(self, "@config");
+    conf = NIL_P(rconf) ? NULL : GetConfigPtr(rconf);
+    ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING(valstr)->ptr);
+#else
+    if (!empty_lhash) empty_lhash = lh_new(NULL, NULL);
+    ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING(valstr)->ptr);
+#endif
     if (!ext){
 	ossl_raise(eX509ExtError, "%s = %s",
 		   RSTRING(oid)->ptr, RSTRING(value)->ptr);
