@@ -1,3 +1,9 @@
+Tue Nov 22 13:30:15 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_stat): Dir.chdir('//server/shared');
+	  p Dir.glob('*') should work on WinNT. (implemented our own
+	  stat(2) on WinNT) [ruby-list:41552] [ruby-dev:27711]
+
 Tue Nov 22 02:31:53 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile.rb: bug fix (Tk::Tile::USE_TTK_NAMESPACE

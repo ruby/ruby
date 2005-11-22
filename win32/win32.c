@@ -3182,6 +3182,111 @@ rb_w32_fstat(int fd, struct stat *st)
 }
 #endif
 
+static time_t
+filetime_to_unixtime(const FILETIME *ft)
+{
+    FILETIME loc;
+    SYSTEMTIME st;
+    struct tm tm;
+    time_t t;
+
+    if (!FileTimeToLocalFileTime(ft, &loc)) {
+	return 0;
+    }
+    if (!FileTimeToSystemTime(&loc, &st)) {
+	return 0;
+    }
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = st.wYear - 1900;
+    tm.tm_mon = st.wMonth - 1;
+    tm.tm_mday = st.wDay;
+    tm.tm_hour = st.wHour;
+    tm.tm_min = st.wMinute;
+    tm.tm_sec = st.wSecond;
+    t = mktime(&tm);
+    return t == -1 ? 0 : t;
+}
+
+static unsigned
+fileattr_to_unixmode(DWORD attr, const char *path)
+{
+    unsigned mode = 0;
+
+    if (attr & FILE_ATTRIBUTE_READONLY) {
+	mode |= S_IREAD;
+    }
+    else {
+	mode |= S_IREAD | S_IWRITE | S_IWUSR;
+    }
+
+    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+	mode |= S_IFDIR | S_IEXEC;
+    }
+    else {
+	mode |= S_IFREG;
+    }
+
+    if (path && (mode & S_IFREG)) {
+	const char *end = path + strlen(path);
+	while (path < end) {
+	    end = CharPrev(path, end);
+	    if (*end == '.') {
+		if ((strcmpi(end, ".bat") == 0) ||
+		    (strcmpi(end, ".cmd") == 0) ||
+		    (strcmpi(end, ".com") == 0) ||
+		    (strcmpi(end, ".exe") == 0)) {
+		    mode |= S_IEXEC;
+		}
+		break;
+	    }
+	}
+    }
+
+    mode |= (mode & 0700) >> 3;
+    mode |= (mode & 0700) >> 6;
+
+    return mode;
+}
+
+static int
+winnt_stat(const char *path, struct stat *st)
+{
+    HANDLE h;
+    WIN32_FIND_DATA wfd;
+
+    memset(st, 0, sizeof(struct stat));
+    st->st_nlink = 1;
+
+    if (_mbspbrk(path, "?*")) {
+	errno = ENOENT;
+	return -1;
+    }
+    h = FindFirstFile(path, &wfd);
+    if (h != INVALID_HANDLE_VALUE) {
+	FindClose(h);
+	st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
+	st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
+	st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
+	st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
+	st->st_size  = wfd.nFileSizeLow; /* TODO: 64bit support */
+    }
+    else {
+	// If runtime stat(2) is called for network shares, it fails on WinNT.
+	// Because GetDriveType returns 1 for network shares. (Win98 returns 4)
+	DWORD attr = GetFileAttributes(path);
+	if (attr == -1) {
+	    errno = ENOENT;
+	    return -1;
+	}
+	st->st_mode  = fileattr_to_unixmode(attr, path);
+    }
+
+    st->st_dev = st->st_rdev = (isalpha(path[0]) && path[1] == ':') ?
+	toupper(path[0]) - 'A' : _getdrive() - 1;
+
+    return 0;
+}
+
 int
 rb_w32_stat(const char *path, struct stat *st)
 {
@@ -3217,7 +3322,7 @@ rb_w32_stat(const char *path, struct stat *st)
     } else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
 	strcat(buf1, ".");
 
-    ret = stat(buf1, st);
+    ret = IsWinNT() ? winnt_stat(buf1, st) : stat(buf1, st);
     if (ret == 0) {
 	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }
