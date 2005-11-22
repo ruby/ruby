@@ -2278,7 +2278,9 @@ rb_path_skip_prefix(path)
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 #ifdef DOSISH_UNC
     if (isdirsep(path[0]) && isdirsep(path[1])) {
-	if (*(path = nextdirsep(path + 2)) && path[1] && !isdirsep(path[1]))
+	path += 2;
+	while (isdirsep(*path)) path++;
+	if (*(path = nextdirsep(path)) && path[1] && !isdirsep(path[1]))
 	    path = nextdirsep(path + 1);
 	return (char *)path;
     }

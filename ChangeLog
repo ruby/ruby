@@ -1,3 +1,10 @@
+Tue Nov 22 14:46:57 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_file_s_basename): skip slashes just after UNC top slashes.
+
+	* test/ruby/test_path.rb (test_dirname, test_basename): follow new
+	  spec. and add new tests.
+
 Tue Nov 22 13:18:32 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_stat): Dir.chdir('//server/shared');
