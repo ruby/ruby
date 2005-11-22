@@ -533,7 +533,7 @@ class OptionParser
     #
     # See OptionParser.accept.
     #
-    def accept(t, pat = /.*/, &block)
+    def accept(t, pat = /.*/nm, &block)
       if pat
         pat.respond_to?(:match) or raise TypeError, "has no `match'"
       else
@@ -1310,7 +1310,7 @@ class OptionParser
       while arg = argv.shift
         case arg
         # long option
-        when /\A--([^=]*)(?:=(.*))?/
+        when /\A--([^=]*)(?:=(.*))?/nm
           opt, rest = $1, $2
           begin
             sw, = complete(:long, opt, true)
@@ -1325,7 +1325,7 @@ class OptionParser
           end
 
         # short option
-        when /\A-(.)((=).*|.+)?/
+        when /\A-(.)((=).*|.+)?/nm
           opt, has_arg, eq, val, rest = $1, $3, $3, $2, $2
           begin
             unless sw = search(:short, opt)
@@ -1545,7 +1545,7 @@ class OptionParser
 : String
   any none-empty string, and no conversion.
 =end #'#"#`#
-  accept(String, /.+/) {|s,*|s}
+  accept(String, /.+/nm) {|s,*|s}
 
 =begin
 : Integer
