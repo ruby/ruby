@@ -1,3 +1,8 @@
+Tue Nov 22 23:52:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: match incomplete (in current enconding) multibyte
+	  string.  http://inamode6.tokuhirom.dnsalias.org/show/1551
+
 Tue Nov 22 18:36:11 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (winnt_stat): set mapped errno instead of ENOENT.
