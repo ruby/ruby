@@ -2918,7 +2918,7 @@ winnt_stat(const char *path, struct stat *st)
 	// Because GetDriveType returns 1 for network shares. (Win98 returns 4)
 	DWORD attr = GetFileAttributes(path);
 	if (attr == -1) {
-	    errno = ENOENT;
+	    errno = map_errno(GetLastError());
 	    return -1;
 	}
 	st->st_mode  = fileattr_to_unixmode(attr, path);

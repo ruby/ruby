@@ -1,3 +1,7 @@
+Tue Nov 22 18:36:11 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (winnt_stat): set mapped errno instead of ENOENT.
+
 Tue Nov 22 14:46:57 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_file_s_basename): skip slashes just after UNC top slashes.
