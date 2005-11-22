@@ -68,6 +68,21 @@ extern "C++" {
 }
 #endif
 
+#ifdef _M_IX86
+# define WIN95 1
+#else
+# undef  WIN95
+#endif
+
+#ifdef WIN95
+extern DWORD rb_w32_osid(void);
+#define rb_w32_iswinnt()  (rb_w32_osid() == VER_PLATFORM_WIN32_NT)
+#define rb_w32_iswin95()  (rb_w32_osid() == VER_PLATFORM_WIN32_WINDOWS)
+#else
+#define rb_w32_iswinnt()  TRUE
+#define rb_w32_iswin95()  FALSE
+#endif
+
 #define WNOHANG -1
 
 #undef getc

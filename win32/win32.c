@@ -44,12 +44,6 @@
 #undef close
 #undef setsockopt
 
-#ifdef _M_IX86
-# define WIN95 1
-#else
-# undef  WIN95
-#endif
-
 #if defined __BORLANDC__ || defined _WIN32_WCE
 #  define _filbuf _fgetc
 #  define _flsbuf _fputc
@@ -204,10 +198,10 @@ map_errno(DWORD winerr)
 static char *NTLoginName;
 
 #ifdef WIN95
-DWORD Win32System = (DWORD)-1;
+static DWORD Win32System = (DWORD)-1;
 
-static DWORD
-IdOS(void)
+DWORD
+rb_w32_osid(void)
 {
     static OSVERSIONINFO osver;
 
@@ -219,20 +213,10 @@ IdOS(void)
     }
     return (Win32System);
 }
-
-static int 
-IsWin95(void) {
-    return (IdOS() == VER_PLATFORM_WIN32_WINDOWS);
-}
-
-static int
-IsWinNT(void) {
-    return (IdOS() == VER_PLATFORM_WIN32_NT);
-}
-#else
-# define IsWinNT() TRUE
-# define IsWin95() FALSE
 #endif
+
+#define IsWinNT() rb_w32_iswinnt()
+#define IsWin95() rb_w32_iswin95()
 
 /* main thread constants */
 static struct {
