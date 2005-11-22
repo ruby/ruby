@@ -51,17 +51,20 @@ class TestPath < Test::Unit::TestCase
       assert_equal('C:.', File.dirname('C:a'))
       assert_equal('C:.', File.dirname('C:a/'))
       assert_equal('C:a', File.dirname('C:a/b'))
+
       assert_equal('C:/', File.dirname('C:/'))
-      assert_equal('C:/', File.dirname('C://'))
-      assert_equal('C:/', File.dirname('C:///'))
       assert_equal('C:/', File.dirname('C:/a'))
-      assert_equal('C:/', File.dirname('C://a'))
-      assert_equal('C:/', File.dirname('C:///a'))
       assert_equal('C:/', File.dirname('C:/a/'))
-      assert_equal('C:/', File.dirname('C://a/'))
-      assert_equal('C:/', File.dirname('C:///a/'))
       assert_equal('C:/a', File.dirname('C:/a/b'))
+
+      assert_equal('C:/', File.dirname('C://'))
+      assert_equal('C:/', File.dirname('C://a'))
+      assert_equal('C:/', File.dirname('C://a/'))
       assert_equal('C:/a', File.dirname('C://a/b'))
+
+      assert_equal('C:/', File.dirname('C:///'))
+      assert_equal('C:/', File.dirname('C:///a'))
+      assert_equal('C:/', File.dirname('C:///a/'))
       assert_equal('C:/a', File.dirname('C:///a/b'))
     else
       # others
@@ -69,18 +72,22 @@ class TestPath < Test::Unit::TestCase
       assert_equal('.', File.dirname('C:a'))
       assert_equal('.', File.dirname('C:a/'))
       assert_equal('C:a', File.dirname('C:a/b'))
+
       assert_equal('.', File.dirname('C:/'))
-      assert_equal('.', File.dirname('C://'))
-      assert_equal('.', File.dirname('C:///'))
       assert_equal('C:', File.dirname('C:/a'))
-      assert_equal('C:', File.dirname('C://a'))
-      assert_equal('C:', File.dirname('C:///a'))
       assert_equal('C:', File.dirname('C:/a/'))
-      assert_equal('C:', File.dirname('C://a/'))
-      assert_equal('C:', File.dirname('C:///a/'))
       assert_equal('C:/a', File.dirname('C:/a/b'))
-      # these show current implementation, but they are not spec.
+
+      assert_equal('.', File.dirname('C://'))
+      assert_equal('C:', File.dirname('C://a'))
+      assert_equal('C:', File.dirname('C://a/'))
+      # not spec.
       #assert_equal('C://a', File.dirname('C://a/b'))
+
+      assert_equal('.', File.dirname('C:///'))
+      assert_equal('C:', File.dirname('C:///a'))
+      assert_equal('C:', File.dirname('C:///a/'))
+      # not spec.
       #assert_equal('C:///a', File.dirname('C:///a/b'))
     end
 
@@ -88,21 +95,24 @@ class TestPath < Test::Unit::TestCase
     assert_equal('.', File.dirname('a'))
     assert_equal('.', File.dirname('a/'))
     assert_equal('a', File.dirname('a/b'))
+
     assert_equal('/', File.dirname('/'))
     assert_equal('/', File.dirname('/a'))
     assert_equal('/', File.dirname('/a/'))
     assert_equal('/a', File.dirname('/a/b'))
+
     if /(bcc|ms|cyg)win|mingw|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_UNC
       assert_equal('//', File.dirname('//'))
       assert_equal('//a', File.dirname('//a'))
-      assert_equal('//a/', File.dirname('//a/'))
+      assert_equal('//a', File.dirname('//a/'))
       assert_equal('//a/b', File.dirname('//a/b'))
       assert_equal('//a/b', File.dirname('//a/b/'))
       assert_equal('//a/b', File.dirname('//a/b/c'))
+
       assert_equal('//', File.dirname('///'))
       assert_equal('//a', File.dirname('///a'))
-      assert_equal('//a/', File.dirname('///a/'))
+      assert_equal('//a', File.dirname('///a/'))
       assert_equal('//a/b', File.dirname('///a/b'))
       assert_equal('//a/b', File.dirname('///a/b/'))
       assert_equal('//a/b', File.dirname('///a/b/c'))
@@ -114,12 +124,101 @@ class TestPath < Test::Unit::TestCase
       assert_equal('/a', File.dirname('//a/b'))
       assert_equal('/a', File.dirname('//a/b/'))
       assert_equal('/a/b', File.dirname('//a/b/c'))
+
       assert_equal('/', File.dirname('///'))
       assert_equal('/', File.dirname('///a'))
       assert_equal('/', File.dirname('///a/'))
       assert_equal('/a', File.dirname('///a/b'))
       assert_equal('/a', File.dirname('///a/b/'))
       assert_equal('/a/b', File.dirname('///a/b/c'))
+    end
+  end
+
+  def test_basename # [ruby-dev:27766]
+    if /(bcc|ms)win\d|mingw|cygwin|djgpp|human|emx/ =~ RUBY_PLATFORM
+      # DOSISH_DRIVE_LETTER
+      assert_equal('', File.basename('C:'))
+      assert_equal('a', File.basename('C:a'))
+      assert_equal('a', File.basename('C:a/'))
+      assert_equal('b', File.basename('C:a/b'))
+
+      assert_equal('/', File.basename('C:/'))
+      assert_equal('a', File.basename('C:/a'))
+      assert_equal('a', File.basename('C:/a/'))
+      assert_equal('b', File.basename('C:/a/b'))
+
+      assert_equal('/', File.basename('C://'))
+      assert_equal('a', File.basename('C://a'))
+      assert_equal('a', File.basename('C://a/'))
+      assert_equal('b', File.basename('C://a/b'))
+
+      assert_equal('/', File.basename('C:///'))
+      assert_equal('a', File.basename('C:///a'))
+      assert_equal('a', File.basename('C:///a/'))
+      assert_equal('b', File.basename('C:///a/b'))
+    else
+      # others
+      assert_equal('C:', File.basename('C:'))
+      assert_equal('C:a', File.basename('C:a'))
+      assert_equal('C:a', File.basename('C:a/'))
+      assert_equal('b', File.basename('C:a/b'))
+
+      assert_equal('C:', File.basename('C:/'))
+      assert_equal('a', File.basename('C:/a'))
+      assert_equal('a', File.basename('C:/a/'))
+      assert_equal('b', File.basename('C:/a/b'))
+
+      assert_equal('C:', File.basename('C://'))
+      assert_equal('a', File.basename('C://a'))
+      assert_equal('a', File.basename('C://a/'))
+      assert_equal('b', File.basename('C://a/b'))
+
+      assert_equal('C:', File.basename('C:///'))
+      assert_equal('a', File.basename('C:///a'))
+      assert_equal('a', File.basename('C:///a/'))
+      assert_equal('b', File.basename('C:///a/b'))
+    end
+
+    assert_equal('', File.basename(''))
+    assert_equal('a', File.basename('a'))
+    assert_equal('a', File.basename('a/'))
+    assert_equal('b', File.basename('a/b'))
+
+    assert_equal('/', File.basename('/'))
+    assert_equal('a', File.basename('/a'))
+    assert_equal('a', File.basename('/a/'))
+    assert_equal('b', File.basename('/a/b'))
+
+    if /(bcc|ms|cyg)win|mingw|djgpp|human|emx/ =~ RUBY_PLATFORM
+      # DOSISH_UNC
+      assert_equal('/', File.basename('//'))
+      assert_equal('/', File.basename('//a'))
+      assert_equal('/', File.basename('//a/'))
+      assert_equal('/', File.basename('//a/b'))
+      assert_equal('/', File.basename('//a/b/'))
+      assert_equal('c', File.basename('//a/b/c'))
+
+      assert_equal('/', File.basename('///'))
+      assert_equal('/', File.basename('///a'))
+      assert_equal('/', File.basename('///a/'))
+      assert_equal('/', File.basename('///a/b'))
+      assert_equal('/', File.basename('///a/b/'))
+      assert_equal('c', File.basename('///a/b/c'))
+    else
+      # others
+      assert_equal('/', File.basename('//'))
+      assert_equal('a', File.basename('//a'))
+      assert_equal('a', File.basename('//a/'))
+      assert_equal('b', File.basename('//a/b'))
+      assert_equal('b', File.basename('//a/b/'))
+      assert_equal('c', File.basename('//a/b/c'))
+
+      assert_equal('/', File.basename('///'))
+      assert_equal('a', File.basename('///a'))
+      assert_equal('a', File.basename('///a/'))
+      assert_equal('b', File.basename('///a/b'))
+      assert_equal('b', File.basename('///a/b/'))
+      assert_equal('c', File.basename('///a/b/c'))
     end
   end
 end
