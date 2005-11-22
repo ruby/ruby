@@ -662,6 +662,34 @@ rb_stat(file, st)
     return stat(StringValueCStr(file), st);
 }
 
+#ifdef _WIN32
+static HANDLE
+w32_io_info(file, st)
+    VALUE *file;
+    BY_HANDLE_FILE_INFORMATION *st;
+{
+    VALUE tmp;
+    HANDLE f, ret = 0;
+
+    tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
+    if (!NIL_P(tmp)) {
+	OpenFile *fptr;
+
+	GetOpenFile(tmp, fptr);
+	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
+    }
+    else {
+	FilePathValue(*file);
+	f = CreateFile(StringValueCStr(*file), 0, 0, NULL,
+		       OPEN_EXISTING, 0, NULL);
+	if (f == INVALID_HANDLE_VALUE) return f;
+	ret = f;
+    }
+    if (GetFileInformationByHandle(f, st)) return ret;
+    return INVALID_HANDLE_VALUE;
+}
+#endif
+
 /*
  *  call-seq:
  *     File.stat(file_name)   =>  stat
@@ -1309,7 +1337,7 @@ check3rdbyte(fname, mode)
  * call-seq:
  *   File.setuid?(file_name)   =>  true or false
  *
- * Returns <code>true</code> if the named file is a has the setuid bit set.
+ * Returns <code>true</code> if the named file has the setuid bit set.
  */
 
 static VALUE
@@ -1327,7 +1355,7 @@ test_suid(obj, fname)
  * call-seq:
  *   File.setgid?(file_name)   =>  true or false
  *
- * Returns <code>true</code> if the named file is a has the setgid bit set.
+ * Returns <code>true</code> if the named file has the setgid bit set.
  */
 
 static VALUE
@@ -1345,7 +1373,7 @@ test_sgid(obj, fname)
  * call-seq:
  *   File.sticky?(file_name)   =>  true or false
  *
- * Returns <code>true</code> if the named file is a has the sticky bit set.
+ * Returns <code>true</code> if the named file has the sticky bit set.
  */
 
 static VALUE
@@ -1357,6 +1385,61 @@ test_sticky(obj, fname)
 #else
     return Qnil;
 #endif
+}
+
+/*
+ * call-seq:
+ *   File.identical?(file_1, file_2)   =>  true or false
+ *
+ * Returns <code>true</code> if the named files are identical.
+ */
+
+static VALUE
+test_identical(obj, fname1, fname2)
+    VALUE obj, fname1, fname2;
+{
+#ifndef DOSISH
+    struct stat st1, st2;
+
+    if (rb_stat(fname1, &st1) < 0) return Qfalse;
+    if (rb_stat(fname2, &st2) < 0) return Qfalse;
+    if (st1.st_dev != st2.st_dev) return Qfalse;
+    if (st1.st_ino != st2.st_ino) return Qfalse;
+#else
+#ifdef _WIN32
+    BY_HANDLE_FILE_INFORMATION st1, st2;
+    HANDLE f1 = 0, f2 = 0;
+#endif
+
+    rb_secure(2);
+#ifdef _WIN32
+    f1 = w32_io_info(&fname1, &st1);
+    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
+    f2 = w32_io_info(&fname2, &st2);
+    if (f1) CloseHandle(f1);
+    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
+    if (f2) CloseHandle(f2);
+
+    if (st1.dwVolumeSerialNumber == st2.dwVolumeSerialNumber &&
+	st1.nFileIndexHigh == st2.nFileIndexHigh &&
+	st1.nFileIndexLow == st2.nFileIndexLow)
+	return Qtrue;
+    if (!f1 || !f2) return Qfalse;
+    if (rb_w32_iswin95()) return Qfalse;
+#else
+    FilePathValue(fname1);
+    fname1 = rb_str_new4(fname1);
+    FilePathValue(fname2);
+    if (access(RSTRING(fname1)->ptr, 0)) return Qfalse;
+    if (access(RSTRING(fname2)->ptr, 0)) return Qfalse;
+#endif
+    fname1 = rb_file_expand_path(fname1, Qnil);
+    fname2 = rb_file_expand_path(fname2, Qnil);
+    if (RSTRING(fname1)->len != RSTRING(fname2)->len) return Qfalse;
+    if (rb_memcicmp(RSTRING(fname1)->ptr, RSTRING(fname2)->ptr, RSTRING(fname1)->len))
+	return Qfalse;
+#endif
+    return Qtrue;
 }
 
 /*
@@ -3290,7 +3373,12 @@ rb_f_test(argc, argv)
 	}
     }
 
-    if (strchr("-=<>", cmd)) {
+    if (cmd == '-') {
+	CHECK(2);
+	return test_identical(0, argv[1], argv[2]);
+    }
+
+    if (strchr("=<>", cmd)) {
 	struct stat st1, st2;
 
 	CHECK(2);
@@ -3298,11 +3386,6 @@ rb_f_test(argc, argv)
 	if (rb_stat(argv[2], &st2) < 0) return Qfalse;
 
 	switch (cmd) {
-	  case '-':
-	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
-		return Qtrue;
-	    return Qfalse;
-
 	  case '=':
 	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
 	    return Qfalse;
@@ -4261,6 +4344,8 @@ Init_File()
     define_filetest_function("setuid?", test_suid, 1);
     define_filetest_function("setgid?", test_sgid, 1);
     define_filetest_function("sticky?", test_sticky, 1);
+
+    define_filetest_function("identical?", test_identical, 2);
 
     rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
     rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);
