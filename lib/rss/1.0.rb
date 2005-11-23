@@ -170,6 +170,12 @@ module RSS
         tag_name_with_prefix(PREFIX)
       end
       
+      def setup_maker(target)
+        lis.each do |li|
+          target << li.resource
+        end
+      end
+    
       private
       def children
         @li
@@ -224,6 +230,12 @@ module RSS
         tag_name_with_prefix(PREFIX)
       end
       
+      def setup_maker(target)
+        lis.each do |li|
+          target << li.resource
+        end
+      end
+    
       private
       def children
         @li
@@ -600,8 +612,12 @@ module RSS
         ]
       end
 
-      def maker_target(maker)
-        maker.items.new_item
+      def maker_target(items)
+        if items.respond_to?("items")
+          # For backward compatibility
+          items = items.items
+        end
+        items.new_item
       end
     end
 

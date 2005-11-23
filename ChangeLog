@@ -1,3 +1,30 @@
+Wed Nov 23 18:21:11 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/taxonomy.rb: implemented taxonomy module for RSS
+	  Maker.
+	* lib/rss/taxonomy.rb: supported RSS Maker.
+	* lib/rss/maker.rb: added taxonomy module support. 
+
+	* lib/rss/rss.rb: adjusted to other element API.
+	* lib/rss/1.0.rb: adjusted to other element API but backward
+	  compatibility is reserved.
+	* lib/rss/0.9.rb: ditto.
+
+	* test/rss/test_maker_taxo.rb: added test case for taxonomy module
+	  for RSS Maker.
+	* test/rss/test_setup_maker_1.0.rb: added tests for taxo:topic.
+
+	* test/rss/test_setup_maker_1.0.rb: added backward compatibility
+	  test.
+	* test/rss/test_setup_maker_0.9.rb: ditto.
+	* test/rss/test_setup_maker_2.0.rb: ditto.
+
+	* test/rss/rss-testcase.rb: added convenience method for setting
+	  up taxo:topic.
+	* test/rss/rss-assertions.rb: added assertion for taxo:topic.
+
+	* sample/rss/blend.rb: followed new API.
+
 Wed Nov 23 17:42:24 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: fixed a indentation bug.

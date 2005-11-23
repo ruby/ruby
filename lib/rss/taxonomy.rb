@@ -76,6 +76,10 @@ module RSS
       def full_name
         tag_name_with_prefix(TAXO_PREFIX)
       end
+
+      def maker_target(target)
+        target.taxo_topics
+      end
       
       def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
@@ -95,7 +99,7 @@ module RSS
           []
         end
       end
-      
+
       private
       def children
         [@Bag]
@@ -183,6 +187,10 @@ module RSS
         end
       end
 
+      def maker_target(target)
+        target.new_taxo_topic
+      end
+      
       private
       def children
         [@taxo_link, @taxo_topics]

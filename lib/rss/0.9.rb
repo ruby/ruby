@@ -472,8 +472,12 @@ module RSS
           rv
         end
 
-        def maker_target(maker)
-          maker.items.new_item
+        def maker_target(items)
+          if items.respond_to?("items")
+            # For backward compatibility
+            items = items.items
+          end
+          items.new_item
         end
 
         def setup_maker_element(item)
