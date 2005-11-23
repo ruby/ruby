@@ -18,11 +18,11 @@ module RSS
 
   %w(topic topics).each do |name|
     class_name = Utils.to_class_name(name)
-    BaseListener.install_class_name(TAXO_URI, name, "Taxo#{class_name}")
+    BaseListener.install_class_name(TAXO_URI, name, "Taxonomy#{class_name}")
     TAXO_ELEMENTS << "#{TAXO_PREFIX}_#{name}"
   end
 
-  module TaxoTopicsModel
+  module TaxonomyTopicsModel
     extend BaseModel
     
     def self.append_features(klass)
@@ -47,7 +47,7 @@ module RSS
       end
     end
 
-    class TaxoTopics < Element
+    class TaxonomyTopics < Element
       include RSS10
       
       Bag = ::RSS::RDF::Bag
@@ -117,7 +117,7 @@ module RSS
     end
   end
   
-  module TaxoTopicModel
+  module TaxonomyTopicModel
     extend BaseModel
     
     def self.append_features(klass)
@@ -134,11 +134,11 @@ module RSS
       end
     end
 
-    class TaxoTopic < Element
+    class TaxonomyTopic < Element
       include RSS10
 
       include DublinCoreModel
-      include TaxoTopicsModel
+      include TaxonomyTopicsModel
       
       class << self
         def required_prefix
@@ -212,10 +212,10 @@ module RSS
   end
 
   class RDF
-    include TaxoTopicModel
+    include TaxonomyTopicModel
     class Channel
-      include TaxoTopicsModel
+      include TaxonomyTopicsModel
     end
-    class Item; include TaxoTopicsModel; end
+    class Item; include TaxonomyTopicsModel; end
   end
 end

@@ -1,3 +1,9 @@
+Wed Nov 23 18:26:00 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/taxonomy.rb: changed class or module prefix to
+	  Taxonomy from Taxo.
+	* lib/rss/maker/taxonomy.rb: ditto.
+	
 Wed Nov 23 18:21:11 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/taxonomy.rb: implemented taxonomy module for RSS
