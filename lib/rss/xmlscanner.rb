@@ -1,19 +1,29 @@
 require 'xmlscan/scanner'
+require 'stringio'
 
 module RSS
   
   class XMLScanParser < BaseParser
     
-    private
-    def listener
-      XMLScanListener
+    class << self
+      def listener
+        XMLScanListener
+      end
     end
-
+    
+    private
     def _parse
       begin
-        XMLScan::XMLScanner.new(@listener).parse(@rss)
+        if @rss.is_a?(String)
+          input = StringIO.new(@rss)
+        else
+          input = @rss
+        end
+        scanner = XMLScan::XMLScanner.new(@listener)
+        scanner.parse(input)
       rescue XMLScan::Error => e
-        raise NotWellFormedError.new(e.lineno){e.message}
+        lineno = e.lineno || scanner.lineno || input.lineno
+        raise NotWellFormedError.new(lineno){e.message}
       end
     end
     
@@ -57,7 +67,7 @@ module RSS
     end
 
     def on_entityref(ref)
-      text(ENTITIES[ref])
+      text(entity(ref))
     end
 
     def on_charref(code)
@@ -79,7 +89,7 @@ module RSS
     end
 
     def on_attr_entityref(ref)
-      @current_attr << ENTITIES[ref]
+      @current_attr << entity(ref)
     end
 
     def on_attr_charref(code)
@@ -97,6 +107,15 @@ module RSS
       tag_end(name)
     end
 
+    private
+    def entity(ref)
+      ent = ENTITIES[ref]
+      if ent
+        ent
+      else
+        wellformed_error("undefined entity: #{ref}")
+      end
+    end
   end
 
 end

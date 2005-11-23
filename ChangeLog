@@ -1,3 +1,14 @@
+Wed Nov 23 22:34:15 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb: added entity handling type predicate.
+	* lib/rss/rexmlparser.rb: ditto.
+	* lib/rss/xmlparser.rb: ditto.
+	* lib/rss/xmlscanner.rb: ditto.
+
+	* lib/rss/xmlscanner.rb: more robust entity handling.
+
+	* test/rss/test_parser.rb: added an entity handling test.
+
 Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add Tk.pkgconfig_list and Tk.pkgconfig_get

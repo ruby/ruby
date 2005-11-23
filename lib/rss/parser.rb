@@ -69,7 +69,6 @@ module RSS
         parser.ignore_unknown_element = ignore_unknown_element
         parser.parse
       end
-
     end
 
     def_delegators(:@parser, :parse, :rss,
@@ -113,8 +112,14 @@ module RSS
 
   class BaseParser
 
+    class << self
+      def raise_for_undefined_entity?
+        listener.raise_for_undefined_entity?
+      end
+    end
+    
     def initialize(rss)
-      @listener = listener.new
+      @listener = self.class.listener.new
       @rss = rss
     end
 
@@ -205,6 +210,10 @@ module RSS
         def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
       end
       
+      def raise_for_undefined_entity?
+        true
+      end
+    
       private
 
       def def_get_text_element(uri, name, file, line)
