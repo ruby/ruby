@@ -1,3 +1,8 @@
+Wed Nov 23 03:40:49 2005  Guy Decoux  <ts@moulon.inra.fr>
+
+	* re.c (KR_REHASH): should cast to unsigned for 64bit CPU.
+	  [ruby-core:06721]
+
 Wed Nov 23 11:01:33 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* intern.h, file.c: failed to compile on windows.
@@ -74,6 +79,7 @@ Sun Nov 20 22:34:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (rb_symname_p): [ not followed by ] is not valid symbol.
 	  fixed: [ruby-talk:166520]
 
+>>>>>>> 1.2673.2.1407
 Sat Nov 19 19:57:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::ln): ln documentation fix.
