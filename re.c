@@ -105,7 +105,7 @@ rb_memsearch(char *x0, long m, char *y0, long n)
     int d;
     unsigned long hx, hy;
 
-#define KR_REHASH(a, b, h) (((h) << 1) - ((long)(a)<<d) + (b))
+#define KR_REHASH(a, b, h) (((h) << 1) - (((unsigned long)(a))<<d) + (b))
 
     if (m > n) return -1;
     s = y; e = s + n - m;

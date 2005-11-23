@@ -1,3 +1,8 @@
+Wed Nov 23 03:40:49 2005  Guy Decoux  <ts@moulon.inra.fr>
+
+	* re.c (KR_REHASH): should cast to unsigned for 64bit CPU.
+	  [ruby-core:06721]
+
 Wed Nov 23 07:26:44 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: check for X509V3_EXT_nconf_nid.

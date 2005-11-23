@@ -111,6 +111,13 @@
 #endif /* People who don't like const sys_error */
 
 #include <stddef.h>
+#if defined(__hpux) && !defined(__GNUC__) || defined(__DECC)
+#include <string.h>
+#endif
+
+#if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
+#include <stdlib.h>
+#endif
 
 #ifndef NULL
 #define	NULL	0
@@ -194,6 +201,9 @@ typedef	struct __sFILE {
 #define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
 #define	__sfileno(p)	((p)->_file)
 
+#undef feof
+#undef ferror
+#undef clearerr
 #define	feof(p)		__sfeof(p)
 #define	ferror(p)	__sferror(p)
 #define	clearerr(p)	__sclearerr(p)
@@ -202,10 +212,6 @@ typedef	struct __sFILE {
 #define	fileno(p)	__sfileno(p)
 #endif
 
-
-#if defined(__hpux) && !defined(__GNUC__) || defined(__DECC)
-#include <string.h>
-#endif
 
 /*
  * I/O descriptors for __sfvwrite().
@@ -302,10 +308,6 @@ static int BSD__sfvwrite(fp, uio)
  *
  * This code is large and complicated...
  */
-
-#if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
-#include <stdlib.h>
-#endif
 
 /*
  * Flush out all the vectors defined by the given uio,
