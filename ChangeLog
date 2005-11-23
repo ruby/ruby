@@ -1,3 +1,9 @@
+Thu Nov 24 01:22:25 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* file.c (w32_io_info): CreateFile failed on Win9x if file was already
+	  opened. (FILE_SHARE_READ was needed, but actually I don't understand
+	  the flags of CreateFile well...)
+
 Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add Tk.pkgconfig_list and Tk.pkgconfig_get

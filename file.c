@@ -683,7 +683,8 @@ w32_io_info(file, st)
     }
     else {
 	SafeStringValue(*file);
-	f = CreateFile(StringValueCStr(*file), 0, 0, NULL, OPEN_EXISTING,
+	f = CreateFile(StringValueCStr(*file), 0,
+	               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 	               rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (f == INVALID_HANDLE_VALUE) return FALSE;
     }
