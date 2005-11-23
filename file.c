@@ -655,7 +655,8 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
     }
     else {
 	FilePathValue(*file);
-	f = CreateFile(StringValueCStr(*file), 0, 0, NULL, OPEN_EXISTING,
+	f = CreateFile(StringValueCStr(*file), 0,
+	               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 	               rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (f == INVALID_HANDLE_VALUE) return FALSE;
     }

@@ -1,3 +1,9 @@
+Thu Nov 24 01:31:44 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* file.c (w32_io_info): CreateFile failed on Win9x if file was already
+	  opened. (FILE_SHARE_READ was needed, but actually I don't understand
+	  the flags of CreateFile well...)
+
 Wed Nov 23 23:52:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_div): use floor rather than rb_Integer().
