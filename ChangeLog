@@ -1,3 +1,8 @@
+Wed Nov 23 23:52:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_div): use floor rather than rb_Integer().
+	  [ruby-dev:27674]
+
 Wed Nov 23 22:34:15 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: added entity handling type predicate.

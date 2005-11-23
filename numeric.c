@@ -243,6 +243,8 @@ num_quo(VALUE x, VALUE y)
 }
 
 
+static VALUE num_floor(VALUE num);
+
 /*
  *  call-seq:
  *     num.div(numeric)    => integer
@@ -255,7 +257,7 @@ num_quo(VALUE x, VALUE y)
 static VALUE
 num_div(VALUE x, VALUE y)
 {
-    return rb_Integer(rb_funcall(x, '/', 1, y));
+    return num_floor(rb_funcall(x, '/', 1, y));
 }
 
 
