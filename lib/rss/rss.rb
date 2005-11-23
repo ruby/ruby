@@ -725,8 +725,8 @@ EOC
       private_methods.each do |meth|
         if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
             self.class::NSPOOL.has_key?($1)
-          res = __send__(meth, need_convert)
-          rv << "#{indent}#{res}" if /\A\s*\z/ !~ res
+          res = __send__(meth, need_convert, indent)
+          rv << res if /\A\s*\z/ !~ res
         end
       end
       rv.join("\n")

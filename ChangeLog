@@ -1,3 +1,11 @@
+Wed Nov 23 17:42:24 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: fixed a indentation bug.
+
+	* lib/rss/taxonomy.rb: fixed <taxo:topic> #to_s bug.
+
+	* test/rss/test_taxonomy.rb: added a #to_s test.
+
 Wed Nov 23 03:40:49 2005  Guy Decoux  <ts@moulon.inra.fr>
 
 	* re.c (KR_REHASH): should cast to unsigned for 64bit CPU.
