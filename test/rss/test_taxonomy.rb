@@ -146,8 +146,8 @@ EOR
       @topic_nodes.each_with_index do |node, i|
         expected = REXML::Document.new(node).root
         actual = REXML::Document.new(@rss.taxo_topics[i].to_s(true, "")).root
-        expected_elems = expected.children.reject {|x| x.is_a?(REXML::Text)}
-        actual_elems = actual.children.reject {|x| x.is_a?(REXML::Text)}
+        expected_elems = expected.reject {|x| x.is_a?(REXML::Text)}
+        actual_elems = actual.reject {|x| x.is_a?(REXML::Text)}
         expected_elems.sort! {|x, y| x.name <=> y.name}
         actual_elems.sort! {|x, y| x.name <=> y.name}
         assert_equal(expected_elems.collect {|x| x.to_s},
