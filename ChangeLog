@@ -1,3 +1,12 @@
+Wed Nov 23 18:52:45 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* file.c (w32_io_info): should not call GetFileInformationByHandle
+	  for pipe.
+
+	* file.c (w32_io_info): checks return value from rb_w32_get_osfhandle.
+
+	* file.c (w32_io_info): now can identify directory on WinNT.
+
 Wed Nov 23 18:46:53 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/: use #__send__ instead of #send.

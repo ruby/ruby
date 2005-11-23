@@ -637,28 +637,36 @@ rb_stat(VALUE file, struct stat *st)
 }
 
 #ifdef _WIN32
-static HANDLE
+static BOOL
 w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 {
     VALUE tmp;
-    HANDLE f, ret = 0;
+    HANDLE f;
+    BOOL ret = FALSE;
 
     tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
 	OpenFile *fptr;
 
+	*file = Qnil;
 	GetOpenFile(tmp, fptr);
 	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
+	if (f == (HANDLE)-1) return FALSE;
     }
     else {
 	FilePathValue(*file);
-	f = CreateFile(StringValueCStr(*file), 0, 0, NULL,
-		       OPEN_EXISTING, 0, NULL);
-	if (f == INVALID_HANDLE_VALUE) return f;
-	ret = f;
+	f = CreateFile(StringValueCStr(*file), 0, 0, NULL, OPEN_EXISTING,
+	               rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	if (f == INVALID_HANDLE_VALUE) return FALSE;
     }
-    if (GetFileInformationByHandle(f, st)) return ret;
-    return INVALID_HANDLE_VALUE;
+    if (GetFileType(f) == FILE_TYPE_DISK) {
+	ZeroMemory(st, sizeof(*st));
+	ret = GetFileInformationByHandle(f, st);
+    }
+    if (NIL_P(tmp)) {
+	CloseHandle(f);
+    }
+    return ret;
 }
 #endif
 
@@ -1408,23 +1416,18 @@ test_identical(VALUE obj, VALUE fname1, VALUE fname2)
 #else
 #ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION st1, st2;
-    HANDLE f1 = 0, f2 = 0;
 #endif
 
     rb_secure(2);
 #ifdef _WIN32
-    f1 = w32_io_info(&fname1, &st1);
-    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
-    f2 = w32_io_info(&fname2, &st2);
-    if (f1) CloseHandle(f1);
-    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
-    if (f2) CloseHandle(f2);
+    if (!w32_io_info(&fname1, &st1)) return Qfalse;
+    if (!w32_io_info(&fname2, &st2)) return Qfalse;
 
     if (st1.dwVolumeSerialNumber == st2.dwVolumeSerialNumber &&
 	st1.nFileIndexHigh == st2.nFileIndexHigh &&
 	st1.nFileIndexLow == st2.nFileIndexLow)
 	return Qtrue;
-    if (!f1 || !f2) return Qfalse;
+    if (NIL_P(fname1) || NIL_P(fname2)) return Qfalse;
     if (rb_w32_iswin95()) return Qfalse;
 #else
     FilePathValue(fname1);
