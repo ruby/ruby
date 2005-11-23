@@ -162,6 +162,7 @@ autoload :TkVariable,         'tk/variable'
 autoload :TkVarAccess,        'tk/variable'
 
 autoload :TkVirtualEvent,     'tk/virtevent'
+autoload :TkNamedVirtualEvent,'tk/virtevent'
 
 autoload :TkWinfo,            'tk/winfo'
 

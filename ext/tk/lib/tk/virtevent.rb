@@ -15,6 +15,19 @@ class TkVirtualEvent<TkObject
   TkCore::INTERP.init_ip_env{ TkVirtualEventTBL.clear }
 
   class PreDefVirtEvent<self
+    def self.new(event, *sequences)
+      if event =~ /^<(<.*>)>$/
+        event = $1
+      elsif event !~ /^<.*>$/
+        event = '<' + event + '>'
+      end
+      if TkVirtualEvent::TkVirtualEventTBL.has_key?(event)
+        TkVirtualEvent::TkVirtualEventTBL[event]
+      else
+        super(event, *sequences)
+      end
+    end
+
     def initialize(event, *sequences)
       @path = @id = event
       TkVirtualEvent::TkVirtualEventTBL[@id] = self
@@ -89,3 +102,5 @@ class TkVirtualEvent<TkObject
     }
   end
 end
+
+TkNamedVirtualEvent = TkVirtualEvent::PreDefVirtEvent
