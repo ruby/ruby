@@ -676,10 +676,10 @@ w32_io_info(file, st)
 	OpenFile *fptr;
 
 	GetOpenFile(tmp, fptr);
-	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
+	f = (HANDLE)rb_w32_get_osfhandle(fileno(fptr->f));
     }
     else {
-	FilePathValue(*file);
+	SafeStringValue(*file);
 	f = CreateFile(StringValueCStr(*file), 0, 0, NULL,
 		       OPEN_EXISTING, 0, NULL);
 	if (f == INVALID_HANDLE_VALUE) return f;
@@ -1427,9 +1427,9 @@ test_identical(obj, fname1, fname2)
     if (!f1 || !f2) return Qfalse;
     if (rb_w32_iswin95()) return Qfalse;
 #else
-    FilePathValue(fname1);
+    SafeStringValue(fname1);
     fname1 = rb_str_new4(fname1);
-    FilePathValue(fname2);
+    SafeStringValue(fname2);
     if (access(RSTRING(fname1)->ptr, 0)) return Qfalse;
     if (access(RSTRING(fname2)->ptr, 0)) return Qfalse;
 #endif
