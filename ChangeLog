@@ -1,3 +1,12 @@
+Wed Nov 23 18:46:53 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/: use #__send__ instead of #send.
+	* test/rss/: ditto.
+
+Wed Nov 23 18:32:56 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_taxonomy.rb: use #reject directory.
+
 Wed Nov 23 18:26:00 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/taxonomy.rb: changed class or module prefix to

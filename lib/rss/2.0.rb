@@ -48,7 +48,7 @@ EOT
       alias _tags09 _tags
       def _tags
         rv = %w(generator ttl).delete_if do |name|
-          send(name).nil?
+          __send__(name).nil?
         end.collect do |elem|
           [nil, elem]
         end + _tags09
@@ -109,7 +109,7 @@ EOT
         alias _tags09 _tags
         def _tags
           %w(comments author pubDate guid).delete_if do |name|
-            send(name).nil?
+            __send__(name).nil?
           end.collect do |elem|
             [nil, elem]
           end + _tags09

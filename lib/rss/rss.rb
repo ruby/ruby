@@ -279,7 +279,7 @@ EOC
         else
           if @do_validate
             begin
-              @#{name} = Time.send('#{type}', new_value)
+              @#{name} = Time.__send__('#{type}', new_value)
             rescue ArgumentError
               raise NotAvailableValueError.new('#{disp_name}', new_value)
             end
@@ -316,7 +316,7 @@ EOC
         if args.empty?
           @#{accessor_name}.first
         else
-          @#{accessor_name}.send("[]", *args)
+          @#{accessor_name}[*args]
         end
       end
 
@@ -328,7 +328,7 @@ EOC
         if args.size == 1
           @#{accessor_name}.push(args[0])
         else
-          @#{accessor_name}.send("[]=", *args)
+          @#{accessor_name}.__send__("[]=", *args)
         end
       end
       alias_method(:set_#{accessor_name}, :#{accessor_name}=)
@@ -703,11 +703,11 @@ EOC
       self.class::NSPOOL.each do |prefix, uri|
         if tags.has_key?(uri) and !must_call_validators.has_key?(uri)
           meth = "#{prefix}_validate"
-          send(meth, tags[uri]) if respond_to?(meth, true)
+          __send__(meth, tags[uri]) if respond_to?(meth, true)
         end
       end
       must_call_validators.each do |uri, prefix|
-        send("#{prefix}_validate", tags[uri])
+        __send__("#{prefix}_validate", tags[uri])
       end
     end
 

@@ -106,7 +106,7 @@ module RSS
           [IMAGE_URI, 'width'],
           [IMAGE_URI, 'height'],
         ].delete_if do |uri, name|
-          send(name).nil?
+          __send__(name).nil?
         end
       end
         

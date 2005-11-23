@@ -86,21 +86,21 @@ EOR
         %w(size image:size large),
         %w(image_size image:size medium),
       ].each do |name, full_name, new_value|
-        assert_equal(@favicon_attrs[full_name], favicon.send(name))
-        favicon.send("#{name}=", new_value)
-        assert_equal(new_value, favicon.send(name))
-        favicon.send("#{name}=", @favicon_attrs[full_name])
-        assert_equal(@favicon_attrs[full_name], favicon.send(name))
+        assert_equal(@favicon_attrs[full_name], favicon.__send__(name))
+        favicon.__send__("#{name}=", new_value)
+        assert_equal(new_value, favicon.__send__(name))
+        favicon.__send__("#{name}=", @favicon_attrs[full_name])
+        assert_equal(@favicon_attrs[full_name], favicon.__send__(name))
       end
 
       [
         %w(dc_title dc:title sample-favicon),
       ].each do |name, full_name, new_value|
-        assert_equal(@favicon_contents[full_name], favicon.send(name))
-        favicon.send("#{name}=", new_value)
-        assert_equal(new_value, favicon.send(name))
-        favicon.send("#{name}=", @favicon_contents[full_name])
-        assert_equal(@favicon_contents[full_name], favicon.send(name))
+        assert_equal(@favicon_contents[full_name], favicon.__send__(name))
+        favicon.__send__("#{name}=", new_value)
+        assert_equal(new_value, favicon.__send__(name))
+        favicon.__send__("#{name}=", @favicon_contents[full_name])
+        assert_equal(@favicon_contents[full_name], favicon.__send__(name))
       end
     end
 
@@ -112,11 +112,11 @@ EOR
           %w(about rdf:about http://example.com/image.png),
           %w(resource rdf:resource http://example.com/),
         ].each do |name, full_name, new_value|
-          assert_equal(attrs[full_name], image_item.send(name))
-          image_item.send("#{name}=", new_value)
-          assert_equal(new_value, image_item.send(name))
-          image_item.send("#{name}=", attrs[full_name])
-          assert_equal(attrs[full_name], image_item.send(name))
+          assert_equal(attrs[full_name], image_item.__send__(name))
+          image_item.__send__("#{name}=", new_value)
+          assert_equal(new_value, image_item.__send__(name))
+          image_item.__send__("#{name}=", attrs[full_name])
+          assert_equal(attrs[full_name], image_item.__send__(name))
         end
         
         [
@@ -126,11 +126,11 @@ EOR
           ["image_height", "image:height", 88],
           ["dc_title", "dc:title", "sample-image"],
         ].each do |name, full_name, new_value|
-          assert_equal(contents[full_name], image_item.send(name))
-          image_item.send("#{name}=", new_value)
-          assert_equal(new_value, image_item.send(name))
-          image_item.send("#{name}=", contents[full_name])
-          assert_equal(contents[full_name], image_item.send(name))
+          assert_equal(contents[full_name], image_item.__send__(name))
+          image_item.__send__("#{name}=", new_value)
+          assert_equal(new_value, image_item.__send__(name))
+          image_item.__send__("#{name}=", contents[full_name])
+          assert_equal(contents[full_name], image_item.__send__(name))
         end
       end
     end

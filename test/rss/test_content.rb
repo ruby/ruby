@@ -61,21 +61,20 @@ EOR
       @elems.each do |name, value|
         @parents.each do |parent|
           meth = "#{RSS::CONTENT_PREFIX}_#{name}"
-          assert_equal(value, @rss.send(parent).funcall(meth))
-          @rss.send(parent).funcall("#{meth}=", new_value[name].to_s)
-          assert_equal(new_value[name], @rss.send(parent).funcall(meth))
+          assert_equal(value, @rss.__send__(parent).funcall(meth))
+          @rss.__send__(parent).funcall("#{meth}=", new_value[name].to_s)
+          assert_equal(new_value[name], @rss.__send__(parent).funcall(meth))
         end
       end
 
     end
     
     def test_to_s
-      
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{CGI.escapeHTML(value)}</#{@prefix}:#{name}>"
         @parents.each do |parent|
           meth = "#{RSS::CONTENT_PREFIX}_#{name}_element"
-          assert_equal(excepted, @rss.send(parent).funcall(meth))
+          assert_equal(excepted, @rss.__send__(parent).funcall(meth))
         end
       end
 

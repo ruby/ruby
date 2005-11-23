@@ -87,7 +87,7 @@ module RSS
       rv = [
         [::RSS::URI, "channel"],
         [::RSS::URI, "image"],
-      ].delete_if {|uri, name| send(name).nil?}
+      ].delete_if {|uri, name| __send__(name).nil?}
       @item.each do |item|
         rv << [::RSS::URI, "item"]
       end
@@ -326,7 +326,7 @@ module RSS
           [::RSS::URI, 'items'],
           [::RSS::URI, 'textinput'],
         ].delete_if do |uri, name|
-          send(name).nil?
+          __send__(name).nil?
         end
       end
 
@@ -532,7 +532,7 @@ module RSS
           [::RSS::URI, 'url'],
           [::RSS::URI, 'link'],
         ].delete_if do |uri, name|
-          send(name).nil?
+          __send__(name).nil?
         end
       end
 
@@ -602,7 +602,7 @@ module RSS
           [::RSS::URI, 'link'],
           [::RSS::URI, 'description'],
         ].delete_if do |uri, name|
-          send(name).nil?
+          __send__(name).nil?
         end
       end
 
@@ -679,7 +679,7 @@ module RSS
           [::RSS::URI, 'name'],
           [::RSS::URI, 'link'],
         ].delete_if do |uri, name|
-          send(name).nil?
+          __send__(name).nil?
         end
       end
       

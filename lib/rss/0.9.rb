@@ -79,7 +79,7 @@ module RSS
       [
         [nil, 'channel'],
       ].delete_if do |uri, name|
-        send(name).nil?
+        __send__(name).nil?
       end
     end
 
@@ -195,7 +195,7 @@ module RSS
           "textInput",
           "cloud",
         ].delete_if do |name|
-          send(name).nil?
+          __send__(name).nil?
         end.collect do |elem|
           [nil, elem]
         end
@@ -358,7 +358,7 @@ module RSS
         private
         def _tags
           %w(url title link width height description).delete_if do |name|
-            send(name).nil?
+            __send__(name).nil?
           end.collect do |elem|
             [nil, elem]
           end
@@ -460,7 +460,7 @@ module RSS
         def _tags
           rv = %w(title link description author comments
             source enclosure).delete_if do |name|
-            send(name).nil?
+            __send__(name).nil?
           end.collect do |name|
             [nil, name]
           end
@@ -635,7 +635,7 @@ module RSS
         private
         def _tags
           %w(title description name link).each do |name|
-            send(name).nil?
+            __send__(name).nil?
           end.collect do |elem|
             [nil, elem]
           end

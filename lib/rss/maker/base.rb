@@ -91,7 +91,7 @@ module RSS
           variables.each do |var|
             setter = "#{var}="
             if target.respond_to?(setter)
-              value = self.__send__(var)
+              value = __send__(var)
               if value
                 target.__send__(setter, value)
                 set = true
