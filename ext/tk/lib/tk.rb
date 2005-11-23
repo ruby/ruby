@@ -1921,6 +1921,62 @@ module Tk
     end
   end
 
+  def Tk.pkgconfig_list(mod)
+    # Tk8.5 feature
+    if mod.kind_of?(Module)
+      if mod.respond_to?(:package_name)
+        pkgname = mod.package_name
+      elsif mod.const_defined?(:PACKAGE_NAME)
+        pkgname = mod::PACKAGE_NAME
+      else
+        fail NotImplementedError, 'may not be a module for a Tcl extension'
+      end
+    else
+      pkgname = mod.to_s
+    end
+
+    pkgname = '::' << pkgname unless pkgname =~ /^::/
+
+    tk_split_list(tk_call(pkgname + '::pkgconfig', 'list'))
+  end
+
+  def Tk.pkgconfig_get(mod, key)
+    # Tk8.5 feature
+    if mod.kind_of?(Module)
+      if mod.respond_to?(:package_name)
+        pkgname = mod.package_name
+      else
+        fail NotImplementedError, 'may not be a module for a Tcl extension'
+      end
+    else
+      pkgname = mod.to_s
+    end
+
+    pkgname = '::' << pkgname unless pkgname =~ /^::/
+
+    tk_call(pkgname + '::pkgconfig', 'get', key)
+  end
+
+  def Tk.tcl_pkgconfig_list
+    # Tk8.5 feature
+    Tk.pkgconfig_list('::tcl')
+  end
+
+  def Tk.tcl_pkgconfig_get(key)
+    # Tk8.5 feature
+    Tk.pkgconfig_get('::tcl', key)
+  end
+
+  def Tk.tk_pkgconfig_list
+    # Tk8.5 feature
+    Tk.pkgconfig_list('::tk')
+  end
+
+  def Tk.tk_pkgconfig_get(key)
+    # Tk8.5 feature
+    Tk.pkgconfig_get('::tk', key)
+  end
+
   def Tk.bell(nice = false)
     if nice
       tk_call_without_enc('bell', '-nice')
@@ -4499,7 +4555,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-11-19'.freeze
+  RELEASE_DATE = '2005-11-23'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

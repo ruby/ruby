@@ -103,6 +103,58 @@ class TkText<TkTextWin
     end
     alias char chars
 
+    def display_chars(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display chars')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display chars')
+      end
+    end
+    alias display_char display_chars
+
+    def any_chars(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any chars')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any chars')
+      end
+    end
+    alias any_char any_chars
+
+    def indices(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' indices')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' indices')
+      end
+    end
+
+    def display_indices(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display indices')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display indices')
+      end
+    end
+
+    def any_indices(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any indices')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any indices')
+      end
+    end
+
     def lines(mod)
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
@@ -113,6 +165,28 @@ class TkText<TkTextWin
     end
     alias line lines
 
+    def display_lines(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display_lines')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display lines')
+      end
+    end
+    alias display_line display_lines
+
+    def any_lines(mod)
+      # Tk8.5 feature
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any_lines')
+      else
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any lines')
+      end
+    end
+    alias any_line any_lines
+
     def linestart
       TkText::IndexString.new(String.new(id) << ' linestart')
     end
@@ -120,11 +194,29 @@ class TkText<TkTextWin
       TkText::IndexString.new(String.new(id) << ' lineend')
     end
 
+    def display_linestart
+      # Tk8.5 feature
+      TkText::IndexString.new(String.new(id) << ' display linestart')
+    end
+    def display_lineend
+      # Tk8.5 feature
+      TkText::IndexString.new(String.new(id) << ' display lineend')
+    end
+
     def wordstart
       TkText::IndexString.new(String.new(id) << ' wordstart')
     end
     def wordend
       TkText::IndexString.new(String.new(id) << ' wordend')
+    end
+
+    def display_wordstart
+      # Tk8.5 feature
+      TkText::IndexString.new(String.new(id) << ' display wordstart')
+    end
+    def display_wordend
+      # Tk8.5 feature
+      TkText::IndexString.new(String.new(id) << ' display wordend')
     end
   end
 

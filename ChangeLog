@@ -1,3 +1,18 @@
+Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add Tk.pkgconfig_list and Tk.pkgconfig_get
+	  [Tk8.5 feature].
+
+	* ext/tk/lib/tk/text.rb: supports new indices modifires on a Text
+	  widget [Tk8.5 feature]. 
+
+	* ext/tk/lib/tk/virtevent.rb: add TkNamedVirtualEvent.
+
+	* ext/tk/lib/tk/autoload.rb: ditto.
+
+	* ext/tk/lib/tk/event.rb: add :data key for virtual events [Tk8.5
+	  feature].
+
 Wed Nov 23 18:52:45 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (w32_io_info): should not call GetFileInformationByHandle

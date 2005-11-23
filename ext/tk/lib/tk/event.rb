@@ -384,6 +384,7 @@ module TkEvent
 =end
     ALIAS_TBL = {
       :button    => :num, 
+      :data      => :detail, 
       :delta     => :wheel_delta, 
       :root      => :rootwin_id, 
       :rootx     => :x_root, 
