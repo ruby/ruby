@@ -438,13 +438,13 @@ AC_REPLACE_FUNCS(dup2 memmove strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isnan finite isinf hypot acosh erf)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd\
-	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
-	      setitimer setruid seteuid setreuid setresuid setproctitle\
-	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
-	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit dlopen sigprocmask sigaction _setjmp\
-	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh\
-	      setuid setgid)
+	      truncate chsize times utimes fcntl lockf lstat symlink link\
+	      readlink setitimer setruid seteuid setreuid setresuid\
+	      setproctitle setrgid setegid setregid setresgid issetugid pause\
+	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
+	      getgroups setgroups getpriority getrlimit dlopen sigprocmask\
+	      sigaction _setjmp setsid telldir seekdir fchmod mktime timegm\
+	      cosh sinh tanh setuid setgid)
 AC_ARG_ENABLE(setreuid,
        [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
        [use_setreuid=$enableval])

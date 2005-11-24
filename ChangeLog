@@ -1,3 +1,8 @@
+Thu Nov 24 21:05:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in (AC_CHECK_FUNCS): need to check link().
+	  fixed: [ruby-dev:27814]
+
 Thu Nov 24 01:22:25 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (w32_io_info): CreateFile failed on Win9x if file was already
