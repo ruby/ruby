@@ -5,7 +5,14 @@
 require 'tk'
 
 demodir = File.dirname($0)
-Tk::AUTO_PATH.lappend('.', demodir, File.join(demodir, 'themes'))
+themesdir = File.join(demodir, 'themes')
+Tk::AUTO_PATH.lappend('.', demodir, themesdir)
+
+Dir.foreach(themesdir){|name|
+  next if name == '.' || name == '..'
+  dir = File.join(themesdir, name)
+  Tk::AUTO_PATH.lappend(dir) if File.directory?(dir)
+}
 
 require 'tkextlib/tile'
 
@@ -30,7 +37,8 @@ TkRoot.new{
 
 # The descriptive names of the builtin themes.
 $THEMELIST = [
-  ['default', 'Classic'], 
+  ['default', 'Default'], 
+  ['classic', 'Classic'], 
   ['alt', 'Revitalized'], 
   ['winnative', 'Windows native'], 
   ['xpnative', 'XP Native'], 
@@ -359,9 +367,9 @@ rb3 = Tk::Tile::Radiobutton.new(l, :text=>'Three',
 btn = Tk::Tile::Button.new(l, :text=>'Button', :underline=>0)
 
 mb = Tk::Tile::Menubutton.new(l, :text=>'Menubutton', :underline=>2)
-#m = TkMenu.new(mb)
-#mb.menu(m)
-#fillMenu(m)
+m = TkMenu.new(mb)
+mb.menu(m)
+fillMenu(m)
 
 $entryText = TkVariable.new('Entry widget')
 e = Tk::Tile::Entry.new(l, :textvariable=>$entryText)
@@ -465,7 +473,11 @@ if version?('0.6')
 
   if true
     def progress.inverted(w, value)
-      w.value(w.maximum - value)
+      if w.mode == 'indeterminate'
+        w.value(value)
+      else
+        w.value(w.maximum - value)
+      end
     end
     scale.command {|value| progress.value(value)}
     vscale.command {|value| progress.inverted(vprogress, value) }
@@ -489,6 +501,10 @@ if version?('0.6')
           :text=>'indeterminate', :value=>'indeterminate',
           :command=>proc{pbMode(progress, vprogress)})
   def pbMode(progress, vprogress)
+    if vprogress.mode != $V[:PBMODE]
+      vprogress.value(vprogress.maximum - vprogress.value)
+    end
+
     progress.mode $V[:PBMODE]
     vprogress.mode $V[:PBMODE]
   end
@@ -496,7 +512,8 @@ if version?('0.6')
   start = Tk::Tile::Button.new(l, :text=>"Start",
           :command=>proc{pbStart(progress, vprogress)})
   def pbStart(progress, vprogress)
-    $V[:PBMODE] = 'indeterminate'; pbMode(progress, vprogress)
+    # $V[:PBMODE] = 'indeterminate'
+    pbMode(progress, vprogress)
     progress.start 10
     vprogress.start
   end

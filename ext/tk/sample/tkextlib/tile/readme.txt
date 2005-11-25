@@ -1,3 +1,2 @@
-All of *.tcl, themes/kroc.tcl and images (themes/kroc/*) are 
-quoted from Tcl/Tk's Tile extension.
-Please read Orig_LICENSE.txt. 
+All of *.tcl and under themes/ directory (except kroc.rb) are 
+quoted from Tcl/Tk's Tile extension. Please read Orig_LICENSE.txt. 

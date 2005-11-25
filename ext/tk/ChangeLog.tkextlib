@@ -1,3 +1,10 @@
+2005-11-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* sample/tkextlib/tile/demo.rb: bug fix
+
+	* sample/tkextlib/tile/themes/*: add some themes (blue,
+	  keramik, and plastik; require Tile-0.5 or later).
+
 2005-11-22  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/tile.rb: bug fix (Tk::Tile::USE_TTK_NAMESPACE

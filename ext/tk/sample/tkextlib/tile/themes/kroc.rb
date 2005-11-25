@@ -5,7 +5,7 @@
 #   >> kroc.tcl - Copyright (C) 2004 David Zolli <kroc@kroc.tk>
 #
 
-imgdir = File.join(File.dirname(__FILE__), 'kroc')
+imgdir = File.join(File.dirname(__FILE__), 'kroc', 'kroc')
 $images = Tk::Tile.load_images(imgdir, '*.gif')
 
 if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
@@ -97,28 +97,31 @@ def kroc_rb_settings
   #
   if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
 
-    Tk::Tile::Style.element_create('Button.button', :image, $images['button-n'],
+    Tk::Tile::Style.element_create('Button.button', 
+                                   :image, $images['button-n'],
                                    :map=>[
                                      :pressed, $images['button-p'], 
                                      :active,  $images['button-h'], 
                                    ], :border=>3, :sticky=>:ew)
 
-    Tk::Tile::Style.element_create('Checkbutton.indicator', :image, $images['check-nu'],
+    Tk::Tile::Style.element_create('Checkbutton.indicator', 
+                                   :image, $images['check-nu'],
                                    :map=>[
-                                     [:pressed, :selected], $images['check-nc'], 
-                                     :pressed,              $images['check-nu'], 
-                                     [:active, :selected],  $images['check-hc'], 
-                                     :active,               $images['check-hu'], 
-                                     :selected,             $images['check-nc'], 
+                                     [:pressed, :selected],$images['check-nc'],
+                                     :pressed,             $images['check-nu'],
+                                     [:active, :selected], $images['check-hc'],
+                                     :active,              $images['check-hu'],
+                                     :selected,            $images['check-nc'],
                                    ], :sticky=>:w)
 
-    Tk::Tile::Style.element_create('Radiobutton.indicator', :image, $images['radio-nu'],
+    Tk::Tile::Style.element_create('Radiobutton.indicator', 
+                                   :image, $images['radio-nu'],
                                    :map=>[
-                                     [:pressed, :selected], $images['radio-nc'], 
-                                     :pressed,              $images['radio-nu'], 
-                                     [:active, :selected],  $images['radio-hc'], 
-                                     :active,               $images['radio-hu'], 
-                                     :selected,             $images['radio-nc'], 
+                                     [:pressed, :selected],$images['radio-nc'],
+                                     :pressed,             $images['radio-nu'],
+                                     [:active, :selected], $images['radio-hc'],
+                                     :active,              $images['radio-hu'],
+                                     :selected,            $images['radio-nc'],
                                    ], :sticky=>:w)
 
   else # tile 0.4 or earlier
@@ -132,22 +135,22 @@ def kroc_rb_settings
 
     Tk::Tile::Style.element_create('Checkbutton.indicator', :pixmap, 
                                    :images=>[
-                                     [:pressed, :selected], $images['check-nc'], 
-                                     :pressed,              $images['check-nu'], 
-                                     [:active, :selected],  $images['check-hc'], 
-                                     :active,               $images['check-hu'], 
-                                     :selected,             $images['check-nc'], 
-                                     '',                    $images['check-nu'], 
+                                     [:pressed, :selected],$images['check-nc'],
+                                     :pressed,             $images['check-nu'],
+                                     [:active, :selected], $images['check-hc'],
+                                     :active,              $images['check-hu'],
+                                     :selected,            $images['check-nc'],
+                                     '',                   $images['check-nu'],
                                    ], :tiling=>:fixed)
 
     Tk::Tile::Style.element_create('Radiobutton.indicator', :pixmap, 
                                    :images=>[
-                                     [:pressed, :selected], $images['radio-nc'], 
-                                     :pressed,              $images['radio-nu'], 
-                                     [:active, :selected],  $images['radio-hc'], 
-                                     :active,               $images['radio-hu'], 
-                                     :selected,             $images['radio-nc'], 
-                                     '',                    $images['radio-nu'], 
+                                     [:pressed, :selected],$images['radio-nc'],
+                                     :pressed,             $images['radio-nu'],
+                                     [:active, :selected], $images['radio-hc'],
+                                     :active,              $images['radio-hu'],
+                                     :selected,            $images['radio-nc'],
+                                     '',                   $images['radio-nu'],
                                    ], :tiling=>:fixed)
 
   end
