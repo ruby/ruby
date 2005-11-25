@@ -17,8 +17,12 @@ module RSS
       super
       
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
-        %w(updatePeriod updateFrequency).each do |name|
-          install_text_element("\#{SY_PREFIX}_\#{name}")
+        [
+          ["updatePeriod"],
+          ["updateFrequency", :positive_integer]
+        ].each do |name, type|
+          install_text_element("\#{SY_PREFIX}_\#{name}", type,
+                               "\#{SY_PREFIX}:\#{name}")
         end
 
         %w(updateBase).each do |name|
@@ -30,12 +34,6 @@ module RSS
           new_value = new_value.strip
           validate_sy_updatePeriod(new_value) if @do_validate
           self._sy_updatePeriod = new_value
-        end
-
-        alias_method(:_sy_updateFrequency=, :sy_updateFrequency=)
-        def sy_updateFrequency=(new_value)
-          validate_sy_updateFrequency(new_value) if @do_validate
-          self._sy_updateFrequency = new_value.to_i
         end
       EOC
     end
@@ -61,15 +59,6 @@ module RSS
         raise NotAvailableValueError.new("updatePeriod", value)
       end
     end
-
-    SY_UPDATEFREQUENCY_AVAILABLE_RE = /\A\s*\+?\d+\s*\z/
-    def validate_sy_updateFrequency(value)
-      value = value.to_s.strip
-      if SY_UPDATEFREQUENCY_AVAILABLE_RE !~ value
-        raise NotAvailableValueError.new("updateFrequency", value)
-      end
-    end
-
   end
 
   class RDF

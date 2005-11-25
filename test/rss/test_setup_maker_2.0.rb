@@ -13,15 +13,15 @@ module RSS
       copyright = "foo"
       managingEditor = "bar"
       webMaster = "web master"
-      rating = "6"
+      rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
       docs = "http://foo.com/doc"
       skipDays = [
         "Sunday",
         "Monday",
       ]
       skipHours = [
-        0,
-        13,
+        "0",
+        "13",
       ]
       pubDate = Time.now
       lastBuildDate = Time.now
@@ -30,7 +30,7 @@ module RSS
         "misc",
       ]
       generator = "RSS Maker"
-      ttl = 60
+      ttl = "60"
 
       rss = RSS::Maker.make("2.0") do |maker|
         maker.channel.title = title
@@ -85,7 +85,7 @@ module RSS
         assert_equal(day, channel.skipDays.days[i].content)
       end
       skipHours.each_with_index do |hour, i|
-        assert_equal(hour, channel.skipHours.hours[i].content)
+        assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
       
 
@@ -94,7 +94,7 @@ module RSS
       end
       
       assert_equal(generator, channel.generator)
-      assert_equal(ttl, channel.ttl)
+      assert_equal(ttl.to_i, channel.ttl)
 
 
       assert(channel.items.empty?)
@@ -106,8 +106,8 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      width = 144
-      height = 400
+      width = "144"
+      height = "400"
       description = "an image"
 
       rss = RSS::Maker.make("2.0") do |maker|
@@ -130,8 +130,8 @@ module RSS
       assert_equal(title, image.title)
       assert_equal(link, image.link)
       assert_equal(url, image.url)
-      assert_equal(width, image.width)
-      assert_equal(height, image.height)
+      assert_equal(width.to_i, image.width)
+      assert_equal(height.to_i, image.height)
       assert_equal(description, image.description)
     end
     
@@ -170,7 +170,7 @@ module RSS
       comments = "http://www.myblog.org/cgi-local/mt/mt-comments.cgi?entry_id=290"
       pubDate = Time.now
 
-      guid_isPermaLink = true
+      guid_isPermaLink = "true"
       guid_content = "http://inessential.com/2002/09/01.php#a2"
       
       enclosure_url = "http://www.scripting.com/mp3s/weatherReportSuite.mp3"
@@ -234,11 +234,11 @@ module RSS
         assert_equal("#{comments}#{i}", item.comments)
         assert_equal(pubDate, item.pubDate)
 
-        assert_equal(guid_isPermaLink, item.guid.isPermaLink)
+        assert_equal(guid_isPermaLink == "true", item.guid.isPermaLink)
         assert_equal(guid_content, item.guid.content)
 
         assert_equal(enclosure_url, item.enclosure.url)
-        assert_equal(enclosure_length, item.enclosure.length)
+        assert_equal(enclosure_length.to_i, item.enclosure.length)
         assert_equal(enclosure_type, item.enclosure.type)
 
         assert_equal(source_url, item.source.url)

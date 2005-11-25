@@ -15,7 +15,7 @@ module RSS
       
       @elements = {
         :updatePeriod => "hourly",
-        :updateFrequency => 2,
+        :updateFrequency => "2",
         :updateBase => t,
       }
     end

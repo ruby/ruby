@@ -1,3 +1,29 @@
+Fri Nov 25 12:39:56 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: improved type conversion.
+	* lib/rss/1.0.rb: ditto.
+	* lib/rss/0.9.rb: ditto.
+	* lib/rss/2.0.rb: ditto.
+	* lib/rss/image.rb: ditto.
+	* lib/rss/syndication.rb: ditto.
+
+	* test/rss/test_2.0.rb: added type conversion tests.
+	* test/rss/test_accessor.rb: ditto.
+	* test/rss/test_to_s.rb: ditto.
+	* test/rss/test_syndication.rb: ditto.
+	* test/rss/test_setup_maker_2.0.rb: ditto.
+	* test/rss/test_setup_maker_1.0.rb: ditto.
+	* test/rss/test_setup_maker_0.9.rb: ditto.
+	* test/rss/test_maker_sy.rb: ditto.
+	* test/rss/test_maker_image.rb: ditto.
+	* test/rss/test_maker_2.0.rb: ditto.
+	* test/rss/test_maker_0.9.rb: ditto.
+	* test/rss/test_image.rb: ditto.
+
+	* test/rss/test_maker_1.0.rb: use assert instead of assert_equal.
+
+	* test/rss/rss-assertions.rb: improved type conversion assertions.
+
 Fri Nov 25 10:38:20 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/image.rb: added Image prefix.

@@ -22,7 +22,7 @@ module RSS
       
       @elems = {
         :updatePeriod => "hourly",
-        :updateFrequency => 2,
+        :updateFrequency => "2",
         :updateBase => t,
       }
       
@@ -68,16 +68,18 @@ EOR
       
       new_value = {
         :updatePeriod => "daily",
-        :updateFrequency => +11,
+        :updateFrequency => "11",
         :updateBase => t,
       }
       
       @elems.each do |name, value|
+        value = value.to_i if name == :updateFrequency
         @parents.each do |parent|
-          assert_equal(value, @rss.__send__(parent).funcall("sy_#{name}"))
-          @rss.__send__(parent).funcall("sy_#{name}=", new_value[name].to_s)
-          assert_equal(new_value[name],
-                       @rss.__send__(parent).funcall("sy_#{name}"))
+          assert_equal(value, @rss.__send__(parent).__send__("sy_#{name}"))
+          @rss.__send__(parent).__send__("sy_#{name}=", new_value[name])
+          new_val = new_value[name]
+          new_val = new_val.to_i if name == :updateFrequency
+          assert_equal(new_val, @rss.__send__(parent).__send__("sy_#{name}"))
         end
       end
       

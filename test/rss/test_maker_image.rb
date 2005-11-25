@@ -17,8 +17,8 @@ module RSS
         "about" => "http://www.example.org/item.png",
         "resource" => "http://www.example.org/item",
         "dc_title" => "Example Image",
-        "image_width" => 100,
-        "image_height" => 65,
+        "image_width" => "100",
+        "image_height" => "65",
       }
     end
 
@@ -53,8 +53,8 @@ module RSS
         item = target.items.last.image_item
         assert_equal(@item_infos["about"], item.about)
         assert_equal(@item_infos["resource"], item.resource)
-        assert_equal(@item_infos["image_width"], item.image_width)
-        assert_equal(@item_infos["image_height"], item.image_height)
+        assert_equal(@item_infos["image_width"].to_i, item.image_width)
+        assert_equal(@item_infos["image_height"].to_i, item.image_height)
         assert_equal(@item_infos["dc_title"], item.dc_title)
       end
     end

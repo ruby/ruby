@@ -32,7 +32,7 @@ module RSS
 
       @sy_elems = {
         :updatePeriod => "hourly",
-        :updateFrequency => 2,
+        :updateFrequency => "2",
         :updateBase => t,
       }
 
@@ -107,6 +107,7 @@ module RSS
       end
       
       @sy_elems.each do |var, value|
+        value = value.to_i if var == :updateFrequency
         assert_equal(value, channel.__send__("sy_#{var}"))
       end
       
@@ -473,6 +474,7 @@ module RSS
         assert_equal(value, channel.__send__("dc_#{var}"))
       end
       @sy_elems.each do |var, value|
+        value = value.to_i if var == :updateFrequency
         assert_equal(value, channel.__send__("sy_#{var}"))
       end
 

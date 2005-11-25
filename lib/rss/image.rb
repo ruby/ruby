@@ -63,14 +63,20 @@ module RSS
 
       %w(width height).each do |tag|
         full_name = "#{IMAGE_PREFIX}_#{tag}"
-        install_text_element(full_name)
+        disp_name = "#{IMAGE_PREFIX}:#{tag}"
+        install_text_element(full_name, :integer, disp_name)
         BaseListener.install_get_text_element(IMAGE_URI, tag, "#{full_name}=")
       end
 
+      alias width= image_width=
+      alias width image_width
+      alias height= image_height=
+      alias height image_height
+
       def initialize(about=nil, resource=nil)
         super()
-        @about = about
-        @resource = resource
+        self.about = about
+        self.resource = resource
       end
 
       def full_name
@@ -86,29 +92,6 @@ module RSS
         rv = convert(rv) if need_convert
         rv
       end
-
-      alias _image_width= image_width=
-      def image_width=(new_value)
-        if @do_validate
-          self._image_width = Integer(new_value)
-        else
-          self._image_width = new_value.to_i
-        end
-      end
-
-      alias _image_height= image_height=
-      def image_height=(new_value)
-        if @do_validate
-          self._image_height = Integer(new_value)
-        else
-          self._image_height = new_value.to_i
-        end
-      end
-
-      alias width= image_width=
-      alias width image_width
-      alias height= image_height=
-      alias height image_height
 
       private
       def _tags
@@ -177,13 +160,27 @@ module RSS
         install_get_attribute(name, uri, required)
       end
 
+      AVAILABLE_SIZES = %w(small medium large)
+      alias_method :_size=, :size=
+      private :_size=
+      def size=(new_value)
+        if @do_validate and !new_value.nil?
+          new_value = new_value.strip
+          unless AVAILABLE_SIZES.include?(new_value)
+            attr_name = "#{IMAGE_PREFIX}:size"
+            raise NotAvailableValueError.new(full_name, new_value, attr_name)
+          end
+        end
+        funcall(:_size=, new_value)
+      end
+      
       alias image_size= size=
       alias image_size size
 
       def initialize(about=nil, size=nil)
         super()
-        @about = about
-        @size = size
+        self.about = about
+        self.size = size
       end
 
       def full_name

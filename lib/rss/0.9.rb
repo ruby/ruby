@@ -269,7 +269,7 @@ module RSS
 
           def initialize(content=nil)
             super()
-            @content = content
+            self.content = content
           end
       
         end
@@ -310,18 +310,12 @@ module RSS
         class Hour < Element
           include RSS09
 
-          content_setup
+          content_setup(:integer)
 
           def initialize(content=nil)
             super()
-            @content = content
+            self.content = content
           end
-
-          remove_method :content=
-          def content=(value)
-            @content = value.to_i
-          end
-          
         end
         
       end
@@ -334,20 +328,24 @@ module RSS
           install_text_element(name)
           install_model(name, nil)
         end
-        %w(width height description).each do |name|
-          install_text_element(name)
+        [
+          ["width", :integer],
+          ["height", :integer],
+          ["description"],
+        ].each do |name, type|
+          install_text_element(name, type)
           install_model(name, "?")
         end
 
         def initialize(url=nil, title=nil, link=nil, width=nil, height=nil,
                        description=nil)
           super()
-          @url = url
-          @title = title
-          @link = link
-          @width = width
-          @height = height
-          @description = description
+          self.url = url
+          self.title = title
+          self.link = link
+          self.width = width
+          self.height = height
+          self.description = description
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -386,21 +384,21 @@ module RSS
         
         [
           ["domain", nil, true],
-          ["port", nil, true],
+          ["port", nil, true, :integer],
           ["path", nil, true],
           ["registerProcedure", nil, true],
-          ["protocol", nil ,true],
-        ].each do |name, uri, required|
-          install_get_attribute(name, uri, required)
+          ["protocol", nil, true],
+        ].each do |name, uri, required, type|
+          install_get_attribute(name, uri, required, type)
         end
 
         def initialize(domain=nil, port=nil, path=nil, rp=nil, protocol=nil)
           super()
-          @domain = domain
-          @port = port
-          @path = path
-          @registerProcedure = rp
-          @protocol = protocol
+          self.domain = domain
+          self.port = port
+          self.path = path
+          self.registerProcedure = rp
+          self.protocol = protocol
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -511,8 +509,8 @@ module RSS
 
           def initialize(url=nil, content=nil)
             super()
-            @url = url
-            @content = content
+            self.url = url
+            self.content = content
           end
 
           private
@@ -543,17 +541,17 @@ module RSS
 
           [
             ["url", nil, true],
-            ["length", nil, true],
+            ["length", nil, true, :integer],
             ["type", nil, true],
-          ].each do |name, uri, required|
-            install_get_attribute(name, uri, required)
+          ].each do |name, uri, required, type|
+            install_get_attribute(name, uri, required, type)
           end
 
           def initialize(url=nil, length=nil, type=nil)
             super()
-            @url = url
-            @length = length
-            @type = type
+            self.url = url
+            self.length = length
+            self.type = type
           end
 
           def to_s(need_convert=true, indent=calc_indent)
@@ -596,8 +594,8 @@ module RSS
 
           def initialize(domain=nil, content=nil)
             super()
-            @domain = domain
-            @content = content
+            self.domain = domain
+            self.content = content
           end
 
           private
@@ -631,10 +629,10 @@ module RSS
 
         def initialize(title=nil, description=nil, name=nil, link=nil)
           super()
-          @title = title
-          @description = description
-          @name = name
-          @link = link
+          self.title = title
+          self.description = description
+          self.name = name
+          self.link = link
         end
 
         def to_s(need_convert=true, indent=calc_indent)
