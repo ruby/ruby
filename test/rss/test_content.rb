@@ -61,9 +61,9 @@ EOR
       @elems.each do |name, value|
         @parents.each do |parent|
           meth = "#{RSS::CONTENT_PREFIX}_#{name}"
-          assert_equal(value, @rss.__send__(parent).funcall(meth))
-          @rss.__send__(parent).funcall("#{meth}=", new_value[name].to_s)
-          assert_equal(new_value[name], @rss.__send__(parent).funcall(meth))
+          assert_equal(value, @rss.__send__(parent).__send__(meth))
+          @rss.__send__(parent).__send__("#{meth}=", new_value[name].to_s)
+          assert_equal(new_value[name], @rss.__send__(parent).__send__(meth))
         end
       end
 

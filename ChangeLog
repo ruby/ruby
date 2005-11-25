@@ -1,3 +1,13 @@
+Fri Nov 25 12:52:57 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: added backward compatibility codes.
+	* lib/rss/parser.rb: ditto.
+	* test/rss/test_parser.rb: ditto.
+	* test/rss/test_2.0.rb: ditto.
+
+	* test/rss/test_content.rb: use #__send__ instead of #funcall for
+	  no private method.
+
 Fri Nov 25 12:39:56 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: improved type conversion.
