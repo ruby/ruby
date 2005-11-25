@@ -436,6 +436,64 @@ range_last(VALUE range)
     return rb_ivar_get(range, id_end);
 }
 
+/*
+ *  call-seq:
+ *     rng.min                    => obj
+ *     rng.min {| a,b | block }   => obj
+ *  
+ *  Returns the minimum value in <i>rng</i>. The second uses
+ *  the block to compare values.  Returns nil if the first
+ *  value in range is larger than the last value.
+ *     
+ */
+
+
+static VALUE
+range_min(VALUE range)
+{
+    if (rb_block_given_p()) {
+	return rb_call_super(0, 0);
+    }
+    else {
+	VALUE b = rb_ivar_get(range, id_beg);
+	VALUE e = rb_ivar_get(range, id_end);
+	VALUE r = rb_funcall(b, id_cmp, 1, e);
+	int c = rb_cmpint(r, b, e);
+
+	if (c > 0) return Qnil;
+	return b;
+    }
+}
+
+/*
+ *  call-seq:
+ *     rng.max                    => obj
+ *     rng.max {| a,b | block }   => obj
+ *  
+ *  Returns the maximum value in <i>rng</i>. The second uses
+ *  the block to compare values.  Returns nil if the first
+ *  value in range is larger than the last value.
+ *     
+ */
+
+
+static VALUE
+range_max(VALUE range)
+{
+    if (rb_block_given_p() || EXCL(range)) {
+	return rb_call_super(0, 0);
+    }
+    else {
+	VALUE b = rb_ivar_get(range, id_beg);
+	VALUE e = rb_ivar_get(range, id_end);
+	VALUE r = rb_funcall(b, id_cmp, 1, e);
+	int c = rb_cmpint(r, b, e);
+
+	if (c > 0) return Qnil;
+	return e;
+    }
+}
+
 VALUE
 rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 {
@@ -638,6 +696,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "last", range_last, 0);
     rb_define_method(rb_cRange, "begin", range_first, 0);
     rb_define_method(rb_cRange, "end", range_last, 0);
+    rb_define_method(rb_cRange, "min", range_min, 0);
+    rb_define_method(rb_cRange, "max", range_max, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 

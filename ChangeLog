@@ -1,3 +1,10 @@
+Fri Nov 25 10:29:48 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_min): use <=> comparison rather than iteration.
+	  [ruby-talk:167420]
+
+	* range.c (range_max): ditto.
+
 Thu Nov 24 01:31:44 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (w32_io_info): CreateFile failed on Win9x if file was already
