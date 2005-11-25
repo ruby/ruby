@@ -139,16 +139,16 @@ module RSS
       end
     end
     
-    def assert_xml_stylesheet_pis(attrs_ary)
+    def assert_xml_stylesheet_pis(attrs_ary, rss=nil)
       _wrap_assertion do
-        rdf = ::RSS::RDF.new()
+        rss ||= ::RSS::RDF.new()
         xss_strs = []
         attrs_ary.each do |attrs|
           xss = ::RSS::XMLStyleSheet.new(*attrs)
           xss_strs.push(xss.to_s)
-          rdf.xml_stylesheets.push(xss)
+          rss.xml_stylesheets.push(xss)
         end
-        pi_str = rdf.to_s.gsub(/<\?xml .*\n/, "").gsub(/\s*<rdf:RDF.*\z/m, "")
+        pi_str = rss.to_s.gsub(/<\?xml .*\n/, "").gsub(/\s*<[^\?].*\z/m, "")
         assert_equal(xss_strs.join("\n"), pi_str)
       end
     end
