@@ -31,4 +31,24 @@ class TestRange < Test::Unit::TestCase
   def test_duckrange
     assert_equal("bc", "abcd"[DuckRange.new(1,2)])
   end
+
+  def test_min
+    assert_equal(1, (1..2).min)
+    assert_equal(nil, (2..1).min)
+    assert_equal(1, (1...2).min)
+
+    assert_equal(1.0, (1.0..2.0).min)
+    assert_equal(nil, (2.0..1.0).min)
+    assert_equal(1, (1.0...2.0).min)
+  end
+
+  def test_max
+    assert_equal(2, (1..2).max)
+    assert_equal(nil, (2..1).max)
+    assert_equal(1, (1...2).max)
+
+    assert_equal(2.0, (1.0..2.0).max)
+    assert_equal(nil, (2.0..1.0).max)
+    assert_raise(TypeError) { (1.0...2.0).max }
+  end
 end

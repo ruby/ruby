@@ -1,3 +1,8 @@
+Fri Nov 25 14:34:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_max): treat end exclusion without iteration if
+	  the end value is an integer.  [ruby-talk:167433]
+
 Fri Nov 25 12:52:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: added backward compatibility codes.

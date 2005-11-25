@@ -457,8 +457,7 @@ range_min(VALUE range)
     else {
 	VALUE b = rb_ivar_get(range, id_beg);
 	VALUE e = rb_ivar_get(range, id_end);
-	VALUE r = rb_funcall(b, id_cmp, 1, e);
-	int c = rb_cmpint(r, b, e);
+	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
 
 	if (c > 0) return Qnil;
 	return b;
@@ -480,16 +479,23 @@ range_min(VALUE range)
 static VALUE
 range_max(VALUE range)
 {
-    if (rb_block_given_p() || EXCL(range)) {
+    VALUE e = rb_ivar_get(range, id_end);
+    int ip = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cInteger);
+
+    if (rb_block_given_p() || (EXCL(range) && !ip)) {
 	return rb_call_super(0, 0);
     }
     else {
 	VALUE b = rb_ivar_get(range, id_beg);
-	VALUE e = rb_ivar_get(range, id_end);
-	VALUE r = rb_funcall(b, id_cmp, 1, e);
-	int c = rb_cmpint(r, b, e);
+	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
 
 	if (c > 0) return Qnil;
+	if (EXCL(range)) {
+	    if (FIXNUM_P(e)) {
+		return INT2NUM(FIX2INT(e)-1);
+	    }
+	    return rb_funcall(e, '-', 1, INT2FIX(1));
+	}
 	return e;
     }
 }
