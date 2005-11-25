@@ -1,3 +1,9 @@
+Fri Nov 25 10:38:20 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/image.rb: added Image prefix.
+
+	* lib/rss/maker/image.rb: ditto.
+
 Fri Nov 25 10:33:02 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_2.0.rb: added RSS 2.0 tests.
