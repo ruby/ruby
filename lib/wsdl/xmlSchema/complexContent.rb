@@ -33,6 +33,10 @@ class ComplexContent < Info
     parent.targetnamespace
   end
 
+  def elementformdefault
+    parent.elementformdefault
+  end
+
   def basetype
     @basetype ||= root.collect_complextypes[@base]
   end

@@ -1,3 +1,8 @@
+Sun Nov 27 00:56:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/wsdl/xmlSchema/complexContent.rb: missing
+	  ComplexContent#elementformdefault method.
+
 Sat Nov 26 19:57:45 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (conv_to_posix_path): should initialize posix.
@@ -1676,7 +1681,7 @@ Fri Sep 16 12:02:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/syck/rubyext.c (syck_resolver_transfer): remove C++ style
 	  comment (//).  [ruby-core:05793]
 
-Fri Sep 16 00:17:03 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Fri Sep 16 00:17:03 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/logger/test_logger.rb: unintentionally overwritten changes by
 	  Usa.  reverted.
@@ -1686,7 +1691,7 @@ Fri Sep 16 00:03:11 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#initialize): should set
 	  $stdout.binmode.
 
-Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/{soap,wsdl,xsd}, test/{soap,wsdl,xsd}: imported soap4r/1.5.5.
 
@@ -1827,7 +1832,7 @@ Wed Sep 14 15:06:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  rubysig.h, signal.c, sprintf.c, st.h, string.c, struct.c, time.c,
 	  util.c, util.h, variable.c: ditto.
 
-Tue Sep 13 22:09:40 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Sep 13 22:09:40 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb (Logger): added formatter accessor to logger for
 	  dictating the way in which the logger should format the messages it
@@ -2166,7 +2171,7 @@ Tue Aug 30 23:49:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (RETURN_ENUMERATOR): utility macro for enumerable methods.
 
-Tue Aug 30 23:25:45 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Aug 30 23:25:45 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/debug.rb: no need to restart at exit.
 
@@ -2296,7 +2301,7 @@ Sat Aug 20 23:55:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): update paren_nest for brackets [].
 
-Sun Aug 21 00:10:23 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Aug 21 00:10:23 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/wsdl/xmlSchema/importer.rb (WSDL::XMLSchema::Importer#fetch): add
 	  a workaround for importing an WSDL whose path begins with drive
@@ -2307,7 +2312,7 @@ Sat Aug 20 22:05:25 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 	* regexec.c (code_is_in_cclass_node): check code size.
 	  [ruby-dev:26840]
 
-Sat Aug 20 22:37:13 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Aug 20 22:37:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb (write, shift_log?, shift_log): file shifting race
 	  condition bug fixed.  [ruby-dev:26764]
@@ -2533,7 +2538,7 @@ Mon Aug  8 21:28:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_fnmatch.rb: separated from test_file.rb.
 
-Mon Aug  8 20:40:35 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Mon Aug  8 20:40:35 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_method.rb: added.  [ruby-dev:26761]
 
@@ -2562,7 +2567,7 @@ Mon Aug  8 05:15:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb: add a media-type "text/html" for .xhtml.
 
-Sun Aug  7 23:52:39 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Aug  7 23:52:39 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_super.rb: added optional arg tests.  [ruby-dev:26743]
 	  the tests expects 1.8 behavior at this time.
@@ -3354,7 +3359,7 @@ Mon Jul  4 11:23:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* test/{dbm,gdbm,sdbm}/test_{dbm,gdbm,sdbm}.rb: skip some tests
 	  which using fork on fork-less platforms.
 
-Sun Jul  3 23:26:30 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Jul  3 23:26:30 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/wsdl/document/test_rpc.rb: compare formatted time string of
 	  Time objects instead of comparing Time objects itself to avoid
@@ -4052,7 +4057,7 @@ Tue May 24 06:45:31 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): string
 	  literals to be matched non-greedy.
 
-Tue May 24 00:39:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue May 24 00:39:14 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/calc: method name 'set' was able to crash with a class Set.
 	  [ruby-dev:26210]
@@ -4076,7 +4081,7 @@ Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* re.c (make_regexp): should not return junk address during
 	  compile time.  [ruby-dev:26206]
 
-Sun May 22 21:54:06 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun May 22 21:54:06 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/{soap,wsdl,xsd}, test/{soap,wsdl,xsd}: imported soap4r/1.5.4.
 
@@ -6372,7 +6377,7 @@ Mon Jan 24 15:44:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* document updates - [ruby-core:04296], [ruby-core:04301],
 	  [ruby-core:04302], [ruby-core:04307]
 
-Sun Jan 23 12:38:01 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Jan 23 12:38:01 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/wsdlDriver.rb: from 1.5.3-ruby1.8.2, operation which has
 	  capitalized name (such as KeywordSearchRequest in AWS) is defined as
@@ -6919,7 +6924,7 @@ Tue Dec 21 16:15:21 2004  Michael Neumann  <mneumann@ruby-lang.org>
 	  (http://rubyforge.org/tracker/?func=detail&atid=1698&aid=1208&group_id=426).
 	  removed testing of SSL enabled servlet as this hangs.
 
-Wed Dec 22 00:05:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed Dec 22 00:05:10 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/*, test/soap/*, sample/soap/authheader/*: eval cleanup.
 
@@ -6942,7 +6947,7 @@ Tue Dec 21 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/grid.rb: rescue bug of 'grid configure' on Tcl/Tk8.3-
 
-Mon Dec 20 22:52:29 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Mon Dec 20 22:52:29 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* added samples for the previous soap4r's commit.
 
@@ -6951,7 +6956,7 @@ Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
 	* gc.c (set_stack_end): gcc noinline attribute is available since
 	  gcc-3.1.
 
-Mon Dec 20 22:40:31 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Mon Dec 20 22:40:31 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* added files:
 	  * lib/soap/mapping/wsdl*.rb
@@ -7040,7 +7045,7 @@ Sat Dec 18 16:36:23 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/zlib/zlib.c (rb_deflate_s_deflate, rb_inflate_s_inflate):
 	  disallow interrupt by type conversion.  fixed: [ruby-dev:25226]
 
-Sat Dec 18 15:09:02 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Dec 18 15:09:02 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/httpauth.rb,
 	  lib/webrick/httpauth/{basicauth.rb,digestauth.rb}: use
@@ -8165,7 +8170,7 @@ Thu Nov 18 10:10:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/stringio/stringio.c (strio_initialize): allow Fixnum as mode as
 	  well as IO.new does.  [ruby-dev:24896]
 
-Wed Nov 17 23:47:30 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed Nov 17 23:47:30 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_settracefunc.rb: added.  [ruby-dev:24884]
 
@@ -8322,7 +8327,7 @@ Sun Nov 14 10:48:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/mathn.rb (Integer::gcd2): faster implementation by
 	  <erlercw@siu.edu>. [ruby-talk:120232]
 
-Sun Nov 14 08:46:33 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Nov 14 08:46:33 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/logger/test_logger.rb: Logger just expects
 	  Logger#datetime_format to be used for Time#strftime independently of
@@ -10616,7 +10621,7 @@ Mon Jul 12 21:20:51 2004  Dave Thomas  <dave@pragprog.com>
 	* html_generator.rb: Support hyperlinks of the form {any text}[xxx]
 	  as well as stuff[xxx]
 
-Sat Jul 10 09:30:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Jul 10 09:30:24 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/marshal/test_struct.rb: use qualified built-in class name
 	  (::Struct) to avoid name crash.
@@ -10717,7 +10722,7 @@ Sun Jul  4 12:24:50 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: added copyright header.
 
-Sat Jul  3 22:25:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Jul  3 22:25:27 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* added files:
 	  * lib/soap/header/*
@@ -11216,11 +11221,11 @@ Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (rb_io_fwrite): should check if errno == ENOENT, too.
 
-Thu May 27 11:25:03 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu May 27 11:25:03 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: illegal require module name (../lib/csv.rb).
 
-Wed May 26 23:12:13 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed May 26 23:12:13 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb (CSV.read, CSV.readlines): added.  works as IO.read and
 	  IO.readlines in CSV format.
@@ -11302,7 +11307,7 @@ Fri May 21 09:22:05 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_parameters):
 	  Add ()'s around parameters that don't have them
 
-Fri May 21 02:21:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Fri May 21 02:21:11 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb: fixed a few bugs around multi char record/field separator.
 
@@ -11359,7 +11364,7 @@ Wed May 19 02:21:53 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: do not use class variables.
 
-Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb: writes lines with "\n" when row separator is not given.
 	  formerly it was "\r\n".
@@ -11624,7 +11629,7 @@ Sun May  9 23:38:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/net/telnet.rb: ditto
 
-Sun May  9 23:34:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun May  9 23:34:51 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_float.rb: added test_strtod to test Float("0").
 
@@ -12266,7 +12271,7 @@ Thu Apr  1 22:55:04 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_options.rb: Fix undefined variable warning.
 
-Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/mapping/{factory.rb,registry.rb}: fixed illegal mapped URI
 	  object with soap/marshal.
@@ -12342,7 +12347,7 @@ Sat Mar 27 10:40:48 2004  Tanaka Akira  <akr@m17n.org>
 	* (lib/pp.rb, lib/prettyprint.rb): define seplist in PP::PPMethods
 	  instead of PrettyPrint.
 
-Sat Mar 27 01:47:09 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Mar 27 01:47:09 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: trim tail space of each line.  no user visible change.
 
@@ -13240,12 +13245,12 @@ Thu Feb 19 22:39:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/ostruct.rb: documented
 
-Thu Feb 19 22:39:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Feb 19 22:39:04 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/rinda/test_rinda.rb: DRb.start_service only once in testsuites.
 	  DRb.start_service could handle this.
 
-Thu Feb 19 22:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Feb 19 22:24:04 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/mapping/rubytypeFactory.rb: should not dump singleton class.
 	  [ruby-dev:22588]
@@ -13308,7 +13313,7 @@ Wed Feb 18 22:42:19 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: improt test_rinda.rb
 
-Wed Feb 18 22:03:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed Feb 18 22:03:11 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/*: should not depend on $KCODE.
 
@@ -13337,12 +13342,12 @@ Tue Feb 17 23:40:34 2004  Guy Decoux  <ts@moulon.inra.fr>
 	* sprintf.c (rb_f_sprintf): preserve original val for
 	  format_integer. [ruby-talk:92975]
 
-Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/marshal/test_marshal.rb, test/ruby/test_marshal.rb: do $:
 	  trick to share the testcase test/ruby/marshaltestlib.rb.
 
-Tue Feb 17 23:13:23 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Feb 17 23:13:23 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/marshaltestlib.rb: common marshal testcase added.
 
@@ -13410,7 +13415,7 @@ Tue Feb 17 01:20:57 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: new module FileUtils::DryRun.
 
-Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb: document reduction.  [ruby-core:02429]
 
@@ -13501,7 +13506,7 @@ Sun Feb 15 20:56:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (push_braces): remove wrong const. [ruby-dev:22891]
 
-Sun Feb 15 20:41:15 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Feb 15 20:41:15 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* sample/soap/calc/httpd.rb, sample/soap/exchange/httpd.rb,
 	  sample/soap/sampleStruct/httpd.rb, sample/wsdl/googleSearch/httpd.rb:
@@ -13745,12 +13750,12 @@ Fri Feb  6 22:48:16 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/generators/html_generator.rb (gen_url): Support
 	  https in RDoc hyperlinks
 
-Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/pp.rb (PPInspectTest#test_to_s_with_iv): rollback the previous
 	  commit.  [ruby-dev:22813]
 
-Fri Feb  6 22:22:50 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Fri Feb  6 22:22:50 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/pp.rb (PPInspectTest#test_to_s_with_iv): remove instance
 	  variable which is defined in the test.
@@ -13887,7 +13892,7 @@ Sat Jan 31 02:28:15 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RPATHFLAG): set to -Wl,-R like NetBSD on Interix.
 
-Sat Jan 31 01:09:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Jan 31 01:09:41 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: leading 0 padding of timestamp usec part.
 
@@ -13910,12 +13915,12 @@ Thu Jan 29 22:41:53 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/generators/html_generator.rb: Allow 'link:' in Tidylinks.
 	  THis means you can write "see f1[link:files/f1_rb.html]".
 
-Thu Jan 29 22:24:47 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Jan 29 22:24:47 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* sample/openssl/gen_csr.rb: follow OpenSSL::X509::Name change.
 	  ASN.1 type of subject DN elements were wrong.
 
-Thu Jan 29 22:19:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Jan 29 22:19:51 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/*: remove $: trick.  [ruby-dev:22763]  use test/runner.rb to
 	  run test.
@@ -13935,7 +13940,7 @@ Thu Jan 29 17:03:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
 	  [ruby-dev:22761]
 
-Thu Jan 29 11:32:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Jan 29 11:32:14 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/rss/test_*: do $: trick while searching a module in the current
 	  directory.
@@ -14266,7 +14271,7 @@ Sun Jan 18 20:47:35 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.c: use translate_char() on Cygwin.
 
-Sun Jan 18 20:00:16 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sun Jan 18 20:00:16 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
 	  "parts" attribute of soap:body element in WSDL.
@@ -14382,7 +14387,7 @@ Tue Jan 13 14:26:59 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* lib/test/unit/ui/testrunnerutilities.rb (TestRunnerUtilities):
 	  moved run method which allows output level.  [ruby-dev:22554]
 
-Tue Jan 13 13:04:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Jan 13 13:04:24 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/test_*.rb: Pathname#parent -> Pathname#dirname.
 
@@ -14498,7 +14503,7 @@ Fri Jan  9 17:36:51 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/socket/socket.c (make_hostent): getaddrinfo(3) on BSD do not
 	  fill ai_canonname if serv is not supplied.  (ruby-bugs PR#1243)
 
-Fri Jan  9 13:14:59 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Fri Jan  9 13:14:59 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb: do not ignore exceptions(LoadError
 	  and SystemExitError) while loading a testcase.  smell of bug.
@@ -14550,7 +14555,7 @@ Thu Jan  8 18:25:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): should not recurse in exceptional status.
 
-Thu Jan  8 16:51:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Thu Jan  8 16:51:04 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/wsdl/datetime/test_datetime.rb: fixed a stupid testcase which
 	  dumps "E" at month-end.
@@ -14607,7 +14612,7 @@ Wed Jan  7 14:26:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkcanvas.rb: use epath for window items.
 
-Wed Jan  7 14:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed Jan  7 14:24:04 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/{attachment.rb,mimemessage.rb}: added from soap4r/1.5.2.
 
@@ -14618,7 +14623,7 @@ Wed Jan  7 13:00:18 2004  Dave Thomas  <dave@pragprog.com>
 	  names (such as "ri Thread.join" would return both
 	  Thread.join and ThreadsWait.join)
 
-Wed Jan  7 12:35:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Wed Jan  7 12:35:41 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/debug.rb: revert command parse regexps.  [ruby-list:39014] by
 	  Shirai,Kaoru.
@@ -14639,7 +14644,7 @@ Tue Jan  6 21:51:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* io.c (fptr_finalize): should save errno just after failure.
 	  [ruby-dev:22492]
 
-Tue Jan  6 20:51:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Jan  6 20:51:10 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb(Logger#msg2str): no special treatment for the object
 	  which responds to :to_str.
@@ -14655,13 +14660,13 @@ Tue Jan  6 14:53:14 2004  Dave Thomas  <dave@pragprog.com>
 	* bin/ri: split out the display side, making it pluggable. Added
 	  new ri_driver and ri_display files in lib/rdoc/ri.
 
-Tue Jan  6 11:29:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Jan  6 11:29:43 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/inlinetest.rb, test/{test_generator.rb,test_ipaddr.rb,
 	  test_pathname.rb,test_pp.rb,test_prettyprint.rb,test_set.rb,
 	  test_time.rb,test_tsort.rb: added.
 
-Tue Jan  6 09:38:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Tue Jan  6 09:38:27 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* import soap4r/1.5.2;
 
