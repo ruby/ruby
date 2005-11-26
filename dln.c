@@ -1645,6 +1645,7 @@ conv_to_posix_path(win32, posix, len)
     char *p = win32;
     char *dst = posix;
 
+    posix[0] = '\0';
     for (p = win32; *p; p++)
 	if (*p == ';') {
 	    *p = 0;
