@@ -1,3 +1,8 @@
+Sun Nov 27 05:37:20 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb: use File.basename to decompose pathnames.
+	  experimental Windows support.
+
 Sun Nov 27 00:56:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/wsdl/xmlSchema/complexContent.rb: missing
