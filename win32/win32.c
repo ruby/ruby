@@ -1712,9 +1712,9 @@ rb_w32_strerror(int e)
 	buffer[sizeof(buffer) - 1] = 0;
     }
 
-    for (p = buffer + strlen(buffer) - 1; buffer <= p; p--) {
-	if (*p != '\r' && *p != '\n') break;
-	*p = 0;
+    p = buffer;
+    while ((p = strpbrk(p, "\r\n")) != NULL) {
+	memmove(p, p + 1, strlen(p));
     }
     return buffer;
 }

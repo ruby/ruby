@@ -1,3 +1,8 @@
+Mon Nov 28 13:08:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_strerror): remove all CR and LF. (avoid broken
+	  error message on bccwin32 + winsock)
+
 Mon Nov 28 09:21:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): should not change sodir with
