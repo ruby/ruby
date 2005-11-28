@@ -1,8 +1,8 @@
-Mon Nov 28 13:20:11 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+Mon Nov 28 18:55:22 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (init_inetsock_internal): remove setting
-	  SO_REUSEADDR option on server socket. fixed: [ruby-core:6765]
-	  ([ ruby-Bugs-2872 ])
+	  SO_REUSEADDR option on server socket on Cygwin.
+	  fixed: [ruby-core:6765] ([ ruby-Bugs-2872 ])
 
 Mon Nov 28 13:11:45 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
