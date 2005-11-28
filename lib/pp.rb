@@ -150,8 +150,15 @@ class PP < PrettyPrint
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
+    case Object.new.inspect
+    when /\A\#<Object:0x([0-9a-f]+)>\z/
+      PointerFormat = "%0#{$1.length}x"
+    else
+      PointerFormat = "%x"
+    end
+
     def object_address_group(obj, &block)
-      id = "%x" % (obj.__id__ * 2)
+      id = PointerFormat % (obj.__id__ * 2)
       id.sub!(/\Af(?=[[:xdigit:]]{2}+\z)/, '') if id.sub!(/\A\.\./, '')
       group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end

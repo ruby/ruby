@@ -1,3 +1,7 @@
+Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (PP::PPMethods#object_address_group): adjust address format.
+
 Mon Nov 28 18:55:22 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (init_inetsock_internal): remove setting
