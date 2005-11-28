@@ -1100,7 +1100,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print CLEANINGS
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
-  sodir = dir = "$(RUBYARCHDIR)"
+  sodir = (dir = "$(RUBYARCHDIR)").dup
   mfile.print("install-so: #{dir}\n")
   if target
     f = "$(DLLIB)"

@@ -1,3 +1,9 @@
+Mon Nov 28 09:21:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/mkmf.rb (create_makefile): should not change sodir with
+	  dir.gsub!. (bccwin32 failed to install third party exntesions)
+	  [ruby-dev:27834]
+
 Sun Nov 27 00:56:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/wsdl/xmlSchema/complexContent.rb: missing
