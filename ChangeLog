@@ -1,3 +1,9 @@
+Mon Nov 28 09:15:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/mkmf.rb (create_makefile): should not change sodir with
+	  dir.gsub!. (bccwin32 failed to install third party exntesions)
+	  [ruby-dev:27834]
+
 Sun Nov 27 05:37:20 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: use File.basename to decompose pathnames.
