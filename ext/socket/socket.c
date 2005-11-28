@@ -1097,11 +1097,6 @@ init_inetsock_internal(arg)
 	}
 	arg->fd = fd;
 	if (type == INET_SERVER) {
-#ifndef _WIN32
-	    status = 1;
-	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
-		       (char*)&status, sizeof(status));
-#endif
 	    status = bind(fd, res->ai_addr, res->ai_addrlen);
 	    syscall = "bind(2)";
 	}

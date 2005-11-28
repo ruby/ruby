@@ -1,3 +1,9 @@
+Mon Nov 28 13:25:23 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (init_inetsock_internal): remove setting
+	  SO_REUSEADDR option on server socket. fixed: [ruby-core:6765]
+	  ([ ruby-Bugs-2872 ])
+
 Mon Nov 28 13:08:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_strerror): remove all CR and LF. (avoid broken
