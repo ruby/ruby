@@ -1,3 +1,8 @@
+Tue Nov 29 22:45:30 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/observer.rb (notify_observers): follow change of observer.rb.
+	  fixed: [ruby-core:6796]
+
 Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP::PPMethods#object_address_group): adjust address format.
