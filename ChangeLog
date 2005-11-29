@@ -1,3 +1,14 @@
+Tue Nov 29 23:57:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): heap must be placed at same offset
+	  also in ripper.y.  fixed: [ruby-dev:27846]
+
+	* parse.y (yycompile): prevent vparser from tail call optimization.
+	  fixed: [ruby-dev:27851]
+
+	* parse.y (parser_mark): value needs to be marked.
+	  fixed: [ruby-dev:27845]
+
 Tue Nov 29 22:45:30 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/observer.rb (notify_observers): follow change of observer.rb.
@@ -130,7 +141,7 @@ Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  [Tk8.5 feature].
 
 	* ext/tk/lib/tk/text.rb: supports new indices modifires on a Text
-	  widget [Tk8.5 feature]. 
+	  widget [Tk8.5 feature].
 
 	* ext/tk/lib/tk/virtevent.rb: add TkNamedVirtualEvent.
 
@@ -162,13 +173,13 @@ Wed Nov 23 18:26:00 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/taxonomy.rb: changed class or module prefix to
 	  Taxonomy from Taxo.
 	* lib/rss/maker/taxonomy.rb: ditto.
-	
+
 Wed Nov 23 18:21:11 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/taxonomy.rb: implemented taxonomy module for RSS
 	  Maker.
 	* lib/rss/taxonomy.rb: supported RSS Maker.
-	* lib/rss/maker.rb: added taxonomy module support. 
+	* lib/rss/maker.rb: added taxonomy module support.
 
 	* lib/rss/rss.rb: adjusted to other element API.
 	* lib/rss/1.0.rb: adjusted to other element API but backward

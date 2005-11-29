@@ -129,6 +129,8 @@ struct local_vars {
                      token
 */
 struct parser_params {
+    NODE *heap;
+
     union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
     VALUE eofp;
 
@@ -179,10 +181,6 @@ struct parser_params {
 #endif
     int line_count;
     int has_shebang;
-
-#ifdef YYMALLOC
-    NODE *heap;
-#endif
 };
 
 #ifdef YYMALLOC
@@ -4546,12 +4544,15 @@ static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
 static NODE*
-yycompile(struct parser_params *parser, const char *f, int line)
+yycompile(VALUE vparser, const char *f, int line)
 {
     int n;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
     const char *kcode_save;
+    volatile VALUE parser_save = vparser;
+    struct parser_params *parser;
 
+    Data_Get_Struct(vparser, struct parser_params, parser);
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
@@ -4642,7 +4643,7 @@ rb_compile_string(const char *f, VALUE s, int line)
 }
 
 NODE*
-rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct parser_params *parser;
 
@@ -4653,7 +4654,7 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = ruby_in_eval;
 
-    return yycompile(parser, f, line);
+    return yycompile(vparser, f, line);
 }
 
 NODE*
@@ -4663,7 +4664,7 @@ rb_compile_cstr(const char *f, const char *s, int len, int line)
 }
 
 NODE*
-rb_parser_compile_cstr(volatile VALUE vparser, const char *f, const char *s, int len, int line)
+rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int line)
 {
     return rb_parser_compile_string(vparser, f, rb_str_new(s, len), line);
 }
@@ -4683,7 +4684,7 @@ rb_compile_file(const char *f, VALUE file, int start)
 }
 
 NODE*
-rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int start)
+rb_parser_compile_file(VALUE vparser, const char *f, VALUE file, int start)
 {
     struct parser_params *parser;
 
@@ -4692,7 +4693,7 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
 
-    return yycompile(parser, f, start);
+    return yycompile(vparser, f, start);
 }
 #endif  /* !RIPPER */
 
@@ -8698,6 +8699,7 @@ parser_mark(void *ptr)
 #else
     rb_gc_mark(p->parser_ruby_sourcefile);
     rb_gc_mark(p->delayed);
+    rb_gc_mark(p->value);
     rb_gc_mark(p->result);
     rb_gc_mark(p->parsing_thread);
 #endif

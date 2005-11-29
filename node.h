@@ -353,9 +353,9 @@ typedef struct RNode {
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 
-NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
-NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_file(volatile VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
+NODE *rb_parser_compile_string(VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_file(VALUE, const char*, VALUE, int);
 
 NODE *rb_compile_cstr(const char*, const char*, int, int);
 NODE *rb_compile_string(const char*, VALUE, int);
