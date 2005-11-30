@@ -1,3 +1,8 @@
+Thu Dec  1 00:50:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_funcall2): allow to call protected methods.
+	  fixed: [ruby-dev:27890]
+
 Wed Nov 30 23:52:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (NEWHEAP, ADD2HEAP): set count after pointer was set.
