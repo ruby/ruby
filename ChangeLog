@@ -8,6 +8,11 @@ Wed Nov 30 23:52:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (NEWHEAP, ADD2HEAP): set count after pointer was set.
 	  fixed: [ruby-dev:27896]
 
+Wed Nov 30 13:43:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): support $! at the end of
+	  expression.   [ruby-dev:27868]
+
 Mon Nov 28 18:55:43 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (init_inetsock_internal): remove setting
