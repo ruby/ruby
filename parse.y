@@ -160,6 +160,9 @@ struct parser_params {
     VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
     struct local_vars *parser_lvtbl;
     int parser_ruby__end__seen;
+    int line_count;
+    int has_shebang;
+
 #ifndef RIPPER
     /* Ruby core only */
     NODE *parser_eval_tree_begin;
@@ -179,8 +182,6 @@ struct parser_params {
     VALUE parsing_thread;
     int toplevel_p;
 #endif
-    int line_count;
-    int has_shebang;
 };
 
 #ifdef YYMALLOC
@@ -474,7 +475,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 /*%
 %token <val>
 %*/
-        kCLASS
+	kCLASS
 	kMODULE
 	kDEF
 	kUNDEF
@@ -618,18 +619,18 @@ program		:  {
 			lex_state = EXPR_BEG;
 			top_local_init();
 			if (ruby_class == rb_cObject) class_nest = 0;
-                        else class_nest = 1;
+			else class_nest = 1;
 		    /*%
-		        lex_state = EXPR_BEG;
-		        class_nest = !parser->toplevel_p;
-		        $$ = Qnil;
+			lex_state = EXPR_BEG;
+			class_nest = !parser->toplevel_p;
+			$$ = Qnil;
 		    %*/
 		    }
 		  compstmt
 		    {
 		    /*%%%*/
 			if ($2 && !compile_for_eval) {
-                            /* last expression should not be void */
+			    /* last expression should not be void */
 			    if (nd_type($2) != NODE_BLOCK) void_expr($2);
 			    else {
 				NODE *node = $2;
@@ -640,12 +641,12 @@ program		:  {
 			    }
 			}
 			ruby_eval_tree = block_append(ruby_eval_tree, $2);
-                        top_local_setup();
+			top_local_setup();
 			class_nest = 0;
-                    /*%
+		    /*%
 			class_nest = 0;
-                        $$ = $2;
-                        parser->result = dispatch1(program, $$);
+			$$ = $2;
+			parser->result = dispatch1(program, $$);
 		    %*/
 		    }
 		;
@@ -656,7 +657,7 @@ bodystmt	: compstmt
 		  opt_ensure
 		    {
 		    /*%%%*/
-		        $$ = $1;
+			$$ = $1;
 			if ($2) {
 			    $$ = NEW_RESCUE($1, $2, $3);
 			}
@@ -673,12 +674,12 @@ bodystmt	: compstmt
 			    }
 			}
 			fixpos($$, $1);
-                    /*%
-		        $$ = dispatch4(bodystmt,
-                                       escape_Qundef($1),
-                                       escape_Qundef($2),
-                                       escape_Qundef($3),
-                                       escape_Qundef($4));
+		    /*%
+			$$ = dispatch4(bodystmt,
+				       escape_Qundef($1),
+				       escape_Qundef($2),
+				       escape_Qundef($3),
+				       escape_Qundef($4));
 		    %*/
 		    }
 		;
@@ -687,9 +688,9 @@ compstmt	: stmts opt_terms
 		    {
 		    /*%%%*/
 			void_stmts($1);
-		        $$ = $1;
+			$$ = $1;
 		    /*%
-		    	$$ = $1;
+			$$ = $1;
 		    %*/
 		    }
 		;
@@ -699,7 +700,7 @@ stmts		: none
 		    /*%c
 		    {
 			$$ = dispatch2(stmts_add, dispatch0(stmts_new),
-			                          dispatch0(void_stmt));
+						  dispatch0(void_stmt));
 		    }
 		    %*/
 		| stmt
@@ -727,7 +728,7 @@ stmts		: none
 stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
-		        $$ = NEW_ALIAS($2, $4);
+			$$ = NEW_ALIAS($2, $4);
 		    /*%
 			$$ = dispatch2(alias, $2, $4);
 		    %*/
@@ -735,7 +736,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| kALIAS tGVAR tGVAR
 		    {
 		    /*%%%*/
-		        $$ = NEW_VALIAS($2, $3);
+			$$ = NEW_VALIAS($2, $3);
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 		    %*/
@@ -746,7 +747,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			char buf[3];
 
 			sprintf(buf, "$%c", (char)$3->nd_nth);
-		        $$ = NEW_VALIAS($2, rb_intern(buf));
+			$$ = NEW_VALIAS($2, rb_intern(buf));
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 		    %*/
@@ -754,8 +755,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| kALIAS tGVAR tNTH_REF
 		    {
 		    /*%%%*/
-		        yyerror("can't make alias for the number variables");
-		        $$ = 0;
+			yyerror("can't make alias for the number variables");
+			$$ = 0;
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 			$$ = dispatch1(alias_error, $$);
@@ -773,10 +774,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($3), $1, 0);
-		        fixpos($$, $3);
+			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
-		            $$->nd_else = $$->nd_body;
-		            $$->nd_body = 0;
+			    $$->nd_else = $$->nd_body;
+			    $$->nd_body = 0;
 			}
 		    /*%
 			$$ = dispatch2(if_mod, $3, $1);
@@ -786,13 +787,13 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($3), $1, 0);
-		        fixpos($$, $3);
+			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
-		            $$->nd_body = $$->nd_else;
-		            $$->nd_else = 0;
+			    $$->nd_body = $$->nd_else;
+			    $$->nd_else = 0;
 			}
 		    /*%
-		    	$$ = dispatch2(unless_mod, $3, $1);
+			$$ = dispatch2(unless_mod, $3, $1);
 		    %*/
 		    }
 		| stmt kWHILE_MOD expr_value
@@ -871,7 +872,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			if (in_def || in_single) {
 			    rb_warn0("END in method; use at_exit");
 			}
-		    	$$ = dispatch1(END, $3);
+			$$ = dispatch1(END, $3);
 		    %*/
 		    }
 		| lhs '=' command_call
@@ -879,7 +880,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%%%*/
 			$$ = node_assign($1, $3);
 		    /*%
-		    	$$ = dispatch2(assign, $1, $3);
+			$$ = dispatch2(assign, $1, $3);
 		    %*/
 		    }
 		| mlhs '=' command_call
@@ -889,7 +890,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = ($1->nd_head) ? NEW_TO_ARY($3) : NEW_ARRAY($3);
 			$$ = $1;
 		    /*%
-		    	$$ = dispatch2(massign, $1, $3);
+			$$ = dispatch2(massign, $1, $3);
 		    %*/
 		    }
 		| var_lhs tOP_ASGN command_call
@@ -918,16 +919,16 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $$ = 0;
 			}
 		    /*%
-		    	$$ = dispatch3(opassign, $1, $2, $3);
+			$$ = dispatch3(opassign, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
 		    /*%%%*/
-                        NODE *args;
+			NODE *args;
 
 			value_expr($6);
-		        args = NEW_LIST($6);
+			args = NEW_LIST($6);
 			if ($3 && nd_type($3) != NODE_ARRAY)
 			    $3 = NEW_LIST($3);
 			$3 = list_append($3, NEW_NIL());
@@ -939,10 +940,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $5 = 1;
 			}
 			$$ = NEW_OP_ASGN1($1, $5, args);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
-		    	$$ = dispatch3(opassign, $$, $5, $6);
+			$$ = dispatch3(opassign, $$, $5, $6);
 		    %*/
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN command_call
@@ -956,9 +957,9 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
-                        $$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
+			$$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
 		    %*/
 		    }
@@ -973,9 +974,9 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
-                        $$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
+			$$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
 		    %*/
 		    }
@@ -990,20 +991,20 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
-                        $$ = dispatch3(field, $1, ripper_intern("::"), $3);
-		    	$$ = dispatch3(opassign, $$, $4, $5);
+			$$ = dispatch3(field, $1, ripper_intern("::"), $3);
+			$$ = dispatch3(opassign, $$, $4, $5);
 		    %*/
 		    }
 		| backref tOP_ASGN command_call
 		    {
 		    /*%%%*/
-		        rb_backref_error($1);
+			rb_backref_error($1);
 			$$ = 0;
 		    /*%
-                        $$ = dispatch2(assign, dispatch1(var_field, $1), $3);
-		    	$$ = dispatch1(assign_error, $$);
+			$$ = dispatch2(assign, dispatch1(var_field, $1), $3);
+			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| lhs '=' mrhs
@@ -1011,7 +1012,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%%%*/
 			$$ = node_assign($1, NEW_SVALUE($3));
 		    /*%
-		    	$$ = dispatch2(assign, $1, $3);
+			$$ = dispatch2(assign, $1, $3);
 		    %*/
 		    }
 		| mlhs '=' arg_value
@@ -1020,7 +1021,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = ($1->nd_head) ? NEW_TO_ARY($3) : NEW_ARRAY($3);
 			$$ = $1;
 		    /*%
-		    	dispatch2(massign, $1, $3);
+			dispatch2(massign, $1, $3);
 		    %*/
 		    }
 		| mlhs '=' mrhs
@@ -1029,7 +1030,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = $3;
 			$$ = $1;
 		    /*%
-		    	$$ = dispatch2(massign, $1, $3);
+			$$ = dispatch2(massign, $1, $3);
 		    %*/
 		    }
 		| expr
@@ -1041,7 +1042,7 @@ expr		: command_call
 		    /*%%%*/
 			$$ = logop(NODE_AND, $1, $3);
 		    /*%
-		    	$$ = dispatch3(binary, $1, ripper_intern("and"), $3);
+			$$ = dispatch3(binary, $1, ripper_intern("and"), $3);
 		    %*/
 		    }
 		| expr kOR expr
@@ -1049,7 +1050,7 @@ expr		: command_call
 		    /*%%%*/
 			$$ = logop(NODE_OR, $1, $3);
 		    /*%
-		    	$$ = dispatch3(binary, $1, ripper_intern("or"), $3);
+			$$ = dispatch3(binary, $1, ripper_intern("or"), $3);
 		    %*/
 		    }
 		| kNOT expr
@@ -1057,7 +1058,7 @@ expr		: command_call
 		    /*%%%*/
 			$$ = NEW_NOT(cond($2));
 		    /*%
-		    	$$ = dispatch2(unary, ripper_intern("not"), $2);
+			$$ = dispatch2(unary, ripper_intern("not"), $2);
 		    %*/
 		    }
 		| '!' command_call
@@ -1065,7 +1066,7 @@ expr		: command_call
 		    /*%%%*/
 			$$ = NEW_NOT(cond($2));
 		    /*%
-		    	$$ = dispatch2(unary, ID2SYM('!'), $2);
+			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
 		    }
 		| arg
@@ -1077,7 +1078,7 @@ expr_value	: expr
 			value_expr($$);
 			$$ = $1;
 		    /*%
-		    	$$ = $1;
+			$$ = $1;
 		    %*/
 		    }
 		;
@@ -1089,7 +1090,7 @@ command_call	: command
 		    /*%%%*/
 			$$ = NEW_RETURN(ret_args($2));
 		    /*%
-		    	$$ = dispatch1(return, $2);
+			$$ = dispatch1(return, $2);
 		    %*/
 		    }
 		| kBREAK call_args
@@ -1097,7 +1098,7 @@ command_call	: command
 		    /*%%%*/
 			$$ = NEW_BREAK(ret_args($2));
 		    /*%
-		    	$$ = dispatch1(break, $2);
+			$$ = dispatch1(break, $2);
 		    %*/
 		    }
 		| kNEXT call_args
@@ -1105,7 +1106,7 @@ command_call	: command
 		    /*%%%*/
 			$$ = NEW_NEXT(ret_args($2));
 		    /*%
-		    	$$ = dispatch1(next, $2);
+			$$ = dispatch1(next, $2);
 		    %*/
 		    }
 		;
@@ -1116,8 +1117,8 @@ block_command	: block_call
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 		    /*%
-		    	$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
-                        $$ = method_arg($$, $4);
+			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
+			$$ = method_arg($$, $4);
 		    %*/
 		    }
 		| block_call tCOLON2 operation2 command_args
@@ -1125,8 +1126,8 @@ block_command	: block_call
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 		    /*%
-		    	$$ = dispatch3(call, $1, ripper_intern("::"), $3);
-                        $$ = method_arg($$, $4);
+			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
+			$$ = method_arg($$, $4);
 		    %*/
 		    }
 		;
@@ -1159,9 +1160,9 @@ command		: operation command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			$$ = new_fcall($1, $2);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
-		        $$ = dispatch2(command, $1, $2);
+			$$ = dispatch2(command, $1, $2);
 		    %*/
 		    }
 		| operation command_args cmd_brace_block
@@ -1169,21 +1170,21 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_fcall($1, $2);
 			if ($3) {
-		            block_dup_check($$);
+			    block_dup_check($$);
 			    $3->nd_iter = $$;
 			    $$ = $3;
 			}
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
-		        $$ = dispatch2(command, $1, $2);
-                        $$ = dispatch2(iter_block, $$, $3);
+			$$ = dispatch2(command, $1, $2);
+			$$ = dispatch2(iter_block, $$, $3);
 		    %*/
 		    }
 		| primary_value '.' operation2 command_args	%prec tLOWEST
 		    {
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
 		    %*/
@@ -1193,11 +1194,11 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 			if ($5) {
-		            block_dup_check($$);
+			    block_dup_check($$);
 			    $5->nd_iter = $$;
 			    $$ = $5;
 			}
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
 			$$ = dispatch2(iter_block, $$, $5);
@@ -1207,7 +1208,7 @@ command		: operation command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);
 		    %*/
@@ -1217,21 +1218,21 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 			if ($5) {
-		            block_dup_check($$);
+			    block_dup_check($$);
 			    $5->nd_iter = $$;
 			    $$ = $5;
 			}
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);
-                        $$ = dispatch2(iter_block, $$, $5);
+			$$ = dispatch2(iter_block, $$, $5);
 		    %*/
 		   }
 		| kSUPER command_args
 		    {
 		    /*%%%*/
 			$$ = new_super($2);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch1(super, $2);
 		    %*/
@@ -1240,7 +1241,7 @@ command		: operation command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			$$ = new_yield($2);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch1(yield, $2);
 		    %*/
@@ -1413,11 +1414,11 @@ mlhs_node	: variable
 		| backref
 		    {
 		    /*%%%*/
-		        rb_backref_error($1);
+			rb_backref_error($1);
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(var_field, $1);
-                        $$ = dispatch1(assign_error, $$);
+			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		;
@@ -1469,7 +1470,7 @@ lhs		: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
 		    /*%
-                        $$ = dispatch2(constpath_field, $1, $3);
+			$$ = dispatch2(constpath_field, $1, $3);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
 			}
@@ -1482,7 +1483,7 @@ lhs		: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
 		    /*%
-                        $$ = dispatch1(topconst_field, $2);
+			$$ = dispatch1(topconst_field, $2);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
 			}
@@ -1491,7 +1492,7 @@ lhs		: variable
 		| backref
 		    {
 		    /*%%%*/
-		        rb_backref_error($1);
+			rb_backref_error($1);
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(assign_error, $1);
@@ -1622,7 +1623,7 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '`'		{ ifndef_ripper($$ = '`'); }
 		;
 
-reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
+reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
 		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
 		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
@@ -1636,7 +1637,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = node_assign($1, $3);
 		    /*%
-		    	$$ = dispatch2(assign, $1, $3);
+			$$ = dispatch2(assign, $1, $3);
 		    %*/
 		    }
 		| lhs '=' arg kRESCUE_MOD arg
@@ -1644,7 +1645,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = node_assign($1, NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0));
 		    /*%
-		    	$$ = dispatch2(assign, $1, dispatch2(rescue_mod,$3,$5));
+			$$ = dispatch2(assign, $1, dispatch2(rescue_mod,$3,$5));
 		    %*/
 		    }
 		| var_lhs tOP_ASGN arg
@@ -1673,13 +1674,13 @@ arg		: lhs '=' arg
 			    $$ = 0;
 			}
 		    /*%
-		    	$$ = dispatch3(opassign, $1, $2, $3);
+			$$ = dispatch3(opassign, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN arg
 		    {
 		    /*%%%*/
-                        NODE *args;
+			NODE *args;
 
 			value_expr($6);
 			args = NEW_LIST($6);
@@ -1694,10 +1695,10 @@ arg		: lhs '=' arg
 			    $5 = 1;
 			}
 			$$ = NEW_OP_ASGN1($1, $5, args);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
-		    	$$ = dispatch3(opassign, $1, $5, $6);
+			$$ = dispatch3(opassign, $1, $5, $6);
 		    %*/
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN arg
@@ -1711,10 +1712,10 @@ arg		: lhs '=' arg
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$1 = dispatch3(field, $1, ripper_id2sym('.'), $3);
-		    	$$ = dispatch3(opassign, $1, $4, $5);
+			$$ = dispatch3(opassign, $1, $4, $5);
 		    %*/
 		    }
 		| primary_value '.' tCONSTANT tOP_ASGN arg
@@ -1728,10 +1729,10 @@ arg		: lhs '=' arg
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$1 = dispatch3(field, $1, ripper_id2sym('.'), $3);
-		    	$$ = dispatch3(opassign, $1, $4, $5);
+			$$ = dispatch3(opassign, $1, $4, $5);
 		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
@@ -1745,10 +1746,10 @@ arg		: lhs '=' arg
 			    $4 = 1;
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$1 = dispatch3(field, $1, ripper_intern("::"), $3);
-		    	$$ = dispatch3(opassign, $1, $4, $5);
+			$$ = dispatch3(opassign, $1, $4, $5);
 		    %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
@@ -1759,7 +1760,7 @@ arg		: lhs '=' arg
 		    /*%
 			$$ = dispatch2(constpath_field, $1, $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
-                        $$ = dispatch1(assign_error, $$);
+			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg
@@ -1770,18 +1771,18 @@ arg		: lhs '=' arg
 		    /*%
 			$$ = dispatch1(topconst_field, $2);
 			$$ = dispatch3(opassign, $$, $3, $4);
-                        $$ = dispatch1(assign_error, $$);
+			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| backref tOP_ASGN arg
 		    {
 		    /*%%%*/
-		        rb_backref_error($1);
+			rb_backref_error($1);
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(var_field, $1);
 			$$ = dispatch3(opassign, $$, $2, $3);
-                        $$ = dispatch1(assign_error, $$);
+			$$ = dispatch1(assign_error, $$);
 		    %*/
 		    }
 		| arg tDOT2 arg
@@ -1829,7 +1830,7 @@ arg		: lhs '=' arg
 		| arg '-' arg
 		    {
 		    /*%%%*/
-		        $$ = call_op($1, '-', 1, $3);
+			$$ = call_op($1, '-', 1, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('-'), $3);
 		    %*/
@@ -1837,7 +1838,7 @@ arg		: lhs '=' arg
 		| arg '*' arg
 		    {
 		    /*%%%*/
-		        $$ = call_op($1, '*', 1, $3);
+			$$ = call_op($1, '*', 1, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('*'), $3);
 		    %*/
@@ -1908,7 +1909,7 @@ arg		: lhs '=' arg
 		| arg '|' arg
 		    {
 		    /*%%%*/
-		        $$ = call_op($1, '|', 1, $3);
+			$$ = call_op($1, '|', 1, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('!'), $3);
 		    %*/
@@ -2071,7 +2072,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($1), $3, $5);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch3(ifop, $1, $3, $5);
 		    %*/
@@ -2097,10 +2098,10 @@ aref_args	: none
 		| command opt_nl
 		    {
 		    /*%%%*/
-		        rb_warn("parenthesize argument(s) for future version");
+			rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    /*%
-		        rb_warn0("parenthesize argument(s) for future version");
+			rb_warn0("parenthesize argument(s) for future version");
 			$$ = arg_add(arg_new(), $1);
 		    %*/
 		    }
@@ -2155,20 +2156,20 @@ paren_args	: '(' none ')'
 		| '(' block_call rparen
 		    {
 		    /*%%%*/
-		        rb_warn("parenthesize argument for future version");
+			rb_warn("parenthesize argument for future version");
 			$$ = NEW_LIST($2);
 		    /*%
-		        rb_warn0("parenthesize argument for future version");
+			rb_warn0("parenthesize argument for future version");
 			$$ = dispatch1(arg_paren, arg_add(arg_new(), $2));
 		    %*/
 		    }
 		| '(' args ',' block_call rparen
 		    {
 		    /*%%%*/
-		        rb_warn("parenthesize argument for future version");
+			rb_warn("parenthesize argument for future version");
 			$$ = list_append($2, $4);
 		    /*%
-		        rb_warn0("parenthesize argument for future version");
+			rb_warn0("parenthesize argument for future version");
 			$$ = dispatch1(arg_paren, arg_add($2, $4));
 		    %*/
 		    }
@@ -2181,10 +2182,10 @@ opt_paren_args	: none
 call_args	: command
 		    {
 		    /*%%%*/
-		        rb_warn("parenthesize argument(s) for future version");
+			rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    /*%
-		        rb_warn0("parenthesize argument(s) for future version");
+			rb_warn0("parenthesize argument(s) for future version");
 			$$ = arg_add(arg_new(), $1);
 		    %*/
 		    }
@@ -2256,9 +2257,9 @@ call_args	: command
 		| block_arg
 		    /*%c%*/
 		    /*%c
-                    {
+		    {
 			$$ = arg_add_block(arg_new(), $1);
-                    }
+		    }
 		    %*/
 		;
 
@@ -2273,11 +2274,11 @@ call_args2	: arg_value ',' args opt_block_arg
 		| arg_value ',' block_arg
 		    {
 		    /*%%%*/
-                        $$ = arg_blk_pass($1, $3);
+			$$ = arg_blk_pass($1, $3);
 		    /*%
 			$$ = arg_add_block(arg_add(arg_new(), $1), $3);
 		    %*/
-                    }
+		    }
 		| arg_value ',' tSTAR arg_value opt_block_arg
 		    {
 		    /*%%%*/
@@ -2377,7 +2378,7 @@ command_args	:  {
 		  open_args
 		    {
 			/* CMDARG_POP() */
-		        cmdarg_stack = $<num>1;
+			cmdarg_stack = $<num>1;
 			$$ = $2;
 		    }
 		;
@@ -2386,7 +2387,7 @@ open_args	: call_args
 		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-		        rb_warning("don't put space before argument parentheses");
+			rb_warning("don't put space before argument parentheses");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, arg_new()));
@@ -2395,7 +2396,7 @@ open_args	: call_args
 		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-		        rb_warning("don't put space before argument parentheses");
+			rb_warning("don't put space before argument parentheses");
 			$$ = $2;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, $2));
@@ -2420,7 +2421,7 @@ opt_block_arg	: ',' block_arg
 		| none
 		;
 
-args 		: arg_value
+args		: arg_value
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST($1);
@@ -2507,7 +2508,7 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
 		    {
-		        rb_warning0("(...) interpreted as grouped expression");
+			rb_warning0("(...) interpreted as grouped expression");
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -2542,7 +2543,7 @@ primary		: literal
 		| tLBRACK aref_args ']'
 		    {
 		    /*%%%*/
-		        if ($2 == 0) {
+			if ($2 == 0) {
 			    $$ = NEW_ZARRAY(); /* zero length array*/
 			}
 			else {
@@ -2617,10 +2618,10 @@ primary		: literal
 		| method_call brace_block
 		    {
 		    /*%%%*/
-		        block_dup_check($$);
+			block_dup_check($$);
 			$2->nd_iter = $1;
 			$$ = $2;
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(iter_block, $1, $2);
 		    %*/
@@ -2636,11 +2637,11 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($2), $4, $5);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 			if (cond_negative(&$$->nd_cond)) {
-		            NODE *tmp = $$->nd_body;
-		            $$->nd_body = $$->nd_else;
-		            $$->nd_else = tmp;
+			    NODE *tmp = $$->nd_body;
+			    $$->nd_body = $$->nd_else;
+			    $$->nd_else = tmp;
 			}
 		    /*%
 			$$ = dispatch3(if, $2, $4, escape_Qundef($5));
@@ -2653,11 +2654,11 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($2), $4, $5);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 			if (cond_negative(&$$->nd_cond)) {
-		            NODE *tmp = $$->nd_body;
-		            $$->nd_body = $$->nd_else;
-		            $$->nd_else = tmp;
+			    NODE *tmp = $$->nd_body;
+			    $$->nd_body = $$->nd_else;
+			    $$->nd_else = tmp;
 			}
 		    /*%
 			$$ = dispatch3(unless, $2, $4, escape_Qundef($5));
@@ -2669,7 +2670,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_WHILE(cond($3), $6, 1);
-		        fixpos($$, $3);
+			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_UNTIL);
 			}
@@ -2683,7 +2684,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_UNTIL(cond($3), $6, 1);
-		        fixpos($$, $3);
+			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_WHILE);
 			}
@@ -2697,7 +2698,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE($2, $4);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch2(case, $2, $4);
 		    %*/
@@ -2707,7 +2708,7 @@ primary		: literal
 		    /*%%%*/
 			$$ = block_append($2, $5);
 		    /*%
-		    	$$ = dispatch2(case, $2, dispatch1(else, $5));
+			$$ = dispatch2(case, $2, dispatch1(else, $5));
 		    %*/
 		    }
 		| kCASE opt_terms case_body kEND
@@ -2732,7 +2733,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_FOR($2, $5, $8);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(for, $2, $5, $8);
 		    %*/
@@ -2744,7 +2745,7 @@ primary		: literal
 			    yyerror("class definition in method body");
 			class_nest++;
 			local_push(0);
-		        $<num>$ = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*%
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
@@ -2755,9 +2756,9 @@ primary		: literal
 		  kEND
 		    {
 		    /*%%%*/
-		        $$ = NEW_CLASS($2, $5, $3);
-		        nd_set_line($$, $<num>4);
-		        local_pop();
+			$$ = NEW_CLASS($2, $5, $3);
+			nd_set_line($$, $<num>4);
+			local_pop();
 			class_nest--;
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
@@ -2768,21 +2769,21 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$<num>$ = in_def;
-		        in_def = 0;
+			in_def = 0;
 		    /*%
-		        in_def = 0;
+			in_def = 0;
 		    %*/
 		    }
 		  term
 		    {
 		    /*%%%*/
-		        $<num>$ = in_single;
-		        in_single = 0;
+			$<num>$ = in_single;
+			in_single = 0;
 			class_nest++;
 			local_push(0);
 		    /*%
-		        $$ = in_single;
-		        in_single = 0;
+			$$ = in_single;
+			in_single = 0;
 			class_nest++;
 		    %*/
 		    }
@@ -2790,17 +2791,17 @@ primary		: literal
 		  kEND
 		    {
 		    /*%%%*/
-		        $$ = NEW_SCLASS($3, $7);
-		        fixpos($$, $3);
-		        local_pop();
+			$$ = NEW_SCLASS($3, $7);
+			fixpos($$, $3);
+			local_pop();
 			class_nest--;
-		        in_def = $<num>4;
-		        in_single = $<num>6;
+			in_def = $<num>4;
+			in_single = $<num>6;
 		    /*%
 			$$ = dispatch2(sclass, $3, $7);
 			class_nest--;
-		        in_def = $<val>4;
-		        in_single = $<val>6;
+			in_def = $<val>4;
+			in_single = $<val>6;
 		    %*/
 		    }
 		| kMODULE cpath
@@ -2810,7 +2811,7 @@ primary		: literal
 			    yyerror("module definition in method body");
 			class_nest++;
 			local_push(0);
-		        $<num>$ = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*%
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
@@ -2821,9 +2822,9 @@ primary		: literal
 		  kEND
 		    {
 		    /*%%%*/
-		        $$ = NEW_MODULE($2, $4);
-		        nd_set_line($$, $<num>3);
-		        local_pop();
+			$$ = NEW_MODULE($2, $4);
+			nd_set_line($$, $<num>3);
+			local_pop();
 			class_nest--;
 		    /*%
 			$$ = dispatch2(module, $2, $4);
@@ -2851,8 +2852,8 @@ primary		: literal
 			NODE *body = remove_begin($5);
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
-		        fixpos($$, $4);
-		        local_pop();
+			fixpos($$, $4);
+			local_pop();
 			in_def--;
 			cur_mid = $<id>3;
 		    /*%
@@ -2866,10 +2867,10 @@ primary		: literal
 		    /*%%%*/
 			in_single++;
 			local_push(0);
-		        lex_state = EXPR_END; /* force for args */
+			lex_state = EXPR_END; /* force for args */
 		    /*%
 			in_single++;
-		        lex_state = EXPR_END;
+			lex_state = EXPR_END;
 		    %*/
 		    }
 		  f_arglist
@@ -2880,8 +2881,8 @@ primary		: literal
 			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
-		        fixpos($$, $2);
-		        local_pop();
+			fixpos($$, $2);
+			local_pop();
 			in_single--;
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
@@ -2922,7 +2923,7 @@ primary		: literal
 		    }
 		;
 
-primary_value 	: primary
+primary_value	: primary
 		    {
 		    /*%%%*/
 			value_expr($1);
@@ -2971,7 +2972,7 @@ if_tail		: opt_else
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($2), $4, $5);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(elsif, $2, $4, escape_Qundef($5));
 		    %*/
@@ -3006,7 +3007,7 @@ block_param0	: mlhs_item
 		    /*%%%*/
 			$$ = list_append($1, $3);
 		    /*%
-		    	$$ = mlhs_add($1, $3);
+			$$ = mlhs_add($1, $3);
 		    %*/
 		    }
 		;
@@ -3188,7 +3189,7 @@ bv_decls	: bv_decl
 bv_decl		:  tIDENTIFIER
 		    {
 		    /*%%%*/
-                        $$ = new_bv($1, NEW_NIL());
+			$$ = new_bv($1, NEW_NIL());
 		    /*%
 			$$ = FIXME;
 		    %*/
@@ -3201,23 +3202,23 @@ lambda		: {
 		    /*%
 		    %*/
 		  }
-                  {
+		  {
 			$<num>$ = lpar_beg;
- 			lpar_beg = ++paren_nest;
+			lpar_beg = ++paren_nest;
 		  }
 		  f_larglist
 		    {
-		        $<vars>$ = ruby_dyna_vars;
+			$<vars>$ = ruby_dyna_vars;
 		    }
 		  lambda_body
 		    {
 		    /*%%%*/
 			$$ = $3;
-                        $$->nd_body = block_append($$->nd_body, $5);
+			$$->nd_body = block_append($$->nd_body, $5);
 			dyna_pop($<vars>1);
 			lpar_beg = $<num>2;
 		    /*%
-		    	$$ = dispatch2(lambda, $3, $5);
+			$$ = dispatch2(lambda, $3, $5);
 		    %*/
 		    }
 		;
@@ -3253,7 +3254,7 @@ lambda_body	: tLAMBEG compstmt '}'
 do_block	: kDO_BLOCK
 		    {
 		    /*%%%*/
-		        $<vars>$ = dyna_push();
+			$<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3281,10 +3282,10 @@ do_block	: kDO_BLOCK
 block_call	: command do_block
 		    {
 		    /*%%%*/
-		        block_dup_check($1);
+			block_dup_check($1);
 			$2->nd_iter = $1;
 			$$ = $2;
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(iter_block, $1, $2);
 		    %*/
@@ -3313,16 +3314,16 @@ method_call	: operation paren_args
 		    {
 		    /*%%%*/
 			$$ = new_fcall($1, $2);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
-		        $$ = method_arg(dispatch1(fcall, $1), $2);
+			$$ = method_arg(dispatch1(fcall, $1), $2);
 		    %*/
 		    }
 		| primary_value '.' operation2 opt_paren_args
 		    {
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
 			$$ = method_optarg($$, $4);
@@ -3332,7 +3333,7 @@ method_call	: operation paren_args
 		    {
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
-		        fixpos($$, $1);
+			fixpos($$, $1);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
 			$$ = method_optarg($$, $4);
@@ -3367,10 +3368,10 @@ method_call	: operation paren_args
 		    /*%%%*/
 			if (!$2) $2 = NEW_NIL();
 			$$ = new_call($2, rb_intern("call"), $4);
-		        fixpos($$, $2);
+			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(call, dispatch1(paren, $2),
-		                       ripper_id2sym('.'), rb_intern("call"));
+				       ripper_id2sym('.'), rb_intern("call"));
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
@@ -3391,7 +3392,7 @@ method_call	: operation paren_args
 brace_block	: '{'
 		    {
 		    /*%%%*/
-		        $<vars>$ = dyna_push();
+			$<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3417,7 +3418,7 @@ brace_block	: '{'
 		| kDO
 		    {
 		    /*%%%*/
-		        $<vars>$ = dyna_push();
+			$<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3491,18 +3492,18 @@ opt_rescue	: kRESCUE exc_list exc_var then
 		  opt_rescue
 		    {
 		    /*%%%*/
-		        if ($3) {
-		            $3 = node_assign($3, NEW_ERRINFO());
+			if ($3) {
+			    $3 = node_assign($3, NEW_ERRINFO());
 			    $5 = block_append($3, $5);
 			}
 			$$ = NEW_RESBODY($2, $5, $6);
-		        fixpos($$, $2?$2:$5);
+			fixpos($$, $2?$2:$5);
 		    /*%
 			$$ = dispatch4(rescue,
-                                       escape_Qundef($2),
-                                       escape_Qundef($3),
-                                       escape_Qundef($5),
-                                       escape_Qundef($6));
+				       escape_Qundef($2),
+				       escape_Qundef($3),
+				       escape_Qundef($5),
+				       escape_Qundef($6));
 		    %*/
 		    }
 		| none
@@ -3513,7 +3514,7 @@ exc_list	: arg_value
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%
-		    	$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, $1);
 		    %*/
 		    }
 		| mrhs
@@ -3781,7 +3782,7 @@ string_content	: tSTRING_CONTENT
 		    {
 		    /*%%%*/
 			lex_strterm = $<node>2;
-		        $$ = NEW_EVSTR($3);
+			$$ = NEW_EVSTR($3);
 		    /*%
 			lex_strterm = $<node>2;
 			$$ = dispatch1(string_dvar, $3);
@@ -3801,7 +3802,7 @@ string_content	: tSTRING_CONTENT
 			COND_LEXPOP();
 			CMDARG_LEXPOP();
 		    /*%%%*/
-		        if ($3) $3->flags &= ~NODE_NEWLINE;
+			if ($3) $3->flags &= ~NODE_NEWLINE;
 			$$ = new_evstr($3);
 		    /*%
 			$$ = dispatch1(string_embexpr, $3);
@@ -3839,10 +3840,10 @@ string_dvar	: tGVAR
 symbol		: tSYMBEG sym
 		    {
 		    /*%%%*/
-		        lex_state = EXPR_END;
+			lex_state = EXPR_END;
 			$$ = $2;
 		    /*%
-		        lex_state = EXPR_END;
+			lex_state = EXPR_END;
 			$$ = dispatch1(symbol, $2);
 		    %*/
 		    }
@@ -3857,7 +3858,7 @@ sym		: fname
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
 		    /*%%%*/
-		        lex_state = EXPR_END;
+			lex_state = EXPR_END;
 			if (!($$ = $2)) {
 			    yyerror("empty symbol literal");
 			}
@@ -3886,13 +3887,13 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 			    }
 			}
 		    /*%
-		        lex_state = EXPR_END;
+			lex_state = EXPR_END;
 			$$ = dispatch1(dyna_symbol, $2);
 		    %*/
 		    }
 		;
 
-numeric         : tINTEGER
+numeric 	: tINTEGER
 		| tFLOAT
 		| tUMINUS_NUM tINTEGER	       %prec tLOWEST
 		    {
@@ -4075,26 +4076,26 @@ f_norm_arg	: tCONSTANT
 			$$ = dispatch1(param_error, $1);
 		    %*/
 		    }
-                | tIVAR
+		| tIVAR
 		    {
 		    /*%%%*/
-                        yyerror("formal argument cannot be an instance variable");
+			yyerror("formal argument cannot be an instance variable");
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
 		    }
-                | tGVAR
+		| tGVAR
 		    {
 		    /*%%%*/
-                        yyerror("formal argument cannot be a global variable");
+			yyerror("formal argument cannot be a global variable");
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
 		    }
-                | tCVAR
+		| tCVAR
 		    {
 		    /*%%%*/
-                        yyerror("formal argument cannot be a class variable");
+			yyerror("formal argument cannot be a class variable");
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
@@ -4105,7 +4106,7 @@ f_norm_arg	: tCONSTANT
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
 			if (dyna_in_block()) {
-		            shadowing_lvar($1);
+			    shadowing_lvar($1);
 			    dyna_var($1);
 			}
 			else {
@@ -4125,7 +4126,7 @@ f_arg		: f_norm_arg
 		    /*%
 			VALUE arg = $1;
 		    %*/
-		        $$ = rb_ary_new3(1, arg);
+			$$ = rb_ary_new3(1, arg);
 		    }
 		| f_arg ',' f_norm_arg
 		    {
@@ -4148,10 +4149,10 @@ f_opt		: tIDENTIFIER '=' arg_value
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
 			if (dyna_in_block()) {
-		            shadowing_lvar($1);
+			    shadowing_lvar($1);
 			    dyna_var($1);
 			}
-		        $$ = assignable($1, $3);
+			$$ = assignable($1, $3);
 		    /*%
 			$$ = rb_assoc_new($1, $3);
 		    %*/
@@ -4187,7 +4188,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
 			if (dyna_in_block()) {
-		            shadowing_lvar($2);
+			    shadowing_lvar($2);
 			    dyna_var($2);
 			}
 			$$ = assignable($2, 0);
@@ -4222,13 +4223,13 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 			else if (!dyna_in_block() && local_id($2))
 			    yyerror("duplicated block argument name");
 			if (dyna_in_block()) {
-		            shadowing_lvar($2);
+			    shadowing_lvar($2);
 			    dyna_var($2);
 			    $$ = assignable($2, 0);
 			}
-		        else {
+			else {
 			    $$ = NEW_BLOCK_ARG($2);
-		        }
+			}
 		    /*%
 			$$ = $2;
 		    %*/
@@ -4250,7 +4251,7 @@ singleton	: var_ref
 			}
 			else {
 			    $$ = $1;
-		            value_expr($$);
+			    value_expr($$);
 			}
 		    /*%
 			$$ = $1;
@@ -4298,7 +4299,7 @@ assoc_list	: none
 			}
 			$$ = $1;
 		    /*%
-		    	$$ = dispatch1(assoclist_from_args, $1);
+			$$ = dispatch1(assoclist_from_args, $1);
 		    %*/
 		    }
 		;
@@ -4333,7 +4334,7 @@ assoc		: arg_value tASSOC arg_value
 		    /*%%%*/
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
 		    /*%
-		    	$$ = dispatch2(assoc_new, $1, $2);
+			$$ = dispatch2(assoc_new, $1, $2);
 		    %*/
 		    }
 		;
@@ -4395,7 +4396,7 @@ none		: /* none */
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-		    	$$ = Qundef;
+			$$ = Qundef;
 		    %*/
 		    }
 		;
@@ -4549,9 +4550,10 @@ yycompile(VALUE vparser, const char *f, int line)
     int n;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
     const char *kcode_save;
-    volatile VALUE parser_save = vparser;
+    volatile VALUE parser_save;
     struct parser_params *parser;
 
+    *(&parser_save) = vparser;
     Data_Get_Struct(vparser, struct parser_params, parser);
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
@@ -4703,15 +4705,15 @@ parser_nextc(struct parser_params *parser)
     int c;
 
     if (lex_p == lex_pend) {
-        if (parser->eofp)
-            return -1;
+	if (parser->eofp)
+	    return -1;
 	if (lex_input) {
 	    VALUE v = lex_getline(parser);
 
 	    if (NIL_P(v)) {
-                parser->eofp = Qtrue;
-                return -1;
-            }
+		parser->eofp = Qtrue;
+		return -1;
+	    }
 #ifdef RIPPER
 	    if (parser->tokp < lex_pend) {
 		if (NIL_P(parser->delayed)) {
@@ -4889,7 +4891,7 @@ parser_read_escape(struct parser_params *parser)
 
       eof:
       case -1:
-        yyerror("Invalid escape character syntax");
+	yyerror("Invalid escape character syntax");
 	return '\0';
 
       default:
@@ -4971,7 +4973,7 @@ parser_tokadd_escape(struct parser_params *parser, int term)
 
       eof:
       case -1:
-        yyerror("Invalid escape character syntax");
+	yyerror("Invalid escape character syntax");
 	return -1;
 
       default:
@@ -5063,7 +5065,7 @@ parser_tokadd_string(struct parser_params *parser,
     unsigned char uc;
 
     while ((c = nextc()) != -1) {
-        uc = (unsigned char)c;
+	uc = (unsigned char)c;
 	if (paren && c == paren) {
 	    ++*nest;
 	}
@@ -5224,7 +5226,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
-            uc = (unsigned int)c;
+	    uc = (unsigned int)c;
 	    len = mbclen(uc);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
 	}
@@ -5235,7 +5237,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	break;
 
       default:
-        uc = (unsigned int)c;
+	uc = (unsigned int)c;
 	if (!is_identchar(uc)) {
 	    pushback(c);
 	    if (func & STR_FUNC_INDENT) {
@@ -5247,7 +5249,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	term = '"';
 	tokadd(func |= str_dquote);
 	do {
-            uc = (unsigned int)c;
+	    uc = (unsigned int)c;
 	    len = mbclen(uc);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
 	} while ((c = nextc()) != -1 &&
@@ -5382,7 +5384,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    pushback(c);
 	    if ((c = tokadd_string(func, '\n', 0, NULL)) == -1) goto error;
 	    if (c != '\n') {
-                set_yylval_str(rb_str_new(tok(), toklen()));
+		set_yylval_str(rb_str_new(tok(), toklen()));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
@@ -5624,14 +5626,14 @@ parser_yylex(struct parser_params *parser)
   retry:
 #ifdef RIPPER
     while ((c = nextc())) {
-        switch (c) {
-          case ' ': case '\t': case '\f': case '\r':
-          case '\13': /* '\v' */
-            space_seen++;
-            break;
-          default:
-            goto outofloop;
-        }
+	switch (c) {
+	  case ' ': case '\t': case '\f': case '\r':
+	  case '\13': /* '\v' */
+	    space_seen++;
+	    break;
+	  default:
+	    goto outofloop;
+	}
     }
   outofloop:
     pushback(c);
@@ -5657,8 +5659,8 @@ parser_yylex(struct parser_params *parser)
 	}
 	lex_p = lex_pend;
 #ifdef RIPPER
-        ripper_dispatch_scan_event(parser, tCOMMENT);
-        fallthru = Qtrue;
+	ripper_dispatch_scan_event(parser, tCOMMENT);
+	fallthru = Qtrue;
 #endif
 	/* fall through */
       case '\n':
@@ -5669,10 +5671,10 @@ parser_yylex(struct parser_params *parser)
 	  case EXPR_CLASS:
 	  case EXPR_VALUE:
 #ifdef RIPPER
-            if (!fallthru) {
-                ripper_dispatch_scan_event(parser, tIGNORED_NL);
-            }
-            fallthru = Qfalse;
+	    if (!fallthru) {
+		ripper_dispatch_scan_event(parser, tIGNORED_NL);
+	    }
+	    fallthru = Qfalse;
 #endif
 	    goto retry;
 	  default:
@@ -5685,7 +5687,7 @@ parser_yylex(struct parser_params *parser)
       case '*':
 	if ((c = nextc()) == '*') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tPOW);
+		set_yylval_id(tPOW);
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5694,7 +5696,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	else {
 	    if (c == '=') {
-                set_yylval_id('*');
+		set_yylval_id('*');
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5734,18 +5736,18 @@ parser_yylex(struct parser_params *parser)
 	    /* skip embedded rd document */
 	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 #ifdef RIPPER
-                int first_p = Qtrue;
+		int first_p = Qtrue;
 
-                lex_goto_eol(parser);
-                ripper_dispatch_scan_event(parser, tEMBDOC_BEG);
+		lex_goto_eol(parser);
+		ripper_dispatch_scan_event(parser, tEMBDOC_BEG);
 #endif
 		for (;;) {
 		    lex_goto_eol(parser);
 #ifdef RIPPER
-                    if (!first_p) {
-                        ripper_dispatch_scan_event(parser, tEMBDOC);
-                    }
-                    first_p = Qfalse;
+		    if (!first_p) {
+			ripper_dispatch_scan_event(parser, tEMBDOC);
+		    }
+		    first_p = Qfalse;
 #endif
 		    c = nextc();
 		    if (c == -1) {
@@ -5760,7 +5762,7 @@ parser_yylex(struct parser_params *parser)
 		}
 		lex_goto_eol(parser);
 #ifdef RIPPER
-                ripper_dispatch_scan_event(parser, tEMBDOC_END);
+		ripper_dispatch_scan_event(parser, tEMBDOC_END);
 #endif
 		goto retry;
 	    }
@@ -5815,7 +5817,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '<') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tLSHFT);
+		set_yylval_id(tLSHFT);
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5837,7 +5839,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '>') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tRSHFT);
+		set_yylval_id(tRSHFT);
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5882,7 +5884,7 @@ parser_yylex(struct parser_params *parser)
 	    rb_compile_error(PARSER_ARG  "incomplete character syntax");
 	    return 0;
 	}
-        uc = (unsigned char)c;
+	uc = (unsigned char)c;
 	if (ISSPACE(c)){
 	    if (!IS_ARG()){
 		int c2 = 0;
@@ -5927,14 +5929,14 @@ parser_yylex(struct parser_params *parser)
 	}
 	c &= 0xff;
 	lex_state = EXPR_END;
-        set_yylval_literal(INT2FIX(c));
+	set_yylval_literal(INT2FIX(c));
 	return tINTEGER;
 
       case '&':
 	if ((c = nextc()) == '&') {
 	    lex_state = EXPR_BEG;
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tANDOP);
+		set_yylval_id(tANDOP);
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5942,7 +5944,7 @@ parser_yylex(struct parser_params *parser)
 	    return tANDOP;
 	}
 	else if (c == '=') {
-            set_yylval_id('&');
+	    set_yylval_id('&');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -5969,7 +5971,7 @@ parser_yylex(struct parser_params *parser)
 	if ((c = nextc()) == '|') {
 	    lex_state = EXPR_BEG;
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tOROP);
+		set_yylval_id(tOROP);
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
@@ -5977,7 +5979,7 @@ parser_yylex(struct parser_params *parser)
 	    return tOROP;
 	}
 	if (c == '=') {
-            set_yylval_id('|');
+	    set_yylval_id('|');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6001,7 +6003,7 @@ parser_yylex(struct parser_params *parser)
 	    return '+';
 	}
 	if (c == '=') {
-            set_yylval_id('+');
+	    set_yylval_id('+');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6031,7 +6033,7 @@ parser_yylex(struct parser_params *parser)
 	    return '-';
 	}
 	if (c == '=') {
-            set_yylval_id('-');
+	    set_yylval_id('-');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6115,7 +6117,7 @@ parser_yylex(struct parser_params *parser)
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    set_yylval_literal(rb_cstr_to_inum(tok(), 16, Qfalse));
+		    set_yylval_literal(rb_cstr_to_inum(tok(), 16, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == 'b' || c == 'B') {
@@ -6139,7 +6141,7 @@ parser_yylex(struct parser_params *parser)
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    set_yylval_literal(rb_cstr_to_inum(tok(), 2, Qfalse));
+		    set_yylval_literal(rb_cstr_to_inum(tok(), 2, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == 'd' || c == 'D') {
@@ -6163,7 +6165,7 @@ parser_yylex(struct parser_params *parser)
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-                    set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));
+		    set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == '_') {
@@ -6180,7 +6182,7 @@ parser_yylex(struct parser_params *parser)
 		if (c >= '0' && c <= '7') {
 		    /* octal */
 		  octal_number:
-	            do {
+		    do {
 			if (c == '_') {
 			    if (nondigit) break;
 			    nondigit = c;
@@ -6194,7 +6196,7 @@ parser_yylex(struct parser_params *parser)
 			pushback(c);
 			tokfix();
 			if (nondigit) goto trailing_uc;
-                        set_yylval_literal(rb_cstr_to_inum(tok(), 8, Qfalse));
+			set_yylval_literal(rb_cstr_to_inum(tok(), 8, Qfalse));
 			return tINTEGER;
 		    }
 		    if (nondigit) {
@@ -6210,7 +6212,7 @@ parser_yylex(struct parser_params *parser)
 		}
 		else {
 		    pushback(c);
-                    set_yylval_literal(INT2FIX(0));
+		    set_yylval_literal(INT2FIX(0));
 		    return tINTEGER;
 		}
 	    }
@@ -6289,10 +6291,10 @@ parser_yylex(struct parser_params *parser)
 		    rb_warnS("Float %s out of range", tok());
 		    errno = 0;
 		}
-                set_yylval_literal(rb_float_new(d));
+		set_yylval_literal(rb_float_new(d));
 		return tFLOAT;
 	    }
-            set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));
+	    set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));
 	    return tINTEGER;
 	}
 
@@ -6342,7 +6344,7 @@ parser_yylex(struct parser_params *parser)
 	    return tREGEXP_BEG;
 	}
 	if ((c = nextc()) == '=') {
-            set_yylval_id('/');
+	    set_yylval_id('/');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6364,7 +6366,7 @@ parser_yylex(struct parser_params *parser)
 
       case '^':
 	if ((c = nextc()) == '=') {
-            set_yylval_id('^');
+	    set_yylval_id('^');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6456,7 +6458,7 @@ parser_yylex(struct parser_params *parser)
 	    return tLAMBEG;
 	}
 	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_END2)
-	    c = '{';          /* block (primary) */
+	    c = '{';	      /* block (primary) */
 	else if (lex_state == EXPR_ENDARG)
 	    c = tLBRACE_ARG;  /* block (expr) */
 	else
@@ -6491,7 +6493,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    else {
 		term = nextc();
-                uc = (unsigned char)c;
+		uc = (unsigned char)c;
 		if (ISALNUM(term) || ismbchar(uc)) {
 		    yyerror("unknown type of %string");
 		    return 0;
@@ -6548,7 +6550,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
 	if ((c = nextc()) == '=') {
-            set_yylval_id('%');
+	    set_yylval_id('%');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
@@ -6572,7 +6574,7 @@ parser_yylex(struct parser_params *parser)
 	switch (c) {
 	  case '_':		/* $_: last read line string */
 	    c = nextc();
-            uc = (unsigned char)c;
+	    uc = (unsigned char)c;
 	    if (is_identchar(uc)) {
 		tokadd('$');
 		tokadd('_');
@@ -6602,7 +6604,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd('$');
 	    tokadd(c);
 	    tokfix();
-            set_yylval_id(rb_intern(tok()));
+	    set_yylval_id(rb_intern(tok()));
 	    return tGVAR;
 
 	  case '-':
@@ -6618,9 +6620,9 @@ parser_yylex(struct parser_params *parser)
 	    }
 	  gvar:
 	    tokfix();
-            set_yylval_id(rb_intern(tok()));
+	    set_yylval_id(rb_intern(tok()));
 	    if (!is_global_id(yylval_id())) {
-	    	rb_compile_error(PARSER_ARG  "invalid global variable `%s'", rb_id2name(yylval.id));
+		rb_compile_error(PARSER_ARG  "invalid global variable `%s'", rb_id2name(yylval.id));
 		return 0;
 	    }
 	    return tGVAR;
@@ -6652,7 +6654,7 @@ parser_yylex(struct parser_params *parser)
 	    return tNTH_REF;
 
 	  default:
-            uc = (unsigned char)c;
+	    uc = (unsigned char)c;
 	    if (!is_identchar(uc)) {
 		pushback(c);
 		return '$';
@@ -6678,7 +6680,7 @@ parser_yylex(struct parser_params *parser)
 		rb_compile_error(PARSER_ARG  "`@@%c' is not allowed as a class variable name", c);
 	    }
 	}
-        uc = (unsigned char)c;
+	uc = (unsigned char)c;
 	if (!is_identchar(uc)) {
 	    pushback(c);
 	    return '@';
@@ -6692,9 +6694,9 @@ parser_yylex(struct parser_params *parser)
 #ifndef RIPPER
 	    return -1;
 #else
-            lex_goto_eol(parser);
-            ripper_dispatch_scan_event(parser, k__END__);
-            return 0;
+	    lex_goto_eol(parser);
+	    ripper_dispatch_scan_event(parser, k__END__);
+	    return 0;
 #endif
 	}
 	newtok();
@@ -6723,7 +6725,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
 	c = nextc();
-        uc = (unsigned char)c;
+	uc = (unsigned char)c;
     } while (is_identchar(uc));
     if ((c == '!' || c == '?') && is_identchar(tok()[0]) && !peek('=')) {
 	tokadd(c);
@@ -6783,7 +6785,7 @@ parser_yylex(struct parser_params *parser)
 		    enum lex_state_e state = lex_state;
 		    lex_state = kw->state;
 		    if (state == EXPR_FNAME) {
-                        set_yylval_id(rb_intern(kw->name));
+			set_yylval_id(rb_intern(kw->name));
 		    }
 		    if (kw->id[0] == kDO) {
 			if (lpar_beg && lpar_beg == paren_nest) {
@@ -6832,14 +6834,14 @@ parser_yylex(struct parser_params *parser)
 		lex_state = EXPR_END;
 	    }
 	}
-        {
-            ID ident = rb_intern(tok());
+	{
+	    ID ident = rb_intern(tok());
 
-            set_yylval_id(ident);
-            if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
-                lex_state = EXPR_END;
-            }
-        }
+	    set_yylval_id(ident);
+	    if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
+		lex_state = EXPR_END;
+	    }
+	}
 	return result;
     }
 }
@@ -7184,7 +7186,7 @@ gettable_gen(struct parser_params *parser, ID id)
 	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
-        dyna_check(id);
+	dyna_check(id);
 	return NEW_VCALL(id);
     }
     else if (is_global_id(id)) {
@@ -7836,17 +7838,17 @@ new_yield(NODE *node)
     long state = Qtrue;
 
     if (node) {
-        no_blockarg(node);
-        if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
-            node = node->nd_head;
-            state = Qfalse;
-        }
-        else if (node && nd_type(node) == NODE_SPLAT) {
-            state = Qtrue;
-        }
+	no_blockarg(node);
+	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
+	    node = node->nd_head;
+	    state = Qfalse;
+	}
+	else if (node && nd_type(node) == NODE_SPLAT) {
+	    state = Qtrue;
+	}
     }
     else {
-        state = Qfalse;
+	state = Qfalse;
     }
     return NEW_YIELD(node, state);
 }
@@ -8456,7 +8458,7 @@ rb_intern(const char *name)
 	}
 	else if (ISUPPER(name[0])) {
 	    id = ID_CONST;
-        }
+	}
 	else {
 	    id = ID_LOCAL;
 	}
@@ -8715,7 +8717,7 @@ parser_free(void *ptr)
     struct local_vars *local, *prev;
 
     if (p->parser_tokenbuf) {
-        xfree(p->parser_tokenbuf);
+	xfree(p->parser_tokenbuf);
     }
     for (local = p->parser_lvtbl; local; local = prev) {
 	if (local->tbl && !local->nofree)
@@ -8764,23 +8766,28 @@ rb_parser_end_seen_p(VALUE vparser)
 
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP(cnt) rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parserp->heap, cnt)
-#define ADD2HEAP(n, ptr) ((parserp->heap = (n))->u1.node = (ptr))
+#define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parserp->heap, 0)
+#define ADD2HEAP(n, c, p) ((parserp->heap = (n))->u1.node = (p), \
+			   (n)->u3.cnt = (c), (p))
 
 void *
 rb_parser_malloc(struct parser_params *parserp, size_t size)
 {
-    NODE *n = NEWHEAP(HEAPCNT(1, size));
+    size_t cnt = HEAPCNT(1, size);
+    NODE *n = NEWHEAP();
+    void *ptr = xmalloc(size);
 
-    return ADD2HEAP(n, xmalloc(size));
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void *
 rb_parser_calloc(struct parser_params *parserp, size_t nelem, size_t size)
 {
-    NODE *n = NEWHEAP(HEAPCNT(nelem, size));
+    size_t cnt = HEAPCNT(nelem, size);
+    NODE *n = NEWHEAP();
+    void *ptr = xcalloc(nelem, size);
 
-    return ADD2HEAP(n, xcalloc(nelem, size));
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void *
@@ -8798,8 +8805,9 @@ rb_parser_realloc(struct parser_params *parserp, void *ptr, size_t size)
 	    }
 	} while ((n = n->u2.node) != NULL);
     }
-    n = NEWHEAP(cnt);
-    return ADD2HEAP(n, xrealloc(ptr, size));
+    n = NEWHEAP();
+    ptr = xrealloc(ptr, size);
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void
@@ -8832,23 +8840,23 @@ ripper_validate_object(VALUE self, VALUE x)
     if (x == Qtrue) return x;
     if (x == Qnil) return x;
     if (x == Qundef)
-        rb_raise(rb_eArgError, "Qundef given");
+	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
     if (!rb_is_pointer_to_heap(x))
-        rb_raise(rb_eArgError, "invalid pointer: %p", x);
+	rb_raise(rb_eArgError, "invalid pointer: %p", x);
     switch (TYPE(x)) {
       case T_STRING:
       case T_OBJECT:
       case T_ARRAY:
       case T_BIGNUM:
       case T_FLOAT:
-        return x;
+	return x;
       case T_NODE:
-        rb_raise(rb_eArgError, "NODE given: %p", x);
+	rb_raise(rb_eArgError, "NODE given: %p", x);
       default:
-        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
-                 x, rb_obj_classname(x));
+	rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
+		 x, rb_obj_classname(x));
     }
     return x;
 }
@@ -8967,8 +8975,8 @@ keyword_id_to_str(ID id)
     struct kw_assoc *a;
 
     for (a = keyword_to_name; a->id; a++) {
-        if (a->id == id)
-            return a->name;
+	if (a->id == id)
+	    return a->name;
     }
     return NULL;
 }
@@ -8980,26 +8988,26 @@ ripper_id2sym(ID id)
     char buf[8];
 
     if (id <= 256) {
-        buf[0] = id;
-        buf[1] = '\0';
-        return ID2SYM(rb_intern(buf));
+	buf[0] = id;
+	buf[1] = '\0';
+	return ID2SYM(rb_intern(buf));
     }
     if ((name = keyword_id_to_str(id))) {
-        return ID2SYM(rb_intern(name));
+	return ID2SYM(rb_intern(name));
     }
     switch (id) {
     case tOROP:
-        name = "||";
-        break;
+	name = "||";
+	break;
     case tANDOP:
-        name = "&&";
-        break;
+	name = "&&";
+	break;
     default:
-        name = rb_id2name(id);
-        if (!name) {
-            rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
-        }
-        break;
+	name = rb_id2name(id);
+	if (!name) {
+	    rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
+	}
+	break;
     }
     return ID2SYM(rb_intern(name));
 }
@@ -9032,14 +9040,14 @@ static void
 ripper_warnI(struct parser_params *parser, const char *fmt, int a)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
-               rb_str_new2(fmt), INT2NUM(a));
+	       rb_str_new2(fmt), INT2NUM(a));
 }
 
 static void
 ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
-    	       rb_str_new2(fmt), rb_str_new2(str));
+	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
 static void
@@ -9052,7 +9060,7 @@ static void
 ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
-    	       rb_str_new2(fmt), rb_str_new2(str));
+	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
 static VALUE
@@ -9098,16 +9106,16 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
         parser->parser_lex_gets = ripper_lex_get_generic;
     }
     else {
-        StringValue(src);
-        parser->parser_lex_gets = lex_get_str;
+	StringValue(src);
+	parser->parser_lex_gets = lex_get_str;
     }
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
     if (NIL_P(fname)) {
-        fname = rb_str_new2("(ripper)");
+	fname = rb_str_new2("(ripper)");
     }
     else {
-        StringValue(fname);
+	StringValue(fname);
     }
     parser_initialize(parser);
     parser->parser_ruby_sourcefile = fname;
@@ -9183,13 +9191,13 @@ ripper_parse(VALUE self)
 
     Data_Get_Struct(self, struct parser_params, parser);
     if (!ripper_initialized_p(parser)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
+	rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (!NIL_P(parser->parsing_thread)) {
-        if (parser->parsing_thread == rb_thread_current())
-            rb_raise(rb_eArgError, "Ripper#parse is not reentrant");
-        else
-            rb_raise(rb_eArgError, "Ripper#parse is not multithread-safe");
+	if (parser->parsing_thread == rb_thread_current())
+	    rb_raise(rb_eArgError, "Ripper#parse is not reentrant");
+	else
+	    rb_raise(rb_eArgError, "Ripper#parse is not multithread-safe");
     }
     parser->parsing_thread = rb_thread_current();
     rb_ensure(ripper_parse0, self, ripper_ensure, self);
@@ -9212,7 +9220,7 @@ ripper_column(VALUE self)
 
     Data_Get_Struct(self, struct parser_params, parser);
     if (!ripper_initialized_p(parser)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
+	rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
     col = parser->tokp - parser->parser_lex_pbeg;
@@ -9233,7 +9241,7 @@ ripper_lineno(VALUE self)
 
     Data_Get_Struct(self, struct parser_params, parser);
     if (!ripper_initialized_p(parser)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
+	rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
     return INT2NUM(parser->parser_ruby_sourceline);
@@ -9246,7 +9254,7 @@ ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
     if (obj == Qundef) {
-        rb_raise(rb_eArgError, RSTRING(msg)->ptr);
+	rb_raise(rb_eArgError, RSTRING(msg)->ptr);
     }
     return Qnil;
 }

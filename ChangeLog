@@ -1,3 +1,11 @@
+Wed Nov 30 23:52:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): fields common to ripper must be
+	  placed at each same offset.
+
+	* parse.y (NEWHEAP, ADD2HEAP): set count after pointer was set.
+	  fixed: [ruby-dev:27896]
+
 Wed Nov 30 13:43:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg): support $! at the end of
