@@ -6235,8 +6235,8 @@ rb_lastline_set(val)
 
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parserp->heap, 0)
-#define ADD2HEAP(n, c, p) ((parserp->heap = (n))->u1.node = (p), \
+#define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser_heap, 0)
+#define ADD2HEAP(n, c, p) ((parser_heap = (n))->u1.node = (p), \
 			   (n)->u3.cnt = (c), (p))
 
 static void *
