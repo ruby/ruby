@@ -1,3 +1,8 @@
+Wed Nov 30 23:52:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (NEWHEAP, ADD2HEAP): set count after pointer was set.
+	  fixed: [ruby-dev:27896]
+
 Mon Nov 28 18:55:43 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (init_inetsock_internal): remove setting
@@ -19,7 +24,7 @@ Sun Nov 27 00:56:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/wsdl/xmlSchema/complexContent.rb: missing
 	  ComplexContent#elementformdefault method.
-		  
+
 Sat Nov 26 19:57:45 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (conv_to_posix_path): should initialize posix.
@@ -41,7 +46,7 @@ Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  [Tk8.5 feature].
 
 	* ext/tk/lib/tk/text.rb: supports new indices modifires on a Text
-	  widget [Tk8.5 feature]. 
+	  widget [Tk8.5 feature].
 
 	* ext/tk/lib/tk/virtevent.rb: add TkNamedVirtualEvent.
 

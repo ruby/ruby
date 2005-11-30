@@ -6235,25 +6235,30 @@ rb_lastline_set(val)
 
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP(cnt) rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser_heap, cnt)
-#define ADD2HEAP(n, ptr) ((parser_heap = (n))->u1.node = (ptr))
+#define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parserp->heap, 0)
+#define ADD2HEAP(n, c, p) ((parserp->heap = (n))->u1.node = (p), \
+			   (n)->u3.cnt = (c), (p))
 
 static void *
 rb_parser_malloc(size)
     size_t size;
 {
-    NODE *n = NEWHEAP(HEAPCNT(1, size));
+    size_t cnt = HEAPCNT(1, size);
+    NODE *n = NEWHEAP();
+    void *ptr = xmalloc(size);
 
-    return ADD2HEAP(n, xmalloc(size));
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 static void *
 rb_parser_calloc(nelem, size)
     size_t nelem, size;
 {
-    NODE *n = NEWHEAP(HEAPCNT(nelem, size));
+    size_t cnt = HEAPCNT(nelem, size);
+    NODE *n = NEWHEAP();
+    void *ptr = xcalloc(nelem, size);
 
-    return ADD2HEAP(n, xcalloc(nelem, size));
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 static void *
@@ -6273,8 +6278,9 @@ rb_parser_realloc(ptr, size)
 	    }
 	} while ((n = n->u2.node) != NULL);
     }
-    n = NEWHEAP(cnt);
-    return ADD2HEAP(n, xrealloc(ptr, size));
+    n = NEWHEAP();
+    ptr = xrealloc(ptr, size);
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 static void
