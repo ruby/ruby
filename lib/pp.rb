@@ -167,7 +167,6 @@ class PP < PrettyPrint
 
     def object_address_group(obj, &block)
       id = PointerFormat % (obj.__id__ * 2 & PointerMask)
-      id.sub!(/\Af(?=[[:xdigit:]]{2}+\z)/, '') if id.sub!(/\A\.\./, '')
       group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end
 
