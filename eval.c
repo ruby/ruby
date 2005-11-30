@@ -5768,13 +5768,13 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	return method_missing(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }
 
-    if (mid != missing) {
+    if (mid != missing && scope == 0) {
 	/* receiver specified form for private method */
-	if ((noex & NOEX_PRIVATE) && scope == 0)
+	if (noex & NOEX_PRIVATE)
 	    return method_missing(recv, mid, argc, argv, CSTAT_PRIV);
 
 	/* self must be kind of a specified form for protected method */
-	if ((noex & NOEX_PROTECTED)) {
+	if (noex & NOEX_PROTECTED) {
 	    VALUE defined_class = klass;
 
 	    if (TYPE(defined_class) == T_ICLASS) {
