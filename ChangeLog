@@ -1,3 +1,8 @@
+Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (PP::PPMethods#object_address_group): mask an address with
+	  word size.
+
 Tue Nov 29 23:57:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): heap must be placed at same offset
