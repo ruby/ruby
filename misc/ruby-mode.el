@@ -318,7 +318,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (and (looking-at "[!?]")
 		 (or (not (eq option 'modifier))
 		     (bolp)
-		     (save-excursion (forward-char -1) (looking-at "\\Sw"))))
+		     (save-excursion (forward-char -1) (looking-at "\\Sw$"))))
 	    (and (looking-at ruby-symbol-re)
 		 (skip-chars-backward ruby-symbol-chars)
 		 (cond

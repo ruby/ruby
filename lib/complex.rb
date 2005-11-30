@@ -305,13 +305,8 @@ class Complex < Numeric
     Complex(@real, -@image)
   end
   alias conj conjugate
-  
-  #
-  # Compares the absolute values of the two numbers.
-  #
-  def <=> (other)
-    self.abs <=> other.abs
-  end
+
+  undef <=>
   
   #
   # Test for numerical equality (<tt>a == a + 0<i>i</i></tt>).

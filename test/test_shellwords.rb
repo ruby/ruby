@@ -11,12 +11,6 @@ class TestShellwords < Test::Unit::TestCase
   end
 
 
-  def test_not_string  
-      assert_raises ArgumentError do 
-        shellwords(@not_string)
-    end
-  end
-  
   def test_string
     assert_instance_of(Array, shellwords(@cmd))
     assert_equal(4, shellwords(@cmd).length)

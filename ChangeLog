@@ -1,3 +1,8 @@
+Wed Nov 30 13:43:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): support $! at the end of
+	  expression.   [ruby-dev:27868]
+
 Mon Nov 28 20:24:22 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP::PPMethods#object_address_group): mask an address with
@@ -53,6 +58,11 @@ Sun Nov 27 00:56:13 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 Sat Nov 26 19:57:45 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (conv_to_posix_path): should initialize posix.
+
+Fri Nov 25 20:34:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/xmlrpc/datetime.rb (DateTime::to_a): comparison with non
+	  array-convertible object must return false.
 
 Fri Nov 25 14:34:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

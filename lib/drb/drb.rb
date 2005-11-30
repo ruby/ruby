@@ -1549,7 +1549,7 @@ module DRb
 	  end
 	  ary.collect(&@obj)[0]
 	else
-	  @obj.__send__(@msg_id, *@argv)
+	  @obj.funcall(@msg_id, *@argv)
 	end
       end
 
