@@ -1,3 +1,7 @@
+Fri Dec  2 19:06:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (Compare): should not fold double byte alphabet on win9x.
+
 Thu Dec  1 00:50:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_funcall2): allow to call protected methods.

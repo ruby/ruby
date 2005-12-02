@@ -121,7 +121,7 @@ CompareImpl(const char *p1, const char *p2, int nocase)
     if (len2 == 0) return -len1;
 
 #ifdef _WIN32
-    if (nocase) {
+    if (nocase && rb_w32_iswinnt()) {
 	if (len1 > 1) {
 	    if (len1 >= sizeof(buf1)) {
 		rb_fatal("CompareImpl: too large len");
