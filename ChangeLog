@@ -1,3 +1,8 @@
+Tue Dec  4 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
+
+	* eval.c (exec_under): avoid accessing ruby_frame->prev.
+	  [ruby-dev:27948]
+
 Thu Dec  1 00:50:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_funcall2): allow to call protected methods.

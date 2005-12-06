@@ -6442,7 +6442,7 @@ exec_under(func, under, cbase, args)
     VALUE val = Qnil;		/* OK */
     int state;
     int mode;
-    struct FRAME *f = ruby_frame->prev;
+    struct FRAME *f = ruby_frame;
 
     PUSH_CLASS(under);
     PUSH_FRAME();
