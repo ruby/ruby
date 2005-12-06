@@ -19,9 +19,16 @@ $menu_demo = TkToplevel.new {|w|
 $menu_frame = TkFrame.new($menu_demo, 'relief'=>'raised', 'bd'=>2)
 $menu_frame.pack('side'=>'top', 'fill'=>'x')
 
+begin
+  windowingsystem = Tk.windowingsystem()
+rescue
+  windowingsystem = ""
+end
+
 # label
 TkLabel.new($menu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
-  if $tk_platform['platform'] == 'macintosh'
+  if $tk_platform['platform'] == 'macintosh' ||
+      windowingsystem == "classic" || windowingsystem == "aqua"
     text("This window contains a menubar with cascaded menus.  You can invoke entries with an accelerator by typing Command+x, where \"x\" is the character next to the command key symbol. The rightmost menu can be torn off into a palette by dragging outside of its bounds and releasing the mouse.")
   else
     text("This window contains a menubar with cascaded menus.  You can post a menu from the keyboard by typing Alt+x, where \"x\" is the character underlined on the menu.  You can then traverse among the menus using the arrow keys.  When a menu is posted, you can invoke the current entry by typing space, or you can invoke any entry by typing its underlined character.  If a menu entry has an accelerator, you can invoke the entry without posting the menu just by typing the accelerator. The rightmost menu can be torn off into a palette by selecting the first item in the menu.")
@@ -62,7 +69,8 @@ TkMenubutton.new($menu_frame, 'text'=>'File', 'underline'=>0) {|m|
   }
 }
 
-if $tk_platform['platform'] == 'macintosh'
+if $tk_platform['platform'] == 'macintosh' ||
+    windowingsystem == "classic" || windowingsystem == "aqua"
   modifier = 'Command'
 elsif $tk_platform['platform'] == 'windows'
   modifier = 'Control'
