@@ -5741,6 +5741,7 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 static VALUE
 rb_call(VALUE klass, VALUE recv, ID mid,
     int argc /* OK */, const VALUE *argv /* OK */, int scope)
+    /* scope: 0=normal, 1=functional style, 2=variable style */
 {
     NODE  *body;		/* OK */
     int    noex;
@@ -6259,7 +6260,7 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE cbase, VALUE args)
     VALUE val = Qnil;		/* OK */
     int state;
     int mode;
-    struct FRAME *f = ruby_frame->prev;
+    struct FRAME *f = ruby_frame;
 
     PUSH_CLASS(under);
     PUSH_FRAME();

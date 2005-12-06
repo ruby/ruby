@@ -595,6 +595,8 @@ yaml_org_handler( n, ref )
     return transferred;
 }
 
+static void syck_node_mark( SyckNode *n );
+
 /*
  * {native mode} node handler
  * - Converts data into native Ruby types
@@ -615,7 +617,8 @@ rb_syck_load_handler(p, n)
     /*
      * Create node, 
      */
-    obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cNode, NULL, NULL, n ) );
+    obj = rb_funcall( resolver, s_node_import,
+                      1, Data_Wrap_Struct( cNode, syck_node_mark, NULL, n ) );
 
     /*
      * ID already set, let's alter the symbol table to accept the new object
@@ -711,13 +714,14 @@ syck_mark_parser(parser)
     SyckParser *parser;
 {
     struct parser_xtra *bonus;
-    rb_gc_mark(parser->root);
-    rb_gc_mark(parser->root_on_error);
+    rb_gc_mark_maybe(parser->root);
+    rb_gc_mark_maybe(parser->root_on_error);
     if ( parser->bonus != NULL )
     {
         bonus = (struct parser_xtra *)parser->bonus;
         rb_gc_mark( bonus->data );
         rb_gc_mark( bonus->proc );
+        rb_gc_mark( bonus->resolver );
     }
 }
 
@@ -1380,9 +1384,12 @@ syck_node_mark( n )
     SyckNode *n;
 {
     int i;
+    if (!n) return;
+    rb_gc_mark_maybe( n->id );
     switch ( n->kind )
     {
         case syck_seq_kind:
+            if (!n->data.list) return;
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 rb_gc_mark( syck_seq_read( n, i ) );
@@ -1390,6 +1397,7 @@ syck_node_mark( n )
         break;
 
         case syck_map_kind:
+            if (!n->data.pairs) return;
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
                 rb_gc_mark( syck_map_read( n, map_key, i ) );
@@ -1397,6 +1405,7 @@ syck_node_mark( n )
             }
         break;
     }
+    rb_gc_mark_maybe( n->shortcut );
 }
 
 /*
@@ -1804,13 +1813,14 @@ syck_node_transform( self )
     SyckNode *n;
     SyckNode *orig_n;
     Data_Get_Struct(self, SyckNode, orig_n);
+    t = Data_Wrap_Struct( cNode, syck_node_mark, NULL, 0 );
 
     switch (orig_n->kind)
     {
         case syck_map_kind:
             {
                 int i;
-                n = syck_alloc_map();
+                DATA_PTR(t) = n = syck_alloc_map();
                 for ( i = 0; i < orig_n->data.pairs->idx; i++ )
                 {
                     syck_map_add( n, rb_funcall( syck_map_read( orig_n, map_key, i ), s_transform, 0 ),
@@ -1822,7 +1832,7 @@ syck_node_transform( self )
         case syck_seq_kind:
             {
                 int i;
-                n = syck_alloc_seq();
+                DATA_PTR(t) = n = syck_alloc_seq();
                 for ( i = 0; i < orig_n->data.list->idx; i++ )
                 {
                     syck_seq_add( n, rb_funcall( syck_seq_read( orig_n, i ), s_transform, 0 ) );
@@ -1831,7 +1841,7 @@ syck_node_transform( self )
         break;
 
         case syck_str_kind:
-            n = syck_new_str2( orig_n->data.str->ptr, orig_n->data.str->len, orig_n->data.str->style );
+            DATA_PTR(t) = n = syck_new_str2( orig_n->data.str->ptr, orig_n->data.str->len, orig_n->data.str->style );
         break;
     }
 
@@ -1843,7 +1853,6 @@ syck_node_transform( self )
     {
         n->anchor = syck_strndup( orig_n->anchor, strlen( orig_n->anchor ) );
     }
-    t = Data_Wrap_Struct( cNode, NULL, NULL, n );
     n->id = t;
     t = rb_funcall( oDefaultResolver, s_node_import, 1, t );
     syck_free_node( n );
@@ -1946,6 +1955,7 @@ syck_mark_emitter(emitter)
     if ( emitter->bonus != NULL )
     {
         bonus = (struct emitter_xtra *)emitter->bonus;
+        rb_gc_mark( bonus->oid  );
         rb_gc_mark( bonus->data );
         rb_gc_mark( bonus->port );
     }

@@ -107,7 +107,7 @@ rb_memerror(void)
 }
 
 void *
-ruby_xmalloc(long size)
+ruby_xmalloc(size_t size)
 {
     void *mem;
 
@@ -134,17 +134,17 @@ ruby_xmalloc(long size)
 }
 
 void *
-ruby_xmalloc2(long n, long size)
+ruby_xmalloc2(size_t n, size_t size)
 {
     long len = size * n;
-    if (len < n || (n > 0 && len < size)) {
+    if (n != 0 && size != len / n) {
 	rb_raise(rb_eArgError, "malloc: possible integer overflow");
     }
     return ruby_xmalloc(len);
 }
 
 void *
-ruby_xcalloc(long n, long size)
+ruby_xcalloc(size_t n, size_t size)
 {
     void *mem;
 
@@ -155,7 +155,7 @@ ruby_xcalloc(long n, long size)
 }
 
 void *
-ruby_xrealloc(void *ptr, long size)
+ruby_xrealloc(void *ptr, size_t size)
 {
     void *mem;
 
@@ -179,10 +179,10 @@ ruby_xrealloc(void *ptr, long size)
 }
 
 void *
-ruby_xrealloc2(void *ptr, long n, long size)
+ruby_xrealloc2(void *ptr, size_t n, size_t size)
 {
-    long len = size * n;
-    if (len < n || (n > 0 && len < size)) {
+    size_t len = size * n;
+    if (n != 0 && size != len / n) {
 	rb_raise(rb_eArgError, "realloc: possible integer overflow");
     }
     return ruby_xrealloc(ptr, len);

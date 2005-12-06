@@ -18,9 +18,9 @@
 #define xrealloc ruby_xrealloc
 #define xfree ruby_xfree
 
-void *xmalloc(long);
-void *xcalloc(long, long);
-void *xrealloc(void *, long);
+void *xmalloc(size_t);
+void *xcalloc(size_t, size_t);
+void *xrealloc(void *, size_t);
 void xfree(void *);
 #endif
 #endif
@@ -65,7 +65,7 @@ static struct st_hash_type type_strhash = {
 
 static void rehash(st_table *);
 
-#define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
+#define alloc(type) (type*)xmalloc((size_t)sizeof(type))
 #define Calloc(n,s) (char*)xcalloc((n),(s))
 
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)

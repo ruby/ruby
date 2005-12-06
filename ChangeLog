@@ -1,3 +1,15 @@
+Tue Dec  6 16:48:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (ruby_xmalloc2): change check for integer overflow.
+	  [ruby-dev:27399]
+
+	* gc.c (ruby_xrealloc2): ditto.
+
+Tue Dec  4 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
+
+	* eval.c (exec_under): avoid accessing ruby_frame->prev.
+	  [ruby-dev:27948]
+
 Fri Dec  2 19:06:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (Compare): should not fold double byte alphabet on win9x.
@@ -15,6 +27,7 @@ Wed Nov 30 23:52:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (NEWHEAP, ADD2HEAP): set count after pointer was set.
 	  fixed: [ruby-dev:27896]
 
+>>>>>>> 1.4819
 Wed Nov 30 13:43:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg): support $! at the end of

@@ -41,8 +41,6 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
-#include "defines.h"
-
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
@@ -59,6 +57,8 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdio.h>
+
+#include "defines.h"
 
 /* need to include <ctype.h> to use these macros */
 #ifndef ISPRINT

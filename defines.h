@@ -48,11 +48,11 @@
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-void *xmalloc(long);
-void *xmalloc2(long,long);
-void *xcalloc(long,long);
-void *xrealloc(void*,long);
-void *xrealloc2(void*,long,long);
+void *xmalloc(size_t);
+void *xmalloc2(size_t,size_t);
+void *xcalloc(size_t,size_t);
+void *xrealloc(void*,size_t);
+void *xrealloc2(void*,size_t,size_t);
 void xfree(void*);
 
 #if SIZEOF_LONG_LONG > 0
