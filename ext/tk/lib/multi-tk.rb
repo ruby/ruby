@@ -603,6 +603,7 @@ class MultiTkIp
       begin
         loop do
           sleep 1
+          receiver.kill if @interp.deleted?
           break unless receiver.alive?
         end
       rescue Exception

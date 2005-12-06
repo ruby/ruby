@@ -1271,10 +1271,11 @@ eventloop_sleep(dummy)
 
 
 static int
-lib_eventloop_core(check_root, update_flag, check_var)
+lib_eventloop_core(check_root, update_flag, check_var, interp)
     int check_root;
     int update_flag;
     int *check_var;
+    Tcl_Interp *interp;
 {
     volatile VALUE current = eventloop_thread;
     int found_event = 1;
@@ -1323,6 +1324,11 @@ lib_eventloop_core(check_root, update_flag, check_var)
             if (check_var != (int *)NULL) {
                 if (*check_var || !found_event) {
                     return found_event;
+                }
+                if (interp != (Tcl_Interp*)NULL 
+                    && Tcl_InterpDeleted(interp)) {
+                    /* IP for check_var is deleted */
+                    return 0;
                 }
             }
 
@@ -1434,6 +1440,11 @@ lib_eventloop_core(check_root, update_flag, check_var)
                 if (check_var != (int *)NULL) {
                     if (*check_var || !found_event) {
                         return found_event;
+                    }
+                    if (interp != (Tcl_Interp*)NULL 
+                        && Tcl_InterpDeleted(interp)) {
+                        /* IP for check_var is deleted */
+                        return 0;
                     }
                 }
 
@@ -1611,6 +1622,8 @@ struct evloop_params {
     int check_root;
     int update_flag;
     int *check_var;
+    Tcl_Interp *interp;
+    int thr_crit_bup;
 };
 
 VALUE
@@ -1623,7 +1636,8 @@ lib_eventloop_main_core(args)
 
     if (lib_eventloop_core(params->check_root, 
                            params->update_flag, 
-                           params->check_var)) {
+                           params->check_var, 
+                           params->interp)) {
         return Qtrue;
     } else {
         return Qfalse;
@@ -1676,6 +1690,9 @@ lib_eventloop_ensure(args)
     DUMP2("eventloop_ensure: eventloop-thread : %lx", eventloop_thread);
     if (eventloop_thread != current_evloop) {
         DUMP2("finish eventloop %lx (NOT current eventloop)", current_evloop);
+
+	rb_thread_critical = ptr->thr_crit_bup;
+
         return Qnil;
     }
 
@@ -1706,15 +1723,18 @@ lib_eventloop_ensure(args)
 
     free(ptr);
 
+    rb_thread_critical = ptr->thr_crit_bup;
+
     DUMP2("finish current eventloop %lx", current_evloop);
     return Qnil;
 }
 
 static VALUE
-lib_eventloop_launcher(check_root, update_flag, check_var)
+lib_eventloop_launcher(check_root, update_flag, check_var, interp)
     int check_root;
     int update_flag;
     int *check_var;
+    Tcl_Interp *interp;
 {
     volatile VALUE parent_evloop = eventloop_thread;
     struct evloop_params *args = ALLOC(struct evloop_params);
@@ -1742,9 +1762,13 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
     DUMP3("tcltklib: eventloop-thread : %lx -> %lx\n", 
                 parent_evloop, eventloop_thread);
 
-    args->check_root  = check_root;
-    args->update_flag = update_flag;
-    args->check_var   = check_var;
+    args->check_root   = check_root;
+    args->update_flag  = update_flag;
+    args->check_var    = check_var;
+    args->interp       = interp;
+    args->thr_crit_bup = rb_thread_critical;
+
+    rb_thread_critical = Qfalse;
 
 #if 0
     return rb_ensure(lib_eventloop_main, (VALUE)args, 
@@ -1771,7 +1795,8 @@ lib_mainloop(argc, argv, self)
         check_rootwidget = Qfalse;
     }
 
-    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, (int*)NULL);
+    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, 
+                                  (int*)NULL, (Tcl_Interp*)NULL);
 }
 
 static VALUE
@@ -1799,7 +1824,8 @@ static VALUE
 watchdog_evloop_launcher(check_rootwidget)
     VALUE check_rootwidget;
 {
-    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, (int*)NULL);
+    return lib_eventloop_launcher(RTEST(check_rootwidget), 0, 
+                                  (int*)NULL, (Tcl_Interp*)NULL);
 }
 
 #define EVLOOP_WAKEUP_CHANCE 3
@@ -1981,8 +2007,8 @@ lib_thread_callback(argc, argv, self)
     rb_thread_schedule();
 
     /* start sub-eventloop */
-    foundEvent = lib_eventloop_launcher(/* not check root-widget */0, 0, 
-                                        q->done);
+    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 0, 
+                                              q->done, (Tcl_Interp*)NULL));
 
     if (RTEST(rb_funcall(th, ID_alive_p, 0))) {
         rb_funcall(th, ID_kill, 0);
@@ -2812,7 +2838,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 
     /* call eventloop */
     /* ret = lib_eventloop_core(0, flags, (int *)NULL);*/ /* ignore result */
-    ret = lib_eventloop_launcher(0, flags, (int *)NULL); /* ignore result */
+    ret = RTEST(lib_eventloop_launcher(0, flags, (int *)NULL, interp)); /* ignore result */
 
     /* exception check */
     if (!NIL_P(rbtk_pending_exception)) {
@@ -2995,6 +3021,24 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 /* replace of vwait/tkwait */
 /***************************/
 #if TCL_MAJOR_VERSION >= 8
+static int ip_rbVwaitObjCmd _((ClientData, Tcl_Interp *, int,
+                               Tcl_Obj *CONST []));
+static int ip_rb_threadVwaitObjCmd _((ClientData, Tcl_Interp *, int,
+                                      Tcl_Obj *CONST []));
+static int ip_rbTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
+                                Tcl_Obj *CONST []));
+static int ip_rb_threadTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
+                                       Tcl_Obj *CONST []));
+#else
+static int ip_rbVwaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
+static int ip_rb_threadVwaitCommand _((ClientData, Tcl_Interp *, int,
+                                       char *[]));
+static int ip_rbTkWaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
+static int ip_rb_threadTkWaitCommand _((ClientData, Tcl_Interp *, int,
+                                        char *[]));
+#endif
+
+#if TCL_MAJOR_VERSION >= 8
 static char *VwaitVarProc _((ClientData, Tcl_Interp *, 
                              CONST84 char *,CONST84 char *, int));
 static char *
@@ -3021,10 +3065,7 @@ VwaitVarProc(clientData, interp, name1, name2, flags)
     return (char *) NULL;
 }
 
-
 #if TCL_MAJOR_VERSION >= 8
-static int ip_rbVwaitObjCmd _((ClientData, Tcl_Interp *, int,
-                               Tcl_Obj *CONST []));
 static int
 ip_rbVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3032,7 +3073,6 @@ ip_rbVwaitObjCmd(clientData, interp, objc, objv)
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
-static int ip_rbVwaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
 static int
 ip_rbVwaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3052,6 +3092,20 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
                                              "IP is deleted");
         return TCL_ERROR;
     }
+
+#if 0
+    if (!rb_thread_alone() 
+	&& eventloop_thread != Qnil
+	&& eventloop_thread != rb_thread_current()) {
+#if TCL_MAJOR_VERSION >= 8
+        DUMP1("call ip_rb_threadVwaitObjCmd");
+        return ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv);
+#else /* TCL_MAJOR_VERSION < 8 */
+        DUMP1("call ip_rb_threadVwaitCommand");
+        return ip_rb_threadVwaitCommand(clientData, interp, objc, objv);
+#endif
+    }
+#endif
 
     Tcl_Preserve(interp);
 #ifdef HAVE_NATIVETHREAD
@@ -3117,8 +3171,8 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 
     done = 0;
 
-    foundEvent 
-        = lib_eventloop_launcher(/* not check root-widget */0, 0, &done);
+    foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 
+                                              0, &done, interp));
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -3248,8 +3302,6 @@ WaitWindowProc(clientData, eventPtr)
 }
 
 #if TCL_MAJOR_VERSION >= 8
-static int ip_rbTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
-                                Tcl_Obj *CONST []));
 static int
 ip_rbTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3257,7 +3309,6 @@ ip_rbTkWaitObjCmd(clientData, interp, objc, objv)
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
-static int ip_rbTkWaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
 static int
 ip_rbTkWaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3282,6 +3333,20 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
                                              "IP is deleted");
         return TCL_ERROR;
     }
+
+#if 0
+    if (!rb_thread_alone() 
+	&& eventloop_thread != Qnil
+	&& eventloop_thread != rb_thread_current()) {
+#if TCL_MAJOR_VERSION >= 8
+        DUMP1("call ip_rb_threadTkWaitObjCmd");
+        return ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv);
+#else /* TCL_MAJOR_VERSION < 8 */
+        DUMP1("call ip_rb_threadTkWaitCommand");
+        return ip_rb_threadTkWwaitCommand(clientData, interp, objc, objv);
+#endif
+    }
+#endif
 
     Tcl_Preserve(interp);
 
@@ -3394,7 +3459,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
         done = 0;
         /* lib_eventloop_core(check_rootwidget_flag, 0, &done); */
-        lib_eventloop_launcher(check_rootwidget_flag, 0, &done);
+        lib_eventloop_launcher(check_rootwidget_flag, 0, &done, interp);
 
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
@@ -3463,7 +3528,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
         done = 0;
         /* lib_eventloop_core(check_rootwidget_flag, 0, &done); */
-        lib_eventloop_launcher(check_rootwidget_flag, 0, &done);
+        lib_eventloop_launcher(check_rootwidget_flag, 0, &done, interp);
 
         /* exception check */
         if (!NIL_P(rbtk_pending_exception)) {
@@ -3560,7 +3625,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
         done = 0;
         /* lib_eventloop_core(check_rootwidget_flag, 0, &done); */
-        lib_eventloop_launcher(check_rootwidget_flag, 0, &done);
+        lib_eventloop_launcher(check_rootwidget_flag, 0, &done, interp);
 
         /* exception check */
         if (!NIL_P(rbtk_pending_exception)) {
@@ -3678,8 +3743,6 @@ rb_threadWaitWindowProc(clientData, eventPtr)
 }
 
 #if TCL_MAJOR_VERSION >= 8
-static int ip_rb_threadVwaitObjCmd _((ClientData, Tcl_Interp *, int,
-                                      Tcl_Obj *CONST []));
 static int
 ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3687,8 +3750,6 @@ ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
-static int ip_rb_threadVwaitCommand _((ClientData, Tcl_Interp *, int,
-                                       char *[]));
 static int
 ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3811,8 +3872,6 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 }
 
 #if TCL_MAJOR_VERSION >= 8
-static int ip_rb_threadTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
-                                       Tcl_Obj *CONST []));
 static int
 ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
@@ -3820,8 +3879,6 @@ ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv)
     int objc;
     Tcl_Obj *CONST objv[];
 #else /* TCL_MAJOR_VERSION < 8 */
-static int ip_rb_threadTkWaitCommand _((ClientData, Tcl_Interp *, int,
-                                        char *[]));
 static int
 ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     ClientData clientData;

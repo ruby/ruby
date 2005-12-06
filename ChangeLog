@@ -1,3 +1,24 @@
+Wed Dec  7 01:02:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/README.macosx-aqua: [new document] tips to avoid the known
+	  bug on platform specific dialogs of Tcl/Tk Aqua on MacOS X.
+
+	* ext/tk/tcltklib.c: fix bug on switching threads and waiting on the 
+	  deleted interpreter on vwait and tkwait command. 
+
+	* ext/tk/lib/multi-tk.rb: kill the meaningless loop for the deleted Tk
+	  interpreter. 
+
+	* ext/tk/sample/demos-jp/image3.rb: [bug fix] wrong argument.
+
+	* ext/tk/sample/demos-en/image3.rb: ditto.
+
+	* ext/tk/sample/demos-jp/menu.rb: fix message for MacOS X.
+
+	* ext/tk/sample/demos-jp/menu8x.rb: ditto.
+
+	* ext/tk/sample/demos-en/menu.rb: ditto.
+
 Tue Dec  4 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
 
 	* eval.c (exec_under): avoid accessing ruby_frame->prev.

@@ -19,9 +19,16 @@ $menu_demo = TkToplevel.new {|w|
 $menu_frame = TkFrame.new($menu_demo, 'relief'=>'raised', 'bd'=>2)
 $menu_frame.pack('side'=>'top', 'fill'=>'x')
 
+begin
+  windowingsystem = Tk.windowingsystem()
+rescue
+  windowingsystem = ""
+end
+
 # label 生成
 TkLabel.new($menu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
-  if $tk_platform['platform'] == 'macintosh'
+  if $tk_platform['platform'] == 'macintosh' ||
+      windowingsystem == "classic" || windowingsystem == "aqua"
     text("このウィンドウは様々なメニューとカスケードメニューから構成されています。Command-X を入力すると、Xがコマンドキー記号に続いて表示されている文字ならば、アクセラレータを使った項目起動を行うことができます。メニュー要素中、最後のものは、そのメニューの最初の項目を選択することで独立させることができます。")
   else
     text("このウィンドウは様々なメニューとカスケードメニューから構成されています。Alt-X を入力すると、Xがメニューにアンダーライン付きで表示されている文字ならば、キーボードからの指定ができます。矢印キーでメニューのトラバースも可能です。メニューが指定された際には、スペースキーで実行することができます。あるいは、アンダーライン付きの文字を入力することでも実行できます。メニューのエントリがアクセラレータを持っている場合は、そのアクセラレータを入力することでメニューを指定することなしに実行することができます。メニュー要素中、最後のものは、そのメニューの最初の項目を選択することで独立させることができます。")
@@ -63,7 +70,8 @@ TkMenubutton.new($menu_frame, 'text'=>'File', 'underline'=>0) {|m|
   }
 }
 
-if $tk_platform['platform'] == 'macintosh'
+if $tk_platform['platform'] == 'macintosh' ||
+    windowingsystem == "classic" || windowingsystem == "aqua"
   modifier = 'Command'
 elsif $tk_platform['platform'] == 'windows'
   modifier = 'Control'

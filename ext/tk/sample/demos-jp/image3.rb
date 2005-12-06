@@ -35,7 +35,8 @@ end
 # Arguments:
 # w -                   Name of the toplevel window of the demo.
 def selectAndLoadDir3(w, lbox)
-  dir = Tk.chooseDirectory(:initialdir=>$dirName, :parent=>w, :mustexist=>true)
+  dir = Tk.chooseDirectory(:initialdir=>$dirName.value, 
+                           :parent=>w, :mustexist=>true)
   if dir.length > 0
     $dirName.value = dir 
     loadDir3(lbox)
