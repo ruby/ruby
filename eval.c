@@ -2628,7 +2628,7 @@ call_trace_func(event, node, self, id, klass)
 	    klass = RBASIC(klass)->klass;
 	}
 	else if (FL_TEST(klass, FL_SINGLETON)) {
-	    klass = self;
+	    klass = rb_iv_get(klass, "__attached__");
 	}
     }
     PUSH_TAG(PROT_NONE);
