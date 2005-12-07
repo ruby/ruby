@@ -618,19 +618,28 @@ range_inspect(VALUE range)
 static VALUE
 range_include(VALUE range, VALUE val)
 {
-    VALUE beg, end;
+    VALUE beg = rb_ivar_get(range, id_beg);
+    VALUE end = rb_ivar_get(range, id_end);
+    VALUE tmp;
+    int nv = FIXNUM_P(beg) || FIXNUM_P(end) ||
+	     rb_obj_is_kind_of(beg, rb_cNumeric) ||
+	     rb_obj_is_kind_of(end, rb_cNumeric);
 
-    beg = rb_ivar_get(range, id_beg);
-    end = rb_ivar_get(range, id_end);
-    if (r_le(beg, val)) {
-	if (EXCL(range)) {
-	    if (r_lt(val, end)) return Qtrue;
-	}
-	else {
-	    if (r_le(val, end)) return Qtrue;
+    if (nv) {
+      numeric_range:
+	if (r_le(beg, val)) {
+	    if (EXCL(range)) {
+		if (r_lt(val, end)) return Qtrue;
+	    }
+	    else {
+		if (r_le(val, end)) return Qtrue;
+	    }
 	}
     }
-    return Qfalse;
+    if (!NIL_P(rb_check_to_integer(beg, "to_int")) ||
+	!NIL_P(rb_check_to_integer(end, "to_int")))
+	goto numeric_range;
+    return rb_call_super(1, &val);
 }
 
 

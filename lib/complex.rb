@@ -103,6 +103,10 @@ class Complex < Numeric
 
   undef step
 
+  def scalar?
+    false
+  end
+
   def Complex.generic?(other) # :nodoc:
     other.kind_of?(Integer) or
     other.kind_of?(Float) or

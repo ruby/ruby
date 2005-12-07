@@ -1,3 +1,16 @@
+Wed Dec  7 17:10:27 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* sprintf.c (rb_f_sprintf): [ruby-dev:27967]
+
+Wed Dec  7 16:39:18 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_include): use discrete membership for non Numeric
+	  values, for example, String.
+
+	* numeric.c (num_scalar_p): new method. [ruby-dev:27936]
+
+	* lib/complex.rb (Complex#scalar?): ditto.
+
 Wed Dec  7 15:31:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): integer overflow check added.

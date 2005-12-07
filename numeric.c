@@ -350,6 +350,20 @@ num_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
+ *     num.scalar? -> true or false
+ *  
+ *  Returns <code>true</code> if <i>num</i> is an <code>Scalar</code>
+ *  (i.e. non <code>Complex</code>).
+ */
+
+static VALUE
+num_scalar_p(VALUE num)
+{
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
  *     num.integer? -> true or false
  *  
  *  Returns <code>true</code> if <i>num</i> is an <code>Integer</code>
@@ -2806,6 +2820,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);
     rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
+    rb_define_method(rb_cNumeric, "scalar?", num_scalar_p, 0);
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);

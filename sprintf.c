@@ -116,11 +116,11 @@ sign_bits(int base, const char *p)
     t = p++; \
     n = 0; \
     for (; p < end && ISDIGIT(*p); p++) { \
-	int times10 = n*10; \
-        if (times10 / 10 != n) {\
+	int next_n = 10 * n + (*p - '0'); \
+        if (next_n / 10 != n) {\
 	    rb_raise(rb_eArgError, #val " too big"); \
 	} \
-	n = 10 * n + (*p - '0'); \
+	n = next_n; \
     } \
     if (p >= end) { \
 	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
@@ -320,11 +320,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '5': case '6': case '7': case '8': case '9':
 	    n = 0;
 	    for (; p < end && ISDIGIT(*p); p++) {
-		int times10 = n*10;
-		if (times10 / 10 != n) {
+		int next_n = 10 * n + (*p - '0');
+		if (next_n / 10 != n) {
 		    rb_raise(rb_eArgError, "width too big");
 		}
-		n = 10 * n + (*p - '0');
+		n = next_n;
 	    }
 	    if (p >= end) {
 		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
