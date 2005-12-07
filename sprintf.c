@@ -116,6 +116,10 @@ sign_bits(int base, const char *p)
     t = p++; \
     n = 0; \
     for (; p < end && ISDIGIT(*p); p++) { \
+	int times10 = n*10; \
+        if (times10 / 10 != n) {\
+	    rb_raise(rb_eArgError, #val " too big"); \
+	} \
 	n = 10 * n + (*p - '0'); \
     } \
     if (p >= end) { \
@@ -316,6 +320,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case '5': case '6': case '7': case '8': case '9':
 	    n = 0;
 	    for (; p < end && ISDIGIT(*p); p++) {
+		int times10 = n*10;
+		if (times10 / 10 != n) {
+		    rb_raise(rb_eArgError, "width too big");
+		}
 		n = 10 * n + (*p - '0');
 	    }
 	    if (p >= end) {
@@ -337,7 +345,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    if (flags & FWIDTH) {
 		rb_raise(rb_eArgError, "width given twice");
 	    }
-
 	    flags |= FWIDTH;
 	    GETASTER(width);
 	    if (width < 0) {
