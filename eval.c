@@ -9094,13 +9094,22 @@ umethod_bind(method, recv)
     VALUE method, recv;
 {
     struct METHOD *data, *bound;
+    VALUE rklass = CLASS_OF(recv), klass = rklass;
 
     Data_Get_Struct(method, struct METHOD, data);
-    if (data->rklass != CLASS_OF(recv)) {
+    if (data->rklass != rklass) {
 	if (FL_TEST(data->rklass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError, "singleton method called for a different object");
 	}
-	if(!rb_obj_is_kind_of(recv, data->rklass)) {
+	if (TYPE(data->rklass) == T_MODULE) {
+	    st_table *m_tbl = RCLASS(data->rklass)->m_tbl;
+	    while (RCLASS(rklass)->m_tbl != m_tbl) {
+		rklass = RCLASS(rklass)->super;
+		if (!rklass) goto not_instace;
+	    }
+	}
+	else if (!rb_obj_is_kind_of(recv, data->rklass)) {
+	  not_instace:
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rklass));
 	}
@@ -9109,7 +9118,8 @@ umethod_bind(method, recv)
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
     *bound = *data;
     bound->recv = recv;
-    bound->rklass = CLASS_OF(recv);
+    bound->klass = klass;
+    bound->rklass = rklass;
 
     return method;
 }
