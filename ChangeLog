@@ -1,3 +1,7 @@
+Wed Dec  7 17:10:27 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* sprintf.c (rb_f_sprintf): [ruby-dev:27967]
+
 Wed Dec  7 15:31:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): integer overflow check added.
