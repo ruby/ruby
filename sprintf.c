@@ -113,6 +113,9 @@ sign_bits(base, p)
     t = p++; \
     n = 0; \
     for (; p < end && ISDIGIT(*p); p++) { \
+	if ((n*10) / 10 != n) { \
+	    rb_raise(rb_eArgError, #val " too big"); \
+	} \
 	n = 10 * n + (*p - '0'); \
     } \
     if (p >= end) { \
@@ -309,6 +312,9 @@ rb_f_sprintf(argc, argv)
 	  case '5': case '6': case '7': case '8': case '9':
 	    n = 0;
 	    for (; p < end && ISDIGIT(*p); p++) {
+		if ((n*10) / 10 != n) {
+		    rb_raise(rb_eArgError, "width too big");
+		}
 		n = 10 * n + (*p - '0');
 	    }
 	    if (p >= end) {

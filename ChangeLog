@@ -1,3 +1,9 @@
+Wed Dec  7 15:31:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): integer overflow check added.
+
+	* sprintf.c (GETASTER): ditto.
+
 Wed Dec  7 01:02:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/README.macosx-aqua: [new document] tips to avoid the known
