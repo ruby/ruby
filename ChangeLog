@@ -1,3 +1,8 @@
+Sat Dec 10 00:31:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (calling_scope_t): gave names to magic numbers for rb_call().
+	  [ruby-dev:27978]
+
 Fri Dec  9 23:31:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/encoding.rb (encoding=): give priority to particular
