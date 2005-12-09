@@ -625,8 +625,9 @@ range_include(VALUE range, VALUE val)
 	     rb_obj_is_kind_of(beg, rb_cNumeric) ||
 	     rb_obj_is_kind_of(end, rb_cNumeric);
 
-    if (nv) {
-      numeric_range:
+    if (nv ||
+	!NIL_P(rb_check_to_integer(beg, "to_int")) ||
+	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	if (r_le(beg, val)) {
 	    if (EXCL(range)) {
 		if (r_lt(val, end)) return Qtrue;
@@ -635,10 +636,8 @@ range_include(VALUE range, VALUE val)
 		if (r_le(val, end)) return Qtrue;
 	    }
 	}
+	return Qfalse;
     }
-    if (!NIL_P(rb_check_to_integer(beg, "to_int")) ||
-	!NIL_P(rb_check_to_integer(end, "to_int")))
-	goto numeric_range;
     return rb_call_super(1, &val);
 }
 
