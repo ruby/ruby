@@ -1,9 +1,9 @@
 #!/usr/local/bin/ruby
 #--
 #   matrix.rb - 
-#       $Release Version: 1.0$
-#       $Revision: 1.11 $
-#       $Date: 1999/10/06 11:01:53 $
+#   	$Release Version: 1.0$
+#   	$Revision: 1.13 $
+#   	$Date: 2001/12/09 14:22:23 $
 #       Original Version from Smalltalk-80 version
 #          on July 23, 1985 at 8:37:17 am
 #       by Keiju ISHITSUKA
@@ -105,7 +105,7 @@ end
 # * <tt> #inspect                       </tt>
 #
 class Matrix
-  @RCS_ID='-$Id: matrix.rb,v 1.11 1999/10/06 11:01:53 keiju Exp keiju $-'
+  @RCS_ID='-$Id: matrix.rb,v 1.13 2001/12/09 14:22:23 keiju Exp keiju $-'
   
 #  extend Exception2MessageMapper
   include ExceptionForMatrix
@@ -265,6 +265,15 @@ class Matrix
   def [](i, j)
     @rows[i][j]
   end
+  alias element []
+  alias component []
+
+  def []=(i, j, v)
+    @rows[i][j] = v
+  end
+  alias set_element []=
+  alias set_component []=
+  private :[]=, :set_element, :set_component
 
   #
   # Returns the number of rows.
@@ -320,7 +329,7 @@ class Matrix
   #
   # Returns a matrix that is the result of iteration of the given block over all
   # elements of the matrix.
-  #   Matrix[ [1,2], [3,4] ].collect { |i| i**2 }
+  #   Matrix[ [1,2], [3,4] ].collect { |e| e**2 }
   #     => 1  4
   #        9 16
   #
@@ -668,9 +677,13 @@ class Matrix
   
   #
   # Returns the determinant of the matrix.  If the matrix is not square, the
-  # result is 0.
+  # result is 0. This method's algorism is Gaussian elimination method
+  # and using Numeric#quo(). Beware that using Float values, with their
+  # usual lack of precision, can affect the value returned by this method.  Use
+  # Rational values or Matrix#det_e instead if this is important to you.
+  #
   #   Matrix[[7,6], [3,9]].determinant
-  #     => 63
+  #     => 63.0
   #
   def determinant
     return 0 unless square?
@@ -703,11 +716,56 @@ class Matrix
     det
   end
   alias det determinant
-        
+
   #
-  # Returns the rank of the matrix.  Beware that using Float values, with their
-  # usual lack of precision, can affect the value returned by this method.  Use
-  # Rational values instead if this is important to you.
+  # Returns the determinant of the matrix.  If the matrix is not square, the
+  # result is 0. This method's algorism is Gaussian elimination method. 
+  # This method uses Euclidean algorism. If all elements are integer,
+  # really exact value. But, if an element is a float, can't return
+  # exact value.   
+  #
+  #   Matrix[[7,6], [3,9]].determinant
+  #     => 63
+  #
+  def determinant_e
+    return 0 unless square?
+    
+    size = row_size - 1
+    a = to_a
+    
+    det = 1
+    k = 0
+    begin 
+      if a[k][k].zero?
+        i = k
+        begin
+          return 0 if (i += 1) > size
+        end while a[i][k].zero?
+        a[i], a[k] = a[k], a[i]
+        det *= -1
+      end
+      (k + 1).upto(size) do |i|
+        q = a[i][k] / a[k][k]
+        k.upto(size) do |j|
+          a[i][j] -= a[k][j] * q
+        end
+        unless a[i][k].zero?
+          a[i], a[k] = a[k], a[i]
+          det *= -1
+          redo
+        end
+      end
+      det *= a[k][k]
+    end while (k += 1) <= size
+    det
+  end
+  alias det_e determinant_e
+
+  #
+  # Returns the rank of the matrix. Beware that using Float values,
+  # probably return faild value. Use Rational values or Matrix#rank_e
+  # for getting exact result.
+  #
   #   Matrix[[7,6], [3,9]].rank
   #     => 2
   #
@@ -768,6 +826,41 @@ class Matrix
     end while (k += 1) <= a_column_size - 1
     return rank
   end
+
+  #
+  # Returns the rank of the matrix. This method uses Euclidean
+  # algorism. If all elements are integer, really exact value. But, if
+  # an element is a float, can't return exact value.  
+  #
+  #   Matrix[[7,6], [3,9]].rank
+  #     => 2
+  #
+  def rank_e
+    a = to_a
+    a_column_size = column_size
+    a_row_size = row_size
+    pi = 0
+    (0 ... a_column_size).each do |j|
+      if i = (pi ... a_row_size).find{|i0| !a[i0][j].zero?}
+        if i != pi
+          a[pi], a[i] = a[i], a[pi]
+        end
+        (pi + 1 ... a_row_size).each do |k|
+          q = a[k][j] / a[pi][j]
+          (pi ... a_column_size).each do |j0|
+            a[k][j0] -= q * a[pi][j0]
+          end
+          if k > pi && !a[k][j].zero?
+            a[k], a[pi] = a[pi], a[k]
+            redo
+          end
+        end
+        pi += 1
+      end
+    end
+    pi
+  end
+
 
   #
   # Returns the trace (sum of diagonal elements) of the matrix.
@@ -842,6 +935,18 @@ class Matrix
   #
   def to_a
     @rows.collect{|row| row.collect{|e| e}}
+  end
+  
+  def elements_to_f
+    collect{|e| e.to_f}
+  end
+  
+  def elements_to_i
+    collect{|e| e.to_i}
+  end
+  
+  def elements_to_r
+    collect{|e| e.to_r}
   end
   
   #--
@@ -922,7 +1027,7 @@ class Matrix
       when Vector
         Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
-        self * _M.inverse
+	self * other.inverse
       else
         x, y = other.coerce(self)
         x.quo(y)
@@ -1034,6 +1139,15 @@ class Vector
   def [](i)
     @elements[i]
   end
+  alias element []
+  alias component []
+
+  def []=(i, v)
+    @elements[i]= v
+  end
+  alias set_element []=
+  alias set_component []=
+  private :[]=, :set_element, :set_component
   
   #
   # Returns the number of elements in the vector.
@@ -1234,6 +1348,18 @@ class Vector
   #
   def to_a
     @elements.dup
+  end
+  
+  def elements_to_f
+    collect{|e| e.to_f}
+  end
+  
+  def elements_to_i
+    collect{|e| e.to_i}
+  end
+  
+  def elements_to_r
+    collect{|e| e.to_r}
   end
   
   #
