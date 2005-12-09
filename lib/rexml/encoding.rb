@@ -25,28 +25,22 @@ module REXML
 			begin
 				$VERBOSE = false
 				return if defined? @encoding and enc == @encoding
-				if enc and enc != UTF_8
-					@encoding = enc.upcase
-					begin
-						require 'rexml/encodings/ICONV.rb'
-						Encoding.apply(self, "ICONV")
-					rescue LoadError, Exception => err
-						raise ArgumentError, "Bad encoding name #@encoding" unless @encoding =~ /^[\w-]+$/
-						@encoding.untaint 
-						enc_file = File.join( "rexml", "encodings", "#@encoding.rb" )
-						begin
-							require enc_file
-							Encoding.apply(self, @encoding)
-						rescue LoadError
-							puts $!.message
-							raise ArgumentError, "No decoder found for encoding #@encoding.  Please install iconv."
-						end
-					end
+				if enc
+					raise ArgumentError, "Bad encoding name #{enc}" unless /\A[\w-]+\z/n =~ enc
+					@encoding = enc.upcase.untaint
 				else
 					@encoding = UTF_8
-					require 'rexml/encodings/UTF-8.rb'
-					Encoding.apply(self, @encoding)
 				end
+				err = nil
+				[@encoding, "ICONV"].each do |enc|
+					begin
+						require File.join("rexml", "encodings", "#{enc}.rb")
+						return Encoding.apply(self, enc)
+					rescue LoadError, Exception => err
+					end
+				end
+				puts err.message
+				raise ArgumentError, "No decoder found for encoding #@encoding.  Please install iconv."
 			ensure
 				$VERBOSE = old_verbosity
 			end

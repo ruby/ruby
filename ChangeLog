@@ -1,3 +1,8 @@
+Fri Dec  9 23:31:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/encoding.rb (encoding=): give priority to particular
+	  conversion to iconv.  [ruby-core:06520]
+
 Fri Dec  9 23:16:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_include): return false unless included in numeric
