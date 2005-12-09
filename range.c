@@ -620,7 +620,6 @@ range_include(VALUE range, VALUE val)
 {
     VALUE beg = rb_ivar_get(range, id_beg);
     VALUE end = rb_ivar_get(range, id_end);
-    VALUE tmp;
     int nv = FIXNUM_P(beg) || FIXNUM_P(end) ||
 	     rb_obj_is_kind_of(beg, rb_cNumeric) ||
 	     rb_obj_is_kind_of(end, rb_cNumeric);
