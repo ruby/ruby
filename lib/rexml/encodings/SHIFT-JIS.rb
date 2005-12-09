@@ -1,13 +1,28 @@
-require 'uconv'
-
 module REXML
   module Encoding
-    def decode_sjis content
-      Uconv::sjistou8(content)
-    end
+    begin
+      require 'uconv'
 
-    def encode_sjis(str)
-      Uconv::u8tosjis(str)
+      def decode_sjis content
+        Uconv::sjistou8(content)
+      end
+
+      def encode_sjis(str)
+        Uconv::u8tosjis(str)
+      end
+    rescue LoadError
+      require 'nkf'
+
+      SJISTOU8 = '-Swm0'
+      U8TOSJIS = '-Wsm0'
+
+      def decode_sjis(str)
+        NKF.nkf(SJISTOU8, str)
+      end
+
+      def encode_sjis content
+        NKF.nkf(U8TOSJIS, content)
+      end
     end
 
     b = proc do |obj|

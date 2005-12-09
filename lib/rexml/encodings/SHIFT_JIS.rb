@@ -1,1 +1,1 @@
-load 'rexml/encodings/SHIFT-JIS.rb'
+require 'rexml/encodings/SHIFT-JIS'

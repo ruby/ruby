@@ -1,3 +1,8 @@
+Fri Dec  9 23:31:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/encoding.rb (encoding=): give priority to particular
+	  conversion to iconv.  [ruby-core:06520]
+
 Thu Dec  8 02:07:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (umethod_bind): adjust invoking class for module method.
