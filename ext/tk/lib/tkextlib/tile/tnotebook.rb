@@ -90,6 +90,15 @@ class Tk::Tile::TNotebook < TkWindow
     number(tk_send('index', idx))
   end
 
+  def insert(idx, subwin, keys=nil)
+    if keys && keys != None
+      tk_send('insert', idx, subwin, *hash_kv(keys))
+    else
+      tk_send('insert', idx, subwin)
+    end
+    self
+  end
+
   def select(idx)
     tk_send('select', idx)
     self
