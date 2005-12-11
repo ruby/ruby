@@ -1,7 +1,7 @@
 
   [ current support status of Tcl/Tk extensions ]
 
-  *******<<<  RELEASE_DATE of the libraries : 2005/11/22  >>>*******
+  *******<<<  RELEASE_DATE of the libraries : 2005/12/11  >>>*******
 
 The following list shows *CURRENT* status when this file was modifyed
 at last. If you want to add other Tcl/Tk extensions to the planed list
@@ -55,8 +55,8 @@ script may give you some hints about that.
 
 ===< support with some examples (may be beta quality) >=======================
 
-Tcllib       1.8     http://sf.net/projects/tcllib
-                       ==> tcllib  (partial support; Tklib part only)
+Tcllib       1.8     
+Tklib        0.4.1   http://sf.net/projects/tcllib               ==> tcllib
 
 IWidgets     4.0.2   http://sf.net/projects/incrTcl              ==> iwidgets
 
@@ -80,10 +80,11 @@ BLT          2.4z    http://sourceforge.net/projects/blt
                                 (http://raa.ruby-lang.org/)
                       ==> blt
 
-TkTreeCtrl   CVS/Hd(2005-03-25)
+TkTreeCtrl   CVS/Hd(2005-12-02)
                      http://tktreectrl.sourceforge.net/          ==> treectrl
 
-Tile         0.7.2   http://tktable.sourceforge.net/tile/        ==> tile
+Tile         CVS/Hd(2005-12-07)
+                     http://tktable.sourceforge.net/tile/        ==> tile
 
 
 

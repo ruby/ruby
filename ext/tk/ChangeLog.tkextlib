@@ -1,3 +1,12 @@
+2005-12-11  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/SUPPORT_STATUS: update to support libraries in
+          ActiveTcl8.4.12.0.
+
+	* lib/tkextlib/tile/tnotebook.rb: add Tk::Tile::TNotebook#insert.
+
+	* sample/tkextlib/tile/demo.rb: improve the look of a part of the demo.
+
 2005-11-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* sample/tkextlib/tile/demo.rb: bug fix

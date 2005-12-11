@@ -734,7 +734,11 @@ end
 #
 $Timers = {:StateMonitor=>nil, :FocusMonitor=>nil}
 
-msg = TkMessage.new(others, :aspect=>200)
+begin
+  msg = Tk::Tile::Label.new(others, :justify=>:left, :wraplength=>300)
+rescue
+  msg = TkMessage.new(others, :aspect=>200)
+end
 
 $Desc = {}
 
