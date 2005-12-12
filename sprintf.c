@@ -454,6 +454,7 @@ rb_f_sprintf(argc, argv)
 		int base, bignum = 0;
 		int len, pos;
 		VALUE tmp;
+                volatile VALUE tmp1;
 
 		switch (*p) {
 		  case 'd':
@@ -602,7 +603,7 @@ rb_f_sprintf(argc, argv)
 		    val = rb_big_clone(val);
 		    rb_big_2comp(val);
 		}
-		tmp = rb_big2str(val, base);
+		tmp1 = tmp = rb_big2str(val, base);
 		s = RSTRING(tmp)->ptr;
 		if (*s == '-') {
 		    if (base == 10) {

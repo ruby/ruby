@@ -1,3 +1,8 @@
+Tue Dec 13 00:08:09 2005  Tanaka Akira  <akr@m17n.org>
+
+	* sprintf.c (rb_str_format): fix a GC problem.
+	  [ruby-dev:28001]
+
 Mon Dec 12 15:54:56 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_ssl.rb (test_parallel): call GC.start to close
