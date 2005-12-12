@@ -879,10 +879,10 @@ Init_signal()
 #endif
 
 #ifdef SIGBUS
-    install_sighandler(SIGBUS, sigbus);
+    //install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-    install_sighandler(SIGSEGV, sigsegv);
+    //install_sighandler(SIGSEGV, sigsegv);
 #endif
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sigpipe);

@@ -469,7 +469,9 @@ mark_global_entry(key, entry)
 void
 rb_gc_mark_global_tbl()
 {
-    st_foreach(rb_global_tbl, mark_global_entry, 0);
+    if (rb_global_tbl) {
+	st_foreach(rb_global_tbl, mark_global_entry, 0);
+    }
 }
 
 static ID

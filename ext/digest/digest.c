@@ -91,7 +91,7 @@ rb_digest_base_s_digest(klass, str)
     void *pctx;
     size_t len;
     unsigned char *digest;
-    VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj = rb_digest_base_alloc(klass);
 
     algo = get_digest_base_metadata(klass);
     Data_Get_Struct(obj, void, pctx);
@@ -120,7 +120,7 @@ rb_digest_base_s_hexdigest(klass, str)
     void *pctx;
     size_t len;
     unsigned char *hexdigest;
-    VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj = rb_digest_base_alloc(klass);
 
     algo = get_digest_base_metadata(klass);
     Data_Get_Struct(obj, void, pctx);

@@ -6079,10 +6079,11 @@ fev_on_event_with_outargs(argc, argv, self)
 void
 Init_win32ole()
 {
-    ary_ole_event = rb_ary_new();
     rb_global_variable(&ary_ole_event);
+    ary_ole_event = rb_ary_new();
     id_events = rb_intern("events");
 
+    rb_global_variable(&com_hash);
     com_vtbl.QueryInterface = QueryInterface;
     com_vtbl.AddRef = AddRef;
     com_vtbl.Release = Release;
@@ -6091,7 +6092,6 @@ Init_win32ole()
     com_vtbl.GetIDsOfNames = GetIDsOfNames;
     com_vtbl.Invoke = Invoke;
     com_hash = Data_Wrap_Struct(rb_cData, rb_mark_hash, st_free_table, st_init_numtable());
-    rb_global_variable(&com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
 

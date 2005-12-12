@@ -1140,8 +1140,8 @@ ruby_prog_init()
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
-    rb_argv = rb_ary_new();
     rb_define_readonly_variable("$*", &rb_argv);
+    rb_argv = rb_ary_new();
     rb_define_global_const("ARGV", rb_argv);
     rb_define_readonly_variable("$-a", &do_split);
     rb_global_variable(&rb_argv0);

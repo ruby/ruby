@@ -903,8 +903,8 @@ Init_iconv _((void))
     rb_success = rb_intern("success");
     rb_failed = rb_intern("failed");
 
-    charset_map = rb_hash_new();
     rb_gc_register_address(&charset_map);
+    charset_map = rb_hash_new();
     rb_define_singleton_method(rb_cIconv, "charset_map", charset_map_get, 0);
 }
 

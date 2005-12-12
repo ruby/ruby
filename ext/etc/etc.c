@@ -521,6 +521,7 @@ Init_etc()
     rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
 
+    rb_global_variable(&sPasswd);
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",
 #ifdef HAVE_ST_PW_GECOS
@@ -546,14 +547,13 @@ Init_etc()
 				"expire",
 #endif
 				NULL);
-    rb_global_variable(&sPasswd);
 
 #ifdef HAVE_GETGRENT
+    rb_global_variable(&sGroup);
     sGroup = rb_struct_define("Group", "name",
 #ifdef HAVE_ST_GR_PASSWD
 			      "passwd",
 #endif
 			      "gid", "mem", NULL);
-    rb_global_variable(&sGroup);
 #endif
 }
