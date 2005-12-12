@@ -2638,7 +2638,8 @@ static VALUE
 rb_ary_diff(ary1, ary2)
     VALUE ary1, ary2;
 {
-    VALUE ary3, hash;
+    VALUE ary3;
+    volatile VALUE hash;
     long i;
 
     hash = ary_make_hash(to_ary(ary2), 0);
