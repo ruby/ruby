@@ -7612,8 +7612,8 @@ Init_eval(void)
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     respond_to   = rb_intern("respond_to?");
-    basic_respond_to = rb_method_node(rb_cObject, respond_to);
     rb_global_variable((VALUE*)&basic_respond_to);
+    basic_respond_to = rb_method_node(rb_cObject, respond_to);
     
     rb_define_global_function("raise", rb_f_raise, -1);
     rb_define_global_function("fail", rb_f_raise, -1);
@@ -9355,13 +9355,13 @@ Init_Proc(void)
     rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
-    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
     rb_global_variable(&exception_error);
+    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
+    rb_global_variable(&sysstack_error);
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
     OBJ_TAINT(sysstack_error);
-    rb_global_variable(&sysstack_error);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);
@@ -12815,9 +12815,9 @@ Init_Thread(void)
     rb_define_method(cThGroup, "enclose", thgroup_enclose, 0);
     rb_define_method(cThGroup, "enclosed?", thgroup_enclosed_p, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
+    rb_global_variable(&thgroup_default);
     thgroup_default = rb_obj_alloc(cThGroup);
     rb_define_const(cThGroup, "Default", thgroup_default);
-    rb_global_variable(&thgroup_default);
 
     /* allocate main thread */
     main_thread = rb_thread_alloc(rb_cThread);

@@ -1909,6 +1909,6 @@ Init_GC(void)
 
     source_filenames = st_init_strtable();
 
-    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
     rb_global_variable(&nomem_error);
+    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
 }
