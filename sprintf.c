@@ -604,11 +604,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			}
 		    }
 		    else {
+                        volatile VALUE tmp1;
 			if (!RBIGNUM(val)->sign) {
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
 			}
-			tmp = rb_big2str(val, base);
+			tmp1 = tmp = rb_big2str(val, base);
 			s = RSTRING(tmp)->ptr;
 			if (*s == '-') {
 			    if (base == 10) {
