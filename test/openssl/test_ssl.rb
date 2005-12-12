@@ -212,6 +212,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_parallel
+    GC.start
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
       ssls = []
       10.times{

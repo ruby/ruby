@@ -1,3 +1,8 @@
+Mon Dec 12 15:54:56 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_ssl.rb (test_parallel): call GC.start to close
+	  unused files. [ruby-dev:27981]
+
 Mon Dec 12 00:33:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_digest): add volatile to
