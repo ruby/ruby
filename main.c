@@ -24,6 +24,10 @@ static void objcdummyfunction( void ) { objc_msgSend(); }
 int
 main(int argc, char **argv, char **envp)
 {
+#ifdef RUBY_GC_DEBUG
+    extern int always_gc;
+    always_gc = getenv("RUBY_ALWAYS_GC") != NULL;
+#endif
 #ifdef _WIN32
     NtInitialize(&argc, &argv);
 #endif

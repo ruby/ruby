@@ -15,11 +15,11 @@
 
 #include "ruby.h"
 
-typedef void (*hash_init_func_t) _((void *));
-typedef void (*hash_update_func_t) _((void *, unsigned char *, size_t));
-typedef void (*hash_end_func_t) _((void *, unsigned char *));
-typedef void (*hash_final_func_t) _((unsigned char *, void *));
-typedef int (*hash_equal_func_t) _((void *, void *));
+typedef void (*hash_init_func_t)(void *);
+typedef void (*hash_update_func_t)(void *, unsigned char *, size_t);
+typedef void (*hash_end_func_t)(void *, unsigned char *);
+typedef void (*hash_final_func_t)(unsigned char *, void *);
+typedef int (*hash_equal_func_t)(void *, void *);
 
 typedef struct {
     size_t digest_len;

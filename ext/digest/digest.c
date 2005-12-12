@@ -41,8 +41,7 @@ static ID id_metadata;
  */
 
 static algo_t *
-get_digest_base_metadata(klass)
-    VALUE klass;
+get_digest_base_metadata(VALUE klass)
 {
     VALUE obj;
     algo_t *algo;
@@ -58,10 +57,8 @@ get_digest_base_metadata(klass)
     return algo;
 }
 
-static VALUE rb_digest_base_alloc _((VALUE));
 static VALUE
-rb_digest_base_alloc(klass)
-    VALUE klass;
+rb_digest_base_alloc(VALUE klass)
 {
     algo_t *algo;
     VALUE obj;
@@ -83,15 +80,12 @@ rb_digest_base_alloc(klass)
 }
 
 static VALUE
-rb_digest_base_s_digest(klass, str)
-    VALUE klass;
-    VALUE str;
+rb_digest_base_s_digest(VALUE klass, VALUE str)
 {
     algo_t *algo;
     void *pctx;
-    size_t len;
     unsigned char *digest;
-    VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj = rb_digest_base_alloc(klass);
 
     algo = get_digest_base_metadata(klass);
     Data_Get_Struct(obj, void, pctx);
@@ -99,28 +93,19 @@ rb_digest_base_s_digest(klass, str)
     StringValue(str);
     algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
 
-    len = algo->digest_len;
+    str = rb_str_new(0, algo->digest_len);
+    algo->final_func(RSTRING(str)->ptr, pctx);
 
-    digest = xmalloc(len);
-    algo->final_func(digest, pctx);
-
-    obj = rb_str_new(digest, len);
-
-    free(digest);
-
-    return obj;
+    return str;
 }
 
 static VALUE
-rb_digest_base_s_hexdigest(klass, str)
-    VALUE klass;
-    VALUE str;
+rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
 {
     algo_t *algo;
     void *pctx;
-    size_t len;
     unsigned char *hexdigest;
-    VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj = rb_digest_base_alloc(klass);
 
     algo = get_digest_base_metadata(klass);
     Data_Get_Struct(obj, void, pctx);
@@ -128,21 +113,14 @@ rb_digest_base_s_hexdigest(klass, str)
     StringValue(str);
     algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
 
-    len = algo->digest_len * 2;
+    str = rb_str_new(0, algo->digest_len * 2);
+    algo->end_func(pctx, RSTRING(str)->ptr);
 
-    hexdigest = xmalloc(len + 1); /* +1 is for '\0' */
-    algo->end_func(pctx, hexdigest);
-
-    obj = rb_str_new(hexdigest, len);
-
-    free(hexdigest);
-
-    return obj;
+    return str;
 }
 
 static VALUE
-rb_digest_base_copy(copy, obj)
-    VALUE copy, obj;
+rb_digest_base_copy(VALUE copy, VALUE obj)
 {
     algo_t *algo;
     void *pctx1, *pctx2;
@@ -161,8 +139,7 @@ rb_digest_base_copy(copy, obj)
 }
 
 static VALUE
-rb_digest_base_update(self, str)
-    VALUE self, str;
+rb_digest_base_update(VALUE self, VALUE str)
 {
     algo_t *algo;
     void *pctx;
@@ -177,10 +154,7 @@ rb_digest_base_update(self, str)
 }
 
 static VALUE
-rb_digest_base_init(argc, argv, self)
-    int argc;
-    VALUE* argv;
-    VALUE self;
+rb_digest_base_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
 
@@ -192,8 +166,7 @@ rb_digest_base_init(argc, argv, self)
 }
 
 static VALUE
-rb_digest_base_digest(self)
-    VALUE self;
+rb_digest_base_digest(VALUE self)
 {
     algo_t *algo;
     void *pctx1, *pctx2;
@@ -204,58 +177,43 @@ rb_digest_base_digest(self)
     algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx1);
 
-    len = algo->ctx_size;
+    str = rb_str_new(0, algo->digest_len);
 
+    len = algo->ctx_size;
     pctx2 = xmalloc(len);
     memcpy(pctx2, pctx1, len);
 
-    len = algo->digest_len;
-
-    digest = xmalloc(len);
-    algo->final_func(digest, pctx2);
-
-    str = rb_str_new(digest, len);
-
-    free(digest);
+    algo->final_func(RSTRING(str)->ptr, pctx2);
     free(pctx2);
 
     return str;
 }
 
 static VALUE
-rb_digest_base_hexdigest(self)
-    VALUE self;
+rb_digest_base_hexdigest(VALUE self)
 {
     algo_t *algo;
     void *pctx1, *pctx2;
-    unsigned char *hexdigest;
     size_t len;
     VALUE str;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx1);
 
-    len = algo->ctx_size;
+    str = rb_str_new(0, algo->digest_len * 2);
 
+    len = algo->ctx_size;
     pctx2 = xmalloc(len);
     memcpy(pctx2, pctx1, len);
 
-    len = algo->digest_len * 2;
-
-    hexdigest = xmalloc(len + 1); /* +1 is for '\0' */
-    algo->end_func(pctx2, hexdigest);
-
-    str = rb_str_new(hexdigest, len);
-
-    free(hexdigest);
+    algo->end_func(pctx2, RSTRING(str)->ptr);
     free(pctx2);
 
     return str;
 }
 
 static VALUE
-rb_digest_base_equal(self, other)
-    VALUE self, other;
+rb_digest_base_equal(VALUE self, VALUE other)
 {
     algo_t *algo;
     VALUE klass;
@@ -282,7 +240,7 @@ rb_digest_base_equal(self, other)
 	str1 = rb_digest_base_hexdigest(self);
 
     if (RSTRING(str1)->len == RSTRING(str2)->len
-      && rb_str_cmp(str1, str2) == 0)
+	&& rb_str_cmp(str1, str2) == 0)
 	return Qtrue;
 
     return Qfalse;

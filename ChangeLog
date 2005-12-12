@@ -1,3 +1,12 @@
+Mon Dec 12 00:33:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/digest/digest.c (rb_digest_base_s_digest): add volatile to
+	  protect temporary context object.  [ruby-dev:27979]
+
+	* ext/iconv/iconv.c (Init_iconv): rb_gc_register_address() should
+	  be called before actual variable initialization.
+	  [ruby-dev:27986]
+
 Sun Dec 11 22:07:58 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb (test_remote_array_and_hash): pseudo remote

@@ -7760,14 +7760,14 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
 void
 Init_load(void)
 {
-    rb_load_path = rb_ary_new();
     rb_define_readonly_variable("$:", &rb_load_path);
     rb_define_readonly_variable("$-I", &rb_load_path);
     rb_define_readonly_variable("$LOAD_PATH", &rb_load_path);
+    rb_load_path = rb_ary_new();
 
-    rb_features = rb_ary_new();
     rb_define_readonly_variable("$\"", &rb_features);
     rb_define_readonly_variable("$LOADED_FEATURES", &rb_features);
+    rb_features = rb_ary_new();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
@@ -7777,8 +7777,8 @@ Init_load(void)
     rb_define_global_function("autoload?", rb_f_autoload_p, 1);
     rb_global_variable(&ruby_wrapper);
 
-    ruby_dln_librefs = rb_ary_new();
     rb_global_variable(&ruby_dln_librefs);
+    ruby_dln_librefs = rb_ary_new();
 }
 
 static void

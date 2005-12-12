@@ -53,7 +53,7 @@ cmp_eq(VALUE *a)
 {
     VALUE c = rb_funcall(a[0], cmp, 1, a[1]);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return Qfalse;
     if (rb_cmpint(c, a[0], a[1]) == 0) return Qtrue;
     return Qfalse;
 }
@@ -61,7 +61,7 @@ cmp_eq(VALUE *a)
 static VALUE
 cmp_failed(void)
 {
-    return Qnil;
+    return Qfalse;
 }
 
 /*

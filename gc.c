@@ -106,6 +106,12 @@ rb_memerror(void)
     rb_exc_raise(nomem_error);
 }
 
+#ifdef RUBY_GC_DEBUG
+int always_gc = 0;
+#else
+# define always_gc 0
+#endif
+
 void *
 ruby_xmalloc(size_t size)
 {
@@ -117,7 +123,7 @@ ruby_xmalloc(size_t size)
     if (size == 0) size = 1;
     malloc_increase += size;
 
-    if (malloc_increase > malloc_limit) {
+    if (always_gc || malloc_increase > malloc_limit) {
 	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -165,6 +171,7 @@ ruby_xrealloc(void *ptr, size_t size)
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
     malloc_increase += size;
+    if (always_gc) garbage_collect();
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	if (garbage_collect()) {
@@ -394,7 +401,7 @@ rb_newobj(void)
 {
     VALUE obj;
 
-    if (!freelist && !garbage_collect())
+    if ((always_gc || !freelist) && !garbage_collect())
 	rb_memerror();
 
     obj = (VALUE)freelist;
@@ -1018,6 +1025,7 @@ gc_sweep(void)
     unsigned long live = 0;
 
     mark_source_filename(ruby_sourcefile);
+    if (source_filenames)
     st_foreach(source_filenames, sweep_source_filename, 0);
 
     freelist = 0;

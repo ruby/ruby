@@ -1083,8 +1083,8 @@ Init_iconv(void)
     id_transliterate = rb_intern("transliterate");
     id_discard_ilseq = rb_intern("discard_ilseq");
 
-    charset_map = rb_hash_new();
     rb_gc_register_address(&charset_map);
+    charset_map = rb_hash_new();
     rb_define_singleton_method(rb_cIconv, "charset_map", charset_map_get, 0);
 }
 

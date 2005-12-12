@@ -449,7 +449,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  values in <i>enum</i> through the given block.
  *     
  *     %w{ apple pear fig }.sort_by {|word| word.length}
-                    #=> ["fig", "pear", "apple"]
+                     #=> ["fig", "pear", "apple"]
  *     
  *  The current implementation of <code>sort_by</code> generates an
  *  array of tuples containing the original collection element and the
