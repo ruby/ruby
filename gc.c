@@ -1025,8 +1025,9 @@ gc_sweep(void)
     unsigned long live = 0;
 
     mark_source_filename(ruby_sourcefile);
-    if (source_filenames)
-    st_foreach(source_filenames, sweep_source_filename, 0);
+    if (source_filenames) {
+        st_foreach(source_filenames, sweep_source_filename, 0);
+    }
 
     freelist = 0;
     final_list = deferred_final_list;
