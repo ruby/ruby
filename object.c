@@ -2753,8 +2753,8 @@ Init_Object()
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
 
-    ruby_top_self = rb_obj_alloc(rb_cObject);
     rb_global_variable(&ruby_top_self);
+    ruby_top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(ruby_top_self, "to_s", main_to_s, 0);
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);

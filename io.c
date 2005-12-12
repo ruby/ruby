@@ -5668,12 +5668,12 @@ Init_IO()
     rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
-    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
     rb_define_variable("$stdin", &rb_stdin);
-    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
+    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
     rb_define_hooked_variable("$stdout", &rb_stdout, 0, stdout_setter);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
+    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
+    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
@@ -5687,10 +5687,9 @@ Init_IO()
     rb_define_global_const("STDOUT", rb_stdout);
     rb_define_global_const("STDERR", rb_stderr);
 
+    rb_define_readonly_variable("$<", &argf);
     argf = rb_obj_alloc(rb_cObject);
     rb_extend_object(argf, rb_mEnumerable);
-
-    rb_define_readonly_variable("$<", &argf);
     rb_define_global_const("ARGF", argf);
 
     rb_define_singleton_method(argf, "to_s", argf_to_s, 0);
@@ -5729,8 +5728,8 @@ Init_IO()
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
     rb_global_variable(&current_file);
-    filename = rb_str_new2("-");
     rb_define_readonly_variable("$FILENAME", &filename);
+    filename = rb_str_new2("-");
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
 

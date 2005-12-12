@@ -1053,7 +1053,9 @@ gc_sweep()
     }
 
     mark_source_filename(ruby_sourcefile);
-    st_foreach(source_filenames, sweep_source_filename, 0);
+    if (source_filenames) {
+        st_foreach(source_filenames, sweep_source_filename, 0);
+    }
 
     freelist = 0;
     final_list = deferred_final_list;
@@ -1938,6 +1940,6 @@ Init_GC()
 
     source_filenames = st_init_strtable();
 
-    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
     rb_global_variable(&nomem_error);
+    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
 }
