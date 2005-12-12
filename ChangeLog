@@ -1,3 +1,8 @@
+Mon Dec 12 15:51:22 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_ssl.rb (test_parallel): call GC.start to close
+	  unused files. [ruby-dev:27981]
+
 Mon Dec 12 09:58:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_cover): new method Range#cover? added.  the
