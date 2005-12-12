@@ -641,6 +641,38 @@ range_include(VALUE range, VALUE val)
 }
 
 
+/*
+ *  call-seq:
+ *     rng.cover?(val)  =>  true or false
+ *  
+ *  Returns <code>true</code> if <i>obj</i> is between beg and end,
+ *  i.e <code>beg <= obj <= end</code> (or <i>end</i> exclusive when
+ *  <code>exclude_end?</code> is true).
+ *     
+ *     ("a".."z").cover?("c")    #=> true
+ *     ("a".."z").cover?("5")    #=> false
+ */
+
+static VALUE
+range_cover(range, val)
+    VALUE range, val;
+{
+    VALUE beg, end;
+
+    beg = rb_ivar_get(range, id_beg);
+    end = rb_ivar_get(range, id_end);
+    if (r_le(beg, val)) {
+	if (EXCL(range)) {
+	    if (r_lt(val, end)) return Qtrue;
+	}
+	else {
+	    if (r_le(val, end)) return Qtrue;
+	}
+    }
+    return Qfalse;
+}
+
+
 /*  A <code>Range</code> represents an interval---a set of values with a
  *  start and an end. Ranges may be constructed using the
  *  <em>s</em><code>..</code><em>e</em> and
@@ -718,6 +750,7 @@ Init_Range(void)
 
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
+    rb_define_method(rb_cRange, "cover?", range_cover, 1);
 
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");

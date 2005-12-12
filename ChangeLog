@@ -1,3 +1,10 @@
+Mon Dec 12 09:58:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_cover): new method Range#cover? added.  the
+	  method name might be changed.  thanks to takano32 at
+	  http://www.rubyist.net/~matz/20051210.html#c08 for name
+	  suggestion.  [ruby-talk:167182]
+
 Mon Dec 12 00:33:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_digest): add volatile to
