@@ -1,3 +1,8 @@
+Tue Dec 13 12:23:47 2005  Tanaka Akira  <akr@m17n.org>
+
+	* re.c (rb_reg_regcomp): fix a GC problem on x86_64 with
+	  gcc 3.3.5 (Debian 1:3.3.5-13).
+
 Tue Dec 13 01:44:16 2005  Tanaka Akira  <akr@m17n.org>
 
 	* array.c (rb_ary_diff): fix a GC problem on IA64 with

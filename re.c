@@ -1408,6 +1408,7 @@ VALUE
 rb_reg_regcomp(str)
     VALUE str;
 {
+    volatile VALUE save_str = str;
     if (reg_cache && RREGEXP(reg_cache)->len == RSTRING(str)->len
 	&& case_cache == ruby_ignorecase
 	&& kcode_cache == reg_kcode
