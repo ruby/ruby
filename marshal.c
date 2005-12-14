@@ -1107,7 +1107,7 @@ r_object0(arg, proc, ivp, extmod)
 	{
 	    long len;
 	    BDIGIT *digits;
-	    VALUE data;
+	    volatile VALUE data;
 
 	    NEWOBJ(big, struct RBignum);
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
