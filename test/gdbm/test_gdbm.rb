@@ -118,7 +118,7 @@ if defined? GDBM
     end
     def test_s_open_lock
       return unless have_fork?	# snip this test
-      fork() {
+      pid = fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
         sleep 2
       }
@@ -132,7 +132,7 @@ if defined? GDBM
           end
         }
       ensure
-        Process.wait
+        Process.wait pid
       end
     end
 
@@ -158,7 +158,7 @@ if defined? GDBM
       end
       return unless have_fork?	# snip this test
 
-      fork() {
+      pid = fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644,
                                                   GDBM::NOLOCK))
         sleep 2
@@ -170,13 +170,13 @@ if defined? GDBM
           assert_instance_of(GDBM, gdbm2 = GDBM.open("tmptest_gdbm", 0644))
         }
       ensure
-        Process.wait
+        Process.wait pid
         gdbm2.close if gdbm2
       end
 
       p Dir.glob("tmptest_gdbm*") if $DEBUG
 
-      fork() {
+      pid = Process.fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
         sleep 2
       }
@@ -189,7 +189,7 @@ if defined? GDBM
                                                      GDBM::NOLOCK))
         }
       ensure
-        Process.wait
+        Process.wait pid
         gdbm2.close if gdbm2
       end
     end

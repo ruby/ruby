@@ -1,3 +1,8 @@
+Wed Dec 14 12:11:46 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/gdbm/test_gdbm.rb: specify pid for the argument of
+	  Process.wait.  workaround for Cygwin.
+
 Wed Dec 14 12:01:26 2005  Tanaka Akira  <akr@m17n.org>
 
 	* marshal.c (r_object0): fix a GC problem for reading a bignum on 
