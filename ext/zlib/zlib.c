@@ -762,6 +762,7 @@ zstream_run(z, src, len, flush)
     zstream_reset_input(z);
     if (z->stream.avail_in > 0) {
 	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
+        guard = Qnil; /* prevent tail call to make guard effective */
     }
 }
 

@@ -1,3 +1,8 @@
+Thu Dec 15 01:33:31 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ext/zlib/zlib.c (zstream_run): fix a GC problem by tail call on
+	  x86_64 with gcc 4.0.3 20051111 (prerelease) (Debian 4.0.2-4)
+
 Wed Dec 14 23:50:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (find_class_comment): fix for class
