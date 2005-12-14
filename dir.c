@@ -67,10 +67,23 @@ char *strchr(char*,char);
 #define lstat stat
 #endif
 
+#ifndef CASEFOLD_FILESYSTEM
+# if defined DOSISH || defined __VMS
+#   define CASEFOLD_FILESYSTEM 1
+# else
+#   define CASEFOLD_FILESYSTEM 0
+# endif
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
 #define FNM_CASEFOLD	0x08
+#if CASEFOLD_FILESYSTEM
+#define FNM_SYSCASE	FNM_CASEFOLD
+#else
+#define FNM_SYSCASE	0
+#endif
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -931,6 +944,7 @@ static int
 has_magic(const char *s, int flags)
 {
     const int escape = !(flags & FNM_NOESCAPE);
+    const int nocase = flags & FNM_CASEFOLD;
 
     register const char *p = s;
     register char c;
@@ -946,6 +960,10 @@ has_magic(const char *s, int flags)
 	    if (escape && !(c = *p++))
 		return 0;
 	    continue;
+
+	  default:
+	    if (!FNM_SYSCASE && ISALPHA(c) && nocase)
+		return 1;
 	}
 
 	p = Next(p-1);
@@ -1295,11 +1313,9 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg)
     int status;
 
     start = root = path;
+    flags |= FNM_SYSCASE;
 #if defined DOSISH
-    flags |= FNM_CASEFOLD;
     root = rb_path_skip_prefix(root);
-#else
-    flags &= ~FNM_CASEFOLD;
 #endif
 
     if (root && *root == '/') root++;
@@ -1342,8 +1358,8 @@ rb_glob2(const char *path, int flags, void (*func)(const char *, VALUE), VALUE a
     args.func = func;
     args.value = arg;
 
-    if (flags & FNM_CASEFOLD) {
-	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
+    if (flags & FNM_SYSCASE) {
+	rb_warning("Dir.glob() ignores File::FNM_CASEFOLD");
     }
 
     return ruby_glob0(path, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args);
@@ -1822,4 +1838,5 @@ Init_Dir(void)
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
+    rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
 }

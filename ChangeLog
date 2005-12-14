@@ -1,3 +1,11 @@
+Wed Dec 14 23:39:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (has_magic): glob names contain alphabets to enable case fold
+	  search.  [ruby-dev:27735]
+
+	* dir.c (Init_Dir): FNM_SYSCASE which is default case fold flag.
+	  [ruby-dev:23296]
+
 Wed Dec 14 12:01:26 2005  Tanaka Akira  <akr@m17n.org>
 
 	* marshal.c (r_object0): fix a GC problem for reading a bignum on
@@ -47,10 +55,10 @@ Sun Dec 11 22:07:58 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	  objects are protected against GC. [ruby-dev:27911]
 
 Sat Dec 10 01:06:06 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
-	
+
 	* lib/matrix.rb: add Matrix#determinant_e, Matrix#rank_e.
 	  [ruby-dev:27820] and related thread.
-	
+
 Sat Dec 10 00:31:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (calling_scope_t): gave names to magic numbers for rb_call().
