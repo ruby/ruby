@@ -1,3 +1,8 @@
+Wed Dec 14 23:50:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (find_class_comment): fix for class
+	  document with prototypes.  [ruby-core:06863]
+
 Wed Dec 14 23:39:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (has_magic): glob names contain alphabets to enable case fold
