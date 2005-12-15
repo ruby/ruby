@@ -4,7 +4,7 @@ require 'test/unit'
 require 'pathname'
 
 require 'fileutils'
-require 'tempfile'
+require 'tmpdir'
 
 class TestPathname < Test::Unit::TestCase
   def self.define_assertion(name, &block)
