@@ -1,3 +1,8 @@
+Thu Dec 15 12:35:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tmpdir.rb: merged RDoc patch from Eric Hodel <drbrain at
+	  segment7.net>.  [ruby-core:06894]
+
 Thu Dec 15 01:33:31 2005  Tanaka Akira  <akr@m17n.org>
 
 	* ext/zlib/zlib.c (zstream_run): fix a GC problem by tail call on

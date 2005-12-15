@@ -596,7 +596,7 @@ gc_mark_rest(void)
     MEMCPY(tmp_arry, mark_stack, VALUE, MARK_STACK_MAX);
 
     init_mark_stack();
-    while(p != tmp_arry){
+    while (p != tmp_arry){
 	p--;
 	gc_mark_children(*p, 0);
     }

@@ -39,5 +39,6 @@ thread.rb
 thwait.rb
 time.rb
 timeout.rb
+tmpdir.rb
 uri
 yaml.rb
