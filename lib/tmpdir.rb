@@ -24,6 +24,9 @@ class Dir
   rescue LoadError
   end
 
+  ##
+  # Returns the operating system's temporary file path.
+
   def Dir::tmpdir
     tmp = '.'
     if $SAFE > 0
