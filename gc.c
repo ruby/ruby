@@ -988,9 +988,9 @@ gc_mark_children(ptr, lev)
 	break;
 
       default:
-	rb_bug("rb_gc_mark(): unknown data type 0x%lx (0x%lx) %s",
+	rb_bug("rb_gc_mark(): unknown data type 0x%lx(0x%lx) %s",
 	       obj->as.basic.flags & T_MASK, obj,
-	       is_pointer_to_heap(obj) ? "corrupted object" : "not a pointer to heap");
+	       is_pointer_to_heap(obj) ? "corrupted object" : "non object");
     }
 }
 
