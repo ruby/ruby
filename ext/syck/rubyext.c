@@ -1191,10 +1191,9 @@ syck_resolver_tagurize( self, val )
 
     if ( !NIL_P(tmp) )
     {
-        char *taguri;
-        val = tmp;
-        taguri = syck_type_id_to_uri( RSTRING(val)->ptr );
-        return rb_str_new2( taguri );
+        char *taguri = syck_type_id_to_uri( RSTRING(tmp)->ptr );
+        val = rb_str_new2( taguri );
+        S_FREE( taguri );
     }
 
     return val;
@@ -1405,7 +1404,9 @@ syck_node_mark( n )
             }
         break;
     }
-    rb_gc_mark_maybe( n->shortcut );
+#if 0 /* maybe needed */
+    if ( n->shortcut ) syck_node_mark( n->shortcut ); /* caution: maybe cyclic */
+#endif
 }
 
 /*
@@ -1795,7 +1796,8 @@ syck_node_type_id_set( self, type_id )
     if ( NIL_P( type_id ) ) {
         node->type_id = NULL;
     } else {
-        node->type_id = StringValuePtr( type_id );
+        StringValue( type_id );
+        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
     }
 
     rb_iv_set( self, "@type_id", type_id );

@@ -1,3 +1,12 @@
+Fri Dec 16 11:44:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (syck_resolver_tagurize): fixed memory leak.
+
+	* ext/syck/rubyext.c (syck_node_type_id_set): should set newly
+	  allocated memory instead of RString's internal storage.
+
+	... these fixes won't fix [ruby-dev:27839]. more work is needed.
+
 Thu Dec 15 12:35:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tmpdir.rb: merged RDoc patch from Eric Hodel <drbrain at
@@ -146,7 +155,7 @@ Tue Dec  6 16:48:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (ruby_xrealloc2): ditto.
 
-Tue Dec  4 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
+Tue Dec  6 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
 
 	* eval.c (exec_under): avoid accessing ruby_frame->prev.
 	  [ruby-dev:27948]
@@ -2988,7 +2997,8 @@ Sat Jul 30 18:49:44 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testOLETYPE.rb: ditto.
 
-Fri Jul 29 16:12:02 005	 Keiju Ishitsuka <keiju@ruby-lang.org>
+Fri Jul 29 16:12:02 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
 	* lib/irb/context.rb: fix `irb --readline` option. [ruby-dev:40955]
 
 Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
