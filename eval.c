@@ -9273,9 +9273,12 @@ bmcall(args, method)
     VALUE args, method;
 {
     volatile VALUE a;
+    VALUE ret;
 
     a = svalue_to_avalue(args);
-    return method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
+    ret = method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
+    a = Qnil; /* prevent tail call */
+    return ret;
 }
 
 VALUE

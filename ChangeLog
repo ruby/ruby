@@ -1,3 +1,8 @@
+Sat Dec 17 03:30:23 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (bmcall): fix a GC problem by tail call on
+	  IA64 with gcc 4.0.3 20051216 (prerelease).
+
 Fri Dec 16 00:54:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (Init_signal): revert C++ style comment.
