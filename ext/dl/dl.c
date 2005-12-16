@@ -147,7 +147,7 @@ dlstrdup(const char *str)
 {
   char *newstr;
 
-  newstr = (char*)dlmalloc(strlen(str));
+  newstr = (char*)dlmalloc(strlen(str)+1);
   strcpy(newstr,str);
 
   return newstr;
