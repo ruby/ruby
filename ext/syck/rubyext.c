@@ -1522,7 +1522,7 @@ syck_scalar_value_set( self, val )
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = RSTRING(val)->ptr;
+    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
     node->data.str->len = RSTRING(val)->len;
     node->data.str->style = scalar_none;
 

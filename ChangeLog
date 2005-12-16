@@ -5,6 +5,8 @@ Fri Dec 16 11:44:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/syck/rubyext.c (syck_node_type_id_set): should set newly
 	  allocated memory instead of RString's internal storage.
 
+	* ext/syck/rubyext.c (syck_scalar_value_set): ditto.
+
 	... these fixes won't fix [ruby-dev:27839]. more work is needed.
 
 Thu Dec 15 12:35:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
