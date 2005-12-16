@@ -1855,6 +1855,7 @@ rb_big_rshift(x, y)
     VALUE z;
     BDIGIT_DBL num = 0;
     long i, j;
+    volatile VALUE save_x;
 
     if (shift < 0) return rb_big_lshift(x, INT2FIX(-shift));
 
@@ -1865,7 +1866,7 @@ rb_big_rshift(x, y)
 	    return INT2FIX(-1);
     }
     if (!RBIGNUM(x)->sign) {
-	x = rb_big_clone(x);
+	save_x = x = rb_big_clone(x);
 	get2comp(x);
     }
     xds = BDIGITS(x);
