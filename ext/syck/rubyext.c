@@ -122,7 +122,7 @@ rb_syck_compile(self, port)
 
     syck_free_parser( parser );
 
-    bc = rb_str_new2( ret );
+    bc = rb_str_new2( ret );  S_FREE( ret );
     if ( taint )      OBJ_TAINT( bc );
     return bc;
 }
@@ -2264,10 +2264,12 @@ Init_syck()
     rb_define_method( cResolver, "node_import", syck_resolver_node_import, 1 );
     rb_define_method( cResolver, "tagurize", syck_resolver_tagurize, 1 );
 
+    rb_global_variable( &oDefaultResolver );
     oDefaultResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oDefaultResolver, "node_import", syck_defaultresolver_node_import, 1 );
     rb_define_singleton_method( oDefaultResolver, "detect_implicit", syck_defaultresolver_detect_implicit, 1 );
     rb_define_const( rb_syck, "DefaultResolver", oDefaultResolver );
+    rb_global_variable( &oGenericResolver );
     oGenericResolver = rb_funcall( cResolver, rb_intern( "new" ), 0 );
     rb_define_singleton_method( oGenericResolver, "node_import", syck_genericresolver_node_import, 1 );
     rb_define_const( rb_syck, "GenericResolver", oGenericResolver );

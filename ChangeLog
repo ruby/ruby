@@ -1,3 +1,9 @@
+Fri Dec 16 17:53:45 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (rb_syck_compile): fixed memory leak.
+
+	* ext/syck/rubyext.c: should protect global variable from GC.
+
 Fri Dec 16 11:44:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_resolver_tagurize): fixed memory leak.
