@@ -1,3 +1,11 @@
+Sat Dec 17 21:50:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (syck_emitter_reset): should initialize
+	  emitter->bonus->oid. otherwise rb_gc_mark crashes.
+
+	* ext/syck/rubyext.c (syck_mark_parser): should mark anchor nodes
+	  because they hold ruby objects. (ie: rb_syck_bad_anchor_handler)
+
 Sat Dec 17 03:57:01 2005  Tanaka Akira  <akr@m17n.org>
 
 	* bignum.c (rb_big_rshift): fix a GC problem on

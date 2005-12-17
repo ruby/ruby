@@ -617,8 +617,7 @@ rb_syck_load_handler(p, n)
     /*
      * Create node, 
      */
-    obj = rb_funcall( resolver, s_node_import,
-                      1, Data_Wrap_Struct( cNode, syck_node_mark, NULL, n ) );
+    obj = rb_funcall( resolver, s_node_import, 1, Data_Wrap_Struct( cNode, NULL, NULL, n ) );
 
     /*
      * ID already set, let's alter the symbol table to accept the new object
@@ -706,6 +705,13 @@ syck_set_model( p, input, model )
     syck_parser_bad_anchor_handler( parser, rb_syck_bad_anchor_handler );
 }
 
+static int
+syck_st_mark_nodes( char *key, SyckNode *n, char *arg )
+{
+    if ( n != (void *)1 ) syck_node_mark( n );
+    return ST_CONTINUE;
+}
+
 /*
  * mark parser nodes
  */
@@ -722,6 +728,14 @@ syck_mark_parser(parser)
         rb_gc_mark( bonus->data );
         rb_gc_mark( bonus->proc );
         rb_gc_mark( bonus->resolver );
+    }
+    if ( parser->anchors != NULL )
+    {
+        st_foreach( parser->anchors, syck_st_mark_nodes, 0 );
+    }
+    if ( parser->bad_anchors != NULL )
+    {
+        st_foreach( parser->bad_anchors, syck_st_mark_nodes, 0 );
     }
 }
 
@@ -2013,6 +2027,7 @@ syck_emitter_reset( argc, argv, self )
     if ( bonus != NULL ) S_FREE( bonus );
 
     bonus = S_ALLOC_N( struct emitter_xtra, 1 );
+    bonus->oid = Qnil;
     bonus->port = rb_str_new2( "" );
     bonus->data = hash = rb_hash_new();
 
