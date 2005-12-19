@@ -5,6 +5,36 @@ Mon Dec 19 23:09:24 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  SyckParser's hash table. if GC occurs in st_insert, it's not under
 	  SyckParser's mark system yet. so RString can be released wrongly.
 
+	* ext/syck/syck.h (S_FREE): small hack. no need to check if pointer is
+	  NULL or not before S_FREE.
+
+	* ext/syck/rubyext.c (syck_parser_assign_io): rb_check_string_type can
+	  return new RString. if so, it becomes unreachable from GC after
+	  returns syck_parser_assign_io, and can be freed by GC. (dangling
+	  in syck io system) so extends its life time till syck_parse is called.
+
+	* ext/syck/rubyext.c (syck_parser_s_alloc): always allocates bonus,
+	  so no need to check if NULL, and "volatile VALUE hash"
+	  is not needed. (bonus->port was not protected in syck_emitter_reset)
+
+	* ext/syck/rubyext.c (syck_mark_parser): ditto.
+
+	* ext/syck/rubyext.c (syck_parser_load): ditto.
+
+	* ext/syck/rubyext.c (syck_parser_load_documents): ditto.
+
+	* ext/syck/rubyext.c (syck_emitter_s_alloc): ditto.
+
+	* ext/syck/rubyext.c (syck_mark_emitter): ditto.
+
+	* ext/syck/rubyext.c (syck_emitter_reset): ditto.
+
+	* ext/syck/rubyext.c (syck_scalar_value_set): "should set newly
+	  allocated memory instead of RString's internal storage" stuff again.
+	  by this, should call syck_free_node instead of rb_syck_free_node.
+
+	* ext/syck/rubyext.c (syck_node_type_id_set): ditto.
+
 Mon Dec 19 12:20:59 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): activate only

@@ -75,7 +75,7 @@ void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
-int syck_parser_assign_io _((SyckParser *, VALUE));
+int syck_parser_assign_io _((SyckParser *, VALUE *));
 VALUE syck_scalar_alloc _((VALUE class));
 VALUE syck_seq_alloc _((VALUE class));
 VALUE syck_map_alloc _((VALUE class));
@@ -107,7 +107,7 @@ rb_syck_compile(self, port)
     bytestring_t *sav; 
 
     SyckParser *parser = syck_new_parser();
-    taint = syck_parser_assign_io(parser, port);
+    taint = syck_parser_assign_io(parser, &port);
     syck_parser_handler( parser, syck_yaml2byte_handler );
     syck_parser_error_handler( parser, NULL );
     syck_parser_implicit_typing( parser, 0 );
@@ -164,12 +164,12 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
  * (returns tainted? boolean)
  */
 int
-syck_parser_assign_io(parser, port)
+syck_parser_assign_io(parser, pport)
     SyckParser *parser;
-    VALUE port;
+    VALUE *pport;
 {
     int taint = Qtrue;
-    VALUE tmp;
+    VALUE tmp, port = *pport;
     if (!NIL_P(tmp = rb_check_string_type(port))) {
         taint = OBJ_TAINTED(port); /* original taintedness */
         port = tmp;
@@ -184,6 +184,7 @@ syck_parser_assign_io(parser, port)
     else {
         rb_raise(rb_eTypeError, "instance of IO needed");
     }
+    *pport = port;
     return taint;
 }
 
@@ -265,12 +266,11 @@ rb_syck_mktime(str, len)
     ptr += 2;
     if ( len > ptr - str && *ptr == '.' )
     {
-        char *padded = syck_strndup( "000000", 6 );
+        char padded[] = "000000";
         char *end = ptr + 1;
         while ( isdigit( *end ) ) end++;
         MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
         usec = strtol(padded, NULL, 10);
-        S_FREE(padded);
     }
     else
     {
@@ -719,16 +719,13 @@ static void
 syck_mark_parser(parser)
     SyckParser *parser;
 {
-    struct parser_xtra *bonus;
+    struct parser_xtra *bonus = (struct parser_xtra *)parser->bonus;
     rb_gc_mark_maybe(parser->root);
     rb_gc_mark_maybe(parser->root_on_error);
-    if ( parser->bonus != NULL )
-    {
-        bonus = (struct parser_xtra *)parser->bonus;
-        rb_gc_mark( bonus->data );
-        rb_gc_mark( bonus->proc );
-        rb_gc_mark( bonus->resolver );
-    }
+    rb_gc_mark( bonus->data );
+    rb_gc_mark( bonus->proc );
+    rb_gc_mark( bonus->resolver );
+
     if ( parser->anchors != NULL )
     {
         st_foreach( parser->anchors, syck_st_mark_nodes, 0 );
@@ -746,8 +743,7 @@ void
 rb_syck_free_parser(p)
     SyckParser *p;
 {
-    struct parser_xtra *bonus = (struct parser_xtra *)p->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
+    S_FREE( p->bonus );
     syck_free_parser(p);
 }
 
@@ -761,6 +757,9 @@ syck_parser_s_alloc(class)
 {
     VALUE pobj;
     SyckParser *parser = syck_new_parser();
+
+    parser->bonus = S_ALLOC( struct parser_xtra );
+    S_MEMZERO( parser->bonus, struct parser_xtra, 1 );
 
     pobj = Data_Wrap_Struct( class, syck_mark_parser, rb_syck_free_parser, parser );
 
@@ -833,8 +832,7 @@ syck_parser_load(argc, argv, self)
 {
     VALUE port, proc, model, input;
     SyckParser *parser;
-    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
-    volatile VALUE hash;    /* protect from GC */
+    struct parser_xtra *bonus;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
 
@@ -843,13 +841,12 @@ syck_parser_load(argc, argv, self)
     Data_Get_Struct(self, SyckParser, parser);
     syck_set_model( self, input, model );
 
-    bonus->taint = syck_parser_assign_io(parser, port);
-    bonus->data = hash = rb_hash_new();
+    bonus = (struct parser_xtra *)parser->bonus;
+    bonus->taint = syck_parser_assign_io(parser, &port);
+    bonus->data = rb_hash_new();
     bonus->resolver = rb_attr_get( self, s_resolver );
     if ( NIL_P( proc ) ) bonus->proc = 0;
     else                 bonus->proc = proc;
-    
-    parser->bonus = (void *)bonus;
 
     return syck_parse( parser );
 }
@@ -865,8 +862,7 @@ syck_parser_load_documents(argc, argv, self)
 {
     VALUE port, proc, v, input, model;
     SyckParser *parser;
-    struct parser_xtra *bonus = S_ALLOC_N( struct parser_xtra, 1 );
-    volatile VALUE hash;
+    struct parser_xtra *bonus;
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
 
@@ -875,15 +871,15 @@ syck_parser_load_documents(argc, argv, self)
     Data_Get_Struct(self, SyckParser, parser);
     syck_set_model( self, input, model );
     
-    bonus->taint = syck_parser_assign_io(parser, port);
+    bonus = (struct parser_xtra *)parser->bonus;
+    bonus->taint = syck_parser_assign_io(parser, &port);
     bonus->resolver = rb_attr_get( self, s_resolver );
     bonus->proc = 0;
-    parser->bonus = (void *)bonus;
 
     while ( 1 )
     {
         /* Reset hash for tracking nodes */
-        bonus->data = hash = rb_hash_new();
+        bonus->data = rb_hash_new();
 
         /* Parse a document */
         v = syck_parse( parser );
@@ -1397,12 +1393,10 @@ syck_node_mark( n )
     SyckNode *n;
 {
     int i;
-    if (!n) return;
     rb_gc_mark_maybe( n->id );
     switch ( n->kind )
     {
         case syck_seq_kind:
-            if (!n->data.list) return;
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 rb_gc_mark( syck_seq_read( n, i ) );
@@ -1410,7 +1404,6 @@ syck_node_mark( n )
         break;
 
         case syck_map_kind:
-            if (!n->data.pairs) return;
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
                 rb_gc_mark( syck_map_read( n, map_key, i ) );
@@ -1424,42 +1417,6 @@ syck_node_mark( n )
 }
 
 /*
- * Don't free Ruby data, Ruby will do that
- */
-void
-rb_syck_free_node( SyckNode *n )
-{
-    switch ( n->kind  )
-    {
-        case syck_str_kind:
-            S_FREE( n->data.str );
-            n->data.str = NULL;
-        break;
-
-        case syck_seq_kind:
-            if ( n->data.list != NULL )
-            {
-                S_FREE( n->data.list->items );
-                S_FREE( n->data.list );
-                n->data.list = NULL;
-            }
-        break;
-
-        case syck_map_kind:
-            if ( n->data.pairs != NULL )
-            {
-                S_FREE( n->data.pairs->keys );
-                S_FREE( n->data.pairs->values );
-                S_FREE( n->data.pairs );
-                n->data.pairs = NULL;
-            }
-        break;
-    }
-
-    S_FREE( n );
-}
-
-/*
  * YAML::Syck::Scalar.allocate
  */
 VALUE
@@ -1467,7 +1424,7 @@ syck_scalar_alloc( class )
     VALUE class;
 {
     SyckNode *node = syck_alloc_str();
-    VALUE obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    VALUE obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1536,7 +1493,7 @@ syck_scalar_value_set( self, val )
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = RSTRING(val)->ptr;
+    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
     node->data.str->len = RSTRING(val)->len;
     node->data.str->style = scalar_none;
 
@@ -1554,7 +1511,7 @@ syck_seq_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_seq();
-    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1653,7 +1610,7 @@ syck_map_alloc( class )
     SyckNode *node;
     VALUE obj;
     node = syck_alloc_map();
-    obj = Data_Wrap_Struct( class, syck_node_mark, rb_syck_free_node, node );
+    obj = Data_Wrap_Struct( class, syck_node_mark, syck_free_node, node );
     node->id = obj;
     return obj;
 }
@@ -1783,8 +1740,7 @@ syck_node_init_copy( copy, orig )
     if ( copy == orig )
         return copy;
 
-    if ( TYPE( orig ) != T_DATA ||
-         RDATA( orig )->dfree != ( RUBY_DATA_FUNC )rb_syck_free_node )
+    if ( TYPE( orig ) != T_DATA )
     {
         rb_raise( rb_eTypeError, "wrong argument type" );
     }
@@ -1805,10 +1761,11 @@ syck_node_type_id_set( self, type_id )
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
 
-    if ( NIL_P( type_id ) ) {
-        node->type_id = NULL;
-    } else {
-        node->type_id = StringValuePtr( type_id );
+    S_FREE( node->type_id );
+
+    if ( !NIL_P( type_id ) ) {
+        StringValue( type_id );
+        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
     }
 
     rb_iv_set( self, "@type_id", type_id );
@@ -1964,14 +1921,10 @@ static void
 syck_mark_emitter(emitter)
     SyckEmitter *emitter;
 {
-    struct emitter_xtra *bonus;
-    if ( emitter->bonus != NULL )
-    {
-        bonus = (struct emitter_xtra *)emitter->bonus;
-        rb_gc_mark( bonus->oid  );
-        rb_gc_mark( bonus->data );
-        rb_gc_mark( bonus->port );
-    }
+    struct emitter_xtra *bonus = (struct emitter_xtra *)emitter->bonus;
+    rb_gc_mark( bonus->oid  );
+    rb_gc_mark( bonus->data );
+    rb_gc_mark( bonus->port );
 }
 
 /*
@@ -1981,8 +1934,7 @@ void
 rb_syck_free_emitter(e)
     SyckEmitter *e;
 {
-    struct emitter_xtra *bonus = (struct emitter_xtra *)e->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
+    S_FREE( e->bonus );
     syck_free_emitter(e);
 }
 
@@ -1996,6 +1948,9 @@ syck_emitter_s_alloc(class)
 {
     VALUE pobj;
     SyckEmitter *emitter = syck_new_emitter();
+
+    emitter->bonus = S_ALLOC( struct emitter_xtra );
+    S_MEMZERO( emitter->bonus, struct emitter_xtra, 1 );
 
     pobj = Data_Wrap_Struct( class, syck_mark_emitter, rb_syck_free_emitter, emitter );
     syck_emitter_handler( emitter, rb_syck_emitter_handler );
@@ -2017,16 +1972,13 @@ syck_emitter_reset( argc, argv, self )
     VALUE options, tmp;
     SyckEmitter *emitter;
     struct emitter_xtra *bonus;
-    volatile VALUE hash;    /* protect from GC */
 
     Data_Get_Struct(self, SyckEmitter, emitter);
     bonus = (struct emitter_xtra *)emitter->bonus;
-    if ( bonus != NULL ) S_FREE( bonus );
 
-    bonus = S_ALLOC_N( struct emitter_xtra, 1 );
     bonus->oid = Qnil;
     bonus->port = rb_str_new2( "" );
-    bonus->data = hash = rb_hash_new();
+    bonus->data = rb_hash_new();
 
     if (rb_scan_args(argc, argv, "01", &options) == 0)
     {
@@ -2048,7 +2000,6 @@ syck_emitter_reset( argc, argv, self )
     }
     
     emitter->headless = 1;
-    emitter->bonus = (void *)bonus;
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
     return self;
