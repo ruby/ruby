@@ -1,3 +1,8 @@
+Mon Dec 19 12:20:59 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): activate only
+	  before gcc 4.0.3 on SPARC and IA64.
+
 Mon Dec 19 11:37:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c: sorry, I reverted my "should set newly
