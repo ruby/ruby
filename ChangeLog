@@ -44,6 +44,8 @@ Mon Dec 19 23:09:24 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_node_type_id_set): ditto.
 
+	... I believe syck GC problem was solved by this.
+
 Mon Dec 19 12:20:59 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): activate only
