@@ -8360,7 +8360,9 @@ rb_symname_p(const char *name)
 	break;
 
       case '>':
-	if (*++m == '>') ++m;
+	switch (*++m) {
+	  case '>': case '=': ++m; break;
+	}
 	break;
 
       case '=':
@@ -8380,6 +8382,7 @@ rb_symname_p(const char *name)
 	break;
 
       case '|': case '^': case '&': case '/': case '%': case '~': case '`':
+	++m;
 	break;
 
       case '[':
