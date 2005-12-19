@@ -138,14 +138,13 @@ rb_jump_context(env, val)
       (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
       (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
 #if GCC_VERSION_BEFORE(4,0,3)
-#if defined (__GNUC__) && (defined(sparc) || defined(__sparc__))
+#if defined(sparc) || defined(__sparc__)
 #define FUNCTION_CALL_MAY_RETURN_TWICE \
  ({ __asm__ volatile ("" : : :  \
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
-#else
-#if defined(__ia64__)
+#elif defined(__ia64__)
 static jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
 #define FUNCTION_CALL_MAY_RETURN_TWICE \
@@ -154,7 +153,6 @@ int function_call_may_return_twice_false = 0;
    0)
 #else
 #define FUNCTION_CALL_MAY_RETURN_TWICE 0
-#endif
 #endif
 #else
 #define FUNCTION_CALL_MAY_RETURN_TWICE 0
