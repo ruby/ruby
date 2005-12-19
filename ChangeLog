@@ -1,3 +1,14 @@
+Mon Dec 19 11:37:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c: sorry, I reverted my "should set newly
+	  allocated memory instead of RString's internal storage" stuff.
+	  node allocated in rubyext.c seems to be freed by rb_syck_free_node
+	  not syck_free_node, and it won't free data.str->ptr and type_id.
+
+	 (I still think this is unsafe because RString(foo)->ptr becomes
+	  dangling pointer when RString is modified or freed, but anyway
+	  I misunderstood, so go back to original code for now)
+
 Sat Dec 17 21:50:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_emitter_reset): should initialize

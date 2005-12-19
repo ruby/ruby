@@ -1536,7 +1536,7 @@ syck_scalar_value_set( self, val )
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
+    node->data.str->ptr = RSTRING(val)->ptr;
     node->data.str->len = RSTRING(val)->len;
     node->data.str->style = scalar_none;
 
@@ -1805,13 +1805,10 @@ syck_node_type_id_set( self, type_id )
     SyckNode *node;
     Data_Get_Struct( self, SyckNode, node );
 
-    if ( node->type_id != NULL ) S_FREE( node->type_id );
-
     if ( NIL_P( type_id ) ) {
         node->type_id = NULL;
     } else {
-        StringValue( type_id );
-        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
+        node->type_id = StringValuePtr( type_id );
     }
 
     rb_iv_set( self, "@type_id", type_id );
