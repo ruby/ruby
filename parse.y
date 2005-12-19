@@ -5940,7 +5940,9 @@ rb_symname_p(name)
 	break;
 
       case '>':
-	if (*++m == '>') ++m;
+	switch (*++m) {
+	  case '>': case '=': ++m; break;
+	}
 	break;
 
       case '=':
@@ -5960,6 +5962,7 @@ rb_symname_p(name)
 	break;
 
       case '|': case '^': case '&': case '/': case '%': case '~': case '`':
+	++m;
 	break;
 
       case '[':

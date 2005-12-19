@@ -1,3 +1,7 @@
+Mon Dec 19 23:32:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_symname_p): fixed wrong validation.  [ruby-dev:28047]
+
 Sat Dec 17 03:57:01 2005  Tanaka Akira  <akr@m17n.org>
 
 	* bignum.c (rb_big_rshift): fix a GC problem on
@@ -20,7 +24,7 @@ Thu Dec 15 12:35:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Dec 15 01:33:31 2005  Tanaka Akira  <akr@m17n.org>
 
-	* ext/zlib/zlib.c (zstream_run): fix a GC problem by tail call on 
+	* ext/zlib/zlib.c (zstream_run): fix a GC problem by tail call on
 	  x86_64 with gcc 4.0.3 20051111 (prerelease) (Debian 4.0.2-4)
 
 Wed Dec 14 12:11:46 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
@@ -30,7 +34,7 @@ Wed Dec 14 12:11:46 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Wed Dec 14 12:01:26 2005  Tanaka Akira  <akr@m17n.org>
 
-	* marshal.c (r_object0): fix a GC problem for reading a bignum on 
+	* marshal.c (r_object0): fix a GC problem for reading a bignum on
 	  IA64 with gcc 3.3.5 (Debian 1:3.3.5-13).
 
 Tue Dec 13 12:23:47 2005  Tanaka Akira  <akr@m17n.org>
