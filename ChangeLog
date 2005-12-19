@@ -1,3 +1,8 @@
+Tue Dec 20 01:46:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_f_backquote): fix a GC problem on
+	  IA64 with gcc 4.0.3 20051216 (prerelease) -O3.
+
 Mon Dec 19 23:32:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_symname_p): fixed wrong validation.  [ruby-dev:28047]

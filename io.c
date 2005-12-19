@@ -4513,7 +4513,8 @@ static VALUE
 rb_f_backquote(obj, str)
     VALUE obj, str;
 {
-    VALUE port, result;
+    volatile VALUE port;
+    VALUE result;
     OpenFile *fptr;
 
     SafeStringValue(str);
