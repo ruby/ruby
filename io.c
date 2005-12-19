@@ -4373,7 +4373,8 @@ rb_f_readlines(int argc, VALUE *argv)
 static VALUE
 rb_f_backquote(VALUE obj, VALUE str)
 {
-    VALUE port, result;
+    volatile VALUE port;
+    VALUE result;
     OpenFile *fptr;
 
     SafeStringValue(str);
