@@ -10,6 +10,7 @@
 
 **********************************************************************/
 
+#undef RUBY_EXPORT
 #include "ruby.h"
 
 #if defined(__MACOS__) && defined(__MWERKS__)
@@ -25,7 +26,7 @@ int
 main(int argc, char **argv, char **envp)
 {
 #ifdef RUBY_GC_DEBUG
-    extern int always_gc;
+    RUBY_EXTERN int always_gc;
     always_gc = getenv("RUBY_ALWAYS_GC") != NULL;
 #endif
 #ifdef _WIN32

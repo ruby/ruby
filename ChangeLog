@@ -1,3 +1,10 @@
+Mon Dec 19 23:30:59 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (XCFLAGS): separated as well as win32/Makefile.sub.
+
+	* main.c (always_gc): dllimport is required for VC to import a DLL
+	  symbol.  fixed: [ruby-dev:28051]
+
 Mon Dec 19 23:09:24 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* st.c: uses malloc instead of xmalloc to avoid GC. syck uses st_insert
