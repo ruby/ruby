@@ -46,22 +46,10 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
-#ifdef RUBY_PLATFORM
-#define xmalloc ruby_xmalloc
-#define xcalloc ruby_xcalloc
-#define xrealloc ruby_xrealloc
-#define xfree ruby_xfree
-
-void *xmalloc(long);
-void *xcalloc(long, long);
-void *xrealloc(void *, long);
-void xfree(void *);
-#endif
-
 static void rehash(st_table *);
 
-#define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
-#define Calloc(n,s) (char*)xcalloc((n),(s))
+#define alloc(type) (type*)malloc((unsigned)sizeof(type))
+#define Calloc(n,s) (char*)calloc((n),(s))
 
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
 
@@ -216,12 +204,12 @@ st_free_table(table)
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
-	    xfree(ptr);
+	    free(ptr);
 	    ptr = next;
 	}
     }
-    xfree(table->bins);
-    xfree(table);
+    free(table->bins);
+    free(table);
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
@@ -340,7 +328,7 @@ rehash(table)
 	    ptr = next;
 	}
     }
-    xfree(table->bins);
+    free(table->bins);
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 }
@@ -363,7 +351,7 @@ st_copy(old_table)
 	Calloc((unsigned)num_bins, sizeof(st_table_entry*));
 
     if (new_table->bins == 0) {
-	xfree(new_table);
+	free(new_table);
 	return 0;
     }
 
@@ -373,8 +361,8 @@ st_copy(old_table)
 	while (ptr != 0) {
 	    entry = alloc(st_table_entry);
 	    if (entry == 0) {
-		xfree(new_table->bins);
-		xfree(new_table);
+		free(new_table->bins);
+		free(new_table);
 		return 0;
 	    }
 	    *entry = *ptr;
@@ -409,7 +397,7 @@ st_delete(table, key, value)
 	table->num_entries--;
 	if (value != 0) *value = ptr->record;
 	*key = ptr->key;
-	xfree(ptr);
+	free(ptr);
 	return 1;
     }
 
@@ -420,7 +408,7 @@ st_delete(table, key, value)
 	    table->num_entries--;
 	    if (value != 0) *value = tmp->record;
 	    *key = tmp->key;
-	    xfree(tmp);
+	    free(tmp);
 	    return 1;
 	}
     }
@@ -520,7 +508,7 @@ st_foreach(table, func, arg)
 		    last->next = ptr->next;
 		}
 		ptr = ptr->next;
-		xfree(tmp);
+		free(tmp);
 		table->num_entries--;
 	    }
 	}

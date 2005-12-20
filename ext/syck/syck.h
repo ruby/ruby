@@ -51,7 +51,7 @@ extern "C" {
 #define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define S_ALLOC(type) (type*)malloc(sizeof(type))
 #define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
-#define S_FREE(n) free(n); n = NULL;
+#define S_FREE(n) if (n) { free(n); n = NULL; }
 
 #define S_ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 
