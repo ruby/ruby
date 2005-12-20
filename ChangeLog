@@ -1,3 +1,8 @@
+Tue Dec 20 22:41:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (eval_under_i): evaluate source in caller's frame.
+	  [ruby-dev:28076]
+
 Tue Dec 20 12:53:23 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_emitter_reset): to ensure compatibility

@@ -6315,7 +6315,11 @@ static VALUE
 eval_under_i(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
+    struct FRAME *f = ruby_frame;
 
+    if (f && (f = f->prev) && (f = f->prev)) {
+	ruby_frame = f;
+    }
     return eval(args[0], args[1], Qnil, (char*)args[2], (int)args[3]);
 }
 
