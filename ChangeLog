@@ -1,3 +1,10 @@
+Tue Dec 20 12:33:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (syck_node_transform): ruby object holding
+	  explicitly freed SyckNode caused SEGV. [ruby-dev:28067]
+
+	... I think syck GC problem was solved now!
+
 Tue Dec 20 01:46:48 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_f_backquote): fix a GC problem on

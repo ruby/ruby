@@ -1783,7 +1783,7 @@ syck_node_transform( self )
     SyckNode *n;
     SyckNode *orig_n;
     Data_Get_Struct(self, SyckNode, orig_n);
-    t = Data_Wrap_Struct( cNode, syck_node_mark, NULL, 0 );
+    t = Data_Wrap_Struct( cNode, syck_node_mark, syck_free_node, 0 );
 
     switch (orig_n->kind)
     {
@@ -1824,9 +1824,7 @@ syck_node_transform( self )
         n->anchor = syck_strndup( orig_n->anchor, strlen( orig_n->anchor ) );
     }
     n->id = t;
-    t = rb_funcall( oDefaultResolver, s_node_import, 1, t );
-    syck_free_node( n );
-    return t;
+    return rb_funcall( oDefaultResolver, s_node_import, 1, t );
 }
 
 /*
