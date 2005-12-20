@@ -1,3 +1,8 @@
+Tue Dec 20 12:53:23 2005  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_emitter_reset): to ensure compatibility
+	  with previous Ruby versions, documents are no longer headless.
+
 Tue Dec 20 12:33:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_node_transform): ruby object holding

@@ -1997,7 +1997,7 @@ syck_emitter_reset( argc, argv, self )
         rb_ivar_set(self, s_options, options);
     }
     
-    emitter->headless = 1;
+    emitter->headless = 0;
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
     return self;
