@@ -1,3 +1,11 @@
+Tue Dec 20 22:41:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (eval_under_i): evaluate source in caller's frame.
+	  [ruby-dev:28076]
+
+	* eval.c (rb_call_super): use original method name on exception.
+	  [ruby-dev:28078]
+
 Tue Dec 20 13:11:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c: fixed GC problem (backported HEAD 1.55 - 1.62)

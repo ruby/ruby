@@ -6075,13 +6075,13 @@ rb_call_super(argc, argv)
 
     if (ruby_frame->last_class == 0) {
 	rb_name_error(ruby_frame->last_func, "calling `super' from `%s' is prohibited",
-		      rb_id2name(ruby_frame->last_func));
+		      rb_id2name(ruby_frame->orig_func));
     }
 
     self = ruby_frame->self;
     klass = ruby_frame->last_class;
     if (RCLASS(klass)->super == 0) {
-	return method_missing(self, ruby_frame->last_func, argc, argv, CSTAT_SUPER);
+	return method_missing(self, ruby_frame->orig_func, argc, argv, CSTAT_SUPER);
     }
 
     PUSH_ITER(ruby_iter->iter ? ITER_PRE : ITER_NOT);
@@ -6476,6 +6476,11 @@ static VALUE
 eval_under_i(args)
     VALUE *args;
 {
+    struct FRAME *f = ruby_frame;
+
+    if (f && (f = f->prev) && (f = f->prev)) {
+	ruby_frame = f;
+    }
     return eval(args[0], args[1], Qnil, (char*)args[2], (int)args[3]);
 }
 
