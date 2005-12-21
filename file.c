@@ -1399,6 +1399,16 @@ test_sticky(VALUE obj, VALUE fname)
  *   File.identical?(file_1, file_2)   =>  true or false
  *
  * Returns <code>true</code> if the named files are identical.
+ *
+ *     open("a", "w") {}
+ *     p File.identical?("a", "a")      #=> true
+ *     p File.identical?("a", "./a")    #=> true
+ *     File.link("a", "b")
+ *     p File.identical?("a", "b")      #=> true
+ *     File.symlink("a", "c")
+ *     p File.identical?("a", "c")      #=> true
+ *     open("d", "w") {}
+ *     p File.identical?("a", "d")      #=> false
  */
 
 static VALUE
@@ -3195,7 +3205,7 @@ test_check(int n, int argc, VALUE *argv)
  *
  * Tests that take two files:
  *
- *     ?-  | boolean | True if file1 is a hard link to file2
+ *     ?-  | boolean | True if file1 and file2 are identical
  *     ?=  | boolean | True if the modification times of file1
  *         |         | and file2 are equal
  *     ?<  | boolean | True if the modification time of file1
