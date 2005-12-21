@@ -450,12 +450,8 @@ class TestPathname < Test::Unit::TestCase
 
   def test_kernel_open
     count = 0
-    stat1 = File.stat(__FILE__)
     result = Kernel.open(Pathname.new(__FILE__)) {|f|
-      stat2 = f.stat
-      assert_equal(stat1.dev, stat2.dev)
-      assert_equal(stat1.ino, stat2.ino)
-      assert_equal(stat1.size, stat2.size)
+      assert(File.identical?(__FILE__, f))
       count += 1
       2
     }
