@@ -1,3 +1,8 @@
+Wed Dec 21 16:53:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* file.c (w32_io_info): should return handle because FileIndex is
+	  valid only while file is open. [ruby-dev:28088]
+
 Wed Dec 21 14:53:26 2005  Tanaka Akira  <akr@m17n.org>
 
         * lib/pathname.rb (test_kernel_open): use File.identical?.

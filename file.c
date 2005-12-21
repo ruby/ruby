@@ -663,39 +663,36 @@ rb_stat(file, st)
 }
 
 #ifdef _WIN32
-static BOOL
+static HANDLE
 w32_io_info(file, st)
     VALUE *file;
     BY_HANDLE_FILE_INFORMATION *st;
 {
     VALUE tmp;
-    HANDLE f;
-    BOOL ret = FALSE;
+    HANDLE f, ret = 0;
 
     tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
 	OpenFile *fptr;
 
-	*file = Qnil;
 	GetOpenFile(tmp, fptr);
 	f = (HANDLE)rb_w32_get_osfhandle(fileno(fptr->f));
-	if (f == (HANDLE)-1) return FALSE;
+	if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
     }
     else {
 	SafeStringValue(*file);
 	f = CreateFile(StringValueCStr(*file), 0,
 	               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 	               rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	if (f == INVALID_HANDLE_VALUE) return FALSE;
+	if (f == INVALID_HANDLE_VALUE) return f;
+	ret = f;
     }
     if (GetFileType(f) == FILE_TYPE_DISK) {
 	ZeroMemory(st, sizeof(*st));
-	ret = GetFileInformationByHandle(f, st);
+	if (GetFileInformationByHandle(f, st)) return ret;
     }
-    if (NIL_P(tmp)) {
-	CloseHandle(f);
-    }
-    return ret;
+    if (ret) CloseHandle(ret);
+    return INVALID_HANDLE_VALUE;
 }
 #endif
 
@@ -1417,18 +1414,23 @@ test_identical(obj, fname1, fname2)
 #else
 #ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION st1, st2;
+    HANDLE f1 = 0, f2 = 0;
 #endif
 
     rb_secure(2);
 #ifdef _WIN32
-    if (!w32_io_info(&fname1, &st1)) return Qfalse;
-    if (!w32_io_info(&fname2, &st2)) return Qfalse;
+    f1 = w32_io_info(&fname1, &st1);
+    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
+    f2 = w32_io_info(&fname2, &st2);
+    if (f1) CloseHandle(f1);
+    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
+    if (f2) CloseHandle(f2);
 
     if (st1.dwVolumeSerialNumber == st2.dwVolumeSerialNumber &&
 	st1.nFileIndexHigh == st2.nFileIndexHigh &&
 	st1.nFileIndexLow == st2.nFileIndexLow)
 	return Qtrue;
-    if (NIL_P(fname1) || NIL_P(fname2)) return Qfalse;
+    if (!f1 || !f2) return Qfalse;
     if (rb_w32_iswin95()) return Qfalse;
 #else
     SafeStringValue(fname1);
