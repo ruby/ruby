@@ -1,3 +1,8 @@
+Wed Dec 21 14:53:26 2005  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pathname.rb (test_kernel_open): use File.identical?.
+	  [ruby-talk:171804]
+
 Tue Dec 20 22:41:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (eval_under_i): evaluate source in caller's frame.
