@@ -901,7 +901,7 @@ rb_ary_rindex(ary, val)
  *     array.indexes( i1, i2, ... iN )   -> an_array
  *     array.indices( i1, i2, ... iN )   -> an_array
  *  
- *  Deprecated; use <code>Array#select</code>.
+ *  Deprecated; use <code>Array#values_at</code>.
  */
 
 static VALUE
