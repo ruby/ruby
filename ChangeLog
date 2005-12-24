@@ -1,3 +1,12 @@
+Sat Dec 24 18:58:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.4 released.
+
+Fri Dec 23 10:30:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/digest/sha2/sha2.c (ULL): support AIX C.  a patch from
+	  Kailden <kailden at gmail.com>.  [ruby-core:06984]
+
 Wed Dec 21 16:53:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (w32_io_info): should return handle because FileIndex is

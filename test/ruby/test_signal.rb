@@ -50,7 +50,7 @@ class TestSignal < Test::Unit::TestCase
       assert_nothing_raised("[ruby-dev:26128]") {
         Process.kill(:USR1, pid)
         begin
-          Timeout.timeout(1) {
+          Timeout.timeout(10) {
             Process.waitpid pid
           }
         rescue Timeout::Error
