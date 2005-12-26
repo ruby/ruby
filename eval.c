@@ -1810,12 +1810,13 @@ ev_const_defined(cref, id, self)
     while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
-	    if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
-		return Qfalse;
+	if (!NIL_P(klass)) {
+	    if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
+		if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
+		    return Qfalse;
+		}
+		return Qtrue;
 	    }
-	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
     }
@@ -1834,13 +1835,15 @@ ev_const_get(cref, id, self)
     while (cbase && cbase->nd_next) {
 	VALUE klass = cbase->nd_clss;
 
-	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
-	while (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
-	    if (result == Qundef) {
-		if (!RTEST(rb_autoload_load(klass, id))) break;
-		continue;
+	if (!NIL_P(klass)) {
+	    while (RCLASS(klass)->iv_tbl &&
+		   st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
+		if (result == Qundef) {
+		    if (!RTEST(rb_autoload_load(klass, id))) break;
+		    continue;
+		}
+		return result;
 	    }
-	    return result;
 	}
 	cbase = cbase->nd_next;
     }

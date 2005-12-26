@@ -1,3 +1,14 @@
+Mon Dec 26 08:50:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): fixed a bug in constant reference during
+	  instance_eval.  [yarv-dev:707]
+
+	* eval.c (ev_const_defined): ditto.
+
+	* lib/yaml.rb (YAML::add_domain_type): typo fixed.  a patch from
+	  Joel VanderWerf <vjoel at path.berkeley.edu>.
+	  [ruby-talk:165285] [ruby-core:6995]
+
 Sat Dec 24 18:58:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.4 released.

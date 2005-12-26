@@ -310,7 +310,7 @@ module YAML
 	#
 	# Add a transfer method for a builtin type
 	#
-	def YAML.add_ruby_type( type, &transfer_proc )
+	def YAML.add_ruby_type( type_tag, &transfer_proc )
 	    resolver.add_type( "tag:ruby.yaml.org,2002:#{ type_tag }", transfer_proc )
 	end
 
