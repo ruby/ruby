@@ -1,3 +1,8 @@
+Tue Dec 27 08:29:18 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_chech):
+	  treat wildcard character in commonName. [ruby-dev:28121]
+
 Mon Dec 26 22:32:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval), gc.c (gc_mark_children), node.h (NEW_ALIAS,
