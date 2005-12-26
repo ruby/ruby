@@ -82,8 +82,9 @@ module OpenSSL
         }
         if check_common_name
           cert.subject.to_a.each{|oid, value|
-            if oid == "CN" && value.casecmp(hostname) == 0
-              return true
+            if oid == "CN"
+              reg = Regexp.escape(value).gsub(/\\\*/, "[^.]+")
+              return true if /\A#{reg}\z/i =~ hostname
             end
           }
         end

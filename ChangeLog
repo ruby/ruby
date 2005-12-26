@@ -1,3 +1,8 @@
+Tue Dec 27 08:22:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_chech):
+	  treat wildcard character in commonName. [ruby-dev:28121]
+
 Wed Dec 21 16:47:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (w32_io_info): should return handle because FileIndex is
