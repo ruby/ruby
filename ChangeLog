@@ -1,3 +1,10 @@
+Mon Dec 26 22:32:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval), gc.c (gc_mark_children), node.h (NEW_ALIAS,
+	  NEW_VALIAS), parse.y (fitem): allow dynamic symbols to
+	  NODE_UNDEF and NODE_ALIAS.
+	  backported from trunk.  fixed: [ruby-dev:28105]
+
 Mon Dec 26 08:50:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ev_const_get): fixed a bug in constant reference during
@@ -25,7 +32,7 @@ Wed Dec 21 16:53:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Wed Dec 21 14:53:26 2005  Tanaka Akira  <akr@m17n.org>
 
-        * lib/pathname.rb (test_kernel_open): use File.identical?.
+	* lib/pathname.rb (test_kernel_open): use File.identical?.
 	  [ruby-talk:171804]
 
 Tue Dec 20 22:41:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
