@@ -9083,6 +9083,10 @@ Sat Oct 30 00:19:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* enum.c (enum_sort_by): protect continuation jump in.
 	  [ruby-dev:24642]
 
+	* eval.c (rb_eval), gc.c (gc_mark_children), node.h (NEW_ALIAS,
+	  NEW_VALIAS), parse.y (fitem): allow dynamic symbols to
+	  NODE_UNDEF and NODE_ALIAS.
+
 Fri Oct 29 21:27:51 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_check_initialized): new function to check uninitialized
