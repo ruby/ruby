@@ -1,3 +1,7 @@
+Tue Dec 27 23:59:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (CompletingHash#match): fix for 1.9.
+
 Tue Dec 27 14:17:55 2005  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: define IA64 for portability.  (HP aC++/ANSI C doesn't

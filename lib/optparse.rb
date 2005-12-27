@@ -700,7 +700,7 @@ class OptionParser
     # Completion for hash key.
     #
     def match(key)
-      return key, *fetch(key) {
+      return key, fetch(key) {
         raise AmbiguousArgument, catch(:ambiguous) {return complete(key)}
       }
     end
