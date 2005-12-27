@@ -2632,7 +2632,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     ngroups = RARRAY(ary)->len;
     if (ngroups > maxgroups)
-	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
+	rb_raise(rb_eArgError, "too many groups, %lu max", (unsigned long)maxgroups);
 
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
@@ -3583,6 +3583,7 @@ Init_process(void)
 #endif
 #endif
 
+    rb_define_singleton_method(rb_mProcess, "exec", rb_f_exec, -1);
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);

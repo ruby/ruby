@@ -1,3 +1,7 @@
+Tue Dec 27 14:09:39 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* process.c: new method Process.exec. [ruby-dev:28107]
+
 Tue Dec 27 08:22:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_chech):
