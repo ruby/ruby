@@ -1,3 +1,9 @@
+Wed Dec 28 01:32:39 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (struct thread): add bstr_max.
+	  (rb_thread_save_context): use realloc instead of REALLOC_N
+	  to avoid GC.
+
 Tue Dec 27 23:59:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (CompletingHash#match): fix for 1.9.

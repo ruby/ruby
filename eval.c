@@ -9697,9 +9697,10 @@ struct thread {
     VALUE *stk_ptr;
     VALUE *stk_pos;
 #ifdef IA64
-    VALUE *bstr_pos;
-    VALUE *bstr_ptr;
     long   bstr_len;
+    long   bstr_max;
+    VALUE *bstr_ptr;
+    VALUE *bstr_pos;
 #endif
 
     struct FRAME *frame;
@@ -10074,8 +10075,15 @@ rb_thread_save_context(rb_thread_t th)
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
 #ifdef IA64
     th->bstr_pos = rb_gc_register_stack_start;
-    th->bstr_len = (VALUE*)rb_ia64_bsp() - th->bstr_pos;
-    REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
+    len = (VALUE*)rb_ia64_bsp() - th->bstr_pos;
+    th->bstr_len = 0;
+    if (len > th->bstr_max) {
+        VALUE *ptr = realloc(th->bstr_ptr, sizeof(VALUE) * len);
+        if (!ptr) rb_memerror();
+        th->bstr_ptr = ptr;
+        th->bstr_max = len;
+    }
+    th->bstr_len = len;
     MEMCPY(th->bstr_ptr, th->bstr_pos, VALUE, th->bstr_len);
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -11476,6 +11484,7 @@ rb_thread_group(VALUE thread)
     th->wait_for = 0;\
     IA64_INIT(th->bstr_ptr = 0);\
     IA64_INIT(th->bstr_len = 0);\
+    IA64_INIT(th->bstr_max = 0);\
     rb_fd_init(&th->readfds);\
     rb_fd_init(&th->writefds);\
     rb_fd_init(&th->exceptfds);\
