@@ -38,6 +38,8 @@ Tue Dec 27 14:17:55 2005  Tanaka Akira  <akr@m17n.org>
 	  (rb_thread_restore_context): just call stack_extend.
 	  (flush_register_windows): removed.
 
+	[ruby-dev:28127]
+
 Tue Dec 27 14:09:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* process.c: new method Process.exec. [ruby-dev:28107]
