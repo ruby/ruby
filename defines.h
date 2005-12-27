@@ -230,9 +230,10 @@ flush_register_windows(void)
 	;
 }
 #  define FLUSH_REGISTER_WINDOWS flush_register_windows()
-#elif defined(__ia64__)
-NOINLINE(void flush_register_windows(void));
-#  define FLUSH_REGISTER_WINDOWS flush_register_windows()
+#elif defined(IA64)
+void *rb_ia64_bsp(void);
+void rb_ia64_flushrs(void);
+#  define FLUSH_REGISTER_WINDOWS rb_ia64_flushrs()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif

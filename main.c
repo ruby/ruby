@@ -36,8 +36,11 @@ main(int argc, char **argv, char **envp)
     argc = ccommand(&argv);
 #endif
 
-    ruby_init();
-    ruby_options(argc, argv);
-    ruby_run();
+    {
+        RUBY_INIT_STACK
+        ruby_init();
+        ruby_options(argc, argv);
+        ruby_run();
+    }
     return 0;
 }

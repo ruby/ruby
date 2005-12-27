@@ -583,6 +583,17 @@ NORETURN(void rb_throw(const char*,VALUE));
 
 VALUE rb_require(const char*);
 
+#ifdef IA64
+void ruby_init_stack(VALUE*, void*);
+#define RUBY_INIT_STACK \
+    VALUE variable_in_this_stack_frame; \
+    ruby_init_stack(&variable_in_this_stack_frame, rb_ia64_bsp());
+#else
+void ruby_init_stack(VALUE*);
+#define RUBY_INIT_STACK \
+    VALUE variable_in_this_stack_frame; \
+    ruby_init_stack(&variable_in_this_stack_frame);
+#endif
 void ruby_init(void);
 void ruby_options(int, char**);
 NORETURN(void ruby_run(void));

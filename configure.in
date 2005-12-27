@@ -451,7 +451,7 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h pthread.h \
-		 ucontext.h intrinsics.h unwind.h)
+		 ucontext.h intrinsics.h)
 
 dnl Check additional types.
 AC_CHECK_SIZEOF(rlim_t, 0, [
@@ -612,18 +612,16 @@ AC_C_INLINE
 AC_C_VOLATILE
 
 if test x"$target_cpu" = xia64; then
-    if test x"$ac_cv_header_unwind_h" = xyes -a x"$ac_cv_func__UNW_createContextForSelf" = xyes; then
-	LIBS="-lunwind $LIBS"
-    else
-	AC_CACHE_CHECK(IA64 backing store member in mcontext_t, rb_cv_ia64_bspstore,
-	    [rb_cv_ia64_bspstore=no;
-	    for mem in mc_special.bspstore sc_ar_bsp; do
-	    AC_TRY_COMPILE([#include <ucontext.h>
-],[ucontext_t ctx; ctx.uc_mcontext.$mem = 0;], [rb_cv_ia64_bspstore=$mem; break])
-	    done])
-	if test "$rb_cv_ia64_bspstore" != no; then
-	    AC_DEFINE_UNQUOTED(IA64_BSPSTORE, $rb_cv_ia64_bspstore)
-	fi
+    AC_LIBOBJ([ia64])
+    # use IA64 instead of __ia64__ because
+    # HP aC++ doesn't define it.  (HP aC++ define __ia64.)
+    AC_DEFINE(IA64)
+    AC_TRY_LINK(
+      [extern unsigned long __libc_ia64_register_backing_store_base;],
+      [unsigned long p = __libc_ia64_register_backing_store_base;],
+      [rb_cv___libc_ia64_register_backing_store_base=yes; break])
+    if test $rb_cv___libc_ia64_register_backing_store_base = yes; then
+      AC_DEFINE(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
     fi
 fi
 

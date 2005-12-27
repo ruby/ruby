@@ -30,24 +30,6 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef __ia64__
-#include <ucontext.h>
-#if defined(__FreeBSD__)
-/*
- * FreeBSD/ia64 currently does not have a way for a process to get the
- * base address for the RSE backing store, so hardcode it.
- */
-#define __libc_ia64_register_backing_store_base (4ULL<<61)
-#else
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-#include <unwind.h>
-#else
-#pragma weak __libc_ia64_register_backing_store_base
-extern unsigned long __libc_ia64_register_backing_store_base;
-#endif
-#endif
-#endif
-
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #endif
@@ -429,6 +411,10 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
+#ifdef IA64
+VALUE *rb_gc_register_stack_start = 0;
+#endif
+
 
 #ifdef DJGPP
 /* set stack size (http://www.delorie.com/djgpp/v2faq/faq15_9.html) */
@@ -1327,30 +1313,10 @@ garbage_collect(void)
     else
 	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END + 1);
 #endif
-#ifdef __ia64__
-    /* mark backing store (flushed register window on the stack) */
+#ifdef IA64
+    /* mark backing store (flushed register stack) */
     /* the basic idea from guile GC code                         */
-    {
-	ucontext_t ctx;
-	VALUE *top, *bot;
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-#endif
-
-	getcontext(&ctx);
-	mark_locations_array((VALUE*)&ctx.uc_mcontext,
-			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_UNW_currentContext(unwctx);
-	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
-	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
-	_UNW_destroyContext(unwctx);
-#else
-	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
-#endif
-	rb_gc_mark_locations(bot, top);
-    }
+    rb_gc_mark_locations(rb_gc_register_stack_start, (VALUE*)rb_ia64_bsp());
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
     rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
@@ -1422,6 +1388,28 @@ ruby_set_stack_size(size_t size)
 void
 Init_stack(VALUE *addr)
 {
+#ifdef IA64
+    if (rb_gc_register_stack_start == 0) {
+# if defined(__FreeBSD__)
+        /*
+         * FreeBSD/ia64 currently does not have a way for a process to get the
+         * base address for the RSE backing store, so hardcode it.
+         */
+        rb_gc_register_stack_start = (4ULL<<61);
+# elif defined(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
+#  pragma weak __libc_ia64_register_backing_store_base
+        extern unsigned long __libc_ia64_register_backing_store_base;
+        rb_gc_register_stack_start = (VALUE*)__libc_ia64_register_backing_store_base;
+# endif
+    }
+    {
+        VALUE *bsp = (VALUE*)rb_ia64_bsp();
+        if (rb_gc_register_stack_start == 0 ||
+            bsp < rb_gc_register_stack_start) {
+            rb_gc_register_stack_start = bsp;
+        }
+    }
+#endif
 #if defined(_WIN32) || defined(__CYGWIN__)
     MEMORY_BASIC_INFORMATION m;
     memset(&m, 0, sizeof(m));
@@ -1430,8 +1418,10 @@ Init_stack(VALUE *addr)
 	STACK_UPPER((VALUE *)&m, (VALUE *)m.BaseAddress,
 		    (VALUE *)((char *)m.BaseAddress + m.RegionSize) - 1);
 #elif defined(STACK_END_ADDRESS)
-    extern void *STACK_END_ADDRESS;
-    rb_gc_stack_start = STACK_END_ADDRESS;
+    {
+        extern void *STACK_END_ADDRESS;
+        rb_gc_stack_start = STACK_END_ADDRESS;
+    }
 #else
     if (!addr) addr = (VALUE *)&addr;
     STACK_UPPER(&addr, addr, ++addr);
@@ -1458,6 +1448,37 @@ Init_stack(VALUE *addr)
 #endif
 }
 
+void ruby_init_stack(VALUE *addr
+#ifdef IA64
+    , void *bsp
+#endif
+    )
+{
+    if (!rb_gc_stack_start ||
+        STACK_UPPER(&addr,
+                    rb_gc_stack_start > addr,
+                    rb_gc_stack_start < addr)) {
+        rb_gc_stack_start = addr;
+    }
+#ifdef IA64
+    if (!rb_gc_register_stack_start ||
+        (VALUE*)bsp < rb_gc_register_stack_start) {
+        rb_gc_register_stack_start = (VALUE*)bsp;
+    }
+#endif
+#ifdef HAVE_GETRLIMIT
+    {
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
+	    unsigned int space = rlim.rlim_cur/5;
+
+	    if (space > 1024*1024) space = 1024*1024;
+	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
+	}
+    }
+#endif
+}
 
 /*
  * Document-class: ObjectSpace

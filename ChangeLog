@@ -1,3 +1,43 @@
+Tue Dec 27 14:17:55 2005  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: define IA64 for portability.  (HP aC++/ANSI C doesn't
+	  define __ia64__.)
+	  don't check libunwind stuff.
+	  check __libc_ia64_register_backing_store_base.
+
+	* defines.h: declare rb_ia64_bsp and rb_ia64_flushrs.
+	  (flush_register_windows): call rb_ia64_flushrs on IA64.
+
+	* ia64.s: new file for IA64.
+	  it is separated from C program files because
+	  Intel C++ Compiler for IA64 doesn't support inline assembly.
+
+	* common.mk (ia64.$(OBJEXT)): new target.
+
+	* ruby.h (RUBY_INIT_STACK): defined.
+	  (ruby_init_stack): declared for RUBY_INIT_STACK.
+
+	* main.c (main): precedes RUBY_INIT_STACK before ruby_init.
+
+	* gc.c (rb_gc_register_stack_start): new global variable on IA64.
+	  (garbage_collect): simplify register stack marking code.
+	  don't use libunwind.
+	  (Init_stack): initialize rb_gc_register_stack_start.
+	  (ruby_init_stack): new function for RUBY_INIT_STACK.
+
+	* eval.c (struct thread): add bstr_pos member for original position of
+	  register stack.
+	  (rb_thread_save_context): simplify register stack saving code.
+	  don't use libunwind.
+	  (rb_thread_restore_context_0): new function.  moved from
+	  rb_thread_restore_context except the stack position checking code.
+	  don't use libunwind for IA64 register stack.
+	  (register_stack_extend): new function.
+	  (stack_extend): make it self-recursive with
+	  the stack position checking code in old rb_thread_restore_context.
+	  (rb_thread_restore_context): just call stack_extend.
+	  (flush_register_windows): removed.
+
 Tue Dec 27 14:09:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* process.c: new method Process.exec. [ruby-dev:28107]

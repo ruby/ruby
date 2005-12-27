@@ -144,7 +144,7 @@ rb_jump_context(env, val)
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
-#elif defined(__ia64__)
+#elif defined(IA64)
 static jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
 #define FUNCTION_CALL_MAY_RETURN_TWICE \
@@ -9482,23 +9482,6 @@ Init_Binding(void)
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
-#ifdef __ia64__
-#if defined(__FreeBSD__)
-/*
- * FreeBSD/ia64 currently does not have a way for a process to get the
- * base address for the RSE backing store, so hardcode it.
- */
-#define __libc_ia64_register_backing_store_base (4ULL<<61)
-#else
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-#include <unwind.h>
-#else
-#pragma weak __libc_ia64_register_backing_store_base
-extern unsigned long __libc_ia64_register_backing_store_base;
-#endif
-#endif
-#endif
-
 /* Windows SEH refers data on the stack. */
 #undef SAVE_WIN32_EXCEPTION_LIST
 #if defined _WIN32 || defined __CYGWIN__
@@ -9713,7 +9696,8 @@ struct thread {
     long   stk_max;
     VALUE *stk_ptr;
     VALUE *stk_pos;
-#ifdef __ia64__
+#ifdef IA64
+    VALUE *bstr_pos;
     VALUE *bstr_ptr;
     long   bstr_len;
 #endif
@@ -9965,7 +9949,7 @@ thread_mark(rb_thread_t th)
 #if defined(THINK_C) || defined(__human68k__)
 	rb_gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
 #endif
-#ifdef __ia64__
+#ifdef IA64
 	if (th->bstr_ptr) {
 	    rb_gc_mark_locations(th->bstr_ptr, th->bstr_ptr+th->bstr_len);
 	}
@@ -10023,7 +10007,7 @@ thread_free(rb_thread_t th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
-#ifdef __ia64__
+#ifdef IA64
     if (th->bstr_ptr) free(th->bstr_ptr);
     th->bstr_ptr = 0;
 #endif
@@ -10065,6 +10049,9 @@ static const char   *th_signm;
 #define RESTORE_EXIT		7
 
 extern VALUE *rb_gc_stack_start;
+#ifdef IA64
+extern VALUE *rb_gc_register_stack_start;
+#endif
 
 static void
 rb_thread_save_context(rb_thread_t th)
@@ -10085,27 +10072,11 @@ rb_thread_save_context(rb_thread_t th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef __ia64__
-    {
-	VALUE *top, *bot;
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-
-	_UNW_currentContext(unwctx);
-	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
-	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
-	_UNW_destroyContext(unwctx);
-#else
-	ucontext_t ctx;
-
-	getcontext(&ctx);
-	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
-#endif
-	th->bstr_len = top - bot;
-	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
-	MEMCPY(th->bstr_ptr, bot, VALUE, th->bstr_len);
-    }
+#ifdef IA64
+    th->bstr_pos = rb_gc_register_stack_start;
+    th->bstr_len = (VALUE*)rb_ia64_bsp() - th->bstr_pos;
+    REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
+    MEMCPY(th->bstr_ptr, th->bstr_pos, VALUE, th->bstr_len);
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
     th->win32_exception_list = win32_get_exception_list();
@@ -10181,41 +10152,16 @@ rb_thread_switch(int n)
      rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp((th)->context))))
 
 NORETURN(static void rb_thread_restore_context(rb_thread_t,int));
-NOINLINE(static void stack_extend(rb_thread_t, int));
+NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int,void*)));
+NORETURN(NOINLINE(static void stack_extend(rb_thread_t, int, VALUE *)));
 
 static void
-stack_extend(rb_thread_t th, int exit)
+rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
 {
-    VALUE space[1024];
-
-    memset(space, 0, 1);	/* prevent array from optimization */
-    rb_thread_restore_context(th, exit);
-}
-
-static void
-rb_thread_restore_context(rb_thread_t th, int exit)
-{
-    VALUE v;
+    /* vp prevents tail call */
     static rb_thread_t tmp;
     static int ex;
     static VALUE tval;
-
-    if (!th->stk_ptr) rb_bug("unsaved context");
-
-#if STACK_GROW_DIRECTION < 0
-    if (&v > th->stk_pos) stack_extend(th, exit);
-#elif STACK_GROW_DIRECTION > 0
-    if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
-#else
-    if (&v < rb_gc_stack_start) {
-	/* Stack grows downward */
-	if (&v > th->stk_pos) stack_extend(th, exit);
-    }
-    else {
-	/* Stack grows upward */
-	if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
-    }
-#endif
 
     rb_trap_immediate = 0;	/* inhibit interrupts from here */
     ruby_frame = th->frame;
@@ -10242,20 +10188,8 @@ rb_thread_restore_context(rb_thread_t th, int exit)
     ex = exit;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
-#ifdef __ia64__
-    {
-	VALUE *base;
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-
-	_UNW_currentContext(unwctx);
-	base = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
-	_UNW_destroyContext(unwctx);
-#else
-	base = (VALUE*)__libc_ia64_register_backing_store_base;
-#endif
-	MEMCPY(base, tmp->bstr_ptr, VALUE, tmp->bstr_len);
-    }
+#ifdef IA64
+    MEMCPY(tmp->bstr_pos, tmp->bstr_ptr, VALUE, tmp->bstr_len);
 #endif
 
     tval = rb_lastline_get();
@@ -10266,6 +10200,73 @@ rb_thread_restore_context(rb_thread_t th, int exit)
     tmp->last_match = tval;
 
     ruby_longjmp(tmp->context, ex);
+}
+
+#ifdef IA64
+#define C(a) rse_##a##0, rse_##a##1, rse_##a##2, rse_##a##3, rse_##a##4
+#define E(a) rse_##a##0= rse_##a##1= rse_##a##2= rse_##a##3= rse_##a##4
+static volatile int C(a), C(b), C(c), C(d), C(e);
+static volatile int C(f), C(g), C(h), C(i), C(j);
+static volatile int C(k), C(l), C(m), C(n), C(o);
+static volatile int C(p), C(q), C(r), C(s), C(t);
+int rb_dummy_false = 0;
+NORETURN(NOINLINE(static void register_stack_extend(rb_thread_t, int, void *, VALUE *)));
+static void
+register_stack_extend(rb_thread_t th, int exit, void *vp, VALUE *curr_bsp)
+{
+    if (rb_dummy_false) {
+        /* use registers as much as possible */
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+    }
+    if (curr_bsp < th->bstr_pos+th->bstr_len) {
+        register_stack_extend(th, exit, &exit, (VALUE*)rb_ia64_bsp());
+    }
+    rb_thread_restore_context_0(th, exit, &exit);
+}
+#undef C
+#undef E
+#endif
+
+static void
+stack_extend(rb_thread_t th, int exit, VALUE *addr_in_prev_frame)
+{
+#define STACK_PAD_SIZE 1024
+    VALUE space[STACK_PAD_SIZE];
+
+#if STACK_GROW_DIRECTION < 0
+    if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
+#elif STACK_GROW_DIRECTION > 0
+    if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
+#else
+    if (addr_in_prev_frame < rb_gc_stack_start) {
+	/* Stack grows downward */
+	if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
+    }
+    else {
+	/* Stack grows upward */
+	if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
+    }
+#endif
+#ifdef IA64
+    register_stack_extend(th, exit, space, (VALUE*)rb_ia64_bsp());
+#else
+    rb_thread_restore_context_0(th, exit, space);
+#endif
+}
+
+static void
+rb_thread_restore_context(rb_thread_t th, int exit)
+{
+    VALUE v;
+    if (!th->stk_ptr) rb_bug("unsaved context");
+    stack_extend(th, exit, &v);
 }
 
 static void
@@ -11453,7 +11454,7 @@ rb_thread_group(VALUE thread)
     return group;
 }
 
-#ifdef __ia64__
+#ifdef IA64
 # define IA64_INIT(x) x
 #else
 # define IA64_INIT(x)
@@ -13048,13 +13049,3 @@ rb_exec_recursive(VALUE (*func)(VALUE, VALUE, int), VALUE obj, VALUE arg)
 	return result;
     }
 }
-
-/* flush_register_windows must not be inlined because flushrs doesn't flush
- * current frame in register stack. */
-#ifdef __ia64__
-void flush_register_windows(void)
-{
-    __asm__ ("flushrs");
-}
-#endif
-
