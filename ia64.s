@@ -7,7 +7,6 @@
 //   void *rb_ia64_bsp(void) { return __builtin_ia64_bsp(); }
 // 
 	.file	"ia64.c"
-	.pred.safe_across_calls p1-p5,p16-p63
 	.text
 	.align 16
 	.global rb_ia64_flushrs#

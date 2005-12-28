@@ -1,3 +1,8 @@
+Wed Dec 28 14:10:05 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ia64.s: remove .pred.safe_across_calls directive.
+	  reported by WATANABE Tetsuya.  [ruby-dev:28141]
+
 Wed Dec 28 01:32:39 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (struct thread): add bstr_max.
