@@ -10030,6 +10030,9 @@ rb_gc_abort_threads(void)
 {
     rb_thread_t th;
 
+    if (!main_thread)
+        return;
+
     FOREACH_THREAD_FROM(main_thread, th) {
 	if (FL_TEST(th->thread, FL_MARK)) continue;
 	if (th->status == THREAD_STOPPED) {
