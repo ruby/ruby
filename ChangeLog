@@ -1,3 +1,11 @@
+Thu Dec 29 23:59:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_gc_mark_threads): leave unmarked threads which won't wake
+	  up alone, and mark threads in the loading table.  [ruby-dev:28154]
+
+	* eval.c (rb_gc_abort_threads), gc.c (gc_sweep): kill unmarked
+	  threads.  [ruby-dev:28172]
+
 Thu Dec 29 17:02:07 2005  Tanaka Akira  <akr@m17n.org>
 
 	* test/ruby/envutil.rb (EnvUtil.rubybin): search "ruby" instead of
