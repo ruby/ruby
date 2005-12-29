@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  eval.c -
+  eval.e -
 
   $Author$
   $Date$
@@ -10014,6 +10014,9 @@ void
 rb_gc_abort_threads()
 {
     rb_thread_t th;
+
+    if (!main_thread)
+        return;
 
     FOREACH_THREAD_FROM(main_thread, th) {
 	if (FL_TEST(th->thread, FL_MARK)) continue;
