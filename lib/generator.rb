@@ -73,14 +73,12 @@ class Generator
     @queue = []
     @loop_thread = Thread.new do
       Thread.stop
-      Thread.critical = true
       begin
         @block.call(self) # exception safe?
       rescue
         @main_thread.raise $!
       ensure
         @main_thread.wakeup
-        Thread.critical = false
       end
     end
     self
@@ -89,21 +87,28 @@ class Generator
   # Yields an element to the generator.
   def yield(value)
     if Thread.current != @loop_thread
-      raise RuntimeError.new("Generator#yield must be called in Generator.new{|g| ... }")
+      raise "should be called in Generator.new{|g| ... }"
     end
-    @queue << value
-    @main_thread.wakeup
-    Thread.stop
     Thread.critical = true
+    begin
+      @queue << value
+      @main_thread.wakeup
+      Thread.stop
+    ensure
+      Thread.critical = false
+    end
     self
   end
 
   # Returns true if the generator has reached the end.
   def end?
     if @queue.empty?
+      if @main_thread
+        raise "should not be called in Generator.new{|g| ... }"
+      end
       Thread.critical = true
-      @main_thread = Thread.current
       begin
+        @main_thread = Thread.current
         @loop_thread.wakeup
         Thread.stop
       rescue ThreadError

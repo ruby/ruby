@@ -1,3 +1,8 @@
+Fri Dec 30 01:04:52 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/generator.rb: should work with another thread. (more robust code)
+	  [ruby-dev:28177]
+
 Thu Dec 29 23:59:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_gc_mark_threads): keep unmarked threads which won't wake
