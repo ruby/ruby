@@ -1015,6 +1015,8 @@ gc_sweep(void)
         st_foreach(source_filenames, sweep_source_filename, 0);
     }
 
+    rb_gc_abort_threads();
+
     freelist = 0;
     final_list = deferred_final_list;
     deferred_final_list = 0;

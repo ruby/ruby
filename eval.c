@@ -9987,6 +9987,13 @@ static struct {
     VALUE proc, arg;
 } new_thread;
 
+static int
+mark_loading_thread(ID key, VALUE value, int lev)
+{
+    rb_gc_mark(((rb_thread_t)value)->thread);
+    return ST_CONTINUE;
+}
+
 void
 rb_gc_mark_threads(void)
 {
@@ -9996,7 +10003,18 @@ rb_gc_mark_threads(void)
     rb_gc_mark((VALUE)ruby_cref);
 
     if (!curr_thread) return;
+    rb_gc_mark(main_thread->thread);
+    rb_gc_mark(curr_thread->thread);
     FOREACH_THREAD_FROM(main_thread, th) {
+	switch (th->status) {
+	  case THREAD_TO_KILL:
+	  case THREAD_RUNNABLE:
+	    break;
+	  case THREAD_STOPPED:
+	    if (th->wait_for) break;
+	  default:
+	    continue;
+	}
 	rb_gc_mark(th->thread);
     } END_FOREACH_FROM(main_thread, th);
     if (new_thread.thread) {
@@ -10004,6 +10022,21 @@ rb_gc_mark_threads(void)
 	rb_gc_mark(new_thread.proc);
 	rb_gc_mark(new_thread.arg);
     }
+    if (loading_tbl) st_foreach(loading_tbl, mark_loading_thread, 0);
+}
+
+void
+rb_gc_abort_threads(void)
+{
+    rb_thread_t th;
+
+    FOREACH_THREAD_FROM(main_thread, th) {
+	if (FL_TEST(th->thread, FL_MARK)) continue;
+	if (th->status == THREAD_STOPPED) {
+	    th->status = THREAD_TO_KILL;
+	    rb_gc_mark(th->thread);
+	}
+    } END_FOREACH_FROM(main_thread, th);
 }
 
 static void
