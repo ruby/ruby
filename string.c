@@ -2155,19 +2155,6 @@ rb_str_clear(VALUE str)
     return str;
 }
 
-static VALUE
-uscore_get(void)
-{
-    VALUE line;
-
-    line = rb_lastline_get();
-    if (TYPE(line) != T_STRING) {
-	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
-		 NIL_P(line) ? "nil" : rb_obj_classname(line));
-    }
-    return line;
-}
-
 /*
  *  call-seq:
  *     str.reverse!   => str
