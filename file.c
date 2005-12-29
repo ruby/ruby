@@ -884,6 +884,9 @@ eaccess(path, mode)
 
     return -1;
 #else
+# if _MSC_VER >= 1400
+    mode &= 6;
+# endif
     return access(path, mode);
 #endif
 }

@@ -1,3 +1,9 @@
+Fri Dec 30 04:54:40 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (eaccess): workaround for VC++8 runtime.
+
+	* win32/win32.c (ioinfo): VC++8 support.
+
 Thu Dec 29 23:59:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_gc_mark_threads): leave unmarked threads which won't wake

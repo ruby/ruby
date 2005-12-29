@@ -1556,6 +1556,10 @@ typedef struct	{
 #ifdef MSVCRT_THREADS
     int lockinitflag;
     CRITICAL_SECTION lock;
+#if _MSC_VER >= 1400
+    char textmode;
+    char pipech2[2];
+#endif
 #endif
 }	ioinfo;
 
