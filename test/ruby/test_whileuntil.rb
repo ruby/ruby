@@ -31,15 +31,15 @@ class TestWhileuntil < Test::Unit::TestCase
     tmp.close
 
     tmp = open("while_tmp", "r")
-    while tmp.gets()
-      line = $_
-      gsub(/vt100/, 'VT100')
-      if $_ != line
-        $_.gsub!('VT100', 'Vt100')
+    while line = tmp.gets()
+      lastline = line
+      line = line.gsub(/vt100/, 'VT100')
+      if lastline != line
+        line.gsub!('VT100', 'Vt100')
         redo
       end
-      assert_no_match(/vt100/, $_)
-      assert_no_match(/VT100/, $_)
+      assert_no_match(/vt100/, line)
+      assert_no_match(/VT100/, line)
     end
     assert(tmp.eof?)
     tmp.close
