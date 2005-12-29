@@ -520,15 +520,15 @@ tmp.close
 # test redo
 $bad = false
 tmp = open("while_tmp", "r")
-while tmp.gets()
-  line = $_
-  gsub(/vt100/, 'VT100')
-  if $_ != line
-    $_.gsub!('VT100', 'Vt100')
+while line = tmp.gets()
+  lastline = line
+  line = line.gsub(/vt100/, 'VT100')
+  if lastline != line
+    line.gsub!('VT100', 'Vt100')
     redo
   end
-  $bad = 1 if /vt100/ =~ $_
-  $bad = 1 if /VT100/ =~ $_
+  $bad = 1 if /vt100/ =~ line
+  $bad = 1 if /VT100/ =~ line
 end
 test_ok(tmp.eof? && !$bad)
 tmp.close
@@ -1837,7 +1837,7 @@ for i in 1..5
 end
 tmp.close
 
-`./miniruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
 done = true
 tmp = open("script_tmp", "r")
 while tmp.gets

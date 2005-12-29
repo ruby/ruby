@@ -2170,84 +2170,6 @@ uscore_get(void)
 
 /*
  *  call-seq:
- *     sub!(pattern, replacement)    => $_ or nil
- *     sub!(pattern) {|...| block }  => $_ or nil
- *  
- *  Equivalent to <code>$_.sub!(<i>args</i>)</code>.
- */
-
-static VALUE
-rb_f_sub_bang(int argc, VALUE *argv)
-{
-    return rb_str_sub_bang(argc, argv, uscore_get());
-}
-
-/*
- *  call-seq:
- *     sub(pattern, replacement)   => $_
- *     sub(pattern) { block }      => $_
- *  
- *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
- *  <code>$_</code> will be updated if substitution occurs.
- */
-
-static VALUE
-rb_f_sub(int argc, VALUE *argv)
-{
-    VALUE str = rb_str_dup(uscore_get());
-
-    if (NIL_P(rb_str_sub_bang(argc, argv, str)))
-	return str;
-    rb_lastline_set(str);
-    return str;
-}
-
-/*
- *  call-seq:
- *     gsub!(pattern, replacement)    => string or nil
- *     gsub!(pattern) {|...| block }  => string or nil
- *  
- *  Equivalent to <code>Kernel::gsub</code>, except <code>nil</code> is
- *  returned if <code>$_</code> is not modified.
- *     
- *     $_ = "quick brown fox"
- *     gsub! /cat/, '*'   #=> nil
- *     $_                 #=> "quick brown fox"
- */
-
-static VALUE
-rb_f_gsub_bang(int argc, VALUE *argv)
-{
-    return rb_str_gsub_bang(argc, argv, uscore_get());
-}
-
-/*
- *  call-seq:
- *     gsub(pattern, replacement)    => string
- *     gsub(pattern) {|...| block }  => string
- *  
- *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
- *  receives the modified result.
- *     
- *     $_ = "quick brown fox"
- *     gsub /[aeiou]/, '*'   #=> "q**ck br*wn f*x"
- *     $_                    #=> "q**ck br*wn f*x"
- */
-
-static VALUE
-rb_f_gsub(int argc, VALUE *argv)
-{
-    VALUE str = rb_str_dup(uscore_get());
-
-    if (NIL_P(rb_str_gsub_bang(argc, argv, str)))
-	return str;
-    rb_lastline_set(str);
-    return str;
-}
-
-
-/*
- *  call-seq:
  *     str.reverse!   => str
  *  
  *  Reverses <i>str</i> in place.
@@ -3439,20 +3361,6 @@ rb_str_split(VALUE str, const char *sep0)
 
 /*
  *  call-seq:
- *     split([pattern [, limit]])    => array
- *  
- *  Equivalent to <code>$_.split(<i>pattern</i>, <i>limit</i>)</code>.
- *  See <code>String#split</code>.
- */
-
-static VALUE
-rb_f_split(int argc, VALUE *argv)
-{
-    return rb_str_split_m(argc, argv, uscore_get());
-}
-
-/*
- *  call-seq:
  *     str.each(separator=$/) {|substr| block }        => str
  *     str.each_line(separator=$/) {|substr| block }   => str
  *  
@@ -3622,61 +3530,6 @@ rb_str_chop(VALUE str)
 
 /*
  *  call-seq:
- *     chop!    => $_ or nil
- *  
- *  Equivalent to <code>$_.chop!</code>.
- *     
- *     a  = "now\r\n"
- *     $_ = a
- *     chop!   #=> "now"
- *     chop!   #=> "no"
- *     chop!   #=> "n"
- *     chop!   #=> ""
- *     chop!   #=> nil
- *     $_      #=> ""
- *     a       #=> ""
- */
-
-static VALUE
-rb_f_chop_bang(VALUE str)
-{
-    return rb_str_chop_bang(uscore_get());
-}
-
-/*
- *  call-seq:
- *     chop   => string
- *  
- *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
- *  is never returned. See <code>String#chop!</code>.
- *     
- *     a  =  "now\r\n"
- *     $_ = a
- *     chop   #=> "now"
- *     $_     #=> "now"
- *     chop   #=> "no"
- *     chop   #=> "n"
- *     chop   #=> ""
- *     chop   #=> ""
- *     a      #=> "now\r\n"
- */
-
-static VALUE
-rb_f_chop(void)
-{
-    VALUE str = uscore_get();
-
-    if (RSTRING(str)->len > 0) {
-	str = rb_str_dup(str);
-	rb_str_chop_bang(str);
-	rb_lastline_set(str);
-    }
-    return str;
-}
-
-
-/*
- *  call-seq:
  *     str.chomp!(separator=$/)   => str or nil
  *  
  *  Modifies <i>str</i> in place as described for <code>String#chomp</code>,
@@ -3779,57 +3632,6 @@ rb_str_chomp(int argc, VALUE *argv, VALUE str)
     rb_str_chomp_bang(argc, argv, str);
     return str;
 }
-
-/*
- *  call-seq:
- *     chomp!             => $_ or nil
- *     chomp!(string)     => $_ or nil
- *  
- *  Equivalent to <code>$_.chomp!(<em>string</em>)</code>. See
- *  <code>String#chomp!</code>
- *     
- *     $_ = "now\n"
- *     chomp!       #=> "now"
- *     $_           #=> "now"
- *     chomp! "x"   #=> nil
- *     $_           #=> "now"
- */
-
-static VALUE
-rb_f_chomp_bang(int argc, VALUE *argv)
-{
-    return rb_str_chomp_bang(argc, argv, uscore_get());
-}
-
-/*
- *  call-seq:
- *     chomp            => $_
- *     chomp(string)    => $_
- *  
- *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
- *  <code>String#chomp</code>.
- *     
- *     $_ = "now\n"
- *     chomp         #=> "now"
- *     $_            #=> "now"
- *     chomp "ow"    #=> "n"
- *     $_            #=> "n"
- *     chomp "xxx"   #=> "n"
- *     $_            #=> "n"
- */
-
-static VALUE
-rb_f_chomp(int argc, VALUE *argv)
-{
-    VALUE str = uscore_get();
-    VALUE dup = rb_str_dup(str);
-
-    if (NIL_P(rb_str_chomp_bang(argc, argv, dup)))
-	return str;
-    rb_lastline_set(dup);
-    return dup;
-}
-
 
 /*
  *  call-seq:
@@ -4073,21 +3875,6 @@ rb_str_scan(VALUE str, VALUE pat)
     }
     rb_backref_set(match);
     return str;
-}
-
-/*
- *  call-seq:
- *     scan(pattern)                   => array
- *     scan(pattern) {|///| block }    => $_
- *  
- *  Equivalent to calling <code>$_.scan</code>. See
- *  <code>String#scan</code>.
- */
-
-static VALUE
-rb_f_scan(VALUE self, VALUE pat)
-{
-    return rb_str_scan(uscore_get(), pat);
 }
 
 
@@ -4509,21 +4296,6 @@ Init_String(void)
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
-
-    rb_define_global_function("sub", rb_f_sub, -1);
-    rb_define_global_function("gsub", rb_f_gsub, -1);
-
-    rb_define_global_function("sub!", rb_f_sub_bang, -1);
-    rb_define_global_function("gsub!", rb_f_gsub_bang, -1);
-
-    rb_define_global_function("chop", rb_f_chop, 0);
-    rb_define_global_function("chop!", rb_f_chop_bang, 0);
-
-    rb_define_global_function("chomp", rb_f_chomp, -1);
-    rb_define_global_function("chomp!", rb_f_chomp_bang, -1);
-
-    rb_define_global_function("split", rb_f_split, -1);
-    rb_define_global_function("scan", rb_f_scan, 1);
 
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);

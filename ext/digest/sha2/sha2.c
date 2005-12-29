@@ -67,7 +67,7 @@ typedef uint8_t  sha2_byte;	/* Exactly 1 byte */
 typedef uint32_t sha2_word32;	/* Exactly 4 bytes */
 typedef uint64_t sha2_word64;	/* Exactly 8 bytes */
 
-#if defined(__GNUC__) || defined(_HPUX_SOURCE)
+#if defined(__GNUC__) || defined(_HPUX_SOURCE) || defined(__IBMC__)
 #define ULL(number)	number##ULL
 #else
 #define ULL(number)	(uint64_t)(number)

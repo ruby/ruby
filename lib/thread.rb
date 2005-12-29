@@ -9,7 +9,7 @@
 #
 
 unless defined? Thread
-  fail "Thread not available for this ruby interpreter"
+  raise "Thread not available for this ruby interpreter"
 end
 
 unless defined? ThreadError

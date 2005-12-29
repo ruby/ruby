@@ -570,9 +570,9 @@ all_i(VALUE i, VALUE *memo)
  *  <code>all?</code> will return <code>true</code> only if none of the
  *  collection members are <code>false</code> or <code>nil</code>.)
  *     
- *     %w{ ant bear cat}.all? {|word| word.length >= 3}   #=> true
- *     %w{ ant bear cat}.all? {|word| word.length >= 4}   #=> false
- *     [ nil, true, 99 ].all?                             #=> false
+ *     %w{ant bear cat}.all? {|word| word.length >= 3}   #=> true
+ *     %w{ant bear cat}.all? {|word| word.length >= 4}   #=> false
+ *     [ nil, true, 99 ].all?                            #=> false
  *     
  */
 
@@ -617,9 +617,9 @@ any_i(VALUE i, VALUE *memo)
  *  of the collection members is not <code>false</code> or
  *  <code>nil</code>.
  *     
- *     %w{ ant bear cat}.any? {|word| word.length >= 3}   #=> true
- *     %w{ ant bear cat}.any? {|word| word.length >= 4}   #=> true
- *     [ nil, true, 99 ].any?                             #=> true
+ *     %w{ant bear cat}.any? {|word| word.length >= 3}   #=> true
+ *     %w{ant bear cat}.any? {|word| word.length >= 4}   #=> true
+ *     [ nil, true, 99 ].any?                            #=> true
  *     
  */
 
@@ -629,6 +629,104 @@ enum_any(VALUE obj)
     VALUE result = Qfalse;
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)&result);
+    return result;
+}
+
+static VALUE
+one_iter_i(VALUE i, VALUE *memo)
+{
+    if (RTEST(rb_yield(i))) {
+	if (*memo == Qundef) {
+	    *memo = Qtrue;
+	}
+	else if (*memo == Qtrue) {
+	    *memo = Qfalse;
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
+one_i(VALUE i, VALUE *memo)
+{
+    if (RTEST(i)) {
+	if (*memo == Qundef) {
+	    *memo = Qtrue;
+	}
+	else if (*memo == Qtrue) {
+	    *memo = Qfalse;
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.one? [{|obj| block }]   => true or false
+ *  
+ *  Passes each element of the collection to the given block. The method
+ *  returns <code>true</code> if the block returns <code>true</code>
+ *  exactly once. If the block is not given, <code>one?</code> will return
+ *  <code>true</code> only if exactly one of the collection members are
+ *  true.
+ *     
+ *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
+ *     %w{ant bear cat}.one? {|word| word.length >= 4}   #=> false
+ *     [ nil, true, 99 ].one?                            #=> true
+ *     
+ */
+
+static VALUE
+enum_one(VALUE obj)
+{
+    VALUE result = Qundef;
+
+    rb_iterate(rb_each, obj, rb_block_given_p() ? one_iter_i : one_i, (VALUE)&result);
+    if (result == Qundef) return Qfalse;
+    return result;
+}
+
+static VALUE
+none_iter_i(VALUE i, VALUE *memo)
+{
+    if (RTEST(rb_yield(i))) {
+	*memo = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+none_i(VALUE i, VALUE *memo)
+{
+    if (RTEST(i)) {
+	*memo = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.none? [{|obj| block }]   => true or false
+ *  
+ *  Passes each element of the collection to the given block. The method
+ *  returns <code>true</code> if the block never returns <code>true</code>
+ *  for all elements. If the block is not given, <code>one?</code> will return
+ *  <code>true</code> only if any of the collection members is true.
+ *     
+ *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
+ *     %w{ant bear cat}.one? {|word| word.length >= 4}   #=> false
+ *     [ nil, true, 99 ].one?                            #=> true
+ *     
+ */
+
+static VALUE
+enum_none(VALUE obj)
+{
+    VALUE result = Qtrue;
+
+    rb_iterate(rb_each, obj, rb_block_given_p() ? none_iter_i : none_i, (VALUE)&result);
     return result;
 }
 
@@ -998,6 +1096,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
+    rb_define_method(rb_mEnumerable,"one?", enum_one, 0);
+    rb_define_method(rb_mEnumerable,"none?", enum_none, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);

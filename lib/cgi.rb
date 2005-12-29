@@ -993,22 +993,9 @@ class CGI
 
       loop do
         head = nil
-        if 10240 < content_length
-          require "tempfile"
-          body = Tempfile.new("CGI")
-        else
-          begin
-            require "stringio"
-            body = StringIO.new
-          rescue LoadError
-            require "tempfile"
-            body = Tempfile.new("CGI")
-          end
-        end
-        body.binmode if defined? body.binmode
+        body = MorphingBody.new
 
         until head and /#{boundary}(?:#{EOL}|--)/n.match(buf)
-
           if (not head) and /#{EOL}#{EOL}/n.match(buf)
             buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
               head = $1.dup
@@ -1042,6 +1029,7 @@ class CGI
           ""
         end
 
+        p body
         body.rewind
 
         /Content-Disposition:.* filename="?([^\";]*)"?/ni.match(head)
@@ -1062,7 +1050,7 @@ class CGI
         end
 
         /Content-Disposition:.* name="?([^\";]*)"?/ni.match(head)
-        name = $1.dup
+        name = ($1 || "").dup
 
         if params.has_key?(name)
           params[name].push(body)
@@ -1101,6 +1089,59 @@ class CGI
       end
     end
     private :read_from_cmdline
+
+    # A wrapper class to use a StringIO object as the body and switch
+    # to a TempFile when the passed threshold is passed.
+    class MorphingBody
+      begin
+        require "stringio"
+        @@small_buffer = lambda{StringIO.new}
+      rescue LoadError
+        require "tempfile"
+        @@small_buffer = lambda{
+          n = Tempfile.new("CGI")
+          n.binmode
+          n
+        }
+      end
+
+      def initialize(morph_threshold = 10240)
+        @threshold = morph_threshold
+        @body = @@small_buffer.call
+        @cur_size = 0
+        @morph_check = true
+      end
+
+      def print(data)
+        if @morph_check && (@cur_size + data.size > @threshold)
+          convert_body
+        end
+        @body.print data
+      end
+      def rewind
+        @body.rewind
+      end
+      def path
+        @body.path
+      end
+
+      # returns the true body object.
+      def extract
+        @body
+      end
+
+      private
+      def convert_body
+        new_body = TempFile.new("CGI")
+        new_body.binmode if defined? @body.binmode
+        new_body.binmode if defined? new_body.binmode
+
+        @body.rewind
+        new_body.print @body.read
+        @body = new_body
+        @morph_check = false
+      end
+    end
 
     # Initialize the data from the query.
     #

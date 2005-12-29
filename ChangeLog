@@ -3,6 +3,11 @@ Thu Dec 29 17:02:07 2005  Tanaka Akira  <akr@m17n.org>
 	* test/ruby/envutil.rb (EnvUtil.rubybin): search "ruby" instead of
 	  "miniruby".  [ruby-dev:28140]
 
+Thu Dec 29 14:35:10 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_define_method): should save safe_level in the
+	  proc object.  [ruby-dev:28146]
+
 Thu Dec 29 11:22:34 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/generator.rb: reimplemented Generator class with Thread instead of
@@ -22,6 +27,12 @@ Wed Dec 28 01:32:39 2005  Tanaka Akira  <akr@m17n.org>
 Tue Dec 27 23:59:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (CompletingHash#match): fix for 1.9.
+
+Tue Dec 27 16:59:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/drb/drbtest.rb (DRbService::self.ext_service): increase
+	  timeout limit.  a patch from Kazuhiro NISHIYAMA
+	  <zn at mbf.nifty.com>. [ruby-dev:28132]
 
 Tue Dec 27 14:17:55 2005  Tanaka Akira  <akr@m17n.org>
 
@@ -73,6 +84,22 @@ Tue Dec 27 08:22:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_chech):
 	  treat wildcard character in commonName. [ruby-dev:28121]
+
+Mon Dec 26 08:50:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): fixed a bug in constant reference during
+	  instance_eval.  [yarv-dev:707]
+
+	* eval.c (ev_const_defined): ditto.
+
+	* lib/yaml.rb (YAML::add_domain_type): typo fixed.  a patch from
+	  Joel VanderWerf <vjoel at path.berkeley.edu>.
+	  [ruby-talk:165285] [ruby-core:6995]
+
+Fri Dec 23 10:30:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/digest/sha2/sha2.c (ULL): support AIX C.  a patch from
+	  Kailden <kailden at gmail.com>.  [ruby-core:06984]
 
 Wed Dec 21 16:47:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -179,6 +206,14 @@ Sat Dec 17 21:50:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/syck/rubyext.c (syck_mark_parser): should mark anchor nodes
 	  because they hold ruby objects. (ie: rb_syck_bad_anchor_handler)
 
+Sat Dec 17 11:00:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (rb_syck_compile): avoid potential memory
+	  leak.
+
+	* ext/syck/rubyext.c (syck_set_ivars): avoid potential memory
+	  leak by explicit symbol allocation.
+
 Sat Dec 17 03:57:01 2005  Tanaka Akira  <akr@m17n.org>
 
 	* bignum.c (rb_big_rshift): fix a GC problem on
@@ -205,6 +240,19 @@ Fri Dec 16 11:44:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/syck/rubyext.c (syck_scalar_value_set): ditto.
 
 	... these fixes won't fix [ruby-dev:27839]. more work is needed.
+
+Fri Dec 16 04:38:55 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::method_missing): should delegate
+	  block as well.
+
+Thu Dec 15 19:57:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::MorphingBody): fix criteria to
+	  use Tempfile.  A fix from Zev Blut <rubyzbibd at ubit.com>.
+	  [ruby-core:06076]
+
+	* string.c: remove global functions work on $_.
 
 Thu Dec 15 12:35:14 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

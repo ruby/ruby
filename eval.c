@@ -373,7 +373,6 @@ static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 static ID __id__, __send__, respond_to;
 
-#define NOEX_TAINTED 8
 #define NOEX_SAFE(n) ((n) >> 4)
 #define NOEX_WITH(n, v) ((n) | (v) << 4)
 #define NOEX_WITH_SAFE(n) NOEX_WITH(n, ruby_safe_level)
@@ -1766,12 +1765,13 @@ ev_const_defined(NODE *cref, ID id, VALUE self)
     while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
-	    if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
-		return Qfalse;
+	if (!NIL_P(klass)) {
+	    if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
+		if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
+		    return Qfalse;
+		}
+		return Qtrue;
 	    }
-	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
     }
@@ -1787,13 +1787,15 @@ ev_const_get(NODE *cref, ID id, VALUE self)
     while (cbase && cbase->nd_next) {
 	VALUE klass = cbase->nd_clss;
 
-	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
-	while (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
-	    if (result == Qundef) {
-		if (!RTEST(rb_autoload_load(klass, id))) break;
-		continue;
+	if (!NIL_P(klass)) {
+	    while (RCLASS(klass)->iv_tbl &&
+		   st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
+		if (result == Qundef) {
+		    if (!RTEST(rb_autoload_load(klass, id))) break;
+		    continue;
+		}
+		return result;
 	    }
-	    return result;
 	}
 	cbase = cbase->nd_next;
     }
@@ -8038,11 +8040,11 @@ bind_eval(int argc, VALUE *argv, VALUE bind)
 #define PROC_TSHIFT (FL_USHIFT+1)
 #define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
 #define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
-#define PROC_NOSAFE FL_USER4
+#define PROC_SAFE_SAVED FL_USER4
 
 #define SAFE_LEVEL_MAX PROC_TMASK
 
-#define proc_safe_level_p(data) (!(RBASIC(data)->flags & PROC_NOSAFE))
+#define proc_safe_level_p(data) (RBASIC(data)->flags & PROC_SAFE_SAVED)
 
 static void
 proc_save_safe_level(VALUE data)
@@ -8050,6 +8052,7 @@ proc_save_safe_level(VALUE data)
     int safe = ruby_safe_level;
     if (safe > PROC_TMAX) safe = PROC_TMAX;
     FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
+    FL_SET(data, PROC_SAFE_SAVED);
 }
 
 static int
@@ -8887,7 +8890,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
     if (OBJ_TAINTED(method)) {
-        safe = NOEX_WITH(data->safe_level, 4)|NOEX_TAINTED;
+        safe = NOEX_WITH(data->safe_level, 4);
     }
     else {
 	safe = data->safe_level;
@@ -9328,7 +9331,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	struct BLOCK *block;
 
 	body = proc_clone(body);
-	RBASIC(body)->flags |= PROC_NOSAFE;
+	proc_save_safe_level(body);
 	Data_Get_Struct(body, struct BLOCK, block);
 	block->frame.callee = id;
 	block->frame.this_func = id;
