@@ -3,12 +3,12 @@ module EnvUtil
     if ruby = ENV["RUBY"]
       return ruby
     end
-    miniruby = "miniruby"
+    ruby = "ruby"
     3.times do
-      if File.exist? miniruby or File.exist? miniruby+".exe"
-        return File.expand_path(miniruby)
+      if File.exist? ruby or File.exist? ruby+".exe"
+        return File.expand_path(ruby)
       end
-      miniruby = File.join("..", miniruby)
+      ruby = File.join("..", ruby)
     end
     begin
       require "rbconfig"

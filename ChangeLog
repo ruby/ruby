@@ -1,3 +1,8 @@
+Thu Dec 29 17:02:07 2005  Tanaka Akira  <akr@m17n.org>
+
+	* test/ruby/envutil.rb (EnvUtil.rubybin): search "ruby" instead of
+	  "miniruby".  [ruby-dev:28140]
+
 Thu Dec 29 11:22:34 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/generator.rb: reimplemented Generator class with Thread instead of
