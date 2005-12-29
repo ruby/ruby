@@ -28,9 +28,6 @@
 # Generator converts an internal iterator (i.e. an Enumerable object)
 # to an external iterator.
 #
-# Note that it is not very fast since it is implemented using
-# continuations, which are currently slow.
-#
 # == Example
 #
 #   require 'generator'
@@ -68,99 +65,97 @@ class Generator
   # itself, and expected to call the +yield+ method for each element.
   def initialize(enum = nil, &block)
     if enum
-      @block = proc { |g|
-	enum.each { |x| g.yield x }
-      }
+      @block = proc{|g| enum.each{|value| g.yield value}}
     else
       @block = block
     end
-
     @index = 0
     @queue = []
-    @cont_next = @cont_yield = @cont_endp = nil
-
-    if @cont_next = callcc { |c| c }
-      @block.call(self)
-
-      @cont_endp.call(nil) if @cont_endp
+    @loop_thread = Thread.new do
+      Thread.stop
+      Thread.critical = true
+      begin
+        @block.call(self) # exception safe?
+      rescue
+        @main_thread.raise $!
+      ensure
+        @main_thread.wakeup
+        Thread.critical = false
+      end
     end
-
     self
   end
 
   # Yields an element to the generator.
   def yield(value)
-    if @cont_yield = callcc { |c| c }
-      @queue << value
-      @cont_next.call(nil)
+    if Thread.current != @loop_thread
+      raise RuntimeError.new("Generator#yield must be called in Generator.new{|g| ... }")
     end
-
+    @queue << value
+    @main_thread.wakeup
+    Thread.stop
+    Thread.critical = true
     self
   end
 
   # Returns true if the generator has reached the end.
-  def end?()
-    if @cont_endp = callcc { |c| c }
-      @cont_yield.nil? && @queue.empty?
-    else
-      @queue.empty?
+  def end?
+    if @queue.empty?
+      Thread.critical = true
+      @main_thread = Thread.current
+      begin
+        @loop_thread.wakeup
+        Thread.stop
+      rescue ThreadError
+        # ignore
+      ensure
+        @main_thread = nil
+        Thread.critical = false
+      end
     end
+    @queue.empty?
   end
 
   # Returns true if the generator has not reached the end yet.
-  def next?()
+  def next?
     !end?
   end
 
   # Returns the current index (position) counting from zero.
-  def index()
+  def index
     @index
   end
 
   # Returns the current index (position) counting from zero.
-  def pos()
+  def pos
     @index
   end
 
   # Returns the element at the current position and moves forward.
-  def next()
-    if end?
-      raise EOFError, "no more elements available"
-    end
-
-    if @cont_next = callcc { |c| c }
-      @cont_yield.call(nil) if @cont_yield
-    end
-
+  def next
+    raise EOFError.new("no more elements available") if end?
     @index += 1
-
     @queue.shift
   end
 
   # Returns the element at the current position.
-  def current()
-    if @queue.empty?
-      raise EOFError, "no more elements available"
-    end
-
+  def current
+    raise EOFError.new("no more elements available") if end?
     @queue.first
   end
 
   # Rewinds the generator.
-  def rewind()
+  def rewind
     initialize(nil, &@block) if @index.nonzero?
-
     self
   end
 
   # Rewinds the generator and enumerates the elements.
   def each
     rewind
-
     until end?
       yield self.next
     end
-
     self
   end
 end
