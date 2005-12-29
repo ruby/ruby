@@ -1031,6 +1031,8 @@ free_unused_heaps()
     }
 }
 
+void rb_gc_abort_threads(void);
+
 static void
 gc_sweep()
 {
