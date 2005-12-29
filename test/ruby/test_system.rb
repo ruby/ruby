@@ -42,7 +42,7 @@ class TestSystem < Test::Unit::TestCase
     end
     tmp.close
 
-    `#{ruby} -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+    `#{ruby} -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
     tmp = open("script_tmp", "r")
     while tmp.gets
       assert_equal(0, $_.to_i % 5)
