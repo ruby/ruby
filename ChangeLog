@@ -1,3 +1,8 @@
+Fri Dec 30 12:20:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/generator.rb: (Generator#initialize) fixed dead lock. this occured
+	  when end? was called before @loop_thread was stopped. [ruby-core:7029]
+
 Fri Dec 30 01:04:52 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/generator.rb: should work with another thread. (more robust code)

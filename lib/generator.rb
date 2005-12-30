@@ -81,6 +81,7 @@ class Generator
         @main_thread.wakeup
       end
     end
+    Thread.pass # ensure @loop_thread to be stopped
     self
   end
 
