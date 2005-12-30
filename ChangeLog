@@ -1,3 +1,8 @@
+Fri Dec 30 18:14:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (garbage_collect): mark objects refered from aborting threads.
+	  [ruby-dev:28190]
+
 Fri Dec 30 14:24:53 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (glob_helper): do not use TRUE for djgpp.
