@@ -1017,8 +1017,6 @@ gc_sweep(void)
         st_foreach(source_filenames, sweep_source_filename, 0);
     }
 
-    rb_gc_abort_threads();
-
     freelist = 0;
     final_list = deferred_final_list;
     deferred_final_list = 0;
@@ -1344,14 +1342,18 @@ garbage_collect(void)
     rb_gc_mark_parser();
 
     /* gc_mark objects whose marking are not completed*/
-    while (!MARK_STACK_EMPTY){
-	if (mark_stack_overflow){
-	    gc_mark_all();
+    do {
+	while (!MARK_STACK_EMPTY) {
+	    if (mark_stack_overflow){
+		gc_mark_all();
+	    }
+	    else {
+		gc_mark_rest();
+	    }
 	}
-	else {
-	    gc_mark_rest();
-	}
-    }
+	rb_gc_abort_threads();
+    } while (!MARK_STACK_EMPTY);
+
     gc_sweep();
 
     return Qtrue;

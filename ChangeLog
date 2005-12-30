@@ -1,3 +1,8 @@
+Fri Dec 30 18:14:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (garbage_collect): mark objects refered from aborting threads.
+	  [ruby-dev:28190]
+
 Fri Dec 30 15:17:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/generator.rb: (Generator#initialize) ensured to stop @loop_thread.
