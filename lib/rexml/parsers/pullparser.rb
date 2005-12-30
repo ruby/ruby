@@ -32,6 +32,7 @@ module REXML
       def_delegators( :@parser, :has_next? )
       def_delegators( :@parser, :entity )
       def_delegators( :@parser, :empty? )
+      def_delegators( :@parser, :source )
 
       def initialize stream
         @entities = {}

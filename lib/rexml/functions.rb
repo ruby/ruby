@@ -157,12 +157,9 @@ module REXML
     # Kouhei fixed this too
     def Functions::substring_after( string, test )
       ruby_string = string(string)
-      ruby_index = ruby_string.index(string(test))
-      if ruby_index.nil?
-        ""
-      else
-        ruby_string[ ruby_index+1..-1 ]
-      end
+      test_string = string(test)
+      return $1 if ruby_string =~ /#{test}(.*)/
+      ""
     end
 
     # Take equal portions of Mike Stok and Sean Russell; mix 

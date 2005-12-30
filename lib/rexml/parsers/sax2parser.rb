@@ -167,7 +167,7 @@ module REXML
 						:elementdecl, :cdata, :notationdecl, :xmldecl
 						handle( *event )
 					end
-          handle( :progress, @parser.source.position )
+          handle( :progress, @parser.position )
 				end
 			end
 

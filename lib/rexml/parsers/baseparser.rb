@@ -128,6 +128,8 @@ module REXML
           @source = source
         elsif defined? StringIO and source.kind_of? StringIO
           @source = IOSource.new(source)
+        elsif defined? Tempfile and source.kind_of? Tempfile
+          @source = IOSource.new(source)
         else
           raise "#{source.class} is not a valid input stream.  It must be \n"+
           "either a String, IO, StringIO or Source."
@@ -137,6 +139,15 @@ module REXML
         @tags = []
         @stack = []
         @entities = []
+      end
+
+      def position
+        if @source.respond_to? :position
+          @source.position
+        else
+          # FIXME
+          0
+        end
       end
 
       # Returns true if there are no more events

@@ -152,9 +152,10 @@ module REXML
           #puts "IN QNAME"
           prefix = path_stack.shift
           name = path_stack.shift
-          ns = @namespaces[prefix]
-          ns = ns ? ns : ''
+          default_ns = @namespaces[prefix]
+          default_ns = default_ns ? default_ns : ''
           nodeset.delete_if do |node|
+            ns = default_ns
             # FIXME: This DOUBLES the time XPath searches take
             ns = node.namespace( prefix ) if node.node_type == :element and ns == ''
             #puts "NS = #{ns.inspect}"
@@ -347,7 +348,7 @@ module REXML
             preceding_siblings = all_siblings[ 0 .. current_index-1 ].reverse
             #results += expr( path_stack.dclone, preceding_siblings )
           end
-          nodeset = preceding_siblings
+          nodeset = preceding_siblings || []
           node_types = ELEMENTS
 
         when :preceding

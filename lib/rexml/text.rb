@@ -39,8 +39,10 @@ module REXML
     # text.  If this value is nil (the default), then the raw value of the 
     # parent will be used as the raw value for this node.  If there is no raw
     # value for the parent, and no value is supplied, the default is false.
+    # Use this field if you have entities defined for some text, and you don't
+    # want REXML to escape that text in output.
     #   Text.new( "<&", false, nil, false ) #-> "&lt;&amp;"
-    #   Text.new( "<&", false, nil, true )  #-> IllegalArgumentException
+    #   Text.new( "<&", false, nil, true )  #-> Parse exception
     #   Text.new( "&lt;&amp;", false, nil, true )  #-> "&lt;&amp;"
     #   # Assume that the entity "s" is defined to be "sean"
     #   # and that the entity    "r" is defined to be "russell"
@@ -156,11 +158,11 @@ module REXML
     #   # Assume that the entity "s" is defined to be "sean", and that the 
     #   # entity "r" is defined to be "russell"
     #   t = Text.new( "< & sean russell", false, nil, false, ['s'] ) 
-    #   t.string   #-> "< & sean russell"
+    #   t.value   #-> "< & sean russell"
     #   t = Text.new( "< & &s; russell", false, nil, false )
-    #   t.string   #-> "< & sean russell"
+    #   t.value   #-> "< & sean russell"
     #   u = Text.new( "sean russell", false, nil, true )
-    #   u.string   #-> "sean russell"
+    #   u.value   #-> "sean russell"
     def value
       @unnormalized if @unnormalized
       doctype = nil

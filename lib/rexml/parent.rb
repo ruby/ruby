@@ -31,9 +31,11 @@ module REXML
 		end
 
 		def delete( object )
-			return unless @children.include? object
-			@children.delete object
-			object.parent = nil
+      found = false
+      @children.delete_if {|c| 
+        c.equal?(object) and found = true
+      }
+			object.parent = nil if found
 		end
 
 		def each(&block)
@@ -131,15 +133,16 @@ module REXML
 			@children.size
 		end
 
+    alias :length :size
+
 		# Replaces one child with another, making sure the nodelist is correct
 		# @param to_replace the child to replace (must be a Child)
 		# @param replacement the child to insert into the nodelist (must be a 
 		# Child)
 		def replace_child( to_replace, replacement )
-			ind = @children.index( to_replace )
-			to_replace.parent = nil
-			@children[ind,0] = replacement
-			replacement.parent = self
+      @children.map! {|c| c.equal?( to_replace ) ? replacement : c }
+      to_replace.parent = nil
+      replacement.parent = self
 		end
 
 		# Deeply clones this object.  This creates a complete duplicate of this

@@ -8,11 +8,12 @@ module REXML
 		# @return a Source, or nil if a bad argument was given
 		def SourceFactory::create_from arg#, slurp=true
 			if arg.kind_of? String
-				source = Source.new(arg)
+			  Source.new(arg)
 			elsif arg.kind_of? IO
-				source = IOSource.new(arg)
+				IOSource.new(arg)
+      elsif arg.kind_of? Source
+        arg
 			end
-			source
 		end
 	end
 
@@ -199,7 +200,7 @@ module REXML
 		end
 
     def position
-      @er_source.pos
+      @er_source.stat.pipe? ? 0 : @er_source.pos
     end
 
 		# @return the current line in the source

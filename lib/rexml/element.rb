@@ -713,7 +713,7 @@ module REXML
 
 		private
     def __to_xpath_helper node
-      rv = node.expanded_name
+      rv = node.expanded_name.clone
       if node.parent
         results = node.parent.find_all {|n| 
           n.kind_of?(REXML::Element) and n.expanded_name == node.expanded_name 
