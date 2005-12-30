@@ -1,7 +1,9 @@
-Fri Dec 30 18:14:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (garbage_collect): mark objects refered from aborting threads.
 	  [ruby-dev:28190]
+
+	* win32/Makefile.sub: VC++8 support.
 
 Fri Dec 30 14:24:53 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
