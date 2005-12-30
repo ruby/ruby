@@ -919,13 +919,9 @@ glob_helper(path, sub, flags, func, arg)
 
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
-	if (
-#if defined DOSISH
-	    TRUE
-#else
-	    !(flags & FNM_NOESCAPE)
+#if !defined DOSISH
+	if (!(flags & FNM_NOESCAPE))
 #endif
-	    )
 	{
 	    newpath = strdup(path);
 	    if (sub) {

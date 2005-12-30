@@ -1,3 +1,7 @@
+Fri Dec 30 14:24:53 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c (glob_helper): do not use TRUE for djgpp.
+
 Fri Dec 30 04:54:40 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (eaccess): workaround for VC++8 runtime.
