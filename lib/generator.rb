@@ -74,14 +74,14 @@ class Generator
     @loop_thread = Thread.new do
       Thread.stop
       begin
-        @block.call(self) # exception safe?
+        @block.call(self)
       rescue
-        @main_thread.raise $!
+        @main_thread.raise
       ensure
         @main_thread.wakeup
       end
     end
-    Thread.pass # ensure @loop_thread to be stopped
+    Thread.pass until @loop_thread.stop?
     self
   end
 
