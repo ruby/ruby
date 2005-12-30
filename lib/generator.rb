@@ -76,7 +76,7 @@ class Generator
       begin
         @block.call(self)
       rescue
-        @main_thread.raise
+        @main_thread.raise $!
       ensure
         @main_thread.wakeup
       end
