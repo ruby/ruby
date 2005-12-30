@@ -1,3 +1,8 @@
+Fri Dec 30 18:27:00 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/generator.rb: uses Mutex instead of Thread.critical.
+	  [ruby-dev:28184]
+
 Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (garbage_collect): mark objects refered from aborting threads.

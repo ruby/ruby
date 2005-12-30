@@ -23,6 +23,7 @@
 #
 # See the respective classes for examples of usage.
 
+require "thread"
 
 #
 # Generator converts an internal iterator (i.e. an Enumerable object)
@@ -71,17 +72,24 @@ class Generator
     end
     @index = 0
     @queue = []
+    @mutex = Mutex.new
+    @main_cond = ConditionVariable.new
+    @loop_cond = ConditionVariable.new
+    entered = false
     @loop_thread = Thread.new do
-      Thread.stop
-      begin
-        @block.call(self)
-      rescue
-        @main_thread.raise
-      ensure
-        @main_thread.wakeup
+      @mutex.synchronize do
+        entered = true
+        @loop_cond.wait(@mutex)
+        begin
+          @block.call(self)
+        rescue
+          @main_thread.raise $!
+        ensure
+          @main_cond.signal
+        end
       end
     end
-    Thread.pass until @loop_thread.stop?
+    Thread.pass until entered && !@mutex.locked?
     self
   end
 
@@ -90,33 +98,26 @@ class Generator
     if Thread.current != @loop_thread
       raise "should be called in Generator.new{|g| ... }"
     end
-    Thread.critical = true
-    begin
-      @queue << value
-      @main_thread.wakeup
-      Thread.stop
-    ensure
-      Thread.critical = false
-    end
+    @queue << value
+    @main_cond.signal
+    @loop_cond.wait(@mutex)
     self
   end
 
   # Returns true if the generator has reached the end.
   def end?
-    if @queue.empty?
-      if @main_thread
-        raise "should not be called in Generator.new{|g| ... }"
-      end
-      Thread.critical = true
-      begin
-        @main_thread = Thread.current
-        @loop_thread.wakeup
-        Thread.stop
-      rescue ThreadError
-        # ignore
-      ensure
-        @main_thread = nil
-        Thread.critical = false
+    @mutex.synchronize do
+      if @queue.empty? && @loop_thread.alive?
+        if @main_thread
+          raise "should not be called in Generator.new{|g| ... }"
+        end
+        begin
+          @main_thread = Thread.current
+          @loop_cond.signal
+          @main_cond.wait(@mutex)
+        ensure
+          @main_thread = nil
+        end
       end
     end
     @queue.empty?
