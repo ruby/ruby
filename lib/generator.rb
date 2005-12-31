@@ -71,6 +71,8 @@ class Generator
     end
     @index = 0
     @queue = []
+    @main_thread = nil
+    @loop_thread.kill if defined?(@loop_thread)
     @loop_thread = Thread.new do
       Thread.stop
       begin

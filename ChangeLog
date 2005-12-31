@@ -1,3 +1,9 @@
+Sat Dec 31 11:53:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/generator.rb: (Generator#initialize): should kill @loop_thread
+	  before starting new thread. (occurs when called via Generator#rewind)
+	  [ruby-dev:28184]
+
 Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (garbage_collect): mark objects refered from aborting threads.
