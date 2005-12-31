@@ -1,3 +1,8 @@
+Sat Dec 31 22:57:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_save_context): should not recycle scope object used
+	  in a thread.  fixed: [ruby-dev:28177]
+
 Sat Dec 31 19:50:38 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c: attribute name was truncated with Rev1.64.
