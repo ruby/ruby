@@ -10117,6 +10117,7 @@ rb_thread_save_context(th)
 
     th->frame = ruby_frame;
     th->scope = ruby_scope;
+    ruby_scope->flags |= SCOPE_DONT_RECYCLE;
     th->klass = ruby_class;
     th->wrapper = ruby_wrapper;
     th->cref = ruby_cref;

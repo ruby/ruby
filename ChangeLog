@@ -1,3 +1,8 @@
+Sat Dec 31 22:57:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_save_context): should not recycle scope object used
+	  in a thread.  fixed: [ruby-dev:28177]
+
 Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (garbage_collect): mark objects refered from aborting threads.
