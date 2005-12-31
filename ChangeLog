@@ -1,3 +1,7 @@
+Sat Dec 31 19:50:38 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c: attribute name was truncated with Rev1.64.
+
 Sat Dec 31 11:53:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/generator.rb: (Generator#initialize): should kill @loop_thread
@@ -13,12 +17,12 @@ Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Dec 30 15:17:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* lib/generator.rb: (Generator#initialize) ensured to stop @loop_thread.
+	* lib/generator.rb (Generator#initialize): ensured to stop @loop_thread.
 	  Mr. Tanaka pointed out one Thread.pass is not enough. [ruby-dev:28185]
 
 Fri Dec 30 12:20:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* lib/generator.rb: (Generator#initialize) fixed dead lock. this occured
+	* lib/generator.rb (Generator#initialize): fixed dead lock. this occured
 	  when end? was called before @loop_thread was stopped. [ruby-core:7029]
 
 Fri Dec 30 01:04:52 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
