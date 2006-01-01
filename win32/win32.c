@@ -1461,6 +1461,21 @@ rb_w32_opendir(const char *filename)
     return p;
 }
 
+//
+// Move to next entry
+//
+
+static void
+move_to_next_entry(DIR *dirp)
+{
+    if (dirp->curr) {
+	dirp->loc++;
+	dirp->curr += strlen(dirp->curr) + 1;
+	if (dirp->curr >= (dirp->start + dirp->size)) {
+	    dirp->curr = NULL;
+	}
+    }
+}
 
 //
 // Readdir just returns the current string pointer and bumps the
@@ -1470,7 +1485,6 @@ rb_w32_opendir(const char *filename)
 struct direct  *
 rb_w32_readdir(DIR *dirp)
 {
-    int         len;
     static int  dummy = 0;
 
     if (dirp->curr) {
@@ -1479,9 +1493,8 @@ rb_w32_readdir(DIR *dirp)
 	// first set up the structure to return
 	//
 
-	len = strlen(dirp->curr);
 	strcpy(dirp->dirstr.d_name, dirp->curr);
-	dirp->dirstr.d_namlen = len;
+	dirp->dirstr.d_namlen = strlen(dirp->curr);
 
 	//
 	// Fake inode
@@ -1491,19 +1504,14 @@ rb_w32_readdir(DIR *dirp)
 	//
 	// Attributes
 	//
-	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->bitpos);
-	dirp->bitpos++;
-	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->bitpos);
-	dirp->bitpos++;
+	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->loc * 2);
+	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->loc * 2 + 1);
 
 	//
 	// Now set up for the next call to readdir
 	//
 
-	dirp->curr += len + 1;
-	if (dirp->curr >= (dirp->start + dirp->size)) {
-	    dirp->curr = NULL;
-	}
+	move_to_next_entry(dirp);
 
 	return &(dirp->dirstr);
 
@@ -1518,7 +1526,7 @@ rb_w32_readdir(DIR *dirp)
 long
 rb_w32_telldir(DIR *dirp)
 {
-	return (long) dirp->curr;	/* ouch! pointer to long cast */
+    return dirp->loc;
 }
 
 //
@@ -1528,7 +1536,11 @@ rb_w32_telldir(DIR *dirp)
 void
 rb_w32_seekdir(DIR *dirp, long loc)
 {
-	dirp->curr = (char *) loc;	/* ouch! long to pointer cast */
+    rb_w32_rewinddir(dirp);
+
+    while (dirp->curr && dirp->loc < loc) {
+	move_to_next_entry(dirp);
+    }
 }
 
 //
@@ -1538,8 +1550,8 @@ rb_w32_seekdir(DIR *dirp, long loc)
 void
 rb_w32_rewinddir(DIR *dirp)
 {
-	dirp->curr = dirp->start;
-	dirp->bitpos = 0;
+    dirp->curr = dirp->start;
+    dirp->loc = 0;
 }
 
 //
@@ -1549,9 +1561,9 @@ rb_w32_rewinddir(DIR *dirp)
 void
 rb_w32_closedir(DIR *dirp)
 {
-	free(dirp->start);
-	free(dirp->bits);
-	free(dirp);
+    free(dirp->start);
+    free(dirp->bits);
+    free(dirp);
 }
 
 #if (defined _MT || defined __MSVCRT__) && !defined __BORLANDC__

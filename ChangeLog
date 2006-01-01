@@ -1,3 +1,13 @@
+Sun Jan  1 14:42:54 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
+	  the location which rb_w32_telldir didn't return. (and should change
+	  `bits' position) [ruby-core:7035]
+
+	* win32/dir.h: ditto. (stores `loc' instead of `bitpos')
+
+	* test/ruby/test_dir.rb: added.
+
 Sat Dec 31 22:57:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_save_context): should not recycle scope object used

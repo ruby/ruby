@@ -21,9 +21,9 @@ typedef struct {
     char *curr;
     long size;
     long nfiles;
+    long loc;  /* [0, nfiles) */
     struct direct dirstr;
     char *bits;  /* used for d_isdir and d_isrep */
-    long bitpos; /* used for d_isdir and d_isrep */
 } DIR;
 
 
