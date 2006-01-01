@@ -2,6 +2,7 @@ Sun Jan  1 17:07:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
 	  the location which rb_w32_telldir didn't return. [ruby-core:7035]
+	  (I think HEAD implementation is better. but binary compatibility)
 
 	* test/ruby/test_dir.rb: added.
 
