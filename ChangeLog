@@ -1,6 +1,6 @@
 Sun Jan  1 15:28:46 2006  Tanaka Akira  <akr@m17n.org>
 
-	* missing.h (isnan): avoid macro expantion
+	* missing.h (isinf): avoid macro expantion
 	  "extern int isinf(double);" to
 	  "extern int ((sizeof(double)==sizeof(float))?_Isinff(double):_Isinf(double));" on
 	  HP-UX.
