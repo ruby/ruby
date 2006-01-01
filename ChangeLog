@@ -1,3 +1,10 @@
+Sun Jan  1 17:07:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
+	  the location which rb_w32_telldir didn't return. [ruby-core:7035]
+
+	* test/ruby/test_dir.rb: added.
+
 Sat Dec 31 22:57:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_save_context): should not recycle scope object used
@@ -223,7 +230,7 @@ Wed Dec  7 01:02:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/demos-en/menu.rb: ditto.
 
-Tue Dec  4 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
+Tue Dec  6 16:37:57 2005  Yuya Nishida  <yuya@j96.org>
 
 	* eval.c (exec_under): avoid accessing ruby_frame->prev.
 	  [ruby-dev:27948]
