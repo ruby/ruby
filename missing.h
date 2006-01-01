@@ -62,11 +62,13 @@ extern double erf(double);
 extern double erfc(double);
 #endif
 
-#ifndef HAVE_ISINF
-# if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
-# define isinf(x) (!finite(x) && !isnan(x))
-# else
+#ifndef isinf
+# ifndef HAVE_ISINF
+#  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
+#  define isinf(x) (!finite(x) && !isnan(x))
+#  else
 extern int isinf(double);
+#  endif
 # endif
 #endif
 

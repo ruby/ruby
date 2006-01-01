@@ -1,3 +1,10 @@
+Sun Jan  1 15:28:46 2006  Tanaka Akira  <akr@m17n.org>
+
+	* missing.h (isnan): avoid macro expantion
+	  "extern int isinf(double);" to
+	  "extern int ((sizeof(double)==sizeof(float))?_Isinff(double):_Isinf(double));" on
+	  HP-UX.
+
 Sun Jan  1 14:42:54 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
