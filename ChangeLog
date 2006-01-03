@@ -1,6 +1,6 @@
 Sun Jan  1 15:28:46 2006  Tanaka Akira  <akr@m17n.org>
 
-	* missing.h (isinf): avoid macro expantion
+	* missing.h (isinf): avoid macro expansion
 	  "extern int isinf(double);" to
 	  "extern int ((sizeof(double)==sizeof(float))?_Isinff(double):_Isinf(double));" on
 	  HP-UX.
@@ -32,7 +32,7 @@ Sat Dec 31 11:53:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Fri Dec 30 18:22:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (garbage_collect): mark objects refered from aborting threads.
+	* gc.c (garbage_collect): mark objects referred from aborting threads.
 	  [ruby-dev:28190]
 
 	* win32/Makefile.sub: VC++8 support.
@@ -44,7 +44,7 @@ Fri Dec 30 15:17:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Fri Dec 30 12:20:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* lib/generator.rb (Generator#initialize): fixed dead lock. this occured
+	* lib/generator.rb (Generator#initialize): fixed dead lock. this occurred
 	  when end? was called before @loop_thread was stopped. [ruby-core:7029]
 
 Fri Dec 30 01:04:52 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
