@@ -144,7 +144,7 @@ Tue Dec 27 14:09:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 Tue Dec 27 08:22:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_chech):
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket#post_connection_check):
 	  treat wildcard character in commonName. [ruby-dev:28121]
 
 Mon Dec 26 08:50:36 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -530,7 +530,7 @@ Mon Nov 28 13:11:45 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 Mon Nov 28 09:15:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): should not change sodir with
-	  dir.gsub!. (bccwin32 failed to install third party exntesions)
+	  dir.gsub!. (bccwin32 failed to install third party extensions)
 	  [ruby-dev:27834]
 
 Sun Nov 27 05:37:20 2005  Tanaka Akira  <akr@m17n.org>
@@ -643,7 +643,7 @@ Wed Nov 23 20:59:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: add Tk.pkgconfig_list and Tk.pkgconfig_get
 	  [Tk8.5 feature].
 
-	* ext/tk/lib/tk/text.rb: supports new indices modifires on a Text
+	* ext/tk/lib/tk/text.rb: supports new indices modifiers on a Text
 	  widget [Tk8.5 feature].
 
 	* ext/tk/lib/tk/virtevent.rb: add TkNamedVirtualEvent.
@@ -906,7 +906,7 @@ Tue Nov 15 16:36:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	    a.fill {|i| a[i] * 10} #=> [nil, nil, ...., nil]
 
 	  previous commit has the advantage of early garbage collection, but
-	  potensially this would break some script. so I reverted behavior.
+	  potentially this would break some script. so I reverted behavior.
 
 Tue Nov 15 16:15:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -962,14 +962,14 @@ Fri Nov 11 08:20:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (OUTFLAG): keep trailing spaces.  [ruby-dev:27666]
 
-	* mkconfig.rb: substitution refereces added.
+	* mkconfig.rb: substitution references added.
 
 Fri Nov 11 07:39:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* configure.in: undef HAVE_LINK on BeOS. (link(2) always returns
 	  EINVAL, and this causes error in test/fileutils.)
 
-	* file.c: overwride chown(2) and fchown(2) on BeOS. (these functions
+	* file.c: override chown(2) and fchown(2) on BeOS. (these functions
 	  should not change user/group id if -1 is passed as corresponding
 	  argument, and this causes error in test/fileutils too)
 	  [ruby-dev:27672]
@@ -985,7 +985,7 @@ Wed Nov  9 08:39:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov  8 17:35:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* intern.h, eval.c (rb_thread_signal_raise): costified.
+	* intern.h, eval.c (rb_thread_signal_raise): constified.
 
 	* signal.c: cosmetic change.
 
@@ -1867,7 +1867,7 @@ Wed Sep 21 14:16:30 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed Sep 21 08:52:25 2005  why the lucky stiff  <why@ruby-lang.org>
 
-	* ext/syck/token.c: correctly compute identation of a block
+	* ext/syck/token.c: correctly compute indentation of a block
 	  scalar's parent node. [ruby-talk:150620]
 
 Wed Sep 21 08:20:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
