@@ -1,3 +1,12 @@
+Fri Jan  6 02:20:18 2006  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: don't force getcontext on IA64.
+
+	* eval.c (ruby_setjmp): add an argument for just before getcontext.
+	  (THREAD_SAVE_CONTEXT): call rb_thread_save_context just
+	  before getcontext.
+	  [ruby-dev:28205]
+
 Sun Jan  1 15:28:46 2006  Tanaka Akira  <akr@m17n.org>
 
 	* missing.h (isinf): avoid macro expansion

@@ -158,17 +158,18 @@ int function_call_may_return_twice_false = 0;
 #define FUNCTION_CALL_MAY_RETURN_TWICE 0
 #endif
 #define ruby_longjmp(env, val) rb_jump_context(env, val)
-#define ruby_setjmp(j) ((j)->status = 0, \
+#define ruby_setjmp(just_before_setjmp, j) ((j)->status = 0, \
+    (just_before_setjmp), \
     FUNCTION_CALL_MAY_RETURN_TWICE, \
     getcontext(&(j)->context), \
     (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
 #if !defined(setjmp) && defined(HAVE__SETJMP)
-#define ruby_setjmp(env) _setjmp(env)
+#define ruby_setjmp(just_before_setjmp, env) ((just_before_setjmp), _setjmp(env))
 #define ruby_longjmp(env,val) _longjmp(env,val)
 #else
-#define ruby_setjmp(env) setjmp(env)
+#define ruby_setjmp(just_before_setjmp, env) ((just_before_setjmp), setjmp(env))
 #define ruby_longjmp(env,val) longjmp(env,val)
 #endif
 #endif
@@ -918,7 +919,7 @@ static struct tag *prot_tag;
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
 #define PROT_TOP    INT2FIX(4)	/* 9 */
 
-#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(prot_tag->buf))
+#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(0, prot_tag->buf))
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
@@ -10123,6 +10124,7 @@ rb_thread_save_context(rb_thread_t th)
         th->bstr_max = len;
     }
     th->bstr_len = len;
+    rb_ia64_flushrs();
     MEMCPY(th->bstr_ptr, th->bstr_pos, VALUE, th->bstr_len);
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -10196,8 +10198,7 @@ rb_thread_switch(int n)
 }
 
 #define THREAD_SAVE_CONTEXT(th) \
-    (rb_thread_save_context(th),\
-     rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp((th)->context))))
+    (rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp(rb_thread_save_context(th), (th)->context))))
 
 NORETURN(static void rb_thread_restore_context(rb_thread_t,int));
 NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int,void*)));
