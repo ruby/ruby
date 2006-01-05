@@ -919,7 +919,7 @@ static struct tag *prot_tag;
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
 #define PROT_TOP    INT2FIX(4)	/* 9 */
 
-#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(0, prot_tag->buf))
+#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(((void)0), prot_tag->buf))
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
