@@ -23,9 +23,7 @@
 #include <errno.h>
 
 int
-flock(fd, operation)
-    int fd;
-    int operation;
+flock(int fd, int operation)
 {
     struct flock lock;
  
@@ -90,9 +88,7 @@ flock(fd, operation)
 # endif
 
 int
-flock(fd, operation)
-    int fd;
-    int operation;
+flock(int fd, int operation)
 {
     switch (operation) {
 
@@ -124,9 +120,7 @@ flock(fd, operation)
 }
 #elif !defined _WIN32
 int
-flock(fd, operation)
-    int fd;
-    int operation;
+flock(int fd, int operation)
 {
     rb_notimplement();
     return -1;

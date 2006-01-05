@@ -6,8 +6,7 @@
 #include <nan.h>
 
 int
-isinf(n)
-    double n;
+isinf(double n)
 {
     if (IsNANorINF(n) && IsINF(n)) {
 	return 1;
@@ -29,8 +28,7 @@ isinf(n)
 #endif
 
 int
-isinf(n)
-    double n;
+isinf(double n)
 {
     return (!finite(n) && !isnan(n));
 }
@@ -43,13 +41,12 @@ isinf(n)
 # include <strings.h>
 #endif
 
-static double zero()	{ return 0.0; }
-static double one()	{ return 1.0; }
-static double inf()	{ return one() / zero(); }
+static double zero(void) { return 0.0; }
+static double one (void) { return 1.0; }
+static double inf (void) { return one() / zero(); }
 
 int
-isinf(n)
-    double n;
+isinf(double n)
 {
     static double pinf = 0.0;
     static double ninf = 0.0;
