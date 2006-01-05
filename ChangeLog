@@ -1,3 +1,7 @@
+Thu Jan  5 19:03:09 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (ioinfo): VC++8 support, forgotten to commit.
+
 Sun Jan  1 17:07:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
