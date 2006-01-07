@@ -1,3 +1,8 @@
+Sat Jan  7 15:40:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (singleton): get rid of segfault on syntax error.
+	  fixed: [ruby-core:07070]
+
 Sun Jan  1 17:07:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_seekdir): should not segfault even if passed
