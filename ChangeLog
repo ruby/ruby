@@ -6,9 +6,9 @@ Sat Jan  7 15:40:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jan  7 06:24:18 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_fd_isset): compare the result of FD_ISSET with 0 to
-	  avoid BSD bug.  BSD defines FD_ISSET as just a bitmap of unsigned
-	  long.  So returning the value from rb_fd_isset discards upper
-	  32bits on LP64 environment.
+	  avoid FreeBSD bug.  FreeBSD defines FD_ISSET as just a bitmap of
+	  unsigned long.  So returning the value from rb_fd_isset discards
+	  upper 32bits on LP64 environment.
 	  http://www.freebsd.org/cgi/query-pr.cgi?pr=ia64/91421
 
 Fri Jan  6 02:20:18 2006  Tanaka Akira  <akr@m17n.org>

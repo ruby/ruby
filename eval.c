@@ -9644,7 +9644,7 @@ rb_fd_isset(n, fds)
     const rb_fdset_t *fds;
 {
     if (n >= fds->maxfd) return 0;
-    return FD_ISSET(n, fds->fdset) != 0; /* "!= 0" avoids BSD bug */
+    return FD_ISSET(n, fds->fdset) != 0; /* "!= 0" avoids FreeBSD bug */
 }
 
 void
