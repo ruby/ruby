@@ -1,3 +1,9 @@
+Sun Jan  8 14:15:27 2006  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (GCC_VERSION_BEFORE): check __INTEL_COMPILER.
+	  Intel C++ Compiler defines __GNUC__.
+	  http://www.intel.com/software/products/compilers/clin/docs/ug_cpp/lin1077.htm
+
 Sat Jan  7 15:40:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (singleton): get rid of segfault on syntax error.

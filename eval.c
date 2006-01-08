@@ -133,7 +133,7 @@ rb_jump_context(env, val)
  * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=22127
  */
 #define GCC_VERSION_BEFORE(major, minor, patchlevel) \
-    (defined (__GNUC__) && \
+    (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
      ((__GNUC__ < (major)) ||  \
       (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
       (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
