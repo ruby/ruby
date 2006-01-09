@@ -1,3 +1,9 @@
+Tue Jan 10 07:26:52 2006  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (gc_stress): renamed from always_gc and enabled by default.
+	  (gc_stress_get): new function for GC.stress.
+	  (gc_stress_set): new function for GC.stress=.
+
 Mon Jan  9 19:58:56 2006  arton  <artonx@yahoo.co.jp>
 
 	* ext/zlib/extconf.rb: zlib compiled DLL version 1.2.3 distributed by

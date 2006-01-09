@@ -944,12 +944,12 @@ Init_signal(void)
 #endif
 
 #ifdef SIGBUS
-# ifndef RUBY_GC_DEBUG
+# ifndef RUBY_GC_STRESS
     install_sighandler(SIGBUS, sigbus);
 # endif
 #endif
 #ifdef SIGSEGV
-# ifndef RUBY_GC_DEBUG
+# ifndef RUBY_GC_STRESS
     install_sighandler(SIGSEGV, sigsegv);
 # endif
 #endif

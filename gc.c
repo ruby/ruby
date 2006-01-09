@@ -88,11 +88,40 @@ rb_memerror(void)
     rb_exc_raise(nomem_error);
 }
 
-#ifdef RUBY_GC_DEBUG
-int always_gc = 0;
-#else
-# define always_gc 0
-#endif
+int gc_stress = 0;
+
+/*
+ *  call-seq:
+ *    GC.stress                 => true or false
+ *
+ *  returns current status of GC stress mode.
+ */
+
+static VALUE
+gc_stress_get(VALUE self)
+{
+    return gc_stress ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *    GC.stress = bool          => bool
+ *
+ *  updates GC stress mode.
+ *
+ *  When GC.stress = true, GC is invoked for all GC opportunity:
+ *  all memory and object allocation.
+ *
+ *  Since it makes Ruby very slow, it is only for debugging.
+ */
+
+static VALUE
+gc_stress_set(VALUE self, VALUE bool)
+{
+    rb_secure(2);
+    gc_stress = RTEST(bool);
+    return bool;
+}
 
 void *
 ruby_xmalloc(size_t size)
@@ -105,7 +134,7 @@ ruby_xmalloc(size_t size)
     if (size == 0) size = 1;
     malloc_increase += size;
 
-    if (always_gc || malloc_increase > malloc_limit) {
+    if (gc_stress || malloc_increase > malloc_limit) {
 	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -153,7 +182,7 @@ ruby_xrealloc(void *ptr, size_t size)
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
     malloc_increase += size;
-    if (always_gc) garbage_collect();
+    if (gc_stress) garbage_collect();
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	if (garbage_collect()) {
@@ -383,7 +412,7 @@ rb_newobj(void)
 {
     VALUE obj;
 
-    if ((always_gc || !freelist) && !garbage_collect())
+    if ((gc_stress || !freelist) && !garbage_collect())
 	rb_memerror();
 
     obj = (VALUE)freelist;
@@ -1915,6 +1944,8 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "start", rb_gc_start, 0);
     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
+    rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
+    rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
     rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     rb_mObSpace = rb_define_module("ObjectSpace");
