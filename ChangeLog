@@ -1,3 +1,11 @@
+Mon Jan  9 14:25:00 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/Makefile.sub (OPTFLAGS): I have experienced trouble on y- flag,
+	  (VisualC++6) so use -O2b2xg- if  $(MSC_VER) < 1400. [ruby-core:7040]
+
+	* lib/webrick/httpservlet/filehandler.rb: fixed typo. (Kero van Gelder)
+	  [ruby-core:7075]
+
 Sun Jan  8 14:15:27 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (GCC_VERSION_BEFORE): check __INTEL_COMPILER.
