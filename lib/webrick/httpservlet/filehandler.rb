@@ -51,7 +51,7 @@ module WEBrick
               return true
             end
           rescue
-            if HTTPUtils::split_header_valie(ir).member?(res['etag'])
+            if HTTPUtils::split_header_value(ir).member?(res['etag'])
               return true
             end
           end
