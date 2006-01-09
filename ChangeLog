@@ -1,3 +1,8 @@
+Mon Jan  9 19:54:35 2006  arton  <artonx@yahoo.co.jp>
+
+	* ext/zlib/extconf.rb: zlib compiled DLL version 1.2.3 distributed by
+	  http://www.zlib.net/ has zdll.lib. [ruby-dev:28209]
+
 Mon Jan  9 14:17:12 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/Makefile.sub (OPTFLAGS): I have experienced trouble on y- flag,
