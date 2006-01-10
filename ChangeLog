@@ -1,7 +1,7 @@
 Tue Jan 10 19:42:33 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (garbage_collect): mark ruby_current_node.
-	  if an exception is raised in a finalizer called by
+	  if an exception is raised in a finalizer called written in C by
 	  rb_gc_call_finalizer_at_exit, ruby_set_current_source may use
 	  collected ruby_current_node and mark_source_filename may corrupt
 	  memory.
