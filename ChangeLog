@@ -1,3 +1,8 @@
+Tue Jan 10 12:00:48 2006  Aaron Schrab  <aaron @nospam@ schrab.com>
+
+	* lib/yaml/rubytypes.rb (Symbol#yaml_new): YAML loading of quoted
+	  Symbols broken. [ruby-Bugs:2535]
+
 Mon Jan  9 19:54:35 2006  arton  <artonx@yahoo.co.jp>
 
 	* ext/zlib/extconf.rb: zlib compiled DLL version 1.2.3 distributed by
@@ -8,8 +13,9 @@ Mon Jan  9 14:17:12 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* win32/Makefile.sub (OPTFLAGS): I have experienced trouble on y- flag,
 	  (VisualC++6) so use -O2b2xg- if  $(MSC_VER) < 1400. [ruby-core:7040]
 
-	* lib/webrick/httpservlet/filehandler.rb: fixed typo. (Kero van Gelder)
-	  [ruby-core:7075]
+Mon Jan  9 14:17:12 2006  Kero van Gelder  <rubyforge @nospam@ kero.tmfweb.nl>
+
+	* lib/webrick/httpservlet/filehandler.rb: fixed typo. [ruby-core:7075]
 
 Sat Jan  7 15:40:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

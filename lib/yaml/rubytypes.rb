@@ -183,6 +183,7 @@ class Symbol
     yaml_as "tag:ruby.yaml.org,2002:sym"
     def Symbol.yaml_new( klass, tag, val )
         if String === val
+            val = YAML::load( val ) if val =~ /\A(["']).*\1\z/
             val.intern
         else
             raise YAML::TypeError, "Invalid Symbol: " + val.inspect
