@@ -115,14 +115,14 @@ rb_syck_compile(self, port)
     oid = syck_parse( parser );
     syck_lookup_sym( parser, oid, (char **)&sav );
 
-    ret = S_ALLOCA_N( char, strlen( sav->buffer ) + 3 );
+    ret = S_ALLOC_N( char, strlen( sav->buffer ) + 3 );
     ret[0] = '\0';
     strcat( ret, "D\n" );
     strcat( ret, sav->buffer );
 
     syck_free_parser( parser );
 
-    bc = rb_str_new2( ret );
+    bc = rb_str_new2( ret );  S_FREE( ret );
     if ( taint )      OBJ_TAINT( bc );
     return bc;
 }
@@ -1038,16 +1038,17 @@ syck_resolver_node_import( self, node )
  */
 VALUE
 syck_set_ivars( vars, obj )
-    VALUE vars, obj;
+        VALUE vars, obj;
 {
     VALUE ivname = rb_ary_entry( vars, 0 );
     char *ivn;
     StringValue( ivname );
-    ivn = S_ALLOCA_N( char, RSTRING(ivname)->len + 2 );
+    ivn = S_ALLOC_N( char, RSTRING(ivname)->len + 2 );
     ivn[0] = '@';
     ivn[1] = '\0';
     strncat( ivn, RSTRING(ivname)->ptr, RSTRING(ivname)->len );
     rb_iv_set( obj, ivn, rb_ary_entry( vars, 1 ) );
+    S_FREE( ivn );
     return Qnil;
 }
 
@@ -1156,7 +1157,15 @@ syck_resolver_transfer( self, type, val )
             }
             else if ( !NIL_P( target_class ) )
             {
-                obj = rb_obj_alloc( subclass );
+                if ( subclass == rb_cBignum )
+                {
+                    obj = rb_str2inum( val, 10 ); /* for yaml dumped by 1.8.3 [ruby-core:6159] */
+                }
+                else
+                {
+                    obj = rb_obj_alloc( subclass );
+                }
+
                 if ( rb_respond_to( obj, s_yaml_initialize ) )
                 {
                     rb_funcall( obj, s_yaml_initialize, 2, type, val );

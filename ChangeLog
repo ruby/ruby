@@ -1,3 +1,8 @@
+Tue Jan 10 13:30:34 2006  akira yamada  <akira@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_resolver_transfer): should be able to load
+	  !ruby/object:Bignum syntax 1.8.3 dumped. [ruby-core:6159]
+
 Tue Jan 10 12:47:41 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/yaml/rubytypes.rb (Fixnum): Bignum could not be loaded in
