@@ -558,7 +558,7 @@ class ERB
 		out.push(content)
 	      end
 	    when '<%='
-	      out.push("#{@put_cmd}((#{content}).to_s)")
+	      out.push("#{@insert_cmd}((#{content}).to_s)")
 	    when '<%#'
 	      # out.push("# #{content.dump}")
 	    end
@@ -607,11 +607,12 @@ class ERB
     def initialize(trim_mode)
       @percent, @trim_mode = prepare_trim_mode(trim_mode)
       @put_cmd = 'print'
+      @insert_cmd = @put_cmd
       @pre_cmd = []
       @post_cmd = []
     end
     attr_reader :percent, :trim_mode
-    attr_accessor :put_cmd, :pre_cmd, :post_cmd
+    attr_accessor :put_cmd, :insert_cmd, :pre_cmd, :post_cmd
   end
 end
 
@@ -705,6 +706,7 @@ class ERB
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.concat"
+    compiler.insert_cmd = "#{eoutvar}.concat"
 
     cmd = []
     cmd.push "#{eoutvar} = ''"
@@ -822,5 +824,3 @@ class ERB
     module_function :def_erb_method
   end
 end
-
-

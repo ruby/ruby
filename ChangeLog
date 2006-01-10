@@ -1,3 +1,8 @@
+Wed Jan 11 00:12:29 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Compiler): add instance variable @insert_cmd to 
+	  change <%='s behavior.
+
 Tue Jan 10 19:42:33 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (garbage_collect): mark ruby_current_node.
