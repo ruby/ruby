@@ -1,3 +1,11 @@
+Tue Jan 10 19:42:33 2006  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (garbage_collect): mark ruby_current_node.
+	  if an exception is raised in a finalizer called by
+	  rb_gc_call_finalizer_at_exit, ruby_set_current_source may use
+	  collected ruby_current_node and mark_source_filename may corrupt
+	  memory.
+
 Tue Jan 10 13:30:34 2006  akira yamada  <akira@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_resolver_transfer): should be able to load
