@@ -1157,7 +1157,15 @@ syck_resolver_transfer( self, type, val )
             }
             else if ( !NIL_P( target_class ) )
             {
-                obj = rb_obj_alloc( subclass );
+                if ( subclass == rb_cBignum )
+                {
+                    obj = rb_str2inum( val, 10 ); /* for yaml dumped by 1.8.3 [ruby-core:6159] */
+                }
+                else
+                {
+                    obj = rb_obj_alloc( subclass );
+                }
+
                 if ( rb_respond_to( obj, s_yaml_initialize ) )
                 {
                     rb_funcall( obj, s_yaml_initialize, 2, type, val );
