@@ -1225,6 +1225,17 @@ EOY
         inspect_str = "[[...], [...]]"
         assert_equal( inspect_str, YAML::load( a.to_yaml ).inspect )
     end
+
+    #
+    # Test Symbol cycle
+    #
+    def test_symbol_cycle
+      #
+      # From Aaron Schrab [ruby-Bugs:2535]
+      #
+      assert_cycle(:"^foo")
+    end
+
 end
 
 if $0 == __FILE__

@@ -1,3 +1,8 @@
+Tue Jan 10 12:00:48 2006  Aaron Schrab  <aaron @nospam@ schrab.com>
+
+	* lib/yaml/rubytypes.rb (Symbol#yaml_new): YAML loading of quoted
+	  Symbols broken. [ruby-Bugs:2535]
+
 Tue Jan 10 07:26:52 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (gc_stress): renamed from always_gc and enabled by default.
@@ -14,8 +19,9 @@ Mon Jan  9 14:25:00 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* win32/Makefile.sub (OPTFLAGS): I have experienced trouble on y- flag,
 	  (VisualC++6) so use -O2b2xg- if  $(MSC_VER) < 1400. [ruby-core:7040]
 
-	* lib/webrick/httpservlet/filehandler.rb: fixed typo. (Kero van Gelder)
-	  [ruby-core:7075]
+Mon Jan  9 14:25:00 2006  Kero van Gelder  <rubyforge @nospam@ kero.tmfweb.nl>
+
+	* lib/webrick/httpservlet/filehandler.rb: fixed typo. [ruby-core:7075]
 
 Sun Jan  8 14:15:27 2006  Tanaka Akira  <akr@m17n.org>
 
