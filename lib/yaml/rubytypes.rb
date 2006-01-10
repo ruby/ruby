@@ -353,7 +353,17 @@ class Date
 	end
 end
 
-class Numeric
+class Integer
+    yaml_as "tag:yaml.org,2002:int"
+	def to_yaml( opts = {} )
+		YAML::quick_emit( nil, opts ) do |out|
+            out.scalar( "tag:yaml.org,2002:int", self.to_s, :plain )
+        end
+	end
+end
+
+class Float
+    yaml_as "tag:yaml.org,2002:float"
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) do |out|
             str = self.to_s
@@ -364,17 +374,9 @@ class Numeric
             elsif str == "NaN"
                 str = ".NaN"
             end
-            out.scalar( taguri, str, :plain )
+            out.scalar( "tag:yaml.org,2002:float", str, :plain )
         end
 	end
-end
-
-class Fixnum
-    yaml_as "tag:yaml.org,2002:int"
-end
-
-class Float
-    yaml_as "tag:yaml.org,2002:float"
 end
 
 class TrueClass

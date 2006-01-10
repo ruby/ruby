@@ -1236,6 +1236,23 @@ EOY
       assert_cycle(:"^foo")
     end
 
+    #
+    # Test Numeric cycle
+    #
+    class NumericTest < Numeric
+      def initialize(value)
+        @value = value
+      end
+      def ==(other)
+        @value == other.instance_eval{ @value }
+      end
+    end
+    def test_numeric_cycle
+      assert_cycle(1) # Fixnum
+      assert_cycle(111111111111111111111111111111111) # Bignum
+      assert_cycle(NumericTest.new(3)) # Subclass of Numeric
+    end
+
 end
 
 if $0 == __FILE__

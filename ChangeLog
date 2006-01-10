@@ -1,3 +1,11 @@
+Tue Jan 10 12:47:41 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/yaml/rubytypes.rb (Fixnum): Bignum could not be loaded in
+	  ruby 1.8.3/1.8.4. [ruby-core:6115]
+
+	* lib/yaml/rubytypes.rb (Numeric): Subclass of Numeric could not
+	  be dumped properly. [ruby-core:7047]
+
 Tue Jan 10 12:00:48 2006  Aaron Schrab  <aaron @nospam@ schrab.com>
 
 	* lib/yaml/rubytypes.rb (Symbol#yaml_new): YAML loading of quoted
