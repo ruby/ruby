@@ -1313,6 +1313,8 @@ garbage_collect(void)
 
     init_mark_stack();
 
+    gc_mark((VALUE)ruby_current_node, 0);
+
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
 	rb_gc_mark_frame(frame);
