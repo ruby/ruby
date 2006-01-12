@@ -1,3 +1,10 @@
+Thu Jan 12 11:53:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkballoonhelp.rb: [bug fix] couldn't add to a widget
+	  which is constructed with TkComposite module. 
+	  [new feature] support 'command' option which is called just before 
+	  popping up the balloon help.
+
 Tue Jan 10 19:42:33 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (garbage_collect): mark ruby_current_node.
@@ -5580,6 +5587,13 @@ Sun Dec 12 10:14:03 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc::parse_files): Never exclude files
 	  explicitly given on the command line.
+
+Sun Dec 11 23:54:07 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/*: update to support libraries in ActiveTcl8.4.12.0
+	  (see ext/tk/ChangeLog.tkextlib).
+
+	* ext/tk/sample/scrollframe.rb: add a new sample.
 
 Sat Dec 11 20:12:21 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 

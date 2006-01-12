@@ -24,13 +24,17 @@ class TkBalloonHelp<TkLabel
     @bindtag.bind('Leave',  proc{@timer.stop; erase})
     tags = @parent.bindtags
     idx = tags.index(@parent)
+    unless idx
+      ppath = TkComm.window(@parent.path)
+      idx = tags.index(ppath) || 0
+    end
     tags[idx,0] = @bindtag
     @parent.bindtags(tags)
   end
   private :_balloon_binding
 
   def initialize(parent=nil, keys={})
-    @parent = parent
+    @parent = parent || Tk.root
 
     @frame = TkToplevel.new(@parent)
     @frame.withdraw
@@ -38,7 +42,13 @@ class TkBalloonHelp<TkLabel
     @frame.transient(TkWinfo.toplevel(@parent))
     @epath = @frame.path
 
-    keys = {} unless keys
+    if keys
+      keys = _symbolkey2str(keys)
+    else
+      keys = {}
+    end
+
+    @command = keys.delete('command')
 
     @interval = keys.delete('interval'){1000}
     _balloon_binding(@interval)
@@ -60,10 +70,31 @@ class TkBalloonHelp<TkLabel
     end
   end
 
+  def command(cmd = Proc.new)
+    @command = cmd
+    self
+  end
+
   def show
     x = TkWinfo.pointerx(@parent)
     y = TkWinfo.pointery(@parent)
     @frame.geometry("+#{x+1}+#{y+1}")
+
+    if @command
+      case @command.arity
+      when 0
+        @command.call
+      when 2
+        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent))
+      when 3
+        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent), 
+                      self)
+      else
+        @command.call(x - TkWinfo.rootx(@parent), y - TkWinfo.rooty(@parent), 
+                      self, @parent)
+      end
+    end
+
     @frame.deiconify
     @frame.raise
 
@@ -95,5 +126,69 @@ if __FILE__ == $0
                       'interval'=>200, 'font'=>'courier', 
                       'background'=>'gray', 'foreground'=>'red')
   }
+
+  sb = TkScrollbox.new.pack(:fill=>:x)
+  sb.insert(:end, *%w(aaa bbb ccc ddd eee fff ggg hhh iii jjj kkk lll mmm))
+=begin
+  # CASE1 : command takes no arguemnt
+  bh = TkBalloonHelp.new(sb, :interval=>500, 
+                         :relief=>:ridge, :background=>'white', 
+                         :command=>proc{
+                           y = TkWinfo.pointery(sb) - TkWinfo.rooty(sb)
+                           bh.text "current index == #{sb.nearest(y)}"
+                         })
+=end
+=begin
+  # CASE2 : command takes 2 arguemnts
+  bh = TkBalloonHelp.new(sb, :interval=>500, 
+                         :relief=>:ridge, :background=>'white', 
+                         :command=>proc{|x, y|
+                           bh.text "current index == #{sb.nearest(y)}"
+                         })
+=end
+=begin
+  # CASE3 : command takes 3 arguemnts
+  TkBalloonHelp.new(sb, :interval=>500, 
+                    :relief=>:ridge, :background=>'white', 
+                    :command=>proc{|x, y, bhelp|
+                      bhelp.text "current index == #{sb.nearest(y)}"
+                    })
+=end
+=begin
+  # CASE4a : command is a Proc object and takes 4 arguemnts
+  cmd = proc{|x, y, bhelp, parent|
+    bhelp.text "current index == #{parent.nearest(y)}"
+  }
+
+  TkBalloonHelp.new(sb, :interval=>500, 
+                    :relief=>:ridge, :background=>'white', 
+                    :command=>cmd)
+
+  sb2 = TkScrollbox.new.pack(:fill=>:x)
+  sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
+  TkBalloonHelp.new(sb2, :interval=>500, 
+                    :padx=>5, :relief=>:raised, 
+                    :background=>'gray25', :foreground=>'white',
+                    :command=>cmd)
+=end
+#=begin
+  # CASE4b : command is a Method object and takes 4 arguemnts
+  def set_msg(x, y, bhelp, parent)
+    bhelp.text "current index == #{parent.nearest(y)}"
+  end
+  cmd = self.method(:set_msg)
+
+  TkBalloonHelp.new(sb, :interval=>500, 
+                    :relief=>:ridge, :background=>'white', 
+                    :command=>cmd)
+
+  sb2 = TkScrollbox.new.pack(:fill=>:x)
+  sb2.insert(:end, *%w(AAA BBB CCC DDD EEE FFF GGG HHH III JJJ KKK LLL MMM))
+  TkBalloonHelp.new(sb2, :interval=>500, 
+                    :padx=>5, :relief=>:raised, 
+                    :background=>'gray25', :foreground=>'white',
+                    :command=>cmd)
+#=end
+
   Tk.mainloop
 end
