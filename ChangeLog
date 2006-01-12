@@ -1,3 +1,10 @@
+Thu Jan 12 11:53:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkballoonhelp.rb: [bug fix] couldn't add to a widget
+	  which is constructed with TkComposite module. 
+	  [new feature] support 'command' option which is called just before 
+	  popping up the balloon help.
+
 Wed Jan 11 00:12:29 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler): add instance variable @insert_cmd to 
@@ -460,6 +467,13 @@ Mon Dec 12 00:33:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/iconv/iconv.c (Init_iconv): rb_gc_register_address() should
 	  be called before actual variable initialization.
 	  [ruby-dev:27986]
+
+Sun Dec 11 23:54:07 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/*: update to support libraries in ActiveTcl8.4.12.0
+	  (see ext/tk/ChangeLog.tkextlib).
+
+	* ext/tk/sample/scrollframe.rb: add a new sample.
 
 Sun Dec 11 22:07:58 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
