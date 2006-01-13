@@ -320,13 +320,13 @@ module RDoc
         xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
         url, area_name = $5, $6
 
-        res <<  %{  <area shape="RECT" coords="#{xs.min},#{ys.min},#{xs.max},#{ys.max}" }
-        res <<  %{     href="#{url}" alt="#{area_name}">\n}
+        res <<  %{  <area shape="rect" coords="#{xs.min},#{ys.min},#{xs.max},#{ys.max}" }
+        res <<  %{     href="#{url}" alt="#{area_name}" />\n}
       end
       res << "</map>\n"
 #      map_file = src.sub(/.dot/, '.map')
 #      system("dot -Timap #{src} -o #{map_file}")
-      res << %{<img src="#{dot}" usemap="#map" border=0 alt="#{name}">}
+      res << %{<img src="#{dot}" usemap="#map" border="0" alt="#{name}" />}
       return res
     end
   end

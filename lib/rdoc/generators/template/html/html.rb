@@ -322,7 +322,7 @@ FILE_PAGE = %{
       <td><strong>Path:</strong></td>
       <td>%full_path%
 IF:cvsurl
-        &nbsp;(<a href="%cvsurl%">CVS</a>)
+        &nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
       </td>
     </tr>
@@ -358,7 +358,7 @@ IF:full_path_url
                 </a>
 ENDIF:full_path_url
 IF:cvsurl
-        &nbsp;(<a href="%cvsurl%">CVS</a>)
+        &nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
         <br />
 END:infiles
@@ -504,7 +504,7 @@ IF:aliases
 START:aliases
         <tr class="top-aligned-row context-row">
           <td class="context-item-name">%old_name%</td>
-          <td>-></td>
+          <td>-&gt;</td>
           <td class="context-item-value">%new_name%</td>
         </tr>
 IF:desc

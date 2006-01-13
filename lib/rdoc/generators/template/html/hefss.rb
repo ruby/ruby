@@ -114,7 +114,7 @@ BODY = %{
 <html><head>
   <title>%title%</title>
   <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
-  <link rel=StyleSheet href="%style_url%" type="text/css" media=screen>
+  <link rel="stylesheet" href="%style_url%" type="text/css" media="screen" />
   <script type="text/javascript" language="JavaScript">
   <!--
   function popCode(url) {
@@ -138,9 +138,9 @@ IF:description
 ENDIF:description
 
 IF:requires
-<table cellpadding=5 width="100%">
+<table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Required files</td></tr>
-</table><br>
+</table><br />
 <div class="name-list">
 START:requires
 HREF:aref:name:
@@ -149,9 +149,9 @@ ENDIF:requires
 </div>
 
 IF:methods
-<table cellpadding=5 width="100%">
+<table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Subroutines and Functions</td></tr>
-</table><br>
+</table><br />
 <div class="name-list">
 START:methods
 HREF:aref:name:,
@@ -160,10 +160,10 @@ END:methods
 ENDIF:methods
 
 IF:attributes
-<table cellpadding=5 width="100%">
+<table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Arguments</td></tr>
-</table><br>
-<table cellspacing=5>
+</table><br />
+<table cellspacing="5">
 START:attributes
      <tr valign="top">
 IF:rw
@@ -180,10 +180,10 @@ END:attributes
 ENDIF:attributes
 
 IF:classlist
-<table cellpadding=5 width="100%">
+<table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Modules</td></tr>
-</table><br>
-%classlist%<br>
+</table><br />
+%classlist%<br />
 ENDIF:classlist
 
   !INCLUDE!  <!-- method descriptions -->
@@ -198,13 +198,13 @@ FILE_PAGE = <<_FILE_PAGE_
 <table width="100%">
  <tr class="title-row">
  <td><table width="100%"><tr>
-   <td class="big-title-font" colspan=2><font size=-3><B>File</B><BR></font>%short_name%</td>
-   <td align="right"><table cellspacing=0 cellpadding=2>
+   <td class="big-title-font" colspan="2"><font size="-3"><b>File</b><br /></font>%short_name%</td>
+   <td align="right"><table cellspacing="0" cellpadding="2">
          <tr>
            <td  class="small-title-font">Path:</td>
            <td class="small-title-font">%full_path%
 IF:cvsurl
-				&nbsp;(<a href="%cvsurl%">CVS</a>)
+				&nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
            </td>
          </tr>
@@ -215,26 +215,26 @@ ENDIF:cvsurl
         </table>
     </td></tr></table></td>
   </tr>
-</table><br>
+</table><br />
 _FILE_PAGE_
 
 ###################################################################
 
 CLASS_PAGE = %{
-<table width="100%" border=0 cellspacing=0>
+<table width="100%" border="0" cellspacing="0">
  <tr class="title-row">
  <td class="big-title-font">
-   <font size=-3><B>%classmod%</B><BR></font>%full_name%
+   <font size="-3"><b>%classmod%</b><br /></font>%full_name%
  </td>
  <td align="right">
-   <table cellspacing=0 cellpadding=2>
+   <table cellspacing="0" cellpadding="2">
      <tr valign="top">
       <td class="small-title-font">In:</td>
       <td class="small-title-font">
 START:infiles
 HREF:full_path_url:full_path:
 IF:cvsurl
-&nbsp;(<a href="%cvsurl%">CVS</a>)
+&nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
 END:infiles
       </td>
@@ -256,14 +256,14 @@ ENDIF:parent
    </table>
   </td>
   </tr>
-</table><br>
+</table><br />
 }
 
 ###################################################################
 
 METHOD_LIST = %{
 IF:includes
-<div class="tablesubsubtitle">Uses</div><br>
+<div class="tablesubsubtitle">Uses</div><br />
 <div class="name-list">
 START:includes
     <span class="method-name">HREF:aref:name:</span>
@@ -274,11 +274,11 @@ ENDIF:includes
 IF:method_list
 START:method_list
 IF:methods
-<table cellpadding=5 width="100%">
+<table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">%type% %category% methods</td></tr>
 </table>
 START:methods
-<table width="100%" cellspacing = 0 cellpadding=5 border=0>
+<table width="100%" cellspacing="0" cellpadding="5" border="0">
 <tr><td class="methodtitle">
 <a name="%aref%">
 <b>%name%</b>%params% 
@@ -307,7 +307,7 @@ SRC_PAGE = %{
 <html>
 <head><title>%title%</title>
 <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
-<style>
+<style type="text/css">
   .kw { color: #3333FF; font-weight: bold }
   .cmt { color: green; font-style: italic }
   .str { color: #662222; font-style: italic }
@@ -339,7 +339,7 @@ FILE_INDEX = %{
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
-<style>
+<style type="text/css">
 <!--
   body {
 background-color: #bbbbbb;
@@ -368,7 +368,7 @@ div.banner {
 <body>
 <div class="banner">%list_title%</div>
 START:entries
-<a href="%href%">%name%</a><br>
+<a href="%href%">%name%</a><br />
 END:entries
 </body></html>
 }
