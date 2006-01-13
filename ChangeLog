@@ -1,3 +1,8 @@
+Sat Jan 14 03:43:24 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* file.c (rb_file_s_chmod): avoid warning where sizeof(int) !=
+	  sizeof(void*).
+
 Fri Jan 13 19:14:56 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/rdoc/diagram.rb:
