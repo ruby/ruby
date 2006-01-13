@@ -1681,7 +1681,7 @@ rb_file_ctime(VALUE obj)
 static void
 chmod_internal(const char *path, void *mode)
 {
-    if (chmod(path, (int)mode) < 0)
+    if (chmod(path, *(int *)mode) < 0)
 	rb_sys_fail(path);
 }
 
@@ -1710,7 +1710,7 @@ rb_file_s_chmod(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
-    n = apply2files(chmod_internal, rest, (void *)(long)mode);
+    n = apply2files(chmod_internal, rest, &mode);
     return LONG2FIX(n);
 }
 
