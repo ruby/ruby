@@ -497,7 +497,7 @@ FILE_PAGE = <<_FILE_PAGE_
            <td  class="small-title-font">Path:</td>
            <td class="small-title-font">%full_path%
 IF:cvsurl
-				&nbsp;(<a href="%cvsurl%">CVS</a>)
+				&nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
            </td>
          </tr>
@@ -533,7 +533,7 @@ IF:full_path_url
          </a>
 ENDIF:full_path_url
 IF:cvsurl
-         &nbsp;(<a href="%cvsurl%">CVS</a>)
+         &nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 ENDIF:cvsurl
 <br />
 END:infiles
@@ -570,7 +570,7 @@ SRC_PAGE = %{
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
 <title>%title%</title>
-<link rel=StyleSheet href="%style_url%" type="text/css" media="screen" />
+<link rel="stylesheet" href="%style_url%" type="text/css" media="screen" />
 </head>
 <body bgcolor="white">
 <pre>%code%</pre>

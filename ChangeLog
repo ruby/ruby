@@ -1,3 +1,18 @@
+Fri Jan 13 19:26:15 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/diagram.rb:
+	    - properly quote bare element attributes
+	    - terminates dangling elements (e.g. <img>, <br>, <link>, etc)
+	    - converts "CVS" to the more HTML-friendly acronym element
+	    - adds missing type attributes to style elements
+
+	  based on Paul Duncan's patch <pabs@pablotron.org> [ruby-core:7028]
+
+	* lib/rdoc/generators/html_generator.rb: ditto.
+	* lib/rdoc/generators/template/html/hefss.rb: ditto.
+	* lib/rdoc/generators/template/html/html.rb: ditto.
+	* lib/rdoc/generators/template/html/kilmer.rb: ditto.
+
 Thu Jan 12 11:53:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkballoonhelp.rb: [bug fix] couldn't add to a widget
