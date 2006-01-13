@@ -144,6 +144,19 @@ static VALUE lineno = INT2FIX(0);
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
 #    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
 #  endif
+#elif defined(_LP64) && (defined(__sun__) || defined(__sun))
+typedef struct _FILE64 {
+  unsigned char        *_ptr;  /* next character from/to here in buffer */
+  unsigned char        *_base; /* the buffer */
+  unsigned char        *_end;  /* the end of the buffer */
+  ssize_t      _cnt;   /* number of available characters in buffer */
+  int          _file;  /* UNIX System file descriptor */
+  unsigned int _flag;  /* the state of the stream */
+  char         __fill[80];     /* filler to bring size to 128 bytes */
+} FILE64;
+#  define READ_DATA_PENDING(fp) (((FILE64*)(fp))->_cnt > 0)
+#  define READ_DATA_PENDING_COUNT(fp) (((FILE64*)(fp))->_cnt)
+#  define READ_DATA_PENDING_PTR(fp) ((char *)((FILE64*)(fp))->_ptr)
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)

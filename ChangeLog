@@ -20,6 +20,19 @@ Thu Jan 12 11:53:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  [new feature] support 'command' option which is called just before 
 	  popping up the balloon help.
 
+Tue Jan 11 15:00:00 2006  Ville Mattila  <mulperi@iki.fi>
+
+	* io.c (READ_PENDING*): Support solaris 64-bit enviroments.
+	  Solaris defines a opaque FILE struct when compiling 64 bit
+	  binaries. This means that we dont have access to _ptr etc.
+	  members anymore. The solution by Steven Lumos is to define
+	  FILE64 that has needed members available. I've modified
+	  the origanal patch a bit so that it compiles both with gcc
+	  and now free sun studio 11 compiler and both amd64 and sparc.
+	  NOTE! We have to 64 bit solaris FILE structure time to time
+	  otherwise we'll get breakage.
+	  [ruby-core:7106]
+
 Tue Jan 10 19:42:33 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (garbage_collect): mark ruby_current_node.
@@ -64,6 +77,13 @@ Sat Jan  7 15:40:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (singleton): get rid of segfault on syntax error.
 	  fixed: [ruby-core:07070]
+
+Fri Jan  6 10:16:20 2006  Steven Lumos <steven@lumos.us>
+
+	* io.c (READ_DATA_PENDING): defined for 64bit Solaris on SPARC.
+	  [ruby-core:7057]
+	  (READ_DATA_PENDING_COUNT): ditto.
+	  (READ_DATA_PENDING_PTR): ditto.
 
 Sun Jan  1 17:07:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
