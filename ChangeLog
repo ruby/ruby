@@ -1,3 +1,8 @@
+Sat Jan 14 05:37:06 2006  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (READ_DATA_PENDING, READ_DATA_PENDING_COUNT): defined
+	  for DragonFly BSD 1.4.0.
+
 Sat Jan 14 03:43:24 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (rb_file_s_chmod): avoid warning where sizeof(int) !=

@@ -169,6 +169,10 @@ typedef struct _FILE64 {
 #  define READ_DATA_PENDING_COUNT(fp) ((unsigned int)(*(fp))->_cnt)
 #  define READ_DATA_PENDING(fp)       (((unsigned int)(*(fp))->_cnt) > 0)
 #  define READ_DATA_BUFFERED(fp) 0
+#elif defined(__DragonFly__)
+/* FILE is an incomplete struct type since DragonFly BSD 1.4.0 */
+#  define READ_DATA_PENDING(fp) (((struct __FILE_public *)(fp))->_r > 0)
+#  define READ_DATA_PENDING_COUNT(fp) (((struct __FILE_public *)(fp))->_r)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
