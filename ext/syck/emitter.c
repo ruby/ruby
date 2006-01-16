@@ -1003,6 +1003,11 @@ void syck_emit_seq( SyckEmitter *e, char *tag, enum seq_style style )
         syck_emitter_write( e, "[", 1 );
         lvl->status = syck_lvl_iseq;
     } else {
+        /* complex key */
+        if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
+            syck_emitter_write( e, "? ", 2 );
+            parent->status = syck_lvl_mapx;
+        }
         lvl->status = syck_lvl_seq;
     }
 }
@@ -1019,6 +1024,11 @@ void syck_emit_map( SyckEmitter *e, char *tag, enum map_style style )
         syck_emitter_write( e, "{", 1 );
         lvl->status = syck_lvl_imap;
     } else {
+        /* complex key */
+        if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
+            syck_emitter_write( e, "? ", 2 );
+            parent->status = syck_lvl_mapx;
+        }
         lvl->status = syck_lvl_map;
     }
 }
@@ -1036,18 +1046,11 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
         {
             SyckLevel *parent = syck_emitter_parent_level( e );
 
-            /* seq-in-map shortcut */
-            if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
-                /* complex key */
-                if ( parent->ncount % 2 == 1 ) {
-                    syck_emitter_write( e, "?", 1 );
-                    parent->status = syck_lvl_mapx;
-                /* shortcut -- the lvl->anctag check should be unneccesary but
-                 * there is a nasty shift/reduce in the parser on this point and
-                 * i'm not ready to tickle it. */
-                } else if ( lvl->anctag == 0 ) { 
-                    lvl->spaces = parent->spaces;
-                }
+            /* seq-in-map shortcut -- the lvl->anctag check should be unneccesary but
+             * there is a nasty shift/reduce in the parser on this point and
+             * i'm not ready to tickle it. */
+            if ( lvl->anctag == 0 && parent->status == syck_lvl_map && lvl->ncount == 0 ) {
+                lvl->spaces = parent->spaces;
             }
 
             /* seq-in-seq shortcut */
@@ -1079,15 +1082,6 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
         case syck_lvl_map:
         {
             SyckLevel *parent = syck_emitter_parent_level( e );
-
-            /* map-in-map */
-            if ( parent->status == syck_lvl_map && lvl->ncount == 0 ) {
-                /* complex key */
-                if ( parent->ncount % 2 == 1 ) {
-                    syck_emitter_write( e, "?", 1 );
-                    parent->status = syck_lvl_mapx;
-                }
-            }
 
             /* map-in-seq shortcut */
             if ( lvl->anctag == 0 && parent->status == syck_lvl_seq && lvl->ncount == 0 ) {

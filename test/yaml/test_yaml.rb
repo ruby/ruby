@@ -1253,6 +1253,25 @@ EOY
       assert_cycle(NumericTest.new(3)) # Subclass of Numeric
     end
 
+    #
+    # Test empty map/seq in map cycle
+    #
+    def test_empty_map_key
+      #
+      # empty seq as key
+      #
+      o = YAML.load({[]=>""}.to_yaml)
+      assert_equal(Hash, o.class)
+      assert_equal([[]], o.keys)
+
+      #
+      # empty map as key
+      #
+      o = YAML.load({{}=>""}.to_yaml)
+      assert_equal(Hash, o.class)
+      assert_equal([{}], o.keys)
+    end
+
 end
 
 if $0 == __FILE__
