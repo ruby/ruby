@@ -1,3 +1,9 @@
+Mon Jan 16 10:13:38 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/emitter.c (syck_emit_seq, syck_emit_map, syck_emit_item):
+	  should output complex key mark even if map's key is empty seq/map.
+	  [ruby-core:7129]
+
 Sat Jan 14 03:38:54 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* file.c (rb_file_s_chmod): avoid warning where sizeof(int) !=
