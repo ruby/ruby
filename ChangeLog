@@ -1,3 +1,7 @@
+Tue Jan 17 11:32:46 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak (MAKE): workaround for nmake 8.
+
 Tue Jan 17 11:10:21 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{Makefile.sub,setup.mak}: invoke .bat via shell. workaround

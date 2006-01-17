@@ -37,6 +37,7 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
 ### Makefile for ruby $(OS) ###
+MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 EXTSTATIC = $(EXTSTATIC)
