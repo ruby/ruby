@@ -1628,22 +1628,34 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     mod.const_get(sym)    => obj
+ *     mod.const_get(sym, inherit=true)    => obj
  *  
  *  Returns the value of the named constant in <i>mod</i>.
  *     
  *     Math.const_get(:PI)   #=> 3.14159265358979
+ *
+ *  If the constant is not defined or is defined by the ancestors and
+ *  +inherit+ is false, +NameError+ will be raised.
  */
 
 static VALUE
-rb_mod_const_get(VALUE mod, VALUE name)
+rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 {
-    ID id = rb_to_id(name);
+    VALUE name, recur;
+    ID id;
 
+    if (argc == 1) {
+	name = argv[0];
+	recur = Qtrue;
+    }
+    else {
+	rb_scan_args(argc, argv, "11", &name, &recur);
+    }
+    id = rb_to_id(name);
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
-    return rb_const_get(mod, id);
+    return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
 }
 
 /*
@@ -1672,23 +1684,34 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 
 /*
  *  call-seq:
- *     mod.const_defined?(sym)   => true or false
+ *     mod.const_defined?(sym, inherit=true)   => true or false
  *  
  *  Returns <code>true</code> if a constant with the given name is
- *  defined by <i>mod</i>.
+ *  defined by <i>mod</i>, or its ancestors if +inherit+ is not false.
  *     
  *     Math.const_defined? "PI"   #=> true
+ *     IO.const_defined? "SYNC"   #=> true
+ *     IO.const_defined? "SYNC", false   #=> false
  */
 
 static VALUE
-rb_mod_const_defined(VALUE mod, VALUE name)
+rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 {
-    ID id = rb_to_id(name);
+    VALUE name, recur;
+    ID id;
 
+    if (argc == 1) {
+	name = argv[0];
+	recur = Qtrue;
+    }
+    else {
+	rb_scan_args(argc, argv, "11", &name, &recur);
+    }
+    id = rb_to_id(name);
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
-    return rb_const_defined_at(mod, id);
+    return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
 }
 
 /*
@@ -2498,9 +2521,9 @@ Init_Object(void)
 		     rb_class_private_instance_methods, -1);   /* in class.c */
 
     rb_define_method(rb_cModule, "constants", rb_mod_constants, 0); /* in variable.c */
-    rb_define_method(rb_cModule, "const_get", rb_mod_const_get, 1);
+    rb_define_method(rb_cModule, "const_get", rb_mod_const_get, -1);
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
-    rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, 1);
+    rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, -1);
     rb_define_private_method(rb_cModule, "remove_const", 
 			     rb_mod_remove_const, 1); /* in variable.c */
     rb_define_method(rb_cModule, "const_missing", 
