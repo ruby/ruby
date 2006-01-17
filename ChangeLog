@@ -1,3 +1,7 @@
+Tue Jan 17 11:06:19 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub: invoke .bat via shell. workaround for nmake 8.
+
 Mon Jan 16 10:13:38 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/emitter.c (syck_emit_seq, syck_emit_map, syck_emit_item):

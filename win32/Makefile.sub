@@ -50,7 +50,7 @@ YFLAGS = -o y.tab.c
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
-RM = $(srcdir:/=\)\win32\rm.bat
+RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86
@@ -197,7 +197,7 @@ rubyw: $(WPROGRAM)
 !include $(srcdir)/common.mk
 
 $(MKFILES): $(srcdir)/win32/Makefile.sub $(srcdir)/win32/configure.bat $(srcdir)/win32/setup.mak
-	$(srcdir:/=\)\win32\configure.bat $(configure_args)
+	$(COMSPEC) /C $(srcdir:/=\)\win32\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
 
 CONFIG_H = ./.config.h.time
@@ -211,7 +211,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 !if exist(config.h)
 	@copy config.h config.h.old > nul
 !endif
-	@$(srcdir:/=\)\win32\ifchange.bat config.h <<
+	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat config.h <<
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch
 #endif
