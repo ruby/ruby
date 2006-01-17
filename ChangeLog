@@ -1,8 +1,10 @@
-Tue Jan 17 23:05:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 17 23:59:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_get, rb_mod_const_defined): added optional
 	  flag to search ancestors, which is defaulted to true.
 	  fixed: [ruby-talk:175899]
+
+	* eval.c (rb_mod_method_defined): ditto.
 
 Tue Jan 17 11:31:47 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 

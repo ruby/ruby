@@ -4056,11 +4056,12 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     mod.method_defined?(symbol)    => true or false
+ *     mod.method_defined?(symbol, inherit=true)    => true or false
  *  
  *  Returns +true+ if the named method is defined by
  *  _mod_ (or its included modules and, if _mod_ is a class,
- *  its ancestors). Public and protected methods are matched.
+ *  its ancestors, if _inherit_ is true). Public and protected
+ *  methods are matched.
  *     
  *     module A
  *       def method1()  end
@@ -4078,12 +4079,27 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *     C.method_defined? "method2"   #=> true
  *     C.method_defined? "method3"   #=> true
  *     C.method_defined? "method4"   #=> false
+ *     C.method_defined?("method2", false)   #=> false
  */
 
 static VALUE
-rb_mod_method_defined(VALUE mod, VALUE mid)
+rb_mod_method_defined(int argc, VALUE *argv, VALUE mod)
 {
-    return rb_method_boundp(mod, rb_to_id(mid), 1);
+    VALUE mid, recur;
+    ID id;
+
+    if (argc == 1) {
+	recur = Qtrue;
+	mid = argv[0];
+    }
+    else {
+	rb_scan_args(argc, argv, "11", &mid, &recur);
+    }
+    id = rb_to_id(mid);
+    if (!RTEST(recur)) {
+	return st_is_member(RCLASS(mod)->m_tbl, id) ? Qtrue : Qfalse;
+    }
+    return rb_method_boundp(mod, id, 1);
 }
 
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
@@ -7666,7 +7682,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
-    rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, 1);
+    rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, -1);
     rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, 1);
     rb_define_method(rb_cModule, "private_method_defined?", rb_mod_private_method_defined, 1);
     rb_define_method(rb_cModule, "protected_method_defined?", rb_mod_protected_method_defined, 1);
