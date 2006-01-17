@@ -43,7 +43,7 @@ YACC = byacc
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
-RM = $(srcdir:/=\)\win32\rm.bat
+RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86
@@ -194,7 +194,7 @@ config.status: $(CONFIG_H)
 
 $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 	@echo Creating config.h
-	@$(srcdir:/=\)\win32\ifchange.bat config.h <<
+	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat config.h <<
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch
 #endif
