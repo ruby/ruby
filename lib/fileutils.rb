@@ -501,6 +501,7 @@ module FileUtils
           File.rename s, d
         rescue Errno::EXDEV
           copy_entry s, d, true
+          File.unlink s
         end
       rescue SystemCallError
         raise unless options[:force]
