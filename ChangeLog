@@ -1,3 +1,8 @@
+Thu Jan 19 22:19:18 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mv): should remove file after copying.
+	  [ruby-dev:28223]
+
 Wed Jan 18 23:37:06 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): don't clobber %l7 of SPARC 
