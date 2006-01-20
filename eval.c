@@ -137,8 +137,19 @@ rb_jump_context(env, val)
  *
  * Since the magic setjmp is not enough for SPARC,
  * inline asm is used to prohibit registers in register windows.
+ *
+ * Since the problem is fixed at gcc 4.0.3, the magic is applied only for
+ * prior versions of gcc.
+ * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=21957
+ * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=22127
  */
-#if defined (__GNUC__) && (defined(sparc) || defined(__sparc__))
+#define GCC_VERSION_BEFORE(major, minor, patchlevel) \
+    (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
+     ((__GNUC__ < (major)) ||  \
+      (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
+      (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
+#if GCC_VERSION_BEFORE(4,0,3)
+#if defined(sparc) || defined(__sparc__)
 #ifdef __pic__
 /*
  * %l7 is excluded for PIC because it is PIC register.
@@ -156,13 +167,18 @@ rb_jump_context(env, val)
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
 #endif
-#else
+#elif defined(__ia64)
 static jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
 #define FUNCTION_CALL_MAY_RETURN_TWICE \
   (function_call_may_return_twice_false ? \
    setjmp(function_call_may_return_twice_jmp_buf) : \
    0)
+#else
+#define FUNCTION_CALL_MAY_RETURN_TWICE 0
+#endif
+#else
+#define FUNCTION_CALL_MAY_RETURN_TWICE 0
 #endif
 #define ruby_longjmp(env, val) rb_jump_context(env, val)
 #define ruby_setjmp(j) ((j)->status = 0, \
