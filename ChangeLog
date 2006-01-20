@@ -1,7 +1,8 @@
 Sat Jan 21 00:36:47 2006  Tanaka Akira  <akr@m17n.org>
 
-	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): use only for SPARC and IA64
+	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): use only on SPARC and IA64
 	  before gcc 4.0.3.
+	  [ruby-dev:28247]
 	 
 Thu Jan 19 22:21:23 2006  Minero Aoki  <aamine@loveruby.net>
 
