@@ -1,3 +1,8 @@
+Sun Jan 22 23:27:13 2006  Go Noguchi  <gonoguti@yahoo.co.jp>
+
+	* lib/test/unit/autorunner.rb (process_args): ignore arguments after
+	  '--' so that test scripts can handle them.  fixed: [ruby-dev:28258]
+
 Sun Jan 22 22:09:52 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (POST_GETCONTEXT): define separately from PRE_GETCONTEXT on
@@ -18,7 +23,7 @@ Thu Jan 19 22:19:18 2006  Minero Aoki  <aamine@loveruby.net>
 
 Wed Jan 18 23:37:06 2006  Tanaka Akira  <akr@m17n.org>
 
-	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): don't clobber %l7 of SPARC 
+	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): don't clobber %l7 of SPARC
 	  if enable-shared.
 	  (ruby_setjmp): call FUNCTION_CALL_MAY_RETURN_TWICE after getcontext
 	  too.
