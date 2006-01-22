@@ -1,3 +1,9 @@
+Sun Jan 22 20:03:35 2006  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (ruby_setjmp): workaround for FreeBSD/i386
+	  getcontext/setcontext bug.
+	  [ruby-dev:28263]
+
 Sat Jan 21 00:36:47 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): use only on SPARC and IA64

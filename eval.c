@@ -108,7 +108,7 @@ rb_jump_context(env, val)
     abort();			/* ensure noreturn */
 }
 /*
- * FUNCTION_CALL_MAY_RETURN_TWICE is a magic for getcontext, gcc,
+ * PRE_GETCONTEXT and POST_GETCONTEXT is a magic for getcontext, gcc,
  * IA64 register stack and SPARC register window combination problem.
  *
  * Assume following code sequence.
@@ -148,43 +148,54 @@ rb_jump_context(env, val)
      ((__GNUC__ < (major)) ||  \
       (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
       (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
-#if GCC_VERSION_BEFORE(4,0,3)
-#if defined(sparc) || defined(__sparc__)
+#if GCC_VERSION_BEFORE(4,0,3) && (defined(sparc) || defined(__sparc__))
 #ifdef __pic__
 /*
  * %l7 is excluded for PIC because it is PIC register.
  * http://lists.freebsd.org/pipermail/freebsd-sparc64/2006-January/003739.html
  */
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
  ({ __asm__ volatile ("" : : :  \
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
 #else
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
  ({ __asm__ volatile ("" : : :  \
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
 #endif
-#elif defined(__ia64)
+#define POST_GETCONTEXT PRE_GETCONTEXT
+#elif GCC_VERSION_BEFORE(4,0,3) && defined(__ia64)
 static jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
   (function_call_may_return_twice_false ? \
    setjmp(function_call_may_return_twice_jmp_buf) : \
    0)
-#else
-#define FUNCTION_CALL_MAY_RETURN_TWICE 0
+#define POST_GETCONTEXT PRE_GETCONTEXT
+#elif defined(__FreeBSD__)
+/*
+ * workaround for FreeBSD/i386 getcontext/setcontext bug.
+ * clear the carry flag by (0 ? ... : ...).
+ * FreeBSD PR 92110 http://www.freebsd.org/cgi/query-pr.cgi?pr=92110
+ * [ruby-dev:28263]
+ */
+static int volatile freebsd_clear_carry_flag = 0;
+#define PRE_GETCONTEXT (freebsd_clear_carry_flag ? (freebsd_clear_carry_flag = 0) : 0)
 #endif
-#else
-#define FUNCTION_CALL_MAY_RETURN_TWICE 0
-#endif
+#  ifndef PRE_GETCONTEXT
+#    define PRE_GETCONTEXT 0
+#  endif
+#  ifndef POST_GETCONTEXT
+#    define POST_GETCONTEXT 0
+#  endif
 #define ruby_longjmp(env, val) rb_jump_context(env, val)
 #define ruby_setjmp(j) ((j)->status = 0, \
-    FUNCTION_CALL_MAY_RETURN_TWICE, \
+    PRE_GETCONTEXT, \
     getcontext(&(j)->context), \
-    FUNCTION_CALL_MAY_RETURN_TWICE, \
+    POST_GETCONTEXT, \
     (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
