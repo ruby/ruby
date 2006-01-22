@@ -143,39 +143,43 @@ rb_jump_context(env, val)
  * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=21957
  * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=22127
  */
-#define GCC_VERSION_BEFORE(major, minor, patchlevel) \
+#  define GCC_VERSION_BEFORE(major, minor, patchlevel) \
     (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
      ((__GNUC__ < (major)) ||  \
       (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
       (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
-#if GCC_VERSION_BEFORE(4,0,3) && (defined(sparc) || defined(__sparc__))
-#ifdef __pic__
+#  if GCC_VERSION_BEFORE(4,0,3) && (defined(sparc) || defined(__sparc__))
+#    ifdef __pic__
 /*
  * %l7 is excluded for PIC because it is PIC register.
  * http://lists.freebsd.org/pipermail/freebsd-sparc64/2006-January/003739.html
  */
-#define PRE_GETCONTEXT \
- ({ __asm__ volatile ("" : : :  \
-    "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
-    "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", \
-    "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
-#else
-#define PRE_GETCONTEXT \
- ({ __asm__ volatile ("" : : :  \
-    "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
-    "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
-    "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
-#endif
-#define POST_GETCONTEXT PRE_GETCONTEXT
-#elif GCC_VERSION_BEFORE(4,0,3) && defined(__ia64)
+#      define PRE_GETCONTEXT \
+	 ({ __asm__ volatile ("" : : :  \
+	    "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
+	    "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", \
+	    "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
+#    else
+#      define PRE_GETCONTEXT \
+	 ({ __asm__ volatile ("" : : :  \
+	    "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
+	    "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
+	    "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
+#    endif
+#    define POST_GETCONTEXT PRE_GETCONTEXT
+#  elif GCC_VERSION_BEFORE(4,0,3) && defined(__ia64)
 static jmp_buf function_call_may_return_twice_jmp_buf;
-int function_call_may_return_twice_false = 0;
-#define PRE_GETCONTEXT \
-  (function_call_may_return_twice_false ? \
-   setjmp(function_call_may_return_twice_jmp_buf) : \
-   0)
-#define POST_GETCONTEXT PRE_GETCONTEXT
-#elif defined(__FreeBSD__)
+int function_call_may_return_twice_false_1 = 0;
+int function_call_may_return_twice_false_2 = 0;
+#    define PRE_GETCONTEXT \
+       (function_call_may_return_twice_false_1 ? \
+        setjmp(function_call_may_return_twice_jmp_buf) : \
+        0)
+#    define POST_GETCONTEXT \
+       (function_call_may_return_twice_false_2 ? \
+        setjmp(function_call_may_return_twice_jmp_buf) : \
+        0)
+#  elif defined(__FreeBSD__)
 /*
  * workaround for FreeBSD/i386 getcontext/setcontext bug.
  * clear the carry flag by (0 ? ... : ...).
@@ -183,29 +187,30 @@ int function_call_may_return_twice_false = 0;
  * [ruby-dev:28263]
  */
 static int volatile freebsd_clear_carry_flag = 0;
-#define PRE_GETCONTEXT (freebsd_clear_carry_flag ? (freebsd_clear_carry_flag = 0) : 0)
-#endif
+#    define PRE_GETCONTEXT \
+       (freebsd_clear_carry_flag ? (freebsd_clear_carry_flag = 0) : 0)
+#  endif
 #  ifndef PRE_GETCONTEXT
 #    define PRE_GETCONTEXT 0
 #  endif
 #  ifndef POST_GETCONTEXT
 #    define POST_GETCONTEXT 0
 #  endif
-#define ruby_longjmp(env, val) rb_jump_context(env, val)
-#define ruby_setjmp(j) ((j)->status = 0, \
-    PRE_GETCONTEXT, \
-    getcontext(&(j)->context), \
-    POST_GETCONTEXT, \
-    (j)->status)
+#  define ruby_longjmp(env, val) rb_jump_context(env, val)
+#  define ruby_setjmp(j) ((j)->status = 0, \
+     PRE_GETCONTEXT, \
+     getcontext(&(j)->context), \
+     POST_GETCONTEXT, \
+     (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
-#if !defined(setjmp) && defined(HAVE__SETJMP)
-#define ruby_setjmp(env) _setjmp(env)
-#define ruby_longjmp(env,val) _longjmp(env,val)
-#else
-#define ruby_setjmp(env) setjmp(env)
-#define ruby_longjmp(env,val) longjmp(env,val)
-#endif
+#  if !defined(setjmp) && defined(HAVE__SETJMP)
+#    define ruby_setjmp(env) _setjmp(env)
+#    define ruby_longjmp(env,val) _longjmp(env,val)
+#  else
+#    define ruby_setjmp(env) setjmp(env)
+#    define ruby_longjmp(env,val) longjmp(env,val)
+#  endif
 #endif
 
 #include <sys/types.h>
