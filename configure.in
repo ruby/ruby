@@ -612,9 +612,6 @@ AC_C_VOLATILE
 
 if test x"$target_cpu" = xia64; then
     AC_LIBOBJ([ia64])
-    # use IA64 instead of __ia64__ because
-    # HP aC++ doesn't define it.  (HP aC++ define __ia64.)
-    AC_DEFINE(IA64)
     AC_CACHE_CHECK(for __libc_ia64_register_backing_store_base,
                    rb_cv___libc_ia64_register_backing_store_base,
     [rb_cv___libc_ia64_register_backing_store_base=no

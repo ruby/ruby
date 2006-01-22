@@ -98,7 +98,7 @@ rb_jump_context(env, val)
     abort();			/* ensure noreturn */
 }
 /*
- * FUNCTION_CALL_MAY_RETURN_TWICE is a magic for getcontext, gcc,
+ * PRE_GETCONTEXT and POST_GETCONTEXT is a magic for getcontext, gcc,
  * IA64 register stack and SPARC register window combination problem.
  *
  * Assume following code sequence.
@@ -138,44 +138,55 @@ rb_jump_context(env, val)
      ((__GNUC__ < (major)) ||  \
       (__GNUC__ == (major) && __GNUC_MINOR__ < (minor)) || \
       (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ < (patchlevel))))
-#if GCC_VERSION_BEFORE(4,0,3)
-#if defined(sparc) || defined(__sparc__)
+#if GCC_VERSION_BEFORE(4,0,3) && (defined(sparc) || defined(__sparc__))
 #ifdef __pic__
 /*
  * %l7 is excluded for PIC because it is PIC register.
  * http://lists.freebsd.org/pipermail/freebsd-sparc64/2006-January/003739.html
  */
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
  ({ __asm__ volatile ("" : : :  \
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
 #else
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
  ({ __asm__ volatile ("" : : :  \
     "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
     "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
     "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
 #endif
-#elif defined(IA64)
+#define POST_GETCONTEXT PRE_GETCONTEXT
+#elif GCC_VERSION_BEFORE(4,0,3) && defined(__ia64)
 static jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
-#define FUNCTION_CALL_MAY_RETURN_TWICE \
+#define PRE_GETCONTEXT \
   (function_call_may_return_twice_false ? \
    setjmp(function_call_may_return_twice_jmp_buf) : \
    0)
-#else
-#define FUNCTION_CALL_MAY_RETURN_TWICE 0
+#define POST_GETCONTEXT PRE_GETCONTEXT
+#elif defined(__FreeBSD__)
+/*
+ * workaround for FreeBSD/i386 getcontext/setcontext bug.
+ * clear the carry flag by (0 ? ... : ...).
+ * FreeBSD PR 92110 http://www.freebsd.org/cgi/query-pr.cgi?pr=92110
+ * [ruby-dev:28263]
+ */
+static int volatile freebsd_clear_carry_flag = 0;
+#define PRE_GETCONTEXT (freebsd_clear_carry_flag ? (freebsd_clear_carry_flag = 0) : 0)
 #endif
-#else
-#define FUNCTION_CALL_MAY_RETURN_TWICE 0
-#endif
+#  ifndef PRE_GETCONTEXT
+#    define PRE_GETCONTEXT 0
+#  endif
+#  ifndef POST_GETCONTEXT
+#    define POST_GETCONTEXT 0
+#  endif
 #define ruby_longjmp(env, val) rb_jump_context(env, val)
 #define ruby_setjmp(just_before_setjmp, j) ((j)->status = 0, \
     (just_before_setjmp), \
-    FUNCTION_CALL_MAY_RETURN_TWICE, \
+    PRE_GETCONTEXT, \
     getcontext(&(j)->context), \
-    FUNCTION_CALL_MAY_RETURN_TWICE, \
+    POST_GETCONTEXT, \
     (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
@@ -9730,7 +9741,7 @@ struct thread {
     long   stk_max;
     VALUE *stk_ptr;
     VALUE *stk_pos;
-#ifdef IA64
+#ifdef __ia64
     long   bstr_len;
     long   bstr_max;
     VALUE *bstr_ptr;
@@ -9984,7 +9995,7 @@ thread_mark(rb_thread_t th)
 #if defined(THINK_C) || defined(__human68k__)
 	rb_gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
 #endif
-#ifdef IA64
+#ifdef __ia64
 	if (th->bstr_ptr) {
 	    rb_gc_mark_locations(th->bstr_ptr, th->bstr_ptr+th->bstr_len);
 	}
@@ -10078,7 +10089,7 @@ thread_free(rb_thread_t th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
-#ifdef IA64
+#ifdef __ia64
     if (th->bstr_ptr) free(th->bstr_ptr);
     th->bstr_ptr = 0;
 #endif
@@ -10120,7 +10131,7 @@ static const char   *th_signm;
 #define RESTORE_EXIT		7
 
 extern VALUE *rb_gc_stack_start;
-#ifdef IA64
+#ifdef __ia64
 extern VALUE *rb_gc_register_stack_start;
 #endif
 
@@ -10143,7 +10154,7 @@ rb_thread_save_context(rb_thread_t th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef IA64
+#ifdef __ia64
     th->bstr_pos = rb_gc_register_stack_start;
     len = (VALUE*)rb_ia64_bsp() - th->bstr_pos;
     th->bstr_len = 0;
@@ -10267,7 +10278,7 @@ rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
     ex = exit;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
-#ifdef IA64
+#ifdef __ia64
     MEMCPY(tmp->bstr_pos, tmp->bstr_ptr, VALUE, tmp->bstr_len);
 #endif
 
@@ -10281,7 +10292,7 @@ rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
     ruby_longjmp(tmp->context, ex);
 }
 
-#ifdef IA64
+#ifdef __ia64
 #define C(a) rse_##a##0, rse_##a##1, rse_##a##2, rse_##a##3, rse_##a##4
 #define E(a) rse_##a##0= rse_##a##1= rse_##a##2= rse_##a##3= rse_##a##4
 static volatile int C(a), C(b), C(c), C(d), C(e);
@@ -10333,7 +10344,7 @@ stack_extend(rb_thread_t th, int exit, VALUE *addr_in_prev_frame)
 	if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
     }
 #endif
-#ifdef IA64
+#ifdef __ia64
     register_stack_extend(th, exit, space, (VALUE*)rb_ia64_bsp());
 #else
     rb_thread_restore_context_0(th, exit, space);
@@ -11533,7 +11544,7 @@ rb_thread_group(VALUE thread)
     return group;
 }
 
-#ifdef IA64
+#ifdef __ia64
 # define IA64_INIT(x) x
 #else
 # define IA64_INIT(x)
