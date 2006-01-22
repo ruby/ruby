@@ -85,7 +85,7 @@ module Test
 
       def process_args(args = ARGV)
         begin
-          @to_run.concat options.parse!(args)
+          options.order!(args) {|arg| @to_run << arg}
         rescue OptionParser::ParseError => e
           puts e
           puts options
