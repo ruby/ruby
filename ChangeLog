@@ -1,7 +1,14 @@
+Sun Jan 22 22:09:52 2006  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (POST_GETCONTEXT): define separately from PRE_GETCONTEXT on
+	  IA64 to avoid reusing variable address.
+
 Sun Jan 22 20:03:35 2006  Tanaka Akira  <akr@m17n.org>
 
-	* eval.c (ruby_setjmp): workaround for FreeBSD/i386
-	  getcontext/setcontext bug.
+	* eval.c (ruby_setjmp): define PRE_GETCONTEXT and POST_GETCONTEXT
+	  instead of FUNCTION_CALL_MAY_RETURN_TWICE.
+	  define PRE_GETCONTEXT to clear carry flag for workaround of
+	  FreeBSD/i386 getcontext/setcontext bug.
 	  [ruby-dev:28263]
 
 Thu Jan 19 22:19:18 2006  Minero Aoki  <aamine@loveruby.net>
