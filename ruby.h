@@ -583,7 +583,7 @@ NORETURN(void rb_throw(const char*,VALUE));
 
 VALUE rb_require(const char*);
 
-#ifdef IA64
+#ifdef __ia64
 void ruby_init_stack(VALUE*, void*);
 #define RUBY_INIT_STACK \
     VALUE variable_in_this_stack_frame; \
