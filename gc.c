@@ -440,7 +440,7 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
-#ifdef IA64
+#ifdef __ia64
 VALUE *rb_gc_register_stack_start = 0;
 #endif
 
@@ -1346,7 +1346,7 @@ garbage_collect(void)
     else
 	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END + 1);
 #endif
-#ifdef IA64
+#ifdef __ia64
     /* mark backing store (flushed register stack) */
     /* the basic idea from guile GC code                         */
     rb_gc_mark_locations(rb_gc_register_stack_start, (VALUE*)rb_ia64_bsp());
@@ -1425,7 +1425,7 @@ ruby_set_stack_size(size_t size)
 void
 Init_stack(VALUE *addr)
 {
-#ifdef IA64
+#ifdef __ia64
     if (rb_gc_register_stack_start == 0) {
 # if defined(__FreeBSD__)
         /*
@@ -1486,7 +1486,7 @@ Init_stack(VALUE *addr)
 }
 
 void ruby_init_stack(VALUE *addr
-#ifdef IA64
+#ifdef __ia64
     , void *bsp
 #endif
     )
@@ -1497,7 +1497,7 @@ void ruby_init_stack(VALUE *addr
                     rb_gc_stack_start < addr)) {
         rb_gc_stack_start = addr;
     }
-#ifdef IA64
+#ifdef __ia64
     if (!rb_gc_register_stack_start ||
         (VALUE*)bsp < rb_gc_register_stack_start) {
         rb_gc_register_stack_start = (VALUE*)bsp;
