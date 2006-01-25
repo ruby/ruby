@@ -1,3 +1,8 @@
+Wed Jan 25 22:29:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, dln.c, file.c, intern.h, missing.h (eaccess): use
+	  system routine if provided.  fixed: [ruby-core:07195]
+
 Sun Jan 22 23:27:13 2006  Go Noguchi  <gonoguti@yahoo.co.jp>
 
 	* lib/test/unit/autorunner.rb (process_args): ignore arguments after

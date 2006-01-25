@@ -282,7 +282,6 @@ VALUE rb_thread_local_aset(VALUE, ID, VALUE);
 void rb_thread_atfork(void);
 VALUE rb_exec_recursive(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
 /* file.c */
-int eaccess(const char*, int);
 VALUE rb_file_s_expand_path(int, VALUE *);
 VALUE rb_file_expand_path(VALUE, VALUE);
 void rb_file_const(const char*, VALUE);
