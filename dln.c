@@ -89,8 +89,6 @@ char *getenv();
 # include <image.h>
 #endif
 
-int eaccess();
-
 #ifndef NO_DLN_LOAD
 
 #if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__) && !defined(_UNICOSMP)

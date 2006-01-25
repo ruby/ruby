@@ -39,6 +39,10 @@ extern char *crypt _((char *, char *));
 extern int dup2 _((int, int));
 #endif
 
+#ifndef HAVE_EACCESS
+extern int eaccess _((const char*, int));
+#endif
+
 #ifndef HAVE_FINITE
 extern int finite _((double));
 #endif

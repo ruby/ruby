@@ -849,6 +849,7 @@ group_member(gid)
 #  define S_IXUGO		(S_IXUSR | S_IXGRP | S_IXOTH)
 #endif
 
+#ifndef HAVE_EACCESS
 int
 eaccess(path, mode)
      const char *path;
@@ -890,6 +891,7 @@ eaccess(path, mode)
     return access(path, mode);
 #endif
 }
+#endif
 
 
 /*

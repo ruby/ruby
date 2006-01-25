@@ -221,7 +221,6 @@ VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
 VALUE rb_funcall_rescue __((VALUE, ID, int, ...));
 /* file.c */
-int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
 VALUE rb_file_expand_path _((VALUE, VALUE));
 void rb_file_const _((const char*, VALUE));
