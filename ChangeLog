@@ -1,3 +1,7 @@
+Thu Jan 26 15:55:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: turn on do_not_reverse_lookup by default. 
+
 Wed Jan 25 22:29:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, dln.c, file.c, intern.h, missing.h (eaccess): use

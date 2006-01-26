@@ -70,7 +70,7 @@
 #endif
 #include "sockport.h"
 
-static int do_not_reverse_lookup = 0;
+static int do_not_reverse_lookup = 1;
 #define FMODE_NOREVLOOKUP 0x100
 
 VALUE rb_cBasicSocket;
