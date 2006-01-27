@@ -1,3 +1,9 @@
+Sat Jan 28 07:56:57 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/usage.rb: support "a:0:33" style caller[-1]. In this case
+	  file name is "a:0". I don't know this really happens though...
+	  [ruby-Bugs:3344]
+
 Wed Jan 25 22:29:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, dln.c, file.c, intern.h, missing.h (eaccess): use
@@ -88,9 +94,9 @@ Thu Jan 12 11:53:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  [new feature] support 'command' option which is called just before
 	  popping up the balloon help.
 
-Tue Jan 11 15:00:00 2006  Ville Mattila  <mulperi@iki.fi>
+Wed Jan 11 15:00:00 2006  Ville Mattila  <mulperi@iki.fi>
 
-	* io.c (READ_PENDING*): Support solaris 64-bit enviroments.
+	* io.c (READ_PENDING*): Support solaris 64-bit environments.
 	  Solaris defines a opaque FILE struct when compiling 64 bit
 	  binaries. This means that we dont have access to _ptr etc.
 	  members anymore. The solution by Steven Lumos is to define
