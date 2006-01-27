@@ -5,3 +5,4 @@ iconv/iconv.c
 stringio/stringio.c
 strscan/strscan.c
 zlib/zlib.c
+win32ole
