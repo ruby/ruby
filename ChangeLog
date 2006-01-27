@@ -1,3 +1,9 @@
+Sat Jan 28 07:49:30 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/usage.rb: support "a:0:33" style caller[-1]. In this case
+	  file name is "a:0". I don't know this really happens though...
+	  [ruby-Bugs:3344]
+
 Thu Jan 26 15:55:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: turn on do_not_reverse_lookup by default. 
