@@ -1134,6 +1134,10 @@ syck_resolver_transfer( self, type, val )
                             type = subclass;
                             subclass = cYObject;
                         }
+                        else /* workaround for SEGV. real fix please */
+                        {
+                            rb_raise( rb_eTypeError, "invalid subclass" );
+                        }
                     }
                     break;
                 }
