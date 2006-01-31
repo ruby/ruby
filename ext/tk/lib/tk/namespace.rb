@@ -14,7 +14,12 @@ class TkNamespace < TkObject
   Tk_Namespace_ID_TBL = TkCore::INTERP.create_table
   Tk_Namespace_ID = ["ns".freeze, "00000".taint].freeze
 
-  TkCore::INTERP.init_ip_env{ Tk_Namespace_ID_TBL.clear }
+  Tk_NsCode_RetObjID_TBL = TkCore::INTERP.create_table
+
+  TkCore::INTERP.init_ip_env{
+    Tk_Namespace_ID_TBL.clear
+    Tk_NsCode_RetObjID_TBL.clear
+  }
 
   def TkNamespace.id2obj(id)
     Tk_Namespace_ID_TBL[id]? Tk_Namespace_ID_TBL[id]: id
@@ -152,8 +157,9 @@ class TkNamespace < TkObject
   #####################################
 
   class NsCode < TkObject
-    def initialize(scope)
+    def initialize(scope, use_obj_id = false)
       @scope = scope + ' '
+      @use_obj_id = use_obj_id
     end
     def path
       @scope
@@ -162,7 +168,11 @@ class TkNamespace < TkObject
       @scope
     end
     def call(*args)
-      TkCore::INTERP._eval_without_enc(@scope + array2tk_list(args))
+      ret = TkCore::INTERP._eval_without_enc(@scope + array2tk_list(args))
+      if @use_obj_id
+        ret = TkNamespace::Tk_NsCode_RetObjID_TBL.delete(ret.to_i)
+      end
+      ret
     end
   end
 
@@ -264,6 +274,7 @@ class TkNamespace < TkObject
   def self.code(script = Proc.new)
     TkNamespace.new('').code(script)
   end
+=begin
   def code(script = Proc.new)
     if script.kind_of?(String)
       cmd = proc{|*args| ScopeArgs.new(@fullname,*args).instance_eval(script)}
@@ -274,6 +285,29 @@ class TkNamespace < TkObject
     end
     TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code', 
                                                 _get_eval_string(cmd, false)))
+  end
+=end
+  def code(script = Proc.new)
+    if script.kind_of?(String)
+      cmd = proc{|*args|
+        ret = ScopeArgs.new(@fullname,*args).instance_eval(script)
+        id = ret.object_id
+        TkNamespace::Tk_NsCode_RetObjID_TBL[id] = ret
+        id
+      }
+    elsif script.kind_of?(Proc)
+      cmd = proc{|*args|
+        ret = ScopeArgs.new(@fullname,*args).instance_eval(&script)
+        id = ret.object_id
+        TkNamespace::Tk_NsCode_RetObjID_TBL[id] = ret
+        id
+      }
+    else
+      fail ArgumentError, "String or Proc is expected"
+    end
+    TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code', 
+                                                _get_eval_string(cmd, false)), 
+                            true)
   end
 
   def self.current_path
@@ -339,6 +373,7 @@ class TkNamespace < TkObject
     #tk_call('namespace', 'eval', namespace, cmd, *args)
     TkNamespace.new(namespece).eval(cmd, *args)
   end
+=begin
   def eval(cmd = Proc.new, *args)
     #TkNamespace.eval(@fullname, cmd, *args)
     #ns_tk_call(cmd, *args)
@@ -347,6 +382,13 @@ class TkNamespace < TkObject
     # uninstall_cmd(TkCore::INTERP._split_tklist(code_obj.path)[-1])
     uninstall_cmd(_fromUTF8(TkCore::INTERP._split_tklist(_toUTF8(code_obj.path))[-1]))
     tk_tcl2ruby(ret)
+  end
+=end
+  def eval(cmd = Proc.new, *args)
+    code_obj = code(cmd)
+    ret = code_obj.call(*args)
+    uninstall_cmd(_fromUTF8(TkCore::INTERP._split_tklist(_toUTF8(code_obj.path))[-1]))
+    ret
   end
 
   def self.exist?(ns)

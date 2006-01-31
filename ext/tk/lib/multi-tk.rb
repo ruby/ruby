@@ -1702,6 +1702,35 @@ class MultiTkIp
   alias background_eval_string bg_eval_string
   alias bg_eval_str bg_eval_string
   alias background_eval_str bg_eval_string
+
+  def eval(*args, &blk)
+    if block_given?
+      eval_proc(*args, &blk)
+    elsif args[0]
+      if args[0].respond_to?(:call)
+        eval_proc(*args)
+      else
+        eval_string(*args)
+      end
+    else
+      fail ArgumentError, "no argument to eval"
+    end
+  end
+
+  def bg_eval(*args, &blk)
+    if block_given?
+      bg_eval_proc(*args, &blk)
+    elsif args[0]
+      if args[0].respond_to?(:call)
+        bg_eval_proc(*args)
+      else
+        bg_eval_string(*args)
+      end
+    else
+      fail ArgumentError, "no argument to eval"
+    end
+  end
+  alias background_eval bg_eval
 end
 
 class << MultiTkIp
@@ -1711,7 +1740,39 @@ class << MultiTkIp
     __getip.eval_proc(*args, &blk)
   end
   alias call eval_proc
-  alias eval_string eval_proc
+
+  def bg_eval_proc(*args, &blk)
+    # class ==> interp object
+    __getip.bg_eval_proc(*args, &blk)
+  end
+  alias background_eval_proc bg_eval_proc
+  alias thread_eval_proc bg_eval_proc
+  alias bg_call bg_eval_proc
+  alias background_call bg_eval_proc
+
+  def eval_string(cmd, *eval_args)
+    # class ==> interp object
+    __getip.eval_string(cmd, *eval_args)
+  end
+  alias eval_str eval_string
+
+  def bg_eval_string(cmd, *eval_args)
+    # class ==> interp object
+    __getip.bg_eval_string(cmd, *eval_args)
+  end
+  alias background_eval_string bg_eval_string
+  alias bg_eval_str bg_eval_string
+  alias background_eval_str bg_eval_string
+
+  def eval(*args, &blk)
+    # class ==> interp object
+    __getip.eval(*args, &blk)
+  end
+  def bg_eval(*args, &blk)
+    # class ==> interp object
+    __getip.bg_eval(*args, &blk)
+  end
+  alias background_eval bg_eval
 end
 
 
