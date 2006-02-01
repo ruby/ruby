@@ -196,8 +196,6 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
     rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
 }
 
-static VALUE hash_alloc(VALUE);
-
 static VALUE
 hash_alloc(VALUE klass)
 {
@@ -1690,7 +1688,7 @@ ruby_setenv(const char *name, const char *value)
      *         RTL's environ global variable directly yet.
      */
     SetEnvironmentVariable(name,value);
-#elif defined __CYGWIN__
+#elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
     if (value)
