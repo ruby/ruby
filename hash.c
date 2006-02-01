@@ -1812,7 +1812,7 @@ ruby_setenv(name, value)
      *         RTL's environ global variable directly yet.
      */
     SetEnvironmentVariable(name,value);
-#elif defined __CYGWIN__
+#elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
 #undef setenv
 #undef unsetenv
     if (value)

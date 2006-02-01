@@ -971,7 +971,14 @@ VALUE rb_progname;
 VALUE rb_argv;
 VALUE rb_argv0;
 
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE) && !defined(DOSISH)
+#if defined(PSTAT_SETCMD) || defined(HAVE_SETPROCTITLE)
+#elif defined(_WIN32)
+#elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
+#else
+#define USE_ENVSPACE_FOR_ARG0
+#endif
+
+#ifdef USE_ENVSPACE_FOR_ARG0
 static struct {
     char *begin, *end;
 } envspace;
@@ -1047,7 +1054,7 @@ set_arg0(val, id)
 		break;
 	    }
 	}
-#ifndef DOSISH
+#if defined(USE_ENVSPACE_FOR_ARG0)
 	if (s + 1 == envspace.begin) {
 	    s = envspace.end;
 	    ruby_setenv("", NULL); /* duplicate environ vars */

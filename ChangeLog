@@ -8,7 +8,7 @@ Tue Jan 31 11:58:51 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Tue Jan 31 00:10:26 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_resolver_transfer): workaround for SEGV.
-	  ex: YAML.load("!map:B {}"). [ruby-core:7217]
+	  ex: ruby -ryaml -e 'YAML.load("!map:B {}")' [ruby-core:7217]
 
 Sat Jan 28 07:56:57 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
