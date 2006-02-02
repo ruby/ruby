@@ -1,3 +1,8 @@
+Thu Feb  2 14:45:53 2006  Ville Mattila  <ville.mattila@stonesoft.com>
+
+	* configure.in: The isinf is not regognized by autoconf
+	  library guesser on solaris 10. [ruby-core:7138]
+
 Tue Jan 31 11:58:51 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add MultiTkIp#eval and bg_eval.

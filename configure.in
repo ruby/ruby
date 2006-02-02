@@ -398,6 +398,9 @@ bow)		ac_cv_func_setitimer=no
 		;;
 superux*)     ac_cv_func_setitimer=no
               ;;
+solaris*2.10)  ac_cv_func_isinf=yes
+               LIBS="-lm $LIBS"
+              ;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
