@@ -314,7 +314,6 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
      */
     S_MEMCPY( e->marker, str, char, len );
     e->marker += len;
-    e->marker[0] = '\0';
 }
 
 /*

@@ -1,3 +1,9 @@
+Thu Feb  2 23:51:18 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/emitter.c (syck_emitter_write): should not set '\0' on
+	  emitter's marker. if marker points to the end of buffer, this causes
+	  buffer overrun. (ex: YAML.dump("." * 12288))
+
 Thu Feb  2 16:01:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (eval): need not to protect $SAFE value.
