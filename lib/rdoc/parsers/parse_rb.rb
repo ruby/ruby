@@ -1471,8 +1471,12 @@ module RDoc
       if tk.kind_of?(TkSYMBEG)
         set_token_position(tk.line_no, tk.char_no)
         tk1 = get_tk
-        if tk1.kind_of?(TkId) || tk1.kind_of?(TkOp)
-          tk = Token(TkSYMBOL).set_text(":" + tk1.name)
+        if tk1.kind_of?(TkId) || tk1.kind_of?(TkOp) || tk1.kind_of?(TkSTRING)
+          if tk1.respond_to?(:name)
+            tk = Token(TkSYMBOL).set_text(":" + tk1.name)
+          else
+            tk = Token(TkSYMBOL).set_text(":" + tk1.text)
+          end
           # remove the identifier we just read (we're about to
           # replace it with a symbol)
           @token_listeners.each do |obj|
