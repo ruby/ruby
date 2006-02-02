@@ -3,6 +3,15 @@ Thu Feb  2 14:45:53 2006  Ville Mattila  <ville.mattila@stonesoft.com>
 	* configure.in: The isinf is not regognized by autoconf
 	  library guesser on solaris 10. [ruby-core:7138]
 
+Wed Feb  1 22:01:47 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* configure.in, hash.c (ruby_setenv): use setenv(3) and unsetenv(3)
+	  where they are supported. modifing environ variable seems to
+	  segfault solaris 10. [ruby-core:7276] [ruby-dev:28270]
+
+	* ruby.c (set_arg0): if use setenv(3), environ space cannot be used
+	  for altering argv[0].
+
 Tue Jan 31 11:58:51 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add MultiTkIp#eval and bg_eval.
