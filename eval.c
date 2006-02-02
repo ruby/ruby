@@ -6366,7 +6366,6 @@ eval(self, src, scope, file, line)
     POP_TAG();
     POP_CLASS();
     ruby_in_eval--;
-    ruby_safe_level = safe;
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;
 

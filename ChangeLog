@@ -1,3 +1,8 @@
+Thu Feb  2 16:01:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): need not to protect $SAFE value.
+	  [ruby-core:07177]
+
 Thu Feb  2 14:45:53 2006  Ville Mattila  <ville.mattila@stonesoft.com>
 
 	* configure.in: The isinf is not regognized by autoconf
@@ -11,6 +16,11 @@ Wed Feb  1 22:01:47 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.c (set_arg0): if use setenv(3), environ space cannot be used
 	  for altering argv[0].
+
+Tue Jan 31 14:46:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_select): update RDoc description.
+	  [ruby-core:7254]
 
 Tue Jan 31 11:58:51 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -227,6 +237,12 @@ Thu Dec 29 17:02:07 2005  Tanaka Akira  <akr@m17n.org>
 
 	* test/ruby/envutil.rb (EnvUtil.rubybin): search "ruby" instead of
 	  "miniruby".  [ruby-dev:28140]
+
+Tue Dec 27 16:59:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/drb/drbtest.rb (DRbService::self.ext_service): increase
+	  timeout limit.  a patch from Kazuhiro NISHIYAMA
+	  <zn at mbf.nifty.com>. [ruby-dev:28132]
 
 Tue Dec 27 08:29:18 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
