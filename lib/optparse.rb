@@ -1457,8 +1457,8 @@ class OptionParser
       : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
-  def search(id, k)
-    visit(:search, id, k) do |k|
+  def search(id, key)
+    visit(:search, id, key) do |k|
       return k unless block_given?
       return yield(k)
     end

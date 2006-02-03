@@ -522,7 +522,7 @@ get_iconv_opt(struct rb_iconv_opt_t *opt, VALUE options)
     opt->transliterate = Qundef;
     opt->discard_ilseq = Qundef;
     if (!NIL_P(options)) {
-	rb_iterate(rb_each, options, get_iconv_opt_i, (VALUE)opt);
+	rb_block_call(options, rb_intern("each"), 0, 0, get_iconv_opt_i, (VALUE)opt);
     }
 }
 

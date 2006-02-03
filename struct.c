@@ -667,21 +667,15 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 
 /*
  *  call-seq:
- *     struct.select(fixnum, ... )   => array
  *     struct.select {|i| block }    => array
  *  
- *  The first form returns an array containing the elements in
- *  <i>struct</i> corresponding to the given indices. The second
- *  form invokes the block passing in successive elements from
+ *  Invokes the block passing in successive elements from
  *  <i>struct</i>, returning an array containing those elements
  *  for which the block returns a true value (equivalent to
  *  <code>Enumerable#select</code>).
  *     
  *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
  *     l = Lots.new(11, 22, 33, 44, 55, 66)
- *     l.select(1, 3, 5)               #=> [22, 44, 66]
- *     l.select(0, 2, 4)               #=> [11, 33, 55]
- *     l.select(-1, -3, -5)            #=> [66, 44, 22]
  *     l.select {|v| (v % 2).zero? }   #=> [22, 44, 66]
  */
 

@@ -571,7 +571,7 @@ yaml_org_handler( n, ref )
                             VALUE dup = rb_funcall( tmph, s_dup, 0 );
                             tmp = rb_ary_reverse( tmp );
                             rb_ary_push( tmp, obj );
-                            rb_iterate( rb_each, tmp, syck_merge_i, dup );
+                            rb_block_call(tmp, rb_intern("each"), 0, 0, syck_merge_i, dup);
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -1006,7 +1006,7 @@ syck_resolver_node_import( self, node )
                             VALUE dup = rb_funcall( end, s_dup, 0 );
                             v = rb_ary_reverse( v );
                             rb_ary_push( v, obj );
-                            rb_iterate( rb_each, v, syck_merge_i, dup );
+                            rb_block_call(v, rb_intern("each"), 0, 0, syck_merge_i, dup);
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -1175,7 +1175,7 @@ syck_resolver_transfer( self, type, val )
                 }
                 else if ( !NIL_P( obj ) && rb_obj_is_instance_of( val, rb_cHash ) )
                 {
-                    rb_iterate( rb_each, val, syck_set_ivars, obj );
+                    rb_block_call(val, rb_intern("each"), 0, 0, syck_set_ivars, obj);
                 }
             }
             else 

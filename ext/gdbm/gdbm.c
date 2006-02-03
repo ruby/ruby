@@ -530,13 +530,6 @@ fgdbm_invert(obj)
 
 static VALUE each_pair _((VALUE));
 
-static VALUE
-each_pair(obj)
-    VALUE obj;
-{
-    return rb_funcall(obj, rb_intern("each_pair"), 0, 0);
-}
-
 static VALUE fgdbm_store _((VALUE,VALUE,VALUE));
 
 static VALUE
@@ -555,7 +548,7 @@ static VALUE
 fgdbm_update(obj, other)
     VALUE obj, other;
 {
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 
@@ -564,7 +557,7 @@ fgdbm_replace(obj, other)
     VALUE obj, other;
 {
     fgdbm_clear(obj);
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 

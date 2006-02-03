@@ -2672,6 +2672,7 @@ fix_size(VALUE fix)
 static VALUE
 int_upto(VALUE from, VALUE to)
 {
+    RETURN_ENUMERATOR(from, 1, &to);
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 
@@ -2710,6 +2711,7 @@ int_upto(VALUE from, VALUE to)
 static VALUE
 int_downto(VALUE from, VALUE to)
 {
+    RETURN_ENUMERATOR(from, 1, &to);
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 
@@ -2749,6 +2751,7 @@ int_downto(VALUE from, VALUE to)
 static VALUE
 int_dotimes(VALUE num)
 {
+    RETURN_ENUMERATOR(num, 0, 0);
     if (FIXNUM_P(num)) {
 	long i, end;
 

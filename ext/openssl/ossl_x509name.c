@@ -125,7 +125,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	    VALUE args;
 	    if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
 	    args = rb_ary_new3(2, self, template);
-	    rb_iterate(rb_each, tmp, ossl_x509name_init_i, args);
+	    rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i, args);
 	}
 	else{
 	    unsigned char *p;

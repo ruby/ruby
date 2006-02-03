@@ -1,3 +1,8 @@
+Fri Feb  3 17:57:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c: unify ruby_class (for method definition) and ruby_cbase
+	  (for constant reference).
+
 Fri Feb  3 15:02:10 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/syck.c (syck_move_tokens): should reset p->cursor or etc
@@ -15,6 +20,17 @@ Thu Feb  2 17:13:01 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser#get_tk): added
 	  support of :'string' style Symbol.
 
+Thu Feb  2 16:01:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): use TMP_ALLOC() instead of allocating
+	  a temporary array object.
+
+	* eval.c (eval): need not to protect $SAFE value.
+	  [ruby-core:07177]
+
+	* error.c (Init_Exception): change NameError to direct subclass of
+	  Exception so that default rescue do not handle it silently.
+
 Thu Feb  2 14:45:53 2006  Ville Mattila  <ville.mattila@stonesoft.com>
 
 	* configure.in: The isinf is not regognized by autoconf
@@ -29,12 +45,32 @@ Wed Feb  1 22:01:47 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ruby.c (set_arg0): if use setenv(3), environ space cannot be used
 	  for altering argv[0].
 
+Tue Jan 31 14:46:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_select): update RDoc description.
+	  [ruby-core:7254]
+
 Tue Jan 31 11:58:51 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add MultiTkIp#eval and bg_eval.
 
 	* ext/tk/lib/tk/namespace.rb: TkNamespace#eval was enbugged at the
 	  last commit. Now it will return a proper object.
+
+Tue Jan 31 08:07:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_upto): return an enumerator if no block is
+	  attached to the method.
+
+	* numeric.c (int_downto): ditto.
+
+	* numeric.c (int_dotimes): ditto.
+
+	* enum.c (enum_first): new method Enumerable#first to take first n
+	  element from an enumerable.
+
+	* enum.c (enum_group_by): new method Enumerable#group_by that
+	  groups enumerable values according to their block values.
 
 Tue Jan 31 00:08:22 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

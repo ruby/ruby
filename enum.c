@@ -17,12 +17,6 @@
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
 
-VALUE
-rb_each(VALUE obj)
-{
-    return rb_funcall(obj, id_each, 0, 0);
-}
-
 static VALUE
 grep_i(VALUE i, VALUE *arg)
 {
@@ -68,7 +62,7 @@ enum_grep(VALUE obj, VALUE pat)
     arg[0] = pat;
     arg[1] = ary;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)arg);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)arg);
     
     return ary;
 }
@@ -117,13 +111,13 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 	rb_scan_args(argc, argv, "1", &item);
 	args[0] = item;
 	args[1] = 0;
-	rb_iterate(rb_each, obj, count_i, (VALUE)&args);
+	rb_block_call(obj, id_each, 0, 0, count_i, (VALUE)&args);
 	return INT2NUM(args[1]);
     }
     else {
 	long n = 0;
 
-	rb_iterate(rb_each, obj, count_iter_i, (VALUE)&n);
+	rb_block_call(obj, id_each, 0, 0, count_iter_i, (VALUE)&n);
 	return INT2NUM(n);
     }
 }
@@ -161,7 +155,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "01", &if_none);
     RETURN_ENUMERATOR(obj, argc, argv);
-    rb_iterate(rb_each, obj, find_i, (VALUE)&memo);
+    rb_block_call(obj, id_each, 0, 0, find_i, (VALUE)&memo);
     if (memo != Qundef) {
 	return memo;
     }
@@ -201,7 +195,7 @@ enum_find_all(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
-    rb_iterate(rb_each, obj, find_all_i, ary);
+    rb_block_call(obj, id_each, 0, 0, find_all_i, ary);
 
     return ary;
 }
@@ -234,7 +228,7 @@ enum_reject(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
-    rb_iterate(rb_each, obj, reject_i, ary);
+    rb_block_call(obj, id_each, 0, 0, reject_i, ary);
 
     return ary;
 }
@@ -276,7 +270,7 @@ enum_collect(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
-    rb_iterate(rb_each, obj, collect_i, ary);
+    rb_block_call(obj, id_each, 0, 0, collect_i, ary);
 
     return ary;
 }
@@ -296,7 +290,7 @@ enum_to_a(VALUE obj)
 {
     VALUE ary = rb_ary_new();
 
-    rb_iterate(rb_each, obj, collect_all, ary);
+    rb_block_call(obj, id_each, 0, 0, collect_all, ary);
 
     return ary;
 }
@@ -351,7 +345,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 
     if (rb_scan_args(argc, argv, "01", &memo) == 0)
 	memo = Qundef;
-    rb_iterate(rb_each, obj, inject_i, (VALUE)&memo);
+    rb_block_call(obj, id_each, 0, 0, inject_i, (VALUE)&memo);
     if (memo == Qundef) return Qnil;
     return memo;
 }
@@ -389,9 +383,101 @@ enum_partition(VALUE obj)
 
     ary[0] = rb_ary_new();
     ary[1] = rb_ary_new();
-    rb_iterate(rb_each, obj, partition_i, (VALUE)ary);
+    rb_block_call(obj, id_each, 0, 0, partition_i, (VALUE)ary);
 
     return rb_assoc_new(ary[0], ary[1]);
+}
+
+static VALUE
+group_by_i(VALUE i, VALUE hash)
+{
+    VALUE group = rb_yield(i);
+    VALUE values;
+
+    values = rb_hash_aref(hash, group);
+    if (NIL_P(values)) {
+	values = rb_ary_new3(1, i);
+	rb_hash_aset(hash, group, values);
+    }
+    else {
+	rb_ary_push(values, i);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.group_by {| obj | block }  => a_hash
+ *  
+ *  Returns a hash, which keys are evaluated result from the
+ *  block, and values are arrays of elements in <i>enum</i>
+ *  corresponding to the key.
+ *     
+ *     (1..6).group_by {|i| i%3}   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
+ *     
+ */
+
+static VALUE
+enum_group_by(VALUE obj)
+{
+    VALUE hash;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    hash = rb_hash_new();
+    rb_block_call(obj, id_each, 0, 0, group_by_i, hash);
+
+    return hash;
+}
+
+static VALUE
+first_i(VALUE i, VALUE *ary)
+{
+    if (NIL_P(ary[0])) {
+	ary[1] = i;
+	rb_iter_break();
+    }
+    else {
+	long n = NUM2LONG(ary[0]);
+
+	if (n <= 0) {
+	    rb_iter_break();
+	}
+	rb_ary_push(ary[1], i);
+	n--;
+	ary[0] = INT2NUM(n);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.first      -> obj or nil
+ *     enum.first(n)   -> an_array
+ *  
+ *  Returns the first element, or the first +n+ elements, of the enumerable.
+ *  If the enumerable is empty, the first form returns <code>nil</code>, and the
+ *  second form returns an empty array.
+ *     
+ */
+
+static VALUE
+enum_first(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE n, ary[2];
+    
+    rb_scan_args(argc, argv, "01", &n);
+
+    if (NIL_P(n)) {
+	ary[0] = ary[1] = Qnil;
+    }
+    else {
+	ary[0] = n;
+	ary[1] = rb_ary_new2(NUM2LONG(n));
+    }
+    rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)ary);
+
+    return ary[1];
 }
 
 /*
@@ -525,7 +611,7 @@ enum_sort_by(VALUE obj)
 	ary = rb_ary_new();
     }
     RBASIC(ary)->klass = 0;
-    rb_iterate(rb_each, obj, sort_by_i, ary);
+    rb_block_call(obj, id_each, 0, 0, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
 	ruby_qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp, 0);
     }
@@ -581,7 +667,7 @@ enum_all(VALUE obj)
 {
     VALUE result = Qtrue;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? all_iter_i : all_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? all_iter_i : all_i, (VALUE)&result);
     return result;
 }
 
@@ -628,7 +714,7 @@ enum_any(VALUE obj)
 {
     VALUE result = Qfalse;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? any_iter_i : any_i, (VALUE)&result);
     return result;
 }
 
@@ -681,7 +767,7 @@ enum_one(VALUE obj)
 {
     VALUE result = Qundef;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? one_iter_i : one_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? one_iter_i : one_i, (VALUE)&result);
     if (result == Qundef) return Qfalse;
     return result;
 }
@@ -726,7 +812,7 @@ enum_none(VALUE obj)
 {
     VALUE result = Qtrue;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? none_iter_i : none_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? none_iter_i : none_i, (VALUE)&result);
     return result;
 }
 
@@ -784,7 +870,7 @@ enum_min(VALUE obj)
 {
     VALUE result = Qundef;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
     if (result == Qundef) return Qnil;
     return result;
 }
@@ -842,7 +928,7 @@ enum_max(VALUE obj)
 {
     VALUE result = Qundef;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
     if (result == Qundef) return Qnil;
     return result;
 }
@@ -884,7 +970,7 @@ enum_min_by(VALUE obj)
 
     memo[0] = Qundef;
     memo[1] = Qnil;
-    rb_iterate(rb_each, obj, min_by_i, (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
     return memo[1];
 }
 
@@ -925,7 +1011,7 @@ enum_max_by(VALUE obj)
 
     memo[0] = Qundef;
     memo[1] = Qnil;
-    rb_iterate(rb_each, obj, max_by_i, (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
     return memo[1];
 }
 
@@ -959,7 +1045,7 @@ enum_member(VALUE obj, VALUE val)
 
     memo[0] = val;
     memo[1] = Qfalse;
-    rb_iterate(rb_each, obj, member_i, (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, member_i, (VALUE)memo);
     return memo[1];
 }
 
@@ -993,7 +1079,7 @@ enum_each_with_index(VALUE obj)
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
-    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&memo);
+    rb_block_call(obj, id_each, 0, 0, each_with_index_i, (VALUE)&memo);
     return obj;
 }
 
@@ -1057,7 +1143,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     memo[0] = result;
     memo[1] = rb_ary_new4(argc, argv);
     memo[2] = 0;
-    rb_iterate(rb_each, obj, zip_i, (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, zip_i, (VALUE)memo);
 
     return result;
 }
@@ -1094,6 +1180,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
+    rb_define_method(rb_mEnumerable,"group_by", enum_group_by, 0);
+    rb_define_method(rb_mEnumerable,"first", enum_first, -1);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"one?", enum_one, 0);

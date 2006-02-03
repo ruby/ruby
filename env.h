@@ -22,7 +22,7 @@ RUBY_EXTERN struct FRAME {
     struct FRAME *prev;
     struct FRAME *tmp;
     struct RNode *node;
-    int iter;
+    struct BLOCK *block;
     int flags;
     unsigned long uniq;
 } *ruby_frame;
@@ -45,8 +45,8 @@ RUBY_EXTERN struct SCOPE {
 #define SCOPE_DONT_RECYCLE 4
 
 RUBY_EXTERN int ruby_in_eval;
-
-RUBY_EXTERN VALUE ruby_class;
+VALUE ruby_current_class_object(void);
+#define ruby_class ruby_current_class_object()
 
 struct RVarmap {
     struct RBasic super;
@@ -72,7 +72,6 @@ struct BLOCK {
     struct SCOPE *scope;
     VALUE klass;
     struct RNode *cref;
-    int iter;
     int vmode;
     int flags;
     int uniq;
@@ -80,8 +79,6 @@ struct BLOCK {
     VALUE orig_thread;
     VALUE wrapper;
     VALUE block_obj;
-    struct BLOCK *outer;
-    struct BLOCK *prev;
 };
 
 #define BLOCK_D_SCOPE 1

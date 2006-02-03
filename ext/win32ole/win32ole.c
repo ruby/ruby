@@ -2218,7 +2218,7 @@ ole_invoke(argc, argv, self, wFlags)
         op.dp.cArgs = cNamedArgs + argc - 2;
         op.pNamedArgs = ALLOCA_N(OLECHAR*, cNamedArgs + 1);
         op.dp.rgvarg = ALLOCA_N(VARIANTARG, op.dp.cArgs);
-        rb_iterate(rb_each, param, hash2named_arg, (VALUE)&op);
+        rb_block_call(param, rb_intern("each"), 0, 0, hash2named_arg, (VALUE)&op);
 
         pDispID = ALLOCA_N(DISPID, cNamedArgs + 1);
         op.pNamedArgs[0] = ole_mb2wc(StringValuePtr(cmd), -1);

@@ -961,7 +961,7 @@ Init_Exception(void)
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
-    rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_eNameError     = rb_define_class("NameError", rb_eException);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);

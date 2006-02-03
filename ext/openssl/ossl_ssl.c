@@ -324,7 +324,7 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_extra_cert(self);
     if(!NIL_P(val)){
-	rb_iterate(rb_each, val, ossl_sslctx_add_extra_chain_cert_i, self);
+	rb_block_call(val, rb_intern("each"), 0, 0, ossl_sslctx_add_extra_chain_cert_i, self);
     }
 
     /* private key may be bundled in certificate file. */

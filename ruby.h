@@ -575,6 +575,7 @@ VALUE rb_yield_splat(VALUE);
 int rb_block_given_p(void);
 void rb_need_block(void);
 VALUE rb_iterate(VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_iterate_method(VALUE,ID,VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_rescue(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_rescue2(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...);
 VALUE rb_ensure(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);

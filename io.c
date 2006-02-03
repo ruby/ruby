@@ -5241,7 +5241,7 @@ argf_each_line(int argc, VALUE *argv, VALUE self)
     if (TYPE(current_file) != T_FILE) {
 	for (;;) {
 	    if (!next_argv()) return argf;
-	    rb_iterate(rb_each, current_file, rb_yield, 0);
+	    rb_block_call(current_file, rb_intern("each"), 0, 0, rb_yield, 0);
 	    next_p = 1;
 	}
     }

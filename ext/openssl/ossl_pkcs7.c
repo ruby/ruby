@@ -583,7 +583,7 @@ ossl_pkcs7_set_certificates(VALUE self, VALUE ary)
 
     certs = pkcs7_get_certs_or_crls(self, 1);
     while((cert = sk_X509_pop(certs))) X509_free(cert);
-    rb_iterate(rb_each, ary, ossl_pkcs7_set_certs_i, self);
+    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_certs_i, self);
 
     return ary;
 }
@@ -623,7 +623,7 @@ ossl_pkcs7_set_crls(VALUE self, VALUE ary)
 
     crls = pkcs7_get_certs_or_crls(self, 0);
     while((crl = sk_X509_CRL_pop(crls))) X509_CRL_free(crl);
-    rb_iterate(rb_each, ary, ossl_pkcs7_set_crls_i, self);
+    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_crls_i, self);
 
     return ary;
 }

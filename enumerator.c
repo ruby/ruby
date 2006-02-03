@@ -32,18 +32,6 @@ proc_call(VALUE proc, VALUE args)
     return rb_proc_call(proc, args);
 }
 
-static VALUE
-method_call(VALUE method, VALUE args)
-{
-    int argc = 0;
-    VALUE *argv = 0;
-    if (args) {
-	argc = RARRAY(args)->len;
-	argv = RARRAY(args)->ptr;
-    }
-    return rb_method_call(argc, argv, method);
-}
-
 struct enumerator {
     VALUE method;
     VALUE proc;
@@ -168,7 +156,7 @@ enum_each_slice(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_iterate(rb_each, obj, each_slice_i, (VALUE)args);
+    rb_block_call(obj, rb_intern("each"), 0, 0, each_slice_i, (VALUE)args);
 
     ary = args[0];
     if (RARRAY(ary)->len > 0) rb_yield(ary);
@@ -235,7 +223,7 @@ enum_each_cons(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_iterate(rb_each, obj, each_cons_i, (VALUE)args);
+    rb_block_call(obj, rb_intern("each"), 0, 0, each_cons_i, (VALUE)args);
 
     return Qnil;
 }
@@ -315,14 +303,6 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
     return enumerator_init(enumerator_allocate(rb_cEnumerator), obj, meth, argc, argv);
 }
 
-static VALUE
-enumerator_iter(VALUE memo)
-{
-    struct enumerator *e = (struct enumerator *)memo;
-
-    return method_call(e->method, e->args);
-}
-
 /*
  *  call-seq:
  *    enum.each {...}
@@ -335,8 +315,14 @@ static VALUE
 enumerator_each(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+    int argc = 0;
+    VALUE *argv = 0;
 
-    return rb_iterate(enumerator_iter, (VALUE)e, e->iter, (VALUE)e);
+    if (e->args) {
+	argc = RARRAY(e->args)->len;
+	argv = RARRAY(e->args)->ptr;
+    }
+    return rb_block_call(e->method, rb_intern("call"), argc, argv, e->iter, (VALUE)e);
 }
 
 static VALUE
@@ -360,9 +346,17 @@ enumerator_with_index(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE memo = 0;
+    int argc = 0;
+    VALUE *argv = 0;
 
-    return rb_iterate(enumerator_iter, (VALUE)e,
-		      enumerator_with_index_i, (VALUE)&memo);
+    if (e->args) {
+	argc = RARRAY(e->args)->len;
+	argv = RARRAY(e->args)->ptr;
+    }
+    return rb_block_call(e->method, rb_intern("call"), argc, argv, e->iter, (VALUE)e);
+
+    return rb_block_call(e->method, rb_intern("call"), argc, argv,
+			 enumerator_with_index_i, (VALUE)&memo);
 }
 
 void

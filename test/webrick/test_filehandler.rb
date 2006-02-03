@@ -9,7 +9,11 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def get_res_body(res)
-    return res.body.read rescue res.body
+    if defined? res.body.read
+      res.body.read
+    else
+      res.body
+    end
   end
 
   def make_range_request(range_spec)

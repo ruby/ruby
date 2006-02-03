@@ -867,7 +867,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    rb_warn("END in method; use at_exit");
 			}
 
-			$$ = NEW_ITER(0, NEW_POSTEXE(), $3);
+			$$ = NEW_POSTEXE($3);
 		    /*%
 			if (in_def || in_single) {
 			    rb_warn0("END in method; use at_exit");

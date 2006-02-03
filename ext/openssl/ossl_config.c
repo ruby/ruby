@@ -246,7 +246,7 @@ static VALUE
 ossl_config_set_section(VALUE self, VALUE section, VALUE hash)
 {
     VALUE arg[2] = { self, section };
-    rb_iterate(rb_each, hash, set_conf_section_i, (VALUE)arg);
+    rb_block_call(hash, rb_intern("each"), 0, 0, set_conf_section_i, (VALUE)arg);
     return hash;
 }
 

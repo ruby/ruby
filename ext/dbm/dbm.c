@@ -426,20 +426,10 @@ fdbm_invert(obj)
     return hash;
 }
 
-static VALUE each_pair _((VALUE));
+static VALUE fdbm_store(VALUE,VALUE,VALUE);
 
 static VALUE
-each_pair(obj)
-    VALUE obj;
-{
-    return rb_funcall(obj, rb_intern("each_pair"), 0, 0);
-}
-
-static VALUE fdbm_store _((VALUE,VALUE,VALUE));
-
-static VALUE
-update_i(pair, dbm)
-    VALUE pair, dbm;
+update_i(VALUE pair, VALUE dbm)
 {
     Check_Type(pair, T_ARRAY);
     if (RARRAY(pair)->len < 2) {
@@ -450,19 +440,17 @@ update_i(pair, dbm)
 }
 
 static VALUE
-fdbm_update(obj, other)
-    VALUE obj, other;
+fdbm_update(VALUE obj, VALUE other)
 {
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 
 static VALUE
-fdbm_replace(obj, other)
-    VALUE obj, other;
+fdbm_replace(VALUE obj, VALUE other)
 {
     fdbm_clear(obj);
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 
