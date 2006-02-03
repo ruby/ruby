@@ -49,8 +49,8 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
-static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver, s_each;
+static ID s_tags, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain, sym_inline;
@@ -571,7 +571,7 @@ yaml_org_handler( n, ref )
                             VALUE dup = rb_funcall( tmph, s_dup, 0 );
                             tmp = rb_ary_reverse( tmp );
                             rb_ary_push( tmp, obj );
-                            rb_block_call(tmp, rb_intern("each"), 0, 0, syck_merge_i, dup);
+                            rb_block_call( tmp, s_each, 0, 0, syck_merge_i, dup );
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -1006,7 +1006,7 @@ syck_resolver_node_import( self, node )
                             VALUE dup = rb_funcall( end, s_dup, 0 );
                             v = rb_ary_reverse( v );
                             rb_ary_push( v, obj );
-                            rb_block_call(v, rb_intern("each"), 0, 0, syck_merge_i, dup);
+                            rb_block_call( v, s_each, 0, 0, syck_merge_i, dup );
                             obj = dup;
                             skip_aset = 1;
                         }
@@ -1175,7 +1175,7 @@ syck_resolver_transfer( self, type, val )
                 }
                 else if ( !NIL_P( obj ) && rb_obj_is_instance_of( val, rb_cHash ) )
                 {
-                    rb_block_call(val, rb_intern("each"), 0, 0, syck_set_ivars, obj);
+                    rb_block_call( val, s_each, 0, 0, syck_set_ivars, obj );
                 }
             }
             else 
@@ -2194,6 +2194,7 @@ Init_syck()
     s_transform = rb_intern( "transform" );
     s_yaml_new = rb_intern("yaml_new");
     s_yaml_initialize = rb_intern("yaml_initialize");
+    s_each = rb_intern("each");
 
     s_tags = rb_intern("@tags");
     s_name = rb_intern("@name");

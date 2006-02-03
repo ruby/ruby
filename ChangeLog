@@ -1,3 +1,9 @@
+Fri Feb  3 19:25:53 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ruby.h: fixed prototype.
+
+	* ext/syck/rubyext.c: defined symbol ID as global variable as others.
+
 Fri Feb  3 17:57:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: unify ruby_class (for method definition) and ruby_cbase
