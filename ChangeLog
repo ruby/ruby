@@ -1,3 +1,9 @@
+Fri Feb  3 15:06:50 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/syck.c (syck_move_tokens): should reset p->cursor or etc
+	  even if skip == 0. This causes buffer overrun.
+	  (ex: YAML.load('--- "..' + '\x82\xA0' * 511 + '"'))
+
 Thu Feb  2 23:51:18 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/emitter.c (syck_emitter_write): should not set '\0' on
