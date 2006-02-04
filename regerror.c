@@ -30,14 +30,20 @@
 #include "regint.h"
 #include <stdio.h> /* for vsnprintf() */
 
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
+#include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
-extern char*
+extern UChar*
 onig_error_code_to_format(int code)
 {
   char *p;
 
-  if (code >= 0) return (char* )0;
+  if (code >= 0) return (UChar* )0;
 
   switch (code) {
   case ONIG_MISMATCH:
@@ -171,7 +177,7 @@ onig_error_code_to_format(int code)
     p = "undefined error code"; break;
   }
 
-  return p;
+  return (UChar* )p;
 }
 
 
@@ -179,14 +185,21 @@ onig_error_code_to_format(int code)
 #define MAX_ERROR_PAR_LEN   30
 
 extern int
+#ifdef HAVE_STDARG_PROTOTYPES
 onig_error_code_to_str(UChar* s, int code, ...)
+#else
+onig_error_code_to_str(s, code, va_alist)
+  UChar* s;
+  int code;
+  va_dcl 
+#endif
 {
   UChar *p, *q;
   OnigErrorInfo* einfo;
   int len;
   va_list vargs;
 
-  va_start(vargs, code);
+  va_init_list(vargs, code);
 
   switch (code) {
   case ONIGERR_UNDEFINED_NAME_REFERENCE:
@@ -242,26 +255,37 @@ onig_error_code_to_str(UChar* s, int code, ...)
 
 
 void
-onig_snprintf_with_pattern(char buf[], int bufsize, OnigEncoding enc,
-			    char* pat, char* pat_end, char *fmt, ...)
+#ifdef HAVE_STDARG_PROTOTYPES
+onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, ...)
+#else
+onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
+    UChar buf[];
+    int bufsize;
+    OnigEncoding enc;
+    UChar* pat;
+    UChar* pat_end;
+    const UChar *fmt;
+    va_dcl
+#endif
 {
   int n, need, len;
   UChar *p, *s, *bp;
-  char bs[6];
+  UChar bs[6];
   va_list args;
 
-  va_start(args, fmt);
-  n = vsnprintf(buf, bufsize, fmt, args);
+  va_init_list(args, (char* )fmt);
+  n = vsnprintf((char* )buf, bufsize, (char* )fmt, args);
   va_end(args);
 
   need = (pat_end - pat) * 4 + 4;
 
   if (n + need < bufsize) {
-    strcat(buf, ": /");
+    strcat((char* )buf, ": /");
     s = buf + onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, buf);
 
     p = pat;
-    while (p < (UChar* )pat_end) {
+    while (p < pat_end) {
       if (*p == MC_ESC(enc)) {
 	*s++ = *p++;
 	len = enc_len(enc, p);
@@ -280,7 +304,7 @@ onig_snprintf_with_pattern(char buf[], int bufsize, OnigEncoding enc,
           int blen;
 
           while (len-- > 0) {
-            sprintf(bs, "\\%03o", *p++ & 0377);
+            sprintf((char* )bs, "\\%03o", *p++ & 0377);
             blen = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
             bp = bs;
             while (blen-- > 0) *s++ = *bp++;
@@ -289,7 +313,7 @@ onig_snprintf_with_pattern(char buf[], int bufsize, OnigEncoding enc,
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
 	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
-	sprintf(bs, "\\%03o", *p++ & 0377);
+	sprintf((char* )bs, "\\%03o", *p++ & 0377);
 	len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
         bp = bs;
 	while (len-- > 0) *s++ = *bp++;

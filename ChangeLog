@@ -11,6 +11,10 @@ Sat Feb  4 15:52:56 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  I think the function name of rb_int2big is quite misleading.
 	  This should be "rb_long2big".
 
+Sat Feb  4 15:02:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* oniguruma.h: merge Oniguruma 4.0.0  [ruby-dev:28290]
+
 Fri Feb  3 19:25:53 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.h: fixed prototype.
@@ -86,7 +90,7 @@ Tue Jan 31 08:07:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* numeric.c (int_dotimes): ditto.
 
 	* enum.c (enum_first): new method Enumerable#first to take first n
-	  element from an enumerable.
+	  elements from an enumerable.
 
 	* enum.c (enum_group_by): new method Enumerable#group_by that
 	  groups enumerable values according to their block values.

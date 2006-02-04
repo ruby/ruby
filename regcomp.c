@@ -34,7 +34,7 @@ OnigAmbigType OnigDefaultAmbigFlag =
    ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE);
 
 extern OnigAmbigType
-onig_get_default_ambig_flag(void)
+onig_get_default_ambig_flag()
 {
   return OnigDefaultAmbigFlag;
 }
@@ -2120,29 +2120,6 @@ get_char_length_tree(Node* node, regex_t* reg, int* len)
   return get_char_length_tree1(node, reg, len, 0);
 }
 
-extern int
-onig_is_code_in_cc(OnigEncoding enc, OnigCodePoint code, CClassNode* cc)
-{
-  int found;
-
-  if (ONIGENC_MBC_MINLEN(enc) > 1 || (code >= SINGLE_BYTE_SIZE)) {
-    if (IS_NULL(cc->mbuf)) {
-      found = 0;
-    }
-    else {
-      found = (onig_is_in_code_range(cc->mbuf->p, code) != 0 ? 1 : 0);
-    }
-  }
-  else {
-    found = (BITSET_AT(cc->bs, code) == 0 ? 0 : 1);
-  }
-
-  if (IS_CCLASS_NOT(cc))
-    return !found;
-  else
-    return found;
-}
-
 /* x is not included y ==>  1 : 0 */
 static int
 is_not_included(Node* x, Node* y, regex_t* reg)
@@ -2516,6 +2493,9 @@ subexp_inf_recursive_check(Node* node, ScanEnv* env, int head)
 
   case N_QUALIFIER:
     r = subexp_inf_recursive_check(NQUALIFIER(node).target, env, head);
+    if (r == RECURSION_EXIST) {
+      if (NQUALIFIER(node).lower == 0) r = 0;
+    }
     break;
 
   case N_ANCHOR:
@@ -2943,15 +2923,55 @@ next_setup(Node* node, Node* next_node, regex_t* reg)
   return 0;
 }
 
+
+static int
+divide_ambig_string_node_sub(regex_t* reg, int prev_ambig,
+                             UChar* prev_start, UChar* prev,
+                             UChar* end, Node*** tailp, Node** root)
+{
+  UChar *tmp, *wp;
+  Node* snode;
+
+  if (prev_ambig != 0) {
+    tmp = prev_start;
+    wp  = prev_start;
+    while (tmp < prev) {
+      wp += ONIGENC_MBC_TO_NORMALIZE(reg->enc, reg->ambig_flag,
+                                     &tmp, end, wp);
+    }
+    snode = onig_node_new_str(prev_start, wp);
+    CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
+    NSTRING_SET_AMBIG(snode);
+    if (wp != prev) NSTRING_SET_AMBIG_REDUCE(snode);
+  }
+  else {
+    snode = onig_node_new_str(prev_start, prev);
+    CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
+  }
+
+  if (*tailp == (Node** )0) {
+    *root = onig_node_new_list(snode, NULL);
+    CHECK_NULL_RETURN_VAL(*root, ONIGERR_MEMORY);
+    *tailp = &(NCONS(*root).right);
+  }
+  else {
+    **tailp = onig_node_new_list(snode, NULL);
+    CHECK_NULL_RETURN_VAL(**tailp, ONIGERR_MEMORY);
+    *tailp = &(NCONS(**tailp).right);
+  }
+
+  return 0;
+}
+
 static int
 divide_ambig_string_node(Node* node, regex_t* reg)
 {
   StrNode* sn = &NSTRING(node);
   int ambig, prev_ambig;
   UChar *prev, *p, *end, *prev_start, *start, *tmp, *wp;
-  Node *snode;
   Node *root = NULL_NODE;
   Node **tailp = (Node** )0;
+  int r;
 
   start = prev_start = p = sn->s;
   end  = sn->end;
@@ -2964,33 +2984,9 @@ divide_ambig_string_node(Node* node, regex_t* reg)
     if (prev_ambig != (ambig = ONIGENC_IS_MBC_AMBIGUOUS(reg->enc,
                                               reg->ambig_flag, &p, end))) {
 
-      if (prev_ambig != 0) {
-        tmp = prev_start;
-        wp  = prev_start;
-        while (tmp < prev) {
-          wp += ONIGENC_MBC_TO_NORMALIZE(reg->enc, reg->ambig_flag,
-                                         &tmp, end, wp);
-        }
-        snode = onig_node_new_str(prev_start, wp);
-        CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
-        NSTRING_SET_AMBIG(snode);
-        if (wp != prev) NSTRING_SET_AMBIG_REDUCE(snode);
-      }
-      else {
-        snode = onig_node_new_str(prev_start, prev);
-        CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
-      }
-
-      if (tailp == (Node** )0) {
-        root = onig_node_new_list(snode, NULL);
-	CHECK_NULL_RETURN_VAL(root, ONIGERR_MEMORY);
-	tailp = &(NCONS(root).right);
-      }
-      else {
-	*tailp = onig_node_new_list(snode, NULL);
-	CHECK_NULL_RETURN_VAL(*tailp, ONIGERR_MEMORY);
-	tailp = &(NCONS(*tailp).right);
-      }
+      r = divide_ambig_string_node_sub(reg, prev_ambig, prev_start, prev,
+                                       end, &tailp, &root);
+      if (r != 0) return r;
 
       prev_ambig = ambig;
       prev_start = prev;
@@ -3011,33 +3007,9 @@ divide_ambig_string_node(Node* node, regex_t* reg)
     }
   }
   else {
-    if (prev_ambig != 0) {
-      tmp = prev_start;
-      wp  = prev_start;
-      while (tmp < end) {
-        wp += ONIGENC_MBC_TO_NORMALIZE(reg->enc, reg->ambig_flag,
-                                       &tmp, end, wp);
-      }
-      snode = onig_node_new_str(prev_start, wp);
-      CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
-      NSTRING_SET_AMBIG(snode);
-      if (wp != end) NSTRING_SET_AMBIG_REDUCE(snode);
-    }
-    else {
-      snode = onig_node_new_str(prev_start, end);
-      CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
-    }
-
-    if (tailp == (Node** )0) {
-      root = onig_node_new_list(snode, NULL);
-      CHECK_NULL_RETURN_VAL(root, ONIGERR_MEMORY);
-      tailp = &(NCONS(node).right);
-    }
-    else {
-      *tailp = onig_node_new_list(snode, NULL);
-      CHECK_NULL_RETURN_VAL(*tailp, ONIGERR_MEMORY);
-      tailp = &(NCONS(*tailp).right);
-    }
+    r = divide_ambig_string_node_sub(reg, prev_ambig, prev_start, end,
+                                     end, &tailp, &root);
+    if (r != 0) return r;
 
     swap_node(node, root);
     onig_node_str_clear(root); /* should be after swap! */
@@ -3383,7 +3355,7 @@ typedef struct {
 static int
 map_position_value(OnigEncoding enc, int i)
 {
-  static short int ByteValTable[] = {
+  static const short int ByteValTable[] = {
      5,  1,  1,  1,  1,  1,  1,  1,  1, 10, 10,  1,  1, 10,  1,  1,
      1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     12,  4,  7,  4,  4,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  5,
@@ -3408,7 +3380,7 @@ static int
 distance_value(MinMaxLen* mm)
 {
   /* 1000 / (min-max-dist + 1) */
-  static short int dist_vals[] = {
+  static const short int dist_vals[] = {
     1000,  500,  333,  250,  200,  167,  143,  125,  111,  100, 
       91,   83,   77,   71,   67,   63,   59,   56,   53,   50, 
       48,   45,   43,   42,   40,   38,   37,   36,   34,   33, 
@@ -3711,7 +3683,7 @@ select_opt_exact_info(OnigEncoding enc, OptExactInfo* now, OptExactInfo* alt)
 static void
 clear_opt_map_info(OptMapInfo* map)
 {
-  static OptMapInfo clean_info = {
+  static const OptMapInfo clean_info = {
     {0, 0}, {0, 0}, 0,
     {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3758,8 +3730,8 @@ add_char_amb_opt_map_info(OptMapInfo* map, UChar* p, UChar* end,
   int i, j, n, len;
   UChar buf[ONIGENC_MBC_NORMALIZE_MAXLEN];
   OnigCodePoint code, ccode;
-  OnigCompAmbigCodes* ccs;
-  OnigPairAmbigCodes* pccs;
+  const OnigCompAmbigCodes* ccs;
+  const OnigPairAmbigCodes* pccs;
   OnigAmbigType amb;
 
   add_char_opt_map_info(map, p[0], enc);
@@ -4316,10 +4288,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
     CHECK_NULL_RETURN_VAL(reg->exact, ONIGERR_MEMORY);
     reg->exact_end = reg->exact + e->len;
  
-    if (e->anc.left_anchor & ANCHOR_BEGIN_LINE)
-      allow_reverse = 1;
-    else
-      allow_reverse =
+    allow_reverse =
 	ONIGENC_IS_ALLOWED_REVERSE_MATCH(reg->enc, reg->exact, reg->exact_end);
 
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
@@ -4514,8 +4483,8 @@ print_anchor(FILE* f, int anchor)
 static void
 print_optimize_info(FILE* f, regex_t* reg)
 {
-  static char* on[] = { "NONE", "EXACT", "EXACT_BM", "EXACT_BM_NOT_REV",
-			"EXACT_IC", "MAP" };
+  static const char* on[] = { "NONE", "EXACT", "EXACT_BM", "EXACT_BM_NOT_REV",
+                              "EXACT_IC", "MAP" };
 
   fprintf(f, "optimize: %s\n", on[reg->optimize]);
   fprintf(f, "  anchor: "); print_anchor(f, reg->anchor);
@@ -4959,7 +4928,7 @@ onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 }
 
 extern int
-onig_init(void)
+onig_init()
 {
   if (onig_inited != 0)
     return 0;
@@ -4981,9 +4950,9 @@ onig_init(void)
 
 
 extern int
-onig_end(void)
+onig_end()
 {
-  extern int onig_free_shared_cclass_table(void);
+  extern int onig_free_shared_cclass_table();
 
   THREAD_ATOMIC_START;
 

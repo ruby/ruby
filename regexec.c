@@ -29,6 +29,12 @@
 
 #include "regint.h"
 
+#ifdef USE_CRNL_AS_LINE_TERMINATOR
+#define ONIGENC_IS_MBC_CRNL(enc,p,end) \
+  (ONIGENC_MBC_TO_CODE(enc,p,end) == 13 && \
+   ONIGENC_IS_MBC_NEWLINE(enc,(p+enc_len(enc,p)),end))
+#endif
+
 #ifdef USE_CAPTURE_HISTORY
 static void history_tree_free(OnigCaptureTreeNode* node);
 
@@ -227,7 +233,7 @@ onig_region_init(OnigRegion* region)
 }
 
 extern OnigRegion*
-onig_region_new(void)
+onig_region_new()
 {
   OnigRegion* r;
 
@@ -1165,26 +1171,42 @@ onig_is_in_code_range(const UChar* p, OnigCodePoint code)
 }
 
 static int
-code_is_in_cclass_node(void* node, OnigCodePoint code, int enclen)
+is_code_in_cc(int enclen, OnigCodePoint code, CClassNode* cc)
 {
-  unsigned int in_cc;
-  CClassNode* cc = (CClassNode* )node;
+  int found;
 
-  if (enclen == 1 && code < SINGLE_BYTE_SIZE) {
-    in_cc = BITSET_AT(cc->bs, code);
+  if (enclen > 1 || (code >= SINGLE_BYTE_SIZE)) {
+    if (IS_NULL(cc->mbuf)) {
+      found = 0;
+    }
+    else {
+      found = (onig_is_in_code_range(cc->mbuf->p, code) != 0 ? 1 : 0);
+    }
   }
   else {
-    UChar* p = ((BBuf* )(cc->mbuf))->p;
-    in_cc = onig_is_in_code_range(p, code);
+    found = (BITSET_AT(cc->bs, code) == 0 ? 0 : 1);
   }
 
-  if (IS_CCLASS_NOT(cc)) {
-    return (in_cc ? 0 : 1);
-  }
-  else {
-    return (in_cc ? 1 : 0);
-  }
+  if (IS_CCLASS_NOT(cc))
+    return !found;
+  else
+    return found;
 }
+
+extern int
+onig_is_code_in_cc(OnigEncoding enc, OnigCodePoint code, CClassNode* cc)
+{
+  int len;
+
+  if (ONIGENC_MBC_MINLEN(enc) > 1) {
+    len = 2;
+  }
+  else {
+    len = ONIGENC_CODE_TO_MBCLEN(enc, code);
+  }
+  return is_code_in_cc(len, code, cc);
+}
+
 
 /* matching region of POSIX API */
 typedef int regoff_t;
@@ -1739,8 +1761,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	mb_len = enc_len(encode, s);
 	ss = s;
 	s += mb_len;
+	DATA_ENSURE(0);
 	code = ONIGENC_MBC_TO_CODE(encode, ss, s);
-        if (code_is_in_cclass_node(node, code, mb_len) == 0) goto fail;
+	if (is_code_in_cc(mb_len, code, node) == 0) goto fail;
       }
       STAT_OP_OUT;
       break;
@@ -1946,6 +1969,12 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	STAT_OP_OUT;
 	continue;
       }
+#ifdef USE_CRNL_AS_LINE_TERMINATOR
+      else if (ONIGENC_IS_MBC_CRNL(encode, s, end)) {
+	STAT_OP_OUT;
+	continue;
+      }
+#endif
       goto fail;
       break;
 
@@ -1966,6 +1995,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	STAT_OP_OUT;
 	continue;
       }
+#ifdef USE_CRNL_AS_LINE_TERMINATOR
+      else if (ONIGENC_IS_MBC_CRNL(encode, s, end)) {
+        UChar* ss = s + enc_len(encode, s);
+        if (ON_STR_END(ss + enc_len(encode, ss))) {
+          STAT_OP_OUT;
+          continue;
+        }
+      }
+#endif
       goto fail;
       break;
 
@@ -3029,7 +3067,11 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	  if (prev && ONIGENC_IS_MBC_NEWLINE(reg->enc, prev, end))
 	    goto retry_gate;
 	}
-	else if (!ONIGENC_IS_MBC_NEWLINE(reg->enc, p, end))
+	else if (! ONIGENC_IS_MBC_NEWLINE(reg->enc, p, end)
+#ifdef USE_CRNL_AS_LINE_TERMINATOR
+              && ! ONIGENC_IS_MBC_CRNL(reg->enc, p, end)
+#endif
+                )
 	  goto retry_gate;
 	break;
       }
@@ -3149,7 +3191,11 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
 	    goto retry;
 	  }
 	}
-	else if (!ONIGENC_IS_MBC_NEWLINE(reg->enc, p, end)) {
+	else if (! ONIGENC_IS_MBC_NEWLINE(reg->enc, p, end)
+#ifdef USE_CRNL_AS_LINE_TERMINATOR
+              && ! ONIGENC_IS_MBC_CRNL(reg->enc, p, end)
+#endif
+                ) {
 	  p = onigenc_get_prev_char_head(reg->enc, adjrange, p);
 	  if (IS_NULL(p)) goto fail;
 	  goto retry;
@@ -3310,7 +3356,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
     }
   }
   else if (str == end) { /* empty string */
-    static const UChar* address_for_empty_string = "";
+    static const UChar* address_for_empty_string = (UChar* )"";
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr, "onig_search: empty string.\n");
@@ -3354,8 +3400,11 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	  if (sch_range > end) sch_range = (UChar* )end;
 	}
       }
-      if (reg->dmax != ONIG_INFINITE_DISTANCE &&
-	  (end - start) >= reg->threshold_len) {
+
+      if ((end - start) < reg->threshold_len)
+        goto mismatch;
+
+      if (reg->dmax != ONIG_INFINITE_DISTANCE) {
 	do {
 	  if (! forward_search_range(reg, str, end, s, sch_range,
 				     &low, &high, &low_prev)) goto mismatch;
@@ -3368,22 +3417,26 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	    prev = s;
 	    s += enc_len(reg->enc, s);
 	  }
-	  if ((reg->anchor & ANCHOR_ANYCHAR_STAR) != 0) {
-	    if (IS_NOT_NULL(prev)) {
-	      while (!ONIGENC_IS_MBC_NEWLINE(reg->enc, prev, end) &&
-                     s < range) {
-		prev = s;
-		s += enc_len(reg->enc, s);
-	      }
-	    }
-	  }
 	} while (s < range);
 	goto mismatch;
       }
       else { /* check only. */
-	if ((end - start) < reg->threshold_len ||
-	    ! forward_search_range(reg, str, end, s, sch_range,
+	if (! forward_search_range(reg, str, end, s, sch_range,
 				   &low, &high, (UChar** )NULL)) goto mismatch;
+
+        if ((reg->anchor & ANCHOR_ANYCHAR_STAR) != 0) {
+          do {
+            MATCH_AND_RETURN_CHECK;
+            prev = s;
+            s += enc_len(reg->enc, s);
+
+            while (!ONIGENC_IS_MBC_NEWLINE(reg->enc, prev, end) && s < range) {
+              prev = s;
+              s += enc_len(reg->enc, s);
+            }
+          } while (s < range);
+          goto mismatch;
+        }
       }
     }
 
@@ -3391,7 +3444,11 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
       MATCH_AND_RETURN_CHECK;
       prev = s;
       s += enc_len(reg->enc, s);
-    } while (s <= range);   /* exec s == range, because empty match with /$/. */
+    } while (s < range);
+
+    if (s == range) { /* because empty match with /$/. */
+      MATCH_AND_RETURN_CHECK;
+    }
   }
   else {  /* backward search */
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
