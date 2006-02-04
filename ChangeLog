@@ -1,3 +1,8 @@
+Sat Feb  4 21:19:23 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (LK_ERR): ERROR_NOT_LOCKED is not an error.
+	  In such situation, flock() should return 0.
+
 Sat Feb  4 15:56:37 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* numeric.c (fix_to_s): (2**32).to_s(2) fails with exception where

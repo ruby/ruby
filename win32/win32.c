@@ -250,7 +250,20 @@ GetCurrentThreadHandle(void)
 /* simulate flock by locking a range on the file */
 
 
-#define LK_ERR(f,i) ((f) ? (i = 0) : (errno = GetLastError() == ERROR_LOCK_VIOLATION ? EWOULDBLOCK : EACCES))
+#define LK_ERR(f,i) \
+    do {								\
+	if (f)								\
+	    i = 0;							\
+	else {								\
+	    DWORD err = GetLastError();					\
+	    if (err == ERROR_LOCK_VIOLATION)				\
+		errno = EWOULDBLOCK;					\
+	    else if (err == ERROR_NOT_LOCKED)				\
+		i = 0;							\
+	    else							\
+		errno = map_errno(err);					\
+	}								\
+    } while (0)
 #define LK_LEN      ULONG_MAX
 
 static VALUE
