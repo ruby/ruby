@@ -1,3 +1,11 @@
+Sat Feb  4 15:52:56 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* numeric.c (fix_to_s): (2**32).to_s(2) fails with exception where
+	  sizeof(int) == 4 < sizeof(long). [ruby-core:7300]
+
+	  I think the function name of rb_int2big is quite misleading.
+	  This should be "rb_long2big".
+
 Fri Feb  3 19:25:53 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.h: fixed prototype.

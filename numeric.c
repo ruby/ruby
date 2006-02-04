@@ -1884,7 +1884,7 @@ fix_to_s(int argc, VALUE *argv, VALUE x)
 
     if (base == 2) {
 	/* rb_fix2str() does not handle binary */
-	return rb_big2str(rb_int2big(FIX2INT(x)), 2);
+	return rb_big2str(rb_int2big(FIX2LONG(x)), 2);
     }
     return rb_fix2str(x, base);
 }
