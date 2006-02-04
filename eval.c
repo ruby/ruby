@@ -179,7 +179,7 @@ int function_call_may_return_twice_false_2 = 0;
        (function_call_may_return_twice_false_2 ? \
         setjmp(function_call_may_return_twice_jmp_buf) : \
         0)
-#  elif defined(__FreeBSD__)
+#  elif defined(__FreeBSD__) && __FreeBSD__ < 7
 /*
  * workaround for FreeBSD/i386 getcontext/setcontext bug.
  * clear the carry flag by (0 ? ... : ...).
