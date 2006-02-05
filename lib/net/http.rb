@@ -1,8 +1,8 @@
 #
 # = net/http.rb
 #
-# Copyright (c) 1999-2005 Yukihiro Matsumoto
-# Copyright (c) 1999-2005 Minero Aoki
+# Copyright (c) 1999-2006 Yukihiro Matsumoto
+# Copyright (c) 1999-2006 Minero Aoki
 # Copyright (c) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
@@ -154,7 +154,7 @@ module Net   #:nodoc:
   #     require 'net/http'
   #     require 'uri'
   # 
-  #     def fetch( uri_str, limit = 10 )
+  #     def fetch(uri_str, limit = 10)
   #       # You should choose better exception. 
   #       raise ArgumentError, 'HTTP redirect too deep' if limit == 0
   # 
@@ -1156,9 +1156,10 @@ module Net   #:nodoc:
         @header.delete key.downcase
         return val
       end
-      @header[key.downcase] = Array(val).map {|s| s.to_str }
+      @header[key.downcase] = [val]
     end
 
+    # [Ruby 1.8.3]
     # Adds header field instead of replace.
     # Second argument +val+ must be a String.
     # See also #[]=, #[] and #get_fields.
@@ -1175,12 +1176,13 @@ module Net   #:nodoc:
     #
     def add_field(key, val)
       if @header.key?(key.downcase)
-        @header[key.downcase].concat Array(val)
+        @header[key.downcase].concat [val]
       else
-        @header[key.downcase] = Array(val).dup
+        @header[key.downcase] = [val]
       end
     end
 
+    # [Ruby 1.8.3]
     # Returns an array of header field strings corresponding to the
     # case-insensitive +key+.  This method allows you to get duplicated
     # header fields without any processing.  See also #[].

@@ -1,3 +1,8 @@
+Sun Feb  5 18:49:00 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (add_field, get_fields): keep 1.8.2
+	  compatibility.  This patch is contributed by Rob Pitt.
+
 Sun Feb  5 16:33:50 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): Kernel#sub! was removed on HEAD.
