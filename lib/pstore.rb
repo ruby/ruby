@@ -135,14 +135,15 @@ class PStore
   # raise PStore::Error if called at any other time.
   #
   def fetch(name, default=PStore::Error)
+    in_transaction
     unless @table.key? name
       if default==PStore::Error
 	raise PStore::Error, format("undefined root name `%s'", name)
       else
-	default
+	return default
       end
     end
-    self[name]
+    @table[name]
   end
   #
   # Stores an individual Ruby object or a hierarchy of Ruby objects in the data
