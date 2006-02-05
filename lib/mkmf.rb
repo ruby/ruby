@@ -1051,7 +1051,7 @@ def create_makefile(target, srcprefix = nil)
     if File.exist?(File.join(srcdir, target + '.def'))
       deffile = "$(srcdir)/$(TARGET).def"
       unless EXPORT_PREFIX.empty?
-        makedef = %{-pe "sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
+        makedef = %{-pe "$_.sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
       end
     else
       makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET)'"}

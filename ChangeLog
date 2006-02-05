@@ -1,3 +1,7 @@
+Sun Feb  5 16:33:50 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/mkmf.rb (create_makefile): Kernel#sub! was removed on HEAD.
+
 Sun Feb  5 14:26:54 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/pstore.rb: should return default value if name is not found.
