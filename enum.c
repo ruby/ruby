@@ -166,6 +166,45 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
+find_index_i(VALUE i, VALUE *memo)
+{
+    if (RTEST(rb_yield(i))) {
+	memo[0] = UINT2NUM(memo[1]);
+	rb_iter_break();
+    }
+    memo[1]++;
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.find_index(ifnone = nil)   {| obj | block }  => int
+ *  
+ *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
+ *  index for the first for which <em>block</em> is not <code>false</code>.
+ *  If no object matches, returns <code>nil</code>
+ *     
+ *     (1..10).find_index  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     
+ */
+
+static VALUE
+enum_find_index(VALUE obj)
+{
+    VALUE memo[2];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+    memo[0] = Qundef;
+    memo[1] = 0;
+    rb_block_call(obj, id_each, 0, 0, find_index_i, (VALUE)memo);
+    if (memo[0] != Qundef) {
+	return memo[0];
+    }
+    return Qnil;
+}
+
+static VALUE
 find_all_i(VALUE i, VALUE ary)
 {
     if (RTEST(rb_yield(i))) {
@@ -1173,6 +1212,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"count", enum_count, -1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
+    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, 0);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);

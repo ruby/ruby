@@ -1,3 +1,8 @@
+Mon Feb  6 00:14:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_find_index): a new method Enumerable#find_index.
+	  [ruby-talk:178495]
+
 Sun Feb  5 23:29:31 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ruby.h (struct RStruct): embed 3 or less elements structs.
