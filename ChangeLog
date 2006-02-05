@@ -1,3 +1,9 @@
+Sun Feb  5 21:01:49 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* numeric.c (fix_to_s): removed workaround for radix 2. Historically,
+	  rb_fix2str can only handle radix 8, 10, 16. (Rev1.37) But for now,
+	  it can handle radix 2..36. [ruby-Bugs#3438]
+
 Sun Feb  5 18:49:00 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (add_field, get_fields): keep 1.8.2
