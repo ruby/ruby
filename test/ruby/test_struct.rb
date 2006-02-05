@@ -33,4 +33,20 @@ class TestStruct < Test::Unit::TestCase
       list.pop
     end
   end
+
+  def test_small_structs
+    names = [:a, :b, :c, :d]
+    1.upto(4) {|n|
+      fields = names[0, n]
+      klass = Struct.new(*fields)
+      o = klass.new(*(0...n).to_a)
+      fields.each_with_index {|name, i|
+        assert_equal(i, o[name])
+      }
+      o = klass.new(*(0...n).to_a.reverse)
+      fields.each_with_index {|name, i|
+        assert_equal(n-i-1, o[name])
+      }
+    }
+  end
 end
