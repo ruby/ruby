@@ -428,11 +428,12 @@ struct RStruct {
 	VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
-#define RSTRUCT_EMBED_LEN_MASK (FL_USER1|FL_USER0)
-#define RSTRUCT_EMBED_LEN_SHIFT FL_USHIFT
+#define RSTRUCT_EMBED_LEN_MASK (FL_USER2|FL_USER1)
+#define RSTRUCT_EMBED_LEN_SHIFT FL_USHIFT+1
 #define RSTRUCT_LEN(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-     (RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & 3 : \
+     (RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
+     (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT) : \
      RSTRUCT(st)->as.heap.len)
 #define RSTRUCT_PTR(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
