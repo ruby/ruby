@@ -401,6 +401,8 @@ struct RStruct {
     long len;
     VALUE *ptr;
 };
+#define RSTRUCT_LEN(st) (RSTRUCT(st)->len)
+#define RSTRUCT_PTR(st) (RSTRUCT(st)->ptr)
 
 struct RBignum {
     struct RBasic basic;
