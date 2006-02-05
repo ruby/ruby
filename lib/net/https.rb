@@ -104,6 +104,14 @@ require 'openssl'
 module Net
 
   class HTTP
+    remove_method :use_ssl?
+    def use_ssl?
+      @use_ssl
+    end
+
+    # For backward compatibility.
+    alias use_ssl use_ssl?
+
     # Turn on/off SSL.
     # This flag must be set before starting session.
     # If you change use_ssl value after session started,

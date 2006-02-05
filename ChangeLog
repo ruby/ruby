@@ -1,3 +1,14 @@
+Sun Feb  5 18:55:08 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: imported from trunk, rev 1.129
+
+	* lib/net/http.rb (add_field, get_fields): keep 1.8.2 backward
+	  compatibility.
+
+	* lib/net/https.rb: imported from trunk, rev 1.3.
+
+	* lib/net/https.rb: #use_ssl? definition moved from net/http.rb.
+
 Sun Feb  5 14:22:15 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/pstore.rb: should return default value if name is not found.

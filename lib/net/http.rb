@@ -1,8 +1,8 @@
 #
 # = net/http.rb
 #
-# Copyright (c) 1999-2005 Yukihiro Matsumoto
-# Copyright (c) 1999-2005 Minero Aoki
+# Copyright (c) 1999-2006 Yukihiro Matsumoto
+# Copyright (c) 1999-2006 Minero Aoki
 # Copyright (c) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
@@ -280,7 +280,7 @@ module Net   #:nodoc:
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
-    @newimpl = true    # for backward compatability
+    @newimpl = true
     # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
@@ -523,10 +523,8 @@ module Net   #:nodoc:
 
     # returns true if use SSL/TLS with HTTP.
     def use_ssl?
-      @use_ssl
+      false   # redefined in net/https
     end
-
-    alias use_ssl use_ssl?   #:nodoc: obsolete
 
     # Opens TCP connection and HTTP session.
     # 
@@ -1158,7 +1156,7 @@ module Net   #:nodoc:
         @header.delete key.downcase
         return val
       end
-      @header[key.downcase] = Array(val).map {|s| s.to_str }
+      @header[key.downcase] = [val]
     end
 
     # [Ruby 1.8.3]
@@ -1178,9 +1176,9 @@ module Net   #:nodoc:
     #
     def add_field(key, val)
       if @header.key?(key.downcase)
-        @header[key.downcase].concat Array(val)
+        @header[key.downcase].concat [val]
       else
-        @header[key.downcase] = Array(val).dup
+        @header[key.downcase] = [val]
       end
     end
 
