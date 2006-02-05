@@ -979,8 +979,8 @@ gc_mark_children(VALUE ptr, int lev)
 
       case T_STRUCT:
 	{
-	    long len = obj->as.rstruct.len;
-	    VALUE *ptr = obj->as.rstruct.ptr;
+	    long len = RSTRUCT_LEN(obj);
+	    VALUE *ptr = RSTRUCT_PTR(obj);
 
 	    while (len--) {
 		gc_mark(*ptr++, lev);
@@ -1234,8 +1234,9 @@ obj_free(VALUE obj)
 	break;
 
       case T_STRUCT:
-	if (RANY(obj)->as.rstruct.ptr) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.rstruct.ptr));
+	if (RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK == 0 &&
+	    RANY(obj)->as.rstruct.as.heap.ptr) {
+	    RUBY_CRITICAL(free(RANY(obj)->as.rstruct.as.heap.ptr));
 	}
 	break;
 

@@ -1,3 +1,18 @@
+Sun Feb  5 23:29:31 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ruby.h (struct RStruct): embed 3 or less elements structs.
+	  (RSTRUCT_LEN): defined for accessing struct members.
+	  (RSTRUCT_PTR): ditto.
+
+	* struct.c: use RSTRUCT_LEN and RSTRUCT_PTR.
+	  (struct_alloc): allocate small structs in embedded format.
+	  (rb_struct_init_copy): ditto.
+
+	* gc.c (gc_mark_children): use RSTRUCT_LEN and RSTRUCT_PTR.
+	  (obj_free): ditto.
+
+	* marshal.c (w_object): use RSTRUCT_LEN and RSTRUCT_PTR.
+
 Sun Feb  5 21:01:49 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* numeric.c (fix_to_s): removed workaround for radix 2. Historically,

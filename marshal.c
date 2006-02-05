@@ -585,7 +585,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	  case T_STRUCT:
 	    w_class(TYPE_STRUCT, obj, arg, Qtrue);
 	    {
-		long len = RSTRUCT(obj)->len;
+		long len = RSTRUCT_LEN(obj);
 		VALUE mem;
 		long i;
 
@@ -593,7 +593,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
-		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
+		    w_object(RSTRUCT_PTR(obj)[i], arg, limit);
 		}
 	    }
 	    break;

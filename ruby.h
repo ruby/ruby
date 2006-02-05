@@ -417,11 +417,27 @@ VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
     sval = (type*)DATA_PTR(obj);\
 } while (0)
 
+#define RSTRUCT_EMBED_LEN_MAX 3
 struct RStruct {
     struct RBasic basic;
-    long len;
-    VALUE *ptr;
+    union {
+	struct {
+	    long len;
+	    VALUE *ptr;
+	} heap;
+	VALUE ary[RSTRUCT_EMBED_LEN_MAX];
+    } as;
 };
+#define RSTRUCT_EMBED_LEN_MASK (FL_USER1|FL_USER0)
+#define RSTRUCT_EMBED_LEN_SHIFT FL_USHIFT
+#define RSTRUCT_LEN(st) \
+    ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
+     (RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & 3 : \
+     RSTRUCT(st)->as.heap.len)
+#define RSTRUCT_PTR(st) \
+    ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
+     RSTRUCT(st)->as.ary : \
+     RSTRUCT(st)->as.heap.ptr)
 
 struct RBignum {
     struct RBasic basic;

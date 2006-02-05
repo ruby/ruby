@@ -47,9 +47,9 @@ rb_struct_members(VALUE s)
 {
     VALUE members = rb_struct_s_members(rb_obj_class(s));
 
-    if (RSTRUCT(s)->len != RARRAY(members)->len) {
+    if (RSTRUCT_LEN(s) != RARRAY(members)->len) {
 	rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
-		 RARRAY(members)->len, RSTRUCT(s)->len);
+		 RARRAY(members)->len, RSTRUCT_LEN(s));
     }
     return members;
 }
@@ -99,7 +99,7 @@ rb_struct_getmember(VALUE obj, ID id)
     slot = ID2SYM(id);
     for (i=0; i<RARRAY(members)->len; i++) {
 	if (RARRAY(members)->ptr[i] == slot) {
-	    return RSTRUCT(obj)->ptr[i];
+	    return RSTRUCT_PTR(obj)[i];
 	}
     }
     rb_name_error(id, "%s is not struct member", rb_id2name(id));
@@ -112,16 +112,16 @@ rb_struct_ref(VALUE obj)
     return rb_struct_getmember(obj, rb_frame_this_func());
 }
 
-static VALUE rb_struct_ref0(VALUE obj) {return RSTRUCT(obj)->ptr[0];}
-static VALUE rb_struct_ref1(VALUE obj) {return RSTRUCT(obj)->ptr[1];}
-static VALUE rb_struct_ref2(VALUE obj) {return RSTRUCT(obj)->ptr[2];}
-static VALUE rb_struct_ref3(VALUE obj) {return RSTRUCT(obj)->ptr[3];}
-static VALUE rb_struct_ref4(VALUE obj) {return RSTRUCT(obj)->ptr[4];}
-static VALUE rb_struct_ref5(VALUE obj) {return RSTRUCT(obj)->ptr[5];}
-static VALUE rb_struct_ref6(VALUE obj) {return RSTRUCT(obj)->ptr[6];}
-static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT(obj)->ptr[7];}
-static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT(obj)->ptr[8];}
-static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT(obj)->ptr[9];}
+static VALUE rb_struct_ref0(VALUE obj) {return RSTRUCT_PTR(obj)[0];}
+static VALUE rb_struct_ref1(VALUE obj) {return RSTRUCT_PTR(obj)[1];}
+static VALUE rb_struct_ref2(VALUE obj) {return RSTRUCT_PTR(obj)[2];}
+static VALUE rb_struct_ref3(VALUE obj) {return RSTRUCT_PTR(obj)[3];}
+static VALUE rb_struct_ref4(VALUE obj) {return RSTRUCT_PTR(obj)[4];}
+static VALUE rb_struct_ref5(VALUE obj) {return RSTRUCT_PTR(obj)[5];}
+static VALUE rb_struct_ref6(VALUE obj) {return RSTRUCT_PTR(obj)[6];}
+static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT_PTR(obj)[7];}
+static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT_PTR(obj)[8];}
+static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT_PTR(obj)[9];}
 
 #define N_REF_FUNC (sizeof(ref_func) / sizeof(ref_func[0]))
 
@@ -157,7 +157,7 @@ rb_struct_set(VALUE obj, VALUE val)
     for (i=0; i<RARRAY(members)->len; i++) {
 	slot = RARRAY(members)->ptr[i];
 	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_this_func()) {
-	    return RSTRUCT(obj)->ptr[i] = val;
+	    return RSTRUCT_PTR(obj)[i] = val;
 	}
     }
     rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",
@@ -315,9 +315,9 @@ rb_struct_initialize(VALUE self, VALUE values)
     if (n < RARRAY(values)->len) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
-    MEMCPY(RSTRUCT(self)->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
+    MEMCPY(RSTRUCT_PTR(self), RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
     if (n > RARRAY(values)->len) {
-	rb_mem_clear(RSTRUCT(self)->ptr+RARRAY(values)->len,
+	rb_mem_clear(RSTRUCT_PTR(self)+RARRAY(values)->len,
 		     n-RARRAY(values)->len);
     }
     return Qnil;
@@ -334,9 +334,16 @@ struct_alloc(VALUE klass)
     size = rb_struct_iv_get(klass, "__size__");
     n = FIX2LONG(size);
 
-    st->ptr = ALLOC_N(VALUE, n);
-    rb_mem_clear(st->ptr, n);
-    st->len = n;
+    if (0 < n && n <= RSTRUCT_EMBED_LEN_MAX) {
+        RBASIC(st)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
+        RBASIC(st)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
+	rb_mem_clear(st->as.ary, n);
+    }
+    else {
+	st->as.heap.ptr = ALLOC_N(VALUE, n);
+	rb_mem_clear(st->as.heap.ptr, n);
+	st->as.heap.len = n;
+    }
 
     return (VALUE)st;
 }
@@ -390,8 +397,8 @@ rb_struct_each(VALUE s)
     long i;
 
     RETURN_ENUMERATOR(s, 0, 0);
-    for (i=0; i<RSTRUCT(s)->len; i++) {
-	rb_yield(RSTRUCT(s)->ptr[i]);
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	rb_yield(RSTRUCT_PTR(s)[i]);
     }
     return s;
 }
@@ -422,8 +429,8 @@ rb_struct_each_pair(VALUE s)
 
     RETURN_ENUMERATOR(s, 0, 0);
     members = rb_struct_members(s);
-    for (i=0; i<RSTRUCT(s)->len; i++) {
-	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT(s)->ptr[i]);
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT_PTR(s)[i]);
     }
     return s;
 }
@@ -441,7 +448,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 
     members = rb_struct_members(s);
     str = rb_sprintf("#<struct %s ", cname);
-    for (i=0; i<RSTRUCT(s)->len; i++) {
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE slot;
 	ID id;
 	char *p;
@@ -459,7 +466,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	    rb_str_append(str, rb_inspect(slot));
 	}
 	rb_str_cat2(str, "=");
-	rb_str_append(str, rb_inspect(RSTRUCT(s)->ptr[i]));
+	rb_str_append(str, rb_inspect(RSTRUCT_PTR(s)[i]));
     }
     rb_str_cat2(str, ">");
     OBJ_INFECT(str, s);
@@ -496,7 +503,7 @@ rb_struct_inspect(VALUE s)
 static VALUE
 rb_struct_to_a(VALUE s)
 {
-    return rb_ary_new4(RSTRUCT(s)->len, RSTRUCT(s)->ptr);
+    return rb_ary_new4(RSTRUCT_LEN(s), RSTRUCT_PTR(s));
 }
 
 /* :nodoc: */
@@ -508,9 +515,15 @@ rb_struct_init_copy(VALUE copy, VALUE s)
     if (!rb_obj_is_instance_of(s, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
-    RSTRUCT(copy)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
-    RSTRUCT(copy)->len = RSTRUCT(s)->len;
-    MEMCPY(RSTRUCT(copy)->ptr, RSTRUCT(s)->ptr, VALUE, RSTRUCT(copy)->len);
+    if (0 < RSTRUCT_LEN(s) && RSTRUCT_LEN(s) <= RSTRUCT_EMBED_LEN_MAX) {
+        RBASIC(copy)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
+        RBASIC(copy)->flags |= RSTRUCT_LEN(s) << RSTRUCT_EMBED_LEN_SHIFT;
+    }
+    else {
+	RSTRUCT(copy)->as.heap.ptr = ALLOC_N(VALUE, RSTRUCT_LEN(s));
+	RSTRUCT(copy)->as.heap.len = RSTRUCT_LEN(s);
+    }
+    MEMCPY(RSTRUCT_PTR(copy), RSTRUCT_PTR(s), VALUE, RSTRUCT_LEN(copy));
 
     return copy;
 }
@@ -525,7 +538,7 @@ rb_struct_aref_id(VALUE s, ID id)
     len = RARRAY(members)->len;
     for (i=0; i<len; i++) {
 	if (SYM2ID(RARRAY(members)->ptr[i]) == id) {
-	    return RSTRUCT(s)->ptr[i];
+	    return RSTRUCT_PTR(s)[i];
 	}
     }
     rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
@@ -561,14 +574,14 @@ rb_struct_aref(VALUE s, VALUE idx)
     }
 
     i = NUM2LONG(idx);
-    if (i < 0) i = RSTRUCT(s)->len + i;
+    if (i < 0) i = RSTRUCT_LEN(s) + i;
     if (i < 0)
         rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
-		 i, RSTRUCT(s)->len);
-    if (RSTRUCT(s)->len <= i)
+		 i, RSTRUCT_LEN(s));
+    if (RSTRUCT_LEN(s) <= i)
         rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
-		 i, RSTRUCT(s)->len);
-    return RSTRUCT(s)->ptr[i];
+		 i, RSTRUCT_LEN(s));
+    return RSTRUCT_PTR(s)[i];
 }
 
 static VALUE
@@ -580,13 +593,13 @@ rb_struct_aset_id(VALUE s, ID id, VALUE val)
     members = rb_struct_members(s);
     rb_struct_modify(s);
     len = RARRAY(members)->len;
-    if (RSTRUCT(s)->len != RARRAY(members)->len) {
+    if (RSTRUCT_LEN(s) != RARRAY(members)->len) {
 	rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
-		 RARRAY(members)->len, RSTRUCT(s)->len);
+		 RARRAY(members)->len, RSTRUCT_LEN(s));
     }
     for (i=0; i<len; i++) {
 	if (SYM2ID(RARRAY(members)->ptr[i]) == id) {
-	    RSTRUCT(s)->ptr[i] = val;
+	    RSTRUCT_PTR(s)[i] = val;
 	    return val;
 	}
     }
@@ -624,17 +637,17 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
     }
 
     i = NUM2LONG(idx);
-    if (i < 0) i = RSTRUCT(s)->len + i;
+    if (i < 0) i = RSTRUCT_LEN(s) + i;
     if (i < 0) {
         rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
-		 i, RSTRUCT(s)->len);
+		 i, RSTRUCT_LEN(s));
     }
-    if (RSTRUCT(s)->len <= i) {
+    if (RSTRUCT_LEN(s) <= i) {
         rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
-		 i, RSTRUCT(s)->len);
+		 i, RSTRUCT_LEN(s));
     }
     rb_struct_modify(s);
-    return RSTRUCT(s)->ptr[i] = val;
+    return RSTRUCT_PTR(s)[i] = val;
 }
 
 static VALUE
@@ -662,7 +675,7 @@ struct_entry(VALUE s, long n)
 static VALUE
 rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 {
-    return rb_get_values_at(s, RSTRUCT(s)->len, argc, argv, struct_entry);
+    return rb_get_values_at(s, RSTRUCT_LEN(s), argc, argv, struct_entry);
 }
 
 /*
@@ -689,9 +702,9 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     result = rb_ary_new();
-    for (i = 0; i < RSTRUCT(s)->len; i++) {
-	if (RTEST(rb_yield(RSTRUCT(s)->ptr[i]))) {
-	    rb_ary_push(result, RSTRUCT(s)->ptr[i]);
+    for (i = 0; i < RSTRUCT_LEN(s); i++) {
+	if (RTEST(rb_yield(RSTRUCT_PTR(s)[i]))) {
+	    rb_ary_push(result, RSTRUCT_PTR(s)[i]);
 	}
     }
 
@@ -723,12 +736,12 @@ rb_struct_equal(VALUE s, VALUE s2)
     if (s == s2) return Qtrue;
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
-    if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
+    if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
 	rb_bug("inconsistent struct"); /* should never happen */
     }
 
-    for (i=0; i<RSTRUCT(s)->len; i++) {
-	if (!rb_equal(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return Qfalse;
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	if (!rb_equal(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
     }
     return Qtrue;
 }
@@ -747,9 +760,9 @@ rb_struct_hash(VALUE s)
     VALUE n;
 
     h = rb_hash(rb_obj_class(s));
-    for (i = 0; i < RSTRUCT(s)->len; i++) {
+    for (i = 0; i < RSTRUCT_LEN(s); i++) {
 	h = (h << 1) | (h<0 ? 1 : 0);
-	n = rb_hash(RSTRUCT(s)->ptr[i]);
+	n = rb_hash(RSTRUCT_PTR(s)[i]);
 	h ^= NUM2LONG(n);
     }
     return LONG2FIX(h);
@@ -771,12 +784,12 @@ rb_struct_eql(VALUE s, VALUE s2)
     if (s == s2) return Qtrue;
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
-    if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
+    if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
 	rb_bug("inconsistent struct"); /* should never happen */
     }
 
-    for (i=0; i<RSTRUCT(s)->len; i++) {
-	if (!rb_eql(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return Qfalse;
+    for (i=0; i<RSTRUCT_LEN(s); i++) {
+	if (!rb_eql(RSTRUCT_PTR(s)[i], RSTRUCT_PTR(s2)[i])) return Qfalse;
     }
     return Qtrue;
 }
@@ -796,7 +809,7 @@ rb_struct_eql(VALUE s, VALUE s2)
 static VALUE
 rb_struct_size(VALUE s)
 {
-    return LONG2FIX(RSTRUCT(s)->len);
+    return LONG2FIX(RSTRUCT_LEN(s));
 }
 
 /*
