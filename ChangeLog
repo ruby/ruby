@@ -1,3 +1,8 @@
+Mon Feb  6 16:02:51 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_thread_flock): ERROR_NOT_LOCKED is not an error on Cygwin.
+	  In such situation, flock() should return 0.
+
 Mon Feb  6 00:14:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_find_index): a new method Enumerable#find_index.
