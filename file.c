@@ -2230,7 +2230,7 @@ rb_file_s_rename(klass, from, to)
     dst = StringValueCStr(to);
     if (rename(src, dst) < 0) {
 #if defined __CYGWIN__
-	extern unsigned long __attribute__((stdcall)) GetLastError();
+	extern unsigned long __attribute__((stdcall)) GetLastError(void);
 	errno = GetLastError(); /* This is a Cygwin bug */
 #elif defined DOSISH && !defined _WIN32
 	if (errno == EEXIST
@@ -3107,7 +3107,19 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if 1
+#ifdef __CYGWIN__
+static int
+#include <winerror.h>
+cygwin_flock(int fd, int op)
+{
+    int ret = flock(fd, op);
+    if (GetLastError() == ERROR_NOT_LOCKED)
+	ret = 0;
+    return ret;
+}
+# define flock(fd, op) cygwin_flock(fd, op)
+#endif
+
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
@@ -3137,8 +3149,10 @@ rb_thread_flock(fd, op, fptr)
     }
     return 0;
 }
-#define flock(fd, op) rb_thread_flock(fd, op, fptr)
+#ifdef __CYGWIN__
+# undef flock
 #endif
+#define flock(fd, op) rb_thread_flock(fd, op, fptr)
 
 /*
  *  call-seq:

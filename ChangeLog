@@ -1,3 +1,8 @@
+Mon Feb  6 16:02:51 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_thread_flock): ERROR_NOT_LOCKED is not an error on Cygwin.
+	  In such situation, flock() should return 0.
+
 Mon Feb  6 00:41:08 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ruby.h (RSTRUCT_LEN, RSTRUCT_PTR): defined for source level
