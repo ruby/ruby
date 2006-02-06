@@ -1087,7 +1087,7 @@ gc_sweep()
 	    }
 	    else if (RBASIC(p)->flags == FL_MARK) {
 		/* objects to be finalized */
-		/* do notning remain marked */
+		/* do nothing remain marked */
 	    }
 	    else {
 		RBASIC(p)->flags &= ~FL_MARK;
