@@ -3047,9 +3047,12 @@ rb_file_truncate(VALUE obj, VALUE len)
 static int
 cygwin_flock(int fd, int op)
 {
+    int old_errno = errno;
     int ret = flock(fd, op);
-    if (GetLastError() == ERROR_NOT_LOCKED)
+    if (GetLastError() == ERROR_NOT_LOCKED) {
 	ret = 0;
+	errno = old_errno;
+    }
     return ret;
 }
 # define flock(fd, op) cygwin_flock(fd, op)
