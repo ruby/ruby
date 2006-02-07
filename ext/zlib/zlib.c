@@ -39,6 +39,7 @@ static VALUE rb_zlib_crc32 _((int, VALUE*, VALUE));
 static VALUE rb_zlib_crc_table _((VALUE));
 static voidpf zlib_mem_alloc _((voidpf, uInt, uInt));
 static void zlib_mem_free _((voidpf, voidpf));
+static void finalizer_warn _((const char*));
 
 struct zstream;
 struct zstream_funcs;
@@ -62,6 +63,7 @@ static void zstream_mark _((struct zstream*));
 static void zstream_free _((struct zstream*));
 static VALUE zstream_new _((VALUE, const struct zstream_funcs*));
 static struct zstream *get_zstream _((VALUE));
+static void zstream_finalize _((struct zstream*));
 
 static VALUE rb_zstream_end _((VALUE));
 static VALUE rb_zstream_reset _((VALUE));
@@ -127,7 +129,6 @@ static void gzfile_calc_crc _((struct gzfile*, VALUE));
 static VALUE gzfile_read _((struct gzfile*, int));
 static VALUE gzfile_read_all _((struct gzfile*));
 static void gzfile_ungetc _((struct gzfile*, int));
-static VALUE gzfile_finalize _((VALUE));
 static void gzfile_writer_end _((struct gzfile*));
 static void gzfile_reader_end _((struct gzfile*));
 static void gzfile_reader_rewind _((struct gzfile*));
@@ -240,6 +241,15 @@ raise_zlib_error(err, msg)
     rb_exc_raise(exc);
 }
 
+
+/*--- Warning (in finalizer) ---*/
+
+static void
+finalizer_warn(msg)
+    const char *msg;
+{
+    fprintf(stderr, "zlib(finalizer): %s\n", msg);
+}
 
 
 /*-------- module Zlib --------*/
@@ -365,15 +375,13 @@ struct zstream {
 #define ZSTREAM_FLAG_READY      0x1
 #define ZSTREAM_FLAG_IN_STREAM  0x2
 #define ZSTREAM_FLAG_FINISHED   0x4
-#define ZSTREAM_FLAG_FINALIZE   0x8
-#define ZSTREAM_FLAG_CLOSED     0x10
-#define ZSTREAM_FLAG_UNUSED     0x20
+#define ZSTREAM_FLAG_CLOSING    0x8
+#define ZSTREAM_FLAG_UNUSED     0x10
 
 #define ZSTREAM_READY(z)       ((z)->flags |= ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_READY(z)    ((z)->flags & ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_FINISHED(z) ((z)->flags & ZSTREAM_FLAG_FINISHED)
-#define ZSTREAM_IS_FINALIZE(z) ((z)->flags & ZSTREAM_FLAG_FINALIZE)
-#define ZSTREAM_IS_CLOSED(z)   ((z)->flags & ZSTREAM_FLAG_CLOSED)
+#define ZSTREAM_IS_CLOSING(z)  ((z)->flags & ZSTREAM_FLAG_CLOSING)
 
 /* I think that more better value should be found,
    but I gave up finding it. B) */
@@ -661,7 +669,7 @@ zstream_reset(z)
     int err;
 
     err = z->func->reset(&z->stream);
-    if (err != Z_OK && !ZSTREAM_IS_FINALIZE(z)) {
+    if (err != Z_OK) {
 	raise_zlib_error(err, z->stream.msg);
     }
     z->flags = ZSTREAM_FLAG_READY;
@@ -678,22 +686,18 @@ zstream_end(z)
 {
     int err;
 
-    if (!ZSTREAM_IS_READY(z) && !ZSTREAM_IS_FINALIZE(z)) {
-	if (RTEST(ruby_debug)) {
-	    rb_warning("attempt to close uninitialized zstream; ignored.");
-	}
+    if (!ZSTREAM_IS_READY(z)) {
+	rb_warning("attempt to close uninitialized zstream; ignored.");
 	return Qnil;
     }
     if (z->flags & ZSTREAM_FLAG_IN_STREAM) {
-	if (RTEST(ruby_debug)) {
-	    rb_warning("attempt to close unfinished zstream; reset forced.");
-	}
+	rb_warning("attempt to close unfinished zstream; reset forced.");
 	zstream_reset(z);
     }
 
     zstream_reset_input(z);
     err = z->func->end(&z->stream);
-    if (err != Z_OK && !ZSTREAM_IS_FINALIZE(z)) {
+    if (err != Z_OK) {
 	raise_zlib_error(err, z->stream.msg);
     }
     z->flags = 0;
@@ -817,11 +821,23 @@ zstream_mark(z)
 }
 
 static void
+zstream_finalize(z)
+    struct zstream *z;
+{
+    int err = z->func->end(&z->stream);
+    if (err == Z_STREAM_ERROR)
+	finalizer_warn("the stream state was inconsistent.");
+    if (err == Z_DATA_ERROR)
+	finalizer_warn("the stream was freed prematurely.");
+}
+
+static void
 zstream_free(z)
     struct zstream *z;
 {
-    z->flags |= ZSTREAM_FLAG_FINALIZE;
-    zstream_end(z);
+    if (ZSTREAM_IS_READY(z)) {
+	zstream_finalize(z);
+    }
     free(z);
 }
 
@@ -1356,9 +1372,7 @@ rb_deflate_params(obj, v_level, v_strategy)
 
     err = deflateParams(&z->stream, level, strategy);
     while (err == Z_BUF_ERROR) {
-	if (RTEST(ruby_debug)) {
-	    rb_warning("deflateParams() returned Z_BUF_ERROR");
-	}
+	rb_warning("deflateParams() returned Z_BUF_ERROR");
 	zstream_expand_buffer(z);
 	err = deflateParams(&z->stream, level, strategy);
     }
@@ -1750,9 +1764,13 @@ static void
 gzfile_free(gz)
     struct gzfile *gz;
 {
-    gz->z.flags |= ZSTREAM_FLAG_FINALIZE;
-    if (ZSTREAM_IS_READY(&gz->z)) {
-	gz->end(gz);
+    struct zstream *z = &gz->z;
+
+    if (ZSTREAM_IS_READY(z)) {
+	if (z->func == &deflate_funcs) {
+	    finalizer_warn("Zlib::GzipWriter object must be closed explicitly.");
+	}
+	zstream_finalize(z);
     }
     free(gz);
 }
@@ -2256,23 +2274,12 @@ gzfile_ungetc(gz, c)
     gz->ungetc++;
 }
 
-static VALUE
-gzfile_finalize(obj)
-    VALUE obj;
-{
-    struct gzfile *gz = (struct gzfile *)obj;
-    gzfile_write_raw(gz);
-    return Qnil;
-}
-
 static void
 gzfile_writer_end(gz)
     struct gzfile *gz;
 {
-    int aborted;
-
-    if (ZSTREAM_IS_CLOSED(&gz->z)) return;
-    gz->z.flags |= ZSTREAM_FLAG_CLOSED;
+    if (ZSTREAM_IS_CLOSING(&gz->z)) return;
+    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
     if (!(gz->z.flags & GZFILE_FLAG_HEADER_FINISHED)) {
 	gzfile_make_header(gz);
@@ -2280,22 +2287,6 @@ gzfile_writer_end(gz)
 
     zstream_run(&gz->z, "", 0, Z_FINISH);
     gzfile_make_footer(gz);
-
-    if (ZSTREAM_IS_FINALIZE(&gz->z)) {
-	if (NIL_P(gz->io)) return;
-	rb_warn("Zlib::GzipWriter object must be closed explicitly.");
-	if (!SPECIAL_CONST_P(gz->io) && OBJ_IS_FREED(gz->io)) {
-	    aborted = 1;
-	}
-	else {
-	    rb_protect(gzfile_finalize, (VALUE)gz, &aborted);
-	}
-	if (aborted) {
-	    rb_warn("gzip footer is not written; broken gzip file");
-	}
-	zstream_end(&gz->z);
-	return;
-    }
     gzfile_write_raw(gz);
     zstream_end(&gz->z);
 }
@@ -2304,11 +2295,10 @@ static void
 gzfile_reader_end(gz)
     struct gzfile *gz;
 {
-    if (ZSTREAM_IS_CLOSED(&gz->z)) return;
-    gz->z.flags |= ZSTREAM_FLAG_CLOSED;
+    if (ZSTREAM_IS_CLOSING(&gz->z)) return;
+    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
     if (GZFILE_IS_FINISHED(gz)
-	&& !ZSTREAM_IS_FINALIZE(&gz->z)
 	&& !(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
 	gzfile_check_footer(gz);
     }
