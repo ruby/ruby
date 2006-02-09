@@ -6538,7 +6538,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
  *       end
  *     end
  *     k = Klass.new
- *     k.instance_eval(5) {|x| @secret+x }   #=> 104
+ *     k.instance_exec(5) {|x| @secret+x }   #=> 104
  */
 
 VALUE
