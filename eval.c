@@ -1856,13 +1856,12 @@ ev_const_defined(cref, id, self)
     while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (!NIL_P(klass)) {
-	    if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
-		if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
-		    return Qfalse;
-		}
-		return Qtrue;
+	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
+	    if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
+		return Qfalse;
 	    }
+	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
     }
@@ -1881,15 +1880,14 @@ ev_const_get(cref, id, self)
     while (cbase && cbase->nd_next) {
 	VALUE klass = cbase->nd_clss;
 
-	if (!NIL_P(klass)) {
-	    while (RCLASS(klass)->iv_tbl &&
-		   st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
-		if (result == Qundef) {
-		    if (!RTEST(rb_autoload_load(klass, id))) break;
-		    continue;
-		}
-		return result;
+	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
+	while (RCLASS(klass)->iv_tbl &&
+	       st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
+	    if (result == Qundef) {
+		if (!RTEST(rb_autoload_load(klass, id))) break;
+		continue;
 	    }
+	    return result;
 	}
 	cbase = cbase->nd_next;
     }
@@ -6343,7 +6341,6 @@ eval(self, src, scope, file, line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
-    PUSH_CLASS(ruby_cbase);
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {
 	ruby_class = RBASIC(ruby_class)->klass;
@@ -6364,7 +6361,6 @@ eval(self, src, scope, file, line)
 	result = eval_node(self, node);
     }
     POP_TAG();
-    POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;
@@ -7958,6 +7954,9 @@ rb_f_autoload(obj, sym, file)
     VALUE sym;
     VALUE file;
 {
+    if (NIL_P(ruby_cbase)) {
+	rb_raise(rb_eTypeError, "no class/module for autoload target");
+    }
     return rb_mod_autoload(ruby_cbase, sym, file);
 }
 
@@ -7978,6 +7977,9 @@ rb_f_autoload_p(obj, sym)
     VALUE sym;
 {
     /* use ruby_cbase as same as rb_f_autoload. */
+    if (NIL_P(ruby_cbase)) {
+	return Qfalse;
+    }
     return rb_mod_autoload_p(ruby_cbase, sym);
 }
 

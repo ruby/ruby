@@ -1,3 +1,13 @@
+Sat Feb 11 02:04:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): no need to push ruby_class.  [ruby-dev:28176]
+
+Sat Feb 11 01:57:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_autoload): check if ruby_cbase is nil (during
+	  instance_eval for objects cannot have singleton classes,
+	  e.g. fixnums and symbols).  [ruby-dev:28178]
+
 Tue Feb  7 23:03:24 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/zlib/zlib.c: should not access ruby objects in finalizer.
