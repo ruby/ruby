@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.9"
+#define WIN32OLE_VERSION "0.7.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2021,6 +2021,32 @@ fole_s_set_code_page(self, vcp)
      * Should this method return old codepage?
      */
     return Qnil;
+}
+
+/* 
+ *  call-seq:
+ *     WIN32OLE.create_guid
+ * 
+ *  Creates GUID.
+ *     WIN32OLE.create_guid # => {1CB530F1-F6B1-404D-BCE6-1959BF91F4A8} 
+ */
+static VALUE
+fole_s_create_guid(self)
+    VALUE self;
+{
+    GUID guid;
+    HRESULT hr;
+    OLECHAR bstr[80];
+    int len = 0;
+    hr = CoCreateGuid(&guid);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to create GUID");
+    }
+    len = StringFromGUID2(&guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    if (len == 0) {
+        rb_raise(rb_eRuntimeError, "failed to create GUID(buffer over)");
+    }
+    return ole_wc2vstr(bstr, FALSE);
 }
 
 /*
@@ -6932,6 +6958,7 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "ole_show_help", fole_s_show_help, -1);
     rb_define_singleton_method(cWIN32OLE, "codepage", fole_s_get_code_page, 0);
     rb_define_singleton_method(cWIN32OLE, "codepage=", fole_s_set_code_page, 1);
+    rb_define_singleton_method(cWIN32OLE, "create_guid", fole_s_create_guid, 0);
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
     rb_define_method(cWIN32OLE, "[]", fole_getproperty, 1);

@@ -289,6 +289,12 @@ class TestWin32OLE < RUNIT::TestCase
     assert_equal(tlib.name, MS_EXCEL_TYPELIB);
   end
 
+  def test_s_create_guid
+    guid = WIN32OLE.create_guid
+    assert_match(/^\{[A-Z0-9]{8}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{12}/,
+                 guid)
+  end
+
   def teardown
     @excel.quit
     @excel = nil

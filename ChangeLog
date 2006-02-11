@@ -1,3 +1,9 @@
+Sat Feb 11 21:57:29 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE.create_guid.
+
+	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
 Tue Feb  7 23:03:13 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/zlib/zlib.c: should not access ruby objects in finalizer.
