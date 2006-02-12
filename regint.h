@@ -4,7 +4,7 @@
   regint.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -523,7 +523,7 @@ typedef struct _BBuf {
 #define ANCHOR_LOOK_BEHIND_NOT  (1<<13)
 
 #define ANCHOR_ANYCHAR_STAR     (1<<14)   /* ".*" optimize info */
-#define ANCHOR_ANYCHAR_STAR_PL  (1<<15)   /* ".*" optimize info (posix-line) */
+#define ANCHOR_ANYCHAR_STAR_ML  (1<<15)   /* ".*" optimize info (multi-line) */
 
 /* operation code */
 enum OpCode {

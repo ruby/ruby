@@ -2,7 +2,7 @@
   regcomp.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -4169,8 +4169,8 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       if (qn->lower == 0 && IS_REPEAT_INFINITE(qn->upper)) {
 	if (env->mmd.max == 0 &&
 	    NTYPE(qn->target) == N_ANYCHAR && qn->greedy) {
-	  if (IS_POSIXLINE(env->options))
-	    add_opt_anc_info(&opt->anc, ANCHOR_ANYCHAR_STAR_PL);
+	  if (IS_MULTILINE(env->options))
+	    add_opt_anc_info(&opt->anc, ANCHOR_ANYCHAR_STAR_ML);
 	  else
 	    add_opt_anc_info(&opt->anc, ANCHOR_ANYCHAR_STAR);
 	}
@@ -4360,7 +4360,7 @@ set_optimize_info_from_tree(Node* node, regex_t* reg, ScanEnv* scan_env)
   if (r) return r;
 
   reg->anchor = opt.anc.left_anchor & (ANCHOR_BEGIN_BUF |
-        ANCHOR_BEGIN_POSITION | ANCHOR_ANYCHAR_STAR | ANCHOR_ANYCHAR_STAR_PL);
+        ANCHOR_BEGIN_POSITION | ANCHOR_ANYCHAR_STAR | ANCHOR_ANYCHAR_STAR_ML);
 
   reg->anchor |= opt.anc.right_anchor & (ANCHOR_END_BUF | ANCHOR_SEMI_END_BUF);
 
@@ -4472,7 +4472,7 @@ print_anchor(FILE* f, int anchor)
     q = 1;
     fprintf(f, "anychar-star");
   }
-  if (anchor & ANCHOR_ANYCHAR_STAR_PL) {
+  if (anchor & ANCHOR_ANYCHAR_STAR_ML) {
     if (q) fprintf(f, ", ");
     fprintf(f, "anychar-star-pl");
   }

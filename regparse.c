@@ -2,7 +2,7 @@
   regparse.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -4675,6 +4675,8 @@ i_free_shared_class(type_cclass_key* key, Node* node, void* arg)
     if (IS_NOT_NULL(cc->mbuf)) xfree(cc->mbuf);
     xfree(node);
   }
+
+  if (IS_NOT_NULL(key)) xfree(key);
   return ST_DELETE;
 }
 
@@ -4683,6 +4685,8 @@ onig_free_shared_cclass_table()
 {
   if (IS_NOT_NULL(OnigTypeCClassTable)) {
     onig_st_foreach(OnigTypeCClassTable, i_free_shared_class, 0);
+    xfree(OnigTypeCClassTable);
+    OnigTypeCClassTable = NULL;
   }
 
   return 0;

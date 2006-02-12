@@ -2,7 +2,7 @@
   regexec.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -3351,7 +3351,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	goto end_buf;
       }
     }
-    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_PL)) {
+    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML)) {
       goto begin_position;
     }
   }

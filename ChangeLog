@@ -1,3 +1,17 @@
+Mon Feb 13 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* oniguruma.h: Version 4.0.1
+
+	* regparse.c (onig_free_shared_cclass_table): fix memory leaks.
+
+	* regcomp.c (optimize_node_left): change from IS_POSIXLINE() to IS_MULTILINE().
+
+	* regint.h: rename ANCHOR_ANYCHAR_STAR_PL to ANCHOR_ANYCHAR_STAR_ML.
+
+	* regparse.h: ditto.
+
+	* regexec.c: ditto.
+
 Sat Feb 11 21:57:29 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.create_guid.
