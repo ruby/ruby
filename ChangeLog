@@ -1,3 +1,8 @@
+Mon Feb 13 00:04:00 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Compiler): add instance variable @insert_cmd to
+          change <%='s behavior. (backported 1.15 - 1.16)
+
 Sat Feb 11 02:04:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (eval): no need to push ruby_class.  [ruby-dev:28176]
