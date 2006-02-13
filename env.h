@@ -16,7 +16,6 @@
 extern struct FRAME {
     VALUE self;
     int argc;
-    VALUE *argv;
     ID last_func;
     ID orig_func;
     VALUE last_class;
@@ -30,8 +29,8 @@ extern struct FRAME {
 
 void rb_gc_mark_frame _((struct FRAME *));
 
-#define FRAME_ALLOCA 0
-#define FRAME_MALLOC 1
+#define FRAME_DMETH  1
+#define FRAME_FUNC   2
 
 extern struct SCOPE {
     struct RBasic super;

@@ -1,3 +1,9 @@
+Mon Feb 13 18:08:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): argument update propagation.  [ruby-dev:28044]
+
+	* env.h: remove argc member from struct FRAME.
+
 Mon Feb 13 13:27:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (eval): should push class from binding if supplied.

@@ -199,7 +199,7 @@ typedef struct RNode {
 #define nd_lit   u1.value
 
 #define nd_frml  u1.node
-#define nd_rest  u2.argc
+#define nd_rest  u2.node
 #define nd_opt   u1.node
 
 #define nd_recv  u1.node

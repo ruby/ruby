@@ -275,12 +275,12 @@ static void top_local_setup();
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
-%type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
+%type <node> f_arglist f_args f_optarg f_opt f_rest_arg f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> block_var opt_block_var brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fsym variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_rest_arg
+%type <id>   cname fname op
 %type <num>  f_norm_arg f_arg
 %token tUPLUS 		/* unary+ */
 %token tUMINUS 		/* unary- */
@@ -2249,7 +2249,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    }
 		| f_arg ',' f_optarg opt_f_block_arg
 		    {
-			$$ = block_append(NEW_ARGS($1, $3, -1), $4);
+			$$ = block_append(NEW_ARGS($1, $3, 0), $4);
 		    }
 		| f_arg ',' f_rest_arg opt_f_block_arg
 		    {
@@ -2257,7 +2257,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    }
 		| f_arg opt_f_block_arg
 		    {
-			$$ = block_append(NEW_ARGS($1, 0, -1), $2);
+			$$ = block_append(NEW_ARGS($1, 0, 0), $2);
 		    }
 		| f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
@@ -2265,7 +2265,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    }
 		| f_optarg opt_f_block_arg
 		    {
-			$$ = block_append(NEW_ARGS(0, $1, -1), $2);
+			$$ = block_append(NEW_ARGS(0, $1, 0), $2);
 		    }
 		| f_rest_arg opt_f_block_arg
 		    {
@@ -2273,11 +2273,11 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    }
 		| f_block_arg
 		    {
-			$$ = block_append(NEW_ARGS(0, 0, -1), $1);
+			$$ = block_append(NEW_ARGS(0, 0, 0), $1);
 		    }
 		| /* none */
 		    {
-			$$ = NEW_ARGS(0, 0, -1);
+			$$ = NEW_ARGS(0, 0, 0);
 		    }
 		;
 
@@ -2344,13 +2344,19 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
-			else if (local_id($2))
-			    yyerror("duplicate rest argument name");
-			$$ = local_cnt($2);
+			if (dyna_in_block()) {
+			    rb_dvar_push($2, Qnil);
+			}
+			$$ = assignable($2, 0);
 		    }
 		| restarg_mark
 		    {
-			$$ = -2;
+			if (dyna_in_block()) {
+			    $$ = NEW_DASGN_CURR(internal_id(), 0);
+			}
+			else {
+			    $$ = NEW_NODE(NODE_LASGN,0,0,local_append(0));
+			}
 		    }
 		;
 

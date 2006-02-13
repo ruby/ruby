@@ -816,6 +816,7 @@ gc_mark_children(ptr, lev)
 	  case NODE_MODULE:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_ARGS:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
@@ -845,7 +846,6 @@ gc_mark_children(ptr, lev)
 	  case NODE_NEXT:
 	  case NODE_YIELD:
 	  case NODE_COLON2:
-	  case NODE_ARGS:
 	  case NODE_SPLAT:
 	  case NODE_TO_ARY:
 	  case NODE_SVALUE:
@@ -1265,7 +1265,6 @@ void
 rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
-    mark_locations_array(frame->argv, frame->argc);
     gc_mark((VALUE)frame->node, 0);
 }
 

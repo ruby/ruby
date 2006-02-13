@@ -764,8 +764,7 @@ static unsigned long frame_unique = 0;
     _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
     _frame.argc = 0;			\
-    _frame.argv = 0;			\
-    _frame.flags = FRAME_ALLOCA;	\
+    _frame.flags = 0;			\
     _frame.uniq = frame_unique++;	\
     ruby_frame = &_frame
 
@@ -843,6 +842,8 @@ struct RVarmap *ruby_dyna_vars;
 } while (0)
 
 #define DVAR_DONT_RECYCLE FL_USER2
+
+#define DMETHOD_P() (ruby_frame->prev ? (ruby_frame->prev->flags & FRAME_DMETH) : 0)
 
 static struct RVarmap*
 new_dvar(id, value, prev)
@@ -1181,9 +1182,9 @@ error_pos()
 {
     ruby_set_current_source();
     if (ruby_sourcefile) {
-	if (ruby_frame->last_func) {
+	if (ruby_frame->orig_func) {
 	    warn_printf("%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
-			rb_id2name(ruby_frame->last_func));
+			rb_id2name(ruby_frame->orig_func));
 	}
 	else if (ruby_sourceline == 0) {
 	    warn_printf("%s", ruby_sourcefile);
@@ -3467,7 +3468,17 @@ rb_eval(self, n)
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
 		argc = ruby_frame->argc;
-		argv = ruby_frame->argv;
+		if (argc && DMETHOD_P()) {
+		    if (TYPE(RBASIC(ruby_scope)->klass) != T_ARRAY ||
+			RARRAY(RBASIC(ruby_scope)->klass)->len != argc) {
+			rb_raise(rb_eRuntimeError, 
+				 "super: specify arguments explicitly");
+		    }
+		    argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;
+		}
+		else {
+		    argv = ruby_scope->local_vars + 2;
+		}
 	    }
 	    else {
 		BEGIN_CALLARGS;
@@ -3840,13 +3851,6 @@ rb_eval(self, n)
 
       case NODE_LIT:
 	result = node->nd_lit;
-	break;
-
-      case NODE_ATTRSET:
-	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
-		     ruby_frame->argc);
-	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
 
       case NODE_DEFN:
@@ -5702,6 +5706,18 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	stack_check();
 	rb_gc_finalize_deferred();
     }
+    if (argc < 0) {
+	VALUE tmp;
+	VALUE *nargv;
+
+	argc = -argc-1;
+	tmp = splat_value(argv[argc]);
+	nargv = TMP_ALLOC(argc + RARRAY(tmp)->len);
+	MEMCPY(nargv, argv, VALUE, argc);
+	MEMCPY(nargv+argc, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
+	argc += RARRAY(tmp)->len;
+	argv = nargv;
+    }
     PUSH_ITER(itr);
     PUSH_FRAME();
 
@@ -5710,7 +5726,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     ruby_frame->last_class = (flags & NOEX_NOSUPER)?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
-    ruby_frame->argv = argv;
+    ruby_frame->flags = 0;
 
     switch (nd_type(body)) {
       case NODE_CFUNC:
@@ -5751,9 +5767,13 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	break;
 
       case NODE_ATTRSET:
-	/* for re-scoped/renamed method */
+	if (argc != 1)
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+	result = rb_ivar_set(recv, body->nd_vid, argv[0]);
+	break;
+
       case NODE_ZSUPER:
-	result = rb_eval(recv, body);
+	result = rb_call_super(argc, argv);
 	break;
 
       case NODE_DMETHOD:
@@ -5761,6 +5781,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	break;
 
       case NODE_BMETHOD:
+	ruby_frame->flags |= FRAME_DMETH;
 	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	break;
 
@@ -5801,7 +5822,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    PUSH_TAG(PROT_FUNC);
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
-		int i;
+		int i, nopt = 0;
 
 		if (nd_type(body) == NODE_ARGS) {
 		    node = body;
@@ -5821,53 +5842,54 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				 argc, i);
 		    }
-		    if ((long)node->nd_rest == -1) {
-			int opt = i;
+		    if (!node->nd_rest) {
 			NODE *optnode = node->nd_opt;
 
+			nopt = i;
 			while (optnode) {
-			    opt++;
+			    nopt++;
 			    optnode = optnode->nd_next;
 			}
-			if (opt < argc) {
-			    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-				     argc, opt);
+			if (nopt < argc) {
+			    rb_raise(rb_eArgError,
+				     "wrong number of arguments (%d for %d)",
+				     argc, nopt);
 			}
-			ruby_frame->argc = opt;
-			ruby_frame->argv = local_vars+2;
 		    }
-
 		    if (local_vars) {
 			if (i > 0) {
 			    /* +2 for $_ and $~ */
 			    MEMCPY(local_vars+2, argv, VALUE, i);
 			}
-			argv += i; argc -= i;
-			if (node->nd_opt) {
-			    NODE *opt = node->nd_opt;
-
-			    while (opt && argc) {
-				assign(recv, opt->nd_head, *argv, 1);
-				argv++; argc--;
-				opt = opt->nd_next;
-			    }
-			    if (opt) {
-				rb_eval(recv, opt);
-			    }
-			}
-			local_vars = ruby_scope->local_vars;
-			if ((long)node->nd_rest >= 0) {
-			    VALUE v;
-
-			    if (argc > 0)
-				v = rb_ary_new4(argc,argv);
-			    else
-				v = rb_ary_new2(0);
-			    ruby_scope->local_vars[node->nd_rest] = v;
-			}
 		    }
-		}
+		    argv += i; argc -= i;
+		    if (node->nd_opt) {
+			NODE *opt = node->nd_opt;
 
+			while (opt && argc) {
+			    assign(recv, opt->nd_head, *argv, 1);
+			    argv++; argc--;
+			    opt = opt->nd_next;
+			}
+			if (opt) {
+			    rb_eval(recv, opt);
+			}
+			i = nopt;
+		    }
+		    if (node->nd_rest) {
+			VALUE v;
+			
+			if (argc > 0) {
+			    v = rb_ary_new4(argc,argv);
+			    i = -i - 1;
+			}
+			else {
+			    v = rb_ary_new2(0);
+			}
+			assign(recv, node->nd_rest, v, 1);
+		    }
+		    ruby_frame->argc = i;
+		}
 		if (event_hooks) {
 		    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, b2, recv, id, klass);
 		}
@@ -6154,10 +6176,10 @@ backtrace(lev)
     }
     if (lev < 0) {
 	ruby_set_current_source();
-	if (frame->last_func) {
+	if (frame->orig_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     ruby_sourcefile, ruby_sourceline,
-		     rb_id2name(frame->last_func));
+		     rb_id2name(frame->orig_func));
 	}
 	else if (ruby_sourceline == 0) {
 	    snprintf(buf, BUFSIZ, "%s", ruby_sourcefile);
@@ -6178,11 +6200,11 @@ backtrace(lev)
 	}
     }
     for (; frame && (n = frame->node); frame = frame->prev) {
-	if (frame->prev && frame->prev->last_func) {
+	if (frame->prev && frame->prev->orig_func) {
 	    if (frame->prev->node == n) continue;
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     n->nd_file, nd_line(n),
-		     rb_id2name(frame->prev->last_func));
+		     rb_id2name(frame->prev->orig_func));
 	}
 	else {
 	    snprintf(buf, BUFSIZ, "%s:%d", n->nd_file, nd_line(n));
@@ -6498,7 +6520,6 @@ exec_under(func, under, cbase, args)
     ruby_frame->orig_func = f->orig_func;
     ruby_frame->last_class = f->last_class;
     ruby_frame->argc = f->argc;
-    ruby_frame->argv = f->argv;
     if (cbase) {
 	PUSH_CREF(cbase);
     }
@@ -8053,12 +8074,8 @@ frame_free(frame)
 {
     struct FRAME *tmp;
 
-    if (frame->argc > 0 && (frame->flags & FRAME_MALLOC))
-        free(frame->argv);
     frame = frame->prev;
     while (frame) {
-	if (frame->argc > 0 && (frame->flags & FRAME_MALLOC))
-	    free(frame->argv);
 	tmp = frame;
 	frame = frame->prev;
 	free(tmp);
@@ -8083,16 +8100,9 @@ static void
 frame_dup(frame)
     struct FRAME *frame;
 {
-    VALUE *argv;
     struct FRAME *tmp;
 
     for (;;) {
-	if (frame->argc > 0) {
-	    argv = ALLOC_N(VALUE, frame->argc);
-	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
-	    frame->argv = argv;
-	    frame->flags |= FRAME_MALLOC;
-	}
 	frame->tmp = 0;		/* should not preserve tmp */
 	if (!frame->prev) break;
 	tmp = ALLOC(struct FRAME);
@@ -8425,11 +8435,15 @@ proc_invoke(proc, args, self, klass)
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.last_class = klass;
     _block.frame.argc = RARRAY(tmp)->len;
-    _block.frame.argv = ALLOCA_N(VALUE, RARRAY(tmp)->len);
-    MEMCPY(_block.frame.argv, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
-    _block.frame.flags = FRAME_ALLOCA;
+    if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
+        NEWOBJ(scope, struct SCOPE);
+        OBJSETUP(scope, tmp, T_SCOPE);
+        scope->local_tbl = _block.scope->local_tbl;
+        scope->local_vars = _block.scope->local_vars;
+        _block.scope = scope;
+    }
+    /* modify current frame */
     ruby_block = &_block;
-
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
     PUSH_TAG(pcall ? PROT_LAMBDA : PROT_NONE);
@@ -9240,16 +9254,18 @@ method_arity(method)
 	return proc_arity(body->nd_cval);
       case NODE_DMETHOD:
 	return method_arity(body->nd_cval);
-      default:
+      case NODE_SCOPE:
 	body = body->nd_next;	/* skip NODE_SCOPE */
 	if (nd_type(body) == NODE_BLOCK)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_opt || body->nd_rest != -1)
+	if (body->nd_opt || body->nd_rest)
 	    n = -n-1;
 	return INT2FIX(n);
-    }
+      default:
+	rb_raise(rb_eArgError, "invalid node 0x%x", nd_type(body));
+   }
 }
 
 /*
@@ -9941,26 +9957,6 @@ timeofday()
 
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
-#ifdef C_ALLOCA
-# define MARK_FRAME_ADJ(f) rb_gc_mark_frame(f)
-#else
-# define MARK_FRAME_ADJ(f) mark_frame_adj(f, th)
-static void
-mark_frame_adj(frame, th)
-    struct FRAME *frame;
-    rb_thread_t th;
-{
-    if (frame->flags & FRAME_MALLOC) {
-	rb_gc_mark_locations(frame->argv, frame->argv+frame->argc);
-    }
-    else {
-	VALUE *start = ADJ(frame->argv);
-	rb_gc_mark_locations(start, start+frame->argc);
-    }
-    rb_gc_mark((VALUE)frame->node);
-}
-#endif
-
 static void
 thread_mark(th)
     rb_thread_t th;
@@ -10003,13 +9999,13 @@ thread_mark(th)
     frame = th->frame;
     while (frame && frame != top_frame) {
 	frame = ADJ(frame);
-	MARK_FRAME_ADJ(frame);
+	rb_gc_mark_frame(frame);
 	if (frame->tmp) {
 	    struct FRAME *tmp = frame->tmp;
 
 	    while (tmp && tmp != top_frame) {
 		tmp = ADJ(tmp);
-		MARK_FRAME_ADJ(tmp);
+		rb_gc_mark_frame(tmp);
 		tmp = tmp->prev;
 	    }
 	}
@@ -10018,7 +10014,7 @@ thread_mark(th)
     block = th->block;
     while (block) {
 	block = ADJ(block);
-	MARK_FRAME_ADJ(&block->frame);
+	rb_gc_mark_frame(&block->frame);
 	block = block->prev;
     }
 }
