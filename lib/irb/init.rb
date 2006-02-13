@@ -206,7 +206,7 @@ module IRB
       begin
 	load rc_file
       rescue LoadError, Errno::ENOENT
-      rescue
+      rescue # StandardError, ScriptError
 	print "load error: #{rc_file}\n"
 	print $!.class, ": ", $!, "\n"
 	for err in $@[0, $@.size - 2]
@@ -250,7 +250,7 @@ module IRB
     for m in @CONF[:LOAD_MODULES]
       begin
 	require m
-      rescue
+      rescue # StandardError, ScriptError
 	print $@[0], ":", $!.class, ": ", $!, "\n"
       end
     end

@@ -41,8 +41,7 @@ closed_sdbm()
 }
 
 static void
-free_sdbm(dbmp)
-    struct dbmdata *dbmp;
+free_sdbm(struct dbmdata *dbmp)
 {
 
     if (dbmp->di_dbm) sdbm_close(dbmp->di_dbm);
@@ -50,8 +49,7 @@ free_sdbm(dbmp)
 }
 
 static VALUE
-fsdbm_close(obj)
-    VALUE obj;
+fsdbm_close(VALUE obj)
 {
     struct dbmdata *dbmp;
 
@@ -63,8 +61,7 @@ fsdbm_close(obj)
 }
 
 static VALUE
-fsdbm_closed(obj)
-    VALUE obj;
+fsdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
@@ -77,19 +74,14 @@ fsdbm_closed(obj)
     return Qfalse;
 }
 
-static VALUE fsdbm_alloc _((VALUE));
 static VALUE
-fsdbm_alloc(klass)
-    VALUE klass;
+fsdbm_alloc(VALUE klass)
 {
     return Data_Wrap_Struct(klass, 0, free_sdbm, 0);
 }
 
 static VALUE
-fsdbm_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
     VALUE file, vmode;
     DBM *dbm;
@@ -129,10 +121,7 @@ fsdbm_initialize(argc, argv, obj)
 }
 
 static VALUE
-fsdbm_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+fsdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
     VALUE obj = Data_Wrap_Struct(klass, 0, free_sdbm, 0);
 
@@ -148,8 +137,7 @@ fsdbm_s_open(argc, argv, klass)
 }
 
 static VALUE
-fsdbm_fetch(obj, keystr, ifnone)
-    VALUE obj, keystr, ifnone;
+fsdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
 {
     datum key, value;
     struct dbmdata *dbmp;
@@ -170,17 +158,13 @@ fsdbm_fetch(obj, keystr, ifnone)
 }
 
 static VALUE
-fsdbm_aref(obj, keystr)
-    VALUE obj, keystr;
+fsdbm_aref(VALUE obj, VALUE keystr)
 {
     return fsdbm_fetch(obj, keystr, Qnil);
 }
 
 static VALUE
-fsdbm_fetch_m(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fsdbm_fetch_m(int argc, VALUE *argv, VALUE obj)
 {
     VALUE keystr, valstr, ifnone;
 
@@ -193,8 +177,7 @@ fsdbm_fetch_m(argc, argv, obj)
 }
 
 static VALUE
-fsdbm_index(obj, valstr)
-    VALUE obj, valstr;
+fsdbm_index(VALUE obj, VALUE valstr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -215,8 +198,7 @@ fsdbm_index(obj, valstr)
 }
 
 static VALUE
-fsdbm_select(obj)
-    VALUE obj;
+fsdbm_select(VALUE obj)
 {
     VALUE new = rb_ary_new();
     datum key, val;
@@ -240,10 +222,7 @@ fsdbm_select(obj)
 }
 
 static VALUE
-fsdbm_values_at(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fsdbm_values_at(int argc, VALUE *argv, VALUE obj)
 {
     VALUE new = rb_ary_new2(argc);
     int i;
@@ -256,16 +235,14 @@ fsdbm_values_at(argc, argv, obj)
 }
 
 static void
-fdbm_modify(obj)
-    VALUE obj;
+fdbm_modify(VALUE obj)
 {
     rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("SDBM");
 }
 
 static VALUE
-fsdbm_delete(obj, keystr)
-    VALUE obj, keystr;
+fsdbm_delete(VALUE obj, VALUE keystr)
 {
     datum key, value;
     struct dbmdata *dbmp;
@@ -300,8 +277,7 @@ fsdbm_delete(obj, keystr)
 }
 
 static VALUE
-fsdbm_shift(obj)
-    VALUE obj;
+fsdbm_shift(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -324,8 +300,7 @@ fsdbm_shift(obj)
 }
 
 static VALUE
-fsdbm_delete_if(obj)
-    VALUE obj;
+fsdbm_delete_if(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -364,8 +339,7 @@ fsdbm_delete_if(obj)
 }
 
 static VALUE
-fsdbm_clear(obj)
-    VALUE obj;
+fsdbm_clear(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -385,8 +359,7 @@ fsdbm_clear(obj)
 }
 
 static VALUE
-fsdbm_invert(obj)
-    VALUE obj;
+fsdbm_invert(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -404,42 +377,8 @@ fsdbm_invert(obj)
     return hash;
 }
 
-static VALUE each_pair _((VALUE));
-
-static VALUE fsdbm_store _((VALUE,VALUE,VALUE));
-
 static VALUE
-update_i(pair, dbm)
-    VALUE pair, dbm;
-{
-    Check_Type(pair, T_ARRAY);
-    if (RARRAY(pair)->len < 2) {
-	rb_raise(rb_eArgError, "pair must be [key, value]");
-    }
-    fsdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
-    return Qnil;
-}
-
-static VALUE
-fsdbm_update(obj, other)
-    VALUE obj, other;
-{
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
-    return obj;
-}
-
-static VALUE
-fsdbm_replace(obj, other)
-    VALUE obj, other;
-{
-    fsdbm_clear(obj);
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
-    return obj;
-}
-
-static VALUE
-fsdbm_store(obj, keystr, valstr)
-    VALUE obj, keystr, valstr;
+fsdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -474,8 +413,33 @@ fsdbm_store(obj, keystr, valstr)
 }
 
 static VALUE
-fsdbm_length(obj)
-    VALUE obj;
+update_i(VALUE pair, VALUE dbm)
+{
+    Check_Type(pair, T_ARRAY);
+    if (RARRAY(pair)->len < 2) {
+	rb_raise(rb_eArgError, "pair must be [key, value]");
+    }
+    fsdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
+    return Qnil;
+}
+
+static VALUE
+fsdbm_update(VALUE obj, VALUE other)
+{
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    return obj;
+}
+
+static VALUE
+fsdbm_replace(VALUE obj, VALUE other)
+{
+    fsdbm_clear(obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    return obj;
+}
+
+static VALUE
+fsdbm_length(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -494,8 +458,7 @@ fsdbm_length(obj)
 }
 
 static VALUE
-fsdbm_empty_p(obj)
-    VALUE obj;
+fsdbm_empty_p(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -518,8 +481,7 @@ fsdbm_empty_p(obj)
 }
 
 static VALUE
-fsdbm_each_value(obj)
-    VALUE obj;
+fsdbm_each_value(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -535,8 +497,7 @@ fsdbm_each_value(obj)
 }
 
 static VALUE
-fsdbm_each_key(obj)
-    VALUE obj;
+fsdbm_each_key(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -551,8 +512,7 @@ fsdbm_each_key(obj)
 }
 
 static VALUE
-fsdbm_each_pair(obj)
-    VALUE obj;
+fsdbm_each_pair(VALUE obj)
 {
     datum key, val;
     DBM *dbm;
@@ -572,8 +532,7 @@ fsdbm_each_pair(obj)
 }
 
 static VALUE
-fsdbm_keys(obj)
-    VALUE obj;
+fsdbm_keys(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -590,8 +549,7 @@ fsdbm_keys(obj)
 }
 
 static VALUE
-fsdbm_values(obj)
-    VALUE obj;
+fsdbm_values(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -609,8 +567,7 @@ fsdbm_values(obj)
 }
 
 static VALUE
-fsdbm_has_key(obj, keystr)
-    VALUE obj, keystr;
+fsdbm_has_key(VALUE obj, VALUE keystr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -627,8 +584,7 @@ fsdbm_has_key(obj, keystr)
 }
 
 static VALUE
-fsdbm_has_value(obj, valstr)
-    VALUE obj, valstr;
+fsdbm_has_value(VALUE obj, VALUE valstr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -649,8 +605,7 @@ fsdbm_has_value(obj, valstr)
 }
 
 static VALUE
-fsdbm_to_a(obj)
-    VALUE obj;
+fsdbm_to_a(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -669,8 +624,7 @@ fsdbm_to_a(obj)
 }
 
 static VALUE
-fsdbm_to_hash(obj)
-    VALUE obj;
+fsdbm_to_hash(VALUE obj)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -689,8 +643,7 @@ fsdbm_to_hash(obj)
 }
 
 static VALUE
-fsdbm_reject(obj)
-    VALUE obj;
+fsdbm_reject(VALUE obj)
 {
     return rb_hash_delete_if(fsdbm_to_hash(obj));
 }

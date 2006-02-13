@@ -1,3 +1,9 @@
+Mon Feb 13 13:49:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_parse_string): mention "regexp" in a error
+	  message.  a patch from Mauricio Fernandez <mfp at acm.org>
+	  [ruby-core:07340]
+
 Mon Feb 13 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.0.1
@@ -18,15 +24,45 @@ Sat Feb 11 21:57:29 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
 
+Sat Feb 11 01:57:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_autoload): check if ruby_cbase is nil (during
+	  instance_eval for objects cannot have singleton classes,
+	  e.g. fixnums and symbols).  [ruby-dev:28178]
+
+Fri Feb 10 12:31:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should support NODE_ZSUPER in NODE_ITER.
+	  [ruby-dev:28326]
+
+	* eval.c (ZSUPER_ARGS): support macro.
+
+Wed Feb  8 10:26:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): turn on during_gc while
+	  invoking finalizers.
+
+	* gc.c (rb_gc_finalize_deferred): ditto.
+
 Tue Feb  7 23:03:13 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/zlib/zlib.c: should not access ruby objects in finalizer.
 	  [ruby-dev:28286]
 
+Tue Feb  7 18:42:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_write_error2): use fwrite(3) if rb_stderr is not
+	  updated or is already freed.  [ruby-dev:28313]
+
 Mon Feb  6 16:02:51 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_thread_flock): ERROR_NOT_LOCKED is not an error on Cygwin.
 	  In such situation, flock() should return 0.
+
+Mon Feb  6 14:36:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_line): include the class name of a surrounding
+	  method in error position description.
 
 Mon Feb  6 00:14:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

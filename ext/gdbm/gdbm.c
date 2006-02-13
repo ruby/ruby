@@ -21,8 +21,7 @@ static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
 static void
-rb_gdbm_fatal(msg)
-    char *msg;
+rb_gdbm_fatal(char *msg)
 {
     rb_raise(rb_eGDBMFatalError, msg);
 }
@@ -33,7 +32,7 @@ struct dbmdata {
 };
 
 static void
-closed_dbm()
+closed_dbm(void)
 {
     rb_raise(rb_eRuntimeError, "closed GDBM file");
 }
@@ -50,8 +49,7 @@ closed_dbm()
 }
 
 static void
-free_dbm(dbmp)
-    struct dbmdata *dbmp;
+free_dbm(struct dbmdata *dbmp)
 {
     if (dbmp) {
 	if (dbmp->di_dbm) gdbm_close(dbmp->di_dbm);
@@ -60,8 +58,7 @@ free_dbm(dbmp)
 }
 
 static VALUE
-fgdbm_close(obj)
-    VALUE obj;
+fgdbm_close(VALUE obj)
 {
     struct dbmdata *dbmp;
 
@@ -73,8 +70,7 @@ fgdbm_close(obj)
 }
 
 static VALUE
-fgdbm_closed(obj)
-    VALUE obj;
+fgdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
@@ -87,20 +83,14 @@ fgdbm_closed(obj)
     return Qfalse;
 }
 
-static VALUE fgdbm_s_alloc _((VALUE));
-
 static VALUE
-fgdbm_s_alloc(klass)
-    VALUE klass;
+fgdbm_s_alloc(VALUE klass)
 {
     return Data_Wrap_Struct(klass, 0, free_dbm, 0);
 }
 
 static VALUE
-fgdbm_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
     VALUE file, vmode, vflags;
     GDBM_FILE dbm;
@@ -161,10 +151,7 @@ fgdbm_initialize(argc, argv, obj)
 }
 
 static VALUE
-fgdbm_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+fgdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
     VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
 
@@ -180,9 +167,7 @@ fgdbm_s_open(argc, argv, klass)
 }
 
 static VALUE
-rb_gdbm_fetch(dbm, key)
-    GDBM_FILE dbm;
-    datum key;
+rb_gdbm_fetch(GDBM_FILE dbm, datum key)
 {
     datum val;
     VALUE str;
@@ -202,9 +187,7 @@ rb_gdbm_fetch(dbm, key)
 }
 
 static VALUE
-rb_gdbm_fetch2(dbm, keystr)
-    GDBM_FILE dbm;
-    VALUE keystr;
+rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
 {
     datum key;
 
@@ -216,8 +199,7 @@ rb_gdbm_fetch2(dbm, keystr)
 }
 
 static VALUE
-rb_gdbm_fetch3(obj, keystr)
-    VALUE obj, keystr;
+rb_gdbm_fetch3(VALUE obj, VALUE keystr)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -227,8 +209,7 @@ rb_gdbm_fetch3(obj, keystr)
 }
 
 static VALUE
-rb_gdbm_firstkey(dbm)
-    GDBM_FILE dbm;
+rb_gdbm_firstkey(GDBM_FILE dbm)
 {
     datum key;
     VALUE str;
@@ -248,9 +229,7 @@ rb_gdbm_firstkey(dbm)
 }
 
 static VALUE
-rb_gdbm_nextkey(dbm, keystr)
-    GDBM_FILE dbm;
-    VALUE keystr;
+rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
 {
     datum key, key2;
     VALUE str;
@@ -272,8 +251,7 @@ rb_gdbm_nextkey(dbm, keystr)
 }
 
 static VALUE
-fgdbm_fetch(obj, keystr, ifnone)
-    VALUE obj, keystr, ifnone;
+fgdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
 {
     VALUE valstr;
 
@@ -287,17 +265,13 @@ fgdbm_fetch(obj, keystr, ifnone)
 }
 
 static VALUE
-fgdbm_aref(obj, keystr)
-    VALUE obj, keystr;
+fgdbm_aref(VALUE obj, VALUE keystr)
 {
     return rb_gdbm_fetch3(obj, keystr);
 }
 
 static VALUE
-fgdbm_fetch_m(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fgdbm_fetch_m(int argc, VALUE *argv, VALUE obj)
 {
     VALUE keystr, valstr, ifnone;
 
@@ -310,8 +284,7 @@ fgdbm_fetch_m(argc, argv, obj)
 }
 
 static VALUE
-fgdbm_index(obj, valstr)
-    VALUE obj, valstr;
+fgdbm_index(VALUE obj, VALUE valstr)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -334,8 +307,7 @@ fgdbm_index(obj, valstr)
 }
 
 static VALUE
-fgdbm_select(obj)
-    VALUE obj;
+fgdbm_select(VALUE obj)
 {
     VALUE new = rb_ary_new();
     GDBM_FILE dbm;
@@ -358,10 +330,7 @@ fgdbm_select(obj)
 }
 
 static VALUE
-fgdbm_values_at(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+fgdbm_values_at(int argc, VALUE *argv, VALUE obj)
 {
     VALUE new = rb_ary_new2(argc);
     int i;
@@ -374,16 +343,14 @@ fgdbm_values_at(argc, argv, obj)
 }
 
 static void
-rb_gdbm_modify(obj)
-    VALUE obj;
+rb_gdbm_modify(VALUE obj)
 {
     rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
 }
 
 static VALUE
-rb_gdbm_delete(obj, keystr)
-    VALUE obj, keystr;
+rb_gdbm_delete(VALUE obj, VALUE keystr)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -410,8 +377,7 @@ rb_gdbm_delete(obj, keystr)
 }
 
 static VALUE
-fgdbm_delete(obj, keystr)
-    VALUE obj, keystr;
+fgdbm_delete(VALUE obj, VALUE keystr)
 {
     VALUE valstr;
 
@@ -421,8 +387,7 @@ fgdbm_delete(obj, keystr)
 }
 
 static VALUE
-fgdbm_shift(obj)
-    VALUE obj;
+fgdbm_shift(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -439,8 +404,7 @@ fgdbm_shift(obj)
 }
 
 static VALUE
-fgdbm_delete_if(obj)
-    VALUE obj;
+fgdbm_delete_if(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -472,8 +436,7 @@ fgdbm_delete_if(obj)
 }
 
 static VALUE
-fgdbm_clear(obj)
-    VALUE obj;
+fgdbm_clear(VALUE obj)
 {
     datum key, nextkey;
     struct dbmdata *dbmp;
@@ -510,8 +473,7 @@ fgdbm_clear(obj)
 }
 
 static VALUE
-fgdbm_invert(obj)
-    VALUE obj;
+fgdbm_invert(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -528,42 +490,8 @@ fgdbm_invert(obj)
     return hash;
 }
 
-static VALUE each_pair _((VALUE));
-
-static VALUE fgdbm_store _((VALUE,VALUE,VALUE));
-
 static VALUE
-update_i(pair, dbm)
-    VALUE pair, dbm;
-{
-    Check_Type(pair, T_ARRAY);
-    if (RARRAY(pair)->len < 2) {
-	rb_raise(rb_eArgError, "pair must be [key, value]");
-    }
-    fgdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
-    return Qnil;
-}
-
-static VALUE
-fgdbm_update(obj, other)
-    VALUE obj, other;
-{
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
-    return obj;
-}
-
-static VALUE
-fgdbm_replace(obj, other)
-    VALUE obj, other;
-{
-    fgdbm_clear(obj);
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
-    return obj;
-}
-
-static VALUE
-fgdbm_store(obj, keystr, valstr)
-    VALUE obj, keystr, valstr;
+fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 {
     datum key, val;
     struct dbmdata *dbmp;
@@ -590,8 +518,33 @@ fgdbm_store(obj, keystr, valstr)
 }
 
 static VALUE
-fgdbm_length(obj)
-    VALUE obj;
+update_i(VALUE pair, VALUE dbm)
+{
+    Check_Type(pair, T_ARRAY);
+    if (RARRAY(pair)->len < 2) {
+	rb_raise(rb_eArgError, "pair must be [key, value]");
+    }
+    fgdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
+    return Qnil;
+}
+
+static VALUE
+fgdbm_update(VALUE obj, VALUE other)
+{
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    return obj;
+}
+
+static VALUE
+fgdbm_replace(VALUE obj, VALUE other)
+{
+    fgdbm_clear(obj);
+    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    return obj;
+}
+
+static VALUE
+fgdbm_length(VALUE obj)
 {
     datum key, nextkey;
     struct dbmdata *dbmp;
@@ -612,8 +565,7 @@ fgdbm_length(obj)
 }
 
 static VALUE
-fgdbm_empty_p(obj)
-    VALUE obj;
+fgdbm_empty_p(VALUE obj)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -636,8 +588,7 @@ fgdbm_empty_p(obj)
 }
 
 static VALUE
-fgdbm_each_value(obj)
-    VALUE obj;
+fgdbm_each_value(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -654,8 +605,7 @@ fgdbm_each_value(obj)
 }
 
 static VALUE
-fgdbm_each_key(obj)
-    VALUE obj;
+fgdbm_each_key(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -672,8 +622,7 @@ fgdbm_each_key(obj)
 }
 
 static VALUE
-fgdbm_each_pair(obj)
-    VALUE obj;
+fgdbm_each_pair(VALUE obj)
 {
     GDBM_FILE dbm;
     struct dbmdata *dbmp;
@@ -691,8 +640,7 @@ fgdbm_each_pair(obj)
 }
 
 static VALUE
-fgdbm_keys(obj)
-    VALUE obj;
+fgdbm_keys(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -710,8 +658,7 @@ fgdbm_keys(obj)
 }
 
 static VALUE
-fgdbm_values(obj)
-    VALUE obj;
+fgdbm_values(VALUE obj)
 {
     datum key, nextkey;
     struct dbmdata *dbmp;
@@ -731,8 +678,7 @@ fgdbm_values(obj)
 }
 
 static VALUE
-fgdbm_has_key(obj, keystr)
-    VALUE obj, keystr;
+fgdbm_has_key(VALUE obj, VALUE keystr)
 {
     datum key;
     struct dbmdata *dbmp;
@@ -749,8 +695,7 @@ fgdbm_has_key(obj, keystr)
 }
 
 static VALUE
-fgdbm_has_value(obj, valstr)
-    VALUE obj, valstr;
+fgdbm_has_value(VALUE obj, VALUE valstr)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -774,8 +719,7 @@ fgdbm_has_value(obj, valstr)
 }
 
 static VALUE
-fgdbm_to_a(obj)
-    VALUE obj;
+fgdbm_to_a(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -793,8 +737,7 @@ fgdbm_to_a(obj)
 }
 
 static VALUE
-fgdbm_reorganize(obj)
-    VALUE obj;
+fgdbm_reorganize(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -806,8 +749,7 @@ fgdbm_reorganize(obj)
 }
 
 static VALUE
-fgdbm_sync(obj)
-    VALUE obj;
+fgdbm_sync(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -819,8 +761,7 @@ fgdbm_sync(obj)
 }
 
 static VALUE
-fgdbm_set_cachesize(obj, val)
-    VALUE obj, val;
+fgdbm_set_cachesize(VALUE obj, VALUE val)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -835,8 +776,7 @@ fgdbm_set_cachesize(obj, val)
 }
 
 static VALUE
-fgdbm_set_fastmode(obj, val)
-    VALUE obj, val;
+fgdbm_set_fastmode(VALUE obj, VALUE val)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -854,8 +794,7 @@ fgdbm_set_fastmode(obj, val)
 }
 
 static VALUE
-fgdbm_set_syncmode(obj, val)
-    VALUE obj, val;
+fgdbm_set_syncmode(VALUE obj, VALUE val)
 {
 #if !defined(GDBM_SYNCMODE)
     fgdbm_set_fastmode(obj, RTEST(val) ? Qfalse : Qtrue);
@@ -878,8 +817,7 @@ fgdbm_set_syncmode(obj, val)
 }
 
 static VALUE
-fgdbm_to_hash(obj)
-    VALUE obj;
+fgdbm_to_hash(VALUE obj)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
@@ -897,14 +835,13 @@ fgdbm_to_hash(obj)
 }
 
 static VALUE
-fgdbm_reject(obj)
-    VALUE obj;
+fgdbm_reject(VALUE obj)
 {
     return rb_hash_delete_if(fgdbm_to_hash(obj));
 }
 
 void
-Init_gdbm()
+Init_gdbm(void)
 {
     rb_cGDBM = rb_define_class("GDBM", rb_cObject);
     rb_eGDBMError = rb_define_class("GDBMError", rb_eStandardError);

@@ -772,7 +772,6 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
 	  case NODE_ITER:
-	  case NODE_CREF:
 	  case NODE_WHEN:
 	  case NODE_MASGN:
 	  case NODE_RESCUE:
@@ -792,6 +791,7 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
+	  case NODE_CREF:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
@@ -1831,11 +1831,13 @@ rb_gc_finalize_deferred(void)
 {
     RVALUE *p = deferred_final_list;
 
+    during_gc++;
     deferred_final_list = 0;
     if (p) {
 	finalize_list(p);
     }
     free_unused_heaps();
+    during_gc = 0;
 }
 
 void
@@ -1844,6 +1846,8 @@ rb_gc_call_finalizer_at_exit(void)
     RVALUE *p, *pend;
     int i;
 
+    /* finalizers are part of garbage collection */
+    during_gc++;
     /* run finalizers */
     if (need_call_final) {
 	p = deferred_final_list;
@@ -1884,6 +1888,7 @@ rb_gc_call_finalizer_at_exit(void)
 	    p++;
 	}
     }
+    during_gc = 0;
 }
 
 /*

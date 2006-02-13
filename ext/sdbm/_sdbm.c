@@ -143,10 +143,7 @@ static long masks[] = {
 datum nullitem = {NULL, 0};
 
 DBM *
-sdbm_open(file, flags, mode)
-register char *file;
-register int flags;
-register int mode;
+sdbm_open(register char *file, register int flags, register int mode)
 {
 	register DBM *db;
 	register char *dirname;
@@ -175,11 +172,7 @@ register int mode;
 }
 
 DBM *
-sdbm_prep(dirname, pagname, flags, mode)
-char *dirname;
-char *pagname;
-int flags;
-int mode;
+sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 {
 	register DBM *db;
 	struct stat dstat;
@@ -235,8 +228,7 @@ int mode;
 }
 
 void
-sdbm_close(db)
-register DBM *db;
+sdbm_close(register DBM *db)
 {
 	if (db == NULL)
 		errno = EINVAL;
@@ -248,9 +240,7 @@ register DBM *db;
 }
 
 datum
-sdbm_fetch(db, key)
-register DBM *db;
-datum key;
+sdbm_fetch(register DBM *db, datum key)
 {
 	if (db == NULL || bad(key))
 		return errno = EINVAL, nullitem;
@@ -262,9 +252,7 @@ datum key;
 }
 
 int
-sdbm_delete(db, key)
-register DBM *db;
-datum key;
+sdbm_delete(register DBM *db, datum key)
 {
 	if (db == NULL || bad(key))
 		return errno = EINVAL, -1;
@@ -288,11 +276,7 @@ datum key;
 }
 
 int
-sdbm_store(db, key, val, flags)
-register DBM *db;
-datum key;
-datum val;
-int flags;
+sdbm_store(register DBM *db, datum key, datum val, int flags)
 {
 	int need;
 	register long hash;
@@ -350,10 +334,7 @@ int flags;
  * giving up.
  */
 static int
-makroom(db, hash, need)
-register DBM *db;
-long hash;
-int need;
+makroom(register DBM *db, long int hash, int need)
 {
 	long newp;
 	char twin[PBLKSIZ];
@@ -450,8 +431,7 @@ int need;
  * deletions aren't taken into account. (ndbm bug)
  */
 datum
-sdbm_firstkey(db)
-register DBM *db;
+sdbm_firstkey(register DBM *db)
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -470,8 +450,7 @@ register DBM *db;
 }
 
 datum
-sdbm_nextkey(db)
-register DBM *db;
+sdbm_nextkey(register DBM *db)
 {
 	if (db == NULL)
 		return errno = EINVAL, nullitem;
@@ -482,9 +461,7 @@ register DBM *db;
  * all important binary trie traversal
  */
 static int
-getpage(db, hash)
-register DBM *db;
-register long hash;
+getpage(register DBM *db, register long int hash)
 {
 	register int hbit;
 	register long dbit;
@@ -526,9 +503,7 @@ register long hash;
 }
 
 static int
-getdbit(db, dbit)
-register DBM *db;
-register long dbit;
+getdbit(register DBM *db, register long int dbit)
 {
 	register long c;
 	register long dirb;
@@ -549,9 +524,7 @@ register long dbit;
 }
 
 static int
-setdbit(db, dbit)
-register DBM *db;
-register long dbit;
+setdbit(register DBM *db, register long int dbit)
 {
 	register long c;
 	register long dirb;
@@ -585,8 +558,7 @@ register long dbit;
  * the page, try the next page in sequence
  */
 static datum
-getnext(db)
-register DBM *db;
+getnext(register DBM *db)
 {
 	datum key;
 
@@ -661,9 +633,7 @@ static int seepair proto((char *, int, char *, int));
  */
 
 static int
-fitpair(pag, need)
-char *pag;
-int need;
+fitpair(char *pag, int need)
 {
 	register int n;
 	register int off;
@@ -680,10 +650,7 @@ int need;
 }
 
 static void
-putpair(pag, key, val)
-char *pag;
-datum key;
-datum val;
+putpair(char *pag, datum key, datum val)
 {
 	register int n;
 	register int off;
@@ -711,9 +678,7 @@ datum val;
 }
 
 static datum
-getpair(pag, key)
-char *pag;
-datum key;
+getpair(char *pag, datum key)
 {
 	register int i;
 	register int n;
@@ -733,9 +698,7 @@ datum key;
 
 #ifdef SEEDUPS
 static int
-duppair(pag, key)
-char *pag;
-datum key;
+duppair(char *pag, datum key)
 {
 	register short *ino = (short *) pag;
 	return GET_SHORT(ino,0) > 0 &&
@@ -744,9 +707,7 @@ datum key;
 #endif
 
 static datum
-getnkey(pag, num)
-char *pag;
-int num;
+getnkey(char *pag, int num)
 {
 	datum key;
 	register int off;
@@ -765,9 +726,7 @@ int num;
 }
 
 static int
-delpair(pag, key)
-char *pag;
-datum key;
+delpair(char *pag, datum key)
 {
 	register int n;
 	register int i;
@@ -837,11 +796,7 @@ datum key;
  * return 0 if not found.
  */
 static int
-seepair(pag, n, key, siz)
-char *pag;
-register int n;
-register char *key;
-register int siz;
+seepair(char *pag, register int n, register char *key, register int siz)
 {
 	register int i;
 	register int off = PBLKSIZ;
@@ -857,10 +812,7 @@ register int siz;
 }
 
 static void
-splpage(pag, new, sbit)
-char *pag;
-char *new;
-long sbit;
+splpage(char *pag, char *new, long int sbit)
 {
 	datum key;
 	datum val;
@@ -901,8 +853,7 @@ long sbit;
  * this could be made more rigorous.
  */
 static int
-chkpage(pag)
-char *pag;
+chkpage(char *pag)
 {
 	register int n;
 	register int off;
@@ -942,9 +893,7 @@ char *pag;
  *      65587   even better. 
  */
 long
-sdbm_hash(str, len)
-register char *str;
-register int len;
+sdbm_hash(register char *str, register int len)
 {
 	register unsigned long n = 0;
 

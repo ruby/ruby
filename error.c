@@ -961,7 +961,13 @@ Init_Exception(void)
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
-    rb_eNameError     = rb_define_class("NameError", rb_eException);
+
+    rb_eScriptError = rb_define_class("ScriptError", rb_eException);
+    rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
+    rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
+
+    rb_eNameError     = rb_define_class("NameError", rb_eScriptError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
@@ -974,11 +980,6 @@ Init_Exception(void)
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
-
-    rb_eScriptError = rb_define_class("ScriptError", rb_eException);
-    rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
-    rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
-    rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
