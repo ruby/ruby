@@ -256,7 +256,7 @@ static int vis_mode;
 #define VIS_MASK      7
 #define VIS_SET(f)  (vis_mode=(f))
 #define VIS_TEST(f) (vis_mode&(f))
-#define VIS_MODE(f) (vis_mode)
+#define VIS_MODE()  (vis_mode)
 
 NODE* ruby_current_node;
 int ruby_safe_level = 0;
@@ -2102,7 +2102,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 static NODE*
 copy_node_scope(NODE *node, NODE *rval)
 {
-    NODE *cref = NEW_NODE(NODE_CREF,rval->nd_clss,0,rval->nd_next);;
+    NODE *cref = NEW_NODE(NODE_CREF,rval->nd_clss,0,rval->nd_next);
     NODE *copy = NEW_NODE(NODE_SCOPE,0,cref,node->nd_next);
 
     if (node->nd_tbl) {
@@ -5716,7 +5716,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
     ruby_frame->self = recv;\
     ruby_frame->argc = argc;\
     ruby_frame->block = block;\
-    ruby_frame->flags = ((flags & NOEX_RECV) ? FRAME_FUNC : 0) | 0;
+    ruby_frame->flags = (flags & NOEX_RECV) ? FRAME_FUNC : 0;
 
 static VALUE
 rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
@@ -5726,7 +5726,6 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
-    int dmeth = DMETHOD_P();
     static int tick;
     volatile VALUE args;
     volatile int safe = -1;

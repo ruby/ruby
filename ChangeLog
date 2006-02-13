@@ -1,3 +1,12 @@
+Mon Feb 13 18:01:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (copy_node_scope): remove duplicated semicolons at end.
+	  a patch from KIMURA Koichi <kimura.koichi at canon.co.jp>.
+	  [ruby-dev:28332]
+
+	* eval.c (VIS_MODE): remove unnecessary argument.
+	  [ruby-dev:28332]
+
 Mon Feb 13 13:49:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_parse_string): mention "regexp" in a error
