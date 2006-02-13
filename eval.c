@@ -6341,6 +6341,7 @@ eval(self, src, scope, file, line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
+    PUSH_CLASS(data ? data->klass : ruby_class);
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {
 	ruby_class = RBASIC(ruby_class)->klass;
@@ -6361,6 +6362,7 @@ eval(self, src, scope, file, line)
 	result = eval_node(self, node);
     }
     POP_TAG();
+    POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;

@@ -1,3 +1,8 @@
+Mon Feb 13 13:27:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): should push class from binding if supplied.
+	  [ruby-core:07347]
+
 Mon Feb 13 00:04:00 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler): add instance variable @insert_cmd to
