@@ -1,3 +1,11 @@
+Tue Feb 14 11:42:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (search_time_t): support non 32bit time_t environments.
+
+	* win32/Makefile.sub (config.h): VC++8 have ``long long'' type.
+
+	* win32/Makefile.sub (config.h): VC++8's time_t is 64bit value.
+
 Mon Feb 13 18:01:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (copy_node_scope): remove duplicated semicolons at end.

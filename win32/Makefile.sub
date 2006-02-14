@@ -225,13 +225,21 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONG 4
+!if $(MSC_VER) >= 1400
+#define SIZEOF_LONG_LONG 8
+!else
 #define SIZEOF_LONG_LONG 0
+!endif
 #define SIZEOF___INT64 8
 #define SIZEOF_OFF_T 4
 #define SIZEOF_VOIDP 4
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
+!if $(MSC_VER) >= 1400
+#define SIZEOF_TIME_T 8
+!else
 #define SIZEOF_TIME_T 4
+!endif
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
