@@ -780,7 +780,7 @@ struct RVarmap *ruby_dyna_vars;
 
 #define DVAR_DONT_RECYCLE FL_USER2
 
-#define DMETHOD_P() (ruby_frame->prev ? (ruby_frame->prev->flags & FRAME_DMETH) : 0)
+#define DMETHOD_P() (ruby_frame->flags & FRAME_DMETH)
 
 static struct RVarmap*
 new_dvar(ID id, VALUE value, struct RVarmap *prev)
@@ -8323,6 +8323,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass)
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.this_class = klass;
     _block.frame.argc = RARRAY(tmp)->len;
+    _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
         NEWOBJ(scope, struct SCOPE);
         OBJSETUP(scope, tmp, T_SCOPE);
