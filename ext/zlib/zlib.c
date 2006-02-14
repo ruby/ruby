@@ -2212,7 +2212,7 @@ gzfile_writer_end_run(arg)
 	gzfile_make_header(gz);
     }
 
-    zstream_run(&gz->z, (Bytef*)"", 0, Z_FINISH);
+    zstream_run(&gz->z, "", 0, Z_FINISH);
     gzfile_make_footer(gz);
     gzfile_write_raw(gz);
 
