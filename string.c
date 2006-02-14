@@ -2151,7 +2151,7 @@ rb_str_clear(VALUE str)
     FL_UNSET(str, STR_NOCAPA);
     FL_SET(str, ELTS_SHARED);
     RSTRING(str)->ptr = null_str;
-    RARRAY(str)->len = 0;
+    RSTRING(str)->len = 0;
     return str;
 }
 
