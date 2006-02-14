@@ -314,10 +314,12 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
 static VALUE
 enumerator_each(VALUE obj)
 {
-    struct enumerator *e = enumerator_ptr(obj);
+    struct enumerator *e;
     int argc = 0;
     VALUE *argv = 0;
 
+    if (!rb_block_given_p()) return obj;
+    e = enumerator_ptr(obj);
     if (e->args) {
 	argc = RARRAY(e->args)->len;
 	argv = RARRAY(e->args)->ptr;
