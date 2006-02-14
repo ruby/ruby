@@ -129,7 +129,9 @@ static void gzfile_calc_crc _((struct gzfile*, VALUE));
 static VALUE gzfile_read _((struct gzfile*, int));
 static VALUE gzfile_read_all _((struct gzfile*));
 static void gzfile_ungetc _((struct gzfile*, int));
+static VALUE gzfile_writer_end_run _((VALUE));
 static void gzfile_writer_end _((struct gzfile*));
+static VALUE gzfile_reader_end_run _((VALUE));
 static void gzfile_reader_end _((struct gzfile*));
 static void gzfile_reader_rewind _((struct gzfile*));
 static VALUE gzfile_reader_get_unused _((struct gzfile*));
@@ -2274,12 +2276,11 @@ gzfile_ungetc(gz, c)
     gz->ungetc++;
 }
 
-static void
-gzfile_writer_end(gz)
-    struct gzfile *gz;
+static VALUE
+gzfile_writer_end_run(arg)
+    VALUE arg;
 {
-    if (ZSTREAM_IS_CLOSING(&gz->z)) return;
-    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
+    struct gzfile *gz = (struct gzfile *)arg;
 
     if (!(gz->z.flags & GZFILE_FLAG_HEADER_FINISHED)) {
 	gzfile_make_header(gz);
@@ -2288,7 +2289,32 @@ gzfile_writer_end(gz)
     zstream_run(&gz->z, (Bytef*)"", 0, Z_FINISH);
     gzfile_make_footer(gz);
     gzfile_write_raw(gz);
-    zstream_end(&gz->z);
+
+    return Qnil;
+}
+
+static void
+gzfile_writer_end(gz)
+    struct gzfile *gz;
+{
+    if (ZSTREAM_IS_CLOSING(&gz->z)) return;
+    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
+
+    rb_ensure(gzfile_writer_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
+}
+
+static VALUE
+gzfile_reader_end_run(arg)
+    VALUE arg;
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+
+    if (GZFILE_IS_FINISHED(gz)
+	&& !(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
+	gzfile_check_footer(gz);
+    }
+
+    return Qnil;
 }
 
 static void
@@ -2298,12 +2324,7 @@ gzfile_reader_end(gz)
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
 
-    if (GZFILE_IS_FINISHED(gz)
-	&& !(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
-	gzfile_check_footer(gz);
-    }
-
-    zstream_end(&gz->z);
+    rb_ensure(gzfile_reader_end_run, (VALUE)gz, zstream_end, (VALUE)&gz->z);
 }
 
 static void

@@ -1,3 +1,7 @@
+Tue Feb 14 15:15:22 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/zlib/zlib.c: supress warning on test/zlib. [ruby-dev:28323]
+
 Tue Feb 14 13:47:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_utime): drop read-only attribute before
