@@ -1,3 +1,7 @@
+Tue Feb 14 15:13:51 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/zlib/zlib.c: supress warning on test/zlib. [ruby-dev:28323]
+
 Tue Feb 14 14:01:17 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (search_time_t): support non 32bit time_t environments.
