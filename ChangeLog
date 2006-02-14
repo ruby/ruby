@@ -1,3 +1,8 @@
+Tue Feb 14 11:21:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_forward): should not use frame->argv.
+	  [ruby-core:07358]
+
 Mon Feb 13 18:08:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): argument update propagation.  [ruby-dev:28044]
