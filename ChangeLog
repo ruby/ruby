@@ -1,3 +1,16 @@
+Tue Feb 14 14:01:17 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (search_time_t): support non 32bit time_t environments.
+
+	* win32/Makefile.sub (config.h): VC++8 has ``long long'' type.
+
+	* win32/Makefile.sub (config.h): VC++8's time_t is 64bit value.
+
+	* win32/win32.c (rb_w32_utime): drop read-only attribute before
+	  changing file time.
+
+	  all changes are backported from CVS HEAD.
+
 Tue Feb 14 11:21:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_forward): should not use frame->argv.

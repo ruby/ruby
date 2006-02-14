@@ -486,6 +486,16 @@ tmcmp(a, b)
         return 0;
 }
 
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned LONG_LONG unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
 static time_t
 search_time_t(tptr, utc_p)
     struct tm *tptr;
@@ -499,12 +509,12 @@ search_time_t(tptr, utc_p)
     find_dst = 0 < tptr->tm_isdst;
 
 #ifdef NEGATIVE_TIME_T
-    guess_lo = 1L << (8 * sizeof(time_t) - 1);
+    guess_lo = (time_t)~((unsigned_time_t)~(time_t)0 >> 1);
 #else
     guess_lo = 0;
 #endif
     guess_hi = ((time_t)-1) < ((time_t)0) ?
-               (1UL << (8 * sizeof(time_t) - 1)) - 1 :
+	       (time_t)((unsigned_time_t)~(time_t)0 >> 1) :
 	       ~(time_t)0;
 
     guess = timegm_noleapsecond(tptr);
@@ -1254,16 +1264,6 @@ time_to_s(time)
     }
     return rb_str_new(buf, len);
 }
-
-#if SIZEOF_TIME_T == SIZEOF_LONG
-typedef unsigned long unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_INT
-typedef unsigned int unsigned_time_t;
-#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned LONG_LONG unsigned_time_t;
-#else
-# error cannot find integer type which size is same as time_t.
-#endif
 
 static VALUE
 time_add(tobj, offset, sign)

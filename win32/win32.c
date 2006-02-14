@@ -3504,6 +3504,9 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     }
 
     RUBY_CRITICAL({
+	const DWORD attr = GetFileAttributes(path);
+	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
+	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
 			   IsWin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, 0);
 	if (hFile == INVALID_HANDLE_VALUE) {
@@ -3517,6 +3520,8 @@ rb_w32_utime(const char *path, struct utimbuf *times)
 	    }
 	    CloseHandle(hFile);
 	}
+	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
+	    SetFileAttributes(path, attr);
     });
 
     return ret;
