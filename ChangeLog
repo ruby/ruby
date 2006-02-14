@@ -2,7 +2,7 @@ Tue Feb 14 11:42:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (search_time_t): support non 32bit time_t environments.
 
-	* win32/Makefile.sub (config.h): VC++8 have ``long long'' type.
+	* win32/Makefile.sub (config.h): VC++8 has ``long long'' type.
 
 	* win32/Makefile.sub (config.h): VC++8's time_t is 64bit value.
 
