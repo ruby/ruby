@@ -1,3 +1,8 @@
+Tue Feb 14 13:47:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_utime): drop read-only attribute before
+	  changing file time.
+
 Tue Feb 14 13:38:01 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): should define HAVE_LONG_LONG with
