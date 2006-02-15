@@ -6466,7 +6466,6 @@ yield_under_i(VALUE arg)
     VALUE avalue = Qtrue;
     if (args[0] == Qundef) {
 	avalue = Qfalse;
-	args[0] = args[1];
     }
     return rb_yield_0(args[0], args[1], ruby_cbase, YIELD_PUBLIC_DEF, avalue);
 }
@@ -6475,7 +6474,7 @@ yield_under_i(VALUE arg)
 static VALUE
 yield_under(VALUE under, VALUE self, VALUE values)
 {
-    VALUE args[4];
+    VALUE args[2];
     args[0] = values;
     args[1] = self;
     return exec_under(yield_under_i, under, (VALUE)args);

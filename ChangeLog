@@ -1,6 +1,11 @@
+Wed Feb 15 10:09:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (yield_under_i): should not pass self as an argument to
+	  the block for instance_eval.  [ruby-core:07364]
+
 Wed Feb 15 09:20:35 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_obj_instance_eval): should no singleton classes for
+	* eval.c (rb_obj_instance_eval): should be no singleton classes for
 	  true, false, and nil.  [ruby-dev:28186]
 
 Tue Feb 14 20:26:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
