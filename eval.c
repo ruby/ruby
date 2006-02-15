@@ -6578,7 +6578,7 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
+    return rb_yield_0(Qundef, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
 }
 
 /* block eval under the class/module context */
