@@ -1127,10 +1127,8 @@ error_line(struct FRAME *frame, NODE *node)
 	else if (!node && ruby_sourceline == 0) {
 	    return  rb_str_new2(ruby_sourcefile);
 	}
-	else {
-	    return rb_sprintf("%s:%d", file, line);
-	}
     }
+    return rb_sprintf("%s:%d", file, line);
 }
 
 #define warn_print(x) rb_write_error(x)
@@ -6463,7 +6461,8 @@ static VALUE
 yield_under_i(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
-    VALUE avalue = Qtrue;
+    int avalue = Qtrue;
+
     if (args[0] == Qundef) {
 	avalue = Qfalse;
     }
@@ -6577,7 +6576,7 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
 {
     VALUE klass;
 
-    if (FIXNUM_P(self) || SYMBOL_P(self)) {
+    if (SPECIAL_CONST_P(self)) {
 	klass = Qnil;
     }
     else {
