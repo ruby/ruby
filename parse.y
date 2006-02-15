@@ -1684,9 +1684,6 @@ arg		: lhs '=' arg
 
 			value_expr($6);
 			args = NEW_LIST($6);
-			if ($3 && nd_type($3) != NODE_ARRAY)
-			    $3 = NEW_LIST($3);
-			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
