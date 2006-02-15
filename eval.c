@@ -2212,7 +2212,7 @@ copy_node_scope(node, rval)
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
 #endif
 
-#define SETUP_ARGS0(anode,alen) do {\
+#define SETUP_ARGS0(anode,alen,extra) do {\
     NODE *n = anode;\
     if (!n) {\
 	argc = 0;\
@@ -2239,12 +2239,12 @@ copy_node_scope(node, rval)
 	if (TYPE(args) != T_ARRAY)\
 	    args = rb_ary_to_ary(args);\
 	argc = RARRAY(args)->len;\
-	argv = ALLOCA_N(VALUE, argc);\
+	argv = TMP_ALLOC(argc+extra);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
 } while (0)
 
-#define SETUP_ARGS(anode) SETUP_ARGS0(anode, anode->nd_alen)
+#define SETUP_ARGS(anode) SETUP_ARGS0(anode, anode->nd_alen,0)
 
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
@@ -3533,28 +3533,29 @@ rb_eval(self, n)
       case NODE_OP_ASGN1:
 	{
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
-	    VALUE recv, val;
+	    VALUE recv, val, tmp;
 	    NODE *rval;
 	    TMP_PROTECT;
 
 	    recv = rb_eval(self, node->nd_recv);
 	    rval = node->nd_args->nd_head;
-	    SETUP_ARGS0(node->nd_args->nd_next, node->nd_args->nd_alen - 1);
-	    val = rb_funcall2(recv, aref, argc-1, argv);
+	    SETUP_ARGS0(node->nd_args->nd_next, node->nd_args->nd_alen-1,1);
+	    val = rb_funcall3(recv, aref, argc, argv);
 	    switch (node->nd_mid) {
 	    case 0: /* OR */
-		if (RTEST(val)) RETURN(val);
-		val = rb_eval(self, rval);
-		break;
+	      if (RTEST(val)) RETURN(val);
+	      val = rb_eval(self, rval);
+	      break;
 	    case 1: /* AND */
-		if (!RTEST(val)) RETURN(val);
-		val = rb_eval(self, rval);
-		break;
+	      if (!RTEST(val)) RETURN(val);
+	      val = rb_eval(self, rval);
+	      break;
 	    default:
-		val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
+	      tmp = rb_eval(self, rval);
+	      val = rb_funcall3(val, node->nd_mid, 1, &tmp);
 	    }
-	    argv[argc-1] = val;
-	    rb_funcall2(recv, aset, argc, argv);
+	    argv[argc] = val;
+	    rb_funcall2(recv, aset, argc+1, argv);
 	    result = val;
 	}
 	break;
@@ -3562,22 +3563,22 @@ rb_eval(self, n)
       case NODE_OP_ASGN2:
 	{
 	    ID id = node->nd_next->nd_vid;
-	    VALUE recv, val;
+	    VALUE recv, val, tmp;
 
 	    recv = rb_eval(self, node->nd_recv);
-	    val = rb_funcall(recv, id, 0);
+	    val = rb_funcall3(recv, id, 0, 0);
 	    switch (node->nd_next->nd_mid) {
 	    case 0: /* OR */
-		if (RTEST(val)) RETURN(val);
-		val = rb_eval(self, node->nd_value);
-		break;
+	      if (RTEST(val)) RETURN(val);
+	      val = rb_eval(self, node->nd_value);
+	      break;
 	    case 1: /* AND */
-		if (!RTEST(val)) RETURN(val);
-		val = rb_eval(self, node->nd_value);
-		break;
+	      if (!RTEST(val)) RETURN(val);
+	      val = rb_eval(self, node->nd_value);
+	      break;
 	    default:
-		val = rb_funcall(val, node->nd_next->nd_mid, 1,
-				 rb_eval(self, node->nd_value));
+	      tmp = rb_eval(self, node->nd_value);
+	      val = rb_funcall3(val, node->nd_next->nd_mid, 1, &tmp);
 	    }
 
 	    rb_funcall2(recv, node->nd_next->nd_aid, 1, &val);

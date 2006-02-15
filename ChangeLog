@@ -1,3 +1,14 @@
+Wed Feb 15 16:52:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): NODE_OP_ASGN1 should allow splat in its
+	  argument list.  [ruby-core:07366]
+
+	* parse.y (arg): avoid unnecessary extra argument.
+	  [ruby-core:07366]
+
+	* eval.c (rb_eval): honor visibility on OP_ASGN1 and
+	  OP_ASGN2. [ruby-core:07366]
+
 Wed Feb 15 10:09:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (yield_under_i): should not pass self as an argument to
