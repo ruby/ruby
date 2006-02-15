@@ -1,3 +1,8 @@
+Wed Feb 15 09:20:35 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_obj_instance_eval): should no singleton classes for
+	  true, false, and nil.  [ruby-dev:28186]
+
 Tue Feb 14 18:48:33 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (DMETHOD_P): accessing wrong frame.  [ruby-dev:28181]

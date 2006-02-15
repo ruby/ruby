@@ -6660,7 +6660,7 @@ rb_obj_instance_eval(argc, argv, self)
 {
     VALUE klass;
 
-    if (FIXNUM_P(self) || SYMBOL_P(self)) {
+    if (SPECIAL_CONST_P(self)) {
 	klass = Qnil;
     }
     else {
