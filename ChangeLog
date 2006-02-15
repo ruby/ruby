@@ -1,3 +1,8 @@
+Thu Feb 16 01:10:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (backtrace): frame->orig_func may not be initialized.
+	  [ruby-core:07367]
+
 Wed Feb 15 16:52:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): NODE_OP_ASGN1 should allow splat in its

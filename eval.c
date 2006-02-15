@@ -1182,7 +1182,7 @@ error_pos()
 {
     ruby_set_current_source();
     if (ruby_sourcefile) {
-	if (ruby_frame->orig_func) {
+	if (ruby_frame->last_func) {
 	    warn_printf("%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
 			rb_id2name(ruby_frame->orig_func));
 	}
@@ -1679,7 +1679,6 @@ rb_eval_string_wrap(str, state)
     rb_extend_object(ruby_top_self, ruby_wrapper);
     PUSH_FRAME();
     ruby_frame->last_func = 0;
-    ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
     PUSH_CREF(ruby_wrapper);
@@ -1821,7 +1820,6 @@ rb_eval_cmd(cmd, arg, level)
     ruby_scope = top_scope;
     PUSH_FRAME();
     ruby_frame->last_func = 0;
-    ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = ruby_top_self;
     PUSH_CREF(ruby_wrapper ? ruby_wrapper : rb_cObject);
@@ -2307,7 +2305,7 @@ is_defined(self, node, buf)
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
-	if (ruby_frame->orig_func == 0) return 0;
+	if (ruby_frame->last_func == 0) return 0;
 	else if (ruby_frame->last_class == 0) return 0;
 	val = ruby_frame->last_class;
 	if (rb_method_boundp(RCLASS(val)->super, ruby_frame->orig_func, 0)) {
@@ -3457,7 +3455,7 @@ rb_eval(self, n)
 	    TMP_PROTECT;
 
 	    if (ruby_frame->last_class == 0) {
-		if (ruby_frame->orig_func) {
+		if (ruby_frame->last_func) {
 		    rb_name_error(ruby_frame->last_func,
 				  "superclass method `%s' disabled",
 				  rb_id2name(ruby_frame->orig_func));
@@ -6177,7 +6175,7 @@ backtrace(lev)
     }
     if (lev < 0) {
 	ruby_set_current_source();
-	if (frame->orig_func) {
+	if (frame->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     ruby_sourcefile, ruby_sourceline,
 		     rb_id2name(frame->orig_func));
@@ -6201,7 +6199,7 @@ backtrace(lev)
 	}
     }
     for (; frame && (n = frame->node); frame = frame->prev) {
-	if (frame->prev && frame->prev->orig_func) {
+	if (frame->prev && frame->prev->last_func) {
 	    if (frame->prev->node == n) continue;
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     n->nd_file, nd_line(n),
@@ -8225,6 +8223,7 @@ rb_f_binding(self)
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
 	data->frame.last_class = ruby_frame->prev->last_class;
+	data->frame.orig_func = ruby_frame->prev->orig_func;
     }
 
     if (data->iter) {
