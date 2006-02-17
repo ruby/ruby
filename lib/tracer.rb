@@ -24,8 +24,6 @@ class Tracer
     attr :stdout, true
   end
   
-  MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0][0]
-  
   EVENT_SYMBOL = {
     "line" => "-",
     "call" => ">",
@@ -114,7 +112,7 @@ class Tracer
   end
   
   def trace_func(event, file, line, id, binding, klass, *)
-    return if file == MY_FILE_NAME
+    return if file == __FILE__
     
     for p in @filters
       return unless p.call event, file, line, id, binding, klass
@@ -157,15 +155,13 @@ end
 
 SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 
-if caller(0).size == 1
-  if $0 == Tracer::MY_FILE_NAME
-    # direct call
+if $0 == __FILE__
+  # direct call
     
-    $0 = ARGV[0]
-    ARGV.shift
-    Tracer.on
-    require $0
-  else
-    Tracer.on
-  end
+  $0 = ARGV[0]
+  ARGV.shift
+  Tracer.on
+  require $0
+else
+  Tracer.on
 end
