@@ -10777,7 +10777,7 @@ rb_thread_wait_for(time)
 #ifdef ERESTART
 		  case ERESTART:
 #endif
-		    return;
+		    break;
 		  default:
 		    rb_sys_fail("sleep");
 		}

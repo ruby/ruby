@@ -1,3 +1,8 @@
+Fri Feb 17 09:39:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_wait_for): sleep should always sleep for
+	  specified amount of time.  [ruby-talk:180067]
+
 Thu Feb 16 01:10:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (backtrace): frame->orig_func may not be initialized.
