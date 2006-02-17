@@ -1,3 +1,8 @@
+Sat Feb 18 00:22:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tracer.rb: merged a minor clarification patch from Daniel
+	  Berger <Daniel.Berger at qwest.com>.  [ruby-core:07376]
+
 Fri Feb 17 11:18:42 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): Float("1e") should fail. [ruby-core:7330]
