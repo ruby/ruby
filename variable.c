@@ -1297,16 +1297,19 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
 	if (!recurse) break;
 	tmp = RCLASS(tmp)->super;
 	if (tmp == rb_cObject) break;
+	if (ruby_wrapper && tmp && RBASIC(tmp)->klass == ruby_wrapper) {
+	    tmp = RCLASS(tmp)->super;
+	}
     }
     if (recurse) {
+	if (!n_retry) {
+	    n_retry = 1;
+	    tmp = ruby_wrapper ? ruby_wrapper : rb_cObject;
+	    goto retry;
+	}
 	if (fallback) {
 	    tmp = fallback->nd_clss;
 	    fallback = fallback->nd_next;
-	    goto retry;
-	}
-	if (!n_retry) {
-	    n_retry = 1;
-	    tmp = rb_cObject;
 	    goto retry;
 	}
     }
@@ -1464,12 +1467,11 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
 	}
 	if (!recurse) break;
 	tmp = RCLASS(tmp)->super;
-	if (tmp == rb_cObject) break;
     }
     if (recurse) {
 	if (!n_retry) {
 	    n_retry = 1;
-	    tmp = rb_cObject;
+	    tmp = ruby_wrapper ? ruby_wrapper : rb_cObject;
 	    goto retry;
 	}
 	if (fallback) {

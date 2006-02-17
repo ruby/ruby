@@ -951,7 +951,7 @@ static struct tag *prot_tag;
 #define TAG_THREAD	0xa
 #define TAG_MASK	0xf
 
-static VALUE ruby_wrapper;	/* security wrapper */
+VALUE ruby_wrapper;	/* security wrapper */
 
 static NODE *ruby_cref = 0;
 static NODE *top_cref;

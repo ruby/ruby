@@ -1,3 +1,10 @@
+Sat Feb 18 01:01:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_get_0): skip ruby_wrapper in const search
+	  to give it lower priority (just above Object).  need not to
+	  change rb_const_defined_0() since it's only a precedence matter;
+	  they are defined anyway.
+
 Sat Feb 18 00:22:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tracer.rb: merged a minor clarification patch from Daniel

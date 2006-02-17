@@ -85,4 +85,6 @@ struct BLOCK {
 #define BLOCK_LAMBDA  2
 #define BLOCK_FROM_METHOD  4
 
+RUBY_EXTERN VALUE ruby_wrapper;
+
 #endif /* ENV_H */
