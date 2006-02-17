@@ -347,11 +347,11 @@ num2i32(x)
     return 0;			/* not reached */
 }
 
-#if SIZEOF_LONG == SIZE32 || SIZEOF_INT == SIZE32
+#if SIZEOF_LONG == SIZE32
 # define EXTEND32(x) 
 #else
 /* invariant in modulo 1<<31 */
-# define EXTEND32(x) do {if (!natint) {(x) = (I32)(((1<<31)-1-(x))^~(~0<<31));}} while(0)
+# define EXTEND32(x) do { if (!natint) {(x) = (((1L<<31)-1-(x))^~(~0L<<31));}} while(0)
 #endif
 #if SIZEOF_SHORT == SIZE16
 # define EXTEND16(x) 
@@ -1951,7 +1951,7 @@ pack_unpack(str, fmt)
 	  case 'w':
 	    {
 		unsigned long ul = 0;
-		unsigned long ulmask = 0xfeL << ((sizeof(unsigned long) - 1) * 8);
+		unsigned long ulmask = 0xfeUL << ((sizeof(unsigned long) - 1) * 8);
 
 		while (len > 0 && s < send) {
 		    ul <<= 7;
