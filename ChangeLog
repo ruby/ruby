@@ -1,3 +1,22 @@
+Fri Feb 17 17:30:20 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): simplified using rb_const_get_fallback().
+
+	* eval.c (ev_const_defined): adopt to ev_const_get() using
+	  rb_const_defined_fallback().
+
+	* variable.c (rb_const_get_fallback): new function to implement
+	  constant search.
+
+	* variable.c (rb_const_defined_fallback): new function to
+	  implement constant definition check.
+
+	* variable.c (rb_const_get_0): adopt to new behavior.  constants
+	  are looked up in the order of: current class, super classes (but
+	  Object), lexically external classes/modules, and Object.
+
+	* variable.c (rb_const_defined_0): ditto.
+
 Fri Feb 17 11:20:53 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): Float("1e") should fail. [ruby-core:7330]

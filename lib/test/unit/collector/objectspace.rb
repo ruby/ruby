@@ -8,7 +8,7 @@ module Test
   module Unit
     module Collector
       class ObjectSpace
-        include Collector
+        include Test::Unit::Collector
         
         NAME = 'collected from the ObjectSpace'
         

@@ -1275,10 +1275,10 @@ rb_autoload_p(VALUE mod, ID id)
 }
 
 static VALUE
-rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
+rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
 {
     VALUE value, tmp;
-    int mod_retry = 0;
+    int n_retry = 0;
 
     tmp = klass;
   retry:
@@ -1294,34 +1294,47 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 	    }
 	    return value;
 	}
-	if (!recurse && klass != rb_cObject) break;
+	if (!recurse) break;
 	tmp = RCLASS(tmp)->super;
+	if (tmp == rb_cObject) break;
     }
-    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
-	mod_retry = 1;
-	tmp = rb_cObject;
-	goto retry;
+    if (recurse) {
+	if (fallback) {
+	    tmp = fallback->nd_clss;
+	    fallback = fallback->nd_next;
+	    goto retry;
+	}
+	if (!n_retry) {
+	    n_retry = 1;
+	    tmp = rb_cObject;
+	    goto retry;
+	}
     }
-
     return const_missing(klass, id);
 }
 
 VALUE
 rb_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qtrue);
+    return rb_const_get_0(klass, id, Qtrue, Qtrue, 0);
 }
 
 VALUE
 rb_const_get(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qfalse, Qtrue);
+    return rb_const_get_0(klass, id, Qfalse, Qtrue, 0);
 }
 
 VALUE
 rb_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qfalse);
+    return rb_const_get_0(klass, id, Qtrue, Qfalse, 0);
+}
+
+VALUE
+rb_const_get_fallback(VALUE klass, ID id, NODE *fallback)
+{
+    return rb_const_get_0(klass, id, Qfalse, Qtrue, fallback);
 }
 
 /*
@@ -1436,10 +1449,10 @@ rb_mod_constants(VALUE mod)
 }
 
 static int
-rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
+rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
 {
     VALUE value, tmp;
-    int mod_retry = 0;
+    int n_retry = 0;
 
     tmp = klass;
   retry:
@@ -1449,13 +1462,21 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 		return Qfalse;
 	    return Qtrue;
 	}
-	if (!recurse && klass != rb_cObject) break;
+	if (!recurse) break;
 	tmp = RCLASS(tmp)->super;
+	if (tmp == rb_cObject) break;
     }
-    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
-	mod_retry = 1;
-	tmp = rb_cObject;
-	goto retry;
+    if (recurse) {
+	if (!n_retry) {
+	    n_retry = 1;
+	    tmp = rb_cObject;
+	    goto retry;
+	}
+	if (fallback) {
+	    tmp = fallback->nd_clss;
+	    fallback = fallback->nd_next;
+	    goto retry;
+	}
     }
     return Qfalse;
 }
@@ -1463,19 +1484,25 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 int
 rb_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
+    return rb_const_defined_0(klass, id, Qtrue, Qtrue, 0);
 }
 
 int
 rb_const_defined(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
+    return rb_const_defined_0(klass, id, Qfalse, Qtrue, 0);
 }
 
 int
 rb_const_defined_at(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
+    return rb_const_defined_0(klass, id, Qtrue, Qfalse, 0);
+}
+
+int
+rb_const_defined_fallback(VALUE klass, ID id, NODE *fallback)
+{
+    return rb_const_defined_0(klass, id, Qfalse, Qtrue, fallback);
 }
 
 static void
