@@ -1,3 +1,13 @@
+Fri Feb 17 11:20:53 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strtod): Float("1e") should fail. [ruby-core:7330]
+
+	* pack.c (EXTEND32): unpack("l") did not work where sizeof(long) != 4.
+	  [ruby-talk:180024]
+
+	* pack.c (pack_unpack): fixed integer overflow on template "w".
+	  [ruby-talk:180126]
+
 Fri Feb 17 09:39:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_wait_for): sleep should always sleep for

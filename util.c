@@ -848,9 +848,15 @@ ruby_strtod(
 		}
 		expSign = FALSE;
 	    }
-	    while (ISDIGIT(*p)) {
-		exp = exp * 10 + (*p - '0');
-		p += 1;
+	    if (ISDIGIT(*p)) {
+		do {
+		    exp = exp * 10 + (*p - '0');
+		    p += 1;
+		}
+		while (ISDIGIT(*p));
+	    }
+	    else {
+		p = pExp;
 	    }
 	}
 	if (expSign) {

@@ -15,6 +15,9 @@ class TestPack < Test::Unit::TestCase
 
     $x = [-1073741825]
     assert_equal($x, $x.pack("q").unpack("q"))
+
+    $x = [-1]
+    assert_equal($x, $x.pack("l").unpack("l"))
   end
 
   def test_pack_N
