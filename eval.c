@@ -6497,7 +6497,10 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
  *  instance variables. In the version of <code>instance_eval</code>
  *  that takes a +String+, the optional second and third
  *  parameters supply a filename and starting line number that are used
- *  when reporting compilation errors.
+ *  when reporting compilation errors. Note that, if a Proc that is
+ *  converted from a Method object is given as the block,
+ *  <code>instance_eval</code> will not change the context of this
+ *  block and it will be evaluated in Method object's original context.
  *     
  *     class Klass
  *       def initialize

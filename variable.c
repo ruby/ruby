@@ -1304,7 +1304,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
     if (recurse) {
 	if (!n_retry) {
 	    n_retry = 1;
-	    tmp = ruby_wrapper ? ruby_wrapper : rb_cObject;
+	    tmp = rb_cObject;
 	    goto retry;
 	}
 	if (fallback) {
@@ -1471,7 +1471,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
     if (recurse) {
 	if (!n_retry) {
 	    n_retry = 1;
-	    tmp = ruby_wrapper ? ruby_wrapper : rb_cObject;
+	    tmp = rb_cObject;
 	    goto retry;
 	}
 	if (fallback) {

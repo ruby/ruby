@@ -1,3 +1,9 @@
+Sat Feb 18 21:16:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_obj_instance_eval): RDoc description updated.  a
+	  patch from Ozgur Murat Homurlu <ozgurmurath at gmail.com>.
+	  [ruby-core:07381]
+
 Sat Feb 18 01:01:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): skip ruby_wrapper in const search
