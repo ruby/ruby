@@ -719,6 +719,7 @@ module FileUtils
   def fu_world_writable?(st)
     (st.mode & 0002) != 0
   end
+  private_module_function :fu_world_writable?
 
   def fu_have_symlink?   #:nodoc
     File.symlink nil, nil
