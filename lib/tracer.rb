@@ -162,6 +162,6 @@ if $0 == __FILE__
   ARGV.shift
   Tracer.on
   require $0
-else
+elsif caller(0).size == 1
   Tracer.on
 end

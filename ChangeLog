@@ -1,3 +1,13 @@
+Sat Feb 18 23:58:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tracer.rb (Tracer::Tracer.add_filter): turn on tracer mode
+	  only when caller() level size is one.  [ruby-core:07389]
+
+	* lib/rdoc/parsers/parse_rb.rb: need not to require "tracer".
+	  [ruby-core:07389]
+
+	* sample/rtags.rb: ditto.
+
 Sat Feb 18 21:16:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_obj_instance_eval): RDoc description updated.  a

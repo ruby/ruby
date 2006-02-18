@@ -13,7 +13,6 @@
 #   	by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
-require "tracer"
 require "e2mmap"
 require "irb/slex"
 
