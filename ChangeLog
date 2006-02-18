@@ -1,3 +1,13 @@
+Sat Feb 18 23:58:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tracer.rb (Tracer::Tracer.add_filter): turn on tracer mode
+	  only when caller() level size is one.  [ruby-core:07389]
+
+	* lib/rdoc/parsers/parse_rb.rb: need not to require "tracer".
+	  [ruby-core:07389]
+
+	* sample/rtags.rb: ditto.
+
 Sat Feb 18 12:18:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::fu_world_writable): make it
