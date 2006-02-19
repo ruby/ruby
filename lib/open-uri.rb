@@ -99,6 +99,8 @@ module OpenURI
     :content_length_proc => true,
     :http_basic_authentication => true,
     :read_timeout => true,
+    :ssl_ca_cert => nil,
+    :ssl_verify_mode => nil,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -269,8 +271,17 @@ module OpenURI
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
+      if options[:ssl_ca_cert]
+        if File.directory? options[:ssl_ca_cert]
+          store.add_path options[:ssl_ca_cert]
+        else
+          store.add_file options[:ssl_ca_cert]
+        end
+      else
+        store.set_default_paths
+      end
       store.set_default_paths
       http.cert_store = store
     end
@@ -582,6 +593,19 @@ module OpenURI
     #    :read_timeout=>10      (10 second)
     #
     #  :read_timeout option specifies a timeout of read for http connections.
+    #
+    # [:ssl_ca_cert]
+    #  Synopsis:
+    #    :ssl_ca_cert=>filename
+    #
+    #  :ssl_ca_cert is used to specify CA certificate for SSL.
+    #  If it is given, default certificates are not used.
+    #
+    # [:ssl_verify_mode]
+    #  Synopsis:
+    #    :ssl_verify_mode=>mode
+    #
+    #  :ssl_verify_mode is used to specify openssl verify mode.
     #
     # OpenURI::OpenRead#open returns an IO like object if block is not given.
     # Otherwise it yields the IO object and return the value of the block.
