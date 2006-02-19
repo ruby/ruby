@@ -1,3 +1,8 @@
+Mon Feb 20 00:57:02 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.h (OSSL_Debug): should not use __func__.
+	  [ruby-dev:28339]
+
 Mon Feb 20 00:13:49 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: add :ssl_verify_mode option.
