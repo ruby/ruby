@@ -164,7 +164,7 @@ extern VALUE dOSSL;
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
     fprintf(stderr, fmt, ##__VA_ARGS__); \
-    fprintf(stderr, " [in %s (%s:%d)]\n", __func__, __FILE__, __LINE__); \
+    fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
   } \
 } while (0)
 

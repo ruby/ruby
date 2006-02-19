@@ -1,3 +1,8 @@
+Mon Feb 20 00:57:02 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.h (OSSL_Debug): should not use __func__.
+	  [ruby-dev:28339]
+
 Sat Feb 18 23:58:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tracer.rb (Tracer::Tracer.add_filter): turn on tracer mode
