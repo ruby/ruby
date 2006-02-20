@@ -1,3 +1,8 @@
+Mon Feb 20 13:46:19 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/find.rb: should raise ENOENT if root entry does not exist,
+	  without opening it. [ruby-dev:28345]
+
 Mon Feb 20 12:27:53 2006  Kent Sibilev  <ksruby@gmail.com>
 
 	* lib/rational.rb (Integer::gcd): small typo fix.
