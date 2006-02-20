@@ -345,6 +345,7 @@ mingw*)		LIBS="-lwsock32 $LIBS"
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		ac_cv_func_finite=yes
+		ac_cv_func_link=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_setpgrp_void=yes
