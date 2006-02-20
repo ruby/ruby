@@ -1,3 +1,8 @@
+Tue Feb 21 02:07:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_arglist): should set command_start = Qtrue for
+	  command body.  [ruby-talk:180648]
+
 Mon Feb 20 22:30:17 2006  Tanaka Akira  <akr@m17n.org>
 
 	* mkconfig.rb: alias Config to RbConfig for compatibility.

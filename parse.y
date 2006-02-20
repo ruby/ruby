@@ -3980,9 +3980,11 @@ f_arglist	: '(' f_args rparen
 		    /*%%%*/
 			$$ = $2;
 			lex_state = EXPR_BEG;
+		        command_start = Qtrue;
 		    /*%
 			$$ = dispatch1(paren, $2);
 			lex_state = EXPR_BEG;
+		        command_start = Qtrue;
 		    %*/
 		    }
 		| f_args term
