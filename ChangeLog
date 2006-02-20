@@ -1,3 +1,8 @@
+Mon Feb 20 12:27:53 2006  Kent Sibilev  <ksruby@gmail.com>
+
+	* lib/rational.rb (Integer::gcd): small typo fix.
+	  [ruby-core:07395]
+
 Mon Feb 20 01:05:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rational.rb (Integer::gcd): replaced by gcd4 in
