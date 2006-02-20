@@ -1,3 +1,7 @@
+Mon Feb 20 09:17:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator): should not delegate "funcall".
+
 Mon Feb 20 09:13:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler): 
