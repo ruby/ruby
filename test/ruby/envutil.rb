@@ -20,8 +20,8 @@ module EnvUtil
     begin
       require "rbconfig"
       File.join(
-        Config::CONFIG["bindir"],
-	Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+        RbConfig::CONFIG["bindir"],
+	RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
       )
     rescue LoadError
       "ruby"

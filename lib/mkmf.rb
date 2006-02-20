@@ -5,7 +5,7 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-CONFIG = Config::MAKEFILE_CONFIG
+CONFIG = RbConfig::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 CXX_EXT = %w[cc cxx cpp]
@@ -112,10 +112,10 @@ end
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
 $extmk = File.expand_path($0)[0, extdir.size+1] == extdir+"/"
-if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
-  $hdrdir = $topdir = Config::CONFIG["archdir"]
+if not $extmk and File.exist?(RbConfig::CONFIG["archdir"] + "/ruby.h")
+  $hdrdir = $topdir = RbConfig::CONFIG["archdir"]
 elsif File.exist?(($top_srcdir ||= topdir)  + "/ruby.h") and
-    File.exist?(($topdir ||= Config::CONFIG["topdir"]) + "/config.h")
+    File.exist?(($topdir ||= RbConfig::CONFIG["topdir"]) + "/config.h")
   $hdrdir = $top_srcdir
 else
   abort "can't find header files for ruby."
@@ -259,7 +259,7 @@ ensure
 end
 
 def link_command(ldflags, opt="", libpath=$LIBPATH)
-  Config::expand(TRY_LINK.dup,
+  RbConfig::expand(TRY_LINK.dup,
                  CONFIG.merge('hdrdir' => $hdrdir.quote,
                               'src' => CONFTEST_C,
                               'INCFLAGS' => $INCFLAGS,
@@ -273,13 +273,13 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 end
 
 def cc_command(opt="")
-  Config::expand("$(CC) -c #$INCFLAGS -I$(hdrdir) " \
+  RbConfig::expand("$(CC) -c #$INCFLAGS -I$(hdrdir) " \
                  "#$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} #{CONFTEST_C}",
 		 CONFIG.merge('hdrdir' => $hdrdir.quote))
 end
 
 def cpp_command(outfile, opt="")
-  Config::expand("$(CPP) #$INCFLAGS -I$(hdrdir) " \
+  RbConfig::expand("$(CPP) #$INCFLAGS -I$(hdrdir) " \
                  "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
 		 CONFIG.merge('hdrdir' => $hdrdir.quote))
 end
@@ -484,7 +484,7 @@ end
 def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   ifiles or return
   srcprefix ||= '$(srcdir)'
-  Config::expand(srcdir = srcprefix.dup)
+  RbConfig::expand(srcdir = srcprefix.dup)
   dirs = []
   path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
   ifiles.each do |files, dir, prefix|
@@ -972,7 +972,7 @@ RUBY_INSTALL_NAME = #{CONFIG['RUBY_INSTALL_NAME']}
 RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
 arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
-ruby_version = #{Config::CONFIG['ruby_version']}
+ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = $(ruby#{sep})
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
@@ -1028,7 +1028,7 @@ def create_makefile(target, srcprefix = nil)
   end
 
   srcprefix ||= '$(srcdir)'
-  Config::expand(srcdir = srcprefix.dup)
+  RbConfig::expand(srcdir = srcprefix.dup)
 
   if not $objs
     $objs = []
@@ -1290,7 +1290,7 @@ def init_mkmf(config = CONFIG)
   $objs = nil
   $srcs = nil
   $libs = ""
-  if $enable_shared or Config.expand(config["LIBRUBY"].dup) != Config.expand(config["LIBRUBY_A"].dup)
+  if $enable_shared or RbConfig.expand(config["LIBRUBY"].dup) != RbConfig.expand(config["LIBRUBY_A"].dup)
     $LIBRUBYARG = config['LIBRUBYARG']
   end
 
@@ -1333,20 +1333,20 @@ when $bccwin
   $nmake = ?b if /Borland/i =~ `#{make} -h`
 end
 
-Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
+RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
   $srcdir = arg_config("--srcdir", File.dirname($0))
 $configure_args["--topsrcdir"] ||= $srcdir
 if $curdir = arg_config("--curdir")
-  Config.expand(curdir = $curdir.dup)
+  RbConfig.expand(curdir = $curdir.dup)
 else
   curdir = $curdir = "."
 end
-unless File.expand_path(Config::CONFIG["topdir"]) == File.expand_path(curdir)
+unless File.expand_path(RbConfig::CONFIG["topdir"]) == File.expand_path(curdir)
   CONFIG["topdir"] = $curdir
-  Config::CONFIG["topdir"] = curdir
+  RbConfig::CONFIG["topdir"] = curdir
 end
 $configure_args["--topdir"] ||= $curdir
-$ruby = arg_config("--ruby", File.join(Config::CONFIG["bindir"], CONFIG["ruby_install_name"]))
+$ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
 split = Shellwords.method(:shellwords).to_proc
 

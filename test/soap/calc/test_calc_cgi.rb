@@ -12,8 +12,8 @@ module Calc
 class TestCalcCGI < Test::Unit::TestCase
   # This test shuld be run after installing ruby.
   RUBYBIN = File.join(
-    Config::CONFIG["bindir"],
-    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+    RbConfig::CONFIG["bindir"],
+    RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
   )
   RUBYBIN << " -d" if $DEBUG
 

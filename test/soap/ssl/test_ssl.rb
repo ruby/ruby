@@ -16,8 +16,8 @@ class TestSSL < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))
   require 'rbconfig'
   RUBY = File.join(
-    Config::CONFIG["bindir"],
-    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+    RbConfig::CONFIG["bindir"],
+    RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
   )
 
   def setup

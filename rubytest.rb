@@ -2,7 +2,7 @@
 
 exit if defined?(CROSS_COMPILING)
 load './rbconfig.rb'
-include Config
+include RbConfig
 
 ruby = "./#{CONFIG['ruby_install_name']}#{CONFIG['EXEEXT']}"
 unless File.exist? ruby

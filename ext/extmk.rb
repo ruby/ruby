@@ -64,7 +64,7 @@ def extract_makefile(makefile, keep = true)
       unless installrb.empty?
         config = CONFIG.dup
         install_dirs(target_prefix).each {|var, val| config[var] = val}
-        FileUtils.rm_f(installrb.values.collect {|f| Config.expand(f, config)}, verbose: true)
+        FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)}, verbose: true)
       end
     end
     return false
@@ -116,9 +116,9 @@ def extmake(target)
     makefile = "./Makefile"
     ok = File.exist?(makefile)
     unless $ignore
-      Config::CONFIG["hdrdir"] = $hdrdir
-      Config::CONFIG["srcdir"] = $srcdir
-      Config::CONFIG["topdir"] = $topdir
+      RbConfig::CONFIG["hdrdir"] = $hdrdir
+      RbConfig::CONFIG["srcdir"] = $srcdir
+      RbConfig::CONFIG["topdir"] = $topdir
       CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1]
       CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
       CONFIG["topdir"] = $topdir
@@ -183,8 +183,8 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
-    Config::CONFIG["srcdir"] = $top_srcdir
-    Config::CONFIG["topdir"] = topdir
+    RbConfig::CONFIG["srcdir"] = $top_srcdir
+    RbConfig::CONFIG["topdir"] = topdir
     CONFIG["srcdir"] = mk_srcdir
     CONFIG["topdir"] = mk_topdir
     CONFIG.delete("hdrdir")
@@ -378,9 +378,9 @@ else
 end
 
 if $extout
-  Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
+  RbConfig.expand(extout = "#$extout", RbConfig::CONFIG.merge("topdir"=>$topdir))
   if $install
-    Config.expand(dest = "#{$destdir}#{$rubylibdir}")
+    RbConfig.expand(dest = "#{$destdir}#{$rubylibdir}")
     FileUtils.cp_r(extout+"/.", dest, :verbose => true, :noop => $dryrun)
     exit
   end
@@ -472,7 +472,7 @@ unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
 if !$extlist.empty? and $extupdate
-  rm_f(Config::CONFIG["LIBRUBY_SO"])
+  rm_f(RbConfig::CONFIG["LIBRUBY_SO"])
 end
 puts "making #{rubies.join(', ')}"
 $stdout.flush

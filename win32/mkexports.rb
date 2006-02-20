@@ -1,6 +1,6 @@
 #!./miniruby -s
 
-module Config
+module RbConfig
   autoload :CONFIG, "rbconfig"
 end
 
@@ -112,7 +112,7 @@ end
 
 class Exports::Mingw < Exports
   def self.nm
-    @@nm ||= Config::CONFIG["NM"]
+    @@nm ||= RbConfig::CONFIG["NM"]
   end
 
   def each_export(objs)

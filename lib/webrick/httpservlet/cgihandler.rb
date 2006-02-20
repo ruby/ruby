@@ -17,9 +17,9 @@ module WEBrick
   module HTTPServlet
 
     class CGIHandler < AbstractServlet
-      Ruby = File::join(::Config::CONFIG['bindir'],
-                        ::Config::CONFIG['ruby_install_name'])
-      Ruby << ::Config::CONFIG['EXEEXT']
+      Ruby = File::join(RbConfig::CONFIG['bindir'],
+                        RbConfig::CONFIG['ruby_install_name'])
+      Ruby << RbConfig::CONFIG['EXEEXT']
       CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\""
 
       def initialize(server, name)

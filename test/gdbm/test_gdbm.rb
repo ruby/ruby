@@ -12,7 +12,7 @@ if defined? GDBM
   class TestGDBM < Test::Unit::TestCase
     def TestGDBM.uname_s
       require 'rbconfig'
-      case Config::CONFIG['host_os']
+      case RbConfig::CONFIG['host_os']
       when 'cygwin'
         require 'Win32API'
         uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
@@ -21,7 +21,7 @@ if defined? GDBM
 
         utsname.unpack('A20' * 5)[0]
       else
-        Config::CONFIG['host_os']
+        RbConfig::CONFIG['host_os']
       end
     end
     SYSTEM = uname_s

@@ -1,7 +1,7 @@
 #!./miniruby
 
 load "./rbconfig.rb"
-include Config
+include RbConfig
 
 srcdir = File.dirname(__FILE__)
 $:.unshift File.expand_path("lib", srcdir)

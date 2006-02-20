@@ -25,7 +25,7 @@ abs_archdir = File.expand_path(archdir)
 $:.unshift(abs_archdir)
 
 require 'rbconfig'
-config = Config::CONFIG
+config = RbConfig::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
 unless File.exist?(ruby)

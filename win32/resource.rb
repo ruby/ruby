@@ -2,7 +2,7 @@
 
 require 'rbconfig'
 
-CONFIG = Config::MAKEFILE_CONFIG
+CONFIG = RbConfig::MAKEFILE_CONFIG
 
 fversion = "#{CONFIG['MAJOR']},#{CONFIG['MINOR']},#{CONFIG['TEENY']},0"
 
