@@ -1,3 +1,16 @@
+Mon Feb 20 09:13:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler): 
+	  qualify the access for Config constant.  [ruby-dev:28338] 
+
+	* lib/resolv.rb (Resolv::DNS::Resource::IN::A): qualify
+	  ClassValue.  [ruby-dev:28338] 
+
+Mon Feb 20 01:05:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rational.rb (Integer::gcd): replaced by gcd4 in
+	  [ruby-core:07390].  [ruby-core:07377]
+
 Mon Feb 20 00:57:02 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.h (OSSL_Debug): should not use __func__.

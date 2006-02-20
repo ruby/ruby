@@ -1810,8 +1810,9 @@ class Resolv
         # IPv4 Address resource
 
         class A < Resource
-
-          ClassHash[[TypeValue = 1, ClassValue = ClassValue]] = self # :nodoc:
+          TypeValue = 1
+          ClassValue = IN::ClassValue
+          ClassHash[[TypeValue, ClassValue]] = self # :nodoc:
 
           ##
           # Creates a new A for +address+.
@@ -1838,8 +1839,9 @@ class Resolv
         # Well Known Service resource.
 
         class WKS < Resource
-
-          ClassHash[[TypeValue = 11, ClassValue = ClassValue]] = self # :nodoc:
+          TypeValue = 11
+          ClassValue = IN::ClassValue
+          ClassHash[[TypeValue, ClassValue]] = self # :nodoc:
 
           def initialize(address, protocol, bitmap)
             @address = IPv4.create(address)
@@ -1885,8 +1887,9 @@ class Resolv
         # An IPv6 address record.
 
         class AAAA < Resource
-
-          ClassHash[[TypeValue = 28, ClassValue = ClassValue]] = self # :nodoc:
+          TypeValue = 28
+          ClassValue = IN::ClassValue
+          ClassHash[[TypeValue, ClassValue]] = self # :nodoc:
 
           ##
           # Creates a new AAAA for +address+.
@@ -1916,8 +1919,9 @@ class Resolv
         # available at.
 
         class SRV < Resource
-
-          ClassHash[[TypeValue = 33, ClassValue = ClassValue]] = self # :nodoc:
+          TypeValue = 33
+          ClassValue = IN::ClassValue
+          ClassHash[[TypeValue, ClassValue]] = self # :nodoc:
 
           # Create a SRV resource record.
           #

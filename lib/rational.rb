@@ -435,42 +435,16 @@ class Integer
   # The result is positive, no matter the sign of the arguments.
   #
   def gcd(n)
-    m = self.abs
-    n = n.abs
-
-    return n if m == 0
-    return m if n == 0
-
-    b = 0
-    while n[0] == 0 && m[0] == 0
-      b += 1; n >>= 1; m >>= 1
+    min = self.abs
+    max = other.abs
+    while min > 0
+      tmp = min
+      min = max % min
+      max = tmp
     end
-    m >>= 1 while m[0] == 0
-    n >>= 1 while n[0] == 0
-    while m != n
-      m, n = n, m if n > m
-      m -= n; m >>= 1 while m[0] == 0
-    end
-    m << b
+    max
   end
 
-  def gcd2(int)
-    a = self.abs
-    b = int.abs
-
-    a, b = b, a if a < b
-
-    while b != 0
-      void, a = a.divmod(b)
-      a, b = b, a
-    end
-    return a
-  end
-
-  #
-  # Returns the <em>lowest common multiple</em> (LCM) of the two arguments
-  # (+self+ and +other+).
-  #
   # Examples:
   #   6.lcm 7        # -> 42
   #   6.lcm 9        # -> 18
