@@ -740,7 +740,7 @@ static unsigned long frame_unique = 0;
     ruby_frame = _frame.prev;		\
 } while (0)
 
-static unsigned long block_unique = 0;
+static unsigned long block_unique = 1;
 
 #define PUSH_BLOCK(v,iv,b) do {	\
     struct BLOCK _block;		\
