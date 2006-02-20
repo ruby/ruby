@@ -1,3 +1,8 @@
+Mon Feb 20 12:27:53 2006  Kent Sibilev  <ksruby@gmail.com>
+
+	* lib/rational.rb (Integer::gcd): small typo fix.
+	  [ruby-core:07395]
+
 Mon Feb 20 10:03:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): Object should have been the lowest

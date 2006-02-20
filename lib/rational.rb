@@ -434,7 +434,7 @@ class Integer
   #
   # The result is positive, no matter the sign of the arguments.
   #
-  def gcd(n)
+  def gcd(other)
     min = self.abs
     max = other.abs
     while min > 0
