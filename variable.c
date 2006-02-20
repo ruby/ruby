@@ -1302,14 +1302,14 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
 	}
     }
     if (recurse) {
-	if (!n_retry) {
-	    n_retry = 1;
-	    tmp = rb_cObject;
-	    goto retry;
-	}
 	if (fallback) {
 	    tmp = fallback->nd_clss;
 	    fallback = fallback->nd_next;
+	    goto retry;
+	}
+	if (!n_retry) {
+	    n_retry = 1;
+	    tmp = rb_cObject;
 	    goto retry;
 	}
     }
@@ -1469,14 +1469,14 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
 	tmp = RCLASS(tmp)->super;
     }
     if (recurse) {
-	if (!n_retry) {
-	    n_retry = 1;
-	    tmp = rb_cObject;
-	    goto retry;
-	}
 	if (fallback) {
 	    tmp = fallback->nd_clss;
 	    fallback = fallback->nd_next;
+	    goto retry;
+	}
+	if (!n_retry) {
+	    n_retry = 1;
+	    tmp = rb_cObject;
 	    goto retry;
 	}
     }
