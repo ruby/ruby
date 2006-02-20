@@ -137,6 +137,7 @@ print <<EOS
     RbConfig::expand(val)
   end
 end
+Config = RbConfig # compatibility for ruby-1.8 and older.
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
 

@@ -1,3 +1,7 @@
+Mon Feb 20 22:30:17 2006  Tanaka Akira  <akr@m17n.org>
+
+	* mkconfig.rb: alias Config to RbConfig for compatibility.
+
 Mon Feb 20 18:21:41 2006  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_reopen): flush before reopening a file.
