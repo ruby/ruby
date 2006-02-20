@@ -2233,6 +2233,7 @@ f_arglist	: '(' f_args opt_nl ')'
 		    {
 			$$ = $2;
 			lex_state = EXPR_BEG;
+		        command_start = Qtrue;
 		    }
 		| f_args term
 		    {
