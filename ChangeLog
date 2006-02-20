@@ -1,3 +1,8 @@
+Mon Feb 20 18:21:41 2006  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_reopen): flush before reopening a file.
+	  reported by Mathieu Bouchard.  [ruby-core:7396] 
+
 Mon Feb 20 17:29:50 2006  Tanaka Akira  <akr@m17n.org>
 
 	* mkconfig.rb: generate RbConfig instead of Config.

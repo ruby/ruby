@@ -3416,6 +3416,10 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	return file;
     }
 
+    if (fptr->mode & FMODE_WRITABLE) {
+        io_fflush(fptr);
+    }
+
     if (fptr->stdio_file) {
         if (freopen(RSTRING(fname)->ptr, mode, fptr->stdio_file) == 0) {
             rb_sys_fail(fptr->path);
