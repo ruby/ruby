@@ -1,3 +1,7 @@
+Mon Feb 20 17:37:26 2006  Tanaka Akira  <akr@m17n.org>
+
+	* mkconfig.rb: alias RbConfig for Config.
+
 Mon Feb 20 12:27:53 2006  Kent Sibilev  <ksruby@gmail.com>
 
 	* lib/rational.rb (Integer::gcd): small typo fix.
