@@ -122,6 +122,7 @@ static int in_single = 0;
 static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
+static int command_start = Qtrue;
 
 static NODE *cond();
 static NODE *logop();
@@ -2561,7 +2562,6 @@ yyerror(msg)
 }
 
 static int heredoc_end;
-static int command_start = Qtrue;
 
 int ruby_in_compile = 0;
 int ruby__end__seen;
