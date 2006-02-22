@@ -492,7 +492,8 @@ class Pathname
   #     # yields "usr", "bin", and "ruby".
   #
   def each_filename # :yield: s
-    split_names(@path).each {|filename| yield filename }
+    prefix, names = split_names(@path)
+    names.each {|filename| yield filename }
   end
 
   # Iterates over and yields a new Pathname object

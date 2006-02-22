@@ -458,4 +458,10 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(1, count)
     assert_equal(2, result)
   end
+
+  def test_each_filename
+    result = []
+    Pathname.new("/usr/bin/ruby").each_filename {|f| result << f }
+    assert_equal(%w[usr bin ruby], result)
+  end
 end

@@ -1,3 +1,7 @@
+Wed Feb 22 21:16:55 2006  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#each_filename): use split_names properly.
+
 Wed Feb 22 16:24:05 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb: should support platforms which search
