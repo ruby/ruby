@@ -2124,7 +2124,7 @@ copy_node_scope(NODE *node, NODE *rval)
     }\
 } while (0)
 
-#define SETUP_ARGS(anode) SETUP_ARGS0(anode, anode->nd_alen,0)
+#define SETUP_ARGS(anode) SETUP_ARGS0(anode,anode->nd_alen,0)
 
 #define ZSUPER_ARGS() do {\
     argc = ruby_frame->argc;\
@@ -3451,7 +3451,7 @@ rb_eval(VALUE self, NODE *n)
 
 	    recv = rb_eval(self, node->nd_recv);
 	    rval = node->nd_args->nd_head;
-	    SETUP_ARGS0(node->nd_args->nd_next, node->nd_args->nd_alen-1,1);
+	    SETUP_ARGS0(node->nd_args->nd_next,node->nd_args->nd_alen-1,1);
 	    val = rb_funcall3(recv, aref, argc, argv);
 	    switch (node->nd_mid) {
 	    case 0: /* OR */
@@ -3467,7 +3467,7 @@ rb_eval(VALUE self, NODE *n)
 	      val = rb_funcall3(val, node->nd_mid, 1, &tmp);
 	    }
 	    argv[argc] = val;
-	    rb_funcall2(recv, aset, argc+1, argv);
+	    rb_funcall3(recv, aset, argc+1, argv);
 	    result = val;
 	}
 	break;
@@ -3493,7 +3493,7 @@ rb_eval(VALUE self, NODE *n)
 	      val = rb_funcall3(val, node->nd_next->nd_mid, 1, &tmp);
 	    }
 
-	    rb_funcall2(recv, node->nd_next->nd_aid, 1, &val);
+	    rb_funcall3(recv, node->nd_next->nd_aid, 1, &val);
 	    result = val;
 	}
 	break;
@@ -8147,7 +8147,7 @@ proc_alloc(VALUE klass, int lambda)
     struct FRAME *frame = ruby_frame;
     struct BLOCK *data;
 
-    if (!rb_block_given_p() && !rb_f_block_given_p()) {
+    if (!rb_block_given_p() && (lambda || !rb_f_block_given_p())) {
 	rb_raise(rb_eArgError, "tried to create Proc object without a block");
     }
     if (!lambda) {

@@ -1,3 +1,8 @@
+Wed Feb 22 09:22:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_alloc): add proper check for creation of a lambda
+	  without a block.
+
 Tue Feb 21 02:07:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_arglist): should set command_start = Qtrue for
