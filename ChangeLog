@@ -1,3 +1,9 @@
+Wed Feb 22 16:24:05 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/test_cgi.rb: should support platforms which search
+	  library path from the interpreter's path.
+	  And, support test without install incidentally.
+
 Wed Feb 22 14:21:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bignorm): x may not be a bignum.  [ruby-dev:28367]
