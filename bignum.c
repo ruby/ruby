@@ -92,7 +92,10 @@ rb_big_2comp(VALUE x)			/* get 2's complement */
 static VALUE
 bignorm(VALUE x)
 {
-    if (!FIXNUM_P(x)) {
+    if (FIXNUM_P(x)) {
+	return x;
+    }
+    else if (TYPE(x) == T_BIGNUM) {
 	long len = RBIGNUM(x)->len;
 	BDIGIT *ds = BDIGITS(x);
 

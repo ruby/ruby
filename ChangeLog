@@ -1,3 +1,7 @@
+Wed Feb 22 14:21:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): x may not be a bignum.  [ruby-dev:28367]
+
 Wed Feb 22 09:22:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_alloc): add proper check for creation of a lambda
