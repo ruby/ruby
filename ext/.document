@@ -2,6 +2,8 @@
 
 enumerator/enumerator.c
 iconv/iconv.c
+nkf/lib/kconv.rb
+nkf/nkf.c
 stringio/stringio.c
 strscan/strscan.c
 zlib/zlib.c
