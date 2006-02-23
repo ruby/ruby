@@ -54,6 +54,14 @@ EXTOUT = $(EXTOUT)
 $(BANG)endif
 !endif
 |
+	@type > usebormm.bat &&|
+@echo off
+ilink32 -Gn -x usebormm.lib > nul
+if exist usebormm.tds echo MEMLIB = usebormm.lib
+|
+	@usebormm.bat >> $(MAKEFILE)
+	@del usebormm.*
+
 	@cpp32 -I$(srcdir) -DRUBY_EXTERN="//" -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
