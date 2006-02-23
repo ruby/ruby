@@ -1,4 +1,4 @@
-Thu Feb 23 15:36:25 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu Feb 23 22:39:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: use borlndmm.dll if possible. bcc32's RTL internal
 	  memory manager cannot handle large memory block properly.
