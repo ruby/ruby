@@ -2103,7 +2103,7 @@ copy_node_scope(NODE *node, NODE *rval)
 	if (argc > 0) {\
 	    int i;\
 	    n = anode;\
-	    argv = TMP_ALLOC(argc);\
+	    argv = TMP_ALLOC(argc+extra);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\

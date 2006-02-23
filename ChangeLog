@@ -1,3 +1,7 @@
+Thu Feb 23 13:23:03 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* eval.c (SETUP_ARGS0): fixed memory corruption. [ruby-dev:28360]
+
 Wed Feb 22 21:16:55 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#each_filename): use split_names properly.
