@@ -19,6 +19,14 @@
      * bison ((<URL:http://gnuwin32.sourceforge.net/packages/bison.htm>))
      * sed   ((<URL:http://gnuwin32.sourceforge.net/packages/sed.htm>))
 
+(4) We strongly recommend to build ruby on C++Builder, to link following files.
+     * usebormm.lib
+     * memmgr.lib
+
+    RTL's internal memory manager cannot handle large memory block properly,
+    so we should use borlndmm.dll instead.
+     10000.times { "" << "." * 529671; GC.start } # crash
+
 == How to compile and install
 
 (1) Execute bcc32\configure.bat on your build directory.
@@ -52,6 +60,10 @@
       * <install_directory>\man\man1
     If Ruby's version is `x.y.z', the ((|<MAJOR>|)) is `x' and the ((|<MINOR>|)) is `y'.
     The default ((|<PLATFORM>|)) is `(({i386-bccwin32}))'.
+
+(6) Requires dynamic RTL (cc3250.dll on C++Builder5) and borlndmm.dll (If built with
+    usebormm.lib) to use installed binary. These files are ordinary in bcc32's bin
+    directory.
 
 == Icons
 

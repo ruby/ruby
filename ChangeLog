@@ -1,3 +1,10 @@
+Thu Feb 23 15:36:25 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: use borlndmm.dll if possible. bcc32's RTL internal
+	  memory manager cannot handle large memory block properly.
+	  ex: 10000.times { "" << "." * 529671; GC.start } # crash
+	  [ruby-dev:28230]
+
 Thu Feb 23 13:23:03 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* eval.c (SETUP_ARGS0): fixed memory corruption. [ruby-dev:28360]
