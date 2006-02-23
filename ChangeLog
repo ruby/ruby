@@ -1,3 +1,11 @@
+Fri Feb 24 08:19:16 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test.rb: Removed.  Obsolete by test/nkf.
+
+	* ext/.document: enabled documents in nkf and kconv
+
+	* ext/nkf/nkf.c ext/nkf/lib/kconv.rb: Add rdoc.
+
 Thu Feb 23 22:39:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: use borlndmm.dll if possible. bcc32's RTL internal
