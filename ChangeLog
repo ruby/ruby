@@ -1,3 +1,7 @@
+Fri Feb 24 11:33:52 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub (HAVE_HYPOT): bcc32 has hypot().
+
 Fri Feb 24 11:19:58 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (time_new_internal): add prototype to tell the compiler

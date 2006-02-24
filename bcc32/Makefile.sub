@@ -253,6 +253,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
 \#define HAVE_STRTOUL 1
 \#define HAVE_ISNAN 1
 \#define HAVE_FINITE 1
+\#define HAVE_HYPOT 1
 \#define HAVE_FMOD 1
 \#define HAVE_WAITPID 1
 \#define HAVE_FSYNC 1
