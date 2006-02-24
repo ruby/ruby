@@ -109,28 +109,39 @@ arc = CONFIG["LIBRUBY_A"]
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
 install?(:bin) do
-ruby_bin = File.join(bindir, ruby_install_name)
+  ruby_bin = File.join(bindir, ruby_install_name)
 
-install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
-if rubyw_install_name and !rubyw_install_name.empty?
-  install rubyw_install_name+exeext, bindir, :mode => 0755
-end
-install dll, bindir, :mode => 0755 if enable_shared and dll != lib
-install lib, libdir, :mode => 0755 unless lib == arc
-install arc, libdir, :mode => 0644
-install "config.h", archlibdir, :mode => 0644
-install "rbconfig.rb", archlibdir, :mode => 0644
-if CONFIG["ARCHFILE"]
-  for file in CONFIG["ARCHFILE"].split
-    install file, archlibdir, :mode => 0644
+  install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
+  if File.exist?(ruby_install_name+exeext+".manifest")
+    install ruby_install_name+exeext+".manifest", bindir, :mode => 0644
   end
-end
+  if rubyw_install_name and !rubyw_install_name.empty?
+    install rubyw_install_name+exeext, bindir, :mode => 0755
+    if File.exist?(rubyw_install_name+exeext+".manifest")
+      install rubyw_install_name+exeext+".manifest", bindir, :mode => 0644
+    end
+  end
+  if enable_shared and dll != lib
+    install dll, bindir, :mode => 0755
+    if File.exist?(dll+".manifest")
+      install dll+".manifest", bindir, :mode => 0644
+    end
+  end
+  install lib, libdir, :mode => 0755 unless lib == arc
+  install arc, libdir, :mode => 0644
+  install "config.h", archlibdir, :mode => 0644
+  install "rbconfig.rb", archlibdir, :mode => 0644
+  if CONFIG["ARCHFILE"]
+    for file in CONFIG["ARCHFILE"].split
+      install file, archlibdir, :mode => 0644
+    end
+  end
 
-if dll == lib and dll != arc
-  for link in CONFIG["LIBRUBY_ALIASES"].split
-    ln_sf(dll, File.join(libdir, link))
+  if dll == lib and dll != arc
+    for link in CONFIG["LIBRUBY_ALIASES"].split
+      ln_sf(dll, File.join(libdir, link))
+    end
   end
-end
 end
 
 Dir.chdir srcdir

@@ -1,3 +1,8 @@
+Fri Feb 24 12:10:07 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: install *.exe.manifest and *.dll.manifest if exist.
+	  It's for VC++8.
+
 Fri Feb 24 11:17:45 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (NtInitialize): need to set a handler for VC++8.
