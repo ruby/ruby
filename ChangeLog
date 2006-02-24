@@ -1,3 +1,9 @@
+Fri Feb 24 20:21:38 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/drbtest.rb (add_service_command): quote pathnames in the
+          server's command line for space contained directory names.
+          Thanks, arton. [ruby-dev:28386]
+
 Fri Feb 24 12:10:07 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb: install *.exe.manifest and *.dll.manifest if exist.
