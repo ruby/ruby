@@ -354,6 +354,13 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
+#if _MSC_VER >= 1400
+static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
+{
+    // nothing to do
+}
+#endif
+
 //
 // Initialization stuff
 //
@@ -363,6 +370,10 @@ NtInitialize(int *argc, char ***argv)
 
     WORD version;
     int ret;
+
+#if _MSC_VER >= 1400
+    _set_invalid_parameter_handler(invalid_parameter);
+#endif
 
     //
     // subvert cmd.exe's feeble attempt at command line parsing

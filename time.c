@@ -139,6 +139,7 @@ time_overflow_p(secp, usecp)
     *usecp = usec;
 }
 
+static VALUE time_new_internal _((VALUE, time_t, time_t));
 static VALUE
 time_new_internal(klass, sec, usec)
     VALUE klass;

@@ -1,3 +1,10 @@
+Fri Feb 24 11:19:58 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (time_new_internal): add prototype to tell the compiler
+	  arugments types.
+
+	* win32/win32.c (NtInitialize): need to set a handler for VC++8.
+
 Fri Feb 24 08:19:16 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test.rb: Removed.  Obsolete by test/nkf.
