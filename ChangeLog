@@ -1,3 +1,7 @@
+Fri Feb 24 11:17:45 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (NtInitialize): need to set a handler for VC++8.
+
 Thu Feb 23 22:39:59 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: use borlndmm.dll if possible. bcc32's RTL internal
