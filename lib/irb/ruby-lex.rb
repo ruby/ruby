@@ -309,7 +309,7 @@ class RubyLex
     "q" => "\'",
     "Q" => "\"",
     "x" => "\`",
-    "r" => "\/",
+    "r" => "/",
     "w" => "]",
     "W" => "]",
     "s" => ":"
@@ -326,14 +326,14 @@ class RubyLex
     "\'" => TkSTRING,
     "\"" => TkSTRING,
     "\`" => TkXSTRING,
-    "\/" => TkREGEXP,
+    "/" => TkREGEXP,
     "]" => TkDSTRING,
     ":" => TkSYMBOL
   }
   DLtype2Token = {
     "\"" => TkDSTRING,
     "\`" => TkDXSTRING,
-    "\/" => TkDREGEXP,
+    "/" => TkDREGEXP,
   }
 
   def lex_init()
@@ -1087,7 +1087,7 @@ class RubyLex
   def read_escape
     case ch = getc
     when "\n", "\r", "\f"
-    when "\\", "n", "t", "r", "f", "v", "a", "e", "b" #"
+    when "\\", "n", "t", "r", "f", "v", "a", "e", "b", "s" #"
     when /[0-7]/
       ungetc ch
       3.times do
@@ -1122,7 +1122,7 @@ class RubyLex
 	end
       end
 
-    when "C", "c", "^"
+    when "C", "c" #, "^"
       if ch == "C" and (ch = getc) != "-"
 	ungetc
       elsif (ch = getc) == "\\" #"
