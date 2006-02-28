@@ -560,7 +560,7 @@ class RubyLex
     "q" => "\'",
     "Q" => "\"",
     "x" => "\`",
-    "r" => "\/",
+    "r" => "/",
     "w" => "]"
   }
   
@@ -575,7 +575,7 @@ class RubyLex
     "\'" => TkSTRING,
     "\"" => TkSTRING,
     "\`" => TkXSTRING,
-    "\/" => TkREGEXP,
+    "/" => TkREGEXP,
     "]" => TkDSTRING
   }
   Ltype2Token.default = TkSTRING
@@ -583,7 +583,7 @@ class RubyLex
   DLtype2Token = {
     "\"" => TkDSTRING,
     "\`" => TkDXSTRING,
-    "\/" => TkDREGEXP,
+    "/" => TkDREGEXP,
   }
 
   def lex_init()
@@ -1334,7 +1334,7 @@ class RubyLex
 	end
       end
 
-    when "C", "c", "^"
+    when "C", "c" #, "^"
       res << ch
       if ch == "C" and (ch = getc) != "-"
 	ungetc
