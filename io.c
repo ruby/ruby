@@ -455,8 +455,7 @@ io_fflush(OpenFile *fptr)
 
 #ifdef HAVE_RB_FD_INIT
 static VALUE
-wait_readable(p)
-    VALUE p;
+wait_readable(VALUE p)
 {
     rb_fdset_t *rfds = (rb_fdset_t *)p;
 
@@ -498,8 +497,7 @@ rb_io_wait_readable(int f)
 
 #ifdef HAVE_RB_FD_INIT
 static VALUE
-wait_writable(p)
-    VALUE p;
+wait_writable(VALUE p)
 {
     rb_fdset_t *wfds = (rb_fdset_t *)p;
 
@@ -2805,8 +2803,7 @@ popen_redirect(struct popen_arg *p)
 
 #ifdef HAVE_FORK
 static int
-popen_exec(p)
-    struct popen_arg *p;
+popen_exec(struct popen_arg *p)
 {
     int fd;
 
@@ -2823,7 +2820,7 @@ popen_exec(p)
 #endif
 
 static VALUE
-pipe_open(int argc, VALUE *argv, char *mode)
+pipe_open(int argc, VALUE *argv, const char *mode)
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
@@ -3255,7 +3252,7 @@ rb_f_open(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_io_open(char *fname, char *mode)
+rb_io_open(const char *fname, const char *mode)
 {
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
@@ -3725,7 +3722,7 @@ rb_f_puts(int argc, VALUE *argv)
 }
 
 void
-rb_p(VALUE obj)			/* for debug print within C code */
+rb_p(VALUE obj) /* for debug print within C code */
 {
     rb_io_write(rb_stdout, rb_obj_as_string(rb_inspect(obj)));
     rb_io_write(rb_stdout, rb_default_rs);
@@ -4515,8 +4512,7 @@ struct select_args {
 
 #ifdef HAVE_RB_FD_INIT
 static VALUE
-select_call(arg)
-    VALUE arg;
+select_call(VALUE arg)
 {
     struct select_args *p = (struct select_args *)arg;
 
@@ -4524,8 +4520,7 @@ select_call(arg)
 }
 
 static VALUE
-select_end(arg)
-    VALUE arg;
+select_end(VALUE arg)
 {
     struct select_args *p = (struct select_args *)arg;
     int i;

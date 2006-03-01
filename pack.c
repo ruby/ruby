@@ -152,8 +152,7 @@ swapd(const double d)
 #else
 #if SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
 static double
-swapd(d)
-    const double d;
+swapd(const double d)
 {
     double dtmp = d;
     unsigned short utmp[2];
@@ -186,7 +185,7 @@ define_swapx(d, double)
 #undef htonl
 #endif
 static int
-endian()
+endian(void)
 {
     static int init = 0;
     static int endian_value;
@@ -362,13 +361,12 @@ num2i32(VALUE x)
 #else
 # define QUAD_SIZE 8
 #endif
-static char *toofew = "too few arguments";
 
-static void encodes(VALUE,char*,long,int);
+static void encodes(VALUE,const char*,long,int);
 static void qpencode(VALUE,VALUE,long);
 
 static int uv_to_utf8(char*,unsigned long);
-static unsigned long utf8_to_uv(char*,long*);
+static unsigned long utf8_to_uv(const char*,long*);
 
 /*
  *  call-seq:
@@ -438,13 +436,13 @@ static unsigned long utf8_to_uv(char*,long*);
 static VALUE
 pack_pack(VALUE ary, VALUE fmt)
 {
-    static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
-    static char *spc10 = "          ";
-    char *p, *pend;
+    static const char nul10[] = "\0\0\0\0\0\0\0\0\0\0";
+    static const char spc10[] = "          ";
+    const char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
     long items, len, idx, plen;
-    char *ptr;
+    const char *ptr;
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
@@ -458,7 +456,7 @@ pack_pack(VALUE ary, VALUE fmt)
     idx = 0;
 
 #define THISFROM RARRAY(ary)->ptr[idx]
-#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, toofew),0))
+#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, "too few arguments"),0))
 
     while (p < pend) {
 	if (RSTRING(fmt)->ptr + RSTRING(fmt)->len != pend) {
@@ -999,17 +997,17 @@ pack_pack(VALUE ary, VALUE fmt)
     return res;
 }
 
-static char uu_table[] =
+static const char uu_table[] =
 "`!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
-static char b64_table[] =
+static const char b64_table[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void
-encodes(VALUE str, char *s, long len, int type)
+encodes(VALUE str, const char *s, long len, int type)
 {
     char *buff = ALLOCA_N(char, len * 4 / 3 + 6);
     long i = 0;
-    char *trans = type == 'u' ? uu_table : b64_table;
+    const char *trans = type == 'u' ? uu_table : b64_table;
     int padding;
 
     if (type == 'u') {
@@ -1043,7 +1041,7 @@ encodes(VALUE str, char *s, long len, int type)
     rb_str_buf_cat(str, buff, i);
 }
 
-static char hex_table[] = "0123456789ABCDEF";
+static const char hex_table[] = "0123456789ABCDEF";
 
 static void
 qpencode(VALUE str, VALUE from, long len)
@@ -2031,7 +2029,7 @@ static const unsigned long utf8_limits[] = {
 };
 
 static unsigned long
-utf8_to_uv(char *p, long *lenp)
+utf8_to_uv(const char *p, long *lenp)
 {
     int c = *p++ & 0xff;
     unsigned long uv = c;

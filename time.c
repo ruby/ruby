@@ -260,7 +260,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     return t;
 }
 
-static char *months [12] = {
+static const char *months[] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec",
 };
@@ -1773,9 +1773,7 @@ time_to_a(VALUE time)
 
 #define SMALLBUF 100
 static int
-rb_strftime(char **buf,
-            const char *format,
-            struct tm *time)
+rb_strftime(char **buf, const char *format, struct tm *time)
 {
     int size, len, flen;
 

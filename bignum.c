@@ -249,9 +249,7 @@ rb_quad_unpack(const char *buf, int sign)
 #define QUAD_SIZE 8
 
 void
-rb_quad_pack(buf, val)
-    char *buf;
-    VALUE val;
+rb_quad_pack(char *buf, VALUE val)
 {
     long len;
 
@@ -277,9 +275,7 @@ rb_quad_pack(buf, val)
 #define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
 
 VALUE
-rb_quad_unpack(buf, sign)
-    const char *buf;
-    int sign;
+rb_quad_unpack(const char *buf, int sign)
 {
     VALUE big = bignew(QUAD_SIZE/SIZEOF_BDIGITS, 1);
 

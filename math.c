@@ -146,8 +146,7 @@ math_atan(VALUE obj, VALUE x)
 
 #ifndef HAVE_COSH
 double
-cosh(x)
-    double x;
+cosh(double x)
 {
     return (exp(x) + exp(-x)) / 2;
 }
@@ -170,8 +169,7 @@ math_cosh(VALUE obj, VALUE x)
 
 #ifndef HAVE_SINH
 double
-sinh(x)
-    double x;
+sinh(double x)
 {
     return (exp(x) - exp(-x)) / 2;
 }
@@ -194,8 +192,7 @@ math_sinh(VALUE obj, VALUE x)
 
 #ifndef HAVE_TANH
 double
-tanh(x)
-    double x;
+tanh(double x)
 {
     return sinh(x) / cosh(x);
 }

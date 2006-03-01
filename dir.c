@@ -1745,7 +1745,7 @@ dir_entries(VALUE io, VALUE dirname)
  *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true    period by default.
  *     File.fnmatch('.*',  '.profile')                      #=> true
  *
- *     rbfiles = File.join("**", "*.rb")
+ *     rbfiles = '**' '/' '*.rb' # you don't have to do like this. just write in single string.
  *     File.fnmatch(rbfiles, 'main.rb')                    #=> false
  *     File.fnmatch(rbfiles, './main.rb')                  #=> false
  *     File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
@@ -1754,14 +1754,16 @@ dir_entries(VALUE io, VALUE dirname)
  *     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
  *     File.fnmatch('*',           'dave/.profile')                      #=> true
  *
- *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME)  #=> false
- *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+ *     pattern = '*' '/' '*'
+ *     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME)  #=> false
+ *     File.fnmatch(pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
  *
- *     File.fnmatch('** IGNORE /foo', 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
- *     File.fnmatch('** IGNORE /foo', '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
- *     File.fnmatch('** IGNORE /foo', 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
- *     File.fnmatch('** IGNORE /foo', 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
- *     File.fnmatch('** IGNORE /foo', 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+ *     pattern = '**' '/' 'foo'
+ *     File.fnmatch(pattern, 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
+ *     File.fnmatch(pattern, '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
+ *     File.fnmatch(pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
+ *     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
+ *     File.fnmatch(pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
  */
 static VALUE
 file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
