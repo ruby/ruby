@@ -167,7 +167,7 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 #define SYMBOL_FLAG 0x0e
 #define SYMBOL_P(x) (((VALUE)(x)&0xff)==SYMBOL_FLAG)
 #define ID2SYM(x) ((VALUE)(((long)(x))<<8|SYMBOL_FLAG))
-#define SYM2ID(x) RSHIFT((long)x,8)
+#define SYM2ID(x) RSHIFT((unsigned long)x,8)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
 #define Qfalse ((VALUE)0)
