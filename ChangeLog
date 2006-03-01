@@ -1,3 +1,8 @@
+Thu Mar  2 08:02:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_heap): heap_slots may overflow.  a patch from Stefan
+	  Weil <weil at mail.berlios.de>.
+
 Wed Mar  1 00:24:31 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/rdoc/parsers/parse_rb.rb (read_escape): could not handle /\^/.

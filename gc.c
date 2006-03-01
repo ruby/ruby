@@ -363,6 +363,7 @@ add_heap()
     if (himem < pend) himem = pend;
     heaps_used++;
     heap_slots *= 1.8;
+    if (heap_slots <= 0) heap_slots = HEAP_MIN_SLOTS;
 
     while (p < pend) {
 	p->as.free.flags = 0;
