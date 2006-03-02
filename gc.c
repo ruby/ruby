@@ -276,6 +276,10 @@ rb_global_variable(var)
     rb_gc_register_address(var);
 }
 
+#if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__CYGWIN__)
+#pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
+#endif
+
 typedef struct RVALUE {
     union {
 	struct {
@@ -304,6 +308,10 @@ typedef struct RVALUE {
     int   line;
 #endif
 } RVALUE;
+
+#if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__CYGWIN__)
+#pragma pack(pop)
+#endif
 
 static RVALUE *freelist = 0;
 static RVALUE *deferred_final_list = 0;

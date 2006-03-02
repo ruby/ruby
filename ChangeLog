@@ -1,3 +1,8 @@
+Thu Mar  2 17:57:49 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
+	  [ruby-core:7474]
+
 Thu Mar  2 12:59:14 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (filetime_to_unixtime): should set tm_isdst to -1.
