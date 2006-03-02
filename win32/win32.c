@@ -3223,6 +3223,7 @@ filetime_to_unixtime(const FILETIME *ft)
     tm.tm_hour = st.wHour;
     tm.tm_min = st.wMinute;
     tm.tm_sec = st.wSecond;
+    tm.tm_isdst = -1;
     t = mktime(&tm);
     return t == -1 ? 0 : t;
 }
