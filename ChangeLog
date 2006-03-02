@@ -9,7 +9,7 @@ Thu Mar  2 14:12:26 2006  Tanaka Akira  <akr@m17n.org>
 	  (is_pointer_to_heap): check alignment out of loop.
 	  (id2ref): avoid collision between symbols and objects.
 	  (rb_obj_id): ditto.  moved from object.c.
-	  [ruby-talk:178364] [ruby-core:7401]
+	  [ruby-talk:178364] [ruby-core:7305]
 
 Thu Mar  2 12:55:16 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
