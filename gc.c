@@ -318,6 +318,7 @@ static RVALUE *deferred_final_list = 0;
 
 #define HEAPS_INCREMENT 10
 static struct heaps_slot {
+    void *membase;
     RVALUE *slot;
     int limit;
 } *heaps;
@@ -355,8 +356,7 @@ add_heap()
     }
 
     for (;;) {
-	RUBY_CRITICAL(p = heaps[heaps_used].slot = (RVALUE*)malloc(sizeof(RVALUE)*heap_slots));
-	heaps[heaps_used].limit = heap_slots;
+	RUBY_CRITICAL(p = (RVALUE*)malloc(sizeof(RVALUE)*(heap_slots+1)));
 	if (p == 0) {
 	    if (heap_slots == HEAP_MIN_SLOTS) {
 		rb_memerror();
@@ -364,6 +364,13 @@ add_heap()
 	    heap_slots = HEAP_MIN_SLOTS;
 	    continue;
 	}
+        heaps[heaps_used].membase = p;
+        if ((VALUE)p % sizeof(RVALUE) == 0)
+            heap_slots += 1;
+        else
+            p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
+        heaps[heaps_used].slot = p;
+        heaps[heaps_used].limit = heap_slots;
 	break;
     }
     pend = p + heap_slots;
@@ -612,12 +619,12 @@ is_pointer_to_heap(ptr)
     register long i;
 
     if (p < lomem || p > himem) return Qfalse;
+    if ((VALUE)p % sizeof(RVALUE) != 0) return Qfalse;
 
     /* check if p looks like a pointer */
     for (i=0; i < heaps_used; i++) {
 	heap_org = heaps[i].slot;
-	if (heap_org <= p && p < heap_org + heaps[i].limit &&
-	    ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
+	if (heap_org <= p && p < heap_org + heaps[i].limit)
 	    return Qtrue;
     }
     return Qfalse;
@@ -1028,7 +1035,7 @@ free_unused_heaps()
 
     for (i = j = 1; j < heaps_used; i++) {
 	if (heaps[i].limit == 0) {
-	    free(heaps[i].slot);
+	    free(heaps[i].membase);
 	    heaps_used--;
 	}
 	else {
@@ -1894,22 +1901,26 @@ rb_gc_call_finalizer_at_exit()
  */
 
 static VALUE
-id2ref(obj, id)
-    VALUE obj, id;
+id2ref(obj, objid)
+    VALUE obj, objid;
 {
     unsigned long ptr, p0;
 
     rb_secure(4);
-    p0 = ptr = NUM2ULONG(id);
+    p0 = ptr = NUM2ULONG(objid);
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
-    if (SYMBOL_P(ptr) && rb_id2name(SYM2ID((VALUE)ptr)) != 0) {
-	return (VALUE)ptr;
+
+    if ((objid % sizeof(RVALUE)) == (4 << 2)) {
+        ID symid = objid / sizeof(RVALUE);
+        if (rb_id2name(symid) == 0)
+            rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
+        return ID2SYM(symid);
     }
 
-    ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
+    ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLKTAG) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
@@ -1917,6 +1928,73 @@ id2ref(obj, id)
 	rb_raise(rb_eRangeError, "0x%lx is recycled object", p0);
     }
     return (VALUE)ptr;
+}
+
+/*
+ *  Document-method: __id__
+ *  Document-method: object_id
+ *
+ *  call-seq:
+ *     obj.__id__       => fixnum
+ *     obj.object_id    => fixnum
+ *  
+ *  Returns an integer identifier for <i>obj</i>. The same number will
+ *  be returned on all calls to <code>id</code> for a given object, and
+ *  no two active objects will share an id.
+ *  <code>Object#object_id</code> is a different concept from the
+ *  <code>:name</code> notation, which returns the symbol id of
+ *  <code>name</code>. Replaces the deprecated <code>Object#id</code>.
+ */
+
+/*
+ *  call-seq:
+ *     obj.hash    => fixnum
+ *  
+ *  Generates a <code>Fixnum</code> hash value for this object. This
+ *  function must have the property that <code>a.eql?(b)</code> implies
+ *  <code>a.hash == b.hash</code>. The hash value is used by class
+ *  <code>Hash</code>. Any hash value that exceeds the capacity of a
+ *  <code>Fixnum</code> will be truncated before being used.
+ */
+
+VALUE
+rb_obj_id(VALUE obj)
+{
+    /*
+     *                32-bit VALUE space
+     *          MSB ------------------------ LSB
+     *  false   00000000000000000000000000000000
+     *  true    00000000000000000000000000000010
+     *  nil     00000000000000000000000000000100
+     *  undef   00000000000000000000000000000110
+     *  symbol  ssssssssssssssssssssssss00001110
+     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE))
+     *  fixnum  fffffffffffffffffffffffffffffff1
+     *
+     *                    object_id space
+     *                                       LSB
+     *  false   00000000000000000000000000000000
+     *  true    00000000000000000000000000000010
+     *  nil     00000000000000000000000000000100
+     *  undef   00000000000000000000000000000110
+     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = s...s * A + 4)
+     *  object   oooooooooooooooooooooooooooooo0        o...o % A = 0
+     *  fixnum  fffffffffffffffffffffffffffffff1        bignum if required
+     *
+     *  where A = sizeof(RVALUE)/4
+     *
+     *  sizeof(RVALUE) is
+     *  20 if 32-bit, double is 4-byte aligned
+     *  24 if 32-bit, double is 8-byte aligned
+     *  40 if 64-bit
+     */
+    if (TYPE(obj) == T_SYMBOL) {
+        return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
+    }
+    if (SPECIAL_CONST_P(obj)) {
+        return LONG2NUM((long)obj);
+    }
+    return (VALUE)((long)obj|FIXNUM_FLAG);
 }
 
 /*
@@ -1958,4 +2036,8 @@ Init_GC()
 
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
+
+    rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
+    rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
+    rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 }

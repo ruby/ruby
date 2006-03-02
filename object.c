@@ -98,46 +98,6 @@ rb_obj_equal(obj1, obj2)
     return Qfalse;
 }
 
-
-/*
- *  Document-method: __id__
- *  Document-method: object_id
- *
- *  call-seq:
- *     obj.__id__       => fixnum
- *     obj.object_id    => fixnum
- *  
- *  Returns an integer identifier for <i>obj</i>. The same number will
- *  be returned on all calls to <code>id</code> for a given object, and
- *  no two active objects will share an id.
- *  <code>Object#object_id</code> is a different concept from the
- *  <code>:name</code> notation, which returns the symbol id of
- *  <code>name</code>. Replaces the deprecated <code>Object#id</code>.
- */
-
-
-
-/*
- *  call-seq:
- *     obj.hash    => fixnum
- *  
- *  Generates a <code>Fixnum</code> hash value for this object. This
- *  function must have the property that <code>a.eql?(b)</code> implies
- *  <code>a.hash == b.hash</code>. The hash value is used by class
- *  <code>Hash</code>. Any hash value that exceeds the capacity of a
- *  <code>Fixnum</code> will be truncated before being used.
- */
-
-VALUE
-rb_obj_id(obj)
-    VALUE obj;
-{
-    if (SPECIAL_CONST_P(obj)) {
-	return LONG2NUM((long)obj);
-    }
-    return (VALUE)((long)obj|FIXNUM_FLAG);
-}
-
 /*
  *  call-seq:
  *     obj.id    => fixnum
@@ -2614,10 +2574,7 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
 
-    rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "id", rb_obj_id_obsolete, 0);
-    rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 

@@ -1,3 +1,11 @@
+Thu Mar  2 19:44:18 2006  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c: align VALUE with sizeof(RVALUE) globally. 
+	  (is_pointer_to_heap): check alignment out of loop.
+	  (id2ref): avoid collision between symbols and objects.
+	  (rb_obj_id): ditto.  moved from object.c.
+	  [ruby-talk:178364] [ruby-core:7401]
+
 Thu Mar  2 17:57:49 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
