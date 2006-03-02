@@ -1,3 +1,9 @@
+Thu Mar  2 12:59:14 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (filetime_to_unixtime): should set tm_isdst to -1.
+	  stat() didn't treat daylight saving time property on WinNT.
+	  [ruby-talk:182100]
+
 Thu Mar  2 08:02:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (add_heap): heap_slots may overflow.  a patch from Stefan
