@@ -1,3 +1,11 @@
+Thu Mar  2 14:12:26 2006  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c: align VALUE with sizeof(RVALUE) globally. 
+	  (is_pointer_to_heap): check alignment out of loop.
+	  (id2ref): avoid collision between symbols and objects.
+	  (rb_obj_id): ditto.  moved from object.c.
+	  [ruby-talk:178364] [ruby-core:7401]
+
 Thu Mar  2 12:55:16 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (filetime_to_unixtime): should set tm_isdst to -1.
