@@ -1,3 +1,12 @@
+Fri Mar  3 21:22:42 2006  Tanaka Akira  <akr@m17n.org>
+
+	* lib/fileutils.rb (FileUtils.cp_r): implement :remove_destination
+	  option.
+
+	* ext/extmk.rb: use :remove_destination to install extension libraries
+	  to avoid SEGV.
+	  [ruby-dev:28417]
+
 Fri Mar  3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/dl/.cvsignore: ignore callback.h.

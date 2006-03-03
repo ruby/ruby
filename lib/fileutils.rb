@@ -392,7 +392,7 @@ module FileUtils
   OPT_TABLE['copy'] = %w( noop verbose preserve )
 
   #
-  # Options: preserve noop verbose dereference_root
+  # Options: preserve noop verbose dereference_root remove_destination
   # 
   # Copies +src+ to +dest+. If +src+ is a directory, this method copies
   # all its contents recursively. If +dest+ is a directory, copies
@@ -415,11 +415,11 @@ module FileUtils
   #                                      # but this doesn't.
   # 
   def cp_r(src, dest, options = {})
-    fu_check_options options, :preserve, :noop, :verbose, :dereference_root
-    fu_output_message "cp -r#{options[:preserve] ? 'p' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
+    fu_check_options options, :preserve, :noop, :verbose, :dereference_root, :remove_destination
+    fu_output_message "cp -r#{options[:preserve] ? 'p' : ''}#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
     fu_each_src_dest(src, dest) do |s, d|
-      copy_entry s, d, options[:preserve], options[:dereference_root]
+      copy_entry s, d, options[:preserve], options[:dereference_root], options[:remove_destination]
     end
   end
   module_function :cp_r
@@ -440,9 +440,12 @@ module FileUtils
   #
   # If +dereference_root+ is true, this method dereference tree root.
   #
-  def copy_entry(src, dest, preserve = false, dereference_root = false)
+  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #
+  def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
     Entry_.new(src, nil, dereference_root).traverse do |ent|
       destent = Entry_.new(dest, ent.rel, false)
+      File.unlink destent.path if remove_destination && File.file?(destent.path)
       ent.copy destent.path
       ent.copy_metadata destent.path if preserve
     end
