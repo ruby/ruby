@@ -1,5 +1,6 @@
 Makefile
 eventids1.c
+eventids2table.c
 ripper.*
 ids1
 ids2

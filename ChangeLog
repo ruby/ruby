@@ -1,3 +1,11 @@
+Fri Mar  3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/dl/.cvsignore: ignore callback.h.
+
+	* ext/ripper/.cvsignore: ignore eventids2table.c.
+
+	* ext/socket/.cvsignore: ignore constants.h.
+
 Thu Mar  2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
