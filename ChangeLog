@@ -1,3 +1,9 @@
+Sat Mar  4 01:08:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/ri/ri_paths.rb (RI::Paths): adding paths from rubygems
+	  directories.  a patch from Eric Hodel <drbrain at segment7.net>.
+	  [ruby-core:07423]
+
 Thu Mar  2 19:44:18 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c: align VALUE with sizeof(RVALUE) globally. 
@@ -5,6 +11,11 @@ Thu Mar  2 19:44:18 2006  Tanaka Akira  <akr@m17n.org>
 	  (id2ref): avoid collision between symbols and objects.
 	  (rb_obj_id): ditto.  moved from object.c.
 	  [ruby-talk:178364] [ruby-core:7305]
+
+Thu Mar  2 18:58:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_fd_writable): should not re-schedule output
+	  from KILLED thread (must be error printing).
 
 Thu Mar  2 17:57:49 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

@@ -10737,6 +10737,7 @@ rb_thread_fd_writable(fd)
     if (rb_thread_critical) return Qtrue;
     if (curr_thread == curr_thread->next) return Qtrue;
     if (curr_thread->status == THREAD_TO_KILL) return Qtrue;
+    if (curr_thread->status == THREAD_KILLED) return Qtrue;
 
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
