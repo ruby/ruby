@@ -5,12 +5,13 @@ class TestObjectSpace < Test::Unit::TestCase
     /:(\d+)/ =~ caller[0]
     file = $`
     line = $1.to_i
-    eval <<"End", binding, file, line
+    code = <<"End"
     define_method("test_id2ref_#{line}") {\
       o = ObjectSpace._id2ref(obj.object_id);\
-      assert_equal(obj, o, "didn't round trip: #{obj.inspect}");\
+      assert_equal(obj, o, "didn't round trip: \#{obj.inspect}");\
     }
 End
+    eval code, binding, file, line
   end
 
   deftest_id2ref(-0x4000000000000001)
