@@ -1,3 +1,7 @@
+Sat Mar  4 15:26:40 2006  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (id2ref): fix symbol test.
+
 Fri Mar  3 21:22:42 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/fileutils.rb (FileUtils.cp_r): implement :remove_destination
