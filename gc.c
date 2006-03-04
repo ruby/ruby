@@ -1912,15 +1912,15 @@ id2ref(obj, objid)
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
 
-    if ((objid % sizeof(RVALUE)) == (4 << 2)) {
-        ID symid = objid / sizeof(RVALUE);
+    if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
+        ID symid = ptr / sizeof(RVALUE);
         if (rb_id2name(symid) == 0)
             rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
         return ID2SYM(symid);
     }
 
-    ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLKTAG) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
