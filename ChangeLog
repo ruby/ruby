@@ -1,3 +1,8 @@
+Sun Mar  5 18:35:03 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (send_request_with_body): #content_type never
+	  return false, use #main_type instead. [ruby-core:07476]
+
 Sat Mar  4 15:26:40 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (id2ref): fix symbol test.

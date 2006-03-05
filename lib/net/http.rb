@@ -1176,7 +1176,7 @@ module Net   #:nodoc:
     #
     def add_field(key, val)
       if @header.key?(key.downcase)
-        @header[key.downcase].concat [val]
+        @header[key.downcase].push val
       else
         @header[key.downcase] = [val]
       end
@@ -1504,7 +1504,7 @@ module Net   #:nodoc:
     def send_request_with_body(sock, ver, path, body)
       self.content_length = body.length
       delete 'Transfer-Encoding'
-      unless content_type()
+      unless main_type()
         warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
         set_content_type 'application/x-www-form-urlencoded'
       end
