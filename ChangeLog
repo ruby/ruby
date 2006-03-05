@@ -1,3 +1,7 @@
+Sun Mar  5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: do not repeat command options.
+
 Sun Mar  5 18:35:03 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (send_request_with_body): #content_type never
