@@ -1,3 +1,11 @@
+Sat Mar 11 14:24:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::wrap): removed
+	  space before argument parenthesis.  [ruby-talk:183630]
+
+	* ruby.1: a clarification patch from David Lutterkort
+	  <dlutter at redhat.com>.  [ruby-core:7508]
+
 Sat Mar  4 15:26:40 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (id2ref): fix symbol test.
