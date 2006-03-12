@@ -62,7 +62,7 @@ class TestOLEPARAM < RUNIT::TestCase
     f = methods.find {|m| m.name == 'SaveAs'}
     assert(f.params[0].optional?)
   end
-  def test_ole_type_detail
+  def test_ole_type_detail2
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     methods = classes.find {|c| c.name == 'Worksheet'}.ole_methods
     f = methods.find {|m| m.name == 'SaveAs'}

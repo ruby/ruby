@@ -71,4 +71,9 @@ class TestWIN32OLE_VARIANT < Test::Unit::TestCase
     assert_equal("10000", obj.value)
   end
 
+  def test_create_vt_array
+    obj = WIN32OLE_VARIANT.new([1.2, 2.3], WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_R8)
+    assert_equal([1.2, 2.3], obj.value)
+  end
+
 end

@@ -1,3 +1,13 @@
+Sun Mar 12 17:02:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_val2olevariantdata): support VT_VARIANT in 
+	  WIN32OLE_VARIANT.new().
+
+	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
+
+	* ext/win32ole/tests/testOLEPARAM.rb: test method name should not be 
+	  duplicated.
+
 Sun Mar  5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: do not repeat command options.
