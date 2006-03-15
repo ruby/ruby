@@ -1094,7 +1094,7 @@ TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
 CLEANLIBS     = #{n}#{CONFIG['DLEXT']} #{n}il? #{n}tds #{n}map
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.exp *.bak
 
-all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
+all:		#{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 }
   mfile.print CLEANINGS
