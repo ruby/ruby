@@ -168,7 +168,7 @@ ossl_spki_get_challenge(VALUE self)
     GetSPKI(self, spki);
     if (spki->spkac->challenge->length <= 0) {
 	OSSL_Debug("Challenge.length <= 0?");
-	return rb_str_new2(NULL);
+	return str_str_new(0, 0);
     }
 
     return rb_str_new(spki->spkac->challenge->data,

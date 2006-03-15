@@ -1,3 +1,8 @@
+Wed Mar 15 16:35:43 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c, ext/openssl/ossl_nsspki.c: should use
+	  "rb_str_new(0, 0)" to make empty string.
+
 Sat Mar 11 14:24:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::wrap): removed
