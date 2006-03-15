@@ -458,7 +458,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     if (NIL_P(v))
 	return v;
     else if (TYPE(v) == T_ARRAY) {
-        str = rb_str_new2(NULL);
+        str = rb_str_new(0, 0);
         for (i = 0; i < RARRAY(v)->len; i++) {
             elem = rb_ary_entry(v, i);
             if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
