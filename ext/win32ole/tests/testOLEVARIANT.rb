@@ -76,4 +76,23 @@ class TestWIN32OLE_VARIANT < Test::Unit::TestCase
     assert_equal([1.2, 2.3], obj.value)
   end
 
+  def test_create_vt_array_str2ui1array
+    obj = WIN32OLE_VARIANT.new("ABC", WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
+    assert_equal("ABC", obj.value)
+
+    obj = WIN32OLE_VARIANT.new([65, 0].pack("C*"), WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
+    assert_equal([65, 0].pack("C*"), obj.value)
+
+  end
+  def test_create_vt_array_int
+    obj = WIN32OLE_VARIANT.new([65, 0], WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
+    assert_equal([65, 0].pack("C*"), obj.value)
+
+    obj = WIN32OLE_VARIANT.new([65, 0])
+    assert_equal([65, 0], obj.value)
+
+    obj = WIN32OLE_VARIANT.new([65, 0], WIN32OLE::VARIANT::VT_I2|WIN32OLE::VARIANT::VT_ARRAY)
+    assert_equal([65, 0], obj.value)
+  end
+
 end

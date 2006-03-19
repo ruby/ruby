@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.1"
+#define WIN32OLE_VERSION "0.7.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1124,12 +1124,30 @@ ole_val2olevariantdata(val, vtype, pvar)
 {
     HRESULT hr = S_OK;
     VARIANT var;
-    if (vtype & VT_ARRAY) {
+
+    if (((vtype & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && TYPE(val) == T_STRING) {
+        long len = RSTRING(val)->len;
+        char *pdest = NULL;
+        SAFEARRAY *psa = SafeArrayCreateVector(VT_UI1, 0, len);
+        if (!psa) {
+            rb_raise(rb_eRuntimeError, "fail to SafeArrayCreateVector");
+        }
+        hr = SafeArrayAccessData(psa, (void **)&pdest);
+        if (SUCCEEDED(hr)) {
+            memcpy(pdest, RSTRING(val)->ptr, len);
+            SafeArrayUnaccessData(psa);
+            V_VT(&(pvar->realvar)) = vtype;
+            V_ARRAY(&(pvar->realvar)) = psa;
+            hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+        } else {
+            if (psa) 
+                SafeArrayDestroy(psa);
+        }
+    } else if (vtype & VT_ARRAY) {
         VALUE val1;
         long dim = 0;
         int  i = 0;
 
-        HRESULT hr;
         SAFEARRAYBOUND *psab = NULL;
         SAFEARRAY *psa = NULL;
         long      *pub, *pid;
@@ -7105,8 +7123,25 @@ folevariant_value(self)
 {
     struct olevariantdata *pvar;
     VALUE val = Qnil;
+    VARTYPE vt;
     Data_Get_Struct(self, struct olevariantdata, pvar);
+
     val = ole_variant2val(&(pvar->var));
+    vt = V_VT(&(pvar->var));
+
+    if ((vt & ~VT_BYREF) == (VT_UI1|VT_ARRAY)) {
+        SAFEARRAY *psa;
+        if (vt & VT_BYREF) {
+            psa = *V_ARRAYREF(&(pvar->var));
+        } else {
+            psa  = V_ARRAY(&(pvar->var));
+        }
+        int dim = SafeArrayGetDim(psa);
+        if (dim == 1) {
+            VALUE args = rb_ary_new3(1, rb_str_new2("C*"));
+            val = rb_apply(val, rb_intern("pack"), args);
+        }
+    }
     return val;
 }
 

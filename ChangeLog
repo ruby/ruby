@@ -1,3 +1,13 @@
+Sun Mar 19 09:46:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_val2olevariantdata): change behavior 
+	  of converting  OLE Variant object with VT_ARRAY|VT_UI1 and Ruby 
+	  String object.
+
+	* ext/win32ole/win32ole.c(folevariant_value): ditto.
+
+	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
+
 Wed Mar 15 16:51:11 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): support libraries without *.so.
@@ -9,7 +19,7 @@ Wed Mar 15 16:39:29 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Sun Mar 12 17:02:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c(ole_val2olevariantdata): support VT_VARIANT in 
+	* ext/win32ole/win32ole.c(ole_val2olevariantdata): support VT_ARRAY in 
 	  WIN32OLE_VARIANT.new().
 
 	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
