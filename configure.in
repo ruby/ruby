@@ -1276,7 +1276,11 @@ if test "$enable_shared" = 'yes'; then
   esac
 fi
 if test "$enable_rpath" = yes; then
-    LIBRUBYARG_SHARED='-Wl,-R -Wl,$(libdir) -L$(libdir) -L. '"$LIBRUBYARG_SHARED"
+    if test "$GCC" = yes; then
+       LIBRUBYARG_SHARED='-Wl,-R -Wl,$(libdir) -L$(libdir) -L. '"$LIBRUBYARG_SHARED"
+    else
+       LIBRUBYARG_SHARED='-R $(libdir) -L$(libdir) -L. '"$LIBRUBYARG_SHARED"
+    fi
 fi
 
 XLDFLAGS="$XLDFLAGS -L."

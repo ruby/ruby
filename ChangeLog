@@ -1,3 +1,8 @@
+Mon Mar 20 12:05:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: Solaris SunPro compiler -rapth patch from
+	  <kuwa at labs.fujitsu.com>.  [ruby-dev:28443]
+
 Mon Mar 20 09:40:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: remove enable_rpath=no for Solaris.
