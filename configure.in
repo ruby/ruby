@@ -1236,8 +1236,6 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR).$(TEENY) lib$(RUBY_SO_NAME).so'
 	if test "$GCC" = yes; then
 	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
-	else
-	    enable_rpath=no
 	fi
 	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
  	;;

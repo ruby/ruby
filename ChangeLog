@@ -1,3 +1,8 @@
+Mon Mar 20 09:40:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: remove enable_rpath=no for Solaris.
+	  [ruby-dev:28440]
+
 Fri Mar 17 19:08:49 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c, ext/openssl/ossl_nsspki.c: fix typo.
