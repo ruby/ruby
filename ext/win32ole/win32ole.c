@@ -7131,12 +7131,13 @@ folevariant_value(self)
 
     if ((vt & ~VT_BYREF) == (VT_UI1|VT_ARRAY)) {
         SAFEARRAY *psa;
+	int dim;
         if (vt & VT_BYREF) {
             psa = *V_ARRAYREF(&(pvar->var));
         } else {
             psa  = V_ARRAY(&(pvar->var));
         }
-        int dim = SafeArrayGetDim(psa);
+        dim = SafeArrayGetDim(psa);
         if (dim == 1) {
             VALUE args = rb_ary_new3(1, rb_str_new2("C*"));
             val = rb_apply(val, rb_intern("pack"), args);

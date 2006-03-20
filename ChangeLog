@@ -1,10 +1,15 @@
+Mon Mar 20 11:12:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (folevariant_value): could not compile
+	  with C90 compiler.
+
 Sun Mar 19 09:46:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c(ole_val2olevariantdata): change behavior 
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata): change behavior 
 	  of converting  OLE Variant object with VT_ARRAY|VT_UI1 and Ruby 
 	  String object.
 
-	* ext/win32ole/win32ole.c(folevariant_value): ditto.
+	* ext/win32ole/win32ole.c (folevariant_value): ditto.
 
 	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
 
