@@ -970,6 +970,7 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_MATCH:
+        gc_mark(obj->as.match.regexp, lev);
 	if (obj->as.match.str) {
 	    ptr = obj->as.match.str;
 	    goto again;

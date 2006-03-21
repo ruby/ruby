@@ -655,6 +655,7 @@ match_alloc(VALUE klass)
 
     match->str = 0;
     match->regs = 0;
+    match->regexp = 0;
     match->regs = ALLOC(struct re_registers);
     MEMZERO(match->regs, struct re_registers, 1);
 
@@ -942,6 +943,7 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
 
     onig_region_copy(RMATCH(match)->regs, &regs);
     RMATCH(match)->str = rb_str_new4(str);
+    RMATCH(match)->regexp = re;
     rb_backref_set(match);
 
     OBJ_INFECT(match, re);
@@ -1183,10 +1185,43 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
     rb_scan_args(argc, argv, "11", &idx, &rest);
 
-    if (!NIL_P(rest) || !FIXNUM_P(idx) || FIX2INT(idx) < 0) {
-	return rb_ary_aref(argc, argv, match_to_a(match));
+    if (NIL_P(rest)) {
+      if (FIXNUM_P(idx)) {
+        if (FIX2INT(idx) >= 0) {
+          return rb_reg_nth_match(FIX2INT(idx), match);
+        }
+      }
+      else {
+        char *p, *end;
+        int num;
+
+        switch (TYPE(idx)) {
+          case T_SYMBOL:
+            p = rb_id2name(SYM2ID(idx));
+            goto name_to_backref;
+            break;
+          case T_STRING:
+            p = StringValuePtr(idx);
+
+          name_to_backref:
+            end = p + strlen(p);
+            num = onig_name_to_backref_number(RREGEXP(RMATCH(match)->regexp)->ptr,
+                  (unsigned char* )p, (unsigned char* )end, RMATCH(match)->regs);
+            if (num >= 1) {
+              return rb_reg_nth_match(num, match);
+            }
+            else {
+              rb_raise(rb_eArgError, "undefined group name reference: %s", p);
+            }
+            break;
+
+          default:
+            break;
+        }
+      }
     }
-    return rb_reg_nth_match(FIX2INT(idx), match);
+
+    return rb_ary_aref(argc, argv, match_to_a(match));
 }
 
 static VALUE

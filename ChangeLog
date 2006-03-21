@@ -1,3 +1,13 @@
+Tue Mar 21 22:14:01 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* re.c (match_alloc): initialize member regexp.
+
+	* re.c (match_aref): add String and Symbol argument. [ruby-dev:28448]
+
+	* re.h : add member regexp to RMatch. 
+
+	* gc.c (gc_mark_children): add gc_mark() to regexp member.
+
 Mon Mar 20 11:12:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (folevariant_value): could not compile

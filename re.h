@@ -24,6 +24,7 @@ struct RMatch {
     struct RBasic basic;
     VALUE str;
     struct re_registers *regs;
+    VALUE regexp;  /* RRegexp */
 };
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
