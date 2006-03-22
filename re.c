@@ -1158,6 +1158,22 @@ match_captures(VALUE match)
     return match_array(match, 1);
 }
 
+static int
+name_to_backref_number(struct re_registers *regs, VALUE regexp, char* name, char* name_end)
+{
+  int num;
+
+  num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+            (unsigned char* )name, (unsigned char* )name_end, regs);
+  if (num >= 1) {
+    return num;
+  }
+  else {
+    VALUE s = rb_str_new(name, (long )(name_end - name));
+    rb_raise(rb_eRuntimeError, "undefined group name reference: %s",
+                                StringValuePtr(s));
+  }
+}
 
 /*
  *  call-seq:
@@ -1192,7 +1208,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
         }
       }
       else {
-        char *p, *end;
+        char *p;
         int num;
 
         switch (TYPE(idx)) {
@@ -1204,15 +1220,9 @@ match_aref(int argc, VALUE *argv, VALUE match)
             p = StringValuePtr(idx);
 
           name_to_backref:
-            end = p + strlen(p);
-            num = onig_name_to_backref_number(RREGEXP(RMATCH(match)->regexp)->ptr,
-                  (unsigned char* )p, (unsigned char* )end, RMATCH(match)->regs);
-            if (num >= 1) {
-              return rb_reg_nth_match(num, match);
-            }
-            else {
-              rb_raise(rb_eArgError, "undefined group name reference: %s", p);
-            }
+            num = name_to_backref_number(RMATCH(match)->regs,
+                       RMATCH(match)->regexp, p, p + strlen(p));
+            return rb_reg_nth_match(num, match);
             break;
 
           default:
@@ -2013,7 +2023,7 @@ rb_reg_init_copy(VALUE copy, VALUE re)
 }
 
 VALUE
-rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs)
+rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 {
     VALUE val = 0;
     char *p, *s, *e;
@@ -2049,6 +2059,30 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs)
 	  case '5': case '6': case '7': case '8': case '9':
 	    no = uc - '0';
 	    break;
+
+          case 'k':
+            if (s < e && *s == '<') {
+              char *name, *name_end;
+
+              name_end = name = s + 1;
+              while (name_end < e) {
+                if (*name_end == '>') break;
+                uc = (unsigned char)*name_end;
+                name_end += mbclen(uc);
+              }
+              if (name_end < e) {
+                no = name_to_backref_number(regs, regexp, name, name_end);
+                p = s = name_end + 1;
+                break;
+              }
+              else {
+                rb_raise(rb_eRuntimeError, "invalid group name reference format");
+              }
+            }
+
+            rb_str_buf_cat(val, s-2, 2);
+            continue;
+
 	  case '&':
 	    no = 0;
 	    break;

@@ -1848,7 +1848,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    rb_backref_set(match);
 	}
 	else {
-	    repl = rb_reg_regsub(repl, str, regs);
+	    repl = rb_reg_regsub(repl, str, regs, pat);
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	plen = END(0) - BEG(0);
@@ -1966,7 +1966,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	    rb_backref_set(match);
 	}
 	else {
-	    val = rb_reg_regsub(repl, str, regs);
+	    val = rb_reg_regsub(repl, str, regs, pat);
 	}
 	if (OBJ_TAINTED(val)) tainted = 1;
 	len = (bp - buf) + (beg - offset) + RSTRING(val)->len + 3;

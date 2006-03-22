@@ -31,7 +31,7 @@ struct RMatch {
 
 VALUE rb_reg_regcomp(VALUE);
 long rb_reg_search(VALUE, VALUE, long, long);
-VALUE rb_reg_regsub(VALUE, VALUE, struct re_registers *);
+VALUE rb_reg_regsub(VALUE, VALUE, struct re_registers *, VALUE);
 long rb_reg_adjust_startpos(VALUE, VALUE, long, long);
 void rb_match_busy(VALUE);
 VALUE rb_reg_quote(VALUE);

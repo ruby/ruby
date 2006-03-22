@@ -1,3 +1,14 @@
+Thu Mar 23 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* re.c (rb_reg_regsub): add back reference by name \k<name> in 
+	  replace string.
+
+	* re.h : add regexp argument to rb_reg_regsub(). 
+
+	* string.c (rb_str_sub_bang): ditto.
+
+	* string.c (str_gsub): ditto.
+
 Tue Mar 21 22:14:01 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (match_alloc): initialize member regexp.
