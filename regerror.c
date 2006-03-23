@@ -2,7 +2,7 @@
   regerror.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -170,6 +170,8 @@ onig_error_code_to_format(int code)
     p = "invalid character property name {%n}"; break;
   case ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION:
     p = "not supported encoding combination"; break;
+  case ONIGERR_INVALID_COMBINATION_OF_OPTIONS:
+    p = "invalid combination of options"; break;
   case ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT:
     p = "over thread pass limit count"; break;
 

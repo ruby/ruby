@@ -899,6 +899,23 @@ onig_number_of_names(regex_t* reg)
 }
 #endif /* else USE_NAMED_GROUP */
 
+extern int
+onig_noname_group_capture_is_active(regex_t* reg)
+{
+  if (ONIG_IS_OPTION_ON(reg->options, ONIG_OPTION_DONT_CAPTURE_GROUP))
+    return 0;
+
+#ifdef USE_NAMED_GROUP
+  if (onig_number_of_names(reg) > 0 &&
+      IS_SYNTAX_BV(reg->syntax, ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP) &&
+      !ONIG_IS_OPTION_ON(reg->options, ONIG_OPTION_CAPTURE_GROUP)) {
+    return 0;
+  }
+#endif
+
+  return 1;
+}
+
 
 #define INIT_SCANENV_MEMNODES_ALLOC_SIZE   16
 
@@ -4439,10 +4456,9 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
     }
   }
   else {
-#ifdef USE_NAMED_GROUP
     if (ONIG_IS_OPTION_ON(env->option, ONIG_OPTION_DONT_CAPTURE_GROUP))
       goto group;
-#endif
+
     *np = node_new_effect_memory(env->option, 0);
     CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
     num = scan_env_add_mem_entry(env);

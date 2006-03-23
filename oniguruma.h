@@ -36,7 +36,7 @@ extern "C" {
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   4
 #define ONIGURUMA_VERSION_MINOR   0
-#define ONIGURUMA_VERSION_TEENY   1
+#define ONIGURUMA_VERSION_TEENY   2
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -448,7 +448,7 @@ int onigenc_str_bytelen_null P_((OnigEncoding enc, const OnigUChar* p));
 #define ONIG_NREGION                          10
 #define ONIG_MAX_BACKREF_NUM                1000
 #define ONIG_MAX_REPEAT_NUM               100000
-#define ONIG_MAX_MULTI_BYTE_RANGES_NUM      1000
+#define ONIG_MAX_MULTI_BYTE_RANGES_NUM     10000
 /* constants */
 #define ONIG_MAX_ERROR_MESSAGE_LEN            90
 
@@ -666,6 +666,7 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
 #define ONIGERR_NOT_SUPPORTED_ENCODING_COMBINATION           -402
+#define ONIGERR_INVALID_COMBINATION_OF_OPTIONS               -403
 
 /* errors related to thread */
 #define ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT                -1001
@@ -772,7 +773,13 @@ typedef struct re_pattern_buffer {
 
   /* regex_t link chain */
   struct re_pattern_buffer* chain;  /* escape compile-conflict */
-} regex_t;
+} OnigRegexType;
+
+typedef OnigRegexType*  OnigRegex;
+
+#ifndef ONIG_ESCAPE_REGEX_T_COLLISION
+  typedef OnigRegexType  regex_t;
+#endif
 
 
 typedef struct {
@@ -794,19 +801,19 @@ void onig_set_warn_func P_((OnigWarnFunc f));
 ONIG_EXTERN
 void onig_set_verb_warn_func P_((OnigWarnFunc f));
 ONIG_EXTERN
-int onig_new P_((regex_t**, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax, OnigErrorInfo* einfo));
+int onig_new P_((OnigRegex*, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax, OnigErrorInfo* einfo));
 ONIG_EXTERN
-int onig_new_deluxe P_((regex_t** reg, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigCompileInfo* ci, OnigErrorInfo* einfo));
+int onig_new_deluxe P_((OnigRegex* reg, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigCompileInfo* ci, OnigErrorInfo* einfo));
 ONIG_EXTERN
-void onig_free P_((regex_t*));
+void onig_free P_((OnigRegex));
 ONIG_EXTERN
-int onig_recompile P_((regex_t*, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax, OnigErrorInfo* einfo));
+int onig_recompile P_((OnigRegex, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax, OnigErrorInfo* einfo));
 ONIG_EXTERN
-int onig_recompile_deluxe P_((regex_t* reg, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigCompileInfo* ci, OnigErrorInfo* einfo));
+int onig_recompile_deluxe P_((OnigRegex reg, const OnigUChar* pattern, const OnigUChar* pattern_end, OnigCompileInfo* ci, OnigErrorInfo* einfo));
 ONIG_EXTERN
-int onig_search P_((regex_t*, const OnigUChar* str, const OnigUChar* end, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option));
+int onig_search P_((OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option));
 ONIG_EXTERN
-int onig_match P_((regex_t*, const OnigUChar* str, const OnigUChar* end, const OnigUChar* at, OnigRegion* region, OnigOptionType option));
+int onig_match P_((OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* at, OnigRegion* region, OnigOptionType option));
 ONIG_EXTERN
 OnigRegion* onig_region_new P_((void));
 ONIG_EXTERN
@@ -822,29 +829,31 @@ int onig_region_resize P_((OnigRegion* region, int n));
 ONIG_EXTERN
 int onig_region_set P_((OnigRegion* region, int at, int beg, int end));
 ONIG_EXTERN
-int onig_name_to_group_numbers P_((regex_t* reg, const OnigUChar* name, const OnigUChar* name_end, int** nums));
+int onig_name_to_group_numbers P_((OnigRegex reg, const OnigUChar* name, const OnigUChar* name_end, int** nums));
 ONIG_EXTERN
-int onig_name_to_backref_number P_((regex_t* reg, const OnigUChar* name, const OnigUChar* name_end, OnigRegion *region));
+int onig_name_to_backref_number P_((OnigRegex reg, const OnigUChar* name, const OnigUChar* name_end, OnigRegion *region));
 ONIG_EXTERN
-int onig_foreach_name P_((regex_t* reg, int (*func)(const OnigUChar*, const OnigUChar*,int,int*,regex_t*,void*), void* arg));
+int onig_foreach_name P_((OnigRegex reg, int (*func)(const OnigUChar*, const OnigUChar*,int,int*,OnigRegex,void*), void* arg));
 ONIG_EXTERN
-int onig_number_of_names P_((regex_t* reg));
+int onig_number_of_names P_((OnigRegex reg));
 ONIG_EXTERN
-int onig_number_of_captures P_((regex_t* reg));
+int onig_number_of_captures P_((OnigRegex reg));
 ONIG_EXTERN
-int onig_number_of_capture_histories P_((regex_t* reg));
+int onig_number_of_capture_histories P_((OnigRegex reg));
 ONIG_EXTERN
 OnigCaptureTreeNode* onig_get_capture_tree P_((OnigRegion* region));
 ONIG_EXTERN
 int onig_capture_tree_traverse P_((OnigRegion* region, int at, int(*callback_func)(int,int,int,int,int,void*), void* arg));
 ONIG_EXTERN
-OnigEncoding onig_get_encoding P_((regex_t* reg));
+int onig_noname_group_capture_is_active P_((OnigRegex reg));
 ONIG_EXTERN
-OnigOptionType onig_get_options P_((regex_t* reg));
+OnigEncoding onig_get_encoding P_((OnigRegex reg));
 ONIG_EXTERN
-OnigAmbigType onig_get_ambig_flag P_((regex_t* reg));
+OnigOptionType onig_get_options P_((OnigRegex reg));
 ONIG_EXTERN
-OnigSyntaxType* onig_get_syntax P_((regex_t* reg));
+OnigAmbigType onig_get_ambig_flag P_((OnigRegex reg));
+ONIG_EXTERN
+OnigSyntaxType* onig_get_syntax P_((OnigRegex reg));
 ONIG_EXTERN
 int onig_set_default_syntax P_((OnigSyntaxType* syntax));
 ONIG_EXTERN

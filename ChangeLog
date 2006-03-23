@@ -1,3 +1,13 @@
+Thu Mar 23 21:06:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* oniguruma.h: Version 4.0.2
+
+	* regparse.c: ditto.
+
+	* regcomp.c ditto.
+
+	* regerror.c: ditto.
+
 Thu Mar 23 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (rb_reg_regsub): add back reference by name \k<name> in 
