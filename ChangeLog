@@ -1,3 +1,8 @@
+Thu Mar 23 21:40:47 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* re.c (rb_reg_regsub): prohibit \1, \2 ...\9 in replaced string
+          for named regex pattern.
+
 Thu Mar 23 21:06:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.0.2

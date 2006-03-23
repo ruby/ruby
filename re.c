@@ -2055,9 +2055,14 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	uc = (unsigned char)*s++;
 	p = s;
 	switch (uc) {
-	  case '0': case '1': case '2': case '3': case '4':
+	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    no = uc - '0';
+            if (onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
+              no = uc - '0';
+            }
+            else {
+              continue;
+            }
 	    break;
 
           case 'k':
@@ -2083,6 +2088,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
             rb_str_buf_cat(val, s-2, 2);
             continue;
 
+          case '0':
 	  case '&':
 	    no = 0;
 	    break;
