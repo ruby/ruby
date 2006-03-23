@@ -5576,11 +5576,22 @@ method_missing(obj, id, argc, argv, call_status)
     else if (id == ID_ALLOCATOR) {
 	rb_raise(rb_eTypeError, "allocator undefined for %s", rb_class2name(obj));
     }
+    if (argc < 0) {
+	VALUE tmp;
 
-    nargv = ALLOCA_N(VALUE, argc+1);
+	argc = -argc-1;
+	tmp = splat_value(argv[argc]);
+	nargv = ALLOCA_N(VALUE, argc + RARRAY(tmp)->len + 1);
+	MEMCPY(nargv+1, argv, VALUE, argc);
+	MEMCPY(nargv+1+argc, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
+	argc += RARRAY(tmp)->len;
+
+    }
+    else {
+	nargv = ALLOCA_N(VALUE, argc+1);
+	MEMCPY(nargv+1, argv, VALUE, argc);
+    }
     nargv[0] = ID2SYM(id);
-    MEMCPY(nargv+1, argv, VALUE, argc);
-
     return rb_funcall2(obj, missing, argc+1, nargv);
 }
 
