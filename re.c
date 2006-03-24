@@ -5,7 +5,7 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2006 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -1177,9 +1177,10 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, char* name, char
 
 /*
  *  call-seq:
- *     mtch[i]               => obj
+ *     mtch[i]               => str or nil
  *     mtch[start, length]   => array
  *     mtch[range]           => array
+ *     mtch[name]            => str or nil
  *  
  *  Match Reference---<code>MatchData</code> acts as an array, and may be
  *  accessed using the normal array indexing techniques.  <i>mtch</i>[0] is
@@ -1192,6 +1193,10 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, char* name, char
  *     m[1, 2]    #=> ["H", "X"]
  *     m[1..3]    #=> ["H", "X", "113"]
  *     m[-3, 2]   #=> ["X", "113"]
+ *
+ *     m = /(?<foo>a+)b/.match("ccaaab")
+ *     m["foo"]   #=> "aaa"
+ *     m[:foo]    #=> "aaa"
  */
 
 static VALUE

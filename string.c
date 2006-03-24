@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2006 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -1887,7 +1887,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  If the method call specifies <i>replacement</i>, special variables such as
  *  <code>$&</code> will not be useful, as substitution into the string occurs
  *  before the pattern match starts. However, the sequences <code>\1</code>,
- *  <code>\2</code>, etc., may be used.
+ *  <code>\2</code>, <code>\k<group_name></code>, etc., may be used.
  *     
  *  In the block form, the current match string is passed in as a parameter, and
  *  variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
@@ -1897,9 +1897,10 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
  *     
- *     "hello".sub(/[aeiou]/, '*')               #=> "h*llo"
- *     "hello".sub(/([aeiou])/, '<\1>')          #=> "h<e>llo"
- *     "hello".sub(/./) {|s| s[0].to_s + ' ' }   #=> "104 ello"
+ *     "hello".sub(/[aeiou]/, '*')                  #=> "h*llo"
+ *     "hello".sub(/([aeiou])/, '<\1>')             #=> "h<e>llo"
+ *     "hello".sub(/./) {|s| s[0].to_s + ' ' }      #=> "104 ello"
+ *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
  */
 
 static VALUE
@@ -2066,8 +2067,9 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  If a string is used as the replacement, special variables from the match
  *  (such as <code>$&</code> and <code>$1</code>) cannot be substituted into it,
  *  as substitution into the string occurs before the pattern match
- *  starts. However, the sequences <code>\1</code>, <code>\2</code>, and so on
- *  may be used to interpolate successive groups in the match.
+ *  starts. However, the sequences <code>\1</code>, <code>\2</code>,
+ *  <code>\k<group_name></code>, and so on may be used to interpolate
+ *  successive groups in the match.
  *     
  *  In the block form, the current match string is passed in as a parameter, and
  *  variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
@@ -2077,9 +2079,10 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  The result inherits any tainting in the original string or any supplied
  *  replacement string.
  *     
- *     "hello".gsub(/[aeiou]/, '*')              #=> "h*ll*"
- *     "hello".gsub(/([aeiou])/, '<\1>')         #=> "h<e>ll<o>"
- *     "hello".gsub(/./) {|s| s[0].to_s + ' '}   #=> "104 101 108 108 111 "
+ *     "hello".gsub(/[aeiou]/, '*')                  #=> "h*ll*"
+ *     "hello".gsub(/([aeiou])/, '<\1>')             #=> "h<e>ll<o>"
+ *     "hello".gsub(/./) {|s| s[0].to_s + ' '}       #=> "104 101 108 108 111 "
+ *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
  */
 
 static VALUE
