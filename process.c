@@ -1549,12 +1549,11 @@ rb_f_system(argc, argv)
  *  call-seq:
  *     sleep([duration])    => fixnum
  *
- *  Suspends the current thread for _duration_ seconds (which may be
- *  any number, including a +Float+ with fractional seconds). Returns the actual
- *  number of seconds slept (rounded), which may be less than that asked
- *  for if the thread was interrupted by a +SIGALRM+, or if
- *  another thread calls <code>Thread#run</code>. Zero arguments
- *  causes +sleep+ to sleep forever.
+ *  Suspends the current thread for _duration_ seconds (which may be any number,
+ *  including a +Float+ with fractional seconds). Returns the actual number of
+ *  seconds slept (rounded), which may be less than that asked for if another
+ *  thread calls <code>Thread#run</code>. Zero arguments causes +sleep+ to sleep
+ *  forever.
  *
  *     Time.new    #=> Wed Apr 09 08:56:32 CDT 2003
  *     sleep 1.2   #=> 1
