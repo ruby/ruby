@@ -1,3 +1,9 @@
+Sun Mar 26 22:02:51 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* re.c: refactoring for options.
+
+	* parse.y: ditto.
+
 Fri Mar 24 21:11:02 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (match_aref): RDoc description updated.

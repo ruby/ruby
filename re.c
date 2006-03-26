@@ -81,7 +81,7 @@ rb_memcicmp(char *p1, char *p2, long len)
     int tmp;
 
     while (len--) {
-	if (tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++])
+	if ((tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++]))
 	    return tmp;
     }
     return 0;
@@ -159,37 +159,127 @@ rb_memsearch(char *x0, long m, char *y0, long n)
 #define KCODE_FIXED FL_USER4
 #define KCODE_MASK (KCODE_EUC|KCODE_SJIS|KCODE_UTF8)
 
+#define ARG_REG_OPTION_MASK   0x0f
+#define ARG_KCODE_UNIT        16
+#define ARG_KCODE_NONE       (ARG_KCODE_UNIT * 1)
+#define ARG_KCODE_EUC        (ARG_KCODE_UNIT * 2)
+#define ARG_KCODE_SJIS       (ARG_KCODE_UNIT * 3)
+#define ARG_KCODE_UTF8       (ARG_KCODE_UNIT * 4)
+#define ARG_KCODE_MASK       (ARG_KCODE_UNIT * 7)
+
+
 static int reg_kcode = DEFAULT_KCODE;
 
-static void
-kcode_euc(struct RRegexp *re)
+
+static int char_to_option(int c)
 {
-    FL_UNSET(re, KCODE_MASK);
-    FL_SET(re, KCODE_EUC);
-    FL_SET(re, KCODE_FIXED);
+  int val;
+
+  switch (c) {
+    case 'i':
+      val = ONIG_OPTION_IGNORECASE;
+      break;
+    case 'x':
+      val = ONIG_OPTION_EXTEND;
+      break;
+    case 'm':
+      val = ONIG_OPTION_MULTILINE;
+      break;
+    default:
+      val = 0;
+      break;
+  }
+  return val;
+}
+
+extern int rb_char_to_option_kcode(int c, int *option, int *kcode)
+{
+  *option = 0;
+
+  switch (c) {
+    case 'n':
+      *kcode = ARG_KCODE_NONE;
+      break;
+    case 'e':
+      *kcode = ARG_KCODE_EUC;
+      break;
+    case 's':
+      *kcode = ARG_KCODE_SJIS;
+      break;
+    case 'u':
+      *kcode = ARG_KCODE_UTF8;
+      break;
+    default:
+      *kcode  = 0;
+      *option = char_to_option(c);
+      break;
+  }
+
+  return ((*kcode == 0 && *option == 0) ? 0 : 1);
+}
+
+static int char_to_arg_kcode(int c)
+{
+  int kcode, option;
+
+  if (ISUPPER(c))  c = tolower(c);
+
+  (void )rb_char_to_option_kcode(c, &option, &kcode);
+  return kcode;
+}
+
+static int
+kcode_to_arg_value(unsigned int kcode)
+{
+  switch (kcode & KCODE_MASK) {
+    case KCODE_NONE:
+      return ARG_KCODE_NONE;
+    case KCODE_EUC:
+      return ARG_KCODE_EUC;
+    case KCODE_SJIS:
+      return ARG_KCODE_SJIS;
+    case KCODE_UTF8:
+      return ARG_KCODE_UTF8;
+    default:
+      return 0;
+  }
 }
 
 static void
-kcode_sjis(struct RRegexp *re)
+set_re_kcode_by_option(struct RRegexp *re, int options)
 {
-    FL_UNSET(re, KCODE_MASK);
-    FL_SET(re, KCODE_SJIS);
-    FL_SET(re, KCODE_FIXED);
+  switch (options & ARG_KCODE_MASK) {
+    case ARG_KCODE_NONE:
+      FL_UNSET(re, KCODE_MASK);
+      FL_SET(re, KCODE_FIXED);
+      break;
+    case ARG_KCODE_EUC:
+      FL_UNSET(re, KCODE_MASK);
+      FL_SET(re, KCODE_EUC);
+      FL_SET(re, KCODE_FIXED);
+      break;
+    case ARG_KCODE_SJIS:
+      FL_UNSET(re, KCODE_MASK);
+      FL_SET(re, KCODE_SJIS);
+      FL_SET(re, KCODE_FIXED);
+      break;
+    case ARG_KCODE_UTF8:
+      FL_UNSET(re, KCODE_MASK);
+      FL_SET(re, KCODE_UTF8);
+      FL_SET(re, KCODE_FIXED);
+      break;
+
+    case 0:
+    default:
+      FL_SET(re, reg_kcode);
+      break;
+    }
 }
 
-static void
-kcode_utf8(struct RRegexp *re)
+static int
+re_to_kcode_arg_value(VALUE re)
 {
-    FL_UNSET(re, KCODE_MASK);
-    FL_SET(re, KCODE_UTF8);
-    FL_SET(re, KCODE_FIXED);
-}
-
-static void
-kcode_none(struct RRegexp *re)
-{
-    FL_UNSET(re, KCODE_MASK);
-    FL_SET(re, KCODE_FIXED);
+  return kcode_to_arg_value(RBASIC(re)->flags);
 }
 
 static int curr_kcode;
@@ -412,7 +502,7 @@ rb_reg_inspect(VALUE re)
 static VALUE
 rb_reg_to_s(VALUE re)
 {
-    int options;
+    int options, opt;
     const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
     long len;
     const char* ptr;
@@ -429,16 +519,13 @@ rb_reg_to_s(VALUE re)
 	ptr += 2;
 	if ((len -= 2) > 0) {
 	    do {
-		if (*ptr == 'm') {
-		    options |= ONIG_OPTION_MULTILINE;
-		}
-		else if (*ptr == 'i') {
-		    options |= ONIG_OPTION_IGNORECASE;
-		}
-		else if (*ptr == 'x') {
-		    options |= ONIG_OPTION_EXTEND;
-		}
-		else break;
+                opt = char_to_option((int )*ptr);
+                if (opt != 0) {
+                    options |= opt;
+                }
+                else {
+                    break;
+                }
 		++ptr;
 	    } while (--len > 0);
 	}
@@ -446,16 +533,13 @@ rb_reg_to_s(VALUE re)
 	    ++ptr;
 	    --len;
 	    do {
-		if (*ptr == 'm') {
-		    options &= ~ONIG_OPTION_MULTILINE;
-		}
-		else if (*ptr == 'i') {
-		    options &= ~ONIG_OPTION_IGNORECASE;
-		}
-		else if (*ptr == 'x') {
-		    options &= ~ONIG_OPTION_EXTEND;
-		}
-		else break;
+                opt = char_to_option((int )*ptr);
+                if (opt != 0) {
+                    options &= ~opt;
+                }
+                else {
+                    break;
+                }
 		++ptr;
 	    } while (--len > 0);
 	}
@@ -1344,13 +1428,7 @@ VALUE rb_cRegexp;
 
 static void
 rb_reg_initialize(VALUE obj, const char *s, long len,
-    int options,		/* CASEFOLD  = 1 */
-				/* EXTENDED  = 2 */
-				/* MULTILINE = 4 */
-				/* CODE_NONE = 16 */
-				/* CODE_EUC  = 32 */
-				/* CODE_SJIS = 48 */
-				/* CODE_UTF8 = 64 */
+    int options,
     int ce)			/* call rb_compile_error() */
 {
     struct RRegexp *re = RREGEXP(obj);
@@ -1360,38 +1438,21 @@ rb_reg_initialize(VALUE obj, const char *s, long len,
     re->ptr = 0;
     re->str = 0;
 
-    switch (options & ~0xf) {
-      case 0:
-      default:
-	FL_SET(re, reg_kcode);
-	break;
-      case 16:
-	kcode_none(re);
-	break;
-      case 32:
-	kcode_euc(re);
-	break;
-      case 48:
-	kcode_sjis(re);
-	break;
-      case 64:
-	kcode_utf8(re);
-	break;
-    }
+    set_re_kcode_by_option(re, options);
 
-    if (options & ~0xf) {
+    if (options & ARG_KCODE_MASK) {
 	kcode_set_option((VALUE)re);
     }
     if (ruby_ignorecase) {
 	options |= ONIG_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
-    re->ptr = make_regexp(s, len, options & 0xf, ce);
+    re->ptr = make_regexp(s, len, options & ARG_REG_OPTION_MASK, ce);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
-    if (options & ~0xf) {
+    if (options & ARG_KCODE_MASK) {
 	kcode_reset_option();
     }
 }
@@ -1704,24 +1765,9 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    rb_warn("flags%s ignored", (argc == 3) ? " and encoding": "");
 	}
 	rb_reg_check(argv[0]);
-	flags = RREGEXP(argv[0])->ptr->options & 0xf;
+	flags = RREGEXP(argv[0])->ptr->options & ARG_REG_OPTION_MASK;
 	if (FL_TEST(argv[0], KCODE_FIXED)) {
-	    switch (RBASIC(argv[0])->flags & KCODE_MASK) {
-	      case KCODE_NONE:
-		flags |= 16;
-		break;
-	      case KCODE_EUC:
-		flags |= 32;
-		break;
-	      case KCODE_SJIS:
-		flags |= 48;
-		break;
-	      case KCODE_UTF8:
-		flags |= 64;
-		break;
-	      default:
-		break;
-	    }
+            flags |= re_to_kcode_arg_value(argv[0]);
 	}
 	s = RREGEXP(argv[0])->str;
 	len = RREGEXP(argv[0])->len;
@@ -1734,23 +1780,8 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
 
-	    flags &= ~0x70;
-	    switch (kcode[0]) {
-	      case 'n': case 'N':
-		flags |= 16;
-		break;
-	      case 'e': case 'E':
-		flags |= 32;
-		break;
-	      case 's': case 'S':
-		flags |= 48;
-		break;
-	      case 'u': case 'U':
-		flags |= 64;
-		break;
-	      default:
-		break;
-	    }
+	    flags &= ~ARG_KCODE_MASK;
+	    flags |= char_to_arg_kcode((int )kcode[0]);
 	}
 	s = StringValuePtr(argv[0]);
 	len = RSTRING(argv[0])->len;
@@ -1891,23 +1922,6 @@ rb_kcode(void)
     rb_bug("wrong reg_kcode value (0x%x)", reg_kcode);
 }
 
-static int
-rb_reg_get_kcode(VALUE re)
-{
-    switch (RBASIC(re)->flags & KCODE_MASK) {
-      case KCODE_NONE:
-	return 16;
-      case KCODE_EUC:
-	return 32;
-      case KCODE_SJIS:
-	return 48;
-      case KCODE_UTF8:
-	return 64;
-      default:
-	return 0;
-    }
-}
-
 int
 rb_reg_options(VALUE re)
 {
@@ -1917,7 +1931,7 @@ rb_reg_options(VALUE re)
     options = RREGEXP(re)->ptr->options &
 	(ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND);
     if (FL_TEST(re, KCODE_FIXED)) {
-	options |= rb_reg_get_kcode(re);
+	options |= re_to_kcode_arg_value(re);
     }
     return options;
 }

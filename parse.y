@@ -4986,41 +4986,24 @@ parser_tokadd_escape(struct parser_params *parser, int term)
 static int
 parser_regx_options(struct parser_params *parser)
 {
-    char kcode = 0;
+    extern int rb_char_to_option_kcode(int c, int *option, int *kcode);
+
+    int kcode   = 0;
     int options = 0;
-    int c;
+    int c, opt, kc, found;
 
     newtok();
     while (c = nextc(), ISALPHA(c)) {
-	switch (c) {
-	  case 'i':
-	    options |= ONIG_OPTION_IGNORECASE;
-	    break;
-	  case 'x':
-	    options |= ONIG_OPTION_EXTEND;
-	    break;
-	  case 'm':
-	    options |= ONIG_OPTION_MULTILINE;
-	    break;
-	  case 'o':
-	    options |= RE_OPTION_ONCE;
-	    break;
-	  case 'n':
-	    kcode = 16;
-	    break;
-	  case 'e':
-	    kcode = 32;
-	    break;
-	  case 's':
-	    kcode = 48;
-	    break;
-	  case 'u':
-	    kcode = 64;
-	    break;
-	  default:
+        if (c == 'o') {
+            options |= RE_OPTION_ONCE;
+        }
+        else if (rb_char_to_option_kcode(c, &opt, &kc)) {
+            options |= opt;
+            if (kc != 0) kcode = kc;
+        }
+        else {
 	    tokadd(c);
-	    break;
-	}
+        }
     }
     pushback(c);
     if (toklen()) {
