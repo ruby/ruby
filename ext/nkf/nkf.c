@@ -78,6 +78,54 @@ rb_nkf_putchar(c)
 #include "nkf-utf8/utf8tbl.c"
 #include "nkf-utf8/nkf.c"
 
+int nkf_split_options(arg)
+    const char* arg;
+{
+    int count = 0;
+    char option[256];
+    int i = 0, j = 0;
+    int is_escaped = FALSE;
+    int is_single_quoted = FALSE;
+    int is_double_quoted = FALSE;
+    for(i = 0; arg[i]; i++){
+	if(j == 255){
+	    return -1;
+	}else if(is_single_quoted){
+	    if(arg[i] == '\''){
+		is_single_quoted = FALSE;
+	    }else{
+		option[j++] = arg[i];
+	    }
+	}else if(is_escaped){
+	    is_escaped = FALSE;
+	    option[j++] = arg[i];
+	}else if(arg[i] == '\\'){
+	    is_escaped = TRUE;
+	}else if(is_double_quoted){
+	    if(arg[i] == '"'){
+		is_double_quoted = FALSE;
+	    }else{
+		option[j++] = arg[i];
+	    }
+	}else if(arg[i] == '\''){
+	    is_single_quoted = TRUE;
+	}else if(arg[i] == '"'){
+	    is_double_quoted = TRUE;
+	}else if(arg[i] == ' '){
+	    option[j] = '\0';
+	    options(option);
+	    j = 0;
+	}else{
+	    option[j++] = arg[i];
+	}
+    }
+    if(j){
+	option[j] = '\0';
+	options(option);
+    }
+    return count;
+}
+
 /*
  *  call-seq:
  *     NKF.nkf(opt, str)   -> string
@@ -104,7 +152,7 @@ rb_nkf_kconv(obj, opt, src)
   StringValue(opt);
   opt_ptr = RSTRING(opt)->ptr;
   opt_end = opt_ptr + RSTRING(opt)->len;
-  options(opt_ptr);
+  nkf_split_options(opt_ptr);
 
   incsize = INCSIZE;
 
@@ -565,7 +613,9 @@ rb_nkf_guess2(obj, src)
 void
 Init_nkf()
 {
+    /* hoge */
     VALUE mKconv = rb_define_module("NKF");
+    /* hoge */
 
     rb_define_module_function(mKconv, "nkf", rb_nkf_kconv, 2);
     rb_define_module_function(mKconv, "guess1", rb_nkf_guess1, 1);

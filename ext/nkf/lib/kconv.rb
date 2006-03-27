@@ -130,11 +130,10 @@ module Kconv
   # Convert <code>str</code> to ISO-2022-JP
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-jxm0', str).
   def tojis(str)
-    ::NKF::nkf('-j', str)
+    ::NKF::nkf('-jm0', str)
   end
   module_function :tojis
 
@@ -144,11 +143,10 @@ module Kconv
   # Convert <code>str</code> to EUC-JP
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc(str)
-    ::NKF::nkf('-e', str)
+    ::NKF::nkf('-em0', str)
   end
   module_function :toeuc
 
@@ -158,11 +156,10 @@ module Kconv
   # Convert <code>str</code> to Shift_JIS
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-sxm0', str).
   def tosjis(str)
-    ::NKF::nkf('-s', str)
+    ::NKF::nkf('-sm0', str)
   end
   module_function :tosjis
 
@@ -172,11 +169,10 @@ module Kconv
   # Convert <code>str</code> to UTF-8
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-wxm0', str).
   def toutf8(str)
-    ::NKF::nkf('-w', str)
+    ::NKF::nkf('-wm0', str)
   end
   module_function :toutf8
 
@@ -186,11 +182,10 @@ module Kconv
   # Convert <code>str</code> to UTF-16
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-w16xm0', str).
   def toutf16(str)
-    ::NKF::nkf('-w16', str)
+    ::NKF::nkf('-w16m0', str)
   end
   module_function :toutf16
 
@@ -263,8 +258,7 @@ class String
   # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want to decode them, use NKF.nkf.
   def kconv(out_code, in_code=Kconv::AUTO)
     Kconv::kconv(self, out_code, in_code)
@@ -280,8 +274,7 @@ class String
   # Convert <code>self</code> to ISO-2022-JP
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-jxm0', str).
   def tojis; Kconv.tojis(self) end
 
@@ -291,8 +284,7 @@ class String
   # Convert <code>self</code> to EUC-JP
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc; Kconv.toeuc(self) end
 
@@ -302,8 +294,7 @@ class String
   # Convert <code>self</code> to Shift_JIS
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-sxm0', str).
   def tosjis; Kconv.tosjis(self) end
 
@@ -313,8 +304,7 @@ class String
   # Convert <code>self</code> to UTF-8
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-wxm0', str).
   def toutf8; Kconv.toutf8(self) end
 
@@ -324,8 +314,7 @@ class String
   # Convert <code>self</code> to UTF-16
   #
   # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
+  # This method convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-w16xm0', str).
   def toutf16; Kconv.toutf16(self) end
 
