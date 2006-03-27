@@ -40,12 +40,13 @@
 **    まで御連絡をお願いします。
 ***********************************************************************/
 /* $Id$ */
-#define NKF_VERSION "2.0.5"
-#define NKF_RELEASE_DATE "2005-07-22"
+#define NKF_VERSION "2.0.6"
+#define NKF_RELEASE_DATE "2006-03-26"
 #include "config.h"
 
 #define COPY_RIGHT \
-    "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW, 2002-2005 Kono, Furukawa, Naruse"
+    "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
+    "                     2002-2006 Kono, Furukawa, Naruse, mastodon"
 
 
 /*
@@ -190,7 +191,9 @@
 #define         X0201           2
 #define         ISO8859_1       8
 #define         NO_X0201        3
-#define         X0212           16
+#define         X0212      0x2844
+#define         X0213_1    0x284F
+#define         X0213_2    0x2850
 
 /* Input Assumption */
 
@@ -232,6 +235,17 @@
 #define		is_alnum(c)  \
             (('a'<=c && c<='z')||('A'<= c && c<='Z')||('0'<=c && c<='9'))
 
+/* I don't trust portablity of toupper */
+#define nkf_toupper(c)  (('a'<=c && c<='z')?(c-('a'-'A')):c)
+#define nkf_isoctal(c)  ('0'<=c && c<='7')
+#define nkf_isdigit(c)  ('0'<=c && c<='9')
+#define nkf_isxdigit(c)  (nkf_isdigit(c) || ('a'<=c && c<='f') || ('A'<=c && c <= 'F'))
+#define nkf_isblank(c) (c == SPACE || c == TAB)
+#define nkf_isspace(c) (nkf_isblank(c) || c == CR || c == NL)
+#define nkf_isalpha(c) (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
+#define nkf_isalnum(c) (nkf_isdigit(c) || nkf_isalpha(c))
+#define hex2bin(x)     ( nkf_isdigit(x) ? x - '0' : nkf_toupper(x) - 'A' + 10)
+
 #define         HOLD_SIZE       1024
 #define         IOBUF_SIZE      16384
 
@@ -247,13 +261,12 @@
 
 
 #if defined(UTF8_OUTPUT_ENABLE) || defined(UTF8_INPUT_ENABLE)
-#define sizeof_euc_utf8 94
 #define sizeof_euc_to_utf8_1byte 94
 #define sizeof_euc_to_utf8_2bytes 94
 #define sizeof_utf8_to_euc_C2 64
 #define sizeof_utf8_to_euc_E5B8 64
 #define sizeof_utf8_to_euc_2bytes 112
-#define sizeof_utf8_to_euc_3bytes 112
+#define sizeof_utf8_to_euc_3bytes 16
 #endif
 
 /* MIME preprocessor */
@@ -300,14 +313,41 @@ STATIC  void    set_iconv PROTO((int f, int (*iconv_func)(int c2,int c1,int c0))
 STATIC  int     s_iconv PROTO((int c2,int c1,int c0));
 STATIC  int     s2e_conv PROTO((int c2, int c1, int *p2, int *p1));
 STATIC  int     e_iconv PROTO((int c2,int c1,int c0));
+#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+/* UCS Mapping
+ * 0: Shift_JIS, eucJP-ascii
+ * 1: eucJP-ms
+ * 2: CP932, CP51932
+ */
+#define UCS_MAP_ASCII 0
+#define UCS_MAP_MS    1
+#define UCS_MAP_CP932 2
+STATIC int ms_ucs_map_f = UCS_MAP_ASCII;
+#endif
 #ifdef UTF8_INPUT_ENABLE
+/* no NEC special, NEC-selected IBM extended and IBM extended characters */
+STATIC  int     no_cp932ext_f = FALSE;
+/* ignore ZERO WIDTH NO-BREAK SPACE */
+STATIC  int     ignore_zwnbsp_f = TRUE;
+STATIC  int     no_best_fit_chars_f = FALSE;
+STATIC  int     unicode_subchar = '?'; /* the regular substitution character */
+STATIC  void    encode_fallback_html PROTO((int c));
+STATIC  void    encode_fallback_xml PROTO((int c));
+STATIC  void    encode_fallback_java PROTO((int c));
+STATIC  void    encode_fallback_perl PROTO((int c));
+STATIC  void    encode_fallback_subchar PROTO((int c));
+STATIC  void    (*encode_fallback)PROTO((int c)) = NULL;
 STATIC  int     w2e_conv PROTO((int c2,int c1,int c0,int *p2,int *p1));
 STATIC  int     w_iconv PROTO((int c2,int c1,int c0));
 STATIC  int     w_iconv16 PROTO((int c2,int c1,int c0));
+STATIC  int	unicode_to_jis_common PROTO((int c2,int c1,int c0,int *p2,int *p1));
 STATIC  int	w_iconv_common PROTO((int c1,int c0,const unsigned short *const *pp,int psize,int *p2,int *p1));
 STATIC  int     ww16_conv PROTO((int c2, int c1, int c0));
+STATIC  int     w16e_conv PROTO((unsigned short val,int *p2,int *p1));
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
+STATIC  int     unicode_bom_f= 0;   /* Output Unicode BOM */
+STATIC  int     w_oconv16_LE = 0;   /* utf-16 little endian */
 STATIC  int     e2w_conv PROTO((int c2,int c1));
 STATIC  void    w_oconv PROTO((int c2,int c1));
 STATIC  void    w_oconv16 PROTO((int c2,int c1));
@@ -400,14 +440,6 @@ STATIC int             x0201_f = TRUE;         /* Assume JISX0201 kana */
 STATIC int             x0201_f = NO_X0201;     /* Assume NO JISX0201 */
 #endif
 STATIC int             iso2022jp_f = FALSE;    /* convert ISO-2022-JP */
-#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-STATIC int             internal_unicode_f = FALSE;   /* Internal Unicode Processing */
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-STATIC int             unicode_bom_f= 0;   /* Output Unicode BOM */
-STATIC int             w_oconv16_LE = 0;   /* utf-16 little endian */
-STATIC int             ms_ucs_map_f = FALSE;   /* Microsoft UCS Mapping Compatible */
-#endif
 
 #ifdef UNICODE_NORMALIZATION
 STATIC int nfc_f = FALSE;
@@ -462,10 +494,12 @@ STATIC int exec_f = 0;
 #endif
 
 #ifdef SHIFTJIS_CP932
-STATIC int cp932_f = TRUE;
+/* invert IBM extended characters to others */
+STATIC int cp51932_f = TRUE;
 #define CP932_TABLE_BEGIN (0xfa)
 #define CP932_TABLE_END   (0xfc)
 
+/* invert NEC-selected IBM extended characters to IBM extended characters */
 STATIC int cp932inv_f = TRUE;
 #define CP932INV_TABLE_BEGIN (0xed)
 #define CP932INV_TABLE_END   (0xee)
@@ -478,6 +512,7 @@ STATIC int x0212_f = FALSE;
 STATIC int x0212_shift PROTO((int c));
 STATIC int x0212_unshift PROTO((int c));
 #endif
+STATIC int x0213_f = FALSE;
 
 STATIC unsigned char prefix_table[256];
 
@@ -670,9 +705,13 @@ unsigned char fv[] = {
 
 #define    CRLF      1
 
-STATIC int             file_out = FALSE;
+STATIC int             file_out_f = FALSE;
 #ifdef OVERWRITE
-STATIC int             overwrite = FALSE;
+STATIC int             overwrite_f = FALSE;
+STATIC int             preserve_time_f = FALSE;
+STATIC int             backup_f = FALSE;
+STATIC char            *backup_suffix = "";
+STATIC char *get_backup_filename PROTO((const char *suffix, const char *filename));
 #endif
 
 STATIC int             crmode_f = 0;   /* CR, NL, CRLF */
@@ -783,9 +822,9 @@ main(argc, argv)
 #endif
 
 /* reopen file for stdout */
-              if (file_out == TRUE) {
+              if (file_out_f == TRUE) {
 #ifdef OVERWRITE
-                  if (overwrite){
+                  if (overwrite_f){
                       outfname = malloc(strlen(origfname)
                                         + strlen(".nkftmpXXXXXX")
                                         + 1);
@@ -807,7 +846,7 @@ main(argc, argv)
                       }
                       strcat(outfname, "ntXXXXXX");
                       mktemp(outfname);
-                      fd = open(outfname, O_WRONLY | O_CREAT | O_TRUNC,
+			fd = open(outfname, O_WRONLY | O_CREAT | O_TRUNC | O_EXCL,
                                 S_IREAD | S_IWRITE);
 #else
                       strcat(outfname, ".nkftmpXXXXXX");
@@ -860,7 +899,7 @@ main(argc, argv)
               }
               fclose(fin);
 #ifdef OVERWRITE
-              if (overwrite) {
+              if (overwrite_f) {
                   struct stat     sb;
 #if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__)
                   time_t tb[2];
@@ -882,23 +921,37 @@ main(argc, argv)
                   }
 
                   /* タイムスタンプを復元 */
+		    if(preserve_time_f){
 #if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__)
-                  tb[0] = tb[1] = sb.st_mtime;
-                  if (utime(outfname, tb)) {
-                      fprintf(stderr, "Can't set timestamp %s\n", outfname);
-                  }
+			tb[0] = tb[1] = sb.st_mtime;
+			if (utime(outfname, tb)) {
+			    fprintf(stderr, "Can't set timestamp %s\n", outfname);
+			}
 #else
-                  tb.actime  = sb.st_atime;
-                  tb.modtime = sb.st_mtime;
-                  if (utime(outfname, &tb)) {
-                      fprintf(stderr, "Can't set timestamp %s\n", outfname);
-                  }
+			tb.actime  = sb.st_atime;
+			tb.modtime = sb.st_mtime;
+			if (utime(outfname, &tb)) {
+			    fprintf(stderr, "Can't set timestamp %s\n", outfname);
+			}
 #endif
+		    }
+		    if(backup_f){
+			char *backup_filename = get_backup_filename(backup_suffix, origfname);
 #ifdef MSDOS
-                  if (unlink(origfname)){
-                      perror(origfname);
-                  }
+			unlink(backup_filename);
 #endif
+			if (rename(origfname, backup_filename)) {
+			    perror(backup_filename);
+			    fprintf(stderr, "Can't rename %s to %s\n",
+				    origfname, backup_filename);
+			}
+		    }else{
+#ifdef MSDOS
+			if (unlink(origfname)){
+			    perror(origfname);
+			}
+#endif
+		    }
                   if (rename(outfname, origfname)) {
                       perror(origfname);
                       fprintf(stderr, "Can't rename %s to %s\n",
@@ -911,23 +964,68 @@ main(argc, argv)
       }
     }
 #ifdef EASYWIN /*Easy Win */
-    if (file_out == FALSE) 
+    if (file_out_f == FALSE) 
         scanf("%d",&end_check);
     else 
         fclose(stdout);
 #else /* for Other OS */
-    if (file_out == TRUE) 
+    if (file_out_f == TRUE) 
         fclose(stdout);
 #endif /*Easy Win */
     return (0);
 }
 #endif /* WIN32DLL */
 
+#ifdef OVERWRITE
+char *get_backup_filename(suffix, filename)
+    const char *suffix;
+    const char *filename;
+{
+    char *backup_filename = NULL;
+    int asterisk_count = 0;
+    int i, j;
+    int filename_length = strlen(filename);
+
+    for(i = 0; suffix[i]; i++){
+	if(suffix[i] == '*') asterisk_count++;
+    }
+
+    if(asterisk_count){
+	backup_filename = malloc(strlen(suffix) + (asterisk_count * (filename_length - 1)) + 1);
+	if (!backup_filename){
+	    perror("Can't malloc backup filename.");
+	    return NULL;
+	}
+
+	for(i = 0, j = 0; suffix[i];){
+	    if(suffix[i] == '*'){
+		backup_filename[j] = '\0';
+		strncat(backup_filename, filename, filename_length);
+		i++;
+		j += filename_length;
+	    }else{
+		backup_filename[j++] = suffix[i++];
+	    }
+	}
+	backup_filename[j] = '\0';
+    }else{
+	j = strlen(suffix) + filename_length;
+	backup_filename = malloc( + 1);
+	strcpy(backup_filename, filename);
+	strcat(backup_filename, suffix);
+	backup_filename[j] = '\0';
+    }
+    return backup_filename;
+}
+#endif
+
 STATIC const
 struct {
     const char *name;
     const char *alias;
 } long_option[] = {
+    {"ic=", ""},
+    {"oc=", ""},
     {"base64","jMB"},
     {"euc","e"},
     {"euc-input","E"},
@@ -953,23 +1051,32 @@ struct {
 #ifdef X0212_ENABLE
     {"x0212", ""},
 #endif
-#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-    {"internal-unicode", ""},
-#endif
 #ifdef UTF8_OUTPUT_ENABLE
     {"utf8", "w"},
     {"utf16", "w16"},
     {"ms-ucs-map", ""},
+    {"fb-skip", ""},
+    {"fb-html", ""},
+    {"fb-xml", ""},
+    {"fb-perl", ""},
+    {"fb-java", ""},
+    {"fb-subchar", ""},
+    {"fb-subchar=", ""},
 #endif
 #ifdef UTF8_INPUT_ENABLE
     {"utf8-input", "W"},
     {"utf16-input", "W16"},
+    {"no-cp932ext", ""},
+    {"no-best-fit-chars",""},
 #endif
 #ifdef UNICODE_NORMALIZATION
     {"utf8mac-input", ""},
 #endif
 #ifdef OVERWRITE
     {"overwrite", ""},
+    {"overwrite=", ""},
+    {"in-place", ""},
+    {"in-place=", ""},
 #endif
 #ifdef INPUT_OPTION
     {"cap-input", ""},
@@ -998,39 +1105,327 @@ void
 options(cp) 
      unsigned char *cp;
 {
-    int i;
+    int i, j;
     unsigned char *p = NULL;
+    unsigned char *cp_back = NULL;
+    unsigned char codeset[32];
 
     if (option_mode==1)
 	return;
     while(*cp && *cp++!='-');
-    while (*cp) {
+    while (*cp || cp_back) {
+	if(!*cp){
+	    cp = cp_back;
+	    cp_back = NULL;
+	    continue;
+	}
 	p = 0;
         switch (*cp++) {
         case '-':  /* literal options */
-	    if (!*cp) {        /* ignore the rest of arguments */
+	    if (!*cp || *cp == SPACE) {        /* ignore the rest of arguments */
 		option_mode = 1;
 		return;
 	    }
             for (i=0;i<sizeof(long_option)/sizeof(long_option[0]);i++) {
-		int j;
                 p = (unsigned char *)long_option[i].name;
                 for (j=0;*p && *p != '=' && *p == cp[j];p++, j++);
 		if (*p == cp[j] || cp[j] == ' '){
-		    p = &cp[j];
+		    p = &cp[j] + 1;
 		    break;
 		}
 		p = 0;
             }
 	    if (p == 0) return;
-            cp = (unsigned char *)long_option[i].alias;
-            if (!*cp){
-	        cp = p;
+	    while(*cp && *cp != SPACE && cp++);
+            if (long_option[i].alias[0]){
+		cp_back = cp;
+		cp = (unsigned char *)long_option[i].alias;
+	    }else{
+                if (strcmp(long_option[i].name, "ic=") == 0){
+		    for (i=0; i < 16 && SPACE < p[i] && p[i] < DEL; i++){
+			codeset[i] = nkf_toupper(p[i]);
+		    }
+		    codeset[i] = 0;
+		    if(strcmp(codeset, "ISO-2022-JP") == 0 ||
+		      strcmp(codeset, "X-ISO2022JP-CP932") == 0 ||
+		      strcmp(codeset, "CP50220") == 0 ||
+		      strcmp(codeset, "CP50221") == 0 ||
+		      strcmp(codeset, "CP50222") == 0 ||
+		      strcmp(codeset, "ISO-2022-JP-MS") == 0){
+			input_f = JIS_INPUT;
+		    }else if(strcmp(codeset, "ISO-2022-JP-1") == 0){
+			input_f = JIS_INPUT;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+		    }else if(strcmp(codeset, "ISO-2022-JP-3") == 0){
+			input_f = JIS_INPUT;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+			x0213_f = TRUE;
+		    }else if(strcmp(codeset, "SHIFT_JIS") == 0){
+			input_f = SJIS_INPUT;
+			if (x0201_f==NO_X0201) x0201_f=TRUE;
+		    }else if(strcmp(codeset, "WINDOWS-31J") == 0 ||
+			     strcmp(codeset, "CSWINDOWS31J") == 0 ||
+			     strcmp(codeset, "CP932") == 0 ||
+			     strcmp(codeset, "MS932") == 0){
+			input_f = SJIS_INPUT;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP932;
+#endif
+		    }else if(strcmp(codeset, "EUCJP") == 0 ||
+			     strcmp(codeset, "EUC-JP") == 0){
+			input_f = JIS_INPUT;
+		    }else if(strcmp(codeset, "CP51932") == 0){
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP932;
+#endif
+		    }else if(strcmp(codeset, "EUC-JP-MS") == 0 ||
+			     strcmp(codeset, "EUCJP-MS") == 0 ||
+			     strcmp(codeset, "EUCJPMS") == 0){
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_MS;
+#endif
+		    }else if(strcmp(codeset, "EUC-JP-ASCII") == 0 ||
+			     strcmp(codeset, "EUCJP-ASCII") == 0){
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_ASCII;
+#endif
+		    }else if(strcmp(codeset, "SHIFT_JISX0213") == 0 ||
+			     strcmp(codeset, "SHIFT_JIS-2004") == 0){
+			input_f = SJIS_INPUT;
+			x0213_f = TRUE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+			cp932inv_f = FALSE;
+#endif
+			if (x0201_f==NO_X0201) x0201_f=TRUE;
+		    }else if(strcmp(codeset, "EUC-JISX0213") == 0 ||
+			     strcmp(codeset, "EUC-JIS-2004") == 0){
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
+			x0213_f = TRUE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+			cp932inv_f = FALSE;
+#endif
+#ifdef UTF8_INPUT_ENABLE
+		    }else if(strcmp(codeset, "UTF-8") == 0 ||
+			     strcmp(codeset, "UTF-8N") == 0 ||
+			     strcmp(codeset, "UTF-8-BOM") == 0){
+			input_f = UTF8_INPUT;
+#ifdef UNICODE_NORMALIZATION
+		    }else if(strcmp(codeset, "UTF8-MAC") == 0 ||
+			     strcmp(codeset, "UTF-8-MAC") == 0){
+			input_f = UTF8_INPUT;
+			nfc_f = TRUE;
+#endif
+		    }else if(strcmp(codeset, "UTF-16") == 0){
+			input_f = UTF16BE_INPUT;
+			utf16_mode = UTF16BE_INPUT;
+		    }else if(strcmp(codeset, "UTF-16BE") == 0 ||
+			     strcmp(codeset, "UTF-16BE-BOM") == 0){
+			input_f = UTF16BE_INPUT;
+			utf16_mode = UTF16BE_INPUT;
+		    }else if(strcmp(codeset, "UTF-16LE") == 0 ||
+			     strcmp(codeset, "UTF-16LE-BOM") == 0){
+			input_f = UTF16LE_INPUT;
+			utf16_mode = UTF16LE_INPUT;
+#endif
+		    }
+                    continue;
+		}
+                if (strcmp(long_option[i].name, "oc=") == 0){
+		    for (i=0; i < 16 && SPACE < p[i] && p[i] < DEL; i++){
+			codeset[i] = nkf_toupper(p[i]);
+		    }
+		    codeset[i] = 0;
+		    if(strcmp(codeset, "ISO-2022-JP") == 0 ||
+		       strcmp(codeset, "CP50220") == 0){
+			output_conv = j_oconv;
+		    }else if(strcmp(codeset, "X-ISO2022JP-CP932") == 0){
+			output_conv = j_oconv;
+			no_cp932ext_f = TRUE;
+		    }else if(strcmp(codeset, "CP50221") == 0 ||
+			     strcmp(codeset, "ISO-2022-JP-MS") == 0){
+			output_conv = j_oconv;
+			x0201_f = FALSE;
+		    }else if(strcmp(codeset, "ISO-2022-JP-1") == 0){
+			output_conv = j_oconv;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+		    }else if(strcmp(codeset, "ISO-2022-JP-3") == 0){
+			output_conv = j_oconv;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+			x0213_f = TRUE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+		    }else if(strcmp(codeset, "ISO-2022-JP-MS") == 0){
+			output_conv = j_oconv;
+			x0201_f = FALSE;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+		    }else if(strcmp(codeset, "SHIFT_JIS") == 0){
+			output_conv = s_oconv;
+		    }else if(strcmp(codeset, "WINDOWS-31J") == 0 ||
+			     strcmp(codeset, "CSWINDOWS31J") == 0 ||
+			     strcmp(codeset, "CP932") == 0 ||
+			     strcmp(codeset, "MS932") == 0){
+			output_conv = s_oconv;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+			cp932inv_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP932;
+#endif
+		    }else if(strcmp(codeset, "EUCJP") == 0 ||
+			     strcmp(codeset, "EUC-JP") == 0){
+			output_conv = e_oconv;
+		    }else if(strcmp(codeset, "CP51932") == 0){
+			output_conv = e_oconv;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP932;
+#endif
+		    }else if(strcmp(codeset, "EUC-JP-MS") == 0 ||
+			     strcmp(codeset, "EUCJP-MS") == 0 ||
+			     strcmp(codeset, "EUCJPMS") == 0){
+			output_conv = e_oconv;
+			x0201_f = FALSE;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_MS;
+#endif
+		    }else if(strcmp(codeset, "EUC-JP-ASCII") == 0 ||
+			     strcmp(codeset, "EUCJP-ASCII") == 0){
+			output_conv = e_oconv;
+			x0201_f = FALSE;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_ASCII;
+#endif
+		    }else if(strcmp(codeset, "SHIFT_JISX0213") == 0 ||
+			     strcmp(codeset, "SHIFT_JIS-2004") == 0){
+			output_conv = s_oconv;
+			x0213_f = TRUE;
+#ifdef SHIFTJIS_CP932
+			cp932inv_f = FALSE;
+#endif
+		    }else if(strcmp(codeset, "EUC-JISX0213") == 0 ||
+			     strcmp(codeset, "EUC-JIS-2004") == 0){
+			output_conv = e_oconv;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+			x0213_f = TRUE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+		    }else if(strcmp(codeset, "UTF-8") == 0){
+			output_conv = w_oconv;
+		    }else if(strcmp(codeset, "UTF-8N") == 0){
+			output_conv = w_oconv;
+			unicode_bom_f=1;
+		    }else if(strcmp(codeset, "UTF-8-BOM") == 0){
+			output_conv = w_oconv;
+			unicode_bom_f=2;
+		    }else if(strcmp(codeset, "UTF-16BE") == 0){
+			output_conv = w_oconv16; 
+			unicode_bom_f=1;
+		    }else if(strcmp(codeset, "UTF-16") == 0 ||
+			     strcmp(codeset, "UTF-16BE-BOM") == 0){
+			output_conv = w_oconv16; 
+			unicode_bom_f=2;
+		    }else if(strcmp(codeset, "UTF-16LE") == 0){
+			output_conv = w_oconv16; 
+			w_oconv16_LE = 1;
+			unicode_bom_f=1;
+		    }else if(strcmp(codeset, "UTF-16LE-BOM") == 0){
+			output_conv = w_oconv16; 
+			w_oconv16_LE = 1;
+			unicode_bom_f=2;
+#endif
+		    }
+                    continue;
+		}
 #ifdef OVERWRITE
                 if (strcmp(long_option[i].name, "overwrite") == 0){
-                    file_out = TRUE;
-                    overwrite = TRUE;
+                    file_out_f = TRUE;
+                    overwrite_f = TRUE;
+		    preserve_time_f = TRUE;
                     continue;
+                }
+                if (strcmp(long_option[i].name, "overwrite=") == 0){
+                    file_out_f = TRUE;
+                    overwrite_f = TRUE;
+		    preserve_time_f = TRUE;
+		    backup_f = TRUE;
+		    backup_suffix = malloc(strlen(p) + 1);
+		    strcpy(backup_suffix, p);
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "in-place") == 0){
+                    file_out_f = TRUE;
+                    overwrite_f = TRUE;
+		    preserve_time_f = FALSE;
+		    continue;
+                }
+                if (strcmp(long_option[i].name, "in-place=") == 0){
+                    file_out_f = TRUE;
+                    overwrite_f = TRUE;
+		    preserve_time_f = FALSE;
+		    backup_f = TRUE;
+		    backup_suffix = malloc(strlen(p) + 1);
+		    strcpy(backup_suffix, p);
+		    continue;
                 }
 #endif
 #ifdef INPUT_OPTION
@@ -1061,21 +1456,21 @@ options(cp)
 #endif
                 if (strcmp(long_option[i].name, "cp932") == 0){
 #ifdef SHIFTJIS_CP932
-                    cp932_f = TRUE;
+                    cp51932_f = TRUE;
                     cp932inv_f = TRUE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-                    ms_ucs_map_f = TRUE;
+                    ms_ucs_map_f = UCS_MAP_CP932;
 #endif
                     continue;
                 }
                 if (strcmp(long_option[i].name, "no-cp932") == 0){
 #ifdef SHIFTJIS_CP932
-                    cp932_f = FALSE;
+                    cp51932_f = FALSE;
                     cp932inv_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-                    ms_ucs_map_f = FALSE;
+                    ms_ucs_map_f = UCS_MAP_ASCII;
 #endif
                     continue;
                 }
@@ -1104,14 +1499,68 @@ options(cp)
                   }
 #endif
 #if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-                if (strcmp(long_option[i].name, "internal-unicode") == 0){
-                    internal_unicode_f = TRUE;
+                if (strcmp(long_option[i].name, "no-cp932ext") == 0){
+		    no_cp932ext_f = TRUE;
+                    continue;
+                }
+		if (strcmp(long_option[i].name, "no-best-fit-chars") == 0){
+		    no_best_fit_chars_f = TRUE;
+		    continue;
+		}
+                if (strcmp(long_option[i].name, "fb-skip") == 0){
+		    encode_fallback = NULL;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-html") == 0){
+		    encode_fallback = encode_fallback_html;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-xml" ) == 0){
+		    encode_fallback = encode_fallback_xml;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-java") == 0){
+		    encode_fallback = encode_fallback_java;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-perl") == 0){
+		    encode_fallback = encode_fallback_perl;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-subchar") == 0){
+		    encode_fallback = encode_fallback_subchar;
+                    continue;
+                }
+                if (strcmp(long_option[i].name, "fb-subchar=") == 0){
+		    encode_fallback = encode_fallback_subchar;
+		    unicode_subchar = 0;
+		    if (p[0] != '0'){
+			/* decimal number */
+			for (i = 0; i < 7 && nkf_isdigit(p[i]); i++){
+			    unicode_subchar *= 10;
+			    unicode_subchar += hex2bin(p[i]);
+			}
+		    }else if(p[1] == 'x' || p[1] == 'X'){
+			/* hexadecimal number */
+			for (i = 2; i < 8 && nkf_isxdigit(p[i]); i++){
+			    unicode_subchar <<= 4;
+			    unicode_subchar |= hex2bin(p[i]);
+			}
+		    }else{
+			/* octal number */
+			for (i = 1; i < 8 && nkf_isoctal(p[i]); i++){
+			    unicode_subchar *= 8;
+			    unicode_subchar += hex2bin(p[i]);
+			}
+		    }
+		    w16e_conv(unicode_subchar, &i, &j);
+		    unicode_subchar = i<<8 | j;
                     continue;
                 }
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
                 if (strcmp(long_option[i].name, "ms-ucs-map") == 0){
-                    ms_ucs_map_f = TRUE;
+                    ms_ucs_map_f = UCS_MAP_MS;
                     continue;
                 }
 #endif
@@ -1123,9 +1572,9 @@ options(cp)
 		}
 #endif
                 if (strcmp(long_option[i].name, "prefix=") == 0){
-                    if (*p == '=' && ' ' < p[1] && p[1] < 128){
-                        for (i = 2; ' ' < p[i] && p[i] < 128; i++){
-                            prefix_table[p[i]] = p[1];
+                    if (' ' < p[0] && p[0] < 128){
+                        for (i = 1; ' ' < p[i] && p[i] < 128; i++){
+                            prefix_table[p[i]] = p[0];
                         }
                     }
                     continue;
@@ -1333,7 +1782,7 @@ options(cp)
             continue;
 #ifndef PERL_XS
         case 'O':/* for Output file */
-            file_out = TRUE;
+            file_out_f = TRUE;
             continue;
 #endif
         case 'c':/* add cr code */
@@ -1565,7 +2014,7 @@ void s_status(ptr, c)
               ptr->stat = 1;
               status_push_ch(ptr, c);
 #ifdef SHIFTJIS_CP932
-          }else if (cp932_f
+          }else if (cp51932_f
                     && CP932_TABLE_BEGIN <= c && c <= CP932_TABLE_END){
               ptr->stat = 2;
               status_push_ch(ptr, c);
@@ -1602,8 +2051,8 @@ void s_status(ptr, c)
 #endif /* SHIFTJIS_CP932 */
 #ifndef X0212_ENABLE
           status_disable(ptr);
-          break;
 #endif
+          break;
     }
 }
 
@@ -1947,6 +2396,14 @@ kanji_convert(f)
     module_connection();
     c2 = 0;
 
+    if(input_f == SJIS_INPUT
+#ifdef UTF8_INPUT_ENABLE
+       || input_f == UTF8_INPUT || input_f == UTF16BE_INPUT || input_f == UTF16LE_INPUT
+#endif
+      ){
+	is_8bit = TRUE;
+    }
+
 
     input_mode = ASCII;
     output_mode = ASCII;
@@ -1957,7 +2414,10 @@ kanji_convert(f)
 #define LAST break         /* end of loop, go closing  */
 
     while ((c1 = (*i_getc)(f)) != EOF) {
-        code_status(c1);
+#ifdef INPUT_CODE_FIX
+	if (!input_f)
+#endif
+	    code_status(c1);
         if (c2) {
             /* second byte */
             if (c2 > DEL) {
@@ -2067,7 +2527,8 @@ kanji_convert(f)
                         /* look like bogus code */
                         NEXT;
                     }
-                } else if (input_mode == X0208) {
+                } else if (input_mode == X0208 || input_mode == X0212 ||
+			   input_mode == X0213_1 || input_mode == X0213_2) {
                     /* in case of Kanji shifted */
                     c2 = c1;
                     NEXT;
@@ -2097,13 +2558,13 @@ kanji_convert(f)
                     /* normal ASCII code */ 
                     SEND;
                 }
-            } else if (c1 == SI) {
+            } else if (!is_8bit && c1 == SI) {
                 shift_mode = FALSE; 
                 NEXT;
-            } else if (c1 == SO) {
+            } else if (!is_8bit && c1 == SO) {
                 shift_mode = TRUE; 
                 NEXT;
-            } else if (c1 == ESC ) {
+            } else if (!is_8bit && c1 == ESC ) {
                 if ((c1 = (*i_getc)(f)) == EOF) {
                     /*  (*oconv)(0, ESC); don't send bogus code */
                     LAST;
@@ -2141,6 +2602,14 @@ kanji_convert(f)
                             shift_mode = FALSE;
                             NEXT;
 #endif /* X0212_ENABLE */
+                        } else if (c1 == (X0213_1&0x7F)){
+                            input_mode = X0213_1;
+                            shift_mode = FALSE;
+                            NEXT;
+                        } else if (c1 == (X0213_2&0x7F)){
+                            input_mode = X0213_2;
+                            shift_mode = FALSE;
+                            NEXT;
                         } else {
                             /* could be some special code */
                             (*oconv)(0, ESC);
@@ -2236,21 +2705,31 @@ kanji_convert(f)
                 SEND;
         }
         /* send: */
-        if (input_mode == X0208) 
-            (*oconv)(c2, c1);  /* this is JIS, not SJIS/EUC case */
+	switch(input_mode){
+	case ASCII:
+	    if ((*iconv)(c2, c1, 0) < 0){  /* can be EUC/SJIS */
+		int c0 = (*i_getc)(f);
+		if (c0 != EOF){
+		    code_status(c0);
+		    (*iconv)(c2, c1, c0);
+		}
+	    }
+	    break;
+	case X0208:
+	case X0213_1:
+	    (*oconv)(c2, c1); /* this is JIS, not SJIS/EUC case */
+	    break;
 #ifdef X0212_ENABLE
-        else if (input_mode == X0212) 
-            (*oconv)((0x8f << 8) | c2, c1);
+	case X0212:
+	    (*oconv)((0x8f << 8) | c2, c1);
+	    break;
 #endif /* X0212_ENABLE */
-        else if (input_mode) 
-            (*oconv)(input_mode, c1);  /* other special case */
-        else if ((*iconv)(c2, c1, 0) < 0){  /* can be EUC/SJIS */
-            int c0 = (*i_getc)(f);
-            if (c0 != EOF){
-                code_status(c0);
-                (*iconv)(c2, c1, c0);
-            }
-        }
+	case X0213_2:
+	    (*oconv)((0x8f << 8) | c2, c1);
+	    break;
+	default:
+	    (*oconv)(input_mode, c1);  /* other special case */
+	}
 
         c2 = 0;
         continue;
@@ -2391,8 +2870,9 @@ int s2e_conv(c2, c1, p2, p1)
 #if defined(SHIFTJIS_CP932) || defined(X0212_ENABLE)
     int val;
 #endif
+    STATIC const int shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
 #ifdef SHIFTJIS_CP932
-    if (cp932_f && CP932_TABLE_BEGIN <= c2 && c2 <= CP932_TABLE_END){
+    if (cp51932_f && CP932_TABLE_BEGIN <= c2 && c2 <= CP932_TABLE_END){
         extern const unsigned short shiftjis_cp932[3][189];
         val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
         if (val){
@@ -2402,7 +2882,7 @@ int s2e_conv(c2, c1, p2, p1)
     }
 #endif /* SHIFTJIS_CP932 */
 #ifdef X0212_ENABLE
-    if (x0212_f && 0xfa <= c2 && c2 <= 0xfc){
+    if (!x0213_f && 0xfa <= c2 && c2 <= 0xfc){
         extern const unsigned short shiftjis_x0212[3][189];
         val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
         if (val){
@@ -2419,18 +2899,27 @@ int s2e_conv(c2, c1, p2, p1)
         }
     }
 #endif
-    c2 = c2 + c2 - ((c2 <= 0x9f) ? SJ0162 : SJ6394);
-    if (c1 < 0x9f)
-        c1 = c1 - ((c1 > DEL) ? SPACE : 0x1f);
-    else {
-        c1 = c1 - 0x7e;
-        c2++;
+    if(c2 >= 0x80){
+	if(x0213_f && c2 >= 0xF0){
+	    if(c2 <= 0xF3 || (c2 == 0xF4 && c1 < 0x9F)){ /* k=1, 3<=k<=5, k=8, 12<=k<=15 */
+		c2 = 0x8F20 + shift_jisx0213_s1a3_table[c2 - 0xF0][0x9E < c1];
+	    }else{ /* 78<=k<=94 */
+		c2 = 0x8F00 | (c2 * 2 - 0x17B);
+		if (0x9E < c1) c2++;
+	    }
+	}else{
+	    c2 = c2 + c2 - ((c2 <= 0x9F) ? SJ0162 : SJ6394);
+	    if (0x9E < c1) c2++;
+	}
+	if (c1 < 0x9F)
+	    c1 = c1 - ((c1 > DEL) ? SPACE : 0x1F);
+	else {
+	    c1 = c1 - 0x7E;
+	}
     }
 
 #ifdef X0212_ENABLE
-    if (x0212_f){
-        c2 = x0212_unshift(c2);
-    }
+    c2 = x0212_unshift(c2);
 #endif
     if (p2) *p2 = c2;
     if (p1) *p1 = c1;
@@ -2469,7 +2958,7 @@ e_iconv(c2, c1, c0)
         c2 = (c2 << 8) | (c1 & 0x7f);
         c1 = c0 & 0x7f;
 #ifdef SHIFTJIS_CP932
-        if (cp932_f){
+        if (cp51932_f){
             int s2, s1;
             if (e2s_conv(c2, c1, &s2, &s1) == 0){
                 s2e_conv(s2, s1, &c2, &c1);
@@ -2500,33 +2989,21 @@ w2e_conv(c2, c1, c0, p2, p1)
     int    c2, c1, c0;
     int *p2, *p1;
 {
-    extern const unsigned short *const utf8_to_euc_2bytes[];
-    extern const unsigned short *const *const utf8_to_euc_3bytes[];
     int ret = 0;
 
-    if (0xc0 <= c2 && c2 <= 0xef) {
-        const unsigned short *const *pp;
-
-        if (0xe0 <= c2) {
-            if (c0 == 0) return -1;
-            pp = utf8_to_euc_3bytes[c2 - 0x80];
-            ret = w_iconv_common(c1, c0, pp, sizeof_utf8_to_euc_C2, p2, p1);
-        } else {
-            ret =  w_iconv_common(c2, c1, utf8_to_euc_2bytes, sizeof_utf8_to_euc_2bytes, p2, p1);
-        }
+    if (!c1){
+        *p2 = 0;
+        *p1 = c2;
+    }else if (0xc0 <= c2 && c2 <= 0xef) {
+	ret =  unicode_to_jis_common(c2, c1, c0, p2, p1);
 #ifdef NUMCHAR_OPTION
-        if (ret){
+        if (ret > 0){
             if (p2) *p2 = 0;
             if (p1) *p1 = CLASS_UTF16 | ww16_conv(c2, c1, c0);
             ret = 0;
         }
 #endif
-        return ret;
-    } else if (c2 == X0201) {
-        c1 &= 0x7f;
     }
-    if (p2) *p2 = c2;
-    if (p1) *p1 = c1;
     return ret;
 }
 
@@ -2537,12 +3014,20 @@ w_iconv(c2, c1, c0)
 {
     int ret = 0;
     
-    if (c0 == 0){
-	if (c2 == 0) /* 0x00-0x7f */
-	    ; /* 1byte */
-	else if ((c2 & 0xe0) == 0xc0) /* 0xc0-0xdf */
-	    ; /* 2ytes */
-	else if ((c2 & 0xf0) == 0xe0) /* 0xe0-0xef */
+    /* throw away ZERO WIDTH NO-BREAK SPACE (U+FEFF) */
+    if(ignore_zwnbsp_f){
+	ignore_zwnbsp_f = FALSE;
+	if(c2 == 0xef && c1 == 0xbb && c0 == 0xbf)
+	    return 0;
+    }
+    
+    if (c2 == 0) /* 0x00-0x7f */
+	c1 &= 0x7F; /* 1byte */
+    else if (c0 == 0){
+	if ((c2 & 0xe0) == 0xc0){ /* 0xc0-0xdf */
+	    /* 2ytes */
+	    if((c2 & 0xFE) == 0xC0 || c1 < 0x80 || 0xBF < c1) return 0;
+	}else if ((c2 & 0xf0) == 0xe0) /* 0xe0-0xef */
 	    return -1; /* 3bytes */
 #ifdef __COMMENT__
 	else if (0xf0 <= c2)
@@ -2551,21 +3036,20 @@ w_iconv(c2, c1, c0)
 	    return 0; /* trail byte */
 #endif
 	else return 0;
+    }else{
+	/* must be 3bytes */
+	if(c2 == 0xE0){
+	    if(c1 < 0xA0 || 0xBF < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else if(c2 == 0xED){
+	    if(c1 < 0x80 || 0x9F < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else if((c2 & 0xf0) == 0xe0){
+	    if(c1 < 0x80 || 0xBF < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else return 0;
     }
-    if (c2 == EOF);
-    else if (c2 == 0xef && c1 == 0xbb && c0 == 0xbf) {
-	return 0; /* throw BOM */
-#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-    } else if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16)){
-	unsigned short val = 0;
-	if(c2 == 0){
-	    c2 = c1;
-	    c1 = 0;
-	}
-	val = ww16_conv(c2, c1, c0);
-	c2 = (val >> 8) & 0xff;
-	c1 = val & 0xff;
-#endif
+    if (c2 == 0 || c2 == EOF){
     } else {
 	ret = w2e_conv(c2, c1, c0, &c2, &c1);
     }
@@ -2574,7 +3058,9 @@ w_iconv(c2, c1, c0)
     }
     return ret;
 }
+#endif
 
+#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
 void
 w16w_conv(val, p2, p1, p0)
      unsigned short val;
@@ -2594,13 +3080,17 @@ w16w_conv(val, p2, p1, p0)
         *p0 = 0x80 | (val        & 0x3f);
     }
 }
+#endif
 
+#ifdef UTF8_INPUT_ENABLE
 int
 ww16_conv(c2, c1, c0)
      int c2, c1, c0;
 {
     unsigned short val;
-    if (c2 >= 0xe0){
+    if (c2 >= 0xf0){
+	val = -1;
+    }else if (c2 >= 0xe0){
         val = (c2 & 0x0f) << 12;
         val |= (c1 & 0x3f) << 6;
         val |= (c0 & 0x3f);
@@ -2618,50 +3108,44 @@ w16e_conv(val, p2, p1)
      unsigned short val;
      int *p2, *p1;
 {
-    extern const unsigned short *const utf8_to_euc_2bytes[];
-    extern const unsigned short *const *const utf8_to_euc_3bytes[];
     int c2, c1, c0;
-    const unsigned short *const *pp;
-    int psize;
     int ret = 0;
 
-    w16w_conv(val, &c2, &c1, &c0);
-    if (c1){
-        if (c0){
-            pp = utf8_to_euc_3bytes[c2 - 0x80];
-            psize = sizeof_utf8_to_euc_C2;
-            ret =  w_iconv_common(c1, c0, pp, psize, p2, p1);
-        }else{
-            pp = utf8_to_euc_2bytes;
-            psize = sizeof_utf8_to_euc_2bytes;
-            ret =  w_iconv_common(c2, c1, pp, psize, p2, p1);
-        }
-#ifdef NUMCHAR_OPTION
-        if (ret){
-            *p2 = 0;
-            *p1 = CLASS_UTF16 | val;
-            ret = 0;
-        }
-#endif
-    }else{
+    if (val < 0x80){
         *p2 = 0;
-        *p1 = c2;
+        *p1 = val;
+    }else{
+	w16w_conv(val, &c2, &c1, &c0);
+	ret =  unicode_to_jis_common(c2, c1, c0, p2, p1);
+#ifdef NUMCHAR_OPTION
+	if (ret > 0){
+	    *p2 = 0;
+	    *p1 = CLASS_UTF16 | val;
+	    ret = 0;
+	}
+#endif
     }
     return ret;
 }
+#endif
 
+#ifdef UTF8_INPUT_ENABLE
 int
 w_iconv16(c2, c1, c0)
     int    c2, c1,c0;
 {
     int ret = 0;
 
-    if (c2==0376 && c1==0377){
-	utf16_mode = UTF16BE_INPUT;
-	return 0;    
-    } else if (c2==0377 && c1==0376){
-	utf16_mode = UTF16LE_INPUT;
-	return 0;    
+    /* throw away ZERO WIDTH NO-BREAK SPACE (U+FEFF) */
+    if(ignore_zwnbsp_f){
+	ignore_zwnbsp_f = FALSE;
+	if (c2==0376 && c1==0377){
+	    utf16_mode = UTF16BE_INPUT;
+	    return 0;
+	}else if(c2==0377 && c1==0376){
+	    utf16_mode = UTF16LE_INPUT;
+	    return 0;
+	}
     }
     if (c2 != EOF && utf16_mode == UTF16LE_INPUT) {
 	int tmp;
@@ -2670,14 +3154,129 @@ w_iconv16(c2, c1, c0)
     if ((c2==0 && c1 < 0x80) || c2==EOF) {
 	(*oconv)(c2, c1);
 	return 0;
-    }
-#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-    if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16));
-#endif
-    else ret = w16e_conv(((c2<<8)&0xff00) + c1, &c2, &c1);
+    }else if((c2>>3)==27){ /* surrogate pair */
+	return 1;
+    }else ret = w16e_conv(((c2<<8)&0xff00) + c1, &c2, &c1);
     if (ret) return ret;
     (*oconv)(c2, c1);
     return 0;
+}
+
+int
+unicode_to_jis_common(c2, c1, c0, p2, p1)
+    int c2, c1, c0;
+    int *p2, *p1;
+{
+    extern const unsigned short *const utf8_to_euc_2bytes[];
+    extern const unsigned short *const utf8_to_euc_2bytes_ms[];
+    extern const unsigned short *const utf8_to_euc_2bytes_932[];
+    extern const unsigned short *const *const utf8_to_euc_3bytes[];
+    extern const unsigned short *const *const utf8_to_euc_3bytes_ms[];
+    extern const unsigned short *const *const utf8_to_euc_3bytes_932[];
+    const unsigned short *const *pp;
+    const unsigned short *const *const *ppp;
+    STATIC const int no_best_fit_chars_table_C2[] =
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1,
+	0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0};
+    STATIC const int no_best_fit_chars_table_C2_ascii[] =
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+	0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0};
+    STATIC const int no_best_fit_chars_table_932_C2[] =
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0};
+    STATIC const int no_best_fit_chars_table_932_C3[] =
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+    int ret = 0;
+
+    if(c2 < 0x80){
+	*p2 = 0;
+	*p1 = c2;
+    }else if(c2 < 0xe0){
+	if(no_best_fit_chars_f){
+	    if(ms_ucs_map_f == UCS_MAP_CP932){
+		switch(c2){
+		case 0xC2:
+		    if(no_best_fit_chars_table_932_C2[c1&0x3F]) return 1;
+		    break;
+		case 0xC3:
+		    if(no_best_fit_chars_table_932_C3[c1&0x3F]) return 1;
+		    break;
+		}
+	    }else if(cp51932_f){
+		if(c2 == 0xC2 && no_best_fit_chars_table_C2[c1&0x3F]) return 1;
+	    }else{
+		if(c2 == 0xC2 && no_best_fit_chars_table_C2_ascii[c1&0x3F]) return 1;
+	    }
+	}
+	pp =
+	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_2bytes_932 :
+	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_2bytes_ms :
+	    utf8_to_euc_2bytes;
+	ret =  w_iconv_common(c2, c1, pp, sizeof_utf8_to_euc_2bytes, p2, p1);
+    }else if(c0){
+	if(no_best_fit_chars_f){
+	    if(ms_ucs_map_f == UCS_MAP_CP932){
+		if(c2 == 0xE3 && c1 == 0x82 && c0 == 0x94) return 1;
+	    }else if(ms_ucs_map_f == UCS_MAP_MS){
+		switch(c2){
+		case 0xE2:
+		    switch(c1){
+		    case 0x80:
+			if(c0 == 0x94 || c0 == 0x96 || c0 == 0xBE) return 1;
+			break;
+		    case 0x88:
+			if(c0 == 0x92) return 1;
+			break;
+		    }
+		    break;
+		case 0xE3:
+		    if(c1 == 0x80 || c0 == 0x9C) return 1;
+		    break;
+		}
+	    }else{
+		switch(c2){
+		case 0xE2:
+		    switch(c1){
+		    case 0x80:
+			if(c0 == 0x95) return 1;
+			break;
+		    case 0x88:
+			if(c0 == 0xA5) return 1;
+			break;
+		    }
+		    break;
+		case 0xEF:
+		    switch(c1){
+		    case 0xBC:
+			if(c0 == 0x8D) return 1;
+			break;
+		    case 0xBD:
+			if(c0 == 0x9E && cp51932_f) return 1;
+			break;
+		    case 0xBF:
+			if(0xA0 <= c0 && c0 <= 0xA5) return 1;
+			break;
+		    }
+		    break;
+		}
+	    }
+	}
+	ppp =
+	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_3bytes_932 :
+	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_3bytes_ms :
+	    utf8_to_euc_3bytes;
+	ret = w_iconv_common(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
+    }else return -1;
+    return ret;
 }
 
 int
@@ -2699,9 +3298,13 @@ w_iconv_common(c1, c0, pp, psize, p2, p1)
     if (p == 0)  return 1;
 
     c0 -= 0x80;
-    if (c0 < 0 || sizeof_utf8_to_euc_E5B8 <= c0) return 1;
+    if (c0 < 0 || sizeof_utf8_to_euc_C2 <= c0) return 1;
     val = p[c0];
     if (val == 0) return 1;
+    if (no_cp932ext_f && (
+	(val>>8) == 0x2D || /* NEC special characters */
+	val > 0xF300 /* NEC special characters */
+	)) return 1;
 
     c2 = val >> 8;
     if (val & 0x8000){
@@ -2715,6 +3318,118 @@ w_iconv_common(c1, c0, pp, psize, p2, p1)
     return 0;
 }
 
+void
+nkf_each_char_to_hex(f, c)
+    void (*f)PROTO((int c2,int c1));
+    int c;
+{
+    const char *hex = "0123456789ABCDEF";
+    c &= 0x00FFFFFF;
+    int shift = 20;
+    while(shift >= 0){
+	if(c >= 1<<shift){
+	    while(shift >= 0){
+		(*f)(0, hex[(c>>shift)&0xF]);
+		shift -= 4;
+	    }
+	}else{
+	    shift -= 4;
+	}
+    }
+    return;
+}
+
+void
+encode_fallback_html(c)
+    int c;
+{
+    (*oconv)(0, '&');
+    (*oconv)(0, '#');
+    c &= 0x00FFFFFF;
+    if(c >= 1000000)
+	(*oconv)(0, 0x30+(c/1000000)%10);
+    if(c >= 100000)
+	(*oconv)(0, 0x30+(c/100000 )%10);
+    if(c >= 10000)
+	(*oconv)(0, 0x30+(c/10000  )%10);
+    if(c >= 1000)
+	(*oconv)(0, 0x30+(c/1000   )%10);
+    if(c >= 100)
+	(*oconv)(0, 0x30+(c/100    )%10);
+    if(c >= 10)
+	(*oconv)(0, 0x30+(c/10     )%10);
+    if(c >= 0)
+	(*oconv)(0, 0x30+ c         %10);
+    (*oconv)(0, ';');
+    return;
+}
+
+void
+encode_fallback_xml(c)
+    int c;
+{
+    (*oconv)(0, '&');
+    (*oconv)(0, '#');
+    (*oconv)(0, 'x');
+    nkf_each_char_to_hex(oconv, c);
+    (*oconv)(0, ';');
+    return;
+}
+
+void
+encode_fallback_java(c)
+    int c;
+{
+    const char *hex = "0123456789ABCDEF";
+    (*oconv)(0, '\\');
+    if((c&0x00FFFFFF) > 0xFFFF){
+	(*oconv)(0, 'U');
+	(*oconv)(0, '0');
+	(*oconv)(0, '0');
+	(*oconv)(0, hex[(c>>20)&0xF]);
+	(*oconv)(0, hex[(c>>16)&0xF]);
+    }else{
+	(*oconv)(0, 'u');
+    }
+    (*oconv)(0, hex[(c>>12)&0xF]);
+    (*oconv)(0, hex[(c>> 8)&0xF]);
+    (*oconv)(0, hex[(c>> 4)&0xF]);
+    (*oconv)(0, hex[ c     &0xF]);
+    return;
+}
+
+void
+encode_fallback_perl(c)
+    int c;
+{
+    (*oconv)(0, '\\');
+    (*oconv)(0, 'x');
+    (*oconv)(0, '{');
+    nkf_each_char_to_hex(oconv, c);
+    (*oconv)(0, '}');
+    return;
+}
+
+void
+encode_fallback_subchar(c)
+    int c;
+{
+    c = unicode_subchar;
+    (*oconv)((c>>8)&0xFF, c&0xFF);
+    return;
+    int shift = 16;
+    while(shift >= 0){
+	if(c >= 1<<shift){
+	    while(shift >= 0){
+		(*oconv)(0, (c>>shift)&0xFF);
+		shift -= 8;
+	    }
+	}else{
+	    shift -= 8;
+	}
+    }
+    return;
+}
 #endif
 
 #ifdef UTF8_OUTPUT_ENABLE
@@ -2731,6 +3446,9 @@ e2w_conv(c2, c1)
         p = euc_to_utf8_1byte;
 #ifdef X0212_ENABLE
     } else if (c2 >> 8 == 0x8f){
+	if(ms_ucs_map_f == UCS_MAP_ASCII&& c2 == 0x8F22 && c1 == 0x43){
+	    return 0xA6;
+	}
         extern const unsigned short *const x0212_to_utf8_2bytes[];
         c2 = (c2&0x7f) - 0x21;
         if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
@@ -2742,7 +3460,7 @@ e2w_conv(c2, c1)
         c2 &= 0x7f;
         c2 = (c2&0x7f) - 0x21;
         if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
-            p = ms_ucs_map_f ? euc_to_utf8_2bytes_ms[c2] : euc_to_utf8_2bytes[c2];
+            p = ms_ucs_map_f != UCS_MAP_ASCII ? euc_to_utf8_2bytes_ms[c2] : euc_to_utf8_2bytes[c2];
 	else
 	    return 0;
     }
@@ -2792,9 +3510,7 @@ w_oconv(c2, c1)
         (*o_putc)(c1 | 0x080);
     } else {
         output_mode = UTF8;
-	if (internal_unicode_f && (iconv == w_iconv || iconv == w_iconv16))
-	    val = ((c2<<8)&0xff00) + c1;
-	else val = e2w_conv(c2, c1);
+	val = e2w_conv(c2, c1);
         if (val){
             w16w_conv(val, &c2, &c1, &c0);
             (*o_putc)(c2);
@@ -2827,8 +3543,7 @@ w_oconv16(c2, c1)
 	unicode_bom_f=1;
     }
 
-    if (internal_unicode_f && (iconv == w_iconv || iconv == w_iconv16)){
-    } else if (c2 == ISO8859_1) {
+    if (c2 == ISO8859_1) {
         c2 = 0;
         c1 |= 0x80;
 #ifdef NUMCHAR_OPTION
@@ -2861,6 +3576,7 @@ e_oconv(c2, c1)
     if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
         w16e_conv(c1, &c2, &c1);
         if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
+	    if(encode_fallback)(*encode_fallback)(c1);
             return;
         }
     }
@@ -2881,14 +3597,17 @@ e_oconv(c2, c1)
     } else if ((c2 & 0xff00) >> 8 == 0x8f){
 	output_mode = JAPANESE_EUC;
 #ifdef SHIFTJIS_CP932
-        if (cp932_f){
+        if (cp51932_f){
             int s2, s1;
             if (e2s_conv(c2, c1, &s2, &s1) == 0){
                 s2e_conv(s2, s1, &c2, &c1);
             }
         }
 #endif
-        if ((c2 & 0xff00) >> 8 == 0x8f){
+        if (c2 == 0) {
+	    output_mode = ASCII;
+	    (*o_putc)(c1);
+	}else if ((c2 & 0xff00) >> 8 == 0x8f){
             if (x0212_f){
                 (*o_putc)(0x8f);
                 (*o_putc)((c2 & 0x7f) | 0x080);
@@ -2947,32 +3666,42 @@ int
 e2s_conv(c2, c1, p2, p1)
      int c2, c1, *p2, *p1;
 {
-#ifdef X0212_ENABLE
-    int val = 0;
-    const unsigned short *ptr;
     int ndx;
-    extern const unsigned short *const x0212_shiftjis[];
     if ((c2 & 0xff00) == 0x8f00){
-        ndx = c2 & 0x7f;
-        if (0x21 <= ndx && ndx <= 0x7e){
-            ptr = x0212_shiftjis[ndx - 0x21];
-            if (ptr){
-                val = ptr[(c1 & 0x7f) - 0x21];
-            }
-            if (val){
-                c2 = val >> 8;
-                c1 = val & 0xff;
-                if (p2) *p2 = c2;
-                if (p1) *p1 = c1;
-                return 0;
-            }
-        }
-        c2 = x0212_shift(c2);
-    }
+	ndx = c2 & 0xff;
+	if (x0213_f){
+	    if((0x21 <= ndx && ndx <= 0x2F)){
+		if (p2) *p2 = ((ndx - 1) >> 1) + 0xec - ndx / 8 * 3;
+		if (p1) *p1 = c1 + ((ndx & 1) ? ((c1 < 0x60) ? 0x1f : 0x20) : 0x7e);
+		return 0;
+	    }else if(0x6E <= ndx && ndx <= 0x7E){
+		if (p2) *p2 = ((ndx - 1) >> 1) + 0xbe;
+		if (p1) *p1 = c1 + ((ndx & 1) ? ((c1 < 0x60) ? 0x1f : 0x20) : 0x7e);
+		return 0;
+	    }
+	    return 1;
+	}
+#ifdef X0212_ENABLE
+	else if(0x21 <= ndx && ndx <= 0x7e){
+	    int val = 0;
+	    const unsigned short *ptr;
+	    extern const unsigned short *const x0212_shiftjis[];
+	    ptr = x0212_shiftjis[ndx - 0x21];
+	    if (ptr){
+		val = ptr[(c1 & 0x7f) - 0x21];
+	    }
+	    if (val){
+		c2 = val >> 8;
+		c1 = val & 0xff;
+		if (p2) *p2 = c2;
+		if (p1) *p1 = c1;
+		return 0;
+	    }
+	    c2 = x0212_shift(c2);
+	}
 #endif /* X0212_ENABLE */
-    if ((c2 & 0xff00) == 0x8f00){
-        return 1;
     }
+    if(0x7F < c2) return 1;
     if (p2) *p2 = ((c2 - 1) >> 1) + ((c2 <= 0x5e) ? 0x71 : 0xb1);
     if (p1) *p1 = c1 + ((c2 & 1) ? ((c1 < 0x60) ? 0x1f : 0x20) : 0x7e);
     return 0;
@@ -2986,6 +3715,10 @@ s_oconv(c2, c1)
 #ifdef NUMCHAR_OPTION
     if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
         w16e_conv(c1, &c2, &c1);
+        if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
+	    if(encode_fallback)(*encode_fallback)(c1);
+            return;
+        }
     }
 #endif
     if (c2 == EOF) {
@@ -3043,8 +3776,12 @@ j_oconv(c2, c1)
                     c1;
 {
 #ifdef NUMCHAR_OPTION
-    if ((c1 & CLASS_MASK) == CLASS_UTF16){
+    if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
         w16e_conv(c1, &c2, &c1);
+        if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
+	    if(encode_fallback)(*encode_fallback)(c1);
+            return;
+        }
     }
 #endif
     if (c2 == EOF) {
@@ -3057,12 +3794,22 @@ j_oconv(c2, c1)
         (*o_putc)(EOF);
 #ifdef X0212_ENABLE
     } else if ((c2 & 0xff00) >> 8 == 0x8f){
-        if (output_mode!=X0212) {
-            output_mode = X0212;
-            (*o_putc)(ESC);
-            (*o_putc)('$');
-            (*o_putc)('(');
-            (*o_putc)('D');
+	if(x0213_f){
+	    if(output_mode!=X0213_2){
+		output_mode = X0213_2;
+		(*o_putc)(ESC);
+		(*o_putc)('$');
+		(*o_putc)('(');
+		(*o_putc)(X0213_2&0x7F);
+	    }
+	}else{
+	    if(output_mode!=X0212){
+		output_mode = X0212;
+		(*o_putc)(ESC);
+		(*o_putc)('$');
+		(*o_putc)('(');
+		(*o_putc)(X0212&0x7F);
+	    }
         }
         (*o_putc)(c2 & 0x7f);
         (*o_putc)(c1);
@@ -3090,16 +3837,21 @@ j_oconv(c2, c1)
         }
         (*o_putc)(c1);
     } else {
-        if (output_mode != X0208) {
+	if(c2<0x20 || 0x7e<c2 || c1<0x20 || 0x7e<c1) return;
+	if(x0213_f){
+	    if (output_mode!=X0213_1) {
+		output_mode = X0213_1;
+		(*o_putc)(ESC);
+		(*o_putc)('$');
+		(*o_putc)('(');
+		(*o_putc)(X0213_1&0x7F);
+	    }
+	}else if (output_mode != X0208) {
             output_mode = X0208;
             (*o_putc)(ESC);
             (*o_putc)('$');
             (*o_putc)(kanji_intro);
         }
-        if (c1<0x20 || 0x7e<c1) 
-            return;
-        if (c2<0x20 || 0x7e<c2) 
-            return;
         (*o_putc)(c2);
         (*o_putc)(c1);
     }
@@ -3300,7 +4052,7 @@ int c2,c1;
         if (f_line<=fold_len) {   /* normal case */
             fold_state = 1;
         } else {
-            if (f_line>=fold_len+fold_margin) { /* too many kinsou suspension */
+            if (f_line>fold_len+fold_margin) { /* too many kinsoku suspension */
                 f_line = char_size(c2,c1);
                 fold_state =  '\n';       /* We can't wait, do fold now */
             } else if (c2==X0201) {
@@ -3568,7 +4320,7 @@ const unsigned char *mime_pattern[] = {
     (const unsigned char *)"\075?ISO-8859-1?B?",
     (const unsigned char *)"\075?ISO-2022-JP?B?",
     (const unsigned char *)"\075?ISO-2022-JP?Q?",
-#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+#if defined(UTF8_INPUT_ENABLE)
     (const unsigned char *)"\075?UTF-8?B?",
     (const unsigned char *)"\075?UTF-8?Q?",
 #endif
@@ -3580,7 +4332,7 @@ const unsigned char *mime_pattern[] = {
 /* 該当するコードの優先度を上げるための目印 */
 int (*mime_priority_func[])PROTO((int c2, int c1, int c0)) = {
     e_iconv, s_iconv, 0, 0, 0, 0,
-#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+#if defined(UTF8_INPUT_ENABLE)
     w_iconv, w_iconv,
 #endif
     0,
@@ -3588,7 +4340,7 @@ int (*mime_priority_func[])PROTO((int c2, int c1, int c0)) = {
 
 const int mime_encode[] = {
     JAPANESE_EUC, SHIFT_JIS,ISO8859_1, ISO8859_1, X0208, X0201,
-#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+#if defined(UTF8_INPUT_ENABLE)
     UTF8, UTF8,
 #endif
     ASCII,
@@ -3597,7 +4349,7 @@ const int mime_encode[] = {
 
 const int mime_encode_method[] = {
     'B', 'B','Q', 'B', 'B', 'Q',
-#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+#if defined(UTF8_INPUT_ENABLE)
     'B', 'Q',
 #endif
     'Q',
@@ -3606,15 +4358,6 @@ const int mime_encode_method[] = {
 
 
 #define MAXRECOVER 20
-
-/* I don't trust portablity of toupper */
-#define nkf_toupper(c)  (('a'<=c && c<='z')?(c-('a'-'A')):c)
-#define nkf_isdigit(c)  ('0'<=c && c<='9')
-#define nkf_isxdigit(c)  (nkf_isdigit(c) || ('a'<=c && c<='f') || ('A'<=c && c <= 'F'))
-#define nkf_isblank(c) (c == SPACE || c == TAB)
-#define nkf_isspace(c) (nkf_isblank(c) || c == CR || c == NL)
-#define nkf_isalpha(c) (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
-#define nkf_isalnum(c) (nkf_isdigit(c) || nkf_isalpha(c))
 
 void
 switch_mime_getc()
@@ -3823,14 +4566,6 @@ print_guessed_code (filename)
 }
 #endif /*WIN32DLL*/
 
-int
-hex2bin(x)
-     int x;
-{
-    if (nkf_isdigit(x)) return x - '0';
-    return nkf_toupper(x) - 'A' + 10;
-}
-
 #ifdef INPUT_OPTION 
 
 #ifdef ANSI_C_PROTOTYPE
@@ -4038,12 +4773,12 @@ FILE *f;
     if (mime_decode_mode == 'Q') {
         if ((c1 = (*i_mgetc)(f)) == EOF) return (EOF);
 restart_mime_q:
-        if (c1=='_') return ' ';
+        if (c1=='_' && mimebuf_f != FIXED_MIME) return ' ';
 	if (c1<=' ' || DEL<=c1) {
 	    mime_decode_mode = exit_mode; /* prepare for quit */
 	    return c1;
 	}
-        if (c1!='=' && c1!='?') {
+        if (c1!='=' && (c1!='?' || mimebuf_f == FIXED_MIME)) {
 	    return c1;
 	}
                 
@@ -4455,13 +5190,10 @@ mimeout_addchar(c)
 {
     switch(mimeout_mode) {
     case 'Q':
-	if(c==SPACE){
-	    (*o_mputc)('_');
-	    base64_count++;
-	} else if (c==CR||c==NL) {
+	if (c==CR||c==NL) {
 	    (*o_mputc)(c);
 	    base64_count = 0;
-	} else if(c<SPACE||c=='='||c=='?'||c=='_'||DEL<=c) {
+	} else if(!nkf_isalnum(c)) {
 	    (*o_mputc)('=');
 	    (*o_mputc)(itoh4(((c>>4)&0xf)));
 	    (*o_mputc)(itoh4((c&0xf)));
@@ -4749,13 +5481,19 @@ reinit()
      x0201_f = NO_X0201;
 #endif
     iso2022jp_f = FALSE;
-#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-    internal_unicode_f = FALSE;
+#if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
+    ms_ucs_map_f = UCS_MAP_ASCII;
+#endif
+#ifdef UTF8_INPUT_ENABLE
+    no_cp932ext_f = FALSE;
+    ignore_zwnbsp_f = TRUE;
+    no_best_fit_chars_f = FALSE;
+    encode_fallback = NULL;
+    unicode_subchar  = '?';
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
     unicode_bom_f = 0;
     w_oconv16_LE = 0;
-    ms_ucs_map_f = FALSE;
 #endif
 #ifdef UNICODE_NORMALIZATION
     nfc_f = FALSE;
@@ -4776,8 +5514,12 @@ reinit()
     exec_f = 0;
 #endif
 #ifdef SHIFTJIS_CP932
-    cp932_f = TRUE;
+    cp51932_f = TRUE;
     cp932inv_f = TRUE;
+#endif
+#ifdef X0212_ENABLE
+    x0212_f = FALSE;
+    x0213_f = FALSE;
 #endif
     {
         int i;
@@ -4822,7 +5564,7 @@ reinit()
     input_mode =  ASCII;
     shift_mode =  FALSE;
     mime_decode_mode = FALSE;
-    file_out = FALSE;
+    file_out_f = FALSE;
     crmode_f = 0;
     option_mode = 0;
     broken_counter = 0;
@@ -4865,26 +5607,27 @@ usage()
     fprintf(stderr,"Flags:\n");
     fprintf(stderr,"b,u      Output is buffered (DEFAULT),Output is unbuffered\n");
 #ifdef DEFAULT_CODE_SJIS
-    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS (DEFAULT), AT&T JIS (EUC), UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift_JIS (DEFAULT), EUC-JP, UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_JIS
-    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit (DEFAULT), Shift JIS, AT&T JIS (EUC), UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit (DEFAULT), Shift JIS, EUC-JP, UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_EUC
-    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, AT&T JIS (EUC) (DEFAULT), UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, EUC-JP (DEFAULT), UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_UTF8
-    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, AT&T JIS (EUC), UTF-8N (DEFAULT)\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, EUC-JP, UTF-8N (DEFAULT)\n");
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-    fprintf(stderr,"         After 'w' you can add more options. (80?|16((B|L)0?)?) \n");
+    fprintf(stderr,"         After 'w' you can add more options. -w[ 8 [0], 16 [[BL] [0]] ]\n");
 #endif
-    fprintf(stderr,"J,S,E,W  Input assumption is JIS 7 bit , Shift JIS, AT&T JIS (EUC), UTF-8\n");
+    fprintf(stderr,"J,S,E,W  Input assumption is JIS 7 bit , Shift JIS, EUC-JP, UTF-8\n");
 #ifdef UTF8_INPUT_ENABLE
-    fprintf(stderr,"         After 'W' you can add more options. (8|16(B|L)?) \n");
+    fprintf(stderr,"         After 'W' you can add more options. -W[ 8, 16 [BL] ] \n");
 #endif
     fprintf(stderr,"t        no conversion\n");
-    fprintf(stderr,"i_/o_    Output sequence to designate JIS-kanji/ASCII (DEFAULT B)\n");
+    fprintf(stderr,"i[@B]    Specify the Esc Seq for JIS X 0208-1978/83 (DEFAULT B)\n");
+    fprintf(stderr,"o[BJH]   Specify the Esc Seq for ASCII/Roman        (DEFAULT B)\n");
     fprintf(stderr,"r        {de/en}crypt ROT13/47\n");
     fprintf(stderr,"h        1 katakana->hiragana, 2 hiragana->katakana, 3 both\n");
     fprintf(stderr,"v        Show this usage. V: show version\n");
@@ -4892,41 +5635,46 @@ usage()
     fprintf(stderr,"M[BQ]    MIME encode [B:base64 Q:quoted]\n");
     fprintf(stderr,"l        ISO8859-1 (Latin-1) support\n");
     fprintf(stderr,"f/F      Folding: -f60 or -f or -f60-10 (fold margin 10) F preserve nl\n");
-    fprintf(stderr,"Z[0-3]   Convert X0208 alphabet to ASCII  1: Kankaku to space,2: 2 spaces,\n");
-    fprintf(stderr,"                                          3: Convert HTML Entity\n");
+    fprintf(stderr,"Z[0-3]   Convert X0208 alphabet to ASCII\n");
+    fprintf(stderr,"         1: Kankaku to 1 space  2: to 2 spaces  3: Convert to HTML Entity\n");
     fprintf(stderr,"X,x      Assume X0201 kana in MS-Kanji, -x preserves X0201\n");
     fprintf(stderr,"B[0-2]   Broken input  0: missing ESC,1: any X on ESC-[($]-X,2: ASCII on NL\n");
 #ifdef MSDOS
     fprintf(stderr,"T        Text mode output\n");
 #endif
     fprintf(stderr,"O        Output to File (DEFAULT 'nkf.out')\n");
-    fprintf(stderr,"d,c      Delete \\r in line feed and \\032, Add \\r in line feed\n");
     fprintf(stderr,"I        Convert non ISO-2022-JP charactor to GETA\n");
+    fprintf(stderr,"d,c      Convert line breaks  -d: LF  -c: CRLF\n");
     fprintf(stderr,"-L[uwm]  line mode u:LF w:CRLF m:CR (DEFAULT noconversion)\n");
-    fprintf(stderr,"long name options\n");
-    fprintf(stderr," --fj,--unix,--mac,--windows                        convert for the system\n");
-    fprintf(stderr," --jis,--euc,--sjis,--utf8,--utf16,--mime,--base64  convert for the code\n");
-    fprintf(stderr," --hiragana, --katakana    Hiragana/Katakana Conversion\n");
-    fprintf(stderr," --x0212                   Convert JISX0212\n");
-    fprintf(stderr," --cp932, --no-cp932       CP932 compatibility\n");
-    fprintf(stderr," --prefix=    Insert escape before troublesome characters of Shift_JIS\n");
+    fprintf(stderr,"\n");
+    fprintf(stderr,"Long name options\n");
+    fprintf(stderr," --ic=<input codeset>  --oc=<output codeset>\n");
+    fprintf(stderr,"                   Specify the input or output codeset\n");
+    fprintf(stderr," --fj  --unix --mac  --windows\n");
+    fprintf(stderr," --jis  --euc  --sjis  --utf8  --utf16  --mime  --base64\n");
+    fprintf(stderr,"                   Convert for the system or code\n");
+    fprintf(stderr," --hiragana  --katakana  --katakana-hiragana\n");
+    fprintf(stderr,"                   To Hiragana/Katakana Conversion\n");
+    fprintf(stderr," --prefix=         Insert escape before troublesome characters of Shift_JIS\n");
 #ifdef INPUT_OPTION
     fprintf(stderr," --cap-input, --url-input  Convert hex after ':' or '%%'\n");
 #endif
 #ifdef NUMCHAR_OPTION
     fprintf(stderr," --numchar-input   Convert Unicode Character Reference\n");
 #endif
-#ifdef UNICODE_NORMALIZATION
-    fprintf(stderr," --utf8mac-input   UTF-8-MAC input\n");
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-    fprintf(stderr," --ms-ucs-map      Microsoft UCS Mapping Compatible\n");
+#ifdef UTF8_INPUT_ENABLE
+    fprintf(stderr," --fb-{skip, html, xml, perl, java, subchar}\n");
+    fprintf(stderr,"                   Specify how nkf handles unassigned characters\n");
 #endif
 #ifdef OVERWRITE
-    fprintf(stderr," --overwrite       Overwrite original listed files by filtered result\n");
+    fprintf(stderr," --in-place[=SUFFIX]  --overwrite[=SUFFIX]\n");
+    fprintf(stderr,"                   Overwrite original listed files by filtered result\n");
+    fprintf(stderr,"                   --overwrite preserves timestamp of original files\n");
 #endif
-    fprintf(stderr," -g, --guess       Guess the input code\n");
-    fprintf(stderr," --help,--version\n");
+    fprintf(stderr," -g  --guess       Guess the input code\n");
+    fprintf(stderr," --help  --version Show this help/the version\n");
+    fprintf(stderr,"                   For more information, see also man nkf\n");
+    fprintf(stderr,"\n");
     version();
 }
 

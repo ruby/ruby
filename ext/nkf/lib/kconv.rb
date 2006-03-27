@@ -12,35 +12,54 @@ module Kconv
   #
   
   #Constant of Encoding
-  AUTO = ::NKF::AUTO
-  JIS = ::NKF::JIS
-  EUC = ::NKF::EUC
-  SJIS = ::NKF::SJIS
-  BINARY = ::NKF::BINARY
-  NOCONV = ::NKF::NOCONV
-  ASCII = ::NKF::ASCII
-  UTF8 = ::NKF::UTF8
-  UTF16 = ::NKF::UTF16
-  UTF32 = ::NKF::UTF32
-  UNKNOWN = ::NKF::UNKNOWN
+  
+  # Auto-Detect
+  AUTO = NKF::AUTO
+  # ISO-2022-JP
+  JIS = NKF::JIS
+  # EUC-JP
+  EUC = NKF::EUC
+  # Shift_JIS
+  SJIS = NKF::SJIS
+  # BINARY
+  BINARY = NKF::BINARY
+  # NOCONV
+  NOCONV = NKF::NOCONV
+  # ASCII
+  ASCII = NKF::ASCII
+  # UTF-8
+  UTF8 = NKF::UTF8
+  # UTF-16
+  UTF16 = NKF::UTF16
+  # UTF-32
+  UTF32 = NKF::UTF32
+  # UNKNOWN
+  UNKNOWN = NKF::UNKNOWN
   
   #
   # Private Constants
   #
   
+  # Revision of kconv.rb
   REVISION = %q$Revision$
   
   #Regexp of Encoding
+  
+  # Regexp of Shift_JIS string (private constant)
   RegexpShiftjis = /\A(?:
 		       [\x00-\x7f\xa1-\xdf] |
 		       [\x81-\x9f\xe0-\xfc][\x40-\x7e\x80-\xfc] 
 		      )*\z/nx
+
+  # Regexp of EUC-JP string (private constant)
   RegexpEucjp = /\A(?:
 		    [\x00-\x7f]                         |
 		    \x8e        [\xa1-\xdf]             |
 		    \x8f        [\xa1-\xdf] [\xa1-\xfe] |
 		    [\xa1-\xdf] [\xa1-\xfe]
 		   )*\z/nx
+
+  # Regexp of UTF-8 string (private constant)
   RegexpUtf8  = /\A(?:
 		    [\x00-\x7f]                                     |
 		    [\xc2-\xdf] [\x80-\xbf]                         |
@@ -50,227 +69,280 @@ module Kconv
 		    [\xf1-\xf3] [\x80-\xbf] [\x80-\xbf] [\x80-\xbf] |
 		    \xf4        [\x80-\x8f] [\x80-\xbf] [\x80-\xbf]
 		   )*\z/nx
-  
-  # SYMBOL_TO_OPTION is the table for Kconv#conv
-  # Kconv#conv is intended to generic convertion method,
-  # so this table specifies symbols which can be supported not only nkf...
-  SYMBOL_TO_OPTION = {
-    :iso2022jp	=> '-j',
-    :jis	=> '-j',
-    :eucjp	=> '-e',
-    :euc	=> '-e',
-    :eucjpms	=> '-e --cp932',
-    :shiftjis	=> '-s',
-    :sjis	=> '-s',
-    :cp932	=> '-s --cp932',
-    :windows31j	=> '-s --cp932',
-    :utf8	=> '-w',
-    :utf8bom	=> '-w8',
-    :utf8n	=> '-w80',
-    :utf8mac	=> '-w --utf8mac-input',
-    :utf16	=> '-w16',
-    :utf16be	=> '-w16B',
-    :utf16ben	=> '-w16B0',
-    :utf16le	=> '-w16L',
-    :utf16len	=> '-w16L0',
-    :lf		=> '-Lu',	# LF
-    :cr		=> '-Lm',	# CR
-    :crlf	=> '-Lw',	# CRLF
-  }
-  
-  CONSTANT_TO_SYMBOL = {
-    JIS		=> :iso2022jp,
-    EUC		=> :eucjp,
-    SJIS	=> :shiftjis,
-    BINARY	=> :binary,
-    NOCONV	=> :noconv,
-    ASCII	=> :ascii,
-    UTF8	=> :utf8,
-    UTF16	=> :utf16,
-    UTF32	=> :utf32,
-    UNKNOWN	=> :unknown
-  }
-  
+
   #
   # Public Methods
   #
   
+  # call-seq:
+  #    Kconv.kconv(str, out_code, in_code = Kconv::AUTO)
   #
-  # Kconv.conv( str, :to => :"euc-jp", :from => :shift_jis, :opt => [:hiragana, :katakana] )
+  # Convert <code>str</code> to out_code.
+  # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
   #
-  def conv(str, *args)
-    option = nil
-    if args[0].is_a? Hash
-      option = [
-	args[0][:to]||args[0]['to'],
-	args[0][:from]||args[0]['from'],
-	args[0][:opt]||args[0]['opt'] ]
-    elsif args[0].is_a? String or args[0].is_a? Symbol or args[0].is_a? Integer
-      option = args
-    else
+  # *Note*
+  # This method decode MIME encoded string and
+  # convert halfwidth katakana to fullwidth katakana.
+  # If you don't want to decode them, use NKF.nkf.
+  def kconv(str, out_code, in_code = AUTO)
+    opt = '-'
+    case in_code
+    when ::NKF::JIS
+      opt << 'J'
+    when ::NKF::EUC
+      opt << 'E'
+    when ::NKF::SJIS
+      opt << 'S'
+    when ::NKF::UTF8
+      opt << 'W'
+    when ::NKF::UTF16
+      opt << 'W16'
+    end
+
+    case out_code
+    when ::NKF::JIS
+      opt << 'j'
+    when ::NKF::EUC
+      opt << 'e'
+    when ::NKF::SJIS
+      opt << 's'
+    when ::NKF::UTF8
+      opt << 'w'
+    when ::NKF::UTF16
+      opt << 'w16'
+    when ::NKF::NOCONV
       return str
     end
-    
-    to = symbol_to_option(option[0])
-    from = symbol_to_option(option[1]).to_s.sub(/(-[jesw])/o){$1.upcase}
-    opt = option[2..-1] and opt = opt.flatten.map{|x|symbol_to_option(x)}.compact.join(' ')
-    
-    nkf_opt = '-x -m0 %s %s %s' % [to, from, opt]
-    result = ::NKF::nkf( nkf_opt, str)
+
+    opt = '' if opt == '-'
+
+    ::NKF::nkf(opt, str)
   end
-  alias :kconv :conv
+  module_function :kconv
 
   #
   # Encode to
   #
 
+  # call-seq:
+  #    Kconv.tojis(str)   -> string
+  #
+  # Convert <code>str</code> to ISO-2022-JP
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-jxm0', str).
   def tojis(str)
-    ::NKF::nkf('-j', str)
+    ::NKF::nkf('-jm0', str)
   end
+  module_function :tojis
 
+  # call-seq:
+  #    Kconv.toeuc(str)   -> string
+  #
+  # Convert <code>str</code> to EUC-JP
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc(str)
-    ::NKF::nkf('-e', str)
+    ::NKF::nkf('-em0', str)
   end
+  module_function :toeuc
 
+  # call-seq:
+  #    Kconv.tosjis(str)   -> string
+  #
+  # Convert <code>str</code> to Shift_JIS
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-sxm0', str).
   def tosjis(str)
-    ::NKF::nkf('-s', str)
+    ::NKF::nkf('-sm0', str)
   end
+  module_function :tosjis
 
+  # call-seq:
+  #    Kconv.toutf8(str)   -> string
+  #
+  # Convert <code>str</code> to UTF-8
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-wxm0', str).
   def toutf8(str)
-    ::NKF::nkf('-w', str)
+    ::NKF::nkf('-wm0', str)
   end
+  module_function :toutf8
 
+  # call-seq:
+  #    Kconv.toutf16(str)   -> string
+  #
+  # Convert <code>str</code> to UTF-16
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-w16xm0', str).
   def toutf16(str)
-    ::NKF::nkf('-w16', str)
+    ::NKF::nkf('-w16m0', str)
   end
-
-  alias :to_jis :tojis
-  alias :to_euc :toeuc
-  alias :to_eucjp :toeuc
-  alias :to_sjis :tosjis
-  alias :to_shiftjis :tosjis
-  alias :to_iso2022jp :tojis
-  alias :to_utf8 :toutf8
-  alias :to_utf16 :toutf16
+  module_function :toutf16
 
   #
   # guess
   #
 
+  # call-seq:
+  #    Kconv.guess(str)   -> integer
+  #
+  # Guess input encoding by NKF.guess2
   def guess(str)
     ::NKF::guess(str)
   end
+  module_function :guess
 
+  # call-seq:
+  #    Kconv.guess_old(str)   -> integer
+  #
+  # Guess input encoding by NKF.guess1
   def guess_old(str)
     ::NKF::guess1(str)
   end
-
-  def guess_as_symbol(str)
-    CONSTANT_TO_SYMBOL[guess(str)]
-  end
+  module_function :guess_old
 
   #
   # isEncoding
   #
 
+  # call-seq:
+  #    Kconv.iseuc(str)   -> obj or nil
+  #
+  # Returns whether input encoding is EUC-JP or not.
+  #
+  # *Note* don't expect this return value is MatchData.
   def iseuc(str)
     RegexpEucjp.match( str )
   end
-  
+  module_function :iseuc
+
+  # call-seq:
+  #    Kconv.issjis(str)   -> obj or nil
+  #
+  # Returns whether input encoding is Shift_JIS or not.
+  #
+  # *Note* don't expect this return value is MatchData.
   def issjis(str)
     RegexpShiftjis.match( str )
   end
+  module_function :issjis
 
+  # call-seq:
+  #    Kconv.isutf8(str)   -> obj or nil
+  #
+  # Returns whether input encoding is UTF-8 or not.
+  #
+  # *Note* don't expect this return value is MatchData.
   def isutf8(str)
     RegexpUtf8.match( str )
   end
-
-  #
-  # encoding?
-  #
-
-  def eucjp?(str)
-    RegexpEucjp.match( str ) ? true : false
-  end
-
-  def shiftjis?(str)
-    RegexpShiftjis.match( str ) ? true : false
-  end
-
-  def utf8?(str)
-    RegexpUtf8.match( str ) ? true : false
-  end
-
-  alias :euc? :eucjp?
-  alias :sjis? :shiftjis?
-
-  #
-  # Private Methods
-  #
-  def symbol_to_option(symbol)
-    if symbol.is_a? Integer
-      symbol = CONSTANT_TO_SYMBOL[symbol]
-    elsif symbol.to_s[0] == ?-
-      return symbol.to_s
-    end
-    begin
-      SYMBOL_TO_OPTION[ symbol.to_s.downcase.delete('-_').to_sym ]
-    rescue
-      return nil
-    end
-  end
-
-  #
-  # Make them module functions
-  #
-  module_function(*instance_methods(false))
-  private_class_method :symbol_to_option
+  module_function :isutf8
 
 end
 
 class String
-  def kconv(*args)
-    Kconv::kconv(self, *args)
+  # call-seq:
+  #    String#kconv(out_code, in_code = Kconv::AUTO)
+  #
+  # Convert <code>self</code> to out_code.
+  # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want to decode them, use NKF.nkf.
+  def kconv(out_code, in_code=Kconv::AUTO)
+    Kconv::kconv(self, out_code, in_code)
   end
   
-  def conv(*args)
-    Kconv::conv(self, *args)
-  end
-  
+  #
   # to Encoding
-  def tojis
-    ::NKF::nkf('-j', self)
-  end
-  def toeuc
-    ::NKF::nkf('-e', self)
-  end
-  def tosjis
-    ::NKF::nkf('-s', self)
-  end
-  def toutf8
-    ::NKF::nkf('-w', self)
-  end
-  def toutf16
-    ::NKF::nkf('-w16', self)
-  end
-  alias :to_jis :tojis
-  alias :to_euc :toeuc
-  alias :to_eucjp :toeuc
-  alias :to_sjis :tosjis
-  alias :to_shiftjis :tosjis
-  alias :to_iso2022jp :tojis
-  alias :to_utf8 :toutf8
-  alias :to_utf16 :toutf16
+  #
   
+  # call-seq:
+  #    String#tojis   -> string
+  #
+  # Convert <code>self</code> to ISO-2022-JP
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-jxm0', str).
+  def tojis; Kconv.tojis(self) end
+
+  # call-seq:
+  #    String#toeuc   -> string
+  #
+  # Convert <code>self</code> to EUC-JP
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-exm0', str).
+  def toeuc; Kconv.toeuc(self) end
+
+  # call-seq:
+  #    String#tosjis   -> string
+  #
+  # Convert <code>self</code> to Shift_JIS
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-sxm0', str).
+  def tosjis; Kconv.tosjis(self) end
+
+  # call-seq:
+  #    String#toutf8   -> string
+  #
+  # Convert <code>self</code> to UTF-8
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-wxm0', str).
+  def toutf8; Kconv.toutf8(self) end
+
+  # call-seq:
+  #    String#toutf16   -> string
+  #
+  # Convert <code>self</code> to UTF-16
+  #
+  # *Note*
+  # This method convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-w16xm0', str).
+  def toutf16; Kconv.toutf16(self) end
+
+  #
   # is Encoding
-  def iseuc;	Kconv.iseuc( self ) end
-  def issjis;	Kconv.issjis( self ) end
-  def isutf8;	Kconv.isutf8( self ) end
-  def eucjp?;	Kconv.eucjp?( self ) end
-  def shiftjis?;Kconv.shiftjis?( self ) end
-  def utf8?;	Kconv.utf8?( self ) end
-  alias :euc? :eucjp?
-  alias :sjis? :shiftjis?
-  
-  def guess_as_symbol;	Kconv.guess_as_symbol( self ) end
+  #
+
+  # call-seq:
+  #    String#iseuc   -> obj or nil
+  #
+  # Returns whether <code>self</code>'s encoding is EUC-JP or not.
+  #
+  # *Note* don't expect this return value is MatchData.
+  def iseuc;	Kconv.iseuc(self) end
+
+  # call-seq:
+  #    String#issjis   -> obj or nil
+  #
+  # Returns whether <code>self</code>'s encoding is Shift_JIS or not.
+  #
+  # *Note* don't expect this return value is MatchData.
+  def issjis;	Kconv.issjis(self) end
+
+  # call-seq:
+  #    String#isutf8   -> obj or nil
+  #
+  # Returns whether <code>self</code>'s encoding is UTF-8 or not.
+  #
+  # *Note* don't expect this return value is MatchData.
+  def isutf8;	Kconv.isutf8(self) end
 end

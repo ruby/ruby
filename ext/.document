@@ -1,6 +1,8 @@
 # Add files to this as they become documented
 
 iconv/iconv.c
+nkf/lib/kconv.rb
+nkf/nkf.c
 stringio/stringio.c
 strscan/strscan.c
 zlib/zlib.c
