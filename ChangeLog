@@ -1,3 +1,9 @@
+Wed Mar 29 06:48:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (backtrace): reports aliased method names in a generated
+	  backtrace.  a patch from "U.Nakamura" <usa at garbagecollect.jp>.
+	  [ruby-dev:28471]
+
 Mon Mar 27 22:19:09 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/{nkf.c, utf8tbl.c, config.h}: imported nkf 2.0.6.
@@ -10,6 +16,19 @@ Mon Mar 27 22:19:09 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv.to*): add -m0.
 	  Note that Kconv.to* still imply -X.
+
+Mon Mar 27 03:17:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): insecure calling should be checked for non
+	  NODE_SCOPE method invocations too.
+
+	* eval.c (rb_alias): should preserve the current safe level as
+	  well as method definition.
+
+Fri Mar 24 23:14:30 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (yield_under_i): pass self again for instance_eval().
+	  [ruby-dev:28466]
 
 Fri Mar 24 17:20:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

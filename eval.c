@@ -2143,7 +2143,8 @@ rb_alias(klass, name, def)
 	}
     }
     st_insert(RCLASS(klass)->m_tbl, name,
-      (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
+	      (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin),
+				    NOEX_WITH_SAFE(orig->nd_noex)));
     if (singleton) {
 	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
     }
@@ -5700,6 +5701,11 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     TMP_PROTECT;
     volatile int safe = -1;
 
+    if (NOEX_SAFE(flags) > ruby_safe_level &&
+	!(flags&NOEX_TAINTED) && ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
+	rb_raise(rb_eSecurityError, "calling insecure method: %s",
+		 rb_id2name(id));
+    }
     switch (ruby_iter->iter) {
       case ITER_PRE:
       case ITER_PAS:
@@ -5821,10 +5827,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    b2 = body = body->nd_next;
 
 	    if (NOEX_SAFE(flags) > ruby_safe_level) {
-		if (!(flags&NOEX_TAINTED) && ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
-		    rb_raise(rb_eSecurityError, "calling insecure method: %s",
-			     rb_id2name(id));
-		}
 		safe = ruby_safe_level;
 		ruby_safe_level = NOEX_SAFE(flags);
 	    }
@@ -6189,7 +6191,7 @@ backtrace(lev)
 	if (frame->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     ruby_sourcefile, ruby_sourceline,
-		     rb_id2name(frame->orig_func));
+		     rb_id2name(frame->last_func));
 	}
 	else if (ruby_sourceline == 0) {
 	    snprintf(buf, BUFSIZ, "%s", ruby_sourcefile);
@@ -6214,7 +6216,7 @@ backtrace(lev)
 	    if (frame->prev->node == n) continue;
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     n->nd_file, nd_line(n),
-		     rb_id2name(frame->prev->orig_func));
+		     rb_id2name(frame->prev->last_func));
 	}
 	else {
 	    snprintf(buf, BUFSIZ, "%s:%d", n->nd_file, nd_line(n));
@@ -6588,7 +6590,7 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(Qundef, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
+    return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
 }
 
 /* block eval under the class/module context */
