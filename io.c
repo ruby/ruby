@@ -2149,6 +2149,9 @@ rb_io_close(io)
  *  an <code>IOError</code> is raised if such an attempt is made. I/O
  *  streams are automatically closed when they are claimed by the
  *  garbage collector.
+ *
+ *  If <em>ios</em> is opened by <code>IO.popen</code>,
+ *  <code>close</code> sets <code>$?</code>.
  */
 
 static VALUE
@@ -3062,7 +3065,9 @@ retry:
  *     
  *  If a block is given, Ruby will run the command as a child connected
  *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
- *  parameter to the block. In this case <code>IO::popen</code> returns
+ *  parameter to the block.
+ *  At the end of block, Ruby close the pipe and sets <code>$?</code>.
+ *  In this case <code>IO::popen</code> returns
  *  the value of the block.
  *     
  *  If a block is given with a <i>cmd_string</i> of ``<code>-</code>'',
@@ -3078,6 +3083,7 @@ retry:
  *     puts "Parent is #{Process.pid}"
  *     IO.popen ("date") { |f| puts f.gets }
  *     IO.popen("-") {|f| $stderr.puts "#{Process.pid} is here, f is #{f}"}
+ *     p $?
  *     
  *  <em>produces:</em>
  *     
@@ -3086,6 +3092,7 @@ retry:
  *     Wed Apr  9 08:53:52 CDT 2003
  *     26169 is here, f is
  *     26166 is here, f is #<IO:0x401b3d44>
+ *     #<Process::Status: pid=26166,exited(0)>
  */
 
 static VALUE
