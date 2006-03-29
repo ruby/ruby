@@ -9,14 +9,14 @@ excel = WIN32OLE.new("excel.application")
 
 # Create and rotate the chart
 
-excel['Visible'] = TRUE;
+excel.visible = TRUE;
 excel.Workbooks.Add();
-excel.Range("a1")['Value'] = 3;
-excel.Range("a2")['Value'] = 2;
-excel.Range("a3")['Value'] = 1;
+excel.Range("a1").value = 3;
+excel.Range("a2").value = 2;
+excel.Range("a3").value = 1;
 excel.Range("a1:a3").Select();
 excelchart = excel.Charts.Add();
-excelchart['Type'] = ChartTypeVal;
+excelchart.type = ChartTypeVal;
 
 i = 30
 i.step(180, 10) do |rot|

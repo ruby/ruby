@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.2"
+#define WIN32OLE_VERSION "0.7.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -148,6 +148,7 @@ VALUE cWIN32OLE_EVENT;
 VALUE cWIN32OLE_VARIANT;
 VALUE eWIN32OLE_RUNTIME_ERROR;
 VALUE mWIN32OLE_VARIANT;
+VALUE cWIN32OLE_PROPERTY;
 
 static VALUE ary_ole_event;
 static ID id_events;
@@ -206,9 +207,10 @@ static VALUE foletype_s_allocate _((VALUE));
 static VALUE oletype_set_member  _((VALUE, ITypeInfo *, VALUE));
 static VALUE olemethod_from_typeinfo _((VALUE, ITypeInfo *, VALUE));
 static HRESULT ole_docinfo_from_type _((ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR *));
-static char *ole_wc2mb(LPWSTR);
-static VALUE ole_variant2val(VARIANT*);
-static void ole_val2variant(VALUE, VARIANT*);
+static char *ole_wc2mb _((LPWSTR));
+static VALUE ole_variant2val _((VARIANT*));
+static void ole_val2variant _((VALUE, VARIANT*));
+static VALUE create_property_object _((VALUE, VALUE, HRESULT, VALUE));
   
 typedef struct _Win32OLEIDispatch
 {
@@ -2375,11 +2377,12 @@ set_argv(realargs, beg, end)
 }
 
 static VALUE
-ole_invoke(argc, argv, self, wFlags)
+ole_invoke(argc, argv, self, wFlags, is_bracket)
     int argc;
     VALUE *argv;
     VALUE self;
     USHORT wFlags;
+    BOOL is_bracket;
 {
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
     struct oledata *pole;
@@ -2417,14 +2420,20 @@ ole_invoke(argc, argv, self, wFlags)
     if(!pole->pDispatch) {
         rb_raise(rb_eRuntimeError, "failed to get dispatch interface");
     }
-    wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
-    hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
-                                                 &wcmdname, 1, lcid, &DispID);
-    SysFreeString(wcmdname);
-    if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "unknown property or method: `%s'",
-                  StringValuePtr(cmd));
+    if (is_bracket) {
+        DispID = DISPID_VALUE;
+        argc += 1;
+        rb_funcall(paramS, rb_intern("unshift"), 1, cmd);
+    } else {
+        wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
+        hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
+                &wcmdname, 1, lcid, &DispID);
+        SysFreeString(wcmdname);
+        if(FAILED(hr)) {
+            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+                    "unknown property or method: `%s'",
+                    StringValuePtr(cmd));
+        }
     }
 
     /* pick up last argument of method */
@@ -2575,8 +2584,26 @@ ole_invoke(argc, argv, self, wFlags)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s%s",
-                  StringValuePtr(cmd), StringValuePtr(v));
+        if (is_bracket) {
+            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s",
+                      StringValuePtr(v));
+        } else {
+            /* 
+             * This is the trick to save following script.
+             * 
+             *   installer = WIN32OLE.new("WindowsInstaller.Installer")
+             *   record = installer.CreateRecord(2)
+             *   record.StringData[1] =  'ffff'
+             * 
+             * record.StringData failed, but we expect [] or []= 
+             * method called next, so we use this trick.
+             *
+             * If this trick may be confused.
+             * If so, we should raise WIN32OLERuntimeError here...
+             * And we give up saving the above script.
+             */
+            return create_property_object(self, cmd, hr, v);
+        }
     }
     obj = ole_variant2val(&result);
     VariantClear(&result);
@@ -2602,7 +2629,7 @@ fole_invoke(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET);
+    return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
 }
 
 static VALUE
@@ -2871,10 +2898,27 @@ fole_setproperty2(self, dispid, args, types)
  *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
  * 
  *  Sets property of OLE object.
+ *
+ */
+static VALUE
+fole_setproperty_with_bracket(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE['property']=val 
+ *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+ * 
+ *  Sets property of OLE object.
  *  When you want to set property with argument, you can use this method.
  *
  *     excel = WIN32OLE.new('Excel.Application')
- *     excel['Visible'] = true
+ *     excel.Visible = true
  *     book = excel.workbooks.add
  *     sheet = book.worksheets(1)
  *     sheet.setproperty('Cells', 1, 2, 10) # => The B1 cell value is 10.
@@ -2885,7 +2929,7 @@ fole_setproperty(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT);
+    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
 }
 
 /*
@@ -2898,10 +2942,12 @@ fole_setproperty(argc, argv, self)
  *     puts excel['Visible'] # => false
  */
 static VALUE
-fole_getproperty(self, property)
-    VALUE self, property;
+fole_getproperty_with_bracket(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    return ole_invoke(1, &property, self, DISPATCH_PROPERTYGET);
+    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
 }
 
 static VALUE
@@ -3101,7 +3147,7 @@ fole_missing(argc, argv, self)
     }
     else {
         argv[0] = rb_str_new2(mname);
-        return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET);
+        return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }
 
@@ -4404,6 +4450,18 @@ foletypelib_ole_classes(self)
     return classes;
 }
 
+static VALUE
+foletypelib_inspect(self)
+    VALUE self;
+{
+    VALUE str;
+    VALUE to_s;
+    str = rb_str_new2("#<WIN32OLE_TYPELIB:");
+    to_s = rb_funcall(self, rb_intern("to_s"), 0);
+    rb_str_concat(str, to_s);
+    rb_str_cat2(str, ">");
+    return str;
+}
 
 /*
  * Document-class: WIN32OLE_TYPE
@@ -7146,6 +7204,57 @@ folevariant_value(self)
     return val;
 }
 
+static VALUE
+create_property_object(oleobj, propname, prehr, premsg) 
+    VALUE oleobj;
+    VALUE propname;
+    HRESULT prehr;
+    VALUE premsg;
+{
+    VALUE prop = rb_funcall(cWIN32OLE_PROPERTY, rb_intern("new"), 0);
+    rb_ivar_set(prop, rb_intern("oleobj"), oleobj);
+    rb_ivar_set(prop, rb_intern("property"), propname);
+    rb_ivar_set(prop, rb_intern("prehresult"), INT2NUM(prehr));
+    rb_ivar_set(prop, rb_intern("premsg"), premsg);
+    return prop;
+}
+
+static VALUE
+foleproperty_getproperty(self, args)
+    VALUE self;
+    VALUE args;
+{
+    VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
+    VALUE params = rb_ary_new();
+    rb_ary_push(params, rb_ivar_get(self, rb_intern("property")));
+    rb_ary_concat(params, args);
+    return rb_apply(oleobj, rb_intern("[]"), params);
+}
+
+static VALUE
+foleproperty_setproperty(self, args)
+    VALUE self;
+    VALUE args;
+{
+    VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
+    VALUE params = rb_ary_new();
+    rb_ary_push(params, rb_ivar_get(self, rb_intern("property")));
+    rb_ary_concat(params, args);
+    return rb_apply(oleobj, rb_intern("setproperty"), params);
+}
+
+static VALUE
+foleproperty_method_missing(self, args)
+    VALUE self;
+    VALUE args;
+{
+    HRESULT hr = NUM2INT(rb_ivar_get(self, rb_intern("prehresult")));
+    VALUE prop = rb_ivar_get(self, rb_intern("property"));
+    VALUE msg = rb_ivar_get(self, rb_intern("premsg"));
+    ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s%s",
+              StringValuePtr(prop), StringValuePtr(msg));
+}
+
 void
 Init_win32ole()
 {
@@ -7180,13 +7289,13 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "create_guid", fole_s_create_guid, 0);
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
-    rb_define_method(cWIN32OLE, "[]", fole_getproperty, 1);
+    rb_define_method(cWIN32OLE, "[]", fole_getproperty_with_bracket, -1);
     rb_define_method(cWIN32OLE, "_invoke", fole_invoke2, 3);
     rb_define_method(cWIN32OLE, "_getproperty", fole_getproperty2, 3);
     rb_define_method(cWIN32OLE, "_setproperty", fole_setproperty2, 3);
 
     /* support propput method that takes an argument */
-    rb_define_method(cWIN32OLE, "[]=", fole_setproperty, -1); 
+    rb_define_method(cWIN32OLE, "[]=", fole_setproperty_with_bracket, -1); 
 
     rb_define_method(cWIN32OLE, "ole_free", fole_free, 0);
 
@@ -7252,6 +7361,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPELIB, "path", foletypelib_path, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "ole_classes", foletypelib_ole_classes, 0);
     rb_define_alias(cWIN32OLE_TYPELIB, "to_s", "name");
+    rb_define_method(cWIN32OLE_TYPELIB, "inspect", foletypelib_inspect, 0);
     
     cWIN32OLE_TYPE = rb_define_class("WIN32OLE_TYPE", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_TYPE, "ole_classes", foletype_s_ole_classes, 1);
@@ -7337,4 +7447,9 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_VARIANT, "value", folevariant_value, 0);
 
     eWIN32OLE_RUNTIME_ERROR = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
+
+    cWIN32OLE_PROPERTY = rb_define_class_under(cWIN32OLE, "PROPERTY", rb_cObject);
+    rb_define_method(cWIN32OLE_PROPERTY, "[]", foleproperty_getproperty, -2);
+    rb_define_method(cWIN32OLE_PROPERTY, "[]=", foleproperty_setproperty, -2);
+    rb_define_method(cWIN32OLE_PROPERTY, "method_missing", foleproperty_method_missing, -2);
 }

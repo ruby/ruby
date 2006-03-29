@@ -139,9 +139,9 @@ class TestWin32OLE < RUNIT::TestCase
     book = @excel.workbooks.add
     sheet = book.worksheets(1)
     begin
-      sheet.range("A1")['Value'] = 10
+      sheet.range("A1").value = 10
       assert_equal(10, sheet.range("A1").value)
-      sheet['Cells', 1, 2] = 10
+      sheet.cells[1, 2] = 10
       assert_equal(10, sheet.range("B1").value)
     ensure
       book.saved = true
@@ -322,7 +322,7 @@ class TestWin32OLE_WITH_MSI < Test::Unit::TestCase
     assert_equal('dddd', @record.StringData(1))
   end
   def test_bracket_equal_with_arg
-    @record[ "StringData", 1 ] =  'ffff'
+    @record.StringData[1] =  'ffff'
     assert_equal('ffff', @record.StringData(1))
   end
 

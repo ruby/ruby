@@ -1,3 +1,12 @@
+Wed Mar 29 23:06:48 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): change the behavior of 
+	  WIN32OLE#[], WIN32OLE#[]=. These methods invoke DISPID_VALUE.
+
+	* ext/win32ole/sample/excel2.rb: ditto.
+
+	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
 Wed Mar 29 10:11:31 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_each_char_to_hex, encode_fallback_subchar,
