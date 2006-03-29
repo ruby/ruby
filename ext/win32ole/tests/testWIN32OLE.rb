@@ -142,6 +142,7 @@ class TestWin32OLE < RUNIT::TestCase
       assert_equal(10, sheet.range("A1").value)
       sheet['Cells', 1, 2] = 10
       assert_equal(10, sheet.range("B1").value)
+      assert_equal(10, sheet['Cells', 1, 2].value)
     ensure
       book.saved = true
     end

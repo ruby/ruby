@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.5"
+#define WIN32OLE_VERSION "0.6.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2476,10 +2476,12 @@ fole_setproperty(argc, argv, self)
  *     puts excel['Visible'] # => false
  */
 static VALUE
-fole_getproperty(self, property)
-    VALUE self, property;
+fole_getproperty(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    return ole_invoke(1, &property, self, DISPATCH_PROPERTYGET);
+    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET);
 }
 
 static VALUE
@@ -6110,7 +6112,7 @@ Init_win32ole()
 
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
-    rb_define_method(cWIN32OLE, "[]", fole_getproperty, 1);
+    rb_define_method(cWIN32OLE, "[]", fole_getproperty, -1);
     rb_define_method(cWIN32OLE, "_invoke", fole_invoke2, 3);
     rb_define_method(cWIN32OLE, "_getproperty", fole_getproperty2, 3);
     rb_define_method(cWIN32OLE, "_setproperty", fole_setproperty2, 3);

@@ -1,3 +1,10 @@
+Wed Mar 29 20:54:44 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_getproperty): WIN32OLE#[] should accept 
+	  multi arguments. 
+
+	* ext/win32ole/tests/testWIN32OLE.rb (test_setproperty_bracket): ditto.
+
 Wed Mar 29 10:07:44 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_each_char_to_hex, encode_fallback_subchar,
