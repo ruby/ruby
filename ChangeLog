@@ -1,3 +1,8 @@
+Wed Mar 29 10:07:44 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (nkf_each_char_to_hex, encode_fallback_subchar,
+	  e2w_conv): support C90 compiler.
+
 Wed Mar 29 06:48:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (backtrace): reports aliased method names in a generated
