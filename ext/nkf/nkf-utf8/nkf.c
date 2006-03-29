@@ -3324,8 +3324,8 @@ nkf_each_char_to_hex(f, c)
     int c;
 {
     const char *hex = "0123456789ABCDEF";
-    c &= 0x00FFFFFF;
     int shift = 20;
+    c &= 0x00FFFFFF;
     while(shift >= 0){
 	if(c >= 1<<shift){
 	    while(shift >= 0){
@@ -3414,10 +3414,10 @@ void
 encode_fallback_subchar(c)
     int c;
 {
+    int shift = 16;
     c = unicode_subchar;
     (*oconv)((c>>8)&0xFF, c&0xFF);
     return;
-    int shift = 16;
     while(shift >= 0){
 	if(c >= 1<<shift){
 	    while(shift >= 0){
@@ -3446,10 +3446,10 @@ e2w_conv(c2, c1)
         p = euc_to_utf8_1byte;
 #ifdef X0212_ENABLE
     } else if (c2 >> 8 == 0x8f){
+        extern const unsigned short *const x0212_to_utf8_2bytes[];
 	if(ms_ucs_map_f == UCS_MAP_ASCII&& c2 == 0x8F22 && c1 == 0x43){
 	    return 0xA6;
 	}
-        extern const unsigned short *const x0212_to_utf8_2bytes[];
         c2 = (c2&0x7f) - 0x21;
         if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
 	    p = x0212_to_utf8_2bytes[c2];
