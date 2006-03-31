@@ -1,6 +1,11 @@
+Fri Mar 31 14:24:55 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_with_index): removed suspicious return
+	  statement.
+
 Wed Mar 29 23:06:48 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_invoke): change the behavior of 
+	* ext/win32ole/win32ole.c (ole_invoke): change the behavior of
 	  WIN32OLE#[], WIN32OLE#[]=. These methods invoke DISPID_VALUE.
 
 	* ext/win32ole/sample/excel2.rb: ditto.
@@ -48,7 +53,7 @@ Fri Mar 24 21:11:02 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 Thu Mar 23 21:40:47 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (rb_reg_regsub): prohibit \1, \2 ...\9 in replaced string
-          for named regex pattern.
+	  for named regex pattern.
 
 Thu Mar 23 21:06:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
@@ -62,10 +67,10 @@ Thu Mar 23 21:06:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 Thu Mar 23 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
-	* re.c (rb_reg_regsub): add back reference by name \k<name> in 
+	* re.c (rb_reg_regsub): add back reference by name \k<name> in
 	  replace string.
 
-	* re.h : add regexp argument to rb_reg_regsub(). 
+	* re.h : add regexp argument to rb_reg_regsub().
 
 	* string.c (rb_str_sub_bang): ditto.
 
@@ -77,7 +82,7 @@ Tue Mar 21 22:14:01 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (match_aref): add String and Symbol argument. [ruby-dev:28448]
 
-	* re.h : add member regexp to RMatch. 
+	* re.h : add member regexp to RMatch.
 
 	* gc.c (gc_mark_children): add gc_mark() to regexp member.
 
@@ -88,8 +93,8 @@ Mon Mar 20 11:12:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Sun Mar 19 09:46:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_val2olevariantdata): change behavior 
-	  of converting  OLE Variant object with VT_ARRAY|VT_UI1 and Ruby 
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata): change behavior
+	  of converting  OLE Variant object with VT_ARRAY|VT_UI1 and Ruby
 	  String object.
 
 	* ext/win32ole/win32ole.c (folevariant_value): ditto.
@@ -103,16 +108,16 @@ Wed Mar 15 16:51:11 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Mar 15 16:39:29 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c, ext/openssl/ossl_nsspki.c: should use
-	  "rb_str_new(0, 0)" to make empty string. 
+	  "rb_str_new(0, 0)" to make empty string.
 
 Sun Mar 12 17:02:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c(ole_val2olevariantdata): support VT_ARRAY in 
+	* ext/win32ole/win32ole.c(ole_val2olevariantdata): support VT_ARRAY in
 	  WIN32OLE_VARIANT.new().
 
 	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
 
-	* ext/win32ole/tests/testOLEPARAM.rb: test method name should not be 
+	* ext/win32ole/tests/testOLEPARAM.rb: test method name should not be
 	  duplicated.
 
 Sun Mar  5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
@@ -152,7 +157,7 @@ Thu Mar  2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Thu Mar  2 14:12:26 2006  Tanaka Akira  <akr@m17n.org>
 
-	* gc.c: align VALUE with sizeof(RVALUE) globally. 
+	* gc.c: align VALUE with sizeof(RVALUE) globally.
 	  (is_pointer_to_heap): check alignment out of loop.
 	  (id2ref): avoid collision between symbols and objects.
 	  (rb_obj_id): ditto.  moved from object.c.
@@ -227,7 +232,7 @@ Mon Feb 20 22:30:17 2006  Tanaka Akira  <akr@m17n.org>
 Mon Feb 20 18:21:41 2006  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_reopen): flush before reopening a file.
-	  reported by Mathieu Bouchard.  [ruby-core:7396] 
+	  reported by Mathieu Bouchard.  [ruby-core:7396]
 
 Mon Feb 20 17:29:50 2006  Tanaka Akira  <akr@m17n.org>
 
@@ -264,11 +269,11 @@ Mon Feb 20 09:17:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Feb 20 09:13:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler): 
-	  qualify the access for Config constant.  [ruby-dev:28338] 
+	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler):
+	  qualify the access for Config constant.  [ruby-dev:28338]
 
 	* lib/resolv.rb (Resolv::DNS::Resource::IN::A): qualify
-	  ClassValue.  [ruby-dev:28338] 
+	  ClassValue.  [ruby-dev:28338]
 
 Mon Feb 20 01:05:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -641,7 +646,7 @@ Sat Jan 28 07:49:30 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Thu Jan 26 15:55:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/socket/socket.c: turn on do_not_reverse_lookup by default. 
+	* ext/socket/socket.c: turn on do_not_reverse_lookup by default.
 
 Wed Jan 25 22:29:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

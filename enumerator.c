@@ -355,8 +355,6 @@ enumerator_with_index(VALUE obj)
 	argc = RARRAY(e->args)->len;
 	argv = RARRAY(e->args)->ptr;
     }
-    return rb_block_call(e->method, rb_intern("call"), argc, argv, e->iter, (VALUE)e);
-
     return rb_block_call(e->method, rb_intern("call"), argc, argv,
 			 enumerator_with_index_i, (VALUE)&memo);
 }
