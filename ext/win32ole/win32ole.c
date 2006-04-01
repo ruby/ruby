@@ -1243,6 +1243,29 @@ ole_val2variant2(val, var)
 }
 
 static VALUE
+make_inspect(class_name, detail) 
+    const char *class_name;
+    VALUE detail;
+{
+    VALUE str;
+    str = rb_str_new2("#<");
+    rb_str_cat2(str, class_name);
+    rb_str_cat2(str, ":");
+    rb_str_concat(str, detail);
+    rb_str_cat2(str, ">");
+    return str;
+}
+
+static VALUE
+default_inspect(self, class_name) 
+    VALUE self;
+    const char *class_name;
+{
+    VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
+    return make_inspect(class_name, detail);
+}
+
+static VALUE
 ole_set_member(self, dispatch)
     VALUE self;
     IDispatch * dispatch;
@@ -1256,6 +1279,7 @@ ole_set_member(self, dispatch)
     pole->pDispatch = dispatch;
     return self;
 }
+
 
 static VALUE fole_s_allocate _((VALUE));
 static VALUE
@@ -4454,13 +4478,7 @@ static VALUE
 foletypelib_inspect(self)
     VALUE self;
 {
-    VALUE str;
-    VALUE to_s;
-    str = rb_str_new2("#<WIN32OLE_TYPELIB:");
-    to_s = rb_funcall(self, rb_intern("to_s"), 0);
-    rb_str_concat(str, to_s);
-    rb_str_cat2(str, ">");
-    return str;
+    return default_inspect(self, "WIN32OLE_TYPELIB");
 }
 
 /*
@@ -5000,6 +5018,13 @@ foletype_impl_ole_types(self)
 }
 
 static VALUE
+foletype_inspect(self)
+    VALUE self;
+{
+    return default_inspect(self, "WIN32OLE_TYPE");
+}
+
+static VALUE
 ole_variables(pTypeInfo)
     ITypeInfo *pTypeInfo;
 {
@@ -5086,9 +5111,7 @@ foletype_variables(self)
  *    # => ['Activate', 'Copy', 'Delete',....]
  */
 static VALUE
-foletype_methods(argc, argv, self)
-    int argc;
-    VALUE *argv;
+foletype_methods(self)
     VALUE self;
 {
     struct oletypedata *ptype;
@@ -5407,6 +5430,16 @@ folevariable_varkind(self)
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
     return ole_variable_varkind(pvar->pTypeInfo, pvar->index);
+}
+
+static VALUE
+folevariable_inspect(self)
+    VALUE self;
+{
+    VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
+    rb_str_cat2(detail, "=");
+    rb_str_concat(detail, rb_funcall(rb_funcall(self, rb_intern("value"), 0), rb_intern("inspect"), 0));
+    return make_inspect("WIN32OLE_VARIABLE", detail);
 }
 
 /*
@@ -7375,7 +7408,6 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPE, "progid", foletype_progid, 0);
     rb_define_method(cWIN32OLE_TYPE, "visible?", foletype_visible, 0);
     rb_define_alias(cWIN32OLE_TYPE, "to_s", "name");
-
     rb_define_method(cWIN32OLE_TYPE, "major_version", foletype_major_version, 0);
     rb_define_method(cWIN32OLE_TYPE, "minor_version", foletype_minor_version, 0);
     rb_define_method(cWIN32OLE_TYPE, "typekind", foletype_typekind, 0);
@@ -7384,9 +7416,10 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPE, "helpfile", foletype_helpfile, 0);
     rb_define_method(cWIN32OLE_TYPE, "helpcontext", foletype_helpcontext, 0);
     rb_define_method(cWIN32OLE_TYPE, "variables", foletype_variables, 0);
-    rb_define_method(cWIN32OLE_TYPE, "ole_methods", foletype_methods, -1);
+    rb_define_method(cWIN32OLE_TYPE, "ole_methods", foletype_methods, 0);
     rb_define_method(cWIN32OLE_TYPE, "ole_typelib", foletype_ole_typelib, 0);
     rb_define_method(cWIN32OLE_TYPE, "implemented_ole_types", foletype_impl_ole_types, 0);
+    rb_define_method(cWIN32OLE_TYPE, "inspect", foletype_inspect, 0);
 
     cWIN32OLE_VARIABLE = rb_define_class("WIN32OLE_VARIABLE", rb_cObject);
     rb_define_method(cWIN32OLE_VARIABLE, "name", folevariable_name, 0);
@@ -7396,12 +7429,12 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_VARIABLE, "visible?", folevariable_visible, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "variable_kind", folevariable_variable_kind, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "varkind", folevariable_varkind, 0);
+    rb_define_method(cWIN32OLE_VARIABLE, "inspect", folevariable_inspect, 0);
     rb_define_alias(cWIN32OLE_VARIABLE, "to_s", "name");
 
     cWIN32OLE_METHOD = rb_define_class("WIN32OLE_METHOD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);
     rb_define_method(cWIN32OLE_METHOD, "initialize", folemethod_initialize, 2);
-
     rb_define_method(cWIN32OLE_METHOD, "name", folemethod_name, 0);
     rb_define_method(cWIN32OLE_METHOD, "return_type", folemethod_return_type, 0);
     rb_define_method(cWIN32OLE_METHOD, "return_vtype", folemethod_return_vtype, 0);
