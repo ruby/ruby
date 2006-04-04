@@ -237,7 +237,7 @@ class Pathname
 
   # Return a pathname which is substituted by String#sub.
   def sub(pattern, *rest, &block)
-    Pathname.new(@path.sub(pattern, *rest, &block))
+    self.class.new(@path.sub(pattern, *rest, &block))
   end
 
   if File::ALT_SEPARATOR
@@ -322,7 +322,7 @@ class Pathname
     if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
       names.shift while names[0] == '..'
     end
-    Pathname.new(prepend_prefix(pre, File.join(*names)))
+    self.class.new(prepend_prefix(pre, File.join(*names)))
   end
   private :cleanpath_aggressive
 
@@ -371,16 +371,16 @@ class Pathname
       names.shift while names[0] == '..'
     end
     if names.empty?
-      File.dirname(pre)
+      self.class.new(File.dirname(pre))
     else
       if names.last != '..' && File.basename(path) == '.'
         names << '.'
       end
       result = prepend_prefix(pre, File.join(*names))
       if /\A(?:\.|\.\.)\z/ !~ names.last && has_trailing_separator?(path)
-        Pathname.new(add_trailing_separator(result))
+        self.class.new(add_trailing_separator(result))
       else
-        Pathname.new(result)
+        self.class.new(result)
       end
     end
   end
@@ -437,7 +437,7 @@ class Pathname
       names = names2 + names
     end
     prefix, *names = realpath_rec(prefix, names, {})
-    Pathname.new(prepend_prefix(prefix, File.join(*names)))
+    self.class.new(prepend_prefix(prefix, File.join(*names)))
   end
 
   # #parent returns the parent directory.
@@ -518,6 +518,7 @@ class Pathname
     vs = []
     ascend {|v| vs << v }
     vs.reverse_each {|v| yield v }
+    nil
   end
 
   # Iterates over and yields a new Pathname object
@@ -544,7 +545,7 @@ class Pathname
     while r = chop_basename(path)
       path, name = r
       break if path.empty?
-      yield Pathname.new(del_trailing_separator(path))
+      yield self.class.new(del_trailing_separator(path))
     end
   end
 
@@ -603,6 +604,7 @@ class Pathname
       r1 ? prefix1 : File.dirname(prefix1)
     end
   end
+  private :plus
 
   #
   # Pathname#join joins pathnames.
@@ -650,9 +652,9 @@ class Pathname
     Dir.foreach(@path) {|e|
       next if e == '.' || e == '..'
       if with_directory
-        result << Pathname.new(File.join(@path, e))
+        result << self.class.new(File.join(@path, e))
       else
-        result << Pathname.new(e)
+        result << self.class.new(e)
       end
     }
     result
@@ -778,7 +780,7 @@ class Pathname    # * File *
   end
 
   # See <tt>File.readlink</tt>.  Read symbolic link.
-  def readlink() Pathname.new(File.readlink(@path)) end
+  def readlink() self.class.new(File.readlink(@path)) end
 
   # See <tt>File.rename</tt>.  Rename the file.
   def rename(to) File.rename(@path, to) end
@@ -799,20 +801,20 @@ class Pathname    # * File *
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
   # See <tt>File.basename</tt>.  Returns the last component of the path.
-  def basename(*args) Pathname.new(File.basename(@path, *args)) end
+  def basename(*args) self.class.new(File.basename(@path, *args)) end
 
   # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
-  def dirname() Pathname.new(File.dirname(@path)) end
+  def dirname() self.class.new(File.dirname(@path)) end
 
   # See <tt>File.extname</tt>.  Returns the file's extension.
   def extname() File.extname(@path) end
 
   # See <tt>File.expand_path</tt>.
-  def expand_path(*args) Pathname.new(File.expand_path(@path, *args)) end
+  def expand_path(*args) self.class.new(File.expand_path(@path, *args)) end
 
   # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
   # Array.
-  def split() File.split(@path).map {|f| Pathname.new(f) } end
+  def split() File.split(@path).map {|f| self.class.new(f) } end
 
   # Pathname#link is confusing and *obsoleted* because the receiver/argument
   # order is inverted to corresponding system call.
@@ -910,14 +912,14 @@ class Pathname    # * Dir *
   # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
   def Pathname.glob(*args) # :yield: p
     if block_given?
-      Dir.glob(*args) {|f| yield Pathname.new(f) }
+      Dir.glob(*args) {|f| yield self.new(f) }
     else
-      Dir.glob(*args).map {|f| Pathname.new(f) }
+      Dir.glob(*args).map {|f| self.new(f) }
     end
   end
 
   # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
-  def Pathname.getwd() Pathname.new(Dir.getwd) end
+  def Pathname.getwd() self.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
   # Pathname#chdir is *obsoleted* at 1.8.1.
@@ -934,14 +936,14 @@ class Pathname    # * Dir *
 
   # Return the entries (files and subdirectories) in the directory, each as a
   # Pathname object.
-  def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
+  def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
 
   # Iterates over the entries (files and subdirectories) in the directory.  It
   # yields a Pathname object for each entry.
   #
   # This method has existed since 1.8.1.
   def each_entry(&block) # :yield: p
-    Dir.foreach(@path) {|f| yield Pathname.new(f) }
+    Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
   # Pathname#dir_foreach is *obsoleted* at 1.8.1.
@@ -977,9 +979,9 @@ class Pathname    # * Find *
   def find(&block) # :yield: p
     require 'find'
     if @path == '.'
-      Find.find(@path) {|f| yield Pathname.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
     else
-      Find.find(@path) {|f| yield Pathname.new(f) }
+      Find.find(@path) {|f| yield self.class.new(f) }
     end
   end
 end
