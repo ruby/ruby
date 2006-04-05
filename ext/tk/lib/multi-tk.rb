@@ -142,7 +142,7 @@ class MultiTkIp
 
   ######################################
 
-  @@CB_ENTRY_CLASS = Class.new(TkCallbackEntry){|c|
+  @@CB_ENTRY_CLASS = Class.new(TkCallbackEntry){
     def initialize(ip, cmd)
       @ip = ip
       @cmd = cmd
