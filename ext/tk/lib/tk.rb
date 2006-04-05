@@ -1121,8 +1121,8 @@ module TkCore
       @init_ip_env  = [].taint  # table of Procs
       @add_tk_procs = [].taint  # table of [name, args, body]
 
-      @cb_entry_class = Class.new(TkCallbackEntry){|c|
-        class << c
+      @cb_entry_class = Class.new(TkCallbackEntry){
+        class << self
           def inspect
             sprintf("#<Class(TkCallbackEntry):%0x>", self.__id__)
           end
@@ -2310,11 +2310,15 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
   end
 
   module TclTkLib
-    def self.encoding=(name)
-      TkCore::INTERP.encoding = name
-    end
-    def self.encoding
-      TkCore::INTERP.encoding
+    class << self
+      alias _encoding encoding
+      alias _encoding= encoding=
+      def encoding=(name)
+        TkCore::INTERP.encoding = name
+      end
+      def encoding
+        TkCore::INTERP.encoding
+      end
     end
   end
 
@@ -4555,7 +4559,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-12-07'.freeze
+  RELEASE_DATE = '2006-04-06'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

@@ -1,3 +1,22 @@
+Thu Apr  6 01:04:47 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: fix SEGV when embedding to an application.
+	  [ruby-core:7600]
+
+	* ext/tk/tcltklib.c: fix SEGV at exit. [ruby-talk:186489]
+
+	* ext/tk/tkutil/tkutil.c: follow to changing specification of
+	  instance_eval on ruby-1.9.x.
+
+	* ext/tk/lib/tk.rb: ditto.
+
+	* ext/tk/lib/multi-tk.rb: ditto.
+
+	* ext/tk/lib/tk.rb: remove warning about redefinition of methods.
+
+	* ext/tk/lib/tk/variable.rb: remove warning about unseting Tcl
+	  variables.
+
 Wed Mar 29 20:54:44 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fole_getproperty): WIN32OLE#[] should accept 

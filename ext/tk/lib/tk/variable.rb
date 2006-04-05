@@ -266,8 +266,11 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
 
   def initialize(val="", type=nil)
     # @id = Tk_VARIABLE_ID.join('')
-    @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
-    Tk_VARIABLE_ID[1].succ!
+    begin
+      @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
+      Tk_VARIABLE_ID[1].succ!
+    end until INTERP._invoke_without_enc('info', 'globals', @id).empty?
+
     TkVar_ID_TBL[@id] = self
 
     @var  = @id
@@ -285,11 +288,6 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     @element_type = Hash.new{|k,v| var.default_value_type }
 
     self.default_value_type = type
-
-    begin
-      INTERP._unset_global_var(@id)
-    rescue
-    end
 
     # teach Tk-ip that @id is global var
     INTERP._invoke_without_enc('global', @id)

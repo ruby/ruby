@@ -8,10 +8,11 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-11-07"
+#define TKUTIL_RELEASE_DATE "2006-04-06"
 
 #include "ruby.h"
 #include "rubysig.h"
+#include "version.h"
 #include "st.h"
 
 static VALUE cMethod;
@@ -57,7 +58,13 @@ tk_s_new(argc, argv, klass)
 {
     VALUE obj = rb_class_new_instance(argc, argv, klass);
 
-    if (rb_block_given_p()) rb_obj_instance_eval(0, 0, obj);
+    if (rb_block_given_p()) {
+#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR <= 8 /* ruby 1.8.x */
+      rb_obj_instance_eval(0, 0, obj);
+#else
+      rb_obj_instance_exec(1, &obj, obj);
+#endif
+    }
     return obj;
 }
 

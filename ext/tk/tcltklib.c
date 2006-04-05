@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-12-07"
+#define TCLTKLIB_RELEASE_DATE "2006-04-06"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -1140,8 +1140,11 @@ set_max_block_time(self, time)
         tcl_time.usec = (long)(NUM2DBL(RARRAY(divmod)->ptr[1]) * 1000000);
 
     default:
-        rb_raise(rb_eArgError, "invalid value for time: '%s'", 
-                 RSTRING(rb_funcall(time, ID_inspect, 0, 0))->ptr);
+        {
+	    VALUE tmp = rb_funcall(time, ID_inspect, 0, 0);
+	    rb_raise(rb_eArgError, "invalid value for time: '%s'", 
+		     StringValuePtr(tmp));
+	}
     }
 
     Tcl_SetMaxBlockTime(&tcl_time);
@@ -2132,6 +2135,7 @@ ip_set_exc_message(interp, exc)
     rb_thread_critical = Qtrue;
 
     msg = rb_funcall(exc, ID_message, 0, 0);
+    StringValue(msg);
 
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
     enc = rb_attr_get(exc, ID_at_enc);
@@ -4355,18 +4359,24 @@ ip_finalize(ip)
 {
     Tcl_CmdInfo info;
     int  thr_crit_bup;
-    int  rb_debug_bup;  /* When ruby is exiting, printing debug messages in 
-                           some callback operations from Tcl-IP sometimes 
-                           cause SEGV. I don't know the reason. But I got 
-                           SEGV when calling "rb_io_write(rb_stdout, ...)".
-                           So, in some part of this function, debug mode is 
-                           disabled. If you know the reason, please fix it.
-                           --  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp) */
+
+    VALUE rb_debug_bup, rb_verbose_bup;
+          /* When ruby is exiting, printing debug messages in some callback 
+             operations from Tcl-IP sometimes cause SEGV. I don't know the 
+             reason. But I got SEGV when calling "rb_io_write(rb_stdout, ...)".
+             So, in some part of this function, debug mode and verbose mode 
+             are disabled. If you know the reason, please fix it.
+                           --  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)  */
 
     DUMP1("start ip_finalize");
 
     if (ip == (Tcl_Interp*)NULL) {
         DUMP1("ip is NULL");
+        return;
+    }
+
+    if (Tcl_InterpDeleted(ip)) {
+        DUMP2("ip(%lx) is already deleted", ip);
         return;
     }
 
@@ -4380,7 +4390,8 @@ ip_finalize(ip)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    rb_debug_bup = ruby_debug;
+    rb_debug_bup   = ruby_debug;
+    rb_verbose_bup = ruby_verbose;
 
     Tcl_Preserve(ip);
 
@@ -4399,9 +4410,11 @@ ip_finalize(ip)
     DUMP1("destroy root widget");
     if (tk_stubs_init_p() && Tk_MainWindow(ip) != (Tk_Window)NULL) {
         DUMP1("call Tk_DestroyWindow");
-        ruby_debug = 0;
+        ruby_debug   = Qfalse;
+        ruby_verbose = Qnil;
         Tk_DestroyWindow(Tk_MainWindow(ip));
-        ruby_debug = rb_debug_bup;
+        ruby_debug   = rb_debug_bup;
+        ruby_verbose = rb_verbose_bup;
     }
 #endif
 
@@ -4409,24 +4422,29 @@ ip_finalize(ip)
     DUMP1("check `finalize-hook-proc'");
     if (Tcl_GetCommandInfo(ip, finalize_hook_name, &info)) {
         DUMP2("call finalize hook proc '%s'", finalize_hook_name);
-        ruby_debug = 0;
+        ruby_debug   = Qfalse;
+        ruby_verbose = Qnil;
         Tcl_GlobalEval(ip, finalize_hook_name);
-        ruby_debug = rb_debug_bup;
+        ruby_debug   = rb_debug_bup;
+        ruby_verbose = rb_verbose_bup;
     }
 
     DUMP1("check `foreach' & `after'");
     if ( Tcl_GetCommandInfo(ip, "foreach", &info)
          && Tcl_GetCommandInfo(ip, "after", &info) ) {
         DUMP1("cancel after callbacks");
-        ruby_debug = 0;
+        ruby_debug   = Qfalse;
+        ruby_verbose = Qnil;
         Tcl_GlobalEval(ip, "foreach id [after info] {after cancel $id}");
-        ruby_debug = rb_debug_bup;
+        ruby_debug   = rb_debug_bup;
+        ruby_verbose = rb_verbose_bup;
     }
 
     Tcl_Release(ip);
 
     DUMP1("finish ip_finalize");
-    ruby_debug = rb_debug_bup;
+    ruby_debug   = rb_debug_bup;
+    ruby_verbose = rb_verbose_bup;
     rb_thread_critical = thr_crit_bup;
 }
 
@@ -4467,6 +4485,7 @@ ip_free(ptr)
         Tcl_DeleteInterp(ptr->ip); 
         Tcl_Release(ptr->ip); 
 
+        ptr->ip = (Tcl_Interp*)NULL;
         free(ptr);
 
         rb_thread_critical = thr_crit_bup;
@@ -4910,7 +4929,7 @@ ip_create_slave_core(interp, argc, argv)
     slave->allow_ruby_exit = 0;
     slave->return_value = 0;
 
-    slave->ip = Tcl_CreateSlave(master->ip, RSTRING(name)->ptr, safe);
+    slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe);
     if (slave->ip == NULL) {
         rb_thread_critical = thr_crit_bup;
         return rb_exc_new2(rb_eRuntimeError, 
@@ -6192,6 +6211,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             char *s;
             int  len;
 
+            StringValue(str);
             s = Tcl_GetByteArrayFromObj(Tcl_NewStringObj(RSTRING(str)->ptr, 
                                                          RSTRING(str)->len), 
                                         &len);
@@ -6371,7 +6391,7 @@ lib_set_system_encoding(self, enc_name)
 
     enc_name = rb_funcall(enc_name, ID_to_s, 0, 0);
     if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL, 
-                              RSTRING(enc_name)->ptr) != TCL_OK) {
+                              StringValuePtr(enc_name)) != TCL_OK) {
         rb_raise(rb_eArgError, "unknown encoding name '%s'", 
                  RSTRING(enc_name)->ptr);
     }
@@ -7929,7 +7949,7 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+    ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
     switch(ret) {
     case TCLTK_STUBS_OK:
         break;
