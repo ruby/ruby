@@ -63,7 +63,7 @@ class TkPanedWindow<TkWindow
   def sash_coord(index)
     list(tk_send('sash', 'coord', index))
   end
-  def sash_dragto(index)
+  def sash_dragto(index, x, y)
     tk_send('sash', 'dragto', index, x, y)
     self
   end
