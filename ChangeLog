@@ -1,3 +1,7 @@
+Thu Apr  6 11:18:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/panedwindow.rb: lack of arguments. [ruby-core:7681]
+
 Thu Apr  6 01:04:47 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: fix SEGV when embedding to an application.
