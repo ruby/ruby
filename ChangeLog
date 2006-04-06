@@ -1,3 +1,7 @@
+Thu Apr  6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* intern.h (rb_obj_instance_exec, rb_mod_module_exec): add declaration.
+
 Thu Apr  6 11:18:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/panedwindow.rb: lack of arguments. [ruby-core:7681]
