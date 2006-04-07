@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.3"
+#define WIN32OLE_VERSION "0.7.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3531,38 +3531,45 @@ make_oletypelib_obj(guid, major_version, minor_version)
 }
 
 static VALUE
-ole_typelib_from_itypeinfo(pTypeInfo)
-    ITypeInfo *pTypeInfo;
-{
-    HRESULT hr;
+ole_typelib_from_itypelib(pTypeLib)
     ITypeLib *pTypeLib;
+{
     TLIBATTR *pTLibAttr;
     OLECHAR bstr[80];
-    int len;
     VALUE guid = Qnil;
     VALUE major;
     VALUE minor;
-    unsigned int index;
-
-    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
-    if(FAILED(hr)) {
-        return Qnil;
-    }
-
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-
-    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    HRESULT hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    int len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
     if (len > 3) {
         guid = ole_wc2vstr(bstr, FALSE);
     }
     major = INT2NUM(pTLibAttr->wMajorVerNum);
     minor = INT2NUM(pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-    OLE_RELEASE(pTypeLib);
     if (guid == Qnil) {
         return Qnil;
     }
     return make_oletypelib_obj(guid, major, minor);
+}
+
+
+static VALUE
+ole_typelib_from_itypeinfo(pTypeInfo)
+    ITypeInfo *pTypeInfo;
+{
+    HRESULT hr;
+    ITypeLib *pTypeLib;
+    unsigned int index;
+    VALUE retval = Qnil;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
+    if(FAILED(hr)) {
+        return Qnil;
+    }
+    retval = ole_typelib_from_itypelib(pTypeLib);
+    OLE_RELEASE(pTypeLib);
+    return retval;
 }
 
 /*
@@ -4254,7 +4261,8 @@ oletypelib_search_registry(self, typelib)
  *
  * Returns a new WIN32OLE_TYPELIB object.
  *
- * The first argument <i>typelib</i>  specifies OLE type library name or GUID.
+ * The first argument <i>typelib</i>  specifies OLE type library name or GUID or 
+ * OLE library file.
  * The second argument is major version or version of the type library.
  * The third argument is minor version.
  * The second argument and third argument are optional.
@@ -4265,10 +4273,12 @@ oletypelib_search_registry(self, typelib)
  *     tlib2 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}')
  *     tlib3 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1.3)
  *     tlib4 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1, 3)
+ *     tlib5 = WIN32OLE_TYPELIB.new("C:\\WINNT\\SYSTEM32\\SHELL32.DLL")
  *     puts tlib1.name  # -> 'Microsoft Excel 9.0 Object Library'
  *     puts tlib2.name  # -> 'Microsoft Excel 9.0 Object Library'
  *     puts tlib3.name  # -> 'Microsoft Excel 9.0 Object Library'
  *     puts tlib4.name  # -> 'Microsoft Excel 9.0 Object Library'
+ *     puts tlib5.name  # -> 'Microsoft Shell Controls And Automation'
  *
  */
 static VALUE
@@ -4279,6 +4289,11 @@ foletypelib_initialize(self, args)
     VALUE found = Qfalse;
     VALUE typelib = Qnil;
     int len = 0;
+    OLECHAR * pbuf;
+    ITypeLib *pTypeLib;
+    BSTR bstr;
+    VALUE retval;
+    HRESULT hr = S_OK;
 
     len = RARRAY(args)->len;
     if (len < 1 || len > 3) {
@@ -4292,6 +4307,22 @@ foletypelib_initialize(self, args)
     found = oletypelib_search_registry(self, typelib);
     if (found == Qfalse) {
         found = oletypelib_search_registry2(self, args);
+    }
+    if (found == Qfalse) {
+        pbuf = ole_mb2wc(StringValuePtr(typelib), -1);
+        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
+        SysFreeString(pbuf);
+        if (SUCCEEDED(hr)) {
+            retval = ole_typelib_from_itypelib(pTypeLib);
+            OLE_RELEASE(pTypeLib);
+            if (retval != Qnil) {
+                found = Qtrue;
+                oletypelib_set_member(self, 
+                        rb_ivar_get(retval, rb_intern("name")),
+                        rb_ivar_get(retval, rb_intern("guid")),
+                        rb_ivar_get(retval, rb_intern("version")));
+            }
+        }
     }
 
     if (found == Qfalse) {

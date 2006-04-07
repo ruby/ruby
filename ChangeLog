@@ -1,3 +1,10 @@
+Fri Apr  7 22:11:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(foletypelib_initialize): WIN32OLE_TYPELIB.new
+	  accepts OLE file.
+
+	* test/win32ole/test_win32ole_typelib.rb(test_initialize): ditto.
+
 Thu Apr  6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* intern.h (rb_obj_instance_exec, rb_mod_module_exec): add declaration.

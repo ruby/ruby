@@ -33,6 +33,10 @@ if defined?(WIN32OLE_TYPELIB)
       assert_instance_of(WIN32OLE_TYPELIB, tlib_by_guid)
       assert_equal("Microsoft Shell Controls And Automation" , tlib_by_guid.name)
 
+      path = tlib.path
+      tlib_by_path =  WIN32OLE_TYPELIB.new(path)
+      assert_equal("Microsoft Shell Controls And Automation" , tlib_by_path.name)
+
       assert_raise(WIN32OLERuntimeError) {
         WIN32OLE_TYPELIB.new("Non Exist Type Library")
       }
