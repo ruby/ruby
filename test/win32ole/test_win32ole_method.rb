@@ -128,5 +128,9 @@ if defined?(WIN32OLE_METHOD)
       assert_equal(@m_namespace.name, @m_namespace.to_s)
     end
 
+    def test_inspect
+      assert_equal("#<WIN32OLE_METHOD:NameSpace>", @m_namespace.inspect)
+    end
+
   end
 end

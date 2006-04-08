@@ -1,3 +1,12 @@
+Sat Apr  8 18:06:28 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect, 
+	  WIN32OLE_PARAM#inspect.
+
+	* test/win32ole/test_win32ole_method.rb: ditto.
+
+	* add test/win32ole/test_win32ole_param.rb.
+
 Fri Apr  7 22:11:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(foletypelib_initialize): WIN32OLE_TYPELIB.new

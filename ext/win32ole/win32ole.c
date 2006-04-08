@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.4"
+#define WIN32OLE_VERSION "0.7.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -6233,6 +6233,13 @@ folemethod_params(self)
     return ole_method_params(pmethod->pTypeInfo, pmethod->index);
 }
 
+static VALUE
+folemethod_inspect(self)
+    VALUE self;
+{
+    return default_inspect(self, "WIN32OLE_METHOD");
+}
+
 /*
  * Document-class: WIN32OLE_PARAM
  *
@@ -6501,6 +6508,20 @@ static VALUE foleparam_default(self)
     return ole_param_default(pparam->pTypeInfo, pparam->method_index,
                              pparam->index);
 }
+
+static VALUE
+foleparam_inspect(self)
+    VALUE self;
+{
+    VALUE detail = foleparam_name(self);
+    VALUE defval = foleparam_default(self);
+    if (defval != Qnil) {
+        rb_str_cat2(detail, "=");
+        rb_str_concat(detail, rb_funcall(defval, rb_intern("inspect"), 0));
+    }
+    return make_inspect("WIN32OLE_PARAM", detail);
+}
+  
 
 
 /*
@@ -7484,6 +7505,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_METHOD, "size_opt_params", folemethod_size_opt_params, 0);
     rb_define_method(cWIN32OLE_METHOD, "params", folemethod_params, 0);
     rb_define_alias(cWIN32OLE_METHOD, "to_s", "name");
+    rb_define_method(cWIN32OLE_METHOD, "inspect", folemethod_inspect, 0);
 
     cWIN32OLE_PARAM = rb_define_class("WIN32OLE_PARAM", rb_cObject);
     rb_define_method(cWIN32OLE_PARAM, "name", foleparam_name, 0);
@@ -7495,13 +7517,12 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_PARAM, "retval?", foleparam_retval, 0);
     rb_define_method(cWIN32OLE_PARAM, "default", foleparam_default, 0);
     rb_define_alias(cWIN32OLE_PARAM, "to_s", "name");
+    rb_define_method(cWIN32OLE_PARAM, "inspect", foleparam_inspect, 0);
  
     cWIN32OLE_EVENT = rb_define_class("WIN32OLE_EVENT", rb_cObject);
-
+    rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);
-    rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
-
     rb_define_method(cWIN32OLE_EVENT, "on_event", fev_on_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event_with_outargs", fev_on_event_with_outargs, -1);
 
