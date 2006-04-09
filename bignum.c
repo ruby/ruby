@@ -1606,6 +1606,11 @@ rb_big_pow(x, y)
 	if (yy > 0) {
 	    VALUE z = x;
 
+	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
+		rb_warn("in a**b, b may be too big");
+		d = (double)yy;
+		break;
+	    }
 	    for (;;) {
 		yy -= 1;
 		if (yy == 0) break;

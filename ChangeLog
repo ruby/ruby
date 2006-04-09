@@ -1,3 +1,21 @@
+Mon Apr 10 01:03:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* prec.c (prec_prec_f): documentation patch from
+	  <gerardo.santana at gmail.com>.  [ruby-core:07689]
+
+Sat Apr  8 02:34:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): second operand may be too big even if
+	  it's a Fixnum.  [ruby-talk:187984]
+
+Sat Apr  8 02:12:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* README.EXT: update symbol description.  [ruby-talk:188104]
+
+Thu Apr  6 23:28:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* COPYING: explicitly note GPLv2.  [ruby-talk:187922]
+
 Thu Apr  6 11:18:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/panedwindow.rb: lack of arguments. [ruby-core:7681]

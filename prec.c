@@ -57,9 +57,9 @@ prec_prec_i(x)
 
 /*
  *  call-seq:
- *    num.prec_f  =>  Integer
+ *    num.prec_f  =>  Float
  *
- *  Returns an +Float+ converted from _num_. It is equivalent 
+ *  Returns a +Float+ converted from _num_. It is equivalent 
  *  to <code>prec(Float)</code>.
  */
 
