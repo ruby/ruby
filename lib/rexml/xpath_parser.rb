@@ -380,10 +380,13 @@ module REXML
           return @variables[ var_name ]
 
         # :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
+				# TODO: Special case for :or and :and -- not evaluate the right
+				# operand if the left alone determines result (i.e. is true for
+				# :or and false for :and).
         when :eq, :neq, :lt, :lteq, :gt, :gteq, :and, :or
-          left = expr( path_stack.shift, nodeset, context )
+          left = expr( path_stack.shift, nodeset.dup, context )
           #puts "LEFT => #{left.inspect} (#{left.class.name})"
-          right = expr( path_stack.shift, nodeset, context )
+          right = expr( path_stack.shift, nodeset.dup, context )
           #puts "RIGHT => #{right.inspect} (#{right.class.name})"
           res = equality_relational_compare( left, op, right )
           #puts "RES => #{res.inspect}"
@@ -467,8 +470,11 @@ module REXML
     
     def descendant_or_self( path_stack, nodeset )
       rs = []
+      #puts "#"*80
+      #puts "PATH_STACK = #{path_stack.inspect}"
+      #puts "NODESET = #{nodeset.collect{|n|n.inspect}.inspect}"
       d_o_s( path_stack, nodeset, rs )
-      #puts "RS = #{rs.collect{|n|n.to_s}.inspect}"
+      #puts "RS = #{rs.collect{|n|n.inspect}.inspect}"
       document_order(rs.flatten.compact)
       #rs.flatten.compact
     end

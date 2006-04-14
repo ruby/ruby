@@ -7,13 +7,19 @@ module REXML
 		# @param arg Either a String, or an IO
 		# @return a Source, or nil if a bad argument was given
 		def SourceFactory::create_from arg#, slurp=true
-			if arg.kind_of? String
+      if arg.kind_of? String
 			  Source.new(arg)
-			elsif arg.kind_of? IO
+      elsif arg.respond_to? :read and
+            arg.respond_to? :readline and
+            arg.respond_to? :nil? and
+            arg.respond_to? :eof?
 				IOSource.new(arg)
       elsif arg.kind_of? Source
         arg
-			end
+      else
+        raise "#{source.class} is not a valid input stream.  It must walk \n"+
+        "like either a String, IO, or Source."
+      end
 		end
 	end
 

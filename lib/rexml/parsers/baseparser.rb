@@ -42,7 +42,7 @@ module REXML
       CDATA_END = /^\s*\]\s*>/um
       CDATA_PATTERN = /<!\[CDATA\[(.*?)\]\]>/um
       XMLDECL_START = /\A<\?xml\s/u;
-      XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>*/um
+      XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
       INSTRUCTION_START = /\A<\?/u
       INSTRUCTION_PATTERN = /<\?(.*?)(\s+.*?)?\?>/um
       TAG_MATCH = /^<((?>#{NAME_STR}))\s*((?>\s+#{NAME_STR}\s*=\s*(["']).*?\3)*)\s*(\/)?>/um
@@ -68,8 +68,8 @@ module REXML
       ATTLISTDECL_START = /^\s*<!ATTLIST/um
       ATTLISTDECL_PATTERN = /^\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
       NOTATIONDECL_START = /^\s*<!NOTATION/um
-      PUBLIC = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+((["']).*?\4)\s*>/um
-      SYSTEM = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+((["']).*?\4)\s*>/um
+      PUBLIC = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+(["'])(.*?)\3(?:\s+(["'])(.*?)\5)?\s*>/um
+      SYSTEM = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+(["'])(.*?)\3\s*>/um
 
       TEXT_PATTERN = /\A([^<]*)/um
 
@@ -120,20 +120,7 @@ module REXML
       attr_reader :source
 
       def stream=( source )
-        if source.kind_of? String
-          @source = Source.new(source)
-        elsif source.kind_of? IO
-          @source = IOSource.new(source)
-        elsif source.kind_of? Source
-          @source = source
-        elsif defined? StringIO and source.kind_of? StringIO
-          @source = IOSource.new(source)
-        elsif defined? Tempfile and source.kind_of? Tempfile
-          @source = IOSource.new(source)
-        else
-          raise "#{source.class} is not a valid input stream.  It must be \n"+
-          "either a String, IO, StringIO or Source."
-        end
+        @source = SourceFactory.create_from( source )
         @closed = nil
         @document_status = nil
         @tags = []
@@ -152,8 +139,8 @@ module REXML
 
       # Returns true if there are no more events
       def empty?
-        #puts "@source.empty? = #{@source.empty?}"
-        #puts "@stack.empty? = #{@stack.empty?}"
+        #STDERR.puts "@source.empty? = #{@source.empty?}"
+        #STDERR.puts "@stack.empty? = #{@stack.empty?}"
         return (@source.empty? and @stack.empty?)
       end
 
@@ -197,14 +184,17 @@ module REXML
         return [ :end_document ] if empty?
         return @stack.shift if @stack.size > 0
         @source.read if @source.buffer.size<2
+        #STDERR.puts "BUFFER = #{@source.buffer.inspect}"
         if @document_status == nil
-          @source.consume( /^\s*/um )
-          word = @source.match( /(<[^>]*)>/um )
+          #@source.consume( /^\s*/um )
+          word = @source.match( /^((?:\s+)|(?:<[^>]*>))/um )
           word = word[1] unless word.nil?
+          #STDERR.puts "WORD = #{word.inspect}"
           case word
           when COMMENT_START
             return [ :comment, @source.match( COMMENT_PATTERN, true )[1] ]
           when XMLDECL_START
+            #STDERR.puts "XMLDECL"
             results = @source.match( XMLDECL_PATTERN, true )[1]
             version = VERSION.match( results )
             version = version[1] unless version.nil?
@@ -213,7 +203,7 @@ module REXML
             @source.encoding = encoding
             standalone = STANDALONE.match(results)
             standalone = standalone[1] unless standalone.nil?
-            return [ :xmldecl, version, encoding, standalone]
+            return [ :xmldecl, version, encoding, standalone ]
           when INSTRUCTION_START
             return [ :processing_instruction, *@source.match(INSTRUCTION_PATTERN, true)[1,2] ]
           when DOCTYPE_START
@@ -236,6 +226,7 @@ module REXML
               @document_status = :in_doctype
             end
             return args
+          when /^\s+/
           else
             @document_status = :after_doctype
             @source.read if @source.buffer.size<2
@@ -299,12 +290,14 @@ module REXML
             md = nil
             if @source.match( PUBLIC )
               md = @source.match( PUBLIC, true )
+              vals = [md[1],md[2],md[4],md[6]]
             elsif @source.match( SYSTEM )
               md = @source.match( SYSTEM, true )
+              vals = [md[1],md[2],nil,md[4]]
             else
               raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
             end
-            return [ :notationdecl, md[1], md[2], md[3] ]
+            return [ :notationdecl, *vals ]
           when CDATA_END
             @document_status = :after_doctype
             @source.match( CDATA_END, true )
@@ -323,7 +316,7 @@ module REXML
               return [ :end_element, last_tag ]
             elsif @source.buffer[1] == ?!
               md = @source.match(/\A(\s*[^>]*>)/um)
-              #puts "SOURCE BUFFER = #{source.buffer}, #{source.buffer.size}"
+              #STDERR.puts "SOURCE BUFFER = #{source.buffer}, #{source.buffer.size}"
               raise REXML::ParseException.new("Malformed node", @source) unless md
               if md[0][2] == ?-
                 md = @source.match( COMMENT_PATTERN, true )
@@ -361,10 +354,11 @@ module REXML
           else
             md = @source.match( TEXT_PATTERN, true )
             if md[0].length == 0
-              #puts "EMPTY = #{empty?}"
-              #puts "BUFFER = \"#{@source.buffer}\""
+              puts "EMPTY = #{empty?}"
+              puts "BUFFER = \"#{@source.buffer}\""
               @source.match( /(\s+)/, true )
             end
+            #STDERR.puts "GOT #{md[1].inspect}" unless md[0].length == 0
             #return [ :text, "" ] if md[0].length == 0
             # unnormalized = Text::unnormalize( md[1], self )
             # return PullEvent.new( :text, md[1], unnormalized )

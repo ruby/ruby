@@ -67,11 +67,10 @@ module REXML
       if node_set == nil
         yield @@context[:node] if defined? @@context[:node].namespace
       else  
-        if node_set.namespace
-          yield node_set
-        else
-          return unless node_set.kind_of? Enumerable
+        if node_set.respond_to? :each
           node_set.each { |node| yield node if defined? node.namespace }
+        elsif node_set.respond_to? :namespace
+          yield node_set
         end
       end
     end

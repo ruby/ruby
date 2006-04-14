@@ -35,6 +35,10 @@ module REXML
 			@string
 		end
 
+    def value
+      @string
+    end
+
 		# Generates XML output of this object
 		#
 		# output::

@@ -70,11 +70,23 @@ module REXML
 			if child.kind_of? XMLDecl
 				@children.unshift child
 			elsif child.kind_of? DocType
-				if @children[0].kind_of? XMLDecl
-					@children[1,0] = child
-				else
-					@children.unshift child
-				end
+        # Find first Element or DocType node and insert the decl right 
+        # before it.  If there is no such node, just insert the child at the
+        # end.  If there is a child and it is an DocType, then replace it.
+        insert_before_index = 0
+        @children.find { |x| 
+          insert_before_index += 1
+          x.kind_of?(Element) || x.kind_of?(DocType)
+        }
+        if @children[ insert_before_index ] # Not null = not end of list
+          if @children[ insert_before_index ].kind_of DocType
+            @children[ insert_before_index ] = child
+          else
+            @children[ index_before_index-1, 0 ] = child
+          end
+        else  # Insert at end of list
+          @children[insert_before_index] = child
+        end
 				child.parent = self
 			else
 				rv = super

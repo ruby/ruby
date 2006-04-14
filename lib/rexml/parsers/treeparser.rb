@@ -19,8 +19,12 @@ module REXML
         begin
           while true
             event = @parser.pull
+            #STDERR.puts "TREEPARSER GOT #{event.inspect}"
             case event[0]
             when :end_document
+              unless tag_stack.empty?
+                raise ParseException.new("No close tag for #{tag_stack.inspect}")
+              end
               return
             when :start_element
               tag_stack.push(event[1])
@@ -35,10 +39,10 @@ module REXML
                   @build_context[-1] << event[1]
                 else
                   @build_context.add( 
-                    Text.new( event[1], @build_context.whitespace, nil, true ) 
+                    Text.new(event[1], @build_context.whitespace, nil, true) 
                   ) unless (
-                    event[1].strip.size==0 and 
-                    @build_context.ignore_whitespace_nodes
+                    @build_context.ignore_whitespace_nodes and
+                    event[1].strip.size==0
                   )
                 end
               end
