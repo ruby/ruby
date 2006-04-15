@@ -1,9 +1,11 @@
 require 'rexml/parsers/baseparser'
 require 'rexml/parseexception'
 require 'rexml/namespace'
+require 'rexml/text'
 
 module REXML
 	module Parsers
+    # SAX2Parser
 		class SAX2Parser
 			def initialize source
 				@parser = BaseParser.new(source)
@@ -36,6 +38,10 @@ module REXML
 			# :start_prefix_mapping, :end_prefix_mapping, :characters,
 			# :processing_instruction, :doctype, :attlistdecl, :elementdecl,
 			# :entitydecl, :notationdecl, :cdata, :xmldecl, :comment
+      #
+      # There is an additional symbol that can be listened for: :progress.
+      # This will be called for every event generated, passing in the current 
+      # stream position.
 			#
 			# Array contains regular expressions or strings which will be matched
 			# against fully qualified element names.
@@ -161,6 +167,7 @@ module REXML
 						:elementdecl, :cdata, :notationdecl, :xmldecl
 						handle( *event )
 					end
+          handle( :progress, @parser.position )
 				end
 			end
 

@@ -36,8 +36,6 @@ module REXML
 		# 	If an Element, the object will be shallowly cloned; name, 
 		# 	attributes, and namespaces will be copied.  Children will +not+ be
 		# 	copied.
-		# 	If a Source, the source will be scanned and parsed for an Element,
-		# 	and all child elements will be recursively parsed as well.
 		# parent:: 
 		# 	if supplied, must be a Parent, and will be used as
 		# 	the parent of this object.
@@ -223,7 +221,7 @@ module REXML
 		#  b.namespace("y")      # -> '2'
 		def namespace(prefix=nil)
 			if prefix.nil?
-				prefix = self.prefix()
+				prefix = prefix()
 			end
 			if prefix == ''
 				prefix = "xmlns"
@@ -715,7 +713,7 @@ module REXML
 
 		private
     def __to_xpath_helper node
-      rv = node.expanded_name
+      rv = node.expanded_name.clone
       if node.parent
         results = node.parent.find_all {|n| 
           n.kind_of?(REXML::Element) and n.expanded_name == node.expanded_name 
@@ -1226,5 +1224,20 @@ module REXML
 			rv.each{ |attr| attr.remove }
 			return rv
 		end
+    
+    # The +get_attribute_ns+ method retrieves a method by its namespace
+    # and name. Thus it is possible to reliably identify an attribute
+    # even if an XML processor has changed the prefix.
+    # 
+    # Method contributed by Henrik Martensson
+    def get_attribute_ns(namespace, name)
+      each_attribute() { |attribute|
+        if name == attribute.name &&
+           namespace == attribute.namespace()
+          return attribute
+        end
+      }
+      nil
+    end
 	end
 end

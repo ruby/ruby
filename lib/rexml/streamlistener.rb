@@ -39,6 +39,9 @@ module REXML
 		# @p uri the uri of the doctype, or nil.  EG, "bar"
 		def doctype name, pub_sys, long_name, uri
 		end
+		# Called when the doctype is done
+		def doctype_end
+		end
 		# If a doctype includes an ATTLIST declaration, it will cause this
 		# method to be called.  The content is the declaration itself, unparsed.
 		# EG, <!ATTLIST el attr CDATA #REQUIRED> will come to this method as "el

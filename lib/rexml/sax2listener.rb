@@ -84,11 +84,14 @@ module REXML
 		# @p version the version attribute value.  EG, "1.0"
 		# @p encoding the encoding attribute value, or nil.  EG, "utf"
 		# @p standalone the standalone attribute value, or nil.  EG, nil
+    # @p spaced the declaration is followed by a line break
 		def xmldecl version, encoding, standalone
 		end
 		# Called when a comment is encountered.
 		# @p comment The content of the comment
 		def comment comment
 		end
+    def progress position
+    end
 	end	
 end

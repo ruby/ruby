@@ -7,12 +7,19 @@ module REXML
 		# @param arg Either a String, or an IO
 		# @return a Source, or nil if a bad argument was given
 		def SourceFactory::create_from arg#, slurp=true
-			if arg.kind_of? String
-				source = Source.new(arg)
-			elsif arg.kind_of? IO
-				source = IOSource.new(arg)
-			end
-			source
+      if arg.kind_of? String
+			  Source.new(arg)
+      elsif arg.respond_to? :read and
+            arg.respond_to? :readline and
+            arg.respond_to? :nil? and
+            arg.respond_to? :eof?
+				IOSource.new(arg)
+      elsif arg.kind_of? Source
+        arg
+      else
+        raise "#{source.class} is not a valid input stream.  It must walk \n"+
+        "like either a String, IO, or Source."
+      end
 		end
 	end
 
@@ -97,6 +104,10 @@ module REXML
 		def empty?
 			@buffer == ""
 		end
+
+    def position
+      @orig.index( @buffer )
+    end
 
 		# @return the current line in the source
 		def current_line
@@ -193,6 +204,10 @@ module REXML
 		def empty?
 			super and ( @source.nil? || @source.eof? )
 		end
+
+    def position
+      @er_source.stat.pipe? ? 0 : @er_source.pos
+    end
 
 		# @return the current line in the source
 		def current_line
