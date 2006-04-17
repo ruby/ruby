@@ -755,7 +755,7 @@ struct SCOPE *ruby_scope;
 static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
-static unsigned long frame_unique = 1;
+static unsigned long frame_unique = 0;
 
 #define PUSH_FRAME() do {		\
     struct FRAME _frame;		\
@@ -797,7 +797,7 @@ struct BLOCK {
 #define BLOCK_LAMBDA  2
 
 static struct BLOCK *ruby_block;
-static unsigned long block_unique = 0;
+static unsigned long block_unique = 1;
 
 #define PUSH_BLOCK(v,b) do {		\
     struct BLOCK _block;		\
