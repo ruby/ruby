@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-04-06"
+#define TCLTKLIB_RELEASE_DATE "2006-04-18"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -5118,7 +5118,10 @@ ip_make_safe_core(interp, argc, argv)
     }
 
     if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
-        return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
+        /* return rb_exc_new2(rb_eRuntimeError, 
+                              Tcl_GetStringResult(ptr->ip)); */
+        return create_ip_exc(interp, rb_eRuntimeError, 
+                             Tcl_GetStringResult(ptr->ip));
     }
 
     ptr->allow_ruby_exit = 0;
@@ -7050,7 +7053,10 @@ ip_get_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
+            /* exc = rb_exc_new2(rb_eRuntimeError, 
+                                 Tcl_GetStringResult(ptr->ip)); */
+            exc = create_ip_exc(interp, rb_eRuntimeError, 
+                                Tcl_GetStringResult(ptr->ip));
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7186,7 +7192,10 @@ ip_set_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
+            /* exc = rb_exc_new2(rb_eRuntimeError, 
+                                 Tcl_GetStringResult(ptr->ip)); */
+            exc = create_ip_exc(interp, rb_eRuntimeError, 
+                                Tcl_GetStringResult(ptr->ip));
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7303,7 +7312,10 @@ ip_unset_variable2_core(interp, argc, argv)
 
     if (ptr->return_value == TCL_ERROR) {
         if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
-            return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
+            /* return rb_exc_new2(rb_eRuntimeError, 
+                                  Tcl_GetStringResult(ptr->ip)); */
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 Tcl_GetStringResult(ptr->ip));
         }
         return Qfalse;
     }

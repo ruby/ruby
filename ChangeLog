@@ -1,3 +1,13 @@
+Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: add a binding to a container for a slave IP.
+
+	* ext/tk/lib/tk.rb: update RELEASE_DATE.
+
+	* ext/tk/tcltklib.c: forget to reset a Tcl interpreter.
+
+	* ext/tk/stubs.c: fix potential bugs about handling rb_argv0.
+
 Sat Apr  8 18:06:28 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect, 

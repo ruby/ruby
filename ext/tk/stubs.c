@@ -141,7 +141,8 @@ ruby_open_tk_dll()
     char tk_name[20];
 
     if (!tcl_dll) {
-        int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+        /* int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
+        int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
         if (ret != TCLTK_STUBS_OK) return ret;
     }
 
@@ -212,7 +213,9 @@ ruby_tcl_create_ip_and_stubs_init(st)
         Tcl_Interp *(*p_Tcl_DeleteInterp)();
 
         if (!tcl_dll) {
-            int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+            /* int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
+            int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+
             if (ret != TCLTK_STUBS_OK) {
                 if (st) *st = ret;
                 return (Tcl_Interp*)NULL;
@@ -345,7 +348,8 @@ ruby_tcltk_stubs()
     int st;
     Tcl_Interp *tcl_ip;
 
-    st = ruby_open_tcltk_dll(RSTRING(rb_argv0)->ptr);
+    /* st = ruby_open_tcltk_dll(RSTRING(rb_argv0)->ptr); */
+    st = ruby_open_tcltk_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
     switch(st) {
     case NO_FindExecutable:
         return -7;
@@ -407,7 +411,8 @@ ruby_open_tcl_dll(appname)
 int ruby_open_tk_dll()
 {
     if (!open_tcl_dll) {
-        ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+        /* ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
+        ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
     }
 
     return TCLTK_STUBS_OK;
@@ -438,7 +443,8 @@ ruby_tcl_create_ip_and_stubs_init(st)
     Tcl_Interp *tcl_ip;
 
     if (!open_tcl_dll) {
-        ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+        /* ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
+        ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
     }
 
     if (st) *st = 0;
@@ -502,7 +508,8 @@ ruby_tk_stubs_safeinit(tcl_ip)
 int 
 ruby_tcltk_stubs()
 {
-    Tcl_FindExecutable(RSTRING(rb_argv0)->ptr);
+    /* Tcl_FindExecutable(RSTRING(rb_argv0)->ptr); */
+    Tcl_FindExecutable(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
     return 0;
 }
 
