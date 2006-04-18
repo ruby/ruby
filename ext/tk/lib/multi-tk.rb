@@ -944,6 +944,7 @@ class MultiTkIp
     dup_keys['fill'] = :both  unless dup_keys.key?('fill')
     dup_keys['expand'] = true unless dup_keys.key?('expand')
     c = TkFrame.new(top, :container=>true).pack(dup_keys)
+    c.bind('Destroy', proc{top.destroy})
 
     # return keys
     loadTk_keys['use'] = TkWinfo.id(c)
