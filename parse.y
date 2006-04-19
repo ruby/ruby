@@ -542,11 +542,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
                         NODE *args;
 
 			value_expr($6);
-		        args = NEW_LIST($6);
-			if ($3 && nd_type($3) != NODE_ARRAY)
-			    $3 = NEW_LIST($3);
-			$3 = list_append($3, NEW_NIL());
-			list_concat(args, $3);
+			args = arg_concat(NEW_LIST($6), $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -1013,8 +1009,7 @@ arg		: lhs '=' arg
                         NODE *args;
 
 			value_expr($6);
-			args = NEW_LIST($6);
-			list_concat(args, $3);
+			args = arg_concat(NEW_LIST($6), $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -4665,8 +4660,6 @@ list_concat(head, tail)
 {
     NODE *last;
 
-    if (nd_type(tail) != NODE_ARRAY)
-        return list_append(head, tail);
     if (head->nd_next) {
 	last = head->nd_next->nd_end;
     }

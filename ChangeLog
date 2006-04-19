@@ -1,3 +1,22 @@
+Wed Apr 19 11:57:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): use ARGSCAT for NODE_OP_ASGN1.
+	  [ruby-dev:28585]
+
+	* parse.y (list_concat): revert last change.
+
+	* parse.y (arg): use NODE_ARGSCAT for placeholder.
+
+Wed Apr 19 11:13:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/getoptlong.rb (GetoptLong::get): RDoc update patch from
+	  mathew <meta at pobox.com>.  [ruby-core:07738]
+
+Wed Apr 19 10:13:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_set): raise error when no target klass is
+	  supplied.  [ruby-dev:28582]
+
 Wed Apr 19 09:49:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (list_concat): should not modify nodes other than

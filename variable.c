@@ -1670,6 +1670,10 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class/module to define constant %s",
+		 rb_id2name(id));
+    }
     mod_av_set(klass, id, val, Qtrue);
 }
 
