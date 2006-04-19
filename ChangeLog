@@ -1,3 +1,8 @@
+Wed Apr 19 09:49:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (list_concat): should not modify nodes other than
+	  NODE_ARRAY.  [ruby-dev:28583]
+
 Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add a binding to a container for a slave IP.

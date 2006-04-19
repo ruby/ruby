@@ -4665,6 +4665,8 @@ list_concat(head, tail)
 {
     NODE *last;
 
+    if (nd_type(tail) != NODE_ARRAY)
+        return list_append(head, tail);
     if (head->nd_next) {
 	last = head->nd_next->nd_end;
     }
