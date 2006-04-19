@@ -542,7 +542,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
                         NODE *args;
 
 			value_expr($6);
-			args = arg_concat(NEW_LIST($6), $3);
+			args = arg_concat($6, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -1009,7 +1009,7 @@ arg		: lhs '=' arg
                         NODE *args;
 
 			value_expr($6);
-			args = arg_concat(NEW_LIST($6), $3);
+			args = arg_concat($6, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}

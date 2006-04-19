@@ -2213,14 +2213,14 @@ copy_node_scope(node, rval)
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
 #endif
 
-#define SETUP_ARGS0(anode,alen,extra) do {\
+#define SETUP_ARGS0(anode,extra) do {\
     NODE *n = anode;\
     if (!n) {\
 	argc = 0;\
 	argv = 0;\
     }\
     else if (nd_type(n) == NODE_ARRAY) {\
-	argc=alen;\
+	argc=anode->nd_alen;\
 	if (argc > 0) {\
 	    int i;\
 	    n = anode;\
@@ -2245,7 +2245,7 @@ copy_node_scope(node, rval)
     }\
 } while (0)
 
-#define SETUP_ARGS(anode) SETUP_ARGS0(anode, anode->nd_alen,0)
+#define SETUP_ARGS(anode) SETUP_ARGS0(anode,0)
 
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
@@ -3540,7 +3540,7 @@ rb_eval(self, n)
 
 	    recv = rb_eval(self, node->nd_recv);
 	    rval = node->nd_args->nd_head;
-	    SETUP_ARGS0(node->nd_args->nd_body, node->nd_args->nd_alen-1,1);
+	    SETUP_ARGS0(node->nd_args->nd_body, 1);
 	    val = rb_funcall3(recv, aref, argc, argv);
 	    switch (node->nd_mid) {
 	    case 0: /* OR */
