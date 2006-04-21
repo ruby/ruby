@@ -1,3 +1,8 @@
+Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (lib_eventloop_ensure): refer freed pointer
+	  [ruby-core:07744] and memory leak.
+
 Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: add a binding to a container for a slave IP.

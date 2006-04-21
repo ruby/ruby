@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-04-18"
+#define TCLTKLIB_RELEASE_DATE "2006-04-21"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -1696,6 +1696,8 @@ lib_eventloop_ensure(args)
 
 	rb_thread_critical = ptr->thr_crit_bup;
 
+        free(ptr);
+
         return Qnil;
     }
 
@@ -1724,9 +1726,9 @@ lib_eventloop_ensure(args)
         }
     }
 
-    free(ptr);
-
     rb_thread_critical = ptr->thr_crit_bup;
+
+    free(ptr);
 
     DUMP2("finish current eventloop %lx", current_evloop);
     return Qnil;
