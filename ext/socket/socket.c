@@ -1250,7 +1250,14 @@ make_hostent_internal(arg)
     rb_ary_push(ary, names);
     rb_ary_push(ary, INT2NUM(addr->ai_family));
     for (ai = addr; ai; ai = ai->ai_next) {
-	rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
+      /* Pushing all addresses regardless of address family is not the
+       * behaviour expected of gethostbyname(). All the addresses in struct
+       * hostent->h_addr_list must be of the same family, I think the following
+       * line would fix this.
+
+       if(ai->ai_family == addr->ai_family)  <-- suggested fix
+       */
+       rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
     }
 
     return ary;
@@ -2701,6 +2708,7 @@ make_addrinfo(res0)
     return base;
 }
 
+/* Returns a String containing the binary value of a struct sockaddr. */
 VALUE
 sock_sockaddr(addr, len)
     struct sockaddr *addr;
@@ -2726,6 +2734,102 @@ sock_sockaddr(addr, len)
     return rb_str_new(ptr, len);
 }
 
+/*
+ * Document-class: IPSocket
+ *
+ * IPSocket is the parent of TCPSocket and UDPSocket and implements
+ * functionality common to them.
+ *
+ * A number of APIs in IPSocket, Socket, and their descendants return an
+ * address as an array. The members of that array are:
+ * - address family: A string like "AF_INET" or "AF_INET6" if it is one of the
+ *   commonly used families, the string "unknown:#" (where `#' is the address
+ *   family number) if it is not one of the common ones.  The strings map to
+ *   the Socket::AF_* constants.
+ * - port: The port number.
+ * - name: Either the canonical name from looking the address up in the DNS, or
+ *   the address in presentation format
+ * - address: The address in presentation format (a dotted decimal string for
+ *   IPv4, a hex string for IPv6).
+ *
+ * The address and port can be used directly to create sockets and to bind or
+ * connect them to the address.
+ */
+
+/*
+ * Document-class: Socket
+ *
+ * Socket contains a number of generally useful singleton methods and
+ * constants, as well as offering low-level interfaces that can be used to
+ * develop socket applications using protocols other than TCP, UDP, and UNIX
+ * domain sockets.
+ */
+
+/*
+ * Document-method: gethostbyname
+ * call-seq: Socket.gethostbyname(host) => hostent
+ *
+ * Resolve +host+ and return name and address information for it, similarly to
+ * gethostbyname(3). +host+ can be a domain name or the presentation format of
+ * an address.
+ *
+ * Returns an array of information similar to that found in a +struct hostent+:
+ *   - cannonical name: the cannonical name for host in the DNS, or a
+ *     string representing the address
+ *   - aliases: an array of aliases for the canonical name, there may be no aliases
+ *   - address family: usually one of Socket::AF_INET or Socket::AF_INET6
+ *   - address: a string, the binary value of the +struct sockaddr+ for this name, in
+ *     the indicated address family
+ *   - ...: if there are multiple addresses for this host,  a series of
+ *     strings/+struct sockaddr+s may follow, not all necessarily in the same
+ *     address family. Note that the fact that they may not be all in the same
+ *     address family is a departure from the behaviour of gethostbyname(3).
+ *
+ * Note: I believe that the fact that the multiple addresses returned are not
+ * necessarily in the same address family may be a bug, since if this function
+ * actually called gethostbyname(3), ALL the addresses returned in the trailing
+ * address list (h_addr_list from struct hostent) would be of the same address
+ * family!  Examples from my system, OS X 10.3:
+ *
+ *   ["localhost", [], 30, "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\001", "\177\000\000\001"]
+ *     and
+ *   ["ensemble.local", [], 30, "\376\200\000\004\000\000\000\000\002\003\223\377\376\255\010\214", "\300\250{\232" ]
+ *
+ * Similar information can be returned by Socket.getaddrinfo if called as:
+ *
+ *    Socket.getaddrinfo(+host+, 0, Socket::AF_UNSPEC, Socket::SOCK_STREAM, nil, Socket::AI_CANONNAME)
+ *
+ * == Examples
+ *   
+ *   Socket.gethostbyname "example.com"                                                           
+ *   => ["example.com", [], 2, "\300\000\"\246"]
+ *   
+ * This name has no DNS aliases, and a single IPv4 address.
+ *   
+ *   Socket.gethostbyname "smtp.telus.net"
+ *   => ["smtp.svc.telus.net", ["smtp.telus.net"], 2, "\307\271\334\371"]
+ *   
+ * This name is an an alias so the canonical name is returned, as well as the
+ * alias and a single IPv4 address.
+ *   
+ *   Socket.gethostbyname "localhost"
+ *   => ["localhost", [], 30, "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\001", "\177\000\000\001"]
+ *   
+ * This machine has no aliases, returns an IPv6 address, and has an additional IPv4 address.
+ *
+ * +host+ can also be an IP address in presentation format, in which case a
+ * reverse lookup is done on the address:
+ *
+ *   Socket.gethostbyname("127.0.0.1")
+ *   => ["localhost", [], 2, "\177\000\000\001"]
+ *
+ *   Socket.gethostbyname("192.0.34.166")
+ *   => ["www.example.com", [], 2, "\300\000\"\246"]
+ *
+ *
+ * == See
+ * See: Socket.getaddrinfo
+ */
 static VALUE
 sock_s_gethostbyname(obj, host)
     VALUE obj, host;
@@ -2786,6 +2890,18 @@ sock_s_gethostbyaddr(argc, argv)
     return ary;
 }
 
+/*
+ * Document-method: getservbyname
+ * call-seq: Socket.getservbyname(name, proto="tcp") => port
+ *
+ * +name+ is a service name ("ftp", "telnet", ...) and proto is a protocol name
+ * ("udp", "tcp", ...). '/etc/services' (or your system's equivalent) is
+ * searched for a service for +name+ and +proto+, and the port number is
+ * returned.
+ *
+ * Note that unlike Socket.getaddrinfo, +proto+ may not be specified using the
+ * Socket::SOCK_* constants, a string must must be used.
+ */
 static VALUE
 sock_s_getservbyaname(argc, argv)
     int argc;
@@ -2816,6 +2932,120 @@ sock_s_getservbyaname(argc, argv)
     return INT2FIX(port);
 }
 
+/*
+Documentation should explain the following:
+
+  $ pp Socket.getaddrinfo("", 1, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_PASSIVE)
+  [["AF_INET", 1, "0.0.0.0", "0.0.0.0", 2, 1, 6]]
+
+  $ pp Socket.getaddrinfo(nil, 1, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_PASSIVE)
+  [["AF_INET6", 1, "::", "::", 30, 1, 6],
+   ["AF_INET", 1, "0.0.0.0", "0.0.0.0", 2, 1, 6]]
+
+  $ pp Socket.getaddrinfo("localhost", 1, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_PASSIVE)
+  [["AF_INET6", 1, "localhost", "::1", 30, 1, 6],
+   ["AF_INET", 1, "localhost", "127.0.0.1", 2, 1, 6]]
+
+  $ pp Socket.getaddrinfo("ensemble.local.", 1, Socket::AF_UNSPEC, Socket::SOCK_STREAM, 0, Socket::AI_PASSIVE)
+  [["AF_INET", 1, "localhost", "192.168.123.154", 2, 1, 6]]
+
+Does it?
+
+API suggestion: this method has too many arguments, it would be backwards compatible and easier
+to understand if limit args were accepted as :family=>..., :flags=>...
+*/
+
+/*
+ * Document-method: getaddrinfo
+ * call-seq: Socket.getaddrinfo(host, service, family=nil, socktype=nil, protocol=nil, flags=nil) => addrinfo
+ *
+ * Return address information for +host+ and +port+. The remaining arguments
+ * are hints that limit the address information returned.
+ *
+ * This method corresponds closely to the POSIX.1g getaddrinfo() definition.
+ *
+ * === Parameters
+ * - +host+ is a host name or an address string (dotted decimal for IPv4, or a hex string
+ *   for IPv6) for which to return information. A nil is also allowed, its meaning
+ *   depends on +flags+, see below.
+ * - +service+ is a service name ("http", "ssh", ...), or 
+ *   a port number (80, 22, ...), see Socket.getservbyname for more
+ *   information. A nil is also allowed, meaning zero.
+ * - +family+ limits the output to a specific address family, one of the
+ *   Socket::AF_* constants. Socket::AF_INET (IPv4) and Socket::AF_INET6 (IPv6)
+ *   are the most commonly used families. You will usually pass either nil or
+ *   Socket::AF_UNSPEC, allowing the IPv6 information to be returned first if
+ *   +host+ is reachable via IPv6, and IPv4 information otherwise.  The two
+ *   strings "AF_INET" or "AF_INET6" are also allowed, they are converted to
+ *   their respective Socket::AF_* constants.
+ * - +socktype+ limits the output to a specific type of socket, one of the
+ *   Socket::SOCK_* constants. Socket::SOCK_STREAM (for TCP) and
+ *   Socket::SOCK_DGRAM (for UDP) are the most commonly used socket types. If
+ *   nil, then information for all types of sockets supported by +service+ will
+ *   be returned. You will usually know what type of socket you intend to
+ *   create, and should pass that socket type in.
+ * - +protocol+ limits the output to a specific protocol numpber, one of the
+ *   Socket::IPPROTO_* constants. It is usually implied by the socket type
+ *   (Socket::SOCK_STREAM => Socket::IPPROTO_TCP, ...), if you pass other than
+ *   nil you already know what this is for.
+ * - +flags+ is one of the Socket::AI_* constants. They mean:
+ *   - Socket::AI_PASSIVE: when set, if +host+ is nil the 'any' address will be
+ *     returned, Socket::INADDR_ANY or 0 for IPv4, "0::0" or "::" for IPv6.  This
+ *     address is suitable for use by servers that will bind their socket and do
+ *     a passive listen, thus the name of the flag. Otherwise the local or
+ *     loopback address will be returned, this is "127.0.0.1" for IPv4 and "::1'
+ *     for IPv6.
+ *   - ...
+ *
+ *
+ * === Returns
+ *
+ * Returns an array of arrays, where each subarray contains:
+ * - address family, a string like "AF_INET" or "AF_INET6"
+ * - port number, the port number for +service+
+ * - host name, either a canonical name for +host+, or it's address in presentation
+ *   format if the address could not be looked up.
+ * - host IP, the address of +host+ in presentation format
+ * - address family, as a numeric value (one of the Socket::AF_* constants).
+ * - socket type, as a numeric value (one of the Socket::SOCK_* constants).
+ * - protocol number, as a numeric value (one of the Socket::IPPROTO_* constants).
+ *
+ * The first four values are identical to what is commonly returned as an
+ * address array, see IPSocket for more information.
+ *
+ * === Examples
+ *
+ * Not all input combinations are valid, and while there are many combinations,
+ * only a few cases are common.
+ *
+ * A typical client will call getaddrinfo with the +host+ and +service+ it
+ * wants to connect to. It knows that it will attempt to connect with either
+ * TCP or UDP, and specifies +socktype+ accordingly. It loops through all
+ * returned addresses, and try to connect to them in turn:
+ *
+ *   addrinfo = Socket::getaddrinfo('www.example.com', 'www', nil, Socket::SOCK_STREAM)
+ *   addrinfo.each do |af, port, name, addr|
+ *     begin
+ *       sock = TCPSocket.new(addr, port)
+ *       # ...
+ *       exit 1
+ *     rescue
+ *     end
+ *   end
+ *
+ * With UDP you don't know if connect suceeded, but if communication fails,
+ * the next address can be tried.
+ *
+ * A typical server will call getaddrinfo with a +host+ of nil, the +service+
+ * it listens to, and a +flags+ of Socket::AI_PASSIVE. It will listen for
+ * connections on the first returned address:
+ *   addrinfo = Socket::getaddrinfo(nil, 'www', nil, Socket::SOCK_STREAM, nil, Socket::AI_PASSIVE)
+ *   af, port, name, addr = addrinfo.first
+ *   sock = TCPServer(addr, port)
+ *   while( client = s.accept )
+ *     # ...
+ *   end
+ */
 static VALUE
 sock_s_getaddrinfo(argc, argv)
     int argc;
@@ -3110,7 +3340,7 @@ sock_define_const(name, value)
  * socket implementations. It can be used to provide more operating system
  * specific functionality than the protocol-specific socket classes but at the
  * expense of greater complexity. In particular, the class handles addresses
- * using +struct+ sockaddr structures packed into Ruby strings, which can be
+ * using +struct sockaddr+ structures packed into Ruby strings, which can be
  * a joy to manipulate.
  * 
  * === Exception Handling

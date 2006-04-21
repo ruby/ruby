@@ -1,3 +1,8 @@
+Fri Apr 21 12:14:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: document update patch from Sam Roberts
+	  <sroberts at uniserve.com>.  [ruby-core:07701]
+
 Wed Apr 19 13:55:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): too much NEW_LIST()
