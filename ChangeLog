@@ -1,3 +1,9 @@
+Tue Apr 25 07:55:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/jcode.rb (String::tr_s): should have translated non
+	  squeezing character sequence (i.e. a character) as well.  thanks
+	  to Hiroshi Ichikawa <gimite at gimite.ddo.jp> [ruby-list:42090]
+
 Tue Apr 25 00:08:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): should check if c is not a

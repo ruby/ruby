@@ -175,7 +175,7 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = SqueezePatternCache[from] ||= /([#{_regex_quote(from)}])\1+/
+    pattern = SqueezePatternCache[from] ||= /([#{_regex_quote(from)}])\1*/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
