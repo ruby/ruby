@@ -1,3 +1,9 @@
+Tue Apr 25 00:08:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should check if c is not a
+	  multibyte chracter.  a patch from KIMURA Koichi
+	  <kimura.koichi at canon.co.jp>.  [ruby-dev:28598]
+
 Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_ensure): refer freed pointer

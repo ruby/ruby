@@ -1705,7 +1705,7 @@ re_compile_pattern(pattern, size, bufp)
 	  goto range_retry;
 	}
 	else {
-	  if (TRANSLATE_P()) c = (unsigned char)translate[c];
+	  if (TRANSLATE_P() && c < 0x100) c = (unsigned char)translate[c];
 	  if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
 	    SET_LIST_BIT(c);
 	    had_num_literal = 0;
