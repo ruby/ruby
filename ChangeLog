@@ -1,3 +1,8 @@
+Tue Apr 25 18:00:05 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (delete_slaves): maybe increment the reference
+	  count of a NULL Tcl_Obj [ruby-core:07759].
+
 Tue Apr 25 07:55:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/jcode.rb (String::tr_s): should have translated non
