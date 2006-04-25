@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-04-21"
+#define TCLTKLIB_RELEASE_DATE "2006-04-25"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -4285,9 +4285,10 @@ delete_slaves(ip)
         if (Tcl_ListObjLength((Tcl_Interp*)NULL, slave_list, &len) == TCL_OK) {
             for(i = 0; i < len; i++) {
                 Tcl_ListObjIndex((Tcl_Interp*)NULL, slave_list, i, &elem);
-                Tcl_IncrRefCount(elem);
 
                 if (elem == (Tcl_Obj*)NULL) continue;
+
+                Tcl_IncrRefCount(elem);
 
                 /* get slave */
                 /* slave_name = Tcl_GetString(elem); */
