@@ -1,3 +1,8 @@
+Wed Apr 26 16:59:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): now supports CRLF newlines.  a patch from
+	  <tommy at tmtm.org>.  [ruby-dev:28601]
+
 Tue Apr 25 18:00:05 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (delete_slaves): maybe increment the reference

@@ -1834,6 +1834,8 @@ pack_unpack(str, fmt)
 		while (s < send) {
 		    if (*s == '=') {
 			if (++s == send) break;
+                       if (s+1 < send && *s == '\r' && *(s+1) == '\n')
+                         s++;
 			if (*s != '\n') {
 			    if ((c1 = hex2num(*s)) == -1) break;
 			    if (++s == send) break;
