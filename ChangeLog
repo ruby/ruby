@@ -1,3 +1,8 @@
+Thu Apr 27 01:38:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_fill): internalize local variable "beg" to
+	  pacify Coverity.  [ruby-core:07770]
+
 Wed Apr 26 16:59:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): now supports CRLF newlines.  a patch from

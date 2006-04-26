@@ -2223,7 +2223,7 @@ rb_ary_fill(argc, argv, ary)
     VALUE ary;
 {
     VALUE item, arg1, arg2;
-    long beg, end, len;
+    long beg = 0, end, len;
     VALUE *p, *pend;
     int block_p = Qfalse;
 
