@@ -1,3 +1,8 @@
+Fri Apr 28 10:53:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): should not cut off 18 digits for no
+	  reason.  [ruby-core:07796]
+
 Thu Apr 27 01:38:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_fill): internalize local variable "beg" to

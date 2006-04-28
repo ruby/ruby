@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include "missing/file.h"
@@ -679,22 +680,8 @@ ruby_getcwd()
  *
  */
 
-#define TRUE 1
-#define FALSE 0
-
 static  int     MDMINEXPT       = -323;
-static  int     MDMAXEXPT       =  309;
-static double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
-    10.0,			/* is 10^2^i.  Used to convert decimal */
-    100.0,			/* exponents into floating-point numbers. */
-    1.0e4,
-    1.0e8,
-    1.0e16,
-    1.0e32,
-    1.0e64,
-    1.0e128,
-    1.0e256
-};
+static  int     MDMAXEXPT       = 309;
 
 /*
  *----------------------------------------------------------------------
@@ -735,8 +722,8 @@ ruby_strtod(string, endPtr)
     char **endPtr;		/* If non-NULL, store terminating character's
 				 * address here. */
 {
-    int sign, expSign = FALSE;
-    double fraction, dblExp, *d;
+    int sign, expSign = Qfalse;
+    double fraction = 0.0, dblExp;
     register const char *p;
     register int c;
     int exp = 0;		/* Exponent read from "EX" field. */
@@ -750,8 +737,8 @@ ruby_strtod(string, endPtr)
 				 * case, fracExp is incremented one for each
 				 * dropped digit. */
     int mantSize = 0;		/* Number of digits in mantissa. */
-    int hasPoint = FALSE;	/* Decimal point exists. */
-    int hasDigit = FALSE;	/* I or F exists. */
+    int hasPoint = Qfalse;	/* Decimal point exists. */
+    int hasDigit = Qfalse;	/* I or F exists. */
     const char *pMant;		/* Temporarily holds location of mantissa
 				 * in string. */
     const char *pExp;		/* Temporarily holds location of exponent
@@ -767,14 +754,14 @@ ruby_strtod(string, endPtr)
 	p += 1;
     }
     if (*p == '-') {
-	sign = TRUE;
+	sign = Qtrue;
 	p += 1;
     }
     else {
 	if (*p == '+') {
 	    p += 1;
 	}
-	sign = FALSE;
+	sign = Qfalse;
     }
 
     /*
@@ -787,7 +774,7 @@ ruby_strtod(string, endPtr)
 	    if (c != '.' || hasPoint) {
 		break;
 	    }
-	    hasPoint = TRUE;
+	    hasPoint = Qtrue;
 	}
 	else {
 	    if (hasPoint) { /* already in fractional part */
@@ -800,7 +787,7 @@ ruby_strtod(string, endPtr)
 		mantSize += 1;
 		pMant = p;
 	    }
-	    hasDigit = TRUE;
+	    hasDigit = Qtrue;
 	}
     }
 
@@ -824,7 +811,7 @@ ruby_strtod(string, endPtr)
 	p = string;
     }
     else {
-	int frac1, frac2;
+	double frac1, frac2;
 	frac1 = 0;
 	for ( ; mantSize > 9; mantSize -= 1) {
 	    c = *p;
@@ -854,14 +841,14 @@ ruby_strtod(string, endPtr)
 	if ((*p == 'E') || (*p == 'e')) {
 	    p += 1;
 	    if (*p == '-') {
-		expSign = TRUE;
+		expSign = Qtrue;
 		p += 1;
 	    }
 	    else {
 		if (*p == '+') {
 		    p += 1;
 		}
-		expSign = FALSE;
+		expSign = Qfalse;
 	    }
 	    if (ISDIGIT(*p)) {
 		do {
@@ -888,55 +875,57 @@ ruby_strtod(string, endPtr)
 	 * fraction.
 	 */
     
-	if (exp >= MDMAXEXPT - 18) {
-	    exp = MDMAXEXPT;
+	if (exp >= MDMAXEXPT) {
 	    errno = ERANGE;
+	    return HUGE_VAL * (sign ? -1.0 : 1.0);
 	}
-	else if (exp < MDMINEXPT + 18) {
-	    exp = MDMINEXPT;
+	else if (exp < MDMINEXPT) {
 	    errno = ERANGE;
+	    return 0.0 * (sign ? -1.0 : 1.0);
 	}
-	fracExp = exp;
-	exp += 9;
+	if (frac1 > 0) {
+	    fracExp = exp;
+	    exp += 9;
+	    if (exp < 0) {
+		expSign = Qtrue;
+		exp = -exp;
+	    }
+	    else {
+		expSign = Qfalse;
+	    }
+	    dblExp = 10.0;
+	    while (exp) {
+		if (exp & 1) {
+		    if (expSign)
+			frac1 /= dblExp;
+		    else
+			frac1 *= dblExp;
+		}
+		exp >>= 1;
+		dblExp *= dblExp;
+	    }
+	    fraction = frac1;
+	}
 	if (exp < 0) {
-	    expSign = TRUE;
+	    expSign = Qtrue;
 	    exp = -exp;
 	}
 	else {
-	    expSign = FALSE;
+	    expSign = Qfalse;
 	}
-	dblExp = 1.0;
-	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
-	    if (exp & 01) {
-		dblExp *= *d;
+	dblExp = 10.0;
+	while (exp) 
+	{
+	    if (exp & 1) {
+		if (expSign)
+		    frac2 /= dblExp;
+		else
+		    frac2 *= dblExp;
 	    }
+	    exp >>= 1;
+	    dblExp *= dblExp;
 	}
-	if (expSign) {
-	    fraction = frac1 / dblExp;
-	}
-	else {
-	    fraction = frac1 * dblExp;
-	}
-	exp = fracExp;
-	if (exp < 0) {
-	    expSign = TRUE;
-	    exp = -exp;
-	}
-	else {
-	    expSign = FALSE;
-	}
-	dblExp = 1.0;
-	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
-	    if (exp & 01) {
-		dblExp *= *d;
-	    }
-	}
-	if (expSign) {
-	    fraction += frac2 / dblExp;
-	}
-	else {
-	    fraction += frac2 * dblExp;
-	}
+	fraction += frac2;
     }
 
     if (endPtr != NULL) {
