@@ -1,3 +1,8 @@
+Sat Apr 29 22:43:37 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_decode0): should initialize
+	  flag. [ruby-core:07785]
+
 Tue Apr 25 18:00:05 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (delete_slaves): maybe increment the reference
