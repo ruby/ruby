@@ -766,7 +766,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 	if(tag_class == sUNIVERSAL &&
 	   tag < ossl_asn1_info_size && ossl_asn1_info[tag].klass){
 	    VALUE klass = *ossl_asn1_info[tag].klass;
-	    long flag;
+	    long flag = 0;
 	    if(!rb_obj_is_kind_of(value, rb_cArray)){
 		switch(tag){
 		case V_ASN1_BOOLEAN:
