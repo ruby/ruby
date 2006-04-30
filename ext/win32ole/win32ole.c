@@ -201,16 +201,16 @@ struct olevariantdata {
     VARIANT var;
 };
 
-static VALUE folemethod_s_allocate _((VALUE));
-static VALUE olemethod_set_member _((VALUE, ITypeInfo *, ITypeInfo *, int, VALUE));
-static VALUE foletype_s_allocate _((VALUE));
-static VALUE oletype_set_member  _((VALUE, ITypeInfo *, VALUE));
-static VALUE olemethod_from_typeinfo _((VALUE, ITypeInfo *, VALUE));
-static HRESULT ole_docinfo_from_type _((ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR *));
-static char *ole_wc2mb _((LPWSTR));
-static VALUE ole_variant2val _((VARIANT*));
-static void ole_val2variant _((VALUE, VARIANT*));
-static VALUE create_property_object _((VALUE, VALUE, HRESULT, VALUE));
+static VALUE folemethod_s_allocate(VALUE);
+static VALUE olemethod_set_member(VALUE, ITypeInfo *, ITypeInfo *, int, VALUE);
+static VALUE foletype_s_allocate(VALUE);
+static VALUE oletype_set_member(VALUE, ITypeInfo *, VALUE);
+static VALUE olemethod_from_typeinfo(VALUE, ITypeInfo *, VALUE);
+static HRESULT ole_docinfo_from_type(ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR *);
+static char *ole_wc2mb(LPWSTR);
+static VALUE ole_variant2val(VARIANT*);
+static void ole_val2variant(VALUE, VARIANT*);
+static VALUE create_property_object(VALUE, VALUE, HRESULT, VALUE);
   
 typedef struct _Win32OLEIDispatch
 {
@@ -321,8 +321,7 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
 }
 
 static IDispatch*
-val2dispatch(val)
-    VALUE val;
+val2dispatch(VALUE val)
 {
     struct st_table *tbl = DATA_PTR(com_hash);
     Win32OLEIDispatch* pdisp;
@@ -343,17 +342,13 @@ val2dispatch(val)
 }
 
 static void
-time2d(hh, mm, ss, pv)
-    int hh, mm, ss;
-    double *pv;
+time2d(int hh, int mm, int ss, double *pv)
 {
     *pv =  (hh * 60.0 * 60.0 + mm * 60.0 + ss) / 86400.0;
 }
 
 static void
-d2time(v, hh, mm, ss)
-    double v;
-    int *hh, *mm, *ss;
+d2time(double v, int *hh, int *mm, int *ss)
 {
     double d_hh, d_mm, d_ss;
     int    i_hh, i_mm, i_ss;
@@ -393,9 +388,7 @@ d2time(v, hh, mm, ss)
 }
 
 static void
-civil2jd(y, m, d, jd)
-    int y, m, d;
-    long *jd;
+civil2jd(int y, int m, int d, long *jd)
 {
     long a, b;
     if (m <= 2) {
@@ -410,9 +403,7 @@ civil2jd(y, m, d, jd)
 }
 
 static void
-jd2civil(day, yy, mm, dd)
-    long day;
-    int *yy, *mm, *dd;
+jd2civil(long day, int *yy, int *mm, int *dd)
 {
     long x, a, b, c, d, e;
     x = (long)(((double)day - 1867216.25) / 36524.25);
@@ -433,9 +424,7 @@ jd2civil(day, yy, mm, dd)
 }
 
 static void
-double2time(v, y, m, d, hh, mm, ss)
-    double v;
-    int *y, *m, *d, *hh, *mm, *ss;
+double2time(double v, int *y, int *m, int *d, int *hh, int *mm, int *ss)
 {
     long day;
     double t;
@@ -448,8 +437,7 @@ double2time(v, y, m, d, hh, mm, ss)
 }
 
 static double
-time_object2date(tmobj)
-    VALUE tmobj;
+time_object2date(VALUE tmobj)
 {
     long y, m, d, hh, mm, ss;
     long day;
@@ -466,8 +454,7 @@ time_object2date(tmobj)
 }
 
 static VALUE
-date2time_str(date)
-    double date;
+date2time_str(double date)
 {
     int y, m, d, hh, mm, ss;
     char szTime[20];
@@ -481,8 +468,7 @@ date2time_str(date)
 static void ole_val2variant();
 
 static char *
-ole_wc2mb(pw)
-    LPWSTR pw;
+ole_wc2mb(LPWSTR pw)
 {
     int size;
     LPSTR pm;
@@ -499,8 +485,7 @@ ole_wc2mb(pw)
 } 
 
 static VALUE
-ole_hresult2msg(hr)
-    HRESULT hr;
+ole_hresult2msg(HRESULT hr)
 {
     VALUE msg = Qnil;
     char *p_msg = NULL;
@@ -533,8 +518,7 @@ ole_hresult2msg(hr)
 }
 
 static VALUE
-ole_excepinfo2msg(pExInfo)
-    EXCEPINFO *pExInfo;
+ole_excepinfo2msg(EXCEPINFO *pExInfo)
 {
     char error_code[40];
     char *pSource = NULL;
@@ -578,15 +562,7 @@ ole_excepinfo2msg(pExInfo)
 }
 
 static void
-#ifdef HAVE_STDARG_PROTOTYPES
 ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
-#else
-ole_raise(hr, exc, fmt, va_alist)
-    HRESULT hr;
-    VALUE exc;
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
     char buf[BUFSIZ];
@@ -641,45 +617,38 @@ ole_msg_loop() {
 }
 
 static void
-ole_free(pole)
-    struct oledata *pole;
+ole_free(struct oledata *pole)
 {
     OLE_FREE(pole->pDispatch);
 }
 
 static void
-oletype_free(poletype)
-    struct oletypedata *poletype;
+oletype_free(struct oletypedata *poletype)
 {
     OLE_FREE(poletype->pTypeInfo);
 }
 
 static void
-olemethod_free(polemethod)
-    struct olemethoddata *polemethod;
+olemethod_free(struct olemethoddata *polemethod)
 {
     OLE_FREE(polemethod->pTypeInfo);
     OLE_FREE(polemethod->pOwnerTypeInfo);
 }
 
 static void
-olevariable_free(polevar)
-    struct olevariabledata *polevar;
+olevariable_free(struct olevariabledata *polevar)
 {
     OLE_FREE(polevar->pTypeInfo);
 }
 
 static void
-oleparam_free(pole)
-    struct oleparamdata *pole;
+oleparam_free(struct oleparamdata *pole)
 {
     OLE_FREE(pole->pTypeInfo);
 }
 
 static LPWSTR
-ole_mb2wc(pm, len)
-    char *pm;
-    int  len;
+ole_mb2wc(char *pm, int len)
 {
     int size;
     LPWSTR pw;
@@ -690,9 +659,7 @@ ole_mb2wc(pm, len)
 }
 
 static VALUE
-ole_wc2vstr(pw, isfree)
-    LPWSTR pw;
-    BOOL isfree;
+ole_wc2vstr(LPWSTR pw, BOOL isfree)
 {
     char *p = ole_wc2mb(pw);
     VALUE vstr = rb_str_new2(p);
@@ -703,9 +670,7 @@ ole_wc2vstr(pw, isfree)
 }
 
 static VALUE
-ole_ary_m_entry(val, pid)
-    VALUE val;
-    long *pid;
+ole_ary_m_entry(VALUE val, long *pid)
 {
     VALUE obj = Qnil;
     int i = 0;
@@ -718,13 +683,7 @@ ole_ary_m_entry(val, pid)
 }
 
 static void
-ole_set_safe_array(n, psa, pid, pub, val, dim)
-    long n;
-    SAFEARRAY *psa;
-    long *pid;
-    long *pub;
-    VALUE val;
-    long dim;
+ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim)
 {
     VALUE val1;
     VARIANT var;
@@ -745,8 +704,7 @@ ole_set_safe_array(n, psa, pid, pub, val, dim)
     }
 }
 
-static void * get_ptr_of_variant(pvar)
-    VARIANT *pvar;
+static void * get_ptr_of_variant(VARIANT *pvar)
 {
     switch(V_VT(pvar)) {
     case VT_UI1:
@@ -808,15 +766,7 @@ static void * get_ptr_of_variant(pvar)
 }
 
 static void
-ole_set_safe_array_with_type(n, psa, pid, pub, val, dim, vtype)
-    long n;
-    SAFEARRAY *psa;
-    long *pid;
-    long *pub;
-    VALUE val;
-    long dim;
-    VARTYPE vtype;
-
+ole_set_safe_array_with_type(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vtype)
 {
     VALUE val1;
     HRESULT hr;
@@ -860,9 +810,7 @@ ole_set_safe_array_with_type(n, psa, pid, pub, val, dim, vtype)
 }
 
 static void
-ole_val2variant(val, var)
-    VALUE val;
-    VARIANT *var;
+ole_val2variant(VALUE val, VARIANT *var)
 {
     struct oledata *pole;
     struct olevariantdata *pvar;
@@ -984,9 +932,7 @@ ole_val2variant(val, var)
 }
 
 static void
-ole_val2ptr_variant(val, var)
-    VALUE val;
-    VARIANT *var;
+ole_val2ptr_variant(VALUE val, VARIANT *var)
 {
     switch (TYPE(val)) {
     case T_STRING:
@@ -1054,9 +1000,7 @@ ole_val2ptr_variant(val, var)
 }
 
 static void
-ole_var2ptr_var(var, pvar)
-    VARIANT *var;
-    VARIANT *pvar;
+ole_var2ptr_var(VARIANT *var, VARIANT *pvar)
 {
     VARTYPE vt = V_VT(var);
     V_VT(pvar) = V_VT(var) | VT_BYREF;
@@ -1119,10 +1063,7 @@ ole_var2ptr_var(var, pvar)
 }
 
 static void
-ole_val2olevariantdata(val, vtype, pvar)
-    VALUE val;
-    VARTYPE vtype;
-    struct olevariantdata *pvar;
+ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
 {
     HRESULT hr = S_OK;
     VARIANT var;
@@ -1233,9 +1174,7 @@ ole_val2olevariantdata(val, vtype, pvar)
 }
 
 static void
-ole_val2variant2(val, var)
-    VALUE val;
-    VARIANT *var;
+ole_val2variant2(VALUE val, VARIANT *var)
 {
     g_nil_to = VT_EMPTY;
     ole_val2variant(val, var);
@@ -1243,9 +1182,7 @@ ole_val2variant2(val, var)
 }
 
 static VALUE
-make_inspect(class_name, detail) 
-    const char *class_name;
-    VALUE detail;
+make_inspect(const char *class_name, VALUE detail) 
 {
     VALUE str;
     str = rb_str_new2("#<");
@@ -1257,18 +1194,14 @@ make_inspect(class_name, detail)
 }
 
 static VALUE
-default_inspect(self, class_name) 
-    VALUE self;
-    const char *class_name;
+default_inspect(VALUE self, const char *class_name) 
 {
     VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
     return make_inspect(class_name, detail);
 }
 
 static VALUE
-ole_set_member(self, dispatch)
-    VALUE self;
-    IDispatch * dispatch;
+ole_set_member(VALUE self, IDispatch *dispatch)
 {
     struct oledata *pole;
     Data_Get_Struct(self, struct oledata, pole);
@@ -1281,10 +1214,8 @@ ole_set_member(self, dispatch)
 }
 
 
-static VALUE fole_s_allocate _((VALUE));
 static VALUE
-fole_s_allocate(klass)
-    VALUE klass;
+fole_s_allocate(VALUE klass)
 {
     struct oledata *pole;
     VALUE obj;
@@ -1295,11 +1226,7 @@ fole_s_allocate(klass)
 }
 
 static VALUE
-create_win32ole_object(klass, pDispatch, argc, argv)
-    VALUE klass;
-    IDispatch *pDispatch;
-    int argc;
-    VALUE *argv;
+create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv)
 {
     VALUE obj = fole_s_allocate(klass);
     ole_set_member(obj, pDispatch);
@@ -1307,8 +1234,7 @@ create_win32ole_object(klass, pDispatch, argc, argv)
 }
 
 static VALUE
-ole_variant2val(pvar)
-    VARIANT *pvar;
+ole_variant2val(VARIANT *pvar)
 {
     VALUE obj = Qnil;
     HRESULT hr;
@@ -1510,26 +1436,18 @@ ole_variant2val(pvar)
     return obj;
 }
 
-static LONG reg_open_key(hkey, name, phkey)
-    HKEY hkey;
-    const char *name;
-    HKEY *phkey;
+static LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey)
 {
     return RegOpenKeyEx(hkey, name, 0, KEY_READ, phkey);
 }
 
-static LONG reg_open_vkey(hkey, key, phkey)
-    HKEY hkey;
-    VALUE key;
-    HKEY *phkey;
+static LONG reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey)
 {
     return reg_open_key(hkey, StringValuePtr(key), phkey);
 }
 
 static VALUE
-reg_enum_key(hkey, i)
-    HKEY hkey;
-    DWORD i;
+reg_enum_key(HKEY hkey, DWORD i)
 {
     char buf[BUFSIZ];
     DWORD size_buf = sizeof(buf);
@@ -1543,9 +1461,7 @@ reg_enum_key(hkey, i)
 }
 
 static VALUE
-reg_get_val(hkey, subkey)
-    HKEY hkey;
-    const char *subkey;
+reg_get_val(HKEY hkey, const char *subkey)
 {
     char buf[BUFSIZ];
     LONG size_buf = sizeof(buf);
@@ -1557,8 +1473,7 @@ reg_get_val(hkey, subkey)
 }
 
 static VALUE
-reg_get_typelib_file_path(hkey)
-    HKEY hkey;
+reg_get_typelib_file_path(HKEY hkey)
 {
     VALUE path = Qnil;
     path = reg_get_val(hkey, "win32");
@@ -1569,8 +1484,7 @@ reg_get_typelib_file_path(hkey)
 }
 
 static VALUE
-typelib_file_from_clsid(ole)
-    VALUE ole;
+typelib_file_from_clsid(VALUE ole)
 {
     OLECHAR *pbuf;
     CLSID clsid;
@@ -1604,8 +1518,7 @@ typelib_file_from_clsid(ole)
 }
 
 static VALUE
-typelib_file_from_typelib(ole)
-    VALUE ole;
+typelib_file_from_typelib(VALUE ole)
 {
     HKEY htypelib, hclsid, hversion, hlang;
     double fver;
@@ -1663,8 +1576,7 @@ typelib_file_from_typelib(ole)
 }
 
 static VALUE
-typelib_file(ole)
-    VALUE ole;
+typelib_file(VALUE ole)
 {
     VALUE file = typelib_file_from_clsid(ole);
     if (file != Qnil) {
@@ -1674,10 +1586,7 @@ typelib_file(ole)
 }
 
 static void
-ole_const_load(pTypeLib, klass, self)
-    ITypeLib *pTypeLib;
-    VALUE klass;
-    VALUE self;
+ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self)
 {
     unsigned int count;
     unsigned int index;
@@ -1740,10 +1649,7 @@ ole_const_load(pTypeLib, klass, self)
 }
 
 static HRESULT
-clsid_from_remote(host, com, pclsid)
-    VALUE host;
-    VALUE com;
-    CLSID *pclsid;
+clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid)
 {
     HKEY hlm;
     HKEY hpid;
@@ -1765,7 +1671,7 @@ clsid_from_remote(host, com, pclsid)
         hr = HRESULT_FROM_WIN32(err);
     else {
         len = sizeof(clsid);
-        err = RegQueryValueEx(hpid, "", NULL, &dwtype, clsid, &len);
+        err = RegQueryValueEx(hpid, (LPBYTE)"", NULL, &dwtype, clsid, &len);
         if (err == ERROR_SUCCESS && dwtype == REG_SZ) {
             pbuf  = ole_mb2wc(clsid, -1);
             hr = CLSIDFromString(pbuf, pclsid);
@@ -1781,10 +1687,7 @@ clsid_from_remote(host, com, pclsid)
 }
 
 static VALUE
-ole_create_dcom(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+ole_create_dcom(int argc, VALUE *argv, VALUE self)
 {
     VALUE ole, host, others;
     HRESULT hr;
@@ -1834,11 +1737,7 @@ ole_create_dcom(argc, argv, self)
 }
 
 static VALUE
-ole_bind_obj(moniker, argc, argv, self)
-    VALUE moniker;
-    int argc;
-    VALUE *argv;
-    VALUE self;
+ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
 {
     IBindCtx *pBindCtx;
     IMoniker *pMoniker;
@@ -1888,10 +1787,7 @@ ole_bind_obj(moniker, argc, argv, self)
  *     WIN32OLE.connect('Excel.Application') # => WIN32OLE object which represents running Excel.
  */
 static VALUE
-fole_s_connect(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_s_connect(int argc, VALUE *argv, VALUE self)
 {
     VALUE svr_name;
     VALUE others;
@@ -1971,10 +1867,7 @@ fole_s_connect(argc, argv, self)
  *     puts MSO::MsoLineSingle # => 1
  */
 static VALUE
-fole_s_const_load(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_s_const_load(int argc, VALUE *argv, VALUE self)
 {
     VALUE ole;
     VALUE klass;
@@ -2040,9 +1933,7 @@ fole_s_const_load(argc, argv, self)
 }
 
 static VALUE
-ole_classes_from_typelib(pTypeLib, classes)
-    ITypeLib *pTypeLib;
-    VALUE classes;
+ole_classes_from_typelib(ITypeLib *pTypeLib, VALUE classes)
 {
     
     long count;
@@ -2074,8 +1965,7 @@ ole_classes_from_typelib(pTypeLib, classes)
 }
 
 static ULONG
-reference_count(pole)
-    struct oledata * pole;
+reference_count(struct oledata * pole)
 {
     ULONG n = 0;
     if(pole->pDispatch) {
@@ -2094,9 +1984,7 @@ reference_count(pole)
  *  exists only for debugging WIN32OLE.
  */
 static VALUE
-fole_s_reference_count(self, obj)
-    VALUE self;
-    VALUE obj;
+fole_s_reference_count(VALUE self, VALUE obj)
 {
     struct oledata * pole;
     OLEData_Get_Struct(obj, pole);
@@ -2113,9 +2001,7 @@ fole_s_reference_count(self, obj)
  *  The return value is reference counter of OLE object.
  */
 static VALUE
-fole_s_free(self, obj)
-    VALUE self;
-    VALUE obj;
+fole_s_free(VALUE self, VALUE obj)
 {
     ULONG n = 0;
     struct oledata * pole;
@@ -2129,9 +2015,7 @@ fole_s_free(self, obj)
 }
 
 static HWND
-ole_show_help(helpfile, helpcontext)
-    VALUE helpfile;
-    VALUE helpcontext;
+ole_show_help(VALUE helpfile, VALUE helpcontext)
 {
     FNHTMLHELP *pfnHtmlHelp;
     HWND hwnd = 0;
@@ -2163,10 +2047,7 @@ ole_show_help(helpfile, helpcontext)
  *     WIN32OLE.ole_show_help(typeobj)
  */
 static VALUE
-fole_s_show_help(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_s_show_help(int argc, VALUE *argv, VALUE self)
 {
     VALUE target;
     VALUE helpcontext;
@@ -2205,8 +2086,7 @@ fole_s_show_help(argc, argv, self)
  *     WIN32OLE.codepage # => WIN32OLE::CP_ACP
  */
 static VALUE
-fole_s_get_code_page(self)
-    VALUE self;
+fole_s_get_code_page(VALUE self)
 {
     return INT2FIX(cWIN32OLE_cp);
 }
@@ -2219,9 +2099,7 @@ fole_s_get_code_page(self)
  *     WIN32OLE.codepage = WIN32OLE::CP_UTF8
  */
 static VALUE
-fole_s_set_code_page(self, vcp)
-    VALUE self;
-    VALUE vcp;
+fole_s_set_code_page(VALUE self, VALUE vcp)
 {
     UINT cp = FIX2INT(vcp);
 
@@ -2254,8 +2132,7 @@ fole_s_set_code_page(self, vcp)
  *     WIN32OLE.create_guid # => {1CB530F1-F6B1-404D-BCE6-1959BF91F4A8} 
  */
 static VALUE
-fole_s_create_guid(self)
-    VALUE self;
+fole_s_create_guid(VALUE self)
 {
     GUID guid;
     HRESULT hr;
@@ -2292,10 +2169,7 @@ fole_s_create_guid(self)
  *      WIN32OLE.new('{00024500-0000-0000-C000-000000000046}') # => Excel OLE Automation WIN32OLE object.
  */
 static VALUE
-fole_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE svr_name;
     VALUE host;
@@ -2348,9 +2222,7 @@ fole_initialize(argc, argv, self)
 }
 
 static VALUE
-hash2named_arg(pair, pOp)
-    VALUE pair;
-    struct oleparam* pOp;
+hash2named_arg(VALUE pair, struct oleparam* pOp)
 {
     unsigned int index, i;
     VALUE key, value;
@@ -2385,9 +2257,7 @@ hash2named_arg(pair, pOp)
 }
 
 static VALUE
-set_argv(realargs, beg, end)
-    VARIANTARG* realargs;
-    unsigned int beg, end;
+set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end)
 {
     VALUE argv = rb_const_get(cWIN32OLE, rb_intern("ARGV"));
 
@@ -2401,12 +2271,7 @@ set_argv(realargs, beg, end)
 }
 
 static VALUE
-ole_invoke(argc, argv, self, wFlags, is_bracket)
-    int argc;
-    VALUE *argv;
-    VALUE self;
-    USHORT wFlags;
-    BOOL is_bracket;
+ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 {
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
     struct oledata *pole;
@@ -2529,7 +2394,7 @@ ole_invoke(argc, argv, self, wFlags, is_bracket)
     /* apparent you need to call propput, you need this */
     if (wFlags & DISPATCH_PROPERTYPUT) {
         if (op.dp.cArgs == 0)
-            return ResultFromScode(E_INVALIDARG);
+            ole_raise(ResultFromScode(E_INVALIDARG), eWIN32OLE_RUNTIME_ERROR, "argument error");
 
         op.dp.cNamedArgs = 1;
         op.dp.rgdispidNamedArgs = ALLOCA_N( DISPID, 1 );
@@ -2648,21 +2513,13 @@ ole_invoke(argc, argv, self, wFlags, is_bracket)
  *
  */
 static VALUE
-fole_invoke(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_invoke(int argc, VALUE *argv, VALUE self)
 {
     return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
 }
 
 static VALUE
-ole_invoke2(self, dispid, args, types, dispkind)
-    VALUE self;
-    VALUE dispid;
-    VALUE args;
-    VALUE types;
-    USHORT dispkind;
+ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
 {
     HRESULT hr;
     struct oledata *pole;
@@ -2863,11 +2720,7 @@ ole_invoke2(self, dispid, args, types, dispkind)
  *      excel._invoke(302, [], []) #  same effect as excel.Quit
  */
 static VALUE
-fole_invoke2(self, dispid, args, types)
-    VALUE self;
-    VALUE dispid;
-    VALUE args;
-    VALUE types;
+fole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 {
     return ole_invoke2(self, dispid, args, types, DISPATCH_METHOD);
 }
@@ -2885,11 +2738,7 @@ fole_invoke2(self, dispid, args, types)
  *     puts excel._getproperty(558, [], []) # same effect as puts excel.visible
  */
 static VALUE
-fole_getproperty2(self, dispid, args, types)
-    VALUE self;
-    VALUE dispid;
-    VALUE args;
-    VALUE types;
+fole_getproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 {
     return ole_invoke2(self, dispid, args, types, DISPATCH_PROPERTYGET);
 }
@@ -2907,11 +2756,7 @@ fole_getproperty2(self, dispid, args, types)
  *      excel._setproperty(558, [true], [WIN32OLE::VARIANT::VT_BOOL]) # same effect as excel.visible = true
  */
 static VALUE
-fole_setproperty2(self, dispid, args, types)
-    VALUE self;
-    VALUE dispid;
-    VALUE args;
-    VALUE types;
+fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 {
     return ole_invoke2(self, dispid, args, types, DISPATCH_PROPERTYPUT);
 }
@@ -2925,10 +2770,7 @@ fole_setproperty2(self, dispid, args, types)
  *
  */
 static VALUE
-fole_setproperty_with_bracket(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
     return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
 }
@@ -2948,10 +2790,7 @@ fole_setproperty_with_bracket(argc, argv, self)
  *     sheet.setproperty('Cells', 1, 2, 10) # => The B1 cell value is 10.
  */
 static VALUE
-fole_setproperty(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_setproperty(int argc, VALUE *argv, VALUE self)
 {
     return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
 }
@@ -2966,17 +2805,13 @@ fole_setproperty(argc, argv, self)
  *     puts excel['Visible'] # => false
  */
 static VALUE
-fole_getproperty_with_bracket(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
     return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
 }
 
 static VALUE
-ole_propertyput(self, property, value)
-    VALUE self, property, value;
+ole_propertyput(VALUE self, VALUE property, VALUE value)
 {
     struct oledata *pole;
     unsigned argErr;
@@ -3040,8 +2875,7 @@ ole_propertyput(self, property, value)
  *
  */
 static VALUE
-fole_free(self)
-    VALUE self;
+fole_free(VALUE self)
 {
     struct oledata *pole;
     rb_secure(4);
@@ -3052,8 +2886,7 @@ fole_free(self)
 }
 
 static VALUE
-ole_each_sub(pEnumV)
-    VALUE pEnumV;
+ole_each_sub(VALUE pEnumV)
 {
     VARIANT variant;
     VALUE obj = Qnil;
@@ -3069,8 +2902,7 @@ ole_each_sub(pEnumV)
 }
 
 static VALUE
-ole_ienum_free(pEnumV)
-    VALUE pEnumV;
+ole_ienum_free(VALUE pEnumV)
 {
     IEnumVARIANT *pEnum = (IEnumVARIANT *)pEnumV;
     OLE_RELEASE(pEnum);
@@ -3092,8 +2924,7 @@ ole_ienum_free(pEnumV)
  *     end
  */
 static VALUE
-fole_each(self)
-    VALUE self;
+fole_each(VALUE self)
 {
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
 
@@ -3150,10 +2981,7 @@ fole_each(self)
  *  Calls WIN32OLE#invoke method.
  */
 static VALUE
-fole_missing(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fole_missing(int argc, VALUE *argv, VALUE self)
 {
     ID id;
     char* mname;
@@ -3176,11 +3004,7 @@ fole_missing(argc, argv, self)
 }
 
 static VALUE
-ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
-    VALUE self;
-    ITypeInfo *pOwnerTypeInfo;
-    ITypeInfo *pTypeInfo;
-    VALUE name;
+ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -3217,10 +3041,7 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
 }
 
 static VALUE
-olemethod_from_typeinfo(self, pTypeInfo, name)
-    VALUE self;
-    ITypeInfo *pTypeInfo;
-    VALUE name;
+olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -3251,11 +3072,7 @@ olemethod_from_typeinfo(self, pTypeInfo, name)
 }
 
 static VALUE
-ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
-    ITypeInfo *pOwnerTypeInfo;
-    ITypeInfo *pTypeInfo;
-    VALUE     methods;
-    int       mask;
+ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -3295,9 +3112,7 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
 }
 
 static VALUE
-ole_methods_from_typeinfo(pTypeInfo, mask)
-    ITypeInfo *pTypeInfo;
-    int mask;
+ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -3326,9 +3141,7 @@ ole_methods_from_typeinfo(pTypeInfo, mask)
 }
 
 static HRESULT
-typeinfo_from_ole(pole, ppti)
-    struct oledata *pole;
-    ITypeInfo **ppti;
+typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
 {
     ITypeInfo *pTypeInfo;
     ITypeLib *pTypeLib;
@@ -3369,9 +3182,7 @@ typeinfo_from_ole(pole, ppti)
 }
 
 static VALUE
-ole_methods(self,mask)
-    VALUE self;
-    int mask;
+ole_methods(VALUE self, int mask)
 {
     ITypeInfo *pTypeInfo;
     HRESULT hr;
@@ -3401,8 +3212,7 @@ ole_methods(self,mask)
  *     
  */
 static VALUE
-fole_methods( self )
-    VALUE self;
+fole_methods(VALUE self)
 {
     return ole_methods( self, INVOKE_FUNC | INVOKE_PROPERTYGET | INVOKE_PROPERTYPUT);
 }
@@ -3418,8 +3228,7 @@ fole_methods( self )
  *     properties = excel.ole_get_methods
  */
 static VALUE
-fole_get_methods( self )
-    VALUE self;
+fole_get_methods(VALUE self)
 {
     return ole_methods( self, INVOKE_PROPERTYGET);
 }
@@ -3435,8 +3244,7 @@ fole_get_methods( self )
  *     properties = excel.ole_put_methods
  */
 static VALUE
-fole_put_methods( self )
-    VALUE self;
+fole_put_methods(VALUE self)
 {
     return ole_methods( self, INVOKE_PROPERTYPUT);
 }
@@ -3453,15 +3261,13 @@ fole_put_methods( self )
  *
  */
 static VALUE
-fole_func_methods( self )
-    VALUE self;
+fole_func_methods(VALUE self)
 {
     return ole_methods( self, INVOKE_FUNC);
 }
 
 static VALUE
-ole_type_from_itypeinfo(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_from_itypeinfo(ITypeInfo *pTypeInfo)
 {
     ITypeLib *pTypeLib;
     VALUE type = Qnil;
@@ -3494,8 +3300,7 @@ ole_type_from_itypeinfo(pTypeInfo)
  *      tobj = excel.ole_type
  */
 static VALUE
-fole_type( self )
-    VALUE self;
+fole_type(VALUE self)
 {
     ITypeInfo *pTypeInfo;
     HRESULT hr;
@@ -3518,10 +3323,7 @@ fole_type( self )
 }
 
 static VALUE
-make_oletypelib_obj(guid, major_version, minor_version)
-    VALUE guid;
-    VALUE major_version;
-    VALUE minor_version;
+make_oletypelib_obj(VALUE guid, VALUE major_version, VALUE minor_version)
 {
     VALUE args = rb_ary_new();
     rb_ary_push(args, guid);
@@ -3531,16 +3333,20 @@ make_oletypelib_obj(guid, major_version, minor_version)
 }
 
 static VALUE
-ole_typelib_from_itypelib(pTypeLib)
-    ITypeLib *pTypeLib;
+ole_typelib_from_itypelib(ITypeLib *pTypeLib)
 {
     TLIBATTR *pTLibAttr;
     OLECHAR bstr[80];
     VALUE guid = Qnil;
     VALUE major;
     VALUE minor;
-    HRESULT hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-    int len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    int len = 0;
+    HRESULT hr = S_OK; 
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        return Qnil;
+    }
+    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
     if (len > 3) {
         guid = ole_wc2vstr(bstr, FALSE);
     }
@@ -3555,8 +3361,7 @@ ole_typelib_from_itypelib(pTypeLib)
 
 
 static VALUE
-ole_typelib_from_itypeinfo(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     ITypeLib *pTypeLib;
@@ -3584,8 +3389,7 @@ ole_typelib_from_itypeinfo(pTypeInfo)
  *     puts tlib.name  # -> 'Microsoft Excel 9.0 Object Library'
  */
 static VALUE
-fole_typelib(self)
-    VALUE self;
+fole_typelib(VALUE self)
 {
     struct oledata *pole;
     HRESULT hr;
@@ -3608,12 +3412,7 @@ fole_typelib(self)
 }
 
 static HRESULT
-ole_docinfo_from_type(pTypeInfo, name, helpstr, helpcontext, helpfile)
-    ITypeInfo *pTypeInfo;
-    BSTR *name;
-    BSTR *helpstr; 
-    DWORD *helpcontext;
-    BSTR *helpfile;
+ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile)
 {
     HRESULT hr;
     ITypeLib *pTypeLib;
@@ -3636,10 +3435,7 @@ ole_docinfo_from_type(pTypeInfo, name, helpstr, helpcontext, helpfile)
 }
 
 static VALUE
-ole_usertype2val(pTypeInfo, pTypeDesc, typedetails)
-    ITypeInfo *pTypeInfo;
-    TYPEDESC *pTypeDesc;
-    VALUE typedetails;
+ole_usertype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {
     HRESULT hr;
     BSTR bstr;
@@ -3665,10 +3461,7 @@ ole_usertype2val(pTypeInfo, pTypeDesc, typedetails)
 
 static VALUE ole_typedesc2val();
 static VALUE
-ole_ptrtype2val(pTypeInfo, pTypeDesc, typedetails) 
-    ITypeInfo *pTypeInfo;
-    TYPEDESC *pTypeDesc;
-    VALUE typedetails;
+ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {    
     TYPEDESC *p = pTypeDesc;
     VALUE type = rb_str_new2("");
@@ -3685,10 +3478,7 @@ ole_ptrtype2val(pTypeInfo, pTypeDesc, typedetails)
 }
 
 static VALUE
-ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
-    ITypeInfo *pTypeInfo;
-    TYPEDESC *pTypeDesc;
-    VALUE typedetails;
+ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {
     VALUE str;
     switch(pTypeDesc->vt) {
@@ -3830,9 +3620,7 @@ ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
  *
  */
 static VALUE
-fole_method_help( self, cmdname )
-    VALUE self;
-    VALUE cmdname;
+fole_method_help(VALUE self, VALUE cmdname)
 {
     ITypeInfo *pTypeInfo;
     HRESULT hr;
@@ -3861,9 +3649,7 @@ fole_method_help( self, cmdname )
  *   This method will be OBSOLETE. Use WIN32OLE_TYPELIB.new(typelib).ole_classes instead.
  */
 static VALUE
-foletype_s_ole_classes(self, typelib)
-    VALUE self;
-    VALUE typelib;
+foletype_s_ole_classes(VALUE self, VALUE typelib)
 {
     VALUE file, classes;
     OLECHAR * pbuf;
@@ -3904,8 +3690,7 @@ foletype_s_ole_classes(self, typelib)
  *
  */
 static VALUE
-foletype_s_typelibs(self)
-    VALUE self;
+foletype_s_typelibs(VALUE self)
 {
     HKEY htypelib, hclsid;
     double fversion;
@@ -3957,8 +3742,7 @@ foletype_s_typelibs(self)
  *  Returns array of ProgID.
  */
 static VALUE
-foletype_s_progids(self)
-    VALUE self;
+foletype_s_progids(VALUE self)
 {
     HKEY hclsids, hclsid;
     DWORD i;
@@ -3989,8 +3773,7 @@ foletype_s_progids(self)
 }
 
 static VALUE
-foletype_s_allocate(klass)
-    VALUE klass;
+foletype_s_allocate(VALUE klass)
 {
     struct oletypedata *poletype;
     VALUE obj;
@@ -4001,10 +3784,7 @@ foletype_s_allocate(klass)
 }
 
 static VALUE
-oletype_set_member(self, pTypeInfo, name)
-    VALUE self;
-    ITypeInfo *pTypeInfo;
-    VALUE name;
+oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4015,10 +3795,7 @@ oletype_set_member(self, pTypeInfo, name)
 }
 
 static VALUE
-oleclass_from_typelib(self, pTypeLib, oleclass)
-    VALUE self;
-    ITypeLib *pTypeLib;
-    VALUE oleclass;
+oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass)
 {
     
     long count;
@@ -4057,11 +3834,7 @@ oleclass_from_typelib(self, pTypeLib, oleclass)
 
 
 static VALUE
-oletypelib_set_member(self, typelib, guid, version) 
-    VALUE self;
-    VALUE typelib;
-    VALUE guid;
-    VALUE version;
+oletypelib_set_member(VALUE self, VALUE typelib, VALUE guid, VALUE version)
 {
     rb_ivar_set(self, rb_intern("name"), typelib);
     rb_ivar_set(self, rb_intern("guid"), guid);
@@ -4080,8 +3853,7 @@ oletypelib_set_member(self, typelib, guid, version)
  *
  */
 static VALUE
-foletypelib_s_typelibs(self)
-    VALUE self;
+foletypelib_s_typelibs(VALUE self)
 {
     HKEY htypelib, hguid;
     DWORD i, j;
@@ -4120,9 +3892,7 @@ foletypelib_s_typelibs(self)
 }
 
 static VALUE
-make_version_str(major, minor)
-    VALUE major;
-    VALUE minor;
+make_version_str(VALUE major, VALUE minor)
 {
     VALUE version_str = Qnil;
     VALUE minor_str = Qnil;
@@ -4139,9 +3909,7 @@ make_version_str(major, minor)
 }
 
 static VALUE
-oletypelib_search_registry2(self, args)
-    VALUE self;
-    VALUE args;
+oletypelib_search_registry2(VALUE self, VALUE args)
 {
     HKEY htypelib, hguid, hversion;
     double fver;
@@ -4208,9 +3976,7 @@ oletypelib_search_registry2(self, args)
 }
 
 static VALUE
-oletypelib_search_registry(self, typelib)
-    VALUE self;
-    VALUE typelib;
+oletypelib_search_registry(VALUE self, VALUE typelib)
 {
     HKEY htypelib, hguid, hversion;
     DWORD i, j;
@@ -4282,16 +4048,13 @@ oletypelib_search_registry(self, typelib)
  *
  */
 static VALUE
-foletypelib_initialize(self, args)
-    VALUE self;
-    VALUE args;
+foletypelib_initialize(VALUE self, VALUE args)
 {
     VALUE found = Qfalse;
     VALUE typelib = Qnil;
     int len = 0;
     OLECHAR * pbuf;
     ITypeLib *pTypeLib;
-    BSTR bstr;
     VALUE retval;
     HRESULT hr = S_OK;
 
@@ -4342,8 +4105,7 @@ foletypelib_initialize(self, args)
  *     guid = tlib.guid # -> '{00020813-0000-0000-C000-000000000046}'
  */
 static VALUE
-foletypelib_guid(self)
-    VALUE self;
+foletypelib_guid(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("guid"));
 }
@@ -4358,8 +4120,7 @@ foletypelib_guid(self)
  *     name = tlib.name # -> 'Microsoft Excel 9.0 Object Library'
  */
 static VALUE
-foletypelib_name(self)
-    VALUE self;
+foletypelib_name(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("name"));
 }
@@ -4374,8 +4135,7 @@ foletypelib_name(self)
  *     puts tlib.version #-> 1.3
  */
 static VALUE
-foletypelib_version(self)
-    VALUE self;
+foletypelib_version(VALUE self)
 {
     VALUE ver = rb_ivar_get(self, rb_intern("version"));
     return rb_Float(ver);
@@ -4391,8 +4151,7 @@ foletypelib_version(self)
  *     puts tlib.major_version # -> 1
  */
 static VALUE
-foletypelib_major_version(self)
-    VALUE self;
+foletypelib_major_version(VALUE self)
 {
     VALUE ver = rb_ivar_get(self, rb_intern("version"));
     VALUE ary = rb_str_split(ver, ".");
@@ -4409,8 +4168,7 @@ foletypelib_major_version(self)
  *     puts tlib.minor_version # -> 3
  */
 static VALUE
-foletypelib_minor_version(self)
-    VALUE self;
+foletypelib_minor_version(VALUE self)
 {
     VALUE ver = rb_ivar_get(self, rb_intern("version"));
     VALUE ary = rb_str_split(ver, ".");
@@ -4418,9 +4176,7 @@ foletypelib_minor_version(self)
 }
 
 static VALUE
-oletypelib_path(guid, version)
-    VALUE guid;
-    VALUE version;
+oletypelib_path(VALUE guid, VALUE version)
 {
     int k;
     LONG err;
@@ -4462,8 +4218,7 @@ oletypelib_path(guid, version)
  *     puts tlib.path #-> 'C:\...\EXCEL9.OLB'
  */
 static VALUE
-foletypelib_path(self)
-    VALUE self;
+foletypelib_path(VALUE self)
 {
     VALUE guid = rb_ivar_get(self, rb_intern("guid"));
     VALUE version = rb_ivar_get(self, rb_intern("version"));
@@ -4481,8 +4236,7 @@ foletypelib_path(self)
  *     classes = tlib.ole_classes.collect{|k| k.name} # -> ['AddIn', 'AddIns' ...] 
  */
 static VALUE
-foletypelib_ole_classes(self)
-    VALUE self;
+foletypelib_ole_classes(VALUE self)
 {
     OLECHAR * pbuf;
     HRESULT hr;
@@ -4506,8 +4260,7 @@ foletypelib_ole_classes(self)
 }
 
 static VALUE
-foletypelib_inspect(self)
-    VALUE self;
+foletypelib_inspect(VALUE self)
 {
     return default_inspect(self, "WIN32OLE_TYPELIB");
 }
@@ -4530,10 +4283,7 @@ foletypelib_inspect(self)
  *          # => WIN32OLE_TYPE object of Application class of Excel. 
  */
 static VALUE
-foletype_initialize(self, typelib, oleclass)
-    VALUE self;
-    VALUE typelib;
-    VALUE oleclass;
+foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
 {
     VALUE file;
     OLECHAR * pbuf;
@@ -4569,15 +4319,13 @@ foletype_initialize(self, typelib, oleclass)
  *    puts tobj.name  # => Application
  */
 static VALUE
-foletype_name(self)
-    VALUE self;
+foletype_name(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("name"));
 }
 
 static VALUE
-ole_ole_type(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_ole_type(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -4631,8 +4379,7 @@ ole_ole_type(pTypeInfo)
  *    puts tobj.ole_type  # => Class
  */
 static VALUE
-foletype_ole_type(self)
-    VALUE self;
+foletype_ole_type(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4640,8 +4387,7 @@ foletype_ole_type(self)
 }
 
 static VALUE
-ole_type_guid(pTypeInfo) 
-    ITypeInfo *pTypeInfo;
+ole_type_guid(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -4668,8 +4414,7 @@ ole_type_guid(pTypeInfo)
  *    puts tobj.guid  # => {00024500-0000-0000-C000-000000000046}
  */
 static VALUE
-foletype_guid(self)
-    VALUE self;
+foletype_guid(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4677,8 +4422,7 @@ foletype_guid(self)
 }
 
 static VALUE
-ole_type_progid(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_progid(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -4703,8 +4447,7 @@ ole_type_progid(pTypeInfo)
  *    puts tobj.progid  # =>   Excel.Application.9
  */
 static VALUE
-foletype_progid(self)
-    VALUE self;
+foletype_progid(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4713,8 +4456,7 @@ foletype_progid(self)
 
 
 static VALUE
-ole_type_visible(pTypeInfo) 
-    ITypeInfo *pTypeInfo;
+ole_type_visible(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -4740,8 +4482,7 @@ ole_type_visible(pTypeInfo)
  *    puts tobj.visible  # => true
  */
 static VALUE
-foletype_visible(self)
-    VALUE self;
+foletype_visible(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4749,8 +4490,7 @@ foletype_visible(self)
 }
 
 static VALUE
-ole_type_major_version(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_major_version(ITypeInfo *pTypeInfo)
 {
     VALUE ver;
     TYPEATTR *pTypeAttr;
@@ -4772,8 +4512,7 @@ ole_type_major_version(pTypeInfo)
  *     puts tobj.major_version # => 8
  */
 static VALUE
-foletype_major_version(self)
-    VALUE self;
+foletype_major_version(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4781,8 +4520,7 @@ foletype_major_version(self)
 }
 
 static VALUE
-ole_type_minor_version(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_minor_version(ITypeInfo *pTypeInfo)
 {
     VALUE ver;
     TYPEATTR *pTypeAttr;
@@ -4804,8 +4542,7 @@ ole_type_minor_version(pTypeInfo)
  *     puts tobj.minor_version # => 2
  */
 static VALUE
-foletype_minor_version(self)
-    VALUE self;
+foletype_minor_version(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4813,8 +4550,7 @@ foletype_minor_version(self)
 }
 
 static VALUE
-ole_type_typekind(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_typekind(ITypeInfo *pTypeInfo)
 {
     VALUE typekind;
     TYPEATTR *pTypeAttr;
@@ -4837,8 +4573,7 @@ ole_type_typekind(pTypeInfo)
  *
  */
 static VALUE 
-foletype_typekind(self)
-    VALUE self;
+foletype_typekind(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4846,8 +4581,7 @@ foletype_typekind(self)
 }
 
 static VALUE
-ole_type_helpstring(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_helpstring(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     BSTR bhelpstr;
@@ -4867,8 +4601,7 @@ ole_type_helpstring(pTypeInfo)
  *    puts tobj.helpstring # => Web Browser interface
  */
 static VALUE 
-foletype_helpstring(self)
-    VALUE self;
+foletype_helpstring(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4876,8 +4609,7 @@ foletype_helpstring(self)
 }
 
 static VALUE
-ole_type_src_type(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_src_type(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -4904,8 +4636,7 @@ ole_type_src_type(pTypeInfo)
  *
  */
 static VALUE
-foletype_src_type(self)
-    VALUE self;
+foletype_src_type(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4913,8 +4644,7 @@ foletype_src_type(self)
 }
 
 static VALUE
-ole_type_helpfile(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_helpfile(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     BSTR bhelpfile;
@@ -4935,8 +4665,7 @@ ole_type_helpfile(pTypeInfo)
  *
  */
 static VALUE
-foletype_helpfile(self)
-    VALUE self;
+foletype_helpfile(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4944,8 +4673,7 @@ foletype_helpfile(self)
 }
 
 static VALUE
-ole_type_helpcontext(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_helpcontext(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     DWORD helpcontext;
@@ -4965,8 +4693,7 @@ ole_type_helpcontext(pTypeInfo)
  *     puts tobj.helpfile # => 131185
  */
 static VALUE
-foletype_helpcontext(self)
-    VALUE self;
+foletype_helpcontext(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4983,8 +4710,7 @@ foletype_helpcontext(self)
  *     puts tobj.ole_typelib # => 'Microsoft Excel 9.0 Object Library'
  */
 static VALUE
-foletype_ole_typelib(self)
-    VALUE self;
+foletype_ole_typelib(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -4992,8 +4718,7 @@ foletype_ole_typelib(self)
 }
 
 static VALUE
-ole_type_impl_ole_types(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_type_impl_ole_types(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     ITypeInfo *pRefTypeInfo;
@@ -5040,8 +4765,7 @@ ole_type_impl_ole_types(pTypeInfo)
  *     p tobj.implemented_ole_types # => [_Worksheet, DocEvents]
  */
 static VALUE
-foletype_impl_ole_types(self)
-    VALUE self;
+foletype_impl_ole_types(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -5049,15 +4773,13 @@ foletype_impl_ole_types(self)
 }
 
 static VALUE
-foletype_inspect(self)
-    VALUE self;
+foletype_inspect(VALUE self)
 {
     return default_inspect(self, "WIN32OLE_TYPE");
 }
 
 static VALUE
-ole_variables(pTypeInfo)
-    ITypeInfo *pTypeInfo;
+ole_variables(ITypeInfo *pTypeInfo)
 {
     HRESULT hr;
     TYPEATTR *pTypeAttr;
@@ -5121,8 +4843,7 @@ ole_variables(pTypeInfo)
  *
  */
 static VALUE
-foletype_variables(self)
-    VALUE self;
+foletype_variables(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -5142,8 +4863,7 @@ foletype_variables(self)
  *    # => ['Activate', 'Copy', 'Delete',....]
  */
 static VALUE
-foletype_methods(self)
-    VALUE self;
+foletype_methods(VALUE self)
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -5177,16 +4897,13 @@ foletype_methods(self)
  *
  */
 static VALUE
-folevariable_name(self)
-    VALUE self;
+folevariable_name(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("name"));
 }
 
 static VALUE
-ole_variable_ole_type(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5220,8 +4937,7 @@ ole_variable_ole_type(pTypeInfo, var_index)
  *
  */
 static VALUE
-folevariable_ole_type(self)
-    VALUE self;
+folevariable_ole_type(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5229,9 +4945,7 @@ folevariable_ole_type(self)
 }
 
 static VALUE
-ole_variable_ole_type_detail(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_ole_type_detail(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5257,8 +4971,7 @@ ole_variable_ole_type_detail(pTypeInfo, var_index)
  *
  */
 static VALUE
-folevariable_ole_type_detail(self)
-    VALUE self;
+folevariable_ole_type_detail(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5266,9 +4979,7 @@ folevariable_ole_type_detail(self)
 }
 
 static VALUE
-ole_variable_value(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_value(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5304,8 +5015,7 @@ ole_variable_value(pTypeInfo, var_index)
  *
  */    
 static VALUE
-folevariable_value(self)
-    VALUE self;
+folevariable_value(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5313,9 +5023,7 @@ folevariable_value(self)
 }
 
 static VALUE
-ole_variable_visible(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_visible(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5353,8 +5061,7 @@ ole_variable_visible(pTypeInfo, var_index)
  *       
  */
 static VALUE
-folevariable_visible(self)
-    VALUE self;
+folevariable_visible(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5362,9 +5069,7 @@ folevariable_visible(self)
 }
 
 static VALUE
-ole_variable_kind(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_kind(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5412,8 +5117,7 @@ ole_variable_kind(pTypeInfo, var_index)
  *      xlWorksheet CONSTANT
  */
 static VALUE
-folevariable_variable_kind(self)
-    VALUE self;
+folevariable_variable_kind(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5421,9 +5125,7 @@ folevariable_variable_kind(self)
 }
 
 static VALUE
-ole_variable_varkind(pTypeInfo, var_index)
-    ITypeInfo *pTypeInfo;
-    UINT var_index;
+ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index)
 {
     VARDESC *pVarDesc;
     HRESULT hr;
@@ -5455,8 +5157,7 @@ ole_variable_varkind(pTypeInfo, var_index)
  *       xlWorksheet 2
  */
 static VALUE
-folevariable_varkind(self)
-    VALUE self;
+folevariable_varkind(VALUE self)
 {
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
@@ -5464,8 +5165,7 @@ folevariable_varkind(self)
 }
 
 static VALUE
-folevariable_inspect(self)
-    VALUE self;
+folevariable_inspect(VALUE self)
 {
     VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
     rb_str_cat2(detail, "=");
@@ -5480,12 +5180,7 @@ folevariable_inspect(self)
  */
 
 static VALUE
-olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, index, name)
-    VALUE self;
-    ITypeInfo *pTypeInfo;
-    ITypeInfo *pOwnerTypeInfo;
-    int index;
-    VALUE name;
+olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo, int index, VALUE name)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5499,8 +5194,7 @@ olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, index, name)
 }
 
 static VALUE
-folemethod_s_allocate(klass)
-    VALUE klass;
+folemethod_s_allocate(VALUE klass)
 {
     struct olemethoddata *pmethod;
     VALUE obj;
@@ -5527,10 +5221,7 @@ folemethod_s_allocate(klass)
  *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
  */
 static VALUE
-folemethod_initialize(self, oletype, method)
-    VALUE self;
-    VALUE oletype;
-    VALUE method;
+folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
 {
     struct oletypedata *ptype;
     VALUE obj = Qnil;
@@ -5561,16 +5252,13 @@ folemethod_initialize(self, oletype, method)
  *     
  */
 static VALUE
-folemethod_name(self)
-    VALUE self;
+folemethod_name(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("name"));
 }
 
 static VALUE
-ole_method_return_type(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_return_type(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5596,8 +5284,7 @@ ole_method_return_type(pTypeInfo, method_index)
  *
  */
 static VALUE
-folemethod_return_type(self)
-    VALUE self;
+folemethod_return_type(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5605,9 +5292,7 @@ folemethod_return_type(self)
 }
 
 static VALUE
-ole_method_return_vtype(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_return_vtype(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5633,8 +5318,7 @@ ole_method_return_vtype(pTypeInfo, method_index)
  *
  */
 static VALUE
-folemethod_return_vtype(self)
-    VALUE self;
+folemethod_return_vtype(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5642,9 +5326,7 @@ folemethod_return_vtype(self)
 }
 
 static VALUE
-ole_method_return_type_detail(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_return_type_detail(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5670,8 +5352,7 @@ ole_method_return_type_detail(pTypeInfo, method_index)
  *     p method.return_type_detail # => ["PTR", "USERDEFINED", "Workbook"]
  */
 static VALUE
-folemethod_return_type_detail(self)
-    VALUE self;
+folemethod_return_type_detail(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5679,9 +5360,7 @@ folemethod_return_type_detail(self)
 }
 
 static VALUE
-ole_method_invkind(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_invkind(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5695,9 +5374,7 @@ ole_method_invkind(pTypeInfo, method_index)
 }
 
 static VALUE
-ole_method_invoke_kind(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    WORD method_index;
+ole_method_invoke_kind(ITypeInfo *pTypeInfo, UINT method_index)
 {
     VALUE type = rb_str_new2("UNKNOWN");
     VALUE invkind = ole_method_invkind(pTypeInfo, method_index);
@@ -5727,8 +5404,7 @@ ole_method_invoke_kind(pTypeInfo, method_index)
  *
  */
 static VALUE
-folemethod_invkind(self)
-    VALUE self;
+folemethod_invkind(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5747,8 +5423,7 @@ folemethod_invkind(self)
  *     puts method.invoke_kind # => "FUNC"
  */
 static VALUE
-folemethod_invoke_kind(self)
-    VALUE self;
+folemethod_invoke_kind(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5756,9 +5431,7 @@ folemethod_invoke_kind(self)
 }
 
 static VALUE
-ole_method_visible(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_visible(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5787,8 +5460,7 @@ ole_method_visible(pTypeInfo, method_index)
  *     puts method.visible? # => true
  */
 static VALUE
-folemethod_visible(self) 
-    VALUE self;
+folemethod_visible(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5796,10 +5468,7 @@ folemethod_visible(self)
 }
 
 static VALUE
-ole_method_event(pTypeInfo, method_index, method_name)
-    ITypeInfo *pTypeInfo;
-    WORD method_index;
-    VALUE method_name;
+ole_method_event(ITypeInfo *pTypeInfo, UINT method_index, VALUE method_name)
 {
     TYPEATTR *pTypeAttr;
     HRESULT hr;
@@ -5873,8 +5542,7 @@ ole_method_event(pTypeInfo, method_index, method_name)
  *
  */
 static VALUE
-folemethod_event(self)
-    VALUE self;
+folemethod_event(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5895,8 +5563,7 @@ folemethod_event(self)
  *    puts method.event_interface # =>  WorkbookEvents
  */
 static VALUE
-folemethod_event_interface(self)
-    VALUE self;
+folemethod_event_interface(VALUE self)
 {
     BSTR name;
     struct olemethoddata *pmethod;
@@ -5911,14 +5578,14 @@ folemethod_event_interface(self)
 }
 
 static VALUE
-ole_method_docinfo_from_type(pTypeInfo, method_index, name, helpstr,
-                             helpcontext, helpfile)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
-    BSTR *name;
-    BSTR *helpstr;
-    DWORD *helpcontext;
-    BSTR *helpfile;
+ole_method_docinfo_from_type(
+    ITypeInfo *pTypeInfo,
+    UINT method_index,
+    BSTR *name,
+    BSTR *helpstr,
+    DWORD *helpcontext,
+    BSTR *helpfile
+    )
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -5933,9 +5600,7 @@ ole_method_docinfo_from_type(pTypeInfo, method_index, name, helpstr,
 }
 
 static VALUE
-ole_method_helpstring(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_helpstring(ITypeInfo *pTypeInfo, UINT method_index)
 {
     HRESULT hr;
     BSTR bhelpstring;
@@ -5958,8 +5623,7 @@ ole_method_helpstring(pTypeInfo, method_index)
  *
  */
 static VALUE
-folemethod_helpstring(self)
-    VALUE self;
+folemethod_helpstring(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -5967,9 +5631,7 @@ folemethod_helpstring(self)
 }
 
 static VALUE
-ole_method_helpfile(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_helpfile(ITypeInfo *pTypeInfo, UINT method_index)
 {
     HRESULT hr;
     BSTR bhelpfile;
@@ -5991,8 +5653,7 @@ ole_method_helpfile(pTypeInfo, method_index)
  *     puts method.helpfile # => C:\...\VBAXL9.CHM
  */
 static VALUE
-folemethod_helpfile(self)
-    VALUE self;
+folemethod_helpfile(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6001,9 +5662,7 @@ folemethod_helpfile(self)
 }
 
 static VALUE
-ole_method_helpcontext(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_helpcontext(ITypeInfo *pTypeInfo, UINT method_index)
 {
     HRESULT hr;
     DWORD helpcontext = 0;
@@ -6024,8 +5683,7 @@ ole_method_helpcontext(pTypeInfo, method_index)
  *     puts method.helpcontext # => 65717
  */
 static VALUE
-folemethod_helpcontext(self)
-    VALUE self;
+folemethod_helpcontext(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6033,9 +5691,7 @@ folemethod_helpcontext(self)
 }
 
 static VALUE
-ole_method_dispid(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_dispid(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6058,8 +5714,7 @@ ole_method_dispid(pTypeInfo, method_index)
  *     puts method.dispid # => 181
  */
 static VALUE
-folemethod_dispid(self)
-    VALUE self;
+folemethod_dispid(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6067,9 +5722,7 @@ folemethod_dispid(self)
 }
 
 static VALUE
-ole_method_offset_vtbl(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_offset_vtbl(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6092,8 +5745,7 @@ ole_method_offset_vtbl(pTypeInfo, method_index)
  *     puts method.offset_vtbl # => 40
  */
 static VALUE
-folemethod_offset_vtbl(self)
-    VALUE self;
+folemethod_offset_vtbl(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6101,9 +5753,7 @@ folemethod_offset_vtbl(self)
 }
 
 static VALUE
-ole_method_size_params(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_size_params(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6127,8 +5777,7 @@ ole_method_size_params(pTypeInfo, method_index)
  *  
  */
 static VALUE
-folemethod_size_params(self)
-    VALUE self;
+folemethod_size_params(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6136,9 +5785,7 @@ folemethod_size_params(self)
 }
 
 static VALUE
-ole_method_size_opt_params(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_size_opt_params(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6161,8 +5808,7 @@ ole_method_size_opt_params(pTypeInfo, method_index)
  *     puts method.size_opt_params # => 4
  */
 static VALUE
-folemethod_size_opt_params(self)
-    VALUE self;
+folemethod_size_opt_params(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6170,9 +5816,7 @@ folemethod_size_opt_params(self)
 }
 
 static VALUE
-ole_method_params(pTypeInfo, method_index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
+ole_method_params(ITypeInfo *pTypeInfo, UINT method_index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6225,8 +5869,7 @@ ole_method_params(pTypeInfo, method_index)
  *                           TextVisualLayout]
  */
 static VALUE
-folemethod_params(self)
-    VALUE self;
+folemethod_params(VALUE self)
 {
     struct olemethoddata *pmethod;
     Data_Get_Struct(self, struct olemethoddata, pmethod);
@@ -6234,8 +5877,7 @@ folemethod_params(self)
 }
 
 static VALUE
-folemethod_inspect(self)
-    VALUE self;
+folemethod_inspect(VALUE self)
 {
     return default_inspect(self, "WIN32OLE_METHOD");
 }
@@ -6258,17 +5900,13 @@ folemethod_inspect(self)
  *     puts param1.name # => Filename
  */
 static VALUE
-foleparam_name(self)
-    VALUE self;
+foleparam_name(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("name"));
 }
 
 static VALUE
-ole_param_ole_type(pTypeInfo, method_index, index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
-    UINT index;
+ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6293,8 +5931,7 @@ ole_param_ole_type(pTypeInfo, method_index, index)
  *     puts param1.ole_type # => VARIANT
  */
 static VALUE 
-foleparam_ole_type(self)
-    VALUE self;
+foleparam_ole_type(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6303,10 +5940,7 @@ foleparam_ole_type(self)
 }
 
 static VALUE
-ole_param_ole_type_detail(pTypeInfo, method_index, index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
-    UINT index;
+ole_param_ole_type_detail(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6331,8 +5965,7 @@ ole_param_ole_type_detail(pTypeInfo, method_index, index)
  *     p param1.ole_type_detail # => ["PTR", "USERDEFINED", "Range"]
  */
 static VALUE 
-foleparam_ole_type_detail(self)
-    VALUE self;
+foleparam_ole_type_detail(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6341,11 +5974,7 @@ foleparam_ole_type_detail(self)
 }
 
 static VALUE
-ole_param_flag_mask(pTypeInfo, method_index, index, mask)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
-    UINT index;
-    USHORT mask;
+ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT mask)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
@@ -6369,8 +5998,7 @@ ole_param_flag_mask(pTypeInfo, method_index, index, mask)
  *     param1 = method.params[0]
  *     puts param1.input? # => true
  */
-static VALUE foleparam_input(self)
-    VALUE self;
+static VALUE foleparam_input(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6397,8 +6025,7 @@ static VALUE foleparam_input(self)
  *       Headers false
  *       Processed true
  */
-static VALUE foleparam_output(self)
-    VALUE self;
+static VALUE foleparam_output(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6416,8 +6043,7 @@ static VALUE foleparam_output(self)
  *     param1 = method.params[0]
  *     puts "#{param1.name} #{param1.optional?}" # => Filename true
  */
-static VALUE foleparam_optional(self)
-    VALUE self;
+static VALUE foleparam_optional(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6436,8 +6062,7 @@ static VALUE foleparam_optional(self)
  *     param = method.params[0]
  *     puts "#{param.name} #{param.retval?}"  # => name true
  */
-static VALUE foleparam_retval(self)
-    VALUE self;
+static VALUE foleparam_retval(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6446,10 +6071,7 @@ static VALUE foleparam_retval(self)
 }
 
 static VALUE
-ole_param_default(pTypeInfo, method_index, index)
-    ITypeInfo *pTypeInfo;
-    UINT method_index;
-    UINT index;
+ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 {
     FUNCDESC *pFuncDesc;
     ELEMDESC *pElemDesc;
@@ -6500,8 +6122,7 @@ ole_param_default(pTypeInfo, method_index, index)
  *         TextCodepage
  *         TextVisualLayout
  */
-static VALUE foleparam_default(self)
-    VALUE self;
+static VALUE foleparam_default(VALUE self)
 {
     struct oleparamdata *pparam;
     Data_Get_Struct(self, struct oleparamdata, pparam);
@@ -6510,8 +6131,7 @@ static VALUE foleparam_default(self)
 }
 
 static VALUE
-foleparam_inspect(self)
-    VALUE self;
+foleparam_inspect(VALUE self)
 {
     VALUE detail = foleparam_name(self);
     VALUE defval = foleparam_default(self);
@@ -6603,9 +6223,7 @@ STDMETHODIMP EVENTSINK_GetIDsOfNames(
 }
 
 static long
-ole_search_event_at(ary, ev)
-    VALUE ary;
-    VALUE ev;
+ole_search_event_at(VALUE ary, VALUE ev)
 {
     VALUE event;
     VALUE def_event;
@@ -6632,10 +6250,7 @@ ole_search_event_at(ary, ev)
 }
 
 static VALUE
-ole_search_event(ary, ev, is_default)
-    VALUE ary;
-    VALUE ev;
-    BOOL  *is_default;
+ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default)
 {
     VALUE event;
     VALUE def_event;
@@ -6661,9 +6276,7 @@ ole_search_event(ary, ev, is_default)
 
 
 static void
-ary2ptr_dispparams(ary, pdispparams)
-    VALUE ary;
-    DISPPARAMS *pdispparams;
+ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams)
 {
     int i;
     VALUE v;
@@ -6783,11 +6396,7 @@ void EVENTSINK_Destructor(
 }
 
 static HRESULT
-find_iid(ole, pitf, piid, ppTypeInfo)
-    VALUE ole;
-    char *pitf;
-    IID *piid;
-    ITypeInfo **ppTypeInfo;
+find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo)
 {
     HRESULT hr;
     IDispatch *pDispatch;
@@ -6898,10 +6507,7 @@ find_iid(ole, pitf, piid, ppTypeInfo)
 }
 
 static HRESULT
-find_default_source(ole, piid, ppTypeInfo)
-    VALUE ole;
-    IID *piid;
-    ITypeInfo **ppTypeInfo;
+find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
 {
     HRESULT hr;
     IProvideClassInfo2 *pProvideClassInfo2;
@@ -6993,8 +6599,7 @@ find_default_source(ole, piid, ppTypeInfo)
 }
 
 static void
-ole_event_free(poleev)
-    struct oleeventdata *poleev;
+ole_event_free(struct oleeventdata *poleev)
 {
     ITypeInfo *pti = NULL;
     IConnectionPoint *pcp = NULL;
@@ -7013,10 +6618,8 @@ ole_event_free(poleev)
     }
 }
 
-static VALUE fev_s_allocate _((VALUE));
 static VALUE
-fev_s_allocate(klass)
-    VALUE klass;
+fev_s_allocate(VALUE klass)
 {
     VALUE obj;
     struct oleeventdata *poleev;
@@ -7036,10 +6639,7 @@ fev_s_allocate(klass)
  *     ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
  */     
 static VALUE
-fev_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fev_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE ole, itf;
     struct oledata *pole;
@@ -7129,8 +6729,7 @@ fev_initialize(argc, argv, self)
  *  Translates and dispatches Windows message.
  */
 static VALUE
-fev_s_msg_loop(klass)
-    VALUE klass;
+fev_s_msg_loop(VALUE klass)
 {
     ole_msg_loop();
     return Qnil;
@@ -7138,10 +6737,7 @@ fev_s_msg_loop(klass)
 
 
 static void
-add_event_call_back(obj, event, data)
-    VALUE obj;
-    VALUE event;
-    VALUE data;
+add_event_call_back(VALUE obj, VALUE event, VALUE data)
 {
     long at;
     VALUE events = rb_ivar_get(obj, id_events);
@@ -7157,11 +6753,7 @@ add_event_call_back(obj, event, data)
 }
 
 static VALUE
-ev_on_event(argc, argv, self, is_ary_arg)
-    int argc;
-    VALUE *argv;
-    VALUE self;
-    VALUE is_ary_arg;
+ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
 {
     VALUE event, args, data;
     rb_scan_args(argc, argv, "01*", &event, &args);
@@ -7184,10 +6776,7 @@ ev_on_event(argc, argv, self, is_ary_arg)
  *    ev.on_event("NavigateComplete") {|url| puts url}
  */
 static VALUE
-fev_on_event(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fev_on_event(int argc, VALUE *argv, VALUE self)
 {
     return ev_on_event(argc, argv, self, Qfalse);
 }
@@ -7201,26 +6790,20 @@ fev_on_event(argc, argv, self)
  *  you should use this method instead of WIN32OLE_EVENT#on_event.
  */
 static VALUE
-fev_on_event_with_outargs(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
 {
     return ev_on_event(argc, argv, self, Qtrue);
 }
 
 static void 
-olevariant_free(pvar)
-    struct olevariantdata *pvar;
+olevariant_free(struct olevariantdata *pvar)
 {
     VariantClear(&(pvar->realvar));
     VariantClear(&(pvar->var));
 }
 
-static VALUE folevariant_s_allocate _((VALUE));
 static VALUE
-folevariant_s_allocate(klass)
-    VALUE klass;
+folevariant_s_allocate(VALUE klass)
 {
     struct olevariantdata *pvar;
     VALUE obj;
@@ -7232,11 +6815,9 @@ folevariant_s_allocate(klass)
 }
 
 static VALUE
-folevariant_initialize(self, args) 
-    VALUE self;
-    VALUE args;
+folevariant_initialize(VALUE self, VALUE args)
 {
-    long len = 0;
+    int len = 0;
     VARIANT var;
     VALUE val;
     VALUE vvt;
@@ -7261,8 +6842,7 @@ folevariant_initialize(self, args)
 }
 
 static VALUE
-folevariant_value(self)
-    VALUE self;
+folevariant_value(VALUE self)
 {
     struct olevariantdata *pvar;
     VALUE val = Qnil;
@@ -7290,11 +6870,7 @@ folevariant_value(self)
 }
 
 static VALUE
-create_property_object(oleobj, propname, prehr, premsg) 
-    VALUE oleobj;
-    VALUE propname;
-    HRESULT prehr;
-    VALUE premsg;
+create_property_object(VALUE oleobj, VALUE propname, HRESULT prehr, VALUE premsg)
 {
     VALUE prop = rb_funcall(cWIN32OLE_PROPERTY, rb_intern("new"), 0);
     rb_ivar_set(prop, rb_intern("oleobj"), oleobj);
@@ -7305,9 +6881,7 @@ create_property_object(oleobj, propname, prehr, premsg)
 }
 
 static VALUE
-foleproperty_getproperty(self, args)
-    VALUE self;
-    VALUE args;
+foleproperty_getproperty(VALUE self, VALUE args)
 {
     VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
     VALUE params = rb_ary_new();
@@ -7317,9 +6891,7 @@ foleproperty_getproperty(self, args)
 }
 
 static VALUE
-foleproperty_setproperty(self, args)
-    VALUE self;
-    VALUE args;
+foleproperty_setproperty(VALUE self, VALUE args)
 {
     VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
     VALUE params = rb_ary_new();
@@ -7329,15 +6901,14 @@ foleproperty_setproperty(self, args)
 }
 
 static VALUE
-foleproperty_method_missing(self, args)
-    VALUE self;
-    VALUE args;
+foleproperty_method_missing(VALUE self, VALUE args)
 {
     HRESULT hr = NUM2INT(rb_ivar_get(self, rb_intern("prehresult")));
     VALUE prop = rb_ivar_get(self, rb_intern("property"));
     VALUE msg = rb_ivar_get(self, rb_intern("premsg"));
     ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s%s",
               StringValuePtr(prop), StringValuePtr(msg));
+    return Qnil;
 }
 
 void

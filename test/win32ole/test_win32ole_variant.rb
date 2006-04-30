@@ -66,6 +66,12 @@ class TestWIN32OLE_VARIANT < Test::Unit::TestCase
     assert_equal("2004/12/24 12:24:45", obj.value)
   end
 
+  def test_conversion_time2date
+    dt = Time.mktime(2004, 12, 24, 12, 24, 45)
+    obj = WIN32OLE_VARIANT.new(dt, WIN32OLE::VARIANT::VT_DATE)
+    assert_equal("2004/12/24 12:24:45", obj.value)
+  end
+
   def test_conversion_str2cy
     obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
     assert_equal("10000", obj.value)
