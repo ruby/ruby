@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.5"
+#define WIN32OLE_VERSION "0.7.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -5910,7 +5910,7 @@ ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 {
     FUNCDESC *pFuncDesc;
     HRESULT hr;
-    VALUE type = rb_str_new2("UNKNOWN");
+    VALUE type = rb_str_new2("unknown type");
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return type;

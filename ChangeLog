@@ -1,3 +1,8 @@
+Mon May  1 08:32:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_param_ole_type): should return 
+	  "unknown type" string when ITypeInfo::GetFuncDesc failed.
+
 Sat Apr 29 22:43:37 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_decode0): should initialize
