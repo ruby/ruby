@@ -87,4 +87,32 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("1e")}
     # add expected behaviour here.
   end
+
+  def test_divmod
+    assert_equal([2, 3.5], 11.5.divmod(4))
+    assert_equal([-3, -0.5], 11.5.divmod(-4))
+    assert_equal([-3, 0.5], (-11.5).divmod(4))
+    assert_equal([2, -3.5], (-11.5).divmod(-4))
+  end
+
+  def test_div
+    assert_equal(2, 11.5.div(4))
+    assert_equal(-3, 11.5.div(-4))
+    assert_equal(-3, (-11.5).div(4))
+    assert_equal(2, (-11.5).div(-4))
+  end
+
+  def test_modulo
+    assert_equal(3.5, 11.5.modulo(4))
+    assert_equal(-0.5, 11.5.modulo(-4))
+    assert_equal(0.5, (-11.5).modulo(4))
+    assert_equal(-3.5, (-11.5).modulo(-4))
+  end
+
+  def test_remainder
+    assert_equal(3.5, 11.5.remainder(4))
+    assert_equal(3.5, 11.5.remainder(-4))
+    assert_equal(-3.5, (-11.5).remainder(4))
+    assert_equal(-3.5, (-11.5).remainder(-4))
+  end
 end

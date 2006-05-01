@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
+#include <float.h>
 
 #ifdef _WIN32
 #include "missing/file.h"
@@ -750,26 +751,25 @@ ruby_strtod(string, endPtr)
 
     errno = 0;
     p = string;
-    while (ISSPACE(*p)) {
-	p += 1;
-    }
+    while (ISSPACE(*p)) p++;
     if (*p == '-') {
 	sign = Qtrue;
-	p += 1;
+	p++;
     }
     else {
-	if (*p == '+') {
-	    p += 1;
-	}
+	if (*p == '+') p++;
 	sign = Qfalse;
     }
+
+    fraction = 0.;
+    exp = 0;
 
     /*
      * Count the number of digits in the mantissa
      * and also locate the decimal point.
      */
 
-    for ( ; c = *p; p += 1) {
+    for ( ; c = *p; p++) {
 	if (!ISDIGIT(c)) {
 	    if (c != '.' || hasPoint) {
 		break;
@@ -778,13 +778,13 @@ ruby_strtod(string, endPtr)
 	}
 	else {
 	    if (hasPoint) { /* already in fractional part */
-		fracExp -= 1;
+		fracExp--;
 	    }
 	    if (mantSize) { /* already in mantissa */
-		mantSize += 1;
+		mantSize++;
 	    }
 	    else if (c != '0') { /* have entered mantissa */
-		mantSize += 1;
+		mantSize++;
 		pMant = p;
 	    }
 	    hasDigit = Qtrue;
@@ -807,30 +807,17 @@ ruby_strtod(string, endPtr)
 	mantSize = 18;
     }
     if (!hasDigit) {
+	errno = ERANGE;
 	fraction = 0.0;
 	p = string;
     }
     else {
-	double frac1, frac2;
-	frac1 = 0;
-	for ( ; mantSize > 9; mantSize -= 1) {
-	    c = *p;
-	    p += 1;
+	for (; mantSize > 0; mantSize--) {
+	    c = *p++;
 	    if (c == '.') {
-		c = *p;
-		p += 1;
+		c = *p++;
 	    }
-	    frac1 = 10*frac1 + (c - '0');
-	}
-	frac2 = 0;
-	for (; mantSize > 0; mantSize -= 1) {
-	    c = *p;
-	    p += 1;
-	    if (c == '.') {
-		c = *p;
-		p += 1;
-	    }
-	    frac2 = 10*frac2 + (c - '0');
+	    fraction = 10*fraction + (c - '0');
 	}
 
 	/*
@@ -839,21 +826,20 @@ ruby_strtod(string, endPtr)
 
 	p = pExp;
 	if ((*p == 'E') || (*p == 'e')) {
-	    p += 1;
+	    p++;
 	    if (*p == '-') {
 		expSign = Qtrue;
-		p += 1;
+		p++;
 	    }
 	    else {
 		if (*p == '+') {
-		    p += 1;
+		    p++;
 		}
 		expSign = Qfalse;
 	    }
 	    if (ISDIGIT(*p)) {
 		do {
-		    exp = exp * 10 + (*p - '0');
-		    p += 1;
+		    exp = exp * 10 + (*p++ - '0');
 		}
 		while (ISDIGIT(*p));
 	    }
@@ -883,29 +869,6 @@ ruby_strtod(string, endPtr)
 	    errno = ERANGE;
 	    return 0.0 * (sign ? -1.0 : 1.0);
 	}
-	if (frac1 > 0) {
-	    fracExp = exp;
-	    exp += 9;
-	    if (exp < 0) {
-		expSign = Qtrue;
-		exp = -exp;
-	    }
-	    else {
-		expSign = Qfalse;
-	    }
-	    dblExp = 10.0;
-	    while (exp) {
-		if (exp & 1) {
-		    if (expSign)
-			frac1 /= dblExp;
-		    else
-			frac1 *= dblExp;
-		}
-		exp >>= 1;
-		dblExp *= dblExp;
-	    }
-	    fraction = frac1;
-	}
 	if (exp < 0) {
 	    expSign = Qtrue;
 	    exp = -exp;
@@ -918,18 +881,17 @@ ruby_strtod(string, endPtr)
 	{
 	    if (exp & 1) {
 		if (expSign)
-		    frac2 /= dblExp;
+		    fraction /= dblExp;
 		else
-		    frac2 *= dblExp;
+		    fraction *= dblExp;
 	    }
 	    exp >>= 1;
 	    dblExp *= dblExp;
 	}
-	fraction += frac2;
     }
 
     if (endPtr != NULL) {
-	*endPtr = (char *) p;
+	*endPtr = (char *)p;
     }
 
     if (sign) {

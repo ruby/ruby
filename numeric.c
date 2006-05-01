@@ -256,6 +256,8 @@ num_quo(x, y)
 }
 
 
+static VALUE num_floor(VALUE num);
+
 /*
  *  call-seq:
  *     num.div(numeric)    => integer
@@ -269,7 +271,7 @@ static VALUE
 num_div(x, y)
     VALUE x, y;
 {
-    return rb_Integer(rb_funcall(x, '/', 1, y));
+    return num_floor(rb_funcall(x, '/', 1, y));
 }
 
 
@@ -297,21 +299,21 @@ num_div(x, y)
  *    ------+-----+---------------+---------+-------------+---------------
  *    -13   | -4  |   3,   -1     |   3     |   -1        |    -1
  *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 |  4  |   2.0,  3.5   |   2.875 |    3.5      |     3.5
+ *     11.5 |  4  |   2,    3.5   |   2.875 |    3.5      |     3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 | -4  |  -3.0, -0.5   |  -2.875 |   -0.5      |     3.5
+ *     11.5 | -4  |  -3,   -0.5   |  -2.875 |   -0.5      |     3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 |  4  |  -3.0   0.5   |  -2.875 |    0.5      |    -3.5
+ *    -11.5 |  4  |  -3,    0.5   |  -2.875 |    0.5      |    -3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 | -4  |   2.0  -3.5   |   2.875 |   -3.5      |    -3.5
+ *    -11.5 | -4  |   2    -3.5   |   2.875 |   -3.5      |    -3.5
  *
  *
  *  Examples
  *     11.divmod(3)         #=> [3, 2]
  *     11.divmod(-3)        #=> [-4, -1]
- *     11.divmod(3.5)       #=> [3.0, 0.5]
- *     (-11).divmod(3.5)    #=> [-4.0, 3.0]
- *     (11.5).divmod(3.5)   #=> [3.0, 1.0]
+ *     11.divmod(3.5)       #=> [3, 0.5]
+ *     (-11).divmod(3.5)    #=> [-4, 3.0]
+ *     (11.5).divmod(3.5)   #=> [3, 1.0]
  */
 
 static VALUE
@@ -715,7 +717,7 @@ static VALUE
 flo_divmod(x, y)
     VALUE x, y;
 {
-    double fy, div, mod;
+    double fy, div, mod, val;
     volatile VALUE a, b;
 
     switch (TYPE(y)) {
@@ -732,7 +734,13 @@ flo_divmod(x, y)
 	return rb_num_coerce_bin(x, y);
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
-    a = rb_float_new(div);
+    if (FIXABLE(div)) {
+        val = div;
+        a = LONG2FIX(val);
+    }
+    else {
+        a = rb_dbl2big(div);
+    }
     b = rb_float_new(mod);
     return rb_assoc_new(a, b);
 }
