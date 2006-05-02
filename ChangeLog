@@ -1,3 +1,9 @@
+Wed May  3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent_internal): accept ai_family
+	  check from Sam Roberts <sroberts at uniserve.com>.
+	  [ruby-core:07691]
+
 Mon May	 1 12:23:19 2006    <sinara@blade.nagaokaut.ac.jp>
 
 	* numeric.c (num_div): use floor rather than rb_Integer().

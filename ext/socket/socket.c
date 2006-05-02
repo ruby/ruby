@@ -1252,12 +1252,11 @@ make_hostent_internal(arg)
     for (ai = addr; ai; ai = ai->ai_next) {
       /* Pushing all addresses regardless of address family is not the
        * behaviour expected of gethostbyname(). All the addresses in struct
-       * hostent->h_addr_list must be of the same family, I think the following
-       * line would fix this.
-
-       if(ai->ai_family == addr->ai_family)  <-- suggested fix
+       * hostent->h_addr_list must be of the same family.
        */
-       rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
+       if(ai->ai_family == addr->ai_family) {
+	   rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
+       }
     }
 
     return ary;
