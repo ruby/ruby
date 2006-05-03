@@ -1,3 +1,12 @@
+Thu May  4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/emitter.c (syck_scan_scalar): avoid accessing
+	  uninitialized array element.  a patch from Pat Eyler
+	  <rubypate at gmail.com>.  [ruby-core:07809]
+
+	* array.c (rb_ary_fill): initialize local variables first.  a
+	  patch from Pat Eyler <rubypate at gmail.com>.  [ruby-core:07810]
+
 Wed May  3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (make_hostent_internal): accept ai_family
