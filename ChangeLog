@@ -7,6 +7,10 @@ Thu May  4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* array.c (rb_ary_fill): initialize local variables first.  a
 	  patch from Pat Eyler <rubypate at gmail.com>.  [ruby-core:07810]
 
+	* ext/syck/yaml2byte.c (syck_yaml2byte_handler): need to free
+	  type_tag.  a patch from Pat Eyler <rubypate at gmail.com>.
+	  [ruby-core:07808]
+
 Wed May  3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (make_hostent_internal): accept ai_family

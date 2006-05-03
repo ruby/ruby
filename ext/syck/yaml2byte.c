@@ -145,6 +145,7 @@ syck_yaml2byte_handler(p, n)
             strcat( type_tag, "!" );
             strcat( type_tag, n->type_id );
             bytestring_append( val, YAMLBYTE_TRANSFER, type_tag, NULL);
+	    S_FREE(type_tag);
         }
     }
     switch (n->kind)
