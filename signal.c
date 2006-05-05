@@ -578,7 +578,7 @@ trap(arg)
 	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
     }
 
-    if (sig < 0 || sig > NSIG) {
+    if (sig < 0 || sig >= NSIG) {
 	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }
 #if defined(HAVE_SETITIMER)

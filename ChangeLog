@@ -1,3 +1,9 @@
+Sat May  6 00:38:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (trap): sig should be less then NSIG.  Coverity found
+	  this bug.  a patch from Kevin Tew <tewk at tewk.com>.
+	  [ruby-core:07823]
+
 Thu May  4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_scan_scalar): avoid accessing
