@@ -1,10 +1,7 @@
-# You need RubyUnit and MS Excel and MSI to run this test script 
-
 begin
   require 'win32ole'
 rescue LoadError
 end
-
 require "test/unit"
 
 if defined?(WIN32OLE::VARIANT)

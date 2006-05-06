@@ -4,9 +4,8 @@
 
 begin
   require 'win32ole'
-rescue
+rescue LoadError
 end
-
 require 'test/unit'
 
 if defined?(WIN32OLE)

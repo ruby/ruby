@@ -2,7 +2,6 @@ begin
   require 'win32ole'
 rescue LoadError
 end
-
 require "test/unit"
 
 if defined?(WIN32OLE_VARIABLE)

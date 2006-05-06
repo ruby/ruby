@@ -1,8 +1,9 @@
 begin
   require 'win32ole'
-rescue
+rescue LoadError
 end
 require 'test/unit'
+
 if defined?(WIN32OLE_EVENT)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
     def setup
