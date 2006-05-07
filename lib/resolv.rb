@@ -637,7 +637,7 @@ class Resolv
           super()
           @host = host
           @port = port
-          @sock = UDPSocket.new
+          @sock = UDPSocket.new(host.index(':') ? Socket::AF_INET6 : Socket::AF_INET)
           @sock.connect(host, port)
           @sock.fcntl(Fcntl::F_SETFD, 1) if defined? Fcntl::F_SETFD
           @id = -1
