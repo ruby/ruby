@@ -26,22 +26,22 @@ module OpenSSL
       alg += %w(SHA224 SHA256 SHA384 SHA512)
     end
 
-    alg.each{|digest|
-      self.module_eval(<<-EOD)
-        class #{digest} < Digest
-          def initialize(data=nil)
-            super(\"#{digest}\", data)
+    alg.each{|name|
+      klass = Class.new(Digest){
+        define_method(:initialize){|*data|
+          if data.length > 1
+            raise ArgumentError,
+              "wrong number of arguments (#{data.length} for 1)"
           end
-
-          def #{digest}::digest(data)
-            Digest::digest(\"#{digest}\", data)
-          end
-
-          def #{digest}::hexdigest(data)
-            Digest::hexdigest(\"#{digest}\", data)
-          end
-        end
-      EOD
+          super(name, data.first)
+        }
+      }
+      singleton = (class <<klass; self; end)
+      singleton.class_eval{
+        define_method(:digest){|data| Digest.digest(name, data) }
+        define_method(:hexdigest){|data| Digest.hexdigest(name, data) }
+      }
+      const_set(name, klass)
     }
 
   end # Digest

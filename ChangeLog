@@ -1,3 +1,22 @@
+Mon May  8 09:10:31 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for OBJ_NAME_do_all_sorted.
+
+	* ext/openssl/ossl_cipher.c (ossl_s_ciphers): new method
+	  OpenSSL::Cipher.ciphers. it returns all the cipher names.
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_init): refine warning message.
+
+	* ext/openssl/lib/openssl/cipher.rb: reimplement without eval() and
+	  add constants AES128, AES192, AES256. [ruby-dev:28610]
+
+	* ext/openssl/lib/openssl/digest.rb: reimplement without eval().
+
+	* test/openssl/test_cipher.rb, test_digest: fix about reimplemented
+	  features.
+
+	* sample/openssl/cipher.rb: rewrite all.
+
 Sun May  7 03:09:51 2006  Stephan Maka  <stephan@spaceboyz.net>
 
 	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP#initialize):
