@@ -1286,7 +1286,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
  *     r.readpartial(4096)      #=> "ghi\n"     ""              ""
  *
  *  Note that readpartial is nonblocking-flag insensitive.
- *  It blocks even if the nonblocking-flag is set.
+ *  It blocks on the situation IO#sysread causes Errno::EAGAIN.
  *
  *  Also note that readpartial behaves similar to sysread in blocking mode.
  *  The behavior is identical when the buffer is empty.
