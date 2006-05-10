@@ -3174,7 +3174,7 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
       switch (reg->sub_anchor) {
       case ANCHOR_BEGIN_LINE:
 	if (!ON_STR_BEGIN(p)) {
-	  prev = onigenc_get_prev_char_head(reg->enc, adjrange, p);
+	  prev = onigenc_get_prev_char_head(reg->enc, str, p);
 	  if (!ONIGENC_IS_MBC_NEWLINE(reg->enc, prev, end)) {
 	    p = prev;
 	    goto retry;

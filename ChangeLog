@@ -1,3 +1,9 @@
+Wed May 10 23:40:21 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* oniguruma.h: Version 4.0.3
+
+	* regexec.c: ditto.
+
 Mon May  8 09:10:31 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for OBJ_NAME_do_all_sorted.
