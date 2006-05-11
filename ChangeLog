@@ -1,3 +1,8 @@
+Thu May 11 19:57:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): differ addition to minimize error.
+	  [ruby-dev:28619]
+
 Thu May 11 18:10:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): should not raise ERANGE when the input

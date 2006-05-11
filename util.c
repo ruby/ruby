@@ -811,12 +811,26 @@ ruby_strtod(string, endPtr)
 	p = string;
     }
     else {
-	for (; mantSize > 0; mantSize--) {
-	    c = *p++;
+	double frac1, frac2;
+	frac1 = 0;
+	for ( ; mantSize > 9; mantSize -= 1) {
+	    c = *p;
+	    p += 1;
 	    if (c == '.') {
-		c = *p++;
+		c = *p;
+		p += 1;
 	    }
-	    fraction = 10*fraction + (c - '0');
+	    frac1 = 10*frac1 + (c - '0');
+	}
+	frac2 = 0;
+	for (; mantSize > 0; mantSize -= 1) {
+	    c = *p;
+	    p += 1;
+	    if (c == '.') {
+		c = *p;
+		p += 1;
+	    }
+	    frac2 = 10*frac2 + (c - '0');
 	}
 
 	/*
@@ -868,6 +882,8 @@ ruby_strtod(string, endPtr)
 	    errno = ERANGE;
 	    return 0.0 * (sign ? -1.0 : 1.0);
 	}
+	fracExp = exp;
+	exp += 9;
 	if (exp < 0) {
 	    expSign = Qtrue;
 	    exp = -exp;
@@ -876,23 +892,45 @@ ruby_strtod(string, endPtr)
 	    expSign = Qfalse;
 	}
 	dblExp = 10.0;
-	while (exp) 
-	{
-	    if (exp & 1) {
-		if (expSign)
-		    fraction /= dblExp;
-		else
-		    fraction *= dblExp;
+	while (exp) {
+	    if (exp & 01) {
+		if (expSign) {
+		    frac1 /= dblExp;
+		}
+		else {
+		    frac1 *= dblExp;
+		}
 	    }
 	    exp >>= 1;
 	    dblExp *= dblExp;
 	}
+	exp = fracExp;
+	if (exp < 0) {
+	    expSign = Qtrue;
+	    exp = -exp;
+	}
+	else {
+	    expSign = Qfalse;
+	}
+	dblExp = 10.0;
+	while (exp) {
+	    if (exp & 01) {
+		if (expSign) {
+		    frac2 /= dblExp;
+		}
+		else {
+		    frac2 *= dblExp;
+		}
+	    }
+	    exp >>= 1;
+	    dblExp *= dblExp;
+	}
+	fraction = frac1 + frac2;
     }
 
     if (endPtr != NULL) {
 	*endPtr = (char *)p;
     }
-
     if (sign) {
 	return -fraction;
     }
