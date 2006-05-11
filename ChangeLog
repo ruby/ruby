@@ -1,3 +1,8 @@
+Thu May 11 18:30:11 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_cipher.c (add_cipher_name_to_ary): should return
+	  value. [ruby-dev:28627]
+
 Wed May 10 23:40:21 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.0.3
