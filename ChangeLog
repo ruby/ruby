@@ -1,3 +1,8 @@
+Thu May 11 18:10:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): should not raise ERANGE when the input
+	  string does not have any digits.  [ruby-dev:28629]
+
 Sun May  7 03:09:51 2006  Stephan Maka  <stephan@spaceboyz.net>
 
 	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP#initialize):

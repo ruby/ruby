@@ -681,8 +681,8 @@ ruby_getcwd()
  *
  */
 
-static  int     MDMINEXPT       = -323;
-static  int     MDMAXEXPT       = 309;
+#define MDMINEXPT DBL_MIN_EXP
+#define MDMAXEXPT DBL_MAX_EXP
 
 /*
  *----------------------------------------------------------------------
@@ -798,7 +798,7 @@ ruby_strtod(string, endPtr)
      * they can't affect the value anyway.
      */
     
-    pExp  = p;
+    pExp = p;
     if (mantSize) {
 	p = pMant;
     }
@@ -807,7 +807,6 @@ ruby_strtod(string, endPtr)
 	mantSize = 18;
     }
     if (!hasDigit) {
-	errno = ERANGE;
 	fraction = 0.0;
 	p = string;
     }
