@@ -4,6 +4,7 @@ Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 	  (Struct#pretty_print): call Kernel#class and Struct#members even if
 	  overriden.
 	  (Struct#pretty_print_cycle): ditto.
+	  [ruby-core:7865]
 
 Thu May 11 19:57:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
