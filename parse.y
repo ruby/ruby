@@ -4990,7 +4990,7 @@ parser_regx_options(struct parser_params *parser)
 
     int kcode   = 0;
     int options = 0;
-    int c, opt, kc, found;
+    int c, opt, kc;
 
     newtok();
     while (c = nextc(), ISALPHA(c)) {
