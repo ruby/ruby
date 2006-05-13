@@ -1242,10 +1242,12 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.readpartial(maxlen[, outbuf])    => string, outbuf
+ *     ios.readpartial(maxlen)              => string
+ *     ios.readpartial(maxlen, outbuf)      => outbuf
  *
- *  Reads at most <i>maxlen</i> bytes from the I/O stream but
- *  it blocks only if <em>ios</em> has no data immediately available.
+ *  Reads at most <i>maxlen</i> bytes from the I/O stream.
+ *  It blocks only if <em>ios</em> has no data immediately available.
+ *  It doesn't block if some data available.
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
  *  It raises <code>EOFError</code> on end of file.
@@ -1285,11 +1287,13 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
  *     r.readpartial(4096)      #=> "def\n"     ""              "ghi\n"
  *     r.readpartial(4096)      #=> "ghi\n"     ""              ""
  *
- *  Note that readpartial is nonblocking-flag insensitive.
- *  It blocks on the situation IO#sysread causes Errno::EAGAIN.
+ *  Note that readpartial behaves similar to sysread.
+ *  The differences are:
+ *  * If the buffer is not empty, read from the buffer instead of "sysread for buffered IO (IOError)".
+ *  * It doesn't cause Errno::EAGAIN and Errno::EINTR.  When readpartial meets EAGAIN and EINTR by read system call, readpartial retry the system call.
  *
- *  Also note that readpartial behaves similar to sysread in blocking mode.
- *  The behavior is identical when the buffer is empty.
+ *  The later means that readpartial is nonblocking-flag insensitive.
+ *  It blocks on the situation IO#sysread causes Errno::EAGAIN as if the fd is blocking mode.
  *
  */
 
