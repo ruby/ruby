@@ -1,3 +1,7 @@
+Mon May 15 21:37:12 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* re.c (rb_reg_prepare_re): don't use onig_recompile().
+
 Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.

@@ -906,7 +906,7 @@ rb_reg_prepare_re(VALUE re)
 	char err[ONIG_MAX_ERROR_MESSAGE_LEN];
 	int r;
 	OnigErrorInfo einfo;
-	regex_t *reg;
+	regex_t *reg, *reg2;
 	UChar *pattern;
 
 	if (FL_TEST(re, KCODE_FIXED))
@@ -914,14 +914,18 @@ rb_reg_prepare_re(VALUE re)
 	rb_reg_check(re);
 	reg = RREGEXP(re)->ptr;
 	pattern = ((UChar*)RREGEXP(re)->str);
-	r = onig_recompile(reg, pattern, pattern + RREGEXP(re)->len,
-			   reg->options, onigenc_get_default_encoding(),
-			   OnigDefaultSyntax, &einfo);
 
-	if (r != 0) {
-	     (void )onig_error_code_to_str((UChar*)err, r, &einfo);
-	     rb_reg_raise(pattern, RREGEXP(re)->len, err, re, Qfalse);
+	r = onig_new(&reg2, (UChar* )pattern,
+		     (UChar* )(pattern + RREGEXP(re)->len),
+		     reg->options, onigenc_get_default_encoding(),
+		     OnigDefaultSyntax, &einfo);
+	if (r) {
+	  onig_error_code_to_str((UChar*)err, r, &einfo);
+	  rb_reg_raise((char* )pattern, RREGEXP(re)->len, err, re, Qfalse);
 	}
+
+	RREGEXP(re)->ptr = reg2;
+	onig_free(reg);
     }
 }
 
