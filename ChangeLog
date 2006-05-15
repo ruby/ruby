@@ -1,3 +1,8 @@
+Mon May 15 17:42:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_symbol_arg):
+	  typo fixed.  a patch from Florian Gross <florg at florg.net>.
+
 Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.
