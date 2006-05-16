@@ -1,3 +1,10 @@
+Tue May 16 09:20:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not modify untainted objects in
+	  safe levels higher than 3.
+
+	* re.c (rb_memcmp): type change from char* to const void*.
+
 Mon May 15 17:42:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_symbol_arg):

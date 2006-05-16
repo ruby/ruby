@@ -70,10 +70,11 @@ static const char casetable[] = {
 #endif
 
 int
-rb_memcicmp(p1, p2, len)
-    char *p1, *p2;
+rb_memcicmp(x, y, len)
+    const void *x, *y;
     long len;
 {
+    const unsigned char *p1 = x, *p2 = y;
     int tmp;
 
     while (len--) {
@@ -85,7 +86,7 @@ rb_memcicmp(p1, p2, len)
 
 int
 rb_memcmp(p1, p2, len)
-    char *p1, *p2;
+    const void *p1, *p2;
     long len;
 {
     if (!ruby_ignorecase) {
@@ -96,11 +97,11 @@ rb_memcmp(p1, p2, len)
 
 long
 rb_memsearch(x0, m, y0, n)
-    char *x0, *y0;
+    const void *x0, *y0;
     long m, n;
 {
-    unsigned char *x = (unsigned char *)x0, *y = (unsigned char *)y0;
-    unsigned char *s, *e;
+    const unsigned char *x = (unsigned char *)x0, *y = (unsigned char *)y0;
+    const unsigned char *s, *e;
     long i;
     int d;
     unsigned long hx, hy;
@@ -1332,6 +1333,8 @@ rb_reg_initialize(obj, s, len, options)
 {
     struct RRegexp *re = RREGEXP(obj);
 
+    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
     if (re->ptr) re_free_pattern(re->ptr);
     if (re->str) free(re->str);
     re->ptr = 0;
