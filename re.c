@@ -152,6 +152,7 @@ rb_memsearch(x0, m, y0, n)
     return s-y;
 }
 
+#define REG_LITERAL FL_USER5
 #define REG_CASESTATE  FL_USER0
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER1
@@ -1335,6 +1336,9 @@ rb_reg_initialize(obj, s, len, options)
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
+    rb_check_frozen(obj);
+    if (FL_TEST(obj, REG_LITERAL))
+	rb_raise(rb_eSecurityError, "can't modify literal regexp");
     if (re->ptr) re_free_pattern(re->ptr);
     if (re->str) free(re->str);
     re->ptr = 0;
@@ -1374,6 +1378,7 @@ rb_reg_initialize(obj, s, len, options)
     if (options & ~0xf) {
 	kcode_reset_option();
     }
+    if (ruby_in_compile) FL_SET(obj, REG_LITERAL);
 }
 
 static VALUE rb_reg_s_alloc _((VALUE));
@@ -1656,7 +1661,6 @@ rb_reg_initialize_m(argc, argv, self)
     long len;
     int flags = 0;
 
-    rb_check_frozen(self);
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }

@@ -1,3 +1,8 @@
+Tue May 16 15:34:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not allow modifying literal
+	  regexps.  frozen check moved from rb_reg_initialize_m as well.
+
 Tue May 16 09:20:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): should not modify untainted objects in
