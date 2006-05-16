@@ -1,3 +1,8 @@
+Wed May 17 08:17:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): try to reduce errors using powersOf10
+	  table.  [ruby-dev:28644]
+
 Tue May 16 15:34:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): should not allow modifying literal

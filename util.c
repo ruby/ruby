@@ -684,6 +684,18 @@ ruby_getcwd()
 #define MDMINEXPT DBL_MIN_EXP
 #define MDMAXEXPT DBL_MAX_EXP
 
+static double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
+    10.0,			/* is 10^2^i.  Used to convert decimal */
+    100.0,			/* exponents into floating-point numbers. */
+    1.0e4,
+    1.0e8,
+    1.0e16,
+    1.0e32,
+    1.0e64,
+    1.0e128,
+    1.0e256
+};
+
 /*
  *----------------------------------------------------------------------
  *
@@ -724,7 +736,7 @@ ruby_strtod(string, endPtr)
 				 * address here. */
 {
     int sign, expSign = Qfalse;
-    double fraction = 0.0, dblExp;
+    double fraction = 0.0, dblExp, *d;
     register const char *p;
     register int c;
     int exp = 0;		/* Exponent read from "EX" field. */
@@ -891,18 +903,17 @@ ruby_strtod(string, endPtr)
 	else {
 	    expSign = Qfalse;
 	}
-	dblExp = 10.0;
-	while (exp) {
+	dblExp = 1.0;
+	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
 	    if (exp & 01) {
-		if (expSign) {
-		    frac1 /= dblExp;
-		}
-		else {
-		    frac1 *= dblExp;
-		}
+		dblExp *= *d;
 	    }
-	    exp >>= 1;
-	    dblExp *= dblExp;
+	}
+	if (expSign) {
+	    frac1 /= dblExp;
+	}
+	else {
+	    frac1 *= dblExp;
 	}
 	exp = fracExp;
 	if (exp < 0) {
@@ -912,18 +923,17 @@ ruby_strtod(string, endPtr)
 	else {
 	    expSign = Qfalse;
 	}
-	dblExp = 10.0;
-	while (exp) {
+	dblExp = 1.0;
+	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
 	    if (exp & 01) {
-		if (expSign) {
-		    frac2 /= dblExp;
-		}
-		else {
-		    frac2 *= dblExp;
-		}
+		dblExp *= *d;
 	    }
-	    exp >>= 1;
-	    dblExp *= dblExp;
+	}
+	if (expSign) {
+	    frac2 /= dblExp;
+	}
+	else {
+	    frac2 *= dblExp;
 	}
 	fraction = frac1 + frac2;
     }
