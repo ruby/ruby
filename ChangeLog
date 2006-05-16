@@ -5,6 +5,10 @@ Tue May 16 09:20:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_memcmp): type change from char* to const void*.
 
+	* dir.c (dir_close): should not close untainted dir stream.
+
+	* dir.c (GetDIR): add tainted/frozen check for each dir operation.
+
 Mon May 15 17:42:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_symbol_arg):
