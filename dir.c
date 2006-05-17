@@ -799,9 +799,16 @@ dir_s_rmdir(obj, dir)
     return INT2FIX(0);
 }
 
+static void
+sys_warning_1(mesg)
+    const char* mesg;
+{
+    rb_sys_warning("%s", mesg);
+}
+
 #define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)(val), 0))
+    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int

@@ -1,3 +1,8 @@
+Wed May 17 17:55:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (sys_warning): should not call a vararg function
+	  rb_sys_warning() indirectly.  [ruby-core:07886]
+
 Wed May 17 08:17:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): try to reduce errors using powersOf10
