@@ -306,8 +306,8 @@ end
 EXEEXT = CONFIG['EXEEXT']
 if CROSS_COMPILING
   $ruby = CONFIG['MINIRUBY']
-elsif $nmake
-  $ruby = '$(topdir:/=\\)\\miniruby' + EXEEXT
+elsif sep = config_string('BUILD_FILE_SEPARATOR')
+  $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end

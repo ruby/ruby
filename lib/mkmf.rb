@@ -1383,7 +1383,7 @@ LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 
-sep = File::ALT_SEPARATOR ? ":/=#{File::ALT_SEPARATOR}" : ''
+sep = config_string('BUILD_FILE_SEPARATOR') {|sep| ":/=#{sep}" if sep != "/"} || ""
 CLEANINGS = "
 clean:
 		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})

@@ -1,3 +1,7 @@
+Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.
+
 Mon May 15 21:37:12 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (rb_reg_prepare_re): don't use onig_recompile().
@@ -52,7 +56,7 @@ Mon May  1 17:58:16 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Mon May  1 08:32:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_param_ole_type): should return 
+	* ext/win32ole/win32ole.c (ole_param_ole_type): should return
 	  "unknown type" string when ITypeInfo::GetFuncDesc failed.
 
 Sat Apr 29 22:43:37 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
@@ -82,7 +86,7 @@ Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Sat Apr  8 18:06:28 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect, 
+	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect,
 	  WIN32OLE_PARAM#inspect.
 
 	* test/win32ole/test_win32ole_method.rb: ditto.
@@ -131,7 +135,7 @@ Wed Apr  5 00:22:54 2006  Tanaka Akira  <akr@m17n.org>
 
 Sat Apr  1 15:11:27 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c :add WIN32OLE_TYPE#inspect, 
+	* ext/win32ole/win32ole.c :add WIN32OLE_TYPE#inspect,
 	  WIN32OLE_VARIABLE#inspect
 
 	* remove ext/win32ole/tests/testOLEVARIABLE.rb, testOLETYPE.rb
