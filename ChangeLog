@@ -1,3 +1,7 @@
+Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.
+
 Wed May 17 17:55:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (sys_warning): should not call a vararg function
@@ -224,8 +228,8 @@ Thu Apr  6 01:04:47 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Wed Mar 29 20:54:44 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (fole_getproperty): WIN32OLE#[] should accept 
-	  multi arguments. 
+	* ext/win32ole/win32ole.c (fole_getproperty): WIN32OLE#[] should accept
+	  multi arguments.
 
 	* ext/win32ole/tests/testWIN32OLE.rb (test_setproperty_bracket): ditto.
 
@@ -320,7 +324,7 @@ Sat Mar  4 01:08:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Mar  2 19:44:18 2006  Tanaka Akira  <akr@m17n.org>
 
-	* gc.c: align VALUE with sizeof(RVALUE) globally. 
+	* gc.c: align VALUE with sizeof(RVALUE) globally.
 	  (is_pointer_to_heap): check alignment out of loop.
 	  (id2ref): avoid collision between symbols and objects.
 	  (rb_obj_id): ditto.  moved from object.c.
@@ -542,7 +546,7 @@ Mon Feb 13 13:27:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Feb 13 00:04:00 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler): add instance variable @insert_cmd to
-          change <%='s behavior. (backported 1.15 - 1.16)
+	  change <%='s behavior. (backported 1.15 - 1.16)
 
 Sat Feb 11 02:04:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
