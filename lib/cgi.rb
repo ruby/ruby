@@ -716,6 +716,8 @@ class CGI
       when /shift_jis/ni
         content = NKF::nkf('-s', content)
         options["language"] = "ja" unless options.has_key?("language")
+      when /utf-8/ni
+        content = NKF::nkf('-w', content)
       end
     end
 

@@ -1,3 +1,8 @@
+Thu May 18 17:11:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::out): support utf-8.  a patch from Fujioka
+	  <fuj@rabbix.jp>.  [ruby-dev:28649]
+
 Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.
