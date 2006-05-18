@@ -48,6 +48,8 @@ module WEBrick
       :DocumentRootOptions => { :FancyIndexing => true },
       :RequestCallback => nil,
       :ServerAlias    => nil,
+      :InputBufferSize  => 65536, # input buffer size in reading request body
+      :OutputBufferSize => 65536, # output buffer size in sending File or IO
 
       # for HTTPProxyServer
       :ProxyAuthProc  => nil,

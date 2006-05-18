@@ -1,3 +1,25 @@
+Thu May 18 22:37:20 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/config.rb (WEBrick::Config::HTTP): add new parameters,
+	  :InputBufferSize and :OutputBufferSize.
+
+	* lib/webrick/utils.rb (WEBrick::Utils.timeout): add new timeout 
+	  method. this implementation is expected to be compatible with
+	  timeout.rb and faster than timeout.rb.
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#_read_data):
+	  Timeout.timeout is replaced by WEBrick::Utils.timeout.
+
+	* lib/webrick/httprequest.rb: WEBrick::HTTPRequest::BUFSIZE is
+	  replaced by config[:InputBufferSize].
+
+	* lib/webrick/httpresposne.rb: WEBrick::HTTPResponse::BUFSIZE is
+	  replaced by config[:OutputBufferSize].
+
+	* lib/webrick/server.rb: get rid of unnecessary require.
+
+	* test/webrick/test_utils.rb: test for WEBrick::Utils.timeout.
+
 Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.

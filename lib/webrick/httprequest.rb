@@ -8,19 +8,15 @@
 #
 # $IPR: httprequest.rb,v 1.64 2003/07/13 17:18:22 gotoyuzo Exp $
 
-require 'timeout'
 require 'uri'
-
 require 'webrick/httpversion'
 require 'webrick/httpstatus'
 require 'webrick/httputils'
 require 'webrick/cookie'
 
 module WEBrick
-
   class HTTPRequest
     BODY_CONTAINABLE_METHODS = [ "POST", "PUT" ]
-    BUFSIZE = 1024*4
 
     # Request line
     attr_reader :request_line
@@ -44,6 +40,7 @@ module WEBrick
 
     def initialize(config)
       @config = config
+      @buffer_size = @config[:InputBufferSize]
       @logger = config[:Logger]
 
       @request_line = @request_method =
@@ -278,7 +275,7 @@ module WEBrick
       elsif self['content-length'] || @remaining_size
         @remaining_size ||= self['content-length'].to_i
         while @remaining_size > 0 
-          sz = BUFSIZE < @remaining_size ? BUFSIZE : @remaining_size
+          sz = [@buffer_size, @remaining_size].min
           break unless buf = read_data(socket, sz)
           @remaining_size -= buf.size
           block.call(buf)
@@ -321,7 +318,7 @@ module WEBrick
 
     def _read_data(io, method, arg)
       begin
-        timeout(@config[:RequestTimeout]){
+        WEBrick::Utils.timeout(@config[:RequestTimeout]){
           return io.__send__(method, arg)
         }
       rescue Errno::ECONNRESET
