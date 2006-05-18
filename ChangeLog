@@ -1,3 +1,10 @@
+Thu May 18 17:51:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_timeval): should round for usec floating
+	  number.  [ruby-core:07896]
+
+	* time.c (time_add): ditto.
+
 Thu May 18 17:11:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::out): support utf-8.  a patch from Fujioka

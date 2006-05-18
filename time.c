@@ -194,7 +194,7 @@ time_timeval(time, interval)
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
 	    }
-	    t.tv_usec = (time_t)(d*1e6);
+	    t.tv_usec = (time_t)(d*1e6+0.5);
 	}
 	break;
 
@@ -1287,7 +1287,7 @@ time_add(tobj, offset, sign)
     if (f != (double)sec_off)
         rb_raise(rb_eRangeError, "time %s %f out of Time range",
             sign < 0 ? "-" : "+", v);
-    usec_off = (time_t)(d*1e6);
+    usec_off = (time_t)(d*1e6+0.5);
 
     if (sign < 0) {
         sec = tobj->tv.tv_sec - sec_off;
