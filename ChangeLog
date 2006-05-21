@@ -1,3 +1,8 @@
+Sunn May 21 09:50:31 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* regexec.c: add STK_NULL_CHECK_END to IS_TO_VOID_TARGET().
+	  [ruby-list:42234]
+
 Thu May 18 22:37:20 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/config.rb (WEBrick::Config::HTTP): add new parameters,

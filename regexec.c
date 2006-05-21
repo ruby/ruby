@@ -360,7 +360,8 @@ typedef struct _StackType {
 /* stack type check mask */
 #define STK_MASK_POP_USED     0x00ff
 #define IS_TO_VOID_TARGET(stk) \
-     (((stk)->type & STK_MASK_POP_USED) || (stk)->type == STK_NULL_CHECK_START)
+     (((stk)->type & STK_MASK_POP_USED) || \
+       (stk)->type == STK_NULL_CHECK_START || (stk)->type == STK_NULL_CHECK_END)
 
 typedef struct {
   void* stack_p;
