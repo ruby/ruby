@@ -1,4 +1,21 @@
-Sunn May 21 09:50:31 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+Mon May 22 16:32:03 2006  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h (rb_io_set_nonblock): declared.
+
+	* io.c (rb_io_set_nonblock): new function.
+	  (io_getpartial): nonblocking read support.
+	  (io_read_nonblock): new method: IO#read_nonblock.
+	  (io_write_nonblock): new method: IO#write_nonblock.
+
+	* ext/socket/socket.c (s_accept): retry for EWOULDBLOCK.
+	  revert [ruby-talk:113807].
+	  (sock_connect_nonblock): new method: Socket#connect_nonblock.
+	  (sock_accept_nonblock): new method: Socket#accept_nonblock.
+	  (sock_recvfrom_nonblock): new method: Socket#recvfrom_nonblock.
+
+	  [ruby-core:7917]
+
+Sun May 21 09:50:31 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* regexec.c: add STK_NULL_CHECK_END to IS_TO_VOID_TARGET().
 	  [ruby-list:42234]
