@@ -429,7 +429,7 @@ struct RStruct {
     } as;
 };
 #define RSTRUCT_EMBED_LEN_MASK (FL_USER2|FL_USER1)
-#define RSTRUCT_EMBED_LEN_SHIFT FL_USHIFT+1
+#define RSTRUCT_EMBED_LEN_SHIFT (FL_USHIFT+1)
 #define RSTRUCT_LEN(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
      (RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
