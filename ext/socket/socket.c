@@ -2092,7 +2092,7 @@ unix_s_socketpair(argc, argv, klass)
  * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
  * 	sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
  * 	socket.connect( sockaddr )
- * 	socket.write( "GET / HTTP/1.0\n\n" )
+ * 	socket.write( "GET / HTTP/1.0\r\n\r\n" )
  * 	results = socket.read 
  * 
  * === Unix-based Exceptions
@@ -2202,6 +2202,142 @@ sock_connect(sock, addr)
     }
 
     return INT2FIX(0);
+}
+
+/*
+ * call-seq:
+ * 	socket.connect_nonblock( sockaddr ) => 0
+ * 
+ * Requests a connection to be made on the given +sockaddr+ after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * Returns 0 if successful, otherwise an exception is raised.
+ *  
+ * === Parameter
+ * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ * 
+ * === Example:
+ * 	# Pull down Google's web page
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
+ * 	begin
+ * 	  socket.connect_nonblock( sockaddr )
+ * 	rescue Errno::EINPROGRESS
+ * 	  IO.select(nil, [socket])
+ * 	  socket.connect_nonblock( sockaddr )
+ * 	end
+ * 	socket.write( "GET / HTTP/1.0\r\n\r\n" )
+ * 	results = socket.read 
+ * 
+ * === Unix-based Exceptions
+ * On unix-based systems the following system exceptions may be raised if 
+ * the call to _connect_ fails:
+ * * Errno::EACCES - search permission is denied for a component of the prefix
+ *   path or write access to the +socket+ is denided
+ * * Errno::EADDRINUSE - the _sockaddr_ is already in use
+ * * Errno::EADDRNOTAVAIL - the specified _sockaddr_ is not available from the
+ *   local machine
+ * * Errno::EAFNOSUPPORT - the specified _sockaddr_ is not a valid address for 
+ *   the address family of the specified +socket+
+ * * Errno::EALREADY - a connection is already in progress for the specified
+ *   socket
+ * * Errno::EBADF - the +socket+ is not a valid file descriptor
+ * * Errno::ECONNREFUSED - the target _sockaddr_ was not listening for connections
+ *   refused the connection request
+ * * Errno::ECONNRESET - the remote host reset the connection request
+ * * Errno::EFAULT - the _sockaddr_ cannot be accessed
+ * * Errno::EHOSTUNREACH - the destination host cannot be reached (probably 
+ *   because the host is down or a remote router cannot reach it)
+ * * Errno::EINPROGRESS - the O_NONBLOCK is set for the +socket+ and the
+ *   connection cnanot be immediately established; the connection will be
+ *   established asynchronously
+ * * Errno::EINTR - the attempt to establish the connection was interrupted by
+ *   delivery of a signal that was caught; the connection will be established
+ *   asynchronously
+ * * Errno::EISCONN - the specified +socket+ is already connected
+ * * Errno::EINVAL - the address length used for the _sockaddr_ is not a valid
+ *   length for the address family or there is an invalid family in _sockaddr_ 
+ * * Errno::ENAMETOOLONG - the pathname resolved had a length which exceeded
+ *   PATH_MAX
+ * * Errno::ENETDOWN - the local interface used to reach the destination is down
+ * * Errno::ENETUNREACH - no route to the network is present
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOSR - there were insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
+ * * Errno::EOPNOTSUPP - the calling +socket+ is listening and cannot be connected
+ * * Errno::EPROTOTYPE - the _sockaddr_ has a different type than the socket 
+ *   bound to the specified peer address
+ * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ *   was made.
+ * 
+ * On unix-based systems if the address family of the calling +socket+ is
+ * AF_UNIX the follow exceptions may be raised if the call to _connect_
+ * fails:
+ * * Errno::EIO - an i/o error occured while reading from or writing to the 
+ *   file system
+ * * Errno::ELOOP - too many symbolic links were encountered in translating
+ *   the pathname in _sockaddr_
+ * * Errno::ENAMETOOLLONG - a component of a pathname exceeded NAME_MAX 
+ *   characters, or an entired pathname exceeded PATH_MAX characters
+ * * Errno::ENOENT - a component of the pathname does not name an existing file
+ *   or the pathname is an empty string
+ * * Errno::ENOTDIR - a component of the path prefix of the pathname in _sockaddr_
+ *   is not a directory 
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _connect_ fails:
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::EADDRINUSE - the socket's local address is already in use
+ * * Errno::EINTR - the socket was cancelled
+ * * Errno::EINPROGRESS - a blocking socket is in progress or the service provider
+ *   is still processing a callback function. Or a nonblocking connect call is 
+ *   in progress on the +socket+.
+ * * Errno::EALREADY - see Errno::EINVAL
+ * * Errno::EADDRNOTAVAIL - the remote address is not a valid address, such as 
+ *   ADDR_ANY TODO check ADDRANY TO INADDR_ANY
+ * * Errno::EAFNOSUPPORT - addresses in the specified family cannot be used with
+ *   with this +socket+
+ * * Errno::ECONNREFUSED - the target _sockaddr_ was not listening for connections
+ *   refused the connection request
+ * * Errno::EFAULT - the socket's internal address or address length parameter
+ *   is too small or is not a valid part of the user space address
+ * * Errno::EINVAL - the +socket+ is a listening socket
+ * * Errno::EISCONN - the +socket+ is already connected
+ * * Errno::ENETUNREACH - the network cannot be reached from this host at this time
+ * * Errno::EHOSTUNREACH - no route to the network is present
+ * * Errno::ENOBUFS - no buffer space is available
+ * * Errno::ENOTSOCK - the +socket+ argument does not refer to a socket
+ * * Errno::ETIMEDOUT - the attempt to connect time out before a connection
+ *   was made.
+ * * Errno::EWOULDBLOCK - the socket is marked as nonblocking and the 
+ *   connection cannot be completed immediately
+ * * Errno::EACCES - the attempt to connect the datagram socket to the 
+ *   broadcast address failed
+ * 
+ * === See
+ * * connect manual pages on unix-based systems
+ * * connect function in Microsoft's Winsock functions reference
+ */
+static VALUE
+sock_connect_nonblock(sock, addr)
+    VALUE sock, addr;
+{
+    OpenFile *fptr;
+    int n;
+
+    StringValue(addr);
+    addr = rb_str_new4(addr);
+    GetOpenFile(sock, fptr);
+    rb_io_set_nonblock(fptr);
+    n = connect(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len);
+    if (n < 0) {
+	rb_sys_fail("connect(2)");
+    }
+
+    return INT2FIX(n);
 }
 
 /*
@@ -2391,7 +2527,7 @@ sock_listen(sock, log)
  * Receives up to _len_ bytes from +socket+. _flags_ is zero or more
  * of the +MSG_+ options. The first element of the results is the data
  * received. The second element contains protocol-specific information
- * on the snder
+ * on the sender.
  * 
  * === Parameters
  * * +len+ - the number of bytes to receive from the socket
@@ -2499,6 +2635,163 @@ sock_recvfrom(argc, argv, sock)
 
 /*
  * call-seq:
+ * 	socket.recvfrom_nonblock( len ) => [ data, sender ]
+ * 	socket.recvfrom_nonblock( len, flags ) => [ data, sender ]
+ * 
+ * Receives up to _len_ bytes from +socket+ using recvfrom(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * _flags_ is zero or more of the +MSG_+ options.
+ * The first element of the results is the data received.
+ * The second element contains protocol-specific information
+ * on the sender.
+ * 
+ * === Parameters
+ * * +len+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	# In one file, start this first
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 	client, client_sockaddr = socket.accept
+ * 	begin
+ * 	  pair = client.recvfrom_nonblock( 20 )
+ * 	rescue Errno::EAGAIN
+ * 	  IO.select([client])
+ * 	  retry
+ * 	end
+ * 	data = pair[0].chomp
+ * 	puts "I only received 20 bytes '#{data}'"
+ * 	sleep 1
+ * 	socket.close
+ * 
+ * 	# In another file, start this second
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.connect( sockaddr )
+ * 	socket.puts "Watch this get cut short!"
+ * 	socket.close 
+ * 
+ * === Unix-based Exceptions
+ * On unix-based based systems the following system exceptions may be raised if the
+ * call to _recvfrom_ fails:
+ * * Errno::EAGAIN - the +socket+ file descriptor is marked as O_NONBLOCK and no
+ *   data is waiting to be received; or MSG_OOB is set and no out-of-band data
+ *   is available and either the +socket+ file descriptor is marked as 
+ *   O_NONBLOCK or the +socket+ does not support blocking to wait for 
+ *   out-of-band-data
+ * * Errno::EWOULDBLOCK - see Errno::EAGAIN
+ * * Errno::EBADF - the +socket+ is not a valid file descriptor
+ * * Errno::ECONNRESET - a connection was forcibly closed by a peer
+ * * Errno::EFAULT - the socket's internal buffer, address or address length 
+ *   cannot be accessed or written
+ * * Errno::EINTR - a signal interupted _recvfrom_ before any data was available
+ * * Errno::EINVAL - the MSG_OOB flag is set and no out-of-band data is available
+ * * Errno::EIO - an i/o error occurred while reading from or writing to the 
+ *   filesystem
+ * * Errno::ENOBUFS - insufficient resources were available in the system to 
+ *   perform the operation
+ * * Errno::ENOMEM - insufficient memory was available to fulfill the request
+ * * Errno::ENOSR - there were insufficient STREAMS resources available to 
+ *   complete the operation
+ * * Errno::ENOTCONN - a receive is attempted on a connection-mode socket that
+ *   is not connected
+ * * Errno::ENOTSOCK - the +socket+ does not refer to a socket
+ * * Errno::EOPNOTSUPP - the specified flags are not supported for this socket type
+ * * Errno::ETIMEDOUT - the connection timed out during connection establishment
+ *   or due to a transmission timeout on an active connection
+ * 
+ * === Windows Exceptions
+ * On Windows systems the following system exceptions may be raised if 
+ * the call to _recvfrom_ fails:
+ * * Errno::ENETDOWN - the network is down
+ * * Errno::EFAULT - the internal buffer and from parameters on +socket+ are not
+ *   part of the user address space, or the internal fromlen parameter is
+ *   too small to accomodate the peer address
+ * * Errno::EINTR - the (blocking) call was cancelled by an internal call to
+ *   the WinSock function WSACancelBlockingCall
+ * * Errno::EINPROGRESS - a blocking Windows Sockets 1.1 call is in progress or 
+ *   the service provider is still processing a callback function
+ * * Errno::EINVAL - +socket+ has not been bound with a call to _bind_, or an
+ *   unknown flag was specified, or MSG_OOB was specified for a socket with
+ *   SO_OOBINLINE enabled, or (for byte stream-style sockets only) the internal
+ *   len parameter on +socket+ was zero or negative
+ * * Errno::EISCONN - +socket+ is already connected. The call to _recvfrom_ is
+ *   not permitted with a connected socket on a socket that is connetion 
+ *   oriented or connectionless.
+ * * Errno::ENETRESET - the connection has been broken due to the keep-alive 
+ *   activity detecting a failure while the operation was in progress.
+ * * Errno::EOPNOTSUPP - MSG_OOB was specified, but +socket+ is not stream-style
+ *   such as type SOCK_STREAM. OOB data is not supported in the communication
+ *   domain associated with +socket+, or +socket+ is unidirectional and 
+ *   supports only send operations
+ * * Errno::ESHUTDOWN - +socket+ has been shutdown. It is not possible to 
+ *   call _recvfrom_ on a socket after _shutdown_ has been invoked.
+ * * Errno::EWOULDBLOCK - +socket+ is marked as nonblocking and a  call to 
+ *   _recvfrom_ would block.
+ * * Errno::EMSGSIZE - the message was too large to fit into the specified buffer
+ *   and was truncated.
+ * * Errno::ETIMEDOUT - the connection has been dropped, because of a network
+ *   failure or because the system on the other end went down without
+ *   notice
+ * * Errno::ECONNRESET - the virtual circuit was reset by the remote side 
+ *   executing a hard or abortive close. The application should close the
+ *   socket; it is no longer usable. On a UDP-datagram socket this error
+ *   indicates a previous send operation resulted in an ICMP Port Unreachable
+ *   message.
+ */
+static VALUE
+sock_recvfrom_nonblock(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    OpenFile *fptr;
+    VALUE str;
+    char buf[1024];
+    socklen_t alen = sizeof buf;
+    VALUE len, flg;
+    long buflen;
+    long slen;
+    int fd, flags;
+
+    rb_scan_args(argc, argv, "11", &len, &flg);
+
+    if (flg == Qnil) flags = 0;
+    else             flags = NUM2INT(flg);
+    buflen = NUM2INT(len);
+
+    GetOpenFile(sock, fptr);
+    if (rb_io_read_pending(fptr)) {
+	rb_raise(rb_eIOError, "recv for buffered IO");
+    }
+    fd = fileno(fptr->f);
+
+    str = rb_tainted_str_new(0, buflen);
+
+    rb_io_check_closed(fptr);
+    rb_io_set_nonblock(fptr);
+    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
+
+    if (slen < 0) {
+	rb_sys_fail("recvfrom(2)");
+    }
+    if (slen < RSTRING(str)->len) {
+	RSTRING(str)->len = slen;
+	RSTRING(str)->ptr[slen] = '\0';
+    }
+    rb_obj_taint(str);
+    return rb_assoc_new(str, rb_str_new(buf, alen));
+}
+
+/*
+ * call-seq:
  * 	socket.accept => [ socket, string ]
  * 
  * Accepts an incoming connection returning an array containing a new
@@ -2590,6 +2883,69 @@ sock_accept(sock)
 
     GetOpenFile(sock, fptr);
     sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);
+
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
+}
+
+/*
+ * call-seq:
+ *    socket.accept_nonblock => [ socket, address ]
+ * 
+ * Accepts an incoming connection using accept(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * It returns an array containg the accpeted socket
+ * for the incoming connection and a string that contains the
+ * +struct+ sockaddr information about the caller.
+ * 
+ * === Example
+ *    # In one script, start this first
+ *    require 'socket'
+ *    include Socket::Constants
+ *    socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *    sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *    socket.bind( sockaddr )
+ *    socket.listen( 5 )
+ *    IO.select([socket])
+ *    client_fd, client_sockaddr = socket.accept_nonblock
+ *    puts "The client said, '#{socket.readline.chomp}'"
+ *    client_socket = Socket.for_fd( client_fd )
+ *    client_socket.puts "Hello from script one!"
+ *    socket.close
+ * 
+ *    # In another script, start this second
+ *    require 'socket'
+ *    include Socket::Constants
+ *    socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ *    sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ *    socket.connect( sockaddr )
+ *    socket.puts "Hello from script 2." 
+ *    puts "The server said, '#{socket.readline.chomp}'"
+ *    socket.close
+ * 
+ * Refer to Socket#accept for the exceptions that may be thrown if the call
+ * to _sysaccept_ fails. 
+ * 
+ * === See
+ * * Socket#accept
+ */
+static VALUE
+sock_accept_nonblock(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+    int fd2;
+    VALUE sock2;
+    char buf[1024];
+    socklen_t len = sizeof buf;
+
+    GetOpenFile(sock, fptr);
+    rb_io_set_nonblock(fptr);
+    fd2 = accept(fileno(fptr->f), (struct sockaddr*)buf, &len);
+
+    if (fd2 < 0) {
+        rb_sys_fail(0);
+    }
+    sock2 = init_sock(rb_obj_alloc(rb_cSocket), fd2);
 
     return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
@@ -3443,12 +3799,15 @@ Init_socket()
 
     rb_define_method(rb_cSocket, "initialize", sock_initialize, 3);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
+    rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, 1);
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
+    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, 0);
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
+    rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
 
     rb_define_singleton_method(rb_cSocket, "socketpair", sock_s_socketpair, 3);
     rb_define_singleton_method(rb_cSocket, "pair", sock_s_socketpair, 3);

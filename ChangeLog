@@ -1,3 +1,19 @@
+Mon May 22 17:30:04 2006  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h (rb_io_set_nonblock): declared.
+
+	* io.c (rb_io_set_nonblock): new function.
+	  (io_getpartial): nonblocking read support.
+	  (io_read_nonblock): new method: IO#read_nonblock.
+	  (io_write_nonblock): new method: IO#write_nonblock.
+
+	* ext/socket/socket.c
+	  (sock_connect_nonblock): new method: Socket#connect_nonblock.
+	  (sock_accept_nonblock): new method: Socket#accept_nonblock.
+	  (sock_recvfrom_nonblock): new method: Socket#recvfrom_nonblock.
+
+	  [ruby-core:7917]
+
 Mon May 22 15:57:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (umethod_bind): should not update original class.
