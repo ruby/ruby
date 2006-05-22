@@ -2768,7 +2768,7 @@ sock_recvfrom_nonblock(argc, argv, sock)
     buflen = NUM2INT(len);
 
     GetOpenFile(sock, fptr);
-    if (rb_io_read_pending(fptr)) {
+    if (rb_read_pending(fptr->f)) {
 	rb_raise(rb_eIOError, "recv for buffered IO");
     }
     fd = fileno(fptr->f);
