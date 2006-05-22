@@ -1196,9 +1196,11 @@ void rb_io_set_nonblock(OpenFile *fptr)
 #else
     flags = 0;
 #endif
-    flags |= O_NONBLOCK;
-    if (fcntl(fileno(fptr->f), F_SETFL, flags) == -1) {
-        rb_sys_fail(fptr->path);
+    if ((flags & O_NONBLOCK) == 0) {
+        flags |= O_NONBLOCK;
+        if (fcntl(fileno(fptr->f), F_SETFL, flags) == -1) {
+            rb_sys_fail(fptr->path);
+        }
     }
     if (fptr->f2) {
 #ifdef F_GETFL
@@ -1209,9 +1211,11 @@ void rb_io_set_nonblock(OpenFile *fptr)
 #else
         flags = 0;
 #endif
-        flags |= O_NONBLOCK;
-        if (fcntl(fileno(fptr->f2), F_SETFL, flags) == -1) {
-            rb_sys_fail(fptr->path);
+        if ((flags & O_NONBLOCK) == 0) {
+            flags |= O_NONBLOCK;
+            if (fcntl(fileno(fptr->f2), F_SETFL, flags) == -1) {
+                rb_sys_fail(fptr->path);
+            }
         }
     }
 }
