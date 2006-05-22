@@ -1,3 +1,8 @@
+Mon May 22 13:38:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): should support constant access from
+	  within instance_eval().  [ruby-dev:28327]
+
 Thu May 18 17:51:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_timeval): should round for usec floating

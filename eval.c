@@ -1892,7 +1892,7 @@ ev_const_get(cref, id, self)
 	}
 	cbase = cbase->nd_next;
     }
-    return rb_const_get(cref->nd_clss, id);
+    return rb_const_get(NIL_P(cref->nd_clss) ? CLASS_OF(self): cref->nd_clss, id);
 }
 
 static VALUE
