@@ -2806,9 +2806,8 @@ sock_accept_nonblock(sock)
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
     fd2 = accept(fileno(fptr->f), (struct sockaddr*)buf, &len);
-
     if (fd2 < 0) {
-        rb_sys_fail(0);
+        rb_sys_fail("accept(2)");
     }
     sock2 = init_sock(rb_obj_alloc(rb_cSocket), fd2);
 
