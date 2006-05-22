@@ -1,3 +1,9 @@
+Mon May 22 17:54:12 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_recvfrom_nonblock): use rb_read_pending
+	  instead of rb_io_read_pending.
+	  [ruby-dev:28663]
+
 Mon May 22 17:30:04 2006  Tanaka Akira  <akr@m17n.org>
 
 	* rubyio.h (rb_io_set_nonblock): declared.
