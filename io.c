@@ -1236,8 +1236,25 @@ read_all(OpenFile *fptr, long siz, VALUE str)
     return str;
 }
 
+void rb_io_set_nonblock(OpenFile *fptr)
+{
+    int flags;
+#ifdef F_GETFL
+    flags = fcntl(fptr->fd, F_GETFL);
+    if (flags == -1) {
+        rb_sys_fail(fptr->path);
+    }
+#else
+    flags = 0;
+#endif
+    flags |= O_NONBLOCK;
+    if (fcntl(fptr->fd, F_SETFL, flags) == -1) {
+        rb_sys_fail(fptr->path);
+    }
+}
+
 static VALUE
-io_getpartial(int argc, VALUE *argv, VALUE io)
+io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 {
     OpenFile *fptr;
     VALUE length, str;
@@ -1265,7 +1282,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
     if (len == 0)
 	return str;
 
-    READ_CHECK(fptr);
+    if (!nonblock)
+        READ_CHECK(fptr);
     if (RSTRING(str)->len != len) {
       modified:
 	rb_raise(rb_eRuntimeError, "buffer string modified");
@@ -1274,11 +1292,17 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
     if (n <= 0) {
       again:
 	if (RSTRING(str)->len != len) goto modified;
-        TRAP_BEG;
-        n = read(fptr->fd, RSTRING(str)->ptr, len);
-        TRAP_END;
+        if (nonblock) {
+            rb_io_set_nonblock(fptr);
+            n = read(fptr->fd, RSTRING(str)->ptr, len);
+        }
+        else {
+            TRAP_BEG;
+            n = read(fptr->fd, RSTRING(str)->ptr, len);
+            TRAP_END;
+        }
         if (n < 0) {
-            if (rb_io_wait_readable(fptr->fd))
+            if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
             rb_sys_fail(fptr->path);
         }
@@ -1353,11 +1377,87 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
 {
     VALUE ret;
 
-    ret = io_getpartial(argc, argv, io);
+    ret = io_getpartial(argc, argv, io, 0);
     if (NIL_P(ret))
         rb_eof_error();
     else
         return ret;
+}
+
+/*
+ *  call-seq:
+ *     ios.read_nonblock(maxlen)              => string
+ *     ios.read_nonblock(maxlen, outbuf)      => outbuf
+ *
+ *  Reads at most <i>maxlen</i> bytes from <em>ios</em> using
+ *  read(2) system call after O_NONBLOCK is set for
+ *  the underlying file descriptor.
+ *
+ *  If the optional <i>outbuf</i> argument is present,
+ *  it must reference a String, which will receive the data.
+ *
+ *  read_nonblock just calls read(2).
+ *  It causes all errors read(2) causes: EAGAIN, EINTR, etc.
+ *  The caller should care such errors.
+ *
+ *  read_nonblock causes EOFError on EOF.
+ *
+ *  If the read buffer is not empty,
+ *  read_nonblock reads from the buffer like readpartial.
+ *  In this case, read(2) is not called.
+ *
+ */
+
+static VALUE
+io_read_nonblock(int argc, VALUE *argv, VALUE io)
+{
+    VALUE ret;
+
+    ret = io_getpartial(argc, argv, io, 1);
+    if (NIL_P(ret))
+        rb_eof_error();
+    else
+        return ret;
+}
+
+/*
+ *  call-seq:
+ *     ios.write_nonblock(string)   => integer
+ *
+ *  Writes the given string to <em>ios</em> using
+ *  write(2) system call after O_NONBLOCK is set for
+ *  the underlying file descriptor.
+ *
+ *  write_nonblock just calls write(2).
+ *  It causes all errors write(2) causes: EAGAIN, EINTR, etc.
+ *  The result may also be smaller than string.length (partial write).
+ *  The caller should care such errors and partial write.
+ *
+ *  If the write buffer is not empty, it is flushed at first.
+ *
+ */
+
+static VALUE
+rb_io_write_nonblock(VALUE io, VALUE str)
+{
+    OpenFile *fptr;
+    long n;
+
+    rb_secure(4);
+    if (TYPE(str) != T_STRING)
+	str = rb_obj_as_string(str);
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+
+    io_fflush(fptr);
+
+    rb_io_set_nonblock(fptr);
+    n = write(fptr->fd, RSTRING(str)->ptr, RSTRING(str)->len);
+
+    if (n == -1) rb_sys_fail(fptr->path);
+
+    return LONG2FIX(n);
 }
 
 /*
@@ -5194,7 +5294,7 @@ argf_readpartial(int argc, VALUE *argv)
                          rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, current_file);
+        tmp = io_getpartial(argc, argv, current_file, 0);
     }
     if (NIL_P(tmp)) {
         if (next_p == -1) {
@@ -5537,6 +5637,8 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
+    rb_define_method(rb_cIO, "read_nonblock",  io_read_nonblock, -1);
+    rb_define_method(rb_cIO, "write_nonblock", rb_io_write_nonblock, 1);
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write, 1);

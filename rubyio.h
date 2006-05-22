@@ -93,6 +93,7 @@ void rb_io_check_initialized(OpenFile*);
 void rb_io_check_closed(OpenFile*);
 int rb_io_wait_readable(int);
 int rb_io_wait_writable(int);
+void rb_io_set_nonblock(OpenFile *fptr);
 
 VALUE rb_io_taint_check(VALUE);
 NORETURN(void rb_eof_error(void));
