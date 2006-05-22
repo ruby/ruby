@@ -1,3 +1,8 @@
+Mon May 22 15:57:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (umethod_bind): should not update original class.
+	  [ruby-dev:28636]
+
 Mon May 22 13:38:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ev_const_get): should support constant access from
