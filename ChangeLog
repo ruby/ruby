@@ -1,3 +1,8 @@
+Wed May 24 03:10:48 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb
+	  (OpenSSL::SSL::SocketForwarder#setsockopt,getsockopt): typo fixed.
+
 Mon May 22 17:54:12 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_recvfrom_nonblock): use rb_read_pending
