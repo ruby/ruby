@@ -29,12 +29,12 @@ module OpenSSL
         to_io.peeraddr
       end
 
-      def getsockopt(level, optname, optval)
+      def setsockopt(level, optname, optval)
         to_io.setsockopt(level, optname, optval)
       end
 
-      def setsockopt(level, optname)
-        to_io.setsockopt(level, optname)
+      def getsockopt(level, optname)
+        to_io.getsockopt(level, optname)
       end
 
       def fcntl(*args)

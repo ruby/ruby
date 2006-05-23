@@ -1,3 +1,8 @@
+Wed May 24 03:10:44 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb
+	  (OpenSSL::SSL::SocketForwarder#setsockopt,getsockopt): typo fixed.
+
 Mon May 22 16:32:03 2006  Tanaka Akira  <akr@m17n.org>
 
 	* rubyio.h (rb_io_set_nonblock): declared.
