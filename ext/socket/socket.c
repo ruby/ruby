@@ -2225,7 +2225,10 @@ sock_connect(sock, addr)
  * 	  socket.connect_nonblock( sockaddr )
  * 	rescue Errno::EINPROGRESS
  * 	  IO.select(nil, [socket])
- * 	  socket.connect_nonblock( sockaddr )
+ * 	  begin
+ * 	    socket.connect_nonblock( sockaddr )
+ * 	  rescue Errno::EISCONN
+ * 	  end
  * 	end
  * 	socket.write( "GET / HTTP/1.0\r\n\r\n" )
  * 	results = socket.read 
@@ -2562,6 +2565,10 @@ sock_recvfrom(argc, argv, sock)
  * The first element of the results is the data received.
  * The second element contains protocol-specific information
  * on the sender.
+ *
+ * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
+ * an empty string as data.
+ * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
  * 
  * === Parameters
  * * +len+ - the number of bytes to receive from the socket
@@ -2757,32 +2764,32 @@ sock_accept(sock)
  * +struct+ sockaddr information about the caller.
  * 
  * === Example
- *    # In one script, start this first
- *    require 'socket'
- *    include Socket::Constants
- *    socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- *    sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- *    socket.bind( sockaddr )
- *    socket.listen( 5 )
- *    begin
- *      client_socket, client_sockaddr = socket.accept_nonblock
- *    rescue Errno::EAGAIN
- *      IO.select([socket])
- *      retry
- *    end
- *    puts "The client said, '#{socket.readline.chomp}'"
- *    client_socket.puts "Hello from script one!"
- *    socket.close
- * 
- *    # In another script, start this second
- *    require 'socket'
- *    include Socket::Constants
- *    socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- *    sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- *    socket.connect( sockaddr )
- *    socket.puts "Hello from script 2." 
- *    puts "The server said, '#{socket.readline.chomp}'"
- *    socket.close
+ * 	# In one script, start this first
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.bind( sockaddr )
+ * 	socket.listen( 5 )
+ * 	begin
+ * 	  client_socket, client_sockaddr = socket.accept_nonblock
+ * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	  IO.select([socket])
+ * 	  retry
+ * 	end
+ * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	client_socket.puts "Hello from script one!"
+ * 	socket.close
+ *
+ * 	# In another script, start this second
+ * 	require 'socket'
+ * 	include Socket::Constants
+ * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
+ * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	socket.connect( sockaddr )
+ * 	socket.puts "Hello from script 2." 
+ * 	puts "The server said, '#{socket.readline.chomp}'"
+ * 	socket.close
  * 
  * Refer to Socket#accept for the exceptions that may be thrown if the call
  * to _accept_nonblock_ fails. 
