@@ -1,3 +1,7 @@
+Thu May 25 00:51:18 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (pkg_config): particular config commands support.
+
 Wed May 24 23:52:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_install_sh): ignore dummy install-sh.
