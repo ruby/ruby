@@ -1,6 +1,8 @@
-Thu May 25 00:51:18 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Thu May 25 01:43:30 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): particular config commands support.
+
+	* ext/extmk.rb: deal with $static set in extconf.rb.
 
 Wed May 24 23:52:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
