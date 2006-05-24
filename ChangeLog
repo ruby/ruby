@@ -1,8 +1,16 @@
-Thu May 25 01:43:30 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Thu May 25 01:52:07 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): particular config commands support.
 
 	* ext/extmk.rb: deal with $static set in extconf.rb.
+
+	* mkconfig.rb: merge multiple entries to an entry with multiple lines.
+
+	* lib/mkmf.rb: allow a series of commands to link.
+
+	* win32/Makefile.sub: embed manifests.
+
+	* win32/setup.mak: suffix OS name by runtime version.
 
 Wed May 24 23:52:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 

@@ -1189,10 +1189,11 @@ site-install-rb: install-rb
   end
 
   mfile.print "$(RUBYARCHDIR)/" if $extout
-  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
-  mfile.print "@-$(RM) $@\n\t"
-  mfile.print "@-$(MAKEDIRS) $(@D)\n\t" if $extout
-  mfile.print LINK_SO, "\n\n"
+  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
+  mfile.print "\t@-$(RM) $@\n"
+  mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
+  link_so = LINK_SO.gsub(/^/, "\t")
+  mfile.print link_so, "\n\n"
   unless $static.nil?
     mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"

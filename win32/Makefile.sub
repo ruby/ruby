@@ -141,6 +141,9 @@ XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+MANIFESTTOOL = mt -nologo
+LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
+LDSHARED_2 = @$(RM) $(@:/=\).manifest
 !endif
 
 DLDFLAGS = $(LDFLAGS) -dll
@@ -403,6 +406,10 @@ s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),;t t
+!if $(MSC_VER) >= 1400
+s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
+s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
+!endif
 s,@COMPILE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(hdrdir)}.%s{}.%s: .%s.%s:,;t t
@@ -425,15 +432,21 @@ s,@top_srcdir@,$(srcdir),;t t
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
+		$(LDSHARED_1)
+		$(LDSHARED_2)
 
 $(PROGRAM):	$(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
+		$(LDSHARED_1)
+		$(LDSHARED_2)
 
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			$(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+		$(LDSHARED_1)
+		$(LDSHARED_2)
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
@@ -446,6 +459,8 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
+		$(LDSHARED_1)
+		$(LDSHARED_2)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)

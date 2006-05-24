@@ -69,7 +69,7 @@ int
 runtime_name()
 {
     char libpath[MAXPATHLEN+1];
-    char *p, *base = NULL;
+    char *p, *base = NULL, *ver = NULL;
     HMODULE msvcrt = NULL;
     MEMORY_BASIC_INFORMATION m;
 
@@ -87,9 +87,17 @@ runtime_name()
     if (!base) return 0;
     if (p = strchr(base, '.')) *p = '\0';
     for (p = base; *p; p = CharNext(p)) {
-	if (isascii(*p) && isupper(*p))
+	if (!isascii(*p)) continue;
+	if (isupper(*p)) {
 	    *p = tolower(*p);
+	}
+	if (!isdigit(*p)) {
+	    ver = NULL;
+	} else if (!ver) {
+	    ver = p;
+	}
     }
+    if (ver) printf("OS = $$(OS)_%s\n", ver);
     printf("RT = %s\n", base);
     return 1;
 }
