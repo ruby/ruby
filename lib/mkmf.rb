@@ -880,16 +880,23 @@ def dir_config(target, idefault=nil, ldefault=nil)
 end
 
 def pkg_config(pkg)
-  unless defined?($PKGCONFIG)
-    if pkgconfig = with_config("pkg-config", !CROSS_COMPILING && "pkg-config")
-      find_executable0(pkgconfig) or pkgconfig = nil
-    end
-    $PKGCONFIG = pkgconfig
+  if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
+    # iff package specific config command is given
+    get = proc {|opt| `#{pkgconfig} --#{opt}`.chomp}
+  elsif ($PKGCONFIG ||= 
+         (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
+         find_executable0(pkgconfig) && pkgconfig) and
+      system("#{$PKGCONFIG} --exists #{pkg}")
+    # default to pkg-config command
+    get = proc {|opt| `#{$PKGCONFIG} --#{opt} #{pkg}`.chomp}
+  elsif find_executable0(pkgconfig = "#{pkg}-config")
+    # default to package specific config command, as a last resort.
+    get = proc {|opt| `#{pkgconfig} --#{opt}`.chomp}
   end
-  if $PKGCONFIG and system("#{$PKGCONFIG} --exists #{pkg}")
-    cflags = `#{$PKGCONFIG} --cflags #{pkg}`.chomp
-    ldflags = `#{$PKGCONFIG} --libs #{pkg}`.chomp
-    libs = `#{$PKGCONFIG} --libs-only-l #{pkg}`.chomp
+  if get
+    cflags = get['cflags']
+    ldflags = get['libs']
+    libs = get['libs-only-l']
     ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
     $CFLAGS += " " << cflags
     $LDFLAGS += " " << ldflags
@@ -898,6 +905,9 @@ def pkg_config(pkg)
     Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
                      cflags, ldflags, libs
     [cflags, ldflags, libs]
+  else
+    Logging::message "package configuration for %s is not found\n", pkg
+    nil
   end
 end
 
