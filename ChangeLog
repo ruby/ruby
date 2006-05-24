@@ -1,3 +1,8 @@
+Wed May 24 23:52:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_install_sh): ignore dummy install-sh.
+	  [ruby-talk:193876]
+
 Wed May 24 03:10:44 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb
@@ -30,7 +35,7 @@ Thu May 18 22:37:20 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/config.rb (WEBrick::Config::HTTP): add new parameters,
 	  :InputBufferSize and :OutputBufferSize.
 
-	* lib/webrick/utils.rb (WEBrick::Utils.timeout): add new timeout 
+	* lib/webrick/utils.rb (WEBrick::Utils.timeout): add new timeout
 	  method. this implementation is expected to be compatible with
 	  timeout.rb and faster than timeout.rb.
 
