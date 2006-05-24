@@ -1191,10 +1191,10 @@ site-install-rb: install-rb
   end
 
   mfile.print "$(RUBYARCHDIR)/" if $extout
-  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
-  mfile.print "@-$(RM) $@\n\t"
-  mfile.print "@-$(MAKEDIRS) $(@D)\n\t" if $extout
-  link_so = LINK_SO
+  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
+  mfile.print "\t@-$(RM) $@\n"
+  mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
+  link_so = LINK_SO.gsub(/^/, "\t")
   if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
     link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
   end

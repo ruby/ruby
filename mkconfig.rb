@@ -34,6 +34,7 @@ module RbConfig
 
 v_fast = []
 v_others = []
+vars = {}
 has_version = false
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
@@ -51,8 +52,10 @@ File.foreach "config.status" do |line|
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     val.gsub!(/ +(?!-)/, "=") if name == "configure_args" && /mswin32/ =~ RUBY_PLATFORM
-    v = "  CONFIG[\"" + name + "\"] = " +
+    v = "  CONFIG[\"" + name + "\"] #{vars[name] ? '<<' : ''}= " +
+      (vars[name] ? '"\n" ' : '') +
       val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump + "\n"
+    vars[name] = true
     if fast[name]
       v_fast << v
     else
