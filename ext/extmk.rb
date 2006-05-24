@@ -16,7 +16,6 @@ alias $PROGRAM_NAME $0
 alias $0 $progname
 
 $extlist = []
-$extupdate = false
 $compiled = {}
 
 $:.replace([Dir.pwd])
@@ -129,7 +128,6 @@ def extmake(target)
         then
 	  ok = false
           init_mkmf
-          $defs << "-DRUBY_EXPORT" if $static
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
@@ -139,7 +137,7 @@ def extmake(target)
 	  else
 	    create_makefile(target)
 	  end
-	  $extupdate = true
+	  $defs << "-DRUBY_EXPORT" if $static
 	  ok = File.exist?(makefile)
 	end
       rescue SystemExit
@@ -470,9 +468,6 @@ rubies = []
 Dir.chdir ".."
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
-end
-if !$extlist.empty? and $extupdate
-  rm_f(RbConfig::CONFIG["LIBRUBY_SO"])
 end
 puts "making #{rubies.join(', ')}"
 $stdout.flush
