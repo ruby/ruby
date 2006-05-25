@@ -33,7 +33,7 @@ def db_check(db)
   if have_library(db, db_prefix("dbm_open")) || have_func(db_prefix("dbm_open"))
     for hdr in $dbm_conf_headers.fetch(db, ["ndbm.h"])
       if have_header(hdr.dup) and have_type("DBM", hdr.dup, hsearch)
-	$CFLAGS += " " + hsearch + '-DDBM_HDR="<'+hdr+'>"'
+	$defs << hsearch << '-DDBM_HDR="<'+hdr+'>"'
 	return true
       end
     end

@@ -22,6 +22,9 @@ extern "C" {
 #endif
 
 #include "config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 
 #define NORETURN_STYLE_NEW 1
 #ifndef NORETURN

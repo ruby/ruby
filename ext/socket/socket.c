@@ -2094,7 +2094,7 @@ static VALUE
 sock_s_socketpair(klass, domain, type, protocol)
     VALUE klass, domain, type, protocol;
 {
-#if !defined(_WIN32) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__)
+#if defined HAVE_SOCKETPAIR
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);

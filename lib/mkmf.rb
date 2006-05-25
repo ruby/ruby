@@ -14,6 +14,7 @@ if /mswin|bccwin|mingw|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
 end
 SRC_EXT = %w[c m] << CXX_EXT
 $static = $config_h = nil
+$default_static = $static
 
 unless defined? $configure_args
   $configure_args = {}
@@ -273,15 +274,13 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 end
 
 def cc_command(opt="")
-  RbConfig::expand("$(CC) -c #$INCFLAGS -I$(hdrdir) " \
-                 "#$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} #{CONFTEST_C}",
-		 CONFIG.merge('hdrdir' => $hdrdir.quote))
+  RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
+		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
 end
 
 def cpp_command(outfile, opt="")
-  RbConfig::expand("$(CPP) #$INCFLAGS -I$(hdrdir) " \
-                 "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
-		 CONFIG.merge('hdrdir' => $hdrdir.quote))
+  RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
+		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
 end
 
 def libpathflag(libpath=$LIBPATH)
@@ -828,21 +827,24 @@ end
 
 def create_header(header = "extconf.h")
   message "creating %s\n", header
-  if $defs.length > 0
-    sym = header.tr("a-z./\055", "A-Z___")
-    open(header, "w") do |hfile|
-      hfile.print "#ifndef #{sym}\n#define #{sym}\n"
-      for line in $defs
-	case line
-	when /^-D([^=]+)(?:=(.*))?/
-	  hfile.print "#define #$1 #{$2 || 1}\n"
-	when /^-U(.*)/
-	  hfile.print "#undef #$1\n"
-	end
-      end
-      hfile.print "#endif\n"
+  sym = header.tr("a-z./\055", "A-Z___")
+  hdr = ["#ifndef #{sym}\n#define #{sym}\n"]
+  for line in $defs
+    case line
+    when /^-D([^=]+)(?:=(.*))?/
+      hdr << "#define #$1 #{$2 ? Shellwords.shellwords($2)[0] : 1}\n"
+    when /^-U(.*)/
+      hdr << "#undef #$1\n"
     end
   end
+  hdr << "#endif\n"
+  hdr = hdr.join
+  unless (IO.read(header) == hdr rescue false)
+    open(header, "w") do |hfile|
+      hfile.write(hdr)
+    end
+  end
+  $extconf_h = header
 end
 
 def dir_config(target, idefault=nil, ldefault=nil)
@@ -961,6 +963,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   else
     sep = ""
   end
+  extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : ""
   mk << %{
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
@@ -969,8 +972,10 @@ LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
+RUBY_EXTCONF_H = #{$extconf_h}
 CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS #$ARCH_FLAG
-CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
+INCFLAGS = -I. #$INCFLAGS
+CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
 DLDFLAGS = #$LDFLAGS #$DLDFLAGS #$ARCH_FLAG
 LDSHARED = #{CONFIG['LDSHARED']}
@@ -1096,6 +1101,7 @@ SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs}
 TARGET = #{target}
 DLLIB = #{dllib}
+EXTSTATIC = #{$default_static != $static && $static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 
 }
@@ -1269,6 +1275,7 @@ site-install-rb: install-rb
       headers.each {|h| h.sub!(/.*/) {|*m| RULE_SUBST % m}}
     end
     headers << $config_h if $config_h
+    headers << "$(RUBY_EXTCONF_H)" if $extconf_h
     mfile.print "$(OBJS): ", headers.join(' '), "\n"
   end
 
@@ -1282,11 +1289,12 @@ def init_mkmf(config = CONFIG)
   $arg_config = []
   $enable_shared = config['ENABLE_SHARED'] == 'yes'
   $defs = []
+  $extconf_h = nil
   $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
   $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = (with_config("ldflags") || "").dup
-  $INCFLAGS = "-I$(topdir)"
+  $INCFLAGS = "-I$(topdir) -I$(hdrdir) -I$(srcdir)"
   $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
@@ -1377,10 +1385,10 @@ COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
 COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
 RULE_SUBST = config_string('RULE_SUBST')
-COMPILE_C = config_string('COMPILE_C') || '$(CC) $(CFLAGS) $(CPPFLAGS) -c $<'
-COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<'
+COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) -c $<'
+COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) -c $<'
 TRY_LINK = config_string('TRY_LINK') ||
-  "$(CC) #{OUTFLAG}conftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS) " \
+  "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
@@ -1399,7 +1407,7 @@ clean:
 		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean:	clean
-		@-$(RM) Makefile extconf.h conftest.* mkmf.log
+		@-$(RM) Makefile #{$extconf_h} conftest.* mkmf.log
 		@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 
 realclean:	distclean

@@ -26,7 +26,7 @@ if /solaris/ =~ RUBY_PLATFORM and !try_compile("")
   headers << "sys/feature_tests.h"
 end
 
-$ipv6 = false
+ipv6 = false
 default_ipv6 = /cygwin/ !~ RUBY_PLATFORM
 if enable_config("ipv6", default_ipv6)
   if checking_for("ipv6") {try_link(<<EOF)}
@@ -37,63 +37,45 @@ main()
   socket(AF_INET6, SOCK_STREAM, 0);
 }
 EOF
-    $CPPFLAGS+=" -DENABLE_IPV6"
-    $ipv6 = true
+    $defs << "-DENABLE_IPV6" << "-DINET6"
+    ipv6 = true
   end
 end
 
-$ipv6type = nil
-$ipv6lib = nil
-$ipv6libdir = nil
-$ipv6trylibc = nil
-if $ipv6
-  if have_macro("IPV6_INRIA_VERSION", "netinet/in.h")
-    $ipv6type = "inria"
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
-  elsif have_macro("__KAME__", "netinet/in.h")
-    $ipv6type = "kame"
-    $ipv6lib="inet6"
-    $ipv6libdir="/usr/local/v6/lib"
-    $ipv6trylibc=true
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
-  elsif File.directory? "/usr/inet6"
-    $ipv6type = "linux"
-    $ipv6lib="inet6"
-    $ipv6libdir="/usr/inet6/lib"
-    $CPPFLAGS="-DINET6 -I/usr/inet6/include "+$CPPFLAGS
-  elsif have_macro("_TOSHIBA_INET6", "sys/param.h")
-    $ipv6type = "toshiba"
-    $ipv6lib="inet6"
-    $ipv6libdir="/usr/local/v6/lib"
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
-  elsif have_macro("__V6D__", "/usr/local/v6/include/sys/v6config.h")
-    $ipv6type = "v6d"
-    $ipv6lib="v6"
-    $ipv6libdir="/usr/local/v6/lib"
-    $CFLAGS="-I/usr/local/v6/include "+$CFLAGS
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
-  elsif have_macro("_ZETA_MINAMI_INET6", "sys/param.h")
-    $ipv6type = "zeta"
-    $ipv6lib="inet6"
-    $ipv6libdir="/usr/local/v6/lib"
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
-  else
-    $ipv6lib=with_config("ipv6-lib", nil)
-    $ipv6libdir=with_config("ipv6-libdir", nil)
-    $CPPFLAGS="-DINET6 "+$CPPFLAGS
+if ipv6
+  ipv6lib = nil
+  class << (fmt = "unknown")
+    def %(s) s || self end
   end
-  
-  if $ipv6lib
-    if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/lib#{$ipv6lib}.a"
-      $LOCAL_LIBS = " -L#$ipv6libdir -l#$ipv6lib"
-    elsif !$ipv6trylibc
-      abort <<EOS
-Fatal: no #$ipv6lib library found.  cannot continue.
-You need to fetch lib#{$ipv6lib}.a from appropriate
+  idirs, ldirs = dir_config("inet6", %w[/usr/inet6 /usr/local/v6].find {|d| File.directory?(d)})
+  checking_for("ipv6 type", fmt) do
+    if have_macro("IPV6_INRIA_VERSION", "netinet/in.h")
+      "inria"
+    elsif have_macro("__KAME__", "netinet/in.h")
+      have_library(ipv6lib = "inet6")
+      "kame"
+    elsif have_macro("_TOSHIBA_INET6", "sys/param.h")
+      have_library(ipv6lib = "inet6") and "toshiba"
+    elsif have_macro("__V6D__", "sys/v6config.h")
+      have_library(ipv6lib = "v6") and "v6d"
+    elsif have_macro("_ZETA_MINAMI_INET6", "sys/param.h")
+      have_library(ipv6lib = "inet6") and "zeta"
+    elsif ipv6lib = with_config("ipv6-lib")
+      warn <<EOS
+--with-ipv6-lib and --with-ipv6-libdir option will be obsolete, use
+--with-inet6lib and --with-inet6-{include,lib} options instead.
+EOS
+      find_library(ipv6lib, nil, with_config("ipv6-libdir", ldirs)) and
+        ipv6lib
+    elsif have_library("inet6")
+      "inet6"
+    end
+  end or not ipv6lib or abort <<EOS
+
+Fatal: no #{ipv6lib} library found.  cannot continue.
+You need to fetch lib#{ipv6lib}.a from appropriate
 ipv6 kit and compile beforehand.
 EOS
-    end
-  end
 end
 
 if have_struct_member("struct sockaddr_in", "sin_len", headers)
@@ -219,7 +201,7 @@ main()
 }
 EOF
 end
-if $ipv6 and not getaddr_info_ok
+if ipv6 and not getaddr_info_ok
   abort <<EOS
 
 Fatal: --enable-ipv6 is specified, and your OS seems to support IPv6 feature.
