@@ -3,7 +3,8 @@
 
 require "mkmf"
 
-$CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
+$defs << "-DNDEBUG" << "-DHAVE_CONFIG_H"
+$INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 

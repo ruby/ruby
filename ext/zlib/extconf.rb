@@ -54,12 +54,7 @@ if %w'z libz zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
   message "#{OS_NAMES[os_code]}\n"
   defines << "OS_CODE=#{os_code}"
 
-  defines = defines.collect{|d|' -D'+d}.join
-  if $CPPFLAGS then
-    $CPPFLAGS += defines
-  else
-    $CFLAGS += defines
-  end
+  $defs.concat(defines.collect{|d|' -D'+d})
 
   create_makefile('zlib')
 

@@ -1,3 +1,16 @@
+Fri May 26 08:40:03 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* ruby.h, lib/mkmf.rb (create_header): clear command line options for
+	  macros moved to extconf.h.
+
+	* ext/extmk.rb (extract_makefile, extmk): made RUBY_EXTCONF_H and
+	  EXTSTATIC permanent.
+
+	* ext/{dbm,digest/*,socket,zlib}/extconf.rb: used $defs and $INCFLAGS.
+
+	* {bcc32,win32,wince}/Makefile.sub (COMPILE_C, COMPILE_CXX): added
+	  $(INCFLAGS).
+
 Thu May 25 01:52:07 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): particular config commands support.

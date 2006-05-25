@@ -69,6 +69,8 @@ def extract_makefile(makefile, keep = true)
     return false
   end
   $target = target
+  $extconf_h = m[/^RUBY_EXTCONF_H[ \t]*=[ \t]*(\S+)/, 1]
+  $static = m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
   /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
   $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
@@ -90,6 +92,7 @@ def extmake(target)
   else
     $static = false
   end
+  $default_static = $static
 
   unless $ignore
     return true if $nodynamic and not $static
@@ -122,10 +125,13 @@ def extmake(target)
       CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
       CONFIG["topdir"] = $topdir
       begin
-	if (!(ok &&= extract_makefile(makefile)) ||
+	$extconf_h = nil
+	ok &&= extract_makefile(makefile)
+	if (($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
             %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
         then
+	  $default_static = $static
 	  ok = false
           init_mkmf
 	  Logging::logfile 'mkmf.log'

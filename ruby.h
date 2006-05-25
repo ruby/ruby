@@ -22,6 +22,9 @@ extern "C" {
 #endif
 
 #include "config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 #include "defines.h"
 
 #ifdef HAVE_STDLIB_H
