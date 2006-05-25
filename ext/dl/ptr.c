@@ -753,32 +753,32 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
   switch (data->ctype) {
   case DLPTR_CTYPE_STRUCT:
     for (i=0; i < data->ids_num; i++) {
+      switch (data->stype[i]) {
+      case 'I':
+        DLALIGN(data->ptr,offset,INT_ALIGN);
+        break;
+      case 'L':
+        DLALIGN(data->ptr,offset,LONG_ALIGN);
+        break;
+      case 'P':
+      case 'S':
+        DLALIGN(data->ptr,offset,VOIDP_ALIGN);
+        break;
+      case 'F':
+        DLALIGN(data->ptr,offset,FLOAT_ALIGN);
+        break;
+      case 'D':
+        DLALIGN(data->ptr,offset,DOUBLE_ALIGN);
+        break;
+      case 'C':
+        break;
+      case 'H':
+        DLALIGN(data->ptr,offset,SHORT_ALIGN);
+        break;
+      default:
+        rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+      }
       if (data->ids[i] == id) {
-	switch (data->stype[i]) {
-	case 'I':
-	  DLALIGN(data->ptr,offset,INT_ALIGN);
-	  break;
-	case 'L':
-	  DLALIGN(data->ptr,offset,LONG_ALIGN);
-	  break;
-	case 'P':
-	case 'S':
-	  DLALIGN(data->ptr,offset,VOIDP_ALIGN);
-	  break;
-	case 'F':
-	  DLALIGN(data->ptr,offset,FLOAT_ALIGN);
-	  break;
-	case 'D':
-	  DLALIGN(data->ptr,offset,DOUBLE_ALIGN);
-	  break;
-	case 'C':
-	  break;
-	case 'H':
-	  DLALIGN(data->ptr,offset,SHORT_ALIGN);
-	  break;
-	default:
-	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-	}
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       }
       switch (data->stype[i]) {
@@ -883,34 +883,35 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
   case DLPTR_CTYPE_STRUCT:
     offset = 0;
     for (i=0; i < data->ids_num; i++) {
+      switch (data->stype[i]) {
+      case 'I':
+        DLALIGN(data->ptr,offset,INT_ALIGN);
+        break;
+      case 'L':
+        DLALIGN(data->ptr,offset,LONG_ALIGN);
+        break;
+      case 'P':
+      case 'S':
+        DLALIGN(data->ptr,offset,VOIDP_ALIGN);
+        break;
+      case 'D':
+        DLALIGN(data->ptr,offset,DOUBLE_ALIGN);
+        break;
+      case 'F':
+        DLALIGN(data->ptr,offset,FLOAT_ALIGN);
+        break;
+      case 'C':
+        break;
+      case 'H':
+        DLALIGN(data->ptr,offset,SHORT_ALIGN);
+        break;
+      default:
+        rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+      }
       if (data->ids[i] == id) {
-	switch (data->stype[i]) {
-	case 'I':
-	  DLALIGN(data->ptr,offset,INT_ALIGN);
-	  break;
-	case 'L':
-	  DLALIGN(data->ptr,offset,LONG_ALIGN);
-	  break;
-	case 'P':
-	case 'S':
-	  DLALIGN(data->ptr,offset,VOIDP_ALIGN);
-	  break;
-	case 'D':
-	  DLALIGN(data->ptr,offset,DOUBLE_ALIGN);
-	  break;
-	case 'F':
-	  DLALIGN(data->ptr,offset,FLOAT_ALIGN);
-	  break;
-	case 'C':
-	  break;
-	case 'H':
-	  DLALIGN(data->ptr,offset,SHORT_ALIGN);
-	  break;
-	default:
-	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-	}
 	memimg = ary2cary(data->stype[i], val, &memsize);
 	memcpy((char *)data->ptr + offset, memimg, memsize);
+        dlfree(memimg);
 	return val;
       }
       switch (data->stype[i]) {
@@ -981,6 +982,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	}
 	memimg = ary2cary(data->stype[i], val, NULL);
 	memcpy(data->ptr, memimg, memsize);
+        dlfree(memimg);
       }
     }
     return val;

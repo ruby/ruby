@@ -273,7 +273,7 @@ assert("data_aref", :must,
 
 GC.start
 
-ptr = DL::malloc(1024)
+ptr = DL::malloc(32)
 ptr.struct!("CHIL", "c", "h", "i", "l")
 ptr["c"] = 1
 ptr["h"] = 2
@@ -290,6 +290,17 @@ ptr.struct!("IP", "n", "ptr")
 ptr["n"] = 10
 ptr["ptr"] = nil
 assert("struct!", :must, ptr["n"] == 10 && ptr["ptr"] == nil)
+
+ptr = DL::malloc(16)
+ptr.struct!("CICI", "c1", "i1", "c2", "i2")
+ptr["c1"] = 0xf1
+ptr["c2"] = 0xf2
+c1 = [ptr["c1"]].pack("c").unpack("C")[0]
+c2 = [ptr["c2"]].pack("c").unpack("C")[0]
+assert("struct!", :must,
+  c1 == 0xf1 &&
+  c2 == 0xf2)
+
 
 GC.start
 printf("fail/total = #{$FAIL}/#{$TOTAL}\n")
