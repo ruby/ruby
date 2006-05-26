@@ -1,4 +1,4 @@
-Fri May 26 08:40:03 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Fri May 26 09:05:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* ruby.h, lib/mkmf.rb (create_header): clear command line options for
 	  macros moved to extconf.h.
@@ -10,6 +10,8 @@ Fri May 26 08:40:03 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (COMPILE_C, COMPILE_CXX): added
 	  $(INCFLAGS).
+
+	* lib/mkmf.rb (configuration): add $defs unless extconf.h was created.
 
 Thu May 25 01:52:07 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
