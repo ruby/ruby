@@ -1101,7 +1101,7 @@ SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs}
 TARGET = #{target}
 DLLIB = #{dllib}
-EXTSTATIC = #{$default_static != $static && $static || ""}
+EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 
 }

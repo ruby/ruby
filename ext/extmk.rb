@@ -70,7 +70,7 @@ def extract_makefile(makefile, keep = true)
   end
   $target = target
   $extconf_h = m[/^RUBY_EXTCONF_H[ \t]*=[ \t]*(\S+)/, 1]
-  $static = m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
+  $static ||= m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
   /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
   $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
@@ -92,7 +92,6 @@ def extmake(target)
   else
     $static = false
   end
-  $default_static = $static
 
   unless $ignore
     return true if $nodynamic and not $static
@@ -131,7 +130,6 @@ def extmake(target)
 	    !(t = modified?(makefile, MTIMES)) ||
             %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
         then
-	  $default_static = $static
 	  ok = false
           init_mkmf
 	  Logging::logfile 'mkmf.log'
@@ -404,8 +402,13 @@ end
 $hdrdir = $top_srcdir = srcdir
 $topdir = "."
 
+extinit = Struct.new(:c, :o) {
+  def initialize(src)
+    super("#{src}.c", "#{src}.#{$OBJEXT}")
+  end
+}.new("extinit")
 if $ignore
-  FileUtils.rm_f(%W"extinit.c extinit.#{$OBJEXT}") if $clean
+  FileUtils.rm_f(extinit.to_a) if $clean
   Dir.chdir ".."
   if $clean
     Dir.rmdir('ext') rescue nil
@@ -436,16 +439,16 @@ if $extlist.size > 0
     end
   end
 
-  src = <<SRC
+  src = %{\
 extern char *ruby_sourcefile, *rb_source_filename();
 #define init(func, name) (ruby_sourcefile = src = rb_source_filename(name), func(), rb_provide(src))
 void Init_ext() {\n\tchar* src;\n#$extinit}
-SRC
-  if !modified?("extinit.c", MTIMES) || IO.read("extinit.c") != src
-    open("extinit.c", "w") {|f| f.print src}
+}
+  if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
+    open(extinit.c, "w") {|f| f.print src}
   end
 
-  $extobjs = "ext/extinit.#{$OBJEXT} " + $extobjs
+  $extobjs = "ext/#{extinit.o} " + $extobjs
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extflags.delete("-L/usr/local/lib")
   end
@@ -461,6 +464,8 @@ SRC
   puts conf
   $stdout.flush
   $mflags.concat(conf)
+else
+  FileUtils.rm_f(extinit.to_a)
 end
 rubies = []
 %w[RUBY RUBYW STATIC_RUBY].each {|r|
