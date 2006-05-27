@@ -1,3 +1,8 @@
+Sat May 27 11:29:46 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): remove extinit files if no statically linked
+	  extensions.
+
 Fri May 26 09:05:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* ruby.h, lib/mkmf.rb (create_header): clear command line options for
