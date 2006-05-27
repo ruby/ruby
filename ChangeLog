@@ -1,9 +1,14 @@
-Sat May 27 11:29:46 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Sat May 27 22:46:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): save and restore block in the current frame.
+	  fixed: [ruby-core:07833], [ruby-talk:191639]
+
+Sat May 27 11:29:46 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): remove extinit files if no statically linked
 	  extensions.
 
-Fri May 26 09:05:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Fri May 26 09:05:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.h, lib/mkmf.rb (create_header): clear command line options for
 	  macros moved to extconf.h.
@@ -18,7 +23,7 @@ Fri May 26 09:05:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): add $defs unless extconf.h was created.
 
-Thu May 25 01:52:07 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Thu May 25 01:52:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): particular config commands support.
 
@@ -32,7 +37,7 @@ Thu May 25 01:52:07 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* win32/setup.mak: suffix OS name by runtime version.
 
-Wed May 24 23:52:11 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Wed May 24 23:52:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_install_sh): ignore dummy install-sh.
 	  [ruby-talk:193876]
@@ -86,7 +91,7 @@ Thu May 18 22:37:20 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/webrick/test_utils.rb: test for WEBrick::Utils.timeout.
 
-Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Thu May 18 00:42:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.
 
@@ -233,7 +238,7 @@ Sat Apr  1 15:11:27 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* add test/win32ole
 
-Fri Mar 31 14:24:55 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
+Fri Mar 31 14:24:55 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_with_index): removed suspicious return
 	  statement.

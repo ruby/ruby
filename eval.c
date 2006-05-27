@@ -8264,7 +8264,7 @@ static VALUE
 proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass)
 {
     struct BLOCK _block;
-    struct BLOCK *data;
+    struct BLOCK *data, *volatile old_block;
     volatile VALUE result = Qundef;
     int state;
     volatile int safe = ruby_safe_level;
@@ -8302,6 +8302,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass)
         _block.scope = scope;
     }
     /* modify current frame */
+    old_block = ruby_frame->block;
     ruby_frame->block = &_block;
     PUSH_TAG((pcall&YIELD_LAMBDA_CALL) ? PROT_LAMBDA : PROT_NONE);
     state = EXEC_TAG();
@@ -8314,6 +8315,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass)
 	result = prot_tag->retval;
     }
     POP_TAG();
+    ruby_frame->block = old_block;
     ruby_wrapper = old_wrapper;
     POP_VARS();
     if (proc_safe_level_p(proc))
