@@ -1,3 +1,8 @@
+Thu Jun  1 11:29:14 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getcwd): set errno if not set.
+	  fixed [ruby-list:42346]
+
 Sat May 27 11:29:46 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): remove extinit files if no statically linked
