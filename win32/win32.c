@@ -1185,7 +1185,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 
 	    switch (*ptr) {
 	      case '\\':
-		slashes++;
+		if (quote != '\'') slashes++;
 	        break;
 
 	      case ' ':
@@ -1264,7 +1264,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		switch (*p) {
 		  case '\\':
 		    p++;
-		    slashes++;
+		    if (quote != '\'') slashes++;
 		    break;
 
 		  case '\'':

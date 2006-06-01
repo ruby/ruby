@@ -1,3 +1,8 @@
+Thu Jun  1 19:12:37 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_cmdvector): backslashes inside single-quotes
+	  no longer has special meanings.  fixed: [ruby-list:42311]
+
 Thu Jun  1 16:14:41 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getcwd): runtime's getcwd() will not success
