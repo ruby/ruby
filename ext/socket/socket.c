@@ -589,18 +589,90 @@ s_recvfrom(sock, argc, argv, from)
 	}
 #endif
 	if (alen) /* OSX doesn't return a 'from' result from recvfrom for connection-oriented sockets */
-	  return rb_assoc_new(str, ipaddr((struct sockaddr*)buf));
+	    return rb_assoc_new(str, ipaddr((struct sockaddr*)buf));
 	else
-	  return rb_assoc_new(str, Qnil);
+	    return rb_assoc_new(str, Qnil);
+
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
+        if (alen) /* connection-oriented socket may not return a from result */
+            return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
+        else
+            return rb_assoc_new(str, Qnil);
 #endif
       case RECV_SOCKET:
 	return rb_assoc_new(str, rb_str_new(buf, alen));
       default:
 	rb_bug("s_recvfrom called with bad value");
     }
+}
+
+static VALUE
+s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
+{
+    OpenFile *fptr;
+    VALUE str;
+    char buf[1024];
+    socklen_t alen = sizeof buf;
+    VALUE len, flg;
+    long buflen;
+    long slen;
+    int fd, flags;
+    VALUE addr = Qnil;
+
+    rb_scan_args(argc, argv, "11", &len, &flg);
+
+    if (flg == Qnil) flags = 0;
+    else             flags = NUM2INT(flg);
+    buflen = NUM2INT(len);
+
+#ifdef MSG_DONTWAIT
+    /* MSG_DONTWAIT avoids the race condition between fcntl and recvfrom.
+       It is Linux specific, though. */
+    flags |= MSG_DONTWAIT;
+#endif
+
+    GetOpenFile(sock, fptr);
+    if (rb_read_pending(fptr->f)) {
+	rb_raise(rb_eIOError, "recvfrom for buffered IO");
+    }
+    fd = fileno(fptr->f);
+
+    str = rb_tainted_str_new(0, buflen);
+
+    rb_io_check_closed(fptr);
+    rb_io_set_nonblock(fptr);
+    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
+
+    if (slen < 0) {
+	rb_sys_fail("recvfrom(2)");
+    }
+    if (slen < RSTRING(str)->len) {
+	RSTRING(str)->len = slen;
+	RSTRING(str)->ptr[slen] = '\0';
+    }
+    rb_obj_taint(str);
+    switch (from) {
+      case RECV_IP:
+        if (alen) /* connection-oriented socket may not return a from result */
+            addr = ipaddr((struct sockaddr*)buf);
+        break;
+
+#ifdef HAVE_SYS_UN_H
+      case RECV_UNIX:
+        if (alen) /* connection-oriented socket may not return a from result */
+            addr = unixaddr((struct sockaddr_un*)buf);
+        break;
+#endif
+
+      case RECV_SOCKET:
+        addr = rb_str_new(buf, alen);
+        break;
+
+      default:
+        rb_bug("s_recvfrom_nonblock called with bad value");
+    }
+    return rb_assoc_new(str, addr);
 }
 
 static VALUE
@@ -1308,6 +1380,20 @@ tcp_svr_init(argc, argv, sock)
 }
 
 static VALUE
+s_accept_nonblock(VALUE klass, OpenFile *fptr, struct sockaddr *sockaddr, socklen_t *len)
+{
+    int fd2;
+
+    rb_secure(3);
+    rb_io_set_nonblock(fptr);
+    fd2 = accept(fileno(fptr->f), (struct sockaddr*)sockaddr, len);
+    if (fd2 < 0) {
+        rb_sys_fail("accept(2)");
+    }
+    return init_sock(rb_obj_alloc(klass), fd2);
+}
+
+static VALUE
 s_accept(klass, fd, sockaddr, len)
     VALUE klass;
     int fd;
@@ -1360,6 +1446,49 @@ tcp_accept(sock)
     fromlen = sizeof(from);
     return s_accept(rb_cTCPSocket, fileno(fptr->f),
 		    (struct sockaddr*)&from, &fromlen);
+}
+
+/*
+ * call-seq:
+ * 	tcpserver.accept_nonblock => tcpsocket
+ * 
+ * Accepts an incoming connection using accept(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * It returns an accepted TCPSocket for the incoming connection.
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	serv = TCPServer.new(2202)
+ * 	begin
+ * 	  sock = serv.accept_nonblock
+ * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	  IO.select([serv])
+ * 	  retry
+ * 	end
+ * 	# sock is an accepted socket.
+ * 
+ * Refer to Socket#accept for the exceptions that may be thrown if the call
+ * to TCPServer#accept_nonblock fails. 
+ *
+ * TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
+ * including Errno::EAGAIN.
+ * 
+ * === See
+ * * TCPServer#accept
+ * * Socket#accept
+ */
+static VALUE
+tcp_accept_nonblock(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept_nonblock(rb_cTCPSocket, fptr,
+                             (struct sockaddr *)&from, &fromlen);
 }
 
 static VALUE
@@ -1477,6 +1606,51 @@ ip_recvfrom(argc, argv, sock)
     VALUE sock;
 {
     return s_recvfrom(sock, argc, argv, RECV_IP);
+}
+
+/*
+ * call-seq:
+ * 	ipsocket.recvfrom_nonblock(len) => [mesg, inet_addr]
+ * 	ipsocket.recvfrom_nonblock(len, flags) => [mesg, inet_addr]
+ * 
+ * Receives up to _len_ bytes from +ipsocket+ using recvfrom(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * _flags_ is zero or more of the +MSG_+ options.
+ * The first element of the results is the data received.
+ * The second element is an array to represent the sender address.
+ *
+ * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
+ * an empty string as data.
+ * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+ * 
+ * === Parameters
+ * * +len+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	socket = TCPSocket.new("localhost", "daytime")
+ * 	begin
+ * 	  p socket.recvfrom_nonblock(20)
+ * 	rescue Errno::EAGAIN
+ * 	  IO.select([socket])
+ * 	  retry
+ * 	end
+ * 	socket.close
+ * 
+ * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+ * to _recvfrom_nonblock_ fails. 
+ *
+ * IPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
+ * including Errno::EAGAIN.
+ *
+ * === See
+ * * Socket#recvfrom
+ */
+static VALUE
+ip_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+{
+    return s_recvfrom_nonblock(argc, argv, sock, RECV_IP);
 }
 
 static VALUE
@@ -1654,6 +1828,51 @@ unix_recvfrom(argc, argv, sock)
     VALUE sock;
 {
     return s_recvfrom(sock, argc, argv, RECV_UNIX);
+}
+
+/*
+ * call-seq:
+ * 	unixsocket.recvfrom_nonblock(len) => [mesg, unix_addr]
+ * 	unixsocket.recvfrom_nonblock(len, flags) => [mesg, unix_addr]
+ * 
+ * Receives up to _len_ bytes from +unixsocket+ using recvfrom(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * _flags_ is zero or more of the +MSG_+ options.
+ * The first element of the results is the data received.
+ * The second element is an array to represent the sender address.
+ *
+ * When recvfrom(2) returns 0, UNIXSocket#recvfrom_nonblock returns
+ * an empty string as data.
+ * It means EOF for UNIXSocket#recvfrom_nonblock.
+ * 
+ * === Parameters
+ * * +len+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	socket = UNIXSocket.new("/tmp/sock")
+ * 	begin
+ * 	  p socket.recvfrom_nonblock(20)
+ * 	rescue Errno::EAGAIN
+ * 	  IO.select([socket])
+ * 	  retry
+ * 	end
+ * 	socket.close
+ * 
+ * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+ * to _recvfrom_nonblock_ fails. 
+ *
+ * IPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
+ * including Errno::EAGAIN.
+ *
+ * === See
+ * * Socket#recvfrom
+ */
+static VALUE
+unix_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+{
+    return s_recvfrom_nonblock(argc, argv, sock, RECV_UNIX);
 }
 
 #if defined(HAVE_ST_MSG_CONTROL) && defined(SCM_RIGHTS)
@@ -1866,6 +2085,49 @@ unix_accept(sock)
     fromlen = sizeof(struct sockaddr_un);
     return s_accept(rb_cUNIXSocket, fileno(fptr->f),
 		    (struct sockaddr*)&from, &fromlen);
+}
+
+/*
+ * call-seq:
+ * 	unixserver.accept_nonblock => unixsocket
+ * 
+ * Accepts an incoming connection using accept(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * It returns an accepted UNIXSocket for the incoming connection.
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	serv = UNIXServer.new("/tmp/sock")
+ * 	begin
+ * 	  sock = serv.accept_nonblock
+ * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	  IO.select([serv])
+ * 	  retry
+ * 	end
+ * 	# sock is an accepted socket.
+ * 
+ * Refer to Socket#accept for the exceptions that may be thrown if the call
+ * to UNIXServer#accept_nonblock fails. 
+ *
+ * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
+ * including Errno::EAGAIN.
+ * 
+ * === See
+ * * UNIXServer#accept
+ * * Socket#accept
+ */
+static VALUE
+unix_accept_nonblock(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept_nonblock(rb_cUNIXSocket, fptr,
+                             (struct sockaddr *)&from, &fromlen);
 }
 
 static VALUE
@@ -2556,8 +2818,8 @@ sock_recvfrom(argc, argv, sock)
 
 /*
  * call-seq:
- * 	socket.recvfrom_nonblock( len ) => [ data, sender ]
- * 	socket.recvfrom_nonblock( len, flags ) => [ data, sender ]
+ * 	socket.recvfrom_nonblock(len) => [data, sockaddr]
+ * 	socket.recvfrom_nonblock(len, flags) => [data, sockaddr]
  * 
  * Receives up to _len_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -2578,13 +2840,13 @@ sock_recvfrom(argc, argv, sock)
  * 	# In one file, start this first
  * 	require 'socket'
  * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
- * 	socket.listen( 5 )
+ * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ * 	sockaddr = Socket.pack_sockaddr_in(2200, 'localhost')
+ * 	socket.bind(sockaddr)
+ * 	socket.listen(5)
  * 	client, client_sockaddr = socket.accept
  * 	begin
- * 	  pair = client.recvfrom_nonblock( 20 )
+ * 	  pair = client.recvfrom_nonblock(20)
  * 	rescue Errno::EAGAIN
  * 	  IO.select([client])
  * 	  retry
@@ -2597,9 +2859,9 @@ sock_recvfrom(argc, argv, sock)
  * 	# In another file, start this second
  * 	require 'socket'
  * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
- * 	socket.connect( sockaddr )
+ * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ * 	sockaddr = Socket.pack_sockaddr_in(2200, 'localhost')
+ * 	socket.connect(sockaddr)
  * 	socket.puts "Watch this get cut short!"
  * 	socket.close 
  * 
@@ -2613,47 +2875,9 @@ sock_recvfrom(argc, argv, sock)
  * * Socket#recvfrom
  */
 static VALUE
-sock_recvfrom_nonblock(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 {
-    OpenFile *fptr;
-    VALUE str;
-    char buf[1024];
-    socklen_t alen = sizeof buf;
-    VALUE len, flg;
-    long buflen;
-    long slen;
-    int fd, flags;
-
-    rb_scan_args(argc, argv, "11", &len, &flg);
-
-    if (flg == Qnil) flags = 0;
-    else             flags = NUM2INT(flg);
-    buflen = NUM2INT(len);
-
-    GetOpenFile(sock, fptr);
-    if (rb_read_pending(fptr->f)) {
-	rb_raise(rb_eIOError, "recv for buffered IO");
-    }
-    fd = fileno(fptr->f);
-
-    str = rb_tainted_str_new(0, buflen);
-
-    rb_io_check_closed(fptr);
-    rb_io_set_nonblock(fptr);
-    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
-
-    if (slen < 0) {
-	rb_sys_fail("recvfrom(2)");
-    }
-    if (slen < RSTRING(str)->len) {
-	RSTRING(str)->len = slen;
-	RSTRING(str)->ptr[slen] = '\0';
-    }
-    rb_obj_taint(str);
-    return rb_assoc_new(str, rb_str_new(buf, alen));
+    return s_recvfrom_nonblock(argc, argv, sock, RECV_SOCKET);
 }
 
 /*
@@ -2805,19 +3029,12 @@ sock_accept_nonblock(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    int fd2;
     VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    rb_io_set_nonblock(fptr);
-    fd2 = accept(fileno(fptr->f), (struct sockaddr*)buf, &len);
-    if (fd2 < 0) {
-        rb_sys_fail("accept(2)");
-    }
-    sock2 = init_sock(rb_obj_alloc(rb_cSocket), fd2);
-
+    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)buf, &len);
     return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
@@ -3615,6 +3832,7 @@ Init_socket()
     rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
+    rb_define_method(rb_cIPSocket, "recvfrom_nonblock", ip_recvfrom_nonblock, -1);
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
 
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
@@ -3634,6 +3852,7 @@ Init_socket()
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
     rb_define_global_const("TCPserver", rb_cTCPServer);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
+    rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
     rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
@@ -3653,6 +3872,7 @@ Init_socket()
     rb_define_method(rb_cUNIXSocket, "addr", unix_addr, 0);
     rb_define_method(rb_cUNIXSocket, "peeraddr", unix_peeraddr, 0);
     rb_define_method(rb_cUNIXSocket, "recvfrom", unix_recvfrom, -1);
+    rb_define_method(rb_cUNIXSocket, "recvfrom_nonblock", unix_recvfrom_nonblock, -1);
     rb_define_method(rb_cUNIXSocket, "send_io", unix_send_io, 1);
     rb_define_method(rb_cUNIXSocket, "recv_io", unix_recv_io, -1);
     rb_define_singleton_method(rb_cUNIXSocket, "socketpair", unix_s_socketpair, -1);
@@ -3662,6 +3882,7 @@ Init_socket()
     rb_define_global_const("UNIXserver", rb_cUNIXServer);
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
+    rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, 0);
     rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
     rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
 #endif

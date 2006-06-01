@@ -1,3 +1,16 @@
+Fri Jun  2 00:11:19 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c (s_recvfrom): alen may be zero with UNIXSocket
+	  too.  (tested on NetBSD 3.0)
+	  (s_recvfrom_nonblock): extracted from sock_recvfrom_nonblock.
+	  (sock_recvfrom_nonblock): use s_recvfrom_nonblock.
+	  (ip_recvfrom_nonblock): new method: IPSocket#recvfrom_nonblock
+	  (unix_recvfrom_nonblock): new method: UNIXSocket#recvfrom_nonblock
+	  (s_accept_nonblock): extracted from sock_accept_nonblock.
+	  (sock_accept_nonblock): use s_accept_nonblock.
+	  (tcp_accept_nonblock): new method: TCPServer#accept_nonblock
+	  (unix_accept_nonblock): new method: UNIXServer#accept_nonblock
+
 Thu Jun  1 19:12:37 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_cmdvector): backslashes inside single-quotes
