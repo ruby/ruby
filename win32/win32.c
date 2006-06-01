@@ -2935,18 +2935,25 @@ rb_w32_getcwd(char *buffer, int size)
 {
     int length;
     char *bp;
+    int save_errno = errno;
 
 #undef getcwd
 #ifndef __BORLANDC__
 #define getcwd _getcwd
 #endif
+    errno = 0;
+    SetLastError(0);
     if (getcwd(buffer, size) == NULL) {
+	if (!errno)
+	    errno = GetLastError() ? map_errno(GetLastError()) : ERANGE;
         return NULL;
     }
     length = strlen(buffer);
     if (length >= size) {
+	errno = ERANGE;
         return NULL;
     }
+    errno = save_errno;
 
     for (bp = buffer; *bp != '\0'; bp = CharNext(bp)) {
 	if (*bp == '\\') {

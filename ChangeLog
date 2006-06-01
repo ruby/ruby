@@ -1,3 +1,8 @@
+Thu Jun  1 11:33:32 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getcwd): set errno if not set.
+	  fixed [ruby-list:42346]
+
 Sat May 27 22:46:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): save and restore block in the current frame.
