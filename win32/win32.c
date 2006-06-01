@@ -2609,31 +2609,45 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 char *
 rb_w32_getcwd(char *buffer, int size)
 {
-    int length;
+    char *p = buffer;
     char *bp;
-    int save_errno = errno;
+    int len;
 
-#undef getcwd
-    errno = 0;
-    SetLastError(0);
-    if (getcwd(buffer, size) == NULL) {
-	if (!errno)
-	    errno = GetLastError() ? map_errno(GetLastError()) : ERANGE;
-        return NULL;
+    len = GetCurrentDirectory(0, NULL);
+    if (!len) {
+	errno = map_errno(GetLastError());
+	return NULL;
     }
-    length = strlen(buffer);
-    if (length >= size) {
-	errno = ERANGE;
-        return NULL;
-    }
-    errno = save_errno;
 
-    for (bp = buffer; *bp != '\0'; bp = CharNext(bp)) {
+    if (p) {
+	if (size < len) {
+	    errno = ERANGE;
+	    return NULL;
+	}
+    }
+    else {
+	p = malloc(len);
+	size = len;
+	if (!p) {
+	    errno = ENOMEM;
+	    return NULL;
+	}
+    }
+
+    if (!GetCurrentDirectory(size, p)) {
+	errno = map_errno(GetLastError());
+	if (!buffer)
+	    free(p);
+	return NULL;
+    }
+
+    for (bp = p; *bp != '\0'; bp = CharNext(bp)) {
 	if (*bp == '\\') {
 	    *bp = '/';
 	}
     }
-    return buffer;
+
+    return p;
 }
 
 int
