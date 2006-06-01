@@ -653,7 +653,7 @@ s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
 
 #ifdef MSG_DONTWAIT
     /* MSG_DONTWAIT avoids the race condition between fcntl and recvfrom.
-       It is Linux specific, though. */
+       It is not portable, though. */
     flags |= MSG_DONTWAIT;
 #endif
 
@@ -2542,7 +2542,7 @@ sock_connect(sock, addr)
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 80, 'www.google.com' )
+ * 	sockaddr = Socket.sockaddr_in( 80, 'www.google.com' )
  * 	begin
  * 	  socket.connect_nonblock( sockaddr )
  * 	rescue Errno::EINPROGRESS
@@ -2901,7 +2901,7 @@ sock_recvfrom(argc, argv, sock)
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.pack_sockaddr_in(2200, 'localhost')
+ * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
  * 	socket.bind(sockaddr)
  * 	socket.listen(5)
  * 	client, client_sockaddr = socket.accept
@@ -2920,7 +2920,7 @@ sock_recvfrom(argc, argv, sock)
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- * 	sockaddr = Socket.pack_sockaddr_in(2200, 'localhost')
+ * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
  * 	socket.connect(sockaddr)
  * 	socket.puts "Watch this get cut short!"
  * 	socket.close 
@@ -2970,7 +2970,7 @@ sock_accept(sock)
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	sockaddr = Socket.sockaddr_in( 2200, 'localhost' )
  * 	socket.bind( sockaddr )
  * 	socket.listen( 5 )
  * 	begin
@@ -2987,7 +2987,7 @@ sock_accept(sock)
  * 	require 'socket'
  * 	include Socket::Constants
  * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.pack_sockaddr_in( 2200, 'localhost' )
+ * 	sockaddr = Socket.sockaddr_in( 2200, 'localhost' )
  * 	socket.connect( sockaddr )
  * 	socket.puts "Hello from script 2." 
  * 	puts "The server said, '#{socket.readline.chomp}'"
