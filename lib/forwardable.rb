@@ -92,7 +92,7 @@
 # array, like this:
 #
 #   class RecordCollection
-#     extends Forwardable
+#     extend Forwardable
 #     def_delegator :@records, :[], :record_number
 #   end
 #
@@ -100,7 +100,7 @@
 # all of which delegate to @records, this is how you can do it:
 #
 #   class RecordCollection
-#     # extends Forwardable, but we did that above
+#     # extend Forwardable, but we did that above
 #     def_delegators :@records, :size, :<<, :map
 #   end
 #
