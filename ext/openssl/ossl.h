@@ -11,6 +11,8 @@
 #if !defined(_OSSL_H_)
 #define _OSSL_H_
 
+#include RUBY_EXTCONF_H
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

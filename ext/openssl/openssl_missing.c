@@ -8,6 +8,8 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#include RUBY_EXTCONF_H
+
 #if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
 # include <openssl/engine.h>
 #endif
@@ -16,6 +18,8 @@
 #if !defined(OPENSSL_NO_HMAC)
 #include <string.h> /* memcpy() */
 #include <openssl/hmac.h>
+
+#include "openssl_missing.h"
 
 #if !defined(HAVE_HMAC_CTX_COPY)
 int
