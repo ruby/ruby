@@ -1,3 +1,7 @@
+Fri Jun  2 17:16:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (CLEANINGS): remove extconf.h by distclean if created.
+
 Fri Jun  2 00:11:19 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (s_recvfrom): alen may be zero with UNIXSocket

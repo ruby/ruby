@@ -1402,7 +1402,7 @@ clean:
 		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean:	clean
-		@-$(RM) Makefile #{$extconf_h} conftest.* mkmf.log
+		@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
 		@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 
 realclean:	distclean
