@@ -1,3 +1,10 @@
+Fri Jun  2 19:00:40 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: use create_header.
+
+	* ext/openssl/ossl.h, ext/openssl/openssl_missing.h:
+	  include RUBY_EXTCONF_H.
+
 Fri Jun  2 17:16:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (CLEANINGS): remove extconf.h by distclean if created.
