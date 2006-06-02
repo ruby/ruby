@@ -1610,21 +1610,21 @@ ip_recvfrom(argc, argv, sock)
 
 /*
  * call-seq:
- * 	ipsocket.recvfrom_nonblock(len) => [mesg, inet_addr]
- * 	ipsocket.recvfrom_nonblock(len, flags) => [mesg, inet_addr]
+ * 	ipsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
+ * 	ipsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
  * 
- * Receives up to _len_ bytes from +ipsocket+ using recvfrom(2) after
+ * Receives up to _maxlen_ bytes from +ipsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results is the data received.
- * The second element is an array to represent the sender address.
+ * The first element of the results, _mesg_, is the data received.
+ * The second element, _sender_inet_addr_, is an array to represent the sender address.
  *
  * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
  * an empty string as data.
  * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
  * 
  * === Parameters
- * * +len+ - the number of bytes to receive from the socket
+ * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options 
  * 
  * === Example
@@ -1832,21 +1832,21 @@ unix_recvfrom(argc, argv, sock)
 
 /*
  * call-seq:
- * 	unixsocket.recvfrom_nonblock(len) => [mesg, unix_addr]
- * 	unixsocket.recvfrom_nonblock(len, flags) => [mesg, unix_addr]
+ * 	unixsocket.recvfrom_nonblock(maxlen) => [mesg, sender_unix_addr]
+ * 	unixsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_unix_addr]
  * 
- * Receives up to _len_ bytes from +unixsocket+ using recvfrom(2) after
+ * Receives up to _maxlen_ bytes from +unixsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results is the data received.
- * The second element is an array to represent the sender address.
+ * The first element of the results, _mesg_, is the data received.
+ * The second element, _sender_unix_addr_, is an array to represent the sender address.
  *
  * When recvfrom(2) returns 0, UNIXSocket#recvfrom_nonblock returns
  * an empty string as data.
  * It means EOF for UNIXSocket#recvfrom_nonblock.
  * 
  * === Parameters
- * * +len+ - the number of bytes to receive from the socket
+ * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options 
  * 
  * === Example
@@ -2339,13 +2339,13 @@ unix_s_socketpair(argc, argv, klass)
 
 /*
  * call-seq:
- * 	socket.connect( sockaddr ) => 0
+ * 	socket.connect(server_sockaddr) => 0
  * 
- * Requests a connection to be made on the given +sockaddr+. Returns 0 if
+ * Requests a connection to be made on the given +server_sockaddr+. Returns 0 if
  * successful, otherwise an exception is raised.
  *  
  * === Parameter
- * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ * * +server_sockaddr+ - the +struct+ sockaddr contained in a string
  * 
  * === Example:
  * 	# Pull down Google's web page
@@ -2468,31 +2468,31 @@ sock_connect(sock, addr)
 
 /*
  * call-seq:
- * 	socket.connect_nonblock( sockaddr ) => 0
+ * 	socket.connect_nonblock(server_sockaddr) => 0
  * 
- * Requests a connection to be made on the given +sockaddr+ after
+ * Requests a connection to be made on the given +server_sockaddr+ after
  * O_NONBLOCK is set for the underlying file descriptor.
  * Returns 0 if successful, otherwise an exception is raised.
  *  
  * === Parameter
- * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ * * +server_sockaddr+ - the +struct+ sockaddr contained in a string
  * 
  * === Example:
  * 	# Pull down Google's web page
  * 	require 'socket'
  * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.sockaddr_in( 80, 'www.google.com' )
+ * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ * 	sockaddr = Socket.sockaddr_in(80, 'www.google.com')
  * 	begin
- * 	  socket.connect_nonblock( sockaddr )
+ * 	  socket.connect_nonblock(sockaddr)
  * 	rescue Errno::EINPROGRESS
  * 	  IO.select(nil, [socket])
  * 	  begin
- * 	    socket.connect_nonblock( sockaddr )
+ * 	    socket.connect_nonblock(sockaddr)
  * 	  rescue Errno::EISCONN
  * 	  end
  * 	end
- * 	socket.write( "GET / HTTP/1.0\r\n\r\n" )
+ * 	socket.write("GET / HTTP/1.0\r\n\r\n")
  * 	results = socket.read 
  * 
  * Refer to Socket#connect for the exceptions that may be thrown if the call
@@ -2525,12 +2525,12 @@ sock_connect_nonblock(sock, addr)
 
 /*
  * call-seq:
- * 	socket.bind( sockaddr ) => 0
+ * 	socket.bind(server_sockaddr) => 0
  * 
  * Binds to the given +struct+ sockaddr.
  * 
  * === Parameter
- * * +sockaddr+ - the +struct+ sockaddr contained in a string
+ * * +server_sockaddr+ - the +struct+ sockaddr contained in a string
  *
  * === Example
  * 	require 'socket'
@@ -2704,16 +2704,16 @@ sock_listen(sock, log)
 
 /*
  * call-seq:
- * 	socket.recvfrom( len ) => [ data, sender ]
- * 	socket.recvfrom( len, flags ) => [ data, sender ]
+ * 	socket.recvfrom(maxlen) => [mesg, sender_sockaddr]
+ * 	socket.recvfrom(maxlen, flags) => [mesg, sender_sockaddr]
  * 
- * Receives up to _len_ bytes from +socket+. _flags_ is zero or more
- * of the +MSG_+ options. The first element of the results is the data
- * received. The second element contains protocol-specific information
+ * Receives up to _maxlen_ bytes from +socket+. _flags_ is zero or more
+ * of the +MSG_+ options. The first element of the results, _mesg_, is the data
+ * received. The second element, _sender_sockaddr_, contains protocol-specific information
  * on the sender.
  * 
  * === Parameters
- * * +len+ - the number of bytes to receive from the socket
+ * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options 
  * 
  * === Example
@@ -2818,14 +2818,14 @@ sock_recvfrom(argc, argv, sock)
 
 /*
  * call-seq:
- * 	socket.recvfrom_nonblock(len) => [data, sockaddr]
- * 	socket.recvfrom_nonblock(len, flags) => [data, sockaddr]
+ * 	socket.recvfrom_nonblock(maxlen) => [mesg, sender_sockaddr]
+ * 	socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_sockaddr]
  * 
- * Receives up to _len_ bytes from +socket+ using recvfrom(2) after
+ * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results is the data received.
- * The second element contains protocol-specific information
+ * The first element of the results, _mesg_, is the data received.
+ * The second element, _sender_sockaddr_, contains protocol-specific information
  * on the sender.
  *
  * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
@@ -2833,7 +2833,7 @@ sock_recvfrom(argc, argv, sock)
  * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
  * 
  * === Parameters
- * * +len+ - the number of bytes to receive from the socket
+ * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options 
  * 
  * === Example
@@ -2979,22 +2979,23 @@ sock_accept(sock)
 
 /*
  * call-seq:
- *    socket.accept_nonblock => [ socket, address ]
+ *    socket.accept_nonblock => [client_socket, client_sockaddr]
  * 
  * Accepts an incoming connection using accept(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
  * It returns an array containg the accpeted socket
- * for the incoming connection and a string that contains the
- * +struct+ sockaddr information about the caller.
+ * for the incoming connection, _client_socket_,
+ * and a string that contains the +struct+ sockaddr information
+ * about the caller, _client_sockaddr_.
  * 
  * === Example
  * 	# In one script, start this first
  * 	require 'socket'
  * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.sockaddr_in( 2200, 'localhost' )
- * 	socket.bind( sockaddr )
- * 	socket.listen( 5 )
+ * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ * 	socket.bind(sockaddr)
+ * 	socket.listen(5)
  * 	begin
  * 	  client_socket, client_sockaddr = socket.accept_nonblock
  * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
@@ -3008,9 +3009,9 @@ sock_accept(sock)
  * 	# In another script, start this second
  * 	require 'socket'
  * 	include Socket::Constants
- * 	socket = Socket.new( AF_INET, SOCK_STREAM, 0 )
- * 	sockaddr = Socket.sockaddr_in( 2200, 'localhost' )
- * 	socket.connect( sockaddr )
+ * 	socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+ * 	sockaddr = Socket.sockaddr_in(2200, 'localhost')
+ * 	socket.connect(sockaddr)
  * 	socket.puts "Hello from script 2." 
  * 	puts "The server said, '#{socket.readline.chomp}'"
  * 	socket.close
@@ -3040,11 +3041,12 @@ sock_accept_nonblock(sock)
 
 /*
  * call-seq:
- * 	socket.sysaccept => [ socket_fd, address ]
+ * 	socket.sysaccept => [client_socket_fd, client_sockaddr]
  * 
  * Accepts an incoming connection returnings an array containg the (integer)
- * file descriptor for the incoming connection and a string that contains the
- * +struct+ sockaddr information about the caller.
+ * file descriptor for the incoming connection, _client_socket_fd_,
+ * and a string that contains the +struct+ sockaddr information
+ * about the caller, _client_sockaddr_.
  * 
  * === Example
  * 	# In one script, start this first
