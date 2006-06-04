@@ -520,7 +520,7 @@ bsock_send(argc, argv, sock)
 
 static VALUE ipaddr _((struct sockaddr*));
 #ifdef HAVE_SYS_UN_H
-static VALUE unixaddr _((struct sockaddr_un*));
+static VALUE unixaddr _((struct sockaddr_un*, socklen_t));
 #endif
 
 enum sock_recv_type {
@@ -595,10 +595,7 @@ s_recvfrom(sock, argc, argv, from)
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        if (alen) /* connection-oriented socket may not return a from result */
-            return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
-        else
-            return rb_assoc_new(str, Qnil);
+        return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf, alen));
 #endif
       case RECV_SOCKET:
 	return rb_assoc_new(str, rb_str_new(buf, alen));
@@ -660,8 +657,7 @@ s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
 
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-        if (alen) /* connection-oriented socket may not return a from result */
-            addr = unixaddr((struct sockaddr_un*)buf);
+        addr = unixaddr((struct sockaddr_un*)buf, alen);
         break;
 #endif
 
@@ -1536,8 +1532,11 @@ init_unixsock(sock, path, server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    strncpy(sockaddr.sun_path, RSTRING(path)->ptr, sizeof(sockaddr.sun_path)-1);
-    sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
+    if (sizeof(sockaddr.sun_path) <= RSTRING(path)->len) {
+        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
+            (int)sizeof(sockaddr.sun_path)-1);
+    }
+    strcpy(sockaddr.sun_path, StringValueCStr(path));
 
     if (server) {
         status = bind(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
@@ -1563,7 +1562,9 @@ init_unixsock(sock, path, server)
 
     init_sock(sock, fd);
     GetOpenFile(sock, fptr);
-    fptr->path = strdup(RSTRING(path)->ptr);
+    if (server) {
+        fptr->path = strdup(RSTRING(path)->ptr);
+    }
 
     return sock;
 }
@@ -1797,6 +1798,15 @@ unix_init(sock, path)
     return init_unixsock(sock, path, 0);
 }
 
+static char *
+unixpath(struct sockaddr_un *sockaddr, socklen_t len)
+{
+    if (sockaddr->sun_path < (char*)sockaddr + len)
+        return sockaddr->sun_path;
+    else
+        return "";
+}
+
 static VALUE
 unix_path(sock)
     VALUE sock;
@@ -1809,7 +1819,7 @@ unix_path(sock)
 	socklen_t len = sizeof(addr);
 	if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
-	fptr->path = strdup(addr.sun_path);
+	fptr->path = strdup(unixpath(&addr, len));
     }
     return rb_str_new2(fptr->path);
 }
@@ -2121,7 +2131,7 @@ unix_accept_nonblock(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct sockaddr_storage from;
+    struct sockaddr_un from;
     socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
@@ -2144,11 +2154,12 @@ unix_sysaccept(sock)
 }
 
 static VALUE
-unixaddr(sockaddr)
+unixaddr(sockaddr, len)
     struct sockaddr_un *sockaddr;
+    socklen_t len;
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
-			rb_str_new2(sockaddr->sun_path));
+                        rb_str_new2(unixpath(sockaddr, len)));
 }
 
 static VALUE
@@ -2163,9 +2174,7 @@ unix_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    if (len == 0)
-        addr.sun_path[0] = '\0';
-    return unixaddr(&addr);
+    return unixaddr(&addr, len);
 }
 
 static VALUE
@@ -2180,9 +2189,7 @@ unix_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    if (len == 0)
-        addr.sun_path[0] = '\0';
-    return unixaddr(&addr);
+    return unixaddr(&addr, len);
 }
 #endif
 
@@ -3739,11 +3746,17 @@ sock_s_pack_sockaddr_un(self, path)
     VALUE self, path;
 {
     struct sockaddr_un sockaddr;
+    char *sun_path;
     VALUE addr;
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    strncpy(sockaddr.sun_path, StringValuePtr(path), sizeof(sockaddr.sun_path)-1);
+    sun_path = StringValueCStr(path);
+    if (sizeof(sockaddr.sun_path) <= strlen(sun_path)) {
+        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
+            (int)sizeof(sockaddr.sun_path)-1);
+    }
+    strncpy(sockaddr.sun_path, sun_path, sizeof(sockaddr.sun_path)-1);
     addr = rb_str_new((char*)&sockaddr, sizeof(sockaddr));
     OBJ_INFECT(addr, path);
 
@@ -3755,15 +3768,21 @@ sock_s_unpack_sockaddr_un(self, addr)
     VALUE self, addr;
 {
     struct sockaddr_un * sockaddr;
+    char *sun_path;
     VALUE path;
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
-    if (RSTRING(addr)->len != sizeof(struct sockaddr_un)) {
-	rb_raise(rb_eTypeError, "sockaddr_un size differs - %ld required; %d given",
+    if (sizeof(struct sockaddr_un) < RSTRING(addr)->len) {
+        rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
     }
-    /* xxx: should I check against sun_path size? */
-    path = rb_str_new2(sockaddr->sun_path);
+    sun_path = unixpath(sockaddr, RSTRING(addr)->len);
+    if (sizeof(struct sockaddr_un) == RSTRING(addr)->len &&
+        sun_path == sockaddr->sun_path &&
+        sun_path + strlen(sun_path) == RSTRING(addr)->ptr + RSTRING(addr)->len) {
+        rb_raise(rb_eArgError, "sockaddr_un.sun_path not NUL terminated");
+    }
+    path = rb_str_new2(sun_path);
     OBJ_INFECT(path, addr);
     return path;
 }

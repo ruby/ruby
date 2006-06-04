@@ -1,3 +1,7 @@
+Sun Jun  4 20:40:19 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c: fix sockaddr_un handling.
+
 Fri Jun  2 22:08:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/forwardable.rb: RDoc typo fix from Jan Svitok
