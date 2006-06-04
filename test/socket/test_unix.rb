@@ -148,9 +148,10 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_raise(Errno::EAGAIN) { s1.recvfrom_nonblock(10) }
+  rescue Errno::EPROTONOSUPPORT
   ensure
-    s1.close
-    s2.close
+    s1.close if s1
+    s2.close if s2
   end
 
 end if defined?(UNIXSocket)

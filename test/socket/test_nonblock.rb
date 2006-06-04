@@ -88,9 +88,9 @@ class TestNonblockSocket < Test::Unit::TestCase
     IO.select [c]
     mesg, unix_addr = c.recvfrom_nonblock(100)
     assert_equal("aaa", mesg)
-    if unix_addr != nil # connection-oriented socket may not return the peer address.
-      assert_equal(2, unix_addr.length)
-      af, path = unix_addr
+    assert_equal(2, unix_addr.length)
+    af, path = unix_addr
+    if path != "" # connection-oriented socket may not return the peer address.
       assert_equal(serv_path, path)
     end
     s.close
