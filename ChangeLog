@@ -1,3 +1,7 @@
+Sun Jun  4 20:40:19 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c: fix sockaddr_un handling.
+
 Fri Jun  2 19:00:40 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: use create_header.
