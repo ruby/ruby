@@ -72,3 +72,12 @@ class TestBasicSocket < Test::Unit::TestCase
     end
   end
 end if defined?(Socket)
+
+class TestSocket < Test::Unit::TestCase
+  def test_unpack_sockaddr
+    sockaddr_in = Socket.sockaddr_in(80, "")
+    assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(sockaddr_in) }
+    sockaddr_un = Socket.sockaddr_un("/tmp/s")
+    assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(sockaddr_un) }
+  end
+end
