@@ -3735,6 +3735,17 @@ sock_s_unpack_sockaddr_in(self, addr)
     VALUE host;
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
+    if (((struct sockaddr *)sockaddr)->sa_family != AF_INET
+#ifdef INET6
+        && ((struct sockaddr *)sockaddr)->sa_family != AF_INET6
+#endif
+        ) {
+#ifdef INET6
+        rb_raise(rb_eArgError, "not an AF_INET/AF_INET6 sockaddr");
+#else
+        rb_raise(rb_eArgError, "not an AF_INET sockaddr");
+#endif
+    }
     host = make_ipaddr((struct sockaddr*)sockaddr);
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
@@ -3772,6 +3783,9 @@ sock_s_unpack_sockaddr_un(self, addr)
     VALUE path;
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
+    if (((struct sockaddr *)sockaddr)->sa_family != AF_UNIX) {
+        rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
+    }
     if (sizeof(struct sockaddr_un) < RSTRING(addr)->len) {
         rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
