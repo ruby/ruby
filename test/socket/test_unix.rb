@@ -81,10 +81,12 @@ class TestUNIXSocket < Test::Unit::TestCase
 
   def test_noname_unpack_sockaddr_un
     s1, s2 = UNIXSocket.pair
-    assert_equal("", Socket.unpack_sockaddr_un(s1.getsockname))
-    assert_equal("", Socket.unpack_sockaddr_un(s2.getsockname))
-    assert_equal("", Socket.unpack_sockaddr_un(s1.getpeername))
-    assert_equal("", Socket.unpack_sockaddr_un(s2.getpeername))
+    n = nil
+    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
+    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
+    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getsockname) != ""
+    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getpeername) != ""
+    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getpeername) != ""
   ensure
     s1.close
     s2.close
