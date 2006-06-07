@@ -80,4 +80,4 @@ class TestSocket < Test::Unit::TestCase
     sockaddr_un = Socket.sockaddr_un("/tmp/s")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(sockaddr_un) }
   end
-end
+end if defined?(Socket) && Socket.respond_to?(:sockaddr_un)
