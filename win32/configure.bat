@@ -87,6 +87,7 @@ goto :loop
   echo System types:
   echo   --target=TARGET         configure for TARGET [i386-mswin32]
   echo Optional Package:
+  echo   --with-winsock2         link winsock2
   echo   --with-static-linked-ext link external modules statically
   echo   --enable-install-doc    install rdoc indexes during install
   del ~tmp~.mak
