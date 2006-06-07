@@ -1,3 +1,12 @@
+Wed Jun  7 09:14:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): binding for the return event hook should have
+	  consistent scope.  [ruby-core:07928]
+
+	* eval.c (EXEC_EVENT_HOOK): trace_func may remove itself from
+	  event_hooks.	no guarantee for arbitrary hook deletion.
+	  [ruby-dev:28632]
+
 Mon Jun  5 18:12:12 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): reject

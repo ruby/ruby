@@ -1128,11 +1128,16 @@ static rb_event_hook_t *event_hooks;
 
 #define EXEC_EVENT_HOOK(event, node, self, id, klass) \
     do { \
-	rb_event_hook_t *hook; \
+	rb_event_hook_t *hook = event_hooks; \
+        rb_event_hook_func_t hook_func; \
+        rb_event_t events; \
 	\
-	for (hook = event_hooks; hook; hook = hook->next) { \
-	    if (hook->events & event) \
-		(*hook->func)(event, node, self, id, klass); \
+	while (hook) { \
+            hook_func = hook->func; \
+            events = hook->events; \
+            hook = hook->next; \
+	    if (events & event) \
+		(*hook_func)(event, node, self, id, klass); \
 	} \
     } while (0)
 
@@ -5911,14 +5916,14 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 		state = 0;
 	    }
 	    POP_TAG();
+	    if (event_hooks) {
+		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
+	    }
 	    POP_VARS();
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
 	    if (safe >= 0) ruby_safe_level = safe;
-	    if (event_hooks) {
-		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
-	    }
 	    switch (state) {
 	      case 0:
 		break;
