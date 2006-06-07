@@ -16,6 +16,7 @@ if "%1" == "srcdir" goto :srcdir
 if "%1" == "--target" goto :target
 if "%1" == "target" goto :target
 if "%1" == "--with-static-linked-ext" goto :extstatic
+if "%1" == "--with-winsock2" goto :winsock2
 if "%1" == "--program-suffix" goto :suffix
 if "%1" == "--program-name" goto :progname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
@@ -58,6 +59,10 @@ goto :loop
 goto :loop
 :extstatic
   echo>> ~tmp~.mak 	"EXTSTATIC=static" \
+  shift
+goto :loop
+:winsock2
+  echo>> ~tmp~.mak 	"USE_WINSOCK2=1" \
   shift
 goto :loop
 :enable-rdoc

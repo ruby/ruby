@@ -1,3 +1,18 @@
+Wed Jun  7 10:45:10 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/{configure.bat, setup.mak, Makefile.sub, win32.h}: add
+	  support new configure option `--with-winsock2'.
+
+	* win32/win32.c (StartSockets): ditto.
+
+	* ext/socket/extconf.rb: ditto.
+
+	* win32/win32.c (open_ifs_socket): new function.
+
+	* win32/win32.c (StartSockets, rb_w32_socket): use open_ifs_socket()
+	  instead of socket().
+	  ifs socket support is backported from trunk.
+
 Wed Jun  7 09:14:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): binding for the return event hook should have

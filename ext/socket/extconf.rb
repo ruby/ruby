@@ -6,7 +6,11 @@ when /bccwin32/
   have_library("ws2_32", "WSACleanup")
 when /mswin32|mingw/
   test_func = "WSACleanup"
-  have_library("wsock32", "WSACleanup")
+  if /USE_WINSOCK2/ =~ $CPPFLAGS
+    have_library("ws2_32", "WSACleanup")
+  else
+    have_library("wsock32", "WSACleanup")
+  end
 when /cygwin/
   test_func = "socket"
 when /beos/

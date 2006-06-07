@@ -1989,12 +1989,21 @@ StartSockets ()
     WORD version;
     WSADATA retdata;
     int ret;
+#ifndef USE_WINSOCK2
     int iSockOpt;
-    
+#endif
+
     //
     // initalize the winsock interface and insure that it's
     // cleaned up at exit.
     //
+#ifdef USE_WINSOCK2
+    version = MAKEWORD(2, 0);
+    if (WSAStartup(version, &retdata))
+	rb_fatal ("Unable to locate winsock library!\n");
+    if (LOBYTE(retdata.wVersion) != 2)
+	rb_fatal("could not find version 2 of winsock dll\n");
+#else
     version = MAKEWORD(1, 1);
     if (ret = WSAStartup(version, &retdata))
 	rb_fatal ("Unable to locate winsock library!\n");
@@ -2003,23 +2012,26 @@ StartSockets ()
 
     if (HIBYTE(retdata.wVersion) != 1)
 	rb_fatal("could not find version 1 of winsock dll\n");
+#endif	/* USE_WINSOCK2 */
 
     atexit((void (*)(void)) WSACleanup);
 
-#ifndef SO_SYNCHRONOUS_NONALERT
-#define SO_SYNCHRONOUS_NONALERT 0x20
-#endif
+#ifndef USE_WINSOCK2
+# ifndef SO_SYNCHRONOUS_NONALERT
+#  define SO_SYNCHRONOUS_NONALERT 0x20
+# endif
 
     iSockOpt = SO_SYNCHRONOUS_NONALERT;
     /*
      * Enable the use of sockets as filehandles
      */
-#ifndef SO_OPENTYPE
-#define SO_OPENTYPE     0x7008
-#endif
+# ifndef SO_OPENTYPE
+#  define SO_OPENTYPE     0x7008
+# endif
 
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
 	       (char *)&iSockOpt, sizeof(iSockOpt));
+#endif	/* USE_WINSOCK2 */
 
     main_thread.handle = GetCurrentThreadHandle();
     main_thread.id = GetCurrentThreadId();
@@ -2284,7 +2296,54 @@ rb_w32_shutdown(int s, int how)
     return r;
 }
 
+#ifdef USE_WINSOCK2
+static SOCKET
+open_ifs_socket(int af, int type, int protocol)
+{
+    unsigned long proto_buffers_len = 0;
+    int error_code;
+    SOCKET out = INVALID_SOCKET;
+
+    if (WSAEnumProtocols(NULL, NULL, &proto_buffers_len) == SOCKET_ERROR) {
+	error_code = WSAGetLastError();
+	if (error_code == WSAENOBUFS) {
+	    WSAPROTOCOL_INFO *proto_buffers;
+	    int protocols_available = 0;
+
+	    proto_buffers = (WSAPROTOCOL_INFO *)malloc(proto_buffers_len);
+
+	    protocols_available =
+		WSAEnumProtocols(NULL, proto_buffers, &proto_buffers_len);
+	    if (protocols_available != SOCKET_ERROR) {
+		int i;
+		for (i = 0; i < protocols_available; i++) {
+		    if ((af != AF_UNSPEC && af != proto_buffers[i].iAddressFamily) ||
+			(type != proto_buffers[i].iSocketType) ||
+			(protocol != 0 && protocol != proto_buffers[i].iProtocol))
+			continue;
+
+		    if ((proto_buffers[i].dwServiceFlags1 & XP1_IFS_HANDLES) == 0)
+			continue;
+
+		    out = WSASocket(af, type, protocol, &(proto_buffers[i]), 0, 0);
+		    break;
+		}
+	    }
+
+	    free(proto_buffers);
+	}
+    }
+
+    return out;
+}
+#endif	/* USE_WINSOCK2 */
+
 #undef socket
+#ifdef USE_WINSOCK2
+#define open_socket(a, t, p)	open_ifs_socket(a, t, p)
+#else
+#define open_socket(a, t, p)	socket(a, t, p)
+#endif
 
 int 
 rb_w32_socket(int af, int type, int protocol)
@@ -2296,7 +2355,7 @@ rb_w32_socket(int af, int type, int protocol)
 	StartSockets();
     }
     RUBY_CRITICAL({
-	s = socket(af, type, protocol);
+	s = open_socket(af, type, protocol);
 	if (s == INVALID_SOCKET) {
 	    errno = map_errno(WSAGetLastError());
 	    fd = -1;

@@ -23,6 +23,9 @@
 #if !defined(IN) && !defined(FLOAT)
 #define OpenFile  WINAPI_OpenFile
 #ifdef __BORLANDC__
+#define USE_WINSOCK2
+#endif
+#ifdef USE_WINSOCK2
 #include <winsock2.h>
 #include <windows.h>
 #else
