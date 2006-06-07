@@ -187,6 +187,15 @@ cygwin*|mingw*)
 				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;}'`],
 		    [rb_cv_msvcrt=msvcrt])])
 	test "$rb_cv_msvcrt" = "" && AC_MSG_ERROR([must be linked to DLL])
+	AC_ARG_WITH(winsock2,
+		[  --with-winsock2         link winsock2 (MinGW only)], [
+		case $withval in
+		yes) with_winsock2=yes;;
+		*)   with_winsock2=no;;
+		esac], [with_winsock2=no])
+	if test "$with_winsock2" = yes; then
+	  AC_DEFINE(USE_WINSOCK2)
+	fi
     esac
     : ${enable_shared=yes}
     ;;
@@ -328,7 +337,11 @@ cygwin*)	rb_cv_have_daylight=no
 		ac_cv_func__setjmp=no
 		ac_cv_func_setitimer=no
 		;;
-mingw*)		LIBS="-lwsock32 $LIBS"
+mingw*)		if test "$with_winsock2" = yes; then
+		  LIBS="-lws2_32 $LIBS"
+		else
+		  LIBS="-lwsock32 $LIBS"
+		fi
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no

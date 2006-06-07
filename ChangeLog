@@ -1,7 +1,17 @@
+Wed Jun  7 11:34:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in: add new configure option `--with-winsock2' for mingw.
+
+	* win32/Makefile.sub (config.h): define USE_WINSOCK2 in config.h
+	  instead of in CPPFLAGS.
+
+	* ext/socket/extconf.rb: determine whether to use winsock2 or not
+	  by using with_config.
+
 Wed Jun  7 10:45:10 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/{configure.bat, setup.mak, Makefile.sub, win32.h}: add
-	  support new configure option `--with-winsock2'.
+	  new configure option `--with-winsock2'.
 
 	* win32/win32.c (StartSockets): ditto.
 

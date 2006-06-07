@@ -142,9 +142,6 @@ CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
-!if defined(USE_WINSOCK2)
-CPPFLAGS = $(CPPFLAGS) -DUSE_WINSOCK2
-!endif
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
@@ -208,6 +205,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch
 #endif
+!if defined(USE_WINSOCK2)
+#define USE_WINSOCK2 1
+!endif
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
