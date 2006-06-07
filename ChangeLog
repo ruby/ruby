@@ -1,3 +1,7 @@
+Wed Jun  7 14:51:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (errmap): add some winsock errors.
+
 Mon Jun  5 18:12:12 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): reject
