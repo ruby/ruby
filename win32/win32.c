@@ -176,7 +176,13 @@ static struct {
     {	ERROR_NESTING_NOT_ALLOWED,	EAGAIN		},
     {	ERROR_NOT_ENOUGH_QUOTA,		ENOMEM		},
     {	WSAENAMETOOLONG,		ENAMETOOLONG	},
-    {	WSAENOTEMPTY,			ENOTEMPTY	}
+    {	WSAENOTEMPTY,			ENOTEMPTY	},
+    {	WSAEINTR,			EINTR		},
+    {	WSAEBADF,			EBADF		},
+    {	WSAEACCES,			EACCES		},
+    {	WSAEFAULT,			EFAULT		},
+    {	WSAEINVAL,			EINVAL		},
+    {	WSAEMFILE,			EMFILE		},
 };
 
 static int
