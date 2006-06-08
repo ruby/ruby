@@ -108,6 +108,8 @@ extern DWORD rb_w32_osid(void);
 #define pipe(p)			_pipe(p, 2048L, O_BINARY)
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
+#define read(f, b, s)		rb_w32_read(f, b, s)
+#define write(f, b, s)		rb_w32_write(f, b, s)
 #define getpid()		rb_w32_getpid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
@@ -490,6 +492,8 @@ int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);
+size_t rb_w32_read(int, void *, size_t);
+size_t rb_w32_write(int, const void *, size_t);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  WINAPI rb_w32_Sleep(unsigned long msec);
 
