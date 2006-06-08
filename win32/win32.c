@@ -3556,6 +3556,30 @@ rb_w32_close(int fd)
     return 0;
 }
 
+#undef read
+size_t
+rb_w32_read(int fd, void *buf, size_t size)
+{
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (!is_socket(sock))
+	return read(fd, buf, size);
+    else
+	return rb_w32_recv(fd, buf, size, 0);
+}
+
+#undef write
+size_t
+rb_w32_write(int fd, const void *buf, size_t size)
+{
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (!is_socket(sock))
+	return write(fd, buf, size);
+    else
+	return rb_w32_send(fd, buf, size, 0);
+}
+
 static int
 unixtime_to_filetime(time_t time, FILETIME *ft)
 {
