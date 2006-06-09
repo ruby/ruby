@@ -1083,6 +1083,10 @@ def create_makefile(target, srcprefix = nil)
     end
   end
 
+  if $extmk and not $extconf_h
+    create_header
+  end
+
   libpath = libpathflag(libpath)
 
   dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""

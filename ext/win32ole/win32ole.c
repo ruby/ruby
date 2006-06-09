@@ -2984,7 +2984,7 @@ static VALUE
 fole_missing(int argc, VALUE *argv, VALUE self)
 {
     ID id;
-    char* mname;
+    const char* mname;
     int n;
     id = rb_to_id(argv[0]);
     mname = rb_id2name(id);

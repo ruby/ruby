@@ -355,7 +355,7 @@ class OptionParser
     def conv_arg(arg, val = [])
       if block
         if conv
-          val = conv.call(*val)
+          val = conv.yield(*val)
         else
           val = val[0]
         end
@@ -849,7 +849,7 @@ class OptionParser
   def add_officious
     list = base()
     Officious.each do |opt, block|
-      list.long[opt] ||= block.call(self)
+      list.long[opt] ||= block.yield(self)
     end
   end
 
@@ -1319,7 +1319,7 @@ class OptionParser
           end
           begin
             opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.call(*val) if sw
+            sw.yield(*val) if sw
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1328,7 +1328,8 @@ class OptionParser
         when /\A-(.)((=).*|.+)?/nm
           opt, has_arg, eq, val, rest = $1, $3, $3, $2, $2
           begin
-            unless sw = search(:short, opt)
+            sw, = search(:short, opt)
+            unless sw
               begin
                 sw, = complete(:short, opt)
                 # short option matched.
@@ -1348,7 +1349,7 @@ class OptionParser
             opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            sw.call(val) if sw
+            sw.yield(val) if sw
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1357,9 +1358,9 @@ class OptionParser
         else
           catch(:prune) do
             visit(:each_option) do |sw|
-              sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
+              sw.block.yield(arg) if Switch === sw and sw.match_nonswitch?(arg)
             end
-            nonopt.call(arg)
+            nonopt.yield(arg)
           end
         end
       end
@@ -1367,7 +1368,7 @@ class OptionParser
       nil
     }
 
-    visit(:search, :short, nil) {|sw| sw.block.call(argv) if !sw.pattern}
+    visit(:search, :short, nil) {|sw| sw.block.yield(argv) if !sw.pattern}
 
     argv
   end

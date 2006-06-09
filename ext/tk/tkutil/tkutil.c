@@ -1234,7 +1234,8 @@ cbsubst_get_subst_arg(argc, argv, self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    char *str, *buf, *ptr;
+    const char *str;
+    char *buf, *ptr;
     int i, j, len;
     ID id;
     volatile VALUE arg_sym, ret;

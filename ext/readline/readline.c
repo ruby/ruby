@@ -1,6 +1,10 @@
 /* readline.c -- GNU Readline module
    Copyright (C) 1997-2001  Shugo Maeda */
 
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>

@@ -322,12 +322,16 @@ math_log(int argc, VALUE *argv)
     return rb_float_new(d);
 }
 
+#ifndef log2
 #ifndef HAVE_LOG2
 double
 log2(double x)
 {
     return log10(x)/log10(2.0);
 }
+#else
+extern double log2(double);
+#endif
 #endif
 
 /*
@@ -340,7 +344,6 @@ log2(double x)
 static VALUE
 math_log2(VALUE obj, VALUE x)
 {
-    extern double log2(double);
     double d;
 
     Need_Float(x);

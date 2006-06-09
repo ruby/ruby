@@ -669,7 +669,7 @@ ruby_getcwd(void)
 #define MDMINEXPT DBL_MIN_EXP
 #define MDMAXEXPT DBL_MAX_EXP
 
-static double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
+static const double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
     10.0,			/* is 10^2^i.  Used to convert decimal */
     100.0,			/* exponents into floating-point numbers. */
     1.0e4,
@@ -721,7 +721,8 @@ ruby_strtod(
 				 * address here. */
 {
     int sign, expSign = Qfalse;
-    double fraction = 0.0, dblExp, *d;
+    double fraction = 0.0, dblExp;
+    const double *d;
     register const char *p;
     register int c;
     int exp = 0;		/* Exponent read from "EX" field. */

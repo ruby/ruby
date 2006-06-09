@@ -2314,7 +2314,7 @@ args		: arg_value
 		    /*%%%*/
 			$$ = NEW_SPLAT($2);
 		    /*%
-			$$ = arg_add_star(arg_new(), $1);
+			$$ = arg_add_star(arg_new(), $2);
 		    %*/
 		    }
 		| args ',' arg_value
@@ -2938,7 +2938,7 @@ block_param	: block_param0
 			$$ = NEW_BLOCK_PARAM($9, NEW_MASGN($1, NEW_POSTARG($4,$6)));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), $4);
-			$$ = blockvar_add_block($$, $7);
+			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
 		| block_param0 ',' tSTAR ',' tAMPER lhs
@@ -2956,7 +2956,7 @@ block_param	: block_param0
 			$$ = NEW_BLOCK_PARAM($8, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
-			$$ = blockvar_add_block($$, $6);
+			$$ = blockvar_add_block($$, $5);
 		    %*/
 		    }
 		| block_param0 ',' tSTAR lhs
@@ -3902,7 +3902,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, $5, 0, $6);
 		    /*%
-			$$ = dispatch4(params, $1, $3, $5, escape_Qundef($6));
+			$$ = dispatch5(params, $1, $3, $5, Qnil, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg ',' f_optarg ',' f_rest_arg ',' f_post_arg opt_f_block_arg
@@ -3910,7 +3910,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, $5, $7, $8);
 		    /*%
-			$$ = dispatch4(params, $1, $3, $5, escape_Qundef($6));
+			$$ = dispatch5(params, $1, $3, $5, $7, escape_Qundef($8));
 		    %*/
 		    }
 		| f_arg ',' f_optarg opt_f_block_arg
@@ -3918,7 +3918,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, 0, 0, $4);
 		    /*%
-			$$ = dispatch4(params, $1, $3, Qnil, escape_Qundef($4));
+			$$ = dispatch5(params, $1, $3, Qnil, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg opt_f_block_arg
@@ -3926,7 +3926,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, 0, $4);
 		    /*%
-			$$ = dispatch4(params, $1, Qnil, $3, escape_Qundef($4));
+			$$ = dispatch5(params, $1, Qnil, $3, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg ',' f_post_arg opt_f_block_arg
@@ -3934,7 +3934,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, $5, $6);
 		    /*%
-			$$ = dispatch4(params, $1, Qnil, $3, escape_Qundef($4));
+			$$ = dispatch5(params, $1, Qnil, $3, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg opt_f_block_arg
@@ -3942,7 +3942,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, 0, 0, $2);
 		    /*%
-			$$ = dispatch4(params, $1, Qnil, Qnil, escape_Qundef($2));
+			$$ = dispatch5(params, $1, Qnil, Qnil, Qnil, escape_Qundef($2));
 		    %*/
 		    }
 		| f_optarg ',' f_rest_arg opt_f_block_arg
@@ -3950,7 +3950,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, $3, 0, $4);
 		    /*%
-			$$ = dispatch4(params, Qnil, $1, $3, escape_Qundef($4));
+			$$ = dispatch5(params, Qnil, $1, $3, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_optarg ',' f_rest_arg ',' f_post_arg opt_f_block_arg
@@ -3958,7 +3958,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, $3, $5, $6);
 		    /*%
-			$$ = dispatch4(params, Qnil, $1, $3, escape_Qundef($4));
+			$$ = dispatch5(params, Qnil, $1, $3, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_optarg opt_f_block_arg
@@ -3966,7 +3966,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, 0, 0, $2);
 		    /*%
-			$$ = dispatch4(params, Qnil, $1, Qnil, escape_Qundef($2));
+			$$ = dispatch5(params, Qnil, $1, Qnil, Qnil, escape_Qundef($2));
 		    %*/
 		    }
 		| f_rest_arg opt_f_block_arg
@@ -3974,7 +3974,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, 0, $2);
 		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, $1, escape_Qundef($2));
+			$$ = dispatch5(params, Qnil, Qnil, $1, Qnil, escape_Qundef($2));
 		    %*/
 		    }
 		| f_rest_arg ',' f_post_arg opt_f_block_arg
@@ -3982,7 +3982,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, $3, $4);
 		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, $1, escape_Qundef($2));
+			$$ = dispatch5(params, Qnil, Qnil, $1, $3, escape_Qundef($4));
 		    %*/
 		    }
 		| f_block_arg
@@ -3990,7 +3990,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, $1);
 		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, Qnil, $1);
+			$$ = dispatch5(params, Qnil, Qnil, Qnil, Qnil, $1);
 		    %*/
 		    }
 		| /* none */
@@ -3998,7 +3998,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, 0);
 		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
+			$$ = dispatch5(params, Qnil, Qnil, Qnil, Qnil, Qnil);
 		    %*/
 		    }
 		;
@@ -4744,9 +4744,9 @@ parser_newtok(struct parser_params *parser)
 }
 
 static void
-parser_tokadd(struct parser_params *parser, char c)
+parser_tokadd(struct parser_params *parser, int c)
 {
-    tokenbuf[tokidx++] = c;
+    tokenbuf[tokidx++] = (char)c;
     if (tokidx >= toksiz) {
 	toksiz *= 2;
 	REALLOC_N(tokenbuf, char, toksiz);

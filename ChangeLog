@@ -1,3 +1,26 @@
+Sat Jun %-2d 08:17:23 2006  U-HUDIE\nobu,S-1-5-21-3746871489-166115513-3294629105-1005  <nobu@ruby-lang.org>
+
+	* math.c (log2): may be a macro.
+
+	* parse.y (args, block_param, f_args): pass f_post_arg to #params.
+
+	* util.c (powersOf10): constified.
+
+	* ext/readline/readline.c: include extconf.h first.
+
+	* ext/ripper/eventids2.c: removed tLAMBDA_ARG.
+
+	* ext/tk/tcltklib.c (lib_fromUTF8_core): removed conflict.
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_get_subst_arg): rb_id2name() is
+	  defined as const now.
+
+	* ext/win32ole/win32ole.c (fole_missing): ditto.
+
+	* lib/mkmf.rb (create_makefile): force to create extconf header.
+
+	* lib/optparse.rb (order!): use Proc#yield.
+
 Sat Jun 10 06:53:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (CALLARGS): remove last semicolon. C90 compiler doesn't

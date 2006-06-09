@@ -7,7 +7,6 @@
 #define tHEREDOC_BEG     (tLAST_TOKEN + 7)
 #define tHEREDOC_END     (tLAST_TOKEN + 8)
 #define k__END__         (tLAST_TOKEN + 9)
-#define tCHAR            (tLAST_TOKEN + 10)
 
 static ID ripper_id_backref;
 static ID ripper_id_backtick;
@@ -44,7 +43,6 @@ static ID ripper_id_regexp_beg;
 static ID ripper_id_regexp_end;
 static ID ripper_id_label;
 static ID ripper_id_tlambda;
-static ID ripper_id_tlambda_arg;
 static ID ripper_id_tlambeg;
 
 static ID ripper_id_ignored_nl;
@@ -98,7 +96,6 @@ ripper_init_eventids2(VALUE self)
     ripper_id_regexp_end = rb_intern("on_regexp_end");
     ripper_id_label = rb_intern("on_label");
     ripper_id_tlambda = rb_intern("on_tlambda");
-    ripper_id_tlambda_arg = rb_intern("on_tlambda_arg");
     ripper_id_tlambeg = rb_intern("on_tlambeg");
 
     ripper_id_ignored_nl = rb_intern("on_ignored_nl");
@@ -248,7 +245,6 @@ static struct token_assoc {
     {tXSTRING_BEG,	&ripper_id_backtick},
     {tLABEL,		&ripper_id_label},
     {tLAMBDA,		&ripper_id_tlambda},
-    {tLAMBDA_ARG,	&ripper_id_tlambda_arg},
     {tLAMBEG,		&ripper_id_tlambeg},
 
     /* ripper specific tokens */
