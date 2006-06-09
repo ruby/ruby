@@ -2146,7 +2146,7 @@ copy_node_scope(NODE *node, NODE *rval)
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
 #endif
 
-#define CALLARGS int argc; VALUE *argv; struct BLOCK *block = 0, _block;
+#define CALLARGS int argc; VALUE *argv; struct BLOCK *block = 0, _block
 #define SETUP_ARGS0(anode,extra) do {\
     NODE *n = anode, *bpass = 0;\
     if (n && nd_type(n) == NODE_BLOCK_PASS) {\

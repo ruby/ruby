@@ -1,3 +1,9 @@
+Sat Jun 10 06:53:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (CALLARGS): remove last semicolon. C90 compiler doesn't
+	  allow any lines (even if they're empty) within variable
+	  declaretions.
+
 Fri Jun  9 09:56:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): allow %c to print one character
