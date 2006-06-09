@@ -90,8 +90,7 @@ no_window()
 } while (0)
 
 static void
-free_window(winp)
-    struct windata *winp;
+free_window(struct windata *winp)
 {
     if (winp->window && winp->window != stdscr) delwin(winp->window);
     winp->window = 0;
@@ -99,9 +98,7 @@ free_window(winp)
 }
 
 static VALUE
-prep_window(class, window)
-    VALUE class;
-    WINDOW *window;
+prep_window(VALUE class, WINDOW *window)
 {
     VALUE obj;
     struct windata *winp;
@@ -178,8 +175,7 @@ curses_closed()
 
 /* def clear */
 static VALUE
-curses_clear(obj)
-    VALUE obj;
+curses_clear(VALUE obj)
 {
     curses_stdscr();
     wclear(stdscr);
@@ -197,8 +193,7 @@ curses_clrtoeol()
 
 /* def refresh */
 static VALUE
-curses_refresh(obj)
-    VALUE obj;
+curses_refresh(VALUE obj)
 {
     curses_stdscr();
     refresh();
@@ -207,8 +202,7 @@ curses_refresh(obj)
 
 /* def doupdate */
 static VALUE
-curses_doupdate(obj)
-    VALUE obj;
+curses_doupdate(VALUE obj)
 {
     curses_stdscr();
 #ifdef HAVE_DOUPDATE
@@ -221,8 +215,7 @@ curses_doupdate(obj)
 
 /* def echo */
 static VALUE
-curses_echo(obj)
-    VALUE obj;
+curses_echo(VALUE obj)
 {
     curses_stdscr();
     echo();
@@ -231,8 +224,7 @@ curses_echo(obj)
 
 /* def noecho */
 static VALUE
-curses_noecho(obj)
-    VALUE obj;
+curses_noecho(VALUE obj)
 {
     curses_stdscr();
     noecho();
@@ -241,8 +233,7 @@ curses_noecho(obj)
 
 /* def raw */
 static VALUE
-curses_raw(obj)
-    VALUE obj;
+curses_raw(VALUE obj)
 {
     curses_stdscr();
     raw();
@@ -251,8 +242,7 @@ curses_raw(obj)
 
 /* def noraw */
 static VALUE
-curses_noraw(obj)
-    VALUE obj;
+curses_noraw(VALUE obj)
 {
     curses_stdscr();
     noraw();
@@ -261,8 +251,7 @@ curses_noraw(obj)
 
 /* def cbreak */
 static VALUE
-curses_cbreak(obj)
-    VALUE obj;
+curses_cbreak(VALUE obj)
 {
     curses_stdscr();
     cbreak();
@@ -271,8 +260,7 @@ curses_cbreak(obj)
 
 /* def nocbreak */
 static VALUE
-curses_nocbreak(obj)
-    VALUE obj;
+curses_nocbreak(VALUE obj)
 {
     curses_stdscr();
     nocbreak();
@@ -281,8 +269,7 @@ curses_nocbreak(obj)
 
 /* def nl */
 static VALUE
-curses_nl(obj)
-    VALUE obj;
+curses_nl(VALUE obj)
 {
     curses_stdscr();
     nl();
@@ -291,8 +278,7 @@ curses_nl(obj)
 
 /* def nonl */
 static VALUE
-curses_nonl(obj)
-    VALUE obj;
+curses_nonl(VALUE obj)
 {
     curses_stdscr();
     nonl();
@@ -301,8 +287,7 @@ curses_nonl(obj)
 
 /* def beep */
 static VALUE
-curses_beep(obj)
-    VALUE obj;
+curses_beep(VALUE obj)
 {
 #ifdef HAVE_BEEP
     curses_stdscr();
@@ -313,8 +298,7 @@ curses_beep(obj)
 
 /* def flash */
 static VALUE
-curses_flash(obj)
-    VALUE obj;
+curses_flash(VALUE obj)
 {
 #ifdef HAVE_FLASH
     curses_stdscr();
@@ -325,9 +309,7 @@ curses_flash(obj)
 
 /* def ungetch */
 static VALUE
-curses_ungetch(obj, ch)
-    VALUE obj;
-    VALUE ch;
+curses_ungetch(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_UNGETCH
     curses_stdscr();
@@ -340,10 +322,7 @@ curses_ungetch(obj, ch)
 
 /* def setpos(y, x) */
 static VALUE
-curses_setpos(obj, y, x)
-    VALUE obj;
-    VALUE y;
-    VALUE x;
+curses_setpos(VALUE obj, VALUE y, VALUE x)
 {
     curses_stdscr();
     move(NUM2INT(y), NUM2INT(x));
@@ -352,8 +331,7 @@ curses_setpos(obj, y, x)
 
 /* def standout */
 static VALUE
-curses_standout(obj)
-    VALUE obj;
+curses_standout(VALUE obj)
 {
     standout();
     return Qnil;
@@ -361,8 +339,7 @@ curses_standout(obj)
 
 /* def standend */
 static VALUE
-curses_standend(obj)
-    VALUE obj;
+curses_standend(VALUE obj)
 {
     standend();
     return Qnil;
@@ -370,8 +347,7 @@ curses_standend(obj)
 
 /* def inch */
 static VALUE
-curses_inch(obj)
-    VALUE obj;
+curses_inch(VALUE obj)
 {
     curses_stdscr();
     return CH2FIX(inch());
@@ -379,9 +355,7 @@ curses_inch(obj)
 
 /* def addch(ch) */
 static VALUE
-curses_addch(obj, ch)
-    VALUE obj;
-    VALUE ch;
+curses_addch(VALUE obj, VALUE ch)
 {
     curses_stdscr();
     addch(NUM2CH(ch));
@@ -390,9 +364,7 @@ curses_addch(obj, ch)
 
 /* def insch(ch) */
 static VALUE
-curses_insch(obj, ch)
-    VALUE obj;
-    VALUE ch;
+curses_insch(VALUE obj, VALUE ch)
 {
     curses_stdscr();
     insch(NUM2CH(ch));
@@ -401,9 +373,7 @@ curses_insch(obj, ch)
 
 /* def addstr(str) */
 static VALUE
-curses_addstr(obj, str)
-    VALUE obj;
-    VALUE str;
+curses_addstr(VALUE obj, VALUE str)
 {
     curses_stdscr();
     if (!NIL_P(str)) {
@@ -414,8 +384,7 @@ curses_addstr(obj, str)
 
 /* def getch */
 static VALUE
-curses_getch(obj)
-    VALUE obj;
+curses_getch(VALUE obj)
 {
     rb_read_check(stdin);
     curses_stdscr();
@@ -424,8 +393,7 @@ curses_getch(obj)
 
 /* def getstr */
 static VALUE
-curses_getstr(obj)
-    VALUE obj;
+curses_getstr(VALUE obj)
 {
     char rtn[1024]; /* This should be big enough.. I hope */
 
@@ -440,8 +408,7 @@ curses_getstr(obj)
 
 /* def delch */
 static VALUE
-curses_delch(obj)
-    VALUE obj;
+curses_delch(VALUE obj)
 {
     delch();
     return Qnil;
@@ -449,8 +416,7 @@ curses_delch(obj)
 
 /* def delelteln */
 static VALUE
-curses_deleteln(obj)
-    VALUE obj;
+curses_deleteln(VALUE obj)
 {
 #if defined(HAVE_DELETELN) || defined(deleteln)
     deleteln();
@@ -460,8 +426,7 @@ curses_deleteln(obj)
 
 /* def insertln */
 static VALUE
-curses_insertln(obj)
-    VALUE obj;
+curses_insertln(VALUE obj)
 {
 #if defined(HAVE_INSERTLN) || defined(insertln)
     insertln();
@@ -471,9 +436,7 @@ curses_insertln(obj)
 
 /* def keyname */
 static VALUE
-curses_keyname(obj, c)
-    VALUE obj;
-    VALUE c;
+curses_keyname(VALUE obj, VALUE c)
 {
 #ifdef HAVE_KEYNAME
   const char *name;
@@ -768,12 +731,7 @@ window_s_allocate(VALUE class)
 
 /* def initialize(h, w, top, left) */
 static VALUE
-window_initialize(obj, h, w, top, left)
-    VALUE obj;
-    VALUE h;
-    VALUE w;
-    VALUE top;
-    VALUE left;
+window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
 {
     struct windata *winp;
     WINDOW *window;
@@ -791,12 +749,7 @@ window_initialize(obj, h, w, top, left)
 
 /* def subwin(height, width, top, left) */
 static VALUE
-window_subwin(obj, height, width, top, left)
-    VALUE obj;
-    VALUE height;
-    VALUE width;
-    VALUE top;
-    VALUE left;
+window_subwin(VALUE obj, VALUE height, VALUE width, VALUE top, VALUE left)
 {
     struct windata *winp;
     WINDOW *window;
@@ -816,8 +769,7 @@ window_subwin(obj, height, width, top, left)
 
 /* def close */
 static VALUE
-window_close(obj)
-    VALUE obj;
+window_close(VALUE obj)
 {
     struct windata *winp;
     
@@ -830,8 +782,7 @@ window_close(obj)
 
 /* def clear */
 static VALUE
-window_clear(obj)
-    VALUE obj;
+window_clear(VALUE obj)
 {
     struct windata *winp;
     
@@ -843,8 +794,7 @@ window_clear(obj)
 
 /* def clrtoeol */
 static VALUE
-window_clrtoeol(obj)
-    VALUE obj;
+window_clrtoeol(VALUE obj)
 {
     struct windata *winp;
     
@@ -856,8 +806,7 @@ window_clrtoeol(obj)
 
 /* def refresh */
 static VALUE
-window_refresh(obj)
-    VALUE obj;
+window_refresh(VALUE obj)
 {
     struct windata *winp;
     
@@ -869,8 +818,7 @@ window_refresh(obj)
 
 /* def noutrefresh */
 static VALUE
-window_noutrefresh(obj)
-    VALUE obj;
+window_noutrefresh(VALUE obj)
 {
     struct windata *winp;
 
@@ -886,10 +834,7 @@ window_noutrefresh(obj)
 
 /* def move(y, x) */
 static VALUE
-window_move(obj, y, x)
-    VALUE obj;
-    VALUE y;
-    VALUE x;
+window_move(VALUE obj, VALUE y, VALUE x)
 {
     struct windata *winp;
     
@@ -901,10 +846,7 @@ window_move(obj, y, x)
 
 /* def setpos(y, x) */
 static VALUE
-window_setpos(obj, y, x)
-    VALUE obj;
-    VALUE y;
-    VALUE x;
+window_setpos(VALUE obj, VALUE y, VALUE x)
 {
     struct windata *winp;
     
@@ -915,8 +857,7 @@ window_setpos(obj, y, x)
 
 /* def cury */
 static VALUE
-window_cury(obj)
-    VALUE obj;
+window_cury(VALUE obj)
 {
     struct windata *winp;
     int x, y;
@@ -928,8 +869,7 @@ window_cury(obj)
 
 /* def curx */
 static VALUE
-window_curx(obj)
-    VALUE obj;
+window_curx(VALUE obj)
 {
     struct windata *winp;
     int x, y;
@@ -941,8 +881,7 @@ window_curx(obj)
 
 /* def maxy */
 static VALUE
-window_maxy(obj)
-    VALUE obj;
+window_maxy(VALUE obj)
 {
     struct windata *winp;
 
@@ -962,8 +901,7 @@ window_maxy(obj)
 
 /* def maxx */
 static VALUE
-window_maxx(obj)
-    VALUE obj;
+window_maxx(VALUE obj)
 {
     struct windata *winp;
 
@@ -983,8 +921,7 @@ window_maxx(obj)
 
 /* def begy */
 static VALUE
-window_begy(obj)
-    VALUE obj;
+window_begy(VALUE obj)
 {
     struct windata *winp;
     int x, y;
@@ -1000,8 +937,7 @@ window_begy(obj)
 
 /* def begx */
 static VALUE
-window_begx(obj)
-    VALUE obj;
+window_begx(VALUE obj)
 {
     struct windata *winp;
     int x, y;
@@ -1053,8 +989,7 @@ window_box(argc, argv, self)
 
 /* def standout */
 static VALUE
-window_standout(obj)
-    VALUE obj;
+window_standout(VALUE obj)
 {
     struct windata *winp;
     
@@ -1065,8 +1000,7 @@ window_standout(obj)
 
 /* def standend */
 static VALUE
-window_standend(obj)
-    VALUE obj;
+window_standend(VALUE obj)
 {
     struct windata *winp;
     
@@ -1077,8 +1011,7 @@ window_standend(obj)
 
 /* def inch */
 static VALUE
-window_inch(obj)
-    VALUE obj;
+window_inch(VALUE obj)
 {
     struct windata *winp;
     
@@ -1088,9 +1021,7 @@ window_inch(obj)
 
 /* def addch(ch) */
 static VALUE
-window_addch(obj, ch)
-    VALUE obj;
-    VALUE ch;
+window_addch(VALUE obj, VALUE ch)
 {
     struct windata *winp;
     
@@ -1102,9 +1033,7 @@ window_addch(obj, ch)
 
 /* def insch(ch) */
 static VALUE
-window_insch(obj, ch)
-    VALUE obj;
-    VALUE ch;
+window_insch(VALUE obj, VALUE ch)
 {
     struct windata *winp;
     
@@ -1116,9 +1045,7 @@ window_insch(obj, ch)
 
 /* def addstr(str) */
 static VALUE
-window_addstr(obj, str)
-    VALUE obj;
-    VALUE str;
+window_addstr(VALUE obj, VALUE str)
 {
     if (!NIL_P(str)) {
 	struct windata *winp;
@@ -1131,9 +1058,7 @@ window_addstr(obj, str)
 
 /* def <<(str) */
 static VALUE
-window_addstr2(obj, str)
-    VALUE obj;
-    VALUE str;
+window_addstr2(VALUE obj, VALUE str)
 {
     window_addstr(obj, str);
     return obj;
@@ -1141,8 +1066,7 @@ window_addstr2(obj, str)
 
 /* def getch */
 static VALUE
-window_getch(obj)
-    VALUE obj;
+window_getch(VALUE obj)
 {
     struct windata *winp;
     
@@ -1153,8 +1077,7 @@ window_getch(obj)
 
 /* def getstr */
 static VALUE
-window_getstr(obj)
-    VALUE obj;
+window_getstr(VALUE obj)
 {
     struct windata *winp;
     char rtn[1024]; /* This should be big enough.. I hope */
@@ -1171,8 +1094,7 @@ window_getstr(obj)
 
 /* def delch */
 static VALUE
-window_delch(obj)
-    VALUE obj;
+window_delch(VALUE obj)
 {
     struct windata *winp;
     
@@ -1183,8 +1105,7 @@ window_delch(obj)
 
 /* def delelteln */
 static VALUE
-window_deleteln(obj)
-    VALUE obj;
+window_deleteln(VALUE obj)
 {
 #if defined(HAVE_WDELETELN) || defined(wdeleteln)
     struct windata *winp;
@@ -1197,8 +1118,7 @@ window_deleteln(obj)
 
 /* def insertln */
 static VALUE
-window_insertln(obj)
-    VALUE obj;
+window_insertln(VALUE obj)
 {
 #if defined(HAVE_WINSERTLN) || defined(winsertln)
     struct windata *winp;

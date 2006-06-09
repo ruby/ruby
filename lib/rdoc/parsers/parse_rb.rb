@@ -2555,7 +2555,7 @@ module RDoc
 	    break
 	  when TkCOMMA
 	  else
-	    warn("unexpected token: '#{tk2.inspect}'") if $DEBBUG
+           warn("unexpected token: '#{tk2.inspect}'") if $DEBUG
 	    break
 	  end
 	end

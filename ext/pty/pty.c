@@ -118,8 +118,7 @@ static char SlaveName[DEVICELEN];
 static VALUE eChildExited;
 
 static VALUE
-echild_status(self)
-    VALUE self;
+echild_status(VALUE self)
 {
     return rb_ivar_get(self, rb_intern("status"));
 }
@@ -131,9 +130,7 @@ struct pty_info {
 };
 
 static void
-raise_from_wait(state, info)
-    struct pty_info *info;
-    char *state;
+raise_from_wait(char *state, struct pty_info *info)
 {
     extern VALUE rb_last_status;
     char buf[1024];
@@ -146,8 +143,7 @@ raise_from_wait(state, info)
 }
 
 static VALUE
-pty_syswait(info)
-    struct pty_info *info;
+pty_syswait(struct pty_info *info)
 {
     int cpid, status;
 
@@ -184,17 +180,13 @@ struct exec_info {
 };
 
 static VALUE
-pty_exec(arg)
-    struct exec_info *arg;
+pty_exec(struct exec_info *arg)
 {
     return rb_f_exec(arg->argc, arg->argv);
 }
 
 static void
-establishShell(argc, argv, info)
-    int argc;
-    VALUE *argv;
-    struct pty_info *info;
+establishShell(int argc, VALUE *argv, struct pty_info *info)
 {	
     static int		i,master,slave,currentPid;
     char		*p,*getenv();
@@ -295,8 +287,7 @@ establishShell(argc, argv, info)
 }
 
 static VALUE
-pty_finalize_syswait(info)
-    struct pty_info *info;
+pty_finalize_syswait(struct pty_info *info)
 {
     rb_thread_kill(info->thread);
     rb_funcall(info->thread, rb_intern("value"), 0);
@@ -310,8 +301,7 @@ pty_finalize_syswait(info)
  * or the same interface function.
  */
 static void
-getDevice(master,slave)
-    int	*master,*slave;
+getDevice(int *master, int *slave)
 {
     if (openpty(master, slave, SlaveName,
 		(struct termios *)0, (struct winsize *)0) == -1) {
@@ -321,8 +311,7 @@ getDevice(master,slave)
 #else /* HAVE_OPENPTY */
 #ifdef HAVE__GETPTY
 static void
-getDevice(master,slave)
-    int	*master,*slave;
+getDevice(int *master, int *slave)
 {
     char *name;
 
@@ -335,8 +324,7 @@ getDevice(master,slave)
 }
 #else /* HAVE__GETPTY */
 static void
-getDevice(master,slave)
-    int	*master,*slave;
+getDevice(int *master, int *slave)
 {
     int	 i,j;
 
@@ -407,10 +395,7 @@ freeDevice()
 
 /* ruby function: getpty */
 static VALUE
-pty_getpty(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+pty_getpty(int argc, VALUE *argv, VALUE self)
 {
     VALUE res;
     struct pty_info info;
@@ -450,8 +435,7 @@ pty_getpty(argc, argv, self)
 
 /* ruby function: protect_signal - obsolete */
 static VALUE
-pty_protect(self)
-    VALUE self;
+pty_protect(VALUE self)
 {
     rb_warn("PTY::protect_signal is no longer needed");
     rb_yield(Qnil);
@@ -460,8 +444,7 @@ pty_protect(self)
 
 /* ruby function: reset_signal - obsolete */
 static VALUE
-pty_reset_signal(self)
-    VALUE self;
+pty_reset_signal(VALUE self)
 {
     rb_warn("PTY::reset_signal is no longer needed");
     return self;

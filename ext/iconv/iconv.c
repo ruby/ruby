@@ -166,7 +166,7 @@ iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt)
 	}
 	if (cd == (iconv_t)-1) {
 	    int inval = errno == EINVAL;
-	    char *s = inval ? "invalid encoding " : "iconv";
+	    const char *s = inval ? "invalid encoding " : "iconv";
 	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING(to)->len +
 					    RSTRING(from)->len + 8);
 

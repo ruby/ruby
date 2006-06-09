@@ -300,15 +300,54 @@ math_exp(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_log(VALUE obj, VALUE x)
+math_log(int argc, VALUE *argv)
 {
-    double d;
+    VALUE x, base;
+    double d, b;
 
+    rb_scan_args(argc, argv, "11", &x, &base);
     Need_Float(x);
     errno = 0;
     d = log(RFLOAT(x)->value);
     if (errno) {
 	rb_sys_fail("log");
+    }
+    if (!NIL_P(base)) {
+	Need_Float(base);
+	d /= log(RFLOAT(base)->value);
+    }
+    if (errno) {
+	rb_sys_fail("log");
+    }
+    return rb_float_new(d);
+}
+
+#ifndef HAVE_LOG2
+double
+log2(double x)
+{
+    return log10(x)/log10(2.0);
+}
+#endif
+
+/*
+ *  call-seq:
+ *     Math.log2(numeric)    => float
+ *  
+ *  Returns the base 2 logarithm of <i>numeric</i>.
+ */
+
+static VALUE
+math_log2(VALUE obj, VALUE x)
+{
+    extern double log2(double);
+    double d;
+
+    Need_Float(x);
+    errno = 0;
+    d = log2(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("log2");
     }
     return rb_float_new(d);
 }
@@ -485,7 +524,8 @@ Init_Math(void)
     rb_define_module_function(rb_mMath, "atanh", math_atanh, 1);
 
     rb_define_module_function(rb_mMath, "exp", math_exp, 1);
-    rb_define_module_function(rb_mMath, "log", math_log, 1);
+    rb_define_module_function(rb_mMath, "log", math_log, -1);
+    rb_define_module_function(rb_mMath, "log2", math_log2, 1);
     rb_define_module_function(rb_mMath, "log10", math_log10, 1);
     rb_define_module_function(rb_mMath, "sqrt", math_sqrt, 1);
 

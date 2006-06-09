@@ -309,9 +309,10 @@ this switch, unless you are going to debug the Ruby interpreter.
 .Sh ENVIRONMENT
 .Bl -tag -width "RUBYLIB_PREFIX" -compact
 .It Ev RUBYLIB
-A colon-separated list of directories that are appended to Ruby's
+A colon-separated list of directories that are added to Ruby's
 library load path
-.Pf ( Li "$:" ) .
+.Pf ( Li "$:" ) . Directories from this environment variable are searched
+before the standard load path is searched.
 .Pp
 e.g.:
 .Dl RUBYLIB="$HOME/lib/ruby:$HOME/lib/rubyext"

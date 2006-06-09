@@ -441,7 +441,16 @@ dir_closed(void)
     rb_raise(rb_eIOError, "closed directory");
 }
 
+static void
+dir_check(VALUE dir)
+{
+    if (!OBJ_TAINTED(dir) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: operation on untainted Dir");
+    rb_check_frozen(dir);
+}
+
 #define GetDIR(obj, dirp) do {\
+    dir_check(dir);\
     Data_Get_Struct(obj, struct dir_data, dirp);\
     if (dirp->dir == NULL) dir_closed();\
 } while (0)
@@ -647,6 +656,9 @@ dir_rewind(VALUE dir)
 {
     struct dir_data *dirp;
 
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(dir)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close");
+    }
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     return dir;
@@ -903,9 +915,15 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     return INT2FIX(0);
 }
 
+static void
+sys_warning_1(const char* mesg)
+{
+    rb_sys_warning("%s", mesg);
+}
+
 #define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)(val), 0))
+    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
 
 /* System call with warning */
 static int

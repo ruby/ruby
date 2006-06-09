@@ -20,6 +20,7 @@ fileutils.rb
 find.rb
 forwardable.rb
 generator.rb
+getoptlong.rb
 logger.rb
 matrix.rb
 net

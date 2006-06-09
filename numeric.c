@@ -284,21 +284,21 @@ num_div(VALUE x, VALUE y)
  *    ------+-----+---------------+---------+-------------+---------------
  *    -13   | -4  |   3,   -1     |   3     |   -1        |    -1
  *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 |  4  |   2.0,  3.5   |   2.875 |    3.5      |     3.5
+ *     11.5 |  4  |   2,    3.5   |   2.875 |    3.5      |     3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *     11.5 | -4  |  -3.0, -0.5   |  -2.875 |   -0.5      |     3.5
+ *     11.5 | -4  |  -3,   -0.5   |  -2.875 |   -0.5      |     3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 |  4  |  -3.0   0.5   |  -2.875 |    0.5      |    -3.5
+ *    -11.5 |  4  |  -3,    0.5   |  -2.875 |    0.5      |    -3.5
  *    ------+-----+---------------+---------+-------------+---------------
- *    -11.5 | -4  |   2.0  -3.5   |   2.875 |   -3.5      |    -3.5
+ *    -11.5 | -4  |   2,   -3.5   |   2.875 |   -3.5      |    -3.5
  *
  *
  *  Examples
  *     11.divmod(3)         #=> [3, 2]
  *     11.divmod(-3)        #=> [-4, -1]
- *     11.divmod(3.5)       #=> [3.0, 0.5]
- *     (-11).divmod(3.5)    #=> [-4.0, 3.0]
- *     (11.5).divmod(3.5)   #=> [3.0, 1.0]
+ *     11.divmod(3.5)       #=> [3, 0.5]
+ *     (-11).divmod(3.5)    #=> [-4, 3.0]
+ *     (11.5).divmod(3.5)   #=> [3, 1.0]
  */
 
 static VALUE
@@ -696,7 +696,7 @@ flo_mod(VALUE x, VALUE y)
 static VALUE
 flo_divmod(VALUE x, VALUE y)
 {
-    double fy, div, mod;
+    double fy, div, mod, val;
     volatile VALUE a, b;
 
     switch (TYPE(y)) {
@@ -713,7 +713,13 @@ flo_divmod(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y);
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
-    a = rb_float_new(div);
+    if (FIXABLE(div)) {
+        val = div;
+        a = LONG2FIX(val);
+    }
+    else {
+        a = rb_dbl2big(div);
+    }
     b = rb_float_new(mod);
     return rb_assoc_new(a, b);
 }
@@ -1722,7 +1728,6 @@ int_succ(VALUE num)
  *  receiver's value.
  *     
  *     65.chr    #=> "A"
- *     ?a.chr    #=> "a"
  *     230.chr   #=> "\346"
  */
 
@@ -2603,7 +2608,7 @@ fix_abs(VALUE fix)
 static VALUE
 fix_id2name(VALUE fix)
 {
-    char *name = rb_id2name(FIX2UINT(fix));
+    const char *name = rb_id2name(FIX2UINT(fix));
     if (name) return rb_str_new2(name);
     return Qnil;
 }

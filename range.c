@@ -654,8 +654,7 @@ range_include(VALUE range, VALUE val)
  */
 
 static VALUE
-range_cover(range, val)
-    VALUE range, val;
+range_cover(VALUE range, VALUE val)
 {
     VALUE beg, end;
 

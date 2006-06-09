@@ -186,7 +186,7 @@ rb_class_path(VALUE klass)
 	return path;
     }
     else {
-	char *s = "Class";
+	const char *s = "Class";
 
 	if (TYPE(klass) == T_MODULE) {
 	    if (rb_obj_class(klass) == rb_cModule) {
@@ -711,7 +711,7 @@ rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
     char buf[4];
-    char *s = "&`'+123456789";
+    const char *s = "&`'+123456789";
 
     st_foreach_safe(rb_global_tbl, gvar_i, ary);
     if (!NIL_P(rb_backref_get())) {
@@ -1282,7 +1282,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
 
     tmp = klass;
   retry:
-    while (tmp) {
+    while (tmp && !NIL_P(tmp)) {
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
 		if (!RTEST(rb_autoload_load(tmp, id))) break;
@@ -1510,7 +1510,7 @@ rb_const_defined_fallback(VALUE klass, ID id, NODE *fallback)
 static void
 mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 {
-    char *dest = isconst ? "constant" : "class variable";
+    const char *dest = isconst ? "constant" : "class variable";
 
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
@@ -1542,6 +1542,10 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class/module to define constant %s",
+		 rb_id2name(id));
+    }
     mod_av_set(klass, id, val, Qtrue);
 }
 

@@ -765,39 +765,103 @@ rb_str_concat(VALUE str1, VALUE str2)
     return str1;
 }
 
+/*
+ * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
+ *
+ * @(#) $Revision$
+ * @(#) $Id$
+ * @(#) $Source$
+ *
+ ***
+ *
+ * Fowler/Noll/Vo hash
+ *
+ * The basis of this hash algorithm was taken from an idea sent
+ * as reviewer comments to the IEEE POSIX P1003.2 committee by:
+ *
+ *      Phong Vo (http://www.research.att.com/info/kpv/)
+ *      Glenn Fowler (http://www.research.att.com/~gsf/)
+ *
+ * In a subsequent ballot round:
+ *
+ *      Landon Curt Noll (http://www.isthe.com/chongo/)
+ *
+ * improved on their algorithm.  Some people tried this hash
+ * and found that it worked rather well.  In an EMail message
+ * to Landon, they named it the ``Fowler/Noll/Vo'' or FNV hash.
+ *
+ * FNV hashes are designed to be fast while maintaining a low
+ * collision rate. The FNV speed allows one to quickly hash lots
+ * of data while maintaining a reasonable collision rate.  See:
+ *
+ *      http://www.isthe.com/chongo/tech/comp/fnv/index.html
+ *
+ * for more details as well as other forms of the FNV hash.
+ ***
+ *
+ * To use the recommended 32 bit FNV-1a hash, pass FNV1_32A_INIT as the
+ * Fnv32_t hashval argument to fnv_32a_buf() or fnv_32a_str().
+ *
+ ***
+ *
+ * Please do not copyright this code.  This code is in the public domain.
+ *
+ * LANDON CURT NOLL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+ * EVENT SHALL LANDON CURT NOLL BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
+ * USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * By:
+ *	chongo <Landon Curt Noll> /\oo/\
+ *      http://www.isthe.com/chongo/
+ *
+ * Share and Enjoy!	:-)
+ */
+
+/*
+ * 32 bit FNV-1 and FNV-1a non-zero initial basis
+ *
+ * The FNV-1 initial basis is the FNV-0 hash of the following 32 octets:
+ *
+ *              chongo <Landon Curt Noll> /\../\
+ *
+ * NOTE: The \'s above are not back-slashing escape characters.
+ * They are literal ASCII  backslash 0x5c characters.
+ *
+ * NOTE: The FNV-1a initial basis is the same value as FNV-1 by definition.
+ */
+#define FNV1_32A_INIT 0x811c9dc5
+
+/*
+ * 32 bit magic FNV-1a prime
+ */
+#define FNV_32_PRIME 0x01000193
+
 int
 rb_str_hash(VALUE str)
 {
     register long len = RSTRING(str)->len;
     register char *p = RSTRING(str)->ptr;
-    register int key = 0;
+    register int hval = FNV1_32A_INIT;
 
-#ifdef HASH_ELFHASH
-    register unsigned int g;
+    /*
+     * FNV-1a hash each octet in the buffer
+     */
+    while (len--) {
+	/* xor the bottom with the current octet */
+	hval ^= (int)*p++;
 
-    while (len--) {
-	key = (key << 4) + *p++;
-	if (g = key & 0xF0000000)
-	    key ^= g >> 24;
-	key &= ~g;
-    }
-#elif HASH_PERL
-    while (len--) {
-	key += *p++;
-	key += (key << 10);
-	key ^= (key >> 6);
-    }
-    key += (key << 3);
-    key ^= (key >> 11);
-    key += (key << 15);
+	/* multiply by the 32 bit FNV magic prime mod 2^32 */
+#if defined(FNV_GCC_OPTIMIZATION)
+	hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
 #else
-    while (len--) {
-	key = key*65599 + *p;
-	p++;
-    }
-    key = key + (key>>5);
+	hval *= FNV_32_PRIME;
 #endif
-    return key;
+    }
+    return hval;
 }
 
 /*
@@ -810,8 +874,8 @@ rb_str_hash(VALUE str)
 static VALUE
 rb_str_hash_m(VALUE str)
 {
-    int key = rb_str_hash(str);
-    return INT2FIX(key);
+    int hval = rb_str_hash(str);
+    return INT2FIX(hval);
 }
 
 #define lesser(a,b) (((a)>(b))?(b):(a))
@@ -1414,13 +1478,7 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = FIX2LONG(indx);
 
       num_index:
-	if (idx < 0) {
-	    idx = RSTRING(str)->len + idx;
-	}
-	if (idx < 0 || RSTRING(str)->len <= idx) {
-	    return Qnil;
-	}
-	return INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
+	return rb_str_substr(str, idx, 1);
 
       case T_REGEXP:
 	return rb_str_subpat(str, indx, 0);
@@ -1456,21 +1514,21 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *     str[fixnum]                 => fixnum or nil
+ *     str[fixnum]                 => new_str or nil
  *     str[fixnum, fixnum]         => new_str or nil
  *     str[range]                  => new_str or nil
  *     str[regexp]                 => new_str or nil
  *     str[regexp, fixnum]         => new_str or nil
  *     str[other_str]              => new_str or nil
- *     str.slice(fixnum)           => fixnum or nil
+ *     str.slice(fixnum)           => new_str or nil
  *     str.slice(fixnum, fixnum)   => new_str or nil
  *     str.slice(range)            => new_str or nil
  *     str.slice(regexp)           => new_str or nil
  *     str.slice(regexp, fixnum)   => new_str or nil
  *     str.slice(other_str)        => new_str or nil
  *  
- *  Element Reference---If passed a single <code>Fixnum</code>, returns the code
- *  of the character at that position. If passed two <code>Fixnum</code>
+ *  Element Reference---If passed a single <code>Fixnum</code>, returns a
+ *  substring of one character at that position. If passed two <code>Fixnum</code>
  *  objects, returns a substring starting at the offset given by the first, and
  *  a length given by the second. If given a range, a substring containing
  *  characters at offsets given by the range is returned. In all three cases, if
@@ -1486,7 +1544,7 @@ rb_str_aref(VALUE str, VALUE indx)
  *  match.
  *     
  *     a = "hello there"
- *     a[1]                   #=> 101
+ *     a[1]                   #=> "e"
  *     a[1,3]                 #=> "ell"
  *     a[1..3]                #=> "ell"
  *     a[-3,2]                #=> "er"
@@ -1615,17 +1673,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 		goto out_of_range;
 	    idx += RSTRING(str)->len;
 	}
-	if (FIXNUM_P(val)) {
-	    rb_str_modify(str);
-	    if (RSTRING(str)->len == idx) {
-		RSTRING(str)->len += 1;
-		RESIZE_CAPA(str, RSTRING(str)->len);
-	    }
-	    RSTRING(str)->ptr[idx] = FIX2INT(val) & 0xff;
-	}
-	else {
-	    rb_str_splice(str, idx, 1, val);
-	}
+	rb_str_splice(str, idx, 1, val);
 	return val;
 
       case T_REGEXP:
@@ -1656,7 +1704,6 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *     str[fixnum] = fixnum
  *     str[fixnum] = new_str
  *     str[fixnum, fixnum] = new_str
  *     str[range] = aString
@@ -2156,6 +2203,22 @@ rb_str_clear(VALUE str)
     RSTRING(str)->ptr = null_str;
     RSTRING(str)->len = 0;
     return str;
+}
+
+/*
+ *  call-seq:
+ *     string.chr    ->  string
+ *
+ *  Returns a one-character string at the beginning of the string.
+ *
+ *     a = "abcde"
+ *     a.chr    #=> "a"
+ */
+
+static VALUE
+rb_str_chr(VALUE str)
+{
+    return rb_str_substr(str, 0, 1);
 }
 
 /*
@@ -4217,6 +4280,7 @@ Init_String(void)
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
+    rb_define_method(rb_cString, "chr", rb_str_chr, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

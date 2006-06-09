@@ -31,9 +31,9 @@ class TestDir < Test::Unit::TestCase
         break unless name = dir.read
         cache << [pos, name]
       end
-      for x in cache.sort_by {|x| x[0] % 3 } # shuffle
-        dir.seek(x[0])
-        assert_equal(x[1], dir.read)
+      for x,y in cache.sort_by {|x| x[0] % 3 } # shuffle
+        dir.seek(x)
+        assert_equal(y, dir.read)
       end
     ensure
       dir.close

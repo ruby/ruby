@@ -451,7 +451,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE slot;
 	ID id;
-	char *p;
+	const char *p;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");

@@ -265,8 +265,7 @@ static struct token_assoc {
 };
 
 static ID
-ripper_token2eventid(tok)
-    int tok;
+ripper_token2eventid(int tok)
 {
     struct token_assoc *a;
 

@@ -233,7 +233,7 @@ def parse_args()
     opts.on('--make=MAKE') do |v|
       $make = v || 'make'
     end
-    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |*v|
       v.grep(/\A([-\w]+)=(.*)/) {$configure_args["--#{$1}"] = $2}
       if arg = v.first
         arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
@@ -258,7 +258,7 @@ def parse_args()
   $mflags.unshift(*rest) unless rest.empty?
 
   def $mflags.set?(flag)
-    grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
+    grep(/\A-(?!-).*#{'%s' % flag}/i) { return true }
     false
   end
   def $mflags.defined?(var)

@@ -16,14 +16,6 @@ require "matrix.rb"
 
 class Integer
 
-  remove_method(:gcd2)
-  def gcd2(other)
-    min = self.abs
-    max = other.abs
-    min, max = max % min, min while min > 0
-    max
-  end
-
   def Integer.from_prime_division(pd)
     value = 1
     for prime, index in pd

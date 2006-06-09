@@ -73,7 +73,7 @@ usage(const char *name)
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
 
-    static char *usage_msg[] = {
+    static const char *usage_msg[] = {
 "-0[octal]       specify record separator (\\0, if no argument)",
 "-a              autosplit mode with -n or -p (splits $_ into $F)",
 "-c              check syntax only",
@@ -99,7 +99,7 @@ usage(const char *name)
 "--version       print the version",
 NULL
 };
-    char **p = usage_msg;
+    const char **p = usage_msg;
 
     printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
     while (*p)

@@ -226,7 +226,7 @@ rb_f_kill(int argc, VALUE *argv)
     int negative = 0;
     int sig;
     int i;
-    char *s;
+    const char *s;
 
     rb_secure(2);
     if (argc < 2)
@@ -564,7 +564,7 @@ trap(struct trap_arg *arg)
     sighandler_t func, oldfunc;
     VALUE command, oldcmd;
     int sig = -1;
-    char *s;
+    const char *s;
 
     func = sighandler;
     if (NIL_P(arg->cmd)) {
@@ -630,7 +630,7 @@ trap(struct trap_arg *arg)
 	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
     }
 
-    if (sig < 0 || sig > NSIG) {
+    if (sig < 0 || sig >= NSIG) {
 	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }
 #if defined(HAVE_SETITIMER)

@@ -302,7 +302,7 @@ VpNewRbClass(U_LONG mx, char *str, VALUE klass)
 }
 
 VP_EXPORT Real *
-VpCreateRbObject(U_LONG mx, char *str)
+VpCreateRbObject(U_LONG mx, const char *str)
 {
     Real *pv = VpAlloc(mx,str);
     pv->obj = (VALUE)Data_Wrap_Struct(rb_cBigDecimal, 0, BigDecimal_delete, pv);
@@ -917,7 +917,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
     Real   *c, *a;
-    int    iLoc;
+    int    iLoc = 0;
     U_LONG mx;
     VALUE  vLoc;
     VALUE  vRound;
@@ -1578,7 +1578,7 @@ VpIsNegDoubleZero(double v)
 }
 
 VP_EXPORT int
-VpException(unsigned short f,char *str,int always)
+VpException(unsigned short f, const char *str,int always)
 {
     VALUE exc;
     int   fatal=0;
@@ -1720,7 +1720,7 @@ NaN:
  *    returns number of chars needed to represent vp in specified format.
  */
 VP_EXPORT U_LONG
-VpNumOfChars(Real *vp,char *pszFmt)
+VpNumOfChars(Real *vp,const char *pszFmt)
 {
     S_INT  ex;
     U_LONG nc;
@@ -1873,7 +1873,7 @@ overflow:
  *   NULL be returned if memory allocation is failed,or any error.
  */
 VP_EXPORT Real *
-VpAlloc(U_LONG mx, char *szVal)
+VpAlloc(U_LONG mx, const char *szVal)
 {
     U_LONG i, ni, ipn, ipf, nf, ipe, ne, nalloc;
     char v,*psz;
@@ -3277,7 +3277,7 @@ VpToFString(Real *a,char *psz,int fFmt,int fPlus)
  *   ne   ... number of characters in exp_chr[],not including '+/-'.
  */
 VP_EXPORT int
-VpCtoV(Real *a, char *int_chr, U_LONG ni, char *frac, U_LONG nf, char *exp_chr, U_LONG ne)
+VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, const char *exp_chr, U_LONG ne)
 {
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;

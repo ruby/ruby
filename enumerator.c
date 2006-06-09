@@ -27,7 +27,7 @@ static VALUE
 proc_call(VALUE proc, VALUE args)
 {
     if (TYPE(args) != T_ARRAY) {
-	args = rb_values_new(1, args);
+	args = rb_ary_new3(1, args);
     }
     return rb_proc_call(proc, args);
 }

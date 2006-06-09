@@ -1902,18 +1902,14 @@ const int score_table_F0[] = {
     SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST, SCORE_ERROR,
 };
 
-void set_code_score(ptr, score)
-     struct input_code *ptr;
-     int score;
+void set_code_score(struct input_code *ptr, int score)
 {
     if (ptr){
         ptr->score |= score;
     }
 }
 
-void clr_code_score(ptr, score)
-     struct input_code *ptr;
-     int score;
+void clr_code_score(struct input_code *ptr, int score)
 {
     if (ptr){
         ptr->score &= ~score;
@@ -1944,8 +1940,7 @@ void code_score(ptr)
     }
 }
 
-void status_disable(ptr)
-struct input_code *ptr;
+void status_disable(struct input_code *ptr)
 {
     ptr->stat = -1;
     ptr->buf[0] = -1;
@@ -1953,46 +1948,37 @@ struct input_code *ptr;
     if (iconv == ptr->iconv_func) set_iconv(FALSE, 0);
 }
 
-void status_push_ch(ptr, c)
-     struct input_code *ptr;
-     int c;
+void status_push_ch(struct input_code *ptr, int c)
 {
     ptr->buf[ptr->index++] = c;
 }
 
-void status_clear(ptr)
-     struct input_code *ptr;
+void status_clear(struct input_code *ptr)
 {
     ptr->stat = 0;
     ptr->index = 0;
 }
 
-void status_reset(ptr)
-     struct input_code *ptr;
+void status_reset(struct input_code *ptr)
 {
     status_clear(ptr);
     ptr->score = SCORE_INIT;
 }
 
-void status_reinit(ptr)
-     struct input_code *ptr;
+void status_reinit(struct input_code *ptr)
 {
     status_reset(ptr);
     ptr->_file_stat = 0;
 }
 
-void status_check(ptr, c)
-     struct input_code *ptr;
-     int c;
+void status_check(struct input_code *ptr, int c)
 {
     if (c <= DEL && estab_f){
         status_reset(ptr);
     }
 }
 
-void s_status(ptr, c)
-     struct input_code *ptr;
-     int c;
+void s_status(struct input_code *ptr, int c)
 {
     switch(ptr->stat){
       case -1:
@@ -3062,9 +3048,7 @@ w_iconv(c2, c1, c0)
 
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
 void
-w16w_conv(val, p2, p1, p0)
-     unsigned short val;
-     int *p2, *p1, *p0;
+w16w_conv(unsigned short val, int *p2, int *p1, int *p0)
 {
     if (val < 0x80){
         *p2 = val;
@@ -3771,9 +3755,7 @@ s_oconv(c2, c1)
 }
 
 void
-j_oconv(c2, c1)
-    int    c2,
-                    c1;
+j_oconv(int c2, int c1)
 {
 #ifdef NUMCHAR_OPTION
     if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
@@ -3858,9 +3840,7 @@ j_oconv(c2, c1)
 }
 
 void
-base64_conv(c2, c1)
-    int    c2,
-                    c1;
+base64_conv(int c2, int c1)
 {
     mime_prechar(c2, c1);
     (*o_base64conv)(c2,c1);
@@ -3871,8 +3851,7 @@ STATIC int broken_buf[3];
 STATIC int broken_counter = 0;
 STATIC int broken_last = 0;
 int
-broken_getc(f)
-FILE *f;
+broken_getc(FILE *f)
 {
     int c,c1;
 
@@ -3911,9 +3890,7 @@ FILE *f;
 }
 
 int
-broken_ungetc(c,f)
-int c;
-FILE *f;
+broken_ungetc(int c, FILE *f)
 {
     if (broken_counter<2)
 	broken_buf[broken_counter++]=c;
@@ -3923,8 +3900,7 @@ FILE *f;
 STATIC int prev_cr = 0;
 
 void
-cr_conv(c2,c1) 
-int c2,c1;
+cr_conv(int c2, int c1)
 {
     if (prev_cr) {
 	prev_cr = 0;
@@ -3972,8 +3948,7 @@ int c2,c1;
 #define char_size(c2,c1) (c2?2:1)
 
 void
-fold_conv(c2,c1) 
-int c2,c1;
+fold_conv(int c2, int c1)
 { 
     int prev0;
     int fold_state=0;
@@ -4146,8 +4121,7 @@ int c2,c1;
 int z_prev2=0,z_prev1=0;
 
 void
-z_conv(c2,c1)
-int c2,c1;
+z_conv(int c2, int c1)
 {
 
     /* if (c2) c1 &= 0x7f; assertion */
@@ -4237,8 +4211,7 @@ int c2,c1;
 )
 
 void
-rot_conv(c2,c1)
-int c2,c1;
+rot_conv(int c2, int c1)
 {
     if (c2==0 || c2==X0201 || c2==ISO8859_1) {
 	c1 = rot13(c1);
@@ -4250,8 +4223,7 @@ int c2,c1;
 }
 
 void
-hira_conv(c2,c1)
-int c2,c1;
+hira_conv(int c2, int c1)
 {
     if ((hira_f & 1) && c2==0x25 && 0x20<c1 && c1<0x74) {
 	c2 = 0x24;
@@ -4263,8 +4235,7 @@ int c2,c1;
 
 
 void
-iso2022jp_check_conv(c2,c1)
-int    c2, c1;
+iso2022jp_check_conv(int c2, int c1)
 {
     STATIC const int range[RANGE_NUM_MAX][2] = {
         {0x222f, 0x2239,},
@@ -4386,8 +4357,7 @@ unswitch_mime_getc()
 }
 
 int
-mime_begin_strict(f)
-FILE *f;
+mime_begin_strict(FILE *f)
 {
     int c1 = 0;
     int i,j,k;
@@ -4437,8 +4407,7 @@ FILE *f;
 }
 
 int
-mime_getc_buf(f) 
-FILE *f;
+mime_getc_buf(FILE *f)
 {
     /* we don't keep eof of Fifo, becase it contains ?= as
        a terminator. It was checked in mime_integrity. */
@@ -4447,9 +4416,7 @@ FILE *f;
 }
 
 int
-mime_ungetc_buf(c,f) 
-FILE *f;
-int c;
+mime_ungetc_buf(int c, FILE *f) 
 {
     if (mimebuf_f)
 	(*i_mungetc_buf)(c,f);
@@ -4459,8 +4426,7 @@ int c;
 }
 
 int
-mime_begin(f)
-FILE *f;
+mime_begin(FILE *f)
 {
     int c1;
     int i,k;
@@ -4518,8 +4484,7 @@ FILE *f;
 
 #ifdef CHECK_OPTION
 void
-no_putc(c)
-     int c;
+no_putc(int c)
 {
     ;
 }
@@ -4534,8 +4499,7 @@ void debug(str)
 #endif
 
 void
-set_input_codename (codename)
-    char *codename;
+set_input_codename (char *codename)
 {
     if (guess_f && 
         is_inputcode_set &&
@@ -4550,8 +4514,7 @@ set_input_codename (codename)
 
 #if !defined(PERL_XS) && !defined(WIN32DLL)
 void
-print_guessed_code (filename)
-    char *filename;
+print_guessed_code (char *filename)
 {
     char *codename = "BINARY";
     if (!is_inputcode_mixed) {
@@ -4599,31 +4562,25 @@ hex_getc(ch, f, g, u)
 }
 
 int
-cap_getc(f)
-     FILE *f;
+cap_getc(FILE *f)
 {
     return hex_getc(':', f, i_cgetc, i_cungetc);
 }
 
 int
-cap_ungetc(c, f)
-     int c;
-     FILE *f;
+cap_ungetc(int c, FILE *f)
 {
     return (*i_cungetc)(c, f);
 }
 
 int
-url_getc(f)
-     FILE *f;
+url_getc(FILE *f)
 {
     return hex_getc('%', f, i_ugetc, i_uungetc);
 }
 
 int
-url_ungetc(c, f)
-     int c;
-     FILE *f;
+url_ungetc(int c, FILE *f)
 {
     return (*i_uungetc)(c, f);
 }
@@ -4631,8 +4588,7 @@ url_ungetc(c, f)
 
 #ifdef NUMCHAR_OPTION
 int
-numchar_getc(f)
-     FILE *f;
+numchar_getc(FILE *f)
 {
     int (*g)() = i_ngetc;
     int (*u)() = i_nungetc;
@@ -4698,8 +4654,7 @@ numchar_ungetc(c, f)
 
 /* Normalization Form C */
 int
-nfc_getc(f)
-     FILE *f;
+nfc_getc(FILE *f)
 {
     int (*g)() = i_nfc_getc;
     int (*u)() = i_nfc_ungetc;
@@ -5185,8 +5140,7 @@ eof_mime()
 }
 
 void
-mimeout_addchar(c)
-    int            c;
+mimeout_addchar(int c)
 {
     switch(mimeout_mode) {
     case 'Q':

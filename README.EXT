@@ -330,16 +330,29 @@ of the innermost method (which is defined by Ruby) can be accessed.
 
 2.2.2 ID or Symbol
 
-You can invoke methods directly, without parsing the string.  First I
-need to explain about symbols (whose data type is ID).  ID is the
-integer number to represent Ruby's identifiers such as variable names.
-It can be accessed from Ruby in the form:
+You can invoke methods directly, without parsing the string.  First I need
+to explain about ID.  ID is the integer number to represent Ruby's
+identifiers such as variable names.  The Ruby data type corresponding to ID
+is Symbol.  It can be accessed from Ruby in the form:
 
  :Identifier
 
-You can get the symbol value from a string within C code by using
+You can get the ID value from a string within C code by using
 
   rb_intern(const char *name)
+
+You can retrieve ID from Ruby object (Symbol or String) given as an
+argument by using
+
+  rb_to_id(VALUE symbol)
+
+You can convert C ID to Ruby Symbol by using
+
+  VALUE ID2SYM(ID id)
+
+and to convert Ruby Symbol object to ID, use
+
+  ID SYM2ID(VALUE symbol)
 
 2.2.3 Invoke Ruby method from C
 

@@ -6,8 +6,7 @@ require 'test/unit/assertions'
 require 'runit/error'
 
 module RUNIT
-  module Assert
-    include Test::Unit::Assertions
+  module AssertMixin
 
     def setup_assert
     end
@@ -69,5 +68,9 @@ module RUNIT
     def called_internally?
       /assertions\.rb/.match(caller[1])
     end
+  end
+  module Assert
+    include Test::Unit::Assertions
+    include AssertMixin
   end
 end

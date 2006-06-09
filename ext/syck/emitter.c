@@ -282,7 +282,7 @@ syck_emitter_clear( SyckEmitter *e )
  * Raw write to the emitter buffer.
  */
 void
-syck_emitter_write( SyckEmitter *e, char *str, long len )
+syck_emitter_write( SyckEmitter *e, const char *str, long len )
 {
     long at;
     ASSERT( str != NULL )
@@ -438,7 +438,7 @@ end_emit:
  * and the implicit tag which would be assigned to this node.  If a tag is
  * required, write the tag.
  */
-void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
+void syck_emit_tag( SyckEmitter *e, const char *tag, const char *ignore )
 {
     SyckLevel *lvl;
     if ( tag == NULL ) return;
@@ -457,7 +457,7 @@ void syck_emit_tag( SyckEmitter *e, char *tag, char *ignore )
             int skip = 4 + strlen( YAML_DOMAIN ) + 1;
             syck_emitter_write( e, tag + skip, taglen - skip );
         } else {
-            char *subd = tag + 4;
+            const char *subd = tag + 4;
             while ( *subd != ':' && *subd != '\0' ) subd++;
             if ( *subd == ':' ) {
                 if ( subd - tag > ( strlen( YAML_DOMAIN ) + 5 ) &&
@@ -559,7 +559,7 @@ syck_scan_scalar( int req_width, char *cursor, long len )
     }
     if ( ( cursor[0] == '-' || cursor[0] == ':' ||
            cursor[0] == '?' || cursor[0] == ',' ) &&
-           ( cursor[1] == ' ' || cursor[1] == '\n' || len == 1 ) )
+           ( len == 1 || cursor[1] == ' ' || cursor[1] == '\n' ) )
     {
             flags |= SCAN_INDIC_S;
     }
@@ -1221,7 +1221,7 @@ syck_emitter_mark_node( SyckEmitter *e, st_data_t n )
         if ( ! st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
         {
             int idx = 0;
-            char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );
+            const char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );
 
             /*
              * Second time hitting this object, let's give it an anchor

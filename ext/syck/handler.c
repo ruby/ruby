@@ -155,7 +155,7 @@ syck_xprivate( char *type_id, int type_len )
 }
 
 char *
-syck_taguri( char *domain, char *type_id, int type_len )
+syck_taguri( const char *domain, const char *type_id, int type_len )
 {
     char *uri = S_ALLOC_N( char, strlen( domain ) + type_len + 14 );
     uri[0] = '\0';

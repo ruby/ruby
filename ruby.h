@@ -547,7 +547,7 @@ void rb_gc_register_address(VALUE*);
 void rb_gc_unregister_address(VALUE*);
 
 ID rb_intern(const char*);
-char *rb_id2name(ID);
+const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
 
 char *rb_class2name(VALUE);
@@ -629,6 +629,7 @@ RUBY_EXTERN VALUE rb_mGC;
 RUBY_EXTERN VALUE rb_mMath;
 RUBY_EXTERN VALUE rb_mProcess;
 
+RUBY_EXTERN VALUE rb_cBasicObject;
 RUBY_EXTERN VALUE rb_cObject;
 RUBY_EXTERN VALUE rb_cArray;
 RUBY_EXTERN VALUE rb_cValues;

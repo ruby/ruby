@@ -41,5 +41,11 @@ module RI
 
     # This is the search path for 'ri'
     PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
+
+    begin
+      require 'rubygems'
+      Dir["#{Gem.path}/doc/*/ri"].each { |path| RI::Paths::PATH << path }
+    rescue LoadError
+    end
   end
 end

@@ -412,6 +412,7 @@ add_heap(void)
     if (himem < pend) himem = pend;
     heaps_used++;
     heap_slots *= 1.8;
+    if (heap_slots <= 0) heap_slots = HEAP_MIN_SLOTS;
 
     while (p < pend) {
 	p->as.free.flags = 0;
@@ -832,6 +833,7 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_MODULE:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_BLOCK_PASS:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
@@ -863,12 +865,10 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_COLON2:
 	  case NODE_SPLAT:
 	  case NODE_TO_ARY:
-	  case NODE_SVALUE:
 	    ptr = (VALUE)obj->as.node.u1.node;
 	    goto again;
 
 	  case NODE_SCOPE:	/* 2,3 */
-	  case NODE_BLOCK_PASS:
 	  case NODE_CDECL:
 	    gc_mark((VALUE)obj->as.node.u3.node, lev);
 	    ptr = (VALUE)obj->as.node.u2.node;
@@ -2066,7 +2066,7 @@ Init_GC(void)
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
 
+    rb_define_method(rb_cBasicObject, "__id__", rb_obj_id, 0);
+    rb_define_method(rb_cBasicObject, "object_id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 }

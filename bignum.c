@@ -406,7 +406,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     len *= strlen(str)*sizeof(char);
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	unsigned long val = strtoul((char*)str, &end, base);
+	unsigned long val = strtoul(str, &end, base);
 
 	if (*end == '_') goto bigparse;
 	if (badcheck) {
@@ -516,7 +516,7 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 
 #if HAVE_LONG_LONG
 
-VALUE
+static VALUE
 rb_ull2big(unsigned LONG_LONG n)
 {
     BDIGIT_DBL num = n;
@@ -537,7 +537,7 @@ rb_ull2big(unsigned LONG_LONG n)
     return big;
 }
 
-VALUE
+static VALUE
 rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
@@ -595,10 +595,10 @@ rb_big2str(VALUE x, int base)
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
     }
-    i = RBIGNUM(x)->len;
     if (BIGZEROP(x)) {
 	return rb_str_new2("0");
     }
+    i = RBIGNUM(x)->len;
     j = SIZEOF_BDIGITS*CHAR_BIT*i;
     switch (base) {
       case 2: break;
@@ -1546,6 +1546,11 @@ rb_big_pow(VALUE x, VALUE y)
 	if (yy > 0) {
 	    VALUE z = x;
 
+	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
+		rb_warn("in a**b, b may be too big");
+		d = (double)yy;
+		break;
+	    }
 	    for (;;) {
 		yy -= 1;
 		if (yy == 0) break;

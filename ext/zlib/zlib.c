@@ -197,9 +197,7 @@ static VALUE cZError, cStreamEnd, cNeedDict;
 static VALUE cStreamError, cDataError, cMemError, cBufError, cVersionError;
 
 static void
-raise_zlib_error(err, msg)
-    int err;
-    const char *msg;
+raise_zlib_error(int err, const char *msg)
 {
     VALUE exc;
 
@@ -247,8 +245,7 @@ raise_zlib_error(err, msg)
 /*--- Warning (in finalizer) ---*/
 
 static void
-finalizer_warn(msg)
-    const char *msg;
+finalizer_warn(const char *msg)
 {
     fprintf(stderr, "zlib(finalizer): %s\n", msg);
 }
@@ -260,8 +257,7 @@ finalizer_warn(msg)
  * Returns the string which represents the version of zlib library.
  */
 static VALUE
-rb_zlib_version(klass)
-    VALUE klass;
+rb_zlib_version(VALUE klass)
 {
     VALUE str;
 
@@ -311,10 +307,7 @@ do_checksum(argc, argv, func)
  * FIXME: expression.
  */
 static VALUE
-rb_zlib_adler32(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
 {
     return do_checksum(argc, argv, adler32);
 }
@@ -329,10 +322,7 @@ rb_zlib_adler32(argc, argv, klass)
  * FIXME: expression.
  */
 static VALUE
-rb_zlib_crc32(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 {
     return do_checksum(argc, argv, crc32);
 }
@@ -341,8 +331,7 @@ rb_zlib_crc32(argc, argv, klass)
  * Returns the table for calculating CRC checksum as an array.
  */
 static VALUE
-rb_zlib_crc_table(obj)
-    VALUE obj;
+rb_zlib_crc_table(VALUE obj)
 {
     const unsigned long *crctbl;
     VALUE dst;
@@ -401,24 +390,19 @@ static const struct zstream_funcs inflate_funcs = {
 
 
 static voidpf
-zlib_mem_alloc(opaque, items, size)
-    voidpf opaque;
-    uInt items, size;
+zlib_mem_alloc(voidpf opaque, uInt items, uInt size)
 {
     return xmalloc(items * size);
 }
 
 static void
-zlib_mem_free(opaque, address)
-    voidpf opaque, address;
+zlib_mem_free(voidpf opaque, voidpf address)
 {
     free(address);
 }
 
 static void
-zstream_init(z, func)
-    struct zstream *z;
-    const struct zstream_funcs *func;
+zstream_init(struct zstream *z, const struct zstream_funcs *func)
 {
     z->flags = 0;
     z->buf = Qnil;
@@ -439,8 +423,7 @@ zstream_init(z, func)
 #define zstream_init_inflate(z)   zstream_init((z), &inflate_funcs)
 
 static void
-zstream_expand_buffer(z)
-    struct zstream *z;
+zstream_expand_buffer(struct zstream *z)
 {
     long inc;
 
@@ -472,9 +455,7 @@ zstream_expand_buffer(z)
 }
 
 static void
-zstream_expand_buffer_into(z, size)
-    struct zstream *z;
-    int size;
+zstream_expand_buffer_into(struct zstream *z, int size)
 {
     if (NIL_P(z->buf)) {
 	/* I uses rb_str_new here not rb_str_buf_new because
@@ -493,10 +474,7 @@ zstream_expand_buffer_into(z, size)
 }
 
 static void
-zstream_append_buffer(z, src, len)
-    struct zstream *z;
-    const Bytef *src;
-    int len;
+zstream_append_buffer(struct zstream *z, const Bytef *src, int len)
 {
     if (NIL_P(z->buf)) {
 	z->buf = rb_str_buf_new(len);
@@ -529,8 +507,7 @@ zstream_append_buffer(z, src, len)
     zstream_append_buffer((z),(Bytef*)RSTRING(v)->ptr,RSTRING(v)->len)
 
 static VALUE
-zstream_detach_buffer(z)
-    struct zstream *z;
+zstream_detach_buffer(struct zstream *z)
 {
     VALUE dst;
 
@@ -551,9 +528,7 @@ zstream_detach_buffer(z)
 }
 
 static VALUE
-zstream_shift_buffer(z, len)
-    struct zstream *z;
-    int len;
+zstream_shift_buffer(struct zstream *z, int len)
 {
     VALUE dst;
 
@@ -576,9 +551,7 @@ zstream_shift_buffer(z, len)
 }
 
 static void
-zstream_buffer_ungetc(z, c)
-    struct zstream *z;
-    int c;
+zstream_buffer_ungetc(struct zstream *z, int c)
 {
     if (NIL_P(z->buf) || RSTRING(z->buf)->len - z->buf_filled == 0) {
 	zstream_expand_buffer(z);
@@ -594,10 +567,7 @@ zstream_buffer_ungetc(z, c)
 }
 
 static void
-zstream_append_input(z, src, len)
-    struct zstream *z;
-    const Bytef *src;
-    unsigned int len;
+zstream_append_input(struct zstream *z, const Bytef *src, unsigned int len)
 {
     if (len <= 0) return;
 
@@ -615,9 +585,7 @@ zstream_append_input(z, src, len)
     zstream_append_input((z), (Bytef*)RSTRING(v)->ptr, RSTRING(v)->len)
 
 static void
-zstream_discard_input(z, len)
-    struct zstream *z;
-    unsigned int len;
+zstream_discard_input(struct zstream *z, unsigned int len)
 {
     if (NIL_P(z->input) || RSTRING(z->input)->len <= len) {
 	z->input = Qnil;
@@ -630,15 +598,13 @@ zstream_discard_input(z, len)
 }
 
 static void
-zstream_reset_input(z)
-    struct zstream *z;
+zstream_reset_input(struct zstream *z)
 {
     z->input = Qnil;
 }
 
 static void
-zstream_passthrough_input(z)
-    struct zstream *z;
+zstream_passthrough_input(struct zstream *z)
 {
     if (!NIL_P(z->input)) {
 	zstream_append_buffer2(z, z->input);
@@ -647,8 +613,7 @@ zstream_passthrough_input(z)
 }
 
 static VALUE
-zstream_detach_input(z)
-    struct zstream *z;
+zstream_detach_input(struct zstream *z)
 {
     VALUE dst;
 
@@ -665,8 +630,7 @@ zstream_detach_input(z)
 }
 
 static void
-zstream_reset(z)
-    struct zstream *z;
+zstream_reset(struct zstream *z)
 {
     int err;
 
@@ -683,8 +647,7 @@ zstream_reset(z)
 }
 
 static VALUE
-zstream_end(z)
-    struct zstream *z;
+zstream_end(struct zstream *z)
 {
     int err;
 
@@ -707,11 +670,7 @@ zstream_end(z)
 }
 
 static void
-zstream_run(z, src, len, flush)
-    struct zstream *z;
-    Bytef *src;
-    uInt len;
-    int flush;
+zstream_run(struct zstream *z, Bytef *src, uInt len, int flush)
 {
     uInt n;
     int err;
@@ -773,10 +732,7 @@ zstream_run(z, src, len, flush)
 }
 
 static VALUE
-zstream_sync(z, src, len)
-    struct zstream *z;
-    Bytef *src;
-    uInt len;
+zstream_sync(struct zstream *z, Bytef *src, uInt len)
 {
     VALUE rest;
     int err;
@@ -815,16 +771,14 @@ zstream_sync(z, src, len)
 }
 
 static void
-zstream_mark(z)
-    struct zstream *z;
+zstream_mark(struct zstream *z)
 {
     rb_gc_mark(z->buf);
     rb_gc_mark(z->input);
 }
 
 static void
-zstream_finalize(z)
-    struct zstream *z;
+zstream_finalize(struct zstream *z)
 {
     int err = z->func->end(&z->stream);
     if (err == Z_STREAM_ERROR)
@@ -834,8 +788,7 @@ zstream_finalize(z)
 }
 
 static void
-zstream_free(z)
-    struct zstream *z;
+zstream_free(struct zstream *z)
 {
     if (ZSTREAM_IS_READY(z)) {
 	zstream_finalize(z);
@@ -844,9 +797,7 @@ zstream_free(z)
 }
 
 static VALUE
-zstream_new(klass, funcs)
-    VALUE klass;
-    const struct zstream_funcs *funcs;
+zstream_new(VALUE klass, const struct zstream_funcs *funcs)
 {
     VALUE obj;
     struct zstream *z;
@@ -861,8 +812,7 @@ zstream_new(klass, funcs)
 #define zstream_inflate_new(klass)  zstream_new((klass), &inflate_funcs)
 
 static struct zstream *
-get_zstream(obj)
-    VALUE obj;
+get_zstream(VALUE obj)
 {
     struct zstream *z;
 
@@ -942,8 +892,7 @@ get_zstream(obj)
  * exception.
  */
 static VALUE
-rb_zstream_end(obj)
-    VALUE obj;
+rb_zstream_end(VALUE obj)
 {
     zstream_end(get_zstream(obj));
     return Qnil;
@@ -954,8 +903,7 @@ rb_zstream_end(obj)
  * are discarded.
  */
 static VALUE
-rb_zstream_reset(obj)
-    VALUE obj;
+rb_zstream_reset(VALUE obj)
 {
     zstream_reset(get_zstream(obj));
     return Qnil;
@@ -966,8 +914,7 @@ rb_zstream_reset(obj)
  * Zlib::Inflate#finish for details of this behavior.
  */
 static VALUE
-rb_zstream_finish(obj)
-    VALUE obj;
+rb_zstream_finish(VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
     VALUE dst;
@@ -983,8 +930,7 @@ rb_zstream_finish(obj)
  * Flushes input buffer and returns all data in that buffer.
  */
 static VALUE
-rb_zstream_flush_next_in(obj)
-    VALUE obj;
+rb_zstream_flush_next_in(VALUE obj)
 {
     struct zstream *z;
     VALUE dst;
@@ -999,8 +945,7 @@ rb_zstream_flush_next_in(obj)
  * Flushes output buffer and returns all data in that buffer.
  */
 static VALUE
-rb_zstream_flush_next_out(obj)
-    VALUE obj;
+rb_zstream_flush_next_out(VALUE obj)
 {
     struct zstream *z;
     VALUE dst;
@@ -1016,8 +961,7 @@ rb_zstream_flush_next_out(obj)
  * space is allocated automatically, this method returns 0 normally.
  */
 static VALUE
-rb_zstream_avail_out(obj)
-    VALUE obj;
+rb_zstream_avail_out(VALUE obj)
 {
     struct zstream *z;
     Data_Get_Struct(obj, struct zstream, z);
@@ -1031,8 +975,7 @@ rb_zstream_avail_out(obj)
  * method.
  */
 static VALUE
-rb_zstream_set_avail_out(obj, size)
-    VALUE obj, size;
+rb_zstream_set_avail_out(VALUE obj, VALUE size)
 {
     struct zstream *z = get_zstream(obj);
 
@@ -1045,8 +988,7 @@ rb_zstream_set_avail_out(obj, size)
  * Returns bytes of data in the input buffer. Normally, returns 0.
  */
 static VALUE
-rb_zstream_avail_in(obj)
-    VALUE obj;
+rb_zstream_avail_in(VALUE obj)
 {
     struct zstream *z;
     Data_Get_Struct(obj, struct zstream, z);
@@ -1057,8 +999,7 @@ rb_zstream_avail_in(obj)
  * Returns the total bytes of the input data to the stream.  FIXME
  */
 static VALUE
-rb_zstream_total_in(obj)
-    VALUE obj;
+rb_zstream_total_in(VALUE obj)
 {
     return rb_uint2inum(get_zstream(obj)->stream.total_in);
 }
@@ -1067,8 +1008,7 @@ rb_zstream_total_in(obj)
  * Returns the total bytes of the output data from the stream.  FIXME
  */
 static VALUE
-rb_zstream_total_out(obj)
-    VALUE obj;
+rb_zstream_total_out(VALUE obj)
 {
     return rb_uint2inum(get_zstream(obj)->stream.total_out);
 }
@@ -1079,8 +1019,7 @@ rb_zstream_total_out(obj)
  * <tt>Zlib::UNKNOWN</tt>.
  */
 static VALUE
-rb_zstream_data_type(obj)
-    VALUE obj;
+rb_zstream_data_type(VALUE obj)
 {
     return INT2FIX(get_zstream(obj)->stream.data_type);
 }
@@ -1089,8 +1028,7 @@ rb_zstream_data_type(obj)
  * Returns the adler-32 checksum.
  */
 static VALUE
-rb_zstream_adler(obj)
-    VALUE obj;
+rb_zstream_adler(VALUE obj)
 {
 	return rb_uint2inum(get_zstream(obj)->stream.adler);
 }
@@ -1099,8 +1037,7 @@ rb_zstream_adler(obj)
  * Returns true if the stream is finished.
  */
 static VALUE
-rb_zstream_finished_p(obj)
-    VALUE obj;
+rb_zstream_finished_p(VALUE obj)
 {
     return ZSTREAM_IS_FINISHED(get_zstream(obj)) ? Qtrue : Qfalse;
 }
@@ -1109,8 +1046,7 @@ rb_zstream_finished_p(obj)
  * Returns true if the stream is closed.
  */
 static VALUE
-rb_zstream_closed_p(obj)
-    VALUE obj;
+rb_zstream_closed_p(VALUE obj)
 {
     struct zstream *z;
     Data_Get_Struct(obj, struct zstream, z);
@@ -1139,8 +1075,7 @@ rb_zstream_closed_p(obj)
 
 
 static VALUE
-rb_deflate_s_allocate(klass)
-    VALUE klass;
+rb_deflate_s_allocate(VALUE klass)
 {
     return zstream_deflate_new(klass);
 }
@@ -1155,10 +1090,7 @@ rb_deflate_s_allocate(klass)
  * TODO: document better!
  */
 static VALUE
-rb_deflate_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_deflate_initialize(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z;
     VALUE level, wbits, memlevel, strategy;
@@ -1182,8 +1114,7 @@ rb_deflate_initialize(argc, argv, obj)
  * Duplicates the deflate stream.
  */
 static VALUE
-rb_deflate_init_copy(self, orig)
-    VALUE self, orig;
+rb_deflate_init_copy(VALUE self, VALUE orig)
 {
     struct zstream *z1 = get_zstream(self);
     struct zstream *z2 = get_zstream(orig);
@@ -1199,8 +1130,7 @@ rb_deflate_init_copy(self, orig)
 }
 
 static VALUE
-deflate_run(args)
-    VALUE args;
+deflate_run(VALUE args)
 {
     struct zstream *z = (struct zstream*)((VALUE*)args)[0];
     VALUE src = ((VALUE*)args)[1];
@@ -1230,10 +1160,7 @@ deflate_run(args)
  *
  */
 static VALUE
-rb_deflate_s_deflate(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_deflate_s_deflate(int argc, VALUE *argv, VALUE klass)
 {
     struct zstream z;
     VALUE src, level, dst, args[2];
@@ -1259,10 +1186,7 @@ rb_deflate_s_deflate(argc, argv, klass)
 }
 
 static void
-do_deflate(z, src, flush)
-    struct zstream *z;
-    VALUE src;
-    int flush;
+do_deflate(struct zstream *z, VALUE src, int flush)
 {
     if (NIL_P(src)) {
 	zstream_run(z, (Bytef*)"", 0, Z_FINISH);
@@ -1289,10 +1213,7 @@ do_deflate(z, src, flush)
  * TODO: document better!
  */
 static VALUE
-rb_deflate_deflate(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
     VALUE src, flush, dst;
@@ -1314,8 +1235,7 @@ rb_deflate_deflate(argc, argv, obj)
  * preserved in output buffer.
  */
 static VALUE
-rb_deflate_addstr(obj, src)
-    VALUE obj, src;
+rb_deflate_addstr(VALUE obj, VALUE src)
 {
     OBJ_INFECT(obj, src);
     do_deflate(get_zstream(obj), src, Z_NO_FLUSH);
@@ -1332,10 +1252,7 @@ rb_deflate_addstr(obj, src)
  * TODO: document better!
  */
 static VALUE
-rb_deflate_flush(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
     VALUE v_flush, dst;
@@ -1362,8 +1279,7 @@ rb_deflate_flush(argc, argv, obj)
  * TODO: document better!
  */
 static VALUE
-rb_deflate_params(obj, v_level, v_strategy)
-    VALUE obj, v_level, v_strategy;
+rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
 {
     struct zstream *z = get_zstream(obj);
     int level, strategy;
@@ -1395,8 +1311,7 @@ rb_deflate_params(obj, v_level, v_strategy)
  * TODO: document better!
  */
 static VALUE
-rb_deflate_set_dictionary(obj, dic)
-    VALUE obj, dic;
+rb_deflate_set_dictionary(VALUE obj, VALUE dic)
 {
     struct zstream *z = get_zstream(obj);
     VALUE src = dic;
@@ -1427,8 +1342,7 @@ rb_deflate_set_dictionary(obj, dic)
 
 
 static VALUE
-rb_inflate_s_allocate(klass)
-    VALUE klass;
+rb_inflate_s_allocate(VALUE klass)
 {
     return zstream_inflate_new(klass);
 }
@@ -1442,10 +1356,7 @@ rb_inflate_s_allocate(klass)
  * TODO: document better!
  */
 static VALUE
-rb_inflate_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_inflate_initialize(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z;
     VALUE wbits;
@@ -1464,8 +1375,7 @@ rb_inflate_initialize(argc, argv, obj)
 }
 
 static VALUE
-inflate_run(args)
-    VALUE args;
+inflate_run(VALUE args)
 {
     struct zstream *z = (struct zstream*)((VALUE*)args)[0];
     VALUE src = ((VALUE*)args)[1];
@@ -1493,8 +1403,7 @@ inflate_run(args)
  *
  */
 static VALUE
-rb_inflate_s_inflate(obj, src)
-    VALUE obj, src;
+rb_inflate_s_inflate(VALUE obj, VALUE src)
 {
     struct zstream z;
     VALUE dst, args[2];
@@ -1517,9 +1426,7 @@ rb_inflate_s_inflate(obj, src)
 }
 
 static void
-do_inflate(z, src)
-    struct zstream *z;
-    VALUE src;
+do_inflate(struct zstream *z, VALUE src)
 {
     if (NIL_P(src)) {
 	zstream_run(z, (Bytef*)"", 0, Z_FINISH);
@@ -1546,8 +1453,7 @@ do_inflate(z, src)
  * TODO: document better!
  */
 static VALUE
-rb_inflate_inflate(obj, src)
-    VALUE obj, src;
+rb_inflate_inflate(VALUE obj, VALUE src)
 {
     struct zstream *z = get_zstream(obj);
     VALUE dst;
@@ -1584,8 +1490,7 @@ rb_inflate_inflate(obj, src)
  * preserved in output buffer.
  */
 static VALUE
-rb_inflate_addstr(obj, src)
-    VALUE obj, src;
+rb_inflate_addstr(VALUE obj, VALUE src)
 {
     struct zstream *z = get_zstream(obj);
 
@@ -1616,8 +1521,7 @@ rb_inflate_addstr(obj, src)
  * following data of full flush point is preserved in the buffer.
  */
 static VALUE
-rb_inflate_sync(obj, src)
-    VALUE obj, src;
+rb_inflate_sync(VALUE obj, VALUE src)
 {
     struct zstream *z = get_zstream(obj);
 
@@ -1634,8 +1538,7 @@ rb_inflate_sync(obj, src)
  * <tt>:)</tt>
  */
 static VALUE
-rb_inflate_sync_point_p(obj)
-    VALUE obj;
+rb_inflate_sync_point_p(VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
     int err;
@@ -1657,8 +1560,7 @@ rb_inflate_sync_point_p(obj)
  * TODO: document better!
  */
 static VALUE
-rb_inflate_set_dictionary(obj, dic)
-    VALUE obj, dic;
+rb_inflate_set_dictionary(VALUE obj, VALUE dic)
 {
     struct zstream *z = get_zstream(obj);
     VALUE src = dic;
@@ -1753,8 +1655,7 @@ struct gzfile {
 
 
 static void
-gzfile_mark(gz)
-    struct gzfile *gz;
+gzfile_mark(struct gzfile *gz)
 {
     rb_gc_mark(gz->io);
     rb_gc_mark(gz->orig_name);
@@ -1763,8 +1664,7 @@ gzfile_mark(gz)
 }
 
 static void
-gzfile_free(gz)
-    struct gzfile *gz;
+gzfile_free(struct gzfile *gz)
 {
     struct zstream *z = &gz->z;
 
@@ -1806,8 +1706,7 @@ gzfile_new(klass, funcs, endfunc)
 #define gzfile_reader_new(gz) gzfile_new((gz),&inflate_funcs,gzfile_reader_end)
 
 static void
-gzfile_reset(gz)
-    struct gzfile *gz;
+gzfile_reset(struct gzfile *gz)
 {
     zstream_reset(&gz->z);
     gz->crc = crc32(0, Z_NULL, 0);
@@ -1816,9 +1715,7 @@ gzfile_reset(gz)
 }
 
 static void
-gzfile_close(gz, closeflag)
-    struct gzfile *gz;
-    int closeflag;
+gzfile_close(struct gzfile *gz, int closeflag)
 {
     VALUE io = gz->io;
 
@@ -1832,8 +1729,7 @@ gzfile_close(gz, closeflag)
 }
 
 static void
-gzfile_write_raw(gz)
-    struct gzfile *gz;
+gzfile_write_raw(struct gzfile *gz)
 {
     VALUE str;
 
@@ -1848,8 +1744,7 @@ gzfile_write_raw(gz)
 }
 
 static VALUE
-gzfile_read_raw_partial(arg)
-    VALUE arg;
+gzfile_read_raw_partial(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile*)arg;
     VALUE str;
@@ -1860,8 +1755,7 @@ gzfile_read_raw_partial(arg)
 }
 
 static VALUE
-gzfile_read_raw_rescue(arg)
-    VALUE arg;
+gzfile_read_raw_rescue(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile*)arg;
     VALUE str = Qnil;
@@ -1875,8 +1769,7 @@ gzfile_read_raw_rescue(arg)
 }
 
 static VALUE
-gzfile_read_raw(gz)
-    struct gzfile *gz;
+gzfile_read_raw(struct gzfile *gz)
 {
     return rb_rescue2(gzfile_read_raw_partial, (VALUE)gz,
                       gzfile_read_raw_rescue, (VALUE)gz,
@@ -1884,9 +1777,7 @@ gzfile_read_raw(gz)
 }
 
 static int
-gzfile_read_raw_ensure(gz, size)
-    struct gzfile *gz;
-    int size;
+gzfile_read_raw_ensure(struct gzfile *gz, int size)
 {
     VALUE str;
 
@@ -1899,9 +1790,7 @@ gzfile_read_raw_ensure(gz, size)
 }
 
 static char *
-gzfile_read_raw_until_zero(gz, offset)
-    struct gzfile *gz;
-    long offset;
+gzfile_read_raw_until_zero(struct gzfile *gz, long offset)
 {
     VALUE str;
     char *p;
@@ -1921,8 +1810,7 @@ gzfile_read_raw_until_zero(gz, offset)
 }
 
 static unsigned int
-gzfile_get16(src)
-    const unsigned char *src;
+gzfile_get16(const unsigned char *src)
 {
     unsigned int n;
     n  = *(src++) & 0xff;
@@ -1931,8 +1819,7 @@ gzfile_get16(src)
 }
 
 static unsigned long
-gzfile_get32(src)
-    const unsigned char *src;
+gzfile_get32(const unsigned char *src)
 {
     unsigned long n;
     n  = *(src++) & 0xff;
@@ -1943,9 +1830,7 @@ gzfile_get32(src)
 }
 
 static void
-gzfile_set32(n, dst)
-    unsigned long n;
-    unsigned char *dst;
+gzfile_set32(unsigned long n, unsigned char *dst)
 {
     *(dst++) = n & 0xff;
     *(dst++) = (n >> 8) & 0xff;
@@ -1954,8 +1839,7 @@ gzfile_set32(n, dst)
 }
 
 static void
-gzfile_make_header(gz)
-    struct gzfile *gz;
+gzfile_make_header(struct gzfile *gz)
 {
     Bytef buf[10];  /* the size of gzip header */
     unsigned char flags = 0, extraflags = 0;
@@ -1999,8 +1883,7 @@ gzfile_make_header(gz)
 }
 
 static void
-gzfile_make_footer(gz)
-    struct gzfile *gz;
+gzfile_make_footer(struct gzfile *gz)
 {
     Bytef buf[8];  /* 8 is the size of gzip footer */
 
@@ -2011,8 +1894,7 @@ gzfile_make_footer(gz)
 }
 
 static void
-gzfile_read_header(gz)
-    struct gzfile *gz;
+gzfile_read_header(struct gzfile *gz)
 {
     const unsigned char *head;
     long len;
@@ -2087,8 +1969,7 @@ gzfile_read_header(gz)
 }
 
 static void
-gzfile_check_footer(gz)
-    struct gzfile *gz;
+gzfile_check_footer(struct gzfile *gz)
 {
     unsigned long crc, length;
 
@@ -2113,10 +1994,7 @@ gzfile_check_footer(gz)
 }
 
 static void
-gzfile_write(gz, str, len)
-    struct gzfile *gz;
-    Bytef *str;
-    uInt len;
+gzfile_write(struct gzfile *gz, Bytef *str, uInt len)
 {
     if (!(gz->z.flags & GZFILE_FLAG_HEADER_FINISHED)) {
 	gzfile_make_header(gz);
@@ -2131,8 +2009,7 @@ gzfile_write(gz, str, len)
 }
 
 static long
-gzfile_read_more(gz)
-    struct gzfile *gz;
+gzfile_read_more(struct gzfile *gz)
 {
     volatile VALUE str;
 
@@ -2154,9 +2031,7 @@ gzfile_read_more(gz)
 }
 
 static void
-gzfile_calc_crc(gz, str)
-    struct gzfile *gz;
-    VALUE str;
+gzfile_calc_crc(struct gzfile *gz, VALUE str)
 {
     if (RSTRING(str)->len <= gz->ungetc) {
 	gz->ungetc -= RSTRING(str)->len;
@@ -2169,9 +2044,7 @@ gzfile_calc_crc(gz, str)
 }
 
 static VALUE
-gzfile_read(gz, len)
-    struct gzfile *gz;
-    int len;
+gzfile_read(struct gzfile *gz, int len)
 {
     VALUE dst;
 
@@ -2197,10 +2070,7 @@ gzfile_read(gz, len)
 }
 
 static VALUE
-gzfile_readpartial(gz, len, outbuf)
-    struct gzfile *gz;
-    int len;
-    VALUE outbuf;
+gzfile_readpartial(struct gzfile *gz, int len, VALUE outbuf)
 {
     VALUE dst;
 
@@ -2245,8 +2115,7 @@ gzfile_readpartial(gz, len, outbuf)
 }
 
 static VALUE
-gzfile_read_all(gz)
-    struct gzfile *gz;
+gzfile_read_all(struct gzfile *gz)
 {
     VALUE dst;
 
@@ -2268,17 +2137,14 @@ gzfile_read_all(gz)
 }
 
 static void
-gzfile_ungetc(gz, c)
-    struct gzfile *gz;
-    int c;
+gzfile_ungetc(struct gzfile *gz, int c)
 {
     zstream_buffer_ungetc(&gz->z, c);
     gz->ungetc++;
 }
 
 static VALUE
-gzfile_writer_end_run(arg)
-    VALUE arg;
+gzfile_writer_end_run(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile *)arg;
 
@@ -2294,8 +2160,7 @@ gzfile_writer_end_run(arg)
 }
 
 static void
-gzfile_writer_end(gz)
-    struct gzfile *gz;
+gzfile_writer_end(struct gzfile *gz)
 {
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
@@ -2304,8 +2169,7 @@ gzfile_writer_end(gz)
 }
 
 static VALUE
-gzfile_reader_end_run(arg)
-    VALUE arg;
+gzfile_reader_end_run(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile *)arg;
 
@@ -2318,8 +2182,7 @@ gzfile_reader_end_run(arg)
 }
 
 static void
-gzfile_reader_end(gz)
-    struct gzfile *gz;
+gzfile_reader_end(struct gzfile *gz)
 {
     if (ZSTREAM_IS_CLOSING(&gz->z)) return;
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
@@ -2328,8 +2191,7 @@ gzfile_reader_end(gz)
 }
 
 static void
-gzfile_reader_rewind(gz)
-    struct gzfile *gz;
+gzfile_reader_rewind(struct gzfile *gz)
 {
     long n;
 
@@ -2343,8 +2205,7 @@ gzfile_reader_rewind(gz)
 }
 
 static VALUE
-gzfile_reader_get_unused(gz)
-    struct gzfile *gz;
+gzfile_reader_get_unused(struct gzfile *gz)
 {
     VALUE str;
 
@@ -2361,8 +2222,7 @@ gzfile_reader_get_unused(gz)
 }
 
 static struct gzfile *
-get_gzfile(obj)
-    VALUE obj;
+get_gzfile(VALUE obj)
 {
     struct gzfile *gz;
 
@@ -2388,8 +2248,7 @@ get_gzfile(obj)
 
 
 static VALUE
-gzfile_ensure_close(obj)
-    VALUE obj;
+gzfile_ensure_close(VALUE obj)
 {
     struct gzfile *gz;
 
@@ -2404,10 +2263,7 @@ gzfile_ensure_close(obj)
  * See Zlib::GzipReader#wrap and Zlib::GzipWriter#wrap.
  */
 static VALUE
-rb_gzfile_s_wrap(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_gzfile_s_wrap(int argc, VALUE *argv, VALUE klass)
 {
     VALUE obj = rb_class_new_instance(argc, argv, klass);
 
@@ -2423,11 +2279,7 @@ rb_gzfile_s_wrap(argc, argv, klass)
  * See Zlib::GzipReader#open and Zlib::GzipWriter#open.
  */
 static VALUE
-gzfile_s_open(argc, argv, klass, mode)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-    const char *mode;
+gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
 {
     VALUE io, filename;
 
@@ -2446,8 +2298,7 @@ gzfile_s_open(argc, argv, klass, mode)
  * Same as IO.
  */
 static VALUE
-rb_gzfile_to_io(obj)
-    VALUE obj;
+rb_gzfile_to_io(VALUE obj)
 {
     return get_gzfile(obj)->io;
 }
@@ -2456,8 +2307,7 @@ rb_gzfile_to_io(obj)
  * Returns CRC value of the uncompressed data.
  */
 static VALUE
-rb_gzfile_crc(obj)
-    VALUE obj;
+rb_gzfile_crc(VALUE obj)
 {
     return rb_uint2inum(get_gzfile(obj)->crc);
 }
@@ -2466,8 +2316,7 @@ rb_gzfile_crc(obj)
  * Returns last modification time recorded in the gzip file header.
  */
 static VALUE
-rb_gzfile_mtime(obj)
-    VALUE obj;
+rb_gzfile_mtime(VALUE obj)
 {
     return rb_time_new(get_gzfile(obj)->mtime, (time_t)0);
 }
@@ -2476,8 +2325,7 @@ rb_gzfile_mtime(obj)
  * Returns compression level.
  */
 static VALUE
-rb_gzfile_level(obj)
-    VALUE obj;
+rb_gzfile_level(VALUE obj)
 {
     return INT2FIX(get_gzfile(obj)->level);
 }
@@ -2486,8 +2334,7 @@ rb_gzfile_level(obj)
  * Returns OS code number recorded in the gzip file header.
  */
 static VALUE
-rb_gzfile_os_code(obj)
-    VALUE obj;
+rb_gzfile_os_code(VALUE obj)
 {
     return INT2FIX(get_gzfile(obj)->os_code);
 }
@@ -2497,8 +2344,7 @@ rb_gzfile_os_code(obj)
  * original filename is not present.
  */
 static VALUE
-rb_gzfile_orig_name(obj)
-    VALUE obj;
+rb_gzfile_orig_name(VALUE obj)
 {
     VALUE str = get_gzfile(obj)->orig_name;
     if (!NIL_P(str)) {
@@ -2513,8 +2359,7 @@ rb_gzfile_orig_name(obj)
  * is not present.
  */
 static VALUE
-rb_gzfile_comment(obj)
-    VALUE obj;
+rb_gzfile_comment(VALUE obj)
 {
     VALUE str = get_gzfile(obj)->comment;
     if (!NIL_P(str)) {
@@ -2528,8 +2373,7 @@ rb_gzfile_comment(obj)
  * ???
  */
 static VALUE
-rb_gzfile_lineno(obj)
-    VALUE obj;
+rb_gzfile_lineno(VALUE obj)
 {
     return INT2NUM(get_gzfile(obj)->lineno);
 }
@@ -2538,8 +2382,7 @@ rb_gzfile_lineno(obj)
  * ???
  */
 static VALUE
-rb_gzfile_set_lineno(obj, lineno)
-    VALUE obj, lineno;
+rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
 {
     struct gzfile *gz = get_gzfile(obj);
     gz->lineno = NUM2INT(lineno);
@@ -2550,8 +2393,7 @@ rb_gzfile_set_lineno(obj, lineno)
  * ???
  */
 static VALUE
-rb_gzfile_set_mtime(obj, mtime)
-    VALUE obj, mtime;
+rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE val;
@@ -2574,8 +2416,7 @@ rb_gzfile_set_mtime(obj, mtime)
  * ???
  */
 static VALUE
-rb_gzfile_set_orig_name(obj, str)
-    VALUE obj, str;
+rb_gzfile_set_orig_name(VALUE obj, VALUE str)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE s;
@@ -2597,8 +2438,7 @@ rb_gzfile_set_orig_name(obj, str)
  * ???
  */
 static VALUE
-rb_gzfile_set_comment(obj, str)
-    VALUE obj, str;
+rb_gzfile_set_comment(VALUE obj, VALUE str)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE s;
@@ -2621,8 +2461,7 @@ rb_gzfile_set_comment(obj, str)
  * associated IO object. Returns the associated IO object.
  */
 static VALUE
-rb_gzfile_close(obj)
-    VALUE obj;
+rb_gzfile_close(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE io;
@@ -2638,8 +2477,7 @@ rb_gzfile_close(obj)
  * object.
  */
 static VALUE
-rb_gzfile_finish(obj)
-    VALUE obj;
+rb_gzfile_finish(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE io;
@@ -2653,8 +2491,7 @@ rb_gzfile_finish(obj)
  * Same as IO.
  */
 static VALUE
-rb_gzfile_closed_p(obj)
-    VALUE obj;
+rb_gzfile_closed_p(VALUE obj)
 {
     struct gzfile *gz;
     Data_Get_Struct(obj, struct gzfile, gz);
@@ -2665,8 +2502,7 @@ rb_gzfile_closed_p(obj)
  * ???
  */
 static VALUE
-rb_gzfile_eof_p(obj)
-    VALUE obj;
+rb_gzfile_eof_p(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     return GZFILE_IS_FINISHED(gz) ? Qtrue : Qfalse;
@@ -2676,8 +2512,7 @@ rb_gzfile_eof_p(obj)
  * Same as IO.
  */
 static VALUE
-rb_gzfile_sync(obj)
-    VALUE obj;
+rb_gzfile_sync(VALUE obj)
 {
     return (get_gzfile(obj)->z.flags & GZFILE_FLAG_SYNC) ? Qtrue : Qfalse;
 }
@@ -2690,8 +2525,7 @@ rb_gzfile_sync(obj)
  * decreases sharply.
  */
 static VALUE
-rb_gzfile_set_sync(obj, mode)
-    VALUE obj, mode;
+rb_gzfile_set_sync(VALUE obj, VALUE mode)
 {
     struct gzfile *gz = get_gzfile(obj);
 
@@ -2708,8 +2542,7 @@ rb_gzfile_set_sync(obj, mode)
  * ???
  */
 static VALUE
-rb_gzfile_total_in(obj)
-    VALUE obj;
+rb_gzfile_total_in(VALUE obj)
 {
     return rb_uint2inum(get_gzfile(obj)->z.stream.total_in);
 }
@@ -2718,8 +2551,7 @@ rb_gzfile_total_in(obj)
  * ???
  */
 static VALUE
-rb_gzfile_total_out(obj)
-    VALUE obj;
+rb_gzfile_total_out(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     return rb_uint2inum(gz->z.stream.total_out - gz->z.buf_filled);
@@ -2756,8 +2588,7 @@ rb_gzfile_total_out(obj)
  */
 
 static VALUE
-rb_gzwriter_s_allocate(klass)
-    VALUE klass;
+rb_gzwriter_s_allocate(VALUE klass)
 {
     return gzfile_writer_new(klass);
 }
@@ -2770,10 +2601,7 @@ rb_gzwriter_s_allocate(klass)
  * this method are found in Zlib::GzipWriter.new and Zlib::GzipWriter#wrap.
  */
 static VALUE
-rb_gzwriter_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_gzwriter_s_open(int argc, VALUE *argv, VALUE klass)
 {
     return gzfile_s_open(argc, argv, klass, "wb");
 }
@@ -2787,10 +2615,7 @@ rb_gzwriter_s_open(argc, argv, klass)
  * +write+ method that behaves same as write method in IO class.
  */
 static VALUE
-rb_gzwriter_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz;
     VALUE io, level, strategy;
@@ -2820,10 +2645,7 @@ rb_gzwriter_initialize(argc, argv, obj)
  * +flush+ is omitted.  It is no use giving flush <tt>Zlib::NO_FLUSH</tt>.
  */
 static VALUE
-rb_gzwriter_flush(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzwriter_flush(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE v_flush;
@@ -2847,8 +2669,7 @@ rb_gzwriter_flush(argc, argv, obj)
  * Same as IO.
  */
 static VALUE
-rb_gzwriter_write(obj, str)
-    VALUE obj, str;
+rb_gzwriter_write(VALUE obj, VALUE str)
 {
     struct gzfile *gz = get_gzfile(obj);
 
@@ -2863,8 +2684,7 @@ rb_gzwriter_write(obj, str)
  * Same as IO.
  */
 static VALUE
-rb_gzwriter_putc(obj, ch)
-    VALUE obj, ch;
+rb_gzwriter_putc(VALUE obj, VALUE ch)
 {
     struct gzfile *gz = get_gzfile(obj);
     char c = NUM2CHR(ch);
@@ -2955,8 +2775,7 @@ rb_gzwriter_putc(obj, ch)
  */
 
 static VALUE
-rb_gzreader_s_allocate(klass)
-    VALUE klass;
+rb_gzreader_s_allocate(VALUE klass)
 {
     return gzfile_reader_new(klass);
 }
@@ -2969,10 +2788,7 @@ rb_gzreader_s_allocate(klass)
  * are in Zlib::GzipReader.new and ZLib::GzipReader.wrap.
  */
 static VALUE
-rb_gzreader_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_gzreader_s_open(int argc, VALUE *argv, VALUE klass)
 {
     return gzfile_s_open(argc, argv, klass, "rb");
 }
@@ -2988,8 +2804,7 @@ rb_gzreader_s_open(argc, argv, klass)
  * exception.
  */
 static VALUE
-rb_gzreader_initialize(obj, io)
-    VALUE obj, io;
+rb_gzreader_initialize(VALUE obj, VALUE io)
 {
     struct gzfile *gz;
     int err;
@@ -3013,8 +2828,7 @@ rb_gzreader_initialize(obj, io)
  * object.  The associated IO object needs to respond to the +seek+ method.
  */
 static VALUE
-rb_gzreader_rewind(obj)
-    VALUE obj;
+rb_gzreader_rewind(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     gzfile_reader_rewind(gz);
@@ -3026,8 +2840,7 @@ rb_gzreader_rewind(obj)
  * +nil+ if the whole gzip file is not parsed yet.
  */
 static VALUE
-rb_gzreader_unused(obj)
-    VALUE obj;
+rb_gzreader_unused(VALUE obj)
 {
     struct gzfile *gz;
     Data_Get_Struct(obj, struct gzfile, gz);
@@ -3038,10 +2851,7 @@ rb_gzreader_unused(obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_read(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE vlen;
@@ -3070,10 +2880,7 @@ rb_gzreader_read(argc, argv, obj)
  *  It raises <code>EOFError</code> on end of file.
  */
 static VALUE
-rb_gzreader_readpartial(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_readpartial(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE vlen, outbuf;
@@ -3094,8 +2901,7 @@ rb_gzreader_readpartial(argc, argv, obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_getc(obj)
-    VALUE obj;
+rb_gzreader_getc(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     VALUE dst;
@@ -3111,8 +2917,7 @@ rb_gzreader_getc(obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_readchar(obj)
-    VALUE obj;
+rb_gzreader_readchar(VALUE obj)
 {
     VALUE dst;
     dst = rb_gzreader_getc(obj);
@@ -3126,8 +2931,7 @@ rb_gzreader_readchar(obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_each_byte(obj)
-    VALUE obj;
+rb_gzreader_each_byte(VALUE obj)
 {
     VALUE c;
     while (!NIL_P(c = rb_gzreader_getc(obj))) {
@@ -3140,8 +2944,7 @@ rb_gzreader_each_byte(obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_ungetc(obj, ch)
-    VALUE obj, ch;
+rb_gzreader_ungetc(VALUE obj, VALUE ch)
 {
     struct gzfile *gz = get_gzfile(obj);
     gzfile_ungetc(gz, NUM2CHR(ch));
@@ -3149,8 +2952,7 @@ rb_gzreader_ungetc(obj, ch)
 }
 
 static void
-gzreader_skip_linebreaks(gz)
-    struct gzfile *gz;
+gzreader_skip_linebreaks(struct gzfile *gz)
 {
     VALUE str;
     char *p;
@@ -3181,20 +2983,14 @@ gzreader_skip_linebreaks(gz)
 }
 
 static void
-rscheck(rsptr, rslen, rs)
-    char *rsptr;
-    long rslen;
-    VALUE rs;
+rscheck(char *rsptr, long rslen, VALUE rs)
 {
     if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
 	rb_raise(rb_eRuntimeError, "rs modified");
 }
 
 static VALUE
-gzreader_gets(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+gzreader_gets(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
     volatile VALUE rs;
@@ -3274,10 +3070,7 @@ gzreader_gets(argc, argv, obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_gets(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_gets(int argc, VALUE *argv, VALUE obj)
 {
     VALUE dst;
     dst = gzreader_gets(argc, argv, obj);
@@ -3291,10 +3084,7 @@ rb_gzreader_gets(argc, argv, obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_readline(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_readline(int argc, VALUE *argv, VALUE obj)
 {
     VALUE dst;
     dst = rb_gzreader_gets(argc, argv, obj);
@@ -3308,10 +3098,7 @@ rb_gzreader_readline(argc, argv, obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_each(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE str;
     while (!NIL_P(str = gzreader_gets(argc, argv, obj))) {
@@ -3324,10 +3111,7 @@ rb_gzreader_each(argc, argv, obj)
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
-rb_gzreader_readlines(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 {
     VALUE str, dst;
     dst = rb_ary_new();

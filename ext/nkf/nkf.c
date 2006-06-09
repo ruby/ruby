@@ -56,8 +56,7 @@ static int incsize;
 static VALUE result;
 
 static int
-rb_nkf_putchar(c)
-  unsigned int c;
+rb_nkf_putchar(unsigned int c)
 {
   if (output_ctr >= o_len) {
     o_len += incsize;
@@ -78,8 +77,7 @@ rb_nkf_putchar(c)
 #include "nkf-utf8/utf8tbl.c"
 #include "nkf-utf8/nkf.c"
 
-int nkf_split_options(arg)
-    const char* arg;
+int nkf_split_options(const char *arg)
 {
     int count = 0;
     char option[256];
@@ -142,8 +140,7 @@ int nkf_split_options(arg)
  */
 
 static VALUE
-rb_nkf_kconv(obj, opt, src)
-  VALUE obj, opt, src;
+rb_nkf_kconv(VALUE obj, VALUE opt, VALUE src)
 {
   char *opt_ptr, *opt_end;
   volatile VALUE v;
@@ -205,8 +202,7 @@ rb_nkf_kconv(obj, opt, src)
  */
 
 static VALUE
-rb_nkf_guess1(obj, src)
-  VALUE obj, src;
+rb_nkf_guess1(VALUE obj, VALUE src)
 {
   unsigned char *p;
   unsigned char *pend;
@@ -319,8 +315,7 @@ rb_nkf_guess1(obj, src)
  */
 
 static VALUE
-rb_nkf_guess2(obj, src)
-  VALUE obj, src;
+rb_nkf_guess2(VALUE obj, VALUE src)
 {
   int code = _BINARY;
 

@@ -489,8 +489,7 @@ strio_eof(self)
 
 /* :nodoc: */
 static VALUE
-strio_copy(copy, orig)
-    VALUE copy, orig;
+strio_copy(VALUE copy, VALUE orig)
 {
     struct StringIO *ptr;
 
@@ -559,10 +558,7 @@ strio_set_lineno(self, lineno)
  * and _mode_ (see StringIO#new).
  */
 static VALUE
-strio_reopen(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_reopen(int argc, VALUE *argv, VALUE self)
 {
     if (!OBJ_TAINTED(self)) rb_secure(4);
     if (argc == 1 && TYPE(*argv) != T_STRING) {
@@ -717,9 +713,7 @@ strio_getc(self)
 }
 
 static void
-strio_extend(ptr, pos, len)
-    struct StringIO *ptr;
-    long pos, len;
+strio_extend(struct StringIO *ptr, long pos, long len)
 {
     long olen;
 
@@ -1149,10 +1143,7 @@ strio_read(argc, argv, self)
  * returning +nil+, as well as IO#sysread does.
  */
 static VALUE
-strio_sysread(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_sysread(int argc, VALUE *argv, VALUE self)
 {
     VALUE val = strio_read(argc, argv, self);
     if (NIL_P(val) || RSTRING(val)->len == 0) {

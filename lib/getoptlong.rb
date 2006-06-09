@@ -1,17 +1,94 @@
-#                                                         -*- Ruby -*-
-# Copyright (C) 1998, 1999, 2000  Motoyuki Kasahara
 #
-# You may redistribute it and/or modify it under the same license
+# GetoptLong for Ruby
+#
+# Copyright (C) 1998, 1999, 2000  Motoyuki Kasahara.
+#
+# You may redistribute and/or modify this library under the same license
 # terms as Ruby.
 #
+# See GetoptLong for documentation.
+#
+# Additional documents and the latest version of `getoptlong.rb' can be
+# found at http://www.sra.co.jp/people/m-kasahr/ruby/getoptlong/
 
+# The GetoptLong class allows you to parse command line options similarly to
+# the GNU getopt_long() C library call. Note, however, that GetoptLong is a 
+# pure Ruby implementation.
 #
-# Documents and latest version of `getoptlong.rb' are found at:
-#    http://www.sra.co.jp/people/m-kasahr/ruby/getoptlong/
+# GetoptLong allows for POSIX-style options like <tt>--file</tt> as well 
+# as single letter options like <tt>-f</tt>
 #
-
+# The empty option <tt>--</tt> (two minus symbols) is used to end option
+# processing. This can be particularly important if options have optional
+# arguments.
 #
-# Parse command line options just like GNU getopt_long().
+# Here is a simple example of usage:
+#
+#     # == Synopsis
+#     #
+#     # hello: greets user, demonstrates command line parsing
+#     #
+#     # == Usage
+#     #
+#     # hello [OPTION] ... DIR
+#     #
+#     # -h, --help:
+#     #    show help
+#     #
+#     # --repeat x, -n x:
+#     #    repeat x times
+#     #
+#     # --name [name]:
+#     #    greet user by name, if name not supplied default is John
+#     #
+#     # DIR: The directory in which to issue the greeting.
+#     
+#     require 'getoptlong'
+#     require 'rdoc/usage'
+#     
+#     opts = GetoptLong.new(
+#       [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
+#       [ '--repeat', '-n', GetoptLong::REQUIRED_ARGUMENT ],
+#       [ '--name', GetoptLong::OPTIONAL_ARGUMENT ]
+#     )
+#     
+#     dir = nil
+#     name = nil
+#     repetitions = 1
+#     opts.each do |opt, arg|
+#       case opt
+#         when '--help'
+#           RDoc::usage
+#         when '--repeat'
+#           repetitions = arg.to_i
+#         when '--name'
+#           if arg == ''
+#             name = 'John'
+#           else
+#             name = arg
+#           end
+#       end
+#     end
+#     
+#     if ARGV.length != 1
+#       puts "Missing dir argument (try --help)"
+#       exit 0
+#     end
+#     
+#     dir = ARGV.shift
+#     
+#     Dir.chdir(dir)
+#     for i in (1..repetitions)
+#       print "Hello"
+#       if name
+#         print ", #{name}"
+#       end
+#       puts
+#     end
+#
+# Example command line:
+#
+#     hello -n 6 --name -- /tmp
 #
 class GetoptLong
   #
@@ -40,13 +117,20 @@ class GetoptLong
   class InvalidOption    < Error; end
 
   #
-  # The arguments are passed to new() as an array of arrays. Each
-  # subarray has a number of option names which carry the same
-  # meaning, and a ARGUMENT_FLAG, being one of
-  # GetoptLong::NO_ARGUMENT, GetoptLong::REQUIRED_ARGUMENT or
-  # GetoptLong::OPTIONAL_ARGUMENT.  These determine whether the
-  # option takes an argument or not, or whether it is optional The
-  # actual processing is done later with #each().
+  # Set up option processing.
+  #
+  # The options to support are passed to new() as an array of arrays.
+  # Each sub-array contains any number of String option names which carry 
+  # the same meaning, and one of the following flags:
+  #
+  # GetoptLong::NO_ARGUMENT :: Option does not take an argument.
+  #
+  # GetoptLong::REQUIRED_ARGUMENT :: Option always takes an argument.
+  #
+  # GetoptLong::OPTIONAL_ARGUMENT :: Option may or may not take an argument.
+  #
+  # The first option name is considered to be the preferred (canonical) name.
+  # Other than that, the elements of each sub-array can be in any order.
   #
   def initialize(*arguments)
     #
@@ -109,11 +193,53 @@ class GetoptLong
   end
 
   #
-  # Set the handling of the ordering of options.  The supplied
-  # argument ordering must be a member of ORDERINGS, i.e one of
-  # GetoptLong::REQUIRE_ORDER, GetoptLong::PERMUTE,
-  # GetoptLong::RETURN_IN_ORDER.  A RuntimeError is raised if
-  # option processing has already started.
+  # Set the handling of the ordering of options and arguments.
+  # A RuntimeError is raised if option processing has already started.
+  #
+  # The supplied value must be a member of GetoptLong::ORDERINGS. It alters
+  # the processing of options as follows:
+  #
+  # <b>REQUIRE_ORDER</b> :
+  # 
+  # Options are required to occur before non-options.
+  #
+  # Processing of options ends as soon as a word is encountered that has not
+  # been preceded by an appropriate option flag.
+  #
+  # For example, if -a and -b are options which do not take arguments,
+  # parsing command line arguments of '-a one -b two' would result in 
+  # 'one', '-b', 'two' being left in ARGV, and only ('-a', '') being 
+  # processed as an option/arg pair.
+  #
+  # This is the default ordering, if the environment variable
+  # POSIXLY_CORRECT is set. (This is for compatibility with GNU getopt_long.)
+  #
+  # <b>PERMUTE</b> :
+  #  
+  # Options can occur anywhere in the command line parsed. This is the 
+  # default behavior.
+  #
+  # Every sequence of words which can be interpreted as an option (with or
+  # without argument) is treated as an option; non-option words are skipped.
+  #
+  # For example, if -a does not require an argument and -b optionally takes
+  # an argument, parsing '-a one -b two three' would result in ('-a','') and
+  # ('-b', 'two') being processed as option/arg pairs, and 'one','three'
+  # being left in ARGV.
+  #
+  # If the ordering is set to PERMUTE but the environment variable
+  # POSIXLY_CORRECT is set, REQUIRE_ORDER is used instead. This is for
+  # compatibility with GNU getopt_long.
+  #
+  # <b>RETURN_IN_ORDER</b> :
+  #
+  # All words on the command line are processed as options. Words not 
+  # preceded by a short or long option flag are passed as arguments
+  # with an option of '' (empty string).
+  #
+  # For example, if -a requires an argument but -b does not, a command line
+  # of '-a one -b two three' would result in option/arg pairs of ('-a', 'one')
+  # ('-b', ''), ('', 'two'), ('', 'three') being processed.
   #
   def ordering=(ordering)
     #
@@ -144,7 +270,9 @@ class GetoptLong
   attr_reader :ordering
 
   #
-  # Set options
+  # Set options. Takes the same argument as GetoptLong.new.
+  #
+  # Raises a RuntimeError if option processing has already started.
   #
   def set_options(*arguments)
     #
@@ -233,7 +361,7 @@ class GetoptLong
   alias quiet? quiet
 
   #
-  # Terminate option processing.
+  # Explicitly terminate option processing.
   #
   def terminate
     return nil if @status == STATUS_TERMINATED
@@ -253,7 +381,7 @@ class GetoptLong
   end
 
   #
-  # Examine whether option processing is terminated or not.
+  # Returns true if option processing has terminated, false otherwise.
   #
   def terminated?
     return @status == STATUS_TERMINATED
@@ -286,16 +414,22 @@ class GetoptLong
   #
   alias error? error
 
-  #
-  # Return an error message.
+  # Return the appropriate error message in POSIX-defined format.
+  # If no error has occurred, returns nil.
   #
   def error_message
     return @error_message
   end
 
   #
-  # Get next option name and its argument as an array.
-  # Return nil if the processing is complete (as determined by
+  # Get next option name and its argument, as an Array of two elements.
+  #
+  # The option name is always converted to the first (preferred)
+  # name given in the original options to GetoptLong.new.
+  #
+  # Example: ['--option', 'value']
+  #
+  # Returns nil if the processing is complete (as determined by
   # STATUS_TERMINATED).
   #
   def get
@@ -462,9 +596,15 @@ class GetoptLong
   #
   alias get_option get
 
+  # Iterator version of `get'.
   #
-  # Iterator version of `get', passes the option and the
-  # corresponding argument to the supplied block for processing.
+  # The block is called repeatedly with two arguments:
+  # The first is the option name.
+  # The second is the argument which followed it (if any). 
+  # Example: ('--opt', 'value')
+  #
+  # The option name is always converted to the first (preferred)
+  # name given in the original options to GetoptLong.new.
   #
   def each
     loop do

@@ -62,7 +62,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_tmp_dh_cb(o)     rb_iv_get((o),"@tmp_dh_callback")
 #define ossl_sslctx_get_sess_id_ctx(o)   rb_iv_get((o),"@session_id_context")
 
-static char *ossl_sslctx_attrs[] = {
+static const char *ossl_sslctx_attrs[] = {
     "cert", "key", "client_ca", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
     "verify_callback", "options", "cert_store", "extra_chain_cert",
@@ -83,8 +83,8 @@ static char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_set_key(o,v)        rb_iv_set((o),"@key",(v))
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
 
-static char *ossl_ssl_attr_readers[] = { "io", "context", };
-static char *ossl_ssl_attrs[] = { "sync_close", };
+static const char *ossl_ssl_attr_readers[] = { "io", "context", };
+static const char *ossl_ssl_attrs[] = { "sync_close", };
 
 /*
  * SSLContext class
@@ -144,7 +144,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     SSL_METHOD *method = NULL;
     SSL_CTX *ctx;
     int i;
-    char *s;
+    const char *s;
 
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
 	char buf[32];

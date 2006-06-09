@@ -75,8 +75,7 @@ struct wait_readable_arg {
 
 #ifdef HAVE_RB_FD_INIT
 static VALUE
-wait_readable(p)
-    VALUE p;
+wait_readable(VALUE p)
 {
     struct wait_readable_arg *arg = (struct wait_readable_arg *)p;
     rb_fdset_t *fds = &arg->fds;

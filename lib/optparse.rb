@@ -357,7 +357,7 @@ class OptionParser
         if conv
           val = conv.call(*val)
         else
-          val = *val
+          val = val[0]
         end
         return arg, block, val
       else
@@ -622,7 +622,7 @@ class OptionParser
       if list = __send__(id)
         val = list.fetch(key) {return nil}
         return val unless block_given?
-        yield(val)
+        yield(*val)
       end
     end
 
@@ -848,7 +848,7 @@ class OptionParser
   # :nodoc:
   def add_officious
     list = base()
-    Officious.each_pair do |opt, block|
+    Officious.each do |opt, block|
       list.long[opt] ||= block.call(self)
     end
   end
@@ -1319,7 +1319,7 @@ class OptionParser
           end
           begin
             opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.call(val) if sw
+            sw.call(*val) if sw
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1458,9 +1458,9 @@ class OptionParser
         yielded with the found value when succeeded.
 =end #'#"#`#
   def search(id, key)
-    visit(:search, id, key) do |k|
+    visit(:search, id, key) do |*k|
       return k unless block_given?
-      return yield(k)
+      return yield(*k)
     end
   end
   private :search

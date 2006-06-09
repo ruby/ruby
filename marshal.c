@@ -304,7 +304,7 @@ w_float(double d, struct dump_arg *arg)
 static void
 w_symbol(ID id, struct dump_arg *arg)
 {
-    char *sym = rb_id2name(id);
+    const char *sym = rb_id2name(id);
     st_data_t num;
 
     if (st_lookup(arg->symbols, id, &num)) {
@@ -872,7 +872,7 @@ r_symbol(struct load_arg *arg)
     return r_symreal(arg);
 }
 
-static char*
+static const char*
 r_unique(struct load_arg *arg)
 {
     return rb_id2name(r_symbol(arg));

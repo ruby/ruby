@@ -445,7 +445,7 @@ decode_time(unsigned char* der, int length)
 /********/
 
 typedef struct {
-    char *name;
+    const char *name;
     VALUE *klass;
 } ossl_asn1_info_t;
 

@@ -25,7 +25,7 @@ def parse_args()
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
   opt.on('--make=COMMAND') {|make| $make = make}
   opt.on('--mantype=MAN') {|man| $mantype = man}
-  opt.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+  opt.on('--make-flags=FLAGS', '--mflags', Shellwords) do |*v|
     if arg = v.first
       arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
     end
@@ -38,7 +38,7 @@ def parse_args()
   $mflags.unshift(*rest) unless rest.empty?
 
   def $mflags.set?(flag)
-    grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
+    grep(/\A-(?!-).*#{'%s' % flag}/i) { return true }
     false
   end
 

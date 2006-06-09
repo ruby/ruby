@@ -157,7 +157,7 @@ static struct timeval
 time_timeval(VALUE time, int interval)
 {
     struct timeval t;
-    char *tstr = interval ? "time interval" : "time";
+    const char *tstr = interval ? "time interval" : "time";
 
 #ifndef NEGATIVE_TIME_T
     interval = 1;
@@ -182,7 +182,7 @@ time_timeval(VALUE time, int interval)
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
 	    }
-	    t.tv_usec = (time_t)(d*1e6);
+	    t.tv_usec = (time_t)(d*1e6+0.5);
 	}
 	break;
 
@@ -1229,7 +1229,7 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
     if (f != (double)sec_off)
 	rb_raise(rb_eRangeError, "time %s %f out of Time range",
 		 sign < 0 ? "-" : "+", v);
-    usec_off = (time_t)(d*1e6);
+    usec_off = (time_t)(d*1e6+0.5);
 
     if (sign < 0) {
 	sec = tobj->tv.tv_sec - sec_off;

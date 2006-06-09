@@ -67,7 +67,7 @@ class Tempfile < DelegateClass(File)
   end
 
   def make_tmpname(basename, n)
-    sprintf('%s%d.%d', basename, $$, n)
+    sprintf('%s.%d.%d', basename, $$, n)
   end
   private :make_tmpname
 

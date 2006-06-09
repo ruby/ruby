@@ -38,9 +38,11 @@ vars = {}
 has_version = false
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
-  if /^s[%,]@program_transform_name@[%,]s,(.*)/ =~ line
+  line.gsub!(/\|#_!!_#\|/, '')
+  if /^s[%,]@program_transform_name@[%,]s(\\?.)(.*)\1[%,]/ =~ line
     next if $install_name
-    ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
+    sep = Regexp.quote($1)
+    ptn = $2.sub(/\$\$/, '$').split(/#{sep}/,2)
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(/#{ptn[0]}/,ptn[1]) + "\"\n"
   elsif /^s[%,]@(\w+)@[%,](.*)[%,]/ =~ line
     name = $1

@@ -1286,7 +1286,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
 static VALUE
 pack_unpack(VALUE str, VALUE fmt)
 {
-    static char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
+    static const char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
     char *s, *send;
     char *p, *pend;
     VALUE ary;
@@ -1320,7 +1320,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	}
 	star = 0;
 	if (*p == '_' || *p == '!') {
-	    char *natstr = "sSiIlL";
+	    const char *natstr = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
@@ -1818,6 +1818,8 @@ pack_unpack(VALUE str, VALUE fmt)
 		while (s < send) {
 		    if (*s == '=') {
 			if (++s == send) break;
+                       if (s+1 < send && *s == '\r' && *(s+1) == '\n')
+                         s++;
 			if (*s != '\n') {
 			    if ((c1 = hex2num(*s)) == -1) break;
 			    if (++s == send) break;

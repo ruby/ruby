@@ -1095,7 +1095,8 @@ static VALUE
 rb_io_inspect(VALUE obj)
 {
     OpenFile *fptr;
-    char *cname, *st = "";
+    char *cname;
+    const char *st = "";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr || !fptr->path) return rb_any_to_s(obj);
@@ -1962,18 +1963,6 @@ rb_io_each_byte(VALUE io)
     return io;
 }
 
-/*
- *  call-seq:
- *     ios.getc   => fixnum or nil
- *
- *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
- *  <code>nil</code> if called at end of file.
- *
- *     f = File.new("testfile")
- *     f.getc   #=> 84
- *     f.getc   #=> 104
- */
-
 VALUE
 rb_io_getc(VALUE io)
 {
@@ -1990,6 +1979,38 @@ rb_io_getc(VALUE io)
 	return Qnil;
     }
     return INT2FIX(c & 0xff);
+}
+
+/*
+ *  call-seq:
+ *     ios.getc   => string or nil
+ *
+ *  Reads a one-character string from <em>ios</em>. Returns
+ *  <code>nil</code> if called at end of file.
+ *
+ *     f = File.new("testfile")
+ *     f.getc   #=> "8"
+ *     f.getc   #=> "1"
+ */
+
+VALUE
+rb_io_getc_m(VALUE io)
+{
+    char ch;
+    OpenFile *fptr;
+    int c;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    READ_CHECK(fptr);
+    c = io_getc(fptr);
+
+    if (c < 0) {
+	return Qnil;
+    }
+    ch = c & 0xff; 
+    return rb_str_new(&ch, 1);
 }
 
 int
@@ -2009,7 +2030,7 @@ rb_getc(FILE *f)
 
 /*
  *  call-seq:
- *     ios.readchar   => fixnum
+ *     ios.readchar   => string
  *
  *  Reads a character as with <code>IO#getc</code>, but raises an
  *  <code>EOFError</code> on end of file.
@@ -2028,7 +2049,7 @@ rb_io_readchar(VALUE io)
 
 /*
  *  call-seq:
- *     ios.ungetc(integer)   => nil
+ *     ios.ungetc(string)   => nil
  *
  *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
  *  such that a subsequent buffered read will return it. Only one character
@@ -2037,20 +2058,30 @@ rb_io_readchar(VALUE io)
  *  back). Has no effect with unbuffered reads (such as <code>IO#sysread</code>).
  *
  *     f = File.new("testfile")   #=> #<File:testfile>
- *     c = f.getc                 #=> 84
+ *     c = f.getc                 #=> "8"
  *     f.ungetc(c)                #=> nil
- *     f.getc                     #=> 84
+ *     f.getc                     #=> "8"
  */
 
 VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
     OpenFile *fptr;
-    int cc = NUM2INT(c);
+    int cc;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-
+    if (NIL_P(c)) return Qnil;
+    if (FIXNUM_P(c)) {
+	cc = FIX2INT(c);
+    }
+    else {
+	SafeStringValue(c);
+	if (RSTRING(c)->len > 1) {
+	    rb_warn("IO#ungetc pushes back only one byte");
+	}
+	cc = (unsigned char)RSTRING(c)->ptr[0];
+    }
     if (io_ungetc(cc, fptr) == EOF && cc != EOF) {
 	rb_raise(rb_eIOError, "ungetc failed");
     }
@@ -2912,8 +2943,9 @@ popen_redirect(struct popen_arg *p)
 
 #ifdef HAVE_FORK
 static int
-popen_exec(struct popen_arg *p)
+popen_exec(void *pp)
 {
+    struct popen_arg *p = (struct popen_arg*)pp;
     int fd;
 
     popen_redirect(p);
@@ -5316,23 +5348,23 @@ argf_readpartial(int argc, VALUE *argv)
 static VALUE
 argf_getc(void)
 {
-    VALUE byte;
+    VALUE ch;
 
   retry:
     if (!next_argv()) return Qnil;
     if (TYPE(current_file) != T_FILE) {
-	byte = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
+	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
     else {
-	byte = rb_io_getc(current_file);
+	ch = rb_io_getc(current_file);
     }
-    if (NIL_P(byte) && next_p != -1) {
+    if (NIL_P(ch) && next_p != -1) {
 	argf_close(current_file);
 	next_p = 1;
 	goto retry;
     }
 
-    return byte;
+    return ch;
 }
 
 static VALUE
@@ -5646,7 +5678,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "write", io_write, 1);
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
-    rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);
+    rb_define_method(rb_cIO, "getc",  rb_io_getc_m, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);

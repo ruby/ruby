@@ -490,42 +490,97 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     return 0;
 }
 
+/*
+ * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
+ *
+ * @(#) $Revision$
+ * @(#) $Id$
+ * @(#) $Source$
+ *
+ ***
+ *
+ * Fowler/Noll/Vo hash
+ *
+ * The basis of this hash algorithm was taken from an idea sent
+ * as reviewer comments to the IEEE POSIX P1003.2 committee by:
+ *
+ *      Phong Vo (http://www.research.att.com/info/kpv/)
+ *      Glenn Fowler (http://www.research.att.com/~gsf/)
+ *
+ * In a subsequent ballot round:
+ *
+ *      Landon Curt Noll (http://www.isthe.com/chongo/)
+ *
+ * improved on their algorithm.  Some people tried this hash
+ * and found that it worked rather well.  In an EMail message
+ * to Landon, they named it the ``Fowler/Noll/Vo'' or FNV hash.
+ *
+ * FNV hashes are designed to be fast while maintaining a low
+ * collision rate. The FNV speed allows one to quickly hash lots
+ * of data while maintaining a reasonable collision rate.  See:
+ *
+ *      http://www.isthe.com/chongo/tech/comp/fnv/index.html
+ *
+ * for more details as well as other forms of the FNV hash.
+ ***
+ *
+ * To use the recommended 32 bit FNV-1a hash, pass FNV1_32A_INIT as the
+ * Fnv32_t hashval argument to fnv_32a_buf() or fnv_32a_str().
+ *
+ ***
+ *
+ * Please do not copyright this code.  This code is in the public domain.
+ *
+ * LANDON CURT NOLL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+ * EVENT SHALL LANDON CURT NOLL BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
+ * USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ * By:
+ *	chongo <Landon Curt Noll> /\oo/\
+ *      http://www.isthe.com/chongo/
+ *
+ * Share and Enjoy!	:-)
+ */
+
+/*
+ * 32 bit FNV-1 and FNV-1a non-zero initial basis
+ *
+ * The FNV-1 initial basis is the FNV-0 hash of the following 32 octets:
+ *
+ *              chongo <Landon Curt Noll> /\../\
+ *
+ * NOTE: The \'s above are not back-slashing escape characters.
+ * They are literal ASCII  backslash 0x5c characters.
+ *
+ * NOTE: The FNV-1a initial basis is the same value as FNV-1 by definition.
+ */
+#define FNV1_32A_INIT 0x811c9dc5
+
+/*
+ * 32 bit magic FNV-1a prime
+ */
+#define FNV_32_PRIME 0x01000193
+
 static int
 strhash(register const char *string)
 {
-    register int c;
+    register int hval = FNV1_32A_INIT;
 
-#ifdef HASH_ELFHASH
-    register unsigned int h = 0, g;
+    /*
+     * FNV-1a hash each octet in the buffer
+     */
+    while (*string) {
+	/* xor the bottom with the current octet */
+	hval ^= (int)*string++;
 
-    while ((c = *string++) != '\0') {
-	h = ( h << 4 ) + c;
-	if ( g = h & 0xF0000000 )
-	    h ^= g >> 24;
-	h &= ~g;
+	/* multiply by the 32 bit FNV magic prime mod 2^32 */
+	hval *= FNV_32_PRIME;
     }
-    return h;
-#elif HASH_PERL
-    register int val = 0;
-
-    while ((c = *string++) != '\0') {
-	val += c;
-	val += (val << 10);
-	val ^= (val >> 6);
-    }
-    val += (val << 3);
-    val ^= (val >> 11);
-
-    return val + (val << 15);
-#else
-    register int val = 0;
-
-    while ((c = *string++) != '\0') {
-	val = val*997 + c;
-    }
-
-    return val + (val>>5);
-#endif
+    return hval;
 }
 
 static int

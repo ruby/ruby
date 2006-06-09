@@ -209,7 +209,7 @@ rb_check_type(VALUE x, int t)
     if (TYPE(x) != t) {
 	while (type->type >= 0) {
 	    if (type->type == t) {
-		char *etype;
+		const char *etype;
 
 		if (NIL_P(x)) {
 		    etype = "nil";
@@ -434,7 +434,7 @@ static VALUE
 check_backtrace(VALUE bt)
 {
     long i;
-    static char *err = "backtrace must be Array of String";
+    static const char *err = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {
 	int t = TYPE(bt);
@@ -683,7 +683,7 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[0];
     if (NIL_P(mesg)) return Qnil;
     else {
-	char *desc = 0;
+	const char *desc = 0;
 	VALUE d = 0, args[3];
 
 	obj = ptr[1];
@@ -828,7 +828,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 #if !defined(_WIN32) && !defined(__VMS)
     char *strerror();
 #endif
-    char *err;
+    const char *err;
     VALUE mesg, error;
     VALUE klass = rb_obj_class(self);
 

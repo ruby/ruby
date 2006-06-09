@@ -786,21 +786,26 @@ def find_executable(bin, path = nil)
   end
 end
 
-def arg_config(config, *defaults, &block)
-  $arg_config << [config, *defaults]
-  defaults << nil if !block and defaults.empty?
+def arg_config(config, default=nil, &block)
+  $arg_config << [config, default]
+  defaults = []
+  if default
+    defaults << default
+  elsif !block
+    defaults << nil
+  end
   $configure_args.fetch(config.tr('_', '-'), *defaults, &block)
 end
 
-def with_config(config, *defaults)
+def with_config(config, default=nil)
   config = config.sub(/^--with[-_]/, '')
   val = arg_config("--with-"+config) do
     if arg_config("--without-"+config)
       false
     elsif block_given?
-      yield(config, *defaults)
+      yield(config, default)
     else
-      break *defaults
+      break default
     end
   end
   case val
@@ -813,15 +818,15 @@ def with_config(config, *defaults)
   end
 end
 
-def enable_config(config, *defaults)
+def enable_config(config, default=nil)
   if arg_config("--enable-"+config)
     true
   elsif arg_config("--disable-"+config)
     false
   elsif block_given?
-    yield(config, *defaults)
+    yield(config, default)
   else
-    return *defaults
+    return default
   end
 end
 
@@ -1105,7 +1110,7 @@ EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 
 }
-  install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
+  install_dirs.each {|*d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
   n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET).'
   mfile.print %{
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)

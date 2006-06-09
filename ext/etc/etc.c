@@ -70,8 +70,7 @@ safe_setup_str(str)
 
 #ifdef HAVE_GETPWENT
 static VALUE
-setup_passwd(pwd)
-    struct passwd *pwd;
+setup_passwd(struct passwd *pwd)
 {
     if (pwd == 0) rb_sys_fail("/etc/passwd");
     return rb_struct_new(sPasswd,
@@ -119,10 +118,7 @@ setup_passwd(pwd)
  * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
-etc_getpwuid(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 {
 #if defined(HAVE_GETPWENT)
     VALUE id;
@@ -153,8 +149,7 @@ etc_getpwuid(argc, argv, obj)
  * passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
  */
 static VALUE
-etc_getpwnam(obj, nam)
-    VALUE obj, nam;
+etc_getpwnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
@@ -207,8 +202,7 @@ passwd_iterate()
  *
  */
 static VALUE
-etc_passwd(obj)
-    VALUE obj;
+etc_passwd(VALUE obj)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pw;
@@ -232,8 +226,7 @@ etc_passwd(obj)
  * to getpwent will return the first entry again.
  */
 static VALUE
-etc_setpwent(obj)
-    VALUE obj;
+etc_setpwent(VALUE obj)
 {
 #ifdef HAVE_GETPWENT
     setpwent();
@@ -245,8 +238,7 @@ etc_setpwent(obj)
  * getpwent, and closes the file.
  */
 static VALUE
-etc_endpwent(obj)
-    VALUE obj;
+etc_endpwent(VALUE obj)
 {
 #ifdef HAVE_GETPWENT
     endpwent();
@@ -281,8 +273,7 @@ etc_endpwent(obj)
  * - Passwd#shell contains the path to the login shell of the user as a String.
  */
 static VALUE
-etc_getpwent(obj)
-    VALUE obj;
+etc_getpwent(VALUE obj)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pw;
@@ -296,8 +287,7 @@ etc_getpwent(obj)
 
 #ifdef HAVE_GETGRENT
 static VALUE
-setup_group(grp)
-    struct group *grp;
+setup_group(struct group *grp)
 {
     VALUE mem;
     char **tbl;
@@ -329,8 +319,7 @@ setup_group(grp)
  *
  */
 static VALUE
-etc_getgrgid(obj, id)
-    VALUE obj, id;
+etc_getgrgid(VALUE obj, VALUE id)
 {
 #ifdef HAVE_GETGRENT
     int gid;
@@ -357,8 +346,7 @@ etc_getgrgid(obj, id)
  *
  */
 static VALUE
-etc_getgrnam(obj, nam)
-    VALUE obj, nam;
+etc_getgrnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETGRENT
     struct group *grp;
@@ -412,8 +400,7 @@ group_iterate()
  *
  */
 static VALUE
-etc_group(obj)
-    VALUE obj;
+etc_group(VALUE obj)
 {
 #ifdef HAVE_GETGRENT
     struct group *grp;
@@ -437,8 +424,7 @@ etc_group(obj)
  * to getgrent will return the first entry again.
  */
 static VALUE
-etc_setgrent(obj)
-    VALUE obj;
+etc_setgrent(VALUE obj)
 {
 #ifdef HAVE_GETGRENT
     setgrent();
@@ -450,8 +436,7 @@ etc_setgrent(obj)
  * getgrent, and closes the file.
  */
 static VALUE
-etc_endgrent(obj)
-    VALUE obj;
+etc_endgrent(VALUE obj)
 {
 #ifdef HAVE_GETGRENT
     endgrent();
@@ -480,8 +465,7 @@ etc_endgrent(obj)
  *   members of the group.
  */
 static VALUE
-etc_getgrent(obj)
-    VALUE obj;
+etc_getgrent(VALUE obj)
 {
 #ifdef HAVE_GETGRENT
     struct group *gr;

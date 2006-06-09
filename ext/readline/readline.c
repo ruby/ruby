@@ -50,10 +50,7 @@ readline_event()
 }
 
 static VALUE
-readline_readline(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+readline_readline(int argc, VALUE *argv, VALUE self)
 {
     VALUE tmp, add_hist, result;
     char *prompt = NULL;
@@ -95,8 +92,7 @@ readline_readline(argc, argv, self)
 }
 
 static VALUE
-readline_s_set_input(self, input)
-    VALUE self, input;
+readline_s_set_input(VALUE self, VALUE input)
 {
     OpenFile *ifp;
 
@@ -108,8 +104,7 @@ readline_s_set_input(self, input)
 }
 
 static VALUE
-readline_s_set_output(self, output)
-    VALUE self, output;
+readline_s_set_output(VALUE self, VALUE output)
 {
     OpenFile *ofp;
 
@@ -121,9 +116,7 @@ readline_s_set_output(self, output)
 }
 
 static VALUE
-readline_s_set_completion_proc(self, proc)
-    VALUE self;
-    VALUE proc;
+readline_s_set_completion_proc(VALUE self, VALUE proc)
 {
     rb_secure(4);
     if (!rb_respond_to(proc, rb_intern("call")))
@@ -132,35 +125,28 @@ readline_s_set_completion_proc(self, proc)
 }
 
 static VALUE
-readline_s_get_completion_proc(self)
-    VALUE self;
+readline_s_get_completion_proc(VALUE self)
 {
     rb_secure(4);
     return rb_attr_get(mReadline, completion_proc);
 }
 
 static VALUE
-readline_s_set_completion_case_fold(self, val)
-    VALUE self;
-    VALUE val;
+readline_s_set_completion_case_fold(VALUE self, VALUE val)
 {
     rb_secure(4);
     return rb_ivar_set(mReadline, completion_case_fold, val);
 }
 
 static VALUE
-readline_s_get_completion_case_fold(self)
-    VALUE self;
+readline_s_get_completion_case_fold(VALUE self)
 {
     rb_secure(4);
     return rb_attr_get(mReadline, completion_case_fold);
 }
 
 static char **
-readline_attempted_completion_function(text, start, end)
-    const char *text;
-    int start;
-    int end;
+readline_attempted_completion_function(const char *text, int start, int end)
 {
     VALUE proc, ary, temp;
     char **result;
@@ -224,8 +210,7 @@ readline_attempted_completion_function(text, start, end)
 }
 
 static VALUE
-readline_s_vi_editing_mode(self)
-    VALUE self;
+readline_s_vi_editing_mode(VALUE self)
 {
 #ifdef HAVE_RL_VI_EDITING_MODE
     rb_secure(4);
@@ -238,8 +223,7 @@ readline_s_vi_editing_mode(self)
 }
 
 static VALUE
-readline_s_emacs_editing_mode(self)
-    VALUE self;
+readline_s_emacs_editing_mode(VALUE self)
 {
 #ifdef HAVE_RL_EMACS_EDITING_MODE
     rb_secure(4);
@@ -252,8 +236,7 @@ readline_s_emacs_editing_mode(self)
 }
 
 static VALUE
-readline_s_set_completion_append_character(self, str)
-    VALUE self, str;
+readline_s_set_completion_append_character(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
     rb_secure(4);
@@ -276,8 +259,7 @@ readline_s_set_completion_append_character(self, str)
 }
 
 static VALUE
-readline_s_get_completion_append_character(self)
-    VALUE self;
+readline_s_get_completion_append_character(VALUE self)
 {
 #ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
     VALUE str;
@@ -296,8 +278,7 @@ readline_s_get_completion_append_character(self)
 }
 
 static VALUE
-readline_s_set_basic_word_break_characters(self, str)
-    VALUE self, str;
+readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_BASIC_WORD_BREAK_CHARACTERS
     static char *basic_word_break_characters = NULL;
@@ -323,8 +304,7 @@ readline_s_set_basic_word_break_characters(self, str)
 }
 
 static VALUE
-readline_s_get_basic_word_break_characters(self, str)
-    VALUE self, str;
+readline_s_get_basic_word_break_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_BASIC_WORD_BREAK_CHARACTERS
     rb_secure(4);
@@ -338,8 +318,7 @@ readline_s_get_basic_word_break_characters(self, str)
 }
 
 static VALUE
-readline_s_set_completer_word_break_characters(self, str)
-    VALUE self, str;
+readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_COMPLETER_WORD_BREAK_CHARACTERS
     static char *completer_word_break_characters = NULL;
@@ -365,8 +344,7 @@ readline_s_set_completer_word_break_characters(self, str)
 }
 
 static VALUE
-readline_s_get_completer_word_break_characters(self, str)
-    VALUE self, str;
+readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_COMPLETER_WORD_BREAK_CHARACTERS
     rb_secure(4);
@@ -380,8 +358,7 @@ readline_s_get_completer_word_break_characters(self, str)
 }
 
 static VALUE
-readline_s_set_basic_quote_characters(self, str)
-    VALUE self, str;
+readline_s_set_basic_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_BASIC_QUOTE_CHARACTERS
     static char *basic_quote_characters = NULL;
@@ -408,8 +385,7 @@ readline_s_set_basic_quote_characters(self, str)
 }
 
 static VALUE
-readline_s_get_basic_quote_characters(self, str)
-    VALUE self, str;
+readline_s_get_basic_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_BASIC_QUOTE_CHARACTERS
     rb_secure(4);
@@ -423,8 +399,7 @@ readline_s_get_basic_quote_characters(self, str)
 }
 
 static VALUE
-readline_s_set_completer_quote_characters(self, str)
-    VALUE self, str;
+readline_s_set_completer_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_COMPLETER_QUOTE_CHARACTERS
     static char *completer_quote_characters = NULL;
@@ -451,8 +426,7 @@ readline_s_set_completer_quote_characters(self, str)
 }
 
 static VALUE
-readline_s_get_completer_quote_characters(self, str)
-    VALUE self, str;
+readline_s_get_completer_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_COMPLETER_QUOTE_CHARACTERS
     rb_secure(4);
@@ -466,8 +440,7 @@ readline_s_get_completer_quote_characters(self, str)
 }
 
 static VALUE
-readline_s_set_filename_quote_characters(self, str)
-    VALUE self, str;
+readline_s_set_filename_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_FILENAME_QUOTE_CHARACTERS
     static char *filename_quote_characters = NULL;
@@ -494,8 +467,7 @@ readline_s_set_filename_quote_characters(self, str)
 }
 
 static VALUE
-readline_s_get_filename_quote_characters(self, str)
-    VALUE self, str;
+readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 {
 #ifdef HAVE_RL_FILENAME_QUOTE_CHARACTERS
     rb_secure(4);
@@ -509,16 +481,13 @@ readline_s_get_filename_quote_characters(self, str)
 }
 
 static VALUE
-hist_to_s(self)
-    VALUE self;
+hist_to_s(VALUE self)
 {
     return rb_str_new2("HISTORY");
 }
 
 static VALUE
-hist_get(self, index)
-    VALUE self;
-    VALUE index;
+hist_get(VALUE self, VALUE index)
 {
     HIST_ENTRY *entry;
     int i;
@@ -536,10 +505,7 @@ hist_get(self, index)
 }
 
 static VALUE
-hist_set(self, index, str)
-    VALUE self;
-    VALUE index;
-    VALUE str;
+hist_set(VALUE self, VALUE index, VALUE str)
 {
 #ifdef HAVE_REPLACE_HISTORY_ENTRY
     HIST_ENTRY *entry;
@@ -563,9 +529,7 @@ hist_set(self, index, str)
 }
 
 static VALUE
-hist_push(self, str)
-    VALUE self;
-    VALUE str;
+hist_push(VALUE self, VALUE str)
 {
     rb_secure(4);
     SafeStringValue(str);
@@ -574,10 +538,7 @@ hist_push(self, str)
 }
 
 static VALUE
-hist_push_method(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+hist_push_method(int argc, VALUE *argv, VALUE self)
 {
     VALUE str;
     
@@ -591,8 +552,7 @@ hist_push_method(argc, argv, self)
 }
 
 static VALUE
-rb_remove_history(index)
-    int index;
+rb_remove_history(int index)
 {
 #ifdef HAVE_REMOVE_HISTORY
     HIST_ENTRY *entry;
@@ -614,8 +574,7 @@ rb_remove_history(index)
 }
 
 static VALUE
-hist_pop(self)
-    VALUE self;
+hist_pop(VALUE self)
 {
     rb_secure(4);
     if (history_length > 0) {
@@ -626,8 +585,7 @@ hist_pop(self)
 }
 
 static VALUE
-hist_shift(self)
-    VALUE self;
+hist_shift(VALUE self)
 {
     rb_secure(4);
     if (history_length > 0) {
@@ -638,8 +596,7 @@ hist_shift(self)
 }
 
 static VALUE
-hist_each(self)
-    VALUE self;
+hist_each(VALUE self)
 {
     HIST_ENTRY *entry;
     int i;
@@ -655,25 +612,21 @@ hist_each(self)
 }
 
 static VALUE
-hist_length(self)
-    VALUE self;
+hist_length(VALUE self)
 {
     rb_secure(4);
     return INT2NUM(history_length);
 }
 
 static VALUE
-hist_empty_p(self)
-    VALUE self;
+hist_empty_p(VALUE self)
 {
     rb_secure(4);
     return history_length == 0 ? Qtrue : Qfalse;
 }
 
 static VALUE
-hist_delete_at(self, index)
-    VALUE self;
-    VALUE index;
+hist_delete_at(VALUE self, VALUE index)
 {
     int i;
 
@@ -688,9 +641,7 @@ hist_delete_at(self, index)
 }
 
 static VALUE
-filename_completion_proc_call(self, str)
-    VALUE self;
-    VALUE str;
+filename_completion_proc_call(VALUE self, VALUE str)
 {
     VALUE result;
     char **matches;
@@ -715,9 +666,7 @@ filename_completion_proc_call(self, str)
 }
 
 static VALUE
-username_completion_proc_call(self, str)
-    VALUE self;
-    VALUE str;
+username_completion_proc_call(VALUE self, VALUE str)
 {
     VALUE result;
     char **matches;

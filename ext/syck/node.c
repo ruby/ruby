@@ -100,13 +100,13 @@ syck_alloc_str()
 }
 
 SyckNode *
-syck_new_str( char *str, enum scalar_style style )
+syck_new_str( const char *str, enum scalar_style style )
 {
     return syck_new_str2( str, strlen( str ), style );
 }
 
 SyckNode *
-syck_new_str2( char *str, long len, enum scalar_style style )
+syck_new_str2( const char *str, long len, enum scalar_style style )
 {
     SyckNode *n;
 

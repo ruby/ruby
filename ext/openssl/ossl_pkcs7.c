@@ -335,7 +335,7 @@ static int
 ossl_pkcs7_sym2typeid(VALUE sym)
 {
     int i, ret = Qnil;
-    char *s;
+    const char *s;
 
     static struct {
         const char *name;

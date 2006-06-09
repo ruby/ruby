@@ -32,7 +32,7 @@ syck_assert( char *file_name, unsigned line_num )
  * Allocates and copies a string
  */
 char *
-syck_strndup( char *buf, long len )
+syck_strndup( const char *buf, long len )
 {
     char *new = S_ALLOC_N( char, len + 1 );
     S_MEMZERO( new, char, len + 1 );

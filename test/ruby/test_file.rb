@@ -88,7 +88,7 @@ class TestFile < Test::Unit::TestCase
     assert_nil(f.getc)
     open(f.path, "w") {|g| g.print "a" }
     result = []
-    f.each_byte {|b| result << b }
+    f.each_byte {|b| result << b.chr }
     assert_equal([?a], result)
   end
 

@@ -33,7 +33,7 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_call, id_default;
+static ID id_hash, id_yield, id_default;
 
 static VALUE
 eql(VALUE *args)
@@ -474,7 +474,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
     rb_scan_args(argc, argv, "01", &key);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH(hash)->ifnone, id_call, 2, hash, key);
+	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, key);
     }
     return RHASH(hash)->ifnone;
 }
@@ -656,7 +656,7 @@ rb_hash_shift(VALUE hash)
 	return rb_assoc_new(var.key, var.val);
     }
     else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH(hash)->ifnone, id_call, 2, hash, Qnil);
+	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, Qnil);
     }
     else {
 	return RHASH(hash)->ifnone;
@@ -986,7 +986,7 @@ static int
 each_pair_i(VALUE key, VALUE value)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield_values(2, key, value);
+    rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
@@ -994,11 +994,11 @@ each_pair_i(VALUE key, VALUE value)
  *  call-seq:
  *     hsh.each_pair {| key_value_array | block } -> hsh
  *  
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key
- *  and value as parameters.
+ *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the
+ *  key and value to the block as a two-element array.
  *     
  *     h = { "a" => 100, "b" => 200 }
- *     h.each_pair {|key, value| puts "#{key} is #{value}" }
+ *     h.each_pair {|(key, value)| puts "#{key} is #{value}" }
  *     
  *  <em>produces:</em>
  *     
@@ -1019,7 +1019,7 @@ static int
 each_i(VALUE key, VALUE value)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield(rb_assoc_new(key, value));
+    rb_yield_values(2, key, value);
     return ST_CONTINUE;
 }
 
@@ -1027,11 +1027,9 @@ each_i(VALUE key, VALUE value)
  *  call-seq:
  *     hsh.each {| key, value | block } -> hsh
  *  
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key
- *  and value to the block as a two-element array. Because of the assignment
- *  semantics of block parameters, these elements will be split out if the
- *  block has two formal parameters. Also see <code>Hash.each_pair</code>, which
- *  will be marginally more efficient for blocks with two parameters.
+ *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key-value
+ *  pair as parameters.  Also see <code>Hash#each_pair</code>, which
+ *  passes the key and value to the block as a two-element array.
  *     
  *     h = { "a" => 100, "b" => 200 }
  *     h.each {|key, value| puts "#{key} is #{value}" }
@@ -1893,14 +1891,14 @@ static VALUE
 env_each(VALUE ehash)
 {
     RETURN_ENUMERATOR(ehash, 0, 0);
-    return env_each_i(ehash, Qfalse);
+    return env_each_i(ehash, Qtrue);
 }
 
 static VALUE
 env_each_pair(VALUE ehash)
 {
     RETURN_ENUMERATOR(ehash, 0, 0);
-    return env_each_i(ehash, Qtrue);
+    return env_each_i(ehash, Qfalse);
 }
 
 static VALUE
@@ -2273,7 +2271,7 @@ void
 Init_Hash(void)
 {
     id_hash = rb_intern("hash");
-    id_call = rb_intern("call");
+    id_yield = rb_intern("yield");
     id_default = rb_intern("default");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);

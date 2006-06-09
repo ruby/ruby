@@ -86,11 +86,11 @@ enum node_type {
     NODE_DREGX,
     NODE_DREGX_ONCE,
     NODE_ARGS,
+    NODE_POSTARG,
     NODE_ARGSCAT,
     NODE_ARGSPUSH,
     NODE_SPLAT,
     NODE_TO_ARY,
-    NODE_SVALUE,
     NODE_BLOCK_ARG,
     NODE_BLOCK_PASS,
     NODE_DEFN,
@@ -311,11 +311,11 @@ typedef struct RNode {
 #define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() NEW_NODE(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS(f,o,r) NEW_NODE(NODE_ARGS,o,r,f)
+#define NEW_POSTARG(r,m) NEW_NODE(NODE_POSTARG,m,0,r)
 #define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
 #define NEW_SPLAT(a) NEW_NODE(NODE_SPLAT,a,0,0)
 #define NEW_TO_ARY(a) NEW_NODE(NODE_TO_ARY,a,0,0)
-#define NEW_SVALUE(a) NEW_NODE(NODE_SVALUE,a,0,0)
 #define NEW_BLOCK_ARG(v) NEW_NODE(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) NEW_NODE(NODE_BLOCK_PASS,0,b,0)
 #define NEW_ALIAS(n,o) NEW_NODE(NODE_ALIAS,n,o,0)
@@ -345,10 +345,11 @@ typedef struct RNode {
 #define NOEX_NOSUPER   1
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
-#define NOEX_MASK      6 
+#define NOEX_LOCAL     8
+#define NOEX_MASK      14
 
 #define NOEX_UNDEF     NOEX_NOSUPER
-#define NOEX_RECV      8
+#define NOEX_RECV      16
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);

@@ -344,7 +344,7 @@ include_class_new(VALUE module, VALUE super)
 void
 rb_include_module(VALUE klass, VALUE module)
 {
-    VALUE p, c;
+    VALUE c;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -362,30 +362,11 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
-	int superclass_seen = Qfalse;
-
 	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
 	    rb_raise(rb_eArgError, "cyclic include detected");
-	/* ignore if the module included already in superclasses */
-	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
-	    switch (BUILTIN_TYPE(p)) {
-	      case T_ICLASS:
-		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		    if (!superclass_seen) {
-			c = p;	/* move insertion point */
-		    }
-		    goto skip;
-		}
-		break;
-	      case T_CLASS:
-		superclass_seen = Qtrue;
-		break;
-	    }
-	}
 	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
 	c = RCLASS(c)->super;
 	changed = 1;
-      skip:
 	module = RCLASS(module)->super;
     }
     if (changed) rb_clear_cache();
@@ -500,6 +481,7 @@ ins_methods_push(ID name, long type, VALUE ary, long visi)
       case NOEX_PRIVATE:
       case NOEX_PROTECTED:
       case NOEX_PUBLIC:
+      case NOEX_LOCAL:
 	visi = (type == visi);
 	break;
       default:
@@ -534,6 +516,12 @@ static int
 ins_methods_pub_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, NOEX_PUBLIC);
+}
+
+static int
+ins_methods_local_i(ID name, long type, VALUE ary)
+{
+    return ins_methods_push(name, type, ary, NOEX_LOCAL);
 }
 
 static int
@@ -664,6 +652,19 @@ VALUE
 rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     mod.local_methods   => array
+ *  
+ *  Returns a list of the local methods defined in <i>mod</i>.
+ */
+
+VALUE
+rb_class_local_methods(VALUE mod)
+{
+    return class_instance_method_list(0, 0, mod, ins_methods_local_i);
 }
 
 /*

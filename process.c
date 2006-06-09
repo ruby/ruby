@@ -1296,10 +1296,7 @@ proc_syswait(pid)
  * +chfunc+ must not raise any exceptions.
  */
 int
-rb_fork(status, chfunc, charg)
-    int *status;
-    int (*chfunc)(void *);
-    void *charg;
+rb_fork(int *status, int (*chfunc)(void*), void *charg)
 {
     int pid, err, state = 0;
 #ifdef FD_CLOEXEC
@@ -1627,12 +1624,11 @@ rb_f_spawn(int argc, VALUE *argv)
  *  call-seq:
  *     sleep([duration])    => fixnum
  *
- *  Suspends the current thread for _duration_ seconds (which may be
- *  any number, including a +Float+ with fractional seconds). Returns the actual
- *  number of seconds slept (rounded), which may be less than that asked
- *  for if the thread was interrupted by a +SIGALRM+, or if
- *  another thread calls <code>Thread#run</code>. Zero arguments
- *  causes +sleep+ to sleep forever.
+ *  Suspends the current thread for _duration_ seconds (which may be any number,
+ *  including a +Float+ with fractional seconds). Returns the actual number of
+ *  seconds slept (rounded), which may be less than that asked for if another
+ *  thread calls <code>Thread#run</code>. Zero arguments causes +sleep+ to sleep
+ *  forever.
  *
  *     Time.new    #=> Wed Apr 09 08:56:32 CDT 2003
  *     sleep 1.2   #=> 1
@@ -3314,8 +3310,7 @@ p_uid_have_saved_id(void)
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_uid_sw_ensure(id)
-    int id;
+p_uid_sw_ensure(int id)
 {
     under_uid_switch = 0;
     return rb_seteuid_core(id);
@@ -3336,8 +3331,7 @@ p_uid_sw_ensure(id)
  */
 
 static VALUE
-p_uid_switch(obj)
-    VALUE obj;
+p_uid_switch(VALUE obj)
 {
     int uid, euid;
 
@@ -3423,8 +3417,7 @@ p_gid_have_saved_id(void)
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_gid_sw_ensure(id)
-    int id;
+p_gid_sw_ensure(int id)
 {
     under_gid_switch = 0;
     return rb_setegid_core(id);
@@ -3445,8 +3438,7 @@ p_gid_sw_ensure(id)
  */
 
 static VALUE
-p_gid_switch(obj)
-    VALUE obj;
+p_gid_switch(VALUE obj)
 {
     int gid, egid;
 

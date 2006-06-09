@@ -314,9 +314,7 @@ static int BSD__sfvwrite(fp, uio)
  * then reset it so that it can be reused.
  */
 static int
-BSD__sprint(fp, uio)
-	FILE *fp;
-	register struct __suio *uio;
+BSD__sprint(FILE *fp, register struct __suio *uio)
 {
 	register int err;
 
@@ -337,10 +335,7 @@ BSD__sprint(fp, uio)
  * worries about ungetc buffers and so forth.
  */
 static int
-BSD__sbprintf(fp, fmt, ap)
-	register FILE *fp;
-	const char *fmt;
-	va_list ap;
+BSD__sbprintf(register FILE *fp, const char *fmt, va_list ap)
 {
 /* We don't support files. */
 	return 0;
@@ -361,11 +356,7 @@ BSD__sbprintf(fp, fmt, ap)
  * use the given digits.
  */
 static char *
-BSD__ultoa(val, endp, base, octzero, xdigs)
-	register u_long val;
-	char *endp;
-	int base, octzero;
-	char *xdigs;
+BSD__ultoa(register u_long val, char *endp, int base, int octzero, char *xdigs)
 {
 	register char *cp = endp;
 	register long sval;
@@ -464,10 +455,7 @@ static int exponent __P((char *, int, int));
 #define	ZEROPAD		0x080		/* zero (as opposed to blank) pad */
 #define FPT		0x100		/* Floating point number */
 static int
-BSD_vfprintf(fp, fmt0, ap)
-	FILE *fp;
-	const char *fmt0;
-	va_list ap;
+BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
 	register char *fmt;	/* format string */
 	register int ch;	/* character from fmt */

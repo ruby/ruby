@@ -68,9 +68,9 @@ END
     # character constants(assumes ASCII)
     assert_equal(?a, "a"[0])
     assert_equal(?a, ?a)
-    assert_equal(1, ?\C-a)
-    assert_equal(225, ?\M-a)
-    assert_equal(129, ?\M-\C-a)
+    assert_equal("\1", ?\C-a)
+    assert_equal("\341", ?\M-a)
+    assert_equal("\201", ?\M-\C-a)
     assert_equal(?A, "a".upcase![0])
     assert_equal(?a, "A".downcase![0])
     assert_equal("ABC", "abc".tr!("a-z", "A-Z"))
@@ -82,7 +82,7 @@ END
     $y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
     $bad = false
     $x.each_byte {|i|
-      if i != $y.shift
+      if i.chr != $y.shift
         $bad = true
         break
       end

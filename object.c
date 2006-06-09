@@ -20,6 +20,7 @@
 #include <ctype.h>
 #include <math.h>
 
+VALUE rb_cBasicObject;
 VALUE rb_mKernel;
 VALUE rb_cObject;
 VALUE rb_cModule;
@@ -266,7 +267,7 @@ static int
 inspect_i(ID id, VALUE value, VALUE str)
 {
     VALUE str2;
-    char *ivname;
+    const char *ivname;
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
@@ -698,8 +699,7 @@ nil_to_s(VALUE obj)
  */
 
 static VALUE
-nil_to_a(obj)
-    VALUE obj;
+nil_to_a(VALUE obj)
 {
     return rb_ary_new2(0);
 }
@@ -1007,7 +1007,7 @@ static VALUE
 sym_inspect(VALUE sym)
 {
     VALUE str;
-    char *name;
+    const char *name;
     ID id = SYM2ID(sym);
 
     name = rb_id2name(id);
@@ -1374,7 +1374,7 @@ rb_obj_alloc(VALUE klass)
 {
     VALUE obj;
 
-    if (RCLASS(klass)->super == 0) {
+    if (RCLASS(klass)->super == 0 && klass != rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
     if (FL_TEST(klass, FL_SINGLETON)) {
@@ -2258,7 +2258,7 @@ rb_f_array(VALUE obj, VALUE arg)
 }
 
 static VALUE
-boot_defclass(char *name, VALUE super)
+boot_defclass(const char *name, VALUE super)
 {
     extern st_table *rb_class_tbl;
     VALUE obj = rb_class_boot(super);
@@ -2309,9 +2309,12 @@ VALUE ruby_top_self;
  *  that follows, the vertical arrows represent inheritance, and the
  *  parentheses meta-classes. All metaclasses are instances 
  *  of the class `Class'.
- *
- *                            +------------------+
- *                            |                  |
+ * 
+ *                             +-----------------+
+ *                             |                 |
+ *           BasicObject-->(BasicObject)         |
+ *                ^           ^                  |
+ *                |           |                  |
  *              Object---->(Object)              |
  *               ^  ^        ^  ^                |
  *               |  |        |  |                |
@@ -2331,10 +2334,12 @@ VALUE ruby_top_self;
 
 
 /*
- *  <code>Object</code> is the parent class of all classes in Ruby. Its
+ *  <code>BasicObject</code> is the parent class of all classes in Ruby.
+ *  It's an explicit blank class.  <code>Object</code>, the root of Ruby's
+ *  class hierarchy is a direct subclass of <code>BasicObject</code>.  Its
  *  methods are therefore available to all objects unless explicitly
  *  overridden.
- *     
+ *
  *  <code>Object</code> mixes in the <code>Kernel</code> module, making
  *  the built-in kernel functions globally accessible. Although the
  *  instance methods of <code>Object</code> are defined by the
@@ -2351,18 +2356,23 @@ Init_Object(void)
 {
     VALUE metaclass;
 
-    rb_cObject = boot_defclass("Object", 0);
+    rb_cBasicObject = boot_defclass("BasicObject", 0);
+    rb_cObject = boot_defclass("Object", rb_cBasicObject);
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
 
-    metaclass = rb_make_metaclass(rb_cObject, rb_cClass);
+    metaclass = rb_make_metaclass(rb_cBasicObject, rb_cClass);
+    metaclass = rb_make_metaclass(rb_cObject, metaclass);
     metaclass = rb_make_metaclass(rb_cModule, metaclass);
     metaclass = rb_make_metaclass(rb_cClass, metaclass);
 
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
+    rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
+    rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
+    rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
+
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
-    rb_define_alloc_func(rb_cObject, rb_class_allocate_instance);
-    rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, 0);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "extended", rb_obj_dummy, 1);
@@ -2370,10 +2380,7 @@ Init_Object(void)
     rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
 
-
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
-    rb_define_method(rb_mKernel, "==", rb_obj_equal, 1);
-    rb_define_method(rb_mKernel, "equal?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "===", rb_equal, 1); 
     rb_define_method(rb_mKernel, "=~", rb_obj_pattern_match, 1);
 
@@ -2477,6 +2484,8 @@ Init_Object(void)
 		     rb_class_protected_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "private_instance_methods", 
 		     rb_class_private_instance_methods, -1);   /* in class.c */
+    rb_define_method(rb_cModule, "local_methods", 
+		     rb_class_local_methods, 0);               /* in class.c */
 
     rb_define_method(rb_cModule, "constants", rb_mod_constants, 0); /* in variable.c */
     rb_define_method(rb_cModule, "const_get", rb_mod_const_get, -1);

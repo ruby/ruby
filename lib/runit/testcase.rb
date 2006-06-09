@@ -10,7 +10,7 @@ require 'test/unit/testcase'
 
 module RUNIT
   class TestCase < Test::Unit::TestCase  
-    include RUNIT::Assert
+    include RUNIT::AssertMixin
     
     def self.suite
       method_names = instance_methods(true)

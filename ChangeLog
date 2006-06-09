@@ -1,11 +1,37 @@
+Fri Jun  9 09:56:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): allow %c to print one character
+	  string (e.g. ?x).
+
 Thu Jun  8 14:00:02 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_read, rb_w32_write): new functions.
 	  use recv() and send() when fd is socket. fixed: [ruby-dev:28694]
 
+Wed Jun  7 16:22:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::make_tmpname): put dot between
+	  basename and pid.  [ruby-talk:196272]
+
+Wed Jun  7 16:16:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (do_block): remove -> style block.
+
+	* parse.y (parser_yylex): remove tLAMBDA_ARG.
+
 Wed Jun  7 14:51:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (errmap): add some winsock errors.
+
+Wed Jun  7 09:14:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): binding for the return event hook should have
+	  consistent scope.  [ruby-core:07928]
+
+Tue Jun  6 23:25:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): return behavior should depend whether it
+	  is surrounded by a lambda or a mere block.
 
 Mon Jun  5 18:12:12 2006  Tanaka Akira  <akr@m17n.org>
 
@@ -18,6 +44,20 @@ Sun Jun  4 20:40:19 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c: fix sockaddr_un handling.
 	  [ruby-dev:28677]
+
+Sat Jun  3 23:53:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (formal_assign): handles post splat arguments.
+
+	* eval.c (rb_call0): ditto.
+
+Sat Jun  3 13:10:41 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (strhash): use FNV-1a hash.
+
+Fri Jun  2 20:01:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): removed experimental ';;' terminator.
 
 Fri Jun  2 19:00:40 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -48,16 +88,66 @@ Thu Jun  1 19:12:37 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (rb_w32_cmdvector): backslashes inside single-quotes
 	  no longer has special meanings.  fixed: [ruby-list:42311]
 
+Thu Jun  1 17:55:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_node_arity): should be aware of post splat arguments.
+
+	* eval.c (rb_proc_arity): ditto.
+
 Thu Jun  1 16:17:26 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getcwd): runtime's getcwd() will not success
 	  if the length of the cwd is longer than MAX_PATH.
 	  fixed [ruby-list:42335]
 
+Thu Jun  1 16:07:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_args): syntax rule enhanced to support arguments
+	  after the splat.
+
+	* parse.y (mlhs_basic): ditto for multiple assignments
+
+	* parse.y (block_param): ditto for block parameters.
+
+	* parse.y (f_post_arg): mandatory formal arguments after the splat
+	  argument.
+
+	* parse.y (new_args_gen): generate nodes for mandatory formal
+	  arguments after the splat argument.
+
+	* eval.c (rb_eval): dispatch mandatory formal arguments after the
+	  splat argument.
+
 Thu Jun  1 11:33:32 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getcwd): set errno if not set.
 	  fixed [ruby-list:42346]
+
+Thu Jun  1 00:45:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (args): allow more than one splat in the argument list.
+
+Wed May 31 18:38:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (method_call): allow aref [] to accept all kind of
+	  method argument, including assocs, splat, and block argument.
+
+	* eval.c (SETUP_ARGS0): prepare block argument as well.
+
+Tue May 30 18:13:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Integer): remove Integer#gcd2. [ruby-core:07931]
+
+Mon May 29 22:40:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_line): print receivers true/false/nil specially.
+
+	* eval.c (rb_proc_yield): handles parameters in yield semantics.
+
+	* eval.c (nil_yield): gives LocalJumpError to denote no block
+	  error.
+
+	* io.c (rb_io_getc): now takes one-character string.
 
 Sat May 27 22:46:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -68,6 +158,11 @@ Sat May 27 11:29:46 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): remove extinit files if no statically linked
 	  extensions.
+
+Fri May 26 19:56:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_hash): use FNV-1a hash from Fowler/Noll/Vo
+	  hashing algorithm.
 
 Fri May 26 09:05:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -103,7 +198,17 @@ Wed May 24 23:52:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (ac_install_sh): ignore dummy install-sh.
 	  [ruby-talk:193876]
 
-Wed May 24 03:10:44 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Wed May 24 17:55:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_aref): str[0] now returns 1 character string,
+	  instead of a fixnum.	[Ruby2]
+
+	* parse.y (parser_yylex): ?c now returns 1 character string,
+	  instead of a fixnum.	[Ruby2]
+
+	* string.c (rb_str_aset): no longer support fixnum insertion.
+
+Wed May 24 03:10:44 2006  GOTOU Yuuzou	<gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb
 	  (OpenSSL::SSL::SocketForwarder#setsockopt,getsockopt): typo fixed.
@@ -124,6 +229,16 @@ Mon May 22 16:32:03 2006  Tanaka Akira  <akr@m17n.org>
 	  (sock_recvfrom_nonblock): new method: Socket#recvfrom_nonblock.
 
 	  [ruby-core:7917]
+
+Mon May 22 15:57:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (umethod_bind): should not update original class.
+	  [ruby-dev:28636]
+
+Mon May 22 13:38:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): should support constant access from
+	  within instance_eval().  [ruby-dev:28327]
 
 Sun May 21 09:50:31 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
@@ -152,15 +267,55 @@ Thu May 18 22:37:20 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/webrick/test_utils.rb: test for WEBrick::Utils.timeout.
 
+Thu May 18 17:51:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_timeval): should round for usec floating
+	  number.  [ruby-core:07896]
+
+	* time.c (time_add): ditto.
+
 Thu May 18 00:42:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb: use BUILD_FILE_SEPARATOR in Makefiles.
+
+Wed May 17 17:55:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (sys_warning): should not call a vararg function
+	  rb_sys_warning() indirectly.	[ruby-core:07886]
+
+Tue May 16 17:23:19 2006    <sinara@blade.nagaokaut.ac.jp>
+
+	* numeric.c (flo_divmod): the first element of Float#divmod should
+	  be an integer. [ruby-dev:28589]
+
+	* test/ruby/test_float.rb: add tests for divmod, div, modulo and remainder.
+
+Tue May 16 15:34:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not allow modifying literal
+	  regexps.  frozen check moved from rb_reg_initialize_m as well.
+
+Tue May 16 09:20:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not modify untainted objects in
+	  safe levels higher than 3.
+
+	* re.c (rb_memcmp): type change from char* to const void*.
+
+	* dir.c (dir_close): should not close untainted dir stream.
+
+	* dir.c (GetDIR): add tainted/frozen check for each dir operation.
 
 Mon May 15 21:37:12 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (rb_reg_prepare_re): don't use onig_recompile().
 
-Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
+Mon May 15 17:42:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_symbol_arg):
+	  typo fixed.  a patch from Florian Gross <florg at florg.net>.
+
+Sat May 13 16:14:05 2006  Tanaka Akira	<akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.
 	  (Struct#pretty_print): call Kernel#class and Struct#members even if
@@ -168,10 +323,26 @@ Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 	  (Struct#pretty_print_cycle): ditto.
 	  [ruby-core:7865]
 
-Thu May 11 18:30:11 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Fri May 12 15:54:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (EXEC_EVENT_HOOK): trace_func may remove itself from
+	  event_hooks.	no guarantee for arbitrary hook deletion.
+	  [ruby-dev:28632]
+
+Thu May 11 19:57:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): differ addition to minimize error.
+	  [ruby-dev:28619]
+
+Thu May 11 18:30:11 2006  GOTOU Yuuzou	<gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (add_cipher_name_to_ary): should return
 	  value. [ruby-dev:28627]
+
+Thu May 11 18:10:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): should not raise ERANGE when the input
+	  string does not have any digits.  [ruby-dev:28629]
 
 Wed May 10 23:40:21 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
@@ -203,7 +374,46 @@ Sun May  7 03:09:51 2006  Stephan Maka  <stephan@spaceboyz.net>
 	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP#initialize):
 	  Use AF_INET6 for nameservers containing colons.
 
-Mon May  1 17:58:16 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+Sat May	 6 23:40:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should restore old ruby_frame->block.
+	  thanks to ts <decoux at moulon.inra.fr>.  [ruby-core:07833]
+	  also fix [ruby-dev:28614] as well.
+
+Sat May	 6 00:38:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (trap): sig should be less then NSIG.  Coverity found
+	  this bug.  a patch from Kevin Tew <tewk at tewk.com>.
+	  [ruby-core:07823]
+
+Thu May	 4 22:13:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (math_log2): add new method inspired by
+	  [ruby-talk:191237].
+
+	* math.c (math_log): add optional base argument to Math::log().
+	  [ruby-talk:191308]
+
+Thu May	 4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/emitter.c (syck_scan_scalar): avoid accessing
+	  uninitialized array element.	a patch from Pat Eyler
+	  <rubypate at gmail.com>.  [ruby-core:07809]
+
+	* array.c (rb_ary_fill): initialize local variables first.  a
+	  patch from Pat Eyler <rubypate at gmail.com>.	 [ruby-core:07810]
+
+	* ext/syck/yaml2byte.c (syck_yaml2byte_handler): need to free
+	  type_tag.  a patch from Pat Eyler <rubypate at gmail.com>.
+	  [ruby-core:07808]
+
+Wed May	 3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent_internal): accept ai_family
+	  check from Sam Roberts <sroberts at uniserve.com>.
+	  [ruby-core:07691]
+
+Mon May	 1 17:58:16 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (add_event_call_back): should not
 	  delete event handler when the event name is not entried.
@@ -218,15 +428,74 @@ Sat Apr 29 22:43:37 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_asn1.c (ossl_asn1_decode0): should initialize
 	  flag. [ruby-core:07785]
 
+Fri Apr 28 10:53:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): should not cut off 18 digits for no
+	  reason.  [ruby-core:07796]
+
+Thu Apr 27 01:38:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_fill): internalize local variable "beg" to
+	  pacify Coverity.  [ruby-core:07770]
+
+Wed Apr 26 16:59:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): now supports CRLF newlines.  a patch from
+	  <tommy at tmtm.org>.	[ruby-dev:28601]
+
+Wed Apr 26 16:55:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* applied code clean-up patch from Stefan Huehner
+	  <stefan at huehner.org>.  [ruby-core:07764]
+
 Tue Apr 25 18:00:05 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (delete_slaves): maybe increment the reference
 	  count of a NULL Tcl_Obj [ruby-core:07759].
 
+Tue Apr 25 07:55:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/jcode.rb (String::tr_s): should have translated non
+	  squeezing character sequence (i.e. a character) as well.  thanks
+	  to Hiroshi Ichikawa <gimite at gimite.ddo.jp> [ruby-list:42090]
+
 Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_ensure): refer freed pointer
 	  [ruby-core:07744] and memory leak.
+
+Fri Apr 21 12:14:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: document update patch from Sam Roberts
+	  <sroberts at uniserve.com>.  [ruby-core:07701]
+
+Thu Apr 20 08:43:54 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Integer): need not to remove gcd2.  a patch from
+	  NARUSE, Yui <naruse at airemix.com>.	[ruby-dev:28570]
+
+Wed Apr 19 13:55:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): too much NEW_LIST()
+
+	* eval.c (SETUP_ARGS0): remove unnecessary access to nd_alen.
+
+Wed Apr 19 11:57:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): use ARGSCAT for NODE_OP_ASGN1.
+	  [ruby-dev:28585]
+
+	* parse.y (arg): use NODE_ARGSCAT for placeholder.
+
+Wed Apr 19 11:13:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/getoptlong.rb (GetoptLong::get): RDoc update patch from
+	  mathew <meta at pobox.com>.  [ruby-core:07738]
+
+Wed Apr 19 10:13:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_set): raise error when no target klass is
+	  supplied.  [ruby-dev:28582]
 
 Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -238,7 +507,21 @@ Tue Apr 18 17:40:37 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/stubs.c: fix potential bugs about handling rb_argv0.
 
-Sat Apr  8 18:06:28 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+Mon Apr 10 01:03:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* prec.c (prec_prec_f): documentation patch from
+	  <gerardo.santana at gmail.com>.  [ruby-core:07689]
+
+Sat Apr	 8 02:34:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): second operand may be too big even if
+	  it's a Fixnum.  [ruby-talk:187984]
+
+Sat Apr	 8 02:12:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* README.EXT: update symbol description.  [ruby-talk:188104]
+
+Sat Apr	 8 18:06:28 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect,
 	  WIN32OLE_PARAM#inspect.
@@ -254,7 +537,11 @@ Fri Apr  7 22:11:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_typelib.rb(test_initialize): ditto.
 
-Thu Apr  6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+Thu Apr	 6 23:28:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* COPYING: explicitly note GPLv2.  [ruby-talk:187922]
+
+Thu Apr	 6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* intern.h (rb_obj_instance_exec, rb_mod_module_exec): add declaration.
 
@@ -287,7 +574,12 @@ Wed Apr  5 00:22:54 2006  Tanaka Akira  <akr@m17n.org>
 	  methods take pathname argument.  suggested by Evan Phoenix.
 	  [ruby-core:7618]
 
-Sat Apr  1 15:11:27 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+Tue Apr	 4 22:15:41 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: remove some obsolete syntax rules (unparenthesized
+	  method calls in argument list).
+
+Sat Apr	 1 15:11:27 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c :add WIN32OLE_TYPE#inspect,
 	  WIN32OLE_VARIABLE#inspect
@@ -337,6 +629,14 @@ Mon Mar 27 22:45:37 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c, ext/nkf/lib/kconv.rb: Add rdoc.
 
+Mon Mar 27 03:17:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): insecure calling should be checked for non
+	  NODE_SCOPE method invocations too.
+
+	* eval.c (rb_alias): should preserve the current safe level as
+	  well as method definition.
+
 Sun Mar 26 22:02:51 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c: refactoring for options.
@@ -350,6 +650,11 @@ Fri Mar 24 21:11:02 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 	* string.c (rb_str_sub): ditto.
 
 	* string.c (rb_str_gsub): ditto.
+
+Fri Mar 24 17:20:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_f_sleep): remove RDoc description about SIGALRM
+	  which is not valid on the current implementation. [ruby-dev:28464]
 
 Thu Mar 23 21:40:47 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
@@ -365,6 +670,12 @@ Thu Mar 23 21:06:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 	* regcomp.c ditto.
 
 	* regerror.c: ditto.
+
+Thu Mar 23 10:47:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (method_missing): should support argument splat in
+	  super.  a bug in combination of super, splat and
+	  method_missing.  [ruby-talk:185438]
 
 Thu Mar 23 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
@@ -387,15 +698,25 @@ Tue Mar 21 22:14:01 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* gc.c (gc_mark_children): add gc_mark() to regexp member.
 
+Mon Mar 20 12:05:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: Solaris SunPro compiler -rapth patch from
+	  <kuwa at labs.fujitsu.com>.  [ruby-dev:28443]
+
 Mon Mar 20 11:12:38 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (folevariant_value): could not compile
 	  with C90 compiler.
 
-Sun Mar 19 09:46:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+Mon Mar 20 09:40:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: remove enable_rpath=no for Solaris.
+	  [ruby-dev:28440]
+
+Sun Mar 19 09:46:30 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2olevariantdata): change behavior
-	  of converting  OLE Variant object with VT_ARRAY|VT_UI1 and Ruby
+	  of converting	 OLE Variant object with VT_ARRAY|VT_UI1 and Ruby
 	  String object.
 
 	* ext/win32ole/win32ole.c (folevariant_value): ditto.
@@ -421,7 +742,12 @@ Sun Mar 12 17:02:10 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/tests/testOLEPARAM.rb: test method name should not be
 	  duplicated.
 
-Sun Mar  5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
+Sat Mar 11 14:24:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.1: a clarification patch from David Lutterkort
+	  <dlutter at redhat.com>.  [ruby-core:7508]
+
+Sun Mar	 5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: do not repeat command options.
 
@@ -434,16 +760,25 @@ Sat Mar  4 15:26:40 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (id2ref): fix symbol test.
 
-Fri Mar  3 21:22:42 2006  Tanaka Akira  <akr@m17n.org>
+Sat Mar	 4 01:08:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/ri/ri_paths.rb (RI::Paths): adding paths from rubygems
+	  directories.	a patch from Eric Hodel <drbrain at segment7.net>.
+	  [ruby-core:07423]
+
+Fri Mar	 3 17:59:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_clear_cache_by_class): clearing wrong cache.
+
+Fri Mar	 3 21:22:42 2006  Tanaka Akira	<akr@m17n.org>
 
 	* lib/fileutils.rb (FileUtils.cp_r): implement :remove_destination
 	  option.
 
 	* ext/extmk.rb: use :remove_destination to install extension libraries
-	  to avoid SEGV.
-	  [ruby-dev:28417]
+	  to avoid SEGV.  [ruby-dev:28417]
 
-Fri Mar  3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
+Fri Mar	 3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/dl/.cvsignore: ignore callback.h.
 
@@ -451,7 +786,40 @@ Fri Mar  3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/socket/.cvsignore: ignore constants.h.
 
-Thu Mar  2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu Mar	 2 18:58:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_fd_writable): should not re-schedule output
+	  from KILLED thread (must be error printing).
+
+Thu Mar	 2 09:12:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_flatten_bang): allow specifying recursion
+	  level.  [ruby-talk:182170]
+
+	* array.c (rb_ary_flatten): ditto.
+
+Thu Mar	 2 08:02:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_heap): a heap_slots may overflow.  a patch from Stefan
+	  Weil <weil at mail.berlios.de>.
+
+Wed Mar	 1 17:13:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call): use separate cache for fcall/vcall
+	  invocation.
+
+	* eval.c (rb_eval): NODE_FCALL, NODE_VCALL can call local
+	  functions.
+
+	* eval.c (rb_mod_local): a new method to specify newly added
+	  visibility "local".
+
+	* eval.c (search_method): search for local methods which are
+	  visible only from the current class.
+
+	* class.c (rb_class_local_methods): a method to list local methods.
+
+Thu Mar	 2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
 	  [ruby-core:7474]
@@ -475,6 +843,16 @@ Wed Mar  1 00:15:51 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* lib/rdoc/parsers/parse_rb.rb (read_escape): could not handle /\^/.
 	  merged Mr. Ishizuka's lib/irb/ruby-lex.rb 's patch rev 1.29.
 	  [ruby-talk:181631] [ruby-dev:28404]
+
+Tue Feb 28 19:32:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): add BasicObject class as a top level
+	  BlankSlate class.
+
+Mon Feb 27 00:19:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (SYM2ID): should not cast to signed long.
+	  [ruby-core:07414]
 
 Fri Feb 24 20:21:38 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 

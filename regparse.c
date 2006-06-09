@@ -4487,11 +4487,11 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
   return 0;
 }
 
-static char* PopularQStr[] = {
+static const char* PopularQStr[] = {
   "?", "*", "+", "??", "*?", "+?"
 };
 
-static char* ReduceQStr[] = {
+static const char* ReduceQStr[] = {
   "", "", "*", "*?", "??", "+ and ??", "+? and ?"
 };
 

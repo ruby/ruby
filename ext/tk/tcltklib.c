@@ -6217,7 +6217,11 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             char *s;
             int  len;
 
+<<<<<<< tcltklib.c
+	    StringValue(str);
+=======
             StringValue(str);
+>>>>>>> 1.45
             s = Tcl_GetByteArrayFromObj(Tcl_NewStringObj(RSTRING(str)->ptr, 
                                                          RSTRING(str)->len), 
                                         &len);

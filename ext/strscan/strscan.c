@@ -263,8 +263,7 @@ strscan_s_mustc(self)
  * Reset the scan pointer (index 0) and clear matching data.
  */
 static VALUE
-strscan_reset(self)
-    VALUE self;
+strscan_reset(VALUE self)
 {
     struct strscanner *p;
 
@@ -600,8 +599,7 @@ strscan_scan_until(self, re)
  *   s.exist? /e/            # -> nil
  */
 static VALUE
-strscan_exist_p(self, re)
-    VALUE self, re;
+strscan_exist_p(VALUE self, VALUE re)
 {
     return strscan_do_scan(self, re, 0, 0, 0);
 }
@@ -962,8 +960,7 @@ strscan_matched_size(self)
  * This method is obsolete; use #matched_size instead.
  */
 static VALUE
-strscan_matchedsize(self)
-    VALUE self;
+strscan_matchedsize(VALUE self)
 {
     rb_warning("StringScanner#matchedsize is obsolete; use #matched_size instead");
     return strscan_matched_size(self);
@@ -1084,8 +1081,7 @@ strscan_rest_size(self)
  * This method is obsolete; use #rest_size instead.
  */
 static VALUE
-strscan_restsize(self)
-    VALUE self;
+strscan_restsize(VALUE self)
 {
     rb_warning("StringScanner#restsize is obsolete; use #rest_size instead");
     return strscan_rest_size(self);

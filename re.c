@@ -76,8 +76,9 @@ static const char casetable[] = {
 #endif
 
 int
-rb_memcicmp(char *p1, char *p2, long len)
+rb_memcicmp(const void *x, const void *y, long len)
 {
+    const unsigned char *p1 = x, *p2 = y;
     int tmp;
 
     while (len--) {
@@ -88,7 +89,7 @@ rb_memcicmp(char *p1, char *p2, long len)
 }
 
 int
-rb_memcmp(char *p1, char *p2, long len)
+rb_memcmp(const void *p1, const void *p2, long len)
 {
     if (!ruby_ignorecase) {
 	return memcmp(p1, p2, len);
@@ -97,10 +98,10 @@ rb_memcmp(char *p1, char *p2, long len)
 }
 
 long
-rb_memsearch(char *x0, long m, char *y0, long n)
+rb_memsearch(const void *x0, long m, const void *y0, long n)
 {
-    unsigned char *x = (unsigned char *)x0, *y = (unsigned char *)y0;
-    unsigned char *s, *e;
+    const unsigned char *x = x0, *y = y0;
+    const unsigned char *s, *e;
     long i;
     int d;
     unsigned long hx, hy;
@@ -151,7 +152,9 @@ rb_memsearch(char *x0, long m, char *y0, long n)
     return s-y;
 }
 
+#define REG_LITERAL FL_USER5
 #define REG_CASESTATE  FL_USER0
+
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER1
 #define KCODE_SJIS  FL_USER2
@@ -167,9 +170,7 @@ rb_memsearch(char *x0, long m, char *y0, long n)
 #define ARG_KCODE_UTF8       (ARG_KCODE_UNIT * 4)
 #define ARG_KCODE_MASK       (ARG_KCODE_UNIT * 7)
 
-
 static int reg_kcode = DEFAULT_KCODE;
-
 
 static int char_to_option(int c)
 {
@@ -505,13 +506,13 @@ rb_reg_to_s(VALUE re)
     int options, opt;
     const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
     long len;
-    const char* ptr;
+    const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
 
     rb_reg_check(re);
 
     options = RREGEXP(re)->ptr->options;
-    ptr = RREGEXP(re)->str;
+    ptr = (UChar*)RREGEXP(re)->str;
     len = RREGEXP(re)->len;
   again:
     if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
@@ -566,7 +567,7 @@ rb_reg_to_s(VALUE re)
 	}
 	if (err) {
 	    options = RREGEXP(re)->ptr->options;
-	    ptr = RREGEXP(re)->str;
+	    ptr = (UChar*)RREGEXP(re)->str;
 	    len = RREGEXP(re)->len;
 	}
     }
@@ -583,7 +584,7 @@ rb_reg_to_s(VALUE re)
     }
 
     rb_str_buf_cat2(str, ":");
-    rb_reg_expr_str(str, ptr, len);
+    rb_reg_expr_str(str, (char*)ptr, len);
     rb_str_buf_cat2(str, ")");
 
     OBJ_INFECT(str, re);
@@ -1247,12 +1248,12 @@ match_captures(VALUE match)
 }
 
 static int
-name_to_backref_number(struct re_registers *regs, VALUE regexp, char* name, char* name_end)
+name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
   int num;
 
   num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
-            (unsigned char* )name, (unsigned char* )name_end, regs);
+            (const unsigned char* )name, (const unsigned char* )name_end, regs);
   if (num >= 1) {
     return num;
   }
@@ -1301,7 +1302,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
         }
       }
       else {
-        char *p;
+        const char *p;
         int num;
 
         switch (TYPE(idx)) {
@@ -1336,6 +1337,8 @@ match_entry(VALUE match, long n)
 
 /*
  *  call-seq:
+    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
  *     mtch.select([index]*)   => array
  *  
  *  Uses each <i>index</i> to access the matching values, returning an array of
@@ -1437,6 +1440,11 @@ rb_reg_initialize(VALUE obj, const char *s, long len,
 {
     struct RRegexp *re = RREGEXP(obj);
 
+    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
+    rb_check_frozen(obj);
+    if (FL_TEST(obj, REG_LITERAL))
+	rb_raise(rb_eSecurityError, "can't modify literal regexp");
     if (re->ptr) onig_free(re->ptr);
     if (re->str) free(re->str);
     re->ptr = 0;
@@ -1459,6 +1467,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len,
     if (options & ARG_KCODE_MASK) {
 	kcode_reset_option();
     }
+    if (ce) FL_SET(obj, REG_LITERAL);
 }
 
 static VALUE
@@ -1760,7 +1769,6 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     long len;
     int flags = 0;
 
-    rb_check_frozen(self);
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }

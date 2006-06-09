@@ -17,7 +17,7 @@
 #include "st.h"
 #include "node.h"
 
-VALUE rb_cArray, rb_cValues;
+VALUE rb_cArray;
 
 static ID id_cmp;
 
@@ -169,38 +169,6 @@ rb_ary_new4(long n, const VALUE *elts)
     return ary;
 }
 
-VALUE
-rb_values_new(long n, ...)
-{
-    va_list ar;
-    VALUE val;
-    long i;
-
-    val = ary_new(rb_cValues, n);
-    va_start(ar, n);
-    for (i=0; i<n; i++) {
-	RARRAY(val)->ptr[i] = va_arg(ar, VALUE);
-    }
-    va_end(ar);
-    RARRAY(val)->len = n;
-
-    return val;
-}
-
-VALUE
-rb_values_new2(long n, const VALUE *elts)
-{
-    VALUE val;
-
-    val = ary_new(rb_cValues, n);
-    if (n > 0 && elts) {
-	RARRAY(val)->len = n;
-	MEMCPY(RARRAY(val)->ptr, elts, VALUE, n);
-    }
-
-    return val;
-}
-
 static VALUE
 ary_make_shared(VALUE ary)
 {
@@ -235,21 +203,9 @@ ary_shared_array(VALUE klass, VALUE ary)
 }
 
 VALUE
-rb_values_from_ary(VALUE ary)
-{
-    return ary_shared_array(rb_cValues, ary);
-}
-
-VALUE
-rb_ary_from_values(VALUE val)
-{
-    return ary_shared_array(rb_cArray, val);
-}
-
-VALUE
 rb_assoc_new(VALUE car, VALUE cdr)
 {
-    return rb_values_new(2, car, cdr);
+    return rb_ary_new3(2, car, cdr);
 }
 
 static VALUE
@@ -2099,7 +2055,7 @@ static VALUE
 rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
     VALUE item, arg1, arg2;
-    long beg, end, len;
+    long beg = 0, end = 0, len = 0;
     VALUE *p, *pend;
     int block_p = Qfalse;
 
@@ -2739,27 +2695,30 @@ rb_ary_nitems(VALUE ary)
 }
 
 static long
-flatten(VALUE ary, long idx, VALUE ary2, VALUE memo)
+flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
 {
     VALUE id;
     long i = idx;
     long n, lim = idx + RARRAY(ary2)->len;
 
+    level--;
     id = rb_obj_id(ary2);
     if (rb_ary_includes(memo, id)) {
 	rb_raise(rb_eArgError, "tried to flatten recursive array");
     }
     rb_ary_push(memo, id);
     rb_ary_splice(ary, idx, 1, ary2);
-    while (i < lim) {
-	VALUE tmp;
+    if (level != 0) {
+	while (i < lim) {
+	    VALUE tmp;
 
-	tmp = rb_check_array_type(rb_ary_elt(ary, i));
-	if (!NIL_P(tmp)) {
-	    n = flatten(ary, i, tmp, memo);
-	    i += n; lim += n;
+	    tmp = rb_check_array_type(rb_ary_elt(ary, i));
+	    if (!NIL_P(tmp)) {
+		n = flatten(ary, i, tmp, memo, level);
+		i += n; lim += n;
+	    }
+	    i++;
 	}
-	i++;
     }
     rb_ary_pop(memo);
 
@@ -2768,25 +2727,34 @@ flatten(VALUE ary, long idx, VALUE ary2, VALUE memo)
 
 /*
  *  call-seq:
- *     array.flatten! -> array or nil
+ *     array.flatten!        -> array or nil
+ *     array.flatten!(level) -> array or nil
  *  
  *  Flattens _self_ in place.
  *  Returns <code>nil</code> if no modifications were made (i.e.,
- *  <i>array</i> contains no subarrays.)
+ *  <i>array</i> contains no subarrays.)  If the optional <i>level</i>
+ *  argument determins the level of recursion to flatten.
  *     
  *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!   #=> [1, 2, 3, 4, 5]
- *     a.flatten!   #=> nil
- *     a            #=> [1, 2, 3, 4, 5]
+ *     a.flatten!    #=> [1, 2, 3, 4, 5]
+ *     a.flatten!    #=> nil
+ *     a             #=> [1, 2, 3, 4, 5]
+ *     a = [ 1, 2, [3, [4, 5] ] ]
+ *     a.flatten!(1) #=> [1, 2, 3, [4, 5]]
  */
 
 static VALUE
-rb_ary_flatten_bang(VALUE ary)
+rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 {
     long i = 0;
     int mod = 0;
+    int level = -1;
     VALUE memo = Qnil;
+    VALUE lv;
 
+    rb_scan_args(argc, argv, "01", &lv);
+    if (!NIL_P(lv)) level = FIX2INT(lv);
+    if (level == 0) return ary;
     while (i<RARRAY(ary)->len) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
 	VALUE tmp;
@@ -2796,7 +2764,7 @@ rb_ary_flatten_bang(VALUE ary)
 	    if (NIL_P(memo)) {
 		memo = rb_ary_new();
 	    }
-	    i += flatten(ary, i, tmp, memo);
+	    i += flatten(ary, i, tmp, memo, level);
 	    mod = 1;
 	}
 	i++;
@@ -2808,22 +2776,26 @@ rb_ary_flatten_bang(VALUE ary)
 /*
  *  call-seq:
  *     array.flatten -> an_array
+ *     array.flatten(level) -> an_array
  *  
  *  Returns a new array that is a one-dimensional flattening of this
  *  array (recursively). That is, for every element that is an array,
- *  extract its elements into the new array.
+ *  extract its elements into the new array.  If the optional
+ *  <i>level</i> argument determins the level of recursion to flatten.
  *     
  *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
  *     a = [ s, t, 9, 10 ]       #=> [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
  *     a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+ *     a = [ 1, 2, [3, [4, 5] ] ]
+ *     a.flatten(1)              #=> [1, 2, 3, [4, 5]]
  */
 
 static VALUE
-rb_ary_flatten(VALUE ary)
+rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 {
     ary = rb_ary_dup(ary);
-    rb_ary_flatten_bang(ary);
+    rb_ary_flatten_bang(argc, argv, ary);
     return ary;
 }
 
@@ -2918,11 +2890,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
-    rb_define_method(rb_cArray, "flatten", rb_ary_flatten, 0);
-    rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, 0);
+    rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
+    rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
 
     id_cmp = rb_intern("<=>");
-
-    rb_cValues  = rb_define_class("Values", rb_cArray);
 }
