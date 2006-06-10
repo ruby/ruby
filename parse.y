@@ -620,7 +620,6 @@ program		:  {
 		    /*%
 			lex_state = EXPR_BEG;
 			class_nest = !parser->toplevel_p;
-			$$ = Qnil;
 		    %*/
 		    }
 		  compstmt
@@ -915,7 +914,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch3(opassign, $1, $2, $3);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args ']' tOP_ASGN command_call
+		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
 		    {
 		    /*%%%*/
 			NODE *args = $3;
@@ -1384,7 +1383,7 @@ mlhs_node	: variable
 			$$ = $1;
 		    %*/
 		    }
-		| primary_value '[' opt_call_args ']'
+		| primary_value '[' opt_call_args rbracket
 		    {
 		    /*%%%*/
 			$$ = aryset($1, $3);
@@ -1458,7 +1457,7 @@ lhs		: variable
 			$$ = dispatch1(var_field, $1);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args ']'
+		| primary_value '[' opt_call_args rbracket
 		    {
 		    /*%%%*/
 			$$ = aryset($1, $3);
@@ -1704,7 +1703,7 @@ arg		: lhs '=' arg
 			$$ = dispatch3(opassign, $1, $2, $3);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args ']' tOP_ASGN arg
+		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
 		    {
 		    /*%%%*/
 			NODE *args;
@@ -3303,7 +3302,7 @@ method_call	: operation paren_args
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args ']'
+		| primary_value '[' opt_call_args rbracket
 		    {
 		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_SELF)
@@ -4329,6 +4328,9 @@ opt_nl		: /* none */
 		;
 
 rparen		: opt_nl ')'
+		;
+
+rbracket	: opt_nl ']'
 		;
 
 trailer		: /* none */

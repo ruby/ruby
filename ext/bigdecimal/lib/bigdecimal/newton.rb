@@ -60,7 +60,7 @@ module Newton
       begin
         fact *= p5
         if fact < minfact then
-          raize "Failed to reduce function values."
+          raise "Failed to reduce function values."
         end
         for i in 0...n do
           x[i] = xs[i] - dx[i]*fact

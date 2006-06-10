@@ -1,3 +1,15 @@
+Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/newton.rb (Newton::nlsolve): typo
+	  fixed: raize -> raise.  [ruby-talk:196608]
+
+Sat Jun 10 17:49:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_ord): new method.
+
+	* parse.y (rbracket): allow optional newline before closing
+	  brackets.
+
 Sat Jun 10 15:12:29 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_f_method_name, rb_f_callee_name): new functions.

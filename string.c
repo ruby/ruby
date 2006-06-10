@@ -4041,6 +4041,28 @@ rb_str_intern(VALUE s)
 
 /*
  *  call-seq:
+ *     str.ord   => integer
+ *  
+ *  Return the <code>Integer</code> ordinal of a one-character string.
+ *     
+ *     "a".ord         #=> 97
+ */
+
+VALUE
+rb_str_ord(VALUE s)
+{
+    int c;
+
+    if (RSTRING(s)->len != 1) {
+	rb_raise(rb_eTypeError,
+		 "expacted a characer, but string of size %d given",
+		 RSTRING(s)->len);
+    }
+    c = RSTRING(s)->ptr[0];
+    return INT2NUM(c);
+}
+/*
+ *  call-seq:
  *     str.sum(n=16)   => integer
  *  
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
@@ -4309,6 +4331,7 @@ Init_String(void)
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
     rb_define_method(rb_cString, "intern", rb_str_intern, 0);
     rb_define_method(rb_cString, "to_sym", rb_str_intern, 0);
+    rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
 
