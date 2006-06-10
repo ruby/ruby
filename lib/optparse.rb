@@ -1425,6 +1425,42 @@ class OptionParser
     end
   end
 
+=begin
+--- OptionParser#getopts(argv, single_options, *long_options)
+--- OptionParser.getopts(argv, single_options, *long_options)
+    Wrapper methods for getopts.rb.
+=end #'#"#`#
+  def getopts(argv, single_options, *long_options)
+    result = {}
+
+    single_options.scan(/(.)(:)?/) do |opt, val|
+      if val
+        result[opt] = nil
+        define("-#{opt} VAL") {|val| result[opt] = val}
+      else
+        result[opt] = false
+        define("-#{opt}") {result[opt] = true}
+      end
+    end if single_options
+
+    long_options.each do |arg|
+      opt, val = arg.split(':', 2)
+      if val
+        result[opt] = val.empty? ? nil : val
+        define("--#{opt} VAL") {|val| result[opt] = val}
+      else
+        result[opt] = false
+        define("--#{opt}") {result[opt] = true}
+      end
+    end
+
+    order!(argv)
+    result
+  end
+
+  def self.getopts(*args)
+    new.getopts(*args)
+  end
 
 =begin private
 --- OptionParser#visit(id, *args) {block}
@@ -1528,7 +1564,6 @@ class OptionParser
     env = ENV[env] || ENV[env.upcase] or return
     parse(*Shellwords.shellwords(env))
   end
-
 
 =begin
 = Acceptable argument classes
@@ -1829,6 +1864,21 @@ Extends command line arguments array to parse itself.
     def order!(&blk) options.order!(self, &blk) end
     def permute!() options.permute!(self) end
     def parse!() options.parse!(self) end
+
+=begin
+--- OptionParser::Arguable#getopts(single_options, *long_options)
+    Substitution of getopts is possible as follows.
+
+      def getopts(*args)
+        ($OPT = ARGV.getopts(*args)).each do |opt, val|
+          eval "$OPT_#{opt.gsub(/[^A-Za-z0-9_]/, '_')} = val"
+        end
+      rescue OptionParser::ParseError
+      end
+=end #'#"#`#
+    def getopts(*args)
+      options.getopts(*args)
+    end
 
 =begin private
 Initializes instance variable.
