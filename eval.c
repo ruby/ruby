@@ -7699,6 +7699,15 @@ rb_exec_end_proc(void)
  *  If called from inside of an aliased method it will return the original
  *  nonaliased name.
  *  If called outside of a method, it returns <code>nil</code>.
+ *  
+ *    def foo
+ *      __method__
+ *    end
+ *    alias bar foo
+ *    
+ *    foo                # => :foo
+ *    bar                # => :foo
+ *  
  *  See also <code>\_\_callee__</code>.
  *
  */
@@ -7723,6 +7732,15 @@ rb_f_method_name(void)
  *  If called from inside of an aliased method it will return the aliased
  *  name.
  *  If called outside of a method, it returns <code>nil</code>.
+ *  
+ *    def foo
+ *      __callee__
+ *    end
+ *    alias bar foo
+ *    
+ *    foo                # => :foo
+ *    bar                # => :bar
+ *  
  *  See also <code>\_\_method__</code>.
  *
  */
@@ -8465,6 +8483,7 @@ rb_proc_yield(int argc, VALUE *argv, VALUE proc)
 	return proc_invoke(proc, rb_ary_new4(argc, argv), Qundef, 0, 0);
 }
 
+/* :nodoc: */
 static VALUE
 nil_yield(int argc, VALUE *argv)
 {
