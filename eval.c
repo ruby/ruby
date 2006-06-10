@@ -7691,6 +7691,54 @@ rb_exec_end_proc(void)
     ruby_safe_level = safe;
 }
 
+/*
+ *  call-seq:
+ *     __method__         => string
+ *  
+ *  Returns the name of the current method as a Symbol.
+ *  If called from inside of an aliased method it will return the original
+ *  nonaliased name.
+ *  If called outside of a method, it returns <code>nil</code>.
+ *  See also <code>\_\_callee__</code>.
+ *
+ */
+
+static VALUE
+rb_f_method_name(void)
+{
+    struct FRAME* prev = ruby_frame->prev;
+    if (prev && prev->this_func) {
+	return ID2SYM(prev->this_func);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+/*
+ *  call-seq:
+ *     __callee__         => string
+ *  
+ *  Returns the name of the current method as Symbol.
+ *  If called from inside of an aliased method it will return the aliased
+ *  name.
+ *  If called outside of a method, it returns <code>nil</code>.
+ *  See also <code>\_\_method__</code>.
+ *
+ */
+
+static VALUE
+rb_f_callee_name(void)
+{
+    struct FRAME* prev = ruby_frame->prev;
+    if (prev && prev->callee) {
+	return ID2SYM(prev->callee);
+    }
+    else {
+	return Qnil;
+    }
+}
+
 void
 Init_eval(void)
 {
@@ -7744,6 +7792,9 @@ Init_eval(void)
     rb_define_global_function("throw", rb_f_throw, -1);
     rb_define_global_function("global_variables", rb_f_global_variables, 0); /* in variable.c */
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
+
+    rb_define_global_function("__method__", rb_f_method_name, 0);
+    rb_define_global_function("__callee__", rb_f_callee_name, 0);
 
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
