@@ -1,4 +1,4 @@
-Sun Jun %-2d 04:38:20 2006  U-HUDIE\nobu,S-1-5-21-3746871489-166115513-3294629105-1005  <nobu@ruby-lang.org>
+Sun Jun 11 04:38:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_to_proc): imported Symbol#to_proc from ActiveSupprot.
 
