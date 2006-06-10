@@ -1055,6 +1055,31 @@ sym_to_sym(VALUE sym)
     return sym;
 }
 
+static VALUE
+sym_call(VALUE args, VALUE sym)
+{
+    VALUE obj = RARRAY(args)->ptr[0];
+
+    return rb_funcall(obj, SYM2ID(sym),
+		      RARRAY(args)->len - 1,
+		      RARRAY(args)->ptr + 1);
+}
+
+/*
+ * call-seq:
+ *   sym.to_proc
+ *
+ * Returns a _Proc_ object which respond to the given method by _sym_.
+ *
+ *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
+ */
+
+static VALUE
+sym_to_proc(VALUE sym)
+{
+    return rb_proc_new(sym_call, sym);
+}
+
 
 /***********************************************************************
  *
@@ -2453,7 +2478,8 @@ Init_Object(void)
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1); 
+    rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
+    rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1);
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
