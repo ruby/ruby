@@ -289,14 +289,7 @@ class GetoptLong
     @canonical_names.clear
     @argument_flags.clear
 
-    arguments.each do |arg|
-      #
-      # Each argument must be an Array.
-      #
-      if !arg.is_a?(Array)
-	raise ArgumentError, "the option list contains non-Array argument"
-      end
-
+    arguments.each do |*arg|
       #
       # Find an argument flag and it set to `argument_flag'.
       #

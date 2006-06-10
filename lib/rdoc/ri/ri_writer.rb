@@ -13,7 +13,7 @@ module RI
     # by %xx)
 
     def RiWriter.internal_to_external(name)
-      name.gsub(/\W/) { sprintf("%%%02x", $&[0]) }
+      name.gsub(/\W/) { "%%%02x" % $&[0].unpack('C') }
     end
 
     # And the reverse operation

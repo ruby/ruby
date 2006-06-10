@@ -183,7 +183,7 @@ module SM
       unless SPECIAL.empty?
         SPECIAL.each do |regexp, attr|
           str.scan(regexp) do
-            attrs.set_attrs($`.length, $1.length, attr | Attribute::SPECIAL)
+            attrs.set_attrs($`.length, $&.length, attr | Attribute::SPECIAL)
           end
         end
       end
@@ -215,6 +215,8 @@ module SM
       add_html("b",  :BOLD)
       add_html("tt",   :TT)
       add_html("code", :TT)
+
+      add_special(/<!--(.*?)-->/, :COMMENT)
     end
 
     def add_word_pair(start, stop, name)
@@ -293,7 +295,7 @@ module SM
 
       # skip leading invisible text
       i = 0
-      i += 1 while i < str_len and @str[i].zero?
+      i += 1 while i < str_len and @str[i] == "\0"
       start_pos = i
 
       # then scan the string, chunking it on attribute changes
@@ -319,7 +321,7 @@ module SM
         # move on, skipping any invisible characters
         begin
           i += 1
-        end while i < str_len and @str[i].zero?
+        end while i < str_len and @str[i] == "\0"
       end
       
       # tidy up trailing text

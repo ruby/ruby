@@ -167,9 +167,9 @@ module IRB
       def match(chrs, op = "")
 	D_DETAIL.print "match>: ", chrs, "op:", op, "\n"
 	if chrs.empty?
-	  if @preproc.nil? || @preproc.call(op, chrs)
+	  if @preproc.nil? || @preproc.yield(op, chrs)
 	    DOUT.printf(D_DETAIL, "op1: %s\n", op)
-	    @postproc.call(op, chrs)
+	    @postproc.yield(op, chrs)
 	  else
 	    nil
 	  end
@@ -180,9 +180,9 @@ module IRB
 	      return ret
 	    else
 	      chrs.unshift ch
-	      if @postproc and @preproc.nil? || @preproc.call(op, chrs)
+	      if @postproc and @preproc.nil? || @preproc.yield(op, chrs)
 		DOUT.printf(D_DETAIL, "op2: %s\n", op.inspect)
-		ret = @postproc.call(op, chrs)
+		ret = @postproc.yield(op, chrs)
 		return ret
 	      else
 		return nil
@@ -190,9 +190,9 @@ module IRB
 	    end
 	  else
 	    chrs.unshift ch
-	    if @postproc and @preproc.nil? || @preproc.call(op, chrs)
+	    if @postproc and @preproc.nil? || @preproc.yield(op, chrs)
 	      DOUT.printf(D_DETAIL, "op3: %s\n", op)
-	      @postproc.call(op, chrs)
+	      @postproc.yield(op, chrs)
 	      return ""
 	    else
 	      return nil
@@ -211,9 +211,9 @@ module IRB
 	  ch = io.getc_of_rests
 	end
 	if ch.nil?
-	  if @preproc.nil? || @preproc.call(op, io)
+	  if @preproc.nil? || @preproc.yield(op, io)
 	    D_DETAIL.printf("op1: %s\n", op)
-	    @postproc.call(op, io)
+	    @postproc.yield(op, io)
 	  else
 	    nil
 	  end
@@ -223,18 +223,18 @@ module IRB
 	      ret
 	    else
 	      io.ungetc ch
-	      if @postproc and @preproc.nil? || @preproc.call(op, io)
+	      if @postproc and @preproc.nil? || @preproc.yield(op, io)
 		DOUT.exec_if{D_DETAIL.printf "op2: %s\n", op.inspect}
-		@postproc.call(op, io)
+		@postproc.yield(op, io)
 	      else
 		nil
 	      end
 	    end
 	  else
 	    io.ungetc ch
-	    if @postproc and @preproc.nil? || @preproc.call(op, io)
+	    if @postproc and @preproc.nil? || @preproc.yield(op, io)
 	      D_DETAIL.printf("op3: %s\n", op)
-	      @postproc.call(op, io)
+	      @postproc.yield(op, io)
 	    else
 	      nil
 	    end

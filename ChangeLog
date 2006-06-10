@@ -1,4 +1,16 @@
-Sat Jun %-2d 08:17:23 2006  U-HUDIE\nobu,S-1-5-21-3746871489-166115513-3294629105-1005  <nobu@ruby-lang.org>
+Sat Jun 10 10:13:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/getoptlong.rb (GetoptLong#set_options): recieve arguments
+	  as Array.
+
+	* lib/irb/slex.rb: use Proc#yield.
+
+	* lib/rdoc/markup/simple_markup/inline.rb: follow the new behavior
+	  of String#[].
+
+	* lib/rdoc/ri/ri_write.rb: ditto.
+
+Sat Jun 10 08:17:23 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (log2): may be a macro.
 
