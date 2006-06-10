@@ -1,7 +1,17 @@
+Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/newton.rb (Newton::nlsolve): typo
+	  fixed: raize -> raise.  [ruby-talk:196608]
+
 Thu Jun  8 14:19:17 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_read, rb_w32_write): new functions.
 	  use recv() and send() when fd is socket. fixed: [ruby-dev:28694]
+
+Wed Jun  7 16:22:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::make_tmpname): put dot between
+	  basename and pid.  [ruby-talk:196272]
 
 Wed Jun  7 14:53:04 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -32,6 +42,7 @@ Wed Jun  7 10:45:10 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  instead of socket().
 	  ifs socket support is backported from trunk.
 
+>>>>>>> 1.2673.2.1622
 Wed Jun  7 09:14:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): binding for the return event hook should have
