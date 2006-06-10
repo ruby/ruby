@@ -1,3 +1,7 @@
+Sun Jun %-2d 08:30:33 2006  U-HUDIE\nobu,S-1-5-21-3746871489-166115513-3294629105-1005  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#getopts): new methods.
+
 Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/newton.rb (Newton::nlsolve): typo
