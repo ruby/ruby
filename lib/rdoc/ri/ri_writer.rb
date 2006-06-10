@@ -13,7 +13,7 @@ module RI
     # by %xx)
 
     def RiWriter.internal_to_external(name)
-      name.gsub(/\W/) { "%%%02x" % $&[0].unpack('C') }
+      name.gsub(/\W/) { "%%%02x" % $&[0].ord }
     end
 
     # And the reverse operation
