@@ -1877,7 +1877,7 @@ Extends command line arguments array to parse itself.
       end
 =end #'#"#`#
     def getopts(*args)
-      options.getopts(*args)
+      options.getopts(self, *args)
     end
 
 =begin private
