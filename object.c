@@ -1060,9 +1060,9 @@ sym_call(VALUE args, VALUE sym)
 {
     VALUE obj = RARRAY(args)->ptr[0];
 
-    return rb_funcall(obj, SYM2ID(sym),
-		      RARRAY(args)->len - 1,
-		      RARRAY(args)->ptr + 1);
+    return rb_funcall3(obj, (ID)sym,
+		       RARRAY(args)->len - 1,
+		       RARRAY(args)->ptr + 1);
 }
 
 /*
@@ -1077,7 +1077,7 @@ sym_call(VALUE args, VALUE sym)
 static VALUE
 sym_to_proc(VALUE sym)
 {
-    return rb_proc_new(sym_call, sym);
+    return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
 }
 
 

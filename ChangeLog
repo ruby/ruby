@@ -1,3 +1,7 @@
+Sun Jun 11 23:16:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (sym_call): disallow to call private methods.
+
 Sun Jun 11 09:56:41 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.h (write): not need to define on bcc.
