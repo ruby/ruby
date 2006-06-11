@@ -1,3 +1,7 @@
+Sun Jun 11 10:00:57 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.h (write): not need to define on bcc.
+
 Sun Jun 11 08:30:33 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): new methods.

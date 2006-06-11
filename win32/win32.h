@@ -130,7 +130,6 @@ extern DWORD rb_w32_osid(void);
 #define read(h, b, l)		_read(h, b, l)
 #define tell(h)			_tell(h)
 #define unlink(p)		_unlink(p)
-#define write(h, b, l)		_write(h, b, l)
 #define _open			_sopen
 #define sopen			_sopen
 #undef fopen
