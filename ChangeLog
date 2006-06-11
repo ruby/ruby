@@ -1,3 +1,7 @@
+Sun Jun 11 09:56:41 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.h (write): not need to define on bcc.
+
 Sun Jun 11 08:30:33 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): new methods.
@@ -8,7 +12,7 @@ Sun Jun 11 07:27:11 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Sun Jun 11 04:38:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* object.c (sym_to_proc): imported Symbol#to_proc from ActiveSupprot.
+	* object.c (sym_to_proc): imported Symbol#to_proc from ActiveSupport.
 
 Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

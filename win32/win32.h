@@ -119,7 +119,6 @@ extern DWORD rb_w32_osid(void);
 #define filelength(h)		_filelength(h)
 #define mktemp(t)		_mktemp(t)
 #define tell(h)			_tell(h)
-#define write(h, b, l)		_write(h, b, l)
 #define _open			_sopen
 #define sopen			_sopen
 #undef fstat
