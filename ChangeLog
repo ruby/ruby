@@ -1,3 +1,8 @@
+Mon Jun 12 22:25:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): adjust precision length to prevent
+	  splitting multi-byte characters.  [ruby-list:42389]
+
 Sun Jun 11 23:20:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Arguable#getopts): pass self to the

@@ -13,6 +13,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "re.h"
 #include <ctype.h>
 #include <math.h>
 
@@ -412,6 +413,23 @@ rb_f_sprintf(argc, argv)
 		    if (prec < len) {
 			len = prec;
 		    }
+		}
+		{
+		    char *s, *send;
+		    long l;
+
+			s = RSTRING(str)->ptr;
+			send = s + RSTRING(str)->len;
+			l = 0;
+			while (s < send) {
+			    long n = mbclen(*s);
+			    if (l + n > len) {
+				len = l;
+				break;
+			    }
+			    l += n;
+			    s += n;
+			}
 		}
 		if (flags&FWIDTH) {
 		    if (width > len) {
