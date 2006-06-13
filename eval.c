@@ -254,7 +254,7 @@ static int vis_mode;
 #define VIS_PROTECTED 2
 #define VIS_MODFUNC   5
 #define VIS_LOCAL     8
-#define VIS_MASK     16
+#define VIS_MASK     15
 #define VIS_SET(f)  (vis_mode=(f))
 #define VIS_TEST(f) (vis_mode&(f))
 #define VIS_MODE()  (vis_mode)
@@ -5555,6 +5555,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 {
     int i;
     int nopt = 0;
+    int npost = 0;
 
     if (nd_type(node) != NODE_ARGS) {
 	rb_bug("no argument-node");
@@ -5591,18 +5592,23 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	}
     }
     argv += i; argc -= i;
+    if (node->nd_rest && nd_type(node->nd_rest) == NODE_POSTARG) {
+	npost = node->nd_rest->nd_head->nd_alen;
+    }
     if (node->nd_opt) {
 	NODE *opt = node->nd_opt;
+	int ac = argc - npost;
 
-	while (opt && argc) {
+	while (opt && ac) {
 	    assign(recv, opt->nd_head, *argv, 1);
-	    argv++; argc--;
+	    argv++; ac--;
 	    ++i;
 	    opt = opt->nd_next;
 	}
 	if (opt) {
 	    rb_eval(recv, opt);
 	}
+	argc = ac + npost;
     }
     if (!node->nd_rest) {
 	i = nopt;
@@ -5613,9 +5619,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	if (argc > 0) {
 	    int n = 1;
 	    v = rb_ary_new4(argc,argv);
-	    if (nd_type(node->nd_rest) == NODE_POSTARG) {
-		n += node->nd_rest->nd_head->nd_alen;
-	    }
+	    n += npost;
 	    i += n*256;
 	}
 	else {

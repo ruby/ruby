@@ -13,6 +13,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "re.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>
@@ -428,6 +429,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			len = prec;
 		    }
 		}
+		/* need to adjust multi-byte string pos */
 		if (flags&FWIDTH) {
 		    if (width > len) {
 			CHECK(width);

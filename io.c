@@ -2039,7 +2039,7 @@ rb_getc(FILE *f)
 static VALUE
 rb_io_readchar(VALUE io)
 {
-    VALUE c = rb_io_getc(io);
+    VALUE c = rb_io_getc_m(io);
 
     if (NIL_P(c)) {
 	rb_eof_error();
@@ -5356,7 +5356,7 @@ argf_getc(void)
 	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
     else {
-	ch = rb_io_getc(current_file);
+	ch = rb_io_getc_m(current_file);
     }
     if (NIL_P(ch) && next_p != -1) {
 	argf_close(current_file);

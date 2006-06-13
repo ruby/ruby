@@ -3642,7 +3642,6 @@ Init_socket()
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
-    rb_define_global_const("IPsocket", rb_cIPSocket);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
@@ -3650,13 +3649,11 @@ Init_socket()
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
 
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
-    rb_define_global_const("TCPsocket", rb_cTCPSocket);
     rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
     rb_define_method(rb_cTCPSocket, "initialize", tcp_init, -1);
 
 #ifdef SOCKS
     rb_cSOCKSSocket = rb_define_class("SOCKSSocket", rb_cTCPSocket);
-    rb_define_global_const("SOCKSsocket", rb_cSOCKSSocket);
     rb_define_method(rb_cSOCKSSocket, "initialize", socks_init, 2);
 #ifdef SOCKS5
     rb_define_method(rb_cSOCKSSocket, "close", socks_s_close, 0);
@@ -3664,7 +3661,6 @@ Init_socket()
 #endif
 
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
-    rb_define_global_const("TCPserver", rb_cTCPServer);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
     rb_define_method(rb_cTCPServer, "accept_nonblock", tcp_accept_nonblock, 0);
     rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
@@ -3672,7 +3668,6 @@ Init_socket()
     rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
 
     rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
-    rb_define_global_const("UDPsocket", rb_cUDPSocket);
     rb_define_method(rb_cUDPSocket, "initialize", udp_init, -1);
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);
     rb_define_method(rb_cUDPSocket, "bind", udp_bind, 2);
@@ -3680,7 +3675,6 @@ Init_socket()
 
 #ifdef HAVE_SYS_UN_H
     rb_cUNIXSocket = rb_define_class("UNIXSocket", rb_cBasicSocket);
-    rb_define_global_const("UNIXsocket", rb_cUNIXSocket);
     rb_define_method(rb_cUNIXSocket, "initialize", unix_init, 1);
     rb_define_method(rb_cUNIXSocket, "path", unix_path, 0);
     rb_define_method(rb_cUNIXSocket, "addr", unix_addr, 0);
@@ -3693,7 +3687,6 @@ Init_socket()
     rb_define_singleton_method(rb_cUNIXSocket, "pair", unix_s_socketpair, -1);
 
     rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);
-    rb_define_global_const("UNIXserver", rb_cUNIXServer);
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
     rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, 0);

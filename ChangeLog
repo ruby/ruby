@@ -1,3 +1,22 @@
+Tue Jun 13 17:22:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (Init_socket): remove obsolete constants:
+	  IPsocket, TCPsocket, SOCKSsocket, TCPserver, UDPsocket,
+	  UNIXsocket, UNIXserver.
+
+Tue Jun 13 09:07:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (formal_assign): post splat arguments should have had
+	  higher priority than optional arguments, since they are
+	  mandatory.  [ruby-dev:28715]
+
+	* eval.c (VIS_MASK): broken. should be 15.  [ruby-dev:28715]
+
+	* io.c (argf_getc): should return one-character string.
+	  [ruby-dev:28715]
+
+	* io.c (rb_io_readchar): ditto.
+
 Sun Jun 11 23:20:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_call): disallow to call private methods.
@@ -21,6 +40,7 @@ Sun Jun 11 04:38:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_to_proc): imported Symbol#to_proc from ActiveSupport.
 
+>>>>>>> 1.5068
 Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/newton.rb (Newton::nlsolve): typo
