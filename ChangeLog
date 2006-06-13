@@ -40,7 +40,6 @@ Sun Jun 11 04:38:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_to_proc): imported Symbol#to_proc from ActiveSupport.
 
->>>>>>> 1.5068
 Sat Jun 10 18:02:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/newton.rb (Newton::nlsolve): typo
