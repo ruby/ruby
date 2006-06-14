@@ -1426,16 +1426,23 @@ module RDoc
 
     private 
 
-    def warn(msg)
+    def make_message(msg)
       prefix = "\n" + @input_file_name + ":"
       if @scanner
         prefix << "#{@scanner.line_no}:#{@scanner.char_no}: "
       end
-      $stderr.puts prefix + msg
+      return prefix + msg
+    end
+
+    def warn(msg)
+      return if @options.quiet
+      msg = make_message msg
+      $stderr.puts msg
     end
 
     def error(msg)
-      warn msg
+      msg = make_message msg
+      $stderr.puts msg
       exit(1)
     end
 

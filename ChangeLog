@@ -1,3 +1,8 @@
+Wed Jun 14 15:01:09 2006  Eric Hodel <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser#warn): Don't print
+	  warnings when -q is set.
+
 Wed Jun 14 23:03:53 2006  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check sizeof(rlim_t).
