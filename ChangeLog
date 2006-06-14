@@ -1,3 +1,13 @@
+Wed Jun 14 23:03:53 2006  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: check sizeof(rlim_t).
+	  check setrlimit.
+	
+	* process.c (proc_getrlimit): new method Process.getrlimit.
+	  (proc_setrlimit): new method Process.setrlimit.
+
+	* ruby.h (NUM2ULL): new macro.
+	  
 Mon Jun 12 22:25:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): adjust precision length to prevent

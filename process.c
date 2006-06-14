@@ -1818,6 +1818,115 @@ proc_setpriority(obj, which, who, prio)
 #endif
 }
 
+#if SIZEOF_RLIM_T == SIZEOF_INT
+# define RLIM2NUM(v) UINT2NUM(v)
+# define NUM2RLIM(v) NUM2UINT(v)
+#elif SIZEOF_RLIM_T == SIZEOF_LONG
+# define RLIM2NUM(v) ULONG2NUM(v)
+# define NUM2RLIM(v) NUM2ULONG(v)
+#elif SIZEOF_RLIM_T == SIZEOF_LONG_LONG
+# define RLIM2NUM(v) ULL2NUM(v)
+# define NUM2RLIM(v) NUM2ULL(v)
+#endif
+
+/*
+ *  call-seq:
+ *     Process.getrlimit(resource)   => [cur_limit, max_limit]
+ *
+ *  Gets the resource limit of the process.
+ *  _cur_limit_ means current (soft) limit and
+ *  _max_limit_ means maximum (hard) limit.
+ *
+ *  _resource_ indicates the kind of resource to limit:
+ *  such as <code>Process::RLIMIT_CORE</code>,
+ *  <code>Process::RLIMIT_CPU</code>, etc.
+ *  See Process.setrlimit for details.
+ *
+ *  _cur_limit_ and _max_limit_ may be <code>Process::RLIM_INFINITY</code>,
+ *  <code>Process::RLIM_SAVED_MAX</code> or
+ *  <code>Process::RLIM_SAVED_CUR</code>.
+ *  See Process.setrlimit and the system getrlimit(2) manual for details.
+ */
+
+static VALUE
+proc_getrlimit(VALUE obj, VALUE resource)
+{
+#if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
+    struct rlimit rlim;
+
+    rb_secure(2);
+
+    if (getrlimit(NUM2INT(resource), &rlim) < 0) {
+        rb_sys_fail("getrlimit");
+    }
+    return rb_assoc_new(RLIM2NUM(rlim.rlim_cur), RLIM2NUM(rlim.rlim_max));
+#else
+    rb_notimplement();
+#endif
+}
+
+/*
+ *  call-seq:
+ *     Process.setrlimit(resource, cur_limit, max_limit)        => nil
+ *     Process.setrlimit(resource, cur_limit)                   => nil
+ *
+ *  Sets the resource limit of the process.
+ *  _cur_limit_ means current (soft) limit and
+ *  _max_limit_ means maximum (hard) limit.
+ *
+ *  If _max_limit_ is not given, _cur_limit_ is used.
+ *
+ *  _resource_ indicates the kind of resource to limit.
+ *  The list of resources are OS dependent.
+ *  Ruby may support following resources.
+ *
+ *  [Process::RLIMIT_CORE] core size (bytes) (SUSv3)
+ *  [Process::RLIMIT_CPU] CPU time (seconds) (SUSv3)
+ *  [Process::RLIMIT_DATA] data segment (bytes) (SUSv3)
+ *  [Process::RLIMIT_FSIZE] file size (bytes) (SUSv3)
+ *  [Process::RLIMIT_NOFILE] file descriptors (number) (SUSv3)
+ *  [Process::RLIMIT_STACK] stack size (bytes) (SUSv3)
+ *  [Process::RLIMIT_AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
+ *  [Process::RLIMIT_MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
+ *  [Process::RLIMIT_NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
+ *  [Process::RLIMIT_RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
+ *  [Process::RLIMIT_SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
+ *
+ *  Other <code>Process::RLIMIT_???</code> constants may be defined.
+ *
+ *  _cur_limit_ and _max_limit_ may be <code>Process::RLIM_INFINITY</code>,
+ *  which means that the resource is not limited.
+ *  They may be <code>Process::RLIM_SAVED_MAX</code> or
+ *  <code>Process::RLIM_SAVED_CUR</code> too.
+ *  See system setrlimit(2) manual for details.
+ *
+ */
+
+static VALUE
+proc_setrlimit(int argc, VALUE *argv, VALUE obj)
+{
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
+    VALUE resource, rlim_cur, rlim_max;
+    struct rlimit rlim;
+
+    rb_secure(2);
+
+    rb_scan_args(argc, argv, "21", &resource, &rlim_cur, &rlim_max);
+    if (rlim_max == Qnil)
+        rlim_max = rlim_cur;
+
+    rlim.rlim_cur = NUM2RLIM(rlim_cur);
+    rlim.rlim_max = NUM2RLIM(rlim_max);
+
+    if (setrlimit(NUM2INT(resource), &rlim) < 0) {
+        rb_sys_fail("setrlimit");
+    }
+    return Qnil;
+#else
+    rb_notimplement();
+#endif
+}
+
 static int under_uid_switch = 0;
 static void
 check_uid_switch()
@@ -3433,6 +3542,57 @@ Init_process()
     rb_define_const(rb_mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(rb_mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
     rb_define_const(rb_mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
+#endif
+
+#ifdef HAVE_GETRLIMIT
+    rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
+#endif
+#ifdef HAVE_SETRLIMIT
+    rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
+#endif
+#ifdef RLIM2NUM
+#ifdef RLIM_INFINITY
+    rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
+#endif
+#ifdef RLIM_SAVED_MAX
+    rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", RLIM2NUM(RLIM_SAVED_MAX));
+#endif
+#ifdef RLIM_SAVED_CUR
+    rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", RLIM2NUM(RLIM_SAVED_CUR));
+#endif
+#ifdef RLIMIT_CORE
+    rb_define_const(rb_mProcess, "RLIMIT_CORE", INT2FIX(RLIMIT_CORE));
+#endif
+#ifdef RLIMIT_CPU
+    rb_define_const(rb_mProcess, "RLIMIT_CPU", INT2FIX(RLIMIT_CPU));
+#endif
+#ifdef RLIMIT_DATA
+    rb_define_const(rb_mProcess, "RLIMIT_DATA", INT2FIX(RLIMIT_DATA));
+#endif
+#ifdef RLIMIT_FSIZE
+    rb_define_const(rb_mProcess, "RLIMIT_FSIZE", INT2FIX(RLIMIT_FSIZE));
+#endif
+#ifdef RLIMIT_NOFILE
+    rb_define_const(rb_mProcess, "RLIMIT_NOFILE", INT2FIX(RLIMIT_NOFILE));
+#endif
+#ifdef RLIMIT_STACK
+    rb_define_const(rb_mProcess, "RLIMIT_STACK", INT2FIX(RLIMIT_STACK));
+#endif
+#ifdef RLIMIT_AS
+    rb_define_const(rb_mProcess, "RLIMIT_AS", INT2FIX(RLIMIT_AS));
+#endif
+#ifdef RLIMIT_MEMLOCK
+    rb_define_const(rb_mProcess, "RLIMIT_MEMLOCK", INT2FIX(RLIMIT_MEMLOCK));
+#endif
+#ifdef RLIMIT_NPROC
+    rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
+#endif
+#ifdef RLIMIT_RSS
+    rb_define_const(rb_mProcess, "RLIMIT_RSS", INT2FIX(RLIMIT_RSS));
+#endif
+#ifdef RLIMIT_SBSIZE
+    rb_define_const(rb_mProcess, "RLIMIT_SBSIZE", INT2FIX(RLIMIT_SBSIZE));
+#endif
 #endif
 
     rb_define_module_function(rb_mProcess, "uid", proc_getuid, 0);
