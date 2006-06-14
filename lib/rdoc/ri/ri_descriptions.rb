@@ -95,8 +95,10 @@ module RI
       if @comment.nil? || @comment.empty?
         @comment = old.comment
       else
-        @comment << SM::Flow::RULE.new
-        @comment.concat old.comment
+        unless old.comment.nil? or old.comment.empty? then
+          @comment << SM::Flow::RULE.new
+          @comment.concat old.comment
+        end
       end
     end
 
