@@ -1,3 +1,15 @@
+Thu Jun 15 23:02:47 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_methods): The return value
+	  of WIN32OLE#ole_methods should include PROPERTYPUTREF methods.
+
+	* ext/win32ole/win32ole.c (fole_put_methods): The return value
+	  of WIN32OLE#ole_put_methods should include PROPERTYPUTREF methods.
+
+	* ext/win32ole/tests/test_ole_methods.rb : ditto.
+
+	* ext/win32ole/tests/testall.rb : ditto.
+
 Wed Jun 14 18:23:28 2006  Eric Hodel <drbrain@segment7.net>
 
         * enum.c (enum_any): Documentation typo.
