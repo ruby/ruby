@@ -3631,12 +3631,8 @@ Init_process(void)
     rb_define_const(rb_mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
 #endif
 
-#ifdef HAVE_GETRLIMIT
     rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
-#endif
-#ifdef HAVE_SETRLIMIT
     rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
-#endif
 #ifdef RLIM2NUM
 #ifdef RLIM_INFINITY
     rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
