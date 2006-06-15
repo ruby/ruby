@@ -578,7 +578,7 @@ any_i(i, memo)
  *  
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block ever returns a value other
- *  that <code>false</code> or <code>nil</code>. If the block is not
+ *  than <code>false</code> or <code>nil</code>. If the block is not
  *  given, Ruby adds an implicit block of <code>{|obj| obj}</code> (that
  *  is <code>any?</code> will return <code>true</code> if at least one
  *  of the collection members is not <code>false</code> or
