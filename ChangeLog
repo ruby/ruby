@@ -1,3 +1,9 @@
+Fri Jun 16 01:41:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_proc_arity): get rid of segfault for mere splat.
+
+	* gc.c (gc_mark_children): NODE_BLOCK_PASS needs u3 to be marked.
+
 Wed Jun 14 18:00:20 2006  Eric Hodel <drbrain@segment7.net>
 
 	* enum.c (enum_any): Documentation typo.

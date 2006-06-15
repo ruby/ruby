@@ -8530,7 +8530,7 @@ rb_proc_arity(VALUE proc)
 	    list = list->nd_next;
 	}
 	if (var->nd_args) {
-	    if (nd_type(var->nd_args) == NODE_POSTARG) {
+	    if (var->nd_args != (NODE *)-1 && nd_type(var->nd_args) == NODE_POSTARG) {
 		return -n-1-var->nd_args->nd_head->nd_alen;
 	    }
 	    return -n-1;
