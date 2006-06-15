@@ -1,3 +1,7 @@
+Wed Jun 14 18:00:20 2006  Eric Hodel <drbrain@segment7.net>
+
+	* enum.c (enum_any): Documentation typo.
+
 Wed Jun 14 15:01:09 2006  Eric Hodel <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser#warn): Don't print
