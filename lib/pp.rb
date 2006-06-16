@@ -46,8 +46,16 @@
 require 'prettyprint'
 
 module Kernel
+  # returns a pretty printed object as a string.
+  def pretty_inspect
+    PP.pp(self, '')
+  end
+
   private
-  def pp(*objs)
+  # prints arguments in pretty form.
+  #
+  # pp returns nil.
+  def pp(*objs) # :doc:
     objs.each {|obj|
       PP.pp(obj)
     }

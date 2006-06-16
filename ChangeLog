@@ -1,3 +1,8 @@
+Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
+	  string.
+
 Sat Jun 17 00:23:58 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reswords): kDO_BLOCK was missing.  fixed: [ruby-core:7995]
