@@ -1,6 +1,10 @@
+Sat Jun 17 00:23:58 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reswords): kDO_BLOCK was missing.  fixed: [ruby-core:7995]
+
 Sat Jun 17 00:02:15 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_propertyput): support 
+	* ext/win32ole/win32ole.c (ole_propertyput): support
 	  PROPERTYPUTREF. [ruby-talk:183042]
 
 	* ext/win32ole/tests/test_propertyputref.rb: ditto.
@@ -19,7 +23,7 @@ Thu Jun 15 23:02:47 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Wed Jun 14 18:23:28 2006  Eric Hodel <drbrain@segment7.net>
 
-        * enum.c (enum_any): Documentation typo.
+	* enum.c (enum_any): Documentation typo.
 
 Wed Jun 14 15:01:09 2006  Eric Hodel <drbrain@segment7.net>
 
@@ -30,12 +34,12 @@ Wed Jun 14 23:03:53 2006  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check sizeof(rlim_t).
 	  check setrlimit.
-	
+
 	* process.c (proc_getrlimit): new method Process.getrlimit.
 	  (proc_setrlimit): new method Process.setrlimit.
 
 	* ruby.h (NUM2ULL): new macro.
-	  
+
 Mon Jun 12 22:25:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): adjust precision length to prevent
