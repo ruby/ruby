@@ -1,3 +1,7 @@
+Sat Jun 17 00:23:58 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reswords): kDO_BLOCK was missing.  fixed: [ruby-core:7995]
+
 Fri Jun 16 01:41:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_proc_arity): get rid of segfault for mere splat.

@@ -1651,7 +1651,7 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 
 reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
-		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
+		| kDEFINED | kDO | kDO_BLOCK | kELSE | kELSIF | kEND | kENSURE | kFALSE
 		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
