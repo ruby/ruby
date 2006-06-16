@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.7"
+#define WIN32OLE_VERSION "0.6.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2495,7 +2495,7 @@ ole_propertyput(self, property, value)
     EXCEPINFO excepinfo;
     DISPID dispID = DISPID_VALUE;
     DISPID dispIDParam = DISPID_PROPERTYPUT;
-    USHORT wFlags = DISPATCH_PROPERTYPUT;
+    USHORT wFlags = DISPATCH_PROPERTYPUT|DISPATCH_PROPERTYPUTREF;
     DISPPARAMS dispParams;
     VARIANTARG propertyValue[2];
     OLECHAR* pBuf[1];
