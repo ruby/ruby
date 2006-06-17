@@ -339,6 +339,17 @@ module RSS
           install_model(name, "?")
         end
 
+        def initialize(url=nil, title=nil, link=nil, width=nil, height=nil,
+                       description=nil)
+          super()
+          @url = url
+          @title = title
+          @link = link
+          @width = width
+          @height = height
+          @description = description
+        end
+
         def to_s(need_convert=true, indent=calc_indent)
           rv = tag(indent) do |next_indent|
             [
@@ -616,6 +627,14 @@ module RSS
         %w(title description name link).each do |name|
           install_text_element(name)
           install_model(name, nil)
+        end
+
+        def initialize(title=nil, description=nil, name=nil, link=nil)
+          super()
+          @title = title
+          @description = description
+          @name = name
+          @link = link
         end
 
         def to_s(need_convert=true, indent=calc_indent)

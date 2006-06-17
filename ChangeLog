@@ -68,6 +68,11 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_parser.rb: added an entity handling test.
 
+	* test/rss/test_2.0.rb: added RSS 2.0 tests.
+	* test/rss/rss-assertions.rb: extended XML stylesheet assertion.
+	* lib/rss/0.9.rb: added initialize method.
+	* test/rss/test_1.0.rb: cleanup.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
