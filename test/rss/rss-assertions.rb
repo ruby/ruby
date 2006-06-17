@@ -193,6 +193,7 @@ module RSS
 
     def assert_channel10_items(attrs, items)
       _wrap_assertion do
+        assert_equal(items.resources, items.Seq.lis.collect {|x| x.resource})
         items.Seq.lis.each_with_index do |li, i|
           assert_attributes(attrs[i], %w(resource), li)
         end

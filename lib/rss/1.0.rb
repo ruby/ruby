@@ -438,12 +438,21 @@ module RSS
           end
         end
 
+        def resources
+          if @Seq
+            @Seq.lis.collect do |li|
+              li.resource
+            end
+          else
+            []
+          end
+        end
+
         private
         def children
           [@Seq]
         end
 
-        private
         def _tags
           rv = []
           rv << [URI, 'Seq'] unless @Seq.nil?
@@ -453,9 +462,7 @@ module RSS
         def rdf_validate(tags)
           _validate(tags, [["Seq", nil]])
         end
-
       end
-
     end
 
     class Image < Element

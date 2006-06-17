@@ -117,6 +117,7 @@ EOR
       topics = @rss.channel.taxo_topics
       assert_equal(@topics_lis.sort,
                    topics.Bag.lis.collect {|li| li.resource}.sort)
+      assert_equal(@topics_lis.sort, topics.resources.sort)
 
       assert_equal(@rss.taxo_topics.first, @rss.taxo_topic)
 
@@ -128,8 +129,7 @@ EOR
             assert_equal(value, topic.about)
             assert_equal(value, topic.taxo_link)
           when :topics
-            assert_equal(value.sort,
-                         topic.taxo_topics.Bag.lis.collect {|li| li.resource}.sort)
+            assert_equal(value.sort, topic.taxo_topics.resources.sort)
           else
             assert_equal(value, topic.__send__("dc_#{name}"))
           end
