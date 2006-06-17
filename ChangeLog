@@ -13,6 +13,9 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/1.0.rb: added rdf:Bag.
 
+	* lib/rss/taxonomy.rb: implemented taxonomy module.
+	* test/rss/test_taxonomy.rb: added tests for taxonomy support.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed

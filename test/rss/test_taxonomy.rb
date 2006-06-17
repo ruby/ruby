@@ -20,7 +20,7 @@ module RSS
         @dc_prefix => @dc_uri,
       }
       
-      @topics_parents = %w(channel item)
+      @parents = %w(channel item)
       
       @topics_lis = [
         "http://meerkat.oreillynet.com/?c=cat23",
@@ -66,28 +66,28 @@ module RSS
         info.each do |name, value|
           case name
           when :topics
-            rv << "  <#{@prefix}:topics>\n"
-            rv << "    <rdf:Bag>\n"
+            rv << "<#{@prefix}:topics>\n"
+            rv << "  <rdf:Bag>\n"
             value.each do |li|
               resource = CGI.escapeHTML(li)
-              rv << "      <rdf:li resource=\"#{resource}\"/>\n"
+              rv << "    <rdf:li resource=\"#{resource}\"/>\n"
             end
-            rv << "    </rdf:Bag>\n"
-            rv << "  </#{@prefix}:topics>\n"
+            rv << "  </rdf:Bag>\n"
+            rv << "</#{@prefix}:topics>"
           else
             prefix = (name == :link ? @prefix : @dc_prefix)
             rv << "  <#{prefix}:#{name}>#{value}</#{prefix}:#{name}>\n"
           end
         end
         rv << "</#{@prefix}:topic>"
-      end
+      end.join("\n")
       
       @rss_source = make_RDF(<<-EOR, @ns)
 #{make_channel(@topics_node)}
 #{make_image()}
 #{make_item(@topics_node)}
 #{make_textinput()}
-#{@topic_nodes.join("\n")}
+#{@topic_nodes}
 EOR
 
       @rss = Parser.parse(@rss_source)
@@ -117,7 +117,6 @@ EOR
       topics = @rss.channel.taxo_topics
       assert_equal(@topics_lis.sort,
                    topics.Bag.lis.collect {|li| li.resource}.sort)
-      assert_equal(@topics_lis.sort, topics.resources.sort)
 
       assert_equal(@rss.taxo_topics.first, @rss.taxo_topic)
 
@@ -129,7 +128,8 @@ EOR
             assert_equal(value, topic.about)
             assert_equal(value, topic.taxo_link)
           when :topics
-            assert_equal(value.sort, topic.taxo_topics.resources.sort)
+            assert_equal(value.sort,
+                         topic.taxo_topics.Bag.lis.collect {|li| li.resource}.sort)
           else
             assert_equal(value, topic.__send__("dc_#{name}"))
           end
@@ -138,21 +138,9 @@ EOR
     end
     
     def test_to_s
-      @topics_parents.each do |parent|
+      @parents.each do |parent|
         meth = "taxo_topics_element"
-        assert_equal(@topics_node, @rss.__send__(parent).funcall(meth))
-      end
-
-      @topic_nodes.each_with_index do |node, i|
-        expected = REXML::Document.new(node).root
-        actual = REXML::Document.new(@rss.taxo_topics[i].to_s(true, "")).root
-        expected_elems = expected.reject {|x| x.is_a?(REXML::Text)}
-        actual_elems = actual.reject {|x| x.is_a?(REXML::Text)}
-        expected_elems.sort! {|x, y| x.name <=> y.name}
-        actual_elems.sort! {|x, y| x.name <=> y.name}
-        assert_equal(expected_elems.collect {|x| x.to_s},
-                     actual_elems.collect {|x| x.to_s})
-        assert_equal(expected.attributes.sort, actual.attributes.sort)
+        assert_equal(@topics_node, @rss.__send__(parent).__send__(meth))
       end
     end
   end
