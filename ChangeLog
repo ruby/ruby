@@ -54,6 +54,8 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 	  Taxonomy from Taxo.
 	* lib/rss/maker/taxonomy.rb: ditto.
 
+	* test/rss/test_taxonomy.rb: use #reject directory.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
