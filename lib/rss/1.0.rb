@@ -95,16 +95,55 @@ module RSS
       rv
     end
 
-    class Seq < Element
+    class Li < Element
 
       include RSS10
 
       class << self
-        
         def required_uri
           URI
         end
-        
+      end
+      
+      [
+        ["resource", [URI, nil], true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
+      
+      def initialize(resource=nil)
+        super()
+        @resource = resource
+      end
+
+      def full_name
+        tag_name_with_prefix(PREFIX)
+      end
+      
+      def to_s(need_convert=true, indent=calc_indent)
+        rv = tag(indent)
+        rv = convert(rv) if need_convert
+        rv
+      end
+
+      private
+      def _attrs
+        [
+          ["resource", true]
+        ]
+      end
+    end
+
+    class Seq < Element
+
+      include RSS10
+
+      Li = ::RSS::RDF::Li
+
+      class << self
+        def required_uri
+          URI
+        end
       end
 
       @tag_name = 'Seq'
@@ -147,49 +186,60 @@ module RSS
         end
         rv
       end
-
     end
 
-    class Li < Element
+    class Bag < Element
 
       include RSS10
 
+      Li = ::RSS::RDF::Li
+
       class << self
-          
         def required_uri
           URI
         end
-        
       end
+
+      @tag_name = 'Bag'
       
-      [
-        ["resource", [URI, nil], true]
-      ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
-      end
+      install_have_children_element("li")
       
-      def initialize(resource=nil)
+      install_must_call_validator('rdf', ::RSS::RDF::URI)
+      
+      def initialize(li=[])
         super()
-        @resource = resource
+        @li = li
+      end
+      
+      def to_s(need_convert=true, indent=calc_indent)
+        tag(indent) do |next_indent|
+          [
+            li_elements(need_convert, next_indent),
+            other_element(need_convert, next_indent),
+          ]
+        end
       end
 
       def full_name
         tag_name_with_prefix(PREFIX)
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
-        rv = tag(indent)
-        rv = convert(rv) if need_convert
-        rv
+      private
+      def children
+        @li
+      end
+          
+      def rdf_validate(tags)
+        _validate(tags, [["li", '*']])
       end
 
-      private
-      def _attrs
-        [
-          ["resource", true]
-        ]
+      def _tags
+        rv = []
+        @li.each do |li|
+          rv << [URI, "li"]
+        end
+        rv
       end
-      
     end
 
     class Channel < Element
@@ -361,11 +411,6 @@ module RSS
         include RSS10
 
         Seq = ::RSS::RDF::Seq
-        class Seq
-          unless const_defined?(:Li)
-            Li = ::RSS::RDF::Li
-          end
-        end
 
         class << self
           
