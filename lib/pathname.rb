@@ -15,8 +15,8 @@
 # == Pathname
 #
 # Pathname represents a pathname which locates a file in a filesystem.
-# It supports only Unix style pathnames.  It does not represent the file
-# itself.  A Pathname can be relative or absolute.  It's not until you try to
+# It does not represent the file itself.
+# A Pathname can be relative or absolute.  It's not until you try to
 # reference the file that it even matters whether the file exists or not.
 #
 # Pathname is immutable.  It has no method for destructive update.
@@ -103,6 +103,7 @@
 # - #owned?
 # - #pipe?
 # - #readable?
+# - #world_readable?
 # - #readable_real?
 # - #setgid?
 # - #setuid?
@@ -112,6 +113,7 @@
 # - #sticky?
 # - #symlink?
 # - #writable?
+# - #world_writable?
 # - #writable_real?
 # - #zero?
 #
@@ -180,12 +182,22 @@
 # information.  In some cases, a brief description will follow.
 #
 class Pathname
+
+  # :stopdoc:
+  if RUBY_VERSION < "1.9"
+    TO_PATH = :to_str
+  else
+    # to_path is implemented so Pathname objects are usable with File.open, etc.
+    TO_PATH = :to_path
+  end
+  # :startdoc:
+
   #
   # Create a Pathname object from the given String (or String-like object).
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    path = path.to_str if path.respond_to? :to_str
+    path = path.__send__(TO_PATH) if path.respond_to? TO_PATH
     @path = path.dup
 
     if /\0/ =~ @path
@@ -226,14 +238,59 @@ class Pathname
     @path.dup
   end
 
-  # to_str is implemented so Pathname objects are usable with File.open, etc.
-  alias to_str to_s
+  # to_path is implemented so Pathname objects are usable with File.open, etc.
+  alias_method TO_PATH, :to_s
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
   end
 
-  #
+  # Return a pathname which is substituted by String#sub.
+  def sub(pattern, *rest, &block)
+    self.class.new(@path.sub(pattern, *rest, &block))
+  end
+
+  if File::ALT_SEPARATOR
+    SEPARATOR_PAT = /[#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}]/
+  else
+    SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}/
+  end
+
+  # chop_basename(path) -> [pre-basename, basename] or nil
+  def chop_basename(path)
+    base = File.basename(path)
+    if /\A#{SEPARATOR_PAT}?\z/ =~ base
+      return nil
+    else
+      return path[0, path.rindex(base)], base
+    end
+  end
+  private :chop_basename
+
+  # split_names(path) -> prefix, [name, ...]
+  def split_names(path)
+    names = []
+    while r = chop_basename(path)
+      path, basename = r
+      names.unshift basename
+    end
+    return path, names
+  end
+  private :split_names
+
+  def prepend_prefix(prefix, relpath)
+    if relpath.empty?
+      File.dirname(prefix)
+    elsif /#{SEPARATOR_PAT}/ =~ prefix
+      prefix = File.dirname(prefix)
+      prefix = File.join(prefix, "") if File.basename(prefix + 'a') != 'a'
+      prefix + relpath
+    else
+      prefix + relpath
+    end
+  end
+  private :prepend_prefix
+
   # Returns clean pathname of +self+ with consecutive slashes and useless dots
   # removed.  The filesystem is not accessed.
   #
@@ -255,52 +312,126 @@ class Pathname
   # Nothing more, nothing less.
   #
   def cleanpath_aggressive
-    # cleanpath_aggressive assumes:
-    # * no symlink
-    # * all pathname prefix contained in the pathname is existing directory
-    return Pathname.new('') if @path == ''
-    absolute = absolute?
+    path = @path
     names = []
-    @path.scan(%r{[^/]+}) {|name|
-      next if name == '.'
-      if name == '..'
-        if names.empty?
-          next if absolute
+    pre = path
+    while r = chop_basename(pre)
+      pre, base = r
+      case base
+      when '.'
+      when '..'
+        names.unshift base
+      else
+        if names[0] == '..'
+          names.shift
         else
-          if names.last != '..'
-            names.pop
-            next
-          end
+          names.unshift base
         end
       end
-      names << name
-    }
-    return Pathname.new(absolute ? '/' : '.') if names.empty?
-    path = absolute ? '/' : ''
-    path << names.join('/')
-    Pathname.new(path)
+    end
+    if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
+      names.shift while names[0] == '..'
+    end
+    self.class.new(prepend_prefix(pre, File.join(*names)))
   end
   private :cleanpath_aggressive
 
+  # has_trailing_separator?(path) -> bool
+  def has_trailing_separator?(path)
+    if r = chop_basename(path)
+      pre, basename = r
+      pre.length + basename.length < path.length
+    else
+      false
+    end
+  end
+  private :has_trailing_separator?
+
+  # add_trailing_separator(path) -> path
+  def add_trailing_separator(path)
+    if File.basename(path + 'a') == 'a'
+      path
+    else
+      File.join(path, "") # xxx: Is File.join is appropriate to add separator?
+    end
+  end
+  private :add_trailing_separator
+
+  def del_trailing_separator(path)
+    if r = chop_basename(path)
+      pre, basename = r
+      pre + basename
+    elsif /#{SEPARATOR_PAT}+\z/o =~ path
+      $` + File.dirname(path)[/#{SEPARATOR_PAT}*\z/o]
+    else
+      path
+    end
+  end
+  private :del_trailing_separator
+
   def cleanpath_conservative
-    return Pathname.new('') if @path == ''
-    names = @path.scan(%r{[^/]+})
-    last_dot = names.last == '.'
-    names.delete('.')
-    names.shift while names.first == '..' if absolute?
-    return Pathname.new(absolute? ? '/' : '.') if names.empty?
-    path = absolute? ? '/' : ''
-    path << names.join('/')
-    if names.last != '..'
-      if last_dot
-        path << '/.'
-      elsif %r{/\z} =~ @path
-        path << '/'
+    path = @path
+    names = []
+    pre = path
+    while r = chop_basename(pre)
+      pre, base = r
+      names.unshift base if base != '.'
+    end
+    if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
+      names.shift while names[0] == '..'
+    end
+    if names.empty?
+      self.class.new(File.dirname(pre))
+    else
+      if names.last != '..' && File.basename(path) == '.'
+        names << '.'
+      end
+      result = prepend_prefix(pre, File.join(*names))
+      if /\A(?:\.|\.\.)\z/ !~ names.last && has_trailing_separator?(path)
+        self.class.new(add_trailing_separator(result))
+      else
+        self.class.new(result)
       end
     end
-    Pathname.new(path)
   end
   private :cleanpath_conservative
+
+  def realpath_rec(prefix, unresolved, h)
+    resolved = []
+    until unresolved.empty?
+      n = unresolved.shift
+      if n == '.'
+        next
+      elsif n == '..'
+        resolved.pop
+      else
+        path = prepend_prefix(prefix, File.join(*(resolved + [n])))
+        if h.include? path
+          if h[path] == :resolving
+            raise Errno::ELOOP.new(path)
+          else
+            prefix, *resolved = h[path]
+          end
+        else
+          s = File.lstat(path)
+          if s.symlink?
+            h[path] = :resolving
+            link_prefix, link_names = split_names(File.readlink(path))
+            if link_prefix == ''
+              prefix, *resolved = h[path] = realpath_rec(prefix, resolved + link_names, h)
+            else
+              prefix, *resolved = h[path] = realpath_rec(link_prefix, link_names, h)
+            end
+          else
+            resolved << n
+            h[path] = [prefix, *resolved]
+          end
+        end
+      end
+    end
+    return prefix, *resolved
+  end
+  private :realpath_rec
 
   #
   # Returns a real (absolute) pathname of +self+ in the actual filesystem.
@@ -308,65 +439,15 @@ class Pathname
   #
   # No arguments should be given; the old behaviour is *obsoleted*. 
   #
-  def realpath(*args)
-    unless args.empty?
-      warn "The argument for Pathname#realpath is obsoleted."
+  def realpath
+    path = @path
+    prefix, names = split_names(path)
+    if prefix == ''
+      prefix, names2 = split_names(Dir.pwd)
+      names = names2 + names
     end
-    force_absolute = args.fetch(0, true)
-
-    if %r{\A/} =~ @path
-      top = '/'
-      unresolved = @path.scan(%r{[^/]+})
-    elsif force_absolute
-      # Although POSIX getcwd returns a pathname which contains no symlink,
-      # 4.4BSD-Lite2 derived getcwd may return the environment variable $PWD
-      # which may contain a symlink.
-      # So the return value of Dir.pwd should be examined.
-      top = '/'
-      unresolved = Dir.pwd.scan(%r{[^/]+}) + @path.scan(%r{[^/]+})
-    else
-      top = ''
-      unresolved = @path.scan(%r{[^/]+})
-    end
-    resolved = []
-
-    until unresolved.empty?
-      case unresolved.last
-      when '.'
-        unresolved.pop
-      when '..'
-        resolved.unshift unresolved.pop
-      else
-        loop_check = {}
-        while (stat = File.lstat(path = top + unresolved.join('/'))).symlink?
-          symlink_id = "#{stat.dev}:#{stat.ino}"
-          raise Errno::ELOOP.new(path) if loop_check[symlink_id]
-          loop_check[symlink_id] = true
-          if %r{\A/} =~ (link = File.readlink(path))
-            top = '/'
-            unresolved = link.scan(%r{[^/]+})
-          else
-            unresolved[-1,1] = link.scan(%r{[^/]+})
-          end
-        end
-        next if (filename = unresolved.pop) == '.'
-        if filename != '..' && resolved.first == '..'
-          resolved.shift
-        else
-          resolved.unshift filename
-        end
-      end
-    end
-
-    if top == '/'
-      resolved.shift while resolved[0] == '..'
-    end
-    
-    if resolved.empty?
-      Pathname.new(top.empty? ? '.' : '/')
-    else
-      Pathname.new(top + resolved.join('/'))
-    end
+    prefix, *names = realpath_rec(prefix, names, {})
+    self.class.new(prepend_prefix(prefix, File.join(*names)))
   end
 
   # #parent returns the parent directory.
@@ -396,18 +477,22 @@ class Pathname
   # pathnames which points to roots such as <tt>/usr/..</tt>.
   #
   def root?
-    %r{\A/+\z} =~ @path ? true : false
+    !!(chop_basename(@path) == nil && /#{SEPARATOR_PAT}/o =~ @path)
   end
 
   # Predicate method for testing whether a path is absolute.
   # It returns +true+ if the pathname begins with a slash.
   def absolute?
-    %r{\A/} =~ @path ? true : false
+    !relative?
   end
 
   # The opposite of #absolute?
   def relative?
-    !absolute?
+    path = @path
+    while r = chop_basename(path)
+      path, basename = r
+    end
+    path == ''
   end
 
   #
@@ -416,8 +501,67 @@ class Pathname
   #   Pathname.new("/usr/bin/ruby").each_filename {|filename| ... }
   #     # yields "usr", "bin", and "ruby".
   #
-  def each_filename # :yield: s
-    @path.scan(%r{[^/]+}) { yield $& }
+  def each_filename # :yield: filename
+    prefix, names = split_names(@path)
+    names.each {|filename| yield filename }
+    nil
+  end
+
+  # Iterates over and yields a new Pathname object
+  # for each element in the given path in descending order.
+  #
+  #  Pathname.new('/path/to/some/file.rb').descend {|v| p v}
+  #     #<Pathname:/>
+  #     #<Pathname:/path>
+  #     #<Pathname:/path/to>
+  #     #<Pathname:/path/to/some>
+  #     #<Pathname:/path/to/some/file.rb>
+  #
+  #  Pathname.new('path/to/some/file.rb').descend {|v| p v}
+  #     #<Pathname:path>
+  #     #<Pathname:path/to>
+  #     #<Pathname:path/to/some>
+  #     #<Pathname:path/to/some/file.rb>
+  #
+  # It doesn't access actual filesystem.
+  #
+  # This method is available since 1.8.5.
+  #
+  def descend
+    vs = []
+    ascend {|v| vs << v }
+    vs.reverse_each {|v| yield v }
+    nil
+  end
+
+  # Iterates over and yields a new Pathname object
+  # for each element in the given path in ascending order.
+  #
+  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
+  #     #<Pathname:/path/to/some/file.rb>
+  #     #<Pathname:/path/to/some>
+  #     #<Pathname:/path/to>
+  #     #<Pathname:/path>
+  #     #<Pathname:/>
+  #
+  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
+  #     #<Pathname:path/to/some/file.rb>
+  #     #<Pathname:path/to/some>
+  #     #<Pathname:path/to>
+  #     #<Pathname:path>
+  #
+  # It doesn't access actual filesystem.
+  #
+  # This method is available since 1.8.5.
+  #
+  def ascend
+    path = @path
+    yield self
+    while r = chop_basename(path)
+      path, name = r
+      break if path.empty?
+      yield self.class.new(del_trailing_separator(path))
+    end
   end
 
   #
@@ -432,32 +576,50 @@ class Pathname
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
+    Pathname.new(plus(@path, other.to_s))
+  end
 
-    return other if other.absolute?
-
-    path1 = @path
-    path2 = other.to_s
-    while m2 = %r{\A\.\.(?:/+|\z)}.match(path2) and
-          m1 = %r{(\A|/+)([^/]+)\z}.match(path1) and
-          %r{\A(?:\.|\.\.)\z} !~ m1[2]
-      path1 = m1[1].empty? ? '.' : '/' if (path1 = m1.pre_match).empty?
-      path2 = '.' if (path2 = m2.post_match).empty?
+  def plus(path1, path2) # -> path
+    prefix2 = path2
+    index_list2 = []
+    basename_list2 = []
+    while r2 = chop_basename(prefix2)
+      prefix2, basename2 = r2
+      index_list2.unshift prefix2.length
+      basename_list2.unshift basename2
     end
-    if %r{\A/+\z} =~ path1
-      while m2 = %r{\A\.\.(?:/+|\z)}.match(path2)
-        path2 = '.' if (path2 = m2.post_match).empty?
+    return path2 if prefix2 != ''
+    prefix1 = path1
+    while true
+      while !basename_list2.empty? && basename_list2.first == '.'
+        index_list2.shift
+        basename_list2.shift
+      end
+      break unless r1 = chop_basename(prefix1)
+      prefix1, basename1 = r1
+      next if basename1 == '.'
+      if basename1 == '..' || basename_list2.empty? || basename_list2.first != '..'
+        prefix1 = prefix1 + basename1
+        break
+      end
+      index_list2.shift
+      basename_list2.shift
+    end
+    r1 = chop_basename(prefix1)
+    if !r1 && /#{SEPARATOR_PAT}/o =~ File.basename(prefix1)
+      while !basename_list2.empty? && basename_list2.first == '..'
+        index_list2.shift
+        basename_list2.shift
       end
     end
-
-    return Pathname.new(path2) if path1 == '.'
-    return Pathname.new(path1) if path2 == '.'
-
-    if %r{/\z} =~ path1
-      Pathname.new(path1 + path2)
+    if !basename_list2.empty?
+      suffix2 = path2[index_list2.first..-1]
+      r1 ? File.join(prefix1, suffix2) : prefix1 + suffix2
     else
-      Pathname.new(path1 + '/' + path2)
+      r1 ? prefix1 : File.dirname(prefix1)
     end
   end
+  private :plus
 
   #
   # Pathname#join joins pathnames.
@@ -505,9 +667,9 @@ class Pathname
     Dir.foreach(@path) {|e|
       next if e == '.' || e == '..'
       if with_directory
-        result << Pathname.new(File.join(@path, e))
+        result << self.class.new(File.join(@path, e))
       else
-        result << Pathname.new(e)
+        result << self.class.new(e)
       end
     }
     result
@@ -525,43 +687,41 @@ class Pathname
   # This method has existed since 1.8.1.
   #
   def relative_path_from(base_directory)
-    if self.absolute? != base_directory.absolute?
-      raise ArgumentError,
-        "relative path between absolute and relative path: #{self.inspect}, #{base_directory.inspect}"
+    dest_directory = self.cleanpath.to_s
+    base_directory = base_directory.cleanpath.to_s
+    dest_prefix = dest_directory
+    dest_names = []
+    while r = chop_basename(dest_prefix)
+      dest_prefix, basename = r
+      dest_names.unshift basename if basename != '.'
     end
-
-    dest = []
-    self.cleanpath.each_filename {|f|
-      next if f == '.'
-      dest << f
-    }
-
-    base = []
-    base_directory.cleanpath.each_filename {|f|
-      next if f == '.'
-      base << f
-    }
-
-    while !base.empty? && !dest.empty? && base[0] == dest[0]
-      base.shift
-      dest.shift
+    base_prefix = base_directory
+    base_names = []
+    while r = chop_basename(base_prefix)
+      base_prefix, basename = r
+      base_names.unshift basename if basename != '.'
     end
-
-    if base.include? '..'
+    if dest_prefix != base_prefix
+      raise ArgumentError, "different prefix: #{dest_prefix.inspect} and #{base_directory.inspect}"
+    end
+    while !dest_names.empty? &&
+          !base_names.empty? &&
+          dest_names.first == base_names.first
+      dest_names.shift
+      base_names.shift
+    end
+    if base_names.include? '..'
       raise ArgumentError, "base_directory has ..: #{base_directory.inspect}"
     end
-
-    base.fill '..'
-    relpath = base + dest
-    if relpath.empty?
-      Pathname.new(".")
+    base_names.fill('..')
+    relpath_names = base_names + dest_names
+    if relpath_names.empty?
+      Pathname.new('.')
     else
-      Pathname.new(relpath.join('/'))
+      Pathname.new(File.join(*relpath_names))
     end
   end
-
 end
-
 
 class Pathname    # * IO *
   #
@@ -635,7 +795,7 @@ class Pathname    # * File *
   end
 
   # See <tt>File.readlink</tt>.  Read symbolic link.
-  def readlink() Pathname.new(File.readlink(@path)) end
+  def readlink() self.class.new(File.readlink(@path)) end
 
   # See <tt>File.rename</tt>.  Rename the file.
   def rename(to) File.rename(@path, to) end
@@ -656,20 +816,20 @@ class Pathname    # * File *
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
   # See <tt>File.basename</tt>.  Returns the last component of the path.
-  def basename(*args) Pathname.new(File.basename(@path, *args)) end
+  def basename(*args) self.class.new(File.basename(@path, *args)) end
 
   # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
-  def dirname() Pathname.new(File.dirname(@path)) end
+  def dirname() self.class.new(File.dirname(@path)) end
 
   # See <tt>File.extname</tt>.  Returns the file's extension.
   def extname() File.extname(@path) end
 
   # See <tt>File.expand_path</tt>.
-  def expand_path(*args) Pathname.new(File.expand_path(@path, *args)) end
+  def expand_path(*args) self.class.new(File.expand_path(@path, *args)) end
 
   # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
   # Array.
-  def split() File.split(@path).map {|f| Pathname.new(f) } end
+  def split() File.split(@path).map {|f| self.class.new(f) } end
 
   # Pathname#link is confusing and *obsoleted* because the receiver/argument
   # order is inverted to corresponding system call.
@@ -725,6 +885,9 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 
+  # See <tt>FileTest.world_readable?</tt>.
+  def world_readable?() FileTest.world_readable?(@path) end
+
   # See <tt>FileTest.readable_real?</tt>.
   def readable_real?() FileTest.readable_real?(@path) end
 
@@ -749,6 +912,9 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
+  # See <tt>FileTest.world_writable?</tt>.
+  def world_writable?() FileTest.world_writable?(@path) end
+
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
 
@@ -761,14 +927,14 @@ class Pathname    # * Dir *
   # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
   def Pathname.glob(*args) # :yield: p
     if block_given?
-      Dir.glob(*args) {|f| yield Pathname.new(f) }
+      Dir.glob(*args) {|f| yield self.new(f) }
     else
-      Dir.glob(*args).map {|f| Pathname.new(f) }
+      Dir.glob(*args).map {|f| self.new(f) }
     end
   end
 
   # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
-  def Pathname.getwd() Pathname.new(Dir.getwd) end
+  def Pathname.getwd() self.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
   # Pathname#chdir is *obsoleted* at 1.8.1.
@@ -785,14 +951,14 @@ class Pathname    # * Dir *
 
   # Return the entries (files and subdirectories) in the directory, each as a
   # Pathname object.
-  def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
+  def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
 
   # Iterates over the entries (files and subdirectories) in the directory.  It
   # yields a Pathname object for each entry.
   #
   # This method has existed since 1.8.1.
   def each_entry(&block) # :yield: p
-    Dir.foreach(@path) {|f| yield Pathname.new(f) }
+    Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
   # Pathname#dir_foreach is *obsoleted* at 1.8.1.
@@ -828,9 +994,9 @@ class Pathname    # * Find *
   def find(&block) # :yield: p
     require 'find'
     if @path == '.'
-      Find.find(@path) {|f| yield Pathname.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
     else
-      Find.find(@path) {|f| yield Pathname.new(f) }
+      Find.find(@path) {|f| yield self.class.new(f) }
     end
   end
 end
@@ -881,315 +1047,12 @@ class Pathname    # * mixed *
   end
 end
 
-if $0 == __FILE__
-  require 'test/unit'
-
-  class PathnameTest < Test::Unit::TestCase # :nodoc:
-    def test_initialize
-      p1 = Pathname.new('a')
-      assert_equal('a', p1.to_s)
-      p2 = Pathname.new(p1)
-      assert_equal(p1, p2)
-    end
-
-    class AnotherStringLike # :nodoc:
-      def initialize(s) @s = s end
-      def to_str() @s end
-      def ==(other) @s == other end
-    end
-
-    def test_equality
-      obj = Pathname.new("a")
-      str = "a"
-      sym = :a
-      ano = AnotherStringLike.new("a")
-      assert_equal(false, obj == str)
-      assert_equal(false, str == obj)
-      assert_equal(false, obj == ano)
-      assert_equal(false, ano == obj)
-      assert_equal(false, obj == sym)
-      assert_equal(false, sym == obj)
-
-      obj2 = Pathname.new("a")
-      assert_equal(true, obj == obj2)
-      assert_equal(true, obj === obj2)
-      assert_equal(true, obj.eql?(obj2))
-    end
-
-    def test_hashkey
-      h = {}
-      h[Pathname.new("a")] = 1
-      h[Pathname.new("a")] = 2
-      assert_equal(1, h.size)
-    end
-
-    def assert_pathname_cmp(e, s1, s2)
-      p1 = Pathname.new(s1)
-      p2 = Pathname.new(s2)
-      r = p1 <=> p2
-      assert(e == r,
-        "#{p1.inspect} <=> #{p2.inspect}: <#{e}> expected but was <#{r}>")
-    end
-    def test_comparison
-      assert_pathname_cmp( 0, "a", "a")
-      assert_pathname_cmp( 1, "b", "a")
-      assert_pathname_cmp(-1, "a", "b")
-      ss = %w(
-        a
-        a/
-        a/b
-        a.
-        a0
-      )
-      s1 = ss.shift
-      ss.each {|s2|
-        assert_pathname_cmp(-1, s1, s2)
-        s1 = s2
-      }
-    end
-
-    def test_comparison_string
-      assert_equal(nil, Pathname.new("a") <=> "a")
-      assert_equal(nil, "a" <=> Pathname.new("a"))
-    end
-
-    def test_syntactical
-      assert_equal(true, Pathname.new("/").root?)
-      assert_equal(true, Pathname.new("//").root?)
-      assert_equal(true, Pathname.new("///").root?)
-      assert_equal(false, Pathname.new("").root?)
-      assert_equal(false, Pathname.new("a").root?)
-    end
-
-    def test_cleanpath
-      assert_equal('/', Pathname.new('/').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('//').cleanpath(true).to_s)
-      assert_equal('', Pathname.new('').cleanpath(true).to_s)
-
-      assert_equal('.', Pathname.new('.').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('..').cleanpath(true).to_s)
-      assert_equal('a', Pathname.new('a').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/.').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/..').cleanpath(true).to_s)
-      assert_equal('/a', Pathname.new('/a').cleanpath(true).to_s)
-      assert_equal('.', Pathname.new('./').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('../').cleanpath(true).to_s)
-      assert_equal('a/', Pathname.new('a/').cleanpath(true).to_s)
-
-      assert_equal('a/b', Pathname.new('a//b').cleanpath(true).to_s)
-      assert_equal('a/.', Pathname.new('a/.').cleanpath(true).to_s)
-      assert_equal('a/.', Pathname.new('a/./').cleanpath(true).to_s)
-      assert_equal('a/..', Pathname.new('a/../').cleanpath(true).to_s)
-      assert_equal('/a/.', Pathname.new('/a/.').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('./..').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('../.').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('./../').cleanpath(true).to_s)
-      assert_equal('..', Pathname.new('.././').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/./..').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/../.').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/./../').cleanpath(true).to_s)
-      assert_equal('/', Pathname.new('/.././').cleanpath(true).to_s)
-
-      assert_equal('a/b/c', Pathname.new('a/b/c').cleanpath(true).to_s)
-      assert_equal('b/c', Pathname.new('./b/c').cleanpath(true).to_s)
-      assert_equal('a/c', Pathname.new('a/./c').cleanpath(true).to_s)
-      assert_equal('a/b/.', Pathname.new('a/b/.').cleanpath(true).to_s)
-      assert_equal('a/..', Pathname.new('a/../.').cleanpath(true).to_s)
-
-      assert_equal('/a', Pathname.new('/../.././../a').cleanpath(true).to_s)
-      assert_equal('a/b/../../../../c/../d',
-        Pathname.new('a/b/../../../../c/../d').cleanpath(true).to_s)
-    end
-
-    def test_cleanpath_no_symlink
-      assert_equal('/', Pathname.new('/').cleanpath.to_s)
-      assert_equal('/', Pathname.new('//').cleanpath.to_s)
-      assert_equal('', Pathname.new('').cleanpath.to_s)
-
-      assert_equal('.', Pathname.new('.').cleanpath.to_s)
-      assert_equal('..', Pathname.new('..').cleanpath.to_s)
-      assert_equal('a', Pathname.new('a').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/.').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/..').cleanpath.to_s)
-      assert_equal('/a', Pathname.new('/a').cleanpath.to_s)
-      assert_equal('.', Pathname.new('./').cleanpath.to_s)
-      assert_equal('..', Pathname.new('../').cleanpath.to_s)
-      assert_equal('a', Pathname.new('a/').cleanpath.to_s)
-
-      assert_equal('a/b', Pathname.new('a//b').cleanpath.to_s)
-      assert_equal('a', Pathname.new('a/.').cleanpath.to_s)
-      assert_equal('a', Pathname.new('a/./').cleanpath.to_s)
-      assert_equal('.', Pathname.new('a/../').cleanpath.to_s)
-      assert_equal('/a', Pathname.new('/a/.').cleanpath.to_s)
-      assert_equal('..', Pathname.new('./..').cleanpath.to_s)
-      assert_equal('..', Pathname.new('../.').cleanpath.to_s)
-      assert_equal('..', Pathname.new('./../').cleanpath.to_s)
-      assert_equal('..', Pathname.new('.././').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/./..').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/../.').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/./../').cleanpath.to_s)
-      assert_equal('/', Pathname.new('/.././').cleanpath.to_s)
-
-      assert_equal('a/b/c', Pathname.new('a/b/c').cleanpath.to_s)
-      assert_equal('b/c', Pathname.new('./b/c').cleanpath.to_s)
-      assert_equal('a/c', Pathname.new('a/./c').cleanpath.to_s)
-      assert_equal('a/b', Pathname.new('a/b/.').cleanpath.to_s)
-      assert_equal('.', Pathname.new('a/../.').cleanpath.to_s)
-
-      assert_equal('/a', Pathname.new('/../.././../a').cleanpath.to_s)
-      assert_equal('../../d', Pathname.new('a/b/../../../../c/../d').cleanpath.to_s)
-    end
-
-    def test_destructive_update
-      path = Pathname.new("a")
-      path.to_s.replace "b"
-      assert_equal(Pathname.new("a"), path)
-    end
-
-    def test_null_character
-      assert_raise(ArgumentError) { Pathname.new("\0") }
-    end
-
-    def assert_relpath(result, dest, base)
-      assert_equal(Pathname.new(result),
-        Pathname.new(dest).relative_path_from(Pathname.new(base)))
-    end
-
-    def assert_relpath_err(dest, base)
-      assert_raise(ArgumentError) {
-        Pathname.new(dest).relative_path_from(Pathname.new(base))
-      }
-    end
-
-    def test_relative_path_from
-      assert_relpath("../a", "a", "b")
-      assert_relpath("../a", "a", "b/")
-      assert_relpath("../a", "a/", "b")
-      assert_relpath("../a", "a/", "b/")
-      assert_relpath("../a", "/a", "/b")
-      assert_relpath("../a", "/a", "/b/")
-      assert_relpath("../a", "/a/", "/b")
-      assert_relpath("../a", "/a/", "/b/")
-
-      assert_relpath("../b", "a/b", "a/c")
-      assert_relpath("../a", "../a", "../b")
-
-      assert_relpath("a", "a", ".")
-      assert_relpath("..", ".", "a")
-
-      assert_relpath(".", ".", ".")
-      assert_relpath(".", "..", "..")
-      assert_relpath("..", "..", ".")
-
-      assert_relpath("c/d", "/a/b/c/d", "/a/b")
-      assert_relpath("../..", "/a/b", "/a/b/c/d")
-      assert_relpath("../../../../e", "/e", "/a/b/c/d")
-      assert_relpath("../b/c", "a/b/c", "a/d")
-
-      assert_relpath("../a", "/../a", "/b")
-      assert_relpath("../../a", "../a", "b")
-      assert_relpath(".", "/a/../../b", "/b")
-      assert_relpath("..", "a/..", "a")
-      assert_relpath(".", "a/../b", "b")
-
-      assert_relpath("a", "a", "b/..")
-      assert_relpath("b/c", "b/c", "b/..")
-
-      assert_relpath_err("/", ".")
-      assert_relpath_err(".", "/")
-      assert_relpath_err("a", "..")
-      assert_relpath_err(".", "..")
-    end
-
-    def assert_pathname_plus(a, b, c)
-      a = Pathname.new(a)
-      b = Pathname.new(b)
-      c = Pathname.new(c)
-      d = b + c
-      assert(a == d,
-        "#{b.inspect} + #{c.inspect}: #{a.inspect} expected but was #{d.inspect}")
-    end
-
-    def test_plus
-      assert_pathname_plus('a/b', 'a', 'b')
-      assert_pathname_plus('a', 'a', '.')
-      assert_pathname_plus('b', '.', 'b')
-      assert_pathname_plus('.', '.', '.')
-      assert_pathname_plus('/b', 'a', '/b')
-
-      assert_pathname_plus('/', '/', '..')
-      assert_pathname_plus('.', 'a', '..')
-      assert_pathname_plus('a', 'a/b', '..')
-      assert_pathname_plus('../..', '..', '..')
-      assert_pathname_plus('/c', '/', '../c')
-      assert_pathname_plus('c', 'a', '../c')
-      assert_pathname_plus('a/c', 'a/b', '../c')
-      assert_pathname_plus('../../c', '..', '../c')
-    end
-
-    def test_taint
-      obj = Pathname.new("a"); assert_same(obj, obj.taint)
-      obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-      assert_equal(false, Pathname.new("a"      )           .tainted?)
-      assert_equal(false, Pathname.new("a"      )      .to_s.tainted?)
-      assert_equal(true,  Pathname.new("a"      ).taint     .tainted?)
-      assert_equal(true,  Pathname.new("a"      ).taint.to_s.tainted?)
-      assert_equal(true,  Pathname.new("a".taint)           .tainted?)
-      assert_equal(true,  Pathname.new("a".taint)      .to_s.tainted?)
-      assert_equal(true,  Pathname.new("a".taint).taint     .tainted?)
-      assert_equal(true,  Pathname.new("a".taint).taint.to_s.tainted?)
-
-      str = "a"
-      path = Pathname.new(str)
-      str.taint
-      assert_equal(false, path     .tainted?)
-      assert_equal(false, path.to_s.tainted?)
-    end
-
-    def test_untaint
-      obj = Pathname.new("a"); assert_same(obj, obj.untaint)
-
-      assert_equal(false, Pathname.new("a").taint.untaint     .tainted?)
-      assert_equal(false, Pathname.new("a").taint.untaint.to_s.tainted?)
-
-      str = "a".taint
-      path = Pathname.new(str)
-      str.untaint
-      assert_equal(true, path     .tainted?)
-      assert_equal(true, path.to_s.tainted?)
-    end
-
-    def test_freeze
-      obj = Pathname.new("a"); assert_same(obj, obj.freeze)
-
-      assert_equal(false, Pathname.new("a"       )            .frozen?)
-      assert_equal(false, Pathname.new("a".freeze)            .frozen?)
-      assert_equal(true,  Pathname.new("a"       ).freeze     .frozen?)
-      assert_equal(true,  Pathname.new("a".freeze).freeze     .frozen?)
-      assert_equal(false, Pathname.new("a"       )       .to_s.frozen?)
-      assert_equal(false, Pathname.new("a".freeze)       .to_s.frozen?)
-      assert_equal(false, Pathname.new("a"       ).freeze.to_s.frozen?)
-      assert_equal(false, Pathname.new("a".freeze).freeze.to_s.frozen?)
-    end
-
-    def test_to_s
-      str = "a"
-      obj = Pathname.new(str)
-      assert_equal(str, obj.to_s)
-      assert_not_same(str, obj.to_s)
-      assert_not_same(obj.to_s, obj.to_s)
-    end
-
-    def test_kernel_open
-      count = 0
-      result = Kernel.open(Pathname.new(__FILE__)) {|f|
-	assert(File.identical?(__FILE__, f))
-	count += 1
-	2
-      }
-      assert_equal(1, count)
-      assert_equal(2, result)
-    end
+module Kernel
+  # create a pathname object.
+  #
+  # This method is available since 1.8.5.
+  def Pathname(path) # :doc:
+    Pathname.new(path)
   end
+  private :Pathname
 end

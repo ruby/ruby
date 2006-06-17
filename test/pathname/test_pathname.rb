@@ -5,8 +5,16 @@ require 'pathname'
 
 require 'fileutils'
 require 'tmpdir'
+require 'enumerator'
 
 class TestPathname < Test::Unit::TestCase
+
+  if RUBY_VERSION < "1.9"
+    FUNCALL = :__send__
+  else
+    FUNCALL = :funcall
+  end
+
   def self.define_assertion(name, &block)
     @defassert_num ||= {}
     @defassert_num[name] ||= 0
@@ -115,7 +123,7 @@ class TestPathname < Test::Unit::TestCase
 
   # has_trailing_separator?(path) -> bool
   def has_trailing_separator?(path)
-    Pathname.allocate.funcall(:has_trailing_separator?, path)
+    Pathname.allocate.send(FUNCALL, :has_trailing_separator?, path)
   end
 
   defassert(:has_trailing_separator?, false, "/")
@@ -124,11 +132,11 @@ class TestPathname < Test::Unit::TestCase
   defassert(:has_trailing_separator?, true, "a/")
 
   def add_trailing_separator(path)
-    Pathname.allocate.funcall(:add_trailing_separator, path)
+    Pathname.allocate.send(FUNCALL, :add_trailing_separator, path)
   end
 
   def del_trailing_separator(path)
-    Pathname.allocate.funcall(:del_trailing_separator, path)
+    Pathname.allocate.send(FUNCALL, :del_trailing_separator, path)
   end
 
   defassert(:del_trailing_separator, "/", "/")
@@ -313,6 +321,10 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(p1, p2)
   end
 
+  def test_initialize_nul
+    assert_raise(ArgumentError) { Pathname.new("a\0") }
+  end
+
   class AnotherStringLike # :nodoc:
     def initialize(s) @s = s end
     def to_str() @s end
@@ -373,6 +385,9 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(nil, Pathname.new("a") <=> "a")
     assert_equal(nil, "a" <=> Pathname.new("a"))
   end
+
+  def pathsub(path, pat, repl) Pathname.new(path).sub(pat, repl).to_s end
+  defassert(:pathsub, "a.o", "a.c", /\.c\z/, ".o")
 
   def root?(path)
     Pathname.new(path).root?
@@ -463,5 +478,9 @@ class TestPathname < Test::Unit::TestCase
     result = []
     Pathname.new("/usr/bin/ruby").each_filename {|f| result << f }
     assert_equal(%w[usr bin ruby], result)
+  end
+
+  def test_kernel_pathname
+    assert_equal(Pathname.new("a"), Pathname("a"))
   end
 end

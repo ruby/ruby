@@ -1,3 +1,8 @@
+Sat Jun 17 14:53:32 2006  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb: backport from 1.9.
+	  (Kernel#Pathname): new method.
+
 Sat Jun 17 10:30:41 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (Hash#merge, Enumerable#sort_by): removed.
