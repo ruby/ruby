@@ -8,6 +8,9 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/trackback.rb: added TrackBack prefix.
 	* lib/rss/maker/trackback.rb: ditto.
 
+	* lib/rss/rss.rb : removed needless argument 'prefix'.
+	* lib/rss/parser.rb: ditto.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
