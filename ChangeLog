@@ -4,7 +4,8 @@ Sun Jun 18 00:49:11 2006  Tanaka Akira  <akr@m17n.org>
 	  BasicSocket#recv_nonblock.
 	  (udp_recvfrom_nonblock): renamed from ip_recvfrom_nonblock.
 	  IPSocket#recvfrom_nonblock is moved to UDPSocket#recvfrom_nonblock.
-	  (unix_recvfrom_nonblock): removed.  UNIXSocket#is removed.
+	  (unix_recvfrom_nonblock): removed.
+	  UNIXSocket#recvfrom_nonblock is removed.
 
 Sat Jun 17 14:53:32 2006  Tanaka Akira  <akr@m17n.org>
 
