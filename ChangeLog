@@ -5,6 +5,9 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.5 -> 0.1.6.
 	* test/rss/test_version.rb (RSS::TestVersion#test_version): ditto.
 
+	* lib/rss/trackback.rb: added TrackBack prefix.
+	* lib/rss/maker/trackback.rb: ditto.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed

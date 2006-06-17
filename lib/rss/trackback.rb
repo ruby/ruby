@@ -34,6 +34,9 @@ module RSS
   end
   
   module BaseTrackBackModel
+
+    ELEMENTS = %w(ping about)
+    
     def append_features(klass)
       super
 
@@ -42,7 +45,7 @@ module RSS
 
         %w(ping).each do |name|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
-          klass_name = name.capitalize
+          klass_name = "TrackBack#{Utils.to_class_name(name)}"
           klass.install_have_child_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
@@ -59,7 +62,7 @@ module RSS
         
         [%w(about s)].each do |name, postfix|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
-          klass_name = name.capitalize
+          klass_name = "TrackBack#{Utils.to_class_name(name)}"
           klass.install_have_children_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
@@ -105,7 +108,7 @@ module RSS
     extend BaseModel
     extend BaseTrackBackModel
 
-    class Ping < Element
+    class TrackBackPing < Element
       include RSS10
 
       class << self
@@ -119,6 +122,8 @@ module RSS
         end
 
       end
+
+      @tag_name = "ping"
       
       [
         ["resource", ::RSS::RDF::URI, true]
@@ -153,7 +158,7 @@ module RSS
 
     end
 
-    class About < Element
+    class TrackBackAbout < Element
       include RSS10
 
       class << self
@@ -167,6 +172,8 @@ module RSS
         end
 
       end
+      
+      @tag_name = "about"
       
       [
         ["resource", ::RSS::RDF::URI, true]
@@ -214,9 +221,11 @@ module RSS
     extend BaseModel
     extend BaseTrackBackModel
 
-    class Ping < Element
+    class TrackBackPing < Element
       include RSS09
 
+      @tag_name = "ping"
+      
       content_setup
 
       class << self
@@ -245,9 +254,11 @@ module RSS
       
     end
 
-    class About < Element
+    class TrackBackAbout < Element
       include RSS09
 
+      @tag_name = "about"
+      
       content_setup
 
       class << self
@@ -287,4 +298,11 @@ module RSS
     end
   end
 
+  BaseTrackBackModel::ELEMENTS.each do |name|
+    class_name = Utils.to_class_name(name)
+    BaseListener.install_class_name(TRACKBACK_URI, name,
+                                    "TrackBack#{class_name}")
+  end
+
+  BaseTrackBackModel::ELEMENTS.collect! {|name| "#{TRACKBACK_PREFIX}_#{name}"}
 end
