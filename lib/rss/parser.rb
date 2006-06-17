@@ -226,7 +226,7 @@ module RSS
             end
           end
           EOT
-          send("private", "start_#{name}")
+          __send__("private", "start_#{name}")
         end
       end
 
@@ -285,7 +285,7 @@ module RSS
       @tag_stack.last.push([ns[prefix], local])
       @tag_stack.push([])
       if respond_to?("start_#{local}", true)
-        send("start_#{local}", local, prefix, attrs, ns.dup)
+        __send__("start_#{local}", local, prefix, attrs, ns.dup)
       else
         start_else_element(local, prefix, attrs, ns.dup)
       end
@@ -358,7 +358,7 @@ module RSS
         setter = self.class.setter(required_uri, tag_name)
         setter ||= "#{tag_name}="
         if @last_element.respond_to?(setter)
-          @last_element.send(setter, text.to_s)
+          @last_element.__send__(setter, text.to_s)
         else
           if @do_validate and not @ignore_unknown_element
             raise NotExceptedTagError.new(tag_name, @last_element.tag_name)
@@ -405,7 +405,7 @@ module RSS
       end
 
       previous = @last_element
-      next_element = klass.send(:new, *args)
+      next_element = klass.__send__(:new, *args)
       next_element.do_validate = @do_validate
       previous.instance_eval {set_next_element(tag_name, next_element)}
       @last_element = next_element

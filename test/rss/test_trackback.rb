@@ -88,20 +88,20 @@ EOR
       @elems.each do |name, value|
         @parents.each do |parent|
           accessor = "#{RSS::TRACKBACK_PREFIX}_#{name}"
-          target = @rss.send(parent)
-          target20 = @rss20.channel.send(parent, -1)
-          assert_equal(value, target.send(accessor))
-          assert_equal(value, target20.send(accessor))
+          target = @rss.__send__(parent)
+          target20 = @rss20.channel.__send__(parent, -1)
+          assert_equal(value, target.__send__(accessor))
+          assert_equal(value, target20.__send__(accessor))
           if name == :about
             # abount is zero or more
-            target.send("#{accessor}=", 0, new_value[name].to_s)
-            target20.send("#{accessor}=", 0, new_value[name].to_s)
+            target.__send__("#{accessor}=", 0, new_value[name].to_s)
+            target20.__send__("#{accessor}=", 0, new_value[name].to_s)
           else
-            target.send("#{accessor}=", new_value[name].to_s)
-            target20.send("#{accessor}=", new_value[name].to_s)
+            target.__send__("#{accessor}=", new_value[name].to_s)
+            target20.__send__("#{accessor}=", new_value[name].to_s)
           end
-          assert_equal(new_value[name], target.send(accessor))
-          assert_equal(new_value[name], target20.send(accessor))
+          assert_equal(new_value[name], target.__send__(accessor))
+          assert_equal(new_value[name], target20.__send__(accessor))
         end
       end
       
@@ -114,7 +114,7 @@ EOR
         @parents.each do |parent|
           meth = "#{RSS::TRACKBACK_PREFIX}_#{name}_element"
           meth << "s" if name == :about
-          assert_equal(excepted, @rss.send(parent).send(meth))
+          assert_equal(excepted, @rss.__send__(parent).__send__(meth))
         end
       end
       

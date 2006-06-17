@@ -28,7 +28,7 @@ module RSS
       xmldecl = doc.xml_decl
       
       %w(version encoding).each do |x|
-        assert_equal(instance_eval(x), xmldecl.send(x))
+        assert_equal(instance_eval(x), xmldecl.__send__(x))
       end
       assert_equal(standalone, !xmldecl.standalone.nil?)
       
@@ -69,7 +69,7 @@ module RSS
       
       channel = RDF::Channel.new(about)
       %w(title link description image items textinput).each do |x|
-        channel.send("#{x}=", instance_eval(x))
+        channel.__send__("#{x}=", instance_eval(x))
       end
       
       doc = REXML::Document.new(make_RDF(channel.to_s))
@@ -187,7 +187,7 @@ module RSS
       
       image = RDF::Image.new(about)
       %w(title url link).each do |x|
-        image.send("#{x}=", instance_eval(x))
+        image.__send__("#{x}=", instance_eval(x))
       end
       
       doc = REXML::Document.new(make_RDF(image.to_s))
@@ -212,7 +212,7 @@ module RSS
       
       item = RDF::Item.new(about)
       %w(title link description).each do |x|
-        item.send("#{x}=", instance_eval(x))
+        item.__send__("#{x}=", instance_eval(x))
       end
       
       doc = REXML::Document.new(make_RDF(item.to_s))
@@ -238,7 +238,7 @@ module RSS
       
       textinput = RDF::Textinput.new(about)
       %w(title link name description).each do |x|
-        textinput.send("#{x}=", instance_eval(x))
+        textinput.__send__("#{x}=", instance_eval(x))
       end
       
       doc = REXML::Document.new(make_RDF(textinput.to_s))

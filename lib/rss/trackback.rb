@@ -70,7 +70,7 @@ module RSS
               if args.empty?
                 @#{var_name}.first and @#{var_name}.first.value
               else
-                ret = @#{var_name}.send("[]", *args)
+                ret = @#{var_name}.__send__("[]", *args)
                 if ret.is_a?(Array)
                   ret.collect {|x| x.value}
                 else
@@ -94,7 +94,7 @@ module RSS
                 else
                   new_val = Utils.new_with_value_if_need(#{klass_name}, new_val)
                 end
-                @#{var_name}.send("[]=", *(args[0..-2] + [new_val]))
+                @#{var_name}.__send__("[]=", *(args[0..-2] + [new_val]))
               end
             end
             alias set_#{var_name} #{var_name}=

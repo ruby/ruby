@@ -87,7 +87,7 @@ EOR
 
       @elems.each do |name, value|
         @parents.each do |parent|
-          parsed_value = @rss.send(parent).send("dc_#{name}")
+          parsed_value = @rss.__send__(parent).__send__("dc_#{name}")
           if parsed_value.kind_of?(String)
             parsed_value = CGI.escapeHTML(parsed_value)
           end
@@ -97,16 +97,17 @@ EOR
             class << t
               alias_method(:to_s, :iso8601)
             end
-            @rss.send(parent).send("dc_#{name}=", t.iso8601)
-            assert_equal(t, @rss.send(parent).send("dc_#{name}"))
-            assert_equal(t, @rss.send(parent).date)
+            @rss.__send__(parent).__send__("dc_#{name}=", t.iso8601)
+            assert_equal(t, @rss.__send__(parent).__send__("dc_#{name}"))
+            assert_equal(t, @rss.__send__(parent).date)
             
-            @rss.send(parent).date = value
-            assert_equal(value, @rss.send(parent).date)
-            assert_equal(value, @rss.send(parent).send("dc_#{name}"))
+            @rss.__send__(parent).date = value
+            assert_equal(value, @rss.__send__(parent).date)
+            assert_equal(value, @rss.__send__(parent).__send__("dc_#{name}"))
           else
-            @rss.send(parent).send("dc_#{name}=", new_value)
-            assert_equal(new_value, @rss.send(parent).send("dc_#{name}"))
+            @rss.__send__(parent).__send__("dc_#{name}=", new_value)
+            assert_equal(new_value,
+                         @rss.__send__(parent).__send__("dc_#{name}"))
           end
         end
       end
@@ -117,7 +118,7 @@ EOR
       
       @elems.each do |name, value|
         @parents.each do |parent|
-          parsed_value = @rss.send(parent).send("dc_#{name}")
+          parsed_value = @rss.__send__(parent).__send__("dc_#{name}")
           if parsed_value.kind_of?(String)
             parsed_value = CGI.escapeHTML(parsed_value)
           end
@@ -131,16 +132,21 @@ EOR
             class << t
               alias_method(:to_s, :iso8601)
             end
-            elems = @rss.send(parent).send(plural_reader)
+            elems = @rss.__send__(parent).__send__(plural_reader)
             elems << klass.new(t.iso8601)
-            values = @rss.send(parent).send(plural_reader).collect{|x| x.value}
-            assert_equal([@rss.send(parent).send("dc_#{name}"), t],
+            new_elems = @rss.__send__(parent).__send__(plural_reader)
+            values = new_elems.collect{|x| x.value}
+            assert_equal([@rss.__send__(parent).__send__("dc_#{name}"), t],
                          values)
           else
-            elems = @rss.send(parent).send(plural_reader)
+            elems = @rss.__send__(parent).__send__(plural_reader)
             elems << klass.new(new_value)
-            values = @rss.send(parent).send(plural_reader).collect{|x| x.value}
-            assert_equal([@rss.send(parent).send("dc_#{name}"), new_value],
+            new_elems = @rss.__send__(parent).__send__(plural_reader)
+            values = new_elems.collect{|x| x.value}
+            assert_equal([
+                          @rss.__send__(parent).__send__("dc_#{name}"),
+                          new_value
+                         ],
                          values)
           end
         end
@@ -151,17 +157,19 @@ EOR
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
-          assert_equal(excepted, @rss.send(parent).send("dc_#{name}_elements"))
+          assert_equal(excepted,
+                       @rss.__send__(parent).__send__("dc_#{name}_elements"))
         end
         
         excepted = Array.new(2, excepted).join("\n")
         @parents.each do |parent|
           reader = "dc_#{name}" + (name == :rights ? "es" : "s")
-          elems = @rss.send(parent).send(reader)
+          elems = @rss.__send__(parent).__send__(reader)
           klass_name = "DublinCore#{Utils.to_class_name(name.to_s)}"
           klass = DublinCoreModel.const_get(klass_name)
-          elems << klass.new(@rss.send(parent).send("dc_#{name}"))
-          assert_equal(excepted, @rss.send(parent).send("dc_#{name}_elements"))
+          elems << klass.new(@rss.__send__(parent).__send__("dc_#{name}"))
+          assert_equal(excepted,
+                       @rss.__send__(parent).__send__("dc_#{name}_elements"))
         end
       end
       

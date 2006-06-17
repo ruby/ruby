@@ -15,10 +15,10 @@ module RSS
   module Assertions
     
     def assert_parse(rss, assert_method, *args)
-      send("assert_#{assert_method}", *args) do
+      __send__("assert_#{assert_method}", *args) do
         ::RSS::Parser.parse(rss)
       end
-      send("assert_#{assert_method}", *args) do
+      __send__("assert_#{assert_method}", *args) do
         ::RSS::Parser.parse(rss, false).validate
       end
     end
@@ -119,7 +119,7 @@ module RSS
       _wrap_assertion do
         n_attrs = normalized_attrs(attrs)
         ::RSS::XMLStyleSheet::ATTRIBUTES.each do |name|
-          assert_equal(n_attrs[name], xsl.send(name))
+          assert_equal(n_attrs[name], xsl.__send__(name))
         end
       end
     end

@@ -37,13 +37,13 @@ module RSS
     def initialize(*attrs)
       @do_validate = true
       ATTRIBUTES.each do |attr|
-        self.send("#{attr}=", nil)
+        __send__("#{attr}=", nil)
       end
       vars = ATTRIBUTES.dup
       vars.unshift(:do_validate)
       attrs.each do |name, value|
         if vars.include?(name.to_s)
-          self.send("#{name}=", value)
+          __send__("#{name}=", value)
         end
       end
     end
@@ -53,8 +53,8 @@ module RSS
       if @href
         rv << %Q[<?xml-stylesheet]
         ATTRIBUTES.each do |name|
-          if self.send(name)
-            rv << %Q[ #{name}="#{h self.send(name)}"]
+          if __send__(name)
+            rv << %Q[ #{name}="#{h __send__(name)}"]
           end
         end
         rv << %Q[?>]

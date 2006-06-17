@@ -74,16 +74,17 @@ EOR
       
       @elems.each do |name, value|
         @parents.each do |parent|
-          assert_equal(value, @rss.send(parent).send("sy_#{name}"))
-          @rss.send(parent).send("sy_#{name}=", new_value[name].to_s)
-          assert_equal(new_value[name], @rss.send(parent).send("sy_#{name}"))
+          assert_equal(value, @rss.__send__(parent).__send__("sy_#{name}"))
+          @rss.__send__(parent).__send__("sy_#{name}=", new_value[name].to_s)
+          assert_equal(new_value[name],
+                       @rss.__send__(parent).__send__("sy_#{name}"))
         end
       end
       
       %w(hourly daily weekly monthly yearly).each do |x|
         @parents.each do |parent|
           assert_nothing_raised do
-            @rss.send(parent).sy_updatePeriod = x
+            @rss.__send__(parent).sy_updatePeriod = x
           end
         end
       end
@@ -91,7 +92,7 @@ EOR
       %w(-2 0.3 -0.4).each do |x|
         @parents.each do |parent|
           assert_not_available_value("updateBase", x) do
-            @rss.send(parent).sy_updateBase = x
+            @rss.__send__(parent).sy_updateBase = x
           end
         end
       end
@@ -103,7 +104,8 @@ EOR
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
-          assert_equal(excepted, @rss.send(parent).send("sy_#{name}_element"))
+          assert_equal(excepted,
+                       @rss.__send__(parent).__send__("sy_#{name}_element"))
         end
       end
       
