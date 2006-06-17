@@ -26,8 +26,8 @@ module RSS
           },
           {
             "dc:title" => "Example Image",
-            "#{@prefix}:width" => 100,
-            "#{@prefix}:height" => 65,
+            "#{@prefix}:width" => "100",
+            "#{@prefix}:height" => "65",
           },
         ],
         [
@@ -36,8 +36,8 @@ module RSS
           },
           {
             "dc:title" => "Culture",
-            "#{@prefix}:width" => 80,
-            "#{@prefix}:height" => 50,
+            "#{@prefix}:width" => "80",
+            "#{@prefix}:height" => "50",
           },
         ]
       ]
@@ -93,6 +93,23 @@ EOR
         assert_equal(@favicon_attrs[full_name], favicon.__send__(name))
       end
 
+      %w(small medium large).each do |value|
+        assert_nothing_raised do
+          favicon.size = value
+          favicon.image_size = value
+        end
+      end
+
+      %w(aaa AAA SMALL MEDIUM LARGE).each do |value|
+        args = ["#{@prefix}:favicon", value, "#{@prefix}:size"]
+        assert_not_available_value(*args) do
+          favicon.size = value
+        end
+        assert_not_available_value(*args) do
+          favicon.image_size = value
+        end
+      end
+
       [
         %w(dc_title dc:title sample-favicon),
       ].each do |name, full_name, new_value|
@@ -120,10 +137,19 @@ EOR
         end
         
         [
-          ["width", "image:width", 111],
-          ["image_width", "image:width", 44],
-          ["height", "image:height", 222],
-          ["image_height", "image:height", 88],
+          ["width", "image:width", "111"],
+          ["image_width", "image:width", "44"],
+          ["height", "image:height", "222"],
+          ["image_height", "image:height", "88"],
+        ].each do |name, full_name, new_value|
+          assert_equal(contents[full_name].to_i, image_item.__send__(name))
+          image_item.__send__("#{name}=", new_value)
+          assert_equal(new_value.to_i, image_item.__send__(name))
+          image_item.__send__("#{name}=", contents[full_name])
+          assert_equal(contents[full_name].to_i, image_item.__send__(name))
+        end
+
+        [
           ["dc_title", "dc:title", "sample-image"],
         ].each do |name, full_name, new_value|
           assert_equal(contents[full_name], image_item.__send__(name))

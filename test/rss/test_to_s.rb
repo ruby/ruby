@@ -146,13 +146,13 @@ module RSS
           "Friday",
         ],
         "skipHours" => [
-          12,
-          23,
+          "12",
+          "23",
         ],
         "date" => Time.now,
         "lastBuildDate" => Time.now - 3600,
         "generator" => "RSS Maker",
-        "ttl" => 60,
+        "ttl" => "60",
         "cloud" => {
           "domain" => "rpc.sys.com",
           "port" => "80",
@@ -187,7 +187,7 @@ module RSS
           "author" => "foo@example.com",
           "comments" => "http://example.com/1/comments",
           "guid" => {
-            "isPermaLink" => "ture",
+            "isPermaLink" => "true",
             "content" => "http://example.com/1",
           },
           "enclosure" => {
@@ -275,7 +275,7 @@ module RSS
     def setup_syndication_info
       @sy_info = {
         "updatePeriod" => "hourly",
-        "updateFrequency" => 2,
+        "updateFrequency" => "2",
         "updateBase" => Time.now - 3600,
       }
     end

@@ -55,7 +55,7 @@ module RSS
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
-      assert_equal(true, channel.items.Seq.lis.empty?)
+      assert(channel.items.Seq.lis.empty?)
       assert_nil(channel.image)
       assert_nil(channel.textinput)
 

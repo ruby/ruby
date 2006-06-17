@@ -117,10 +117,13 @@ module RSS
   end
 
   class NotAvailableValueError < InvalidRSSError
-    attr_reader :tag, :value
-    def initialize(tag, value)
-      @tag, @value = tag, value
-      super("value <#{value}> of tag <#{tag}> is not available.")
+    attr_reader :tag, :value, :attribute
+    def initialize(tag, value, attribute=nil)
+      @tag, @value, @attribute = tag, value, attribute
+      message = "value <#{value}> of "
+      message << "attribute <#{attribute}> of " if attribute
+      message << "tag <#{tag}> is not available."
+      super(message)
     end
   end
 
@@ -192,11 +195,11 @@ EOC
       end
     end
 
-    def install_text_element(name)
+    def install_text_element(name, type=nil, disp_name=name)
       self::ELEMENTS << name
       add_need_initialize_variable(name)
 
-      attr_writer name
+      def_corresponded_attr_writer name, type, disp_name
       convert_attr_reader name
       install_element(name) do |n, elem_name|
         <<-EOC
@@ -302,6 +305,68 @@ EOC
           end
         end
 
+      end
+EOC
+    end
+
+    def integer_writer(name, disp_name=name)
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def #{name}=(new_value)
+        if new_value.nil?
+          @#{name} = new_value
+        else
+          if @do_validate
+            begin
+              @#{name} = Integer(new_value)
+            rescue ArgumentError
+              raise NotAvailableValueError.new('#{disp_name}', new_value)
+            end
+          else
+            @#{name} = new_value.to_i
+          end
+        end
+      end
+EOC
+    end
+
+    def positive_integer_writer(name, disp_name=name)
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def #{name}=(new_value)
+        if new_value.nil?
+          @#{name} = new_value
+        else
+          if @do_validate
+            begin
+              tmp = Integer(new_value)
+              raise ArgumentError if tmp <= 0
+              @#{name} = tmp
+            rescue ArgumentError
+              raise NotAvailableValueError.new('#{disp_name}', new_value)
+            end
+          else
+            @#{name} = new_value.to_i
+          end
+        end
+      end
+EOC
+    end
+
+    def boolean_writer(name, disp_name=name)
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def #{name}=(new_value)
+        if new_value.nil?
+          @#{name} = new_value
+        else
+          if @do_validate and
+              ![true, false, "true", "false"].include?(new_value)
+            raise NotAvailableValueError.new('#{disp_name}', new_value)
+          end
+          if [true, false].include?(new_value)
+            @#{name} = new_value
+          else
+            @#{name} = new_value == "true"
+          end
+        end
       end
 EOC
     end
@@ -437,14 +502,31 @@ EOC
           end
         end
 
-        def self.install_get_attribute(name, uri, required=true)
-          attr_writer name
+        def self.install_get_attribute(name, uri, required=true,
+                                       type=nil, disp_name=name)
+          def_corresponded_attr_writer name, type, disp_name
           convert_attr_reader name
+          if type == :boolean and /^is/ =~ name
+            alias_method "\#{$POSTMATCH}?", name
+          end
           GET_ATTRIBUTES << [name, uri, required]
         end
 
-        def self.content_setup
-          attr_writer :content
+        def self.def_corresponded_attr_writer(name, type=nil, disp_name=name)
+          case type
+          when :integer
+            integer_writer name, disp_name
+          when :positive_integer
+            positive_integer_writer name, disp_name
+          when :boolean
+            boolean_writer name, disp_name
+          else
+            attr_writer name
+          end
+        end
+
+        def self.content_setup(type=nil)
+          def_corresponded_attr_writer "content", type
           convert_attr_reader :content
           def_content_only_to_s
           @have_content = true

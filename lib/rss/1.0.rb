@@ -113,7 +113,7 @@ module RSS
       
       def initialize(resource=nil)
         super()
-        @resource = resource
+        self.resource = resource
       end
 
       def full_name
@@ -293,7 +293,7 @@ module RSS
       
       def initialize(about=nil)
         super()
-        @about = about
+        self.about = about
       end
 
       def to_s(need_convert=true, indent=calc_indent)
@@ -364,7 +364,7 @@ module RSS
       
         def initialize(resource=nil)
           super()
-          @resource = resource
+          self.resource = resource
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -401,7 +401,7 @@ module RSS
       
         def initialize(resource=nil)
           super()
-          @resource = resource
+          self.resource = resource
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -509,7 +509,7 @@ module RSS
 
       def initialize(about=nil)
         super()
-        @about = about
+        self.about = about
       end
 
       def to_s(need_convert=true, indent=calc_indent)
@@ -579,7 +579,7 @@ module RSS
 
       def initialize(about=nil)
         super()
-        @about = about
+        self.about = about
       end
 
       def to_s(need_convert=true, indent=calc_indent)
@@ -654,7 +654,7 @@ module RSS
 
       def initialize(about=nil)
         super()
-        @about = about
+        self.about = about
       end
 
       def to_s(need_convert=true, indent=calc_indent)

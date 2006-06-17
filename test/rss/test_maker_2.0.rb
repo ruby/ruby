@@ -49,15 +49,15 @@ module RSS
       copyright = "foo"
       managingEditor = "bar"
       webMaster = "web master"
-      rating = "6"
+      rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
       docs = "http://foo.com/doc"
       skipDays = [
         "Sunday",
         "Monday",
       ]
       skipHours = [
-        0,
-        13,
+        "0",
+        "13",
       ]
       pubDate = Time.now
       lastBuildDate = Time.now
@@ -66,7 +66,7 @@ module RSS
         "misc",
       ]
       generator = "RSS Maker"
-      ttl = 60
+      ttl = "60"
       
       rss = RSS::Maker.make("2.0") do |maker|
         maker.channel.title = title
@@ -117,7 +117,7 @@ module RSS
         assert_equal(day, channel.skipDays.days[i].content)
       end
       skipHours.each_with_index do |hour, i|
-        assert_equal(hour, channel.skipHours.hours[i].content)
+        assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
       
       channel.categories.each_with_index do |category, i|
@@ -125,7 +125,7 @@ module RSS
       end
       
       assert_equal(generator, channel.generator)
-      assert_equal(ttl, channel.ttl)
+      assert_equal(ttl.to_i, channel.ttl)
 
       assert(channel.items.empty?)
       assert_nil(channel.image)
@@ -193,7 +193,7 @@ module RSS
       end
       cloud = rss.channel.cloud
       assert_equal(domain, cloud.domain)
-      assert_equal(port, cloud.port)
+      assert_equal(port.to_i, cloud.port)
       assert_equal(path, cloud.path)
       assert_equal(registerProcedure, cloud.registerProcedure)
       assert_equal(protocol, cloud.protocol)
@@ -267,8 +267,8 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      width = 144
-      height = 400
+      width = "144"
+      height = "400"
       description = "an image"
 
       rss = RSS::Maker.make("2.0") do |maker|
@@ -285,8 +285,8 @@ module RSS
       assert_equal(title, image.title)
       assert_equal(link, image.link)
       assert_equal(url, image.url)
-      assert_equal(width, image.width)
-      assert_equal(height, image.height)
+      assert_equal(width.to_i, image.width)
+      assert_equal(height.to_i, image.height)
       assert_equal(description, image.description)
 
       assert_not_set_error("maker.channel", %w(title description)) do
@@ -307,8 +307,8 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      width = 144
-      height = 400
+      width = "144"
+      height = "400"
       description = "an image"
 
       rss = RSS::Maker.make("2.0") do |maker|
@@ -418,7 +418,7 @@ module RSS
     end
 
     def test_guid
-      isPermaLink = true
+      isPermaLink = "true"
       content = "http://inessential.com/2002/09/01.php#a2"
       
       rss = RSS::Maker.make("2.0") do |maker|
@@ -430,7 +430,7 @@ module RSS
         guid.content = content
       end
       guid = rss.channel.items.last.guid
-      assert_equal(isPermaLink, guid.isPermaLink)
+      assert_equal(isPermaLink == "true", guid.isPermaLink)
       assert_equal(content, guid.content)
     end
 
@@ -463,7 +463,7 @@ module RSS
       end
       enclosure = rss.channel.items.last.enclosure
       assert_equal(url, enclosure.url)
-      assert_equal(length, enclosure.length)
+      assert_equal(length.to_i, enclosure.length)
       assert_equal(type, enclosure.type)
     end
 

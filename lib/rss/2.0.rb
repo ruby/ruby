@@ -6,16 +6,14 @@ module RSS
 
     class Channel
 
-      %w(generator ttl).each do |name|
-        install_text_element(name)
+      [
+        ["generator"],
+        ["ttl", :integer],
+      ].each do |name, type|
+        install_text_element(name, type)
         install_model(name, '?')
       end
 
-      remove_method :ttl=
-      def ttl=(value)
-        @ttl = value.to_i
-      end
-      
       [
         %w(category categories),
       ].each do |name, plural_name|
@@ -126,17 +124,24 @@ EOT
           include RSS09
 
           [
-            ["isPermaLink", nil, false]
-          ].each do |name, uri, required|
-            install_get_attribute(name, uri, required)
+            ["isPermaLink", nil, false, :boolean]
+          ].each do |name, uri, required, type|
+            install_get_attribute(name, uri, required, type)
           end
 
           content_setup
 
           def initialize(isPermaLink=nil, content=nil)
             super()
-            @isPermaLink = isPermaLink
-            @content = content
+            self.isPermaLink = isPermaLink
+            self.content = content
+          end
+
+          alias_method :_PermaLink?, :PermaLink?
+          private :_PermaLink?
+          def PermaLink?
+            perma = _PermaLink?
+            perma or perma.nil?
           end
 
           private

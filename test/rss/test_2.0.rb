@@ -75,9 +75,9 @@ module RSS
       generator = "MightyInHouse Content System v2.3"
       docs = "http://blogs.law.harvard.edu/tech/rss"
 
-      ttl = 60
+      ttl = "60"
 
-      rating = 6
+      rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
 
       channel = Rss::Channel.new
       
@@ -85,7 +85,9 @@ module RSS
                  managingEditor webMaster pubDate lastBuildDate
                  generator docs ttl rating)
       elems.each do |x|
-        channel.__send__("#{x}=", instance_eval(x))
+        value = instance_eval(x)
+        value = value.rfc822 if %w(pubDate lastBuildDate).include?(x)
+        channel.__send__("#{x}=", value)
       end
       categories.each do |cat|
         channel.categories << Rss::Channel::Category.new(cat[:domain],
@@ -103,7 +105,8 @@ module RSS
         case x
         when "pubDate", "lastBuildDate"
           assert_equal(expected, Time.parse(elem.text))
-        when "ttl", "rating"
+        when "ttl"
+          expected = channel.__send__(x)
           assert_equal(expected, elem.text.to_i)
         else
           assert_equal(expected, elem.text)
@@ -124,7 +127,7 @@ module RSS
     def test_channel_cloud
       cloud_params = {
         :domain => "rpc.sys.com",
-        :port => 80,
+        :port => "80",
         :path => "/RPC2",
         :registerProcedure => "myCloud.rssPleaseNotify",
         :protocol => "xml-rpc",
@@ -134,7 +137,8 @@ module RSS
                                       cloud_params[:path],
                                       cloud_params[:registerProcedure],
                                       cloud_params[:protocol])
-                                      
+      cloud_params[:port] = cloud.port
+      
       doc = REXML::Document.new(cloud.to_s)
       cloud_elem = doc.root
       
@@ -151,8 +155,8 @@ module RSS
         :url => "http://hoge.com/hoge.png",
         :title => "fugafuga",
         :link => "http://hoge.com",
-        :width => 144,
-        :height => 400,
+        :width => "144",
+        :height => "400",
         :description => "an image",
       }
       image = Rss::Channel::Image.new(image_params[:url],
@@ -166,6 +170,7 @@ module RSS
       image_elem = doc.root
       
       image_params.each do |name, value|
+        value = image.__send__(name)
         actual = image_elem.elements[name.to_s].text
         actual = actual.to_i if [:width, :height].include?(name)
         assert_equal(value, actual)
@@ -213,8 +218,8 @@ module RSS
     
     def test_channel_skip_hours
       skipHours_values = [
-        0,
-        13,
+        "0",
+        "13",
       ]
       skipHours = Rss::Channel::SkipHours.new
       skipHours_values.each do |value|
@@ -225,7 +230,8 @@ module RSS
       hours_elem = doc.root
       
       skipHours_values.each_with_index do |value, i|
-        assert_equal(value, hours_elem.elements[i + 1].text.to_i)
+        expected = skipHours.hours[i].content
+        assert_equal(expected, hours_elem.elements[i + 1].text.to_i)
       end
     end
 
@@ -252,7 +258,9 @@ module RSS
       
       elems = %w(title link description author comments pubDate)
       elems.each do |x|
-        item.__send__("#{x}=", instance_eval(x))
+        value = instance_eval(x)
+        value = value.rfc822 if x == "pubDate"
+        item.__send__("#{x}=", value)
       end
       categories.each do |cat|
         item.categories << Rss::Channel::Category.new(cat[:domain],
@@ -290,23 +298,21 @@ module RSS
     def test_item_enclosure
       enclosure_params = {
         :url => "http://www.scripting.com/mp3s/weatherReportSuite.mp3",
-        :length => 12216320,
+        :length => "12216320",
         :type => "audio/mpeg",
       }
 
       enclosure = Rss::Channel::Item::Enclosure.new(enclosure_params[:url],
                                                     enclosure_params[:length],
                                                     enclosure_params[:type])
-
+      enclosure_params[:length] = enclosure.length
+      
       doc = REXML::Document.new(enclosure.to_s)
       enclosure_elem = doc.root
 
       actual = {}
       enclosure_elem.attributes.each do |name, value|
-        if name == "length"
-          enclosure_params[name.to_sym] = value.to_i
-          value = value.to_i
-        end
+        value = value.to_i if name == "length"
         actual[name.to_sym] = value
       end
       assert_equal(enclosure_params, actual)
@@ -326,13 +332,22 @@ module RSS
       test_params.each do |guid_params|
         guid = Rss::Channel::Item::Guid.new(guid_params[:isPermaLink],
                                             guid_params[:content])
-
+        if guid_params.has_key?(:isPermaLink)
+          guid_params[:isPermaLink] = guid.isPermaLink
+        end
+        if guid.isPermaLink.nil?
+          assert_equal(true, guid.PermaLink?)
+        else
+          assert_equal(guid.isPermaLink, guid.PermaLink?)
+        end
+        
         doc = REXML::Document.new(guid.to_s)
         guid_elem = doc.root
       
         actual = {}
         actual[:content] = guid_elem.text if guid_elem.text
         guid_elem.attributes.each do |name, value|
+          value = value == "true" if name == "isPermaLink"
           actual[name.to_sym] = value
         end
         assert_equal(guid_params, actual)

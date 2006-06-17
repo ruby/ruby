@@ -55,15 +55,15 @@ module RSS
       copyright = "foo"
       managingEditor = "bar"
       webMaster = "web master"
-      rating = "6"
+      rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
       docs = "http://foo.com/doc"
       skipDays = [
         "Sunday",
         "Monday",
       ]
       skipHours = [
-        0,
-        13,
+        "0",
+        "13",
       ]
       pubDate = Time.now
       lastBuildDate = Time.now
@@ -109,7 +109,7 @@ module RSS
         assert_equal(day, channel.skipDays.days[i].content)
       end
       skipHours.each_with_index do |hour, i|
-        assert_equal(hour, channel.skipHours.hours[i].content)
+        assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
       
       assert(channel.items.empty?)
@@ -165,8 +165,8 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      width = 144
-      height = 400
+      width = "144"
+      height = "400"
       description = "an image"
 
       rss = RSS::Maker.make("0.91") do |maker|
@@ -183,8 +183,8 @@ module RSS
       assert_equal(title, image.title)
       assert_equal(link, image.link)
       assert_equal(url, image.url)
-      assert_equal(width, image.width)
-      assert_equal(height, image.height)
+      assert_equal(width.to_i, image.width)
+      assert_equal(height.to_i, image.height)
       assert_equal(description, image.description)
 
       assert_not_set_error("maker.channel", %w(description title language)) do
@@ -205,8 +205,8 @@ module RSS
       title = "fugafuga"
       link = "http://hoge.com"
       url = "http://hoge.com/hoge.png"
-      width = 144
-      height = 400
+      width = "144"
+      height = "400"
       description = "an image"
 
       rss = RSS::Maker.make("0.91") do |maker|
