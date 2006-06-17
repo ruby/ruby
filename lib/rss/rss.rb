@@ -30,28 +30,6 @@ class Time
   end
 end
 
-module Enumerable
-  unless instance_methods.include?("sort_by")
-    def sort_by
-      collect do |x|
-        [yield(x), x]
-      end.sort do |x, y|
-        x[0] <=> y[0]
-      end.collect! do |x|
-        x[1]
-      end
-    end
-  end
-end
-
-class Hash
-  unless instance_methods.include?("merge")
-    def merge(other)
-      dup.update(other)
-    end
-  end
-end
-
 require "English"
 require "rss/utils"
 require "rss/converter"
@@ -946,7 +924,18 @@ EOC
 
       setup_maker_elements(maker)
     end
-    
+
+    def to_xml(version=nil, &block)
+      if version.nil? or version == @rss_version
+        to_s
+      else
+        RSS::Maker.make(version) do |maker|
+          setup_maker(maker)
+          block.call(maker) if block
+        end.to_s
+      end
+    end
+
     private
     def tag(indent, attrs, &block)
       rv = xmldecl + xml_stylesheet_pi

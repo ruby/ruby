@@ -1,3 +1,22 @@
+Sat Jun 17 10:30:41 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (Hash#merge, Enumerable#sort_by): removed.
+
+	* lib/rss/rss.rb (RSS::RootElementMixin#to_xml): added.
+	  [ruby-talk:197284]
+
+	  We can convert RSS version easily like the following:
+	    rss10 = RSS::Parser.parse(File.read("1.0.rdf"))
+	    File.open("2.0.rss", "w") {|f| f.print(rss10.to_xml("2.0"))}
+
+	* test/rss/test_1.0.rb: added #to_xml test.
+	* test/rss/test_2.0.rb: ditto.
+
+	* test/rss/rss-testcase.rb: added some helper methods that
+	  generates sample RSS 2.0.
+
+	* sample/rss/convert.rb: added a sample script to convert RSS format.
+
 Sat Jun 17 10:23:22 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (Kernel#funcall): removed.

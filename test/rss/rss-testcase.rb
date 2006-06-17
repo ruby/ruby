@@ -140,6 +140,15 @@ EOR
 EORSS
     end
 
+    def make_sample_items20
+      RESOURCES.collect do |res|
+        elems = ["<link>#{res}</link>"]
+        elems << "<title>title of #{res}</title>"
+        elems = elems.join("\n")
+        item = "<item>\n#{elems}\n</item>"
+      end.join("\n")
+    end
+
     def make_channel20(content=nil)
       <<-EOC
 <channel>
@@ -154,7 +163,7 @@ EORSS
     <link>#{LINK_VALUE}</link>
   </image>
 
-#{RESOURCES.collect do |res| '<item><link>' + res + '</link></item>' end.join("\n")}
+#{make_sample_items20}
 
   <textInput>
     <title>#{TITLE_VALUE}</title>
@@ -188,6 +197,12 @@ EOI
   registerProcedure="#{CLOUD_REGISTER_PROCEDURE}"
   protocol="#{CLOUD_PROTOCOL}" />
 EOC
+    end
+
+    def make_sample_rss20
+      make_rss20(<<-EOR)
+#{make_channel20}
+EOR
     end
 
     def make_element(elem_name, attrs, contents)

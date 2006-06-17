@@ -373,7 +373,20 @@ module RSS
       end
       assert_equal(source_params, actual)
     end
-    
+
+    def test_to_xml
+      rss = RSS::Parser.parse(make_sample_rss20)
+      assert_equal(rss.to_s, rss.to_xml)
+      assert_equal(rss.to_s, rss.to_xml("2.0"))
+      rss09 = RSS::Parser.parse(rss.to_xml("0.91"))
+      assert_equal("0.91", rss09.rss_version)
+      rss10 = rss.to_xml("1.0") do |maker|
+        maker.channel.about = "http://www.example.com/index.rdf"
+      end
+      rss10 = RSS::Parser.parse(rss10)
+      assert_equal("1.0", rss10.rss_version)
+    end
+
     def test_indent_size
       assert_equal(0, Rss.indent_size)
       assert_equal(1, Rss::Channel.indent_size)

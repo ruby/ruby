@@ -233,6 +233,19 @@ module RSS
       end
     end
 
+    def test_to_xml
+      rss = RSS::Parser.parse(make_sample_RDF)
+      assert_equal(rss.to_s, rss.to_xml)
+      assert_equal(rss.to_s, rss.to_xml("1.0"))
+      rss09 = rss.to_xml("0.91") do |maker|
+        maker.channel.language = "en-us"
+      end
+      rss09 = RSS::Parser.parse(rss09)
+      assert_equal("0.91", rss09.rss_version)
+      rss20 = RSS::Parser.parse(rss.to_xml("2.0"))
+      assert_equal("2.0", rss20.rss_version)
+    end
+
     def test_indent_size
       assert_equal(0, RDF.indent_size)
       assert_equal(1, RDF::Channel.indent_size)

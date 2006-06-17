@@ -70,6 +70,13 @@ module RSS
       rv
     end
 
+    def setup_maker_elements(maker)
+      super
+      items.each do |item|
+        item.setup_maker(maker.items)
+      end
+    end
+
     private
     def children
       [@channel]
