@@ -1,3 +1,10 @@
+Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss, test/rss: backported from trunk. (2005-11-16 - now)
+
+	* lib/rss/rss.rb (RSS::VERSION): 0.1.5 -> 0.1.6.
+	* test/rss/test_version.rb (RSS::TestVersion#test_version): ditto.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
@@ -107,7 +114,6 @@ Wed Jun  7 10:45:10 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  instead of socket().
 	  ifs socket support is backported from trunk.
 
->>>>>>> 1.2673.2.1622
 Wed Jun  7 09:14:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): binding for the return event hook should have
