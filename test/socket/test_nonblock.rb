@@ -71,38 +71,25 @@ class TestNonblockSocket < Test::Unit::TestCase
     u2.close if u2
   end
 
-  def bound_unix_socket(klass)
-    tmpfile = Tempfile.new("testrubysock")
-    path = tmpfile.path
-    tmpfile.close(true)
-    return klass.new(path), path
-  end
-
-  def test_unix_recvfrom_nonblock
-    serv, serv_path = bound_unix_socket(UNIXServer)
-    c = UNIXSocket.new(serv_path)
-    s = serv.accept
-    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { s.recvfrom_nonblock(100) }
-    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { c.recvfrom_nonblock(100) }
-    s.write "aaa"
-    IO.select [c]
-    mesg, unix_addr = c.recvfrom_nonblock(100)
+  def test_udp_recv_nonblock
+    u1 = UDPSocket.new
+    u2 = UDPSocket.new
+    u1.bind("127.0.0.1", 0)
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { u1.recv_nonblock(100) }
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::EINVAL) { u2.recv_nonblock(100) }
+    u2.send("aaa", 0, u1.getsockname)
+    IO.select [u1]
+    mesg = u1.recv_nonblock(100)
     assert_equal("aaa", mesg)
-    assert_equal(2, unix_addr.length)
-    af, path = unix_addr
-    if path != "" # connection-oriented socket may not return the peer address.
-      assert_equal(serv_path, path)
-    end
-    s.close
-    IO.select [c]
-    mesg, unix_addr = c.recvfrom_nonblock(100)
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { u1.recv_nonblock(100) }
+    u2.send("", 0, u1.getsockname)
+    IO.select [u1]
+    mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)
   ensure
-    File.unlink serv_path if serv_path && File.socket?(serv_path)
-    serv.close if serv
-    c.close if c
-    s.close if s && !s.closed?
-  end if defined?(UNIXSocket)
+    u1.close if u1
+    u2.close if u2
+  end
 
   def test_socket_recvfrom_nonblock
     s1 = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM, 0)
@@ -130,6 +117,20 @@ class TestNonblockSocket < Test::Unit::TestCase
     return c, s
   ensure
     serv.close if serv
+  end
+
+  def test_tcp_recv_nonblock
+    c, s = tcp_pair
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { c.recv_nonblock(100) }
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { s.recv_nonblock(100) }
+    c.write("abc")
+    IO.select [s]
+    assert_equal("a", s.recv_nonblock(1))
+    assert_equal("bc", s.recv_nonblock(100))
+    assert_raise(Errno::EAGAIN, Errno::EWOULDBLOCK) { s.recv_nonblock(100) }
+  ensure
+    c.close if c
+    s.close if s
   end
 
   def test_read_nonblock
