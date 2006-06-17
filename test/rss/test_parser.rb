@@ -1,4 +1,14 @@
-require "fileutils"
+begin
+  require "fileutils"
+rescue LoadError
+  module FileUtils
+    module_function
+    def rm_f(target)
+      File.unlink(target)
+    rescue Errno::ENOENT
+    end
+  end
+end
 
 require "rss-testcase"
 

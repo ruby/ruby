@@ -100,6 +100,11 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/rss-assertions.rb: improved type conversion assertions.
 
+	* lib/rss/rss.rb: added backward compatibility codes.
+	* lib/rss/parser.rb: ditto.
+	* test/rss/test_parser.rb: ditto.
+	* test/rss/test_2.0.rb: ditto.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed

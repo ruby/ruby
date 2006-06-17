@@ -1,5 +1,17 @@
 require "forwardable"
-require "open-uri"
+begin
+  require "open-uri"
+rescue LoadError
+  require "uri"
+end
+unless Kernel.methods.include?("URI")
+  module Kernel
+    def URI(uri_str) # :doc:
+      URI.parse(uri_str)
+    end
+    module_function :URI
+  end
+end
 
 require "rss/rss"
 
@@ -414,7 +426,7 @@ module RSS
       end
 
       previous = @last_element
-      next_element = klass.__send__(:new, *args)
+      next_element = klass.new(*args)
       next_element.do_validate = @do_validate
       previous.instance_eval {set_next_element(tag_name, next_element)}
       @last_element = next_element
