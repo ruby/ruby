@@ -1759,6 +1759,9 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 	rb_raise(rb_eSecurityError, "can't change environment variable");
     }
 
+    if (NIL_P(val)) {
+	rb_raise(rb_eTypeError, "cannot assign nil; use Hash#delete instead");
+    }
     StringValue(nm);
     StringValue(val);
     name = RSTRING(nm)->ptr;

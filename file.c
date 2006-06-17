@@ -2877,7 +2877,8 @@ rb_file_join(VALUE ary, VALUE sep)
 	    len += 10;
 	}
     }
-    if (!NIL_P(sep) && TYPE(sep) == T_STRING) {
+    if (!NIL_P(sep)) {
+	StringValue(sep);
 	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
     }
     result = rb_str_buf_new(len);

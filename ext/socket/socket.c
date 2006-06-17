@@ -136,11 +136,8 @@ static int lookup_order_table[LOOKUP_ORDERS] = {
 };
 
 static int
-ruby_getaddrinfo(nodename, servname, hints, res)
-     char *nodename;
-     char *servname;
-     struct addrinfo *hints;
-     struct addrinfo **res;
+ruby_getaddrinfo(char *nodename, char *servname,
+		 struct addrinfo *hints, struct addrinfo **res)
 {
     struct addrinfo tmp_hints;
     int i, af, error;
@@ -171,11 +168,8 @@ ruby_getaddrinfo(nodename, servname, hints, res)
 
 #if defined(_AIX)
 static int
-ruby_getaddrinfo__aix(nodename, servname, hints, res)
-     char *nodename;
-     char *servname;
-     struct addrinfo *hints;
-     struct addrinfo **res;
+ruby_getaddrinfo__aix(char *nodename, char *servname,
+		      struct addrinfo *hints, struct addrinfo **res)
 {
     int error = getaddrinfo(nodename, servname, hints, res);
     struct addrinfo *r;
@@ -199,9 +193,7 @@ ruby_getaddrinfo__aix(nodename, servname, hints, res)
 #endif
 
 static VALUE
-init_sock(sock, fd)
-    VALUE sock;
-    int fd;
+init_sock(VALUE sock, int fd)
 {
     OpenFile *fp;
 
@@ -217,8 +209,7 @@ init_sock(sock, fd)
 }
 
 static VALUE
-bsock_s_for_fd(klass, fd)
-    VALUE klass, fd;
+bsock_s_for_fd(VALUE klass, VALUE fd)
 {
     OpenFile *fptr;
     VALUE sock = init_sock(rb_obj_alloc(klass), NUM2INT(fd));
@@ -229,10 +220,7 @@ bsock_s_for_fd(klass, fd)
 }
 
 static VALUE
-bsock_shutdown(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+bsock_shutdown(int argc, VALUE *argv, VALUE sock)
 {
     VALUE howto;
     int how;
@@ -258,8 +246,7 @@ bsock_shutdown(argc, argv, sock)
 }
 
 static VALUE
-bsock_close_read(sock)
-    VALUE sock;
+bsock_close_read(VALUE sock)
 {
     OpenFile *fptr;
 
@@ -277,8 +264,7 @@ bsock_close_read(sock)
 }
 
 static VALUE
-bsock_close_write(sock)
-    VALUE sock;
+bsock_close_write(VALUE sock)
 {
     OpenFile *fptr;
 
@@ -341,8 +327,7 @@ bsock_close_write(sock)
  *
 */
 static VALUE
-bsock_setsockopt(sock, lev, optname, val)
-    VALUE sock, lev, optname, val;
+bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
 {
     int level, option;
     OpenFile *fptr;
@@ -421,8 +406,7 @@ bsock_setsockopt(sock, lev, optname, val)
  *   onoff, linger = optval.unpack "ii"
 */
 static VALUE
-bsock_getsockopt(sock, lev, optname)
-    VALUE sock, lev, optname;
+bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 {
 #if !defined(__BEOS__)
     int level, option;
@@ -446,8 +430,7 @@ bsock_getsockopt(sock, lev, optname)
 }
 
 static VALUE
-bsock_getsockname(sock)
-    VALUE sock;
+bsock_getsockname(VALUE sock)
 {
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -460,8 +443,7 @@ bsock_getsockname(sock)
 }
 
 static VALUE
-bsock_getpeername(sock)
-    VALUE sock;
+bsock_getpeername(VALUE sock)
 {
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -474,10 +456,7 @@ bsock_getpeername(sock)
 }
 
 static VALUE
-bsock_send(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+bsock_send(int argc, VALUE *argv, VALUE sock)
 {
     VALUE mesg, to;
     VALUE flags;
@@ -514,8 +493,7 @@ bsock_send(argc, argv, sock)
 }
 
 static VALUE
-bsock_do_not_reverse_lookup(sock)
-    VALUE sock;
+bsock_do_not_reverse_lookup(VALUE sock)
 {
     OpenFile *fptr;
 
@@ -524,9 +502,7 @@ bsock_do_not_reverse_lookup(sock)
 }
 
 static VALUE
-bsock_do_not_reverse_lookup_set(sock, state)
-    VALUE sock;
-    VALUE state;
+bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 {
     OpenFile *fptr;
 
@@ -541,9 +517,9 @@ bsock_do_not_reverse_lookup_set(sock, state)
     return sock;
 }
 
-static VALUE ipaddr _((struct sockaddr*, int));
+static VALUE ipaddr(struct sockaddr*, int);
 #ifdef HAVE_SYS_UN_H
-static VALUE unixaddr _((struct sockaddr_un*, socklen_t));
+static VALUE unixaddr(struct sockaddr_un*, socklen_t);
 #endif
 
 enum sock_recv_type {
@@ -554,11 +530,7 @@ enum sock_recv_type {
 };
 
 static VALUE
-s_recvfrom(sock, argc, argv, from)
-    VALUE sock;
-    int argc;
-    VALUE *argv;
-    enum sock_recv_type from;
+s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     OpenFile *fptr;
     VALUE str;
@@ -697,10 +669,7 @@ s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
 }
 
 static VALUE
-bsock_recv(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+bsock_recv(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_RECV);
 }
@@ -712,19 +681,16 @@ bsock_do_not_rev_lookup()
 }
 
 static VALUE
-bsock_do_not_rev_lookup_set(self, val)
-    VALUE self, val;
+bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
 {
     rb_secure(4);
     do_not_reverse_lookup = RTEST(val);
     return val;
 }
 
-NORETURN(static void raise_socket_error _((char *, int)));
+NORETURN(static void raise_socket_error(char *, int));
 static void
-raise_socket_error(reason, error)
-    char *reason;
-    int error;
+raise_socket_error(char *reason, int error)
 {
 #ifdef EAI_SYSTEM
     if (error == EAI_SYSTEM) rb_sys_fail(reason);
@@ -733,10 +699,7 @@ raise_socket_error(reason, error)
 }
 
 static void
-make_ipaddr0(addr, buf, len)
-    struct sockaddr *addr;
-    char *buf;
-    size_t len;
+make_ipaddr0(struct sockaddr *addr, char *buf, size_t len)
 {
     int error;
 
@@ -747,8 +710,7 @@ make_ipaddr0(addr, buf, len)
 }
 
 static VALUE
-make_ipaddr(addr)
-    struct sockaddr *addr;
+make_ipaddr(struct sockaddr *addr)
 {
     char buf[1024];
 
@@ -757,10 +719,7 @@ make_ipaddr(addr)
 }
 
 static void
-make_inetaddr(host, buf, len)
-    long host;
-    char *buf;
-    size_t len;
+make_inetaddr(long host, char *buf, size_t len)
 {
     struct sockaddr_in sin;
 
@@ -772,8 +731,7 @@ make_inetaddr(host, buf, len)
 }
 
 static int
-str_isnumber(p)
-        const char *p;
+str_isnumber(const char *p)
 {
     char *ep;
 
@@ -787,11 +745,8 @@ str_isnumber(p)
        return 0;
 }
 
-static char *
-host_str(host, hbuf, len)
-    VALUE host;
-    char *hbuf;
-    size_t len;
+static char*
+host_str(VALUE host, char *hbuf, size_t len)
 {
     if (NIL_P(host)) {
 	return NULL;
@@ -823,11 +778,8 @@ host_str(host, hbuf, len)
     }
 }
 
-static char *
-port_str(port, pbuf, len)
-    VALUE port;
-    char *pbuf;
-    size_t len;
+static char*
+port_str(VALUE port, char *pbuf, size_t len)
 {
     if (NIL_P(port)) {
 	return 0;
@@ -857,9 +809,7 @@ port_str(port, pbuf, len)
 #endif
 
 static struct addrinfo*
-sock_addrinfo(host, port, socktype, flags)
-    VALUE host, port;
-    int socktype, flags;
+sock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
 {
     struct addrinfo hints;
     struct addrinfo* res = NULL;
@@ -907,9 +857,7 @@ sock_addrinfo(host, port, socktype, flags)
 }
 
 static VALUE
-ipaddr(sockaddr, norevlookup)
-    struct sockaddr *sockaddr;
-    int norevlookup;
+ipaddr(struct sockaddr *sockaddr, int norevlookup)
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -967,8 +915,7 @@ ipaddr(sockaddr, norevlookup)
 }
 
 static int
-ruby_socket(domain, type, proto)
-    int domain, type, proto;
+ruby_socket(int domain, int type, int proto)
 {
     int fd;
 
@@ -983,9 +930,7 @@ ruby_socket(domain, type, proto)
 }
 
 static int
-wait_connectable0(fd, fds_w, fds_e)
-    int fd;
-    rb_fdset_t *fds_w, *fds_e;
+wait_connectable0(int fd, rb_fdset_t *fds_w, rb_fdset_t *fds_e)
 {
     int sockerr;
     socklen_t sockerrlen;
@@ -1025,16 +970,14 @@ struct wait_connectable_arg {
 
 #ifdef HAVE_RB_FD_INIT
 static VALUE
-try_wait_connectable(arg)
-    VALUE arg;
+try_wait_connectable(VALUE arg)
 {
     struct wait_connectable_arg *p = (struct wait_connectable_arg *)arg;
     return (VALUE)wait_connectable0(p->fd, &p->fds_w, &p->fds_e);
 }
 
 static VALUE
-wait_connectable_ensure(arg)
-    VALUE arg;
+wait_connectable_ensure(VALUE arg)
 {
     struct wait_connectable_arg *p = (struct wait_connectable_arg *)arg;
     rb_fd_term(&p->fds_w);
@@ -1044,8 +987,7 @@ wait_connectable_ensure(arg)
 #endif
 
 static int
-wait_connectable(fd)
-    int fd;
+wait_connectable(int fd)
 {
     struct wait_connectable_arg arg;
 
@@ -1076,11 +1018,7 @@ wait_connectable(fd)
 #endif
 
 static int
-ruby_connect(fd, sockaddr, len, socks)
-    int fd;
-    struct sockaddr *sockaddr;
-    int len;
-    int socks;
+ruby_connect(int fd, struct sockaddr *sockaddr, int len, int socks)
 {
     int status;
     int mode;
@@ -1200,8 +1138,7 @@ struct inetsock_arg
 };
 
 static VALUE
-inetsock_cleanup(arg)
-    struct inetsock_arg *arg;
+inetsock_cleanup(struct inetsock_arg *arg)
 {
     if (arg->remote.res) {
 	freeaddrinfo(arg->remote.res);
@@ -1218,8 +1155,7 @@ inetsock_cleanup(arg)
 }
 
 static VALUE
-init_inetsock_internal(arg)
-    struct inetsock_arg *arg;
+init_inetsock_internal(struct inetsock_arg *arg)
 {
     int type = arg->type;
     struct addrinfo *res;
@@ -1288,9 +1224,8 @@ init_inetsock_internal(arg)
 }
 
 static VALUE
-init_inetsock(sock, remote_host, remote_serv, local_host, local_serv, type)
-    VALUE sock, remote_host, remote_serv, local_host, local_serv;
-    int type;
+init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
+	      VALUE local_host, VALUE local_serv, int type)
 {
     struct inetsock_arg arg;
     arg.sock = sock;
@@ -1307,10 +1242,7 @@ init_inetsock(sock, remote_host, remote_serv, local_host, local_serv, type)
 }
 
 static VALUE
-tcp_init(argc, argv, sock)
-     int argc;
-     VALUE *argv;
-     VALUE sock;
+tcp_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
@@ -1324,8 +1256,7 @@ tcp_init(argc, argv, sock)
 
 #ifdef SOCKS
 static VALUE
-socks_init(sock, host, serv)
-    VALUE sock, host, serv;
+socks_init(VALUE sock, VALUE host, VALUEserv)
 {
     static init = 0;
 
@@ -1339,8 +1270,7 @@ socks_init(sock, host, serv)
 
 #ifdef SOCKS5
 static VALUE
-socks_s_close(sock)
-    VALUE sock;
+socks_s_close(VALUE sock)
 {
     OpenFile *fptr;
 
@@ -1357,16 +1287,15 @@ socks_s_close(sock)
 struct hostent_arg {
     VALUE host;
     struct addrinfo* addr;
-    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+    VALUE (*ipaddr)(struct sockaddr*, size_t);
 };
 
 static VALUE
-make_hostent_internal(arg)
-    struct hostent_arg *arg;
+make_hostent_internal(struct hostent_arg *arg)
 {
     VALUE host = arg->host;
     struct addrinfo* addr = arg->addr;
-    VALUE (*ipaddr)_((struct sockaddr*, size_t)) = arg->ipaddr;
+    VALUE (*ipaddr)(struct sockaddr*, size_t) = arg->ipaddr;
 
     struct addrinfo *ai;
     struct hostent *h;
@@ -1405,10 +1334,7 @@ make_hostent_internal(arg)
 }
 
 static VALUE
-make_hostent(host, addr, ipaddr)
-    VALUE host;
-    struct addrinfo* addr;
-    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+make_hostent(VALUE host, struct addrinfo *addr, VALUE (*ipaddr)(struct sockaddr *, size_t))
 {
     struct hostent_arg arg;
 
@@ -1419,27 +1345,22 @@ make_hostent(host, addr, ipaddr)
 		     RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
 }
 
-VALUE
-tcp_sockaddr(addr, len)
-    struct sockaddr *addr;
-    size_t len;
+static VALUE
+tcp_sockaddr(struct sockaddr *addr, size_t len)
 {
     return make_ipaddr(addr);
 }
 
 static VALUE
-tcp_s_gethostbyname(obj, host)
-    VALUE obj, host;
+tcp_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
-    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
+    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME),
+			tcp_sockaddr);
 }
 
 static VALUE
-tcp_svr_init(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+tcp_svr_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE arg1, arg2;
 
@@ -1464,11 +1385,7 @@ s_accept_nonblock(VALUE klass, OpenFile *fptr, struct sockaddr *sockaddr, sockle
 }
 
 static VALUE
-s_accept(klass, fd, sockaddr, len)
-    VALUE klass;
-    int fd;
-    struct sockaddr *sockaddr;
-    socklen_t *len;
+s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
     int retry = 0;
@@ -1503,13 +1420,12 @@ s_accept(klass, fd, sockaddr, len)
 }
 
 static VALUE
-tcp_accept(sock)
-    VALUE sock;
+tcp_accept(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
-
+ 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
     return s_accept(rb_cTCPSocket, fptr->fd,
@@ -1546,30 +1462,38 @@ tcp_accept(sock)
  * * Socket#accept
  */
 static VALUE
-tcp_accept_nonblock(sock)
-    VALUE sock;
+tcp_accept_nonblock(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
+    VALUE client;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept_nonblock(rb_cTCPSocket, fptr,
-                             (struct sockaddr *)&from, &fromlen);
+    client = s_accept_nonblock(rb_cTCPSocket, fptr,
+			       (struct sockaddr *)&from, &fromlen);
+    if (rb_block_given_p()) {
+	return sock_yield(client);
+    }
+    return client;
 }
 
 static VALUE
-tcp_sysaccept(sock)
-    VALUE sock;
+tcp_sysaccept(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
+    VALUE client;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    client = s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    if (rb_block_given_p()) {
+	return sock_yield(client);
+    }
+    return client;
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -1579,17 +1503,14 @@ struct unixsock_arg {
 };
 
 static VALUE
-unixsock_connect_internal(arg)
-    struct unixsock_arg *arg;
+unixsock_connect_internal(struct unixsock_arg *arg)
 {
-    return (VALUE)ruby_connect(arg->fd, arg->sockaddr, sizeof(*arg->sockaddr), 0);
+    return (VALUE)ruby_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
+			       sizeof(*arg->sockaddr), 0);
 }
 
 static VALUE
-init_unixsock(sock, path, server)
-    VALUE sock;
-    VALUE path;
-    int server;
+init_unixsock(VALUE sock, VALUE path, int server)
 {
     struct sockaddr_un sockaddr;
     int fd, status;
@@ -1617,7 +1538,8 @@ init_unixsock(sock, path, server)
 	struct unixsock_arg arg;
 	arg.sockaddr = &sockaddr;
 	arg.fd = fd;
-        status = rb_protect(unixsock_connect_internal, (VALUE)&arg, &prot);
+        status = rb_protect((VALUE(*)(VALUE))unixsock_connect_internal,
+			    (VALUE)&arg, &prot);
 	if (prot) {
 	    close(fd);
 	    rb_jump_tag(prot);
@@ -1642,8 +1564,7 @@ init_unixsock(sock, path, server)
 #endif
 
 static VALUE
-ip_addr(sock)
-    VALUE sock;
+ip_addr(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage addr;
@@ -1657,8 +1578,7 @@ ip_addr(sock)
 }
 
 static VALUE
-ip_peeraddr(sock)
-    VALUE sock;
+ip_peeraddr(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage addr;
@@ -1672,10 +1592,7 @@ ip_peeraddr(sock)
 }
 
 static VALUE
-ip_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+ip_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_IP);
 }
@@ -1726,8 +1643,7 @@ ip_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-ip_s_getaddress(obj, host)
-    VALUE obj, host;
+ip_s_getaddress(VALUE obj, VALUE host)
 {
     struct sockaddr_storage addr;
     struct addrinfo *res = sock_addrinfo(host, Qnil, SOCK_STREAM, 0);
@@ -1740,10 +1656,7 @@ ip_s_getaddress(obj, host)
 }
 
 static VALUE
-udp_init(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+udp_init(int argc, VALUE *argv, VALUE sock)
 {
     VALUE arg;
     int socktype = AF_INET;
@@ -1768,8 +1681,7 @@ struct udp_arg
 };
 
 static VALUE
-udp_connect_internal(arg)
-    struct udp_arg *arg;
+udp_connect_internal(struct udp_arg *arg)
 {
     int fd = arg->fd;
     struct addrinfo *res;
@@ -1783,8 +1695,7 @@ udp_connect_internal(arg)
 }
 
 static VALUE
-udp_connect(sock, host, port)
-    VALUE sock, host, port;
+udp_connect(VALUE sock, VALUE host, VALUE port)
 {
     OpenFile *fptr;
     struct udp_arg arg;
@@ -1801,8 +1712,7 @@ udp_connect(sock, host, port)
 }
 
 static VALUE
-udp_bind(sock, host, port)
-    VALUE sock, host, port;
+udp_bind(VALUE sock, VALUE host, VALUE port)
 {
     OpenFile *fptr;
     struct addrinfo *res0, *res;
@@ -1823,10 +1733,7 @@ udp_bind(sock, host, port)
 }
 
 static VALUE
-udp_send(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+udp_send(int argc, VALUE *argv, VALUE sock)
 {
     VALUE mesg, flags, host, port;
     OpenFile *fptr;
@@ -1861,13 +1768,12 @@ udp_send(argc, argv, sock)
 
 #ifdef HAVE_SYS_UN_H
 static VALUE
-unix_init(sock, path)
-    VALUE sock, path;
+unix_init(VALUE sock, VALUE path)
 {
     return init_unixsock(sock, path, 0);
 }
 
-static char *
+static char*
 unixpath(struct sockaddr_un *sockaddr, socklen_t len)
 {
     if (sockaddr->sun_path < (char*)sockaddr + len)
@@ -1877,8 +1783,7 @@ unixpath(struct sockaddr_un *sockaddr, socklen_t len)
 }
 
 static VALUE
-unix_path(sock)
-    VALUE sock;
+unix_path(VALUE sock)
 {
     OpenFile *fptr;
 
@@ -1894,17 +1799,13 @@ unix_path(sock)
 }
 
 static VALUE
-unix_svr_init(sock, path)
-    VALUE sock, path;
+unix_svr_init(VALUE sock, VALUE path)
 {
     return init_unixsock(sock, path, 1);
 }
 
 static VALUE
-unix_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+unix_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_UNIX);
 }
@@ -1967,8 +1868,7 @@ unix_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 #endif
 
 static VALUE
-unix_send_io(sock, val)
-    VALUE sock, val;
+unix_send_io(VALUE sock, VALUE val)
 {
 #if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     int fd;
@@ -2032,10 +1932,7 @@ unix_send_io(sock, val)
 }
 
 static VALUE
-unix_recv_io(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+unix_recv_io(int argc, VALUE *argv, VALUE sock)
 {
 #if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     VALUE klass, mode;
@@ -2140,8 +2037,7 @@ unix_recv_io(argc, argv, sock)
 }
 
 static VALUE
-unix_accept(sock)
-    VALUE sock;
+unix_accept(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_un from;
@@ -2183,8 +2079,7 @@ unix_accept(sock)
  * * Socket#accept
  */
 static VALUE
-unix_accept_nonblock(sock)
-    VALUE sock;
+unix_accept_nonblock(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_un from;
@@ -2193,12 +2088,11 @@ unix_accept_nonblock(sock)
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
     return s_accept_nonblock(rb_cUNIXSocket, fptr,
-                             (struct sockaddr *)&from, &fromlen);
+			     (struct sockaddr *)&from, &fromlen);
 }
 
 static VALUE
-unix_sysaccept(sock)
-    VALUE sock;
+unix_sysaccept(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_un from;
@@ -2206,14 +2100,12 @@ unix_sysaccept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
 static VALUE
-unixaddr(sockaddr, len)
-    struct sockaddr_un *sockaddr;
-    socklen_t len;
+unixaddr(struct sockaddr_un *sockaddr, socklen_t len)
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
                         rb_str_new2(unixpath(sockaddr, len)));
@@ -2221,8 +2113,7 @@ unixaddr(sockaddr, len)
 #endif
 
 static VALUE
-unix_addr(sock)
-    VALUE sock;
+unix_addr(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_un addr;
@@ -2236,8 +2127,7 @@ unix_addr(sock)
 }
 
 static VALUE
-unix_peeraddr(sock)
-    VALUE sock;
+unix_peeraddr(VALUE sock)
 {
     OpenFile *fptr;
     struct sockaddr_un addr;
@@ -2252,9 +2142,7 @@ unix_peeraddr(sock)
 #endif
 
 static void
-setup_domain_and_type(domain, dv, type, tv)
-    VALUE domain, type;
-    int *dv, *tv;
+setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
 {
     VALUE tmp;
     char *ptr;
@@ -2344,8 +2232,7 @@ setup_domain_and_type(domain, dv, type, tv)
 }
 
 static VALUE
-sock_initialize(sock, domain, type, protocol)
-    VALUE sock, domain, type, protocol;
+sock_initialize(VALUE sock, VALUE domain, VALUE type, VALUE protocol)
 {
     int fd;
     int d, t;
@@ -2359,8 +2246,7 @@ sock_initialize(sock, domain, type, protocol)
 }
 
 static VALUE
-sock_s_socketpair(klass, domain, type, protocol)
-    VALUE klass, domain, type, protocol;
+sock_s_socketpair(VALUE klass, VALUE domain, VALUE type, VALUE protocol)
 {
 #if defined HAVE_SOCKETPAIR
     int d, t, sp[2];
@@ -2384,10 +2270,7 @@ sock_s_socketpair(klass, domain, type, protocol)
 
 #ifdef HAVE_SYS_UN_H
 static VALUE
-unix_s_socketpair(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 {
     VALUE domain, type, protocol;
     domain = INT2FIX(PF_UNIX);
@@ -2514,8 +2397,7 @@ unix_s_socketpair(argc, argv, klass)
  * * connect function in Microsoft's Winsock functions reference
  */
 static VALUE
-sock_connect(sock, addr)
-    VALUE sock, addr;
+sock_connect(VALUE sock, VALUE addr)
 {
     OpenFile *fptr;
     int fd, n;
@@ -2572,8 +2454,7 @@ sock_connect(sock, addr)
  * * Socket#connect
  */
 static VALUE
-sock_connect_nonblock(sock, addr)
-    VALUE sock, addr;
+sock_connect_nonblock(VALUE sock, VALUE addr)
 {
     OpenFile *fptr;
     int n;
@@ -2670,8 +2551,7 @@ sock_connect_nonblock(sock, addr)
  * * bind function in Microsoft's Winsock functions reference
  */ 
 static VALUE
-sock_bind(sock, addr)
-    VALUE sock, addr;
+sock_bind(VALUE sock, VALUE addr)
 {
     OpenFile *fptr;
 
@@ -2754,8 +2634,7 @@ sock_bind(sock, addr)
  * * listen function in Microsoft's Winsock functions reference
  */
 static VALUE
-sock_listen(sock, log)
-    VALUE sock, log;
+sock_listen(VALUE sock, VALUE log)
 {
     OpenFile *fptr;
     int backlog;
@@ -2875,10 +2754,7 @@ sock_listen(sock, log)
  *   message.
  */
 static VALUE
-sock_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
+sock_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
@@ -2948,18 +2824,15 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-sock_accept(sock)
-    VALUE sock;
+sock_accept(VALUE sock)
 {
     OpenFile *fptr;
-    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf,&len);
-
-    return rb_assoc_new(sock2, rb_str_new(buf, len));
+    return rb_assoc_new(s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf, &len),
+			rb_str_new(buf, len));
 }
 
 /*
@@ -3011,17 +2884,16 @@ sock_accept(sock)
  * * Socket#accept
  */
 static VALUE
-sock_accept_nonblock(sock)
-    VALUE sock;
+sock_accept_nonblock(VALUE sock)
 {
     OpenFile *fptr;
-    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)buf, &len);
-    return rb_assoc_new(sock2, rb_str_new(buf, len));
+    return rb_assoc_new(s_accept_nonblock(rb_cSocket, fptr,
+					  (struct sockaddr *)buf, &len),
+			rb_str_new(buf, len));
 }
 
 /*
@@ -3064,24 +2936,20 @@ sock_accept_nonblock(sock)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(sock)
-    VALUE sock;
+sock_sysaccept(VALUE sock)
 {
     OpenFile *fptr;
-    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)buf,&len);
-
-    return rb_assoc_new(sock2, rb_str_new(buf, len));
+    return rb_assoc_new(s_accept(0,fptr->fd,(struct sockaddr*)buf,&len),
+			rb_str_new(buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME
 static VALUE
-sock_gethostname(obj)
-    VALUE obj;
+sock_gethostname(VALUE obj)
 {
     char buf[1024];
 
@@ -3098,8 +2966,7 @@ sock_gethostname(obj)
 #include <sys/utsname.h>
 
 static VALUE
-sock_gethostname(obj)
-    VALUE obj;
+sock_gethostname(VALUE obj)
 {
     struct utsname un;
 
@@ -3109,8 +2976,7 @@ sock_gethostname(obj)
 }
 #else
 static VALUE
-sock_gethostname(obj)
-    VALUE obj;
+sock_gethostname(VALUE obj)
 {
     rb_notimplement();
 }
@@ -3118,8 +2984,7 @@ sock_gethostname(obj)
 #endif
 
 static VALUE
-make_addrinfo(res0)
-    struct addrinfo *res0;
+make_addrinfo(struct addrinfo *res0)
 {
     VALUE base, ary;
     struct addrinfo *res;
@@ -3141,10 +3006,8 @@ make_addrinfo(res0)
     return base;
 }
 
-VALUE
-sock_sockaddr(addr, len)
-    struct sockaddr *addr;
-    size_t len;
+static VALUE
+sock_sockaddr(struct sockaddr *addr, size_t len)
 {
     char *ptr;
 
@@ -3167,17 +3030,14 @@ sock_sockaddr(addr, len)
 }
 
 static VALUE
-sock_s_gethostbyname(obj, host)
-    VALUE obj, host;
+sock_s_gethostbyname(VALUE obj, VALUE host)
 {
     rb_secure(3);
     return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
 static VALUE
-sock_s_gethostbyaddr(argc, argv)
-    int argc;
-    VALUE *argv;
+sock_s_gethostbyaddr(int argc, VALUE *argv)
 {
     VALUE addr, type;
     struct hostent *h;
@@ -3227,9 +3087,7 @@ sock_s_gethostbyaddr(argc, argv)
 }
 
 static VALUE
-sock_s_getservbyname(argc, argv)
-    int argc;
-    VALUE *argv;
+sock_s_getservbyname(int argc, VALUE *argv)
 {
     VALUE service, proto;
     struct servent *sp;
@@ -3257,9 +3115,7 @@ sock_s_getservbyname(argc, argv)
 }
 
 static VALUE
-sock_s_getservbyport(argc, argv)
-    int argc;
-    VALUE *argv;
+sock_s_getservbyport(int argc, VALUE *argv)
 {
     VALUE port, proto;
     struct servent *sp;
@@ -3276,9 +3132,7 @@ sock_s_getservbyport(argc, argv)
 }
 
 static VALUE
-sock_s_getaddrinfo(argc, argv)
-    int argc;
-    VALUE *argv;
+sock_s_getaddrinfo(int argc, VALUE *argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret;
     char hbuf[1024], pbuf[1024];
@@ -3347,9 +3201,7 @@ sock_s_getaddrinfo(argc, argv)
 }
 
 static VALUE
-sock_s_getnameinfo(argc, argv)
-    int argc;
-    VALUE *argv;
+sock_s_getnameinfo(int argc, VALUE *argv)
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
     char *hptr, *pptr;
@@ -3491,8 +3343,7 @@ sock_s_getnameinfo(argc, argv)
 }
 
 static VALUE
-sock_s_pack_sockaddr_in(self, port, host)
-    VALUE self, port, host;
+sock_s_pack_sockaddr_in(VALUE self, VALUE port, VALUE host)
 {
     struct addrinfo *res = sock_addrinfo(host, port, 0, 0);
     VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
@@ -3505,8 +3356,7 @@ sock_s_pack_sockaddr_in(self, port, host)
 }
 
 static VALUE
-sock_s_unpack_sockaddr_in(self, addr)
-    VALUE self, addr;
+sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
 {
     struct sockaddr_in * sockaddr;
     VALUE host;
@@ -3530,8 +3380,7 @@ sock_s_unpack_sockaddr_in(self, addr)
 
 #ifdef HAVE_SYS_UN_H
 static VALUE
-sock_s_pack_sockaddr_un(self, path)
-    VALUE self, path;
+sock_s_pack_sockaddr_un(VALUE self, VALUE path)
 {
     struct sockaddr_un sockaddr;
     char *sun_path;
@@ -3552,8 +3401,7 @@ sock_s_pack_sockaddr_un(self, path)
 }
 
 static VALUE
-sock_s_unpack_sockaddr_un(self, addr)
-    VALUE self, addr;
+sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 {
     struct sockaddr_un * sockaddr;
     char *sun_path;
@@ -3582,9 +3430,7 @@ sock_s_unpack_sockaddr_un(self, addr)
 static VALUE mConst;
 
 static void
-sock_define_const(name, value)
-    char *name;
-    int value;
+sock_define_const(char *name, int value)
 {
     rb_define_const(rb_cSocket, name, INT2FIX(value));
     rb_define_const(mConst, name, INT2FIX(value));

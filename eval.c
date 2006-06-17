@@ -7820,7 +7820,9 @@ Init_eval(void)
 
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
+    rb_define_method(rb_cBasicObject, "invoke_method", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "funcall", rb_f_funcall, -1);
+    rb_define_method(rb_cBasicObject, "invoke_functional_method", rb_f_funcall, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
 
