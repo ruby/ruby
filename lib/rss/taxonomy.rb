@@ -163,7 +163,6 @@ module RSS
       def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
           [
-           link_element(need_convert, next_indent),
            other_element(need_convert, next_indent),
           ]
         end
@@ -189,6 +188,12 @@ module RSS
         [@taxo_link, @taxo_topics]
       end
 
+      def _attrs
+        [
+         ["#{RDF::PREFIX}:about", true, "about"]
+        ]
+      end
+      
       def _tags
         rv = []
         rv << [TAXO_URI, "link"] unless @taxo_link.nil?

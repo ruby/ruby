@@ -21,6 +21,10 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 	* test/rss/rss-assertions.rb: added test for 'resources'.
 	* test/rss/test_taxonomy.rb: ditto.
 
+	* lib/rss/rss.rb: fixed a indentation bug.
+	* lib/rss/taxonomy.rb: fixed <taxo:topic> #to_s bug.
+	* test/rss/test_taxonomy.rb: added a #to_s test.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed
