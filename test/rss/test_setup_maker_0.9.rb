@@ -138,7 +138,7 @@ module RSS
       assert_equal(link, textInput.link)
     end
 
-    def test_setup_maker_items
+    def test_setup_maker_items(for_backward_compatibility=false)
       title = "TITLE"
       link = "http://hoge.com/"
       description = "text hoge fuga"
@@ -160,7 +160,11 @@ module RSS
         rss.channel.setup_maker(maker)
 
         rss.items.each do |item|
-          item.setup_maker(maker)
+          if for_backward_compatibility
+            item.setup_maker(maker)
+          else
+            item.setup_maker(maker.items)
+          end
         end
       end
       
@@ -173,6 +177,10 @@ module RSS
 
     end
 
+    def test_setup_maker_items_backward_compatibility
+      test_setup_maker_items(true)
+    end
+    
     def test_setup_maker
       encoding = "EUC-JP"
       standalone = true

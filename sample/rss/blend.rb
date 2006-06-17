@@ -61,7 +61,7 @@ rss = RSS::Maker.make("1.0") do |maker|
 
   feeds.each do |feed|
     feed.items.each do |item|
-      item.setup_maker(maker)
+      item.setup_maker(maker.items)
     end
   end
   maker.items.do_sort = true

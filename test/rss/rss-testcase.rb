@@ -248,5 +248,24 @@ EOC
       item.link = link
     end
     
+    def setup_taxo_topic(target, topics)
+      topics.each do |topic|
+        taxo_topic = target.taxo_topics.new_taxo_topic
+        topic.each do |name, value|
+          case name
+          when :link
+            taxo_topic.taxo_link = value
+          when :topics
+            value.each do |t|
+              taxo_topic.taxo_topics << t
+            end
+          else
+            dc_elems = taxo_topic.__send__("dc_#{name}s")
+            dc_elem = dc_elems.__send__("new_#{name}")
+            dc_elem.value = value
+          end
+        end
+      end
+    end
   end
 end

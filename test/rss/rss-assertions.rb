@@ -435,6 +435,25 @@ module RSS
       end
     end
 
+    def assert_taxo_topic(topics, target)
+      _wrap_assertion do
+        topics.each_with_index do |topic, i|
+          taxo_topic = target.taxo_topics[i]
+          topic.each do |name, value|
+            case name
+            when :link
+              assert_equal(value, taxo_topic.about)
+              assert_equal(value, taxo_topic.taxo_link)
+            when :topics
+              assert_equal(value, taxo_topic.taxo_topics.resources)
+            else
+              assert_equal(value, taxo_topic.__send__("dc_#{name}"))
+            end
+          end
+        end
+      end
+    end
+
 
     def assert_attributes(attrs, names, target)
       _wrap_assertion do

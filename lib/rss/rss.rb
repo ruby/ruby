@@ -655,7 +655,6 @@ EOC
     
     def setup_maker_elements(parent)
       self.class.have_children_elements.each do |name, plural_name|
-        real_name = name.sub(/^[^_]+_/, '')
         if parent.respond_to?(plural_name)
           target = parent.__send__(plural_name)
           __send__(plural_name).each do |elem|
@@ -894,9 +893,7 @@ EOC
       channel.setup_maker(maker) if channel
       image.setup_maker(maker) if image
       textinput.setup_maker(maker) if textinput
-      items.each do |item|
-        item.setup_maker(maker)
-      end
+      super(maker)
     end
   end
 

@@ -4,7 +4,7 @@ require 'rss/maker/dublincore'
 
 module RSS
   module Maker
-    module TaxonomyTopicsModel
+    module TaxoTopicsModel
       def self.append_features(klass)
         super
 
@@ -13,7 +13,7 @@ module RSS
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           attr_reader :taxo_topics
           def make_taxo_topics
-            self.class::TaxonomyTopics.new(@maker)
+            self.class::TaxoTopics.new(@maker)
           end
             
           def setup_taxo_topics(rss, current)
@@ -24,10 +24,10 @@ EOC
 
       def self.install_taxo_topics(klass)
         klass.module_eval(<<-EOC, *Utils.get_file_and_line_from_caller(1))
-          class TaxonomyTopics < TaxonomyTopicsBase
+          class TaxoTopics < TaxoTopicsBase
             def to_rss(rss, current)
               if current.respond_to?(:taxo_topics)
-                topics = current.class::TaxonomyTopics.new
+                topics = current.class::TaxoTopics.new
                 bag = topics.Bag
                 @resources.each do |resource|
                   bag.lis << RDF::Bag::Li.new(resource)
@@ -39,7 +39,7 @@ EOC
 EOC
       end
 
-      class TaxonomyTopicsBase
+      class TaxoTopicsBase
         include Base
 
         attr_reader :resources
@@ -47,7 +47,7 @@ EOC
       end
     end
 
-    module TaxonomyTopicModel
+    module TaxoTopicModel
       def self.append_features(klass)
         super
 
@@ -56,7 +56,7 @@ EOC
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           attr_reader :taxo_topics
           def make_taxo_topics
-            self.class::TaxonomyTopics.new(@maker)
+            self.class::TaxoTopics.new(@maker)
           end
             
           def setup_taxo_topics(rss, current)
@@ -68,7 +68,7 @@ EOC
           end
             
           def taxo_topic=(new_value)
-            @taxo_topic[0] = self.class::TaxonomyTopic.new(self)
+            @taxo_topic[0] = self.class::TaxoTopic.new(self)
             @taxo_topic[0].value = new_value
           end
 EOC
@@ -76,14 +76,14 @@ EOC
     
       def self.install_taxo_topic(klass)
         klass.module_eval(<<-EOC, *Utils.get_file_and_line_from_caller(1))
-          class TaxonomyTopics < TaxonomyTopicsBase
-            class TaxonomyTopic < TaxonomyTopicBase
+          class TaxoTopics < TaxoTopicsBase
+            class TaxoTopic < TaxoTopicBase
               DublinCoreModel.install_dublin_core(self)
-              TaxonomyTopicsModel.install_taxo_topics(self)
+              TaxoTopicsModel.install_taxo_topics(self)
 
               def to_rss(rss, current)
                 if current.respond_to?(:taxo_topics)
-                  topic = current.class::TaxonomyTopic.new(value)
+                  topic = current.class::TaxoTopic.new(value)
                   topic.taxo_link = value
                   taxo_topics.to_rss(rss, topic) if taxo_topics
                   current.taxo_topics << topic
@@ -99,13 +99,13 @@ EOC
 EOC
       end
 
-      class TaxonomyTopicsBase
+      class TaxoTopicsBase
         include Base
         
         def_array_element("taxo_topics")
                             
         def new_taxo_topic
-          taxo_topic = self.class::TaxonomyTopic.new(self)
+          taxo_topic = self.class::TaxoTopic.new(self)
           @taxo_topics << taxo_topic
           taxo_topic
         end
@@ -116,10 +116,10 @@ EOC
           end
         end
         
-        class TaxonomyTopicBase
+        class TaxoTopicBase
           include Base
           include DublinCoreModel
-          include TaxonomyTopicsModel
+          include TaxoTopicsModel
           
           attr_accessor :value
           add_need_initialize_variable("value")
@@ -134,43 +134,43 @@ EOC
     end
 
     class RSSBase
-      include TaxonomyTopicModel
+      include TaxoTopicModel
     end
     
     class ChannelBase
-      include TaxonomyTopicsModel
+      include TaxoTopicsModel
     end
     
     class ItemsBase
       class ItemBase
-        include TaxonomyTopicsModel
+        include TaxoTopicsModel
       end
     end
 
     class RSS10
-      TaxonomyTopicModel.install_taxo_topic(self)
+      TaxoTopicModel.install_taxo_topic(self)
       
       class Channel
-        TaxonomyTopicsModel.install_taxo_topics(self)
+        TaxoTopicsModel.install_taxo_topics(self)
       end
 
       class Items
         class Item
-          TaxonomyTopicsModel.install_taxo_topics(self)
+          TaxoTopicsModel.install_taxo_topics(self)
         end
       end
     end
     
     class RSS09
-      TaxonomyTopicModel.install_taxo_topic(self)
+      TaxoTopicModel.install_taxo_topic(self)
       
       class Channel
-        TaxonomyTopicsModel.install_taxo_topics(self)
+        TaxoTopicsModel.install_taxo_topics(self)
       end
 
       class Items
         class Item
-          TaxonomyTopicsModel.install_taxo_topics(self)
+          TaxoTopicsModel.install_taxo_topics(self)
         end
       end
     end
