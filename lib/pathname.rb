@@ -182,12 +182,22 @@
 # information.  In some cases, a brief description will follow.
 #
 class Pathname
+
+  # :stopdoc:
+  if RUBY_VERSION < "1.9"
+    TO_PATH = :to_str
+  else
+    # to_path is implemented so Pathname objects are usable with File.open, etc.
+    TO_PATH = :to_path
+  end
+  # :startdoc:
+
   #
   # Create a Pathname object from the given String (or String-like object).
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    path = path.to_path if path.respond_to? :to_path
+    path = path.__send__(TO_PATH) if path.respond_to? TO_PATH
     @path = path.dup
 
     if /\0/ =~ @path
@@ -229,7 +239,7 @@ class Pathname
   end
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.
-  alias to_path to_s
+  alias_method TO_PATH, :to_s
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
@@ -491,9 +501,10 @@ class Pathname
   #   Pathname.new("/usr/bin/ruby").each_filename {|filename| ... }
   #     # yields "usr", "bin", and "ruby".
   #
-  def each_filename # :yield: s
+  def each_filename # :yield: filename
     prefix, names = split_names(@path)
     names.each {|filename| yield filename }
+    nil
   end
 
   # Iterates over and yields a new Pathname object
@@ -513,6 +524,8 @@ class Pathname
   #     #<Pathname:path/to/some/file.rb>
   #
   # It doesn't access actual filesystem.
+  #
+  # This method is available since 1.8.5.
   #
   def descend
     vs = []
@@ -538,6 +551,8 @@ class Pathname
   #     #<Pathname:path>
   #
   # It doesn't access actual filesystem.
+  #
+  # This method is available since 1.8.5.
   #
   def ascend
     path = @path
@@ -1030,4 +1045,14 @@ class Pathname    # * mixed *
       IO.foreach(@path, *args, &block)
     end
   end
+end
+
+module Kernel
+  # create a pathname object.
+  #
+  # This method is available since 1.8.5.
+  def Pathname(path) # :doc:
+    Pathname.new(path)
+  end
+  private :Pathname
 end
