@@ -95,7 +95,7 @@ EOC
             DublinCoreModel.install_dublin_core(self)
             def to_rss(rss, current)
               if @about
-                item = ::RSS::ImageItemModel::Item.new(@about, @resource)
+                item = ::RSS::ImageItemModel::ImageItem.new(@about, @resource)
                 setup_values(item)
                 setup_other_elements(item)
                 current.image_item = item
@@ -111,7 +111,7 @@ EOC
           def to_rss(rss, current)
             if @about and @image_size
               args = [@about, @image_size]
-              favicon = ::RSS::ImageFaviconModel::Favicon.new(*args)
+              favicon = ::RSS::ImageFaviconModel::ImageFavicon.new(*args)
               setup_values(favicon)
               setup_other_elements(favicon)
               current.image_favicon = favicon

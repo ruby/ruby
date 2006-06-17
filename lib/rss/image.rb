@@ -8,6 +8,14 @@ module RSS
 
   RDF.install_ns(IMAGE_PREFIX, IMAGE_URI)
 
+  IMAGE_ELEMENTS = []
+
+  %w(item favicon).each do |name|
+    class_name = Utils.to_class_name(name)
+    BaseListener.install_class_name(IMAGE_URI, name, "Image#{class_name}")
+    IMAGE_ELEMENTS << "#{IMAGE_PREFIX}_#{name}"
+  end
+  
   module ImageModelUtils
     def validate_one_tag_name(name, tags)
       invalid = tags.find {|tag| tag != name}
@@ -30,10 +38,12 @@ module RSS
       validate_one_tag_name("item", tags)
     end
     
-    class Item < Element
+    class ImageItem < Element
       include RSS10
       include DublinCoreModel
 
+      @tag_name = "item"
+      
       class << self
         def required_prefix
           IMAGE_PREFIX
@@ -144,10 +154,12 @@ module RSS
       validate_one_tag_name("favicon", tags)
     end
     
-    class Favicon < Element
+    class ImageFavicon < Element
       include RSS10
       include DublinCoreModel
 
+      @tag_name = "favicon"
+      
       class << self
         def required_prefix
           IMAGE_PREFIX
