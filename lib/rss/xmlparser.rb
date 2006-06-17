@@ -59,11 +59,13 @@ module RSS
 
   class XMLParserParser < BaseParser
 
-    private
-    def listener
-      XMLParserListener
+    class << self
+      def listener
+        XMLParserListener
+      end
     end
-
+    
+    private
     def _parse
       begin
         parser = REXMLLikeXMLParser.new

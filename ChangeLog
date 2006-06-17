@@ -59,6 +59,15 @@ Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/: use #__send__ instead of #send.
 	* test/rss/: ditto.
 
+	* lib/rss/parser.rb: added entity handling type predicate.
+	* lib/rss/rexmlparser.rb: ditto.
+	* lib/rss/xmlparser.rb: ditto.
+	* lib/rss/xmlscanner.rb: ditto.
+
+	* lib/rss/xmlscanner.rb: more robust entity handling.
+
+	* test/rss/test_parser.rb: added an entity handling test.
+
 Sat Jun 17 02:01:00 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Kernel#pretty_inspect): defined for pretty printed

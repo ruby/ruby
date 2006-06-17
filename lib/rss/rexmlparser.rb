@@ -10,12 +10,13 @@ module RSS
   
   class REXMLParser < BaseParser
 
-    private
-
-    def listener
-      REXMLListener
+    class << self
+      def listener
+        REXMLListener
+      end
     end
-
+    
+    private
     def _parse
       begin
         REXML::Document.parse_stream(@rss, @listener)
@@ -35,6 +36,12 @@ module RSS
     include REXML::StreamListener
     include ListenerMixin
 
+    class << self
+      def raise_for_undefined_entity?
+        false
+      end
+    end
+    
     def xmldecl(version, encoding, standalone)
       super(version, encoding, standalone == "yes")
       # Encoding is converted to UTF-8 when REXML parse XML.

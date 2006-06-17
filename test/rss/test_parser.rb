@@ -122,7 +122,20 @@ EOR
         end
         assert_parse(rss, :nothing_raised)
       end
+    end
 
+    def test_undefined_entity
+      return unless RSS::Parser.default_parser.raise_for_undefined_entity?
+      assert_parse(make_RDF(<<-EOR), :raises, RSS::NotWellFormedError)
+#{make_channel}
+#{make_image}
+<item rdf:about="#{RDF_ABOUT}">
+  <title>#{TITLE_VALUE} &UNKNOWN_ENTITY;</title>
+  <link>#{LINK_VALUE}</link>
+  <description>#{DESCRIPTION_VALUE}</description>
+</item>
+#{make_textinput}
+EOR
     end
 
     def test_channel
