@@ -1,3 +1,24 @@
+Sat Jun 17 10:23:22 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (Kernel#funcall): removed.
+	* lib/rss/parser.rb (Kernel.URI): removed.
+
+	* lib/rss/maker/: supported
+	    xxx.new_yyy do |yyy|
+	      yyy.zzz = zzz
+	      ...
+	    end
+	  style and this style became the style of the recommendation.
+
+	  Old style
+	    yyy = xxx.new_yyy
+	    yyy.zzz = zzz
+	    ...
+	  is supported too but this style isn't recommended.
+	  [ruby-talk:197284]
+
+	* test/rss/test_*maker*.rb: used new recommended style.
+
 Sat Jun 17 09:03:47 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss, test/rss: backported from trunk. (2005-11-16 - now)

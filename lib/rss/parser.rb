@@ -4,14 +4,6 @@ begin
 rescue LoadError
   require "uri"
 end
-unless Kernel.methods.include?("URI")
-  module Kernel
-    def URI(uri_str) # :doc:
-      URI.parse(uri_str)
-    end
-    module_function :URI
-  end
-end
 
 require "rss/rss"
 

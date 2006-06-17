@@ -53,7 +53,11 @@ EOC
           def new_#{name}
             #{name} = self.class::#{klass_name}.new(self)
             @#{plural_name} << #{name}
-            #{name}
+            if block_given?
+              yield #{name}
+            else
+              #{name}
+            end
           end
 
           def to_rss(rss, current)

@@ -52,14 +52,6 @@ class Hash
   end
 end
 
-module Kernel
-  unless methods.include?("funcall")
-    def funcall(*args, &block)
-      __send__(*args, &block)
-    end
-  end
-end
-
 require "English"
 require "rss/utils"
 require "rss/converter"

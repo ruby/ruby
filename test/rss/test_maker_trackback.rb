@@ -25,8 +25,9 @@ module RSS
         item = maker.items.last
         item.trackback_ping = @elements[:ping]
         @elements[:abouts].each do |about|
-          new_about = item.trackback_abouts.new_about
-          new_about.value = about
+          item.trackback_abouts.new_about do |new_about|
+            new_about.value = about
+          end
         end
       end
       assert_trackback(@elements, rss.items.last)

@@ -82,12 +82,14 @@ module RSS
         maker.channel.lastBuildDate = lastBuildDate
 
         skipDays.each do |day|
-          new_day = maker.channel.skipDays.new_day
-          new_day.content = day
+          maker.channel.skipDays.new_day do |new_day|
+            new_day.content = day
+          end
         end
         skipHours.each do |hour|
-          new_hour = maker.channel.skipHours.new_hour
-          new_hour.content = hour
+          maker.channel.skipHours.new_hour do |new_hour|
+            new_hour.content = hour
+          end
         end
       end
       channel = rss.channel
@@ -261,10 +263,11 @@ module RSS
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
         
-        item = maker.items.new_item
-        item.title = title
-        item.link = link
-        # item.description = description
+        maker.items.new_item do |item|
+          item.title = title
+          item.link = link
+          # item.description = description
+        end
       end
       assert_equal(1, rss.channel.items.size)
       item = rss.channel.items.first
@@ -278,10 +281,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.do_sort = true
       end
@@ -296,10 +300,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.do_sort = Proc.new do |x, y|
           y.title[-1] <=> x.title[-1]

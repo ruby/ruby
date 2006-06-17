@@ -107,7 +107,11 @@ EOC
         def new_taxo_topic
           taxo_topic = self.class::TaxonomyTopic.new(self)
           @taxo_topics << taxo_topic
-          taxo_topic
+          if block_given?
+            yield taxo_topic
+          else
+            taxo_topic
+          end
         end
 
         def to_rss(rss, current)

@@ -195,23 +195,25 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
 
-          @dc_elems.each do |var, value|
-            item.__send__("dc_#{var}=", value)
-          end
-          
-          @content_elems.each do |var, value|
-            item.__send__("content_#{var}=", value)
-          end
+            @dc_elems.each do |var, value|
+              item.__send__("dc_#{var}=", value)
+            end
 
-          item.trackback_ping = @trackback_elems[:ping]
-          @trackback_elems[:about].each do |value|
-            new_about = item.trackback_abouts.new_about
-            new_about.value = value
+            @content_elems.each do |var, value|
+              item.__send__("content_#{var}=", value)
+            end
+
+            item.trackback_ping = @trackback_elems[:ping]
+            @trackback_elems[:about].each do |value|
+              item.trackback_abouts.new_about do |new_about|
+                new_about.value = value
+              end
+            end
           end
         end
       end
@@ -321,14 +323,15 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         setup_dummy_channel(maker)
       end
       
@@ -384,14 +387,15 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         maker.channel.about = channel_about
         maker.channel.title = channel_title
         maker.channel.link = channel_link
@@ -418,23 +422,25 @@ module RSS
         end
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{item_title}#{i}"
-          item.link = "#{item_link}#{i}"
-          item.description = "#{item_description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{item_title}#{i}"
+            item.link = "#{item_link}#{i}"
+            item.description = "#{item_description}#{i}"
 
-          @dc_elems.each do |var, value|
-            item.__send__("dc_#{var}=", value)
-          end
-          
-          @content_elems.each do |var, value|
-            item.__send__("content_#{var}=", value)
-          end
+            @dc_elems.each do |var, value|
+              item.__send__("dc_#{var}=", value)
+            end
 
-          item.trackback_ping = @trackback_elems[:ping]
-          @trackback_elems[:about].each do |value|
-            new_about = item.trackback_abouts.new_about
-            new_about.value = value
+            @content_elems.each do |var, value|
+              item.__send__("content_#{var}=", value)
+            end
+
+            item.trackback_ping = @trackback_elems[:ping]
+            @trackback_elems[:about].each do |value|
+              item.trackback_abouts.new_about do |new_about|
+                new_about.value = value
+              end
+            end
           end
         end
 

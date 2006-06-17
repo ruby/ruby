@@ -42,8 +42,12 @@ module RSS
         
         def new_about
           about = self.class::TrackBackAbout.new(@maker)
-          @abouts << about 
-          about
+          @abouts << about
+          if block_given?
+            yield about
+          else
+            about
+          end
         end
 
         def to_rss(rss, current)

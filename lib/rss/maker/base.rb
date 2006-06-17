@@ -207,7 +207,11 @@ EOC
       def new_xml_stylesheet
         xss = XMLStyleSheet.new(@maker)
         @xml_stylesheets << xss
-        xss
+        if block_given?
+          yield xss
+        else
+          xss
+        end
       end
 
       class XMLStyleSheet
@@ -281,8 +285,12 @@ EOC
 
         def new_day
           day = self.class::Day.new(@maker)
-          @days << day 
-          day
+          @days << day
+          if block_given?
+            yield day
+          else
+            day
+          end
         end
         
         def current_element(rss)
@@ -311,8 +319,12 @@ EOC
 
         def new_hour
           hour = self.class::Hour.new(@maker)
-          @hours << hour 
-          hour
+          @hours << hour
+          if block_given?
+            yield hour
+          else
+            hour
+          end
         end
         
         def current_element(rss)
@@ -356,7 +368,11 @@ EOC
         def new_category
           category = self.class::Category.new(@maker)
           @categories << category
-          category
+          if block_given?
+            yield category
+          else
+            category
+          end
         end
 
         class CategoryBase
@@ -414,8 +430,12 @@ EOC
 
       def new_item
         item = self.class::Item.new(@maker)
-        @items << item 
-        item
+        @items << item
+        if block_given?
+          yield item
+        else
+          item
+        end
       end
       
       private

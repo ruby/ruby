@@ -203,10 +203,11 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         
-        item = maker.items.new_item
-        item.title = title
-        item.link = link
-        # item.description = description
+        maker.items.new_item do |item|
+          item.title = title
+          item.link = link
+          # item.description = description
+        end
       end
       assert_equal(1, rss.items.size)
       item = rss.items.first
@@ -221,10 +222,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.do_sort = true
       end
@@ -240,10 +242,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.do_sort = Proc.new do |x, y|
           y.title[-1] <=> x.title[-1]
@@ -262,10 +265,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.max_size = max_size
       end
@@ -282,10 +286,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.max_size = max_size
       end
@@ -296,10 +301,11 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
         maker.items.max_size = max_size
       end
@@ -319,18 +325,20 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         
-        item = maker.items.new_item
-        # item.title = title
-        item.link = link
+        maker.items.new_item do |item|
+          # item.title = title
+          item.link = link
+        end
       end
       assert(rss.items.empty?)
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         
-        item = maker.items.new_item
-        item.title = title
-        # item.link = link
+        maker.items.new_item do |item|
+          item.title = title
+          # item.link = link
+        end
       end
       assert(rss.items.empty?)
     end
