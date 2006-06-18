@@ -1,3 +1,7 @@
+Sun Jun 18 18:22:04 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_image.rb: shared name space configuration.
+
 Sun Jun 18 18:13:25 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: improved ignore_unknown_element

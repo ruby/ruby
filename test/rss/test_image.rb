@@ -52,11 +52,11 @@ module RSS
         items << make_item(image_item)
       end
 
-      ns = {
+      @ns = {
         @prefix => @uri,
         DC_PREFIX => DC_URI,
       }
-      @rss_source = make_RDF(<<-EOR, ns)
+      @rss_source = make_RDF(<<-EOR, @ns)
 #{make_channel(@channel_nodes)}
 #{make_image}
 #{items}
@@ -70,9 +70,9 @@ EOR
       assert_nothing_raised do
         Parser.parse(@rss_source)
       end
-    
+      
       assert_too_much_tag("favicon", "channel") do
-        Parser.parse(make_RDF(<<-EOR, {@prefix => @uri}))
+        Parser.parse(make_RDF(<<-EOR, @ns))
 #{make_channel(@channel_nodes * 2)}
 #{make_item}
 EOR
