@@ -125,13 +125,6 @@ module RSS
         rv = convert(rv) if need_convert
         rv
       end
-
-      private
-      def _attrs
-        [
-          ["resource", true]
-        ]
-      end
     end
 
     class Seq < Element
@@ -277,7 +270,8 @@ module RSS
       [
         ["about", URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{PREFIX}:#{name}")
       end
 
       %w(title link description).each do |name|
@@ -342,12 +336,6 @@ module RSS
         end
       end
 
-      def _attrs
-        [
-          ["#{PREFIX}:about", true, "about"]
-        ]
-      end
-      
       def maker_target(maker)
         maker.channel
       end
@@ -371,7 +359,8 @@ module RSS
         [
           ["resource", URI, true]
         ].each do |name, uri, required|
-          install_get_attribute(name, uri, required)
+          install_get_attribute(name, uri, required, nil, nil,
+                                "#{PREFIX}:#{name}")
         end
       
         def initialize(*args)
@@ -387,13 +376,6 @@ module RSS
           rv = tag(indent)
           rv = convert(rv) if need_convert
           rv
-        end
-
-        private
-        def _attrs
-          [
-            ["#{PREFIX}:resource", true, "resource"]
-          ]
         end
       end
 
@@ -412,7 +394,8 @@ module RSS
         [
           ["resource", URI, true]
         ].each do |name, uri, required|
-          install_get_attribute(name, uri, required)
+          install_get_attribute(name, uri, required, nil, nil,
+                                "#{PREFIX}:#{name}")
         end
       
         def initialize(*args)
@@ -428,13 +411,6 @@ module RSS
           rv = tag(indent)
           rv = convert(rv) if need_convert
           rv
-        end
-        
-        private
-        def _attrs
-          [
-            ["#{PREFIX}:resource", true, "resource"]
-          ]
         end
       end
       
@@ -513,11 +489,12 @@ module RSS
         end
 
       end
-      
+
       [
         ["about", URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{PREFIX}:#{name}")
       end
 
       %w(title url link).each do |name|
@@ -565,12 +542,6 @@ module RSS
         end
       end
 
-      def _attrs
-        [
-          ["#{PREFIX}:about", true, "about"]
-        ]
-      end
-
       def maker_target(maker)
         maker.image
       end
@@ -588,10 +559,12 @@ module RSS
         
       end
 
+
       [
         ["about", URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{PREFIX}:#{name}")
       end
 
       %w(title link description).each do |name|
@@ -639,12 +612,6 @@ module RSS
         end
       end
 
-      def _attrs
-        [
-          ["#{PREFIX}:about", true, "about"]
-        ]
-      end
-
       def maker_target(items)
         if items.respond_to?("items")
           # For backward compatibility
@@ -669,7 +636,8 @@ module RSS
       [
         ["about", URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{PREFIX}:#{name}")
       end
 
       %w(title description name link).each do |name|
@@ -718,12 +686,6 @@ module RSS
         ].delete_if do |uri, name|
           __send__(name).nil?
         end
-      end
-      
-      def _attrs
-        [
-          ["#{PREFIX}:about", true, "about"]
-        ]
       end
 
       def maker_target(maker)

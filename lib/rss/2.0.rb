@@ -149,12 +149,6 @@ EOT
           end
 
           private
-          def _attrs
-            [
-              ["isPermaLink", false]
-            ]
-          end
-
           def maker_target(item)
             item.guid
           end

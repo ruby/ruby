@@ -55,12 +55,13 @@ module RSS
           IMAGE_URI
         end
       end
-      
+
       [
         ["about", ::RSS::RDF::URI, true],
         ["resource", ::RSS::RDF::URI, false],
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       %w(width height).each do |tag|
@@ -108,13 +109,6 @@ module RSS
           __send__(name).nil?
         end
       end
-        
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:about", true, "about"],
-          ["#{::RSS::RDF::PREFIX}:resource", false, "resource"],
-        ]
-      end
 
       def maker_target(target)
         target.image_item
@@ -158,12 +152,13 @@ module RSS
           IMAGE_URI
         end
       end
-      
+
       [
-        ["about", ::RSS::RDF::URI, true],
-        ["size", IMAGE_URI, true],
-      ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        ["about", ::RSS::RDF::URI, true, ::RSS::RDF::PREFIX],
+        ["size", IMAGE_URI, true, IMAGE_PREFIX],
+      ].each do |name, uri, required, prefix|
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{prefix}:#{name}")
       end
 
       AVAILABLE_SIZES = %w(small medium large)
@@ -208,13 +203,6 @@ module RSS
       end
 
       private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:about", true, "about"],
-          ["#{IMAGE_PREFIX}:size", true, "size"],
-        ]
-      end
-
       def maker_target(target)
         target.image_favicon
       end

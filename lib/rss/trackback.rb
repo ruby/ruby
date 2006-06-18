@@ -126,16 +126,16 @@ module RSS
       end
 
       @tag_name = "ping"
-      
+
       [
         ["resource", ::RSS::RDF::URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
-      
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -154,14 +154,6 @@ module RSS
         rv = convert(rv) if need_convert
         rv
       end
-
-      private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:resource", true, "resource"],
-        ]
-      end
-
     end
 
     class TrackBackAbout < Element
@@ -180,11 +172,12 @@ module RSS
       end
       
       @tag_name = "about"
-      
+
       [
         ["resource", ::RSS::RDF::URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       alias_method(:value, :resource)
@@ -210,12 +203,6 @@ module RSS
       end
 
       private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:resource", true, "resource"],
-        ]
-      end
-
       def maker_target(abouts)
         abouts.new_about
       end

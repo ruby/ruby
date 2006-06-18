@@ -395,7 +395,7 @@ module RSS
       class Cloud < Element
 
         include RSS09
-        
+
         [
           ["domain", "", true],
           ["port", "", true, :integer],
@@ -424,14 +424,6 @@ module RSS
           rv = convert(rv) if need_convert
           rv
         end
-
-        private
-        def _attrs
-          %w(domain port path registerProcedure protocol).collect do |attr|
-            [attr, true]
-          end
-        end
-
       end
       
       class Item < Element
@@ -540,13 +532,6 @@ module RSS
             []
           end
 
-          def _attrs
-            [
-              ["url", true]
-            ]
-          end
-
-
           def maker_target(item)
             item.source
           end
@@ -587,14 +572,6 @@ module RSS
           end
 
           private
-          def _attrs
-            [
-              ["url", true],
-              ["length", true],
-              ["type", true],
-            ]
-          end
-
           def maker_target(item)
             item.enclosure
           end
@@ -629,12 +606,6 @@ module RSS
           end
 
           private
-          def _attrs
-            [
-              ["domain", false]
-            ]
-          end
-
           def maker_target(item)
             item.new_category
           end

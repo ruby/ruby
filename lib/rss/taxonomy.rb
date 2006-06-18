@@ -157,7 +157,8 @@ module RSS
 
       @tag_name = "topic"
 
-      install_get_attribute("about", ::RSS::RDF::URI, true)
+      install_get_attribute("about", ::RSS::RDF::URI, true, nil, nil,
+                            "#{RDF::PREFIX}:about")
       install_text_element("#{TAXO_PREFIX}_link")
         
       def initialize(*args)
@@ -205,12 +206,6 @@ module RSS
         [@taxo_link, @taxo_topics]
       end
 
-      def _attrs
-        [
-         ["#{RDF::PREFIX}:about", true, "about"]
-        ]
-      end
-      
       def _tags
         rv = []
         rv << [TAXO_URI, "link"] unless @taxo_link.nil?

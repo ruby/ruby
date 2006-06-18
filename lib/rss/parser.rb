@@ -378,7 +378,7 @@ module RSS
       check_ns(tag_name, prefix, ns, klass.required_uri)
 
       attributes = {}
-      klass.get_attributes.each do |a_name, a_uri, required|
+      klass.get_attributes.each do |a_name, a_uri, required, element_name|
 
         if a_uri.is_a?(String) or !a_uri.respond_to?(:include?)
           a_uri = [a_uri]

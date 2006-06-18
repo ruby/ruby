@@ -482,13 +482,16 @@ EOC
         end
 
         def self.install_get_attribute(name, uri, required=true,
-                                       type=nil, disp_name=name)
+                                       type=nil, disp_name=nil,
+                                       element_name=nil)
+          disp_name ||= name
+          element_name ||= name
           def_corresponded_attr_writer name, type, disp_name
           convert_attr_reader name
           if type == :boolean and /^is/ =~ name
             alias_method "\#{$POSTMATCH}?", name
           end
-          GET_ATTRIBUTES << [name, uri, required]
+          GET_ATTRIBUTES << [name, uri, required, element_name]
           add_need_initialize_variable(disp_name)
         end
 
@@ -751,7 +754,9 @@ EOC
     end
 
     def _attrs
-      []
+      self.class.get_attributes.collect do |name, uri, required, element_name|
+        [element_name, required, name]
+      end
     end
 
     def __validate(ignore_unknown_element, tags=_tags, recursive=true)
