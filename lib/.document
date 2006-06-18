@@ -36,6 +36,7 @@ shellwords.rb
 singleton.rb
 tempfile.rb
 test/unit.rb
+test/unit/assertions.rb
 thread.rb
 thwait.rb
 time.rb
