@@ -60,7 +60,7 @@ module RSS
       tag_name_with_prefix(PREFIX)
     end
     
-    def to_s(need_convert=true, indent=calc_indent)
+    def to_s(need_convert=true, indent='')
       rv = tag(indent, ns_declarations) do |next_indent|
         [
           channel_element(false, next_indent),
@@ -120,7 +120,7 @@ module RSS
         tag_name_with_prefix(PREFIX)
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent)
         rv = convert(rv) if need_convert
         rv
@@ -157,7 +157,7 @@ module RSS
         @li = li
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         tag(indent) do |next_indent|
           [
             li_elements(need_convert, next_indent),
@@ -217,7 +217,7 @@ module RSS
         @li = li
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         tag(indent) do |next_indent|
           [
             li_elements(need_convert, next_indent),
@@ -296,7 +296,7 @@ module RSS
         self.about = about
       end
 
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -367,7 +367,7 @@ module RSS
           self.resource = resource
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent)
           rv = convert(rv) if need_convert
           rv
@@ -404,7 +404,7 @@ module RSS
           self.resource = resource
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent)
           rv = convert(rv) if need_convert
           rv
@@ -441,7 +441,7 @@ module RSS
           @Seq = seq
         end
         
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               Seq_element(need_convert, next_indent),
@@ -512,7 +512,7 @@ module RSS
         self.about = about
       end
 
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -582,7 +582,7 @@ module RSS
         self.about = about
       end
 
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -657,7 +657,7 @@ module RSS
         self.about = about
       end
 
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),

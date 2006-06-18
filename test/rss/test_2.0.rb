@@ -386,22 +386,5 @@ module RSS
       rss10 = RSS::Parser.parse(rss10)
       assert_equal("1.0", rss10.rss_version)
     end
-
-    def test_indent_size
-      assert_equal(0, Rss.indent_size)
-      assert_equal(1, Rss::Channel.indent_size)
-      assert_equal(2, Rss::Channel::SkipDays.indent_size)
-      assert_equal(3, Rss::Channel::SkipDays::Day.indent_size)
-      assert_equal(2, Rss::Channel::SkipHours.indent_size)
-      assert_equal(3, Rss::Channel::SkipHours::Hour.indent_size)
-      assert_equal(2, Rss::Channel::Image.indent_size)
-      assert_equal(2, Rss::Channel::Cloud.indent_size)
-      assert_equal(2, Rss::Channel::Item.indent_size)
-      assert_equal(3, Rss::Channel::Item::Source.indent_size)
-      assert_equal(3, Rss::Channel::Item::Enclosure.indent_size)
-      assert_equal(3, Rss::Channel::Item::Category.indent_size)
-      assert_equal(3, Rss::Channel::Item::Guid.indent_size)
-      assert_equal(2, Rss::Channel::TextInput.indent_size)
-    end
   end
 end

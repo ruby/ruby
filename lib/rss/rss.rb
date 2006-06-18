@@ -380,7 +380,7 @@ EOC
 
     def def_content_only_to_s
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         if @content
           rv = tag(indent) do |next_indent|
             h(@content)
@@ -445,7 +445,6 @@ EOC
         
         @tag_name = name.split(/::/).last
         @tag_name[0,1] = @tag_name[0,1].downcase
-        @indent_size = name.split(/::/).size - 2
         @have_content = false
 
         def self.must_call_validators
@@ -547,11 +546,6 @@ EOC
       def tag_name
         @tag_name
       end
-      
-      def indent_size
-        @indent_size
-      end
-      
     end
 
     attr_accessor :do_validate
@@ -568,10 +562,6 @@ EOC
 
     def full_name
       tag_name
-    end
-    
-    def indent_size
-      self.class.indent_size
     end
     
     def converter=(converter)
@@ -682,9 +672,10 @@ EOC
     def tag_name_with_prefix(prefix)
       "#{prefix}:#{tag_name}"
     end
-    
+
+    # For backward compatibility
     def calc_indent
-      INDENT * (self.class.indent_size)
+      ''
     end
 
     def maker_target(maker)

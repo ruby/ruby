@@ -59,7 +59,7 @@ module RSS
       end
     end
     
-    def to_s(need_convert=true, indent=calc_indent)
+    def to_s(need_convert=true, indent='')
       rv = tag(indent, ns_declarations) do |next_indent|
         [
           channel_element(false, next_indent),
@@ -153,7 +153,7 @@ module RSS
         super()
       end
 
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -248,7 +248,7 @@ module RSS
           install_model(name, occurs)
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               day_elements(false, next_indent)
@@ -293,7 +293,7 @@ module RSS
           install_model(name, occurs)
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               hour_elements(false, next_indent)
@@ -355,7 +355,7 @@ module RSS
           self.description = description
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               url_element(false, next_indent),
@@ -408,7 +408,7 @@ module RSS
           self.protocol = protocol
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent)
           rv = convert(rv) if need_convert
           rv
@@ -452,7 +452,7 @@ module RSS
           install_model(tag, occurs)
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               title_element(false, next_indent),
@@ -561,7 +561,7 @@ module RSS
             self.type = type
           end
 
-          def to_s(need_convert=true, indent=calc_indent)
+          def to_s(need_convert=true, indent='')
             rv = tag(indent)
             rv = convert(rv) if need_convert
             rv
@@ -642,7 +642,7 @@ module RSS
           self.link = link
         end
 
-        def to_s(need_convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent='')
           rv = tag(indent) do |next_indent|
             [
               title_element(false, next_indent),

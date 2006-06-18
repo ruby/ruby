@@ -83,7 +83,7 @@ module RSS
         tag_name_with_prefix(IMAGE_PREFIX)
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             other_element(false, next_indent),
@@ -187,7 +187,7 @@ module RSS
         tag_name_with_prefix(IMAGE_PREFIX)
       end
       
-      def to_s(need_convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
             other_element(false, next_indent),

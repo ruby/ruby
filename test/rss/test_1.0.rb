@@ -245,16 +245,5 @@ module RSS
       rss20 = RSS::Parser.parse(rss.to_xml("2.0"))
       assert_equal("2.0", rss20.rss_version)
     end
-
-    def test_indent_size
-      assert_equal(0, RDF.indent_size)
-      assert_equal(1, RDF::Channel.indent_size)
-      assert_equal(2, RDF::Channel::Image.indent_size)
-      assert_equal(2, RDF::Channel::Textinput.indent_size)
-      assert_equal(2, RDF::Channel::Items.indent_size)
-      assert_equal(1, RDF::Image.indent_size)
-      assert_equal(1, RDF::Item.indent_size)
-      assert_equal(1, RDF::Textinput.indent_size)
-    end
   end
 end
