@@ -1,9 +1,5 @@
 require "forwardable"
-begin
-  require "open-uri"
-rescue LoadError
-  require "uri"
-end
+require "open-uri"
 
 require "rss/rss"
 
