@@ -1,3 +1,18 @@
+Sun Jun 18 20:28:43 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_methods): The return value
+	  of WIN32OLE#ole_methods should include PROPERTYPUTREF methods.
+
+	* ext/win32ole/win32ole.c (fole_put_methods): The return value
+	  of WIN32OLE#ole_put_methods should include PROPERTYPUTREF methods.
+
+	* test/win32ole/test_ole_methods.rb: ditto.
+
+	* ext/win32ole/win32ole.c (ole_propertyput): support
+	  PROPERTYPUTREF. [ruby-talk:183042]
+
+	* test/win32ole/test_propertyputref.rb : ditto.
+
 Sat Jun 17 23:42:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_eval): add aliases invoke_method and

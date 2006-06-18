@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.7"
+#define WIN32OLE_VERSION "0.7.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2820,7 +2820,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     EXCEPINFO excepinfo;
     DISPID dispID = DISPID_VALUE;
     DISPID dispIDParam = DISPID_PROPERTYPUT;
-    USHORT wFlags = DISPATCH_PROPERTYPUT;
+    USHORT wFlags = DISPATCH_PROPERTYPUT|DISPATCH_PROPERTYPUTREF;
     DISPPARAMS dispParams;
     VARIANTARG propertyValue[2];
     OLECHAR* pBuf[1];
@@ -3214,7 +3214,7 @@ ole_methods(VALUE self, int mask)
 static VALUE
 fole_methods(VALUE self)
 {
-    return ole_methods( self, INVOKE_FUNC | INVOKE_PROPERTYGET | INVOKE_PROPERTYPUT);
+    return ole_methods( self, INVOKE_FUNC | INVOKE_PROPERTYGET | INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF);
 }
 
 /*
@@ -3246,7 +3246,7 @@ fole_get_methods(VALUE self)
 static VALUE
 fole_put_methods(VALUE self)
 {
-    return ole_methods( self, INVOKE_PROPERTYPUT);
+    return ole_methods( self, INVOKE_PROPERTYPUT|INVOKE_PROPERTYPUTREF);
 }
 
 /*
