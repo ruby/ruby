@@ -1,3 +1,7 @@
+Mon Jun 19 00:00:17 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: fix bug: initialize improper tables.
+
 Sun Jun 18 22:36:13 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: RSS::Element#initialize accepts initial
