@@ -68,9 +68,14 @@ module RSS
         
       install_must_call_validator('rdf', ::RSS::RDF::URI)
 
-      def initialize(bag=Bag.new)
-        super()
-        @Bag = bag
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.Bag = args[0]
+        end
+        self.Bag ||= Bag.new
       end
 
       def full_name
@@ -155,9 +160,13 @@ module RSS
       install_get_attribute("about", ::RSS::RDF::URI, true)
       install_text_element("#{TAXO_PREFIX}_link")
         
-      def initialize(about=nil)
-        super()
-        @about = about
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+        end
       end
 
       def full_name

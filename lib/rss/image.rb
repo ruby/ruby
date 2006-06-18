@@ -75,10 +75,14 @@ module RSS
       alias height= image_height=
       alias height image_height
 
-      def initialize(about=nil, resource=nil)
-        super()
-        self.about = about
-        self.resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+          self.resource = args[1]
+        end
       end
 
       def full_name
@@ -179,10 +183,14 @@ module RSS
       alias image_size= size=
       alias image_size size
 
-      def initialize(about=nil, size=nil)
-        super()
-        self.about = about
-        self.size = size
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+          self.size = args[1]
+        end
       end
 
       def full_name

@@ -136,9 +136,13 @@ module RSS
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
       
-      def initialize(resource=nil)
-        super()
-        @resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.resource = args[0]
+        end
       end
 
       def full_name
@@ -186,9 +190,13 @@ module RSS
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
       
-      def initialize(resource=nil)
-        super()
-        @resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.resource = args[0]
+        end
       end
 
       def full_name
@@ -245,9 +253,13 @@ module RSS
       alias_method(:value, :content)
       alias_method(:value=, :content=)
 
-      def initialize(content=nil)
-        super()
-        @content = content
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.content = args[0]
+        end
       end
       
       def full_name
@@ -278,9 +290,13 @@ module RSS
       alias_method(:value, :content)
       alias_method(:value=, :content=)
 
-      def initialize(content=nil)
-        super()
-        @content = content
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.content = args[0]
+        end
       end
       
       def full_name

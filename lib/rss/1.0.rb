@@ -107,9 +107,13 @@ module RSS
         install_get_attribute(name, uri, required)
       end
       
-      def initialize(resource=nil)
-        super()
-        self.resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.resource = args[0]
+        end
       end
 
       def full_name
@@ -148,9 +152,13 @@ module RSS
       
       install_must_call_validator('rdf', ::RSS::RDF::URI)
       
-      def initialize(li=[])
-        super()
-        @li = li
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          @li = args[0] if args[0]
+        end
       end
       
       def to_s(need_convert=true, indent='')
@@ -208,9 +216,13 @@ module RSS
       
       install_must_call_validator('rdf', ::RSS::RDF::URI)
       
-      def initialize(li=[])
-        super()
-        @li = li
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          @li = args[0] if args[0]
+        end
       end
       
       def to_s(need_convert=true, indent='')
@@ -287,9 +299,13 @@ module RSS
         install_model(tag, occurs)
       end
       
-      def initialize(about=nil)
-        super()
-        self.about = about
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+        end
       end
 
       def to_s(need_convert=true, indent='')
@@ -358,9 +374,13 @@ module RSS
           install_get_attribute(name, uri, required)
         end
       
-        def initialize(resource=nil)
-          super()
-          self.resource = resource
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.resource = args[0]
+          end
         end
 
         def to_s(need_convert=true, indent='')
@@ -395,9 +415,13 @@ module RSS
           install_get_attribute(name, uri, required)
         end
       
-        def initialize(resource=nil)
-          super()
-          self.resource = resource
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.resource = args[0]
+          end
         end
 
         def to_s(need_convert=true, indent='')
@@ -432,9 +456,14 @@ module RSS
         
         install_must_call_validator('rdf', ::RSS::RDF::URI)
         
-        def initialize(seq=Seq.new)
-          super()
-          @Seq = seq
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.Seq = args[0]
+          end
+          self.Seq ||= Seq.new
         end
         
         def to_s(need_convert=true, indent='')
@@ -503,9 +532,13 @@ module RSS
         install_model(tag, occurs)
       end
 
-      def initialize(about=nil)
-        super()
-        self.about = about
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+        end
       end
 
       def to_s(need_convert=true, indent='')
@@ -573,9 +606,13 @@ module RSS
         install_model(tag, occurs)
       end
 
-      def initialize(about=nil)
-        super()
-        self.about = about
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+        end
       end
 
       def to_s(need_convert=true, indent='')
@@ -648,9 +685,13 @@ module RSS
         install_model(tag, occurs)
       end
 
-      def initialize(about=nil)
-        super()
-        self.about = about
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+        end
       end
 
       def to_s(need_convert=true, indent='')

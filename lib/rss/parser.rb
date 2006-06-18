@@ -377,8 +377,7 @@ module RSS
 
       check_ns(tag_name, prefix, ns, klass.required_uri)
 
-      args = []
-      
+      attributes = {}
       klass.get_attributes.each do |a_name, a_uri, required|
 
         if a_uri.is_a?(String) or !a_uri.respond_to?(:include?)
@@ -407,12 +406,11 @@ module RSS
           raise MissingAttributeError.new(tag_name, a_name)
         end
 
-        args << val
+        attributes[a_name] = val
       end
 
       previous = @last_element
-      next_element = klass.new(*args)
-      next_element.do_validate = @do_validate
+      next_element = klass.new(@do_validate, attributes)
       previous.instance_eval {set_next_element(tag_name, next_element)}
       @last_element = next_element
       @proc_stack.push Proc.new { |text, tags|

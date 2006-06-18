@@ -131,10 +131,14 @@ EOT
 
           content_setup
 
-          def initialize(isPermaLink=nil, content=nil)
-            super()
-            self.isPermaLink = isPermaLink
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.isPermaLink = args[0]
+              self.content = args[1]
+            end
           end
 
           alias_method :_PermaLink?, :PermaLink?

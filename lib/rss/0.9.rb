@@ -149,10 +149,6 @@ module RSS
         install_model(name, occurs)
       end
 
-      def initialize()
-        super()
-      end
-
       def to_s(need_convert=true, indent='')
         rv = tag(indent) do |next_indent|
           [
@@ -274,9 +270,13 @@ module RSS
 
           content_setup
 
-          def initialize(content=nil)
-            super()
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.content = args[0]
+            end
           end
       
         end
@@ -319,9 +319,13 @@ module RSS
 
           content_setup(:integer)
 
-          def initialize(content=nil)
-            super()
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.content = args[0]
+            end
           end
         end
         
@@ -344,15 +348,18 @@ module RSS
           install_model(name, "?")
         end
 
-        def initialize(url=nil, title=nil, link=nil, width=nil, height=nil,
-                       description=nil)
-          super()
-          self.url = url
-          self.title = title
-          self.link = link
-          self.width = width
-          self.height = height
-          self.description = description
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.url = args[0]
+            self.title = args[1]
+            self.link = args[2]
+            self.width = args[3]
+            self.height = args[4]
+            self.description = args[5]
+          end
         end
 
         def to_s(need_convert=true, indent='')
@@ -399,13 +406,17 @@ module RSS
           install_get_attribute(name, uri, required, type)
         end
 
-        def initialize(domain=nil, port=nil, path=nil, rp=nil, protocol=nil)
-          super()
-          self.domain = domain
-          self.port = port
-          self.path = path
-          self.registerProcedure = rp
-          self.protocol = protocol
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.domain = args[0]
+            self.port = args[1]
+            self.path = args[2]
+            self.registerProcedure = args[3]
+            self.protocol = args[4]
+          end
         end
 
         def to_s(need_convert=true, indent='')
@@ -514,10 +525,14 @@ module RSS
           
           content_setup
 
-          def initialize(url=nil, content=nil)
-            super()
-            self.url = url
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.url = args[0]
+              self.content = args[1]
+            end
           end
 
           private
@@ -554,11 +569,15 @@ module RSS
             install_get_attribute(name, uri, required, type)
           end
 
-          def initialize(url=nil, length=nil, type=nil)
-            super()
-            self.url = url
-            self.length = length
-            self.type = type
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.url = args[0]
+              self.length = args[1]
+              self.type = args[2]
+            end
           end
 
           def to_s(need_convert=true, indent='')
@@ -599,10 +618,14 @@ module RSS
 
           content_setup
 
-          def initialize(domain=nil, content=nil)
-            super()
-            self.domain = domain
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.domain = args[0]
+              self.content = args[1]
+            end
           end
 
           private
@@ -634,12 +657,16 @@ module RSS
           install_model(name, nil)
         end
 
-        def initialize(title=nil, description=nil, name=nil, link=nil)
-          super()
-          self.title = title
-          self.description = description
-          self.name = name
-          self.link = link
+        def initialize(*args)
+          if Utils.element_initialize_arguments?(args)
+            super
+          else
+            super()
+            self.title = args[0]
+            self.description = args[1]
+            self.name = args[2]
+            self.link = args[3]
+          end
         end
 
         def to_s(need_convert=true, indent='')

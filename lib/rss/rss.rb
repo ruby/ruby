@@ -489,6 +489,7 @@ EOC
             alias_method "\#{$POSTMATCH}?", name
           end
           GET_ATTRIBUTES << [name, uri, required]
+          add_need_initialize_variable(disp_name)
         end
 
         def self.def_corresponded_attr_writer(name, type=nil, disp_name=name)
@@ -552,10 +553,10 @@ EOC
 
     attr_accessor :do_validate
 
-    def initialize(do_validate=true)
+    def initialize(do_validate=true, attrs={})
       @converter = nil
       @do_validate = do_validate
-      initialize_variables
+      initialize_variables(attrs)
     end
 
     def tag_name
@@ -605,9 +606,18 @@ EOC
     end
     
     private
-    def initialize_variables
+    def initialize_variables(attrs)
+      normalized_attrs = {}
+      attrs.each do |key, value|
+        normalized_attrs[key.to_s] = value
+      end
       self.class.need_initialize_variables.each do |variable_name|
-        instance_eval("@#{variable_name} = nil")
+        value = normalized_attrs[variable_name.to_s]
+        if value
+          __send__("#{variable_name}=", value)
+        else
+          instance_eval("@#{variable_name} = nil")
+        end
       end
       initialize_have_children_elements
       @content = "" if self.class.have_content?
