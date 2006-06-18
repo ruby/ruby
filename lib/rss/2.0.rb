@@ -48,11 +48,11 @@ EOT
         rv = %w(generator ttl).delete_if do |name|
           __send__(name).nil?
         end.collect do |elem|
-          [nil, elem]
+          ["", elem]
         end + _tags09
 
         @category.each do
-          rv << [nil, "category"]
+          rv << ["", "category"]
         end
         
         rv
@@ -109,7 +109,7 @@ EOT
           %w(comments author pubDate guid).delete_if do |name|
             __send__(name).nil?
           end.collect do |elem|
-            [nil, elem]
+            ["", elem]
           end + _tags09
         end
 
@@ -124,7 +124,7 @@ EOT
           include RSS09
 
           [
-            ["isPermaLink", nil, false, :boolean]
+            ["isPermaLink", "", false, :boolean]
           ].each do |name, uri, required, type|
             install_get_attribute(name, uri, required, type)
           end
@@ -168,7 +168,7 @@ EOT
   end
 
   RSS09::ELEMENTS.each do |name|
-    BaseListener.install_get_text_element(nil, name, "#{name}=")
+    BaseListener.install_get_text_element("", name, "#{name}=")
   end
 
 end

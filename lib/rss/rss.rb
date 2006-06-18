@@ -535,7 +535,7 @@ EOC
       end
 
       def required_uri
-        nil
+        ""
       end
       
       def install_ns(prefix, uri)

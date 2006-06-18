@@ -221,7 +221,7 @@ module RSS
         unless private_instance_methods(false).include?("start_#{name}")
           module_eval(<<-EOT, file, line)
           def start_#{name}(name, prefix, attrs, ns)
-            uri = ns[prefix]
+            uri = _ns(ns, prefix)
             if self.class.uri_registered?(uri, #{name.inspect})
               if @do_validate
                 tags = self.class.available_tags(uri)
@@ -291,7 +291,7 @@ module RSS
       @ns_stack.push(ns)
 
       prefix, local = split_name(name)
-      @tag_stack.last.push([ns[prefix], local])
+      @tag_stack.last.push([_ns(ns, prefix), local])
       @tag_stack.push([])
       if respond_to?("start_#{local}", true)
         __send__("start_#{local}", local, prefix, attrs, ns.dup)
@@ -317,6 +317,9 @@ module RSS
     end
 
     private
+    def _ns(ns, prefix)
+      ns.fetch(prefix, "")
+    end
 
     CONTENT_PATTERN = /\s*([^=]+)=(["'])([^\2]+?)\2/
     def parse_pi_content(content)
@@ -328,7 +331,7 @@ module RSS
     end
 
     def start_else_element(local, prefix, attrs, ns)
-      class_name = self.class.class_name(ns[prefix], local)
+      class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
       if current_class.constants.include?(class_name)
         next_class = current_class.const_get(class_name)
@@ -354,7 +357,7 @@ module RSS
 
     def check_ns(tag_name, prefix, ns, require_uri)
       if @do_validate
-        if ns[prefix] == require_uri
+        if _ns(ns, prefix) == require_uri
           #ns.delete(prefix)
         else
           raise NSError.new(tag_name, prefix, require_uri)
@@ -387,7 +390,7 @@ module RSS
         if a_uri.is_a?(String) or !a_uri.respond_to?(:include?)
           a_uri = [a_uri]
         end
-        unless a_uri == [nil]
+        unless a_uri == [""]
           for prefix, uri in ns
             if a_uri.include?(uri)
               val = attrs["#{prefix}:#{a_name}"]
@@ -395,12 +398,12 @@ module RSS
             end
           end
         end
-        if val.nil? and a_uri.include?(nil)
+        if val.nil? and a_uri.include?("")
           val = attrs[a_name]
         end
 
         if @do_validate and required and val.nil?
-          unless a_uri.include?(nil)
+          unless a_uri.include?("")
             for prefix, uri in ns
               if a_uri.include?(uri)
                 a_name = "#{prefix}:#{a_name}"

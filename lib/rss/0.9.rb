@@ -9,7 +9,7 @@ module RSS
     def self.append_features(klass)
       super
       
-      klass.install_must_call_validator('', nil)
+      klass.install_must_call_validator('', "")
     end
   end
 
@@ -84,7 +84,7 @@ module RSS
 
     def _tags
       [
-        [nil, 'channel'],
+        ["", 'channel'],
       ].delete_if do |uri, name|
         __send__(name).nil?
       end
@@ -204,11 +204,11 @@ module RSS
         ].delete_if do |name|
           __send__(name).nil?
         end.collect do |elem|
-          [nil, elem]
+          ["", elem]
         end
 
         @item.each do
-          rv << [nil, "item"]
+          rv << ["", "item"]
         end
 
         rv
@@ -265,7 +265,7 @@ module RSS
 
         def _tags
           @day.compact.collect do
-            [nil, "day"]
+            ["", "day"]
           end
         end
 
@@ -310,7 +310,7 @@ module RSS
 
         def _tags
           @hour.compact.collect do
-            [nil, "hour"]
+            ["", "hour"]
           end
         end
 
@@ -376,7 +376,7 @@ module RSS
           %w(url title link width height description).delete_if do |name|
             __send__(name).nil?
           end.collect do |elem|
-            [nil, elem]
+            ["", elem]
           end
         end
 
@@ -390,11 +390,11 @@ module RSS
         include RSS09
         
         [
-          ["domain", nil, true],
-          ["port", nil, true, :integer],
-          ["path", nil, true],
-          ["registerProcedure", nil, true],
-          ["protocol", nil, true],
+          ["domain", "", true],
+          ["port", "", true, :integer],
+          ["path", "", true],
+          ["registerProcedure", "", true],
+          ["protocol", "", true],
         ].each do |name, uri, required, type|
           install_get_attribute(name, uri, required, type)
         end
@@ -478,11 +478,11 @@ module RSS
             source enclosure).delete_if do |name|
             __send__(name).nil?
           end.collect do |name|
-            [nil, name]
+            ["", name]
           end
 
           @category.each do
-            rv << [nil, "category"]
+            rv << ["", "category"]
           end
           
           rv
@@ -507,7 +507,7 @@ module RSS
           include RSS09
 
           [
-            ["url", nil, true]
+            ["url", "", true]
           ].each do |name, uri, required|
             install_get_attribute(name, uri, required)
           end
@@ -547,9 +547,9 @@ module RSS
           include RSS09
 
           [
-            ["url", nil, true],
-            ["length", nil, true, :integer],
-            ["type", nil, true],
+            ["url", "", true],
+            ["length", "", true, :integer],
+            ["type", "", true],
           ].each do |name, uri, required, type|
             install_get_attribute(name, uri, required, type)
           end
@@ -592,7 +592,7 @@ module RSS
           include RSS09
           
           [
-            ["domain", nil, false]
+            ["domain", "", false]
           ].each do |name, uri, required|
             install_get_attribute(name, uri, required)
           end
@@ -661,7 +661,7 @@ module RSS
           %w(title description name link).each do |name|
             __send__(name).nil?
           end.collect do |elem|
-            [nil, elem]
+            ["", elem]
           end
         end
 
@@ -675,13 +675,13 @@ module RSS
   end
 
   RSS09::ELEMENTS.each do |name|
-    BaseListener.install_get_text_element(nil, name, "#{name}=")
+    BaseListener.install_get_text_element("", name, "#{name}=")
   end
 
   module ListenerMixin
     private
     def start_rss(tag_name, prefix, attrs, ns)
-      check_ns(tag_name, prefix, ns, nil)
+      check_ns(tag_name, prefix, ns, "")
       
       @rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
       @rss.do_validate = @do_validate

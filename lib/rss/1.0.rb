@@ -106,7 +106,7 @@ module RSS
       end
       
       [
-        ["resource", [URI, nil], true]
+        ["resource", [URI, ""], true]
       ].each do |name, uri, required|
         install_get_attribute(name, uri, required)
       end
