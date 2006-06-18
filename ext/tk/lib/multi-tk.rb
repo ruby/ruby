@@ -1405,7 +1405,7 @@ class MultiTkIp
   end
 
   def _init_ip_env(script)
-    script.call(self)
+    self.eval_proc{script.call(self)}
   end
 
   def _add_tk_procs(name, args, body)
@@ -1417,7 +1417,8 @@ class MultiTkIp
   end
 
   def _init_ip_internal(init_ip_env, add_tk_procs)
-    init_ip_env.each{|script| script.call(self)}
+    #init_ip_env.each{|script| self.eval_proc{script.call(self)}}
+    init_ip_env.each{|script| self._init_ip_env(script)}
     add_tk_procs.each{|name, args, body| 
       if master?
         @interp._invoke('proc', name, args, body) if args && body
