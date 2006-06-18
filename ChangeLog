@@ -1,3 +1,7 @@
+Sun Jun 18 18:24:42 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/converter.rb: use NKF for Uconv fallback.
+
 Sun Jun 18 18:22:04 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_image.rb: shared name space configuration.

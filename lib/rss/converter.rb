@@ -66,7 +66,7 @@ module RSS
       end
     end
 
-    def def_uconv_convert_if_can(meth, to_enc, from_enc)
+    def def_uconv_convert_if_can(meth, to_enc, from_enc, nkf_arg)
       begin
         require "uconv"
         def_convert(1) do |value|
@@ -79,24 +79,27 @@ module RSS
           EOC
         end
       rescue LoadError
-        def_iconv_convert(to_enc, from_enc, 1)
+        require 'nkf'
+        def_convert(1) do |value|
+          "NKF.nkf(#{nkf_arg.dump}, #{value})"
+        end
       end
     end
 
     def def_to_euc_jp_from_utf_8
-      def_uconv_convert_if_can('u8toeuc', 'EUC-JP', 'UTF-8')
+      def_uconv_convert_if_can('u8toeuc', 'EUC-JP', 'UTF-8', '-We')
     end
     
     def def_to_utf_8_from_euc_jp
-      def_uconv_convert_if_can('euctou8', 'UTF-8', 'EUC-JP')
+      def_uconv_convert_if_can('euctou8', 'UTF-8', 'EUC-JP', '-Ew')
     end
     
     def def_to_shift_jis_from_utf_8
-      def_uconv_convert_if_can('u8tosjis', 'Shift_JIS', 'UTF-8')
+      def_uconv_convert_if_can('u8tosjis', 'Shift_JIS', 'UTF-8', '-Ws')
     end
     
     def def_to_utf_8_from_shift_jis
-      def_uconv_convert_if_can('sjistou8', 'UTF-8', 'Shift_JIS')
+      def_uconv_convert_if_can('sjistou8', 'UTF-8', 'Shift_JIS', '-Sw')
     end
     
     def def_to_euc_jp_from_shift_jis
