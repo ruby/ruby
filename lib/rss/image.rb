@@ -17,9 +17,11 @@ module RSS
   end
   
   module ImageModelUtils
-    def validate_one_tag_name(name, tags)
-      invalid = tags.find {|tag| tag != name}
-      raise UnknownTagError.new(invalid, IMAGE_URI) if invalid
+    def validate_one_tag_name(ignore_unknown_element, name, tags)
+      if !ignore_unknown_element
+        invalid = tags.find {|tag| tag != name}
+        raise UnknownTagError.new(invalid, IMAGE_URI) if invalid
+      end
       raise TooMuchTagError.new(name, tag_name) if tags.size > 1
     end
   end
@@ -34,8 +36,8 @@ module RSS
       klass.install_have_child_element("#{IMAGE_PREFIX}_item")
     end
 
-    def image_validate(tags)
-      validate_one_tag_name("item", tags)
+    def image_validate(ignore_unknown_element, tags, uri)
+      validate_one_tag_name(ignore_unknown_element, "item", tags)
     end
     
     class ImageItem < Element
@@ -133,8 +135,8 @@ module RSS
       end
     end
 
-    def image_validate(tags)
-      validate_one_tag_name("favicon", tags)
+    def image_validate(ignore_unknown_element, tags, uri)
+      validate_one_tag_name(ignore_unknown_element, "favicon", tags)
     end
     
     class ImageFavicon < Element

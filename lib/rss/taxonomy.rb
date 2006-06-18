@@ -32,7 +32,7 @@ module RSS
       klass.install_have_child_element(var_name)
     end
 
-    def taxo_validate(tags)
+    def taxo_validate(ignore_unknown_element, tags, uri)
       found_topics = false
       tags.each do |tag|
         if tag == "topics"
@@ -41,7 +41,7 @@ module RSS
           else
             found_topics = true
           end
-        else
+        elsif !ignore_unknown_element
           raise UnknownTagError.new(tag, TAXO_URI)
         end
       end
@@ -111,8 +111,8 @@ module RSS
         rv
       end
       
-      def rdf_validate(tags)
-        _validate(tags, [["Bag", nil]])
+      def rdf_validate(ignore_unknown_element, tags, uri)
+        _validate(ignore_unknown_element, tags, uri, [["Bag", nil]])
       end
     end
   end
@@ -126,9 +126,9 @@ module RSS
       klass.install_have_children_element(var_name)
     end
 
-    def taxo_validate(tags)
+    def taxo_validate(ignore_unknown_element, tags, uri)
       tags.each do |tag|
-        if tag != "topic"
+        if !ignore_unknown_element and tag != "topic"
           raise UnknownTagError.new(tag, TAXO_URI)
         end
       end
@@ -172,7 +172,7 @@ module RSS
         end
       end
 
-      def taxo_validate(tags)
+      def taxo_validate(ignore_unknown_element, tags, uri)
         elements = %w(link topics)
         counter = {}
         
@@ -181,7 +181,7 @@ module RSS
             counter[tag] ||= 0
             counter[tag] += 1
             raise TooMuchTagError.new(tag, tag_name) if counter[tag] > 1
-          else
+          elsif !ignore_unknown_element
             raise UnknownTagError.new(tag, TAXO_URI)
           end
         end

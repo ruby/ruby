@@ -38,7 +38,7 @@ module RSS
       EOC
     end
 
-    def sy_validate(tags)
+    def sy_validate(ignore_unknown_element, tags, uri)
       counter = {}
       ELEMENTS.each do |name|
         counter[name] = 0
@@ -46,7 +46,9 @@ module RSS
 
       tags.each do |tag|
         key = "#{SY_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, SY_URI)  unless counter.has_key?(key)
+        if ignore_unknown_element and !counter.has_key?(key)
+          raise UnknownTagError.new(tag, SY_URI)
+        end
         counter[key] += 1
         raise TooMuchTagError.new(tag, tag_name) if counter[key] > 1
       end

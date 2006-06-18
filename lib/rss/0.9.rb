@@ -688,7 +688,7 @@ module RSS
       @rss.xml_stylesheets = @xml_stylesheets
       @last_element = @rss
       @proc_stack.push Proc.new { |text, tags|
-        @rss.validate_for_stream(tags) if @do_validate
+        @rss.validate_for_stream(tags, @ignore_unknown_element) if @do_validate
       }
     end
     

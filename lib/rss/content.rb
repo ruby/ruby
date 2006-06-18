@@ -23,7 +23,7 @@ module RSS
       EOC
     end
 
-    def content_validate(tags)
+    def content_validate(ignore_unknown_element, tags, uri)
       counter = {}
       ELEMENTS.each do |name|
         counter[name] = 0
@@ -31,7 +31,9 @@ module RSS
 
       tags.each do |tag|
         key = "#{CONTENT_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, CONTENT_URI) unless counter.has_key?(key)
+        if !ignore_unknown_element and !counter.has_key?(key)
+          raise UnknownTagError.new(tag, CONTENT_URI)
+        end
         counter[key] += 1
         raise TooMuchTagError.new(tag, tag_name) if counter[key] > 1
       end

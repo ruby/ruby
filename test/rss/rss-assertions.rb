@@ -71,13 +71,14 @@ module RSS
       end
     end
     
-    def assert_not_expected_tag(tag, parent)
+    def assert_not_expected_tag(tag, uri, parent)
       _wrap_assertion do
         begin
           yield
           flunk("Not raise NotExpectedTagError")
         rescue ::RSS::NotExpectedTagError => e
           assert_equal(tag, e.tag)
+          assert_equal(uri, e.uri)
           assert_equal(parent, e.parent)
         end
       end

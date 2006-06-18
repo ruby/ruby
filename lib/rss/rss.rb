@@ -87,10 +87,10 @@ module RSS
   end
 
   class NotExpectedTagError < InvalidRSSError
-    attr_reader :tag, :parent
-    def initialize(tag, parent)
-      @tag, @parent = tag, parent
-      super("tag <#{tag}> is not expected in tag <#{parent}>")
+    attr_reader :tag, :uri, :parent
+    def initialize(tag, uri, parent)
+      @tag, @uri, @parent = tag, uri, parent
+      super("tag <{#{uri}}#{tag}> is not expected in tag <#{parent}>")
     end
   end
   # For backward compatibility :X
@@ -585,14 +585,14 @@ EOC
       end
     end
     
-    def validate
+    def validate(ignore_unknown_element=true)
       validate_attribute
-      __validate
+      __validate(ignore_unknown_element)
     end
     
-    def validate_for_stream(tags)
+    def validate_for_stream(tags, ignore_unknown_element=true)
       validate_attribute
-      __validate(tags, false)
+      __validate(ignore_unknown_element, tags, false)
     end
 
     def setup_maker(maker)
@@ -744,7 +744,7 @@ EOC
       []
     end
 
-    def __validate(tags=_tags, recursive=true)
+    def __validate(ignore_unknown_element, tags=_tags, recursive=true)
       if recursive
         children.compact.each do |child|
           child.validate
@@ -756,11 +756,13 @@ EOC
       self.class::NSPOOL.each do |prefix, uri|
         if tags.has_key?(uri) and !must_call_validators.has_key?(uri)
           meth = "#{prefix}_validate"
-          __send__(meth, tags[uri]) if respond_to?(meth, true)
+          if respond_to?(meth, true)
+            __send__(meth, ignore_unknown_element, tags[uri], uri)
+          end
         end
       end
       must_call_validators.each do |uri, prefix|
-        __send__("#{prefix}_validate", tags[uri])
+        __send__("#{prefix}_validate", ignore_unknown_element, tags[uri], uri)
       end
     end
 
@@ -784,7 +786,7 @@ EOC
       rv.join("\n")
     end
 
-    def _validate(tags, model=self.class.model)
+    def _validate(ignore_unknown_element, tags, uri, model=self.class.model)
       count = 1
       do_redo = false
       not_shift = false
@@ -869,8 +871,8 @@ EOC
 
       end
 
-      if !tags.nil? and !tags.empty?
-        raise NotExpectedTagError.new(tag, tag_name)
+      if !ignore_unknown_element and !tags.nil? and !tags.empty?
+        raise NotExpectedTagError.new(tags.first, uri, tag_name)
       end
 
     end

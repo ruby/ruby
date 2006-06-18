@@ -130,10 +130,11 @@ module RSS
       EOC
     end
       
-    def dc_validate(tags)
+    def dc_validate(ignore_unknown_element, tags, uri)
       tags.each do |tag|
         key = "#{DC_PREFIX}_#{tag}"
-        unless DublinCoreModel::ELEMENTS.include?(key)
+        if !ignore_unknown_element and
+            !DublinCoreModel::ELEMENTS.include?(key)
           raise UnknownTagError.new(tag, DC_URI)
         end
       end

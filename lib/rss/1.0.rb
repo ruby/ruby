@@ -75,10 +75,6 @@ module RSS
     end
 
     private
-    def rdf_validate(tags)
-      _validate(tags, [])
-    end
-
     def children
       [@channel, @image, @textinput, *@item]
     end
@@ -181,8 +177,8 @@ module RSS
         @li
       end
           
-      def rdf_validate(tags)
-        _validate(tags, [["li", '*']])
+      def rdf_validate(ignore_unknown_element, tags, uri)
+        _validate(ignore_unknown_element, tags, uri, [["li", '*']])
       end
 
       def _tags
@@ -241,8 +237,8 @@ module RSS
         @li
       end
           
-      def rdf_validate(tags)
-        _validate(tags, [["li", '*']])
+      def rdf_validate(ignore_unknown_element, tags, uri)
+        _validate(ignore_unknown_element, tags, uri, [["li", '*']])
       end
 
       def _tags
@@ -471,8 +467,8 @@ module RSS
           rv
         end
         
-        def rdf_validate(tags)
-          _validate(tags, [["Seq", nil]])
+        def rdf_validate(ignore_unknown_element, tags, uri)
+          _validate(ignore_unknown_element, tags, uri, [["Seq", nil]])
         end
       end
     end
@@ -710,7 +706,7 @@ module RSS
       @rss.xml_stylesheets = @xml_stylesheets
       @last_element = @rss
       @proc_stack.push Proc.new { |text, tags|
-        @rss.validate_for_stream(tags) if @do_validate
+        @rss.validate_for_stream(tags, @ignore_unknown_element) if @do_validate
       }
     end
   end

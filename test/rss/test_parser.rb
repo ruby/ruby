@@ -603,19 +603,64 @@ EOR
     end
 
     def test_ignore
-
+      name = "a"
       rss = make_RDF(<<-EOR)
 #{make_channel}
 #{make_item}
-<a/>
+<#{name}/>
 EOR
-
-      assert_parse(rss, :nothing_raised)
-
-      assert_not_expected_tag("a", "RDF") do
+      assert_not_expected_tag(name, ::RSS::URI, "RDF") do
         Parser.parse(rss, true, false)
       end
 
+      uri = ""
+      name = "a"
+      rss = make_RDF(<<-EOR)
+#{make_channel}
+#{make_item}
+<#{name} xmlns=""/>
+EOR
+      assert_parse(rss, :nothing_raised)
+      assert_not_expected_tag(name, uri, "RDF") do
+        Parser.parse(rss, true, false)
+      end
+
+      uri = "http://example.com/"
+      name = "a"
+      rss = make_RDF(<<-EOR)
+#{make_channel}
+#{make_item}
+<x:#{name} xmlns:x="#{uri}"/>
+EOR
+      assert_parse(rss, :nothing_raised)
+      assert_not_expected_tag(name, uri, "RDF") do
+        Parser.parse(rss, true, false)
+      end
+
+      uri = ::RSS::URI
+      name = "a"
+      rss = make_RDF(<<-EOR)
+#{make_channel}
+#{make_item}
+#{make_image("<#{name}/>")}
+EOR
+      assert_parse(rss, :nothing_raised)
+      assert_not_expected_tag(name, uri, "image") do
+        Parser.parse(rss, true, false)
+      end
+      
+      uri = CONTENT_URI
+      name = "encoded"
+      elem = "<#{name} xmlns='#{uri}'/>"
+      rss = make_RDF(<<-EOR)
+#{make_channel}
+#{make_item}
+#{make_image(elem)}
+EOR
+      assert_parse(rss, :nothing_raised)
+      assert_not_expected_tag(name, uri, "image") do
+        Parser.parse(rss, true, false)
+      end
     end
 
     def test_default_parser

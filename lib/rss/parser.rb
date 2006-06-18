@@ -63,7 +63,8 @@ module RSS
         end
       end
 
-      def parse(rss, do_validate=true, ignore_unknown_element=true, parser_class=default_parser)
+      def parse(rss, do_validate=true, ignore_unknown_element=true,
+                parser_class=default_parser)
         parser = new(rss, parser_class)
         parser.do_validate = do_validate
         parser.ignore_unknown_element = ignore_unknown_element
@@ -162,11 +163,6 @@ module RSS
       @@registered_uris = {}
       @@class_names = {}
 
-      def install_setter(uri, tag_name, setter)
-        @@setters[uri] ||= {}
-        @@setters[uri][tag_name] = setter
-      end
-
       def setter(uri, tag_name)
         begin
           @@setters[uri][tag_name]
@@ -215,6 +211,10 @@ module RSS
       end
     
       private
+      def install_setter(uri, tag_name, setter)
+        @@setters[uri] ||= {}
+        @@setters[uri][tag_name] = setter
+      end
 
       def def_get_text_element(uri, name, file, line)
         register_uri(uri, name)
@@ -223,12 +223,6 @@ module RSS
           def start_#{name}(name, prefix, attrs, ns)
             uri = _ns(ns, prefix)
             if self.class.uri_registered?(uri, #{name.inspect})
-              if @do_validate
-                tags = self.class.available_tags(uri)
-                unless tags.include?(name)
-                  raise UnknownTagError.new(name, uri)
-                end
-              end
               start_get_text_element(name, prefix, ns, uri)
             else
               start_else_element(name, prefix, attrs, ns)
@@ -337,14 +331,14 @@ module RSS
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
-        if @ignore_unknown_element
+        if !@do_validate or @ignore_unknown_element
           @proc_stack.push(nil)
         else
           parent = "ROOT ELEMENT???"
           if current_class.tag_name
             parent = current_class.tag_name
           end
-          raise NotExpectedTagError.new(local, parent)
+          raise NotExpectedTagError.new(local, _ns(ns, prefix), parent)
         end
       end
     end
@@ -368,12 +362,12 @@ module RSS
     def start_get_text_element(tag_name, prefix, ns, required_uri)
       @proc_stack.push Proc.new {|text, tags|
         setter = self.class.setter(required_uri, tag_name)
-        setter ||= "#{tag_name}="
         if @last_element.respond_to?(setter)
           @last_element.__send__(setter, text.to_s)
         else
-          if @do_validate and not @ignore_unknown_element
-            raise NotExpectedTagError.new(tag_name, @last_element.tag_name)
+          if @do_validate and !@ignore_unknown_element
+            raise NotExpectedTagError.new(tag_name, _ns(ns, prefix),
+                                          @last_element.tag_name)
           end
         end
       }
@@ -424,7 +418,9 @@ module RSS
       @proc_stack.push Proc.new { |text, tags|
         p(@last_element.class) if DEBUG
         @last_element.content = text if klass.have_content?
-        @last_element.validate_for_stream(tags) if @do_validate
+        if @do_validate
+          @last_element.validate_for_stream(tags, @ignore_unknown_element)
+        end
         @last_element = previous
       }
     end

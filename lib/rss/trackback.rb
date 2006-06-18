@@ -11,7 +11,7 @@ module RSS
 
   module TrackBackUtils
     private
-    def trackback_validate(tags)
+    def trackback_validate(ignore_unknown_element, tags, uri)
       counter = {}
       %w(ping about).each do |name|
         counter["#{TRACKBACK_PREFIX}_#{name}"] = 0
@@ -19,7 +19,9 @@ module RSS
 
       tags.each do |tag|
         key = "#{TRACKBACK_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, TRACKBACK_URI) unless counter.has_key?(key)
+        if !ignore_unknown_element and !counter.has_key?(key)
+          raise UnknownTagError.new(tag, TRACKBACK_URI)
+        end
         counter[key] += 1
         if tag != "about" and counter[key] > 1
           raise TooMuchTagError.new(tag, tag_name)
