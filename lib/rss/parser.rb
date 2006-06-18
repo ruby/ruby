@@ -345,7 +345,7 @@ module RSS
           if current_class.tag_name
             parent = current_class.tag_name
           end
-          raise NotExceptedTagError.new(local, parent)
+          raise NotExpectedTagError.new(local, parent)
         end
       end
     end
@@ -374,7 +374,7 @@ module RSS
           @last_element.__send__(setter, text.to_s)
         else
           if @do_validate and not @ignore_unknown_element
-            raise NotExceptedTagError.new(tag_name, @last_element.tag_name)
+            raise NotExpectedTagError.new(tag_name, @last_element.tag_name)
           end
         end
       }

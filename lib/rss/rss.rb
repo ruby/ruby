@@ -86,13 +86,15 @@ module RSS
     end
   end
 
-  class NotExceptedTagError < InvalidRSSError
+  class NotExpectedTagError < InvalidRSSError
     attr_reader :tag, :parent
     def initialize(tag, parent)
       @tag, @parent = tag, parent
       super("tag <#{tag}> is not expected in tag <#{parent}>")
     end
   end
+  # For backward compatibility :X
+  NotExceptedTagError = NotExpectedTagError
 
   class NotAvailableValueError < InvalidRSSError
     attr_reader :tag, :value, :attribute
@@ -868,7 +870,7 @@ EOC
       end
 
       if !tags.nil? and !tags.empty?
-        raise NotExceptedTagError.new(tag, tag_name)
+        raise NotExpectedTagError.new(tag, tag_name)
       end
 
     end

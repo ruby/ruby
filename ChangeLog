@@ -1,3 +1,10 @@
+Sun Jun 18 18:01:26 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: fixed typo: except -> expect
+	* lib/rss/parser.rb: ditto.
+	* test/rss/rss-assertions.rb: ditto.
+	* test/rss/test_parser.rb: ditto.
+
 Sun Jun 18 17:52:39 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: RSS::Element#calc_indent became to be deprecated.

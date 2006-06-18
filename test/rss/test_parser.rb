@@ -612,7 +612,7 @@ EOR
 
       assert_parse(rss, :nothing_raised)
 
-      assert_not_excepted_tag("a", "RDF") do
+      assert_not_expected_tag("a", "RDF") do
         Parser.parse(rss, true, false)
       end
 
