@@ -8,21 +8,39 @@ require 'test/unit/util/backtracefilter'
 module Test
   module Unit
 
-    # Contains all of the standard Test::Unit assertions. Mixed in
-    # to Test::Unit::TestCase. To mix it in and use its
-    # functionality, you simply need to rescue
-    # Test::Unit::AssertionFailedError, and you can additionally
-    # override add_assertion to be notified whenever an assertion
-    # is made.
+    ##
+    # Test::Unit::Assertions contains the standard Test::Unit assertions.
+    # Assertions is included in Test::Unit::TestCase.
+    #
+    # To include it in your own code and use its functionality, you simply
+    # need to rescue Test::Unit::AssertionFailedError. Additionally you may
+    # override add_assertion to get notified whenever an assertion is made.
     #
     # Notes:
-    # * The message to each assertion, if given, will be
-    #   propagated with the failure.
-    # * It's easy to add your own assertions based on assert_block().
+    # * The message to each assertion, if given, will be propagated with the
+    #   failure.
+    # * It is easy to add your own assertions based on assert_block().
+    #
+    # = Example Custom Assertion
+    #
+    #   def deny(boolean, message = nil)
+    #     message = build_message message, '<?> is not false or nil.', boolean
+    #     assert_block message do
+    #       not boolean
+    #     end
+    #   end
+
     module Assertions
 
-      # The assertion upon which all other assertions are
-      # based. Passes if the block yields true.
+      ##
+      # The assertion upon which all other assertions are based. Passes if the
+      # block yields true.
+      #
+      # Example:
+      #   assert_block "Couldn't do the thing" do
+      #     do_the_thing
+      #   end
+
       public
       def assert_block(message="assert_block failed.") # :yields: 
         _wrap_assertion do
@@ -32,7 +50,12 @@ module Test
         end
       end
 
-      # Passes if boolean is true.
+      ##
+      # Asserts that +boolean+ is not false or nil.
+      #
+      # Example:
+      #   assert [1, 2].include?(5)
+
       public
       def assert(boolean, message=nil)
         _wrap_assertion do
@@ -41,10 +64,16 @@ module Test
         end
       end
 
-      # Passes if expected == actual. Note that the ordering of
-      # arguments is important, since a helpful error message is
-      # generated when this one fails that tells you the values
-      # of expected and actual.
+      ##
+      # Passes if +expected+ == +actual.
+      #
+      # Note that the ordering of arguments is important, since a helpful
+      # error message is generated when this one fails that tells you the
+      # values of expected and actual.
+      #
+      # Example:
+      #   assert_equal 'MY STRING', 'my string'.upcase
+
       public
       def assert_equal(expected, actual, message=nil)
         full_message = build_message(message, <<EOT, expected, actual)
@@ -55,7 +84,7 @@ EOT
       end
 
       private
-      def _check_exception_class(args)
+      def _check_exception_class(args) # :nodoc:
         args.partition do |klass|
           next if klass.instance_of?(Module)
           assert(Exception >= klass, "Should expect a class of exception, #{klass}")
@@ -64,12 +93,19 @@ EOT
       end
 
       private
-      def _expected_exception?(actual_exception, exceptions, modules)
+      def _expected_exception?(actual_exception, exceptions, modules) # :nodoc:
         exceptions.include?(actual_exception.class) or
           modules.any? {|mod| actual_exception.is_a?(mod)}
       end
 
-      # Passes if block raises one of the given exceptions.
+      ##
+      # Passes if the block raises one of the given exceptions.
+      #
+      # Example:
+      #   assert_raise RuntimeError, LoadError do
+      #     raise 'Boom!!!'
+      #   end
+
       public
       def assert_raise(*args)
         _wrap_assertion do
@@ -96,13 +132,22 @@ EOT
         end
       end
 
-      # Alias of assert_raise. Will be deprecated in 1.9, and removed in 2.0.
+      ##
+      # Alias of assert_raise.
+      #
+      # Will be deprecated in 1.9, and removed in 2.0.
+
       public
       def assert_raises(*args, &block)
         assert_raise(*args, &block)
       end
 
-      # Passes if object.class == klass.
+      ##
+      # Passes if +object+ .instance_of? +klass+
+      #
+      # Example:
+      #   assert_instance_of String, 'foo'
+
       public
       def assert_instance_of(klass, object, message="")
         _wrap_assertion do
@@ -116,13 +161,23 @@ EOT
         end
       end
 
-      # Passes if object.nil?.
+      ##
+      # Passes if +object+ is nil.
+      #
+      # Example:
+      #   assert_nil [1, 2].uniq!
+
       public
       def assert_nil(object, message="")
         assert_equal(nil, object, message)
       end
 
-      # Passes if object.kind_of?(klass).
+      ##
+      # Passes if +object+ .kind_of? +klass+
+      #
+      # Example:
+      #   assert_kind_of Object, 'foo'
+
       public
       def assert_kind_of(klass, object, message="")
         _wrap_assertion do
@@ -132,7 +187,12 @@ EOT
         end
       end
 
-      # Passes if object.respond_to?(method) is true.
+      ##
+      # Passes if +object+ .respond_to? +method+
+      #
+      # Example:
+      #   assert_respond_to 'bugbear', :slice
+
       public
       def assert_respond_to(object, method, message="")
         _wrap_assertion do
@@ -150,7 +210,12 @@ EOT
         end
       end
 
-      # Passes if string =~ pattern.
+      ##
+      # Passes if +string+ =~ +pattern+.
+      #
+      # Example:
+      #   assert_match(/\d+/, 'five, 6, seven')
+
       public
       def assert_match(pattern, string, message="")
         _wrap_assertion do
@@ -165,8 +230,14 @@ EOT
         end
       end
 
-      # Passes if actual.equal?(expected) (i.e. they are the
-      # same instance).
+      ##
+      # Passes if +actual+ .equal? +expected+ (i.e. they are the same
+      # instance).
+      #
+      # Example:
+      #   o = Object.new
+      #   assert_same o, o
+
       public
       def assert_same(expected, actual, message="")
         full_message = build_message(message, <<EOT, expected, expected.__id__, actual, actual.__id__)
@@ -178,9 +249,14 @@ EOT
         assert_block(full_message) { actual.equal?(expected) }
       end
 
-      # Compares the two objects based on the passed
-      # operator. Passes if object1.__send__(operator, object2)
-      # is true.
+      ##
+      # Compares the +object1+ with +object2+ using +operator+.
+      #
+      # Passes if object1.__send__(operator, object2) is true.
+      #
+      # Example:
+      #   assert_operator 5, :>=, 4
+
       public
       def assert_operator(object1, operator, object2, message="")
         _wrap_assertion do
@@ -195,7 +271,14 @@ EOT
         end
       end
 
+      ##
       # Passes if block does not raise an exception.
+      #
+      # Example:
+      #   assert_nothing_raised do
+      #     [1, 2].uniq
+      #   end
+
       public
       def assert_nothing_raised(*args)
         _wrap_assertion do
@@ -219,13 +302,23 @@ EOT
         end
       end
 
-      # Always fails.
+      ##
+      # Flunk always fails.
+      #
+      # Example:
+      #   flunk 'Not done testing yet.'
+
       public
       def flunk(message="Flunked")
         assert_block(build_message(message)){false}
       end
 
-      # Passes if !actual.equal?(expected).
+      ##
+      # Passes if ! +actual+ .equal? +expected+
+      #
+      # Example:
+      #   assert_not_same Object.new, Object.new
+
       public
       def assert_not_same(expected, actual, message="")
         full_message = build_message(message, <<EOT, expected, expected.__id__, actual, actual.__id__)
@@ -237,21 +330,36 @@ EOT
         assert_block(full_message) { !actual.equal?(expected) }
       end
 
-      # Passes if expected != actual.
+      ##
+      # Passes if +expected+ != +actual+
+      #
+      # Example:
+      #   assert_not_equal 'some string', 5
+
       public
       def assert_not_equal(expected, actual, message="")
         full_message = build_message(message, "<?> expected to be != to\n<?>.", expected, actual)
         assert_block(full_message) { expected != actual }
       end
 
-      # Passes if !object.nil?.
+      ##
+      # Passes if ! +object+ .nil?
+      #
+      # Example:
+      #   assert_not_nil '1 two 3'.sub!(/two/, '2')
+
       public
       def assert_not_nil(object, message="")
         full_message = build_message(message, "<?> expected to not be nil.", object)
         assert_block(full_message){!object.nil?}
       end
 
-      # Passes if string !~ regularExpression.
+      ##
+      # Passes if +regexp+ !~ +string+ 
+      #
+      # Example:
+      #   assert_no_match(/two/, 'one 2 three')
+
       public
       def assert_no_match(regexp, string, message="")
         _wrap_assertion do
@@ -264,7 +372,14 @@ EOT
       UncaughtThrow = {NameError => /^uncaught throw \`(.+)\'$/,
                        ThreadError => /^uncaught throw \`(.+)\' in thread /} #`
 
-      # Passes if block throws symbol.
+      ##
+      # Passes if the block throws +expected_symbol+
+      #
+      # Example:
+      #   assert_throws :done do
+      #     throw :done
+      #   end
+
       public
       def assert_throws(expected_symbol, message="", &proc)
         _wrap_assertion do
@@ -288,7 +403,14 @@ EOT
         end
       end
 
+      ##
       # Passes if block does not throw anything.
+      #
+      # Example:
+      #  assert_nothing_thrown do
+      #    [1, 2].uniq
+      #  end
+
       public
       def assert_nothing_thrown(message="", &proc)
         _wrap_assertion do
@@ -306,8 +428,13 @@ EOT
         end
       end
 
-      # Passes if expected_float and actual_float are equal
-      # within delta tolerance.
+      ##
+      # Passes if +expected_float+ and +actual_float+ are equal
+      # within +delta+ tolerance.
+      #
+      # Example:
+      #   assert_in_delta 0.05, (50000.0 / 10**6), 0.00001
+
       public
       def assert_in_delta(expected_float, actual_float, delta, message="")
         _wrap_assertion do
@@ -324,7 +451,17 @@ EOT
         end
       end
 
-      # Passes if the method sent returns a true value.
+      ##
+      # Passes if the method send returns a true value.
+      #
+      # +send_array+ is composed of:
+      # * A receiver
+      # * A method
+      # * Arguments to the method
+      #
+      # Example:
+      #   assert_send [[1, 2], :include?, 4]
+
       public
       def assert_send(send_array, message="")
         _wrap_assertion do
@@ -337,6 +474,10 @@ EOT
           assert_block(full_message) { send_array[0].__send__(send_array[1], *send_array[2..-1]) }
         end
       end
+
+      ##
+      # Builds a failure message.  +head+ is added before the +template+ and
+      # +arguments+ replaces the '?'s positionally in the template.
 
       public
       def build_message(head, template=nil, *arguments)
@@ -360,19 +501,25 @@ EOT
         end
       end
       
-      # Called whenever an assertion is made.
+      ##
+      # Called whenever an assertion is made.  Define this in classes that
+      # include Test::Unit::Assertions to record assertion counts.
+
       private
       def add_assertion
       end
 
-      # Select whether or not to use the prettyprinter. If this
-      # option is set to false before any assertions are made, the
-      # prettyprinter will not be required at all.
+      ##
+      # Select whether or not to use the pretty-printer. If this option is set
+      # to false before any assertions are made, pp.rb will not be required.
+
       public
       def self.use_pp=(value)
         AssertionMessage.use_pp = value
       end
       
+      # :stopdoc:
+
       class AssertionMessage
         @use_pp = true
         class << self
@@ -467,6 +614,9 @@ EOM
           message_parts.join("\n")
         end
       end
+
+      # :startdoc:
+
     end
   end
 end

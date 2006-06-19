@@ -6,20 +6,21 @@
 
 # But for now
 
+English.rb
 abbrev.rb
 base64.rb
 benchmark.rb
-cgi.rb
 cgi
+cgi.rb
 complex.rb
 date.rb
 delegate.rb
 erb.rb
-English.rb
 fileutils.rb
 find.rb
 forwardable.rb
 generator.rb
+getoptlong.rb
 logger.rb
 matrix.rb
 observer.rb
@@ -27,11 +28,13 @@ optionparser.rb
 pathname.rb
 pstore.rb
 rational.rb
+rinda
 set.rb
 shellwords.rb
 singleton.rb
 tempfile.rb
 test/unit.rb
+test/unit/assertions.rb
 thread.rb
 thwait.rb
 time.rb
