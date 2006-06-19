@@ -1,3 +1,10 @@
+Mon Jun 19 13:22:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (unix_sysaccept): typo fixed.
+
+	* ext/socket/socket.c (sock_connect): remove an unused local
+	  variable tmpaddr.
+
 Mon Jun 19 02:10:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (tcp_accept_nonblock): forgot to remove

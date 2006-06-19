@@ -2090,7 +2090,7 @@ unix_sysaccept(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
+    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -2391,7 +2391,6 @@ sock_connect(VALUE sock, VALUE addr)
 {
     OpenFile *fptr;
     int fd, n;
-    volatile VALUE tmpaddr;
 
     StringValue(addr);
     addr = rb_str_new4(addr);
