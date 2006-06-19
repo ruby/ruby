@@ -1,3 +1,8 @@
+Mon Jun 19 02:10:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (tcp_accept_nonblock): forgot to remove
+	  abandoned hacks.  [ruby-dev:28740]
+
 Mon Jun 19 00:00:17 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix bug: initialize improper tables.
@@ -27,6 +32,11 @@ Sat Jun 17 23:42:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  on EXPR_FNAME.  [ruby-core:7995]
 
 	* ext/socket/socket.c: protoize.
+
+Sat Jun 17 22:17:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Integer::prime_division): raise ZeroDivisionError
+	  on zeros.  [ruby-dev:28739]
 
 Sat Jun 17 14:53:32 2006  Tanaka Akira  <akr@m17n.org>
 

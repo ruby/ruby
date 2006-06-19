@@ -1467,16 +1467,11 @@ tcp_accept_nonblock(VALUE sock)
     OpenFile *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
-    VALUE client;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    client = s_accept_nonblock(rb_cTCPSocket, fptr,
-			       (struct sockaddr *)&from, &fromlen);
-    if (rb_block_given_p()) {
-	return sock_yield(client);
-    }
-    return client;
+    return s_accept_nonblock(rb_cTCPSocket, fptr,
+			     (struct sockaddr *)&from, &fromlen);
 }
 
 static VALUE
@@ -1485,15 +1480,10 @@ tcp_sysaccept(VALUE sock)
     OpenFile *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
-    VALUE client;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    client = s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
-    if (rb_block_given_p()) {
-	return sock_yield(client);
-    }
-    return client;
+    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
