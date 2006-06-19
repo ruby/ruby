@@ -8498,4 +8498,3 @@ const unsigned short *const x0212_shiftjis[] = {
                  0,                 0,                 0,
 };
 #endif /* X0212_ENABLE */
-;

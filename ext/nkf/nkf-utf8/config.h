@@ -43,6 +43,15 @@
  */
 /* #define INT_IS_SHORT */
 
+
+#if defined(INT_IS_SHORT)
+typedef long nkf_char;
+typedef unsigned char nkf_nfchar;
+#else
+typedef int nkf_char;
+typedef int nkf_nfchar;
+#endif
+
 /* Unicode Normalization */
 #define UNICODE_NORMALIZATION
 
@@ -71,8 +80,8 @@
 #define NORMALIZATION_TABLE_NFC_LENGTH 3
 #define NORMALIZATION_TABLE_NFD_LENGTH 9
 struct normalization_pair{
-    const int nfc[NORMALIZATION_TABLE_NFC_LENGTH];
-    const int nfd[NORMALIZATION_TABLE_NFD_LENGTH];
+    const nkf_nfchar nfc[NORMALIZATION_TABLE_NFC_LENGTH];
+    const nkf_nfchar nfd[NORMALIZATION_TABLE_NFD_LENGTH];
 };
 #endif
 
