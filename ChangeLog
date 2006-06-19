@@ -130,6 +130,11 @@ Sun Jun 18 00:49:11 2006  Tanaka Akira  <akr@m17n.org>
 	  (unix_recvfrom_nonblock): removed.
 	  UNIXSocket#recvfrom_nonblock is removed.
 
+Sat Jun 17 22:17:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Integer::prime_division): raise ZeroDivisionError
+	  on zeros.  [ruby-dev:28739]
+
 Sat Jun 17 14:53:32 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: backport from 1.9.

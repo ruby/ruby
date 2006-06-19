@@ -43,6 +43,7 @@ class Integer
   end
   
   def prime_division
+    raise ZeroDivisionError if self == 0
     ps = Prime.new
     value = self
     pv = []
