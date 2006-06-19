@@ -1,3 +1,10 @@
+Mon Jun 19 23:40:59 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	  * ext/nkf/lib/kconv.rb: remove default -m0 and fix document.
+
+	  * ext/nkf/nkf-8/{nkf.c, config.h, utf8tbl.c, utf8tbl.h}:
+	    imported nkf 2.0.7.
+
 Mon Jun 19 17:02:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample/test.rb (proc_return3): return within non lambda block
