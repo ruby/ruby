@@ -28,22 +28,10 @@ module RSS
     def self.append_features(klass)
       super
 
-      var_name = "#{TAXO_PREFIX}_topics"
-      klass.install_have_child_element(var_name)
-    end
-
-    def taxo_validate(ignore_unknown_element, tags, uri)
-      found_topics = false
-      tags.each do |tag|
-        if tag == "topics"
-          if found_topics
-            raise TooMuchTagError.new(tag, tag_name)
-          else
-            found_topics = true
-          end
-        elsif !ignore_unknown_element
-          raise UnknownTagError.new(tag, TAXO_URI)
-        end
+      klass.install_must_call_validator(TAXO_PREFIX, TAXO_URI)
+      %w(topics).each do |name|
+        klass.install_have_child_element("#{TAXO_PREFIX}_#{name}")
+        klass.install_model(name, TAXO_URI, "?")
       end
     end
 
@@ -65,8 +53,8 @@ module RSS
       @tag_name = "topics"
       
       install_have_child_element("Bag")
-        
-      install_must_call_validator('rdf', ::RSS::RDF::URI)
+      install_model("Bag", RDF::URI, nil)
+      install_must_call_validator('rdf', RDF::URI)
 
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
@@ -103,12 +91,8 @@ module RSS
 
       def _tags
         rv = []
-        rv << [::RSS::RDF::URI, 'Bag'] unless @Bag.nil?
+        rv << [RDF::URI, 'Bag'] unless @Bag.nil?
         rv
-      end
-      
-      def rdf_validate(ignore_unknown_element, tags, uri)
-        _validate(ignore_unknown_element, tags, uri, [["Bag", nil]])
       end
     end
   end
@@ -120,14 +104,6 @@ module RSS
       super
       var_name = "#{TAXO_PREFIX}_topic"
       klass.install_have_children_element(var_name)
-    end
-
-    def taxo_validate(ignore_unknown_element, tags, uri)
-      tags.each do |tag|
-        if !ignore_unknown_element and tag != "topic"
-          raise UnknownTagError.new(tag, TAXO_URI)
-        end
-      end
     end
 
     class TaxonomyTopic < Element
@@ -163,21 +139,6 @@ module RSS
 
       def full_name
         tag_name_with_prefix(TAXO_PREFIX)
-      end
-
-      def taxo_validate(ignore_unknown_element, tags, uri)
-        elements = %w(link topics)
-        counter = {}
-        
-        tags.each do |tag|
-          if elements.include?(tag)
-            counter[tag] ||= 0
-            counter[tag] += 1
-            raise TooMuchTagError.new(tag, tag_name) if counter[tag] > 1
-          elsif !ignore_unknown_element
-            raise UnknownTagError.new(tag, TAXO_URI)
-          end
-        end
       end
 
       def maker_target(target)

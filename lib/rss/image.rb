@@ -34,12 +34,10 @@ module RSS
       super
 
       klass.install_have_child_element("#{IMAGE_PREFIX}_item")
+      klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
+      klass.install_model("item", IMAGE_URI, "?")
     end
 
-    def image_validate(ignore_unknown_element, tags, uri)
-      validate_one_tag_name(ignore_unknown_element, "item", tags)
-    end
-    
     class ImageItem < Element
       include RSS10
       include DublinCoreModel
@@ -55,6 +53,8 @@ module RSS
           IMAGE_URI
         end
       end
+
+      install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
 
       [
         ["about", ::RSS::RDF::URI, true],
@@ -120,13 +120,11 @@ module RSS
 
       unless klass.class == Module
         klass.install_have_child_element("#{IMAGE_PREFIX}_favicon")
+        klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
+        klass.install_model("favicon", IMAGE_URI, "?")
       end
     end
 
-    def image_validate(ignore_unknown_element, tags, uri)
-      validate_one_tag_name(ignore_unknown_element, "favicon", tags)
-    end
-    
     class ImageFavicon < Element
       include RSS10
       include DublinCoreModel

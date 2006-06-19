@@ -41,7 +41,7 @@ module RSS
       ["item", "+"],
       ["textinput", "?"],
     ].each do |tag, occurs|
-      install_model(tag, occurs)
+      install_model(tag, ::RSS::URI, occurs)
       if occurs == "+"
         install_have_children_element(tag)
       else
@@ -121,7 +121,7 @@ module RSS
       @tag_name = 'Seq'
       
       install_have_children_element("li")
-      
+      install_model("li", URI, "*")
       install_must_call_validator('rdf', ::RSS::RDF::URI)
       
       def initialize(*args)
@@ -146,10 +146,6 @@ module RSS
       private
       def children
         @li
-      end
-          
-      def rdf_validate(ignore_unknown_element, tags, uri)
-        _validate(ignore_unknown_element, tags, uri, [["li", '*']])
       end
 
       def _tags
@@ -176,7 +172,7 @@ module RSS
       @tag_name = 'Bag'
       
       install_have_children_element("li")
-      
+      install_model("li", URI, "*")
       install_must_call_validator('rdf', ::RSS::RDF::URI)
       
       def initialize(*args)
@@ -201,10 +197,6 @@ module RSS
       private
       def children
         @li
-      end
-          
-      def rdf_validate(ignore_unknown_element, tags, uri)
-        _validate(ignore_unknown_element, tags, uri, [["li", '*']])
       end
 
       def _tags
@@ -251,7 +243,7 @@ module RSS
         ['items', nil],
         ['textinput', '?'],
       ].each do |tag, occurs|
-        install_model(tag, occurs)
+        install_model(tag, ::RSS::URI, occurs)
       end
       
       def initialize(*args)
@@ -362,8 +354,8 @@ module RSS
         end
 
         install_have_child_element("Seq")
-        
-        install_must_call_validator('rdf', ::RSS::RDF::URI)
+        install_model("Seq", URI, nil)
+        install_must_call_validator('rdf', URI)
         
         def initialize(*args)
           if Utils.element_initialize_arguments?(args)
@@ -394,10 +386,6 @@ module RSS
           rv = []
           rv << [URI, 'Seq'] unless @Seq.nil?
           rv
-        end
-        
-        def rdf_validate(ignore_unknown_element, tags, uri)
-          _validate(ignore_unknown_element, tags, uri, [["Seq", nil]])
         end
       end
     end
@@ -430,7 +418,7 @@ module RSS
         ['url', nil],
         ['link', nil],
       ].each do |tag, occurs|
-        install_model(tag, occurs)
+        install_model(tag, ::RSS::URI, occurs)
       end
 
       def initialize(*args)
@@ -487,7 +475,7 @@ module RSS
         ["link", nil],
         ["description", "?"],
       ].each do |tag, occurs|
-        install_model(tag, occurs)
+        install_model(tag, ::RSS::URI, occurs)
       end
 
       def initialize(*args)
@@ -548,7 +536,7 @@ module RSS
         ["name", nil],
         ["link", nil],
       ].each do |tag, occurs|
-        install_model(tag, occurs)
+        install_model(tag, ::RSS::URI, occurs)
       end
 
       def initialize(*args)

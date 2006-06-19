@@ -15,18 +15,21 @@ module RSS
     
     def self.append_features(klass)
       super
-      
-      klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
+
+      klass.install_must_call_validator(SY_PREFIX, SY_URI)
+      klass.module_eval do
         [
           ["updatePeriod"],
           ["updateFrequency", :positive_integer]
         ].each do |name, type|
-          install_text_element("\#{SY_PREFIX}_\#{name}", type,
-                               "\#{SY_PREFIX}:\#{name}")
+          install_text_element("#{SY_PREFIX}_#{name}", type,
+                               "#{SY_PREFIX}:#{name}")
+          install_model(name, SY_URI, "?")
         end
 
         %w(updateBase).each do |name|
-          install_date_element("\#{SY_PREFIX}_\#{name}", 'w3cdtf', name)
+          install_date_element("#{SY_PREFIX}_#{name}", 'w3cdtf', name)
+          install_model(name, SY_URI, "?")
         end
 
         alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
@@ -35,22 +38,6 @@ module RSS
           validate_sy_updatePeriod(new_value) if @do_validate
           self._sy_updatePeriod = new_value
         end
-      EOC
-    end
-
-    def sy_validate(ignore_unknown_element, tags, uri)
-      counter = {}
-      ELEMENTS.each do |name|
-        counter[name] = 0
-      end
-
-      tags.each do |tag|
-        key = "#{SY_PREFIX}_#{tag}"
-        if ignore_unknown_element and !counter.has_key?(key)
-          raise UnknownTagError.new(tag, SY_URI)
-        end
-        counter[key] += 1
-        raise TooMuchTagError.new(tag, tag_name) if counter[key] > 1
       end
     end
 

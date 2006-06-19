@@ -22,7 +22,7 @@ module RSS
     [
       ["channel", nil],
     ].each do |tag, occurs|
-      install_model(tag, occurs)
+      install_model(tag, "", occurs)
     end
 
     %w(channel).each do |name|
@@ -109,7 +109,7 @@ module RSS
         ["textInput", "?", :have_child],
       ].each do |name, occurs, type, *args|
         __send__("install_#{type}_element", name, *args)
-        install_model(name, occurs)
+        install_model(name, "", occurs)
       end
       alias date pubDate
       alias date= pubDate=
@@ -179,7 +179,7 @@ module RSS
           ["day", "*"]
         ].each do |name, occurs|
           install_have_children_element(name)
-          install_model(name, occurs)
+          install_model(name, "", occurs)
         end
 
         private
@@ -218,7 +218,7 @@ module RSS
           ["hour", "*"]
         ].each do |name, occurs|
           install_have_children_element(name)
-          install_model(name, occurs)
+          install_model(name, "", occurs)
         end
 
         private
@@ -255,7 +255,7 @@ module RSS
         
         %w(url title link).each do |name|
           install_text_element(name)
-          install_model(name, nil)
+          install_model(name, "", nil)
         end
         [
           ["width", :integer],
@@ -263,7 +263,7 @@ module RSS
           ["description"],
         ].each do |name, type|
           install_text_element(name, type)
-          install_model(name, "?")
+          install_model(name, "", "?")
         end
 
         def initialize(*args)
@@ -335,7 +335,7 @@ module RSS
           ["enclosure", '?', :have_child],
         ].each do |tag, occurs, type, *args|
           __send__("install_#{type}_element", tag, *args)
-          install_model(tag, occurs)
+          install_model(tag, "", occurs)
         end
 
         private
@@ -486,7 +486,7 @@ module RSS
 
         %w(title description name link).each do |name|
           install_text_element(name)
-          install_model(name, nil)
+          install_model(name, "", nil)
         end
 
         def initialize(*args)

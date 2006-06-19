@@ -17,10 +17,10 @@ module RSS
         full_name = "#{DC_PREFIX}_#{name}"
         full_plural_name = "#{DC_PREFIX}_#{plural}"
         klass_name = "DublinCore#{Utils.to_class_name(name)}"
+        klass.install_must_call_validator(DC_PREFIX, DC_URI)
+        klass.install_model(name, DC_URI, "*")
+        klass.install_have_children_element(full_name, full_plural_name)
         klass.module_eval(<<-EOC, *get_file_and_line_from_caller(0))
-          install_have_children_element(#{full_name.dump},
-                                        #{full_plural_name.dump})
-
           remove_method :#{full_name}
           remove_method :#{full_name}=
           remove_method :set_#{full_name}
@@ -133,17 +133,6 @@ module RSS
         end
       EOC
     end
-      
-    def dc_validate(ignore_unknown_element, tags, uri)
-      tags.each do |tag|
-        key = "#{DC_PREFIX}_#{tag}"
-        if !ignore_unknown_element and
-            !DublinCoreModel::ELEMENTS.include?(key)
-          raise UnknownTagError.new(tag, DC_URI)
-        end
-      end
-    end
-
   end
 
   # For backward compatibility

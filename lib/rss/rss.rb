@@ -391,7 +391,7 @@ EOC
     INDENT = "  "
     
     MUST_CALL_VALIDATORS = {}
-    MODEL = []
+    MODELS = []
     GET_ATTRIBUTES = []
     HAVE_CHILDREN_ELEMENTS = []
     TO_ELEMENT_METHODS = []
@@ -403,8 +403,8 @@ EOC
       def must_call_validators
         MUST_CALL_VALIDATORS
       end
-      def model
-        MODEL
+      def models
+        MODELS
       end
       def get_attributes
         GET_ATTRIBUTES
@@ -425,7 +425,7 @@ EOC
       
       def inherited(klass)
         klass.const_set("MUST_CALL_VALIDATORS", {})
-        klass.const_set("MODEL", [])
+        klass.const_set("MODELS", [])
         klass.const_set("GET_ATTRIBUTES", [])
         klass.const_set("HAVE_CHILDREN_ELEMENTS", [])
         klass.const_set("TO_ELEMENT_METHODS", [])
@@ -442,8 +442,8 @@ EOC
         def self.must_call_validators
           super.merge(MUST_CALL_VALIDATORS)
         end
-        def self.model
-          MODEL + super
+        def self.models
+          MODELS + super
         end
         def self.get_attributes
           GET_ATTRIBUTES + super
@@ -466,11 +466,11 @@ EOC
           MUST_CALL_VALIDATORS[uri] = prefix
         end
         
-        def self.install_model(tag, occurs=nil)
-          if m = MODEL.find {|t, o| t == tag}
-            m[1] = occurs
+        def self.install_model(tag, uri, occurs=nil)
+          if m = MODELS.find {|t, u, o| t == tag and u == uri}
+            m[2] = occurs
           else
-            MODEL << [tag, occurs]
+            MODELS << [tag, uri, occurs]
           end
         end
 
@@ -783,16 +783,12 @@ EOC
       must_call_validators = self.class.must_call_validators
       tags = tag_filter(tags.dup)
       p tags if DEBUG
-      self.class::NSPOOL.each do |prefix, uri|
-        if tags.has_key?(uri) and !must_call_validators.has_key?(uri)
-          meth = "#{prefix}_validate"
-          if respond_to?(meth, true)
-            __send__(meth, ignore_unknown_element, tags[uri], uri)
-          end
-        end
-      end
       must_call_validators.each do |uri, prefix|
-        __send__("#{prefix}_validate", ignore_unknown_element, tags[uri], uri)
+        _validate(ignore_unknown_element, tags[uri], uri)
+        meth = "#{prefix}_validate"
+        if respond_to?(meth, true)
+          __send__(meth, ignore_unknown_element, tags[uri], uri)
+        end
       end
     end
 
@@ -804,23 +800,25 @@ EOC
       end
     end
 
-    def _validate(ignore_unknown_element, tags, uri, model=self.class.model)
+    def _validate(ignore_unknown_element, tags, uri, models=self.class.models)
       count = 1
       do_redo = false
       not_shift = false
       tag = nil
-      element_names = model.collect {|elem| elem[0]}
+      models = models.find_all {|model| model[1] == uri}
+      element_names = models.collect {|model| model[0]}
       if tags
         tags_size = tags.size
         tags = tags.sort_by {|x| element_names.index(x) || tags_size}
       end
 
-      model.each_with_index do |elem, i|
+      models.each_with_index do |model, i|
+        name, model_uri, occurs = model
 
         if DEBUG
           p "before" 
           p tags
-          p elem
+          p model
         end
 
         if not_shift
@@ -834,41 +832,41 @@ EOC
           p count
         end
 
-        case elem[1]
+        case occurs
         when '?'
           if count > 2
-            raise TooMuchTagError.new(elem[0], tag_name)
+            raise TooMuchTagError.new(name, tag_name)
           else
-            if elem[0] == tag
+            if name == tag
               do_redo = true
             else
               not_shift = true
             end
           end
         when '*'
-          if elem[0] == tag
+          if name == tag
             do_redo = true
           else
             not_shift = true
           end
         when '+'
-          if elem[0] == tag
+          if name == tag
             do_redo = true
           else
             if count > 1
               not_shift = true
             else
-              raise MissingTagError.new(elem[0], tag_name)
+              raise MissingTagError.new(name, tag_name)
             end
           end
         else
-          if elem[0] == tag
-            if model[i+1] and model[i+1][0] != elem[0] and
-                tags and tags.first == elem[0]
-              raise TooMuchTagError.new(elem[0], tag_name)
+          if name == tag
+            if models[i+1] and models[i+1][0] != name and
+                tags and tags.first == name
+              raise TooMuchTagError.new(name, tag_name)
             end
           else
-            raise MissingTagError.new(elem[0], tag_name)
+            raise MissingTagError.new(name, tag_name)
           end
         end
 

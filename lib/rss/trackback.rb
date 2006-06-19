@@ -12,29 +12,14 @@ module RSS
   module TrackBackUtils
     private
     def trackback_validate(ignore_unknown_element, tags, uri)
-      counter = {}
-      %w(ping about).each do |name|
-        counter["#{TRACKBACK_PREFIX}_#{name}"] = 0
-      end
-
-      tags.each do |tag|
-        key = "#{TRACKBACK_PREFIX}_#{tag}"
-        if !ignore_unknown_element and !counter.has_key?(key)
-          raise UnknownTagError.new(tag, TRACKBACK_URI)
-        end
-        counter[key] += 1
-        if tag != "about" and counter[key] > 1
-          raise TooMuchTagError.new(tag, tag_name)
-        end
-      end
-
-      if counter["#{TRACKBACK_PREFIX}_ping"].zero? and
-          counter["#{TRACKBACK_PREFIX}_about"].nonzero?
+      return if tags.nil?
+      if tags.find {|tag| tag == "about"} and
+          !tags.find {|tag| tag == "ping"}
         raise MissingTagError.new("#{TRACKBACK_PREFIX}:ping", tag_name)
       end
     end
   end
-  
+
   module BaseTrackBackModel
 
     ELEMENTS = %w(ping about)
@@ -45,10 +30,12 @@ module RSS
       unless klass.class == Module
         klass.module_eval {include TrackBackUtils}
 
+        klass.install_must_call_validator(TRACKBACK_PREFIX, TRACKBACK_URI)
         %w(ping).each do |name|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
           klass.install_have_child_element(var_name)
+          klass.install_model(name, TRACKBACK_URI, "?")
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}
@@ -66,6 +53,7 @@ module RSS
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
           klass.install_have_children_element(var_name)
+          klass.install_model(name, TRACKBACK_URI, "*")
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}(*args)
