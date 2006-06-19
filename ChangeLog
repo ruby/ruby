@@ -1,3 +1,8 @@
+Mon Jun 19 17:02:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/test.rb (proc_return3): return within non lambda block
+	  should terminate surrounding method.  [ruby-dev:28741]
+
 Mon Jun 19 13:22:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (unix_sysaccept): typo fixed.

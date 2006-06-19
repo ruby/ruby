@@ -1099,13 +1099,21 @@ def proc_yield()
   yield
 end
 def proc_return1
-  proc_call{return 42}+1
+  lambda{return 42}.call+1
 end
 test_ok(proc_return1() == 43)
 def proc_return2
+  ->{return 42}.call+1
+end
+test_ok(proc_return2() == 43)
+def proc_return3
+  proc_call{return 42}+1
+end
+test_ok(proc_return3() == 42)
+def proc_return4
   proc_yield{return 42}+1
 end
-test_ok(proc_return2() == 42)
+test_ok(proc_return4() == 42)
 
 def ljump_test(state, proc, *args)
   x = state
