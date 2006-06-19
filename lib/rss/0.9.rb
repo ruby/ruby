@@ -58,17 +58,6 @@ module RSS
         nil
       end
     end
-    
-    def to_s(need_convert=true, indent='')
-      rv = tag(indent, ns_declarations) do |next_indent|
-        [
-          channel_element(false, next_indent),
-          other_element(false, next_indent),
-        ]
-      end
-      rv = convert(rv) if need_convert
-      rv
-    end
 
     def setup_maker_elements(maker)
       super
@@ -101,80 +90,29 @@ module RSS
       include RSS09
 
       [
-        ["title", nil],
-        ["link", nil],
-        ["description", nil],
-        ["language", nil],
-        ["copyright", "?"],
-        ["managingEditor", "?"],
-        ["webMaster", "?"],
-        ["rating", "?"],
-        ["docs", "?"],
-      ].each do |name, occurs|
-        install_text_element(name)
-        install_model(name, occurs)
-      end
-
-      [
-        ["pubDate", "?"],
-        ["lastBuildDate", "?"],
-      ].each do |name, occurs|
-        install_date_element(name, 'rfc822')
+        ["title", nil, :text],
+        ["link", nil, :text],
+        ["description", nil, :text],
+        ["language", nil, :text],
+        ["copyright", "?", :text],
+        ["managingEditor", "?", :text],
+        ["webMaster", "?", :text],
+        ["rating", "?", :text],
+        ["pubDate", "?", :date, 'rfc822'],
+        ["lastBuildDate", "?", :date, 'rfc822'],
+        ["docs", "?", :text],
+        ["cloud", "?", :have_attribute],
+        ["skipDays", "?", :have_child],
+        ["skipHours", "?", :have_child],
+        ["image", nil, :have_child],
+        ["item", "*", :have_children],
+        ["textInput", "?", :have_child],
+      ].each do |name, occurs, type, *args|
+        __send__("install_#{type}_element", name, *args)
         install_model(name, occurs)
       end
       alias date pubDate
       alias date= pubDate=
-
-      [
-        ["skipDays", "?"],
-        ["skipHours", "?"],
-        ["image", nil],
-        ["textInput", "?"],
-      ].each do |name, occurs|
-        install_have_child_element(name)
-        install_model(name, occurs)
-      end
-      
-      [
-        ["cloud", "?"]
-      ].each do |name, occurs|
-        install_have_attribute_element(name)
-        install_model(name, occurs)
-      end
-      
-      [
-        ["item", "*"]
-      ].each do |name, occurs|
-        install_have_children_element(name)
-        install_model(name, occurs)
-      end
-
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            title_element(false, next_indent),
-            link_element(false, next_indent),
-            description_element(false, next_indent),
-            language_element(false, next_indent),
-            copyright_element(false, next_indent),
-            managingEditor_element(false, next_indent),
-            webMaster_element(false, next_indent),
-            rating_element(false, next_indent),
-            pubDate_element(false, next_indent),
-            lastBuildDate_element(false, next_indent),
-            docs_element(false, next_indent),
-            cloud_element(false, next_indent),
-            skipDays_element(false, next_indent),
-            skipHours_element(false, next_indent),
-            image_element(false, next_indent),
-            item_elements(false, next_indent),
-            textInput_element(false, next_indent),
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
 
       private
       def children
@@ -244,16 +182,6 @@ module RSS
           install_model(name, occurs)
         end
 
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              day_elements(false, next_indent)
-            ]
-          end
-          rv = convert(rv) if need_convert
-          rv
-        end
-
         private
         def children
           @day
@@ -291,16 +219,6 @@ module RSS
         ].each do |name, occurs|
           install_have_children_element(name)
           install_model(name, occurs)
-        end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              hour_elements(false, next_indent)
-            ]
-          end
-          rv = convert(rv) if need_convert
-          rv
         end
 
         private
@@ -362,22 +280,6 @@ module RSS
           end
         end
 
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              url_element(false, next_indent),
-              title_element(false, next_indent),
-              link_element(false, next_indent),
-              width_element(false, next_indent),
-              height_element(false, next_indent),
-              description_element(false, next_indent),
-              other_element(false, next_indent),
-            ]
-          end
-          rv = convert(rv) if need_convert
-          rv
-        end
-
         private
         def _tags
           %w(url title link width height description).delete_if do |name|
@@ -418,57 +320,22 @@ module RSS
             self.protocol = args[4]
           end
         end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent)
-          rv = convert(rv) if need_convert
-          rv
-        end
       end
       
       class Item < Element
         
         include RSS09
 
-        %w(title link description).each do |name|
-          install_text_element(name)
-        end
-
-        %w(source enclosure).each do |name|
-          install_have_child_element(name)
-        end
-
         [
-          %w(category categories),
-        ].each do |name, plural_name|
-          install_have_children_element(name, plural_name)
-        end
-        
-        [
-          ["title", '?'],
-          ["link", '?'],
-          ["description", '?'],
-          ["category", '*'],
-          ["source", '?'],
-          ["enclosure", '?'],
-        ].each do |tag, occurs|
+          ["title", '?', :text],
+          ["link", '?', :text],
+          ["description", '?', :text],
+          ["category", '*', :have_children, "categories"],
+          ["source", '?', :have_child],
+          ["enclosure", '?', :have_child],
+        ].each do |tag, occurs, type, *args|
+          __send__("install_#{type}_element", tag, *args)
           install_model(tag, occurs)
-        end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              title_element(false, next_indent),
-              link_element(false, next_indent),
-              description_element(false, next_indent),
-              category_elements(false, next_indent),
-              source_element(false, next_indent),
-              enclosure_element(false, next_indent),
-              other_element(false, next_indent),
-            ]
-          end
-          rv = convert(rv) if need_convert
-          rv
         end
 
         private
@@ -565,12 +432,6 @@ module RSS
             end
           end
 
-          def to_s(need_convert=true, indent='')
-            rv = tag(indent)
-            rv = convert(rv) if need_convert
-            rv
-          end
-
           private
           def maker_target(item)
             item.enclosure
@@ -638,20 +499,6 @@ module RSS
             self.name = args[2]
             self.link = args[3]
           end
-        end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              title_element(false, next_indent),
-              description_element(false, next_indent),
-              name_element(false, next_indent),
-              link_element(false, next_indent),
-              other_element(false, next_indent),
-            ]
-          end
-          rv = convert(rv) if need_convert
-          rv
         end
 
         private

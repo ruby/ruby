@@ -85,15 +85,6 @@ module RSS
       def maker_target(target)
         target.taxo_topics
       end
-      
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-           Bag_element(need_convert, next_indent),
-           other_element(need_convert, next_indent),
-          ]
-        end
-      end
 
       def resources
         if @Bag
@@ -172,14 +163,6 @@ module RSS
 
       def full_name
         tag_name_with_prefix(TAXO_PREFIX)
-      end
-      
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-           other_element(need_convert, next_indent),
-          ]
-        end
       end
 
       def taxo_validate(ignore_unknown_element, tags, uri)

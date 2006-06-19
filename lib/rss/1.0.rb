@@ -42,13 +42,12 @@ module RSS
       ["textinput", "?"],
     ].each do |tag, occurs|
       install_model(tag, occurs)
+      if occurs == "+"
+        install_have_children_element(tag)
+      else
+        install_have_child_element(tag)
+      end
     end
-
-    %w(channel image textinput).each do |name|
-      install_have_child_element(name)
-    end
-
-    install_have_children_element("item")
 
     attr_accessor :rss_version, :version, :encoding, :standalone
     
@@ -58,20 +57,6 @@ module RSS
 
     def full_name
       tag_name_with_prefix(PREFIX)
-    end
-    
-    def to_s(need_convert=true, indent='')
-      rv = tag(indent, ns_declarations) do |next_indent|
-        [
-          channel_element(false, next_indent),
-          image_element(false, next_indent),
-          item_elements(false, next_indent),
-          textinput_element(false, next_indent),
-          other_element(false, next_indent),
-        ]
-      end
-      rv = convert(rv) if need_convert
-      rv
     end
 
     private
@@ -119,12 +104,6 @@ module RSS
       def full_name
         tag_name_with_prefix(PREFIX)
       end
-      
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent)
-        rv = convert(rv) if need_convert
-        rv
-      end
     end
 
     class Seq < Element
@@ -151,15 +130,6 @@ module RSS
         else
           super()
           @li = args[0] if args[0]
-        end
-      end
-      
-      def to_s(need_convert=true, indent='')
-        tag(indent) do |next_indent|
-          [
-            li_elements(need_convert, next_indent),
-            other_element(need_convert, next_indent),
-          ]
         end
       end
 
@@ -215,15 +185,6 @@ module RSS
         else
           super()
           @li = args[0] if args[0]
-        end
-      end
-      
-      def to_s(need_convert=true, indent='')
-        tag(indent) do |next_indent|
-          [
-            li_elements(need_convert, next_indent),
-            other_element(need_convert, next_indent),
-          ]
         end
       end
 
@@ -302,22 +263,6 @@ module RSS
         end
       end
 
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            title_element(false, next_indent),
-            link_element(false, next_indent),
-            description_element(false, next_indent),
-            image_element(false, next_indent),
-            items_element(false, next_indent),
-            textinput_element(false, next_indent),
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
-
       private
       def children
         [@image, @items, @textinput]
@@ -371,12 +316,6 @@ module RSS
             self.resource = args[0]
           end
         end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent)
-          rv = convert(rv) if need_convert
-          rv
-        end
       end
 
       class Textinput < Element
@@ -406,12 +345,6 @@ module RSS
             self.resource = args[0]
           end
         end
-
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent)
-          rv = convert(rv) if need_convert
-          rv
-        end
       end
       
       class Items < Element
@@ -440,15 +373,6 @@ module RSS
             self.Seq = args[0]
           end
           self.Seq ||= Seq.new
-        end
-        
-        def to_s(need_convert=true, indent='')
-          rv = tag(indent) do |next_indent|
-            [
-              Seq_element(need_convert, next_indent),
-              other_element(need_convert, next_indent),
-            ]
-          end
         end
 
         def resources
@@ -518,19 +442,6 @@ module RSS
         end
       end
 
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            title_element(false, next_indent),
-            url_element(false, next_indent),
-            link_element(false, next_indent),
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
-
       private
       def _tags
         [
@@ -588,19 +499,6 @@ module RSS
         end
       end
 
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            title_element(false, next_indent),
-            link_element(false, next_indent),
-            description_element(false, next_indent),
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
- 
       private
       def _tags
         [
@@ -660,20 +558,6 @@ module RSS
           super()
           self.about = args[0]
         end
-      end
-
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            title_element(false, next_indent),
-            description_element(false, next_indent),
-            name_element(false, next_indent),
-            link_element(false, next_indent),
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
       end
 
       private

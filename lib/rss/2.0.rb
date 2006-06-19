@@ -28,15 +28,6 @@ module RSS
         install_model(name, occurs)
       end
 
-      def other_element(need_convert, indent)
-        rv = <<-EOT
-#{category_elements(need_convert, indent)}
-#{generator_element(need_convert, indent)}
-#{ttl_element(need_convert, indent)}
-EOT
-        rv << super
-      end
-      
       private
       alias children09 children
       def children
@@ -84,18 +75,6 @@ EOT
         ].each do |name, occurs|
           install_have_child_element(name)
           install_model(name, occurs)
-        end
-      
-        def other_element(need_convert, indent)
-          rv = [
-            super,
-            *%w(author comments pubDate guid).collect do |name|
-              __send__("#{name}_element", false, indent)
-            end
-          ].reject do |value|
-            /\A\s*\z/.match(value)
-          end
-          rv.join("\n")
         end
 
         private

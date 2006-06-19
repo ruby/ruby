@@ -89,16 +89,6 @@ module RSS
       def full_name
         tag_name_with_prefix(IMAGE_PREFIX)
       end
-      
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
 
       private
       def _tags
@@ -190,16 +180,6 @@ module RSS
 
       def full_name
         tag_name_with_prefix(IMAGE_PREFIX)
-      end
-      
-      def to_s(need_convert=true, indent='')
-        rv = tag(indent) do |next_indent|
-          [
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
       end
 
       private

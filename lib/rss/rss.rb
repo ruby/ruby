@@ -231,11 +231,13 @@ EOC
     private
     def install_element(name, postfix="")
       elem_name = name.sub('_', ':')
+      method_name = "#{name}_element#{postfix}"
+      add_to_element_method(method_name)
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def #{name}_element#{postfix}(need_convert=true, indent='')
+      def #{method_name}(need_convert=true, indent='')
         #{yield(name, elem_name)}
       end
-      private :#{name}_element#{postfix}
+      private :#{method_name}
 EOC
     end
 
@@ -379,23 +381,6 @@ EOC
       alias_method(:set_#{accessor_name}, :#{accessor_name}=)
 EOC
     end
-
-    def def_content_only_to_s
-      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def to_s(need_convert=true, indent='')
-        if @content
-          rv = tag(indent) do |next_indent|
-            h(@content)
-          end
-          rv = convert(rv) if need_convert
-          rv
-        else
-          ""
-        end
-      end
-EOC
-    end
-    
   end
 
   class Element
@@ -409,6 +394,7 @@ EOC
     MODEL = []
     GET_ATTRIBUTES = []
     HAVE_CHILDREN_ELEMENTS = []
+    TO_ELEMENT_METHODS = []
     NEED_INITIALIZE_VARIABLES = []
     PLURAL_FORMS = {}
     
@@ -426,6 +412,9 @@ EOC
       def have_children_elements
         HAVE_CHILDREN_ELEMENTS
       end
+      def to_element_methods
+        TO_ELEMENT_METHODS
+      end
       def need_initialize_variables
         NEED_INITIALIZE_VARIABLES
       end
@@ -439,6 +428,7 @@ EOC
         klass.const_set("MODEL", [])
         klass.const_set("GET_ATTRIBUTES", [])
         klass.const_set("HAVE_CHILDREN_ELEMENTS", [])
+        klass.const_set("TO_ELEMENT_METHODS", [])
         klass.const_set("NEED_INITIALIZE_VARIABLES", [])
         klass.const_set("PLURAL_FORMS", {})
 
@@ -460,6 +450,9 @@ EOC
         end
         def self.have_children_elements
           HAVE_CHILDREN_ELEMENTS + super
+        end
+        def self.to_element_methods
+          TO_ELEMENT_METHODS + super
         end
         def self.need_initialize_variables
           NEED_INITIALIZE_VARIABLES + super
@@ -511,7 +504,6 @@ EOC
         def self.content_setup(type=nil)
           def_corresponded_attr_writer "content", type
           convert_attr_reader :content
-          def_content_only_to_s
           @have_content = true
         end
 
@@ -523,6 +515,10 @@ EOC
           HAVE_CHILDREN_ELEMENTS << [variable_name, plural_name]
         end
         
+        def self.add_to_element_method(method_name)
+          TO_ELEMENT_METHODS << method_name
+        end
+
         def self.add_need_initialize_variable(variable_name)
           NEED_INITIALIZE_VARIABLES << variable_name
         end
@@ -607,7 +603,24 @@ EOC
         setup_maker_elements(target)
       end
     end
-    
+
+    def to_s(need_convert=true, indent='')
+      if self.class.have_content?
+        return "" unless @content
+        rv = tag(indent) do |next_indent|
+          h(@content)
+        end
+      else
+        rv = tag(indent) do |next_indent|
+          self.class.to_element_methods.collect do |method_name|
+            __send__(method_name, false, next_indent)
+          end
+        end
+      end
+      rv = convert(rv) if need_convert
+      rv
+    end
+
     private
     def initialize_variables(attrs)
       normalized_attrs = {}
@@ -632,13 +645,13 @@ EOC
       end
     end
 
-    def tag(indent, additional_attrs=[], &block)
+    def tag(indent, additional_attrs={}, &block)
       next_indent = indent + INDENT
 
       attrs = collect_attrs
       return "" if attrs.nil?
 
-      attrs += additional_attrs
+      attrs.update(additional_attrs)
       start_tag = make_start_tag(indent, next_indent, attrs)
 
       if block
@@ -675,13 +688,15 @@ EOC
     end
 
     def collect_attrs
-      _attrs.collect do |name, required, alias_name|
+      attrs = {}
+      _attrs.each do |name, required, alias_name|
         value = __send__(alias_name || name)
         return nil if required and value.nil?
-        [name, value]
-      end.reject do |name, value|
-        value.nil?
+        next if value.nil?
+        return nil if attrs.has_key?(name)
+        attrs[name] = value
       end
+      attrs
     end
     
     def tag_name_with_prefix(prefix)
@@ -787,18 +802,6 @@ EOC
           raise MissingAttributeError.new(tag_name, a_name)
         end
       end
-    end
-
-    def other_element(need_convert, indent='')
-      rv = []
-      private_methods.each do |meth|
-        if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
-            self.class::NSPOOL.has_key?($1)
-          res = __send__(meth, need_convert, indent)
-          rv << res if /\A\s*\z/ !~ res
-        end
-      end
-      rv.join("\n")
     end
 
     def _validate(ignore_unknown_element, tags, uri, model=self.class.model)
@@ -947,9 +950,9 @@ EOC
     end
 
     private
-    def tag(indent, attrs, &block)
+    def tag(indent, attrs={}, &block)
       rv = xmldecl + xml_stylesheet_pi
-      rv << super(indent, attrs, &block)
+      rv << super(indent, ns_declarations.merge(attrs), &block)
       rv
     end
 
@@ -964,10 +967,12 @@ EOC
     end
     
     def ns_declarations
+      decls = {}
       self.class::NSPOOL.collect do |prefix, uri|
         prefix = ":#{prefix}" unless prefix.empty?
-        ["xmlns#{prefix}", uri]
+        decls["xmlns#{prefix}"] = uri
       end
+      decls
     end
     
     def setup_maker_elements(maker)
