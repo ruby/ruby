@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.8"
+#define WIN32OLE_VERSION "0.6.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2101,6 +2101,18 @@ ole_invoke(argc, argv, self, wFlags)
                                                  &IID_NULL, lcid, wFlags,
                                                  &op.dp, &result,
                                                  &excepinfo, &argErr);
+
+            /* mega kludge. if a method in WORD is called and we ask
+             * for a result when one is not returned then
+             * hResult == DISP_E_EXCEPTION. this only happens on
+             * functions whose DISPID > 0x8000 */
+            if ((hr == DISP_E_EXCEPTION || hr == DISP_E_MEMBERNOTFOUND) && DispID > 0x8000) {
+                memset(&excepinfo, 0, sizeof(EXCEPINFO));
+                hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
+                        &IID_NULL, lcid, wFlags,
+                        &op.dp, NULL,
+                        &excepinfo, &argErr);
+            }
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
                 VariantClear(&op.dp.rgvarg[n]);
@@ -2127,19 +2139,6 @@ ole_invoke(argc, argv, self, wFlags)
             }
         }
 
-        /* mega kludge. if a method in WORD is called and we ask
-         * for a result when one is not returned then
-         * hResult == DISP_E_EXCEPTION. this only happens on
-         * functions whose DISPID > 0x8000 */
-        if (hr == DISP_E_EXCEPTION && DispID > 0x8000) {
-            memset(&excepinfo, 0, sizeof(EXCEPINFO));
-            VariantInit(&result);
-            hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
-                                                 &IID_NULL, lcid, wFlags,
-                                                 &op.dp, &result,
-                                                 &excepinfo, &argErr);
-
-        }
     }
     /* clear dispatch parameter */
     if(op.dp.cArgs > cNamedArgs) {

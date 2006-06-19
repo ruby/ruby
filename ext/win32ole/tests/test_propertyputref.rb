@@ -5,7 +5,7 @@ class TestWIN32OLE_PROPERTYPUTREF < Test::Unit::TestCase
   def setup
     begin
       @sapi = WIN32OLE.new('SAPI.SpVoice')
-    rescue WIN32OLERuntimeErro
+    rescue WIN32OLERuntimeError
       @sapi = nil
     end
   end

@@ -1,3 +1,12 @@
+Mon Jun 19 22:09:16 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): support some kind of
+	  method of word. [ruby-Bugs#3237]
+
+	* ext/win32ole/tests/test_word.rb: ditto.
+
+	* ext/win32ole/tests/testall.rb: ditto.
+
 Mon Jun 19 00:02:17 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: automatically detected attributes.
