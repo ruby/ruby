@@ -60,18 +60,6 @@ module RSS
       [@channel, @image, @textinput, *@item]
     end
 
-    def _tags
-      rv = [
-        [::RSS::URI, "channel"],
-        [::RSS::URI, "image"],
-      ].delete_if {|uri, name| __send__(name).nil?}
-      @item.each do |item|
-        rv << [::RSS::URI, "item"]
-      end
-      rv << [::RSS::URI, "textinput"] if @textinput
-      rv
-    end
-
     class Li < Element
 
       include RSS10
@@ -142,14 +130,6 @@ module RSS
       def children
         @li
       end
-
-      def _tags
-        rv = []
-        @li.each do |li|
-          rv << [URI, "li"]
-        end
-        rv
-      end
     end
 
     class Bag < Element
@@ -191,14 +171,6 @@ module RSS
       private
       def children
         @li
-      end
-
-      def _tags
-        rv = []
-        @li.each do |li|
-          rv << [URI, "li"]
-        end
-        rv
       end
     end
 
@@ -244,19 +216,6 @@ module RSS
       private
       def children
         [@image, @items, @textinput]
-      end
-
-      def _tags
-        [
-          [::RSS::URI, 'title'],
-          [::RSS::URI, 'link'],
-          [::RSS::URI, 'description'],
-          [::RSS::URI, 'image'],
-          [::RSS::URI, 'items'],
-          [::RSS::URI, 'textinput'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
       end
 
       def maker_target(maker)
@@ -366,12 +325,6 @@ module RSS
         def children
           [@Seq]
         end
-
-        def _tags
-          rv = []
-          rv << [URI, 'Seq'] unless @Seq.nil?
-          rv
-        end
       end
     end
 
@@ -408,16 +361,6 @@ module RSS
       end
 
       private
-      def _tags
-        [
-          [::RSS::URI, 'title'],
-          [::RSS::URI, 'url'],
-          [::RSS::URI, 'link'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
-      end
-
       def maker_target(maker)
         maker.image
       end
@@ -461,16 +404,6 @@ module RSS
       end
 
       private
-      def _tags
-        [
-          [::RSS::URI, 'title'],
-          [::RSS::URI, 'link'],
-          [::RSS::URI, 'description'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
-      end
-
       def maker_target(items)
         if items.respond_to?("items")
           # For backward compatibility
@@ -513,17 +446,6 @@ module RSS
       end
 
       private
-      def _tags
-        [
-          [::RSS::URI, 'title'],
-          [::RSS::URI, 'description'],
-          [::RSS::URI, 'name'],
-          [::RSS::URI, 'link'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
-      end
-
       def maker_target(maker)
         maker.textinput
       end

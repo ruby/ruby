@@ -87,12 +87,6 @@ module RSS
       def children
         [@Bag]
       end
-
-      def _tags
-        rv = []
-        rv << [RDF::URI, 'Bag'] unless @Bag.nil?
-        rv
-      end
     end
   end
   
@@ -147,13 +141,6 @@ module RSS
       private
       def children
         [@taxo_link, *@taxo_topics]
-      end
-
-      def _tags
-        rv = []
-        rv << [TAXO_URI, "link"] unless @taxo_link.nil?
-        rv.concat([TAXO_URI, "topics"] * @taxo_topics.size)
-        rv
       end
     end
   end

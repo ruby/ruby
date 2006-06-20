@@ -144,7 +144,7 @@ module RSS
     def install_have_child_element(tag_name, uri, occurs, name=nil)
       name ||= tag_name
       add_need_initialize_variable(name)
-      install_model(tag_name, uri, occurs)
+      install_model(tag_name, uri, occurs, name)
 
       attr_accessor name
       install_element(name) do |n, elem_name|
@@ -164,7 +164,7 @@ EOC
       plural_name ||= "#{name}s"
       add_have_children_element(name, plural_name)
       add_plural_form(name, plural_name)
-      install_model(tag_name, uri, occurs)
+      install_model(tag_name, uri, occurs, plural_name)
 
       def_children_accessor(name, plural_name)
       install_element(name, "s") do |n, elem_name|
@@ -184,7 +184,7 @@ EOC
       disp_name ||= name
       self::ELEMENTS << name
       add_need_initialize_variable(name)
-      install_model(tag_name, uri, occurs)
+      install_model(tag_name, uri, occurs, name)
 
       def_corresponded_attr_writer name, type, disp_name
       convert_attr_reader name
@@ -213,7 +213,7 @@ EOC
       disp_name ||= name
       self::ELEMENTS << name
       add_need_initialize_variable(name)
-      install_model(tag_name, uri, occurs)
+      install_model(tag_name, uri, occurs, name)
 
       # accessor
       convert_attr_reader name
@@ -477,11 +477,12 @@ EOC
           MUST_CALL_VALIDATORS[uri] = prefix
         end
         
-        def self.install_model(tag, uri, occurs=nil)
-          if m = MODELS.find {|t, u, o| t == tag and u == uri}
+        def self.install_model(tag, uri, occurs=nil, getter=nil)
+          getter ||= tag
+          if m = MODELS.find {|t, u, o, g| t == tag and u == uri}
             m[2] = occurs
           else
-            MODELS << [tag, uri, occurs]
+            MODELS << [tag, uri, occurs, getter]
           end
         end
 
@@ -776,7 +777,17 @@ EOC
 
     # default #validate() argument.
     def _tags
-      []
+      rv = []
+      self.class.models.each do |name, uri, occurs, getter|
+        value = __send__(getter)
+        next if value.nil?
+        if value.is_a?(Array)
+          rv.concat([[uri, name]] * value.size)
+        else
+          rv << [uri, name]
+        end
+      end
+      rv
     end
 
     def _attrs
@@ -824,7 +835,7 @@ EOC
       end
 
       models.each_with_index do |model, i|
-        name, model_uri, occurs = model
+        name, model_uri, occurs, getter = model
 
         if DEBUG
           p "before" 

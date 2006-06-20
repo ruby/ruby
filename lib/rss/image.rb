@@ -92,15 +92,6 @@ module RSS
       end
 
       private
-      def _tags
-        [
-          [IMAGE_URI, 'width'],
-          [IMAGE_URI, 'height'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
-      end
-
       def maker_target(target)
         target.image_item
       end

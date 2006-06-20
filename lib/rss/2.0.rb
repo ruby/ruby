@@ -32,21 +32,6 @@ module RSS
         children09 + @category.compact
       end
 
-      alias _tags09 _tags
-      def _tags
-        rv = %w(generator ttl).delete_if do |name|
-          __send__(name).nil?
-        end.collect do |elem|
-          ["", elem]
-        end + _tags09
-
-        @category.each do
-          rv << ["", "category"]
-        end
-        
-        rv
-      end
-
       Category = Item::Category
 
       class Item
@@ -76,15 +61,6 @@ module RSS
         alias children09 children
         def children
           children09 + [@guid].compact
-        end
-
-        alias _tags09 _tags
-        def _tags
-          %w(comments author pubDate guid).delete_if do |name|
-            __send__(name).nil?
-          end.collect do |elem|
-            ["", elem]
-          end + _tags09
         end
 
         alias _setup_maker_element setup_maker_element

@@ -65,14 +65,6 @@ module RSS
       [@channel]
     end
 
-    def _tags
-      [
-        ["", 'channel'],
-      ].delete_if do |uri, name|
-        __send__(name).nil?
-      end
-    end
-
     def _attrs
       [
         ["version", true, "rss_version"],
@@ -110,35 +102,6 @@ module RSS
       private
       def children
         [@skipDays, @skipHours, @image, @textInput, @cloud, *@item]
-      end
-
-      def _tags
-        rv = [
-          "title",
-          "link",
-          "description",
-          "language",
-          "copyright",
-          "managingEditor",
-          "webMaster",
-          "rating",
-          "docs",
-          "skipDays",
-          "skipHours",
-          "image",
-          "textInput",
-          "cloud",
-        ].delete_if do |name|
-          __send__(name).nil?
-        end.collect do |elem|
-          ["", elem]
-        end
-
-        @item.each do
-          rv << ["", "item"]
-        end
-
-        rv
       end
 
       def maker_target(maker)
@@ -179,12 +142,6 @@ module RSS
           @day
         end
 
-        def _tags
-          @day.compact.collect do
-            ["", "day"]
-          end
-        end
-
         class Day < Element
           include RSS09
 
@@ -215,12 +172,6 @@ module RSS
         private
         def children
           @hour
-        end
-
-        def _tags
-          @hour.compact.collect do
-            ["", "hour"]
-          end
         end
 
         class Hour < Element
@@ -270,14 +221,6 @@ module RSS
         end
 
         private
-        def _tags
-          %w(url title link width height description).delete_if do |name|
-            __send__(name).nil?
-          end.collect do |elem|
-            ["", elem]
-          end
-        end
-
         def maker_target(maker)
           maker.image
         end
@@ -331,21 +274,6 @@ module RSS
           [@source, @enclosure, *@category].compact
         end
 
-        def _tags
-          rv = %w(title link description author comments
-            source enclosure).delete_if do |name|
-            __send__(name).nil?
-          end.collect do |name|
-            ["", name]
-          end
-
-          @category.each do
-            rv << ["", "category"]
-          end
-          
-          rv
-        end
-
         def maker_target(items)
           if items.respond_to?("items")
             # For backward compatibility
@@ -383,10 +311,6 @@ module RSS
           end
 
           private
-          def _tags
-            []
-          end
-
           def maker_target(item)
             item.source
           end
@@ -489,14 +413,6 @@ module RSS
         end
 
         private
-        def _tags
-          %w(title description name link).each do |name|
-            __send__(name).nil?
-          end.collect do |elem|
-            ["", elem]
-          end
-        end
-
         def maker_target(maker)
           maker.textinput
         end
