@@ -55,11 +55,6 @@ module RSS
       tag_name_with_prefix(PREFIX)
     end
 
-    private
-    def children
-      [@channel, @image, @textinput, *@item]
-    end
-
     class Li < Element
 
       include RSS10
@@ -125,11 +120,6 @@ module RSS
           target << li.resource
         end
       end
-    
-      private
-      def children
-        @li
-      end
     end
 
     class Bag < Element
@@ -166,11 +156,6 @@ module RSS
         lis.each do |li|
           target << li.resource
         end
-      end
-    
-      private
-      def children
-        @li
       end
     end
 
@@ -214,10 +199,6 @@ module RSS
       end
 
       private
-      def children
-        [@image, @items, @textinput]
-      end
-
       def maker_target(maker)
         maker.channel
       end
@@ -319,11 +300,6 @@ module RSS
           else
             []
           end
-        end
-
-        private
-        def children
-          [@Seq]
         end
       end
     end

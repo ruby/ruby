@@ -769,13 +769,20 @@ EOC
         __send__("#{prefix}#{tag_name}=", next_element)
       end
     end
-    
-    # not String class children.
+
     def children
-      []
+      rv = []
+      self.class.models.each do |name, uri, occurs, getter|
+        value = __send__(getter)
+        next if value.nil?
+        value = [value] unless value.is_a?(Array)
+        value.each do |v|
+          rv << v if v.is_a?(Element)
+        end
+      end
+      rv
     end
 
-    # default #validate() argument.
     def _tags
       rv = []
       self.class.models.each do |name, uri, occurs, getter|

@@ -26,12 +26,6 @@ module RSS
         install_model(name, "", occurs)
       end
 
-      private
-      alias children09 children
-      def children
-        children09 + @category.compact
-      end
-
       Category = Item::Category
 
       class Item
@@ -58,11 +52,6 @@ module RSS
         end
 
         private
-        alias children09 children
-        def children
-          children09 + [@guid].compact
-        end
-
         alias _setup_maker_element setup_maker_element
         def setup_maker_element(item)
           _setup_maker_element(item)

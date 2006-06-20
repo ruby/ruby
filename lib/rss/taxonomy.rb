@@ -82,11 +82,6 @@ module RSS
           []
         end
       end
-
-      private
-      def children
-        [@Bag]
-      end
     end
   end
   
@@ -136,11 +131,6 @@ module RSS
 
       def maker_target(target)
         target.new_taxo_topic
-      end
-      
-      private
-      def children
-        [@taxo_link, *@taxo_topics]
       end
     end
   end

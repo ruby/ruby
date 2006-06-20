@@ -61,10 +61,6 @@ module RSS
     end
 
     private
-    def children
-      [@channel]
-    end
-
     def _attrs
       [
         ["version", true, "rss_version"],
@@ -100,10 +96,6 @@ module RSS
       alias date= pubDate=
 
       private
-      def children
-        [@skipDays, @skipHours, @image, @textInput, @cloud, *@item]
-      end
-
       def maker_target(maker)
         maker.channel
       end
@@ -137,11 +129,6 @@ module RSS
           install_have_children_element(name, "", occurs)
         end
 
-        private
-        def children
-          @day
-        end
-
         class Day < Element
           include RSS09
 
@@ -167,11 +154,6 @@ module RSS
           ["hour", "*"]
         ].each do |name, occurs|
           install_have_children_element(name, "", occurs)
-        end
-
-        private
-        def children
-          @hour
         end
 
         class Hour < Element
@@ -270,10 +252,6 @@ module RSS
         end
 
         private
-        def children
-          [@source, @enclosure, *@category].compact
-        end
-
         def maker_target(items)
           if items.respond_to?("items")
             # For backward compatibility
