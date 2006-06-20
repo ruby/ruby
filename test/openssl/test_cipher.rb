@@ -11,7 +11,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     @c1 = OpenSSL::Cipher::Cipher.new("DES-EDE3-CBC")
     @c2 = OpenSSL::Cipher::DES.new(:EDE3, "CBC")
     @key = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-    @iv = @key
+    @iv = "\0\0\0\0\0\0\0\0"
     @hexkey = "0000000000000000000000000000000000000000000000"
     @hexiv = "0000000000000000"
     @data = "DATA"
@@ -22,11 +22,16 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   end
 
   def test_crypt
-    s1 = @c1.encrypt(@key, @iv).update(@data) + @c1.final
-    s2 = @c2.encrypt(@key, @iv).update(@data) + @c2.final
+    @c1.encrypt.pkcs5_keyivgen(@key, @iv)
+    @c2.encrypt.pkcs5_keyivgen(@key, @iv)
+    s1 = @c1.update(@data) + @c1.final
+    s2 = @c2.update(@data) + @c2.final
     assert_equal(s1, s2, "encrypt")
-    assert_equal(@data, @c1.decrypt(@key, @iv).update(s2)+@c1.final, "decrypt")
-    assert_equal(@data, @c2.decrypt(@key, @iv).update(s1)+@c2.final, "decrypt")
+
+    @c1.decrypt.pkcs5_keyivgen(@key, @iv)
+    @c2.decrypt.pkcs5_keyivgen(@key, @iv)
+    assert_equal(@data, @c1.update(s1)+@c1.final, "decrypt")
+    assert_equal(@data, @c2.update(s2)+@c2.final, "decrypt")
   end
 
   def test_info
@@ -61,6 +66,29 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   def test_empty_data
     @c1.encrypt
     assert_raises(ArgumentError){ @c1.update("") }
+  end
+
+  if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000
+    def test_ciphers
+      OpenSSL::Cipher.ciphers.each{|name|
+        assert(OpenSSL::Cipher::Cipher.new(name).is_a?(OpenSSL::Cipher::Cipher))
+      }
+    end
+
+    def test_AES
+      pt = File.read(__FILE__)
+      %w(ECB CBC CFB OFB).each{|mode|
+        c1 = OpenSSL::Cipher::AES256.new(mode)
+        c1.encrypt
+        c1.pkcs5_keyivgen("passwd")
+        ct = c1.update(pt) + c1.final
+
+        c2 = OpenSSL::Cipher::AES256.new(mode)
+        c2.decrypt
+        c2.pkcs5_keyivgen("passwd")
+        assert_equal(pt, c2.update(ct) + c2.final)
+      }
+    end
   end
 end
 

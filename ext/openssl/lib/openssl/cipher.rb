@@ -20,19 +20,25 @@
 
 module OpenSSL
   module Cipher
-    %w(AES CAST5 BF DES IDEA RC2 RC4 RC5).each{|cipher|
-      eval(<<-EOD)
-        class #{cipher} < Cipher
-          def initialize(*args)
-            args = args.join('-')
-            if args.size == 0
-              super(\"#{cipher}\")
-            else
-              super(\"#{cipher}-#\{args\}\")
-            end
-          end
-        end
-      EOD
+    %w(AES CAST5 BF DES IDEA RC2 RC4 RC5).each{|name|
+      klass = Class.new(Cipher){
+        define_method(:initialize){|*args|
+          cipher_name = args.inject(name){|n, arg| "#{n}-#{arg}" }
+          super(cipher_name)
+        }
+      }
+      const_set(name, klass)
+    }
+
+    %w(128 192 256).each{|keylen|
+      klass = Class.new(Cipher){
+        define_method(:initialize){|mode|
+          mode ||= "CBC"
+          cipher_name = "AES-#{keylen}-#{mode}"
+          super(cipher_name)
+        }
+      }
+      const_set("AES#{keylen}", klass)
     }
 
     class Cipher
