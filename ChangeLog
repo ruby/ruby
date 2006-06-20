@@ -1,3 +1,9 @@
+Tue Jun 20 22:08:36 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_parser.rb: split parser tests into ...
+	* test/rss/test_parser_1.0.rb: ... RSS 1.0 parsing tests and ...
+	* test/rss/test_parser_2.0.rb: ... RSS 2.0 parsing tests.
+
 Tue Jun 20 21:19:06 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: provided default RSS::Element#children.
