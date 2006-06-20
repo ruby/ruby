@@ -1,3 +1,25 @@
+Tue Jun 20 11:07:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): intercept break and return from lambda
+	  Proc objects.  [ruby-dev:28742]
+
+	* eval.c (proc_invoke): remove unnecessary YIELD_PROC_CALL flag.
+
+	* eval.c (YIELD_EXACT_ARGS): renamed from YIELD_LAMBDA_CALL, which
+	  is no longer related to the behavior turned on by this flag.
+
+	* eval.c (return_jump): no need to care about PROT_YIELD.
+
+	* eval.c (break_jump): no jump to toplevel PROT_TREAD tag.
+
+	* eval.c (rb_yield_0): fix confusion between lambda (which is a
+	  property of a proc) and pcall (which depends on whether it's
+	  called via yield or call). 
+
+	* eval.c (rb_thread_yield): no need to specify YIELD_LAMBDA_CALL. 
+
+	* eval.c (rb_block_pass): update blkid in prot_tag.
+
 Mon Jun 19 23:40:59 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	  * ext/nkf/lib/kconv.rb: remove default -m0 and fix document.

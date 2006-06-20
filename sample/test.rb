@@ -1045,33 +1045,33 @@ yield_argument_test(true, lambda{|a,|}, 1)
 yield_argument_test(true, lambda{|a,|})
 yield_argument_test(true, lambda{|a,|}, 1,2)
 
-def get_block(&block)
+def block_get(&block)
   block
 end
 
-test_ok(Proc == get_block{}.class)
-yield_argument_test(true, get_block{||})
-yield_argument_test(true, get_block{||}, 1)
-yield_argument_test(true, get_block{|a,|}, 1)
-yield_argument_test(true, get_block{|a,|})
-yield_argument_test(true, get_block{|a,|}, 1,2)
+test_ok(Proc == block_get{}.class)
+yield_argument_test(true, block_get{||})
+yield_argument_test(true, block_get{||}, 1)
+yield_argument_test(true, block_get{|a,|}, 1)
+yield_argument_test(true, block_get{|a,|})
+yield_argument_test(true, block_get{|a,|}, 1,2)
 
-call_argument_test(true, get_block(&lambda{||}))
-call_argument_test(false, get_block(&lambda{||}),1)
-call_argument_test(true, get_block(&lambda{|a,|}),1)
-call_argument_test(false, get_block(&lambda{|a,|}),1,2)
+call_argument_test(true, block_get(&lambda{||}))
+call_argument_test(false, block_get(&lambda{||}),1)
+call_argument_test(true, block_get(&lambda{|a,|}),1)
+call_argument_test(false, block_get(&lambda{|a,|}),1,2)
 
-blk = get_block{11}
+blk = block_get{11}
 test_ok(blk.class == Proc)
 test_ok(blk.to_proc.class == Proc)
 test_ok(blk.clone.call == 11)
-test_ok(get_block(&blk).class == Proc)
+test_ok(block_get(&blk).class == Proc)
 
 lmd = lambda{44}
 test_ok(lmd.class == Proc)
 test_ok(lmd.to_proc.class == Proc)
 test_ok(lmd.clone.call == 44)
-test_ok(get_block(&lmd).class == Proc)
+test_ok(block_get(&lmd).class == Proc)
 
 test_ok(Proc.new{|a,| a}.yield(1,2,3) == 1)
 yield_argument_test(true, Proc.new{|a,|}, 1,2)
@@ -1115,7 +1115,7 @@ def proc_return4
 end
 test_ok(proc_return4() == 42)
 
-def ljump_test(state, proc, *args)
+def ljump_test(state, proc, *args) 
   x = state
   begin
     proc.call(*args)
@@ -1125,7 +1125,7 @@ def ljump_test(state, proc, *args)
   test_ok(x,2)
 end
 
-ljump_test(true, get_block{break})
+ljump_test(false, block_get{break})
 ljump_test(true, lambda{break})
 
 def exit_value_test(&block)
@@ -1134,20 +1134,16 @@ rescue LocalJumpError
   $!.exit_value
 end
 
-test_ok(45, exit_value_test{break 45})
+test_ok(45 == exit_value_test{break 45})
 
-test_ok(55, begin
-              get_block{break 55}.call
+test_ok(55 == begin
+              block_get{break 55}.call
             rescue LocalJumpError
               $!.exit_value
             end)
 
 def block_call(&block)
   block.call
-end
-
-def block_get(&block)
-  block
 end
 
 def test_b1
@@ -1168,7 +1164,7 @@ def test_b2
     block_get{break 21}.call
   end
 end
-test_ok(test_b2() == 21)
+test_ok(test_b2() == 22)
 
 def test_b3
   ljump_rescue(33) do
@@ -1207,7 +1203,7 @@ def test_b7
     block_call(&b)
   end
 end
-test_ok(test_b7() == 78)
+test_ok(test_b7() == 77)
 
 def util_b8(&block)
   block_call(&block)
@@ -1219,7 +1215,7 @@ end
 test_ok(test_b8() == 88)
 
 def util_b9(&block)
-  lambda{block.call}.call
+  lambda{block.call; 98}.call
 end
 
 def test_b9
@@ -1287,7 +1283,7 @@ marity_test(:marity_test)
 marity_test(:p)
 
 lambda(&method(:test_ok)).call(true)
-lambda(&get_block{|a,n| test_ok(a,n)}).call(true, 2)
+lambda(&block_get{|a,n| test_ok(a,n)}).call(true, 2)
 
 class ITER_TEST1
    def a

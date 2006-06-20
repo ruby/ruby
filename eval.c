@@ -747,7 +747,7 @@ struct SCOPE *ruby_scope;
 static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
-static unsigned long frame_unique = 0;
+static unsigned long frame_unique = 1;
 
 #define PUSH_FRAME(link) do {		\
     struct FRAME _frame;		\
@@ -942,7 +942,7 @@ static struct tag *prot_tag;
     _tag.prev = prot_tag;		\
     _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
-    _tag.dst = 0;			\
+    _tag.dst = -1;			\
     _tag.blkid = 0;			\
     prot_tag = &_tag
 
@@ -1047,8 +1047,7 @@ static NODE *compile(VALUE, const char*, int);
 
 static VALUE rb_yield_0(VALUE, VALUE, VALUE, int);
 
-#define YIELD_LAMBDA_CALL 1
-#define YIELD_PROC_CALL   2
+#define YIELD_EXACT_ARGS  1
 #define YIELD_PUBLIC_DEF  4
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
@@ -2608,7 +2607,7 @@ call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass /* 
 static VALUE
 svalue_to_avalue(VALUE v)
 {
-    VALUE tmp, top;
+    VALUE tmp;
 
     if (v == Qundef) return rb_ary_new2(0);
     tmp = rb_check_array_type(v);
@@ -2682,7 +2681,6 @@ rb_eval(VALUE self, NODE *n)
     NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
-    VALUE pushed_block = 0;
 
 #define RETURN(v) do { \
     result = (v); \
@@ -4598,16 +4596,11 @@ static void
 return_jump(VALUE retval)
 {
     struct tag *tt = prot_tag;
-    int yield = Qfalse;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
-	if (tt->tag == PROT_YIELD) {
-	    yield = Qtrue;
-	    tt = tt->prev;
-	}
 	if ((tt->tag == PROT_FUNC && tt->frame->uniq == ruby_frame->uniq) ||
-	    (tt->tag == PROT_LAMBDA && !yield))
+	    (tt->tag == PROT_LAMBDA))
 	{
 	    tt->dst = (VALUE)tt->frame->uniq;
 	    tt->retval = retval;
@@ -4625,14 +4618,17 @@ static void
 break_jump(VALUE retval)
 {
     struct tag *tt = prot_tag;
+    int yield = 0;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
 	switch (tt->tag) {
 	  case PROT_THREAD:
+	    /* skip toplevel tag */
+	    if (!tt->prev) break;
 	  case PROT_YIELD:
-	  case PROT_LOOP:
 	  case PROT_LAMBDA:
+	  case PROT_LOOP:
 	    tt->dst = (VALUE)tt->frame->uniq;
 	    tt->retval = retval;
 	    JUMP_TAG(TAG_BREAK);
@@ -4671,8 +4667,8 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
-    int lambda = flags & YIELD_LAMBDA_CALL;
-    int state;
+    int pcall = flags & YIELD_EXACT_ARGS, lambda;
+    int state, broken = 0;
 
     rb_need_block();
 
@@ -4704,6 +4700,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     }
     node = block->body;
     var = block->var;
+    lambda = block->flags & BLOCK_LAMBDA;
 
     if (var) {
 	PUSH_TAG(PROT_NONE);
@@ -4711,7 +4708,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	    NODE *bvar = NULL;
 	  block_var:
 	    if (var == (NODE*)1) { /* no parameter || */
-		if (lambda && RARRAY(val)->len != 0) {
+		if (pcall && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
@@ -4739,24 +4736,24 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		goto block_var;
 	    }
 	    else if (nd_type(var) == NODE_MASGN) {
-		massign(self, var, val, lambda);
+		massign(self, var, val, pcall);
 	    }
 	    else {
-		assign(self, var, val, lambda);
+		assign(self, var, val, pcall);
 	    }
 	    if (bvar) {
 		VALUE blk;
-		if (flags & YIELD_PROC_CALL)
-		    blk = block->block_obj;
-		else
+		if (lambda)
 		    blk = rb_block_proc();
+		else
+		    blk = block->block_obj;
 		assign(self, bvar, blk, 0);
 	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (lambda && RARRAY(val)->len != 0 &&
+    else if (pcall && RARRAY(val)->len != 0 &&
 	     (!node || nd_type(node) != NODE_IFUNC ||
 	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
@@ -4808,9 +4805,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	  case TAG_BREAK:
 	    if (TAG_DST()) {
 		result = prot_tag->retval;
-	    }
-	    else {
-		lambda = Qtrue;	/* just pass TAG_BREAK */
+		broken = 1;
 	    }
 	    break;
 	  default:
@@ -4845,11 +4840,12 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
       case 0:
 	break;
       case TAG_BREAK:
-	if (!lambda) {
+	if (broken) {
 	    struct tag *tt = prot_tag;
 
 	    while (tt) {
-		if (tt->tag == PROT_LOOP && tt->blkid == block->uniq) {
+		if ((tt->tag == PROT_LOOP && tt->blkid == block->uniq) ||
+		    (lambda && tt->tag == PROT_LAMBDA)) {
 		    tt->dst = (VALUE)tt->frame->uniq;
 		    tt->retval = result;
 		    JUMP_TAG(TAG_BREAK);
@@ -4857,8 +4853,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		tt = tt->prev;
 	    }
 	    proc_jump_error(TAG_BREAK, result);
-	}
-	/* fall through */
+       }
       default:
 	JUMP_TAG(state);
 	break;
@@ -5649,7 +5644,6 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     static int tick;
-    volatile VALUE args;
     volatile int safe = -1;
     TMP_PROTECT;
 
@@ -5897,7 +5891,6 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	prot_tag->blkid = block->uniq;
 	state = EXEC_TAG();
 	if (state == 0) {
-	  retry:
 	    result = rb_call0(klass, recv, mid, id, argc, argv, block, body, noex);
 	}
 	else if (state == TAG_BREAK && TAG_DST()) {
@@ -7927,8 +7920,6 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
 static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
-    VALUE klass = ruby_cbase;
-
     if (NIL_P(ruby_cbase)) {
 	rb_raise(rb_eTypeError, "no class/module for autoload target");
     }
@@ -8356,11 +8347,12 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     int state;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
-    volatile int pcall;
+    volatile int pcall, lambda;
     VALUE bvar = Qnil;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    pcall = call ? YIELD_LAMBDA_CALL : 0;
+    pcall = call ? YIELD_EXACT_ARGS : 0;
+    lambda = data->flags & BLOCK_LAMBDA;
     if (rb_block_given_p() && ruby_frame->callee) {
 	if (klass != ruby_frame->this_class)
 	    klass = rb_obj_class(proc);
@@ -8387,12 +8379,11 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     /* modify current frame */
     old_block = ruby_frame->block;
     ruby_frame->block = &_block;
-    PUSH_TAG((data->flags&BLOCK_LAMBDA) ? PROT_LAMBDA : PROT_NONE);
+    PUSH_TAG(lambda ? PROT_LAMBDA : PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0,
-			    pcall | YIELD_PROC_CALL);
+	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, pcall);
     }
     else if (TAG_DST()) {
 	result = prot_tag->retval;
@@ -8412,9 +8403,8 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
 	JUMP_TAG(state);
 	break;
       case TAG_BREAK:
-	if (!pcall && result != Qundef) {
-	    proc_jump_error(state, result);
-	}
+	if (lambda && result != Qundef) break;
+	JUMP_TAG(state);
       case TAG_RETURN:
 	if (result != Qundef) {
 	    if (pcall) break;
@@ -8731,10 +8721,13 @@ rb_block_pass(VALUE (*func) (VALUE), VALUE arg, VALUE proc)
     orphan = block_orphan(data);
 
     PUSH_FRAME(Qtrue);
-    _block = *data;
-    if (orphan) _block.uniq = block_unique++;
-    ruby_frame->block = &_block;
     PUSH_TAG(PROT_LOOP);
+    _block = *data;
+    if (orphan) {
+	_block.uniq = block_unique++;
+	prot_tag->blkid = _block.uniq;
+    }
+    ruby_frame->block = &_block;
     state = EXEC_TAG();
     if (state == 0) {
       retry:
@@ -12054,7 +12047,7 @@ rb_thread_yield(VALUE arg, rb_thread_t th)
     rb_dvar_push('~', Qnil);
     ruby_frame->block->dyna_vars = ruby_dyna_vars;
 
-    return rb_yield_0(arg, 0, 0, YIELD_LAMBDA_CALL);
+    return rb_yield_0(arg, 0, 0, 0);
 }
 
 /*
