@@ -1655,7 +1655,7 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
-		| kIF_MOD | kUNLESS_MOD | kWHILE_MOD | kUNTIL_MOD | kRESCUE_MOD
+		| kIF | kUNLESS | kWHILE | kUNTIL
 		;
 
 arg		: lhs '=' arg

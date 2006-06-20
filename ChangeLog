@@ -1,3 +1,8 @@
+Wed Jun 21 01:40:25 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reswords): modifier token is no longer returned in fname
+	  state.  fixed: [ruby-dev:28775]
+
 Tue Jun 20 23:28:34 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (parse_args): provisional catch-up for the recent changes.
