@@ -964,11 +964,11 @@ op		: '|'		{ $$ = '|'; }
 
 reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
-		| kDEFINED | kDO | kDO_BLOCK | kELSE | kELSIF | kEND | kENSURE | kFALSE
+		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
 		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
-		| kIF_MOD | kUNLESS_MOD | kWHILE_MOD | kUNTIL_MOD | kRESCUE_MOD
+		| kIF | kUNLESS | kWHILE | kUNTIL
 		;
 
 arg		: lhs '=' arg
@@ -4448,6 +4448,7 @@ yylex()
 		    lex_state = kw->state;
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
+			return kw->id[0];
 		    }
 		    if (kw->id[0] == kDO) {
 			if (COND_P()) return kDO_COND;
