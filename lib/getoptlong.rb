@@ -346,7 +346,7 @@ class GetoptLong
   end
 
   #
-  # Set/Unset `quit' mode.
+  # Set/Unset `quiet' mode.
   #
   attr_writer :quiet
 
