@@ -1643,7 +1643,7 @@ rb_io_getline_fast(OpenFile *fptr, unsigned char delim)
 }
 
 static int
-rscheck(char *rsptr, long rslen, VALUE rs)
+rscheck(const char *rsptr, long rslen, VALUE rs)
 {
     if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
 	rb_raise(rb_eRuntimeError, "rs modified");
@@ -1667,7 +1667,7 @@ rb_io_getline(VALUE rs, VALUE io)
     }
     else {
 	int c, newline;
-	char *rsptr;
+	const char *rsptr;
 	long rslen;
 	int rspara = 0;
 
@@ -2527,7 +2527,7 @@ rb_io_binmode(VALUE io)
     return io;
 }
 
-static char*
+static const char*
 rb_io_flags_mode(int flags)
 {
 #ifdef O_BINARY
@@ -2666,7 +2666,7 @@ rb_io_mode_modenum(const char *mode)
 
 #define MODENUM_MAX 4
 
-static char*
+static const char*
 rb_io_modenum_mode(int flags)
 {
 #ifdef O_BINARY
@@ -3154,7 +3154,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 static VALUE
 rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 {
-    char *mode;
+    const char *mode;
     VALUE pname, pmode, port, tmp;
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
@@ -3199,7 +3199,7 @@ static VALUE
 rb_open_file(int argc, VALUE *argv, VALUE io)
 {
     VALUE fname, vmode, perm;
-    char *mode;
+    const char *mode;
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
@@ -3514,7 +3514,7 @@ static VALUE
 rb_io_reopen(int argc, VALUE *argv, VALUE file)
 {
     VALUE fname, nmode;
-    char *mode;
+    const char *mode;
     OpenFile *fptr;
 
     rb_secure(4);

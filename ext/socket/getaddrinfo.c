@@ -198,8 +198,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 const
 #endif
 char *
-gai_strerror(ecode)
-	int ecode;
+gai_strerror(int ecode)
 {
 	if (ecode < 0 || ecode > EAI_MAX)
 		ecode = EAI_MAX;
@@ -207,7 +206,7 @@ gai_strerror(ecode)
 }
 
 void
-freeaddrinfo(ai)
+freeaddrinfo(struct addrinfo *ai)
 	struct addrinfo *ai;
 {
 	struct addrinfo *next;
@@ -222,8 +221,7 @@ freeaddrinfo(ai)
 }
 
 static int
-str_isnumber(p)
-	const char *p;
+str_isnumber(const char *p)
 {
 	char *q = (char *)p;
 	while (*q) {
@@ -237,10 +235,7 @@ str_isnumber(p)
 #ifndef HAVE_INET_PTON
 
 static int
-inet_pton(af, hostname, pton)
-	int af;
-	const char *hostname;
-	void *pton;
+inet_pton(int af, const char *hostname, void *pton)
 {
 	struct in_addr in;
 
@@ -268,10 +263,7 @@ inet_pton(af, hostname, pton)
 #endif
 
 int
-getaddrinfo(hostname, servname, hints, res)
-	const char *hostname, *servname;
-	const struct addrinfo *hints;
-	struct addrinfo **res;
+getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *hints, struct addrinfo **res)
 {
 	struct addrinfo sentinel;
 	struct addrinfo *top = NULL;
@@ -538,13 +530,7 @@ getaddrinfo(hostname, servname, hints, res)
 }
 
 static int
-get_name(addr, afd, res, numaddr, pai, port0)
-	const char *addr;
-	const struct afd *afd;
-	struct addrinfo **res;
-	char *numaddr;
-	struct addrinfo *pai;
-	int port0;
+get_name(const char *addr, const struct aft *afd, struct addrinfo **res, char *numaddr, struct addrinfo *pai, int port0)
 {
 	u_short port = port0 & 0xffff;
 	struct hostent *hp;
@@ -584,12 +570,7 @@ get_name(addr, afd, res, numaddr, pai, port0)
 }
 
 static int
-get_addr(hostname, af, res, pai, port0)
-	const char *hostname;
-	int af;
-	struct addrinfo **res;
-	struct addrinfo *pai;
-	int port0;
+get_addr(const char *hostname, int af, struct addrinfo **res, struct addrinfo *pai, int port0)
 {
 	u_short port = port0 & 0xffff;
 	struct addrinfo sentinel;

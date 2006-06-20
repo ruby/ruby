@@ -660,7 +660,7 @@ rb_reg_options_m(VALUE re)
 static VALUE
 rb_reg_kcode_m(VALUE re)
 {
-    char *kcode;
+    const char *kcode;
 
     if (FL_TEST(re, KCODE_FIXED)) {
 	switch (RBASIC(re)->flags & KCODE_MASK) {

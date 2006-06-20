@@ -3988,7 +3988,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 {
     extern char *crypt(const char *, const char *);
     VALUE result;
-    char *s;
+    const char *s;
 
     StringValue(salt);
     if (RSTRING(salt)->len < 2)

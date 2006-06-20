@@ -40,8 +40,7 @@ char *getlogin();
  *   Etc.getlogin -> 'guest'
  */
 static VALUE
-etc_getlogin(obj)
-    VALUE obj;
+etc_getlogin(VALUE obj)
 {
     char *login;
 
@@ -60,8 +59,7 @@ etc_getlogin(obj)
 
 #if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
 static VALUE
-safe_setup_str(str)
-    const char *str;
+safe_setup_str(const char *str)
 {
     if (str == 0) str = "";
     return rb_tainted_str_new2(str);

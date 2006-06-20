@@ -67,8 +67,7 @@ static inline long num_to_long _((VALUE n));
 #endif
 
 static ID
-value_to_id(v)
-    VALUE v;
+value_to_id(VALUE v)
 {
 #ifndef SYMBOL_P
 #  define SYMBOL_P(v) FIXNUM_P(v)
@@ -88,8 +87,7 @@ value_to_id(v)
 #endif
 
 static inline long
-num_to_long(n)
-    VALUE n;
+num_to_long(VALUE n)
 {
     return NUM2LONG(n);
 }
@@ -106,9 +104,7 @@ static VALUE get_stack_tail _((VALUE stack, long len));
 static void cut_stack_tail _((VALUE stack, long len));
 
 static VALUE
-get_stack_tail(stack, len)
-    VALUE stack;
-    long len;
+get_stack_tail(VALUE stack, long len)
 {
     if (len < 0) return Qnil;  /* system error */
     if (len > RARRAY(stack)->len) len = RARRAY(stack)->len;
@@ -116,9 +112,7 @@ get_stack_tail(stack, len)
 }
 
 static void
-cut_stack_tail(stack, len)
-    VALUE stack;
-    long len;
+cut_stack_tail(VALUE stack, long len)
 {
     while (len > 0) {
         rb_ary_pop(stack);
@@ -231,8 +225,7 @@ static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
 #endif
 
 static VALUE
-racc_cparse(parser, arg, sysdebug)
-    VALUE parser, arg, sysdebug;
+racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 {
     struct cparse_params params;
     struct cparse_params *v = &params;
@@ -247,8 +240,7 @@ racc_cparse(parser, arg, sysdebug)
 }
 
 static VALUE
-racc_yyparse(parser, lexer, lexmid, arg, sysdebug)
-    VALUE parser, lexer, lexmid, arg, sysdebug;
+racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
 {
     struct cparse_params params;
     struct cparse_params *v = &params;
@@ -269,15 +261,13 @@ racc_yyparse(parser, lexer, lexmid, arg, sysdebug)
 }
 
 static void
-call_lexer(v)
-    struct cparse_params *v;
+call_lexer(struct cparse_params *v)
 {
     rb_iterate(lexer_iter, v->value_v, lexer_i, v->value_v);
 }
 
 static VALUE
-lexer_iter(data)
-    VALUE data;
+lexer_iter(VALUE data)
 {
     struct cparse_params *v;
 
@@ -287,8 +277,7 @@ lexer_iter(data)
 }
 
 static VALUE
-lexer_i(block_args, data, self)
-    VALUE block_args, data, self;
+lexer_i(VALUE block_args, VALUE data, VALUE self)
 {
     struct cparse_params *v;
     VALUE tok, val;
@@ -304,32 +293,27 @@ lexer_i(block_args, data, self)
 }
 
 static VALUE
-assert_array(a)
-    VALUE a;
+assert_array(VALUE a)
 {
     Check_Type(a, T_ARRAY);
     return a;
 }
 
 static VALUE
-assert_hash(h)
-    VALUE h;
+assert_hash(VALUE h)
 {
     Check_Type(h, T_HASH);
     return h;
 }
 
 static long
-assert_integer(n)
-    VALUE n;
+assert_integer(VALUE n)
 {
     return NUM2LONG(n);
 }
 
 static void
-initialize_params(v, parser, arg, lexer, lexmid)
-    struct cparse_params *v;
-    VALUE parser, arg, lexer, lexmid;
+initialize_params(struct cparse_params *v, VALUE parser, VALUE arg, VALUE lexer, VALUE lexmid)
 {
     v->value_v = Data_Wrap_Struct(CparseParams, 0, 0, v);
 
@@ -380,10 +364,7 @@ initialize_params(v, parser, arg, lexer, lexmid)
 }
 
 static void
-extract_user_token(v, block_args, tok, val)
-    struct cparse_params *v;
-    VALUE block_args;
-    VALUE *tok, *val;
+extract_user_token(struct cparse_params *v, VALUE block_args, VALUE *tok, VALUE *val)
 {
     if (NIL_P(block_args)) {
         /* EOF */
@@ -426,10 +407,7 @@ extract_user_token(v, block_args, tok, val)
 } while (0)
 
 static void
-parse_main(v, tok, val, resume)
-    struct cparse_params *v;
-    VALUE tok, val;
-    int resume;
+parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
 {
     long i;              /* table index */
     long act;            /* action type */
@@ -636,10 +614,7 @@ parse_main(v, tok, val, resume)
 }
 
 static void
-shift(v, act, tok, val)
-    struct cparse_params *v;
-    long act;
-    VALUE tok, val;
+shift(struct cparse_params *v, long act, VALUE tok, VALUE val)
 {
     PUSH(v->vstack, val);
     if (v->debug) {
@@ -652,9 +627,7 @@ shift(v, act, tok, val)
 }
 
 static int
-reduce(v, act)
-    struct cparse_params *v;
-    long act;
+reduce(struct cparse_params *v, long act)
 {
     VALUE code;
     v->ruleno = -act * 3;
@@ -664,15 +637,13 @@ reduce(v, act)
 }
 
 static VALUE
-catch_iter(dummy)
-    VALUE dummy;
+catch_iter(VALUE dummy)
 {
     return rb_funcall(rb_mKernel, id_catch, 1, sym_raccjump);
 }
 
 static VALUE
-reduce0(val, data, self)
-    VALUE val, data, self;
+reduce0(VALUE val, VALUE data, VALUE self)
 {
     struct cparse_params *v;
     VALUE reduce_to, reduce_len, method_id;

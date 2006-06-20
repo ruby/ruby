@@ -35,7 +35,7 @@ typedef struct {
    long remaining;
    int  printed;
 } bytestring_t;
-bytestring_t *bytestring_alloc() {
+bytestring_t *bytestring_alloc(void) {
     bytestring_t *ret; 
     /*TRACE0("bytestring_alloc()");*/
     ret = S_ALLOC(bytestring_t);

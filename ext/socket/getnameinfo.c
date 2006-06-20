@@ -115,11 +115,7 @@ static struct afd {
 
 #ifndef HAVE_INET_NTOP
 static const char *
-inet_ntop(af, addr, numaddr, numaddr_len)
-	int af;
-	const void *addr;
-	char *numaddr;
-	size_t numaddr_len;
+inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 #ifdef HAVE_INET_NTOA
 	struct in_addr in;
@@ -136,14 +132,7 @@ inet_ntop(af, addr, numaddr, numaddr_len)
 #endif
 
 int
-getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
-	const struct sockaddr *sa;
-	size_t salen;
-	char *host;
-	size_t hostlen;
-	char *serv;
-	size_t servlen;
-	int flags;
+getnameinfo(const struct sockaddr *sa, size_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 {
 	struct afd *afd;
 	struct servent *sp;

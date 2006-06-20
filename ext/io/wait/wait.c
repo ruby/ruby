@@ -92,10 +92,7 @@ wait_readable(VALUE p)
 =end
 */
 static VALUE
-io_wait(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
+io_wait(int argc, VALUE *argv, VALUE io)
 {
     OpenFile *fptr;
     struct wait_readable_arg arg;

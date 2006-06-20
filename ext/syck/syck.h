@@ -363,7 +363,7 @@ long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
 char *syck_base64enc( char *, long );
 char *syck_base64dec( char *, long );
-SyckEmitter *syck_new_emitter();
+SyckEmitter *syck_new_emitter(void);
 SYMID syck_emitter_mark_node( SyckEmitter *, st_data_t );
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
 void syck_output_handler( SyckEmitter *, SyckOutputHandler );

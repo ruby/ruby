@@ -86,8 +86,7 @@ static DL_HANDLE tcl_dll = (DL_HANDLE)0;
 static DL_HANDLE tk_dll  = (DL_HANDLE)0;
 
 int
-ruby_open_tcl_dll(appname)
-    char *appname;
+ruby_open_tcl_dll(char *appname)
 {
     void (*p_Tcl_FindExecutable)(const char *);
     int n;
@@ -169,8 +168,7 @@ ruby_open_tk_dll()
 }
 
 int
-ruby_open_tcltk_dll(appname)
-    char *appname;
+ruby_open_tcltk_dll(char *appname)
 {
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
@@ -189,8 +187,7 @@ tk_stubs_init_p()
 
 
 Tcl_Interp *
-ruby_tcl_create_ip_and_stubs_init(st)
-    int *st;
+ruby_tcl_create_ip_and_stubs_init(int *st)
 {
     Tcl_Interp *tcl_ip;
 
@@ -272,8 +269,7 @@ ruby_tcl_stubs_init()
 }
 
 int
-ruby_tk_stubs_init(tcl_ip)
-    Tcl_Interp *tcl_ip;
+ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
 {
     Tcl_ResetResult(tcl_ip);
 
@@ -308,8 +304,7 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
-ruby_tk_stubs_safeinit(tcl_ip)
-    Tcl_Interp *tcl_ip;
+ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
 {
     Tcl_ResetResult(tcl_ip);
 
@@ -395,8 +390,7 @@ static int open_tcl_dll = 0;
 static int call_tk_stubs_init = 0;
 
 int
-ruby_open_tcl_dll(appname)
-    char *appname;
+ruby_open_tcl_dll(char *appname)
 {
     if (appname) {
         Tcl_FindExecutable(appname);
@@ -418,8 +412,7 @@ int ruby_open_tk_dll()
     return TCLTK_STUBS_OK;
 }
 
-int ruby_open_tcltk_dll(appname)
-    char *appname;
+int ruby_open_tcltk_dll(char *appname)
 {
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
@@ -437,8 +430,7 @@ tk_stubs_init_p()
 }
 
 Tcl_Interp *
-ruby_tcl_create_ip_and_stubs_init(st)
-    int *st;
+ruby_tcl_create_ip_and_stubs_init(int *st)
 {
     Tcl_Interp *tcl_ip;
 
@@ -466,8 +458,7 @@ ruby_tcl_stubs_init()
 }
 
 int 
-ruby_tk_stubs_init(tcl_ip)
-    Tcl_Interp *tcl_ip;
+ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
 {
     if (Tk_Init(tcl_ip) == TCL_ERROR)
         return FAIL_Tk_Init;
@@ -483,8 +474,7 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
-ruby_tk_stubs_safeinit(tcl_ip)
-    Tcl_Interp *tcl_ip;
+ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
 {
 #if TCL_MAJOR_VERSION >= 8
     if (Tk_SafeInit(tcl_ip) == TCL_ERROR)

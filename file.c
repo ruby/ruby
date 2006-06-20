@@ -1480,7 +1480,7 @@ rb_file_s_size(VALUE klass, VALUE fname)
 static VALUE
 rb_file_ftype(const struct stat *st)
 {
-    char *t;
+    const char *t;
 
     if (S_ISREG(st->st_mode)) {
 	t = "file";

@@ -1207,7 +1207,7 @@ error_print(void)
 {
     VALUE errat = Qnil;		/* OK */
     volatile VALUE eclass, e;
-    char *einfo;
+    const char *einfo;
     long elen;
 
     if (NIL_P(ruby_errinfo)) return;
@@ -2519,7 +2519,7 @@ set_trace_func(VALUE obj, VALUE trace)
     return trace;
 }
 
-static char *
+static const char *
 get_event_name(rb_event_t event)
 {
     switch (event) {
@@ -2551,7 +2551,7 @@ call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass /* 
     struct FRAME *prev;
     NODE *node_save;
     VALUE srcfile;
-    char *event_name;
+    const char *event_name;
 
     if (!trace_func) return;
     if (tracing) return;
@@ -4575,7 +4575,7 @@ static void
 proc_jump_error(int state, VALUE result)
 {
     char mesg[32];
-    char *statement;
+    const char *statement;
 
     switch (state) {
       case TAG_BREAK:
@@ -5378,7 +5378,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     ID id;
     VALUE exc = rb_eNoMethodError;
-    char *format = 0;
+    const char *format = 0;
     NODE *cnode = ruby_current_node;
 
     if (argc == 0 || !SYMBOL_P(argv[0])) {
@@ -9752,8 +9752,7 @@ enum thread_status {
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 void
-rb_fd_init(fds)
-    volatile rb_fdset_t *fds;
+rb_fd_init(volatile rb_fdset_t *fds)
 {
     fds->maxfd = 0;
     fds->fdset = ALLOC(fd_set);
@@ -9761,8 +9760,7 @@ rb_fd_init(fds)
 }
 
 void
-rb_fd_term(fds)
-    rb_fdset_t *fds;
+rb_fd_term(rb_fdset_t *fds)
 {
     if (fds->fdset) free(fds->fdset);
     fds->maxfd = 0;
@@ -9770,8 +9768,7 @@ rb_fd_term(fds)
 }
 
 void
-rb_fd_zero(fds)
-    rb_fdset_t *fds;
+rb_fd_zero(rb_fdset_t *fds)
 {
     if (fds->fdset) {
 	MEMZERO(fds->fdset, fd_mask, howmany(fds->maxfd, NFDBITS));
@@ -9780,9 +9777,7 @@ rb_fd_zero(fds)
 }
 
 static void
-rb_fd_resize(n, fds)
-    int n;
-    rb_fdset_t *fds;
+rb_fd_resize(int n, rb_fdset_t *fds)
 {
     int m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
     int o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
@@ -9798,37 +9793,28 @@ rb_fd_resize(n, fds)
 }
 
 void
-rb_fd_set(n, fds)
-    int n;
-    rb_fdset_t *fds;
+rb_fd_set(int n, rb_fdset_t *fds)
 {
     rb_fd_resize(n, fds);
     FD_SET(n, fds->fdset);
 }
 
 void
-rb_fd_clr(n, fds)
-    int n;
-    rb_fdset_t *fds;
+rb_fd_clr(int n, rb_fdset_t *fds)
 {
     if (n >= fds->maxfd) return;
     FD_CLR(n, fds->fdset);
 }
 
 int
-rb_fd_isset(n, fds)
-    int n;
-    const rb_fdset_t *fds;
+rb_fd_isset(int n, const rb_fdset_t *fds)
 {
     if (n >= fds->maxfd) return 0;
     return FD_ISSET(n, fds->fdset) != 0; /* "!= 0" avoids FreeBSD PR 91421 */
 }
 
 void
-rb_fd_copy(dst, src, max)
-    rb_fdset_t *dst;
-    const fd_set *src;
-    int max;
+rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
     int size = howmany(max, NFDBITS) * sizeof(fd_mask);
 
@@ -9839,10 +9825,7 @@ rb_fd_copy(dst, src, max)
 }
 
 int
-rb_fd_select(n, readfds, writefds, exceptfds, timeout)
-    int n;
-    rb_fdset_t *readfds, *writefds, *exceptfds;
-    struct timeval *timeout;
+rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout)
 {
     rb_fd_resize(n - 1, readfds);
     rb_fd_resize(n - 1, writefds);
@@ -11788,8 +11771,7 @@ rb_thread_stop_timer()
 }
 #elif defined(HAVE_SETITIMER)
 static void
-catch_timer(sig)
-    int sig;
+catch_timer(int sig)
 {
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, catch_timer);

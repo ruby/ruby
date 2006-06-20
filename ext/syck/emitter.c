@@ -106,7 +106,7 @@ syck_base64dec( char *s, long len )
  * Allocate an emitter
  */
 SyckEmitter *
-syck_new_emitter()
+syck_new_emitter(void)
 {
     SyckEmitter *e;
     e = S_ALLOC( SyckEmitter );
@@ -786,8 +786,8 @@ syck_emitter_escape( SyckEmitter *e, char *src, long len )
             else
             {
                 syck_emitter_write( e, "x", 1 );
-                syck_emitter_write( e, (char *)hex_table + ((src[i] & 0xF0) >> 4), 1 );
-                syck_emitter_write( e, (char *)hex_table + (src[i] & 0x0F), 1 );
+                syck_emitter_write( e, (const char *)hex_table + ((src[i] & 0xF0) >> 4), 1 );
+                syck_emitter_write( e, (const char *)hex_table + (src[i] & 0x0F), 1 );
             }
         }
         else

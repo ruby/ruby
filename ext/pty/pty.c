@@ -196,7 +196,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
     int			status;
 
     if (argc == 0) {
-	char *shellname;
+	const char *shellname;
 
 	if ((p = getenv("SHELL")) != NULL) {
 	    shellname = p;

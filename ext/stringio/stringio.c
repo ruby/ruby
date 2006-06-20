@@ -53,8 +53,7 @@ strio_alloc()
 }
 
 static void
-strio_mark(ptr)
-    struct StringIO *ptr;
+strio_mark(struct StringIO *ptr)
 {
     if (ptr) {
 	rb_gc_mark(ptr->string);
@@ -62,8 +61,7 @@ strio_mark(ptr)
 }
 
 static void
-strio_free(ptr)
-    struct StringIO *ptr;
+strio_free(struct StringIO *ptr)
 {
     if (--ptr->count <= 0) {
 	xfree(ptr);
@@ -71,8 +69,7 @@ strio_free(ptr)
 }
 
 static struct StringIO*
-check_strio(self)
-    VALUE self;
+check_strio(VALUE self)
 {
     Check_Type(self, T_DATA);
     if (!IS_STRIO(self)) {
@@ -83,8 +80,7 @@ check_strio(self)
 }
 
 static struct StringIO*
-get_strio(self)
-    VALUE self;
+get_strio(VALUE self)
 {
     struct StringIO *ptr = check_strio(self);
 
@@ -101,8 +97,7 @@ get_strio(self)
 #define WRITABLE(ptr) ((ptr)->flags & FMODE_WRITABLE)
 
 static struct StringIO*
-readable(ptr)
-    struct StringIO *ptr;
+readable(struct StringIO *ptr)
 {
     if (!READABLE(ptr)) {
 	rb_raise(rb_eIOError, "not opened for reading");
@@ -111,8 +106,7 @@ readable(ptr)
 }
 
 static struct StringIO*
-writable(ptr)
-    struct StringIO *ptr;
+writable(struct StringIO *ptr)
 {
     if (!WRITABLE(ptr)) {
 	rb_raise(rb_eIOError, "not opened for writing");
@@ -124,8 +118,7 @@ writable(ptr)
 }
 
 static void
-check_modifiable(ptr)
-    struct StringIO *ptr;
+check_modifiable(struct StringIO *ptr)
 {
     if (OBJ_FROZEN(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
@@ -193,10 +186,7 @@ strio_s_allocate(klass)
  * returned from the block.
  */
 static VALUE
-strio_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+strio_s_open(int argc, VALUE *argv, VALUE klass)
 {
     VALUE obj = rb_class_new_instance(argc, argv, klass);
     if (!rb_block_given_p()) return obj;
@@ -209,10 +199,7 @@ strio_s_open(argc, argv, klass)
  * Creates new StringIO instance from with _string_ and _mode_.
  */
 static VALUE
-strio_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_initialize(int argc, VALUE *argv, VALUE self)
 {
     struct StringIO *ptr = check_strio(self);
     VALUE string, mode;
@@ -257,8 +244,7 @@ strio_initialize(argc, argv, self)
 }
 
 static VALUE
-strio_finalize(self)
-    VALUE self;
+strio_finalize(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     ptr->string = Qnil;
@@ -270,8 +256,7 @@ strio_finalize(self)
  * Returns +false+.  Just for compatibility to IO.
  */
 static VALUE
-strio_false(self)
-    VALUE self;
+strio_false(VALUE self)
 {
     StringIO(self);
     return Qfalse;
@@ -281,8 +266,7 @@ strio_false(self)
  * Returns +nil+.  Just for compatibility to IO.
  */
 static VALUE
-strio_nil(self)
-    VALUE self;
+strio_nil(VALUE self)
 {
     StringIO(self);
     return Qnil;
@@ -292,8 +276,7 @@ strio_nil(self)
  * Returns *strio* itself.  Just for compatibility to IO.
  */
 static VALUE
-strio_self(self)
-    VALUE self;
+strio_self(VALUE self)
 {
     StringIO(self);
     return self;
@@ -303,8 +286,7 @@ strio_self(self)
  * Returns 0.  Just for compatibility to IO.
  */
 static VALUE
-strio_0(self)
-    VALUE self;
+strio_0(VALUE self)
 {
     StringIO(self);
     return INT2FIX(0);
@@ -314,8 +296,7 @@ strio_0(self)
  * Returns the argument unchanged.  Just for compatibility to IO.
  */
 static VALUE
-strio_first(self, arg)
-    VALUE self, arg;
+strio_first(VALUE self, VALUE arg)
 {
     StringIO(self);
     return arg;
@@ -325,10 +306,7 @@ strio_first(self, arg)
  * Raises NotImplementedError.
  */
 static VALUE
-strio_unimpl(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_unimpl(int argc, VALUE *argv, VALUE self)
 {
     StringIO(self);
     rb_notimplement();
@@ -341,8 +319,7 @@ strio_unimpl(argc, argv, self)
  * Returns underlying String object, the subject of IO.
  */
 static VALUE
-strio_get_string(self)
-    VALUE self;
+strio_get_string(VALUE self)
 {
     return StringIO(self)->string;
 }
@@ -354,8 +331,7 @@ strio_get_string(self)
  * Changes underlying String object, the subject of IO.
  */
 static VALUE
-strio_set_string(self, string)
-    VALUE self, string;
+strio_set_string(VALUE self, VALUE string)
 {
     struct StringIO *ptr = StringIO(self);
 
@@ -376,8 +352,7 @@ strio_set_string(self, string)
  * operations; an +IOError+ is raised if such an attempt is made.
  */
 static VALUE
-strio_close(self)
-    VALUE self;
+strio_close(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (CLOSED(ptr)) {
@@ -395,8 +370,7 @@ strio_close(self)
  * *strio* is not readable.
  */
 static VALUE
-strio_close_read(self)
-    VALUE self;
+strio_close_read(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (!READABLE(ptr)) {
@@ -414,8 +388,7 @@ strio_close_read(self)
  * *strio* is not writeable.
  */
 static VALUE
-strio_close_write(self)
-    VALUE self;
+strio_close_write(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (!WRITABLE(ptr)) {
@@ -432,8 +405,7 @@ strio_close_write(self)
  * Returns +true+ if *strio* is completely closed, +false+ otherwise.
  */
 static VALUE
-strio_closed(self)
-    VALUE self;
+strio_closed(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (!CLOSED(ptr)) return Qfalse;
@@ -447,8 +419,7 @@ strio_closed(self)
  * Returns +true+ if *strio* is not readable, +false+ otherwise.
  */
 static VALUE
-strio_closed_read(self)
-    VALUE self;
+strio_closed_read(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (READABLE(ptr)) return Qfalse;
@@ -462,8 +433,7 @@ strio_closed_read(self)
  * Returns +true+ if *strio* is not writable, +false+ otherwise.
  */
 static VALUE
-strio_closed_write(self)
-    VALUE self;
+strio_closed_write(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     if (WRITABLE(ptr)) return Qfalse;
@@ -479,8 +449,7 @@ strio_closed_write(self)
  * opened for reading or an +IOError+ will be raised.
  */
 static VALUE
-strio_eof(self)
-    VALUE self;
+strio_eof(VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     if (ptr->pos < RSTRING(ptr->string)->len) return Qfalse;
@@ -516,8 +485,7 @@ strio_copy(VALUE copy, VALUE orig)
  * newline.  See also the  <code>$.</code> variable.
  */
 static VALUE
-strio_get_lineno(self)
-    VALUE self;
+strio_get_lineno(VALUE self)
 {
     return LONG2NUM(StringIO(self)->lineno);
 }
@@ -530,8 +498,7 @@ strio_get_lineno(self)
  * <code>$.</code> is updated only on the next read.
  */
 static VALUE
-strio_set_lineno(self, lineno)
-    VALUE self, lineno;
+strio_set_lineno(VALUE self, VALUE lineno)
 {
     StringIO(self)->lineno = NUM2LONG(lineno);
     return lineno;
@@ -575,8 +542,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  * Returns the current offset (in bytes) of *strio*.
  */
 static VALUE
-strio_get_pos(self)
-    VALUE self;
+strio_get_pos(VALUE self)
 {
     return LONG2NUM(StringIO(self)->pos);
 }
@@ -588,9 +554,7 @@ strio_get_pos(self)
  * Seeks to the given position (in bytes) in *strio*.
  */
 static VALUE
-strio_set_pos(self, pos)
-    VALUE self;
-    VALUE pos;
+strio_set_pos(VALUE self, VALUE pos)
 {
     struct StringIO *ptr = StringIO(self);
     long p = NUM2LONG(pos);
@@ -609,8 +573,7 @@ strio_set_pos(self, pos)
  * +lineno+ to zero.
  */
 static VALUE
-strio_rewind(self)
-    VALUE self;
+strio_rewind(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     ptr->pos = 0;
@@ -626,10 +589,7 @@ strio_rewind(self)
  * the value of _whence_ (see IO#seek).
  */
 static VALUE
-strio_seek(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_seek(int argc, VALUE *argv, VALUE self)
 {
     VALUE whence;
     struct StringIO *ptr = StringIO(self);
@@ -663,8 +623,7 @@ strio_seek(argc, argv, self)
  * Returns +true+ always.
  */
 static VALUE
-strio_get_sync(self)
-    VALUE self;
+strio_get_sync(VALUE self)
 {
     StringIO(self);
     return Qtrue;
@@ -682,8 +641,7 @@ strio_get_sync(self)
  * See IO#each_byte.
  */
 static VALUE
-strio_each_byte(self)
-    VALUE self;
+strio_each_byte(VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     while (ptr->pos < RSTRING(ptr->string)->len) {
@@ -700,8 +658,7 @@ strio_each_byte(self)
  * See IO#getc.
  */
 static VALUE
-strio_getc(self)
-    VALUE self;
+strio_getc(VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     int c;
@@ -740,8 +697,7 @@ strio_extend(struct StringIO *ptr, long pos, long len)
  * In other case, there is no limitation for multiple pushbacks.
  */
 static VALUE
-strio_ungetc(self, ch)
-    VALUE self, ch;
+strio_ungetc(VALUE self, VALUE ch)
 {
     struct StringIO *ptr = readable(StringIO(self));
     int cc = NUM2INT(ch);
@@ -767,8 +723,7 @@ strio_ungetc(self, ch)
  * See IO#readchar.
  */
 static VALUE
-strio_readchar(self)
-    VALUE self;
+strio_readchar(VALUE self)
 {
     VALUE c = strio_getc(self);
     if (NIL_P(c)) rb_eof_error();
@@ -776,10 +731,7 @@ strio_readchar(self)
 }
 
 static void
-bm_init_skip(skip, pat, m)
-     long *skip;
-     const char *pat;
-     long m;
+bm_init_skip(long *skip, const char *pat, long m)
 {
     int c;
 
@@ -792,12 +744,7 @@ bm_init_skip(skip, pat, m)
 }
 
 static long
-bm_search(little, llen, big, blen, skip)
-    const char *little;
-    long llen;
-    const char *big;
-    long blen;
-    const long *skip;
+bm_search(const char *little, long llen, const char *big, long blen, const long *skip)
 {
     long i, j, k;
 
@@ -816,10 +763,7 @@ bm_search(little, llen, big, blen, skip)
 }
 
 static VALUE
-strio_getline(argc, argv, ptr)
-    int argc;
-    VALUE *argv;
-    struct StringIO *ptr;
+strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 {
     const char *s, *e, *p;
     long n;
@@ -897,10 +841,7 @@ strio_getline(argc, argv, ptr)
  * See IO#gets.
  */
 static VALUE
-strio_gets(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_gets(int argc, VALUE *argv, VALUE self)
 {
     VALUE str = strio_getline(argc, argv, readable(StringIO(self)));
 
@@ -915,10 +856,7 @@ strio_gets(argc, argv, self)
  * See IO#readline.
  */
 static VALUE
-strio_readline(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_readline(int argc, VALUE *argv, VALUE self)
 {
     VALUE line = strio_getline(argc, argv, readable(StringIO(self)));
     if (NIL_P(line)) rb_eof_error();
@@ -933,10 +871,7 @@ strio_readline(argc, argv, self)
  * See IO#each.
  */
 static VALUE
-strio_each(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_each(int argc, VALUE *argv, VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     VALUE line;
@@ -954,10 +889,7 @@ strio_each(argc, argv, self)
  * See IO#readlines.
  */
 static VALUE
-strio_readlines(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_readlines(int argc, VALUE *argv, VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
     VALUE ary = rb_ary_new(), line;
@@ -978,8 +910,7 @@ strio_readlines(argc, argv, self)
  * Returns the number of bytes written.  See IO#write.
  */
 static VALUE
-strio_write(self, str)
-    VALUE self, str;
+strio_write(VALUE self, VALUE str)
 {
     struct StringIO *ptr = writable(StringIO(self));
     long len, olen;
@@ -1037,8 +968,7 @@ strio_write(self, str)
  * See IO#putc.
  */
 static VALUE
-strio_putc(self, ch)
-    VALUE self, ch;
+strio_putc(VALUE self, VALUE ch)
 {
     struct StringIO *ptr = writable(StringIO(self));
     int c = NUM2CHR(ch);
@@ -1070,10 +1000,7 @@ strio_putc(self, ch)
  * See IO#read.
  */
 static VALUE
-strio_read(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+strio_read(int argc, VALUE *argv, VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     VALUE str = Qnil;
@@ -1178,8 +1105,7 @@ strio_sysread(int argc, VALUE *argv, VALUE self)
  * Returns the size of the buffer string.
  */
 static VALUE
-strio_size(self)
-    VALUE self;
+strio_size(VALUE self)
 {
     VALUE string = StringIO(self)->string;
     if (NIL_P(string)) {
@@ -1196,8 +1122,7 @@ strio_size(self)
  * must be opened for writing.
  */
 static VALUE
-strio_truncate(self, len)
-    VALUE self, len;
+strio_truncate(VALUE self, VALUE len)
 {
     VALUE string = writable(StringIO(self))->string;
     long l = NUM2LONG(len);

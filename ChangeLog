@@ -1,3 +1,8 @@
+Wed Jun 21 03:01:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c, file.c, etc.: code-cleanup patch from Stefan Huehner
+	  <stefan at huehner.org>.  [ruby-core:08029]
+
 Wed Jun 21 01:40:25 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reswords): modifier token is no longer returned in fname

@@ -155,7 +155,7 @@ VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 
 /* VP constants */
-VP_EXPORT Real *VpOne();
+VP_EXPORT Real *VpOne(void);
 
 /*  
  *  ------------------

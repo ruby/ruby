@@ -464,7 +464,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		volatile VALUE val = GETARG();
 		char fbuf[32], nbuf[64], *s, *t;
-		char *prefix = 0;
+		const char *prefix = 0;
 		int sign = 0;
 		char sc = 0;
 		long v = 0;
@@ -716,7 +716,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 		fval = RFLOAT(rb_Float(val))->value;
 		if (isnan(fval) || isinf(fval)) {
-		    char *expr;
+		    const char *expr;
 
 		    if  (isnan(fval)) {
 			expr = "NaN";

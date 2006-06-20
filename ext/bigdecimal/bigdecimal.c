@@ -1823,7 +1823,7 @@ VpInit(U_LONG BaseVal)
 }
 
 VP_EXPORT Real *
-VpOne()
+VpOne(void)
 {
     return VpConstOne;
 }

@@ -478,7 +478,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, int len)
 {
     if (NIL_P(z->buf)) {
 	z->buf = rb_str_buf_new(len);
-	rb_str_buf_cat(z->buf, (char*)src, len);
+	rb_str_buf_cat(z->buf, (const char*)src, len);
 	z->buf_filled = len;
 	z->stream.next_out = (Bytef*)RSTRING(z->buf)->ptr;
 	z->stream.avail_out = 0;
@@ -573,11 +573,11 @@ zstream_append_input(struct zstream *z, const Bytef *src, unsigned int len)
 
     if (NIL_P(z->input)) {
 	z->input = rb_str_buf_new(len);
-	rb_str_buf_cat(z->input, (char*)src, len);
+	rb_str_buf_cat(z->input, (const char*)src, len);
 	RBASIC(z->input)->klass = 0;
     }
     else {
-	rb_str_buf_cat(z->input, (char*)src, len);
+	rb_str_buf_cat(z->input, (const char*)src, len);
     }
 }
 
@@ -2995,7 +2995,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     struct gzfile *gz = get_gzfile(obj);
     volatile VALUE rs;
     VALUE dst;
-    char *rsptr, *p, *res;
+    const char *rsptr;
+    char *p, *res;
     long rslen, n;
     int rspara;
 
