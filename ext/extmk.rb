@@ -213,10 +213,14 @@ def parse_args()
   opts = nil
   $optparser ||= OptionParser.new do |opts|
     opts.on('-n') {$dryrun = true}
-    opts.on('--[no-]extension [EXTS]', Array) do |v|
+    opts.on('--[no-]extension [EXTS]', Array) do |*v|
+      v.compact!
+      v = v[0] if v.size == 1 and !v[0]
       $extension = (v == false ? [] : v)
     end
-    opts.on('--[no-]extstatic [STATIC]', Array) do |v|
+    opts.on('--[no-]extstatic [STATIC]', Array) do |*v|
+      v.compact!
+      v = v[0] if v.size == 1 and !v[0]
       if ($extstatic = v) == false
         $extstatic = []
       elsif v

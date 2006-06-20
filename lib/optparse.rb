@@ -670,7 +670,7 @@ class OptionParser
       list.each do |opt|
         if opt.respond_to?(:summarize) # perhaps OptionParser::Switch
           opt.summarize(*args, &block)
-        elsif opt.empty?
+        elsif !opt or opt.empty?
           yield("")
         else
           opt.each(&block)
@@ -1319,7 +1319,7 @@ class OptionParser
           end
           begin
             opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.yield(*val) if sw
+            sw.yield(val) if sw
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
