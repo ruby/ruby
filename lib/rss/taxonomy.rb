@@ -30,8 +30,8 @@ module RSS
 
       klass.install_must_call_validator(TAXO_PREFIX, TAXO_URI)
       %w(topics).each do |name|
-        klass.install_have_child_element("#{TAXO_PREFIX}_#{name}")
-        klass.install_model(name, TAXO_URI, "?")
+        klass.install_have_child_element(name, TAXO_URI, "?",
+                                         "#{TAXO_PREFIX}_#{name}")
       end
     end
 
@@ -52,8 +52,7 @@ module RSS
 
       @tag_name = "topics"
       
-      install_have_child_element("Bag")
-      install_model("Bag", RDF::URI, nil)
+      install_have_child_element("Bag", RDF::URI, nil)
       install_must_call_validator('rdf', RDF::URI)
 
       def initialize(*args)
@@ -103,7 +102,7 @@ module RSS
     def self.append_features(klass)
       super
       var_name = "#{TAXO_PREFIX}_topic"
-      klass.install_have_children_element(var_name)
+      klass.install_have_children_element("topic", TAXO_URI, "*", var_name)
     end
 
     class TaxonomyTopic < Element
@@ -126,7 +125,7 @@ module RSS
 
       install_get_attribute("about", ::RSS::RDF::URI, true, nil, nil,
                             "#{RDF::PREFIX}:about")
-      install_text_element("#{TAXO_PREFIX}_link")
+      install_text_element("link", TAXO_URI, "?", "#{TAXO_PREFIX}_link")
         
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
@@ -147,13 +146,13 @@ module RSS
       
       private
       def children
-        [@taxo_link, @taxo_topics]
+        [@taxo_link, *@taxo_topics]
       end
 
       def _tags
         rv = []
         rv << [TAXO_URI, "link"] unless @taxo_link.nil?
-        rv << [TAXO_URI, "topics"] unless @taxo_topics.nil?
+        rv.concat([TAXO_URI, "topics"] * @taxo_topics.size)
         rv
       end
     end

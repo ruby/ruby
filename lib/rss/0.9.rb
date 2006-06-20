@@ -19,14 +19,8 @@ module RSS
     include RootElementMixin
     include XMLStyleSheetMixin
 
-    [
-      ["channel", nil],
-    ].each do |tag, occurs|
-      install_model(tag, "", occurs)
-    end
-
     %w(channel).each do |name|
-      install_have_child_element(name)
+      install_have_child_element(name, "", nil)
     end
 
     attr_accessor :rss_version, :version, :encoding, :standalone
@@ -98,8 +92,8 @@ module RSS
         ["managingEditor", "?", :text],
         ["webMaster", "?", :text],
         ["rating", "?", :text],
-        ["pubDate", "?", :date, 'rfc822'],
-        ["lastBuildDate", "?", :date, 'rfc822'],
+        ["pubDate", "?", :date, :rfc822],
+        ["lastBuildDate", "?", :date, :rfc822],
         ["docs", "?", :text],
         ["cloud", "?", :have_attribute],
         ["skipDays", "?", :have_child],
@@ -108,8 +102,7 @@ module RSS
         ["item", "*", :have_children],
         ["textInput", "?", :have_child],
       ].each do |name, occurs, type, *args|
-        __send__("install_#{type}_element", name, *args)
-        install_model(name, "", occurs)
+        __send__("install_#{type}_element", name, "", occurs, name, *args)
       end
       alias date pubDate
       alias date= pubDate=
@@ -178,8 +171,7 @@ module RSS
         [
           ["day", "*"]
         ].each do |name, occurs|
-          install_have_children_element(name)
-          install_model(name, "", occurs)
+          install_have_children_element(name, "", occurs)
         end
 
         private
@@ -217,8 +209,7 @@ module RSS
         [
           ["hour", "*"]
         ].each do |name, occurs|
-          install_have_children_element(name)
-          install_model(name, "", occurs)
+          install_have_children_element(name, "", occurs)
         end
 
         private
@@ -254,16 +245,14 @@ module RSS
         include RSS09
         
         %w(url title link).each do |name|
-          install_text_element(name)
-          install_model(name, "", nil)
+          install_text_element(name, "", nil)
         end
         [
           ["width", :integer],
           ["height", :integer],
           ["description"],
         ].each do |name, type|
-          install_text_element(name, type)
-          install_model(name, "", "?")
+          install_text_element(name, "", "?", name, type)
         end
 
         def initialize(*args)
@@ -334,8 +323,7 @@ module RSS
           ["source", '?', :have_child],
           ["enclosure", '?', :have_child],
         ].each do |tag, occurs, type, *args|
-          __send__("install_#{type}_element", tag, *args)
-          install_model(tag, "", occurs)
+          __send__("install_#{type}_element", tag, "", occurs, tag, *args)
         end
 
         private
@@ -485,8 +473,7 @@ module RSS
         include RSS09
 
         %w(title description name link).each do |name|
-          install_text_element(name)
-          install_model(name, "", nil)
+          install_text_element(name, "", nil)
         end
 
         def initialize(*args)

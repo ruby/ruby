@@ -38,15 +38,11 @@ module RSS
     [
       ["channel", nil],
       ["image", "?"],
-      ["item", "+"],
+      ["item", "+", :children],
       ["textinput", "?"],
-    ].each do |tag, occurs|
-      install_model(tag, ::RSS::URI, occurs)
-      if occurs == "+"
-        install_have_children_element(tag)
-      else
-        install_have_child_element(tag)
-      end
+    ].each do |tag, occurs, type|
+      type ||= :child
+      __send__("install_have_#{type}_element", tag, ::RSS::URI, occurs)
     end
 
     attr_accessor :rss_version, :version, :encoding, :standalone
@@ -120,8 +116,7 @@ module RSS
 
       @tag_name = 'Seq'
       
-      install_have_children_element("li")
-      install_model("li", URI, "*")
+      install_have_children_element("li", URI, "*")
       install_must_call_validator('rdf', ::RSS::RDF::URI)
       
       def initialize(*args)
@@ -171,9 +166,8 @@ module RSS
 
       @tag_name = 'Bag'
       
-      install_have_children_element("li")
-      install_model("li", URI, "*")
-      install_must_call_validator('rdf', ::RSS::RDF::URI)
+      install_have_children_element("li", URI, "*")
+      install_must_call_validator('rdf', URI)
       
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
@@ -227,25 +221,17 @@ module RSS
                               "#{PREFIX}:#{name}")
       end
 
-      %w(title link description).each do |name|
-        install_text_element(name)
+      [
+        ['title', nil, :text],
+        ['link', nil, :text],
+        ['description', nil, :text],
+        ['image', '?', :have_child],
+        ['items', nil, :have_child],
+        ['textinput', '?', :have_child],
+      ].each do |tag, occurs, type|
+        __send__("install_#{type}_element", tag, ::RSS::URI, occurs)
       end
 
-      %w(image items textinput).each do |name|
-        install_have_child_element(name)
-      end
-      
-      [
-        ['title', nil],
-        ['link', nil],
-        ['description', nil],
-        ['image', '?'],
-        ['items', nil],
-        ['textinput', '?'],
-      ].each do |tag, occurs|
-        install_model(tag, ::RSS::URI, occurs)
-      end
-      
       def initialize(*args)
         if Utils.element_initialize_arguments?(args)
           super
@@ -353,8 +339,7 @@ module RSS
           
         end
 
-        install_have_child_element("Seq")
-        install_model("Seq", URI, nil)
+        install_have_child_element("Seq", URI, nil)
         install_must_call_validator('rdf', URI)
         
         def initialize(*args)
@@ -410,15 +395,7 @@ module RSS
       end
 
       %w(title url link).each do |name|
-        install_text_element(name)
-      end
-    
-      [
-        ['title', nil],
-        ['url', nil],
-        ['link', nil],
-      ].each do |tag, occurs|
-        install_model(tag, ::RSS::URI, occurs)
+        install_text_element(name, ::RSS::URI, nil)
       end
 
       def initialize(*args)
@@ -466,16 +443,12 @@ module RSS
                               "#{PREFIX}:#{name}")
       end
 
-      %w(title link description).each do |name|
-        install_text_element(name)
-      end
-
       [
         ["title", nil],
         ["link", nil],
         ["description", "?"],
       ].each do |tag, occurs|
-        install_model(tag, ::RSS::URI, occurs)
+        install_text_element(tag, ::RSS::URI, occurs)
       end
 
       def initialize(*args)
@@ -527,16 +500,7 @@ module RSS
       end
 
       %w(title description name link).each do |name|
-        install_text_element(name)
-      end
-    
-      [
-        ["title", nil],
-        ["description", nil],
-        ["name", nil],
-        ["link", nil],
-      ].each do |tag, occurs|
-        install_model(tag, ::RSS::URI, occurs)
+        install_text_element(name, ::RSS::URI, nil)
       end
 
       def initialize(*args)

@@ -18,8 +18,8 @@ module RSS
 
       klass.install_must_call_validator(CONTENT_PREFIX, CONTENT_URI)
       %w(encoded).each do |name|
-        klass.install_text_element("#{CONTENT_PREFIX}_#{name}")
-        klass.install_model(name, CONTENT_URI, "?")
+        klass.install_text_element(name, CONTENT_URI, "?",
+                                   "#{CONTENT_PREFIX}_#{name}")
       end
     end
   end

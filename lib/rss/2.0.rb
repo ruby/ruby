@@ -10,17 +10,15 @@ module RSS
         ["generator"],
         ["ttl", :integer],
       ].each do |name, type|
-        install_text_element(name, type)
-        install_model(name, "", '?')
+        install_text_element(name, "", "?", name, type)
       end
 
       [
         %w(category categories),
       ].each do |name, plural_name|
-        install_have_children_element(name, plural_name)
-        install_model(name, "", '*')
+        install_have_children_element(name, "", "*", name, plural_name)
       end
-        
+
       [
         ["image", "?"],
         ["language", "?"],
@@ -57,15 +55,13 @@ module RSS
           ["comments", "?"],
           ["author", "?"],
         ].each do |name, occurs|
-          install_text_element(name)
-          install_model(name, "", occurs)
+          install_text_element(name, "", occurs)
         end
 
         [
           ["pubDate", '?'],
         ].each do |name, occurs|
-          install_date_element(name, 'rfc822')
-          install_model(name, "", occurs)
+          install_date_element(name, "", occurs, name, 'rfc822')
         end
         alias date pubDate
         alias date= pubDate=
@@ -73,8 +69,7 @@ module RSS
         [
           ["guid", '?'],
         ].each do |name, occurs|
-          install_have_child_element(name)
-          install_model(name, "", occurs)
+          install_have_child_element(name, "", occurs)
         end
 
         private

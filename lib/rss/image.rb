@@ -33,9 +33,9 @@ module RSS
     def self.append_features(klass)
       super
 
-      klass.install_have_child_element("#{IMAGE_PREFIX}_item")
+      klass.install_have_child_element("item", IMAGE_URI, "?",
+                                       "#{IMAGE_PREFIX}_item")
       klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
-      klass.install_model("item", IMAGE_URI, "?")
     end
 
     class ImageItem < Element
@@ -67,7 +67,8 @@ module RSS
       %w(width height).each do |tag|
         full_name = "#{IMAGE_PREFIX}_#{tag}"
         disp_name = "#{IMAGE_PREFIX}:#{tag}"
-        install_text_element(full_name, :integer, disp_name)
+        install_text_element(tag, IMAGE_URI, "?",
+                             full_name, :integer, disp_name)
         BaseListener.install_get_text_element(IMAGE_URI, tag, "#{full_name}=")
       end
 
@@ -119,9 +120,9 @@ module RSS
       super
 
       unless klass.class == Module
-        klass.install_have_child_element("#{IMAGE_PREFIX}_favicon")
+        klass.install_have_child_element("favicon", IMAGE_URI, "?",
+                                         "#{IMAGE_PREFIX}_favicon")
         klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
-        klass.install_model("favicon", IMAGE_URI, "?")
       end
     end
 

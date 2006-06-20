@@ -34,8 +34,7 @@ module RSS
         %w(ping).each do |name|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
-          klass.install_have_child_element(var_name)
-          klass.install_model(name, TRACKBACK_URI, "?")
+          klass.install_have_child_element(name, TRACKBACK_URI, "?", var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}
@@ -52,8 +51,8 @@ module RSS
         [%w(about s)].each do |name, postfix|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
-          klass.install_have_children_element(var_name)
-          klass.install_model(name, TRACKBACK_URI, "*")
+          klass.install_have_children_element(name, TRACKBACK_URI, "*",
+                                              var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}(*args)

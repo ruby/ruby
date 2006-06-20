@@ -141,8 +141,10 @@ module RSS
 
     include Utils
 
-    def install_have_child_element(name)
+    def install_have_child_element(tag_name, uri, occurs, name=nil)
+      name ||= tag_name
       add_need_initialize_variable(name)
+      install_model(tag_name, uri, occurs)
 
       attr_accessor name
       install_element(name) do |n, elem_name|
@@ -157,11 +159,13 @@ EOC
     end
     alias_method(:install_have_attribute_element, :install_have_child_element)
 
-    def install_have_children_element(name, plural_name=nil)
+    def install_have_children_element(tag_name, uri, occurs, name=nil, plural_name=nil)
+      name ||= tag_name
       plural_name ||= "#{name}s"
       add_have_children_element(name, plural_name)
       add_plural_form(name, plural_name)
-      
+      install_model(tag_name, uri, occurs)
+
       def_children_accessor(name, plural_name)
       install_element(name, "s") do |n, elem_name|
         <<-EOC
@@ -175,9 +179,12 @@ EOC
       end
     end
 
-    def install_text_element(name, type=nil, disp_name=name)
+    def install_text_element(tag_name, uri, occurs, name=nil, type=nil, disp_name=nil)
+      name ||= tag_name
+      disp_name ||= name
       self::ELEMENTS << name
       add_need_initialize_variable(name)
+      install_model(tag_name, uri, occurs)
 
       def_corresponded_attr_writer name, type, disp_name
       convert_attr_reader name
@@ -200,9 +207,13 @@ EOC
       end
     end
 
-    def install_date_element(name, type, disp_name=name)
+    def install_date_element(tag_name, uri, occurs, name=nil, type=nil, disp_name=nil)
+      name ||= tag_name
+      type ||= :w3cdtf
+      disp_name ||= name
       self::ELEMENTS << name
       add_need_initialize_variable(name)
+      install_model(tag_name, uri, occurs)
 
       # accessor
       convert_attr_reader name

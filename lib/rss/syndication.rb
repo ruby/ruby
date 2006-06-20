@@ -22,14 +22,14 @@ module RSS
           ["updatePeriod"],
           ["updateFrequency", :positive_integer]
         ].each do |name, type|
-          install_text_element("#{SY_PREFIX}_#{name}", type,
+          install_text_element(name, SY_URI, "?",
+                               "#{SY_PREFIX}_#{name}", type,
                                "#{SY_PREFIX}:#{name}")
-          install_model(name, SY_URI, "?")
         end
 
         %w(updateBase).each do |name|
-          install_date_element("#{SY_PREFIX}_#{name}", 'w3cdtf', name)
-          install_model(name, SY_URI, "?")
+          install_date_element(name, SY_URI, "?",
+                               "#{SY_PREFIX}_#{name}", 'w3cdtf', name)
         end
 
         alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
