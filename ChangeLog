@@ -1,3 +1,8 @@
+Wed Jun 21 08:39:54 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create::conv2value): merge Date
+	  and Time processing.  [ruby-core:08033]
+
 Wed Jun 21 01:40:25 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex, reswords): modifier token is no longer returned in
@@ -95,10 +100,10 @@ Tue Jun 20 01:06:57 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 Mon Jun 19 23:40:59 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	  * ext/nkf/lib/kconv.rb: remove default -m0 and fix document.
+	* ext/nkf/lib/kconv.rb: remove default -m0 and fix document.
 
-	  * ext/nkf/nkf-8/{nkf.c, config.h, utf8tbl.c, utf8tbl.h}:
-	    imported nkf 2.0.7.
+	* ext/nkf/nkf-8/{nkf.c, config.h, utf8tbl.c, utf8tbl.h}:
+	  imported nkf 2.0.7.
 
 Mon Jun 19 22:31:59 2006  Kouhei Sutou  <kou@cozmixng.org>
 
