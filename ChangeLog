@@ -1,3 +1,8 @@
+Wed Jun 21 01:12:46 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: RSS::Element.def_corresponded_attr_writer
+	  supported date type.
+
 Tue Jun 20 22:08:36 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_parser.rb: split parser tests into ...

@@ -508,6 +508,8 @@ EOC
             positive_integer_writer name, disp_name
           when :boolean
             boolean_writer name, disp_name
+          when :w3cdtf, :rfc822, :rfc2822
+            date_writer name, type, disp_name
           else
             attr_writer name
           end
