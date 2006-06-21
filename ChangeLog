@@ -1,3 +1,11 @@
+Wed Jun 21 17:29:57 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/getaddrinfo.c (freeaddrinfo, get_name): fixed typo.
+
+	* ext/tk/tcltklib.c (tcl_eval, tcl_global_eva): ditto.
+
+	* ext/zlib/zlib.c (rscheck): constified.
+
 Wed Jun 21 17:18:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/pp.rb (PP::PPMethods::seplist): should have preserved

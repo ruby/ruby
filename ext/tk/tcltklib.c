@@ -124,7 +124,7 @@ static VALUE tk_funcall _((VALUE(), int, VALUE*, VALUE));
 
 /* safe Tcl_Eval and Tcl_GlobalEval */
 static int
-tcl_eval(Tcp_Interp interp, const char *cmd)
+tcl_eval(Tcl_Interp *interp, const char *cmd)
 {
     char *buf = strdup(cmd);
     const int ret = Tcl_Eval(interp, buf);
@@ -136,7 +136,7 @@ tcl_eval(Tcp_Interp interp, const char *cmd)
 #define Tcl_Eval tcl_eval
 
 static int
-tcl_global_eval(Tcp_Interp *interp, const char *cmd)
+tcl_global_eval(Tcl_Interp *interp, const char *cmd)
 {
     char *buf = strdup(cmd);
     const int ret = Tcl_GlobalEval(interp, buf);

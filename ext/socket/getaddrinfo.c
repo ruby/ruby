@@ -207,7 +207,6 @@ gai_strerror(int ecode)
 
 void
 freeaddrinfo(struct addrinfo *ai)
-	struct addrinfo *ai;
 {
 	struct addrinfo *next;
 
@@ -530,7 +529,7 @@ getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *h
 }
 
 static int
-get_name(const char *addr, const struct aft *afd, struct addrinfo **res, char *numaddr, struct addrinfo *pai, int port0)
+get_name(const char *addr, const struct afd *afd, struct addrinfo **res, char *numaddr, struct addrinfo *pai, int port0)
 {
 	u_short port = port0 & 0xffff;
 	struct hostent *hp;
