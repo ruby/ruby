@@ -3264,6 +3264,28 @@ method_call	: operation paren_args
 			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
 		    %*/
 		    }
+		| primary_value '.' paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, rb_intern("call"), $3);
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch3(call, dispatch1(paren, $1),
+				       ripper_id2sym('.'), rb_intern("call"));
+			$$ = method_optarg($$, $3);
+		    %*/
+		    }
+		| primary_value tCOLON2 paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, rb_intern("call"), $3);
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch3(call, dispatch1(paren, $1),
+				       ripper_id2sym('.'), rb_intern("call"));
+			$$ = method_optarg($$, $3);
+		    %*/
+		    }
 		| kSUPER paren_args
 		    {
 		    /*%%%*/
@@ -3278,18 +3300,6 @@ method_call	: operation paren_args
 			$$ = NEW_ZSUPER();
 		    /*%
 			$$ = dispatch0(zsuper);
-		    %*/
-		    }
-		| tLPAREN compstmt ')' paren_args
-		    {
-		    /*%%%*/
-			if (!$2) $2 = NEW_NIL();
-			$$ = NEW_CALL($2, rb_intern("call"), $4);
-			fixpos($$, $2);
-		    /*%
-			$$ = dispatch3(call, dispatch1(paren, $2),
-				       ripper_id2sym('.'), rb_intern("call"));
-			$$ = method_optarg($$, $4);
 		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket

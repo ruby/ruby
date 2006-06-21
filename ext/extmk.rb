@@ -358,7 +358,7 @@ end unless $extstatic
 
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
-if $extension
+if $extension && $extension.size > 0
   exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
 else
   withes, withouts = %w[--with --without].collect {|w|
