@@ -352,12 +352,12 @@ class OptionParser
     #    : (({block}))
     #      (({yields})) at semi-error condition, instead of raises exception.
     #
-    def conv_arg(arg, val = [])
+    def conv_arg(arg, val = nil)
       if block
         if conv
-          val = conv.yield(*val)
+          val = conv.yield(val)
         else
-          val = val[0]
+          val = *val
         end
         return arg, block, val
       else
@@ -453,12 +453,12 @@ class OptionParser
       #
       # Raises an exception if argument is not present.
       #
-      def parse(arg, argv)
+      def parse(arg, argv, &error)
         unless arg
           raise MissingArgument if argv.empty?
           arg = argv.shift
         end
-        conv_arg(*parse_arg(arg) {|*exc| raise(*exc)})
+        conv_arg(*parse_arg(arg), &error)
       end
     end
 
@@ -622,7 +622,7 @@ class OptionParser
       if list = __send__(id)
         val = list.fetch(key) {return nil}
         return val unless block_given?
-        yield(*val)
+        yield(val)
       end
     end
 
@@ -700,7 +700,7 @@ class OptionParser
     # Completion for hash key.
     #
     def match(key)
-      return key, fetch(key) {
+      return key, *fetch(key) {
         raise AmbiguousArgument, catch(:ambiguous) {return complete(key)}
       }
     end
@@ -1495,9 +1495,9 @@ class OptionParser
         yielded with the found value when succeeded.
 =end #'#"#`#
   def search(id, key)
-    visit(:search, id, key) do |*k|
+    visit(:search, id, key) do |k|
       return k unless block_given?
-      return yield(*k)
+      return yield(k)
     end
   end
   private :search

@@ -1,3 +1,16 @@
+Wed Jun 21 14:35:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (block_param): do not use multiple assignment for a sole
+	  block parameter.  [ruby-dev:28710]
+
+	* eval.c (rb_yield_0): pass a raw yielded value to a sole block
+	  parameter if a value is passed by yield.
+
+	* eval.c (proc_invoke): args may not be an array.
+
+	* eval.c (rb_proc_yield): pass original value without wrapping
+	  it in an array.
+
 Wed Jun 21 14:06:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (method_call): remove (fn)(args) style lambda

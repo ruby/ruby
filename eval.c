@@ -4739,6 +4739,9 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		massign(self, var, val, pcall);
 	    }
 	    else {
+		if (pcall) {
+		    val = RARRAY(val)->ptr[0];
+		}
 		assign(self, var, val, pcall);
 	    }
 	    if (bvar) {
@@ -8367,7 +8370,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.this_class = klass;
-    _block.frame.argc = RARRAY(args)->len;
+    _block.frame.argc = call ? RARRAY(args)->len : 1;
     _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
         NEWOBJ(scope, struct SCOPE);
@@ -8473,10 +8476,14 @@ rb_proc_call(VALUE proc, VALUE args /* OK */)
 VALUE
 rb_proc_yield(int argc, VALUE *argv, VALUE proc)
 {
-    if (argc == 1)
-	return proc_invoke(proc, svalue_to_avalue(argv[0]), Qundef, 0, 0);
-    else
+    switch (argc) {
+      case 0:
+	return proc_invoke(proc, Qnil, Qundef, 0, 0);
+      case 1:
+	return proc_invoke(proc, argv[0], Qundef, 0, 0);
+      default:
 	return proc_invoke(proc, rb_ary_new4(argc, argv), Qundef, 0, 0);
+    }
 }
 
 /* :nodoc: */

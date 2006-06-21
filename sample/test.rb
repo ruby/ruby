@@ -127,13 +127,13 @@ a,b,*c = *[*[1,2]]; test_ok([a,b,c] == [1,2,[]])
 
 def f; yield nil; end; f {|a| test_ok(a == nil)}
 def f; yield 1; end; f {|a| test_ok(a == 1)}
-def f; yield *[]; end; f {|a| test_ok(a == nil)}
-def f; yield *[1]; end; f {|a| test_ok(a == 1)}
-def f; yield *[nil]; end; f {|a| test_ok(a == nil)}
-def f; yield *[[]]; end; f {|a| test_ok(a == [])}
-def f; yield *[*[]]; end; f {|a| test_ok(a == nil)}
-def f; yield *[*[1]]; end; f {|a| test_ok(a == 1)}
-def f; yield *[*[1,2]]; end; f {|a| test_ok(a == 1)}
+def f; yield *[]; end; f {|a| test_ok(a == [])}
+def f; yield *[1]; end; f {|a| test_ok(a == [1])}
+def f; yield *[nil]; end; f {|a| test_ok(a == [nil])}
+def f; yield *[[]]; end; f {|a| test_ok(a == [[]])}
+def f; yield *[*[]]; end; f {|a| test_ok(a == [])}
+def f; yield *[*[1]]; end; f {|a| test_ok(a == [1])}
+def f; yield *[*[1,2]]; end; f {|a| test_ok(a == [1,2])}
 
 def f; yield; end; f {|a,| test_ok(a == nil)}
 def f; yield nil; end; f {|a,| test_ok(a == nil)}
@@ -957,23 +957,23 @@ IterTest.new([1]).each1 {|x| test_ok(x == 1)}
 IterTest.new([2]).each2 {|x| test_ok(x == [2])}
 #IterTest.new([3]).each3 {|x| test_ok(x == 3)}
 IterTest.new([4]).each4 {|x| test_ok(x == 4)}
-IterTest.new([5]).each5 {|x| test_ok(x == 5)}
-IterTest.new([6]).each6 {|x| test_ok(x == 6)}
+IterTest.new([5]).each5 {|x| test_ok(x == [5])}
+IterTest.new([6]).each6 {|x| test_ok(x == [6])}
 #IterTest.new([7]).each7 {|x| test_ok(x == 7)}
 IterTest.new([8]).each8 {|x| test_ok(x == 8)}
 
-IterTest.new([[0]]).each0 {|x| test_ok(x == 0)}
+IterTest.new([[0]]).each0 {|x| test_ok(x == [0])}
 IterTest.new([[1]]).each1 {|x| test_ok(x == 1)}
 IterTest.new([[2]]).each2 {|x| test_ok(x == [2])}
 IterTest.new([[3]]).each3 {|x| test_ok(x == 3)}
-IterTest.new([[4]]).each4 {|x| test_ok(x == 4)}
-IterTest.new([[5]]).each5 {|x| test_ok(x == 5)}
-IterTest.new([[6]]).each6 {|x| test_ok(x == 6)}
-IterTest.new([[7]]).each7 {|x| test_ok(x == 7)}
-IterTest.new([[8]]).each8 {|x| test_ok(x == 8)}
+IterTest.new([[4]]).each4 {|x| test_ok(x == [4])}
+IterTest.new([[5]]).each5 {|x| test_ok(x == [5])}
+IterTest.new([[6]]).each6 {|x| test_ok(x == [6])}
+IterTest.new([[7]]).each7 {|x| test_ok(x == [7])}
+IterTest.new([[8]]).each8 {|x| test_ok(x == [8])}
 
 IterTest.new([[0,0]]).each0 {|*x| test_ok(x == [0,0])}
-IterTest.new([[8,8]]).each8 {|*x| test_ok(x == [8])}
+IterTest.new([[8,8]]).each8 {|*x| test_ok(x == [8,8])}
 
 def m0(v)
   v

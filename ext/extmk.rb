@@ -213,14 +213,10 @@ def parse_args()
   opts = nil
   $optparser ||= OptionParser.new do |opts|
     opts.on('-n') {$dryrun = true}
-    opts.on('--[no-]extension [EXTS]', Array) do |*v|
-      v.compact!
-      v = v[0] if v.size == 1 and !v[0]
+    opts.on('--[no-]extension [EXTS]', Array) do |v|
       $extension = (v == false ? [] : v)
     end
-    opts.on('--[no-]extstatic [STATIC]', Array) do |*v|
-      v.compact!
-      v = v[0] if v.size == 1 and !v[0]
+    opts.on('--[no-]extstatic [STATIC]', Array) do |v|
       if ($extstatic = v) == false
         $extstatic = []
       elsif v
@@ -237,7 +233,7 @@ def parse_args()
     opts.on('--make=MAKE') do |v|
       $make = v || 'make'
     end
-    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |*v|
+    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
       v.grep(/\A([-\w]+)=(.*)/) {$configure_args["--#{$1}"] = $2}
       if arg = v.first
         arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
@@ -358,7 +354,7 @@ end unless $extstatic
 
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
-if $extension && $extension.size > 0
+if $extension
   exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
 else
   withes, withouts = %w[--with --without].collect {|w|

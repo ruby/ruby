@@ -2900,7 +2900,13 @@ block_param0	: mlhs_item
 block_param	: block_param0
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, 0);
+                        if ($1->nd_alen == 1) {
+                            $$ = $1->nd_head;
+                            rb_gc_force_recycle((VALUE)$1);
+                        }
+                        else {
+                            $$ = NEW_MASGN($1, 0);
+                        }
 		    /*%
 			$$ = blockvar_new($1);
 		    %*/
