@@ -1,3 +1,8 @@
+Wed Jun 21 21:28:32 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (jd_to_commercial): now works fine even if in
+	  mathn-ized context.
+
 Wed Jun 21 17:32:31 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* signal.c (ruby_nativethread_signal, posix_nativethread_signal, 
