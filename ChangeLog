@@ -1,3 +1,8 @@
+Wed Jun 21 17:18:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/pp.rb (PP::PPMethods::seplist): should have preserved
+	  original reference to the array.  [ruby-dev:28747]
+
 Wed Jun 21 14:35:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (block_param): do not use multiple assignment for a sole
