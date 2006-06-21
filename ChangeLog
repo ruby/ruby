@@ -1,3 +1,8 @@
+Thu Jun 22 05:15:58 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c (sock_s_socketpair): try GC only once.
+	  [ruby-dev:28778]
+
 Wed Jun 21 21:28:32 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (jd_to_commercial): now works fine even if in

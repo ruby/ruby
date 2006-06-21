@@ -2304,15 +2304,17 @@ sock_s_socketpair(klass, domain, type, protocol)
     VALUE klass, domain, type, protocol;
 {
 #if defined HAVE_SOCKETPAIR
-    int d, t, sp[2];
+    int d, t, p, sp[2];
+    int ret;
 
     setup_domain_and_type(domain, &d, type, &t);
-  again:
-    if (socketpair(d, t, NUM2INT(protocol), sp) < 0) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
-	    goto again;
-	}
+    p = NUM2INT(protocol);
+    ret = socketpair(d, t, p, sp);
+    if (ret < 0 && (errno == EMFILE || errno == ENFILE)) {
+        rb_gc();
+        ret = socketpair(d, t, p, sp);
+    }
+    if (ret < 0) {
 	rb_sys_fail("socketpair(2)");
     }
 
