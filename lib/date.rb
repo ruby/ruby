@@ -1,7 +1,7 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2005
+# Author: Tadayoshi Funaba 1998-2006
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
@@ -370,7 +370,7 @@ class Date
     ns = ns?(jd, sg)
     a = jd_to_civil(jd - 3, ns)[0]
     y = if jd >= commercial_to_jd(a + 1, 1, 1, ns) then a + 1 else a end
-    w = 1 + (jd - commercial_to_jd(y, 1, 1, ns)) / 7
+    w = 1 + ((jd - commercial_to_jd(y, 1, 1, ns)) / 7).floor
     d = (jd + 1) % 7
     if d.zero? then d = 7 end
     return y, w, d
