@@ -1,3 +1,8 @@
+Thu Jun 22 11:52:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPResponse): duplicated error 501;
+	  HTTPInternalServerError should be error 500.  [ruby-core:08037]
+
 Thu Jun 22 05:15:58 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (sock_s_socketpair): try GC only once.
