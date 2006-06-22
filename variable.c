@@ -163,7 +163,7 @@ classname(VALUE klass)
  *  call-seq:
  *     mod.name    => string
  *  
- *  Returns the name of the module <i>mod</i>.
+ *  Returns the name of the module <i>mod</i>.  Returns nil for anonymous modules.
  */
 
 VALUE
@@ -172,7 +172,7 @@ rb_mod_name(VALUE mod)
     VALUE path = classname(mod);
 
     if (!NIL_P(path)) return rb_str_dup(path);
-    return rb_str_new(0,0);
+    return path;
 }
 
 VALUE

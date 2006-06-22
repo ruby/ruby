@@ -1,3 +1,8 @@
+Thu Jun 22 11:47:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_name): returns nil for anonymous modules.
+	  [ruby-talk:198440]
+
 Thu Jun 22 10:31:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_aref): "abc"[3] should not return an empty
