@@ -1478,6 +1478,12 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = FIX2LONG(indx);
 
       num_index:
+	if (idx < 0) {
+	    idx = RSTRING(str)->len + idx;
+	}
+	if (idx < 0 || RSTRING(str)->len <= idx) {
+	    return Qnil;
+	}
 	return rb_str_substr(str, idx, 1);
 
       case T_REGEXP:
