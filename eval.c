@@ -8691,84 +8691,6 @@ proc_binding(VALUE proc)
     return bind;
 }
 
-static VALUE
-rb_block_pass(VALUE (*func) (VALUE), VALUE arg, VALUE proc)
-{
-    VALUE b;
-    struct BLOCK _block;
-    struct BLOCK *data;
-    volatile VALUE result = Qnil;
-    int state;
-    volatile int orphan;
-    volatile int safe = ruby_safe_level;
-
-    if (NIL_P(proc)) {
-	result = (*func)(arg);
-	return result;
-    }
-    if (!rb_obj_is_proc(proc)) {
-	b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
-	if (!rb_obj_is_proc(b)) {
-	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
-		     rb_obj_classname(proc));
-	}
-	proc = b;
-    }
-
-    if (ruby_safe_level >= 1 && OBJ_TAINTED(proc) &&
-	ruby_safe_level > proc_get_safe_level(proc)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
-    }
-
-    if (ruby_frame->block && ruby_frame->block->block_obj == proc) {
-	return (*func)(arg);
-    }
-
-    Data_Get_Struct(proc, struct BLOCK, data);
-    orphan = block_orphan(data);
-
-    PUSH_FRAME(Qtrue);
-    PUSH_TAG(PROT_LOOP);
-    _block = *data;
-    if (orphan) {
-	_block.uniq = block_unique++;
-	prot_tag->blkid = _block.uniq;
-    }
-    ruby_frame->block = &_block;
-    state = EXEC_TAG();
-    if (state == 0) {
-      retry:
-	proc_set_safe_level(proc);
-	if (safe > ruby_safe_level)
-	    ruby_safe_level = safe;
-	result = (*func)(arg);
-    }
-    else if (state == TAG_BREAK && TAG_DST()) {
-	result = prot_tag->retval;
-	state = 0;
-    }
-    else if (state == TAG_RETRY) {
-	state = 0;
-	goto retry;
-    }
-    POP_TAG();
-    POP_FRAME();
-    if (proc_safe_level_p(proc)) ruby_safe_level = safe;
-
-    switch (state) {/* escape from orphan block */
-      case 0:
-	break;
-      case TAG_RETURN:
-	if (orphan) {
-	    proc_jump_error(state, prot_tag->retval);
-	}
-      default:
-	JUMP_TAG(state);
-    }
-
-    return result;
-}
-
 struct block_arg {
     VALUE self;
     NODE *iter;
@@ -11976,7 +11898,7 @@ rb_thread_start_1(void)
     rb_thread_t th = new_thread.thread;
     volatile rb_thread_t th_save = th;
     VALUE proc = new_thread.proc;
-    VALUE arg = new_thread.arg;
+    volatile VALUE arg = new_thread.arg;
     struct ruby_env *ip = th->anchor;
     enum thread_status status;
     int state;
@@ -11992,7 +11914,7 @@ rb_thread_start_1(void)
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    new_thread.thread = 0;
-	    th->result = rb_block_pass(rb_thread_yield_0, arg, proc);
+	    th->result = rb_proc_yield(RARRAY(arg)->len, RARRAY(arg)->ptr, proc);
 	}
 	th = th_save;
     }

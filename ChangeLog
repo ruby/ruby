@@ -1,3 +1,10 @@
+Fri Jun 23 17:27:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_block_pass): removed.
+
+	* eval.c (rb_thread_start_1): use rb_proc_yield() instead of
+	  rb_block_pass().  fixed: [ruby-dev:28794]
+
 Thu Jun 22 11:52:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTPResponse): duplicated error 501;
@@ -27,7 +34,7 @@ Wed Jun 21 17:29:57 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/getaddrinfo.c (freeaddrinfo, get_name): fixed typo.
 
-	* ext/tk/tcltklib.c (tcl_eval, tcl_global_eva): ditto.
+	* ext/tk/tcltklib.c (tcl_eval, tcl_global_eval): ditto.
 
 	* ext/zlib/zlib.c (rscheck): constified.
 
