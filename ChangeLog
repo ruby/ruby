@@ -94,7 +94,7 @@ Tue Jun 20 11:07:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (return_jump): no need to care about PROT_YIELD.
 
-	* eval.c (break_jump): no jump to toplevel PROT_TREAD tag.
+	* eval.c (break_jump): no jump to toplevel PROT_THREAD tag.
 
 	* eval.c (rb_yield_0): fix confusion between lambda (which is a
 	  property of a proc) and pcall (which depends on whether it's
