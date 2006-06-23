@@ -1,3 +1,8 @@
+Fri Jun 23 23:35:32 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ruby.h, lib/drb/drb.rb, lib/drb/invokemethod.rb: remove Values class.
+	  [ruby-dev:28805]
+
 Fri Jun 23 17:27:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_block_pass): removed.

@@ -614,7 +614,7 @@ module DRb
       msg = load(stream)
       argc = load(stream)
       raise ArgumentError, 'too many arguments' if @argc_limit < argc
-      argv = Values.new(argc, nil)
+      argv = Array.new(argc, nil)
       argc.times do |n|
 	argv[n] = load(stream)
       end
