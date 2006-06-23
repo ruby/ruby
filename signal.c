@@ -304,7 +304,6 @@ static struct {
     int safe;
 } trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
-static char rb_trap_accept_nativethreads[NSIG];
 rb_atomic_t rb_trap_pending;
 rb_atomic_t rb_trap_immediate;
 int rb_prohibit_interrupt = 1;
@@ -336,23 +335,21 @@ ruby_signal(signum, handler)
 {
     struct sigaction sigact, old;
 
-    rb_trap_accept_nativethreads[signum] = 0;
-
     sigact.sa_handler = handler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
-# if defined(SA_RESTART)
+#if defined(SA_RESTART)
     /* All other signals but VTALRM shall restart restartable syscall
        VTALRM will cause EINTR to syscall if interrupted.
     */
     if (signum != SIGVTALRM) {
         sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
     }
-# endif
-# ifdef SA_NOCLDWAIT
+#endif
+#ifdef SA_NOCLDWAIT
     if (signum == SIGCHLD && handler == SIG_IGN)
 	sigact.sa_flags |= SA_NOCLDWAIT;
-# endif
+#endif
     sigaction(signum, &sigact, &old);
     return old.sa_handler;
 }
@@ -364,46 +361,9 @@ posix_signal(signum, handler)
 {
     ruby_signal(signum, handler);
 }
-
-# ifdef HAVE_NATIVETHREAD
-static sighandler_t
-ruby_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
-{
-    sighandler_t old;
-
-    old = ruby_signal(signum, handler);
-    rb_trap_accept_nativethreads[signum] = 1;
-    return old;
-}
-
-void
-posix_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
-{
-    ruby_nativethread_signal(signum, handler);
-}
-# endif
-
-#else /* !POSIX_SIGNAL */
-#define ruby_signal(sig,handler) (rb_trap_accept_nativethreads[sig] = 0, signal((sig),(handler)))
-
-# ifdef HAVE_NATIVETHREAD
-static sighandler_t
-ruby_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
-{
-    sighandler_t old;
-
-    old = signal(signum, handler);
-    rb_trap_accept_nativethreads[signum] = 1;
-    return old;
-}
-# endif
-#endif /* POSIX_SIGNAL */
+#else
+#define ruby_signal(sig,handler) signal((sig),(handler))
+#endif
 
 static void signal_exec _((int sig));
 static void
@@ -434,35 +394,10 @@ signal_exec(sig)
 	    break;
 	}
     }
-    else if (trap_list[sig].cmd == Qundef) {
-	rb_thread_signal_exit();
-    }
     else {
 	rb_thread_trap_eval(trap_list[sig].cmd, sig, trap_list[sig].safe);
     }
 }
-
-#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
-static void
-sigsend_to_ruby_thread(int sig)
-{
-# ifdef HAVE_SIGPROCMASK
-    sigset_t mask, old_mask;
-# else
-    int mask, old_mask;
-# endif
-
-# ifdef HAVE_SIGPROCMASK
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &old_mask);
-# else
-    mask = sigblock(~0);
-    sigsetmask(mask);
-# endif
-
-    ruby_native_thread_kill(sig);
-}
-#endif
 
 static RETSIGTYPE sighandler _((int));
 static RETSIGTYPE
@@ -479,22 +414,11 @@ sighandler(sig)
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
 
-#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
-    if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        sigsend_to_ruby_thread(sig);
-        return;
-    }
-#endif
-
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
-    if (rb_trap_accept_nativethreads[sig]) {
-        ruby_nativethread_signal(sig, sighandler);
-    } else {
-        ruby_signal(sig, sighandler);
-    }
+    ruby_signal(sig, sighandler);
 #endif
 
-    if (trap_list[sig].cmd == 0 && ATOMIC_TEST(rb_trap_immediate)) {
+    if (ATOMIC_TEST(rb_trap_immediate)) {
 	IN_MAIN_CONTEXT(signal_exec, sig);
 	ATOMIC_SET(rb_trap_immediate, 1);
     }
@@ -510,13 +434,6 @@ static RETSIGTYPE
 sigbus(sig)
     int sig;
 {
-#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
-    if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        sigsend_to_ruby_thread(sig);
-        return;
-    }
-#endif
-
     rb_bug("Bus Error");
 }
 #endif
@@ -527,13 +444,6 @@ static RETSIGTYPE
 sigsegv(sig)
     int sig;
 {
-#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
-    if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        sigsend_to_ruby_thread(sig);
-        return;
-    }
-#endif
-
     rb_bug("Segmentation fault");
 }
 #endif
@@ -861,27 +771,6 @@ install_sighandler(signum, handler)
 	ruby_signal(signum, old);
     }
 }
-
-#ifdef HAVE_NATIVETHREAD
-static void
-install_nativethread_sighandler(signum, handler)
-    int signum;
-    sighandler_t handler;
-{
-    sighandler_t old;
-    int old_st;
-
-    old_st = rb_trap_accept_nativethreads[signum];
-    old = ruby_nativethread_signal(signum, handler);
-    if (old != SIG_DFL) {
-        if (old_st) {
-            ruby_nativethread_signal(signum, old);
-        } else {
-            ruby_signal(signum, old);
-        }
-    }
-}
-#endif
 
 static void
 init_sigchld(sig)

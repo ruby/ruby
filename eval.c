@@ -1342,15 +1342,6 @@ int
 is_ruby_native_thread() {
     return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
 }
-
-# ifdef HAVE_NATIVETHREAD_KILL
-void
-ruby_native_thread_kill(sig)
-    int sig;
-{
-    NATIVETHREAD_KILL(ruby_thid, sig);
-}
-# endif
 #endif
 
 void
