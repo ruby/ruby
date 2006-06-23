@@ -1,3 +1,8 @@
+Thu Jun 22 11:52:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTPResponse): duplicated error 501;
+	  HTTPInternalServerError should be error 500.  [ruby-core:08037]
+
 Thu Jun 22 11:47:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_name): returns nil for anonymous modules.
