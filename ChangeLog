@@ -4,7 +4,8 @@ Sat Jun 24 23:37:41 2006  Tanaka Akira  <akr@m17n.org>
 	  GC problem.
 	  (rb_yield_values): use rb_ary_new2 instead of rb_ary_new4.
 
-	* array.c (rb_ary_new4): don't set len as n.  make it safe with GC.
+	* array.c (rb_ary_new4): don't set len as n if contents is not
+	  initialized.  make it safe with GC.
 
 	  [ruby-dev:28826]
 
