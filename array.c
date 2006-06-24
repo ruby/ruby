@@ -188,6 +188,8 @@ rb_ary_new4(n, elts)
     if (n > 0 && elts) {
 	MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
     }
+
+    /* This assignment to len will be moved to the above "if" block in Ruby 1.9 */
     RARRAY(ary)->len = n;
 
     return ary;
