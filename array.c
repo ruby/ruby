@@ -163,8 +163,8 @@ rb_ary_new4(long n, const VALUE *elts)
     ary = rb_ary_new2(n);
     if (n > 0 && elts) {
 	MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
+        RARRAY(ary)->len = n;
     }
-    RARRAY(ary)->len = n;
 
     return ary;
 }

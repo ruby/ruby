@@ -3635,7 +3635,7 @@ rb_eval(VALUE self, NODE *n)
 	    long i;
 
 	    i = node->nd_alen;
-	    val = rb_ary_new4(i, 0);
+	    val = rb_ary_new2(i);
 	    for (i=0;node;node=node->nd_next) {
 		RARRAY(val)->ptr[i++] = rb_eval(self, node->nd_head);
 		RARRAY(val)->len = i;
@@ -4881,7 +4881,7 @@ rb_yield_values(int n, ...)
     if (n == 0) {
 	return rb_yield_0(Qundef, 0, 0, 0);
     }
-    val = rb_ary_new4(n, 0);
+    val = rb_ary_new2(n);
     va_start(args, n);
     for (i=0; i<n; i++) {
 	RARRAY(val)->ptr[i] = va_arg(args, VALUE);

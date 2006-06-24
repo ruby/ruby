@@ -1,3 +1,13 @@
+Sat Jun 24 23:37:41 2006  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_eval): use rb_ary_new2 instead of rb_ary_new4 to avoid
+	  GC problem.
+	  (rb_yield_values): use rb_ary_new2 instead of rb_ary_new4.
+
+	* array.c (rb_ary_new4): don't set len as n.  make it safe with GC.
+
+	  [ruby-dev:28826]
+
 Fri Jun 23 23:35:32 2006  Tanaka Akira  <akr@m17n.org>
 
 	* ruby.h, lib/drb/drb.rb, lib/drb/invokemethod.rb: remove Values class.
@@ -266,7 +276,7 @@ Sat Jun 10 15:12:29 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Sat Jun 10 10:13:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/getoptlong.rb (GetoptLong#set_options): recieve arguments
+	* lib/getoptlong.rb (GetoptLong#set_options): receive arguments
 	  as Array.
 
 	* lib/irb/slex.rb: use Proc#yield.
@@ -303,7 +313,7 @@ Sat Jun 10 06:53:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (CALLARGS): remove last semicolon. C90 compiler doesn't
 	  allow any lines (even if they're empty) within variable
-	  declaretions.
+	  declarations.
 
 Fri Jun  9 09:56:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -626,7 +636,7 @@ Sat May 13 16:14:05 2006  Tanaka Akira	<akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.
 	  (Struct#pretty_print): call Kernel#class and Struct#members even if
-	  overriden.
+	  overridden.
 	  (Struct#pretty_print_cycle): ditto.
 	  [ruby-core:7865]
 
