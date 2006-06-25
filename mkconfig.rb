@@ -38,24 +38,27 @@ vars = {}
 has_version = false
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
-  line.gsub!(/\|#_!!_#\|/, '')
-  if /^s[%,]@program_transform_name@[%,]s(\\?.)(.*)\1[%,]/ =~ line
-    next if $install_name
-    sep = Regexp.quote($1)
-    ptn = $2.sub(/\$\$/, '$').split(/#{sep}/,2)
-    v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(/#{ptn[0]}/,ptn[1]) + "\"\n"
-  elsif /^s[%,]@(\w+)@[%,](.*)[%,]/ =~ line
-    name = $1
-    val = $2 || ""
+  if /^s([%,])@(\w+)@\1(?:\|\#_!!_\#\|)?(.*)\1/ =~ line
+    name = $2
+    val = $3.gsub(/\\(?=,)/, '')
     next if /^(?:ac_.*|DEFS|configure_input)$/ =~ name
     next if /^\$\(ac_\w+\)$/ =~ val
     next if /^\$\{ac_\w+\}$/ =~ val
     next if /^\$ac_\w+$/ =~ val
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
-    v = "  CONFIG[\"" + name + "\"] #{vars[name] ? '<<' : ''}= " +
-      (vars[name] ? '"\n" ' : '') +
-      val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump + "\n"
+    if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
+      next if $install_name
+      sep = %r"#{Regexp.quote($1)}"
+      ptn = $2.sub(/\$\$/, '$').split(sep, 2)
+      name = "ruby_install_name"
+      val = "ruby".sub(/#{ptn[0]}/, ptn[1])
+    end
+    val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+    if /^prefix$/ =~ name
+      val = "(TOPDIR || DESTDIR + #{val})"
+    end
+    v = "  CONFIG[\"#{name}\"] #{vars[name] ? '<< "\n"' : '='} #{val}\n"
     vars[name] = true
     if fast[name]
       v_fast << v
@@ -67,14 +70,6 @@ File.foreach "config.status" do |line|
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
-end
-
-v_fast.collect! do |x|
-  if /"prefix"/ === x
-    x.sub(/= (.*)/, '= (TOPDIR || DESTDIR + \1)')
-  else
-    x
-  end
 end
 
 drive = File::PATH_SEPARATOR == ';'

@@ -1,3 +1,7 @@
+Sun Jun 25 23:02:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, mkconfig.rb: catch-up for latest autoconf.
+
 Sat Jun 24 06:35:00 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* signal.c: revert last change.
@@ -23,8 +27,8 @@ Wed Jun 21 21:28:32 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Wed Jun 21 17:32:31 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* signal.c (ruby_nativethread_signal, posix_nativethread_signal, 
-	  sigsend_to_ruby_thread, install_nativethread_sighandler): 
+	* signal.c (ruby_nativethread_signal, posix_nativethread_signal,
+	  sigsend_to_ruby_thread, install_nativethread_sighandler):
 	  nativethread-support on signal handler (backport from 1.9).
 
 	* ruby.h (HAVE_NATIVETHREAD_KILL): ditto.
