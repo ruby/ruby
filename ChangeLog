@@ -1,7 +1,7 @@
 Sun Jun 25 17:44:16 2006  Tanaka Akira  <akr@m17n.org>
 
 	* parse.y (paren_args): wrap $2 by escape_Qundef because it may be
-	  Qundef.
+	  Qundef.  [ruby-dev:28843]
 
 Sun Jun 25 17:18:33 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
