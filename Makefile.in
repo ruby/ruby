@@ -18,6 +18,7 @@ bindir = @bindir@
 sbindir = @sbindir@
 libdir = @libdir@
 libexecdir = @libexecdir@
+datarootdir = @datarootdir@
 datadir = @datadir@
 arch = @arch@
 sitearch = @sitearch@
