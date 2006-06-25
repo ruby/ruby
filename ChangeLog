@@ -1,3 +1,10 @@
+Sun Jun 25 17:18:33 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): support some kind of
+	  method of word. [ruby-Bugs#3237]
+
+	* test/win32ole/test_word.rb: ditto.
+
 Sat Jun 24 23:37:41 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_eval): use rb_ary_new2 instead of rb_ary_new4 to avoid
