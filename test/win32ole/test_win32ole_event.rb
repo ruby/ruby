@@ -42,8 +42,8 @@ if defined?(WIN32OLE_EVENT)
 
     def test_on_event3
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
-      ev.on_event {handler1}
-      ev.on_event {handler2}
+      ev.on_event {|*args| handler1}
+      ev.on_event {|*args| handler2}
       @ie.gohome
       while @ie.busy
         WIN32OLE_EVENT.message_loop
@@ -53,8 +53,8 @@ if defined?(WIN32OLE_EVENT)
 
     def test_on_event4
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
-      ev.on_event{handler1}
-      ev.on_event{handler2}
+      ev.on_event{|*args| handler1}
+      ev.on_event{|*args| handler2}
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
       @ie.gohome
       while @ie.busy
