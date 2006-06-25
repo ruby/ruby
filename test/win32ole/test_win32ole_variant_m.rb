@@ -5,7 +5,7 @@ end
 require "test/unit"
 
 if defined?(WIN32OLE::VARIANT)
-  class TestWin32OLE_VARIANT < Test::Unit::TestCase
+  class TestWin32OLE_VARIANT_MODULE < Test::Unit::TestCase
     include WIN32OLE::VARIANT
     def test_variant
       assert_equal(2, VT_I2)
