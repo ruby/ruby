@@ -2144,7 +2144,7 @@ paren_args	: '(' opt_call_args rparen
 		    /*%%%*/
 			$$ = $2;
 		    /*%
-			$$ = dispatch1(arg_paren, $2);
+			$$ = dispatch1(arg_paren, escape_Qundef($2));
 		    %*/
 		    }
 		;
