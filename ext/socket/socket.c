@@ -2931,15 +2931,18 @@ sock_accept_nonblock(sock)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(VALUE sock)
+sock_sysaccept(sock)
+    VALUE sock;
 {
     OpenFile *fptr;
+    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    return rb_assoc_new(s_accept(0,fptr->fd,(struct sockaddr*)buf,&len),
-			rb_str_new(buf, len));
+    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)buf,&len);
+
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME

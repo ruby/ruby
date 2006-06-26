@@ -79,5 +79,19 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_un(sockaddr_in) }
     sockaddr_un = Socket.sockaddr_un("/tmp/s")
     assert_raise(ArgumentError) { Socket.unpack_sockaddr_in(sockaddr_un) }
+  end if Socket.respond_to?(:sockaddr_un)
+
+  def test_sysaccept
+    serv = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))
+    serv.listen 5
+    c = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    c.connect(serv.getsockname)
+    fd, peeraddr = serv.sysaccept
+    assert_equal(c.getsockname, peeraddr)
+  ensure
+    serv.close if serv
+    c.close if c
+    IO.for_fd(fd).close if fd
   end
-end if defined?(Socket) && Socket.respond_to?(:sockaddr_un)
+end if defined?(Socket)
