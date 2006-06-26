@@ -1,3 +1,8 @@
+Mon Jun 26 18:37:44 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_delete): fix SEGV when a slave-ip is
+	  deleted on callback.
+
 Mon Jun 26 10:47:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (pipe_open): avoid closing uninitialized file descriptors.
