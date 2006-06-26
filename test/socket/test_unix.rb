@@ -101,11 +101,11 @@ class TestUNIXSocket < Test::Unit::TestCase
     s2.close
   end
 
-  def test_noname_recvfrom_nonblock
+  def test_noname_recv_nonblock
     s1, s2 = UNIXSocket.pair
     s2.write("a")
     IO.select [s1]
-    assert_equal(["a", ["AF_UNIX", ""]], s1.recvfrom_nonblock(10))
+    assert_equal("a", s1.recv_nonblock(10))
   ensure
     s1.close
     s2.close
@@ -123,7 +123,7 @@ class TestUNIXSocket < Test::Unit::TestCase
 
   def test_dgram_pair
     s1, s2 = UNIXSocket.pair(Socket::SOCK_DGRAM)
-    assert_raise(Errno::EAGAIN) { s1.recvfrom_nonblock(10) }
+    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
     s2.send("", 0)
     s2.send("haha", 0)
     s2.send("", 0)
@@ -132,7 +132,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_equal("haha", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
-    assert_raise(Errno::EAGAIN) { s1.recvfrom_nonblock(10) }
+    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
   ensure
     s1.close
     s2.close
@@ -140,7 +140,7 @@ class TestUNIXSocket < Test::Unit::TestCase
 
   def test_seqpacket_pair
     s1, s2 = UNIXSocket.pair(Socket::SOCK_SEQPACKET)
-    assert_raise(Errno::EAGAIN) { s1.recvfrom_nonblock(10) }
+    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
     s2.send("", 0)
     s2.send("haha", 0)
     s2.send("", 0)
@@ -149,7 +149,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_equal("haha", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
-    assert_raise(Errno::EAGAIN) { s1.recvfrom_nonblock(10) }
+    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
   rescue Errno::EPROTONOSUPPORT
   ensure
     s1.close if s1

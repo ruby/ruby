@@ -602,7 +602,7 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 }
 
 static VALUE
-s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
+s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     OpenFile *fptr;
     VALUE str;
@@ -647,16 +647,13 @@ s_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock, enum sock_recv_type from)
     }
     rb_obj_taint(str);
     switch (from) {
+      case RECV_RECV:
+        return str;
+
       case RECV_IP:
         if (alen) /* connection-oriented socket may not return a from result */
             addr = ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP);
         break;
-
-#ifdef HAVE_SYS_UN_H
-      case RECV_UNIX:
-        addr = unixaddr((struct sockaddr_un*)buf, alen);
-        break;
-#endif
 
       case RECV_SOCKET:
         addr = rb_str_new(buf, alen);
@@ -672,6 +669,49 @@ static VALUE
 bsock_recv(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_RECV);
+}
+
+/*
+ * call-seq:
+ * 	basicsocket.recv_nonblock(maxlen) => mesg
+ * 	basicsocket.recv_nonblock(maxlen, flags) => mesg
+ * 
+ * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * _flags_ is zero or more of the +MSG_+ options.
+ * The result, _mesg_, is the data received.
+ *
+ * When recvfrom(2) returns 0, Socket#recv_nonblock returns
+ * an empty string as data.
+ * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+ * 
+ * === Parameters
+ * * +maxlen+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	serv = TCPServer.new("127.0.0.1", 0)
+ * 	af, port, host, addr = serv.addr
+ * 	c = TCPSocket.new(addr, port)
+ * 	s = serv.accept
+ * 	c.send "aaa", 0
+ * 	IO.select([s])
+ * 	p s.recv_nonblock(10) #=> "aaa"
+ *
+ * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+ * to _recv_nonblock_ fails. 
+ *
+ * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
+ * including Errno::EAGAIN.
+ *
+ * === See
+ * * Socket#recvfrom
+ */
+
+static VALUE
+bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
+{
+    return s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
 }
 
 static VALUE
@@ -1587,51 +1627,6 @@ ip_recvfrom(int argc, VALUE *argv, VALUE sock)
     return s_recvfrom(sock, argc, argv, RECV_IP);
 }
 
-/*
- * call-seq:
- * 	ipsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
- * 	ipsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
- * 
- * Receives up to _maxlen_ bytes from +ipsocket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_inet_addr_, is an array to represent the sender address.
- *
- * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- * 
- * === Parameters
- * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options 
- * 
- * === Example
- * 	require 'socket'
- * 	socket = TCPSocket.new("localhost", "daytime")
- * 	begin
- * 	  p socket.recvfrom_nonblock(20)
- * 	rescue Errno::EAGAIN
- * 	  IO.select([socket])
- * 	  retry
- * 	end
- * 	socket.close
- * 
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails. 
- *
- * IPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EAGAIN.
- *
- * === See
- * * Socket#recvfrom
- */
-static VALUE
-ip_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
-{
-    return s_recvfrom_nonblock(argc, argv, sock, RECV_IP);
-}
-
 static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
@@ -1756,6 +1751,52 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(n);
 }
 
+/*
+ * call-seq:
+ * 	udpsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
+ * 	udpsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
+ * 
+ * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
+ * O_NONBLOCK is set for the underlying file descriptor.
+ * _flags_ is zero or more of the +MSG_+ options.
+ * The first element of the results, _mesg_, is the data received.
+ * The second element, _sender_inet_addr_, is an array to represent the sender address.
+ *
+ * When recvfrom(2) returns 0,
+ * Socket#recvfrom_nonblock returns an empty string as data.
+ * It means an empty packet.
+ * 
+ * === Parameters
+ * * +maxlen+ - the number of bytes to receive from the socket
+ * * +flags+ - zero or more of the +MSG_+ options 
+ * 
+ * === Example
+ * 	require 'socket'
+ * 	s1 = UDPSocket.new
+ * 	s1.bind("127.0.0.1", 0)
+ * 	s2 = UDPSocket.new
+ * 	s2.bind("127.0.0.1", 0)
+ * 	s2.connect(*s1.addr.values_at(3,1))
+ * 	s1.connect(*s2.addr.values_at(3,1))
+ * 	s1.send "aaa", 0
+ * 	IO.select([s2])
+ * 	p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
+ *
+ * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+ * to _recvfrom_nonblock_ fails. 
+ *
+ * UDPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
+ * including Errno::EAGAIN.
+ *
+ * === See
+ * * Socket#recvfrom
+ */
+static VALUE
+udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+{
+    return s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
+}
+
 #ifdef HAVE_SYS_UN_H
 static VALUE
 unix_init(VALUE sock, VALUE path)
@@ -1798,51 +1839,6 @@ static VALUE
 unix_recvfrom(int argc, VALUE *argv, VALUE sock)
 {
     return s_recvfrom(sock, argc, argv, RECV_UNIX);
-}
-
-/*
- * call-seq:
- * 	unixsocket.recvfrom_nonblock(maxlen) => [mesg, sender_unix_addr]
- * 	unixsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_unix_addr]
- * 
- * Receives up to _maxlen_ bytes from +unixsocket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_unix_addr_, is an array to represent the sender address.
- *
- * When recvfrom(2) returns 0, UNIXSocket#recvfrom_nonblock returns
- * an empty string as data.
- * It means EOF for UNIXSocket#recvfrom_nonblock.
- * 
- * === Parameters
- * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options 
- * 
- * === Example
- * 	require 'socket'
- * 	socket = UNIXSocket.new("/tmp/sock")
- * 	begin
- * 	  p socket.recvfrom_nonblock(20)
- * 	rescue Errno::EAGAIN
- * 	  IO.select([socket])
- * 	  retry
- * 	end
- * 	socket.close
- * 
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails. 
- *
- * IPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EAGAIN.
- *
- * === See
- * * Socket#recvfrom
- */
-static VALUE
-unix_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
-{
-    return s_recvfrom_nonblock(argc, argv, sock, RECV_UNIX);
 }
 
 #if defined(HAVE_ST_MSG_CONTROL) && defined(SCM_RIGHTS)
@@ -2811,7 +2807,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
 static VALUE
 sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 {
-    return s_recvfrom_nonblock(argc, argv, sock, RECV_SOCKET);
+    return s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
 }
 
 static VALUE
@@ -3482,6 +3478,7 @@ Init_socket()
     rb_define_method(rb_cBasicSocket, "getpeername", bsock_getpeername, 0);
     rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
+    rb_define_method(rb_cBasicSocket, "recv_nonblock", bsock_recv_nonblock, -1);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
@@ -3489,7 +3486,6 @@ Init_socket()
     rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
     rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
-    rb_define_method(rb_cIPSocket, "recvfrom_nonblock", ip_recvfrom_nonblock, -1);
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
 
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
@@ -3516,6 +3512,7 @@ Init_socket()
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);
     rb_define_method(rb_cUDPSocket, "bind", udp_bind, 2);
     rb_define_method(rb_cUDPSocket, "send", udp_send, -1);
+    rb_define_method(rb_cUDPSocket, "recvfrom_nonblock", udp_recvfrom_nonblock, -1);
 
 #ifdef HAVE_SYS_UN_H
     rb_cUNIXSocket = rb_define_class("UNIXSocket", rb_cBasicSocket);
@@ -3524,7 +3521,6 @@ Init_socket()
     rb_define_method(rb_cUNIXSocket, "addr", unix_addr, 0);
     rb_define_method(rb_cUNIXSocket, "peeraddr", unix_peeraddr, 0);
     rb_define_method(rb_cUNIXSocket, "recvfrom", unix_recvfrom, -1);
-    rb_define_method(rb_cUNIXSocket, "recvfrom_nonblock", unix_recvfrom_nonblock, -1);
     rb_define_method(rb_cUNIXSocket, "send_io", unix_send_io, 1);
     rb_define_method(rb_cUNIXSocket, "recv_io", unix_recv_io, -1);
     rb_define_singleton_method(rb_cUNIXSocket, "socketpair", unix_s_socketpair, -1);

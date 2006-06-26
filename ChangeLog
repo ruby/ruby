@@ -1,3 +1,12 @@
+Tue Jun 27 01:31:59 2006  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c (bsock_recv_nonblock): new method
+	  BasicSocket#recv_nonblock.
+	  (udp_recvfrom_nonblock): renamed from ip_recvfrom_nonblock.
+	  IPSocket#recvfrom_nonblock is moved to UDPSocket#recvfrom_nonblock.
+	  (unix_recvfrom_nonblock): removed.
+	  UNIXSocket#recvfrom_nonblock is removed.
+
 Tue Jun 27 00:52:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/eventids2.c (token_assoc): added tCHAR, which is not
