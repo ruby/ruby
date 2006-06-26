@@ -471,54 +471,54 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 /*%
 %token <val>
 %*/
-	kCLASS
-	kMODULE
-	kDEF
-	kUNDEF
-	kBEGIN
-	kRESCUE
-	kENSURE
-	kEND
-	kIF
-	kUNLESS
-	kTHEN
-	kELSIF
-	kELSE
-	kCASE
-	kWHEN
-	kWHILE
-	kUNTIL
-	kFOR
-	kBREAK
-	kNEXT
-	kREDO
-	kRETRY
-	kIN
-	kDO
-	kDO_COND
-	kDO_BLOCK
-	kDO_LAMBDA
-	kRETURN
-	kYIELD
-	kSUPER
-	kSELF
-	kNIL
-	kTRUE
-	kFALSE
-	kAND
-	kOR
-	kNOT
-	kIF_MOD
-	kUNLESS_MOD
-	kWHILE_MOD
-	kUNTIL_MOD
-	kRESCUE_MOD
-	kALIAS
-	kDEFINED
-	klBEGIN
-	klEND
-	k__LINE__
-	k__FILE__
+	keyword_class
+	keyword_module
+	keyword_def
+	keyword_undef
+	keyword_begin
+	keyword_rescue
+	keyword_ensure
+	keyword_end
+	keyword_if
+	keyword_unless
+	keyword_then
+	keyword_elsif
+	keyword_else
+	keyword_case
+	keyword_when
+	keyword_while
+	keyword_until
+	keyword_for
+	keyword_break
+	keyword_next
+	keyword_redo
+	keyword_retry
+	keyword_in
+	keyword_do
+	keyword_do_cond
+	keyword_do_block
+	keyword_do_LAMBDA
+	keyword_return
+	keyword_yield
+	keyword_super
+	keyword_self
+	keyword_nil
+	keyword_true
+	keyword_false
+	keyword_and
+	keyword_or
+	keyword_not
+	modifier_if
+	modifier_unless
+	modifier_while
+	modifier_until
+	modifier_rescue
+	keyword_alias
+	keyword_defined
+	keyword_BEGIN
+	keyword_END
+	keyword__LINE__
+	keyword__FILE__
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
 %token <node> tINTEGER tFLOAT tSTRING_CONTENT tCHAR
@@ -587,12 +587,12 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
 
-%nonassoc  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
-%left  kOR kAND
-%right kNOT
-%nonassoc kDEFINED
+%nonassoc  modifier_if modifier_unless modifier_while modifier_until
+%left  keyword_or keyword_and
+%right keyword_not
+%nonassoc keyword_defined
 %right '=' tOP_ASGN
-%left kRESCUE_MOD
+%left modifier_rescue
 %right '?' ':'
 %nonassoc tDOT2 tDOT3
 %left  tOROP
@@ -721,7 +721,7 @@ stmts		: none
 		    }
 		;
 
-stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
+stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			$$ = NEW_ALIAS($2, $4);
@@ -729,7 +729,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(alias, $2, $4);
 		    %*/
 		    }
-		| kALIAS tGVAR tGVAR
+		| keyword_alias tGVAR tGVAR
 		    {
 		    /*%%%*/
 			$$ = NEW_VALIAS($2, $3);
@@ -737,7 +737,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(var_alias, $2, $3);
 		    %*/
 		    }
-		| kALIAS tGVAR tBACK_REF
+		| keyword_alias tGVAR tBACK_REF
 		    {
 		    /*%%%*/
 			char buf[3];
@@ -748,7 +748,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(var_alias, $2, $3);
 		    %*/
 		    }
-		| kALIAS tGVAR tNTH_REF
+		| keyword_alias tGVAR tNTH_REF
 		    {
 		    /*%%%*/
 			yyerror("can't make alias for the number variables");
@@ -758,7 +758,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch1(alias_error, $$);
 		    %*/
 		    }
-		| kUNDEF undef_list
+		| keyword_undef undef_list
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -766,7 +766,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch1(undef, $2);
 		    %*/
 		    }
-		| stmt kIF_MOD expr_value
+		| stmt modifier_if expr_value
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($3), $1, 0);
@@ -779,7 +779,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(if_mod, $3, $1);
 		    %*/
 		    }
-		| stmt kUNLESS_MOD expr_value
+		| stmt modifier_unless expr_value
 		    {
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($3), $1, 0);
@@ -792,7 +792,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(unless_mod, $3, $1);
 		    %*/
 		    }
-		| stmt kWHILE_MOD expr_value
+		| stmt modifier_while expr_value
 		    {
 		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_BEGIN) {
@@ -808,7 +808,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(while_mod, $3, $1);
 		    %*/
 		    }
-		| stmt kUNTIL_MOD expr_value
+		| stmt modifier_until expr_value
 		    {
 		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_BEGIN) {
@@ -824,7 +824,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(until_mod, $3, $1);
 		    %*/
 		    }
-		| stmt kRESCUE_MOD stmt
+		| stmt modifier_rescue stmt
 		    {
 		    /*%%%*/
 			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
@@ -832,7 +832,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch2(rescue_mod, $3, $1);
 		    %*/
 		    }
-		| klBEGIN
+		| keyword_BEGIN
 		    {
 		    /*%%%*/
 			if (in_def || in_single) {
@@ -856,7 +856,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = dispatch1(BEGIN, $4);
 		    %*/
 		    }
-		| klEND '{' compstmt '}'
+		| keyword_END '{' compstmt '}'
 		    {
 			if (in_def || in_single) {
 			    rb_warn0("END in method; use at_exit");
@@ -1025,7 +1025,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		;
 
 expr		: command_call
-		| expr kAND expr
+		| expr keyword_and expr
 		    {
 		    /*%%%*/
 			$$ = logop(NODE_AND, $1, $3);
@@ -1033,7 +1033,7 @@ expr		: command_call
 			$$ = dispatch3(binary, $1, ripper_intern("and"), $3);
 		    %*/
 		    }
-		| expr kOR expr
+		| expr keyword_or expr
 		    {
 		    /*%%%*/
 			$$ = logop(NODE_OR, $1, $3);
@@ -1041,7 +1041,7 @@ expr		: command_call
 			$$ = dispatch3(binary, $1, ripper_intern("or"), $3);
 		    %*/
 		    }
-		| kNOT expr
+		| keyword_not expr
 		    {
 		    /*%%%*/
 			$$ = NEW_NOT(cond($2));
@@ -1073,7 +1073,7 @@ expr_value	: expr
 
 command_call	: command
 		| block_command
-		| kRETURN call_args
+		| keyword_return call_args
 		    {
 		    /*%%%*/
 			$$ = NEW_RETURN(ret_args($2));
@@ -1081,7 +1081,7 @@ command_call	: command
 			$$ = dispatch1(return, $2);
 		    %*/
 		    }
-		| kBREAK call_args
+		| keyword_break call_args
 		    {
 		    /*%%%*/
 			$$ = NEW_BREAK(ret_args($2));
@@ -1089,7 +1089,7 @@ command_call	: command
 			$$ = dispatch1(break, $2);
 		    %*/
 		    }
-		| kNEXT call_args
+		| keyword_next call_args
 		    {
 		    /*%%%*/
 			$$ = NEW_NEXT(ret_args($2));
@@ -1204,7 +1204,7 @@ command		: operation command_args       %prec tLOWEST
 			$$ = dispatch2(iter_block, $$, $5);
 		    %*/
 		   }
-		| kSUPER command_args
+		| keyword_super command_args
 		    {
 		    /*%%%*/
 			$$ = NEW_SUPER($2);
@@ -1213,7 +1213,7 @@ command		: operation command_args       %prec tLOWEST
 			$$ = dispatch1(super, $2);
 		    %*/
 		    }
-		| kYIELD command_args
+		| keyword_yield command_args
 		    {
 		    /*%%%*/
 			$$ = new_yield($2);
@@ -1649,13 +1649,17 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '`'		{ ifndef_ripper($$ = '`'); }
 		;
 
-reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
-		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
-		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
-		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
-		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
-		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
-		| kIF | kUNLESS | kWHILE | kUNTIL
+reswords	: keyword__LINE__ | keyword__FILE__ | keyword_BEGIN | keyword_END
+		| keyword_alias | keyword_and | keyword_begin
+		| keyword_break | keyword_case | keyword_class | keyword_def
+		| keyword_defined | keyword_do | keyword_else | keyword_elsif
+		| keyword_end | keyword_ensure | keyword_false
+		| keyword_for | keyword_in | keyword_module | keyword_next
+		| keyword_nil | keyword_not | keyword_or | keyword_redo
+		| keyword_rescue | keyword_retry | keyword_return | keyword_self
+		| keyword_super | keyword_then | keyword_true | keyword_undef
+		| keyword_when | keyword_yield | keyword_if | keyword_unless
+		| keyword_while | keyword_until
 		;
 
 arg		: lhs '=' arg
@@ -1666,7 +1670,7 @@ arg		: lhs '=' arg
 			$$ = dispatch2(assign, $1, $3);
 		    %*/
 		    }
-		| lhs '=' arg kRESCUE_MOD arg
+		| lhs '=' arg modifier_rescue arg
 		    {
 		    /*%%%*/
 			$$ = node_assign($1, NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0));
@@ -2080,7 +2084,7 @@ arg		: lhs '=' arg
 			$$ = dispatch3(binary, $1, ripper_intern("||"), $3);
 		    %*/
 		    }
-		| kDEFINED opt_nl {in_defined = 1;} arg
+		| keyword_defined opt_nl {in_defined = 1;} arg
 		    {
 		    /*%%%*/
 		        in_defined = 0;
@@ -2376,7 +2380,7 @@ primary		: literal
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
 		    %*/
 		    }
-		| kBEGIN
+		| keyword_begin
 		    {
 		    /*%%%*/
 			$<num>1 = ruby_sourceline;
@@ -2384,7 +2388,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			if ($3 == NULL) {
@@ -2456,7 +2460,7 @@ primary		: literal
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/
 		    }
-		| kRETURN
+		| keyword_return
 		    {
 		    /*%%%*/
 			$$ = NEW_RETURN(0);
@@ -2464,7 +2468,7 @@ primary		: literal
 			$$ = dispatch0(return0);
 		    %*/
 		    }
-		| kYIELD '(' call_args rparen
+		| keyword_yield '(' call_args rparen
 		    {
 		    /*%%%*/
 			$$ = new_yield($3);
@@ -2472,7 +2476,7 @@ primary		: literal
 			$$ = dispatch1(yield, dispatch1(paren, $3));
 		    %*/
 		    }
-		| kYIELD '(' rparen
+		| keyword_yield '(' rparen
 		    {
 		    /*%%%*/
 			$$ = NEW_YIELD(0, Qfalse);
@@ -2480,7 +2484,7 @@ primary		: literal
 			$$ = dispatch1(yield, dispatch1(paren, arg_new()));
 		    %*/
 		    }
-		| kYIELD
+		| keyword_yield
 		    {
 		    /*%%%*/
 			$$ = NEW_YIELD(0, Qfalse);
@@ -2488,7 +2492,7 @@ primary		: literal
 			$$ = dispatch0(yield0);
 		    %*/
 		    }
-		| kDEFINED opt_nl '(' {in_defined = 1;} expr rparen
+		| keyword_defined opt_nl '(' {in_defined = 1;} expr rparen
 		    {
 		    /*%%%*/
 		        in_defined = 0;
@@ -2525,10 +2529,10 @@ primary		: literal
 		    {
 			$$ = $2;
 		    }
-		| kIF expr_value then
+		| keyword_if expr_value then
 		  compstmt
 		  if_tail
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($2), $4, $5);
@@ -2542,10 +2546,10 @@ primary		: literal
 			$$ = dispatch3(if, $2, $4, escape_Qundef($5));
 		    %*/
 		    }
-		| kUNLESS expr_value then
+		| keyword_unless expr_value then
 		  compstmt
 		  opt_else
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($2), $4, $5);
@@ -2559,9 +2563,9 @@ primary		: literal
 			$$ = dispatch3(unless, $2, $4, escape_Qundef($5));
 		    %*/
 		    }
-		| kWHILE {COND_PUSH(1);} expr_value do {COND_POP();}
+		| keyword_while {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_WHILE(cond($3), $6, 1);
@@ -2573,9 +2577,9 @@ primary		: literal
 			$$ = dispatch2(while, $3, $6);
 		    %*/
 		    }
-		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();}
+		| keyword_until {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_UNTIL(cond($3), $6, 1);
@@ -2587,9 +2591,9 @@ primary		: literal
 			$$ = dispatch2(until, $3, $6);
 		    %*/
 		    }
-		| kCASE expr_value opt_terms
+		| keyword_case expr_value opt_terms
 		  case_body
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE($2, $4);
@@ -2598,7 +2602,7 @@ primary		: literal
 			$$ = dispatch2(case, $2, $4);
 		    %*/
 		    }
-		| kCASE expr_value opt_terms kELSE compstmt kEND
+		| keyword_case expr_value opt_terms keyword_else compstmt keyword_end
 		    {
 		    /*%%%*/
 			$$ = block_append($2, $5);
@@ -2606,7 +2610,7 @@ primary		: literal
 			$$ = dispatch2(case, $2, dispatch1(else, $5));
 		    %*/
 		    }
-		| kCASE opt_terms case_body kEND
+		| keyword_case opt_terms case_body keyword_end
 		    {
 		    /*%%%*/
 			$$ = $3;
@@ -2614,7 +2618,7 @@ primary		: literal
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
 		    }
-		| kCASE opt_terms kELSE compstmt kEND
+		| keyword_case opt_terms keyword_else compstmt keyword_end
 		    {
 		    /*%%%*/
 			$$ = $4;
@@ -2622,9 +2626,9 @@ primary		: literal
 			$$ = dispatch2(case, Qnil, dispatch1(else, $4));
 		    %*/
 		    }
-		| kFOR for_var kIN {COND_PUSH(1);} expr_value do {COND_POP();}
+		| keyword_for for_var keyword_in {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_FOR($2, $5, $8);
@@ -2633,7 +2637,7 @@ primary		: literal
 			$$ = dispatch3(for, $2, $5, $8);
 		    %*/
 		    }
-		| kCLASS cpath superclass
+		| keyword_class cpath superclass
 		    {
 		    /*%%%*/
 			if (in_def || in_single)
@@ -2648,7 +2652,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
@@ -2660,7 +2664,7 @@ primary		: literal
 			class_nest--;
 		    %*/
 		    }
-		| kCLASS tLSHFT expr
+		| keyword_class tLSHFT expr
 		    {
 		    /*%%%*/
 			$<num>$ = in_def;
@@ -2683,7 +2687,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $7);
@@ -2699,7 +2703,7 @@ primary		: literal
 			in_single = $<val>6;
 		    %*/
 		    }
-		| kMODULE cpath
+		| keyword_module cpath
 		    {
 		    /*%%%*/
 			if (in_def || in_single)
@@ -2714,7 +2718,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
@@ -2726,7 +2730,7 @@ primary		: literal
 			class_nest--;
 		    %*/
 		    }
-		| kDEF fname
+		| keyword_def fname
 		    {
 		    /*%%%*/
 			$<id>$ = cur_mid;
@@ -2741,7 +2745,7 @@ primary		: literal
 		    }
 		  f_arglist
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			NODE *body = remove_begin($5);
@@ -2757,7 +2761,7 @@ primary		: literal
 			cur_mid = $<id>3;
 		    %*/
 		    }
-		| kDEF singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
+		| keyword_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 		    /*%%%*/
 			in_single++;
@@ -2770,7 +2774,7 @@ primary		: literal
 		    }
 		  f_arglist
 		  bodystmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			NODE *body = remove_begin($8);
@@ -2784,7 +2788,7 @@ primary		: literal
 			in_single--;
 		    %*/
 		    }
-		| kBREAK
+		| keyword_break
 		    {
 		    /*%%%*/
 			$$ = NEW_BREAK(0);
@@ -2792,7 +2796,7 @@ primary		: literal
 			$$ = dispatch1(break, arg_new());
 		    %*/
 		    }
-		| kNEXT
+		| keyword_next
 		    {
 		    /*%%%*/
 			$$ = NEW_NEXT(0);
@@ -2800,7 +2804,7 @@ primary		: literal
 			$$ = dispatch1(next, arg_new());
 		    %*/
 		    }
-		| kREDO
+		| keyword_redo
 		    {
 		    /*%%%*/
 			$$ = NEW_REDO();
@@ -2808,7 +2812,7 @@ primary		: literal
 			$$ = dispatch0(redo);
 		    %*/
 		    }
-		| kRETRY
+		| keyword_retry
 		    {
 		    /*%%%*/
 			$$ = NEW_RETRY();
@@ -2834,8 +2838,8 @@ then		: term
 		    /*%c
 		    { $$ = Qnil; }
 		    %*/
-		| kTHEN
-		| term kTHEN
+		| keyword_then
+		| term keyword_then
 		    /*%c%*/
 		    /*%c
 		    { $$ = $2; }
@@ -2847,11 +2851,11 @@ do		: term
 		    /*%c
 		    { $$ = Qnil; }
 		    %*/
-		| kDO_COND
+		| keyword_do_cond
 		;
 
 if_tail		: opt_else
-		| kELSIF expr_value then
+		| keyword_elsif expr_value then
 		  compstmt
 		  if_tail
 		    {
@@ -2865,7 +2869,7 @@ if_tail		: opt_else
 		;
 
 opt_else	: none
-		| kELSE compstmt
+		| keyword_else compstmt
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -3168,13 +3172,13 @@ lambda_body	: tLAMBEG compstmt '}'
 		    {
 			$$ = $2;
 		    }
-		| kDO_LAMBDA compstmt kEND
+		| keyword_do_LAMBDA compstmt keyword_end
 		    {
 			$$ = $2;
 		    }
 		;
 
-do_block	: kDO_BLOCK
+do_block	: keyword_do_block
 		    {
 		    /*%%%*/
 			$<vars>$ = dyna_push();
@@ -3188,7 +3192,7 @@ do_block	: kDO_BLOCK
 		    /*% %*/
 		    }
 		  compstmt
-		  kEND
+		  keyword_end
 		    {
 		    /*%%%*/
 			$3->nd_body = block_append($3->nd_body,
@@ -3292,7 +3296,7 @@ method_call	: operation paren_args
 			$$ = method_optarg($$, $3);
 		    %*/
 		    }
-		| kSUPER paren_args
+		| keyword_super paren_args
 		    {
 		    /*%%%*/
 			$$ = NEW_SUPER($2);
@@ -3300,7 +3304,7 @@ method_call	: operation paren_args
 			$$ = dispatch1(super, $2);
 		    %*/
 		    }
-		| kSUPER
+		| keyword_super
 		    {
 		    /*%%%*/
 			$$ = NEW_ZSUPER();
@@ -3348,7 +3352,7 @@ brace_block	: '{'
 			$$ = dispatch2(brace_block, escape_Qundef($3), $5);
 		    %*/
 		    }
-		| kDO
+		| keyword_do
 		    {
 		    /*%%%*/
 			$<vars>$ = dyna_push();
@@ -3362,7 +3366,7 @@ brace_block	: '{'
 		    /*%
 		    %*/
 		    }
-		  compstmt kEND
+		  compstmt keyword_end
 		    {
 		    /*%%%*/
 			$3->nd_body = block_append($3->nd_body,
@@ -3376,7 +3380,7 @@ brace_block	: '{'
 		    }
 		;
 
-case_body	: kWHEN args then
+case_body	: keyword_when args then
 		  compstmt
 		  cases
 		    {
@@ -3392,7 +3396,7 @@ cases		: opt_else
 		| case_body
 		;
 
-opt_rescue	: kRESCUE exc_list exc_var then
+opt_rescue	: keyword_rescue exc_list exc_var then
 		  compstmt
 		  opt_rescue
 		    {
@@ -3433,7 +3437,7 @@ exc_var		: tASSOC lhs
 		| none
 		;
 
-opt_ensure	: kENSURE compstmt
+opt_ensure	: keyword_ensure compstmt
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -3824,12 +3828,12 @@ variable	: tIDENTIFIER
 		| tGVAR
 		| tCONSTANT
 		| tCVAR
-		| kNIL {ifndef_ripper($$ = kNIL);}
-		| kSELF {ifndef_ripper($$ = kSELF);}
-		| kTRUE {ifndef_ripper($$ = kTRUE);}
-		| kFALSE {ifndef_ripper($$ = kFALSE);}
-		| k__FILE__ {ifndef_ripper($$ = k__FILE__);}
-		| k__LINE__ {ifndef_ripper($$ = k__LINE__);}
+		| keyword_nil {ifndef_ripper($$ = keyword_nil);}
+		| keyword_self {ifndef_ripper($$ = keyword_self);}
+		| keyword_true {ifndef_ripper($$ = keyword_true);}
+		| keyword_false {ifndef_ripper($$ = keyword_false);}
+		| keyword__FILE__ {ifndef_ripper($$ = keyword__FILE__);}
+		| keyword__LINE__ {ifndef_ripper($$ = keyword__LINE__);}
 		;
 
 var_ref		: variable
@@ -6735,18 +6739,18 @@ parser_yylex(struct parser_params *parser)
 			set_yylval_id(rb_intern(kw->name));
 			return kw->id[0];
 		    }
-		    if (kw->id[0] == kDO) {
+		    if (kw->id[0] == keyword_do) {
 			if (lpar_beg && lpar_beg == paren_nest) {
 			    lpar_beg = 0;
 			    --paren_nest;
-			    return kDO_LAMBDA;
+			    return keyword_do_LAMBDA;
 			}
-			if (COND_P()) return kDO_COND;
+			if (COND_P()) return keyword_do_cond;
 			if (CMDARG_P() && state != EXPR_CMDARG)
-			    return kDO_BLOCK;
+			    return keyword_do_block;
 			if (state == EXPR_ENDARG || state == EXPR_BEG)
-			    return kDO_BLOCK;
-			return kDO;
+			    return keyword_do_block;
+			return keyword_do;
 		    }
 		    if (state == EXPR_BEG || state == EXPR_VALUE)
 			return kw->id[0];
@@ -7112,22 +7116,22 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 static NODE*
 gettable_gen(struct parser_params *parser, ID id)
 {
-    if (id == kSELF) {
+    if (id == keyword_self) {
 	return NEW_SELF();
     }
-    else if (id == kNIL) {
+    else if (id == keyword_nil) {
 	return NEW_NIL();
     }
-    else if (id == kTRUE) {
+    else if (id == keyword_true) {
 	return NEW_TRUE();
     }
-    else if (id == kFALSE) {
+    else if (id == keyword_false) {
 	return NEW_FALSE();
     }
-    else if (id == k__FILE__) {
+    else if (id == keyword__FILE__) {
 	return NEW_STR(rb_str_new2(ruby_sourcefile));
     }
-    else if (id == k__LINE__) {
+    else if (id == keyword__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));
     }
     else if (is_local_id(id)) {
@@ -7157,22 +7161,22 @@ static NODE*
 assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
     value_expr(val);
-    if (id == kSELF) {
+    if (id == keyword_self) {
 	yyerror("Can't change the value of self");
     }
-    else if (id == kNIL) {
+    else if (id == keyword_nil) {
 	yyerror("Can't assign to nil");
     }
-    else if (id == kTRUE) {
+    else if (id == keyword_true) {
 	yyerror("Can't assign to true");
     }
-    else if (id == kFALSE) {
+    else if (id == keyword_false) {
 	yyerror("Can't assign to false");
     }
-    else if (id == k__FILE__) {
+    else if (id == keyword__FILE__) {
 	yyerror("Can't assign to __FILE__");
     }
-    else if (id == k__LINE__) {
+    else if (id == keyword__LINE__) {
 	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
@@ -8844,53 +8848,53 @@ static struct kw_assoc {
     ID id;
     const char *name;
 } keyword_to_name[] = {
-    {kCLASS,	"class"},
-    {kMODULE,	"module"},
-    {kDEF,	"def"},
-    {kUNDEF,	"undef"},
-    {kBEGIN,	"begin"},
-    {kRESCUE,	"rescue"},
-    {kENSURE,	"ensure"},
-    {kEND,	"end"},
-    {kIF,	"if"},
-    {kUNLESS,	"unless"},
-    {kTHEN,	"then"},
-    {kELSIF,	"elsif"},
-    {kELSE,	"else"},
-    {kCASE,	"case"},
-    {kWHEN,	"when"},
-    {kWHILE,	"while"},
-    {kUNTIL,	"until"},
-    {kFOR,	"for"},
-    {kBREAK,	"break"},
-    {kNEXT,	"next"},
-    {kREDO,	"redo"},
-    {kRETRY,	"retry"},
-    {kIN,	"in"},
-    {kDO,	"do"},
-    {kDO_COND,	"do"},
-    {kDO_BLOCK,	"do"},
-    {kRETURN,	"return"},
-    {kYIELD,	"yield"},
-    {kSUPER,	"super"},
-    {kSELF,	"self"},
-    {kNIL,	"nil"},
-    {kTRUE,	"true"},
-    {kFALSE,	"false"},
-    {kAND,	"and"},
-    {kOR,	"or"},
-    {kNOT,	"not"},
-    {kIF_MOD,	"if"},
-    {kUNLESS_MOD,	"unless"},
-    {kWHILE_MOD,	"while"},
-    {kUNTIL_MOD,	"until"},
-    {kRESCUE_MOD,	"rescue"},
-    {kALIAS,	"alias"},
-    {kDEFINED,	"defined"},
-    {klBEGIN,	"BEGIN"},
-    {klEND,	"END"},
-    {k__LINE__,	"__LINE__"},
-    {k__FILE__,	"__FILE__"},
+    {keyword_class,	"class"},
+    {keyword_module,	"module"},
+    {keyword_def,	"def"},
+    {keyword_undef,	"undef"},
+    {keyword_begin,	"begin"},
+    {keyword_rescue,	"rescue"},
+    {keyword_ensure,	"ensure"},
+    {keyword_end,	"end"},
+    {keyword_if,	"if"},
+    {keyword_unless,	"unless"},
+    {keyword_then,	"then"},
+    {keyword_elsif,	"elsif"},
+    {keyword_else,	"else"},
+    {keyword_case,	"case"},
+    {keyword_when,	"when"},
+    {keyword_while,	"while"},
+    {keyword_until,	"until"},
+    {keyword_for,	"for"},
+    {keyword_break,	"break"},
+    {keyword_next,	"next"},
+    {keyword_redo,	"redo"},
+    {keyword_retry,	"retry"},
+    {keyword_in,	"in"},
+    {keyword_do,	"do"},
+    {keyword_do_cond,	"do"},
+    {keyword_do_block,	"do"},
+    {keyword_return,	"return"},
+    {keyword_yield,	"yield"},
+    {keyword_super,	"super"},
+    {keyword_self,	"self"},
+    {keyword_nil,	"nil"},
+    {keyword_true,	"true"},
+    {keyword_false,	"false"},
+    {keyword_and,	"and"},
+    {keyword_or,	"or"},
+    {keyword_not,	"not"},
+    {modifier_if,	"if"},
+    {modifier_unless,	"unless"},
+    {modifier_while,	"while"},
+    {modifier_until,	"until"},
+    {modifier_rescue,	"rescue"},
+    {keyword_alias,	"alias"},
+    {keyword_defined,	"defined?"},
+    {keyword_BEGIN,	"BEGIN"},
+    {keyword_END,	"END"},
+    {keyword__LINE__,	"__LINE__"},
+    {keyword__FILE__,	"__FILE__"},
     {0, NULL}
 };
 

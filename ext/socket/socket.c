@@ -2815,15 +2815,18 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-sock_accept(VALUE sock)
+sock_accept(sock)
+    VALUE sock;
 {
     OpenFile *fptr;
+    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    return rb_assoc_new(s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf, &len),
-			rb_str_new(buf, len));
+    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf,&len);
+
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
 /*
@@ -2875,16 +2878,17 @@ sock_accept(VALUE sock)
  * * Socket#accept
  */
 static VALUE
-sock_accept_nonblock(VALUE sock)
+sock_accept_nonblock(sock)
+    VALUE sock;
 {
     OpenFile *fptr;
+    VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    return rb_assoc_new(s_accept_nonblock(rb_cSocket, fptr,
-					  (struct sockaddr *)buf, &len),
-			rb_str_new(buf, len));
+    sock2 = s_accept_nonblock(rb_cSocket, fptr, (struct sockaddr *)buf, &len);
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
 /*

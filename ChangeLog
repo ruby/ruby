@@ -3,6 +3,18 @@ Mon Jun 26 18:37:44 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tcltklib.c (ip_delete): fix SEGV when a slave-ip is
 	  deleted on callback.
 
+Mon Jun 26 15:40:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_accept): revert to avoid ambiguity of
+	  argument evaluation order.  [ruby-dev:28861]
+
+	* ext/socket/socket.c (sock_accept_nonblock): ditto.
+
+Mon Jun 26 10:47:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (pipe_open): avoid closing uninitialized file descriptors.
+	  a patch from <tommy at tmtm.org> [ruby-dev:28600]
+
 Sun Jun 25 23:02:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, mkconfig.rb: catch-up for latest autoconf.
@@ -18,6 +30,11 @@ Sun Jun 25 17:18:33 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	  method of word. [ruby-Bugs#3237]
 
 	* test/win32ole/test_word.rb: ditto.
+
+Sat Jun 24 23:48:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: replace terminal token names with more descriptive
+	  name, i.e. kEND to keyword_end.  [ruby-list:42477]
 
 Sat Jun 24 23:37:41 2006  Tanaka Akira  <akr@m17n.org>
 
