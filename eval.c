@@ -2592,7 +2592,7 @@ call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass /* 
 					    id?ID2SYM(id):Qnil,
 					    self ? rb_f_binding(self) : Qnil,
 					    klass?klass:Qnil),
-		    Qundef, 0, 1);
+		    Qundef, 0, 0);
     }
     if (raised) thread_set_raised();
     POP_TAG();

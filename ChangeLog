@@ -1,3 +1,8 @@
+Mon Jun 26 23:42:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (call_trace_func): no check for argument number of the
+	  callback.  fixed: [ruby-dev:28812]
+
 Mon Jun 26 18:37:44 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_delete): fix SEGV when a slave-ip is
