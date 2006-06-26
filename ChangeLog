@@ -1,3 +1,8 @@
+Mon Jun 26 18:37:44 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_delete): fix SEGV when a slave-ip is
+	  deleted on callback.
+
 Sun Jun 25 23:02:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, mkconfig.rb: catch-up for latest autoconf.

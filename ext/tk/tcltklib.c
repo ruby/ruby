@@ -5265,8 +5265,6 @@ ip_delete(self)
     Tcl_DeleteInterp(ptr->ip);
     Tcl_Release(ptr->ip);
 
-    ptr->ip = (Tcl_Interp*)NULL;
-
     rb_thread_critical = thr_crit_bup;
 
     return Qnil;
