@@ -262,7 +262,7 @@ module RDoc
     def find_class_comment(class_name, class_meth)
       comment = nil
       if @body =~ %r{((?>/\*.*?\*/\s+))
-                     (static\s+)?void\s+Init_#{class_name}\s*\(\)}xmi
+                     (static\s+)?void\s+Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)\)}xmi
         comment = $1
       elsif @body =~ %r{Document-(class|module):\s#{class_name}\s*?\n((?>.*?\*/))}m
         comment = $2

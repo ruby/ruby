@@ -1,3 +1,8 @@
+Mon Jun 26 13:37:27 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc: Merge from HEAD.
+	  Add options to limit the ri search path.
+
 Tue Jun 27 00:54:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (powersOf10): constified.

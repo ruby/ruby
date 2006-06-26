@@ -194,12 +194,15 @@ class  DefaultDisplay
   ######################################################################
 
   def page
-    setup_pager
+    return yield unless pager = setup_pager
     begin
+      save_stdout = STDOUT.clone
+      STDOUT.reopen(pager)
       yield
-      page_output
     ensure
-      STDOUT.reopen(@save_stdout) if @save_stdout
+      STDOUT.reopen(save_stdout)
+      save_stdout.close
+      pager.close
     end
   end
 
@@ -207,31 +210,11 @@ class  DefaultDisplay
 
   def setup_pager
     unless @options.use_stdout
-      require 'tempfile'
-
-      @save_stdout = STDOUT.clone
-      STDOUT.reopen(Tempfile.new("ri_"))
-    end
-  end
-
-  ######################################################################
-
-  def page_output
-    unless @options.use_stdout
-      path = STDOUT.path
-      STDOUT.reopen(@save_stdout)
-      @save_stdout = nil
-      paged = false
-      for pager in [ ENV['PAGER'], "less", "more <", 'pager' ].compact.uniq
-        if system("#{pager} #{path}")
-          paged = true
-          break
-        end
+      for pager in [ ENV['PAGER'], "less", "more", 'pager' ].compact.uniq
+        return IO.popen(pager, "w") rescue nil
       end
-      if !paged
-        @options.use_stdout = true
-        puts File.read(path)
-      end
+      @options.use_stdout = true
+      nil
     end
   end
 
@@ -255,12 +238,6 @@ class  DefaultDisplay
   end
   ######################################################################
   
-  def warn_no_database
-    puts "Before using ri, you need to generate documentation"
-    puts "using 'rdoc' with the --ri option"
-  end
-  ######################################################################
-  
   def display_flow(flow)
     if !flow || flow.empty?
       @formatter.wrap("(no description...)")
@@ -269,5 +246,10 @@ class  DefaultDisplay
     end
   end
 
-
+  ######################################################################
+  
+  def warn_no_database
+    puts "Before using ri, you need to generate documentation"
+    puts "using 'rdoc' with the --ri option"
+  end
 end  # class RiDisplay

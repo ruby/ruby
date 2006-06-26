@@ -43,7 +43,12 @@ module SM
     def include_file(name, indent)
       if (full_name = find_include_file(name))
         content = File.open(full_name) {|f| f.read}
-        res = content.gsub(/^#?/, indent)
+        # strip leading '#'s, but only if all lines start with them
+        if content =~ /^[^#]/
+          content.gsub(/^/, indent)
+        else
+          content.gsub(/^#?/, indent)
+        end
       else
         $stderr.puts "Couldn't find file to include: '#{name}'"
         ''

@@ -295,7 +295,7 @@ module RDoc
         f << graph.to_s << "\n"
       end
       
-      system "dot -T#{op_type} #{src} -o #{dot}"
+      system "dot", "-T#{op_type}", src, "-o", dot
 
       # Now construct the imagemap wrapper around
       # that png
