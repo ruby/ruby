@@ -190,6 +190,7 @@ static struct token_assoc {
     {tASET,		&ripper_id_op},
     {tASSOC,		&ripper_id_op},
     {tBACK_REF,		&ripper_id_backref},
+    {tCHAR,		&ripper_id_CHAR},
     {tCMP,		&ripper_id_op},
     {tCOLON2,		&ripper_id_op},
     {tCOLON3,		&ripper_id_op},
