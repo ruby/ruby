@@ -1,3 +1,8 @@
+Mon Jun 26 10:47:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (pipe_open): avoid closing uninitialized file descriptors.
+	  a patch from <tommy at tmtm.org> [ruby-dev:28600]
+
 Mon Jun 26 09:56:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_send, rb_w32_sendto): constified.

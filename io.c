@@ -3136,8 +3136,19 @@ retry:
 	    rb_thread_sleep(1);
 	    goto retry;
 	}
-	close(pr[0]); close(pw[1]);
-	rb_sys_fail(pname);
+	else {
+	    int e = errno;
+	    if ((modef & FMODE_READABLE)) {
+		close(pr[0]);
+		close(pr[1]);
+	    }
+	    if ((modef & FMODE_WRITABLE)) {
+		close(pw[0]);
+		close(pw[1]);
+	    }
+	    errno = e;
+	    rb_sys_fail(pname);
+	}
 	break;
 
       default:			/* parent */
