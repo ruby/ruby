@@ -1,5 +1,5 @@
-require 'rdoc/usage'
 require 'rdoc/ri/ri_paths'
+require 'rdoc/usage'
 require 'rdoc/ri/ri_cache'
 require 'rdoc/ri/ri_util'
 require 'rdoc/ri/ri_reader'
@@ -21,20 +21,18 @@ class  RiDriver
 
     @options.parse(args)
 
-    paths = @options.paths || RI::Paths::PATH
-    if paths.empty?
-      report_missing_documentation(paths)
-    end
-    @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-    @display   = @options.displayer
-  end    
-  
-  # Couldn't find documentation in paths, so tell the user
-  # what to do
+    path = @options.path
+    report_missing_documentation @options.raw_path if path.empty?
 
-  def report_missing_documentation(paths)
+    @ri_reader = RI::RiReader.new(RI::RiCache.new(path))
+    @display   = @options.displayer
+  end
+  
+  # Couldn't find documentation in +path+, so tell the user what to do
+
+  def report_missing_documentation(path)
     STDERR.puts "No ri documentation found in:"
-    paths.each do |d|
+    path.each do |d|
       STDERR.puts "     #{d}"
     end
     STDERR.puts "\nWas rdoc run to create documentation?\n\n"

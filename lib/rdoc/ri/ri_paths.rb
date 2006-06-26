@@ -44,8 +44,37 @@ module RI
 
     begin
       require 'rubygems'
-      Dir["#{Gem.path}/doc/*/ri"].each { |path| RI::Paths::PATH << path }
+      GEMDIRS = Dir["#{Gem.path}/doc/*/ri"]
+      GEMDIRS.each { |path| RI::Paths::PATH << path }
     rescue LoadError
+      GEMDIRS = nil
     end
+
+    # Returns the selected documentation directories as an Array, or PATH if no
+    # overriding directories were given.
+
+    def self.path(use_system, use_site, use_home, use_gems, *extra_dirs)
+      path = raw_path(use_system, use_site, use_home, use_gems, *extra_dirs)
+      return path.select { |path| File.directory? path }
+    end
+
+    # Returns the selected documentation directories including nonexistent
+    # directories.  Used to print out what paths were searched if no ri was
+    # found.
+
+    def self.raw_path(use_system, use_site, use_home, use_gems, *extra_dirs)
+      return PATH unless use_system or use_site or use_home or use_gems or
+                         not extra_dirs.empty?
+
+      path = []
+      path << extra_dirs unless extra_dirs.empty?
+      path << RI::Paths::SYSDIR if use_system
+      path << RI::Paths::SITEDIR if use_site
+      path << RI::Paths::HOMEDIR if use_home
+      path << RI::Paths::GEMDIRS if use_gems
+
+      return path.flatten.compact
+    end
+
   end
 end
