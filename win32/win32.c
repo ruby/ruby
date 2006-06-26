@@ -2236,7 +2236,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
 #undef send
 
 int 
-rb_w32_send(int s, char *buf, int len, int flags)
+rb_w32_send(int s, const char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2253,7 +2253,7 @@ rb_w32_send(int s, char *buf, int len, int flags)
 #undef sendto
 
 int 
-rb_w32_sendto(int s, char *buf, int len, int flags, 
+rb_w32_sendto(int s, const char *buf, int len, int flags, 
 	      struct sockaddr *to, int tolen)
 {
     int r;
