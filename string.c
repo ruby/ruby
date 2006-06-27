@@ -1278,13 +1278,11 @@ rb_str_rindex_m(argc, argv, str)
  *     str =~ obj   => fixnum or nil
  *  
  *  Match---If <i>obj</i> is a <code>Regexp</code>, use it as a pattern to match
- *  against <i>str</i>. If <i>obj</i> is a <code>String</code>, look for it in
- *  <i>str</i> (similar to <code>String#index</code>). Returns the position the
- *  match starts, or <code>nil</code> if there is no match. Otherwise, invokes
+ *  against <i>str</i>,and returns the position the match starts, or 
+ *  <code>nil</code> if there is no match. Otherwise, invokes
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
  *  <code>=~</code> in <code>Object</code> returns <code>false</code>.
  *     
- *     "cat o' 9 tails" =~ '\d'   #=> nil
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> false
  */

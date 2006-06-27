@@ -1,3 +1,8 @@
+Tue Jun 27 23:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c: RDoc update for =~ method.  a patch from Alex Young
+	  <alex at blackkettle.org>.  [ruby-core:08068]
+
 Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
