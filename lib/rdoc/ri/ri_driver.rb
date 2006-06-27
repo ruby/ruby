@@ -1,4 +1,3 @@
-require 'rdoc/usage'
 require 'rdoc/ri/ri_paths'
 require 'rdoc/usage'
 require 'rdoc/ri/ri_cache'
