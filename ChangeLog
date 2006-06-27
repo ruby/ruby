@@ -1,3 +1,8 @@
+Tue Jun 27 11:36:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (setup_passwd, setup_group): allow bignum uid, gid and
+	  so on.  [ruby-talk:199102]
+
 Tue Jun 27 10:46:53 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_yield_0): avoid core dump.  [ruby-dev:28840]

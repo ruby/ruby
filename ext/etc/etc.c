@@ -76,18 +76,18 @@ setup_passwd(struct passwd *pwd)
 #ifdef HAVE_ST_PW_PASSWD
 			 safe_setup_str(pwd->pw_passwd),
 #endif
-			 INT2FIX(pwd->pw_uid),
-			 INT2FIX(pwd->pw_gid),
+			 PW_UID2VAL(pwd->pw_uid),
+			 PW_GID2VAL(pwd->pw_gid),
 #ifdef HAVE_ST_PW_GECOS
 			 safe_setup_str(pwd->pw_gecos),
 #endif
 			 safe_setup_str(pwd->pw_dir),
 			 safe_setup_str(pwd->pw_shell),
 #ifdef HAVE_ST_PW_CHANGE
-			 INT2FIX(pwd->pw_change),
+			 INT2NUM(pwd->pw_change),
 #endif
 #ifdef HAVE_ST_PW_QUOTA
-			 INT2FIX(pwd->pw_quota),
+			 INT2NUM(pwd->pw_quota),
 #endif
 #ifdef HAVE_ST_PW_AGE
 			 PW_AGE2VAL(pwd->pw_age),
@@ -99,7 +99,7 @@ setup_passwd(struct passwd *pwd)
 			 safe_setup_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_ST_PW_EXPIRE
-			 INT2FIX(pwd->pw_expire),
+			 INT2NUM(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
 	);
@@ -301,7 +301,7 @@ setup_group(struct group *grp)
 #ifdef HAVE_ST_GR_PASSWD
 			 safe_setup_str(grp->gr_passwd),
 #endif
-			 INT2FIX(grp->gr_gid),
+			 PW_GID2VAL(grp->gr_gid),
 			 mem);
 }
 #endif
