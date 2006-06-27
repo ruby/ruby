@@ -1023,38 +1023,28 @@ def call_argument_test(state, proc, *args)
   test_ok(x,2)
 end
 
-def yield_argument_test(state, proc, *args)
-  x = state
-  begin
-    proc.yield(*args)
-  rescue ArgumentError
-    x = !x
-  end
-  test_ok(x,2)
-end
-
 call_argument_test(true, lambda{||})
 call_argument_test(false, lambda{||}, 1)
 call_argument_test(true, lambda{|a,|}, 1)
 call_argument_test(false, lambda{|a,|})
 call_argument_test(false, lambda{|a,|}, 1,2)
 
-yield_argument_test(true, lambda{||})
-yield_argument_test(true, lambda{||}, 1)
-yield_argument_test(true, lambda{|a,|}, 1)
-yield_argument_test(true, lambda{|a,|})
-yield_argument_test(true, lambda{|a,|}, 1,2)
+call_argument_test(true, Proc.new{||})
+call_argument_test(true, Proc.new{||}, 1)
+call_argument_test(true, Proc.new{|a,|}, 1)
+call_argument_test(true, Proc.new{|a,|})
+call_argument_test(true, Proc.new{|a,|}, 1,2)
 
 def block_get(&block)
   block
 end
 
 test_ok(Proc == block_get{}.class)
-yield_argument_test(true, block_get{||})
-yield_argument_test(true, block_get{||}, 1)
-yield_argument_test(true, block_get{|a,|}, 1)
-yield_argument_test(true, block_get{|a,|})
-yield_argument_test(true, block_get{|a,|}, 1,2)
+call_argument_test(true, block_get{||})
+call_argument_test(true, block_get{||}, 1)
+call_argument_test(true, block_get{|a,|}, 1)
+call_argument_test(true, block_get{|a,|})
+call_argument_test(true, block_get{|a,|}, 1,2)
 
 call_argument_test(true, block_get(&lambda{||}))
 call_argument_test(false, block_get(&lambda{||}),1)
@@ -1074,7 +1064,7 @@ test_ok(lmd.clone.call == 44)
 test_ok(block_get(&lmd).class == Proc)
 
 test_ok(Proc.new{|a,| a}.yield(1,2,3) == 1)
-yield_argument_test(true, Proc.new{|a,|}, 1,2)
+call_argument_test(true, Proc.new{|a,|}, 1,2)
 
 test_ok(Proc.new{|&b| b.call(10)}.call {|x| x} == 10)
 test_ok(Proc.new{|a,&b| b.call(a)}.call(12) {|x| x} == 12)
