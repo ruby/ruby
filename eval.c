@@ -4740,7 +4740,10 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	    }
 	    else {
 		if (pcall) {
-		    val = RARRAY(val)->ptr[0];
+                    if (RARRAY(val)->len == 0)
+                        val = Qnil;
+                    else
+                        val = RARRAY(val)->ptr[0];
 		}
 		assign(self, var, val, pcall);
 	    }
