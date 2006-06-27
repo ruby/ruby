@@ -1,3 +1,12 @@
+Wed Jun 28 01:48:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): support splat in when expression list.
+	  [ruby-dev:28822]
+
+	* eval.c (when_check): a new auxiliary function for case match.
+
+	* eval.c (when_cond): ditto.
+
 Wed Jun 28 01:05:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): should not skip '_' at the beginning

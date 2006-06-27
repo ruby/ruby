@@ -2674,6 +2674,48 @@ unknown_node(NODE *volatile node)
     }
 }
 
+static int
+when_cond(VALUE v1, VALUE v2)
+{
+    if (v1 == Qundef) {
+	return RTEST(v2);
+    }
+    return RTEST(rb_funcall2(v2, eqq, 1, &v1));
+}
+
+static int
+when_check(NODE *tag, VALUE val, VALUE self)
+{
+    VALUE elm;
+    long i;
+
+    switch (nd_type(tag)) {
+      case NODE_ARRAY:
+	while (tag) {
+	    elm = rb_eval(self, tag->nd_head);
+	    if (when_cond(val, elm)) {
+		return Qtrue;
+	    }
+	    tag = tag->nd_next;
+	}
+	break;
+      case NODE_SPLAT:
+	elm = svalue_to_avalue(rb_eval(self, tag->nd_head));
+	for (i=0; i<RARRAY(elm)->len; i++) {
+	    if (when_cond(val, RARRAY(elm)->ptr[i])) {
+		return Qtrue;
+	    }
+	}
+	break;
+      case NODE_ARGSCAT:
+	if (when_check(tag->nd_head, val, self)) return Qtrue;
+	return when_check(tag->nd_body, val, self);
+      default:
+	unknown_node(tag);
+    }
+    return Qfalse;
+}
+
 static VALUE
 rb_eval(VALUE self, NODE *n)
 {
@@ -2804,34 +2846,15 @@ rb_eval(VALUE self, NODE *n)
 	goto again;
 
       case NODE_WHEN:
+	node = node->nd_body;
 	while (node) {
-	    NODE *tag;
-
 	    if (nd_type(node) != NODE_WHEN) goto again;
-	    tag = node->nd_head;
-	    while (tag) {
-		EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
-				ruby_frame->this_func,
-				ruby_frame->this_class);
-		if (tag->nd_head && nd_type(tag->nd_head) == NODE_WHEN) {
-		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
-		    long i;
-
-		    if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
-		    for (i=0; i<RARRAY(v)->len; i++) {
-			if (RTEST(RARRAY(v)->ptr[i])) {
-			    node = node->nd_body;
-			    goto again;
-			}
-		    }
-		    tag = tag->nd_next;
-		    continue;
-		}
-		if (RTEST(rb_eval(self, tag->nd_head))) {
-		    node = node->nd_body;
-		    goto again;
-		}
-		tag = tag->nd_next;
+	    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node->nd_head, self,
+			    ruby_frame->this_func,
+			    ruby_frame->this_class);
+	    if (when_check(node->nd_head, Qundef, self)) {
+		node = node->nd_body;
+		goto again;
 	    }
 	    node = node->nd_next;
 	}
@@ -2844,35 +2867,15 @@ rb_eval(VALUE self, NODE *n)
 	    val = rb_eval(self, node->nd_head);
 	    node = node->nd_body;
 	    while (node) {
-		NODE *tag;
-
 		if (nd_type(node) != NODE_WHEN) {
 		    goto again;
 		}
-		tag = node->nd_head;
-		while (tag) {
-		    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
-				    ruby_frame->this_func,
-				    ruby_frame->this_class);
-		    if (tag->nd_head && nd_type(tag->nd_head) == NODE_WHEN) {
-			VALUE v = rb_eval(self, tag->nd_head->nd_head);
-			long i;
-
-			if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
-			for (i=0; i<RARRAY(v)->len; i++) {
-			    if (RTEST(rb_funcall2(RARRAY(v)->ptr[i], eqq, 1, &val))){
-				node = node->nd_body;
-				goto again;
-			    }
-			}
-			tag = tag->nd_next;
-			continue;
-		    }
-		    if (RTEST(rb_funcall2(rb_eval(self, tag->nd_head), eqq, 1, &val))) {
-			node = node->nd_body;
-			goto again;
-		    }
-		    tag = tag->nd_next;
+		EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node->nd_head, self,
+				ruby_frame->this_func,
+				ruby_frame->this_class);
+		if (when_check(node->nd_head, val, self)) {
+		    node = node->nd_body;
+		    goto again;
 		}
 		node = node->nd_next;
 	    }
