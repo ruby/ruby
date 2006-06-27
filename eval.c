@@ -2846,7 +2846,6 @@ rb_eval(VALUE self, NODE *n)
 	goto again;
 
       case NODE_WHEN:
-	node = node->nd_body;
 	while (node) {
 	    if (nd_type(node) != NODE_WHEN) goto again;
 	    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node->nd_head, self,

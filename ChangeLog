@@ -1,3 +1,7 @@
+Wed Jun 28 08:08:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): problem to handle else part.  [ruby-dev:28873]
+
 Wed Jun 28 01:48:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): support splat in when expression list.
