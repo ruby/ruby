@@ -1,3 +1,8 @@
+Tue Jun 27 11:36:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (setup_passwd, setup_group): allow bignum uid, gid and
+	  so on.  [ruby-talk:199102]
+
 Mon Jun 26 13:37:27 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc: Merge from HEAD.
