@@ -1,3 +1,10 @@
+Wed Jun 28 01:05:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): should not skip '_' at the beginning
+	  of a string.  [ruby-dev:28830]
+
+	* bignum.c (rb_cstr_to_inum): ditto.
+
 Tue Jun 27 23:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c: RDoc update for =~ method.  a patch from Alex Young

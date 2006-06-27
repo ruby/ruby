@@ -2066,12 +2066,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 
     if (!p) return 0.0;
     q = p;
-    if (badcheck) {
-	while (ISSPACE(*p)) p++;
-    }
-    else {
-	while (ISSPACE(*p) || *p == '_') p++;
-    }
+    while (ISSPACE(*p)) p++;
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	rb_warn("Float %*s out of range", end-p, p);

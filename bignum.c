@@ -313,12 +313,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	if (badcheck) goto bad;
 	return INT2FIX(0);
     }
-    if (badcheck) {
-	while (ISSPACE(*str)) str++;
-    }
-    else {
-	while (ISSPACE(*str) || *str == '_') str++;
-    }
+    while (ISSPACE(*str)) str++;
 
     if (str[0] == '+') {
 	str++;
@@ -408,7 +403,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
 	unsigned long val = strtoul(str, &end, base);
 
-	if (*end == '_') goto bigparse;
+	if (str < end && *end == '_') goto bigparse;
 	if (badcheck) {
 	    if (end == str) goto bad; /* no number */
 	    while (*end && ISSPACE(*end)) end++;
