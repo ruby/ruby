@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-04-25"
+#define TCLTKLIB_RELEASE_DATE "2006-06-26"
 
 #include "ruby.h"
 #include "rubysig.h"

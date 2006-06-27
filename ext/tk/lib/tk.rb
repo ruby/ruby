@@ -209,17 +209,17 @@ module TkComm
     #  return val.split.collect{|v| tk_tcl2ruby(v)}
     #end
     case val
-    when /^@font/
+    when /\A@font\S+\z/
       TkFont.get_obj(val)
-    when /^-?\d+$/
+    when /\A-?\d+\z/
       val.to_i
-    when /^\./
+    when /\A\.\S*\z/
       #Tk_WINDOWS[val] ? Tk_WINDOWS[val] : _genobj_for_tkwidget(val)
       TkCore::INTERP.tk_windows[val]? 
            TkCore::INTERP.tk_windows[val] : _genobj_for_tkwidget(val)
-    when /^i(_\d+_)?\d+$/
+    when /\Ai(_\d+_)?\d+\z/
       TkImage::Tk_IMGTBL[val]? TkImage::Tk_IMGTBL[val] : val
-    when /^-?\d+\.?\d*(e[-+]?\d+)?$/
+    when /\A-?\d+\.?\d*(e[-+]?\d+)?\z/
       val.to_f
     when /\\ /
       val.gsub(/\\ /, ' ')
@@ -4559,7 +4559,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-04-18'.freeze
+  RELEASE_DATE = '2006-06-27'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
