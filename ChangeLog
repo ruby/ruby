@@ -1,3 +1,10 @@
+Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
+
+	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert 
+	  a tcl string to a ruby object if the tcl string includes "\n".
+
 Tue Jun 27 16:04:05 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.h: define isascii on MinGW for msvcrt compatibility.
