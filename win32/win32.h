@@ -157,6 +157,8 @@ struct timezone {
   int tz_minuteswest;
   int tz_dsttime;
 };
+#undef isascii
+#define isascii __isascii
 #endif
 extern void   NtInitialize(int *, char ***);
 extern int    rb_w32_cmdvector(const char *, char ***);

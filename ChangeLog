@@ -1,3 +1,10 @@
+Tue Jun 27 16:04:05 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.h: define isascii on MinGW for msvcrt compatibility.
+
+	* configure.in: set ac_cv_header_sys_time_h=no on MinGW
+	  for msvcrt compatibility.
+
 Tue Jun 27 11:36:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd, setup_group): allow bignum uid, gid and
