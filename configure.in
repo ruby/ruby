@@ -349,6 +349,7 @@ mingw*)		if test "$with_winsock2" = yes; then
 		ac_cv_header_sys_param_h=no
 		ac_cv_header_sys_resource_h=no
 		ac_cv_header_sys_select_h=no
+		ac_cv_header_sys_time_h=no
 		ac_cv_header_sys_times_h=no
 		ac_cv_func_times=yes
 		ac_cv_func_waitpid=yes
