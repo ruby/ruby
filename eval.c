@@ -1047,7 +1047,7 @@ static NODE *compile(VALUE, const char*, int);
 
 static VALUE rb_yield_0(VALUE, VALUE, VALUE, int);
 
-#define YIELD_EXACT_ARGS  1
+#define YIELD_ARY_ARGS    1
 #define YIELD_PUBLIC_DEF  4
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
@@ -4667,7 +4667,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
-    int pcall = flags & YIELD_EXACT_ARGS, lambda;
+    int ary_args = flags & YIELD_ARY_ARGS, lambda;
     int state, broken = 0;
 
     rb_need_block();
@@ -4701,16 +4701,20 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     node = block->body;
     var = block->var;
     lambda = block->flags & BLOCK_LAMBDA;
-
     if (var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    NODE *bvar = NULL;
 	  block_var:
 	    if (var == (NODE*)1) { /* no parameter || */
-		if (pcall && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
-			     RARRAY(val)->len);
+		if (lambda && val != Qundef) {
+		    if (TYPE(val) != T_ARRAY) {
+			rb_raise(rb_eArgError, "wrong number of arguments (1 for 0)");
+		    }
+		    else if (RARRAY(val)->len != 0) {
+			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
+				 RARRAY(val)->len);
+		    }
 		}
 	    }
 	    else if (var == (NODE*)2) {
@@ -4725,7 +4729,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		goto block_var;
 	    }
 	    else if (nd_type(var) == NODE_ARGS) {
-		val = svalue_to_avalue(val);
+		if (!ary_args) val = svalue_to_avalue(val);
 		formal_assign(self, var, RARRAY(val)->len, RARRAY(val)->ptr, 0);
 	    }
 	    else if (nd_type(var) == NODE_BLOCK) {
@@ -4736,16 +4740,25 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		goto block_var;
 	    }
 	    else if (nd_type(var) == NODE_MASGN) {
-		massign(self, var, val, pcall);
+		massign(self, var, val, lambda);
 	    }
 	    else {
-		if (pcall) {
-                    if (RARRAY(val)->len == 0)
-                        val = Qnil;
-                    else
-                        val = RARRAY(val)->ptr[0];
+		if (lambda) {
+		    if (val == Qundef) {
+			rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
+		    }
+		    if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 1) {
+			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 1)",
+				 RARRAY(val)->len);
+		    }
 		}
-		assign(self, var, val, pcall);
+		if (ary_args) {
+		    if (RARRAY(val)->len == 0)
+			val = Qnil;
+		    else
+			val = RARRAY(val)->ptr[0];
+		}
+		assign(self, var, val, lambda);
 	    }
 	    if (bvar) {
 		VALUE blk;
@@ -4759,7 +4772,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (pcall && RARRAY(val)->len != 0 &&
+    else if (lambda && RARRAY(val)->len != 0 &&
 	     (!node || nd_type(node) != NODE_IFUNC ||
 	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
@@ -8357,7 +8370,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     VALUE bvar = Qnil;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    pcall = call ? YIELD_EXACT_ARGS : 0;
+    pcall = call ? YIELD_ARY_ARGS : 0;
     lambda = data->flags & BLOCK_LAMBDA;
     if (rb_block_given_p() && ruby_frame->callee) {
 	if (klass != ruby_frame->this_class)
@@ -8481,7 +8494,7 @@ rb_proc_yield(int argc, VALUE *argv, VALUE proc)
 {
     switch (argc) {
       case 0:
-	return proc_invoke(proc, Qnil, Qundef, 0, 0);
+	return proc_invoke(proc, Qundef, Qundef, 0, 0);
       case 1:
 	return proc_invoke(proc, argv[0], Qundef, 0, 0);
       default:

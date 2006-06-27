@@ -2927,8 +2927,7 @@ sock_accept_nonblock(sock)
  * * Socket#accept
  */
 static VALUE
-sock_sysaccept(sock)
-    VALUE sock;
+sock_sysaccept(VALUE sock)
 {
     OpenFile *fptr;
     VALUE sock2;

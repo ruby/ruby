@@ -3029,14 +3029,8 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     /* parent */
     if (pid == -1) {
 	int e = errno;
-	if ((modef & FMODE_READABLE)) {
-	    close(arg.pair[0]);
-	    close(arg.pair[1]);
-	}
-	if ((modef & FMODE_WRITABLE)) {
-	    close(arg.pair[0]);
-	    close(arg.pair[1]);
-	}
+	close(arg.pair[0]);
+	close(arg.pair[1]);
 	errno = e;
 	rb_sys_fail(cmd);
     }

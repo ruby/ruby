@@ -1,9 +1,25 @@
+Tue Jun 27 23:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c: RDoc update for =~ method.  a patch from Alex Young
+	  <alex at blackkettle.org>.  [ruby-core:08068]
+
 Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
 
 	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert 
 	  a tcl string to a ruby object if the tcl string includes "\n".
+
+Tue Jun 27 20:05:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (pipe_open): backout unnecessary fix on 2006-06-26.
+	  [ruby-dev:28865]
+
+	* eval.c (rb_yield_0): exact argument number check now done only
+	  for lambda Proc.
+
+	* eval.c (rb_yield_0): add check for number of arguments, if
+	  there's one lambda block parameter.
 
 Tue Jun 27 16:04:05 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
