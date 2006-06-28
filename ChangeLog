@@ -1,3 +1,7 @@
+Wed Jun 28 15:47:14 2006  Eric Hodel  <drbrain@segment7.net>
+
+        * lib/optparse.rb: RDoc patch from Robin Stocker <robin@nibor.org>
+
 Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
 
 	* test/socket/test_unix.rb: test_seqpacket_pair removed.

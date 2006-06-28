@@ -24,7 +24,7 @@ getoptlong.rb
 logger.rb
 matrix.rb
 observer.rb
-optionparser.rb
+optparse.rb
 pathname.rb
 pstore.rb
 rational.rb
