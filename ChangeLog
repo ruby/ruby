@@ -1,3 +1,8 @@
+Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
+
+	* test/socket/test_unix.rb: test_seqpacket_pair removed.
+	  [ruby-dev:28846]
+
 Wed Jun 28 13:51:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (when_check): arbitrary values are allowed after splats.
