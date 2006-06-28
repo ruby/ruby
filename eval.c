@@ -2711,7 +2711,8 @@ when_check(NODE *tag, VALUE val, VALUE self)
 	if (when_check(tag->nd_head, val, self)) return Qtrue;
 	return when_check(tag->nd_body, val, self);
       default:
-	unknown_node(tag);
+	if (when_cond(val, rb_eval(self, tag))) return Qtrue;
+	break;
     }
     return Qfalse;
 }

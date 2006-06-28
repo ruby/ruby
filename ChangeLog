@@ -1,3 +1,8 @@
+Wed Jun 28 13:51:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (when_check): arbitrary values are allowed after splats.
+	  fixed: [ruby-dev:28879]
+
 Wed Jun 28 09:16:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): remove meaningless else-only case statement
@@ -32,7 +37,7 @@ Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
 
-	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert 
+	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert
 	  a tcl string to a ruby object if the tcl string includes "\n".
 
 Tue Jun 27 20:05:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
