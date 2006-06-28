@@ -1,3 +1,8 @@
+Wed Jun 28 09:16:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): remove meaningless else-only case statement
+	  syntax.
+
 Wed Jun 28 08:08:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): problem to handle else part.  [ruby-dev:28873]

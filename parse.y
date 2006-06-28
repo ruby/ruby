@@ -2602,28 +2602,12 @@ primary		: literal
 			$$ = dispatch2(case, $2, $4);
 		    %*/
 		    }
-		| keyword_case expr_value opt_terms keyword_else compstmt keyword_end
-		    {
-		    /*%%%*/
-			$$ = block_append($2, $5);
-		    /*%
-			$$ = dispatch2(case, $2, dispatch1(else, $5));
-		    %*/
-		    }
 		| keyword_case opt_terms case_body keyword_end
 		    {
 		    /*%%%*/
 			$$ = $3;
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
-		    %*/
-		    }
-		| keyword_case opt_terms keyword_else compstmt keyword_end
-		    {
-		    /*%%%*/
-			$$ = $4;
-		    /*%
-			$$ = dispatch2(case, Qnil, dispatch1(else, $4));
 		    %*/
 		    }
 		| keyword_for for_var keyword_in {COND_PUSH(1);} expr_value do {COND_POP();}
