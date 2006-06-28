@@ -1,3 +1,7 @@
+Wed Jun 28 14:53:09 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/optparse.rb: RDoc patch from Robin Stocker <robin@nibor.org>
+
 Wed Jun 28 23:23:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): underscores should appear only
