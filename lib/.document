@@ -25,7 +25,7 @@ logger.rb
 matrix.rb
 net
 observer.rb
-optionparser.rb
+optparse.rb
 pathname.rb
 pstore.rb
 rational.rb
