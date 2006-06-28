@@ -134,24 +134,6 @@ class TestUNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
   ensure
-    s1.close
-    s2.close
-  end
-
-  def test_seqpacket_pair
-    s1, s2 = UNIXSocket.pair(Socket::SOCK_SEQPACKET)
-    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
-    s2.send("", 0)
-    s2.send("haha", 0)
-    s2.send("", 0)
-    s2.send("", 0)
-    assert_equal("", s1.recv(10))
-    assert_equal("haha", s1.recv(10))
-    assert_equal("", s1.recv(10))
-    assert_equal("", s1.recv(10))
-    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
-  rescue Errno::EPROTONOSUPPORT
-  ensure
     s1.close if s1
     s2.close if s2
   end

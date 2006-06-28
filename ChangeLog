@@ -1,3 +1,8 @@
+Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
+
+	* test/socket/test_unix.rb: test_seqpacket_pair removed.
+	  [ruby-dev:28846]
+
 Tue Jun 27 23:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c: RDoc update for =~ method.  a patch from Alex Young
