@@ -1,3 +1,8 @@
+Wed Jun 28 23:23:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): underscores should appear only
+	  between digits.  [ruby-dev:28891]
+
 Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
 
 	* test/socket/test_unix.rb: test_seqpacket_pair removed.

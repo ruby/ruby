@@ -2073,8 +2073,8 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	errno = 0;
     }
     if (p == end) {
+      bad:
 	if (badcheck) {
-	  bad:
 	    rb_invalid_str(q, "Float()");
 	}
 	return d;
@@ -2087,15 +2087,12 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	while (*p) {
 	    if (*p == '_') {
 		/* remove underscores between digits */
+		if (n == buf || !ISDIGIT(n[-1])) goto bad;
+		while (*++p == '_');
 		if (badcheck) {
-		    if (n == buf || !ISDIGIT(n[-1])) goto bad;
-		    ++p;
 		    if (!ISDIGIT(*p)) goto bad;
 		}
-		else {
-		    while (*++p == '_');
-		    continue;
-		}
+		continue;
 	    }
 	    *n++ = *p++;
 	}
