@@ -1,3 +1,8 @@
+Thu Jun 29 23:56:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark_children): a bug in NODE_BLOCK_PASS marking.
+	  [ruby-dev:28908]
+
 Thu Jun 29 23:04:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: use ARGSPUSH instead of ARGSCAT to prevent too much
@@ -8,8 +13,7 @@ Thu Jun 29 23:04:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (block_orphan): lambda and proc from method are always
 	  orphan.
 
-	* gc.c (gc_mark_children): proper marking for NODE_BLOCK_PASS and
-	  NODE_LAMBDA.
+	* gc.c (gc_mark_children): proper marking for NODE_LAMBDA.
 
 Thu Jun 29 22:47:30 2006  Tanaka Akira  <akr@m17n.org>
 
