@@ -1,3 +1,8 @@
+Thu Jun 29 22:47:30 2006  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (SETUP_ARGS0): avoid GC problem.
+	  [ruby-dev:28902]
+
 Thu Jun 29 18:58:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_version): fix patch

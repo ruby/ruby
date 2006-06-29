@@ -2180,7 +2180,8 @@ copy_node_scope(NODE *node, NODE *rval)
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
     if (bpass) {\
-	block = passing_block(rb_eval(self, bpass->nd_body), &_block);\
+        volatile VALUE save_block = rb_eval(self, bpass->nd_body); \
+	block = passing_block(save_block, &_block);\
     }\
 } while (0)
 
