@@ -1,3 +1,8 @@
+Thu Jun 29 18:58:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_version): fix patch
+	  failure.
+
 Thu Jun 29 18:00:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: add RDoc document.  a patch from
