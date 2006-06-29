@@ -1,6 +1,12 @@
+Thu Jun 29 18:00:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: add RDoc document.  a patch from
+	  mathew <meta at pobox.com>.   [ruby-core:07050]
+
 Wed Jun 28 15:47:14 2006  Eric Hodel  <drbrain@segment7.net>
 
         * lib/optparse.rb: RDoc patch from Robin Stocker <robin@nibor.org>
+	  [ruby-core:08087]
 
 Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
 
