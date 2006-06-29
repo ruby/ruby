@@ -153,8 +153,6 @@ Init_BigDecimal()
 }
 #endif
 
-void
-
 /*
  * Returns the BigDecimal version number.
  *
