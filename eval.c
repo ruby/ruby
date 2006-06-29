@@ -2711,6 +2711,9 @@ when_check(NODE *tag, VALUE val, VALUE self)
       case NODE_ARGSCAT:
 	if (when_check(tag->nd_head, val, self)) return Qtrue;
 	return when_check(tag->nd_body, val, self);
+      case NODE_ARGSPUSH:
+	if (when_check(tag->nd_head, val, self)) return Qtrue;
+	if (when_cond(val, rb_eval(self, tag->nd_body))) return Qtrue;
       default:
 	if (when_cond(val, rb_eval(self, tag))) return Qtrue;
 	break;
@@ -8352,6 +8355,9 @@ proc_lambda(void)
 static int
 block_orphan(struct BLOCK *data)
 {
+    if (data->flags & (BLOCK_LAMBDA|BLOCK_FROM_METHOD)) {
+	return 1;
+    }
     if (data->scope->flags & SCOPE_NOSTACK) {
 	return 1;
     }

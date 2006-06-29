@@ -7291,7 +7291,7 @@ arg_append(NODE *node1, NODE *node2)
 	node1->nd_head = arg_append(node1->nd_head, node2);
 	return node1;
       default:
-	return NEW_ARGSCAT(node1, node2);
+	return NEW_ARGSPUSH(node1, node2);
     }
 }
 

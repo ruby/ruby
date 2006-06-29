@@ -794,7 +794,6 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
 	  case NODE_ARGS:
-	  case NODE_BLOCK_PASS:
 	    gc_mark((VALUE)obj->as.node.u2.node, lev);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
@@ -834,6 +833,8 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_MODULE:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_BLOCK_PASS:
+	  case NODE_LAMBDA:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */

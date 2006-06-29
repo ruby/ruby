@@ -1,3 +1,16 @@
+Thu Jun 29 23:04:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: use ARGSPUSH instead of ARGSCAT to prevent too much
+	  splat expansion.
+
+	* eval.c (when_check): need to handle ARGSPUSH as well.
+
+	* eval.c (block_orphan): lambda and proc from method are always
+	  orphan.
+
+	* gc.c (gc_mark_children): proper marking for NODE_BLOCK_PASS and
+	  NODE_LAMBDA.
+
 Thu Jun 29 22:47:30 2006  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (SETUP_ARGS0): avoid GC problem.
