@@ -1,3 +1,8 @@
+Fri Jun 30 23:46:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: should test isinf for Solaris with GCC compiler.
+	  [ruby-core:08100]
+
 Fri Jun 30 19:35:41 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils._escape): should
