@@ -1,3 +1,8 @@
+Fri Jun 30 23:46:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: should test isinf for Solaris with GCC compiler.
+	  [ruby-core:08100]
+
 Thu Jun 29 18:58:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_version): fix patch
