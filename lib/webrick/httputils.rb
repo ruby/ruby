@@ -358,7 +358,7 @@ module WEBrick
 
     def _make_regex(str) /([#{Regexp.escape(str)}])/n end
     def _make_regex!(str) /([^#{Regexp.escape(str)}])/n end
-    def _escape(str, regex) str.gsub(regex){ "%%%02X" % $1[0] } end
+    def _escape(str, regex) str.gsub(regex){ "%%%02X" % $1.ord } end
     def _unescape(str, regex) str.gsub(regex){ $1.hex.chr } end
 
     UNESCAPED = _make_regex(control+space+delims+unwise+nonascii)

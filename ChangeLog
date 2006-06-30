@@ -1,3 +1,9 @@
+Fri Jun 30 19:35:41 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils._escape): should
+	  use String#ord to get ascii code from the one-character string.
+	  [ruby-dev:28901]
+
 Thu Jun 29 23:56:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_mark_children): a bug in NODE_BLOCK_PASS marking.
