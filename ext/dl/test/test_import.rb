@@ -28,8 +28,9 @@ module DL
       "int tz_dsttime",
     ]
     MyStruct = struct [
-      "int num[10]",
-      "unsigned char buff[8]",
+      "short num[5]",
+      "char c",
+      "unsigned char buff[7]",
     ]
 
     CallCallback = bind("void call_callback(void*, void*)"){|ptr1, ptr2|
@@ -93,10 +94,12 @@ module DL
 
     def test_struct()
       s = LIBC::MyStruct.malloc()
-      s.num = [0,1,2,3,4,5,6,7,8,9]
-      s.buff = "0123456\377"
-      assert_equal([0,1,2,3,4,5,6,7,8,9], s.num)
-      assert_equal([?0,?1,?2,?3,?4,?5,?6,?\377], s.buff)
+      s.num = [0,1,2,3,4]
+      s.c = ?a
+      s.buff = "012345\377"
+      assert_equal([0,1,2,3,4], s.num)
+      assert_equal(?a, s.c)
+      assert_equal([?0,?1,?2,?3,?4,?5,?\377], s.buff)
     end
 
     def test_gettimeofday()

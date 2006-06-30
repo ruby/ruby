@@ -223,10 +223,12 @@ rb_dlcfunc_inspect(VALUE self)
 }
 
 #if defined(__GNUC__)
-# define DECL_FUNC(f,ret,args,calltype)  ret (__attribute__((calltype)) *f)(args)
+# define DECL_FUNC_CDECL(f,ret,args)  FUNC_CDECL(ret (*f)(args))
+# define DECL_FUNC_STDCALL(f,ret,args)  FUNC_STDCALL(ret (*f)(args))
 /* # define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) */
 #elif defined(_MSC_VER) || defined(__BORLANDC__)
-# define DECL_FUNC(f,ret,args,calltype)  ret (__##calltype *f)(args)
+# define DECL_FUNC_CDECL(f,ret,args)  ret (__cdecl *f)(args)
+# define DECL_FUNC_STDCALL(f,ret,args)  ret (__stdcall *f)(args)
 #else
 # error "unsupported compiler."
 #endif
@@ -273,7 +275,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	switch( cfunc->type ){
 	case DLTYPE_VOID:
 #define CASE(n) case n: { \
-            DECL_FUNC(f,void,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+            DECL_FUNC_CDECL(f,void,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    f(DLSTACK_ARGS##n(stack)); \
 	    result = Qnil; \
 }
@@ -282,7 +284,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_VOIDP:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,void*,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,void*,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    void * ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = PTR2NUM(ret); \
@@ -292,7 +294,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_CHAR:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,char,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,char,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    char ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = CHR2FIX(ret); \
@@ -302,7 +304,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_SHORT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,short,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,short,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    short ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = INT2NUM((int)ret); \
@@ -312,7 +314,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_INT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,int,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,int,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    int ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = INT2NUM(ret); \
@@ -322,7 +324,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,long,DLSTACK_PROTO##n,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,long,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    long ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = LONG2NUM(ret); \
@@ -333,7 +335,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #if HAVE_LONG_LONG  /* used in ruby.h */
 	case DLTYPE_LONG_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,LONG_LONG,DLSTACK_PROTO,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,LONG_LONG,DLSTACK_PROTO) = cfunc->ptr; \
 	    LONG_LONG ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = LL2NUM(ret); \
@@ -344,7 +346,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #endif
 	case DLTYPE_FLOAT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,float,DLSTACK_PROTO,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,float,DLSTACK_PROTO) = cfunc->ptr; \
 	    float ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = rb_float_new(ret); \
@@ -354,7 +356,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_DOUBLE:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,double,DLSTACK_PROTO,cdecl) = cfunc->ptr; \
+	    DECL_FUNC_CDECL(f,double,DLSTACK_PROTO) = cfunc->ptr; \
 	    double ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = rb_float_new(ret); \
@@ -371,7 +373,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	switch( cfunc->type ){
 	case DLTYPE_VOID:
 #define CASE(n) case n: { \
-            DECL_FUNC(f,void,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+            DECL_FUNC_STDCALL(f,void,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    f(DLSTACK_ARGS##n(stack)); \
 	    result = Qnil; \
 }
@@ -380,7 +382,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_VOIDP:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,void*,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,void*,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    void * ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = PTR2NUM(ret); \
@@ -390,7 +392,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_CHAR:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,char,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,char,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    char ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = CHR2FIX(ret); \
@@ -400,7 +402,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_SHORT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,short,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,short,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    short ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = INT2NUM((int)ret); \
@@ -410,7 +412,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_INT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,int,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,int,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    int ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = INT2NUM(ret); \
@@ -420,7 +422,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,long,DLSTACK_PROTO##n,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,long,DLSTACK_PROTO##n) = cfunc->ptr; \
 	    long ret; \
 	    ret = f(DLSTACK_ARGS##n(stack)); \
 	    result = LONG2NUM(ret); \
@@ -431,7 +433,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #if HAVE_LONG_LONG  /* used in ruby.h */
 	case DLTYPE_LONG_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,LONG_LONG,DLSTACK_PROTO,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,LONG_LONG,DLSTACK_PROTO) = cfunc->ptr; \
 	    LONG_LONG ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = LL2NUM(ret); \
@@ -442,7 +444,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #endif
 	case DLTYPE_FLOAT:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,float,DLSTACK_PROTO,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,float,DLSTACK_PROTO) = cfunc->ptr; \
 	    float ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = rb_float_new(ret); \
@@ -452,7 +454,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    break;
 	case DLTYPE_DOUBLE:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,double,DLSTACK_PROTO,stdcall) = cfunc->ptr; \
+	    DECL_FUNC_STDCALL(f,double,DLSTACK_PROTO) = cfunc->ptr; \
 	    double ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = rb_float_new(ret); \

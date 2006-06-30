@@ -111,8 +111,8 @@ for calltype in CALLTYPES
       for n in 0..(MAX_CALLBACK-1)
         $out << (<<-EOS)
 
-PRE_DECL_#{calltype.upcase} static #{DLTYPE[ty][:type]} MIDST_DECL_#{calltype.upcase}
-#{func_name(ty,argc,n,calltype)}(#{(0...argc).collect{|i| "DLSTACK_TYPE stack" + i.to_s}.join(", ")}) POST_DECL_#{calltype.upcase}
+FUNC_#{calltype.upcase}(static #{DLTYPE[ty][:type]}
+#{func_name(ty,argc,n,calltype)}(#{(0...argc).collect{|i| "DLSTACK_TYPE stack" + i.to_s}.join(", ")}))
 {
     VALUE ret, cb#{argc > 0 ? ", args[#{argc}]" : ""};
 #{

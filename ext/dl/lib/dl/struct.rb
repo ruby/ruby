@@ -54,19 +54,25 @@ module DL
 
     def CStructEntity.size(types)
       offset = 0
+      max_align = 0
       types.each_with_index{|t,i|
         orig_offset = offset
         if( t.is_a?(Array) )
-          offset = PackInfo.align(orig_offset, PackInfo::ALIGN_MAP[TYPE_VOIDP])
+          align = PackInfo::ALIGN_MAP[t[0]]
+          offset = PackInfo.align(orig_offset, align)
           size = offset - orig_offset
           offset += (PackInfo::SIZE_MAP[t[0]] * t[1])
         else
-          offset = PackInfo.align(orig_offset, PackInfo::ALIGN_MAP[t])
+          align = PackInfo::ALIGN_MAP[t]
+          offset = PackInfo.align(orig_offset, align)
           size = offset - orig_offset
           offset += PackInfo::SIZE_MAP[t]
         end
+        if (max_align < align)
+          max_align = align
+        end
       }
-      offset = PackInfo.align(offset, PackInfo::ALIGN_MAP[TYPE_VOIDP])
+      offset = PackInfo.align(offset, max_align)
       offset
     end
 
@@ -83,13 +89,15 @@ module DL
       @ctypes = types
       @offset = []
       offset = 0
+      max_align = 0
       types.each_with_index{|t,i|
         orig_offset = offset
         if( t.is_a?(Array) )
-          offset = align(orig_offset, ALIGN_MAP[TYPE_VOIDP])
+          align = ALIGN_MAP[t[0]]
         else
-          offset = align(orig_offset, ALIGN_MAP[t])
+          align = ALIGN_MAP[t]
         end
+        offset = PackInfo.align(orig_offset, align)
         size = offset - orig_offset
         @offset[i] = offset
         if( t.is_a?(Array) )
@@ -97,8 +105,11 @@ module DL
         else
           offset += SIZE_MAP[t]
         end
+        if (max_align < align)
+          max_align = align
+        end
       }
-      offset = align(offset, ALIGN_MAP[TYPE_VOIDP])
+      offset = PackInfo.align(offset, max_align)
       @size = offset
     end
 
