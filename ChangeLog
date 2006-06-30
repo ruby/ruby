@@ -1,7 +1,10 @@
 Fri Jun 30 23:46:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: should test isinf for Solaris with GCC compiler.
-	  [ruby-core:08100]
+	  a patch from <ville.mattila at stonesoft.com>.  [ruby-core:07791]
+
+	* configure.in: -shared patch from Andrew Morrow
+	  <andrew.c.morrow at gmail.com>.  [ruby-core:08100]
 
 Thu Jun 29 18:58:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

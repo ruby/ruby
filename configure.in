@@ -912,10 +912,9 @@ if test "$with_dln_a_out" != yes; then
 			: ${LIBPATHENV=SHLIB_PATH}
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
-			   : ${LDSHARED='$(CC) -Wl,-G'}
+                          : ${LDSHARED='$(CC) -shared'}
 			   if test "$rb_cv_prog_gnu_ld" = yes; then
 	 		       LDFLAGS="$LDFLAGS -Wl,-E"
-			       LDSHARED="$LDSHARED -shared"
 			   fi
 			else
 			   : ${LDSHARED='ld -G'}
