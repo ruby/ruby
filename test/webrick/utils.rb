@@ -23,7 +23,7 @@ module TestWEBrick
     begin
       thread = Thread.start{ server.start }
       addr = server.listeners[0].addr
-      block.call([server, addr[3], addr[1]])
+      block.yield([server, addr[3], addr[1]])
     ensure
       server.stop
       thread.join
