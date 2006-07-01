@@ -755,6 +755,7 @@ static unsigned long frame_unique = 1;
     _frame.tmp  = 0;			\
     _frame.node = ruby_current_node;	\
     _frame.argc = 0;			\
+    _frame.self = (link)?ruby_frame->self:0;\
     _frame.block = (link)?ruby_frame->block:0;\
     _frame.flags = 0;			\
     _frame.uniq = frame_unique++;	\

@@ -1,3 +1,7 @@
+Sat Jul  1 23:55:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (PUSH_FRAME): initialize frame->self.  [ruby-dev:28911]
+
 Sat Jul  1 17:00:42 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/webrick/utils.rb: use Proc#yield instead of Proc#call.
@@ -12,7 +16,10 @@ Sat Jul  1 15:15:49 2006  Tanaka Akira  <akr@m17n.org>
 Fri Jun 30 23:46:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: should test isinf for Solaris with GCC compiler.
-	  [ruby-core:08100]
+	  a patch from <ville.mattila at stonesoft.com>.  [ruby-core:07791]
+
+	* configure.in: -shared patch from Andrew Morrow
+	  <andrew.c.morrow at gmail.com>.  [ruby-core:08100]
 
 Fri Jun 30 19:35:41 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
