@@ -1,3 +1,8 @@
+Sat Jul  1 17:00:42 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/webrick/utils.rb: use Proc#yield instead of Proc#call.
+	  [ruby-dev:28914]
+
 Sat Jul  1 15:15:49 2006  Tanaka Akira  <akr@m17n.org>
 
 	* test/socket/test_nonblock.rb: add timeout to send/receive
