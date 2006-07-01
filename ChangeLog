@@ -1,3 +1,9 @@
+Sat Jul  1 15:15:49 2006  Tanaka Akira  <akr@m17n.org>
+
+	* test/socket/test_nonblock.rb: add timeout to send/receive
+	  an empty UDP packet.
+	  [ruby-dev:28820]
+
 Fri Jun 30 23:46:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: should test isinf for Solaris with GCC compiler.
