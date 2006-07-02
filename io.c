@@ -3425,7 +3425,8 @@ io_reopen(VALUE io, VALUE nfile)
     if (fptr == orig) return io;
 #if !defined __CYGWIN__
     if (IS_PREP_STDIO(fptr)) {
-	if ((fptr->mode & FMODE_READWRITE) != (orig->mode & FMODE_READWRITE)) {
+	if (((fptr->mode & FMODE_READWRITE) & (orig->mode & FMODE_READWRITE)) !=
+            (fptr->mode & FMODE_READWRITE)) {
 	    rb_raise(rb_eArgError,
 		     "%s can't change access mode from \"%s\" to \"%s\"",
 		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
@@ -3536,7 +3537,8 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     if (!NIL_P(nmode)) {
 	int flags = rb_io_mode_flags(StringValuePtr(nmode));
 	if (IS_PREP_STDIO(fptr) &&
-	    (fptr->mode & FMODE_READWRITE) != (flags & FMODE_READWRITE)) {
+            ((fptr->mode & FMODE_READWRITE) & (flags & FMODE_READWRITE)) !=
+            (fptr->mode & FMODE_READWRITE)) {
 	    rb_raise(rb_eArgError,
 		     "%s can't change access mode from \"%s\" to \"%s\"",
 		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
