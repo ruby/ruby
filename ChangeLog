@@ -1,3 +1,10 @@
+Sun Jul  2 19:03:30 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c: sync with original code, rev 1.7.
+
+	* ext/racc/cparse/cparse.c: must require version.h to get
+	  RUBY_VERSION_CODE.
+
 Sun Jul  2 18:42:27 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c: sync with original source code, rev

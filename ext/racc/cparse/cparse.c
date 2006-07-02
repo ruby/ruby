@@ -7,11 +7,12 @@
     This library is free software.
     You can distribute/modify this program under the same terms of ruby.
 
-    $originalId: cparse.c,v 1.6 2006/07/02 09:34:14 aamine Exp $
+    $originalId: cparse.c,v 1.7 2006/07/02 10:02:02 aamine Exp $
 
 */
 
 #include "ruby.h"
+#include "version.h"
 
 /* -----------------------------------------------------------------------
                         Important Constants
@@ -188,7 +189,6 @@ static VALUE racc_yyparse _((VALUE parser, VALUE lexer, VALUE lexmid,
                              VALUE arg, VALUE sysdebug));
 
 static void call_lexer _((struct cparse_params *v));
-static VALUE lexer_iter _((VALUE data));
 static VALUE lexer_i _((VALUE block_args, VALUE data, VALUE self));
 
 static VALUE assert_array _((VALUE a));
@@ -765,7 +765,7 @@ Init_cparse(void)
     rb_define_const(Parser, "Racc_Runtime_Core_Version_C",
                     rb_str_new2(RACC_VERSION));
     rb_define_const(Parser, "Racc_Runtime_Core_Id_C",
-        rb_str_new2("$originalId: cparse.c,v 1.6 2006/07/02 09:34:14 aamine Exp $"));
+        rb_str_new2("$originalId: cparse.c,v 1.7 2006/07/02 10:02:02 aamine Exp $"));
 
     CparseParams = rb_define_class_under(Racc, "CparseParams", rb_cObject);
 
