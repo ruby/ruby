@@ -2449,6 +2449,10 @@ rb_str_inspect(VALUE str)
 	    s[0] = '\\'; s[1] = 'v';
 	    rb_str_buf_cat(result, s, 2);
 	}
+	else if (c == '\010') {
+	    s[0] = '\\'; s[1] = 'b';
+	    rb_str_buf_cat(result, s, 2);
+	}
 	else if (c == '\007') {
 	    s[0] = '\\'; s[1] = 'a';
 	    rb_str_buf_cat(result, s, 2);
@@ -2550,6 +2554,10 @@ rb_str_dump(VALUE str)
 	else if (c == '\013') {
 	    *q++ = '\\';
 	    *q++ = 'v';
+	}
+	else if (c == '\010') {
+	    *q++ = '\\';
+	    *q++ = 'b';
 	}
 	else if (c == '\007') {
 	    *q++ = '\\';
