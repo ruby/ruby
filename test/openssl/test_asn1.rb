@@ -169,7 +169,7 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::OctetString, ext.value[2].class)
     extv = OpenSSL::ASN1.decode(ext.value[2].value)
     assert_equal(OpenSSL::ASN1::BitString, extv.class)
-    str = "\000"; str[0] = 0b00000110
+    str = "\000"; str[0] = 0b00000110.chr
     assert_equal(str, extv.value)
 
     ext = extensions.value[0].value[2]  # subjetKeyIdentifier
