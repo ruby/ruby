@@ -1,3 +1,10 @@
+Mon Jul  3 01:14:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_inspect): encode \b (\010) for escape.
+	  [ruby-dev:28927]
+
+	* string.c (rb_str_dump): ditto.
+
 Sun Jul  2 19:17:56 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c: sync with original code (rev 1.7).
