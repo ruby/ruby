@@ -1,3 +1,13 @@
+Sun Jul  2 19:17:56 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c: sync with original code (rev 1.7).
+
+	* ext/racc/cparse/cparse.c: use rb_catch instead of rb_iterate.
+	  Giving a block to a Ruby-level method by rb_iterate is obsolete on
+	  Ruby 1.9.  Note that current cparse.c still includes one
+	  rb_iterate call on Ruby 1.8, but it is not a problem (at least
+	  just now).
+
 Sat Jul  1 15:15:49 2006  Tanaka Akira  <akr@m17n.org>
 
 	* test/socket/test_nonblock.rb: add timeout to send/receive
