@@ -1,3 +1,11 @@
+Sun Jul  2 18:42:27 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c: sync with original source code, rev
+	  1.6.
+
+	* ext/racc/cparse/cparse.c: do not use rb_iterate to give a block
+	  to the method, use rb_block_call instead. [ruby-dev:28445]
+
 Sun Jul  2 11:22:03 2006  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_reopen): STDOUT.reopen(filename, "w+") didn't work. 
