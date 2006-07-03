@@ -70,6 +70,13 @@ rb_dl_value2ptr(VALUE self, VALUE val)
 # define MIDST_DECL_STDCALL   __stdcall
 # define POST_DECL_CDECL
 # define POST_DECL_STDCALL
+#elif (__SUNPRO_C)
+# define PRE_DECL_CDECL
+# define PRE_DECL_STDCALL
+# define MIDST_DECL_CDECL   
+# define MIDST_DECL_STDCALL 
+# define POST_DECL_CDECL
+# define POST_DECL_STDCALL
 #else
 # error "unsupported compiler"
 #endif

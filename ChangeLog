@@ -1,3 +1,8 @@
+Tue Jul  4 04:48:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c: ruby 1.9 HEAD 64 bit warnings clean up from
+	  <ville.mattila at stonesoft.com>.   [ruby-core:08120]
+
 Mon Jul  3 19:04:38 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_make_menu_embeddable): help to make a menu
@@ -3161,7 +3166,7 @@ Tue Nov 01 10:48:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Oct 31 17:34:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: use proper option for Sun linker. A patch from
-	  Shinya Kuwamura <kuwa@labs.fujitsu.com>.  [ruby-dev:27603]
+	  Shinya Kuwamura <kuwa at labs.fujitsu.com>.  [ruby-dev:27603]
 
 Mon Oct 31 05:46:08 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -4298,7 +4303,7 @@ Fri Sep 16 18:34:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/node.c (syck_replace_str): was using return from the
 	  void function.  a patch from MIYAMUKO Katsuyuki
-	  <miyamuko@mtb.biglobe.ne.jp>.  [ruby-dev:27111]
+	  <miyamuko at mtb.biglobe.ne.jp>.  [ruby-dev:27111]
 
 Fri Sep 16 14:48:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -4623,7 +4628,7 @@ Fri Sep  9 16:45:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* merged a patch from Takahiro Kambe <taca@back-street.net> to
+	* merged a patch from Takahiro Kambe <taca at back-street.net> to
 	  support DragonFly BSD.  [ruby-dev:26984]
 
 Thu Sep  8 13:14:57 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
@@ -4726,13 +4731,13 @@ Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/find.rb: should raise ENOENT if root entry does not exist.
 	  [ruby-list:41054]
 
-	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>
+	* lib/ostruct.rb: a patch from Florian Gross <florgro at gmail.com>
 	  merged to allow recursive inspect (and to_s) for OpenStruct.
 	  [ruby-core:05532]
 
 Mon Sep  5 08:20:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/observer.rb: a patch from nornagon <nornagon@gmail.com>
+	* lib/observer.rb: a patch from nornagon <nornagon at gmail.com>
 	  merged to allow arbitrary names for update methods.
 	  [ruby-core:05416]
 
@@ -4981,7 +4986,7 @@ Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lambda): need separate block variable stack
 	  manipulation and lpar_beg maintenance.  based on a patch found
-	  in [ruby-core:05551] from Mauricio Fernandez <mfp@acm.org>.
+	  in [ruby-core:05551] from Mauricio Fernandez <mfp at acm.org>.
 
 	* parse.y (parser_yylex): adjust lpar_beg after tLAMBEG and
 	  kDO_LAMBDA. [ruby-core:05551]
@@ -6414,19 +6419,19 @@ Wed Jun  8 01:27:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Jun  8 00:15:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_getaddrinfo__aix): merged a patch from
-	  KUBO Takehiro <kubo@jiubao.org> to support AIX.  [ruby-list:40832]
+	  KUBO Takehiro <kubo at jiubao.org> to support AIX.  [ruby-list:40832]
 
 Wed Jun  8 00:09:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (Array::to_yaml): merged a patch from
-	  Tilman Sauerbeck <tilman@code-monkey.de>.  [ruby-core:05055]
+	  Tilman Sauerbeck <tilman at code-monkey.de>.  [ruby-core:05055]
 
 	* lib/yaml/rubytypes.rb (Hash::to_yaml): ditto.
 
 Wed Jun  8 00:00:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_insertln): merged a patch from
-	  TAKAHASHI Tamotsu <ttakah@lapis.plala.or.jp>.  [ruby-ext:02305]
+	  TAKAHASHI Tamotsu <ttakah at lapis.plala.or.jp>.  [ruby-ext:02305]
 
 Tue Jun  7 19:34:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -12596,7 +12601,7 @@ Mon Sep  6 11:00:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_chdir): the patch to shut up false warning when
 	  exception occurred within a block.  a patch was given from Johan
-	  Holmberg <holmberg@iar.se>.  [ruby-core:03292]
+	  Holmberg <holmberg at iar.se>.  [ruby-core:03292]
 
 Mon Sep  6 10:57:40 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

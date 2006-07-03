@@ -229,6 +229,10 @@ rb_dlcfunc_inspect(VALUE self)
 #elif defined(_MSC_VER) || defined(__BORLANDC__)
 # define DECL_FUNC_CDECL(f,ret,args)  ret (__cdecl *f)(args)
 # define DECL_FUNC_STDCALL(f,ret,args)  ret (__stdcall *f)(args)
+#elif defined(__SUNPRO_C)
+# define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) 
+# define DECL_FUNC_CDECL(f,ret,args)  ret (*f)(args)
+# define DECL_FUNC_STDCALL(f,ret,args)  ret (*f)(args)
 #else
 # error "unsupported compiler."
 #endif

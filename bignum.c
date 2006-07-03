@@ -1249,8 +1249,8 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 
     dd = 0;
     q = yds[ny-1];
-    while ((q & (1<<(BITSPERDIG-1))) == 0) {
-	q <<= 1;
+    while ((q & (1UL<<(BITSPERDIG-1))) == 0) {
+	q <<= 1UL;
 	dd++;
     }
     if (dd) {

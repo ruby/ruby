@@ -921,7 +921,7 @@ sys_warning_1(const char* mesg)
     rb_sys_warning("%s", mesg);
 }
 
-#define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
+#define GLOB_VERBOSE	(1UL << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
     ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
 

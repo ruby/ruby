@@ -457,8 +457,8 @@ typedef unsigned int        OnigOptionType;
 #define ONIG_OPTION_DEFAULT            ONIG_OPTION_NONE
 
 /* options */
-#define ONIG_OPTION_NONE                 0
-#define ONIG_OPTION_IGNORECASE           1L
+#define ONIG_OPTION_NONE                 0U
+#define ONIG_OPTION_IGNORECASE           1U
 #define ONIG_OPTION_EXTEND               (ONIG_OPTION_IGNORECASE         << 1)
 #define ONIG_OPTION_MULTILINE            (ONIG_OPTION_EXTEND             << 1)
 #define ONIG_OPTION_SINGLELINE           (ONIG_OPTION_MULTILINE          << 1)
@@ -513,81 +513,81 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_SYNTAX_DEFAULT   OnigDefaultSyntax
 
 /* syntax (operators) */
-#define ONIG_SYN_OP_VARIABLE_META_CHARACTERS    (1<<0)
-#define ONIG_SYN_OP_DOT_ANYCHAR                 (1<<1)   /* . */
-#define ONIG_SYN_OP_ASTERISK_ZERO_INF           (1<<2)   /* * */
-#define ONIG_SYN_OP_ESC_ASTERISK_ZERO_INF       (1<<3)
-#define ONIG_SYN_OP_PLUS_ONE_INF                (1<<4)   /* + */
-#define ONIG_SYN_OP_ESC_PLUS_ONE_INF            (1<<5)
-#define ONIG_SYN_OP_QMARK_ZERO_ONE              (1<<6)   /* ? */
-#define ONIG_SYN_OP_ESC_QMARK_ZERO_ONE          (1<<7)
-#define ONIG_SYN_OP_BRACE_INTERVAL              (1<<8)   /* {lower,upper} */
-#define ONIG_SYN_OP_ESC_BRACE_INTERVAL          (1<<9)   /* \{lower,upper\} */
-#define ONIG_SYN_OP_VBAR_ALT                    (1<<10)   /* | */
-#define ONIG_SYN_OP_ESC_VBAR_ALT                (1<<11)  /* \| */
-#define ONIG_SYN_OP_LPAREN_SUBEXP               (1<<12)  /* (...)   */
-#define ONIG_SYN_OP_ESC_LPAREN_SUBEXP           (1<<13)  /* \(...\) */
-#define ONIG_SYN_OP_ESC_AZ_BUF_ANCHOR           (1<<14)  /* \A, \Z, \z */
-#define ONIG_SYN_OP_ESC_CAPITAL_G_BEGIN_ANCHOR  (1<<15)  /* \G     */
-#define ONIG_SYN_OP_DECIMAL_BACKREF             (1<<16)  /* \num   */
-#define ONIG_SYN_OP_BRACKET_CC                  (1<<17)  /* [...]  */
-#define ONIG_SYN_OP_ESC_W_WORD                  (1<<18)  /* \w, \W */
-#define ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END     (1<<19)  /* \<. \> */
-#define ONIG_SYN_OP_ESC_B_WORD_BOUND            (1<<20)  /* \b, \B */
-#define ONIG_SYN_OP_ESC_S_WHITE_SPACE           (1<<21)  /* \s, \S */
-#define ONIG_SYN_OP_ESC_D_DIGIT                 (1<<22)  /* \d, \D */
-#define ONIG_SYN_OP_LINE_ANCHOR                 (1<<23)  /* ^, $   */
-#define ONIG_SYN_OP_POSIX_BRACKET               (1<<24)  /* [:xxxx:] */
-#define ONIG_SYN_OP_QMARK_NON_GREEDY            (1<<25)  /* ??,*?,+?,{n,m}? */
-#define ONIG_SYN_OP_ESC_CONTROL_CHARS           (1<<26)  /* \n,\r,\t,\a ... */
-#define ONIG_SYN_OP_ESC_C_CONTROL               (1<<27)  /* \cx  */
-#define ONIG_SYN_OP_ESC_OCTAL3                  (1<<28)  /* \OOO */
-#define ONIG_SYN_OP_ESC_X_HEX2                  (1<<29)  /* \xHH */
-#define ONIG_SYN_OP_ESC_X_BRACE_HEX8            (1<<30)  /* \x{7HHHHHHH} */
+#define ONIG_SYN_OP_VARIABLE_META_CHARACTERS    (1U<<0)
+#define ONIG_SYN_OP_DOT_ANYCHAR                 (1U<<1)   /* . */
+#define ONIG_SYN_OP_ASTERISK_ZERO_INF           (1U<<2)   /* * */
+#define ONIG_SYN_OP_ESC_ASTERISK_ZERO_INF       (1U<<3)
+#define ONIG_SYN_OP_PLUS_ONE_INF                (1U<<4)   /* + */
+#define ONIG_SYN_OP_ESC_PLUS_ONE_INF            (1U<<5)
+#define ONIG_SYN_OP_QMARK_ZERO_ONE              (1U<<6)   /* ? */
+#define ONIG_SYN_OP_ESC_QMARK_ZERO_ONE          (1U<<7)
+#define ONIG_SYN_OP_BRACE_INTERVAL              (1U<<8)   /* {lower,upper} */
+#define ONIG_SYN_OP_ESC_BRACE_INTERVAL          (1U<<9)   /* \{lower,upper\} */
+#define ONIG_SYN_OP_VBAR_ALT                    (1U<<10)   /* | */
+#define ONIG_SYN_OP_ESC_VBAR_ALT                (1U<<11)  /* \| */
+#define ONIG_SYN_OP_LPAREN_SUBEXP               (1U<<12)  /* (...)   */
+#define ONIG_SYN_OP_ESC_LPAREN_SUBEXP           (1U<<13)  /* \(...\) */
+#define ONIG_SYN_OP_ESC_AZ_BUF_ANCHOR           (1U<<14)  /* \A, \Z, \z */
+#define ONIG_SYN_OP_ESC_CAPITAL_G_BEGIN_ANCHOR  (1U<<15)  /* \G     */
+#define ONIG_SYN_OP_DECIMAL_BACKREF             (1U<<16)  /* \num   */
+#define ONIG_SYN_OP_BRACKET_CC                  (1U<<17)  /* [...]  */
+#define ONIG_SYN_OP_ESC_W_WORD                  (1U<<18)  /* \w, \W */
+#define ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END     (1U<<19)  /* \<. \> */
+#define ONIG_SYN_OP_ESC_B_WORD_BOUND            (1U<<20)  /* \b, \B */
+#define ONIG_SYN_OP_ESC_S_WHITE_SPACE           (1U<<21)  /* \s, \S */
+#define ONIG_SYN_OP_ESC_D_DIGIT                 (1U<<22)  /* \d, \D */
+#define ONIG_SYN_OP_LINE_ANCHOR                 (1U<<23)  /* ^, $   */
+#define ONIG_SYN_OP_POSIX_BRACKET               (1U<<24)  /* [:xxxx:] */
+#define ONIG_SYN_OP_QMARK_NON_GREEDY            (1U<<25)  /* ??,*?,+?,{n,m}? */
+#define ONIG_SYN_OP_ESC_CONTROL_CHARS           (1U<<26)  /* \n,\r,\t,\a ... */
+#define ONIG_SYN_OP_ESC_C_CONTROL               (1U<<27)  /* \cx  */
+#define ONIG_SYN_OP_ESC_OCTAL3                  (1U<<28)  /* \OOO */
+#define ONIG_SYN_OP_ESC_X_HEX2                  (1U<<29)  /* \xHH */
+#define ONIG_SYN_OP_ESC_X_BRACE_HEX8            (1U<<30)  /* \x{7HHHHHHH} */
 
-#define ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE        (1<<0)   /* \Q...\E */
-#define ONIG_SYN_OP2_QMARK_GROUP_EFFECT         (1<<1)   /* (?...) */
-#define ONIG_SYN_OP2_OPTION_PERL                (1<<2)   /* (?imsx),(?-imsx) */
-#define ONIG_SYN_OP2_OPTION_RUBY                (1<<3)   /* (?imx), (?-imx)  */
-#define ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT     (1<<4)   /* ?+,*+,++ */
-#define ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL   (1<<5)   /* {n,m}+   */
-#define ONIG_SYN_OP2_CCLASS_SET_OP              (1<<6)   /* [...&&..[..]..] */
-#define ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP       (1<<7)   /* (?<name>...) */
-#define ONIG_SYN_OP2_ESC_K_NAMED_BACKREF        (1<<8)   /* \k<name> */
-#define ONIG_SYN_OP2_ESC_G_SUBEXP_CALL          (1<<9)   /* \g<name>, \g<n> */
-#define ONIG_SYN_OP2_ATMARK_CAPTURE_HISTORY     (1<<10)  /* (?@..),(?@<x>..) */
-#define ONIG_SYN_OP2_ESC_CAPITAL_C_BAR_CONTROL  (1<<11)  /* \C-x */
-#define ONIG_SYN_OP2_ESC_CAPITAL_M_BAR_META     (1<<12)  /* \M-x */
-#define ONIG_SYN_OP2_ESC_V_VTAB                 (1<<13)  /* \v as VTAB */
-#define ONIG_SYN_OP2_ESC_U_HEX4                 (1<<14)  /* \uHHHH */
-#define ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR         (1<<15)  /* \`, \' */
-#define ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  (1<<16)  /* \p{...}, \P{...} */
-#define ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT (1<<17)  /* \p{^..}, \P{^..} */
-#define ONIG_SYN_OP2_CHAR_PROPERTY_PREFIX_IS    (1<<18)  /* \p{IsXDigit} */
-#define ONIG_SYN_OP2_ESC_H_XDIGIT               (1<<19)  /* \h, \H */
-#define ONIG_SYN_OP2_INEFFECTIVE_ESCAPE         (1<<20)  /* \ */
+#define ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE        (1U<<0)  /* \Q...\E */
+#define ONIG_SYN_OP2_QMARK_GROUP_EFFECT         (1U<<1)  /* (?...) */
+#define ONIG_SYN_OP2_OPTION_PERL                (1U<<2)  /* (?imsx),(?-imsx) */
+#define ONIG_SYN_OP2_OPTION_RUBY                (1U<<3)  /* (?imx), (?-imx)  */
+#define ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT     (1U<<4)  /* ?+,*+,++ */
+#define ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL   (1U<<5)  /* {n,m}+   */
+#define ONIG_SYN_OP2_CCLASS_SET_OP              (1U<<6)  /* [...&&..[..]..] */
+#define ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP       (1U<<7)  /* (?<name>...) */
+#define ONIG_SYN_OP2_ESC_K_NAMED_BACKREF        (1U<<8)  /* \k<name> */
+#define ONIG_SYN_OP2_ESC_G_SUBEXP_CALL          (1U<<9)  /* \g<name>, \g<n> */
+#define ONIG_SYN_OP2_ATMARK_CAPTURE_HISTORY     (1U<<10) /* (?@..),(?@<x>..) */
+#define ONIG_SYN_OP2_ESC_CAPITAL_C_BAR_CONTROL  (1U<<11) /* \C-x */
+#define ONIG_SYN_OP2_ESC_CAPITAL_M_BAR_META     (1U<<12) /* \M-x */
+#define ONIG_SYN_OP2_ESC_V_VTAB                 (1U<<13) /* \v as VTAB */
+#define ONIG_SYN_OP2_ESC_U_HEX4                 (1U<<14) /* \uHHHH */
+#define ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR         (1U<<15) /* \`, \' */
+#define ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  (1U<<16) /* \p{...}, \P{...} */
+#define ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT (1U<<17) /* \p{^..}, \P{^..} */
+#define ONIG_SYN_OP2_CHAR_PROPERTY_PREFIX_IS    (1U<<18) /* \p{IsXDigit} */
+#define ONIG_SYN_OP2_ESC_H_XDIGIT               (1U<<19) /* \h, \H */
+#define ONIG_SYN_OP2_INEFFECTIVE_ESCAPE         (1U<<20) /* \ */
 
 /* syntax (behavior) */
-#define ONIG_SYN_CONTEXT_INDEP_ANCHORS           (1<<31) /* not implemented */
-#define ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS        (1<<0)  /* ?, *, +, {n,m} */
-#define ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS      (1<<1)  /* error or ignore */
-#define ONIG_SYN_ALLOW_UNMATCHED_CLOSE_SUBEXP    (1<<2)  /* ...)... */
-#define ONIG_SYN_ALLOW_INVALID_INTERVAL          (1<<3)  /* {??? */
-#define ONIG_SYN_ALLOW_INTERVAL_LOW_ABBREV       (1<<4)  /* {,n} => {0,n} */
-#define ONIG_SYN_STRICT_CHECK_BACKREF            (1<<5)  /* /(\1)/,/\1()/ ..*/
-#define ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND   (1<<6)  /* (?<=a|bc) */
-#define ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP        (1<<7)  /* see doc/RE */
-#define ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME (1<<8)  /* (?<x>)(?<x>) */
-#define ONIG_SYN_FIXED_INTERVAL_IS_GREEDY_ONLY   (1<<9)  /* a{n}?=(?:a{n})? */
+#define ONIG_SYN_CONTEXT_INDEP_ANCHORS           (1U<<31) /* not implemented */
+#define ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS        (1U<<0)  /* ?, *, +, {n,m} */
+#define ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS      (1U<<1)  /* error or ignore */
+#define ONIG_SYN_ALLOW_UNMATCHED_CLOSE_SUBEXP    (1U<<2)  /* ...)... */
+#define ONIG_SYN_ALLOW_INVALID_INTERVAL          (1U<<3)  /* {??? */
+#define ONIG_SYN_ALLOW_INTERVAL_LOW_ABBREV       (1U<<4)  /* {,n} => {0,n} */
+#define ONIG_SYN_STRICT_CHECK_BACKREF            (1U<<5)  /* /(\1)/,/\1()/ ..*/
+#define ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND   (1U<<6)  /* (?<=a|bc) */
+#define ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP        (1U<<7)  /* see doc/RE */
+#define ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME (1U<<8)  /* (?<x>)(?<x>) */
+#define ONIG_SYN_FIXED_INTERVAL_IS_GREEDY_ONLY   (1U<<9)  /* a{n}?=(?:a{n})? */
 
 /* syntax (behavior) in char class [...] */
-#define ONIG_SYN_NOT_NEWLINE_IN_NEGATIVE_CC      (1<<20) /* [^...] */
-#define ONIG_SYN_BACKSLASH_ESCAPE_IN_CC          (1<<21) /* [..\w..] etc.. */
-#define ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC         (1<<22)
-#define ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC     (1<<23) /* [0-9-a]=[0-9\-a] */
+#define ONIG_SYN_NOT_NEWLINE_IN_NEGATIVE_CC      (1U<<20) /* [^...] */
+#define ONIG_SYN_BACKSLASH_ESCAPE_IN_CC          (1U<<21) /* [..\w..] etc.. */
+#define ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC         (1U<<22)
+#define ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC     (1U<<23) /* [0-9-a]=[0-9\-a] */
 /* syntax (behavior) warning */
-#define ONIG_SYN_WARN_CC_OP_NOT_ESCAPED          (1<<24) /* [,-,] */
-#define ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT    (1<<25) /* (?:a*)+ */
+#define ONIG_SYN_WARN_CC_OP_NOT_ESCAPED          (1U<<24) /* [,-,] */
+#define ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT    (1U<<25) /* (?:a*)+ */
 
 /* meta character specifiers (onig_set_meta_char()) */
 #define ONIG_META_CHAR_ESCAPE               0

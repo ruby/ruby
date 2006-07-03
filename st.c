@@ -568,14 +568,14 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 static int
 strhash(register const char *string)
 {
-    register int hval = FNV1_32A_INIT;
+    register unsigned int hval = FNV1_32A_INIT;
 
     /*
      * FNV-1a hash each octet in the buffer
      */
     while (*string) {
 	/* xor the bottom with the current octet */
-	hval ^= (int)*string++;
+	hval ^= (unsigned int)*string++;
 
 	/* multiply by the 32 bit FNV magic prime mod 2^32 */
 	hval *= FNV_32_PRIME;

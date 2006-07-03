@@ -845,14 +845,14 @@ rb_str_hash(VALUE str)
 {
     register long len = RSTRING(str)->len;
     register char *p = RSTRING(str)->ptr;
-    register int hval = FNV1_32A_INIT;
+    register unsigned int hval = FNV1_32A_INIT;
 
     /*
      * FNV-1a hash each octet in the buffer
      */
     while (len--) {
 	/* xor the bottom with the current octet */
-	hval ^= (int)*p++;
+	hval ^= (unsigned int)*p++;
 
 	/* multiply by the 32 bit FNV magic prime mod 2^32 */
 #if defined(FNV_GCC_OPTIMIZATION)

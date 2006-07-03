@@ -1923,8 +1923,8 @@ time_mdump(VALUE time)
 
     if ((tm->tm_year & 0xffff) != tm->tm_year)
 	rb_raise(rb_eArgError, "year too big to marshal");
-
-    p = 0x1          << 31 | /*  1 */
+ 
+    p = 0x1UL          << 31 | /*  1 */
 	tobj->gmt    << 30 | /*  1 */
 	tm->tm_year  << 14 | /* 16 */
 	tm->tm_mon   << 10 | /*  4 */
@@ -1994,13 +1994,13 @@ time_mload(VALUE time, VALUE str)
 	s |= buf[i]<<(8*(i-4));
     }
 
-    if ((p & (1<<31)) == 0) {
+    if ((p & (1UL<<31)) == 0) {
         gmt = 0;
 	sec = p;
 	usec = s;
     }
     else {
-	p &= ~(1<<31);
+	p &= ~(1UL<<31);
 	gmt        = (p >> 30) & 0x1;
 	tm.tm_year = (p >> 14) & 0xffff;
 	tm.tm_mon  = (p >> 10) & 0xf;
