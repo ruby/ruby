@@ -2950,11 +2950,7 @@ popen_exec(void *pp)
 
     popen_redirect(p);
     for (fd = 3; fd < NOFILE; fd++) {
-#ifdef FD_CLOEXEC
-	fcntl(fd, F_SETFL, FD_CLOEXEC);
-#else
 	close(fd);
-#endif
     }
     return rb_exec(&p->exec);
 }

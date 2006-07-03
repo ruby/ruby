@@ -1,3 +1,8 @@
+Mon Jul  3 10:44:01 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (popen_exec): close file descriptors other than standard I/Os.
+	  fixed: [ruby-dev:28924]
+
 Mon Jul  3 05:15:29 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_asn1.c: String#[]= doesnt't accept Integer.
@@ -26,7 +31,7 @@ Sun Jul  2 18:42:27 2006  Minero Aoki  <aamine@loveruby.net>
 
 Sun Jul  2 11:22:03 2006  Tanaka Akira  <akr@m17n.org>
 
-	* io.c (io_reopen): STDOUT.reopen(filename, "w+") didn't work. 
+	* io.c (io_reopen): STDOUT.reopen(filename, "w+") didn't work.
 	(rb_io_reopen): STDOUT.reopen(File.open(filename, "w+")) didn't work.
 
 Sat Jul  1 23:55:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
