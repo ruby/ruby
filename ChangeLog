@@ -64,7 +64,7 @@ Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
 
-	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert
+	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] sometimes fail to convert
 	  a tcl string to a ruby object if the tcl string includes "\n".
 
 Tue Jun 27 16:04:05 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
@@ -830,7 +830,7 @@ Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.
 	  (Struct#pretty_print): call Kernel#class and Struct#members even if
-	  overriden.
+	  overridden.
 	  (Struct#pretty_print_cycle): ditto.
 	  [ruby-core:7865]
 
@@ -920,7 +920,7 @@ Tue Apr 25 07:55:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Apr 25 00:08:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): should check if c is not a
-	  multibyte chracter.  a patch from KIMURA Koichi
+	  multibyte character.  a patch from KIMURA Koichi
 	  <kimura.koichi at canon.co.jp>.  [ruby-dev:28598]
 
 Fri Apr 21 15:19:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
