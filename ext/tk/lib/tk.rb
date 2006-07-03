@@ -1295,6 +1295,10 @@ module TkCore
     fail TkCallbackContinue, "Tk callback returns 'continue' status"
   end
 
+  def callback_return
+    fail TkCallbackReturn, "Tk callback returns 'return' status"
+  end
+
   def TkCore.callback(*arg)
     begin
       if TkCore::INTERP.tk_cmd_tbl.kind_of?(Hash)
@@ -4559,7 +4563,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-06-27'.freeze
+  RELEASE_DATE = '2006-07-03'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

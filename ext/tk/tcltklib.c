@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-06-26"
+#define TCLTKLIB_RELEASE_DATE "2006-07-03"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -127,7 +127,10 @@ static int
 tcl_eval(Tcl_Interp *interp, const char *cmd)
 {
     char *buf = strdup(cmd);
-    const int ret = Tcl_Eval(interp, buf);
+    int ret;
+
+    Tcl_AllowExceptions(interp);
+    ret = Tcl_Eval(interp, buf);
     free(buf);
     return ret;
 }
@@ -139,7 +142,10 @@ static int
 tcl_global_eval(Tcl_Interp *interp, const char *cmd)
 {
     char *buf = strdup(cmd);
-    const int ret = Tcl_GlobalEval(interp, buf);
+    int ret;
+
+    Tcl_AllowExceptions(interp);
+    ret = Tcl_GlobalEval(interp, buf);
     free(buf);
     return ret;
 }
@@ -5587,6 +5593,7 @@ call_tcl_eval(arg)
 {
     struct call_eval_info *inf = (struct call_eval_info *)arg;
 
+    Tcl_AllowExceptions(inf->ptr->ip);
     inf->ptr->return_value = Tcl_EvalObj(inf->ptr->ip, inf->cmd);
 
     return Qnil;
@@ -7717,6 +7724,98 @@ tcltklib_compile_info()
     return ret;
 }
 
+/*###############################################*/
+
+/*
+ *   The following is based on tkMenu.[ch] 
+ *   of Tcl/Tk (>=8.0) source code.
+ */
+#if TCL_MAJOR_VERSION >= 8
+
+#define MASTER_MENU             0
+#define TEAROFF_MENU            1
+#define MENUBAR                 2
+
+struct dummy_TkMenuEntry {
+    int type;
+    struct dummy_TkMenu *menuPtr;
+    /* , and etc.   */
+};
+
+struct dummy_TkMenu {
+    Tk_Window tkwin;
+    Display *display;
+    Tcl_Interp *interp;
+    Tcl_Command widgetCmd;
+    struct dummy_TkMenuEntry **entries;
+    int numEntries;
+    int active;
+    int menuType;     /* MASTER_MENU, TEAROFF_MENU, or MENUBAR */
+    Tcl_Obj *menuTypePtr;
+    /* , and etc.   */
+};
+
+struct dummy_TkMenuRef {
+    struct dummy_TkMenu *menuPtr;
+    char *dummy1;
+    char *dummy2;
+    char *dummy3;
+};
+
+EXTERN struct dummy_TkMenuRef *TkFindMenuReferences(Tcl_Interp*, char*);
+
+#endif
+
+static VALUE
+ip_make_menu_embeddable(interp, menu_path)
+    VALUE interp;
+    VALUE menu_path;
+{
+#if TCL_MAJOR_VERSION >= 8
+    struct tcltkip *ptr = get_ip(interp);
+    struct dummy_TkMenuRef *menuRefPtr;
+
+    StringValue(menu_path);
+
+    menuRefPtr = TkFindMenuReferences(ptr->ip, RSTRING(menu_path)->ptr);
+    if (menuRefPtr == (struct dummy_TkMenuRef *) NULL) {
+        rb_raise(rb_eArgError, "not a menu widget, or invalid widget path");
+    }
+
+    if (menuRefPtr->menuPtr == (struct dummy_TkMenu *) NULL) {
+        rb_raise(rb_eRuntimeError, 
+		 "invalid menu widget (maybe already destroyed)");
+    }
+
+    if ((menuRefPtr->menuPtr)->menuType != MENUBAR) {
+        rb_raise(rb_eRuntimeError, 
+		 "target menu widget must be a MENUBAR type");
+    }
+
+    (menuRefPtr->menuPtr)->menuType = TEAROFF_MENU;
+#if 0  /* cause SEGV */
+    {
+       /* char *s = "tearoff"; */
+       char *s = "normal";
+       /* Tcl_SetStringObj((menuRefPtr->menuPtr)->menuTypePtr, s, strlen(s));*/
+       (menuRefPtr->menuPtr)->menuTypePtr = Tcl_NewStringObj(s, strlen(s));
+       /* (menuRefPtr->menuPtr)->menuType = TEAROFF_MENU; */
+       (menuRefPtr->menuPtr)->menuType = MASTER_MENU;
+    }
+#endif
+
+    TkEventuallyRecomputeMenu(menuRefPtr->menuPtr);
+    TkEventuallyRedrawMenu(menuRefPtr->menuPtr, 
+			   (struct dummy_TkMenuEntry *)NULL);
+
+#else /* TCL_MAJOR_VERSION <= 7 */
+    rb_notimplement();
+#endif
+
+    return interp;
+}
+
+/*###############################################*/
 
 /*---- initialization ----*/
 void
@@ -7911,6 +8010,10 @@ Init_tcltklib()
     rb_define_method(ip, "_set_global_var2", ip_set_global_var2, 3);
     rb_define_method(ip, "_unset_global_var", ip_unset_global_var, 1);
     rb_define_method(ip, "_unset_global_var2", ip_unset_global_var2, 2);
+
+    /* --------------------------------------------------------------- */
+
+    rb_define_method(ip, "_make_menu_embeddable", ip_make_menu_embeddable, 1);
 
     /* --------------------------------------------------------------- */
 
