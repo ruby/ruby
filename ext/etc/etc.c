@@ -483,7 +483,7 @@ static VALUE mEtc;
  * Documented by mathew <meta@pobox.com>.
  */
 void
-Init_etc()
+Init_etc(void)
 {
     mEtc = rb_define_module("Etc");
 

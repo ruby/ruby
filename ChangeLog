@@ -1,3 +1,9 @@
+Mon Jul  3 14:42:06 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/extconf.rb (PW_UID2VAL, PW_GID2VAL): defaulted to conversion
+	  from int, and sys/types.h needs to be included before grp.h.
+	  fixed: [ruby-dev:28938]
+
 Mon Jul  3 10:44:01 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (popen_exec): close file descriptors other than standard I/Os.
