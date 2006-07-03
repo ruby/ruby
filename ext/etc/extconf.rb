@@ -25,18 +25,17 @@ if  a or b or c
   have_struct_member('struct passwd', 'pw_passwd', 'pwd.h')
   have_struct_member('struct group', 'gr_passwd', 'grp.h')
   [%w"uid_t pwd.h", %w"gid_t grp.h"].each do |t, *h|
-    h << "sys/types.h"
+    h.unshift("sys/types.h")
+    f = "INT2NUM"
     if have_type(t, h)
       if try_static_assert("sizeof(#{t}) > sizeof(long)", h)
 	f = "LL2NUM"
-      else
-	f = "INT2NUM"
       end
       if try_static_assert("(#{t})-1 > 0", h)
 	f = "U#{f}"
       end
-      $defs.push("-DPW_#{t.chomp('_t').upcase}2VAL=#{f}")
     end
+    $defs.push("-DPW_#{t.chomp('_t').upcase}2VAL=#{f}")
   end
   create_makefile("etc")
 end

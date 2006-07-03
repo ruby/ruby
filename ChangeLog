@@ -1,3 +1,9 @@
+Mon Jul  3 14:42:06 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/extconf.rb (PW_UID2VAL, PW_GID2VAL): defaulted to conversion
+	  from int, and sys/types.h needs to be included before grp.h.
+	  fixed: [ruby-dev:28938]
+
 Mon Jul  3 01:14:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_inspect): encode \b (\010) for escape.
@@ -41,7 +47,7 @@ Thu Jun 29 18:00:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Jun 28 15:47:14 2006  Eric Hodel  <drbrain@segment7.net>
 
-        * lib/optparse.rb: RDoc patch from Robin Stocker <robin@nibor.org>
+	* lib/optparse.rb: RDoc patch from Robin Stocker <robin@nibor.org>
 	  [ruby-core:08087]
 
 Wed Jun 28 19:04:34 2006  Tanaka Akira  <akr@m17n.org>
@@ -58,7 +64,7 @@ Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
 
-	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert 
+	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert
 	  a tcl string to a ruby object if the tcl string includes "\n".
 
 Tue Jun 27 16:04:05 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
