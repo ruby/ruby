@@ -416,10 +416,18 @@ module TkEvent
         id = install_cmd(proc{|*arg|
           ex_args = []
           extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-          TkUtil.eval_cmd(cmd, *(ex_args.concat(klass.scan_args(keys, arg))))
+          begin
+            TkUtil.eval_cmd(cmd, *(ex_args.concat(klass.scan_args(keys, arg))))
+          rescue Exception=>e
+            if TkCore::INTERP.kind_of?(TclTkIp)
+              fail e
+            else
+              # MultiTkIp
+              fail Exception, "#{e.class}: #{e.message.dup}"
+            end
+          end
         })
       end
-      id + ' ' + args
     else
       keys, args = klass._get_all_subst_keys
 
@@ -431,11 +439,46 @@ module TkEvent
         id = install_cmd(proc{|*arg|
           ex_args = []
           extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-          TkUtil.eval_cmd(cmd, 
-                          *(ex_args << klass.new(*klass.scan_args(keys, arg))))
+          begin
+            TkUtil.eval_cmd(cmd, *(ex_args << klass.new(*klass.scan_args(keys, arg))))
+          rescue Exception=>e
+            if TkCore::INTERP.kind_of?(TclTkIp)
+              fail e
+            else
+              # MultiTkIp
+              fail Exception, "#{e.class}: #{e.message.dup}"
+            end
+          end
         })
       end
+    end
+
+    if TkCore::INTERP.kind_of?(TclTkIp)
       id + ' ' + args
+    else
+      # MultiTkIp
+      "if {[set st [catch {#{id} #{args}} ret]] != 0} {
+         if {$st == 4} {
+           return -code continue $ret
+         } elseif {$st == 3} {
+           return -code break $ret
+         } elseif {$st == 2} {
+           return -code return $ret
+         } elseif {[regexp {^Exception: (TkCallbackContinue: .*)$} \
+                                                               $ret m msg]} {
+           return -code continue $msg
+         } elseif {[regexp {^Exception: (TkCallbackBreak: .*)$} $ret m msg]} {
+           return -code break $msg
+         } elseif {[regexp {^Exception: (TkCallbackReturn: .*)$} $ret m msg]} {
+           return -code return $msg
+         } elseif {[regexp {^Exception: (\\S+: .*)$} $ret m msg]} {
+           return -code return $msg
+         } else {
+           return -code error $ret
+         }
+       } else {
+          set ret
+       }"
     end
   end
 

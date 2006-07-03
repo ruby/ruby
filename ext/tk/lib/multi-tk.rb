@@ -158,7 +158,9 @@ class MultiTkIp
         backup_ip = current['callback_ip']
         current['callback_ip'] = @ip
         begin
-          @ip.cb_eval(@cmd, *args)
+          ret = @ip.cb_eval(@cmd, *args)
+          fail ret if ret.kind_of?(Exception)
+          ret
         rescue TkCallbackBreak, TkCallbackContinue => e
           fail e
 	rescue SecurityError => e
@@ -175,6 +177,8 @@ class MultiTkIp
             fail e
           end
         rescue Exception => e
+          fail e if e.message =~ /^TkCallback/
+
           if @ip.safe?
 	    if @ip.respond_to?(:cb_error)
               @ip.cb_error(e)
@@ -662,6 +666,8 @@ class MultiTkIp
     @interp = TclTkIp.new(name, _keys2opts(keys))
     @ip_name = nil
 
+    @callback_status = [].taint
+
     @system = Object.new
 
     @wait_on_mainloop = [true, 0].taint
@@ -1056,6 +1062,8 @@ class MultiTkIp
     @slave_ip_top.taint unless @slave_ip_top.tainted?
     @cb_error_proc.taint unless @cb_error_proc.tainted?
     @evloop_thread.taint unless @evloop_thread.tainted?
+
+    @callback_status = []
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
@@ -1487,6 +1495,7 @@ class MultiTkIp
     @@CB_ENTRY_CLASS.new(__getip, cmd).freeze
   end
 
+=begin
   def cb_eval(cmd, *args)
     #self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
     #ret = self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
@@ -1499,8 +1508,62 @@ class MultiTkIp
     end
     ret
   end
-end
+=end
+  def cb_eval(cmd, *args)
+    self.eval_callback(*args){|safe, *params|
+      $SAFE=safe if $SAFE < safe
+      # TkUtil.eval_cmd(cmd, *params)
+      TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *params))
+    }
+  end
+=begin
+  def cb_eval(cmd, *args)
+    @callback_status[0] ||= TkVariable.new
+    @callback_status[1] ||= TkVariable.new
+    st, val = @callback_status
+    th = Thread.new{
+      self.eval_callback(*args){|safe, *params|
+        #p [status, val, safe, *params]
+        $SAFE=safe if $SAFE < safe
+        begin
+          TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *params))
+        rescue TkCallbackContinue
+          st.value = 4
+        rescue TkCallbackBreak
+          st.value = 3
+        rescue TkCallbackReturn
+          st.value = 2
+        rescue Exception => e
+          val.value = e.message
+          st.value = 1
+        else
+          st.value = 0
+        end
+      }
+    }
+    begin
+      st.wait
+      status = st.numeric
+      retval = val.value
+    rescue => e
+      fail e
+    end
 
+    if status == 1
+      fail RuntimeError, retval
+    elsif status == 2
+      fail TkCallbackReturn, "Tk callback returns 'return' status"
+    elsif status == 3
+      fail TkCallbackBreak, "Tk callback returns 'break' status"
+    elsif status == 4
+      fail TkCallbackContinue, "Tk callback returns 'continue' status"
+    else
+      ''
+    end
+  end
+=end
+
+end
 
 # evaluate a procedure on the proper interpreter
 class MultiTkIp
@@ -1969,6 +2032,10 @@ class << MultiTkIp
     __getip._unset_global_var2(var, idx)
   end
 
+  def _make_menu_embeddable(menu_path)
+    __getip._make_menu_embeddable(menu_path)
+  end
+
   def _split_tklist(str)
     __getip._split_tklist(str)
   end
@@ -2408,6 +2475,11 @@ class MultiTkIp
   def _unset_global_var2(var, idx)
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
     @interp._unset_global_var2(var, idx)
+  end
+
+  def _make_menu_embeddable(menu_path)
+    raise SecurityError, "no permission to manipulate" unless self.manipulable?
+    @interp._make_menu_embeddable(menu_path)
   end
 
   def _split_tklist(str)
