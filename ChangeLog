@@ -11,7 +11,7 @@ Mon Jul  3 10:44:01 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Jul  3 05:15:29 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* test/openssl/test_asn1.c: String#[]= doesnt't accept Integer.
+	* test/openssl/test_asn1.c: String#[]= doesn't accept Integer.
 
 Mon Jul  3 01:14:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -38,7 +38,7 @@ Sun Jul  2 18:42:27 2006  Minero Aoki  <aamine@loveruby.net>
 Sun Jul  2 11:22:03 2006  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_reopen): STDOUT.reopen(filename, "w+") didn't work.
-	(rb_io_reopen): STDOUT.reopen(File.open(filename, "w+")) didn't work.
+	  (rb_io_reopen): STDOUT.reopen(File.open(filename, "w+")) didn't work.
 
 Sat Jul  1 23:55:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -155,7 +155,7 @@ Tue Jun 27 22:47:18 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: forgot to update TCLTKLIB_RELEASE_DATE.
 
-	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] somtimes fail to convert
+	* ext/tk/lib/tk.rb (tk_tcl2ruby): [bug fix] sometimes fail to convert
 	  a tcl string to a ruby object if the tcl string includes "\n".
 
 Tue Jun 27 20:05:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
