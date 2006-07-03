@@ -805,7 +805,7 @@ Thu May 18 17:51:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu May 18 17:11:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::out): support utf-8.  a patch from Fujioka
-	  <fuj@rabbix.jp>.  [ruby-dev:28649]
+	  <fuj at rabbix.jp>.  [ruby-dev:28649]
 
 Thu May 18 00:42:12 2006  nobuyoshi nakada  <nobu@ruby-lang.org>
 
@@ -2215,7 +2215,7 @@ Tue Nov 01 10:50:17 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Oct 31 17:34:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: use proper option for Sun linker. A patch from
-	  Shinya Kuwamura <kuwa@labs.fujitsu.com>.  [ruby-dev:27603]
+	  Shinya Kuwamura <kuwa at labs.fujitsu.com>.  [ruby-dev:27603]
 
 Mon Oct 31 11:27:22 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -2938,7 +2938,7 @@ Fri Sep 16 18:34:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/node.c (syck_replace_str): was using return from the
 	  void function.  a patch from MIYAMUKO Katsuyuki
-	  <miyamuko@mtb.biglobe.ne.jp>.  [ruby-dev:27111]
+	  <miyamuko at mtb.biglobe.ne.jp>.  [ruby-dev:27111]
 
 Fri Sep 16 14:48:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -3169,7 +3169,7 @@ Mon Sep 12 14:03:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Sep 12 10:45:58 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/dl.c (rb_io_to_ptr): merged a patch for DragonFly BSD
-	  from Takahiro Kambe <taca@back-street.net>.  [ruby-dev:27023]
+	  from Takahiro Kambe <taca at back-street.net>.  [ruby-dev:27023]
 
 Sun Sep 11 22:05:51 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
@@ -3268,7 +3268,7 @@ Fri Sep  9 16:45:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* merged a patch from Takahiro Kambe <taca@back-street.net> to
+	* merged a patch from Takahiro Kambe <taca at back-street.net> to
 	  support DragonFly BSD.  [ruby-dev:26984]
 
 Wed Sep  7 12:55:08 2005  Tanaka Akira  <akr@m17n.org>
@@ -3313,7 +3313,7 @@ Wed Sep  7 08:32:47 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>
+	* lib/ostruct.rb: a patch from Florian Gross <florgro at gmail.com>
 	  merged to allow recursive inspect (and to_s) for OpenStruct.
 	  [ruby-core:05532]
 
@@ -4403,19 +4403,19 @@ Wed Jun  8 08:33:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Jun  8 00:15:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_getaddrinfo__aix): merged a patch from
-	  KUBO Takehiro <kubo@jiubao.org> to support AIX.  [ruby-list:40832]
+	  KUBO Takehiro <kubo at jiubao.org> to support AIX.  [ruby-list:40832]
 
 Wed Jun  8 00:09:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (Array::to_yaml): merged a patch from
-	  Tilman Sauerbeck <tilman@code-monkey.de>.  [ruby-core:05055]
+	  Tilman Sauerbeck <tilman at code-monkey.de>.  [ruby-core:05055]
 
 	* lib/yaml/rubytypes.rb (Hash::to_yaml): ditto.
 
 Wed Jun  8 00:00:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_insertln): merged a patch from
-	  TAKAHASHI Tamotsu <ttakah@lapis.plala.or.jp>.  [ruby-ext:02305]
+	  TAKAHASHI Tamotsu <ttakah at lapis.plala.or.jp>.  [ruby-ext:02305]
 
 Tue Jun  7 19:34:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -4425,7 +4425,7 @@ Tue Jun  7 19:34:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Jun  7 18:39:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/thread.rb: RDoc documentation from Eric Hodel
-	  <drbrain@segment7.net> added.  [ruby-core:05148]
+	  <drbrain at segment7.net> added.  [ruby-core:05148]
 
 Tue Jun  7 18:30:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -8932,7 +8932,7 @@ Mon Sep  6 11:00:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_chdir): the patch to shut up false warning when
 	  exception occurred within a block.  a patch was given from Johan
-	  Holmberg <holmberg@iar.se>.  [ruby-core:03292]
+	  Holmberg <holmberg at iar.se>.  [ruby-core:03292]
 
 Mon Sep  6 07:51:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
