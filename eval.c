@@ -785,10 +785,14 @@ static unsigned long block_unique = 1;
     _block.dyna_vars = ruby_dyna_vars;	\
     _block.wrapper = ruby_wrapper;	\
     _block.block_obj = 0;		\
-    _block.uniq = (b)?block_unique++:0; \
     if (b) {				\
+        _block.uniq = block_unique++;   \
 	prot_tag->blkid = _block.uniq;  \
     }                                   \
+    else {				\
+        _block.uniq = 0;                \
+	prot_tag->blkid = 0;            \
+    }					\
     (v) = &_block
 
 #define POP_BLOCK() } while (0)
@@ -5915,15 +5919,15 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	int state;
 
 	PUSH_TAG(PROT_LOOP);
-	prot_tag->blkid = block->uniq;
+//	prot_tag->blkid = block->uniq;
 	state = EXEC_TAG();
 	if (state == 0) {
 	    result = rb_call0(klass, recv, mid, id, argc, argv, block, body, noex);
 	}
-	else if (state == TAG_BREAK && TAG_DST()) {
-	    result = prot_tag->retval;
-	    state = 0;
-	}
+//	else if (state == TAG_BREAK && TAG_DST()) {
+//	    result = prot_tag->retval;
+//	    state = 0;
+//	}
 	POP_TAG();
 	if (state) JUMP_TAG(state);
 	return result;
@@ -8750,7 +8754,7 @@ passing_block(VALUE proc, struct BLOCK *blockp)
     if (!orphan) return data;
 
     *blockp = *data;
-    if (orphan) blockp->uniq = block_unique++;
+    blockp->uniq = block_unique++;
     return blockp;
 }
 

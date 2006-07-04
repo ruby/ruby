@@ -1,3 +1,8 @@
+Tue Jul  4 15:12:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call): should not set prot_tag->blkid since it would
+	  never catch breaks at this level.  [ruby-dev:28922]
+
 Tue Jul  4 04:48:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c: ruby 1.9 HEAD 64 bit warnings clean up from
