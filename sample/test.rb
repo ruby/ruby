@@ -1174,7 +1174,7 @@ def test_b5
     block_call(&b)
   end
 end
-test_ok(test_b5() == 54)
+test_ok(test_b5() == 55)
 
 def test_b6
   b = lambda{break 67}
