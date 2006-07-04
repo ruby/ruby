@@ -811,7 +811,8 @@ proc_options(int argc, char **argv)
 		script_node = NEW_BEGIN(0);
 	    }
 #if defined DOSISH || defined __CYGWIN__
-	    translate_char(script, '\\', '/');
+	    /* assume that we can change argv[n] if never change its length. */
+	    translate_char((char *)script, '\\', '/');
 #endif
 	    argc--; argv++;
 	}

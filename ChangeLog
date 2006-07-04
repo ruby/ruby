@@ -1,3 +1,7 @@
+Tue Jul  4 21:48:56 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (proc_options): supress warning on DOSISH.
+
 Tue Jul  4 15:12:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): should not set prot_tag->blkid since it would
