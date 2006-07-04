@@ -1,3 +1,8 @@
+Wed Jul  5 01:12:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_lambda.rb (TestLambdaParameters::test_lambda_as_iterator): 
+	  -> style block no longer available.  [ruby-dev:28958]
+
 Tue Jul  4 21:48:56 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (proc_options): supress warning on DOSISH.

@@ -47,7 +47,7 @@ class TestLambdaParameters < Test::Unit::TestCase
 
   def test_lambda_as_iterator
     a = 0
-    2.times ->(_){ a += 1 }
+    2.times(&->(_){ a += 1 })
     assert_equal(a, 2)
   end
 end
