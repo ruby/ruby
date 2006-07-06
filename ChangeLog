@@ -1,3 +1,8 @@
+Fri Jul  7 00:38:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_default): should not call default procedure if
+	  no key is given.  [ruby-list:42541]
+
 Fri Jul  7 00:29:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_mload): a patch from Daniel Berger

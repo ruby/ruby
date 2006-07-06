@@ -508,6 +508,7 @@ rb_hash_default(argc, argv, hash)
 
     rb_scan_args(argc, argv, "01", &key);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	if (argc == 0) return Qnil;
 	return rb_funcall(RHASH(hash)->ifnone, id_call, 2, hash, key);
     }
     return RHASH(hash)->ifnone;
