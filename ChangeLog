@@ -1,3 +1,8 @@
+Thu Jul  6 22:21:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_proc_times): use sysconf(_SC_CLK_TCK) value prior to
+	  HZ and CLK_TCK.  fixed: [ruby-talk:200293]
+
 Thu Jul  6 22:17:21 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c: sync with original code, rev 1.8.
@@ -11,9 +16,9 @@ Thu Jul  6 22:17:21 2006  Minero Aoki  <aamine@loveruby.net>
 Mon Jul  3 19:04:38 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_make_menu_embeddable): help to make a menu
-	  widget embeddable (pack, grid, and so on) like as a general widget. 
+	  widget embeddable (pack, grid, and so on) like as a general widget.
 	  However, an embeddable menu may require to be definied some event
-	  bindings for general use. 
+	  bindings for general use.
 
 	* ext/tk/lib/tk/event.rb: [bug fix] Tk.callback_break and
 	  Tk.callback_continue don't work on MultiTkIp.

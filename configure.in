@@ -483,7 +483,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      readlink setitimer setruid seteuid setreuid setresuid\
 	      setproctitle setrgid setegid setregid setresgid issetugid pause\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
-	      getgroups setgroups getpriority getrlimit setrlimit\
+	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
               dlopen sigprocmask\
 	      sigaction _setjmp setsid telldir seekdir fchmod mktime timegm\
 	      cosh sinh tanh setuid setgid setenv unsetenv)
@@ -747,6 +747,22 @@ rb_cv_huge_st_ino=no)
 ])
 if test $rb_cv_huge_st_ino = yes; then
   AC_DEFINE(HUGE_ST_INO)
+fi
+
+if test "$ac_cv_func_sysconf" = yes; then
+  AC_DEFUN(RUBY_CHECK_SYSCONF, [dnl
+  AC_CACHE_CHECK([whether _SC_$1 is supported], rb_cv_have_sc_[]m4_tolower($1),
+    [AC_TRY_COMPILE([#include <unistd.h>
+      ],
+      [_SC_$1 >= 0],
+      rb_cv_have_sc_[]m4_tolower($1)=yes,
+      rb_cv_have_sc_[]m4_tolower($1)=no)
+    ])
+  if test "$rb_cv_have_sc_[]m4_tolower($1)" = yes; then
+    AC_DEFINE(HAVE__SC_$1)
+  fi
+  ])
+  RUBY_CHECK_SYSCONF(CLK_TCK)
 fi
 
 case "$target_cpu" in
