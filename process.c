@@ -3516,6 +3516,10 @@ VALUE
 rb_proc_times(VALUE obj)
 {
 #if defined(HAVE_TIMES) && !defined(__CHECKER__)
+    const double hz =
+#ifdef HAVE__SC_CLK_TCK
+	(double)sysconf(_SC_CLK_TCK);
+#else
 #ifndef HZ
 # ifdef CLK_TCK
 #   define HZ CLK_TCK
@@ -3523,15 +3527,17 @@ rb_proc_times(VALUE obj)
 #   define HZ 60
 # endif
 #endif /* HZ */
+	HZ;
+#endif
     struct tms buf;
     volatile VALUE utime, stime, cutime, sctime;
 
     times(&buf);
     return rb_struct_new(S_Tms,
-			 utime = rb_float_new((double)buf.tms_utime / HZ),
-			 stime = rb_float_new((double)buf.tms_stime / HZ),
-			 cutime = rb_float_new((double)buf.tms_cutime / HZ),
-			 sctime = rb_float_new((double)buf.tms_cstime / HZ));
+			 utime = rb_float_new(buf.tms_utime / hz),
+			 stime = rb_float_new(buf.tms_stime / hz),
+			 cutime = rb_float_new(buf.tms_cutime / hz),
+			 sctime = rb_float_new(buf.tms_cstime / hz));
 #else
     rb_notimplement();
 #endif
