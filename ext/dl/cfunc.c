@@ -222,20 +222,9 @@ rb_dlcfunc_inspect(VALUE self)
     return val;
 }
 
-#if defined(__GNUC__)
-# define DECL_FUNC_CDECL(f,ret,args)  FUNC_CDECL(ret (*f)(args))
-# define DECL_FUNC_STDCALL(f,ret,args)  FUNC_STDCALL(ret (*f)(args))
-/* # define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) */
-#elif defined(_MSC_VER) || defined(__BORLANDC__)
-# define DECL_FUNC_CDECL(f,ret,args)  ret (__cdecl *f)(args)
-# define DECL_FUNC_STDCALL(f,ret,args)  ret (__stdcall *f)(args)
-#elif defined(__SUNPRO_C)
-# define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) 
-# define DECL_FUNC_CDECL(f,ret,args)  ret (*f)(args)
-# define DECL_FUNC_STDCALL(f,ret,args)  ret (*f)(args)
-#else
-# error "unsupported compiler."
-#endif
+
+# define DECL_FUNC_CDECL(f,ret,args)  ret (FUNC_CDECL(*f))(args)
+# define DECL_FUNC_STDCALL(f,ret,args)  ret (FUNC_STDCALL(*f))(args)
 
 #define CALL_CASE switch( RARRAY(ary)->len ){ \
   CASE(0); break; \

@@ -94,14 +94,14 @@ class TestDL < TestBase
       assert_equal(str[0,2], ptr[0,2])
       assert_equal(str[1,2], ptr[1,2])
       assert_equal(str[1,0], ptr[1,0])
-      assert_equal(str[0], ptr[0])
-      assert_equal(str[1], ptr[1])
+      assert_equal(str[0].ord, ptr[0])
+      assert_equal(str[1].ord, ptr[1])
     }
     str = 'abc'
     ptr = CPtr[str]
     check.call(str, ptr)
-    str[0] = ?c
-    ptr[0] = ?c
+    str[0] = "c"
+    ptr[0] = "c".ord
     check.call(str, ptr)
     str[0,2] = "aa"
     ptr[0,2] = "aa"
