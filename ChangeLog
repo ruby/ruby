@@ -1,3 +1,8 @@
+Fri Jul  7 00:29:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_mload): a patch from Daniel Berger
+	  <Daniel.Berger at qwest.com>.  [ruby-core:08128]
+
 Thu Jul  6 22:21:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_proc_times): use sysconf(_SC_CLK_TCK) value prior to
