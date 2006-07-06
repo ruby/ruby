@@ -7,7 +7,7 @@
     This library is free software.
     You can distribute/modify this program under the same terms of ruby.
 
-    $originalId: cparse.c,v 1.7 2006/07/02 10:02:02 aamine Exp $
+    $originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $
 
 */
 
@@ -194,9 +194,9 @@ static VALUE lexer_i _((VALUE block_args, VALUE data, VALUE self));
 static VALUE assert_array _((VALUE a));
 static long assert_integer _((VALUE n));
 static VALUE assert_hash _((VALUE h));
-static void initialize_params _((struct cparse_params *v,
-                                 VALUE parser, VALUE arg,
+static VALUE initialize_params _((VALUE vparams, VALUE parser, VALUE arg,
                                  VALUE lexer, VALUE lexmid));
+static void cparse_params_mark _((void *ptr));
 
 static void parse_main _((struct cparse_params *v,
                          VALUE tok, VALUE val, int resume));
@@ -217,12 +217,14 @@ static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
 static VALUE
 racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 {
-    struct cparse_params params;
-    struct cparse_params *v = &params;
+    volatile VALUE vparams;
+    struct cparse_params *v;
 
+    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
+                               cparse_params_mark, -1, v);
     D_puts("starting cparse");
     v->sys_debug = RTEST(sysdebug);
-    initialize_params(v, parser, arg, Qnil, Qnil);
+    vparams = initialize_params(vparams, parser, arg, Qnil, Qnil);
     v->lex_is_iterator = Qfalse;
     parse_main(v, Qnil, Qnil, 0);
 
@@ -232,12 +234,14 @@ racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 static VALUE
 racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
 {
-    struct cparse_params params;
-    struct cparse_params *v = &params;
+    volatile VALUE vparams;
+    struct cparse_params *v;
 
+    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
+                               cparse_params_mark, -1, v);
     v->sys_debug = RTEST(sysdebug);
     D_puts("start C yyparse");
-    initialize_params(v, parser, arg, lexer, lexmid);
+    vparams = initialize_params(vparams, parser, arg, lexer, lexmid);
     v->lex_is_iterator = Qtrue;
     D_puts("params initialized");
     parse_main(v, Qnil, Qnil, 0);
@@ -310,12 +314,13 @@ assert_integer(VALUE n)
     return NUM2LONG(n);
 }
 
-static void
-initialize_params(struct cparse_params *v,
-                  VALUE parser, VALUE arg, VALUE lexer, VALUE lexmid)
+static VALUE
+initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lexmid)
 {
-    v->value_v = Data_Wrap_Struct(CparseParams, 0, 0, v);
+    struct cparse_params *v;
 
+    Data_Get_Struct(vparams, struct cparse_params, v);
+    v->value_v = vparams;
     v->parser = parser;
     v->lexer = lexer;
     if (! NIL_P(lexmid))
@@ -360,6 +365,45 @@ initialize_params(struct cparse_params *v,
     v->fin = 0;
 
     v->lex_is_iterator = Qfalse;
+
+    rb_iv_set(parser, "@vstack", v->vstack);
+    if (v->debug) {
+        rb_iv_set(parser, "@tstack", v->tstack);
+    }
+    else {
+        rb_iv_set(parser, "@tstack", Qnil);
+    }
+
+    return vparams;
+}
+
+static void
+cparse_params_mark(void *ptr)
+{
+    struct cparse_params *v = (struct cparse_params*)ptr;
+
+    rb_gc_mark(v->value_v);
+    rb_gc_mark(v->parser);
+    rb_gc_mark(v->lexer);
+    rb_gc_mark(v->action_table);
+    rb_gc_mark(v->action_check);
+    rb_gc_mark(v->action_default);
+    rb_gc_mark(v->action_pointer);
+    rb_gc_mark(v->goto_table);
+    rb_gc_mark(v->goto_check);
+    rb_gc_mark(v->goto_default);
+    rb_gc_mark(v->goto_pointer);
+    rb_gc_mark(v->goto_pointer);
+    rb_gc_mark(v->goto_pointer);
+    rb_gc_mark(v->goto_pointer);
+    rb_gc_mark(v->goto_pointer);
+    rb_gc_mark(v->reduce_table);
+    rb_gc_mark(v->token_table);
+    rb_gc_mark(v->state);
+    rb_gc_mark(v->vstack);
+    rb_gc_mark(v->tstack);
+    rb_gc_mark(v->t);
+    rb_gc_mark(v->retval);
 }
 
 static void
@@ -446,8 +490,10 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
                 extract_user_token(v, tmp, &tok, &val);
             }
             /* convert token */
-            tmp = rb_hash_aref(v->token_table, tok);
-            v->t = NIL_P(tmp) ? vERROR_TOKEN : tmp;
+            v->t = rb_hash_aref(v->token_table, tok);
+            if (NIL_P(v->t)) {
+                v->t = vERROR_TOKEN;
+            }
             D_printf("(act) t(k2)=%ld\n", NUM2LONG(v->t));
             if (v->debug) {
                 rb_funcall(v->parser, id_d_read_token,
@@ -765,7 +811,7 @@ Init_cparse(void)
     rb_define_const(Parser, "Racc_Runtime_Core_Version_C",
                     rb_str_new2(RACC_VERSION));
     rb_define_const(Parser, "Racc_Runtime_Core_Id_C",
-        rb_str_new2("$originalId: cparse.c,v 1.7 2006/07/02 10:02:02 aamine Exp $"));
+        rb_str_new2("$originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $"));
 
     CparseParams = rb_define_class_under(Racc, "CparseParams", rb_cObject);
 

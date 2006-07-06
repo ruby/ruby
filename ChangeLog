@@ -1,3 +1,13 @@
+Thu Jul  6 21:50:06 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c: sync with original code, rev 1.8.
+
+	* ext/racc/cparse/cparse.c: should mark CparseParams objects.
+
+	* lib/racc/parser.rb: sync with original code, rev 1.8.
+
+	* lib/racc/parser.rb: update coding style.
+
 Wed Jul  5 01:12:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_lambda.rb (TestLambdaParameters::test_lambda_as_iterator): 
