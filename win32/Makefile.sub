@@ -256,6 +256,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define DEPRECATED(x) __declspec(deprecated) x
 #define NOINLINE(x) __declspec(noinline) x
 !endif
+#define FUNC_STDCALL(x) __stdcall x
+#define FUNC_CDECL(x) __cdecl x
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
