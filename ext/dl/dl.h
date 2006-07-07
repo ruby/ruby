@@ -3,6 +3,13 @@
 
 #include <ruby.h>
 
+#if !defined(FUNC_CDECL)
+#  define FUNC_CDECL(x) x
+#endif
+#if !defined(FUNC_STDCALL)
+#  define FUNC_STDCALL(x) x
+#endif
+
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
 # /* some stranger systems may not define all of these */
