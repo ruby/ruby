@@ -1,3 +1,9 @@
+Fri Jul  7 17:49:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_ord): extract lower byte.  fixed: [ruby-dev:28980]
+
+	* lib/jcode.rb (String#succ!): fix for 1.9.  fixed: [ruby-dev:28979]
+
 Fri Jul  7 14:05:03 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): define FUNC_STDCALL/FUNC_CDECL.

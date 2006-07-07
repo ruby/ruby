@@ -79,9 +79,12 @@ class String
     reg = end_regexp
     if self =~ reg
       succ_table = SUCC[$KCODE[0,1].downcase]
+      last1 = self[-1].ord
+      last2 = self[-2].ord
       begin
-	self[-1] += succ_table[self[-1]]
-	self[-2] += 1 if self[-1] == 0
+	last1 += succ_table[last1]
+	last2 += 1 if last1 == 0
+	self[-2..-1] = [last2, last1].pack("C*")
       end while self !~ reg
       self
     else

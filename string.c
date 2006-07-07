@@ -4070,7 +4070,7 @@ rb_str_ord(VALUE s)
 		 "expacted a characer, but string of size %d given",
 		 RSTRING(s)->len);
     }
-    c = RSTRING(s)->ptr[0];
+    c = RSTRING(s)->ptr[0] & 0xff;
     return INT2NUM(c);
 }
 /*
