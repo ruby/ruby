@@ -8,7 +8,7 @@ end
 require "test/unit"
 
 if defined?(WIN32OLE)
-  class TestWIN32OLE < Test::Unit::TestCase
+  class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
     
     def setup
       begin
