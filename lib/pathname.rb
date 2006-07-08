@@ -15,6 +15,10 @@
 # == Pathname
 #
 # Pathname represents a pathname which locates a file in a filesystem.
+# The pathname depends on OS: Unix, Windows, etc.
+# Pathname library works with pathnames of local OS.
+# However non-Unix pathnames are supported experimentally.
+#
 # It does not represent the file itself.
 # A Pathname can be relative or absolute.  It's not until you try to
 # reference the file that it even matters whether the file exists or not.
