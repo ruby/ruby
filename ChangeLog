@@ -1,3 +1,8 @@
+Sun Jul  9 00:54:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (next_jump): deal with destination of next.
+	  fixed: [ruby-core:08169]
+
 Fri Jul  7 17:49:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_ord): extract lower byte.  fixed: [ruby-dev:28980]

@@ -2660,6 +2660,7 @@ class_prefix(VALUE self, NODE *cpath)
 
 NORETURN(static void return_jump(VALUE));
 NORETURN(static void break_jump(VALUE));
+NORETURN(static void next_jump(VALUE));
 NORETURN(static void unknown_node(NODE * volatile));
 
 static VALUE call_super(int, const VALUE*, struct BLOCK*);
@@ -2978,8 +2979,7 @@ rb_eval(VALUE self, NODE *n)
 
       case NODE_NEXT:
 	CHECK_INTS;
-	return_value(rb_eval(self, node->nd_stts));
-	JUMP_TAG(TAG_NEXT);
+	next_jump(rb_eval(self, node->nd_stts));
 	break;
 
       case NODE_REDO:
@@ -3056,7 +3056,6 @@ rb_eval(VALUE self, NODE *n)
 	    POP_TAG();
 	    if (state != TAG_RAISE) ruby_errinfo = e_info;
 	    if (state) {
-		if (state == TAG_NEXT) prot_tag->retval = result;
 		JUMP_TAG(state);
 	    }
 	    /* no exception raised */
@@ -4654,6 +4653,33 @@ break_jump(VALUE retval)
 	tt = tt->prev;
     }
     localjump_error("unexpected break", retval, TAG_BREAK, 0);
+}
+
+static void
+next_jump(VALUE retval)
+{
+    struct tag *tt = prot_tag;
+
+    if (retval == Qundef) retval = Qnil;
+    while (tt) {
+	switch (tt->tag) {
+	  case PROT_THREAD:
+	    /* skip toplevel tag */
+	    if (!tt->prev) break;
+	  case PROT_YIELD:
+	  case PROT_LAMBDA:
+	  case PROT_LOOP:
+	  case PROT_FUNC:
+	    tt->dst = (VALUE)tt->frame->uniq;
+	    tt->retval = retval;
+	    JUMP_TAG(TAG_NEXT);
+	    break;
+	  default:
+	    break;
+	}
+	tt = tt->prev;
+    }
+    localjump_error("unexpected next", retval, TAG_NEXT, 0);
 }
 
 static VALUE bmcall(VALUE, VALUE);
