@@ -114,7 +114,12 @@ module Generators
         lookup = name
       end
 
-      if /([A-Z].*)[.\#](.*)/ =~ lookup
+      # Find class, module, or method in class or module.
+      if /([A-Z]\w*)[.\#](\w+[!?=]?)/ =~ lookup
+        container = $1
+        method = $2
+        ref = @context.find_symbol(container, method)
+      elsif /([A-Za-z]\w*)[.\#](\w+(\([\.\w+\*\/\+\-\=\<\>]+\))?)/ =~ lookup
         container = $1
         method = $2
         ref = @context.find_symbol(container, method)
@@ -206,12 +211,14 @@ module Generators
       unless defined? @markup
         @markup = SM::SimpleMarkup.new
 
-        # class names, variable names, file names, or instance variables
+        # class names, variable names, or instance variables
         @markup.add_special(/(
-                               \b([A-Z]\w*(::\w+)*[.\#]\w+)  #    A::B.meth
+                               \w+(::\w+)*[.\#]\w+(\([\.\w+\*\/\+\-\=\<\>]+\))?  # A::B.meth(**) (for operator in Fortran95)
+                             | \#\w+(\([.\w\*\/\+\-\=\<\>]+\))?  #  meth(**) (for operator in Fortran95)
+                             | \b([A-Z]\w*(::\w+)*[.\#]\w+)  #    A::B.meth
                              | \b([A-Z]\w+(::\w+)*)       #    A::B..
                              | \#\w+[!?=]?                #    #meth_name 
-                             | \b\w+([_\/\.]+\w+)+[!?=]?  #    meth_name
+                             | \b\w+([_\/\.]+\w+)*[!?=]?  #    meth_name
                              )/x, 
                             :CROSSREF)
 

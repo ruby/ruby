@@ -1,3 +1,23 @@
+Sun Jul  9 07:58:48 2006  Ryan Davis  <ryand@zenspider.com>
+
+	* lib/rdoc/parsers/parse_f95.rb: massive overhaul from Yasuhiro
+	  Morikawa including new file suffixes, function support, public
+	  variables and constants, derived-types, defined operators and
+	  assignments, namelists, and subroutine and function
+	  arguments. Truly massive.
+
+	* lib/rdoc/diagram.rb: diagrams are now cached.
+
+	* lib/irb/completion.rb: fixed a crasher when completing against
+	  an unnamed class/module.
+
+	* lib/rdoc/parsers/parse_c.rb: private comment (--/++) support in
+	  C-file rdoc.
+
+	* lib/debug.rb: minor clarification in help.
+
+	* lib/pp.rb: minor clarification on exception.
+
 Sun Jul  9 00:54:11 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (next_jump): deal with destination of next.

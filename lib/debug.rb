@@ -551,7 +551,7 @@ Commands
   b[reak] [class.]<line|method>
                              set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
-  cat[ch] <an Exception>     set catchpoint to an exception
+  cat[ch] (<exception>|off)  set catchpoint to an exception
   b[reak]                    list breakpoints
   cat[ch]                    show catchpoint
   del[ete][ nnn]             delete some or all breakpoints

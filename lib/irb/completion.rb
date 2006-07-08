@@ -137,9 +137,10 @@ module IRB
 	else
 	  # func1.func2
 	  candidates = []
+          name = m.name rescue ""
 	  ObjectSpace.each_object(Module){|m|
-	    next if m.name != "IRB::Context" and 
-	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ m.name
+	    next if name != "IRB::Context" and 
+	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
 	    candidates.concat m.instance_methods(false)
 	  }
 	  candidates.sort!
