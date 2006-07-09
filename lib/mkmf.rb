@@ -235,17 +235,22 @@ def xpopen command, *mode, &block
 end
 
 def log_src(src)
-  Logging::message <<"EOM", src
+  src = src.split(/^/)
+  fmt = "%#{src.size.to_s.size}d: %s"
+  Logging::message <<"EOM"
 checked program was:
 /* begin */
-%s/* end */
+EOM
+  src.each_with_index {|line, no| Logging::message fmt, no+1, line}
+  Logging::message <<"EOM"
+/* end */
 
 EOM
 end
 
 def create_tmpsrc(src)
   src = yield(src) if block_given?
-  src = src.sub(/[^\n]\z/, "\\&\n")
+  src = src.gsub(/[ \t]+$/, '').gsub(/\A\n+|^\n+$/, '').sub(/[^\n]\z/, "\\&\n")
   open(CONFTEST_C, "wb") do |cfile|
     cfile.print src
   end
@@ -369,6 +374,7 @@ def try_constant(const, headers = nil, opt = "", &b)
       return nil
     end
     upper = 1
+    lower = 0
     until try_static_assert("#{const} <= #{upper}", headers, opt)
       lower = upper
       upper <<= 1
@@ -380,11 +386,6 @@ def try_constant(const, headers = nil, opt = "", &b)
         lower = mid
       else
         upper = mid
-      end
-    end
-    unless upper == lower
-      if try_static_assert("#{const} == #{lower}", headers, opt)
-        upper = lower
       end
     end
     upper = -upper if neg
@@ -429,7 +430,7 @@ def try_var(var, headers = nil, &b)
 #{headers}
 /*top*/
 int main() { return 0; }
-int t() { void *volatile p; p = (void *)&#{var}; return 0; }
+int t() { const volatile void *volatile p; p = (void *)&#{var}; return 0; }
 SRC
 end
 
@@ -534,7 +535,7 @@ end
 
 def checking_for(m, fmt = nil)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
-  m = "checking for #{m}... "
+  m = "checking #{'for ' if /\Acheck/ !~ f}#{m}... "
   message "%s", m
   a = r = nil
   Logging::postpone do
@@ -555,7 +556,7 @@ def have_macro(macro, headers = nil, opt = "", &b)
   end
 end
 
-def have_library(lib, func = nil, header=nil, &b)
+def have_library(lib, func = nil, headers = nil, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
   checking_for "#{func}() in #{LIBARG%lib}" do
@@ -563,7 +564,7 @@ def have_library(lib, func = nil, header=nil, &b)
       true
     else
       libs = append_library($libs, lib)
-      if try_func(func, libs, header, &b)
+      if try_func(func, libs, headers, &b)
         $libs = libs
         true
       else
@@ -629,14 +630,15 @@ def have_header(header, &b)
 end
 
 def find_header(header, *paths)
+  header = cpp_include(header)
   checking_for header do
-    if try_cpp(cpp_include(header))
+    if try_cpp(header)
       true
     else
       found = false
       paths.each do |dir|
         opt = "-I#{dir}".quote
-        if try_cpp(cpp_include(header), opt)
+        if try_cpp(header, opt)
           $INCFLAGS << " " << opt
           found = true
           break
@@ -664,17 +666,17 @@ SRC
   end
 end
 
-def have_type(type, header = nil, opt = "", &b)
+def have_type(type, headers = nil, opt = "", &b)
   checking_for type do
-    header = cpp_include(header)
+    headers = cpp_include(headers)
     if try_compile(<<"SRC", opt, &b) or (/\A\w+\z/n =~ type && try_compile(<<"SRC", opt, &b))
 #{COMMON_HEADERS}
-#{header}
+#{headers}
 /*top*/
 static #{type} t;
 SRC
 #{COMMON_HEADERS}
-#{header}
+#{headers}
 /*top*/
 static #{type} *t;
 SRC
@@ -688,21 +690,16 @@ end
 
 def check_sizeof(type, header = nil, &b)
   expr = "sizeof(#{type})"
-  m = "checking size of #{type}... "
-  message "%s", m
-  a = size = nil
-  Logging::postpone do
+  fmt = "%d"
+  def fmt.%(x)
+    x ? super : "failed"
+  end
+  checking_for("size of #{type}", fmt) do
     if size = try_constant(expr, header, &b)
       $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
-      a = "#{size}\n"
-    else
-      a = "failed\n"
+      size
     end
-    "check_sizeof: #{m}-------------------- #{a}\n"
   end
-  message(a)
-  Logging::message "--------------------\n\n"
-  size
 end
 
 def scalar_ptr_type?(type, member = nil, headers = nil, &b)
