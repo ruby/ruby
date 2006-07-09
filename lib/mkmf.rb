@@ -1248,7 +1248,7 @@ site-install-rb: install-rb
 	  suffixes << m[1] << m[2]
 	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
-	elsif RULE_SUBST and /\A[$\w][^#]*:/ =~ line
+	elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
 	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
 	end
 	depout << line
