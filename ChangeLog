@@ -1,3 +1,13 @@
+Mon Jul 10 13:58:40 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* signal.c (ruby_nativethread_signal, posix_nativethread_signal,
+	  sigsend_to_ruby_thread, install_nativethread_sighandler):
+	  nativethread-support on signal handler. RE-backport from 1.9. 
+
+	* ruby.h (HAVE_NATIVETHREAD_KILL): ditto.
+
+	* eval.c (ruby_native_thread_kill): ditto.
+
 Mon Jul 10 10:54:14 2006  Ryan Davis  <ryand@zenspider.com>
 
 	* lib/rdoc/parsers/parse_f95.rb: massive overhaul from Yasuhiro
