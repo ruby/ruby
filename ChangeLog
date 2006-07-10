@@ -1,3 +1,8 @@
+Mon Jul 10 19:22:19 2006  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (gc_sweep): expand heap earlier.
+	  reported by MORITA Naoyuki.  [ruby-dev:28960]
+
 Mon Jul 10 18:59:34 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/font.rb: sorry. mistaken to patch.
