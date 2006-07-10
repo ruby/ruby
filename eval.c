@@ -365,7 +365,8 @@ rb_clear_cache_for_remove(VALUE klass, ID id)
     for (i=0; i<CACHE_SIZE; i++) {
 	for (j=0; j<2; j++) {
 	    struct cache_entry *ent = cache[j]+i;
-	    if (ent->origin == klass && ent->mid == id) {
+	    if (ent->mid == id &&
+		RCLASS(ent->origin)->m_tbl == RCLASS(klass)->m_tbl) {
 		ent->mid = 0;
 	    }
 	}

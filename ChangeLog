@@ -1,3 +1,8 @@
+Mon Jul 10 09:29:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_clear_cache_for_remove): clear entries for included
+	  module.  fixed: [ruby-core:08180]
+
 Sun Jul  9 18:06:47 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_constant): fix for value 1 at cross compiling.
