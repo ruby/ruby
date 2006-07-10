@@ -1192,8 +1192,22 @@ module TkCore
       script.call(self)
     end
     def INTERP.add_tk_procs(name, args = nil, body = nil)
-      @add_tk_procs << [name, args, body]
-      self._invoke('proc', name, args, body) if args && body
+      if name.kind_of?(Array)
+        name.each{|param| self.add_tk_procs(*param)}
+      else
+        name = name.to_s
+        @add_tk_procs << [name, args, body]
+        self._invoke('proc', name, args, body) if args && body
+      end
+    end
+    def INTERP.remove_tk_procs(*names)
+      names.each{|name|
+        name = name.to_s
+        @add_tk_procs.delete_if{|elem| 
+          elem.kind_of?(Array) && elem[0].to_s == name
+        }
+        self._invoke('rename', name, '')
+      }
     end
     def INTERP.init_ip_internal
       ip = self
@@ -1284,6 +1298,8 @@ module TkCore
     }
   EOL
 =end
+
+  at_exit{ INTERP.remove_tk_procs(TclTkLib::FINALIZE_PROC_NAME) }
 
   EventFlag = TclTkLib::EventFlag
 
@@ -3886,12 +3902,14 @@ class TkObject<TkKernel
       begin
         cget(name)
       rescue
-        fail NameError, 
-             "undefined local variable or method `#{name}' for #{self.to_s}", 
-             error_at
+        super(id, *args)
+#        fail NameError, 
+#             "undefined local variable or method `#{name}' for #{self.to_s}", 
+#             error_at
       end
     else
-      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
+      super(id, *args)
+#      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
     end
   end
 
@@ -4563,7 +4581,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-07-03'.freeze
+  RELEASE_DATE = '2006-07-10'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

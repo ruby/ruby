@@ -130,7 +130,8 @@ class TkMsgCatalog < TkObject
       self.set_translation(loc, *args)
 
     else
-      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
+      super(id, *args)
+#      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
 
     end
   end

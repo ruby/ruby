@@ -551,11 +551,92 @@ else # ver >= 8.4
   alias showVars showVars2
 end
 
+# 疑似トップレベルサポート
+module PseudoToplevel_Evaluable
+  def pseudo_toplevel_eval(body = Proc.new)
+    Thread.current[:TOPLEVEL] = self
+    begin
+      body.call
+    ensure
+      Thread.current[:TOPLEVEL] = nil
+    end
+  end
+
+  def pseudo_toplevel_evaluable?
+    @pseudo_toplevel_evaluable
+  end
+  def pseudo_toplevel_evaluable=(mode)
+    @pseudo_toplevel_evaluable = (mode)? true: false
+  end
+
+  def self.extended(mod)
+    mod.__send__(:extend_object, mod)
+    mod.instance_variable_set('@pseudo_toplevel_evaluable', true)
+  end
+end
+
+class Object
+  alias __method_missing__ method_missing
+  private :__method_missing__
+
+  def method_missing(id, *args)
+    begin
+      has_top = (top = Thread.current[:TOPLEVEL]) && 
+                   top.respond_to?(:pseudo_toplevel_evaluable?) && 
+                   top.pseudo_toplevel_evaluable? && 
+                   top.respond_to?(id)
+    rescue Exception => e
+      has_top = false
+    end
+
+    if has_top
+      top.__send__(id, *args)
+    else
+      __method_missing__(id, *args)
+    end
+  end
+end
+
+class Proc
+  def initialize(*args, &b)
+    super
+    @__pseudo_toplevel__ = Thread.current[:TOPLEVEL]
+  end
+
+  alias __call__ call
+  def call(*args, &b)
+    if top = @__pseudo_toplevel__
+      orig_top = Thread.current[:TOPLEVEL]
+      Thread.current[:TOPLEVEL] = top
+      begin
+        __call__(*args, &b)
+      ensure
+        Thread.current[:TOPLEVEL] = orig_top
+      end
+    else
+      __call__(*args, &b)
+    end
+  end
+end
+
+def proc(&b)
+  Proc.new(&b)
+end
+def lambda(&b)
+  Proc.new(&b)
+end
+
 def _null_binding
+  Module.new.instance_eval{extend PseudoToplevel_Evaluable}
   # binding
-  Module.new.instance_eval{binding}
+  # Module.new.instance_eval{binding}
 end
 private :_null_binding
+
+def eval_samplecode(code)
+  Thread.new{ _null_binding.pseudo_toplevel_eval{ eval(code) } }.run
+  Tk.update
+end
 
 # テキスト上での click に対する動作
 def invoke(txt, idx)
@@ -565,8 +646,9 @@ def invoke(txt, idx)
   cursor = txt.cget('cursor')
   txt.cursor('watch')
   Tk.update
-  eval(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join, _null_binding)
-  Tk.update
+  # eval(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join, _null_binding)
+  # Tk.update
+  eval_samplecode(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join)
   txt.cursor(cursor)
 
   $tag_visited.add("#{idx} linestart +1 chars", "#{idx} lineend +1 chars")
@@ -622,7 +704,8 @@ def showCode1(demo)
     }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
     TkButton.new(f) {
       text "再実行"
-      command proc{eval($code_text.get('1.0','end'), _null_binding)}
+      # command proc{eval($code_text.get('1.0','end'), _null_binding)}
+      command proc{eval_samplecode($code_text.get('1.0','end'))}
     }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
 #    f.pack('side'=>'bottom', 'expand'=>'yes', 'fill'=>'x')
     f.pack('side'=>'bottom', 'fill'=>'x')
@@ -716,7 +799,8 @@ def showCode2(demo)
                          :image=>$image['print'], :compound=>:left)
     b_run = TkButton.new(bf, :text=>'再実行', 
                          :command=>proc{
-                           eval($code_text.get('1.0','end'), _null_binding)
+                           # eval($code_text.get('1.0','end'), _null_binding)
+                           eval_samplecode($code_text.get('1.0','end'))
                          }, 
                          :image=>$image['refresh'], :compound=>:left)
 
@@ -842,7 +926,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.5.6-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.0-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 
@@ -867,8 +951,9 @@ ARGV.each{|cmd|
   if cmd =~ /(.*).rb/
     cmd = $1
   end
-  eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, 
-       _null_binding)
+  #eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, 
+  #     _null_binding)
+  eval_samplecode(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join)
 }
 if no_launcher
   $root.withdraw  # hide root window

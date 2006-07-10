@@ -1,3 +1,29 @@
+Mon Jul 10 18:46:52 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: make SEGV risk lower at exit.
+
+	* ext/tk/lib/tk.rb: ditto.
+
+	* ext/tk/lib/multi-tk.rb: fail to call function-style methods on slave
+	  interpreters. The strategy (MultiTkIp_PseudoToplevel_Evaluable) to
+	  fix the problem is a little tricky. You may have to take care of
+	  conflicting with it.
+
+	* ext/tk/lib/tk.rb: a little change for the pseudo-toplevel strategy.
+
+	* ext/tk/lib/tk/font.rb: ditto.
+
+	* ext/tk/lib/tk/msgcat.rb: ditto.
+
+	* ext/tk/lib/tkextlib/itk/incr_tk.rb: ditto.
+
+	* ext/tk/sample/demos-en/widget: fail to call function-style methods
+	  on sample scripts. To fix it, a strategy which similar to the way
+	  on MultiTiIp is used. Please take care when re-write and re-run a
+	  demo script on the Widget-Demo code viewer.
+
+	* ext/tk/sample/demos-jp/widget: ditto.
+
 Mon Jul 10 13:58:40 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* signal.c (ruby_nativethread_signal, posix_nativethread_signal,
