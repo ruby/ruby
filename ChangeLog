@@ -1,3 +1,11 @@
+Mon Jul 10 17:32:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/test.rb: update test suites.
+
+	* test/ruby/test_assignment.rb (TestAssignment::test_yield): ditto.
+
+	* test/ruby/test_iterator.rb (TestIterator::test_itertest): ditto.
+
 Mon Jul 10 14:43:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): remove erroneously restored prot_tag->blkid

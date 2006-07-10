@@ -82,18 +82,18 @@ class TestAssignment < Test::Unit::TestCase
   def test_yield
     def f; yield(nil); end; f {|a| assert_nil(a)}; undef f
     def f; yield(1); end; f {|a| assert_equal(1, a)}; undef f
-    def f; yield([]); end; f {|a| assert_equal(nil, a)}; undef f
-    def f; yield([1]); end; f {|a| assert_equal(1, a)}; undef f
-    def f; yield([nil]); end; f {|a| assert_equal(nil, a)}; undef f
-    def f; yield([[]]); end; f {|a| assert_equal([], a)}; undef f
-    def f; yield([*[]]); end; f {|a| assert_equal(nil, a)}; undef f
-    def f; yield([*[1]]); end; f {|a| assert_equal(1, a)}; undef f
-    def f; yield([*[1,2]]); end; f {|a| assert_equal(1, a)}; undef f
+    def f; yield([]); end; f {|a| assert_equal([], a)}; undef f
+    def f; yield([1]); end; f {|a| assert_equal([1], a)}; undef f
+    def f; yield([nil]); end; f {|a| assert_equal([nil], a)}; undef f
+    def f; yield([[]]); end; f {|a| assert_equal([[]], a)}; undef f
+    def f; yield([*[]]); end; f {|a| assert_equal([], a)}; undef f
+    def f; yield([*[1]]); end; f {|a| assert_equal([1], a)}; undef f
+    def f; yield([*[1,2]]); end; f {|a| assert_equal([1,2], a)}; undef f
 
-    def f; yield(*[1]); end; f {|a| assert_equal(1, a)}; undef f
-    def f; yield(*[nil]); end; f {|a| assert_nil(a)}; undef f
-    def f; yield(*[[]]); end; f {|a| assert_equal([], a)}; undef f
-    def f; yield(*[*[1]]); end; f {|a| assert_equal(1, a)}; undef f
+    def f; yield(*[1]); end; f {|a| assert_equal([1], a)}; undef f
+    def f; yield(*[nil]); end; f {|a| assert_equal([nil], a)}; undef f
+    def f; yield(*[[]]); end; f {|a| assert_equal([[]], a)}; undef f
+    def f; yield(*[*[1]]); end; f {|a| assert_equal([1], a)}; undef f
 
     def f; yield; end; f {|*a| assert_equal([], a)}; undef f
     def f; yield(nil); end; f {|*a| assert_equal([nil], a)}; undef f
