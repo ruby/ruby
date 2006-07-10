@@ -1,3 +1,7 @@
+Mon Jul 10 13:58:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* signal.c (install_nativethread_sighandler): commented out.
+
 Mon Jul 10 09:29:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_clear_cache_for_remove): clear entries for included

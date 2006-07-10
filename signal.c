@@ -819,6 +819,13 @@ install_sighandler(int signum, sighandler_t handler)
     }
 }
 
+#if 0
+/* 
+ *   If you write a handler which works on any native thread
+ *   (even if the thread is NOT a ruby's one), please enable
+ *   this function and use it to install the handler, instead
+ *   of `install_sighandler()'.
+ */
 #ifdef HAVE_NATIVETHREAD
 static void
 install_nativethread_sighandler(int signum, sighandler_t handler)
@@ -836,6 +843,7 @@ install_nativethread_sighandler(int signum, sighandler_t handler)
         }
     }
 }
+#endif
 #endif
 
 static void
