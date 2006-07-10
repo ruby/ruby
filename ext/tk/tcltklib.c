@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-07-03"
+#define TCLTKLIB_RELEASE_DATE "2006-07-10"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -80,6 +80,8 @@ const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
 
 static void ip_finalize _((Tcl_Interp*));
+
+static int at_exit = 0;
 
 
 /* for callback break & continue */
@@ -4358,6 +4360,33 @@ delete_slaves(ip)
 
 
 /* finalize operation */
+static VALUE
+lib_mark_at_exit(self)
+    VALUE self;
+{
+    at_exit = 1;
+    return Qnil;
+}
+
+static int
+#if TCL_MAJOR_VERSION >= 8
+ip_null_proc(clientData, interp, argc, argv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int argc;
+    Tcl_Obj *CONST argv[];
+#else /* TCL_MAJOR_VERSION < 8 */
+ip_null_proc(clientData, interp, argc, argv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int argc;
+    char *argv[];
+#endif
+{
+    Tcl_ResetResult(interp);
+    return TCL_OK;
+}
+
 static void
 ip_finalize(ip)
     Tcl_Interp *ip;
@@ -4403,6 +4432,29 @@ ip_finalize(ip)
     /* delete slaves */
     delete_slaves(ip);
 
+    /* shut off some connections from Tcl-proc to Ruby */
+    if (at_exit) {
+	/* NOTE: Only when at exit. 
+	   Because, ruby removes objects, which depends on the deleted 
+	   interpreter, on some callback operations. 
+	   It is important for GC. */
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_CreateObjCommand(ip, "ruby", ip_null_proc, 
+			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+	Tcl_CreateObjCommand(ip, "ruby_eval", ip_null_proc, 
+			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+	Tcl_CreateObjCommand(ip, "ruby_cmd", ip_null_proc, 
+			     (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else /* TCL_MAJOR_VERSION < 8 */
+	Tcl_CreateCommand(ip, "ruby", ip_null_proc, 
+			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+	Tcl_CreateCommand(ip, "ruby_eval", ip_null_proc, 
+			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+	Tcl_CreateCommand(ip, "ruby_cmd", ip_null_proc, 
+			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
+    }
+
     /* delete root widget */
 #if 0
     DUMP1("check `destroy'");
@@ -4425,7 +4477,7 @@ ip_finalize(ip)
 
     /* call finalize-hook-proc */
     DUMP1("check `finalize-hook-proc'");
-    if (Tcl_GetCommandInfo(ip, finalize_hook_name, &info)) {
+    if ( Tcl_GetCommandInfo(ip, finalize_hook_name, &info)) {
         DUMP2("call finalize hook proc '%s'", finalize_hook_name);
         ruby_debug   = Qfalse;
         ruby_verbose = Qnil;
@@ -4679,7 +4731,6 @@ ip_CallWhenDeleted(clientData, ip)
     DUMP1("finish ip_CallWhenDeleted");
     rb_thread_critical = thr_crit_bup;
 }
-
 
 /* initialize interpreter */
 static VALUE
@@ -7925,6 +7976,8 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
+    rb_define_module_function(lib, "_mark_at_exit", lib_mark_at_exit, 0);
+
     rb_define_module_function(lib, "mainloop", lib_mainloop, -1);
     rb_define_module_function(lib, "mainloop_thread?", 
                               lib_evloop_thread_p, 0);
@@ -8058,6 +8111,10 @@ Init_tcltklib()
     /* if ruby->nativethread-supprt and tcltklib->doen't, 
        the following will cause link-error. */
     is_ruby_native_thread();
+
+    /* --------------------------------------------------------------- */
+
+    rb_eval_string("at_exit{ TclTkLib._mark_at_exit }");
 
     /* --------------------------------------------------------------- */
 

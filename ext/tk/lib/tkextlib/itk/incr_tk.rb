@@ -289,7 +289,8 @@ module Tk
         end
 
         # unknown method
-        fail RuntimeError, "unknown method '#{name}' for #{self.inspect}"
+        super(id, *args)
+        # fail RuntimeError, "unknown method '#{name}' for #{self.inspect}"
       end
 
       def tk_send(cmd, *rest)

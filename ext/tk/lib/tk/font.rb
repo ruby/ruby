@@ -859,10 +859,12 @@ class TkFont
       begin
         configinfo name
       rescue
-        fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
-      end
+        super(id, *args)
+#        fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+#      end
     else
-      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
+      super(id, *args)
+#      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
     end
   end
 

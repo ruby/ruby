@@ -34,6 +34,64 @@ end
 
 
 ################################################
+# use pseudo-toplevel feature of MultiTkIp ?
+if (!defined?(Use_PseudoToplevel_Feature_of_MultiTkIp) || 
+      Use_PseudoToplevel_Feature_of_MultiTkIp)
+  module MultiTkIp_PseudoToplevel_Evaluable
+    #def pseudo_toplevel_eval(body = Proc.new)
+    #  Thread.current[:TOPLEVEL] = self
+    #  begin
+    #    body.call
+    #  ensure
+    #    Thread.current[:TOPLEVEL] = nil
+    #  end
+    #end
+
+    def pseudo_toplevel_evaluable?
+      @pseudo_toplevel_evaluable
+    end
+
+    def pseudo_toplevel_evaluable=(mode)
+      @pseudo_toplevel_evaluable = (mode)? true: false
+    end
+
+    def self.extended(mod)
+      mod.__send__(:extend_object, mod)
+      mod.instance_variable_set('@pseudo_toplevel_evaluable', true)
+    end
+  end
+
+  class Object
+    alias __method_missing_alias_for_MultiTkIp__ method_missing
+    private :__method_missing_alias_for_MultiTkIp__
+
+    def method_missing(id, *args)
+      begin
+        has_top = (top = MultiTkIp.__getip.__pseudo_toplevel) && 
+          top.respond_to?(:pseudo_toplevel_evaluable?) && 
+          top.pseudo_toplevel_evaluable? && 
+          top.respond_to?(id)
+      rescue Exception => e
+        has_top = false
+      end
+
+      if has_top
+        top.__send__(id, *args)
+      else
+        __method_missing_alias_for_MultiTkIp__(id, *args)
+      end
+    end
+  end
+else
+  # dummy
+  module MultiTkIp_PseudoToplevel_Evaluable
+    def pseudo_toplevel_evaluable?
+      false
+    end
+  end
+end
+
+################################################
 # exceptiopn to treat the return value from IP
 class MultiTkIp_OK < Exception
   def self.send(thread, ret=nil)
@@ -54,6 +112,8 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
+  BASE_DIR = File.dirname(__FILE__)
+
   @@SLAVE_IP_ID = ['slave'.freeze, '0'.taint].freeze
 
   @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
@@ -692,6 +752,46 @@ class MultiTkIp
 
     #################################
 
+    @pseudo_toplevel = [false, nil]
+
+    def self.__pseudo_toplevel
+      self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
+    end
+
+    def self.__pseudo_toplevel=(m)
+      unless (Thread.current.group == ThreadGroup::Default && 
+                MultiTkIp.__getip == @@DEFAULT_MASTER)
+        fail SecurityError, "no permission to manipulate"
+      end
+
+      if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+        @pseudo_toplevel[0] = true
+        @pseudo_toplevel[1] = m
+      else
+        fail ArgumentError, 'fail to set pseudo-toplevel'
+      end
+      self
+    end
+
+    def self.__pseudo_toplevel_evaluable?
+      begin
+        @pseudo_toplevel[0] && @pseudo_toplevel[1].pseudo_toplevel_evaluable?
+      rescue Exception
+        false
+      end
+    end
+
+    def self.__pseudo_toplevel_evaluable=(mode)
+      unless (Thread.current.group == ThreadGroup::Default && 
+                MultiTkIp.__getip == @@DEFAULT_MASTER)
+        fail SecurityError, "no permission to manipulate"
+      end
+
+      @pseudo_toplevel[0] = (mode)? true: false
+    end
+
+    #################################
+
     @assign_request = Class.new(Exception){
       def self.new(target, ret)
         obj = super()
@@ -746,10 +846,40 @@ class MultiTkIp
 
     #################################
 
+    @init_ip_env_queue = Queue.new
+    Thread.new{
+      current = Thread.current
+      loop {
+        mtx, ret, table, script = @init_ip_env_queue.deq
+        begin        
+          ret[0] = table.each{|tg, ip| ip._init_ip_env(script) }
+        rescue Exception => e
+          ret[0] = e
+        ensure
+          mtx.unlock
+        end
+      }
+    }
+
+    def self.__init_ip_env__(table, script)
+      ret = []
+      mtx = Mutex.new.lock
+      @init_ip_env_queue.enq([mtx, ret, table, script])
+      mtx.lock
+      if ret[0].kind_of?(Exception)
+        raise ret[0]
+      else
+        ret[0]
+      end
+    end
+
+    #################################
+
     class << self
       undef :instance_eval
     end
   }
+
   @@DEFAULT_MASTER.freeze # defend against modification
 
   ######################################
@@ -1115,6 +1245,8 @@ class MultiTkIp
 
     @threadgroup  = ThreadGroup.new
 
+    @pseudo_toplevel = [false, nil]
+
     @cmd_queue = Queue.new
 
 =begin
@@ -1424,6 +1556,17 @@ class MultiTkIp
     }
   end
 
+  def _remove_tk_procs(*names)
+    return if slave?
+    names.each{|name|
+      name = name.to_s
+      @interp._invoke('rename', name, '')
+      @interp._invoke('interp', 'slaves').split.each{|slave|
+        @interp._invoke('interp', 'alias', slave, name, '') rescue nil
+      }
+    }
+  end
+
   def _init_ip_internal(init_ip_env, add_tk_procs)
     #init_ip_env.each{|script| self.eval_proc{script.call(self)}}
     init_ip_env.each{|script| self._init_ip_env(script)}
@@ -1450,9 +1593,21 @@ class MultiTkIp
     __getip._tk_table_list[id]
   end
   def self.create_table
-    #if __getip.slave?
-    #  raise SecurityError, "slave-IP has no permission creating a new table"
-    #end
+    if __getip.slave? 
+      begin
+        raise SecurityError, "slave-IP has no permission creating a new table"
+      rescue SecurityError => e
+        #p e.backtrace
+        # Is called on a Ruby/Tk library?
+        caller_info = e.backtrace[1]
+        if caller_info =~ %r{^#{MultiTkIp::BASE_DIR}/(tk|tkextlib)/[^:]+\.rb:}
+          # Probably, caller is a Ruby/Tk library  -->  allow creating
+        else
+          raise e
+        end
+      end
+    end
+
     id = @@TK_TABLE_LIST.size
     obj = Object.new
     @@TK_TABLE_LIST << obj
@@ -1468,15 +1623,48 @@ class MultiTkIp
 
   def self.init_ip_env(script = Proc.new)
     @@INIT_IP_ENV << script
-    @@IP_TABLE.each{|tg, ip| 
-      ip._init_ip_env(script)
-    }
+    if __getip.slave?
+      begin
+        raise SecurityError, "slave-IP has no permission initializing IP env"
+      rescue SecurityError => e
+        #p e.backtrace
+        # Is called on a Ruby/Tk library?
+        caller_info = e.backtrace[1]
+        if caller_info =~ %r{^#{MultiTkIp::BASE_DIR}/(tk|tkextlib)/[^:]+\.rb:}
+          # Probably, caller is a Ruby/Tk library  -->  allow creating
+        else
+          raise e
+        end
+      end
+    end
+
+    # @@IP_TABLE.each{|tg, ip| 
+    #   ip._init_ip_env(script)
+    # }
+    @@DEFAULT_MASTER.__init_ip_env__(@@IP_TABLE, script)
   end
 
   def self.add_tk_procs(name, args=nil, body=nil)
-    @@ADD_TK_PROCS << [name, args, body]
+    if name.kind_of?(Array) # => an array of [name, args, body]
+      name.each{|param| self.add_tk_procs(*param)}
+    else
+      name = name.to_s
+      @@ADD_TK_PROCS << [name, args, body]
+      @@IP_TABLE.each{|tg, ip| 
+        ip._add_tk_procs(name, args, body)
+      }
+    end
+  end
+
+  def self.remove_tk_procs(*names)
+    names.each{|name|
+      name = name.to_s
+      @@ADD_TK_PROCS.delete_if{|elem| 
+        elem.kind_of?(Array) && elem[0].to_s == name
+      }
+    }
     @@IP_TABLE.each{|tg, ip| 
-      ip._add_tk_procs(name, args, body)
+      ip._remove_tk_procs(*names)
     }
   end
 
@@ -1563,6 +1751,46 @@ class MultiTkIp
   end
 =end
 
+end
+
+# pseudo-toplevel operation support
+class MultiTkIp
+  # instance method
+  def __pseudo_toplevel
+    self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
+  end
+
+  def __pseudo_toplevel=(m)
+    unless (Thread.current.group == ThreadGroup::Default && 
+              MultiTkIp.__getip == @@DEFAULT_MASTER)
+      fail SecurityError, "no permission to manipulate"
+    end
+
+    if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+      @pseudo_toplevel[0] = true
+      @pseudo_toplevel[1] = m
+    else
+      fail ArgumentError, 'fail to set pseudo-toplevel'
+    end
+    self
+  end
+
+  def __pseudo_toplevel_evaluable?
+    begin
+      @pseudo_toplevel[0] && @pseudo_toplevel[1].pseudo_toplevel_evaluable?
+    rescue Exception
+      false
+    end
+  end
+
+  def __pseudo_toplevel_evaluable=(mode)
+    unless (Thread.current.group == ThreadGroup::Default && 
+              MultiTkIp.__getip == @@DEFAULT_MASTER)
+      fail SecurityError, "no permission to manipulate"
+    end
+
+    @pseudo_toplevel[0] = (mode)? true: false
+  end
 end
 
 # evaluate a procedure on the proper interpreter
