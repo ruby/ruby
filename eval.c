@@ -236,11 +236,14 @@ typedef jmp_buf rb_jmpbuf_t;
 
 VALUE rb_cProc;
 static VALUE rb_cBinding;
+static VALUE proc_alloc(VALUE,struct BLOCK*,int);
 static VALUE proc_invoke(VALUE,VALUE,VALUE,VALUE,int);
 static VALUE proc_lambda(void);
 static VALUE rb_f_binding(VALUE);
 static void rb_f_END(void);
 static struct BLOCK *passing_block(VALUE,struct BLOCK*);
+static int block_orphan(struct BLOCK *data);
+
 static VALUE rb_cMethod;
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind(VALUE, VALUE);
@@ -1054,6 +1057,7 @@ static NODE *compile(VALUE, const char*, int);
 static VALUE rb_yield_0(VALUE, VALUE, VALUE, int);
 
 #define YIELD_ARY_ARGS    1
+#define YIELD_PROC_INVOKE 2
 #define YIELD_PUBLIC_DEF  4
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
@@ -4800,11 +4804,15 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		assign(self, var, val, lambda);
 	    }
 	    if (bvar) {
+		struct BLOCK *b = ruby_frame->prev->prev->block;
 		VALUE blk;
-		if (lambda)
-		    blk = rb_block_proc();
-		else
-		    blk = block->block_obj;
+
+		if ((flags & YIELD_PROC_INVOKE) && b) {
+		    blk = proc_alloc(rb_cProc, b, lambda);
+		}
+		else {
+		    blk = Qnil;
+		}
 		assign(self, bvar, blk, 0);
 	    }
 	}
@@ -5941,20 +5949,21 @@ rb_call(VALUE klass, VALUE recv, ID mid,
     if (scope > CALLING_NORMAL) { /* pass receiver info */
 	noex |= NOEX_RECV;
     }
-    if (block && !iter) {
+    if (block && !iter && !block_orphan(block)) {
 	VALUE result;
 	int state;
 
 	PUSH_TAG(PROT_LOOP);
-//	prot_tag->blkid = block->uniq;
+	prot_tag->blkid = block->uniq;
 	state = EXEC_TAG();
 	if (state == 0) {
+	  retry:
 	    result = rb_call0(klass, recv, mid, id, argc, argv, block, body, noex);
 	}
-//	else if (state == TAG_BREAK && TAG_DST()) {
-//	    result = prot_tag->retval;
-//	    state = 0;
-//	}
+	else if (state == TAG_BREAK && TAG_DST()) {
+	    result = prot_tag->retval;
+	    state = 0;
+	}
 	POP_TAG();
 	if (state) JUMP_TAG(state);
 	return result;
@@ -8284,7 +8293,34 @@ proc_set_safe_level(VALUE data)
 }
 
 static VALUE
-proc_alloc(VALUE klass, int lambda)
+proc_alloc(VALUE klass, struct BLOCK *blk, int lambda)
+{
+    volatile VALUE block;
+    struct BLOCK *data;
+
+    block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
+    *data = *blk;
+
+    if (!lambda && data->block_obj) {
+	return data->block_obj;
+    }
+    data->orig_thread = rb_thread_current();
+    data->wrapper = ruby_wrapper;
+    frame_dup(&data->frame);
+    blk_nail_down(data);
+    scope_dup(data->scope);
+    proc_save_safe_level(block);
+    if (lambda) {
+        data->flags |= BLOCK_LAMBDA;
+    }
+    else {
+	data->block_obj = block;
+    }
+    return block;
+}
+
+static VALUE
+proc_new(VALUE klass, int lambda)
 {
     volatile VALUE block;
     struct FRAME *frame = ruby_frame;
@@ -8304,23 +8340,10 @@ proc_alloc(VALUE klass, int lambda)
 	}
 	return obj;
     }
-    block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
-    *data = *frame->block;
-
-    data->orig_thread = rb_thread_current();
-    data->wrapper = ruby_wrapper;
-    data->block_obj = block;
-    frame_dup(&data->frame);
-    blk_nail_down(data);
-    scope_dup(data->scope);
-    proc_save_safe_level(block);
-    if (lambda) {
-        data->flags |= BLOCK_LAMBDA;
-    }
-    else {
+    block = proc_alloc(klass, frame->block, lambda);
+    if (!lambda) {
 	frame->block->block_obj = block;
     }
-
     return block;
 }
 
@@ -8344,7 +8367,7 @@ proc_alloc(VALUE klass, int lambda)
 static VALUE
 proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE block = proc_alloc(klass, Qfalse);
+    VALUE block = proc_new(klass, Qfalse);
 
     rb_obj_call_init(block, argc, argv);
     return block;
@@ -8360,14 +8383,14 @@ proc_s_new(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_block_proc(void)
 {
-    return proc_alloc(rb_cProc, Qfalse);
+    return proc_new(rb_cProc, Qfalse);
 }
 
 VALUE
 rb_f_lambda(void)
 {
     rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
-    return proc_alloc(rb_cProc, Qtrue);
+    return proc_new(rb_cProc, Qtrue);
 }
 
 /*
@@ -8381,7 +8404,7 @@ rb_f_lambda(void)
 static VALUE
 proc_lambda(void)
 {
-    return proc_alloc(rb_cProc, Qtrue);
+    return proc_new(rb_cProc, Qtrue);
 }
 
 static int
@@ -8403,21 +8426,22 @@ static VALUE
 proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
 {
     struct BLOCK _block;
-    struct BLOCK *data, *volatile old_block;
+    struct BLOCK *data;
     volatile VALUE result = Qundef;
     int state;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     volatile int pcall, lambda;
-    VALUE bvar = Qnil;
+    VALUE bvar = 0;
 
     Data_Get_Struct(proc, struct BLOCK, data);
     pcall = call ? YIELD_ARY_ARGS : 0;
+    pcall |= YIELD_PROC_INVOKE;
     lambda = data->flags & BLOCK_LAMBDA;
     if (rb_block_given_p() && ruby_frame->callee) {
 	if (klass != ruby_frame->this_class)
 	    klass = rb_obj_class(proc);
-	bvar = rb_block_proc();
+//	bvar = rb_block_proc();
     }
 
     PUSH_VARS();
@@ -8437,8 +8461,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
         scope->local_vars = _block.scope->local_vars;
         _block.scope = scope;
     }
-    /* modify current frame */
-    old_block = ruby_frame->block;
+    PUSH_FRAME(Qfalse);
     ruby_frame->block = &_block;
     PUSH_TAG(lambda ? PROT_LAMBDA : PROT_NONE);
     state = EXEC_TAG();
@@ -8450,7 +8473,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
 	result = prot_tag->retval;
     }
     POP_TAG();
-    ruby_frame->block = old_block;
+    POP_FRAME();
     ruby_wrapper = old_wrapper;
     POP_VARS();
     if (proc_safe_level_p(proc))

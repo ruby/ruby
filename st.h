@@ -6,7 +6,14 @@
 
 #define ST_INCLUDED
 
+#if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+typedef unsigned LONG_LONG st_data_t;
+#else
+# error ---->> st.c requires sizeof(void*) == sizeof(long) to be compiled. <<---
+-
+#endif
 #define ST_DATA_T_DEFINED
 
 typedef struct st_table st_table;

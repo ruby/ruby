@@ -606,7 +606,7 @@ VALUE rb_require(const char*);
 
 #ifdef __ia64
 void ruby_init_stack(VALUE*, void*);
-#define RUBY_INIT_STACK \
+#define RUBY_INTT_STACK \
     VALUE variable_in_this_stack_frame; \
     ruby_init_stack(&variable_in_this_stack_frame, rb_ia64_bsp());
 #else

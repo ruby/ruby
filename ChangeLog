@@ -3,6 +3,22 @@ Mon Jul 10 09:29:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_clear_cache_for_remove): clear entries for included
 	  module.  fixed: [ruby-core:08180]
 
+Mon Jul 10 02:22:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should not overwrite block information in
+	  current frame.  [ruby-dev:28957]
+
+	* eval.c (rb_yield_0): retrieve proper block object from the frame
+	  record.
+
+	* eval.c (proc_alloc): return preserved block object if it's
+	  available. 
+
+Mon Jul 10 01:48:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.h (st_data_t): use pointer sized integer for st_data_t.
+	  [ruby-dev:28988]
+
 Sun Jul  9 18:06:47 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_constant): fix for value 1 at cross compiling.
@@ -46,6 +62,11 @@ Fri Jul  7 14:05:03 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/Makefile.sub (config.h): define FUNC_STDCALL/FUNC_CDECL.
 	  from [ruby-dev:28970].
 
+Fri Jul  7 00:38:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_default): should not call default procedure if
+	  no key is given.  [ruby-list:42541]
+
 Thu Jul  6 23:30:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_proc_times): use sysconf(_SC_CLK_TCK) value prior to
@@ -60,6 +81,11 @@ Thu Jul  6 21:50:06 2006  Minero Aoki  <aamine@loveruby.net>
 	* lib/racc/parser.rb: sync with original code, rev 1.8.
 
 	* lib/racc/parser.rb: update coding style.
+
+Wed Jul  5 05:28:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (block_param): should allow block argument after splat
+	  and post splat args.
 
 Wed Jul  5 01:12:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

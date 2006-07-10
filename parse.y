@@ -2921,7 +2921,16 @@ block_param	: block_param0
 			$$ = NEW_BLOCK_PARAM($9, NEW_MASGN($1, NEW_POSTARG($4,$6)));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), $4);
-			$$ = blockvar_add_block($$, $6);
+			$$ = blockvar_add_block($$, $9);
+		    %*/
+		    }
+		| block_param0 ',' tSTAR lhs ',' tAMPER lhs
+		    {
+		    /*%%%*/
+			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN($1, $4));
+		    /*%
+			$$ = blockvar_add_star(blockvar_new($1), $4);
+			$$ = blockvar_add_block($$, $7);
 		    %*/
 		    }
 		| block_param0 ',' tSTAR ',' tAMPER lhs
@@ -2939,7 +2948,7 @@ block_param	: block_param0
 			$$ = NEW_BLOCK_PARAM($8, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
-			$$ = blockvar_add_block($$, $5);
+			$$ = blockvar_add_block($$, $8);
 		    %*/
 		    }
 		| block_param0 ',' tSTAR lhs
@@ -3008,6 +3017,15 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 		    %*/
 		    }
+		| tSTAR lhs ',' mlhs_post ',' tAMPER lhs
+		    {
+		    /*%%%*/
+			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN(0, NEW_POSTARG($2,$4)));
+		    /*%
+			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
+			$$ = blockvar_add_block($$, $7);
+		    %*/
+		    }
 		| tSTAR
 		    {
 		    /*%%%*/
@@ -3022,6 +3040,15 @@ block_param	: block_param0
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1,$3));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
+		    %*/
+		    }
+		| tSTAR ',' mlhs_post ',' tAMPER lhs
+		    {
+		    /*%%%*/
+			$$ = NEW_BLOCK_PARAM($6, NEW_MASGN(0, NEW_POSTARG(-1,$3)));
+		    /*%
+			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
+			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
 		| tAMPER lhs

@@ -1924,7 +1924,7 @@ time_mdump(VALUE time)
     if ((tm->tm_year & 0xffff) != tm->tm_year)
 	rb_raise(rb_eArgError, "year too big to marshal");
  
-    p = 0x1UL          << 31 | /*  1 */
+    p = 0x1UL        << 31 | /*  1 */
 	tobj->gmt    << 30 | /*  1 */
 	tm->tm_year  << 14 | /* 16 */
 	tm->tm_mon   << 10 | /*  4 */
