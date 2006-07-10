@@ -38,6 +38,7 @@ module RDoc
       @options = options
       @counter = 0
       File.makedirs(DOT_PATH)
+      @diagram_cache = {}
     end
 
     # Draw the diagrams. We traverse the files, drawing a diagram for
@@ -55,7 +56,6 @@ module RDoc
         @local_names = find_names(i)
         @global_names = []
         @global_graph = graph = DOT::DOTDigraph.new('name' => 'TopLevel',
-                                    'label' => i.file_absolute_name,
                                     'fontname' => FONT,
                                     'fontsize' => '8',
                                     'bgcolor'  => 'lightcyan1',
@@ -73,7 +73,7 @@ module RDoc
         end
         add_classes(i, graph, i.file_relative_name)
 
-        i.diagram = convert_to_png("f_#{file_count}", graph, i.name)
+        i.diagram = convert_to_png("f_#{file_count}", graph)
         
         # now go through and document each top level class and
         # module independently
@@ -83,7 +83,6 @@ module RDoc
           @global_names = []
 
           @global_graph = graph = DOT::DOTDigraph.new('name' => 'TopLevel',
-                                      'label' => i.full_name,
                                       'fontname' => FONT,
                                       'fontsize' => '8',
                                       'bgcolor'  => 'lightcyan1',
@@ -95,8 +94,7 @@ module RDoc
                                     'fontsize' => 8)
           draw_module(mod, graph, true)
           mod.diagram = convert_to_png("m_#{file_count}_#{count}", 
-                                       graph, 
-                                       "Module: #{mod.name}")
+                                       graph) 
         end
       end
       $stderr.puts unless @options.quiet
@@ -280,7 +278,9 @@ module RDoc
       
     end
 
-    def convert_to_png(file_base, graph, name)
+    def convert_to_png(file_base, graph)
+      str = graph.to_s
+      return @diagram_cache[str] if @diagram_cache[str]
       op_type = Options.instance.image_format
       dotfile = File.join(DOT_PATH, file_base)
       src = dotfile + ".dot"
@@ -292,7 +292,7 @@ module RDoc
       end
 
       File.open(src, 'w+' ) do |f|
-        f << graph.to_s << "\n"
+        f << str << "\n"
       end
       
       system "dot", "-T#{op_type}", src, "-o", dot
@@ -300,7 +300,9 @@ module RDoc
       # Now construct the imagemap wrapper around
       # that png
 
-      return wrap_in_image_map(src, dot, name)
+      ret = wrap_in_image_map(src, dot)
+      @diagram_cache[str] = ret
+      return ret
     end
 
     # Extract the client-side image map from dot, and use it
@@ -308,7 +310,7 @@ module RDoc
     # <map>..<img> combination, suitable for inclusion on
     # the page
 
-    def wrap_in_image_map(src, dot, name)
+    def wrap_in_image_map(src, dot)
       res = %{<map id="map" name="map">\n}
       dot_map = `dot -Tismap #{src}`
       dot_map.each do |area|
@@ -326,7 +328,7 @@ module RDoc
       res << "</map>\n"
 #      map_file = src.sub(/.dot/, '.map')
 #      system("dot -Timap #{src} -o #{map_file}")
-      res << %{<img src="#{dot}" usemap="#map" border="0" alt="#{name}" />}
+      res << %{<img src="#{dot}" usemap="#map" border="0" alt="#{dot}">}
       return res
     end
   end

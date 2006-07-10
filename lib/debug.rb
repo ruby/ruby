@@ -255,6 +255,9 @@ class Context
 
   def debug_command(file, line, id, binding)
     MUTEX.lock
+    unless defined?($debugger_restart) and $debugger_restart
+      callcc{|c| $debugger_restart = c} 
+    end
     set_last_thread(Thread.current)
     frame_pos = 0
     binding_file = file
@@ -524,6 +527,9 @@ class Context
 	when /^\s*p\s+/
 	  stdout.printf "%s\n", debug_eval($', binding).inspect
 
+	when /^\s*r(?:estart)?$/
+          $debugger_restart.call
+
 	when /^\s*h(?:elp)?$/
 	  debug_print_help()
 
@@ -541,11 +547,11 @@ class Context
     stdout.print <<EOHELP
 Debugger help v.-0.002b
 Commands
-  b[reak] [file|class:]<line|method>
+  b[reak] [file:|class:]<line|method>
   b[reak] [class.]<line|method>
                              set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
-  cat[ch] <an Exception>     set catchpoint to an exception
+  cat[ch] (<exception>|off)  set catchpoint to an exception
   b[reak]                    list breakpoints
   cat[ch]                    show catchpoint
   del[ete][ nnn]             delete some or all breakpoints

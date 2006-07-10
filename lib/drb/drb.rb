@@ -832,7 +832,7 @@ module DRb
       begin
         Socket::gethostbyname(host)[0]
       rescue
-        host
+        'localhost'
       end
     end
 

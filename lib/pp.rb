@@ -290,7 +290,7 @@ class PP < PrettyPrint
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
       if /\(PP::ObjectMixin\)#/ =~ method(:pretty_print).inspect
-        raise "pretty_print is not overridden."
+        raise "pretty_print is not overridden for #{self.class}"
       end
       PP.singleline_pp(self, '')
     end

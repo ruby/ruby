@@ -212,6 +212,11 @@ module RDoc
       $stderr.flush
     end
 
+    def remove_private_comments(comment)
+       comment.gsub!(/\/?\*--(.*?)\/?\*\+\+/m, '')
+       comment.sub!(/\/?\*--.*/m, '')
+    end
+
     # remove lines that are commented out that might otherwise get
     # picked up when scanning for classes and methods
 
@@ -551,6 +556,8 @@ module RDoc
               \s*(\(.*?\)).*?^}xm
         comment, params = $1, $2
         body_text = $&
+
+        remove_private_comments(comment) if comment
 
         # see if we can find the whole body
         
