@@ -861,7 +861,7 @@ class TkFont
       rescue
         super(id, *args)
 #        fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
-#      end
+      end
     else
       super(id, *args)
 #      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at

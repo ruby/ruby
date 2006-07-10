@@ -1,3 +1,7 @@
+Mon Jul 10 18:59:34 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/font.rb: sorry. mistaken to patch.
+
 Mon Jul 10 18:46:52 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: make SEGV risk lower at exit.
