@@ -1,3 +1,8 @@
+Mon Jul 10 14:43:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call): remove erroneously restored prot_tag->blkid
+	  initialization.  [ruby-dev:28997]  [ruby-dev:29000]
+
 Mon Jul 10 13:58:08 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* signal.c (install_nativethread_sighandler): commented out.

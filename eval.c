@@ -5954,7 +5954,6 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	int state;
 
 	PUSH_TAG(PROT_LOOP);
-	prot_tag->blkid = block->uniq;
 	state = EXEC_TAG();
 	if (state == 0) {
 	  retry:
