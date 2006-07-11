@@ -5956,7 +5956,6 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	PUSH_TAG(PROT_LOOP);
 	state = EXEC_TAG();
 	if (state == 0) {
-	  retry:
 	    result = rb_call0(klass, recv, mid, id, argc, argv, block, body, noex);
 	}
 	else if (state == TAG_BREAK && TAG_DST()) {
@@ -8323,7 +8322,6 @@ proc_new(VALUE klass, int lambda)
 {
     volatile VALUE block;
     struct FRAME *frame = ruby_frame;
-    struct BLOCK *data;
 
     if (!rb_block_given_p()) {
 	if (lambda || !ruby_frame->prev || !ruby_frame->prev->block) {
