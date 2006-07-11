@@ -766,7 +766,8 @@ class MultiTkIp
         fail SecurityError, "no permission to manipulate"
       end
 
-      if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+      # if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+      if m.respond_to?(:pseudo_toplevel_evaluable?)
         @pseudo_toplevel[0] = true
         @pseudo_toplevel[1] = m
       else
@@ -1770,7 +1771,8 @@ class MultiTkIp
       fail SecurityError, "no permission to manipulate"
     end
 
-    if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+    # if m.kind_of?(Module) && m.respond_to?(:pseudo_toplevel_evaluable?)
+    if m.respond_to?(:pseudo_toplevel_evaluable?)
       @pseudo_toplevel[0] = true
       @pseudo_toplevel[1] = m
     else
