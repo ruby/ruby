@@ -1,3 +1,17 @@
+Tue Jul 11 15:29:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_int2big): use SIGNED_VALUE.  [ruby-dev:29019]
+
+	* bignum.c (rb_int2inum, rb_uint2inum): use VALUE sized integer.
+
+	* bignum.c (rb_big2long, rb_big2ulong): ditto.
+
+	* numeric.c (rb_num2long, rb_num2ulong): ditto.
+
+	* numeric.c (check_int, check_uint): ditto.
+
+	* bignum.c (rb_quad_pack): typo fixed.
+
 Tue Jul 11 13:40:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bignorm): sizeof(long) may be smaller than

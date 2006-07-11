@@ -8555,10 +8555,13 @@ VALUE
 rb_proc_yield(int argc, VALUE *argv, VALUE proc)
 {
     switch (argc) {
+      case 1:
+	if (!NIL_P(argv[0])) {
+	    return proc_invoke(proc, argv[0], Qundef, 0, 0);
+	}
+	/* fall through */
       case 0:
 	return proc_invoke(proc, Qundef, Qundef, 0, 0);
-      case 1:
-	return proc_invoke(proc, argv[0], Qundef, 0, 0);
       default:
 	return proc_invoke(proc, rb_ary_new4(argc, argv), Qundef, 0, 0);
     }

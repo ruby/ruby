@@ -192,7 +192,7 @@ rb_quad_pack(char *buf, VALUE val)
 	BDIGIT *ds;
 
 	if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS) {
-	    len = SIZEOF_LONG/SIZEOF_BDIGITS;
+	    len = SIZEOF_LONG_LONG/SIZEOF_BDIGITS;
 	}
 	ds = BDIGITS(val);
 	q = 0;
@@ -686,17 +686,17 @@ rb_big_to_s(int argc, VALUE *argv, VALUE x)
     return rb_big2str(x, base);
 }
 
-static unsigned long
+static VALUE
 big2ulong(VALUE x, const char *type, int check)
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > SIZEOF_LONG/SIZEOF_BDIGITS) {
+    if (len > SIZEOF_VALUE/SIZEOF_BDIGITS) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-	len = SIZEOF_LONG/SIZEOF_BDIGITS;
+	len = SIZEOF_VALUE/SIZEOF_BDIGITS;
     }
     ds = BDIGITS(x);
     num = 0;
@@ -707,23 +707,23 @@ big2ulong(VALUE x, const char *type, int check)
     return num;
 }
 
-unsigned long
+VALUE
 rb_big2ulong_pack(VALUE x)
 {
-    unsigned long num = big2ulong(x, "unsigned long", Qfalse);
+    VALUE num = big2ulong(x, "unsigned long", Qfalse);
     if (!RBIGNUM(x)->sign) {
 	return -num;
     }
     return num;
 }
 
-unsigned long
+VALUE
 rb_big2ulong(VALUE x)
 {
-    unsigned long num = big2ulong(x, "unsigned long", Qtrue);
+    VALUE num = big2ulong(x, "unsigned long", Qtrue);
 
     if (!RBIGNUM(x)->sign) {
-	if ((long)num < 0) {
+	if ((SIGNED_VALUE)num < 0) {
 	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
 	}
 	return -num;
@@ -731,15 +731,16 @@ rb_big2ulong(VALUE x)
     return num;
 }
 
-long
+SIGNED_VALUE
 rb_big2long(VALUE x)
 {
-    unsigned long num = big2ulong(x, "long", Qtrue);
+    VALUE num = big2ulong(x, "long", Qtrue);
 
-    if ((long)num < 0 && (RBIGNUM(x)->sign || (long)num != LONG_MIN)) {
+    if ((SIGNED_VALUE)num < 0 &&
+	(RBIGNUM(x)->sign || (SIGNED_VALUE)num != LONG_MIN)) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
     }
-    if (!RBIGNUM(x)->sign) return -(long)num;
+    if (!RBIGNUM(x)->sign) return -(SIGNED_VALUE)num;
     return num;
 }
 

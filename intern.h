@@ -72,18 +72,18 @@ VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
-VALUE rb_uint2big(unsigned long);
-VALUE rb_int2big(long);
-VALUE rb_uint2inum(unsigned long);
-VALUE rb_int2inum(long);
+VALUE rb_uint2big(VALUE);
+VALUE rb_int2big(SIGNED_VALUE);
+VALUE rb_uint2inum(VALUE);
+VALUE rb_int2inum(SIGNED_VALUE);
 VALUE rb_cstr_to_inum(const char*, int, int);
 VALUE rb_str_to_inum(VALUE, int, int);
 VALUE rb_cstr2inum(const char*, int);
 VALUE rb_str2inum(VALUE, int);
 VALUE rb_big2str(VALUE, int);
-long rb_big2long(VALUE);
+SIGNED_VALUE rb_big2long(VALUE);
 #define rb_big2int(x) rb_big2long(x)
-unsigned long rb_big2ulong(VALUE);
+VALUE rb_big2ulong(VALUE);
 #define rb_big2uint(x) rb_big2ulong(x)
 #if HAVE_LONG_LONG
 VALUE rb_ll2inum(LONG_LONG);

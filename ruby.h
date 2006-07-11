@@ -94,14 +94,17 @@ extern "C" {
 typedef unsigned long VALUE;
 typedef unsigned long ID;
 # define SIGNED_VALUE long
+# define SIZEOF_VALUE SIZEOF_LONG
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG VALUE;
 typedef unsigned LONG_LONG ID;
 # define SIGNED_VALUE LONG_LONG
 # define LONG_LONG_VALUE 1
+# define SIZEOF_VALUE SIZEOF_LONG_LONG
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
+
 
 #ifdef __STDC__
 # include <limits.h>
@@ -273,8 +276,8 @@ RUBY_EXTERN int ruby_safe_level;
 void rb_set_safe_level(int);
 void rb_secure_update(VALUE);
 
-long rb_num2long(VALUE);
-unsigned long rb_num2ulong(VALUE);
+SIGNED_VALUE rb_num2long(VALUE);
+VALUE rb_num2ulong(VALUE);
 #define NUM2LONG(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2long((VALUE)x))
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
@@ -336,7 +339,7 @@ VALUE rb_newobj(void);
 } while (0)
 
 struct RBasic {
-    unsigned long flags;
+    VALUE flags;
     VALUE klass;
 };
 

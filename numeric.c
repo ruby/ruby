@@ -1458,7 +1458,7 @@ num_step(int argc, VALUE *argv, VALUE from)
     return from;
 }
 
-long
+SIGNED_VALUE
 rb_num2long(VALUE val)
 {
     if (NIL_P(val)) {
@@ -1471,7 +1471,7 @@ rb_num2long(VALUE val)
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)LONG_MAX
 	    && RFLOAT(val)->value >= (double)LONG_MIN) {
-	    return (long)(RFLOAT(val)->value);
+	    return (SIGNED_VALUE)(RFLOAT(val)->value);
 	}
 	else {
 	    char buf[24];
@@ -1491,19 +1491,18 @@ rb_num2long(VALUE val)
     }
 }
 
-unsigned long
+VALUE
 rb_num2ulong(VALUE val)
 {
     if (TYPE(val) == T_BIGNUM) {
 	return rb_big2ulong(val);
     }
-    return (unsigned long)rb_num2long(val);
+    return (VALUE)rb_num2long(val);
 }
 
-#if SIZEOF_INT < SIZEOF_LONG
+#if SIZEOF_INT < SIZEOF_VALUE
 static void
-check_int(num)
-    long num;
+check_int(SIGNED_VALUE num)
 {
     const char *s;
 
@@ -1516,21 +1515,27 @@ check_int(num)
     else {
 	return;
     }
+#if LONG_LONG_VALUE
+    rb_raise(rb_eRangeError, "integer %lld too %s to convert to `int'", num, s);
+#else
     rb_raise(rb_eRangeError, "integer %ld too %s to convert to `int'", num, s);
+#endif
 }
 
 static void
-check_uint(num)
-    unsigned long num;
+check_uint(VALUE num)
 {
     if (num > UINT_MAX) {
+#if LONG_LONG_VALUE
+	rb_raise(rb_eRangeError, "integer %llu too big to convert to `unsigned int'", num);
+#else
 	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+#endif
     }
 }
 
 long
-rb_num2int(val)
-    VALUE val;
+rb_num2int(VALUE val)
 {
     long num = rb_num2long(val);
 
@@ -1539,8 +1544,7 @@ rb_num2int(val)
 }
 
 long
-rb_fix2int(val)
-    VALUE val;
+rb_fix2int(VALUE val)
 {
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
@@ -1549,8 +1553,7 @@ rb_fix2int(val)
 }
 
 unsigned long
-rb_num2uint(val)
-    VALUE val;
+rb_num2uint(VALUE val)
 {
     unsigned long num = rb_num2ulong(val);
 
@@ -1561,8 +1564,7 @@ rb_num2uint(val)
 }
 
 unsigned long
-rb_fix2uint(val)
-    VALUE val;
+rb_fix2uint(VALUE val)
 {
     unsigned long num;
 
@@ -1837,7 +1839,7 @@ VALUE
 rb_fix2str(VALUE x, int base)
 {
     extern const char ruby_digitmap[];
-    char buf[SIZEOF_LONG*CHAR_BIT + 2], *b = buf + sizeof buf;
+    char buf[SIZEOF_VALUE*CHAR_BIT + 2], *b = buf + sizeof buf;
     long val = FIX2LONG(x);
     int neg = 0;
 
