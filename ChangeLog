@@ -1,3 +1,7 @@
+Tue Jul 11 17:33:39 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_dump): need to extend len for \b.
+
 Mon Jul 10 19:22:19 2006  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (gc_sweep): expand heap earlier.
