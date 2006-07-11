@@ -755,7 +755,9 @@ class MultiTkIp
     @pseudo_toplevel = [false, nil]
 
     def self.__pseudo_toplevel
-      self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
+      Thread.current.group == ThreadGroup::Default && 
+        MultiTkIp.__getip == @@DEFAULT_MASTER &&
+        self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
     end
 
     def self.__pseudo_toplevel=(m)
@@ -1757,7 +1759,9 @@ end
 class MultiTkIp
   # instance method
   def __pseudo_toplevel
-    self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
+    ip = MultiTkIp.__getip
+    (ip == @@DEFAULT_MASTER || ip == self) &&
+      self.__pseudo_toplevel_evaluable? && @pseudo_toplevel[1]
   end
 
   def __pseudo_toplevel=(m)

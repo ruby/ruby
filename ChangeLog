@@ -1,3 +1,7 @@
+Tue Jul 11 18:00:57 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: security fix.
+
 Tue Jul 11 17:33:39 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_dump): need to extend len for \b.
