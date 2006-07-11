@@ -46,11 +46,10 @@ class BigDecimal < Numeric
      numerator = sign*digits.to_i
      denomi_power = power - digits.size # base is always 10
      if denomi_power < 0
-        denominator = base ** (-denomi_power)
+        Rational(numerator,base ** (-denomi_power))
      else
-        denominator = base ** denomi_power
+        Rational(numerator * (base ** denomi_power),1)
      end
-     Rational(numerator,denominator)
   end
 end
 

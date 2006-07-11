@@ -788,7 +788,7 @@ public
       if ele.is_a?(Array)
 	deep_map(ele, &block)
       else
-	new_obj = block.call(ele)
+	new_obj = yield(ele)
 	new_obj.elename = ITEM_NAME
 	new_obj
       end

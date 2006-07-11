@@ -103,7 +103,7 @@ bignorm(VALUE x)
 	RBIGNUM(x)->len = ++len;
 
 	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
-	    long num = 0;
+	    SIGNED_VALUE num = 0;
 	    while (len--) {
 		num = BIGUP(num) + ds[len];
 	    }
@@ -125,7 +125,7 @@ rb_big_norm(VALUE x)
 }
 
 VALUE
-rb_uint2big(unsigned long n)
+rb_uint2big(VALUE n)
 {
     BDIGIT_DBL num = n;
     long i = 0;
@@ -146,7 +146,7 @@ rb_uint2big(unsigned long n)
 }
 
 VALUE
-rb_int2big(long n)
+rb_int2big(SIGNED_VALUE n)
 {
     long neg = 0;
     VALUE big;
@@ -163,14 +163,14 @@ rb_int2big(long n)
 }
 
 VALUE
-rb_uint2inum(unsigned long n)
+rb_uint2inum(VALUE n)
 {
     if (POSFIXABLE(n)) return LONG2FIX(n);
     return rb_uint2big(n);
 }
 
 VALUE
-rb_int2inum(long n)
+rb_int2inum(SIGNED_VALUE n)
 {
     if (FIXABLE(n)) return LONG2FIX(n);
     return rb_int2big(n);
@@ -1236,7 +1236,7 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 	}
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
 	if (modp) {
-	    *modp = rb_uint2big((unsigned long)t2);
+	    *modp = rb_uint2big((VALUE)t2);
 	    RBIGNUM(*modp)->sign = RBIGNUM(x)->sign;
 	}
 	if (divp) *divp = z;

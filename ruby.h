@@ -93,9 +93,12 @@ extern "C" {
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;
+# define SIGNED_VALUE long
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG VALUE;
 typedef unsigned LONG_LONG ID;
+# define SIGNED_VALUE LONG_LONG
+# define LONG_LONG_VALUE 1
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
@@ -145,18 +148,23 @@ typedef unsigned LONG_LONG ID;
 # endif
 #endif
 
-#define FIXNUM_MAX (LONG_MAX>>1)
-#define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
+#if LONG_LONG_VALUE
+# define FIXNUM_MAX (LLONG_MAX>>1)
+# define FIXNUM_MIN RSHIFT((LONG_LONG)LLONG_MIN,1)
+#else
+# define FIXNUM_MAX (LONG_MAX>>1)
+# define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
+#endif
 
 #define FIXNUM_FLAG 0x01
-#define INT2FIX(i) ((VALUE)(((long)(i))<<1 | FIXNUM_FLAG))
+#define INT2FIX(i) ((VALUE)(((SIGNED_VALUE)(i))<<1 | FIXNUM_FLAG))
 #define LONG2FIX(i) INT2FIX(i)
 #define rb_fix_new(v) INT2FIX(v)
-VALUE rb_int2inum(long);
+VALUE rb_int2inum(SIGNED_VALUE);
 #define INT2NUM(v) rb_int2inum(v)
 #define LONG2NUM(v) INT2NUM(v)
 #define rb_int_new(v) rb_int2inum(v)
-VALUE rb_uint2inum(unsigned long);
+VALUE rb_uint2inum(VALUE);
 #define UINT2NUM(v) rb_uint2inum(v)
 #define ULONG2NUM(v) UINT2NUM(v)
 #define rb_uint_new(v) rb_uint2inum(v)

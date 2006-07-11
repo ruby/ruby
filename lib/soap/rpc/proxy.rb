@@ -345,7 +345,12 @@ private
       if @response_style == :rpc
         response_rpc(body, mapping_registry, literal_mapping_registry, opt)
       else
-        response_doc(body, mapping_registry, literal_mapping_registry, opt)
+        ret = response_doc(body, mapping_registry, literal_mapping_registry, opt)
+        if ret.size == 1
+          ret[0]
+        else
+          ret
+        end
       end
     end
 
@@ -439,9 +444,9 @@ private
 
     def response_doc(body, mapping_registry, literal_mapping_registry, opt)
       if @response_use == :encoded
-        return *response_doc_enc(body, mapping_registry, opt)
+        return response_doc_enc(body, mapping_registry, opt)
       else
-        return *response_doc_lit(body, literal_mapping_registry, opt)
+        return response_doc_lit(body, literal_mapping_registry, opt)
       end
     end
 

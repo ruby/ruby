@@ -1,3 +1,21 @@
+Tue Jul 11 13:40:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): sizeof(long) may be smaller than
+	  sizeof(VALUE).  [ruby-dev:29013]
+
+	* ruby.h (FIXNUM_MAX): fixnum may be bigger than long.
+
+	* ruby.h (SIGNED_VALUE): signed integer of size of VALUE.
+
+Mon Jul 10 23:37:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/soap/rpc/proxy.rb (Proxy::Operation::response_doc): remove
+	  splat star from return statements.
+
+	* lib/soap/rpc/proxy.rb (Proxy::Operation::response_obj): retrieve
+	  the first value from the result array if response has only one
+	  value.
+
 Mon Jul 10 19:22:19 2006  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (gc_sweep): expand heap earlier.

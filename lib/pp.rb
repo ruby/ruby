@@ -142,7 +142,7 @@ class PP < PrettyPrint
     # Object#pretty_print_cycle is used when +obj+ is already
     # printed, a.k.a the object reference chain has a cycle.
     def pp(obj)
-      id = obj.__id__
+      id = obj.object_id
  
       if check_inspect_key(id)
         group {obj.pretty_print_cycle self}
@@ -180,7 +180,7 @@ class PP < PrettyPrint
     end
 
     def object_address_group(obj, &block)
-      id = PointerFormat % (obj.__id__ * 2 & PointerMask)
+      id = PointerFormat % (obj.object_id * 2 & PointerMask)
       group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end
 
