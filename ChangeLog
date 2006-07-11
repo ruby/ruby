@@ -1,3 +1,7 @@
+Tue Jul 11 17:28:08 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_dump): need to extend len for \b.
+
 Tue Jul 11 15:29:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_int2big): use SIGNED_VALUE.  [ruby-dev:29019]

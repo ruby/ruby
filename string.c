@@ -2497,7 +2497,7 @@ rb_str_dump(VALUE str)
 	  case '"':  case '\\':
 	  case '\n': case '\r':
 	  case '\t': case '\f':
-	  case '\013': case '\007': case '\033':
+	  case '\013': case '\010': case '\007': case '\033':
 	    len += 2;
 	    break;
 
