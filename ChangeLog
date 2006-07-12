@@ -1,3 +1,10 @@
+Thu Jul 13 00:40:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (FIX2LONG): returns integer of size of VALUE.
+	  [ruby-dev:29024]
+	
+	* ruby.h (FIX2ULONG): ditto.
+
 Wed Jul 12 20:05:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_args): allow post mandatory arguments after optional
