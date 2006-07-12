@@ -3941,6 +3941,14 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 			$$ = dispatch5(params, $1, $3, Qnil, Qnil, escape_Qundef($4));
 		    %*/
 		    }
+		| f_arg ',' f_optarg ',' f_post_arg opt_f_block_arg
+		    {
+		    /*%%%*/
+			$$ = new_args($1, $3, 0, $5, $6);
+		    /*%
+			$$ = dispatch5(params, $1, $3, Qnil, $5, escape_Qundef($6));
+		    %*/
+		    }
 		| f_arg ',' f_rest_arg opt_f_block_arg
 		    {
 		    /*%%%*/
@@ -3987,6 +3995,14 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 			$$ = new_args(0, $1, 0, 0, $2);
 		    /*%
 			$$ = dispatch5(params, Qnil, $1, Qnil, Qnil, escape_Qundef($2));
+		    %*/
+		    }
+		| f_optarg ',' f_post_arg opt_f_block_arg
+		    {
+		    /*%%%*/
+			$$ = new_args(0, $1, 0, $3, $4);
+		    /*%
+			$$ = dispatch5(params, Qnil, $1, Qnil, $3, escape_Qundef($4));
 		    %*/
 		    }
 		| f_rest_arg opt_f_block_arg
@@ -4089,7 +4105,7 @@ f_arg		: f_norm_arg
 			VALUE arg = ID2SYM($3);
 			$$ = $1;
 			if (rb_ary_includes($$, arg)) {
-			    yyerror("duplicated argument arg");
+			    yyerror("duplicated argument name");
 			}
 			rb_ary_push($$, arg);
 		    /*%
@@ -7898,9 +7914,18 @@ new_args_gen(struct parser_params *parser, VALUE m, NODE *o, NODE *r, NODE *p, N
 	    yyerror("duplicated rest argument name");
 	    return 0;
 	}
-	if (p) {
-	    r = NEW_POSTARG(r, p);
+    }
+    if (p) {
+	node = p;
+	while (node) {
+	    if (!node->nd_head) break;
+	    if (arg_dup_check(node->nd_head->nd_vid, m, list, node)) {
+		yyerror("duplicated argument name");
+		return 0;	
+	    }
+	    node = node->nd_next;
 	}
+	r = NEW_POSTARG(r, p);
     }
     node = NEW_ARGS(m, o, r);
     if (b) {

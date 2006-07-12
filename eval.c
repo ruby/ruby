@@ -244,7 +244,7 @@ static void rb_f_END(void);
 static struct BLOCK *passing_block(VALUE,struct BLOCK*);
 static int block_orphan(struct BLOCK *data);
 
-static VALUE rb_cMethod;
+VALUE rb_cMethod;
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind(VALUE, VALUE);
 static VALUE rb_mod_define_method(int, VALUE*, VALUE);
@@ -5131,7 +5131,7 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 	    int cnt;
 	    VALUE *p;
 
-	    if ((long)(lhs->nd_args) != -1) {
+	    if (lhs->nd_args && (long)(lhs->nd_args) != -1) {
 		assign(self, lhs->nd_args, val, 0);
 	    }
 	    cnt = lhs->nd_head->nd_alen;
@@ -5660,7 +5660,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	NODE *opt = node->nd_opt;
 	int ac = argc - npost;
 
-	while (opt && ac) {
+	while (opt && ac > 0) {
 	    assign(recv, opt->nd_head, *argv, 1);
 	    argv++; ac--;
 	    ++i;
@@ -8372,7 +8372,7 @@ proc_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   proc   { |...| block }  => a_proc
+ *   proc {|...| block }  => a_proc
  *
  * Equivalent to <code>Proc.new</code>.
  */

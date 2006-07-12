@@ -1,3 +1,18 @@
+Wed Jul 12 20:05:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_args): allow post mandatory arguments after optional
+	  arguments.  [ruby-dev:29014]
+
+	* parse.y (new_args_gen): allow post_args without rest_args.
+
+	* eval.c (formal_assign): ditto.
+
+	* parse.y (new_args_gen): check post argument duplication.
+
+Tue Jul 11 20:58:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: export rb_cMethod.  [ruby-talk:201259]
+
 Tue Jul 11 19:13:33 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: remove restriction on the class of 
@@ -42,6 +57,14 @@ Mon Jul 10 23:37:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/soap/rpc/proxy.rb (Proxy::Operation::response_obj): retrieve
 	  the first value from the result array if response has only one
 	  value.
+
+Mon Jul 10 22:00:00 2006  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Allows '_' to appear within
+	  digits.  [ruby-dev:28872]
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb: Bug in to_r reported by
+	  [ruby-list:42533] fixed.
 
 Mon Jul 10 19:22:19 2006  Tanaka Akira  <akr@fsij.org>
 
