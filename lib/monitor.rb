@@ -86,6 +86,10 @@ module MonitorMixin
   class ConditionVariable
     class Timeout < Exception; end
     
+    # Create a new timer with the argument timeout, and add the
+    # current thread to the list of waiters.  Then the thread is
+    # stopped.  It will be resumed when a corresponding #signal 
+    # occurs.
     def wait(timeout = nil)
       @monitor.funcall(:mon_check_owner)
       timer = create_timer(timeout)
@@ -112,18 +116,22 @@ module MonitorMixin
       end
     end
     
+
+    # call #wait while the supplied block returns +true+.
     def wait_while
       while yield
 	wait
       end
     end
     
+    # call #wait until the supplied block returns +true+.
     def wait_until
       until yield
 	wait
       end
     end
     
+    # Wake up and run the next waiter
     def signal
       @monitor.funcall(:mon_check_owner)
       Thread.critical = true
@@ -133,6 +141,7 @@ module MonitorMixin
       Thread.pass
     end
     
+    # Wake up all the waiters.
     def broadcast
       @monitor.funcall(:mon_check_owner)
       Thread.critical = true
@@ -235,6 +244,9 @@ module MonitorMixin
   
   #
   # FIXME: This isn't documented in Nutshell.
+  # 
+  # Create a new condition variable for this monitor.
+  # This facilitates control of the monitor with #signal and #wait.
   #
   def new_cond
     return ConditionVariable.new(self)
@@ -247,6 +259,7 @@ module MonitorMixin
     mon_initialize
   end
 
+  # called by initialize method to set defaults for instance variables.
   def mon_initialize
     @mon_owner = nil
     @mon_count = 0
@@ -254,6 +267,8 @@ module MonitorMixin
     @mon_waiting_queue = []
   end
 
+  # Throw a ThreadError exception if the current thread
+  # does't own the monitor
   def mon_check_owner
     if @mon_owner != Thread.current
       raise ThreadError, "current thread not owner"
@@ -289,6 +304,17 @@ module MonitorMixin
   end
 end
 
+# Monitors provide means of mutual exclusion for Thread programming.
+# A critical region is created by means of the synchronize method,
+# which takes a block.
+# The condition variables (created with #new_cond) may be used 
+# to control the execution of a monitor with #signal and #wait.
+#
+# the Monitor class wraps MonitorMixin, and provides aliases
+#  alias try_enter try_mon_enter
+#  alias enter mon_enter
+#  alias exit mon_exit
+# to access its methods more concisely.
 class Monitor
   include MonitorMixin
   alias try_enter try_mon_enter

@@ -1,3 +1,8 @@
+Fri Jul 14 02:30:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/monitor.rb: document patch from Hugh Sasse <hgs at dmu.ac.uk>.
+	  [ruby-core:08205]
+
 Fri Jul 14 00:10:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_pop): may cause realloc oscillation.  a patch
