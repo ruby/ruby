@@ -7,6 +7,7 @@ module TkComposite
   include Tk
   extend Tk
 
+=begin
   def initialize(parent=nil, *args)
     @delegates = {}
     @option_methods = {}
@@ -23,6 +24,106 @@ module TkComposite
       @path = @epath = @frame.path
       initialize_composite(*args)
     end
+  end
+=end
+
+  def _choice_classname_of_baseframe
+    base_class_name = nil
+
+    klass = WidgetClassNames[self.class::WidgetClassName]
+
+    if klass
+      # WidgetClassName is a known class
+      if klass <= TkFrame || klass < TkComposite
+        # klass is valid for the base frame
+        if self.class <= klass
+          # use my classname
+          base_class_name = self.class.name
+          if base_class_name == ''
+            # anonymous class -> use ancestor's name
+            base_class_name = klass.name
+          end
+        else
+          # not subclass -> use WidgetClassName
+          base_class_name = klass.name
+        end
+
+      else
+        # klass is invalid for the base frame
+        if self.class < TkFrame || self.class.superclass < TkComposite
+          # my class name is valid for the base frame -> use my classname
+          base_class_name = self.class.name
+          if base_class_name == ''
+            # anonymous class -> use TkFrame
+            base_class_name = nil
+          end
+        else
+          # no idea for the base frame -> use TkFrame
+          base_class_name = nil
+        end
+      end
+
+    elsif self.class::WidgetClassName && ! self.class::WidgetClassName.empty?
+      # unknown WidgetClassName is defined -> use it for the base frame
+      base_class_name = self.class::WidgetClassName
+
+    else
+      # no valid WidgetClassName
+      if self.class < TkFrame || self.class.superclass < TkComposite
+        # my class name is valid for the base frame -> use my classname
+        base_class_name = self.class.name
+        if base_class_name == ''
+          # anonymous class -> use TkFrame
+          base_class_name = nil
+        end
+      else
+        # no idea for the base frame -> use TkFrame
+        base_class_name = nil
+      end
+    end
+
+    base_class_name
+  end
+  private :_choice_classname_of_baseframe
+
+  # def initialize(parent=nil, *args)
+  def initialize(*args)
+    @delegates = {}
+    @option_methods = {}
+    @option_setting = {}
+
+    if args[-1].kind_of?(Hash)
+      keys = _symbolkey2str(args.pop)
+    else
+      keys = {}
+    end
+    parent = args.shift
+    parent = keys.delete('parent') if keys.has_key?('parent')
+
+    if keys.key?('classname')
+      keys['class'] = keys.delete('classname')
+    end
+    if (base_class_name = (keys.delete('class')).to_s).empty?
+      base_class_name = _choice_classname_of_baseframe
+    end
+
+    if base_class_name
+      @frame = TkFrame.new(parent, :class=>base_class_name)
+    else
+      @frame = TkFrame.new(parent)
+    end
+    @path = @epath = @frame.path
+
+    args.push(keys) unless keys.empty?
+    initialize_composite(*args)
+  end
+
+  def database_classname
+    @frame.database_classname
+  end
+
+  def database_class
+    @frame.database_class
   end
 
   def epath

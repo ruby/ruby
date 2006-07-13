@@ -1,3 +1,8 @@
+Thu Jul 13 22:23:56 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/composite.rb: improve handling of the classname on the 
+	  option database for the widget class which includes TkComposite.
+
 Thu Jul 13 20:32:19 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: updated documents by a patch from
