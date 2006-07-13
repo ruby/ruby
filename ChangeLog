@@ -1,3 +1,7 @@
+Fri Jul 14 01:09:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (then): error in warning action.
+
 Fri Jul 14 00:10:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_pop): may cause realloc oscillation.  a patch
