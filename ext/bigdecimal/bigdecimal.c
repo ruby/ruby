@@ -2496,13 +2496,24 @@ VpAlloc(U_LONG mx, char *szVal)
        return vp;
     }
 
-    /* Skip all spaces */
+    /* Skip all '_' after digit: 2006-6-30 */
+    ni = 0;
     psz = ALLOCA_N(char,strlen(szVal)+1);
     i   = 0;
     ipn = 0;
     while(psz[i]=szVal[ipn]) {
-        if(ISSPACE(szVal[ipn])) {ipn++;continue;}
+        if(ISDIGIT(psz[i])) ++ni;
+        if(psz[i]=='_') {
+            if(ni>0) {ipn++;continue;}
+            psz[i]=0;
+            break;
+        }
         ++i; ++ipn;
+    }
+    /* Skip trailing spaces */
+    while((--i)>0) {
+        if(ISSPACE(psz[i])) psz[i] = 0;
+        else                break;
     }
     szVal = psz;
 

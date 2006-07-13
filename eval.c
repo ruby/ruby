@@ -234,7 +234,8 @@ static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
-static VALUE rb_cMethod;
+
+VALUE rb_cMethod;
 static VALUE method_call _((int, VALUE*, VALUE));
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind _((VALUE, VALUE));

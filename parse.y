@@ -1731,6 +1731,11 @@ primary_value 	: primary
 
 then		: term
 		| ':'
+		    {
+		        rb_warn("colon will be obsoleted; use semicolon");
+			value_expr($1);
+			$$ = $1;
+		    }
 		| kTHEN
 		| term kTHEN
 		;
