@@ -23,6 +23,7 @@ generator.rb
 getoptlong.rb
 logger.rb
 matrix.rb
+monitor.rb
 net
 observer.rb
 optparse.rb
