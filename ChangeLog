@@ -1,3 +1,9 @@
+Fri Jul 14 00:10:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_pop): may cause realloc oscillation.  a patch
+	  from MORITA Naoyuki <mlgetter at kidou.sakura.ne.jp>.
+	  [ruby-dev:29028]
+
 Thu Jul 13 22:23:56 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/composite.rb: improve handling of the classname on the 
