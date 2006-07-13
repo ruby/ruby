@@ -21,15 +21,16 @@ module RSS
 
   class XMLParserNotFound < Error
     def initialize
-      super("available XML parser does not found in " <<
+      super("available XML parser was not found in " <<
             "#{AVAILABLE_PARSER_LIBRARIES.inspect}.")
     end
   end
 
   class NotValidXMLParser < Error
     def initialize(parser)
-      super("#{parser} is not available XML parser. " <<
-            "available XML parser is " <<
+      super("#{parser} is not an available XML parser. " <<
+            "Available XML parser"<<
+            (AVAILABLE_PARSERS.size > 1 ? "s are ": " is ") <<
             "#{AVAILABLE_PARSERS.inspect}.")
     end
   end
@@ -55,6 +56,8 @@ module RSS
         @@default_parser || AVAILABLE_PARSERS.first
       end
 
+      # Set @@default_parser to new_value if it is one of the
+      # available parsers. Else raise NotValidXMLParser error.
       def default_parser=(new_value)
         if AVAILABLE_PARSERS.include?(new_value)
           @@default_parser = new_value
@@ -96,10 +99,13 @@ module RSS
       end
     end
 
+    # maybe_xml? tests if source is a string that looks like XML.
     def maybe_xml?(source)
       source.is_a?(String) and /</ =~ source
     end
 
+    # Attempt to convert rss to a URI, but just return it if 
+    # there's a ::URI::Error
     def to_uri(rss)
       return rss if rss.is_a?(::URI::Generic)
 
@@ -163,6 +169,7 @@ module RSS
       @@registered_uris = {}
       @@class_names = {}
 
+      # return the setter for the uri, tag_name pair, or nil.
       def setter(uri, tag_name)
         begin
           @@setters[uri][tag_name]
@@ -171,6 +178,8 @@ module RSS
         end
       end
 
+
+      # return the tag_names for setters associated with uri
       def available_tags(uri)
         begin
           @@setters[uri].keys
@@ -179,20 +188,25 @@ module RSS
         end
       end
       
+      # register uri against this name.
       def register_uri(uri, name)
         @@registered_uris[name] ||= {}
         @@registered_uris[name][uri] = nil
       end
       
+      # test if this uri is registered against this name
       def uri_registered?(uri, name)
         @@registered_uris[name].has_key?(uri)
       end
 
+      # record class_name for the supplied uri and tag_name
       def install_class_name(uri, tag_name, class_name)
         @@class_names[uri] ||= {}
         @@class_names[uri][tag_name] = class_name
       end
 
+      # retrieve class_name for the supplied uri and tag_name
+      # If it doesn't exist, capitalize the tag_name
       def class_name(uri, tag_name)
         begin
           @@class_names[uri][tag_name]
@@ -211,6 +225,7 @@ module RSS
       end
     
       private
+      # set the setter for the uri, tag_name pair
       def install_setter(uri, tag_name, setter)
         @@setters[uri] ||= {}
         @@setters[uri][tag_name] = setter
@@ -257,6 +272,7 @@ module RSS
       @xml_stylesheets = []
     end
     
+    # set instance vars for version, encoding, standalone
     def xmldecl(version, encoding, standalone)
       @version, @encoding, @standalone = version, encoding, standalone
     end
@@ -316,6 +332,9 @@ module RSS
     end
 
     CONTENT_PATTERN = /\s*([^=]+)=(["'])([^\2]+?)\2/
+    # Extract the first name="value" pair from content.
+    # Works with single quotes according to the constant
+    # CONTENT_PATTERN. Return a Hash.
     def parse_pi_content(content)
       params = {}
       content.scan(CONTENT_PATTERN) do |name, quote, value|
