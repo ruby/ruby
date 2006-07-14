@@ -9,7 +9,7 @@ Sat Jul 15 01:09:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  malloc/calloc, to detect memory allocation failure.  see
 	  <http://www.nongnu.org/failmalloc/>.
 
-	* gc.c (rb_memerror): should not raise nomem_error.
+	* gc.c (rb_memerror): should not raise empty nomem_error.
 
 Fri Jul 14 13:08:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

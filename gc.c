@@ -95,7 +95,7 @@ rb_memerror()
 {
     static int recurse = 0;
 
-    if (recurse > 0 && rb_safe_level() < 4) {
+    if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(1);
     }
