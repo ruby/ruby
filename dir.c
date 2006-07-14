@@ -67,10 +67,23 @@ char *strchr _((char*,char));
 #define lstat stat
 #endif
 
+#ifndef CASEFOLD_FILESYSTEM
+# if defined DOSISH || defined __VMS
+#   define CASEFOLD_FILESYSTEM 1
+# else
+#   define CASEFOLD_FILESYSTEM 0
+# endif
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
 #define FNM_CASEFOLD	0x08
+#if CASEFOLD_FILESYSTEM
+#define FNM_SYSCASE	FNM_CASEFOLD
+#else
+#define FNM_SYSCASE	0
+#endif
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -806,7 +819,7 @@ sys_warning_1(mesg)
     rb_sys_warning("%s", mesg);
 }
 
-#define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
+#define GLOB_VERBOSE	(1U << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
     ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
 
@@ -819,7 +832,8 @@ has_magic(s, send, flags)
     register const char *p = s;
     register char c;
     int open = 0;
-    int escape = !(flags & FNM_NOESCAPE);
+    const int escape = !(flags & FNM_NOESCAPE);
+    const int nocase = flags & FNM_CASEFOLD;
 
     while ((c = *p++) != '\0') {
 	switch (c) {
@@ -838,6 +852,11 @@ has_magic(s, send, flags)
 	  case '\\':
 	    if (escape && *p++ == '\0')
 		return Qfalse;
+	    break;
+
+	  default:
+	    if (!FNM_SYSCASE && ISALPHA(c) && nocase)
+		return Qtrue;
 	}
 
 	if (send && p >= send) break;
@@ -1103,6 +1122,7 @@ ruby_glob(path, flags, func, arg)
     int (*func) _((const char *, VALUE));
     VALUE arg;
 {
+    flags |= FNM_SYSCASE;
     return glob_helper(path, 0, flags & ~GLOB_VERBOSE, func, arg);
 }
 
@@ -1143,6 +1163,7 @@ rb_glob2(path, flags, func, arg)
     args.func = func;
     args.v = arg;
 
+    flags |= FNM_SYSCASE;
     return glob_helper(path, 0, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args);
 }
 
@@ -1582,4 +1603,5 @@ Init_Dir()
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
+    rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
 }
