@@ -2,12 +2,12 @@
 
 /* static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible"; */
 
-#include "config.h"
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 #include <string.h>
+#include "defines.h"
 
 #ifdef NOT_RUBY
 #include "regint.h"
@@ -52,6 +52,11 @@ static struct st_hash_type type_strhash = {
 };
 
 static void rehash(st_table *);
+
+#ifdef RUBY
+#define malloc xmalloc
+#define calloc xcalloc
+#endif
 
 #define alloc(type) (type*)malloc((size_t)sizeof(type))
 #define Calloc(n,s) (char*)calloc((n),(s))

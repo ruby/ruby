@@ -1,3 +1,9 @@
+Sat Jul 15 01:09:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (malloc): use xmalloc/xcalloc instead of plain
+	  malloc/calloc, to detect memory allocation failure.  see
+	  <http://www.nongnu.org/failmalloc/>.
+
 Fri Jul 14 13:08:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add methods for new features of latest Tcl/Tk8.5.
