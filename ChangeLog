@@ -1,3 +1,9 @@
+Fri Jul 14 13:08:13 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add methods for new features of latest Tcl/Tk8.5.
+
+	* ext/tk/lib/tk/namespace.rb: ditto.
+
 Fri Jul 14 02:30:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/monitor.rb: document patch from Hugh Sasse <hgs at dmu.ac.uk>.

@@ -2357,15 +2357,15 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
       end
 
       def encoding_names
-        tk_split_simplelist(tk_call('encoding', 'names'))
+        TkComm.simplelist(Tk.tk_call('encoding', 'names'))
       end
 
       def encoding_system
-        tk_call('encoding', 'system')
+        Tk.tk_call('encoding', 'system')
       end
 
       def encoding_system=(enc)
-        tk_call('encoding', 'system', enc)
+        Tk.tk_call('encoding', 'system', enc)
       end
 
       def encoding_convertfrom(str, enc=nil)
@@ -2389,6 +2389,16 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         ret
       end
       alias encoding_convert_to encoding_convertto
+
+      def encoding_dirs
+        # Tcl8.5 feature
+        TkComm.simplelist(Tk.tk_call_without_enc('encoding', 'dirs'))
+      end
+
+      def encoding_dirs=(dir_list) # an array or a Tcl's list string
+        # Tcl8.5 feature
+        Tk.tk_call_without_enc('encoding', 'dirs', dir_list)
+      end
     end
 
     extend Encoding
@@ -2467,6 +2477,12 @@ else
         str
       end
       alias encoding_convert_to encoding_convertto
+      def encoding_dirs
+        nil
+      end
+      def encoding_dirs=(dir_array)
+        nil
+      end
     end
 
     extend Encoding
@@ -4581,7 +4597,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-07-13'.freeze
+  RELEASE_DATE = '2006-07-14'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

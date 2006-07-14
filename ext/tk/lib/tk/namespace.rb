@@ -472,6 +472,20 @@ class TkNamespace < TkObject
     tk_call('namespace', 'tail', str)
   end
 
+  def self.upvar(namespace, *var_pairs)
+    tk_call('namespace', 'upvar', namespace, *(var_pairs.flatten))
+  end
+  def upvar(*var_pairs)
+    TkNamespace.inscope(@fullname, *(var_pairs.flatten))
+  end
+
+  def self.get_unknown_handler
+    tk_tcl2ruby(tk_call('namespace', 'unknown'))
+  end
+  def self.set_unknown_handler(cmd = Proc.new)
+    tk_call('namespace', 'unknown', cmd)
+  end
+
   def self.which(name)
     tk_call('namespace', 'which', name)
   end
