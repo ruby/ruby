@@ -48,6 +48,11 @@ static struct st_hash_type type_strhash = {
 
 static void rehash(st_table *);
 
+#ifdef RUBY
+#define malloc xmalloc
+#define calloc xcalloc
+#endif
+
 #define alloc(type) (type*)malloc((unsigned)sizeof(type))
 #define Calloc(n,s) (char*)calloc((n),(s))
 
