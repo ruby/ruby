@@ -7137,12 +7137,11 @@ rb_require_safe(fname, safe)
 	ruby_safe_level = safe;
 	found = search_required(fname, &feature, &path);
 	if (found) {
-	    if (!path || load_wait(RSTRING(path)->ptr)) {
+	    if (!path || load_wait(RSTRING(feature)->ptr)) {
 		result = Qfalse;
 	    }
 	    else {
 		ruby_safe_level = 0;
-		rb_provide_feature(feature);
 		switch (found) {
 		  case 'r':
 		    /* loading ruby library should be serialized. */
@@ -7165,6 +7164,7 @@ rb_require_safe(fname, safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
+		rb_provide_feature(feature);
 		result = Qtrue;
 	    }
 	}

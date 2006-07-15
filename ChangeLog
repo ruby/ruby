@@ -1,3 +1,8 @@
+Sat Jul 15 23:50:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_require_safe): wait for another thread requiring the same
+	  feature.  fixed: [ruby-core:08229]
+
 Sat Jul 15 01:27:13 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (has_magic): glob names contain alphabets to enable case fold
