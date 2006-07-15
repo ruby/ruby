@@ -8438,7 +8438,6 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     if (rb_block_given_p() && ruby_frame->callee) {
 	if (klass != ruby_frame->this_class)
 	    klass = rb_obj_class(proc);
-//	bvar = rb_block_proc();
     }
 
     PUSH_VARS();
