@@ -767,9 +767,9 @@ ruby_strtod(
      * and also locate the decimal point.
      */
 
-    for ( ; c = *p; p++) {
+    for ( ; (c = *p) != '\0'; p++) {
 	if (!ISDIGIT(c)) {
-	    if (c != '.' || hasPoint) {
+	    if (c != '.' || hasPoint || !ISDIGIT(p[1])) {
 		break;
 	    }
 	    hasPoint = Qtrue;
