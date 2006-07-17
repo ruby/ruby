@@ -1,3 +1,7 @@
+Mon Jul 17 12:58:41 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: set ac_cv_func_dlopen=no on MinGW.
+
 Mon Jul 17 11:47:35 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* st.c: still need to include config.h on some platforms.
