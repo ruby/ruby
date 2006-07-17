@@ -480,6 +480,9 @@ Dir.chdir ".."
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
+unless $extlist.empty?
+  rm_f(Config::CONFIG["LIBRUBY_SO"])
+end
 puts "making #{rubies.join(', ')}"
 $stdout.flush
 $mflags.concat(rubies)
