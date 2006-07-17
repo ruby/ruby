@@ -1,131 +1,45 @@
 # $Id$
 
-=begin
-= PrettyPrint
-The class implements pretty printing algorithm.
-It finds line breaks and nice indentations for grouped structure.
-
-By default, the class assumes that primitive elements are strings and
-each byte in the strings have single column in width.
-But it can be used for other situations
-by giving suitable arguments for some methods:
-newline object and space generation block for (({PrettyPrint.new})),
-optional width argument for (({PrettyPrint#text})),
-(({PrettyPrint#breakable})), etc.
-There are several candidates to use them:
-text formatting using proportional fonts,
-multibyte characters which has columns different to number of bytes,
-non-string formatting, etc.
-
-== class methods
---- PrettyPrint.new([output[, maxwidth[, newline]]]) [{|width| ...}]
-    creates a buffer for pretty printing.
-
-    ((|output|)) is an output target.
-    If it is not specified, (({''})) is assumed.
-    It should have a (({<<})) method which accepts
-    the first argument ((|obj|)) of (({PrettyPrint#text})),
-    the first argument ((|sep|)) of (({PrettyPrint#breakable})),
-    the first argument ((|newline|)) of (({PrettyPrint.new})),
-    and
-    the result of a given block for (({PrettyPrint.new})).
-
-    ((|maxwidth|)) specifies maximum line length.
-    If it is not specified, 79 is assumed.
-    However actual outputs may overflow ((|maxwidth|)) if
-    long non-breakable texts are provided.
-
-    ((|newline|)) is used for line breaks.
-    (({"\n"})) is used if it is not specified.
-
-    The block is used to generate spaces.
-    (({{|width| ' ' * width}})) is used if it is not given.
-
---- PrettyPrint.format([output[, maxwidth[, newline[, genspace]]]]) {|q| ...}
-    is a convenience method which is same as follows:
-
-      begin
-        q = PrettyPrint.new(output, maxwidth, newline, &genspace)
-        ...
-        q.flush
-        output
-      end
-
---- PrettyPrint.singleline_format([output[, maxwidth[, newline[, genspace]]]]) {|q| ...}
-    is similar to (({PrettyPrint.format})) but the result has no breaks.
-
-    ((|maxwidth|)), ((|newline|)) and ((|genspace|)) are ignored.
-    The invocation of (({breakable})) in the block doesn't break a line and
-    treated as just an invocation of (({text})).
-
-== methods
---- text(obj[, width])
-    adds ((|obj|)) as a text of ((|width|)) columns in width.
-
-    If ((|width|)) is not specified, (({((|obj|)).length})) is used.
-
---- breakable([sep[, width]])
-    tells "you can break a line here if necessary", and a
-    ((|width|))-column text ((|sep|)) is inserted if a line is not
-    broken at the point.
-
-    If ((|sep|)) is not specified, (({" "})) is used.
-
-    If ((|width|)) is not specified, (({((|sep|)).length})) is used.
-    You will have to specify this when ((|sep|)) is a multibyte
-    character, for example.
-
---- nest(indent) {...}
-    increases left margin after newline with ((|indent|)) for line breaks added
-    in the block.
-
---- group([indent[, open_obj[, close_obj[, open_width[, close_width]]]]]) {...}
-    groups line break hints added in the block.
-    The line break hints are all to be breaked or not.
-
-    If ((|indent|)) is specified, the method call is regarded as nested by
-    (({nest(((|indent|))) { ... }})).
-
-    If ((|open_obj|)) is specified, (({text open_obj, open_width})) is called
-    at first.
-    If ((|close_obj|)) is specified, (({text close_obj, close_width})) is
-    called at last.
-
---- flush
-    outputs buffered data.
-
---- first?
-    first? is obsoleted at 1.8.2.
-
-    first? is a predicate to test the call is a first call to (({first?})) with
-    current group.
-    It is useful to format comma separated values as:
-
-      q.group(1, '[', ']') {
-        xxx.each {|yyy|
-          unless q.first?
-            q.text ','
-            q.breakable
-          end
-          ... pretty printing yyy ...
-        }
-      }
-
-== Bugs
-* Box based formatting?  Other (better) model/algorithm?
-
-== References
-Christian Lindig, Strictly Pretty, March 2000,
-((<URL:http://www.st.cs.uni-sb.de/~lindig/papers/#pretty>))
-
-Philip Wadler, A prettier printer, March 1998,
-((<URL:http://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier>))
-
-== AUTHOR
-Tanaka Akira <akr@m17n.org>
-=end
-
+# This class implements a pretty printing algorithm. It finds line breaks and
+# nice indentations for grouped structure.
+# 
+# By default, the class assumes that primitive elements are strings and each
+# byte in the strings have single column in width. But it can be used for
+# other situations by giving suitable arguments for some methods:
+# * newline object and space generation block for PrettyPrint.new
+# * optional width argument for PrettyPrint#text
+# * PrettyPrint#breakable
+#
+# There are several candidate uses:
+# * text formatting using proportional fonts
+# * multibyte characters which has columns different to number of bytes
+# * non-string formatting
+#
+# == Bugs
+# * Box based formatting?
+# * Other (better) model/algorithm?
+# 
+# == References
+# Christian Lindig, Strictly Pretty, March 2000,
+# http://www.st.cs.uni-sb.de/~lindig/papers/#pretty
+# 
+# Philip Wadler, A prettier printer, March 1998,
+# http://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier
+# 
+# == Author
+# Tanaka Akira <akr@m17n.org>
+# 
 class PrettyPrint
+
+  # This is a convenience method which is same as follows:
+  # 
+  #   begin
+  #     q = PrettyPrint.new(output, maxwidth, newline, &genspace)
+  #     ...
+  #     q.flush
+  #     output
+  #   end
+  # 
   def PrettyPrint.format(output='', maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
     q = PrettyPrint.new(output, maxwidth, newline, &genspace)
     yield q
@@ -133,12 +47,36 @@ class PrettyPrint
     output
   end
 
+  # This is similar to PrettyPrint::format but the result has no breaks.
+  #
+  # +maxwidth+, +newline+ and +genspace+ are ignored.
+  #
+  # The invocation of +breakable+ in the block doesn't break a line and is
+  # treated as just an invocation of +text+.
+  #
   def PrettyPrint.singleline_format(output='', maxwidth=nil, newline=nil, genspace=nil)
     q = SingleLine.new(output)
     yield q
     output
   end
 
+  # Creates a buffer for pretty printing.
+  #
+  # +output+ is an output target. If it is not specified, '' is assumed. It
+  # should have a << method which accepts the first argument +obj+ of
+  # PrettyPrint#text, the first argument +sep+ of PrettyPrint#breakable, the
+  # first argument +newline+ of PrettyPrint.new, and the result of a given
+  # block for PrettyPrint.new.
+  #
+  # +maxwidth+ specifies maximum line length. If it is not specified, 79 is
+  # assumed. However actual outputs may overflow +maxwidth+ if long
+  # non-breakable texts are provided.
+  #
+  # +newline+ is used for line breaks. "\n" is used if it is not specified.
+  #
+  # The block is used to generate spaces. {|width| ' ' * width} is used if it
+  # is not given.
+  #
   def initialize(output='', maxwidth=79, newline="\n", &genspace)
     @output = output
     @maxwidth = maxwidth
@@ -161,6 +99,23 @@ class PrettyPrint
     @group_stack.last
   end
 
+  # first? is a predicate to test the call is a first call to first? with
+  # current group.
+  #
+  # It is useful to format comma separated values as:
+  #
+  #   q.group(1, '[', ']') {
+  #     xxx.each {|yyy|
+  #       unless q.first?
+  #         q.text ','
+  #         q.breakable
+  #       end
+  #       ... pretty printing yyy ...
+  #     }
+  #   }
+  #
+  # first? is obsoleted in 1.8.2.
+  #
   def first?
     warn "PrettyPrint#first? is obsoleted at 1.8.2."
     current_group.first?
@@ -182,6 +137,10 @@ class PrettyPrint
     end
   end
 
+  # This adds +obj+ as a text of +width+ columns in width.
+  #
+  # If +width+ is not specified, obj.length is used.
+  #
   def text(obj, width=obj.length)
     if @buffer.empty?
       @output << obj
@@ -202,6 +161,14 @@ class PrettyPrint
     group { breakable sep, width }
   end
 
+  # This tells "you can break a line here if necessary", and a +width+\-column
+  # text +sep+ is inserted if a line is not broken at the point.
+  #
+  # If +sep+ is not specified, " " is used.
+  #
+  # If +width+ is not specified, +sep.length+ is used. You will have to
+  # specify this when +sep+ is a multibyte character, for example.
+  #
   def breakable(sep=' ', width=sep.length)
     group = @group_stack.last
     if group.break?
@@ -217,6 +184,16 @@ class PrettyPrint
     end
   end
 
+  # Groups line break hints added in the block. The line break hints are all
+  # to be used or not.
+  #
+  # If +indent+ is specified, the method call is regarded as nested by
+  # nest(indent) { ... }.
+  #
+  # If +open_obj+ is specified, <tt>text open_obj, open_width</tt> is called
+  # before grouping. If +close_obj+ is specified, <tt>text close_obj,
+  # close_width</tt> is called after grouping.
+  #
   def group(indent=0, open_obj='', close_obj='', open_width=open_obj.length, close_width=close_obj.length)
     text open_obj, open_width
     group_sub {
@@ -241,6 +218,9 @@ class PrettyPrint
     end
   end
 
+  # Increases left margin after newline with +indent+ for line breaks added in
+  # the block.
+  #
   def nest(indent)
     @indent += indent
     begin
@@ -250,6 +230,8 @@ class PrettyPrint
     end
   end
 
+  # outputs buffered data.
+  #
   def flush
     @buffer.each {|data|
       @output_width = data.output(@output, @output_width)

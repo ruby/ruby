@@ -28,6 +28,8 @@ net
 observer.rb
 optparse.rb
 pathname.rb
+pp.rb
+prettyprint.rb
 pstore.rb
 rational.rb
 rinda
