@@ -1,3 +1,7 @@
+Mon Jul 17 13:43:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (define_swapx): should not use plain malloc.
+
 Mon Jul 17 12:58:41 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: should use ac_cv_lib_dl_dlopen=no on MinGW.
