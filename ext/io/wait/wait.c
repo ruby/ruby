@@ -53,8 +53,7 @@ EXTERN struct timeval rb_time_interval _((VALUE time));
 =end
 */
 static VALUE
-io_ready_p(io)
-    VALUE io;
+io_ready_p(VALUE io)
 {
     OpenFile *fptr;
     ioctl_arg n;

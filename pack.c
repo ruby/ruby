@@ -52,18 +52,17 @@
 
 #define define_swapx(x, xtype)		\
 static xtype				\
-TOKEN_PASTE(swap,x)(z)			\
-    xtype z;				\
+TOKEN_PASTE(swap,x)(xtype z)		\
 {					\
     xtype r;				\
     xtype *zp;				\
     unsigned char *s, *t;		\
     int i;				\
 					\
-    zp = malloc(sizeof(xtype));		\
+    zp = xmalloc(sizeof(xtype));	\
     *zp = z;				\
     s = (unsigned char*)zp;		\
-    t = malloc(sizeof(xtype));		\
+    t = xmalloc(sizeof(xtype));		\
     for (i=0; i<sizeof(xtype); i++) {	\
 	t[sizeof(xtype)-i-1] = s[i];	\
     }					\
