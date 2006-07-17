@@ -1,3 +1,7 @@
+Mon Jul 17 12:58:41 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: set ac_cv_func_dlopen=no on MinGW.
+
 Sat Jul 15 23:50:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_require_safe): wait for another thread requiring the same
