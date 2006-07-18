@@ -932,6 +932,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		    associates = rb_ary_new();
 		}
 		rb_ary_push(associates, from);
+		rb_obj_taint(from);
 		rb_str_buf_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
@@ -1873,8 +1874,12 @@ pack_unpack(VALUE str, VALUE fmt)
 		    pend = p + RARRAY(a)->len;
 		    while (p < pend) {
 			if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {
-			    if (len > RSTRING(*p)->len) {
-				len = RSTRING(*p)->len;
+			    if (len < RSTRING(*p)->len) {
+				tmp = rb_tainted_str_new(t, len);
+				rb_str_associate(tmp, a);
+			    }
+			    else {
+				tmp = *p;
 			    }
 			    break;
 			}
@@ -1883,7 +1888,6 @@ pack_unpack(VALUE str, VALUE fmt)
 		    if (p == pend) {
 			rb_raise(rb_eArgError, "non associated pointer");
 		    }
-		    tmp = rb_tainted_str_new(t, len);
 		}
 		else {
 		    tmp = Qnil;
@@ -1915,6 +1919,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			pend = p + RARRAY(a)->len;
 			while (p < pend) {
 			    if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {
+				tmp = *p;
 				break;
 			    }
 			    p++;
@@ -1922,8 +1927,6 @@ pack_unpack(VALUE str, VALUE fmt)
 			if (p == pend) {
 			    rb_raise(rb_eArgError, "non associated pointer");
 			}
-			tmp = rb_str_new2(t);
-			OBJ_INFECT(tmp, str);
 		    }
 		    else {
 			tmp = Qnil;

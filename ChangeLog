@@ -1,3 +1,14 @@
+Tue Jul 18 15:49:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): propagate association array to copied
+	  string.  [ruby-core:08223]
+
+	* pack.c (pack_unpack): return referenced string itself if it has
+	  same length as specified.  a patch from <nobu at ruby-lang.org>
+	  in [ruby-core:08225].
+
+	* pack.c (pack_pack): taint 'p' packed strings.
+
 Tue Jul 18 15:19:07 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* intern.h (st_foreach_safe): fix prototype.
