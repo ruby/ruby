@@ -1,3 +1,8 @@
+Tue Jul 18 14:38:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_f_system): call rb_sys_fail(0) if rb_last_status
+	  is nil.  [ruby-talk:202361]
+
 Tue Jul 18 14:03:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer::unmount): remove

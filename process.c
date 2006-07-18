@@ -1537,7 +1537,7 @@ rb_f_system(argc, argv)
       default:
 	rb_syswait(pid);
     }
-
+    if (NIL_P(rb_last_status)) rb_sys_fail(0);
     status = NUM2INT(rb_last_status);
 #endif
 
