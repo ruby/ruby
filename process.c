@@ -1583,18 +1583,28 @@ rb_spawn(int argc, VALUE *argv)
  *     *
  */
 
+#if defined(SIGCLD) && !defined(SIGCHLD)
+# define SIGCHLD SIGCLD
+#endif
+
 static VALUE
 rb_f_system(int argc, VALUE *argv)
 {
     int status;
+    RETSIGTYPE (*chfunc)(int);
 
+    chfunc = signal(SIGCHLD, SIG_DFL);
     status = rb_spawn(argc, argv);
-    if (status == -1) rb_sys_fail(RSTRING(argv[0])->ptr);
+    if (status > 0) {
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
-    rb_syswait(status);
-    if (NIL_P(rb_last_status)) rb_sys_fail(0);
-    status = NUM2INT(rb_last_status);
+	rb_syswait(status);
 #endif
+    }
+    signal(SIGCHLD, chfunc);
+    if (status < 0) {
+	rb_sys_fail(RSTRING(argv[0])->ptr);
+    }
+    status = NUM2INT(rb_last_status);
     if (status == EXIT_SUCCESS) return Qtrue;
     return Qfalse;
 }
