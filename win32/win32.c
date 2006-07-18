@@ -1462,7 +1462,7 @@ rb_w32_opendir(const char *filename)
 	// new name and it's null terminator 
 	//
 
-	#define Renew(x, y, z) (x = (z *)realloc(x, y))
+	#define Renew(x, y, z) (x = (z *)xrealloc(x, y))
 
 	Renew (p->start, idx+len+1, char);
 	if (p->start == NULL) {
@@ -2317,6 +2317,10 @@ open_ifs_socket(int af, int type, int protocol)
 	    int protocols_available = 0;
 
 	    proto_buffers = (WSAPROTOCOL_INFO *)malloc(proto_buffers_len);
+	    if (!proto_buffers) {
+		WSASetLastError(WSA_NOT_ENOUGH_MEMORY);
+		return INVALID_SOCKET;
+	    }
 
 	    protocols_available =
 		WSAEnumProtocols(NULL, proto_buffers, &proto_buffers_len);

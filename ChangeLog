@@ -1,3 +1,9 @@
+Tue Jul 18 23:12:14 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (open_ifs_socket): should not use plain malloc.
+
+	* win32/win32.c (rb_w32_opendir): should not use plain realloc.
+
 Tue Jul 18 18:05:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_float.rb (TestFloat::test_strtod): update test to
