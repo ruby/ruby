@@ -1,3 +1,8 @@
+Tue Jul 18 18:05:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_float.rb (TestFloat::test_strtod): update test to
+	  conform strtod change.
+
 Tue Jul 18 15:49:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): propagate association array to copied

@@ -73,11 +73,6 @@ class TestFloat < Test::Unit::TestCase
     assert(a.abs < Float::EPSILON)
     a = Float("-.0")
     assert(a.abs < Float::EPSILON)
-    a = Float("0.")
-    assert(a.abs < Float::EPSILON)
-    a = Float("+0.")
-    assert(a.abs < Float::EPSILON)
-    a = Float("-0.")
     assert(a.abs < Float::EPSILON)
     assert_raise(ArgumentError){Float(".")}
     assert_raise(ArgumentError){Float("+")}
