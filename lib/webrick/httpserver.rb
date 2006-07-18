@@ -127,7 +127,7 @@ module WEBrick
     end
 
     def unmount(dir)
-      @logger.debug(sprintf("unmount %s.", inspect, dir))
+      @logger.debug(sprintf("unmount %s.", dir))
       @mount_tab.delete(dir)
     end
     alias umount unmount
