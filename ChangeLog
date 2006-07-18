@@ -1,3 +1,8 @@
+Tue Jul 18 23:53:59 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_f_system): shouldn't block SIGCHLD if it's not
+	  exist.
+
 Tue Jul 18 22:10:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_system): block SIGCHLD during the process

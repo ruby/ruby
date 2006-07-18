@@ -1591,16 +1591,20 @@ static VALUE
 rb_f_system(int argc, VALUE *argv)
 {
     int status;
+#ifdef SIGCHLD
     RETSIGTYPE (*chfunc)(int);
 
     chfunc = signal(SIGCHLD, SIG_DFL);
+#endif
     status = rb_spawn(argc, argv);
     if (status > 0) {
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
 	rb_syswait(status);
 #endif
     }
+#ifdef SIGCHLD
     signal(SIGCHLD, chfunc);
+#endif
     if (status < 0) {
 	rb_sys_fail(RSTRING(argv[0])->ptr);
     }
