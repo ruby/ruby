@@ -1492,7 +1492,9 @@ rb_f_system(argc, argv)
     volatile VALUE prog = 0;
     int pid;
     int i;
+    RETSIGTYPE (*chfunc)(int);
 
+    chfunc = signal(SIGCHLD, SIG_DFL);
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
@@ -1515,8 +1517,9 @@ rb_f_system(argc, argv)
 	SafeStringValue(argv[i]);
     }
   retry:
-    switch (pid = fork()) {
-      case 0:
+    pid = fork();
+    if (pid == 0) {
+	/* child process */
 	if (argc == 1 && prog == 0) {
 	    rb_proc_exec(RSTRING(argv[0])->ptr);
 	}
@@ -1524,20 +1527,18 @@ rb_f_system(argc, argv)
 	    proc_exec_n(argc, argv, prog);
 	}
 	_exit(127);
-	break;			/* not reached */
-
-      case -1:
+    }
+    if (pid < 0) {
 	if (errno == EAGAIN) {
 	    rb_thread_sleep(1);
 	    goto retry;
 	}
-	rb_sys_fail(0);
-	break;
-
-      default:
+    }
+    else {
 	rb_syswait(pid);
     }
-    if (NIL_P(rb_last_status)) rb_sys_fail(0);
+    signal(SIGCHLD, chfunc);
+    if (pid < 0) rb_sys_fail(0);
     status = NUM2INT(rb_last_status);
 #endif
 
@@ -1596,6 +1597,10 @@ rb_f_sleep(argc, argv)
  *     Process.getpgid(0)   #=> 25527
  *     Process.getpgrp      #=> 25527
  */
+
+#if defined(SIGCLD) && !defined(SIGCHLD)
+# define SIGCHLD SIGCLD
+#endif
 
 static VALUE
 proc_getpgrp()
