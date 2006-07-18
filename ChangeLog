@@ -1,3 +1,8 @@
+Tue Jul 18 16:52:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (yield_under_i): argument should be passed in avalue
+	  from.  [ruby-dev:29044]
+
 Tue Jul 18 15:49:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): propagate association array to copied

@@ -6481,8 +6481,10 @@ static VALUE
 yield_under_i(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
+    int flags = YIELD_PUBLIC_DEF;
+    if (args[0] != Qundef) flags |= YIELD_ARY_ARGS;
 
-    return rb_yield_0(args[0], args[1], ruby_cbase, YIELD_PUBLIC_DEF);
+    return rb_yield_0(args[0], args[1], ruby_cbase, flags);
 }
 
 /* block eval under the class/module context */
