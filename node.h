@@ -166,7 +166,7 @@ typedef struct RNode {
     RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|(((t)<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
-#define NODE_LMASK  (((long)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
+#define NODE_LMASK  (((VALUE)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
 #define nd_line(n) ((unsigned int)(((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK))
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))

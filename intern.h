@@ -20,6 +20,7 @@
 #else
 # include <varargs.h>
 #endif
+#include <st.h>
 
 /* 
  * Functions and variables that are used by more than one source file of
@@ -314,7 +315,7 @@ VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
 /* hash.c */
-void st_foreach_safe(struct st_table *, int (*)(ANYARGS), unsigned long);
+void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 void rb_hash_foreach(VALUE, int (*)(ANYARGS), VALUE);
 VALUE rb_hash(VALUE);
 VALUE rb_hash_new(void);

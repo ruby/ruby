@@ -349,6 +349,72 @@ BSD__sbprintf(register FILE *fp, const char *fmt, va_list ap)
 #define is_digit(c)	((unsigned)to_digit(c) <= 9)
 #define	to_char(n)	((n) + '0')
 
+#ifdef _HAVE_SANE_QUAD_
+/*
+ * Convert an unsigned long long to ASCII for printf purposes, returning
+ * a pointer to the first character of the string representation.
+ * Octal numbers can be forced to have a leading zero; hex numbers
+ * use the given digits.
+ */
+static char *
+BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, char *xdigs)
+{
+	register char *cp = endp;
+	register long sval;
+
+	/*
+	 * Handle the three cases separately, in the hope of getting
+	 * better/faster code.
+	 */
+	switch (base) {
+	case 10:
+		if (val < 10) {	/* many numbers are 1 digit */
+			*--cp = to_char(val);
+			return (cp);
+		}
+		/*
+		 * On many machines, unsigned arithmetic is harder than
+		 * signed arithmetic, so we do at most one unsigned mod and
+		 * divide; this is sufficient to reduce the range of
+		 * the incoming value to where signed arithmetic works.
+		 */
+		if (val > LLONG_MAX) {
+			*--cp = to_char(val % 10);
+			sval = val / 10;
+		} else
+			sval = val;
+		do {
+			*--cp = to_char(sval % 10);
+			sval /= 10;
+		} while (sval != 0);
+		break;
+
+	case 8:
+		do {
+			*--cp = to_char(val & 7);
+			val >>= 3;
+		} while (val);
+		if (octzero && *cp != '0')
+			*--cp = '0';
+		break;
+
+	case 16:
+		do {
+			*--cp = xdigs[val & 15];
+			val >>= 4;
+		} while (val);
+		break;
+
+	default:			/* oops */
+		/* 
+		abort();
+		*/
+		break;	/* fjc 7-31-97.  Don't reference abort() here */
+	}
+	return (cp);
+}
+#endif /* _HAVE_SANE_QUAD_ */
+
 /*
  * Convert an unsigned long to ASCII for printf purposes, returning
  * a pointer to the first character of the string representation.
@@ -867,7 +933,7 @@ number:			if ((dprec = prec) >= 0)
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				if (uqval != 0 || prec != 0)
-					cp = __uqtoa(uqval, cp, base,
+					cp = BSD__uqtoa(uqval, cp, base,
 					    flags & ALT, xdigs);
 			} else {
 #else /* _HAVE_SANE_QUAD_ */
