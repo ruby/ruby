@@ -874,11 +874,13 @@ ruby_strtod(
     
 	if (exp >= MDMAXEXPT) {
 	    errno = ERANGE;
-	    return HUGE_VAL * (sign ? -1.0 : 1.0);
+	    fraction = HUGE_VAL;
+	    goto ret;
 	}
 	else if (exp < MDMINEXPT) {
 	    errno = ERANGE;
-	    return 0.0 * (sign ? -1.0 : 1.0);
+	    fraction = 0.0;
+	    goto ret;
 	}
 	fracExp = exp;
 	exp += 9;
@@ -924,6 +926,7 @@ ruby_strtod(
 	fraction = frac1 + frac2;
     }
 
+  ret:
     if (endPtr != NULL) {
 	*endPtr = (char *)p;
     }

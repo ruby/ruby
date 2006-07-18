@@ -1,3 +1,10 @@
+Tue Jul 18 10:53:37 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): limit out-of-range message.
+
+	* util.c (ruby_strtod): return end pointer even if ERANGE occurred.
+	  fixed: [ruby-dev:29041]
+
 Mon Jul 18 00:43:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): stop at dot not followed by digits.

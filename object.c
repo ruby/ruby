@@ -2063,13 +2063,17 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     const char *q;
     char *end;
     double d;
+    const char *ellipsis = "";
+    int w;
+#define OutOfRange() (((w = end - p) > 20) ? (w = 20, ellipsis = "...") : (ellipsis = ""))
 
     if (!p) return 0.0;
     q = p;
     while (ISSPACE(*p)) p++;
     d = strtod(p, &end);
     if (errno == ERANGE) {
-	rb_warn("Float %*s out of range", end-p, p);
+	OutOfRange();
+	rb_warn("Float %.*s%s out of range", w, p, ellipsis);
 	errno = 0;
     }
     if (p == end) {
@@ -2100,18 +2104,20 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	p = buf;
 	d = strtod(p, &end);
 	if (errno == ERANGE) {
-	    rb_warn("Float %*s out of range", end-p, p);
+	    OutOfRange();
+	    rb_warn("Float %.*s%s out of range", w, p, ellipsis);
 	    errno = 0;
 	}
 	if (badcheck) {
-	    if (p == end) goto bad;
+	    if (!end || p == end) goto bad;
 	    while (*end && ISSPACE(*end)) end++;
 	    if (*end) goto bad;
 	}
     }
     if (errno == ERANGE) {
 	errno = 0;
-	rb_raise(rb_eArgError, "Float %s out of range", q);
+	OutOfRange();
+	rb_raise(rb_eArgError, "Float %.*s%s out of range", w, q, ellipsis);
     }
     return d;
 }
