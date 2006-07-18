@@ -1592,6 +1592,7 @@ rb_f_system(int argc, VALUE *argv)
     if (status == -1) rb_sys_fail(RSTRING(argv[0])->ptr);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     rb_syswait(status);
+    if (NIL_P(rb_last_status)) rb_sys_fail(0);
     status = NUM2INT(rb_last_status);
 #endif
     if (status == EXIT_SUCCESS) return Qtrue;
