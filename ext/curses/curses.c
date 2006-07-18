@@ -683,7 +683,7 @@ curses_getmouse(VALUE obj)
 
   val = Data_Make_Struct(cMouseEvent,struct mousedata,
 			 0,curses_mousedata_free,mdata);
-  mdata->mevent = (MEVENT*)malloc(sizeof(MEVENT));
+  mdata->mevent = (MEVENT*)xmalloc(sizeof(MEVENT));
   return (getmouse(mdata->mevent) == OK) ? val : Qnil;
 }
 
