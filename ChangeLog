@@ -1,3 +1,8 @@
+Wed Jul 19 19:40:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): should check args_args before lambda
+	  argument check.  [ruby-dev:29029]
+
 Tue Jul 18 23:53:59 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_f_system): shouldn't block SIGCHLD if it's not

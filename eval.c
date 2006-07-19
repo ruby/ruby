@@ -4710,7 +4710,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
-    int ary_args = flags & YIELD_ARY_ARGS, lambda;
+    int ary_args, lambda;
     int state, broken = 0;
 
     rb_need_block();
@@ -4744,6 +4744,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     node = block->body;
     var = block->var;
     lambda = block->flags & BLOCK_LAMBDA;
+    ary_args = flags & YIELD_ARY_ARGS;
     if (var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
@@ -4819,7 +4820,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (lambda && RARRAY(val)->len != 0 &&
+    else if (lambda && ary_args && RARRAY(val)->len != 0 &&
 	     (!node || nd_type(node) != NODE_IFUNC ||
 	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
