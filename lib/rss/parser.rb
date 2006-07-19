@@ -7,6 +7,10 @@ module RSS
 
   class NotWellFormedError < Error
     attr_reader :line, :element
+
+    # Create a new NotWellFormedError for an error at +line+
+    # in +element+.  If a block is given the return value of
+    # the block ends up in the error message.
     def initialize(line=nil, element=nil)
       message = "This is not well formed XML"
       if element or line
@@ -85,6 +89,10 @@ module RSS
     end
 
     private
+
+    # Try to get the XML associated with +rss+.
+    # Return +rss+ if it already looks like XML, or treat it as a URI,
+    # or a file to get the XML,
     def normalize_rss(rss)
       return rss if maybe_xml?(rss)
 

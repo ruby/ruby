@@ -1,3 +1,7 @@
+Wed Jul 19 23:53:05 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb, lib/rss/utils.rb: added documents.
+
 Tue Jul 18 22:10:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_system): block SIGCHLD during the process
