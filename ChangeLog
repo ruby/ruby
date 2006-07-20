@@ -1,3 +1,8 @@
+Thu Jul 20 20:27:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_attr): make Module#attr to be an alias to
+	  attr_reader.  [RCR#331]
+
 Thu Jul 20 15:07:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: export classes/modules to implement sandbox.

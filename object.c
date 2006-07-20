@@ -1515,43 +1515,8 @@ rb_to_id(VALUE name)
 
 /*
  *  call-seq:
- *     attr(symbol, writable=false)    => nil
- *  
- *  Defines a named attribute for this module, where the name is
- *  <i>symbol.</i><code>id2name</code>, creating an instance variable
- *  (<code>@name</code>) and a corresponding access method to read it.
- *  If the optional <i>writable</i> argument is <code>true</code>, also
- *  creates a method called <code>name=</code> to set the attribute.
- *     
- *     module Mod
- *       attr  :size, true
- *     end
- *     
- *  <em>is equivalent to:</em>
- *     
- *     module Mod
- *       def size
- *         @size
- *       end
- *       def size=(val)
- *         @size = val
- *       end
- *     end
- */
-
-static VALUE
-rb_mod_attr(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE name, pub;
-
-    rb_scan_args(argc, argv, "11", &name, &pub);
-    rb_attr(klass, rb_to_id(name), 1, RTEST(pub), Qtrue);
-    return Qnil;
-}
-
-/*
- *  call-seq:
  *     attr_reader(symbol, ...)    => nil
+ *     attr(symbol, ...)             => nil
  *  
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
@@ -1564,9 +1529,20 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), 1, 0, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), Qtrue, Qfalse, Qtrue);
     }
     return Qnil;
+}
+
+VALUE
+rb_mod_attr(int argc, VALUE *argv, VALUE klass)
+{
+    if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
+	rb_warning("optional boolean argument is obsoleted");
+	rb_attr(klass, rb_to_id(argv[0]), 1, RTEST(argv[1]), Qtrue);
+	return Qnil;
+    }
+    return rb_mod_attr_reader(argc, argv, klass);
 }
 
 /*
@@ -1583,7 +1559,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), 0, 1, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), Qfalse, Qtrue, Qtrue);
     }
     return Qnil;
 }
@@ -1592,8 +1568,10 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     attr_accessor(symbol, ...)    => nil
  *  
- *  Equivalent to calling ``<code>attr</code><i>symbol</i><code>,
- *  true</code>'' on each <i>symbol</i> in turn.
+ *  Defines a named attribute for this module, where the name is
+ *  <i>symbol.</i><code>id2name</code>, creating an instance variable
+ *  (<code>@name</code>) and a corresponding access method to read it.
+ *  Also creates a method called <code>name=</code> to set the attribute.
  *     
  *     module Mod
  *       attr_accessor(:one, :two)
@@ -1607,7 +1585,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), 1, 1, Qtrue);
+	rb_attr(klass, rb_to_id(argv[i]), Qtrue, Qtrue, Qtrue);
     }
     return Qnil;
 }
