@@ -964,11 +964,11 @@ class CGI
     end
 
     # Get the cookies as a hash of cookie-name=>Cookie pairs.
-    attr_accessor("cookies")
+    attr_accessor :cookies
 
     # Get the parameters as a hash of name=>values pairs, where
     # values is an Array.
-    attr("params")
+    attr_reader :params
 
     # Set all the parameters.
     def params=(hash)

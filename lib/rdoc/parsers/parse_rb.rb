@@ -466,11 +466,10 @@ class RubyLex
     @exception_on_syntax_error = true
   end
 
-  attr :skip_space, true
-  attr :read_auto_clean_up, true
-  attr :exception_on_syntax_error, true
-
-  attr :indent
+  attr_accessor :skip_space
+  attr_accessor :read_auto_clean_up
+  attr_accessor :exception_on_syntax_error
+  attr_reader :indent
 
   # io functions
   def line_no

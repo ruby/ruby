@@ -255,7 +255,7 @@ VALUE rb_eNoMethodError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
-static VALUE rb_cNameErrorMesg;
+VALUE rb_cNameErrorMesg;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;

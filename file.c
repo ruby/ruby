@@ -93,7 +93,7 @@ be_fchown(int fd, uid_t owner, gid_t group)
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
-static VALUE rb_cStat;
+VALUE rb_cStat;
 
 VALUE
 rb_get_path(VALUE obj)
@@ -3991,7 +3991,7 @@ rb_stat_sticky(VALUE obj)
     return Qfalse;
 }
 
-static VALUE rb_mFConst;
+VALUE rb_mFConst;
 
 void
 rb_file_const(const char *name, VALUE value)

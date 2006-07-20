@@ -232,13 +232,13 @@ module Sync_m
     end
   end
 
-  attr :sync_mode, true
+  attr_accessor :sync_mode
     
-  attr :sync_waiting, true
-  attr :sync_upgrade_waiting, true
-  attr :sync_sh_locker, true
-  attr :sync_ex_locker, true
-  attr :sync_ex_count, true
+  attr_accessor :sync_waiting
+  attr_accessor :sync_upgrade_waiting
+  attr_accessor :sync_sh_locker
+  attr_accessor :sync_ex_locker
+  attr_accessor :sync_ex_count
     
   private
 

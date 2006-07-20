@@ -84,7 +84,7 @@ class IPAddr
   IN6FORMAT = (["%.4x"] * 8).join(':')
 
   # Returns the address family of this IP address.
-  attr :family
+  attr_reader :family
 
   # Creates a new ipaddr containing the given network byte ordered
   # string form of an IP address.

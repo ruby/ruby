@@ -29,9 +29,7 @@ module RubyToken
       @line_no = line_no
       @char_no = char_no
     end
-    attr :seek
-    attr :line_no
-    attr :char_no
+    attr :seek, :line_no, :char_no
   end
 
   class TkNode < Token
@@ -58,7 +56,7 @@ module RubyToken
   end
 
   class TkOp < Token
-    attr :name, true
+    attr_accessor :name
   end
 
   class TkOPASGN < TkOp

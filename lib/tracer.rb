@@ -19,9 +19,9 @@ class Tracer
   @stdout = STDOUT
   @verbose = false
   class << self
-    attr :verbose, true
+    attr_accessor :verbose
     alias verbose? verbose
-    attr :stdout, true
+    attr_accessor :stdout
   end
   
   EVENT_SYMBOL = {

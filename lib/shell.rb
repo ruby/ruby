@@ -31,9 +31,7 @@ class Shell
   @verbose = true
 
   class << Shell
-    attr :cascade, true
-    attr :debug, true
-    attr :verbose, true
+    attr_accessor :cascade, :debug, :verbose
 
 #    alias cascade? cascade
     alias debug? debug
@@ -98,11 +96,8 @@ class Shell
     rehash
   end
 
-  attr :umask, true
-  attr :record_separator, true
-
-  attr :verbose, true
-  attr :debug, true
+  attr_accessor :umask, :record_separator
+  attr_accessor :verbose, :debug
 
   def debug=(val)
     @debug = val

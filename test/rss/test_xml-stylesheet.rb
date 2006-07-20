@@ -74,10 +74,12 @@ module RSS
           :media => "printer", :charset => "UTF-8",
           :alternate => "yes"},],
       ].each do |xsss|
+        p xsss
         doc = REXML::Document.new(make_sample_RDF)
         root = doc.root
         xsss.each do |xss|
           content = xss.collect do |key, name|
+            p [key, name]
             %Q[#{key}="#{name}"]
           end.join(" ")
           pi = REXML::Instruction.new("xml-stylesheet", content)

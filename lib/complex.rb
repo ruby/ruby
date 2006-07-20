@@ -400,10 +400,10 @@ class Complex < Numeric
   I = Complex(0,1)
   
   # The real part of a complex number.
-  attr :real
+  attr_reader :real
 
   # The imaginary part of a complex number.
-  attr :image
+  attr_reader :image
   alias imag image
   
 end

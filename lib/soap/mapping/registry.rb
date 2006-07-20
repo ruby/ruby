@@ -522,7 +522,7 @@ private
     list = (class << obj; self; end).ancestors - obj.class.ancestors
     unless list.empty?
       node.extraattr[RubyExtendName] = list.collect { |c|
-	if c.name.empty?
+	unless c.name
   	  raise TypeError.new("singleton can't be dumped #{ obj }")
    	end
 	c.name

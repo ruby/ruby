@@ -19,7 +19,7 @@
 #define MBCTYPE_SJIS          2
 #define MBCTYPE_UTF8          3
 
-static VALUE rb_eRegexpError;
+VALUE rb_eRegexpError;
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -730,7 +730,7 @@ make_regexp(const char *s, long len, int flags, int ce)
  *
  */
 
-static VALUE rb_cMatch;
+VALUE rb_cMatch;
 
 static VALUE
 match_alloc(VALUE klass)
