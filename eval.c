@@ -228,7 +228,7 @@ typedef jmp_buf rb_jmpbuf_t;
 #include <sys/stat.h>
 
 VALUE rb_cProc;
-static VALUE rb_cBinding;
+VALUE rb_cBinding;
 static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
@@ -237,7 +237,7 @@ static VALUE block_pass _((VALUE,NODE*));
 
 VALUE rb_cMethod;
 static VALUE method_call _((int, VALUE*, VALUE));
-static VALUE rb_cUnboundMethod;
+VALUE rb_cUnboundMethod;
 static VALUE umethod_bind _((VALUE, VALUE));
 static VALUE rb_mod_define_method _((int, VALUE*, VALUE));
 NORETURN(static void rb_raise_jump _((VALUE)));
@@ -747,8 +747,8 @@ extern NODE *ruby_eval_tree_begin;
 extern NODE *ruby_eval_tree;
 extern int ruby_nerrs;
 
-static VALUE rb_eLocalJumpError;
-static VALUE rb_eSysStackError;
+VALUE rb_eLocalJumpError;
+VALUE rb_eSysStackError;
 
 extern VALUE ruby_top_self;
 
@@ -12556,7 +12556,7 @@ rb_thread_atfork()
  *     3:  15 16
  */
 
-static VALUE rb_cCont;
+VALUE rb_cCont;
 
 /*
  *  call-seq:

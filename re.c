@@ -13,7 +13,7 @@
 #include "re.h"
 #include <ctype.h>
 
-static VALUE rb_eRegexpError;
+VALUE rb_eRegexpError;
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -664,7 +664,7 @@ make_regexp(s, len, flags)
  *
  */
 
-static VALUE rb_cMatch;
+VALUE rb_cMatch;
 
 static VALUE match_alloc _((VALUE));
 static VALUE

@@ -1,3 +1,8 @@
+Thu Jul 20 15:07:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: export classes/modules to implement sandbox.
+	  [ruby-core:08283]
+
 Thu Jul 20 00:06:29 2006 Keiju Ishitsuka <keiju@ishitsuka.com>
 	* lib/irb/completion.rb: support for completion of numeric
     	  number. [ruby-dev: 29038]

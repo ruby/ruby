@@ -100,7 +100,7 @@ be_fchown(int fd, uid_t owner, gid_t group)
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
-static VALUE rb_cStat;
+VALUE rb_cStat;
 
 static long apply2files _((void (*)(const char *, void *), VALUE, void *));
 static long
@@ -4039,7 +4039,7 @@ rb_stat_sticky(obj)
     return Qfalse;
 }
 
-static VALUE rb_mFConst;
+VALUE rb_mFConst;
 
 void
 rb_file_const(name, value)
