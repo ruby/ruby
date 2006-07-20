@@ -235,7 +235,7 @@ typedef jmp_buf rb_jmpbuf_t;
 #include <sys/stat.h>
 
 VALUE rb_cProc;
-static VALUE rb_cBinding;
+VALUE rb_cBinding;
 static VALUE proc_alloc(VALUE,struct BLOCK*,int);
 static VALUE proc_invoke(VALUE,VALUE,VALUE,VALUE,int);
 static VALUE proc_lambda(void);
@@ -245,7 +245,7 @@ static struct BLOCK *passing_block(VALUE,struct BLOCK*);
 static int block_orphan(struct BLOCK *data);
 
 VALUE rb_cMethod;
-static VALUE rb_cUnboundMethod;
+VALUE rb_cUnboundMethod;
 static VALUE umethod_bind(VALUE, VALUE);
 static VALUE rb_mod_define_method(int, VALUE*, VALUE);
 NORETURN(static void rb_raise_jump(VALUE));
@@ -467,9 +467,10 @@ rb_undef_alloc_func(VALUE klass)
 #define LOOKUP_NORMAL 0
 #define LOOKUP_FCALL  1
 #define LOOKUP_NOSKIP 2
+#define LOOKUP_LOCAL  1
 
 static NODE*
-search_method(VALUE klass, ID id, VALUE *origin, int flag)
+search_method(VALUE klass, ID id, VALUE *origin, int flag, int *out)
 {
     NODE *body;
 
@@ -477,6 +478,7 @@ search_method(VALUE klass, ID id, VALUE *origin, int flag)
 	if (st_lookup(RCLASS(ruby_frame->this_class)->m_tbl, id, (st_data_t *)&body) &&
 	    body->nd_noex == NOEX_LOCAL) {
 	    if (origin) *origin = ruby_frame->this_class;
+	    if (out) *out = LOOKUP_LOCAL;
 	    return body;
 	}
     }
@@ -484,6 +486,7 @@ search_method(VALUE klass, ID id, VALUE *origin, int flag)
 	if (st_lookup(RCLASS(klass)->m_tbl, id, (st_data_t *)&body) &&
 	    (flag == LOOKUP_NOSKIP || body->nd_noex != NOEX_LOCAL)) {
 	    if (origin) *origin = klass;
+	    if (out) *out = LOOKUP_NORMAL;
 	    return body;
 	}
     }
@@ -499,8 +502,9 @@ rb_get_method_body(VALUE *klassp, ID *idp, int *noexp)
     NODE * volatile body;
     struct cache_entry *ent;
     int noex = *noexp;
+    int lc;
 
-    if ((body = search_method(klass, id, &origin, noex)) == 0 || !body->nd_body) {
+    if ((body = search_method(klass, id, &origin, noex, &lc)) == 0 || !body->nd_body) {
 	/* store empty info in cache */
 	ent = cache[noex] + EXPR1(klass, id);
 	ent->klass  = klass;
@@ -513,9 +517,10 @@ rb_get_method_body(VALUE *klassp, ID *idp, int *noexp)
     }
 
     if (ruby_running) {
+	VALUE c = (lc == LOOKUP_LOCAL) ? origin : klass;
 	/* store in cache */
-	ent = cache[noex] + EXPR1(klass, id);
-	ent->klass = klass;
+	ent = cache[lc] + EXPR1(c, id);
+	ent->klass = c;
 	ent->noex = body->nd_noex;
 	if (noexp) *noexp = body->nd_noex;
 	body = body->nd_body;
@@ -552,7 +557,7 @@ rb_get_method_body(VALUE *klassp, ID *idp, int *noexp)
 NODE*
 rb_method_node(VALUE klass, ID id)
 {
-    int noex = 0;
+    int noex = LOOKUP_NORMAL;
     struct cache_entry *ent;
 
     ent = cache[0] + EXPR1(klass, id);
@@ -641,9 +646,9 @@ rb_export_method(VALUE klass, ID name, ID noex)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    body = search_method(klass, name, &origin, LOOKUP_NOSKIP);
+    body = search_method(klass, name, &origin, LOOKUP_NOSKIP, 0);
     if (!body && TYPE(klass) == T_MODULE) {
-	body = search_method(rb_cObject, name, &origin, LOOKUP_NOSKIP);
+	body = search_method(rb_cObject, name, &origin, LOOKUP_NOSKIP, 0);
     }
     if (!body || !body->nd_body) {
 	raise_undef(klass, name);
@@ -741,8 +746,8 @@ rb_attr(VALUE klass, ID id, int read, int write, int noex)
 VALUE ruby_errinfo = Qnil;
 extern int ruby_nerrs;
 
-static VALUE rb_eLocalJumpError;
-static VALUE rb_eSysStackError;
+VALUE rb_eLocalJumpError;
+VALUE rb_eSysStackError;
 
 extern VALUE ruby_top_self;
 
@@ -1965,7 +1970,7 @@ rb_undef(VALUE klass, ID id)
     if (id == __id__ || id == __send__ || id == init) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
-    body = search_method(klass, id, &origin, LOOKUP_NOSKIP);
+    body = search_method(klass, id, &origin, LOOKUP_NOSKIP, 0);
     if (!body || !body->nd_body) {
 	const char *s0 = " class";
 	VALUE c = klass;
@@ -2062,10 +2067,10 @@ rb_alias(VALUE klass, ID name, ID def)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    orig = search_method(klass, def, &origin, LOOKUP_NOSKIP);
+    orig = search_method(klass, def, &origin, LOOKUP_NOSKIP, 0);
     if (!orig || !orig->nd_body) {
 	if (TYPE(klass) == T_MODULE) {
-	    orig = search_method(rb_cObject, def, &origin, LOOKUP_NOSKIP);
+	    orig = search_method(rb_cObject, def, &origin, LOOKUP_NOSKIP, 0);
 	}
     }
     if (!orig || !orig->nd_body) {
@@ -3746,7 +3751,7 @@ rb_eval(VALUE self, NODE *n)
 			rb_id2name(node->nd_mid));
 	    }
 	    rb_frozen_class_p(ruby_cbase);
-	    body = search_method(ruby_cbase, node->nd_mid, &origin, LOOKUP_NOSKIP);
+	    body = search_method(ruby_cbase, node->nd_mid, &origin, LOOKUP_NOSKIP, 0);
 	    if (body){
 		if (RTEST(ruby_verbose) && ruby_cbase == origin &&
 		    body->nd_cnt == 0 && body->nd_body) {
@@ -4147,7 +4152,7 @@ static VALUE
 rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_to_id(mid);
-    int noex = 1;
+    int noex = LOOKUP_NOSKIP;
 
     if (rb_get_method_body(&mod, &id, &noex)) {
 	if (VISI_CHECK(noex, NOEX_PUBLIC))
@@ -4186,7 +4191,7 @@ static VALUE
 rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_to_id(mid);
-    int noex = 0;
+    int noex = LOOKUP_NOSKIP;
 
     if (rb_get_method_body(&mod, &id, &noex)) {
 	if (VISI_CHECK(noex, NOEX_PRIVATE))
@@ -4225,7 +4230,7 @@ static VALUE
 rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_to_id(mid);
-    int noex = 1;
+    int noex = LOOKUP_NOSKIP;
 
     if (rb_get_method_body(&mod, &id, &noex)) {
 	if (VISI_CHECK(noex, NOEX_PROTECTED))
@@ -5894,7 +5899,7 @@ rb_call(VALUE klass, VALUE recv, ID mid,
     NODE  *body;		/* OK */
     int    noex;
     ID     id = mid;
-    struct cache_entry *ent;
+    struct cache_entry *ent = 0;
 
     if (!klass) {
 	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (%p)",
@@ -5904,7 +5909,7 @@ rb_call(VALUE klass, VALUE recv, ID mid,
       case CALLING_FCALL:
       case CALLING_VCALL:
 	if (recv == ruby_frame->self) {
-	    noex = LOOKUP_FCALL;
+	    noex = LOOKUP_LOCAL;
 	    break;
 	}
 	/* fall thtough */
@@ -5914,8 +5919,19 @@ rb_call(VALUE klass, VALUE recv, ID mid,
     }
 
     /* is it in the method cache? */
-    ent = cache[noex] + EXPR1(klass, mid);
-    if (ent->mid == mid && ent->klass == klass) {
+    if (noex == LOOKUP_LOCAL) {
+	ent = cache[LOOKUP_FCALL] + EXPR1(ruby_frame->this_class, mid);
+	if (ent->mid != mid || ent->klass != ruby_frame->this_class) {
+	    ent = NULL;
+	}
+    }
+    if (ent) {
+	ent = cache[LOOKUP_NORMAL] + EXPR1(klass, mid);
+	if (ent->mid != mid || ent->klass != klass) {
+	    ent = NULL;
+	}
+    }
+    if (ent) {
 	if (!ent->method)
 	    return method_missing(recv, mid, argc, argv, block,
 				  scope==CALLING_VCALL?CSTAT_VCALL:0);
@@ -7368,9 +7384,9 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 
 	id = rb_to_id(argv[i]);
 	for (;;) {
-	    body = search_method(m, id, &m, LOOKUP_NOSKIP);
+	    body = search_method(m, id, &m, LOOKUP_NOSKIP, 0);
 	    if (body == 0) {
-		body = search_method(rb_cObject, id, &m, LOOKUP_NOSKIP);
+		body = search_method(rb_cObject, id, &m, LOOKUP_NOSKIP, 0);
 	    }
 	    if (body == 0 || body->nd_body == 0) {
 		rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
@@ -12693,7 +12709,7 @@ rb_thread_atfork(void)
  *     3:  15 16
  */
 
-static VALUE rb_cCont;
+VALUE rb_cCont;
 
 /*
  *  call-seq:
