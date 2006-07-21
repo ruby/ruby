@@ -1,3 +1,8 @@
+Fri Jul 21 21:21:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call0): include funcalled methods in caller list.
+	  fixed: [ruby-core:08290]
+
 Fri Jul 21 12:11:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb (with_destdir): remove drive letter before
