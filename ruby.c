@@ -62,8 +62,6 @@ static VALUE do_loop = Qfalse, do_print = Qfalse;
 static VALUE do_check = Qfalse, do_line = Qfalse;
 static VALUE do_split = Qfalse;
 
-static const char *script;
-
 static int origargc;
 static char **origargv;
 
@@ -447,10 +445,10 @@ process_sflag(void)
 static void proc_options(int argc, char **argv);
 
 static char*
-moreswitches(char *s)
+moreswitches(const char *s)
 {
     int argc; char *argv[3];
-    char *p = s;
+    const char *p = s;
 
     argc = 2; argv[0] = argv[2] = 0;
     while (*s && !ISSPACE(*s))
@@ -462,7 +460,7 @@ moreswitches(char *s)
     proc_options(argc, argv);
     while (*s && ISSPACE(*s))
 	s++;
-    return s;
+    return (char *)s;
 }
 
 NODE *ruby_eval_tree;
@@ -472,7 +470,8 @@ proc_options(int argc, char **argv)
 {
     char *argv0 = argv[0];
     int do_search;
-    char *s;
+    const char *s;
+    char *script = 0;
     NODE *volatile script_node = 0;
 
     int version = 0;
@@ -812,7 +811,7 @@ proc_options(int argc, char **argv)
 	    }
 #if defined DOSISH || defined __CYGWIN__
 	    /* assume that we can change argv[n] if never change its length. */
-	    translate_char((char *)script, '\\', '/');
+	    translate_char(script, '\\', '/');
 #endif
 	    argc--; argv++;
 	}
