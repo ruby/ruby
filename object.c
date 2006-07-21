@@ -2071,10 +2071,10 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 		/* remove underscores between digits */
 		if (n == buf || !ISDIGIT(n[-1])) goto bad;
 		while (*++p == '_');
-		if (badcheck) {
-		    if (!ISDIGIT(*p)) goto bad;
+		if (!ISDIGIT(*p)) {
+		    if (badcheck) goto bad;
+		    break;
 		}
-		continue;
 	    }
 	    *n++ = *p++;
 	}
