@@ -1,3 +1,8 @@
+Fri Jul 21 12:11:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb (with_destdir): remove drive letter before
+	  prepending destdir on DOSISH.
+
 Fri Jul 21 04:17:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): try local method look-up first for fcall, then

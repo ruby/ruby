@@ -382,7 +382,10 @@ end
 if $extout
   RbConfig.expand(extout = "#$extout", RbConfig::CONFIG.merge("topdir"=>$topdir))
   if $install
-    RbConfig.expand(dest = "#{$destdir}#{$rubylibdir}")
+    dest = RbConfig.expand($rubylibdir.dup)
+    unless $destdir.empty?
+      dest.sub!($dest_prefix_pattern, RbConfig.expand($destdir.dup))
+    end
     FileUtils.cp_r(extout+"/.", dest, :remove_destination => true, :verbose => true, :noop => $dryrun)
     exit
   end

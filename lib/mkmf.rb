@@ -61,6 +61,7 @@ $netbsd = /netbsd/ =~ RUBY_PLATFORM
 $os2 = /os2/ =~ RUBY_PLATFORM
 $beos = /beos/ =~ RUBY_PLATFORM
 $solaris = /solaris/ =~ RUBY_PLATFORM
+$dest_prefix_pattern = (File::PATH_SEPARATOR == ';' ? /\A([[:alpha:]]:)?/ : /\A/)
 
 def config_string(key, config = CONFIG)
   s = config[key] and !s.empty? and block_given? ? yield(s) : s
@@ -916,7 +917,8 @@ def pkg_config(pkg)
 end
 
 def with_destdir(dir)
-  /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
+  dir = dir.sub($dest_prefix_pattern, '')
+  /\A\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
 def winsep(s)
@@ -946,18 +948,17 @@ topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
-  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
-  if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
+  if $destdir = CONFIG["prefix"][$dest_prefix_pattern, 1]
     mk << "\nDESTDIR = #{destdir}\n"
   end
   CONFIG.each do |key, var|
     next unless /prefix$/ =~ key
-    mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
+    mk << "#{key} = #{with_destdir(var)}\n"
   end
   CONFIG.each do |key, var|
     next if /^abs_/ =~ key
     next unless /^(?:src|top|hdr|(.*))dir$/ =~ key and $1
-    mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
+    mk << "#{key} = #{with_destdir(var)}\n"
   end
   if !$extmk and !$configure_args.has_key?('--ruby') and
       sep = config_string('BUILD_FILE_SEPARATOR')
