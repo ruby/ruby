@@ -1,3 +1,8 @@
+Fri Jul 21 12:11:00 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb (with_destdir): remove drive letter before
+	  prepending destdir on DOSISH.
+
 Thu Jul 20 15:07:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: export classes/modules to implement sandbox.
