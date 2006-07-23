@@ -138,4 +138,4 @@ class TestUNIXSocket < Test::Unit::TestCase
     s2.close if s2
   end
 
-end if defined?(UNIXSocket)
+end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
