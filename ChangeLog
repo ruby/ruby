@@ -1,3 +1,8 @@
+Sun Jul 23 22:59:49 2006  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_unix.rb: disabled on cygwin.
+	  reported by Kouhei Yanagita.  [ruby-dev:29080]
+
 Fri Jul 21 23:57:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): script is never used while recursing.
