@@ -5808,7 +5808,6 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 
 	    PUSH_METHOD_FRAME();
 	    PUSH_SCOPE();
-	    ruby_frame->node = body;
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
