@@ -6162,7 +6162,7 @@ backtrace(int lev)
     for (; frame && (n = frame->node); frame = frame->prev) {
 	if (frame->prev && frame->prev->this_func) {
 	    if (frame->prev->node == n) {
-		if (frame->prev->last_func == frame->last_func) continue;
+		if (frame->prev->this_func == frame->this_func) continue;
 	    }
 	    str = error_line(frame->prev, n);
 	}
