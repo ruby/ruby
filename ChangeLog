@@ -1,3 +1,8 @@
+Mon Jul 24 15:19:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): revert last change.  [ruby-dev:29112]
+	  [ruby-core:08374]
+
 Sun Jul 23 22:59:49 2006  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_unix.rb: disabled on cygwin.
@@ -19,6 +24,7 @@ Thu Jul 20 15:07:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  [ruby-core:08283]
 
 Thu Jul 20 00:06:29 2006 Keiju Ishitsuka <keiju@ishitsuka.com>
+
 	* lib/irb/completion.rb: support for completion of numeric
     	  number. [ruby-dev: 29038]
 
