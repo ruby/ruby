@@ -1,3 +1,8 @@
+Mon Jul 24 15:51:52 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (readline_readline): rl_deprep_term_function
+	  may be NULL with libedit.  reported by Ryan Davis.  [ruby-dev:29070]
+
 Mon Jul 24 15:19:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): revert last change.  [ruby-dev:29112]
