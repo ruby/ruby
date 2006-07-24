@@ -1,3 +1,10 @@
+Mon Jul 24 17:55:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_f_system): add security check.  [ruby-talk:202947]
+
+	* process.c (rb_f_system): move signal right before fork to avoid
+	  signal handler intervention.
+
 Mon Jul 24 15:51:52 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/readline/readline.c (readline_readline): rl_deprep_term_function

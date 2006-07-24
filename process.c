@@ -1494,7 +1494,6 @@ rb_f_system(argc, argv)
     int i;
     RETSIGTYPE (*chfunc)(int);
 
-    chfunc = signal(SIGCHLD, SIG_DFL);
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
@@ -1516,6 +1515,8 @@ rb_f_system(argc, argv)
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
     }
+    security(RSTRING(prog ? prog : argv[0])->ptr);
+    chfunc = signal(SIGCHLD, SIG_DFL);
   retry:
     pid = fork();
     if (pid == 0) {
