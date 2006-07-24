@@ -1,3 +1,8 @@
+Mon Jul 24 15:51:52 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/readline/readline.c (readline_readline): rl_deprep_term_function
+	  may be NULL with libedit.  reported by Ryan Davis.  [ruby-dev:29070]
+
 Sun Jul 23 22:59:49 2006  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_unix.rb: disabled on cygwin.

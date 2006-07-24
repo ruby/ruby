@@ -77,7 +77,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
         rl_cleanup_after_signal();
 #elif defined HAVE_RL_DEPREP_TERM_FUNCTION
         /* restore terminal mode */
-        (*rl_deprep_term_function)();
+	if (rl_deprep_term_function != NULL) /* NULL in libedit. [ruby-dev:29116] */
+	    (*rl_deprep_term_function)();
+	else
 #else
         rl_deprep_terminal();
 #endif
