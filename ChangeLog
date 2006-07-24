@@ -1,3 +1,7 @@
+Mon Jul 24 22:03:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (backtrace): skip frames successive on node and method name.
+
 Mon Jul 24 17:55:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_system): add security check.  [ruby-talk:202947]

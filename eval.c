@@ -5848,7 +5848,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    NODE *saved_cref = 0;
 
 	    PUSH_SCOPE();
-	    ruby_current_node = body;
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
@@ -6254,7 +6253,9 @@ backtrace(lev)
     }
     for (; frame && (n = frame->node); frame = frame->prev) {
 	if (frame->prev && frame->prev->last_func) {
-	    if (frame->prev->node == n) continue;
+	    if (frame->prev->node == n) {
+		if (frame->prev->last_func == frame->last_func) continue;
+	    }
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     n->nd_file, nd_line(n),
 		     rb_id2name(frame->prev->last_func));
