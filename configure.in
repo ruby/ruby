@@ -3,7 +3,7 @@ AC_INIT()
 
 AC_PREREQ(2.58)
 
-AC_DEFUN(RUBY_MINGW32,
+AC_DEFUN([RUBY_MINGW32],
 [case "$host_os" in
 cygwin*)
 AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
@@ -17,7 +17,7 @@ test "$rb_cv_mingw32" = yes && target_os="mingw32"
   ;;
 esac])
 
-AC_DEFUN(RUBY_CPPOUTFILE,
+AC_DEFUN([RUBY_CPPOUTFILE],
 [AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
 [cppflags=$CPPFLAGS
 CPPFLAGS='-o conftest.i'
@@ -33,7 +33,7 @@ elif test -n "$rb_cv_cppoutfile"; then
 fi
 AC_SUBST(CPPOUTFILE)])
 
-AC_DEFUN(RUBY_PROG_GNU_LD,
+AC_DEFUN([RUBY_PROG_GNU_LD],
 [AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
 [if `$CC $CFLAGS $CPPFLAGS $LDFLAGS --print-prog-name=ld 2>&1` -v 2>&1 | grep "GNU ld" > /dev/null; then
   rb_cv_prog_gnu_ld=yes
@@ -269,7 +269,7 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-AC_DEFUN(RUBY_FUNC_ATTRIBUTE, [dnl
+AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
   [AS_VAR_PUSHDEF([attrib],[$2])], dnl
   [AS_VAR_PUSHDEF([attrib],[FUNC_]AS_TR_CPP($1))] dnl
@@ -730,7 +730,7 @@ if test $rb_cv_huge_st_ino = yes; then
 fi
 
 if test "$ac_cv_func_sysconf" = yes; then
-  AC_DEFUN(RUBY_CHECK_SYSCONF, [dnl
+  AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl
   AC_CACHE_CHECK([whether _SC_$1 is supported], rb_cv_have_sc_[]m4_tolower($1),
     [AC_TRY_COMPILE([#include <unistd.h>
       ],

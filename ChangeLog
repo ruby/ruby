@@ -1,3 +1,7 @@
+Wed Jul 26 01:02:59 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: suppress warnings by automake 1.8 or later.
+
 Tue Jul 25 14:46:14 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): typo.
