@@ -1,16 +1,21 @@
+Tue Jul 25 13:14:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_proc_times): rename hz to hertz to avoid name
+	  crash on AIX.  [ruby-dev:29126]
+
 Mon Jul 24 22:03:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (backtrace): skip frames successive on node and method name.
-
-Mon Jul 24 15:19:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* eval.c (rb_call0): revert last change.  [ruby-dev:29112]
-	  [ruby-core:08374]
 
 Mon Jul 24 15:51:52 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/readline/readline.c (readline_readline): rl_deprep_term_function
 	  may be NULL with libedit.  reported by Ryan Davis.  [ruby-dev:29070]
+
+Mon Jul 24 15:19:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): revert last change.  [ruby-dev:29112]
+	  [ruby-core:08374]
 
 Sun Jul 23 22:59:49 2006  Tanaka Akira  <akr@fsij.org>
 

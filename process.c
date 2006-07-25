@@ -1597,11 +1597,11 @@ rb_f_system(int argc, VALUE *argv)
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
     status = rb_spawn(argc, argv);
-    if (status > 0) {
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+    if (status > 0) {
 	rb_syswait(status);
-#endif
     }
+#endif
 #ifdef SIGCHLD
     signal(SIGCHLD, chfunc);
 #endif
@@ -3531,7 +3531,7 @@ VALUE
 rb_proc_times(VALUE obj)
 {
 #if defined(HAVE_TIMES) && !defined(__CHECKER__)
-    const double hz =
+    const double hertz =
 #ifdef HAVE__SC_CLK_TCK
 	(double)sysconf(_SC_CLK_TCK);
 #else
@@ -3549,10 +3549,10 @@ rb_proc_times(VALUE obj)
 
     times(&buf);
     return rb_struct_new(S_Tms,
-			 utime = rb_float_new(buf.tms_utime / hz),
-			 stime = rb_float_new(buf.tms_stime / hz),
-			 cutime = rb_float_new(buf.tms_cutime / hz),
-			 sctime = rb_float_new(buf.tms_cstime / hz));
+			 utime = rb_float_new(buf.tms_utime / hertz),
+			 stime = rb_float_new(buf.tms_stime / hertz),
+			 cutime = rb_float_new(buf.tms_cutime / hertz),
+			 sctime = rb_float_new(buf.tms_cstime / hertz));
 #else
     rb_notimplement();
 #endif
