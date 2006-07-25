@@ -1,3 +1,7 @@
+Tue Jul 25 00:30:06 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/prettyprint.rb: RD to RDoc conversion by Hugh Sasse.
+
 Tue Jul 25 14:49:51 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): typo.
