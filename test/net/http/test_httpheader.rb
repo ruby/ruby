@@ -167,39 +167,51 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_content_type
+    assert_nil @c.content_type
     @c.content_type = 'text/html'
     assert_equal 'text/html', @c.content_type
     @c.content_type = 'application/pdf'
     assert_equal 'application/pdf', @c.content_type
     @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
     assert_equal 'text/html', @c.content_type
+    @c.content_type = 'text'
+    assert_equal 'text', @c.content_type
   end
 
   def test_main_type
+    assert_nil @c.main_type
     @c.content_type = 'text/html'
     assert_equal 'text', @c.main_type
     @c.content_type = 'application/pdf'
     assert_equal 'application', @c.main_type
     @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
     assert_equal 'text', @c.main_type
+    @c.content_type = 'text'
+    assert_equal 'text', @c.main_type
   end
 
   def test_sub_type
+    assert_nil @c.sub_type
     @c.content_type = 'text/html'
     assert_equal 'html', @c.sub_type
     @c.content_type = 'application/pdf'
     assert_equal 'pdf', @c.sub_type
     @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
     assert_equal 'html', @c.sub_type
+    @c.content_type = 'text'
+    assert_nil @c.sub_type
   end
 
   def test_type_params
+    assert_equal({}, @c.type_params)
     @c.content_type = 'text/html'
     assert_equal({}, @c.type_params)
     @c.content_type = 'application/pdf'
     assert_equal({}, @c.type_params)
     @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
     assert_equal({'charset' => 'iso-2022-jp'}, @c.type_params)
+    @c.content_type = 'text'
+    assert_equal({}, @c.type_params)
   end
 
   def test_set_content_type
