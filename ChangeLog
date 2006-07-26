@@ -1,3 +1,10 @@
+Wed Jul 26 18:35:38 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: sync with HEAD (rev 1.25).
+
+	* ext/strscan/strscan.c (strscan_do_scan):
+	  StringScanner.new("").scan(//) should return "". [ruby-Bugs:4361]
+
 Wed Jul 26 18:14:19 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (getDevice): retry once after GC on failure.
