@@ -6,6 +6,8 @@
 .ccmalloc
 .ppack
 .ext
+.git
+.svn
 .rbconfig.time
 COPYING.LIB
 ChangeLog.pre-alpha

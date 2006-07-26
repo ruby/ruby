@@ -79,6 +79,8 @@ NM            = @NM@
 AR            = @AR@
 ARFLAGS       = rcu
 RANLIB        = @RANLIB@
+AS            = @AS@
+ASFLAGS       = @ASFLAGS@
 
 OBJEXT        = @OBJEXT@
 MANTYPE	      = @MANTYPE@
@@ -161,6 +163,9 @@ lex.c: keywords
 
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
+.s.@OBJEXT@:
+	$(AS) $(ASFLAGS) -o $@ $<
 
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
