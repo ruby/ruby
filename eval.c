@@ -410,7 +410,7 @@ rb_clear_cache_by_class(VALUE klass)
 
 static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
-static ID __id__, __send__, respond_to;
+static ID object_id, __send, __send_bang, respond_to;
 
 #define NOEX_SAFE(n) ((n) >> 5)
 #define NOEX_WITH(n, v) ((n) | (v) << 5)
@@ -580,7 +580,7 @@ remove_method(VALUE klass, ID mid)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-    if (mid == __id__ || mid == __send__ || mid == init) {
+    if (mid == object_id || mid == __send || mid == __send_bang || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
     if (!st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body) ||
@@ -1967,7 +1967,7 @@ rb_undef(VALUE klass, ID id)
 	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'", rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == __id__ || id == __send__ || id == init) {
+    if (id == object_id || id == __send || id == __send_bang || id == init) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin, LOOKUP_NOSKIP, 0);
@@ -3746,7 +3746,8 @@ rb_eval(VALUE self, NODE *n)
 	    if (ruby_cbase == rb_cObject && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
 	    }
-	    if (node->nd_mid == __id__ || node->nd_mid == __send__) {
+	    if (node->nd_mid == object_id ||
+		node->nd_mid == __send || node->nd_mid == __send_bang) {
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(node->nd_mid));
 	    }
@@ -6016,8 +6017,8 @@ send_funcall(int argc, VALUE *argv, VALUE recv, calling_scope_t scope)
 
 /*
  *  call-seq:
- *     obj.send(symbol [, args...])        => obj
- *     obj.__send__(symbol [, args...])    => obj
+ *     obj.send(symbol [, args...])      => obj
+ *     obj.__send(symbol [, args...])    => obj
  *  
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. You can use <code>\_\_send__</code> if the name
@@ -6054,6 +6055,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 /*
  *  call-seq:
  *     obj.funcall(symbol [, args...])        => obj
+ *     obj.__send!(symbol [, args...])        => obj
  *  
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. Unlike send, which calls private methods only
@@ -7858,8 +7860,9 @@ Init_eval(void)
     undefined = rb_intern("method_undefined");
     singleton_undefined = rb_intern("singleton_method_undefined");
 
-    __id__ = rb_intern("__id__");
-    __send__ = rb_intern("__send__");
+    object_id = rb_intern("object_id");
+    __send = rb_intern("__send");
+    __send_bang = rb_intern("__send!");
 
     rb_global_variable((VALUE*)&top_scope);
     rb_global_variable((VALUE*)&ruby_eval_tree);
@@ -7899,9 +7902,9 @@ Init_eval(void)
 
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
-    rb_define_method(rb_cBasicObject, "invoke_method", rb_f_send, -1);
+    rb_define_method(rb_cBasicObject, "__send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "funcall", rb_f_funcall, -1);
-    rb_define_method(rb_cBasicObject, "invoke_functional_method", rb_f_funcall, -1);
+    rb_define_method(rb_cBasicObject, "__send!", rb_f_funcall, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
 
