@@ -1,3 +1,19 @@
+Wed Jul 26 22:13:45 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: sync with HEAD (rev 1.132).
+
+	* lib/net/http.rb (Net::HTTP#post, request_post, request): should
+	  set Content-Type: x-www-form-urlencoded by default.
+
+	* lib/net/http.rb (Net::HTTPHeader#content_type): should return
+	  nil when there's no Content-Type.
+
+	* lib/net/http.rb (Net::HTTPHeader#sub_type): should return nil
+	  when there's no sub Content-Type (e.g. "Content-Type: text").
+
+	* lib/net/http.rb (Net::HTTPHeader#type_params): wrongly failed
+	  when there's no Content-Type.
+
 Wed Jul 26 18:35:38 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: sync with HEAD (rev 1.25).
