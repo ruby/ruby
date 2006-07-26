@@ -1,3 +1,9 @@
+Wed Jul 26 16:06:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): check
+	  multipart boundary end.  a patch from Fujioka <fuj at rabbix.jp>
+	  [ruby-dev:28470]
+
 Wed Jul 26 01:02:59 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: suppress warnings by automake 1.8 or later.

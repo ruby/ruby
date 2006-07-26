@@ -971,6 +971,7 @@ class CGI
       boundary = "--" + boundary
       buf = ""
       bufsize = 10 * 1024
+      boundary_end=""
 
       # start multipart/form-data
       stdinput.binmode if defined? stdinput.binmode
@@ -1031,6 +1032,7 @@ class CGI
           if "--" == $2
             content_length = -1
           end
+         boundary_end = $2.dup
           ""
         end
 
@@ -1064,6 +1066,7 @@ class CGI
         break if buf.size == 0
         break if content_length === -1
       end
+      raise EOFError, "bad boundary end of body part" unless boundary_end=~/--/
 
       params
     end # read_multipart
