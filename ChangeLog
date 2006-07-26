@@ -1,3 +1,8 @@
+Wed Jul 26 16:39:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_scan): add string modification check.
+	  [ruby-core:7216]
+
 Wed Jul 26 16:06:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): check
