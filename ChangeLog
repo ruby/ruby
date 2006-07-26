@@ -1,3 +1,8 @@
+Wed Jul 26 18:38:13 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c (strscan_do_scan): always return nil if
+	  p->curr exceeds string size.
+
 Wed Jul 26 18:33:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_eval): rename #invoke_method and

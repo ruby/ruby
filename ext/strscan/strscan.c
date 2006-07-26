@@ -1,7 +1,7 @@
 /*
     $Id$
 
-    Copyright (c) 1999-2005 Minero Aoki
+    Copyright (c) 1999-2006 Minero Aoki
 
     This program is free software.
     You can distribute/modify this program under the terms of
@@ -401,6 +401,9 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     GET_SCANNER(self, p);
 
     CLEAR_MATCH_STATUS(p);
+    if (S_RESTLEN(p) < 0) {
+        return Qnil;
+    }
     if (headonly) {
         ret = onig_match(RREGEXP(regex)->ptr, (UChar* )CURPTR(p),
                          (UChar* )(CURPTR(p) + S_RESTLEN(p)),
