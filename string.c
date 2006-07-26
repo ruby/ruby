@@ -4255,6 +4255,7 @@ rb_str_scan(str, pat)
     VALUE result;
     long start = 0;
     VALUE match = Qnil;
+    char *p = RSTRING(str)->ptr; long len = RSTRING(str)->len;
 
     pat = get_pat(pat, 1);
     if (!rb_block_given_p()) {
@@ -4272,6 +4273,7 @@ rb_str_scan(str, pat)
 	match = rb_backref_get();
 	rb_match_busy(match);
 	rb_yield(result);
+	str_mod_check(str, p, len);
 	rb_backref_set(match);	/* restore $~ value */
     }
     rb_backref_set(match);
