@@ -391,9 +391,6 @@ strscan_set_pos(VALUE self, VALUE v)
     return INT2NUM(i);
 }
 
-/* I should implement this function? */
-#define strscan_prepare_re(re)  /* none */
-
 static VALUE
 strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
 {
@@ -404,10 +401,6 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     GET_SCANNER(self, p);
 
     CLEAR_MATCH_STATUS(p);
-    if (EOS_P(p)) {
-        return Qnil;
-    }
-    strscan_prepare_re(regex);
     if (headonly) {
         ret = onig_match(RREGEXP(regex)->ptr, (UChar* )CURPTR(p),
                          (UChar* )(CURPTR(p) + S_RESTLEN(p)),

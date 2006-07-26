@@ -242,6 +242,11 @@ class TestStringScanner < Test::Unit::TestCase
     s.string.replace ''
     # unspecified: assert_equal 2, s.pos
     assert_equal nil, s.scan(/test/)
+
+    # [ruby-bugs:4361]
+    s = StringScanner.new("")
+    assert_equal "", s.scan(//)
+    assert_equal "", s.scan(//)
   end
 
   def test_skip
@@ -259,6 +264,11 @@ class TestStringScanner < Test::Unit::TestCase
     s.scan(/te/)
     s.string.replace ''
     assert_equal nil, s.skip(/./)
+
+    # [ruby-bugs:4361]
+    s = StringScanner.new("")
+    assert_equal 0, s.skip(//)
+    assert_equal 0, s.skip(//)
   end
 
   def test_getch

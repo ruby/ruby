@@ -1,3 +1,8 @@
+Wed Jul 26 17:43:20 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c (strscan_do_scan):
+	  StringScanner.new("").scan(//) should return "". [ruby-Bugs:4361]
+
 Wed Jul 26 17:28:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): prepend ".." to %u for negative bignum,
