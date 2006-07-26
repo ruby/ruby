@@ -295,37 +295,34 @@ pty_finalize_syswait(struct pty_info *info)
     return Qnil;
 }
 
-#ifdef HAVE_OPENPTY
+static int
+get_device_once(int *master, int *slave, int fail)
+{
+#if defined HAVE_OPENPTY
 /*
  * Use openpty(3) of 4.3BSD Reno and later,
  * or the same interface function.
  */
-static void
-getDevice(int *master, int *slave)
-{
     if (openpty(master, slave, SlaveName,
 		(struct termios *)0, (struct winsize *)0) == -1) {
+	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
-}
-#else /* HAVE_OPENPTY */
-#ifdef HAVE__GETPTY
-static void
-getDevice(int *master, int *slave)
-{
+
+    return 0;
+#elif defined HAVE__GETPTY
     char *name;
 
     if (!(name = _getpty(master, O_RDWR, 0622, 0))) {
+	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
 
     *slave = open(name, O_RDWR);
     strcpy(SlaveName, name);
-}
+
+    return 0;
 #else /* HAVE__GETPTY */
-static void
-getDevice(int *master, int *slave)
-{
     int	 i,j;
 
 #ifdef HAVE_PTSNAME
@@ -350,7 +347,7 @@ getDevice(int *master, int *slave)
 				*master = i;
 				*slave = j;
 				strcpy(SlaveName, pn);
-				return;
+				return 0;
 #if defined I_PUSH && !defined linux
 			    }
 			}
@@ -361,7 +358,8 @@ getDevice(int *master, int *slave)
 	}
 	close(i);
     }
-    rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+    if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
+    return -1;
 #else
     char **p;
     char MasterName[DEVICELEN];
@@ -375,16 +373,25 @@ getDevice(int *master, int *slave)
 		*slave = j;
 		chown(SlaveName, getuid(), getgid());
 		chmod(SlaveName, 0622);
-		return;
+		return 0;
 	    }
 	    close(i);
 	}
     }
-    rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
+    if (fail) rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
+    return -1;
+#endif
 #endif
 }
-#endif /* HAVE__GETPTY */
-#endif /* HAVE_OPENPTY */
+
+static void
+getDevice(int *master, int *slave)
+{
+    if (get_device_once(master, slave, 0)) {
+	rb_gc();
+	get_device_once(master, slave, 1);
+    }
+}
 
 static void
 freeDevice()
