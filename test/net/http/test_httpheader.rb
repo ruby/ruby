@@ -6,8 +6,7 @@ class HTTPHeaderTest < Test::Unit::TestCase
   class C
     include Net::HTTPHeader
     def initialize
-      @header = {}
-      @body = nil
+      initialize_http_header({})
     end
     attr_accessor :body
   end
@@ -51,23 +50,88 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c['Next-Header'] = 'next string'
     assert_equal 'next string', @c['next-header']
   end
-  
+
   def test_add_field
+    @c.add_field 'My-Header', 'a'
+    assert_equal 'a', @c['My-Header']
+    assert_equal ['a'], @c.get_fields('My-Header')
+    @c.add_field 'My-Header', 'b'
+    assert_equal 'a, b', @c['My-Header']
+    assert_equal ['a', 'b'], @c.get_fields('My-Header')
+    @c.add_field 'My-Header', 'c'
+    assert_equal 'a, b, c', @c['My-Header']
+    assert_equal ['a', 'b', 'c'], @c.get_fields('My-Header')
+    @c.add_field 'My-Header', 'd, d'
+    assert_equal 'a, b, c, d, d', @c['My-Header']
+    assert_equal ['a', 'b', 'c', 'd, d'], @c.get_fields('My-Header')
   end
 
   def test_get_fields
+    @c['My-Header'] = 'test string'
+    assert_equal ['test string'], @c.get_fields('my-header')
+    assert_equal ['test string'], @c.get_fields('My-header')
+    assert_equal ['test string'], @c.get_fields('my-Header')
+
+    assert_nil @c.get_fields('not-found')
+    assert_nil @c.get_fields('Not-Found')
+
+    @c.get_fields('my-header').push 'junk'
+    assert_equal ['test string'], @c.get_fields('my-header')
+    @c.get_fields('my-header').clear
+    assert_equal ['test string'], @c.get_fields('my-header')
   end
 
   def test_delete
+    @c['My-Header'] = 'test'
+    assert_equal 'test', @c['My-Header']
+    assert_nil @c['not-found']
+    @c.delete 'My-Header'
+    assert_nil @c['My-Header']
+    assert_nil @c['not-found']
+    @c.delete 'My-Header'
+    @c.delete 'My-Header'
+    assert_nil @c['My-Header']
+    assert_nil @c['not-found']
   end
 
   def test_each
+    @c['My-Header'] = 'test'
+    @c.each do |k, v|
+      assert_equal 'my-header', k
+      assert_equal 'test', v
+    end
+    @c.each do |k, v|
+      assert_equal 'my-header', k
+      assert_equal 'test', v
+    end
   end
 
   def test_each_key
+    @c['My-Header'] = 'test'
+    @c.each_key do |k|
+      assert_equal 'my-header', k
+    end
+    @c.each_key do |k|
+      assert_equal 'my-header', k
+    end
   end
 
   def test_each_value
+    @c['My-Header'] = 'test'
+    @c.each_value do |v|
+      assert_equal 'test', v
+    end
+    @c.each_value do |v|
+      assert_equal 'test', v
+    end
+  end
+
+  def test_canonical_each
+    @c['my-header'] = ['a', 'b']
+    @c.canonical_each do |k,v|
+      assert_equal 'My-Header', k
+      assert_equal 'a, b', v
+    end
   end
 
   def test_each_capitalized
@@ -79,6 +143,13 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_key?
+    @c['My-Header'] = 'test'
+    assert_equal true, @c.key?('My-Header')
+    assert_equal true, @c.key?('my-header')
+    assert_equal false, @c.key?('Not-Found')
+    assert_equal false, @c.key?('not-found')
+    assert_equal false, @c.key?('')
+    assert_equal false, @c.key?('x' * 1024)
   end
 
   def test_to_hash
