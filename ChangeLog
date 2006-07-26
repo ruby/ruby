@@ -1,3 +1,8 @@
+Wed Jul 26 17:28:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): prepend ".." to %u for negative bignum,
+	  but not "-".  fixed: [ruby-core:08167]
+
 Wed Jul 26 16:39:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_scan): add string modification check.

@@ -626,27 +626,24 @@ rb_f_sprintf(argc, argv)
 		if (*s == '-') {
 		    if (base == 10) {
 			rb_warning("negative number for %%u specifier");
-			s++;
 		    }
-		    else {
-			remove_sign_bits(++s, base);
-			tmp = rb_str_new(0, 3+strlen(s));
-			t = RSTRING(tmp)->ptr;
-			if (!(flags&(FPREC|FZERO))) {
-			    strcpy(t, "..");
-			    t += 2;
-			}
-			switch (base) {
-			  case 16:
-			    if (s[0] != 'f') strcpy(t++, "f"); break;
-			  case 8:
-			    if (s[0] != '7') strcpy(t++, "7"); break;
-			  case 2:
-			    if (s[0] != '1') strcpy(t++, "1"); break;
-			}
-			strcpy(t, s);
-			bignum = 2;
+		    remove_sign_bits(++s, base);
+		    tmp = rb_str_new(0, 3+strlen(s));
+		    t = RSTRING(tmp)->ptr;
+		    if (!(flags&(FPREC|FZERO))) {
+			strcpy(t, "..");
+			t += 2;
 		    }
+		    switch (base) {
+		      case 16:
+			if (s[0] != 'f') strcpy(t++, "f"); break;
+		      case 8:
+			if (s[0] != '7') strcpy(t++, "7"); break;
+		      case 2:
+			if (s[0] != '1') strcpy(t++, "1"); break;
+		    }
+		    strcpy(t, s);
+		    bignum = 2;
 		}
 		s = RSTRING(tmp)->ptr;
 
