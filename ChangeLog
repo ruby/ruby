@@ -1,3 +1,7 @@
+Thu Jul 27 22:21:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_to_s): fixed format mismatch.
+
 Thu Jul 27 18:12:12 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c: need to declare time_utc_offset.
