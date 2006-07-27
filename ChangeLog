@@ -1,3 +1,9 @@
+Fri Jul 28 00:26:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (domain_check): ANSI style function arguments
+
+	* math.c (math_log): too few argument to domain_check().
+
 Thu Jul 27 21:19:54 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (domain_check): a new function to check domain error

@@ -23,9 +23,7 @@ VALUE rb_mMath;
 } while (0)
 
 static void
-domain_check(x, msg)
-    double x;
-    char *msg;
+domain_check(double x, char *msg)
 {
     while(1) {
 	if (errno) {
@@ -325,7 +323,7 @@ math_log(int argc, VALUE *argv)
 	Need_Float(base);
 	d /= log(RFLOAT(base)->value);
     }
-    domain_check(d);
+    domain_check(d, "log");
     return rb_float_new(d);
 }
 
