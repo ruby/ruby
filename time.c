@@ -1276,7 +1276,7 @@ time_to_s(time)
 	    off = -off;
 	}
 	sprintf(buf2, "%%a %%b %%d %%H:%%M:%%S %c%02d%02d %%Y",
-		sign, off/3600, off%3600/60);
+		sign, (int)(off/3600), (int)(off%3600/60));
 	len = strftime(buf, 128, buf2, &tobj->tm);
     }
     return rb_str_new(buf, len);
