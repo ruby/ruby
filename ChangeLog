@@ -1,6 +1,9 @@
-Thu Jul 27 09:02:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Jul 27 16:41:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* time.c (time_to_s): generate RFC822 style date string.
+	* ext/openssl/ossl.h: move <ruby.h> inclusion point to shut up
+	  Solaris compiler.  [ruby-core:08114]
+
+	* time.c (time_to_s): use +0900 style timezone string for local time.
 	  [ruby-dev:29143]
 
 Wed Jul 26 22:20:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>

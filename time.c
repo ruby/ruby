@@ -1219,7 +1219,7 @@ time_to_s(VALUE time)
 	    sign = '-';
 	    off = -off;
 	}
-	sprintf(buf2, "%%a %%b %%d %%Y %%H:%%M:%%S %c%02d%02d",
+	sprintf(buf2, "%%a %%b %%d %%H:%%M:%%S %c%02d%02d %%Y",
 		sign, off/3600, off%3600/60);
 	len = strftime(buf, 128, buf2, &tobj->tm);
     }
