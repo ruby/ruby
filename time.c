@@ -33,6 +33,7 @@ struct time_object {
     Data_Get_Struct(obj, struct time_object, tobj)
 
 static void time_free _((void *));
+static VALUE time_utc_offset _((VALUE));
 
 static void
 time_free(tobj)
