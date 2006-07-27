@@ -18,6 +18,15 @@ extern "C" {
 #endif
 
 /*
+* OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
+*/
+#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
+#  undef RFILE
+#endif
+#include <ruby.h>
+#include <rubyio.h>
+
+/*
  * Check the OpenSSL version
  * The only supported are:
  * 	OpenSSL >= 0.9.7
@@ -58,15 +67,6 @@ extern "C" {
 #if defined(_WIN32)
 #  undef OpenFile
 #endif
-
-/*
- * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
- */
-#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
-#  undef RFILE
-#endif
-#include <ruby.h>
-#include <rubyio.h>
 
 /*
  * Common Module

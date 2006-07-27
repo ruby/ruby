@@ -1,3 +1,8 @@
+Thu Jul 27 16:41:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl.h: move <ruby.h> inclusion point to shut up
+	  Solaris compiler.  [ruby-core:08114]
+
 Wed Jul 26 22:20:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: add support for as and ASFLAGS.  [ruby-dev:29138]
