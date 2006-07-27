@@ -1,3 +1,8 @@
+Thu Jul 27 17:01:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_close): always calls "close" method of the receiver.
+	  [ruby-core:6911] [ruby-core:8112]
+
 Thu Jul 27 16:41:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl.h: move <ruby.h> inclusion point to shut up

@@ -2226,13 +2226,15 @@ rb_io_close_m(VALUE io)
 }
 
 static VALUE
+io_call_close(VALUE io)
+{
+    return rb_funcall(io, rb_intern("close"), 0, 0);
+}
+
+static VALUE
 io_close(VALUE io)
 {
-    if (TYPE(io) == T_FILE) {
-	rb_io_close(io);
-	return Qnil;
-    }
-    return rb_funcall(io, rb_intern("close"), 0, 0);
+    return rb_rescue(io_call_close, io, 0, 0);
 }
 
 /*
