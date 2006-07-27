@@ -2,6 +2,17 @@ Thu Jul 27 22:21:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_to_s): fixed format mismatch.
 
+Thu Jul 27 21:19:54 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (domain_check): a new function to check domain error
+	  explicitly for systems that return NaN like FreeBSD.
+	  [ruby-core:07019]
+
+	* math.c (math_acos, math_asin, math_acosh, math_atanh, math_log,
+	  math_log10, math_sqrt): use domain_check().
+
+	* math.c (math_sqrt): fix documentation flaw.
+
 Thu Jul 27 18:12:12 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c: need to declare time_utc_offset.

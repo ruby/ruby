@@ -22,6 +22,27 @@ VALUE rb_mMath;
     Need_Float(y);\
 } while (0)
 
+static void
+domain_check(x, msg)
+    double x;
+    char *msg;
+{
+    while(1) {
+	if (errno) {
+	    rb_sys_fail(msg);
+	}
+	if (isnan(x)) {
+#if defined(EDOM)
+	    errno = EDOM;
+#elif define(ERANGE)
+	    errno = ERANGE;
+#endif
+	    continue;
+	}
+	break;
+    }
+}
+
 
 /*
  *  call-seq:
@@ -39,7 +60,6 @@ math_atan2(obj, y, x)
     Need_Float2(y, x);
     return rb_float_new(atan2(RFLOAT(y)->value, RFLOAT(x)->value));
 }
-
 
 
 /*
@@ -108,9 +128,7 @@ math_acos(obj, x)
     Need_Float(x);
     errno = 0;
     d = acos(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("acos");
-    }
+    domain_check(d, "acos");
     return rb_float_new(d);
 }
 
@@ -130,9 +148,7 @@ math_asin(obj, x)
     Need_Float(x);
     errno = 0;
     d = asin(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("asin");
-    }
+    domain_check(d, "asin");
     return rb_float_new(d);
 }
 
@@ -242,9 +258,7 @@ math_acosh(obj, x)
     Need_Float(x);
     errno = 0;
     d = acosh(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("acosh");
-    }
+    domain_check(d, "acosh");
     return rb_float_new(d);
 }
 
@@ -279,9 +293,7 @@ math_atanh(obj, x)
     Need_Float(x);
     errno = 0;
     d = atanh(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("atanh");
-    }
+    domain_check(d, "atanh");
     return rb_float_new(d);
 }
 
@@ -325,9 +337,7 @@ math_log(obj, x)
     Need_Float(x);
     errno = 0;
     d = log(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("log");
-    }
+    domain_check(d, "log");
     return rb_float_new(d);
 }
 
@@ -347,9 +357,7 @@ math_log10(obj, x)
     Need_Float(x);
     errno = 0;
     d = log10(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("log10");
-    }
+    domain_check(d, "log10");
     return rb_float_new(d);
 }
 
@@ -357,8 +365,7 @@ math_log10(obj, x)
  *  call-seq:
  *     Math.sqrt(numeric)    => float
  *  
- *  Returns the non-negative square root of <i>numeric</i>. Raises
- *  <code>ArgError</code> if <i>numeric</i> is less than zero.
+ *  Returns the non-negative square root of <i>numeric</i>.
  */
 
 static VALUE
@@ -370,9 +377,7 @@ math_sqrt(obj, x)
     Need_Float(x);
     errno = 0;
     d = sqrt(RFLOAT(x)->value);
-    if (errno) {
-	rb_sys_fail("sqrt");
-    }
+    domain_check(d, "sqrt");
     return rb_float_new(d);
 }
 
