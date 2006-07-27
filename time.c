@@ -21,6 +21,7 @@
 #include <math.h>
 
 VALUE rb_cTime;
+static VALUE time_utc_offset _((VALUE));
 
 struct time_object {
     struct timeval tv;

@@ -1,3 +1,7 @@
+Thu Jul 27 18:12:12 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* time.c: need to declare time_utc_offset.
+
 Thu Jul 27 17:01:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_close): always calls "close" method of the receiver.
