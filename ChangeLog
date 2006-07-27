@@ -1,3 +1,8 @@
+Thu Jul 27 16:49:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_to_s): use +0900 style timezone string for local time.
+	  [ruby-dev:29143]
+
 Thu Jul 27 16:41:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl.h: move <ruby.h> inclusion point to shut up

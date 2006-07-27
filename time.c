@@ -1261,7 +1261,22 @@ time_to_s(time)
 	len = strftime(buf, 128, "%a %b %d %H:%M:%S UTC %Y", &tobj->tm);
     }
     else {
-	len = strftime(buf, 128, "%a %b %d %H:%M:%S %Z %Y", &tobj->tm);
+	time_t off;
+	char buf2[32];
+	char sign = '+';
+#if defined(HAVE_STRUCT_TM_TM_GMTOFF)
+	off = tobj->tm.tm_gmtoff;
+#else
+	VALUE tmp = time_utc_offset(time);
+	off = NUM2INT(tmp);
+#endif
+	if (off < 0) {
+	    sign = '-';
+	    off = -off;
+	}
+	sprintf(buf2, "%%a %%b %%d %%H:%%M:%%S %c%02d%02d %%Y",
+		sign, off/3600, off%3600/60);
+	len = strftime(buf, 128, buf2, &tobj->tm);
     }
     return rb_str_new(buf, len);
 }
