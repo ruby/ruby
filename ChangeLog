@@ -1,3 +1,10 @@
+Sat Jul 29 01:23:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/logger.rb: improves the amount of documentation that Rdoc
+	  picks up when processing logger.rb by moving the require
+	  statement back before the comment block.  a patch from Hugh
+	  Sasse <hgs at dmu.ac.uk>.  [ruby-core:08422]
+
 Thu Jul 27 22:21:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_to_s): fixed format mismatch.
