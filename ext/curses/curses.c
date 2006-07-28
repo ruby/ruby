@@ -54,8 +54,8 @@
 # define USE_MOUSE 1
 #endif
 
-#define NUM2CH NUM2LONG
-#define CH2FIX LONG2FIX
+#define NUM2CH NUM2CHR
+#define CH2FIX CHR2FIX
 
 static VALUE mCurses;
 static VALUE mKey;
@@ -77,7 +77,7 @@ static VALUE window_attron();
 static VALUE window_attrset();
 
 static void
-no_window()
+no_window(void)
 {
     rb_raise(rb_eRuntimeError, "already closed window");
 }
@@ -118,7 +118,7 @@ prep_window(VALUE class, WINDOW *window)
 
 /* def init_screen */
 static VALUE
-curses_init_screen()
+curses_init_screen(void)
 {
     rb_secure(4);
     if (rb_stdscr) return rb_stdscr;
@@ -136,7 +136,7 @@ curses_init_screen()
 
 /* def close_screen */
 static VALUE
-curses_close_screen()
+curses_close_screen(void)
 {
 #ifdef HAVE_ISENDWIN
     if (!isendwin())
@@ -161,7 +161,7 @@ curses_finalize(VALUE dummy)
 
 /* def closed? */
 static VALUE
-curses_closed()
+curses_closed(void)
 {
 #ifdef HAVE_ISENDWIN
     if (isendwin()) {
@@ -184,7 +184,7 @@ curses_clear(VALUE obj)
 
 /* def clrtoeol */
 static VALUE
-curses_clrtoeol()
+curses_clrtoeol(void)
 {
     curses_stdscr();
     clrtoeol();
@@ -453,13 +453,13 @@ curses_keyname(VALUE obj, VALUE c)
 }
 
 static VALUE
-curses_lines()
+curses_lines(void)
 {
     return INT2FIX(LINES);
 }
 
 static VALUE
-curses_cols()
+curses_cols(void)
 {
     return INT2FIX(COLS);
 }
@@ -619,7 +619,7 @@ struct mousedata {
 };
 
 static void
-no_mevent()
+no_mevent(void)
 {
   rb_raise(rb_eRuntimeError, "no such mouse event");
 }
@@ -953,9 +953,7 @@ window_begx(VALUE obj)
 
 /* def box(vert, hor) */
 static VALUE
-window_box(argc, argv, self)
-    int argc;
-    VALUE argv[], self;
+window_box(int argc, VALUE *argv, VALUE self)
 {
     struct windata *winp; 
     VALUE vert, hor, corn;
@@ -1360,7 +1358,7 @@ window_timeout(VALUE obj, VALUE delay)
 
 /*------------------------- Initialization -------------------------*/
 void
-Init_curses()
+Init_curses(void)
 {
     mCurses    = rb_define_module("Curses");
     mKey       = rb_define_module_under(mCurses, "Key");

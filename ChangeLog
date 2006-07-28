@@ -1,16 +1,20 @@
+Fri Jul 28 17:18:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (NUM2CH, CH2FIX): use single char strings.
+
 Fri Jul 28 14:09:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): fixed typo in cache look-up.  [ruby-dev:29167]
 
 Fri Jul 28 10:41:35 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_call): a bug in method cache look-up. 
+	* eval.c (rb_call): a bug in method cache look-up.
 	  http://www.rubyist.net/~matz/20060720.html#c04
 
 Fri Jul 28 10:19:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): documentation update patch from Jacob
-	  Fugal <lukfugl at gmail.com>.  [ruby-core:08418] 
+	  Fugal <lukfugl at gmail.com>.  [ruby-core:08418]
 
 Fri Jul 28 09:41:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
