@@ -1,3 +1,7 @@
+Fri Jul 28 09:41:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_to_s): fixed typo.  [ruby-dev:29162]
+
 Fri Jul 28 00:26:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (domain_check): ANSI style function arguments

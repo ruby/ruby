@@ -1204,7 +1204,7 @@ time_to_s(VALUE time)
 	time_get_tm(time, tobj->gmt);
     }
     if (tobj->gmt == 1) {
-	len = strftime(buf, 128, "%a %b %d %Y %H:%M:%S UTC", &tobj->tm);
+	len = strftime(buf, 128, "%a %b %d %H:%M:%S UTC %Y", &tobj->tm);
     }
     else {
 	time_t off;
