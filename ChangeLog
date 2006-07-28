@@ -1,3 +1,8 @@
+Fri Jul 28 10:19:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): documentation update patch from Jacob
+	  Fugal <lukfugl at gmail.com>.  [ruby-core:08418] 
+
 Fri Jul 28 09:41:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_to_s): fixed typo.  [ruby-dev:29162]
