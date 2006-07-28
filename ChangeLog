@@ -1,3 +1,7 @@
+Sat Jul 29 06:12:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: freeze ip_name for security reason.
+
 Fri Jul 28 17:18:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c (NUM2CH, CH2FIX): use single char strings.

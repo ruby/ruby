@@ -949,7 +949,7 @@ class MultiTkIp
   def _create_slave_ip_name
     name = @@SLAVE_IP_ID.join('')
     @@SLAVE_IP_ID[1].succ!
-    name
+    name.freeze
   end
   private :_create_slave_ip_name
 
