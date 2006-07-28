@@ -5932,7 +5932,7 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	    ent = NULL;
 	}
     }
-    if (!ent) {
+    if (ent) {
 	if (!ent->method)
 	    return method_missing(recv, mid, argc, argv, block,
 				  scope==CALLING_VCALL?CSTAT_VCALL:0);
