@@ -1,3 +1,7 @@
+Sat Jul 29 06:12:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: freeze ip_name for security reason.
+
 Sat Jul 29 01:23:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/logger.rb: improves the amount of documentation that Rdoc
