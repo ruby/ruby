@@ -5926,13 +5926,13 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	    ent = NULL;
 	}
     }
-    if (ent) {
+    if (!ent) {
 	ent = cache[LOOKUP_NORMAL] + EXPR1(klass, mid);
 	if (ent->mid != mid || ent->klass != klass) {
 	    ent = NULL;
 	}
     }
-    if (ent) {
+    if (!ent) {
 	if (!ent->method)
 	    return method_missing(recv, mid, argc, argv, block,
 				  scope==CALLING_VCALL?CSTAT_VCALL:0);
