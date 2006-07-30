@@ -301,20 +301,14 @@ class CGI
 
     # Retrieve the session data for key +key+.
     def [](key)
-      unless @data
-	@data = @dbman.restore
-      end
+      @data ||= @dbman.restore
       @data[key]
     end
 
     # Set the session date for key +key+.
     def []=(key, val)
-      unless @write_lock
-	@write_lock = true
-      end
-      unless @data
-	@data = @dbman.restore
-      end
+      @write_lock ||= true
+      @data ||= @dbman.restore
       @data[key] = val
     end
 
@@ -380,7 +374,9 @@ class CGI
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
 	@path = dir+"/"+prefix+md5+suffix
-	unless File::exist? @path
+	if File::exist? @path
+	  @hash = nil
+	else
           unless session.new_session
             raise CGI::Session::NoSession, "uninitialized session"
           end
