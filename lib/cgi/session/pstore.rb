@@ -14,17 +14,6 @@ require 'pstore'
 
 class CGI
   class Session
-    def []=(key, val)
-      unless @write_lock
-	@write_lock = true
-      end
-      unless @data
-	@data = @dbman.restore
-      end
-      #@data[key] = String(val)
-      @data[key] = val
-    end
-
     # PStore-based session storage class.
     #
     # This builds upon the top-level PStore class provided by the
@@ -53,7 +42,7 @@ class CGI
       #
       # This session's PStore file will be created if it does
       # not exist, or opened if it does.
-      def initialize session, option={}
+      def initialize(session, option={})
 	dir = option['tmpdir'] || Dir::tmpdir
 	prefix = option['prefix'] || ''
 	id = session.session_id
@@ -61,7 +50,9 @@ class CGI
         md5 = Digest::MD5.hexdigest(id)[0,16]
 	path = dir+"/"+prefix+md5
 	path.untaint
-	unless File::exist?(path)
+	if File::exist?(path)
+	  @hash = nil
+	else
           unless session.new_session
             raise CGI::Session::NoSession, "uninitialized session"
           end
