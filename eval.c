@@ -10041,6 +10041,7 @@ rb_trap_eval(VALUE cmd, int sig, int safe)
 
     if (state) {
 	rb_trap_immediate = 0;
+	rb_thread_ready(curr_thread);
 	JUMP_TAG(state);
     }
 
