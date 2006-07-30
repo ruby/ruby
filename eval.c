@@ -5797,7 +5797,15 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
       case NODE_BMETHOD:
 	PUSH_METHOD_FRAME();
 	ruby_frame->flags |= FRAME_DMETH;
+	if (event_hooks) {
+	    struct BLOCK *data;
+	    Data_Get_Struct(body->nd_cval, struct BLOCK, data);
+	    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, data->body, recv, id, klass);
+	}
 	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass, 1);
+	if (event_hooks) {
+	    EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
+	}
 	POP_FRAME();
 	break;
 
