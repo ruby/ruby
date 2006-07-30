@@ -1,3 +1,8 @@
+Sun Jul 30 22:29:01 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_trap_eval): make the current thread runnable to deal with
+	  exceptions which occurred within the trap.  fixed: [ruby-dev:27729]
+
 Sat Jul 29 06:12:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: freeze ip_name for security reason.

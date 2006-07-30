@@ -9939,6 +9939,7 @@ rb_trap_eval(cmd, sig, safe)
 
     if (state) {
 	rb_trap_immediate = 0;
+	rb_thread_ready(curr_thread);
 	JUMP_TAG(state);
     }
 
