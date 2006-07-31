@@ -1,3 +1,9 @@
+Mon Jul 31 16:15:13 2006  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_rlimit_nofile):
+	  setrlimit may fail with EINVAL.
+	  reported by MIYAMUKO Katsuyuki.  [ruby-dev:29174]
+
 Mon Jul 31 13:38:22 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPReuqest#parse_uri): improve
