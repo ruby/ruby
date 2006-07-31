@@ -367,6 +367,21 @@ static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wc
 }
 #endif
 
+static BOOL fWinsock;
+static char *envarea;
+static void
+exit_handler(void)
+{
+    if (fWinsock) {
+	WSACleanup();
+	fWinsock = FALSE;
+    }
+    if (envarea) {
+	FreeEnvironmentStrings(envarea);
+	envarea = NULL;
+    }
+}
+
 //
 // Initialization stuff
 //
@@ -391,6 +406,8 @@ NtInitialize(int *argc, char ***argv)
     //
 
     tzset();
+
+    atexit(exit_handler);
 
     // Initialize Winsock
     StartSockets();
@@ -2020,7 +2037,7 @@ StartSockets ()
 	rb_fatal("could not find version 1 of winsock dll\n");
 #endif	/* USE_WINSOCK2 */
 
-    atexit((void (*)(void)) WSACleanup);
+    fWinsock = TRUE;
 
 #ifndef USE_WINSOCK2
 # ifndef SO_SYNCHRONOUS_NONALERT
@@ -2852,28 +2869,22 @@ wait()
 char *
 rb_w32_getenv(const char *name)
 {
-    static char *curitem = NULL;
-    static DWORD curlen = 0;
-    DWORD needlen;
+    int len = strlen(name);
+    char *env;
 
-    if (curitem == NULL || curlen == 0) {
-	curlen = 512;
-	curitem = ALLOC_N(char, curlen);
-    }
-
-    needlen = GetEnvironmentVariable(name, curitem, curlen);
-    if (needlen != 0) {
-	while (needlen > curlen) {
-	    REALLOC_N(curitem, char, needlen);
-	    curlen = needlen;
-	    needlen = GetEnvironmentVariable(name, curitem, curlen);
-	}
-    }
-    else {
+    if (envarea)
+	FreeEnvironmentStrings(envarea);
+    envarea = GetEnvironmentStrings();
+    if (!envarea) {
+	map_errno(GetLastError());
 	return NULL;
     }
 
-    return curitem;
+    for (env = envarea; *env; env += strlen(env) + 1)
+	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
+	    return env + len + 1;
+
+    return NULL;
 }
 
 int
