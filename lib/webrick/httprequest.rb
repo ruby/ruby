@@ -256,7 +256,8 @@ module WEBrick
       uri = URI::parse(str)
       return uri if uri.absolute?
       if self["host"]
-        host, port = self['host'].split(":", 2)
+        pattern = /\A(#{URI::REGEXP::PATTERN::HOST})(?::(\d+))?\z/n
+        host, port = *self['host'].scan(pattern)[0]
       elsif @addr.size > 0
         host, port = @addr[2], @addr[1]
       else
