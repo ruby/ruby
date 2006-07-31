@@ -1,3 +1,18 @@
+Mon Jul 31 16:51:40 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (exit_handler): new function; release winsock and
+	  environment work area.
+
+	* win32/win32.c (NTInitialize): setup exit_handler.
+
+	* win32/win32.c (StartSockets): use exit_handler.
+	  exit handler.
+
+	* win32/win32.c (rb_w32_getenv): use GetEnvironmentStrings() instead
+	  of GetEnvironmentVariable(), because the latter cannot distinguish
+	  wheather a null environment variable exists or not.
+	  fixed: [ruby-talk:205123]
+
 Mon Jul 31 16:15:13 2006  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_process.rb (TestProcess#test_rlimit_nofile):
