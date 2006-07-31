@@ -17,6 +17,9 @@
 #
 
 
+require 'monitor'
+
+
 #
 # == Description
 #
@@ -172,9 +175,6 @@
 # There is currently no supported way to change the overall format, but you may
 # have some luck hacking the Format constant.
 #
-
-
-require 'monitor'
 
 
 class Logger

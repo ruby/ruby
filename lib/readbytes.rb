@@ -12,6 +12,11 @@ class TruncatedDataError<IOError
 end
 
 class IO
+  # reads exactly n bytes from the IO stream.
+  # If the data read is nil, raises EOFError.
+  # If the data read is too short, raises TruncatedDataError.
+  # The method TruncatedDataError#data may be used to obtain
+  # the truncated message.
   def readbytes(n)
     str = read(n)
     if str == nil
