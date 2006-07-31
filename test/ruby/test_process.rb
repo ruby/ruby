@@ -23,7 +23,11 @@ class TestProcess < Test::Unit::TestCase
     return unless rlimit_exist?
     pid = fork {
       cur_nofile, max_nofile = Process.getrlimit(Process::RLIMIT_NOFILE)
-      Process.setrlimit(Process::RLIMIT_NOFILE, 0, max_nofile)
+      begin
+        Process.setrlimit(Process::RLIMIT_NOFILE, 0, max_nofile)
+      rescue Errno::EINVAL
+        exit 0
+      end
       begin
         IO.pipe
       rescue Errno::EMFILE

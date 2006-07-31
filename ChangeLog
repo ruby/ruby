@@ -1,3 +1,9 @@
+Mon Jul 31 16:15:13 2006  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_rlimit_nofile):
+	  setrlimit may fail with EINVAL.
+	  reported by MIYAMUKO Katsuyuki.  [ruby-dev:29174]
+
 Mon Jul 31 09:22:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: use ifdef (or defined) for macro constants that may or
