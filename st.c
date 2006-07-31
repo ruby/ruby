@@ -537,7 +537,7 @@ strhash(string)
 	h &= ~g;
     }
     return h;
-#elif HASH_PERL
+#elif defined(HASH_PERL)
     register int val = 0;
 
     while ((c = *string++) != '\0') {

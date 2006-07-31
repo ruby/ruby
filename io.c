@@ -267,7 +267,7 @@ rb_io_check_readable(fptr)
     if (!(fptr->mode & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
-#if NEED_IO_SEEK_BETWEEN_RW
+#ifdef NEED_IO_SEEK_BETWEEN_RW
     if (((fptr->mode & FMODE_WBUF) ||
 	 (fptr->mode & (FMODE_SYNCWRITE|FMODE_RBUF)) == FMODE_SYNCWRITE) &&
 	!feof(fptr->f) &&

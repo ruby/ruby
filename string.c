@@ -856,7 +856,7 @@ rb_str_hash(str)
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
-#ifdef HASH_ELFHASH
+#if defined(HASH_ELFHASH)
     register unsigned int g;
 
     while (len--) {
@@ -865,7 +865,7 @@ rb_str_hash(str)
 	    key ^= g >> 24;
 	key &= ~g;
     }
-#elif HASH_PERL
+#elif defined(HASH_PERL)
     while (len--) {
 	key += *p++;
 	key += (key << 10);
