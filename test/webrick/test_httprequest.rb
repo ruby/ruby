@@ -111,6 +111,64 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert_equal("hogehoge\n", req.body)
   end
 
+  def test_parse_headers3
+    msg = <<-_end_of_message_
+      GET /path HTTP/1.1
+      Host: test.ruby-lang.org
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    assert_equal(URI.parse("http://test.ruby-lang.org/path"), req.request_uri)
+    assert_equal("test.ruby-lang.org", req.host)
+    assert_equal(80, req.port)
+
+    msg = <<-_end_of_message_
+      GET /path HTTP/1.1
+      Host: 192.168.1.1
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    assert_equal(URI.parse("http://192.168.1.1/path"), req.request_uri)
+    assert_equal("192.168.1.1", req.host)
+    assert_equal(80, req.port)
+
+    msg = <<-_end_of_message_
+      GET /path HTTP/1.1
+      Host: [fe80::208:dff:feef:98c7]
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    assert_equal(URI.parse("http://[fe80::208:dff:feef:98c7]/path"),
+                 req.request_uri)
+    assert_equal("[fe80::208:dff:feef:98c7]", req.host)
+    assert_equal(80, req.port)
+
+    msg = <<-_end_of_message_
+      GET /path HTTP/1.1
+      Host: 192.168.1.1:8080
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    assert_equal(URI.parse("http://192.168.1.1:8080/path"), req.request_uri)
+    assert_equal("192.168.1.1", req.host)
+    assert_equal(8080, req.port)
+
+    msg = <<-_end_of_message_
+      GET /path HTTP/1.1
+      Host: [fe80::208:dff:feef:98c7]:8080
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    assert_equal(URI.parse("http://[fe80::208:dff:feef:98c7]:8080/path"),
+                 req.request_uri)
+    assert_equal("[fe80::208:dff:feef:98c7]", req.host)
+    assert_equal(8080, req.port)
+  end
 
   def test_parse_get_params
     param = "foo=1;foo=2;foo=3;bar=x"
