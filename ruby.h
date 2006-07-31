@@ -125,7 +125,7 @@ typedef unsigned LONG_LONG ID;
 # endif
 #endif
 
-#if HAVE_LONG_LONG
+#ifdef HAVE_LONG_LONG
 # ifndef LLONG_MAX
 #  ifdef LONG_LONG_MAX
 #   define LLONG_MAX  LONG_LONG_MAX
@@ -151,7 +151,7 @@ typedef unsigned LONG_LONG ID;
 # endif
 #endif
 
-#if LONG_LONG_VALUE
+#ifdef LONG_LONG_VALUE
 # define FIXNUM_MAX (LLONG_MAX>>1)
 # define FIXNUM_MIN RSHIFT((LONG_LONG)LLONG_MIN,1)
 #else
@@ -172,7 +172,7 @@ VALUE rb_uint2inum(VALUE);
 #define ULONG2NUM(v) UINT2NUM(v)
 #define rb_uint_new(v) rb_uint2inum(v)
 
-#if HAVE_LONG_LONG
+#ifdef HAVE_LONG_LONG
 VALUE rb_ll2inum(LONG_LONG);
 #define LL2NUM(v) rb_ll2inum(v)
 VALUE rb_ull2inum(unsigned LONG_LONG);
@@ -296,14 +296,14 @@ unsigned long rb_fix2uint(VALUE);
 #define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
 #endif
 
-#if HAVE_LONG_LONG
+#ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
 # define NUM2LL(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2ll((VALUE)x))
 # define NUM2ULL(x) rb_num2ull((VALUE)x)
 #endif
 
-#if HAVE_LONG_LONG && SIZEOF_OFF_T > SIZEOF_LONG
+#if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
 # define NUM2OFFT(x) ((off_t)NUM2LL(x))
 #else
 # define NUM2OFFT(x) NUM2LONG(x)

@@ -1,3 +1,9 @@
+Mon Jul 31 09:22:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: use ifdef (or defined) for macro constants that may or
+	  may not be defined to shut up gcc's -Wundef warnings.
+	  [ruby-core:08447]
+
 Mon Jul 31 13:38:13 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPReuqest#parse_uri): improve
@@ -17,6 +23,13 @@ Sun Jul 30 23:26:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul 29 06:12:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: freeze ip_name for security reason.
+
+Sat Jul 29 01:23:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/logger.rb: improves the amount of documentation that Rdoc
+	  picks up when processing logger.rb by moving the require
+	  statement back before the comment block.  a patch from Hugh
+	  Sasse <hgs at dmu.ac.uk>.  [ruby-core:08422]
 
 Fri Jul 28 17:18:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
