@@ -9557,7 +9557,6 @@ rb_mod_define_method(argc, argv, mod)
 	noex = NOEX_PUBLIC;
     }
     rb_add_method(mod, id, node, noex);
-    rb_define_method(rb_cBinding, "dup", proc_dup, 0);
     return body;
 }
 
@@ -9679,6 +9678,7 @@ Init_Binding()
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", proc_clone, 0);
+    rb_define_method(rb_cBinding, "dup", proc_dup, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
