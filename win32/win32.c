@@ -360,6 +360,8 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
+static void init_stdhandle(void);
+
 #if _MSC_VER >= 1400
 static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
 {
@@ -406,6 +408,8 @@ NtInitialize(int *argc, char ***argv)
     //
 
     tzset();
+
+    init_stdhandle();
 
     atexit(exit_handler);
 
@@ -1695,11 +1699,29 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
     }
     return fh;			/* return handle */
 }
+
+static void
+init_stdhandle(void)
+{
+    if (fileno(stdin) < 0) {
+	stdin->_file = 0;
+    }
+    if (fileno(stdout) < 0) {
+	stdout->_file = 1;
+    }
+    if (fileno(stderr) < 0) {
+	stderr->_file = 2;
+    }
+}
 #else
 
 #define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
 #define _set_osflags(fh, flags) (void)((fh), (flags))
 
+static void
+init_stdhandle(void)
+{
+}
 #endif
 
 #ifdef __BORLANDC__
