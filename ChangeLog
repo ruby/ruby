@@ -1,3 +1,8 @@
+Fri Aug  4 01:28:19 2006  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_reopen): STDERR.reopen(File.open("/dev/null", "w")) should
+	  not fclose stderr.
+
 Thu Aug  3 15:16:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_include): should always call Enumerable#include?
