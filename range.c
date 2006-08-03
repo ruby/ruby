@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "env.h"
 
 VALUE rb_cRange;
 static ID id_cmp, id_succ, id_beg, id_end, id_excl;
@@ -637,6 +638,7 @@ range_include(VALUE range, VALUE val)
 	}
 	return Qfalse;
     }
+    ruby_frame->this_func = rb_intern("include?");
     return rb_call_super(1, &val);
 }
 

@@ -1,3 +1,9 @@
+Thu Aug  3 15:16:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_include): should always call Enumerable#include?
+	  (not #===) for non numeric end points.  [ruby-core:08477]
+	  [ruby-core:08496]
+
 Mon Jul 31 16:51:40 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (exit_handler): new function; release winsock and
