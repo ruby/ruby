@@ -364,7 +364,7 @@ num2i32(x)
 #else
 # define QUAD_SIZE 8
 #endif
-static char *toofew = "too few arguments";
+static const char toofew[] = "too few arguments";
 
 static void encodes _((VALUE,char*,long,int));
 static void qpencode _((VALUE,VALUE,long));
@@ -460,8 +460,9 @@ pack_pack(ary, fmt)
     items = RARRAY(ary)->len;
     idx = 0;
 
-#define THISFROM RARRAY(ary)->ptr[idx]
-#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, toofew),0))
+#define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
+#define THISFROM (items > 0 ? RARRAY(ary)->ptr[idx] : TOO_FEW)
+#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : TOO_FEW)
 
     while (p < pend) {
 	if (RSTRING(fmt)->ptr + RSTRING(fmt)->len != pend) {
@@ -494,7 +495,7 @@ pack_pack(ary, fmt)
 	}
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0 : items;
-            p++;
+	    p++;
 	}
 	else if (ISDIGIT(*p)) {
 	    len = strtoul(p, (char**)&p, 10);

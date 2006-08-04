@@ -1,3 +1,8 @@
+Fri Aug  4 13:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): check argument overrun for 'P'.  based on a
+	  patch by rucila <rucila at yahoo.cojp>.  fixed: [ruby-dev:29182]
+
 Tue Aug 01 17:44:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_stdhandle): assign standard file handles.
