@@ -51,7 +51,7 @@ class Date
   }
 
   def self.__strptime(str, fmt, elem)
-    fmt.scan(/%[EO]?.|./o) do |c|
+    fmt.scan(/%[EO]?.|./mo) do |c|
       cc = c.sub(/\A%[EO]?(.)\Z/o, '%\\1')
       case cc
       when /\A\s/o
@@ -490,7 +490,7 @@ class Date
 
   def strftime(fmt='%F')
     o = ''
-    fmt.scan(/%[EO]?.|./o) do |c|
+    fmt.scan(/%[EO]?.|./mo) do |c|
       cc = c.sub(/^%[EO]?(.)$/o, '%\\1')
       case cc
       when '%A'; o << DAYNAMES[wday]

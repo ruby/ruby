@@ -1,3 +1,9 @@
+Fri Aug  4 14:02:14 2006    <nobu@ruby-lang.org>
+
+	* lib/date/format.rb (__strptime, strftime): allow multi-line patterns
+	  in Date#strftime the same as Time#strftime accepts.
+	  fixed: [ruby-core:08466]
+
 Fri Aug  4 13:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): check argument overrun for 'P'.  based on a
