@@ -1,46 +1,35 @@
 #
 # ping.rb -- check a host for upness
 #
+
+require 'timeout'
+require "socket"
+
 #= SYNOPSIS
 #
 #   require 'ping'
-#    print "'jimmy' is alive and kicking\n" if Ping.pingecho('jimmy', 10) ;
+#   
+#   puts "'jimmy' is alive and kicking" if Ping.pingecho('jimmy', 10)
 #
 #= DESCRIPTION
 #
 # This module contains routines to test for the reachability of remote hosts.
 # Currently the only routine implemented is pingecho(). 
 #
-# pingecho() uses a TCP echo (I<not> an ICMP one) to determine if the
+# pingecho() uses a TCP echo (_not_ an ICMP echo) to determine if the
 # remote host is reachable. This is usually adequate to tell that a remote
-# host is available to rsh(1), ftp(1), or telnet(1) onto.
-#
-#== Parameters
-#
-#  : hostname
-#
-#    The remote host to check, specified either as a hostname or as an
-#    IP address.
-#
-#  : timeout
-#
-#    The timeout in seconds. If not specified it will default to 5 seconds.
-#
-#  : service
-#
-#    The service port to connect.  The default is "echo".
+# host is available to rsh(1), ftp(1), or telnet(1) to.
 #
 #= WARNING
 #
-# pingecho() uses user-level thread to implement the timeout, so it may block
-# for long period if named does not respond for some reason.
+# pingecho() may block for a long period if name resolution is slow.  Require
+# 'resolv-replace' to use non-blocking name resolution.
 #
-#=end
-
-require 'timeout'
-require "socket"
-
 module Ping
+
+  # return true if we can open a connection to the hostname or IP address
+  # +host+ on port +service+ (which defaults to the "echo" port) waiting up to
+  # +timeout+ seconds.
   def pingecho(host, timeout=5, service="echo")
     begin
       timeout(timeout) do

@@ -1,3 +1,5 @@
+#--
+#
 # Author:: Kenta MURATA.
 # Copyright:: Copyright (c) 2000-2002 Kenta MURATA. All rights reserved.
 # License:: Ruby license.

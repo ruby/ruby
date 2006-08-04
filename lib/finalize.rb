@@ -1,44 +1,51 @@
-#
+#--
 #   finalizer.rb - 
 #   	$Release Version: 0.3$
 #   	$Revision: 1.4 $
 #   	$Date: 1998/02/27 05:34:33 $
 #   	by Keiju ISHITSUKA
+#++
 #
-# --
+# Usage:
 #
-#   Usage:
-#
+# add dependency R_method(obj, dependant)
 #   add(obj, dependant, method = :finalize, *opt)
 #   add_dependency(obj, dependant, method = :finalize, *opt)
-#	add dependency R_method(obj, dependant)
 #
+# delete dependency R_method(obj, dependant)
 #   delete(obj_or_id, dependant, method = :finalize)
 #   delete_dependency(obj_or_id, dependant, method = :finalize)
-#	delete dependency R_method(obj, dependant)
-#   delete_all_dependency(obj_or_id, dependant)
-#	delete dependency R_*(obj, dependant)
-#   delete_by_dependant(dependant, method = :finalize)
-#	delete dependency R_method(*, dependant)
-#   delete_all_by_dependant(dependant)
-#	delete dependency R_*(*, dependant)
-#   delete_all
-#	delete all dependency R_*(*, *)
 #
+# delete dependency R_*(obj, dependant)
+#   delete_all_dependency(obj_or_id, dependant)
+#
+# delete dependency R_method(*, dependant)
+#   delete_by_dependant(dependant, method = :finalize)
+#
+# delete dependency R_*(*, dependant)
+#   delete_all_by_dependant(dependant)
+#
+# delete all dependency R_*(*, *)
+#   delete_all
+#
+# finalize the dependant connected by dependency R_method(obj, dependtant).
 #   finalize(obj_or_id, dependant, method = :finalize)
 #   finalize_dependency(obj_or_id, dependant, method = :finalize)
-#	finalize the dependant connected by dependency R_method(obj, dependtant).
-#   finalize_all_dependency(obj_or_id, dependant)
-#	finalize all dependants connected by dependency R_*(obj, dependtant).
-#   finalize_by_dependant(dependant, method = :finalize)
-#	finalize the dependant connected by dependency R_method(*, dependtant).
-#   finalize_all_by_dependant(dependant)
-#	finalize all dependants connected by dependency R_*(*, dependant).
-#   finalize_all
-#	finalize all dependency registered to the Finalizer.
 #
+# finalize all dependants connected by dependency R_*(obj, dependtant).
+#   finalize_all_dependency(obj_or_id, dependant)
+#
+# finalize the dependant connected by dependency R_method(*, dependtant).
+#   finalize_by_dependant(dependant, method = :finalize)
+#
+# finalize all dependants connected by dependency R_*(*, dependant).
+#   finalize_all_by_dependant(dependant)
+#
+# finalize all dependency registered to the Finalizer.
+#   finalize_all
+#
+# stop invoking Finalizer on GC.
 #   safe{..}
-#	stop invoking Finalizer on GC.
 #
 
 module Finalizer

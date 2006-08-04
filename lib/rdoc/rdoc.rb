@@ -21,6 +21,8 @@ require 'ftools'
 # clutter.
 #
 # ToDo: This isn't universally true.
+#
+# :include: README
 
 module RDoc
 

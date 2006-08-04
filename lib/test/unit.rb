@@ -1,17 +1,7 @@
-#
-# = test/unit.rb
-#
-# Ruby's standard unit testing library/software.
-#
-# Copyright (c) 2000-2003, Nathaniel Talbott.
-#
-# See Test::Unit for documentation.
-#
-
 require 'test/unit/testcase'
 require 'test/unit/autorunner'
 
-module Test
+module Test # :nodoc:
   #
   # = Test::Unit - Ruby Unit Testing Framework
   # 
@@ -269,11 +259,14 @@ module Test
   # practitioners about typos, grammatical errors, unclear statements,
   # missing points, etc., in this document (or any other).
   #
+
   module Unit
+    # If set to false Test::Unit will not automatically run at exit.
     def self.run=(flag)
       @run = flag
     end
 
+    # Automatically run tests at exit?
     def self.run?
       @run ||= false
     end

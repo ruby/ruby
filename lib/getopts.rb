@@ -19,6 +19,7 @@ warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: getopts is deprecated after Ru
 
 $RCS_ID=%q$Header$
 
+# getopts is obsolete. Use GetoptLong.
 
 def getopts(single_options, *options)
   boolopts = {}

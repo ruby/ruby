@@ -11,25 +11,22 @@
 #
 # == Description
 #
-# +ftools+ adds several (class, not instance) methods to the File class, for copying, moving,
-# deleting, installing, and comparing files, as well as creating a directory path.  See the
-# File class for details.
+# ftools adds several (class, not instance) methods to the File class, for
+# copying, moving, deleting, installing, and comparing files, as well as
+# creating a directory path.  See the File class for details.
 #
-# +fileutils+ contains all or nearly all the same functionality and more, and is a recommended
-# option over +ftools+. 
-#
-
-
+# FileUtils contains all or nearly all the same functionality and more, and
+# is a recommended option over ftools 
 #
 # When you
 #
 #   require 'ftools'
 #
-# then the File class aquires some utility methods for copying, moving, and deleting files, and
-# more.
+# then the File class aquires some utility methods for copying, moving, and
+# deleting files, and more.
 #
-# See the method descriptions below, and consider using +fileutils+ as it is more
-# comprehensive.
+# See the method descriptions below, and consider using FileUtils as it is
+# more comprehensive.
 #
 class File
 end
@@ -96,8 +93,8 @@ class << File
 
   #
   # Moves a file +from+ to +to+ using #syscopy. If +to+ is a directory,
-  # copies from +from+ to <tt>to/from</tt>. If +verbose+ is true, <tt>from -> to</tt>
-  # is printed.
+  # copies from +from+ to <tt>to/from</tt>. If +verbose+ is true, <tt>from ->
+  # to</tt> is printed.
   #
   def move(from, to, verbose = false)
     to = catname(from, to)
@@ -127,7 +124,7 @@ class << File
   alias mv move
 
   #
-  # Returns +true+ iff the contents of files +from+ and +to+ are
+  # Returns +true+ if and only if the contents of files +from+ and +to+ are
   # identical. If +verbose+ is +true+, <tt>from <=> to</tt> is printed.
   #
   def compare(from, to, verbose = false)

@@ -2,13 +2,15 @@ require "rexml/child"
 
 module REXML
 	##
-	# Represents an XML comment; that is, text between <!-- ... -->
+	# Represents an XML comment; that is, text between \<!-- ... -->
 	class Comment < Child
 		include Comparable
 		START = "<!--"
 		STOP = "-->"
 
-		attr_accessor :string			# The content text
+		# The content text
+
+		attr_accessor :string
 
 		##
 		# Constructor.  The first argument can be one of three types:

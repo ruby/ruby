@@ -25,24 +25,22 @@
 #
 # === Object relationship diagram
 #
-#  +--------------+
-#  | OptionParser |<>-----+
-#  +--------------+       |                      +--------+
-#                         |                    ,-| Switch |
-#       on_head -------->+---------------+    /  +--------+
-#       accept/reject -->| List          |<|>-
-#                        |               |<|>-  +----------+
-#       on ------------->+---------------+    `-| argument |
-#                          :           :        |  class   |
-#                        +---------------+      |==========|
-#       on_tail -------->|               |      |pattern   |
-#                        +---------------+      |----------|
-#  OptionParser.accept ->| DefaultList   |      |converter |
-#               reject   |(shared between|      +----------+
-#                        | all instances)|
-#                        +---------------+
-
-
+#   +--------------+
+#   | OptionParser |<>-----+
+#   +--------------+       |                      +--------+
+#                          |                    ,-| Switch |
+#        on_head -------->+---------------+    /  +--------+
+#        accept/reject -->| List          |<|>-
+#                         |               |<|>-  +----------+
+#        on ------------->+---------------+    `-| argument |
+#                           :           :        |  class   |
+#                         +---------------+      |==========|
+#        on_tail -------->|               |      |pattern   |
+#                         +---------------+      |----------|
+#   OptionParser.accept ->| DefaultList   |      |converter |
+#                reject   |(shared between|      +----------+
+#                         | all instances)|
+#                         +---------------+
 #
 # == OptionParser
 #

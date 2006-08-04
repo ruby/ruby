@@ -1,13 +1,13 @@
-
 require "delegate"
 
-# Weak Reference class that does not bother GCing.  This allows the
-# referenced object to be garbage collected as if nothing else is
-# referring to it.  Because Weakref inherits from Delegator it passes
-# method calls to the object from which it was constructed, so it
-# is of the same Duck Type.
+# WeakRef is a class to represent a reference to an object that is not seen by
+# the tracing phase of the garbage collector.  This allows the referenced
+# object to be garbage collected as if nothing is referring to it. Because
+# WeakRef delegates method calls to the referenced object, it may be used in
+# place of that object, i.e. it is of the same duck type.
 #
 # Usage:
+#
 #   foo = Object.new
 #   foo = Object.new
 #   p foo.to_s			# original's class
@@ -62,9 +62,9 @@ class WeakRef<Delegator
     @@id_rev_map[self.__id__] = @__id
   end
 
-  # Return the object this WeakRef references. Raise
-  # RefError if this is impossible.  The object is that
-  # to which method calls are delegated (see Delegator).
+  # Return the object this WeakRef references. Raises RefError if the object
+  # has been garbage collected.  The object returned is the object to which
+  # method calls are delegated (see Delegator).
   def __getobj__
     unless @@id_rev_map[self.__id__] == @__id
       raise RefError, "Illegal Reference - probably recycled", caller(2)
@@ -76,7 +76,8 @@ class WeakRef<Delegator
     end
   end
 
-  # Determine if this Weakref still refers to anything.
+  # Returns true if the referenced object still exists, and false if it has
+  # been garbage collected.
   def weakref_alive?
     @@id_rev_map[self.__id__] == @__id
   end

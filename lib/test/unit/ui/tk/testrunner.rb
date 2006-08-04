@@ -1,3 +1,5 @@
+#--
+#
 # Original Author:: Nathaniel Talbott.
 # Author:: Kazuhiro NISHIYAMA.
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
