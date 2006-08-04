@@ -261,10 +261,12 @@ module Test # :nodoc:
   #
 
   module Unit
+    # If set to false Test::Unit will not automatically run at exit.
     def self.run=(flag)
       @run = flag
     end
 
+    # Automatically run tests at exit?
     def self.run?
       @run ||= false
     end
