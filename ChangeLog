@@ -1,3 +1,8 @@
+Fri Aug  4 18:59:49 2006  Keiju Ishitsuka <keiju@ruby-lang.org>
+	
+	* lib/irb/{init.rb,ruby-lex.rb,slex.rb}: can't input '\c' for
+	  [ruby-core: 7122]. and support for ruby1.8.X
+	
 Fri Aug  4 14:02:14 2006    <nobu@ruby-lang.org>
 
 	* lib/date/format.rb (__strptime, strftime): allow multi-line patterns
