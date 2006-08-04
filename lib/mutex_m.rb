@@ -1,4 +1,4 @@
-#
+#--
 #   mutex_m.rb - 
 #   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
@@ -7,22 +7,26 @@
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       modified by matz
 #       patched by akira yamada
+#++
 #
-# --
-#   Usage:
-#	require "mutex_m.rb"
-#	obj = Object.new
-#	obj.extend Mutex_m
-#	...
-#	extended object can be handled like Mutex
-#       or
-#	class Foo
-#	  include Mutex_m
-#	  ...
-#	end
-#	obj = Foo.new
-#	this obj can be handled like Mutex
+# == Usage
 #
+# Extend an object and use it like a Mutex object:
+#
+#   require "mutex_m.rb"
+#   obj = Object.new
+#   obj.extend Mutex_m
+#   # ...
+#
+# Or, include Mutex_m in a class to have its instances behave like a Mutex
+# object:
+#
+#   class Foo
+#     include Mutex_m
+#     # ...
+#   end
+#   
+#   obj = Foo.new
 
 module Mutex_m
   def Mutex_m.define_aliases(cl)

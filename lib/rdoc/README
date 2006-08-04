@@ -82,9 +82,6 @@ RDoc is Copyright (c) 2001-2003 Dave Thomas, The Pragmatic Programmers.  It
 is free software, and may be redistributed under the terms specified
 in the README file of the Ruby distribution.
 
-
-----
-
 = Usage
 
 RDoc is invoked from the command line using:

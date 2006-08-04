@@ -1,4 +1,4 @@
-# :nodoc:
+#--
 #
 # Original Author:: Nathaniel Talbott.
 # Author:: Kazuhiro NISHIYAMA.

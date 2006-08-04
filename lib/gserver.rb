@@ -12,21 +12,23 @@ require "socket"
 require "thread"
 
 #
-# +GServer+ implements a generic server, featuring thread pool management, simple logging, and
-# multi-server management.  See <tt>xmlrpc/httpserver.rb</tt> in the Ruby standard library for
-# an example of +GServer+ in action.
+# GServer implements a generic server, featuring thread pool management,
+# simple logging, and multi-server management.  See HttpServer in 
+# <tt>xmlrpc/httpserver.rb</tt> in the Ruby standard library for an example of
+# GServer in action.
 #
-# Any kind of application-level server can be implemented using this class.  It accepts
-# multiple simultaneous connections from clients, up to an optional maximum number.  Several
-# _services_ (i.e. one service per TCP port) can be run simultaneously, and stopped at any time
-# through the class method <tt>GServer.stop(port)</tt>.  All the threading issues are handled,
-# saving you the effort.  All events are optionally logged, but you can provide your own event
-# handlers if you wish.
+# Any kind of application-level server can be implemented using this class.
+# It accepts multiple simultaneous connections from clients, up to an optional
+# maximum number.  Several _services_ (i.e. one service per TCP port) can be
+# run simultaneously, and stopped at any time through the class method
+# <tt>GServer.stop(port)</tt>.  All the threading issues are handled, saving
+# you the effort.  All events are optionally logged, but you can provide your
+# own event handlers if you wish.
 #
 # === Example
 #
-# Using +GServer+ is simple.  Below we implement a simple time server, run it, query it, and
-# shut it down.  Try this code in +irb+:
+# Using GServer is simple.  Below we implement a simple time server, run it,
+# query it, and shut it down.  Try this code in +irb+:
 #
 #   require 'gserver'
 #
@@ -60,14 +62,16 @@ require "thread"
 #   GServer.stop(10001)
 #   # or, of course, "server.stop".
 #
-# All the business of accepting connections and exception handling is taken care of.  All we
-# have to do is implement the method that actually serves the client.
+# All the business of accepting connections and exception handling is taken
+# care of.  All we have to do is implement the method that actually serves the
+# client.
 #
 # === Advanced
 #
-# As the example above shows, the way to use +GServer+ is to subclass it to create a specific
-# server, overriding the +serve+ method.  You can override other methods as well if you wish,
-# perhaps to collect statistics, or emit more detailed logging.
+# As the example above shows, the way to use GServer is to subclass it to
+# create a specific server, overriding the +serve+ method.  You can override
+# other methods as well if you wish, perhaps to collect statistics, or emit
+# more detailed logging.
 #
 #   connecting
 #   disconnecting
@@ -76,8 +80,8 @@ require "thread"
 #
 # The above methods are only called if auditing is enabled.
 #
-# You can also override +log+ and +error+ if, for example, you wish to use a more sophisticated
-# logging system.
+# You can also override +log+ and +error+ if, for example, you wish to use a
+# more sophisticated logging system.
 #
 class GServer
 

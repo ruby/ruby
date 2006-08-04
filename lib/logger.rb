@@ -1,9 +1,8 @@
 # logger.rb - saimple logging utility
 # Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
 
+require 'monitor'
 
-# = logger.rb
-#
 # Simple logging utility.
 #
 # Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
@@ -12,14 +11,6 @@
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
 # Revision:: $Id$
-#
-# See Logger for documentation.
-#
-
-
-require 'monitor'
-
-
 #
 # == Description
 #

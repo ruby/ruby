@@ -57,6 +57,8 @@ def setExpression(ex, opt, op)
   return ex
 end
 
+# parseArgs is obsolete.  Use OptionParser instead.
+
 def parseArgs(argc, nopt, single_opts, *opts)
   if (noOptions = getopts(single_opts, *opts)) == nil
     printUsageAndExit()
