@@ -14,6 +14,10 @@ Fri Aug  4 13:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* pack.c (pack_pack): check argument overrun for 'P'.  based on a
 	  patch by rucila <rucila at yahoo.cojp>.  fixed: [ruby-dev:29182]
 
+Fri Aug  4 02:42:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): a bug in %c type check.
+
 Fri Aug  4 01:28:19 2006  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_reopen): STDERR.reopen(File.open("/dev/null", "w")) should

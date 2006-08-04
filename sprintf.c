@@ -399,13 +399,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'c':
 	    {
 		VALUE val = GETARG();
+		VALUE tmp;
 		char c;
 
-		if (rb_check_string_type(val)) {
-		    if (RSTRING(val)->len != 1) {
+		tmp = rb_check_string_type(val);
+		if (!NIL_P(tmp)) {
+		    if (RSTRING(tmp)->len != 1) {
 			rb_raise(rb_eArgError, "%%c requires a character");
 		    }
-		    c = RSTRING(val)->ptr[0];
+		    c = RSTRING(tmp)->ptr[0];
 		}
 		else {
 		    c = NUM2INT(val) & 0xff;
