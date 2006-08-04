@@ -309,7 +309,7 @@ class RubyLex
     "q" => "\'",
     "Q" => "\"",
     "x" => "\`",
-    "r" => "\/",
+    "r" => "/",
     "w" => "]",
     "W" => "]",
     "s" => ":"
@@ -326,35 +326,35 @@ class RubyLex
     "\'" => TkSTRING,
     "\"" => TkSTRING,
     "\`" => TkXSTRING,
-    "\/" => TkREGEXP,
+    "/" => TkREGEXP,
     "]" => TkDSTRING,
     ":" => TkSYMBOL
   }
   DLtype2Token = {
     "\"" => TkDSTRING,
     "\`" => TkDXSTRING,
-    "\/" => TkDREGEXP,
+    "/" => TkDREGEXP,
   }
 
   def lex_init()
     @OP = IRB::SLex.new
-    @OP.def_rules("\0", "\004", "\032") do
+    @OP.def_rules("\0", "\004", "\032") do |op, io|
       Token(TkEND_OF_SCRIPT)
     end
 
-    @OP.def_rules(" ", "\t", "\f", "\r", "\13") do
+    @OP.def_rules(" ", "\t", "\f", "\r", "\13") do |op, io|
       @space_seen = true
       while getc =~ /[ \t\f\r\13]/; end
       ungetc
       Token(TkSPACE)
     end
 
-    @OP.def_rule("#") do
-      |op, io|
+    @OP.def_rule("#") do |op, io|
       identify_comment
     end
 
-    @OP.def_rule("=begin", proc{@prev_char_no == 0 && peek(0) =~ /\s/}) do
+    @OP.def_rule("=begin",
+		 proc{|op, io| @prev_char_no == 0 && peek(0) =~ /\s/}) do 
       |op, io|
       @ltype = "="
       until getc == "\n"; end
@@ -366,7 +366,7 @@ class RubyLex
       Token(TkRD_COMMENT)
     end
 
-    @OP.def_rule("\n") do
+    @OP.def_rule("\n") do |op, io|
       print "\\n\n" if RubyLex.debug?
       case @lex_state
       when EXPR_BEG, EXPR_FNAME, EXPR_DOT
@@ -478,13 +478,13 @@ class RubyLex
       Token(TkOPASGN, $1)
     end
 
-    @OP.def_rule("+@", proc{@lex_state == EXPR_FNAME}) do
+    @OP.def_rule("+@", proc{|op, io| @lex_state == EXPR_FNAME}) do
       |op, io|
       @lex_state = EXPR_ARG
       Token(op)
     end
 
-    @OP.def_rule("-@", proc{@lex_state == EXPR_FNAME}) do
+    @OP.def_rule("-@", proc{|op, io| @lex_state == EXPR_FNAME}) do
       |op, io|
       @lex_state = EXPR_ARG
       Token(op)
@@ -509,6 +509,7 @@ class RubyLex
     end
 
     @OP.def_rule(".") do
+      |op, io|
       @lex_state = EXPR_BEG
       if peek(0) =~ /[0-9]/
 	ungetc
@@ -539,6 +540,7 @@ class RubyLex
     end
 
     @OP.def_rule(":") do
+      |op, io|
       if @lex_state == EXPR_END || peek(0) =~ /\s/
 	@lex_state = EXPR_BEG
 	Token(TkCOLON)
@@ -549,6 +551,7 @@ class RubyLex
     end
 
     @OP.def_rule("::") do
+       |op, io|
 #      p @lex_state.id2name, @space_seen
       if @lex_state == EXPR_BEG or @lex_state == EXPR_ARG && @space_seen
 	@lex_state = EXPR_BEG
@@ -576,6 +579,7 @@ class RubyLex
     end
 
     @OP.def_rules("^") do
+      |op, io|
       @lex_state = EXPR_BEG
       Token("^")
     end
@@ -603,16 +607,19 @@ class RubyLex
     end
 
     @OP.def_rule("~") do
+      |op, io|
       @lex_state = EXPR_BEG
       Token("~")
     end
 
-    @OP.def_rule("~@", proc{@lex_state == EXPR_FNAME}) do
+    @OP.def_rule("~@", proc{|op, io| @lex_state == EXPR_FNAME}) do
+      |op, io|
       @lex_state = EXPR_BEG
       Token("~")
     end
     
     @OP.def_rule("(") do
+      |op, io|
       @indent += 1
       if @lex_state == EXPR_BEG || @lex_state == EXPR_MID
 	@lex_state = EXPR_BEG
@@ -625,17 +632,20 @@ class RubyLex
       tk = Token(tk_c)
     end
 
-    @OP.def_rule("[]", proc{@lex_state == EXPR_FNAME}) do
+    @OP.def_rule("[]", proc{|op, io| @lex_state == EXPR_FNAME}) do
+      |op, io|
       @lex_state = EXPR_ARG
       Token("[]")
     end
 
-    @OP.def_rule("[]=", proc{@lex_state == EXPR_FNAME}) do
+    @OP.def_rule("[]=", proc{|op, io| @lex_state == EXPR_FNAME}) do
+      |op, io|
       @lex_state = EXPR_ARG
       Token("[]=")
     end
 
     @OP.def_rule("[") do
+      |op, io|
       @indent += 1
       if @lex_state == EXPR_FNAME
 	tk_c = TkfLBRACK
@@ -654,6 +664,7 @@ class RubyLex
     end
 
     @OP.def_rule("{") do
+      |op, io|
       @indent += 1
       if @lex_state != EXPR_END && @lex_state != EXPR_ARG
 	tk_c = TkLBRACE
@@ -666,6 +677,7 @@ class RubyLex
     end
 
     @OP.def_rule('\\') do
+      |op, io|
       if getc == "\n"
 	@space_seen = true
 	@continue = true
@@ -692,10 +704,12 @@ class RubyLex
     end
 
     @OP.def_rule('$') do
+      |op, io|
       identify_gvar
     end
 
     @OP.def_rule('@') do
+      |op, io|
       if peek(0) =~ /[\w_@]/
 	ungetc
 	identify_identifier
@@ -936,6 +950,7 @@ class RubyLex
     @lex_state = EXPR_END
 
     if peek(0) == "0" && peek(1) !~ /[.eE]/
+      getc
       case peek(0)
       when /[xX]/
 	ch = getc
@@ -956,7 +971,7 @@ class RubyLex
       else 
 	return Token(TkINTEGER)
       end
-
+      
       len0 = true
       non_digit = false
       while ch = getc
@@ -1086,7 +1101,7 @@ class RubyLex
   def read_escape
     case ch = getc
     when "\n", "\r", "\f"
-    when "\\", "n", "t", "r", "f", "v", "a", "e", "b" #"
+    when "\\", "n", "t", "r", "f", "v", "a", "e", "b", "s" #"
     when /[0-7]/
       ungetc ch
       3.times do
@@ -1121,7 +1136,7 @@ class RubyLex
 	end
       end
 
-    when "C", "c", "^"
+    when "C", "c" #, "^"
       if ch == "C" and (ch = getc) != "-"
 	ungetc
       elsif (ch = getc) == "\\" #"
