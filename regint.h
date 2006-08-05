@@ -59,9 +59,11 @@
 /* #define USE_UNICODE_FULL_RANGE_CTYPE */ /* --> move to regenc.h */
 #define USE_NAMED_GROUP
 #define USE_SUBEXP_CALL
+/* #define USE_BACKREF_AT_LEVEL */
 #define USE_INFINITE_REPEAT_MONOMANIAC_MEM_STATUS_CHECK /* /(?:()|())*\2/ */
 #define USE_NEWLINE_AT_END_OF_STRING_HAS_EMPTY_LINE     /* /\n$/ =~ "\n" */
 #define USE_WARNING_REDUNDANT_NESTED_REPEAT_OPERATOR
+/* #define USE_RECOMPILE_API */
 /* treat \r\n as line terminator.
    !!! NO SUPPORT !!!
    use this configuration on your own responsibility */
@@ -80,6 +82,7 @@
 /* interface to external system */
 #ifdef NOT_RUBY      /* given from Makefile */
 #include "config.h"
+#define USE_BACKREF_AT_LEVEL
 #define USE_CAPTURE_HISTORY
 #define USE_VARIABLE_META_CHARS
 #define USE_WORD_BEGIN_END          /* "\<": word-begin, "\>": word-end */
@@ -129,13 +132,26 @@
 #endif
 
 
-#ifdef USE_MULTI_THREAD_SYSTEM
-#define ONIG_STATE_INC(reg)    (reg)->state++
-#define ONIG_STATE_DEC(reg)    (reg)->state--
+#if defined(USE_RECOMPILE_API) && defined(USE_MULTI_THREAD_SYSTEM)
+#define ONIG_STATE_INC(reg) (reg)->state++
+#define ONIG_STATE_DEC(reg) (reg)->state--
+
+#define ONIG_STATE_INC_THREAD(reg) do {\
+  THREAD_ATOMIC_START;\
+  (reg)->state++;\
+  THREAD_ATOMIC_END;\
+} while(0)
+#define ONIG_STATE_DEC_THREAD(reg) do {\
+  THREAD_ATOMIC_START;\
+  (reg)->state--;\
+  THREAD_ATOMIC_END;\
+} while(0)
 #else
-#define ONIG_STATE_INC(reg)    /* Nothing */
-#define ONIG_STATE_DEC(reg)    /* Nothing */
-#endif /* USE_MULTI_THREAD_SYSTEM */
+#define ONIG_STATE_INC(reg)         /* Nothing */
+#define ONIG_STATE_DEC(reg)         /* Nothing */
+#define ONIG_STATE_INC_THREAD(reg)  /* Nothing */
+#define ONIG_STATE_DEC_THREAD(reg)  /* Nothing */
+#endif /* USE_RECOMPILE_API && USE_MULTI_THREAD_SYSTEM */
 
 
 #define onig_st_is_member              st_is_member
@@ -584,6 +600,7 @@ enum OpCode {
   OP_BACKREFN_IC,
   OP_BACKREF_MULTI,
   OP_BACKREF_MULTI_IC,
+  OP_BACKREF_AT_LEVEL,    /* \k<xxx+n>, \k<xxx-n> */
 
   OP_MEMORY_START,
   OP_MEMORY_START_PUSH,   /* push back-tracker to stack */

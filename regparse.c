@@ -1085,13 +1085,13 @@ onig_free_node_list()
 {
   FreeNode* n;
 
-  THREAD_ATOMIC_START;
+  /* THREAD_ATOMIC_START; */
   while (IS_NOT_NULL(FreeNodeList)) {
     n = FreeNodeList;
     FreeNodeList = FreeNodeList->next;
     xfree(n);
   }
-  THREAD_ATOMIC_END;
+  /* THREAD_ATOMIC_END; */
   return 0;
 }
 #endif
@@ -1244,7 +1244,11 @@ onig_node_new_anchor(int type)
 }
 
 static Node*
-node_new_backref(int back_num, int* backrefs, int by_name, ScanEnv* env)
+node_new_backref(int back_num, int* backrefs, int by_name,
+#ifdef USE_BACKREF_AT_LEVEL
+		 int exist_level, int nest_level,
+#endif
+		 ScanEnv* env)
 {
   int i;
   Node* node = node_new();
@@ -1256,6 +1260,13 @@ node_new_backref(int back_num, int* backrefs, int by_name, ScanEnv* env)
   NBACKREF(node).back_dynamic = (int* )NULL;
   if (by_name != 0)
     NBACKREF(node).state |= NST_NAME_REF;
+
+#ifdef USE_BACKREF_AT_LEVEL
+  if (exist_level != 0) {
+    NBACKREF(node).state |= NST_NEST_LEVEL;
+    NBACKREF(node).nest_level  = nest_level;
+  }
+#endif
 
   for (i = 0; i < back_num; i++) {
     if (backrefs[i] <= env->num_mem &&
@@ -2241,6 +2252,10 @@ typedef struct {
       int  ref1;
       int* refs;
       int  by_name;
+#ifdef USE_BACKREF_AT_LEVEL
+      int  exist_level;
+      int  level;   /* \k<name+n> */
+#endif
     } backref;
     struct {
       UChar* name;
@@ -2420,6 +2435,89 @@ fetch_escaped_value(UChar** src, UChar* end, ScanEnv* env)
 static int fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env);
 
 #ifdef USE_NAMED_GROUP
+#ifdef USE_BACKREF_AT_LEVEL
+/*
+   \k<name+n>, \k<name-n>
+*/
+static int
+fetch_name_with_level(UChar** src, UChar* end, UChar** rname_end
+		      , ScanEnv* env, int* level)
+{
+  int r, exist_level = 0;
+  OnigCodePoint c = 0;
+  OnigCodePoint first_code;
+  OnigEncoding enc = env->enc;
+  UChar *name_end;
+  UChar *p = *src;
+  PFETCH_READY;
+
+  name_end = end;
+  r = 0;
+  if (PEND) {
+    return ONIGERR_EMPTY_GROUP_NAME;
+  }
+  else {
+    PFETCH(c);
+    first_code = c;
+    if (c == '>')
+      return ONIGERR_EMPTY_GROUP_NAME;
+
+    if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+      r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+    }
+  }
+
+  while (!PEND) {
+    name_end = p;
+    PFETCH(c);
+    if (c == '>' || c == ')' || c == '+' || c == '-') break;
+
+    if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+      r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+    }
+  }
+
+  if (c != '>') {
+    if (c == '+' || c == '-') {
+      int num;
+      int flag = (c == '-' ? -1 : 1);
+
+      PFETCH(c);
+      if (! ONIGENC_IS_CODE_DIGIT(enc, c)) goto err;
+      PUNFETCH;
+      num = onig_scan_unsigned_number(&p, end, enc);
+      if (num < 0) return ONIGERR_TOO_BIG_NUMBER;
+      *level = (num * flag);
+      exist_level = 1;
+
+      PFETCH(c);
+      if (c == '>')
+	goto first_check;
+    }
+
+  err:
+    r = ONIGERR_INVALID_GROUP_NAME;
+    name_end = end;
+  }
+  else {
+  first_check:
+    if (ONIGENC_IS_CODE_ASCII(first_code) &&
+        ONIGENC_IS_CODE_UPPER(enc, first_code))
+      r = ONIGERR_INVALID_GROUP_NAME;
+  }
+
+  if (r == 0) {
+    *rname_end = name_end;
+    *src = p;
+    return (exist_level ? 1 : 0);
+  }
+  else {
+    onig_scan_env_set_error_string(env, r, *src, name_end);
+    return r;
+  }
+}
+#endif /* USE_BACKREF_AT_LEVEL */
+
 /*
   def: 0 -> define name    (don't allow number name)
        1 -> reference name (allow number name)
@@ -3132,6 +3230,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	tok->u.backref.num     = 1;
 	tok->u.backref.ref1    = num;
 	tok->u.backref.by_name = 0;
+#ifdef USE_BACKREF_AT_LEVEL
+	tok->u.backref.exist_level = 0;
+#endif
 	break;
       }
 
@@ -3170,8 +3271,17 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	  int* backs;
 
 	  prev = p;
+
+#ifdef USE_BACKREF_AT_LEVEL
+	  name_end = NULL_UCHARP; /* no need. escape gcc warning. */
+	  r = fetch_name_with_level(&p, end, &name_end, env, &tok->u.backref.level);
+	  if (r == 1) tok->u.backref.exist_level = 1;
+	  else        tok->u.backref.exist_level = 0;
+#else
 	  r = fetch_name(&p, end, &name_end, env, 1);
+#endif
 	  if (r < 0) return r;
+
 	  num = onig_name_to_group_numbers(env->reg, prev, name_end, &backs);
 	  if (num <= 0) {
 	    onig_scan_env_set_error_string(env,
@@ -5007,8 +5117,13 @@ parse_exp(Node** np, OnigToken* tok, int term,
   case TK_BACKREF:
     len = tok->u.backref.num;
     *np = node_new_backref(len,
-	       (len > 1 ? tok->u.backref.refs : &(tok->u.backref.ref1)),
-	        tok->u.backref.by_name, env);
+		   (len > 1 ? tok->u.backref.refs : &(tok->u.backref.ref1)),
+			   tok->u.backref.by_name,
+#ifdef USE_BACKREF_AT_LEVEL
+			   tok->u.backref.exist_level,
+			   tok->u.backref.level,
+#endif
+			   env);
     CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
     break;
 
