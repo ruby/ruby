@@ -4,7 +4,7 @@ Fri Aug  4 12:13:22 2006  Eric Hodel  <drbrain@segment7.net>
 	* lib/.document: Include most of the standard library in RDoc
 	  generation.
 	* lib/rdoc/ri/ri_formatter.rb: Don't unescape HTML in HtmlFormatter.
-	* lib/drb/ssl.rb: Close socket on SSLError
+	* lib/drb/ssl.rb: Close socket on SSLError [ruby-core:7197]
 
 Fri Aug  4 18:59:49 2006  Keiju Ishitsuka <keiju@ruby-lang.org>
 	
