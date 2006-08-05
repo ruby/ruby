@@ -1,4 +1,4 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2005
+# format.rb: Written by Tadayoshi Funaba 1999-2006
 # $Id: format.rb,v 2.15 2005-02-06 13:28:48+09 tadf Exp $
 
 require 'rational'
@@ -52,7 +52,7 @@ class Date
 
   def self.__strptime(str, fmt, elem)
     fmt.scan(/%[EO]?.|./mo) do |c|
-      cc = c.sub(/\A%[EO]?(.)\Z/o, '%\\1')
+      cc = c.sub(/\A%[EO]?(.)\z/mo, '%\\1')
       case cc
       when /\A\s/o
 	str.sub!(/\A[\s\v]+/o, '')
@@ -213,6 +213,8 @@ class Date
 	  warn("warning: %3 is deprecated; use '%F'")
 	end
 	return unless __strptime(str, '%F', elem)
+      when /\A%(.)/m
+	return unless str.sub!(Regexp.new('\\A' + Regexp.quote($1)), '')
       else
 	return unless str.sub!(Regexp.new('\\A' + Regexp.quote(c)), '')
       end
@@ -491,7 +493,7 @@ class Date
   def strftime(fmt='%F')
     o = ''
     fmt.scan(/%[EO]?.|./mo) do |c|
-      cc = c.sub(/^%[EO]?(.)$/o, '%\\1')
+      cc = c.sub(/\A%[EO]?(.)\z/mo, '%\\1')
       case cc
       when '%A'; o << DAYNAMES[wday]
       when '%a'; o << ABBR_DAYNAMES[wday]
@@ -571,7 +573,10 @@ class Date
 	  warn("warning: %3 is deprecated; use '%F'")
 	end
 	o << strftime('%F')
-      else;      o << c
+      when /\A%(.)/m
+	o << $1
+      else
+	o << c
       end
     end
     o
