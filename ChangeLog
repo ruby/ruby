@@ -1,6 +1,7 @@
 Fri Aug  4 15:21:00 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib: Merge RDoc and .document from HEAD.
+	* lib/drb/ssl.rb: Close socket on SSLError [ruby-core:7197]
 
 Fri Aug  4 19:13:41 2006 Keiju Ishitsuka <keiju@ruby-lang.org>
 	
