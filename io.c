@@ -3412,7 +3412,6 @@ io_reopen(VALUE io, VALUE nfile)
     OpenFile *fptr, *orig;
     int fd, fd2;
     off_t pos = 0;
-    int fptr_is_prep_stdio;
 
     nfile = rb_io_get_io(nfile);
     if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
@@ -3423,8 +3422,7 @@ io_reopen(VALUE io, VALUE nfile)
 
     if (fptr == orig) return io;
 #if !defined __CYGWIN__
-    fptr_is_prep_stdio = IS_PREP_STDIO(fptr);
-    if (fptr_is_prep_stdio) {
+    if (IS_PREP_STDIO(fptr)) {
 	if (((fptr->mode & FMODE_READWRITE) & (orig->mode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
 	    rb_raise(rb_eArgError,
@@ -3445,7 +3443,7 @@ io_reopen(VALUE io, VALUE nfile)
     }
 
     /* copy OpenFile structure */
-    fptr->mode = orig->mode;
+    fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (fptr->path) free(fptr->path);
@@ -3457,7 +3455,7 @@ io_reopen(VALUE io, VALUE nfile)
     fd2 = orig->fd;
     if (fd != fd2) {
 #if !defined __CYGWIN__
-	if (fptr_is_prep_stdio) {
+	if (IS_PREP_STDIO(fptr)) {
 	    /* need to keep stdio objects */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);

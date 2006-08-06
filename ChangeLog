@@ -1,3 +1,8 @@
+Sun Aug  6 17:12:12 2006  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_reopen): STDERR.reopen(open("/dev/tty", "w")) should not
+	  clear FMODE_PREP in STDERR.
+
 Sat Aug  5 22:53:41 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.2.2
