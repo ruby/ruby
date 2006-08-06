@@ -148,7 +148,7 @@ class Date
 	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
 	return unless (0..53) === val
-	elem[if c == '%U' then :wnum0 else :wnum1 end] = val
+	elem[if c[-1,1] == 'U' then :wnum0 else :wnum1 end] = val
       when '%u'
 	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
@@ -533,7 +533,7 @@ class Date
       when '%t'; o << "\t"					# P2,ID
       when '%U', '%W'
 	a = self.class.civil_to_jd(year, 1, 1, ns?) + 6
-	k = if c == '%U' then 0 else 1 end
+	k = if c[-1,1] == 'U' then 0 else 1 end
 	w = (jd - (a - ((a - k) + 1) % 7) + 7) / 7
 	o << '%02d' % w
       when '%u'; o <<   '%d' % cwday				# P2,ID
