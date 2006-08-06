@@ -1,3 +1,7 @@
+Sun Aug  6 20:40:41 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb (str[fp]time): %[EO]U didn't denote %U.
+
 Sat Aug  5 13:54:03 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (str[fp]time): "%\n" means "\n".
