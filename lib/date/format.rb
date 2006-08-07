@@ -75,7 +75,7 @@ class Date
       when '%D'
 	return unless __strptime(str, '%m/%d/%y', elem)
       when '%d', '%e'
-	return unless str.sub!(/\A ?(\d{1,2})/o, '')
+	return unless str.sub!(/\A ?(\d+)/o, '')
 	val = $1.to_i
 	return unless (1..31) === val
 	elem[:mday] = val
@@ -112,7 +112,7 @@ class Date
 	return unless (0..59) === val
 	elem[:min] = val
       when '%m'
-	return unless str.sub!(/\A(\d{1,2})/o, '')
+	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
 	return unless (1..12) === val
 	elem[:mon] = val
@@ -171,11 +171,11 @@ class Date
       when '%x'
 	return unless __strptime(str, '%m/%d/%y', elem)
       when '%Y'
-	return unless str.sub!(/\A([-+]?\d{1,4})/o, '')
+	return unless str.sub!(/\A([-+]?\d+)/o, '')
 	val = $1.to_i
 	elem[:year] = val
       when '%y'
-	return unless str.sub!(/\A(\d{2})/o, '')
+	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
 	return unless (0..99) === val
 	elem[:year] = val
