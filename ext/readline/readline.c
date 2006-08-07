@@ -1,6 +1,7 @@
 /* readline.c -- GNU Readline module
    Copyright (C) 1997-2001  Shugo Maeda */
 
+#include "config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>

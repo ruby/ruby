@@ -1,3 +1,10 @@
+Mon Aug  7 17:56:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c, ext/digest/rmd160/rmd160ossl.c,
+	  ext/digest/sha1/sha1ossl.c, ext/readline/readline.c: move
+	  incluion of config.h to pacify AIX.  a patch from Yutaka
+	  Kanemoto <kinpoco at gmail.com>.  [ruby-dev:29197]
+
 Mon Aug  7 15:55:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/syck.c (syck_move_tokens): should avoid negative

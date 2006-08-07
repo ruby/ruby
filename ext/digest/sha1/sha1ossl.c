@@ -1,7 +1,7 @@
 /* $Id$ */
 
-#include "sha1ossl.h"
 #include "defs.h"
+#include "sha1ossl.h"
 #include <assert.h>
 #include <stdlib.h>
 

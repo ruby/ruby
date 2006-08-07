@@ -13,6 +13,7 @@
  *
  */
 
+#include "ruby.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,6 @@
 #include <errno.h>
 #include <float.h>
 #include <math.h>
-#include "ruby.h"
 #include "math.h"
 #include "version.h"
  

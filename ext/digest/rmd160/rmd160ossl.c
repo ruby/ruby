@@ -1,7 +1,7 @@
 /* $Id$ */
 
-#include "rmd160ossl.h"
 #include "defs.h"
+#include "rmd160ossl.h"
 #include <assert.h>
 #include <stdlib.h>
 
