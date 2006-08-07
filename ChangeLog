@@ -1,3 +1,8 @@
+Mon Aug  7 15:55:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/syck.c (syck_move_tokens): should avoid negative
+	  memmove.  [ruby-list:42625]
+
 Mon Aug  7 14:37:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in, common.mk: AIX link issue.  a patch from Yutaka
