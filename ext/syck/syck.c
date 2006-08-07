@@ -412,7 +412,8 @@ syck_move_tokens( SyckParser *p )
     skip = p->limit - p->token;
     if ( ( count = p->token - p->buffer ) )
     {
-        S_MEMMOVE( p->buffer, p->token, char, skip );
+	if (skip > 0)
+	    S_MEMMOVE( p->buffer, p->token, char, skip );
         p->token = p->buffer;
         p->marker -= count;
         p->cursor -= count;
