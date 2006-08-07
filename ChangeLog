@@ -1,3 +1,9 @@
+Mon Aug  7 14:51:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/date/format.rb: specify maximum number of digits to parse
+	  "200608007".  %Y(4), %y(2), %m(2), %d(2).  [ruby-core:8484]
+	  [experimental]
+
 Mon Aug  7 14:37:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in, common.mk: AIX link issue.  a patch from Yutaka
