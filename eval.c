@@ -53,9 +53,7 @@
 # ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
 # else
-#  ifdef _AIX
- #pragma alloca
-#  else
+#  ifndef _AIX
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca ();
 #   endif

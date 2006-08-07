@@ -1,3 +1,8 @@
+Mon Aug  7 12:05:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dln.c, eval.c, gc.c, regex.c, ruby.h: shut up AIX alloca
+	  warning.  [ruby-dev:29191]
+
 Sun Aug  6 20:40:41 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (str[fp]time): %[EO]U didn't denote %U.

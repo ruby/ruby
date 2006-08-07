@@ -84,16 +84,19 @@ void rb_trap_exec _((void));
 #  endif
 # endif /* atarist */
 #else
-# if defined(HAVE_ALLOCA_H)
+# ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
-# elif !defined(alloca)
-char *alloca();
-# endif
-#endif /* __GNUC__ */
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+void *alloca ();
+#   endif
+#  endif /* AIX */
+# endif /* HAVE_ALLOCA_H */
 
-#ifdef _AIX
-#pragma alloca
-#endif
+#endif /* __GNUC__ */
 
 #ifdef HAVE_STRING_H
 # include <string.h>
