@@ -79,10 +79,10 @@ extern "C" {
 
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
-#endif
-
-#ifdef _AIX
+#else
+#  ifdef _AIX
 #pragma alloca
+#  endif
 #endif
 
 #if defined(__VMS)
