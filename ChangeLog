@@ -1,6 +1,14 @@
+Mon Aug  7 14:37:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in, common.mk: AIX link issue.  a patch from Yutaka
+	  Kanemoto <kinpoco at gmail.com>.  [ruby-dev:29190]
+
+	* ext/socket/socket.c: AIX socket support.  [ruby-dev:29190]
+
 Mon Aug  7 12:05:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* dln.c, eval.c, gc.c, ruby.h: shut up AIX alloca warning.
+	* dln.c, eval.c, gc.c, ruby.h: shut up AIX alloca warning.  
+	  a patch from Yutaka Kanemoto <kinpoco at gmail.com>.
 	  [ruby-dev:29191]
 
 Sun Aug  6 20:34:24 2006  Tadayoshi Funaba  <tadf@dotrb.org>

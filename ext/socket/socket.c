@@ -185,6 +185,12 @@ ruby_getaddrinfo__aix(char *nodename, char *servname,
 }
 #undef getaddrinfo
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
+#ifndef CMSG_SPACE
+# define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
+#endif
+#ifndef CMSG_LEN
+# define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
+#endif
 #endif
 
 #ifdef __BEOS__

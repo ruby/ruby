@@ -75,16 +75,16 @@ miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(D
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+$(LIBRUBY_A):	$(OBJS) $(DMYEXT) $(ARCHFILE)
 
-$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(ARCHFILE)
+$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP)
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(LIBRUBY_A)
-	@$(NM) -Pgp $(LIBRUBY_A) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+ruby.imp: $(OBJS)
+	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
@@ -121,6 +121,8 @@ do-install-doc: $(PROGRAM)
 
 pre-install: pre-install-local pre-install-ext
 pre-install-local:: PHONY
+	$(RM) $(prefix)/lib/$(LIBRUBY)
+	$(RM) -r $(prefix)/lib/ruby/$(MAJOR).$(MINOR)/$(arch)
 pre-install-ext:: PHONY
 pre-install-doc:: PHONY
 
