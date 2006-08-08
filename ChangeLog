@@ -1,3 +1,9 @@
+Tue Aug  8 23:49:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/extend-command.rb (IRB::ExtendCommandBundle): pacify
+	  RDoc.  a patch from Eric Hodel <drbrain at segment7.net>.
+	  [ruby-core:08522]
+
 Tue Aug  8 11:32:54 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* Makefile.in, common.mk, configure.in: fix for platforms without

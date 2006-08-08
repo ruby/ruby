@@ -106,14 +106,14 @@ module IRB
 
     ]
 
-    def EXCB.install_extend_commands
+    def self.install_extend_commands
       for args in @EXTEND_COMMANDS
 	def_extend_command(*args)
       end
     end
 
     # aliases = [commans_alias, flag], ...
-    def EXCB.def_extend_command(cmd_name, cmd_class, load_file = nil, *aliases)
+    def self.def_extend_command(cmd_name, cmd_class, load_file = nil, *aliases)
       case cmd_class
       when Symbol
 	cmd_class = cmd_class.id2name
@@ -172,7 +172,7 @@ module IRB
       "irb_" + method_name + "_org"
     end
 
-    def EXCB.extend_object(obj)
+    def self.extend_object(obj)
       unless (class<<obj;ancestors;end).include?(EXCB)
 	super
 	for ali, com, flg in @ALIASES
@@ -196,13 +196,13 @@ module IRB
       [:save_history=, "irb/ext/save-history.rb"],
     ]
 
-    def CE.install_extend_commands
+    def self.install_extend_commands
       for args in @EXTEND_COMMANDS
 	def_extend_command(*args)
       end
     end
 
-    def CE.def_extend_command(cmd_name, load_file, *aliases)
+    def self.def_extend_command(cmd_name, load_file, *aliases)
       Context.module_eval %[
         def #{cmd_name}(*opts, &b)
 	  Context.module_eval {remove_method(:#{cmd_name})}
