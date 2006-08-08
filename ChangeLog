@@ -1,3 +1,11 @@
+Tue Aug  8 19:26:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_string): 
+	  affected by str[0] returns 1 char string.  [ruby-dev:29223]
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_labels): 
+	  ditto.
+
 Tue Aug  8 12:28:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg): allow newlines before ternary colon.  [ruby-dev:29189]

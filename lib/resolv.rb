@@ -1330,6 +1330,7 @@ class Resolv
         def get_unpack(template)
           len = 0
           template.each_byte {|byte|
+            byte = "%c" % byte
             case byte
             when ?c, ?C
               len += 1
@@ -1348,7 +1349,7 @@ class Resolv
         end
 
         def get_string
-          len = @data[@index]
+          len = @data[@index].ord
           raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
           d = @data[@index + 1, len]
           @index += 1 + len
@@ -1371,7 +1372,7 @@ class Resolv
           limit = @index if !limit || @index < limit
           d = []
           while true
-            case @data[@index]
+            case @data[@index].ord
             when 0
               @index += 1
               return d

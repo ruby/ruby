@@ -62,7 +62,7 @@ This is what you need to do to compile and install Ruby:
 
   2. Run ./configure, which will generate config.h and Makefile.
 
-  3. Edit defines.h if you need.  Probably this step will not need.
+  3. Edit defines.h if you need.  Usually this step will not be needed.
 
   4. Remove comment mark(#) before the module names from ext/Setup (or
      add module names if not present), if you want to link modules
