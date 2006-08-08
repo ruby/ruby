@@ -1,3 +1,9 @@
+Tue Aug  8 23:49:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/extend-command.rb (IRB::ExtendCommandBundle): pacify
+	  RDoc.  a patch from Eric Hodel <drbrain at segment7.net>.
+	  [ruby-core:08522]
+
 Tue Aug  8 19:26:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_string): 
