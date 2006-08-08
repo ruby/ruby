@@ -85,6 +85,7 @@ ASFLAGS       = @ASFLAGS@
 OBJEXT        = @OBJEXT@
 MANTYPE	      = @MANTYPE@
 
+PREINSTALL    = @PREINSTALL@
 #### End of variables
 
 all:

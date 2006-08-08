@@ -1,3 +1,9 @@
+Tue Aug  8 11:32:54 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* Makefile.in, common.mk, configure.in: fix for platforms without
+	  rm. patches from Yutaka kanemoto <kinpoco at gmail.com>.
+	  [ruby-dev:29215]
+
 Mon Aug  7 17:56:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c, ext/digest/rmd160/rmd160ossl.c,

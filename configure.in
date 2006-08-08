@@ -1449,6 +1449,9 @@ case "$target_os" in
 	esac
 	MINIOBJS=dmydln.o
 	;;
+    aix*)
+	PREINSTALL='@$(RM) -r $(prefix)/lib/$(LIBRUBY_A) $(prefix)/lib/$(LIBRUBY_SO) $(prefix)/lib/ruby/$(MAJOR).$(MINOR)/$(arch)'
+	;;
     *)
 	;;
 esac
@@ -1481,6 +1484,7 @@ AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
 AC_SUBST(EXPORT_PREFIX)
 AC_SUBST(MINIOBJS)
+AC_SUBST(PREINSTALL)
 
 MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'`"
 MAKEFILES="`echo $MAKEFILES`"
