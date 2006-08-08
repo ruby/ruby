@@ -2094,13 +2094,13 @@ arg		: lhs '=' arg
 			$$ = dispatch1(defined, $4);
 		    %*/
 		    }
-		| arg '?' arg ':' arg
+		| arg '?' arg opt_nl ':' arg
 		    {
 		    /*%%%*/
-			$$ = NEW_IF(cond($1), $3, $5);
+			$$ = NEW_IF(cond($1), $3, $6);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch3(ifop, $1, $3, $5);
+			$$ = dispatch3(ifop, $1, $3, $6);
 		    %*/
 		    }
 		| primary
@@ -2163,7 +2163,7 @@ opt_call_args   : none
 
 call_args	: command
 		    {
-		        rb_warn("parenthesize argument(s) for future version");
+			rb_warn("parenthesize argument(s) for future version");
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%

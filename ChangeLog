@@ -1,3 +1,7 @@
+Tue Aug  8 12:28:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg): allow newlines before ternary colon.  [ruby-dev:29189]
+
 Mon Aug  7 17:56:59 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c, ext/digest/rmd160/rmd160ossl.c,
@@ -19,7 +23,7 @@ Mon Aug  7 14:37:48 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Aug  7 12:05:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* dln.c, eval.c, gc.c, ruby.h: shut up AIX alloca warning.  
+	* dln.c, eval.c, gc.c, ruby.h: shut up AIX alloca warning.
 	  a patch from Yutaka Kanemoto <kinpoco at gmail.com>.
 	  [ruby-dev:29191]
 
@@ -67,10 +71,10 @@ Fri Aug  4 12:13:22 2006  Eric Hodel  <drbrain@segment7.net>
 	* lib/drb/ssl.rb: Close socket on SSLError [ruby-core:7197]
 
 Fri Aug  4 18:59:49 2006  Keiju Ishitsuka <keiju@ruby-lang.org>
-	
+
 	* lib/irb/{init.rb,ruby-lex.rb,slex.rb}: can't input '\c' for
 	  [ruby-core: 7122]. and support for ruby1.8.X
-	
+
 Fri Aug  4 14:02:14 2006    <nobu@ruby-lang.org>
 
 	* lib/date/format.rb (__strptime, strftime): allow multi-line patterns
