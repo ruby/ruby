@@ -699,8 +699,10 @@ module Net
         isecret = secret + "\0" * (64 - secret.size)
         osecret = isecret.dup
         0.upto(63) do |i|
-          isecret[i] ^= 0x36
-          osecret[i] ^= 0x5c
+          c = isecret[i].ord ^ 0x36
+          isecret[i] = c.chr
+          c = osecret[i].ord ^ 0x5c
+          osecret[i] = c.chr
         end
         tmp = Digest::MD5.digest(isecret + challenge)
         tmp = Digest::MD5.hexdigest(osecret + tmp)
