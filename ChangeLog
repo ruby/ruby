@@ -20,10 +20,10 @@ Tue Aug  8 23:49:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Aug  8 19:26:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_string): 
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_string):
 	  affected by str[0] returns 1 char string.  [ruby-dev:29223]
 
-	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_labels): 
+	* lib/resolv.rb (Resolv::DNS::Message::MessageDecoder::get_labels):
 	  ditto.
 
 Tue Aug  8 12:28:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -98,12 +98,12 @@ Fri Aug  4 12:13:22 2006  Eric Hodel  <drbrain@segment7.net>
 	* lib/rdoc/ri/ri_formatter.rb: Don't unescape HTML in HtmlFormatter.
 	* lib/drb/ssl.rb: Close socket on SSLError [ruby-core:7197]
 
-Fri Aug  4 18:59:49 2006  Keiju Ishitsuka <keiju@ruby-lang.org>
+Fri Aug  4 18:59:49 2006  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/{init.rb,ruby-lex.rb,slex.rb}: can't input '\c' for
 	  [ruby-core: 7122]. and support for ruby1.8.X
-	
-Fri Aug  4 14:02:14 2006  James Edward Gray II <james@grayproductions.net>
+
+Fri Aug  4 14:02:14 2006  James Edward Gray II  <james@grayproductions.net>
 
 	* lib/date/format.rb (__strptime, strftime): allow multi-line patterns
 	  in Date#strftime the same as Time#strftime accepts.
@@ -1197,11 +1197,11 @@ Thu Jun 15 22:06:56 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (then): remove ':' from 'then' and 'do' rules.
 
-Wed Jun 14 18:00:20 2006  Eric Hodel <drbrain@segment7.net>
+Wed Jun 14 18:00:20 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* enum.c (enum_any): Documentation typo.
 
-Wed Jun 14 15:01:09 2006  Eric Hodel <drbrain@segment7.net>
+Wed Jun 14 15:01:09 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser#warn): Don't print
 	  warnings when -q is set.
@@ -1525,7 +1525,7 @@ Wed May 24 17:55:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_aset): no longer support fixnum insertion.
 
-Wed May 24 03:10:44 2006  GOTOU Yuuzou	<gotoyuzo@notwork.org>
+Wed May 24 03:10:44 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb
 	  (OpenSSL::SSL::SocketForwarder#setsockopt,getsockopt): typo fixed.
@@ -1632,7 +1632,7 @@ Mon May 15 17:42:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_symbol_arg):
 	  typo fixed.  a patch from Florian Gross <florg at florg.net>.
 
-Sat May 13 16:14:05 2006  Tanaka Akira	<akr@m17n.org>
+Sat May 13 16:14:05 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP.mcall): new method.
 	  (Struct#pretty_print): call Kernel#class and Struct#members even if
@@ -1651,7 +1651,7 @@ Thu May 11 19:57:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* util.c (ruby_strtod): differ addition to minimize error.
 	  [ruby-dev:28619]
 
-Thu May 11 18:30:11 2006  GOTOU Yuuzou	<gotoyuzo@notwork.org>
+Thu May 11 18:30:11 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (add_cipher_name_to_ary): should return
 	  value. [ruby-dev:28627]
@@ -1691,19 +1691,19 @@ Sun May  7 03:09:51 2006  Stephan Maka  <stephan@spaceboyz.net>
 	* lib/resolv.rb (Resolv::DNS::Requester::ConnectedUDP#initialize):
 	  Use AF_INET6 for nameservers containing colons.
 
-Sat May	 6 23:40:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat May  6 23:40:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should restore old ruby_frame->block.
 	  thanks to ts <decoux at moulon.inra.fr>.  [ruby-core:07833]
 	  also fix [ruby-dev:28614] as well.
 
-Sat May	 6 00:38:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat May  6 00:38:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (trap): sig should be less then NSIG.  Coverity found
 	  this bug.  a patch from Kevin Tew <tewk at tewk.com>.
 	  [ruby-core:07823]
 
-Thu May	 4 22:13:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu May  4 22:13:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_log2): add new method inspired by
 	  [ruby-talk:191237].
@@ -1711,7 +1711,7 @@ Thu May	 4 22:13:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* math.c (math_log): add optional base argument to Math::log().
 	  [ruby-talk:191308]
 
-Thu May	 4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu May  4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_scan_scalar): avoid accessing
 	  uninitialized array element.	a patch from Pat Eyler
@@ -1724,13 +1724,13 @@ Thu May	 4 02:24:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  type_tag.  a patch from Pat Eyler <rubypate at gmail.com>.
 	  [ruby-core:07808]
 
-Wed May	 3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed May  3 02:12:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (make_hostent_internal): accept ai_family
 	  check from Sam Roberts <sroberts at uniserve.com>.
 	  [ruby-core:07691]
 
-Mon May	 1 17:58:16 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
+Mon May  1 17:58:16 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (add_event_call_back): should not
 	  delete event handler when the event name is not entried.
@@ -1829,16 +1829,16 @@ Mon Apr 10 01:03:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* prec.c (prec_prec_f): documentation patch from
 	  <gerardo.santana at gmail.com>.  [ruby-core:07689]
 
-Sat Apr	 8 02:34:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat Apr  8 02:34:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_pow): second operand may be too big even if
 	  it's a Fixnum.  [ruby-talk:187984]
 
-Sat Apr	 8 02:12:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat Apr  8 02:12:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* README.EXT: update symbol description.  [ruby-talk:188104]
 
-Sat Apr	 8 18:06:28 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
+Sat Apr  8 18:06:28 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_METHOD#inspect,
 	  WIN32OLE_PARAM#inspect.
@@ -1854,11 +1854,11 @@ Fri Apr  7 22:11:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_typelib.rb(test_initialize): ditto.
 
-Thu Apr	 6 23:28:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Apr  6 23:28:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* COPYING: explicitly note GPLv2.  [ruby-talk:187922]
 
-Thu Apr	 6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+Thu Apr  6 16:43:06 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* intern.h (rb_obj_instance_exec, rb_mod_module_exec): add declaration.
 
@@ -1891,12 +1891,12 @@ Wed Apr  5 00:22:54 2006  Tanaka Akira  <akr@m17n.org>
 	  methods take pathname argument.  suggested by Evan Phoenix.
 	  [ruby-core:7618]
 
-Tue Apr	 4 22:15:41 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Apr  4 22:15:41 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: remove some obsolete syntax rules (unparenthesized
 	  method calls in argument list).
 
-Sat Apr	 1 15:11:27 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
+Sat Apr  1 15:11:27 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c :add WIN32OLE_TYPE#inspect,
 	  WIN32OLE_VARIABLE#inspect
@@ -2030,7 +2030,7 @@ Mon Mar 20 09:40:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* configure.in: remove enable_rpath=no for Solaris.
 	  [ruby-dev:28440]
 
-Sun Mar 19 09:46:30 2006  Masaki Suketa	 <masaki.suketa@nifty.ne.jp>
+Sun Mar 19 09:46:30 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2olevariantdata): change behavior
 	  of converting	 OLE Variant object with VT_ARRAY|VT_UI1 and Ruby
@@ -2064,7 +2064,7 @@ Sat Mar 11 14:24:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ruby.1: a clarification patch from David Lutterkort
 	  <dlutter at redhat.com>.  [ruby-core:7508]
 
-Sun Mar	 5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
+Sun Mar  5 18:40:58 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: do not repeat command options.
 
@@ -2077,17 +2077,17 @@ Sat Mar  4 15:26:40 2006  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (id2ref): fix symbol test.
 
-Sat Mar	 4 01:08:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat Mar  4 01:08:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/ri/ri_paths.rb (RI::Paths): adding paths from rubygems
 	  directories.	a patch from Eric Hodel <drbrain at segment7.net>.
 	  [ruby-core:07423]
 
-Fri Mar	 3 17:59:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Fri Mar  3 17:59:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_clear_cache_by_class): clearing wrong cache.
 
-Fri Mar	 3 21:22:42 2006  Tanaka Akira	<akr@m17n.org>
+Fri Mar  3 21:22:42 2006  Tanaka Akira  <akr@m17n.org>
 
 	* lib/fileutils.rb (FileUtils.cp_r): implement :remove_destination
 	  option.
@@ -2095,7 +2095,7 @@ Fri Mar	 3 21:22:42 2006  Tanaka Akira	<akr@m17n.org>
 	* ext/extmk.rb: use :remove_destination to install extension libraries
 	  to avoid SEGV.  [ruby-dev:28417]
 
-Fri Mar	 3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
+Fri Mar  3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/dl/.cvsignore: ignore callback.h.
 
@@ -2103,24 +2103,24 @@ Fri Mar	 3 14:41:04 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/socket/.cvsignore: ignore constants.h.
 
-Thu Mar	 2 18:58:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Mar  2 18:58:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_fd_writable): should not re-schedule output
 	  from KILLED thread (must be error printing).
 
-Thu Mar	 2 09:12:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Mar  2 09:12:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_flatten_bang): allow specifying recursion
 	  level.  [ruby-talk:182170]
 
 	* array.c (rb_ary_flatten): ditto.
 
-Thu Mar	 2 08:02:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Mar  2 08:02:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (add_heap): a heap_slots may overflow.  a patch from Stefan
 	  Weil <weil at mail.berlios.de>.
 
-Wed Mar	 1 17:13:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Mar  1 17:13:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): use separate cache for fcall/vcall
 	  invocation.
@@ -2136,7 +2136,7 @@ Wed Mar	 1 17:13:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_class_local_methods): a method to list local methods.
 
-Thu Mar	 2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu Mar  2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
 	  [ruby-core:7474]
@@ -3205,7 +3205,7 @@ Sun Dec 11 22:07:58 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* test/rinda/test_rinda.rb (test_remote_array_and_hash): pseudo remote
 	  objects are protected against GC. [ruby-dev:27911]
 
-Sat Dec 10 01:06:06 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
+Sat Dec 10 01:06:06 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/matrix.rb: add Matrix#determinant_e, Matrix#rank_e.
 	  [ruby-dev:27820] and related thread.
@@ -3602,7 +3602,7 @@ Mon Nov 21 16:03:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/setup.mk: findstr doesn't exist on win9x.
 	  fixed: [ruby-dev:27756]
 
-Sun Nov 20 21:39:27 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Sun Nov 20 21:39:27 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* regparse.c (fetch_token_in_cc): tok->escaped should be
 	  initialized.  [ruby-dev:27763]
@@ -3886,7 +3886,7 @@ Tue Nov  1 14:20:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (exec_under): frame during eval should preserve external
 	  information.
 
-Tue Nov 01 10:48:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Tue Nov  1 10:48:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check ERR_peek_last_error().
 	  [ruby-dev:27597]
@@ -5555,7 +5555,7 @@ Tue Aug 30 19:34:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  ext/digest/sha1/sha1ossl.h: include <stddef.h> to avoid
 	  error in compilation with OpenSSL-0.9.8. [ruby-list:41068]
 
-Tue Aug 30 16:19:40 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
+Tue Aug 30 16:19:40 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/init.rb: bug fix. [ruby-dev: 26920]
 
@@ -5575,7 +5575,7 @@ Mon Aug 29 19:47:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* lib/rdoc/usage.rb: support the case when non-ruby code exists before
 	  shebang. (this is needed when ri.bat is executed on windows)
 
-Mon Aug 29 18:58:05 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
+Mon Aug 29 18:58:05 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	* lib/irb/init.rb: make IRB -I option that is same befavior for ruby.
 	  [ruby-dev:26872]
 
@@ -5670,7 +5670,7 @@ Sun Aug 21 00:10:23 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	  a workaround for importing an WSDL whose path begins with drive
 	  letter.  [ruby-dev:26242]
 
-Sat Aug 20 22:05:25 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Sat Aug 20 22:05:25 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* regexec.c (code_is_in_cclass_node): check code size.
 	  [ruby-dev:26840]
@@ -6231,7 +6231,7 @@ Wed Jul 27 16:25:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (lambda): Perl6 style -> lambda expression. [NEW]
 	  [VERY EXPERIMENTAL]
 
-Wed Jul 27 10:43:14 2005   Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 27 10:43:14 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (id2ref): must not assign pointers to long int.  use
 	  LONG_LONG instead if SIZEOF_LONG < SIZEOF_VOIDP.
@@ -6582,7 +6582,7 @@ Mon Jul 11 08:31:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* regparse.c (fetch_escaped_value): mask values following \c in
 	  regexp.  fixed: [ruby-dev:26500]
 
-Sun Jul 10 22:18:17 CEST 2005 Michael Neumann <mneumann@ruby-lang.org>
+Sun Jul 11 05:18:17 2005  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to
 	  WEBrick. This makes file lib/xmlrpc/httpserver.rb obsolete (at least it is
@@ -6875,7 +6875,7 @@ Sat Jun 25 11:37:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 	  conv, {eucjp, shiftjis, utf8}?
 	* ext/nkf/lib/kconv.rb: add aliases Kconv.to_* and String#to_*
 
-Fri Jun 24 17:00:00 2005  Shigeo Kobayashi <shigeo@tinyforest.jp>
+Fri Jun 24 17:00:00 2005  Shigeo Kobayashi  <shigeo@tinyforest.jp>
 
 	* ext/bigdecimal/bigdecimal.c: patch from "NATORI Shin"
 	  (u-tokyo.ac.jp) applied to fix rounding bug.
@@ -6944,7 +6944,7 @@ Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  ext/openssl/ossl_pkcs12.h, ext/openssl/ossl_x509req.c: avoid
 	  compiler warnings. suggested by Michal Rokos.
 
-Sun Jun 19 17:22:02 CEST 2005  Michael Neumann  <mneumann@ruby-lang.org>
+Sun Jun 20 00:22:02 2005  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/utils.rb: Patch by Nobuhiro IMAI fixes the following
 	  problem: Default value modification on
@@ -7823,7 +7823,7 @@ Tue Apr 26 22:58:00 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tcltklib.c (ip_invoke_core): call Tcl's "::unknown"
 	  command when can't get information of target command.
 
-Mon Apr 25 13:54:55 2005  speakillof <speakillof@yahoo.co.jp>
+Mon Apr 25 13:54:55 2005  speakillof  <speakillof@yahoo.co.jp>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb: encoding and decoding were
 	  swapped. [ruby-core:4772]
@@ -8016,7 +8016,7 @@ Thu Apr 14 05:35:45 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/slex.rb: bug fix by [ruby-core:04707].
 
-Thu Apr 14 00:20:31 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
+Thu Apr 14 00:20:31 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	* bin/irb lib/irb.rb lib/irb/...: IRB 0.9.5.
 
 Wed Apr 13 23:40:21 2005  Kouhei Sutou  <kou@cozmixng.org>
@@ -8971,7 +8971,7 @@ Wed Mar  2 12:21:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): ditto, for brace block.
 
-Tue Mar  1 21:16:54 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Tue Mar  1 21:16:54 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* regcomp.c (optimize_node_left): uninitialized member
 	  (OptEnv.backrefed_status) was used. [ruby-dev:25778]
@@ -8994,7 +8994,7 @@ Mon Feb 28 23:10:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/mkconstants.rb: ditto.
 
-Mon Feb 28 21:55:49 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Mon Feb 28 21:55:49 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* ext/strscan/strscan.c (strscan_s_allocate):
 	  use onig_region_init().
@@ -9026,7 +9026,7 @@ Sun Feb 27 05:55:38 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: fix typo. [ruby-core:04494]
 
-Sat Feb 26 16:58:20 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Sat Feb 26 16:58:20 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* parse.y, re.c, regex.h, LEGAL, ext/strscan/strscan.c:
 	  remove oniggnu.h (GNU regex API).
@@ -9152,15 +9152,15 @@ Fri Feb 18 04:06:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (fcall_gen): lvar(arg) will be evaluated as
 	  lvar.call(arg) when lvar is a defined local variable. [new]
 
-Thu Feb 17 22:15:34 2005  K.Kosako <sndgk@ybb.ne.jp>
+Thu Feb 17 22:15:34 2005  K.Kosako  <sndgk@ybb.ne.jp>
 
 	* ext/strscan/strscan.c: calls Oniguruma API directly.
 
-Thu Feb 17 21:53:12 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Thu Feb 17 21:53:12 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* common.mk, LEGAL: remove reggnu.c.
 
-Thu Feb 17 21:53:12 2005  Kazuo Saito <ksaito@uranus.dti.ne.jp>
+Thu Feb 17 21:53:12 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* gc.c, re.c: now ruby calls Oniguruma API directly, bypassing
 	  GNU compatible APIs.
@@ -10790,11 +10790,11 @@ Wed Dec  8 03:26:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: prepend LIBRUBY_SO to LD_PRELOAD as well as rubytest.rb.
 
-Wed Dec 08 01:35:44 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+Wed Dec  8 01:35:44 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (is_socket): reorder of function definitions.
 
-Wed Dec 08 00:44:31 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+Wed Dec  8 00:44:31 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): win32 bidirectional pipe support.
 
@@ -14251,7 +14251,7 @@ Wed Jun 30 16:59:39 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* test/ruby/test_file.rb (test_fnmatch): some tests for File.fnmatch
 	  are added.
 
-Wed Jun 30 11:38:51 2004  Mikael Brockman <phubuh@phubuh.org>
+Wed Jun 30 11:38:51 2004  Mikael Brockman  <phubuh@phubuh.org>
 
 	* parse.y (primary): should not be NULL.  [ruby-core:03098]
 
@@ -14823,7 +14823,7 @@ Mon May 17 00:36:21 2004  why the lucky stiff  <why@ruby-lang.org>
 	* lib/yaml/baseemitter.rb (indent_text): was forcing a mod value
 	  of zero at times, which kept some blocks from getting indentation.
 
-Mon May 17 00:07:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Mon May 17 00:07:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/drb/drb.rb: Cosmetic documentation changes.
 
@@ -14985,7 +14985,7 @@ Mon May 10 01:18:15 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb (logging): append "\n".
 
-Sun May  9 23:38:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sun May  9 23:38:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/net/ftp.rb: ported documentation improvement from 1.8 branch
 
@@ -15095,7 +15095,7 @@ Wed May  5 03:52:31 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/ring.rb: use recv instead of recvfrom.
 
-Wed May  5 00:38:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Wed May  5 00:38:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/gserver.rb: documented
 	* lib/xmlrpc/README.txt: introduced for documentation purposes
@@ -15728,7 +15728,7 @@ Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version):
 	  Add --version option
 
-Thu Mar 25 21:45:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
+Thu Mar 25 21:45:00 2004  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Bug in + and - reported by Bret Jolly
 	  fixed.
@@ -15771,7 +15771,7 @@ Thu Mar 25 02:00:18 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/generators/template/html/one_page_html.rb (Page):
 	  Fix to work with C modules.
 
-Wed Mar 24 20:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Wed Mar 24 20:49:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/uri.rb: Documented (thanks Dmitry V. Sabanin).
 	* lib/uri/common.rb: Ditto.
@@ -16083,7 +16083,7 @@ Tue Mar  9 13:04:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (rb_io_ungetc): raise IOError instead of calling
 	  rb_sys_fail().  [ruby-talk:23181]
 
-Tue Mar 09 10:03:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+Tue Mar  9 10:03:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:
 	  replaced regex.c entry with Oniguruma files.
@@ -16571,11 +16571,11 @@ Sun Feb 22 12:58:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub: ditto.
 
-Sun Feb 22 09:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sun Feb 22 09:51:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* re.c: corrected documentation format (rb_reg_initialize_m)
 
-Sat Feb 21 22:41:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sat Feb 21 22:41:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* ext/zlib/zlib.c: documented, but needs more effort.
 
@@ -16609,7 +16609,7 @@ Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list):
 	  Support visibility modifiers for attributes
 
-Thu Feb 19 22:39:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 19 22:39:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/ostruct.rb: documented
 
@@ -16624,7 +16624,7 @@ Thu Feb 19 22:24:04 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	  [ruby-dev:22588]
 	  c = class << Object.new; class C; self; end; end; SOAPMarshal.dump(c)
 
-Thu Feb 19 18:08:18 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 19 18:08:18 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* ext/strscan/strscan.c: improved documentation
 
@@ -16658,7 +16658,7 @@ Thu Feb 19 02:37:28 2004  Minero Aoki  <aamine@loveruby.net>
 	* ext/strscan/strscan.c: merge documentation from 1.8 branch.
 	  Thanks Gavin Sinclair.
 
-Thu Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 19 00:20:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/cgi-lib.rb:   deprecated after 1.8.1
 
@@ -16791,7 +16791,7 @@ Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	  it should be defined that the specification about what kind of Range
 	  is supported in ruby's custom type in YAML.
 
-Mon Feb 16 22:22:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Mon Feb 16 22:22:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/generator.rb: corrected doc format
 
@@ -16928,7 +16928,7 @@ Sat Feb 14 11:14:12 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add pretty_print, thanks gotoken.
 
-Fri Feb 13 21:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Fri Feb 13 21:51:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/fileutils.rb: slighly improved documentation (sync with 1.8)
 
@@ -16962,11 +16962,11 @@ Fri Feb 13 05:18:58 2004  Minero Aoki  <aamine@loveruby.net>
 	* test/fileutils/test_fileutils.rb: File.link raises EINVAL on
 	  Win9x. [ruby-dev:22713]
 
-Thu Feb 12 21:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 12 21:49:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/ftools.rb: documented
 
-Thu Feb 12 21:19:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 12 21:19:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/base64.rb: added and tidied documentation
 
@@ -17231,12 +17231,12 @@ Mon Feb  2 01:54:00 2004  Tanaka Akira  <akr@m17n.org>
 	  (UDPSocket#send): recognize 3 arguments form.  try all addresses on
 	  4 arguments form.
 
-Sun Feb  1 23:00:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
+Sun Feb  1 23:00:00 2004  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c: Bug in BigDecimal("1e#{n}").add BigDecimal('.5'),n)
 	  reported and fixed by Javier Goizueta.
 
-Sun Feb  1 18:21:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sun Feb  1 18:21:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	  From ruby_1_8 branch:
 	* lib/test/unit.rb: rearranged documentation for RDoc's sake.
@@ -17298,7 +17298,7 @@ Thu Jan 29 19:28:16 2004  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/http.rb (Request#initialize): reject only when a path is
 	  empty. [ruby-dev:22771]
 
-Thu Jan 29 18:54:08 2004  H.Yamamoto  <ocean@m2.ccsnet.ne.jp>.
+Thu Jan 29 18:54:08 2004  H.Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (glob_helper): infinite loop bug in win32 code.
 	  [ruby-dev:22770]
@@ -18098,7 +18098,7 @@ Tue Jan  6 01:01:04 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: fix file dependency.
 
-Mon Jan  5 20:32:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Mon Jan  5 20:32:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/logger.rb: enhanced documentation.
 
@@ -18158,11 +18158,11 @@ Wed Dec 31 17:25:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_each_byte): should return self.  [ruby-dev:22465]
 
-Wed Dec 31 15:05:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Wed Dec 31 15:05:00 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/pathname.rb: Corrected small coding error.
 
-Wed Dec 31 15:00:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Wed Dec 31 15:00:00 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/pathname.rb: Completed documentation.
 
@@ -18208,7 +18208,7 @@ Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
 
 	    def each_entry(&b) Dir.foreach(@path) {|f| yield P.new(f) } end
 
-Tue Dec 30 07:30:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Tue Dec 30 07:30:00 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/pathname.rb: Added documentation.
 
@@ -18231,7 +18231,7 @@ Mon Dec 29 05:05:51 2003  Dave Thomas  <dave@pragprog.com>
 
 	* struct.c, random: Add RDoc comments
 
-Mon Dec 29 02:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Mon Dec 29 02:25:00 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/optparse.rb: Improved documentation.
 
@@ -18364,7 +18364,7 @@ Fri Dec 26 10:58:58 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* MANIFEST: add vms/config.h and remove vms/config.h_in.
 
-Fri Dec 26 10:42:00 2003  AKIYOSHI, Masamichi <masamichi.akiyoshi@hp.com>
+Fri Dec 26 10:42:00 2003  AKIYOSHI, Masamichi  <masamichi.akiyoshi@hp.com>
 
 	* io.c: [VMS] "rfm=stmlf" is specified for open() and fopen().
 
@@ -18517,7 +18517,7 @@ Tue Dec 23 22:47:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (rb_io_check_writable): clear FMODE_RBUF before writing
 	  something.
 
-Tue Dec 23 22:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Tue Dec 23 22:25:00 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/optparse.rb: incomplete RDoc documentation added in place of
 	  existing RD comments.  Tabs converted to spaces.
@@ -18541,7 +18541,7 @@ Tue Dec 23 18:09:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* pack.c (pack_pack): remove unnecessary negative value check.
 	  [ruby-dev:22329]
 
-Tue Dec 23 17:26:55 2003  KONISHI Hiromasa   <konishih@fd6.so-net.ne.jp>
+Tue Dec 23 17:26:55 2003  KONISHI Hiromasa  <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/Makefile.sub (config.h): bcc has finite(). [ruby-list:38940]
 
@@ -19344,7 +19344,7 @@ Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/runner.rb: exit with the test result.
 
-Tue Dec  2 20:18:48 2003  Eric Sunshine <sunshine@sunshineco.com>
+Tue Dec  2 20:18:48 2003  Eric Sunshine  <sunshine@sunshineco.com>
 
 	* configure.in (AC_PROG_YACC): AC_DEFINE(OLD_YACC) if Yacc is found
 	  instead of Bison or byacc.
@@ -19407,7 +19407,7 @@ Mon Dec  1 14:17:49 2003  Minero Aoki  <aamine@loveruby.net>
 	* test/fileutils/test_fileutils.rb: does much strict test on
 	  "same" files detecting.
 
-Mon Dec  1 09:28:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Mon Dec  1 09:28:14 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
 	  (XCFLAGS): re-export $(XCFLAGS).
@@ -19491,7 +19491,7 @@ Fri Nov 28 19:37:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/ruby/test_env.rb (test_has_value, test_index): condition for
 	  aboves.
 
-Fri Nov 28 17:59:20 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Fri Nov 28 17:59:20 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_env.rb: add tests for ENV.
 
@@ -19577,7 +19577,7 @@ Wed Nov 26 00:55:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/httpserver.rb (HTTPServer#run): should pass the
 	  request's keep_alive flag to the response.
 
-Tue Nov 25 21:41:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Tue Nov 25 21:41:35 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* defines.h (ENV_IGNORECASE): should define when DOSISH without
 	  human68k. [ruby-dev:22047]
@@ -19718,7 +19718,7 @@ Mon Nov 24 17:00:00 2003  Tanaka Akira  <akr@m17n.org>
 	* lib/open-uri.rb: validate option names.
 	  :content_length_proc and :progress_proc option implemented.
 
-Mon Nov 24 14:53:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Mon Nov 24 14:53:10 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
 	  (XCFLAGS): output empty value instead of `-DRUBY_EXPORT'.
@@ -19741,12 +19741,12 @@ Sat Nov 22 22:48:46 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add native thread check
 
-Sat Nov 22 18:49:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Sat Nov 22 18:49:47 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/curses/curses.c (window_nodelay): nodelay() of NetBSD's
 	  libcruses returns no value, just like keypad().
 
-Sat Nov 22 17:36:36 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Sat Nov 22 17:36:36 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
 	  (HAVE_GETCWD): output to config.h.
@@ -19855,7 +19855,7 @@ Wed Nov 19 14:32:08 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cannot_overwrite_file?): add wince.
 
-Wed Nov 19 11:04:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Nov 19 11:04:47 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/fileutils.rb (cannot_overwrite_file?, have_st_ino?): bccwin32
 	  is same as mswin32.
@@ -19970,7 +19970,7 @@ Sun Nov 16 12:16:10 2003  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/protocol.rb: logging response body. [experimental]
 	  [ruby-list:38800]
 
-Sun Nov 16 10:49:38 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sun Nov 16 10:49:38 2003  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 	* lib/thread.rb (Thread.exclusive): wrap method definition in
 	  class Thread to enable rdoc to process.
@@ -20143,7 +20143,7 @@ Sat Nov  8 13:49:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: improvement of pthread check
 
-Sat Nov  8 13:28:46 2003 Takaaki Tateishi <ttate@ttsky.net>
+Sat Nov  8 13:28:46 2003  Takaaki Tateishi  <ttate@ttsky.net>
 	* ext/dl/sym.c: Add DL.win32_last_error and DL.last_error.
 	  Thanks, Kaoru Shirai.
 
@@ -20246,7 +20246,7 @@ Wed Nov  5 17:05:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/ui/gtk/testrunner.rb: typo.
 
-Wed Nov  5 11:13:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Nov  5 11:13:32 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c: add #include "version.h". this file still depends on it.
 
@@ -20267,7 +20267,7 @@ Wed Nov  5 08:39:51 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_ssl.c (ossl_ssl_get_peer_cert_chain): return nil
 	  if no cert-chain was given.
 
-Tue Nov  4 23:44:48 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Tue Nov  4 23:44:48 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:
 	  remove needless version.h dependency.
@@ -20373,7 +20373,7 @@ Fri Oct 31 12:55:24 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, win32/Makefile.sub: ditto.
 
-Fri Oct 31 01:38:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Fri Oct 31 01:38:14 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* wince/Makefile.sub, win32/Makefile.sub (.y.c): allow white spaces
 	  at the beginning of line to remove by sed. (ruby-bugs-ja:PR#580)
@@ -20432,7 +20432,7 @@ Thu Oct 30 10:14:51 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb: make fox runner work.
 
-Thu Oct 30 09:32:26 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Thu Oct 30 09:32:26 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_f_system): fixed lack of security check before
 	  calling do_spawn() on win32. [ruby-talk:84555]
@@ -20461,7 +20461,7 @@ Wed Oct 29 22:02:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test/drb/drbtest.rb: use rbconfig.rb to make the path of ruby
 	  interpreter to exec, instead of test/ruby/envutil.rb,
 
-Wed Oct 29 19:58:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Oct 29 19:58:59 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tcltklib/tcltklib.c (CONST84): define CONST84 when it is not
 	  defined and TCL_MAJOR_VERSION >= 8.
@@ -20493,7 +20493,7 @@ Wed Oct 29 11:27:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (ret_args): node may be NULL. [ruby-talk:84530]
 
-Tue Oct 28 15:20:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Tue Oct 28 15:20:12 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tcltklib/tcltklib.c (VwaitVarProc, ip_rbVwaitObjCmd,
 	  WaitVariableProc, WaitVisibilityProc, WaitWindowProc,
@@ -20575,7 +20575,7 @@ Tue Oct 21 15:57:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir#collect_file):
 	  prepend the directory of target file to the load path.
 
-Tue Oct 21 15:08:53 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Tue Oct 21 15:08:53 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (do_spawn, do_aspawn): should wait child process even
 	  if callded with P_OVERLAY.
@@ -20628,7 +20628,7 @@ Mon Oct 20 11:00:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* gc.c (gc_sweep): do not update malloc_limit when malloc_increase
 	  is smaller than malloc_limit.
 
-Mon Oct 20 09:45:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Mon Oct 20 09:45:12 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/debug.rb (debug_command): remove debug print.
 
@@ -20677,7 +20677,7 @@ Fri Oct 17 22:16:42 2003  Akinori MUSHA  <knu@iDaemons.org>
 	* lib/set.rb: It is not necessary to require
 	  'test/unit/ui/console/testrunner'.
 
-Fri Oct 17 11:15:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Fri Oct 17 11:15:22 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_range.rb: added.
 
@@ -20744,7 +20744,7 @@ Wed Oct 15 15:00:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (ruby_run): just return FAILURE instead of parse error
 	  count.  [ruby-list:38569]
 
-Wed Oct 15 13:17:02 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Oct 15 13:17:02 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_base_alloc): need to initialize
 	  buffer. [ruby-dev:21622]
@@ -20757,7 +20757,7 @@ Wed Oct 15 11:23:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  modules before invoking marshal_load.  these two fixes are done
 	  by Masatoshi Seki <m_seki@mva.biglobe.ne.jp>.
 
-Wed Oct 15 09:30:34 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Oct 15 09:30:34 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/enumerator/enumerator.c (enumerator_each): avoid VC++ warning.
 
@@ -21024,7 +21024,7 @@ Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_thread_start_0, rb_thread_raise, rb_callcc): save
 	  variables across THREAD_SAVE_CONTEXT.
 
-Thu Oct  9 12:05:46 2003  Eric Sunshine <sunshine@sunshineco.com>
+Thu Oct  9 12:05:46 2003  Eric Sunshine  <sunshine@sunshineco.com>
 
 	* configure.in: revived NextStep, OpenStep, and Rhapsody ports which
 	  had become unbuildable; enhanced --enable-fat-binary option so that
@@ -21443,7 +21443,7 @@ Fri Oct  3 16:13:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_x509attr.c (ossl_x509attr_get_value): return
 	  DER encoded data in OpenSSL::ASN1 types.
 
-Fri Oct  3 13:02:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+Fri Oct  3 13:02:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit.rb: refactored to use optparse.
 
@@ -21466,7 +21466,7 @@ Fri Oct  3 08:14:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/irb/ruby-lex.rb (RubyLex::identify_identifier): support
 	  'class ::Foo' syntax. [ruby-talk:83514]
 
-Fri Oct  3 08:01:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+Fri Oct  3 08:01:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: added a default message for #assert,
 	  #assert_block, and #flunk.
@@ -21562,7 +21562,7 @@ Thu Oct  2 11:17:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/collector/objectspace.rb: ditto.
 
-Thu Oct  2 03:25:01 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Thu Oct  2 03:25:01 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): prototype; avoid VC++ warning.
 
@@ -21646,11 +21646,11 @@ Wed Oct  1 17:01:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_load): Object scope had priority over required file
 	  scope.  [ruby-dev:21415]
 
-Wed Oct 01 14:09:53 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+Wed Oct  1 14:09:53 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/mkconfig_wce.rb: sorry, forget to commit.
 
-Wed Oct 01 10:08:42 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+Wed Oct  1 10:08:42 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/setup.mak: add sigmarionIII SDK support.
 
@@ -21660,7 +21660,7 @@ Wed Oct 01 10:08:42 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/mkconfig_wce.rb: camouflage RUBY_PLATFORM for compiling ext.
 
-Wed Oct 01 08:02:52 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+Wed Oct  1 08:02:52 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/time_wce.c (time): add zero check.
 
@@ -21793,7 +21793,7 @@ Sat Sep 27 03:32:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	  test/soap/marshal/test_marshal.rb crashed with
 	  test/ruby/test_marshal.rb.
 
-Sat Sep 27 01:30:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Sat Sep 27 01:30:59 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): on win32, type of the 4th
 	  argument of getsockopt is char *.
@@ -21818,7 +21818,7 @@ Fri Sep 26 00:10:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/README: updated.
 
-Thu Sep 25 17:48:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Thu Sep 25 17:48:10 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_buf2str): fix type of 1st argument for
 	  rb_protect.
@@ -21826,7 +21826,7 @@ Thu Sep 25 17:48:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	* ext/openssl/ossl_hmac.c (ossl_hmac_digest): should return meaningful
 	  value.
 
-Thu Sep 25 09:00:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+Thu Sep 25 09:00:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/ostruct.rb: Added OpenStruct#==.
 
@@ -21909,7 +21909,7 @@ Sat Sep 20 11:49:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/logger/test_logger.rb: new file.
 
-Fri Sep 19 11:39:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+Fri Sep 19 11:39:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* test/testunit/*: Added.
 
@@ -22050,7 +22050,7 @@ Mon Sep 15 19:02:52 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/mac.csv: added.  Sample CR separated CSV file.
 
-Fri Sep 12 22:41:48 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+Fri Sep 12 22:41:48 2003  Michal Rokos  <m.rokos@sh.cvut.cz>
 
 	* ext/openssl/ossl.c: move ASN.1 stuff to ossl_asn1.[ch]
 
@@ -22074,7 +22074,7 @@ Fri Sep 12 12:09:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_xor): ditto.
 
-Fri Sep 12 07:06:14 2003   David Black <dblack@superlink.net>
+Fri Sep 12 07:06:14 2003  David Black  <dblack@superlink.net>
 
 	* lib/scanf.rb: Took out useless @matched_item variable; some small
 	  refactoring.
@@ -22099,7 +22099,7 @@ Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_config.c (set_conf_section_i): should check
 	  if the argument is Array.
 
-Wed Sep 10 22:41:54 2003  Tietew <tietew@tietew.net>
+Wed Sep 10 22:41:54 2003  Tietew  <tietew@tietew.net>
 
 	* eval.c (win32_get_exception_list): avoid VC7 warning.
 	  [ruby-win32:577]
@@ -22117,7 +22117,7 @@ Tue Sep  9 05:17:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.rb: avoid compile error in OpenSSL-0.9.6.
 
-Tue Sep 9 02:41:35 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+Tue Sep  9 02:41:35 2003  Michal Rokos  <m.rokos@sh.cvut.cz>
 
 	* ext/openssl/ossl_config.c: Refine compatibility.
 
@@ -22187,7 +22187,7 @@ Sat Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_*.rb: assert_same, assert_match, and so on.
 
-Sat Sep  6 18:45:46 2003  Mauricio Fernandez <batsman.geo@yahoo.com>
+Sat Sep  6 18:45:46 2003  Mauricio Fernandez  <batsman.geo@yahoo.com>
 
 	* parse.y (assignable): call rb_compile_error(), not rb_bug().
 	  [ruby-core:01523]
@@ -22206,7 +22206,7 @@ Sat Sep  6 17:40:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509ext.c (X509::Extension#critical=): new method.
 
-Sat Sep  6 01:23:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Sat Sep  6 01:23:22 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): need to quote cmd if RUBYSHELL is set.
 
@@ -22487,12 +22487,12 @@ Sat Aug 30 03:58:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): stop TAG_RETURN/TAG_BREAK escaping.
 
-Fri Aug 29 22:35:00 2003  Shigeo Kobayashi <shigek@ruby-lang.org>
+Fri Aug 29 22:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* bigdecimal.c *.html: The 2nd arg. for add,sub,mult, and div is 0,
 	  then result will be the same as +,-,*,/ respectively.
 
-Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
+Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* process.c: bug fix
 
@@ -22567,7 +22567,7 @@ Wed Aug 27 15:07:57 2003  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/smtp.rb (check_response): AUTH CRAM-MD5 returns 334
 	  response. [ruby-list:38279]
 
-Wed Aug 27 05:10:15 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Aug 27 05:10:15 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (map_errno): support winsock error.
 
@@ -22616,7 +22616,7 @@ Sat Aug 23 18:56:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/nkf/nkf.c (rb_nkf_putchar): should use rb_str_resize() to just
 	  resize a string, rb_str_cat() disallows NULL.  [ruby-dev:21237]
 
-Sat Aug 23 16:48:41 2003  Keiju Ishitsuka <keiju@ishitsuka.com>
+Sat Aug 23 16:48:41 2003  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: bug fix for "foo" !~ /bar/. [ruby-talk:79942]
 
@@ -22641,7 +22641,7 @@ Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_scan): use rb_yield_splat().
 
-Fri Aug 22 06:13:22 2003  why the lucky stiff <why@ruby-lang.org>
+Fri Aug 22 06:13:22 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: refactoring of the transfer method
 	  dispatch.  added yaml_org_handler for faster dispatch of
@@ -22829,7 +22829,7 @@ Fri Aug 15 02:08:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* gc.c (id2ref): recycle check should be done by klass == 0.
 	  [ruby-core:01408]
 
-Fri Aug 15 01:34:23 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+Fri Aug 15 01:34:23 2003  Michal Rokos  <m.rokos@sh.cvut.cz>
 
 	* ext/openssl/ossl_pkey.c: move generate_cb here
 
@@ -22861,7 +22861,7 @@ Thu Aug 14 20:03:34 2003  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole.c (ole_initialize): stop calling
 	  OleUninitialize at exit.
 
-Thu Aug 14 11:27:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Thu Aug 14 11:27:37 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (rb_data_object_alloc): check type of 1st argument.
 	  [ruby-dev:21192]
@@ -22900,7 +22900,7 @@ Wed Aug 13 15:58:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* object.c (rb_class_s_alloc): add function prototype to avoid VC++
 	  warning.
 
-Wed Aug 13 13:50:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Aug 13 13:50:59 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): should pass some
 	  class to first argument of Data_Wrap_Struct(). (ruby-bugs:PR#1109)
@@ -23059,7 +23059,7 @@ Wed Aug  6 17:23:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: initialize /* OK */ variables by Qnil to stop warnings.
 
-Wed Aug  6 04:58:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Aug  6 04:58:32 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/Setup*: add io/wait and openssl.
 
