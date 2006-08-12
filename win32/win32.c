@@ -25,6 +25,7 @@
 #include <windows.h>
 #include <winbase.h>
 #include <wincon.h>
+#include <share.h>
 #include <shlobj.h>
 #ifdef __MINGW32__
 #include <mswsock.h>
@@ -1403,7 +1404,7 @@ rb_w32_opendir(const char *filename)
     long               idx;
     char               scannamespc[PATHLEN];
     char	      *scanname = scannamespc;
-    struct stat	       sbuf;
+    struct stati64     sbuf;
     WIN32_FIND_DATA fd;
     HANDLE          fh;
 
@@ -1411,7 +1412,7 @@ rb_w32_opendir(const char *filename)
     // check to see if we've got a directory
     //
 
-    if (rb_w32_stat(filename, &sbuf) < 0)
+    if (rb_w32_stati64(filename, &sbuf) < 0)
 	return NULL;
     if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
@@ -1570,7 +1571,7 @@ rb_w32_readdir(DIR *dirp)
 // Telldir returns the current string pointer position
 //
 
-long
+off_t
 rb_w32_telldir(DIR *dirp)
 {
     return dirp->loc;
@@ -1581,7 +1582,7 @@ rb_w32_telldir(DIR *dirp)
 // (Saved by telldir).
 
 void
-rb_w32_seekdir(DIR *dirp, long loc)
+rb_w32_seekdir(DIR *dirp, off_t loc)
 {
     rb_w32_rewinddir(dirp);
 
@@ -3223,6 +3224,20 @@ isUNCRoot(const char *path)
     return 0;
 }
 
+#define COPY_STAT(src, dest) do {		\
+	(dest).st_dev 	= (src).st_dev;		\
+	(dest).st_ino 	= (src).st_ino;		\
+	(dest).st_mode  = (src).st_mode;	\
+	(dest).st_nlink = (src).st_nlink;	\
+	(dest).st_uid   = (src).st_uid;		\
+	(dest).st_gid   = (src).st_gid;		\
+	(dest).st_rdev 	= (src).st_rdev;	\
+	(dest).st_size 	= (src).st_size;	\
+	(dest).st_atime = (src).st_atime;	\
+	(dest).st_mtime = (src).st_mtime;	\
+	(dest).st_ctime = (src).st_ctime;	\
+    } while (0)
+
 #ifdef __BORLANDC__
 #undef fstat
 int
@@ -3236,6 +3251,25 @@ rb_w32_fstat(int fd, struct stat *st)
     if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info) &&
 	!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
 	st->st_mode |= S_IWUSR;
+    }
+    return ret;
+}
+
+int
+rb_w32_fstati64(int fd, struct stati64 *st)
+{
+    BY_HANDLE_FILE_INFORMATION info;
+    struct stat tmp;
+    int ret = fstat(fd, &tmp);
+
+    if (ret) return ret;
+    tmp.st_mode &= ~(S_IWGRP | S_IWOTH);
+    COPY_STAT(tmp, *st);
+    if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
+	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
+	    st->st_mode |= S_IWUSR;
+	}
+	st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
     }
     return ret;
 }
@@ -3309,12 +3343,12 @@ fileattr_to_unixmode(DWORD attr, const char *path)
 }
 
 static int
-winnt_stat(const char *path, struct stat *st)
+winnt_stat(const char *path, struct stati64 *st)
 {
     HANDLE h;
     WIN32_FIND_DATA wfd;
 
-    memset(st, 0, sizeof(struct stat));
+    memset(st, 0, sizeof(*st));
     st->st_nlink = 1;
 
     if (_mbspbrk(path, "?*")) {
@@ -3328,7 +3362,7 @@ winnt_stat(const char *path, struct stat *st)
 	st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
 	st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
-	st->st_size  = wfd.nFileSizeLow; /* TODO: 64bit support */
+	st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
     }
     else {
 	// If runtime stat(2) is called for network shares, it fails on WinNT.
@@ -3349,6 +3383,16 @@ winnt_stat(const char *path, struct stat *st)
 
 int
 rb_w32_stat(const char *path, struct stat *st)
+{
+    struct stati64 tmp;
+
+    if (rb_w32_stati64(path, &tmp)) return -1;
+    COPY_STAT(tmp, *st);
+    return 0;
+}
+
+int
+rb_w32_stati64(const char *path, struct stati64 *st)
 {
     const char *p;
     char *buf1, *s, *end;
@@ -3379,14 +3423,149 @@ rb_w32_stat(const char *path, struct stat *st)
 	    *end = '\0';
 	else if (*end != '\\')
 	    strcat(buf1, "\\");
-    } else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
+    }
+    else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
 	strcat(buf1, ".");
 
-    ret = IsWinNT() ? winnt_stat(buf1, st) : stat(buf1, st);
+    ret = IsWinNT() ? winnt_stat(buf1, st) : stati64(buf1, st);
     if (ret == 0) {
 	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }
     return ret;
+}
+
+static int
+rb_chsize(HANDLE h, off_t size)
+{
+    long upos, lpos, usize, lsize, uend, lend;
+    off_t end;
+    int ret = -1;
+    DWORD e;
+
+    if (((lpos = SetFilePointer(h, 0, (upos = 0, &upos), SEEK_CUR)) == -1L &&
+	 (e = GetLastError())) ||
+	((lend = GetFileSize(h, (DWORD *)&uend)) == -1L && (e = GetLastError()))) {
+	errno = map_errno(e);
+	return -1;
+    }
+    end = ((off_t)uend << 32) | (unsigned long)lend;
+    usize = (long)(size >> 32);
+    lsize = (long)size;
+    if (SetFilePointer(h, lsize, &usize, SEEK_SET) == -1L &&
+	(e = GetLastError())) {
+	errno = map_errno(e);
+    }
+    else if (!SetEndOfFile(h)) {
+	errno = map_errno(GetLastError());
+    }
+    else {
+	ret = 0;
+    }
+    SetFilePointer(h, lpos, &upos, SEEK_SET);
+    return ret;
+}
+
+int
+truncate(const char *path, off_t length)
+{
+    HANDLE h;
+    int ret;
+    if (IsWin95()) {
+	int fd = open(path, O_WRONLY), e;
+	if (fd == -1) return -1;
+	ret = chsize(fd, (unsigned long)length);
+	if (ret == -1) e = errno;
+	close(fd);
+	if (ret == -1) errno = e;
+	return ret;
+    }
+    h = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+    if (h == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    ret = rb_chsize(h, length);
+    CloseHandle(h);
+    return ret;
+}
+
+int
+ftruncate(int fd, off_t length)
+{
+    long h;
+
+    if (IsWin95()) {
+	return chsize(fd, (unsigned long)length);
+    }
+    h = _get_osfhandle(fd);
+    if (h == -1) return -1;
+    return rb_chsize((HANDLE)h, length);
+}
+
+#ifdef __BORLANDC__
+off_t
+_filelengthi64(int fd)
+{
+    DWORD u, l;
+    int e;
+
+    l = GetFileSize((HANDLE)_get_osfhandle(fd), &u);
+    if (l == (DWORD)-1L && (e = GetLastError())) {
+	errno = map_errno(e);
+	return (off_t)-1;
+    }
+    return ((off_t)u << 32) | l;
+}
+
+off_t
+_lseeki64(int fd, off_t offset, int whence)
+{
+    long u, l;
+    int e;
+    HANDLE h = (HANDLE)_get_osfhandle(fd);
+
+    if (!h) {
+	errno = EBADF;
+	return -1;
+    }
+    u = (long)(offset >> 32);
+    if ((l = SetFilePointer(h, (long)offset, &u, whence)) == -1L &&
+	(e = GetLastError())) {
+	errno = map_errno(e);
+	return -1;
+    }
+    return ((off_t)u << 32) | l;
+}
+#endif
+
+int
+fseeko(FILE *stream, off_t offset, int whence)
+{
+    off_t pos;
+    switch (whence) {
+      case SEEK_CUR:
+	if (fgetpos(stream, (fpos_t *)&pos))
+	    return -1;
+	pos += offset;
+	break;
+      case SEEK_END:
+	if ((pos = _filelengthi64(fileno(stream))) == (off_t)-1)
+	    return -1;
+	pos += offset;
+	break;
+      default:
+	pos = offset;
+	break;
+    }
+    return fsetpos(stream, (fpos_t *)&pos);
+}
+
+off_t
+ftello(FILE *stream)
+{
+    off_t pos;
+    if (fgetpos(stream, (fpos_t *)&pos)) return (off_t)-1;
+    return pos;
 }
 
 static long
@@ -3931,10 +4110,10 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     SYSTEMTIME st;
     FILETIME atime, mtime;
     struct tm *tm;
-    struct stat stat;
+    struct stati64 stat;
     int ret = 0;
 
-    if (rb_w32_stat(path, &stat)) {
+    if (rb_w32_stati64(path, &stat)) {
 	return -1;
     }
 

@@ -1,3 +1,8 @@
+Sat Aug 12 15:55:32 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, bcc32/Makefile.sub, win32/Makefile.sub, win32/dir.h,
+	  win32/win32.c, win32/win32.h: large file support for win32.
+
 Fri Aug 11 15:39:25 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_body): Make RDoc

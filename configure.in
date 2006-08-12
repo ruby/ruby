@@ -218,6 +218,13 @@ fi
 dnl check for large file stuff
 AC_SYS_LARGEFILE
 
+case "$target_os" in
+mingw*)
+	ac_cv_type_off_t=yes
+	ac_cv_sizeof_off_t=8
+	;;
+esac
+
 AC_CHECK_TYPES([long long, off_t])
 
 AC_CHECK_SIZEOF(int, 4)
@@ -378,6 +385,9 @@ mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_func_isnan=yes
 		ac_cv_func_finite=yes
 		ac_cv_func_link=yes
+		ac_cv_func_truncate=yes
+		ac_cv_func_fseeko=yes
+		ac_cv_func_ftello=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_setpgrp_void=yes

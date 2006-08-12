@@ -29,8 +29,8 @@ typedef struct {
 
 DIR*           rb_w32_opendir(const char*);
 struct direct* rb_w32_readdir(DIR *);
-long           rb_w32_telldir(DIR *);
-void           rb_w32_seekdir(DIR *, long);
+off_t          rb_w32_telldir(DIR *);
+void           rb_w32_seekdir(DIR *, off_t);
 void           rb_w32_rewinddir(DIR *);
 void           rb_w32_closedir(DIR *);
 

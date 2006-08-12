@@ -214,13 +214,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
 \#define HAVE_STDLIB_H 1
 \#define HAVE_STRING_H 1
 \#define HAVE_MEMORY_H 1
+\#define HAVE_LONG_LONG 1
 \#define HAVE_OFF_T 1
 \#define SIZEOF_INT 4
 \#define SIZEOF_SHORT 2
 \#define SIZEOF_LONG 4
 \#define SIZEOF_LONG_LONG 0
 \#define SIZEOF___INT64 8
-\#define SIZEOF_OFF_T 4
+\#define SIZEOF_OFF_T 8
 \#define SIZEOF_VOIDP 4
 \#define SIZEOF_FLOAT 4
 \#define SIZEOF_DOUBLE 8
@@ -264,7 +265,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
 \#define HAVE_WAITPID 1
 \#define HAVE_FSYNC 1
 \#define HAVE_GETCWD 1
-\#define HAVE_CHSIZE 1
+\#define HAVE_TRUNCATE 1
+\#define HAVE_FSEEKO 1
+\#define HAVE_FTELLO 1
 \#define HAVE_TIMES 1
 \#define HAVE_FCNTL 1
 \#define HAVE_LINK 1

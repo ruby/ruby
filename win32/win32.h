@@ -94,6 +94,8 @@ extern DWORD rb_w32_osid(void);
 #undef fgetchar
 #undef fputchar
 #undef utime
+#undef lseek
+#undef fstat
 #define getc(_stream)		rb_w32_getc(_stream)
 #define getchar()		rb_w32_getc(stdin)
 #define putc(_c, _stream)	rb_w32_putc(_c, _stream)
@@ -104,6 +106,7 @@ extern DWORD rb_w32_osid(void);
 #define fgetchar()		getchar()
 #define fputchar(_c)		putchar(_c)
 #define utime(_p, _t)		rb_w32_utime(_p, _t)
+#define lseek(_f, _o, _w)	_lseeki64(_f, _o, _w)
 
 #define pipe(p)			_pipe(p, 2048L, O_BINARY)
 #define close(h)		rb_w32_close(h)
@@ -113,6 +116,7 @@ extern DWORD rb_w32_osid(void);
 #define getpid()		rb_w32_getpid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
+#define fstat(fd,st)		_fstati64(fd,st)
 #ifdef __BORLANDC__
 #define creat(p, m)		_creat(p, m)
 #define eof()			_eof()
@@ -121,8 +125,7 @@ extern DWORD rb_w32_osid(void);
 #define tell(h)			_tell(h)
 #define _open			_sopen
 #define sopen			_sopen
-#undef fstat
-#define fstat(fd,st)		rb_w32_fstat(fd,st)
+#define _fstati64(fd,st)	rb_w32_fstati64(fd,st)
 #undef fopen
 #define fopen(p, m)		rb_w32_fopen(p, m)
 #undef fdopen
@@ -131,8 +134,6 @@ extern DWORD rb_w32_osid(void);
 #define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
 #endif
 
-#undef stat
-#define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
@@ -146,6 +147,25 @@ extern DWORD rb_w32_osid(void);
 #define rmdir(p)		rb_w32_rmdir(p)
 #undef unlink
 #define unlink(p)		rb_w32_unlink(p)
+#endif
+
+#if SIZEOF_OFF_T == 8
+#define off_t __int64
+#define stat stati64
+#if defined(__BORLANDC__)
+#define stati64(path, st) rb_w32_stati64(path, st)
+#elif !defined(_MSC_VER) || _MSC_VER < 1400
+#define stati64 _stati64
+#define _stati64(path, st) rb_w32_stati64(path, st)
+#else
+#define stati64 _stat64
+#define _stat64(path, st) rb_w32_stati64(path, st)
+#endif
+#else
+#define stat(path,st)		rb_w32_stat(path,st)
+#define fstat(fd,st)		rb_w32_fstat(fd,st)
+extern int rb_w32_stat(const char *, struct stat *);
+extern int rb_w32_fstat(int, struct stat *);
 #endif
 
 #define strcasecmp(s1, s2)	stricmp(s1, s2)
@@ -220,10 +240,11 @@ extern int rb_w32_isatty(int);
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
 extern int rb_w32_unlink(const char *);
-extern int rb_w32_stat(const char *, struct stat *);
+extern int rb_w32_stati64(const char *, struct stati64 *);
 
 #ifdef __BORLANDC__
-extern int rb_w32_fstat(int, struct stat *);
+extern int rb_w32_fstati64(int, struct stati64 *);
+extern off_t _lseeki64(int, off_t, int);
 extern FILE *rb_w32_fopen(const char *, const char *);
 extern FILE *rb_w32_fdopen(int, const char *);
 extern FILE *rb_w32_fsopen(const char *, const char *, int);
@@ -297,6 +318,10 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 //
 
 #define SUFFIX
+extern int       truncate(const char *path, off_t length);
+extern int       ftruncate(int fd, off_t length);
+extern int       fseeko(FILE *stream, off_t offset, int whence);
+extern off_t     ftello(FILE *stream);
 
 //
 // stubs
