@@ -87,9 +87,7 @@ typedef struct {
 
 NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
 static inline void
-rb_jump_context(env, val)
-    rb_jmpbuf_t env;
-    int val;
+rb_jump_context(rb_jmpbuf_t env, int val)
 {
     env->status = val;
     setcontext(&env->context);
@@ -1344,8 +1342,7 @@ is_ruby_native_thread(void)
 
 # ifdef HAVE_NATIVETHREAD_KILL
 void
-ruby_native_thread_kill(sig)
-    int sig;
+ruby_native_thread_kill(int sig)
 {
     NATIVETHREAD_KILL(ruby_thid, sig);
 }
@@ -11763,8 +11760,7 @@ static int thread_init = 0;
 
 #if defined(_THREAD_SAFE)
 static void
-catch_timer(sig)
-    int sig;
+catch_timer(int sig)
 {
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, catch_timer);
@@ -11775,8 +11771,7 @@ catch_timer(sig)
 static pthread_t time_thread;
 
 static void*
-thread_timer(dummy)
-    void *dummy;
+thread_timer(void *dummy)
 {
     for (;;) {
 #ifdef HAVE_NANOSLEEP

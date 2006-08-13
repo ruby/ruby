@@ -182,10 +182,7 @@ static st_table *undef_tbl;
 static int load_lib();
 
 static int
-load_header(fd, hdrp, disp)
-    int fd;
-    struct exec *hdrp;
-    long disp;
+load_header(int fd, struct exec *hdrp, long disp)
 {
     int size;
 
@@ -255,10 +252,7 @@ static int reloc_r_length[] = {
 #endif
 
 static struct relocation_info *
-load_reloc(fd, hdrp, disp)
-     int fd;
-     struct exec *hdrp;
-     long disp;
+load_reloc(int fd, struct exec *hdrp, long disp)
 {
     struct relocation_info *reloc;
     int size;
@@ -281,10 +275,7 @@ load_reloc(fd, hdrp, disp)
 }
 
 static struct nlist *
-load_sym(fd, hdrp, disp)
-    int fd;
-    struct exec *hdrp;
-    long disp;
+load_sym(int fd, struct exec *hdrp, long disp)
 {
     struct nlist * buffer;
     struct nlist * sym;
@@ -325,9 +316,7 @@ load_sym(fd, hdrp, disp)
 }
 
 static st_table *
-sym_hash(hdrp, syms)
-    struct exec *hdrp;
-    struct nlist *syms;
+sym_hash(struct exec *hdrp, struct nlist *syms)
 {
     st_table *tbl;
     struct nlist *sym = syms;
@@ -347,8 +336,7 @@ sym_hash(hdrp, syms)
 }
 
 static int
-dln_init(prog)
-    const char *prog;
+dln_init(const char *prog)
 {
     char *file;
     int fd;
@@ -422,11 +410,7 @@ dln_init(prog)
 }
 
 static long
-load_text_data(fd, hdrp, bss, disp)
-    int fd;
-    struct exec *hdrp;
-    int bss;
-    long disp;
+load_text_data(int fd, struct exec *hdrp, int bss, long disp)
 {
     int size;
     unsigned char* addr;
@@ -460,8 +444,7 @@ load_text_data(fd, hdrp, bss, disp)
 }
 
 static int
-undef_print(key, value)
-    char *key, *value;
+undef_print(char *key, char *value)
 {
     fprintf(stderr, "  %s\n", key);
     return ST_CONTINUE;
@@ -498,10 +481,7 @@ struct undef {
 
 static st_table *reloc_tbl = NULL;
 static void
-link_undef(name, base, reloc)
-    const char *name;
-    long base;
-    struct relocation_info *reloc;
+link_undef(const char *name, long base, struct relocation_info *reloc)
 {
     static int u_no = 0;
     struct undef *obj;
@@ -534,10 +514,7 @@ struct reloc_arg {
 };
 
 static int
-reloc_undef(no, undef, arg)
-    int no;
-    struct undef *undef;
-    struct reloc_arg *arg;
+reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
 {
     int datum;
     char *address;
@@ -598,9 +575,7 @@ reloc_undef(no, undef, arg)
 }
 
 static void
-unlink_undef(name, value)
-    const char *name;
-    long value;
+unlink_undef(const char *name, long value)
 {
     struct reloc_arg arg;
 
@@ -615,10 +590,7 @@ struct indr_data {
 };
 
 static int
-reloc_repl(no, undef, data)
-    int no;
-    struct undef *undef;
-    struct indr_data *data;
+reloc_repl(int no, struct undef *undef, struct indr_data *data)
 {
     if (strcmp(data->name0, undef->name) == 0) {
 	free(undef->name);
@@ -629,10 +601,7 @@ reloc_repl(no, undef, data)
 #endif
 
 static int
-load_1(fd, disp, need_init)
-    int fd;
-    long disp;
-    const char *need_init;
+load_1(int fd, long disp, const char *need_init)
 {
     static char *libc = LIBC_NAME;
     struct exec hdr;
@@ -913,10 +882,7 @@ load_1(fd, disp, need_init)
 
 static int target_offset;
 static int
-search_undef(key, value, lib_tbl)
-    const char *key;
-    int value;
-    st_table *lib_tbl;
+search_undef(const char *key, int value, st_table *lib_tbl)
 {
     long offset;
 
@@ -933,8 +899,7 @@ struct symdef {
 char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 
 static int
-load_lib(lib)
-    const char *lib;
+load_lib(const char *lib)
 {
     char *path, *file;
     char armagic[SARMAG];
@@ -1071,8 +1036,7 @@ load_lib(lib)
 }
 
 static int
-load(file)
-    const char *file;
+load(const char *file)
 {
     int fd;
     int result;
@@ -1097,8 +1061,7 @@ load(file)
 }
 
 void*
-dln_sym(name)
-    const char *name;
+dln_sym(const char *name)
 {
     struct nlist *sym;
 
@@ -1630,10 +1593,7 @@ dln_find_file(const char *fname, const char *path)
 
 #if defined(__CYGWIN32__)
 const char *
-conv_to_posix_path(win32, posix, len)
-    char *win32;
-    char *posix;
-    int len;
+conv_to_posix_path(char *win32, char *posix, int len)
 {
     char *first = win32;
     char *p = win32;

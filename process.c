@@ -623,9 +623,7 @@ struct wait_data {
 };
 
 static int
-wait_each(pid, status, data)
-    int pid, status;
-    struct wait_data *data;
+wait_each(int pid, int status, struct wait_data *data)
 {
     if (data->status != -1) return ST_STOP;
 
@@ -635,9 +633,7 @@ wait_each(pid, status, data)
 }
 
 static int
-waitall_each(pid, status, ary)
-    int pid, status;
-    VALUE ary;
+waitall_each(int pid, int status, VALUE ary)
 {
     last_status_set(status, pid);
     rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status));
@@ -1065,9 +1061,7 @@ rb_proc_exec(const char *str)
 #define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, prog, argv)
 #else
 static int
-proc_spawn_v(argv, prog)
-    char **argv;
-    char *prog;
+proc_spawn_v(char **argv, char *prog)
 {
     char *extension;
     int status;
@@ -1131,8 +1125,7 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 #define proc_spawn(str) rb_w32_spawn(P_NOWAIT, str, 0)
 #else
 static int
-proc_spawn(str)
-    char *str;
+proc_spawn(char *str)
 {
     char *s, *t;
     char **argv, **a;
@@ -1266,8 +1259,7 @@ rb_exec(const struct rb_exec_arg *e)
 #define proc_syswait (VALUE (*)(VALUE))rb_syswait
 #else
 static VALUE
-proc_syswait(pid)
-    VALUE pid;
+proc_syswait(VALUE pid)
 {
     rb_syswait((int)pid);
     return Qnil;

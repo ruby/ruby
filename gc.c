@@ -504,8 +504,7 @@ set_stack_end(VALUE **stack_end_p)
 #else
 static int grow_direction;
 static int
-stack_grow_direction(addr)
-    VALUE *addr;
+stack_grow_direction(VALUE *addr)
 {
     SET_STACK_END;
 

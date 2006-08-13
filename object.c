@@ -719,8 +719,7 @@ nil_inspect(VALUE obj)
 
 #ifdef NIL_PLUS
 static VALUE
-nil_plus(x, y)
-    VALUE x, y;
+nil_plus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_NIL:

@@ -102,8 +102,7 @@ char *strchr(char*,char);
 #elif defined(__EMX__)
 # define Next(p) ((p) + emx_mblen(p))
 static inline int
-emx_mblen(p)
-    const char *p;
+emx_mblen(const char *p)
 {
     int n = mblen(p, RUBY_MBCHAR_MAXSIZE);
     return (n < 0) ? 1 : n;
