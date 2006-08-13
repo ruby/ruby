@@ -2817,8 +2817,7 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-sock_accept(sock)
-    VALUE sock;
+sock_accept(VALUE sock)
 {
     OpenFile *fptr;
     VALUE sock2;
@@ -2880,8 +2879,7 @@ sock_accept(sock)
  * * Socket#accept
  */
 static VALUE
-sock_accept_nonblock(sock)
-    VALUE sock;
+sock_accept_nonblock(VALUE sock)
 {
     OpenFile *fptr;
     VALUE sock2;
