@@ -1,3 +1,8 @@
+Sat Aug 12 22:33:06 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* string.c (String#split): Describe grouping behavior.  Patch by Jan
+	  Svitok <jan.svitok at gmail.com>.  [ruby-core:08603]
+
 Sun Aug 13 12:08:02 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c: ANSIfied.  [ruby-core:08601]

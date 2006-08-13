@@ -3256,7 +3256,8 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
  *     
  *  If <i>pattern</i> is a <code>Regexp</code>, <i>str</i> is divided where the
  *  pattern matches. Whenever the pattern matches a zero-length string,
- *  <i>str</i> is split into individual characters.
+ *  <i>str</i> is split into individual characters. If <i>pattern</i> contains
+ *  groups, the respective matches will be returned in the array as well.
  *     
  *  If <i>pattern</i> is omitted, the value of <code>$;</code> is used.  If
  *  <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
