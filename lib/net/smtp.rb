@@ -1,8 +1,8 @@
 # = net/smtp.rb
 # 
-# Copyright (c) 1999-2004 Yukihiro Matsumoto.
+# Copyright (c) 1999-2006 Yukihiro Matsumoto.
 #
-# Copyright (c) 1999-2004 Minero Aoki.
+# Copyright (c) 1999-2006 Minero Aoki.
 # 
 # Written & maintained by Minero Aoki <aamine@loveruby.net>.
 #
@@ -23,7 +23,7 @@ require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
 begin
-  require "openssl"
+  require 'openssl'
 rescue LoadError
 end
 
@@ -174,38 +174,68 @@ module Net
       25
     end
 
-    @use_tls = false
-    @verify = nil
-    @certs = nil
-
-    # Enable SSL for all new instances.
-    # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_PEER.
-    # +certs+ is a file or directory holding CA certs to use to verify the 
-    # server cert; Defaults to nil.
-    def SMTP.enable_tls(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
-      @use_tls = true
-      @verify = verify
-      @certs = certs  
+    # The default SMTP/SSL port, port 465.
+    def SMTP.default_ssl_port
+      465
     end
 
-    # Disable SSL for all new instances.
+    # The default SMTP/TLS (STARTTLS) port, port 587.
+    def SMTP.default_tls_port
+      587
+    end
+
+    @ssl = false
+    @tls = false
+    @ssl_context = nil
+
+    # Enables SMTP/SSL for all new objects.
+    # +context+ is a OpenSSL::SSL::SSLContext object.
+    def SMTP.enable_ssl(context = SMTP.default_ssl_context)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      raise ArgumentError, "SSL and TLS is exclusive" if @tls
+      @ssl = true
+      @ssl_context = context
+    end
+
+    # Disables SMTP/SSL for all new objects.
+    def SMTP.disable_ssl
+      @ssl = false
+      @ssl_context = nil
+    end
+
+    # true if new objects use SMTP/SSL.
+    def SMTP.use_ssl?
+      @ssl
+    end
+
+    # Enables SMTP/SSL for all new objects.
+    # +context+ is a OpenSSL::SSL::Context object.
+    def SMTP.enable_tls(context = SMTP.default_ssl_context)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      raise ArgumentError, "SSL and TLS is exclusive" if @ssl
+      @tls = false
+      @ssl_context = context
+    end
+
+    # Disable SMTP/TLS for all new objects.
     def SMTP.disable_tls
-      @use_tls = nil
-      @verify = nil
-      @certs = nil
+      @tls = false
+      @ssl_context = nil
     end
 
+    # true if new objects use SMTP/TLS.
     def SMTP.use_tls?
-      @use_tls
+      @tls
     end
 
-    def SMTP.verify
-      @verify
+    def SMTP.ssl_context
+      @ssl_context
     end
 
-    def SMTP.certs
-      @certs
+    def SMTP.default_ssl_context
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx
     end
     
     #
@@ -229,9 +259,16 @@ module Net
       @read_timeout = 60
       @error_occured = false
       @debug_output = nil
-      @use_tls = SMTP.use_tls?
-      @certs = SMTP.certs
-      @verify = SMTP.verify      
+      if SMTP.use_ssl? or SMTP.use_tls?
+        @ssl = true
+        if SMTP.use_ssl?
+          @ssl_mode = :ssl
+        else
+          @ssl_mode = :tls
+        end
+        @certs = SMTP.certs
+        @verify = SMTP.verify      
+      end
     end
     
     # Provide human-readable stringification of class state.
@@ -257,26 +294,47 @@ module Net
 
     alias esmtp esmtp?
 
-    # does this instance use SSL?
+    # true if this object uses SMTP/SSL.
+    def use_ssl?
+      @ssl
+    end
+
+    # true if this object uses SMTP/TLS
     def use_tls?
-      @use_tls
+      @tls
+    end
+
+    # Enables SMTP/SSL for this object.  Must be called before the
+    # connection is established to have any effect.
+    # +context+ is a OpenSSL::SSL::SSLContext object.
+    def enable_ssl(context = SMTP.default_ssl_context)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      raise ArgumentError, "SSL and TLS is exclusive" if @tls
+      @ssl = true
+      @ssl_context = context
     end
     
-    # Enables STARTTLS for this instance.
-    # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_PEER.
-    # +certs+ is a file or directory holding CA certs to use to verify the 
-    # server cert; Defaults to nil.
-    def enable_tls(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
-      @use_tls = true
-      @verify = verify
-      @certs = certs
+    # Disables SMTP/SSL for this object.  Must be called before the
+    # connection is established to have any effect.
+    def disable_ssl
+      @ssl = false
+      @ssl_context = nil
     end
     
+    # Enables SMTP/TLS (STARTTLS) for this object.
+    # +context+ is a OpenSSL::SSL::SSLContext object.
+    def enable_tls(context = SMTP.default_ssl_context)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      raise ArgumentError, "SSL and TLS is exclusive" if @ssl
+      @tls = true
+      @ssl_context = context
+    end
+
+    # Disables SMTP/TLS (STARTTLS) for this object.  Must be called
+    # before the connection is established to have any effect.
     def disable_tls
-      @use_tls = false
-      @verify = nil
-      @certs = nil
+      @ssl = false
+      @ssl_context = nil
     end
 
     # The address of the SMTP server to connect to.
@@ -316,9 +374,11 @@ module Net
     #     ....
     #   end
     #
-    def set_debug_output(arg)
+    def debug_output=(arg)
       @debug_output = arg
     end
+
+    alias set_debug_output debug_output=
 
     #
     # SMTP session control
@@ -437,54 +497,51 @@ module Net
               user = nil, secret = nil, authtype = nil)   # :yield: smtp
       if block_given?
         begin
-          do_start(helo, user, secret, authtype)
+          do_start helo, user, secret, authtype
           return yield(self)
         ensure
           do_finish
         end
       else
-        do_start(helo, user, secret, authtype)
+        do_start helo, user, secret, authtype
         return self
       end
     end
 
-    def do_start(helodomain, user, secret, authtype)
-      raise IOError, 'SMTP session already started' if @started
-      check_auth_args user, secret, authtype if user or secret
-      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }   
-      @socket = InternetMessageIO.new(s)
+    # Finishes the SMTP session and closes TCP connection.
+    # Raises IOError if not started.
+    def finish
+      raise IOError, 'not yet started' unless started?
+      do_finish
+    end
 
-      logging "SMTP session opened: #{@address}:#{@port}"
-      @socket.read_timeout = @read_timeout
-      @socket.debug_output = @debug_output
+    private
+
+    def do_start(helo_domain, user, secret, authtype)
+      raise IOError, 'SMTP session already started' if @started
+      if user or secret
+        check_auth_method authtype
+        check_auth_args user, secret
+      end
+      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }   
+      logging "Connection opened: #{@address}:#{@port}"
+      if use_ssl?
+        s = new_ssl_socket(s)
+        s.connect
+        logging "SMTP/SSL started"
+      end
+      @socket = new_internet_message_io(s)
       check_response(critical { recv_response() })
-      do_helo(helodomain)
-      
-      if @use_tls
-        raise 'openssl library not installed' unless defined?(OpenSSL)
-        context = OpenSSL::SSL::SSLContext.new
-        context.verify_mode = @verify
-        if @certs
-          if File.file?(@certs)
-            context.ca_file = @certs
-          elsif File.directory?(@certs)
-            context.ca_path = @certs
-          else
-            raise ArgumentError, "certs given but is not file or directory: #{@certs}"
-          end
-        end
-        s = OpenSSL::SSL::SSLSocket.new(s, context)
-        s.sync_close = true
+      do_helo helo_domain
+      if use_tls?
+        s = new_ssl_socket(s)
         starttls
         s.connect
-        logging 'TLS started'
-        @socket = InternetMessageIO.new(s)
-        @socket.read_timeout = @read_timeout
-        @socket.debug_output = @debug_output
+        logging "SMTP/TLS started"
+        @socket = new_internet_message_io(s)
         # helo response may be different after STARTTLS
-        do_helo(helodomain)
+        do_helo helo_domain
       end
-
       authenticate user, secret, authtype if user
       @started = true
     ensure
@@ -494,17 +551,26 @@ module Net
         @socket = nil
       end
     end
-    private :do_start
 
-    # method to send helo or ehlo based on defaults and to
-    # retry with helo if server doesn't like ehlo.
-    # 
-    def do_helo(helodomain)
+    def new_internet_message_io(s)
+      io = InternetMessageIO.new(s)
+      io.read_timeout = @read_timeout
+      io.debug_output = @debug_output
+      io
+    end
+
+    def new_ssl_socket(s)
+      s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
+      s.sync_close = true
+      s
+    end
+
+    def do_helo(helo_domain)
        begin
         if @esmtp
-          ehlo helodomain
+          ehlo helo_domain
         else
-          helo helodomain
+          helo helo_domain
         end
       rescue ProtocolError
         if @esmtp
@@ -515,14 +581,6 @@ module Net
         raise
       end
     end
-      
-
-    # Finishes the SMTP session and closes TCP connection.
-    # Raises IOError if not started.
-    def finish
-      raise IOError, 'not yet started' unless started?
-      do_finish
-    end
 
     def do_finish
       quit if @socket and not @socket.closed? and not @error_occured
@@ -532,10 +590,9 @@ module Net
       @socket.close if @socket and not @socket.closed?
       @socket = nil
     end
-    private :do_finish
 
     #
-    # message send
+    # Message Sending
     #
 
     public
@@ -571,9 +628,10 @@ module Net
     # * TimeoutError
     #
     def send_message(msgstr, from_addr, *to_addrs)
-      send0(from_addr, to_addrs.flatten) {
-        @socket.write_message msgstr
-      }
+      raise IOError, 'closed session' unless @socket
+      mailfrom from_addr
+      rcptto_list to_addrs
+      data msgstr
     end
 
     alias send_mail send_message
@@ -624,71 +682,45 @@ module Net
     # * TimeoutError
     #
     def open_message_stream(from_addr, *to_addrs, &block)   # :yield: stream
-      send0(from_addr, to_addrs.flatten) {
-        @socket.write_message_by_block(&block)
-      }
+      raise IOError, 'closed session' unless @socket
+      mailfrom from_addr
+      rcptto_list to_addrs
+      data(&block)
     end
 
     alias ready open_message_stream   # obsolete
 
-    private
-
-    def send0(from_addr, to_addrs)
-      raise IOError, 'closed session' unless @socket
-      raise ArgumentError, 'mail destination not given' if to_addrs.empty?
-      if $SAFE > 0
-        raise SecurityError, 'tainted from_addr' if from_addr.tainted?
-        to_addrs.each do |to| 
-          raise SecurityError, 'tainted to_addr' if to.tainted?
-        end
-      end
-
-      mailfrom from_addr
-      to_addrs.each do |to|
-        rcptto to
-      end
-      res = critical {
-        check_response(get_response('DATA'), true)
-        yield
-        recv_response()
-      }
-      check_response(res)
-    end
-
     #
-    # auth
+    # Authentication
     #
 
-    private
-
-    def check_auth_args(user, secret, authtype)
-      raise ArgumentError, 'both user and secret are required'\
-                      unless user and secret
-      auth_method = "auth_#{authtype || 'cram_md5'}"
-      raise ArgumentError, "wrong auth type #{authtype}"\
-                      unless respond_to?(auth_method, true)
-    end
+    public
 
     def authenticate(user, secret, authtype)
-      __send__("auth_#{authtype || 'cram_md5'}", user, secret)
+      check_auth_method authtype
+      check_auth_args user, secret
+      funcall "auth_#{authtype || 'cram_md5'}", user, secret
     end
 
     def auth_plain(user, secret)
+      check_auth_args user, secret
       res = critical { get_response('AUTH PLAIN %s',
                                     base64_encode("\0#{user}\0#{secret}")) }
-      raise SMTPAuthenticationError, res unless /\A2../ === res
+      raise SMTPAuthenticationError, res unless /\A2../ =~ res
     end
 
     def auth_login(user, secret)
+      check_auth_args user, secret
       res = critical {
         check_response(get_response('AUTH LOGIN'), true)
         check_response(get_response(base64_encode(user)), true)
         get_response(base64_encode(secret))
       }
-      raise SMTPAuthenticationError, res unless /\A2../ === res
+      raise SMTPAuthenticationError, res unless /\A2../ =~ res
     end
 
     def auth_cram_md5(user, secret)
+      check_auth_args user, secret
       # CRAM-MD5: [RFC2195]
       res = nil
       critical {
@@ -709,7 +741,25 @@ module Net
 
         res = get_response(base64_encode(user + ' ' + tmp))
       }
-      raise SMTPAuthenticationError, res unless /\A2../ === res
+      raise SMTPAuthenticationError, res  unless /\A2../ =~ res
+    end
+
+    private
+
+    def check_auth_method(type)
+      mid = "auth_#{type || 'cram_md5'}"
+      unless respond_to?(mid, true)
+        raise ArgumentError, "wrong authentication type #{type}"
+      end
+    end
+
+    def check_auth_args(user, secret)
+      unless user
+        raise ArgumentError, 'SMTP-AUTH requested but missing user name'
+      end
+      unless secret
+        raise ArgumentError, 'SMTP-AUTH requested but missing secret phrase'
+      end
     end
 
     def base64_encode(str)
@@ -721,7 +771,11 @@ module Net
     # SMTP command dispatcher
     #
 
-    private
+    public
+
+    def starttls
+      getok('STARTTLS')
+    end
 
     def helo(domain)
       getok('HELO %s', domain)
@@ -731,24 +785,72 @@ module Net
       getok('EHLO %s', domain)
     end
 
-    def mailfrom(fromaddr)
-      getok('MAIL FROM:<%s>', fromaddr)
+    def mailfrom(from_addr)
+      if $SAFE > 0
+        raise SecurityError, 'tainted from_addr' if from_addr.tainted?
+      end
+      getok('MAIL FROM:<%s>', from_addr)
     end
 
-    def rcptto(to)
-      getok('RCPT TO:<%s>', to)
+    def rcptto_list(to_addrs)
+      raise ArgumentError, 'mail destination not given' if to_addrs.empty?
+      to_addrs.each do |addr|
+        rcptto addr
+      end
+    end
+
+    def rcptto(to_addr)
+      if $SAFE > 0
+        raise SecurityError, 'tainted to_addr' if to.tainted?
+      end
+      getok('RCPT TO:<%s>', to_addr)
+    end
+
+    # This method sends a message.
+    # If +msgstr+ is given, sends it as a message.
+    # If block is given, yield a message writer stream.
+    # You must write message before the block is closed.
+    #
+    #   # Example 1 (by string)
+    #   smtp.data(<<EndMessage)
+    #   From: john@example.com
+    #   To: betty@example.com
+    #   Subject: I found a bug
+    #   
+    #   Check vm.c:58879.
+    #   EndMessage
+    #
+    #   # Example 2 (by block)
+    #   smtp.data {|f|
+    #     f.puts "From: john@example.com"
+    #     f.puts "To: betty@example.com"
+    #     f.puts "Subject: I found a bug"
+    #     f.puts ""
+    #     f.puts "Check vm.c:58879."
+    #   }
+    #
+    def data(msgstr = nil, &block)   #:yield: stream
+      if msgstr and block
+        raise ArgumentError, "message and block are exclusive"
+      end
+      unless msgstr or block
+        raise ArgumentError, "message or block is required"
+      end
+      res = critical {
+        check_response(get_response('DATA'), true)
+        if msgstr
+          @socket.write_message msgstr
+        else
+          @socket.write_message_by_block(&block)
+        end
+        recv_response()
+      }
+      check_response(res)
     end
 
     def quit
       getok('QUIT')
     end
-
-    def starttls
-      getok('STARTTLS')
-    end
-    #
-    # row level library
-    #
 
     private
 
@@ -776,15 +878,24 @@ module Net
     end
 
     def check_response(res, allow_continue = false)
-      return res if /\A2/ === res
-      return res if allow_continue and /\A3/ === res
-      err = case res
-            when /\A4/  then SMTPServerBusy
-            when /\A50/ then SMTPSyntaxError
-            when /\A55/ then SMTPFatalError
-            else SMTPUnknownError
-            end
-      raise err, res
+      case res
+      when /\A2/
+        return res
+      when /\A3/
+        unless allow_continue
+          raise SMTPUnknownError,
+              "got response 3xx but not DATA: #{res.inspect}"
+        end
+        return res
+      when /\A4/
+        raise SMTPServerBusy, res
+      when /\A50/
+        raise SMTPSyntaxError, res
+      when /\A55/
+        raise SMTPFatalError, res
+      else
+        raise SMTPUnknownError, res
+      end
     end
 
     def critical(&block)
@@ -805,4 +916,4 @@ module Net
 
   SMTPSession = SMTP
 
-end   # module Net
+end

@@ -1,3 +1,48 @@
+Tue Aug 15 11:21:08 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: support SMTP/SSL.  Thanks Kazuhiro NISHIYAMA.
+
+	* lib/net/smtp.rb: new method SMTP.use_ssl?
+
+	* lib/net/smtp.rb: new method SMTP.enable_ssl.
+
+	* lib/net/smtp.rb: new method SMTP.disable_ssl.
+
+	* lib/net/smtp.rb: new method SMTP.default_ssl_port.
+
+	* lib/net/smtp.rb: new method SMTP.default_tls_port.
+
+	* lib/net/smtp.rb: now SMTP#enable_tls accepts a SSLContext
+	  object, instead of a verity and cert.  [FEATURE CHANGE]
+
+	* lib/net/smtp.rb: new method SMTP.ssl_context.
+
+	* lib/net/smtp.rb: new method SMTP.default_ssl_context.
+
+	* lib/net/smtp.rb: export SMTP.authenticate.
+
+	* lib/net/smtp.rb: export SMTP.auth_plain.
+
+	* lib/net/smtp.rb: export SMTP.auth_login.
+
+	* lib/net/smtp.rb: export SMTP.auth_cram_md5.
+
+	* lib/net/smtp.rb: export SMTP.starttls.
+
+	* lib/net/smtp.rb: export SMTP.helo.
+
+	* lib/net/smtp.rb: export SMTP.ehlo.
+
+	* lib/net/smtp.rb: export SMTP.mailfrom.
+
+	* lib/net/smtp.rb: export SMTP.rcptto.
+
+	* lib/net/smtp.rb: export SMTP.rcptto_list.
+
+	* lib/net/smtp.rb: export SMTP.data.
+
+	* lib/net/smtp.rb: export SMTP.quit.
+
 Sat Aug 12 22:33:06 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (String#split): Describe grouping behavior.  Patch by Jan
