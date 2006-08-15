@@ -16237,7 +16237,7 @@ Sun Mar  7 02:06:07 2004  Minero Aoki  <aamine@loveruby.net>
 	* ext/openssl/lib/net/https.rb: removed.  moved to net/https with
 	  slight modifications.
 
-	* ext/openssl/lib/net/protocol.rb: removed.  merged with net/http.
+	* ext/openssl/lib/net/protocols.rb: removed.  merged with net/http.
 
 	* lib/net/protocol.rb: new class BufferedIO.
 
