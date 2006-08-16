@@ -757,7 +757,7 @@ r_byte(struct load_arg *arg)
 	VALUE src = arg->src;
 	VALUE v = rb_funcall2(src, s_getc, 0, 0);
 	if (NIL_P(v)) rb_eof_error();
-	c = (unsigned char)FIX2INT(v);
+	c = (unsigned char)NUM2CHR(v);
     }
     return c;
 }
