@@ -1065,18 +1065,13 @@ set_arg0(val, id)
 
     if (i >= len) {
 	i = len;
-	memcpy(origargv[0], s, i);
-	origargv[0][i] = '\0';
     }
-    else {
-	memcpy(origargv[0], s, i);
-	s = origargv[0]+i;
-	*s++ = '\0';
-	while (++i < len)
-	    *s++ = ' ';
-	for (i = 1; i < origargc; i++)
-	    origargv[i] = 0;
-    }
+    memcpy(origargv[0], s, i);
+    s = origargv[0] + i;
+    *s = '\0';
+    if (++i < len) memset(s + 1, ' ', len - i);
+    for (i = 1; i < origargc; i++)
+	origargv[i] = s;
     rb_progname = rb_tainted_str_new2(origargv[0]);
 #endif
 }
