@@ -1,3 +1,8 @@
+Wed Aug 16 17:22:44 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (pre-install-local): remove unnecessary code.
+	  [ruby-dev:29249]
+
 Wed Aug 16 11:45:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_setuid, proc_setgid, proc_seteuid, proc_setegid):

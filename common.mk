@@ -121,8 +121,6 @@ do-install-doc: $(PROGRAM)
 
 pre-install: pre-install-local pre-install-ext
 pre-install-local:: PHONY
-	$(RM) $(prefix)/lib/$(LIBRUBY)
-	$(RM) -r $(prefix)/lib/ruby/$(MAJOR).$(MINOR)/$(arch)
 pre-install-ext:: PHONY
 pre-install-doc:: PHONY
 
