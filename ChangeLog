@@ -1,3 +1,8 @@
+Wed Aug 16 11:09:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_arg0): fill argv other than the first with an empty
+	  string instead of NULL.
+
 Tue Aug 15 11:21:08 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: support SMTP/SSL.  Thanks Kazuhiro NISHIYAMA.
