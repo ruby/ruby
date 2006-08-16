@@ -127,7 +127,6 @@ extern DWORD rb_w32_osid(void);
 #define eof()			_eof()
 #define filelength(h)		_filelength(h)
 #define mktemp(t)		_mktemp(t)
-#define read(h, b, l)		_read(h, b, l)
 #define tell(h)			_tell(h)
 #define unlink(p)		_unlink(p)
 #define _open			_sopen
