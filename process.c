@@ -2152,8 +2152,23 @@ proc_setuid(obj, id)
  *
  */
 
-static int SAVED_USER_ID;
+static int SAVED_USER_ID = -1;
 
+#ifdef BROKEN_SETREUID
+int
+setreuid(ruid, euid)
+    rb_uid_t ruid, euid;
+{
+    if (ruid != -1 && ruid != getuid()) {
+	if (euid == -1) euid = geteuid();
+	if (setuid(ruid) < 0) return -1;
+    }
+    if (euid != -1 && euid != geteuid()) {
+	if (seteuid(euid) < 0) return -1;
+    }
+    return 0;
+}
+#endif
 
 /*
  *  call-seq:
@@ -2497,7 +2512,7 @@ proc_setgid(obj, id)
 #elif defined HAVE_SETREGID
     if (setregid(gid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETRGID
-    if (setrgid((GIDTYPE)gid) < 0) rb_sys_fail(0);
+    if (setrgid(gid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETGID
     {
 	if (getegid() == gid) {
@@ -2702,8 +2717,23 @@ proc_setmaxgroups(VALUE obj, VALUE val)
  *
  */
 
-static int SAVED_GROUP_ID;
+static int SAVED_GROUP_ID = -1;
 
+#ifdef BROKEN_SETREGID
+int
+setregid(rgid, egid)
+    rb_gid_t rgid, egid;
+{
+    if (rgid != -1 && rgid != getgid()) {
+	if (egid == -1) egid = getegid();
+	if (setgid(rgid) < 0) return -1;
+    }
+    if (egid != -1 && egid != getegid()) {
+	if (setegid(egid) < 0) return -1;
+    }
+    return 0;
+}
+#endif
 
 /*
  *  call-seq:

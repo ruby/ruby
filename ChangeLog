@@ -1,3 +1,8 @@
+Wed Aug 16 11:45:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_setuid, proc_setgid, proc_seteuid, proc_setegid):
+	  get rid of bogus implementations on Mac OS X.
+
 Tue Aug 15 19:10:18 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment): Fix
