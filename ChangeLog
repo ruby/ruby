@@ -1,3 +1,8 @@
+Tue Aug 15 19:10:18 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment): Fix
+	  broken class-level documentation.
+
 Wed Aug 16 11:09:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_arg0): fill argv other than the first with an empty
