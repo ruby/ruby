@@ -80,7 +80,7 @@ module Rinda
     # address of the local TupleSpace.
 
     def do_reply
-      tuple = @ts.take([:lookup_ring, DRbObject])
+      tuple = @ts.take([:lookup_ring, nil])
       Thread.new { tuple[1].call(@ts) rescue nil}
     rescue
     end

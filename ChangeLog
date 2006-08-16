@@ -1,3 +1,9 @@
+Thu Aug 17 00:39:05 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/ring.rb (do_reply): Fix for RingServer fails to find a
+	  TupleSpace when TupleSpace resides in the same ruby process with
+	  RingServer. a path from Kent Sibilev. [ruby-core:08453]
+
 Wed Aug 16 11:45:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_setuid, proc_setgid, proc_seteuid, proc_setegid):
