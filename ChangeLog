@@ -1,3 +1,8 @@
+Fri Aug 18 01:05:57 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::out): specify -m0 to disable MIME decode.  a
+	  patch from Fujioka <fuj at rabbix.jp>.  [ruby-dev:29284]
+
 Thu Aug 17 19:15:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_[rRwWxX]): check for super user.
