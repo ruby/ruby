@@ -849,13 +849,17 @@ group_member(gid)
 #  define S_IXUGO		(S_IXUSR | S_IXGRP | S_IXOTH)
 #endif
 
+#if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
+#define USE_GETEUID 1
+#endif
+
 #ifndef HAVE_EACCESS
 int
 eaccess(path, mode)
      const char *path;
      int mode;
 {
-#if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
+#ifdef USE_GETEUID
     struct stat st;
     int euid;
 
@@ -3744,6 +3748,9 @@ rb_stat_r(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (geteuid() == 0) return Qtrue;
+#endif
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
 	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
@@ -3777,6 +3784,9 @@ rb_stat_R(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (getuid() == 0) return Qtrue;
+#endif
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
 	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
@@ -3808,6 +3818,9 @@ rb_stat_w(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (geteuid() == 0) return Qtrue;
+#endif
 #ifdef S_IWUSR
     if (rb_stat_owned(obj))
 	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
@@ -3839,6 +3852,9 @@ rb_stat_W(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (getuid() == 0) return Qtrue;
+#endif
 #ifdef S_IWUSR
     if (rb_stat_rowned(obj))
 	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
@@ -3872,6 +3888,11 @@ rb_stat_x(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (geteuid() == 0) {
+	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+    }
+#endif
 #ifdef S_IXUSR
     if (rb_stat_owned(obj))
 	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
@@ -3901,6 +3922,11 @@ rb_stat_X(obj)
 {
     struct stat *st = get_stat(obj);
 
+#ifdef USE_GETEUID
+    if (getuid() == 0) {
+	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+    }
+#endif
 #ifdef S_IXUSR
     if (rb_stat_rowned(obj))
 	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
