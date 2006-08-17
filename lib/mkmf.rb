@@ -549,6 +549,11 @@ def checking_for(m, fmt = nil)
   r
 end
 
+# Returns whether or not +macro+ is defined either in the common header
+# files or within any +headers+ you provide.
+#
+# Any options you pass to +opt+ are passed along to the compiler.
+#
 def have_macro(macro, headers = nil, opt = "", &b)
   m = "#{macro}"
   m << " in #{headers.inspect}" if headers
@@ -557,6 +562,17 @@ def have_macro(macro, headers = nil, opt = "", &b)
   end
 end
 
+# Returns whether or not the given entry point +func+ can be found within
+# +lib+.  If +func+ is nil, the 'main()' entry point is used by default.
+# If found, it adds the library to list of libraries to be used when linking
+# your extension.
+#
+# If +headers+ are provided, it will include those header files as the
+# header files it looks in when searching for +func+.
+#
+# Real name of the library to be linked can be altered by
+# '--with-FOOlib' configuration option.
+#
 def have_library(lib, func = nil, headers = nil, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
@@ -575,6 +591,13 @@ def have_library(lib, func = nil, headers = nil, &b)
   end
 end
 
+# Returns whether or not the entry point +func+ can be found within the library
+# +lib+ in one of the +paths+ specified, where +paths+ is an array of strings.
+# If +func+ is nil , then the main() function is used as the entry point.
+#
+# If +lib+ is found, then the path it was found on is added to the list of
+# library paths searched and linked against.
+#
 def find_library(lib, func, *paths, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
@@ -597,6 +620,14 @@ def find_library(lib, func, *paths, &b)
   end
 end
 
+# Returns whether or not the function +func+ can be found in the common
+# header files, or within any +headers+ that you provide.  If found, a
+# macro is passed as a preprocessor constant to the compiler using the
+# function name, in uppercase, prepended with 'HAVE_'.
+#
+# For example, if have_func('foo') returned true, then the HAVE_FOO
+# preprocessor macro would be passed to the compiler.
+#
 def have_func(func, headers = nil, &b)
   checking_for "#{func}()" do
     if try_func(func, $libs, headers, &b)
@@ -608,6 +639,14 @@ def have_func(func, headers = nil, &b)
   end
 end
 
+# Returns whether or not the variable +var+ can be found in the common
+# header files, or within any +headers+ that you provide.  If found, a
+# macro is passed as a preprocessor constant to the compiler using the
+# variable name, in uppercase, prepended with 'HAVE_'.
+#
+# For example, if have_var('foo') returned true, then the HAVE_FOO
+# preprocessor macro would be passed to the compiler.
+#
 def have_var(var, headers = nil, &b)
   checking_for "#{var}" do
     if try_var(var, headers, &b)
@@ -619,6 +658,13 @@ def have_var(var, headers = nil, &b)
   end
 end
 
+# Returns whether or not the given +header+ file can be found on your system.
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the header file name, in uppercase, prepended with 'HAVE_'.
+#
+# For example, if have_header('foo.h') returned true, then the HAVE_FOO_H
+# preprocessor macro would be passed to the compiler.
+#
 def have_header(header, &b)
   checking_for header do
     if try_cpp(cpp_include(header), &b)
@@ -630,6 +676,12 @@ def have_header(header, &b)
   end
 end
 
+# Instructs mkmf to search for the given +header+ in any of the +paths+
+# provided, and returns whether or not it was found in those paths.
+#
+# If the header is found then the path it was found on is added to the list
+# of included directories that are sent to the compiler (via the -I switch).
+#
 def find_header(header, *paths)
   header = cpp_include(header)
   checking_for header do
@@ -650,11 +702,22 @@ def find_header(header, *paths)
   end
 end
 
-def have_struct_member(type, member, header = nil, &b)
+# Returns whether or not the struct of type +type+ contains +member+.  If
+# it does not, or the struct type can't be found, then false is returned.  You
+# may optionally specify additional +headers+ in which to look for the struct
+# (in addition to the common header files).
+#
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the member name, in uppercase, prepended with 'HAVE_ST_'.
+#
+# For example, if have_struct_member('foo', 'bar') returned true, then the
+# HAVE_ST_BAR preprocessor macro would be passed to the compiler.
+# 
+def have_struct_member(type, member, headers = nil, &b)
   checking_for "#{type}.#{member}" do
     if try_compile(<<"SRC", &b)
 #{COMMON_HEADERS}
-#{cpp_include(header)}
+#{cpp_include(headers)}
 /*top*/
 int main() { return 0; }
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
@@ -667,6 +730,19 @@ SRC
   end
 end
 
+# Returns whether or not the static type +type+ is defined.  You may
+# optionally pass additional +headers+ to check against in addition to the
+# common header files.
+#
+# You may also pass additional flags to +opt+ which are then passed along to
+# the compiler.
+#
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the type name, in uppercase, prepended with 'HAVE_TYPE_'.
+#
+# For example, if have_type('foo') returned true, then the HAVE_TYPE_FOO
+# preprocessor macro would be passed to the compiler.
+#
 def have_type(type, headers = nil, opt = "", &b)
   checking_for type do
     headers = cpp_include(headers)
@@ -689,14 +765,24 @@ SRC
   end
 end
 
-def check_sizeof(type, header = nil, &b)
+# Returns the size of the given +type+.  You may optionally specify additional
+# +headers+ to search in for the +type+.
+#
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the type name, in uppercase, prepended with 'SIZEOF_', followed by the type
+# name, followed by '=X' where 'X' is the actual size.
+#
+# For example, if check_sizeof('mystruct') returned 12, then the
+# SIZEOF_MYSTRUCT=12 preprocessor macro would be passed to the compiler.
+#
+def check_sizeof(type, headers = nil, &b)
   expr = "sizeof(#{type})"
   fmt = "%d"
   def fmt.%(x)
     x ? super : "failed"
   end
   checking_for("size of #{type}", fmt) do
-    if size = try_constant(expr, header, &b)
+    if size = try_constant(expr, headers, &b)
       $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
       size
     end
@@ -850,6 +936,17 @@ def create_header(header = "extconf.h")
   $extconf_h = header
 end
 
+# Sets a +target+ name that the user can then use to configure various 'with'
+# options with on the command line by using that name.  For example, if the
+# target is set to "foo", then the user could use the --with-foo-dir command
+# line option.
+#
+# You may pass along additional 'include' or 'lib' defaults via the +idefault+
+# and +ldefault+ parameters, respectively.
+#
+# Note that dir_config only adds to the list of places to search for libraries
+# and include files.  It does not link the libraries into your application.
+#
 def dir_config(target, idefault=nil, ldefault=nil)
   if dir = with_config(target + "-dir", (idefault unless ldefault))
     defaults = Array === dir ? dir : dir.split(File::PATH_SEPARATOR)
@@ -1026,6 +1123,23 @@ all install static install-so install-rb: Makefile
 RULES
 end
 
+# Generates the Makefile for your extension, passing along any options and
+# preprocessor constants that you may have generated through other methods.
+#
+# The +target+ name should correspond the name of the global function name
+# defined within your C extension, minus the 'Init_'.  For example, if your
+# C extension is defined as 'Init_foo', then your target would simply be 'foo'.
+#
+# If any '/' characters are present in the target name, only the last name
+# is interpreted as the target name, and the rest are considered toplevel
+# directory names, and the generated Makefile will be altered accordingly to
+# follow that directory structure.
+#
+# For example, if you pass 'test/foo' as a target name, your extension will
+# be installed under the 'test' directory.  This means that in order to
+# load the file within a Ruby program later, that directory structure will
+# have to be followed, e.g. "require 'test/foo'".
+#
 def create_makefile(target, srcprefix = nil)
   $target = target
   libpath = $LIBPATH

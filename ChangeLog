@@ -1,3 +1,7 @@
+Thu Aug 17 14:47:06 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmmf.rb: added rdoc by Daniel Berger.  [ruby-core:08177]
+
 Wed Aug 16 17:46:59 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_byte): IO#getc returns one byte string now.
