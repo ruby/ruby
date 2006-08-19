@@ -2180,10 +2180,16 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
     FilePathValue(to);
     src = StringValueCStr(from);
     dst = StringValueCStr(to);
+#if defined __CYGWIN__
+    errno = 0;
+#endif
     if (rename(src, dst) < 0) {
 #if defined __CYGWIN__
 	extern unsigned long __attribute__((stdcall)) GetLastError(void);
-	errno = GetLastError(); /* This is a Cygwin bug */
+	if (errno == 0) {	/* This is a bug of old Cygwin */
+	    /* incorrect as cygwin errno, but the last resort */
+	    errno = GetLastError();
+	}
 #elif defined DOSISH && !defined _WIN32
 	if (errno == EEXIST
 #if defined (__EMX__)
