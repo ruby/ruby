@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.9"
+#define WIN32OLE_VERSION "0.8.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2228,11 +2228,11 @@ hash2named_arg(VALUE pair, struct oleparam* pOp)
     VALUE key, value;
     index = pOp->dp.cNamedArgs;
 
-    /*-------------------------------------
-      the data-type of key must be String
-    ---------------------------------------*/
+    /*---------------------------------------------
+      the data-type of key must be String or Symbol
+    -----------------------------------------------*/
     key = rb_ary_entry(pair, 0);
-    if(TYPE(key) != T_STRING) {
+    if(TYPE(key) != T_STRING && TYPE(key) != T_SYMBOL) {
         /* clear name of dispatch parameters */
         for(i = 1; i < index + 1; i++) {
             SysFreeString(pOp->pNamedArgs[i]);
@@ -2242,7 +2242,10 @@ hash2named_arg(VALUE pair, struct oleparam* pOp)
             VariantClear(&(pOp->dp.rgvarg[i]));
         }
         /* raise an exception */
-        Check_Type(key, T_STRING);
+        rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+    }
+    if (TYPE(key) == T_SYMBOL) {
+        key = rb_str_new2(rb_id2name(SYM2ID(key)));
     }
 
     /* pNamedArgs[0] is <method name>, so "index + 1" */
