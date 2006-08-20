@@ -1387,6 +1387,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 {
     VALUE to, step;
 
+    RETURN_ENUMERATOR(from, argc, argv);
     if (argc == 1) {
 	to = argv[0];
 	step = INT2FIX(1);
