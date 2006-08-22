@@ -9,6 +9,10 @@ Sat Aug 19 11:28:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (rb_file_s_rename): use errno if set properly.
 	  fixed: [ruby-dev:29293]
 
+Sat Aug 19 11:09:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (then): remove semicolon warning.  [ruby-dev:29299]
+
 Thu Aug 17 19:15:16 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_[rRwWxX]): check for super user.
