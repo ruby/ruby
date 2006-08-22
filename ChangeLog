@@ -1,3 +1,8 @@
+Tue Aug 22 12:35:57 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): fix regexp for
+	  euc-jp [ruby-dev:29344]
+
 Sun Aug 20 11:46:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_step): also return an enumerator object if no block

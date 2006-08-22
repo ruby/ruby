@@ -63,8 +63,8 @@ module Kconv
   RegexpEucjp = /\A(?:
 		    [\x00-\x7f]                         |
 		    \x8e        [\xa1-\xdf]             |
-		    \x8f        [\xa1-\xdf] [\xa1-\xfe] |
-		    [\xa1-\xdf] [\xa1-\xfe]
+		    \x8f        [\xa1-\xfe] [\xa1-\xfe] |
+		    [\xa1-\xfe] [\xa1-\xfe]
 		   )*\z/nx
 
   # Regexp of UTF-8 string (private constant)
