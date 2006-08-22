@@ -135,14 +135,14 @@ module REXML
       # the XML spec.  If there is one, we can determine the encoding from
       # it.
       str = @source.read( 2 )
-      if (str[0] == 254 && str[1] == 255) || (str[0] == 255 && str[1] == 254)
-        @encoding = check_encoding( str )
+      if /\A(?:\xfe\xff|\xff\xfe)/n =~ str
+        self.encoding = check_encoding( str )
         @line_break = encode( '>' )
       else
         @line_break = '>'
       end
       super str+@source.readline( @line_break )
-		end
+    end
 
 		def scan(pattern, cons=false)
 			rv = super

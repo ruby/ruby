@@ -1,3 +1,8 @@
+Wed Aug 23 00:25:14 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#initialize): encoding have to
+	  be set with the accessor.  fixed: [ruby-list:42737]
+
 Tue Aug 22 19:21:00 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: parameter `to_addrs' might be an Array,
