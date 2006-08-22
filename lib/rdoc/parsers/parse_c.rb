@@ -553,7 +553,7 @@ module RDoc
     def find_body(meth_name, meth_obj, body, quiet = false)
       case body
       when %r{((?>/\*.*?\*/\s*))(?:static\s+)?VALUE\s+#{meth_name}
-              \s*(\([^)]*\))\s*\{.*?^\}}xm
+              \s*(\(.*?\)).*?^}xm
         comment, params = $1, $2
         body_text = $&
 
