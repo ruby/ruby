@@ -1,3 +1,9 @@
+Tue Aug 22 18:47:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_method):
+	  rdoc documents C module methods as instance methods. a patch in
+	  [ruby-core:08536]. 
+
 Sat Aug 19 14:15:02 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): include winsock2.h instead of
@@ -1579,6 +1585,9 @@ Tue Apr 18 00:11:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Aug 11 15:39:25 2006  Eric Hodel  <drbrain@segment7.net>
 
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_body): Make RDoc
+	  ignore C function prototypes.  Patch by Tilman Sauerbeck
+	  <tilman at code-monkey.de>.  [ruby-core:8574]
 	* lib/yaml/tag.rb: Replace nodoc with stopdoc so Module methods get
 	  documented.
 
