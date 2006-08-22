@@ -1,3 +1,8 @@
+Tue Aug 22 19:21:00 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: parameter `to_addrs' might be an Array,
+	  .flatten is required. [ruby-dev:29316]
+
 Tue Aug 22 12:35:57 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): fix regexp for

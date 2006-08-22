@@ -794,7 +794,7 @@ module Net
 
     def rcptto_list(to_addrs)
       raise ArgumentError, 'mail destination not given' if to_addrs.empty?
-      to_addrs.each do |addr|
+      to_addrs.flatten.each do |addr|
         rcptto addr
       end
     end
