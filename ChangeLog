@@ -1444,6 +1444,11 @@ Thu May 11 19:57:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* util.c (ruby_strtod): differ addition to minimize error.
 	  [ruby-dev:28619]
 
+Fri Aug 11 15:39:25 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/yaml/tag.rb: Replace nodoc with stopdoc so Module methods get
+	  documented.
+
 Thu May 11 18:10:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): should not raise ERANGE when the input
