@@ -521,7 +521,8 @@ module RDoc
           type = "singleton_method"
         end
         meth_obj = AnyMethod.new("", meth_name)
-        meth_obj.singleton = type == "singleton_method" 
+        meth_obj.singleton =
+	  %w{singleton_method module_function}.include?(type) 
         
         p_count = (Integer(param_count) rescue -1)
         
