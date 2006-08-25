@@ -51,7 +51,7 @@ class TestRPC < Test::Unit::TestCase
 
   def teardown
     teardown_server
-    #File.unlink(pathname('echo.rb'))
+    File.unlink(pathname('echo.rb'))
     @client.reset_stream if @client
   end
 

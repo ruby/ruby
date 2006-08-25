@@ -1,3 +1,10 @@
+Fri Aug 25 20:35:57 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/wsdl/document/echo.rb: removed.
+
+	* test/wsdl/document/test_rpc.rb: remove echo.rb after test.
+	  [ruby-dev:29337]
+
 Fri Aug 25 16:05:50 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_call): check if the receiver is given.
