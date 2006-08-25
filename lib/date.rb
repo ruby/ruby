@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.15 2005-02-06 11:09:53+09 tadf Exp $
+# $Id: date.rb,v 2.21 2006-08-19 22:38:12+09 tadf Exp $
 #++
 #
 # == Overview
@@ -249,6 +249,50 @@ class Date
   # Abbreviated day names, in English.
   ABBR_DAYNAMES = %w(Sun Mon Tue Wed Thu Fri Sat)
 
+  class Infinity < Numeric # :nodoc:
+
+    include Comparable
+
+    def initialize(d=1) @d = d <=> 0 end
+
+    def d() @d end
+
+    protected :d
+
+    def zero? () false end
+    def finite? () false end
+    def infinite? () d.nonzero? end
+    def nan? () d.zero? end
+
+    def abs() self.class.new end
+
+    def -@ () self.class.new(-d) end
+    def +@ () self.class.new(+d) end
+
+    def <=> (other)
+      case other
+      when Infinity; d <=> other.d
+      when Numeric; d
+      else
+	begin
+	  l, r = other.coerce(self)
+	  return l <=> r
+	rescue NoMethodError
+	end
+      end
+      nil
+    end
+
+    def coerce(other)
+      case other
+      when Numeric; return -d, d
+      else
+	super
+      end
+    end
+
+  end
+
   # The Julian Day Number of the Day of Calendar Reform for Italy
   # and the Catholic countries.
   ITALY     = 2299161 # 1582-10-15
@@ -259,11 +303,11 @@ class Date
 
   # A constant used to indicate that a Date should always use the
   # Julian calendar.
-  JULIAN    = false
+  JULIAN    =  Infinity.new
 
   # A constant used to indicate that a Date should always use the
   # Gregorian calendar.
-  GREGORIAN = true
+  GREGORIAN = -Infinity.new
 
   # Does a given Julian Day Number fall inside the old-style (Julian)
   # calendar?
@@ -273,10 +317,16 @@ class Date
   # the answer is true; or it may a number representing the Day of
   # Calendar Reform. Date::ENGLAND and Date::ITALY are two possible such
   # days.
-  def self.os? (jd, sg)
+  def self.julian? (jd, sg)
     case sg
-    when Numeric; jd < sg
-    else;         not sg
+    when Numeric
+      jd < sg
+    else
+      if $VERBOSE
+	warn("#{caller.shift.sub(/:in .*/, '')}: " \
+"warning: do not use non-numerical object as julian day number anymore")
+      end
+      not sg
     end
   end
 
@@ -285,7 +335,15 @@ class Date
   #
   # The reverse of self.os?  See the documentation for that method for
   # more details.
-  def self.ns? (jd, sg) not os?(jd, sg) end
+  def self.gregorian? (jd, sg) not julian?(jd, sg) end
+
+  def self.fix_style(jd, sg) # :nodoc:
+    if julian?(jd, sg)
+    then JULIAN
+    else GREGORIAN end
+  end
+
+  private_class_method :fix_style
 
   # Convert a Civil Date to a Julian Day Number.
   # +y+, +m+, and +d+ are the year, month, and day of the
@@ -302,7 +360,7 @@ class Date
     jd = (365.25 * (y + 4716)).floor +
       (30.6001 * (m + 1)).floor +
       d + b - 1524
-    if os?(jd, sg)
+    if julian?(jd, sg)
       jd -= b
     end
     jd
@@ -315,7 +373,7 @@ class Date
   # Returns the corresponding [year, month, day_of_month]
   # as a three-element array.
   def self.jd_to_civil(jd, sg=GREGORIAN)
-    if os?(jd, sg)
+    if julian?(jd, sg)
       a = jd
     else
       x = ((jd - 1867216.25) / 36524.25).floor
@@ -355,7 +413,7 @@ class Date
   # [year, day_of_year]
   def self.jd_to_ordinal(jd, sg=GREGORIAN)
     y = jd_to_civil(jd, sg)[0]
-    doy = jd - civil_to_jd(y - 1, 12, 31, ns?(jd, sg))
+    doy = jd - civil_to_jd(y - 1, 12, 31, fix_style(jd, sg))
     return y, doy
   end
 
@@ -367,7 +425,7 @@ class Date
   # Returns the corresponding Commercial Date as
   # [commercial_year, week_of_year, day_of_week]
   def self.jd_to_commercial(jd, sg=GREGORIAN)
-    ns = ns?(jd, sg)
+    ns = fix_style(jd, sg)
     a = jd_to_civil(jd - 3, ns)[0]
     y = if jd >= commercial_to_jd(a + 1, 1, 1, ns) then a + 1 else a end
     w = 1 + ((jd - commercial_to_jd(y, 1, 1, ns)) / 7).floor
@@ -386,6 +444,18 @@ class Date
     (jd - (((jd - 1) + 1) % 7)) +
       7 * (w - 1) +
       (d - 1)
+  end
+
+  def self.jd_to_weeknum(jd, k=0, sg=GREGORIAN) # :nodoc:
+    y, m, d = jd_to_civil(jd, sg)
+    a = civil_to_jd(y, 1, 1, sg) + 6
+    w, d = clfloor(jd - (a - ((a - k) + 1) % 7) + 7, 7)
+    return y, w, d
+  end
+
+  def self.weeknum_to_jd(y, w, d, k=0, sg=GREGORIAN) # :nodoc:
+    a = civil_to_jd(y, 1, 1, sg) + 6
+    (a - ((a - k) + 1) % 7 - 7) + 7 * w + d
   end
 
   %w(self.clfloor clfloor).each do |name|
@@ -514,7 +584,7 @@ class Date
     if d < 0
       ny, = clfloor(y + 1, 1)
       jd = ordinal_to_jd(ny, d + 1, sg)
-      ns = ns?(jd, sg)
+      ns = fix_style(jd, sg)
       return unless [y] == jd_to_ordinal(jd, sg)[0..0]
       return unless [ny, 1] == jd_to_ordinal(jd - d, ns)
     else
@@ -561,7 +631,7 @@ class Date
       ny, nm = clfloor(y * 12 + m, 12)
       nm,    = clfloor(nm + 1, 1)
       jd = civil_to_jd(ny, nm, d + 1, sg)
-      ns = ns?(jd, sg)
+      ns = fix_style(jd, sg)
       return unless [y, m] == jd_to_civil(jd, sg)[0..1]
       return unless [ny, nm, 1] == jd_to_civil(jd - d, ns)
     else
@@ -617,7 +687,7 @@ class Date
       w = jd_to_commercial(commercial_to_jd(y + 1, 1, 1) + w * 7)[1]
     end
     jd = commercial_to_jd(y, w, d)
-    return unless ns?(jd, sg)
+    return unless gregorian?(jd, sg)
     return unless [y, w, d] == jd_to_commercial(jd)
     jd
   end
@@ -643,17 +713,104 @@ class Date
     new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  def self.new_with_hash(elem, sg)
+  def self.valid_weeknum? (y, w, d, k, sg=ITALY) # :nodoc:
+    if d < 0
+      d += 7
+    end
+    if w < 0
+      w = jd_to_weeknum(weeknum_to_jd(y + 1, 1, k, k) + w * 7, k)[1]
+    end
+    jd = weeknum_to_jd(y, w, d, k)
+    return unless [y, w, d] == jd_to_weeknum(jd, k)
+    jd
+  end
+
+  private_class_method :valid_weeknum?
+
+  def self.rewrite_hash(elem) # :nodoc:
     elem ||= {}
-    y, m, d = elem.values_at(:year, :mon, :mday)
-    if [y, m, d].include? nil
-      raise ArgumentError, '3 elements of civil date are necessary'
-    else
-      civil(y, m, d, sg)
+    if seconds = elem[:seconds]
+      d,   fr = clfloor(seconds, 86400)
+      h,   fr = clfloor(fr, 3600)
+      min, fr = clfloor(fr, 60)
+      s,   fr = clfloor(fr, 1)
+      elem[:jd] = civil_to_jd(1970, 1, 1) + d
+      elem[:hour] = h
+      elem[:min] = min
+      elem[:sec] = s
+      elem.delete(:seconds)
+      elem.delete(:offset)
+    end
+    elem
+  end
+
+  def self.valid_date_with_hash?(elem, sg) # :nodoc:
+    catch :jd do
+      a = elem.values_at(:jd)
+      if a.all?
+	if jd = valid_jd?(*(a << sg))
+	  throw :jd, jd
+	end
+      end
+
+      a = elem.values_at(:year, :yday)
+      if a.all?
+	if jd = valid_ordinal?(*(a << sg))
+	  throw :jd, jd
+	end
+      end
+
+      a = elem.values_at(:year, :mon, :mday)
+      if a.all?
+	if jd = valid_civil?(*(a << sg))
+	  throw :jd, jd
+	end
+      end
+
+      a = elem.values_at(:cwyear, :cweek, :cwday)
+      if a[2].nil? && elem[:wday]
+	a[2] = elem[:wday].nonzero? || 7
+      end
+      if a.all?
+	if jd = valid_commercial?(*(a << sg))
+	  throw :jd, jd
+	end
+      end
+
+      a = elem.values_at(:year, :wnum0, :wday)
+      if a[2].nil? && elem[:cwday]
+	a[2] = elem[:cwday] % 7
+      end
+      if a.all?
+	if jd = valid_weeknum?(*(a << 0 << sg))
+	  throw :jd, jd
+	end
+      end
+
+      a = elem.values_at(:year, :wnum1, :wday)
+      if a[2]
+	a[2] = (a[2] - 1) % 7
+      end
+      if a[2].nil? && elem[:cwday]
+	a[2] = (elem[:cwday] - 1) % 7
+      end
+      if a.all?
+	if jd = valid_weeknum?(*(a << 1 << sg))
+	  throw :jd, jd
+	end
+      end
     end
   end
 
-  private_class_method :new_with_hash
+  def self.new_with_hash(elem, sg) # :nodoc:
+    elem = rewrite_hash(elem)
+    unless jd = valid_date_with_hash?(elem, sg)
+      raise ArgumentError, 'invalid date'
+    end
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
+
+  private_class_method :rewrite_hash, :valid_date_with_hash?, :new_with_hash
 
   # Create a new Date object by parsing from a String
   # according to a specified format.
@@ -703,13 +860,7 @@ class Date
 	  alias_method :__#{id.to_i}__, :#{id.to_s}
 	  private :__#{id.to_i}__
 	  def #{id.to_s}(*args, &block)
-            if defined? @__#{id.to_i}__
-              @__#{id.to_i}__
-            elsif ! self.frozen?
-	      @__#{id.to_i}__ ||= __#{id.to_i}__(*args, &block)
-            else
-               __#{id.to_i}__(*args, &block)
-            end
+	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
 	  end
 	end;
       end
@@ -764,13 +915,13 @@ class Date
   once :jd, :day_fraction, :mjd, :ld
 
   # Get the date as a Civil Date, [year, month, day_of_month]
-  def civil() self.class.jd_to_civil(jd, @sg) end
+  def civil() self.class.jd_to_civil(jd, @sg) end # :nodoc:
 
   # Get the date as an Ordinal Date, [year, day_of_year]
-  def ordinal() self.class.jd_to_ordinal(jd, @sg) end
+  def ordinal() self.class.jd_to_ordinal(jd, @sg) end # :nodoc:
 
   # Get the date as a Commercial Date, [year, week_of_year, day_of_week]
-  def commercial() self.class.jd_to_commercial(jd, @sg) end
+  def commercial() self.class.jd_to_commercial(jd, @sg) end # :nodoc:
 
   once :civil, :ordinal, :commercial
   private :civil, :ordinal, :commercial
@@ -796,7 +947,7 @@ class Date
 
   # Get the time of this date as [hours, minutes, seconds,
   # fraction_of_a_second]
-  def time() self.class.day_fraction_to_time(day_fraction) end
+  def time() self.class.day_fraction_to_time(day_fraction) end # :nodoc:
 
   once :time
   private :time
@@ -841,17 +992,25 @@ class Date
   end
 
   # Is the current date old-style (Julian Calendar)?
-  def os? () self.class.os?(jd, @sg) end
+  def julian? () self.class.julian?(jd, @sg) end
 
   # Is the current date new-style (Gregorian Calendar)?
-  def ns? () self.class.ns?(jd, @sg) end
+  def gregorian? () self.class.gregorian?(jd, @sg) end
 
-  once :os?, :ns?
+  once :julian?, :gregorian?
+
+  def fix_style # :nodoc:
+    if julian?
+    then Date::JULIAN
+    else Date::GREGORIAN end
+  end
+
+  private :fix_style
 
   # Is this a leap year?
   def leap?
-    self.class.jd_to_civil(self.class.civil_to_jd(year, 3, 1, ns?) - 1,
-		     ns?)[-1] == 29
+    self.class.jd_to_civil(self.class.civil_to_jd(year, 3, 1, fix_style) - 1,
+		     fix_style)[-1] == 29
   end
 
   once :leap?
@@ -948,6 +1107,14 @@ class Date
     false
   end
 
+  def next_day(n=1) self + n end
+  def prev_day(n=1) self - n end
+
+  # Return a new Date one day after this one.
+  def next() next_day end
+
+  alias_method :succ, :next
+
   # Return a new Date object that is +n+ months later than
   # the current one.
   #
@@ -958,7 +1125,7 @@ class Date
     y, m = clfloor(year * 12 + (mon - 1) + n, 12)
     m,   = clfloor(m + 1, 1)
     d = mday
-    d -= 1 until jd2 = self.class.valid_civil?(y, m, d, ns?)
+    d -= 1 until jd2 = self.class.valid_civil?(y, m, d, fix_style)
     self + (jd2 - jd)
   end
 
@@ -973,11 +1140,14 @@ class Date
   def next_month(n=1) self >> n end
   def prev_month(n=1) self << n end
 
+  def next_year(n=1) self >> n * 12 end
+  def prev_year(n=1) self << n * 12 end
+
   # Step the current date forward +step+ days at a
   # time (or backward, if +step+ is negative) until
   # we reach +limit+ (inclusive), yielding the resultant
   # date at each step.
-  def step(limit, step)  # :yield: date
+  def step(limit, step=1)  # :yield: date
     da = self
     op = [:-,:<=,:>=][step<=>0]
     while da.__send__(op, limit)
@@ -990,19 +1160,14 @@ class Date
   # Step forward one day at a time until we reach +max+
   # (inclusive), yielding each date as we go.
   def upto(max, &block)  # :yield: date
-      step(max, +1, &block)
+    step(max, +1, &block)
   end
 
   # Step backward one day at a time until we reach +min+
   # (inclusive), yielding each date as we go.
   def downto(min, &block) # :yield: date
-      step(min, -1, &block)
+    step(min, -1, &block)
   end
-
-  # Return a new Date one day after this one.
-  def succ() self + 1 end
-
-  alias_method :next, :succ
 
   # Is this Date equal to +other+?
   #
@@ -1109,6 +1274,15 @@ class DateTime < Date
     time_to_day_fraction(h, min, s)
   end
 
+  def self.valid_time_with_hash? (elem) # :nodoc:
+    h, min, s = elem.values_at(:hour, :min, :sec)
+    h   ||= 0
+    min ||= 0
+    s   ||= 0
+    s = [s, 59].min
+    valid_time?(h, min, s)
+  end
+
   # Create a new DateTime object corresponding to the specified
   # Julian Day Number +jd+ and hour +h+, minute +min+, second +s+.
   #
@@ -1199,21 +1373,17 @@ class DateTime < Date
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  def self.new_with_hash(elem, sg)
-    elem ||= {}
-    y, m, d, h, min, s, fr, of =
-      elem.values_at(:year, :mon, :mday,
-		     :hour, :min, :sec, :sec_fraction, :offset)
-    h   ||= 0
-    min ||= 0
-    s   ||= 0
-    fr  ||= 0
-    of  ||= 0
-    if [y, m, d].include? nil
-      raise ArgumentError, '3 elements of civil date are necessary'
-    else
-      civil(y, m, d, h, min, s, of.to_r/86400, sg) + (fr/86400)
+  def self.new_with_hash(elem, sg) # :nodoc:
+    elem = rewrite_hash(elem)
+    unless (jd = valid_date_with_hash?(elem, sg)) and
+	   (fr = valid_time_with_hash?(elem))
+      raise ArgumentError, 'invalid date'
     end
+    sf = (elem[:sec_fraction] || 0)
+    fr += sf/86400
+    of = (elem[:offset] || 0)
+    of = of.to_r/86400
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
   private_class_method :new_with_hash
@@ -1307,7 +1477,7 @@ class DateTime < Date
   def to_date() Date.new0(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
   def to_datetime() self end
 
-  class << self; undef_method :today end rescue nil
+  class << self; undef_method :today end
 
   # Create a new DateTime object representing the current time.
   #
@@ -1318,7 +1488,9 @@ end
 
 class Date
 
-  [ %w(exist1?	valid_jd?),
+  [ %w(os?	julian?),
+    %w(ns?	gregorian?),
+    %w(exist1?	valid_jd?),
     %w(exist2?	valid_ordinal?),
     %w(exist3?	valid_date?),
     %w(exist?	valid_date?),
@@ -1340,7 +1512,9 @@ class Date
     end;
   end
 
-  [ %w(sg	start),
+  [ %w(os?	julian?),
+    %w(ns?	gregorian?),
+    %w(sg	start),
     %w(newsg	new_start),
     %w(of	offset),
     %w(newof	new_offset)

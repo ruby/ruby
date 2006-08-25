@@ -10,12 +10,6 @@ module ParseDate
       values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
   end
 
+  module_function :parsedate
 
-  def strptime(str, format)
-    d = Date._strptime(str, format)
-    raise ArgumentError, "invalid strptime format - `#{format}'" unless d
-    d.values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
-  end
-
-  module_function :parsedate, :strptime
 end
