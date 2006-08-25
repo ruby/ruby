@@ -54,8 +54,8 @@ module REXML
 
     def check_encoding str
       # We have to recognize UTF-16, LSB UTF-16, and UTF-8
-      return UTF_16 if str[0] == 254 && str[1] == 255
-      return UNILE if str[0] == 255 && str[1] == 254
+      return UTF_16 if /\A\xfe\xff/n =~ str
+      return UNILE if /\A\xff\xfe/n =~ str
       str =~ /^\s*<?xml\s*version=(['"]).*?\2\s*encoding=(["'])(.*?)\2/um
       return $1.upcase if $1
       return UTF_8

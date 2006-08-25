@@ -1,3 +1,8 @@
+Fri Aug 25 22:32:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#initialize): encoding have to
+	  be set with the accessor.  fixed: [ruby-list:42737]
+
 Fri Aug 25 17:15:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.5 released.
@@ -10,7 +15,7 @@ Tue Aug 22 18:47:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_method):
 	  rdoc documents C module methods as instance methods. a patch in
-	  [ruby-core:08536]. 
+	  [ruby-core:08536].
 
 Sat Aug 19 14:15:02 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
