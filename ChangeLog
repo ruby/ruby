@@ -1,3 +1,7 @@
+Fri Aug 25 17:15:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.5 released.
+
 Fri Aug 25 17:02:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_sweep): typo fixed.
