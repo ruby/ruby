@@ -247,7 +247,8 @@ file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h config.h \
 gc.$(OBJEXT): {$(VPATH)}gc.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}node.h \
-  {$(VPATH)}env.h {$(VPATH)}re.h {$(VPATH)}regex.h
+  {$(VPATH)}env.h {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}regint.h \
+  {$(VPATH)}oniguruma.h
 hash.$(OBJEXT): {$(VPATH)}hash.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}st.h {$(VPATH)}util.h {$(VPATH)}rubysig.h
@@ -286,7 +287,7 @@ range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 re.$(OBJEXT): {$(VPATH)}re.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h
+  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}regint.h {$(VPATH)}oniguruma.h
 regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}oniguruma.h \
   {$(VPATH)}regint.h {$(VPATH)}regparse.h {$(VPATH)}regenc.h config.h
 regenc.$(OBJEXT): {$(VPATH)}regenc.c {$(VPATH)}regint.h \
@@ -310,7 +311,7 @@ sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h
+  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}regint.h {$(VPATH)}oniguruma.h
 struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h config.h \

@@ -1,3 +1,9 @@
+Fri Aug 25 21:15:22 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* common.mk: add regint.h and oniguruma.h to dependence.
+
+	* ext/strscan/depend: ditto.
+
 Fri Aug 25 20:35:57 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/wsdl/document/echo.rb: removed.
