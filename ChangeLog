@@ -1,3 +1,7 @@
+Fri Aug 25 17:02:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_sweep): typo fixed.
+
 Tue Aug 22 18:47:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_method):

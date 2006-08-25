@@ -1122,7 +1122,7 @@ gc_sweep()
 
 	    heaps[i].limit = 0;
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
-		p->as.free.flags |= FL_SINGLETON; /* freeing page mark */
+		pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
 	    freelist = free;	/* cancel this page from freelist */
 	}
