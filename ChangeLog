@@ -1,3 +1,7 @@
+Sat Aug 26 08:07:13 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: updated based on date2 3.8.2.
+
 Fri Aug 25 22:32:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/source.rb (REXML::IOSource#initialize): encoding have to
