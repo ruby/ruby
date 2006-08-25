@@ -1057,8 +1057,12 @@ sym_to_sym(VALUE sym)
 static VALUE
 sym_call(VALUE args, VALUE sym)
 {
-    VALUE obj = RARRAY(args)->ptr[0];
+    VALUE obj;
 
+    if (RARRAY(args)->len < 1) {
+	rb_raise(rb_eArgError, "no receiver given");
+    }
+    obj = RARRAY(args)->ptr[0];
     return rb_funcall3(obj, (ID)sym,
 		       RARRAY(args)->len - 1,
 		       RARRAY(args)->ptr + 1);
