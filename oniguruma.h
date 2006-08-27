@@ -35,8 +35,8 @@ extern "C" {
 
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   4
-#define ONIGURUMA_VERSION_MINOR   2
-#define ONIGURUMA_VERSION_TEENY   2
+#define ONIGURUMA_VERSION_MINOR   4
+#define ONIGURUMA_VERSION_TEENY   0
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -742,6 +742,7 @@ typedef struct re_pattern_buffer {
   int num_mem;                   /* used memory(...) num counted from 1 */
   int num_repeat;                /* OP_REPEAT/OP_REPEAT_NG id-counter */
   int num_null_check;            /* OP_NULL_CHECK_START/END id counter */
+  int num_comb_exp_check;        /* combination explosion check */
   int num_call;                  /* number of subexp call */
   unsigned int capture_history;  /* (?@...) flag (1-31) */
   unsigned int bt_mem_start;     /* need backtrack flag */

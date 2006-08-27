@@ -186,6 +186,17 @@ add_opcode(regex_t* reg, int opcode)
   return 0;
 }
 
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+static int
+add_state_check_num(regex_t* reg, int num)
+{
+  StateCheckNumType n = (StateCheckNumType )num;
+
+  BBUF_ADD(reg, &n, SIZE_STATE_CHECK_NUM);
+  return 0;
+}
+#endif
+
 static int
 add_rel_addr(regex_t* reg, int addr)
 {
@@ -644,7 +655,7 @@ entry_repeat_range(regex_t* reg, int id, int lower, int upper)
   }
 
   p[id].lower = lower;
-  p[id].upper = upper;
+  p[id].upper = (IS_REPEAT_INFINITE(upper) ? 0x7fffffff : upper);
   return 0;
 }
 
@@ -684,7 +695,254 @@ compile_range_repeat_node(QualifierNode* qn, int target_len, int empty_info,
   return r;
 }
 
+static int
+is_anychar_star_qualifier(QualifierNode* qn)
+{
+  if (qn->greedy && IS_REPEAT_INFINITE(qn->upper) &&
+      NTYPE(qn->target) == N_ANYCHAR)
+    return 1;
+  else
+    return 0;
+}
+
 #define QUALIFIER_EXPAND_LIMIT_SIZE   50
+#define CKN_ON   (ckn > 0)
+
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+
+static int
+compile_length_qualifier_node(QualifierNode* qn, regex_t* reg)
+{
+  int len, mod_tlen, cklen;
+  int ckn;
+  int infinite = IS_REPEAT_INFINITE(qn->upper);
+  int empty_info = qn->target_empty_info;
+  int tlen = compile_length_tree(qn->target, reg);
+
+  if (tlen < 0) return tlen;
+
+  ckn = ((reg->num_comb_exp_check > 0) ? qn->comb_exp_check_num : 0);
+
+  cklen = (CKN_ON ? SIZE_STATE_CHECK_NUM: 0);
+
+  /* anychar repeat */
+  if (NTYPE(qn->target) == N_ANYCHAR) {
+    if (qn->greedy && infinite) {
+      if (IS_NOT_NULL(qn->next_head_exact) && !CKN_ON)
+        return SIZE_OP_ANYCHAR_STAR_PEEK_NEXT + tlen * qn->lower + cklen;
+      else
+        return SIZE_OP_ANYCHAR_STAR + tlen * qn->lower + cklen;
+    }
+  }
+
+  if (empty_info != 0)
+    mod_tlen = tlen + (SIZE_OP_NULL_CHECK_START + SIZE_OP_NULL_CHECK_END);
+  else
+    mod_tlen = tlen;
+
+  if (infinite && qn->lower <= 1) {
+    if (qn->greedy) {
+      if (qn->lower == 1)
+	len = SIZE_OP_JUMP;
+      else
+	len = 0;
+
+      len += SIZE_OP_PUSH + cklen + mod_tlen + SIZE_OP_JUMP;
+    }
+    else {
+      if (qn->lower == 0)
+	len = SIZE_OP_JUMP;
+      else
+	len = 0;
+
+      len += mod_tlen + SIZE_OP_PUSH + cklen;
+    }
+  }
+  else if (qn->upper == 0) {
+    if (qn->is_refered != 0) /* /(?<n>..){0}/ */
+      len = SIZE_OP_JUMP + tlen;
+    else
+      len = 0;
+  }
+  else if (qn->upper == 1 && qn->greedy) {
+    if (qn->lower == 0) {
+      if (CKN_ON) {
+	len = SIZE_OP_STATE_CHECK_PUSH + tlen;
+      }
+      else {
+	len = SIZE_OP_PUSH + tlen;
+      }
+    }
+    else {
+      len = tlen;
+    }
+  }
+  else if (!qn->greedy && qn->upper == 1 && qn->lower == 0) { /* '??' */
+    len = SIZE_OP_PUSH + cklen + SIZE_OP_JUMP + tlen;
+  }
+  else {
+    len = SIZE_OP_REPEAT_INC
+        + mod_tlen + SIZE_OPCODE + SIZE_RELADDR + SIZE_MEMNUM;
+    if (CKN_ON)
+      len += SIZE_OP_STATE_CHECK;
+  }
+
+  return len;
+}
+
+static int
+compile_qualifier_node(QualifierNode* qn, regex_t* reg)
+{
+  int r, mod_tlen;
+  int ckn;
+  int infinite = IS_REPEAT_INFINITE(qn->upper);
+  int empty_info = qn->target_empty_info;
+  int tlen = compile_length_tree(qn->target, reg);
+
+  if (tlen < 0) return tlen;
+
+  ckn = ((reg->num_comb_exp_check > 0) ? qn->comb_exp_check_num : 0);
+
+  if (is_anychar_star_qualifier(qn)) {
+    r = compile_tree_n_times(qn->target, qn->lower, reg);
+    if (r) return r;
+    if (IS_NOT_NULL(qn->next_head_exact) && !CKN_ON) {
+      if (IS_MULTILINE(reg->options))
+	r = add_opcode(reg, OP_ANYCHAR_ML_STAR_PEEK_NEXT);
+      else
+	r = add_opcode(reg, OP_ANYCHAR_STAR_PEEK_NEXT);
+      if (r) return r;
+      if (CKN_ON) {
+	r = add_state_check_num(reg, ckn);
+	if (r) return r;
+      }
+
+      return add_bytes(reg, NSTRING(qn->next_head_exact).s, 1);
+    }
+    else {
+      if (IS_MULTILINE(reg->options)) {
+	r = add_opcode(reg, (CKN_ON ?
+			       OP_STATE_CHECK_ANYCHAR_ML_STAR
+			     : OP_ANYCHAR_ML_STAR));
+      }
+      else {
+	r = add_opcode(reg, (CKN_ON ?
+			       OP_STATE_CHECK_ANYCHAR_STAR
+			     : OP_ANYCHAR_STAR));
+      }
+      if (r) return r;
+      if (CKN_ON)
+	r = add_state_check_num(reg, ckn);
+
+      return r;
+    }
+  }
+
+  if (empty_info != 0)
+    mod_tlen = tlen + (SIZE_OP_NULL_CHECK_START + SIZE_OP_NULL_CHECK_END);
+  else
+    mod_tlen = tlen;
+
+  if (infinite && qn->lower <= 1) {
+    if (qn->greedy) {
+      if (qn->lower == 1) {
+	r = add_opcode_rel_addr(reg, OP_JUMP,
+			(CKN_ON ? SIZE_OP_STATE_CHECK_PUSH : SIZE_OP_PUSH));
+	if (r) return r;
+      }
+
+      if (CKN_ON) {
+	r = add_opcode(reg, OP_STATE_CHECK_PUSH);
+	if (r) return r;
+	r = add_state_check_num(reg, ckn);
+	if (r) return r;
+	r = add_rel_addr(reg, mod_tlen + SIZE_OP_JUMP);
+      }
+      else {
+	r = add_opcode_rel_addr(reg, OP_PUSH, mod_tlen + SIZE_OP_JUMP);
+      }
+      if (r) return r;
+      r = compile_tree_empty_check(qn->target, reg, empty_info);
+      if (r) return r;
+      r = add_opcode_rel_addr(reg, OP_JUMP,
+	      -(mod_tlen + (int )SIZE_OP_JUMP
+		+ (int )(CKN_ON ? SIZE_OP_STATE_CHECK_PUSH : SIZE_OP_PUSH)));
+    }
+    else {
+      if (qn->lower == 0) {
+	r = add_opcode_rel_addr(reg, OP_JUMP, mod_tlen);
+	if (r) return r;
+      }
+      r = compile_tree_empty_check(qn->target, reg, empty_info);
+      if (r) return r;
+      if (CKN_ON) {
+	r = add_opcode(reg, OP_STATE_CHECK_PUSH_OR_JUMP);
+	if (r) return r;
+	r = add_state_check_num(reg, ckn);
+	if (r) return r;
+	r = add_rel_addr(reg,
+		 -(mod_tlen + (int )SIZE_OP_STATE_CHECK_PUSH_OR_JUMP));
+      }
+      else
+	r = add_opcode_rel_addr(reg, OP_PUSH, -(mod_tlen + (int )SIZE_OP_PUSH));
+    }
+  }
+  else if (qn->upper == 0) {
+    if (qn->is_refered != 0) { /* /(?<n>..){0}/ */
+      r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
+      if (r) return r;
+      r = compile_tree(qn->target, reg);
+    }
+    else
+      r = 0;
+  }
+  else if (qn->upper == 1 && qn->greedy) {
+    if (qn->lower == 0) {
+      if (CKN_ON) {
+	r = add_opcode(reg, OP_STATE_CHECK_PUSH);
+	if (r) return r;
+	r = add_state_check_num(reg, ckn);
+	if (r) return r;
+	r = add_rel_addr(reg, tlen);
+      }
+      else {
+	r = add_opcode_rel_addr(reg, OP_PUSH, tlen);
+      }
+      if (r) return r;
+    }
+
+    r = compile_tree(qn->target, reg);
+  }
+  else if (!qn->greedy && qn->upper == 1 && qn->lower == 0) { /* '??' */
+    if (CKN_ON) {
+      r = add_opcode(reg, OP_STATE_CHECK_PUSH);
+      if (r) return r;
+      r = add_state_check_num(reg, ckn);
+      if (r) return r;
+      r = add_rel_addr(reg, SIZE_OP_JUMP);
+    }
+    else {
+      r = add_opcode_rel_addr(reg, OP_PUSH, SIZE_OP_JUMP);
+    }
+
+    if (r) return r;
+    r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
+    if (r) return r;
+    r = compile_tree(qn->target, reg);
+  }
+  else {
+    r = compile_range_repeat_node(qn, mod_tlen, empty_info, reg);
+    if (CKN_ON) {
+      if (r) return r;
+      r = add_opcode(reg, OP_STATE_CHECK);
+      if (r) return r;
+      r = add_state_check_num(reg, ckn);
+    }
+  }
+  return r;
+}
+
+#else /* USE_COMBINATION_EXPLOSION_CHECK */
 
 static int
 compile_length_qualifier_node(QualifierNode* qn, regex_t* reg)
@@ -749,16 +1007,6 @@ compile_length_qualifier_node(QualifierNode* qn, regex_t* reg)
   }
 
   return len;
-}
-
-static int
-is_anychar_star_qualifier(QualifierNode* qn)
-{
-  if (qn->greedy && IS_REPEAT_INFINITE(qn->upper) &&
-      NTYPE(qn->target) == N_ANYCHAR)
-    return 1;
-  else
-    return 0;
 }
 
 static int
@@ -887,6 +1135,7 @@ compile_qualifier_node(QualifierNode* qn, regex_t* reg)
   }
   return r;
 }
+#endif /* USE_COMBINATION_EXPLOSION_CHECK */
 
 static int
 compile_length_option_node(EffectNode* node, regex_t* reg)
@@ -1276,7 +1525,7 @@ compile_length_tree(Node* node, regex_t* reg)
       else
 #endif
       if (br->back_num == 1) {
-	r = ((!IS_IGNORECASE(reg->options) && br->back_static[0] <= 3)
+	r = ((!IS_IGNORECASE(reg->options) && br->back_static[0] <= 2)
 	     ? SIZE_OPCODE : (SIZE_OPCODE + SIZE_MEMNUM));
       }
       else {
@@ -1414,7 +1663,6 @@ compile_tree(Node* node, regex_t* reg)
 	  switch (n) {
 	  case 1:  r = add_opcode(reg, OP_BACKREF1); break;
 	  case 2:  r = add_opcode(reg, OP_BACKREF2); break;
-	  case 3:  r = add_opcode(reg, OP_BACKREF3); break;
 	  default:
 	    r = add_opcode(reg, OP_BACKREFN);
 	    if (r) return r;
@@ -1435,7 +1683,9 @@ compile_tree(Node* node, regex_t* reg)
         }
 	if (r) return r;
 
+#ifdef USE_BACKREF_AT_LEVEL
       add_bacref_mems:
+#endif
 	r = add_length(reg, br->back_num);
 	if (r) return r;
 	p = BACKREFS_P(br);
@@ -3039,6 +3289,146 @@ divide_ambig_string_node(Node* node, regex_t* reg)
 
   return 0;
 }
+
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+
+#define CEC_THRES_NUM_BIG_REPEAT         512
+#define CEC_INFINITE_NUM          0x7fffffff
+
+#define CEC_IN_INFINITE_REPEAT    (1<<0)
+#define CEC_IN_FINITE_REPEAT      (1<<1)
+#define CEC_CONT_BIG_REPEAT       (1<<2)
+
+static int
+setup_comb_exp_check(Node* node, int state, ScanEnv* env)
+{
+  int type;
+  int r = state;
+
+  type = NTYPE(node);
+  switch (type) {
+  case N_LIST:
+    {
+      Node* prev = NULL_NODE;
+      do {
+	r = setup_comb_exp_check(NCONS(node).left, r, env);
+	prev = NCONS(node).left;
+      } while (r >= 0 && IS_NOT_NULL(node = NCONS(node).right));
+    }
+    break;
+
+  case N_ALT:
+    {
+      int ret;
+      do {
+	ret = setup_comb_exp_check(NCONS(node).left, state, env);
+	r |= ret;
+      } while (ret >= 0 && IS_NOT_NULL(node = NCONS(node).right));
+    }
+    break;
+
+  case N_QUALIFIER:
+    {
+      int child_state = state;
+      int add_state = 0;
+      QualifierNode* qn = &(NQUALIFIER(node));
+      Node* target = qn->target;
+      int var_num;
+
+      if (! IS_REPEAT_INFINITE(qn->upper)) {
+	if (qn->upper > 1) {
+	  /* {0,1}, {1,1} are allowed */
+	  child_state |= CEC_IN_FINITE_REPEAT;
+
+	  /* check (a*){n,m}, (a+){n,m} => (a*){n,n}, (a+){n,n} */
+	  if (env->backrefed_mem == 0) {
+	    if (NTYPE(qn->target) == N_EFFECT) {
+	      EffectNode* en = &(NEFFECT(qn->target));
+	      if (en->type == EFFECT_MEMORY) {
+		if (NTYPE(en->target) == N_QUALIFIER) {
+		  QualifierNode* q = &(NQUALIFIER(en->target));
+		  if (IS_REPEAT_INFINITE(q->upper)
+		      && q->greedy == qn->greedy) {
+		    qn->upper = (qn->lower == 0 ? 1 : qn->lower);
+		    if (qn->upper == 1)
+		      child_state = state;
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+      }
+
+      if (state & CEC_IN_FINITE_REPEAT) {
+	qn->comb_exp_check_num = -1;
+      }
+      else {
+	if (IS_REPEAT_INFINITE(qn->upper)) {
+	  var_num = CEC_INFINITE_NUM;
+	  child_state |= CEC_IN_INFINITE_REPEAT;
+	}
+	else {
+	  var_num = qn->upper - qn->lower;
+	}
+
+	if (var_num >= CEC_THRES_NUM_BIG_REPEAT)
+	  add_state |= CEC_CONT_BIG_REPEAT;
+
+	if (((state & CEC_IN_INFINITE_REPEAT) != 0 && var_num != 0) ||
+	    ((state & CEC_CONT_BIG_REPEAT) != 0 &&
+	     var_num >= CEC_THRES_NUM_BIG_REPEAT)) {
+	  if (qn->comb_exp_check_num == 0) {
+	    env->num_comb_exp_check++;
+	    qn->comb_exp_check_num = env->num_comb_exp_check;
+	    if (env->curr_max_regnum > env->comb_exp_max_regnum)
+	      env->comb_exp_max_regnum = env->curr_max_regnum;
+	  }
+	}
+      }
+
+      r = setup_comb_exp_check(target, child_state, env);
+      r |= add_state;
+    }
+    break;
+
+  case N_EFFECT:
+    {
+      EffectNode* en = &(NEFFECT(node));
+
+      switch (en->type) {
+      case EFFECT_MEMORY:
+	{
+	  if (env->curr_max_regnum < en->regnum)
+	    env->curr_max_regnum = en->regnum;
+
+	  r = setup_comb_exp_check(en->target, state, env);
+	}
+	break;
+
+      default:
+	r = setup_comb_exp_check(en->target, state, env);
+	break;
+      }
+    }
+    break;
+
+#ifdef USE_SUBEXP_CALL
+  case N_CALL:
+    if (IS_CALL_RECURSION(&(NCALL(node))))
+      env->has_recursion = 1;
+    else
+      r = setup_comb_exp_check(NCALL(node).target, state, env);
+    break;
+#endif
+
+  default:
+    break;
+  }
+
+  return r;
+}
+#endif
 
 #define IN_ALT        (1<<0)
 #define IN_NOT        (1<<1)
@@ -4746,6 +5136,9 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   reg->num_null_check     = 0;
   reg->repeat_range_alloc = 0;
   reg->repeat_range       = (OnigRepeatRange* )NULL;
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+  reg->num_comb_exp_check = 0;
+#endif
 
   r = onig_parse_make_tree(&root, pattern, pattern_end, reg, &scan_env);
   if (r != 0) goto err;
@@ -4798,6 +5191,33 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
     reg->bt_mem_end  = scan_env.bt_mem_end;
     reg->bt_mem_end |= reg->capture_history;
   }
+
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+  if (scan_env.backrefed_mem == 0
+#ifdef USE_SUBEXP_CALL
+      || scan_env.num_call == 0
+#endif
+      ) {
+    setup_comb_exp_check(root, 0, &scan_env);
+#ifdef USE_SUBEXP_CALL
+    if (scan_env.has_recursion != 0) {
+      scan_env.num_comb_exp_check = 0;
+    }
+    else
+#endif
+    if (scan_env.comb_exp_max_regnum > 0) {
+      int i;
+      for (i = 1; i <= scan_env.comb_exp_max_regnum; i++) {
+	if (BIT_STATUS_AT(scan_env.backrefed_mem, i) != 0) {
+	  scan_env.num_comb_exp_check = 0;
+	  break;
+	}
+      }
+    }
+  }
+
+  reg->num_comb_exp_check = scan_env.num_comb_exp_check;
+#endif
 
   clear_optimize_info(reg);
 #ifndef ONIG_DONT_OPTIMIZE
@@ -5008,6 +5428,16 @@ onig_end()
 
 #ifdef ONIG_DEBUG
 
+/* arguments type */
+#define ARG_SPECIAL     -1
+#define ARG_NON          0
+#define ARG_RELADDR      1
+#define ARG_ABSADDR      2
+#define ARG_LENGTH       3
+#define ARG_MEMNUM       4
+#define ARG_OPTION       5
+#define ARG_STATE_CHECK  6
+
 OnigOpInfoType OnigOpInfo[] = {
   { OP_FINISH,            "finish",          ARG_NON },
   { OP_END,               "end",             ARG_NON },
@@ -5038,63 +5468,68 @@ OnigOpInfoType OnigOpInfo[] = {
   { OP_ANYCHAR_ML_STAR,   "anychar-ml*",     ARG_NON },
   { OP_ANYCHAR_STAR_PEEK_NEXT, "anychar*-peek-next", ARG_SPECIAL },
   { OP_ANYCHAR_ML_STAR_PEEK_NEXT, "anychar-ml*-peek-next", ARG_SPECIAL },
-  { OP_WORD,              "word",            ARG_NON },
-  { OP_NOT_WORD,          "not-word",        ARG_NON },
-  { OP_WORD_SB,           "word-sb",         ARG_NON },
-  { OP_WORD_MB,           "word-mb",         ARG_NON },
-  { OP_WORD_BOUND,        "word-bound",      ARG_NON },
-  { OP_NOT_WORD_BOUND,    "not-word-bound",  ARG_NON },
-  { OP_WORD_BEGIN,        "word-begin",      ARG_NON },
-  { OP_WORD_END,          "word-end",        ARG_NON },
-  { OP_BEGIN_BUF,         "begin-buf",       ARG_NON },
-  { OP_END_BUF,           "end-buf",         ARG_NON },
-  { OP_BEGIN_LINE,        "begin-line",      ARG_NON },
-  { OP_END_LINE,          "end-line",        ARG_NON },
-  { OP_SEMI_END_BUF,      "semi-end-buf",    ARG_NON },
-  { OP_BEGIN_POSITION,    "begin-position",  ARG_NON },
-  { OP_BACKREF1,          "backref1",           ARG_NON },
-  { OP_BACKREF2,          "backref2",           ARG_NON },
-  { OP_BACKREF3,          "backref3",           ARG_NON },
-  { OP_BACKREFN,          "backrefn",           ARG_MEMNUM  },
-  { OP_BACKREFN_IC,       "backrefn-ic",        ARG_SPECIAL },
-  { OP_BACKREF_MULTI,     "backref_multi",      ARG_SPECIAL },
-  { OP_BACKREF_MULTI_IC,  "backref_multi-ic",   ARG_SPECIAL },
-  { OP_BACKREF_AT_LEVEL,  "backref_at_level",   ARG_SPECIAL },
-  { OP_MEMORY_START_PUSH,   "mem-start-push",   ARG_MEMNUM  },
-  { OP_MEMORY_START,        "mem-start",        ARG_MEMNUM  },
-  { OP_MEMORY_END_PUSH,     "mem-end-push",     ARG_MEMNUM  },
-  { OP_MEMORY_END_PUSH_REC, "mem-end-push-rec", ARG_MEMNUM  },
-  { OP_MEMORY_END,          "mem-end",          ARG_MEMNUM  },
-  { OP_MEMORY_END_REC,      "mem-end-rec",      ARG_MEMNUM  },
-  { OP_SET_OPTION_PUSH,   "set-option-push",    ARG_OPTION  },
-  { OP_SET_OPTION,        "set-option",         ARG_OPTION  },
-  { OP_FAIL,              "fail",               ARG_NON },
-  { OP_JUMP,              "jump",               ARG_RELADDR },
-  { OP_PUSH,              "push",               ARG_RELADDR },
-  { OP_POP,               "pop",                ARG_NON },
-  { OP_PUSH_OR_JUMP_EXACT1, "push-or-jump-e1",  ARG_SPECIAL },
-  { OP_PUSH_IF_PEEK_NEXT, "push-if-peek-next",  ARG_SPECIAL },
-  { OP_REPEAT,            "repeat",             ARG_SPECIAL },
-  { OP_REPEAT_NG,         "repeat-ng",          ARG_SPECIAL },
-  { OP_REPEAT_INC,        "repeat-inc",         ARG_MEMNUM  },
-  { OP_REPEAT_INC_NG,     "repeat-inc-ng",      ARG_MEMNUM  },
-  { OP_REPEAT_INC_SG,     "repeat-inc-sg",      ARG_MEMNUM  },
-  { OP_REPEAT_INC_NG_SG,  "repeat-inc-ng-sg",   ARG_MEMNUM  },
-  { OP_NULL_CHECK_START,  "null-check-start",   ARG_MEMNUM  },
-  { OP_NULL_CHECK_END,    "null-check-end",     ARG_MEMNUM  },
-  { OP_NULL_CHECK_END_MEMST,"null-check-end-memst",  ARG_MEMNUM  },
-  { OP_NULL_CHECK_END_MEMST_PUSH,"null-check-end-memst-push",  ARG_MEMNUM  },
-  { OP_PUSH_POS,          "push-pos",        ARG_NON },
-  { OP_POP_POS,           "pop-pos",         ARG_NON },
-  { OP_PUSH_POS_NOT,      "push-pos-not",    ARG_RELADDR },
-  { OP_FAIL_POS,          "fail-pos",        ARG_NON },
-  { OP_PUSH_STOP_BT,      "push-stop-bt",    ARG_NON },
-  { OP_POP_STOP_BT,       "pop-stop-bt",     ARG_NON },
-  { OP_LOOK_BEHIND,       "look-behind",     ARG_SPECIAL },
+  { OP_WORD,                "word",            ARG_NON },
+  { OP_NOT_WORD,            "not-word",        ARG_NON },
+  { OP_WORD_SB,             "word-sb",         ARG_NON },
+  { OP_WORD_MB,             "word-mb",         ARG_NON },
+  { OP_WORD_BOUND,          "word-bound",      ARG_NON },
+  { OP_NOT_WORD_BOUND,      "not-word-bound",  ARG_NON },
+  { OP_WORD_BEGIN,          "word-begin",      ARG_NON },
+  { OP_WORD_END,            "word-end",        ARG_NON },
+  { OP_BEGIN_BUF,           "begin-buf",       ARG_NON },
+  { OP_END_BUF,             "end-buf",         ARG_NON },
+  { OP_BEGIN_LINE,          "begin-line",      ARG_NON },
+  { OP_END_LINE,            "end-line",        ARG_NON },
+  { OP_SEMI_END_BUF,        "semi-end-buf",    ARG_NON },
+  { OP_BEGIN_POSITION,      "begin-position",  ARG_NON },
+  { OP_BACKREF1,            "backref1",             ARG_NON },
+  { OP_BACKREF2,            "backref2",             ARG_NON },
+  { OP_BACKREFN,            "backrefn",             ARG_MEMNUM  },
+  { OP_BACKREFN_IC,         "backrefn-ic",          ARG_SPECIAL },
+  { OP_BACKREF_MULTI,       "backref_multi",        ARG_SPECIAL },
+  { OP_BACKREF_MULTI_IC,    "backref_multi-ic",     ARG_SPECIAL },
+  { OP_BACKREF_AT_LEVEL,    "backref_at_level",     ARG_SPECIAL },
+  { OP_MEMORY_START_PUSH,   "mem-start-push",       ARG_MEMNUM  },
+  { OP_MEMORY_START,        "mem-start",            ARG_MEMNUM  },
+  { OP_MEMORY_END_PUSH,     "mem-end-push",         ARG_MEMNUM  },
+  { OP_MEMORY_END_PUSH_REC, "mem-end-push-rec",     ARG_MEMNUM  },
+  { OP_MEMORY_END,          "mem-end",              ARG_MEMNUM  },
+  { OP_MEMORY_END_REC,      "mem-end-rec",          ARG_MEMNUM  },
+  { OP_SET_OPTION_PUSH,     "set-option-push",      ARG_OPTION  },
+  { OP_SET_OPTION,          "set-option",           ARG_OPTION  },
+  { OP_FAIL,                "fail",                 ARG_NON },
+  { OP_JUMP,                "jump",                 ARG_RELADDR },
+  { OP_PUSH,                "push",                 ARG_RELADDR },
+  { OP_POP,                 "pop",                  ARG_NON },
+  { OP_PUSH_OR_JUMP_EXACT1, "push-or-jump-e1",      ARG_SPECIAL },
+  { OP_PUSH_IF_PEEK_NEXT,   "push-if-peek-next",    ARG_SPECIAL },
+  { OP_REPEAT,              "repeat",               ARG_SPECIAL },
+  { OP_REPEAT_NG,           "repeat-ng",            ARG_SPECIAL },
+  { OP_REPEAT_INC,          "repeat-inc",           ARG_MEMNUM  },
+  { OP_REPEAT_INC_NG,       "repeat-inc-ng",        ARG_MEMNUM  },
+  { OP_REPEAT_INC_SG,       "repeat-inc-sg",        ARG_MEMNUM  },
+  { OP_REPEAT_INC_NG_SG,    "repeat-inc-ng-sg",     ARG_MEMNUM  },
+  { OP_NULL_CHECK_START,    "null-check-start",     ARG_MEMNUM  },
+  { OP_NULL_CHECK_END,      "null-check-end",       ARG_MEMNUM  },
+  { OP_NULL_CHECK_END_MEMST,"null-check-end-memst", ARG_MEMNUM  },
+  { OP_NULL_CHECK_END_MEMST_PUSH,"null-check-end-memst-push", ARG_MEMNUM  },
+  { OP_PUSH_POS,             "push-pos",             ARG_NON },
+  { OP_POP_POS,              "pop-pos",              ARG_NON },
+  { OP_PUSH_POS_NOT,         "push-pos-not",         ARG_RELADDR },
+  { OP_FAIL_POS,             "fail-pos",             ARG_NON },
+  { OP_PUSH_STOP_BT,         "push-stop-bt",         ARG_NON },
+  { OP_POP_STOP_BT,          "pop-stop-bt",          ARG_NON },
+  { OP_LOOK_BEHIND,          "look-behind",          ARG_SPECIAL },
   { OP_PUSH_LOOK_BEHIND_NOT, "push-look-behind-not", ARG_SPECIAL },
   { OP_FAIL_LOOK_BEHIND_NOT, "fail-look-behind-not", ARG_NON },
-  { OP_CALL,                 "call",            ARG_ABSADDR },
-  { OP_RETURN,               "return",          ARG_NON },
+  { OP_CALL,                 "call",                 ARG_ABSADDR },
+  { OP_RETURN,               "return",               ARG_NON },
+  { OP_STATE_CHECK_PUSH,         "state-check-push",         ARG_SPECIAL },
+  { OP_STATE_CHECK_PUSH_OR_JUMP, "state-check-push-or-jump", ARG_SPECIAL },
+  { OP_STATE_CHECK,              "state-check",              ARG_STATE_CHECK },
+  { OP_STATE_CHECK_ANYCHAR_STAR, "state-check-anychar*",     ARG_STATE_CHECK },
+  { OP_STATE_CHECK_ANYCHAR_ML_STAR,
+    "state-check-anychar-ml*", ARG_STATE_CHECK },
   { -1, "", ARG_NON }
 };
 
@@ -5153,6 +5588,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
   RelAddrType addr;
   LengthType len;
   MemNumType mem;
+  StateCheckNumType scn;
   OnigCodePoint code;
   UChar *q;
 
@@ -5186,6 +5622,12 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
 	bp += SIZE_OPTION;
 	fprintf(f, ":%d", option);
       }
+      break;
+
+    case ARG_STATE_CHECK:
+      scn = *((StateCheckNumType* )bp);
+      bp += SIZE_STATE_CHECK_NUM;
+      fprintf(f, ":%d", scn);
       break;
     }
   }
@@ -5362,6 +5804,15 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
       GET_RELADDR_INC(addr, bp);
       GET_LENGTH_INC(len, bp);
       fprintf(f, ":%d:(%d)", len, addr);
+      break;
+
+    case OP_STATE_CHECK_PUSH:
+    case OP_STATE_CHECK_PUSH_OR_JUMP:
+      scn = *((StateCheckNumType* )bp);
+      bp += SIZE_STATE_CHECK_NUM;
+      addr = *((RelAddrType* )bp);
+      bp += SIZE_RELADDR;
+      fprintf(f, ":%d:(%d)", scn, addr);
       break;
 
     default:
