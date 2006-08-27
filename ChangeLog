@@ -1,3 +1,8 @@
+Mon Aug 28 07:21:47 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* file.c (File#size?): Fix documentation submitted by Rick Ohnemus.
+	  ruby-Bugs-5529.  [ruby-core:08725]
+
 Sun Aug 27 21:41:23 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.4.0
