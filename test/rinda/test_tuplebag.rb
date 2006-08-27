@@ -1,10 +1,6 @@
 require 'test/unit'
 require 'rinda/tuplespace'
 
-class Rinda::TupleBag
-  attr_reader :hash
-end
-
 class TestTupleBag < Test::Unit::TestCase
 
   def setup
@@ -23,6 +19,19 @@ class TestTupleBag < Test::Unit::TestCase
     val = @tb.delete t
 
     assert_equal t, val
+
+    assert_equal [], @tb.find_all(tem(:val, 1))
+
+    t1 = tup(:val, 1)
+    t2 = tup(:val, 1)
+    @tb.push t1
+    @tb.push t2
+
+    val = @tb.delete t1
+
+    assert_equal t1, val
+
+    assert_equal [t2], @tb.find_all(tem(:val, 1))
   end
 
   def test_delete_unless_alive
@@ -50,19 +59,26 @@ class TestTupleBag < Test::Unit::TestCase
 
     assert_equal nil, @tb.find(template)
 
-    t1 = tup(:val, 1)
-    t2 = tup(:val, 2)
-
+    t1 = tup(:other, 1)
     @tb.push t1
+
+    assert_equal nil, @tb.find(template)
+
+    t2 = tup(:val, 1)
     @tb.push t2
 
-    assert_equal t1, @tb.find(template)
+    assert_equal t2, @tb.find(template)
 
-    t1.cancel
+    t2.cancel
 
-    assert_equal t2, @tb.find(template), 'canceled'
+    assert_equal nil, @tb.find(template), 'canceled'
 
-    t2.renew Object.new
+    t3 = tup(:val, 3)
+    @tb.push t3
+
+    assert_equal t3, @tb.find(template)
+
+    t3.renew Object.new
 
     assert_equal nil, @tb.find(template), 'expired'
   end
@@ -70,21 +86,24 @@ class TestTupleBag < Test::Unit::TestCase
   def test_find_all
     template = tem(:val, nil)
 
+    t1 = tup(:other, 1)
+    @tb.push t1
+
     assert_equal [], @tb.find_all(template)
 
-    t1 = tup(:val, 1)
     t2 = tup(:val, 2)
+    t3 = tup(:val, 3)
 
-    @tb.push t1
     @tb.push t2
+    @tb.push t3
 
-    assert_equal [t1, t2], @tb.find_all(template)
+    assert_equal [t2, t3], @tb.find_all(template)
 
-    t1.cancel
+    t2.cancel
 
-    assert_equal [t2], @tb.find_all(template), 'canceled'
+    assert_equal [t3], @tb.find_all(template), 'canceled'
 
-    t2.renew Object.new
+    t3.renew Object.new
 
     assert_equal [], @tb.find_all(template), 'expired'
   end
@@ -92,21 +111,24 @@ class TestTupleBag < Test::Unit::TestCase
   def test_find_all_template
     tuple = tup(:val, 1)
 
+    t1 = tem(:other, nil)
+    @tb.push t1
+
     assert_equal [], @tb.find_all_template(tuple)
 
-    t1 = tem(:val, nil)
     t2 = tem(:val, nil)
+    t3 = tem(:val, nil)
 
-    @tb.push t1
     @tb.push t2
+    @tb.push t3
 
-    assert_equal [t1, t2], @tb.find_all_template(tuple)
+    assert_equal [t2, t3], @tb.find_all_template(tuple)
 
-    t1.cancel
+    t2.cancel
 
-    assert_equal [t2], @tb.find_all_template(tuple), 'canceled'
+    assert_equal [t3], @tb.find_all_template(tuple), 'canceled'
 
-    t2.renew Object.new
+    t3.renew Object.new
 
     assert_equal [], @tb.find_all_template(tuple), 'expired'
   end
