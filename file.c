@@ -1263,10 +1263,10 @@ test_z(obj, fname)
 
 /*
  * call-seq:
- *    File.file?(file_name)   => integer  or  nil
+ *    File.size?(file_name)   => Integer or nil
  *
- * Returns <code>nil</code> if <code>file_name</code> doesn't
- * exist or has zero size, the size of the file otherwise.
+ * Returns +nil+ if +file_name+ doesn't exist or has zero size, the size of the
+ * file otherwise.
  */
 
 static VALUE
