@@ -169,6 +169,7 @@ module RDoc
     extend ParserFactory
     parse_files_matching(/\.(c|cc|cpp|CC)$/)
 
+    @@enclosure_classes = {}
     @@known_bodies = {}
 
     # prepare to parse a C file
@@ -230,7 +231,7 @@ module RDoc
       parent_name = @known_classes[parent] || parent
 
       if in_module
-        enclosure = @classes[in_module]
+        enclosure = @classes[in_module] || @@enclosure_classes[in_module]
         unless enclosure
           if enclosure = @known_classes[in_module]
             handle_class_module(in_module, (/^rb_m/ =~ in_module ? "module" : "class"),
@@ -258,6 +259,7 @@ module RDoc
 
       find_class_comment(cm.full_name, cm)
       @classes[var_name] = cm
+      @@enclosure_classes[var_name] = cm
       @known_classes[var_name] = cm.full_name
     end
     

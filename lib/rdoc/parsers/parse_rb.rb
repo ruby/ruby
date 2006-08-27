@@ -1488,7 +1488,7 @@ module RDoc
             obj.pop_token
           end if @token_listeners
         else
-          warn("':' not followed by identified or operator")
+          warn("':' not followed by identifier or operator")
           tk = tk1
         end
       end

@@ -13,24 +13,6 @@
 
 ************************************************/
 
-/*
- * This module provides an interface to the following hash algorithms:
- *
- *   - the MD5 Message-Digest Algorithm by the RSA Data Security,
- *     Inc., described in RFC 1321
- *
- *   - the SHA-1 Secure Hash Algorithm by NIST (the US' National
- *     Institute of Standards and Technology), described in FIPS PUB
- *     180-1.
- *
- *   - the SHA-256/384/512 Secure Hash Algorithm by NIST (the US'
- *     National Institute of Standards and Technology), described in
- *     FIPS PUB 180-2.
- *
- *   - the RIPEMD-160 cryptographic hash function, designed by Hans
- *     Dobbertin, Antoon Bosselaers, and Bart Preneel.
- */
-
 #include "digest.h"
 
 static VALUE mDigest, cDigest_Base;
@@ -244,7 +226,21 @@ rb_digest_base_equal(VALUE self, VALUE other)
 }
 
 /*
- * Init
+ * This module provides an interface to the following hash algorithms:
+ *
+ *   - the MD5 Message-Digest Algorithm by the RSA Data Security,
+ *     Inc., described in RFC 1321
+ *
+ *   - the SHA-1 Secure Hash Algorithm by NIST (the US' National
+ *     Institute of Standards and Technology), described in FIPS PUB
+ *     180-1.
+ *
+ *   - the SHA-256/384/512 Secure Hash Algorithm by NIST (the US'
+ *     National Institute of Standards and Technology), described in
+ *     FIPS PUB 180-2.
+ *
+ *   - the RIPEMD-160 cryptographic hash function, designed by Hans
+ *     Dobbertin, Antoon Bosselaers, and Bart Preneel.
  */
 
 void

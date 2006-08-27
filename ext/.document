@@ -1,6 +1,10 @@
 # Add files to this as they become documented
 
+bigdecimal/bigdecimal.c
+etc/etc.c
+fcntl/fcntl.c
 iconv/iconv.c
+io/wait/wait.c
 nkf/lib/kconv.rb
 nkf/nkf.c
 socket/socket.c

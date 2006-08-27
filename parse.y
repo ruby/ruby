@@ -2605,7 +2605,7 @@ primary		: literal
 		| keyword_case opt_terms case_body keyword_end
 		    {
 		    /*%%%*/
-			$$ = $3;
+			$$ = NEW_CASE(NULL, $3);
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/

@@ -41,17 +41,13 @@ void Init_wait _((void));
 EXTERN struct timeval rb_time_interval _((VALUE time));
 
 /*
-=begin
-= IO wait methods.
-=end
+ * call-seq:
+ *
+ *   io.ready? -> boolean
+ *
+ * Returns non-nil if input available without blocking, or nil.
  */
 
-/*
-=begin
---- IO#ready?
-    returns non-nil if input available without blocking, or nil.
-=end
-*/
 static VALUE
 io_ready_p(VALUE io)
 {
@@ -84,12 +80,15 @@ wait_readable(VALUE p)
 #endif
 
 /*
-=begin
---- IO#wait([timeout])
-    waits until input available or timed out and returns self, or nil
-    when EOF reached.
-=end
-*/
+ * call-seq:
+ *
+ *   io.wait          -> io, true, false or nil
+ *   io.wait(timeout) -> io, true, false or nil
+ *
+ * Waits until input is available or times out and returns self or nil when
+ * EOF is reached.
+ */
+
 static VALUE
 io_wait(int argc, VALUE *argv, VALUE io)
 {
@@ -129,6 +128,10 @@ io_wait(int argc, VALUE *argv, VALUE io)
     if (n > 0) return io;
     return Qnil;
 }
+
+/*
+ * IO wait methods
+ */
 
 void
 Init_wait()
