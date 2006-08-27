@@ -554,9 +554,7 @@ module RI
 
     def display_verbatim_flow_item(item, prefix=@indent)
         print("<pre>")
-        item.body.split(/\n/).each do |line|
-          puts conv_html(line)
-        end
+        puts item.body
         puts("</pre>")
     end
 

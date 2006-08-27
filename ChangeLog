@@ -1,3 +1,8 @@
+Mon Aug 28 07:53:44 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/ri_formatter.rb: Don't unescape HTML in HtmlFormatter.
+	  Submitted by Kent Sibilev <ksruby at gmail.com>.  [ruby-core:08392].
+
 Mon Aug 28 07:25:45 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* file.c (File#size?): Fix documentation submitted by Rick Ohnemus.
