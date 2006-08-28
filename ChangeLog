@@ -1,3 +1,18 @@
+Mon Aug 28 11:29:46 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* eval.c, parse.y: Revert.
+	* ext/.document: Add digest.c.
+	* ext/digest/digest.c: Make RDoc show up.
+	* ext/io/wait.c: Fix call-seq in RDoc.
+
+Mon Aug 28 08:03:20 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document: Add C files with RDoc.
+	* ext/digest/digest.c: Convert to RDoc.
+	* ext/io/wait.c: ditto.
+	* lib/rdoc/parsers/parse_rb.rb: Fix typo.  Submitted by
+	  <calamitas at gmail.com>.  [ruby-core:08724]
+
 Mon Aug 28 07:21:47 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* file.c (File#size?): Fix documentation submitted by Rick Ohnemus.
