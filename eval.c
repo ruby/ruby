@@ -2877,10 +2877,9 @@ rb_eval(VALUE self, NODE *n)
 
       case NODE_CASE:
 	{
-	    VALUE val = Qundef;
+	    VALUE val;
 
-	    if (node->nd_head)
-		val = rb_eval(self, node->nd_head);
+	    val = rb_eval(self, node->nd_head);
 	    node = node->nd_body;
 	    while (node) {
 		if (nd_type(node) != NODE_WHEN) {
