@@ -1,3 +1,8 @@
+Mon Aug 28 11:36:02 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_rb.rb: Fix typo.  Submitted by
+	  <calamitas at gmail.com>.  [ruby-core:08724]
+
 Mon Aug 28 07:53:44 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/ri_formatter.rb: Don't unescape HTML in HtmlFormatter.
