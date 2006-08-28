@@ -244,7 +244,7 @@ rb_digest_base_equal(VALUE self, VALUE other)
  */
 
 void
-Init_digest()
+Init_digest(void)
 {
     mDigest = rb_define_module("Digest");
 
