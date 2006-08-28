@@ -42,8 +42,7 @@ EXTERN struct timeval rb_time_interval _((VALUE time));
 
 /*
  * call-seq:
- *
- *   io.ready? -> boolean
+ *   io.ready? -> true, false or nil
  *
  * Returns non-nil if input available without blocking, or nil.
  */
@@ -81,9 +80,8 @@ wait_readable(VALUE p)
 
 /*
  * call-seq:
- *
- *   io.wait          -> io, true, false or nil
- *   io.wait(timeout) -> io, true, false or nil
+ *   io.wait          -> IO, true, false or nil
+ *   io.wait(timeout) -> IO, true, false or nil
  *
  * Waits until input is available or times out and returns self or nil when
  * EOF is reached.
