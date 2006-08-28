@@ -1,6 +1,7 @@
 # Add files to this as they become documented
 
 bigdecimal/bigdecimal.c
+digest/digest.c
 etc/etc.c
 fcntl/fcntl.c
 iconv/iconv.c
