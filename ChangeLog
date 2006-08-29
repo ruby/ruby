@@ -1,3 +1,8 @@
+Tue Aug 29 19:10:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): fixed memory leak, based on the patch
+	  by Kent Sibilev <ksruby at gmail.com>.  fixed: [ruby-talk:211233]
+
 Mon Aug 28 11:29:46 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* eval.c, parse.y: Revert.

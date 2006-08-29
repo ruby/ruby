@@ -197,15 +197,24 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 }
 
 static VALUE
-hash_alloc(VALUE klass)
+hash_alloc0(VALUE klass)
 {
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
 
     hash->ifnone = Qnil;
-    hash->tbl = st_init_table(&objhash);
 
     return (VALUE)hash;
+}
+
+static VALUE
+hash_alloc(VALUE klass)
+{
+    VALUE hash = hash_alloc0(klass);
+
+    RHASH(hash)->tbl = st_init_table(&objhash);
+
+    return hash;
 }
 
 VALUE
@@ -299,9 +308,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	hash = hash_alloc(klass);
-	    
-	RHASH(hash)->ifnone = Qnil;
+	hash = hash_alloc0(klass);
 	RHASH(hash)->tbl = st_copy(RHASH(argv[0])->tbl);
 
 	return hash;
@@ -1644,6 +1651,7 @@ rb_env_path_tainted(void)
     return path_tainted;
 }
 
+#if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 static int
 envix(const char *nam)
 {
@@ -1664,6 +1672,7 @@ envix(const char *nam)
     FREE_ENVIRON(environ);
     return i;
 }
+#endif
 
 void
 ruby_setenv(const char *name, const char *value)
