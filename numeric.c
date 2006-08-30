@@ -836,15 +836,11 @@ static VALUE
 flo_hash(VALUE num)
 {
     double d;
-    char *c;
-    int i, hash;
+    int hash;
 
     d = RFLOAT(num)->value;
     if (d == 0) d = fabs(d);
-    c = (char*)&d;
-    for (hash=0, i=0; i<sizeof(double);i++) {
-	hash += c[i] * 971;
-    }
+    hash = rb_memhash(&d, sizeof(d)) ^ RBASIC(num)->klass;
     if (hash < 0) hash = -hash;
     return INT2FIX(hash);
 }

@@ -768,9 +768,9 @@ rb_str_concat(VALUE str1, VALUE str2)
 /*
  * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
  *
- * @(#) $Revision$
- * @(#) $Id$
- * @(#) $Source$
+ * @(#) $hash_32.Revision: 1.1 $
+ * @(#) $hash_32.Id: hash_32a.c,v 1.1 2003/10/03 20:38:53 chongo Exp $
+ * @(#) $hash_32.Source: /usr/local/src/cmd/fnv/RCS/hash_32a.c,v $
  *
  ***
  *
@@ -841,10 +841,9 @@ rb_str_concat(VALUE str1, VALUE str2)
 #define FNV_32_PRIME 0x01000193
 
 int
-rb_str_hash(VALUE str)
+rb_memhash(const void *ptr, long len)
 {
-    register long len = RSTRING(str)->len;
-    register char *p = RSTRING(str)->ptr;
+    register const unsigned char *p = ptr;
     register unsigned int hval = FNV1_32A_INIT;
 
     /*
@@ -862,6 +861,12 @@ rb_str_hash(VALUE str)
 #endif
     }
     return hval;
+}
+
+int
+rb_str_hash(VALUE str)
+{
+    return rb_memhash(RSTRING(str)->ptr, RSTRING(str)->len);
 }
 
 /*

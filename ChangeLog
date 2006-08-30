@@ -1,3 +1,10 @@
+Wed Aug 30 12:01:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_hash): improve collision.
+
+	* string.c (rb_memhash): new generic function to calculate hash value
+	  for memory chunk.
+
 Tue Aug 29 19:10:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_s_create): fixed memory leak, based on the patch
