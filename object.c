@@ -676,17 +676,15 @@ nil_to_f(VALUE obj)
 
 /*
  *  call-seq:
- *     nil.to_s    => ""
+ *     nil.to_s    => "nil"
  *  
- *  Always returns the empty string.
- *     
- *     nil.to_s   #=> ""
+ *  Always returns the string "nil".
  */
 
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_str_new2("");
+    return rb_str_new2("nil");
 }
 
 /*
@@ -2004,6 +2002,10 @@ rb_Integer(VALUE val)
 
       case T_STRING:
 	return rb_str_to_inum(val, 0, Qtrue);
+
+      case T_NIL:
+	rb_raise(rb_eTypeError, "can't convert nil into Integer");
+	break;
 
       default:
 	break;

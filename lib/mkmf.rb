@@ -1501,7 +1501,7 @@ end
 config_string('COMMON_HEADERS') do |s|
   Shellwords.shellwords(s).each {|s| hdr << "#include <#{s}>"}
 end
-COMMON_HEADERS = (hdr.join("\n") unless hdr.empty?)
+COMMON_HEADERS = if hdr.empty? then "" else hdr.join("\n") end
 COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
 COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
