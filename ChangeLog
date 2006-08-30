@@ -75,6 +75,12 @@ Tue Aug 22 19:21:00 2006  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/smtp.rb: parameter `to_addrs' might be an Array,
 	  .flatten is required. [ruby-dev:29316]
 
+Tue Aug 22 18:47:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_method):
+	  rdoc documents C module methods as instance methods. a patch in
+	  [ruby-core:08536]. 
+
 Tue Aug 22 12:35:57 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): fix regexp for
