@@ -68,7 +68,7 @@ module Tk
 
       params.concat(hash_kv(args.shift, true)) if args[0].kind_of?(Hash)
 
-      params << '--'
+      params << '--' if args[0] =~ /^\s*-[^-]/
       params.concat(args)
 
       tk_call('::blt::bgexec', *params)
@@ -85,7 +85,7 @@ module Tk
 
       params.concat(hash_kv(args.shift, true)) if args[0].kind_of?(Hash)
 
-      params << '--'
+      params << '--' if args[0] =~ /^\s*-[^-]/
       params.concat(args)
       params << '&'
 
