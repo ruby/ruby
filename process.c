@@ -1113,11 +1113,11 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 
     args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
-	args[i] = RSTRING(argv[i])->ptr;
+	args[i] = RSTRING_PTR(argv[i]);
     }
     args[i] = (char*) 0;
     if (args[0])
-	return proc_spawn_v(args, prog ? RSTRING(prog)->ptr : 0);
+	return proc_spawn_v(args, prog ? RSTRING_PTR(prog) : 0);
     return -1;
 }
 
@@ -1538,7 +1538,7 @@ rb_spawn(int argc, VALUE *argv)
     if (prog && argc) argv[0] = prog;
 #elif defined HAVE_SPAWNV
     if (!argc) {
-	status = proc_spawn(RSTRING(prog)->ptr);
+	status = proc_spawn(RSTRING_PTR(prog));
     }
     else {
 	status = proc_spawn_n(argc, argv, prog);

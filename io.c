@@ -3047,12 +3047,12 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	int i;
 
 	for (i = 0; i < argc; ++i) {
-	    args[i] = RSTRING(argv[i])->ptr;
+	    args[i] = RSTRING_PTR(argv[i]);
 	}
 	args[i] = NULL;
 	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
 	rb_w32_join_argv(cmd, args);
-	exename = RSTRING(prog)->ptr;
+	exename = RSTRING_PTR(prog);
     }
     else {
 	cmd = StringValueCStr(prog);
@@ -3067,7 +3067,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	    rb_thread_sleep(1);
 	    break;
 	  default:
-	    rb_sys_fail(RSTRING(prog)->ptr);
+	    rb_sys_fail(RSTRING_PTR(prog));
 	    break;
 	}
     }
@@ -3075,7 +3075,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     if (argc)
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     fp = popen(StringValueCStr(prog), mode);
-    if (!fp) rb_sys_fail(RSTRING(prog)->ptr);
+    if (!fp) rb_sys_fail(RSTRING_PTR(prog));
     fd = fileno(fp);
 #endif
 
@@ -3566,7 +3566,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         fptr->fd = fileno(fptr->stdio_file);
 #ifdef USE_SETVBUF
         if (setvbuf(fptr->stdio_file, NULL, _IOFBF, 0) != 0)
-            rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
+            rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fname));
 #endif
     }
     else {

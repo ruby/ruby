@@ -1452,13 +1452,13 @@ test_identical(VALUE obj, VALUE fname1, VALUE fname2)
     FilePathValue(fname1);
     fname1 = rb_str_new4(fname1);
     FilePathValue(fname2);
-    if (access(RSTRING(fname1)->ptr, 0)) return Qfalse;
-    if (access(RSTRING(fname2)->ptr, 0)) return Qfalse;
+    if (access(RSTRING_PTR(fname1), 0)) return Qfalse;
+    if (access(RSTRING_PTR(fname2), 0)) return Qfalse;
 #endif
     fname1 = rb_file_expand_path(fname1, Qnil);
     fname2 = rb_file_expand_path(fname2, Qnil);
-    if (RSTRING(fname1)->len != RSTRING(fname2)->len) return Qfalse;
-    if (rb_memcicmp(RSTRING(fname1)->ptr, RSTRING(fname2)->ptr, RSTRING(fname1)->len))
+    if (RSTRING_LEN(fname1) != RSTRING_LEN(fname2)) return Qfalse;
+    if (rb_memcicmp(RSTRING_PTR(fname1), RSTRING_PTR(fname2), RSTRING_LEN(fname1)))
 	return Qfalse;
 #endif
     return Qtrue;
@@ -2975,16 +2975,16 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 
 #  ifdef _WIN32
 	if ((tmpfd = open(StringValueCStr(path), O_RDWR)) < 0) {
-	    rb_sys_fail(RSTRING(path)->ptr);
+	    rb_sys_fail(RSTRING_PTR(path));
 	}
 #  else
 	if ((tmpfd = open(StringValueCStr(path), 0)) < 0) {
-	    rb_sys_fail(RSTRING(path)->ptr);
+	    rb_sys_fail(RSTRING_PTR(path));
 	}
 #  endif
 	if (chsize(tmpfd, pos) < 0) {
 	    close(tmpfd);
-	    rb_sys_fail(RSTRING(path)->ptr);
+	    rb_sys_fail(RSTRING_PTR(path));
 	}
 	close(tmpfd);
     }

@@ -1,3 +1,14 @@
+Thu Aug 31 20:21:47 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (test_identical, rb_file_s_truncate): use RSTRING_PTR and
+	  RSTRING_STR.
+
+	* io.c (pipe_open, rb_io_reopen): ditto.
+
+	* process.c (proc_spawn_n, rb_spawn): ditto.
+
+	* util.c (ruby_add_suffix): ditto.
+
 Thu Aug 31 18:23:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (struct RString): embed small strings.

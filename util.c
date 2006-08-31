@@ -156,26 +156,26 @@ ruby_add_suffix(VALUE str, const char *suffix)
     long slen;
     char buf[1024];
 
-    if (RSTRING(str)->len > 1000)
+    if (RSTRING_LEN(str) > 1000)
         rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
-		 RSTRING(str)->len);
+		 RSTRING_LEN(str));
 
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32)
     /* Style 0 */
-    slen = RSTRING(str)->len;
+    slen = RSTRING_LEN(str);
     rb_str_cat(str, suffix, extlen);
 #if defined(DJGPP)
     if (_USE_LFN) return;
 #else
-    if (valid_filename(RSTRING(str)->ptr)) return;
+    if (valid_filename(RSTRING_PTR(str))) return;
 #endif
 
     /* Fooey, style 0 failed.  Fix str before continuing. */
-    RSTRING(str)->ptr[RSTRING(str)->len = slen] = '\0';
+    rb_str_resize(str, slen);
 #endif
 
     slen = extlen;
-    t = buf; baselen = 0; s = RSTRING(str)->ptr;
+    t = buf; baselen = 0; s = RSTRING_PTR(str);
     while ((*t = *s) && *s != '.') {
 	baselen++;
 	if (*s == '\\' || *s == '/') baselen = 0;
@@ -213,7 +213,7 @@ fallback:
 	(void)memcpy(p, strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
     }
     rb_str_resize(str, strlen(buf));
-    memcpy(RSTRING(str)->ptr, buf, RSTRING(str)->len);
+    memcpy(RSTRING_PTR(str), buf, RSTRING_LEN(str));
 }
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
