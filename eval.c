@@ -991,8 +991,8 @@ static struct tag *prot_tag;
 
 VALUE ruby_wrapper;	/* security wrapper */
 
-static NODE *ruby_cref = 0;
-static NODE *top_cref;
+NODE *ruby_cref = 0;
+NODE *ruby_top_cref;
 #define PUSH_CREF(c) ruby_cref = NEW_NODE(NODE_CREF,(c),0,ruby_cref)
 #define POP_CREF() ruby_cref = ruby_cref->nd_next
 
@@ -1384,8 +1384,8 @@ ruby_init(void)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 	ruby_frame->self = ruby_top_self;
-	top_cref = rb_node_newnode(NODE_CREF,rb_cObject,0,0);
-	ruby_cref = top_cref;
+	ruby_top_cref = rb_node_newnode(NODE_CREF,rb_cObject,0,0);
+	ruby_cref = ruby_top_cref;
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
 #ifdef __MACOS__
 	_macruby_init();
@@ -6714,7 +6714,7 @@ rb_load(VALUE fname, int wrap)
 
     ruby_errinfo = Qnil;	/* ensure */
     PUSH_VARS();
-    ruby_cref = top_cref;
+    ruby_cref = ruby_top_cref;
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
 	ruby_wrapper = 0;

@@ -1,3 +1,10 @@
+Thu Aug 31 13:12:06 2006  why the lucky stiff  <why@ruby-lang.org>
+
+	* eval.c (ruby_init): rename top_cref to ruby_top_cref and export,
+	  along with ruby_cref, for use by the sandbox. [ruby-core:08762]
+
+	* node.h: ditto.
+
 Wed Aug 30 12:01:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_hash): improve collision.
