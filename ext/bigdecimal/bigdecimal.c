@@ -224,14 +224,14 @@ GetVpValue(VALUE v, int must)
 #ifdef ENABLE_NUMERIC_STRING
     case T_STRING:
         SafeStringValue(v);
-        return VpCreateRbObject(strlen(RSTRING(v)->ptr) + VpBaseFig() + 1,
-                                RSTRING(v)->ptr);
+        return VpCreateRbObject(strlen(RSTRING_PTR(v)) + VpBaseFig() + 1,
+                                RSTRING_PTR(v));
 #endif /* ENABLE_NUMERIC_STRING */
 
     case T_BIGNUM:
         bg = rb_big2str(v, 10);
-        return VpCreateRbObject(strlen(RSTRING(bg)->ptr) + VpBaseFig() + 1,
-                                RSTRING(bg)->ptr);
+        return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
+                                RSTRING_PTR(bg));
     default:
         goto SomeOneMayDoIt;
     }
@@ -240,7 +240,7 @@ SomeOneMayDoIt:
     if(must) {
         rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
                     rb_special_const_p(v)?
-                    RSTRING(rb_inspect(v))->ptr:
+                    RSTRING_PTR(rb_inspect(v)):
                     rb_obj_classname(v)
                 );
     }
@@ -332,7 +332,7 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned long m=0;
 
     SafeStringValue(str);
-    pch = RSTRING(str)->ptr;
+    pch = RSTRING_PTR(str);
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -1510,7 +1510,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc,argv,"01",&f)==1) {
         if(TYPE(f)==T_STRING) {
             SafeStringValue(f);
-            psz = RSTRING(f)->ptr;
+            psz = RSTRING_PTR(f);
             if(*psz==' ') {
                 fPlus = 1; psz++;
             } else if(*psz=='+') {
@@ -1687,7 +1687,7 @@ BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
         mf = GetPositiveInt(nFig);
     }
     SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpCreateRbObject(mf, RSTRING(iniValue)->ptr));
+    GUARD_OBJ(pv,VpCreateRbObject(mf, RSTRING_PTR(iniValue)));
     return ToValue(pv);
 }
 
@@ -1718,7 +1718,7 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
         mf = GetPositiveInt(nFig);
     }
     SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING(iniValue)->ptr,self));
+    GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING_PTR(iniValue),self));
     return ToValue(pv);
 }
 

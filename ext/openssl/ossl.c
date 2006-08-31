@@ -131,7 +131,7 @@ ossl_buf2str(char *buf, int len)
     int status = 0;
 
     str = rb_protect((VALUE(*)_((VALUE)))ossl_str_new, len, &status);
-    if(!NIL_P(str)) memcpy(RSTRING(str)->ptr, buf, len);
+    if(!NIL_P(str)) memcpy(RSTRING_PTR(str), buf, len);
     OPENSSL_free(buf);
     if(status) rb_jump_tag(status);
 
@@ -170,7 +170,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	rflag = flag ? Qtrue : Qfalse;
 	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
 	if (status) return -1; /* exception was raised. */
-	len = RSTRING(pass)->len;
+	len = RSTRING_LEN(pass);
 	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
 	    rb_warning("password must be longer than 4 bytes");
 	    continue;
@@ -179,7 +179,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	    rb_warning("password must be shorter then %d bytes", max_len-1);
 	    continue;
 	}
-	memcpy(buf, RSTRING(pass)->ptr, len);
+	memcpy(buf, RSTRING_PTR(pass), len);
 	break;
     }
     return len;

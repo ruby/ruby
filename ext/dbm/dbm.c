@@ -114,24 +114,24 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (flags & RUBY_DBM_RW_BIT) {
         flags &= ~RUBY_DBM_RW_BIT;
-        dbm = dbm_open(RSTRING(file)->ptr, flags, mode);
+        dbm = dbm_open(RSTRING_PTR(file), flags, mode);
     }
     else {
         dbm = 0;
         if (mode >= 0) {
-            dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDWR|O_CREAT, mode);
         }
         if (!dbm) {
-            dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, 0);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDWR, 0);
         }
         if (!dbm) {
-            dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDONLY, 0);
         }
     }
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
-	rb_sys_fail(RSTRING(file)->ptr);
+	rb_sys_fail(RSTRING_PTR(file));
     }
 
     dbmp = ALLOC(struct dbmdata);
@@ -166,8 +166,8 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     DBM *dbm;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     value = dbm_fetch(dbm, key);
@@ -206,14 +206,14 @@ fdbm_index(VALUE obj, VALUE valstr)
     DBM *dbm;
 
     StringValue(valstr);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0) {
+	if (val.dsize == RSTRING_LEN(valstr) &&
+	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0) {
 	    return rb_tainted_str_new(key.dptr, key.dsize);
 	}
     }
@@ -274,8 +274,8 @@ fdbm_delete(VALUE obj, VALUE keystr)
 
     fdbm_modify(obj);
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
 
@@ -348,8 +348,8 @@ fdbm_delete_if(VALUE obj)
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	keystr = RARRAY(ary)->ptr[i];
 	StringValue(keystr);
-	key.dptr = RSTRING(keystr)->ptr;
-	key.dsize = RSTRING(keystr)->len;
+	key.dptr = RSTRING_PTR(keystr);
+	key.dsize = RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {
 	    rb_raise(rb_eDBMError, "dbm_delete failed");
 	}
@@ -438,11 +438,11 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     keystr = rb_obj_as_string(keystr);
     valstr = rb_obj_as_string(valstr);
 
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -595,8 +595,8 @@ fdbm_has_key(VALUE obj, VALUE keystr)
     DBM *dbm;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     val = dbm_fetch(dbm, key);
@@ -612,14 +612,14 @@ fdbm_has_value(VALUE obj, VALUE valstr)
     DBM *dbm;
 
     StringValue(valstr);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
+	if (val.dsize == RSTRING_LEN(valstr) &&
+	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0)
 	    return Qtrue;
     }
     return Qfalse;

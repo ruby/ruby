@@ -32,7 +32,7 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 
     str = rb_f_sprintf(argc, argv);
 
-    syslog(pri, "%s", RSTRING(str)->ptr);
+    syslog(pri, "%s", RSTRING_PTR(str));
 }
 
 /* Syslog module methods */
@@ -70,7 +70,7 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 #else
     Check_SafeStr(ident);
 #endif
-    syslog_ident = strdup(RSTRING(ident)->ptr);
+    syslog_ident = strdup(RSTRING_PTR(ident));
 
     if (NIL_P(opt)) {
 	syslog_options = LOG_PID | LOG_CONS;

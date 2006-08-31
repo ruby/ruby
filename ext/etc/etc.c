@@ -153,8 +153,8 @@ etc_getpwnam(VALUE obj, VALUE nam)
     struct passwd *pwd;
 
     SafeStringValue(nam);
-    pwd = getpwnam(RSTRING(nam)->ptr);
-    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING(nam)->ptr);
+    pwd = getpwnam(RSTRING_PTR(nam));
+    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING_PTR(nam));
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -351,8 +351,8 @@ etc_getgrnam(VALUE obj, VALUE nam)
 
     rb_secure(4);
     SafeStringValue(nam);
-    grp = getgrnam(RSTRING(nam)->ptr);
-    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING(nam)->ptr);
+    grp = getgrnam(RSTRING_PTR(nam));
+    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING_PTR(nam));
     return setup_group(grp);
 #else
     return Qnil;

@@ -114,19 +114,19 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (flags & RUBY_GDBM_RW_BIT) {
         flags &= ~RUBY_GDBM_RW_BIT;
-	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+	dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
 			flags, mode, MY_FATAL_FUNC);
     }
     else {
         dbm = 0;
         if (mode >= 0)
-            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
                             GDBM_WRCREAT|flags, mode, MY_FATAL_FUNC);
         if (!dbm)
-            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
                             GDBM_WRITER|flags, 0, MY_FATAL_FUNC);
         if (!dbm)
-            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+            dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE, 
                             GDBM_READER|flags, 0, MY_FATAL_FUNC);
     }
 
@@ -136,7 +136,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 	if (gdbm_errno == GDBM_FILE_OPEN_ERROR ||
 	    gdbm_errno == GDBM_CANT_BE_READER ||
 	    gdbm_errno == GDBM_CANT_BE_WRITER)
-	    rb_sys_fail(RSTRING(file)->ptr);
+	    rb_sys_fail(RSTRING_PTR(file));
 	else
 	    rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
     }
@@ -176,12 +176,8 @@ rb_gdbm_fetch(GDBM_FILE dbm, datum key)
     if (val.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = val.dsize;
-    RSTRING(str)->aux.capa = val.dsize;
-    RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
-    RSTRING(str)->ptr[val.dsize] = '\0';
-
+    str = rb_str_new(val.dptr, val.dsize);
+    free(val.dptr);
     OBJ_TAINT(str);
     return (VALUE)str;
 }
@@ -192,8 +188,8 @@ rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
     datum key;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     return rb_gdbm_fetch(dbm, key);
 }
@@ -218,12 +214,8 @@ rb_gdbm_firstkey(GDBM_FILE dbm)
     if (key.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = key.dsize;
-    RSTRING(str)->aux.capa = key.dsize;
-    RSTRING(str)->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-
+    str = rb_str_new(key.dptr, key.dsize);
+    free(key.dptr);
     OBJ_TAINT(str);
     return str;
 }
@@ -234,18 +226,13 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
     datum key, key2;
     VALUE str;
 
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
     key2 = gdbm_nextkey(dbm, key);
     if (key2.dptr == 0)
         return Qnil;
 
-    str = rb_obj_alloc(rb_cString);
-    RSTRING(str)->len = key2.dsize;
-    RSTRING(str)->aux.capa = key2.dsize;
-    RSTRING(str)->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-
+    str = rb_str_new(key2.dptr, key2.dsize);
     OBJ_TAINT(str);
     return str;
 }
@@ -297,9 +284,9 @@ fgdbm_index(VALUE obj, VALUE valstr)
 
 	valstr2 = rb_gdbm_fetch2(dbm, keystr);
         if (!NIL_P(valstr2) &&
-            RSTRING(valstr)->len == RSTRING(valstr2)->len &&
-            memcmp(RSTRING(valstr)->ptr, RSTRING(valstr2)->ptr,
-                   RSTRING(valstr)->len) == 0) {
+            RSTRING_LEN(valstr) == RSTRING_LEN(valstr2) &&
+            memcmp(RSTRING_PTR(valstr), RSTRING_PTR(valstr2),
+                   RSTRING_LEN(valstr)) == 0) {
 	    return keystr;
         }
     }
@@ -358,8 +345,8 @@ rb_gdbm_delete(VALUE obj, VALUE keystr)
 
     rb_gdbm_modify(obj);
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     if (!gdbm_exists(dbm, key)) {
@@ -501,11 +488,11 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     StringValue(keystr);
     StringValue(valstr);
 
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -685,8 +672,8 @@ fgdbm_has_key(VALUE obj, VALUE keystr)
     GDBM_FILE dbm;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     if (gdbm_exists(dbm, key))
@@ -709,9 +696,9 @@ fgdbm_has_value(VALUE obj, VALUE valstr)
 	valstr2 = rb_gdbm_fetch2(dbm, keystr);
 
         if (!NIL_P(valstr2) &&
-            RSTRING(valstr)->len == RSTRING(valstr2)->len &&
-            memcmp(RSTRING(valstr)->ptr, RSTRING(valstr2)->ptr,
-                   RSTRING(valstr)->len) == 0) {
+            RSTRING_LEN(valstr) == RSTRING_LEN(valstr2) &&
+            memcmp(RSTRING_PTR(valstr), RSTRING_PTR(valstr2),
+                   RSTRING_LEN(valstr)) == 0) {
 	    return Qtrue;
         }
     }

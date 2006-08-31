@@ -34,6 +34,7 @@ def db_check(db)
     for hdr in $dbm_conf_headers.fetch(db, ["ndbm.h"])
       if have_header(hdr.dup) and have_type("DBM", hdr.dup, hsearch)
 	$defs << hsearch << '-DDBM_HDR="<'+hdr+'>"'
+        p $defs
 	return true
       end
     end
@@ -55,7 +56,7 @@ end
 
 have_header("cdefs.h") 
 have_header("sys/cdefs.h") 
-if /DBM_HDR/ =~ $CFLAGS and have_func(db_prefix("dbm_open"))
+if /DBM_HDR/ =~ $defs.join(" ") and have_func(db_prefix("dbm_open"))
   have_func(db_prefix("dbm_clearerr")) unless $dbm_conf_have_gdbm
   create_makefile("dbm")
 end

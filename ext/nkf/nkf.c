@@ -62,7 +62,7 @@ rb_nkf_putchar(unsigned int c)
     o_len += incsize;
     rb_str_resize(result, o_len);
     incsize *= 2;
-    output = RSTRING(result)->ptr;
+    output = RSTRING_PTR(result);
   }
   output[output_ctr++] = c;
 
@@ -147,30 +147,29 @@ rb_nkf_kconv(VALUE obj, VALUE opt, VALUE src)
 
   reinit();
   StringValue(opt);
-  opt_ptr = RSTRING(opt)->ptr;
-  opt_end = opt_ptr + RSTRING(opt)->len;
+  opt_ptr = RSTRING_PTR(opt);
+  opt_end = opt_ptr + RSTRING_LEN(opt);
   nkf_split_options(opt_ptr);
 
   incsize = INCSIZE;
 
   input_ctr = 0;
   StringValue(src);
-  input = RSTRING(src)->ptr;
-  i_len = RSTRING(src)->len;
+  input = RSTRING_PTR(src);
+  i_len = RSTRING_LEN(src);
   result = rb_str_new(0, i_len*3 + 10);
   v = result;
 
   output_ctr = 0;
-  output     = RSTRING(result)->ptr;
-  o_len      = RSTRING(result)->len;
+  output     = RSTRING_PTR(result);
+  o_len      = RSTRING_LEN(result);
   *output    = '\0';
 
   if(x0201_f == WISH_TRUE)
     x0201_f = ((!iso2022jp_f)? TRUE : NO_X0201);
 
   kanji_convert(NULL);
-  RSTRING(result)->ptr[output_ctr] = '\0';
-  RSTRING(result)->len = output_ctr;
+  rb_str_set_len(result, output_ctr);
   OBJ_INFECT(result, src);
 
   return result;
@@ -209,8 +208,8 @@ rb_nkf_guess1(VALUE obj, VALUE src)
   int sequence_counter = 0;
 
   StringValue(src);
-  p = RSTRING(src)->ptr;
-  pend = p + RSTRING(src)->len;
+  p = RSTRING_PTR(src);
+  pend = p + RSTRING_LEN(src);
   if (p == pend) return INT2FIX(_UNKNOWN);
 
 #define INCR do {\
@@ -323,8 +322,8 @@ rb_nkf_guess2(VALUE obj, VALUE src)
 
   input_ctr = 0;
   StringValue(src);
-  input = RSTRING(src)->ptr;
-  i_len = RSTRING(src)->len;
+  input = RSTRING_PTR(src);
+  i_len = RSTRING_LEN(src);
 
   if(x0201_f == WISH_TRUE)
     x0201_f = ((!iso2022jp_f)? TRUE : NO_X0201);

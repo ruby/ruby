@@ -41,13 +41,13 @@ struct strscanner
 #define MATCHED(s)             (s)->flags |= FLAG_MATCHED
 #define CLEAR_MATCH_STATUS(s)  (s)->flags &= ~FLAG_MATCHED
 
-#define S_PBEG(s)  (RSTRING((s)->str)->ptr)
-#define S_LEN(s)  (RSTRING((s)->str)->len)
+#define S_PBEG(s)  (RSTRING_PTR((s)->str))
+#define S_LEN(s)  (RSTRING_LEN((s)->str))
 #define S_PEND(s)  (S_PBEG(s) + S_LEN(s))
 #define CURPTR(s) (S_PBEG(s) + (s)->curr)
 #define S_RESTLEN(s) (S_LEN(s) - (s)->curr)
 
-#define EOS_P(s) ((s)->curr >= RSTRING(p->str)->len)
+#define EOS_P(s) ((s)->curr >= RSTRING_LEN(p->str))
 
 #define GET_SCANNER(obj,var) do {\
     Data_Get_Struct(obj, struct strscanner, var);\
@@ -1069,7 +1069,7 @@ strscan_inspect(VALUE self)
         len = snprintf(buf, BUFSIZE, "#<%s %ld/%ld @ %s>",
                        rb_class2name(CLASS_OF(self)),
                        p->curr, S_LEN(p),
-                       RSTRING(b)->ptr);
+                       RSTRING_PTR(b));
         return infect(rb_str_new(buf, len), p);
     }
     a = inspect1(p);
@@ -1077,8 +1077,8 @@ strscan_inspect(VALUE self)
     len = snprintf(buf, BUFSIZE, "#<%s %ld/%ld %s @ %s>",
                    rb_class2name(CLASS_OF(self)),
                    p->curr, S_LEN(p),
-                   RSTRING(a)->ptr,
-                   RSTRING(b)->ptr);
+                   RSTRING_PTR(a),
+                   RSTRING_PTR(b));
     return infect(rb_str_new(buf, len), p);
 }
 

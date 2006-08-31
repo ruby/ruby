@@ -149,8 +149,8 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
         if (!NIL_P(str2))
         {
             StringValue(str2);
-            len = RSTRING(str2)->len;
-            memcpy( buf + skip, RSTRING(str2)->ptr, len );
+            len = RSTRING_LEN(str2);
+            memcpy( buf + skip, RSTRING_PTR(str2), len );
         }
     }
     len += skip;
@@ -170,7 +170,7 @@ syck_parser_assign_io(SyckParser *parser, VALUE *pport)
     if (!NIL_P(tmp = rb_check_string_type(port))) {
         taint = OBJ_TAINTED(port); /* original taintedness */
         port = tmp;
-        syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
+        syck_parser_str( parser, RSTRING_PTR(port), RSTRING_LEN(port), NULL );
     }
     else if (rb_respond_to(port, s_read)) {
         if (rb_respond_to(port, s_binmode)) {
@@ -1006,10 +1006,10 @@ syck_set_ivars(VALUE vars, VALUE obj)
     VALUE ivname = rb_ary_entry( vars, 0 );
     char *ivn;
     StringValue( ivname );
-    ivn = S_ALLOCA_N( char, RSTRING(ivname)->len + 2 );
+    ivn = S_ALLOCA_N( char, RSTRING_LEN(ivname) + 2 );
     ivn[0] = '@';
     ivn[1] = '\0';
-    strncat( ivn, RSTRING(ivname)->ptr, RSTRING(ivname)->len );
+    strncat( ivn, RSTRING_PTR(ivname), RSTRING_LEN(ivname) );
     rb_iv_set( obj, ivn, rb_ary_entry( vars, 1 ) );
     return Qnil;
 }
@@ -1037,12 +1037,12 @@ syck_const_find(VALUE const_name)
 VALUE
 syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
 {
-    if (NIL_P(type) || RSTRING(StringValue(type))->len == 0) 
+    if (NIL_P(type) || RSTRING_LEN(StringValue(type)) == 0) 
     {
         type = rb_funcall( self, s_detect_implicit, 1, val );
     }
 
-    if ( ! (NIL_P(type) || RSTRING(StringValue(type))->len == 0) )
+    if ( ! (NIL_P(type) || RSTRING_LEN(StringValue(type)) == 0) )
     {
         VALUE str_xprivate = rb_str_new2( "x-private" );
         VALUE colon = rb_str_new2( ":" );
@@ -1172,7 +1172,7 @@ syck_resolver_tagurize(VALUE self, VALUE val)
 
     if ( !NIL_P(tmp) )
     {
-        char *taguri = syck_type_id_to_uri( RSTRING(tmp)->ptr );
+        char *taguri = syck_type_id_to_uri( RSTRING_PTR(tmp) );
         val = rb_str_new2( taguri );
         S_FREE( taguri );
     }
@@ -1192,7 +1192,7 @@ syck_defaultresolver_detect_implicit(VALUE self, VALUE val)
     if ( !NIL_P(tmp) )
     {
         val = tmp;
-        type_id = syck_match_implicit( RSTRING(val)->ptr, RSTRING(val)->len );
+        type_id = syck_match_implicit( RSTRING_PTR(val), RSTRING_LEN(val) );
         return rb_str_new2( type_id );
     }
 
@@ -1451,8 +1451,8 @@ syck_scalar_value_set(VALUE  self, VALUE val)
     Data_Get_Struct( self, SyckNode, node );
 
     StringValue( val );
-    node->data.str->ptr = syck_strndup( RSTRING(val)->ptr, RSTRING(val)->len );
-    node->data.str->len = RSTRING(val)->len;
+    node->data.str->ptr = syck_strndup( RSTRING_PTR(val), RSTRING_LEN(val) );
+    node->data.str->len = RSTRING_LEN(val);
     node->data.str->style = scalar_none;
 
     rb_iv_set( self, "@value", val );
@@ -1711,7 +1711,7 @@ syck_node_type_id_set(VALUE self, VALUE type_id)
 
     if ( !NIL_P( type_id ) ) {
         StringValue( type_id );
-        node->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
+        node->type_id = syck_strndup( RSTRING_PTR(type_id), RSTRING_LEN(type_id) );
     }
 
     rb_iv_set( self, "@type_id", type_id );

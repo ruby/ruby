@@ -72,10 +72,10 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
     Data_Get_Struct(obj, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     str = rb_str_new(0, algo->digest_len);
-    algo->final_func(RSTRING(str)->ptr, pctx);
+    algo->final_func(RSTRING_PTR(str), pctx);
 
     return str;
 }
@@ -91,10 +91,10 @@ rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
     Data_Get_Struct(obj, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     str = rb_str_new(0, algo->digest_len * 2);
-    algo->end_func(pctx, RSTRING(str)->ptr);
+    algo->end_func(pctx, RSTRING_PTR(str));
 
     return str;
 }
@@ -128,7 +128,7 @@ rb_digest_base_update(VALUE self, VALUE str)
     algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx);
 
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     return self;
 }
@@ -162,7 +162,7 @@ rb_digest_base_digest(VALUE self)
     pctx2 = xmalloc(len);
     memcpy(pctx2, pctx1, len);
 
-    algo->final_func(RSTRING(str)->ptr, pctx2);
+    algo->final_func(RSTRING_PTR(str), pctx2);
     free(pctx2);
 
     return str;
@@ -185,7 +185,7 @@ rb_digest_base_hexdigest(VALUE self)
     pctx2 = xmalloc(len);
     memcpy(pctx2, pctx1, len);
 
-    algo->end_func(pctx2, RSTRING(str)->ptr);
+    algo->end_func(pctx2, RSTRING_PTR(str));
     free(pctx2);
 
     return str;
@@ -213,12 +213,12 @@ rb_digest_base_equal(VALUE self, VALUE other)
     StringValue(other);
     str2 = other;
 
-    if (RSTRING(str2)->len == algo->digest_len)
+    if (RSTRING_LEN(str2) == algo->digest_len)
 	str1 = rb_digest_base_digest(self);
     else
 	str1 = rb_digest_base_hexdigest(self);
 
-    if (RSTRING(str1)->len == RSTRING(str2)->len
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
 	&& rb_str_cmp(str1, str2) == 0)
 	return Qtrue;
 

@@ -380,7 +380,7 @@ else
 end
 
 if $extout
-  RbConfig.expand(extout = "#$extout", RbConfig::CONFIG.merge("topdir"=>$topdir))
+  RbConfig.expand(extout = "#{$extout}", RbConfig::CONFIG.merge("topdir"=>$topdir))
   if $install
     dest = RbConfig.expand($rubylibdir.dup)
     unless $destdir.empty?

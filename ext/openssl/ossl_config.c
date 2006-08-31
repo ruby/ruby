@@ -171,16 +171,16 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
     StringValue(name);
     StringValue(value);
     GetConfig(self, conf);
-    if(!(sv = _CONF_get_section(conf, RSTRING(section)->ptr))){
-	if(!(sv = _CONF_new_section(conf, RSTRING(section)->ptr))){
+    if(!(sv = _CONF_get_section(conf, RSTRING_PTR(section)))){
+	if(!(sv = _CONF_new_section(conf, RSTRING_PTR(section)))){
 	    ossl_raise(eConfigError, NULL);
 	}
     }
     if(!(cv = OPENSSL_malloc(sizeof(CONF_VALUE)))){
 	ossl_raise(eConfigError, NULL);
     }
-    cv->name = BUF_strdup(RSTRING(name)->ptr);
-    cv->value = BUF_strdup(RSTRING(value)->ptr);
+    cv->name = BUF_strdup(RSTRING_PTR(name));
+    cv->value = BUF_strdup(RSTRING_PTR(value));
     if(!cv->name || !cv->value || !_CONF_add_string(conf, sv, cv)){
 	OPENSSL_free(cv->name);
 	OPENSSL_free(cv->value);
@@ -201,7 +201,7 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE name)
     StringValue(section);
     StringValue(name);
     GetConfig(self, conf);
-    str = NCONF_get_string(conf, RSTRING(section)->ptr, RSTRING(name)->ptr);
+    str = NCONF_get_string(conf, RSTRING_PTR(section), RSTRING_PTR(name));
     if(!str){
 	ERR_clear_error();
 	return Qnil;

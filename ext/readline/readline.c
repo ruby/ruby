@@ -65,7 +65,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
 	SafeStringValue(tmp);
-	prompt = RSTRING(tmp)->ptr;
+	prompt = RSTRING_PTR(tmp);
     }
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
@@ -176,8 +176,8 @@ readline_attempted_completion_function(const char *text, int start, int end)
     result = ALLOC_N(char *, matches + 2);
     for (i = 0; i < matches; i++) {
 	temp = rb_obj_as_string(RARRAY(ary)->ptr[i]);
-	result[i + 1] = ALLOC_N(char, RSTRING(temp)->len + 1);
-	strcpy(result[i + 1], RSTRING(temp)->ptr);
+	result[i + 1] = ALLOC_N(char, RSTRING_LEN(temp) + 1);
+	strcpy(result[i + 1], RSTRING_PTR(temp));
     }
     result[matches + 1] = NULL;
 
@@ -252,10 +252,10 @@ readline_s_set_completion_append_character(VALUE self, VALUE str)
     }
     else {
 	SafeStringValue(str);
-	if (RSTRING(str)->len == 0) {
+	if (RSTRING_LEN(str) == 0) {
 	    rl_completion_append_character = '\0';
 	} else {
-	    rl_completion_append_character = RSTRING(str)->ptr[0];
+	    rl_completion_append_character = RSTRING_PTR(str)[0];
 	}
     }
     return self;
@@ -276,7 +276,7 @@ readline_s_get_completion_append_character(VALUE self)
 	return Qnil;
 
     str = rb_str_new("", 1);
-    RSTRING(str)->ptr[0] = rl_completion_append_character;
+    RSTRING_PTR(str)[0] = rl_completion_append_character;
     return str;
 #else
     rb_notimplement();
@@ -294,14 +294,14 @@ readline_s_set_basic_word_break_characters(VALUE self, VALUE str)
     SafeStringValue(str);
     if (basic_word_break_characters == NULL) {
 	basic_word_break_characters =
-	    ALLOC_N(char, RSTRING(str)->len + 1);
+	    ALLOC_N(char, RSTRING_LEN(str) + 1);
     }
     else {
-	REALLOC_N(basic_word_break_characters, char, RSTRING(str)->len + 1);
+	REALLOC_N(basic_word_break_characters, char, RSTRING_LEN(str) + 1);
     }
     strncpy(basic_word_break_characters,
-	    RSTRING(str)->ptr, RSTRING(str)->len);
-    basic_word_break_characters[RSTRING(str)->len] = '\0';
+	    RSTRING_PTR(str), RSTRING_LEN(str));
+    basic_word_break_characters[RSTRING_LEN(str)] = '\0';
     rl_basic_word_break_characters = basic_word_break_characters;
     return self;
 #else
@@ -334,14 +334,14 @@ readline_s_set_completer_word_break_characters(VALUE self, VALUE str)
     SafeStringValue(str);
     if (completer_word_break_characters == NULL) {
 	completer_word_break_characters =
-	    ALLOC_N(char, RSTRING(str)->len + 1);
+	    ALLOC_N(char, RSTRING_LEN(str) + 1);
     }
     else {
-	REALLOC_N(completer_word_break_characters, char, RSTRING(str)->len + 1);
+	REALLOC_N(completer_word_break_characters, char, RSTRING_LEN(str) + 1);
     }
     strncpy(completer_word_break_characters,
-	    RSTRING(str)->ptr, RSTRING(str)->len);
-    completer_word_break_characters[RSTRING(str)->len] = '\0';
+	    RSTRING_PTR(str), RSTRING_LEN(str));
+    completer_word_break_characters[RSTRING_LEN(str)] = '\0';
     rl_completer_word_break_characters = completer_word_break_characters;
     return self;
 #else
@@ -374,14 +374,14 @@ readline_s_set_basic_quote_characters(VALUE self, VALUE str)
     SafeStringValue(str);
     if (basic_quote_characters == NULL) {
 	basic_quote_characters =
-	    ALLOC_N(char, RSTRING(str)->len + 1);
+	    ALLOC_N(char, RSTRING_LEN(str) + 1);
     }
     else {
-	REALLOC_N(basic_quote_characters, char, RSTRING(str)->len + 1);
+	REALLOC_N(basic_quote_characters, char, RSTRING_LEN(str) + 1);
     }
     strncpy(basic_quote_characters,
-	    RSTRING(str)->ptr, RSTRING(str)->len);
-    basic_quote_characters[RSTRING(str)->len] = '\0';
+	    RSTRING_PTR(str), RSTRING_LEN(str));
+    basic_quote_characters[RSTRING_LEN(str)] = '\0';
     rl_basic_quote_characters = basic_quote_characters;
 
     return self;
@@ -415,14 +415,13 @@ readline_s_set_completer_quote_characters(VALUE self, VALUE str)
     SafeStringValue(str);
     if (completer_quote_characters == NULL) {
 	completer_quote_characters =
-	    ALLOC_N(char, RSTRING(str)->len + 1);
+	    ALLOC_N(char, RSTRING_LEN(str) + 1);
     }
     else {
-	REALLOC_N(completer_quote_characters, char, RSTRING(str)->len + 1);
+	REALLOC_N(completer_quote_characters, char, RSTRING_LEN(str) + 1);
     }
-    strncpy(completer_quote_characters,
-	    RSTRING(str)->ptr, RSTRING(str)->len);
-    completer_quote_characters[RSTRING(str)->len] = '\0';
+    strncpy(completer_quote_characters, RSTRING_PTR(str), RSTRING_LEN(str));
+    completer_quote_characters[RSTRING_LEN(str)] = '\0';
     rl_completer_quote_characters = completer_quote_characters;
 
     return self;
@@ -456,14 +455,13 @@ readline_s_set_filename_quote_characters(VALUE self, VALUE str)
     SafeStringValue(str);
     if (filename_quote_characters == NULL) {
 	filename_quote_characters =
-	    ALLOC_N(char, RSTRING(str)->len + 1);
+	    ALLOC_N(char, RSTRING_LEN(str) + 1);
     }
     else {
-	REALLOC_N(filename_quote_characters, char, RSTRING(str)->len + 1);
+	REALLOC_N(filename_quote_characters, char, RSTRING_LEN(str) + 1);
     }
-    strncpy(filename_quote_characters,
-	    RSTRING(str)->ptr, RSTRING(str)->len);
-    filename_quote_characters[RSTRING(str)->len] = '\0';
+    strncpy(filename_quote_characters, RSTRING_PTR(str), RSTRING_LEN(str));
+    filename_quote_characters[RSTRING_LEN(str)] = '\0';
     rl_filename_quote_characters = filename_quote_characters;
 
     return self;
@@ -524,7 +522,7 @@ hist_set(VALUE self, VALUE index, VALUE str)
     if (i < 0) {
         i += history_length;
     }
-    entry = replace_history_entry(i, RSTRING(str)->ptr, NULL);
+    entry = replace_history_entry(i, RSTRING_PTR(str), NULL);
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
     }
@@ -540,7 +538,7 @@ hist_push(VALUE self, VALUE str)
 {
     rb_secure(4);
     SafeStringValue(str);
-    add_history(RSTRING(str)->ptr);
+    add_history(RSTRING_PTR(str));
     return self;
 }
 
@@ -553,7 +551,7 @@ hist_push_method(int argc, VALUE *argv, VALUE self)
     while (argc--) {
 	str = *argv++;
 	SafeStringValue(str);
-	add_history(RSTRING(str)->ptr);
+	add_history(RSTRING_PTR(str));
     }
     return self;
 }

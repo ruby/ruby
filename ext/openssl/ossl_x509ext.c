@@ -229,23 +229,23 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     StringValue(value);
     if(NIL_P(critical)) critical = Qfalse;
 
-    nid = OBJ_ln2nid(RSTRING(oid)->ptr);
-    if(!nid) nid = OBJ_sn2nid(RSTRING(oid)->ptr);
-    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%s'", RSTRING(oid)->ptr);
+    nid = OBJ_ln2nid(RSTRING_PTR(oid));
+    if(!nid) nid = OBJ_sn2nid(RSTRING_PTR(oid));
+    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%s'", RSTRING_PTR(oid));
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
     GetX509ExtFactory(self, ctx);
 #ifdef HAVE_X509V3_EXT_NCONF_NID
     rconf = rb_iv_get(self, "@config");
     conf = NIL_P(rconf) ? NULL : GetConfigPtr(rconf);
-    ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING(valstr)->ptr);
+    ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
 #else
     if (!empty_lhash) empty_lhash = lh_new(NULL, NULL);
     ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING(valstr)->ptr);
 #endif
     if (!ext){
 	ossl_raise(eX509ExtError, "%s = %s",
-		   RSTRING(oid)->ptr, RSTRING(value)->ptr);
+		   RSTRING_PTR(oid), RSTRING_PTR(value));
     }
     WrapX509Ext(cX509Ext, obj, ext);
 
@@ -280,9 +280,9 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
 	oid = ossl_to_der_if_possible(oid);
 	StringValue(oid);
-	p  = RSTRING(oid)->ptr;
+	p  = RSTRING_PTR(oid);
 	if(!d2i_X509_EXTENSION((X509_EXTENSION**)&DATA_PTR(self),
-			       &p, RSTRING(oid)->len))
+			       &p, RSTRING_LEN(oid)))
 	    ossl_raise(eX509ExtError, NULL);
 	return self;
     }
@@ -319,14 +319,14 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    if(!(s = OPENSSL_malloc(RSTRING(data)->len)))
+    if(!(s = OPENSSL_malloc(RSTRING_LEN(data))))
 	ossl_raise(eX509ExtError, "malloc error");
-    memcpy(s, RSTRING(data)->ptr, RSTRING(data)->len);
+    memcpy(s, RSTRING_PTR(data), RSTRING_LEN(data));
     if(!(asn1s = ASN1_OCTET_STRING_new())){
 	free(s);
 	ossl_raise(eX509ExtError, NULL);
     }
-    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING(data)->len)){
+    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LEN(data))){
 	free(s);
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
@@ -409,7 +409,7 @@ ossl_x509ext_to_der(VALUE obj)
     if((len = i2d_X509_EXTENSION(ext, NULL)) <= 0)
 	ossl_raise(eX509ExtError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_X509_EXTENSION(ext, &p) < 0)
 	ossl_raise(eX509ExtError, NULL);
     ossl_str_adjust(str, p);

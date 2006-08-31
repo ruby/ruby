@@ -359,8 +359,8 @@ bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
 	break;
       default:
 	StringValue(val);
-	v = RSTRING(val)->ptr;
-	vlen = RSTRING(val)->len;
+	v = RSTRING_PTR(val);
+	vlen = RSTRING_LEN(val);
 	break;
     }
 
@@ -480,13 +480,13 @@ bsock_send(int argc, VALUE *argv, VALUE sock)
   retry:
     if (!NIL_P(to)) {
         TRAP_BEG;
-	n = sendto(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
-		   (struct sockaddr*)RSTRING(to)->ptr, RSTRING(to)->len);
+	n = sendto(fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg), NUM2INT(flags),
+		   (struct sockaddr*)RSTRING_PTR(to), RSTRING_LEN(to));
         TRAP_END;
     }
     else {
         TRAP_BEG;
-	n = send(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags));
+	n = send(fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg), NUM2INT(flags));
         TRAP_END;
     }
     if (n < 0) {
@@ -564,11 +564,11 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
   retry:
     rb_thread_wait_fd(fd);
     rb_io_check_closed(fptr);
-    if (RSTRING(str)->len != buflen) {
+    if (RSTRING_LEN(str) != buflen) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
     TRAP_BEG;
-    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
+    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)buf, &alen);
     TRAP_END;
 
     if (slen < 0) {
@@ -577,9 +577,8 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	}
 	rb_sys_fail("recvfrom(2)");
     }
-    if (slen < RSTRING(str)->len) {
-	RSTRING(str)->len = slen;
-	RSTRING(str)->ptr[slen] = '\0';
+    if (slen < RSTRING_LEN(str)) {
+	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
     switch (from) {
@@ -642,14 +641,13 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 
     rb_io_check_closed(fptr);
     rb_io_set_nonblock(fptr);
-    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
+    slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, (struct sockaddr*)buf, &alen);
 
     if (slen < 0) {
 	rb_sys_fail("recvfrom(2)");
     }
-    if (slen < RSTRING(str)->len) {
-	RSTRING(str)->len = slen;
-	RSTRING(str)->ptr[slen] = '\0';
+    if (slen < RSTRING_LEN(str)) {
+	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
     switch (from) {
@@ -807,7 +805,7 @@ host_str(VALUE host, char *hbuf, size_t len)
 	char *name;
 
 	SafeStringValue(host);
-	name = RSTRING(host)->ptr;
+	name = RSTRING_PTR(host);
 	if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
 	    make_inetaddr(INADDR_ANY, hbuf, len);
 	}
@@ -838,7 +836,7 @@ port_str(VALUE port, char *pbuf, size_t len)
 	char *serv;
 
 	SafeStringValue(port);
-	serv = RSTRING(port)->ptr;
+	serv = RSTRING_PTR(port);
 	if (strlen(serv) >= len) {
 	    rb_raise(rb_eArgError, "service name too long (%d)", strlen(serv));
 	}
@@ -1560,7 +1558,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    if (sizeof(sockaddr.sun_path) <= RSTRING(path)->len) {
+    if (sizeof(sockaddr.sun_path) <= RSTRING_LEN(path)) {
         rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
             (int)sizeof(sockaddr.sun_path)-1);
     }
@@ -1592,7 +1590,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
     init_sock(sock, fd);
     GetOpenFile(sock, fptr);
     if (server) {
-        fptr->path = strdup(RSTRING(path)->ptr);
+        fptr->path = strdup(RSTRING_PTR(path));
     }
 
     return sock;
@@ -1742,7 +1740,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     for (res = res0; res; res = res->ai_next) {
       retry:
-	n = sendto(fptr->fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
+	n = sendto(fptr->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg), NUM2INT(flags),
 		   res->ai_addr, res->ai_addrlen);
 	if (n >= 0) {
 	    freeaddrinfo(res0);
@@ -2143,7 +2141,7 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
     if (!NIL_P(tmp)) {
 	domain = tmp;
 	rb_check_safe_obj(domain);
-	ptr = RSTRING(domain)->ptr;
+	ptr = RSTRING_PTR(domain);
 	if (strcmp(ptr, "AF_INET") == 0)
 	    *dv = AF_INET;
 #ifdef AF_UNIX
@@ -2194,7 +2192,7 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
     if (!NIL_P(tmp)) {
 	type = tmp;
 	rb_check_safe_obj(type);
-	ptr = RSTRING(type)->ptr;
+	ptr = RSTRING_PTR(type);
 	if (strcmp(ptr, "SOCK_STREAM") == 0)
 	    *tv = SOCK_STREAM;
 	else if (strcmp(ptr, "SOCK_DGRAM") == 0)
@@ -2400,7 +2398,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fptr->fd;
-    n = ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0);
+    n = ruby_connect(fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr), 0);
     if (n < 0) {
 	rb_sys_fail("connect(2)");
     }
@@ -2456,7 +2454,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
-    n = connect(fptr->fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len);
+    n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr));
     if (n < 0) {
 	rb_sys_fail("connect(2)");
     }
@@ -2550,7 +2548,7 @@ sock_bind(VALUE sock, VALUE addr)
 
     StringValue(addr);
     GetOpenFile(sock, fptr);
-    if (bind(fptr->fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
+    if (bind(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_LEN(addr)) < 0)
 	rb_sys_fail("bind(2)");
 
     return INT2FIX(0);
@@ -3049,11 +3047,11 @@ sock_s_gethostbyaddr(int argc, VALUE *argv)
 	t = NUM2INT(type);
     }
 #ifdef INET6
-    else if (RSTRING(addr)->len == 16) {
+    else if (RSTRING_LEN(addr) == 16) {
 	t = AF_INET6;
     }
 #endif
-    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
+    h = gethostbyaddr(RSTRING_PTR(addr), RSTRING_LEN(addr), t);
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
@@ -3100,12 +3098,12 @@ sock_s_getservbyname(int argc, VALUE *argv)
 	port = ntohs(sp->s_port);
     }
     else {
-	char *s = RSTRING(service)->ptr;
+	char *s = RSTRING_PTR(service);
 	char *end;
 
 	port = strtoul(s, &end, 0);
 	if (*end != '\0') {
-	    rb_raise(rb_eSocket, "no such service %s/%s", s, RSTRING(proto)->ptr);
+	    rb_raise(rb_eSocket, "no such service %s/%s", s, RSTRING_PTR(proto));
 	}
     }
     return INT2FIX(port);
@@ -3123,7 +3121,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
 
     sp = getservbyport(NUM2INT(port),  StringValueCStr(proto));
     if (!sp) {
-	rb_raise(rb_eSocket, "no such service for port %d/%s", NUM2INT(port), RSTRING(proto)->ptr);
+	rb_raise(rb_eSocket, "no such service for port %d/%s", NUM2INT(port), RSTRING_PTR(proto));
     }
     return rb_tainted_str_new2(sp->s_name);
 }
@@ -3220,11 +3218,11 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     tmp = rb_check_string_type(sa);
     if (!NIL_P(tmp)) {
 	sa = tmp;
-	if (sizeof(ss) < RSTRING(sa)->len) {
+	if (sizeof(ss) < RSTRING_LEN(sa)) {
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
-	memcpy(&ss, RSTRING(sa)->ptr, RSTRING(sa)->len);
-	if (RSTRING(sa)->len != SA_LEN((struct sockaddr*)&ss)) {
+	memcpy(&ss, RSTRING_PTR(sa), RSTRING_LEN(sa));
+	if (RSTRING_LEN(sa) != SA_LEN((struct sockaddr*)&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
@@ -3408,14 +3406,14 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
     if (((struct sockaddr *)sockaddr)->sa_family != AF_UNIX) {
         rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
     }
-    if (sizeof(struct sockaddr_un) < RSTRING(addr)->len) {
+    if (sizeof(struct sockaddr_un) < RSTRING_LEN(addr)) {
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
-		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
+		 RSTRING_LEN(addr), sizeof(struct sockaddr_un));
     }
-    sun_path = unixpath(sockaddr, RSTRING(addr)->len);
-    if (sizeof(struct sockaddr_un) == RSTRING(addr)->len &&
+    sun_path = unixpath(sockaddr, RSTRING_LEN(addr));
+    if (sizeof(struct sockaddr_un) == RSTRING_LEN(addr) &&
         sun_path == sockaddr->sun_path &&
-        sun_path + strlen(sun_path) == RSTRING(addr)->ptr + RSTRING(addr)->len) {
+        sun_path + strlen(sun_path) == RSTRING_PTR(addr) + RSTRING_LEN(addr)) {
         rb_raise(rb_eArgError, "sockaddr_un.sun_path not NUL terminated");
     }
     path = rb_str_new2(sun_path);

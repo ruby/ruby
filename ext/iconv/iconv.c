@@ -167,13 +167,13 @@ iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt)
 	if (cd == (iconv_t)-1) {
 	    int inval = errno == EINVAL;
 	    const char *s = inval ? "invalid encoding " : "iconv";
-	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING(to)->len +
-					    RSTRING(from)->len + 8);
+	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING_LEN(to) +
+					    RSTRING_LEN(from) + 8);
 
-	    sprintf(RSTRING(msg)->ptr, "%s(\"%s\", \"%s\")",
-		    s, RSTRING(to)->ptr, RSTRING(from)->ptr);
-	    s = RSTRING(msg)->ptr;
-	    RSTRING(msg)->len = strlen(s);
+	    sprintf(RSTRING_PTR(msg), "%s(\"%s\", \"%s\")",
+		    s, RSTRING_PTR(to), RSTRING_PTR(from));
+	    s = RSTRING_PTR(msg);
+	    rb_str_set_len(msg, strlen(s));
 	    if (!inval) rb_sys_fail(s);
 	    iconv_fail(rb_eIconvInvalidEncoding,
 		       Qnil, rb_ary_new3(2, to, from), NULL, s);
@@ -284,7 +284,7 @@ iconv_fail(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, co
     if (mesg && *mesg) {
 	args[0] = rb_str_new2(mesg);
     }
-    else if (TYPE(failed) != T_STRING || RSTRING(failed)->len < FAILED_MAXLEN) {
+    else if (TYPE(failed) != T_STRING || RSTRING_LEN(failed) < FAILED_MAXLEN) {
 	args[0] = rb_inspect(failed);
     }
     else {
@@ -313,10 +313,10 @@ rb_str_derive(VALUE str, const char* ptr, int len)
 
     if (NIL_P(str))
 	return rb_str_new(ptr, len);
-    if (RSTRING(str)->ptr == ptr && RSTRING(str)->len == len)
+    if (RSTRING_PTR(str) == ptr && RSTRING_LEN(str) == len)
 	return str;
-    if (RSTRING(str)->ptr + RSTRING(str)->len == ptr + len)
-	ret = rb_str_substr(str, ptr - RSTRING(str)->ptr, len);
+    if (RSTRING_PTR(str) + RSTRING_LEN(str) == ptr + len)
+	ret = rb_str_substr(str, ptr - RSTRING_PTR(str), len);
     else
 	ret = rb_str_new(ptr, len);
     OBJ_INFECT(ret, str);
@@ -368,8 +368,8 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	int slen;
 
 	StringValue(str);
-	slen = RSTRING(str)->len;
-	inptr = RSTRING(str)->ptr;
+	slen = RSTRING_LEN(str);
+	inptr = RSTRING_PTR(str);
 
 	if (start < 0 ? (start += slen) < 0 : start >= slen)
 	    length = 0;
@@ -438,8 +438,8 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 		    rb_str_concat(ret, RARRAY(rescue)->ptr[0]);
 		if (len > 1 && !NIL_P(str = RARRAY(rescue)->ptr[1])) {
 		    StringValue(str);
-		    inlen = length = RSTRING(str)->len;
-		    instart = inptr = RSTRING(str)->ptr;
+		    inlen = length = RSTRING_LEN(str);
+		    instart = inptr = RSTRING_PTR(str);
 		    continue;
 		}
 	    }
@@ -602,7 +602,7 @@ iconv_s_convert(struct iconv_env_t* env)
 
     if (!NIL_P(last)) {
 	VALUE s = iconv_convert(env->cd, Qnil, 0, 0, env);
-	if (RSTRING(s)->len)
+	if (RSTRING_LEN(s))
 	    env->append(env->ret, s);
     }
 
@@ -816,13 +816,13 @@ iconv_conv(int argc, VALUE *argv, VALUE self)
     if (argc > 0) {
 	do {
 	    s = iconv_convert(cd, *argv++, 0, -1, NULL);
-	    if (RSTRING(s)->len)
+	    if (RSTRING_LEN(s))
 		rb_str_buf_append(str, s);
 	    else
 		str = s;
 	} while (--argc);
 	s = iconv_convert(cd, Qnil, 0, 0, NULL);
-	if (RSTRING(s)->len)
+	if (RSTRING_LEN(s))
 	    rb_str_buf_append(str, s);
 	else
 	    str = s;

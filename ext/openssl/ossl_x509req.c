@@ -171,7 +171,7 @@ ossl_x509req_to_der(VALUE self)
     if ((len = i2d_X509_REQ(req, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if (i2d_X509_REQ(req, &p) <= 0)
 	ossl_raise(eX509ReqError, NULL);
     ossl_str_adjust(str, p);

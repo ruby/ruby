@@ -241,7 +241,7 @@ ossl_dsa_to_der(VALUE self)
     if((len = i2d_func(pkey->pkey.dsa, NULL)) <= 0)
 	ossl_raise(eDSAError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_func(pkey->pkey.dsa, &p) < 0)
 	ossl_raise(eDSAError, NULL);
     ossl_str_adjust(str, p);
@@ -334,12 +334,11 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	ossl_raise(eDSAError, "Private DSA key needed!");
     }
     str = rb_str_new(0, ossl_dsa_buf_size(pkey));
-    if (!DSA_sign(0, RSTRING(data)->ptr, RSTRING(data)->len, RSTRING(str)->ptr,
+    if (!DSA_sign(0, RSTRING_PTR(data), RSTRING_LEN(data), RSTRING_PTR(str),
 		  &buf_len, pkey->pkey.dsa)) { /* type is ignored (0) */
 	ossl_raise(eDSAError, NULL);
     }
-    RSTRING(str)->len = buf_len;
-    RSTRING(str)->ptr[buf_len] = 0;
+    rb_str_set_len(str, buf_len);
 
     return str;
 }
@@ -354,8 +353,8 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     StringValue(digest);
     StringValue(sig);
     /* type is ignored (0) */
-    ret = DSA_verify(0, RSTRING(digest)->ptr, RSTRING(digest)->len,
-		     RSTRING(sig)->ptr, RSTRING(sig)->len, pkey->pkey.dsa);
+    ret = DSA_verify(0, RSTRING_PTR(digest), RSTRING_LEN(digest),
+		     RSTRING_PTR(sig), RSTRING_LEN(sig), pkey->pkey.dsa);
     if (ret < 0) {
 	ossl_raise(eDSAError, NULL);
     }

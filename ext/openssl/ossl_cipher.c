@@ -176,14 +176,14 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	if (NIL_P(init_v)) memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
 	else{
 	    StringValue(init_v);
-	    if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
+	    if (EVP_MAX_IV_LENGTH > RSTRING_LEN(init_v)) {
 		memset(iv, 0, EVP_MAX_IV_LENGTH);
-		memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
+		memcpy(iv, RSTRING_PTR(init_v), RSTRING_LEN(init_v));
 	    }
-	    else memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
+	    else memcpy(iv, RSTRING_PTR(init_v), sizeof(iv));
 	}
 	EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
-		       RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
+		       RSTRING_PTR(pass), RSTRING_LEN(pass), 1, key, NULL);
 	p_key = key;
 	p_iv = iv;
     }
@@ -222,15 +222,15 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     StringValue(vpass);
     if(!NIL_P(vsalt)){
 	StringValue(vsalt);
-	if(RSTRING(vsalt)->len != PKCS5_SALT_LEN)
+	if(RSTRING_LEN(vsalt) != PKCS5_SALT_LEN)
 	    rb_raise(eCipherError, "salt must be an 8-octet string");
-	salt = RSTRING(vsalt)->ptr;
+	salt = RSTRING_PTR(vsalt);
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
     digest = NIL_P(vdigest) ? EVP_md5() : GetDigestPtr(vdigest);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
-		   RSTRING(vpass)->ptr, RSTRING(vpass)->len, iter, key, iv); 
+		   RSTRING_PTR(vpass), RSTRING_LEN(vpass), iter, key, iv); 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
 	ossl_raise(eCipherError, NULL);
     OPENSSL_cleanse(key, sizeof key);
@@ -248,16 +248,15 @@ ossl_cipher_update(VALUE self, VALUE data)
     VALUE str;
 
     StringValue(data);
-    in = RSTRING(data)->ptr;
-    if ((in_len = RSTRING(data)->len) == 0)
+    in = RSTRING_PTR(data);
+    if ((in_len = RSTRING_LEN(data)) == 0)
         rb_raise(rb_eArgError, "data must not be empty");
     GetCipher(self, ctx);
     str = rb_str_new(0, in_len+EVP_CIPHER_CTX_block_size(ctx));
-    if (!EVP_CipherUpdate(ctx, RSTRING(str)->ptr, &out_len, in, in_len))
+    if (!EVP_CipherUpdate(ctx, RSTRING_PTR(str), &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
-    assert(out_len < RSTRING(str)->len);
-    RSTRING(str)->len = out_len;
-    RSTRING(str)->ptr[out_len] = 0;
+    assert(out_len < RSTRING_LEN(str));
+    rb_str_set_len(str, out_len);
 
     return str;
 }
@@ -271,11 +270,10 @@ ossl_cipher_final(VALUE self)
 
     GetCipher(self, ctx);
     str = rb_str_new(0, EVP_CIPHER_CTX_block_size(ctx));
-    if (!EVP_CipherFinal_ex(ctx, RSTRING(str)->ptr, &out_len))
+    if (!EVP_CipherFinal_ex(ctx, RSTRING_PTR(str), &out_len))
 	ossl_raise(eCipherError, NULL);
-    assert(out_len <= RSTRING(str)->len);
-    RSTRING(str)->len = out_len;
-    RSTRING(str)->ptr[out_len] = 0;
+    assert(out_len <= RSTRING_LEN(str));
+    rb_str_set_len(str, out_len);
 
     return str;
 }
@@ -298,10 +296,10 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     StringValue(key);
     GetCipher(self, ctx);
 
-    if (RSTRING(key)->len < EVP_CIPHER_CTX_key_length(ctx))
+    if (RSTRING_LEN(key) < EVP_CIPHER_CTX_key_length(ctx))
         ossl_raise(eCipherError, "key length too short");
 
-    if (EVP_CipherInit_ex(ctx, NULL, NULL, RSTRING(key)->ptr, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, RSTRING_PTR(key), NULL, -1) != 1)
         ossl_raise(eCipherError, NULL);
 
     return key;
@@ -315,10 +313,10 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     StringValue(iv);
     GetCipher(self, ctx);
 
-    if (RSTRING(iv)->len < EVP_CIPHER_CTX_iv_length(ctx))
+    if (RSTRING_LEN(iv) < EVP_CIPHER_CTX_iv_length(ctx))
         ossl_raise(eCipherError, "iv length too short");
 
-    if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, RSTRING_PTR(iv), -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
     return iv;

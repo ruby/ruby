@@ -136,7 +136,7 @@ ossl_digest_update(VALUE self, VALUE data)
 
     StringValue(data);
     GetDigest(self, ctx);
-    EVP_DigestUpdate(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+    EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
 
     return self;
 }
@@ -225,12 +225,12 @@ ossl_digest_equal(VALUE self, VALUE other)
 	str2 = other;
     }
     GetDigest(self, ctx);
-    if (RSTRING(str2)->len == EVP_MD_CTX_size(ctx)) {
+    if (RSTRING_LEN(str2) == EVP_MD_CTX_size(ctx)) {
 	str1 = ossl_digest_digest(self);
     } else {
 	str1 = ossl_digest_hexdigest(self);
     }
-    if (RSTRING(str1)->len == RSTRING(str2)->len
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
 	&& rb_str_cmp(str1, str2) == 0) {
 	return Qtrue;
     }

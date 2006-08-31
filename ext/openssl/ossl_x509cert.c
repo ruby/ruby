@@ -63,7 +63,7 @@ ossl_x509_new_from_file(VALUE filename)
     VALUE obj;
 
     SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
+    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
     x509 = PEM_read_X509(fp, NULL, NULL, NULL);
@@ -181,7 +181,7 @@ ossl_x509_to_der(VALUE self)
     if ((len = i2d_X509(x509, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if (i2d_X509(x509, &p) <= 0)
 	ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);

@@ -124,22 +124,22 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     switch (base) {
     case 0:
-	if (!BN_mpi2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+	if (!BN_mpi2bn(RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+	if (!BN_bin2bn(RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 10:
-	if (!BN_dec2bn(&bn, RSTRING(str)->ptr)) {
+	if (!BN_dec2bn(&bn, RSTRING_PTR(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 16:
-	if (!BN_hex2bn(&bn, RSTRING(str)->ptr)) {
+	if (!BN_hex2bn(&bn, RSTRING_PTR(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
@@ -165,13 +165,13 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
     case 0:
 	len = BN_bn2mpi(bn, NULL);
         str = rb_str_new(0, len);
-	if (BN_bn2mpi(bn, RSTRING(str)->ptr) != len)
+	if (BN_bn2mpi(bn, RSTRING_PTR(str)) != len)
 	    ossl_raise(eBNError, NULL);
 	break;
     case 2:
 	len = BN_num_bytes(bn);
         str = rb_str_new(0, len);
-	if (BN_bn2bin(bn, RSTRING(str)->ptr) != len)
+	if (BN_bn2bin(bn, RSTRING_PTR(str)) != len)
 	    ossl_raise(eBNError, NULL);
 	break;
     case 10:

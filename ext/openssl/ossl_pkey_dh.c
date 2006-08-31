@@ -213,7 +213,7 @@ ossl_dh_to_der(VALUE self)
     if((len = i2d_DHparams(pkey->pkey.dh, NULL)) <= 0)
 	ossl_raise(eDHError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_DHparams(pkey->pkey.dh, &p) < 0)
 	ossl_raise(eDHError, NULL);
     ossl_str_adjust(str, p);
@@ -335,11 +335,10 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     pub_key = GetBNPtr(pub);
     len = DH_size(dh);
     str = rb_str_new(0, len);
-    if ((len = DH_compute_key(RSTRING(str)->ptr, pub_key, dh)) < 0) {
+    if ((len = DH_compute_key(RSTRING_PTR(str), pub_key, dh)) < 0) {
 	ossl_raise(eDHError, NULL);
     }
-    RSTRING(str)->len = len;
-    RSTRING(str)->ptr[len] = 0;
+    rb_str_set_len(str, len);
 
     return str;
 }

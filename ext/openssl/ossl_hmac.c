@@ -64,7 +64,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, RSTRING(key)->ptr, RSTRING(key)->len,
+    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LEN(key),
 		 GetDigestPtr(digest), NULL);
 
     return self;
@@ -94,7 +94,7 @@ ossl_hmac_update(VALUE self, VALUE data)
 
     StringValue(data);
     GetHMAC(self, ctx);
-    HMAC_Update(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+    HMAC_Update(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
 
     return self;
 }
@@ -159,8 +159,8 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 	
     StringValue(key);
     StringValue(data);
-    buf = HMAC(GetDigestPtr(digest), RSTRING(key)->ptr, RSTRING(key)->len,
-	       RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+	       RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
 
     return rb_str_new(buf, buf_len);
 }
@@ -175,8 +175,8 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     StringValue(key);
     StringValue(data);
 	
-    buf = HMAC(GetDigestPtr(digest), RSTRING(key)->ptr, RSTRING(key)->len,
-	       RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+	       RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
     }

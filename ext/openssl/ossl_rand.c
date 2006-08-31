@@ -31,7 +31,7 @@ static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
     StringValue(str);
-    RAND_seed(RSTRING(str)->ptr, RSTRING(str)->len);
+    RAND_seed(RSTRING_PTR(str), RSTRING_LEN(str));
 
     return str;
 }
@@ -41,7 +41,7 @@ ossl_rand_load_file(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
 	
-    if(!RAND_load_file(RSTRING(filename)->ptr, -1)) {
+    if(!RAND_load_file(RSTRING_PTR(filename), -1)) {
 	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
@@ -51,7 +51,7 @@ static VALUE
 ossl_rand_write_file(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
-    if (RAND_write_file(RSTRING(filename)->ptr) == -1) {
+    if (RAND_write_file(RSTRING_PTR(filename)) == -1) {
 	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
@@ -63,7 +63,7 @@ ossl_rand_bytes(VALUE self, VALUE len)
     VALUE str;
 	
     str = rb_str_new(0, FIX2INT(len));
-    if (!RAND_bytes(RSTRING(str)->ptr, FIX2INT(len))) {
+    if (!RAND_bytes(RSTRING_PTR(str), FIX2INT(len))) {
 	ossl_raise(eRandomError, NULL);
     }
 
@@ -76,7 +76,7 @@ ossl_rand_pseudo_bytes(VALUE self, VALUE len)
     VALUE str;
 
     str = rb_str_new(0, FIX2INT(len));
-    if (!RAND_pseudo_bytes(RSTRING(str)->ptr, FIX2INT(len))) {
+    if (!RAND_pseudo_bytes(RSTRING_PTR(str), FIX2INT(len))) {
 	ossl_raise(eRandomError, NULL);
     }
 
@@ -88,7 +88,7 @@ ossl_rand_egd(VALUE self, VALUE filename)
 {
     SafeStringValue(filename);
 	
-    if(!RAND_egd(RSTRING(filename)->ptr)) {
+    if(!RAND_egd(RSTRING_PTR(filename))) {
 	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
@@ -99,7 +99,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
     SafeStringValue(filename);
 
-    if (!RAND_egd_bytes(RSTRING(filename)->ptr, FIX2INT(len))) {
+    if (!RAND_egd_bytes(RSTRING_PTR(filename), FIX2INT(len))) {
 	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;

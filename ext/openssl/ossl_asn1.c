@@ -214,7 +214,7 @@ obj_to_asn1bstr(VALUE obj, long unused_bits)
     StringValue(obj);
     if(!(bstr = ASN1_BIT_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_BIT_STRING_set(bstr, RSTRING(obj)->ptr, RSTRING(obj)->len);
+    ASN1_BIT_STRING_set(bstr, RSTRING_PTR(obj), RSTRING_LEN(obj));
     bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
     bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT|(unused_bits&0x07);
 
@@ -229,7 +229,7 @@ obj_to_asn1str(VALUE obj)
     StringValue(obj);
     if(!(str = ASN1_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(str, RSTRING(obj)->ptr, RSTRING(obj)->len);
+    ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LEN(obj));
 
     return str;
 }
@@ -253,8 +253,8 @@ obj_to_asn1obj(VALUE obj)
     ASN1_OBJECT *a1obj;
 
     StringValue(obj);
-    a1obj = OBJ_txt2obj(RSTRING(obj)->ptr, 0);
-    if(!a1obj) a1obj = OBJ_txt2obj(RSTRING(obj)->ptr, 1);
+    a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 0);
+    if(!a1obj) a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 1);
     if(!a1obj) ossl_raise(eASN1Error, "invalid OBJECT ID");
 
     return a1obj;
@@ -295,7 +295,7 @@ obj_to_asn1derstr(VALUE obj)
     str = ossl_to_der(obj);
     if(!(a1str = ASN1_STRING_new()))
 	ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(a1str, RSTRING(str)->ptr, RSTRING(str)->len);
+    ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LEN(str));
 
     return a1str;
 }
@@ -699,13 +699,13 @@ ossl_asn1data_to_der(VALUE self)
 
     tag = ossl_asn1_tag(self);
     tag_class = ossl_asn1_tag_class(self);
-    if((length = ASN1_object_size(1, RSTRING(value)->len, tag)) <= 0)
+    if((length = ASN1_object_size(1, RSTRING_LEN(value), tag)) <= 0)
 	ossl_raise(eASN1Error, NULL);
     der = rb_str_new(0, length);
-    p = RSTRING(der)->ptr;
-    ASN1_put_object(&p, is_cons, RSTRING(value)->len, tag, tag_class);
-    memcpy(p, RSTRING(value)->ptr, RSTRING(value)->len);
-    p += RSTRING(value)->len;
+    p = RSTRING_PTR(der);
+    ASN1_put_object(&p, is_cons, RSTRING_LEN(value), tag, tag_class);
+    memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));
+    p += RSTRING_LEN(value);
     ossl_str_adjust(der, p);
 
     return der;
@@ -824,8 +824,8 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
 
     obj = ossl_to_der_if_possible(obj);
     tmp = rb_str_new4(StringValue(obj));
-    p = RSTRING(tmp)->ptr;
-    ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 0, 1);
+    p = RSTRING_PTR(tmp);
+    ossl_asn1_decode0(&p, RSTRING_LEN(tmp), &offset, 0, 0, 1);
 
     return Qnil;
 }
@@ -840,8 +840,8 @@ ossl_asn1_decode(VALUE self, VALUE obj)
 
     obj = ossl_to_der_if_possible(obj);
     tmp = rb_str_new4(StringValue(obj));
-    p = RSTRING(tmp)->ptr;
-    ary = ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 1, 0);
+    p = RSTRING_PTR(tmp);
+    ary = ossl_asn1_decode0(&p, RSTRING_LEN(tmp), &offset, 0, 1, 0);
     ret = rb_ary_entry(ary, 0);
 
     return ret;
@@ -857,8 +857,8 @@ ossl_asn1_decode_all(VALUE self, VALUE obj)
 
     obj = ossl_to_der_if_possible(obj);
     tmp = rb_str_new4(StringValue(obj));
-    p = RSTRING(tmp)->ptr;
-    ret = ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 0, 0);
+    p = RSTRING_PTR(tmp);
+    ret = ossl_asn1_decode0(&p, RSTRING_LEN(tmp), &offset, 0, 0, 0);
 
     return ret;
 }
@@ -973,21 +973,21 @@ ossl_asn1cons_to_der(VALUE self)
     explicit = ossl_asn1_is_explicit(self);
     value = join_der(ossl_asn1_get_value(self));
 
-    seq_len = ASN1_object_size(1, RSTRING(value)->len, tag);
+    seq_len = ASN1_object_size(1, RSTRING_LEN(value), tag);
     length = ASN1_object_size(1, seq_len, tn);
     str = rb_str_new(0, length);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(tc == V_ASN1_UNIVERSAL)
-	ASN1_put_object(&p, 1, RSTRING(value)->len, tn, tc);
+	ASN1_put_object(&p, 1, RSTRING_LEN(value), tn, tc);
     else{
 	if(explicit){
 	    ASN1_put_object(&p, 1, seq_len, tn, tc);
-	    ASN1_put_object(&p, 1, RSTRING(value)->len, tag, V_ASN1_UNIVERSAL);
+	    ASN1_put_object(&p, 1, RSTRING_LEN(value), tag, V_ASN1_UNIVERSAL);
 	}
-	else ASN1_put_object(&p, 1, RSTRING(value)->len, tn, tc);
+	else ASN1_put_object(&p, 1, RSTRING_LEN(value), tn, tc);
     }
-    memcpy(p, RSTRING(value)->ptr, RSTRING(value)->len);
-    p += RSTRING(value)->len;
+    memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));
+    p += RSTRING_LEN(value);
     ossl_str_adjust(str, p);
 
     return str;
@@ -1007,7 +1007,7 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     StringValue(sn);
     StringValue(ln);
 
-    if(!OBJ_create(RSTRING(oid)->ptr, RSTRING(sn)->ptr, RSTRING(ln)->ptr))
+    if(!OBJ_create(RSTRING_PTR(oid), RSTRING_PTR(sn), RSTRING_PTR(ln)))
 	ossl_raise(eASN1Error, NULL);
 
     return Qtrue;

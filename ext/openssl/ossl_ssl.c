@@ -394,8 +394,8 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_sess_id_ctx(self);
     if (!NIL_P(val)){
 	StringValue(val);
-	if (!SSL_CTX_set_session_id_context(ctx, RSTRING(val)->ptr,
-					    RSTRING(val)->len)){
+	if (!SSL_CTX_set_session_id_context(ctx, RSTRING_PTR(val),
+					    RSTRING_LEN(val))){
 	    ossl_raise(eSSLError, "SSL_CTX_set_session_id_context:");
 	}
     }
@@ -476,7 +476,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         ossl_raise(eSSLError, "SSL_CTX is not initialized.");
         return Qnil;
     }
-    if (!SSL_CTX_set_cipher_list(ctx, RSTRING(str)->ptr)) {
+    if (!SSL_CTX_set_cipher_list(ctx, RSTRING_PTR(str))) {
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list:");
     }
 
@@ -635,7 +635,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 	if(SSL_pending(ssl) <= 0)
 	    rb_thread_wait_fd(fptr->fd);
 	for (;;){
-	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LEN(str));
 	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
@@ -662,8 +662,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     }
 
   end:
-    RSTRING(str)->len = nread;
-    RSTRING(str)->ptr[nread] = 0;
+    rb_str_set_len(str, nread);
     OBJ_TAINT(str);
 
     return str;
@@ -682,7 +681,7 @@ ossl_ssl_write(VALUE self, VALUE str)
 
     if (ssl) {
 	for (;;){
-	    nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+	    nwrite = SSL_write(ssl, RSTRING_PTR(str), RSTRING_LEN(str));
 	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;

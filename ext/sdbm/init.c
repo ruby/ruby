@@ -101,15 +101,15 @@ fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     dbm = 0;
     if (mode >= 0)
-	dbm = sdbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
+	dbm = sdbm_open(RSTRING_PTR(file), O_RDWR|O_CREAT, mode);
     if (!dbm)
-	dbm = sdbm_open(RSTRING(file)->ptr, O_RDWR, 0);
+	dbm = sdbm_open(RSTRING_PTR(file), O_RDWR, 0);
     if (!dbm)
-	dbm = sdbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
+	dbm = sdbm_open(RSTRING_PTR(file), O_RDONLY, 0);
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
-	rb_sys_fail(RSTRING(file)->ptr);
+	rb_sys_fail(RSTRING_PTR(file));
     }
 
     dbmp = ALLOC(struct dbmdata);
@@ -144,8 +144,8 @@ fsdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     DBM *dbm;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     value = sdbm_fetch(dbm, key);
@@ -184,14 +184,14 @@ fsdbm_index(VALUE obj, VALUE valstr)
     DBM *dbm;
 
     StringValue(valstr);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     for (key = sdbm_firstkey(dbm); key.dptr; key = sdbm_nextkey(dbm)) {
 	val = sdbm_fetch(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
+	if (val.dsize == RSTRING_LEN(valstr) &&
+	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0)
 	    return rb_tainted_str_new(key.dptr, key.dsize);
     }
     return Qnil;
@@ -251,8 +251,8 @@ fsdbm_delete(VALUE obj, VALUE keystr)
 
     fdbm_modify(obj);
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -326,8 +326,8 @@ fsdbm_delete_if(VALUE obj)
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	keystr = RARRAY(ary)->ptr[i];
 	StringValue(keystr);
-	key.dptr = RSTRING(keystr)->ptr;
-	key.dsize = RSTRING(keystr)->len;
+	key.dptr = RSTRING_PTR(keystr);
+	key.dsize = RSTRING_LEN(keystr);
 	if (sdbm_delete(dbm, key)) {
 	    rb_raise(rb_eDBMError, "sdbm_delete failed");
 	}
@@ -393,11 +393,11 @@ fsdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     StringValue(keystr);
     StringValue(valstr);
 
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -574,8 +574,8 @@ fsdbm_has_key(VALUE obj, VALUE keystr)
     DBM *dbm;
 
     StringValue(keystr);
-    key.dptr = RSTRING(keystr)->ptr;
-    key.dsize = RSTRING(keystr)->len;
+    key.dptr = RSTRING_PTR(keystr);
+    key.dsize = RSTRING_LEN(keystr);
 
     GetDBM2(obj, dbmp, dbm);
     val = sdbm_fetch(dbm, key);
@@ -591,14 +591,14 @@ fsdbm_has_value(VALUE obj, VALUE valstr)
     DBM *dbm;
 
     StringValue(valstr);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
+    val.dptr = RSTRING_PTR(valstr);
+    val.dsize = RSTRING_LEN(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     for (key = sdbm_firstkey(dbm); key.dptr; key = sdbm_nextkey(dbm)) {
 	val = sdbm_fetch(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
+	if (val.dsize == RSTRING_LEN(valstr) &&
+	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0)
 	    return Qtrue;
     }
     return Qfalse;
