@@ -241,7 +241,7 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
 #else
     if (!empty_lhash) empty_lhash = lh_new(NULL, NULL);
-    ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING(valstr)->ptr);
+    ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING_PTR(valstr));
 #endif
     if (!ext){
 	ossl_raise(eX509ExtError, "%s = %s",

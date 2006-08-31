@@ -729,7 +729,7 @@ nil_plus(VALUE x, VALUE y)
 	return y;
       default:
 	rb_raise(rb_eTypeError, "tried to add %s(%s) to nil",
-		 RSTRING(rb_inspect(y))->ptr,
+		 RSTRING_PTR(rb_inspect(y)),
 		 rb_obj_classname(y));
     }
     /* not reached */

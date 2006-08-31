@@ -6,16 +6,23 @@ Thu Aug 31 20:50:46 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu Aug 31 20:21:47 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* file.c (test_identical, rb_file_s_truncate): use RSTRING_PTR and
-	  RSTRING_STR.
+	* eval.c (search_required): use RSTRING_PTR and RSTRING_STR.
+
+	* file.c (test_identical, rb_file_s_truncate): ditto.
 
 	* io.c (pipe_open, rb_io_reopen): ditto.
+
+	* object.c (nil_plus): ditto.
 
 	* process.c (proc_spawn_n, rb_spawn): ditto.
 
 	* util.c (ruby_add_suffix): ditto.
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): ditto.
+
+	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): ditto.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_create_ext): ditto.
 
 	* ext/tk/stubs.c, ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: ditto.
 

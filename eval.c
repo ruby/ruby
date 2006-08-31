@@ -6993,7 +6993,7 @@ search_required(VALUE fname, VALUE *path)
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
 		tmp = rb_file_expand_path(tmp, Qnil);
-		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse))
 		    *path = tmp;
 		return 's';
