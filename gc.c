@@ -945,9 +945,10 @@ gc_mark_children(VALUE ptr, int lev)
 	goto again;
 
       case T_STRING:
+#define STR_NOEMBED FL_USER1 /* copied from string.c */
 #define STR_ASSOC FL_USER3   /* copied from string.c */
-	if (FL_TEST(obj, ELTS_SHARED|STR_ASSOC)) {
-	    ptr = obj->as.string.aux.shared;
+	if (FL_TEST(obj, STR_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
+	    ptr = obj->as.string.as.heap.aux.shared;
 	    goto again;
 	}
 	break;
@@ -1174,8 +1175,9 @@ obj_free(VALUE obj)
 	}
 	break;
       case T_STRING:
-	if (RANY(obj)->as.string.ptr && !FL_TEST(obj, ELTS_SHARED)) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.string.ptr));
+	if (FL_TEST(obj, STR_NOEMBED) &&
+	    RANY(obj)->as.string.as.heap.ptr && !FL_TEST(obj, ELTS_SHARED)) {
+	    RUBY_CRITICAL(free(RANY(obj)->as.string.as.heap.ptr));
 	}
 	break;
       case T_ARRAY:

@@ -1117,7 +1117,7 @@ inspect_i(VALUE key, VALUE value, VALUE str)
     VALUE str2;
 
     if (key == Qundef) return ST_CONTINUE;
-    if (RSTRING(str)->len > 1) {
+    if (RSTRING_LEN(str) > 1) {
 	rb_str_cat2(str, ", ");
     }
     str2 = rb_inspect(key);
@@ -1540,8 +1540,8 @@ env_delete(VALUE obj, VALUE name)
 
     rb_secure(4);
     SafeStringValue(name);
-    nam = RSTRING(name)->ptr;
-    if (strlen(nam) != RSTRING(name)->len) {
+    nam = RSTRING_PTR(name);
+    if (strlen(nam) != RSTRING_LEN(name)) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     val = getenv(nam);
@@ -1579,8 +1579,8 @@ rb_f_getenv(VALUE obj, VALUE name)
 
     rb_secure(4);
     SafeStringValue(name);
-    nam = RSTRING(name)->ptr;
-    if (strlen(nam) != RSTRING(name)->len) {
+    nam = RSTRING_PTR(name);
+    if (strlen(nam) != RSTRING_LEN(name)) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -1615,8 +1615,8 @@ env_fetch(int argc, VALUE *argv)
 	rb_warn("block supersedes default value argument");
     }
     SafeStringValue(key);
-    nam = RSTRING(key)->ptr;
-    if (strlen(nam) != RSTRING(key)->len) {
+    nam = RSTRING_PTR(key);
+    if (strlen(nam) != RSTRING_LEN(key)) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -1774,11 +1774,11 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
     }
     StringValue(nm);
     StringValue(val);
-    name = RSTRING(nm)->ptr;
-    value = RSTRING(val)->ptr;
-    if (strlen(name) != RSTRING(nm)->len)
+    name = RSTRING_PTR(nm);
+    value = RSTRING_PTR(val);
+    if (strlen(name) != RSTRING_LEN(nm))
 	rb_raise(rb_eArgError, "bad environment variable name");
-    if (strlen(value) != RSTRING(val)->len)
+    if (strlen(value) != RSTRING_LEN(val))
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
@@ -2101,7 +2101,7 @@ env_has_key(VALUE env, VALUE key)
 
     rb_secure(4);
     s = StringValuePtr(key);
-    if (strlen(s) != RSTRING(key)->len)
+    if (strlen(s) != RSTRING_LEN(key))
 	rb_raise(rb_eArgError, "bad environment variable name");
     if (getenv(s)) return Qtrue;
     return Qfalse;
@@ -2119,7 +2119,7 @@ env_has_value(VALUE dmy, VALUE value)
 	char *s = strchr(*env, '=');
 	if (s++) {
 	    long len = strlen(s);
-	    if (RSTRING(value)->len == len && strncmp(s, RSTRING(value)->ptr, len) == 0) {
+	    if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
 		FREE_ENVIRON(environ);
 		return Qtrue;
 	    }
@@ -2143,7 +2143,7 @@ env_key(VALUE dmy, VALUE value)
 	char *s = strchr(*env, '=');
 	if (s++) {
 	    long len = strlen(s);
-	    if (RSTRING(value)->len == len && strncmp(s, RSTRING(value)->ptr, len) == 0) {
+	    if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
 		str = env_str_new(*env, s-*env-1);
 		FREE_ENVIRON(environ);
 		return str;
@@ -2200,7 +2200,7 @@ env_shift(void)
 	char *s = strchr(*env, '=');
 	if (s) {
 	    VALUE key = env_str_new(*env, s-*env);
-	    VALUE val = env_str_new2(getenv(RSTRING(key)->ptr));
+	    VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
 	    env_delete(Qnil, key);
 	    return rb_assoc_new(key, val);
 	}

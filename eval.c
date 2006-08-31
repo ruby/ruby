@@ -1246,7 +1246,7 @@ error_print(void)
 
 	if (NIL_P(mesg)) error_pos();
 	else {
-	    warn_print2(RSTRING(mesg)->ptr, RSTRING(mesg)->len);
+	    warn_print2(RSTRING_PTR(mesg), RSTRING_LEN(mesg));
 	}
     }
 
@@ -1254,8 +1254,8 @@ error_print(void)
     if (EXEC_TAG() == 0) {
 	e = rb_funcall(ruby_errinfo, rb_intern("message"), 0, 0);
 	StringValue(e);
-	einfo = RSTRING(e)->ptr;
-	elen = RSTRING(e)->len;
+	einfo = RSTRING_PTR(e);
+	elen = RSTRING_LEN(e);
     }
     else {
 	einfo = "";
@@ -1271,14 +1271,14 @@ error_print(void)
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
 	    warn_print(": ");
-	    warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
+	    warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
 	    warn_print("\n");
 	}
 	else {
 	    char *tail  = 0;
 	    long len = elen;
 
-	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
+	    if (RSTRING_PTR(epath)[0] == '#') epath = 0;
 	    if (tail = memchr(einfo, '\n', elen)) {
 		len = tail - einfo;
 		tail++;		/* skip newline */
@@ -1287,7 +1287,7 @@ error_print(void)
 	    warn_print2(einfo, len);
 	    if (epath) {
 		warn_print(" (");
-		warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
+		warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
 		warn_print(")\n");
 	    }
 	    if (tail) {
@@ -1307,7 +1307,7 @@ error_print(void)
 	ep = RARRAY(errat);
 	for (i=1; i<ep->len; i++) {
 	    if (TYPE(ep->ptr[i]) == T_STRING) {
-		warn_printf("\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
+		warn_printf("\tfrom %s\n", RSTRING_PTR(ep->ptr[i]));
 	    }
 	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
@@ -2642,7 +2642,7 @@ class_prefix(VALUE self, NODE *cpath)
 	    break;
 	  default:
 	    rb_raise(rb_eTypeError, "%s is not a class/module",
-		     RSTRING(rb_obj_as_string(c))->ptr);
+		     RSTRING_PTR(rb_obj_as_string(c)));
 	}
 	return c;
     }
@@ -3568,7 +3568,7 @@ rb_eval(VALUE self, NODE *n)
 		    break;
 		  default:
 		    rb_raise(rb_eTypeError, "%s is not a class/module",
-			     RSTRING(rb_obj_as_string(klass))->ptr);
+			     RSTRING_PTR(rb_obj_as_string(klass)));
 		    break;
 		}
 	    }
@@ -3666,7 +3666,10 @@ rb_eval(VALUE self, NODE *n)
 	break;
 
       case NODE_EVSTR:
-	result = rb_obj_as_string(rb_eval(self, node->nd_body));
+	if (!node->nd_body) result = rb_str_new(0,0);
+	else {
+	    result = rb_obj_as_string(rb_eval(self, node->nd_body));
+	}
 	break;
 
       case NODE_DSTR:
@@ -3696,11 +3699,11 @@ rb_eval(VALUE self, NODE *n)
 	    }
 	    switch (nd_type(node)) {
 	      case NODE_DREGX:
-		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
+		result = rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str),
 				    node->nd_cflag);
 		break;
 	      case NODE_DREGX_ONCE:	/* regexp expand once */
-		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
+		result = rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str),
 				    node->nd_cflag);
 		nd_set_type(node, NODE_LIT);
 		node->nd_lit = result;
@@ -4404,7 +4407,7 @@ rb_longjmp(int tag, VALUE mesg)
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
 			rb_obj_classname(ruby_errinfo),
 			ruby_sourcefile, ruby_sourceline,
-			RSTRING(e)->ptr);
+			RSTRING_PTR(e));
 	}
 	POP_TAG();
 	if (status == TAG_FATAL && ruby_errinfo == exception_error) {
@@ -6228,7 +6231,7 @@ rb_backtrace(void)
 
     ary = backtrace(-1);
     for (i=0; i<RARRAY(ary)->len; i++) {
-	printf("\tfrom %s\n", RSTRING(RARRAY(ary)->ptr[i])->ptr);
+	printf("\tfrom %s\n", RSTRING_PTR(RARRAY(ary)->ptr[i]));
     }
 }
 
@@ -6421,7 +6424,7 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
 	line = NUM2INT(vline);
     }
 
-    if (!NIL_P(vfile)) file = RSTRING(vfile)->ptr;
+    if (!NIL_P(vfile)) file = RSTRING_PTR(vfile);
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
 	VALUE val;
@@ -6750,7 +6753,7 @@ rb_load(VALUE fname, int wrap)
 	ruby_in_eval++;
 	critical = rb_thread_critical;
 	rb_thread_critical = Qtrue;
-	rb_load_file(RSTRING(fname)->ptr);
+	rb_load_file(RSTRING_PTR(fname));
 	ruby_in_eval--;
 	node = ruby_eval_tree;
 	rb_thread_critical = critical;
@@ -6899,7 +6902,7 @@ rb_provided(const char *feature)
 	}
     }
     if (search_required(rb_str_new2(feature), &fname)) {
-	feature = RSTRING(fname)->ptr;
+	feature = RSTRING_PTR(fname);
 	if (rb_feature_p(feature, 0, Qfalse))
 	    return Qtrue;
 	if (loading_tbl && st_lookup(loading_tbl, (st_data_t)feature, 0))
@@ -6970,13 +6973,13 @@ search_required(VALUE fname, VALUE *path)
     int type, ft = 0;
 
     *path = 0;
-    ext = strrchr(ftptr = RSTRING(fname)->ptr, '.');
+    ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
 	if (strcmp(".rb", ext) == 0) {
 	    if (rb_feature_p(ftptr, ext, Qtrue)) return 'r';
 	    if (tmp = rb_find_file(fname)) {
 		tmp = rb_file_expand_path(tmp, Qnil);
-		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qtrue))
 		    *path = tmp;
 		return 'r';
@@ -6985,7 +6988,7 @@ search_required(VALUE fname, VALUE *path)
 	}
 	else if (IS_SOEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
-	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
+	    tmp = rb_str_new(RSTRING_PTR(fname), ext-RSTRING_PTR(fname));
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
@@ -7000,7 +7003,7 @@ search_required(VALUE fname, VALUE *path)
 	    OBJ_FREEZE(tmp);
 	    if (tmp = rb_find_file(tmp)) {
 		tmp = rb_file_expand_path(tmp, Qnil);
-		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse))
 		    *path = tmp;
 		return 's';
@@ -7011,7 +7014,7 @@ search_required(VALUE fname, VALUE *path)
 	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
 	    if (tmp = rb_find_file(fname)) {
 		tmp = rb_file_expand_path(tmp, Qnil);
-		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse))
 		    *path = tmp;
 		return 's';
@@ -7026,14 +7029,14 @@ search_required(VALUE fname, VALUE *path)
     tmp = rb_file_expand_path(tmp, Qnil);
     switch (type) {
       case 0:
-	ftptr = RSTRING(tmp)->ptr;
+	ftptr = RSTRING_PTR(tmp);
 	if (ft) break;
 	return rb_feature_p(ftptr, 0, Qfalse);
 
       default:
 	if (ft) break;
       case 1:
-	ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 	if (rb_feature_p(ftptr, ext, !--type)) break;
 	*path = tmp;
     }
@@ -7043,7 +7046,7 @@ search_required(VALUE fname, VALUE *path)
 static void
 load_failed(VALUE fname)
 {
-    rb_raise(rb_eLoadError, "no such file to load -- %s", RSTRING(fname)->ptr);
+    rb_raise(rb_eLoadError, "no such file to load -- %s", RSTRING_PTR(fname));
 }
 
 VALUE
@@ -7078,7 +7081,7 @@ rb_require_safe(VALUE fname, int safe)
 	*(volatile VALUE *)&fname = rb_str_new4(fname);
 	found = search_required(fname, &path);
 	if (found) {
-	    if (!path || load_wait(RSTRING(path)->ptr)) {
+	    if (!path || load_wait(RSTRING_PTR(path))) {
 		result = Qfalse;
 	    }
 	    else {
@@ -7090,19 +7093,19 @@ rb_require_safe(VALUE fname, int safe)
 			loading_tbl = st_init_strtable();
 		    }
 		    /* partial state */
-		    ftptr = ruby_strdup(RSTRING(path)->ptr);
+		    ftptr = ruby_strdup(RSTRING_PTR(path));
 		    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 		    rb_load(path, 0);
 		    break;
 
 		  case 's':
 		    ruby_current_node = 0;
-		    ruby_sourcefile = rb_source_filename(RSTRING(path)->ptr);
+		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
 		    ruby_sourceline = 0;
 		    ruby_frame->callee = 0;
 		    ruby_frame->this_func = 0;
 		    VIS_SET(VIS_PUBLIC);
-		    handle = (long)dln_load(RSTRING(path)->ptr);
+		    handle = (long)dln_load(RSTRING_PTR(path));
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
@@ -7975,7 +7978,7 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
     ID id = rb_to_id(sym);
 
     Check_SafeStr(file);
-    rb_autoload(mod, id, RSTRING(file)->ptr);
+    rb_autoload(mod, id, RSTRING_PTR(file));
     return Qnil;
 }
 

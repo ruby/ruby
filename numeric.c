@@ -117,7 +117,7 @@ coerce_rescue(VALUE *x)
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_special_const_p(x[1])?
-	     RSTRING(v)->ptr:
+	     RSTRING_PTR(v):
 	     rb_obj_classname(x[1]),
 	     rb_obj_classname(x[0]));
     return Qnil;		/* dummy */

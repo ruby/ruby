@@ -272,8 +272,8 @@ inspect_i(ID id, VALUE value, VALUE str)
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
-    if (RSTRING(str)->ptr[0] == '-') { /* first element */
-	RSTRING(str)->ptr[0] = '#';
+    if (RSTRING_PTR(str)[0] == '-') { /* first element */
+	RSTRING_PTR(str)[0] = '#';
 	rb_str_cat2(str, " ");
     }
     else {
@@ -299,7 +299,7 @@ inspect_obj(VALUE obj, VALUE str, int recur)
 	st_foreach_safe(ROBJECT(obj)->iv_tbl, inspect_i, str);
     }
     rb_str_cat2(str, ">");
-    RSTRING(str)->ptr[0] = '#';
+    RSTRING_PTR(str)[0] = '#';
     OBJ_INFECT(str, obj);
 
     return str;
@@ -1009,11 +1009,11 @@ sym_inspect(VALUE sym)
 
     name = rb_id2name(id);
     str = rb_str_new(0, strlen(name)+1);
-    RSTRING(str)->ptr[0] = ':';
-    strcpy(RSTRING(str)->ptr+1, name);
+    RSTRING_PTR(str)[0] = ':';
+    strcpy(RSTRING_PTR(str)+1, name);
     if (!rb_symname_p(name)) {
 	str = rb_str_dump(str);
-	strncpy(RSTRING(str)->ptr, ":\"", 2);
+	strncpy(RSTRING_PTR(str), ":\"", 2);
     }
     return str;
 }
@@ -1476,13 +1476,13 @@ rb_class_superclass(VALUE klass)
 static ID
 str_to_id(VALUE str)
 {
-    if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {
+    if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
 	rb_raise(rb_eArgError, "empty symbol string");
     }
-    if (RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
+    if (RSTRING_LEN(str) != strlen(RSTRING_PTR(str))) {
 	rb_raise(rb_eArgError, "Symbols should not contain NUL (\\0)");
     }
-    return rb_intern(RSTRING(str)->ptr);
+    return rb_intern(RSTRING_PTR(str));
 }
 
 ID
@@ -1509,7 +1509,7 @@ rb_to_id(VALUE name)
 	if (!NIL_P(tmp)) {
 	    return str_to_id(tmp);
 	}
-	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING(rb_inspect(name))->ptr);
+	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING_PTR(rb_inspect(name)));
     }
     return id;
 }
@@ -2112,8 +2112,8 @@ rb_str_to_dbl(VALUE str, int badcheck)
     long len;
 
     StringValue(str);
-    s = RSTRING(str)->ptr;
-    len = RSTRING(str)->len;
+    s = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
     if (s) {
 	if (s[len]) {		/* no sentinel somehow */
 	    char *p = ALLOCA_N(char, len+1);
@@ -2204,11 +2204,11 @@ char*
 rb_str2cstr(VALUE str, long *len)
 {
     StringValue(str);
-    if (len) *len = RSTRING(str)->len;
-    else if (RTEST(ruby_verbose) && RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
+    if (len) *len = RSTRING_LEN(str);
+    else if (RTEST(ruby_verbose) && RSTRING_LEN(str) != strlen(RSTRING_PTR(str))) {
 	rb_warn("string contains \\0 character");
     }
-    return RSTRING(str)->ptr;
+    return RSTRING_PTR(str);
 }
 
 VALUE

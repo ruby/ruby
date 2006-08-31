@@ -394,17 +394,17 @@ dir_initialize(VALUE dir, VALUE dirname)
     if (dp->path) free(dp->path);
     dp->dir = NULL;
     dp->path = NULL;
-    dp->dir = opendir(RSTRING(dirname)->ptr);
+    dp->dir = opendir(RSTRING_PTR(dirname));
     if (dp->dir == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    dp->dir = opendir(RSTRING(dirname)->ptr);
+	    dp->dir = opendir(RSTRING_PTR(dirname));
 	}
 	if (dp->dir == NULL) {
-	    rb_sys_fail(RSTRING(dirname)->ptr);
+	    rb_sys_fail(RSTRING_PTR(dirname));
 	}
     }
-    dp->path = strdup(RSTRING(dirname)->ptr);
+    dp->path = strdup(RSTRING_PTR(dirname));
 
     return dir;
 }
@@ -470,7 +470,7 @@ dir_inspect(VALUE dir)
 	char *c = rb_obj_classname(dir);
 	int len = strlen(c) + strlen(dirp->path) + 4;
 	VALUE s = rb_str_new(0, len);
-	snprintf(RSTRING(s)->ptr, len+1, "#<%s:%s>", c, dirp->path);
+	snprintf(RSTRING_PTR(s), len+1, "#<%s:%s>", c, dirp->path);
 	return s;
     }
     return rb_funcall(dir, rb_intern("to_s"), 0, 0);
@@ -688,8 +688,8 @@ dir_close(VALUE dir)
 static void
 dir_chdir(VALUE path)
 {
-    if (chdir(RSTRING(path)->ptr) < 0)
-	rb_sys_fail(RSTRING(path)->ptr);
+    if (chdir(RSTRING_PTR(path)) < 0)
+	rb_sys_fail(RSTRING_PTR(path));
 }
 
 static int chdir_blocking = 0;
@@ -831,7 +831,7 @@ check_dirname(volatile VALUE *dir)
 
     rb_secure(2);
     FilePathValue(*dir);
-    path = RSTRING(*dir)->ptr;
+    path = RSTRING_PTR(*dir);
     if (path && *(pend = rb_path_end(rb_path_skip_prefix(path)))) {
 	*dir = rb_str_new(path, pend - path);
     }
@@ -852,8 +852,8 @@ dir_s_chroot(VALUE dir, VALUE path)
 #if defined(HAVE_CHROOT) && !defined(__CHECKER__)
     check_dirname(&path);
 
-    if (chroot(RSTRING(path)->ptr) == -1)
-	rb_sys_fail(RSTRING(path)->ptr);
+    if (chroot(RSTRING_PTR(path)) == -1)
+	rb_sys_fail(RSTRING_PTR(path));
 
     return INT2FIX(0);
 #else
@@ -889,8 +889,8 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
     }
 
     check_dirname(&path);
-    if (mkdir(RSTRING(path)->ptr, mode) == -1)
-	rb_sys_fail(RSTRING(path)->ptr);
+    if (mkdir(RSTRING_PTR(path), mode) == -1)
+	rb_sys_fail(RSTRING_PTR(path));
 
     return INT2FIX(0);
 }
@@ -908,8 +908,8 @@ static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
 {
     check_dirname(&dir);
-    if (rmdir(RSTRING(dir)->ptr) < 0)
-	rb_sys_fail(RSTRING(dir)->ptr);
+    if (rmdir(RSTRING_PTR(dir)) < 0)
+	rb_sys_fail(RSTRING_PTR(dir));
 
     return INT2FIX(0);
 }
@@ -1501,17 +1501,17 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 
     ary = rb_ary_new();
 
-    while (offset < RSTRING(str)->len) {
-	int status = push_glob(ary, RSTRING(str)->ptr + offset, flags);
+    while (offset < RSTRING_LEN(str)) {
+	int status = push_glob(ary, RSTRING_PTR(str) + offset, flags);
 	char *p, *pend;
 	if (status) rb_jump_tag(status);
-	if (offset >= RSTRING(str)->len) break;
-	p = RSTRING(str)->ptr + offset;
+	if (offset >= RSTRING_LEN(str)) break;
+	p = RSTRING_PTR(str) + offset;
 	p += strlen(p) + 1;
-	pend = RSTRING(str)->ptr + RSTRING(str)->len;
+	pend = RSTRING_PTR(str) + RSTRING_LEN(str);
 	while (p < pend && !*p)
 	    p++;
-	offset = p - RSTRING(str)->ptr;
+	offset = p - RSTRING_PTR(str);
     }
 
     return ary;
@@ -1527,7 +1527,7 @@ dir_globs(long argc, VALUE *argv, int flags)
 	int status;
 	VALUE str = argv[i];
 	FilePathValue(str);
-	status = push_glob(ary, RSTRING(str)->ptr, flags);
+	status = push_glob(ary, RSTRING_PTR(str), flags);
 	if (status) rb_jump_tag(status);
     }
 
@@ -1797,7 +1797,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     StringValue(pattern);
     StringValue(path);
 
-    if (fnmatch(RSTRING(pattern)->ptr, RSTRING(path)->ptr, flags) == 0)
+    if (fnmatch(RSTRING_PTR(pattern), RSTRING_PTR(path), flags) == 0)
 	return Qtrue;
 
     return Qfalse;

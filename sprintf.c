@@ -85,7 +85,7 @@ sign_bits(int base, const char *p)
 	bsiz*=2;\
     }\
     rb_str_resize(result, bsiz);\
-    buf = RSTRING(result)->ptr;\
+    buf = RSTRING_PTR(result);\
 } while (0)
 
 #define PUSH(s, l) do { \
@@ -268,12 +268,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     fmt = rb_str_new4(fmt);
-    p = RSTRING(fmt)->ptr;
-    end = p + RSTRING(fmt)->len;
+    p = RSTRING_PTR(fmt);
+    end = p + RSTRING_LEN(fmt);
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    buf = RSTRING(result)->ptr;
+    buf = RSTRING_PTR(result);
 
     for (; p < end; p++) {
 	const char *t;
@@ -404,10 +404,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 		tmp = rb_check_string_type(val);
 		if (!NIL_P(tmp)) {
-		    if (RSTRING(tmp)->len != 1) {
+		    if (RSTRING_LEN(tmp) != 1) {
 			rb_raise(rb_eArgError, "%%c requires a character");
 		    }
-		    c = RSTRING(tmp)->ptr[0];
+		    c = RSTRING_PTR(tmp)[0];
 		}
 		else {
 		    c = NUM2INT(val) & 0xff;
@@ -431,7 +431,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (*p == 'p') arg = rb_inspect(arg);
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
-		len = RSTRING(str)->len;
+		len = RSTRING_LEN(str);
 		if (flags&FPREC) {
 		    if (prec < len) {
 			len = prec;
@@ -447,7 +447,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				buf[blen++] = ' ';
 			    }
 			}
-			memcpy(&buf[blen], RSTRING(str)->ptr, len);
+			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			blen += len;
 			if (flags&FMINUS) {
 			    while (width--) {
@@ -457,7 +457,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			break;
 		    }
 		}
-		PUSH(RSTRING(str)->ptr, len);
+		PUSH(RSTRING_PTR(str), len);
 	    }
 	    break;
 
@@ -606,7 +606,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		else {
 		    if (sign) {
 			tmp = rb_big2str(val, base);
-			s = RSTRING(tmp)->ptr;
+			s = RSTRING_PTR(tmp);
 			if (s[0] == '-') {
 			    s++;
 			    sc = '-';
@@ -628,14 +628,14 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    rb_big_2comp(val);
 			}
 			tmp1 = tmp = rb_big2str(val, base);
-			s = RSTRING(tmp)->ptr;
+			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
 			    if (base == 10) {
 				rb_warning("negative number for %%u specifier");
 			    }
 			    remove_sign_bits(++s, base);
 			    tmp = rb_str_new(0, 3+strlen(s));
-			    t = RSTRING(tmp)->ptr;
+			    t = RSTRING_PTR(tmp);
 			    if (!(flags&(FPREC|FZERO))) {
 				strcpy(t, "..");
 				t += 2;
@@ -649,7 +649,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				if (s[0] != '1') strcpy(t++, "1"); break;
 			    }
 			    strcpy(t, s);
-			    s  = RSTRING(tmp)->ptr;
+			    s  = RSTRING_PTR(tmp);
 			}
 		    }
 		}
@@ -864,7 +864,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     VALUE result = (VALUE)fp->_bf._base;
     char *buf = (char*)fp->_p;
     size_t len, n;
-    int blen = buf - RSTRING(result)->ptr, bsiz = fp->_w;
+    int blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
     if (RBASIC(result)->klass) {
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
@@ -894,12 +894,12 @@ rb_vsprintf(const char *fmt, va_list ap)
     f._w = 120;
     result = rb_str_buf_new(f._w);
     f._bf._base = (unsigned char *)result;
-    f._p = (unsigned char *)RSTRING(result)->ptr;
+    f._p = (unsigned char *)RSTRING_PTR(result);
     RBASIC(result)->klass = 0;
     f.vwrite = ruby__sfvwrite;
     BSD_vfprintf(&f, fmt, ap);
     RBASIC(result)->klass = rb_cString;
-    rb_str_resize(result, (char *)f._p - RSTRING(result)->ptr);
+    rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
 
     return result;
 }

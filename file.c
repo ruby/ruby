@@ -743,7 +743,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     if (lstat(StringValueCStr(fname), &st) == -1) {
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(RSTRING_PTR(fname));
     }
     return stat_new(&st);
 #else
@@ -1545,7 +1545,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     if (lstat(StringValueCStr(fname), &st) == -1) {
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(RSTRING_PTR(fname));
     }
 
     return rb_file_ftype(&st);
@@ -1611,7 +1611,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(RSTRING_PTR(fname));
     return rb_time_new(st.st_mtime, 0);
 }
 
@@ -1656,7 +1656,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(RSTRING_PTR(fname));
     return rb_time_new(st.st_ctime, 0);
 }
 
@@ -2022,9 +2022,9 @@ sys_fail2(VALUE s1, VALUE s2)
     char *buf;
     int len;
 
-    len = RSTRING(s1)->len + RSTRING(s2)->len + 5;
+    len = RSTRING_LEN(s1) + RSTRING_LEN(s2) + 5;
     buf = ALLOCA_N(char, len);
-    snprintf(buf, len, "(%s, %s)", RSTRING(s1)->ptr, RSTRING(s2)->ptr);
+    snprintf(buf, len, "(%s, %s)", RSTRING_PTR(s1), RSTRING_PTR(s2));
     rb_sys_fail(buf);
 }
 
@@ -2111,7 +2111,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     rb_secure(2);
     FilePathValue(path);
     buf = xmalloc(size);
-    while ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size
+    while ((rv = readlink(RSTRING_PTR(path), buf, size)) == size
 #ifdef _AIX
 	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
 #endif
@@ -2121,7 +2121,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     }
     if (rv < 0) {
 	free(buf);
-	rb_sys_fail(RSTRING(path)->ptr);
+	rb_sys_fail(RSTRING_PTR(path));
     }
     v = rb_tainted_str_new(buf, rv);
     free(buf);
@@ -2390,14 +2390,14 @@ rb_path_end(const char *path)
 	buflen *= 2;\
     }\
     rb_str_resize(result, buflen);\
-    buf = RSTRING(result)->ptr;\
+    buf = RSTRING_PTR(result);\
     p = buf + bdiff;\
     pend = buf + buflen;\
 } while (0)
 
 #define BUFINIT() (\
-    p = buf = RSTRING(result)->ptr,\
-    buflen = RSTRING(result)->len,\
+    p = buf = RSTRING_PTR(result),\
+    buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
 #if !defined(TOLOWER)
@@ -2601,8 +2601,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     if (p == skiproot(buf) - 1) p++;
 
     if (tainted) OBJ_TAINT(result);
-    RSTRING(result)->len = p - buf;
-    *p = '\0';
+    rb_str_set_len(result, p - buf);
     return result;
 }
 
@@ -2692,7 +2691,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 	StringValue(fext);
     }
     StringValue(fname);
-    if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
+    if (RSTRING_LEN(fname) == 0 || !*(name = RSTRING_PTR(fname)))
 	return fname;
     name = skipprefix(name);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -2723,7 +2722,7 @@ rb_file_s_basename(int argc, VALUE *argv)
     else if (!(p = strrdirsep(name))) {
 	if (NIL_P(fext) || !(f = rmext(name, StringValueCStr(fext)))) {
 	    f = chompdirsep(name) - name;
-	    if (f == RSTRING(fname)->len) return fname;
+	    if (f == RSTRING_LEN(fname)) return fname;
 	}
 	p = name;
     }
@@ -2881,7 +2880,7 @@ rb_file_join(VALUE ary, VALUE sep)
     len = 1;
     for (i=0; i<RARRAY(ary)->len; i++) {
 	if (TYPE(RARRAY(ary)->ptr[i]) == T_STRING) {
-	    len += RSTRING(RARRAY(ary)->ptr[i])->len;
+	    len += RSTRING_LEN(RARRAY(ary)->ptr[i]);
 	}
 	else {
 	    len += 10;
@@ -2889,7 +2888,7 @@ rb_file_join(VALUE ary, VALUE sep)
     }
     if (!NIL_P(sep)) {
 	StringValue(sep);
-	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
+	len += RSTRING_LEN(sep) * RARRAY(ary)->len - 1;
     }
     result = rb_str_buf_new(len);
     OBJ_INFECT(result, ary);
@@ -2913,8 +2912,8 @@ rb_file_join(VALUE ary, VALUE sep)
 	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep)) {
 	    tail = chompdirsep(name);
-	    if (RSTRING(tmp)->ptr && isdirsep(RSTRING(tmp)->ptr[0])) {
-		RSTRING(result)->len = tail - name;
+	    if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
+		rb_str_set_len(result, tail - name);
 	    }
 	    else if (!*tail) {
 		rb_str_buf_append(result, sep);
@@ -2968,7 +2967,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     FilePathValue(path);
 #ifdef HAVE_TRUNCATE
     if (truncate(StringValueCStr(path), pos) < 0)
-	rb_sys_fail(RSTRING(path)->ptr);
+	rb_sys_fail(RSTRING_PTR(path));
 #else
 # ifdef HAVE_CHSIZE
     {
@@ -3334,7 +3333,7 @@ rb_f_test(int argc, VALUE *argv)
 
 	CHECK(1);
 	if (rb_stat(argv[1], &st) == -1) {
-	    rb_sys_fail(RSTRING(argv[1])->ptr);
+	    rb_sys_fail(RSTRING_PTR(argv[1]));
 	}
 
 	switch (cmd) {
@@ -3417,7 +3416,7 @@ rb_stat_init(VALUE obj, VALUE fname)
     rb_secure(2);
     FilePathValue(fname);
     if (stat(StringValueCStr(fname), &st) == -1) {
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(RSTRING_PTR(fname));
     }
     if (DATA_PTR(obj)) {
 	free(DATA_PTR(obj));
@@ -4145,7 +4144,7 @@ int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     char *path, *found;
-    char *f = RSTRING(*filep)->ptr;
+    char *f = RSTRING_PTR(*filep);
     VALUE fname;
     long i, j;
 
@@ -4179,8 +4178,8 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	FilePathValue(str);
-	if (RSTRING(str)->len == 0) continue;
-	path = RSTRING(str)->ptr;
+	if (RSTRING_LEN(str) == 0) continue;
+	path = RSTRING_PTR(str);
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[j]);
@@ -4239,16 +4238,16 @@ rb_find_file(VALUE path)
 	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
 	    VALUE str = RARRAY(rb_load_path)->ptr[i];
 	    FilePathValue(str);
-	    if (RSTRING(str)->len > 0) {
+	    if (RSTRING_LEN(str) > 0) {
 		rb_ary_push(tmp, str);
 	    }
 	}
 	tmp = rb_ary_join(tmp, rb_str_new2(PATH_SEP));
-	if (RSTRING(tmp)->len == 0) {
+	if (RSTRING_LEN(tmp) == 0) {
 	    lpath = 0;
 	}
 	else {
-	    lpath = RSTRING(tmp)->ptr;
+	    lpath = RSTRING_PTR(tmp);
 	    if (rb_safe_level() >= 1 && !rb_path_check(lpath)) {
 		rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
 	    }

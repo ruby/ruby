@@ -494,10 +494,10 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 	s = StringValueCStr(str);
     }
     else {
-	s = RSTRING(str)->ptr;
+	s = RSTRING_PTR(str);
     }
     if (s) {
-	len = RSTRING(str)->len;
+	len = RSTRING_LEN(str);
 	if (s[len]) {		/* no sentinel somehow */
 	    char *p = ALLOCA_N(char, len+1);
 
@@ -631,7 +631,7 @@ rb_big2str(VALUE x, int base)
     t = rb_big_clone(x);
     ds = BDIGITS(t);
     ss = rb_str_new(0, j);
-    s = RSTRING(ss)->ptr;
+    s = RSTRING_PTR(ss);
 
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
     while (i && j) {
@@ -653,9 +653,9 @@ rb_big2str(VALUE x, int base)
 	}
     }
     while (s[j] == '0') j++;
-    RSTRING(ss)->len -= RBIGNUM(x)->sign?j:j-1;
-    memmove(RBIGNUM(x)->sign?s:s+1, s+j, RSTRING(ss)->len);
-    s[RSTRING(ss)->len] = '\0';
+    i = RSTRING_LEN(ss)-(RBIGNUM(x)->sign?j:j-1);
+    memmove(RBIGNUM(x)->sign?s:s+1, s+j, i);
+    rb_str_set_len(ss, i);
 
     return ss;
 }

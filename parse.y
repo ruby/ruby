@@ -3550,8 +3550,8 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = rb_reg_compile(RSTRING(src)->ptr,
-							      RSTRING(src)->len,
+				node->nd_lit = rb_reg_compile(RSTRING_PTR(src),
+							      RSTRING_LEN(src),
 							      options & ~RE_OPTION_ONCE);
 			    }
 			    break;
@@ -3792,12 +3792,12 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				break;
 			      case NODE_STR:
 				lit = $$->nd_lit;
-				if (RSTRING(lit)->len == 0) {
+				if (RSTRING_LEN(lit) == 0) {
 				    yyerror("empty symbol literal");
 				    break;
 				}
-				if (strlen(RSTRING(lit)->ptr) == RSTRING(lit)->len) {
-				    $$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
+				if (strlen(RSTRING_PTR(lit)) == RSTRING_LEN(lit)) {
+				    $$->nd_lit = ID2SYM(rb_intern(RSTRING_PTR($$->nd_lit)));
 				    nd_set_type($$, NODE_LIT);
 				    break;
 				}
@@ -4601,17 +4601,17 @@ lex_get_str(struct parser_params *parser, VALUE s)
 {
     char *beg, *end, *pend;
 
-    beg = RSTRING(s)->ptr;
+    beg = RSTRING_PTR(s);
     if (lex_gets_ptr) {
-	if (RSTRING(s)->len == lex_gets_ptr) return Qnil;
+	if (RSTRING_LEN(s) == lex_gets_ptr) return Qnil;
 	beg += lex_gets_ptr;
     }
-    pend = RSTRING(s)->ptr + RSTRING(s)->len;
+    pend = RSTRING_PTR(s) + RSTRING_LEN(s);
     end = beg;
     while (end < pend) {
 	if (*end++ == '\n') break;
     }
-    lex_gets_ptr = end - RSTRING(s)->ptr;
+    lex_gets_ptr = end - RSTRING_PTR(s);
     return rb_str_new(beg, end - beg);
 }
 
@@ -4727,8 +4727,8 @@ parser_nextc(struct parser_params *parser)
 	    }
 	    ruby_sourceline++;
 	    parser->line_count++;
-	    lex_pbeg = lex_p = RSTRING(v)->ptr;
-	    lex_pend = lex_p + RSTRING(v)->len;
+	    lex_pbeg = lex_p = RSTRING_PTR(v);
+	    lex_pend = lex_p + RSTRING_LEN(v);
 #ifdef RIPPER
 	    ripper_flush(parser);
 #endif
@@ -5028,7 +5028,8 @@ enum string_type {
 static void
 dispose_string(VALUE str)
 {
-    xfree(RSTRING(str)->ptr);
+    if (RBASIC(str)->flags & RSTRING_NOEMBED)
+	xfree(RSTRING_PTR(str));
     rb_gc_force_recycle(str);
 }
 
@@ -5270,8 +5271,8 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
 #endif
     line = here->nd_orig;
     lex_lastline = line;
-    lex_pbeg = RSTRING(line)->ptr;
-    lex_pend = lex_pbeg + RSTRING(line)->len;
+    lex_pbeg = RSTRING_PTR(line);
+    lex_pend = lex_pbeg + RSTRING_LEN(line);
     lex_p = lex_pbeg + here->nd_nth;
     heredoc_end = ruby_sourceline;
     ruby_sourceline = nd_line(here);
@@ -5306,8 +5307,8 @@ parser_here_document(struct parser_params *parser, NODE *here)
     long len;
     VALUE str = 0;
 
-    eos = RSTRING(here->nd_lit)->ptr;
-    len = RSTRING(here->nd_lit)->len - 1;
+    eos = RSTRING_PTR(here->nd_lit);
+    len = RSTRING_LEN(here->nd_lit) - 1;
     indent = (func = *eos++) & STR_FUNC_INDENT;
 
     if ((c = nextc()) == -1) {
@@ -5324,7 +5325,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 
     if (!(func & STR_FUNC_EXPAND)) {
 	do {
-	    p = RSTRING(lex_lastline)->ptr;
+	    p = RSTRING_PTR(lex_lastline);
 	    pend = lex_pend;
 	    if (pend > p) {
 		switch (pend[-1]) {
@@ -5469,7 +5470,7 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
     const char *beg, *end, *vbeg, *vend;
 #define str_copy(_s, _p, _n) ((_s) \
 	? (rb_str_resize((_s), (_n)), \
-	   MEMCPY(RSTRING(_s)->ptr, (_p), char, (_n)), (_s)) \
+	   MEMCPY(RSTRING_PTR(_s), (_p), char, (_n)), (_s)) \
 	: ((_s) = rb_str_new((_p), (_n))))
 
     if (len <= 7) return Qfalse;
@@ -5532,9 +5533,9 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
 	rb_funcall(name, rb_intern("downcase!"), 0);
 #ifndef RIPPER
 	do {
-	    if (strncmp(p->name, RSTRING(name)->ptr, n) == 0) {
+	    if (strncmp(p->name, RSTRING_PTR(name), n) == 0) {
 		str_copy(val, vbeg, vend - vbeg);
-		(*p->func)(parser, RSTRING(name)->ptr, RSTRING(val)->ptr);
+		(*p->func)(parser, RSTRING_PTR(name), RSTRING_PTR(val));
 		break;
 	    }
 	} while (++p < pragmas + sizeof(pragmas) / sizeof(*p));
@@ -9218,7 +9219,7 @@ ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
     if (obj == Qundef) {
-	rb_raise(rb_eArgError, RSTRING(msg)->ptr);
+	rb_raise(rb_eArgError, RSTRING_PTR(msg));
     }
     return Qnil;
 }

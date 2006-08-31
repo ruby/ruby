@@ -326,14 +326,14 @@ time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
 	if (!NIL_P(s)) {
 	    tm->tm_mon = -1;
 	    for (i=0; i<12; i++) {
-		if (RSTRING(s)->len == 3 &&
-		    strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
+		if (RSTRING_LEN(s) == 3 &&
+		    strcasecmp(months[i], RSTRING_PTR(v[1])) == 0) {
 		    tm->tm_mon = i;
 		    break;
 		}
 	    }
 	    if (tm->tm_mon == -1) {
-		char c = RSTRING(s)->ptr[0];
+		char c = RSTRING_PTR(s)[0];
 
 		if ('0' <= c && c <= '9') {
 		    tm->tm_mon = obj2long(s)-1;
@@ -1873,8 +1873,8 @@ time_strftime(VALUE time, VALUE format)
     }
     StringValue(format);
     format = rb_str_new4(format);
-    fmt = RSTRING(format)->ptr;
-    len = RSTRING(format)->len;
+    fmt = RSTRING_PTR(format);
+    len = RSTRING_LEN(format);
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
@@ -1897,7 +1897,7 @@ time_strftime(VALUE time, VALUE format)
 	return str;
     }
     else {
-	len = rb_strftime(&buf, RSTRING(format)->ptr, &tobj->tm);
+	len = rb_strftime(&buf, RSTRING_PTR(format), &tobj->tm);
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) free(buf);
@@ -1997,8 +1997,8 @@ time_mload(VALUE time, VALUE str)
 
     time_modify(time);
     StringValue(str);
-    buf = (unsigned char *)RSTRING(str)->ptr;
-    if (RSTRING(str)->len != 8) {
+    buf = (unsigned char *)RSTRING_PTR(str);
+    if (RSTRING_LEN(str) != 8) {
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
 

@@ -217,7 +217,7 @@ ruby_incpush(const char *path)
 static VALUE
 expand_include_path(VALUE path)
 {
-    char *p = RSTRING(path)->ptr;
+    char *p = RSTRING_PTR(path);
     if (!p) return path;
     if (*p == '.' && p[1] == '/') return path;
     return rb_file_expand_path(path, Qnil);
@@ -883,10 +883,10 @@ load_file(const char *fname, int script)
 	    xflag = Qfalse;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
-		if (RSTRING(line)->len > 2
-		    && RSTRING(line)->ptr[0] == '#'
-		    && RSTRING(line)->ptr[1] == '!') {
-		    if ((p = strstr(RSTRING(line)->ptr, "ruby")) != 0) {
+		if (RSTRING_LEN(line) > 2
+		    && RSTRING_PTR(line)[0] == '#'
+		    && RSTRING_PTR(line)[1] == '!') {
+		    if ((p = strstr(RSTRING_PTR(line), "ruby")) != 0) {
 			goto start_read;
 		    }
 		}
@@ -901,13 +901,13 @@ load_file(const char *fname, int script)
 		line = rb_io_gets(f);
 		if (NIL_P(line)) return;
 
-		if ((p = strstr(RSTRING(line)->ptr, "ruby")) == 0) {
+		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
 		    /* not ruby script, kick the program */
 		    char **argv;
 		    char *path;
-		    char *pend = RSTRING(line)->ptr + RSTRING(line)->len;
+		    char *pend = RSTRING_PTR(line) + RSTRING_LEN(line);
 
-		    p = RSTRING(line)->ptr;	/* skip `#!' */
+		    p = RSTRING_PTR(line);	/* skip `#!' */
 		    if (pend[-1] == '\n') pend--; /* chomp line */
 		    if (pend[-1] == '\r') pend--;
 		    *pend = '\0';
@@ -935,9 +935,9 @@ load_file(const char *fname, int script)
 
 	      start_read:
 		p += 4;
-		RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
-		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
-		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
+		RSTRING_PTR(line)[RSTRING_LEN(line)-1] = '\0';
+		if (RSTRING_PTR(line)[RSTRING_LEN(line)-2] == '\r')
+		    RSTRING_PTR(line)[RSTRING_LEN(line)-2] = '\0';
 		if ((p = strstr(p, " -")) != 0) {
 		    p++;	/* skip space before `-' */
 		    while (*p == '-') {
@@ -1032,14 +1032,14 @@ set_arg0(VALUE val, ID id)
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
     StringValue(val);
-    s = RSTRING(val)->ptr;
-    i = RSTRING(val)->len;
+    s = RSTRING_PTR(val);
+    i = RSTRING_LEN(val);
 #if defined(PSTAT_SETCMD)
     if (i >= PST_CLEN) {
 	union pstun j;
 	j.pst_command = s;
 	i = PST_CLEN;
-	RSTRING(val)->len = i;
+	RSTRING_LEN(val) = i;
 	*(s + i) = '\0';
 	pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
     }

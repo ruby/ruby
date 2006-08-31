@@ -235,7 +235,7 @@ rb_path2class(const char *path)
 
 	while (*p && *p != ':') p++;
 	str = rb_str_new(pbeg, p-pbeg);
-	id = rb_intern(RSTRING(str)->ptr);
+	id = rb_intern(RSTRING_PTR(str));
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
 	    p += 2;
@@ -273,7 +273,7 @@ rb_class_name(VALUE klass)
 char *
 rb_class2name(VALUE klass)
 {
-    return RSTRING(rb_class_name(klass))->ptr;
+    return RSTRING_PTR(rb_class_name(klass));
 }
 
 char *
@@ -1155,7 +1155,7 @@ check_autoload_table(VALUE av)
     Check_Type(av, T_DATA);
     if (RDATA(av)->dmark != (RUBY_DATA_FUNC)rb_mark_tbl ||
 	RDATA(av)->dfree != (RUBY_DATA_FUNC)st_free_table) {
-	rb_raise(rb_eTypeError, "wrong autoload table: %s", RSTRING(rb_inspect(av))->ptr);
+	rb_raise(rb_eTypeError, "wrong autoload table: %s", RSTRING_PTR(rb_inspect(av)));
     }
     return (struct st_table *)DATA_PTR(av);
 }
@@ -1223,7 +1223,7 @@ rb_autoload_load(VALUE klass, ID id)
     VALUE file;
     NODE *load = autoload_delete(klass, id);
 
-    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING(file)->ptr)) {
+    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING_PTR(file))) {
 	return Qfalse;
     }
     return rb_require_safe(file, load->nd_nth);
@@ -1242,10 +1242,10 @@ autoload_file(VALUE mod, ID id)
     }
     file = ((NODE *)load)->nd_lit;
     Check_Type(file, T_STRING);
-    if (!RSTRING(file)->ptr) {
+    if (!RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
-    if (!rb_provided(RSTRING(file)->ptr)) {
+    if (!rb_provided(RSTRING_PTR(file))) {
 	return file;
     }
 

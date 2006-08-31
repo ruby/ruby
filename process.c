@@ -974,7 +974,7 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
 
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
-	args[i] = RSTRING(argv[i])->ptr;
+	args[i] = RSTRING_PTR(argv[i]);
     }
     args[i] = 0;
     if (args[0]) {
@@ -1177,7 +1177,7 @@ rb_check_argv(int argc, VALUE *argv)
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
     }
-    security(RSTRING(prog ? prog : argv[0])->ptr);
+    security(RSTRING_PTR(prog ? prog : argv[0]));
     return prog;
 }
 
@@ -1219,12 +1219,12 @@ rb_f_exec(int argc, VALUE *argv)
     if (!prog && argc == 1) {
 	e.argc = 0;
 	e.argv = 0;
-	e.prog = RSTRING(argv[0])->ptr;
+	e.prog = RSTRING_PTR(argv[0]);
     }
     else {
 	e.argc = argc;
 	e.argv = argv;
-	e.prog = prog ? RSTRING(prog)->ptr : 0;
+	e.prog = prog ? RSTRING_PTR(prog) : 0;
     }
     rb_exec(&e);
     rb_sys_fail(e.prog);
@@ -1533,7 +1533,7 @@ rb_spawn(int argc, VALUE *argv)
 #if defined HAVE_FORK
     earg.argc = argc;
     earg.argv = argv;
-    earg.prog = prog ? RSTRING(prog)->ptr : 0;
+    earg.prog = prog ? RSTRING_PTR(prog) : 0;
     status = rb_fork(&status, (int (*)(void*))rb_exec, &earg);
     if (prog && argc) argv[0] = prog;
 #elif defined HAVE_SPAWNV
@@ -1598,7 +1598,7 @@ rb_f_system(int argc, VALUE *argv)
     signal(SIGCHLD, chfunc);
 #endif
     if (status < 0) {
-	rb_sys_fail(RSTRING(argv[0])->ptr);
+	rb_sys_fail(RSTRING_PTR(argv[0]));
     }
     status = NUM2INT(rb_last_status);
     if (status == EXIT_SUCCESS) return Qtrue;
@@ -1619,7 +1619,7 @@ rb_f_spawn(int argc, VALUE *argv)
     int pid;
 
     pid = rb_spawn(argc, argv);
-    if (pid == -1) rb_sys_fail(RSTRING(argv[0])->ptr);
+    if (pid == -1) rb_sys_fail(RSTRING_PTR(argv[0]));
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     return INT2NUM(pid);
 #else
@@ -2666,10 +2666,10 @@ proc_setgroups(VALUE obj, VALUE ary)
 		groups[i] = NUM2INT(g);
 	    }
 	    else {
-		gr = getgrnam(RSTRING(tmp)->ptr);
+		gr = getgrnam(RSTRING_PTR(tmp));
 		if (gr == NULL)
 		    rb_raise(rb_eArgError,
-			     "can't find group for %s", RSTRING(tmp)->ptr);
+			     "can't find group for %s", RSTRING_PTR(tmp));
 		groups[i] = gr->gr_gid;
 	    }
 	}

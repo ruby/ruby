@@ -543,7 +543,7 @@ io_fwrite(VALUE str, OpenFile *fptr)
 {
     long len, n, r, l, offset = 0;
 
-    len = RSTRING(str)->len;
+    len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
     if (fptr->wbuf == NULL && !(fptr->mode & FMODE_SYNC)) {
         fptr->wbuf_off = 0;
@@ -553,14 +553,14 @@ io_fwrite(VALUE str, OpenFile *fptr)
     }
     if ((fptr->mode & FMODE_SYNC) ||
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
-        ((fptr->mode & FMODE_TTY) && memchr(RSTRING(str)->ptr+offset, '\n', len))) {
+        ((fptr->mode & FMODE_TTY) && memchr(RSTRING_PTR(str)+offset, '\n', len))) {
         /* xxx: use writev to avoid double write if available */
         if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
             if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
                 MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
                 fptr->wbuf_off = 0;
             }
-            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING(str)->ptr+offset, char, len);
+            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
             fptr->wbuf_len += len;
             n = 0;
         }
@@ -582,7 +582,7 @@ io_fwrite(VALUE str, OpenFile *fptr)
             l = PIPE_BUF;
         }
         TRAP_BEG;
-	r = write(fptr->fd, RSTRING(str)->ptr+offset, l);
+	r = write(fptr->fd, RSTRING_PTR(str)+offset, l);
         TRAP_END; /* xxx: signal handler may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
@@ -592,7 +592,7 @@ io_fwrite(VALUE str, OpenFile *fptr)
         }
         if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
-	    if (offset < RSTRING(str)->len)
+	    if (offset < RSTRING_LEN(str))
 		goto retry;
         }
         return -1L;
@@ -603,7 +603,7 @@ io_fwrite(VALUE str, OpenFile *fptr)
             MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
         fptr->wbuf_off = 0;
     }
-    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING(str)->ptr+offset, char, len);
+    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
     fptr->wbuf_len += len;
     return len;
 }
@@ -653,7 +653,7 @@ io_write(VALUE io, VALUE str)
 	return rb_funcall(io, id_write, 1, str);
     }
     io = tmp;
-    if (RSTRING(str)->len == 0) return INT2FIX(0);
+    if (RSTRING_LEN(str) == 0) return INT2FIX(0);
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
@@ -1138,12 +1138,12 @@ read_buffered_data(char *ptr, long len, OpenFile *fptr)
 static long
 io_fread(VALUE str, long offset, OpenFile *fptr)
 {
-    long len = RSTRING(str)->len - offset;
+    long len = RSTRING_LEN(str) - offset;
     long n = len;
     int c;
 
     while (n > 0) {
-	c = read_buffered_data(RSTRING(str)->ptr+offset, n, fptr);
+	c = read_buffered_data(RSTRING_PTR(str)+offset, n, fptr);
 	if (c > 0) {
 	    offset += c;
 	    if ((n -= c) <= 0) break;
@@ -1154,8 +1154,8 @@ io_fread(VALUE str, long offset, OpenFile *fptr)
 	if (c < 0) {
 	    break;
 	}
-	RSTRING(str)->ptr[offset++] = c;
-	if (offset > RSTRING(str)->len) break;
+	RSTRING_PTR(str)[offset++] = c;
+	if (offset > RSTRING_LEN(str)) break;
 	n--;
     }
     return len - n;
@@ -1173,7 +1173,7 @@ rb_io_fread(char *ptr, long len, FILE *f)
     of.mode = FMODE_READABLE;
     str = rb_str_new(ptr, len);
     n = io_fread(str, 0, &of);
-    MEMCPY(ptr, RSTRING(str)->ptr, char, n);
+    MEMCPY(ptr, RSTRING_PTR(str), char, n);
     return n;
 }
 
@@ -1287,21 +1287,21 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 
     if (!nonblock)
         READ_CHECK(fptr);
-    if (RSTRING(str)->len != len) {
+    if (RSTRING_LEN(str) != len) {
       modified:
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
-    n = read_buffered_data(RSTRING(str)->ptr, len, fptr);
+    n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
       again:
-	if (RSTRING(str)->len != len) goto modified;
+	if (RSTRING_LEN(str) != len) goto modified;
         if (nonblock) {
             rb_io_set_nonblock(fptr);
-            n = read(fptr->fd, RSTRING(str)->ptr, len);
+            n = read(fptr->fd, RSTRING_PTR(str), len);
         }
         else {
             TRAP_BEG;
-            n = read(fptr->fd, RSTRING(str)->ptr, len);
+            n = read(fptr->fd, RSTRING_PTR(str), len);
             TRAP_END;
         }
         if (n < 0) {
@@ -1456,7 +1456,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     io_fflush(fptr);
 
     rb_io_set_nonblock(fptr);
-    n = write(fptr->fd, RSTRING(str)->ptr, RSTRING(str)->len);
+    n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
     if (n == -1) rb_sys_fail(fptr->path);
 
@@ -1519,7 +1519,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     if (len == 0) return str;
 
     READ_CHECK(fptr);
-    if (RSTRING(str)->len != len) {
+    if (RSTRING_LEN(str) != len) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
     n = io_fread(str, 0, fptr);
@@ -1529,8 +1529,6 @@ io_read(int argc, VALUE *argv, VALUE io)
         return Qnil;
     }
     rb_str_resize(str, n);
-    RSTRING(str)->len = n;
-    RSTRING(str)->ptr[n] = '\0';
     OBJ_TAINT(str);
 
     return str;
@@ -1551,18 +1549,17 @@ appendline(OpenFile *fptr, int delim, VALUE *strp)
 	    if (e) pending = e - p + 1;
 	    len += pending;
 	    if (!NIL_P(str)) {
-		last = RSTRING(str)->len;
+		last = RSTRING_LEN(str);
 		rb_str_resize(str, last + len);
 	    }
 	    else {
 		*strp = str = rb_str_buf_new(len);
-		RSTRING(str)->len = len;
-		RSTRING(str)->ptr[len] = '\0';
+		rb_str_set_len(str, len);
 	    }
 	    if (c != EOF) {
-		RSTRING(str)->ptr[last++] = c;
+		RSTRING_PTR(str)[last++] = c;
 	    }
-	    read_buffered_data(RSTRING(str)->ptr + last, pending, fptr); /* must not fail */
+	    read_buffered_data(RSTRING_PTR(str) + last, pending, fptr); /* must not fail */
 	    if (e) return delim;
 	}
 	else if (c != EOF) {
@@ -1572,7 +1569,8 @@ appendline(OpenFile *fptr, int delim, VALUE *strp)
 	    }
 	    else {
 		*strp = str = rb_str_buf_new(1);
-		RSTRING(str)->ptr[RSTRING(str)->len++] = c;
+		rb_str_resize(str, 1);
+		RSTRING_PTR(str)[0] = c;
 	    }
 	}
 	rb_thread_wait_fd(fptr->fd);
@@ -1645,7 +1643,7 @@ rb_io_getline_fast(OpenFile *fptr, unsigned char delim)
 static int
 rscheck(const char *rsptr, long rslen, VALUE rs)
 {
-    if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
+    if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
 	rb_raise(rb_eRuntimeError, "rs modified");
     return 0;
 }
@@ -1660,7 +1658,7 @@ rb_io_getline(VALUE rs, VALUE io)
     rb_io_check_readable(fptr);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
-	if (RSTRING(str)->len == 0) return Qnil;
+	if (RSTRING_LEN(str) == 0) return Qnil;
     }
     else if (rs == rb_default_rs) {
 	return rb_io_getline_fast(fptr, '\n');
@@ -1671,7 +1669,7 @@ rb_io_getline(VALUE rs, VALUE io)
 	long rslen;
 	int rspara = 0;
 
-	rslen = RSTRING(rs)->len;
+	rslen = RSTRING_LEN(rs);
 	if (rslen == 0) {
 	    rsptr = "\n\n";
 	    rslen = 2;
@@ -1679,18 +1677,18 @@ rb_io_getline(VALUE rs, VALUE io)
 	    swallow(fptr, '\n');
 	}
 	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING(rs)->ptr[0]);
+	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0]);
 	}
 	else {
-	    rsptr = RSTRING(rs)->ptr;
+	    rsptr = RSTRING_PTR(rs);
 	}
 	newline = rsptr[rslen - 1];
 
 	while ((c = appendline(fptr, newline, &str)) != EOF) {
 	    if (c == newline) {
-		if (RSTRING(str)->len < rslen) continue;
+		if (RSTRING_LEN(str) < rslen) continue;
 		if (!rspara) rscheck(rsptr, rslen, rs);
-		if (memcmp(RSTRING(str)->ptr + RSTRING(str)->len - rslen,
+		if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - rslen,
 			   rsptr, rslen) == 0) break;
 	    }
 	}
@@ -2077,10 +2075,10 @@ rb_io_ungetc(VALUE io, VALUE c)
     }
     else {
 	SafeStringValue(c);
-	if (RSTRING(c)->len > 1) {
+	if (RSTRING_LEN(c) > 1) {
 	    rb_warn("IO#ungetc pushes back only one byte");
 	}
-	cc = (unsigned char)RSTRING(c)->ptr[0];
+	cc = (unsigned char)RSTRING_PTR(c)[0];
     }
     if (io_ungetc(cc, fptr) == EOF && cc != EOF) {
 	rb_raise(rb_eIOError, "ungetc failed");
@@ -2427,7 +2425,7 @@ rb_io_syswrite(VALUE io, VALUE str)
         rb_io_check_closed(fptr);
     }
     TRAP_BEG;
-    n = write(fptr->fd, RSTRING(str)->ptr, RSTRING(str)->len);
+    n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
     TRAP_END;
 
     if (n == -1) rb_sys_fail(fptr->path);
@@ -2481,22 +2479,21 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     n = fptr->fd;
     rb_thread_wait_fd(fptr->fd);
     rb_io_check_closed(fptr);
-    if (RSTRING(str)->len != ilen) {
+    if (RSTRING_LEN(str) != ilen) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
     TRAP_BEG;
-    n = read(fptr->fd, RSTRING(str)->ptr, ilen);
+    n = read(fptr->fd, RSTRING_PTR(str), ilen);
     TRAP_END;
 
     if (n == -1) {
 	rb_sys_fail(fptr->path);
     }
-    rb_str_resize(str, n);
+    rb_str_set_len(str, n);
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
-    RSTRING(str)->len = n;
-    RSTRING(str)->ptr[n] = '\0';
+    rb_str_resize(str, n);
     OBJ_TAINT(str);
 
     return str;
@@ -3209,15 +3206,15 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 	}
 	else {
 	    SafeStringValue(vmode);
-	    flags = rb_io_mode_modenum(RSTRING(vmode)->ptr);
+	    flags = rb_io_mode_modenum(RSTRING_PTR(vmode));
 	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
-	rb_file_sysopen_internal(io, RSTRING(fname)->ptr, flags, fmode);
+	rb_file_sysopen_internal(io, RSTRING_PTR(fname), flags, fmode);
     }
     else {
 	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
-	rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
+	rb_file_open_internal(io, RSTRING_PTR(fname), mode);
     }
     return io;
 }
@@ -3272,13 +3269,13 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
     else {
 	SafeStringValue(vmode);
-	flags = rb_io_mode_modenum(RSTRING(vmode)->ptr);
+	flags = rb_io_mode_modenum(RSTRING_PTR(vmode));
     }
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
 
-    path = ALLOCA_N(char, strlen(RSTRING(fname)->ptr)+1);
-    strcpy(path, RSTRING(fname)->ptr);
+    path = ALLOCA_N(char, strlen(RSTRING_PTR(fname))+1);
+    strcpy(path, RSTRING_PTR(fname));
     fd = rb_sysopen(path, flags, fmode);
     return INT2NUM(fd);
 }
@@ -3384,7 +3381,7 @@ rb_f_open(int argc, VALUE *argv)
 	    if (!NIL_P(tmp)) {
 		char *str = StringValuePtr(tmp);
 		if (str && str[0] == '|') {
-		    argv[0] = rb_str_new(str+1, RSTRING(tmp)->len-1);
+		    argv[0] = rb_str_new(str+1, RSTRING_LEN(tmp)-1);
 		    OBJ_INFECT(argv[0], tmp);
 		    return rb_io_s_popen(argc, argv, rb_cIO);
 		}
@@ -3550,7 +3547,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	fptr->path = 0;
     }
 
-    fptr->path = strdup(RSTRING(fname)->ptr);
+    fptr->path = strdup(RSTRING_PTR(fname));
     mode = rb_io_flags_mode(fptr->mode);
     if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
@@ -3563,7 +3560,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (fptr->stdio_file) {
-        if (freopen(RSTRING(fname)->ptr, mode, fptr->stdio_file) == 0) {
+        if (freopen(RSTRING_PTR(fname), mode, fptr->stdio_file) == 0) {
             rb_sys_fail(fptr->path);
         }
         fptr->fd = fileno(fptr->stdio_file);
@@ -3829,20 +3826,15 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
 	return Qnil;
     }
     for (i=0; i<argc; i++) {
-	if (NIL_P(argv[i])) {
-	    line = rb_str_new2("nil");
+	line = rb_check_array_type(argv[i]);
+	if (!NIL_P(line)) {
+	    rb_exec_recursive(io_puts_ary, line, out);
+	    continue;
 	}
-	else {
-	    line = rb_check_array_type(argv[i]);
-	    if (!NIL_P(line)) {
-		rb_exec_recursive(io_puts_ary, line, out);
-		continue;
-	    }
-	    line = rb_obj_as_string(argv[i]);
-	}
+	line = rb_obj_as_string(argv[i]);
 	rb_io_write(out, line);
-	if (RSTRING(line)->len == 0 ||
-            RSTRING(line)->ptr[RSTRING(line)->len-1] != '\n') {
+	if (RSTRING_LEN(line) == 0 ||
+            RSTRING_PTR(line)[RSTRING_LEN(line)-1] != '\n') {
 	    rb_io_write(out, rb_default_rs);
 	}
     }
@@ -4066,7 +4058,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	}
 	else {
 	    SafeStringValue(mode);
-	    flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
+	    flags = rb_io_mode_modenum(RSTRING_PTR(mode));
 	}
     }
     orig = rb_io_check_io(fnum);
@@ -4101,7 +4093,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 		    rb_raise(rb_eArgError, "incompatible mode 0%o", flags);
 		}
 		else {
-		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING(mode)->ptr);
+		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING_PTR(mode));
 		}
 	    }
 	}
@@ -4285,13 +4277,13 @@ next_argv(void)
 #endif
 #ifdef NO_SAFE_RENAME
 			(void)close(fr);
-			(void)unlink(RSTRING(str)->ptr);
-			(void)rename(fn, RSTRING(str)->ptr);
-			fr = rb_sysopen(RSTRING(str)->ptr, O_RDONLY, 0);
+			(void)unlink(RSTRING_PTR(str));
+			(void)rename(fn, RSTRING_PTR(str));
+			fr = rb_sysopen(RSTRING_PTR(str), O_RDONLY, 0);
 #else
-			if (rename(fn, RSTRING(str)->ptr) < 0) {
+			if (rename(fn, RSTRING_PTR(str)) < 0) {
 			    rb_warn("Can't rename %s to %s: %s, skipping file",
-				    fn, RSTRING(str)->ptr, strerror(errno));
+				    fn, RSTRING_PTR(str), strerror(errno));
 			    close(fr);
 			    goto retry;
 			}
@@ -4782,20 +4774,20 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 #endif
 	    rb_str_modify(arg);
 
-	    if (len <= RSTRING(arg)->len) {
-		len = RSTRING(arg)->len;
+	    if (len <= RSTRING_LEN(arg)) {
+		len = RSTRING_LEN(arg);
 	    }
-	    if (RSTRING(arg)->len < len) {
+	    if (RSTRING_LEN(arg) < len) {
 		rb_str_resize(arg, len+1);
 	    }
-	    RSTRING(arg)->ptr[len] = 17;	/* a little sanity check here */
-	    narg = (long)RSTRING(arg)->ptr;
+	    RSTRING_PTR(arg)[len] = 17;	/* a little sanity check here */
+	    narg = (long)RSTRING_PTR(arg);
 	}
     }
     GetOpenFile(io, fptr);
     retval = io_cntl(fptr->fd, cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);
-    if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {
+    if (TYPE(arg) == T_STRING && RSTRING_PTR(arg)[len] != 17) {
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
@@ -4912,7 +4904,7 @@ rb_f_syscall(int argc, VALUE *argv)
 	if (!NIL_P(v)) {
 	    StringValue(v);
 	    rb_str_modify(v);
-	    arg[i] = (unsigned long)RSTRING(v)->ptr;
+	    arg[i] = (unsigned long)RSTRING_PTR(v);
 	}
 	else {
 	    arg[i] = (unsigned long)NUM2LONG(*argv);
@@ -5110,7 +5102,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     else if (!NIL_P(arg.sep)) {
 	StringValue(arg.sep);
     }
-    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
 
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
@@ -5144,7 +5136,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
     FilePathValue(fname);
     arg.argc = argc - 1;
-    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -5177,7 +5169,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
     FilePathValue(fname);
     arg.argc = argc ? 1 : 0;
-    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	rb_io_seek(arg.io, offset, SEEK_SET);
@@ -5292,8 +5284,8 @@ argf_read(int argc, VALUE *argv)
 	}
     }
     else if (argc >= 1) {
-	if (RSTRING(str)->len < len) {
-	    len -= RSTRING(str)->len;
+	if (RSTRING_LEN(str) < len) {
+	    len -= RSTRING_LEN(str);
 	    argv[0] = INT2NUM(len);
 	    goto retry;
 	}
@@ -5490,7 +5482,7 @@ opt_i_set(VALUE val)
     StringValue(val);
     if (ruby_inplace_mode) free(ruby_inplace_mode);
     ruby_inplace_mode = 0;
-    ruby_inplace_mode = strdup(RSTRING(val)->ptr);
+    ruby_inplace_mode = strdup(RSTRING_PTR(val));
 }
 
 /*

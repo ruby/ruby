@@ -242,7 +242,7 @@ rb_f_kill(int argc, VALUE *argv)
 	goto str_signal;
 
       case T_STRING:
-	s = RSTRING(argv[0])->ptr;
+	s = RSTRING_PTR(argv[0]);
 	if (s[0] == '-') {
 	    negative++;
 	    s++;
@@ -263,7 +263,7 @@ rb_f_kill(int argc, VALUE *argv)
 
 	    str = rb_check_string_type(argv[0]);
 	    if (!NIL_P(str)) {
-		s = RSTRING(str)->ptr;
+		s = RSTRING_PTR(str);
 		goto str_signal;
 	    }
 	    rb_raise(rb_eArgError, "bad signal type %s",
@@ -574,28 +574,28 @@ trap(struct trap_arg *arg)
 	command = rb_check_string_type(arg->cmd);
 	if (!NIL_P(command)) {
 	    SafeStringValue(command);	/* taint check */
-	    switch (RSTRING(command)->len) {
+	    switch (RSTRING_LEN(command)) {
 	      case 0:
 		func = SIG_IGN;
 		break;
 	      case 7:
-		if (strncmp(RSTRING(command)->ptr, "SIG_IGN", 7) == 0) {
+		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
 		    func = SIG_IGN;
 		}
-		else if (strncmp(RSTRING(command)->ptr, "SIG_DFL", 7) == 0) {
+		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
 		    func = SIG_DFL;
 		}
-		else if (strncmp(RSTRING(command)->ptr, "DEFAULT", 7) == 0) {
+		else if (strncmp(RSTRING_PTR(command), "DEFAULT", 7) == 0) {
 		    func = SIG_DFL;
 		}
 		break;
 	      case 6:
-		if (strncmp(RSTRING(command)->ptr, "IGNORE", 6) == 0) {
+		if (strncmp(RSTRING_PTR(command), "IGNORE", 6) == 0) {
 		    func = SIG_IGN;
 		}
 		break;
 	      case 4:
-		if (strncmp(RSTRING(command)->ptr, "EXIT", 4) == 0) {
+		if (strncmp(RSTRING_PTR(command), "EXIT", 4) == 0) {
 		    arg->cmd = Qundef;
 		}
 		break;
@@ -620,7 +620,7 @@ trap(struct trap_arg *arg)
 	goto str_signal;
 
       case T_STRING:
-	s = RSTRING(arg->sig)->ptr;
+	s = RSTRING_PTR(arg->sig);
 
       str_signal:
 	if (strncmp("SIG", s, 3) == 0)

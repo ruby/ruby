@@ -317,8 +317,8 @@ char *rb_str2cstr(VALUE,long*);
 /* obsolete API - use StringValuePtr() */
 #define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 
-#define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
-                     RSTRING(x)->ptr[0]:(char)(NUM2INT(x)&0xff))
+#define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
+                     RSTRING_PTR(x)[0]:(char)(NUM2INT(x)&0xff))
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
 VALUE rb_newobj(void);
@@ -362,15 +362,33 @@ struct RFloat {
 
 #define ELTS_SHARED FL_USER2
 
+#define RSTRING_EMBED_LEN_MAX ((sizeof(VALUE)*3)/sizeof(char)-1)
 struct RString {
     struct RBasic basic;
-    long len;
-    char *ptr;
     union {
-	long capa;
-	VALUE shared;
-    } aux;
+	struct {
+	    long len;
+	    char *ptr;
+	    union {
+		long capa;
+		VALUE shared;
+	    } aux;
+	} heap;
+	char ary[RSTRING_EMBED_LEN_MAX];
+    } as;
 };
+#define RSTRING_NOEMBED FL_USER1
+#define RSTRING_EMBED_LEN_MASK (FL_USER2|FL_USER3|FL_USER4|FL_USER5)
+#define RSTRING_EMBED_LEN_SHIFT (FL_USHIFT+2)
+#define RSTRING_LEN(str) \
+    (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
+     (long)((RBASIC(str)->flags >> RSTRING_EMBED_LEN_SHIFT) & \
+            (RSTRING_EMBED_LEN_MASK >> RSTRING_EMBED_LEN_SHIFT)) : \
+     RSTRING(str)->as.heap.len)
+#define RSTRING_PTR(str) \
+    (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
+     RSTRING(str)->as.ary : \
+     RSTRING(str)->as.heap.ptr)
 
 struct RArray {
     struct RBasic basic;
@@ -446,8 +464,8 @@ struct RStruct {
 #define RSTRUCT_EMBED_LEN_SHIFT (FL_USHIFT+1)
 #define RSTRUCT_LEN(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-     (RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
-     (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT) : \
+     (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
+            (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
      RSTRUCT(st)->as.heap.len)
 #define RSTRUCT_PTR(st) \
     ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
@@ -499,6 +517,8 @@ struct RBignum {
 
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
+#define FL_ANY(x,f) FL_TEST(x,f)
+#define FL_ALL(x,f) (FL_TEST(x,f) == (f))
 #define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
 #define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)

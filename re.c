@@ -597,9 +597,9 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re, int ce)
     VALUE desc = rb_reg_desc(s, len, re);
 
     if (ce)
-	rb_compile_error("%s: %s", err, RSTRING(desc)->ptr);
+	rb_compile_error("%s: %s", err, RSTRING_PTR(desc));
     else
-	rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING(desc)->ptr);
+	rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
 }
 
 
@@ -949,13 +949,13 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, long reverse)
 	range = -pos;
     }
     else {
-	range = RSTRING(str)->len - pos;
+	range = RSTRING_LEN(str) - pos;
     }
 
     enc = (RREGEXP(re)->ptr)->enc;
 
-    if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING(str)->len) {
-	 string = (UChar*)RSTRING(str)->ptr;
+    if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING_LEN(str)) {
+	 string = (UChar*)RSTRING_PTR(str);
 
 	 if (range > 0) {
 	      p = onigenc_get_right_adjust_char_head(enc, string, string + pos);
@@ -977,7 +977,7 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
     static struct re_registers regs;
     long range;
 
-    if (pos > RSTRING(str)->len || pos < 0) {
+    if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
@@ -994,14 +994,14 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
 	range = -pos;
     }
     else {
-	range = RSTRING(str)->len - pos;
+	range = RSTRING_LEN(str) - pos;
     }
 
     result = onig_search(RREGEXP(re)->ptr,
-			 (UChar*)(RSTRING(str)->ptr),
-			 ((UChar*)(RSTRING(str)->ptr) + RSTRING(str)->len),
-			 ((UChar*)(RSTRING(str)->ptr) + pos),
-			 ((UChar*)(RSTRING(str)->ptr) + pos + range),
+			 (UChar*)(RSTRING_PTR(str)),
+			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
+			 ((UChar*)(RSTRING_PTR(str)) + pos),
+			 ((UChar*)(RSTRING_PTR(str)) + pos + range),
 			 &regs, ONIG_OPTION_NONE);
 
     if (FL_TEST(re, KCODE_FIXED))
@@ -1130,7 +1130,7 @@ rb_reg_match_post(VALUE match)
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
     str = RMATCH(match)->str;
     pos = RMATCH(match)->END(0);
-    str = rb_str_substr(str, pos, RSTRING(str)->len - pos);
+    str = rb_str_substr(str, pos, RSTRING_LEN(str) - pos);
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
@@ -1509,15 +1509,15 @@ VALUE
 rb_reg_regcomp(VALUE str)
 {
     volatile VALUE save_str = str;
-    if (reg_cache && RREGEXP(reg_cache)->len == RSTRING(str)->len
+    if (reg_cache && RREGEXP(reg_cache)->len == RSTRING_LEN(str)
 	&& case_cache == ruby_ignorecase
 	&& kcode_cache == reg_kcode
-	&& memcmp(RREGEXP(reg_cache)->str, RSTRING(str)->ptr, RSTRING(str)->len) == 0)
+	&& memcmp(RREGEXP(reg_cache)->str, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
     case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
-    return reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
+    return reg_cache = rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str),
 				  ruby_ignorecase);
 }
 
@@ -1595,7 +1595,7 @@ rb_reg_match_pos(VALUE re, VALUE str, long pos)
     StringValue(str);
     if (pos != 0) {
 	if (pos < 0) {
-	    pos += RSTRING(str)->len;
+	    pos += RSTRING_LEN(str);
 	    if (pos < 0) {
 		return Qnil;
 	    }
@@ -1796,7 +1796,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    flags |= char_to_arg_kcode((int )kcode[0]);
 	}
 	s = StringValuePtr(argv[0]);
-	len = RSTRING(argv[0])->len;
+	len = RSTRING_LEN(argv[0]);
     }
     rb_reg_initialize(self, s, len, flags, Qfalse);
     return self;
@@ -1809,8 +1809,8 @@ rb_reg_quote(VALUE str)
     VALUE tmp;
     int c;
 
-    s = RSTRING(str)->ptr;
-    send = s + RSTRING(str)->len;
+    s = RSTRING_PTR(str);
+    send = s + RSTRING_LEN(str);
     for (; s < send; s++) {
 	c = *s;
 	if (ismbchar(*s)) {
@@ -1834,11 +1834,11 @@ rb_reg_quote(VALUE str)
     return str;
 
   meta_found:
-    tmp = rb_str_new(0, RSTRING(str)->len*2);
-    t = RSTRING(tmp)->ptr;
+    tmp = rb_str_new(0, RSTRING_LEN(str)*2);
+    t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
-    memcpy(t, RSTRING(str)->ptr, s - RSTRING(str)->ptr);
-    t += s - RSTRING(str)->ptr;
+    memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
+    t += s - RSTRING_PTR(str);
 
     for (; s < send; s++) {
 	c = *s;
@@ -1881,7 +1881,7 @@ rb_reg_quote(VALUE str)
 	}
 	*t++ = c;
     }
-    rb_str_resize(tmp, t - RSTRING(tmp)->ptr);
+    rb_str_resize(tmp, t - RSTRING_PTR(tmp));
     OBJ_INFECT(tmp, str);
     return tmp;
 }
@@ -2003,7 +2003,7 @@ rb_reg_s_union(int argc, VALUE *argv)
                         str1 = rb_inspect(kcode_re);
                         str2 = rb_inspect(v);
                         rb_raise(rb_eArgError, "mixed kcode: %s and %s",
-                            RSTRING(str1)->ptr, RSTRING(str2)->ptr);
+                            RSTRING_PTR(str1), RSTRING_PTR(str2));
                     }
                 }
                 v = rb_reg_to_s(v);
@@ -2062,8 +2062,8 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     int no;
 
 
-    p = s = RSTRING(str)->ptr;
-    e = s + RSTRING(str)->len;
+    p = s = RSTRING_PTR(str);
+    e = s + RSTRING_LEN(str);
 
     while (s < e) {
 	char *ss = s;
@@ -2125,11 +2125,11 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
 	  case '`':
-	    rb_str_buf_cat(val, RSTRING(src)->ptr, BEG(0));
+	    rb_str_buf_cat(val, RSTRING_PTR(src), BEG(0));
 	    continue;
 
 	  case '\'':
-	    rb_str_buf_cat(val, RSTRING(src)->ptr+END(0), RSTRING(src)->len-END(0));
+	    rb_str_buf_cat(val, RSTRING_PTR(src)+END(0), RSTRING_LEN(src)-END(0));
 	    continue;
 
 	  case '+':
@@ -2150,7 +2150,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	if (no >= 0) {
 	    if (no >= regs->num_regs) continue;
 	    if (BEG(no) == -1) continue;
-	    rb_str_buf_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
+	    rb_str_buf_cat(val, RSTRING_PTR(src)+BEG(no), END(no)-BEG(no));
 	}
     }
 

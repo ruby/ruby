@@ -1,3 +1,11 @@
+Thu Aug 31 18:23:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (struct RString): embed small strings.
+	  (RSTRING_LEN): defined for accessing string members.
+	  (RSTRING_PTR): ditto.
+
+	* string.c: use RSTRING_LEN and RSTRING_PTR.
+
 Thu Aug 31 17:16:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_shuffle_bang): new method.
