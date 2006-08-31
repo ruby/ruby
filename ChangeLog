@@ -1,3 +1,10 @@
+Thu Aug 31 12:46:55 2006  why the lucky stiff  <why@ruby-lang.org>
+
+	* eval.c (ruby_init): rename top_cref to ruby_top_cref and export,
+	  along with ruby_cref, for use by the sandbox. [ruby-core:08762]
+
+	* node.h: ditto.
+
 Tue Aug 29 19:10:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_s_create): fixed memory leak, based on the patch

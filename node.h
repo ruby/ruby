@@ -151,6 +151,9 @@ typedef struct RNode {
     } u3;
 } NODE;
 
+extern NODE *ruby_cref;
+extern NODE *ruby_top_cref;
+
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
 #define nd_type(n) ((int)(((RNODE(n))->flags>>FL_USHIFT)&0xff))
