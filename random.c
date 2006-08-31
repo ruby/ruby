@@ -145,7 +145,7 @@ next_state(void)
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-static unsigned long
+unsigned long
 genrand_int32(void)
 {
     unsigned long y;
@@ -163,7 +163,7 @@ genrand_int32(void)
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-static double
+double
 genrand_real(void)
 { 
     unsigned long a=genrand_int32()>>5, b=genrand_int32()>>6; 
@@ -188,7 +188,6 @@ genrand_real(void)
 #include <fcntl.h>
 #endif
 
-static int first = 1;
 static VALUE saved_seed = INT2FIX(0);
 
 static VALUE
@@ -243,7 +242,6 @@ rand_init(VALUE vseed)
             len--;
         init_by_array(buf, len);
     }
-    first = 0;
     old = saved_seed;
     saved_seed = seed;
     free(buf);
@@ -437,9 +435,6 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     long val, max;
 
     rb_scan_args(argc, argv, "01", &vmax);
-    if (first) {
-	rand_init(random_seed());
-    }
     switch (TYPE(vmax)) {
       case T_FLOAT:
 	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN) {
@@ -489,6 +484,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 void
 Init_Random(void)
 {
+    rand_init(random_seed());
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
     rb_global_variable(&saved_seed);

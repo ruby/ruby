@@ -1222,11 +1222,11 @@ rb_ary_join(VALUE ary, VALUE sep)
 
     for (i=0; i<RARRAY(ary)->len; i++) {
 	tmp = rb_check_string_type(RARRAY(ary)->ptr[i]);
-	len += NIL_P(tmp) ? 10 : RSTRING(tmp)->len;
+	len += NIL_P(tmp) ? 10 : RSTRING_LEN(tmp);
     }
     if (!NIL_P(sep)) {
 	StringValue(sep);
-	len += RSTRING(sep)->len * (RARRAY(ary)->len - 1);
+	len += RSTRING_LEN(sep) * (RARRAY(ary)->len - 1);
     }
     result = rb_str_buf_new(len);
     for (i=0; i<RARRAY(ary)->len; i++) {
@@ -2799,6 +2799,47 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
+/*
+ *  call-seq:
+ *     array.shuffle!        -> array or
+ *  
+ *  Shuffles elements in _self_ in place.
+ */
+
+
+static VALUE
+rb_ary_shuffle_bang(VALUE ary)
+{
+    long i = RARRAY(ary)->len;
+
+    while (i) {
+	long j = genrand_real()*i;
+	VALUE tmp = RARRAY(ary)->ptr[--i];
+	RARRAY(ary)->ptr[i] = RARRAY(ary)->ptr[j];
+	RARRAY(ary)->ptr[j] = tmp;
+    }
+    return ary;
+}
+
+
+/*
+ *  call-seq:
+ *     array.shuffle -> an_array
+ *  
+ *  Returns a new array that with elements of this array shuffled.
+ *     
+ *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
+ *     a.shuffle                 #=> [1, 2, 3]
+ */
+
+static VALUE
+rb_ary_shuffle(VALUE ary)
+{
+    ary = rb_ary_dup(ary);
+    rb_ary_shuffle_bang(ary);
+    return ary;
+}
+
 
 /* Arrays are ordered, integer-indexed collections of any object. 
  * Array indexing starts at 0, as in C or Java.  A negative index is 
@@ -2893,6 +2934,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
+    rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
+    rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
 
     id_cmp = rb_intern("<=>");
 }

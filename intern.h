@@ -426,6 +426,9 @@ VALUE rb_detach_process(int);
 VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
 VALUE rb_length_by_each(VALUE);
+/* random.c */
+unsigned long genrand_int32(void);
+double genrand_real(void);
 /* re.c */
 int rb_memcmp(const void*,const void*,long);
 int rb_memcicmp(const void*,const void*,long);
@@ -497,6 +500,7 @@ VALUE rb_str_times(VALUE, VALUE);
 VALUE rb_str_substr(VALUE, long, long);
 void rb_str_modify(VALUE);
 VALUE rb_str_freeze(VALUE);
+void rb_str_set_len(VALUE, long);
 VALUE rb_str_resize(VALUE, long);
 VALUE rb_str_cat(VALUE, const char*, long);
 VALUE rb_str_cat2(VALUE, const char*);
