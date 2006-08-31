@@ -60,7 +60,7 @@ end
 #include <winver.h>
 #endif
 
-#{icons}
+#{icons || ''}
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{fversion}
  PRODUCTVERSION #{fversion}

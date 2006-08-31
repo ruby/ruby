@@ -155,16 +155,16 @@ tk_uninstall_cmd(self, cmd_id)
     int prefix_len = strlen(cmd_id_prefix);
 
     StringValue(cmd_id);
-    if (strncmp(cmd_id_head, RSTRING(cmd_id)->ptr, head_len) != 0) {
+    if (strncmp(cmd_id_head, RSTRING_PTR(cmd_id), head_len) != 0) {
         return Qnil;
     }
     if (strncmp(cmd_id_prefix, 
-                RSTRING(cmd_id)->ptr + head_len, prefix_len) != 0) {
+                RSTRING_PTR(cmd_id) + head_len, prefix_len) != 0) {
         return Qnil;
     }
 
     return rb_hash_delete(CALLBACK_TABLE, 
-                          rb_str_new2(RSTRING(cmd_id)->ptr + head_len));
+                          rb_str_new2(RSTRING_PTR(cmd_id) + head_len));
 }
 
 static VALUE
@@ -862,7 +862,7 @@ get_eval_string_core(obj, enc_flag, self)
     }
 
     rb_warning("fail to convert '%s' to string for Tk", 
-               RSTRING(rb_funcall(obj, rb_intern("inspect"), 0, 0))->ptr);
+               RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0, 0)));
 
     return obj;
 }
@@ -966,13 +966,13 @@ tcl2rb_bool(self, value)
 
     value = rb_funcall(value, ID_downcase, 0);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return Qnil;
+    if (RSTRING_PTR(value) == (char*)NULL) return Qnil;
 
-    if (RSTRING(value)->ptr[0] == '\0'
-        || strcmp(RSTRING(value)->ptr, "0") == 0
-        || strcmp(RSTRING(value)->ptr, "no") == 0
-        || strcmp(RSTRING(value)->ptr, "off") == 0
-        || strcmp(RSTRING(value)->ptr, "false") == 0) {
+    if (RSTRING_PTR(value)[0] == '\0'
+        || strcmp(RSTRING_PTR(value), "0") == 0
+        || strcmp(RSTRING_PTR(value), "no") == 0
+        || strcmp(RSTRING_PTR(value), "off") == 0
+        || strcmp(RSTRING_PTR(value), "false") == 0) {
         return Qfalse;
     } else {
         return Qtrue;
@@ -983,21 +983,21 @@ static VALUE
 tkstr_to_dec(value)
     VALUE value;
 {
-    return rb_cstr_to_inum(RSTRING(value)->ptr, 10, 1);
+    return rb_cstr_to_inum(RSTRING_PTR(value), 10, 1);
 }
 
 static VALUE
 tkstr_to_int(value)
     VALUE value;
 {
-    return rb_cstr_to_inum(RSTRING(value)->ptr, 0, 1);
+    return rb_cstr_to_inum(RSTRING_PTR(value), 0, 1);
 }
 
 static VALUE
 tkstr_to_float(value)
     VALUE value;
 {
-    return rb_float_new(rb_cstr_to_dbl(RSTRING(value)->ptr, 1));
+    return rb_float_new(rb_cstr_to_dbl(RSTRING_PTR(value), 1));
 }
 
 static VALUE
@@ -1005,7 +1005,7 @@ tkstr_invalid_numstr(value)
     VALUE value;
 {
     rb_raise(rb_eArgError, 
-             "invalid value for Number: '%s'", RSTRING(value)->ptr);
+             "invalid value for Number: '%s'", RSTRING_PTR(value));
     return Qnil; /*dummy*/
 }
 
@@ -1024,7 +1024,7 @@ tkstr_to_number(value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return INT2FIX(0);
+    if (RSTRING_PTR(value) == (char*)NULL) return INT2FIX(0);
 
     return rb_rescue2(tkstr_to_int, value, 
                       tkstr_rescue_float, value, 
@@ -1046,8 +1046,8 @@ tkstr_to_str(value)
     char * ptr;
     int len;
 
-    ptr = RSTRING(value)->ptr;
-    len = RSTRING(value)->len;
+    ptr = RSTRING_PTR(value);
+    len = RSTRING_LEN(value);
 
     if (len > 1 && *ptr == '{' && *(ptr + len - 1) == '}') {
         return rb_str_new(ptr + 1, len - 2);
@@ -1062,7 +1062,7 @@ tcl2rb_string(self, value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
+    if (RSTRING_PTR(value) == (char*)NULL) return rb_tainted_str_new2("");
 
     return tkstr_to_str(value);
 }
@@ -1074,7 +1074,7 @@ tcl2rb_num_or_str(self, value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
+    if (RSTRING_PTR(value) == (char*)NULL) return rb_tainted_str_new2("");
 
     return rb_rescue2(tkstr_to_number, value, 
                       tkstr_to_str, value, 
@@ -1181,7 +1181,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(key)) {
     case T_STRING:
-        key_id = rb_intern(RSTRING(key)->ptr);
+        key_id = rb_intern(RSTRING_PTR(key));
         break;
     case T_SYMBOL:
         key_id = SYM2ID(key);
@@ -1193,7 +1193,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(value)) {
     case T_STRING:
-        value_id = rb_intern(RSTRING(value)->ptr);
+        value_id = rb_intern(RSTRING_PTR(value));
         break;
     case T_SYMBOL:
         value_id = SYM2ID(value);
@@ -1250,7 +1250,7 @@ cbsubst_get_subst_arg(argc, argv, self)
     for(i = 0; i < argc; i++) {
         switch(TYPE(argv[i])) {
         case T_STRING:
-            str = RSTRING(argv[i])->ptr;
+            str = RSTRING_PTR(argv[i]);
             arg_sym = ID2SYM(rb_intern(str));
             break;
         case T_SYMBOL:
@@ -1265,7 +1265,7 @@ cbsubst_get_subst_arg(argc, argv, self)
             str = rb_id2name(SYM2ID(ret));
         }
 
-        id = rb_intern(RSTRING(rb_str_cat2(rb_str_new2("@"), str))->ptr);
+        id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
 
         for(j = 0; j < len; j++) {
             if (inf->ivar[j] == id) break;
@@ -1305,7 +1305,7 @@ cbsubst_get_subst_key(self, str)
     buf = ALLOC_N(char, len + 1);
 
     for(i = 0; i < len; i++) {
-        ptr = RSTRING(RARRAY(list)->ptr[i])->ptr;
+        ptr = RSTRING_PTR(RARRAY(list)->ptr[i]);
         if (*ptr == '%' && *(ptr + 2) == '\0') {
             *(buf + i) = *(ptr + 1);
         } else {
@@ -1388,10 +1388,10 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 
         *(ivar + real_len) 
             = rb_intern(
-                RSTRING(
+                RSTRING_PTR(
                   rb_str_cat2(rb_str_new2("@"), 
                               rb_id2name(SYM2ID(RARRAY(inf)->ptr[2])))
-                )->ptr
+                )
               );
 
         rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
@@ -1453,12 +1453,12 @@ cbsubst_scan_args(self, arg_key, val_ary)
 
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < len; idx++) {
-        if (idx >= RSTRING(arg_key)->len) {
+        if (idx >= RSTRING_LEN(arg_key)) {
             proc = Qnil;
-        } else if (*(RSTRING(arg_key)->ptr + idx) == ' ') {
+        } else if (*(RSTRING_PTR(arg_key) + idx) == ' ') {
             proc = Qnil;
         } else {
-          ptr = strchr(inf->key, *(RSTRING(arg_key)->ptr + idx));
+          ptr = strchr(inf->key, *(RSTRING_PTR(arg_key) + idx));
           if (ptr == (char*)NULL) {
             proc = Qnil;
           } else {

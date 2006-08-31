@@ -1,3 +1,9 @@
+Thu Aug 31 20:50:46 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): follow nil.to_s.
+
+	* win32/resource.rb: ditto.
+
 Thu Aug 31 20:21:47 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (test_identical, rb_file_s_truncate): use RSTRING_PTR and
@@ -8,6 +14,12 @@ Thu Aug 31 20:21:47 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* process.c (proc_spawn_n, rb_spawn): ditto.
 
 	* util.c (ruby_add_suffix): ditto.
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): ditto.
+
+	* ext/tk/stubs.c, ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: ditto.
+
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata): ditto.
 
 Thu Aug 31 18:23:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

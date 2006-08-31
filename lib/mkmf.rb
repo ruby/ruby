@@ -1335,7 +1335,7 @@ site-install-rb: install-rb
   end
   mfile.print "\n\n"
   if makedef
-    mfile.print "$(DEFFILE): #{origdef}\n"
+    mfile.print "$(DEFFILE): #{origdef || ''}\n"
     mfile.print "\t$(RUBY) #{makedef} #{origdef} > $@\n\n"
   end
 

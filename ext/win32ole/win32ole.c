@@ -1069,7 +1069,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
     VARIANT var;
 
     if (((vtype & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && TYPE(val) == T_STRING) {
-        long len = RSTRING(val)->len;
+        long len = RSTRING_LEN(val);
         char *pdest = NULL;
         SAFEARRAY *psa = SafeArrayCreateVector(VT_UI1, 0, len);
         if (!psa) {
@@ -1077,7 +1077,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
         }
         hr = SafeArrayAccessData(psa, (void **)&pdest);
         if (SUCCEEDED(hr)) {
-            memcpy(pdest, RSTRING(val)->ptr, len);
+            memcpy(pdest, RSTRING_PTR(val), len);
             SafeArrayUnaccessData(psa);
             V_VT(&(pvar->realvar)) = vtype;
             V_ARRAY(&(pvar->realvar)) = psa;

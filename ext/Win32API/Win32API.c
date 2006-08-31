@@ -50,18 +50,18 @@ Win32API_initialize(self, dllname, proc, import, export)
 
     SafeStringValue(dllname);
     SafeStringValue(proc);
-    hdll = LoadLibrary(RSTRING(dllname)->ptr);
+    hdll = LoadLibrary(RSTRING_PTR(dllname));
     if (!hdll)
-	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
+	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING_PTR(dllname));
     rb_iv_set(self, "__hdll__", Data_Wrap_Struct(rb_cData, 0, Win32API_FreeLibrary, (void*)hdll));
-    hproc = (HANDLE)GetProcAddress(hdll, RSTRING(proc)->ptr);
+    hproc = (HANDLE)GetProcAddress(hdll, RSTRING_PTR(proc));
     if (!hproc) {
 	str = rb_str_new3(proc);
 	str = rb_str_cat(str, "A", 1);
-	hproc = (HANDLE)GetProcAddress(hdll, RSTRING(str)->ptr);
+	hproc = (HANDLE)GetProcAddress(hdll, RSTRING_PTR(str));
 	if (!hproc)
 	    rb_raise(rb_eRuntimeError, "GetProcAddress: %s or %s\n",
-		RSTRING(proc)->ptr, RSTRING(str)->ptr);
+		RSTRING_PTR(proc), RSTRING_PTR(str));
     }
     rb_iv_set(self, "__dll__", UINT2NUM((unsigned long)hdll));
     rb_iv_set(self, "__dllname__", dllname);
@@ -75,7 +75,7 @@ Win32API_initialize(self, dllname, proc, import, export)
 	ptr = RARRAY(import)->ptr;
 	for (i = 0, len = RARRAY(import)->len; i < len; i++) {
 	    SafeStringValue(ptr[i]);
-	    switch (*(char *)RSTRING(ptr[i])->ptr) {
+	    switch (*(char *)RSTRING_PTR(ptr[i])) {
 	    case 'N': case 'n': case 'L': case 'l':
 		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
 		break;
@@ -90,8 +90,8 @@ Win32API_initialize(self, dllname, proc, import, export)
         break;
     default:
 	SafeStringValue(import);
-	s = RSTRING(import)->ptr;
-	for (i = 0, len = RSTRING(import)->len; i < len; i++) {
+	s = RSTRING_PTR(import);
+	for (i = 0, len = RSTRING_LEN(import); i < len; i++) {
 	    switch (*s++) {
 	    case 'N': case 'n': case 'L': case 'l':
 		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
@@ -117,7 +117,7 @@ Win32API_initialize(self, dllname, proc, import, export)
 	ex = _T_VOID;
     } else {
 	SafeStringValue(export);
-	switch (*RSTRING(export)->ptr) {
+	switch (*RSTRING_PTR(export)) {
         case 'V': case 'v':
 	    ex = _T_VOID;
 	    break;

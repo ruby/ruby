@@ -896,7 +896,7 @@ call_original_exit(ptr, state)
         char **argv;
         argv = (char **)ALLOC_N(char *, 3);
         argv[0] = "exit";
-        argv[1] = RSTRING(rb_fix2str(INT2NUM(state), 10))->ptr;
+        argv[1] = RSTRING_PTR(rb_fix2str(INT2NUM(state), 10));
         argv[2] = (char *)NULL;
 
         ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
@@ -2151,20 +2151,20 @@ ip_set_exc_message(interp, exc)
     if (NIL_P(enc)) {
         encoding = (Tcl_Encoding)NULL;
     } else if (TYPE(enc) == T_STRING) {
-        encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
     } else {
         enc = rb_funcall(enc, ID_to_s, 0, 0);
-        encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
     }
 
     /* to avoid a garbled error message dialog */
-    buf = ALLOC_N(char, (RSTRING(msg)->len)+1);
-    memcpy(buf, RSTRING(msg)->ptr, RSTRING(msg)->len);
-    buf[RSTRING(msg)->len] = 0;
+    buf = ALLOC_N(char, (RSTRING_LEN(msg))+1);
+    memcpy(buf, RSTRING_PTR(msg), RSTRING_LEN(msg));
+    buf[RSTRING_LEN(msg)] = 0;
 
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
-    Tcl_ExternalToUtfDString(encoding, buf, RSTRING(msg)->len, &dstr);
+    Tcl_ExternalToUtfDString(encoding, buf, RSTRING_LEN(msg), &dstr);
 
     Tcl_AppendResult(interp, Tcl_DStringValue(&dstr), (char*)NULL);
     DUMP2("error message:%s", Tcl_DStringValue(&dstr));
@@ -2172,7 +2172,7 @@ ip_set_exc_message(interp, exc)
     free(buf);
 
 #else /* TCL_VERSION <= 8.0 */
-    Tcl_AppendResult(interp, RSTRING(msg)->ptr, (char*)NULL);
+    Tcl_AppendResult(interp, RSTRING_PTR(msg), (char*)NULL);
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -2367,12 +2367,12 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
 
         ret = TkStringValue(ret);
         DUMP1("Tcl_AppendResult");
-        Tcl_AppendResult(interp, RSTRING(ret)->ptr, (char *)NULL);
+        Tcl_AppendResult(interp, RSTRING_PTR(ret), (char *)NULL);
 
         rb_thread_critical = thr_crit_bup;
     }
 
-    DUMP2("(result) %s", NIL_P(ret) ? "nil" : RSTRING(ret)->ptr);
+    DUMP2("(result) %s", NIL_P(ret) ? "nil" : RSTRING_PTR(ret));
 
     return TCL_OK;
 }
@@ -5413,25 +5413,25 @@ get_obj_from_str(str)
     const char *s = StringValuePtr(str);
 
 #if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-    return Tcl_NewStringObj((char*)s, RSTRING(str)->len);
+    return Tcl_NewStringObj((char*)s, RSTRING_LEN(str));
 #else /* TCL_VERSION >= 8.1 */
     VALUE enc = rb_attr_get(str, ID_at_enc);
 
     if (!NIL_P(enc)) {
         StringValue(enc);
-        if (strcmp(RSTRING(enc)->ptr, "binary") == 0) {
+        if (strcmp(RSTRING_PTR(enc), "binary") == 0) {
             /* binary string */
-            return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+            return Tcl_NewByteArrayObj(s, RSTRING_LEN(str));
         } else {
             /* text string */
-            return Tcl_NewStringObj(s, RSTRING(str)->len);
+            return Tcl_NewStringObj(s, RSTRING_LEN(str));
         }
-    } else if (strlen(s) != RSTRING(str)->len) {
+    } else if (strlen(s) != RSTRING_LEN(str)) {
         /* probably binary string */
-        return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+        return Tcl_NewByteArrayObj(s, RSTRING_LEN(str));
     } else {
         /* probably text string */
-        return Tcl_NewStringObj(s, RSTRING(str)->len);
+        return Tcl_NewStringObj(s, RSTRING_LEN(str));
     }
 #endif
 }
@@ -5875,7 +5875,7 @@ ip_eval(self, str)
         } else {
             DUMP2("eval from current eventloop %lx", current);
         }
-        result = ip_eval_real(self, RSTRING(str)->ptr, RSTRING(str)->len);
+        result = ip_eval_real(self, RSTRING_PTR(str), RSTRING_LEN(str));
         if (rb_obj_is_kind_of(result, rb_eException)) {
             rb_exc_raise(result);
         }
@@ -5891,9 +5891,9 @@ ip_eval(self, str)
     alloc_done = (int*)ALLOC(int);
     *alloc_done = 0;
 
-    eval_str = ALLOC_N(char, RSTRING(str)->len + 1);
-    memcpy(eval_str, RSTRING(str)->ptr, RSTRING(str)->len);
-    eval_str[RSTRING(str)->len] = 0;
+    eval_str = ALLOC_N(char, RSTRING_LEN(str) + 1);
+    memcpy(eval_str, RSTRING_PTR(str), RSTRING_LEN(str));
+    eval_str[RSTRING_LEN(str)] = 0;
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
     evq = (struct eval_queue *)Tcl_Alloc(sizeof(struct eval_queue));
@@ -5907,7 +5907,7 @@ ip_eval(self, str)
     /* construct event data */
     evq->done = alloc_done;
     evq->str = eval_str;
-    evq->len = RSTRING(str)->len;
+    evq->len = RSTRING_LEN(str);
     evq->interp = ip_obj;
     evq->result = result;
     evq->thread = current;
@@ -6102,21 +6102,21 @@ lib_toUTF8_core(ip_obj, src, encodename)
                         encoding = (Tcl_Encoding)NULL;
                     } else {
                         StringValue(enc);
-                        encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+                        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
                         if (encoding == (Tcl_Encoding)NULL) {
-                            rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING(enc)->ptr);
+                            rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                         }
                     }
                 }
             } else {
                 StringValue(enc);
-                if (strcmp(RSTRING(enc)->ptr, "binary") == 0) {
+                if (strcmp(RSTRING_PTR(enc), "binary") == 0) {
                     rb_thread_critical = thr_crit_bup;
                     return str;
                 }
-                encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+                encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
                 if (encoding == (Tcl_Encoding)NULL) {
-                    rb_warning("string has unknown encoding information (@encoding:'%s')", RSTRING(enc)->ptr);
+                    rb_warning("string has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                 }
             }
         } else {
@@ -6124,30 +6124,30 @@ lib_toUTF8_core(ip_obj, src, encodename)
         }
     } else {
         StringValue(encodename);
-        encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
+        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
             /*
             rb_warning("unknown encoding name '%s'", 
-                       RSTRING(encodename)->ptr);
+                       RSTRING_PTR(encodename));
             */
             rb_raise(rb_eArgError, "unknown encoding name '%s'", 
-                     RSTRING(encodename)->ptr);
+                     RSTRING_PTR(encodename));
         }
     }
 
     StringValue(str);
-    if (!RSTRING(str)->len) {
+    if (!RSTRING_LEN(str)) {
         rb_thread_critical = thr_crit_bup;
         return str;
     }
-    buf = ALLOC_N(char,(RSTRING(str)->len)+1);
-    memcpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
-    buf[RSTRING(str)->len] = 0;
+    buf = ALLOC_N(char,RSTRING_LEN(str)+1);
+    memcpy(buf, RSTRING_PTR(str), RSTRING_LEN(str));
+    buf[RSTRING_LEN(str)] = 0;
 
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
     /* Tcl_ExternalToUtfDString(encoding,buf,strlen(buf),&dstr); */
-    Tcl_ExternalToUtfDString(encoding, buf, RSTRING(str)->len, &dstr);
+    Tcl_ExternalToUtfDString(encoding, buf, RSTRING_LEN(str), &dstr);
 
     /* str = rb_tainted_str_new2(Tcl_DStringValue(&dstr)); */
     /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
@@ -6238,7 +6238,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             enc = rb_attr_get(str, ID_at_enc);
             if (!NIL_P(enc)) {
                 StringValue(enc);
-                if (strcmp(RSTRING(enc)->ptr, "binary") == 0) {
+                if (strcmp(RSTRING_PTR(enc), "binary") == 0) {
                     rb_thread_critical = thr_crit_bup;
                     return str;
                 }
@@ -6253,9 +6253,9 @@ lib_fromUTF8_core(ip_obj, src, encodename)
                 encoding = (Tcl_Encoding)NULL;
             } else {
                 StringValue(enc);
-                encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+                encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
                 if (encoding == (Tcl_Encoding)NULL) {
-                    rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING(enc)->ptr);
+                    rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                 } else {
                   encodename = rb_obj_dup(enc);
                 }
@@ -6265,13 +6265,13 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     } else {
         StringValue(encodename);
 
-        if (strcmp(RSTRING(encodename)->ptr, "binary") == 0) {
+        if (strcmp(RSTRING_PTR(encodename), "binary") == 0) {
             char *s;
             int  len;
 
             StringValue(str);
-            s = Tcl_GetByteArrayFromObj(Tcl_NewStringObj(RSTRING(str)->ptr, 
-                                                         RSTRING(str)->len), 
+            s = Tcl_GetByteArrayFromObj(Tcl_NewStringObj(RSTRING_PTR(str), 
+                                                         RSTRING_LEN(str)), 
                                         &len);
             str = rb_tainted_str_new(s, len);
             rb_ivar_set(str, ID_at_enc, rb_tainted_str_new2("binary"));
@@ -6280,33 +6280,33 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             return str;
         }
 
-        encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
+        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
             /* 
             rb_warning("unknown encoding name '%s'", 
-                       RSTRING(encodename)->ptr);
+                       RSTRING_PTR(encodename));
             encodename = Qnil;
             */
             rb_raise(rb_eArgError, "unknown encoding name '%s'", 
-                     RSTRING(encodename)->ptr);
+                     RSTRING_PTR(encodename));
         }
     }
 
     StringValue(str);
 
-    if (RSTRING(str)->len == 0) {
+    if (RSTRING_LEN(str) == 0) {
         rb_thread_critical = thr_crit_bup;
         return rb_tainted_str_new2("");
     }
 
-    buf = ALLOC_N(char,strlen(RSTRING(str)->ptr)+1);
-    memcpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
-    buf[RSTRING(str)->len] = 0;
+    buf = ALLOC_N(char,strlen(RSTRING_PTR(str))+1);
+    memcpy(buf, RSTRING_PTR(str), RSTRING_LEN(str));
+    buf[RSTRING_LEN(str)] = 0;
 
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
     /* Tcl_UtfToExternalDString(encoding,buf,strlen(buf),&dstr); */
-    Tcl_UtfToExternalDString(encoding,buf,RSTRING(str)->len,&dstr);
+    Tcl_UtfToExternalDString(encoding,buf,RSTRING_LEN(str),&dstr);
 
     /* str = rb_tainted_str_new2(Tcl_DStringValue(&dstr)); */
     /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
@@ -6371,21 +6371,21 @@ lib_UTF_backslash_core(self, str, all_bs)
     tcl_stubs_check();
 
     StringValue(str);
-    if (!RSTRING(str)->len) {
+    if (!RSTRING_LEN(str)) {
         return str;
     }
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    src_buf = ALLOC_N(char,(RSTRING(str)->len)+1);
-    memcpy(src_buf, RSTRING(str)->ptr, RSTRING(str)->len);
-    src_buf[RSTRING(str)->len] = 0;
+    src_buf = ALLOC_N(char,RSTRING_LEN(str)+1);
+    memcpy(src_buf, RSTRING_PTR(str), RSTRING_LEN(str));
+    src_buf[RSTRING_LEN(str)] = 0;
 
-    dst_buf = ALLOC_N(char,(RSTRING(str)->len)+1);
+    dst_buf = ALLOC_N(char,RSTRING_LEN(str)+1);
 
     ptr = src_buf;
-    while(RSTRING(str)->len > ptr - src_buf) {
+    while(RSTRING_LEN(str) > ptr - src_buf) {
         if (*ptr == '\\' && (all_bs || *(ptr + 1) == 'u')) {
             dst_len += Tcl_UtfBackslash(ptr, &read_len, (dst_buf + dst_len));
             ptr += read_len;
@@ -6451,7 +6451,7 @@ lib_set_system_encoding(self, enc_name)
     if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL, 
                               StringValuePtr(enc_name)) != TCL_OK) {
         rb_raise(rb_eArgError, "unknown encoding name '%s'", 
-                 RSTRING(enc_name)->ptr);
+                 RSTRING_PTR(enc_name));
     }
 
     return enc_name;
@@ -7101,8 +7101,8 @@ ip_get_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_GetVar2Ex(ptr->ip, RSTRING(varname)->ptr,
-                                NIL_P(index) ? NULL : RSTRING(index)->ptr,
+            ret = Tcl_GetVar2Ex(ptr->ip, RSTRING_PTR(varname),
+                                NIL_P(index) ? NULL : RSTRING_PTR(index),
                                 FIX2INT(flag));
         }
 
@@ -7139,8 +7139,8 @@ ip_get_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_GetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                              NIL_P(index) ? NULL : RSTRING(index)->ptr,
+            ret = Tcl_GetVar2(ptr->ip, RSTRING_PTR(varname), 
+                              NIL_P(index) ? NULL : RSTRING_PTR(index),
                               FIX2INT(flag));
         }
 
@@ -7238,8 +7238,8 @@ ip_set_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_SetVar2Ex(ptr->ip, RSTRING(varname)->ptr,
-                                NIL_P(index) ? NULL : RSTRING(index)->ptr,
+            ret = Tcl_SetVar2Ex(ptr->ip, RSTRING_PTR(varname),
+                                NIL_P(index) ? NULL : RSTRING_PTR(index),
                                 valobj, FIX2INT(flag));
         }
 
@@ -7279,9 +7279,9 @@ ip_set_variable2_core(interp, argc, argv)
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_SetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                              NIL_P(index) ? NULL : RSTRING(index)->ptr, 
-                              RSTRING(value)->ptr, FIX2INT(flag));
+            ret = Tcl_SetVar2(ptr->ip, RSTRING_PTR(varname), 
+                              NIL_P(index) ? NULL : RSTRING_PTR(index), 
+                              RSTRING_PTR(value), FIX2INT(flag));
         }
 
         if (ret == (char*)NULL) {
@@ -7361,8 +7361,8 @@ ip_unset_variable2_core(interp, argc, argv)
         return Qtrue;
     }
 
-    ptr->return_value = Tcl_UnsetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                                      NIL_P(index) ? NULL : RSTRING(index)->ptr,
+    ptr->return_value = Tcl_UnsetVar2(ptr->ip, RSTRING_PTR(varname), 
+                                      NIL_P(index) ? NULL : RSTRING_PTR(index),
                                       FIX2INT(flag));
 
     if (ptr->return_value == TCL_ERROR) {
@@ -7555,7 +7555,7 @@ lib_split_tklist_core(ip_obj, list_str)
         int  argc;
         char **argv;
 
-        if (Tcl_SplitList(interp, RSTRING(list_str)->ptr, 
+        if (Tcl_SplitList(interp, RSTRING_PTR(list_str), 
                           &argc, &argv) == TCL_ERROR) {
             if (interp == (Tcl_Interp*)NULL) {
                 rb_raise(rb_eRuntimeError, "can't get elements from list");
@@ -7635,7 +7635,7 @@ lib_merge_tklist(argc, argv, obj)
         if (OBJ_TAINTED(argv[num])) taint_flag = 1;
         dst = StringValuePtr(argv[num]);
 #if TCL_MAJOR_VERSION >= 8
-        len += Tcl_ScanCountedElement(dst, RSTRING(argv[num])->len, 
+        len += Tcl_ScanCountedElement(dst, RSTRING_LEN(argv[num]), 
                                       &flagPtr[num]) + 1;
 #else /* TCL_MAJOR_VERSION < 8 */
         len += Tcl_ScanElement(dst, &flagPtr[num]) + 1;
@@ -7647,11 +7647,11 @@ lib_merge_tklist(argc, argv, obj)
     dst = result;
     for(num = 0; num < argc; num++) {
 #if TCL_MAJOR_VERSION >= 8
-        len = Tcl_ConvertCountedElement(RSTRING(argv[num])->ptr, 
-                                        RSTRING(argv[num])->len, 
+        len = Tcl_ConvertCountedElement(RSTRING_PTR(argv[num]), 
+                                        RSTRING_LEN(argv[num]), 
                                         dst, flagPtr[num]);
 #else /* TCL_MAJOR_VERSION < 8 */
-        len = Tcl_ConvertElement(RSTRING(argv[num])->ptr, dst, flagPtr[num]);
+        len = Tcl_ConvertElement(RSTRING_PTR(argv[num]), dst, flagPtr[num]);
 #endif
         dst += len;
         *dst = ' ';
@@ -7694,19 +7694,18 @@ lib_conv_listelement(self, src)
     StringValue(src);
 
 #if TCL_MAJOR_VERSION >= 8
-    len = Tcl_ScanCountedElement(RSTRING(src)->ptr, RSTRING(src)->len, 
+    len = Tcl_ScanCountedElement(RSTRING_PTR(src), RSTRING_LEN(src), 
                                  &scan_flag);
     dst = rb_str_new(0, len + 1);
-    len = Tcl_ConvertCountedElement(RSTRING(src)->ptr, RSTRING(src)->len, 
-                                    RSTRING(dst)->ptr, scan_flag);
+    len = Tcl_ConvertCountedElement(RSTRING_PTR(src), RSTRING_LEN(src), 
+                                    RSTRING_PTR(dst), scan_flag);
 #else /* TCL_MAJOR_VERSION < 8 */
-    len = Tcl_ScanElement(RSTRING(src)->ptr, &scan_flag);
+    len = Tcl_ScanElement(RSTRING_PTR(src), &scan_flag);
     dst = rb_str_new(0, len + 1);
-    len = Tcl_ConvertElement(RSTRING(src)->ptr, RSTRING(dst)->ptr, scan_flag);
+    len = Tcl_ConvertElement(RSTRING_PTR(src), RSTRING_PTR(dst), scan_flag);
 #endif
 
-    RSTRING(dst)->len = len;
-    RSTRING(dst)->ptr[len] = '\0';
+    rb_str_resize(dst, len);
     if (taint_flag) OBJ_TAINT(dst);
 
     rb_thread_critical = thr_crit_bup;
@@ -7828,7 +7827,7 @@ ip_make_menu_embeddable(interp, menu_path)
 
     StringValue(menu_path);
 
-    menuRefPtr = TkFindMenuReferences(ptr->ip, RSTRING(menu_path)->ptr);
+    menuRefPtr = TkFindMenuReferences(ptr->ip, RSTRING_PTR(menu_path));
     if (menuRefPtr == (struct dummy_TkMenuRef *) NULL) {
         rb_raise(rb_eArgError, "not a menu widget, or invalid widget path");
     }
@@ -8118,7 +8117,7 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+    ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
     switch(ret) {
     case TCLTK_STUBS_OK:
         break;
