@@ -1073,7 +1073,7 @@ LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
 RUBY_EXTCONF_H = #{$extconf_h}
-CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS #$ARCH_FLAG
+CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
@@ -1194,6 +1194,7 @@ def create_makefile(target, srcprefix = nil)
       deffile = "$(TARGET)-$(arch).def"
     end
   end
+  origdef ||= ''
 
   if $extmk and not $extconf_h
     create_header
@@ -1335,7 +1336,7 @@ site-install-rb: install-rb
   end
   mfile.print "\n\n"
   if makedef
-    mfile.print "$(DEFFILE): #{origdef || ''}\n"
+    mfile.print "$(DEFFILE): #{origdef}\n"
     mfile.print "\t$(RUBY) #{makedef} #{origdef} > $@\n\n"
   end
 

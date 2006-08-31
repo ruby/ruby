@@ -1,3 +1,7 @@
+Thu Aug 31 23:59:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): follow nil.to_s.
+
 Thu Aug 31 20:50:46 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): follow nil.to_s.
@@ -151,7 +155,7 @@ Tue Aug 22 18:47:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_method):
 	  rdoc documents C module methods as instance methods. a patch in
-	  [ruby-core:08536]. 
+	  [ruby-core:08536].
 
 Tue Aug 22 12:35:57 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
