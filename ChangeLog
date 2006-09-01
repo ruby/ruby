@@ -1,3 +1,9 @@
+Fri Sep  1 09:32:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex::getc): should not push nil into
+	  reading buffer (@readed).  reported in
+	  <http://jarp.does.notwork.org/diary/200608c.html#200608311>.
+
 Thu Aug 31 23:59:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): follow nil.to_s.

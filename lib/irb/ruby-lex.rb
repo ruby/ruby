@@ -104,6 +104,7 @@ class RubyLex
       @rests.push nil unless buf_input
     end
     c = @rests.shift
+    return if c == nil
     if @here_header
       @here_readed.push c
     else
@@ -234,7 +235,6 @@ class RubyLex
 	  unless l = lex
 	    throw :TERM_INPUT if @line == ''
 	  else
-	    #p l
 	    @line.concat l
 	    if @ltype or @continue or @indent > 0
 	      next
