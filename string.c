@@ -689,7 +689,7 @@ rb_str_resize(VALUE str, long len)
 		return str;
 	    }
 	    ptr = ALLOC_N(char,len+1);
-	    MEMCPY(ptr, RSTRING(str)->ary, char, RSTRING_LEN(str));
+	    MEMCPY(ptr, RSTRING_PTR(str), char, RSTRING_LEN(str));
 	    RSTRING(str)->as.heap.ptr = ptr;
 	    STR_SET_NOEMBED(str);
 	}
