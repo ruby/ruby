@@ -1,3 +1,7 @@
+Fri Sep  1 14:22:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle): RDoc fixed.
+
 Fri Sep  1 13:52:57 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/font.rb: TkFont#current_configinfo() doesn't work

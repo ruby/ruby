@@ -2828,8 +2828,8 @@ rb_ary_shuffle_bang(VALUE ary)
  *  
  *  Returns a new array that with elements of this array shuffled.
  *     
- *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
- *     a.shuffle                 #=> [1, 2, 3]
+ *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
+ *     a.shuffle                 #=> [2, 3, 1]
  */
 
 static VALUE
