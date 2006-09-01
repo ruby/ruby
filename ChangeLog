@@ -1,3 +1,8 @@
+Fri Sep  1 13:52:57 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/font.rb: TkFont#current_configinfo() doesn't work
+	  on Tcl/Tk8.x.
+
 Fri Sep  1 09:32:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex::getc): should not push nil into
