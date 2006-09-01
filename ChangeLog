@@ -1,3 +1,12 @@
+Fri Sep  1 22:02:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_resize): should copy embedded string to
+	  malloc'ed buffer.  a patch from <nobu at ruby-lang.org> in
+	  [ruby-dev:29369].  fixed: [ruby-dev:29368]
+
+	* string.c (rb_str_ord): use %ld specifier since STRING_LEN() is a
+	  long.  [ruby-dev:29369]
+
 Fri Sep  1 21:41:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (socks_init): typo fixed.  a patch from Sven

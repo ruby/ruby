@@ -682,12 +682,15 @@ rb_str_resize(VALUE str, long len)
     rb_str_modify(str);
     if (len != RSTRING_LEN(str)) {
 	if (STR_EMBED_P(str)) {
+	    char *ptr;
 	    if (len <= RSTRING_EMBED_LEN_MAX) {
 		STR_SET_EMBED_LEN(str, len);
 		RSTRING_PTR(str)[len] = '\0';
 		return str;
 	    }
-	    RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
+	    ptr = ALLOC_N(char,len+1);
+	    MEMCPY(ptr, RSTRING(str)->ary, char, RSTRING_LEN(str));
+	    RSTRING(str)->as.heap.ptr = ptr;
 	    STR_SET_NOEMBED(str);
 	}
 	else if (RSTRING_LEN(str) < len || RSTRING_LEN(str) - len > 1024) {
@@ -4165,7 +4168,7 @@ rb_str_ord(VALUE s)
 
     if (RSTRING_LEN(s) != 1) {
 	rb_raise(rb_eTypeError,
-		 "expacted a characer, but string of size %d given",
+		 "expacted a characer, but string of size %ld given",
 		 RSTRING_LEN(s));
     }
     c = RSTRING_PTR(s)[0] & 0xff;

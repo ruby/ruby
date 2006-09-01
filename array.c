@@ -2826,7 +2826,7 @@ rb_ary_shuffle_bang(VALUE ary)
  *  call-seq:
  *     array.shuffle -> an_array
  *  
- *  Returns a new array that with elements of this array shuffled.
+ *  Returns a new array with elements of this array shuffled.
  *     
  *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     a.shuffle                 #=> [2, 3, 1]
