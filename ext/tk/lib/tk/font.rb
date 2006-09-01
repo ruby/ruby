@@ -1449,7 +1449,7 @@ module TkFont::CoreMethods
       end
     else
       l = tk_split_simplelist(tk_call('font', 'configure', font))
-      r = {}
+      h = {}
       while key=l.shift
         if key == '-compound'
           l.shift
@@ -1458,15 +1458,15 @@ module TkFont::CoreMethods
           val = l.shift
           case TkFont::OptionType[key]
           when ?n
-            r.push [key, num_or_str(val)]
+            h[key] = num_or_str(val)
           when ?b
-            r.push [key, bool(val)]
+            h[key] = bool(val)
           else
-            r.push [key, val]
+            h[key] = val
           end
         end
       end
-      r
+      h
     end
   end
 

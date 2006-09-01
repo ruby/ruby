@@ -1,3 +1,8 @@
+Fri Sep  1 13:52:57 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/font.rb: TkFont#current_configinfo() doesn't work
+	  on Tcl/Tk8.x.
+
 Thu Aug 31 12:46:55 2006  why the lucky stiff  <why@ruby-lang.org>
 
 	* eval.c (ruby_init): rename top_cref to ruby_top_cref and export,
