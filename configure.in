@@ -868,7 +868,7 @@ if test x"$enable_pthread" = xyes; then
     fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
-    if x"$rb_with_pthread" = xyes; then
+    if test x"$rb_with_pthread" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
     fi
 fi
