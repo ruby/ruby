@@ -1300,7 +1300,7 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
 
 #ifdef SOCKS
 static VALUE
-socks_init(VALUE sock, VALUE host, VALUEserv)
+socks_init(VALUE sock, VALUE host, VALUE serv)
 {
     static init = 0;
 

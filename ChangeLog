@@ -1,3 +1,8 @@
+Fri Sep  1 21:41:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (socks_init): typo fixed.  a patch from Sven
+	  Klemm <sven at c3d2.de>.  [ruby-core:08770]
+
 Fri Sep  1 14:22:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* array.c (rb_ary_shuffle): RDoc fixed.
