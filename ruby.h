@@ -25,6 +25,15 @@ extern "C" {
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
+
+#define NORETURN_STYLE_NEW 1
+#ifndef NORETURN
+# define NORETURN(x) x
+#endif
+#ifndef NOINLINE
+# define NOINLINE(x) x
+#endif
+
 #include "defines.h"
 
 #ifdef HAVE_STDLIB_H
@@ -56,11 +65,6 @@ extern "C" {
 #define ISALPHA(c) (ISASCII(c) && isalpha((int)(unsigned char)(c)))
 #define ISDIGIT(c) (ISASCII(c) && isdigit((int)(unsigned char)(c)))
 #define ISXDIGIT(c) (ISASCII(c) && isxdigit((int)(unsigned char)(c)))
-#endif
-
-#define NORETURN_STYLE_NEW 1
-#ifndef NORETURN
-# define NORETURN(x) x
 #endif
 
 #if defined(HAVE_ALLOCA_H)
@@ -565,6 +569,17 @@ NORETURN(void rb_throw _((const char*,VALUE)));
 
 VALUE rb_require _((const char*));
 
+#ifdef __ia64
+void ruby_init_stack(VALUE*, void*);
+#define RUBY_INIT_STACK \
+    VALUE variable_in_this_stack_frame; \
+    ruby_init_stack(&variable_in_this_stack_frame, rb_ia64_bsp());
+#else
+void ruby_init_stack(VALUE*);
+#define RUBY_INIT_STACK \
+    VALUE variable_in_this_stack_frame; \
+    ruby_init_stack(&variable_in_this_stack_frame);
+#endif
 void ruby_init _((void));
 void ruby_options _((int, char**));
 NORETURN(void ruby_run _((void)));

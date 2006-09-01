@@ -286,16 +286,42 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-AC_CACHE_CHECK([for noreturn], rb_cv_noreturn,
-[rb_cv_noreturn=x
-for mac in "x __attribute__ ((noreturn))" "__declspec(noreturn) x" x; do
+AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
+m4_ifval([$2], dnl
+  [AS_VAR_PUSHDEF([attrib],[$2])], dnl
+  [AS_VAR_PUSHDEF([attrib],[FUNC_]AS_TR_CPP($1))] dnl
+)dnl
+m4_ifval([$3], dnl
+  [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
+  [AS_VAR_PUSHDEF([rbcv],[rb_cv_func_][$1])]dnl
+)dnl
+AC_CACHE_CHECK(for [$1] function attribute, rbcv,
+[rbcv=x
+if test "${ac_c_werror_flag+set}"; then
+  rb_c_werror_flag="$ac_c_werror_flag"
+else
+  unset rb_c_werror_flag
+fi
+ac_c_werror_flag=yes
+for mac in "__attribute__ (($1)) x" "x __attribute__ (($1))" "__declspec($1) x" x; do
   AC_TRY_COMPILE(
-    [#define NORETURN(x) $mac
-NORETURN(void exit(int x));],
-    [],
-    [rb_cv_noreturn="$mac"; break])
-done])
-AC_DEFINE_UNQUOTED([NORETURN(x)], $rb_cv_noreturn)
+    [#define ]attrib[(x) $mac
+    ]attrib[(void conftest_attribute_check(void));], [],
+    [rbcv="$mac"; break])
+done
+if test "${rb_c_werror_flag+set}"; then
+  ac_c_werror_flag="$rb_c_werror_flag"
+else
+  unset ac_c_werror_flag
+fi
+])
+AC_DEFINE_UNQUOTED(attrib[(x)], $rbcv)
+AS_VAR_POPDEF([attrib])
+AS_VAR_POPDEF([rbcv])
+])
+
+RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
+RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
 
 AC_CACHE_CHECK([for RUBY_EXTERN], rb_cv_ruby_extern,
 [rb_cv_ruby_extern=no
@@ -595,6 +621,21 @@ AC_C_CHAR_UNSIGNED
 AC_C_INLINE
 AC_C_VOLATILE
 
+if test x"$target_cpu" = xia64; then
+    AC_LIBOBJ([ia64])
+    AC_CACHE_CHECK(for __libc_ia64_register_backing_store_base,
+                   rb_cv___libc_ia64_register_backing_store_base,
+    [rb_cv___libc_ia64_register_backing_store_base=no
+    AC_TRY_LINK(
+      [extern unsigned long __libc_ia64_register_backing_store_base;],
+      [unsigned long p = __libc_ia64_register_backing_store_base;
+       printf("%ld\n", p);],
+      [rb_cv___libc_ia64_register_backing_store_base=yes])])
+    if test $rb_cv___libc_ia64_register_backing_store_base = yes; then
+      AC_DEFINE(HAVE___LIBC_IA64_REGISTER_BACKING_STORE_BASE)
+    fi
+fi
+
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([
 int
@@ -827,7 +868,7 @@ if test x"$enable_pthread" = xyes; then
     fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
-    if test x"$target_cpu" = xia64 -o x"$rb_with_pthread" = xyes; then
+    if x"$rb_with_pthread" = xyes; then
 	AC_CHECK_FUNCS(getcontext setcontext)
     fi
 fi

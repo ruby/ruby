@@ -2042,6 +2042,10 @@ fix_mul(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
+#ifdef __HP_cc
+        /* avoids an optimization bug of HP aC++/ANSI C B3910B A.06.05 [Jul 25 2005] */
+        volatile
+#endif
 	long a, b, c;
 	VALUE r;
 

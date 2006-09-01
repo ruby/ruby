@@ -195,7 +195,8 @@ static int volatile freebsd_clear_carry_flag = 0;
 #    define POST_GETCONTEXT 0
 #  endif
 #  define ruby_longjmp(env, val) rb_jump_context(env, val)
-#  define ruby_setjmp(j) ((j)->status = 0, \
+#  define ruby_setjmp(just_before_setjmp, j) ((j)->status = 0, \
+     (just_before_setjmp), \
      PRE_GETCONTEXT, \
      getcontext(&(j)->context), \
      POST_GETCONTEXT, \
@@ -203,10 +204,12 @@ static int volatile freebsd_clear_carry_flag = 0;
 #else
 typedef jmp_buf rb_jmpbuf_t;
 #  if !defined(setjmp) && defined(HAVE__SETJMP)
-#    define ruby_setjmp(env) _setjmp(env)
+#    define ruby_setjmp(just_before_setjmp, env) \
+       ((just_before_setjmp), _setjmp(env))
 #    define ruby_longjmp(env,val) _longjmp(env,val)
 #  else
-#    define ruby_setjmp(env) setjmp(env)
+#    define ruby_setjmp(just_before_setjmp, env) \
+       ((just_before_setjmp), setjmp(env))
 #    define ruby_longjmp(env,val) longjmp(env,val)
 #  endif
 #endif
@@ -1027,7 +1030,7 @@ static struct tag *prot_tag;
 #define PROT_LAMBDA INT2FIX(2)	/* 5 */
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
 
-#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(prot_tag->buf))
+#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(((void)0), prot_tag->buf))
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
@@ -9680,19 +9683,6 @@ Init_Binding()
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 
-#ifdef __ia64__
-#if defined(__FreeBSD__)
-/*
- * FreeBSD/ia64 currently does not have a way for a process to get the
- * base address for the RSE backing store, so hardcode it.
- */
-#define __libc_ia64_register_backing_store_base (4ULL<<61)
-#else
-#pragma weak __libc_ia64_register_backing_store_base
-extern unsigned long __libc_ia64_register_backing_store_base;
-#endif
-#endif
-
 /* Windows SEH refers data on the stack. */
 #undef SAVE_WIN32_EXCEPTION_LIST
 #if defined _WIN32 || defined __CYGWIN__
@@ -9796,9 +9786,11 @@ struct thread {
     long   stk_max;
     VALUE *stk_ptr;
     VALUE *stk_pos;
-#ifdef __ia64__
-    VALUE *bstr_ptr;
+#ifdef __ia64
     long   bstr_len;
+    long   bstr_max;
+    VALUE *bstr_ptr;
+    VALUE *bstr_pos;
 #endif
 
     struct FRAME *frame;
@@ -10052,9 +10044,9 @@ thread_mark(th)
 #if defined(THINK_C) || defined(__human68k__)
 	rb_gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
 #endif
-#ifdef __ia64__
+#ifdef __ia64
 	if (th->bstr_ptr) {
-	    rb_gc_mark_locations(th->bstr_ptr, th->bstr_ptr+th->bstr_len);
+            rb_gc_mark_locations(th->bstr_ptr, th->bstr_ptr+th->bstr_len);
 	}
 #endif
     }
@@ -10140,7 +10132,7 @@ thread_free(th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
-#ifdef __ia64__
+#ifdef __ia64
     if (th->bstr_ptr) free(th->bstr_ptr);
     th->bstr_ptr = 0;
 #endif
@@ -10180,6 +10172,9 @@ static char *th_signm;
 #define RESTORE_EXIT		7
 
 extern VALUE *rb_gc_stack_start;
+#ifdef __ia64
+extern VALUE *rb_gc_register_stack_start;
+#endif
 
 static void
 rb_thread_save_context(th)
@@ -10201,22 +10196,19 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef __ia64__
-    {
-	ucontext_t ctx;
-	VALUE *top, *bot;
-
-	getcontext(&ctx);
-	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-#if defined(__FreeBSD__)
-	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
-#else
-	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
-#endif
-	th->bstr_len = top - bot;
-	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
-	MEMCPY(th->bstr_ptr, (VALUE*)__libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
+#ifdef __ia64
+    th->bstr_pos = rb_gc_register_stack_start;
+    len = (VALUE*)rb_ia64_bsp() - th->bstr_pos;
+    th->bstr_len = 0;
+    if (len > th->bstr_max) {
+        VALUE *ptr = realloc(th->bstr_ptr, sizeof(VALUE) * len);
+        if (!ptr) rb_memerror();
+        th->bstr_ptr = ptr;
+        th->bstr_max = len;
     }
+    th->bstr_len = len;
+    rb_ia64_flushrs();
+    MEMCPY(th->bstr_ptr, th->bstr_pos, VALUE, th->bstr_len);
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
     th->win32_exception_list = win32_get_exception_list();
@@ -10289,51 +10281,18 @@ rb_thread_switch(n)
 }
 
 #define THREAD_SAVE_CONTEXT(th) \
-    (rb_thread_save_context(th),\
-     rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp((th)->context))))
+    (rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp(rb_thread_save_context(th), (th)->context))))
 
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
-
-# if defined(_MSC_VER) && _MSC_VER >= 1300
-__declspec(noinline) static void stack_extend(rb_thread_t, int);
-# endif
-static void
-stack_extend(th, exit)
-    rb_thread_t th;
-    int exit;
-{
-    VALUE space[1024];
-
-    memset(space, 0, 1);	/* prevent array from optimization */
-    rb_thread_restore_context(th, exit);
-}
+NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int,void*)));
+NORETURN(NOINLINE(static void stack_extend(rb_thread_t, int, VALUE *)));
 
 static void
-rb_thread_restore_context(th, exit)
-    rb_thread_t th;
-    int exit;
+rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
 {
-    VALUE v;
     static rb_thread_t tmp;
     static int ex;
     static VALUE tval;
-
-    if (!th->stk_ptr) rb_bug("unsaved context");
-
-#if STACK_GROW_DIRECTION < 0
-    if (&v > th->stk_pos) stack_extend(th, exit);
-#elif STACK_GROW_DIRECTION > 0
-    if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
-#else
-    if (&v < rb_gc_stack_start) {
-	/* Stack grows downward */
-	if (&v > th->stk_pos) stack_extend(th, exit);
-    }
-    else {
-	/* Stack grows upward */
-	if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
-    }
-#endif
 
     rb_trap_immediate = 0;	/* inhibit interrupts from here */
     ruby_frame = th->frame;
@@ -10360,8 +10319,8 @@ rb_thread_restore_context(th, exit)
     ex = exit;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
-#ifdef __ia64__
-    MEMCPY((VALUE*)__libc_ia64_register_backing_store_base, tmp->bstr_ptr, VALUE, tmp->bstr_len);
+#ifdef __ia64
+    MEMCPY(tmp->bstr_pos, tmp->bstr_ptr, VALUE, tmp->bstr_len);
 #endif
 
     tval = rb_lastline_get();
@@ -10372,6 +10331,78 @@ rb_thread_restore_context(th, exit)
     tmp->last_match = tval;
 
     ruby_longjmp(tmp->context, ex);
+}
+
+#ifdef __ia64
+#define C(a) rse_##a##0, rse_##a##1, rse_##a##2, rse_##a##3, rse_##a##4
+#define E(a) rse_##a##0= rse_##a##1= rse_##a##2= rse_##a##3= rse_##a##4
+static volatile int C(a), C(b), C(c), C(d), C(e);
+static volatile int C(f), C(g), C(h), C(i), C(j);
+static volatile int C(k), C(l), C(m), C(n), C(o);
+static volatile int C(p), C(q), C(r), C(s), C(t);
+int rb_dummy_false = 0;
+NORETURN(NOINLINE(static void register_stack_extend(rb_thread_t, int, void *, VALUE *)));
+static void
+register_stack_extend(rb_thread_t th, int exit, void *vp, VALUE *curr_bsp)
+{
+    if (rb_dummy_false) {
+        /* use registers as much as possible */
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+    }
+    if (curr_bsp < th->bstr_pos+th->bstr_len) {
+        register_stack_extend(th, exit, &exit, (VALUE*)rb_ia64_bsp());
+    }
+    rb_thread_restore_context_0(th, exit, &exit);
+}
+#undef C
+#undef E
+#endif
+
+# if defined(_MSC_VER) && _MSC_VER >= 1300
+__declspec(noinline) static void stack_extend(rb_thread_t, int);
+# endif
+static void
+stack_extend(rb_thread_t th, int exit, VALUE *addr_in_prev_frame)
+{
+#define STACK_PAD_SIZE 1024
+    VALUE space[STACK_PAD_SIZE];
+
+#if STACK_GROW_DIRECTION < 0
+    if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
+#elif STACK_GROW_DIRECTION > 0
+    if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
+#else
+    if (addr_in_prev_frame < rb_gc_stack_start) {
+        /* Stack grows downward */
+        if (addr_in_prev_frame > th->stk_pos) stack_extend(th, exit, &space[0]);
+    }
+    else {
+        /* Stack grows upward */
+        if (addr_in_prev_frame < th->stk_pos + th->stk_len) stack_extend(th, exit, &space[STACK_PAD_SIZE-1]);
+    }
+#endif
+#ifdef __ia64
+    register_stack_extend(th, exit, space, (VALUE*)rb_ia64_bsp());
+#else
+    rb_thread_restore_context_0(th, exit, space);
+#endif
+}
+
+static void
+rb_thread_restore_context(th, exit)
+    rb_thread_t th;
+    int exit;
+{
+    VALUE v;
+    if (!th->stk_ptr) rb_bug("unsaved context");
+    stack_extend(th, exit, &v);
 }
 
 static void
@@ -11579,7 +11610,7 @@ rb_thread_group(thread)
     return group;
 }
 
-#ifdef __ia64__
+#ifdef __ia64
 # define IA64_INIT(x) x
 #else
 # define IA64_INIT(x)
@@ -11601,6 +11632,7 @@ rb_thread_group(thread)
     th->wait_for = 0;\
     IA64_INIT(th->bstr_ptr = 0);\
     IA64_INIT(th->bstr_len = 0);\
+    IA64_INIT(th->bstr_max = 0);\
     FD_ZERO(&th->readfds);\
     FD_ZERO(&th->writefds);\
     FD_ZERO(&th->exceptfds);\
@@ -13054,13 +13086,3 @@ rb_throw(tag, val)
     argv[1] = val;
     rb_f_throw(2, argv);
 }
-
-/* flush_register_windows must not be inlined because flushrs doesn't flush
- * current frame in register stack. */
-#ifdef __ia64__
-void flush_register_windows(void)
-{
-    __asm__ ("flushrs");
-}
-#endif
-
