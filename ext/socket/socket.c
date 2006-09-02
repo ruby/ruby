@@ -1071,7 +1071,8 @@ ruby_connect(int fd, struct sockaddr *sockaddr, int len, int socks)
     int mode;
 #if WAIT_IN_PROGRESS > 0
     int wait_in_progress = -1;
-    int sockerr, sockerrlen;
+    int sockerr;
+    socklen_t sockerrlen;
 #endif
 
 #if defined(HAVE_FCNTL)
