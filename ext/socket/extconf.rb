@@ -33,6 +33,9 @@ if /solaris/ =~ RUBY_PLATFORM and !try_compile("")
   # bug of gcc 3.0 on Solaris 8 ?
   headers << "sys/feature_tests.h"
 end
+if have_header("arpa/inet.h")
+  headers << "arpa/inet.h"
+end
 
 ipv6 = false
 default_ipv6 = /cygwin/ !~ RUBY_PLATFORM
@@ -252,7 +255,6 @@ unless getaddr_info_ok and have_func("getnameinfo", "netdb.h") and have_func("ge
   have_func("inet_ntop") or have_func("inet_ntoa")
   have_func("inet_pton") or have_func("inet_aton")
   have_func("getservbyport")
-  have_header("arpa/inet.h")
   have_header("arpa/nameser.h")
   have_header("resolv.h")
 end

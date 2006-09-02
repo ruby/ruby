@@ -1,3 +1,9 @@
+Sun Sep  3 04:40:42 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: check arpa/inet.h for ntohs.
+
+	* ext/socket/socket.c: include arpa/inet.h if available.
+
 Sun Sep  3 04:03:06 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c: define _XOPEN_SOURCE_EXTENDED on HP-UX.
