@@ -599,7 +599,7 @@ class CSV
       @rs = rs
       @dev = CSV::IOBuf.new(@io)
       @idx = 0
-      if @dev[0] == 0xef and @dev[1] == 0xbb and @dev[2] == 0xbf
+      if @dev[0, 3] == "\xef\xbb\xbf"
         @idx += 3
       end
       @close_on_terminate = false

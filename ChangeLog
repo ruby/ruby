@@ -1,3 +1,9 @@
+Sat Sep  2 12:00:32 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/csv.rb (CSV::IOReader#initialize): use String#[](pos, len)
+	  instead of String#[](idx) to check utf BOM.  follows String#[](idx)
+	  behavior change of 1.9.
+
 Fri Sep  1 22:07:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (RSTRING_EMBED_LEN_MASK): uses 5 bits to support 64bit
