@@ -15,6 +15,13 @@ Sat Sep  2 12:00:32 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	  instead of String#[](idx) to check utf BOM.  follows String#[](idx)
 	  behavior change of 1.9.
 
+Sat Sep  2 11:47:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should handle when in else clause.  a patch
+	  from Eric Hodel <drbrain at segment7.net>.  [ruby-core:08662]
+
+	* parse.y (primary): wrap with NODE_CASE.  [ruby-core:08663]
+
 Fri Sep  1 22:07:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (RSTRING_EMBED_LEN_MASK): uses 5 bits to support 64bit

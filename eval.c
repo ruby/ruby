@@ -2861,25 +2861,12 @@ rb_eval(VALUE self, NODE *n)
 	}
 	goto again;
 
-      case NODE_WHEN:
-	while (node) {
-	    if (nd_type(node) != NODE_WHEN) goto again;
-	    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node->nd_head, self,
-			    ruby_frame->this_func,
-			    ruby_frame->this_class);
-	    if (when_check(node->nd_head, Qundef, self)) {
-		node = node->nd_body;
-		goto again;
-	    }
-	    node = node->nd_next;
-	}
-	RETURN(Qnil);
-
       case NODE_CASE:
 	{
-	    VALUE val;
+	    VALUE val = Qundef;
 
-	    val = rb_eval(self, node->nd_head);
+	    if (node->nd_head)
+		val = rb_eval(self, node->nd_head);
 	    node = node->nd_body;
 	    while (node) {
 		if (nd_type(node) != NODE_WHEN) {
