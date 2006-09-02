@@ -4538,8 +4538,6 @@ str_to_id(VALUE str)
     if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
 	rb_raise(rb_eArgError, "empty symbol string");
     }
-    if (RBASIC(str)->klass == rb_cSymbol)
-	return str;
     return rb_intern2(RSTRING_PTR(str), RSTRING_LEN(str));
 }
 

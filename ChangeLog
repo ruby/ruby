@@ -1,3 +1,7 @@
+Sat Sep  2 23:59:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_to_id): a bug caused by premature optimization.
+
 Sat Sep  2 23:53:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (Init_Object): move symbol related code to string.c
