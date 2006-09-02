@@ -156,16 +156,22 @@ public
   end
 
   def encode_tag(elename, attrs = nil)
-    if !attrs or attrs.empty?
+    if attrs.nil? or attrs.empty?
       @buf << "\n#{ @indent }<#{ elename }>"
-    elsif attrs.size == 1
-      key, value = attrs.shift
-      @buf << %Q[\n#{ @indent }<#{ elename } #{ key }="#{ value }">]
+      return 
+    end
+    ary = []
+    attrs.each do |key, value|
+      ary << %Q[#{ key }="#{ value }"] unless value.nil?
+    end
+    case ary.size
+    when 0
+      @buf << "\n#{ @indent }<#{ elename }>"
+    when 1
+      @buf << %Q[\n#{ @indent }<#{ elename } #{ ary[0] }>]
     else
       @buf << "\n#{ @indent }<#{ elename } " <<
-        attrs.collect { |key, value|
-          %Q[#{ key }="#{ value }"]
-        }.join("\n#{ @indent }#{ @indentstr * 2 }") <<
+        ary.join("\n#{ @indent }#{ @indentstr * 2 }") <<
 	'>'
     end
   end

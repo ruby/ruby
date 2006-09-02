@@ -1,3 +1,9 @@
+Sat Sep  2 12:06:35 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/generator.rb (SOAP::SOAPGenerator#encode_tag): do not dump
+	  XML attribute which value is nil.  value "" and nil both were dumped
+	  as 'attr="value"'.  [ruby-dev:29395]
+
 Sat Sep  2 12:00:32 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb (CSV::IOReader#initialize): use String#[](pos, len)
