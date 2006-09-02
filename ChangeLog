@@ -1,3 +1,8 @@
+Sat Sep  2 13:23:01 2006  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (ia64.o): use the compiler driver to assemble ia64.s
+	  to use appropriate ABI.
+
 Sat Sep  2 12:06:35 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/generator.rb (SOAP::SOAPGenerator#encode_tag): do not dump

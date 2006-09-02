@@ -197,6 +197,7 @@ x68.$(OBJEXT): {$(VPATH)}x68.c
 os2.$(OBJEXT): {$(VPATH)}os2.c
 dl_os2.$(OBJEXT): {$(VPATH)}dl_os2.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
+	$(CC) $(CFLAGS) -c $<
 
 # when I use -I., there is confliction at "OpenFile" 
 # so, set . into environment varible "include"
