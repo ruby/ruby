@@ -1,3 +1,8 @@
+Sun Sep  3 01:45:17 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/acl.rb (ACLEntry#initialize): examine whether '*' is
+	  included before IPAddr.new. [ruby-dev:29406]
+
 Sat Sep  2 13:23:01 2006  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (ia64.o): use the compiler driver to assemble ia64.s

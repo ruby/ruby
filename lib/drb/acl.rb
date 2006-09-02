@@ -13,6 +13,8 @@ class ACL
     def initialize(str)
       if str == '*' or str == 'all'
 	@pat = [:all]
+      elsif str.include?('*')
+        @pat = [:name, dot_pat(str)]
       else
 	begin
 	  @pat = [:ip, IPAddr.new(str)]
