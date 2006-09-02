@@ -282,14 +282,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	id = rb_to_id(RARRAY_PTR(rest)[i]);
 	RARRAY_PTR(rest)[i] = ID2SYM(id);
     }
-    if (!NIL_P(name)) {
-	VALUE tmp = rb_check_string_type(name);
-
-	if (NIL_P(tmp)) {
-	    id = rb_to_id(name);
-	    rb_ary_unshift(rest, ID2SYM(id));
-	    name = Qnil;
-	}
+    if (!NIL_P(name) && SYMBOL_P(name)) {
+	rb_ary_unshift(rest, name);
+	name = Qnil;
     }
     st = make_struct(name, rest, klass);
     if (rb_block_given_p()) {

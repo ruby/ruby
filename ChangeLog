@@ -1,3 +1,9 @@
+Sat Sep  2 23:59:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (Init_String): undef Symbol#new.
+
+	* struct.c (rb_struct_s_def): wrong symbol detection.
+
 Sat Sep  2 23:59:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_to_id): a bug caused by premature optimization.

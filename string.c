@@ -4407,7 +4407,6 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     Symbol.new(str)      => new_sym
  *     Symbol.intern(str)   => new_sym
  *  
  *  Returns a new symbol corresponding to <i>str</i>.
@@ -4699,9 +4698,10 @@ Init_String(void)
     rb_define_variable("$-F", &rb_fs);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cString);
+    rb_undef_alloc_func(rb_cSymbol);
+    rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
     rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
-    rb_define_singleton_method(rb_cSymbol, "new", rb_sym_s_intern, 1);
 
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
