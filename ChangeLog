@@ -8,10 +8,6 @@ Sun Sep  3 04:40:42 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c: include arpa/inet.h if available.
 
-Sun Sep  3 04:03:06 2006  Tanaka Akira  <akr@fsij.org>
-
-	* ext/curses/curses.c: define _XOPEN_SOURCE_EXTENDED on HP-UX.
-
 Sun Sep  3 02:34:55 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/unix.rb (DRbUNIXSocket#close): don't get path if client mode.
