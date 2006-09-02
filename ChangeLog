@@ -1,3 +1,7 @@
+Sun Sep  3 04:03:06 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c: define _XOPEN_SOURCE_EXTENDED on HP-UX.
+
 Sat Sep  2 23:59:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (Init_String): undef Symbol#new.
