@@ -88,7 +88,7 @@ module DRb
     public
     def close
       return unless @socket
-      path = @socket.path
+      path = @socket.path if @server_mode
       @socket.close
       File.unlink(path) if @server_mode
       @socket = nil

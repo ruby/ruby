@@ -1,3 +1,8 @@
+Sun Sep  3 02:34:55 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/unix.rb (DRbUNIXSocket#close): don't get path if client mode.
+	  [ruby-dev:29417]
+
 Sun Sep  3 01:45:17 2006  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/acl.rb (ACLEntry#initialize): examine whether '*' is
