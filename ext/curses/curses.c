@@ -28,6 +28,10 @@
 # endif
 # include <curses_colr/curses.h>
 #else
+# if defined(__hpux) && !defined(_XOPEN_SOURCE_EXTENDED)
+/* HP-UX needs _XOPEN_SOURCE_EXTENDED to use getmaxy, etc. */
+#  define _XOPEN_SOURCE_EXTENDED
+# endif
 # include <curses.h>
 # if defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)
 #  if !defined(_maxx)
@@ -1255,7 +1259,6 @@ window_color_set(VALUE obj, VALUE col)
   GetWINDOW(obj, winp);
   res = wcolor_set(winp->window, NUM2INT(col), NULL);
   return (res == OK) ? Qtrue : Qfalse;
-  return Qfalse;
 }
 #endif /* USE_COLOR */
 
