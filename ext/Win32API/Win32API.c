@@ -72,8 +72,8 @@ Win32API_initialize(self, dllname, proc, import, export)
     case T_NIL:
 	break;
     case T_ARRAY:
-	ptr = RARRAY(import)->ptr;
-	for (i = 0, len = RARRAY(import)->len; i < len; i++) {
+	ptr = RARRAY_PTR(import);
+	for (i = 0, len = RARRAY_LEN(import); i < len; i++) {
 	    SafeStringValue(ptr[i]);
 	    switch (*(char *)RSTRING_PTR(ptr[i])) {
 	    case 'N': case 'n': case 'L': case 'l':
@@ -107,8 +107,8 @@ Win32API_initialize(self, dllname, proc, import, export)
         break;
     }
 
-    if (16 < RARRAY(a_import)->len) {
-	rb_raise(rb_eRuntimeError, "too many parameters: %d\n", RARRAY(a_import)->len);
+    if (16 < RARRAY_LEN(a_import)) {
+	rb_raise(rb_eRuntimeError, "too many parameters: %d\n", RARRAY_LEN(a_import));
     }
 
     rb_iv_set(self, "__import__", a_import);
@@ -159,7 +159,7 @@ Win32API_Call(argc, argv, obj)
     VALUE obj_export = rb_iv_get(obj, "__export__");
     FARPROC ApiFunction = (FARPROC)NUM2ULONG(obj_proc);
     int items = rb_scan_args(argc, argv, "0*", &args);
-    int nimport = RARRAY(obj_import)->len;
+    int nimport = RARRAY_LEN(obj_import);
 
 
     if (items != nimport)

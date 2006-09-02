@@ -1238,11 +1238,11 @@ error_print(void)
 	else
 	    warn_printf("%d", ruby_sourceline);
     }
-    else if (RARRAY(errat)->len == 0) {
+    else if (RARRAY_LEN(errat) == 0) {
 	error_pos();
     }
     else {
-	VALUE mesg = RARRAY(errat)->ptr[0];
+	VALUE mesg = RARRAY_PTR(errat)[0];
 
 	if (NIL_P(mesg)) error_pos();
 	else {
@@ -1298,21 +1298,19 @@ error_print(void)
 
     if (!NIL_P(errat)) {
 	long i;
-	struct RArray *ep = RARRAY(errat);
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
 #define TRACE_TAIL 5
 
-	ep = RARRAY(errat);
-	for (i=1; i<ep->len; i++) {
-	    if (TYPE(ep->ptr[i]) == T_STRING) {
-		warn_printf("\tfrom %s\n", RSTRING_PTR(ep->ptr[i]));
+	for (i=1; i<RARRAY_LEN(errat); i++) {
+	    if (TYPE(RARRAY_PTR(errat)[i]) == T_STRING) {
+		warn_printf("\tfrom %s\n", RSTRING_PTR(RARRAY_PTR(errat)[i]));
 	    }
-	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
+	    if (i == TRACE_HEAD && RARRAY_LEN(errat) > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
-			ep->len - TRACE_HEAD - TRACE_TAIL);
-		i = ep->len - TRACE_TAIL;
+			RARRAY_LEN(errat) - TRACE_HEAD - TRACE_TAIL);
+		i = RARRAY_LEN(errat) - TRACE_TAIL;
 	    }
 	}
     }
@@ -1793,7 +1791,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	ruby_safe_level = level;
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_funcall2(cmd, rb_intern("yield"),
-			      RARRAY(arg)->len, RARRAY(arg)->ptr);
+			      RARRAY_LEN(arg), RARRAY_PTR(arg));
 	}
 	ruby_safe_level = safe;
 	POP_TAG();
@@ -1889,7 +1887,7 @@ rb_mod_nesting(void)
 	if (!NIL_P(cbase->nd_clss)) rb_ary_push(ary, cbase->nd_clss);
 	cbase = cbase->nd_next;
     }
-    if (ruby_wrapper && RARRAY(ary)->len == 0) {
+    if (ruby_wrapper && RARRAY_LEN(ary) == 0) {
 	rb_ary_push(ary, ruby_wrapper);
     }
     return ary;
@@ -2185,9 +2183,9 @@ copy_node_scope(NODE *node, NODE *rval)
 	VALUE args = rb_eval(self,n);\
 	if (TYPE(args) != T_ARRAY)\
 	    args = rb_ary_to_ary(args);\
-	argc = RARRAY(args)->len;\
+	argc = RARRAY_LEN(args);\
 	argv = TMP_ALLOC(argc+extra);\
-	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
+	MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);\
     }\
     if (bpass) {\
         volatile VALUE save_block = rb_eval(self, bpass->nd_body); \
@@ -2201,11 +2199,11 @@ copy_node_scope(NODE *node, NODE *rval)
     argc = ruby_frame->argc;\
     if (argc && DMETHOD_P()) {\
 	if (TYPE(RBASIC(ruby_scope)->klass) != T_ARRAY ||\
-	    RARRAY(RBASIC(ruby_scope)->klass)->len != argc) {\
+	    RARRAY_LEN(RBASIC(ruby_scope)->klass) != argc) {\
 	    rb_raise(rb_eRuntimeError, \
 		     "super: specify arguments explicitly");\
 	}\
-	argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;\
+	argv = RARRAY_PTR(RBASIC(ruby_scope)->klass);\
     }\
     else {\
 	argv = ruby_scope->local_vars + 2;\
@@ -2713,8 +2711,8 @@ when_check(NODE *tag, VALUE val, VALUE self)
 	break;
       case NODE_SPLAT:
 	elm = svalue_to_avalue(rb_eval(self, tag->nd_head));
-	for (i=0; i<RARRAY(elm)->len; i++) {
-	    if (when_cond(val, RARRAY(elm)->ptr[i])) {
+	for (i=0; i<RARRAY_LEN(elm); i++) {
+	    if (when_cond(val, RARRAY_PTR(elm)[i])) {
 		return Qtrue;
 	    }
 	}
@@ -3624,8 +3622,7 @@ rb_eval(VALUE self, NODE *n)
 	    i = node->nd_alen;
 	    ary = rb_ary_new2(i);
 	    for (i=0;node;node=node->nd_next) {
-		RARRAY(ary)->ptr[i++] = rb_eval(self, node->nd_head);
-		RARRAY(ary)->len = i;
+		rb_ary_push(ary, rb_eval(self, node->nd_head));
 	    }
 
 	    result = ary;
@@ -3640,8 +3637,7 @@ rb_eval(VALUE self, NODE *n)
 	    i = node->nd_alen;
 	    val = rb_ary_new2(i);
 	    for (i=0;node;node=node->nd_next) {
-		RARRAY(val)->ptr[i++] = rb_eval(self, node->nd_head);
-		RARRAY(val)->len = i;
+		rb_ary_push(val, rb_eval(self, node->nd_head));
 	    }
 
 	    result = val;
@@ -4746,16 +4742,16 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		    if (TYPE(val) != T_ARRAY) {
 			rb_raise(rb_eArgError, "wrong number of arguments (1 for 0)");
 		    }
-		    else if (RARRAY(val)->len != 0) {
+		    else if (RARRAY_LEN(val) != 0) {
 			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
-				 RARRAY(val)->len);
+				 RARRAY_LEN(val));
 		    }
 		}
 	    }
 	    else if (var == (NODE*)2) {
-		if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
+		if (TYPE(val) == T_ARRAY && RARRAY_LEN(val) != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
-			     RARRAY(val)->len);
+			     RARRAY_LEN(val));
 		}
 	    }
 	    else if (!bvar && nd_type(var) == NODE_BLOCK_PASS) {
@@ -4765,7 +4761,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	    }
 	    else if (nd_type(var) == NODE_ARGS) {
 		if (!ary_args) val = svalue_to_avalue(val);
-		formal_assign(self, var, RARRAY(val)->len, RARRAY(val)->ptr, 0);
+		formal_assign(self, var, RARRAY_LEN(val), RARRAY_PTR(val), 0);
 	    }
 	    else if (nd_type(var) == NODE_BLOCK) {
 		if (var->nd_next) {
@@ -4782,16 +4778,16 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		    if (val == Qundef) {
 			rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
 		    }
-		    if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 1) {
+		    if (TYPE(val) == T_ARRAY && RARRAY_LEN(val) != 1) {
 			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 1)",
-				 RARRAY(val)->len);
+				 RARRAY_LEN(val));
 		    }
 		}
 		if (ary_args) {
-		    if (RARRAY(val)->len == 0)
+		    if (RARRAY_LEN(val) == 0)
 			val = Qnil;
 		    else
-			val = RARRAY(val)->ptr[0];
+			val = RARRAY_PTR(val)[0];
 		}
 		assign(self, var, val, lambda);
 	    }
@@ -4811,11 +4807,11 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (lambda && ary_args && RARRAY(val)->len != 0 &&
+    else if (lambda && ary_args && RARRAY_LEN(val) != 0 &&
 	     (!node || nd_type(node) != NODE_IFUNC ||
 	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
-		 RARRAY(val)->len);
+		 RARRAY_LEN(val));
     }
     if (!node) {
 	state = 0;
@@ -4939,9 +4935,8 @@ rb_yield_values(int n, ...)
     val = rb_ary_new2(n);
     va_start(args, n);
     for (i=0; i<n; i++) {
-	RARRAY(val)->ptr[i] = va_arg(args, VALUE);
+	rb_ary_push(val, va_arg(args, VALUE));
     }
-    RARRAY(val)->len = n;
     va_end(args);
     return rb_yield_0(val, 0, 0, 0);
 }
@@ -4989,8 +4984,8 @@ massign(VALUE self, NODE *node, VALUE val, int pcall)
 	    len = (val == Qundef) ? 0 : 1;
 	}
 	else {
-	    argv = RARRAY(tmp)->ptr;
-	    len = RARRAY(tmp)->len;
+	    argv = RARRAY_PTR(tmp);
+	    len = RARRAY_LEN(tmp);
 	}
     }
     list = node->nd_head;
@@ -5112,7 +5107,7 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 		ruby_current_node = lhs;
 		SET_CURRENT_SOURCE();
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
-			RARRAY(args)->len, RARRAY(args)->ptr, 0, scope,0);
+			RARRAY_LEN(args), RARRAY_PTR(args), 0, scope,0);
 	    }
 	}
 	break;
@@ -5127,18 +5122,18 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 		assign(self, lhs->nd_args, val, 0);
 	    }
 	    cnt = lhs->nd_head->nd_alen;
-	    if (RARRAY(val)->len < cnt) {
+	    if (RARRAY_LEN(val) < cnt) {
 		if (pcall) {
 		    rb_raise(rb_eArgError, "wrong number of arguments");
 		}
 		else {
-		    while (RARRAY(val)->len < cnt) {
+		    while (RARRAY_LEN(val) < cnt) {
 			v = v->nd_next;
 			cnt--;
 		    }
 		}
 	    }
-	    p = RARRAY(val)->ptr + RARRAY(val)->len - cnt;
+	    p = RARRAY_PTR(val) + RARRAY_LEN(val) - cnt;
 	    while (cnt--) {
 		assign(self, v->nd_head, *p++, 0);
 		v = v->nd_next;
@@ -5505,10 +5500,10 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
 
 	argc = -argc-1;
 	tmp = svalue_to_avalue(argv[argc]);
-	nargv = ALLOCA_N(VALUE, argc + RARRAY(tmp)->len + 1);
+	nargv = ALLOCA_N(VALUE, argc + RARRAY_LEN(tmp) + 1);
 	MEMCPY(nargv+1, argv, VALUE, argc);
-	MEMCPY(nargv+1+argc, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
-	argc += RARRAY(tmp)->len;
+	MEMCPY(nargv+1+argc, RARRAY_PTR(tmp), VALUE, RARRAY_LEN(tmp));
+	argc += RARRAY_LEN(tmp);
 
     }
     else {
@@ -5614,7 +5609,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	rb_bug("no argument-node");
     }
 
-    i = node->nd_frml ? RARRAY(node->nd_frml)->len : 0;
+    i = node->nd_frml ? RARRAY_LEN(node->nd_frml) : 0;
     if (i > argc) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
     }
@@ -5641,7 +5636,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	VALUE a = node->nd_frml;
 
 	for (j=0; j<i; j++) {
-	    dvar_asgn_curr(SYM2ID(RARRAY(a)->ptr[j]), argv[j]);
+	    dvar_asgn_curr(SYM2ID(RARRAY_PTR(a)[j]), argv[j]);
 	}
     }
     argv += i; argc -= i;
@@ -5722,11 +5717,11 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 
 	argc %= 256;
 	tmp = svalue_to_avalue(argv[argc]);
-	nargv = TMP_ALLOC(argc + RARRAY(tmp)->len + n);
+	nargv = TMP_ALLOC(argc + RARRAY_LEN(tmp) + n);
 	MEMCPY(nargv, argv, VALUE, argc);
-	MEMCPY(nargv+argc, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
-	MEMCPY(nargv + argc + RARRAY(tmp)->len, argv + argc + 1, VALUE, n);
-	argc += RARRAY(tmp)->len + n;
+	MEMCPY(nargv+argc, RARRAY_PTR(tmp), VALUE, RARRAY_LEN(tmp));
+	MEMCPY(nargv + argc + RARRAY_LEN(tmp), argv + argc + 1, VALUE, n);
+	argc += RARRAY_LEN(tmp) + n;
 	argv = nargv;
     }
     switch (nd_type(body)) {
@@ -5988,9 +5983,9 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     int argc;
     VALUE *argv;
 
-    argc = RARRAY(args)->len; /* Assigns LONG, but argc is INT */
+    argc = RARRAY_LEN(args); /* Assigns LONG, but argc is INT */
     argv = ALLOCA_N(VALUE, argc);
-    MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);
+    MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0, CALLING_FUNCALL, 0);
 }
 
@@ -6217,8 +6212,8 @@ rb_backtrace(void)
     VALUE ary;
 
     ary = backtrace(-1);
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	printf("\tfrom %s\n", RSTRING_PTR(RARRAY(ary)->ptr[i]));
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	printf("\tfrom %s\n", RSTRING_PTR(RARRAY_PTR(ary)[i]));
     }
 }
 
@@ -6355,9 +6350,9 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
 			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
+			rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
 		    }
-		    RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
+		    RARRAY_PTR(errat)[0] = RARRAY_PTR(backtrace(-2))[0];
 		}
 	    }
 	    rb_exc_raise(ruby_errinfo);
@@ -6841,8 +6836,8 @@ rb_feature_p(const char *feature, const char *ext, int rb)
 	len = strlen(feature);
 	elen = 0;
     }
-    for (i = 0; i < RARRAY(rb_features)->len; ++i) {
-	v = RARRAY(rb_features)->ptr[i];
+    for (i = 0; i < RARRAY_LEN(rb_features); ++i) {
+	v = RARRAY_PTR(rb_features)[i];
 	f = StringValuePtr(v);
 	if (strncmp(f, feature, len) != 0) continue;
 	if (!*(e = f + len)) {
@@ -8465,7 +8460,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.this_class = klass;
-    _block.frame.argc = call ? RARRAY(args)->len : 1;
+    _block.frame.argc = call ? RARRAY_LEN(args) : 1;
     _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
         NEWOBJ(scope, struct SCOPE);
@@ -9248,7 +9243,7 @@ rb_node_arity(NODE *body)
 	if (nd_type(body) == NODE_BLOCK)
 	    body = body->nd_head;
 	if (!body) return 0;
-	n = body->nd_frml ? RARRAY(body->nd_frml)->len : 0;
+	n = body->nd_frml ? RARRAY_LEN(body->nd_frml) : 0;
 	if (body->nd_opt)
 	    return -n-1;
 	if (body->nd_rest) {
@@ -9399,7 +9394,7 @@ bmcall(VALUE args, VALUE method)
     VALUE ret;
 
     a = svalue_to_avalue(args);
-    ret = rb_method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
+    ret = rb_method_call(RARRAY_LEN(a), RARRAY_PTR(a), method);
     a = Qnil; /* prevent tail call */
     return ret;
 }
@@ -11115,7 +11110,7 @@ rb_thread_join(rb_thread_t th, double limit)
 	VALUE errat = make_backtrace();
 	VALUE errinfo = rb_obj_dup(th->errinfo);
 
-	if (TYPE(oldbt) == T_ARRAY && RARRAY(oldbt)->len > 0) {
+	if (TYPE(oldbt) == T_ARRAY && RARRAY_LEN(oldbt) > 0) {
 	    rb_ary_unshift(errat, rb_ary_entry(oldbt, 0));
 	}
 	set_backtrace(errinfo, errat);
@@ -12010,7 +12005,7 @@ rb_thread_start_1(void)
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    new_thread.thread = 0;
-	    th->result = rb_proc_yield(RARRAY(arg)->len, RARRAY(arg)->ptr, proc);
+	    th->result = rb_proc_yield(RARRAY_LEN(arg), RARRAY_PTR(arg), proc);
 	}
 	th = th_save;
     }

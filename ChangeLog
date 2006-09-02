@@ -1,3 +1,11 @@
+Sat Sep  2 23:37:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (struct RArray): embed small arrays.
+	  (RARRAY_LEN): defined for accessing array members.
+	  (RARRAY_PTR): ditto.
+
+	* array.c: use RARRAY_LEN and RARRAY_PTR.
+	
 Sat Sep  2 13:23:01 2006  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (ia64.o): use the compiler driver to assemble ia64.s

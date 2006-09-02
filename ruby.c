@@ -390,8 +390,8 @@ process_sflag(void)
 	long n;
 	VALUE *args;
 
-	n = RARRAY(rb_argv)->len;
-	args = RARRAY(rb_argv)->ptr;
+	n = RARRAY_LEN(rb_argv);
+	args = RARRAY_PTR(rb_argv);
 	while (n > 0) {
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
@@ -434,7 +434,7 @@ process_sflag(void)
 	    }
 	    rb_gv_set(s, v);
 	}
-	n = RARRAY(rb_argv)->len - n;
+	n = RARRAY_LEN(rb_argv) - n;
 	while (n--) {
 	    rb_ary_shift(rb_argv);
 	}

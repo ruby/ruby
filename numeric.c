@@ -132,15 +132,15 @@ do_coerce(VALUE *x, VALUE *y, int err)
     a[0] = *x; a[1] = *y;
 
     ary = rb_rescue(coerce_body, (VALUE)a, err?coerce_rescue:0, (VALUE)a);
-    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
+    if (TYPE(ary) != T_ARRAY || RARRAY_LEN(ary) != 2) {
 	if (err) {
 	    rb_raise(rb_eTypeError, "coerce must return [x, y]");
 	}
 	return Qfalse;
     }
 
-    *x = RARRAY(ary)->ptr[0];
-    *y = RARRAY(ary)->ptr[1];
+    *x = RARRAY_PTR(ary)[0];
+    *y = RARRAY_PTR(ary)[1];
     return Qtrue;
 }
 

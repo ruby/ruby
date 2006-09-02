@@ -226,7 +226,7 @@ rb_dlcfunc_inspect(VALUE self)
 # define DECL_FUNC_CDECL(f,ret,args)  ret (FUNC_CDECL(*f))(args)
 # define DECL_FUNC_STDCALL(f,ret,args)  ret (FUNC_STDCALL(*f))(args)
 
-#define CALL_CASE switch( RARRAY(ary)->len ){ \
+#define CALL_CASE switch( RARRAY_LEN(ary) ){ \
   CASE(0); break; \
   CASE(1); break; CASE(2); break; CASE(3); break; CASE(4); break; CASE(5); break; \
   CASE(6); break; CASE(7); break; CASE(8); break; CASE(9); break; CASE(10);break; \
@@ -256,11 +256,11 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	return Qnil;
     }
     
-    for( i = 0; i < RARRAY(ary)->len; i++ ){
+    for( i = 0; i < RARRAY_LEN(ary); i++ ){
 	if( i >= DLSTACK_SIZE ){
 	    rb_raise(rb_eDLError, "too many arguments (stack overflow)");
 	}
-	stack[i] = NUM2LONG(RARRAY(ary)->ptr[i]);
+	stack[i] = NUM2LONG(RARRAY_PTR(ary)[i]);
     }
     
     /* calltype == CFUNC_CDECL */

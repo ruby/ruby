@@ -350,7 +350,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	    unsigned int i;
 	    rescue = iconv_fail(error, Qnil, Qnil, env, 0);
 	    if (TYPE(rescue) == T_ARRAY) {
-		str = RARRAY(rescue)->len > 0 ? RARRAY(rescue)->ptr[0] : Qnil;
+		str = RARRAY_LEN(rescue) > 0 ? RARRAY_PTR(rescue)[0] : Qnil;
 	    }
 	    if (FIXNUM_P(str) && (i = FIX2INT(str)) <= 0xff) {
 		char c = i;
@@ -434,9 +434,9 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	    str = rb_str_derive(str, inptr, inlen);
 	    rescue = iconv_fail(error, ret, str, env, errmsg);
 	    if (TYPE(rescue) == T_ARRAY) {
-		if ((len = RARRAY(rescue)->len) > 0)
-		    rb_str_concat(ret, RARRAY(rescue)->ptr[0]);
-		if (len > 1 && !NIL_P(str = RARRAY(rescue)->ptr[1])) {
+		if ((len = RARRAY_LEN(rescue)) > 0)
+		    rb_str_concat(ret, RARRAY_PTR(rescue)[0]);
+		if (len > 1 && !NIL_P(str = RARRAY_PTR(rescue)[1])) {
 		    StringValue(str);
 		    inlen = length = RSTRING_LEN(str);
 		    instart = inptr = RSTRING_PTR(str);

@@ -3163,10 +3163,10 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
-	VALUE *argv = ALLOCA_N(VALUE, RARRAY(tmp)->len);
+	VALUE *argv = ALLOCA_N(VALUE, RARRAY_LEN(tmp));
 
-	MEMCPY(argv, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
-	port = pipe_open(RARRAY(tmp)->len, argv, mode);
+	MEMCPY(argv, RARRAY_PTR(tmp), VALUE, RARRAY_LEN(tmp));
+	port = pipe_open(RARRAY_LEN(tmp), argv, mode);
 	pname = tmp;
     }
     else {
@@ -3784,8 +3784,8 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
     VALUE tmp;
     long i;
 
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	tmp = RARRAY(ary)->ptr[i];
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	tmp = RARRAY_PTR(ary)[i];
 	if (recur) {
 	    tmp = rb_str_new2("[...]");
 	}
@@ -4233,7 +4233,7 @@ next_argv(void)
     }
 
     if (init_p == 0) {
-	if (RARRAY(rb_argv)->len > 0) {
+	if (RARRAY_LEN(rb_argv) > 0) {
 	    next_p = 1;
 	}
 	else {
@@ -4246,7 +4246,7 @@ next_argv(void)
     if (next_p == 1) {
 	next_p = 0;
       retry:
-	if (RARRAY(rb_argv)->len > 0) {
+	if (RARRAY_LEN(rb_argv) > 0) {
 	    filename = rb_ary_shift(rb_argv);
 	    fn = StringValuePtr(filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
@@ -4549,8 +4549,8 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 
     if (!NIL_P(read)) {
 	Check_Type(read, T_ARRAY);
-	for (i=0; i<RARRAY(read)->len; i++) {
-	    GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
+	for (i=0; i<RARRAY_LEN(read); i++) {
+	    GetOpenFile(rb_io_get_io(RARRAY_PTR(read)[i]), fptr);
 	    rb_fd_set(fptr->fd, &fds[0]);
 	    if (READ_DATA_PENDING(fptr)) { /* check for buffered data */
 		pending++;
@@ -4569,8 +4569,8 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 
     if (!NIL_P(write)) {
 	Check_Type(write, T_ARRAY);
-	for (i=0; i<RARRAY(write)->len; i++) {
-	    GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
+	for (i=0; i<RARRAY_LEN(write); i++) {
+	    GetOpenFile(rb_io_get_io(RARRAY_PTR(write)[i]), fptr);
 	    rb_fd_set(fptr->fd, &fds[1]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
@@ -4581,8 +4581,8 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 
     if (!NIL_P(except)) {
 	Check_Type(except, T_ARRAY);
-	for (i=0; i<RARRAY(except)->len; i++) {
-	    GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
+	for (i=0; i<RARRAY_LEN(except); i++) {
+	    GetOpenFile(rb_io_get_io(RARRAY_PTR(except)[i]), fptr);
 	    rb_fd_set(fptr->fd, &fds[2]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
@@ -4607,9 +4607,9 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 
     if (interrupt_flag == 0) {
 	if (rp) {
-	    list = RARRAY(res)->ptr[0];
-	    for (i=0; i< RARRAY(read)->len; i++) {
-		GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
+	    list = RARRAY_PTR(res)[0];
+	    for (i=0; i< RARRAY_LEN(read); i++) {
+		GetOpenFile(rb_io_get_io(RARRAY_PTR(read)[i]), fptr);
 		if (rb_fd_isset(fptr->fd, &fds[0]) ||
 		    rb_fd_isset(fptr->fd, &fds[3])) {
 		    rb_ary_push(list, rb_ary_entry(read, i));
@@ -4618,9 +4618,9 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	}
 
 	if (wp) {
-	    list = RARRAY(res)->ptr[1];
-	    for (i=0; i< RARRAY(write)->len; i++) {
-		GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
+	    list = RARRAY_PTR(res)[1];
+	    for (i=0; i< RARRAY_LEN(write); i++) {
+		GetOpenFile(rb_io_get_io(RARRAY_PTR(write)[i]), fptr);
 		if (rb_fd_isset(fptr->fd, &fds[1])) {
 		    rb_ary_push(list, rb_ary_entry(write, i));
 		}
@@ -4628,9 +4628,9 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	}
 
 	if (ep) {
-	    list = RARRAY(res)->ptr[2];
-	    for (i=0; i< RARRAY(except)->len; i++) {
-		GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
+	    list = RARRAY_PTR(res)[2];
+	    for (i=0; i< RARRAY_LEN(except); i++) {
+		GetOpenFile(rb_io_get_io(RARRAY_PTR(except)[i]), fptr);
 		if (rb_fd_isset(fptr->fd, &fds[2])) {
 		    rb_ary_push(list, rb_ary_entry(except, i));
 		}
@@ -5328,7 +5328,7 @@ argf_readpartial(int argc, VALUE *argv)
         }
         argf_close(current_file);
         next_p = 1;
-        if (RARRAY(rb_argv)->len == 0)
+        if (RARRAY_LEN(rb_argv) == 0)
             rb_eof_error();
         if (NIL_P(str))
             str = rb_str_new(NULL, 0);

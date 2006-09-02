@@ -926,12 +926,12 @@ gc_mark_children(VALUE ptr, int lev)
 
       case T_ARRAY:
 	if (FL_TEST(obj, ELTS_SHARED)) {
-	    ptr = obj->as.array.aux.shared;
+	    ptr = obj->as.array.as.heap.aux.shared;
 	    goto again;
 	}
 	else {
-	    long i, len = obj->as.array.len;
-	    VALUE *ptr = obj->as.array.ptr;
+	    long i, len = RARRAY_LEN(obj);
+	    VALUE *ptr = RARRAY_PTR(obj);
 
 	    for (i=0; i < len; i++) {
 		gc_mark(*ptr++, lev);
@@ -945,9 +945,8 @@ gc_mark_children(VALUE ptr, int lev)
 	goto again;
 
       case T_STRING:
-#define STR_NOEMBED FL_USER1 /* copied from string.c */
 #define STR_ASSOC FL_USER3   /* copied from string.c */
-	if (FL_TEST(obj, STR_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
+	if (FL_TEST(obj, RSTRING_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
 	    ptr = obj->as.string.as.heap.aux.shared;
 	    goto again;
 	}
@@ -1175,14 +1174,15 @@ obj_free(VALUE obj)
 	}
 	break;
       case T_STRING:
-	if (FL_TEST(obj, STR_NOEMBED) &&
+	if (FL_TEST(obj, RSTRING_NOEMBED) &&
 	    RANY(obj)->as.string.as.heap.ptr && !FL_TEST(obj, ELTS_SHARED)) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.string.as.heap.ptr));
 	}
 	break;
       case T_ARRAY:
-	if (RANY(obj)->as.array.ptr && !FL_TEST(obj, ELTS_SHARED)) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.array.ptr));
+	if (FL_TEST(obj, RARRAY_NOEMBED) &&
+	    RANY(obj)->as.array.as.heap.ptr && !FL_TEST(obj, ELTS_SHARED)) {
+	    RUBY_CRITICAL(free(RANY(obj)->as.array.as.heap.ptr));
 	}
 	break;
       case T_HASH:
@@ -1833,17 +1833,17 @@ run_final(VALUE obj)
     rb_thread_critical = Qtrue;
     args[1] = 0;
     args[2] = (VALUE)ruby_safe_level;
-    for (i=0; i<RARRAY(finalizers)->len; i++) {
-	args[0] = RARRAY(finalizers)->ptr[i];
+    for (i=0; i<RARRAY_LEN(finalizers); i++) {
+	args[0] = RARRAY_PTR(finalizers)[i];
 	if (!args[1]) args[1] = rb_ary_new3(1, objid);
 	rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
-	for (i=0; i<RARRAY(table)->len; i++) {
-	    VALUE final = RARRAY(table)->ptr[i];
-	    args[0] = RARRAY(final)->ptr[1];
+	for (i=0; i<RARRAY_LEN(table); i++) {
+	    VALUE final = RARRAY_PTR(table)[i];
+	    args[0] = RARRAY_PTR(final)[1];
 	    if (!args[1]) args[1] = rb_ary_new3(1, objid);
-	    args[2] = FIX2INT(RARRAY(final)->ptr[0]);
+	    args[2] = FIX2INT(RARRAY_PTR(final)[0]);
 	    rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
 	}
     }

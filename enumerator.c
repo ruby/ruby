@@ -122,7 +122,7 @@ each_slice_i(VALUE val, VALUE *memo)
 
     rb_ary_push(ary, val);
 
-    if (RARRAY(ary)->len == size) {
+    if (RARRAY_LEN(ary) == size) {
 	rb_yield(ary);
 	memo[0] = rb_ary_new2(size);
     }
@@ -159,7 +159,7 @@ enum_each_slice(VALUE obj, VALUE n)
     rb_block_call(obj, rb_intern("each"), 0, 0, each_slice_i, (VALUE)args);
 
     ary = args[0];
-    if (RARRAY(ary)->len > 0) rb_yield(ary);
+    if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
     return Qnil;
 }
@@ -183,11 +183,11 @@ each_cons_i(VALUE val, VALUE *memo)
     VALUE ary = memo[0];
     long size = (long)memo[1];
 
-    if (RARRAY(ary)->len == size) {
+    if (RARRAY_LEN(ary) == size) {
 	rb_ary_shift(ary);
     }
     rb_ary_push(ary, val);
-    if (RARRAY(ary)->len == size) {
+    if (RARRAY_LEN(ary) == size) {
 	rb_yield(rb_ary_dup(ary));
     }
     return Qnil;
@@ -321,8 +321,8 @@ enumerator_each(VALUE obj)
     if (!rb_block_given_p()) return obj;
     e = enumerator_ptr(obj);
     if (e->args) {
-	argc = RARRAY(e->args)->len;
-	argv = RARRAY(e->args)->ptr;
+	argc = RARRAY_LEN(e->args);
+	argv = RARRAY_PTR(e->args);
     }
     return rb_block_call(e->method, rb_intern("call"), argc, argv, e->iter, (VALUE)e);
 }
@@ -352,8 +352,8 @@ enumerator_with_index(VALUE obj)
     VALUE *argv = 0;
 
     if (e->args) {
-	argc = RARRAY(e->args)->len;
-	argv = RARRAY(e->args)->ptr;
+	argc = RARRAY_LEN(e->args);
+	argv = RARRAY_PTR(e->args);
     }
     return rb_block_call(e->method, rb_intern("call"), argc, argv,
 			 enumerator_with_index_i, (VALUE)&memo);

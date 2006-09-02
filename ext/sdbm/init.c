@@ -323,8 +323,8 @@ fsdbm_delete_if(VALUE obj)
 	GetDBM2(obj, dbmp, dbm);
     }
 
-    for (i = 0; i < RARRAY(ary)->len; i++) {
-	keystr = RARRAY(ary)->ptr[i];
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	keystr = RARRAY_PTR(ary)[i];
 	StringValue(keystr);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = RSTRING_LEN(keystr);
@@ -333,7 +333,7 @@ fsdbm_delete_if(VALUE obj)
 	}
     }
     if (status) rb_jump_tag(status);
-    if (n > 0) dbmp->di_size = n - RARRAY(ary)->len;
+    if (n > 0) dbmp->di_size = n - RARRAY_LEN(ary);
 
     return obj;
 }
@@ -416,10 +416,10 @@ static VALUE
 update_i(VALUE pair, VALUE dbm)
 {
     Check_Type(pair, T_ARRAY);
-    if (RARRAY(pair)->len < 2) {
+    if (RARRAY_LEN(pair) < 2) {
 	rb_raise(rb_eArgError, "pair must be [key, value]");
     }
-    fsdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
+    fsdbm_store(dbm, RARRAY_PTR(pair)[0], RARRAY_PTR(pair)[1]);
     return Qnil;
 }
 

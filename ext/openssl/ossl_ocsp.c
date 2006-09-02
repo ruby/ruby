@@ -461,8 +461,8 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     if(!NIL_P(ext)){
 	/* All ary's members should be X509Extension */
 	Check_Type(ext, T_ARRAY);
-	for (i = 0; i < RARRAY(ext)->len; i++)
-	    OSSL_Check_Kind(RARRAY(ext)->ptr[i], cX509Ext);
+	for (i = 0; i < RARRAY_LEN(ext); i++)
+	    OSSL_Check_Kind(RARRAY_PTR(ext)[i], cX509Ext);
     }
 
     error = 0;
@@ -490,8 +490,8 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 	X509_EXTENSION *x509ext;
 	sk_X509_EXTENSION_pop_free(single->singleExtensions, X509_EXTENSION_free);
 	single->singleExtensions = NULL;
-	for(i = 0; i < RARRAY(ext)->len; i++){
-	    x509ext = DupX509ExtPtr(RARRAY(ext)->ptr[i]);
+	for(i = 0; i < RARRAY_LEN(ext); i++){
+	    x509ext = DupX509ExtPtr(RARRAY_PTR(ext)[i]);
 	    if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){
 		X509_EXTENSION_free(x509ext);
 		error = 1;

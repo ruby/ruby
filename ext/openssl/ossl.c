@@ -59,7 +59,7 @@ ossl_x509_ary2sk0(VALUE ary)
     sk = sk_X509_new_null();
     if (!sk) ossl_raise(eOSSLError, NULL); 
 
-    for (i = 0; i < RARRAY(ary)->len; i++) {
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
         val = rb_ary_entry(ary, i);
         if (!rb_obj_is_kind_of(val, cX509Cert)) {
             sk_X509_pop_free(sk, X509_free);

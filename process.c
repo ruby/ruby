@@ -1167,11 +1167,11 @@ rb_check_argv(int argc, VALUE *argv)
     prog = 0;
     tmp = rb_check_array_type(argv[0]);
     if (!NIL_P(tmp)) {
-	if (RARRAY(tmp)->len != 2) {
+	if (RARRAY_LEN(tmp) != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
 	}
-	prog = RARRAY(tmp)->ptr[0];
-	argv[0] = RARRAY(tmp)->ptr[1];
+	prog = RARRAY_PTR(tmp)[0];
+	argv[0] = RARRAY_PTR(tmp)[1];
 	SafeStringValue(prog);
     }
     for (i = 0; i < argc; i++) {
@@ -2647,14 +2647,14 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     Check_Type(ary, T_ARRAY);
 
-    ngroups = RARRAY(ary)->len;
+    ngroups = RARRAY_LEN(ary);
     if (ngroups > maxgroups)
 	rb_raise(rb_eArgError, "too many groups, %lu max", (unsigned long)maxgroups);
 
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
-    for (i = 0; i < ngroups && i < RARRAY(ary)->len; i++) {
-	VALUE g = RARRAY(ary)->ptr[i];
+    for (i = 0; i < ngroups && i < RARRAY_LEN(ary); i++) {
+	VALUE g = RARRAY_PTR(ary)[i];
 
 	if (FIXNUM_P(g)) {
 	    groups[i] = FIX2INT(g);

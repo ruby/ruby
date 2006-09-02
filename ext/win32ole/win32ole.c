@@ -863,7 +863,7 @@ ole_val2variant(VALUE val, VARIANT *var)
         val1 = val;
         i = 0;
         while(TYPE(val1) == T_ARRAY) {
-            psab[i].cElements = RARRAY(val1)->len;
+            psab[i].cElements = RARRAY_LEN(val1);
             psab[i].lLbound = 0;
             pub[i] = psab[i].cElements;
             pid[i] = 0;
@@ -1113,7 +1113,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
         val1 = val;
         i = 0;
         while(TYPE(val1) == T_ARRAY) {
-            psab[i].cElements = RARRAY(val1)->len;
+            psab[i].cElements = RARRAY_LEN(val1);
             psab[i].lLbound = 0;
             pub[i] = psab[i].cElements;
             pid[i] = 0;
@@ -2544,7 +2544,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     VariantInit(&result);
     OLEData_Get_Struct(self, pole);
 
-    dispParams.cArgs = RARRAY(args)->len;
+    dispParams.cArgs = RARRAY_LEN(args);
     dispParams.rgvarg = ALLOCA_N(VARIANTARG, dispParams.cArgs);
     realargs = ALLOCA_N(VARIANTARG, dispParams.cArgs);
     for (i = 0, j = dispParams.cArgs - 1; i < (int)dispParams.cArgs; i++, j--)
@@ -2575,7 +2575,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
                 SAFEARRAYBOUND rgsabound[1];
                 Check_Type(param, T_ARRAY);
                 rgsabound[0].lLbound = 0;
-                rgsabound[0].cElements = RARRAY(param)->len;
+                rgsabound[0].cElements = RARRAY_LEN(param);
                 v = vt & ~(VT_ARRAY | VT_BYREF);
                 V_ARRAY(&realargs[i]) = SafeArrayCreate(v, 1, rgsabound);
                 V_VT(&realargs[i]) = VT_ARRAY | v;
@@ -4060,7 +4060,7 @@ foletypelib_initialize(VALUE self, VALUE args)
     VALUE retval;
     HRESULT hr = S_OK;
 
-    len = RARRAY(args)->len;
+    len = RARRAY_LEN(args);
     if (len < 1 || len > 3) {
         rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
     }
@@ -6233,7 +6233,7 @@ ole_search_event_at(VALUE ary, VALUE ev)
     long i, len; 
     long ret = -1;
     def_event = Qnil;
-    len = RARRAY(ary)->len;
+    len = RARRAY_LEN(ary);
     for(i = 0; i < len; i++) {
         event = rb_ary_entry(ary, i);
         event_name = rb_ary_entry(event, 1);
@@ -6260,7 +6260,7 @@ ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default)
     int i, len;
     *is_default = FALSE;
     def_event = Qnil;
-    len = RARRAY(ary)->len;
+    len = RARRAY_LEN(ary);
     for(i = 0; i < len; i++) {
         event = rb_ary_entry(ary, i);
         event_name = rb_ary_entry(event, 1);
@@ -6283,7 +6283,7 @@ ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams)
     int i;
     VALUE v;
     VARIANT *pvar;
-    for(i = 0; i < RARRAY(ary)->len && (unsigned int) i < pdispparams->cArgs; i++) {
+    for(i = 0; i < RARRAY_LEN(ary) && (unsigned int) i < pdispparams->cArgs; i++) {
         v = rb_ary_entry(ary, i);
         pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
         ole_val2ptr_variant(v, pvar);
@@ -6825,7 +6825,7 @@ folevariant_initialize(VALUE self, VALUE args)
     VARTYPE vt;
     struct olevariantdata *pvar;
 
-    len = RARRAY(args)->len;
+    len = RARRAY_LEN(args);
     if (len < 1 || len > 3) {
         rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
     }

@@ -552,8 +552,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_uclass(obj, rb_cArray, arg);
 	    w_byte(TYPE_ARRAY, arg);
 	    {
-		long len = RARRAY(obj)->len;
-		VALUE *ptr = RARRAY(obj)->ptr;
+		long len = RARRAY_LEN(obj);
+		VALUE *ptr = RARRAY_PTR(obj);
 
 		w_long(len, arg);
 		while (len--) {
@@ -592,7 +592,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		w_long(len, arg);
 		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
-		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
+		    w_symbol(SYM2ID(RARRAY_PTR(mem)[i]), arg);
 		    w_object(RSTRUCT_PTR(obj)[i], arg, limit);
 		}
 	    }
@@ -963,7 +963,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
             rb_ary_push(extmod, m);
 
 	    v = r_object0(arg, 0, 0, extmod);
-            while (RARRAY(extmod)->len > 0) {
+            while (RARRAY_LEN(extmod) > 0) {
                 m = rb_ary_pop(extmod);
                 rb_extend_object(v, m);
             }
@@ -1145,11 +1145,11 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
-		if (RARRAY(mem)->ptr[i] != ID2SYM(slot)) {
+		if (RARRAY_PTR(mem)[i] != ID2SYM(slot)) {
 		    rb_raise(rb_eTypeError, "struct %s not compatible (:%s for :%s)",
 			     rb_class2name(klass),
 			     rb_id2name(slot),
-			     rb_id2name(SYM2ID(RARRAY(mem)->ptr[i])));
+			     rb_id2name(SYM2ID(RARRAY_PTR(mem)[i])));
 		}
 		rb_struct_aset(v, LONG2FIX(i), r_object(arg));
 	    }
@@ -1182,7 +1182,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 
 	    v = rb_obj_alloc(klass);
             if (! NIL_P(extmod)) {
-                while (RARRAY(extmod)->len > 0) {
+                while (RARRAY_LEN(extmod) > 0) {
                     VALUE m = rb_ary_pop(extmod);
                     rb_extend_object(v, m);
                 }

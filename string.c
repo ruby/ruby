@@ -43,6 +43,7 @@ VALUE rb_cString;
     FL_SET(str, STR_NOEMBED);\
     STR_SET_EMBED_LEN(str, 0);\
 } while (0)
+#define STR_SET_EMBED(str) FL_UNSET(str, STR_NOEMBED)
 #define STR_EMBED_P(str) (!FL_TEST(str, STR_NOEMBED))
 #define STR_SET_EMBED_LEN(str, n) do { \
     long tmp_n = (n);\
@@ -299,7 +300,7 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     rb_str_modify(str);
     if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
     if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
-	FL_UNSET(str, STR_NOEMBED);
+	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
 	return;
@@ -482,7 +483,7 @@ static VALUE
 rb_str_format_m(VALUE str, VALUE arg)
 {
     if (TYPE(arg) == T_ARRAY) {
-	return rb_str_format(RARRAY(arg)->len, RARRAY(arg)->ptr, str);
+	return rb_str_format(RARRAY_LEN(arg), RARRAY_PTR(arg), str);
     }
     return rb_str_format(1, &arg, str);
 }
@@ -2301,7 +2302,7 @@ rb_str_clear(VALUE str)
     if (str_independent(str)) {
 	free(RSTRING_PTR(str));
     }
-    FL_UNSET(str, STR_NOEMBED);
+    STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, 0);
     RSTRING_PTR(str)[0] = 0;
     return str;
@@ -3505,8 +3506,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	rb_ary_push(result, tmp);
     }
     if (NIL_P(limit) && lim == 0) {
-	while (RARRAY(result)->len > 0 &&
-	       RSTRING_LEN(RARRAY(result)->ptr[RARRAY(result)->len-1]) == 0)
+	while (RARRAY_LEN(result) > 0 &&
+	       RSTRING_LEN(RARRAY_PTR(result)[RARRAY_LEN(result)-1]) == 0)
 	    rb_ary_pop(result);
     }
 

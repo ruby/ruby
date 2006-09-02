@@ -125,15 +125,14 @@ apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 {
     long i;
     VALUE path;
-    struct RArray *args = RARRAY(vargs);
 
     rb_secure(4);
-    for (i=0; i<args->len; i++) {
-	path = rb_get_path(args->ptr[i]);
+    for (i=0; i<RARRAY_LEN(vargs); i++) {
+	path = rb_get_path(RARRAY_PTR(vargs)[i]);
 	(*func)(StringValueCStr(path), arg);
     }
 
-    return args->len;
+    return RARRAY_LEN(vargs);
 }
 
 /*
@@ -2875,12 +2874,12 @@ rb_file_join(VALUE ary, VALUE sep)
     VALUE result, tmp;
     char *name, *tail;
 
-    if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
+    if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
 
     len = 1;
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	if (TYPE(RARRAY(ary)->ptr[i]) == T_STRING) {
-	    len += RSTRING_LEN(RARRAY(ary)->ptr[i]);
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	if (TYPE(RARRAY_PTR(ary)[i]) == T_STRING) {
+	    len += RSTRING_LEN(RARRAY_PTR(ary)[i]);
 	}
 	else {
 	    len += 10;
@@ -2888,12 +2887,12 @@ rb_file_join(VALUE ary, VALUE sep)
     }
     if (!NIL_P(sep)) {
 	StringValue(sep);
-	len += RSTRING_LEN(sep) * RARRAY(ary)->len - 1;
+	len += RSTRING_LEN(sep) * RARRAY_LEN(ary) - 1;
     }
     result = rb_str_buf_new(len);
     OBJ_INFECT(result, ary);
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	tmp = RARRAY(ary)->ptr[i];
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	tmp = RARRAY_PTR(ary)[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
 	    break;
@@ -4174,8 +4173,8 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     if (!rb_load_path) return 0;
 
     Check_Type(rb_load_path, T_ARRAY);
-    for (i=0;i<RARRAY(rb_load_path)->len;i++) {
-	VALUE str = RARRAY(rb_load_path)->ptr[i];
+    for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
+	VALUE str = RARRAY_PTR(rb_load_path)[i];
 
 	FilePathValue(str);
 	if (RSTRING_LEN(str) == 0) continue;
@@ -4235,8 +4234,8 @@ rb_find_file(VALUE path)
 
 	Check_Type(rb_load_path, T_ARRAY);
 	tmp = rb_ary_new();
-	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
-	    VALUE str = RARRAY(rb_load_path)->ptr[i];
+	for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
+	    VALUE str = RARRAY_PTR(rb_load_path)[i];
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) > 0) {
 		rb_ary_push(tmp, str);

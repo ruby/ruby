@@ -170,12 +170,12 @@ readline_attempted_completion_function(const char *text, int start, int end)
     ary = rb_funcall(proc, rb_intern("call"), 1, rb_tainted_str_new2(text));
     if (TYPE(ary) != T_ARRAY)
 	ary = rb_Array(ary);
-    matches = RARRAY(ary)->len;
+    matches = RARRAY_LEN(ary);
     if (matches == 0)
 	return NULL;
     result = ALLOC_N(char *, matches + 2);
     for (i = 0; i < matches; i++) {
-	temp = rb_obj_as_string(RARRAY(ary)->ptr[i]);
+	temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
 	result[i + 1] = ALLOC_N(char, RSTRING_LEN(temp) + 1);
 	strcpy(result[i + 1], RSTRING_PTR(temp));
     }
@@ -661,7 +661,7 @@ filename_completion_proc_call(VALUE self, VALUE str)
 	    free(matches[i]);
 	}
 	free(matches);
-	if (RARRAY(result)->len >= 2)
+	if (RARRAY_LEN(result) >= 2)
 	    rb_ary_shift(result);
     }
     else {
@@ -686,7 +686,7 @@ username_completion_proc_call(VALUE self, VALUE str)
 	    free(matches[i]);
 	}
 	free(matches);
-	if (RARRAY(result)->len >= 2)
+	if (RARRAY_LEN(result) >= 2)
 	    rb_ary_shift(result);
     }
     else {

@@ -1133,15 +1133,15 @@ set_max_block_time(self, time)
     case T_BIGNUM:
         /* time is micro-second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, LONG2NUM(1000000));
-        tcl_time.sec  = NUM2LONG(RARRAY(divmod)->ptr[0]);
-        tcl_time.usec = NUM2LONG(RARRAY(divmod)->ptr[1]);
+        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
+        tcl_time.usec = NUM2LONG(RARRAY_PTR(divmod)[1]);
         break;
 
     case T_FLOAT:
         /* time is second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, INT2FIX(1));
-        tcl_time.sec  = NUM2LONG(RARRAY(divmod)->ptr[0]);
-        tcl_time.usec = (long)(NUM2DBL(RARRAY(divmod)->ptr[1]) * 1000000);
+        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
+        tcl_time.usec = (long)(NUM2DBL(RARRAY_PTR(divmod)[1]) * 1000000);
 
     default:
         {
@@ -2595,15 +2595,14 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 
     /* get args */
     args = rb_ary_new2(argc - 2);
-    RARRAY(args)->len = 0;
     for(i = 3; i < argc; i++) {
 #if TCL_MAJOR_VERSION >= 8
         str = Tcl_GetStringFromObj(argv[i], &len);
         DUMP2("arg:%s",str);
-        RARRAY(args)->ptr[RARRAY(args)->len++] = rb_tainted_str_new(str, len);
+	rb_ary_push(args, rb_tainted_str_new(str, len));
 #else /* TCL_MAJOR_VERSION < 8 */
         DUMP2("arg:%s",argv[i]);
-        RARRAY(args)->ptr[RARRAY(args)->len++] = rb_tainted_str_new2(argv[i]);
+	rb_ary_push(args, rb_tainted_str_new2(argv[i]));
 #endif
     }
 
@@ -5516,7 +5515,7 @@ call_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY(q->result)->ptr[0] = ret;
+    RARRAY_PTR(q->result)[0] = ret;
 
     /* complete */
     *(q->done) = -1;
@@ -5586,8 +5585,8 @@ tk_funcall(func, argc, argv, obj)
 
     /* allocate result obj */
     result = rb_ary_new2(1);
-    RARRAY(result)->ptr[0] = Qnil;
-    RARRAY(result)->len = 1;
+    RARRAY_PTR(result)[0] = Qnil;
+    RARRAY_LEN(result) = 1;
 
     /* construct event data */
     callq->done = alloc_done;
@@ -5614,7 +5613,7 @@ tk_funcall(func, argc, argv, obj)
     DUMP2("back from handler (current thread:%lx)", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY(result)->ptr[0];
+    ret = RARRAY_PTR(result)[0];
     free(alloc_done);
     if (argv) free(argv);
 
@@ -5834,7 +5833,7 @@ eval_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY(q->result)->ptr[0] = ret;
+    RARRAY_PTR(q->result)[0] = ret;
 
     /* complete */
     *(q->done) = -1;
@@ -5901,8 +5900,8 @@ ip_eval(self, str)
 
     /* allocate result obj */
     result = rb_ary_new2(1);
-    RARRAY(result)->ptr[0] = Qnil;
-    RARRAY(result)->len = 1;
+    RARRAY_PTR(result)[0] = Qnil;
+    RARRAY_LEN(result) = 1;
 
     /* construct event data */
     evq->done = alloc_done;
@@ -5930,7 +5929,7 @@ ip_eval(self, str)
     DUMP2("back from handler (current thread:%lx)", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY(result)->ptr[0];
+    ret = RARRAY_PTR(result)[0];
 
     free(alloc_done);
     free(eval_str);
@@ -6911,7 +6910,7 @@ invoke_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY(q->result)->ptr[0] = ret;
+    RARRAY_PTR(q->result)[0] = ret;
 
     /* complete */
     *(q->done) = -1;
@@ -6981,8 +6980,8 @@ ip_invoke_with_position(argc, argv, obj, position)
 
     /* allocate result obj */
     result = rb_ary_new2(1);
-    RARRAY(result)->ptr[0] = Qnil;
-    RARRAY(result)->len = 1;
+    RARRAY_PTR(result)[0] = Qnil;
+    RARRAY_LEN(result) = 1;
 
     /* construct event data */
     ivq->done = alloc_done;
@@ -7008,7 +7007,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     DUMP2("back from handler (current thread:%lx)", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY(result)->ptr[0];
+    ret = RARRAY_PTR(result)[0];
     free(alloc_done);
 
     Tcl_Release(ivq);
@@ -7535,10 +7534,8 @@ lib_split_tklist_core(ip_obj, list_str)
         for(idx = 0; idx < objc; idx++) {
             elem = get_str_from_obj(objv[idx]);
             if (taint_flag) OBJ_TAINT(elem);
-            RARRAY(ary)->ptr[idx] = elem;
+	    rb_ary_push(ary, elem);
         }
-
-        RARRAY(ary)->len = objc;
 
         if (old_gc == Qfalse) rb_gc_enable();
 
@@ -7576,10 +7573,8 @@ lib_split_tklist_core(ip_obj, list_str)
                 elem = rb_str_new2(argv[idx]);
             }
             /* rb_ivar_set(elem, ID_at_enc, rb_str_new2("binary")); */
-            RARRAY(ary)->ptr[idx] = elem;
+	    rb_ary_push(ary, elem);
         }
-        RARRAY(ary)->len = argc;
-
         if (old_gc == Qfalse) rb_gc_enable();
 #endif
     }

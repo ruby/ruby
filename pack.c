@@ -452,12 +452,12 @@ pack_pack(VALUE ary, VALUE fmt)
     pend = p + RSTRING_LEN(fmt);
     res = rb_str_buf_new(0);
 
-    items = RARRAY(ary)->len;
+    items = RARRAY_LEN(ary);
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY(ary)->ptr[idx] : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : TOO_FEW)
+#define THISFROM (items > 0 ? RARRAY_PTR(ary)[idx] : TOO_FEW)
+#define NEXTFROM (items-- > 0 ? RARRAY_PTR(ary)[idx++] : TOO_FEW)
 
     while (p < pend) {
 	if (RSTRING_PTR(fmt) + RSTRING_LEN(fmt) != pend) {
@@ -949,9 +949,9 @@ pack_pack(VALUE ary, VALUE fmt)
 		    VALUE big128 = rb_uint2big(128);
 		    while (TYPE(from) == T_BIGNUM) {
 			from = rb_big_divmod(from, big128);
-			c = NUM2INT(RARRAY(from)->ptr[1]) | 0x80; /* mod */
+			c = NUM2INT(RARRAY_PTR(from)[1]) | 0x80; /* mod */
 			rb_str_buf_cat(buf, &c, sizeof(char));
-			from = RARRAY(from)->ptr[0]; /* div */
+			from = RARRAY_PTR(from)[0]; /* div */
 		    }
 		}
 
@@ -1868,8 +1868,8 @@ pack_unpack(VALUE str, VALUE fmt)
 		    if (!(a = rb_str_associated(str))) {
 			rb_raise(rb_eArgError, "no associated pointer");
 		    }
-		    p = RARRAY(a)->ptr;
-		    pend = p + RARRAY(a)->len;
+		    p = RARRAY_PTR(a);
+		    pend = p + RARRAY_LEN(a);
 		    while (p < pend) {
 			if (TYPE(*p) == T_STRING && RSTRING_PTR(*p) == t) {
 			    if (len < RSTRING_LEN(*p)) {
@@ -1913,8 +1913,8 @@ pack_unpack(VALUE str, VALUE fmt)
 			if (!(a = rb_str_associated(str))) {
 			    rb_raise(rb_eArgError, "no associated pointer");
 			}
-			p = RARRAY(a)->ptr;
-			pend = p + RARRAY(a)->len;
+			p = RARRAY_PTR(a);
+			pend = p + RARRAY_LEN(a);
 			while (p < pend) {
 			    if (TYPE(*p) == T_STRING && RSTRING_PTR(*p) == t) {
 				tmp = *p;

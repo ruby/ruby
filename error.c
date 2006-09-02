@@ -443,8 +443,8 @@ check_backtrace(VALUE bt)
 	if (t != T_ARRAY) {
 	    rb_raise(rb_eTypeError, err);
 	}
-	for (i=0;i<RARRAY(bt)->len;i++) {
-	    if (TYPE(RARRAY(bt)->ptr[i]) != T_STRING) {
+	for (i=0;i<RARRAY_LEN(bt);i++) {
+	    if (TYPE(RARRAY_PTR(bt)[i]) != T_STRING) {
 		rb_raise(rb_eTypeError, err);
 	    }
 	}

@@ -2991,7 +2991,7 @@ make_addrinfo(struct addrinfo *res0)
     for (res = res0; res; res = res->ai_next) {
 	ary = ipaddr(res->ai_addr, do_not_reverse_lookup);
 	if (res->ai_canonname) {
-	    RARRAY(ary)->ptr[2] = rb_str_new2(res->ai_canonname);
+	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
 	}
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
@@ -3232,17 +3232,17 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     if (!NIL_P(tmp)) {
 	sa = tmp;
 	MEMZERO(&hints, struct addrinfo, 1);
-	if (RARRAY(sa)->len == 3) {
-	    af = RARRAY(sa)->ptr[0];
-	    port = RARRAY(sa)->ptr[1];
-	    host = RARRAY(sa)->ptr[2];
+	if (RARRAY_LEN(sa) == 3) {
+	    af = RARRAY_PTR(sa)[0];
+	    port = RARRAY_PTR(sa)[1];
+	    host = RARRAY_PTR(sa)[2];
 	}
-	else if (RARRAY(sa)->len >= 4) {
-	    af = RARRAY(sa)->ptr[0];
-	    port = RARRAY(sa)->ptr[1];
-	    host = RARRAY(sa)->ptr[3];
+	else if (RARRAY_LEN(sa) >= 4) {
+	    af = RARRAY_PTR(sa)[0];
+	    port = RARRAY_PTR(sa)[1];
+	    host = RARRAY_PTR(sa)[3];
 	    if (NIL_P(host)) {
-		host = RARRAY(sa)->ptr[2];
+		host = RARRAY_PTR(sa)[2];
 	    }
 	    else {
 		/*
@@ -3256,7 +3256,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	}
 	else {
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
-		     RARRAY(sa)->len);
+		     RARRAY_LEN(sa));
 	}
 	/* host */
 	if (NIL_P(host)) {

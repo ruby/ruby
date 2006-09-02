@@ -1057,13 +1057,13 @@ sym_call(VALUE args, VALUE sym)
 {
     VALUE obj;
 
-    if (RARRAY(args)->len < 1) {
+    if (RARRAY_LEN(args) < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
     }
-    obj = RARRAY(args)->ptr[0];
+    obj = RARRAY_PTR(args)[0];
     return rb_funcall3(obj, (ID)sym,
-		       RARRAY(args)->len - 1,
-		       RARRAY(args)->ptr + 1);
+		       RARRAY_LEN(args) - 1,
+		       RARRAY_PTR(args) + 1);
 }
 
 /*

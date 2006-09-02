@@ -1023,7 +1023,7 @@ syck_const_find(VALUE const_name)
     VALUE tclass = rb_cObject;
     VALUE tparts = rb_str_split( const_name, "::" );
     int i = 0;
-    for ( i = 0; i < RARRAY(tparts)->len; i++ ) {
+    for ( i = 0; i < RARRAY_LEN(tparts); i++ ) {
         VALUE tpart = rb_to_id( rb_ary_entry( tparts, i ) );
         if ( !rb_const_defined( tclass, tpart ) ) return Qnil;
         tclass = rb_const_get( tclass, tpart );
@@ -1059,7 +1059,7 @@ syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
             VALUE subclass_parts = rb_ary_new();
             VALUE parts = rb_str_split( type, ":" );
 
-            while ( RARRAY(parts)->len > 1 )
+            while ( RARRAY_LEN(parts) > 1 )
             {
                 VALUE partial;
                 rb_ary_unshift( subclass_parts, rb_ary_pop( parts ) );
@@ -1077,7 +1077,7 @@ syck_resolver_transfer(VALUE self, VALUE type, VALUE val)
                 if ( ! NIL_P( target_class ) )
                 {
                     subclass = target_class;
-                    if ( RARRAY(subclass_parts)->len > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
+                    if ( RARRAY_LEN(subclass_parts) > 0 && rb_respond_to( target_class, s_tag_subclasses ) &&
                          RTEST( rb_funcall( target_class, s_tag_subclasses, 0 ) ) )
                     {
                         VALUE subclass_v;
@@ -1502,7 +1502,7 @@ syck_seq_value_set(VALUE self, VALUE val)
     if ( !NIL_P( val ) ) {
         int i;
         syck_seq_empty( node );
-        for ( i = 0; i < RARRAY( val )->len; i++ )
+        for ( i = 0; i < RARRAY_LEN( val ); i++ )
         {
             syck_seq_add( node, rb_ary_entry(val, i) );
         }
@@ -1587,7 +1587,7 @@ syck_map_initialize(VALUE self, VALUE type_id, VALUE val, VALUE style)
         }
 
         keys = rb_funcall( hsh, s_keys, 0 );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        for ( i = 0; i < RARRAY_LEN(keys); i++ )
         {
             VALUE key = rb_ary_entry(keys, i);
             syck_map_add( node, key, rb_hash_aref(hsh, key) );
@@ -1622,7 +1622,7 @@ syck_map_value_set(VALUE self, VALUE val)
 
         syck_map_empty( node );
         keys = rb_funcall( hsh, s_keys, 0 );
-        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        for ( i = 0; i < RARRAY_LEN(keys); i++ )
         {
             VALUE key = rb_ary_entry(keys, i);
             syck_map_add( node, key, rb_hash_aref(hsh, key) );

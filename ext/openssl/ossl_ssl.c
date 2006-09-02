@@ -349,8 +349,8 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_client_ca(self);
     if(!NIL_P(val)){
 	if(TYPE(val) == T_ARRAY){
-	    for(i = 0; i < RARRAY(val)->len; i++){
-		client_ca = GetX509CertPtr(RARRAY(val)->ptr[i]);
+	    for(i = 0; i < RARRAY_LEN(val); i++){
+		client_ca = GetX509CertPtr(RARRAY_PTR(val)[i]);
         	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
 		    /* Copies X509_NAME => FREE it. */
         	    ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
@@ -459,12 +459,12 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 	return v;
     else if (TYPE(v) == T_ARRAY) {
         str = rb_str_new(0, 0);
-        for (i = 0; i < RARRAY(v)->len; i++) {
+        for (i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
             if (TYPE(elem) == T_ARRAY) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
             rb_str_append(str, elem);
-            if (i < RARRAY(v)->len-1) rb_str_cat2(str, ":");
+            if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
         }
     } else {
         str = v;

@@ -644,21 +644,21 @@ enum_sort_by(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
 
     if (TYPE(obj) == T_ARRAY) {
-	ary  = rb_ary_new2(RARRAY(obj)->len);
+	ary  = rb_ary_new2(RARRAY_LEN(obj));
     }
     else {
 	ary = rb_ary_new();
     }
     RBASIC(ary)->klass = 0;
     rb_block_call(obj, id_each, 0, 0, sort_by_i, ary);
-    if (RARRAY(ary)->len > 1) {
-	ruby_qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp, 0);
+    if (RARRAY_LEN(ary) > 1) {
+	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE), sort_by_cmp, 0);
     }
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	RARRAY_PTR(ary)[i] = RNODE(RARRAY_PTR(ary)[i])->u2.value;
     }
     RBASIC(ary)->klass = rb_cArray;
     return ary;
@@ -1131,10 +1131,10 @@ zip_i(VALUE val, VALUE *memo)
     VALUE tmp;
     int i;
 
-    tmp = rb_ary_new2(RARRAY(args)->len + 1);
+    tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
     rb_ary_store(tmp, 0, val);
-    for (i=0; i<RARRAY(args)->len; i++) {
-	rb_ary_push(tmp, rb_ary_entry(RARRAY(args)->ptr[i], idx));
+    for (i=0; i<RARRAY_LEN(args); i++) {
+	rb_ary_push(tmp, rb_ary_entry(RARRAY_PTR(args)[i], idx));
     }
     if (rb_block_given_p()) {
 	rb_yield(tmp);
