@@ -30,7 +30,6 @@ VALUE rb_cData;
 VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
-VALUE rb_cSymbol;
 
 static ID id_eq, id_eql, id_inspect, id_init_copy;
 
@@ -938,149 +937,6 @@ rb_obj_pattern_match(VALUE obj1, VALUE obj2)
     return Qnil;
 }
 
-/**********************************************************************
- * Document-class: Symbol
- *
- *  <code>Symbol</code> objects represent names and some strings
- *  inside the Ruby
- *  interpreter. They are generated using the <code>:name</code> and
- *  <code>:"string"</code> literals
- *  syntax, and by the various <code>to_sym</code> methods. The same
- *  <code>Symbol</code> object will be created for a given name or string
- *  for the duration of a program's execution, regardless of the context
- *  or meaning of that name. Thus if <code>Fred</code> is a constant in
- *  one context, a method in another, and a class in a third, the
- *  <code>Symbol</code> <code>:Fred</code> will be the same object in
- *  all three contexts.
- *     
- *     module One
- *       class Fred
- *       end
- *       $f1 = :Fred
- *     end
- *     module Two
- *       Fred = 1
- *       $f2 = :Fred
- *     end
- *     def Fred()
- *     end
- *     $f3 = :Fred
- *     $f1.id   #=> 2514190
- *     $f2.id   #=> 2514190
- *     $f3.id   #=> 2514190
- *     
- */
-
-/*
- *  call-seq:
- *     sym.to_i      => fixnum
- *  
- *  Returns an integer that is unique for each symbol within a
- *  particular execution of a program.
- *     
- *     :fred.to_i           #=> 9809
- *     "fred".to_sym.to_i   #=> 9809
- */
-
-static VALUE
-sym_to_i(VALUE sym)
-{
-    ID id = SYM2ID(sym);
-
-    return LONG2FIX(id);
-}
-
-
-/*
- *  call-seq:
- *     sym.inspect    => string
- *  
- *  Returns the representation of <i>sym</i> as a symbol literal.
- *     
- *     :fred.inspect   #=> ":fred"
- */
-
-static VALUE
-sym_inspect(VALUE sym)
-{
-    VALUE str;
-    const char *name;
-    ID id = SYM2ID(sym);
-
-    name = rb_id2name(id);
-    str = rb_str_new(0, strlen(name)+1);
-    RSTRING_PTR(str)[0] = ':';
-    strcpy(RSTRING_PTR(str)+1, name);
-    if (!rb_symname_p(name)) {
-	str = rb_str_dump(str);
-	strncpy(RSTRING_PTR(str), ":\"", 2);
-    }
-    return str;
-}
-
-
-/*
- *  call-seq:
- *     sym.id2name   => string
- *     sym.to_s      => string
- *  
- *  Returns the name or string corresponding to <i>sym</i>.
- *     
- *     :fred.id2name   #=> "fred"
- */
-
-
-static VALUE
-sym_to_s(VALUE sym)
-{
-    return rb_str_new2(rb_id2name(SYM2ID(sym)));
-}
-
-
-/*
- * call-seq:
- *   sym.to_sym   => sym
- *
- * In general, <code>to_sym</code> returns the <code>Symbol</code> corresponding
- * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
- * in this case.
- */
-
-static VALUE
-sym_to_sym(VALUE sym)
-{
-    return sym;
-}
-
-static VALUE
-sym_call(VALUE args, VALUE sym)
-{
-    VALUE obj;
-
-    if (RARRAY_LEN(args) < 1) {
-	rb_raise(rb_eArgError, "no receiver given");
-    }
-    obj = RARRAY_PTR(args)[0];
-    return rb_funcall3(obj, (ID)sym,
-		       RARRAY_LEN(args) - 1,
-		       RARRAY_PTR(args) + 1);
-}
-
-/*
- * call-seq:
- *   sym.to_proc
- *
- * Returns a _Proc_ object which respond to the given method by _sym_.
- *
- *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
- */
-
-static VALUE
-sym_to_proc(VALUE sym)
-{
-    return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
-}
-
 
 /***********************************************************************
  *
@@ -1471,47 +1327,6 @@ rb_class_superclass(VALUE klass)
 	return Qnil;
     }
     return super;
-}
-
-static ID
-str_to_id(VALUE str)
-{
-    if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
-	rb_raise(rb_eArgError, "empty symbol string");
-    }
-    if (RSTRING_LEN(str) != strlen(RSTRING_PTR(str))) {
-	rb_raise(rb_eArgError, "Symbols should not contain NUL (\\0)");
-    }
-    return rb_intern(RSTRING_PTR(str));
-}
-
-ID
-rb_to_id(VALUE name)
-{
-    VALUE tmp;
-    ID id;
-
-    switch (TYPE(name)) {
-      case T_STRING:
-	return str_to_id(name);
-      case T_FIXNUM:
-	rb_warn("do not use Fixnums as Symbols");
-	id = FIX2LONG(name);
-	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "%ld is not a symbol", id);
-	}
-	break;
-      case T_SYMBOL:
-	id = SYM2ID(name);
-	break;
-      default:
-	tmp = rb_check_string_type(name);
-	if (!NIL_P(tmp)) {
-	    return str_to_id(tmp);
-	}
-	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING_PTR(rb_inspect(name)));
-    }
-    return id;
 }
 
 /*
@@ -2448,19 +2263,6 @@ Init_Object(void)
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
-
-    rb_cSymbol = rb_define_class("Symbol", rb_cObject);
-    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
-    rb_undef_alloc_func(rb_cSymbol);
-    rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-
-    rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
-    rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
-    rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
-    rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1);
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);

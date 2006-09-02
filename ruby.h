@@ -195,10 +195,11 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 #define IMMEDIATE_MASK 0x03
 #define IMMEDIATE_P(x) ((VALUE)(x) & IMMEDIATE_MASK)
 
-#define SYMBOL_FLAG 0x0e
-#define SYMBOL_P(x) (((VALUE)(x)&0xff)==SYMBOL_FLAG)
-#define ID2SYM(x) ((VALUE)(((long)(x))<<8|SYMBOL_FLAG))
-#define SYM2ID(x) RSHIFT((VALUE)x,8)
+#define SYMBOL_P(x) (!IMMEDIATE_P(x) && RBASIC(x)->klass == rb_cSymbol)
+VALUE rb_id2sym(ID);
+ID rb_sym2id(VALUE);
+#define ID2SYM(x) rb_id2sym(x)
+#define SYM2ID(x) rb_sym2id(x)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
 #define Qfalse ((VALUE)0)
@@ -596,6 +597,7 @@ void rb_gc_register_address(VALUE*);
 void rb_gc_unregister_address(VALUE*);
 
 ID rb_intern(const char*);
+ID rb_intern2(const char*, long);
 const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
 

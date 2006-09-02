@@ -8255,15 +8255,26 @@ static const struct {
 
 static struct symbols {
     ID last_id;
-    st_table *tbl;
-    st_table *rev;
+    st_table *sym_id;
+    st_table *id_sym;
 } global_symbols = {tLAST_TOKEN};
+
+static struct st_hash_type symhash = {
+    rb_str_cmp,
+    rb_str_hash,
+};
 
 void
 Init_sym(void)
 {
-    global_symbols.tbl = st_init_strtable_with_size(200);
-    global_symbols.rev = st_init_numtable_with_size(200);
+    global_symbols.sym_id = st_init_table_with_size(&symhash, 1000);
+    global_symbols.id_sym = st_init_numtable_with_size(1000);
+}
+
+void
+rb_gc_mark_symbols(int lev)
+{
+    rb_mark_tbl(global_symbols.id_sym);
 }
 
 static ID
@@ -8368,16 +8379,17 @@ rb_symname_p(const char *name)
 }
 
 ID
-rb_intern(const char *name)
+rb_intern2(const char *name, long len)
 {
     const char *m = name;
+    VALUE sym = rb_str_new(name, len);
     ID id;
     int last;
 
-    if (st_lookup(global_symbols.tbl, (st_data_t)name, (st_data_t *)&id))
+    if (st_lookup(global_symbols.sym_id, (st_data_t)sym, (st_data_t *)&id))
 	return id;
 
-    last = strlen(name)-1;
+    last = len-1;
     id = 0;
     switch (*name) {
       case '$':
@@ -8438,10 +8450,40 @@ rb_intern(const char *name)
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:
-    name = strdup(name);
-    st_add_direct(global_symbols.tbl, (st_data_t)name, id);
-    st_add_direct(global_symbols.rev, id, (st_data_t)name);
+    RBASIC(sym)->klass = rb_cSymbol;
+    OBJ_FREEZE(sym);
+    st_add_direct(global_symbols.sym_id, (st_data_t)sym, id);
+    st_add_direct(global_symbols.id_sym, id, (st_data_t)sym);
     return id;
+}
+
+ID
+rb_intern(const char *name)
+{
+    return rb_intern2(name, strlen(name));
+}
+
+VALUE
+rb_id2sym(ID id)
+{
+    VALUE data;
+
+    if (st_lookup(global_symbols.id_sym, id, &data)) {
+	if (!RBASIC(data)->klass) {
+	    RBASIC(data)->klass = rb_cSymbol;
+	}
+	return data;
+    }
+}
+
+ID
+rb_sym2id(VALUE sym)
+{
+    ID data;
+
+    if (st_lookup(global_symbols.sym_id, sym, &data))
+	return data;
+    return rb_intern2(RSTRING_PTR(sym), RSTRING_LEN(sym));
 }
 
 const char *
@@ -8459,8 +8501,8 @@ rb_id2name(ID id)
 	}
     }
 
-    if (st_lookup(global_symbols.rev, id, &data))
-	return (char *)data;
+    if (st_lookup(global_symbols.id_sym, id, &data))
+	return RSTRING_PTR(data);
 
     if (is_attrset_id(id)) {
 	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
@@ -8484,9 +8526,9 @@ rb_id2name(ID id)
 }
 
 static int
-symbols_i(char *key, ID value, VALUE ary)
+symbols_i(VALUE sym, ID value, VALUE ary)
 {
-    rb_ary_push(ary, ID2SYM(value));
+    rb_ary_push(ary, sym);
     return ST_CONTINUE;
 }
 
@@ -8509,9 +8551,9 @@ symbols_i(char *key, ID value, VALUE ary)
 VALUE
 rb_sym_all_symbols(void)
 {
-    VALUE ary = rb_ary_new2(global_symbols.tbl->num_entries);
+    VALUE ary = rb_ary_new2(global_symbols.sym_id->num_entries);
 
-    st_foreach(global_symbols.tbl, symbols_i, ary);
+    st_foreach(global_symbols.sym_id, symbols_i, ary);
     return ary;
 }
 
@@ -9261,3 +9303,4 @@ Init_ripper(void)
     rb_intern("&&");
 }
 #endif /* RIPPER */
+

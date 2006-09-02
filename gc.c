@@ -1381,6 +1381,7 @@ garbage_collect(void)
 			 (VALUE*)((char*)rb_gc_stack_start + 2));
 #endif
     rb_gc_mark_threads();
+    rb_gc_mark_symbols();
 
     /* mark protected global variables */
     for (list = global_List; list; list = list->next) {

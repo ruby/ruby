@@ -489,7 +489,7 @@ ins_methods_push(ID name, long type, VALUE ary, long visi)
 	break;
     }
     if (visi) {
-	rb_ary_push(ary, rb_str_new2(rb_id2name(name)));
+	rb_ary_push(ary, ID2SYM(name));
     }
     return ST_CONTINUE;
 }

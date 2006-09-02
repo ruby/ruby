@@ -1,3 +1,14 @@
+Sat Sep  2 23:53:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): move symbol related code to string.c
+
+	* string.c (Init_String): Symbol as subclass of String.
+
+	* parse.y (rb_intern2): handle symbol as strings.
+
+	* string.c (str_new): substring of symbols are mere strings, not
+	  symbols. 
+
 Sat Sep  2 23:37:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (struct RArray): embed small arrays.
@@ -16,6 +27,13 @@ Sat Sep  2 12:06:35 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* lib/soap/generator.rb (SOAP::SOAPGenerator#encode_tag): do not dump
 	  XML attribute which value is nil.  value "" and nil both were dumped
 	  as 'attr="value"'.  [ruby-dev:29395]
+
+Sat Sep  2 11:47:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should handle when in else clause.  a patch
+	  from Eric Hodel <drbrain at segment7.net>.  [ruby-core:08662]
+
+	* parse.y (primary): wrap with NODE_CASE.  [ruby-core:08663]
 
 Sat Sep  2 12:00:32 2006  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
