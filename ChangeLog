@@ -1,3 +1,7 @@
+Sun Sep  3 15:32:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: get rid of nil.to_s.
+
 Sun Sep  3 06:24:38 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (ruby_connect): sockerrlen should be socklen_t.
@@ -27,7 +31,7 @@ Sat Sep  2 23:53:28 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (rb_intern2): handle symbol as strings.
 
 	* string.c (str_new): substring of symbols are mere strings, not
-	  symbols. 
+	  symbols.
 
 Sat Sep  2 23:37:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -36,7 +40,7 @@ Sat Sep  2 23:37:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  (RARRAY_PTR): ditto.
 
 	* array.c: use RARRAY_LEN and RARRAY_PTR.
-	
+
 Sat Sep  2 13:23:01 2006  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (ia64.o): use the compiler driver to assemble ia64.s
