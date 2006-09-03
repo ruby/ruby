@@ -536,7 +536,7 @@ end
 
 def checking_for(m, fmt = nil)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
-  m = "checking #{'for ' if /\Acheck/ !~ f}#{m}... "
+  m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
   message "%s", m
   a = r = nil
   Logging::postpone do
@@ -1067,7 +1067,7 @@ LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
 RUBY_EXTCONF_H = #{$extconf_h}
-CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS #$ARCH_FLAG
+CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
@@ -1092,7 +1092,7 @@ COPY = #{config_string('CP') || '@$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
 
-preload = #{$preload.join(" ") if $preload}
+preload = #{$preload ? $preload.join(' ') : ''}
 }
   if $nmake == ?b
     mk.each do |x|
@@ -1187,6 +1187,7 @@ def create_makefile(target, srcprefix = nil)
       deffile = "$(TARGET)-$(arch).def"
     end
   end
+  origdef ||= ''
 
   libpath = libpathflag(libpath)
 
@@ -1441,7 +1442,7 @@ MESSAGE
 
 def mkmf_failed(path)
   unless $makefile_created or File.exist?("Makefile")
-    opts = $arg_config.collect {|t, n| "\t#{t}#{"=#{n}" if n}\n"}
+    opts = $arg_config.collect {|t, n| "\t#{t}#{n ? "=#{n}" : ""}\n"}
     abort "*** #{path} failed ***\n" + FailedMessage + opts.join
   end
 end
@@ -1487,7 +1488,7 @@ end
 config_string('COMMON_HEADERS') do |s|
   Shellwords.shellwords(s).each {|s| hdr << "#include <#{s}>"}
 end
-COMMON_HEADERS = (hdr.join("\n") unless hdr.empty?)
+COMMON_HEADERS = hdr.join("\n")
 COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
 COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]

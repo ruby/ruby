@@ -1,3 +1,7 @@
+Sun Sep  3 15:32:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: get rid of nil.to_s.
+
 Sun Sep  3 06:24:38 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (ruby_connect): sockerrlen should be socklen_t.
