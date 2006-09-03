@@ -1,3 +1,7 @@
+Sun Sep  3 20:47:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.h (SYMBOL_P): Qnil and Qfalse are not Symbol.
+
 Sun Sep  3 15:32:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: get rid of nil.to_s.
