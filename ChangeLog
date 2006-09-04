@@ -1,3 +1,8 @@
+Tue Sep  5 06:47:22 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_to_s): variable declaration after an execution
+	  statement.
+
 Tue Sep  5 05:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_hash): improve collision.  fixed: [ruby-dev:29352]
