@@ -64,7 +64,7 @@ rb_struct_s_members_m(VALUE klass)
     ary = rb_ary_new2(RARRAY_LEN(members));
     p = RARRAY_PTR(members); pend = p + RARRAY_LEN(members);
     while (p < pend) {
-	rb_ary_push(ary, rb_str_new2(rb_id2name(SYM2ID(*p))));
+	rb_ary_push(ary, *p);
 	p++;
     }
 

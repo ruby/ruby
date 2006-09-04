@@ -693,7 +693,7 @@ rb_gvar_defined(struct global_entry *entry)
 static int
 gvar_i(ID key, struct global_entry *entry, VALUE ary)
 {
-    rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    rb_ary_push(ary, ID2SYM(key));
     return ST_CONTINUE;
 }
 
@@ -988,7 +988,7 @@ static int
 ivar_i(ID key, struct global_entry *entry, VALUE ary)
 {
     if (rb_is_instance_id(key)) {
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+	rb_ary_push(ary, ID2SYM(key));
     }
     return ST_CONTINUE;
 }
@@ -1418,7 +1418,7 @@ rb_mod_const_of(VALUE mod, void *data)
 static int
 list_i(ID key, ID value, VALUE ary)
 {
-    rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    rb_ary_push(ary, ID2SYM(key));
     return ST_CONTINUE;
 }
 
@@ -1633,7 +1633,7 @@ static int
 cv_i(ID key, VALUE value, VALUE ary)
 {
     if (rb_is_class_id(key)) {
-	VALUE kval = rb_str_new2(rb_id2name(key));
+	VALUE kval = ID2SYM(key);
 	if (!rb_ary_includes(ary, kval)) {
 	    rb_ary_push(ary, kval);
 	}

@@ -7602,14 +7602,14 @@ rb_f_local_variables(void)
 	n = *tbl++;
 	for (i=2; i<n; i++) {	/* skip first 2 ($_ and $~) */
 	    if (!rb_is_local_id(tbl[i])) continue; /* skip flip states */
-	    rb_ary_push(ary, rb_str_new2(rb_id2name(tbl[i])));
+	    rb_ary_push(ary, ID2SYM(tbl[i]));
 	}
     }
 
     vars = ruby_dyna_vars;
     while (vars) {
 	if (vars->id && rb_is_local_id(vars->id)) { /* skip $_, $~ and flip states */
-	    rb_ary_push(ary, rb_str_new2(rb_id2name(vars->id)));
+	    rb_ary_push(ary, ID2SYM(vars->id));
 	}
 	vars = vars->next;
     }

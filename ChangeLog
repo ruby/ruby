@@ -1,3 +1,15 @@
+Mon Sep  4 01:25:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_local_variables): list symbols.
+
+	* struct.c (rb_struct_s_members_m): ditto.
+
+	* variable.c (ivar_i): ditto.
+
+	* variable.c (gvar_i): ditto.
+
+	* variable.c (cv_i): ditto.
+
 Sun Sep  3 20:47:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.h (SYMBOL_P): Qnil and Qfalse are not Symbol.
