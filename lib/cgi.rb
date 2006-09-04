@@ -708,13 +708,13 @@ class CGI
       require "nkf"
       case options["charset"]
       when /iso-2022-jp/ni
-        content = NKF::nkf('-j', content)
+        content = NKF::nkf('-m0 -x -j', content)
         options["language"] = "ja" unless options.has_key?("language")
       when /euc-jp/ni
-        content = NKF::nkf('-e', content)
+        content = NKF::nkf('-m0 -x -e', content)
         options["language"] = "ja" unless options.has_key?("language")
       when /shift_jis/ni
-        content = NKF::nkf('-s', content)
+        content = NKF::nkf('-m0 -x -s', content)
         options["language"] = "ja" unless options.has_key?("language")
       end
     end

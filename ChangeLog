@@ -1,3 +1,8 @@
+Mon Sep  4 16:29:33 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::out): specify -m0 -x option for nkf.
+	  [ruby-dev:29284]
+
 Mon Sep  4 16:13:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (pipe_open): command name should not contain null bytes.
