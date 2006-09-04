@@ -1886,7 +1886,7 @@ time_strftime(VALUE time, VALUE format)
 	while (p < pe) {
 	    len = rb_strftime(&buf, p, &tobj->tm);
 	    rb_str_cat(str, buf, len);
-	    p += strlen(p) + 1;
+	    p += strlen(p);
 	    if (buf != buffer) {
 		free(buf);
 		buf = buffer;
