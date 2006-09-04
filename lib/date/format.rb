@@ -116,13 +116,13 @@ class Date
   end
 
   def self.num_pattern? (s) # :nodoc:
-    /\A%[EO]?[CDdeFGgHIjkLlMmNQRrSsTUuVvWwXxYy\d]/ =~ s ||/\A\d/ =~ s
+    /\A%[EO]?[CDdeFGgHIjkLlMmNQRrSsTUuVvWwXxYy\d]/ =~ s || /\A\d/ =~ s
   end
 
   private_class_method :num_pattern?
 
   def self._strptime_i(str, fmt, e) # :nodoc:
-    fmt.scan(/%[EO]?(.)|(.)/m) do |s, c|
+    fmt.scan(/%[EO]?(:{1,3}z|.)|(.)/m) do |s, c|
       if s
 	case s
 	when 'A', 'a'
@@ -272,7 +272,7 @@ class Date
 	  return unless (0..99) === val
 	  e.year = val
 	  e._cent ||= if val >= 69 then 19 else 20 end
-	when 'Z', 'z'
+	when 'Z', /\A:{0,3}z/
 	  return unless str.sub!(/\A((?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
 				    |[a-z.\s]+(?:standard|daylight)\s+time\b
 				    |[a-z]+(?:\s+dst)?\b
@@ -771,8 +771,9 @@ class Date
   end
 
   def strftime(fmt='%F')
-    fmt.gsub(/%[EO]?(.)/m) do |_|
-      case $1
+    fmt.gsub(/%[EO]?(:{1,3}z|.)/m) do |_|
+      s = $1
+      case s
       when 'A'; DAYNAMES[wday]
       when 'a'; ABBR_DAYNAMES[wday]
       when 'B'; MONTHNAMES[mon]
@@ -825,12 +826,26 @@ class Date
       when 'Y'; '%.4d' %  year
       when 'y'; '%02d' % (year % 100)
       when 'Z'; (if offset.zero? then 'Z' else strftime('%z') end)
-      when 'z'							# ID
+      when /\A(:{0,3})z/					# ID
+	t = $1.size
 	p = if offset < 0 then '-' else '+' end
 	of = offset.abs
 	hh, fr = of.divmod(1.to_r/24)
-	mm = fr / (1.to_r/1440)
-	'%s%02d%02d' % [p, hh, mm]
+	mm, fr = fr.divmod(1.to_r/1440)
+	ss, fr = fr.divmod(1.to_r/86400)
+	if t == 3
+	  if ss.nonzero? then t = 2 elsif mm.nonzero? then t = 1 end
+	end
+	case t
+	when 0
+	  '%s%02d%02d' % [p, hh, mm]
+	when 1
+	  '%s%02d:%02d' % [p, hh, mm]
+	when 2
+	  '%s%02d:%02d:%02d' % [p, hh, mm, ss]
+	when 3
+	  '%s%02d' % [p, hh]
+	end
       when '%'; '%'
       when '+'; strftime('%a %b %e %H:%M:%S %Z %Y')		# TZ
       when '1'
@@ -849,7 +864,7 @@ class Date
 	end
 	strftime('%F')
       else
-	$1
+	s
       end
     end
   end
@@ -860,16 +875,66 @@ class Date
 
   alias_method :ctime, :asctime
 
+=begin
+  def iso8601() strftime('%F') end
+
+  def rfc3339() iso8601 end
+
+  def rfc2822() strftime('%a, %d %b %Y %T %z') end
+
+  alias_method :rfc822, :rfc2822
+
+  def jisx301
+    if jd < 2405160
+      iso8601
+    else
+      case jd
+      when 2405160...2419614
+	g = 'M%02d' % (year - 1867)
+      when 2419614...2424875
+	g = 'T%02d' % (year - 1911)
+      when 2424875...2447535
+	g = 'S%02d' % (year - 1925)
+      else
+	g = 'H%02d' % (year - 1988)
+      end
+      g + strftime('.%m.%d')
+    end
+  end
+=end
+
 end
 
 class DateTime < Date
 
-  def self._strptime(str, fmt='%FT%T%Z')
+  def self._strptime(str, fmt='%FT%T%z')
     super(str, fmt)
   end
 
-  def strftime(fmt='%FT%T%Z')
+  def strftime(fmt='%FT%T%:z')
     super(fmt)
   end
+
+=begin
+  def iso8601_timediv(n) # :nodoc:
+    strftime('T%T' +
+	     if n < 1
+	       ''
+	     else
+	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n)))]
+	     end +
+	     '%Z')
+  end
+
+  private :iso8601_timediv
+
+  def iso8601(n=0)
+    super() + iso8601_timediv(n)
+  end
+
+  def jisx301(n=0)
+    super() + iso8601_timediv(n)
+  end
+=end
 
 end
