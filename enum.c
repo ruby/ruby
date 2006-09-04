@@ -1187,27 +1187,6 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     return result;
 }
 
-static VALUE
-in_i(VALUE i, VALUE *memo)
-{
-    if (rb_equal(i, memo[0])) {
-	memo[1] = Qtrue;
-	rb_iter_break();
-    }
-    return Qnil;
-}
-
-VALUE
-rb_enum_in(VALUE elem, VALUE obj)
-{
-    VALUE memo[2];
-
-    memo[0] = elem;
-    memo[1] = Qfalse;
-    rb_block_call(obj, id_each, 0, 0, in_i, (VALUE)&memo);
-    return memo[1];
-}
-
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
