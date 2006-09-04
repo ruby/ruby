@@ -1201,6 +1201,9 @@ time_to_s(VALUE time)
     time_t off;
     char buf2[32];
     char sign = '+';
+#if !defined(HAVE_STRUCT_TM_TM_GMTOFF)
+    VALUE tmp;
+#endif
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
@@ -1209,7 +1212,7 @@ time_to_s(VALUE time)
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
     off = tobj->tm.tm_gmtoff;
 #else
-    VALUE tmp = time_utc_offset(time);
+    tmp = time_utc_offset(time);
     off = NUM2INT(tmp);
 #endif
     if (off < 0) {
