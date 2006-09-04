@@ -1553,8 +1553,10 @@ rb_big_pow(VALUE x, VALUE y)
 		while (yy % 2 == 0) {
 		    yy /= 2;
 		    x = rb_big_mul0(x, x);
+		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
 		}
 		z = rb_big_mul0(z, x);
+		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
 	    }
 	    return bignorm(z);
 	}
