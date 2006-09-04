@@ -4099,9 +4099,9 @@ is_absolute_path(path)
 
 #ifndef DOSISH
 static int
-path_check_0(fpath, loadpath)
+path_check_0(fpath, execpath)
      VALUE fpath;
-     int loadpath;
+     int execpath;
 {
     struct stat st;
     char *p0 = StringValueCStr(fpath);
@@ -4116,7 +4116,7 @@ path_check_0(fpath, loadpath)
 
 	rb_str_cat2(newpath, "/");
 	rb_str_cat2(newpath, p0);
-	return path_check_0(newpath, loadpath);
+	p0 = RSTRING(fpath = newpath)->ptr;
     }
     for (;;) {
 #ifndef S_IWOTH
@@ -4124,10 +4124,11 @@ path_check_0(fpath, loadpath)
 #endif
 	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
-	    && (loadpath || !(st.st_mode & S_ISVTX))
+	    && !(p && execpath && (st.st_mode & S_ISVTX))
 #endif
 	    ) {
-	    rb_warn("Insecure world writable dir %s, mode 0%o", p0, st.st_mode);
+	    rb_warn("Insecure world writable dir %s in %sPATH, mode 0%o",
+		    p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
 	    return 0;
 	}
@@ -4315,9 +4316,6 @@ rb_find_file(path)
 	}
 	else {
 	    lpath = RSTRING(tmp)->ptr;
-	    if (rb_safe_level() >= 1 && !rb_path_check(lpath)) {
-		rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
-	    }
 	}
     }
     else {
