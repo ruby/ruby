@@ -1,3 +1,14 @@
+Mon Sep  4 16:13:23 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (pipe_open): command name should not contain null bytes.
+	  [ruby-dev:29421]
+
+	* process.c (proc_spawn): ditto.
+
+	* process.c (proc_spawn_n): ditto.
+
+	* process.c (rb_f_system): ditto.
+
 Sun Sep  3 15:32:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: get rid of nil.to_s.

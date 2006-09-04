@@ -1136,13 +1136,13 @@ proc_spawn_n(argc, argv, prog)
     args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
-	args[i] = RSTRING(argv[i])->ptr;
+	args[i] = StringValueCStr(argv[i]);
     }
     if (prog)
 	SafeStringValue(prog);
     args[i] = (char*) 0;
     if (args[0])
-	return proc_spawn_v(args, prog ? RSTRING(prog)->ptr : 0);
+	return proc_spawn_v(args, prog ? StringValueCStr(prog) : 0);
     return -1;
 }
 
@@ -1157,7 +1157,7 @@ proc_spawn(sv)
     int status;
 
     SafeStringValue(sv);
-    str = s = RSTRING(sv)->ptr;
+    str = s = StringValueCStr(sv);
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
@@ -1458,7 +1458,7 @@ rb_f_system(argc, argv)
     if (argc == 1 && prog == 0) {
 #if defined(_WIN32)
 	SafeStringValue(argv[0]);
-	status = do_spawn(P_WAIT, RSTRING(argv[0])->ptr);
+	status = do_spawn(P_WAIT, StringValueCStr(argv[0]));
 #else
 	status = proc_spawn(argv[0]);
 #endif
@@ -1486,7 +1486,7 @@ rb_f_system(argc, argv)
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
     SafeStringValue(cmd);
-    status = system(RSTRING(cmd)->ptr);
+    status = system(StringValueCStr(cmd));
     last_status_set((status & 0xff) << 8, 0);
 #else
     volatile VALUE prog = 0;
@@ -1511,9 +1511,11 @@ rb_f_system(argc, argv)
 
     if (prog) {
 	SafeStringValue(prog);
+	StringValueCStr(prog);
     }
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
+	StringValueCStr(argv[i]);
     }
     security(RSTRING(prog ? prog : argv[0])->ptr);
     chfunc = signal(SIGCHLD, SIG_DFL);
