@@ -7884,7 +7884,10 @@ arg_blk_pass(NODE *node1, NODE *node2)
 static int
 arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
 {
-    VALUE sym = ID2SYM(vid);
+    VALUE sym;
+
+    if (!vid) return 0;
+    sym = ID2SYM(vid);
     if ((m && rb_ary_includes(m, sym)) || rb_ary_includes(list, sym)) {
 	ruby_sourceline = nd_line(node);
 	return 1;
@@ -8468,12 +8471,13 @@ rb_id2sym(ID id)
 {
     VALUE data;
 
-    if (st_lookup(global_symbols.id_sym, id, &data)) {
-	if (!RBASIC(data)->klass) {
-	    RBASIC(data)->klass = rb_cSymbol;
-	}
-	return data;
+    while (!st_lookup(global_symbols.id_sym, id, &data)) {
+	rb_id2name(id);
     }
+    if (!RBASIC(data)->klass) {
+	RBASIC(data)->klass = rb_cSymbol;
+    }
+    return data;
 }
 
 ID

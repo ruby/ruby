@@ -1,3 +1,8 @@
+Mon Sep  4 06:46:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_id2sym): intern if id is attrset_id.
+	  [ruby-dev:29420] [ruby-dev:29447]
+
 Mon Sep  4 01:25:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_local_variables): list symbols.
