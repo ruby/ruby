@@ -46,16 +46,16 @@ def db_prefix(func)
 end
 
 if dblib
-  db_check(dblib)
+  dbm_hdr = db_check(dblib)
 else
-  for dblib in %w(db db2 db1 dbm gdbm gdbm_compat qdbm)
-    db_check(dblib) and break
+  dbm_hdr = %w(db db2 db1 dbm gdbm gdbm_compat qdbm).any? do |dblib|
+    db_check(dblib)
   end
 end
 
 have_header("cdefs.h") 
 have_header("sys/cdefs.h") 
-if /DBM_HDR/ =~ $defs.join(" ") and have_func(db_prefix("dbm_open"))
+if dbm_hdr and have_func(db_prefix("dbm_open"))
   have_func(db_prefix("dbm_clearerr")) unless $dbm_conf_have_gdbm
   create_makefile("dbm")
 end
