@@ -966,7 +966,7 @@ class Date
 
   private :hour, :min, :sec, :sec_fraction
 
-  def zone() strftime('%Z') end
+  def zone() strftime('%:z') end
 
   private :zone
 
