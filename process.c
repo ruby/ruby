@@ -1173,9 +1173,11 @@ rb_check_argv(int argc, VALUE *argv)
 	prog = RARRAY_PTR(tmp)[0];
 	argv[0] = RARRAY_PTR(tmp)[1];
 	SafeStringValue(prog);
+	StringValueCStr(prog);
     }
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
+	StringValueCStr(argv[i]);
     }
     security(RSTRING_PTR(prog ? prog : argv[0]));
     return prog;

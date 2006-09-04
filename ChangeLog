@@ -1,3 +1,14 @@
+Mon Sep  4 16:39:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::out): specify -x option for nkf.
+
+	* lib/cgi.rb (CGI::out): should not convert utf-8 implicitly using
+	  NKF.  it is too Japanese centric.
+
+Mon Sep  4 14:23:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (db_check): remove debug print.
+
 Mon Sep  4 06:46:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (rb_id2sym): intern if id is attrset_id.

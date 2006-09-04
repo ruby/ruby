@@ -34,7 +34,6 @@ def db_check(db)
     for hdr in $dbm_conf_headers.fetch(db, ["ndbm.h"])
       if have_header(hdr.dup) and have_type("DBM", hdr.dup, hsearch)
 	$defs << hsearch << '-DDBM_HDR="<'+hdr+'>"'
-        p $defs
 	return true
       end
     end
