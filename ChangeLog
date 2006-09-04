@@ -1,3 +1,7 @@
+Tue Sep  5 05:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_hash): improve collision.  fixed: [ruby-dev:29352]
+
 Tue Sep  5 05:49:41 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (path_check_0): check if sticky bit is set on parent

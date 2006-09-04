@@ -870,7 +870,7 @@ flo_hash(num)
     if (d == 0) d = fabs(d);
     c = (char*)&d;
     for (hash=0, i=0; i<sizeof(double);i++) {
-	hash += c[i] * 971;
+	hash = (hash * 971) ^ (unsigned char)c[i];
     }
     if (hash < 0) hash = -hash;
     return INT2FIX(hash);
