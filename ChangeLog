@@ -1,3 +1,8 @@
+Mon Sep  4 23:15:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_to_s): make it conform to RFC2822 date format.
+	  [ruby-dev:29467]
+
 Mon Sep  4 21:43:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dbm/extconf.rb: create makefile according to the result of check
