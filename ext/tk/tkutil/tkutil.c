@@ -267,25 +267,24 @@ ary2list(ary, enc_flag, self)
         req_chk_flag = 0;
     }
 
-    /* size = RARRAY(ary)->len; */
+    /* size = RARRAY_LEN(ary); */
     size = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        if (TYPE(RARRAY(ary)->ptr[idx]) == T_HASH) {
-            size += 2 * RHASH(RARRAY(ary)->ptr[idx])->tbl->num_entries;
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        if (TYPE(RARRAY_PTR(ary)[idx]) == T_HASH) {
+            size += 2 * RHASH(RARRAY_PTR(ary)[idx])->tbl->num_entries;
         } else {
             size++;
         }
     }
 
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        val = RARRAY(ary)->ptr[idx];
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        val = RARRAY_PTR(ary)[idx];
         str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
             str_val = ary2list(val, enc_flag, self);
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+            rb_ary_push(dst, str_val);
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -303,19 +302,19 @@ ary2list(ary, enc_flag, self)
             break;
 
         case T_HASH:
-            /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
+	    /* rb_ary_push(dst, hash2list(val, self)); */
             if (RTEST(enc_flag)) {
                 val = hash2kv_enc(val, Qnil, self);
             } else {
                 val = hash2kv(val, Qnil, self);
             }
-            size2 = RARRAY(val)->len;
+            size2 = RARRAY_LEN(val);
             for(idx2 = 0; idx2 < size2; idx2++) {
-                val2 = RARRAY(val)->ptr[idx2];
+                val2 = RARRAY_PTR(val)[idx2];
                 switch(TYPE(val2)) {
                 case T_ARRAY:
                     str_val = ary2list(val2, enc_flag, self);
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                    rb_ary_push(dst, str_val);
                     break;
 
                 case T_HASH:
@@ -324,13 +323,13 @@ ary2list(ary, enc_flag, self)
                     } else {
                         str_val = hash2list(val2, self);
                     }
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                    rb_ary_push(dst, str_val);
                     break;
 
                 default:
                     if (val2 != TK_None) {
                         str_val = get_eval_string_core(val2, enc_flag, self);
-                        RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                        rb_ary_push(dst, str_val);
                     }
                 }
 
@@ -352,7 +351,7 @@ ary2list(ary, enc_flag, self)
         default:
             if (val != TK_None) {
                 str_val = get_eval_string_core(val, enc_flag, self);
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                rb_ary_push(dst, str_val);
 
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -371,14 +370,14 @@ ary2list(ary, enc_flag, self)
     }
 
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
-        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
-            str_val = RARRAY(dst)->ptr[idx];
+        for(idx = 0; idx < RARRAY_LEN(dst); idx++) {
+            str_val = RARRAY_PTR(dst)[idx];
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY(dst)->ptr[idx] = str_val;
+            RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
@@ -421,11 +420,10 @@ ary2list2(ary, enc_flag, self)
         req_chk_flag = 0;
     }
 
-    size = RARRAY(ary)->len;
+    size = RARRAY_LEN(ary);
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        val = RARRAY(ary)->ptr[idx];
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        val = RARRAY_PTR(ary)[idx];
         str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
@@ -447,7 +445,7 @@ ary2list2(ary, enc_flag, self)
         }
 
         if (!NIL_P(str_val)) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+            rb_ary_push(dst, str_val);
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -465,14 +463,14 @@ ary2list2(ary, enc_flag, self)
     }
 
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
-        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
-            str_val = RARRAY(dst)->ptr[idx];
+        for(idx = 0; idx < RARRAY_LEN(dst); idx++) {
+            str_val = RARRAY_PTR(dst)[idx];
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY(dst)->ptr[idx] = str_val;
+            RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
@@ -503,38 +501,35 @@ assoc2kv(assoc, ary, self)
     int i, j, len;
     volatile VALUE pair;
     volatile VALUE val;
-    volatile VALUE dst = rb_ary_new2(2 * RARRAY(assoc)->len);
+    volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
 
-    len = RARRAY(assoc)->len;
+    len = RARRAY_LEN(assoc);
 
     for(i = 0; i < len; i++) {
-        pair = RARRAY(assoc)->ptr[i];
+        pair = RARRAY_PTR(assoc)[i];
         if (TYPE(pair) != T_ARRAY) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            rb_ary_push(dst, key2keyname(pair));
             continue;
         }
-        switch(RARRAY(assoc)->len) {
+        switch(RARRAY_LEN(assoc)) {
         case 2:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(pair)->ptr[2];
+            rb_ary_push(dst, RARRAY_PTR(pair)[2]);
 
         case 1:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
         case 0:
             continue;
 
         default:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
-            val = rb_ary_new2(RARRAY(pair)->len - 1);
-            RARRAY(val)->len = 0;
-            for(j = 1; j < RARRAY(pair)->len; j++) {
-                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            val = rb_ary_new2(RARRAY_LEN(pair) - 1);
+            for(j = 1; j < RARRAY_LEN(pair); j++) {
+                rb_ary_push(val, RARRAY_PTR(pair)[j]);
             }
 
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = val;
+            rb_ary_push(dst, val);
         }
     }
 
@@ -554,40 +549,35 @@ assoc2kv_enc(assoc, ary, self)
     int i, j, len;
     volatile VALUE pair;
     volatile VALUE val;
-    volatile VALUE dst = rb_ary_new2(2 * RARRAY(assoc)->len);
+    volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
 
-    len = RARRAY(assoc)->len;
+    len = RARRAY_LEN(assoc);
 
     for(i = 0; i < len; i++) {
-        pair = RARRAY(assoc)->ptr[i];
+        pair = RARRAY_PTR(assoc)[i];
         if (TYPE(pair) != T_ARRAY) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            rb_ary_push(dst, key2keyname(pair));
             continue;
         }
-        switch(RARRAY(assoc)->len) {
+        switch(RARRAY_LEN(assoc)) {
         case 2:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(RARRAY(pair)->ptr[2], Qtrue, self);
+            rb_ary_push(dst, get_eval_string_core(RARRAY_PTR(pair)[2], Qtrue, self));
 
         case 1:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
         case 0:
             continue;
 
         default:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
-            val = rb_ary_new2(RARRAY(pair)->len - 1);
-            RARRAY(val)->len = 0;
-            for(j = 1; j < RARRAY(pair)->len; j++) {
-                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            val = rb_ary_new2(RARRAY_LEN(pair) - 1);
+            for(j = 1; j < RARRAY_LEN(pair); j++) {
+                rb_ary_push(val, RARRAY_PTR(pair)[j]);
             }
 
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(val, Qtrue, self);
+            rb_ary_push(dst, get_eval_string_core(val, Qtrue, self));
         }
     }
 
@@ -606,19 +596,18 @@ push_kv(key, val, args)
 {
     volatile VALUE ary;
 
-    ary = RARRAY(args)->ptr[0];
+    ary = RARRAY_PTR(args)[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) rb_ary_push(ary, val);
 #endif
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
+    rb_ary_push(ary, key2keyname(key));
 
     if (val == TK_None) return ST_CHECK;
 
-    RARRAY(ary)->ptr[RARRAY(ary)->len++]
-        = get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
+    rb_ary_push(ary, get_eval_string_core(val, Qnil, RARRAY_PTR(args)[1]));
 
     return ST_CHECK;
 }
@@ -629,14 +618,9 @@ hash2kv(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE args = rb_ary_new2(2);
     volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    RARRAY(dst)->len = 0;
-
-    RARRAY(args)->ptr[0] = dst;
-    RARRAY(args)->ptr[1] = self;
-    RARRAY(args)->len = 2;
     st_foreach(RHASH(hash)->tbl, push_kv, args);
 
     if (NIL_P(ary)) {
@@ -654,22 +638,21 @@ push_kv_enc(key, val, args)
 {
     volatile VALUE ary;
 
-    ary = RARRAY(args)->ptr[0];
+    ary = RARRAY_PTR(args)[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) {
         rb_ary_push(ary, get_eval_string_core(val, Qtrue, 
-                                              RARRAY(args)->ptr[1]));
+                                              RARRAY_PTR(args)[1]));
     }
 #endif
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
+    rb_ary_push(ary, key2keyname(key));
 
     if (val == TK_None) return ST_CHECK;
 
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] 
-        = get_eval_string_core(val, Qtrue, RARRAY(args)->ptr[1]);
+    rb_ary_push(ary, get_eval_string_core(val, Qtrue, RARRAY_PTR(args)[1]));
 
     return ST_CHECK;
 }
@@ -680,14 +663,9 @@ hash2kv_enc(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE args = rb_ary_new2(2);
     volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    RARRAY(dst)->len = 0;
-
-    RARRAY(args)->ptr[0] = dst;
-    RARRAY(args)->ptr[1] = self;
-    RARRAY(args)->len = 2;
     st_foreach(RHASH(hash)->tbl, push_kv_enc, args);
 
     if (NIL_P(ary)) {
@@ -922,7 +900,6 @@ tk_conv_args(argc, argv, self)
     }
     /* dst = rb_ary_new2(argc - 2); */
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
     for(idx = 2; idx < argc; idx++) {
         if (TYPE(argv[idx]) == T_HASH) {
             if (RTEST(argv[1])) {
@@ -931,8 +908,7 @@ tk_conv_args(argc, argv, self)
                 hash2kv(argv[idx], dst, self);
             }
         } else if (argv[idx] != TK_None) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(argv[idx], argv[1], self);
+            rb_ary_push(dst, get_eval_string_core(argv[idx], argv[1], self));
         }
     }
 
@@ -1301,11 +1277,11 @@ cbsubst_get_subst_key(self, str)
 
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
 
-    len = RARRAY(list)->len;
+    len = RARRAY_LEN(list);
     buf = ALLOC_N(char, len + 1);
 
     for(i = 0; i < len; i++) {
-        ptr = RSTRING_PTR(RARRAY(list)->ptr[i]);
+        ptr = RSTRING_PTR(RARRAY_PTR(list)[i]);
         if (*ptr == '%' && *(ptr + 2) == '\0') {
             *(buf + i) = *(ptr + 1);
         } else {
@@ -1356,7 +1332,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 {
     struct cbsubst_info *subst_inf;
     int idx;
-    int len = RARRAY(key_inf)->len;
+    int len = RARRAY_LEN(key_inf);
     int real_len = 0;
     char *key = ALLOC_N(char, len + 1);
     char *type = ALLOC_N(char, len + 1);
@@ -1381,20 +1357,20 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      *         ivar  ==> symbol
      */
     for(idx = 0; idx < len; idx++) {
-        inf = RARRAY(key_inf)->ptr[idx];
+        inf = RARRAY_PTR(key_inf)[idx];
         if (TYPE(inf) != T_ARRAY) continue;
-        *(key  + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
-        *(type + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
+        *(key  + real_len) = (char)NUM2INT(RARRAY_PTR(inf)[0]);
+        *(type + real_len) = (char)NUM2INT(RARRAY_PTR(inf)[1]);
 
         *(ivar + real_len) 
             = rb_intern(
                 RSTRING_PTR(
                   rb_str_cat2(rb_str_new2("@"), 
-                              rb_id2name(SYM2ID(RARRAY(inf)->ptr[2])))
+                              rb_id2name(SYM2ID(RARRAY_PTR(inf)[2])))
                 )
               );
 
-        rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
+        rb_attr(self, SYM2ID(RARRAY_PTR(inf)[2]), 1, 0, Qtrue);
         real_len++;
     }
     *(key + real_len) = '\0';
@@ -1406,11 +1382,11 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      *         type  ==> char code 
      *         proc  ==> proc/method/obj (must respond to 'call')
      */
-    len = RARRAY(proc_inf)->len;
+    len = RARRAY_LEN(proc_inf);
     for(idx = 0; idx < len; idx++) {
-        inf = RARRAY(proc_inf)->ptr[idx];
+        inf = RARRAY_PTR(proc_inf)[idx];
         if (TYPE(inf) != T_ARRAY) continue;
-        rb_hash_aset(proc, RARRAY(inf)->ptr[0], RARRAY(inf)->ptr[1]);
+        rb_hash_aset(proc, RARRAY_PTR(inf)[0], RARRAY_PTR(inf)[1]);
     }
 
     rb_const_set(self, ID_SUBST_INFO, 
@@ -1435,7 +1411,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
 {
     struct cbsubst_info *inf;
     int idx;
-    int len = RARRAY(val_ary)->len;
+    int len = RARRAY_LEN(val_ary);
     char c;
     char *ptr;
     volatile VALUE dst = rb_ary_new2(len);
@@ -1451,7 +1427,6 @@ cbsubst_scan_args(self, arg_key, val_ary)
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    RARRAY(dst)->len = 0;
     for(idx = 0; idx < len; idx++) {
         if (idx >= RSTRING_LEN(arg_key)) {
             proc = Qnil;
@@ -1468,10 +1443,9 @@ cbsubst_scan_args(self, arg_key, val_ary)
         }
 
         if (NIL_P(proc)) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(val_ary)->ptr[idx];
+            rb_ary_push(dst, RARRAY_PTR(val_ary)[idx]);
         } else {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = rb_funcall(proc, ID_call, 1, RARRAY(val_ary)->ptr[idx]);
+            rb_ary_push(dst, rb_funcall(proc, ID_call, 1, RARRAY_PTR(val_ary)[idx]));
         }
     }
 

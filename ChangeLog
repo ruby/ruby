@@ -1,3 +1,10 @@
+Tue Sep  5 22:06:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c: use rb_ary_new3() since RARRAY_LEN() is not l-value.
+
+	* ext/tk/tkutil/tkutil.c: use RARRAY_PTR() and RARRAY_LEN() and etc.
+	  fixed: [ruby-dev:29473]
+
 Tue Sep  5 06:47:22 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_to_s): variable declaration after an execution

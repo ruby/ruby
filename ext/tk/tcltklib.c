@@ -5584,9 +5584,7 @@ tk_funcall(func, argc, argv, obj)
     Tcl_Preserve(callq);
 
     /* allocate result obj */
-    result = rb_ary_new2(1);
-    RARRAY_PTR(result)[0] = Qnil;
-    RARRAY_LEN(result) = 1;
+    result = rb_ary_new3(1, Qnil);
 
     /* construct event data */
     callq->done = alloc_done;
@@ -5899,9 +5897,7 @@ ip_eval(self, str)
     Tcl_Preserve(evq);
 
     /* allocate result obj */
-    result = rb_ary_new2(1);
-    RARRAY_PTR(result)[0] = Qnil;
-    RARRAY_LEN(result) = 1;
+    result = rb_ary_new3(1, Qnil);
 
     /* construct event data */
     evq->done = alloc_done;
@@ -6979,9 +6975,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     Tcl_Preserve(ivq);
 
     /* allocate result obj */
-    result = rb_ary_new2(1);
-    RARRAY_PTR(result)[0] = Qnil;
-    RARRAY_LEN(result) = 1;
+    result = rb_ary_new3(1, Qnil);
 
     /* construct event data */
     ivq->done = alloc_done;
