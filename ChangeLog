@@ -1,3 +1,8 @@
+Wed Sep  6 13:25:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (symbols_i): need to initialize early-created symbols.
+	  [ruby-dev:29496]
+
 Wed Sep 06 12:05:19 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv::toeuc): remove -m0 [ruby-dev:29505]

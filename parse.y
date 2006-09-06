@@ -8532,6 +8532,9 @@ rb_id2name(ID id)
 static int
 symbols_i(VALUE sym, ID value, VALUE ary)
 {
+    if (!RBASIC(sym)->klass) {
+	RBASIC(sym)->klass = rb_cSymbol;
+    }
     rb_ary_push(ary, sym);
     return ST_CONTINUE;
 }
