@@ -1,3 +1,7 @@
+Thu Sep  7 01:54:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_equal): override.  check equivalence.
+
 Wed Sep  6 13:25:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (symbols_i): need to initialize early-created symbols.

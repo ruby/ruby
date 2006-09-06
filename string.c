@@ -4424,6 +4424,22 @@ rb_sym_s_intern(VALUE s)
 
 /*
  *  call-seq:
+ *     sym == obj   => true or false
+ *  
+ *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
+ *  symbol, returns <code>true</code>. Otherwise, returns
+ *  <code>false</code>.
+ */
+
+static VALUE
+sym_equal(VALUE sym1, VALUE sym2)
+{
+    if (sym1 == sym2) return Qtrue;
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
  *     sym.to_i      => fixnum
  *  
  *  Returns an integer that is unique for each symbol within a
@@ -4703,6 +4719,7 @@ Init_String(void)
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
     rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
 
+    rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
