@@ -1,3 +1,10 @@
+Wed Sep 06 12:05:19 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): fix regexp for euc-jp
+	  [ruby-dev:29344]
+
+	* ext/nkf/lib/kconv.rb (Kconv::toeuc): remove -m0 [ruby-dev:29505]
+
 Tue Sep  5 06:47:22 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_to_s): variable declaration after an execution

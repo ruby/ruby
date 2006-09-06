@@ -63,8 +63,8 @@ module Kconv
   RegexpEucjp = /\A(?:
 		    [\x00-\x7f]                         |
 		    \x8e        [\xa1-\xdf]             |
-		    \x8f        [\xa1-\xdf] [\xa1-\xfe] |
-		    [\xa1-\xdf] [\xa1-\xfe]
+		    \x8f        [\xa1-\xfe] [\xa1-\xfe] |
+		    [\xa1-\xfe] [\xa1-\xfe]
 		   )*\z/nx
 
   # Regexp of UTF-8 string (private constant)
@@ -156,7 +156,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc(str)
-    ::NKF::nkf('-em0', str)
+    ::NKF::nkf('-em', str)
   end
   module_function :toeuc
 
