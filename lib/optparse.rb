@@ -786,7 +786,7 @@ class OptionParser
   def add_officious  # :nodoc:
     list = base()
     Officious.each do |opt, block|
-      list.long[opt] ||= block.yield(self)
+      list.long[opt] ||= block.call(self)
     end
   end
 
@@ -1251,7 +1251,7 @@ class OptionParser
           end
           begin
             opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.yield(val) if sw
+            sw.call(val) if sw
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1281,7 +1281,7 @@ class OptionParser
             opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            sw.yield(val) if sw
+            sw.call(val) if sw
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1290,9 +1290,9 @@ class OptionParser
         else
           catch(:prune) do
             visit(:each_option) do |sw|
-              sw.block.yield(arg) if Switch === sw and sw.match_nonswitch?(arg)
+              sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
             end
-            nonopt.yield(arg)
+            nonopt.call(arg)
           end
         end
       end
@@ -1300,7 +1300,7 @@ class OptionParser
       nil
     }
 
-    visit(:search, :short, nil) {|sw| sw.block.yield(argv) if !sw.pattern}
+    visit(:search, :short, nil) {|sw| sw.block.call(argv) if !sw.pattern}
 
     argv
   end
