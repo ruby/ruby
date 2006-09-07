@@ -24,6 +24,17 @@ Tue Sep  5 05:49:41 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (path_check_0): check if sticky bit is set on parent
 	  directories for executable path.  fixed: [ruby-dev:29415]
 
+Tue Sep  5 05:03:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_plus): addition in Fixnum will never overflow
+	  long.  a patch from Ondrej Bilka <neleai at seznam.cz>.
+	  [ruby-core:08794]
+
+	* numeric.c (fix_minus): ditto.
+
+	* bignum.c (rb_big_pow): eagerly truncate resulting bignum.
+	  [ruby-core:08794]
+
 Mon Sep  4 23:15:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_to_s): make it conform to RFC2822 date format.

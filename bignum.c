@@ -1617,8 +1617,10 @@ rb_big_pow(x, y)
 		while (yy % 2 == 0) {
 		    yy /= 2;
 		    x = rb_big_mul(x, x);
+		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
 		}
 		z = rb_big_mul(z, x);
+		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
 	    }
 	    return bignorm(z);
 	}

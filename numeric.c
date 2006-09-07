@@ -1982,11 +1982,8 @@ fix_plus(x, y)
 	a = FIX2LONG(x);
 	b = FIX2LONG(y);
 	c = a + b;
-	r = LONG2FIX(c);
+	r = LONG2NUM(c);
 
-	if (FIX2LONG(r) != c) {
-	    r = rb_big_plus(rb_int2big(a), rb_int2big(b));
-	}
 	return r;
     }
     if (TYPE(y) == T_FLOAT) {
@@ -2015,11 +2012,8 @@ fix_minus(x, y)
 	a = FIX2LONG(x);
 	b = FIX2LONG(y);
 	c = a - b;
-	r = LONG2FIX(c);
+	r = LONG2NUM(c);
 
-	if (FIX2LONG(r) != c) {
-	    r = rb_big_minus(rb_int2big(a), rb_int2big(b));
-	}
 	return r;
     }
     if (TYPE(y) == T_FLOAT) {
