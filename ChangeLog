@@ -3,6 +3,11 @@ Thu Sep  7 23:27:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (path_check_0, fpath_check): disable path check on cygwin.
 	  [ruby-talk:213074]
 
+Thu Sep  7 02:03:45 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_to_s): adopt new date format using digits
+	  e.g. "2006-09-07 02:03:45 +9000".
+
 Thu Sep  7 01:54:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_equal): override.  check equivalence.
