@@ -4097,7 +4097,15 @@ is_absolute_path(path)
     return 0;
 }
 
-#ifndef DOSISH
+#ifndef ENABLE_PATH_CHECK
+# if defined DOSISH || defined __CYGWIN__
+#   define ENABLE_PATH_CHECK 0
+# else
+#   define ENABLE_PATH_CHECK 1
+# endif
+#endif
+
+#if ENABLE_PATH_CHECK
 static int
 path_check_0(fpath, execpath)
      VALUE fpath;
@@ -4145,7 +4153,7 @@ static int
 fpath_check(path)
     char *path;
 {
-#ifndef DOSISH
+#if ENABLE_PATH_CHECK
     return path_check_0(rb_str_new2(path), Qfalse);
 #else
     return 1;
@@ -4156,7 +4164,7 @@ int
 rb_path_check(path)
     char *path;
 {
-#ifndef DOSISH
+#if ENABLE_PATH_CHECK
     char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
