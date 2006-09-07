@@ -1,3 +1,8 @@
+Thu Sep  7 21:02:56 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (nil_to_s): returns the empty string again.
+	  [ruby-dev:29520]
+
 Thu Sep  7 23:27:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (path_check_0, fpath_check): disable path check on cygwin.

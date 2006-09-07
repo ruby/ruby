@@ -675,15 +675,15 @@ nil_to_f(VALUE obj)
 
 /*
  *  call-seq:
- *     nil.to_s    => "nil"
+ *     nil.to_s    => ""
  *  
- *  Always returns the string "nil".
+ *  Always returns the empty string.
  */
 
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_str_new2("nil");
+    return rb_str_new2("");
 }
 
 /*
