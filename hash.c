@@ -1147,9 +1147,13 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 
 /*
  * call-seq:
+ *   hsh.to_s   => string
  *   hsh.inspect  => string
  *
  * Return the contents of this hash as a string.
+ *     
+ *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
+ *     h.to_s   #=> "{\"a\"=>100, \"c\"=>300, \"d\"=>400}"
  */
 
 static VALUE
@@ -1158,32 +1162,6 @@ rb_hash_inspect(VALUE hash)
     if (RHASH(hash)->tbl == 0 || RHASH(hash)->tbl->num_entries == 0)
 	return rb_str_new2("{}");
     return rb_exec_recursive(inspect_hash, hash, 0);
-}
-
-static VALUE
-to_s_hash(VALUE hash, VALUE dummy, int recur)
-{
-    if (recur) return rb_str_new2("{...}");
-    return rb_ary_to_s(rb_hash_to_a(hash));
-}
-
-/*
- *  call-seq:
- *     hsh.to_s   => string
- *  
- *  Converts <i>hsh</i> to a string by converting the hash to an array
- *  of <code>[</code> <i>key, value</i> <code>]</code> pairs and then
- *  converting that array to a string using <code>Array#join</code> with
- *  the default separator.
- *     
- *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_s   #=> "a100c300d400"
- */
-
-static VALUE
-rb_hash_to_s(VALUE hash)
-{
-    return rb_exec_recursive(to_s_hash, hash, 0);
 }
 
 /*
@@ -2299,7 +2277,7 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
-    rb_define_method(rb_cHash,"to_s", rb_hash_to_s, 0);
+    rb_define_method(rb_cHash,"to_s", rb_hash_inspect, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);

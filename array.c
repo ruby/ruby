@@ -1374,24 +1374,6 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
     return rb_ary_join(ary, sep);
 }
 
-/*
- *  call-seq:
- *     array.to_s -> string
- *  
- *  Returns _self_<code>.join</code>.
- *     
- *     [ "a", "e", "i", "o" ].to_s   #=> "aeio"
- *
- */
-
-VALUE
-rb_ary_to_s(VALUE ary)
-{
-    if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
-    
-    return rb_ary_join(ary, rb_output_fs);
-}
-
 static VALUE
 inspect_ary(VALUE ary, VALUE dummy, int recur)
 {
@@ -1414,6 +1396,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 
 /*
  *  call-seq:
+ *     array.to_s -> string
  *     array.inspect  -> string
  *
  *  Create a printable version of <i>array</i>.
@@ -1424,6 +1407,12 @@ rb_ary_inspect(VALUE ary)
 {
     if (RARRAY_LEN(ary) == 0) return rb_str_new2("[]");
     return rb_exec_recursive(inspect_ary, ary, 0);
+}
+
+VALUE
+rb_ary_to_s(VALUE ary)
+{
+    return rb_ary_inspect(ary);
 }
 
 /*
@@ -2963,7 +2952,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
 
-    rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);
+    rb_define_method(rb_cArray, "to_s", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);

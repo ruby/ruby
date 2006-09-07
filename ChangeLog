@@ -1,3 +1,15 @@
+Fri Sep  8 01:16:34 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (Init_Array): #to_s to be an alias to #inspect.
+	  [ruby-dev:29520]
+
+	* hash.c (Init_Hash): ditto.
+
+	* lib/mkmf.rb (create_makefile): replace "print array" by
+	  "print *array".
+
+	* mkconfig.rb: ditto.
+
 Thu Sep  7 21:02:56 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (nil_to_s): returns the empty string again.

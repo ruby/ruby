@@ -1205,7 +1205,7 @@ def create_makefile(target, srcprefix = nil)
   dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
   staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
-  mfile.print configuration(srcprefix)
+  mfile.print *configuration(srcprefix)
   mfile.print %{
 libpath = #{$LIBPATH.join(" ")}
 LIBPATH = #{libpath}
@@ -1390,7 +1390,7 @@ site-install-rb: install-rb
     unless suffixes.empty?
       mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
     end
-    mfile.print depout
+    mfile.print *depout
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST

@@ -106,7 +106,8 @@ if $so_name
   v_fast << "  CONFIG[\"RUBY_SO_NAME\"] = \"" + $so_name + "\"\n"
 end
 
-print v_fast, v_others
+print *v_fast
+print *v_others
 print <<EOS
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
   CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
