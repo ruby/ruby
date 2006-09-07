@@ -344,6 +344,8 @@ struct RString {
 	VALUE shared;
     } aux;
 };
+#define RSTRING_PTR(s) (RSTRING(s)->ptr)
+#define RSTRING_LEN(s) (RSTRING(s)->len)
 
 struct RArray {
     struct RBasic basic;
@@ -354,6 +356,8 @@ struct RArray {
     } aux;
     VALUE *ptr;
 };
+#define RARRAY_PTR(s) (RARRAY(s)->ptr)
+#define RARRAY_LEN(s) (RARRAY(s)->len)
 
 struct RRegexp {
     struct RBasic basic;

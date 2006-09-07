@@ -1,3 +1,9 @@
+Fri Sep  8 01:33:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (RSTRING_PTR): add migration macro.
+
+	* ruby.h (RARRAY_PTR): ditto.
+
 Thu Sep  7 23:27:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (path_check_0, fpath_check): disable path check on cygwin.
