@@ -373,12 +373,12 @@ else
     elsif (w = w.grep(String)).empty?
       proc {true}
     else
-      w.collect {|opt| opt.split(/,/)}.flatten.method(:any?)
+      proc {|c1| w.collect {|opt| opt.split(/,/)}.flatten.any?(&c1)}
     end
   }
   cond = proc {|ext|
     cond1 = proc {|n| File.fnmatch(n, ext, File::FNM_PATHNAME)}
-    withes.call(&cond1) or !withouts.call(&cond1)
+    withes.call(cond1) or !withouts.call(cond1)
   }
   exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
     d = File.dirname(d)

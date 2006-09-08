@@ -1,9 +1,11 @@
-Sat Sep  9 04:47:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep  9 04:54:42 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (MINIRUBY): append MINIRUBYOPT.
 
 	* mkconfig.rb, ext/extmk.rb, lib/mkmf.rb, win32/mkexports.rb: suppress
 	  warnings with $VERBOSE.
+
+	* ext/extmk.rb: Proc#call does not pass the block in 1.8.
 
 	* win32/resource.rb: add more info.
 
