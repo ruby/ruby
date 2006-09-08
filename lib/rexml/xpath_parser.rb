@@ -10,9 +10,13 @@ class Object
   end
 end
 class Symbol
-  def dclone
-    self
-  end
+  def dclone ; self ; end
+end
+class Fixnum
+  def dclone ; self ; end
+end
+class Float
+  def dclone ; self ; end
 end
 class Array
   def dclone
@@ -34,7 +38,7 @@ module REXML
 
     def initialize( )
       @parser = REXML::Parsers::XPathParser.new
-      @namespaces = {}
+      @namespaces = nil
       @variables = {}
     end
 
@@ -130,6 +134,21 @@ module REXML
     private
 
 
+    # Returns a String namespace for a node, given a prefix
+    # The rules are:
+    # 
+    #  1. Use the supplied namespace mapping first.
+    #  2. If no mapping was supplied, use the context node to look up the namespace
+    def get_namespace( node, prefix )
+      if @namespaces
+        return @namespaces[prefix] || ''
+      else
+        return node.namespace( prefix ) if node.node_type == :element
+        return ''
+      end
+    end
+
+
     # Expr takes a stack of path elements and a set of nodes (either a Parent
     # or an Array and returns an Array of matching nodes
     ALL = [ :attribute, :element, :text, :processing_instruction, :comment ]
@@ -152,12 +171,9 @@ module REXML
           #puts "IN QNAME"
           prefix = path_stack.shift
           name = path_stack.shift
-          default_ns = @namespaces[prefix]
-          default_ns = default_ns ? default_ns : ''
           nodeset.delete_if do |node|
-            ns = default_ns
             # FIXME: This DOUBLES the time XPath searches take
-            ns = node.namespace( prefix ) if node.node_type == :element and ns == ''
+            ns = get_namespace( node, prefix )
             #puts "NS = #{ns.inspect}"
             #puts "node.node_type == :element => #{node.node_type == :element}"
             if node.node_type == :element
@@ -209,11 +225,7 @@ module REXML
           node_types = ELEMENTS
 
         when :literal
-          literal = path_stack.shift
-          if literal =~ /^\d+(\.\d+)?$/
-            return ($1 ? literal.to_f : literal.to_i) 
-          end
-          return literal
+          return path_stack.shift
         
         when :attribute
           new_nodeset = []
@@ -224,7 +236,7 @@ module REXML
             for element in nodeset
               if element.node_type == :element
                 #puts element.name
-                attr = element.attribute( name, @namespaces[prefix] )
+                attr = element.attribute( name, get_namespace(element, prefix) )
                 new_nodeset << attr if attr
               end
             end

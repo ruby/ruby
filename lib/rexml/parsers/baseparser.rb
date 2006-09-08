@@ -96,6 +96,13 @@ module REXML
         "apos" => [/&apos;/, "&apos;", "'", /'/] 
       }
 
+
+      ######################################################################
+      # These are patterns to identify common markup errors, to make the
+      # error messages more informative.
+      ######################################################################
+      MISSING_ATTRIBUTE_QUOTES = /^<#{NAME_STR}\s+#{NAME_STR}\s*=\s*[^"']/um
+
       def initialize( source )
         self.stream = source
       end
@@ -335,7 +342,11 @@ module REXML
             else
               # Get the next tag
               md = @source.match(TAG_MATCH, true)
-              raise REXML::ParseException.new("malformed XML: missing tag start", @source) unless md
+              unless md
+                # Check for missing attribute quotes
+                raise REXML::ParseException.new("missing attribute quote", @source) if @source.match(MISSING_ATTRIBUTE_QUOTES )
+                raise REXML::ParseException.new("malformed XML: missing tag start", @source) 
+              end
               attrs = []
               if md[2].size > 0
                 attrs = md[2].scan( ATTRIBUTE_PATTERN )
