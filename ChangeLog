@@ -1,3 +1,8 @@
+Fri Sep  8 08:59:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub, win32/configure.bat win32/setup.mak: program
+	  name transform.
+
 Fri Sep  8 08:25:39 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb: suppress `assigning void value' warning.

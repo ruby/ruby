@@ -32,7 +32,7 @@ i586-$(OS): -prologue- -i586- -epilogue-
 i686-$(OS): -prologue- -i686- -epilogue-
 alpha-$(OS): -prologue- -alpha- -epilogue-
 
--prologue-: -basic-vars- -system-vars- -version-
+-prologue-: -basic-vars- -system-vars- -version- -program-name-
 
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
@@ -118,6 +118,19 @@ MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
 MSC_VER = _MSC_VER
+<<
+
+-program-name-:
+	@type << >>$(MAKEFILE)
+!ifdef RUBY_SUFFIX
+RUBY_SUFFIX = $(RUBY_SUFFIX)
+!endif
+!ifdef RUBY_INSTALL_NAME
+RUBY_INSTALL_NAME = $(RUBY_INSTALL_NAME)
+!endif
+!ifdef RUBY_SO_NAME
+RUBY_SO_NAME = $(RUBY_SO_NAME)
+!endif
 <<
 
 -generic-: nul
