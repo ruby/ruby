@@ -938,6 +938,29 @@ module REXML
 		def each( xpath=nil, &block)
 			XPath::each( @element, xpath ) {|e| yield e if e.kind_of? Element }
 		end
+		
+		def collect( xpath=nil, &block )
+			collection = []
+			XPath::each( @element, xpath ) {|e| 
+				collection << yield(e)  if e.kind_of?(Element) 
+			}
+			collection
+		end
+			
+		def inject( xpath=nil, initial=nil, &block )
+			first = true
+			XPath::each( @element, xpath ) {|e|
+				if (e.kind_of? Element)
+					if (first and initial == nil)
+						initial = e
+						first = false
+					else
+						initial = yield( initial, e ) if e.kind_of? Element
+					end
+				end
+			}
+			initial
+		end
 
 		# Returns the number of +Element+ children of the parent object.
 		#  doc = Document.new '<a>sean<b/>elliott<b/>russell<b/></a>'

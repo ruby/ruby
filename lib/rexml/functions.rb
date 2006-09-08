@@ -326,8 +326,8 @@ module REXML
       else
         str = string( object )
         #puts "STRING OF #{object.inspect} = #{str}"
-        if str =~ /^\d+/
-          object.to_s.to_f
+        if str =~ /^-?\.?\d/
+          str.to_f
         else
           (0.0 / 0.0)
         end

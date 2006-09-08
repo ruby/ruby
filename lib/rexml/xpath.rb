@@ -19,9 +19,9 @@ module REXML
 		#  XPath.first( node )
 		#  XPath.first( doc, "//b"} )
 		#  XPath.first( node, "a/x:b", { "x"=>"http://doofus" } )
-    def XPath::first element, path=nil, namespaces={}, variables={}
-      raise "The namespaces argument, if supplied, must be a hash object." unless namespaces.kind_of? Hash
-      raise "The variables argument, if supplied, must be a hash object." unless variables.kind_of? Hash
+    def XPath::first element, path=nil, namespaces=nil, variables={}
+      raise "The namespaces argument, if supplied, must be a hash object." unless namespaces.nil? or namespaces.kind_of?(Hash)
+      raise "The variables argument, if supplied, must be a hash object." unless variables.kind_of?(Hash)
 			parser = XPathParser.new
 			parser.namespaces = namespaces
 			parser.variables = variables
@@ -42,9 +42,9 @@ module REXML
 		#  XPath.each( node ) { |el| ... }
 		#  XPath.each( node, '/*[@attr='v']' ) { |el| ... }
 		#  XPath.each( node, 'ancestor::x' ) { |el| ... }
-		def XPath::each element, path=nil, namespaces={}, variables={}, &block
-      raise "The namespaces argument, if supplied, must be a hash object." unless namespaces.kind_of? Hash
-      raise "The variables argument, if supplied, must be a hash object." unless variables.kind_of? Hash
+		def XPath::each element, path=nil, namespaces=nil, variables={}, &block
+      raise "The namespaces argument, if supplied, must be a hash object." unless namespaces.nil? or namespaces.kind_of?(Hash)
+      raise "The variables argument, if supplied, must be a hash object." unless variables.kind_of?(Hash)
 			parser = XPathParser.new
 			parser.namespaces = namespaces
 			parser.variables = variables
@@ -54,7 +54,7 @@ module REXML
 		end
 
 		# Returns an array of nodes matching a given XPath.  
-		def XPath::match element, path=nil, namespaces={}, variables={}
+		def XPath::match element, path=nil, namespaces=nil, variables={}
 			parser = XPathParser.new
 			parser.namespaces = namespaces
 			parser.variables = variables
