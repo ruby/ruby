@@ -29,16 +29,14 @@ else
 end
 
 ruby_icon = rubyw_icon = nil
-[$ruby_name, 'ruby'].each do |i|
+[$ruby_name, 'ruby'].find do |i|
   if i = icons[i]
     ruby_icon = "1 ICON DISCARDABLE "+i.dump+"\n"
-    break
   end
 end
-[$rubyw_name, 'rubyw'].each do |i|
+[$rubyw_name, 'rubyw'].find do |i|
   if i = icons[i]
     rubyw_icon = "1 ICON DISCARDABLE "+i.dump+"\n"
-    break
   end
 end
 dll_icons = []
@@ -46,11 +44,11 @@ icons.keys.sort.each do |i|
   dll_icons << "#{dll_icons.size + 1} ICON DISCARDABLE "+icons[i].dump+"\n"
 end
 
-[ # base name    extension         file type  icons
-  [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', ruby_icon],
-  [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', rubyw_icon || ruby_icon],
-  [$so_name,     '.dll',           'VFT_DLL', dll_icons],
-].each do |base, ext, type, icons|
+[ # base name    extension         file type  desc, icons
+  [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', 'CUI', ruby_icon],
+  [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', 'GUI', rubyw_icon || ruby_icon],
+  [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
+].each do |base, ext, type, desc, icons|
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
@@ -60,7 +58,7 @@ end
 #include <winver.h>
 #endif
 
-#{icons}
+#{icons || ''}
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{fversion}
  PRODUCTVERSION #{fversion}
@@ -74,7 +72,7 @@ BEGIN
  BEGIN
   BLOCK "000004b0"
   BEGIN
-   VALUE "FileDescription",  "Ruby interpreter\\0"
+   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{RUBY_VERSION} [#{RUBY_PLATFORM}]\\0"
    VALUE "FileVersion",      "#{fversion}\\0"
    VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
    VALUE "InternalName",     "#{base + ext}\\0"

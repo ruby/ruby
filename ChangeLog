@@ -1,3 +1,12 @@
+Sat Sep  9 04:47:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (MINIRUBY): append MINIRUBYOPT.
+
+	* mkconfig.rb, ext/extmk.rb, lib/mkmf.rb, win32/mkexports.rb: suppress
+	  warnings with $VERBOSE.
+
+	* win32/resource.rb: add more info.
+
 Fri Sep  8 10:03:59 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cookie.rb (WEBrick::Cookie.parse_set_cookies): new

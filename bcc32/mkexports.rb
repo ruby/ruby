@@ -1,5 +1,7 @@
 #!./miniruby -s
 
+$name = $library = $description = nil
+
 SYM = {}
 STDIN.reopen(open("nul"))
 ARGV.each do |obj|

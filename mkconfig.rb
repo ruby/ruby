@@ -41,7 +41,7 @@ File.foreach "config.status" do |line|
   if /^s([%,])@(\w+)@\1(?:\|\#_!!_\#\|)?(.*)\1/ =~ line
     name = $2
     val = $3.gsub(/\\(?=,)/, '')
-    next if /^(?:ac_.*|DEFS|configure_input)$/ =~ name
+    next if /^(?:ac_.*|DEFS|configure_input|(?:top_)?srcdir)$/ =~ name
     next if /^\$\(ac_\w+\)$/ =~ val
     next if /^\$\{ac_\w+\}$/ =~ val
     next if /^\$ac_\w+$/ =~ val

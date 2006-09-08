@@ -1165,6 +1165,7 @@ def create_makefile(target, srcprefix = nil)
   elsif !(srcs = $srcs)
     srcs = $objs.collect {|obj| obj.sub(/\.o\z/, '.c')}
   end
+  $srcs = srcs
   for i in $objs
     i.sub!(/\.o\z/, ".#{$OBJEXT}")
   end

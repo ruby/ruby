@@ -1,5 +1,7 @@
 #!./miniruby -s
 
+$name = $library = $description = nil
+
 SYM = {}
 
 objs = ARGV.collect {|s| s.tr('/', '\\')}
