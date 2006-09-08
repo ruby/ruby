@@ -155,7 +155,7 @@ def extmake(target)
     ok = yield(ok) if block_given?
     unless ok
       open(makefile, "w") do |f|
-	f.print dummy_makefile(CONFIG["srcdir"])
+	f.print *dummy_makefile(CONFIG["srcdir"])
       end
       return true
     end

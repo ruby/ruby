@@ -1390,7 +1390,7 @@ site-install-rb: install-rb
     unless suffixes.empty?
       mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
     end
-    mfile.print *depout
+    mfile.print *depout.flatten
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST
