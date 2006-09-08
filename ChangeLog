@@ -1,3 +1,10 @@
+Fri Sep  8 10:00:12 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cookie.rb (WEBrick::Cookie.parse_set_cookies): new
+	  method to parse multiple cookies per Set-Cookie header.
+	  Thanks to Aaron Patterson <aaron_patterson at speakeasy.net>.
+	  [ruby-core:08802]
+
 Fri Sep  8 08:59:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub, win32/configure.bat win32/setup.mak: program
