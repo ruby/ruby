@@ -70,4 +70,35 @@ class TestWEBrickCookie < Test::Unit::TestCase
     assert_equal("/acme", cookie.path)
     assert_equal(true, cookie.secure)
   end
+
+  def test_parse_set_cookies
+    data = %(Shipping="FedEx"; Version="1"; Path="/acme"; Secure)
+    data << %(, CUSTOMER=WILE_E_COYOTE; path=/; expires=Wednesday, 09-Nov-99 23:12:40 GMT; path=/; Secure)
+    data << %(, name="Aaron"; Version="1"; path="/acme")
+    cookies = WEBrick::Cookie.parse_set_cookies(data)
+    assert_equal(3, cookies.length)
+
+    fed_ex = cookies.find { |c| c.name == 'Shipping' }
+    assert_not_nil(fed_ex)
+    assert_equal("Shipping", fed_ex.name)
+    assert_equal("FedEx", fed_ex.value)
+    assert_equal(1, fed_ex.version)
+    assert_equal("/acme", fed_ex.path)
+    assert_equal(true, fed_ex.secure)
+
+    name = cookies.find { |c| c.name == 'name' }
+    assert_not_nil(name)
+    assert_equal("name", name.name)
+    assert_equal("Aaron", name.value)
+    assert_equal(1, name.version)
+    assert_equal("/acme", name.path)
+
+    customer = cookies.find { |c| c.name == 'CUSTOMER' }
+    assert_not_nil(customer)
+    assert_equal("CUSTOMER", customer.name)
+    assert_equal("WILE_E_COYOTE", customer.value)
+    assert_equal(0, customer.version)
+    assert_equal("/", customer.path)
+    assert_equal(Time.utc(1999, 11, 9, 23, 12, 40), customer.expires)
+  end
 end
