@@ -119,6 +119,9 @@ str_alloc(VALUE klass)
     NEWOBJ(str, struct RString);
     OBJSETUP(str, klass, T_STRING);
 
+    if (klass == rb_cSymbol) {
+	RBASIC(str)->klass = rb_cString;
+    }
     str->as.heap.ptr = 0;
     str->as.heap.len = 0;
     str->as.heap.aux.capa = 0;
@@ -135,7 +138,6 @@ str_new(VALUE klass, const char *ptr, long len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    if (klass == rb_cSymbol) klass = rb_cString;
     str = str_alloc(klass);
     if (len > RSTRING_EMBED_LEN_MAX) {
 	RSTRING(str)->as.heap.aux.capa = len;
