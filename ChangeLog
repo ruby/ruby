@@ -1,3 +1,8 @@
+Sat Sep  9 04:55:59 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb: open all in binary mode, and get rid of the quirk of
+	  msvcrt.  fixed: [ruby-dev:29518]
+
 Sat Sep  9 04:54:42 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (MINIRUBY): append MINIRUBYOPT.

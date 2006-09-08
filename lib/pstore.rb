@@ -78,6 +78,11 @@ require "digest/md5"
 #  end
 #
 class PStore
+  binmode = defined?(File::BINARY) ? File::BINARY : 0
+  RDWR_ACCESS = File::RDWR | File::CREAT | binmode
+  RD_ACCESS = File::RDONLY | binmode
+  WR_ACCESS = File::WRONLY | File::CREAT | File::TRUNC | binmode
+
   # The error type thrown by all PStore methods.
   class Error < StandardError
   end
@@ -287,17 +292,15 @@ class PStore
 
       content = nil
       unless read_only
-        file = File.open(@filename, File::RDWR | File::CREAT)
-        file.binmode
+        file = File.open(@filename, RDWR_ACCESS)
         file.flock(File::LOCK_EX)
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
         begin
-          file = File.open(@filename, File::RDONLY)
-          file.binmode
+          file = File.open(@filename, RD_ACCESS)
           file.flock(File::LOCK_SH)
-          content = (File.read(new_file) rescue file.read())
+          content = (File.open(new_file, RD_ACCESS) {|n| n.read} rescue file.read())
         rescue Errno::ENOENT
           content = ""
         end
@@ -326,10 +329,7 @@ class PStore
           tmp_file = @filename + ".tmp"
 	  content = dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
-            File.open(tmp_file, "w") {|t|
-              t.binmode
-              t.write(content)
-            }
+            File.open(tmp_file, WR_ACCESS) {|t| t.write(content)}
             File.rename(tmp_file, new_file)
             commit_new(file)
           end
@@ -365,8 +365,7 @@ class PStore
     f.truncate(0)
     f.rewind
     new_file = @filename + ".new"
-    File.open(new_file) do |nf|
-      nf.binmode
+    File.open(new_file, RD_ACCESS) do |nf|
       FileUtils.copy_stream(nf, f)
     end
     File.unlink(new_file)
