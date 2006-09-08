@@ -1172,6 +1172,7 @@ def create_makefile(target, srcprefix = nil)
   elsif !(srcs = $srcs)
     srcs = $objs.collect {|obj| obj.sub(/\.o\z/, '.c')}
   end
+  $srcs = srcs
   for i in $objs
     i.sub!(/\.o\z/, ".#{$OBJEXT}")
   end
@@ -1205,7 +1206,7 @@ def create_makefile(target, srcprefix = nil)
   dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
   staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
-  mfile.print *configuration(srcprefix)
+  mfile.print(*configuration(srcprefix))
   mfile.print %{
 libpath = #{$LIBPATH.join(" ")}
 LIBPATH = #{libpath}
@@ -1390,7 +1391,7 @@ site-install-rb: install-rb
     unless suffixes.empty?
       mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
     end
-    mfile.print *depout.flatten
+    mfile.print(*depout.flatten)
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST

@@ -166,7 +166,7 @@ EXEEXT = .exe
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
-MINIRUBY = .\miniruby$(EXEEXT)
+MINIRUBY = .\miniruby$(EXEEXT) $(MINIRUBYOPT)
 RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 !if !defined(STACK)
@@ -211,9 +211,6 @@ config.status: $(CONFIG_H)
 
 $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 	@echo Creating config.h
-!if exist(config.h)
-	@copy config.h config.h.old > nul
-!endif
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat config.h <<
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch

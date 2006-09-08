@@ -1,5 +1,7 @@
 #!./miniruby -s
 
+$name = $library = $description = nil
+
 module RbConfig
   autoload :CONFIG, "rbconfig"
 end
@@ -130,5 +132,5 @@ end
 
 END {
   exports = Exports.extract(ARGV)
-  Exports.output {|f| f.puts exports}
+  Exports.output {|f| f.puts(*exports)}
 }

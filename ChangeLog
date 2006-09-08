@@ -1,3 +1,12 @@
+Sat Sep  9 04:47:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (MINIRUBY): append MINIRUBYOPT.
+
+	* mkconfig.rb, ext/extmk.rb, lib/mkmf.rb, win32/mkexports.rb: suppress
+	  warnings with $VERBOSE.
+
+	* win32/resource.rb: only file which has more than one icon is DLL.
+
 Fri Sep  8 16:53:30 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_alloc): should allocate a String object, even when

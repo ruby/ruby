@@ -41,7 +41,7 @@ File.foreach "config.status" do |line|
   if /^s([%,])@(\w+)@\1(?:\|\#_!!_\#\|)?(.*)\1/ =~ line
     name = $2
     val = $3.gsub(/\\(?=,)/, '')
-    next if /^(?:ac_.*|DEFS|configure_input)$/ =~ name
+    next if /^(?:ac_.*|DEFS|configure_input|(?:top_)?srcdir)$/ =~ name
     next if /^\$\(ac_\w+\)$/ =~ val
     next if /^\$\{ac_\w+\}$/ =~ val
     next if /^\$ac_\w+$/ =~ val
@@ -106,8 +106,8 @@ if $so_name
   v_fast << "  CONFIG[\"RUBY_SO_NAME\"] = \"" + $so_name + "\"\n"
 end
 
-print *v_fast
-print *v_others
+print(*v_fast)
+print(*v_others)
 print <<EOS
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
   CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"

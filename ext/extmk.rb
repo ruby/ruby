@@ -1,13 +1,19 @@
 #! /usr/local/bin/ruby
 # -*- ruby -*-
 
+$extension = nil
+$extstatic = nil
 $force_static = nil
 $install = nil
 $destdir = nil
+$dryrun = false
 $clean = nil
 $nodynamic = nil
 $extinit = nil
 $extobjs = nil
+$extflags = ""
+$extlibs = nil
+$extpath = nil
 $ignore = nil
 $message = nil
 
@@ -79,6 +85,8 @@ def extract_makefile(makefile, keep = true)
     s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
     $libs = s
   end
+  $objs = (m[/^OBJS[ \t]*=[ \t](.*)/, 1] || "").split
+  $srcs = (m[/^SRCS[ \t]*=[ \t](.*)/, 1] || "").split
   $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
   $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
   true
@@ -113,6 +121,8 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
+    $objs = ""
+    $srcs = ""
     $compiled[target] = false
     makefile = "./Makefile"
     ok = File.exist?(makefile)
@@ -128,7 +138,7 @@ def extmake(target)
 	ok &&= extract_makefile(makefile)
 	if (($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
-            %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
+	    ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb", "#{$srcdir}/depend"].any? {|f| modified?(f, [t])})
         then
 	  ok = false
           init_mkmf
@@ -155,7 +165,7 @@ def extmake(target)
     ok = yield(ok) if block_given?
     unless ok
       open(makefile, "w") do |f|
-	f.print *dummy_makefile(CONFIG["srcdir"])
+	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
       return true
     end
@@ -420,9 +430,13 @@ if $ignore
   exit
 end
 
-if $extlist.size > 0
-  $extinit ||= ""
-  $extobjs ||= ""
+$extinit ||= ""
+$extobjs ||= ""
+$extpath ||= []
+$extflags ||= ""
+$extlibs ||= []
+unless $extlist.empty?
+  $extinit << "\n" unless $extinit.empty?
   list = $extlist.dup
   built = []
   while e = list.shift
@@ -436,16 +450,23 @@ if $extlist.size > 0
     end
     f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)
-      $extinit += "\tinit(Init_#{i}, \"#{t}.so\");\n"
-      $extobjs += "ext/#{f} "
+      $extinit << "    init(Init_#{i}, \"#{t}.so\");\n"
+      $extobjs << "ext/#{f} "
       built << t
     end
   end
 
   src = %{\
-extern char *ruby_sourcefile, *rb_source_filename();
-#define init(func, name) (ruby_sourcefile = src = rb_source_filename(name), func(), rb_provide(src))
-void Init_ext() {\n\tchar* src;\n#$extinit}
+#include "ruby.h"
+
+#define init(func, name) {				\
+    void func _((void));				\
+    ruby_sourcefile = src = rb_source_filename(name);	\
+    func();						\
+    rb_provide(src);					\
+}
+
+void Init_ext _((void))\n{\n    char *src;#$extinit}
 }
   if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
     open(extinit.c, "w") {|f| f.print src}
@@ -464,7 +485,7 @@ void Init_ext() {\n\tchar* src;\n#$extinit}
   ].map {|n, v|
     "#{n}=#{v}" if v and !(v = v.strip).empty?
   }.compact
-  puts conf
+  puts(*conf)
   $stdout.flush
   $mflags.concat(conf)
 else
