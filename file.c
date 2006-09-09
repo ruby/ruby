@@ -3248,13 +3248,8 @@ rb_f_test(int argc, VALUE *argv)
     int cmd;
 
     if (argc == 0) rb_raise(rb_eArgError, "wrong number of arguments");
-#if 0 /* 1.7 behavior? */
-    if (argc == 1) {
-	return RTEST(argv[0]) ? Qtrue : Qfalse;
-    }
-#endif
     cmd = NUM2CHR(argv[0]);
-    if (cmd == 0) return Qfalse;
+    if (cmd == 0) goto unknown;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
 	switch (cmd) {
@@ -3371,8 +3366,14 @@ rb_f_test(int argc, VALUE *argv)
 	    return Qfalse;
 	}
     }
+  unknown:
     /* unknown command */
-    rb_raise(rb_eArgError, "unknown command ?%c", cmd);
+    if (ISPRINT(cmd)) {
+	rb_raise(rb_eArgError, "unknown command ?%c", cmd);
+    }
+    else {
+	rb_raise(rb_eArgError, "unknown command ?\\%03o", cmd);
+    }
     return Qnil;		/* not reached */
 }
 

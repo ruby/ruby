@@ -2501,12 +2501,12 @@ rb_str_to_s(VALUE str)
  * call-seq:
  *   str.inspect   => string
  *
- * Returns a printable version of _str_, with special characters
- * escaped.
+ * Returns a printable version of _str_, srrounded by quote marks,
+ * with special characters escaped.
  *
  *    str = "hello"
- *    str[3] = 8
- *    str.inspect       #=> "hel\010o"
+ *    str[3] = "\b"
+ *    str.inspect       #=> "\"hel\bo\""
  */
 
 VALUE
