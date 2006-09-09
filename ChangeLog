@@ -1,3 +1,8 @@
+Sat Sep  9 14:08:38 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/test/unit/testcase.rb (Test::Unit::TestCase#run): Rescue
+	  Exception in Test::Unit::TestCase#run.  [ruby-core:08783]
+
 Sat Sep  9 04:55:59 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb: open all in binary mode, and get rid of the quirk of

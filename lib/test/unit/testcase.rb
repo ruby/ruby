@@ -28,6 +28,12 @@ module Test
       STARTED = name + "::STARTED"
       FINISHED = name + "::FINISHED"
 
+      ##
+      # These exceptions are not caught by #run.
+
+      PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException, Interrupt,
+                                SystemExit]
+
       # Creates a new instance of the fixture for running the
       # test represented by test_method_name.
       def initialize(test_method_name)
@@ -72,14 +78,16 @@ module Test
           __send__(@method_name)
         rescue AssertionFailedError => e
           add_failure(e.message, e.backtrace)
-        rescue StandardError, ScriptError
+        rescue Exception
+          raise if PASSTHROUGH_EXCEPTIONS.include? $!.class
           add_error($!)
         ensure
           begin
             teardown
           rescue AssertionFailedError => e
             add_failure(e.message, e.backtrace)
-          rescue StandardError, ScriptError
+          rescue Exception
+            raise if PASSTHROUGH_EXCEPTIONS.include? $!.class
             add_error($!)
           end
         end
