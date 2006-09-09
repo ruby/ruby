@@ -1206,15 +1206,8 @@ rb_big_minus(x, y)
     }
 }
 
-/*
- *  call-seq:
- *     big * other  => Numeric
- *
- *  Multiplies big and other, returning the result.
- */
-
 VALUE
-rb_big_mul(x, y)
+rb_big_mul0(x, y)
     VALUE x, y;
 {
     long i, j;
@@ -1257,7 +1250,21 @@ rb_big_mul(x, y)
 	}
     }
 
-    return bignorm(z);
+    return z;
+}
+
+/*
+ *  call-seq:
+ *     big * other  => Numeric
+ *
+ *  Multiplies big and other, returning the result.
+ */
+
+VALUE
+rb_big_mul(x, y)
+    VALUE x, y;
+{
+    return bignorm(rb_big_mul0(x, y));
 }
 
 static void
@@ -1616,10 +1623,10 @@ rb_big_pow(x, y)
 		if (yy == 0) break;
 		while (yy % 2 == 0) {
 		    yy /= 2;
-		    x = rb_big_mul(x, x);
+		    x = rb_big_mul0(x, x);
 		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
 		}
-		z = rb_big_mul(z, x);
+		z = rb_big_mul0(z, x);
 		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
 	    }
 	    return bignorm(z);
