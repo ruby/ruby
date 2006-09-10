@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.20 2006-08-19 22:58:36+09 tadf Exp $
+# $Id: format.rb,v 2.23 2006-09-09 23:55:00+09 tadf Exp $
 
 require 'rational'
 
@@ -770,101 +770,205 @@ class Date
     offset
   end
 
+  def emit(e, f) # :nodoc:
+    case e
+    when Numeric
+      sign = %w(+ + -)[e <=> 0]
+      e = e.abs
+    end
+
+    s = e.to_s
+
+    if f[:s] && f[:p] == '0'
+      f[:w] -= 1
+    end
+
+    if f[:s] && f[:p] == "\s"
+      s[0,0] = sign
+    end
+
+    if f[:p] != '-'
+      s = s.rjust(f[:w], f[:p])
+    end
+
+    if f[:s] && f[:p] != "\s"
+      s[0,0] = sign
+    end
+
+    s = s.upcase if f[:u]
+    s = s.downcase if f[:d]
+    s
+  end
+
+  def emit_w(e, w, f) # :nodoc:
+    f[:w] = [f[:w], w].compact.max
+    emit(e, f)
+  end
+
+  def emit_n(e, w, f) # :nodoc:
+    f[:p] ||= '0'
+    emit_w(e, w, f)
+  end
+
+  def emit_sn(e, w, f) # :nodoc:
+    if e < 0
+      w += 1
+      f[:s] = true
+    end
+    emit_n(e, w, f)
+  end
+
+  def emit_z(e, w, f) # :nodoc:
+    w += 1
+    f[:s] = true
+    emit_n(e, w, f)
+  end
+
+  def emit_a(e, w, f) # :nodoc:
+    f[:p] ||= "\s"
+    emit_w(e, w, f)
+  end
+
+  def emit_ad(e, w, f) # :nodoc:
+    if f[:x]
+      f[:u] = true
+      f[:d] = false
+    end
+    emit_a(e, w, f)
+  end
+
+  def emit_au(e, w, f) # :nodoc:
+    if f[:x]
+      f[:u] = false
+      f[:d] = true
+    end
+    emit_a(e, w, f)
+  end
+
+  private :emit, :emit_w, :emit_n, :emit_sn, :emit_z,
+	  :emit_a, :emit_ad, :emit_au
+
   def strftime(fmt='%F')
-    fmt.gsub(/%[EO]?(:{1,3}z|.)/m) do |_|
-      s = $1
-      case s
-      when 'A'; DAYNAMES[wday]
-      when 'a'; ABBR_DAYNAMES[wday]
-      when 'B'; MONTHNAMES[mon]
-      when 'b'; ABBR_MONTHNAMES[mon]
-      when 'C'; '%02d' % (year / 100)				# P2,ID
-      when 'c'; strftime('%a %b %e %H:%M:%S %Y')
-      when 'D'; strftime('%m/%d/%y')				# P2,ID
-      when 'd'; '%02d' % mday
-      when 'e';  '%2d' % mday
-      when 'F'; strftime('%Y-%m-%d')				# ID
-      when 'G'; '%.4d' %  cwyear				# ID
-      when 'g'; '%02d' % (cwyear % 100)				# ID
-      when 'H'; '%02d' % hour
-      when 'h'; strftime('%b')					# P2,ID
-      when 'I'; '%02d' % ((hour % 12).nonzero? or 12)
-      when 'j'; '%03d' % yday
-      when 'k';  '%2d' % hour					# AR,TZ,GL
-      when 'L'							# JV
-	'%03d' % (sec_fraction / (1.to_r/86400/(10**3)))
-      when 'l';  '%2d' % ((hour % 12).nonzero? or 12)		# AR,TZ,GL
-      when 'M'; '%02d' % min
-      when 'm'; '%02d' % mon
-      when 'N'							# JV, GD
-	'%09d' % (sec_fraction / (1.to_r/86400/(10**9)))
-      when 'n'; "\n"						# P2,ID
-      when 'P'; strftime('%p').downcase				# GL
-      when 'p'; if hour < 12 then 'AM' else 'PM' end
-      when 'Q'							# JV
+    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |_|
+      f = {}
+      s, w, c = $1, $2, $3
+      if s
+	s.scan(/./) do |k|
+	  case k
+	  when '-'; f[:p] = '-'
+	  when '_'; f[:p] = "\s"
+	  when '0'; f[:p] = '0'
+	  when '^'; f[:u] = true
+	  when '#'; f[:x] = true
+	  end
+	end
+      end
+      if w
+	f[:w] = w.to_i
+      end
+      case c
+      when 'A'; emit_ad(DAYNAMES[wday], 0, f)
+      when 'a'; emit_ad(ABBR_DAYNAMES[wday], 0, f)
+      when 'B'; emit_ad(MONTHNAMES[mon], 0, f)
+      when 'b'; emit_ad(ABBR_MONTHNAMES[mon], 0, f)
+      when 'C'; emit_sn(year / 100, 2, f)
+      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 1, f)
+      when 'D'; emit_a(strftime('%m/%d/%y'), 1, f)
+      when 'd'; emit_n(mday, 2, f)
+      when 'e'; emit_a(mday, 2, f)
+      when 'F'; emit_a(strftime('%Y-%m-%d'), 1, f)
+      when 'G'; emit_sn(cwyear, 4, f)
+      when 'g'; emit_n(cwyear % 100, 2, f)
+      when 'H'; emit_n(hour, 2, f)
+      when 'h'; emit_ad(strftime('%b'), 1, f)
+      when 'I'; emit_n((hour % 12).nonzero? || 12, 2, f)
+      when 'j'; emit_n(yday, 3, f)
+      when 'k'; emit_a(hour, 2, f)
+      when 'L'
+	emit_n(sec_fraction / (1.to_r/86400/(10**3)), 3, f)
+      when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
+      when 'M'; emit_n(min, 2, f)
+      when 'm'; emit_n(mon, 2, f)
+      when 'N'
+	emit_n(sec_fraction / (1.to_r/86400/(10**9)), 9, f)
+      when 'n'; "\n"
+      when 'P'; emit_ad(strftime('%p').downcase, 1, f)
+      when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 1, f)
+      when 'Q'
 	d = ajd - self.class.jd_to_ajd(self.class.civil_to_jd(1970,1,1), 0)
 	s = (d * 86400*10**3).to_i
-	'%d' % s
-      when 'R'; strftime('%H:%M')				# ID
-      when 'r'; strftime('%I:%M:%S %p')				# P2,ID
-      when 'S'; '%02d' % sec
-      when 's'							# TZ,GL
+	emit_n(s, 1, f)
+      when 'R'; emit_a(strftime('%H:%M'), 1, f)
+      when 'r'; emit_a(strftime('%I:%M:%S %p'), 1, f)
+      when 'S'; emit_n(sec, 2, f)
+      when 's'
 	d = ajd - self.class.jd_to_ajd(self.class.civil_to_jd(1970,1,1), 0)
 	s = (d * 86400).to_i
-	'%d' % s
-      when 'T'; strftime('%H:%M:%S')				# P2,ID
-      when 't'; "\t"						# P2,ID
+	emit_n(s, 1, f)
+      when 'T'; emit_a(strftime('%H:%M:%S'), 1, f)
+      when 't'; "\t"
       when 'U', 'W'
-	k = if $1 == 'U' then 0 else 1 end
-	'%02d' % self.class.jd_to_weeknum(jd, k, fix_style)[1]
-      when 'u';   '%d' % cwday					# P2,ID
-      when 'V'; '%02d' % cweek					# P2,ID
-      when 'v'; strftime('%e-%b-%Y')				# AR,TZ
-      when 'w';   '%d' % wday
-      when 'X'; strftime('%H:%M:%S')
-      when 'x'; strftime('%m/%d/%y')
-      when 'Y'; '%.4d' %  year
-      when 'y'; '%02d' % (year % 100)
-      when 'Z'; (if offset.zero? then 'Z' else strftime('%z') end)
-      when /\A(:{0,3})z/					# ID
+	k = if c == 'U' then 0 else 1 end
+	emit_n(self.class.jd_to_weeknum(jd, k, fix_style)[1], 2, f)
+      when 'u'; emit_n(cwday, 1, f)
+      when 'V'; emit_n(cweek, 2, f)
+      when 'v'; emit_a(strftime('%e-%b-%Y'), 1, f)
+      when 'w'; emit_n(wday, 1, f)
+      when 'X'; emit_a(strftime('%H:%M:%S'), 1, f)
+      when 'x'; emit_a(strftime('%m/%d/%y'), 1, f)
+      when 'Y'; emit_sn(year, 4, f)
+      when 'y'; emit_n(year % 100, 2, f)
+      when 'Z'; emit_au(strftime('%:z'), 1, f)
+      when /\A(:{0,3})z/
 	t = $1.size
-	p = if offset < 0 then '-' else '+' end
+	p = if offset < 0 then -1 else +1 end
 	of = offset.abs
 	hh, fr = of.divmod(1.to_r/24)
 	mm, fr = fr.divmod(1.to_r/1440)
 	ss, fr = fr.divmod(1.to_r/86400)
 	if t == 3
-	  if ss.nonzero? then t = 2 elsif mm.nonzero? then t = 1 end
+	  if    ss.nonzero? then t =  2
+	  elsif mm.nonzero? then t =  1
+	  else                   t = -1
+	  end
 	end
 	case t
+	when -1
+	  tail = []
+	  sep = ''
 	when 0
-	  '%s%02d%02d' % [p, hh, mm]
+	  f[:w] -= 2 if f[:w]
+	  tail = ['%02d' % mm]
+	  sep = ''
 	when 1
-	  '%s%02d:%02d' % [p, hh, mm]
+	  f[:w] -= 3 if f[:w]
+	  tail = ['%02d' % mm]
+	  sep = ':'
 	when 2
-	  '%s%02d:%02d:%02d' % [p, hh, mm, ss]
-	when 3
-	  '%s%02d' % [p, hh]
+	  f[:w] -= 6 if f[:w]
+	  tail = ['%02d' % mm, '%02d' % ss]
+	  sep = ':'
 	end
-      when '%'; '%'
-      when '+'; strftime('%a %b %e %H:%M:%S %Z %Y')		# TZ
+	([emit_z(p * hh, 2, f)] + tail).join(sep)
+      when '%'; emit_a('%', 1, f)
+      when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 1, f)
       when '1'
 	if $VERBOSE
 	  warn("warning: strftime: %1 is deprecated; forget this")
 	end
-	  '%d' % jd
+	emit_n(jd, 1, f)
       when '2'
 	if $VERBOSE
 	  warn("warning: strftime: %2 is deprecated; use '%Y-%j'")
 	end
-	strftime('%Y-%j')
+	emit_a(strftime('%Y-%j'), 1, f)
       when '3'
 	if $VERBOSE
 	  warn("warning: strftime: %3 is deprecated; use '%F'")
 	end
-	strftime('%F')
+	emit_a(strftime('%F'), 1, f)
       else
-	s
+	c
       end
     end
   end
@@ -880,11 +984,11 @@ class Date
 
   def rfc3339() iso8601 end
 
-  def rfc2822() strftime('%a, %d %b %Y %T %z') end
+  def rfc2822() strftime('%a, %-d %b %Y %T %z') end
 
   alias_method :rfc822, :rfc2822
 
-  def jisx301
+  def jisx0301
     if jd < 2405160
       iso8601
     else
@@ -932,7 +1036,7 @@ class DateTime < Date
     super() + iso8601_timediv(n)
   end
 
-  def jisx301(n=0)
+  def jisx0301(n=0)
     super() + iso8601_timediv(n)
   end
 =end
