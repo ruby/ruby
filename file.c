@@ -39,6 +39,8 @@ int flock(int, int);
 # define MAXPATHLEN 1024
 #endif
 
+#include <ctype.h>
+
 #include <time.h>
 
 VALUE rb_time_new(time_t, time_t);
