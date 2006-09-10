@@ -1,6 +1,9 @@
-Sun Sep 10 09:08:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 10 09:18:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_extend): fixed prototype.
+
+	* eval.c (rb_require_safe): prevent extension from loading twice.
+	  fixed: [ruby-dev:29523]
 
 Sat Sep  9 23:50:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
