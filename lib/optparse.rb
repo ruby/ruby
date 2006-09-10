@@ -1250,8 +1250,8 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.call(val) if sw
+            opt, sw, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            sw.call(*val) if sw
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1278,10 +1278,10 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+            opt, sw, *val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            sw.call(val) if sw
+            sw.call(*val) if sw
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1300,7 +1300,7 @@ class OptionParser
       nil
     }
 
-    visit(:search, :short, nil) {|sw| sw.block.call(argv) if !sw.pattern}
+    visit(:search, :short, nil) {|sw| sw.block.call(*argv) if !sw.pattern}
 
     argv
   end
