@@ -1,7 +1,11 @@
+Sun Sep 10 09:08:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (stack_extend): fixed prototype.
+
 Sat Sep  9 23:50:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_mul0): bignum multiplication without
-	  normalization.  
+	  normalization.
 
 	* bignum.c (rb_big_pow): use rb_big_mul0().  [ruby-dev:29547]
 

@@ -10366,7 +10366,7 @@ register_stack_extend(rb_thread_t th, int exit, void *vp, VALUE *curr_bsp)
 #endif
 
 # if defined(_MSC_VER) && _MSC_VER >= 1300
-__declspec(noinline) static void stack_extend(rb_thread_t, int);
+__declspec(noinline) static void stack_extend(rb_thread_t, int, VALUE*);
 # endif
 static void
 stack_extend(rb_thread_t th, int exit, VALUE *addr_in_prev_frame)
