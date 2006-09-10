@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.21 2006-08-19 22:38:12+09 tadf Exp $
+# $Id: date.rb,v 2.23 2006-09-09 22:44:21+09 tadf Exp $
 #++
 #
 # == Overview
@@ -1149,7 +1149,7 @@ class Date
   # date at each step.
   def step(limit, step=1)  # :yield: date
     da = self
-    op = [:-,:<=,:>=][step<=>0]
+    op = %w(- <= >=)[step <=> 0]
     while da.__send__(op, limit)
       yield da
       da += step
