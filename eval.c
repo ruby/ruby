@@ -7068,15 +7068,15 @@ rb_require_safe(VALUE fname, int safe)
 	    }
 	    else {
 		ruby_safe_level = 0;
+		/* loading ruby library should be serialized. */
+		if (!loading_tbl) {
+		    loading_tbl = st_init_strtable();
+		}
+		/* partial state */
+		ftptr = ruby_strdup(RSTRING_PTR(path));
+		st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 		switch (found) {
 		  case 'r':
-		    /* loading ruby library should be serialized. */
-		    if (!loading_tbl) {
-			loading_tbl = st_init_strtable();
-		    }
-		    /* partial state */
-		    ftptr = ruby_strdup(RSTRING_PTR(path));
-		    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 		    rb_load(path, 0);
 		    break;
 
