@@ -120,6 +120,7 @@ str_alloc(VALUE klass)
     OBJSETUP(str, klass, T_STRING);
 
     if (klass == rb_cSymbol) {
+	/* need to be registered in table */
 	RBASIC(str)->klass = rb_cString;
     }
     str->as.heap.ptr = 0;
@@ -4429,15 +4430,16 @@ rb_sym_s_intern(VALUE s)
  *     sym == obj   => true or false
  *  
  *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
- *  symbol, returns <code>true</code>. Otherwise, returns
- *  <code>false</code>.
+ *  symbol, returns <code>true</code>. Otherwise, compares them
+ *  as strings.
  */
 
 static VALUE
 sym_equal(VALUE sym1, VALUE sym2)
 {
     if (sym1 == sym2) return Qtrue;
-    return Qfalse;
+    if (SYMBOL_P(sym2)) return Qfalse;
+    return rb_str_equal(sym1, sym2);
 }
 
 /*

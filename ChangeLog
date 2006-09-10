@@ -1,3 +1,8 @@
+Mon Sep 11 07:39:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_equal): "sym == str" should compare them as
+	  strings.  [ruby-dev:29554]
+
 Sun Sep 10 22:59:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (parse_args): remove splat.
