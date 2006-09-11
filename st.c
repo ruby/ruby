@@ -38,11 +38,9 @@ struct st_table_entry {
      *
      */
 
-static int numcmp(long, long);
-static int numhash(long);
 static struct st_hash_type type_numhash = {
-    numcmp,
-    numhash,
+    st_numcmp,
+    st_numhash,
 };
 
 /* extern int strcmp(const char *, const char *); */
@@ -589,14 +587,14 @@ strhash(register const char *string)
     return hval;
 }
 
-static int
-numcmp(long x, long y)
+int
+st_numcmp(long x, long y)
 {
     return x != y;
 }
 
-static int
-numhash(long n)
+int
+st_numhash(long n)
 {
     return n;
 }

@@ -368,7 +368,7 @@ rb_hash_rehash(VALUE hash)
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
     rb_hash_modify(hash);
-    tbl = st_init_table_with_size(&objhash, RHASH(hash)->tbl->num_entries);
+    tbl = st_init_table_with_size(RHASH(hash)->tbl->type, RHASH(hash)->tbl->num_entries);
     rb_hash_foreach(hash, rb_hash_rehash_i, (st_data_t)tbl);
     st_free_table(RHASH(hash)->tbl);
     RHASH(hash)->tbl = tbl;
@@ -1475,6 +1475,54 @@ rb_hash_merge(VALUE hash1, VALUE hash2)
     return rb_hash_update(rb_obj_dup(hash1), hash2);
 }
 
+static struct st_hash_type identhash = {
+    st_numcmp,
+    st_numhash,
+};
+
+/*
+ *  call-seq:
+ *     hsh.identical => hsh
+ *  
+ *  Makes <i>hsh</i> to compare its keys by their identity, i.e. it
+ *  will consider exact same objects as same keys.
+ *     
+ *     h1 = { "a" => 100, "b" => 200, :c => "c" }
+ *     h1["a"]        #=> "a"
+ *     h1.identical
+ *     h1.identical?  #=> true
+ *     h1["a"]        #=> nil  # different objects.
+ *     h1[:c]         #=> "c"  # same symbols are all same.
+ *     
+ */
+
+static VALUE
+rb_hash_identical(VALUE hash)
+{
+    rb_hash_modify(hash);
+    RHASH(hash)->tbl->type = &identhash;
+    rb_hash_rehash(hash);
+    return hash;
+}
+
+/*
+ *  call-seq:
+ *     hsh.identical? => true or false
+ *  
+ *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
+ *  their identity.  Also see <code>Hash#identical</code>.
+ *     
+ */
+
+static VALUE
+rb_hash_identical_p(VALUE hash)
+{
+    if (RHASH(hash)->tbl->type == &identhash) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -2323,6 +2371,9 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"has_value?", rb_hash_has_value, 1);
     rb_define_method(rb_cHash,"key?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash,"value?", rb_hash_has_value, 1);
+
+    rb_define_method(rb_cHash,"identical", rb_hash_identical, 0);
+    rb_define_method(rb_cHash,"identical?", rb_hash_identical_p, 0);
 
 #ifndef __MACOS__ /* environment variables nothing on MacOS. */
     origenviron = environ;
