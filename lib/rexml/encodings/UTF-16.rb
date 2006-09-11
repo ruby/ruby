@@ -16,9 +16,10 @@ module REXML
     end
 
     def decode_utf16(str)
+      str = str[2..-1] if /^\376\377/ =~ str
       array_enc=str.unpack('C*')
       array_utf8 = []
-      2.step(array_enc.size-1, 2){|i| 
+      0.step(array_enc.size-1, 2){|i| 
         array_utf8 << (array_enc.at(i+1) + array_enc.at(i)*0x100)
       }
       array_utf8.pack('U*')

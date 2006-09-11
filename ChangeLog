@@ -1,3 +1,19 @@
+Mon Sep 11 11:42:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/source.rb (REXML::Source::encoding): should not
+	  convert the body twice.  [ruby-core:08828]
+
+	* lib/rexml/encoding.rb (REXML::Encoding::encoding):
+	  Encoding#encoding= to return boolean value to tell if the body
+	  is really converted or not.
+
+	* lib/rexml/encoding.rb (REXML::Encoding::encoding): Specific
+	  conversion library (e.g. rexml/encodings/UTF-16.rb) to have
+	  higher preceding.
+
+	* lib/rexml/encodings/UTF-16.rb (REXML::Encoding::decode_utf16):
+	  UTF-16#decode_utf16 should work strings without BOM.
+
 Mon Sep 11 07:39:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_equal): "sym == str" should compare them as

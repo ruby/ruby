@@ -44,7 +44,7 @@ module REXML
 		# Inherited from Encoding
 		# Overridden to support optimized en/decoding
 		def encoding=(enc)
-			super
+			return unless super
 			@line_break = encode( '>' )
 			if enc != UTF_8
 				@buffer = decode(@buffer)
