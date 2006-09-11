@@ -8,6 +8,7 @@
 .ext
 .git
 .svn
+.pc
 .rbconfig.time
 COPYING.LIB
 ChangeLog.pre-alpha
@@ -29,15 +30,10 @@ config.status
 configure
 libruby.so.*
 miniruby
-miniruby.elhash
-miniruby.elhash2
-miniruby.orig2
-miniruby.plhash
-miniruby.plhash2
 newdate.rb
 newver.rb
 parse.c
-parse.y.try
+patches
 pitest.rb
 ppack
 preview
@@ -48,9 +44,6 @@ riscos
 rubicon
 ruby
 ruby-man.rd.gz
-rubyunit
-st.c.power
-this that
 tmp
 web
 y.output

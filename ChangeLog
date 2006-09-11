@@ -1,3 +1,8 @@
+Tue Sep 12 03:58:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_compare_by_identity): rename Hash#identical to
+	  Hash#compare_by_identity.
+
 Mon Sep 11 16:52:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_identical): a new method to make a hash to
