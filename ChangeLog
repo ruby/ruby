@@ -1,3 +1,8 @@
+Wed Sep 13 01:14:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#getopts): works with pre-registered
+	  options.  [ruby-core:08826]
+
 Tue Sep 12 03:58:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_compare_by_identity): rename Hash#identical to
