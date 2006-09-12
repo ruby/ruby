@@ -346,16 +346,12 @@ class OptionParser
     # exception.
     #
     def conv_arg(arg, val = nil)
-      if block
-        if conv
-          val = conv.call(*val)
-        else
-          val = *val
-        end
-        return arg, block, val
+      if conv
+        val = conv.call(*val)
       else
-        return arg, nil
+        val = *val
       end
+      return arg, block, val
     end
     private :conv_arg
 
@@ -400,6 +396,13 @@ class OptionParser
       end
 
       self
+    end
+
+    #
+    # Main name of the switch.
+    #
+    def switch_name
+      (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '').intern
     end
 
     #
@@ -1200,6 +1203,11 @@ class OptionParser
   # Same as #order, but removes switches destructively.
   #
   def order!(argv = default_argv, &nonopt)
+    parse_in_order(argv, &nonopt)
+  end
+
+  # :nodoc:
+  def parse_in_order(argv = default_argv, setter = nil, &nonopt)
     opt, arg, sw, val, rest = nil
     nonopt ||= proc {|arg| throw :terminate, arg}
     argv.unshift(arg) if arg = catch(:terminate) {
@@ -1214,8 +1222,9 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            sw.call(val) if sw
+            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            val = cb.call(*val) if cb
+            setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1241,10 +1250,11 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+            opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            sw.call(val) if sw
+            val = cb.call(val) if cb
+            setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1260,6 +1270,7 @@ class OptionParser
 
     argv
   end
+  private :parse_in_order
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -1304,16 +1315,16 @@ class OptionParser
   #
   # Wrapper method for getopts.rb.
   #
-  def getopts(argv, single_options, *long_options)
+  def getopts(argv, single_options = nil, *long_options)
     result = {}
 
     single_options.scan(/(.)(:)?/) do |opt, val|
       if val
         result[opt] = nil
-        define("-#{opt} VAL") {|val| result[opt] = val}
+        define("-#{opt} VAL")
       else
         result[opt] = false
-        define("-#{opt}") {result[opt] = true}
+        define("-#{opt}")
       end
     end if single_options
 
@@ -1321,14 +1332,14 @@ class OptionParser
       opt, val = arg.split(':', 2)
       if val
         result[opt] = val.empty? ? nil : val
-        define("--#{opt} VAL") {|val| result[opt] = val}
+        define("--#{opt} VAL")
       else
         result[opt] = false
-        define("--#{opt}") {result[opt] = true}
+        define("--#{opt}")
       end
     end
 
-    order!(argv)
+    parse_in_order(argv, result.method(:[]=))
     result
   end
 

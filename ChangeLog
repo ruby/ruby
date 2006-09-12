@@ -1,3 +1,8 @@
+Wed Sep 13 01:14:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#getopts): works with pre-registered
+	  options.  [ruby-core:08826]
+
 Sun Sep 10 20:27:13 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.1.
