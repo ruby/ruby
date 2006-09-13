@@ -1,11 +1,13 @@
+Wed Sep 13 18:25:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): better here-doc support.
+	  a patch from Marshall T. Vandegrift <llasram at gmail.com>.
+	  [ruby-core:08804]
+
 Wed Sep 13 16:43:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
  
  	* string.c (rb_str_intern): prohibit interning tainted string.
  
-	* string.c (rb_str_intern): allow symbols to contains nul.
-
-	* string.c (sym_inspect): symbol may contain nul.
-
 Wed Sep 13 01:14:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): works with pre-registered
