@@ -98,12 +98,12 @@ an exception will be raised if the conversion failed.  NUM2DBL() can
 be used to retrieve the double float value in the same way.
 
 In version 1.7 or later it is recommended that you use the new macros
-StringValue() and StringValuePtr().  StringValue(var) replaces var's
-value with the result of "var.to_str()".  StringValuePtr(var) does same
-replacement and returns char* representation of var.  These macros
-will skip the replacement if var is a String.  Notice that the macros
-take only the lvalue as their argument, to change the value
-of var in place. 
+StringValue() and StringValuePtr() to get a char* from a VALUE.
+StringValue(var) replaces var's value with the result of "var.to_str()".
+StringValuePtr(var) does same replacement and returns char*
+representation of var.  These macros will skip the replacement if var is
+a String.  Notice that the macros take only the lvalue as their
+argument, to change the value of var in place.
 
 In version 1.6 or earlier, STR2CSTR() was used to do the same thing
 but now it is deprecated in version 1.7, because STR2CSTR() has a risk
