@@ -192,6 +192,27 @@ rb_digest_base_hexdigest(VALUE self)
 }
 
 static VALUE
+rb_digest_base_inspect(VALUE self)
+{
+    algo_t *algo;
+    VALUE str;
+    char *cname;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    cname = rb_obj_classname(self);
+
+    /* #<Digest::Alg: xxxxx...xxxx> */
+    str = rb_str_buf_new(2 + strlen(cname) + 2 + algo->digest_len * 2 + 1);
+    rb_str_buf_cat2(str, "#<");
+    rb_str_buf_cat2(str, cname);
+    rb_str_buf_cat2(str, ": ");
+    rb_str_buf_append(str, rb_digest_base_hexdigest(self));
+    rb_str_buf_cat2(str, ">");
+    return str;
+}
+
+static VALUE
 rb_digest_base_equal(VALUE self, VALUE other)
 {
     algo_t *algo;
@@ -261,6 +282,7 @@ Init_digest(void)
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
     rb_define_method(cDigest_Base, "hexdigest", rb_digest_base_hexdigest, 0);
     rb_define_method(cDigest_Base, "to_s", rb_digest_base_hexdigest, 0);
+    rb_define_method(cDigest_Base, "inspect", rb_digest_base_inspect, 0);
     rb_define_method(cDigest_Base, "==", rb_digest_base_equal, 1);
 
     id_metadata = rb_intern("metadata");
