@@ -1,3 +1,8 @@
+Wed Sep 13 18:43:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* README.EXT: English adjustment.  [ruby-core:08851] and
+	  [ruby-core:08852]
+
 Wed Sep 13 18:25:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): better here-doc support.

@@ -8,8 +8,8 @@ In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have a static type, and data themselves have
 types, so data will need to be converted between the languages.
 
-Data in Ruby are represented by C type `VALUE'.  Each VALUE data has
-its data-type.
+Data in Ruby are represented by the C type `VALUE'.  Each VALUE data
+has its data-type.
 
 To retrieve C data from a VALUE, you need to:
 
@@ -91,26 +91,26 @@ The data for type T_NIL, T_FALSE, T_TRUE are nil, true, false
 respectively.  They are singletons for the data type.
 
 The T_FIXNUM data is a 31bit length fixed integer (63bit length on
-some machines), which can be convert to a C integer by using the
+some machines), which can be converted to a C integer by using the
 FIX2INT() macro.  There is also NUM2INT() which converts any Ruby
 numbers into C integers.  The NUM2INT() macro includes a type check, so
 an exception will be raised if the conversion failed.  NUM2DBL() can
-be used to retrieve the double float value in same way.
+be used to retrieve the double float value in the same way.
 
-To get char* from a VALUE, version 1.7 recommend to use new macros
+In version 1.7 or later it is recommended that you use the new macros
 StringValue() and StringValuePtr().  StringValue(var) replaces var's
-value to the result of "var.to_str()".  StringValuePtr(var) does same
+value with the result of "var.to_str()".  StringValuePtr(var) does same
 replacement and returns char* representation of var.  These macros
 will skip the replacement if var is a String.  Notice that the macros
-requires to take only lvalue as their argument, to change the value
-of var in the replacement. 
+take only the lvalue as their argument, to change the value
+of var in place. 
 
-In version 1.6 or earlier, STR2CSTR() was used to do same thing
-but now it is obsoleted in version 1.7 because of STR2CSTR() has
-a risk of dangling pointer problem in to_str() impliclit conversion.
+In version 1.6 or earlier, STR2CSTR() was used to do the same thing
+but now it is deprecated in version 1.7, because STR2CSTR() has a risk
+of a dangling pointer problem in the to_str() impliclit conversion.
 
 Other data types have corresponding C structures, e.g. struct RArray
-for T_ARRAY etc. The VALUE of the type which has corresponding structure
+for T_ARRAY etc. The VALUE of the type which has the corresponding structure
 can be cast to retrieve the pointer to the struct.  The casting macro
 will be of the form RXXXX for each data type; for instance, RARRAY(obj). 
 See "ruby.h".
@@ -205,7 +205,7 @@ interpreter. Some (not all) of the useful functions are listed below:
   rb_ary_unshift(VALUE ary, VALUE val)
 
     Array operations.  The first argument to each functions must be an 
-    array.  They may dump core if other types given.
+    array.  They may dump core if other types are given.
 
 2. Extending Ruby with C
 
@@ -244,7 +244,7 @@ To define methods or singleton methods, use these functions:
 			          VALUE (*func)(), int argc)
 
 The `argc' represents the number of the arguments to the C function,
-which must be less than 17.  But I believe you don't need that much. :-)
+which must be less than 17.  But I doubt you'll need that many.
 
 If `argc' is negative, it specifies the calling sequence, not number of
 the arguments.  
@@ -272,7 +272,7 @@ private methods:
 
 The other is to define module functions, which are private AND singleton
 methods of the module.  For example, sqrt is the module function
-defined in Math module.  It can be call in the form like:
+defined in Math module.  It can be called in the following way:
 
   Math.sqrt(4)
 
@@ -291,7 +291,7 @@ in the Kernel module, can be defined using:
 
   void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
 
-To define alias to the method,
+To define an alias for the method,
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
 
@@ -321,7 +321,7 @@ There are several ways to invoke Ruby's features from C code.
 2.2.1 Evaluate Ruby Programs in a String
 
 The easiest way to use Ruby's functionality from a C program is to
-evaluate the string as Ruby program.  This function will do the job.
+evaluate the string as Ruby program.  This function will do the job:
 
   VALUE rb_eval_string(const char *str)
 
@@ -434,7 +434,7 @@ The prototypes of the getter and setter functions are as follows:
   (*getter)(ID id, void *data, struct global_entry* entry);
   (*setter)(VALUE val, ID id, void *data, struct global_entry* entry);
 
-3.3 Encapsulate C data into Ruby object
+3.3 Encapsulate C data into a Ruby object
 
 To wrap and objectify a C pointer as a Ruby object (so called
 DATA), use Data_Wrap_Struct().
@@ -619,7 +619,7 @@ are not exported to the Ruby world.  You need to protect them by
 If the file named extconf.rb exists, it will be executed to generate
 Makefile.
 
-extconf.rb is the file for check compilation conditions etc.  You
+extconf.rb is the file for checking compilation conditions etc.  You
 need to put
 
   require 'mkmf'
@@ -639,12 +639,12 @@ The value of the variables below will affect the Makefile.
   $LDFLAGS: included in LDFLAGS make variable (such as -L)
   $objs: list of object file names
 
-In normal, object files list is automatically generated by searching
-source files, but you need directs them explicitly if any sources will
+Normally, the object files list is automatically generated by searching
+source files, but you must define them explicitly if any sources will
 be generated while building.
 
 If a compilation condition is not fulfilled, you should not call
-``create_makefile''.  The Makefile will not generated, compilation will
+``create_makefile''.  The Makefile will not be generated, compilation will
 not be done.
 
 (5) prepare depend (optional)
@@ -654,7 +654,7 @@ check dependencies.  You can make this file by invoking
 
   % gcc -MM *.c > depend
 
-It's no harm.  Prepare it.
+It's harmless.  Prepare it.
 
 (6) generate Makefile
 
@@ -673,12 +673,12 @@ Type
   make
 
 to compile your extension.  You don't need this step either if you have
-put extension library under the ext directory of the ruby source tree.
+put the extension library under the ext directory of the ruby source tree.
 
 (8) debug
 
 You may need to rb_debug the extension.  Extensions can be linked
-statically by the adding directory name in the ext/Setup file so that
+statically by adding the directory name in the ext/Setup file so that
 you can inspect the extension with the debugger.
 
 (9) done, now you have the extension library
@@ -843,15 +843,15 @@ it can't be seen from Ruby programs.
  void rb_define_readonly_variable(const char *name, VALUE *var)
 
 Defines a read-only global variable.  Works just like
-rb_define_variable(), except defined variable is read-only.
+rb_define_variable(), except the defined variable is read-only.
 
  void rb_define_virtual_variable(const char *name,
 				 VALUE (*getter)(), VALUE (*setter)())
 
 Defines a virtual variable, whose behavior is defined by a pair of C
 functions.  The getter function is called when the variable is
-referred.  The setter function is called when the value is set to the
-variable.  The prototype for getter/setter functions are:
+referenced.  The setter function is called when the variable is set to a
+value.  The prototype for getter/setter functions are:
 
 	VALUE getter(ID id)
 	void setter(VALUE val, ID id)
@@ -1011,7 +1011,7 @@ Terminates the interpreter immediately.  This function should be
 called under the situation caused by the bug in the interpreter.  No
 exception handling nor ensure execution will be done.
 
-** Initialize and Starts the Interpreter
+** Initialize and Start the Interpreter
 
 The embedding API functions are below (not needed for extension libraries):
 
@@ -1148,7 +1148,7 @@ Returns an array of the added directories ([include_dir, lib_dir]).
 
  pkg_config(pkg)
 
-Obtains the information of pkg by pkg-config command.  The actual
+Obtains the information for pkg by pkg-config command.  The actual
 command name can be overriden by --with-pkg-config command line
 option.
 
