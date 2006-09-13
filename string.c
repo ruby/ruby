@@ -4151,12 +4151,10 @@ rb_str_intern(VALUE s)
     if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
 	rb_raise(rb_eArgError, "interning empty string");
     }
-    if (strlen(RSTRING_PTR(str)) != RSTRING_LEN(str))
-	rb_raise(rb_eArgError, "symbol string may not contain `\\0'");
     if (OBJ_TAINTED(str)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't intern tainted string");
     }
-    id = rb_intern(RSTRING_PTR(str));
+    id = rb_intern2(RSTRING_PTR(str), RSTRING_LEN(str));
     return ID2SYM(id);
 }
 
@@ -4482,7 +4480,8 @@ sym_inspect(VALUE sym)
     str = rb_str_new(0, RSTRING_LEN(sym)+1);
     RSTRING_PTR(str)[0] = ':';
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
-    if (!rb_symname_p(RSTRING_PTR(sym))) {
+    if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
+	!rb_symname_p(RSTRING_PTR(sym))) {
 	str = rb_str_dump(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
     }
@@ -4580,7 +4579,7 @@ rb_to_id(VALUE name)
 	}
 	break;
       case T_SYMBOL:
-	id = SYM2ID(name);
+	return SYM2ID(name);
 	break;
       default:
 	tmp = rb_check_string_type(name);
