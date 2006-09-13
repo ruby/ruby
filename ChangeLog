@@ -1,3 +1,7 @@
+Thu Sep 14 01:02:25 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/digest/lib/digest.rb: new file.
+
 Wed Sep 13 18:43:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* README.EXT: English adjustment.  [ruby-core:08851] and
