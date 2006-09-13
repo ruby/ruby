@@ -4404,6 +4404,9 @@ rb_str_intern(s)
     }
     if (strlen(RSTRING(str)->ptr) != RSTRING(str)->len)
 	rb_raise(rb_eArgError, "symbol string may not contain `\\0'");
+    if (OBJ_TAINTED(str)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't intern tainted string");
+    }
     id = rb_intern(RSTRING(str)->ptr);
     return ID2SYM(id);
 }

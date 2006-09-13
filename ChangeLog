@@ -1,3 +1,7 @@
+Wed Sep 13 16:43:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): prohibit interning tainted string.
+
 Wed Sep 13 01:14:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): works with pre-registered
