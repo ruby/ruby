@@ -1,3 +1,9 @@
+Wed Sep 13 18:25:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): better here-doc support.
+	  a patch from Marshall T. Vandegrift <llasram at gmail.com>.
+	  [ruby-core:08804]
+
 Wed Sep 13 16:43:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_intern): prohibit interning tainted string.

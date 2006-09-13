@@ -523,7 +523,7 @@ The variable ruby-indent-level controls the amount of indentation.
        ((looking-at "<<")
 	(cond
 	 ((and (ruby-expr-beg 'heredoc)
-	       (looking-at "<<\\(-\\)?\\(\\([\"'`]\\)\\([^\n]+?\\)\\3\\|\\sw+\\)"))
+	       (looking-at "<<\\(-\\)?\\(\\([\"'`]\\)\\([^\n]+?\\)\\3\\|\\(?:\\sw\\|\\s_\\)+\\)"))
 	  (setq re (regexp-quote (or (match-string 4) (match-string 2))))
 	  (if (match-beginning 1) (setq re (concat "\\s *" re)))
 	  (let* ((id-end (goto-char (match-end 0)))
