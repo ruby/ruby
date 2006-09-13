@@ -1,3 +1,8 @@
+Thu Sep 14 01:13:56 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (ruby_init_stack): decrease "stack level too deep" in Windows.
+	  [ruby-dev:29569]
+
 Thu Sep 14 01:02:25 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/lib/digest.rb: new file.
