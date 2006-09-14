@@ -1,3 +1,8 @@
+Thu Sep 14 16:34:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): allow zero length symbols.
+	  [ruby-core:08861]
+
 Thu Sep 14 16:11:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_intern): raise SecurityError only when $SAFE
