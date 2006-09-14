@@ -1973,20 +1973,36 @@ fix_mul(VALUE x, VALUE y)
 /* avoids an optimization bug of HP aC++/ANSI C B3910B A.06.05 [Jul 25 2005] */
         volatile
 #endif
-	long a, b, c;
+	SIGNED_VALUE a, b;
+#if SIZEOF_VALUE * 2 <= SIZEOF_LONG_LONG
+	LONG_LONG d;
+#else
+	SIGNED_VALUE c;
 	VALUE r;
+#endif
 
 	a = FIX2LONG(x);
-	if (a == 0) return x;
-
 	b = FIX2LONG(y);
+
+#if SIZEOF_VALUE * 2 <= SIZEOF_LONG_LONG
+	d = (LONG_LONG)a * b;
+	if (FIXABLE(d)) return LONG2FIX(d);
+	return rb_ll2inum(d);
+#else
+#	define SQRT_LONG_MAX (1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
+	/*tests if N*N would overflow*/
+#	define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((N)>=-SQRT_LONG_MAX))
+	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
+	    return LONG2FIX(a*b);
 	c = a * b;
 	r = LONG2FIX(c);
 
+	if (a == 0) return x;
 	if (FIX2LONG(r) != c || c/a != b) {
 	    r = rb_big_mul(rb_int2big(a), rb_int2big(b));
 	}
 	return r;
+#endif
     }
     switch (TYPE(y)) {
       case T_BIGNUM:

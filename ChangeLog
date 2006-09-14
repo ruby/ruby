@@ -1,3 +1,9 @@
+Thu Sep 14 17:21:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_mul): avoid bignum multiplication as far as
+	  possible.  a patch from Ondrej Bilka <neleai at seznam.cz>.
+	  [ruby-core:08825]
+
 Thu Sep 14 16:34:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_intern): allow zero length symbols.
