@@ -1,3 +1,8 @@
+Thu Sep 14 14:37:45 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/digest/lib/digest.rb (Digest::Base.file): new method.
+	  [ruby-dev:29572]
+
 Thu Sep 14 08:30:02 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/digest.c (rb_digest_base_inspect): new method.
