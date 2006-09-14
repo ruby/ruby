@@ -1,3 +1,8 @@
+Fri Sep 15 00:03:07 2006  Tanaka Akira  <akr@fsij.org>
+
+	* ext/digest/lib/digest.rb (Digest::Base.file): open a file in binary
+	  mode.  suggested by Kazuhiro NISHIYAMA.  [ruby-dev:29579]
+
 Thu Sep 14 17:21:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_mul): avoid bignum multiplication as far as

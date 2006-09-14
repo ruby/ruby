@@ -13,7 +13,7 @@ module Digest
     #  # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
     def self.file(name)
       digest = self.new
-      File.open(name) {|f|
+      File.open(name, "rb") {|f|
         buf = ""
         while f.read(16384, buf)
           digest.update buf
