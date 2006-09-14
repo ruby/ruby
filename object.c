@@ -1606,13 +1606,9 @@ static ID
 str_to_id(str)
     VALUE str;
 {
-    if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {
-	rb_raise(rb_eArgError, "empty symbol string");
-    }
-    if (RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
-	rb_warn("Symbols should not contain NUL (\\0)");
-    }
-    return rb_intern(RSTRING(str)->ptr);
+    VALUE sym = rb_str_intern(str);
+
+    return SYM2ID(sym);
 }
 
 ID

@@ -5991,6 +5991,17 @@ rb_symname_p(name)
     return *m ? Qfalse : Qtrue;
 }
 
+int
+rb_sym_interned_p(str)
+    VALUE str;
+{
+    ID id;
+
+    if (st_lookup(sym_tbl, (st_data_t)RSTRING(str)->ptr, (st_data_t *)&id))
+	return Qtrue;
+    return Qfalse;
+}
+
 ID
 rb_intern(name)
     const char *name;

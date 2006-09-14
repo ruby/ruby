@@ -336,6 +336,7 @@ int rb_is_class_id _((ID));
 int rb_is_local_id _((ID));
 int rb_is_junk_id _((ID));
 int rb_symname_p _((const char*));
+int rb_sym_interned_p _((VALUE));
 VALUE rb_backref_get _((void));
 void rb_backref_set _((VALUE));
 VALUE rb_lastline_get _((void));
