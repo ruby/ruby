@@ -4151,7 +4151,7 @@ rb_str_intern(VALUE s)
     if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
 	rb_raise(rb_eArgError, "interning empty string");
     }
-    if (OBJ_TAINTED(str)) {
+    if (OBJ_TAINTED(str) && rb_safe_level() >= 1 && !rb_sym_interned_p(str)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't intern tainted string");
     }
     id = rb_intern2(RSTRING_PTR(str), RSTRING_LEN(str));
@@ -4556,10 +4556,8 @@ sym_to_proc(VALUE sym)
 static ID
 str_to_id(VALUE str)
 {
-    if (!RSTRING_PTR(str) || RSTRING_LEN(str) == 0) {
-	rb_raise(rb_eArgError, "empty symbol string");
-    }
-    return rb_intern2(RSTRING_PTR(str), RSTRING_LEN(str));
+    VALUE sym = rb_str_intern(str);
+    return SYM2ID(sym);
 }
 
 ID

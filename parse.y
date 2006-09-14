@@ -8381,6 +8381,17 @@ rb_symname_p(const char *name)
     return *m ? Qfalse : Qtrue;
 }
 
+int
+rb_sym_interned_p(str)
+    VALUE str;
+{
+    ID id;
+
+    if (st_lookup(global_symbols.sym_id, (st_data_t)str, (st_data_t *)&id))
+	return Qtrue;
+    return Qfalse;
+}
+
 ID
 rb_intern2(const char *name, long len)
 {

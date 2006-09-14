@@ -400,6 +400,7 @@ int rb_is_class_id(ID);
 int rb_is_local_id(ID);
 int rb_is_junk_id(ID);
 int rb_symname_p(const char*);
+int rb_sym_interned_p(VALUE);
 VALUE rb_backref_get(void);
 void rb_backref_set(VALUE);
 VALUE rb_lastline_get(void);

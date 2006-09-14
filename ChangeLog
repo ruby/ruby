@@ -1,3 +1,13 @@
+Thu Sep 14 16:11:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): raise SecurityError only when $SAFE
+	  level is greater than zero.  [ruby-core:08862]
+
+	* parse.y (rb_interned_p): new function to check if a string is
+	  already interned.
+
+	* string.c (str_to_id): use rb_str_intern().
+
 Thu Sep 14 14:37:45 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/lib/digest.rb (Digest::Base.file): new method.
