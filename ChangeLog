@@ -1,3 +1,9 @@
+Fri Sep 15 05:23:24 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-8/nkf.c: imported nkf 2.0.8 2006-09-15.
+	  Add support for U+10000 - U+10FFFF
+	  Add support UTF-32
+
 Fri Sep 15 00:03:07 2006  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/lib/digest.rb (Digest::Base.file): open a file in binary
