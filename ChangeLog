@@ -1,3 +1,17 @@
+Fri Sep 15 20:22:15 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-8/nkf.c: imported nkf 2.0.8 rev.110.
+          * Fix: check_bom cuts \xfe\xff\xXX\xXX of UTF-32LE.
+          * Add support --ic=UTF-32.
+          * Fix: can't guess UTF-16 and UTF-32.
+          * Fix: can't decode beyond BMP of UTF-16LE.
+
+	* ext/nkf/nkf.c (guess): Support UTF-32.
+
+	* ext/nkf/lib/kconv.rb (kconv): Support UTF-32.
+
+	* ext/nkf/lib/kconv.rb (to_utf32): new method.
+
 Fri Sep 15 05:23:24 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-8/nkf.c: imported nkf 2.0.8 2006-09-15.

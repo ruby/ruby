@@ -581,6 +581,8 @@ struct input_code input_code_list[] = {
     {"Shift_JIS", 0, 0, 0, {0, 0, 0}, s_status, s_iconv, 0},
 #ifdef UTF8_INPUT_ENABLE
     {"UTF-8",     0, 0, 0, {0, 0, 0}, w_status, w_iconv, 0},
+    {"UTF-16",    0, 0, 0, {0, 0, 0},     NULL, w_iconv16, 0},
+    {"UTF-32",    0, 0, 0, {0, 0, 0},     NULL, w_iconv32, 0},
 #endif
     {0}
 };
@@ -1293,6 +1295,15 @@ void options(unsigned char *cp)
 			     strcmp(codeset, "UTF-16LE-BOM") == 0){
 			input_f = UTF16_INPUT;
 			input_endian = ENDIAN_LITTLE;
+		    }else if(strcmp(codeset, "UTF-32") == 0 ||
+			     strcmp(codeset, "UTF-32BE") == 0 ||
+			     strcmp(codeset, "UTF-32BE-BOM") == 0){
+			input_f = UTF32_INPUT;
+			input_endian = ENDIAN_BIG;
+		    }else if(strcmp(codeset, "UTF-32LE") == 0 ||
+			     strcmp(codeset, "UTF-32LE-BOM") == 0){
+			input_f = UTF32_INPUT;
+			input_endian = ENDIAN_LITTLE;
 #endif
 		    }
                     continue;
@@ -1901,12 +1912,7 @@ void options(unsigned char *cp)
     }
 }
 
-#ifdef ANSI_C_PROTOTYPE
 struct input_code * find_inputcode_byfunc(nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
-#else
-struct input_code * find_inputcode_byfunc(iconv_func)
-     nkf_char (*iconv_func)();
-#endif
 {
     if (iconv_func){
         struct input_code *p = input_code_list;
@@ -2227,6 +2233,12 @@ void code_status(nkf_char c)
     struct input_code *result = 0;
     struct input_code *p = input_code_list;
     while (p->name){
+        if (!p->status_func) {
+	    ++p;
+	    continue;
+	}
+        if (!p->status_func)
+	    continue;
         (p->status_func)(p, c);
         if (p->stat > 0){
             action_flag = 0;
@@ -2407,8 +2419,11 @@ void check_bom(FILE *f)
 		    if(!input_f){
 			set_iconv(TRUE, w_iconv32);
 		    }
-		    input_endian = ENDIAN_BIG;
-		    return;
+		    if (iconv == w_iconv32) {
+			input_endian = ENDIAN_BIG;
+			return;
+		    }
+		    (*i_ungetc)(0xFF,f);
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0xFE,f);
 	    }else if(c2 == 0xFF){
@@ -2416,8 +2431,11 @@ void check_bom(FILE *f)
 		    if(!input_f){
 			set_iconv(TRUE, w_iconv32);
 		    }
-		    input_endian = ENDIAN_2143;
-		    return;
+		    if (iconv == w_iconv32) {
+			input_endian = ENDIAN_2143;
+			return;
+		    }
+		    (*i_ungetc)(0xFF,f);
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0xFF,f);
 	    }else (*i_ungetc)(c2,f);
@@ -2431,7 +2449,10 @@ void check_bom(FILE *f)
 		if(!input_f){
 		    set_iconv(TRUE, w_iconv);
 		}
-		return;
+		if (iconv == w_iconv) {
+		    return;
+		}
+		(*i_ungetc)(0xBF,f);
 	    }else (*i_ungetc)(c2,f);
 	    (*i_ungetc)(0xBB,f);
 	}else (*i_ungetc)(c2,f);
@@ -2444,16 +2465,22 @@ void check_bom(FILE *f)
 		    if(!input_f){
 			set_iconv(TRUE, w_iconv32);
 		    }
-		    input_endian = ENDIAN_3412;
-		    return;
+		    if (iconv == w_iconv32) {
+			input_endian = ENDIAN_3412;
+			return;
+		    }
+		    (*i_ungetc)(0x00,f);
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0x00,f);
 	    }else (*i_ungetc)(c2,f);
 	    if(!input_f){
 		set_iconv(TRUE, w_iconv16);
 	    }
-	    input_endian = ENDIAN_BIG;
-	    return;
+	    if (iconv == w_iconv16) {
+		input_endian = ENDIAN_BIG;
+		return;
+	    }
+	    (*i_ungetc)(0xFF,f);
 	}else (*i_ungetc)(c2,f);
 	(*i_ungetc)(0xFE,f);
 	break;
@@ -2464,16 +2491,22 @@ void check_bom(FILE *f)
 		    if(!input_f){
 			set_iconv(TRUE, w_iconv32);
 		    }
-		    input_endian = ENDIAN_LITTLE;
-		    return;
+		    if (iconv == w_iconv32) {
+			input_endian = ENDIAN_LITTLE;
+			return;
+		    }
+		    (*i_ungetc)(0x00,f);
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0x00,f);
 	    }else (*i_ungetc)(c2,f);
 	    if(!input_f){
 		set_iconv(TRUE, w_iconv16);
 	    }
-	    input_endian = ENDIAN_LITTLE;
-	    return;
+	    if (iconv == w_iconv16) {
+		input_endian = ENDIAN_LITTLE;
+		return;
+	    }
+	    (*i_ungetc)(0xFE,f);
 	}else (*i_ungetc)(c2,f);
 	(*i_ungetc)(0xFF,f);
 	break;
@@ -2557,21 +2590,21 @@ nkf_char kanji_convert(FILE *f)
 				c0 <<= 8;
 				if ((c3 = (*i_getc)(f)) != EOF) {
 				    c0 |= c3;
-				} else c1 = EOF;
-			    } else c1 = EOF;
+				} else c2 = EOF;
+			    } else c2 = EOF;
 			}
-		    }
+		    } else c2 = EOF;
 		} else {
 		    if ((c2 = (*i_getc)(f)) != EOF) {
 			if (0xD8 <= c2 && c2 <= 0xDB) {
 			    if ((c3 = (*i_getc)(f)) != EOF) {
-				c3 <<= 8;
 				if ((c0 = (*i_getc)(f)) != EOF) {
+				    c0 <<= 8;
 				    c0 |= c3;
-				} else c1 = EOF;
-			    } else c1 = EOF;
+				} else c2 = EOF;
+			    } else c2 = EOF;
 			}
-		    } else c1 = EOF;
+		    } else c2 = EOF;
 		}
 		SEND;
             } else if(iconv == w_iconv32){
@@ -2595,7 +2628,7 @@ nkf_char kanji_convert(FILE *f)
 		    }
 		    c2 = 0;
 		}else{
-		    c1 = EOF;
+		    c2 = EOF;
 		}
 		SEND;
             } else

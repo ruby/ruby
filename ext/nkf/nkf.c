@@ -306,6 +306,8 @@ rb_nkf_guess1(VALUE obj, VALUE src)
  *       "UTF-8"
  *     when NKF::UTF16
  *       "UTF-16"
+ *     when NKF::UTF32
+ *       "UTF-32"
  *     when NKF::UNKNOWN
  *       "UNKNOWN"
  *     when NKF::BINARY
@@ -345,6 +347,8 @@ rb_nkf_guess2(VALUE obj, VALUE src)
       code = _UTF8;
     } else if (strcmp(input_codename, "UTF-16") == 0) {
       code = _UTF16;
+    } else if (strcmp(input_codename, "UTF-32") == 0) {
+      code = _UTF32;
     } else if (strlen(input_codename) > 0) {
       code = _UNKNOWN;
     }
@@ -382,16 +386,16 @@ rb_nkf_guess2(VALUE obj, VALUE src)
  *
  *  Output is buffered (DEFAULT), Output is unbuffered.
  *
- *  === -j -s -e -w -w16
+ *  === -j -s -e -w -w16 -w32
  *
  *  Output code is ISO-2022-JP (7bit JIS), Shift_JIS, EUC-JP,
- *  UTF-8N, UTF-16BE.
+ *  UTF-8N, UTF-16BE, UTF-32BE.
  *  Without this option and compile option, ISO-2022-JP is assumed.
  *
- *  === -J -S -E -W -W16
+ *  === -J -S -E -W -W16 -W32
  *
  *  Input assumption is JIS 7 bit, Shift_JIS, EUC-JP,
- *  UTF-8, UTF-16LE.
+ *  UTF-8, UTF-16, UTF-32.
  *
  *  ==== -J
  *
@@ -574,6 +578,16 @@ rb_nkf_guess2(VALUE obj, VALUE src)
  *
  *  [UTF-16LE-BOM] UTF-16 Little Endian with BOM
  *
+ *  [UTF-32] same as UTF-32BE
+ *
+ *  [UTF-32BE] UTF-32 Big Endian without BOM
+ *
+ *  [UTF-32BE-BOM] UTF-32 Big Endian with BOM
+ *
+ *  [UTF-32LE] UTF-32 Little Endian without BOM
+ *
+ *  [UTF-32LE-BOM] UTF-32 Little Endian with BOM
+ *
  *  [UTF8-MAC] NKDed UTF-8, a.k.a. UTF8-NFD (input only)
  *
  *  === --fb-{skip, html, xml, perl, java, subchar}
@@ -587,9 +601,19 @@ rb_nkf_guess2(VALUE obj, VALUE src)
  *  nkf adds a specified escape character to specified 2nd byte of Shift_JIS characters.
  *  1st byte of argument is the escape character and following bytes are target characters.
  *
- *  === --disable-cp932ext
+ *  === --no-cp932ext
  *
  *  Handle the characters extended in CP932 as unassigned characters.
+ *
+ *  == --no-best-fit-chars
+ *
+ *  When Unicode to Encoded byte conversion,
+ *  don't convert characters which is not round trip safe.
+ *  When Unicode to Unicode conversion,
+ *  with this and -x option, nkf can be used as UTF converter.
+ *  (In other words, without this and -x option, nkf doesn't save some characters)
+ *
+ *  When nkf convert string which related to path, you should use this opion.
  *
  *  === --cap-input
  *

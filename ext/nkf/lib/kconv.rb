@@ -105,6 +105,8 @@ module Kconv
       opt << 'W'
     when ::NKF::UTF16
       opt << 'W16'
+    when ::NKF::UTF32
+      opt << 'W32'
     end
 
     case out_code
@@ -118,6 +120,8 @@ module Kconv
       opt << 'w'
     when ::NKF::UTF16
       opt << 'w16'
+    when ::NKF::UTF32
+      opt << 'w32'
     when ::NKF::NOCONV
       return str
     end
@@ -201,6 +205,20 @@ module Kconv
     ::NKF::nkf('-w16m', str)
   end
   module_function :toutf16
+
+  # call-seq:
+  #    Kconv.toutf32(str)   -> string
+  #
+  # Convert <code>str</code> to UTF-32
+  #
+  # *Note*
+  # This method decode MIME encoded string and
+  # convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-w32xm0', str).
+  def toutf32(str)
+    ::NKF::nkf('-w32m', str)
+  end
+  module_function :toutf32
 
   #
   # guess
@@ -336,6 +354,17 @@ class String
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-w16xm0', str).
   def toutf16; Kconv.toutf16(self) end
+
+  # call-seq:
+  #    String#toutf32   -> string
+  #
+  # Convert <code>self</code> to UTF-32
+  #
+  # *Note*
+  # This method decode MIME encoded string and
+  # convert halfwidth katakana to fullwidth katakana.
+  # If you don't want it, use NKF.nkf('-w32xm0', str).
+  def toutf32; Kconv.toutf32(self) end
 
   #
   # is Encoding
