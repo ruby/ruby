@@ -8,7 +8,7 @@ class TestObjectSpace < Test::Unit::TestCase
     code = <<"End"
     define_method("test_id2ref_#{line}") {\
       o = ObjectSpace._id2ref(obj.object_id);\
-      assert_equal(obj, o, "didn't round trip: \#{obj.inspect}");\
+      assert_same(obj, o, "didn't round trip: \#{obj.inspect}");\
     }
 End
     eval code, binding, file, line
