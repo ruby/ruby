@@ -549,15 +549,27 @@ def checking_for(m, fmt = nil)
   r
 end
 
+def checking_message(target, place = nil, opt = nil)
+  [["in", place], ["with", opt]].inject("#{target}") do |msg, (pre, noun)|
+    if noun
+      [[:to_str], [:join, ","], [:to_s]].each do |meth, *args|
+        if noun.respond_to?(meth)
+          break noun = noun.send(meth, *args)
+        end
+      end
+      msg << " #{pre} #{noun}" unless noun.empty?
+    end
+    msg
+  end
+end
+
 # Returns whether or not +macro+ is defined either in the common header
 # files or within any +headers+ you provide.
 #
 # Any options you pass to +opt+ are passed along to the compiler.
 #
 def have_macro(macro, headers = nil, opt = "", &b)
-  m = "#{macro}"
-  m << " in #{headers.inspect}" if headers
-  checking_for m do
+  checking_for checking_message(macro, headers, opt) do
     macro_defined?(macro, cpp_include(headers), opt, &b)
   end
 end
@@ -576,7 +588,7 @@ end
 def have_library(lib, func = nil, headers = nil, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
-  checking_for "#{func}() in #{LIBARG%lib}" do
+  checking_for checking_message("#{func}()", LIBARG%lib) do
     if COMMON_LIBS.include?(lib)
       true
     else
@@ -629,7 +641,7 @@ end
 # preprocessor macro would be passed to the compiler.
 #
 def have_func(func, headers = nil, &b)
-  checking_for "#{func}()" do
+  checking_for checking_message("#{func}()", headers) do
     if try_func(func, $libs, headers, &b)
       $defs.push(format("-DHAVE_%s", func.upcase))
       true
@@ -648,7 +660,7 @@ end
 # preprocessor macro would be passed to the compiler.
 #
 def have_var(var, headers = nil, &b)
-  checking_for "#{var}" do
+  checking_for checking_message(var, headers) do
     if try_var(var, headers, &b)
       $defs.push(format("-DHAVE_%s", var.upcase))
       true
@@ -714,7 +726,7 @@ end
 # HAVE_ST_BAR preprocessor macro would be passed to the compiler.
 # 
 def have_struct_member(type, member, headers = nil, &b)
-  checking_for "#{type}.#{member}" do
+  checking_for checking_message("#{type}.#{member}", headers) do
     if try_compile(<<"SRC", &b)
 #{COMMON_HEADERS}
 #{cpp_include(headers)}
@@ -744,7 +756,7 @@ end
 # preprocessor macro would be passed to the compiler.
 #
 def have_type(type, headers = nil, opt = "", &b)
-  checking_for type do
+  checking_for checking_message(type, headers, opt) do
     headers = cpp_include(headers)
     if try_compile(<<"SRC", opt, &b) or (/\A\w+\z/n =~ type && try_compile(<<"SRC", opt, &b))
 #{COMMON_HEADERS}
@@ -781,7 +793,7 @@ def check_sizeof(type, headers = nil, &b)
   def fmt.%(x)
     x ? super : "failed"
   end
-  checking_for("size of #{type}", fmt) do
+  checking_for checking_message("size of #{type}", headers), fmt do
     if size = try_constant(expr, headers, &b)
       $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
       size
@@ -818,12 +830,11 @@ def what_type?(type, member = nil, headers = nil, &b)
     m << "." << member
     name = "(((#{type} *)0)->#{member})"
   end
-  m << " in #{headers.inspect}" if headers
   fmt = "seems %s"
   def fmt.%(x)
     x ? super : "unknown"
   end
-  checking_for m, fmt do
+  checking_for checking_message(m, headers), fmt do
     if scalar_ptr_type?(type, member, headers, &b)
       if try_static_assert("sizeof(*#{name}) == 1", headers)
         "string"
@@ -865,7 +876,7 @@ def find_executable0(bin, path = nil)
 end
 
 def find_executable(bin, path = nil)
-  checking_for bin do
+  checking_for checking_message(bin, path) do
     find_executable0(bin, path)
   end
 end

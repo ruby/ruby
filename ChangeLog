@@ -1,5 +1,3 @@
-Mon Jan 16 16:20:35 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
 	* Makefile.in, common.in, instruby.rb, ext/extmk.rb, lib/mkmf.rb:
 	  use instruby.rb to install extensions instead of ext/extmk.rb.
 
