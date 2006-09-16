@@ -1,3 +1,5 @@
+Sat Sep 16 16:40:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* Makefile.in, common.in, instruby.rb, ext/extmk.rb, lib/mkmf.rb:
 	  use instruby.rb to install extensions instead of ext/extmk.rb.
 
@@ -12,6 +14,8 @@
 	* ext/pty/pty.c (freeDevice): not used.
 
 	* ext/pty/pty.c (get_device_once): removed garbage right brace.
+
+	* lib/mkmf.rb (checking_for): improved the messages.
 
 Thu Sep 14 16:11:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
