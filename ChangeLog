@@ -1,3 +1,7 @@
+Sat Sep 16 23:14:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/pty/pty.c (establishShell): remove remaining unused line.
+
 Sat Sep 16 16:40:44 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.in, instruby.rb, ext/extmk.rb, lib/mkmf.rb:

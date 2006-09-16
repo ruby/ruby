@@ -226,7 +226,6 @@ establishShell(argc, argv, info)
     getDevice(&master,&slave);
 
     info->thread = rb_thread_current();
-    currentPid = getpid();
     if((i = fork()) < 0) {
 	close(master);
 	close(slave);
