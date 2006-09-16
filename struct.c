@@ -442,7 +442,12 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
     }
 
     members = rb_struct_members(s);
-    str = rb_sprintf("#<struct %s ", cname);
+    if (cname[0] == '#') {
+	str = rb_str_new2("#<struct ");
+    }
+    else {
+	str = rb_sprintf("#<struct %s ", cname);
+    }
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE slot;
 	ID id;

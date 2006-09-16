@@ -1,3 +1,8 @@
+Sat Sep 16 09:37:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (inspect_struct): do not display a class name for
+	  anonymous struct.  The member fields are sufficient.
+
 Fri Sep 15 20:22:15 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-8/nkf.c: imported nkf 2.0.8 rev.110.
