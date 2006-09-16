@@ -390,16 +390,8 @@ else
 end
 
 if $extout
-  Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
-  if $install
-    dest = Config.expand($rubylibdir.dup)
-    unless $destdir.empty?
-      dest.sub!($dest_prefix_pattern, Config.expand($destdir.dup))
-    end
-    FileUtils.cp_r(extout+"/.", dest, :verbose => true, :noop => $dryrun)
-    exit
-  end
   unless $ignore
+    Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
     FileUtils.mkpath(extout)
   end
 end
