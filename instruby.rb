@@ -17,12 +17,16 @@ File.umask(0)
 def parse_args()
   $mantype = 'doc'
   $destdir = nil
+  $extout = nil
   $make = 'make'
   $mflags = []
   $install = []
+  $installed_list = nil
+  $dryrun = false
   opt = OptionParser.new
   opt.on('-n') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
+  opt.on('--extout=DIR') {|dir| $extout = (dir unless dir.empty?)}
   opt.on('--make=COMMAND') {|make| $make = make}
   opt.on('--mantype=MAN') {|man| $mantype = man}
   opt.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
@@ -31,7 +35,11 @@ def parse_args()
     end
     $mflags.concat(v)
   end
-  opt.on('--install=TYPE', [:bin, :lib, :man]) {|ins| $install << ins}
+  opt.on('-i', '--install=TYPE',
+         [:local, :bin, :lib, :man, :ext, :"ext-arch", :"ext-comm"]) do |ins|
+    $install << ins
+  end
+  opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
   opt.parse! rescue abort [$!.message, opt].join("\n")
 
   $make, *rest = Shellwords.shellwords($make)
@@ -41,6 +49,10 @@ def parse_args()
     grep(/\A-(?!-).*#{'%s' % flag}/i) { return true }
     false
   end
+  def $mflags.defined?(var)
+    grep(/\A#{var}=(.*)/) {return $1}
+    false
+  end
 
   if $mflags.set?(?n)
     $dryrun = true
@@ -48,9 +60,16 @@ def parse_args()
     $mflags << '-n' if $dryrun
   end
 
-  $mflags << "DESTDIR=#{$destdir}"
+  $destdir ||= $mflags.defined?("DESTDIR")
+  $extout ||= $mflags.defined?("EXTOUT")
 
   $continue = $mflags.set?(?k)
+
+  if $installed_list ||= $mflags.defined?('INSTALLED_LIST')
+    Config.expand($installed_list, Config::CONFIG)
+    $installed_list = open($installed_list, "ab")
+    $installed_list.sync = true
+  end
 end
 
 parse_args()
@@ -60,13 +79,22 @@ include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
 
-def install?(type)
-  yield if $install.empty? or $install.include?(type)
+def install?(*types)
+  yield if $install.empty? or !($install & types).empty?
 end
 
 def install(src, dest, options = {})
   options[:preserve] = true
   super
+  if $installed_list
+    dest = File.join(dest, File.basename(src)) if $made_dirs[dest]
+    $installed_list.puts dest
+  end
+end
+
+def ln_sf(src, dest)
+  super
+  $installed_list.puts dest if $installed_list
 end
 
 $made_dirs = {}
@@ -108,7 +136,7 @@ arc = CONFIG["LIBRUBY_A"]
 
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
-install?(:bin) do
+install?(:local, :arch, :bin) do
   ruby_bin = File.join(bindir, ruby_install_name)
 
   install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
@@ -144,41 +172,72 @@ install?(:bin) do
   end
 end
 
+if $extout
+  RbConfig.expand(extout = "#$extout")
+  if noinst = CONFIG["no_install_files"] and noinst.empty?
+    noinst = nil
+  end
+  dest = rubylibdir
+  subpath = nil
+  copy = proc do |s|
+    d = dest + s[subpath]
+    if File.directory?(s)
+      makedirs(d)
+    else
+      install s, d
+    end
+  end
+  install?(:ext, :arch, :'ext-arch') do
+    subpath = extout.size..-1
+    Dir.glob("#{extout}/#{CONFIG['arch']}/**/*", File::FNM_DOTMATCH) do |src|
+      unless /\A\.{1,2}\z/ =~ (base = File.basename(src)) or
+          (noinst and File.fnmatch?(noinst, File.basename(src)))
+        copy[src]
+      end
+    end
+  end
+  install?(:ext, :comm, :'ext-comm') do
+    src = "#{extout}/common"
+    subpath = src.size..-1
+    Dir.glob("#{src}/**/*", &copy)
+  end
+end
+
 Dir.chdir srcdir
 
-install?(:lib) do
-ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
-if File::ALT_SEPARATOR
-  ruby_bin_dosish = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
-end
-for src in Dir["bin/*"]
-  next unless File.file?(src)
-  next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
+install?(:local, :arch, :lib) do
+  ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
+  if File::ALT_SEPARATOR
+    ruby_bin_dosish = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
+  end
+  for src in Dir["bin/*"]
+    next unless File.file?(src)
+    next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
-  name = ruby_install_name.sub(/ruby/, File.basename(src))
-  dest = File.join(bindir, name)
+    name = ruby_install_name.sub(/ruby/, File.basename(src))
+    dest = File.join(bindir, name)
 
-  install src, dest, :mode => 0755
+    install src, dest, :mode => 0755
 
-  next if $dryrun
+    next if $dryrun
 
-  shebang = ''
-  body = ''
-  open(dest, "r+") { |f|
-    shebang = f.gets
-    body = f.read
+    shebang = ''
+    body = ''
+    open(dest, "r+") { |f|
+      shebang = f.gets
+      body = f.read
 
-    if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
-      f.rewind
-      f.print shebang, body
-      f.truncate(f.pos)
-    end
-  }
+      if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
+        f.rewind
+        f.print shebang, body
+        f.truncate(f.pos)
+      end
+    }
 
-  if ruby_bin_dosish
-    batfile = File.join(CONFIG["bindir"], name + ".bat")
-    open(with_destdir(batfile), "w") { |b|
-      b.print <<EOH, shebang, body, <<EOF
+    if ruby_bin_dosish
+      batfile = File.join(CONFIG["bindir"], name + ".bat")
+        open(with_destdir(batfile), "wb") { |b|
+          b.print((<<EOH+shebang+body+<<EOF).gsub(/$/, "\r"))
 @echo off
 if not "%~d0" == "~d0" goto WinNT
 #{ruby_bin_dosish} -x "#{batfile}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -190,55 +249,55 @@ EOH
 __END__
 :endofruby
 EOF
-    }
+      }
+    end
+  end
+
+  for f in Dir["lib/**/*{.rb,help-message}"]
+    dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
+    makedirs dir
+    install f, dir, :mode => 0644
+  end
+  end
+
+  install?(:local, :arch, :bin) do
+  for f in Dir["*.h"]
+    install f, archlibdir, :mode => 0644
+  end
+
+  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
+    makedirs File.join(archlibdir, "win32")
+    install "win32/win32.h", File.join(archlibdir, "win32"), :mode => 0644
   end
 end
 
-for f in Dir["lib/**/*{.rb,help-message}"]
-  dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
-  makedirs dir
-  install f, dir, :mode => 0644
-end
-end
+install?(:local, :comm, :man) do
+  for mdoc in Dir["*.[1-9]"]
+    next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
 
-install?(:bin) do
-for f in Dir["*.h"]
-  install f, archlibdir, :mode => 0644
-end
+    section = mdoc[-1,1]
 
-if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-  makedirs File.join(archlibdir, "win32")
-  install "win32/win32.h", File.join(archlibdir, "win32"), :mode => 0644
-end
-end
+    destdir = mandir + section
+    destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
 
-install?(:man) do
-for mdoc in Dir["*.[1-9]"]
-  next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
+    makedirs destdir
 
-  section = mdoc[-1,1]
+    if $mantype == "doc"
+      install mdoc, destfile, :mode => 0644
+    else
+      require 'mdoc2man.rb'
 
-  destdir = mandir + section
-  destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
+      w = Tempfile.open(mdoc)
 
-  makedirs destdir
+      open(mdoc) { |r|
+        Mdoc2Man.mdoc2man(r, w)
+      }
 
-  if $mantype == "doc"
-    install mdoc, destfile, :mode => 0644
-  else
-    require 'mdoc2man.rb'
+      w.close
 
-    w = Tempfile.open(mdoc)
-
-    open(mdoc) { |r|
-      Mdoc2Man.mdoc2man(r, w)
-    }
-
-    w.close
-
-    install w.path, destfile, :mode => 0644
+      install w.path, destfile, :mode => 0644
+    end
   end
-end
 end
 
 # vi:set sw=2:

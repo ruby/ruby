@@ -62,10 +62,12 @@ OBJS	      = array.$(OBJEXT) \
 		$(MISSING)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
+		--extout="$(EXTOUT)" \
 		--make="$(MAKE)" \
 		--mflags="$(MFLAGS)" \
 		--make-flags="$(MAKEFLAGS)"
-EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
+EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) --
+INSTRUBY_ARGS =	$(SCRIPT_ARGS) --installed-list $(INSTALLED_LIST)
 
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
@@ -89,45 +91,143 @@ ruby.imp: $(OBJS)
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
 
-install-nodoc: install-local install-ext
+install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
+pre-install-nodoc:: pre-install-local pre-install-ext
+do-install-nodoc: 
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --mantype="$(MANTYPE)"
+post-install-nodoc:: post-install-local post-install-ext
+
 install-local: pre-install-local do-install-local post-install-local
+pre-install-local:: pre-install-bin pre-install-lib pre-install-man
+do-install-local:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=local --mantype="$(MANTYPE)"
+post-install-local:: post-install-bin post-install-lib post-install-man
+
 install-ext: pre-install-ext do-install-ext post-install-ext
+pre-install-ext:: pre-install-ext-arch pre-install-ext-comm
+do-install-ext:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=ext
+post-install-ext:: post-install-ext-arch post-install-ext-comm
 
-do-install-local: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-do-install-ext: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) install
+install-arch: pre-install-arch do-install-arch post-install-arch
+pre-install-arch:: pre-install-bin pre-install-ext-arch
+do-install-arch:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=bin --install=ext-arch
+post-install-arch:: post-install-bin post-install-ext-arch
 
-install-bin: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=bin
-install-lib: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=lib
-install-man: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=man --mantype="$(MANTYPE)"
+install-comm: pre-install-comm do-install-comm post-install-comm
+pre-install-comm:: pre-install-lib pre-install-ext-comm pre-install-man
+do-install-comm:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=lib --install=ext-comm --install=man
+post-install-comm:: post-install-lib post-install-ext-comm post-install-man
 
-what-where-all no-install-all: no-install no-install-doc
-what-where no-install: no-install-local no-install-ext
+install-bin: pre-install-bin do-install-bin post-install-bin
+pre-install-bin:: install-prereq
+do-install-bin:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=bin
+post-install-bin::
+
+install-lib: pre-install-lib do-install-lib post-install-lib
+pre-install-lib:: install-prereq
+do-install-lib:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=lib
+post-install-lib::
+
+install-ext-comm: pre-install-ext-comm do-install-ext-comm post-install-ext-comm
+pre-install-ext-comm:: install-prereq
+do-install-ext-comm:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=ext-comm
+post-install-ext-comm::
+
+install-ext-arch: pre-install-ext-arch do-install-ext-arch post-install-ext-arch
+pre-install-ext-arch:: install-prereq
+do-install-ext-arch:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=ext-arch
+post-install-ext-arch::
+
+install-man: pre-install-man do-install-man post-install-man
+pre-install-man:: install-prereq
+do-install-man:
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
+post-install-man::
+
+what-where: no-install
+no-install: no-install-nodoc $(RDOCTARGET)
+what-where-all: no-install-all
+no-install-all: no-install-nodoc
+
+what-where-nodoc: no-install-nodoc
+no-install-nodoc: pre-no-install-nodoc dont-install-nodoc post-no-install-nodoc
+pre-no-install-nodoc:: pre-no-install-local pre-no-install-ext
+dont-install-nodoc: 
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --mantype="$(MANTYPE)"
+post-no-install-nodoc:: post-no-install-local post-no-install-ext
+
 what-where-local: no-install-local
-no-install-local: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
+no-install-local: pre-no-install-local dont-install-local post-no-install-local
+pre-no-install-local:: pre-no-install-bin pre-no-install-lib pre-no-install-man
+dont-install-local:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=local --mantype="$(MANTYPE)"
+post-no-install-local:: post-no-install-bin post-no-install-lib post-no-install-man
+
 what-where-ext: no-install-ext
-no-install-ext: $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(EXTMK_ARGS) install
+no-install-ext: pre-no-install-ext dont-install-ext post-no-install-ext
+pre-no-install-ext:: pre-no-install-ext-arch pre-no-install-ext-comm
+dont-install-ext:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=ext
+post-no-install-ext:: post-no-install-ext-arch post-no-install-ext-comm
 
-install-doc: pre-install-doc do-install-doc post-install-doc
-do-install-doc: $(PROGRAM)
-	@echo Generating RDoc documentation
-	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
+what-where-arch: no-install-arch
+no-install-arch: pre-no-install-arch dont-install-arch post-no-install-arch
+pre-no-install-arch:: pre-no-install-bin pre-no-install-ext-arch
+dont-install-arch:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=bin --install=ext-arch
+post-no-install-arch:: post-no-install-lib post-no-install-man post-no-install-ext-arch
 
-pre-install: pre-install-local pre-install-ext
-pre-install-local:: PHONY
-pre-install-ext:: PHONY
-pre-install-doc:: PHONY
+what-where-comm: no-install-comm
+no-install-comm: pre-no-install-comm dont-install-comm post-no-install-comm
+pre-no-install-comm:: pre-no-install-lib pre-no-install-ext-comm pre-no-install-man
+dont-install-comm:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=lib --install=ext-comm --install=man
+post-no-install-comm:: post-no-install-lib post-no-install-ext-comm post-no-install-man
 
-post-install: post-install-local post-install-ext
-post-install-local:: PHONY
-post-install-ext:: PHONY
-post-install-doc:: PHONY
+what-where-bin: no-install-bin
+no-install-bin: pre-no-install-bin dont-install-bin post-no-install-bin
+pre-no-install-bin:: install-prereq
+dont-install-bin:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=bin
+post-no-install-bin::
+
+what-where-lib: no-install-lib
+no-install-lib: pre-no-install-lib dont-install-lib post-no-install-lib
+pre-no-install-lib:: install-prereq
+dont-install-lib:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=lib
+post-no-install-lib::
+
+what-where-ext-comm: no-install-ext-comm
+no-install-ext-comm: pre-no-install-ext-comm dont-install-ext-comm post-no-install-ext-comm
+pre-no-install-ext-comm:: install-prereq
+dont-install-ext-comm:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=ext-comm
+post-no-install-ext-comm::
+
+what-where-ext-arch: no-install-ext-arch
+no-install-ext-arch: pre-no-install-ext-arch dont-install-ext-arch post-no-install-ext-arch
+pre-no-install-ext-arch:: install-prereq
+dont-install-ext-arch:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=ext-arch
+post-no-install-ext-arch::
+
+what-where-man: no-install-man
+no-install-man: pre-no-install-man dont-install-man post-no-install-man
+pre-no-install-man:: install-prereq
+dont-install-man:
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
+post-no-install-man::
+
+install-prereq:
+	@exit > $(INSTALLED_LIST)
 
 clean: clean-ext clean-local
 clean-local::

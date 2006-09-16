@@ -86,6 +86,7 @@ ASFLAGS       = @ASFLAGS@
 OBJEXT        = @OBJEXT@
 MANTYPE	      = @MANTYPE@
 
+INSTALLED_LIST= .installed.list
 #### End of variables
 
 all:

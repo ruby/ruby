@@ -83,8 +83,8 @@ INSTALL_DIRS = [
 def install_dirs(target_prefix = nil)
   if $extout
     dirs = [
-      ['RUBYCOMMONDIR', '$(extout)'],
-      ['RUBYLIBDIR',    '$(extout)$(target_prefix)'],
+      ['RUBYCOMMONDIR', '$(extout)/common'],
+      ['RUBYLIBDIR',    '$(RUBYCOMMONDIR)/$(target_prefix)'],
       ['RUBYARCHDIR',   '$(extout)/$(arch)$(target_prefix)'],
       ['extout',        "#$extout"],
       ['extout_prefix', "#$extout_prefix"],
@@ -848,7 +848,7 @@ def find_executable0(bin, path = nil)
   ext = config_string('EXEEXT')
   if File.expand_path(bin) == bin
     return bin if File.executable?(bin)
-    return file if ext and File.executable?(file = bin + ext)
+    ext and File.executable?(file = bin + ext) and return file
     return nil
   end
   if path ||= ENV['PATH']
@@ -1207,7 +1207,7 @@ def create_makefile(target, srcprefix = nil)
   staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
   mfile.print(*configuration(srcprefix))
-  mfile.print %{
+  mfile.print "
 libpath = #{$LIBPATH.join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
@@ -1226,18 +1226,18 @@ TARGET = #{target}
 DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
-
-}
+#{!$extout && defined?($installed_list) ? "INSTALLED_LIST = #{$installed_list}\n" : ""}
+"
   install_dirs.each {|*d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
   n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET).'
-  mfile.print %{
+  mfile.print "
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
 CLEANLIBS     = #{n}#{CONFIG['DLEXT']} #{n}il? #{n}tds #{n}map
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.exp *.bak
 
 all:		#{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
-}
+"
   mfile.print CLEANINGS
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
@@ -1259,6 +1259,9 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
         dir.gsub!(/(\$\{\w+)(\})/) {$1+sep+$2}
       end
       mfile.print "\t$(INSTALL_PROG) #{f} #{dir}\n"
+      if defined?($installed_list)
+	mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
+      end
     end
   end
   mfile.print("install-rb: pre-install-rb install-rb-default\n")
@@ -1286,6 +1289,9 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	  sep = ""
 	end
 	mfile.print("#{f} $(@D#{sep})\n")
+	if defined?($installed_list) and !$extout
+	  mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
+	end
       end
     end
   end
