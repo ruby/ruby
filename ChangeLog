@@ -1,3 +1,10 @@
+Sat Sep 16 19:47:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* README.EXT: should mention new macros: RSTRING_PTR, RSTRING_LEN,
+	  RARRAY_PTR, RARRAY_LEN.
+
+	* README.EXT.ja: ditto.
+
 Sat Sep 16 16:39:23 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.in, instruby.rb, ext/extmk.rb, lib/mkmf.rb:

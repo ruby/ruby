@@ -129,10 +129,11 @@ obsolete となり、代わりに StringValue() と StringValuePtr()
 ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
 字にしたもの)という名前で提供されています(例: RSTRING())．
 
-例えば，文字列strの長さを得るためには「RSTRING(str)->len」と
-し，文字列strをchar*として得るためには「RSTRING(str)->ptr」
-とします．配列の場合には，それぞれ「RARRAY(ary)->len」，
-「RARRAY(ary)->ptr」となります．
+構造体からデータを取り出すマクロが提供されています。文字列
+strの長さを得るためには「RSTRING_LEN(str)」とし，文字列strを
+char*として得るためには「RSTRING_PTR(str)」とします．配列の
+場合には，それぞれ「RARRAY_LEN(ary)」，「RARRAY_PTR(ary)」と
+なります．
 
 Rubyの構造体を直接アクセスする時に気をつけなければならないこ
 とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
