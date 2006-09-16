@@ -1,3 +1,5 @@
+Sat Sep 16 16:39:23 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* Makefile.in, common.in, instruby.rb, ext/extmk.rb, lib/mkmf.rb:
 	  use instruby.rb to install extensions instead of ext/extmk.rb.
 
@@ -10,6 +12,8 @@
 	* ext/pty/pty.c (establishShell): parent pid is not used.
 
 	* ext/pty/pty.c (freeDevice): not used.
+
+	* lib/mkmf.rb (checking_for): improved the messages.
 
 Sat Sep 16 11:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
