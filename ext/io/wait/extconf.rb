@@ -3,7 +3,7 @@ target = "io/wait"
 
 unless macro_defined?("DOSISH", "#include <ruby.h>")
   fionread = %w[sys/ioctl.h sys/filio.h].find do |h|
-    checking_for("FIONREAD") {have_macro("FIONREAD", h)}
+    have_macro("FIONREAD", h)
   end
   if fionread
     $defs << "-DFIONREAD_HEADER=\"<#{fionread}>\""
