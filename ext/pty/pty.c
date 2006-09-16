@@ -1,4 +1,7 @@
 #include	"config.h"
+#ifdef RUBY_EXTCONF_H
+#include RUBY_EXTCONF_H
+#endif
 #include	<stdio.h>
 #include	<sys/types.h>
 #include	<sys/stat.h>
@@ -62,7 +65,7 @@ char	*MasterDevice = "/dev/ptym/pty%s",
 		0,
 	};
 #elif defined(_IBMESA)  /* AIX/ESA */
-static 
+static
 char	*MasterDevice = "/dev/ptyp%s",
   	*SlaveDevice = "/dev/ttyp%s",
 	*deviceNo[] = {
@@ -84,7 +87,7 @@ char	*MasterDevice = "/dev/ptyp%s",
 "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff",
 		};
 #elif !defined(HAVE_PTSNAME)
-static 
+static
 char	*MasterDevice = "/dev/pty%s",
 	*SlaveDevice = "/dev/tty%s",
 	*deviceNo[] = {
@@ -136,7 +139,7 @@ raise_from_wait(char *state, struct pty_info *info)
     char buf[1024];
     VALUE exc;
 
-    snprintf(buf, sizeof(buf), "pty - %s: %d", state, info->child_pid);
+    snprintf(buf, sizeof(buf), "pty - %s: %ld", state, (long)info->child_pid);
     exc = rb_exc_new2(eChildExited, buf);
     rb_iv_set(exc, "status", rb_last_status);
     rb_funcall(info->thread, rb_intern("raise"), 1, exc);
@@ -172,7 +175,7 @@ pty_syswait(struct pty_info *info)
     }
 }
 
-static void getDevice _((int*, int*));
+static void getDevice(int*, int*);
 
 struct exec_info {
     int argc;
@@ -180,15 +183,16 @@ struct exec_info {
 };
 
 static VALUE
-pty_exec(struct exec_info *arg)
+pty_exec(VALUE v)
 {
+    struct exec_info *arg = (struct exec_info *)v;
     return rb_f_exec(arg->argc, arg->argv);
 }
 
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info)
-{	
-    static int		i,master,slave,currentPid;
+{
+    int 		i,master,slave;
     char		*p,*getenv();
     struct passwd	*pwent;
     VALUE		v;
@@ -215,7 +219,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
     getDevice(&master,&slave);
 
     info->thread = rb_thread_current();
-    currentPid = getpid();
     if((i = fork()) < 0) {
 	close(master);
 	close(slave);
@@ -223,8 +226,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
     }
 
     if(i == 0) {	/* child */
-	currentPid = getpid();	
-
 	/*
 	 * Set free from process group and controlling terminal
 	 */
@@ -236,7 +237,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
 	if (setpgrp() == -1)
 	    perror("setpgrp()");
 #  else /* SETGRP_VOID */
-	if (setpgrp(0, currentPid) == -1)
+	if (setpgrp(0, getpid()) == -1)
 	    rb_sys_fail("setpgrp()");
 	if ((i = open("/dev/tty", O_RDONLY)) < 0)
 	    rb_sys_fail("/dev/tty");
@@ -393,13 +394,6 @@ getDevice(int *master, int *slave)
     }
 }
 
-static void
-freeDevice()
-{
-    chmod(SlaveName, 0666);
-    chown(SlaveName, 0, 0);
-}
-
 /* ruby function: getpty */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)
@@ -410,7 +404,7 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     OpenFile *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
-  
+
     MakeOpenFile(rport, rfptr);
     MakeOpenFile(wport, wfptr);
 
