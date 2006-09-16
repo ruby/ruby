@@ -1,3 +1,8 @@
+Sat Sep 16 11:03:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_shared_first): should create embedded copies
+	  instead of sharing memory region for smaller arrays.
+
 Sat Sep 16 09:37:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (inspect_struct): do not display a class name for

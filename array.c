@@ -474,7 +474,7 @@ ary_shared_first(int argc, VALUE *argv, VALUE ary, int last)
     if (last) {
 	offset = RARRAY_LEN(ary) - n;
     }
-    if (ARY_EMBED_P(ary)) {
+    if (ARY_EMBED_P(ary) || n <= RARRAY_EMBED_LEN_MAX) {
 	return rb_ary_new4(n, RARRAY_PTR(ary)+offset);
     }
     else {
