@@ -8,6 +8,7 @@ STATIC_RUBY   = static-ruby
 
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
+RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
@@ -225,6 +226,18 @@ pre-no-install-man:: install-prereq
 dont-install-man:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
 post-no-install-man::
+
+install-doc: rdoc pre-install-doc do-install-doc post-install-doc
+do-install-doc: $(PROGRAM)
+	$(RUNRUBY) -run -e cp -- -p -r -v "$(RDOCOUT)" "$(RIDATADIR)"
+
+rdoc: $(PROGRAM) PHONY
+	@echo Generating RDoc documentation
+	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
+
+pre-install-doc:: PHONY
+
+post-install-doc:: PHONY
 
 install-prereq:
 	@exit > $(INSTALLED_LIST)
