@@ -1,3 +1,11 @@
+Sun Sep 17 17:42:13 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (install-doc): reverted.
+
+	* instruby.rb: stores file name list without destdir prefix.
+
+	* lib/rdoc/generators/ri_generator.rb: do not chdir twice.
+
 Sat Sep 16 23:14:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): remove remaining unused line.
