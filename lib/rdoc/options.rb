@@ -91,6 +91,9 @@ class Options
   # multiple files
   attr_reader :promiscuous
 
+  # scan newer sources than the flag file if true.
+  attr_reader :force_update
+
   module OptionList
 
     OPTION_LIST = [
@@ -133,6 +136,10 @@ class Options
         "shown with list of files that sharing them.\n" +
         "Silently discarded if --diagram is not given\n" +
         "Experimental." ],
+
+      [ "--force-update",  "-U",   nil,
+        "forces to scan all sources even if newer than\n" +
+        "the flag file." ],
 
       [ "--fmt",           "-f",   "format name",
         "set the output formatter (see below)" ],
@@ -363,6 +370,7 @@ class Options
       @include_line_numbers = false
       @extra_accessor_flags = {}
       @promiscuous = false
+      @force_update = false
 
       @css = nil
       @webcvs = nil
@@ -461,6 +469,9 @@ class Options
           unless RDoc::ParserFactory.alias_extension(old, new)
             OptionList.error("Unknown extension .#{old} to -E")
           end
+
+        when "--force-update"
+          @force_update = true
 
 	when "--version"
 	  puts VERSION_STRING
