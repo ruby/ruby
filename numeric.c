@@ -1475,7 +1475,7 @@ rb_num2long(VALUE val)
 	    char *s;
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
-	    if (s = strchr(buf, ' ')) *s = '\0';
+	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
 
@@ -1623,7 +1623,7 @@ rb_num2ll(VALUE val)
 	    char *s;
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
-	    if (s = strchr(buf, ' ')) *s = '\0';
+	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
 	}
 
@@ -1991,7 +1991,7 @@ fix_mul(VALUE x, VALUE y)
 #else
 #	define SQRT_LONG_MAX (1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
 	/*tests if N*N would overflow*/
-#	define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((N)>=-SQRT_LONG_MAX))
+#	define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
 	    return LONG2FIX(a*b);
 	c = a * b;

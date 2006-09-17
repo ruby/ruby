@@ -1,3 +1,7 @@
+Sun Sep 17 10:42:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_mul): fixed typo.  fixed: [ruby-core:08885]
+
 Sat Sep 16 19:47:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* README.EXT: should mention new macros: RSTRING_PTR, RSTRING_LEN,
