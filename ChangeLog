@@ -1,3 +1,10 @@
+Mon Sep 18 15:29:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): restore GC protection volatile variable.
+	  [ruby-dev:29588]
+
+	* re.c (rb_reg_regcomp): ditto.
+
 Mon Sep 18 12:16:48 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_mul): get rid of shift overflow.
