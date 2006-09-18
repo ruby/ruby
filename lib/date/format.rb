@@ -98,10 +98,8 @@ class Date
 	t = '@' + t
 	if set
 	  instance_variable_set(t, *args)
-	else
-	  if instance_variables.include?(t)
-	    instance_variable_get(t)
-	  end
+	elsif instance_variable_defined?(t)
+	  instance_variable_get(t)
 	end
       end
 
