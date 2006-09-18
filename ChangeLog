@@ -1,3 +1,15 @@
+Mon Sep 18 10:47:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): remove unused variable.
+
+	* math.c (math_log): ditto.
+
+	* re.c (rb_reg_regcomp): ditto.
+
+	* eval.c (break_jump): ditto.
+
+	* eval.c (rb_thread_yield_0): remove unused function.
+
 Sun Sep 17 23:44:58 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc#document): scan only files modified

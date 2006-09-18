@@ -196,7 +196,7 @@ rb_class_path(VALUE klass)
 		s = rb_class2name(RBASIC(klass)->klass);
 	    }
 	}
-	path = rb_sprintf("#<%s:%p>", s, klass);
+	path = rb_sprintf("#<%s:%p>", s, (void*)klass);
 	rb_ivar_set(klass, tmp_classpath, path);
 
 	return path;

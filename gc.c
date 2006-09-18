@@ -1266,7 +1266,7 @@ obj_free(VALUE obj)
 
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)", 
-	       RANY(obj)->as.basic.flags & T_MASK, obj);
+	       RANY(obj)->as.basic.flags & T_MASK, (void*)obj);
     }
 }
 

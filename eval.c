@@ -4621,7 +4621,6 @@ static void
 break_jump(VALUE retval)
 {
     struct tag *tt = prot_tag;
-    int yield = 0;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
@@ -11975,12 +11974,6 @@ rb_thread_terminated(rb_thread_t th, int state, enum thread_status status)
     }
     rb_thread_schedule();
     ruby_stop(0);		/* last thread termination */
-}
-
-static VALUE
-rb_thread_yield_0(VALUE arg)
-{
-    return rb_thread_yield(arg, curr_thread);
 }
 
 static void

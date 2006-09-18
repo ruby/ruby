@@ -313,7 +313,7 @@ static VALUE
 math_log(int argc, VALUE *argv)
 {
     VALUE x, base;
-    double d, b;
+    double d;
 
     rb_scan_args(argc, argv, "11", &x, &base);
     Need_Float(x);
