@@ -1513,7 +1513,6 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *     k.methods.length   #=> 42
  */
 
-
 static VALUE
 rb_obj_methods(int argc, VALUE *argv, VALUE obj)
 {
@@ -1628,7 +1627,6 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
     return rb_ivar_get(obj, id);
 }
 
-
 /*
  *  call-seq:
  *     obj.instance_variable_set(symbol, obj)    => obj
@@ -1662,6 +1660,35 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 
 /*
  *  call-seq:
+ *     obj.instance_variable_defined?(symbol)    => true or false
+ *
+ *  Returns <code>true</code> if the given instance variable is
+ *  defined in <i>obj</i>.
+ *
+ *     class Fred
+ *       def initialize(p1, p2)
+ *         @a, @b = p1, p2
+ *       end
+ *     end
+ *     fred = Fred.new('cat', 99)
+ *     fred.instance_variable_defined?(:@a)    #=> true
+ *     fred.instance_variable_defined?("@b")   #=> true
+ *     fred.instance_variable_defined?("@c")   #=> false
+ */
+
+static VALUE
+rb_obj_ivar_defined(VALUE obj, VALUE iv)
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_instance_id(id)) {
+	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+    }
+    return rb_ivar_defined(obj, id);
+}
+
+/*
+ *  call-seq:
  *     mod.class_variable_get(symbol)    => obj
  *  
  *  Returns the value of the given class variable (or throws a
@@ -1671,7 +1698,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
  *     class Fred
  *       @@foo = 99
  *     end
- *     Fred.class_variable_get(:@foo)     #=> 99
+ *     Fred.class_variable_get(:@@foo)     #=> 99
  */
 
 static VALUE
@@ -1684,7 +1711,6 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
     }
     return rb_cvar_get(obj, id);
 }
-
 
 /*
  *  call-seq:
@@ -1699,7 +1725,7 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
  *         @@foo
  *       end
  *     end
- *     Fred.class_variable_set(:@foo, 101)      #=> 101
+ *     Fred.class_variable_set(:@@foo, 101)     #=> 101
  *     Fred.new.foo                             #=> 101
  */
 
@@ -1713,6 +1739,31 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
     }
     rb_cvar_set(obj, id, val, Qfalse);
     return val;
+}
+
+/*
+ *  call-seq:
+ *     obj.class_variable_defined?(symbol)    => true or false
+ *
+ *  Returns <code>true</code> if the given class variable is defined
+ *  in <i>obj</i>.
+ *
+ *     class Fred
+ *       @@foo = 99
+ *     end
+ *     Fred.class_variable_defined?(:@@foo)    #=> true
+ *     Fred.class_variable_defined?(:@@bar)    #=> false
+ */
+
+static VALUE
+rb_mod_cvar_defined(VALUE obj, VALUE iv)
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_instance_id(id)) {
+	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+    }
+    return rb_cvar_defined(obj, id);
 }
 
 static VALUE
@@ -2229,6 +2280,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0); /* in variable.c */
     rb_define_method(rb_mKernel, "instance_variable_get", rb_obj_ivar_get, 1);
     rb_define_method(rb_mKernel, "instance_variable_set", rb_obj_ivar_set, 2);
+    rb_define_method(rb_mKernel, "instance_variable_defined?", rb_obj_ivar_defined, 1);
     rb_define_private_method(rb_mKernel, "remove_instance_variable",
 			     rb_obj_remove_instance_variable, 1); /* in variable.c */
 
@@ -2310,6 +2362,7 @@ Init_Object(void)
 		     rb_mod_remove_cvar, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
     rb_define_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
+    rb_define_method(rb_cModule, "class_variable_defined?", rb_mod_cvar_defined, 1);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
