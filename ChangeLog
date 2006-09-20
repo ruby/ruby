@@ -1,3 +1,9 @@
+Wed Sep 20 09:25:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/gdbm/gdbm.c: add RDoc documentation. a patch from Peter
+	  Adolphs <futzilogik at users dot sourceforge dot net>.
+	  [ruby-doc:1223]
+
 Tue Sep 19 00:42:15 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_ivar_defined, rb_mod_cvar_defined): new methods,
