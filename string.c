@@ -458,7 +458,7 @@ rb_str_times(VALUE str, VALUE times)
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new5(str,0, len *= RSTRING_LEN(str));
+    str2 = rb_str_new5(str, 0, len *= RSTRING_LEN(str));
     for (i = 0; i < len; i += RSTRING_LEN(str)) {
 	memcpy(RSTRING_PTR(str2) + i,
 	       RSTRING_PTR(str), RSTRING_LEN(str));
@@ -4365,6 +4365,103 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
     return rb_str_justify(argc, argv, str, 'c');
 }
 
+/*
+ *  call-seq:
+ *     str.partition {| obj | block }  => [true_array, false_array]
+ *     str.partition(sep)              => [head, sep, tail]
+ *  
+ *  If a block is given, returns two arrays of true elements and false
+ *  elements classified by the block evaluation.  Otherwise, searches
+ *  <i>sep</i> in the string and returns the part before it, the
+ *  <i>sep</i>, and the part after it.  If <i>sep</i> is not found,
+ *  returns <i>str</i> and two empty strings.
+ *     
+ *     "hello".partition("l")         #=> ["he", "l", "lo"]
+ *     "hello".partition("x")         #=> ["helo", "", ""]
+ */
+
+static VALUE
+rb_str_partition(int argc, VALUE *argv, VALUE str)
+{
+    VALUE sep;
+    long pos;
+    int regex = Qfalse;
+
+    if (argc == 0) return rb_call_super(argc, argv);
+    rb_scan_args(argc, argv, "1", &sep);
+    if (TYPE(sep) == T_REGEXP) {
+	pos = rb_reg_search(sep, str, 0, 0);
+	regex = Qtrue;
+    }
+    else {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sep);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sep));
+	}
+	pos = rb_str_index(str, sep, 0);
+    }
+    if (pos < 0) {
+      failed:
+	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
+    }
+    if (regex) {
+	sep = rb_str_subpat(str, sep, 0);
+	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
+    }
+    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+		          sep,
+		          rb_str_substr(str, pos+RSTRING_LEN(sep),
+					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+}
+
+/*
+ *  call-seq:
+ *     str.rpartition(sep)            => [head, sep, tail]
+ *  
+ *  Searches <i>sep</i> in the string from the end of the string, and
+ *  returns the part before it, the <i>sep</i>, and the part after it.
+ *  If <i>sep</i> is not found, returns two empty strings and
+ *  <i>str</i>.
+ *     
+ *     "hello".partition("l")         #=> ["he", "l", "lo"]
+ *     "hello".partition("x")         #=> ["helo", "", ""]
+ */
+
+static VALUE
+rb_str_rpartition(VALUE str, VALUE sep)
+{
+    long pos = RSTRING_LEN(str);
+    int regex = Qfalse;
+
+    if (TYPE(sep) == T_REGEXP) {
+	pos = rb_reg_search(sep, str, pos, 1);
+	regex = Qtrue;
+    }
+    else {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sep);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sep));
+	}
+	pos = rb_str_index(str, sep, pos);
+    }
+    if (pos < 0) {
+	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);
+    }
+    if (regex) {
+	sep = rb_reg_nth_match(0, rb_backref_get());
+    }
+    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+		          sep,
+		          rb_str_substr(str, pos+RSTRING_LEN(sep),
+					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+}
+
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
@@ -4751,6 +4848,9 @@ Init_String(void)
 
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
+
+    rb_define_method(rb_cString, "partition", rb_str_partition, -1);
+    rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     id_to_s = rb_intern("to_s");
 

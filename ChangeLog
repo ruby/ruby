@@ -11,6 +11,13 @@ Wed Sep 20 22:41:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* numeric.c (fix_mul): typo again.  patch from Tadashi Saito
 	  <shiba at mail2.accsnet.ne.jp>.  fixed: [ruby-core:08893]
 
+Wed Sep 20 19:32:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_partition): a new method to separate the string
+	  by a separator.  taken from Python 2.5.
+
+	* string.c (rb_str_rpartition): ditto.
+
 Wed Sep 20 09:49:40 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (INSTALLED_LIST): need to define
