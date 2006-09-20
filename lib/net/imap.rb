@@ -1785,7 +1785,7 @@ module Net
       T_TEXT    = :TEXT
 
       BEG_REGEXP = /\G(?:\
-(?# 1:  SPACE   )( )|\
+(?# 1:  SPACE   )( +)|\
 (?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
 (?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
 (?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+]+)|\
