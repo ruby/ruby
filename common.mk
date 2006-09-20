@@ -227,6 +227,7 @@ rdoc: $(PROGRAM) PHONY
 	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
 
 pre-install-doc:: PHONY
+	$(RUNRUBY) -run -e mkdir -- -p "$(RIDATADIR)"
 
 post-install-doc:: PHONY
 
