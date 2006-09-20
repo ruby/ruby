@@ -902,8 +902,8 @@ module Net
       @responses = Hash.new([].freeze)
       @tagged_responses = {}
       @response_handlers = []
-      @tagged_response_arrival = new_cond
-      @continuation_request_arrival = new_cond
+      @response_arrival = new_cond
+      @continuation_request = nil
       @logout_command_tag = nil
       @debug_output_bol = true
 
@@ -934,7 +934,7 @@ module Net
             case resp
             when TaggedResponse
               @tagged_responses[resp.tag] = resp
-              @tagged_response_arrival.broadcast
+              @response_arrival.broadcast
               if resp.tag == @logout_command_tag
                 return
               end
@@ -949,7 +949,8 @@ module Net
                 raise ByeResponseError, resp.raw_data
               end
             when ContinuationRequest
-              @continuation_request_arrival.signal
+              @continuation_request = resp
+              @response_arrival.broadcast
             end
             @response_handlers.each do |handler|
               handler.call(resp)
@@ -961,10 +962,14 @@ module Net
       end
     end
 
-    def get_tagged_response(tag, cmd)
+    def get_tagged_response(tag)
       until @tagged_responses.key?(tag)
-        @tagged_response_arrival.wait
+        @response_arrival.wait
       end
+      return pick_up_tagged_response(tag)
+    end
+
+    def pick_up_tagged_response(tag)
       resp = @tagged_responses.delete(tag)
       case resp.name
       when /\A(?:NO)\z/ni
@@ -1005,7 +1010,7 @@ module Net
 
     def send_command(cmd, *args, &block)
       synchronize do
-        tag = generate_tag
+        tag = Thread.current[:net_imap_tag] = generate_tag
         put_string(tag + " " + cmd)
         args.each do |i|
           put_string(" ")
@@ -1019,7 +1024,7 @@ module Net
           add_response_handler(block)
         end
         begin
-          return get_tagged_response(tag, cmd)
+          return get_tagged_response(tag)
         ensure
           if block
             remove_response_handler(block)
@@ -1088,7 +1093,15 @@ module Net
 
     def send_literal(str)
       put_string("{" + str.length.to_s + "}" + CRLF)
-      @continuation_request_arrival.wait
+      while @continuation_request.nil? &&
+        !@tagged_responses.key?(Thread.current[:net_imap_tag])
+        @response_arrival.wait
+      end
+      if @continuation_request.nil?
+        pick_up_tagged_response(Thread.current[:net_imap_tag])
+        raise ResponseError.new("expected continuation request")
+      end
+      @continuation_request = nil
       put_string(str)
     end
 
@@ -1883,7 +1896,7 @@ module Net
       T_TEXT    = :TEXT
 
       BEG_REGEXP = /\G(?:\
-(?# 1:  SPACE   )( )|\
+(?# 1:  SPACE   )( +)|\
 (?# 2:  NIL     )(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
 (?# 3:  NUMBER  )(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
 (?# 4:  ATOM    )([^\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+]+)|\
