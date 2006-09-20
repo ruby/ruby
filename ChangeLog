@@ -1,3 +1,8 @@
+Wed Sep 20 09:49:40 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub (INSTALLED_LIST): need to define
+	  this macro to install.
+
 Wed Sep 20 09:25:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/gdbm/gdbm.c: add RDoc documentation. a patch from Peter
