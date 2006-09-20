@@ -1989,7 +1989,7 @@ fix_mul(VALUE x, VALUE y)
 	if (FIXABLE(d)) return LONG2FIX(d);
 	return rb_ll2inum(d);
 #else
-#	define SQRT_LONG_MAX ((SIZEOF_VALUE)1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
+#	define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
 	/*tests if N*N would overflow*/
 #	define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
