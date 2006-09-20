@@ -14,6 +14,19 @@ Wed Sep 20 09:25:39 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  Adolphs <futzilogik at users dot sourceforge dot net>.
 	  [ruby-doc:1223]
 
+Tue Sep 19 00:07:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_eql): fail early to gain performance.
+
+	* string.c (sym_hash): cache hash value in aux.shared if possible.
+
+	* gc.c (rb_obj_id): no need to treat symbols specially.
+
+	* lib/fileutils.rb (FileUtils::FileUtils): singleton_methods() no
+	  longer return an array of strings, but of symbols.
+
+	* lib/delegate.rb (DelegateClass): ditto.
+
 Tue Sep 19 00:42:15 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_ivar_defined, rb_mod_cvar_defined): new methods,
@@ -24,7 +37,7 @@ Tue Sep 19 00:42:15 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  instance_variable_defined? to check if an instance variable is
 	  defined.  fixed: [ruby-dev:29554]
 
-Mon Sep 18 00:42:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Mon Sep 18 15:29:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_glob): restore GC protection volatile variable.
 	  [ruby-dev:29588]

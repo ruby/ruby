@@ -535,6 +535,8 @@ void
 rb_str_associate(VALUE str, VALUE add)
 {
     if (STR_ASSOC_P(str)) {
+	/* sanity check */
+	if (OBJ_FROZEN(str)) rb_error_frozen("string");
 	/* already associated */
 	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
     }
@@ -554,6 +556,7 @@ VALUE
 rb_str_associated(VALUE str)
 {
     if (STR_ASSOC_P(str)) {
+	if (OBJ_FROZEN(str)) return Qfalse;
 	return RSTRING(str)->as.heap.aux.shared;
     }
     return Qfalse;
@@ -4441,6 +4444,47 @@ sym_equal(VALUE sym1, VALUE sym2)
 }
 
 /*
+ * call-seq:
+ *   sym.eql?(other)   => true or false
+ *
+ * Two symbols are equal if they are exactly same symbols.
+ */
+
+static VALUE
+sym_eql(VALUE sym1, VALUE sym2)
+{
+    if (sym1 == sym2) return Qtrue;
+    if (SYMBOL_P(sym2)) return Qfalse;
+    return rb_str_eql(sym1, sym2);
+}
+
+/*
+ * call-seq:
+ *    sym.hash   => fixnum
+ *
+ * Return a hash based on the symbol's length and content.
+ */
+static VALUE
+sym_hash(VALUE sym)
+{
+    int h;
+    VALUE hval;
+
+    if (STR_SHARED_P(sym)) {
+	/* if a symbol has shared value, that's a hash value. */
+	return RSTRING(sym)->as.heap.aux.shared;
+    }
+    h = rb_str_hash(sym);
+    hval = INT2FIX(h);
+    if (!STR_EMBED_P(sym)) {
+	FL_SET(sym, STR_ASSOC);
+	RSTRING(sym)->as.heap.aux.shared = hval;
+    }
+    return hval;
+}
+
+
+/*
  *  call-seq:
  *     sym.to_i      => fixnum
  *  
@@ -4721,6 +4765,8 @@ Init_String(void)
     rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
+    rb_define_method(rb_cSymbol, "eql?", sym_eql, 1);
+    rb_define_method(rb_cSymbol, "hash", sym_hash, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);

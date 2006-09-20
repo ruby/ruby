@@ -262,9 +262,9 @@ def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.public_instance_methods(true)
   methods -= [
-    "__id__", "object_id", "__send__", "__send", "__send!", "respond_to?", "send", "funcall",
-    "==", "equal?", "initialize", "method_missing", "__getobj__", "__setobj__",
-    "clone", "dup", "marshal_dump", "marshal_load",
+    :__id__, :object_id, :__send__, :__send, :__send!, :respond_to?, :send, :funcall,
+    :==, :equal?, :initialize, :method_missing, :__getobj__, :__setobj__,
+    :clone, :dup, :marshal_dump, :marshal_load,
   ]
   klass.module_eval {
     include Delegator::MethodDelegation
