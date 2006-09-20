@@ -68,7 +68,7 @@ def config_string(key, config = CONFIG)
 end
 
 def dir_re(dir)
-  Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
+  Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$(?:\(target_prefix\)|\{target_prefix\}))?')
 end
 
 INSTALL_DIRS = [
@@ -84,7 +84,7 @@ def install_dirs(target_prefix = nil)
   if $extout
     dirs = [
       ['RUBYCOMMONDIR', '$(extout)/common'],
-      ['RUBYLIBDIR',    '$(RUBYCOMMONDIR)/$(target_prefix)'],
+      ['RUBYLIBDIR',    '$(RUBYCOMMONDIR)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(extout)/$(arch)$(target_prefix)'],
       ['extout',        "#$extout"],
       ['extout_prefix', "#$extout_prefix"],

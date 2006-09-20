@@ -1,3 +1,11 @@
+Wed Sep 20 23:17:41 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (pre-install-doc): create data directory before install.
+
+	* lib/mkmf.rb (dir_re): fixed typo.
+
+	* lib/mkmf.rb (install_dirs): remove extra slash.
+
 Wed Sep 20 22:41:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_mul): typo again.  patch from Tadashi Saito
