@@ -172,6 +172,8 @@ EXTSTATIC     =
 
 OBJEXT = obj
 
+INSTALLED_LIST= .installed.list
+
 WINMAINOBJ    = wincemain.$(OBJEXT)
 
 all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk

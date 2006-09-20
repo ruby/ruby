@@ -169,6 +169,8 @@ PREP          = miniruby$(EXEEXT)
 
 OBJEXT        = obj
 
+INSTALLED_LIST= .installed.list
+
 WINMAINOBJ    = winmain.$(OBJEXT)
 MINIOBJS      = dmydln.$(OBJEXT)
 
