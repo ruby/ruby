@@ -1,3 +1,10 @@
+Thu Sep 21 17:44:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_startwith): a new method to check if a string
+	  starts with given prefix.
+
+	* string.c (rb_str_endwith): the opposite of String#startwith?.
+
 Thu Sep 21 16:29:02 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* rubytest.rb: use each_line instead of each.

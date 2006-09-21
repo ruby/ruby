@@ -3118,7 +3118,7 @@ tr_setup_table(VALUE str, char table[256], int init)
 
 /*
  *  call-seq:
- *     str.delete!([other_str]+>)   => str or nil
+ *     str.delete!([other_str]+)   => str or nil
  *  
  *  Performs a <code>delete</code> operation in place, returning <i>str</i>, or
  *  <code>nil</code> if <i>str</i> was not modified.
@@ -4498,6 +4498,51 @@ rb_str_rpartition(VALUE str, VALUE sep)
 					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
 }
 
+/*
+ *  call-seq:
+ *     str.startwith?([prefix]+)   => true or false
+ *  
+ *  Returns true if <i>str</i> starts with the prefix given.
+ */
+
+static VALUE
+rb_str_startwith(int argc, VALUE *argv, VALUE str)
+{
+    int i;
+
+    for (i=0; i<argc; i++) {
+	VALUE tmp = rb_check_string_type(argv[i]);
+	if (NIL_P(tmp)) continue;
+	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
+	if (rb_memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     str.endwith?([suffix]+)   => true or false
+ *  
+ *  Returns true if <i>str</i> ends with the suffix given.
+ */
+
+static VALUE
+rb_str_endwith(int argc, VALUE *argv, VALUE str)
+{
+    int i;
+
+    for (i=0; i<argc; i++) {
+	VALUE tmp = rb_check_string_type(argv[i]);
+	if (NIL_P(tmp)) continue;
+	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
+	if (rb_memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - RSTRING_LEN(tmp),
+		      RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
@@ -4842,6 +4887,8 @@ Init_String(void)
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
+    rb_define_method(rb_cString, "startwith?", rb_str_startwith, -1);
+    rb_define_method(rb_cString, "endwith?", rb_str_endwith, -1);
 
     rb_define_method(rb_cString, "scan", rb_str_scan, 1);
 
