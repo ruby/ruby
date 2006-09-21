@@ -153,7 +153,7 @@ do-install-man:
 post-install-man::
 
 what-where: no-install
-no-install: no-install-nodoc $(RDOCTARGET)
+no-install: no-install-nodoc no-install-doc
 what-where-all: no-install-all
 no-install-all: no-install-nodoc
 
@@ -228,17 +228,21 @@ dont-install-man:
 post-no-install-man::
 
 install-doc: rdoc pre-install-doc do-install-doc post-install-doc
+pre-install-doc:: install-prereq
 do-install-doc: $(PROGRAM)
-	$(RUNRUBY) -run -e cp -- -p -r -v "$(RDOCOUT)" "$(RIDATADIR)"
+	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
+post-install-doc::
 
 rdoc: $(PROGRAM) PHONY
 	@echo Generating RDoc documentation
 	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RDOCOUT)" "$(srcdir)"
 
-pre-install-doc:: PHONY
-	$(RUNRUBY) -run -e mkdir -- -p "$(RIDATADIR)"
-
-post-install-doc:: PHONY
+what-where-doc: no-install-doc
+no-install-doc: pre-no-install-doc dont-install-doc post-no-install-doc
+pre-no-install-doc:: install-prereq
+dont-install-doc::
+	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
+post-no-install-doc::
 
 install-prereq:
 	@exit > $(INSTALLED_LIST)

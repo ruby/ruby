@@ -37,11 +37,11 @@ def parse_args()
     $mflags.concat(v)
   end
   opt.on('-i', '--install=TYPE',
-         [:local, :bin, :lib, :man, :ext, :"ext-arch", :"ext-comm"]) do |ins|
+         [:local, :bin, :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc]) do |ins|
     $install << ins
   end
   opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
-  opt.on('--rdoc-output') {|dir| $rdocdir = dir}
+  opt.on('--rdoc-output [DIR]') {|dir| $rdocdir = dir}
 
   opt.parse! rescue abort [$!.message, opt].join("\n")
 
@@ -81,7 +81,6 @@ end
 
 parse_args()
 
-include FileUtils::Verbose
 include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
@@ -115,10 +114,11 @@ def makedirs(dirs)
     realdir = with_destdir(dir)
     realdir unless $made_dirs.fetch(dir) do
       $made_dirs[dir] = true
+      $installed_list.puts(File.join(dir, "")) if $installed_list
       File.directory?(realdir)
     end
   end.compact!
-  super(dirs, :mode => 0755, :verbose => true) unless dirs.empty?
+  super(dirs, :mode => 0755) unless dirs.empty?
 end
 
 def install_recursive(src, dest, options = {})
@@ -169,6 +169,8 @@ lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
 install?(:local, :arch, :bin) do
+  puts "installing binary commands"
+
   makedirs [bindir, libdir, archlibdir]
 
   install ruby_install_name+exeext, bindir, :mode => 0755
@@ -198,6 +200,7 @@ end
 if $extout
   extout = "#$extout"
   install?(:ext, :arch, :'ext-arch') do
+    puts "installing extension objects"
     makedirs [archlibdir, sitearchlibdir]
     if noinst = CONFIG["no_install_files"] and noinst.empty?
       noinst = nil
@@ -205,6 +208,7 @@ if $extout
     install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst)
   end
   install?(:ext, :comm, :'ext-comm') do
+    puts "installing extension scripts"
     makedirs [rubylibdir, sitelibdir]
     install_recursive("#{extout}/common", rubylibdir)
   end
@@ -212,7 +216,9 @@ end
 
 install?(:rdoc) do
   if $rdocdir
-    ridatadir = File.join(Config['datadir'], 'ri/$(MAJOR).$(MINOR)/system')
+    puts "installing rdoc"
+
+    ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR)/system')
     Config.expand(ridatadir)
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir)
@@ -220,6 +226,8 @@ install?(:rdoc) do
 end
 
 install?(:local, :comm, :bin) do
+  puts "installing command scripts"
+
   Dir.chdir srcdir
   makedirs [bindir, rubylibdir]
 
@@ -269,15 +277,24 @@ EOF
       }
     end
   end
+end
+
+install?(:local, :comm, :lib) do
+  puts "installing library scripts"
+
+  Dir.chdir srcdir
+  makedirs [rubylibdir]
 
   for f in Dir["lib/**/*{.rb,help-message}"]
     dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
     makedirs dir
     install f, dir, :mode => 0644
   end
-  end
+end
 
-  install?(:local, :arch, :bin) do
+install?(:local, :arch, :lib) do
+  puts "installing headers"
+
   Dir.chdir(srcdir)
   makedirs [archlibdir]
   for f in Dir["*.h"]
@@ -292,6 +309,8 @@ EOF
 end
 
 install?(:local, :comm, :man) do
+  puts "installing manpages"
+
   Dir.chdir(srcdir)
   for mdoc in Dir["*.[1-9]"]
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
