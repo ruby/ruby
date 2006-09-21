@@ -1,3 +1,7 @@
+Thu Sep 21 16:29:02 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* rubytest.rb: use each_line instead of each.
+
 Thu Sep 21 15:06:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_odd_p): a new method to check even or odd.
@@ -24,7 +28,7 @@ Thu Sep 21 09:38:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_lines): new method to split a string into lines.
 
 	* string.c (Init_String): Strings are no longer Enumerable.  use
-	  each_lines or lines method explicitly.
+	  each_line or lines method explicitly.
 
 	* string.c (Init_String): remove each method. use each_lines.
 
