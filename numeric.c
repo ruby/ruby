@@ -2976,8 +2976,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
     rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
-    rb_define_method(rb_cInteger, "odd?", fix_odd_p, 0);
-    rb_define_method(rb_cInteger, "even?", fix_even_p, 0);
+    rb_define_method(rb_cFixnum, "odd?", fix_odd_p, 0);
+    rb_define_method(rb_cFixnum, "even?", fix_even_p, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

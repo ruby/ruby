@@ -1,3 +1,8 @@
+Fri Sep 22 00:36:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (Init_Numeric): fix_odd_p and fix_even_p are for Fixnum.
+	  patch from Ondrej Bilka <neleai at seznam.cz>.  [ruby-core:08904]
+
 Thu Sep 21 22:56:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (no-install): not install rdoc actually.
