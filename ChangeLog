@@ -1,3 +1,11 @@
+Thu Sep 21 13:55:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwuid): uid integer should be wraped in
+	  uid_t value.  [ruby-core:08897]
+
+	* ext/etc/etc.c (etc_getpwuid): uid_t may be bigger than plain
+	  'int' type.
+
 Wed Sep 20 23:17:41 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (pre-install-doc): create data directory before install.
