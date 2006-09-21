@@ -1,3 +1,10 @@
+Fri Sep 22 06:53:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_hash): use rb_memhash().
+
+	* numeric.c (flo_hash): simplified.  klass need not to affect
+	  resulting hash value.
+
 Fri Sep 22 02:06:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .cvsignore: ignore timestamp files and installed list file.

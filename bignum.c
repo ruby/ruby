@@ -1887,14 +1887,10 @@ rb_big_aref(VALUE x, VALUE y)
 static VALUE
 rb_big_hash(VALUE x)
 {
-    long i, len, key;
-    BDIGIT *digits;
+    int hash;
 
-    key = 0; digits = BDIGITS(x); len = RBIGNUM(x)->len;
-    for (i=0; i<len; i++) {
-	key ^= *digits++;
-    }
-    return LONG2FIX(key);
+    hash = rb_memhash(BDIGITS(x), BITSPERDIG*RBIGNUM(x)->len) ^ RBIGNUM(x)->sign;
+    return INT2FIX(hash);
 }
 
 /*

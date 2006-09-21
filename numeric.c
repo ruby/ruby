@@ -839,9 +839,7 @@ flo_hash(VALUE num)
     int hash;
 
     d = RFLOAT(num)->value;
-    if (d == 0) d = fabs(d);
-    hash = rb_memhash(&d, sizeof(d)) ^ RBASIC(num)->klass;
-    if (hash < 0) hash = -hash;
+    hash = rb_memhash(&d, sizeof(d));
     return INT2FIX(hash);
 }
 
