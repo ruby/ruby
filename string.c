@@ -4781,7 +4781,6 @@ Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
-    rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_alloc_func(rb_cString, str_alloc);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
@@ -4878,7 +4877,6 @@ Init_String(void)
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);
 
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "each", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
