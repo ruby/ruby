@@ -120,12 +120,21 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 {
 #if defined(HAVE_GETPWENT)
     VALUE id;
-    int uid;
+    uid_t uid;
     struct passwd *pwd;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
-	uid = NUM2INT(id);
+#if HAVE_LONG_LONG && HAVE_TYPE_UID_T
+	if (sizeof(uid_t) > sizeof(int)) {
+	    uid = NUM2ULL(id);
+	}
+	else {
+	    uid = NUM2UINT(id);
+	}
+#else
+	uid = NUM2UINT(id);
+#endif
     }
     else {
 	uid = getuid();

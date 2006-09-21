@@ -1,3 +1,11 @@
+Thu Sep 21 13:55:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwuid): uid integer should be wraped in
+	  uid_t value.  [ruby-core:08897]
+
+	* ext/etc/etc.c (etc_getpwuid): uid_t may be bigger than plain
+	  'int' type.
+
 Thu Sep 21 10:07:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_partition): RDoc typo fixed.  [ruby-core:08898]
