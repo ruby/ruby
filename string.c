@@ -4413,7 +4413,7 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
  *  returns <i>str</i> and two empty strings.
  *     
  *     "hello".partition("l")         #=> ["he", "l", "lo"]
- *     "hello".partition("x")         #=> ["helo", "", ""]
+ *     "hello".partition("x")         #=> ["hello", "", ""]
  */
 
 static VALUE
@@ -4462,8 +4462,8 @@ rb_str_partition(int argc, VALUE *argv, VALUE str)
  *  If <i>sep</i> is not found, returns two empty strings and
  *  <i>str</i>.
  *     
- *     "hello".partition("l")         #=> ["he", "l", "lo"]
- *     "hello".partition("x")         #=> ["helo", "", ""]
+ *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
+ *     "hello".rpartition("x")         #=> ["", "", "hello"]
  */
 
 static VALUE
@@ -4484,7 +4484,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 	    rb_raise(rb_eTypeError, "type mismatch: %s given",
 		     rb_obj_classname(sep));
 	}
-	pos = rb_str_index(str, sep, pos);
+	pos = rb_str_rindex(str, sep, pos);
     }
     if (pos < 0) {
 	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);

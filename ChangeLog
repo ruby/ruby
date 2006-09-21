@@ -1,3 +1,9 @@
+Thu Sep 21 10:07:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_partition): RDoc typo fixed.  [ruby-core:08898]
+
+	* string.c (rb_str_rpartition): fixed separation seek bug.
+
 Thu Sep 21 09:38:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_lines): new method to split a string into lines.
