@@ -1,3 +1,13 @@
+Thu Sep 21 22:56:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (no-install): not install rdoc actually.
+
+	* common.mk (install-doc, no-install-doc): use instruby.rb.
+
+	* instruby.rb: rdoc installation.
+
+	* ext/extmk.rb: expand ruby executable names.
+
 Thu Sep 21 13:55:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getpwuid): uid integer should be wraped in
