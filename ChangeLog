@@ -1,3 +1,7 @@
+Fri Sep 22 01:36:34 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb: include FileUtils unconditionally.
+
 Thu Sep 21 22:56:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (no-install): not install rdoc actually.

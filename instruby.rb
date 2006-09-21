@@ -81,6 +81,7 @@ end
 
 parse_args()
 
+include FileUtils
 include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
