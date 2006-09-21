@@ -1,3 +1,7 @@
+Fri Sep 22 02:06:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .cvsignore: ignore timestamp files and installed list file.
+
 Fri Sep 22 01:36:34 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb: include FileUtils unconditionally.

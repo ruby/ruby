@@ -3,13 +3,14 @@
 *.rej
 *.sav
 *~
+.*.list
+.*.time
 .ccmalloc
 .ppack
 .ext
 .git
 .svn
 .pc
-.rbconfig.time
 COPYING.LIB
 ChangeLog.pre-alpha
 ChangeLog.pre1_1
