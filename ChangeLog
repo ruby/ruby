@@ -1,3 +1,7 @@
+Thu Sep 21 09:38:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lines): new method to split a string into lines.
+
 Wed Sep 20 23:17:41 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (pre-install-doc): create data directory before install.

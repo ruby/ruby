@@ -3532,6 +3532,42 @@ rb_str_split(VALUE str, const char *sep0)
     return rb_str_split_m(1, &sep, str);
 }
 
+
+/*
+ *  call-seq:
+ *     str.lines   => anArray
+ *  
+ *  Divides <i>str</i> into lines terminated by newlines.
+ *     
+ *     "foo\nbar\n".lines        #=> ["foo\n", "bar\n"]
+ *     "foo\nb ar".lines         #=> ["foo\n", "b ar"]
+ */
+
+static VALUE
+rb_str_lines(VALUE str)
+{
+    VALUE ary = rb_ary_new();
+    char *p = RSTRING_PTR(str);
+    char *pend = p + RSTRING_LEN(str); 
+    char *s = p;
+    VALUE line;
+
+    while (p < pend) {
+	if (*p == '\n') {
+	    p++;
+	    line = rb_str_new(s, p-s);
+	    rb_ary_push(ary, line);
+	    s = p;
+	}
+	p++;
+    }
+    if (p == pend && s < p) {
+	line = rb_str_new(s, p-s);
+	rb_ary_push(ary, line);
+    }
+    return ary;
+}
+
 /*
  *  call-seq:
  *     str.each(separator=$/) {|substr| block }        => str
@@ -4796,6 +4832,7 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
+    rb_define_method(rb_cString, "lines", rb_str_lines, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
