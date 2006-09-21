@@ -21,6 +21,10 @@ Thu Sep 21 22:56:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: expand ruby executable names.
 
+Thu Sep 21 20:19:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_new3): embed shorter strings more eagerly.
+
 Thu Sep 21 17:44:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_startwith): a new method to check if a string

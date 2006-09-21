@@ -191,11 +191,18 @@ str_new3(VALUE klass, VALUE str)
 {
     VALUE str2 = str_alloc(klass);
 
-    FL_SET(str2, STR_NOEMBED);
-    RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
-    RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
-    RSTRING(str2)->as.heap.aux.shared = str;
-    FL_SET(str2, ELTS_SHARED);
+    if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
+	STR_SET_EMBED(str);
+	memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), RSTRING_LEN(str)+1);
+	STR_SET_EMBED_LEN(str2, RSTRING_LEN(str));
+    }
+    else {
+	FL_SET(str2, STR_NOEMBED);
+	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
+	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
+	RSTRING(str2)->as.heap.aux.shared = str;
+	FL_SET(str2, ELTS_SHARED);
+    }
     OBJ_INFECT(str2, str);
 
     return str2;
