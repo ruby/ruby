@@ -76,13 +76,13 @@ rb_eql(VALUE obj1, VALUE obj2)
  *  object as <code>b</code>).
  *
  *  The <code>eql?</code> method returns <code>true</code> if
-    <i>obj</i> and <i>anObject</i> have the
- *  same value. Used by <code>Hash</code> to test members for equality.
- *  For objects of class <code>Object</code>, <code>eql?</code> is
- *  synonymous with <code>==</code>. Subclasses normally continue this
- *  tradition, but there are exceptions. <code>Numeric</code> types, for
- *  example, perform type conversion across <code>==</code>, but not
- *  across <code>eql?</code>, so:
+ *  <i>obj</i> and <i>anObject</i> have the same value. Used by
+ *  <code>Hash</code> to test members for equality.  For objects of
+ *  class <code>Object</code>, <code>eql?</code> is synonymous with
+ *  <code>==</code>. Subclasses normally continue this tradition, but
+ *  there are exceptions. <code>Numeric</code> types, for example,
+ *  perform type conversion across <code>==</code>, but not across
+ *  <code>eql?</code>, so:
  *     
  *     1 == 1.0     #=> true
  *     1.eql? 1.0   #=> false
