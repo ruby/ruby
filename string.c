@@ -4424,14 +4424,11 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
  */
 
 static VALUE
-rb_str_partition(int argc, VALUE *argv, VALUE str)
+rb_str_partition(VALUE str, VALUE sep)
 {
-    VALUE sep;
     long pos;
     int regex = Qfalse;
 
-    if (argc == 0) return rb_call_super(argc, argv);
-    rb_scan_args(argc, argv, "1", &sep);
     if (TYPE(sep) == T_REGEXP) {
 	pos = rb_reg_search(sep, str, 0, 0);
 	regex = Qtrue;
@@ -4938,7 +4935,7 @@ Init_String(void)
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
 
-    rb_define_method(rb_cString, "partition", rb_str_partition, -1);
+    rb_define_method(rb_cString, "partition", rb_str_partition, 1);
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     id_to_s = rb_intern("to_s");
