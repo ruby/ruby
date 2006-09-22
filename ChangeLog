@@ -1,3 +1,7 @@
+Sat Sep 23 08:35:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/ri/ri_options.rb: prevent NameError.  [ruby-dev:29597]
+
 Sat Sep 23 01:04:20 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.2.
