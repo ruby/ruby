@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.23 2006-09-09 22:44:21+09 tadf Exp $
+# $Id: date.rb,v 2.24 2006-09-22 23:26:52+09 tadf Exp $
 #++
 #
 # == Overview
@@ -249,6 +249,10 @@ class Date
   # Abbreviated day names, in English.
   ABBR_DAYNAMES = %w(Sun Mon Tue Wed Thu Fri Sat)
 
+  [MONTHNAMES, DAYNAMES, ABBR_MONTHNAMES, ABBR_DAYNAMES].each do |xs|
+    xs.each{|x| x.freeze}.freeze
+  end
+
   class Infinity < Numeric # :nodoc:
 
     include Comparable
@@ -308,6 +312,8 @@ class Date
   # A constant used to indicate that a Date should always use the
   # Gregorian calendar.
   GREGORIAN = -Infinity.new
+
+  UNIXEPOCH = 2440588 # 1970-01-01 :nodoc:
 
   # Does a given Julian Day Number fall inside the old-style (Julian)
   # calendar?
@@ -394,16 +400,6 @@ class Date
     return y, m, dom
   end
 
-  # Convert an Ordinal Date to a Julian Day Number.
-  #
-  # +y+ and +d+ are the year and day-of-year to convert.
-  # +sg+ specifies the Day of Calendar Reform.
-  #
-  # Returns the corresponding Julian Day Number.
-  def self.ordinal_to_jd(y, d, sg=GREGORIAN)
-    civil_to_jd(y, 1, d, sg)
-  end
-
   # Convert a Julian Day Number to an Ordinal Date.
   #
   # +jd+ is the Julian Day Number to convert.
@@ -415,6 +411,16 @@ class Date
     y = jd_to_civil(jd, sg)[0]
     doy = jd - civil_to_jd(y - 1, 12, 31, fix_style(jd, sg))
     return y, doy
+  end
+
+  # Convert an Ordinal Date to a Julian Day Number.
+  #
+  # +y+ and +d+ are the year and day-of-year to convert.
+  # +sg+ specifies the Day of Calendar Reform.
+  #
+  # Returns the corresponding Julian Day Number.
+  def self.ordinal_to_jd(y, d, sg=GREGORIAN)
+    civil_to_jd(y, 1, d, sg)
   end
 
   # Convert a Julian Day Number to a Commercial Date
@@ -449,7 +455,7 @@ class Date
   def self.jd_to_weeknum(jd, k=0, sg=GREGORIAN) # :nodoc:
     y, m, d = jd_to_civil(jd, sg)
     a = civil_to_jd(y, 1, 1, sg) + 6
-    w, d = clfloor(jd - (a - ((a - k) + 1) % 7) + 7, 7)
+    w, d = (jd - (a - ((a - k) + 1) % 7) + 7).divmod(7)
     return y, w, d
   end
 
@@ -457,20 +463,6 @@ class Date
     a = civil_to_jd(y, 1, 1, sg) + 6
     (a - ((a - k) + 1) % 7 - 7) + 7 * w + d
   end
-
-  %w(self.clfloor clfloor).each do |name|
-    module_eval <<-"end;"
-      def #{name}(x, y=1)
-	q, r = x.divmod(y)
-	q = q.to_i
-	return q, r
-      end
-    end;
-  end
-
-  private_class_method :clfloor
-  private              :clfloor
-
 
   # Convert an Astronomical Julian Day Number to a (civil) Julian
   # Day Number.
@@ -480,7 +472,7 @@ class Date
   #
   # Returns the (civil) Julian Day Number as [day_number,
   # fraction] where +fraction+ is always 1/2.
-  def self.ajd_to_jd(ajd, of=0) clfloor(ajd + of + 1.to_r/2) end
+  def self.ajd_to_jd(ajd, of=0) (ajd + of + 1.to_r/2).divmod(1) end
 
   # Convert a (civil) Julian Day Number to an Astronomical Julian
   # Day Number.
@@ -496,9 +488,9 @@ class Date
   # Convert a fractional day +fr+ to [hours, minutes, seconds,
   # fraction_of_a_second]
   def self.day_fraction_to_time(fr)
-    h,   fr = clfloor(fr, 1.to_r/24)
-    min, fr = clfloor(fr, 1.to_r/1440)
-    s,   fr = clfloor(fr, 1.to_r/86400)
+    h,   fr = fr.divmod(1.to_r/24)
+    min, fr = fr.divmod(1.to_r/1440)
+    s,   fr = fr.divmod(1.to_r/86400)
     return h, min, s, fr
   end
 
@@ -582,7 +574,7 @@ class Date
   # +sg+ specifies the Day of Calendar Reform.
   def self.valid_ordinal? (y, d, sg=ITALY)
     if d < 0
-      ny, = clfloor(y + 1, 1)
+      ny, = (y + 1).divmod(1)
       jd = ordinal_to_jd(ny, d + 1, sg)
       ns = fix_style(jd, sg)
       return unless [y] == jd_to_ordinal(jd, sg)[0..0]
@@ -628,8 +620,8 @@ class Date
       m += 13
     end
     if d < 0
-      ny, nm = clfloor(y * 12 + m, 12)
-      nm,    = clfloor(nm + 1, 1)
+      ny, nm = (y * 12 + m).divmod(12)
+      nm,    = (nm + 1).divmod(1)
       jd = civil_to_jd(ny, nm, d + 1, sg)
       ns = fix_style(jd, sg)
       return unless [y, m] == jd_to_civil(jd, sg)[0..1]
@@ -730,11 +722,11 @@ class Date
   def self.rewrite_hash(elem) # :nodoc:
     elem ||= {}
     if seconds = elem[:seconds]
-      d,   fr = clfloor(seconds, 86400)
-      h,   fr = clfloor(fr, 3600)
-      min, fr = clfloor(fr, 60)
-      s,   fr = clfloor(fr, 1)
-      elem[:jd] = civil_to_jd(1970, 1, 1) + d
+      d,   fr = seconds.divmod(86400)
+      h,   fr = fr.divmod(3600)
+      min, fr = fr.divmod(60)
+      s,   fr = fr.divmod(1)
+      elem[:jd] = UNIXEPOCH + d
       elem[:hour] = h
       elem[:min] = min
       elem[:sec] = s
@@ -1001,8 +993,8 @@ class Date
 
   def fix_style # :nodoc:
     if julian?
-    then Date::JULIAN
-    else Date::GREGORIAN end
+    then self.class::JULIAN
+    else self.class::GREGORIAN end
   end
 
   private :fix_style
@@ -1122,8 +1114,8 @@ class Date
   # than the last day of the target month, the day-of-the-month
   # of the returned Date will be the last day of the target month.
   def >> (n)
-    y, m = clfloor(year * 12 + (mon - 1) + n, 12)
-    m,   = clfloor(m + 1, 1)
+    y, m = (year * 12 + (mon - 1) + n).divmod(12)
+    m,   = (m + 1).divmod(1)
     d = mday
     d -= 1 until jd2 = self.class.valid_civil?(y, m, d, fix_style)
     self + (jd2 - jd)
@@ -1268,9 +1260,12 @@ class DateTime < Date
     h   += 24 if h   < 0
     min += 60 if min < 0
     s   += 60 if s   < 0
-    return unless (0..24) === h and
-		  (0..59) === min and
-		  (0..59) === s
+    return unless ((0..23) === h and
+		   (0..59) === min and
+		   (0..59) === s) or
+		  (24 == h and
+		    0 == min and
+		    0 == s)
     time_to_day_fraction(h, min, s)
   end
 
@@ -1282,6 +1277,8 @@ class DateTime < Date
     s = [s, 59].min
     valid_time?(h, min, s)
   end
+
+  private_class_method :valid_time_with_hash?
 
   # Create a new DateTime object corresponding to the specified
   # Julian Day Number +jd+ and hour +h+, minute +min+, second +s+.
@@ -1395,14 +1392,14 @@ class DateTime < Date
   # +fmt+ is the format that the date-time is in.  See
   # date/format.rb for details on supported formats.
   #
-  # The default +str+ is '-4712-01-01T00:00:00Z', and the default
-  # +fmt+ is '%FT%T%Z'.  This gives midnight on Julian Day Number day 0.
+  # The default +str+ is '-4712-01-01T00:00:00+00:00', and the default
+  # +fmt+ is '%FT%T%z'.  This gives midnight on Julian Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
   #
   # An ArgumentError will be raised if +str+ cannot be
   # parsed.
-  def self.strptime(str='-4712-01-01T00:00:00Z', fmt='%FT%T%Z', sg=ITALY)
+  def self.strptime(str='-4712-01-01T00:00:00+00:00', fmt='%FT%T%z', sg=ITALY)
     elem = _strptime(str, fmt)
     new_with_hash(elem, sg)
   end
@@ -1418,11 +1415,11 @@ class DateTime < Date
   # for more details.  If parsing fails, an ArgumentError
   # will be raised.
   #
-  # The default +str+ is '-4712-01-01T00:00:00Z'; this is Julian
+  # The default +str+ is '-4712-01-01T00:00:00+00:00'; this is Julian
   # Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.parse(str='-4712-01-01T00:00:00Z', comp=false, sg=ITALY)
+  def self.parse(str='-4712-01-01T00:00:00+00:00', comp=false, sg=ITALY)
     elem = _parse(str, comp)
     new_with_hash(elem, sg)
   end
