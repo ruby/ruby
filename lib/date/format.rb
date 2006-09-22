@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.23 2006-09-09 23:55:00+09 tadf Exp $
+# $Id: format.rb,v 2.24 2006-09-22 23:26:52+09 tadf Exp $
 
 require 'rational'
 
@@ -90,6 +90,10 @@ class Date
       'yakutsk'               =>   32400
     }
 
+    [MONTHS, DAYS, ABBR_MONTHS, ABBR_DAYS, ZONES].each do |x|
+      x.freeze
+    end
+
     class Bag # :nodoc:
 
       def method_missing(t, *args, &block)
@@ -98,8 +102,10 @@ class Date
 	t = '@' + t
 	if set
 	  instance_variable_set(t, *args)
-	elsif instance_variable_defined?(t)
-	  instance_variable_get(t)
+	else
+	  if instance_variables.include?(t)
+	    instance_variable_get(t)
+	  end
 	end
       end
 
@@ -455,7 +461,7 @@ class Date
 		' ')
       e.mon = Format::ABBR_MONTHS[$1.downcase]
 
-      unless $2.size > 2 && $3.nil?
+      unless $2.size > 2 && $4.nil?
 	e.mday = $2.to_i
       else
 	e.year = $2.to_i
@@ -527,6 +533,22 @@ class Date
 	e.year, e.mon, e.mday = e.mday, e.mon, e.year
       elsif $3.size > 2
 	e._comp = false
+      end
+      true
+    elsif str.sub!(/(#{e._parse_monthpat})[^-]*-(-?\d+)(?:-(-?\d+))?/in, ' ')
+      e.mon = Format::ABBR_MONTHS[$1.downcase]
+
+      unless $2.size > 2 && $3.nil?
+	e.mday = $2.to_i
+      else
+	e.year = $2.to_i
+      end
+
+      if $3
+	e.year = $3.to_i
+	if $3.size > 2
+	  e._comp = false
+	end
       end
       true
     end
@@ -719,6 +741,21 @@ class Date
       end
     end
 
+    if str.sub!(/\A\s*(\d{1,2})\s*\z/n, ' ')
+      if e.hour && !e.mday
+	v = $1.to_i
+	if (1..31) === v
+	  e.mday = v
+	end
+      end
+      if e.mday && !e.hour
+	v = $1.to_i
+	if (0..24) === v
+	  e.hour = v
+	end
+      end
+    end
+
     if e._comp and e.year
       if e.year >= 0 and e.year <= 99
 	if e.year >= 69
@@ -847,7 +884,7 @@ class Date
 	  :emit_a, :emit_ad, :emit_au
 
   def strftime(fmt='%F')
-    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |_|
+    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |m|
       f = {}
       s, w, c = $1, $2, $3
       if s
@@ -870,60 +907,70 @@ class Date
       when 'B'; emit_ad(MONTHNAMES[mon], 0, f)
       when 'b'; emit_ad(ABBR_MONTHNAMES[mon], 0, f)
       when 'C'; emit_sn(year / 100, 2, f)
-      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 1, f)
-      when 'D'; emit_a(strftime('%m/%d/%y'), 1, f)
+      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 0, f)
+      when 'D'; emit_a(strftime('%m/%d/%y'), 0, f)
       when 'd'; emit_n(mday, 2, f)
       when 'e'; emit_a(mday, 2, f)
-      when 'F'; emit_a(strftime('%Y-%m-%d'), 1, f)
+      when 'F'
+	if m == '%F'
+	  format('%.4d-%02d-%02d', year, mon, mday) # 4p
+	else
+	  emit_a(strftime('%Y-%m-%d'), 0, f)
+	end
       when 'G'; emit_sn(cwyear, 4, f)
       when 'g'; emit_n(cwyear % 100, 2, f)
       when 'H'; emit_n(hour, 2, f)
-      when 'h'; emit_ad(strftime('%b'), 1, f)
+      when 'h'; emit_ad(strftime('%b'), 0, f)
       when 'I'; emit_n((hour % 12).nonzero? || 12, 2, f)
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n(sec_fraction / (1.to_r/86400/(10**3)), 3, f)
+	emit_n((sec_fraction / (1.to_r/86400/(10**3))).floor, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M'; emit_n(min, 2, f)
       when 'm'; emit_n(mon, 2, f)
       when 'N'
-	emit_n(sec_fraction / (1.to_r/86400/(10**9)), 9, f)
+	emit_n((sec_fraction / (1.to_r/86400/(10**9))).floor, 9, f)
       when 'n'; "\n"
-      when 'P'; emit_ad(strftime('%p').downcase, 1, f)
-      when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 1, f)
+      when 'P'; emit_ad(strftime('%p').downcase, 0, f)
+      when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
       when 'Q'
-	d = ajd - self.class.jd_to_ajd(self.class.civil_to_jd(1970,1,1), 0)
+	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400*10**3).to_i
 	emit_n(s, 1, f)
-      when 'R'; emit_a(strftime('%H:%M'), 1, f)
-      when 'r'; emit_a(strftime('%I:%M:%S %p'), 1, f)
+      when 'R'; emit_a(strftime('%H:%M'), 0, f)
+      when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
       when 'S'; emit_n(sec, 2, f)
       when 's'
-	d = ajd - self.class.jd_to_ajd(self.class.civil_to_jd(1970,1,1), 0)
+	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400).to_i
 	emit_n(s, 1, f)
-      when 'T'; emit_a(strftime('%H:%M:%S'), 1, f)
+      when 'T'
+	if m == '%T'
+	  format('%02d:%02d:%02d', hour, min, sec) # 4p
+	else
+	  emit_a(strftime('%H:%M:%S'), 0, f)
+	end
       when 't'; "\t"
       when 'U', 'W'
 	k = if c == 'U' then 0 else 1 end
 	emit_n(self.class.jd_to_weeknum(jd, k, fix_style)[1], 2, f)
       when 'u'; emit_n(cwday, 1, f)
       when 'V'; emit_n(cweek, 2, f)
-      when 'v'; emit_a(strftime('%e-%b-%Y'), 1, f)
+      when 'v'; emit_a(strftime('%e-%b-%Y'), 0, f)
       when 'w'; emit_n(wday, 1, f)
-      when 'X'; emit_a(strftime('%H:%M:%S'), 1, f)
-      when 'x'; emit_a(strftime('%m/%d/%y'), 1, f)
+      when 'X'; emit_a(strftime('%H:%M:%S'), 0, f)
+      when 'x'; emit_a(strftime('%m/%d/%y'), 0, f)
       when 'Y'; emit_sn(year, 4, f)
       when 'y'; emit_n(year % 100, 2, f)
-      when 'Z'; emit_au(strftime('%:z'), 1, f)
+      when 'Z'; emit_au(strftime('%:z'), 0, f)
       when /\A(:{0,3})z/
 	t = $1.size
-	p = if offset < 0 then -1 else +1 end
-	of = offset.abs
-	hh, fr = of.divmod(1.to_r/24)
-	mm, fr = fr.divmod(1.to_r/1440)
-	ss, fr = fr.divmod(1.to_r/86400)
+	sign = if offset < 0 then -1 else +1 end
+	fr = offset.abs.to_f
+	hh, fr = fr.divmod(1.0/24)
+	mm, fr = fr.divmod(1.0/1440)
+	ss, fr = fr.divmod(1.0/86400)
 	if t == 3
 	  if    ss.nonzero? then t =  2
 	  elsif mm.nonzero? then t =  1
@@ -947,9 +994,9 @@ class Date
 	  tail = ['%02d' % mm, '%02d' % ss]
 	  sep = ':'
 	end
-	([emit_z(p * hh, 2, f)] + tail).join(sep)
-      when '%'; emit_a('%', 1, f)
-      when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 1, f)
+	([emit_z(sign * hh, 2, f)] + tail).join(sep)
+      when '%'; emit_a('%', 0, f)
+      when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 0, f)
       when '1'
 	if $VERBOSE
 	  warn("warning: strftime: %1 is deprecated; forget this")
@@ -959,12 +1006,12 @@ class Date
 	if $VERBOSE
 	  warn("warning: strftime: %2 is deprecated; use '%Y-%j'")
 	end
-	emit_a(strftime('%Y-%j'), 1, f)
+	emit_a(strftime('%Y-%j'), 0, f)
       when '3'
 	if $VERBOSE
 	  warn("warning: strftime: %3 is deprecated; use '%F'")
 	end
-	emit_a(strftime('%F'), 1, f)
+	emit_a(strftime('%F'), 0, f)
       else
 	c
       end
@@ -1023,9 +1070,9 @@ class DateTime < Date
 	     if n < 1
 	       ''
 	     else
-	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n)))]
+	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n))).floor]
 	     end +
-	     '%Z')
+	     '%:z')
   end
 
   private :iso8601_timediv
