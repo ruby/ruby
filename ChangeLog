@@ -1,3 +1,8 @@
+Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
+	  may be empty.  a patch from Jamis Buck <jamis at 37signals.com>.
+
 Sat Sep 23 08:35:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/ri/ri_options.rb: prevent NameError.  [ruby-dev:29597]
