@@ -1,6 +1,11 @@
+Sun Sep 24 06:55:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_print): no special handling for nil as well as puts.
+	  fixed: [ruby-dev:29586]
+
 Sun Sep 24 06:25:53 2006  why the lucky stiff  <why@ruby-lang.org>
 
-	* eval.c (rb_thread_save_context, rb_thread_restore_context): 
+	* eval.c (rb_thread_save_context, rb_thread_restore_context):
 	  sandbox hook to save and restore sandbox state.
 
 	* eval.c (thread_no_ensure): added THREAD_NO_ENSURE thread flag.

@@ -3689,19 +3689,12 @@ rb_io_print(int argc, VALUE *argv, VALUE out)
 	argv = &line;
     }
     for (i=0; i<argc; i++) {
-	if (!NIL_P(rb_output_fs) && i>0) {
+	rb_io_write(out, argv[i]);
+	if (!NIL_P(rb_output_fs)) {
 	    rb_io_write(out, rb_output_fs);
 	}
-	switch (TYPE(argv[i])) {
-	  case T_NIL:
-	    rb_io_write(out, rb_str_new2("nil"));
-	    break;
-	  default:
-	    rb_io_write(out, argv[i]);
-	    break;
-	}
     }
-    if (!NIL_P(rb_output_rs)) {
+    if (argc > 0 && !NIL_P(rb_output_rs)) {
 	rb_io_write(out, rb_output_rs);
     }
 
