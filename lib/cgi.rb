@@ -1015,7 +1015,7 @@ class CGI
               else
                 stdinput.read(content_length)
               end
-          if c.nil?
+          if c.nil? || c.empty?
             raise EOFError, "bad content body"
           end
           buf.concat(c)
