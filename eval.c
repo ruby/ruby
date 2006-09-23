@@ -29,11 +29,6 @@
 #endif
 
 #include <stdio.h>
-#if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
-#include <ucontext.h>
-#define USE_CONTEXT
-#endif
-#include <setjmp.h>
 
 #include "st.h"
 #include "dln.h"
@@ -90,10 +85,6 @@ char *strrchr _((const char*,const char));
 #endif
 
 #ifdef USE_CONTEXT
-typedef struct {
-    ucontext_t context;
-    volatile int status;
-} rb_jmpbuf_t[1];
 
 NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
 static inline void
@@ -202,7 +193,6 @@ static int volatile freebsd_clear_carry_flag = 0;
      POST_GETCONTEXT, \
      (j)->status)
 #else
-typedef jmp_buf rb_jmpbuf_t;
 #  if !defined(setjmp) && defined(HAVE__SETJMP)
 #    define ruby_setjmp(just_before_setjmp, env) \
        ((just_before_setjmp), _setjmp(env))
@@ -253,6 +243,8 @@ static int scope_vmode;
 #define SCOPE_SET(f)  (scope_vmode=(f))
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
+VALUE (*ruby_sandbox_save)(struct thread *) = NULL; 
+VALUE (*ruby_sandbox_restore)(struct thread *) = NULL; 
 NODE* ruby_current_node;
 int ruby_safe_level = 0;
 /* safe-level:
@@ -1081,9 +1073,8 @@ NODE *ruby_top_cref;
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC
 
-typedef struct thread * rb_thread_t;
-static rb_thread_t curr_thread = 0;
-static rb_thread_t main_thread;
+rb_thread_t curr_thread = 0;
+rb_thread_t main_thread;
 static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
@@ -1439,6 +1430,8 @@ static void rb_thread_wait_other_threads _((void));
 
 static int thread_set_raised();
 static int thread_reset_raised();
+
+static int thread_no_ensure _((void));
 
 static VALUE exception_error;
 static VALUE sysstack_error;
@@ -3310,7 +3303,7 @@ rb_eval(self, n)
 	    result = rb_eval(self, node->nd_head);
 	}
 	POP_TAG();
-	if (node->nd_ensr) {
+	if (node->nd_ensr && !thread_no_ensure()) {
 	    VALUE retval = prot_tag->retval; /* save retval */
 	    VALUE errinfo = ruby_errinfo;
 
@@ -4743,7 +4736,7 @@ rb_f_block_given_p()
     return Qfalse;
 }
 
-static VALUE rb_eThreadError;
+VALUE rb_eThreadError;
 
 NORETURN(static void proc_jump_error(int, VALUE));
 static void
@@ -5456,7 +5449,9 @@ rb_ensure(b_proc, data1, e_proc, data2)
     }
     POP_TAG();
     retval = prot_tag ? prot_tag->retval : Qnil;	/* save retval */
+    if (!thread_no_ensure()) {
     (*e_proc)(data2);
+    }
     if (prot_tag) return_value(retval);
     if (state) JUMP_TAG(state);
     return result;
@@ -9747,13 +9742,6 @@ VALUE rb_cThread;
 
 extern VALUE rb_last_status;
 
-enum thread_status {
-    THREAD_TO_KILL,
-    THREAD_RUNNABLE,
-    THREAD_STOPPED,
-    THREAD_KILLED,
-};
-
 #define WAIT_FD		(1<<0)
 #define WAIT_SELECT	(1<<1)
 #define WAIT_TIME	(1<<2)
@@ -9773,70 +9761,10 @@ enum thread_status {
 
 /* typedef struct thread * rb_thread_t; */
 
-struct thread {
-    struct thread *next, *prev;
-    rb_jmpbuf_t context;
-#ifdef SAVE_WIN32_EXCEPTION_LIST
-    DWORD win32_exception_list;
-#endif
-
-    VALUE result;
-
-    long   stk_len;
-    long   stk_max;
-    VALUE *stk_ptr;
-    VALUE *stk_pos;
-#ifdef __ia64
-    long   bstr_len;
-    long   bstr_max;
-    VALUE *bstr_ptr;
-    VALUE *bstr_pos;
-#endif
-
-    struct FRAME *frame;
-    struct SCOPE *scope;
-    struct RVarmap *dyna_vars;
-    struct BLOCK *block;
-    struct iter *iter;
-    struct tag *tag;
-    VALUE klass;
-    VALUE wrapper;
-    NODE *cref;
-
-    int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
-
-    NODE *node;
-
-    int tracing;
-    VALUE errinfo;
-    VALUE last_status;
-    VALUE last_line;
-    VALUE last_match;
-
-    int safe;
-
-    enum thread_status status;
-    int wait_for;
-    int fd;
-    fd_set readfds;
-    fd_set writefds;
-    fd_set exceptfds;
-    int select_value;
-    double delay;
-    rb_thread_t join;
-
-    int abort;
-    int priority;
-    VALUE thgroup;
-
-    st_table *locals;
-
-    VALUE thread;
-};
-
 #define THREAD_RAISED 0x200	 /* temporary flag */
 #define THREAD_TERMINATING 0x400 /* persistent flag */
-#define THREAD_FLAGS_MASK  0x400 /* mask for persistent flags */
+#define THREAD_NO_ENSURE 0x800   /* persistent flag */
+#define THREAD_FLAGS_MASK  0xc00 /* mask for persistent flags */
 
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
@@ -9902,6 +9830,12 @@ thread_reset_raised()
     if (!(curr_thread->flags & THREAD_RAISED)) return 0;
     curr_thread->flags &= ~THREAD_RAISED;
     return 1;
+}
+
+static int
+thread_no_ensure()
+{
+    return ((curr_thread->flags & THREAD_NO_ENSURE) == THREAD_NO_ENSURE);
 }
 
 static void rb_thread_ready _((rb_thread_t));
@@ -10034,6 +9968,7 @@ thread_mark(th)
     rb_gc_mark(th->last_match);
     rb_mark_tbl(th->locals);
     rb_gc_mark(th->thgroup);
+    rb_gc_mark_maybe(th->sandbox);
 
     /* mark data in copied stack */
     if (th == curr_thread) return;
@@ -10238,6 +10173,10 @@ rb_thread_save_context(th)
     th->safe = ruby_safe_level;
 
     th->node = ruby_current_node;
+    if (ruby_sandbox_save != NULL)
+    {
+      ruby_sandbox_save(th);
+    }
 }
 
 static int
@@ -10295,6 +10234,10 @@ rb_thread_restore_context_0(rb_thread_t th, int exit, void *vp)
     static VALUE tval;
 
     rb_trap_immediate = 0;	/* inhibit interrupts from here */
+    if (ruby_sandbox_restore != NULL)
+    {
+      ruby_sandbox_restore(th);
+    }
     ruby_frame = th->frame;
     ruby_scope = th->scope;
     ruby_class = th->klass;
@@ -11232,16 +11175,34 @@ rb_thread_run(thread)
 }
 
 
+static void
+kill_thread(th, flags)
+    rb_thread_t th;
+    int flags;
+{
+    if (th != curr_thread && th->safe < 4) {
+	rb_secure(4);
+    }
+    if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
+	return;
+    if (th == th->next || th == main_thread) rb_exit(EXIT_SUCCESS);
+
+    rb_thread_ready(th);
+    th->flags |= flags;
+    th->status = THREAD_TO_KILL;
+    if (!rb_thread_critical) rb_thread_schedule();
+}
+
+
 /*
  *  call-seq:
- *     thr.exit        => thr or nil
- *     thr.kill        => thr or nil
- *     thr.terminate   => thr or nil
+ *     thr.exit        => thr
+ *     thr.kill        => thr
+ *     thr.terminate   => thr
  *  
- *  Terminates <i>thr</i> and schedules another thread to be run. If this thread
- *  is already marked to be killed, <code>exit</code> returns the
- *  <code>Thread</code>. If this is the main thread, or the last thread, exits
- *  the process.
+ *  Terminates <i>thr</i> and schedules another thread to be run, returning
+ *  the terminated <code>Thread</code>.  If this is the main thread, or the
+ *  last thread, exits the process.
  */
 
 VALUE
@@ -11250,19 +11211,32 @@ rb_thread_kill(thread)
 {
     rb_thread_t th = rb_thread_check(thread);
 
-    if (th != curr_thread && th->safe < 4) {
-	rb_secure(4);
-    }
-    if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
+    kill_thread(th, 0);
 	return thread;
-    if (th == th->next || th == main_thread) rb_exit(EXIT_SUCCESS);
-
-    rb_thread_ready(th);
-    th->status = THREAD_TO_KILL;
-    if (!rb_thread_critical) rb_thread_schedule();
-    return thread;
 }
 
+
+/*
+ *  call-seq:
+ *     thr.exit!        => thr
+ *     thr.kill!        => thr
+ *     thr.terminate!   => thr
+ *  
+ *  Terminates <i>thr</i> without calling ensure clauses and schedules
+ *  another thread to be run, returning the terminated <code>Thread</code>.
+ *  If this is the main thread, or the last thread, exits the process.
+ *
+ *  See <code>Thread#exit</code> for the safer version.
+ */
+
+static VALUE
+rb_thread_kill_bang(thread)
+    VALUE thread;
+{
+    rb_thread_t th = rb_thread_check(thread);
+    kill_thread(th, THREAD_NO_ENSURE);
+    return thread;
+}
 
 /*
  *  call-seq:
@@ -11658,6 +11632,11 @@ rb_thread_group(thread)
     th->thgroup = thgroup_default;\
     th->locals = 0;\
     th->thread = 0;\
+    if (curr_thread == 0) {\
+      th->sandbox = Qnil;\
+    } else {\
+      th->sandbox = curr_thread->sandbox;\
+    }\
 } while (0)
 
 static rb_thread_t
@@ -12915,6 +12894,9 @@ Init_Thread()
     rb_define_method(rb_cThread, "kill", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "terminate", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "exit", rb_thread_kill, 0);
+    rb_define_method(rb_cThread, "kill!", rb_thread_kill_bang, 0);
+    rb_define_method(rb_cThread, "terminate!", rb_thread_kill_bang, 0);
+    rb_define_method(rb_cThread, "exit!", rb_thread_kill_bang, 0);
     rb_define_method(rb_cThread, "value", rb_thread_value, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
     rb_define_method(rb_cThread, "join", rb_thread_join_m, -1);

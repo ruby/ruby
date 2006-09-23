@@ -1,3 +1,22 @@
+Sat Sep 23 23:24:57 2006  why the lucky stiff  <why@ruby-lang.org>
+
+	* eval.c (rb_thread_save_context, rb_thread_restore_context): 
+	  sandbox hook to save and restore sandbox state.
+
+	* eval.c (thread_no_ensure): added THREAD_NO_ENSURE thread flag.
+
+	* eval.c (rb_thread_kill_bang): Thread#kill! uses the above flag
+	  to circumvent ensure, in order to prevent endless loops.
+	  [ruby-core:08768]
+
+	* eval.c (rb_thread_kill): fix Thread#kill docs, which returns
+	  the thread object in all cases.
+
+	* node.h: expose the rb_jmpbuf_t and rb_thread_t structs, along
+	  with the thread flags.  used by the sandbox extension.
+
+	* ruby.h: extern rb_eThreadError, so sandbox can swap it.
+
 Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
