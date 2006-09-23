@@ -729,6 +729,7 @@ RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;
 RUBY_EXTERN VALUE rb_eSecurityError;
 RUBY_EXTERN VALUE rb_eSystemCallError;
+RUBY_EXTERN VALUE rb_eThreadError;
 RUBY_EXTERN VALUE rb_eTypeError;
 RUBY_EXTERN VALUE rb_eZeroDivError;
 RUBY_EXTERN VALUE rb_eNotImpError;

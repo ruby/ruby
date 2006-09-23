@@ -393,6 +393,99 @@ typedef void (*rb_event_hook_func_t)(rb_event_t,NODE*,VALUE,ID,VALUE);
 void rb_add_event_hook(rb_event_hook_func_t,rb_event_t);
 int rb_remove_event_hook(rb_event_hook_func_t);
 
+#if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
+#include <ucontext.h>
+#define USE_CONTEXT
+#endif
+#include <setjmp.h>
+#include "st.h"
+
+#ifdef USE_CONTEXT
+typedef struct {
+    ucontext_t context;
+    volatile int status;
+} rb_jmpbuf_t[1];
+#else
+typedef jmp_buf rb_jmpbuf_t;
+#endif
+
+enum thread_status {
+    THREAD_TO_KILL,
+    THREAD_RUNNABLE,
+    THREAD_STOPPED,
+    THREAD_KILLED,
+};
+
+typedef struct thread * rb_thread_t;
+
+struct thread {
+    struct thread *next, *prev;
+    rb_jmpbuf_t context;
+#ifdef SAVE_WIN32_EXCEPTION_LIST
+    DWORD win32_exception_list;
+#endif
+
+    VALUE result;
+
+    long   stk_len;
+    long   stk_max;
+    VALUE *stk_ptr;
+    VALUE *stk_pos;
+#ifdef __ia64
+    long   bstr_len;
+    long   bstr_max;
+    VALUE *bstr_ptr;
+    VALUE *bstr_pos;
+#endif
+
+    struct FRAME *frame;
+    struct SCOPE *scope;
+    struct RVarmap *dyna_vars;
+    struct BLOCK *block;
+    struct iter *iter;
+    struct tag *tag;
+    VALUE wrapper;
+    NODE *cref;
+    struct ruby_env *anchor;
+
+    int flags;		/* misc. states (rb_trap_immediate/raised) */
+
+    NODE *node;
+
+    int tracing;
+    VALUE errinfo;
+    VALUE last_status;
+    VALUE last_line;
+    VALUE last_match;
+
+    int safe;
+
+    enum thread_status status;
+    int wait_for;
+    int fd;
+    rb_fdset_t readfds;
+    rb_fdset_t writefds;
+    rb_fdset_t exceptfds;
+    int select_value;
+    double delay;
+    rb_thread_t join;
+
+    int abort;
+    int priority;
+    VALUE thgroup;
+
+    st_table *locals;
+
+    VALUE thread;
+
+    VALUE sandbox;
+};
+
+extern VALUE (*ruby_sandbox_save)(struct thread *); 
+extern VALUE (*ruby_sandbox_restore)(struct thread *); 
+extern rb_thread_t curr_thread;
+extern rb_thread_t main_thread;
+
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif
