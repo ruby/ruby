@@ -3066,19 +3066,19 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
 	  (int )text, (int )text_end, (int )text_range);
 #endif
 
-  tlen1 = (target_end - target) - 1;
-  end = text_range + tlen1;
-  if (end > text_end)
-    end = text_end;
-
   tail = target_end - 1;
+  tlen1 = tail - target;
+  end = text_range;
+  if (end + tlen1 > text_end)
+    end = text_end - tlen1;
+
   s = text;
 
   if (IS_NULL(reg->int_map)) {
     while (s < end) {
       p = se = s + tlen1;
       t = tail;
-      while (*p == *t && t >= target) {
+      while (t >= target && *p == *t) {
         p--; t--;
       }
       if (t < target) return (UChar* )s;
@@ -3094,7 +3094,7 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
     while (s < end) {
       p = se = s + tlen1;
       t = tail;
-      while (*p == *t && t >= target) {
+      while (t >= target && *p == *t) {
         p--; t--;
       }
       if (t < target) return (UChar* )s;

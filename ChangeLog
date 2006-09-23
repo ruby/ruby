@@ -1,3 +1,11 @@
+Sat Sep 23 20:54:28 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* oniguruma.h: Version 4.4.4
+
+	* regexec.c: ditto.
+
+	* regcomp.c ditto.
+
 Sat Sep 23 08:35:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc/ri/ri_options.rb: prevent NameError.  [ruby-dev:29597]
