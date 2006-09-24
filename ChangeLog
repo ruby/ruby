@@ -1,3 +1,7 @@
+Sun Sep 24 12:10:04 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.3.
+
 Sun Sep 24 06:55:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_print): no special handling for nil as well as puts.
