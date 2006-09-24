@@ -426,7 +426,7 @@ limited_big_rand(struct RBignum *limit)
  *  than or equal to zero and less than max1. <code>Kernel::srand</code>
  *  may be used to ensure repeatable sequences of random numbers between
  *  different runs of the program. Ruby currently uses a modified
- *  Mersenne Twister with a period of 219937-1.
+ *  Mersenne Twister with a period of 2**19937-1.
  *     
  *     srand 1234                 #=> 0
  *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]

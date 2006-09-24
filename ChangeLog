@@ -1,3 +1,8 @@
+Mon Sep 25 08:11:35 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_rand): RDoc typo fix.  a patch from Frederick
+	  Cheung <fred at 82ask.com>.  [ruby-talk:216047]
+
 Sun Sep 24 22:28:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: extension library scripts moved into common directory.
