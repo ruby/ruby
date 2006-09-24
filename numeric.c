@@ -1274,9 +1274,9 @@ flo_ceil(num)
  *  Rounds <i>flt</i> to the nearest integer. Equivalent to:
  *     
  *     def round
- *       return floor(self+0.5) if self > 0.0
- *       return ceil(self-0.5)  if self < 0.0
- *       return 0.0
+ *       return (self+0.5).floor if self > 0.0
+ *       return (self-0.5).ceil  if self < 0.0
+ *       return 0
  *     end
  *     
  *     1.5.round      #=> 2
