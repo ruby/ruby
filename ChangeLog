@@ -1,3 +1,7 @@
+Sun Sep 24 22:28:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: extension library scripts moved into common directory.
+
 Sun Sep 24 12:10:04 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.3.

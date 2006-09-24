@@ -35,7 +35,7 @@ end
 libs = [abs_archdir, File.expand_path("lib", srcdir)]
 if extout
   abs_extout = File.expand_path(extout)
-  libs << abs_extout << File.expand_path(RUBY_PLATFORM, abs_extout)
+  libs << File.expand_path("common", abs_extout) << File.expand_path(RUBY_PLATFORM, abs_extout)
 end
 config["bindir"] = abs_archdir
 ENV["RUBY"] = File.expand_path(ruby)
