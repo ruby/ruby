@@ -501,8 +501,16 @@ rb_ary_shift(ary)
     rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
     top = RARRAY(ary)->ptr[0];
-    ary_make_shared(ary);
-    RARRAY(ary)->ptr++;		/* shift ptr */
+    if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
+	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary));
+    }
+    else {
+	if (!FL_TEST(ary, ELTS_SHARED)) {
+	    RARRAY(ary)->ptr[0] = Qnil;
+	}
+	ary_make_shared(ary);
+	RARRAY(ary)->ptr++;		/* shift ptr */
+    }
     RARRAY(ary)->len--;
 
     return top;
