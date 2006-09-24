@@ -1,3 +1,7 @@
+Sun Sep 24 22:28:20 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: extension library scripts moved into common directory.
+
 Sun Sep 24 14:59:50 2006  Tanaka Akira  <akr@fsij.org>
 
 	* node.h (struct thread): ia64 support is broken by sandbox patch.
@@ -8,7 +12,7 @@ Sun Sep 24 12:11:16 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sat Sep 23 23:24:57 2006  why the lucky stiff  <why@ruby-lang.org>
 
-	* eval.c (rb_thread_save_context, rb_thread_restore_context): 
+	* eval.c (rb_thread_save_context, rb_thread_restore_context):
 	  sandbox hook to save and restore sandbox state.
 
 	* eval.c (thread_no_ensure): added THREAD_NO_ENSURE thread flag.
