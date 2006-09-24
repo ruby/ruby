@@ -412,9 +412,11 @@ struct thread {
     long   stk_max;
     VALUE *stk_ptr;
     VALUE *stk_pos;
-#ifdef __ia64__
-    VALUE *bstr_ptr;
+#ifdef __ia64
     long   bstr_len;
+    long   bstr_max;
+    VALUE *bstr_ptr;
+    VALUE *bstr_pos;
 #endif
 
     struct FRAME *frame;

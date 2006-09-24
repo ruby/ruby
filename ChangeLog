@@ -1,3 +1,7 @@
+Sun Sep 24 14:59:50 2006  Tanaka Akira  <akr@fsij.org>
+
+	* node.h (struct thread): ia64 support is broken by sandbox patch.
+
 Sun Sep 24 12:11:16 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.3.
