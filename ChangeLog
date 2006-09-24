@@ -1,3 +1,8 @@
+Mon Sep 25 08:11:35 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_rand): RDoc typo fix.  a patch from Frederick
+	  Cheung <fred at 82ask.com>.  [ruby-talk:216047]
+
 Sun Sep 24 21:19:24 2006  Guy Decoux  <ts@moulon.inra.fr>
 
 	* gc.c (gc_mark_children): NODE_POSTEXE holds Ruby VALUE.
