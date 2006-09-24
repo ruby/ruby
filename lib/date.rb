@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.24 2006-09-22 23:26:52+09 tadf Exp $
+# $Id: date.rb,v 2.25 2006-09-24 10:43:22+09 tadf Exp $
 #++
 #
 # == Overview
@@ -453,14 +453,15 @@ class Date
   end
 
   def self.jd_to_weeknum(jd, k=0, sg=GREGORIAN) # :nodoc:
-    y, m, d = jd_to_civil(jd, sg)
-    a = civil_to_jd(y, 1, 1, sg) + 6
+    ns = fix_style(jd, sg)
+    y, m, d = jd_to_civil(jd, ns)
+    a = civil_to_jd(y, 1, 1, ns) + 6
     w, d = (jd - (a - ((a - k) + 1) % 7) + 7).divmod(7)
     return y, w, d
   end
 
-  def self.weeknum_to_jd(y, w, d, k=0, sg=GREGORIAN) # :nodoc:
-    a = civil_to_jd(y, 1, 1, sg) + 6
+  def self.weeknum_to_jd(y, w, d, k=0, ns=GREGORIAN) # :nodoc:
+    a = civil_to_jd(y, 1, 1, ns) + 6
     (a - ((a - k) + 1) % 7 - 7) + 7 * w + d
   end
 
@@ -730,9 +731,75 @@ class Date
       elem[:hour] = h
       elem[:min] = min
       elem[:sec] = s
+      elem[:sec_fraction] = fr
       elem.delete(:seconds)
       elem.delete(:offset)
     end
+    elem
+  end
+
+  def self.complete_hash(elem) # :nodoc:
+    i = 0
+    g = [[:jd, [:jd]],
+	 [:ordinal, [:year, :yday]],
+	 [:civil, [:year, :mon, :mday]],
+	 [:commercial, [:cwyear, :cweek, :cwday]],
+	 [nil, [:wday]],
+	 [:wnum0, [:year, :wnum0, :wday]],
+	 [:wnum1, [:year, :wnum1, :wday]],
+	 [:time, [:hour, :min, :sec]],
+	 [nil, [:cwyear, :cweek, :wday]],
+	 [nil, [:year, :wnum0, :cwday]],
+	 [nil, [:year, :wnum1, :cwday]]].
+      collect{|k, a| e = elem.values_at(*a).compact; [k, a, e]}.
+      select{|k, a, e| e.size > 0}.
+      sort_by{|k, a, e| [e.size, i -= 1]}.last
+
+    if g && g[0] && (g[1].size - g[2].size) != 0
+      d = Date.today
+
+      case g[0]
+      when :ordinal
+	elem[:year] ||= d.year
+	elem[:yday] ||= 1
+      when :civil
+	g[1].each do |e|
+	  break if elem[e]
+	  elem[e] = d.__send__(e)
+	end
+	elem[:mon]  ||= 1
+	elem[:mday] ||= 1
+      when :commercial
+	g[1].each do |e|
+	  break if elem[e]
+	  elem[e] = d.__send__(e)
+	end
+	elem[:cweek] ||= 1
+	elem[:cwday] ||= 1
+      when :wnum0
+	g[1].each do |e|
+	  break if elem[e]
+	  elem[e] = d.__send__(e)
+	end
+	elem[:wnum0] ||= 0
+	elem[:wday]  ||= 0
+      when :wnum1
+	g[1].each do |e|
+	  break if elem[e]
+	  elem[e] = d.__send__(e)
+	end
+	elem[:wnum1] ||= 0
+	elem[:wday]  ||= 0
+      when :time
+	elem[:jd] ||= d.jd
+      end
+    end
+
+    elem[:hour] ||= 0
+    elem[:min]  ||= 0
+    elem[:sec]  ||= 0
+    elem[:sec] = [elem[:sec], 59].min
+
     elem
   end
 
@@ -796,13 +863,15 @@ class Date
 
   def self.new_with_hash(elem, sg) # :nodoc:
     elem = rewrite_hash(elem)
+    elem = complete_hash(elem)
     unless jd = valid_date_with_hash?(elem, sg)
       raise ArgumentError, 'invalid date'
     end
     new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  private_class_method :rewrite_hash, :valid_date_with_hash?, :new_with_hash
+  private_class_method :rewrite_hash, :complete_hash,
+	:valid_date_with_hash?, :new_with_hash
 
   # Create a new Date object by parsing from a String
   # according to a specified format.
@@ -915,8 +984,11 @@ class Date
   # Get the date as a Commercial Date, [year, week_of_year, day_of_week]
   def commercial() self.class.jd_to_commercial(jd, @sg) end # :nodoc:
 
-  once :civil, :ordinal, :commercial
-  private :civil, :ordinal, :commercial
+  def weeknum0() self.class.jd_to_weeknum(jd, 0, @sg) end # :nodoc:
+  def weeknum1() self.class.jd_to_weeknum(jd, 1, @sg) end # :nodoc:
+
+  once :civil, :ordinal, :commercial, :weeknum0, :weeknum1
+  private :civil, :ordinal, :commercial, :weeknum0, :weeknum1
 
   # Get the year of this date.
   def year() civil[0] end
@@ -936,6 +1008,11 @@ class Date
 
   alias_method :month, :mon
   alias_method :day, :mday
+
+  def wnum0() weeknum0[1] end # :nodoc:
+  def wnum1() weeknum1[1] end # :nodoc:
+
+  private :wnum0, :wnum1
 
   # Get the time of this date as [hours, minutes, seconds,
   # fraction_of_a_second]
@@ -1126,7 +1203,7 @@ class Date
   # time (or backward, if +step+ is negative) until
   # we reach +limit+ (inclusive), yielding the resultant
   # date at each step.
-  def step(limit, step=1)  # :yield: date
+  def step(limit, step=1) # :yield: date
     da = self
     op = %w(- <= >=)[step <=> 0]
     while da.__send__(op, limit)
@@ -1138,7 +1215,7 @@ class Date
 
   # Step forward one day at a time until we reach +max+
   # (inclusive), yielding each date as we go.
-  def upto(max, &block)  # :yield: date
+  def upto(max, &block) # :yield: date
     step(max, +1, &block)
   end
 
@@ -1258,10 +1335,6 @@ class DateTime < Date
 
   def self.valid_time_with_hash? (elem) # :nodoc:
     h, min, s = elem.values_at(:hour, :min, :sec)
-    h   ||= 0
-    min ||= 0
-    s   ||= 0
-    s = [s, 59].min
     valid_time?(h, min, s)
   end
 
@@ -1359,6 +1432,7 @@ class DateTime < Date
 
   def self.new_with_hash(elem, sg) # :nodoc:
     elem = rewrite_hash(elem)
+    elem = complete_hash(elem)
     unless (jd = valid_date_with_hash?(elem, sg)) and
 	   (fr = valid_time_with_hash?(elem))
       raise ArgumentError, 'invalid date'

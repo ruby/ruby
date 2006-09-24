@@ -1,3 +1,7 @@
+Sun Sep 24 12:11:16 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.3.
+
 Sat Sep 23 23:24:57 2006  why the lucky stiff  <why@ruby-lang.org>
 
 	* eval.c (rb_thread_save_context, rb_thread_restore_context): 

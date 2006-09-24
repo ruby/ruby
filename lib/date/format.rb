@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.24 2006-09-22 23:26:52+09 tadf Exp $
+# $Id: format.rb,v 2.25 2006-09-24 07:56:58+09 tadf Exp $
 
 require 'rational'
 
@@ -219,7 +219,7 @@ class Date
 	  return unless str.sub!(/\A([ap])(?:m\b|\.m\.)/i, '')
 	  e._merid = if $1.downcase == 'a' then 0 else 12 end
 	when 'Q'
-	  return unless str.sub!(/\A(\d{1,})/, '')
+	  return unless str.sub!(/\A(-?\d{1,})/, '')
 	  val = $1.to_i.to_r / 10**3
 	  e.seconds = val
 	when 'R'
@@ -232,7 +232,7 @@ class Date
 	  return unless (0..60) === val
 	  e.sec = val
 	when 's'
-	  return unless str.sub!(/\A(\d{1,})/, '')
+	  return unless str.sub!(/\A(-?\d{1,})/, '')
 	  val = $1.to_i
 	  e.seconds = val
 	when 'T'
@@ -555,7 +555,7 @@ class Date
   end
 
   def self._parse_sla_ja(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[/.](-?\d+))?|n, ' ')
+    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
       if $3
 	e.year = $1.to_i
 	e.mon = $2.to_i
@@ -585,7 +585,7 @@ class Date
   end
 
   def self._parse_sla_eu(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[/.](-?\d+))?|n, ' ')
+    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
       if $3
 	e.mday = $1.to_i
 	e.mon = $2.to_i
@@ -615,7 +615,7 @@ class Date
   end
 
   def self._parse_sla_us(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[/.](-?\d+))?|n, ' ')
+    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
       if $3
 	e.mon = $1.to_i
 	e.mday = $2.to_i
@@ -937,14 +937,14 @@ class Date
       when 'Q'
 	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400*10**3).to_i
-	emit_n(s, 1, f)
+	emit_sn(s, 1, f)
       when 'R'; emit_a(strftime('%H:%M'), 0, f)
       when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
       when 'S'; emit_n(sec, 2, f)
       when 's'
 	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400).to_i
-	emit_n(s, 1, f)
+	emit_sn(s, 1, f)
       when 'T'
 	if m == '%T'
 	  format('%02d:%02d:%02d', hour, min, sec) # 4p
@@ -953,8 +953,7 @@ class Date
 	end
       when 't'; "\t"
       when 'U', 'W'
-	k = if c == 'U' then 0 else 1 end
-	emit_n(self.class.jd_to_weeknum(jd, k, fix_style)[1], 2, f)
+	emit_n(if c == 'U' then wnum0 else wnum1 end, 2, f)
       when 'u'; emit_n(cwday, 1, f)
       when 'V'; emit_n(cweek, 2, f)
       when 'v'; emit_a(strftime('%e-%b-%Y'), 0, f)
