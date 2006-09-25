@@ -1,6 +1,11 @@
-Mon Sep 25 21:24:54 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Sep 25 22:26:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_path_end): skip root directory.  fixed: [ruby-core:08913]
+
+	* lib/mkmf.rb (rm_f): get rid of NUL.
+
+	* lib/mkmf.rb (init_mkmf): set default $LDFLAGS.  Patch by Michal
+	  Suchanek <hramrach at centrum.cz>.  [ruby-talk:216256]
 
 Mon Sep 25 21:24:54 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
