@@ -584,7 +584,7 @@ rb_ary_shift(VALUE ary)
     }
     else {
 	if (!FL_TEST(ary, ELTS_SHARED)) {
-	    RARRAY(ary)->ptr[0] = Qnil;
+	    RARRAY_PTR(ary)[0] = Qnil;
 	}
 	ary_make_shared(ary);
 	RARRAY(ary)->as.heap.ptr++;	/* shift ptr */
