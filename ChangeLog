@@ -1,3 +1,9 @@
+Tue Sep 26 07:55:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_shift): should not move memory region if array
+	  body is shared.  a patch from Kent Sibilev <ksruby at gmail.com>.
+	  [ruby-core:08922]
+
 Mon Sep 25 23:10:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (rb_push_glob): need not to check by FilePathValue().
