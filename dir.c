@@ -1497,8 +1497,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
     long offset = 0;
     VALUE ary;
 
-    FilePathValue(str);
-
+    StringValue(str);
     ary = rb_ary_new();
 
     while (offset < RSTRING_LEN(str)) {
@@ -1526,7 +1525,7 @@ dir_globs(long argc, VALUE *argv, int flags)
     for (i = 0; i < argc; ++i) {
 	int status;
 	VALUE str = argv[i];
-	FilePathValue(str);
+	StringValue(str);
 	status = push_glob(ary, RSTRING_PTR(str), flags);
 	if (status) rb_jump_tag(status);
     }

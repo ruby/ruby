@@ -1,3 +1,10 @@
+Mon Sep 25 23:10:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (rb_push_glob): need not to check by FilePathValue().
+	  [ruby-dev:29599]
+
+	* dir.c (dir_globs): ditto.
+
 Mon Sep 25 22:26:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_path_end): skip root directory.  fixed: [ruby-core:08913]
