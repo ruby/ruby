@@ -2427,9 +2427,8 @@ rb_path_last_separator(path)
     return last;
 }
 
-#define chompdirsep rb_path_end
 char *
-rb_path_end(path)
+chompdirsep(path)
     const char *path;
 {
     while (*path) {
@@ -2443,6 +2442,14 @@ rb_path_end(path)
 	}
     }
     return (char *)path;
+}
+
+char *
+rb_path_end(path)
+    const char *path;
+{
+    if (isdirsep(*path)) path++;
+    return chompdirsep(path);
 }
 
 #define BUFCHECK(cond) do {\
@@ -2821,7 +2828,7 @@ static VALUE
 rb_file_s_dirname(klass, fname)
     VALUE klass, fname;
 {
-    char *name, *root, *p;
+    const char *name, *root, *p;
     VALUE dirname;
 
     name = StringValueCStr(fname);
@@ -2841,8 +2848,9 @@ rb_file_s_dirname(klass, fname)
 	return rb_str_new2(".");
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
+	const char *top = skiproot(name + 2);
 	dirname = rb_str_new(name, 3);
-	rb_str_cat(dirname, skiproot(name + 2), p - skiproot(name + 2));
+	rb_str_cat(dirname, top, p - top);
     }
     else
 #endif
