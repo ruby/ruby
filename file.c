@@ -111,11 +111,10 @@ rb_get_path(VALUE obj)
 	to_path = rb_intern("to_path");
     }
     if (rb_respond_to(obj, to_path)) {
-	obj = rb_funcall(obj, to_path, 0, 0);
+	tmp = rb_funcall(obj, to_path, 0, 0);
     }
-    tmp = obj;
-    StringValueCStr(tmp);
   exit:
+    StringValueCStr(tmp);
     if (obj != tmp) {
 	rb_check_safe_obj(tmp);
     }

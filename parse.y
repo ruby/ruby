@@ -6029,7 +6029,6 @@ parser_yylex(struct parser_params *parser)
 	    return tOP_ASGN;
 	}
 	if (c == '>') {
-	    enum lex_state_e state = lex_state;
 	    lex_state = EXPR_ARG;
 	    return tLAMBDA;
 	}
@@ -8275,7 +8274,7 @@ Init_sym(void)
 }
 
 void
-rb_gc_mark_symbols(int lev)
+rb_gc_mark_symbols(void)
 {
     rb_mark_tbl(global_symbols.id_sym);
 }

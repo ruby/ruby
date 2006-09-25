@@ -1416,7 +1416,6 @@ static VALUE
 recursive_hash(VALUE hash, VALUE dummy, int recur)
 {
     int hval;
-    VALUE n;
 
     if (recur) {
 	return LONG2FIX(0);

@@ -1,3 +1,13 @@
+Mon Sep 25 11:26:25 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (recursive_hash): remove unused local variable.
+
+	* parse.y (parser_yylex): ditto.
+
+	* parse.y (rb_gc_mark_symbols): fix unmatched prototype .
+
+	* file.c (rb_get_path): check NUL byte in the path string.
+
 Mon Sep 25 08:14:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_shift): should clear shifting top element.
