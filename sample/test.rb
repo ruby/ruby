@@ -1839,7 +1839,7 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-test_ok(`./miniruby -x script_tmp` == 'nil')
+test_ok(`./miniruby -x script_tmp` == '')
 test_ok(`./miniruby -x script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")

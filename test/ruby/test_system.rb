@@ -33,7 +33,7 @@ class TestSystem < Test::Unit::TestCase
     tmp.print "this is a trailing junk\n";
     tmp.close
 
-    assert_equal('nil', `#{ruby} -x script_tmp`)
+    assert_equal('', `#{ruby} -x script_tmp`)
     assert_equal('555', `#{ruby} -x script_tmp -zzz=555`)
 
     tmp = open("script_tmp", "w")

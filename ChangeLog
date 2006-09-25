@@ -1,3 +1,9 @@
+Mon Sep 25 15:06:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/test.rb: "print nil" now prints empty string.
+
+	* test/ruby/test_system.rb (TestSystem::test_system): ditto.
+
 Mon Sep 25 11:26:25 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (recursive_hash): remove unused local variable.
