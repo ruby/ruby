@@ -410,12 +410,7 @@ end
 
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
-  try_link(<<"SRC", libs, &b) or try_link(<<"SRC", libs, &b)
-#{headers}
-/*top*/
-int main() { return 0; }
-int t() { #{func}(); return 0; }
-SRC
+  try_link(<<"SRC", libs, &b) or macro_defined?(func, COMMON_HEADERS+headers, &b)
 #{COMMON_HEADERS}
 #{headers}
 /*top*/
@@ -758,16 +753,12 @@ end
 def have_type(type, headers = nil, opt = "", &b)
   checking_for checking_message(type, headers, opt) do
     headers = cpp_include(headers)
-    if try_compile(<<"SRC", opt, &b) or (/\A\w+\z/n =~ type && try_compile(<<"SRC", opt, &b))
+    if try_compile(<<"SRC", opt, &b)
 #{COMMON_HEADERS}
 #{headers}
 /*top*/
-static #{type} t;
-SRC
-#{COMMON_HEADERS}
-#{headers}
-/*top*/
-static #{type} *t;
+typedef #{type} conftest_type;
+static conftest_type conftestval[sizeof(conftest_type)?1:-1];
 SRC
       $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
       true

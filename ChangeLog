@@ -1,3 +1,9 @@
+Wed Sep 27 01:04:49 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func): check function pointer first and macro next.
+
+	* lib/mkmf.rb (have_type): simplified with typedef and sizeof.
+
 Tue Sep 26 23:57:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): use strings as key.
