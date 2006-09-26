@@ -1,3 +1,7 @@
+Tue Sep 26 15:29:55 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (CPP): check predefined value.
+
 Tue Sep 26 07:55:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_shift): should not move memory region if array
