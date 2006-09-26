@@ -1174,16 +1174,10 @@ obj_free(VALUE obj)
 	}
 	break;
       case T_STRING:
-	if (FL_TEST(obj, RSTRING_NOEMBED) &&
-	    RANY(obj)->as.string.as.heap.ptr && !FL_TEST(obj, ELTS_SHARED)) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.string.as.heap.ptr));
-	}
+	rb_str_free(obj);
 	break;
       case T_ARRAY:
-	if (FL_TEST(obj, RARRAY_NOEMBED) &&
-	    RANY(obj)->as.array.as.heap.ptr && !FL_TEST(obj, ELTS_SHARED)) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.array.as.heap.ptr));
-	}
+	rb_ary_free(obj);
 	break;
       case T_HASH:
 	if (RANY(obj)->as.hash.tbl) {

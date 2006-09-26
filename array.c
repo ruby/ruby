@@ -64,6 +64,11 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     }\
 } while (0) 
 
+#define ARY_LFREE FL_USER6
+#define ARY_LFREE_P(ary) FL_TEST(ary, ARY_LFREE)
+#define LFREE_SIZE(ary) RARRAY(ary)->as.heap.ptr[-1]
+#define LFREE_CAPA(ary) (LFREE_SIZE(ary)+RARRAY(ary)->as.heap.aux.capa)
+
 #define ARY_CAPA(ary) ((ARY_EMBED_P(ary)) ? RARRAY_EMBED_LEN_MAX : RARRAY(ary)->as.heap.aux.capa)
 #define RESIZE_CAPA(ary,capacity) do {\
     if (ARY_EMBED_P(ary)) {\
@@ -76,6 +81,21 @@ memfill(register VALUE *mem, register long size, register VALUE val)
             ARY_SET_NOEMBED(ary);\
 	    RARRAY(ary)->as.heap.aux.capa = (capacity);\
         }\
+    }\
+    else if (ARY_LFREE_P(ary)) {\
+        VALUE *ptr = RARRAY(ary)->as.heap.ptr - LFREE_SIZE(ary);\
+	if (LFREE_CAPA(ary) >= (capacity)) {\
+	    RARRAY(ary)->as.heap.aux.capa = LFREE_CAPA(ary);\
+	    MEMMOVE(ptr, RARRAY(ary)->as.heap.ptr, VALUE, RARRAY_LEN(ary));\
+	    FL_UNSET(ary, ARY_LFREE);\
+	    RARRAY(ary)->as.heap.ptr = ptr;\
+	}\
+        else {\
+	    long offset = LFREE_SIZE(ary);\
+	    REALLOC_N(ptr, VALUE, offset+(capacity));\
+	    RARRAY(ary)->as.heap.aux.capa = (capacity);\
+	    RARRAY(ary)->as.heap.ptr = ptr + offset;\
+	}\
     }\
     else {\
 	REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, (capacity));\
@@ -223,6 +243,19 @@ rb_ary_new4(long n, const VALUE *elts)
     return ary;
 }
 
+void
+rb_ary_free(VALUE ary)
+{
+    if (!ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
+	if (ARY_LFREE_P(ary)) {
+	    xfree(RARRAY(ary)->as.heap.ptr - RARRAY(ary)->as.heap.ptr[-1]);
+	}
+	else {
+	    xfree(RARRAY(ary)->as.heap.ptr);
+	}
+    }
+}
+
 static VALUE
 ary_make_shared(VALUE ary)
 {
@@ -238,6 +271,10 @@ ary_make_shared(VALUE ary)
 	shared->as.heap.len = RARRAY(ary)->as.heap.len;
 	shared->as.heap.ptr = RARRAY(ary)->as.heap.ptr;
 	shared->as.heap.aux.capa = RARRAY(ary)->as.heap.aux.capa;
+        if (ARY_LFREE_P(ary)) {
+            FL_SET(shared,ARY_LFREE);
+            FL_UNSET(ary,ARY_LFREE);
+        }
 	RARRAY(ary)->as.heap.aux.shared = (VALUE)shared;
 	FL_SET(ary, ELTS_SHARED);
 	OBJ_FREEZE(shared);
@@ -578,18 +615,23 @@ rb_ary_shift(VALUE ary)
     rb_ary_modify_check(ary);
     if (RARRAY_LEN(ary) == 0) return Qnil;
     top = RARRAY_PTR(ary)[0];
-    if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE && !FL_TEST(ary, ELTS_SHARED)) {
+    if (ARY_EMBED_P(ary)) {
 	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary));
-	ARY_SET_LEN(ary, RARRAY_LEN(ary)-1);
+	ARY_SET_EMBED_LEN(ary, RARRAY_LEN(ary)-1);
+	return top;
     }
-    else {
-	if (!FL_TEST(ary, ELTS_SHARED)) {
-	    RARRAY_PTR(ary)[0] = Qnil;
+    if (!ARY_SHARED_P(ary)) {
+	if (ARY_LFREE_P(ary)) {
+	    RARRAY(ary)->as.heap.ptr[0] = RARRAY(ary)->as.heap.ptr[-1]+1;
 	}
-	ary_make_shared(ary);
-	RARRAY(ary)->as.heap.ptr++;	/* shift ptr */
-	RARRAY(ary)->as.heap.len--;
+	else {
+            FL_SET(ary, ARY_LFREE);
+            RARRAY(ary)->as.heap.ptr[0] = 1;
+	}
+	RARRAY(ary)->as.heap.aux.capa--;
     }
+    RARRAY(ary)->as.heap.ptr++;	/* shift ptr */
+    RARRAY(ary)->as.heap.len--;
 
     return top;
 }
@@ -640,26 +682,6 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-VALUE
-rb_ary_unshift(VALUE ary, VALUE item)
-{
-    rb_ary_modify(ary);
-    if (RARRAY_LEN(ary) == ARY_CAPA(ary)) {
-	long capa_inc = ARY_CAPA(ary) / 2;
-	if (capa_inc < ARY_DEFAULT_SIZE) {
-	    capa_inc = ARY_DEFAULT_SIZE;
-	}
-	RESIZE_CAPA(ary, ARY_CAPA(ary)+capa_inc);
-    }
-
-    /* sliding items */
-    MEMMOVE(RARRAY_PTR(ary) + 1, RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
-    ARY_SET_LEN(ary, RARRAY_LEN(ary)+1);
-    RARRAY_PTR(ary)[0] = item;
-
-    return ary;
-}
-
 /*
  *  call-seq:
  *     array.unshift(obj, ...)  -> array
@@ -675,18 +697,55 @@ rb_ary_unshift(VALUE ary, VALUE item)
 static VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
-    long len = RARRAY_LEN(ary);
-
+    long lfree = ARY_LFREE_P(ary) ? RARRAY_PTR(ary)[-1] : 0;
+    
+    rb_ary_modify_check(ary);
     if (argc == 0) return ary;
 
-    /* make rooms by setting the last item */
-    rb_ary_store(ary, len + argc - 1, Qnil);
-
-    /* sliding items */
-    MEMMOVE(RARRAY_PTR(ary) + argc, RARRAY_PTR(ary), VALUE, len);
+    if (lfree < argc) {
+        int shared = ARY_SHARED_P(ary); 
+	long len = RARRAY_LEN(ary);
+        long rfree = shared ? 0 : (ARY_CAPA(ary)-len)/2;
+	long free2 = argc+(RARRAY_LEN(ary)+argc)/2;
+        VALUE *ptr;
+	if (free2 < ARY_DEFAULT_SIZE) {
+	    free2 = ARY_DEFAULT_SIZE;
+	}
+        ptr = ALLOC_N(VALUE,len+free2)+(free2-rfree);
+        MEMCPY(ptr, RARRAY_PTR(ary), VALUE, len);
+        if (shared) {
+            FL_UNSET(ary, ELTS_SHARED);
+        }
+	else if (ARY_EMBED_P(ary)) {
+	    ARY_SET_NOEMBED(ary);
+	}
+	else {
+            free(RARRAY_PTR(ary)-lfree);
+        }
+        RARRAY(ary)->as.heap.ptr = ptr;
+        RARRAY(ary)->as.heap.len = len;
+        RARRAY(ary)->as.heap.aux.capa = len+rfree;
+        lfree = free2-rfree;
+        FL_SET(ary, ARY_LFREE);
+    }
+    RARRAY(ary)->as.heap.ptr -= argc;
+    RARRAY(ary)->as.heap.len += argc;
+    RARRAY(ary)->as.heap.aux.capa += argc;
+    lfree -= argc;
+    if (lfree > 0) {
+	RARRAY(ary)->as.heap.ptr[-1] = lfree;
+    } else {
+	FL_UNSET(ary, ARY_LFREE);
+    }
     MEMCPY(RARRAY_PTR(ary), argv, VALUE, argc);
-    
+
     return ary;
+}
+
+VALUE
+rb_ary_unshift(VALUE ary, VALUE item)
+{
+    return rb_ary_unshift_m(1,&item,ary);
 }
 
 /* faster version - use this if you don't need to treat negative offset */

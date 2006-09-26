@@ -299,6 +299,14 @@ rb_str_buf_new2(const char *ptr)
     return str;
 }
 
+void
+rb_str_free(VALUE str)
+{
+    if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
+	xfree(RSTRING(str)->as.heap.ptr);
+    }
+}
+
 VALUE
 rb_str_to_str(VALUE str)
 {

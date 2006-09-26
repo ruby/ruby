@@ -4,6 +4,23 @@ Wed Sep 27 01:04:49 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_type): simplified with typedef and sizeof.
 
+Wed Sep 27 00:08:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_shift): shift/unshift performance boost patch,
+	  based on the patch from Eric Mahurin <eric_mahurin at yahoo.com>.
+	  [ruby-core:05861]
+
+	* array.c (rb_ary_unshift_m): ditto.
+
+	* array.c (ary_make_shared): ditto.
+
+	* array.c (RESIZE_CAPA): ditto.
+
+	* array.c (rb_ary_free): new function to free memory.  code moved
+	  from gc.c.
+
+	* string.c (rb_str_free): ditto.
+
 Tue Sep 26 23:57:03 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#getopts): use strings as key.
