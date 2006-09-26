@@ -1289,6 +1289,14 @@ init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
 		     inetsock_cleanup, (VALUE)&arg);
 }
 
+/*
+ * call-seq:
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil)
+ *
+ * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
+ * and +local_port+ are specified, then those parameters are used on the local
+ * end to establish the connection.
+ */
 static VALUE
 tcp_init(int argc, VALUE *argv, VALUE sock)
 {
