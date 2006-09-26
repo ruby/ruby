@@ -1,6 +1,6 @@
 Tue Sep 26 15:31:26 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/Makefile.sub (CPP): check predefined value.
+	* {win32,wince}/Makefile.sub (CPP): check predefined value.
 
 Mon Sep 25 22:26:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
