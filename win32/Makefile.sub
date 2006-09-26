@@ -34,7 +34,7 @@ VPATH = $(srcdir);$(srcdir)/missing;$(srcdir)/win32
 !if !defined(CC)
 CC = cl
 !endif
-!if !defined(CPP)
+!if !defined(CPP) || "$(CPP)" == "cl"
 CPP = $(CC) -E
 !endif
 !if !defined(YACC)
