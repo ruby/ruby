@@ -390,7 +390,7 @@ class OptionParser
         yield(indent + l)
       end
 
-      while (l = left.shift; r = right.shift; l or r)
+      while begin l = left.shift; r = right.shift; l or r end
         l = l.to_s.ljust(width) + ' ' + r if r and !r.empty?
         yield(indent + l)
       end
@@ -398,11 +398,23 @@ class OptionParser
       self
     end
 
+    def add_banner(to)
+      unless @short or @long
+        s = desc.join
+        to << " [" + s + "]..." unless s.empty?
+      end
+      to
+    end
+
+    def match_nonswitch?(str)
+      @pattern =~ str unless @short or @long
+    end
+
     #
     # Main name of the switch.
     #
     def switch_name
-      (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '').intern
+      (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '')
     end
 
     #
@@ -607,6 +619,13 @@ class OptionParser
     end
 
     #
+    # Iterates over each option, passing the option to the +block+.
+    #
+    def each_option(&block)
+      list.each(&block)
+    end
+
+    #
     # Creates the summary table, passing each line to the +block+ (without
     # newline). The arguments +args+ are passed along to the summarize
     # method which is called on every option.
@@ -615,12 +634,21 @@ class OptionParser
       list.each do |opt|
         if opt.respond_to?(:summarize) # perhaps OptionParser::Switch
           opt.summarize(*args, &block)
-        elsif opt.empty?
+        elsif !opt or opt.empty?
           yield("")
         else
           opt.each(&block)
         end
       end
+    end
+
+    def add_banner(to)
+      list.each do |opt|
+        if opt.respond_to?(:add_banner)
+          opt.add_banner(to)
+        end
+      end
+      to
     end
   end
 
@@ -760,7 +788,7 @@ class OptionParser
 
   def add_officious  # :nodoc:
     list = base()
-    Officious.each_pair do |opt, block|
+    Officious.each do |opt, block|
       list.long[opt] ||= block.call(self)
     end
   end
@@ -831,7 +859,11 @@ class OptionParser
   # Heading banner preceding summary.
   #
   def banner
-    @banner ||= "Usage: #{program_name} [options]"
+    unless @banner
+      @banner = "Usage: #{program_name} [options]"
+      visit(:add_banner, @banner)
+    end
+    @banner
   end
 
   #
@@ -1126,13 +1158,17 @@ class OptionParser
     end
 
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
-    s = if short.empty? and long.empty?
-          raise ArgumentError, "no switch given" if style or pattern or block
-          desc
-        else
-          (style || default_style).new(pattern || default_pattern,
+    if !(short.empty? and long.empty?)
+      s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
-        end
+    elsif !block
+      raise ArgumentError, "no switch given" if style or pattern
+      s = desc
+    else
+      short << pattern
+      s = (style || default_style).new(pattern,
+                                       conv, nil, nil, arg, desc, block)
+    end
     return s, short, long,
       (not_style.new(not_pattern, not_conv, sdesc, ldesc, nil, desc, block) if not_style),
       nolong
@@ -1222,7 +1258,7 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
             val = cb.call(*val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
@@ -1233,7 +1269,8 @@ class OptionParser
         when /\A-(.)((=).*|.+)?/nm
           opt, has_arg, eq, val, rest = $1, $3, $3, $2, $2
           begin
-            unless sw = search(:short, opt)
+            sw, = search(:short, opt)
+            unless sw
               begin
                 sw, = complete(:short, opt)
                 # short option matched.
@@ -1261,12 +1298,19 @@ class OptionParser
 
         # non-option argument
         else
-          nonopt.call(arg)
+          catch(:prune) do
+            visit(:each_option) do |sw|
+              sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
+            end
+            nonopt.call(arg)
+          end
         end
       end
 
       nil
     }
+
+    visit(:search, :short, nil) {|sw| sw.block.call(*argv) if !sw.pattern}
 
     argv
   end
@@ -1315,7 +1359,16 @@ class OptionParser
   #
   # Wrapper method for getopts.rb.
   #
-  def getopts(argv, single_options = nil, *long_options)
+  #   params = ARGV.getopts("ab:", "foo", "bar:")
+  #   # params[:a] = true   # -a
+  #   # params[:b] = "1"    # -b1
+  #   # params[:foo] = "1"  # --foo
+  #   # params[:bar] = "x"  # --bar x
+  #
+  def getopts(*args)
+    argv = Array === args.first ? args.shift : default_argv
+    single_options, *long_options = *args
+
     result = {}
 
     single_options.scan(/(.)(:)?/) do |opt, val|
@@ -1364,12 +1417,12 @@ class OptionParser
   private :visit
 
   #
-  # Searches key +k+ in @stack for +id+ hash and returns or yields the result.
+  # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
-  def search(id, k)
-    visit(:search, id, k) do |k|
-      return k unless block_given?
-      return yield(k)
+  def search(id, key)
+    block_given = block_given?
+    visit(:search, id, key) do |k|
+      return block_given ? yield(k) : k
     end
   end
   private :search
@@ -1581,7 +1634,6 @@ class OptionParser
     end
 
     alias to_s message
-    alias to_str message
   end
 
   #
