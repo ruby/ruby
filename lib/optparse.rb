@@ -1259,7 +1259,7 @@ class OptionParser
           end
           begin
             opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(*val) if cb
+            val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
