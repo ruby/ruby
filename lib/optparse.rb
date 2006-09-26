@@ -347,7 +347,7 @@ class OptionParser
     #
     def conv_arg(arg, val = nil)
       if conv
-        val = conv.yield(val)
+        val = conv.call(*val)
       else
         val = *val
       end
@@ -414,7 +414,7 @@ class OptionParser
     # Main name of the switch.
     #
     def switch_name
-      (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '').intern
+      (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '')
     end
 
     #
@@ -446,12 +446,12 @@ class OptionParser
       #
       # Raises an exception if argument is not present.
       #
-      def parse(arg, argv, &error)
+      def parse(arg, argv)
         unless arg
           raise MissingArgument if argv.empty?
           arg = argv.shift
         end
-        conv_arg(*parse_arg(arg), &error)
+        conv_arg(*parse_arg(arg) {|*exc| raise(*exc)})
       end
     end
 
@@ -861,7 +861,7 @@ class OptionParser
   def banner
     unless @banner
       @banner = "Usage: #{program_name} [options]"
-      @stack.reverse_each {|el|el.add_banner(@banner)}
+      visit(:add_banner, @banner)
     end
     @banner
   end
@@ -1161,7 +1161,7 @@ class OptionParser
     if !(short.empty? and long.empty?)
       s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
-    elsif !block_given?
+    elsif !block
       raise ArgumentError, "no switch given" if style or pattern
       s = desc
     else
@@ -1258,7 +1258,7 @@ class OptionParser
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
             val = cb.call(*val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
@@ -1290,7 +1290,7 @@ class OptionParser
             opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-            val = cb.call(*val) if cb
+            val = cb.call(val) if cb
             setter.call(sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
@@ -1314,6 +1314,7 @@ class OptionParser
 
     argv
   end
+  private :parse_in_order
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -1358,7 +1359,16 @@ class OptionParser
   #
   # Wrapper method for getopts.rb.
   #
-  def getopts(argv = default_argv, single_options = nil, *long_options)
+  #   params = ARGV.getopts("ab:", "foo", "bar:")
+  #   # params[:a] = true   # -a
+  #   # params[:b] = "1"    # -b1
+  #   # params[:foo] = "1"  # --foo
+  #   # params[:bar] = "x"  # --bar x
+  #
+  def getopts(*args)
+    argv = Array === args.first ? args.shift : default_argv
+    single_options, *long_options = *args
+
     result = {}
 
     single_options.scan(/(.)(:)?/) do |opt, val|
@@ -1410,9 +1420,9 @@ class OptionParser
   # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
   def search(id, key)
+    block_given = block_given?
     visit(:search, id, key) do |k|
-      return k unless block_given?
-      return yield(k)
+      return block_given ? yield(k) : k
     end
   end
   private :search
