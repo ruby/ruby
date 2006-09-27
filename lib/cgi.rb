@@ -1306,7 +1306,7 @@ class CGI
             else
               '="' + CGI::escapeHTML(value) + '"'
             end
-          }.to_s + ">"
+          }.join + ">"
       END
       s.sub!(/\Z/, " +") << append if append
       s
@@ -1529,7 +1529,7 @@ class CGI
             value[value.size - 1]
           end
         end
-      }.to_s
+      }.join
     end
 
 
@@ -1609,7 +1609,7 @@ class CGI
       if @output_hidden
         body += @output_hidden.collect{|k,v|
           "<INPUT TYPE=\"HIDDEN\" NAME=\"#{k}\" VALUE=\"#{v}\">"
-        }.to_s
+        }.join
       end
       super(attributes){body}
     end
@@ -1907,7 +1907,7 @@ class CGI
               }
             end
           end
-        }.to_s
+        }.join
       }
 
     end
@@ -1984,7 +1984,7 @@ class CGI
             value[value.size - 1]
           end
         end
-      }.to_s
+      }.join
     end
 
     # Generate a reset button Input element, as a String.

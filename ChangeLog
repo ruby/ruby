@@ -1,3 +1,8 @@
+Wed Sep 27 13:29:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::TagMaker::nOE_element_def): replace to_s by
+	  join.  some other methods as well.  [ruby-dev:29613]
+
 Wed Sep 27 01:04:49 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func): check function pointer first and macro next.
