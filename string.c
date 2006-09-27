@@ -4512,13 +4512,13 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.startwith?([prefix]+)   => true or false
+ *     str.start_with?([prefix]+)   => true or false
  *  
  *  Returns true if <i>str</i> starts with the prefix given.
  */
 
 static VALUE
-rb_str_startwith(int argc, VALUE *argv, VALUE str)
+rb_str_start_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
 
@@ -4534,13 +4534,13 @@ rb_str_startwith(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.endwith?([suffix]+)   => true or false
+ *     str.end_with?([suffix]+)   => true or false
  *  
  *  Returns true if <i>str</i> ends with the suffix given.
  */
 
 static VALUE
-rb_str_endwith(int argc, VALUE *argv, VALUE str)
+rb_str_end_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
 
@@ -4899,8 +4899,8 @@ Init_String(void)
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
-    rb_define_method(rb_cString, "startwith?", rb_str_startwith, -1);
-    rb_define_method(rb_cString, "endwith?", rb_str_endwith, -1);
+    rb_define_method(rb_cString, "start_with?", rb_str_start_with, -1);
+    rb_define_method(rb_cString, "end_with?", rb_str_end_with, -1);
 
     rb_define_method(rb_cString, "scan", rb_str_scan, 1);
 

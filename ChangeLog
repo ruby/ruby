@@ -1,3 +1,8 @@
+Wed Sep 27 21:21:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_startwith): rename startwith? to start_with?,
+	  endwith? to endwith?, respectively.  [ruby-talk:216685]
+
 Wed Sep 27 13:29:01 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::TagMaker::nOE_element_def): replace to_s by
