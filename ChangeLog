@@ -1,3 +1,14 @@
+Wed Sep 27 22:08:16 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/md5/md5init.c (Init_md5): Now that we have digest.rb,
+	  require "digest" rather than "digest.so".
+
+	* ext/digest/rmd160/rmd160init.c (Init_rmd160): Ditto.
+
+	* ext/digest/sha1/sha1init.c (Init_sha1): Ditto.
+
+	* ext/digest/sha2/sha2init.c (Init_sha2): Ditto.
+
 Wed Sep 27 21:21:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_startwith): rename startwith? to start_with?,

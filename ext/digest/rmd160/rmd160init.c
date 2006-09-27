@@ -24,7 +24,7 @@ Init_rmd160()
     VALUE mDigest, cDigest_Base, cDigest_RMD160;
     ID id_metadata;
 
-    rb_require("digest.so");
+    rb_require("digest");
 
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");

@@ -30,7 +30,7 @@ Init_sha2()
 
     FOREACH_BITLEN(DECLARE_ALGO_CLASS)
 
-    rb_require("digest.so");
+    rb_require("digest");
 
     id_metadata = rb_intern("metadata");
 
