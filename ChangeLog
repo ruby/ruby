@@ -1,3 +1,7 @@
+Thu Sep 28 20:53:16 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/tmpdir.rb: use return value of getdir.call for length.
+
 Wed Sep 27 01:04:49 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func): check function pointer first and macro next.
