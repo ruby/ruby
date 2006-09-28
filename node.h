@@ -402,8 +402,8 @@ typedef struct thread * rb_thread_t;
 struct thread {
     struct thread *next, *prev;
     rb_jmpbuf_t context;
-#ifdef SAVE_WIN32_EXCEPTION_LIST
-    DWORD win32_exception_list;
+#if (defined _WIN32 && !defined _WIN32_WCE) || defined __CYGWIN__
+    unsigned long win32_exception_list;
 #endif
 
     VALUE result;
