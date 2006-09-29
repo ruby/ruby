@@ -1,3 +1,8 @@
+Fri Sep 29 12:11:04 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* jcode.rb (succ!): call original succ! if $KCODE == 'n'.
+	  fixed: [ruby-talk:216845]
+
 Fri Sep 29 11:43:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func): revert fallback checking undeclared function.
