@@ -390,8 +390,8 @@ else
 end
 
 if $extout
+  extout = RbConfig.expand("#{$extout}", RbConfig::CONFIG.merge("topdir"=>$topdir))
   unless $ignore
-    RbConfig.expand(extout = "#{$extout}", RbConfig::CONFIG.merge("topdir"=>$topdir))
     FileUtils.mkpath(extout)
   end
 end
