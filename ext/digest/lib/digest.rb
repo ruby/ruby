@@ -1,3 +1,5 @@
+require 'digest.so'
+
 module Digest
   autoload "MD5", "digest/md5"
   autoload "RMD160", "digest/rmd160"

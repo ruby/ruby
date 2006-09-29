@@ -1,3 +1,8 @@
+Fri Sep 29 13:18:24 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest.rb (Digest): Require digest.so and fix the
+	  breakage.  Point out by NAKAMURA Usaku in [ruby-dev:29619].
+
 Fri Sep 29 12:11:04 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* jcode.rb (succ!): call original succ! if $KCODE == 'n'.
