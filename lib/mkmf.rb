@@ -410,12 +410,17 @@ end
 
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
-  try_link(<<"SRC", libs, &b) or macro_defined?(func, COMMON_HEADERS+headers, &b)
+  try_link(<<"SRC", libs, &b) or try_link(<<"SRC", libs, &b)
 #{COMMON_HEADERS}
 #{headers}
 /*top*/
 int main() { return 0; }
 int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
+#{headers}
+/*top*/
+int main() { return 0; }
+int t() { #{func}(); return 0; }
 SRC
 end
 

@@ -1,6 +1,11 @@
+Fri Sep 29 11:43:40 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func): revert fallback checking undeclared function.
+	  fixed: [ruby-core:08949]
+
 Fri Sep 29 10:59:16 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* lib/jcode.rb: need to initialize SUCC['n'].  
+	* lib/jcode.rb: need to initialize SUCC['n'].
 	  fixed: [ruby-talk:216845]
 
 Fri Sep 29 09:56:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
