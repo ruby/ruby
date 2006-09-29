@@ -390,8 +390,8 @@ else
 end
 
 if $extout
+  extout = Config.expand("#{$extout}", Config::CONFIG.merge("topdir"=>$topdir))
   unless $ignore
-    Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
     FileUtils.mkpath(extout)
   end
 end
