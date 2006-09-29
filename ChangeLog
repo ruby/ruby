@@ -1,3 +1,7 @@
+Fri Sep 29 09:29:45 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (parse_in_order): splat arguments to callback block.
+
 Thu Sep 28 23:59:31 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (struct thread): declare win32_exception_list on cygwin and
