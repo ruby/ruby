@@ -1,9 +1,10 @@
-Fri Sep 29 09:36:38 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 29 09:56:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: extout is needed for also clean.
 	  fixed: [ruby-core:08944]
 
-	* lib/optparse.rb (parse_in_order): splat arguments to callback block.
+	* lib/optparse.rb (OptionParser::Switch#conv_arg): unsplat by
+	  Proc#call if no conversion is given.
 
 Thu Sep 28 23:59:31 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
