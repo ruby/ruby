@@ -24,7 +24,6 @@ class String
   RE_UTF8 = Regexp.new(PATTERN_UTF8, 0, 'n')
 
   SUCC = {}
-  SUCC['n'] = Hash.new(1)
   SUCC['s'] = Hash.new(1)
   for i in 0 .. 0x3f
     SUCC['s'][i.chr] = 0x40 - i
@@ -78,7 +77,7 @@ class String
 
   def succ!
     reg = end_regexp
-    if self =~ reg
+    if  $KCODE != 'NONE' && self =~ reg
       succ_table = SUCC[$KCODE[0,1].downcase]
       begin
 	self[-1] += succ_table[self[-1]]
