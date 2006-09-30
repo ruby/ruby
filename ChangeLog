@@ -1,3 +1,7 @@
+Sat Sep 30 15:11:26 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: updated based on date2 3.9.4.
+
 Fri Sep 29 13:18:24 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb (Digest): Require digest.so and fix the

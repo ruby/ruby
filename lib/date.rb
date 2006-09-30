@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.25 2006-09-24 10:43:22+09 tadf Exp $
+# $Id: date.rb,v 2.27 2006-09-30 13:10:32+09 tadf Exp $
 #++
 #
 # == Overview
@@ -740,23 +740,25 @@ class Date
 
   def self.complete_hash(elem) # :nodoc:
     i = 0
-    g = [[:jd, [:jd]],
-	 [:ordinal, [:year, :yday]],
-	 [:civil, [:year, :mon, :mday]],
-	 [:commercial, [:cwyear, :cweek, :cwday]],
-	 [nil, [:wday]],
-	 [:wnum0, [:year, :wnum0, :wday]],
-	 [:wnum1, [:year, :wnum1, :wday]],
-	 [:time, [:hour, :min, :sec]],
-	 [nil, [:cwyear, :cweek, :wday]],
-	 [nil, [:year, :wnum0, :cwday]],
-	 [nil, [:year, :wnum1, :cwday]]].
+    g = [[:time, [:hour, :min, :sec]],
+	 [nil, [:jd]],
+	 [:ordinal, [:year, :yday, :hour, :min, :sec]],
+	 [:civil, [:year, :mon, :mday, :hour, :min, :sec]],
+	 [:commercial, [:cwyear, :cweek, :cwday, :hour, :min, :sec]],
+	 [:wday, [:wday, :hour, :min, :sec]],
+	 [:wnum0, [:year, :wnum0, :wday, :hour, :min, :sec]],
+	 [:wnum1, [:year, :wnum1, :wday, :hour, :min, :sec]],
+	 [nil, [:cwyear, :cweek, :wday, :hour, :min, :sec]],
+	 [nil, [:year, :wnum0, :cwday, :hour, :min, :sec]],
+	 [nil, [:year, :wnum1, :cwday, :hour, :min, :sec]]].
       collect{|k, a| e = elem.values_at(*a).compact; [k, a, e]}.
       select{|k, a, e| e.size > 0}.
       sort_by{|k, a, e| [e.size, i -= 1]}.last
 
+    d = nil
+
     if g && g[0] && (g[1].size - g[2].size) != 0
-      d = Date.today
+      d ||= Date.today
 
       case g[0]
       when :ordinal
@@ -765,32 +767,39 @@ class Date
       when :civil
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send__(e)
+	  elem[e] = d.funcall(e)
 	end
 	elem[:mon]  ||= 1
 	elem[:mday] ||= 1
       when :commercial
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send__(e)
+	  elem[e] = d.funcall(e)
 	end
 	elem[:cweek] ||= 1
 	elem[:cwday] ||= 1
+      when :wday
+	elem[:jd] ||= (d - d.wday + elem[:wday]).jd
       when :wnum0
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send__(e)
+	  elem[e] = d.funcall(e)
 	end
 	elem[:wnum0] ||= 0
 	elem[:wday]  ||= 0
       when :wnum1
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send__(e)
+	  elem[e] = d.funcall(e)
 	end
 	elem[:wnum1] ||= 0
 	elem[:wday]  ||= 0
-      when :time
+      end
+    end
+
+    if g[0] == :time
+      if self <= DateTime
+	d ||= Date.today
 	elem[:jd] ||= d.jd
       end
     end
@@ -1055,6 +1064,14 @@ class Date
   def wday() self.class.jd_to_wday(jd) end
 
   once :wday
+
+=begin
+  MONTHNAMES.each_with_index do |n, i|
+    if n
+      define_method(n.downcase + '?'){mon == i}
+    end
+  end
+=end
 
   DAYNAMES.each_with_index do |n, i|
     define_method(n.downcase + '?'){wday == i}

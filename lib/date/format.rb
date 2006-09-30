@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.25 2006-09-24 07:56:58+09 tadf Exp $
+# $Id: format.rb,v 2.27 2006-09-30 13:10:32+09 tadf Exp $
 
 require 'rational'
 
@@ -118,6 +118,262 @@ class Date
     end
 
   end
+
+  def emit(e, f) # :nodoc:
+    case e
+    when Numeric
+      sign = %w(+ + -)[e <=> 0]
+      e = e.abs
+    end
+
+    s = e.to_s
+
+    if f[:s] && f[:p] == '0'
+      f[:w] -= 1
+    end
+
+    if f[:s] && f[:p] == "\s"
+      s[0,0] = sign
+    end
+
+    if f[:p] != '-'
+      s = s.rjust(f[:w], f[:p])
+    end
+
+    if f[:s] && f[:p] != "\s"
+      s[0,0] = sign
+    end
+
+    s = s.upcase if f[:u]
+    s = s.downcase if f[:d]
+    s
+  end
+
+  def emit_w(e, w, f) # :nodoc:
+    f[:w] = [f[:w], w].compact.max
+    emit(e, f)
+  end
+
+  def emit_n(e, w, f) # :nodoc:
+    f[:p] ||= '0'
+    emit_w(e, w, f)
+  end
+
+  def emit_sn(e, w, f) # :nodoc:
+    if e < 0
+      w += 1
+      f[:s] = true
+    end
+    emit_n(e, w, f)
+  end
+
+  def emit_z(e, w, f) # :nodoc:
+    w += 1
+    f[:s] = true
+    emit_n(e, w, f)
+  end
+
+  def emit_a(e, w, f) # :nodoc:
+    f[:p] ||= "\s"
+    emit_w(e, w, f)
+  end
+
+  def emit_ad(e, w, f) # :nodoc:
+    if f[:x]
+      f[:u] = true
+      f[:d] = false
+    end
+    emit_a(e, w, f)
+  end
+
+  def emit_au(e, w, f) # :nodoc:
+    if f[:x]
+      f[:u] = false
+      f[:d] = true
+    end
+    emit_a(e, w, f)
+  end
+
+  private :emit, :emit_w, :emit_n, :emit_sn, :emit_z,
+	  :emit_a, :emit_ad, :emit_au
+
+  def strftime(fmt='%F')
+    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |m|
+      f = {}
+      s, w, c = $1, $2, $3
+      if s
+	s.scan(/./) do |k|
+	  case k
+	  when '-'; f[:p] = '-'
+	  when '_'; f[:p] = "\s"
+	  when '0'; f[:p] = '0'
+	  when '^'; f[:u] = true
+	  when '#'; f[:x] = true
+	  end
+	end
+      end
+      if w
+	f[:w] = w.to_i
+      end
+      case c
+      when 'A'; emit_ad(DAYNAMES[wday], 0, f)
+      when 'a'; emit_ad(ABBR_DAYNAMES[wday], 0, f)
+      when 'B'; emit_ad(MONTHNAMES[mon], 0, f)
+      when 'b'; emit_ad(ABBR_MONTHNAMES[mon], 0, f)
+      when 'C'; emit_sn((year / 100).floor, 2, f)
+      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 0, f)
+      when 'D'; emit_a(strftime('%m/%d/%y'), 0, f)
+      when 'd'; emit_n(mday, 2, f)
+      when 'e'; emit_a(mday, 2, f)
+      when 'F'
+	if m == '%F'
+	  format('%.4d-%02d-%02d', year, mon, mday) # 4p
+	else
+	  emit_a(strftime('%Y-%m-%d'), 0, f)
+	end
+      when 'G'; emit_sn(cwyear, 4, f)
+      when 'g'; emit_n(cwyear % 100, 2, f)
+      when 'H'; emit_n(hour, 2, f)
+      when 'h'; emit_ad(strftime('%b'), 0, f)
+      when 'I'; emit_n((hour % 12).nonzero? || 12, 2, f)
+      when 'j'; emit_n(yday, 3, f)
+      when 'k'; emit_a(hour, 2, f)
+      when 'L'
+	emit_n((sec_fraction / (1.to_r/86400/(10**3))).round, 3, f)
+      when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
+      when 'M'; emit_n(min, 2, f)
+      when 'm'; emit_n(mon, 2, f)
+      when 'N'
+	emit_n((sec_fraction / (1.to_r/86400/(10**9))).round, 9, f)
+      when 'n'; "\n"
+      when 'P'; emit_ad(strftime('%p').downcase, 0, f)
+      when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
+      when 'Q'
+	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
+	s = (d * 86400*10**3).to_i
+	emit_sn(s, 1, f)
+      when 'R'; emit_a(strftime('%H:%M'), 0, f)
+      when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
+      when 'S'; emit_n(sec, 2, f)
+      when 's'
+	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
+	s = (d * 86400).to_i
+	emit_sn(s, 1, f)
+      when 'T'
+	if m == '%T'
+	  format('%02d:%02d:%02d', hour, min, sec) # 4p
+	else
+	  emit_a(strftime('%H:%M:%S'), 0, f)
+	end
+      when 't'; "\t"
+      when 'U', 'W'
+	emit_n(if c == 'U' then wnum0 else wnum1 end, 2, f)
+      when 'u'; emit_n(cwday, 1, f)
+      when 'V'; emit_n(cweek, 2, f)
+      when 'v'; emit_a(strftime('%e-%b-%Y'), 0, f)
+      when 'w'; emit_n(wday, 1, f)
+      when 'X'; emit_a(strftime('%H:%M:%S'), 0, f)
+      when 'x'; emit_a(strftime('%m/%d/%y'), 0, f)
+      when 'Y'; emit_sn(year, 4, f)
+      when 'y'; emit_n(year % 100, 2, f)
+      when 'Z'; emit_au(strftime('%:z'), 0, f)
+      when /\A(:{0,3})z/
+	t = $1.size
+	sign = if offset < 0 then -1 else +1 end
+	fr = offset.abs.to_f
+	hh, fr = fr.divmod(1.0/24)
+	mm, fr = fr.divmod(1.0/1440)
+	ss, fr = fr.divmod(1.0/86400)
+	if t == 3
+	  if    ss.nonzero? then t =  2
+	  elsif mm.nonzero? then t =  1
+	  else                   t = -1
+	  end
+	end
+	case t
+	when -1
+	  tail = []
+	  sep = ''
+	when 0
+	  f[:w] -= 2 if f[:w]
+	  tail = ['%02d' % mm]
+	  sep = ''
+	when 1
+	  f[:w] -= 3 if f[:w]
+	  tail = ['%02d' % mm]
+	  sep = ':'
+	when 2
+	  f[:w] -= 6 if f[:w]
+	  tail = ['%02d' % mm, '%02d' % ss]
+	  sep = ':'
+	end
+	([emit_z(sign * hh, 2, f)] + tail).join(sep)
+      when '%'; emit_a('%', 0, f)
+      when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 0, f)
+      when '1'
+	if $VERBOSE
+	  warn("warning: strftime: %1 is deprecated; forget this")
+	end
+	emit_n(jd, 1, f)
+      when '2'
+	if $VERBOSE
+	  warn("warning: strftime: %2 is deprecated; use '%Y-%j'")
+	end
+	emit_a(strftime('%Y-%j'), 0, f)
+      when '3'
+	if $VERBOSE
+	  warn("warning: strftime: %3 is deprecated; use '%F'")
+	end
+	emit_a(strftime('%F'), 0, f)
+      else
+	c
+      end
+    end
+  end
+
+# alias_method :format, :strftime
+
+  def asctime() strftime('%c') end
+
+  alias_method :ctime, :asctime
+
+=begin
+  def iso8601() strftime('%F') end
+
+  def rfc3339() iso8601 end
+
+  def rfc2822() strftime('%a, %-d %b %Y %T %z') end
+
+  alias_method :rfc822, :rfc2822
+
+  def jisx0301
+    if jd < 2405160
+      iso8601
+    else
+      case jd
+      when 2405160...2419614
+	g = 'M%02d' % (year - 1867)
+      when 2419614...2424875
+	g = 'T%02d' % (year - 1911)
+      when 2424875...2447535
+	g = 'S%02d' % (year - 1925)
+      else
+	g = 'H%02d' % (year - 1988)
+      end
+      g + strftime('.%m.%d')
+    end
+  end
+
+  def beat(n=0)
+    i, f = (new_offset(1.to_r/24).day_fraction * 1000).divmod(1)
+    ('@%03d' % i) +
+      if n < 1
+	''
+      else
+	'.%0*d' % [n, (f / (1.to_r/(10**n))).round]
+      end
+  end
+=end
 
   def self.num_pattern? (s) # :nodoc:
     /\A%[EO]?[CDdeFGgHIjkLlMmNQRrSsTUuVvWwXxYy\d]/ =~ s || /\A\d/ =~ s
@@ -345,26 +601,100 @@ class Date
     e.to_hash
   end
 
+  def self.s3e(e, y, m, d, bc=false)
+    unless String === m
+      m = m.to_s
+    end
+
+    if y == nil
+      if d && d.size > 2
+	y = d
+	d = nil
+      end
+      if d && d[0,1] == "'"
+	y = d
+	d = nil
+      end
+    end
+
+    if y
+      y.scan(/(\d+)(.+)?/)
+      if $2
+	y, d = d, $1
+      end
+    end
+
+    if m
+      if m[0,1] == "'" || m.size > 2
+	y, m, d = m, d, y # us -> be
+      end
+    end
+
+    if d
+      if d[0,1] == "'" || d.size > 2
+	y, d = d, y
+      end
+    end
+
+    if y
+      y =~ /([-+])?(\d+)/
+      if $1 || $2.size > 2
+	c = false
+      end
+      iy = $&.to_i
+      if bc
+	iy = -iy + 1
+      end
+      e.year = iy
+    end
+
+    if m
+      m =~ /\d+/
+      e.mon = $&.to_i
+    end
+
+    if d
+      d =~ /\d+/
+      e.mday = $&.to_i
+    end
+
+    if c != nil
+      e._comp = c
+    end
+
+  end
+
+  private_class_method :s3e
+
   def self._parse_day(str, e) # :nodoc:
-    if str.sub!(/(#{e._parse_daypat})[^-\d\s]*/in, ' ')
+    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/ino, ' ')
       e.wday = Format::ABBR_DAYS[$1.downcase]
       true
+=begin
+    elsif str.sub!(/\b(?!\dth)(su|mo|tu|we|th|fr|sa)\b/in, ' ')
+      e.wday = %w(su mo tu we th fr sa).index($1.downcase)
+      true
+=end
     end
   end
 
   def self._parse_time(str, e) # :nodoc:
     if str.sub!(
-		/(?:
-		   (\d+)\s*:\s*(\d+)
+		/(
 		   (?:
-		       \s*:\s*(\d+)(?:[,.](\d*)\s*s?)?
-		   )?
+		     \d+\s*:\s*\d+
+		     (?:
+		       \s*:\s*\d+(?:[,.]\d*)?
+		     )?
+		   |
+		     \d+\s*h(?:\s*\d+m?(?:\s*\d+s?)?)?
+		   )
 		   (?:
 		     \s*
-		     ([ap])(?:m\b|\.m\.)
+		     [ap](?:m\b|\.m\.)
 		   )?
 		 |
-		   (\d+)\s*([ap])(?:m\b|\.m\.)
+		   \d+\s*[ap](?:m\b|\.m\.)
 		 )
 		 (?:
 		   \s*
@@ -378,22 +708,28 @@ class Date
 		 )?
 		/inx,
 		' ')
-      e.hour = ($1 || $6).to_i
+
+      t = $1
+      e.zone = $2 if $2
+
+      t =~ /\A(\d+)h?
+	      (?:\s*:?\s*(\d+)m?
+		(?:
+		  \s*:?\s*(\d+)(?:[,.](\d+))?s?
+		)?
+	      )?
+	    (?:\s*([ap])(?:m\b|\.m\.))?/inx
+
+      e.hour = $1.to_i
       e.min = $2.to_i if $2
       e.sec = $3.to_i if $3
-      if $4
-	e.sec_fraction = $4.to_i.to_r / (10**$4.size)
-      end
+      e.sec_fraction = $4.to_i.to_r / (10**$4.size) if $4
 
-      if $5 || $7
+      if $5
 	e.hour %= 12
-	if ($5 || $7).downcase == 'p'
+	if $5.downcase == 'p'
 	  e.hour += 12
 	end
-      end
-
-      if $8
-	e.zone = $8
       end
       true
     end
@@ -409,107 +745,79 @@ class Date
       e.min = min
       e.sec = s
       e.sec_fraction = fr * 86400
-      e.zone = '+0100'
+      e.zone = '+01:00'
       true
     end
   end
 
   def self._parse_eu(str, e) # :nodoc:
     if str.sub!(
-		/(\d+)[^-\d\s]*
+		/'?(\d+)[^-\d\s]*
 		 \s*
-		 (#{e._parse_monthpat})[^-\d\s]*
+		 (#{Format::ABBR_MONTHS.keys.join('|')})[^-\d\s']*
 		 (?:
 		   \s*
 		   (c(?:e|\.e\.)|b(?:ce|\.c\.e\.)|a(?:d|\.d\.)|b(?:c|\.c\.))?
 		   \s*
-		   (-?\d+)
+		   ('?-?\d+(?:(?:st|nd|rd|th)\b)?)
 		 )?
-		/inx,
-		' ')
-      e.mday = $1.to_i
-      e.mon = Format::ABBR_MONTHS[$2.downcase]
-
-      if $4
-	e.year = $4.to_i
-	if $4.size > 2
-	  e._comp = false
-	end
-      end
-
-      if $3 && $4
-	if $3[0,1].downcase == 'b'
-	  e.year = -e.year + 1
-	end
-      end
+		/inox,
+		' ') # '
+      s3e(e, $4, Format::ABBR_MONTHS[$2.downcase], $1,
+	  $3 && $3[0,1].downcase == 'b')
       true
     end
   end
 
   def self._parse_us(str, e) # :nodoc:
     if str.sub!(
-		/(#{e._parse_monthpat})[^-\d\s]*
+		/\b(#{Format::ABBR_MONTHS.keys.join('|')})[^-\d\s']*
 		 \s*
-		 (\d+)[^-\d\s]*
+		 ('?\d+)[^-\d\s']*
 		 (?:
 		   \s*
 		   (c(?:e|\.e\.)|b(?:ce|\.c\.e\.)|a(?:d|\.d\.)|b(?:c|\.c\.))?
 		   \s*
-		   (-?\d+)
+		   ('?-?\d+)
 		 )?
-		/inx,
-		' ')
-      e.mon = Format::ABBR_MONTHS[$1.downcase]
-
-      unless $2.size > 2 && $4.nil?
-	e.mday = $2.to_i
-      else
-	e.year = $2.to_i
-      end
-
-      if $4
-	e.year = $4.to_i
-	if $4.size > 2
-	  e._comp = false
-	end
-      end
-
-      if $3 && $4
-	if $3[0,1].downcase == 'b'
-	  e.year = -e.year + 1
-	end
-      end
+		/inox,
+		' ') # '
+      s3e(e, $4, Format::ABBR_MONTHS[$1.downcase], $2,
+	  $3 && $3[0,1].downcase == 'b')
       true
     end
   end
 
   def self._parse_iso(str, e) # :nodoc:
-    if str.sub!(/([-+]?\d+)-(\d+)-(-?\d+)/n, ' ')
-      e.year = $1.to_i
-      e.mon = $2.to_i
-      e.mday = $3.to_i
+    if str.sub!(/('?[-+]?\d+)-(\d+)-('?-?\d+)/n, ' ')
+      s3e(e, $1, $2, $3)
+      true
+    end
+  end
 
-      if $1.size > 2
-	e._comp = false
-      elsif $3.size > 2
-	e._comp = false
-	e.mday, e.mon, e.year = e.year, e.mon, e.mday
-      end
-      true
-    elsif str.sub!(/\b(\d{2}|\d{4})-?w(\d{2})-?(\d+)\b/in, ' ')
-      e.cwyear = $1.to_i
+  def self._parse_iso2(str, e) # :nodoc:
+    if str.sub!(/\b(\d{2}|\d{4})?-?w(\d{2})(?:-?(\d+))?/in, ' ')
+      e.cwyear = $1.to_i if $1
       e.cweek = $2.to_i
-      e.cwday = $3.to_i
+      e.cwday = $3.to_i if $3
       true
-    elsif str.sub!(/\b(\d{2}|\d{4})-(\d{3})\b/n, ' ')
+    elsif str.sub!(/--(\d{2})-(\d{2})\b/n, ' ')
+      e.mon = $1.to_i
+      e.mday = $2.to_i
+      true
+    elsif str.sub!(/\b(\d{2}|\d{4})-(\d{2,3})\b/n, ' ')
       e.year = $1.to_i
-      e.yday = $2.to_i
+      if $2.size < 3
+	e.mon = $2.to_i
+      else
+	e.yday = $2.to_i
+      end
       true
     end
   end
 
   def self._parse_jis(str, e) # :nodoc:
-    if str.sub!(/([MTSH])(\d+)\.(\d+)\.(\d+)/in, ' ')
+    if str.sub!(/\b([MTSH])(\d+)\.(\d+)\.(\d+)/in, ' ')
       era = { 'm'=>1867,
 	      't'=>1911,
 	      's'=>1925,
@@ -523,123 +831,55 @@ class Date
   end
 
   def self._parse_vms(str, e) # :nodoc:
-    if str.sub!(/(-?\d+)-(#{e._parse_monthpat})[^-]*-(-?\d+)/in, ' ')
-      e.mday = $1.to_i
-      e.mon = Format::ABBR_MONTHS[$2.downcase]
-      e.year = $3.to_i
-
-      if $1.size > 2
-	e._comp = false
-	e.year, e.mon, e.mday = e.mday, e.mon, e.year
-      elsif $3.size > 2
-	e._comp = false
-      end
+    if str.sub!(/('?-?\d+)-(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
+		-('?-?\d+)/inox, ' ')
+      s3e(e, $3, Format::ABBR_MONTHS[$2.downcase], $1)
       true
-    elsif str.sub!(/(#{e._parse_monthpat})[^-]*-(-?\d+)(?:-(-?\d+))?/in, ' ')
-      e.mon = Format::ABBR_MONTHS[$1.downcase]
-
-      unless $2.size > 2 && $3.nil?
-	e.mday = $2.to_i
-      else
-	e.year = $2.to_i
-      end
-
-      if $3
-	e.year = $3.to_i
-	if $3.size > 2
-	  e._comp = false
-	end
-      end
+    elsif str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
+		-('?-?\d+)(?:-('?-?\d+))?/inox, ' ')
+      s3e(e, $3, Format::ABBR_MONTHS[$1.downcase], $2)
       true
     end
   end
 
   def self._parse_sla_ja(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
-      if $3
-	e.year = $1.to_i
-	e.mon = $2.to_i
-	e.mday = $3.to_i
-	if $1.size > 2
-	  e._comp = false
-	end
-      else
-	if $1.size > 2
-	  e.year = $1.to_i
-	  e.mon = $2.to_i
-	elsif $2.size > 2
-	  e.mon = $1.to_i
-	  e.year = $2.to_i
-	else
-	  e.mon = $1.to_i
-	  e.mday = $2.to_i
-	end
-      end
-
-      if $3 && $3.size > 2
-	e._comp = false
-	e.mday, e.mon, e.year = e.year, e.mon, e.mday
-      end
+    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+      s3e(e, $1, $2, $3)
       true
     end
   end
 
   def self._parse_sla_eu(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
-      if $3
-	e.mday = $1.to_i
-	e.mon = $2.to_i
-	e.year = $3.to_i
-	if $3.size > 2
-	  e._comp = false
-	end
-      else
-	if $1.size > 2
-	  e.year = $1.to_i
-	  e.mon = $2.to_i
-	elsif $2.size > 2
-	  e.mon = $1.to_i
-	  e.year = $2.to_i
-	else
-	  e.mday = $1.to_i
-	  e.mon = $2.to_i
-	end
-      end
-
-      if $3 && $1.size > 2
-	e._comp = false
-	e.year, e.mon, e.mday = e.mday, e.mon, e.year
-      end
+    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+      s3e(e, $3, $2, $1)
       true
     end
   end
 
   def self._parse_sla_us(str, e) # :nodoc:
-    if str.sub!(%r|(-?\d+)[/.](\d+)(?:[^\d](-?\d+))?|n, ' ')
-      if $3
-	e.mon = $1.to_i
-	e.mday = $2.to_i
-	e.year = $3.to_i
-	if $3.size > 2
-	  e._comp = false
-	end
-      else
-	if $1.size > 2
-	  e.year = $1.to_i
-	  e.mon = $2.to_i
-	elsif $2.size > 2
-	  e.mon = $1.to_i
-	  e.year = $2.to_i
-	else
-	  e.mon = $1.to_i
-	  e.mday = $2.to_i
-	end
-      end
+    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+      s3e(e, $3, $1, $2)
+      true
+    end
+  end
 
-      if $3 && $1.size > 2
-	e._comp = false
-	e.year, e.mon, e.mday = e.mon, e.mday, e.year
-      end
+  def self._parse_year(str, e) # :nodoc:
+    if str.sub!(/'(\d+)\b/in, ' ')
+      e.year = $1.to_i
+      true
+    end
+  end
+
+  def self._parse_mon(str, e) # :nodoc:
+    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/ino, ' ')
+      e.mon = Format::ABBR_MONTHS[$1.downcase]
+      true
+    end
+  end
+
+  def self._parse_mday(str, e) # :nodoc:
+    if str.sub!(/(\d+)(st|nd|rd|th)\b/in, ' ')
+      e.mday = $1.to_i
       true
     end
   end
@@ -709,115 +949,11 @@ class Date
     end
   end
 
-  def self._parse_k_hi(str, e) # :nodoc:
-    if str.sub!(/(\265\252\270\265\301\260|\271\304\265\252|\300\276\316\361|\314\300\274\243|\302\347\300\265|\276\274\317\302|\312\277\300\256|\271\304|\300\276|\314\300|\302\347|\276\274|\312\277)?\s*
-		 (?:(\270\265|\d+)\s*\307\257\s*)?
-		 (?:(\d+)\s*\267\356\s*)
-		 (?:(\d+)\s*\306\374\s*)
-		/nx, ' ') ||
-       str.sub!(/(\265\252\270\265\301\260|\271\304\265\252|\300\276\316\361|\314\300\274\243|\302\347\300\265|\276\274\317\302|\312\277\300\256|\271\304|\300\276|\314\300|\302\347|\276\274|\312\277)\s*
-			  (?:(\270\265|\d+))
-		 (?:\s*[-\/.]+\s*(\d+)
-		 (?:\s*[-\/.]+\s*(\d+))?)?
-		/nx, ' ')
-
-      era = { "\271\304\265\252" => -660,
-	      "\300\276\316\361" =>    0,
-	      "\314\300\274\243" => 1867,
-	      "\302\347\300\265" => 1911,
-	      "\276\274\317\302" => 1925,
-	      "\312\277\300\256" => 1988,
-	      "\271\304"   => -660,
-	      "\300\276"   =>    0,
-	      "\314\300"   => 1867,
-	      "\302\347"   => 1911,
-	      "\276\274"   => 1925,
-	      "\312\277"   => 1988
-	  }[$1]
-      if $2
-	e.year = ($2.to_i.nonzero? || 1)
-	e.year += era if era
-      end
-      if $1 && $2
-	if $1 == "\265\252\270\265\301\260"
-	  e.year = -e.year + 1
-	end
-      end
-      e.mon = $3.to_i if $3
-      e.mday = $4.to_i if $4
-    end
-  end
-
-  def self._parse_k_ji(str, e) # :nodoc:
-    if str.sub!(/(?:(?:\270\341)?(\301\260|\270\345)|\277\274(?:\314\353)?)?\s*
-		 (?:(\d+)\s*(?:\273\376)\s*)
-		 (?:(\d+)\s*(?:\312\254)\s*)?
-		 (?:(\d+)(?:[.,](\d*))?\s*(?:\311\303))?
-		 (?i:
-		   \s*
-		   (
-		     (?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
-		   |
-		     [a-z.\s]+(?:standard|daylight)\stime\b
-		   |
-		     [a-z]+(?:\sdst)?\b
-		   )
-		 )?
-		/nx, ' ') ||
-       str.sub!(/(?:(?:\270\341)?(\301\260|\270\345)|\277\274(?:\314\353)?)\s*
-			    (\d+)
-		 (?:\s*:+\s*(\d+)
-		 (?:\s*:+\s*(\d+)(?:[.,](\d*))?)?)?
-		 (?i:
-		   \s*
-		   (
-		     (?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
-		   |
-		     [a-z.\s]+(?:standard|daylight)\stime\b
-		   |
-		     [a-z]+(?:\sdst)?\b
-		   )
-		 )?
-		/nx, ' ')
-
-      e.hour = $2.to_i if $2
-      e.min = $3.to_i if $3
-      e.sec = $4.to_i if $4
-      if $5
-	e.sec_fraction = $5.to_i.to_r / (10**$5.size)
-      end
-
-      if $1 && $2
-	e.hour %= 12
-	if $1 == "\270\345"
-	  e.hour += 12
-	end
-      end
-
-      if $6
-	e.zone = $6
-      end
-    end
-  end
-
-  def self._parse_k_yo(str, e) # :nodoc:
-    if str.sub!(/(\306\374|\267\356|\262\320|\277\345|\314\332|\266\342|\305\332)[^-\d\s]*/n, ' ')
-      wday = { "\306\374" => 0,
-	       "\267\356" => 1,
-	       "\262\320" => 2,
-	       "\277\345" => 3,
-	       "\314\332" => 4,
-	       "\266\342" => 5,
-	       "\305\332" => 6
-      }[$1]
-      e.wday = wday
-    end
-  end
-
   private_class_method :_parse_day, :_parse_time, :_parse_beat,
-	:_parse_eu, :_parse_us, :_parse_iso, :_parse_jis, :_parse_vms,
-	:_parse_sla_ja, :_parse_sla_eu, :_parse_sla_us, :_parse_ddd,
-	:_parse_k_hi, :_parse_k_ji, :_parse_k_yo
+	:_parse_eu, :_parse_us, :_parse_iso, :_parse_iso2,
+	:_parse_jis, :_parse_vms,
+	:_parse_sla_ja, :_parse_sla_eu, :_parse_sla_us,
+	:_parse_year, :_parse_mon, :_parse_mday, :_parse_ddd
 
   def self._parse(str, comp=false)
     str = str.dup
@@ -825,24 +961,8 @@ class Date
     e = Format::Bag.new
 
     e._comp = comp
-    e._parse_monthpat = Format::ABBR_MONTHS.keys.join('|')
-    e._parse_daypat   = Format::ABBR_DAYS  .keys.join('|')
 
-    require 'nkf'
-
-    ostr = str
-    str = NKF.nkf('-e', str)
-
-    str.gsub!(/[^-+,.\/:0-9@a-z\x80-\xff]+/in, ' ')
-
-    _parse_k_hi(str, e)
-    _parse_k_ji(str, e)
-    _parse_k_yo(str, e)
-
-    if e.to_hash.empty?
-      str = ostr
-      str.gsub!(/[^-+,.\/:0-9@a-z\x80-\xff]+/in, ' ')
-    end
+    str.gsub!(/[^-+',.\/:0-9@a-z\x80-\xff]+/in, ' ')
 
     _parse_time(str, e) # || _parse_beat(str, e)
     _parse_day(str, e)
@@ -853,6 +973,10 @@ class Date
     _parse_jis(str, e)    ||
     _parse_vms(str, e)    ||
     _parse_sla_us(str, e) ||
+    _parse_iso2(str, e)   ||
+    _parse_year(str, e)   ||
+    _parse_mon(str, e)    ||
+    _parse_mday(str, e)   ||
     _parse_ddd(str, e)
 
     if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/in, ' ')
@@ -925,262 +1049,16 @@ class Date
     offset
   end
 
-  def emit(e, f) # :nodoc:
-    case e
-    when Numeric
-      sign = %w(+ + -)[e <=> 0]
-      e = e.abs
-    end
-
-    s = e.to_s
-
-    if f[:s] && f[:p] == '0'
-      f[:w] -= 1
-    end
-
-    if f[:s] && f[:p] == "\s"
-      s[0,0] = sign
-    end
-
-    if f[:p] != '-'
-      s = s.rjust(f[:w], f[:p])
-    end
-
-    if f[:s] && f[:p] != "\s"
-      s[0,0] = sign
-    end
-
-    s = s.upcase if f[:u]
-    s = s.downcase if f[:d]
-    s
-  end
-
-  def emit_w(e, w, f) # :nodoc:
-    f[:w] = [f[:w], w].compact.max
-    emit(e, f)
-  end
-
-  def emit_n(e, w, f) # :nodoc:
-    f[:p] ||= '0'
-    emit_w(e, w, f)
-  end
-
-  def emit_sn(e, w, f) # :nodoc:
-    if e < 0
-      w += 1
-      f[:s] = true
-    end
-    emit_n(e, w, f)
-  end
-
-  def emit_z(e, w, f) # :nodoc:
-    w += 1
-    f[:s] = true
-    emit_n(e, w, f)
-  end
-
-  def emit_a(e, w, f) # :nodoc:
-    f[:p] ||= "\s"
-    emit_w(e, w, f)
-  end
-
-  def emit_ad(e, w, f) # :nodoc:
-    if f[:x]
-      f[:u] = true
-      f[:d] = false
-    end
-    emit_a(e, w, f)
-  end
-
-  def emit_au(e, w, f) # :nodoc:
-    if f[:x]
-      f[:u] = false
-      f[:d] = true
-    end
-    emit_a(e, w, f)
-  end
-
-  private :emit, :emit_w, :emit_n, :emit_sn, :emit_z,
-	  :emit_a, :emit_ad, :emit_au
-
-  def strftime(fmt='%F')
-    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |m|
-      f = {}
-      s, w, c = $1, $2, $3
-      if s
-	s.scan(/./) do |k|
-	  case k
-	  when '-'; f[:p] = '-'
-	  when '_'; f[:p] = "\s"
-	  when '0'; f[:p] = '0'
-	  when '^'; f[:u] = true
-	  when '#'; f[:x] = true
-	  end
-	end
-      end
-      if w
-	f[:w] = w.to_i
-      end
-      case c
-      when 'A'; emit_ad(DAYNAMES[wday], 0, f)
-      when 'a'; emit_ad(ABBR_DAYNAMES[wday], 0, f)
-      when 'B'; emit_ad(MONTHNAMES[mon], 0, f)
-      when 'b'; emit_ad(ABBR_MONTHNAMES[mon], 0, f)
-      when 'C'; emit_sn(year / 100, 2, f)
-      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 0, f)
-      when 'D'; emit_a(strftime('%m/%d/%y'), 0, f)
-      when 'd'; emit_n(mday, 2, f)
-      when 'e'; emit_a(mday, 2, f)
-      when 'F'
-	if m == '%F'
-	  format('%.4d-%02d-%02d', year, mon, mday) # 4p
-	else
-	  emit_a(strftime('%Y-%m-%d'), 0, f)
-	end
-      when 'G'; emit_sn(cwyear, 4, f)
-      when 'g'; emit_n(cwyear % 100, 2, f)
-      when 'H'; emit_n(hour, 2, f)
-      when 'h'; emit_ad(strftime('%b'), 0, f)
-      when 'I'; emit_n((hour % 12).nonzero? || 12, 2, f)
-      when 'j'; emit_n(yday, 3, f)
-      when 'k'; emit_a(hour, 2, f)
-      when 'L'
-	emit_n((sec_fraction / (1.to_r/86400/(10**3))).floor, 3, f)
-      when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
-      when 'M'; emit_n(min, 2, f)
-      when 'm'; emit_n(mon, 2, f)
-      when 'N'
-	emit_n((sec_fraction / (1.to_r/86400/(10**9))).floor, 9, f)
-      when 'n'; "\n"
-      when 'P'; emit_ad(strftime('%p').downcase, 0, f)
-      when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
-      when 'Q'
-	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
-	s = (d * 86400*10**3).to_i
-	emit_sn(s, 1, f)
-      when 'R'; emit_a(strftime('%H:%M'), 0, f)
-      when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
-      when 'S'; emit_n(sec, 2, f)
-      when 's'
-	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
-	s = (d * 86400).to_i
-	emit_sn(s, 1, f)
-      when 'T'
-	if m == '%T'
-	  format('%02d:%02d:%02d', hour, min, sec) # 4p
-	else
-	  emit_a(strftime('%H:%M:%S'), 0, f)
-	end
-      when 't'; "\t"
-      when 'U', 'W'
-	emit_n(if c == 'U' then wnum0 else wnum1 end, 2, f)
-      when 'u'; emit_n(cwday, 1, f)
-      when 'V'; emit_n(cweek, 2, f)
-      when 'v'; emit_a(strftime('%e-%b-%Y'), 0, f)
-      when 'w'; emit_n(wday, 1, f)
-      when 'X'; emit_a(strftime('%H:%M:%S'), 0, f)
-      when 'x'; emit_a(strftime('%m/%d/%y'), 0, f)
-      when 'Y'; emit_sn(year, 4, f)
-      when 'y'; emit_n(year % 100, 2, f)
-      when 'Z'; emit_au(strftime('%:z'), 0, f)
-      when /\A(:{0,3})z/
-	t = $1.size
-	sign = if offset < 0 then -1 else +1 end
-	fr = offset.abs.to_f
-	hh, fr = fr.divmod(1.0/24)
-	mm, fr = fr.divmod(1.0/1440)
-	ss, fr = fr.divmod(1.0/86400)
-	if t == 3
-	  if    ss.nonzero? then t =  2
-	  elsif mm.nonzero? then t =  1
-	  else                   t = -1
-	  end
-	end
-	case t
-	when -1
-	  tail = []
-	  sep = ''
-	when 0
-	  f[:w] -= 2 if f[:w]
-	  tail = ['%02d' % mm]
-	  sep = ''
-	when 1
-	  f[:w] -= 3 if f[:w]
-	  tail = ['%02d' % mm]
-	  sep = ':'
-	when 2
-	  f[:w] -= 6 if f[:w]
-	  tail = ['%02d' % mm, '%02d' % ss]
-	  sep = ':'
-	end
-	([emit_z(sign * hh, 2, f)] + tail).join(sep)
-      when '%'; emit_a('%', 0, f)
-      when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 0, f)
-      when '1'
-	if $VERBOSE
-	  warn("warning: strftime: %1 is deprecated; forget this")
-	end
-	emit_n(jd, 1, f)
-      when '2'
-	if $VERBOSE
-	  warn("warning: strftime: %2 is deprecated; use '%Y-%j'")
-	end
-	emit_a(strftime('%Y-%j'), 0, f)
-      when '3'
-	if $VERBOSE
-	  warn("warning: strftime: %3 is deprecated; use '%F'")
-	end
-	emit_a(strftime('%F'), 0, f)
-      else
-	c
-      end
-    end
-  end
-
-# alias_method :format, :strftime
-
-  def asctime() strftime('%c') end
-
-  alias_method :ctime, :asctime
-
-=begin
-  def iso8601() strftime('%F') end
-
-  def rfc3339() iso8601 end
-
-  def rfc2822() strftime('%a, %-d %b %Y %T %z') end
-
-  alias_method :rfc822, :rfc2822
-
-  def jisx0301
-    if jd < 2405160
-      iso8601
-    else
-      case jd
-      when 2405160...2419614
-	g = 'M%02d' % (year - 1867)
-      when 2419614...2424875
-	g = 'T%02d' % (year - 1911)
-      when 2424875...2447535
-	g = 'S%02d' % (year - 1925)
-      else
-	g = 'H%02d' % (year - 1988)
-      end
-      g + strftime('.%m.%d')
-    end
-  end
-=end
-
 end
 
 class DateTime < Date
 
-  def self._strptime(str, fmt='%FT%T%z')
-    super(str, fmt)
-  end
-
   def strftime(fmt='%FT%T%:z')
     super(fmt)
+  end
+
+  def self._strptime(str, fmt='%FT%T%z')
+    super(str, fmt)
   end
 
 =begin
@@ -1189,7 +1067,7 @@ class DateTime < Date
 	     if n < 1
 	       ''
 	     else
-	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n))).floor]
+	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n))).round]
 	     end +
 	     '%:z')
   end
