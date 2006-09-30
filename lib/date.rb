@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.25 2006-09-24 10:43:22+09 tadf Exp $
+# $Id: date.rb,v 2.27 2006-09-30 13:10:32+09 tadf Exp $
 #++
 #
 # == Overview
@@ -740,23 +740,25 @@ class Date
 
   def self.complete_hash(elem) # :nodoc:
     i = 0
-    g = [[:jd, [:jd]],
-	 [:ordinal, [:year, :yday]],
-	 [:civil, [:year, :mon, :mday]],
-	 [:commercial, [:cwyear, :cweek, :cwday]],
-	 [nil, [:wday]],
-	 [:wnum0, [:year, :wnum0, :wday]],
-	 [:wnum1, [:year, :wnum1, :wday]],
-	 [:time, [:hour, :min, :sec]],
-	 [nil, [:cwyear, :cweek, :wday]],
-	 [nil, [:year, :wnum0, :cwday]],
-	 [nil, [:year, :wnum1, :cwday]]].
+    g = [[:time, [:hour, :min, :sec]],
+	 [nil, [:jd]],
+	 [:ordinal, [:year, :yday, :hour, :min, :sec]],
+	 [:civil, [:year, :mon, :mday, :hour, :min, :sec]],
+	 [:commercial, [:cwyear, :cweek, :cwday, :hour, :min, :sec]],
+	 [:wday, [:wday, :hour, :min, :sec]],
+	 [:wnum0, [:year, :wnum0, :wday, :hour, :min, :sec]],
+	 [:wnum1, [:year, :wnum1, :wday, :hour, :min, :sec]],
+	 [nil, [:cwyear, :cweek, :wday, :hour, :min, :sec]],
+	 [nil, [:year, :wnum0, :cwday, :hour, :min, :sec]],
+	 [nil, [:year, :wnum1, :cwday, :hour, :min, :sec]]].
       collect{|k, a| e = elem.values_at(*a).compact; [k, a, e]}.
       select{|k, a, e| e.size > 0}.
       sort_by{|k, a, e| [e.size, i -= 1]}.last
 
+    d = nil
+
     if g && g[0] && (g[1].size - g[2].size) != 0
-      d = Date.today
+      d ||= Date.today
 
       case g[0]
       when :ordinal
@@ -776,6 +778,8 @@ class Date
 	end
 	elem[:cweek] ||= 1
 	elem[:cwday] ||= 1
+      when :wday
+	elem[:jd] ||= (d - d.wday + elem[:wday]).jd
       when :wnum0
 	g[1].each do |e|
 	  break if elem[e]
@@ -790,7 +794,12 @@ class Date
 	end
 	elem[:wnum1] ||= 0
 	elem[:wday]  ||= 0
-      when :time
+      end
+    end
+
+    if g[0] == :time
+      if self <= DateTime
+	d ||= Date.today
 	elem[:jd] ||= d.jd
       end
     end
@@ -1056,6 +1065,18 @@ class Date
 
   once :wday
 
+=begin
+  MONTHNAMES.each_with_index do |n, i|
+    if n
+      define_method(n.downcase + '?'){mon == i}
+    end
+  end
+
+  DAYNAMES.each_with_index do |n, i|
+    define_method(n.downcase + '?'){wday == i}
+  end
+=end
+
   # Is the current date old-style (Julian Calendar)?
   def julian? () self.class.julian?(jd, @sg) end
 
@@ -1172,10 +1193,15 @@ class Date
     false
   end
 
-  # Return a new Date one day after this one.
-  def succ() self + 1 end
+  def next_day(n=1) self + n end
+# def prev_day(n=1) self - n end
 
-  alias_method :next, :succ
+  private :next_day
+
+  # Return a new Date one day after this one.
+  def next() next_day end
+
+  alias_method :succ, :next
 
   # Return a new Date object that is +n+ months later than
   # the current one.
@@ -1198,6 +1224,14 @@ class Date
   # than the last day of the target month, the day-of-the-month
   # of the returned Date will be the last day of the target month.
   def << (n) self >> -n end
+
+=begin
+  def next_month(n=1) self >> n end
+  def prev_month(n=1) self << n end
+
+  def next_year(n=1) self >> n * 12 end
+  def prev_year(n=1) self << n * 12 end
+=end
 
   # Step the current date forward +step+ days at a
   # time (or backward, if +step+ is negative) until
@@ -1489,33 +1523,64 @@ class DateTime < Date
 
 end
 
+class Time
+
+#  def to_time() getlocal end
+
+  def to_date
+    jd = Date.civil_to_jd(year, mon, mday, Date::ITALY)
+    Date.new0(Date.jd_to_ajd(jd, 0, 0), 0, Date::ITALY)
+  end
+
+  def to_datetime
+    jd = DateTime.civil_to_jd(year, mon, mday, DateTime::ITALY)
+    fr = DateTime.time_to_day_fraction(hour, min, [sec, 59].min) +
+	 usec.to_r/86400000000
+    of = utc_offset.to_r/86400
+    DateTime.new0(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
+  end
+
+  private :to_date, :to_datetime
+
+end
+
 class Date
+
+=begin
+  def to_time() Time.local(year, mon, mday) end
+  def to_date() self end
+  def to_datetime() DateTime.new0(self.class.jd_to_ajd(jd, 0, 0), @of, @sg) end
+=end
 
   # Create a new Date object representing today.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.today(sg=ITALY)
-    jd = civil_to_jd(*(Time.now.to_a[3..5].reverse << sg))
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
-  end
+  def self.today(sg=ITALY) Time.now.__send__(:to_date).new_start(sg) end
 
 end
 
 class DateTime < Date
+
+=begin
+  def to_time
+    d = new_offset(0)
+    d.instance_eval do
+      Time.utc(year, mon, mday, hour, min, sec,
+	       (sec_fraction * 86400000000).to_i)
+    end.
+	getlocal
+  end
+
+  def to_date() Date.new0(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
+  def to_datetime() self end
+=end
 
   class << self; undef_method :today end
 
   # Create a new DateTime object representing the current time.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.now(sg=ITALY)
-    i = Time.now
-    a = i.to_a[0..5].reverse
-    jd = civil_to_jd(*(a[0,3] << sg))
-    fr = time_to_day_fraction(*(a[3,3])) + i.usec.to_r/86400000000
-    of = i.utc_offset.to_r/86400
-    new0(jd_to_ajd(jd, fr, of), of, sg)
-  end
+  def self.now(sg=ITALY) Time.now.__send__(:to_datetime).new_start(sg) end
 
 end
 
