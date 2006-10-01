@@ -398,6 +398,7 @@ class OptionParser
       self
     end
 
+    # :nodoc:
     def add_banner(to)
       unless @short or @long
         s = desc.join
@@ -406,6 +407,7 @@ class OptionParser
       to
     end
 
+    # :nodoc:
     def match_nonswitch?(str)
       @pattern =~ str unless @short or @long
     end
@@ -425,7 +427,7 @@ class OptionParser
       #
       # Raises an exception if any arguments given.
       #
-      def parse(arg, argv, &error)
+      def parse(arg, argv)
         yield(NeedlessArgument, arg) if arg
         conv_arg(arg)
       end
@@ -603,8 +605,7 @@ class OptionParser
     def search(id, key)
       if list = __send__(id)
         val = list.fetch(key) {return nil}
-        return val unless block_given?
-        yield(val)
+        block_given? ? yield(val) : val
       end
     end
 
@@ -642,6 +643,7 @@ class OptionParser
       end
     end
 
+    # :nodoc:
     def add_banner(to)
       list.each do |opt|
         if opt.respond_to?(:add_banner)
@@ -1055,7 +1057,7 @@ class OptionParser
   #   Handler for the parsed argument value. Either give a block or pass a
   #   Proc or Method as an argument.
   #
-  def make_switch(*opts, &block)
+  def make_switch(opts, block = nil)
     short, long, nolong, style, pattern, conv, not_pattern, not_conv, not_style = [], [], []
     ldesc, sdesc, desc, arg = [], [], []
     default_style = Switch::NoArgument
@@ -1175,7 +1177,7 @@ class OptionParser
   end
 
   def define(*opts, &block)
-    top.append(*(sw = make_switch(*opts, &block)))
+    top.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
@@ -1190,7 +1192,7 @@ class OptionParser
   alias def_option define
 
   def define_head(*opts, &block)
-    top.prepend(*(sw = make_switch(*opts, &block)))
+    top.prepend(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
@@ -1204,7 +1206,7 @@ class OptionParser
   alias def_head_option define_head
 
   def define_tail(*opts, &block)
-    base.append(*(sw = make_switch(*opts, &block)))
+    base.append(*(sw = make_switch(opts, block)))
     sw[0]
   end
 
@@ -1786,5 +1788,5 @@ if $0 == __FILE__
   Version = OptionParser::Version
   ARGV.options {|q|
     q.parse!.empty? or puts "what's #{ARGV.join(' ')}?"
-  } or exit 1
+  } or abort(ARGV.options.to_s)
 end
