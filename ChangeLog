@@ -49,6 +49,12 @@ Tue Sep 26 15:31:26 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {win32,wince}/Makefile.sub (CPP): check predefined value.
 
+Tue Sep 26 07:55:16 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_shift): should not move memory region if array
+	  body is shared.  a patch from Kent Sibilev <ksruby at gmail.com>.
+	  [ruby-core:08922]
+
 Mon Sep 25 22:26:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_path_end): skip root directory.  fixed: [ruby-core:08913]
