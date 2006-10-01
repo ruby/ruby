@@ -471,6 +471,7 @@ void Init_ext _((void))\n{\n    char *src;#$extinit}
   $extpath.delete("$(topdir)")
   $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [
+    ['LIBRUBY_SO_UPDATE', '$(LIBRUBY_EXTS)'],
     ['SETUP', $setup],
     [enable_config("shared", $enable_shared) ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
     ['EXTLIBS', $extlibs.join(' ')], ['EXTLDFLAGS', $extflags]
@@ -495,9 +496,6 @@ rubies = []
 Dir.chdir ".."
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
-end
-unless $extlist.empty?
-  rm_f(Config::CONFIG["LIBRUBY_SO"])
 end
 puts "making #{rubies.join(', ')}"
 $stdout.flush
