@@ -8,6 +8,7 @@ module Test
         include Collector
 
         attr_reader :pattern, :exclude
+        attr_accessor :base
 
         def initialize(dir=::Dir, file=::File, object_space=::ObjectSpace, req=nil)
           super()
@@ -47,11 +48,12 @@ module Test
 
         def recursive_collect(name, already_gathered)
           sub_suites = []
-          if(@file.directory?(name))
-            @dir.entries(name).each do |e|
+          path = realdir(name)
+          if @file.directory?(path)
+            @dir.entries(path).each do |e|
               next if(e == '.' || e == '..')
               e_name = @file.join(name, e)
-              if(@file.directory?(e_name))
+              if @file.directory?(realdir(e_name))
                 next if /\ACVS\z/ =~ e
                 sub_suite = recursive_collect(e_name, already_gathered)
                 sub_suites << sub_suite unless(sub_suite.empty?)
@@ -75,7 +77,7 @@ module Test
         end
 
         def collect_file(name, suites, already_gathered)
-          dir = File.dirname(File.expand_path(name))
+          dir = File.dirname(File.expand_path(name, @base))
           $:.unshift(dir)
           if(@req)
             @req.require(name)
@@ -86,6 +88,14 @@ module Test
         ensure
           $:.delete_at($:.rindex(dir)) if(dir)
         end
+
+	def realdir(path)
+	  if @base
+	    @file.join(@base, path)
+	  else
+	    path
+	  end
+	end
       end
     end
   end

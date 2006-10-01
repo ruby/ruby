@@ -74,6 +74,9 @@ INSTRUBY_ARGS =	$(SCRIPT_ARGS) --installed-list $(INSTALLED_LIST)
 PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil' -- \
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
 
+TESTSDIR      = $(srcdir)/test
+TESTWORKDIR   = testwork
+
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
@@ -278,7 +281,7 @@ test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 
 test-all:
-	$(RUNRUBY) -C "$(srcdir)/test" runner.rb --runner=$(TESTUI) $(TESTS)
+	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)
 
 extconf:
 	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTCONFDIR)"
