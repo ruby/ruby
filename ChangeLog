@@ -1,3 +1,8 @@
+Sun Oct  1 23:56:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, ext/extmk.rb, win{32,ce}/Makefile.in: keep
+	  LIBRUBY_SO unless need to be removed.
+
 Sun Oct  1 23:12:19 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#make_switch): pass arguments directly.

@@ -8,6 +8,7 @@ STATIC_RUBY   = static-ruby
 
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
+LIBRUBY_EXTS  = ./.libruby-with-ext.time
 RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
@@ -70,6 +71,9 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) --
 INSTRUBY_ARGS =	$(SCRIPT_ARGS) --installed-list $(INSTALLED_LIST)
 
+PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil' -- \
+			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
+
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
@@ -80,7 +84,10 @@ $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT) $(ARCHFILE)
 
-$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP)
+$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE)
+
+$(LIBRUBY_EXTS):
+	@exit > $@
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
@@ -250,7 +257,7 @@ install-prereq:
 clean: clean-ext clean-local
 clean-local::
 	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
-	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE)
+	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
 
