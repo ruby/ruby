@@ -262,8 +262,8 @@ install?(:local, :comm, :bin) do
 
     if ruby_bin_dosish
       batfile = File.join(bindir, name + ".bat")
-      open_for_install(batfile, "wb") {|b|
-	b.print((<<EOH+shebang+body.chomp+<<EOF).gsub(/^\s+/, '').gsub(/^$/, "\r"))
+      open_for_install(batfile, "w") {|b|
+	b.print(<<EOH+shebang+body+<<EOF)
 @echo off
 @if not "%~d0" == "~d0" goto WinNT
 #{ruby_bin_dosish} -x "#{batfile}" %1 %2 %3 %4 %5 %6 %7 %8 %9

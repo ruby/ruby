@@ -1,3 +1,7 @@
+Mon Oct  2 15:47:55 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: batfile should be CRLF'ed.
+
 Mon Oct  2 01:24:26 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-all): separate directory where running test cases
