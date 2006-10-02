@@ -64,7 +64,7 @@ module Test
           c.pattern.concat(r.pattern) if(r.pattern)
           c.exclude.concat(r.exclude) if(r.exclude)
           c.base = r.base
-          $:.unshift(r.base) if r.base
+          $:.push(r.base) if r.base
           c.collect(*(r.to_run.empty? ? ['.'] : r.to_run))
         end,
       }
@@ -111,7 +111,7 @@ module Test
           end
 
           if(@standalone)
-            o.on('-b', '--basedir=DIR', "Base directory of test suits.") do |b|
+            o.on('-b', '--basedir=DIR', "Base directory of test suites.") do |b|
               @base = b
             end
 
