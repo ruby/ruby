@@ -1,3 +1,10 @@
+Tue Oct  3 01:36:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lines): returns an Enumerator instead of an
+	  array of lines.
+
+	* string.c (rb_str_bytes): a new method.
+
 Mon Oct  2 23:47:55 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::COLLECTORS):

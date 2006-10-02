@@ -3550,37 +3550,33 @@ rb_str_split(VALUE str, const char *sep0)
 
 /*
  *  call-seq:
- *     str.lines   => anArray
+ *     str.lines   => anEnumerator
  *  
- *  Divides <i>str</i> into lines terminated by newlines.
+ *  Returns an enumerator that gives each line in the string.
  *     
- *     "foo\nbar\n".lines        #=> ["foo\n", "bar\n"]
- *     "foo\nb ar".lines         #=> ["foo\n", "b ar"]
+ *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
+ *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
  */
 
 static VALUE
 rb_str_lines(VALUE str)
 {
-    VALUE ary = rb_ary_new();
-    char *p = RSTRING_PTR(str);
-    char *pend = p + RSTRING_LEN(str); 
-    char *s = p;
-    VALUE line;
+    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), 0, 0);
+}
 
-    while (p < pend) {
-	if (*p == '\n') {
-	    p++;
-	    line = rb_str_new(s, p-s);
-	    rb_ary_push(ary, line);
-	    s = p;
-	}
-	p++;
-    }
-    if (p == pend && s < p) {
-	line = rb_str_new(s, p-s);
-	rb_ary_push(ary, line);
-    }
-    return ary;
+/*
+ *  call-seq:
+ *     str.bytes   => anEnumerator
+ *  
+ *  Returns an enumerator that gives each byte in the string.
+ *     
+ *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ */
+
+static VALUE
+rb_str_bytes(VALUE str)
+{
+    return rb_enumeratorize(str, ID2SYM(rb_intern("each_byte")), 0, 0);
 }
 
 /*
@@ -4889,6 +4885,7 @@ Init_String(void)
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
     rb_define_method(rb_cString, "lines", rb_str_lines, 0);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
