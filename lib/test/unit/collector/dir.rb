@@ -77,7 +77,7 @@ module Test
         end
 
         def collect_file(name, suites, already_gathered)
-          dir = File.dirname(File.expand_path(name, @base))
+          dir = File.dirname(name = File.expand_path(name, @base))
           $:.unshift(dir)
           if(@req)
             @req.require(name)
