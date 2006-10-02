@@ -1,3 +1,14 @@
+Tue Oct  3 02:31:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (splat_value): use "to_splat" instead of "to_ary" to
+	  prepare splat values as an array.
+
+	* array.c (Init_Array): define to_splat.
+
+	* range.c (range_to_splat): new method.
+
+	* enumerator.c (enumerator_to_splat): ditto.
+
 Tue Oct  3 01:36:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_lines): returns an Enumerator instead of an

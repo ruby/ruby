@@ -2620,6 +2620,19 @@ svalue_to_avalue(VALUE v)
 }
 
 static VALUE
+splat_value(VALUE v)
+{
+    VALUE tmp;
+
+    if (v == Qundef) return rb_ary_new2(0);
+    tmp = rb_check_convert_type(v, T_ARRAY, "Array", "to_splat");
+    if (NIL_P(tmp)) {
+	return rb_ary_new3(1, v);
+    }
+    return tmp;
+}
+
+static VALUE
 class_prefix(VALUE self, NODE *cpath)
 {
     if (!cpath) {
@@ -2703,7 +2716,7 @@ when_check(NODE *tag, VALUE val, VALUE self)
 	}
 	break;
       case NODE_SPLAT:
-	elm = svalue_to_avalue(rb_eval(self, tag->nd_head));
+	elm = splat_value(rb_eval(self, tag->nd_head));
 	for (i=0; i<RARRAY_LEN(elm); i++) {
 	    if (when_cond(val, RARRAY_PTR(elm)[i])) {
 		return Qtrue;
@@ -2976,7 +2989,7 @@ rb_eval(VALUE self, NODE *n)
 	break;
 
       case NODE_SPLAT:
-	result = svalue_to_avalue(rb_eval(self, node->nd_head));
+	result = splat_value(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_TO_ARY:
@@ -3137,7 +3150,7 @@ rb_eval(VALUE self, NODE *n)
       case NODE_ARGSCAT:
 	{
 	    VALUE args = rb_eval(self, node->nd_head);
-	    result = rb_ary_concat(args, svalue_to_avalue(rb_eval(self, node->nd_body)));
+	    result = rb_ary_concat(args, splat_value(rb_eval(self, node->nd_body)));
 	}
 	break;
 

@@ -359,6 +359,19 @@ enumerator_with_index(VALUE obj)
 			 enumerator_with_index_i, (VALUE)&memo);
 }
 
+/*
+ * call-seq:
+ *   e.to_splat   => array
+ *
+ * Convert this enumerator object to an array to splat.
+ */
+
+static VALUE
+enumerator_to_splat(VALUE range)
+{
+    return rb_convert_type(range, T_ARRAY, "Array", "to_a");
+}
+
 void
 Init_Enumerator(void)
 {
@@ -378,6 +391,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
+    rb_define_method(rb_cEnumerator, "to_splat", enumerator_to_splat, 0);
 
     sym_each		= ID2SYM(rb_intern("each"));
     sym_each_with_index	= ID2SYM(rb_intern("each_with_index"));
