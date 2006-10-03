@@ -1,3 +1,8 @@
+Wed Oct  4 08:52:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/optparse/test_getopts.rb: changed the class name of test case
+	  to get rid of conflict with test_optparse.rb.
+
 Tue Oct  3 21:04:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dyna_in_block): inline using macro.
