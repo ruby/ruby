@@ -61,7 +61,7 @@ module Test
         end
         if (suite.empty?)
           catch(:invalid_test) do
-            suite << new(:default_test)
+            suite << new("default_test")
           end
         end
         return suite
