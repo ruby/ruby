@@ -1,3 +1,8 @@
+Wed Oct  4 08:52:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/optparse/test_getopts.rb: changed the class name of test case
+	  to get rid of conflict with test_optparse.rb.
+
 Tue Oct  3 23:32:27 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/testcase.rb (Test::Unit::TestCase.suite): tset name
