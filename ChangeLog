@@ -4,6 +4,12 @@ Tue Oct  3 21:04:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (mlhs): simplifies the rule a bit.
 
+	* parse.y (block_param): restrict block parameters to be local
+	  variables only.
+
+	* test/ruby/test_iterator.rb (TestIterator::test_nested_iterator):
+	  update test suite to conform the last change.
+
 Tue Oct  3 02:31:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (splat_value): use "to_splat" instead of "to_ary" to

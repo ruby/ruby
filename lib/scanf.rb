@@ -542,7 +542,8 @@ module Scanf
       @string_left = str
       @matched_count = 0
 
-      @specs.each_with_index do |spec,@i|
+      @specs.each_with_index do |spec,i|
+        @i=i
         @last_spec_tried = spec
         @last_match_tried = spec.match(@string_left)
         break unless @last_match_tried

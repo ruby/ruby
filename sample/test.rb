@@ -846,8 +846,9 @@ def tt
   }
 end
 
+i=0
 tt{|i| break if i == 5}
-test_ok(i == 5)
+test_ok(i == 0)
 
 def tt2(dummy)
   yield 1

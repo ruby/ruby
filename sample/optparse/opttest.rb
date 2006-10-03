@@ -23,49 +23,49 @@ ARGV.options do
   # mandatory argument
   opts.on("-r", "--require=LIBRARY", String,
 	  "require the LIBRARY, before",
-	  "executing your script") {|@library|}
+	  "executing your script") {|lib|@library=lib}
 
   # optional argument
   opts.on("-i", "--inplace=[EXTENSION]",
 	  "edit ARGV files in place", # multiline description
-	  "(make backup if EXTENSION supplied)") {|@inplace| @inplace ||= ''}
+	  "(make backup if EXTENSION supplied)") {|inplace| @inplace = inplace || ''}
 
-  opts.on("-N=[NUM]", Integer) {|@number|}
+  opts.on("-N=[NUM]", Integer) {|num|@number=num}
 
   # additional class
-  opts.on("-t", "--[no-]time[=TIME]", Time, "it's the time") {|@time|}
+  opts.on("-t", "--[no-]time[=TIME]", Time, "it's the time") {|time|@time=time}
 
   # limit argument syntax
   opts.on("-[0-7]", "-F", "--irs=[OCTAL]", OptionParser::OctalInteger,
-	  "specify record separator", "(\\0, if no argument)") {|@irs|}
+	  "specify record separator", "(\\0, if no argument)") {|irs|@irs=irs}
 
   # boolean switch(default true)
   @exec = true
-  opts.on("-n", "--no-exec[=FLAG]", TrueClass, "not really execute") {|@exec|}
+  opts.on("-n", "--no-exec[=FLAG]", TrueClass, "not really execute") {|exec|@exec=exec}
 
   # array
-  opts.on("-a", "--list[=LIST,LIST]", Array, "list") {|@list|}
+  opts.on("-a", "--list[=LIST,LIST]", Array, "list") {|list|@list=list}
 
   # fixed size array
-  opts.on("--pair[=car,cdr]", Array, "pair") {|@x, @y|}
+  opts.on("--pair[=car,cdr]", Array, "pair") {|x,y|@x=x; @y=y}
 
   # keyword completion
   opts.on("--code=CODE", CODES, CODE_ALIASES, "select coding system",
-	  "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") {|@code|}
+	  "("+CODES.join(",")+",", " "+CODE_ALIASES.keys.join(",")+")") {|c|@code=c}
 
   # optional argument with keyword completion
-  opts.on("--type[=TYPE]", [:text, :binary], "select type(text, binary)") {|@type|}
+  opts.on("--type[=TYPE]", [:text, :binary], "select type(text, binary)") {|t|@type=t}
 
   # boolean switch with optional argument(default false)
-  opts.on("-v", "--[no-]verbose=[FLAG]", "run verbosely") {|@verbose|}
+  opts.on("-v", "--[no-]verbose=[FLAG]", "run verbosely") {|v|@verbose=v}
 
   # easy way, set local variable
-  opts.on("-q", "--quit", "quit when ARGV is empty") {|@quit|}
+  opts.on("-q", "--quit", "quit when ARGV is empty") {|q|@quit=q}
 
   # adding on the fly
   opts.on("--add=SWITCH=[ARG]", "add option on the fly", /\A(\w+)(?:=.+)?\Z/) do
     |opt, var|
-    opts.on("--#{opt}", "added in runtime", &eval("proc {|@#{var}|}"))
+    opts.on("--#{opt}", "added in runtime", &eval("proc {|x|@#{var}=x}"))
   end
 
   opts.on_head("specific options:")

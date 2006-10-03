@@ -540,6 +540,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> for_var block_param opt_block_param block_param_def block_param0
+%type <node> block_param1 bparam_post
 %type <node> opt_bv_decl bv_decls bv_decl lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post
@@ -2856,7 +2857,18 @@ for_var 	: lhs
 		| mlhs
 		;
 
-block_param0	: mlhs_item
+block_param1	: bv_decl
+		| tLPAREN block_param rparen
+		    {
+		    /*%%%*/
+			$$ = $2;
+		    /*%
+			$$ = dispatch1(mlhs_paren, $2);
+		    %*/
+		    }
+		;
+
+bparam_post	: block_param1
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST($1);
@@ -2864,7 +2876,26 @@ block_param0	: mlhs_item
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
 		    }
-		| block_param0 ',' mlhs_item
+		| bparam_post ',' block_param1
+		    {
+		    /*%%%*/
+			$$ = list_append($1, $3);
+		    /*%
+			$$ = mlhs_add($1, $3);
+		    %*/
+		    }
+		;
+
+
+block_param0	: block_param1
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST($1);
+		    /*%
+			$$ = mlhs_add(mlhs_new(), $1);
+		    %*/
+		    }
+		| block_param0 ',' block_param1
 		    {
 		    /*%%%*/
 			$$ = list_append($1, $3);
@@ -2904,7 +2935,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs ',' mlhs_post ',' tAMPER lhs
+		| block_param0 ',' tSTAR lhs ',' bparam_post ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($9, NEW_MASGN($1, NEW_POSTARG($4,$6)));
@@ -2931,7 +2962,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR  ',' mlhs_post ',' tAMPER lhs
+		| block_param0 ',' tSTAR  ',' bparam_post ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($8, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
@@ -2948,7 +2979,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs ',' mlhs_post
+		| block_param0 ',' tSTAR lhs ',' bparam_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG($4,$6));
@@ -2964,7 +2995,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR ',' mlhs_post
+		| block_param0 ',' tSTAR ',' bparam_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
@@ -2998,7 +3029,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 		    %*/
 		    }
-		| tSTAR lhs ',' mlhs_post
+		| tSTAR lhs ',' bparam_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG($2,$4));
@@ -3006,7 +3037,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 		    %*/
 		    }
-		| tSTAR lhs ',' mlhs_post ',' tAMPER lhs
+		| tSTAR lhs ',' bparam_post ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN(0, NEW_POSTARG($2,$4)));
@@ -3023,7 +3054,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' mlhs_post
+		| tSTAR ',' bparam_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1,$3));
@@ -3031,7 +3062,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' mlhs_post ',' tAMPER lhs
+		| tSTAR ',' bparam_post ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($6, NEW_MASGN(0, NEW_POSTARG(-1,$3)));

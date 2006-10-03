@@ -52,7 +52,7 @@ class TestIterator < Test::Unit::TestCase
   def test_nested_iterator
     i = 0
     tt{|i| break if i == 5}
-    assert_equal(5, i)
+    assert_equal(0, i)
 
     assert_raises(ArgumentError) do
       tt3{}
