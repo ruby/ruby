@@ -317,7 +317,7 @@ static struct RVarmap *dyna_push_gen(struct parser_params*);
 static void dyna_pop_gen(struct parser_params*, struct RVarmap*);
 #define dyna_pop(vars) dyna_pop_gen(parser, vars)
 static int dyna_in_block_gen(struct parser_params*);
-#define dyna_in_block() dyna_in_block_gen(parser)
+#define dyna_in_block() (lvtbl->dlev > 0)
 static NODE *dyna_init_gen(struct parser_params*, NODE*, struct RVarmap *);
 #define dyna_init(node, pre) dyna_init_gen(parser, node, pre)
 static void dyna_var_gen(struct parser_params*,ID);
@@ -8137,12 +8137,6 @@ dyna_pop_gen(struct parser_params *parser, struct RVarmap* vars)
 {
     lvtbl->dlev--;
     ruby_dyna_vars = vars;
-}
-
-static int
-dyna_in_block_gen(struct parser_params *parser)
-{
-    return (lvtbl->dlev > 0);
 }
 
 static NODE *
