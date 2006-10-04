@@ -1,3 +1,8 @@
+Wed Oct  4 17:25:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call): check protected visibility based on real self,
+	  not ruby_frame->self.  [ruby-talk:217822]
+
 Wed Oct  4 15:46:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (mlhs): should interpret single parenthesized left hand
