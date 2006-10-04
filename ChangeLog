@@ -1,3 +1,8 @@
+Wed Oct  4 15:46:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (mlhs): should interpret single parenthesized left hand
+	  side expression.
+
 Wed Oct  4 08:52:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/optparse/test_getopts.rb: changed the class name of test case
