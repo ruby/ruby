@@ -1,3 +1,8 @@
+Wed Oct  4 18:47:25 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/*: bugfix and update
+	  (see ext/tk/ChangeLog.tkextlib).
+
 Wed Oct  4 17:25:14 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call): check protected visibility based on real self,

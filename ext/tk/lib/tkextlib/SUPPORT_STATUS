@@ -1,7 +1,7 @@
 
   [ current support status of Tcl/Tk extensions ]
 
-  *******<<<  RELEASE_DATE of the libraries : 2005/12/11  >>>*******
+  *******<<<  RELEASE_DATE of the libraries : 2006/10/04  >>>*******
 
 The following list shows *CURRENT* status when this file was modifyed
 at last. If you want to add other Tcl/Tk extensions to the planed list
@@ -56,23 +56,23 @@ script may give you some hints about that.
 ===< support with some examples (may be beta quality) >=======================
 
 Tcllib       1.8     
-Tklib        0.4.1   http://sf.net/projects/tcllib               ==> tcllib
+Tklib        0.4.1   http://sourceforge.net/projects/tcllib      ==> tcllib
 
-IWidgets     4.0.2   http://sf.net/projects/incrTcl              ==> iwidgets
+IWidgets     4.0.2   http://sourceforge.net/projects/incrtcl     ==> iwidgets
 
-BWidgets     1.7     http://sf.net/projects/tcllib               ==> bwidget
+BWidgets     1.7     http://sourceforge.net/projects/tcllib      ==> bwidget
 
-TkTable      2.9     http://sf.net/projects/tktable              ==> tktable
+TkTable      2.9     http://sourceforge.net/projects/tktable     ==> tktable
                          * see also <http://www.korus.hu/~fery/ruby/tktable.rb>
                                     written by Ferenc Engard (ferenc@engard.hu)
 
-vu           2.3.0   http://tktable.sourceforge.net              ==> vu
+vu           2.3.0   http://sourceforge.net/projects/tktable     ==> vu
 
-TkHTML       2.0     http://www.hwaci.com/sw/tkhtml/index.html   ==> tkHTML
+TkHTML       2.0     http://www.hwaci.com/sw/tkhtml/             ==> tkHTML
 
 ICONS        1.0     http://www.satisoft.com/tcltk/icons/        ==> ICONS
 
-TkImg        1.3     http://sf.net/projects/tkimg                ==> tkimg
+TkImg        1.3     http://sourceforge.net/projects/tkimg       ==> tkimg
 
 
 BLT          2.4z    http://sourceforge.net/projects/blt
@@ -81,20 +81,20 @@ BLT          2.4z    http://sourceforge.net/projects/blt
                       ==> blt
 
 TkTreeCtrl   CVS/Hd(2005-12-02)
-                     http://tktreectrl.sourceforge.net/          ==> treectrl
+                     http://sourceforge.net/projects/tktreectrl  ==> treectrl
 
-Tile         CVS/Hd(2005-12-07)
-                     http://tktable.sourceforge.net/tile/        ==> tile
+Tile         CVS/Hd(2006-10-01)
+                     http://sourceforge.net/projects/tktable     ==> tile
 
 
 
 ===< support (may be alpha or beta quality) >=================================
 
 IncrTcl      CVS/Hd(2005-02-14)
-                     http://sf.net/projects/incrTcl              ==> itcl, itk
+                     http://sourceforge.net/projects/incrtcl     ==> itcl, itk
 
 TclX         CVS/Hd(2005-02-07)
-                     http://sf.net/projects/tclx
+                     http://sourceforge.net/projects/tclx
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
 
@@ -105,7 +105,7 @@ Trofs        0.4.3   http://math.nist.gov/~DPorter/tcltk/trofs/
 ===< possibly available (not tested; alpha quality) >=========================
 
 winico       0.6
-                     http://tktable.sourceforge.net
+                     http://sourceforge.net/projects/tktable
                        ==> winico (win32 only)
 
 TkTrans      latest(2004-10-11)
@@ -160,17 +160,17 @@ QuickTimeTcl ***     http://hem.fyristorg.com/matben/qt/
 
 ===< may not support (already exist, out of Ruby/Tk scope, and so on) >=======
 
-TkCon        ***     http://sf.net/projects/tkcon
+TkCon        ***     http://sourceforge.net/projects/tkcon
 
-Expect       ***     http://sf.net/projects/expect
+Expect       ***     http://sourceforge.net/projects/expect
 
-TclXML       ***     http://sf.net/projects/tclxml
+TclXML       ***     http://sourceforge.net/projects/tclxml
 
-TclXSLT      ***     http://sf.net/projects/tclxml
+TclXSLT      ***     http://sourceforge.net/projects/tclxml
 
-TclDOM       ***     http://sf.net/projects/tclxml
+TclDOM       ***     http://sourceforge.net/projects/tclxml
 
-TclSOAP      ***     http://sf.net/projects/tclsoap
+TclSOAP      ***     http://sourceforge.net/projects/tclsoap
 
 Snack        ***     http://www.speech.kth.se/~kare/snack2.2.tar.gz
                         * use Snack for Ruby 
@@ -182,7 +182,7 @@ tDOM         ***     http://www.tdom.org
 
 Mk4tcl       ***     http://www.equi4.com/metakit/tcl.html
 
-Memchan      ***     http://memchan.sourceforge.net/
+Memchan      ***     http://sourceforge.net/projects/memchan
 
 XOTcl        ***     http://www.xotcl.org/
 

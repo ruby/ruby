@@ -1,3 +1,22 @@
+2006-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/tile.rb, lib/tkextlib/tile/* : support Tile 0.7.6.
+
+2006-10-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/SUPPORT_STATUS: [ruby-talk:211939] check links
+	  of extensions.
+
+	* lib/tkextlib/blt/container.rb: define instance methods properly.
+
+        * lib/tkextlib/tile/tcombobox.rb: bug fix [ruby-talk:213003].
+
+	* lib/tkextlib/tile/tnotebook.rb: ditto.
+
+	* lib/tkextlib/tile/treeview.rb: ditto.
+
+	* lib/tkextlib/tile/sizegrip.rb: [new] add 'ttk::sizegrip' widget.
+
 2006-08-31  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/blt.rb: double dashes (--) option doesn't work

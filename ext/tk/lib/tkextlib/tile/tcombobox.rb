@@ -39,14 +39,10 @@ class Tk::Tile::TCombobox < Tk::Tile::TEntry
   end
 
   def current
-    number(tk_send_without_enc('current', idx))
+    number(tk_send_without_enc('current'))
   end
   def current=(idx)
     tk_send_without_enc('current', idx)
-  end
-
-  def identify(x, y)
-    tk_send_without_enc('identify', x, y)
   end
 
   def set(val)
