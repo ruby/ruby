@@ -158,6 +158,11 @@ module Tk
           list(tk_send('state'))
         end
       end
+
+      def identify(x, y)
+        ret = tk_send_without_enc('identify', x, y)
+        (ret.empty?)? nil: ret
+      end
     end
 
     ######################################

@@ -158,6 +158,10 @@ class Tk::Tile::Treeview < TkWindow
     end
   end
 
+  def bbox(item, column=None)
+    list(tk_send('item', 'bbox', item, column))
+  end
+
   def children(item)
     simplelist(tk_send_without_enc('children', item))
   end
@@ -186,11 +190,20 @@ class Tk::Tile::Treeview < TkWindow
   end
 
   def identify(x, y)
+    # tile-0.7.2 or previous
     ret = simplelist(tk_send('identify', x, y))
     case ret[0]
     when 'heading', 'separator', 'cell'
       ret[-1] = num_or_str(ret[-1])
     end
+  end
+
+  def row_identify(x, y)
+    tk_send('identify', 'row', x, y)
+  end
+
+  def column_identify(x, y)
+    tk_send('identify', 'column', x, y)
   end
 
   def index(item)
@@ -201,11 +214,10 @@ class Tk::Tile::Treeview < TkWindow
     keys = _symbolkey2str(keys)
     id = keys.delete('id')
     if id
-      tk_send('insert', parent, idx, '-id', id, *hash_kv(keys))
+      num_or_str(tk_send('insert', parent, idx, '-id', id, *hash_kv(keys)))
     else
-      tk_send('insert', parent, idx, *hash_kv(keys))
+      num_or_str(tk_send('insert', parent, idx, *hash_kv(keys)))
     end
-    self
   end
 
   def instate(spec, cmd=Proc.new)
@@ -270,6 +282,8 @@ class Tk::Tile::Treeview < TkWindow
     end
     ret
   end
+  alias get_dictionary get_directory
+
   def get(item, col)
     tk_send('set', item, col)
   end
@@ -277,4 +291,37 @@ class Tk::Tile::Treeview < TkWindow
     tk_send('set', item, col, value)
     self
   end
+
+  def tag_bind(tag, seq, *args)
+    if TkComm._callback_entry?(args[0]) || !block_given?
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind([@path, 'tag', 'bind', tag], seq, cmd, *args)
+    self
+  end
+  alias tagbind tag_bind
+
+  def tag_bind_append(tag, seq, *args)
+    if TkComm._callback_entry?(args[0]) || !block_given?
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_append([@path, 'tag', 'bind', tag], seq, cmd, *args)
+    self
+  end
+  alias tagbind_append tag_bind_append
+
+  def tag_bind_remove(tag, seq)
+    _bind_remove([@path, 'tag', 'bind', tag], seq)
+    self
+  end
+  alias tagbind_remove tag_bind_remove
+
+  def tag_bindinfo(tag, context=nil)
+    _bindinfo([@path, 'tag', 'bind', tag], context)
+  end
+  alias tagbindinfo tag_bindinfo
 end

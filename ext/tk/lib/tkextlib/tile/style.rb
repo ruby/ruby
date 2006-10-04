@@ -52,6 +52,10 @@ class << Tk::Tile::Style
     end
   end
 
+  def lookup(style, opt, state=None, fallback_value=None)
+    tk_call('style', 'lookup', style, '-' << opt.to_s, state, fallback_value)
+  end
+
   include Tk::Tile::ParseStyleLayout
 
   def layout(style=nil, spec=nil)

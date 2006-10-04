@@ -11,18 +11,18 @@ module Tk::BLT
     TkCommandNames = ['::blt::container'.freeze].freeze
     WidgetClassName = 'Container'.freeze
     WidgetClassNames[WidgetClassName] = self
-  end
 
-  def __strval_optkeys
-    super() << 'name'
-  end
-  private :__strval_optkeys
+    def __strval_optkeys
+      super() << 'name'
+    end
+    private :__strval_optkeys
 
-  def find_command(pat)
-    list(tk_send_without_enc(tk_call(self.path, 'find', '-command', pat)))
-  end
+    def find_command(pat)
+      Hash[*simplelist(tk_send_without_enc('find', '-command', pat))]
+    end
 
-  def find_name(pat)
-    list(tk_send_without_enc(tk_call(self.path, 'find', '-name', pat)))
+    def find_name(pat)
+      Hash[*simplelist(tk_send_without_enc('find', '-name', pat))]
+    end
   end
 end

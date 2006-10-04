@@ -27,15 +27,15 @@ class Tk::Tile::TNotebook < TkWindow
   end
   private :__item_config_cmd
 
-  def __item_listval_optkeys
+  def __item_listval_optkeys(id)
     []
   end
   private :__item_listval_optkeys
 
-  def __item_methodcall_optkeys  # { key=>method, ... }
+  def __item_methodcall_optkeys(id)  # { key=>method, ... }
     {}
   end
-  private :__item_listval_optkeys
+  private :__item_methodcall_optkeys
 
   #alias tabcget itemcget
   alias tabconfigure itemconfigure
@@ -102,6 +102,10 @@ class Tk::Tile::TNotebook < TkWindow
   def select(idx)
     tk_send('select', idx)
     self
+  end
+
+  def selected
+    window(tk_send_without_enc('select'))
   end
 
   def tabs
