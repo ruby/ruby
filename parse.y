@@ -2861,7 +2861,7 @@ block_param1	: bv_decl
 		| tLPAREN block_param rparen
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/
