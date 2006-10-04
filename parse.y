@@ -279,7 +279,7 @@ static void top_local_setup();
 %type <node> f_arglist f_args f_optarg f_opt f_rest_arg f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> block_var opt_block_var brace_block cmd_brace_block do_block lhs none fitem
-%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node
+%type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fsym variable sym symbol operation operation2 operation3
 %type <id>   cname fname op
 %type <num>  f_norm_arg f_arg
@@ -743,7 +743,14 @@ command		: operation command_args       %prec tLOWEST
 		;
 
 mlhs		: mlhs_basic
-		| tLPAREN mlhs ')'
+		| tLPAREN mlhs_entry ')'
+		    {
+			$$ = $2;
+		    }
+		;
+
+mlhs_entry	: mlhs_basic
+		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    }
@@ -776,7 +783,7 @@ mlhs_basic	: mlhs_head
 		;
 
 mlhs_item	: mlhs_node
-		| tLPAREN mlhs ')'
+		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = $2;
 		    }
