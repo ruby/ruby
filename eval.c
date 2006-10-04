@@ -1062,7 +1062,7 @@ typedef enum calling_scope {
     CALLING_SUPER,
 } calling_scope_t;
 
-static VALUE rb_call(VALUE,VALUE,ID,int,const VALUE*,struct BLOCK*,calling_scope_t,int);
+static VALUE rb_call(VALUE,VALUE,ID,int,const VALUE*,struct BLOCK*,calling_scope_t,int,VALUE);
 static VALUE module_setup(VALUE,NODE*);
 
 static VALUE massign(VALUE,NODE*,VALUE,int);
@@ -3180,7 +3180,7 @@ rb_eval(VALUE self, NODE *n)
 
 	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
-	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,block,scope,0);
+	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,block,scope,0,self);
 	    result = argv[argc-1];
 	}
 	break;
@@ -3200,7 +3200,8 @@ rb_eval(VALUE self, NODE *n)
 		recv = rb_eval(self, node->nd_iter);
 		ruby_current_node = node;
 		SET_CURRENT_SOURCE();
-		result = rb_call(CLASS_OF(recv),recv,each,0,0,block,CALLING_NORMAL,1);
+		result = rb_call(CLASS_OF(recv),recv,each,0,0,
+				 block,CALLING_NORMAL,1,self);
 	    }
 	    else if (state == TAG_BREAK && TAG_DST()) {
 		result = prot_tag->retval;
@@ -3262,7 +3263,7 @@ rb_eval(VALUE self, NODE *n)
 		    break;
 		  default:
 		    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,
-				     argc,argv,block_given,scope,1);
+				     argc,argv,block_given,scope,1,self);
 		    break;
 		}
 	    }
@@ -3292,7 +3293,7 @@ rb_eval(VALUE self, NODE *n)
 	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,
-			     block,CALLING_NORMAL,0);
+			     block,CALLING_NORMAL,0,self);
 	}
 	break;
 
@@ -3306,13 +3307,13 @@ rb_eval(VALUE self, NODE *n)
 	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(self),self,node->nd_mid,argc,argv,
-			     block,CALLING_FCALL,0);
+			     block,CALLING_FCALL,0,self);
 	}
 	break;
 
       case NODE_VCALL:
 	SET_CURRENT_SOURCE();
-	result = rb_call(CLASS_OF(self),self,node->nd_mid,0,0,0,CALLING_VCALL,0);
+	result = rb_call(CLASS_OF(self),self,node->nd_mid,0,0,0,CALLING_VCALL,0,self);
 	break;
 
       case NODE_SUPER:
@@ -5101,7 +5102,8 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 		/* attr set */
 		ruby_current_node = lhs;
 		SET_CURRENT_SOURCE();
-		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, 0, scope,0);
+		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val,
+			0, scope, 0, self);
 	    }
 	    else {
 		/* array set */
@@ -5112,7 +5114,8 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 		ruby_current_node = lhs;
 		SET_CURRENT_SOURCE();
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
-			RARRAY_LEN(args), RARRAY_PTR(args), 0, scope,0);
+			RARRAY_LEN(args), RARRAY_PTR(args),
+			0, scope, 0, self);
 	    }
 	}
 	break;
@@ -5207,7 +5210,7 @@ iterate_method(VALUE obj)
 
     arg = (struct iter_method_arg*)obj;
     return rb_call(CLASS_OF(arg->obj), arg->obj, arg->mid, arg->argc, arg->argv,
-		   ruby_frame->block, CALLING_FUNCALL,1);
+		   ruby_frame->block, CALLING_FUNCALL,1,Qundef);
 }
 
 VALUE
@@ -5226,7 +5229,7 @@ VALUE
 rb_each(VALUE obj)
 {
     return rb_call(CLASS_OF(obj), obj, rb_intern("each"), 0, 0,
-		   ruby_frame->block, CALLING_FUNCALL,1);
+		   ruby_frame->block, CALLING_FUNCALL,1,Qundef);
 }
 
 static int
@@ -5518,7 +5521,8 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
 	MEMCPY(nargv+1, argv, VALUE, argc);
     }
     nargv[0] = ID2SYM(id);
-    return rb_call(CLASS_OF(obj), obj, missing, argc+1, nargv, block, CALLING_FUNCALL, 0);
+    return rb_call(CLASS_OF(obj), obj, missing, argc+1, nargv,
+		   block, CALLING_FUNCALL, 0, Qundef);
 }
 
 static inline VALUE
@@ -5890,7 +5894,7 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 static VALUE
 rb_call(VALUE klass, VALUE recv, ID mid,
 	int argc /* OK */, const VALUE *argv /* OK */, struct BLOCK *block,
-	calling_scope_t scope, int iter)
+	calling_scope_t scope, int iter, VALUE self)
 {
     NODE  *body;		/* OK */
     int    noex;
@@ -5952,10 +5956,11 @@ rb_call(VALUE klass, VALUE recv, ID mid,
 	if (noex & NOEX_PROTECTED) {
 	    VALUE defined_class = klass;
 
+	    if (self == Qundef) self = ruby_frame->self;
 	    if (TYPE(defined_class) == T_ICLASS) {
 		defined_class = RBASIC(defined_class)->klass;
 	    }
-	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(defined_class)))
+	    if (!rb_obj_is_kind_of(self, rb_class_real(defined_class)))
 		return method_missing(recv, mid, argc, argv, block, CSTAT_PROT);
 	}
     }
@@ -5993,7 +5998,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     argc = RARRAY_LEN(args); /* Assigns LONG, but argc is INT */
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0, CALLING_FUNCALL, 0);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0,CALLING_FUNCALL,0,Qundef);
 }
 
 static VALUE
@@ -6005,7 +6010,7 @@ send_funcall(int argc, VALUE *argv, VALUE recv, calling_scope_t scope)
 
     vid = *argv++; argc--;
     vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv,
-		  ruby_frame->block, scope, 1);
+		  ruby_frame->block, scope, 1, Qundef);
 
     return vid;
 }
@@ -6087,19 +6092,19 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
 	argv = 0;
     }
 
-    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 0, CALLING_FUNCALL, 0);
+    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 0,CALLING_FUNCALL,0,Qundef);
 }
 
 VALUE
 rb_funcall2(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0, CALLING_FUNCALL, 0);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0,CALLING_FUNCALL,0,Qundef);
 }
 
 VALUE
 rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0, CALLING_NORMAL, 0);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0,CALLING_NORMAL,0,Qundef);
 }
 
 static VALUE
@@ -6110,7 +6115,8 @@ call_super_0(VALUE klass, VALUE self, ID mid,
 	return method_missing(self, mid, argc, argv, block, CSTAT_SUPER);
     }
 
-    return rb_call(RCLASS(klass)->super, self, mid, argc, argv, block, CALLING_SUPER, 1);
+    return rb_call(RCLASS(klass)->super, self, mid, argc, argv,
+		   block, CALLING_SUPER, 1, Qundef);
 }
 
 static VALUE
@@ -7452,7 +7458,8 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
 void
 rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
 {
-    rb_call(CLASS_OF(obj), obj, init, argc, argv, ruby_frame->block, CALLING_FUNCALL, 1);
+    rb_call(CLASS_OF(obj), obj, init, argc, argv,
+	    ruby_frame->block, CALLING_FUNCALL, 1, Qundef);
 }
 
 void
