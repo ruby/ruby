@@ -16,7 +16,7 @@
 #include "digest.h"
 
 static VALUE mDigest, cDigest_Base;
-static ID id_metadata;
+static ID id_metadata, id_new, id_update, id_digest;
 
 /*
  * Digest::Base
@@ -29,7 +29,7 @@ get_digest_base_metadata(VALUE klass)
     algo_t *algo;
 
     if (rb_cvar_defined(klass, id_metadata) == Qfalse) {
-	rb_notimplement();
+        return NULL;
     }
 
     obj = rb_cvar_get(klass, id_metadata);
@@ -67,6 +67,12 @@ hexdigest_str_new(const unsigned char *digest, size_t digest_len)
 }
 
 static VALUE
+hexdigest_str_new2(VALUE str_digest)
+{
+    return hexdigest_str_new(RSTRING_PTR(str_digest), RSTRING_LEN(str_digest));
+}
+
+static VALUE
 rb_digest_base_alloc(VALUE klass)
 {
     algo_t *algo;
@@ -78,6 +84,10 @@ rb_digest_base_alloc(VALUE klass)
     }
 
     algo = get_digest_base_metadata(klass);
+
+    if (algo == NULL) {
+        return Data_Wrap_Struct(klass, 0, free, 0);
+    }
 
     /* XXX: An uninitialized buffer may lead ALGO_Equal() to fail */
     pctx = xcalloc(algo->ctx_size, 1);
@@ -91,11 +101,17 @@ rb_digest_base_alloc(VALUE klass)
 static VALUE
 rb_digest_base_s_digest(VALUE klass, VALUE str)
 {
-    algo_t *algo;
+    algo_t *algo = get_digest_base_metadata(klass);
     void *pctx;
-    volatile VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj;
 
-    algo = get_digest_base_metadata(klass);
+    if (algo == NULL) {
+        VALUE obj = rb_funcall(klass, id_new, 0);
+        rb_funcall(obj, id_update, 1, str);
+        return rb_funcall(obj, id_digest, 0);
+    }
+
+    obj = rb_digest_base_alloc(klass);
     Data_Get_Struct(obj, void, pctx);
 
     StringValue(str);
@@ -110,13 +126,17 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
 static VALUE
 rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
 {
-    algo_t *algo;
+    algo_t *algo = get_digest_base_metadata(klass);
     void *pctx;
     void *digest;
     size_t len;
-    volatile VALUE obj = rb_digest_base_alloc(klass);
+    volatile VALUE obj;
 
-    algo = get_digest_base_metadata(klass);
+    if (algo == NULL)
+        return hexdigest_str_new2(rb_funcall(klass, id_digest, 1, str));
+
+    obj = rb_digest_base_alloc(klass);
+
     Data_Get_Struct(obj, void, pctx);
 
     StringValue(str);
@@ -138,6 +158,11 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     if (copy == obj) return copy;
     rb_check_frozen(copy);
     algo = get_digest_base_metadata(rb_obj_class(copy));
+
+    if (algo == NULL)
+        rb_notimplement();
+
+    /* get_digest_base_metadata() may return a NULL */
     if (algo != get_digest_base_metadata(rb_obj_class(obj))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
@@ -154,10 +179,39 @@ rb_digest_base_update(VALUE self, VALUE str)
     algo_t *algo;
     void *pctx;
 
-    StringValue(str);
     algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        /* subclasses must define update() */
+        rb_notimplement();
+    }
+
     Data_Get_Struct(self, void, pctx);
 
+    StringValue(str);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
+
+    return self;
+}
+
+static VALUE
+rb_digest_base_lshift(VALUE self, VALUE str)
+{
+    algo_t *algo;
+    void *pctx;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        /* subclasses just need to define update(), not << */
+        rb_funcall(self, id_update, 1, str);
+
+        return self;
+    }
+
+    Data_Get_Struct(self, void, pctx);
+
+    StringValue(str);
     algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     return self;
@@ -184,6 +238,10 @@ rb_digest_base_digest(VALUE self)
     VALUE str;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL)
+        rb_notimplement();
+
     Data_Get_Struct(self, void, pctx1);
 
     ctx_size = algo->ctx_size;
@@ -206,6 +264,10 @@ rb_digest_base_hexdigest(VALUE self)
     size_t ctx_size, len;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL)
+        return hexdigest_str_new2(rb_funcall(self, id_digest, 0));
+
     Data_Get_Struct(self, void, pctx1);
 
     ctx_size = algo->ctx_size;
@@ -224,15 +286,20 @@ static VALUE
 rb_digest_base_inspect(VALUE self)
 {
     algo_t *algo;
-    VALUE str;
+    VALUE klass, str;
+    size_t digest_len = 32;	/* no need to be just the right size */
     char *cname;
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
+    klass = rb_obj_class(self);
+    algo = get_digest_base_metadata(klass);
+
+    if (algo != NULL)
+        digest_len = algo->digest_len;
 
     cname = rb_obj_classname(self);
 
     /* #<Digest::Alg: xxxxx...xxxx> */
-    str = rb_str_buf_new(2 + strlen(cname) + 2 + algo->digest_len * 2 + 1);
+    str = rb_str_buf_new(2 + strlen(cname) + 2 + digest_len * 2 + 1);
     rb_str_buf_cat2(str, "#<");
     rb_str_buf_cat2(str, cname);
     rb_str_buf_cat2(str, ": ");
@@ -307,7 +374,7 @@ Init_digest(void)
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
-    rb_define_method(cDigest_Base, "<<", rb_digest_base_update, 1);
+    rb_define_method(cDigest_Base, "<<", rb_digest_base_lshift, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
     rb_define_method(cDigest_Base, "hexdigest", rb_digest_base_hexdigest, 0);
     rb_define_method(cDigest_Base, "to_s", rb_digest_base_hexdigest, 0);
@@ -315,4 +382,7 @@ Init_digest(void)
     rb_define_method(cDigest_Base, "==", rb_digest_base_equal, 1);
 
     id_metadata = rb_intern("metadata");
+    id_new = rb_intern("new");
+    id_update = rb_intern("update");
+    id_digest = rb_intern("digest");
 }
