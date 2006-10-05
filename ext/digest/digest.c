@@ -45,7 +45,14 @@ hexdigest_str_new(const unsigned char *digest, size_t digest_len)
     int i;
     VALUE str;
     char *p;
-    static const char hex[] = "0123456789abcdef";
+    static const char hex[] = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'a', 'b', 'c', 'd', 'e', 'f'
+    };
+
+    if (LONG_MAX / 2 < digest_len) {
+        rb_raise(rb_eRuntimeError, "digest string too long");
+    }
 
     str = rb_str_new(0, digest_len * 2);
 
