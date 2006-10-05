@@ -1,7 +1,9 @@
-Fri Oct  6 04:21:23 2006  Akinori MUSHA  <knu@iDaemons.org>
+Fri Oct  6 04:27:40 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/md5.rb, ext/digest/lib/sha1.rb: Remove those
 	  compatibility stub libraries.
+
+	* sample/openssl/c_rehash.rb: Use digest/md5 instead of obsolete md5.
 
 Fri Oct  6 04:09:51 2006  Akinori MUSHA  <knu@iDaemons.org>
 
