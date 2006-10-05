@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <openssl/md5.h>
 
-void MD5_End(MD5_CTX *pctx, unsigned char *hexdigest);
+void MD5_Finish(MD5_CTX *pctx, unsigned char *digest);
 int MD5_Equal(MD5_CTX *pctx1, MD5_CTX *pctx2);
 
 #endif

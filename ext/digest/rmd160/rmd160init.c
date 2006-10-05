@@ -13,8 +13,7 @@ static algo_t rmd160 = {
     sizeof(RMD160_CTX),
     (hash_init_func_t)RMD160_Init,
     (hash_update_func_t)RMD160_Update,
-    (hash_end_func_t)RMD160_End,
-    (hash_final_func_t)RMD160_Final,
+    (hash_finish_func_t)RMD160_Finish,
     (hash_equal_func_t)RMD160_Equal,
 };
 

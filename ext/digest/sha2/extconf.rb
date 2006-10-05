@@ -8,7 +8,6 @@ $INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [
   "sha2.#{$OBJEXT}",
-  "sha2hl.#{$OBJEXT}",
   "sha2init.#{$OBJEXT}",
 ]
 

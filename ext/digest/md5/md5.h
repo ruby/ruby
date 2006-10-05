@@ -63,17 +63,16 @@ typedef struct md5_state_s {
 } MD5_CTX;
 
 #ifdef RUBY
+/* avoid name clash */
 #define MD5_Init	rb_Digest_MD5_Init
 #define MD5_Update	rb_Digest_MD5_Update
-#define MD5_Final	rb_Digest_MD5_Final
-#define MD5_End		rb_Digest_MD5_End
+#define MD5_Finish	rb_Digest_MD5_Finish
 #define MD5_Equal	rb_Digest_MD5_Equal
 #endif
 
 void	MD5_Init _((MD5_CTX *pms));
 void	MD5_Update _((MD5_CTX *pms, const uint8_t *data, size_t nbytes));
-void	MD5_Final _((uint8_t *digest, MD5_CTX *pms));
-void	MD5_End _((MD5_CTX *pctx, uint8_t *hexdigest));
+void	MD5_Finish _((MD5_CTX *pms, uint8_t *digest));
 int	MD5_Equal _((MD5_CTX *pctx1, MD5_CTX *pctx2));
 
 #define MD5_BLOCK_LENGTH		64

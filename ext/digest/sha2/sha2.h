@@ -77,52 +77,34 @@ typedef SHA512_CTX SHA384_CTX;
 #ifdef RUBY
 #define SHA256_Init		rb_Digest_SHA256_Init
 #define SHA256_Update		rb_Digest_SHA256_Update
-#define SHA256_Final		rb_Digest_SHA256_Final
-#define SHA256_End		rb_Digest_SHA256_End
-#define SHA256_Data		rb_Digest_SHA256_Data
-#define SHA256_File		rb_Digest_SHA256_File
+#define SHA256_Finish		rb_Digest_SHA256_Finish
 #define SHA256_Equal		rb_Digest_SHA256_Equal
 
 #define SHA384_Init		rb_Digest_SHA384_Init
 #define SHA384_Update		rb_Digest_SHA384_Update
-#define SHA384_Final		rb_Digest_SHA384_Final
-#define SHA384_End		rb_Digest_SHA384_End
-#define SHA384_Data		rb_Digest_SHA384_Data
-#define SHA384_File		rb_Digest_SHA384_File
+#define SHA384_Finish		rb_Digest_SHA384_Finish
 #define SHA384_Equal		rb_Digest_SHA384_Equal
 
 #define SHA512_Init		rb_Digest_SHA512_Init
 #define SHA512_Update		rb_Digest_SHA512_Update
-#define SHA512_Final		rb_Digest_SHA512_Final
-#define SHA512_End		rb_Digest_SHA512_End
-#define SHA512_Data		rb_Digest_SHA512_Data
-#define SHA512_File		rb_Digest_SHA512_File
+#define SHA512_Finish		rb_Digest_SHA512_Finish
 #define SHA512_Equal		rb_Digest_SHA512_Equal
 #endif
 
 /*** SHA-256/384/512 Function Prototypes ******************************/
 void SHA256_Init _((SHA256_CTX *));
 void SHA256_Update _((SHA256_CTX*, const uint8_t*, size_t));
-void SHA256_Final _((uint8_t[SHA256_DIGEST_LENGTH], SHA256_CTX*));
-char* SHA256_End _((SHA256_CTX*, char[SHA256_DIGEST_STRING_LENGTH]));
-char* SHA256_Data _((const uint8_t*, size_t, char[SHA256_DIGEST_STRING_LENGTH]));
-char *SHA256_File _((char *, char *));
+void SHA256_Finish _((SHA256_CTX*, uint8_t[SHA256_DIGEST_LENGTH]));
 int SHA256_Equal _((SHA256_CTX*, SHA256_CTX*));
 
 void SHA384_Init _((SHA384_CTX*));
 void SHA384_Update _((SHA384_CTX*, const uint8_t*, size_t));
-void SHA384_Final _((uint8_t[SHA384_DIGEST_LENGTH], SHA384_CTX*));
-char* SHA384_End _((SHA384_CTX*, char[SHA384_DIGEST_STRING_LENGTH]));
-char* SHA384_Data _((const uint8_t*, size_t, char[SHA384_DIGEST_STRING_LENGTH]));
-char *SHA384_File _((char *, char *));
+void SHA384_Finish _((SHA384_CTX*, uint8_t[SHA384_DIGEST_LENGTH]));
 int SHA384_Equal _((SHA384_CTX*, SHA384_CTX*));
 
 void SHA512_Init _((SHA512_CTX*));
 void SHA512_Update _((SHA512_CTX*, const uint8_t*, size_t));
-void SHA512_Final _((uint8_t[SHA512_DIGEST_LENGTH], SHA512_CTX*));
-char* SHA512_End _((SHA512_CTX*, char[SHA512_DIGEST_STRING_LENGTH]));
-char* SHA512_Data _((const uint8_t*, size_t, char[SHA512_DIGEST_STRING_LENGTH]));
-char *SHA512_File _((char *, char *));
+void SHA512_Finish _((SHA512_CTX*, uint8_t[SHA512_DIGEST_LENGTH]));
 int SHA512_Equal _((SHA512_CTX*, SHA512_CTX*));
 
 #ifdef	__cplusplus

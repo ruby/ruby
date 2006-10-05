@@ -39,26 +39,16 @@ typedef struct {
 #define RMD160_Init	rb_Digest_RMD160_Init
 #define RMD160_Transform	rb_Digest_RMD160_Transform
 #define RMD160_Update	rb_Digest_RMD160_Update
-#define RMD160_Final	rb_Digest_RMD160_Final
+#define RMD160_Finish	rb_Digest_RMD160_Finish
 #define RMD160_Equal	rb_Digest_RMD160_Equal
-#ifndef _KERNEL
-#define RMD160_End	rb_Digest_RMD160_End
-#define RMD160_File	rb_Digest_RMD160_File
-#define RMD160_Data	rb_Digest_RMD160_Data
-#endif /* _KERNEL */
 #endif
 
 __BEGIN_DECLS
 void	RMD160_Init _((RMD160_CTX *));
 void	RMD160_Transform _((uint32_t[5], const uint32_t[16]));
 void	RMD160_Update _((RMD160_CTX *, const uint8_t *, size_t));
-void	RMD160_Final _((uint8_t[20], RMD160_CTX *));
+void	RMD160_Finish _((RMD160_CTX *, uint8_t[20]));
 int	RMD160_Equal _((RMD160_CTX *, RMD160_CTX *));
-#ifndef	_KERNEL
-char	*RMD160_End _((RMD160_CTX *, char *));
-char	*RMD160_File _((char *, char *));
-char	*RMD160_Data _((const uint8_t *, size_t, char *));
-#endif /* _KERNEL */
 __END_DECLS
 
 #define RMD160_BLOCK_LENGTH             64

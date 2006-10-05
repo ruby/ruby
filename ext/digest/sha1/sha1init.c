@@ -13,8 +13,7 @@ static algo_t sha1 = {
     sizeof(SHA1_CTX),
     (hash_init_func_t)SHA1_Init,
     (hash_update_func_t)SHA1_Update,
-    (hash_end_func_t)SHA1_End,
-    (hash_final_func_t)SHA1_Final,
+    (hash_finish_func_t)SHA1_Finish,
     (hash_equal_func_t)SHA1_Equal,
 };
 

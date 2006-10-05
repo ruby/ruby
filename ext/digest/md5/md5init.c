@@ -13,8 +13,7 @@ static algo_t md5 = {
     sizeof(MD5_CTX),
     (hash_init_func_t)MD5_Init,
     (hash_update_func_t)MD5_Update,
-    (hash_end_func_t)MD5_End,
-    (hash_final_func_t)MD5_Final,
+    (hash_finish_func_t)MD5_Finish,
     (hash_equal_func_t)MD5_Equal,
 };
 

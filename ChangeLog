@@ -1,3 +1,34 @@
+Thu Oct  5 19:28:35 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.[ch]: Since the argument order of
+	  hash_final_func_t was inconsistent with others, change it and
+	  rename to hash_finish_func_t to avoid confusion.
+
+	* ext/digest/digest.[ch]: Remove and eliminate the use of
+	  hash_end_func_t.  Implement hexdigest conversion in the base
+	  class.
+
+	* ext/digest/md5/md5.c, ext/digest/md5/md5.h,
+	  ext/digest/md5/md5init.c, ext/digest/md5/md5ossl.c,
+	  ext/digest/md5/md5ossl.h: Remove MD5_End() and change
+	  MD5_Final() to MD5_Finish().
+
+	* ext/digest/rmd160/depend, ext/digest/rmd160/extconf.rb,
+	  ext/digest/rmd160/rmd160.c, ext/digest/rmd160/rmd160.h,
+	  ext/digest/rmd160/rmd160hl.c, ext/digest/rmd160/rmd160init.c,
+	  ext/digest/rmd160/rmd160ossl.c, ext/digest/rmd160/rmd160ossl.h:
+	  Remove unused functions RMD160_End(), RMD160_File(),
+	  RMD160_Data() and change RMD160_Final() to RMD160_Finish().
+
+	* ext/digest/sha1/extconf.rb, ext/digest/sha1/sha1.c,
+	  ext/digest/sha1/sha1.h, ext/digest/sha1/sha1hl.c,
+	  ext/digest/sha1/sha1init.c, ext/digest/sha1/sha1ossl.c,
+	  ext/digest/sha1/sha1ossl.h: Likewise.
+
+	* ext/digest/sha2/extconf.rb, ext/digest/sha2/sha2.c,
+	  ext/digest/sha2/sha2.h, ext/digest/sha2/sha2hl.c,
+	  ext/digest/sha2/sha2init.c: Likewise.
+
 Wed Oct  4 18:47:25 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/*: bugfix and update
