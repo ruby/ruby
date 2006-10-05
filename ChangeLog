@@ -1,3 +1,7 @@
+Fri Oct  6 02:38:42 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c: Allow subclassing in Ruby.
+
 Fri Oct  6 02:06:10 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (hexdigest_str_new): Add a string size check.
