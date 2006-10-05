@@ -6,7 +6,7 @@
   created at: Fri May 25 08:57:27 JST 2001
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto
-  Copyright (C) 2001 Akinori MUSHA
+  Copyright (C) 2001-2006 Akinori MUSHA
 
   $RoughId: digest.c,v 1.16 2001/07/13 15:38:27 knu Exp $
   $Id$
@@ -40,8 +40,10 @@ get_digest_base_metadata(VALUE klass)
 }
 
 static VALUE
-hexdigest_str_new(const unsigned char *digest, size_t digest_len)
+hexdigest_str_new(VALUE str_digest)
 {
+    char *digest = RSTRING_PTR(str_digest);
+    size_t digest_len = RSTRING_LEN(str_digest);
     int i;
     VALUE str;
     char *p;
@@ -67,9 +69,61 @@ hexdigest_str_new(const unsigned char *digest, size_t digest_len)
 }
 
 static VALUE
-hexdigest_str_new2(VALUE str_digest)
+bubblebabble_str_new(VALUE str_digest)
 {
-    return hexdigest_str_new(RSTRING_PTR(str_digest), RSTRING_LEN(str_digest));
+    char *digest = RSTRING_PTR(str_digest);
+    size_t digest_len = RSTRING_LEN(str_digest);
+    VALUE str;
+    char *p;
+    int i, j, seed = 1;
+    static const char vowels[] = {
+        'a', 'e', 'i', 'o', 'u', 'y'
+    };
+    static const char consonants[] = {
+        'b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n',
+        'p', 'r', 's', 't', 'v', 'z', 'x'
+    };
+
+    if ((LONG_MAX - 2) / 3 < (digest_len | 1)) {
+	rb_raise(rb_eRuntimeError, "digest string too long");
+    }
+
+    str = rb_str_new(0, (digest_len | 1) * 3 + 2);
+    p = RSTRING_PTR(str);
+
+    i = j = 0;
+    p[j++] = 'x';
+
+    for (;;) {
+        unsigned char byte1, byte2;
+
+        if (i >= digest_len) {
+            p[j++] = vowels[seed % 6];
+            p[j++] = consonants[16];
+            p[j++] = vowels[seed / 6];
+            break;
+        } 
+
+        byte1 = digest[i++];
+        p[j++] = vowels[(((byte1 >> 6) & 3) + seed) % 6];
+        p[j++] = consonants[(byte1 >> 2) & 15];
+        p[j++] = vowels[((byte1 & 3) + (seed / 6)) % 6];
+
+        if (i >= digest_len) {
+            break;
+        }
+
+        byte2 = digest[i++];
+        p[j++] = consonants[(byte2 >> 4) & 15];
+        p[j++] = '-';
+        p[j++] = consonants[byte2 & 15];
+
+        seed = (seed * 5 + byte1 * 7 + byte2) % 36;
+    }
+
+    p[j] = 'x';
+
+    return str;
 }
 
 static VALUE
@@ -126,27 +180,13 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
 static VALUE
 rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
 {
-    algo_t *algo = get_digest_base_metadata(klass);
-    void *pctx;
-    void *digest;
-    size_t len;
-    volatile VALUE obj;
+    return hexdigest_str_new(rb_funcall(klass, id_digest, 1, str));
+}
 
-    if (algo == NULL)
-        return hexdigest_str_new2(rb_funcall(klass, id_digest, 1, str));
-
-    obj = rb_digest_base_alloc(klass);
-
-    Data_Get_Struct(obj, void, pctx);
-
-    StringValue(str);
-    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
-
-    len = algo->digest_len;
-    digest = xmalloc(len);
-    algo->finish_func(pctx, digest);
-
-    return hexdigest_str_new(digest, len);
+static VALUE
+rb_digest_base_s_bubblebabble(VALUE klass, VALUE str)
+{
+    return bubblebabble_str_new(rb_funcall(klass, id_digest, 1, str));
 }
 
 static VALUE
@@ -258,28 +298,13 @@ rb_digest_base_digest(VALUE self)
 static VALUE
 rb_digest_base_hexdigest(VALUE self)
 {
-    algo_t *algo;
-    void *pctx1, *pctx2;
-    void *digest;
-    size_t ctx_size, len;
+    return hexdigest_str_new(rb_funcall(self, id_digest, 0));
+}
 
-    algo = get_digest_base_metadata(rb_obj_class(self));
-
-    if (algo == NULL)
-        return hexdigest_str_new2(rb_funcall(self, id_digest, 0));
-
-    Data_Get_Struct(self, void, pctx1);
-
-    ctx_size = algo->ctx_size;
-    pctx2 = xmalloc(ctx_size);
-    memcpy(pctx2, pctx1, ctx_size);
-
-    len = algo->digest_len;
-    digest = xmalloc(len);
-    algo->finish_func(pctx2, digest);
-    free(pctx2);
-
-    return hexdigest_str_new(digest, len);
+static VALUE
+rb_digest_base_bubblebabble(VALUE self)
+{
+    return bubblebabble_str_new(rb_funcall(self, id_digest, 0));
 }
 
 static VALUE
@@ -370,6 +395,7 @@ Init_digest(void)
     rb_define_alloc_func(cDigest_Base, rb_digest_base_alloc);
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
+    rb_define_singleton_method(cDigest_Base, "bubblebabble", rb_digest_base_s_bubblebabble, 1);
 
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
@@ -377,6 +403,7 @@ Init_digest(void)
     rb_define_method(cDigest_Base, "<<", rb_digest_base_lshift, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
     rb_define_method(cDigest_Base, "hexdigest", rb_digest_base_hexdigest, 0);
+    rb_define_method(cDigest_Base, "bubblebabble", rb_digest_base_bubblebabble, 0);
     rb_define_method(cDigest_Base, "to_s", rb_digest_base_hexdigest, 0);
     rb_define_method(cDigest_Base, "inspect", rb_digest_base_inspect, 0);
     rb_define_method(cDigest_Base, "==", rb_digest_base_equal, 1);
