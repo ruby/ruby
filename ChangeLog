@@ -1,3 +1,7 @@
+Fri Oct  6 04:30:30 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* sample/openssl/c_rehash.rb: Use digest/md5 instead of obsolete md5.
+
 Wed Oct  4 18:47:25 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/*: bugfix and update
