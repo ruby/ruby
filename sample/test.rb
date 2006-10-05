@@ -977,11 +977,11 @@ IterTest.new([[3]]).each3 {|x| test_ok(x == 3)}
 IterTest.new([[4]]).each4 {|x| test_ok(x == [4])}
 IterTest.new([[5]]).each5 {|x| test_ok(x == [5])}
 IterTest.new([[6]]).each6 {|x| test_ok(x == [6])}
-IterTest.new([[7]]).each7 {|x| test_ok(x == [7])}
-IterTest.new([[8]]).each8 {|x| test_ok(x == [8])}
+IterTest.new([[7]]).each7 {|x| p x; test_ok(x == [7])}
+IterTest.new([[8]]).each8 {|x| p x; test_ok(x == [8])}
 
 IterTest.new([[0,0]]).each0 {|*x| test_ok(x == [0,0])}
-IterTest.new([[8,8]]).each8 {|*x| test_ok(x == [8,8])}
+IterTest.new([[8,8]]).each8 {|*x| p x; test_ok(x == [8,8])}
 
 def m0(v)
   v

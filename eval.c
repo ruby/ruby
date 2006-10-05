@@ -4780,16 +4780,14 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		massign(self, var, val, lambda);
 	    }
 	    else {
-		if (lambda) {
-		    if (val == Qundef) {
-			rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
-		    }
-		    if (TYPE(val) == T_ARRAY && RARRAY_LEN(val) != 1) {
+		if (lambda && val == Qundef) {
+		    rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
+		}
+		if (ary_args) {
+		    if (lambda && RARRAY_LEN(val) != 1) {
 			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 1)",
 				 RARRAY_LEN(val));
 		    }
-		}
-		if (ary_args) {
 		    if (RARRAY_LEN(val) == 0)
 			val = Qnil;
 		    else

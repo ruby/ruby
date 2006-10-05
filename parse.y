@@ -538,10 +538,9 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_rest_arg f_post_arg
 %type <node> f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> assoc_list assocs assoc undef_list backref string_dvar
-%type <node> for_var block_param opt_block_param block_param_def block_param0
-%type <node> block_param1 bparam_post
-%type <node> opt_bv_decl bv_decls bv_decl lambda f_larglist lambda_body
+%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> block_param opt_block_param block_param_def bparam_list bparam_item
+%type <node> opt_bv_decl bv_decls bvar lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post
 %type <id>   fsym variable sym symbol operation operation2 operation3
@@ -2857,18 +2856,23 @@ for_var 	: lhs
 		| mlhs
 		;
 
-block_param1	: bv_decl
+bparam_item	: bvar
 		| tLPAREN block_param rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(NEW_LIST($2), 0);
+			if (nd_type($2) != NODE_MASGN) {
+			    $$ = NEW_MASGN(NEW_LIST($2), 0);
+			}
+			else {
+			    $$ = $2;
+			}
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/
 		    }
 		;
 
-bparam_post	: block_param1
+bparam_list	: bparam_item
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST($1);
@@ -2876,7 +2880,7 @@ bparam_post	: block_param1
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
 		    }
-		| bparam_post ',' block_param1
+		| bparam_list ',' bparam_item
 		    {
 		    /*%%%*/
 			$$ = list_append($1, $3);
@@ -2886,29 +2890,10 @@ bparam_post	: block_param1
 		    }
 		;
 
-
-block_param0	: block_param1
+block_param	: bparam_list
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST($1);
-		    /*%
-			$$ = mlhs_add(mlhs_new(), $1);
-		    %*/
-		    }
-		| block_param0 ',' block_param1
-		    {
-		    /*%%%*/
-			$$ = list_append($1, $3);
-		    /*%
-			$$ = mlhs_add($1, $3);
-		    %*/
-		    }
-		;
-
-block_param	: block_param0
-		    {
-		    /*%%%*/
-                        if ($1->nd_alen == 1) {
+                        if ($1->nd_alen == 1 && nd_type($1->nd_head) != NODE_MASGN) {
                             $$ = $1->nd_head;
                             rb_gc_force_recycle((VALUE)$1);
                         }
@@ -2919,7 +2904,7 @@ block_param	: block_param0
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_param0 ','
+		| bparam_list ','
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
@@ -2927,7 +2912,7 @@ block_param	: block_param0
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_param0 ',' tAMPER lhs
+		| bparam_list ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($4, NEW_MASGN($1, 0));
@@ -2935,7 +2920,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs ',' bparam_post ',' tAMPER lhs
+		| bparam_list ',' tSTAR bvar ',' bparam_list ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($9, NEW_MASGN($1, NEW_POSTARG($4,$6)));
@@ -2944,7 +2929,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $9);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs ',' tAMPER lhs
+		| bparam_list ',' tSTAR bvar ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN($1, $4));
@@ -2953,7 +2938,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $7);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR ',' tAMPER lhs
+		| bparam_list ',' tSTAR ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($6, NEW_MASGN($1, -1));
@@ -2962,7 +2947,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR  ',' bparam_post ',' tAMPER lhs
+		| bparam_list ',' tSTAR  ',' bparam_list ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($8, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
@@ -2971,7 +2956,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $8);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs
+		| bparam_list ',' tSTAR bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, $4);
@@ -2979,7 +2964,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR lhs ',' bparam_post
+		| bparam_list ',' tSTAR bvar ',' bparam_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG($4,$6));
@@ -2987,7 +2972,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR
+		| bparam_list ',' tSTAR
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, -1);
@@ -2995,7 +2980,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
 		    %*/
 		    }
-		| block_param0 ',' tSTAR ',' bparam_post
+		| bparam_list ',' tSTAR ',' bparam_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_MASGN($1, NEW_POSTARG(-1,$5)));
@@ -3003,7 +2988,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
 		    %*/
 		    }
-		| tSTAR lhs ',' tAMPER lhs
+		| tSTAR bvar ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($5, NEW_MASGN(0, $2));
@@ -3012,7 +2997,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $5);
 		    %*/
 		    }
-		| tSTAR ',' tAMPER lhs
+		| tSTAR ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($4, NEW_MASGN(0, -1));
@@ -3021,7 +3006,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $4);
 		    %*/
 		    }
-		| tSTAR lhs
+		| tSTAR bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, $2);
@@ -3029,7 +3014,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 		    %*/
 		    }
-		| tSTAR lhs ',' bparam_post
+		| tSTAR bvar ',' bparam_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG($2,$4));
@@ -3037,7 +3022,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 		    %*/
 		    }
-		| tSTAR lhs ',' bparam_post ',' tAMPER lhs
+		| tSTAR bvar ',' bparam_list ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN(0, NEW_POSTARG($2,$4)));
@@ -3054,7 +3039,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' bparam_post
+		| tSTAR ',' bparam_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1,$3));
@@ -3062,7 +3047,7 @@ block_param	: block_param0
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' bparam_post ',' tAMPER lhs
+		| tSTAR ',' bparam_list ',' tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($6, NEW_MASGN(0, NEW_POSTARG(-1,$3)));
@@ -3071,7 +3056,7 @@ block_param	: block_param0
 			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
-		| tAMPER lhs
+		| tAMPER bvar
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_PARAM($2, (NODE*)1);
@@ -3129,7 +3114,7 @@ opt_bv_decl	: none
 		    }
 		;
 
-bv_decls	: bv_decl
+bv_decls	: bvar
 		    {
 		    /*%%%*/
 			$$ = $1;
@@ -3137,7 +3122,7 @@ bv_decls	: bv_decl
 			$$ = FIXME;
 		    %*/
 		    }
-		| bv_decls ',' bv_decl
+		| bv_decls ',' bvar
 		    {
 		    /*%%%*/
 			$$ = block_append($1, $3);
@@ -3147,7 +3132,7 @@ bv_decls	: bv_decl
 		    }
 		;
 
-bv_decl		:  tIDENTIFIER
+bvar		:  tIDENTIFIER
 		    {
 		    /*%%%*/
 			$$ = new_bv($1, NEW_NIL());
