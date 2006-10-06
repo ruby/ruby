@@ -379,9 +379,6 @@ rb_include_module(klass, module)
 	rb_secure(4);
     }
     
-    if (NIL_P(module)) return;
-    if (klass == module) return;
-
     if (TYPE(module) != T_MODULE) {
 	Check_Type(module, T_MODULE);
     }
