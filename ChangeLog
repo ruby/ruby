@@ -1,3 +1,8 @@
+Fri Oct  6 15:19:59 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/depend: Fix header installation when the build
+	  directory is different from srcdir. [Pointed out by: eban]
+
 Fri Oct  6 09:56:31 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (config.status): shouldn't use

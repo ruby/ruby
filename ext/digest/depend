@@ -5,4 +5,4 @@ install-so: install-h
 site-install-so: install-h
 
 install-h:
-	$(INSTALL_DATA) digest.h $(RUBYARCHDIR)
+	$(INSTALL_DATA) $(srcdir)/digest.h $(RUBYARCHDIR)
