@@ -1,3 +1,8 @@
+Fri Oct  6 09:56:31 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub (config.status): shouldn't use
+	  copy command instead of install. use -run install.
+
 Fri Oct  6 06:53:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): small refactoring.
