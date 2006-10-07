@@ -1,3 +1,8 @@
+Sat Oct  7 11:53:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_initialize): since module_eval no longer passes
+	  self, use module_exec instead.  fixed: [ruby-dev:29637]
+
 Sat Oct  7 00:27:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): remove unnecessary check.

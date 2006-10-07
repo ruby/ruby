@@ -1205,7 +1205,7 @@ static VALUE
 rb_mod_initialize(VALUE module)
 {
     if (rb_block_given_p()) {
-	rb_mod_module_eval(0, 0, module);
+	rb_mod_module_exec(1, &module, module);
     }
     return Qnil;
 }
