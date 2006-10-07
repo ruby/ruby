@@ -1,3 +1,8 @@
+Sat Oct  7 23:44:33 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_rshift): a bug in right shift of negative
+	  bignums.  [ruby-core:09020]
+
 Sat Oct  7 00:27:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): remove unnecessary check.

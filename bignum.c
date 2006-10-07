@@ -1885,6 +1885,10 @@ rb_big_rshift(x, y)
     }
     xds = BDIGITS(x);
     i = RBIGNUM(x)->len; j = i - s1;
+    if (j == 0) {
+	if (RBIGNUM(x)->sign) return INT2FIX(0);
+	else return INT2FIX(-1);
+    }
     z = bignew(j, RBIGNUM(x)->sign);
     if (!RBIGNUM(x)->sign) {
 	num = ((BDIGIT_DBL)~0) << BITSPERDIG;
