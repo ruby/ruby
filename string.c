@@ -4239,7 +4239,7 @@ scan_once(str, pat, start)
  *     
  *     a.scan(/\w+/) {|w| print "<<#{w}>> " }
  *     print "\n"
- *     a.scan(/(.)(.)/) {|a,b| print b, a }
+ *     a.scan(/(.)(.)/) {|x,y| print y, x }
  *     print "\n"
  *     
  *  <em>produces:</em>
