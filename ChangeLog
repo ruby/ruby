@@ -1,3 +1,10 @@
+Sat Oct  7 23:33:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (formal_assign): packed post splat arguments may conflict
+	  with normal arguments.  [ruby-core:09021]
+
+	* eval.c (rb_call0): ditto.
+
 Sat Oct  7 11:53:04 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_initialize): since module_eval no longer passes

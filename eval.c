@@ -5678,6 +5678,7 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	    v = rb_ary_new4(argc,argv);
 	    n += npost;
 	    i += n*256;
+	    i = -i;
 	}
 	else {
 	    v = rb_ary_new2(0);
@@ -5719,11 +5720,13 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 	stack_check();
 	rb_gc_finalize_deferred();
     }
-    if (argc >= 256) {
+    if (argc < 0) {
 	VALUE tmp;
 	VALUE *nargv;
-	int n = argc / 256 - 1;
+	int n;
 
+	argc = -argc;
+	n = argc / 256 - 1;
 	argc %= 256;
 	tmp = svalue_to_avalue(argv[argc]);
 	nargv = TMP_ALLOC(argc + RARRAY_LEN(tmp) + n);
