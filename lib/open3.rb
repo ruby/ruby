@@ -1,29 +1,48 @@
-# open3.rb: Spawn a program like popen, but with stderr, too. You might also
-# want to use this if you want to bypass the shell. (By passing multiple args,
-# which IO#popen does not allow)
 #
-# Usage:
+# = open3.rb: Popen, but with stderr, too
+#
+# Author:: Yukihiro Matsumoto
+# Documentation:: Konrad Meyer
+#
+# Open3 gives you access to stdin, stdout, and stderr when running other
+# programs.
+#
+
+#
+# Open3 grants you access to stdin, stdout, and stderr when running another
+# program. Example:
 #
 #   require "open3"
-#   
-#   stdin, stdout, stderr = Open3.popen3('nroff -man')
-#
-# or:
-#
 #   include Open3
 #   
 #   stdin, stdout, stderr = popen3('nroff -man')
 #
-# popen3 can also take a block which will receive stdin, stdout and stderr as
-# parameters.  This ensures stdin, stdout and stderr are closed once the block
-# exits.
+# Open3.popen3 can also take a block which will receive stdin, stdout and
+# stderr as parameters.  This ensures stdin, stdout and stderr are closed
+# once the block exits. Example:
 #
-# Such as:
+#   require "open3"
 #
 #   Open3.popen3('nroff -man') { |stdin, stdout, stderr| ... }
+#
 
 module Open3
-  #[stdin, stdout, stderr] = popen3(command);
+  # 
+  # Open stdin, stdout, and stderr streams and start external executable.
+  # Non-block form:
+  #   
+  #   require 'open3'
+  #
+  #   [stdin, stdout, stderr] = Open3.popen3(cmd)
+  #
+  # Block form:
+  #
+  #   require 'open3'
+  #
+  #   Open3.popen3(cmd) { |stdin, stdout, stderr| ... }
+  #
+  # The parameter +cmd+ is passed directly to Kernel#exec.
+  #
   def popen3(*cmd)
     pw = IO::pipe   # pipe[0] for read, pipe[1] for write
     pr = IO::pipe
