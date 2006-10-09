@@ -1,3 +1,10 @@
+Mon Oct  9 22:56:12 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/encoding.rb (REXML::Encoding::check_encoding): spaces
+	  are allowed around equal sign.  [ruby-core:09032]
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser): ditto.
+
 Sat Oct  7 23:53:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_scan): small documentation fix.

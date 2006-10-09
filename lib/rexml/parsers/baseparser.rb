@@ -49,8 +49,8 @@ module REXML
       CLOSE_MATCH = /^\s*<\/(#{NAME_STR})\s*>/um
 
       VERSION = /\bversion\s*=\s*["'](.*?)['"]/um
-      ENCODING = /\bencoding=["'](.*?)['"]/um
-      STANDALONE = /\bstandalone=["'](.*?)['"]/um
+      ENCODING = /\bencoding\s*=\s*["'](.*?)['"]/um
+      STANDALONE = /\bstandalone\s*=\s["'](.*?)['"]/um
 
       ENTITY_START = /^\s*<!ENTITY/
       IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'].*?['"])?(\s+['"].*?["'])?/u
