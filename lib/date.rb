@@ -767,14 +767,14 @@ class Date
       when :civil
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.funcall(e)
+	  elem[e] = d.__send!(e)
 	end
 	elem[:mon]  ||= 1
 	elem[:mday] ||= 1
       when :commercial
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.funcall(e)
+	  elem[e] = d.__send!(e)
 	end
 	elem[:cweek] ||= 1
 	elem[:cwday] ||= 1
@@ -783,14 +783,14 @@ class Date
       when :wnum0
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.funcall(e)
+	  elem[e] = d.__send!(e)
 	end
 	elem[:wnum0] ||= 0
 	elem[:wday]  ||= 0
       when :wnum1
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.funcall(e)
+	  elem[e] = d.__send!(e)
 	end
 	elem[:wnum1] ||= 0
 	elem[:wday]  ||= 0
