@@ -1,35 +1,46 @@
 #
-# ping.rb -- check a host for upness
+# = ping.rb: Check a host for upness
+#
+# Author:: Yukihiro Matsumoto
+# Documentation:: Konrad Meyer
+# 
+# Performs the function of the basic network testing tool, ping.
+# See: Ping.
 #
 
 require 'timeout'
 require "socket"
 
-#= SYNOPSIS
+# 
+# Ping contains routines to test for the reachability of remote hosts.
+# Currently the only routine implemented is pingecho().
 #
-#   require 'ping'
-#   
-#   puts "'jimmy' is alive and kicking" if Ping.pingecho('jimmy', 10)
-#
-#= DESCRIPTION
-#
-# This module contains routines to test for the reachability of remote hosts.
-# Currently the only routine implemented is pingecho(). 
-#
-# pingecho() uses a TCP echo (_not_ an ICMP echo) to determine if the
+# Ping.pingecho uses a TCP echo (not an ICMP echo) to determine if the
 # remote host is reachable. This is usually adequate to tell that a remote
-# host is available to rsh(1), ftp(1), or telnet(1) to.
+# host is available to telnet, ftp, or ssh to.
 #
-#= WARNING
+# Warning: Ping.pingecho may block for a long time if DNS resolution is
+# slow. Requiring 'resolv-replace' allows non-blocking name resolution.
 #
-# pingecho() may block for a long period if name resolution is slow.  Require
-# 'resolv-replace' to use non-blocking name resolution.
+# Usage:
+# 
+#   require 'ping'
+#
+#   puts "'jimmy' is alive and kicking" if Ping.pingecho('jimmy', 10)
 #
 module Ping
 
-  # return true if we can open a connection to the hostname or IP address
-  # +host+ on port +service+ (which defaults to the "echo" port) waiting up to
-  # +timeout+ seconds.
+  # 
+  # Return true if we can open a connection to the hostname or IP address
+  # +host+ on port +service+ (which defaults to the "echo" port) waiting up
+  # to +timeout+ seconds.
+  #
+  # Example:
+  #
+  #   require 'ping'
+  #
+  #   Ping.pingecho "google.com", 10, 80
+  #
   def pingecho(host, timeout=5, service="echo")
     begin
       timeout(timeout) do
