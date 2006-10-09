@@ -220,7 +220,6 @@ end
 def parse_args()
   $mflags = []
 
-  opts = nil
   $optparser ||= OptionParser.new do |opts|
     opts.on('-n') {$dryrun = true}
     opts.on('--[no-]extension [EXTS]', Array) do |v|
@@ -259,7 +258,7 @@ def parse_args()
   rescue OptionParser::InvalidOption => e
     retry if /^--/ =~ e.args[0]
     $optparser.warn(e)
-    abort opts.to_s
+    abort $optparser.to_s
   end
 
   $destdir ||= ''
@@ -331,7 +330,8 @@ MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtim
 # get static-link modules
 $static_ext = {}
 if $extstatic
-  $extstatic.each do |target|
+  $extstatic.each do |t|
+    target = t
     target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
     $static_ext[target] = $static_ext.size
   end
@@ -368,12 +368,12 @@ if $extension
   exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
 else
   withes, withouts = %w[--with --without].collect {|w|
-    if not (w = %w[-extensions -ext].collect {|opt|arg_config(w+opt)}).any?
+    if not (w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
       proc {false}
     elsif (w = w.grep(String)).empty?
       proc {true}
     else
-      w.collect {|opt| opt.split(/,/)}.flatten.method(:any?)
+      w.collect {|o| o.split(/,/)}.flatten.method(:any?)
     end
   }
   cond = proc {|ext|
@@ -461,7 +461,7 @@ unless $extlist.empty?
 void Init_ext _((void))\n{\n    char *src;#$extinit}
 }
   if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
-    open(extinit.c, "w") {|f| f.print src}
+    open(extinit.c, "w") {|fe| fe.print src}
   end
 
   $extobjs = "ext/#{extinit.o} " + $extobjs
@@ -485,8 +485,8 @@ else
   FileUtils.rm_f(extinit.to_a)
 end
 rubies = []
-%w[RUBY RUBYW STATIC_RUBY].each {|r|
-  n = r
+%w[RUBY RUBYW STATIC_RUBY].each {|n|
+  r = n
   if r = arg_config("--"+r.downcase) || config_string(r+"_INSTALL_NAME")
     rubies << Config.expand(r+=EXEEXT)
     $mflags << "#{n}=#{r}"

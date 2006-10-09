@@ -221,7 +221,7 @@ class OptionParser
     def complete(key, icase = false, pat = nil)
       pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
                          icase)
-      canon, sw, k, v, cn = nil
+      canon, sw, cn = nil
       candidates = []
       each do |k, *v|
         (if Regexp === k
@@ -349,7 +349,7 @@ class OptionParser
       if conv
         val = conv.call(*val)
       else
-        val = proc {|val| val}.call(*val)
+        val = proc {|v| v}.call(*val)
       end
       return arg, block, val
     end
@@ -368,7 +368,7 @@ class OptionParser
     # +indent+:: Prefix string indents all summarized lines.
     #
     def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
-      sopts, lopts, s = [], [], nil
+      sopts, lopts = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
       @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
       return if sopts.empty? and lopts.empty? # completely hidden
@@ -384,9 +384,9 @@ class OptionParser
       end
 
       left[0] << arg if arg
-      mlen = left.collect {|s| s.length}.max.to_i
+      mlen = left.collect {|ss| ss.length}.max.to_i
       while mlen > width and l = left.shift
-        mlen = left.collect {|s| s.length}.max.to_i if l.length == mlen
+        mlen = left.collect {|ss| ss.length}.max.to_i if l.length == mlen
         yield(indent + l)
       end
 
@@ -453,7 +453,7 @@ class OptionParser
           raise MissingArgument if argv.empty?
           arg = argv.shift
         end
-        conv_arg(*parse_arg(arg) {|*exc| raise(*exc)})
+        conv_arg(*parse_arg(arg, &method(:raise)))
       end
     end
 
@@ -557,7 +557,6 @@ class OptionParser
     # +nlopts+:: Negated long style options list.
     #
     def update(sw, sopts, lopts, nsw = nil, nlopts = nil)
-      o = nil
       sopts.each {|o| @short[o] = sw} if sopts
       lopts.each {|o| @long[o] = sw} if lopts
       nlopts.each {|o| @long[o] = nsw} if nsw and nlopts
@@ -1063,7 +1062,6 @@ class OptionParser
     default_style = Switch::NoArgument
     default_pattern = nil
     klass = nil
-    o = nil
     n, q, a = nil
 
     opts.each do |o|
@@ -1097,7 +1095,7 @@ class OptionParser
         else
           raise ArgumentError, "argument pattern given twice"
         end
-        o.each {|(o, *v)| pattern[o] = v.fetch(0) {o}}
+        o.each {|pat, *v| pattern[pat] = v.fetch(0) {pat}}
       when Module
         raise ArgumentError, "unsupported argument type: #{o}"
       when *ArgumentStyle.keys
@@ -1246,8 +1244,8 @@ class OptionParser
 
   # :nodoc:
   def parse_in_order(argv = default_argv, setter = nil, &nonopt)
-    opt, arg, sw, val, rest = nil
-    nonopt ||= proc {|arg| throw :terminate, arg}
+    opt, arg, val, rest = nil
+    nonopt ||= proc {|a| throw :terminate, a}
     argv.unshift(arg) if arg = catch(:terminate) {
       while arg = argv.shift
         case arg
@@ -1301,7 +1299,8 @@ class OptionParser
         # non-option argument
         else
           catch(:prune) do
-            visit(:each_option) do |sw|
+            visit(:each_option) do |sw0|
+              sw = sw0
               sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
             end
             nonopt.call(arg)
@@ -1332,8 +1331,7 @@ class OptionParser
   #
   def permute!(argv = default_argv)
     nonopts = []
-    arg = nil
-    order!(argv) {|arg| nonopts << arg}
+    order!(argv, &nonopts.method(:<<))
     argv[0, 0] = nonopts
     argv
   end
@@ -1410,7 +1408,6 @@ class OptionParser
   # +block+.
   #
   def visit(id, *args, &block)
-    el = nil
     @stack.reverse_each do |el|
       el.send(id, *args, &block)
     end
@@ -1443,7 +1440,7 @@ class OptionParser
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
     raise AmbiguousOption, catch(:ambiguous) {
-      visit(:complete, typ, opt, icase, *pat) {|opt, *sw| return sw}
+      visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
       raise InvalidOption, opt
     }
   end
@@ -1562,7 +1559,7 @@ class OptionParser
   #
   accept(Array) do |s,|
     if s
-      s = s.split(',').collect {|s| s unless s.empty?}
+      s = s.split(',').collect {|ss| ss unless ss.empty?}
     end
     s
   end

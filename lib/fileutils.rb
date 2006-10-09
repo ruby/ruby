@@ -212,11 +212,11 @@ module FileUtils
         stack.push path
         path = File.dirname(path)
       end
-      stack.reverse_each do |path|
+      stack.reverse_each do |dir|
         begin
-          fu_mkdir path, options[:mode]
+          fu_mkdir dir, options[:mode]
         rescue SystemCallError => err
-          raise unless File.directory?(path)
+          raise unless File.directory?(dir)
         end
       end
     end

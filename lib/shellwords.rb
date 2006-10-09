@@ -28,7 +28,6 @@ module Shellwords
   def shellwords(line)
     words = []
     field = ''
-    word = sq = dq = esc = garbage = sep = nil
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage

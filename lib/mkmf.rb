@@ -108,7 +108,7 @@ end
 
 def map_dir(dir, map = nil)
   map ||= INSTALL_DIRS
-  map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
+  map.inject(dir) {|d, (orig, new)| d.gsub(orig, new)}
 end
 
 topdir = File.dirname(libdir = File.dirname(__FILE__))
@@ -501,7 +501,8 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
       len = srcdir.size
     end
     f = nil
-    Dir.glob(files) do |f|
+    Dir.glob(files) do |fx|
+      f = fx
       f[0..len] = "" if len
       d = File.dirname(f)
       d.sub!(prefix, "") if prefix
@@ -967,11 +968,11 @@ def dir_config(target, idefault=nil, ldefault=nil)
 
   idirs = idir ? Array === idir ? idir : idir.split(File::PATH_SEPARATOR) : []
   if defaults
-    idirs.concat(defaults.collect {|dir| dir + "/include"})
+    idirs.concat(defaults.collect {|d| d + "/include"})
     idir = ([idir] + idirs).compact.join(File::PATH_SEPARATOR)
   end
   unless idirs.empty?
-    idirs.collect! {|dir| "-I" + dir}
+    idirs.collect! {|d| "-I" + d}
     idirs -= Shellwords.shellwords($CPPFLAGS)
     unless idirs.empty?
       $CPPFLAGS = (idirs.quote << $CPPFLAGS).join(" ")
@@ -980,7 +981,7 @@ def dir_config(target, idefault=nil, ldefault=nil)
 
   ldirs = ldir ? Array === ldir ? ldir : ldir.split(File::PATH_SEPARATOR) : []
   if defaults
-    ldirs.concat(defaults.collect {|dir| dir + "/lib"})
+    ldirs.concat(defaults.collect {|d| d + "/lib"})
     ldir = ([ldir] + ldirs).compact.join(File::PATH_SEPARATOR)
   end
   $LIBPATH = ldirs | $LIBPATH
@@ -1177,7 +1178,7 @@ def create_makefile(target, srcprefix = nil)
       $objs.push(obj) unless $objs.index(obj)
     end
   elsif !(srcs = $srcs)
-    srcs = $objs.collect {|obj| obj.sub(/\.o\z/, '.c')}
+    srcs = $objs.collect {|o| o.sub(/\.o\z/, '.c')}
   end
   $srcs = srcs
   for i in $objs
@@ -1282,7 +1283,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	dirs << dir
 	mfile.print "pre-install-rb#{sfx}: #{dir}\n"
       end
-      files.each do |f|
+      for f in files
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
 	mfile.print("#{dest}: #{f}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
@@ -1303,7 +1304,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
   end
   dirs.unshift(sodir) if target and !dirs.include?(sodir)
-  dirs.each {|dir| mfile.print "#{dir}:\n\t$(MAKEDIRS) $@\n"}
+  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n"}
 
   mfile.print <<-SITEINSTALL
 
@@ -1379,7 +1380,7 @@ site-install-rb: install-rb
 	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
 	elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
+	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
 	end
 	depout << line
       end
@@ -1408,7 +1409,7 @@ site-install-rb: install-rb
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST
-      headers.each {|h| h.sub!(/.*/) {|*m| RULE_SUBST % m}}
+      headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
     end
     headers << $config_h if $config_h
     headers << "$(RUBY_EXTCONF_H)" if $extconf_h
@@ -1508,13 +1509,13 @@ EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
 hdr = []
 config_string('COMMON_MACROS') do |s|
-  Shellwords.shellwords(s).each do |s|
-    /(.*?)(?:=(.*))/ =~ s
+  Shellwords.shellwords(s).each do |w|
+    /(.*?)(?:=(.*))/ =~ w
     hdr << "#define #$1 #$2"
   end
 end
 config_string('COMMON_HEADERS') do |s|
-  Shellwords.shellwords(s).each {|s| hdr << "#include <#{s}>"}
+  Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
 end
 COMMON_HEADERS = hdr.join("\n")
 COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
@@ -1537,7 +1538,7 @@ LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 
-sep = config_string('BUILD_FILE_SEPARATOR') {|sep| ":/=#{sep}" if sep != "/"} || ""
+sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if sep != "/"} || ""
 CLEANINGS = "
 clean:
 		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
