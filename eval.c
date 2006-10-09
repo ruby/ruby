@@ -234,6 +234,7 @@ VALUE rb_cMethod;
 VALUE rb_cUnboundMethod;
 static VALUE umethod_bind(VALUE, VALUE);
 static VALUE rb_mod_define_method(int, VALUE*, VALUE);
+static VALUE rb_obj_define_method(int, VALUE*, VALUE);
 NORETURN(static void rb_raise_jump(VALUE));
 static VALUE rb_make_exception(int argc, VALUE *argv);
 
@@ -7910,6 +7911,7 @@ Init_eval(void)
     rb_define_method(rb_cBasicObject, "__send!", rb_f_funcall, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
+    rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
@@ -9565,6 +9567,14 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     }
     rb_add_method(mod, id, node, noex);
     return body;
+}
+
+static VALUE
+rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE klass = rb_singleton_class(obj);
+
+    return rb_mod_define_method(argc, argv, klass);
 }
 
 /*
