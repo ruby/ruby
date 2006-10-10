@@ -1,3 +1,8 @@
+Tue Oct 10 16:39:08 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (hexdigest_str_new, bubblebabble_str_new):
+	  Perform StringValue() checks properly.
+
 Tue Oct 10 13:21:21 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha1/depend, ext/digest/sha2/depend: Remove obsolete

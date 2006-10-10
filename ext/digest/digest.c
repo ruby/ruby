@@ -42,8 +42,8 @@ get_digest_base_metadata(VALUE klass)
 static VALUE
 hexdigest_str_new(VALUE str_digest)
 {
-    char *digest = RSTRING_PTR(str_digest);
-    size_t digest_len = RSTRING_LEN(str_digest);
+    char *digest;
+    size_t digest_len;
     int i;
     VALUE str;
     char *p;
@@ -51,6 +51,10 @@ hexdigest_str_new(VALUE str_digest)
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'a', 'b', 'c', 'd', 'e', 'f'
     };
+
+    StringValue(str_digest);
+    digest = RSTRING_PTR(str_digest);
+    digest_len = RSTRING_LEN(str_digest);
 
     if (LONG_MAX / 2 < digest_len) {
         rb_raise(rb_eRuntimeError, "digest string too long");
@@ -71,8 +75,8 @@ hexdigest_str_new(VALUE str_digest)
 static VALUE
 bubblebabble_str_new(VALUE str_digest)
 {
-    char *digest = RSTRING_PTR(str_digest);
-    size_t digest_len = RSTRING_LEN(str_digest);
+    char *digest;
+    size_t digest_len;
     VALUE str;
     char *p;
     int i, j, seed = 1;
@@ -83,6 +87,10 @@ bubblebabble_str_new(VALUE str_digest)
         'b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n',
         'p', 'r', 's', 't', 'v', 'z', 'x'
     };
+
+    StringValue(str_digest);
+    digest = RSTRING_PTR(str_digest);
+    digest_len = RSTRING_LEN(str_digest);
 
     if ((LONG_MAX - 2) / 3 < (digest_len | 1)) {
 	rb_raise(rb_eRuntimeError, "digest string too long");
