@@ -1,3 +1,10 @@
+Tue Oct 10 16:49:16 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (hexdigest_str_new, bubblebabble_str_new):
+	  Perform StringValue() checks properly.
+
+	* ext/digest/digest.c: Use RSTRING_{PTR,LEN} macros.
+
 Tue Oct 10 13:49:53 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest: Merge from trunk; apply all changes since the

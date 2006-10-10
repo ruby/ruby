@@ -42,8 +42,8 @@ get_digest_base_metadata(VALUE klass)
 static VALUE
 hexdigest_str_new(VALUE str_digest)
 {
-    char *digest = RSTRING_PTR(str_digest);
-    size_t digest_len = RSTRING_LEN(str_digest);
+    char *digest;
+    size_t digest_len;
     int i;
     VALUE str;
     char *p;
@@ -51,6 +51,10 @@ hexdigest_str_new(VALUE str_digest)
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'a', 'b', 'c', 'd', 'e', 'f'
     };
+
+    StringValue(str_digest);
+    digest = RSTRING_PTR(str_digest);
+    digest_len = RSTRING_LEN(str_digest);
 
     if (LONG_MAX / 2 < digest_len) {
         rb_raise(rb_eRuntimeError, "digest string too long");
@@ -71,8 +75,8 @@ hexdigest_str_new(VALUE str_digest)
 static VALUE
 bubblebabble_str_new(VALUE str_digest)
 {
-    char *digest = RSTRING_PTR(str_digest);
-    size_t digest_len = RSTRING_LEN(str_digest);
+    char *digest;
+    size_t digest_len;
     VALUE str;
     char *p;
     int i, j, seed = 1;
@@ -83,6 +87,10 @@ bubblebabble_str_new(VALUE str_digest)
         'b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n',
         'p', 'r', 's', 't', 'v', 'z', 'x'
     };
+
+    StringValue(str_digest);
+    digest = RSTRING_PTR(str_digest);
+    digest_len = RSTRING_LEN(str_digest);
 
     if ((LONG_MAX - 2) / 3 < (digest_len | 1)) {
 	rb_raise(rb_eRuntimeError, "digest string too long");
@@ -169,10 +177,10 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
     Data_Get_Struct(obj, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     str = rb_str_new(0, algo->digest_len);
-    algo->finish_func(pctx, RSTRING(str)->ptr);
+    algo->finish_func(pctx, RSTRING_PTR(str));
 
     return str;
 }
@@ -229,7 +237,7 @@ rb_digest_base_update(VALUE self, VALUE str)
     Data_Get_Struct(self, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     return self;
 }
@@ -252,7 +260,7 @@ rb_digest_base_lshift(VALUE self, VALUE str)
     Data_Get_Struct(self, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
+    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     return self;
 }
@@ -289,7 +297,7 @@ rb_digest_base_digest(VALUE self)
     memcpy(pctx2, pctx1, ctx_size);
 
     str = rb_str_new(0, algo->digest_len);
-    algo->finish_func(pctx2, RSTRING(str)->ptr);
+    algo->finish_func(pctx2, RSTRING_PTR(str));
     free(pctx2);
 
     return str;
@@ -355,12 +363,12 @@ rb_digest_base_equal(VALUE self, VALUE other)
     StringValue(other);
     str2 = other;
 
-    if (RSTRING(str2)->len == algo->digest_len)
+    if (RSTRING_LEN(str2) == algo->digest_len)
 	str1 = rb_digest_base_digest(self);
     else
 	str1 = rb_digest_base_hexdigest(self);
 
-    if (RSTRING(str1)->len == RSTRING(str2)->len
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
       && rb_str_cmp(str1, str2) == 0)
 	return Qtrue;
 
