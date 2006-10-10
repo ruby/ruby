@@ -14,7 +14,7 @@ if !with_config("bundled-rmd160") &&
     have_library("crypto") && have_header("openssl/ripemd.h")
   $objs << "rmd160ossl.#{$OBJEXT}"
 else
-  $objs << "rmd160.#{$OBJEXT}" << "rmd160hl.#{$OBJEXT}"
+  $objs << "rmd160.#{$OBJEXT}"
 end
 
 have_header("sys/cdefs.h")
@@ -22,5 +22,7 @@ have_header("sys/cdefs.h")
 have_header("inttypes.h")
 
 have_header("unistd.h")
+
+$preload = %w[digest]
 
 create_makefile("digest/rmd160")

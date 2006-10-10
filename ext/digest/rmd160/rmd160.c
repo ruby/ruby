@@ -409,7 +409,7 @@ RMD160_Update(RMD160_CTX *context, const uint8_t *data, size_t nbytes)
 /********************************************************************/
 
 void
-RMD160_Final(uint8_t digest[20], RMD160_CTX *context)
+RMD160_Finish(RMD160_CTX *context, uint8_t digest[20])
 {
 	uint32_t i;
 	uint32_t X[16];

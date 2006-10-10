@@ -14,7 +14,7 @@ if !with_config("bundled-sha1") &&
     have_library("crypto") && have_header("openssl/sha.h")
   $objs << "sha1ossl.#{$OBJEXT}"
 else
-  $objs << "sha1.#{$OBJEXT}" << "sha1hl.#{$OBJEXT}"
+  $objs << "sha1.#{$OBJEXT}"
 end
 
 have_header("sys/cdefs.h")
@@ -22,5 +22,7 @@ have_header("sys/cdefs.h")
 have_header("inttypes.h")
 
 have_header("unistd.h")
+
+$preload = %w[digest]
 
 create_makefile("digest/sha1")

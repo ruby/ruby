@@ -12,8 +12,7 @@ static algo_t sha##bitlen = { \
     sizeof(SHA##bitlen##_CTX), \
     (hash_init_func_t)SHA##bitlen##_Init, \
     (hash_update_func_t)SHA##bitlen##_Update, \
-    (hash_end_func_t)SHA##bitlen##_End, \
-    (hash_final_func_t)SHA##bitlen##_Final, \
+    (hash_finish_func_t)SHA##bitlen##_Finish, \
     (hash_equal_func_t)SHA##bitlen##_Equal, \
 };
 
@@ -30,7 +29,7 @@ Init_sha2()
 
     FOREACH_BITLEN(DECLARE_ALGO_CLASS)
 
-    rb_require("digest.so");
+    rb_require("digest");
 
     id_metadata = rb_intern("metadata");
 

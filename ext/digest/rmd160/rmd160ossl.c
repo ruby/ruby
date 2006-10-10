@@ -5,31 +5,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#ifndef _DIAGASSERT
-#define _DIAGASSERT(cond)	assert(cond)
-#endif
-
-char *
-RMD160_End(RMD160_CTX *ctx, char *buf)
-{
-    size_t i;
-    char *p = buf;
-    uint8_t digest[20];
-    static const char hex[]="0123456789abcdef";
-
-    _DIAGASSERT(ctx != NULL);
-    /* buf may be NULL */
-
-    if (p == NULL && (p = malloc(41)) == NULL)
-	return 0;
-
-    RMD160_Final(digest,ctx);
-    for (i = 0; i < 20; i++) {
-	p[i + i] = hex[(uint32_t)digest[i] >> 4];
-	p[i + i + 1] = hex[digest[i] & 0x0f];
-    }
-    p[i + i] = '\0';
-    return(p);
+void RMD160_Finish(RMD160_CTX *ctx, char *buf) {
+	RIPEMD160_Final(buf, ctx);
 }
 
 int RMD160_Equal(RMD160_CTX* pctx1, RMD160_CTX* pctx2) {

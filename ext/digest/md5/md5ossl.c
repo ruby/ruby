@@ -6,15 +6,9 @@
 #include <string.h>
 
 void
-MD5_End(MD5_CTX *pctx, unsigned char *hexdigest)
+MD5_Finish(MD5_CTX *pctx, unsigned char *digest)
 {
-    unsigned char digest[16];
-    size_t i;
-
     MD5_Final(digest, pctx);
-
-    for (i = 0; i < 16; i++)
-        sprintf(hexdigest + i * 2, "%02x", digest[i]);
 }
 
 int
