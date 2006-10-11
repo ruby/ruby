@@ -9569,6 +9569,17 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     return body;
 }
 
+/*
+ *  call-seq:
+ *     obj.define_singleton_method(symbol, method)     => new_method
+ *     obj.define_singleton_method(symbol) { block }   => proc
+ *  
+ *  Defines a singleton method for the receiver. The _method_
+ *  parameter can be a +Proc+ or +Method+ object.
+ *  If a block is specified, it is used as the method body.
+ *  See <code>Kernel#define_method</code>.
+ */
+
 static VALUE
 rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 {

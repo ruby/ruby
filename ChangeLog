@@ -1,3 +1,7 @@
+Wed Oct 11 17:11:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_obj_define_method): add half boiled RDoc document.
+
 Wed Oct 11 16:57:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_replace): should shift lfree pointer before
