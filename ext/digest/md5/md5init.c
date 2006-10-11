@@ -14,7 +14,6 @@ static algo_t md5 = {
     (hash_init_func_t)MD5_Init,
     (hash_update_func_t)MD5_Update,
     (hash_finish_func_t)MD5_Finish,
-    (hash_equal_func_t)MD5_Equal,
 };
 
 void

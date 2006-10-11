@@ -13,7 +13,6 @@ static algo_t sha##bitlen = { \
     (hash_init_func_t)SHA##bitlen##_Init, \
     (hash_update_func_t)SHA##bitlen##_Update, \
     (hash_finish_func_t)SHA##bitlen##_Finish, \
-    (hash_equal_func_t)SHA##bitlen##_Equal, \
 };
 
 FOREACH_BITLEN(DEFINE_ALGO_METADATA)

@@ -151,8 +151,7 @@ rb_digest_base_alloc(VALUE klass)
         return Data_Wrap_Struct(klass, 0, free, 0);
     }
 
-    /* XXX: An uninitialized buffer may lead ALGO_Equal() to fail */
-    pctx = xcalloc(algo->ctx_size, 1);
+    pctx = xmalloc(algo->ctx_size);
     algo->init_func(pctx);
 
     obj = Data_Wrap_Struct(klass, 0, free, pctx);
@@ -208,7 +207,7 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     algo = get_digest_base_metadata(rb_obj_class(copy));
 
     if (algo == NULL) {
-        /* subclasses must define initialize_copy() */
+        /* initialize_copy() is undefined or something */
         rb_notimplement();
     }
 
@@ -375,24 +374,21 @@ rb_digest_base_equal(VALUE self, VALUE other)
     VALUE str1, str2;
 
     klass = rb_obj_class(self);
-    algo = get_digest_base_metadata(klass);
 
     if (rb_obj_class(other) == klass) {
-	void *pctx1, *pctx2;
+        str1 = rb_digest_base_digest(self);
+        str2 = rb_digest_base_digest(other);
+    } else {
+        StringValue(other);
+        str2 = other;
 
-	Data_Get_Struct(self, void, pctx1);
-	Data_Get_Struct(other, void, pctx2);
+        algo = get_digest_base_metadata(klass);
 
-	return algo->equal_func(pctx1, pctx2) ? Qtrue : Qfalse;
+        if (RSTRING_LEN(str2) == algo->digest_len)
+            str1 = rb_digest_base_digest(self);
+        else
+            str1 = rb_digest_base_hexdigest(self);
     }
-
-    StringValue(other);
-    str2 = other;
-
-    if (RSTRING_LEN(str2) == algo->digest_len)
-	str1 = rb_digest_base_digest(self);
-    else
-	str1 = rb_digest_base_hexdigest(self);
 
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
 	&& rb_str_cmp(str1, str2) == 0)

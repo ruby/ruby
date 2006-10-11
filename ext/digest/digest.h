@@ -18,7 +18,6 @@
 typedef void (*hash_init_func_t)(void *);
 typedef void (*hash_update_func_t)(void *, unsigned char *, size_t);
 typedef void (*hash_finish_func_t)(void *, unsigned char *);
-typedef int (*hash_equal_func_t)(void *, void *);
 
 typedef struct {
     size_t digest_len;
@@ -26,5 +25,4 @@ typedef struct {
     hash_init_func_t init_func;
     hash_update_func_t update_func;
     hash_finish_func_t finish_func;
-    hash_equal_func_t equal_func;
 } algo_t;

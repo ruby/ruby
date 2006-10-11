@@ -78,34 +78,28 @@ typedef SHA512_CTX SHA384_CTX;
 #define SHA256_Init		rb_Digest_SHA256_Init
 #define SHA256_Update		rb_Digest_SHA256_Update
 #define SHA256_Finish		rb_Digest_SHA256_Finish
-#define SHA256_Equal		rb_Digest_SHA256_Equal
 
 #define SHA384_Init		rb_Digest_SHA384_Init
 #define SHA384_Update		rb_Digest_SHA384_Update
 #define SHA384_Finish		rb_Digest_SHA384_Finish
-#define SHA384_Equal		rb_Digest_SHA384_Equal
 
 #define SHA512_Init		rb_Digest_SHA512_Init
 #define SHA512_Update		rb_Digest_SHA512_Update
 #define SHA512_Finish		rb_Digest_SHA512_Finish
-#define SHA512_Equal		rb_Digest_SHA512_Equal
 #endif
 
 /*** SHA-256/384/512 Function Prototypes ******************************/
 void SHA256_Init _((SHA256_CTX *));
 void SHA256_Update _((SHA256_CTX*, const uint8_t*, size_t));
 void SHA256_Finish _((SHA256_CTX*, uint8_t[SHA256_DIGEST_LENGTH]));
-int SHA256_Equal _((SHA256_CTX*, SHA256_CTX*));
 
 void SHA384_Init _((SHA384_CTX*));
 void SHA384_Update _((SHA384_CTX*, const uint8_t*, size_t));
 void SHA384_Finish _((SHA384_CTX*, uint8_t[SHA384_DIGEST_LENGTH]));
-int SHA384_Equal _((SHA384_CTX*, SHA384_CTX*));
 
 void SHA512_Init _((SHA512_CTX*));
 void SHA512_Update _((SHA512_CTX*, const uint8_t*, size_t));
 void SHA512_Finish _((SHA512_CTX*, uint8_t[SHA512_DIGEST_LENGTH]));
-int SHA512_Equal _((SHA512_CTX*, SHA512_CTX*));
 
 #ifdef	__cplusplus
 }

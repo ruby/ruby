@@ -14,7 +14,6 @@ static algo_t rmd160 = {
     (hash_init_func_t)RMD160_Init,
     (hash_update_func_t)RMD160_Update,
     (hash_finish_func_t)RMD160_Finish,
-    (hash_equal_func_t)RMD160_Equal,
 };
 
 void

@@ -9,6 +9,5 @@
 #define MD5_BLOCK_LENGTH	MD5_CBLOCK
 
 void MD5_Finish(MD5_CTX *pctx, unsigned char *digest);
-int MD5_Equal(MD5_CTX *pctx1, MD5_CTX *pctx2);
 
 #endif

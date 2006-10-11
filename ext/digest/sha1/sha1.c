@@ -267,9 +267,3 @@ void SHA1_Finish(SHA1_CTX* context, uint8_t digest[20])
 		((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
     }
 }
-
-int SHA1_Equal(SHA1_CTX* pctx1, SHA1_CTX* pctx2) {
-	return memcmp(pctx1->count, pctx2->count, sizeof(pctx1->count)) == 0
-		&& memcmp(pctx1->state, pctx2->state, sizeof(pctx1->state)) == 0
-		&& memcmp(pctx1->buffer, pctx2->buffer, sizeof(pctx1->buffer)) == 0;
-}

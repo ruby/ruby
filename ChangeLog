@@ -1,3 +1,14 @@
+Wed Oct 11 21:36:47 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_alloc,
+	  rb_digest_base_equal): Simplify the equality check and just
+	  compare resulted digests since state-level equality should
+	  not be so significant.
+
+	* ext/digest/digest.h: Ditto.
+
+	* ext/digest/*/*.[ch]: Ditto.
+
 Wed Oct 11 17:11:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_obj_define_method): add half boiled RDoc document.

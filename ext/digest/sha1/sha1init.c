@@ -14,7 +14,6 @@ static algo_t sha1 = {
     (hash_init_func_t)SHA1_Init,
     (hash_update_func_t)SHA1_Update,
     (hash_finish_func_t)SHA1_Finish,
-    (hash_equal_func_t)SHA1_Equal,
 };
 
 void

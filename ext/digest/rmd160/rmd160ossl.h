@@ -15,6 +15,5 @@
 #define RMD160_DIGEST_LENGTH		RIPEMD160_DIGEST_LENGTH
 
 void RMD160_Finish(RMD160_CTX *ctx, char *buf);
-int RMD160_Equal(RMD160_CTX *pctx1, RMD160_CTX *pctx2);
 
 #endif
