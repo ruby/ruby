@@ -1,8 +1,2 @@
 digest.o: digest.c digest.h $(hdrdir)/ruby.h $(topdir)/config.h \
   $(hdrdir)/defines.h $(hdrdir)/intern.h
-
-install-so: install-h
-site-install-so: install-h
-
-install-h:
-	$(INSTALL_DATA) $(srcdir)/digest.h $(RUBYARCHDIR)

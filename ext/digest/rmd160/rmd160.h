@@ -40,7 +40,6 @@ typedef struct {
 #define RMD160_Transform	rb_Digest_RMD160_Transform
 #define RMD160_Update	rb_Digest_RMD160_Update
 #define RMD160_Finish	rb_Digest_RMD160_Finish
-#define RMD160_Equal	rb_Digest_RMD160_Equal
 #endif
 
 __BEGIN_DECLS
@@ -48,7 +47,6 @@ void	RMD160_Init _((RMD160_CTX *));
 void	RMD160_Transform _((uint32_t[5], const uint32_t[16]));
 void	RMD160_Update _((RMD160_CTX *, const uint8_t *, size_t));
 void	RMD160_Finish _((RMD160_CTX *, uint8_t[20]));
-int	RMD160_Equal _((RMD160_CTX *, RMD160_CTX *));
 __END_DECLS
 
 #define RMD160_BLOCK_LENGTH             64

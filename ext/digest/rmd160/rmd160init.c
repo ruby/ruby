@@ -14,7 +14,6 @@ static algo_t rmd160 = {
     (hash_init_func_t)RMD160_Init,
     (hash_update_func_t)RMD160_Update,
     (hash_finish_func_t)RMD160_Finish,
-    (hash_equal_func_t)RMD160_Equal,
 };
 
 void
@@ -30,8 +29,11 @@ Init_rmd160()
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
+    rb_define_const(cDigest_RMD160, "DIGEST_LENGTH", INT2NUM(RMD160_DIGEST_LENGTH));
+    rb_define_const(cDigest_RMD160, "BLOCK_LENGTH",  INT2NUM(RMD160_BLOCK_LENGTH));
+
     id_metadata = rb_intern("metadata");
 
-    rb_cvar_set(cDigest_RMD160, id_metadata,
-		Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160), Qtrue);
+    rb_ivar_set(cDigest_RMD160, id_metadata,
+      Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160));
 }

@@ -454,11 +454,4 @@ RMD160_Finish(RMD160_CTX *context, uint8_t digest[20])
 	}
 }
 
-int RMD160_Equal(RMD160_CTX* pctx1, RMD160_CTX* pctx2) {
-	return pctx1->buflen == pctx2->buflen
-		&& memcmp(pctx1->length, pctx2->length, sizeof(pctx1->length)) == 0
-		&& memcmp(pctx1->state, pctx2->state, sizeof(pctx1->state)) == 0
-		&& memcmp(pctx1->bbuffer, pctx2->bbuffer, sizeof(pctx1->bbuffer)) == 0;
-}
-
 /************************ end of file rmd160.c **********************/

@@ -51,12 +51,14 @@ module Digest
         @@algo = superclass
 
         def initialize(text = nil)
-          ipad = Array.new(BLOCK_LENGTH).fill(0x36)
-          opad = Array.new(BLOCK_LENGTH).fill(0x5c)
+          ipad = Array.new(@@algo::BLOCK_LENGTH).fill(0x36)
+          opad = Array.new(@@algo::BLOCK_LENGTH).fill(0x5c)
 
-          KEY.bytes.each_with_index { |c, i|
+          i = 0
+          self.class::KEY.each_byte { |c|
             ipad[i] ^= c
             opad[i] ^= c
+            i += 1
           }
 
           @ipad = ipad.inject('') { |s, c| s << c.chr }
@@ -78,11 +80,11 @@ module Digest
         end
 
         def self.inspect
-          sprintf('#<%s.hmac(%s)>', @@algo.name, KEY.inspect);
+          sprintf('#<%s.hmac(%s)>', @@algo.name, self::KEY.inspect);
         end
 
         def inspect
-          sprintf('#<%s.hmac(%s): %s>', @@algo.name, KEY.inspect, hexdigest());
+          sprintf('#<%s.hmac(%s): %s>', @@algo.name, self.class::KEY.inspect, hexdigest());
         end
       }
     end

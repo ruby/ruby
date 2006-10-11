@@ -3,4 +3,8 @@
 
 require "mkmf"
 
+$INSTALLFILES = {
+  "digest.h" => "$(RUBYARCHDIR)"
+}
+
 create_makefile("digest")

@@ -16,7 +16,7 @@
 #include "digest.h"
 
 static VALUE mDigest, cDigest_Base;
-static ID id_metadata, id_new, id_update, id_digest;
+static ID id_metadata, id_new, id_initialize, id_update, id_digest;
 
 /*
  * Digest::Base
@@ -28,11 +28,11 @@ get_digest_base_metadata(VALUE klass)
     VALUE obj;
     algo_t *algo;
 
-    if (rb_cvar_defined(klass, id_metadata) == Qfalse) {
+    if (rb_ivar_defined(klass, id_metadata) == Qfalse) {
         return NULL;
     }
 
-    obj = rb_cvar_get(klass, id_metadata);
+    obj = rb_ivar_get(klass, id_metadata);
 
     Data_Get_Struct(obj, algo_t, algo);
 
@@ -151,8 +151,7 @@ rb_digest_base_alloc(VALUE klass)
         return Data_Wrap_Struct(klass, 0, free, 0);
     }
 
-    /* XXX: An uninitialized buffer may lead ALGO_Equal() to fail */
-    pctx = xcalloc(algo->ctx_size, 1);
+    pctx = xmalloc(algo->ctx_size);
     algo->init_func(pctx);
 
     obj = Data_Wrap_Struct(klass, 0, free, pctx);
@@ -207,8 +206,10 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     rb_check_frozen(copy);
     algo = get_digest_base_metadata(rb_obj_class(copy));
 
-    if (algo == NULL)
+    if (algo == NULL) {
+        /* initialize_copy() is undefined or something */
         rb_notimplement();
+    }
 
     /* get_digest_base_metadata() may return a NULL */
     if (algo != get_digest_base_metadata(rb_obj_class(obj))) {
@@ -219,6 +220,28 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     memcpy(pctx2, pctx1, algo->ctx_size);
 
     return copy;
+}
+
+static VALUE
+rb_digest_base_reset(VALUE self)
+{
+    algo_t *algo;
+    void *pctx;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        rb_funcall(self, id_initialize, 0);
+
+        return self;
+    }
+
+    Data_Get_Struct(self, void, pctx);
+
+    memset(pctx, 0, algo->ctx_size);
+    algo->init_func(pctx);
+
+    return self;
 }
 
 static VALUE
@@ -287,8 +310,10 @@ rb_digest_base_digest(VALUE self)
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    if (algo == NULL)
+    if (algo == NULL) {
+        /* subclasses must define update() */
         rb_notimplement();
+    }
 
     Data_Get_Struct(self, void, pctx1);
 
@@ -349,27 +374,24 @@ rb_digest_base_equal(VALUE self, VALUE other)
     VALUE str1, str2;
 
     klass = rb_obj_class(self);
-    algo = get_digest_base_metadata(klass);
 
     if (rb_obj_class(other) == klass) {
-	void *pctx1, *pctx2;
+        str1 = rb_digest_base_digest(self);
+        str2 = rb_digest_base_digest(other);
+    } else {
+        StringValue(other);
+        str2 = other;
 
-	Data_Get_Struct(self, void, pctx1);
-	Data_Get_Struct(other, void, pctx2);
+        algo = get_digest_base_metadata(klass);
 
-	return algo->equal_func(pctx1, pctx2) ? Qtrue : Qfalse;
+        if (RSTRING_LEN(str2) == algo->digest_len)
+            str1 = rb_digest_base_digest(self);
+        else
+            str1 = rb_digest_base_hexdigest(self);
     }
 
-    StringValue(other);
-    str2 = other;
-
-    if (RSTRING_LEN(str2) == algo->digest_len)
-	str1 = rb_digest_base_digest(self);
-    else
-	str1 = rb_digest_base_hexdigest(self);
-
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
-      && rb_str_cmp(str1, str2) == 0)
+	&& rb_str_cmp(str1, str2) == 0)
 	return Qtrue;
 
     return Qfalse;
@@ -407,6 +429,7 @@ Init_digest(void)
 
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
+    rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "<<", rb_digest_base_lshift, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
@@ -418,6 +441,7 @@ Init_digest(void)
 
     id_metadata = rb_intern("metadata");
     id_new = rb_intern("new");
+    id_initialize = rb_intern("initialize");
     id_update = rb_intern("update");
     id_digest = rb_intern("digest");
 }

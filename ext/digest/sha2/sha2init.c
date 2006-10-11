@@ -13,7 +13,6 @@ static algo_t sha##bitlen = { \
     (hash_init_func_t)SHA##bitlen##_Init, \
     (hash_update_func_t)SHA##bitlen##_Update, \
     (hash_finish_func_t)SHA##bitlen##_Finish, \
-    (hash_equal_func_t)SHA##bitlen##_Equal, \
 };
 
 FOREACH_BITLEN(DEFINE_ALGO_METADATA)
@@ -39,8 +38,11 @@ Init_sha2()
 #define DEFINE_ALGO_CLASS(bitlen) \
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
 \
-    rb_cvar_set(cDigest_SHA##bitlen, id_metadata, \
-		Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen), Qtrue);
+    rb_define_const(cDigest_SHA##bitlen, "DIGEST_LENGTH", INT2NUM(SHA##bitlen##_DIGEST_LENGTH)); \
+    rb_define_const(cDigest_SHA##bitlen, "BLOCK_LENGTH",  INT2NUM(SHA##bitlen##_BLOCK_LENGTH)); \
+\
+    rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
+      Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen));
 
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

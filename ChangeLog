@@ -1,3 +1,9 @@
+Wed Oct 11 22:21:41 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest: Merge from trunk; metadata location changed,
+	  Digest::Base#reset() added, Digest::Base#equal() changed, and
+	  digest/hmac added with some modifications for ruby 1.8.
+
 Tue Oct 10 17:24:12 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (config.status): shouldn't use

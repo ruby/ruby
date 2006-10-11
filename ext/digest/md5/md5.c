@@ -418,9 +418,3 @@ MD5_Finish(MD5_CTX *pms, uint8_t *digest)
     for (i = 0; i < 16; ++i)
 	digest[i] = (uint8_t)(pms->state[i >> 2] >> ((i & 3) << 3));
 }
-
-int MD5_Equal(MD5_CTX* pctx1, MD5_CTX* pctx2) {
-	return memcmp(pctx1->count, pctx2->count, sizeof(pctx1->count)) == 0
-		&& memcmp(pctx1->state, pctx2->state, sizeof(pctx1->state)) == 0
-		&& memcmp(pctx1->buffer, pctx2->buffer, sizeof(pctx1->buffer)) == 0;
-}
