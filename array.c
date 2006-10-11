@@ -2158,7 +2158,11 @@ rb_ary_replace(VALUE copy, VALUE orig)
 	ARY_SET_NOEMBED(copy);
     }
     else {
-	xfree(RARRAY(copy)->as.heap.ptr);
+	VALUE *ptr = RARRAY(copy)->as.heap.ptr;
+	if (ARY_LFREE_P(copy)) {
+	    ptr -= LFREE_SIZE(copy);
+	}
+	xfree(ptr);
     }
     RARRAY(copy)->as.heap.ptr = RARRAY(shared)->as.heap.ptr;
     RARRAY(copy)->as.heap.len = RARRAY(shared)->as.heap.len;
