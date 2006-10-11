@@ -1,3 +1,22 @@
+Wed Oct 11 14:03:31 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_reset, Init_digest): Add
+	  Digest::Base#reset.
+
+	* ext/digest/digest.h: Update the header comment.
+
+	* ext/digest/md5/md5ossl.h, ext/digest/md5/md5init.c (Init_md5):
+	  Define DIGEST_LENGTH and BLOCK_LENGTH.
+
+	* ext/digest/rmd160/rmd160init.c (Init_rmd160): Ditto.
+
+	* ext/digest/sha1/sha1init.c (Init_sha1): Ditto.
+
+	* ext/digest/sha2/sha2init.c (Init_sha2): Ditto.
+
+	* ext/digest/depend, ext/digest/extconf.rb: Use $INSTALLFILES
+	  rather than adding make targets. [Pointed out by: nobu]
+
 Tue Oct 10 16:39:08 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (hexdigest_str_new, bubblebabble_str_new):

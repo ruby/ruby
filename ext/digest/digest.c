@@ -16,7 +16,7 @@
 #include "digest.h"
 
 static VALUE mDigest, cDigest_Base;
-static ID id_metadata, id_new, id_update, id_digest;
+static ID id_metadata, id_new, id_reset, id_update, id_digest;
 
 /*
  * Digest::Base
@@ -222,6 +222,28 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
 }
 
 static VALUE
+rb_digest_base_reset(VALUE self)
+{
+    algo_t *algo;
+    void *pctx;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        rb_funcall(self, id_reset, 0);
+
+        return self;
+    }
+
+    Data_Get_Struct(self, void, pctx);
+
+    memset(pctx, 0, algo->ctx_size);
+    algo->init_func(pctx);
+
+    return self;
+}
+
+static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
 {
     algo_t *algo;
@@ -407,6 +429,7 @@ Init_digest(void)
 
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
+    rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "<<", rb_digest_base_lshift, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
@@ -418,6 +441,7 @@ Init_digest(void)
 
     id_metadata = rb_intern("metadata");
     id_new = rb_intern("new");
+    id_reset = rb_intern("reset");
     id_update = rb_intern("update");
     id_digest = rb_intern("digest");
 }

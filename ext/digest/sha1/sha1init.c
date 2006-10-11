@@ -29,6 +29,9 @@ Init_sha1()
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
 
+    rb_define_const(cDigest_SHA1, "DIGEST_LENGTH", INT2NUM(SHA1_DIGEST_LENGTH));
+    rb_define_const(cDigest_SHA1, "BLOCK_LENGTH",  INT2NUM(SHA1_BLOCK_LENGTH));
+
     rb_cvar_set(cDigest_SHA1, rb_intern("metadata"),
 		Data_Wrap_Struct(rb_cObject, 0, 0, &sha1), Qtrue);
 }

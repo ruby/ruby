@@ -30,6 +30,9 @@ Init_rmd160()
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
+    rb_define_const(cDigest_RMD160, "DIGEST_LENGTH", INT2NUM(RMD160_DIGEST_LENGTH));
+    rb_define_const(cDigest_RMD160, "BLOCK_LENGTH",  INT2NUM(RMD160_BLOCK_LENGTH));
+
     id_metadata = rb_intern("metadata");
 
     rb_cvar_set(cDigest_RMD160, id_metadata,
