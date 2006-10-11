@@ -54,16 +54,10 @@ module Digest
           ipad = Array.new(BLOCK_LENGTH).fill(0x36)
           opad = Array.new(BLOCK_LENGTH).fill(0x5c)
 
-          i = 0
-          KEY.each_byte { |c|
+          KEY.bytes.each_with_index { |c, i|
             ipad[i] ^= c
             opad[i] ^= c
-            i += 1
           }
-          #KEY.bytes.each_with_index { |c, i|
-          #  ipad[i] ^= c
-          #  opad[i] ^= c
-          #}
 
           @ipad = ipad.inject('') { |s, c| s << c.chr }
           @opad = opad.inject('') { |s, c| s << c.chr }

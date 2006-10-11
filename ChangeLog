@@ -1,3 +1,7 @@
+Thu Oct 12 02:15:24 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Make use of String#bytes.
+
 Thu Oct 12 02:12:31 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (get_digest_base_metadata): Use an instance
