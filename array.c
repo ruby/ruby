@@ -1227,6 +1227,24 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
+VALUE
+each_internal(VALUE ary)
+{
+    long i;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	rb_yield(RARRAY_PTR(ary)[i]);
+    }
+    return ary;
+}
+
+static VALUE
+iter_unlock(VALUE ary)
+{
+    FL_UNSET(ary, ARY_TMPLOCK);
+    return ary;
+}
+
 /*
  *  call-seq:
  *     array.each {|item| block }   ->   array
@@ -1245,12 +1263,9 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 VALUE
 rb_ary_each(VALUE ary)
 {
-    long i;
-
     RETURN_ENUMERATOR(ary, 0, 0);
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	rb_yield(RARRAY_PTR(ary)[i]);
-    }
+    FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during each */
+    rb_ensure(each_internal, ary, iter_unlock, ary);
     return ary;
 }
 
@@ -1623,13 +1638,6 @@ sort_internal(VALUE ary)
     return ary;
 }
 
-static VALUE
-sort_unlock(VALUE ary)
-{
-    FL_UNSET(ary, ARY_TMPLOCK);
-    return ary;
-}
-
 /*
  *  call-seq:
  *     array.sort!                   -> array
@@ -1652,7 +1660,7 @@ rb_ary_sort_bang(VALUE ary)
     rb_ary_modify(ary);
     if (RARRAY_LEN(ary) > 1) {
 	FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
-	rb_ensure(sort_internal, ary, sort_unlock, ary);
+	rb_ensure(sort_internal, ary, iter_unlock, ary);
     }
     return ary;
 }
