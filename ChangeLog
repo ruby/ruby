@@ -1,3 +1,8 @@
+Wed Oct 11 15:07:42 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Add digest/hmac, which implements
+	  HMAC keyed-hashing algorithm.
+
 Wed Oct 11 15:03:55 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_reset): Do not make
