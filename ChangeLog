@@ -1,3 +1,8 @@
+Wed Oct 11 14:58:44 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_each): prohibit array modification during each
+	  iteration.  [ruby-core:09104]
+
 Wed Oct 11 14:56:10 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/digest/sha1/sha1ossl.h: libssl 0.9.8c-3 defines no

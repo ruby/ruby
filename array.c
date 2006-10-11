@@ -1245,6 +1245,42 @@ iter_unlock(VALUE ary)
     return ary;
 }
 
+VALUE
+each_internal(VALUE ary)
+{
+    long i;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	rb_yield(RARRAY_PTR(ary)[i]);
+    }
+    return ary;
+}
+
+static VALUE
+iter_unlock(VALUE ary)
+{
+    FL_UNSET(ary, ARY_TMPLOCK);
+    return ary;
+}
+
+VALUE
+each_internal(VALUE ary)
+{
+    long i;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	rb_yield(RARRAY_PTR(ary)[i]);
+    }
+    return ary;
+}
+
+static VALUE
+iter_unlock(VALUE ary)
+{
+    FL_UNSET(ary, ARY_TMPLOCK);
+    return ary;
+}
+
 /*
  *  call-seq:
  *     array.each {|item| block }   ->   array
