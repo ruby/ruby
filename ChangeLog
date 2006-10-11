@@ -6,8 +6,9 @@ Thu Oct 12 02:12:31 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (get_digest_base_metadata): Use an instance
 	  variable of a class object instead of a class variable for
-	  metadata.  This change is crucial for ruby 1.8 and applying it
-	  also to the trunk will assure compatibilities.
+	  metadata.  This change is only crucial for ruby 1.8 because
+	  class variables are inherited to subclasses prior to 1.9, but
+	  applying it also to 1.9 will assure compatibilities.
 
 	* ext/digest/md5/md5init.c (Init_md5): Ditto.
 
