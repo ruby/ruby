@@ -28,11 +28,11 @@ get_digest_base_metadata(VALUE klass)
     VALUE obj;
     algo_t *algo;
 
-    if (rb_cvar_defined(klass, id_metadata) == Qfalse) {
+    if (rb_ivar_defined(klass, id_metadata) == Qfalse) {
         return NULL;
     }
 
-    obj = rb_cvar_get(klass, id_metadata);
+    obj = rb_ivar_get(klass, id_metadata);
 
     Data_Get_Struct(obj, algo_t, algo);
 

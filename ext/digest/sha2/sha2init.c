@@ -41,8 +41,8 @@ Init_sha2()
     rb_define_const(cDigest_SHA##bitlen, "DIGEST_LENGTH", INT2NUM(SHA##bitlen##_DIGEST_LENGTH)); \
     rb_define_const(cDigest_SHA##bitlen, "BLOCK_LENGTH",  INT2NUM(SHA##bitlen##_BLOCK_LENGTH)); \
 \
-    rb_cvar_set(cDigest_SHA##bitlen, id_metadata, \
-		Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen), Qtrue);
+    rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
+      Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen));
 
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

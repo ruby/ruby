@@ -1,3 +1,18 @@
+Thu Oct 12 02:12:31 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (get_digest_base_metadata): Use an instance
+	  variable of a class object instead of a class variable for
+	  metadata.  This change is crucial for ruby 1.8 and applying it
+	  also to the trunk will assure compatibilities.
+
+	* ext/digest/md5/md5init.c (Init_md5): Ditto.
+
+	* ext/digest/rmd160/rmd160init.c (Init_rmd160): Ditto.
+
+	* ext/digest/sha1/sha1init.c (Init_sha1): Ditto.
+
+	* ext/digest/sha2/sha2init.c (Init_sha2): Ditto.
+
 Wed Oct 11 21:36:47 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_alloc,

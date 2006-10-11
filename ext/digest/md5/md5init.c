@@ -31,6 +31,6 @@ Init_md5()
     rb_define_const(cDigest_MD5, "DIGEST_LENGTH", INT2NUM(MD5_DIGEST_LENGTH));
     rb_define_const(cDigest_MD5, "BLOCK_LENGTH",  INT2NUM(MD5_BLOCK_LENGTH));
 
-    rb_cvar_set(cDigest_MD5, rb_intern("metadata"),
-		Data_Wrap_Struct(rb_cObject, 0, 0, &md5), Qtrue);
+    rb_ivar_set(cDigest_MD5, rb_intern("metadata"),
+      Data_Wrap_Struct(rb_cObject, 0, 0, &md5));
 }

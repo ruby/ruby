@@ -34,6 +34,6 @@ Init_rmd160()
 
     id_metadata = rb_intern("metadata");
 
-    rb_cvar_set(cDigest_RMD160, id_metadata,
-		Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160), Qtrue);
+    rb_ivar_set(cDigest_RMD160, id_metadata,
+      Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160));
 }
