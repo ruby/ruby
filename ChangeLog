@@ -1,6 +1,7 @@
 Fri Oct 13 00:34:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* object.c (rb_mod_cvar_defined): wrong id check.  [ruby-core:09158]
+	* object.c (rb_mod_cvar_defined): wrong id check.  a patch from
+	  Mauricio Fernandez <mfp at acm.org>.  [ruby-core:09158]
 
 	* object.c (rb_mod_cvar_get): typo fixed.  [ruby-core:09168]
 
