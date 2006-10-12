@@ -1,3 +1,8 @@
+Fri Oct 13 01:48:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/date.rb (Date::self.complete_hash): need to check if g is
+	  nil before dereference.  [ruby-core:09116]
+
 Fri Oct 13 00:34:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_cvar_defined): wrong id check.  a patch from

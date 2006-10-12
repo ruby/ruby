@@ -797,7 +797,7 @@ class Date
       end
     end
 
-    if g[0] == :time
+    if g && g[0] == :time
       if self <= DateTime
 	d ||= Date.today
 	elem[:jd] ||= d.jd
