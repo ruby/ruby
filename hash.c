@@ -1549,22 +1549,22 @@ static struct st_hash_type identhash = {
 
 /*
  *  call-seq:
- *     hsh.identical => hsh
+ *     hsh.compare_by_identity => hsh
  *  
  *  Makes <i>hsh</i> to compare its keys by their identity, i.e. it
  *  will consider exact same objects as same keys.
  *     
  *     h1 = { "a" => 100, "b" => 200, :c => "c" }
  *     h1["a"]        #=> "a"
- *     h1.identical
- *     h1.identical?  #=> true
+ *     h1.compare_by_identity
+ *     h1.compare_by_identity? #=> true
  *     h1["a"]        #=> nil  # different objects.
  *     h1[:c]         #=> "c"  # same symbols are all same.
  *     
  */
 
 static VALUE
-rb_hash_identical(VALUE hash)
+rb_hash_compare_by_id(VALUE hash)
 {
     rb_hash_modify(hash);
     RHASH(hash)->tbl->type = &identhash;
@@ -1574,15 +1574,15 @@ rb_hash_identical(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.identical? => true or false
+ *     hsh.compare_by_identity? => true or false
  *  
  *  Returns <code>true</code> if <i>hsh</i> will compare its keys by
- *  their identity.  Also see <code>Hash#identical</code>.
+ *  their identity.  Also see <code>Hash#compare_by_identity</code>.
  *     
  */
 
 static VALUE
-rb_hash_identical_p(VALUE hash)
+rb_hash_compare_by_id_p(VALUE hash)
 {
     if (RHASH(hash)->tbl->type == &identhash) {
 	return Qtrue;
@@ -2441,8 +2441,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"key?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash,"value?", rb_hash_has_value, 1);
 
-    rb_define_method(rb_cHash,"identical", rb_hash_identical, 0);
-    rb_define_method(rb_cHash,"identical?", rb_hash_identical_p, 0);
+    rb_define_method(rb_cHash,"compare_by_identity", rb_hash_compare_by_id, 0);
+    rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
 #ifndef __MACOS__ /* environment variables nothing on MacOS. */
     origenviron = environ;

@@ -1,3 +1,8 @@
+Thu Oct 12 22:58:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_compare_by_id): somehow we lost renaming from
+	  Hash#identical.  [ruby-core:09163]
+
 Thu Oct 12 18:25:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): need to handle new
