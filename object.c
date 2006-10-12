@@ -2052,7 +2052,7 @@ rb_mod_cvar_get(obj, iv)
     ID id = rb_to_id(iv);
 
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an class variable name", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
     }
     return rb_cvar_get(obj, id);
 }
@@ -2085,7 +2085,7 @@ rb_mod_cvar_set(obj, iv, val)
     ID id = rb_to_id(iv);
 
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an class variable name", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
     }
     rb_cvar_set(obj, id, val, Qfalse);
     return val;
@@ -2111,8 +2111,8 @@ rb_mod_cvar_defined(obj, iv)
 {
     ID id = rb_to_id(iv);
 
-    if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+    if (!rb_is_class_id(id)) {
+	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
     }
     return rb_cvar_defined(obj, id);
 }
