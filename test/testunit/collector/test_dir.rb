@@ -89,19 +89,19 @@ module Test
           end
 
           def directory?(name)
+            return true if (base = basename(name)) == '/'
             e = find(dirname(name))
             return false unless(e)
-            e.directory?(basename(name))
+            e.directory?(base)
           end
 
           def find(path)
             if(/\A\// =~ path)
-              path = path.sub(/\A\//, '')
               thing = @root
             else
               thing = @pwd
             end
-            split(path).each do |e|
+            path.scan(/[^\/]+/) do |e|
               break thing = false unless(thing.kind_of?(Directory))
               thing = thing[e]
             end
@@ -109,15 +109,19 @@ module Test
           end
 
           def dirname(name)
-            join(*split(name)[0..-2])
+            if (name = name.tr_s('/', '/')) == '/'
+              name
+            else
+              name[%r"\A.+(?=/[^/]+/?\z)|\A/"] || "."
+            end
           end
 
           def basename(name)
-            split(name)[-1]
+            name[%r"(\A/|[^/]+)/*\z", 1]
           end
 
           def split(name)
-            name.split('/')
+            [dirname(name), basename(name)]
           end
 
           def join(*parts)
@@ -138,6 +142,19 @@ module Test
             e = find(to)
             require_directory(to)
             @pwd = e
+          end
+
+          def expand_path(path, base = nil)
+            until /\A\// =~ path
+              base ||= pwd
+              path = join(base, path)
+              base = nil
+            end
+            path.gsub!(%r"(?:/\.)+(?=/)", '')
+            nil while path.sub!(%r"/(?!\.\./)[^/]+/\.\.(?=/)", '')
+            path.sub!(%r"\A(?:/\.\.)+(?=/)", '')
+            path.sub!(%r"(?:\A(/)|/)\.\.?\z", '\1')
+            path
           end
 
           def require_directory(path)
