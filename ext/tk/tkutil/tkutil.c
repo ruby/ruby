@@ -1359,8 +1359,8 @@ cbsubst_table_setup(self, key_inf, proc_inf)
     for(idx = 0; idx < len; idx++) {
         inf = RARRAY_PTR(key_inf)[idx];
         if (TYPE(inf) != T_ARRAY) continue;
-        *(key  + real_len) = (char)NUM2INT(RARRAY_PTR(inf)[0]);
-        *(type + real_len) = (char)NUM2INT(RARRAY_PTR(inf)[1]);
+        *(key  + real_len) = NUM2CHR(RARRAY_PTR(inf)[0]);
+        *(type + real_len) = NUM2CHR(RARRAY_PTR(inf)[1]);
 
         *(ivar + real_len) 
             = rb_intern(

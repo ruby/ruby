@@ -1043,6 +1043,7 @@ def configuration(srcdir)
       CONFIG['PATH_SEPARATOR'] = ';'
     end
   end
+  CONFIG["hdrdir"] ||= $hdrdir
   mk << %{
 SHELL = /bin/sh
 
@@ -1107,7 +1108,7 @@ COPY = #{config_string('CP') || '@$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
 
-preload = #{$preload ? $preload.join(' ') : ''}
+preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
 }
   if $nmake == ?b
     mk.each do |x|

@@ -1,3 +1,10 @@
+Thu Oct 12 18:25:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): need to handle new
+	  character literal (1 char string).
+
+	* lib/mkmf.rb: shut up some warnings from tk's extconf.rb.
+
 Thu Oct 12 02:15:24 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Make use of String#bytes.
