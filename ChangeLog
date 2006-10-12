@@ -1,6 +1,11 @@
+Fri Oct 13 02:42:00 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_equal): Should call digest()
+	  of a subclass instead of the one defined in the base class.
+
 Fri Oct 13 02:30:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-[]	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
+	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
 	  base directory to load path.
 
 	* lib/test/unit/collector/dir.rb (Collector::Dir#collect_file): should

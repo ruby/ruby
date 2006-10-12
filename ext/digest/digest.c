@@ -376,8 +376,8 @@ rb_digest_base_equal(VALUE self, VALUE other)
     klass = rb_obj_class(self);
 
     if (rb_obj_class(other) == klass) {
-        str1 = rb_digest_base_digest(self);
-        str2 = rb_digest_base_digest(other);
+        str1 = rb_funcall(self, id_digest, 0);
+        str2 = rb_funcall(other, id_digest, 0);
     } else {
         StringValue(other);
         str2 = other;
