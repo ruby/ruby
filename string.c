@@ -4414,13 +4414,10 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.partition {| obj | block }  => [true_array, false_array]
  *     str.partition(sep)              => [head, sep, tail]
  *  
- *  If a block is given, returns two arrays of true elements and false
- *  elements classified by the block evaluation.  Otherwise, searches
- *  <i>sep</i> in the string and returns the part before it, the
- *  <i>sep</i>, and the part after it.  If <i>sep</i> is not found,
+ *  Searches the string for <i>sep</i> and returns the part before
+ *  it, the <i>sep</i>, and the part after it.  If <i>sep</i> is not found,
  *  returns <i>str</i> and two empty strings.
  *     
  *     "hello".partition("l")         #=> ["he", "l", "lo"]

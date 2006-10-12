@@ -1,3 +1,10 @@
+Fri Oct 13 01:05:58 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_partition): RDoc update.  a patch from
+	  Mauricio Fernandez <mfp at acm.org>.  [ruby-core:09160]
+
+	* hash.c (rb_hash_compare_by_id): ditto.
+
 Fri Oct 13 00:34:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_cvar_defined): wrong id check.  a patch from

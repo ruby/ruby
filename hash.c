@@ -1555,7 +1555,7 @@ static struct st_hash_type identhash = {
  *  will consider exact same objects as same keys.
  *     
  *     h1 = { "a" => 100, "b" => 200, :c => "c" }
- *     h1["a"]        #=> "a"
+ *     h1["a"]        #=> 100
  *     h1.compare_by_identity
  *     h1.compare_by_identity? #=> true
  *     h1["a"]        #=> nil  # different objects.
