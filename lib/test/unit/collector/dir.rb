@@ -21,6 +21,8 @@ module Test
         end
 
         def collect(*from)
+          basedir = @base
+          $:.unshift(basedir) if basedir
           if(from.empty?)
             recursive_collect('.', find_test_cases)
           elsif(from.size == 1)
@@ -35,6 +37,8 @@ module Test
             sort(suites).each{|s| suite << s}
             suite
           end
+        ensure
+          $:.delete_at($:.rindex(basedir)) if basedir
         end
 
         def find_test_cases(ignore=[])
@@ -77,7 +81,7 @@ module Test
         end
 
         def collect_file(name, suites, already_gathered)
-          dir = File.dirname(name = File.expand_path(name, @base))
+          dir = @file.dirname(@file.expand_path(name, @base))
           $:.unshift(dir)
           if(@req)
             @req.require(name)

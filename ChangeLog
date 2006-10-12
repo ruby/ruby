@@ -1,3 +1,14 @@
+Fri Oct 13 02:30:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+[]	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
+	  base directory to load path.
+
+	* lib/test/unit/collector/dir.rb (Collector::Dir#collect_file): should
+	  use the given File-like interface, but not File directly.
+
+	* test/testunit/collector/test_dir.rb (TestDir::FileSystem): implement
+	  File-like methods correctly.
+
 Fri Oct 13 01:48:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/date.rb (Date::self.complete_hash): need to check if g is
