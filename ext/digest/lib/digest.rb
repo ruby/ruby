@@ -1,12 +1,20 @@
 require 'digest.so'
 
 module Digest
-  autoload "MD5", "digest/md5"
-  autoload "RMD160", "digest/rmd160"
-  autoload "SHA1", "digest/sha1"
   autoload "SHA256", "digest/sha2"
   autoload "SHA384", "digest/sha2"
   autoload "SHA512", "digest/sha2"
+
+  def self.const_missing(name)
+    begin
+      require File.join('digest', name.downcase)
+
+      return Digest.const_get(name) if Digest.const_defined?(name)
+    rescue LoadError => e
+    end
+
+    raise NameError, "Digest class not found: Digest::#{name}"
+  end
 
   class Base
     # creates a digest object and read given file, _name_.
@@ -24,4 +32,8 @@ module Digest
       digest
     end
   end
+end
+
+def Digest(name)
+  Digest.const_get(name)
 end
