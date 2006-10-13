@@ -82,7 +82,11 @@ bubblebabble_str_new(VALUE str_digest)
  * call-seq:
  *     Digest.bubblebabble(string) -> bubblebabble_string
  *
- * Returns a BubbleBabble encoded version of a given _string_. */
+ * Returns a BubbleBabble encoded version of a given _string_.
+ *
+ * If extra arguments are given, they are passed to
+ * Digest::ALGORITHM.digest() along with the _string_.
+ */
 static VALUE
 rb_digest_s_bubblebabble(VALUE klass, VALUE str)
 {
@@ -91,14 +95,14 @@ rb_digest_s_bubblebabble(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *     Digest::ALGORITHM.bubblebabble(string) -> hash_string
+ *     Digest::ALGORITHM.bubblebabble(string, ...) -> hash_string
  *
  * Returns the BubbleBabble encoded hash value of a given _string_.
  */
 static VALUE
-rb_digest_base_s_bubblebabble(VALUE klass, VALUE str)
+rb_digest_base_s_bubblebabble(int argc, VALUE *argv, VALUE klass)
 {
-    return bubblebabble_str_new(rb_funcall(klass, id_digest, 1, str));
+    return bubblebabble_str_new(rb_funcall2(klass, id_digest, argc, argv));
 }
 
 /*
@@ -127,7 +131,7 @@ Init_bubblebabble(void)
     rb_define_module_function(mDigest, "bubblebabble", rb_digest_s_bubblebabble, 1);
 
     /* Digest::Base::bubblebabble() */
-    rb_define_singleton_method(cDigest_Base, "bubblebabble", rb_digest_base_s_bubblebabble, 1);
+    rb_define_singleton_method(cDigest_Base, "bubblebabble", rb_digest_base_s_bubblebabble, -1);
 
     /* Digest::Base#bubblebabble() */
     rb_define_method(cDigest_Base, "bubblebabble", rb_digest_base_bubblebabble, 0);

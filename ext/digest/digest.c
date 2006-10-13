@@ -108,19 +108,33 @@ rb_digest_base_alloc(VALUE klass)
 
 /*
  * call-seq:
- *     Digest::ALGORITHM.digest(data) -> string
+ *     Digest::ALGORITHM.digest(string[, ...]) -> hash_string
  *
- * Returns the hash value of a given string _data_.
+ * Returns the hash value of a given string _data_.  This is almost
+ * equivalent to Digest::ALGORITHM.new(...).update(string).digest()
+ * where extra arguments, if any, are passed to the constructor.
  */
 static VALUE
-rb_digest_base_s_digest(VALUE klass, VALUE str)
+rb_digest_base_s_digest(int argc, VALUE *argv, VALUE klass)
 {
-    algo_t *algo = get_digest_base_metadata(klass);
+    VALUE str;
+    algo_t *algo;
     void *pctx;
     volatile VALUE obj;
 
+    if (argc < 1) {
+        rb_raise(rb_eArgError, "no data given");
+    }
+
+    str = *argv++;
+    argc--;
+
+    StringValue(str);
+
+    algo = get_digest_base_metadata(klass);
+
     if (algo == NULL) {
-        VALUE obj = rb_funcall(klass, id_new, 0);
+        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
         rb_funcall(obj, id_update, 1, str);
         return rb_funcall(obj, id_digest, 0);
     }
@@ -128,7 +142,6 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
     obj = rb_digest_base_alloc(klass);
     Data_Get_Struct(obj, void, pctx);
 
-    StringValue(str);
     algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
 
     str = rb_str_new(0, algo->digest_len);
@@ -139,16 +152,20 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *     Digest::ALGORITHM.hexdigest(data) -> string
+ *     Digest::ALGORITHM.hexdigest(string[, ...]) -> hash_string
  *
- * Returns the hex-encoded hash value of a given string _data_.
+ * Returns the hex-encoded hash value of a given _string_.  This
+ * method just hex-encode the return value of
+ * Digest::ALGORITHM.digest(string[, ...]) where extra arguments, if
+ * any, are passed to digest() along with the _string_.
  */
 static VALUE
-rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
+rb_digest_base_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 {
-    return hexdigest_str_new(rb_funcall(klass, id_digest, 1, str));
+    return hexdigest_str_new(rb_funcall2(klass, id_digest, argc, argv));
 }
 
+/* :nodoc: */
 static VALUE
 rb_digest_base_copy(VALUE copy, VALUE obj)
 {
@@ -205,9 +222,9 @@ rb_digest_base_reset(VALUE self)
 
 /*
  * call-seq:
- *     digest_obj.update(data) -> digest_obj
+ *     digest_obj.update(string) -> digest_obj
  *
- * Updates the digest using a given string _data_ and returns self.
+ * Updates the digest using a given _string_ and returns self.
  */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
@@ -232,9 +249,9 @@ rb_digest_base_update(VALUE self, VALUE str)
 
 /*
  * call-seq:
- *     digest_obj << data -> digest_obj
+ *     digest_obj << string -> digest_obj
  *
- * Alias for update().
+ * Calls update(string).
  */
 static VALUE
 rb_digest_base_lshift(VALUE self, VALUE str)
@@ -387,8 +404,8 @@ Init_digest(void)
     cDigest_Base = rb_define_class_under(mDigest, "Base", rb_cObject);
 
     rb_define_alloc_func(cDigest_Base, rb_digest_base_alloc);
-    rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
-    rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
+    rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, -1);
+    rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, -1);
 
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
     rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);

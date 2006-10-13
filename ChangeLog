@@ -1,3 +1,16 @@
+Sat Oct 14 04:33:33 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c: Improve RDoc documentation.
+
+	* ext/digest/digest.c (Init_digest, rb_digest_base_s_digest,
+	  rb_digest_base_s_hexdigest): Make Digest::Base::digest() and
+	  Digest::Base::hexdigest() take extra arguments, which are passed
+	  through to the constructor in an internal call.
+
+	* ext/digest/bubblebabble/bubblebabble.c
+	  (rb_digest_base_s_bubblebabble): Ditto for
+	  Digest::Base::bubblebabble().
+
 Sat Oct 14 00:55:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub (post-install-ext): no longer needed.
