@@ -1,6 +1,6 @@
 Fri Oct 13 02:30:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-[]	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
+	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
 	  base directory to load path.
 
 	* lib/test/unit/collector/dir.rb (Collector::Dir#collect_file): should
@@ -97,7 +97,7 @@ Wed Oct  4 08:52:30 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Oct  3 23:32:27 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/test/unit/testcase.rb (Test::Unit::TestCase.suite): tset name
+	* lib/test/unit/testcase.rb (Test::Unit::TestCase.suite): test name
 	  must be string.  fixed: [ruby-core:08978]
 
 Mon Oct  2 23:47:55 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
