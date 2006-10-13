@@ -1,3 +1,7 @@
+Sat Oct 14 05:54:05 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c: Improve RDoc documentation further more.
+
 Sat Oct 14 04:33:33 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c: Improve RDoc documentation.

@@ -112,7 +112,8 @@ rb_digest_base_alloc(VALUE klass)
  *
  * Returns the hash value of a given string _data_.  This is almost
  * equivalent to Digest::ALGORITHM.new(...).update(string).digest()
- * where extra arguments, if any, are passed to the constructor.
+ * where extra arguments, if any, are passed through to the
+ * constructor.
  */
 static VALUE
 rb_digest_base_s_digest(int argc, VALUE *argv, VALUE klass)
@@ -157,7 +158,7 @@ rb_digest_base_s_digest(int argc, VALUE *argv, VALUE klass)
  * Returns the hex-encoded hash value of a given _string_.  This
  * method just hex-encode the return value of
  * Digest::ALGORITHM.digest(string[, ...]) where extra arguments, if
- * any, are passed to digest() along with the _string_.
+ * any, are passed through along with the _string_.
  */
 static VALUE
 rb_digest_base_s_hexdigest(int argc, VALUE *argv, VALUE klass)
@@ -197,6 +198,10 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
  *     digest_obj.reset -> digest_obj
  *
  * Resets the digest to the initial state and returns self.
+ *
+ * Every implementation subclass which constructor takes arguments
+ * must redefine this method because Digest::Base#reset() internally
+ * calls initialize() with no argument.
  */
 static VALUE
 rb_digest_base_reset(VALUE self)
@@ -225,6 +230,8 @@ rb_digest_base_reset(VALUE self)
  *     digest_obj.update(string) -> digest_obj
  *
  * Updates the digest using a given _string_ and returns self.
+ *
+ * Implementation subclasses must redefine this method.
  */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
@@ -252,6 +259,8 @@ rb_digest_base_update(VALUE self, VALUE str)
  *     digest_obj << string -> digest_obj
  *
  * Calls update(string).
+ *
+ * Subclasses need not redefine this method.
  */
 static VALUE
 rb_digest_base_lshift(VALUE self, VALUE str)
@@ -281,6 +290,8 @@ rb_digest_base_lshift(VALUE self, VALUE str)
  *     digest_obj.digest -> string
  *
  * Returns the resulting hash value.
+ *
+ * Implementation subclasses must redefine this method.
  */
 static VALUE
 rb_digest_base_digest(VALUE self)
