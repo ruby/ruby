@@ -410,6 +410,34 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 
 
 /*
+ * Document-method: inherited
+ *
+ * call-seq:
+ *    inherited(subclass)
+ *
+ * Callback invoked whenever a subclass of the current class is created.
+ *
+ * Example:
+ *
+ *    class Foo
+ *       def self.inherited(subclass)
+ *          puts "New subclass: #{subclass}"
+ *       end
+ *    end
+ *
+ *    class Bar < Foo
+ *    end
+ *
+ *    class Baz < Bar
+ *    end
+ *
+ * produces:
+ *
+ *    New subclass: Bar
+ *    New subclass: Baz
+ */
+
+/*
  * Document-method: singleton_method_added
  *
  *  call-seq:
@@ -519,7 +547,6 @@ rb_obj_dummy(void)
 {
     return Qnil;
 }
-
 
 /*
  *  call-seq:

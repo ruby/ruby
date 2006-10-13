@@ -1,3 +1,8 @@
+Fri Oct 13 18:19:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c: Class#inherited RDoc added.  a patch from Daniel
+	  Berger <djberg96 at gmail.com>  [ruby-core:08942]
+
 Fri Oct 13 02:42:00 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_equal): Should call digest()
