@@ -1,3 +1,8 @@
+Fri Oct 13 18:19:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c: Class#inherited RDoc added.  a patch from Daniel
+	  Berger <djberg96 at gmail.com>  [ruby-core:08942]
+
 Fri Oct 13 02:30:12 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): prepend
