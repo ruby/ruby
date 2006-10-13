@@ -1,3 +1,8 @@
+Sat Oct 14 08:24:45 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac: Back out the addition of digest/hmac
+	  for now because the API is too premature for a stable branch.
+
 Sat Oct 14 00:55:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub (post-install-ext): no longer needed.
