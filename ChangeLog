@@ -1,3 +1,8 @@
+Fri Oct 13 22:33:28 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (FileUtils.cp_r): dereference_root=true is
+	  default in Ruby 1.8.  This line is wrongly removed in last commit.
+
 Fri Oct 13 18:19:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c: Class#inherited RDoc added.  a patch from Daniel
