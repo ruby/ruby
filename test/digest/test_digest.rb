@@ -43,7 +43,8 @@ module TestDigest
   def test_eq
     # This test is also for clone()
 
-    md1 = self.class::ALGO.new("ABC")
+    md1 = self.class::ALGO.new
+    md1 << "ABC"
 
     assert_equal(md1, md1.clone, self.class::ALGO)
 

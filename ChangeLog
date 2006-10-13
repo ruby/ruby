@@ -1,3 +1,12 @@
+Fri Oct 13 20:53:37 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (Init_digest): Digest::Base.new() does no
+	  longer take an initial string to feed.  This change allows
+	  subclasses to take hashing parameters.  A statement such as
+	  ``md = Digest::MD5.new(s)'' can be easily rewritten as
+	  ``md = Digest::MD5.new << s'' or
+	  ``md = Digest::MD5.new.update(s)''.
+
 Fri Oct 13 20:51:55 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c, ext/digest/md5/md5init.c,

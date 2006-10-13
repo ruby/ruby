@@ -259,18 +259,6 @@ rb_digest_base_lshift(VALUE self, VALUE str)
     return self;
 }
 
-static VALUE
-rb_digest_base_init(int argc, VALUE *argv, VALUE self)
-{
-    VALUE arg;
-
-    rb_scan_args(argc, argv, "01", &arg);
-
-    if (!NIL_P(arg)) rb_digest_base_update(self, arg);
-
-    return self;
-}
-
 /*
  * call-seq:
  *     digest_obj.digest -> string
@@ -402,7 +390,6 @@ Init_digest(void)
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
 
-    rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
     rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
