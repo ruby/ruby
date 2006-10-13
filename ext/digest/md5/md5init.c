@@ -16,6 +16,11 @@ static algo_t md5 = {
     (hash_finish_func_t)MD5_Finish,
 };
 
+/*
+ * A class for calculating message digests using the MD5
+ * Message-Digest Algorithm by RSA Data Security, Inc., described in
+ * RFC1321.
+ */
 void
 Init_md5()
 {

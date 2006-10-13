@@ -17,6 +17,11 @@ static algo_t sha##bitlen = { \
 
 FOREACH_BITLEN(DEFINE_ALGO_METADATA)
 
+/*
+ * Classes for calculating message digests using the SHA-256/384/512
+ * Secure Hash Algorithm(s) by NIST (the US' National Institute of
+ * Standards and Technology), described in FIPS PUB 180-2.
+ */
 void
 Init_sha2()
 {

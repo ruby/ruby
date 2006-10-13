@@ -16,6 +16,11 @@ static algo_t rmd160 = {
     (hash_finish_func_t)RMD160_Finish,
 };
 
+/*
+ * A class for calculating message digests using RIPEMD-160
+ * cryptographic hash function, designed by Hans Dobbertin, Antoon
+ * Bosselaers, and Bart Preneel.
+ */
 void
 Init_rmd160()
 {

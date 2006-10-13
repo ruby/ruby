@@ -16,6 +16,11 @@ static algo_t sha1 = {
     (hash_finish_func_t)SHA1_Finish,
 };
 
+/*
+ * A class for calculating message digests using the SHA-1 Secure Hash
+ * Algorithm by NIST (the US' National Institute of Standards and
+ * Technology), described in FIPS PUB 180-1.
+ */
 void
 Init_sha1()
 {

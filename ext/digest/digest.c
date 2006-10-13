@@ -19,7 +19,16 @@ static VALUE mDigest, cDigest_Base;
 static ID id_metadata, id_new, id_initialize, id_update, id_digest;
 
 /*
- * Digest::Base
+ * Document-class: Digest
+ *
+ * This module provides a framework for message digest libraries.
+ */
+
+/*
+ * Document-class: Digest::Base
+ *
+ * This class provides a common interface to message digest
+ * algorithms.
  */
 
 static algo_t *
@@ -97,6 +106,12 @@ rb_digest_base_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *     Digest::ALGORITHM.digest(data) -> string
+ *
+ * Returns the hash value of a given string _data_.
+ */
 static VALUE
 rb_digest_base_s_digest(VALUE klass, VALUE str)
 {
@@ -122,6 +137,12 @@ rb_digest_base_s_digest(VALUE klass, VALUE str)
     return str;
 }
 
+/*
+ * call-seq:
+ *     Digest::ALGORITHM.hexdigest(data) -> string
+ *
+ * Returns the hex-encoded hash value of a given string _data_.
+ */
 static VALUE
 rb_digest_base_s_hexdigest(VALUE klass, VALUE str)
 {
@@ -154,6 +175,12 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     return copy;
 }
 
+/*
+ * call-seq:
+ *     digest_obj.reset -> digest_obj
+ *
+ * Resets the digest to the initial state and returns self.
+ */
 static VALUE
 rb_digest_base_reset(VALUE self)
 {
@@ -176,6 +203,12 @@ rb_digest_base_reset(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *     digest_obj.update(data) -> digest_obj
+ *
+ * Updates the digest using a given string _data_ and returns self.
+ */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
 {
@@ -197,6 +230,12 @@ rb_digest_base_update(VALUE self, VALUE str)
     return self;
 }
 
+/*
+ * call-seq:
+ *     digest_obj << data -> digest_obj
+ *
+ * Alias for update().
+ */
 static VALUE
 rb_digest_base_lshift(VALUE self, VALUE str)
 {
@@ -232,6 +271,12 @@ rb_digest_base_init(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *     digest_obj.digest -> string
+ *
+ * Returns the resulting hash value.
+ */
 static VALUE
 rb_digest_base_digest(VALUE self)
 {
@@ -260,12 +305,25 @@ rb_digest_base_digest(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *     digest_obj.hexdigest -> string
+ *     digest_obj.to_s -> string
+ *
+ * Returns the resulting hash value in a hex-encoded form.
+ */
 static VALUE
 rb_digest_base_hexdigest(VALUE self)
 {
     return hexdigest_str_new(rb_funcall(self, id_digest, 0));
 }
 
+/*
+ * call-seq:
+ *     digest_obj.inspect -> string
+ *
+ * Creates a printable version of the digest object.
+ */
 static VALUE
 rb_digest_base_inspect(VALUE self)
 {
@@ -292,6 +350,16 @@ rb_digest_base_inspect(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *     digest_obj == string -> boolean
+ *     digest_obj == another_digest_obj -> boolean
+ *
+ * If a string is given, checks whether it is equal to the hash value
+ * of the digest object.  If another instance of the same digest class
+ * is given, checks whether they have the same hash value.  Otherwise
+ * returns false.
+ */
 static VALUE
 rb_digest_base_equal(VALUE self, VALUE other)
 {
@@ -322,24 +390,6 @@ rb_digest_base_equal(VALUE self, VALUE other)
 
     return Qfalse;
 }
-
-/*
- * This module provides an interface to the following hash algorithms:
- *
- *   - the MD5 Message-Digest Algorithm by the RSA Data Security,
- *     Inc., described in RFC 1321
- *
- *   - the SHA-1 Secure Hash Algorithm by NIST (the US' National
- *     Institute of Standards and Technology), described in FIPS PUB
- *     180-1.
- *
- *   - the SHA-256/384/512 Secure Hash Algorithm by NIST (the US'
- *     National Institute of Standards and Technology), described in
- *     FIPS PUB 180-2.
- *
- *   - the RIPEMD-160 cryptographic hash function, designed by Hans
- *     Dobbertin, Antoon Bosselaers, and Bart Preneel.
- */
 
 void
 Init_digest(void)
