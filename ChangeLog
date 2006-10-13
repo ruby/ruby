@@ -1,3 +1,9 @@
+Fri Oct 13 19:53:59 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_equal): Again, should call
+	  digest() of a subclass instead of the one defined in the base
+	  class.
+
 Fri Oct 13 18:19:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c: Class#inherited RDoc added.  a patch from Daniel

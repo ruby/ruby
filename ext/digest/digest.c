@@ -385,7 +385,7 @@ rb_digest_base_equal(VALUE self, VALUE other)
         algo = get_digest_base_metadata(klass);
 
         if (RSTRING_LEN(str2) == algo->digest_len)
-            str1 = rb_digest_base_digest(self);
+            str1 = rb_funcall(self, id_digest, 0);
         else
             str1 = rb_digest_base_hexdigest(self);
     }
