@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.27 2006-09-30 13:10:32+09 tadf Exp $
+# $Id: date.rb,v 2.28 2006-10-13 22:04:07+09 tadf Exp $
 #++
 #
 # == Overview
