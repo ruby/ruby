@@ -1,3 +1,9 @@
+Fri Oct 13 20:38:12 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/bubblebabble, ext/digest/digest.c: Rip BubbleBabble
+	  support out of the base class and have a separate module named
+	  digest/bubblebabble.
+
 Fri Oct 13 19:53:59 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_equal): Again, should call
