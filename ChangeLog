@@ -13,8 +13,8 @@ Sat Oct 14 08:15:42 2006  Akinori MUSHA  <knu@iDaemons.org>
 	  methods with the same names are also provided, which take extra
 	  parameters for a digest method.
 
-	* ext/digest/lib/digest/hmac.rb: Completely redesign the API which
-	  is similar to Perl's, now that Digest classes can take hashing
+	* ext/digest/lib/digest/hmac.rb: Completely redesign the somewhat
+	  bizarre API, now that Digest classes can take hashing
 	  parameters.
 
 Sat Oct 14 05:54:05 2006  Akinori MUSHA  <knu@iDaemons.org>
