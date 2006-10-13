@@ -69,7 +69,7 @@ goto :loop
   shift
 goto :loop
 :extout
-  echo>> ~tmp~.mak 	"EXTOUT=%2" \
+  echo>> ~tmp~.mak 	-D"EXTOUT=%2" \
   shift
   shift
 goto :loop
@@ -87,6 +87,6 @@ goto :loop
   del ~tmp~.mak
 goto :exit
 :end
-echo>> ~tmp~.mak 	bcc32dir="$(@D)"
+echo>> ~tmp~.mak 	-Dbcc32dir="$(@D)"
 make -s -f ~tmp~.mak
 :exit
