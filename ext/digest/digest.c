@@ -45,6 +45,13 @@ get_digest_base_metadata(VALUE klass)
 
     Data_Get_Struct(obj, algo_t, algo);
 
+    if (algo->api_version != 1) {
+        /*
+         * put conversion here if possible when API is updated
+         */
+        rb_raise(rb_eRuntimeError, "Incompatible digest API version");
+    }
+
     return algo;
 }
 
@@ -231,7 +238,8 @@ rb_digest_base_reset(VALUE self)
  *
  * Updates the digest using a given _string_ and returns self.
  *
- * Implementation subclasses must redefine this method.
+ * Implementation subclasses must redefine this method, and should
+ * make `<<' an alias to it.
  */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
@@ -260,7 +268,8 @@ rb_digest_base_update(VALUE self, VALUE str)
  *
  * Calls update(string).
  *
- * Subclasses need not redefine this method.
+ * Implementation subclasses need not but should alias this method to
+ * update() to eliminate chain calls.
  */
 static VALUE
 rb_digest_base_lshift(VALUE self, VALUE str)
@@ -407,6 +416,106 @@ rb_digest_base_equal(VALUE self, VALUE other)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *     Digest::ALGORITHM.block_length(...) -> integer
+ *
+ * Returns the digest length of the digest algorithm.  Parameters
+ * follow the same specification as the constructor.
+ *
+ * If an implementation subclass does not redefine this method,
+ * returns Digest::ALGORITHM.new(...).digest_length().
+ */
+static VALUE
+rb_digest_base_s_digest_length(int argc, VALUE *argv,VALUE klass)
+{
+    algo_t *algo;
+
+    algo = get_digest_base_metadata(klass);
+
+    if (algo == NULL) {
+        /* Subclasses really should redefine this method */
+        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
+        return rb_funcall(obj, rb_intern("digest_length"), 0);
+    }
+
+    return INT2NUM(algo->digest_len);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.block_length -> integer
+ *
+ * Returns the length of the hash value of the digest object.
+ *
+ * If an implementation subclass does not redefine this method,
+ * returns digest_obj.digest().length().
+ */
+static VALUE
+rb_digest_base_digest_length(VALUE self)
+{
+    algo_t *algo;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        /* subclasses really should redefine this method */
+        VALUE digest = rb_funcall(self, id_digest, 0);
+        StringValue(digest);
+        return INT2NUM(RSTRING_LEN(digest));
+    }
+
+    return INT2NUM(algo->digest_len);
+}
+
+/*
+ * call-seq:
+ *     Digest::ALGORITHM.block_length(...) -> integer
+ *
+ * Returns the block length of the digest algorithm.  Parameters
+ * follow the same specification as the constructor.
+ *
+ * If an implementation subclass does not redefine this method,
+ * returns Digest::ALGORITHM.new(...).block_length().
+ */
+static VALUE
+rb_digest_base_s_block_length(int argc, VALUE *argv,VALUE klass)
+{
+    algo_t *algo;
+
+    algo = get_digest_base_metadata(klass);
+
+    if (algo == NULL) {
+        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
+        return rb_funcall(obj, rb_intern("block_length"), 0);
+    }
+
+    return INT2NUM(algo->block_len);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.block_length -> length
+ *
+ * Returns the block length of the digest.
+ *
+ * Implementation subclasses must redefine this method if used.
+ */
+static VALUE
+rb_digest_base_block_length(VALUE self)
+{
+    algo_t *algo;
+
+    algo = get_digest_base_metadata(rb_obj_class(self));
+
+    if (algo == NULL) {
+        /* subclasses must define this method (only if used) */
+        rb_notimplement();
+    }
+
+    return INT2NUM(algo->block_len);
+}
+
 void
 Init_digest(void)
 {
@@ -418,6 +527,9 @@ Init_digest(void)
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, -1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, -1);
 
+    rb_define_singleton_method(cDigest_Base, "digest_length", rb_digest_base_s_digest_length, -1);
+    rb_define_singleton_method(cDigest_Base, "block_length", rb_digest_base_s_block_length, -1);
+
     rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
     rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
@@ -427,6 +539,9 @@ Init_digest(void)
     rb_define_method(cDigest_Base, "to_s", rb_digest_base_hexdigest, 0);
     rb_define_method(cDigest_Base, "inspect", rb_digest_base_inspect, 0);
     rb_define_method(cDigest_Base, "==", rb_digest_base_equal, 1);
+
+    rb_define_method(cDigest_Base, "digest_length", rb_digest_base_digest_length, 0);
+    rb_define_method(cDigest_Base, "block_length", rb_digest_base_block_length, 0);
 
     id_metadata = rb_intern("metadata");
     id_new = rb_intern("new");

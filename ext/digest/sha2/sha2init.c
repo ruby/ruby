@@ -8,7 +8,9 @@
 
 #define DEFINE_ALGO_METADATA(bitlen) \
 static algo_t sha##bitlen = { \
+    1, \
     SHA##bitlen##_DIGEST_LENGTH, \
+    SHA##bitlen##_BLOCK_LENGTH, \
     sizeof(SHA##bitlen##_CTX), \
     (hash_init_func_t)SHA##bitlen##_Init, \
     (hash_update_func_t)SHA##bitlen##_Update, \
@@ -42,9 +44,6 @@ Init_sha2()
 
 #define DEFINE_ALGO_CLASS(bitlen) \
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
-\
-    rb_define_const(cDigest_SHA##bitlen, "DIGEST_LENGTH", INT2NUM(SHA##bitlen##_DIGEST_LENGTH)); \
-    rb_define_const(cDigest_SHA##bitlen, "BLOCK_LENGTH",  INT2NUM(SHA##bitlen##_BLOCK_LENGTH)); \
 \
     rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
       Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen));

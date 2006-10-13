@@ -9,7 +9,9 @@
 #endif
 
 static algo_t sha1 = {
+    1,
     SHA1_DIGEST_LENGTH,
+    SHA1_BLOCK_LENGTH,
     sizeof(SHA1_CTX),
     (hash_init_func_t)SHA1_Init,
     (hash_update_func_t)SHA1_Update,
@@ -32,9 +34,6 @@ Init_sha1()
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
-
-    rb_define_const(cDigest_SHA1, "DIGEST_LENGTH", INT2NUM(SHA1_DIGEST_LENGTH));
-    rb_define_const(cDigest_SHA1, "BLOCK_LENGTH",  INT2NUM(SHA1_BLOCK_LENGTH));
 
     rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
       Data_Wrap_Struct(rb_cObject, 0, 0, &sha1));

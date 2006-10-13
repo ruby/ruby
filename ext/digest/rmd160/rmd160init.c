@@ -9,7 +9,9 @@
 #endif
 
 static algo_t rmd160 = {
+    1,
     RMD160_DIGEST_LENGTH,
+    RMD160_BLOCK_LENGTH,
     sizeof(RMD160_CTX),
     (hash_init_func_t)RMD160_Init,
     (hash_update_func_t)RMD160_Update,
@@ -33,9 +35,6 @@ Init_rmd160()
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
-
-    rb_define_const(cDigest_RMD160, "DIGEST_LENGTH", INT2NUM(RMD160_DIGEST_LENGTH));
-    rb_define_const(cDigest_RMD160, "BLOCK_LENGTH",  INT2NUM(RMD160_BLOCK_LENGTH));
 
     id_metadata = rb_intern("metadata");
 

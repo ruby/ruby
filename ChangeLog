@@ -1,3 +1,22 @@
+Sat Oct 14 08:15:42 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c, ext/digest/digest.h,
+	  ext/digest/md5/md5init.c, ext/digest/rmd160/rmd160init.c,
+	  ext/digest/sha1/sha1init.c, ext/digest/sha2/sha2init.c:
+	  Introduce API versioning.
+
+	* ext/digest/digest.c, ext/digest/digest.h,
+	  ext/digest/md5/md5init.c, ext/digest/rmd160/rmd160init.c,
+	  ext/digest/sha1/sha1init.c, ext/digest/sha2/sha2init.c: Remove
+	  the constants DIGEST_LENGTH and BLOCK_LENGTH and turn them into
+	  instance methods digest_length() and block_length().  Class
+	  methods with the same names are also provided, which take extra
+	  parameters for a digest method.
+
+	* ext/digest/lib/digest/hmac.rb: Completely redesign the API which
+	  is similar to Perl's, now that Digest classes can take hashing
+	  parameters.
+
 Sat Oct 14 05:54:05 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c: Improve RDoc documentation further more.

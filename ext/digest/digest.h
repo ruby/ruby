@@ -20,7 +20,9 @@ typedef void (*hash_update_func_t)(void *, unsigned char *, size_t);
 typedef void (*hash_finish_func_t)(void *, unsigned char *);
 
 typedef struct {
+    int api_version;
     size_t digest_len;
+    size_t block_len;
     size_t ctx_size;
     hash_init_func_t init_func;
     hash_update_func_t update_func;
