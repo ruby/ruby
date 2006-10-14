@@ -22,7 +22,7 @@ module Test
 
         def collect(*from)
           basedir = @base
-          $:.unshift(basedir) if basedir
+          $:.push(basedir) if basedir
           if(from.empty?)
             recursive_collect('.', find_test_cases)
           elsif(from.size == 1)
@@ -54,9 +54,10 @@ module Test
           sub_suites = []
           path = realdir(name)
           if @file.directory?(path)
+	    dir_name = name unless name == '.'
             @dir.entries(path).each do |e|
               next if(e == '.' || e == '..')
-              e_name = @file.join(name, e)
+              e_name = dir_name ? @file.join(dir_name, e) : e
               if @file.directory?(realdir(e_name))
                 next if /\ACVS\z/ =~ e
                 sub_suite = recursive_collect(e_name, already_gathered)
