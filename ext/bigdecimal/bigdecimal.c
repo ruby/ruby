@@ -2206,8 +2206,8 @@ VpException(unsigned short f,char *str,int always)
     return 0; /* 0 Means VpException() raised no exception */
 
 raise:
-    if(fatal) rb_fatal(str);
-    else   rb_raise(exc,str);
+    if(fatal) rb_fatal("%s", str);
+    else   rb_raise(exc, "%s", str);
     return 0;
 }
 

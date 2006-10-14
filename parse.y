@@ -4559,7 +4559,7 @@ parser_warning(node, mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warning(mesg);
+    rb_warning("%s", mesg);
     ruby_sourceline = line;
 }
 
@@ -4570,7 +4570,7 @@ parser_warn(node, mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warn(mesg);
+    rb_warn("%s", mesg);
     ruby_sourceline = line;
 }
 
