@@ -4240,13 +4240,8 @@ opt_f_block_arg	: ',' f_block_arg
 singleton	: var_ref
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_SELF) {
-			    $$ = NEW_SELF();
-			}
-			else {
-			    $$ = $1;
-			    value_expr($$);
-			}
+			$$ = $1;
+			value_expr($$);
 		    /*%
 			$$ = $1;
 		    %*/
