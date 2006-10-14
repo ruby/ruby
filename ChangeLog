@@ -1,3 +1,17 @@
+Sat Oct 14 23:25:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_warning, parser_warn): some error message may
+	  contain format specifiers.  a patch from Akinori MUSHA <knu at
+	  iDaemons.org>.  [ruby-dev:29657]
+
+	* regparse.c (onig_rb_warning, onig_rb_warn): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (VpException): ditto.
+
+	* ext/dl/handle.c (rb_dlhandle_initialize): ditto.
+
+	* ext/gdbm/gdbm.c (rb_gdbm_fatal): ditto.
+
 Sat Oct 14 08:15:42 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c, ext/digest/digest.h,

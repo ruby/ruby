@@ -70,12 +70,12 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
   if( !ptr && (err = dlerror()) ){
-    rb_raise(rb_eDLError, err);
+    rb_raise(rb_eDLError, "%s", err);
   }
 #else
   if( !ptr ){
     err = dlerror();
-    rb_raise(rb_eDLError, err);
+    rb_raise(rb_eDLError, "%s", err);
   }
 #endif
   Data_Get_Struct(self, struct dl_handle, dlhandle);

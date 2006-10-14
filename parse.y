@@ -6911,7 +6911,7 @@ parser_warning(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warning(mesg);
+    rb_warning("%s", mesg);
     ruby_sourceline = line;
 }
 
@@ -6920,7 +6920,7 @@ parser_warn(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warn(mesg);
+    rb_warn("%s", mesg);
     ruby_sourceline = line;
 }
 
@@ -9277,7 +9277,7 @@ ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
     if (obj == Qundef) {
-	rb_raise(rb_eArgError, RSTRING_PTR(msg));
+        rb_raise(rb_eArgError, "%s", RSTRING_PTR(msg));
     }
     return Qnil;
 }

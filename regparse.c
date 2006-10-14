@@ -64,13 +64,13 @@ extern void onig_null_warn(const char* s) { }
 extern void
 onig_rb_warn(const char* s)
 {
-  rb_warn(s);
+  rb_warn("%s", s);
 }
 
 extern void
 onig_rb_warning(const char* s)
 {
-  rb_warning(s);
+  rb_warning("%s", s);
 }
 #endif
 

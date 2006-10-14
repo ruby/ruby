@@ -81,7 +81,7 @@ static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 static void
 rb_gdbm_fatal(char *msg)
 {
-    rb_raise(rb_eGDBMFatalError, msg);
+    rb_raise(rb_eGDBMFatalError, "%s", msg);
 }
 
 struct dbmdata {
