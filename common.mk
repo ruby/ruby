@@ -1,6 +1,6 @@
 bin: $(PROGRAM) $(WPROGRAM)
-lib: $(LIBRUBY);
-dll: $(LIBRUBY_SO);
+lib: $(LIBRUBY)
+dll: $(LIBRUBY_SO)
 
 RUBYOPT       =
 

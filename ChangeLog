@@ -1,3 +1,10 @@
+Mon Oct 16 08:30:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: *OBJS are not needed for extension libraries.
+
+	* {bcc32,wince,win32}/Makefile.sub (config.status): fixed typo,
+	  missing comma.
+
 Mon Oct 16 00:44:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): execute block if given with unpacked value
