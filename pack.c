@@ -1297,6 +1297,16 @@ pack_unpack(VALUE str, VALUE fmt)
 #ifdef NATINT_PACK
     int natint;			/* native integer */
 #endif
+    int block_p = rb_block_given_p();
+#define UNPACK_PUSH(item) do {\
+	VALUE item_val = (item);\
+	if (block_p) {\
+	    rb_yield(item_val);\
+	}\
+	else {\
+	    rb_ary_push(ary, item_val);\
+	}\
+    } while (0)
 
     StringValue(str);
     StringValue(fmt);
@@ -1305,7 +1315,7 @@ pack_unpack(VALUE str, VALUE fmt)
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
 
-    ary = rb_ary_new();
+    ary = block_p ? Qnil : rb_ary_new();
     while (p < pend) {
 	type = *p++;
 #ifdef NATINT_PACK
@@ -1362,7 +1372,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    if (*t != ' ' && *t != '\0') break;
 		    t--; len--;
 		}
-		rb_ary_push(ary, infected_str_new(s, len, str));
+		UNPACK_PUSH(infected_str_new(s, len, str));
 		s += end;
 	    }
 	    break;
@@ -1373,7 +1383,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 		if (len > send-s) len = send-s;
 		while (t < s+len && *t) t++;
-		rb_ary_push(ary, infected_str_new(s, t-s, str));
+		UNPACK_PUSH(infected_str_new(s, t-s, str));
 		if (t < send) t++;
 		s = star ? t : s+len;
 	    }
@@ -1381,10 +1391,9 @@ pack_unpack(VALUE str, VALUE fmt)
 
 	  case 'a':
 	    if (len > send - s) len = send - s;
-	    rb_ary_push(ary, infected_str_new(s, len, str));
+	    UNPACK_PUSH(infected_str_new(s, len, str));
 	    s += len;
 	    break;
-
 
 	  case 'b':
 	    {
@@ -1396,7 +1405,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		rb_ary_push(ary, bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -1416,7 +1425,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		rb_ary_push(ary, bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -1436,7 +1445,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		rb_ary_push(ary, bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1458,7 +1467,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		rb_ary_push(ary, bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1475,7 +1484,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
-		rb_ary_push(ary, INT2FIX(c));
+		UNPACK_PUSH(INT2FIX(c));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1484,7 +1493,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    PACK_LENGTH_ADJUST(unsigned char,sizeof(unsigned char));
 	    while (len-- > 0) {
 		unsigned char c = *s++;
-		rb_ary_push(ary, INT2FIX(c));
+		UNPACK_PUSH(INT2FIX(c));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1496,7 +1505,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(OFF16(&tmp), s, NATINT_LEN(short,2));
 		EXTEND16(tmp);
 		s += NATINT_LEN(short,2);
-		rb_ary_push(ary, INT2FIX(tmp));
+		UNPACK_PUSH(INT2FIX(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1507,7 +1516,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned short tmp = 0;
 		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		rb_ary_push(ary, INT2FIX(tmp));
+		UNPACK_PUSH(INT2FIX(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1518,7 +1527,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		rb_ary_push(ary, INT2NUM(tmp));
+		UNPACK_PUSH(INT2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1529,7 +1538,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(unsigned int));
 		s += sizeof(unsigned int);
-		rb_ary_push(ary, UINT2NUM(tmp));
+		UNPACK_PUSH(UINT2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1541,7 +1550,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		EXTEND32(tmp);
 		s += NATINT_LEN(long,4);
-		rb_ary_push(ary, LONG2NUM(tmp));
+		UNPACK_PUSH(LONG2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1551,7 +1560,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
-		rb_ary_push(ary, ULONG2NUM(tmp));
+		UNPACK_PUSH(ULONG2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1561,7 +1570,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    while (len-- > 0) {
 		char *tmp = (char*)s;
 		s += QUAD_SIZE;
-		rb_ary_push(ary, rb_quad_unpack(tmp, 1));
+		UNPACK_PUSH(rb_quad_unpack(tmp, 1));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1570,7 +1579,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    while (len-- > 0) {
 		char *tmp = (char*)s;
 		s += QUAD_SIZE;
-		rb_ary_push(ary, rb_quad_unpack(tmp, 0));
+		UNPACK_PUSH(rb_quad_unpack(tmp, 0));
 	    }
 	    break;
 
@@ -1580,7 +1589,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned short tmp = 0;
 		memcpy(OFF16B(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		rb_ary_push(ary, UINT2NUM(ntohs(tmp)));
+		UNPACK_PUSH(UINT2NUM(ntohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1591,7 +1600,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32B(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
-		rb_ary_push(ary, ULONG2NUM(ntohl(tmp)));
+		UNPACK_PUSH(ULONG2NUM(ntohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1602,7 +1611,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned short tmp = 0;
 		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		rb_ary_push(ary, UINT2NUM(vtohs(tmp)));
+		UNPACK_PUSH(UINT2NUM(vtohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1613,7 +1622,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		s += NATINT_LEN(long,4);
-		rb_ary_push(ary, ULONG2NUM(vtohl(tmp)));
+		UNPACK_PUSH(ULONG2NUM(vtohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1625,7 +1634,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
-		rb_ary_push(ary, rb_float_new((double)tmp));
+		UNPACK_PUSH(rb_float_new((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1639,7 +1648,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = VTOHF(tmp,ftmp);
-		rb_ary_push(ary, rb_float_new((double)tmp));
+		UNPACK_PUSH(rb_float_new((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1653,7 +1662,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = VTOHD(tmp,dtmp);
-		rb_ary_push(ary, rb_float_new(tmp));
+		UNPACK_PUSH(rb_float_new(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1665,7 +1674,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
-		rb_ary_push(ary, rb_float_new(tmp));
+		UNPACK_PUSH(rb_float_new(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1679,7 +1688,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = NTOHF(tmp,ftmp);
-		rb_ary_push(ary, rb_float_new((double)tmp));
+		UNPACK_PUSH(rb_float_new((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1693,7 +1702,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = NTOHD(tmp,dtmp);
-		rb_ary_push(ary, rb_float_new(tmp));
+		UNPACK_PUSH(rb_float_new(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1706,7 +1715,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
 		l = utf8_to_uv(s, &alen);
 		s += alen; len--;
-		rb_ary_push(ary, ULONG2NUM(l));
+		UNPACK_PUSH(ULONG2NUM(l));
 	    }
 	    break;
 
@@ -1761,7 +1770,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		}
 
 		rb_str_set_len(buf, total);
-		rb_ary_push(ary, buf);
+		UNPACK_PUSH(buf);
 	    }
 	    break;
 
@@ -1804,7 +1813,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    }
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
-		rb_ary_push(ary, buf);
+		UNPACK_PUSH(buf);
 	    }
 	    break;
 
@@ -1832,7 +1841,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    s++;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
-		rb_ary_push(ary, buf);
+		UNPACK_PUSH(buf);
 	    }
 	    break;
 
@@ -1890,7 +1899,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		else {
 		    tmp = Qnil;
 		}
-		rb_ary_push(ary, tmp);
+		UNPACK_PUSH(tmp);
 	    }
 	    break;
 
@@ -1929,7 +1938,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    else {
 			tmp = Qnil;
 		    }
-		    rb_ary_push(ary, tmp);
+		    UNPACK_PUSH(tmp);
 		}
 	    }
 	    break;
@@ -1943,7 +1952,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    ul <<= 7;
 		    ul |= (*s & 0x7f);
 		    if (!(*s++ & 0x80)) {
-			rb_ary_push(ary, ULONG2NUM(ul));
+			UNPACK_PUSH(ULONG2NUM(ul));
 			len--;
 			ul = 0;
 		    }
@@ -1954,7 +1963,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			    big = rb_big_mul(big, big128);
 			    big = rb_big_plus(big, rb_uint2big(*s & 0x7f));
 			    if (!(*s++ & 0x80)) {
-				rb_ary_push(ary, big);
+				UNPACK_PUSH(big);
 				len--;
 				ul = 0;
 				break;
