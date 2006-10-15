@@ -1,3 +1,10 @@
+Mon Oct 16 08:30:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: *OBJS are not needed for extension libraries.
+
+	* {bcc32,wince,win32}/Makefile.sub (config.status): fixed typo,
+	  missing comma.
+
 Sun Oct 15 01:03:08 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (Collector::Dir#collect): append base
