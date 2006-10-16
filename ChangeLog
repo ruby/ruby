@@ -1,3 +1,10 @@
+Tue Oct 17 08:04:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lines): now takes optional argument for the
+	  line separator.
+
+	* io.c (rb_io_lines, rb_io_bytes): new methods.
+
 Mon Oct 16 23:33:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_unshift_m): a bug in lfree shift length

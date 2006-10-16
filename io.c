@@ -1961,6 +1961,37 @@ rb_io_each_byte(VALUE io)
     return io;
 }
 
+/*
+ *  call-seq:
+ *     str.lines(separator=$/)   => anEnumerator
+ *  
+ *  Returns an enumerator that gives each line in the string.
+ *     
+ *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
+ *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
+ */
+
+static VALUE
+rb_io_lines(int argc, VALUE *argv, VALUE str)
+{
+    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     str.bytes   => anEnumerator
+ *  
+ *  Returns an enumerator that gives each byte in the string.
+ *     
+ *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ */
+
+static VALUE
+rb_io_bytes(VALUE str)
+{
+    return rb_enumeratorize(str, ID2SYM(rb_intern("each_byte")), 0, 0);
+}
+
 VALUE
 rb_io_getc(VALUE io)
 {
@@ -5639,6 +5670,8 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
+    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);

@@ -3550,7 +3550,7 @@ rb_str_split(VALUE str, const char *sep0)
 
 /*
  *  call-seq:
- *     str.lines   => anEnumerator
+ *     str.lines(separator=$/)   => anEnumerator
  *  
  *  Returns an enumerator that gives each line in the string.
  *     
@@ -3559,9 +3559,9 @@ rb_str_split(VALUE str, const char *sep0)
  */
 
 static VALUE
-rb_str_lines(VALUE str)
+rb_str_lines(int argc, VALUE *argv, VALUE str)
 {
-    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), 0, 0);
+    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), argc, argv);
 }
 
 /*
@@ -4881,7 +4881,7 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_lines, 0);
+    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
