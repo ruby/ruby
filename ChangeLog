@@ -1,3 +1,8 @@
+Mon Oct 16 23:33:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_unshift_m): a bug in lfree shift length
+	  calculation.
+
 Mon Oct 16 08:30:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: *OBJS are not needed for extension libraries.
