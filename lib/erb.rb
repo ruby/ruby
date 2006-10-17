@@ -304,11 +304,11 @@ class ERB
       def scan(&block)
 	@stag = nil
 	if @percent
-	  @src.each do |line|
+	  @src.each_line do |line|
 	    percent_line(line, &block)
 	  end
 	else
-	  @src.each do |line|
+	  @src.each_line do |line|
 	    @scan_line.call(line, &block)
 	  end
 	end
@@ -392,7 +392,7 @@ class ERB
 
     class SimpleScanner < Scanner # :nodoc:
       def scan
-	@src.each do |line|
+	@src.each_line do |line|
 	  line.split(SplitRegexp).each do |token|
 	    next if token.empty?
 	    yield(token)
