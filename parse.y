@@ -6498,13 +6498,13 @@ parser_yylex(struct parser_params *parser)
 		return tSTRING_BEG;
 
 	      case 'W':
-		lex_strterm = NEW_STRTERM(str_dquote | STR_FUNC_QWORDS, term, paren);
+		lex_strterm = NEW_STRTERM(str_dword, term, paren);
 		do {c = nextc();} while (ISSPACE(c));
 		pushback(c);
 		return tWORDS_BEG;
 
 	      case 'w':
-		lex_strterm = NEW_STRTERM(str_squote | STR_FUNC_QWORDS, term, paren);
+		lex_strterm = NEW_STRTERM(str_sword, term, paren);
 		do {c = nextc();} while (ISSPACE(c));
 		pushback(c);
 		return tQWORDS_BEG;
