@@ -618,7 +618,7 @@ rb_ary_shift(VALUE ary)
     if (RARRAY_LEN(ary) == 0) return Qnil;
     top = RARRAY_PTR(ary)[0];
     if (ARY_EMBED_P(ary)) {
-	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary));
+	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
 	ARY_SET_EMBED_LEN(ary, RARRAY_LEN(ary)-1);
 	return top;
     }

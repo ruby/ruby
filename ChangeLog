@@ -1,3 +1,7 @@
+Wed Oct 18 22:56:51 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_shift): shorten copy size.  fixed: [ruby-list:42907]
+
 Wed Oct 18 13:25:50 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_line): String#lines now works when a block
