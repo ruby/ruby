@@ -3549,39 +3549,21 @@ rb_str_split(VALUE str, const char *sep0)
 
 
 /*
+ *  Document-method: lines
  *  call-seq:
  *     str.lines(separator=$/)   => anEnumerator
+ *     str.lines(separator=$/) {|substr| block }        => str
  *  
- *  Returns an enumerator that gives each line in the string.
+ *  Returns an enumerator that gives each line in the string.  If a block is
+ *  given, it iterates over eac line in the string.
  *     
  *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
  *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
  */
 
-static VALUE
-rb_str_lines(int argc, VALUE *argv, VALUE str)
-{
-    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), argc, argv);
-}
-
 /*
+ *  Document-method: each_line
  *  call-seq:
- *     str.bytes   => anEnumerator
- *  
- *  Returns an enumerator that gives each byte in the string.
- *     
- *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
- */
-
-static VALUE
-rb_str_bytes(VALUE str)
-{
-    return rb_enumeratorize(str, ID2SYM(rb_intern("each_byte")), 0, 0);
-}
-
-/*
- *  call-seq:
- *     str.each(separator=$/) {|substr| block }        => str
  *     str.each_line(separator=$/) {|substr| block }   => str
  *  
  *  Splits <i>str</i> using the supplied parameter as the record separator
@@ -3669,6 +3651,19 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 
 /*
+ *  Document-method: bytes
+ *  call-seq:
+ *     str.bytes   => anEnumerator
+ *     str.bytes {|fixnum| block }    => str
+ *  
+ *  Returns an enumerator that gives each byte in the string.  If a block is
+ *  given, it iterates over each byte in the string.
+ *     
+ *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ */
+
+/*
+ *  Document-method: each_byte
  *  call-seq:
  *     str.each_byte {|fixnum| block }    => str
  *  
@@ -4881,8 +4876,8 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
-    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
+    rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
+    rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
