@@ -502,7 +502,7 @@ rb_ary_shift(ary)
     if (RARRAY(ary)->len == 0) return Qnil;
     top = RARRAY(ary)->ptr[0];
     if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE && !FL_TEST(ary, ELTS_SHARED)) {
-	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary));
+	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
     }
     else {
 	if (!FL_TEST(ary, ELTS_SHARED)) {
