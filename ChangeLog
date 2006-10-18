@@ -6,6 +6,11 @@ Tue Oct 17 22:03:08 2006  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/erb.rb: String#each was removed, use #each_line instead.
 
+Tue Oct 17 12:27:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_shared_array): should set NOEMBED flag for a copied
+	  array.
+
 Tue Oct 17 08:04:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_lines): now takes optional argument for the

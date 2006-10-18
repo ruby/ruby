@@ -486,6 +486,7 @@ ary_shared_array(VALUE klass, VALUE ary)
     VALUE val = ary_alloc(klass);
 
     ary_make_shared(ary);
+    ARY_SET_NOEMBED(val);
     RARRAY(val)->as.heap.ptr = RARRAY(ary)->as.heap.ptr;
     RARRAY(val)->as.heap.len = RARRAY(ary)->as.heap.len;
     RARRAY(val)->as.heap.aux.shared = RARRAY(ary)->as.heap.aux.shared;
