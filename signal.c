@@ -941,6 +941,9 @@ Init_signal(void)
 #ifdef SIGQUIT
     install_sighandler(SIGQUIT, sighandler);
 #endif
+#ifdef SIGTERM
+    install_sighandler(SIGTERM, sighandler);
+#endif
 #ifdef SIGALRM
     install_sighandler(SIGALRM, sighandler);
 #endif
