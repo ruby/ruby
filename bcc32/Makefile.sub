@@ -436,17 +436,17 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			. $(icondirs) $(srcdir)win32
 
 post-install-bin::
-	@exit > $@
+	@$(NULLCMD)
 post-install-lib::
-	@exit > $@
+	@$(NULLCMD)
 post-install-ext-comm::
-	@exit > $@
+	@$(NULLCMD)
 post-install-ext-arch::
-	@exit > $@
+	@$(NULLCMD)
 post-install-man::
-	@exit > $@
+	@$(NULLCMD)
 post-install-doc::
-	@exit > $@
+	@$(NULLCMD)
 
 clean-local::
 		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
