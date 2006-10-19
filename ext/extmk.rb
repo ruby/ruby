@@ -464,7 +464,7 @@ void Init_ext _((void))\n{\n    char *src;#$extinit}
     open(extinit.c, "w") {|f| f.print src}
   end
 
-  $extobjs = "ext/#{extinit.o} " + $extobjs
+  $extobjs = "ext/#{extinit.o} #{$extobjs}"
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extflags.delete("-L/usr/local/lib")
   end
@@ -502,7 +502,14 @@ $stdout.flush
 $mflags.concat(rubies)
 
 if $nmake == ?b
-  $mflags.collect {|flag| flag.sub!(/\A(?=\w+=)/, "-D")}
+  unless (vars = $mflags.grep(/\A\w+=/n)).empty?
+    open(mkf = "libruby.mk", "wb") do |f|
+      f.puts("!include Makefile")
+      f.puts(*vars)
+      f.puts("PRE_LIBRUBY_UPDATE = del #{mkf}")
+    end
+    $mflags.delete_if(&/\A\w+=/n.method(:=~)).unshift("-f#{mkf}")
+  end
 end
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
