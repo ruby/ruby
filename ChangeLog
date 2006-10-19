@@ -1,3 +1,10 @@
+Fri Oct 20 08:42:38 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (NULLCMD): dummy command.
+
+	* bcc32/Makefile.sub (post-install-*): Borland make cannot ignore
+	  command-less double-colon rules.  [ruby-dev:29676]
+
 Fri Oct 20 00:37:07 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub ($(LIBRUBY_SO)): execute pre-link hook.

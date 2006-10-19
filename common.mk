@@ -3,6 +3,7 @@ lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
 RUBYOPT       =
+NULLCMD       =
 
 STATIC_RUBY   = static-ruby
 
@@ -137,30 +138,35 @@ pre-install-bin:: install-prereq
 do-install-bin:
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=bin
 post-install-bin::
+	@$(NULLCMD)
 
 install-lib: pre-install-lib do-install-lib post-install-lib
 pre-install-lib:: install-prereq
 do-install-lib:
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=lib
 post-install-lib::
+	@$(NULLCMD)
 
 install-ext-comm: pre-install-ext-comm do-install-ext-comm post-install-ext-comm
 pre-install-ext-comm:: install-prereq
 do-install-ext-comm:
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=ext-comm
 post-install-ext-comm::
+	@$(NULLCMD)
 
 install-ext-arch: pre-install-ext-arch do-install-ext-arch post-install-ext-arch
 pre-install-ext-arch:: install-prereq
 do-install-ext-arch:
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=ext-arch
 post-install-ext-arch::
+	@$(NULLCMD)
 
 install-man: pre-install-man do-install-man post-install-man
 pre-install-man:: install-prereq
 do-install-man:
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
 post-install-man::
+	@$(NULLCMD)
 
 what-where: no-install
 no-install: no-install-nodoc no-install-doc
@@ -208,6 +214,7 @@ pre-no-install-bin:: install-prereq
 dont-install-bin:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=bin
 post-no-install-bin::
+	@$(NULLCMD)
 
 what-where-lib: no-install-lib
 no-install-lib: pre-no-install-lib dont-install-lib post-no-install-lib
@@ -215,6 +222,7 @@ pre-no-install-lib:: install-prereq
 dont-install-lib:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=lib
 post-no-install-lib::
+	@$(NULLCMD)
 
 what-where-ext-comm: no-install-ext-comm
 no-install-ext-comm: pre-no-install-ext-comm dont-install-ext-comm post-no-install-ext-comm
@@ -222,6 +230,7 @@ pre-no-install-ext-comm:: install-prereq
 dont-install-ext-comm:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=ext-comm
 post-no-install-ext-comm::
+	@$(NULLCMD)
 
 what-where-ext-arch: no-install-ext-arch
 no-install-ext-arch: pre-no-install-ext-arch dont-install-ext-arch post-no-install-ext-arch
@@ -229,6 +238,7 @@ pre-no-install-ext-arch:: install-prereq
 dont-install-ext-arch:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=ext-arch
 post-no-install-ext-arch::
+	@$(NULLCMD)
 
 what-where-man: no-install-man
 no-install-man: pre-no-install-man dont-install-man post-no-install-man
@@ -236,12 +246,14 @@ pre-no-install-man:: install-prereq
 dont-install-man:
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=man --mantype="$(MANTYPE)"
 post-no-install-man::
+	@$(NULLCMD)
 
 install-doc: rdoc pre-install-doc do-install-doc post-install-doc
 pre-install-doc:: install-prereq
 do-install-doc: $(PROGRAM)
 	$(MINIRUBY) $(srcdir)/instruby.rb $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
 post-install-doc::
+	@$(NULLCMD)
 
 rdoc: $(PROGRAM) PHONY
 	@echo Generating RDoc documentation
@@ -253,6 +265,7 @@ pre-no-install-doc:: install-prereq
 dont-install-doc::
 	$(MINIRUBY) $(srcdir)/instruby.rb -n $(INSTRUBY_ARGS) --install=rdoc --rdoc-output="$(RDOCOUT)"
 post-no-install-doc::
+	@$(NULLCMD)
 
 install-prereq:
 	@exit > $(INSTALLED_LIST)
