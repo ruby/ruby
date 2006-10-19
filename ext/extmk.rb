@@ -503,12 +503,14 @@ $mflags.concat(rubies)
 
 if $nmake == ?b
   unless (vars = $mflags.grep(/\A\w+=/n)).empty?
-    open(mkf = "libruby.mk", "wb") do |f|
-      f.puts("!include Makefile")
-      f.puts(*vars)
-      f.puts("PRE_LIBRUBY_UPDATE = del #{mkf}")
+    open(mkf = "libruby.mk", "wb") do |tmf|
+      tmf.puts("!include Makefile")
+      tmf.puts
+      tmf.puts(*vars.map {|v| v.sub(/=/, " = ")})
+      tmf.puts("PRE_LIBRUBY_UPDATE = del #{mkf}")
     end
-    $mflags.delete_if(&/\A\w+=/n.method(:=~)).unshift("-f#{mkf}")
+    $mflags.unshift("-f#{mkf}")
+    vars.each {|flag| flag.sub!(/\A/, "-D")}
   end
 end
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
