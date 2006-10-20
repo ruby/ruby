@@ -1,3 +1,29 @@
+Fri Oct 20 20:28:37 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest: Prefix C constants with RUBY_ and C type names with
+	  rb_ to avoid name clash in writing extensions.
+
+	* ext/digest: Introduce Digest::Class and Digest::Instance for
+	  ease of implementing subclasses and add-ons, inspried by
+	  gotoyuzo.
+
+	* ext/digest: The Digest::Instance module now requires and assumes
+	  that any instance be resettable and clonable, and add some
+	  convenient instance methods such as "new()", for creating a new
+	  copy, parameter taking "digest()" and "hexdigest()", for instant
+	  calculation.  These methods make digest instances work just like
+	  digest classes.
+
+	* ext/digest/sha2/lib/digest/sha2.rb:
+	  Add the Digest::SHA2 class to wrap up SHA2 variants: SHA256,
+	  SHA384 and SHA512, hoping this module would make a decent
+	  example of a digest subclass written in Ruby.
+
+	* ext/digest/lib/digest.rb: Adjust autoload entries for SHA2
+	  classes.
+
+	* ext/digest/lib/digest/hmac.rb: Follow the framework updates.
+
 Fri Oct 20 10:47:43 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb: fixed the bug of handling COMMON_MACROS.

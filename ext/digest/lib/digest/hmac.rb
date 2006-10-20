@@ -39,17 +39,14 @@
 require 'digest'
 
 module Digest
-  class HMAC < Digest::Base
-    def initialize(key, digest_class, *digest_params)
-      @digest_class  = digest_class.freeze
-      @digest_params = digest_params.freeze
-      @md = digest_class.new(*digest_params)
-      @tmp_md = @md.clone
+  class HMAC < Digest::Class
+    def initialize(key, digester)
+      @md = digester.new
 
       block_len = @md.block_length
 
       if key.length > block_len
-        key = @tmp_md.reset.update(key).digest
+        key = @md.digest(key)
       end
 
       ipad = Array.new(block_len).fill(0x36)
@@ -66,11 +63,11 @@ module Digest
     end
 
     def initialize_copy(other)
-      @md = other.instance_eval { @md }
+      @md = @md.new
     end
 
     def update(text)
-      @md.reset.update(@opad + @tmp_md.reset.update(@ipad + text).digest)
+      @md.reset.update(@opad + @md.digest(@ipad + text))
 
       self
     end
@@ -106,36 +103,36 @@ __END__
 require 'test/unit'
 
 module TM_HMAC
-  def hmac_new(key)
-    Digest::HMAC.new(key, *digest_spec())
-  end
-
   def test_s_hexdigest
-    spec = digest_spec()
-
     cases.each { |h|
-      assert_equal(h[:hexdigest], Digest::HMAC.hexdigest(h[:data], h[:key], *spec))
+      digesters { |d|
+        assert_equal(h[:hexdigest], Digest::HMAC.hexdigest(h[:data], h[:key], d))
+      }
     }
   end
 
   def test_hexdigest
     cases.each { |h|
-      hmac = hmac_new(h[:key])
-      hmac.update(h[:data])
+      digesters { |d|
+        hmac = Digest::HMAC.new(h[:key], d)
 
-      assert_equal(h[:hexdigest], hmac.hexdigest)
+        hmac.update(h[:data])
+
+        assert_equal(h[:hexdigest], hmac.hexdigest)
+      }
     }
   end
 
   def test_reset
     cases.each { |h|
-      hmac = hmac_new(h[:key])
-      hmac.update("test")
-      hmac.reset
-      hmac.update(h[:data])
+      digesters { |d|
+        hmac = Digest::HMAC.new(h[:key], d)
+        hmac.update("test")
+        hmac.reset
+        hmac.update(h[:data])
 
-      p hmac
-      assert_equal(h[:hexdigest], hmac.hexdigest)
+        assert_equal(h[:hexdigest], hmac.hexdigest)
+      }
     }
   end
 end  
@@ -143,8 +140,8 @@ end
 class TC_HMAC_MD5 < Test::Unit::TestCase
   include TM_HMAC
 
-  def digest_spec
-    [Digest::MD5]
+  def digesters
+    [Digest::MD5, Digest::MD5.new]
   end
 
   # Taken from RFC 2202: Test Cases for HMAC-MD5 and HMAC-SHA-1
@@ -186,8 +183,8 @@ end
 class TC_HMAC_SHA1 < Test::Unit::TestCase
   include TM_HMAC
 
-  def digest_spec
-    [Digest::SHA1]
+  def digesters
+    [Digest::SHA1, Digest::SHA1.new]
   end
 
   # Taken from RFC 2202: Test Cases for HMAC-MD5 and HMAC-SHA-1
@@ -229,8 +226,8 @@ end
 class TC_HMAC_RMD160 < Test::Unit::TestCase
   include TM_HMAC
 
-  def digest_spec
-    [Digest::RMD160]
+  def digesters
+    [Digest::RMD160, Digest::RMD160.new]
   end
 
   # Taken from RFC 2286: Test Cases for HMAC-RIPEMD160 and HMAC-RIPEMD128

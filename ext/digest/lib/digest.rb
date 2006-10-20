@@ -1,9 +1,9 @@
 require 'digest.so'
 
 module Digest
-  autoload "SHA256", "digest/sha2"
-  autoload "SHA384", "digest/sha2"
-  autoload "SHA512", "digest/sha2"
+  autoload "SHA256", "digest/sha2.so"
+  autoload "SHA384", "digest/sha2.so"
+  autoload "SHA512", "digest/sha2.so"
 
   def self.const_missing(name)
     begin

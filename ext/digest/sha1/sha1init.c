@@ -8,14 +8,14 @@
 #include "sha1.h"
 #endif
 
-static algo_t sha1 = {
-    1,
+static rb_digest_metadata_t sha1 = {
+    RUBY_DIGEST_API_VERSION,
     SHA1_DIGEST_LENGTH,
     SHA1_BLOCK_LENGTH,
     sizeof(SHA1_CTX),
-    (hash_init_func_t)SHA1_Init,
-    (hash_update_func_t)SHA1_Update,
-    (hash_finish_func_t)SHA1_Finish,
+    (rb_digest_hash_init_func_t)SHA1_Init,
+    (rb_digest_hash_update_func_t)SHA1_Update,
+    (rb_digest_hash_finish_func_t)SHA1_Finish,
 };
 
 /*
@@ -27,9 +27,9 @@ void
 Init_sha1()
 {
     VALUE mDigest, cDigest_Base, cDigest_SHA1;
-
+ 
     rb_require("digest");
-
+ 
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");
 

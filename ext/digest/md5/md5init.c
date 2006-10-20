@@ -8,14 +8,14 @@
 #include "md5.h"
 #endif
 
-static algo_t md5 = {
-    1,
+static rb_digest_metadata_t md5 = {
+    RUBY_DIGEST_API_VERSION,
     MD5_DIGEST_LENGTH,
     MD5_BLOCK_LENGTH,
     sizeof(MD5_CTX),
-    (hash_init_func_t)MD5_Init,
-    (hash_update_func_t)MD5_Update,
-    (hash_finish_func_t)MD5_Finish,
+    (rb_digest_hash_init_func_t)MD5_Init,
+    (rb_digest_hash_update_func_t)MD5_Update,
+    (rb_digest_hash_finish_func_t)MD5_Finish,
 };
 
 /*

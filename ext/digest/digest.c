@@ -15,48 +15,24 @@
 
 #include "digest.h"
 
-static VALUE mDigest, cDigest_Base;
-static ID id_metadata, id_new, id_initialize, id_update, id_digest;
+static VALUE rb_mDigest;
+static VALUE rb_mDigest_Instance;
+static VALUE rb_cDigest_Class;
+static VALUE rb_cDigest_Base;
+
+static ID id_reset, id_update, id_finish, id_digest, id_hexdigest, id_digest_length;
+static ID id_metadata;
+
+RUBY_EXTERN void Init_digest_base(void);
 
 /*
- * Document-class: Digest
+ * Document-module: Digest
  *
  * This module provides a framework for message digest libraries.
  */
 
-/*
- * Document-class: Digest::Base
- *
- * This class provides a common interface to message digest
- * algorithms.
- */
-
-static algo_t *
-get_digest_base_metadata(VALUE klass)
-{
-    VALUE obj;
-    algo_t *algo;
-
-    if (rb_ivar_defined(klass, id_metadata) == Qfalse) {
-        return NULL;
-    }
-
-    obj = rb_ivar_get(klass, id_metadata);
-
-    Data_Get_Struct(obj, algo_t, algo);
-
-    if (algo->api_version != 1) {
-        /*
-         * put conversion here if possible when API is updated
-         */
-        rb_raise(rb_eRuntimeError, "Incompatible digest API version");
-    }
-
-    return algo;
-}
-
 static VALUE
-hexdigest_str_new(VALUE str_digest)
+hexencode_str_new(VALUE str_digest)
 {
     char *digest;
     size_t digest_len;
@@ -88,45 +64,323 @@ hexdigest_str_new(VALUE str_digest)
     return str;
 }
 
+/*
+ * call-seq:
+ *     Digest.hexencode(string) -> hexencoded_string
+ *
+ * Generates a hex-encoded version of a given _string_.
+ */
 static VALUE
-rb_digest_base_alloc(VALUE klass)
+rb_digest_s_hexencode(VALUE klass, VALUE str)
 {
-    algo_t *algo;
-    VALUE obj;
-    void *pctx;
+    return hexencode_str_new(str);
+}
 
-    if (klass == cDigest_Base) {
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
-    }
+/*
+ * Document-module: Digest::Instance
+ *
+ * This module provides instance methods for a digest implementation
+ * object to calculate message digest values.
+ */
 
-    algo = get_digest_base_metadata(klass);
-
-    if (algo == NULL) {
-        return Data_Wrap_Struct(klass, 0, free, 0);
-    }
-
-    pctx = xmalloc(algo->ctx_size);
-    algo->init_func(pctx);
-
-    obj = Data_Wrap_Struct(klass, 0, free, pctx);
-
-    return obj;
+/*
+ * call-seq:
+ *     digest_obj.update(string) -> digest_obj
+ *     digest_obj << string -> digest_obj
+ *
+ * Updates the digest using a given _string_ and returns self.
+ *
+ * The update() method and the left-shift operator are overridden by
+ * each implementation subclass. (One should be an alias for the
+ * other)
+ */
+static VALUE
+rb_digest_instance_update(VALUE self, VALUE str)
+{
+    rb_raise(rb_eRuntimeError, "%s does not implement update()", rb_inspect(self));
 }
 
 /*
  * call-seq:
- *     Digest::ALGORITHM.digest(string[, ...]) -> hash_string
+ *     digest_obj.instance_eval { finish } -> digest_obj
  *
- * Returns the hash value of a given string _data_.  This is almost
- * equivalent to Digest::ALGORITHM.new(...).update(string).digest()
- * where extra arguments, if any, are passed through to the
- * constructor.
+ * Finishes the digest and returns the resulting hash value.
+ *
+ * This method is overridden by each implementation subclass and often
+ * made private, because some of those subclasses may leave internal
+ * data uninitialized.  Do not call this method from outside.  Use
+ * #digest!() instead, which ensures that internal data be reset for
+ * security reasons.
  */
 static VALUE
-rb_digest_base_s_digest(int argc, VALUE *argv, VALUE klass)
+rb_digest_instance_finish(VALUE self)
+{
+    rb_raise(rb_eRuntimeError, "%s does not implement finish()", rb_inspect(self));
+}
+
+/*
+ * call-seq:
+ *     digest_obj.reset -> digest_obj
+ *
+ * Resets the digest to the initial state and returns self.
+ *
+ * This method is overridden by each implementation subclass.
+ */
+static VALUE
+rb_digest_instance_reset(VALUE self)
+{
+    rb_raise(rb_eRuntimeError, "%s does not implement reset()", rb_inspect(self));
+}
+
+/*
+ * call-seq:
+ *     digest_obj.new -> another_digest_obj
+ *
+ * Returns a new, initialized copy of the digest object.  Equivalent
+ * to digest_obj.clone().reset().
+ */
+static VALUE
+rb_digest_instance_new(VALUE self)
+{
+    VALUE clone = rb_obj_clone(self);
+    rb_funcall(clone, id_reset, 0);
+    return clone;
+}
+
+/*
+ * call-seq:
+ *     digest_obj.digest -> string
+ *     digest_obj.digest(string) -> string
+ *
+ * If none is given, returns the resulting hash value of the digest,
+ * keeping the digest's state.
+ *
+ * If a _string_ is given, returns the hash value for the given
+ * _string_, resetting the digest to the initial state before and
+ * after the process.
+ */
+static VALUE
+rb_digest_instance_digest(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str, value;
+
+    if (rb_scan_args(argc, argv, "01", &str) > 0) {
+        rb_funcall(self, id_reset, 0);
+        rb_funcall(self, id_update, 1, str);
+        value = rb_funcall(self, id_finish, 0);
+        rb_funcall(self, id_reset, 0);
+    } else {
+        VALUE clone = rb_obj_clone(self);
+
+        value = rb_funcall(clone, id_finish, 0);
+        rb_funcall(clone, id_reset, 0);
+    }
+
+    return value;
+}
+
+/*
+ * call-seq:
+ *     digest_obj.digest! -> string
+ *
+ * Returns the resulting hash value and resets the digest to the
+ * initial state.
+ */
+static VALUE
+rb_digest_instance_digest_bang(VALUE self)
+{
+    VALUE value = rb_funcall(self, id_finish, 0);
+    rb_funcall(self, id_reset, 0);
+
+    return value;
+}
+
+/*
+ * call-seq:
+ *     digest_obj.hexdigest -> string
+ *     digest_obj.hexdigest(string) -> string
+ *
+ * If none is given, returns the resulting hash value of the digest in
+ * a hex-encoded form, keeping the digest's state.
+ *
+ * If a _string_ is given, returns the hash value for the given
+ * _string_ in a hex-encoded form, resetting the digest to the initial
+ * state before and after the process.
+ */
+static VALUE
+rb_digest_instance_hexdigest(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str, value;
+
+    if (rb_scan_args(argc, argv, "01", &str) > 0) {
+        rb_funcall(self, id_reset, 0);
+        rb_funcall(self, id_update, 1, str);
+        value = rb_funcall(self, id_finish, 0);
+        rb_funcall(self, id_reset, 0);
+    } else {
+        VALUE clone = rb_obj_clone(self);
+
+        value = rb_funcall(clone, id_finish, 0);
+        rb_funcall(clone, id_reset, 0);
+    }
+
+    return hexencode_str_new(value);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.hexdigest! -> string
+ *
+ * Returns the resulting hash value and resets the digest to the
+ * initial state.
+ */
+static VALUE
+rb_digest_instance_hexdigest_bang(VALUE self)
+{
+    VALUE value = rb_funcall(self, id_finish, 0);
+    rb_funcall(self, id_reset, 0);
+
+    return hexencode_str_new(value);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.to_s -> string
+ *
+ * Returns digest_obj.hexdigest().
+ */
+static VALUE
+rb_digest_instance_to_s(VALUE self)
+{
+    return rb_funcall(self, id_hexdigest, 0);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.inspect -> string
+ *
+ * Creates a printable version of the digest object.
+ */
+static VALUE
+rb_digest_instance_inspect(VALUE self)
 {
     VALUE str;
-    algo_t *algo;
+    size_t digest_len = 32;	/* about this size at least */
+    char *cname;
+
+    cname = rb_obj_classname(self);
+
+    /* #<Digest::ClassName: xxxxx...xxxx> */
+    str = rb_str_buf_new(2 + strlen(cname) + 2 + digest_len * 2 + 1);
+    rb_str_buf_cat2(str, "#<");
+    rb_str_buf_cat2(str, cname);
+    rb_str_buf_cat2(str, ": ");
+    rb_str_buf_append(str, rb_digest_instance_hexdigest(0, 0, self));
+    rb_str_buf_cat2(str, ">");
+    return str;
+}
+
+/*
+ * call-seq:
+ *     digest_obj == another_digest_obj -> boolean
+ *     digest_obj == string -> boolean
+ *
+ * If a string is given, checks whether it is equal to the hex-encoded
+ * hash value of the digest object.  If another instance of the same
+ * digest class is given, checks whether they have the same hash
+ * value.  Otherwise returns false.
+ */
+static VALUE
+rb_digest_instance_equal(VALUE self, VALUE other)
+{
+    VALUE str1, str2;
+
+    if (rb_obj_class(self) == rb_obj_class(other)) {
+        str1 = rb_digest_instance_digest(0, 0, self);
+        str2 = rb_digest_instance_digest(0, 0, other);
+    } else {
+        str1 = rb_digest_instance_to_s(self);
+        str2 = other;
+    }
+
+    /* never blindly assume that subclass methods return strings */
+    StringValue(str1);
+    StringValue(str2);
+
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
+	rb_str_cmp(str1, str2) == 0) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ * call-seq:
+ *     digest_obj.digest_length -> integer
+ *
+ * Returns the length of the hash value of the digest.
+ *
+ * This method should be overridden by each implementation subclass.
+ * If not, digest_obj.digest().length() is returned.
+ */
+static VALUE
+rb_digest_instance_digest_length(VALUE self)
+{
+    /* subclasses really should redefine this method */
+    VALUE digest = rb_digest_instance_digest(0, 0, self);
+
+    /* never blindly assume that #digest() returns a string */
+    StringValue(digest);
+    return INT2NUM(RSTRING_LEN(digest));
+}
+
+/*
+ * call-seq:
+ *     digest_obj.length -> integer
+ *     digest_obj.size -> integer
+ *
+ * Returns digest_obj.digest_length().
+ */
+static VALUE
+rb_digest_instance_length(VALUE self)
+{
+    return rb_funcall(self, id_digest_length, 0);
+}
+
+/*
+ * call-seq:
+ *     digest_obj.block_length -> integer
+ *
+ * Returns the block length of the digest.
+ *
+ * This method is overridden by each implementation subclass.
+ */
+static VALUE
+rb_digest_instance_block_length(VALUE self)
+{
+    rb_raise(rb_eRuntimeError, "%s does not implement block_length()", rb_inspect(self));
+}
+
+/*
+ * Document-class: Digest::Class
+ *
+ * This module stands as a base class for digest implementation
+ * classes.
+ */
+
+/*
+ * call-seq:
+ *     Digest::Class.digest(string, *parameters) -> hash_string
+ *
+ * Returns the hash value of a given _string_.  This is equivalent to
+ * Digest::Class.new(*parameters).digest(string), where extra
+ * _parameters_, if any, are passed through to the constructor and the
+ * _string_ is passed to #digest().
+ */
+static VALUE
+rb_digest_class_s_digest(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE str;
     void *pctx;
     volatile VALUE obj;
 
@@ -139,60 +393,97 @@ rb_digest_base_s_digest(int argc, VALUE *argv, VALUE klass)
 
     StringValue(str);
 
-    algo = get_digest_base_metadata(klass);
+    obj = rb_obj_alloc(klass);
+    rb_obj_call_init(obj, argc, argv);
 
-    if (algo == NULL) {
-        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
-        rb_funcall(obj, id_update, 1, str);
-        return rb_funcall(obj, id_digest, 0);
-    }
-
-    obj = rb_digest_base_alloc(klass);
-    Data_Get_Struct(obj, void, pctx);
-
-    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
-
-    str = rb_str_new(0, algo->digest_len);
-    algo->finish_func(pctx, RSTRING_PTR(str));
-
-    return str;
+    return rb_funcall(obj, id_digest, 1, str);
 }
 
 /*
  * call-seq:
- *     Digest::ALGORITHM.hexdigest(string[, ...]) -> hash_string
+ *     Digest::Class.hexdigest(string[, ...]) -> hash_string
  *
- * Returns the hex-encoded hash value of a given _string_.  This
- * method just hex-encode the return value of
- * Digest::ALGORITHM.digest(string[, ...]) where extra arguments, if
- * any, are passed through along with the _string_.
+ * Returns the hex-encoded hash value of a given _string_.  This is
+ * almost equivalent to
+ * Digest.hexencode(Digest::Class.new(*parameters).digest(string)).
  */
 static VALUE
-rb_digest_base_s_hexdigest(int argc, VALUE *argv, VALUE klass)
+rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 {
-    return hexdigest_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return hexencode_str_new(rb_funcall2(klass, id_digest, argc, argv));
+}
+
+/*
+ * Document-class: Digest::Base
+ *
+ * This abstract class provides a common interface to message digest
+ * implementation classes written in C.
+ */
+
+static rb_digest_metadata_t *
+get_digest_base_metadata(VALUE klass)
+{
+    VALUE obj;
+    rb_digest_metadata_t *algo;
+
+    if (rb_ivar_defined(klass, id_metadata) == Qfalse) {
+        /* This class should not be subclassed in Ruby */
+        rb_notimplement();
+    }
+
+    obj = rb_ivar_get(klass, id_metadata);
+
+    Data_Get_Struct(obj, rb_digest_metadata_t, algo);
+
+    switch (algo->api_version) {
+      case 2:
+        break;
+
+      /*
+       * put conversion here if possible when API is updated
+       */
+
+      default:
+        rb_raise(rb_eRuntimeError, "Incompatible digest API version");
+    }
+
+    return algo;
+}
+
+static VALUE
+rb_digest_base_alloc(VALUE klass)
+{
+    rb_digest_metadata_t *algo;
+    VALUE obj;
+    void *pctx;
+
+    if (klass == rb_cDigest_Base) {
+	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+    }
+
+    algo = get_digest_base_metadata(klass);
+
+    pctx = xmalloc(algo->ctx_size);
+    algo->init_func(pctx);
+
+    obj = Data_Wrap_Struct(klass, 0, free, pctx);
+
+    return obj;
 }
 
 /* :nodoc: */
 static VALUE
 rb_digest_base_copy(VALUE copy, VALUE obj)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
     void *pctx1, *pctx2;
 
     if (copy == obj) return copy;
+
     rb_check_frozen(copy);
+
     algo = get_digest_base_metadata(rb_obj_class(copy));
 
-    if (algo == NULL) {
-        /* initialize_copy() is undefined or something */
-        rb_notimplement();
-    }
-
-    /* get_digest_base_metadata() may return a NULL */
-    if (algo != get_digest_base_metadata(rb_obj_class(obj))) {
-	rb_raise(rb_eTypeError, "wrong argument class");
-    }
     Data_Get_Struct(obj, void, pctx1);
     Data_Get_Struct(copy, void, pctx2);
     memcpy(pctx2, pctx1, algo->ctx_size);
@@ -200,59 +491,30 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     return copy;
 }
 
-/*
- * call-seq:
- *     digest_obj.reset -> digest_obj
- *
- * Resets the digest to the initial state and returns self.
- *
- * Every implementation subclass which constructor takes arguments
- * must redefine this method because Digest::Base#reset() internally
- * calls initialize() with no argument.
- */
+/* :nodoc: */
 static VALUE
 rb_digest_base_reset(VALUE self)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
     void *pctx;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    if (algo == NULL) {
-        rb_funcall(self, id_initialize, 0);
-
-        return self;
-    }
-
     Data_Get_Struct(self, void, pctx);
 
-    memset(pctx, 0, algo->ctx_size);
     algo->init_func(pctx);
 
     return self;
 }
 
-/*
- * call-seq:
- *     digest_obj.update(string) -> digest_obj
- *
- * Updates the digest using a given _string_ and returns self.
- *
- * Implementation subclasses must redefine this method, and should
- * make `<<' an alias to it.
- */
+/* :nodoc: */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
     void *pctx;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
-
-    if (algo == NULL) {
-        /* subclasses must define update() */
-        rb_notimplement();
-    }
 
     Data_Get_Struct(self, void, pctx);
 
@@ -262,256 +524,45 @@ rb_digest_base_update(VALUE self, VALUE str)
     return self;
 }
 
-/*
- * call-seq:
- *     digest_obj << string -> digest_obj
- *
- * Calls update(string).
- *
- * Implementation subclasses need not but should alias this method to
- * update() to eliminate chain calls.
- */
+/* :nodoc: */
 static VALUE
-rb_digest_base_lshift(VALUE self, VALUE str)
+rb_digest_base_finish(VALUE self)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
     void *pctx;
-
-    algo = get_digest_base_metadata(rb_obj_class(self));
-
-    if (algo == NULL) {
-        /* subclasses just need to define update(), not << */
-        rb_funcall(self, id_update, 1, str);
-
-        return self;
-    }
-
-    Data_Get_Struct(self, void, pctx);
-
-    StringValue(str);
-    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
-
-    return self;
-}
-
-/*
- * call-seq:
- *     digest_obj.digest -> string
- *
- * Returns the resulting hash value.
- *
- * Implementation subclasses must redefine this method.
- */
-static VALUE
-rb_digest_base_digest(VALUE self)
-{
-    algo_t *algo;
-    void *pctx1, *pctx2;
-    size_t ctx_size;
     VALUE str;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
 
-    if (algo == NULL) {
-        /* subclasses must define update() */
-        rb_notimplement();
-    }
-
-    Data_Get_Struct(self, void, pctx1);
-
-    ctx_size = algo->ctx_size;
-    pctx2 = xmalloc(ctx_size);
-    memcpy(pctx2, pctx1, ctx_size);
+    Data_Get_Struct(self, void, pctx);
 
     str = rb_str_new(0, algo->digest_len);
-    algo->finish_func(pctx2, RSTRING_PTR(str));
-    free(pctx2);
+    algo->finish_func(pctx, RSTRING_PTR(str));
+
+    /* avoid potential coredump caused by use of a finished context */
+    algo->init_func(pctx);
 
     return str;
 }
 
-/*
- * call-seq:
- *     digest_obj.hexdigest -> string
- *     digest_obj.to_s -> string
- *
- * Returns the resulting hash value in a hex-encoded form.
- */
-static VALUE
-rb_digest_base_hexdigest(VALUE self)
-{
-    return hexdigest_str_new(rb_funcall(self, id_digest, 0));
-}
-
-/*
- * call-seq:
- *     digest_obj.inspect -> string
- *
- * Creates a printable version of the digest object.
- */
-static VALUE
-rb_digest_base_inspect(VALUE self)
-{
-    algo_t *algo;
-    VALUE klass, str;
-    size_t digest_len = 32;	/* no need to be just the right size */
-    char *cname;
-
-    klass = rb_obj_class(self);
-    algo = get_digest_base_metadata(klass);
-
-    if (algo != NULL)
-        digest_len = algo->digest_len;
-
-    cname = rb_obj_classname(self);
-
-    /* #<Digest::Alg: xxxxx...xxxx> */
-    str = rb_str_buf_new(2 + strlen(cname) + 2 + digest_len * 2 + 1);
-    rb_str_buf_cat2(str, "#<");
-    rb_str_buf_cat2(str, cname);
-    rb_str_buf_cat2(str, ": ");
-    rb_str_buf_append(str, rb_digest_base_hexdigest(self));
-    rb_str_buf_cat2(str, ">");
-    return str;
-}
-
-/*
- * call-seq:
- *     digest_obj == string -> boolean
- *     digest_obj == another_digest_obj -> boolean
- *
- * If a string is given, checks whether it is equal to the hash value
- * of the digest object.  If another instance of the same digest class
- * is given, checks whether they have the same hash value.  Otherwise
- * returns false.
- */
-static VALUE
-rb_digest_base_equal(VALUE self, VALUE other)
-{
-    algo_t *algo;
-    VALUE klass;
-    VALUE str1, str2;
-
-    klass = rb_obj_class(self);
-
-    if (rb_obj_class(other) == klass) {
-        str1 = rb_funcall(self, id_digest, 0);
-        str2 = rb_funcall(other, id_digest, 0);
-    } else {
-        StringValue(other);
-        str2 = other;
-
-        algo = get_digest_base_metadata(klass);
-
-        if (RSTRING_LEN(str2) == algo->digest_len)
-            str1 = rb_funcall(self, id_digest, 0);
-        else
-            str1 = rb_digest_base_hexdigest(self);
-    }
-
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
-	&& rb_str_cmp(str1, str2) == 0)
-	return Qtrue;
-
-    return Qfalse;
-}
-
-/*
- * call-seq:
- *     Digest::ALGORITHM.block_length(...) -> integer
- *
- * Returns the digest length of the digest algorithm.  Parameters
- * follow the same specification as the constructor.
- *
- * If an implementation subclass does not redefine this method,
- * returns Digest::ALGORITHM.new(...).digest_length().
- */
-static VALUE
-rb_digest_base_s_digest_length(int argc, VALUE *argv,VALUE klass)
-{
-    algo_t *algo;
-
-    algo = get_digest_base_metadata(klass);
-
-    if (algo == NULL) {
-        /* Subclasses really should redefine this method */
-        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
-        return rb_funcall(obj, rb_intern("digest_length"), 0);
-    }
-
-    return INT2NUM(algo->digest_len);
-}
-
-/*
- * call-seq:
- *     digest_obj.block_length -> integer
- *
- * Returns the length of the hash value of the digest object.
- *
- * If an implementation subclass does not redefine this method,
- * returns digest_obj.digest().length().
- */
+/* :nodoc: */
 static VALUE
 rb_digest_base_digest_length(VALUE self)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
-
-    if (algo == NULL) {
-        /* subclasses really should redefine this method */
-        VALUE digest = rb_funcall(self, id_digest, 0);
-        StringValue(digest);
-        return INT2NUM(RSTRING_LEN(digest));
-    }
 
     return INT2NUM(algo->digest_len);
 }
 
-/*
- * call-seq:
- *     Digest::ALGORITHM.block_length(...) -> integer
- *
- * Returns the block length of the digest algorithm.  Parameters
- * follow the same specification as the constructor.
- *
- * If an implementation subclass does not redefine this method,
- * returns Digest::ALGORITHM.new(...).block_length().
- */
-static VALUE
-rb_digest_base_s_block_length(int argc, VALUE *argv,VALUE klass)
-{
-    algo_t *algo;
-
-    algo = get_digest_base_metadata(klass);
-
-    if (algo == NULL) {
-        VALUE obj = rb_funcall2(klass, id_new, argc, argv);
-        return rb_funcall(obj, rb_intern("block_length"), 0);
-    }
-
-    return INT2NUM(algo->block_len);
-}
-
-/*
- * call-seq:
- *     digest_obj.block_length -> length
- *
- * Returns the block length of the digest.
- *
- * Implementation subclasses must redefine this method if used.
- */
+/* :nodoc: */
 static VALUE
 rb_digest_base_block_length(VALUE self)
 {
-    algo_t *algo;
+    rb_digest_metadata_t *algo;
 
     algo = get_digest_base_metadata(rb_obj_class(self));
-
-    if (algo == NULL) {
-        /* subclasses must define this method (only if used) */
-        rb_notimplement();
-    }
 
     return INT2NUM(algo->block_len);
 }
@@ -519,33 +570,70 @@ rb_digest_base_block_length(VALUE self)
 void
 Init_digest(void)
 {
-    mDigest = rb_define_module("Digest");
+    id_reset           = rb_intern("reset");
+    id_update          = rb_intern("update");
+    id_finish          = rb_intern("finish");
+    id_digest          = rb_intern("digest");
+    id_hexdigest       = rb_intern("hexdigest");
+    id_digest_length   = rb_intern("digest_length");
 
-    cDigest_Base = rb_define_class_under(mDigest, "Base", rb_cObject);
+    /*
+     * module Digest
+     */
+    rb_mDigest = rb_define_module("Digest");
 
-    rb_define_alloc_func(cDigest_Base, rb_digest_base_alloc);
-    rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, -1);
-    rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, -1);
+    /* module functions */
+    rb_define_module_function(rb_mDigest, "hexencode", rb_digest_s_hexencode, 1);
 
-    rb_define_singleton_method(cDigest_Base, "digest_length", rb_digest_base_s_digest_length, -1);
-    rb_define_singleton_method(cDigest_Base, "block_length", rb_digest_base_s_block_length, -1);
+    /*
+     * module Digest::Instance
+     */
+    rb_mDigest_Instance = rb_define_module_under(rb_mDigest, "Instance");
 
-    rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
-    rb_define_method(cDigest_Base, "reset", rb_digest_base_reset, 0);
-    rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
-    rb_define_method(cDigest_Base, "<<", rb_digest_base_lshift, 1);
-    rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);
-    rb_define_method(cDigest_Base, "hexdigest", rb_digest_base_hexdigest, 0);
-    rb_define_method(cDigest_Base, "to_s", rb_digest_base_hexdigest, 0);
-    rb_define_method(cDigest_Base, "inspect", rb_digest_base_inspect, 0);
-    rb_define_method(cDigest_Base, "==", rb_digest_base_equal, 1);
+    /* instance methods that should be overridden */
+    rb_define_method(rb_mDigest_Instance, "update", rb_digest_instance_update, 1);
+    rb_define_method(rb_mDigest_Instance, "<<", rb_digest_instance_update, 1);
+    rb_define_private_method(rb_mDigest_Instance, "finish", rb_digest_instance_finish, 0);
+    rb_define_method(rb_mDigest_Instance, "reset", rb_digest_instance_reset, 0);
+    rb_define_method(rb_mDigest_Instance, "digest_length", rb_digest_instance_digest_length, 0);
+    rb_define_method(rb_mDigest_Instance, "block_length", rb_digest_instance_block_length, 0);
 
-    rb_define_method(cDigest_Base, "digest_length", rb_digest_base_digest_length, 0);
-    rb_define_method(cDigest_Base, "block_length", rb_digest_base_block_length, 0);
+    /* instance methods that may be overridden */
+    rb_define_method(rb_mDigest_Instance, "==", rb_digest_instance_equal, 1);
+    rb_define_method(rb_mDigest_Instance, "inspect", rb_digest_instance_inspect, 0);
+
+    /* instance methods that need not usually be overridden */
+    rb_define_method(rb_mDigest_Instance, "new", rb_digest_instance_new, 0);
+    rb_define_method(rb_mDigest_Instance, "digest", rb_digest_instance_digest, -1);
+    rb_define_method(rb_mDigest_Instance, "digest!", rb_digest_instance_digest_bang, 0);
+    rb_define_method(rb_mDigest_Instance, "hexdigest", rb_digest_instance_hexdigest, -1);
+    rb_define_method(rb_mDigest_Instance, "hexdigest!", rb_digest_instance_hexdigest_bang, 0);
+    rb_define_method(rb_mDigest_Instance, "to_s", rb_digest_instance_hexdigest, 0);
+    rb_define_method(rb_mDigest_Instance, "length", rb_digest_instance_length, 0);
+    rb_define_method(rb_mDigest_Instance, "size", rb_digest_instance_length, 0);
+
+    /*
+     * class Digest::Class
+     */
+    rb_cDigest_Class = rb_define_class_under(rb_mDigest, "Class", rb_cObject);
+    rb_include_module(rb_cDigest_Class, rb_mDigest_Instance);
+
+    /* class methods */
+    rb_define_singleton_method(rb_cDigest_Class, "digest", rb_digest_class_s_digest, -1);
+    rb_define_singleton_method(rb_cDigest_Class, "hexdigest", rb_digest_class_s_hexdigest, -1);
 
     id_metadata = rb_intern("metadata");
-    id_new = rb_intern("new");
-    id_initialize = rb_intern("initialize");
-    id_update = rb_intern("update");
-    id_digest = rb_intern("digest");
+
+    /* class Digest::Base < Digest::Class */
+    rb_cDigest_Base = rb_define_class_under(rb_mDigest, "Base", rb_cDigest_Class);
+
+    rb_define_alloc_func(rb_cDigest_Base, rb_digest_base_alloc);
+
+    rb_define_method(rb_cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
+    rb_define_method(rb_cDigest_Base, "reset", rb_digest_base_reset, 0);
+    rb_define_method(rb_cDigest_Base, "update", rb_digest_base_update, 1);
+    rb_define_method(rb_cDigest_Base, "<<", rb_digest_base_update, 1);
+    rb_define_private_method(rb_cDigest_Base, "finish", rb_digest_base_finish, 0);
+    rb_define_method(rb_cDigest_Base, "digest_length", rb_digest_base_digest_length, 0);
+    rb_define_method(rb_cDigest_Base, "block_length", rb_digest_base_block_length, 0);
 }

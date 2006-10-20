@@ -7,14 +7,14 @@
 #define FOREACH_BITLEN(func)	func(256) func(384) func(512)
 
 #define DEFINE_ALGO_METADATA(bitlen) \
-static algo_t sha##bitlen = { \
-    1, \
+static rb_digest_metadata_t sha##bitlen = { \
+    RUBY_DIGEST_API_VERSION, \
     SHA##bitlen##_DIGEST_LENGTH, \
     SHA##bitlen##_BLOCK_LENGTH, \
     sizeof(SHA##bitlen##_CTX), \
-    (hash_init_func_t)SHA##bitlen##_Init, \
-    (hash_update_func_t)SHA##bitlen##_Update, \
-    (hash_finish_func_t)SHA##bitlen##_Finish, \
+    (rb_digest_hash_init_func_t)SHA##bitlen##_Init, \
+    (rb_digest_hash_update_func_t)SHA##bitlen##_Update, \
+    (rb_digest_hash_finish_func_t)SHA##bitlen##_Finish, \
 };
 
 FOREACH_BITLEN(DEFINE_ALGO_METADATA)
