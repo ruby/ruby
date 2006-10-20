@@ -62,7 +62,7 @@ module Digest
 
     # :nodoc:
     def initialize_copy(other)
-      @sha2 = @sha2.clone
+      @sha2 = other.instance_eval { @sha2.clone }
     end
 
     # :nodoc:

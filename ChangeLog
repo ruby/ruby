@@ -1,3 +1,9 @@
+Fri Oct 20 22:00:43 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Complete half-boiled updates.
+
+	* ext/digest/sha2/lib/digest/sha2.rb: Fix #initialize_clone().
+
 Fri Oct 20 20:28:37 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest: Prefix C constants with RUBY_ and C type names with

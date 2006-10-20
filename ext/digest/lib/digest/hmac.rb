@@ -63,22 +63,23 @@ module Digest
     end
 
     def initialize_copy(other)
-      @md = @md.new
+      @md = other.instance_eval { @md.clone }
     end
 
     def update(text)
       @md.reset.update(@opad + @md.digest(@ipad + text))
-
       self
     end
 
     def reset
       @md.reset
+      self
     end
 
-    def digest
-      @md.digest
+    def finish
+      @md.digest!
     end
+    private :finish
 
     def digest_length
       @md.digest_length
@@ -89,7 +90,7 @@ module Digest
     end
 
     def inspect
-      sprintf('#<%s: key=%s, digest=%s: %s>', self.class.name, @key.inspect, @tmp_md.reset.inspect, hexdigest());
+      sprintf('#<%s: key=%s, digest=%s>', self.class.name, @key.inspect, @md.inspect.sub(/^\#<(.*)>$/) { $1 });
     end
   end
 end
@@ -105,7 +106,7 @@ require 'test/unit'
 module TM_HMAC
   def test_s_hexdigest
     cases.each { |h|
-      digesters { |d|
+      digesters.each { |d|
         assert_equal(h[:hexdigest], Digest::HMAC.hexdigest(h[:data], h[:key], d))
       }
     }
@@ -113,7 +114,7 @@ module TM_HMAC
 
   def test_hexdigest
     cases.each { |h|
-      digesters { |d|
+      digesters.each { |d|
         hmac = Digest::HMAC.new(h[:key], d)
 
         hmac.update(h[:data])
@@ -125,7 +126,7 @@ module TM_HMAC
 
   def test_reset
     cases.each { |h|
-      digesters { |d|
+      digesters.each { |d|
         hmac = Digest::HMAC.new(h[:key], d)
         hmac.update("test")
         hmac.reset
