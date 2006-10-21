@@ -1,3 +1,7 @@
+Sat Oct 21 17:50:40 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest.rb: Follow the framework updates.
+
 Fri Oct 20 22:00:43 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Complete half-boiled updates.
