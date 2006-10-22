@@ -146,7 +146,6 @@ str_new3(klass, str)
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
     RSTRING(str2)->aux.shared = str;
     FL_SET(str2, ELTS_SHARED);
-    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -155,7 +154,10 @@ VALUE
 rb_str_new3(str)
     VALUE str;
 {
-    return str_new3(rb_obj_class(str), str);
+    VALUE str2 = str_new3(rb_obj_class(str), str);
+
+    OBJ_INFECT(str2, str);
+    return str2;
 }
 
 static VALUE
@@ -189,7 +191,7 @@ rb_str_new4(orig)
     if (FL_TEST(orig, ELTS_SHARED) && (str = RSTRING(orig)->aux.shared) && klass == RBASIC(str)->klass) {
 	long ofs;
 	ofs = RSTRING(str)->len - RSTRING(orig)->len;
-	if (ofs > 0) {
+	if ((ofs > 0) || (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->ptr += ofs;
 	    RSTRING(str)->len -= ofs;
@@ -610,7 +612,8 @@ rb_str_substr(str, beg, len)
     }
     else if (len > sizeof(struct RString)/2 &&
 	beg + len == RSTRING(str)->len && !FL_TEST(str, STR_ASSOC)) {
-	str2 = rb_str_new3(rb_str_new4(str));
+	str2 = rb_str_new4(str);
+	str2 = str_new3(rb_obj_class(str2), str2);
 	RSTRING(str2)->ptr += RSTRING(str2)->len - len;
 	RSTRING(str2)->len = len;
     }
