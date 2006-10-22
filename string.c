@@ -2711,6 +2711,7 @@ rb_str_dump(VALUE str)
  *  
  *  Upcases the contents of <i>str</i>, returning <code>nil</code> if no changes
  *  were made.
+ *  Note: case replacement is effective only in ASCII region.
  */
 
 static VALUE
@@ -2744,6 +2745,7 @@ rb_str_upcase_bang(VALUE str)
  *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
  *  uppercase counterparts. The operation is locale insensitive---only
  *  characters ``a'' to ``z'' are affected.
+ *  Note: case replacement is effective only in ASCII region.
  *     
  *     "hEllO".upcase   #=> "HELLO"
  */
@@ -2763,6 +2765,7 @@ rb_str_upcase(VALUE str)
  *  
  *  Downcases the contents of <i>str</i>, returning <code>nil</code> if no
  *  changes were made.
+ *  Note: case replacement is effective only in ASCII region.
  */
 
 static VALUE
@@ -2796,6 +2799,7 @@ rb_str_downcase_bang(VALUE str)
  *  Returns a copy of <i>str</i> with all uppercase letters replaced with their
  *  lowercase counterparts. The operation is locale insensitive---only
  *  characters ``A'' to ``Z'' are affected.
+ *  Note: case replacement is effective only in ASCII region.
  *     
  *     "hEllO".downcase   #=> "hello"
  */
@@ -2815,6 +2819,7 @@ rb_str_downcase(VALUE str)
  *  
  *  Modifies <i>str</i> by converting the first character to uppercase and the
  *  remainder to lowercase. Returns <code>nil</code> if no changes are made.
+ *  Note: case conversion is effective only in ASCII region.
  *     
  *     a = "hello"
  *     a.capitalize!   #=> "Hello"
@@ -2855,6 +2860,7 @@ rb_str_capitalize_bang(VALUE str)
  *  
  *  Returns a copy of <i>str</i> with the first character converted to uppercase
  *  and the remainder to lowercase.
+ *  Note: case conversion is effective only in ASCII region.
  *     
  *     "hello".capitalize    #=> "Hello"
  *     "HELLO".capitalize    #=> "Hello"
@@ -2876,6 +2882,7 @@ rb_str_capitalize(VALUE str)
  *  
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
+ *  Note: case conversion is effective only in ASCII region.
  */
 
 static VALUE
@@ -2912,6 +2919,7 @@ rb_str_swapcase_bang(VALUE str)
  *  
  *  Returns a copy of <i>str</i> with uppercase alphabetic characters converted
  *  to lowercase and lowercase characters converted to uppercase.
+ *  Note: case conversion is effective only in ASCII region.
  *     
  *     "Hello".swapcase          #=> "hELLO"
  *     "cYbEr_PuNk11".swapcase   #=> "CyBeR_pUnK11"

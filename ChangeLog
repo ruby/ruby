@@ -6,6 +6,13 @@ Sun Oct 22 16:47:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* strnig.c (rb_str_new4): keep shared string untainted when orignal
 	  string is tainted.  fixed: [ruby-dev:29672]
 
+Sun Oct 22 07:55:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upcase, rb_str_downcase, rb_str_downcase,
+	  rb_str_upcase_bang, rb_str_downcase_bang, rb_str_swapcase_bang):
+	  add RDoc description that case conversion to be effective only
+	  in ASCII region.
+
 Sat Oct 21 17:50:40 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb: Follow the framework updates.
