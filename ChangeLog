@@ -18,6 +18,11 @@ Sun Oct 22 07:55:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  add RDoc description that case conversion to be effective only
 	  in ASCII region.
 
+Sun Oct 22 05:20:34 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* configure.in: alloca is broken; use C_ALLOCA instead.
+	  [ruby-dev:29416]
+
 Sat Oct 21 17:50:40 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb: Follow the framework updates.
