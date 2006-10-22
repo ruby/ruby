@@ -502,7 +502,17 @@ AC_STRUCT_ST_RDEV
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
-AC_FUNC_ALLOCA
+case "${target_cpu}-${target_os}" in
+powerpc-darwin*)
+  AC_LIBSOURCES(alloca.c)
+  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
+  AC_DEFINE(C_ALLOCA)
+  AC_DEFINE_UNQUOTED(alloca, alloca)
+  ;;
+*)
+  AC_FUNC_ALLOCA
+  ;;
+esac
 AC_FUNC_MEMCMP
 AC_FUNC_FSEEKO
 AC_CHECK_FUNCS(ftello)
