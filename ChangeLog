@@ -59,11 +59,6 @@ Fri Oct 20 20:28:37 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Follow the framework updates.
 
-Sun Oct 22 05:20:34 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
-
-        * configure.in: alloca is broken; use C_ALLOCA instead.
-          [ruby-dev:29416]
-
 Fri Oct 20 10:47:43 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb: fixed the bug of handling COMMON_MACROS.
