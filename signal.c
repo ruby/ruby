@@ -968,10 +968,9 @@ Init_signal(void)
     install_sighandler(SIGPIPE, sigpipe);
 #endif
 
-#ifdef SIGCLD
+#if defined(SIGCLD)
     init_sigchld(SIGCLD);
-#endif
-#ifdef SIGCHLD
+#elif defined(SIGCHLD)
     init_sigchld(SIGCHLD);
 #endif
 
