@@ -1,3 +1,9 @@
+Mon Oct 23 04:30:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): use return value from prov given as the
+	  second argument to Marshal#load() to allow value replacement in
+	  the restoring data.
+
 Sun Oct 22 14:48:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (Init_signal): avoid duplicated installation of SIGCHLD

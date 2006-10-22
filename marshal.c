@@ -890,6 +890,9 @@ r_entry(VALUE v, struct load_arg *arg)
 {
     rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
     if (arg->taint) OBJ_TAINT(v);
+    if (arg->proc) {
+	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
+    }
     return v;
 }
 
@@ -931,7 +934,7 @@ path2module(const char *path)
 }
 
 static VALUE
-r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
+r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -944,13 +947,16 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	if (NIL_P(v)) {
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
-	return v;
+	if (arg->proc) {
+	    v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
+	}
+	break;
 
       case TYPE_IVAR:
         {
 	    int ivar = Qtrue;
 
-	    v = r_object0(arg, 0, &ivar, extmod);
+	    v = r_object0(arg, &ivar, extmod);
 	    if (ivar) r_ivar(v, arg);
 	}
 	break;
@@ -962,7 +968,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
             if (NIL_P(extmod)) extmod = rb_ary_new2(0);
             rb_ary_push(extmod, m);
 
-	    v = r_object0(arg, 0, 0, extmod);
+	    v = r_object0(arg, 0, extmod);
             while (RARRAY_LEN(extmod) > 0) {
                 m = rb_ary_pop(extmod);
                 rb_extend_object(v, m);
@@ -977,7 +983,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, 0, 0, extmod);
+	    v = r_object0(arg, 0, extmod);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
@@ -1031,7 +1037,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 		d = load_mantissa(d, e, RSTRING_LEN(str) - (e - ptr));
 	    }
 	    v = rb_float_new(d);
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
 	break;
 
@@ -1076,7 +1082,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 		len--;
 	    }
 	    v = rb_big_norm((VALUE)big);
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
 	break;
 
@@ -1097,7 +1103,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
 
 	    v = rb_ary_new2(len);
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	    while (len--) {
 		rb_ary_push(v, r_object(arg));
 	    }
@@ -1110,7 +1116,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    long len = r_long(arg);
 
 	    v = rb_hash_new();
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	    while (len--) {
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
@@ -1141,7 +1147,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 		rb_ary_push(values, Qnil);
 	    }
 	    v = rb_struct_alloc(klass, values);
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
@@ -1171,7 +1177,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 		*ivp = Qfalse;
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
         break;
 
@@ -1191,7 +1197,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
 			 rb_class2name(klass));
 	    }
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	    data = r_object(arg);
 	    rb_funcall(v, s_mload, 1, data);
 	}
@@ -1205,7 +1211,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	    r_ivar(v, arg);
 	}
 	break;
@@ -1227,13 +1233,13 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
            if (TYPE(v) != T_DATA) {
                rb_raise(rb_eArgError, "dump format error");
            }
-           r_entry(v, arg);
+           v = r_entry(v, arg);
            if (!rb_respond_to(v, s_load_data)) {
                rb_raise(rb_eTypeError,
                         "class %s needs to have instance method `_load_data'",
                         rb_class2name(klass));
            }
-           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0, extmod));
+           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
        }
        break;
 
@@ -1242,7 +1248,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    volatile VALUE str = r_bytes(arg);
 
 	    v = rb_path2class(RSTRING_PTR(str));
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
 	break;
 
@@ -1251,7 +1257,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    volatile VALUE str = r_bytes(arg);
 
 	    v = path2class(RSTRING_PTR(str));
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
 	break;
 
@@ -1260,7 +1266,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	    volatile VALUE str = r_bytes(arg);
 
 	    v = path2module(RSTRING_PTR(str));
-	    r_entry(v, arg);
+	    v = r_entry(v, arg);
 	}
 	break;
 
@@ -1269,14 +1275,11 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 	break;
 
       case TYPE_SYMLINK:
-	return ID2SYM(r_symlink(arg));
+	v = ID2SYM(r_symlink(arg));
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
-    }
-    if (proc) {
-	rb_funcall(proc, rb_intern("call"), 1, v);
     }
     return v;
 }
@@ -1284,7 +1287,7 @@ r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 static VALUE
 r_object(struct load_arg *arg)
 {
-    return r_object0(arg, arg->proc, 0, Qnil);
+    return r_object0(arg, 0, Qnil);
 }
 
 static VALUE
