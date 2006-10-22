@@ -203,7 +203,6 @@ str_new3(VALUE klass, VALUE str)
 	RSTRING(str2)->as.heap.aux.shared = str;
 	FL_SET(str2, ELTS_SHARED);
     }
-    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -211,7 +210,10 @@ str_new3(VALUE klass, VALUE str)
 VALUE
 rb_str_new3(VALUE str)
 {
-    return str_new3(rb_obj_class(str), str);
+    VALUE str2 = str_new3(rb_obj_class(str), str);
+
+    OBJ_INFECT(str2, str);
+    return str2;
 }
 
 static VALUE
@@ -246,7 +248,7 @@ rb_str_new4(VALUE orig)
 	&& klass == RBASIC(str)->klass) {
 	long ofs;
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
-	if (ofs > 0) {
+	if ((ofs > 0) || (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
@@ -635,7 +637,8 @@ rb_str_substr(VALUE str, long beg, long len)
     }
     else if (len > RSTRING_EMBED_LEN_MAX &&
 	     beg + len == RSTRING_LEN(str) && !STR_ASSOC_P(str)) {
-	str2 = rb_str_new3(rb_str_new4(str));
+	str2 = rb_str_new4(str);
+	str2 = str_new3(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += RSTRING_LEN(str2) - len;
 	RSTRING(str2)->as.heap.len = len;
     }
