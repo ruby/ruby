@@ -1,3 +1,8 @@
+Wed Oct 25 08:03:23 2006  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: updated based on date2 3.9.6.
+	  [ruby-core:09323]
+
 Sun Oct 22 14:48:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (ruby_signal): don't set SA_RESTART.  a backport from

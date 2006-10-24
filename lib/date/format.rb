@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.27 2006-09-30 13:10:32+09 tadf Exp $
+# $Id: format.rb,v 2.28 2006-10-25 06:45:12+09 tadf Exp $
 
 require 'rational'
 
@@ -280,10 +280,10 @@ class Date
       when /\A(:{0,3})z/
 	t = $1.size
 	sign = if offset < 0 then -1 else +1 end
-	fr = offset.abs.to_f
-	hh, fr = fr.divmod(1.0/24)
-	mm, fr = fr.divmod(1.0/1440)
-	ss, fr = fr.divmod(1.0/86400)
+	fr = offset.abs
+	hh, fr = fr.divmod(1.to_r/24)
+	mm, fr = fr.divmod(1.to_r/1440)
+	ss, fr = fr.divmod(1.to_r/86400)
 	if t == 3
 	  if    ss.nonzero? then t =  2
 	  elsif mm.nonzero? then t =  1
