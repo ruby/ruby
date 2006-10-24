@@ -14,7 +14,7 @@ class Exports
 
   def self.create(*args, &block)
     platform = RUBY_PLATFORM
-    pat, klass = @subclass.find {|pat, klass| pat =~ platform}
+    pat, klass = @subclass.find {|p, k| p =~ platform}
     unless klass
       raise ArgumentError, "unsupported platform: #{platform}"
     end
@@ -36,7 +36,6 @@ class Exports
   def initialize(objs)
     syms = {}
     winapis = {}
-    internal = export = nil
     each_export(objs) do |internal, export|
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal
@@ -62,7 +61,6 @@ class Exports
       exports << "Library " + library
     end
     exports << "Description " + description.dump if description
-    k = v = nil
     exports << "EXPORTS" << symbols()
     exports
   end

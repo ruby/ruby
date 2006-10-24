@@ -48,7 +48,7 @@ end
   [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', 'CUI', ruby_icon],
   [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', 'GUI', rubyw_icon || ruby_icon],
   [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
-].each do |base, ext, type, desc, icons|
+].each do |base, ext, type, desc, icon|
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
@@ -58,7 +58,7 @@ end
 #include <winver.h>
 #endif
 
-#{icons || ''}
+#{icon || ''}
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{fversion}
  PRODUCTVERSION #{fversion}
