@@ -11,8 +11,6 @@ ${RUBY} extconf.rb --with-cflags="${CFLAGS}"
 ${MAKE} clean
 ${MAKE}
 
-mkdir -p lib/digest
-
 for algo in md5 rmd160 sha1 sha2; do
     args=--with-cflags="${CFLAGS}"
 
@@ -27,7 +25,6 @@ for algo in md5 rmd160 sha1 sha2; do
     ln -sf ../../$algo/$algo.so lib/digest/
 done
 
-${RUBY} -I. -I./lib test.rb
+${RUBY} -I. -I./lib ../../test/digest/test_digest.rb
 
 rm lib/digest/*.so
-rmdir lib/digest
