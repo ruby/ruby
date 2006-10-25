@@ -7,6 +7,12 @@ Wed Oct 25 00:58:19 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb, win32/resource.rb: use unique variable names.
 
+Tue Oct 24 19:18:53 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_by_slice): new method added.
+
+	* enumerator.c (enumerator_by_cons): ditto.
+
 Tue Oct 24 18:56:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enumerator.c (enum_each_slice, enum_each_cons): returns
