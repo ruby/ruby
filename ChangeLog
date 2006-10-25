@@ -1,3 +1,29 @@
+Wed Oct 25 17:23:28 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest, test/digest/test_digest.rb: Merge from trunk:
+	  - Introduce versioning in Digest::Base API, and prefix C
+	    constants with RUBY_ and C type names with rb_ to avoid name
+	    clash in writing extensions.
+	  - Introduce Digest::Class and Digest::Instance for ease of
+	    implementing subclasses and add-ons.
+	  - Digest::Instance module requires and assumes that any instance
+	    be resettable and clonable.  An instance method #new() is
+	    added so digest instances work just like digest classes.
+	  - The constructor does no longer take an initial string to feed;
+	    digest() and hexdigest() now do, instead.  This allows digest
+	    classes to take their own hashing parameters.
+	  - Make some changes to digest() and hexdigest() class methods,
+	    which now take extra arguments, which are passed through to
+	    the constructor in an internal call.
+	  - Add #digest_length/size/length() and #block_length(),
+	  - Add the Digest::SHA2 class to wrap up SHA2 variants: SHA256,
+	    SHA384 and SHA512, hoping this module would make a decent
+	    example of a digest subclass written in Ruby.
+	  - Rip BubbleBabble support out of the base class and have a
+	    separate module named digest/bubblebabble.
+	  - Remove RD documents in favor of newly written and embedded
+	    RDoc documentation.
+
 Wed Oct 25 08:03:23 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: updated based on date2 3.9.6.

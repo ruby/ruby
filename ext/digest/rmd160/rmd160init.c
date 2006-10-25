@@ -8,19 +8,25 @@
 #include "rmd160.h"
 #endif
 
-static algo_t rmd160 = {
+static rb_digest_metadata_t rmd160 = {
+    RUBY_DIGEST_API_VERSION,
     RMD160_DIGEST_LENGTH,
+    RMD160_BLOCK_LENGTH,
     sizeof(RMD160_CTX),
-    (hash_init_func_t)RMD160_Init,
-    (hash_update_func_t)RMD160_Update,
-    (hash_finish_func_t)RMD160_Finish,
+    (rb_digest_hash_init_func_t)RMD160_Init,
+    (rb_digest_hash_update_func_t)RMD160_Update,
+    (rb_digest_hash_finish_func_t)RMD160_Finish,
 };
 
+/*
+ * A class for calculating message digests using RIPEMD-160
+ * cryptographic hash function, designed by Hans Dobbertin, Antoon
+ * Bosselaers, and Bart Preneel.
+ */
 void
 Init_rmd160()
 {
     VALUE mDigest, cDigest_Base, cDigest_RMD160;
-    ID id_metadata;
 
     rb_require("digest");
 
@@ -29,11 +35,6 @@ Init_rmd160()
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
-    rb_define_const(cDigest_RMD160, "DIGEST_LENGTH", INT2NUM(RMD160_DIGEST_LENGTH));
-    rb_define_const(cDigest_RMD160, "BLOCK_LENGTH",  INT2NUM(RMD160_BLOCK_LENGTH));
-
-    id_metadata = rb_intern("metadata");
-
-    rb_ivar_set(cDigest_RMD160, id_metadata,
+    rb_ivar_set(cDigest_RMD160, rb_intern("metadata"),
       Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160));
 }

@@ -15,14 +15,18 @@
 
 #include "ruby.h"
 
-typedef void (*hash_init_func_t)(void *);
-typedef void (*hash_update_func_t)(void *, unsigned char *, size_t);
-typedef void (*hash_finish_func_t)(void *, unsigned char *);
+#define RUBY_DIGEST_API_VERSION	2
+
+typedef void (*rb_digest_hash_init_func_t)(void *);
+typedef void (*rb_digest_hash_update_func_t)(void *, unsigned char *, size_t);
+typedef void (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
 
 typedef struct {
+    int api_version;
     size_t digest_len;
+    size_t block_len;
     size_t ctx_size;
-    hash_init_func_t init_func;
-    hash_update_func_t update_func;
-    hash_finish_func_t finish_func;
-} algo_t;
+    rb_digest_hash_init_func_t init_func;
+    rb_digest_hash_update_func_t update_func;
+    rb_digest_hash_finish_func_t finish_func;
+} rb_digest_metadata_t;
