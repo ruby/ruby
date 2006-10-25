@@ -1178,6 +1178,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     for (i=0; i<argc; i++) {
 	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_a");
     }
+    RETURN_ENUMERATOR(obj, argc, argv);
     result = rb_block_given_p() ? Qnil : rb_ary_new();
     memo[0] = result;
     memo[1] = rb_ary_new4(argc, argv);

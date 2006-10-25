@@ -7,6 +7,10 @@ Wed Oct 25 00:58:19 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb, win32/resource.rb: use unique variable names.
 
+Tue Oct 24 18:51:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_zip): add RETURN_ENUMERATOR() to zip method.
+
 Mon Oct 23 04:30:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object0): use return value from proc given as the
