@@ -1,0 +1,4 @@
+Makefile
+mkmf.log
+*.def
+extconf.h
