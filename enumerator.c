@@ -101,19 +101,6 @@ obj_to_enum(int argc, VALUE *argv, VALUE obj)
     return rb_enumeratorize(obj, meth, argc, argv);
 }
 
-/*
- *  call-seq:
- *    enum_with_index
- *
- *  Returns Enumerable::Enumerator.new(self, :each_with_index).
- *
- */
-static VALUE
-enumerator_enum_with_index(VALUE obj)
-{
-    return rb_enumeratorize(obj, sym_each_with_index, 0, 0);
-}
-
 static VALUE
 each_slice_i(VALUE val, VALUE *memo)
 {
@@ -152,7 +139,7 @@ enum_each_slice(VALUE obj, VALUE n)
     VALUE args[2], ary;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
-
+    RETURN_ENUMERATOR(obj, 1, &n);
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
@@ -162,19 +149,6 @@ enum_each_slice(VALUE obj, VALUE n)
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
     return Qnil;
-}
-
-/*
- *  call-seq:
- *    e.enum_slice(n)
- *
- *  Returns Enumerable::Enumerator.new(self, :each_slice, n).
- *
- */
-static VALUE
-enumerator_enum_slice(VALUE obj, VALUE n)
-{
-    return rb_enumeratorize(obj, sym_each_slice, 1, &n);
 }
 
 static VALUE
@@ -219,6 +193,7 @@ enum_each_cons(VALUE obj, VALUE n)
     long size = NUM2LONG(n);
     VALUE args[2];
 
+    RETURN_ENUMERATOR(obj, 1, &n);
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
@@ -226,19 +201,6 @@ enum_each_cons(VALUE obj, VALUE n)
     rb_block_call(obj, rb_intern("each"), 0, 0, each_cons_i, (VALUE)args);
 
     return Qnil;
-}
-
-/*
- *  call-seq:
- *    e.enum_cons(n)
- *
- *  Returns Enumerable::Enumerator.new(self, :each_cons, n).
- *
- */
-static VALUE
-enumerator_enum_cons(VALUE obj, VALUE n)
-{
-    return rb_enumeratorize(obj, sym_each_cons, 1, &n);
 }
 
 static VALUE
@@ -378,11 +340,8 @@ Init_Enumerator(void)
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
 
-    rb_define_method(rb_mEnumerable, "enum_with_index", enumerator_enum_with_index, 0);
     rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);
-    rb_define_method(rb_mEnumerable, "enum_slice", enumerator_enum_slice, 1);
     rb_define_method(rb_mEnumerable, "each_cons", enum_each_cons, 1);
-    rb_define_method(rb_mEnumerable, "enum_cons", enumerator_enum_cons, 1);
 
     rb_cEnumerator = rb_define_class_under(rb_mEnumerable, "Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);

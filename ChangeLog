@@ -7,6 +7,14 @@ Wed Oct 25 00:58:19 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb, win32/resource.rb: use unique variable names.
 
+Tue Oct 24 18:56:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enum_each_slice, enum_each_cons): returns
+	  Enumerable::Enumerator if no block is given.  [ruby-dev:29246]
+
+	* enumerator.c: remove methods: enum_with_index, enum_slice,
+	  enum_cons.  [ruby-dev:29246]
+
 Tue Oct 24 18:51:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_zip): add RETURN_ENUMERATOR() to zip method.
