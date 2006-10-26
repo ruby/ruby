@@ -105,16 +105,17 @@ static VALUE
 each_slice_i(VALUE val, VALUE *memo)
 {
     VALUE ary = memo[0];
+    VALUE v = Qnil;
     long size = (long)memo[1];
 
     rb_ary_push(ary, val);
 
     if (RARRAY_LEN(ary) == size) {
-	rb_yield(ary);
+	v = rb_yield(ary);
 	memo[0] = rb_ary_new2(size);
     }
 
-    return Qnil;
+    return v;
 }
 
 /*
@@ -155,6 +156,7 @@ static VALUE
 each_cons_i(VALUE val, VALUE *memo)
 {
     VALUE ary = memo[0];
+    VALUE v = Qnil;
     long size = (long)memo[1];
 
     if (RARRAY_LEN(ary) == size) {
@@ -162,9 +164,9 @@ each_cons_i(VALUE val, VALUE *memo)
     }
     rb_ary_push(ary, val);
     if (RARRAY_LEN(ary) == size) {
-	rb_yield(rb_ary_dup(ary));
+	v = rb_yield(rb_ary_dup(ary));
     }
-    return Qnil;
+    return v;
 }
 
 /*
@@ -323,67 +325,6 @@ enumerator_with_index(VALUE obj)
 }
 
 /*
- *  call-seq:
- *    e.by_slice {...}
- *
- *  Iterates the given block for each slice of <n> elements.
- *
- */
-static VALUE
-enumerator_by_slice(VALUE obj, VALUE n)
-{
-    struct enumerator *e = enumerator_ptr(obj);
-    int argc = 0;
-    VALUE *argv = 0;
-    long size = NUM2LONG(n);
-    VALUE args[2], ary;
-
-    if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
-    RETURN_ENUMERATOR(obj, 1, &n);
-    args[0] = rb_ary_new2(size);
-    args[1] = (VALUE)size;
-    if (e->args) {
-	argc = RARRAY_LEN(e->args);
-	argv = RARRAY_PTR(e->args);
-    }
-
-    return rb_block_call(e->method, rb_intern("call"), argc, argv,
-			 each_slice_i, (VALUE)&args);
-    return Qnil;
-}
-
-/*
- *  call-seq:
- *    e.by_cons {...}
- *
- *  Iterates the given block for each array of consecutive <n>
- *  elements.
- *
- */
-static VALUE
-enumerator_by_cons(VALUE obj, VALUE n)
-{
-    struct enumerator *e = enumerator_ptr(obj);
-    int argc = 0;
-    VALUE *argv = 0;
-    long size = NUM2LONG(n);
-    VALUE args[2], ary;
-
-    if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
-    RETURN_ENUMERATOR(obj, 1, &n);
-    args[0] = rb_ary_new2(size);
-    args[1] = (VALUE)size;
-    if (e->args) {
-	argc = RARRAY_LEN(e->args);
-	argv = RARRAY_PTR(e->args);
-    }
-
-    return rb_block_call(e->method, rb_intern("call"), argc, argv,
-			 each_cons_i, (VALUE)&args);
-    return Qnil;
-}
-
-/*
  * call-seq:
  *   e.to_splat   => array
  *
@@ -412,8 +353,6 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
-    rb_define_method(rb_cEnumerator, "by_slice", enumerator_by_slice, 1);
-    rb_define_method(rb_cEnumerator, "by_cons", enumerator_by_cons, 1);
     rb_define_method(rb_cEnumerator, "to_splat", enumerator_to_splat, 0);
 
     sym_each		= ID2SYM(rb_intern("each"));

@@ -1,3 +1,7 @@
+Thu Oct 26 15:23:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c: remove by_slice and by_cons.
+
 Thu Oct 26 15:12:12 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/digest/digest.c (Init_digest): typo.
