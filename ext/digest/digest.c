@@ -608,7 +608,7 @@ Init_digest(void)
     rb_define_method(rb_mDigest_Instance, "digest!", rb_digest_instance_digest_bang, 0);
     rb_define_method(rb_mDigest_Instance, "hexdigest", rb_digest_instance_hexdigest, -1);
     rb_define_method(rb_mDigest_Instance, "hexdigest!", rb_digest_instance_hexdigest_bang, 0);
-    rb_define_method(rb_mDigest_Instance, "to_s", rb_digest_instance_hexdigest, 0);
+    rb_define_method(rb_mDigest_Instance, "to_s", rb_digest_instance_to_s, 0);
     rb_define_method(rb_mDigest_Instance, "length", rb_digest_instance_length, 0);
     rb_define_method(rb_mDigest_Instance, "size", rb_digest_instance_length, 0);
 
