@@ -1,3 +1,10 @@
+Thu Oct 26 21:05:48 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_verify): should clear error.
+	  (fix http://bugs.debian.org/394336)
+
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_initialize): ditto.
+
 Thu Oct 26 15:23:47 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enumerator.c: remove by_slice and by_cons.
