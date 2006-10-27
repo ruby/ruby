@@ -195,8 +195,8 @@ enum_each_cons(VALUE obj, VALUE n)
     long size = NUM2LONG(n);
     VALUE args[2];
 
-    RETURN_ENUMERATOR(obj, 1, &n);
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
+    RETURN_ENUMERATOR(obj, 1, &n);
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 

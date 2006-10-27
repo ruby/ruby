@@ -1,3 +1,8 @@
+Fri Oct 27 17:30:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enum_each_cons): move RETURN_ENUMERATOR() after
+	  argument check.
+
 Thu Oct 26 21:05:48 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_verify): should clear error.
