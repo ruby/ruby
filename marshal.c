@@ -1276,6 +1276,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_SYMLINK:
 	v = ID2SYM(r_symlink(arg));
+	break;
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);

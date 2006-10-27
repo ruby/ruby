@@ -1,3 +1,7 @@
+Sat Oct 28 07:56:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): missing break.  [ruby-core:09345]
+
 Fri Oct 27 17:30:31 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enumerator.c (enum_each_cons): move RETURN_ENUMERATOR() after
