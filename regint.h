@@ -121,7 +121,7 @@
 #endif /* else NOT_RUBY */
 
 #define STATE_CHECK_STRING_THRESHOLD_LEN             7
-#define STATE_CHECK_BUFF_MAX_SIZE           0x08000000
+#define STATE_CHECK_BUFF_MAX_SIZE               0x8000
 
 #define THREAD_PASS_LIMIT_COUNT     8
 #define xmemset     memset
@@ -584,8 +584,6 @@ enum OpCode {
 
   OP_WORD,
   OP_NOT_WORD,
-  OP_WORD_SB,
-  OP_WORD_MB,
   OP_WORD_BOUND,
   OP_NOT_WORD_BOUND,
   OP_WORD_BEGIN,

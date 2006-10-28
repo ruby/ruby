@@ -36,7 +36,7 @@ extern "C" {
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   4
 #define ONIGURUMA_VERSION_MINOR   4
-#define ONIGURUMA_VERSION_TEENY   4
+#define ONIGURUMA_VERSION_TEENY   5
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -715,6 +715,7 @@ struct re_registers {
 typedef struct re_registers   OnigRegion;
 
 typedef struct {
+  OnigEncoding enc;
   OnigUChar* par;
   OnigUChar* par_end;
 } OnigErrorInfo;

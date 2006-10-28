@@ -1,3 +1,17 @@
+Sat Oct 28 20:13:18 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* oniguruma.h: Version 4.4.5
+
+	* regint.h: ditto.
+
+	* regerror.c: ditto.
+
+	* regexec.c: ditto.
+
+	* regcomp.c ditto.
+
+	* regparse.c ditto.
+
 Sat Oct 28 07:56:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object0): missing break.  [ruby-core:09345]
@@ -10926,7 +10940,7 @@ Fri Feb 18 04:06:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (fcall_gen): lvar(arg) will be evaluated as
 	  lvar.call(arg) when lvar is a defined local variable. [new]
 
-Thu Feb 17 22:15:34 2005  K.Kosako  <sndgk@ybb.ne.jp>
+Thu Feb 17 22:15:34 2005  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* ext/strscan/strscan.c: calls Oniguruma API directly.
 

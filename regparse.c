@@ -4830,7 +4830,7 @@ onig_free_shared_cclass_table()
 {
   if (IS_NOT_NULL(OnigTypeCClassTable)) {
     onig_st_foreach(OnigTypeCClassTable, i_free_shared_class, 0);
-    xfree(OnigTypeCClassTable);
+    onig_st_free_table(OnigTypeCClassTable);
     OnigTypeCClassTable = NULL;
   }
 

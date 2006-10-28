@@ -5277,6 +5277,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
  err:
   if (IS_NOT_NULL(scan_env.error)) {
     if (IS_NOT_NULL(einfo)) {
+      einfo->enc     = scan_env.enc;
       einfo->par     = scan_env.error;
       einfo->par_end = scan_env.error_end;
     }
@@ -5470,8 +5471,6 @@ OnigOpInfoType OnigOpInfo[] = {
   { OP_ANYCHAR_ML_STAR_PEEK_NEXT, "anychar-ml*-peek-next", ARG_SPECIAL },
   { OP_WORD,                "word",            ARG_NON },
   { OP_NOT_WORD,            "not-word",        ARG_NON },
-  { OP_WORD_SB,             "word-sb",         ARG_NON },
-  { OP_WORD_MB,             "word-mb",         ARG_NON },
   { OP_WORD_BOUND,          "word-bound",      ARG_NON },
   { OP_NOT_WORD_BOUND,      "not-word-bound",  ARG_NON },
   { OP_WORD_BEGIN,          "word-begin",      ARG_NON },

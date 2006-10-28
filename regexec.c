@@ -388,18 +388,26 @@ typedef struct {
 
 #define STATE_CHECK_BUFF_MALLOC_THRESHOLD_SIZE  16
 
-#define STATE_CHECK_BUFF_INIT(msa, str_len, state_num) do { \
-  (msa).state_check_buff = (void* )0;\
+#define STATE_CHECK_BUFF_INIT(msa, str_len, offset, state_num) do {	\
   if ((state_num) > 0 && str_len >= STATE_CHECK_STRING_THRESHOLD_LEN) {\
     int size = ((int )((str_len) + 1) * (state_num) + 7) / 8;\
-    (msa).state_check_buff_size = size;			     \
-    if (size > 0 && size < STATE_CHECK_BUFF_MAX_SIZE) {\
+    if (size > 0 && offset < size && size < STATE_CHECK_BUFF_MAX_SIZE) {\
       if (size >= STATE_CHECK_BUFF_MALLOC_THRESHOLD_SIZE) \
         (msa).state_check_buff = (void* )xmalloc(size);\
       else \
         (msa).state_check_buff = (void* )xalloca(size);\
-      xmemset((msa).state_check_buff, 0, (size_t )size);\
+      xmemset(((char* )((msa).state_check_buff)+(offset)), 0, \
+              (size_t )(size - (offset))); \
+      (msa).state_check_buff_size = size;\
     }\
+    else {\
+      (msa).state_check_buff = (void* )0;\
+      (msa).state_check_buff_size = 0;\
+    }\
+  }\
+  else {\
+    (msa).state_check_buff = (void* )0;\
+    (msa).state_check_buff_size = 0;\
   }\
 } while (0)
 
@@ -410,7 +418,7 @@ typedef struct {
   }\
 } while (0);
 #else
-#define STATE_CHECK_BUFF_INIT(msa, str_len, state_num)
+#define STATE_CHECK_BUFF_INIT(msa, str_len, offset, state_num)
 #define MATCH_ARG_FREE(msa)  if ((msa).stack_p) xfree((msa).stack_p)
 #endif
 
@@ -3261,7 +3269,12 @@ onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, On
 #endif /* USE_RECOMPILE_API && USE_MULTI_THREAD_SYSTEM */
 
   MATCH_ARG_INIT(msa, option, region, at);
-  STATE_CHECK_BUFF_INIT(msa, end - str, reg->num_comb_exp_check);
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+  {
+    int offset = at - str;
+    STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
+  }
+#endif
 
   if (region
 #ifdef USE_POSIX_REGION_OPTION
@@ -3665,7 +3678,8 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
       MATCH_ARG_INIT(msa, option, region, start);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-      msa.state_check_buff = (void* )0;
+      msa.state_check_buff      = (void* )0;
+      msa.state_check_buff_size = 0;
 #endif
       MATCH_AND_RETURN_CHECK;
       goto mismatch;
@@ -3679,7 +3693,12 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 
   MATCH_ARG_INIT(msa, option, region, orig_start);
-  STATE_CHECK_BUFF_INIT(msa, end - str, reg->num_comb_exp_check);
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+  {
+    int offset = (MIN(start, range) - str);
+    STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
+  }
+#endif
 
   s = (UChar* )start;
   if (range > start) {   /* forward search */
