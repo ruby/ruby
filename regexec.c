@@ -390,7 +390,8 @@ typedef struct {
 
 #define STATE_CHECK_BUFF_INIT(msa, str_len, offset, state_num) do {	\
   if ((state_num) > 0 && str_len >= STATE_CHECK_STRING_THRESHOLD_LEN) {\
-    int size = ((int )((str_len) + 1) * (state_num) + 7) / 8;\
+    unsigned int size = (unsigned int )(((str_len) + 1) * (state_num) + 7) >> 3;\
+    offset = ((offset) * (state_num)) >> 3;\
     if (size > 0 && offset < size && size < STATE_CHECK_BUFF_MAX_SIZE) {\
       if (size >= STATE_CHECK_BUFF_MALLOC_THRESHOLD_SIZE) \
         (msa).state_check_buff = (void* )xmalloc(size);\

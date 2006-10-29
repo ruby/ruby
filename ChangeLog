@@ -1,3 +1,7 @@
+Sun Oct 29 19:51:31 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
+
+	* regexec.c: invalid offset value was used in STATE_CHECK_BUFF_INIT().
+
 Sat Oct 28 20:13:18 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* oniguruma.h: Version 4.4.5
