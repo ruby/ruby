@@ -691,8 +691,15 @@ rb_big2str0(x, base, trim)
 	}
     }
     if (trim) {while (s[j] == '0') j++;}
-    RSTRING(ss)->len -= RBIGNUM(x)->sign?j:j-1;
-    memmove(RBIGNUM(x)->sign?s:s+1, s+j, RSTRING(ss)->len);
+    i = RSTRING(ss)->len - j;
+    if (RBIGNUM(x)->sign) {
+	memmove(s, s+j, i);
+	RSTRING(ss)->len = i-1;
+    }
+    else {
+	memmove(s+1, s+j, i);
+	RSTRING(ss)->len = i;
+    }
     s[RSTRING(ss)->len] = '\0';
 
     return ss;
