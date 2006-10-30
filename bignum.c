@@ -579,13 +579,13 @@ rb_str2inum(VALUE str, int base)
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 VALUE
-rb_big2str(VALUE x, int base)
+rb_big2str0(VALUE x, int base, int trim)
 {
     volatile VALUE t;
     BDIGIT *ds;
     long i, j, hbase;
     VALUE ss;
-    char *s, c;
+    char *s;
 
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
@@ -621,7 +621,7 @@ rb_big2str(VALUE x, int base)
 	rb_raise(rb_eArgError, "illegal radix %d", base);
 	break;
     }
-    j += 2;
+    j++;			/* space for sign */
 
     hbase = base * base;
 #if SIZEOF_BDIGITS > 2
@@ -630,11 +630,11 @@ rb_big2str(VALUE x, int base)
 
     t = rb_big_clone(x);
     ds = BDIGITS(t);
-    ss = rb_str_new(0, j);
+    ss = rb_str_new(0, j+1);
     s = RSTRING_PTR(ss);
 
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
-    while (i && j) {
+    while (i && j > 1) {
 	long k = i;
 	BDIGIT_DBL num = 0;
 
@@ -643,21 +643,33 @@ rb_big2str(VALUE x, int base)
 	    ds[k] = (BDIGIT)(num / hbase);
 	    num %= hbase;
 	}
-	if (ds[i-1] == 0) i--;
+	if (trim && ds[i-1] == 0) i--;
 	k = SIZEOF_BDIGITS;
 	while (k--) {
-	    c = (char)(num % base);
-	    s[--j] = ruby_digitmap[(int)c];
+	    s[--j] = ruby_digitmap[num % base];
 	    num /= base;
-	    if (i == 0 && num == 0) break;
+	    if (!trim && j < 1) break;
+	    if (trim && i == 0 && num == 0) break;
 	}
     }
-    while (s[j] == '0') j++;
-    i = RSTRING_LEN(ss)-(RBIGNUM(x)->sign?j:j-1);
-    memmove(RBIGNUM(x)->sign?s:s+1, s+j, i);
+    if (trim) {while (s[j] == '0') j++;}
+    i = RSTRING_LEN(ss) - j;
+    if (RBIGNUM(x)->sign) {
+	memmove(s, s+j, i);
+	i--;
+    }
+    else {
+	memmove(s+1, s+j, i);
+    }
     rb_str_set_len(ss, i);
 
     return ss;
+}
+
+VALUE
+rb_big2str(VALUE x, int base)
+{
+    return rb_big2str0(x, base, Qtrue);
 }
 
 /*
