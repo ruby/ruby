@@ -1,3 +1,8 @@
+Mon Oct 30 18:35:33 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): wrong allocation length.
+	  [ruby-dev:29710]
+
 Mon Oct 30 12:34:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): fix commit miss.  [ruby-dev:29707]
