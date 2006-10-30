@@ -994,13 +994,15 @@ if test "$with_dln_a_out" != yes; then
 			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			rb_cv_dlopen=yes ;;
         aix*)           if test "$GCC" = yes; then
-                           : ${LDSHARED='gcc -shared'}
-                           DLDFLAGS='-Wl,-G -eInit_$(TARGET)'
-                           LDFLAGS='-Wl,-brtl -Wl,-bE:ruby.imp'
-                        else
-                          : ${LDSHARED='/usr/ccs/bin/ld'}
-                          DLDFLAGS='-G -eInit_$(TARGET)'
-                          LDFLAGS="-brtl -bE:ruby.imp"
+			    : ${LDSHARED='$(CC) -shared'}
+			    DLDFLAGS='-Wl,-G -eInit_$(TARGET)'
+			    LDFLAGS='-Wl,-brtl'
+			    XLDFLAGS='-Wl,-bE:ruby.imp'
+			else
+			    : ${LDSHARED='/usr/ccs/bin/ld'}
+			    DLDFLAGS='-G -eInit_$(TARGET)'
+			    LDFLAGS='-brtl'
+			    XLDFLAGS='-bE:ruby.imp'
                         fi
                         : ${ARCHFILE="ruby.imp"}
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
@@ -1322,13 +1324,12 @@ if test "$enable_shared" = 'yes'; then
 	;;
     aix*)
 	if test "$GCC" = yes; then
-	    LIBRUBY_LDSHARED='$(CC) -shared'
-	    LIBRUBY_DLDFLAGS='-Wl,-G -Wl,-bE:ruby.imp -Wl,-bnoentry'
+	    LIBRUBY_DLDFLAGS='-Wl,-G -Wl,-bnoentry'
 	else
-	    LIBRUBY_LDSHARED='/usr/ccs/bin/ld'
-	    LIBRUBY_DLDFLAGS='-G -bE:ruby.imp -bnoentry'
+	    LIBRUBY_DLDFLAGS='-G -bnoentry'
 	fi
-	LIBRUBYARG_SHARED='-L${libdir} -lruby'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS $XLDFLAGS"
+	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	;;
     beos*)
