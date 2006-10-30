@@ -1,3 +1,7 @@
+Mon Oct 30 12:34:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): fix commit miss.  [ruby-dev:29707]
+
 Mon Oct 30 11:15:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): should preserve leading zero
