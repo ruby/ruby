@@ -158,7 +158,7 @@ fnmatch(pat, string, flags)
     int period = !(flags & FNM_DOTMATCH);
     int nocase = flags & FNM_CASEFOLD;
 
-    while (c = *pat++) {
+    while ((c = *pat++) != '\0') {
 	switch (c) {
 	case '?':
 	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
@@ -821,7 +821,12 @@ sys_warning_1(mesg)
 
 #define GLOB_VERBOSE	(1U << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
+    (void)((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
+
+#define GLOB_ALLOC(type) (type *)malloc(sizeof(type))
+#define GLOB_ALLOC_N(type, n) (type *)malloc(sizeof(type) * (n))
+#define GLOB_REALLOC_N(var, type, n) (type *)realloc((var), sizeof(type) * (n))
+#define GLOB_JUMP_TAG(status) ((status == -1) ? rb_memerror() : rb_jump_tag(status))
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
@@ -872,7 +877,8 @@ extract_path(p, pend)
     int len;
 
     len = pend - p;
-    alloc = ALLOC_N(char, len+1);
+    alloc = GLOB_ALLOC_N(char, len+1);
+    if (!alloc) return NULL;
     memcpy(alloc, p, len);
     if (len > 1 && pend[-1] == '/'
 #if defined DOSISH_DRIVE_LETTER
@@ -955,6 +961,7 @@ glob_helper(path, sub, flags, func, arg)
     int status = 0;
     char *buf = 0;
     char *newpath = 0;
+    char *newbuf;
 
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
@@ -963,6 +970,7 @@ glob_helper(path, sub, flags, func, arg)
 #endif
 	{
 	    newpath = strdup(path);
+	    if (!newpath) return -1;
 	    if (sub) {
 		p = newpath + (sub - path);
 		remove_backslashes(newpath + (sub - path));
@@ -981,7 +989,7 @@ glob_helper(path, sub, flags, func, arg)
 	       we may want to know what is wrong. */
 	    sys_warning(path);
 	}
-	xfree(newpath);
+	if (newpath) free(newpath);
 	return status;
     }
 
@@ -1000,10 +1008,18 @@ glob_helper(path, sub, flags, func, arg)
 	    } *tmp, *link, **tail = &link;
 
 	    base = extract_path(path, p);
+	    if (!base) {
+		status = -1;
+		break;
+	    }
 	    if (path == p) dir = ".";
 	    else dir = base;
 
 	    magic = extract_elem(p);
+	    if (!magic) {
+		status = -1;
+		break;
+	    }
 	    if (stat(dir, &st) < 0) {
 	        if (errno != ENOENT)
 		    sys_warning(dir);
@@ -1015,7 +1031,12 @@ glob_helper(path, sub, flags, func, arg)
 		if (m && strcmp(magic, "**") == 0) {
 		    int n = strlen(base);
 		    recursive = 1;
-		    REALLOC_N(buf, char, n+strlen(m)+3);
+		    newbuf = GLOB_REALLOC_N(buf, char, n+strlen(m)+3);
+		    if (!newbuf) {
+			status = -1;
+			goto finalize;
+		    }
+		    buf = newbuf;
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
 		    status = glob_helper(buf, buf+n, flags, func, arg);
 		    if (status) goto finalize;
@@ -1046,7 +1067,12 @@ glob_helper(path, sub, flags, func, arg)
 			continue;
 		    if (fnmatch("*", dp->d_name, flags) != 0)
 			continue;
-		    REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
+		    newbuf = GLOB_REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
+		    if (!newbuf) {
+			status = -1;
+			break;
+		    }
+		    buf = newbuf;
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 			if (errno != ENOENT)
@@ -1064,14 +1090,23 @@ glob_helper(path, sub, flags, func, arg)
 		    continue;
 		}
 		if (fnmatch(magic, dp->d_name, flags) == 0) {
-		    REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+2);
+		    newbuf = GLOB_REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+2);
+		    if (!newbuf) {
+			status = -1;
+			break;
+		    }
+		    buf = newbuf;
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
 			status = glob_call_func(func, buf, arg);
 			if (status) break;
 			continue;
 		    }
-		    tmp = ALLOC(struct d_link);
+		    tmp = GLOB_ALLOC(struct d_link);
+		    if (!tmp) {
+			status = -1;
+			break;
+		    }
 		    tmp->path = buf;
 		    buf = 0;
 		    *tail = tmp;
@@ -1091,7 +1126,12 @@ glob_helper(path, sub, flags, func, arg)
 				int len = strlen(link->path);
 				int mlen = strlen(m);
 
-				REALLOC_N(buf, char, len+mlen+1);
+				newbuf = GLOB_REALLOC_N(buf, char, len+mlen+1);
+				if (!newbuf) {
+				    status = -1;
+				    goto next_elem;
+				}
+				buf = newbuf;
 				sprintf(buf, "%s%s", link->path, m);
 				status = glob_helper(buf, buf+len, flags, func, arg);
 			    }
@@ -1100,6 +1140,7 @@ glob_helper(path, sub, flags, func, arg)
 			    sys_warning(link->path);
 			}
 		    }
+		  next_elem:
 		    tmp = link;
 		    link = link->next;
 		    free(tmp->path);
@@ -1110,8 +1151,8 @@ glob_helper(path, sub, flags, func, arg)
 	}
 	p = m;
     }
-    xfree(buf);
-    xfree(newpath);
+    if (buf) free(buf);
+    if (newpath) free(newpath);
     return status;
 }
 
@@ -1211,7 +1252,7 @@ push_braces(ary, str, flags)
     int flags;
 {
     char *buf = 0;
-    char *b;
+    char *b, *newbuf;
     const char *s, *p, *t;
     const char *lbrace, *rbrace;
     int nest = 0;
@@ -1249,7 +1290,12 @@ push_braces(ary, str, flags)
 		    }
 		}
 	    }
-	    REALLOC_N(buf, char, len+1);
+	    newbuf = GLOB_REALLOC_N(buf, char, len+1);
+	    if (!newbuf) {
+		status = -1;
+		break;
+	    }
+	    buf = newbuf;
 	    memcpy(buf, s, lbrace-s);
 	    b = buf + (lbrace-s);
 	    memcpy(b, t, p-t);
@@ -1261,7 +1307,7 @@ push_braces(ary, str, flags)
     else {
 	status = push_globs(ary, str, flags);
     }
-    xfree(buf);
+    if (buf) free(buf);
 
     return status;
 }
@@ -1306,7 +1352,7 @@ rb_push_glob(str, flags)
 	}
 	/* else unmatched braces */
     }
-    if (status) rb_jump_tag(status);
+    if (status) GLOB_JUMP_TAG(status);
     if (rb_block_given_p()) {
 	rb_ary_each(ary);
 	return Qnil;
