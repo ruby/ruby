@@ -1,4 +1,8 @@
-Mon Oct 30 23:22:43 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 30 23:40:52 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (miniruby): add XLDFLAGS.
+
+	* configure.in (aix): use -bE option for miniruby.  [ruby-dev:29698]
 
 	* dir.c (glob_helper): get rid of possible memory leak.
 
