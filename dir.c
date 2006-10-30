@@ -922,7 +922,11 @@ sys_warning_1(const char* mesg)
 
 #define GLOB_VERBOSE	(1UL << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
+    (void)((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
+
+#define GLOB_ALLOC(type) (type *)malloc(sizeof(type))
+#define GLOB_ALLOC_N(type, n) (type *)malloc(sizeof(type) * (n))
+#define GLOB_JUMP_TAG(status) ((status == -1) ? rb_memerror() : rb_jump_tag(status))
 
 /* System call with warning */
 static int
@@ -1058,6 +1062,8 @@ struct glob_pattern {
     struct glob_pattern *next;
 };
 
+static void glob_free_pattern(struct glob_pattern *list);
+
 static struct glob_pattern *
 glob_make_pattern(const char *p, int flags)
 {
@@ -1065,7 +1071,8 @@ glob_make_pattern(const char *p, int flags)
     int dirsep = 0; /* pattern is terminated with '/' */
 
     while (*p) {
-	tmp = ALLOC(struct glob_pattern);
+	tmp = GLOB_ALLOC(struct glob_pattern);
+	if (!tmp) goto error;
 	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
 	    /* fold continuous RECURSIVEs (needed in glob_helper) */
 	    do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
@@ -1075,7 +1082,11 @@ glob_make_pattern(const char *p, int flags)
 	}
 	else {
 	    const char *m = find_dirsep(p, flags);
-	    char *buf = ALLOC_N(char, m-p+1);
+	    char *buf = GLOB_ALLOC_N(char, m-p+1);
+	    if (!buf) {
+		free(tmp);
+		goto error;
+	    }
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
 	    tmp->type = has_magic(buf, flags) ? MAGICAL : PLAIN;
@@ -1093,7 +1104,13 @@ glob_make_pattern(const char *p, int flags)
 	tail = &tmp->next;
     }
 
-    tmp = ALLOC(struct glob_pattern);
+    tmp = GLOB_ALLOC(struct glob_pattern);
+    if (!tmp) {
+      error:
+	*tail = 0;
+	glob_free_pattern(list);
+	return 0;
+    }
     tmp->type = dirsep ? MATCH_DIR : MATCH_ALL;
     tmp->str = 0;
     *tail = tmp;
@@ -1118,8 +1135,9 @@ static char *
 join_path(const char *path, int dirsep, const char *name)
 {
     long len = strlen(path);
-    char *buf = ALLOC_N(char, len+strlen(name)+(dirsep?1:0)+1);
+    char *buf = GLOB_ALLOC_N(char, len+strlen(name)+(dirsep?1:0)+1);
 
+    if (!buf) return 0;
     memcpy(buf, path, len);
     if (dirsep) {
 	strcpy(buf+len, "/");
@@ -1229,6 +1247,7 @@ glob_helper(
 	}
 	if (match_dir && isdir == YES) {
 	    char *tmp = join_path(path, dirsep, "");
+	    if (!tmp) return -1;
 	    status = glob_call_func(func, tmp, arg);
 	    free(tmp);
 	    if (status) return status;
@@ -1244,8 +1263,12 @@ glob_helper(
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 	    char *buf = join_path(path, dirsep, dp->d_name);
-
 	    enum answer new_isdir = UNKNOWN;
+
+	    if (!buf) {
+		status = -1;
+		break;
+	    }
 	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
 		&& fnmatch("*", dp->d_name, flags) == 0) {
 #ifndef _WIN32
@@ -1258,7 +1281,11 @@ glob_helper(
 #endif
 	    }
 
-	    new_beg = new_end = ALLOC_N(struct glob_pattern *, (end - beg) * 2);
+	    new_beg = new_end = GLOB_ALLOC_N(struct glob_pattern *, (end - beg) * 2);
+	    if (!new_beg) {
+		status = -1;
+		break;
+	    }
 
 	    for (cur = beg; cur < end; ++cur) {
 		struct glob_pattern *p = *cur;
@@ -1284,7 +1311,8 @@ glob_helper(
     else if (plain) {
 	struct glob_pattern **copy_beg, **copy_end, **cur2;
 
-	copy_beg = copy_end = ALLOC_N(struct glob_pattern *, end - beg);
+	copy_beg = copy_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
+	if (!copy_beg) return -1;
 	for (cur = beg; cur < end; ++cur)
 	    *copy_end++ = (*cur)->type == PLAIN ? *cur : 0;
 
@@ -1292,11 +1320,20 @@ glob_helper(
 	    if (*cur) {
 		char *buf;
 		char *name;
-		name = ALLOC_N(char, strlen((*cur)->str) + 1);
+		name = GLOB_ALLOC_N(char, strlen((*cur)->str) + 1);
+		if (!name) {
+		    status = -1;
+		    break;
+		}
 		strcpy(name, (*cur)->str);
 		if (escape) remove_backslashes(name);
 
-		new_beg = new_end = ALLOC_N(struct glob_pattern *, end - beg);
+		new_beg = new_end = GLOB_ALLOC_N(struct glob_pattern *, end - beg);
+		if (!new_beg) {
+		    free(name);
+		    status = -1;
+		    break;
+		}
 		*new_end++ = (*cur)->next;
 		for (cur2 = cur + 1; cur2 < copy_end; ++cur2) {
 		    if (*cur2 && fnmatch((*cur2)->str, name, flags) == 0) {
@@ -1307,6 +1344,11 @@ glob_helper(
 
 		buf = join_path(path, dirsep, name);
 		free(name);
+		if (!buf) {
+		    free(new_beg);
+		    status = -1;
+		    break;
+		}
 		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg, new_end, flags, func, arg);
 		free(buf);
 		free(new_beg);
@@ -1338,11 +1380,16 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg)
     if (root && *root == '/') root++;
 
     n = root - start;
-    buf = ALLOC_N(char, n + 1);
+    buf = GLOB_ALLOC_N(char, n + 1);
+    if (!buf) return -1;
     MEMCPY(buf, start, char, n);
     buf[n] = '\0';
 
     list = glob_make_pattern(root, flags);
+    if (!list) {
+	free(buf);
+	return -1;
+    }
     status = glob_helper(buf, 0, UNKNOWN, UNKNOWN, &list, &list + 1, flags, func, arg);
     glob_free_pattern(list);
     free(buf);
@@ -1386,7 +1433,7 @@ void
 rb_glob(const char *path, void (*func)(const char *, VALUE), VALUE arg)
 {
     int status = rb_glob2(path, 0, func, arg);
-    if (status) rb_jump_tag(status);
+    if (status) GLOB_JUMP_TAG(status);
 }
 
 static void
@@ -1419,9 +1466,10 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg)
     }
 
     if (lbrace && rbrace) {
-	char *buf = ALLOC_N(char, strlen(s) + 1);
+	char *buf = GLOB_ALLOC_N(char, strlen(s) + 1);
 	long shift;
 
+	if (!buf) return -1;
 	memcpy(buf, s, lbrace-s);
 	shift = (lbrace-s);
 	p = lbrace;
@@ -1503,7 +1551,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
     while (offset < RSTRING_LEN(str)) {
 	int status = push_glob(ary, RSTRING_PTR(str) + offset, flags);
 	char *p, *pend;
-	if (status) rb_jump_tag(status);
+	if (status) GLOB_JUMP_TAG(status);
 	if (offset >= RSTRING_LEN(str)) break;
 	p = RSTRING_PTR(str) + offset;
 	p += strlen(p) + 1;
@@ -1527,7 +1575,7 @@ dir_globs(long argc, VALUE *argv, int flags)
 	VALUE str = argv[i];
 	StringValue(str);
 	status = push_glob(ary, RSTRING_PTR(str), flags);
-	if (status) rb_jump_tag(status);
+	if (status) GLOB_JUMP_TAG(status);
     }
 
     return ary;
