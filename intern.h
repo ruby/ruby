@@ -70,6 +70,7 @@ VALUE rb_str_to_inum _((VALUE, int, int));
 VALUE rb_cstr2inum _((const char*, int));
 VALUE rb_str2inum _((VALUE, int));
 VALUE rb_big2str _((VALUE, int));
+VALUE rb_big2str0 _((VALUE, int, int));
 long rb_big2long _((VALUE));
 #define rb_big2int(x) rb_big2long(x)
 unsigned long rb_big2ulong _((VALUE));

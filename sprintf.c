@@ -627,7 +627,7 @@ rb_f_sprintf(argc, argv)
 		    val = rb_big_clone(val);
 		    rb_big_2comp(val);
 		}
-		tmp1 = tmp = rb_big2str(val, base);
+		tmp1 = tmp = rb_big2str0(val, base, RBIGNUM(val)->sign);
 		s = RSTRING(tmp)->ptr;
 		if (*s == '-') {
 		    if (base == 10) {
