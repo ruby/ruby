@@ -835,7 +835,6 @@ gc_mark_children(ptr, lev)
 	  case NODE_OPT_N:
 	  case NODE_EVSTR:
 	  case NODE_UNDEF:
-	  case NODE_POSTEXE:
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
@@ -882,6 +881,7 @@ gc_mark_children(ptr, lev)
 	  case NODE_FALSE:
 	  case NODE_ATTRSET:
 	  case NODE_BLOCK_ARG:
+	  case NODE_POSTEXE:
 	    break;
 	  case NODE_ALLOCA:
 	    mark_locations_array((VALUE*)obj->as.node.u1.value,
