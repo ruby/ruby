@@ -1,3 +1,11 @@
+Tue Oct 31 17:03:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_dup): duplicate the class of original time.
+	  [ruby-core:09357]
+
+	* lib/time.rb (Time::make_time, Time::rfc2822, Time::httpdate):
+	  should respect subclasses.  [ruby-core:09357]
+
 Tue Oct 31 16:25:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (ary_shared_first): should address offset after

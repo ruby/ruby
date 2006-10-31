@@ -1019,7 +1019,7 @@ time_init_copy(VALUE copy, VALUE time)
 static VALUE
 time_dup(VALUE time)
 {
-    VALUE dup = time_s_alloc(rb_cTime);
+    VALUE dup = time_s_alloc(CLASS_OF(time));
     time_init_copy(dup, time);
     return dup;
 }
