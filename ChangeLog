@@ -1,3 +1,10 @@
+Wed Nov  1 01:05:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_call0): fixed bug of zsuper with both of opt and rest.
+	  fixed: [ruby-list:42928]
+
+	* test/ruby/test_super.rb: add tests to check above bug.
+
 Tue Oct 31 17:03:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_dup): duplicate the class of original time.

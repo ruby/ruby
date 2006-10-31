@@ -5925,14 +5925,21 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 			while (opt && argc) {
 			    assign(recv, opt->nd_head, *argv, 1);
 			    argv++; argc--;
+			    ++i;
 			    opt = opt->nd_next;
 			}
 			if (opt) {
 			    rb_eval(recv, opt);
+			    while (opt) {
+				opt = opt->nd_next;
+				++i;
+			    }
 			}
+		    }
+		    if (!node->nd_rest) {
 			i = nopt;
 		    }
-		    if (node->nd_rest) {
+		    else {
 			VALUE v;
 			
 			if (argc > 0) {
