@@ -1066,7 +1066,7 @@ static VALUE
 time_dup(time)
     VALUE time;
 {
-    VALUE dup = time_s_alloc(rb_cTime);
+    VALUE dup = time_s_alloc(CLASS_OF(time));
     time_init_copy(dup, time);
     return dup;
 }
