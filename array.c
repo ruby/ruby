@@ -517,6 +517,7 @@ ary_shared_first(int argc, VALUE *argv, VALUE ary, int last)
     }
     else {
 	result = ary_shared_array(rb_cArray, ary);
+	RARRAY(result)->as.heap.ptr += offset;
 	RARRAY(result)->as.heap.len = n;
     }
     return result;
