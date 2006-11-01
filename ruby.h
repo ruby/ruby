@@ -391,33 +391,17 @@ struct RString {
      RSTRING(str)->as.ary : \
      RSTRING(str)->as.heap.ptr)
 
-#define RARRAY_EMBED_LEN_MAX 3
 struct RArray {
     struct RBasic basic;
+    long len;
     union {
-	struct {
-	    long len;
-	    union {
-		long capa;
-		VALUE shared;
-	    } aux;
-	    VALUE *ptr;
-	} heap;
-	VALUE ary[RARRAY_EMBED_LEN_MAX];
-    } as;
+	long capa;
+	VALUE shared;
+    } aux;
+    VALUE *ptr;
 };
-#define RARRAY_NOEMBED FL_USER3
-#define RARRAY_EMBED_LEN_MASK (FL_USER4|FL_USER5)
-#define RARRAY_EMBED_LEN_SHIFT (FL_USHIFT+4)
-#define RARRAY_LEN(a) \
-    (!(RBASIC(a)->flags & RARRAY_NOEMBED) ? \
-     (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
-            (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)) : \
-     RARRAY(a)->as.heap.len)
-#define RARRAY_PTR(a) \
-    (!(RBASIC(a)->flags & RARRAY_NOEMBED) ? \
-     RARRAY(a)->as.ary : \
-     RARRAY(a)->as.heap.ptr)
+#define RARRAY_LEN(a) RARRAY(a)->len
+#define RARRAY_PTR(a) RARRAY(a)->ptr
 
 struct RRegexp {
     struct RBasic basic;

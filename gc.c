@@ -926,7 +926,7 @@ gc_mark_children(VALUE ptr, int lev)
 
       case T_ARRAY:
 	if (FL_TEST(obj, ELTS_SHARED)) {
-	    ptr = obj->as.array.as.heap.aux.shared;
+	    ptr = obj->as.array.aux.shared;
 	    goto again;
 	}
 	else {

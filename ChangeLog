@@ -1,3 +1,9 @@
+Wed Nov  1 23:24:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (struct RArray): revert embedding ptr in RVALUE.
+
+	* array.c: ditto.
+
 Wed Nov  1 23:01:55 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (hash): use Bob Jenkins' hash algorithm.
