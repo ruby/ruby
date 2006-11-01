@@ -286,16 +286,16 @@ rb_digest_instance_inspect(VALUE self)
  *     digest_obj == string -> boolean
  *
  * If a string is given, checks whether it is equal to the hex-encoded
- * hash value of the digest object.  If another instance of the same
- * digest class is given, checks whether they have the same hash
- * value.  Otherwise returns false.
+ * hash value of the digest object.  If another digest instance is
+ * given, checks whether they have the same hash value.  Otherwise
+ * returns false.
  */
 static VALUE
 rb_digest_instance_equal(VALUE self, VALUE other)
 {
     VALUE str1, str2;
 
-    if (rb_obj_class(self) == rb_obj_class(other)) {
+    if (rb_obj_is_kind_of(other, rb_mDigest_Instance) == Qtrue) {
         str1 = rb_digest_instance_digest(0, 0, self);
         str2 = rb_digest_instance_digest(0, 0, other);
     } else {

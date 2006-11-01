@@ -1,3 +1,11 @@
+Wed Nov  1 02:41:38 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb (Digest::HMAC::update): Minor
+	  optimization.
+
+	* ext/digest/digest.c (rb_digest_instance_equal): Allow comparing
+	  a digest instance with another of a different class.
+
 Wed Nov  1 01:05:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_call0): fixed bug of zsuper with both of opt and rest.
