@@ -67,7 +67,8 @@ module Digest
     end
 
     def update(text)
-      @md.reset.update(@opad + @md.digest(@ipad + text))
+      # @md is reset when digest() returns
+      @md.update(@opad + @md.digest(@ipad + text))
       self
     end
 

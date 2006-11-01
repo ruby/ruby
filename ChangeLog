@@ -1,3 +1,11 @@
+Wed Nov  1 02:22:31 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb (Digest::HMAC::update): Minor
+	  optimization.
+
+	* ext/digest/digest.c (rb_digest_instance_equal): Allow comparing
+	  a digest instance with another of a different class.
+
 Tue Oct 31 17:03:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_dup): duplicate the class of original time.
