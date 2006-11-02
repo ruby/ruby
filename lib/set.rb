@@ -294,8 +294,8 @@ class Set
   # and the given enumerable object.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
   def ^(enum)
-    n = dup
-    enum.each { |o| if n.include?(o) then n.delete(o) else n.add(o) end }
+    n = Set.new(enum)
+    each { |o| if n.include?(o) then n.delete(o) else n.add(o) end }
     n
   end
 
@@ -1037,6 +1037,13 @@ class TC_Set < Test::Unit::TestCase
     ret = set & [2,4,6]
     assert_not_same(set, ret)
     assert_equal(Set[2,4], ret)
+  end
+
+  def test_xor
+    set = Set[1,2,3,4]
+    ret = set ^ [2,4,5,5]
+    assert_not_same(set, ret)
+    assert_equal(Set[1,3,5], ret)
   end
 
   def test_eq
