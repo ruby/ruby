@@ -46,32 +46,10 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     RARRAY(ary)->len = (n);\
 } while (0) 
 
-#define ARY_LFREE FL_USER6
-#define ARY_LFREE_P(ary) FL_TEST(ary, ARY_LFREE)
-#define LFREE_SIZE(ary) RARRAY(ary)->ptr[-1]
-#define LFREE_CAPA(ary) (LFREE_SIZE(ary)+RARRAY(ary)->aux.capa)
-
 #define ARY_CAPA(ary) RARRAY(ary)->aux.capa
 #define RESIZE_CAPA(ary,capacity) do {\
-    if (ARY_LFREE_P(ary)) {\
-        VALUE *ptr = RARRAY(ary)->ptr - LFREE_SIZE(ary);\
-	if (LFREE_CAPA(ary) >= (capacity)) {\
-	    RARRAY(ary)->aux.capa = LFREE_CAPA(ary);\
-	    MEMMOVE(ptr, RARRAY(ary)->ptr, VALUE, RARRAY_LEN(ary));\
-	    FL_UNSET(ary, ARY_LFREE);\
-	    RARRAY(ary)->ptr = ptr;\
-	}\
-        else {\
-	    long offset = LFREE_SIZE(ary);\
-	    REALLOC_N(ptr, VALUE, offset+(capacity));\
-	    RARRAY(ary)->aux.capa = (capacity);\
-	    RARRAY(ary)->ptr = ptr + offset;\
-	}\
-    }\
-    else {\
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, (capacity));\
-	RARRAY(ary)->aux.capa = (capacity);\
-    }\
+    REALLOC_N(RARRAY(ary)->ptr, VALUE, (capacity));\
+    RARRAY(ary)->aux.capa = (capacity);\
 } while (0)
 
 static VALUE *
@@ -211,12 +189,7 @@ void
 rb_ary_free(VALUE ary)
 {
     if (!ARY_SHARED_P(ary)) {
-	if (ARY_LFREE_P(ary)) {
-	    xfree(RARRAY(ary)->ptr - LFREE_SIZE(ary));
-	}
-	else {
-	    xfree(RARRAY(ary)->ptr);
-	}
+	xfree(RARRAY(ary)->ptr);
     }
 }
 
@@ -233,10 +206,6 @@ ary_make_shared(VALUE ary)
 	shared->len = RARRAY(ary)->len;
 	shared->ptr = RARRAY(ary)->ptr;
 	shared->aux.capa = RARRAY(ary)->aux.capa;
-        if (ARY_LFREE_P(ary)) {
-            FL_SET(shared,ARY_LFREE);
-            FL_UNSET(ary,ARY_LFREE);
-        }
 	RARRAY(ary)->aux.shared = (VALUE)shared;
 	FL_SET(ary, ELTS_SHARED);
 	OBJ_FREEZE(shared);
@@ -558,16 +527,15 @@ rb_ary_shift(VALUE ary)
     if (RARRAY_LEN(ary) == 0) return Qnil;
     top = RARRAY_PTR(ary)[0];
     if (!ARY_SHARED_P(ary)) {
-	if (ARY_LFREE_P(ary)) {
-	    RARRAY(ary)->ptr[0] = LFREE_SIZE(ary)+1;
+	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
+	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
+	    RARRAY(ary)->len--;
+	    return top;
 	}
-	else {
-            FL_SET(ary, ARY_LFREE);
-            RARRAY(ary)->ptr[0] = 1;
-	}
-	RARRAY(ary)->aux.capa--;
+	RARRAY_PTR(ary)[0] = Qnil;
+	ary_make_shared(ary);
     }
-    RARRAY(ary)->ptr++;	/* shift ptr */
+    RARRAY(ary)->ptr++;		/* shift ptr */
     RARRAY(ary)->len--;
 
     return top;
@@ -630,56 +598,19 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
-    long lfree = ARY_LFREE_P(ary) ? LFREE_SIZE(ary) : 0;
-    long free2 = lfree;
+    long len = RARRAY(ary)->len;
 
-    rb_ary_modify_check(ary);
     if (argc == 0) return ary;
-
-    if (lfree < argc) {
-        int shared = ARY_SHARED_P(ary); 
-	long len = RARRAY_LEN(ary);
-	long free = shared ? RARRAY_LEN(ary) : ARY_CAPA(ary);
-        VALUE *ptr;
-
-	if (free > len + argc) {
-	    free += lfree;
-	    free2 = (free - len - argc) / 2 + argc;
-	    ptr = RARRAY(ary)->ptr-lfree+free2;
-	    MEMMOVE(ptr, RARRAY(ary)->ptr, VALUE,
-		    RARRAY(ary)->len);
-	}
-	else {
-	    free = (len+argc) * 1.5;
-	    if (free - len < ARY_DEFAULT_SIZE) {
-		free += ARY_DEFAULT_SIZE;
-	    }
-	    free2 = (free - len - argc)/2 + argc;
-	    ptr = ALLOC_N(VALUE,free)+free2;
-	    MEMCPY(ptr, RARRAY_PTR(ary), VALUE, len);
-	    if (shared) {
-		FL_UNSET(ary, ELTS_SHARED);
-	    }
-	    else {
-		xfree(RARRAY(ary)->ptr-lfree);
-	    }
-	}
-	RARRAY(ary)->ptr = ptr;
-	RARRAY(ary)->len = len;
-	RARRAY(ary)->aux.capa = free-free2;
+    rb_ary_modify(ary);
+    if (RARRAY(ary)->aux.capa <= RARRAY_LEN(ary)+argc) {
+	RESIZE_CAPA(ary, RARRAY(ary)->aux.capa + ARY_DEFAULT_SIZE);
     }
-    RARRAY(ary)->ptr -= argc;
+
+    /* sliding items */
+    MEMMOVE(RARRAY(ary)->ptr + argc, RARRAY(ary)->ptr, VALUE, len);
+    MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
     RARRAY(ary)->len += argc;
-    RARRAY(ary)->aux.capa += argc;
-    free2 -= argc;
-    if (free2 > 0) {
-	RARRAY(ary)->ptr[-1] = free2;
-        FL_SET(ary, ARY_LFREE);
-    } else {
-	FL_UNSET(ary, ARY_LFREE);
-    }
-    MEMCPY(RARRAY_PTR(ary), argv, VALUE, argc);
-
+    
     return ary;
 }
 
@@ -2078,9 +2009,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
     if (copy == orig) return copy;
     shared = ary_make_shared(orig);
     ptr = RARRAY(copy)->ptr;
-    if (ARY_LFREE_P(copy)) {
-	ptr -= LFREE_SIZE(copy);
-    }
     xfree(ptr);
     RARRAY(copy)->ptr = RARRAY(shared)->ptr;
     RARRAY(copy)->len = RARRAY(shared)->len;

@@ -1,3 +1,8 @@
+Thu Nov  2 09:08:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c: revert lfree shift/unshift boost patch to avoid unknown
+	  memory error.
+
 Wed Nov  1 23:24:42 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (struct RArray): revert embedding ptr in RVALUE.
