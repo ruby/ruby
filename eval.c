@@ -5665,6 +5665,10 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
 	}
 	if (opt) {
 	    rb_eval(recv, opt);
+	    while (opt) {
+		++i;
+		opt = opt->nd_next;
+	    }
 	}
 	argc = ac + npost;
     }
