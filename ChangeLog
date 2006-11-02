@@ -1,7 +1,7 @@
 Thu Nov  2 14:19:44 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#^): Fix XOR operation against a container that
-	  holds duplicate values. [issue: #6444]
+	  holds duplicate values. [ruby-core:9372]
 
 Thu Nov  2 10:00:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
