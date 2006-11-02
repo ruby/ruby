@@ -640,7 +640,6 @@ class TC_Set < Test::Unit::TestCase
       Set.new([])
       Set.new([1,2])
       Set.new('a'..'c')
-      Set.new('XYZ')
     }
     assert_raises(NoMethodError) {
       Set.new(false)

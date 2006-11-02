@@ -240,7 +240,7 @@ module WEBrick
         end
       end
       begin
-        @header = HTTPUtils::parse_header(@raw_header)
+        @header = HTTPUtils::parse_header(@raw_header.join)
       rescue => ex
         raise  HTTPStatus::BadRequest, ex.message
       end

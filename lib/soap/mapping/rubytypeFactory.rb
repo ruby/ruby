@@ -38,6 +38,14 @@ class RubytypeFactory < Factory
   def obj2soap(soap_class, obj, info, map)
     param = nil
     case obj
+    when ::Symbol
+      unless @allow_original_mapping
+        return nil
+      end
+      param = SOAPStruct.new(TYPE_SYMBOL)
+      mark_marshalled_obj(obj, param)
+      param.add('id', SOAPString.new(obj.id2name))
+      addiv2soapattr(param, obj, map)
     when ::String
       unless @allow_original_mapping
         return nil
@@ -184,14 +192,6 @@ class RubytypeFactory < Factory
       param = SOAPStruct.new(TYPE_MODULE)
       mark_marshalled_obj(obj, param)
       param.add('name', SOAPString.new(obj.name))
-      addiv2soapattr(param, obj, map)
-    when ::Symbol
-      unless @allow_original_mapping
-        return nil
-      end
-      param = SOAPStruct.new(TYPE_SYMBOL)
-      mark_marshalled_obj(obj, param)
-      param.add('id', SOAPString.new(obj.id2name))
       addiv2soapattr(param, obj, map)
     when ::Struct
       unless @allow_original_mapping

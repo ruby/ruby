@@ -194,11 +194,11 @@ module XMLRPC
 	when TrueClass, FalseClass
 	  @writer.tag("boolean", param ? "1" : "0")
 
-	when String 
-	  @writer.tag("string", param)
-
 	when Symbol 
 	  @writer.tag("string", param.to_s)
+
+	when String 
+	  @writer.tag("string", param)
 
         when NilClass
           if Config::ENABLE_NIL_CREATE

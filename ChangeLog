@@ -1,3 +1,20 @@
+Thu Nov  2 08:21:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create::conv2value): Symbol should
+	  come earlier than String.
+
+	* lib/soap/mapping/rubytypeFactory.rb (RubytypeFactory::obj2soap):
+	  ditto. 
+
+	* lib/set.rb (TC_Set::test_s_new): strings are no longer
+	  Enumerable
+
+	* lib/soap/property.rb (Property::load): ditto.
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils::parse_header): ditto.
+
+	* lib/soap/mimemessage.rb (MIMEMessage::Headers::parse): ditto.
+
 Thu Nov  2 09:08:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c: revert lfree shift/unshift boost patch to avoid unknown

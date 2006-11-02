@@ -127,7 +127,7 @@ module WEBrick
     def parse_header(raw)
       header = Hash.new([].freeze)
       field = nil
-      raw.each{|line|
+      raw.lines.each{|line|
         case line
         when /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):\s*(.*?)\s*\z/om
           field, value = $1, $2

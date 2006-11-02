@@ -49,7 +49,7 @@ class MIMEMessage
 
     def parse(str)
       header_cache = nil
-      str.each do |line|
+      str.lines.each do |line|
 	case line
 	when /^\A[^\: \t]+:\s*.+$/
 	  parse_line(header_cache) if header_cache
