@@ -1,3 +1,8 @@
+Thu Nov  2 10:00:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c: class Symbol is no longer subclass of String. also
+	  covers [ruby-core:09366]
+
 Thu Nov  2 08:21:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/xmlrpc/create.rb (XMLRPC::Create::conv2value): Symbol should

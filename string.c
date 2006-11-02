@@ -4809,6 +4809,12 @@ sym_to_proc(VALUE sym)
 }
 
 
+static VALUE
+sym_succ(VALUE sym)
+{
+    return rb_str_intern(rb_str_succ(sym));
+}
+
 static ID
 str_to_id(VALUE str)
 {
@@ -4978,7 +4984,8 @@ Init_String(void)
     rb_define_variable("$;", &rb_fs);
     rb_define_variable("$-F", &rb_fs);
 
-    rb_cSymbol = rb_define_class("Symbol", rb_cString);
+    rb_cSymbol = rb_define_class("Symbol", rb_cObject);
+    rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
@@ -4994,4 +5001,52 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
+    rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
+    rb_define_method(rb_cSymbol, "next", sym_succ, 0);
+
+    rb_define_method(rb_cSymbol, "<=>", rb_str_cmp_m, 1);
+    rb_define_method(rb_cSymbol, "casecmp", rb_str_casecmp, 1);
+    rb_define_method(rb_cSymbol, "+", rb_str_plus, 1);
+    rb_define_method(rb_cSymbol, "*", rb_str_times, 1);
+    rb_define_method(rb_cSymbol, "%", rb_str_format_m, 1);
+    rb_define_method(rb_cSymbol, "[]", rb_str_aref_m, -1);
+    rb_define_method(rb_cSymbol, "length", rb_str_length, 0);
+    rb_define_method(rb_cSymbol, "size", rb_str_length, 0);
+    rb_define_method(rb_cSymbol, "empty?", rb_str_empty, 0);
+    rb_define_method(rb_cSymbol, "=~", rb_str_match, 1);
+    rb_define_method(rb_cSymbol, "match", rb_str_match_m, -1);
+    rb_define_method(rb_cSymbol, "index", rb_str_index_m, -1);
+    rb_define_method(rb_cSymbol, "rindex", rb_str_rindex_m, -1);
+    rb_define_method(rb_cSymbol, "chr", rb_str_chr, 0);
+
+    rb_define_method(rb_cSymbol, "to_f", rb_str_to_f, 0);
+    rb_define_method(rb_cSymbol, "to_s", rb_str_to_s, 0);
+    rb_define_method(rb_cSymbol, "to_str", rb_str_to_s, 0);
+    rb_define_method(rb_cSymbol, "dump", rb_str_dump, 0);
+
+    rb_define_method(rb_cSymbol, "upcase", rb_str_upcase, 0);
+    rb_define_method(rb_cSymbol, "downcase", rb_str_downcase, 0);
+    rb_define_method(rb_cSymbol, "capitalize", rb_str_capitalize, 0);
+    rb_define_method(rb_cSymbol, "swapcase", rb_str_swapcase, 0);
+
+    rb_define_method(rb_cSymbol, "ord", rb_str_ord, 0);
+
+    rb_define_method(rb_cSymbol, "include?", rb_str_include, 1);
+    rb_define_method(rb_cSymbol, "start_with?", rb_str_start_with, -1);
+    rb_define_method(rb_cSymbol, "end_with?", rb_str_end_with, -1);
+
+    rb_define_method(rb_cSymbol, "scan", rb_str_scan, 1);
+
+    rb_define_method(rb_cSymbol, "sub", rb_str_sub, -1);
+    rb_define_method(rb_cSymbol, "gsub", rb_str_gsub, -1);
+ 
+    rb_define_method(rb_cSymbol, "tr", rb_str_tr, 2);
+    rb_define_method(rb_cSymbol, "tr_s", rb_str_tr_s, 2);
+    rb_define_method(rb_cSymbol, "delete", rb_str_delete, -1);
+    rb_define_method(rb_cSymbol, "squeeze", rb_str_squeeze, -1);
+    rb_define_method(rb_cSymbol, "count", rb_str_count, -1);
+
+    rb_define_method(rb_cSymbol, "each_byte", rb_str_each_byte, 0);
+
+    rb_define_method(rb_cSymbol, "slice", rb_str_aref_m, -1);
 }
