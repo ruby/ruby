@@ -198,6 +198,34 @@ ruby_getaddrinfo__aix(nodename, servname, hints, res)
 }
 #undef getaddrinfo
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
+static int
+ruby_getnameinfo__aix(sa, salen, host, hostlen, serv, servlen, flags)
+     const struct sockaddr *sa;
+     size_t salen;
+     char *host;
+     size_t hostlen;
+     char *serv;
+     size_t servlen;
+     int flags;
+{
+  struct sockaddr_in6 *sa6;
+  u_int32_t *a6;
+
+  if (sa->sa_family == AF_INET6) {
+    sa6 = (struct sockaddr_in6 *)sa;
+    a6 = sa6->sin6_addr.u6_addr.u6_addr32;
+
+    if (a6[0] == 0 && a6[1] == 0 && a6[2] == 0 && a6[3] == 0) {
+      strncpy(host, "::", hostlen);
+      snprintf(serv, servlen, "%d", sa6->sin6_port);
+      return 0;
+    }
+  }
+  return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+}
+#undef getnameinfo
+#define getnameinfo(sa, salen, host, hostlen, serv, servlen, flags) \
+            ruby_getnameinfo__aix((sa), (salen), (host), (hostlen), (serv), (servlen), (flags))
 #ifndef CMSG_SPACE
 # define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
 #endif

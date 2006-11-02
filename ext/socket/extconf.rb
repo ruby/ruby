@@ -156,6 +156,10 @@ main()
       if (ai->ai_addr == NULL)
         goto bad;
 #if defined(_AIX)
+      if (ai->ai_family == AF_INET6 && passive) {
+        inet6++;
+        continue;
+      }
       ai->ai_addr->sa_len = ai->ai_addrlen;
       ai->ai_addr->sa_family = ai->ai_family;
 #endif
