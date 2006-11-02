@@ -1,3 +1,9 @@
+Fri Nov  3 00:16:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_getnameinfo__aix): AF_INET6 workaround
+	  for AIX.  a patch from Yutaka Kanemoto <kinpoco AT gmail.com>.
+	  [ruby-dev:29744]
+
 Thu Nov  2 14:19:44 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#^): Fix XOR operation against a container that
