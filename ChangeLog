@@ -1,3 +1,8 @@
+Sat Nov  4 13:13:57 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: accept NOMODSEQ. [ruby-core:9002]
+	  (backported from HEAD)
+
 Fri Nov  3 00:16:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_getnameinfo__aix): AF_INET6 workaround
