@@ -2637,7 +2637,7 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         case name
-        when /\A(?:ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE)\z/n
+        when /\A(?:ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE|NOMODSEQ)\z/n
           result = ResponseCode.new(name, nil)
         when /\A(?:PERMANENTFLAGS)\z/n
           match(T_SPACE)
