@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.28 2006-10-13 22:04:07+09 tadf Exp $
+# $Id: date.rb,v 2.29 2006-11-05 18:21:29+09 tadf Exp $
 #++
 #
 # == Overview
@@ -1124,7 +1124,13 @@ class Date
   def gregorian() new_start(self.class::GREGORIAN) end
 
   def offset() @of end
-  def new_offset(of=0) self.class.new0(@ajd, of, @sg) end
+
+  def new_offset(of=0)
+    if String === of
+      of = (self.class.zone_to_diff(of) || 0).to_r/86400
+    end
+    self.class.new0(@ajd, of, @sg)
+  end
 
   private :offset, :new_offset
 
@@ -1233,11 +1239,18 @@ class Date
   def prev_year(n=1) self << n * 12 end
 =end
 
+#  require 'enumerator'
+
   # Step the current date forward +step+ days at a
   # time (or backward, if +step+ is negative) until
   # we reach +limit+ (inclusive), yielding the resultant
   # date at each step.
   def step(limit, step=1) # :yield: date
+=begin
+    unless block_given?
+      return to_enum(:step, limit, step)
+    end
+=end
     da = self
     op = %w(- <= >=)[step <=> 0]
     while da.__send__(op, limit)
@@ -1392,6 +1405,9 @@ class DateTime < Date
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
+    if String === of
+      of = (zone_to_diff(of) || 0).to_r/86400
+    end
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
@@ -1414,6 +1430,9 @@ class DateTime < Date
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
+    if String === of
+      of = (zone_to_diff(of) || 0).to_r/86400
+    end
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
@@ -1435,6 +1454,9 @@ class DateTime < Date
     unless (jd = valid_civil?(y, m, d, sg)) and
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
+    end
+    if String === of
+      of = (zone_to_diff(of) || 0).to_r/86400
     end
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1460,6 +1482,9 @@ class DateTime < Date
     unless (jd = valid_commercial?(y, w, d, sg)) and
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
+    end
+    if String === of
+      of = (zone_to_diff(of) || 0).to_r/86400
     end
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1555,7 +1580,14 @@ class Date
   # Create a new Date object representing today.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.today(sg=ITALY) Time.now.__send__(:to_date).new_start(sg) end
+  def self.today(sg=ITALY) Time.now.__send__(:to_date)    .new_start(sg) end
+
+  # Create a new DateTime object representing the current time.
+  #
+  # +sg+ specifies the Day of Calendar Reform.
+  def self.now  (sg=ITALY) Time.now.__send__(:to_datetime).new_start(sg) end
+
+  private_class_method :now
 
 end
 
@@ -1575,12 +1607,8 @@ class DateTime < Date
   def to_datetime() self end
 =end
 
-  class << self; undef_method :today end
-
-  # Create a new DateTime object representing the current time.
-  #
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.now(sg=ITALY) Time.now.__send__(:to_datetime).new_start(sg) end
+  private_class_method :today
+  public_class_method  :now
 
 end
 
