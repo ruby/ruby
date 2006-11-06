@@ -1,7 +1,7 @@
 
   [ current support status of Tcl/Tk extensions ]
 
-  *******<<<  RELEASE_DATE of the libraries : 2006/10/04  >>>*******
+  *** RELEASE_DATE of the libraries => see 'tkextlib/version.rb' ***
 
 The following list shows *CURRENT* status when this file was modifyed
 at last. If you want to add other Tcl/Tk extensions to the planed list
@@ -83,7 +83,7 @@ BLT          2.4z    http://sourceforge.net/projects/blt
 TkTreeCtrl   CVS/Hd(2005-12-02)
                      http://sourceforge.net/projects/tktreectrl  ==> treectrl
 
-Tile         CVS/Hd(2006-10-01)
+Tile         0.7.8
                      http://sourceforge.net/projects/tktable     ==> tile
 
 

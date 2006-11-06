@@ -1,3 +1,28 @@
+Mon Nov  6 15:41:55 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/itemconfig.rb: ext/tk/lib/tk/itemconfig.rb: bug
+	  fix on 'itemconfiginfo' method, and modify to make it easy to
+	  override 'itemconfiginfo' method.
+
+	* ext/tk/lib/tkextlib/tile/treeview.rb : support Tile 0.7.8.
+
+	* ext/tk/lib/tkextlib/version.rb : [new] add Tk::Tkextlib_RELEASE_DATE
+	  to get the information from scripts.
+
+	* ext/tk/lib/tk.rb: load 'tkextlib/version.rb', and update RELEASE_DATE
+
+	* ext/tk/lib/tkextlib/SUPPORT_STATUS: update.
+
+	* ext/tk/sample/editable_listbox.rb: [new] the listbox with editable
+	  items. It's one of the example about usage of Place geometry manager.
+
+	* ext/tk/sample/tktextio.rb: improve the functions of TkTextIO class. 
+	  Those are required by 'irbtkw.rbw'.
+
+	* ext/tk/sample/irbtkw.rbw: [new] IRB on Ruby/Tk. It doesn't need any 
+	  real console. IRB works on a text widget without I/O blocking. That
+	  is, thread switching on IRB will work properly, even if on Windows.
+
 Sun Nov  5 19:53:49 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: updated based on date2 3.9.7.

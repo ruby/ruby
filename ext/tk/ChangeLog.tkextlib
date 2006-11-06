@@ -1,3 +1,11 @@
+2006-11-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/version.rb: keep release date of tkextlib on 
+	  "Tk::Tkextlib_RELEASE_DATE".
+
+	* lib/tkextlib/tile/treeview.rb : support Tile 0.7.8. 
+	  Now, you can handle tree items as objects. 
+
 2006-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/tile.rb, lib/tkextlib/tile/* : support Tile 0.7.6.
