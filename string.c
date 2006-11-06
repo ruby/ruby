@@ -5020,7 +5020,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "chr", rb_str_chr, 0);
 
     rb_define_method(rb_cSymbol, "to_f", rb_str_to_f, 0);
-    rb_define_method(rb_cSymbol, "to_s", rb_str_to_s, 0);
     rb_define_method(rb_cSymbol, "to_str", rb_str_to_s, 0);
     rb_define_method(rb_cSymbol, "dump", rb_str_dump, 0);
 
