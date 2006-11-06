@@ -3592,7 +3592,7 @@ rb_str_split(VALUE str, const char *sep0)
  *     str.lines(separator=$/) {|substr| block }        => str
  *  
  *  Returns an enumerator that gives each line in the string.  If a block is
- *  given, it iterates over eac line in the string.
+ *  given, it iterates over each line in the string.
  *     
  *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
  *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]

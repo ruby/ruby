@@ -7886,6 +7886,7 @@ arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
     VALUE sym;
 
     if (!vid) return 0;
+    if (is_junk_id(vid)) return 0;
     sym = ID2SYM(vid);
     if ((m && rb_ary_includes(m, sym)) || rb_ary_includes(list, sym)) {
 	ruby_sourceline = nd_line(node);
