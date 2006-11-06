@@ -224,6 +224,9 @@ VALUE rb_cProc;
 VALUE rb_cBinding;
 static VALUE proc_alloc(VALUE,struct BLOCK*,int);
 static VALUE proc_invoke(VALUE,VALUE,VALUE,VALUE,int);
+#define INVOKE_CALL   (YIELD_CALL|YIELD_VALUES)
+#define INVOKE_VALUES YIELD_VALUES
+
 static VALUE proc_lambda(void);
 static VALUE rb_f_binding(VALUE);
 static void rb_f_END(void);
@@ -1049,9 +1052,10 @@ static NODE *compile(VALUE, const char*, int);
 
 static VALUE rb_yield_0(VALUE, VALUE, VALUE, int);
 
-#define YIELD_ARY_ARGS    1
-#define YIELD_PROC_INVOKE 2
-#define YIELD_PUBLIC_DEF  4
+#define YIELD_CALL        1
+#define YIELD_VALUES      2
+#define YIELD_PROC_INVOKE 4
+#define YIELD_PUBLIC_DEF  8
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
 
@@ -2608,29 +2612,31 @@ call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass /* 
 }
 
 static VALUE
-svalue_to_avalue(VALUE v)
-{
-    VALUE tmp;
-
-    if (v == Qundef) return rb_ary_new2(0);
-    tmp = rb_check_array_type(v);
-    if (NIL_P(tmp)) {
-	return rb_ary_new3(1, v);
-    }
-    return tmp;
-}
-
-static VALUE
-splat_value(VALUE v)
+splat(VALUE v, int strict)
 {
     VALUE tmp;
 
     if (v == Qundef) return rb_ary_new2(0);
     tmp = rb_check_convert_type(v, T_ARRAY, "Array", "to_splat");
     if (NIL_P(tmp)) {
+	if (strict) {
+	    rb_raise(rb_eTypeError, "failed to splat");
+	}
 	return rb_ary_new3(1, v);
     }
     return tmp;
+}
+
+static VALUE
+svalue_to_avalue(VALUE v)
+{
+    return splat(v, Qfalse);
+}
+
+static VALUE
+splat_value(VALUE v)
+{
+    return splat(v, Qtrue);
 }
 
 static VALUE
@@ -3006,7 +3012,7 @@ rb_eval(VALUE self, NODE *n)
 	    result = Qundef;	/* no arg */
 	}
 	SET_CURRENT_SOURCE();
-	result = rb_yield_0(result, 0, 0, 0);
+	result = rb_yield_0(result, 0, 0, node->nd_state ? YIELD_VALUES : 0);
 	break;
 
       case NODE_RESCUE:
@@ -4704,7 +4710,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
-    int ary_args, lambda;
+    int lambda, call;
     int state, broken = 0;
 
     rb_need_block();
@@ -4738,7 +4744,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
     node = block->body;
     var = block->var;
     lambda = block->flags & BLOCK_LAMBDA;
-    ary_args = flags & YIELD_ARY_ARGS;
+    call = flags & YIELD_CALL;
     if (var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
@@ -4767,7 +4773,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		goto block_var;
 	    }
 	    else if (nd_type(var) == NODE_ARGS) {
-		if (!ary_args) val = svalue_to_avalue(val);
+		if (!(flags & YIELD_VALUES)) val = svalue_to_avalue(val);
 		formal_assign(self, var, RARRAY_LEN(val), RARRAY_PTR(val), 0);
 	    }
 	    else if (nd_type(var) == NODE_BLOCK) {
@@ -4784,7 +4790,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 		if (lambda && val == Qundef) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
 		}
-		if (ary_args) {
+		if (call) {
 		    if (lambda && RARRAY_LEN(val) != 1) {
 			rb_raise(rb_eArgError, "wrong number of arguments (%ld for 1)",
 				 RARRAY_LEN(val));
@@ -4812,7 +4818,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */, int flags)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (lambda && ary_args && RARRAY_LEN(val) != 0 &&
+    else if (lambda && call && RARRAY_LEN(val) != 0 &&
 	     (!node || nd_type(node) != NODE_IFUNC ||
 	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
@@ -4943,7 +4949,7 @@ rb_yield_values(int n, ...)
 	rb_ary_push(val, va_arg(args, VALUE));
     }
     va_end(args);
-    return rb_yield_0(val, 0, 0, 0);
+    return rb_yield_0(val, 0, 0, YIELD_VALUES);
 }
 
 /*
@@ -5799,7 +5805,8 @@ rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
 	    Data_Get_Struct(body->nd_cval, struct BLOCK, data);
 	    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, data->body, recv, id, klass);
 	}
-	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass, 1);
+	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass,
+			     INVOKE_CALL);
 	if (event_hooks) {
 	    EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
 	}
@@ -6510,7 +6517,7 @@ yield_under_i(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
     int flags = YIELD_PUBLIC_DEF;
-    if (args[0] != Qundef) flags |= YIELD_ARY_ARGS;
+    if (args[0] != Qundef) flags |= YIELD_VALUES;
 
     return rb_yield_0(args[0], args[1], ruby_cbase, flags);
 }
@@ -7692,7 +7699,7 @@ call_end_proc(VALUE data)
     PUSH_FRAME(Qfalse);
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->node = 0;
-    proc_invoke(data, rb_ary_new2(0), Qundef, 0, 1);
+    proc_invoke(data, rb_ary_new2(0), Qundef, 0, INVOKE_VALUES);
     POP_FRAME();
 }
 
@@ -8453,7 +8460,7 @@ block_orphan(struct BLOCK *data)
 }
 
 static VALUE
-proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
+proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int flags)
 {
     struct BLOCK _block;
     struct BLOCK *data;
@@ -8461,12 +8468,11 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     int state;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
-    volatile int pcall, lambda;
+    volatile int lambda;
     VALUE bvar = 0;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    pcall = call ? YIELD_ARY_ARGS : 0;
-    pcall |= YIELD_PROC_INVOKE;
+    flags |= YIELD_PROC_INVOKE;
     lambda = data->flags & BLOCK_LAMBDA;
     if (rb_block_given_p() && ruby_frame->callee) {
 	if (klass != ruby_frame->this_class)
@@ -8481,7 +8487,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.this_class = klass;
-    _block.frame.argc = call ? RARRAY_LEN(args) : 1;
+    _block.frame.argc = (flags&YIELD_CALL) ? RARRAY_LEN(args) : 1;
     _block.frame.flags = ruby_frame->flags;
     if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
         NEWOBJ(scope, struct SCOPE);
@@ -8496,7 +8502,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, pcall);
+	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, flags);
     }
     else if (TAG_DST()) {
 	result = prot_tag->retval;
@@ -8520,7 +8526,8 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
 	JUMP_TAG(state);
       case TAG_RETURN:
 	if (result != Qundef) {
-	    if (pcall) break;
+ 	    if (flags & YIELD_CALL)
+		break;
 	    return_jump(result);
 	}
       default:
@@ -8566,7 +8573,7 @@ proc_invoke(VALUE proc, VALUE args /* OK */, VALUE self, VALUE klass, int call)
 VALUE
 rb_proc_call(VALUE proc, VALUE args /* OK */)
 {
-    return proc_invoke(proc, args, Qundef, 0, 1);
+    return proc_invoke(proc, args, Qundef, 0, INVOKE_CALL);
 }
 
 /*
@@ -8595,7 +8602,7 @@ rb_proc_yield(int argc, VALUE *argv, VALUE proc)
       case 0:
 	return proc_invoke(proc, Qundef, Qundef, 0, 0);
       default:
-	return proc_invoke(proc, rb_ary_new4(argc, argv), Qundef, 0, 0);
+	return proc_invoke(proc, rb_ary_new4(argc, argv), Qundef, 0, INVOKE_VALUES);
     }
 }
 

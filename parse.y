@@ -1006,7 +1006,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| mlhs '=' arg_value
 		    {
 		    /*%%%*/
-			$1->nd_value = NEW_SPLAT($3);
+			$1->nd_value = $3;
 			$$ = $1;
 		    /*%
 			dispatch2(massign, $1, $3);

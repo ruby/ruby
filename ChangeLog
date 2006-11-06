@@ -1,3 +1,18 @@
+Mon Nov  6 18:54:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (svalue_to_avalue): need to splat but no error.
+
+	* eval.c: new macros - YIELD_CALL, YIELD_VALUES.
+
+	* eval.c (rb_yield_values): specify YIELD_VALUES.
+
+	* eval.c (rb_yield_0): use new macros.
+
+	* eval.c (proc_invoke): slightly modified to separate YIELD_CALL
+	  and YIELD_VALUES from YIELD_ARY_ARGS.
+
+	* object.c (Init_Object): add nil.to_splat => [].
+
 Mon Nov  6 15:41:55 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/itemconfig.rb: ext/tk/lib/tk/itemconfig.rb: bug
