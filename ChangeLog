@@ -1,3 +1,7 @@
+Mon Nov  6 20:11:20 2006  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/0.9.rb (RSS::Rss): removed needless include.
+
 Mon Nov  6 15:41:55 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/itemconfig.rb: ext/tk/lib/tk/itemconfig.rb: bug
