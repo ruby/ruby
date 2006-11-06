@@ -289,7 +289,7 @@ module TkItemConfigMethod
     self
   end
 
-  def itemconfiginfo(tagOrId, slot = nil)
+  def __itemconfiginfo_core(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
@@ -594,7 +594,7 @@ module TkItemConfigMethod
                 if v.empty?
                   conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = nil
                 else
-                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = TkVarAccess.new
+                  conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = TkVarAccess.new(v)
                 end
               end
 
@@ -1020,13 +1020,18 @@ module TkItemConfigMethod
       end
     end
   end
+  private :__itemconfiginfo_core
+
+  def itemconfiginfo(tagOrId, slot = nil)
+    __itemconfiginfo_core(tagOrId, slot)
+  end
 
   def current_itemconfiginfo(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
         org_slot = slot
         begin
-          conf = itemconfiginfo(tagOrId, slot)
+          conf = __itemconfiginfo_core(tagOrId, slot)
           if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
               || conf.size > __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
             return {conf[0] => conf[-1]}
@@ -1037,7 +1042,7 @@ module TkItemConfigMethod
           "there is a configure alias loop about '#{org_slot}'"
       else
         ret = {}
-        itemconfiginfo(tagOrId).each{|conf|
+        __itemconfiginfo_core(tagOrId).each{|conf|
           if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
               || conf.size > __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
             ret[conf[0]] = conf[-1]
@@ -1047,7 +1052,7 @@ module TkItemConfigMethod
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
-      itemconfiginfo(slot).each{|key, conf|     
+      itemconfiginfo(tagOrId, slot).each{|key, conf|
         ret[key] = conf[-1] if conf.kind_of?(Array)
       }
       ret

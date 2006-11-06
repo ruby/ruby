@@ -4597,7 +4597,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-09-01'.freeze
+  RELEASE_DATE = '2006-11-06'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
@@ -4609,6 +4609,7 @@ end
 
 # call setup script for Tk extension libraries (base configuration)
 begin
+  require 'tkextlib/version.rb'
   require 'tkextlib/setup.rb'
 rescue LoadError
   # ignore
