@@ -1,3 +1,7 @@
+Tue Nov  7 18:05:01 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/itemconfig.rb: minor bug fix.
+
 Tue Nov  7 17:52:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): revert duplicate inclusion of
