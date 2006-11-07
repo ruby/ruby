@@ -2723,7 +2723,9 @@ when_check(NODE *tag, VALUE val, VALUE self)
 	}
 	break;
       case NODE_SPLAT:
-	elm = splat_value(rb_eval(self, tag->nd_head));
+	tag = tag->nd_head;
+      splat:
+	elm = splat_value(rb_eval(self, tag));
 	for (i=0; i<RARRAY_LEN(elm); i++) {
 	    if (when_cond(val, RARRAY_PTR(elm)[i])) {
 		return Qtrue;
@@ -2732,7 +2734,8 @@ when_check(NODE *tag, VALUE val, VALUE self)
 	break;
       case NODE_ARGSCAT:
 	if (when_check(tag->nd_head, val, self)) return Qtrue;
-	return when_check(tag->nd_body, val, self);
+	tag = tag->nd_body;
+	goto splat;
       case NODE_ARGSPUSH:
 	if (when_check(tag->nd_head, val, self)) return Qtrue;
 	if (when_cond(val, rb_eval(self, tag->nd_body))) return Qtrue;

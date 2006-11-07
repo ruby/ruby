@@ -1,3 +1,8 @@
+Tue Nov  7 16:41:21 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (when_check): need to splat for NODE_ARGSCAT as well.
+	  [ruby-dev:29860]
+
 Mon Nov  6 22:23:52 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (Init_String): remove duplicated definition of
