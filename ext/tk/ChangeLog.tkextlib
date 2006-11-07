@@ -1,3 +1,10 @@
+2006-11-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/tile/treeview.rb : minor bug fix.
+
+	* lib/tkextlib/blt/table.rb: fix bugs which forbade use of 
+	  '::blt::table' command. Now, probably, it'll works properly.
+
 2006-11-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/version.rb: keep release date of tkextlib on 

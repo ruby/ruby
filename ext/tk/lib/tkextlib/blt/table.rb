@@ -17,97 +17,97 @@ module Tk::BLT
 
     module TableContainer
       def blt_table_add(*args)
-        Tk::BLT::Table.add(@path, *args)
+        Tk::BLT::Table.add(self, *args)
         self
       end
 
       def blt_table_arrange()
-        Tk::BLT::Table.arrange(@path)
+        Tk::BLT::Table.arrange(self)
         self
       end
 
       def blt_table_cget(*args)
-        Tk::BLT::Table.cget(@path, *args)
+        Tk::BLT::Table.cget(self, *args)
       end
 
       def blt_table_configure(*args)
-        Tk::BLT::Table.configure(@path, *args)
+        Tk::BLT::Table.configure(self, *args)
         self
       end
 
       def blt_table_configinfo(*args)
-        Tk::BLT::Table.configinfo(@path, *args)
+        Tk::BLT::Table.configinfo(self, *args)
       end
 
       def blt_table_current_configinfo(*args)
-        Tk::BLT::Table.current_configinfo(@path, *args)
+        Tk::BLT::Table.current_configinfo(self, *args)
       end
 
       def blt_table_locate(x, y)
-        Tk::BLT::Table.locate(@path, x, y)
+        Tk::BLT::Table.locate(self, x, y)
       end
 
       def blt_table_delete(*args)
-        Tk::BLT::Table.delete(@path, *args)
+        Tk::BLT::Table.delete(self, *args)
         self
       end
 
       def blt_table_extents(item)
-        Tk::BLT::Table.extents(@path, item)
+        Tk::BLT::Table.extents(self, item)
       end
 
       def blt_table_insert(*args)
-        Tk::BLT::Table.insert(@path, *args)
+        Tk::BLT::Table.insert(self, *args)
         self
       end
 
       def blt_table_insert_before(*args)
-        Tk::BLT::Table.insert_before(@path, *args)
+        Tk::BLT::Table.insert_before(self, *args)
         self
       end
 
       def blt_table_insert_after(*args)
-        Tk::BLT::Table.insert_after(@path, *args)
+        Tk::BLT::Table.insert_after(self, *args)
         self
       end
 
       def blt_table_join(first, last)
-        Tk::BLT::Table.join(@path, first, last)
+        Tk::BLT::Table.join(self, first, last)
         self
       end
 
       def blt_table_save()
-        Tk::BLT::Table.save(@path)
+        Tk::BLT::Table.save(self)
       end
 
       def blt_table_search(*args)
-        Tk::BLT::Table.search(@path, *args)
+        Tk::BLT::Table.search(self, *args)
       end
 
       def blt_table_split(*args)
-        Tk::BLT::Table.split(@path, *args)
+        Tk::BLT::Table.split(self, *args)
         self
       end
 
       def blt_table_itemcget(*args)
-        Tk::BLT::Table.itemcget(@path, *args)
+        Tk::BLT::Table.itemcget(self, *args)
       end
 
       def blt_table_itemconfigure(*args)
-        Tk::BLT::Table.itemconfigure(@path, *args)
+        Tk::BLT::Table.itemconfigure(self, *args)
         self
       end
 
       def blt_table_itemconfiginfo(*args)
-        Tk::BLT::Table.itemconfiginfo(@path, *args)
+        Tk::BLT::Table.itemconfiginfo(self, *args)
       end
 
       def blt_table_current_itemconfiginfo(*args)
-        Tk::BLT::Table.current_itemconfiginfo(@path, *args)
+        Tk::BLT::Table.current_itemconfiginfo(self, *args)
       end
 
       def blt_table_iteminfo(item)
-        Tk::BLT::Table.iteminfo(@path, item)
+        Tk::BLT::Table.iteminfo(self, item)
       end
     end
   end
@@ -117,18 +117,21 @@ end
 ############################################
 class << Tk::BLT::Table
   def __item_cget_cmd(id) # id := [ container, item ]
-    ['::blt::table', 'cget', id[0].path, id[1]]
+    win = (id[0].kind_of?(TkWindow))? id[0].path: id[0].to_s
+    ['::blt::table', 'cget', win, id[1]]
   end
   private :__item_cget_cmd
 
   def __item_config_cmd(id) # id := [ container, item, ... ]
     container, *items = id
-    ['::blt::table', 'configure', container.path, *items]
+    win = (container.kind_of?(TkWindow))? container.path: container.to_s
+    ['::blt::table', 'configure', win, *items]
   end
   private :__item_config_cmd
 
   def __item_pathname(id)
-    id[0].path + ';'
+    win = (id[0].kind_of?(TkWindow))? id[0].path: id[0].to_s
+    win + ';'
   end
   private :__item_pathname
 
@@ -194,6 +197,7 @@ class << Tk::BLT::Table
     if args[-1].kind_of?(Hash)
       # container, item, item, ... , hash_optkeys
       keys = args.pop
+      fail ArgumentError, 'no item is given' if args.empty?
       id = [container]
       args.each{|item| id << tagid(item)}
       __itemconfigure(id, keys)
@@ -201,10 +205,12 @@ class << Tk::BLT::Table
       # container, item, item, ... , option, value
       val = args.pop
       opt = args.pop
+      fail ArgumentError, 'no item is given' if args.empty?
       id = [container]
       args.each{|item| id << tagid(item)}
       __itemconfigure(id, opt, val)
     end
+    container
   end
 
   def itemconfiginfo(container, *args)
@@ -222,9 +228,33 @@ class << Tk::BLT::Table
       slot = nil
     end
 
+    fail ArgumentError, 'no item is given' if args.empty?
+
     id = [container]
     args.each{|item| id << tagid(item)}
     __itemconfiginfo(id, slot)
+  end
+
+  def current_itemconfiginfo(container, *args)
+    slot = args[-1]
+    if slot.kind_of?(String) || slot.kind_of?(Symbol)
+      slot = slot.to_s
+      if slot[0] == ?. || slot =~ /^\d+,\d+$/ || slot =~ /^(c|C|r|R)(\*|\d+)/
+        #   widget     ||    row,col          ||    Ci or Ri
+        slot = nil
+      else
+        # option
+        slot = args.pop
+      end
+    else
+      slot = nil
+    end
+
+    fail ArgumentError, 'no item is given' if args.empty?
+
+    id = [container]
+    args.each{|item| id << tagid(item)}
+    __current_itemconfiginfo(id, slot)
   end
 
   def info(container)
@@ -238,12 +268,22 @@ class << Tk::BLT::Table
   end
 
   def iteminfo(container, item)
-    ret = {}
-    inf = list(tk_call('::blt::table', 'info', container, tagid(item)))
-    until inf.empty?
-      opt = inf.slice!(0..1)
-      ret[opt[1..-1]] = opt[1]
+    inf = list(tk_call('::blt::table', 'info', container, tagid(item)).chomp)
+
+    ret = []
+    until inf.empty? || (inf[0].kind_of?(String) && inf[0] =~ /^-/)
+      ret << inf.shift
     end
+
+    if inf.length > 1
+      keys = {}
+      while inf.length > 1
+        opt = inf.slice!(0..1)
+        keys[opt[0][1..-1]] = opt[1]
+      end
+      ret << keys
+    end
+
     ret
   end
 
@@ -253,7 +293,7 @@ class << Tk::BLT::Table
     tk_call('::blt::table', container)
     begin
       class << container
-        include Tk::BLT::TABLE::TableContainer
+        include Tk::BLT::Table::TableContainer
       end
     rescue
       warn('fail to include TableContainer methods (frozen object?)')
@@ -276,10 +316,12 @@ class << Tk::BLT::Table
       }
       tk_call('::blt::table', container, *args)
     end
+    container
   end
 
   def arrange(container)
     tk_call('::blt::table', 'arrange', container)
+    container
   end
 
   def delete(container, *args)

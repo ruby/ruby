@@ -497,7 +497,7 @@ module Tk::Tile::TreeviewConfig
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
-      itemconfiginfo(tagOrId, slot).each{|key, conf|
+      __itemconfiginfo_core(tagOrId, slot).each{|key, conf|
         ret[key] = conf[-1] if conf.kind_of?(Array)
       }
       ret
