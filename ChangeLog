@@ -1,3 +1,8 @@
+Tue Nov  7 18:35:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (formal_assign): need to pack rest arg information in
+	  argc.
+
 Tue Nov  7 18:05:01 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/itemconfig.rb: minor bug fix.

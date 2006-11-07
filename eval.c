@@ -5689,17 +5689,12 @@ formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_
     }
     else {
 	VALUE v;
+	int n = 1;
 
-	if (argc > 0) {
-	    int n = 1;
-	    v = rb_ary_new4(argc,argv);
-	    n += npost;
-	    i += n*256;
-	    i = -i;
-	}
-	else {
-	    v = rb_ary_new2(0);
-	}
+	v = rb_ary_new4(argc,argv);
+	n += npost;
+	i += n*256;
+	i = -i;
 	assign(recv, node->nd_rest, v, 1);
     }
     return i;
