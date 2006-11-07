@@ -5515,14 +5515,17 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
     }
     if (argc < 0) {
 	VALUE tmp;
+	int n;
 
-	argc = -argc-1;
+	argc = -argc;
+	n = argc / 256 - 1;
+	argc %= 256;
 	tmp = svalue_to_avalue(argv[argc]);
-	nargv = ALLOCA_N(VALUE, argc + RARRAY_LEN(tmp) + 1);
+	nargv = ALLOCA_N(VALUE, argc + RARRAY_LEN(tmp) + n + 1);
 	MEMCPY(nargv+1, argv, VALUE, argc);
 	MEMCPY(nargv+1+argc, RARRAY_PTR(tmp), VALUE, RARRAY_LEN(tmp));
-	argc += RARRAY_LEN(tmp);
-
+	MEMCPY(nargv+1+argc+RARRAY_LEN(tmp), argv+argc+1, VALUE, n);
+	argc += RARRAY_LEN(tmp)+n;
     }
     else {
 	nargv = ALLOCA_N(VALUE, argc+1);
