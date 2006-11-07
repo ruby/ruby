@@ -1,3 +1,8 @@
+Tue Nov  7 18:34:34 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Keep this out of the 1.8 tree
+	  until we reach a consensus that HMAC should be put under Digest.
+
 Tue Nov  7 18:05:01 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/itemconfig.rb: minor bug fix.
