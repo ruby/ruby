@@ -344,7 +344,7 @@ include_class_new(VALUE module, VALUE super)
 void
 rb_include_module(VALUE klass, VALUE module)
 {
-    VALUE c;
+    VALUE p, c;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -359,11 +359,29 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
+	int superclass_seen = Qfalse;
+
 	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
 	    rb_raise(rb_eArgError, "cyclic include detected");
-	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
-	c = RCLASS(c)->super;
+	/* ignore if the module included already in superclasses */
+	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
+	    switch (BUILTIN_TYPE(p)) {
+	      case T_ICLASS:
+		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
+		    if (!superclass_seen) {
+			c = p;	/* move insertion point */
+		    }
+		    goto skip;
+		}
+		break;
+	      case T_CLASS:
+		superclass_seen = Qtrue;
+		break;
+	    }
+	}
+	c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
 	changed = 1;
+      skip:
 	module = RCLASS(module)->super;
     }
     if (changed) rb_clear_cache();

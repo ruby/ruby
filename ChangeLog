@@ -1,3 +1,8 @@
+Tue Nov  7 17:52:08 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): revert duplicate inclusion of
+	  modules.  [ruby-dev:29793]
+
 Tue Nov  7 17:18:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (method_missing): update old argument adjustment.

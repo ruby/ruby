@@ -1939,7 +1939,7 @@ module M003; include M002; end
 module M002; include M001; end
 module M003; include M002; end
 
-test_ok(M003.ancestors == [M003, M002, M001, M002])
+test_ok(M003.ancestors == [M003, M002, M001])
 
 test_check "marshal"
 $x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
