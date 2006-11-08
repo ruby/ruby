@@ -2262,7 +2262,7 @@ copy_node_scope(node, rval)
     int tmp_iter = ruby_iter->iter;\
     switch (tmp_iter) {\
       case ITER_PRE:\
-	ruby_block = ruby_block->outer;\
+	if (ruby_block) ruby_block = ruby_block->outer;\
       case ITER_PAS:\
 	tmp_iter = ITER_NOT;\
     }\
