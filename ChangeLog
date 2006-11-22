@@ -1,3 +1,13 @@
+Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: support --with-X11/--without-X11 option.
+
+	* ext/tk/README.tcltklib: add description about --with-X11-* option 
+	  [ruby-talk:225166] and --with-X11/--without-X11 option.
+
+	* ext/tk/tkutil/extconf.rb: able to be called manually 
+	  [ruby-talk:225950]. 
+
 Tue Nov  7 18:35:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (formal_assign): need to pack rest arg information in
