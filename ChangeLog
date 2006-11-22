@@ -8,6 +8,11 @@ Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tkutil/extconf.rb: able to be called manually 
 	  [ruby-talk:225950]. 
 
+Wed Nov 15 23:22:54 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (test_grpowned, rb_stat_grpowned): should honor
+	  supplementary group IDs.  [ruby-core:09546]
+
 Tue Nov  7 18:35:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (formal_assign): need to pack rest arg information in
