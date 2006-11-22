@@ -820,7 +820,7 @@ group_member(gid)
     GETGROUPS_T gid;
 {
 #ifndef _WIN32
-    if (getgid() ==  gid)
+    if (getgid() == gid || getegid() == gid)
 	return Qtrue;
 
 # ifdef HAVE_GETGROUPS
@@ -882,7 +882,7 @@ eaccess(path, mode)
 
     if (st.st_uid == euid)        /* owner */
 	mode <<= 6;
-    else if (getegid() == st.st_gid || group_member(st.st_gid))
+    else if (group_member(st.st_gid))
 	mode <<= 3;
 
     if ((st.st_mode & mode) == mode) return 0;
@@ -1328,7 +1328,7 @@ test_grpowned(obj, fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_gid == getegid()) return Qtrue;
+    if (group_member(st.st_gid)) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -3740,7 +3740,7 @@ rb_stat_grpowned(obj)
     VALUE obj;
 {
 #ifndef _WIN32
-    if (get_stat(obj)->st_gid == getegid()) return Qtrue;
+    if (group_member(get_stat(obj)->st_gid)) return Qtrue;
 #endif
     return Qfalse;
 }
