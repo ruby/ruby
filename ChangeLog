@@ -8,6 +8,10 @@ Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tkutil/extconf.rb: able to be called manually 
 	  [ruby-talk:225950]. 
 
+Sat Nov 18 23:39:20 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_tap): a new method.  [ruby-talk:224013]
+
 Wed Nov 15 23:22:54 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (test_grpowned, rb_stat_grpowned): should honor

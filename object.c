@@ -410,6 +410,23 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 
 
 /*
+ *  call-seq:
+ *     obj.tap{|x|...}    => obj
+ *  
+ *  Returns the receiver after executing the block given.  Its main
+ *  purpose is to be inseted in the method chain.
+ *     
+ */
+
+VALUE
+rb_obj_tap(VALUE obj)
+{
+    rb_yield(obj);
+    return obj;
+}
+
+
+/*
  * Document-method: inherited
  *
  * call-seq:
@@ -2326,6 +2343,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
+    rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_private_method(rb_mKernel, "singleton_method_added", rb_obj_dummy, 1);
     rb_define_private_method(rb_mKernel, "singleton_method_removed", rb_obj_dummy, 1);
