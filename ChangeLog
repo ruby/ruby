@@ -1,3 +1,13 @@
+Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: support --with-X11/--without-X11 option.
+
+	* ext/tk/README.tcltklib: add description about --with-X11-* option 
+	  [ruby-talk:225166] and --with-X11/--without-X11 option.
+
+	* ext/tk/tkutil/extconf.rb: able to be called manually 
+	  [ruby-talk:225950]. 
+
 Thu Nov  9 03:15:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (BEGIN_CALLARGS): ruby_block may be NULL even when

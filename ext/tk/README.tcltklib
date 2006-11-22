@@ -41,6 +41,15 @@ some or all of the following options.
       (e.g. "/Library/Frameworks/Tk.framework/Headers")
 
 
+ --with-X11 / --without-X11    use / not use the X Window System
+
+ --with-X11-dir=<path> 
+      equal to "--with-X11-include=<path>/include --with-X11-lib=<path>/lib"
+
+ --with-X11-include=<dir>      the directry contains X11 header files
+ --with-X11-lib=<dir>          the directry contains X11 libraries
+
+
 If you forgot to give the options when do 'configure' on toplevel
 directry of Ruby sources, please try something like as the followings.
 
