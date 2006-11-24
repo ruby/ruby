@@ -9552,14 +9552,14 @@ rb_mod_define_method(argc, argv, mod)
 	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
-    if (SCOPE_TEST(SCOPE_PRIVATE)) {
-	noex = NOEX_PRIVATE;
-    }
-    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
-	noex = NOEX_PROTECTED;
-    }
-    else {
-	noex = NOEX_PUBLIC;
+    noex = NOEX_PUBLIC;
+    if (ruby_cbase == mod) {
+	if (SCOPE_TEST(SCOPE_PRIVATE)) {
+	    noex = NOEX_PRIVATE;
+	}
+	else if (SCOPE_TEST(SCOPE_PROTECTED)) {
+	    noex = NOEX_PROTECTED;
+	}
     }
     rb_add_method(mod, id, node, noex);
     return body;

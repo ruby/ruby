@@ -1,3 +1,8 @@
+Thu Nov 23 10:38:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_define_method): set implicit visibility only when
+	  it's called for the target class (ruby_cbase).
+
 Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: support --with-X11/--without-X11 option.
