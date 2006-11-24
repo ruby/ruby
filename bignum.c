@@ -99,7 +99,10 @@ static VALUE
 bignorm(x)
     VALUE x;
 {
-    if (!FIXNUM_P(x)) {
+    if (FIXNUM_P(x)) {
+      return x;
+    }
+    else if (TYPE(x) == T_BIGNUM) {
 	long len = RBIGNUM(x)->len;
 	BDIGIT *ds = BDIGITS(x);
 

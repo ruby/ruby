@@ -1,3 +1,8 @@
+Fri Nov 24 10:17:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): avoid segmentation.  a patch from Hiroyuki
+	  Ito <ZXB01226@nifty.com>.  [ruby-list:43012]
+
 Thu Nov 23 10:38:40 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_define_method): set implicit visibility only when
