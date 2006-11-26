@@ -1,3 +1,8 @@
+Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* version.h: addition of RUBY_PATCHLEVEL.
+	* version.c: ditto.
+
 Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: support --with-X11/--without-X11 option.

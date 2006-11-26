@@ -17,6 +17,7 @@
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
+const int ruby_patchlevel = RUBY_PATCHLEVEL;
 
 void
 Init_version(void)
@@ -28,12 +29,13 @@ Init_version(void)
     rb_define_global_const("RUBY_VERSION", v);
     rb_define_global_const("RUBY_RELEASE_DATE", d);
     rb_define_global_const("RUBY_PLATFORM", p);
+    rb_define_global_const("RUBY_PATCHLEVEL", INT2FIX(RUBY_PATCHLEVEL));
 }
 
 void
 ruby_show_version(void)
 {
-    printf("ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    printf("ruby %s (%s patchlevel %d) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PATCHLEVEL, RUBY_PLATFORM);
     fflush(stdout);
 }
 
