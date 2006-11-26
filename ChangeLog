@@ -1,3 +1,17 @@
+Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* version.h: addition of RUBY_PATCHLEVEL.
+	* version.c: ditto.
+
+Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
+	  may be empty.  a patch from Jamis Buck <jamis at 37signals.com>.
+
+Fri Aug 25 17:15:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.5 released.
+
 Fri Aug 25 17:02:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_sweep): typo fixed.
