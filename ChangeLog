@@ -1,3 +1,8 @@
+Mon Nov 27 17:18:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): need not to truncate string if no
+	  width specifier given for %s.  [ruby-dev:29952]
+
 Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* version.h: addition of RUBY_PATCHLEVEL.

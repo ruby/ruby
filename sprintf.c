@@ -420,23 +420,7 @@ rb_f_sprintf(argc, argv)
 			len = prec;
 		    }
 		}
-		{
-		    char *s, *send;
-		    long l;
-
-			s = RSTRING(str)->ptr;
-			send = s + RSTRING(str)->len;
-			l = 0;
-			while (s < send) {
-			    long n = mbclen(*s);
-			    if (l + n > len) {
-				len = l;
-				break;
-			    }
-			    l += n;
-			    s += n;
-			}
-		}
+		/* need to adjust multi-byte string pos */
 		if (flags&FWIDTH) {
 		    if (width > len) {
 			CHECK(width);
@@ -446,7 +430,7 @@ rb_f_sprintf(argc, argv)
 				buf[blen++] = ' ';
 			    }
 			}
-			memcpy(&buf[blen], RSTRING(str)->ptr, len);
+			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			blen += len;
 			if (flags&FMINUS) {
 			    while (width--) {
