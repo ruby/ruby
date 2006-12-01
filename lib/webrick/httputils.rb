@@ -127,7 +127,7 @@ module WEBrick
     def parse_header(raw)
       header = Hash.new([].freeze)
       field = nil
-      raw.lines.each{|line|
+      raw.each_line{|line|
         case line
         when /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):\s*(.*?)\s*\z/om
           field, value = $1, $2
@@ -244,7 +244,7 @@ module WEBrick
         if @header
           super
         elsif str == CRLF
-          @header = HTTPUtils::parse_header(@raw_header)
+          @header = HTTPUtils::parse_header(@raw_header.join)
           if cd = self['content-disposition']
             if /\s+name="(.*?)"/ =~ cd then @name = $1 end
             if /\s+filename="(.*?)"/ =~ cd then @filename = $1 end
@@ -317,7 +317,7 @@ module WEBrick
       form_data = Hash.new
       return form_data unless io
       data = nil
-      io.each{|line|
+      io.each_line{|line|
         if boundary_regexp =~ line
           if data
             data.chop!

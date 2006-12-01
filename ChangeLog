@@ -1,3 +1,14 @@
+Sat Dec  2 07:33:53 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils::FormData::<<):
+	  HTTPUtils::parse_header() takes a string.  [ruby-dev:29931]
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils::parse_header):
+	  String does no longer have each method.
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils::parse_form_data):
+	  ditto.
+
 Sat Dec  2 07:09:04 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ocsp.c: OpenSSL::OCSP::OSCPError should be
