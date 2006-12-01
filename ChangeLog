@@ -1,3 +1,8 @@
+Fri Dec  1 16:31:53 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
+	  [ruby-talk: 227408]
+
 Mon Nov 27 17:18:27 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): need not to truncate string if no
