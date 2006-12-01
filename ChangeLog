@@ -1,3 +1,8 @@
+Sat Dec  2 07:09:04 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ocsp.c: OpenSSL::OCSP::OSCPError should be
+	  subclass of OpenSSL::OpenSSLError. [ruby-dev:29980]
+
 Fri Dec  1 17:01:49 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (ruby_init_stack): decrease "stack level too deep" in Windows.
