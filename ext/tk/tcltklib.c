@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2006-07-10"
+#define TCLTKLIB_RELEASE_DATE "2006-12-01"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -5521,10 +5521,15 @@ call_queue_handler(evPtr, flags)
     *(q->done) = -1;
 
     /* back to caller */
-    DUMP2("back to caller (caller thread:%lx)", q->thread);
-    DUMP2("               (current thread:%lx)", rb_thread_current());
-    rb_thread_run(q->thread);
-    DUMP1("finish back to caller");
+    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
+      DUMP2("back to caller (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+      rb_thread_run(q->thread);
+      DUMP1("finish back to caller");
+    } else {
+      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+    }
 
     /* end of handler : remove it */
     return 1;
@@ -5837,10 +5842,15 @@ eval_queue_handler(evPtr, flags)
     *(q->done) = -1;
 
     /* back to caller */
-    DUMP2("back to caller (caller thread:%lx)", q->thread);
-    DUMP2("               (current thread:%lx)", rb_thread_current());
-    rb_thread_run(q->thread);
-    DUMP1("finish back to caller");
+    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
+      DUMP2("back to caller (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+      rb_thread_run(q->thread);
+      DUMP1("finish back to caller");
+    } else {
+      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+    }
 
     /* end of handler : remove it */
     return 1;
@@ -6912,10 +6922,15 @@ invoke_queue_handler(evPtr, flags)
     *(q->done) = -1;
 
     /* back to caller */
-    DUMP2("back to caller (caller thread:%lx)", q->thread);
-    DUMP2("               (current thread:%lx)", rb_thread_current());
-    rb_thread_run(q->thread);
-    DUMP1("finish back to caller");
+    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
+      DUMP2("back to caller (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+      rb_thread_run(q->thread);
+      DUMP1("finish back to caller");
+    } else {
+      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("               (current thread:%lx)", rb_thread_current());
+    }
 
     /* end of handler : remove it */
     return 1;

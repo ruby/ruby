@@ -1,3 +1,8 @@
+Fri Dec  1 16:31:53 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
+	  [ruby-talk: 227408]
+
 Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* version.h: addition of RUBY_PATCHLEVEL.
