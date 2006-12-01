@@ -681,7 +681,7 @@ Init_ossl_ocsp()
 {
     mOCSP = rb_define_module_under(mOSSL, "OCSP");
 
-    eOCSPError = rb_define_class_under(mOCSP, "OCSPError", rb_cObject);
+    eOCSPError = rb_define_class_under(mOCSP, "OCSPError", eOSSLError);
 
     cOCSPReq = rb_define_class_under(mOCSP, "Request", rb_cObject);
     rb_define_alloc_func(cOCSPReq, ossl_ocspreq_alloc);
