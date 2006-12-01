@@ -424,7 +424,7 @@ static unsigned int STACK_LEVEL_MAX = 65535;
 unsigned int _stacksize = 262144;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
 # undef HAVE_GETRLIMIT
-#elif defined(HAVE_GETRLIMIT)
+#elif defined(HAVE_GETRLIMIT) || defined(_WIN32)
 static unsigned int STACK_LEVEL_MAX = 655300;
 #else
 # define STACK_LEVEL_MAX 655300
@@ -1541,6 +1541,19 @@ void ruby_init_stack(VALUE *addr
             if (space > 1024*1024) space = 1024*1024;
             STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
         }
+    }
+#elif defined _WIN32
+    {
+	MEMORY_BASIC_INFORMATION mi;
+	DWORD size;
+	DWORD space;
+
+	if (VirtualQuery(&mi, &mi, sizeof(mi))) {
+	    size = (char *)mi.BaseAddress - (char *)mi.AllocationBase;
+	    space = size / 5;
+	    if (space > 1024*1024) space = 1024*1024;
+	    STACK_LEVEL_MAX = (size - space) / sizeof(VALUE);
+	}
     }
 #endif
 }

@@ -1,3 +1,8 @@
+Fri Dec  1 17:01:49 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (ruby_init_stack): decrease "stack level too deep" in Windows.
+	  merge from trunk.
+
 Fri Dec  1 16:31:53 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
