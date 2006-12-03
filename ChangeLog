@@ -1,3 +1,8 @@
+Mon Dec  4 08:32:25 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
+	  boundary. JVN#84798830
+
 Sun Dec  3 16:16:53 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Fix problems with update
