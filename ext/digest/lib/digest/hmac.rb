@@ -60,6 +60,7 @@ module Digest
       @key = key.freeze
       @ipad = ipad.inject('') { |s, c| s << c.chr }.freeze
       @opad = opad.inject('') { |s, c| s << c.chr }.freeze
+      @md.update(@ipad)
     end
 
     def initialize_copy(other)
@@ -67,17 +68,20 @@ module Digest
     end
 
     def update(text)
-      # @md is reset when digest() returns
-      @md.update(@opad + @md.digest(@ipad + text))
+      @md.update(text)
       self
     end
 
     def reset
       @md.reset
+      @md.update(@ipad)
       self
     end
 
     def finish
+      d = @md.digest!
+      @md.update(@opad)
+      @md.update(d)
       @md.digest!
     end
     private :finish
