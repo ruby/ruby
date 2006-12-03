@@ -1,3 +1,8 @@
+Mon Dec  4 09:00:00 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
+	  boundary. JVN#84798830
+
 Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* version.h: addition of RUBY_PATCHLEVEL.
