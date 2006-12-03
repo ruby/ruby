@@ -967,6 +967,7 @@ class CGI
     def read_multipart(boundary, content_length)
       params = Hash.new([])
       boundary = "--" + boundary
+      quoted_boundary = Regexp.quote(boundary, "n")
       buf = ""
       bufsize = 10 * 1024
       boundary_end=""
@@ -998,7 +999,7 @@ class CGI
         end
         body.binmode if defined? body.binmode
 
-        until head and /#{boundary}(?:#{EOL}|--)/n.match(buf)
+        until head and /#{quoted_boundary}(?:#{EOL}|--)/n.match(buf)
 
           if (not head) and /#{EOL}#{EOL}/n.match(buf)
             buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
@@ -1025,7 +1026,7 @@ class CGI
           content_length -= c.size
         end
 
-        buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{boundary}([\r\n]{1,2}|--)/n) do
+        buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{quoted_boundary}([\r\n]{1,2}|--)/n) do
           body.print $1
           if "--" == $2
             content_length = -1

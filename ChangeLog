@@ -1,3 +1,8 @@
+Mon Dec  4 08:32:49 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
+	  boundary. JVN#84798830
+
 Sat Dec  2 07:09:04 2006  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ocsp.c: OpenSSL::OCSP::OSCPError should be
