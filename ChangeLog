@@ -1,3 +1,8 @@
+Mon Dec  4 10:48:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (OFFT2NUM): use LONG2NUM() if sizeof(long) equals to
+	  sizeof(off_t). 
+
 Mon Dec  4 10:43:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dyna_init_gen): dvar initialization only if dvar is

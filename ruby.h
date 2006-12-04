@@ -157,6 +157,8 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 
 #if SIZEOF_OFF_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
 # define OFFT2NUM(v) LL2NUM(v)
+#elif SIZEOF_OFF_T == SIZEOF_LONG
+# define OFFT2NUM(v) LONG2NUM(v)
 #else
 # define OFFT2NUM(v) INT2NUM(v)
 #endif
