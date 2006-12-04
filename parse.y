@@ -4861,6 +4861,8 @@ gettable(id)
     return 0;
 }
 
+static VALUE dyna_var_lookup _((ID id));
+
 static NODE*
 assignable(id, val)
     ID id;
@@ -4889,7 +4891,7 @@ assignable(id, val)
 	if (rb_dvar_curr(id)) {
 	    return NEW_DASGN_CURR(id, val);
 	}
-	else if (rb_dvar_defined(id)) {
+	else if (dyna_var_lookup(id)) {
 	    return NEW_DASGN(id, val);
 	}
 	else if (local_id(id) || !dyna_in_block()) {
@@ -5731,6 +5733,22 @@ top_local_setup()
     local_pop();
 }
 
+static VALUE
+dyna_var_lookup(id)
+    ID id;
+{
+    struct RVarmap *vars = ruby_dyna_vars;
+
+    while (vars) {
+	if (vars->id == id) {
+	    vars->val = Qtrue;
+	    return Qtrue;
+	}
+	vars = vars->next;
+    }
+    return Qfalse;
+}
+
 static struct RVarmap*
 dyna_push()
 {
@@ -5765,7 +5783,9 @@ dyna_init(node, pre)
 
     if (!node || !post || pre == post) return node;
     for (var = 0; post != pre && post->id; post = post->next) {
-	var = NEW_DASGN_CURR(post->id, var);
+	if (RTEST(post->val)) {
+	    var = NEW_DASGN_CURR(post->id, var);
+	}
     }
     return block_append(var, node);
 }

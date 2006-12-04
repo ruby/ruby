@@ -1,3 +1,8 @@
+Mon Dec  4 10:43:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (dyna_init_gen): dvar initialization only if dvar is
+	  assigned inner block.  [ruby-talk:227402]
+
 Mon Dec  4 08:32:49 2006  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
