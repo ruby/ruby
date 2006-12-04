@@ -1,3 +1,9 @@
+Tue Dec  5 00:19:14 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, object.c, variable.c (rb_mod_constants): added an optional
+	  flag to search ancestors, which is defaulted to true, as well as
+	  const_defined? and const_get.  [ruby-dev:29989]
+
 Mon Dec  4 23:49:28 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (install_recursive): get rid of warning.

@@ -1438,17 +1438,38 @@ rb_const_list(void *data)
 
 /*
  *  call-seq:
- *     mod.constants    => array
- *  
+ *     mod.constants(inherit=true)    => array
+ *
  *  Returns an array of the names of the constants accessible in
  *  <i>mod</i>. This includes the names of constants in any included
- *  modules (example at start of section).
+ *  modules (example at start of section), unless the <i>all</i>
+ *  parameter is set to <code>false</code>.
+ *
+ *    IO.constants.include?("SYNC")         => true
+ *    IO.constants(false).include?("SYNC")  => false
+ *
+ *  Also see <code>Module::const_defined?</code>.
  */
 
 VALUE
-rb_mod_constants(VALUE mod)
+rb_mod_constants(int argc, VALUE *argv, VALUE mod)
 {
-    return rb_const_list(rb_mod_const_of(mod, 0));
+    VALUE inherit;
+    st_table *tbl;
+
+    if (argc == 0) {
+	inherit = Qtrue;
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &inherit);
+    }
+    if (RTEST(inherit)) {
+	tbl = rb_mod_const_of(mod, 0);
+    }
+    else {
+	tbl = rb_mod_const_at(mod, 0);
+    }
+    return rb_const_list(tbl);
 }
 
 static int

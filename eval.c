@@ -1906,10 +1906,14 @@ rb_mod_nesting(void)
  */
 
 static VALUE
-rb_mod_s_constants(void)
+rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 {
     NODE *cbase = ruby_cref;
     void *data = 0;
+
+    if (argc > 0) {
+	return rb_mod_constants(argc, argv, rb_cModule);
+    }
 
     while (cbase) {
 	if (!NIL_P(cbase->nd_clss)) {
@@ -7952,7 +7956,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
-    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, 0);
+    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
     rb_define_singleton_method(ruby_top_self, "include", top_include, -1);
     rb_define_singleton_method(ruby_top_self, "public", top_public, -1);

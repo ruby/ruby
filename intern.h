@@ -562,7 +562,7 @@ VALUE rb_obj_remove_instance_variable(VALUE, VALUE);
 void *rb_mod_const_at(VALUE, void*);
 void *rb_mod_const_of(VALUE, void*);
 VALUE rb_const_list(void*);
-VALUE rb_mod_constants(VALUE);
+VALUE rb_mod_constants(int, VALUE *, VALUE);
 VALUE rb_mod_remove_const(VALUE, VALUE);
 int rb_const_defined(VALUE, ID);
 int rb_const_defined_at(VALUE, ID);
@@ -573,7 +573,6 @@ VALUE rb_const_get_at(VALUE, ID);
 VALUE rb_const_get_from(VALUE, ID);
 VALUE rb_const_get_fallback(VALUE, ID, struct RNode *);
 void rb_const_set(VALUE, ID, VALUE);
-VALUE rb_mod_constants(VALUE);
 VALUE rb_mod_const_missing(VALUE,VALUE);
 VALUE rb_cvar_defined(VALUE, ID);
 #define RB_CVAR_SET_4ARGS 1
