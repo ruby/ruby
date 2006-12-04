@@ -1,3 +1,9 @@
+Mon Dec  4 23:49:28 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (install_recursive): get rid of warning.
+
+	* lib/optparse.rb (CompletingHash#match): get rid of splat failure.
+
 Mon Dec  4 19:16:39 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest/hmac.rb: Do alias << update.
@@ -5,7 +11,7 @@ Mon Dec  4 19:16:39 2006  Akinori MUSHA  <knu@iDaemons.org>
 Mon Dec  4 10:48:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (OFFT2NUM): use LONG2NUM() if sizeof(long) equals to
-	  sizeof(off_t). 
+	  sizeof(off_t).
 
 Mon Dec  4 08:32:25 2006  Shugo Maeda  <shugo@ruby-lang.org>
 
@@ -47,11 +53,11 @@ Wed Nov 22 16:00:49 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: support --with-X11/--without-X11 option.
 
-	* ext/tk/README.tcltklib: add description about --with-X11-* option 
+	* ext/tk/README.tcltklib: add description about --with-X11-* option
 	  [ruby-talk:225166] and --with-X11/--without-X11 option.
 
-	* ext/tk/tkutil/extconf.rb: able to be called manually 
-	  [ruby-talk:225950]. 
+	* ext/tk/tkutil/extconf.rb: able to be called manually
+	  [ruby-talk:225950].
 
 Sat Nov 18 23:39:20 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -123,10 +129,10 @@ Mon Nov  6 15:41:55 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/sample/editable_listbox.rb: [new] the listbox with editable
 	  items. It's one of the example about usage of Place geometry manager.
 
-	* ext/tk/sample/tktextio.rb: improve the functions of TkTextIO class. 
+	* ext/tk/sample/tktextio.rb: improve the functions of TkTextIO class.
 	  Those are required by 'irbtkw.rbw'.
 
-	* ext/tk/sample/irbtkw.rbw: [new] IRB on Ruby/Tk. It doesn't need any 
+	* ext/tk/sample/irbtkw.rbw: [new] IRB on Ruby/Tk. It doesn't need any
 	  real console. IRB works on a text widget without I/O blocking. That
 	  is, thread switching on IRB will work properly, even if on Windows.
 
@@ -164,7 +170,7 @@ Thu Nov  2 08:21:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  come earlier than String.
 
 	* lib/soap/mapping/rubytypeFactory.rb (RubytypeFactory::obj2soap):
-	  ditto. 
+	  ditto.
 
 	* lib/set.rb (TC_Set::test_s_new): strings are no longer
 	  Enumerable

@@ -663,9 +663,10 @@ class OptionParser
     # Completion for hash key.
     #
     def match(key)
-      return key, *fetch(key) {
+      *values = fetch(key) {
         raise AmbiguousArgument, catch(:ambiguous) {return complete(key)}
       }
+      return key, *values
     end
   end
 

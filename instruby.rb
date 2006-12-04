@@ -122,10 +122,10 @@ def makedirs(dirs)
   super(dirs, :mode => 0755) unless dirs.empty?
 end
 
-def install_recursive(src, dest, options = {})
+def install_recursive(srcdir, dest, options = {})
   noinst = options.delete(:no_install)
-  subpath = src.size..-1
-  Dir.glob("#{src}/**/*", File::FNM_DOTMATCH) do |src|
+  subpath = srcdir.size..-1
+  Dir.glob("#{srcdir}/**/*", File::FNM_DOTMATCH) do |src|
     next if /\A\.{1,2}\z/ =~ (base = File.basename(src))
     next if noinst and File.fnmatch?(noinst, File.basename(src))
     d = dest + src[subpath]
