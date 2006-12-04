@@ -1,3 +1,7 @@
+Mon Dec  4 19:16:39 2006  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest/hmac.rb: Do alias << update.
+
 Mon Dec  4 10:48:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (OFFT2NUM): use LONG2NUM() if sizeof(long) equals to

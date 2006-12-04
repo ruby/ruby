@@ -71,6 +71,7 @@ module Digest
       @md.update(text)
       self
     end
+    alias << update
 
     def reset
       @md.reset
