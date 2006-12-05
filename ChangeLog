@@ -1,3 +1,8 @@
+Tue Dec  5 00:59:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): need to parse "/=" as
+	  self assignment operator, not regex.  [ruby-talk:227324]
+
 Tue Dec  5 00:19:14 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h, object.c, variable.c (rb_mod_constants): added an optional

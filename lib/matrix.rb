@@ -745,7 +745,7 @@ class Matrix
         det *= -1
       end
       (k + 1).upto(size) do |i|
-        q = a[i][k] / a[k][k]
+        q = a[i][k].quo(a[k][k])
         k.upto(size) do |j|
           a[i][j] -= a[k][j] * q
         end
@@ -846,7 +846,7 @@ class Matrix
           a[pi], a[i] = a[i], a[pi]
         end
         (pi + 1 ... a_row_size).each do |k|
-          q = a[k][j] / a[pi][j]
+          q = a[k][j].quo(a[pi][j])
           (pi ... a_column_size).each do |j0|
             a[k][j0] -= q * a[pi][j0]
           end
