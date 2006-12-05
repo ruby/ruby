@@ -1481,7 +1481,8 @@ primary		: literal
 		    }
 		| tLPAREN compstmt ')'
 		    {
-			$$ = $2;
+			if (!$2) $$ = NEW_NIL();
+			else $$ = $2;
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {

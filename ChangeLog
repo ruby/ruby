@@ -12,6 +12,11 @@ Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* version.h: addition of RUBY_PATCHLEVEL.
 	* version.c: ditto.
 
+Thu Nov  2 15:43:39 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (primary): should set NODE even when compstmt is NULL.
+	  merge from trunk. fixed: [ruby-dev:29732]
+
 Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
