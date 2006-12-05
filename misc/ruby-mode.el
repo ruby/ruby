@@ -383,6 +383,8 @@ The variable ruby-indent-level controls the amount of indentation.
 	 (t
 	  (setq in-string (point))
 	  (goto-char end))))
+       ((looking-at "/=") 
+	(goto-char pnt))
        ((looking-at "/")
 	(cond
 	 ((and (not (eobp)) (ruby-expr-beg 'expr-re))

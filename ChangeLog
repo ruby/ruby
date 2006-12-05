@@ -1,3 +1,10 @@
+Tue Dec  5 18:38:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/matrix.rb (Matrix::rank): use quo method to avoid integer
+	  division problem.  [ruby-core:09644]
+
+	* lib/matrix.rb (Matrix::rank_e): ditto.
+
 Tue Dec  5 00:59:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): need to parse "/=" as
