@@ -1531,7 +1531,7 @@ AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
             [sitedir='${prefix}/lib/ruby/site_ruby'])
-SITE_DIR="`eval \"echo ${sitedir}\"`"
+SITE_DIR=`eval echo \\"${sitedir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
     RUBY_SITE_LIB_PATH="`expr "$SITE_DIR" : "$prefix\(/.*\)"`" ||

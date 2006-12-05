@@ -1,3 +1,8 @@
+Tue Dec  5 19:01:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (SITE_DIR): fixed to emtpy RUBY_SITE_LIB in config.h on
+	  NetBSD.  fixed: [ruby-dev:29358]
+
 Tue Dec  5 18:38:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/matrix.rb (Matrix::rank): use quo method to avoid integer
