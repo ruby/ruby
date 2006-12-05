@@ -1,3 +1,8 @@
+Tue Dec  5 00:59:05 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): need to parse "/=" as
+	  self assignment operator, not regex.  [ruby-talk:227324]
+
 Mon Dec  4 10:48:03 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (OFFT2NUM): use LONG2NUM() if sizeof(long) equals to
