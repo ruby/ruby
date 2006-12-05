@@ -1,3 +1,31 @@
+Mon Dec  4 10:22:26 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* stable version 1.8.5-p2 relased.
+
+Sun Dec  3 17:11:12 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
+	  boundary. JVN#84798830
+
+Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* version.h: addition of RUBY_PATCHLEVEL.
+	* version.c: ditto.
+
+Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
+	  may be empty.  a patch from Jamis Buck <jamis at 37signals.com>.
+
+Tue Aug 29 19:10:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): fixed memory leak, based on the patch
+	  by Kent Sibilev <ksruby at gmail.com>.  fixed: [ruby-talk:211233]
+
+Fri Aug 25 17:15:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.5 released.
+
 Fri Aug 25 17:02:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_sweep): typo fixed.
