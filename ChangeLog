@@ -1,3 +1,8 @@
+Wed Dec  6 23:56:14 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk (NULLCMD): moved for platforms that empty
+	  command does not run.  fixed: [ruby-dev:29994]
+
 Tue Dec  5 19:01:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (SITE_DIR): fixed to emtpy RUBY_SITE_LIB in config.h on
