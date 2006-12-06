@@ -223,18 +223,29 @@ rb_hash_foreach(hash, func, farg)
     rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
 }
 
+static VALUE hash_alloc0 _((VALUE));
 static VALUE hash_alloc _((VALUE));
 static VALUE
-hash_alloc(klass)
+hash_alloc0(klass)
     VALUE klass;
 {
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
 
     hash->ifnone = Qnil;
-    hash->tbl = st_init_table(&objhash);
 
     return (VALUE)hash;
+}
+
+static VALUE
+hash_alloc(klass)
+    VALUE klass;
+{
+    VALUE hash = hash_alloc0(klass);
+
+    RHASH(hash)->tbl = st_init_table(&objhash);
+
+    return hash;
 }
 
 VALUE
@@ -325,9 +336,7 @@ rb_hash_s_create(argc, argv, klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	hash = hash_alloc(klass);
-	    
-	RHASH(hash)->ifnone = Qnil;
+	hash = hash_alloc0(klass);
 	RHASH(hash)->tbl = st_copy(RHASH(argv[0])->tbl);
 
 	return hash;
