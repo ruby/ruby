@@ -12,6 +12,11 @@ Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* version.h: addition of RUBY_PATCHLEVEL.
 	* version.c: ditto.
 
+Fri Nov 24 10:17:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): avoid segmentation.  a patch from Hiroyuki
+	  Ito <ZXB01226@nifty.com>.  [ruby-list:43012]
+
 Thu Nov  2 15:43:39 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (primary): should set NODE even when compstmt is NULL.
