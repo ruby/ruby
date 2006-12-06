@@ -1,7 +1,10 @@
-Wed Dec  6 23:56:14 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec  6 23:58:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.mk (NULLCMD): moved for platforms that empty
 	  command does not run.  fixed: [ruby-dev:29994]
+
+	* win32/win32.c (init_stdhandle): redirect unopened IOs to NUL.
+	  [ruby-core:09572]
 
 Tue Dec  5 19:01:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
