@@ -1,3 +1,8 @@
+Mon Dec  4 10:43:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (dyna_init_gen): dvar initialization only if dvar is
+	  assigned inner block.  [ruby-talk:227402]
+
 Mon Dec  4 10:22:26 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 	* stable version 1.8.5-p2 relased.
