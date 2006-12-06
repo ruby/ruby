@@ -1,3 +1,8 @@
+Wed Dec  6 19:53:41 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (SITE_DIR): fixed to emtpy RUBY_SITE_LIB in config.h on
+	  NetBSD.  fixed: [ruby-dev:29358]
+
 Mon Dec  4 10:43:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dyna_init_gen): dvar initialization only if dvar is
