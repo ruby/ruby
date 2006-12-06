@@ -1,3 +1,46 @@
+Mon Dec  4 10:22:26 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* stable version 1.8.5-p2 relased.
+
+Sun Dec  3 17:11:12 2006  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): should quote
+	  boundary. JVN#84798830
+
+Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* version.h: addition of RUBY_PATCHLEVEL.
+	* version.c: ditto.
+
+Fri Nov 24 10:17:51 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): avoid segmentation.  a patch from Hiroyuki
+	  Ito <ZXB01226@nifty.com>.  [ruby-list:43012]
+
+Thu Nov  2 15:43:39 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (primary): should set NODE even when compstmt is NULL.
+	  merge from trunk. fixed: [ruby-dev:29732]
+
+Sat Sep 23 21:34:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): CGI content
+	  may be empty.  a patch from Jamis Buck <jamis at 37signals.com>.
+
+Mon Sep  4 21:43:57 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: create makefile according to the result of check
+	  for dbm header.  fixed: [ruby-dev:29445]
+
+Tue Aug 29 19:10:10 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): fixed memory leak, based on the patch
+	  by Kent Sibilev <ksruby at gmail.com>.  fixed: [ruby-talk:211233]
+
+Fri Aug 25 17:15:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.5 released.
+
 Fri Aug 25 17:02:06 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_sweep): typo fixed.
