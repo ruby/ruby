@@ -1,4 +1,5 @@
 SHELL = /bin/sh
+NULLCMD = :
 
 #### Start of system configuration section. ####
 

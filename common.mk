@@ -3,7 +3,6 @@ lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
 RUBYOPT       =
-NULLCMD       =
 
 STATIC_RUBY   = static-ruby
 
