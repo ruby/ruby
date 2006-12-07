@@ -24,7 +24,6 @@ class WeakRef<Delegator
   @@id_map =  {}                # obj -> [ref,...]
   @@id_rev_map =  {}            # ref -> obj
   @@final = lambda {|id|
-    printf "final: %p\n", id
     __old_status = Thread.critical
     Thread.critical = true
     begin
@@ -48,19 +47,7 @@ class WeakRef<Delegator
 
   # Create a new WeakRef from +orig+.
   def initialize(orig)
-    @__id = orig.object_id
-    printf "orig: %p\n", @__id
-    ObjectSpace.define_finalizer orig, @@final
-    ObjectSpace.define_finalizer self, @@final
-    __old_status = Thread.critical
-    begin
-      Thread.critical = true
-      @@id_map[@__id] = [] unless @@id_map[@__id]
-    ensure
-      Thread.critical = __old_status
-    end
-    @@id_map[@__id].push self.object_id
-    @@id_rev_map[self.object_id] = @__id
+    __setobj__(orig)
     super
   end
 
@@ -79,6 +66,18 @@ class WeakRef<Delegator
   end
 
   def __setobj__(obj)
+    @__id = obj.object_id
+    ObjectSpace.define_finalizer obj, @@final
+    ObjectSpace.define_finalizer self, @@final
+    __old_status = Thread.critical
+    begin
+      Thread.critical = true
+      @@id_map[@__id] = [] unless @@id_map[@__id]
+    ensure
+      Thread.critical = __old_status
+    end
+    @@id_map[@__id].push self.object_id
+    @@id_rev_map[self.object_id] = @__id
   end
 
   # Returns true if the referenced object still exists, and false if it has

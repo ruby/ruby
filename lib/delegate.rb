@@ -115,7 +115,7 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  preserved = ["__id__", "object_id", "__send__", "__send", "__send!", "respond_to?", "send", "funcall"]
+  preserved = [:__id__, :object_id, :__send__, :__send, :__send!, :respond_to?, :send, :funcall]
   instance_methods.each do |m|
     next if preserved.include?(m)
     undef_method m
