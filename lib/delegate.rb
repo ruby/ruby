@@ -184,6 +184,7 @@ class Delegator
   # Reinitializes delegation from a serialized object.
   def marshal_load(obj)
     initialize_methods(obj)
+    __setobj__(obj)
   end
 end
 

@@ -48,18 +48,7 @@ class WeakRef<Delegator
   # Create a new WeakRef from +orig+.
   def initialize(orig)
     super
-    @__id = orig.__id__
-    ObjectSpace.define_finalizer orig, @@final
-    ObjectSpace.define_finalizer self, @@final
-    __old_status = Thread.critical
-    begin
-      Thread.critical = true
-      @@id_map[@__id] = [] unless @@id_map[@__id]
-    ensure
-      Thread.critical = __old_status
-    end
-    @@id_map[@__id].push self.__id__
-    @@id_rev_map[self.__id__] = @__id
+    __setobj__(orig)
   end
 
   # Return the object this WeakRef references. Raises RefError if the object
@@ -74,6 +63,23 @@ class WeakRef<Delegator
     rescue RangeError
       raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
+  end
+
+  def __setobj__(obj)
+    @__id = obj.__id__
+    __old_status = Thread.critical
+    begin
+      Thread.critical = true
+      unless @@id_rev_map.key?(self)
+        ObjectSpace.define_finalizer obj, @@final
+        ObjectSpace.define_finalizer self, @@final
+      end
+      @@id_map[@__id] = [] unless @@id_map[@__id]
+    ensure
+      Thread.critical = __old_status
+    end
+    @@id_map[@__id].push self.__id__
+    @@id_rev_map[self.__id__] = @__id
   end
 
   # Returns true if the referenced object still exists, and false if it has
