@@ -1,3 +1,13 @@
+Thu Dec  7 23:50:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): new method Dir.exist?(path).
+	  [ruby-core:09663]
+
+	* file.c (Init_File): remove File.exists?; use File.exist?
+	  instead.
+
+	* file.c: rename functions to test_* to rb_file_*_p.
+
 Thu Dec  7 09:29:02 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/weakref.rb (WeakRef::__setobj__): should support

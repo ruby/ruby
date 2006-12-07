@@ -877,6 +877,29 @@ eaccess(const char *path, int mode)
 
 
 /*
+ *   File.directory?(file_name)   =>  true or false
+ *   File.directory?(file_name)   =>  true or false
+ *
+ * Returns <code>true</code> if the named file is a directory,
+ * <code>false</code> otherwise.
+ *
+ *    File.directory?(".")
+ */
+
+/*
+ * Document-method: exist?
+ *
+ * call-seq:
+ *   Dir.exist?(file_name)   =>  true or false
+ *
+ * Returns <code>true</code> if the named file is a directory,
+ * <code>false</code> otherwise.
+ *
+ */
+
+/*
+ * Document-method: directory?
+ *
  * call-seq:
  *   File.directory?(file_name)   =>  true or false
  *
@@ -886,8 +909,8 @@ eaccess(const char *path, int mode)
  *    File.directory?(".")
  */
 
-static VALUE
-test_d(VALUE obj, VALUE fname)
+VALUE
+rb_file_directory_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
@@ -900,6 +923,7 @@ test_d(VALUE obj, VALUE fname)
     return Qfalse;
 }
 
+
 /*
  * call-seq:
  *   File.pipe?(file_name)   =>  true or false
@@ -908,7 +932,7 @@ test_d(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_p(VALUE obj, VALUE fname)
+rb_file_pipe_p(VALUE obj, VALUE fname)
 {
 #ifdef S_IFIFO
 #  ifndef S_ISFIFO
@@ -932,7 +956,7 @@ test_p(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_l(VALUE obj, VALUE fname)
+rb_file_symlink_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISLNK
 #  ifdef _S_ISLNK
@@ -968,7 +992,7 @@ test_l(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_S(VALUE obj, VALUE fname)
+rb_file_socket_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISSOCK
 #  ifdef _S_ISSOCK
@@ -1002,7 +1026,7 @@ test_S(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_b(VALUE obj, VALUE fname)
+rb_file_blockdev_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISBLK
 #   ifdef S_IFBLK
@@ -1029,7 +1053,7 @@ test_b(VALUE obj, VALUE fname)
  * Returns <code>true</code> if the named file is a character device.
  */
 static VALUE
-test_c(VALUE obj, VALUE fname)
+rb_file_chardev_p(VALUE obj, VALUE fname)
 {
 #ifndef S_ISCHR
 #   define S_ISCHR(m) ((m & S_IFMT) == S_IFCHR)
@@ -1053,7 +1077,7 @@ test_c(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_e(VALUE obj, VALUE fname)
+rb_file_exist_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1070,7 +1094,7 @@ test_e(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_r(VALUE obj, VALUE fname)
+rb_file_readable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1087,7 +1111,7 @@ test_r(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_R(VALUE obj, VALUE fname)
+rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1118,7 +1142,7 @@ test_R(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_wr(VALUE obj, VALUE fname)
+rb_file_world_readable_p(VALUE obj, VALUE fname)
 {
 #ifdef S_IROTH
     struct stat st;
@@ -1140,7 +1164,7 @@ test_wr(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_w(VALUE obj, VALUE fname)
+rb_file_writable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1157,7 +1181,7 @@ test_w(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_W(VALUE obj, VALUE fname)
+rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1180,7 +1204,7 @@ test_W(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_ww(VALUE obj, VALUE fname)
+rb_file_world_writable_p(VALUE obj, VALUE fname)
 {
 #ifdef S_IWOTH
     struct stat st;
@@ -1202,7 +1226,7 @@ test_ww(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_x(VALUE obj, VALUE fname)
+rb_file_executable_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1219,7 +1243,7 @@ test_x(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_X(VALUE obj, VALUE fname)
+rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1240,7 +1264,7 @@ test_X(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_f(VALUE obj, VALUE fname)
+rb_file_file_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1258,7 +1282,7 @@ test_f(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_z(VALUE obj, VALUE fname)
+rb_file_zero_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1276,7 +1300,7 @@ test_z(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_s(VALUE obj, VALUE fname)
+rb_file_size_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1295,7 +1319,7 @@ test_s(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_owned(VALUE obj, VALUE fname)
+rb_file_owned_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1305,7 +1329,7 @@ test_owned(VALUE obj, VALUE fname)
 }
 
 static VALUE
-test_rowned(VALUE obj, VALUE fname)
+rb_file_rowned_p(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1324,7 +1348,7 @@ test_rowned(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_grpowned(VALUE obj, VALUE fname)
+rb_file_grpowned_p(VALUE obj, VALUE fname)
 {
 #ifndef _WIN32
     struct stat st;
@@ -1357,7 +1381,7 @@ check3rdbyte(VALUE fname, int mode)
  */
 
 static VALUE
-test_suid(VALUE obj, VALUE fname)
+rb_file_suid_p(VALUE obj, VALUE fname)
 {
 #ifdef S_ISUID
     return check3rdbyte(fname, S_ISUID);
@@ -1374,7 +1398,7 @@ test_suid(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_sgid(VALUE obj, VALUE fname)
+rb_file_sgid_p(VALUE obj, VALUE fname)
 {
 #ifdef S_ISGID
     return check3rdbyte(fname, S_ISGID);
@@ -1391,7 +1415,7 @@ test_sgid(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_sticky(VALUE obj, VALUE fname)
+rb_file_sticky_p(VALUE obj, VALUE fname)
 {
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
@@ -1418,7 +1442,7 @@ test_sticky(VALUE obj, VALUE fname)
  */
 
 static VALUE
-test_identical(VALUE obj, VALUE fname1, VALUE fname2)
+rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 {
 #ifndef DOSISH
     struct stat st1, st2;
@@ -3262,71 +3286,71 @@ rb_f_test(int argc, VALUE *argv)
 	CHECK(1);
 	switch (cmd) {
 	  case 'b':
-	    return test_b(0, argv[1]);
+	    return rb_file_blockdev_p(0, argv[1]);
 
 	  case 'c':
-	    return test_c(0, argv[1]);
+	    return rb_file_chardev_p(0, argv[1]);
 
 	  case 'd':
-	    return test_d(0, argv[1]);
+	    return rb_file_directory_p(0, argv[1]);
 
 	  case 'a':
 	  case 'e':
-	    return test_e(0, argv[1]);
+	    return rb_file_exist_p(0, argv[1]);
 
 	  case 'f':
-	    return test_f(0, argv[1]);
+	    return rb_file_file_p(0, argv[1]);
 
 	  case 'g':
-	    return test_sgid(0, argv[1]);
+	    return rb_file_sgid_p(0, argv[1]);
 
 	  case 'G':
-	    return test_grpowned(0, argv[1]);
+	    return rb_file_grpowned_p(0, argv[1]);
 
 	  case 'k':
-	    return test_sticky(0, argv[1]);
+	    return rb_file_sticky_p(0, argv[1]);
 
 	  case 'l':
-	    return test_l(0, argv[1]);
+	    return rb_file_symlink_p(0, argv[1]);
 
 	  case 'o':
-	    return test_owned(0, argv[1]);
+	    return rb_file_owned_p(0, argv[1]);
 
 	  case 'O':
-	    return test_rowned(0, argv[1]);
+	    return rb_file_rowned_p(0, argv[1]);
 
 	  case 'p':
-	    return test_p(0, argv[1]);
+	    return rb_file_pipe_p(0, argv[1]);
 
 	  case 'r':
-	    return test_r(0, argv[1]);
+	    return rb_file_readable_p(0, argv[1]);
 
 	  case 'R':
-	    return test_R(0, argv[1]);
+	    return rb_file_readable_real_p(0, argv[1]);
 
 	  case 's':
-	    return test_s(0, argv[1]);
+	    return rb_file_size_p(0, argv[1]);
 
 	  case 'S':
-	    return test_S(0, argv[1]);
+	    return rb_file_socket_p(0, argv[1]);
 
 	  case 'u':
-	    return test_suid(0, argv[1]);
+	    return rb_file_suid_p(0, argv[1]);
 
 	  case 'w':
-	    return test_w(0, argv[1]);
+	    return rb_file_writable_p(0, argv[1]);
 
 	  case 'W':
-	    return test_W(0, argv[1]);
+	    return rb_file_world_writable_p(0, argv[1]);
 
 	  case 'x':
-	    return test_x(0, argv[1]);
+	    return rb_file_executable_p(0, argv[1]);
 
 	  case 'X':
-	    return test_X(0, argv[1]);
+	    return rb_file_executable_real_p(0, argv[1]);
 
 	  case 'z':
-	    return test_z(0, argv[1]);
+	    return rb_file_zero_p(0, argv[1]);
 	}
     }
 
@@ -3350,7 +3374,7 @@ rb_f_test(int argc, VALUE *argv)
 
     if (cmd == '-') {
 	CHECK(2);
-	return test_identical(0, argv[1], argv[2]);
+	return rb_file_identical_p(0, argv[1], argv[2]);
     }
 
     if (strchr("=<>", cmd)) {
@@ -4332,36 +4356,35 @@ Init_File(void)
     rb_mFileTest = rb_define_module("FileTest");
     rb_cFile = rb_define_class("File", rb_cIO);
 
-    define_filetest_function("directory?", test_d, 1);
-    define_filetest_function("exist?", test_e, 1);
-    define_filetest_function("exists?", test_e, 1); /* temporary */
-    define_filetest_function("readable?", test_r, 1);
-    define_filetest_function("readable_real?", test_R, 1);
-    define_filetest_function("world_readable?", test_wr, 1);
-    define_filetest_function("writable?", test_w, 1);
-    define_filetest_function("writable_real?", test_W, 1);
-    define_filetest_function("world_writable?", test_ww, 1);
-    define_filetest_function("executable?", test_x, 1);
-    define_filetest_function("executable_real?", test_X, 1);
-    define_filetest_function("file?", test_f, 1);
-    define_filetest_function("zero?", test_z, 1);
-    define_filetest_function("size?", test_s, 1);
+    define_filetest_function("directory?", rb_file_directory_p, 1);
+    define_filetest_function("exist?", rb_file_exist_p, 1);
+    define_filetest_function("readable?", rb_file_readable_p, 1);
+    define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
+    define_filetest_function("world_readable?", rb_file_world_writable_p, 1);
+    define_filetest_function("writable?", rb_file_writable_p, 1);
+    define_filetest_function("writable_real?", rb_file_world_writable_p, 1);
+    define_filetest_function("world_writable?", rb_file_world_writable_p, 1);
+    define_filetest_function("executable?", rb_file_executable_p, 1);
+    define_filetest_function("executable_real?", rb_file_executable_real_p, 1);
+    define_filetest_function("file?", rb_file_file_p, 1);
+    define_filetest_function("zero?", rb_file_zero_p, 1);
+    define_filetest_function("size?", rb_file_size_p, 1);
     define_filetest_function("size", rb_file_s_size, 1);
-    define_filetest_function("owned?", test_owned, 1);
-    define_filetest_function("grpowned?", test_grpowned, 1);
+    define_filetest_function("owned?", rb_file_owned_p, 1);
+    define_filetest_function("grpowned?", rb_file_grpowned_p, 1);
 
-    define_filetest_function("pipe?", test_p, 1);
-    define_filetest_function("symlink?", test_l, 1);
-    define_filetest_function("socket?", test_S, 1);
+    define_filetest_function("pipe?", rb_file_pipe_p, 1);
+    define_filetest_function("symlink?", rb_file_symlink_p, 1);
+    define_filetest_function("socket?", rb_file_socket_p, 1);
 
-    define_filetest_function("blockdev?", test_b, 1);
-    define_filetest_function("chardev?", test_c, 1);
+    define_filetest_function("blockdev?", rb_file_blockdev_p, 1);
+    define_filetest_function("chardev?", rb_file_chardev_p, 1);
 
-    define_filetest_function("setuid?", test_suid, 1);
-    define_filetest_function("setgid?", test_sgid, 1);
-    define_filetest_function("sticky?", test_sticky, 1);
+    define_filetest_function("setuid?", rb_file_suid_p, 1);
+    define_filetest_function("setgid?", rb_file_sgid_p, 1);
+    define_filetest_function("sticky?", rb_file_sticky_p, 1);
 
-    define_filetest_function("identical?", test_identical, 2);
+    define_filetest_function("identical?", rb_file_identical_p, 2);
 
     rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
     rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);
