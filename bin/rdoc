@@ -46,7 +46,7 @@ end
 $:.each do |path|
   if /site_ruby/ =~ path 
     rdoc_path = File.join(path, 'rdoc', 'rdoc.rb')
-    if File.exists?(rdoc_path)
+    if File.exist?(rdoc_path)
       adjust_for_existing_rdoc(path)
       break
     end
