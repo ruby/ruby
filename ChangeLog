@@ -1,6 +1,11 @@
+Fri Dec  8 18:11:18 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/optparse.rb: cannot put :nodoc: before method definition.
+	  put after it.
+
 Fri Dec  8 17:00:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* bin/rdoc: ues File.exist? instead of File.exists.
+	* bin/rdoc: ues File.exist? instead of File.exists?.
 
 Thu Dec  7 23:50:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
