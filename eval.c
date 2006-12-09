@@ -1564,7 +1564,6 @@ ruby_cleanup(ex)
     ruby_safe_level = 0;
     Init_stack((void*)&state);
     ruby_finalize_0();
-    if (ruby_errinfo) err = ruby_errinfo;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
