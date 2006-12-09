@@ -153,8 +153,8 @@ module IRB
     end
 
     def search_file(path, file)
-      if File.exists?(p1 = path + lc_path(file, "C"))
-	if File.exists?(p2 = path + lc_path(file))
+      if File.exist?(p1 = path + lc_path(file, "C"))
+	if File.exist?(p2 = path + lc_path(file))
 	  return p2
 	else
 	end
