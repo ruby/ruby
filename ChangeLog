@@ -1,7 +1,8 @@
 Sat Dec  9 11:22:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/locale.rb (IRB::Locale::search_file): ues File.exist?
-	  instead of File.exists?.  [ruby-dev:30000]
+	  instead of File.exists?.  a patch from Yutaka Kanemoto
+	  <kinpoco at gmail.com> in [ruby-dev:30000].
 
 Fri Dec  8 18:11:18 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
