@@ -1,3 +1,8 @@
+Sat Dec  9 21:39:24 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): keep the exception till after END blocks.
+	  [ruby-core:09675]
+
 Sat Dec  9 11:22:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/locale.rb (IRB::Locale::search_file): ues File.exist?

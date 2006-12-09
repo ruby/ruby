@@ -1553,7 +1553,6 @@ ruby_cleanup(int ex)
     PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	ruby_finalize_0();
-	if (ruby_errinfo) err = ruby_errinfo;
 	rb_thread_cleanup();
 	rb_thread_wait_other_threads();
     }
