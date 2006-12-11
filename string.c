@@ -1811,8 +1811,8 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-      num_index:
 	idx = FIX2LONG(indx);
+      num_index:
 	if (RSTRING_LEN(str) <= idx) {
 	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %ld out of string", idx);
