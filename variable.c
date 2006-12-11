@@ -1686,7 +1686,7 @@ rb_define_const(klass, name, val)
     ID id = rb_intern(name);
 
     if (!rb_is_const_id(id)) {
-	rb_warn("rb_define_const: invalide name `%s' for constant", name);
+	rb_warn("rb_define_const: invalid name `%s' for constant", name);
     }
     if (klass == rb_cObject) {
 	rb_secure(4);
