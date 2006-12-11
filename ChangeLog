@@ -1,3 +1,8 @@
+Mon Dec 11 09:36:29 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_aset): index double decode problem.
+	  [ruby-core:09695]
+
 Sat Dec  9 21:39:24 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): keep the exception till after END blocks.
