@@ -1,3 +1,7 @@
+Tue Dec 12 23:33:53 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (Switch#parse_arg, Switch#conv_arg): splat failures.
+
 Mon Dec 11 11:51:10 2006  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha2/lib/sha2.rb: Moved one level up from under

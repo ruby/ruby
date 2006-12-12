@@ -321,10 +321,10 @@ class OptionParser
     # argument pattern. Yields when the pattern doesn't match substring.
     #
     def parse_arg(arg)
-      pattern or return nil, arg
+      pattern or return nil, [arg]
       unless m = pattern.match(arg)
         yield(InvalidArgument, arg)
-        return arg, nil
+        return arg, []
       end
       if String === m
         m = [s = m]
@@ -345,7 +345,7 @@ class OptionParser
     # conversion. Yields at semi-error condition instead of raising an
     # exception.
     #
-    def conv_arg(arg, val = nil)
+    def conv_arg(arg, val = [])
       if conv
         val = conv.call(*val)
       else
