@@ -1,3 +1,10 @@
+Thu Dec 14 23:37:38 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): get rid of possible memory leak.
+
+	* win32/win32.c (cmdglob, rb_w32_cmdvector, rb_w32_opendir,
+	  rb_w32_get_environ): not to use GC before initialization.
+
 Wed Dec  6 19:53:41 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (SITE_DIR): fixed to emtpy RUBY_SITE_LIB in config.h on

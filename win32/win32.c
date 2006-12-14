@@ -431,7 +431,8 @@ getlogin()
 
     if (NTLoginName == NULL) {
 	if (GetUserName(buffer, &len)) {
-	    NTLoginName = ALLOC_N(char, len+1);
+	    NTLoginName = (char *)malloc(len+1);
+	    if (!NTLoginName) return NULL;
 	    strncpy(NTLoginName, buffer, len);
 	    NTLoginName[len] = '\0';
 	}
@@ -1068,10 +1069,12 @@ insert(const char *path, VALUE vinfo)
     NtCmdLineElement *tmpcurr;
     NtCmdLineElement ***tail = (NtCmdLineElement ***)vinfo;
 
-    tmpcurr = ALLOC(NtCmdLineElement);
+    tmpcurr = (NtCmdLineElement *)malloc(sizeof(NtCmdLineElement));
+    if (!tmpcurr) return -1;
     MEMZERO(tmpcurr, NtCmdLineElement, 1);
     tmpcurr->len = strlen(path);
-    tmpcurr->str = ALLOC_N(char, tmpcurr->len + 1);
+    tmpcurr->str = (char *)malloc(tmpcurr->len + 1);
+    if (!tmpcurr->str) return -1;
     tmpcurr->flags |= NTMALLOC;
     strcpy(tmpcurr->str, path);
     **tail = tmpcurr;
@@ -1093,20 +1096,21 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     char buffer[MAXPATHLEN], *buf = buffer;
     char *p;
     NtCmdLineElement **last = tail;
+    int status;
 
     if (patt->len >= MAXPATHLEN)
-	buf = ruby_xmalloc(patt->len + 1);
+	if (!(buf = malloc(patt->len + 1))) return 0;
 
     strncpy (buf, patt->str, patt->len);
     buf[patt->len] = '\0';
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    ruby_globi(buf, 0, insert, (VALUE)&tail);
+    status = ruby_globi(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 
-    if (last == tail) return 0;
+    if (status || last == tail) return 0;
     if (patt->flags & NTMALLOC)
 	free(patt->str);
     free(patt);
@@ -1333,8 +1337,8 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	    }
 	}
 
-	curr = ALLOC(NtCmdLineElement);
-	MEMZERO(curr, NtCmdLineElement, 1);
+	curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
+	if (!curr) goto do_nothing;
 	curr->str = base;
 	curr->len = len;
 
@@ -1359,7 +1363,18 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     }
 
     len = (elements+1)*sizeof(char *) + strsz;
-    buffer = ALLOC_N(char, len);
+    buffer = (char *)malloc(len);
+    if (!buffer) {
+      do_nothing:
+	while (curr = cmdhead) {
+	    cmdhead = curr->next;
+	    if (curr->flags & NTMALLOC) free(curr->str);
+	    free(curr);
+	}
+	free(cmdline);
+	for (vptr = *vec; *vptr; ++vptr);
+	return vptr - *vec;
+    }
     
     //
     // make vptr point to the start of the buffer
@@ -1456,6 +1471,7 @@ rb_w32_opendir(const char *filename)
     fh = FindFirstFile(scanname, &fd);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
+	free(p);
 	return NULL;
     }
 
@@ -1465,7 +1481,13 @@ rb_w32_opendir(const char *filename)
     //
 
     idx = strlen(fd.cFileName)+1;
-    p->start = ALLOC_N(char, idx);
+    if (!(p->start = (char *)malloc(idx))) {
+      error:
+	rb_w32_closedir(p);
+	FindClose(fh);
+	errno = ENOMEM;
+	return NULL;
+    }
     strcpy(p->start, fd.cFileName);
     p->nfiles++;
 
@@ -1476,6 +1498,8 @@ rb_w32_opendir(const char *filename)
     // of the previous string found.
     //
     while (FindNextFile(fh, &fd)) {
+	char *newpath;
+
 	len = strlen(fd.cFileName);
 
 	//
@@ -1483,12 +1507,11 @@ rb_w32_opendir(const char *filename)
 	// new name and it's null terminator 
 	//
 
-	#define Renew(x, y, z) (x = (z *)xrealloc(x, y))
-
-	Renew (p->start, idx+len+1, char);
-	if (p->start == NULL) {
-            rb_fatal ("opendir: malloc failed!\n");
+	newpath = (char *)realloc(p->start, idx+len+1);
+	if (newpath == NULL) {
+	    goto error;
 	}
+	p->start = newpath;
 	strcpy(&p->start[idx], fd.cFileName);
 	p->nfiles++;
 	idx += len+1;
@@ -3519,10 +3542,12 @@ rb_w32_get_environ(void)
     for (env = envtop, num = 0; *env; env += strlen(env) + 1)
 	if (*env != '=') num++;
 
-    myenvtop = ALLOC_N(char*, num + 1);
+    myenvtop = (char **)malloc(sizeof(char *) * (num + 1));
     for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
 	if (*env != '=') {
-	    *myenv = ALLOC_N(char, strlen(env) + 1);
+	    if (!(*myenv = (char *)malloc(strlen(env) + 1))) {
+		break;
+	    }
 	    strcpy(*myenv, env);
 	    myenv++;
 	}
