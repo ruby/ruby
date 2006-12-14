@@ -1,3 +1,8 @@
+Thu Dec 14 18:20:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/locale.rb (IRB::Locale::puts): typo fixed.  a patch from
+	  NAKAMURA Usaku <usa@ruby-lang.org>.  [ruby-dev:30012]
+
 Tue Dec 12 23:33:53 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (Switch#parse_arg, Switch#conv_arg): splat failures.
