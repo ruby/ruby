@@ -1334,9 +1334,10 @@ site-install-rb: install-rb
     end
   end
 
+  sep = config_string('BUILD_FILE_SEPARATOR') {|sep| ":/=#{sep}" if sep != "/"} || ""
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
-  mfile.print "\t@-$(RM) $@\n"
+  mfile.print "\t@-$(RM) $(@#{sep})\n"
   mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
   link_so = LINK_SO.gsub(/^/, "\t")
   if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
@@ -1344,7 +1345,7 @@ site-install-rb: install-rb
   end
   mfile.print link_so, "\n\n"
   unless $static.nil?
-    mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
+    mfile.print "$(STATIC_LIB): $(OBJS)\n\t@-$(RM) $(@#{sep})\n\t"
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
     config_string('RANLIB') do |ranlib|
       mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
