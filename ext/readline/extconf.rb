@@ -43,6 +43,8 @@ else
 end
 
 have_readline_var("rl_filename_completion_function")
+have_readline_var("rl_username_completion_function")
+have_readline_var("rl_completion_matches")
 have_readline_var("rl_deprep_term_function")
 have_readline_var("rl_completion_append_character")
 have_readline_var("rl_basic_word_break_characters")
