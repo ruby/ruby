@@ -38,7 +38,11 @@ static ID completion_proc, completion_case_fold;
 
 #ifndef HAVE_RL_FILENAME_COMPLETION_FUNCTION
 # define rl_filename_completion_function filename_completion_function
+#endif
+#ifndef HAVE_RL_USERNAME_COMPLETION_FUNCTION
 # define rl_username_completion_function username_completion_function
+#endif
+#ifndef HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
 #endif
 

@@ -1,3 +1,10 @@
+Thu Dec 14 18:29:13 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/readline/readline.c: NetBSD editline does not have
+	  rl_username_completion_function() and rl_completion_matches().
+	  a patch from Takahiro Kambe <taca at back-street.net>.
+	  [ruby-dev:30008]
+
 Thu Dec 14 18:20:43 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/locale.rb (IRB::Locale::puts): typo fixed.  a patch from
