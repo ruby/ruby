@@ -71,7 +71,7 @@ module IRB
     end
 
     def puts(*opts)
-      ary = opts.collect{|opt| String(opts)}
+      ary = opts.collect{|opt| String(opt)}
       super(*ary)
     end
 
