@@ -3,6 +3,7 @@
 
 module RI
 
+  require 'rdoc/ri/ri_paths'
   require 'rdoc/ri/ri_display'
 
   VERSION_STRING = "ri v1.0.1 - 20041108"
