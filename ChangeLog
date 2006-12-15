@@ -447,7 +447,7 @@ Sun Oct 22 16:47:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_substr): should be infected with only original
 	  string, but not the shared string.  fixed: [ruby-core:09152]
 
-	* strnig.c (rb_str_new4): keep shared string untainted when orignal
+	* string.c (rb_str_new4): keep shared string untainted when orignal
 	  string is tainted.  fixed: [ruby-dev:29672]
 
 Sun Oct 22 07:55:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
