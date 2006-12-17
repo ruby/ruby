@@ -811,7 +811,7 @@ class CGI
       end
 
       @name = options["name"]
-      @value = Array(options["value"])
+      @value = Array(options["value"].lines)
       # simple support for IE
       if options["path"]
         @path = options["path"]
