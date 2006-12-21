@@ -1,3 +1,8 @@
+Thu Dec 21 15:32:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+ 
+	* lib/cgi.rb (CGI::Cookie::initialize): option["value"] may or may
+	  not be string.  [ruby-core:09750]
+
 Wed Dec 20 12:54:31 2006  Koichi Sasada <ko1@atdot.net>
 
 	* Convert CVS repository to Subversion repository.
