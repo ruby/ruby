@@ -166,6 +166,11 @@ Fri Dec  1 16:31:53 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
 	  [ruby-talk: 227408]
 
+Mon Nov 27 09:00:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_ord): typo fixed.  reported from Kornelius
+	  Kalnbach <murphy@rubychan.de>.  [ruby-core:09621]
+
 Sun Nov 26 16:36:46 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* version.h: addition of RUBY_PATCHLEVEL.

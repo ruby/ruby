@@ -4251,7 +4251,7 @@ rb_str_ord(VALUE s)
 
     if (RSTRING_LEN(s) != 1) {
 	rb_raise(rb_eTypeError,
-		 "expacted a characer, but string of size %ld given",
+		 "expected a character, but string of size %ld given",
 		 RSTRING_LEN(s));
     }
     c = RSTRING_PTR(s)[0] & 0xff;
