@@ -1,3 +1,8 @@
+Thu Dec 21 15:37:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_slice_bang): rdoc description bug fixed.
+	  [ruby-core:09754]
+
 Thu Dec 21 15:32:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
  
 	* lib/cgi.rb (CGI::Cookie::initialize): option["value"] may or may
