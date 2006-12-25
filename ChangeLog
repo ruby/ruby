@@ -1,8 +1,3 @@
-Thu Dec 21 20:11:31 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
-
-	* ext/openssl/ossl.h: fixed compilation problem on gcc 3.2.
-	  [ruby-talk:214786]
-
 Sat Dec 16 04:02:10 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
