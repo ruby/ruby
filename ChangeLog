@@ -1,3 +1,7 @@
+Mon Dec 25 10:40:40 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* stable version 1.8.5-p12 released.
+
 Sat Dec 16 04:02:10 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
@@ -26,7 +30,7 @@ Mon Dec  4 10:43:46 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Dec  4 10:22:26 2006  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
-	* stable version 1.8.5-p2 relased.
+	* stable version 1.8.5-p2 released.
 
 Sun Dec  3 17:11:12 2006  Shugo Maeda  <shugo@ruby-lang.org>
 
