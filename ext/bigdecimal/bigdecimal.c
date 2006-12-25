@@ -781,17 +781,6 @@ BigDecimal_eq(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, '=');
 }
 
-/* Returns true if the values are not equal in value. Values may be coerced
- * to perform the comparison:
- *
- * BigDecimal.new('1.0') != 1.0  -> false
- */
-static VALUE
-BigDecimal_ne(VALUE self, VALUE r)
-{
-    return BigDecimalCmp(self, r, '!');
-}
-
 /* call-seq:
  * a < b
  *
@@ -1921,7 +1910,6 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "==", BigDecimal_eq, 1);
     rb_define_method(rb_cBigDecimal, "===", BigDecimal_eq, 1);
     rb_define_method(rb_cBigDecimal, "eql?", BigDecimal_eq, 1);
-    rb_define_method(rb_cBigDecimal, "!=", BigDecimal_ne, 1);
     rb_define_method(rb_cBigDecimal, "<", BigDecimal_lt, 1);
     rb_define_method(rb_cBigDecimal, "<=", BigDecimal_le, 1);
     rb_define_method(rb_cBigDecimal, ">", BigDecimal_gt, 1);

@@ -1,3 +1,8 @@
+Tue Dec 26 06:13:08 2006  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/bigdecimal/bigdecimal.c: remove useless method
+	  BigDecimal#!=. [ruby-dev:30050]
+
 Thu Dec 21 15:37:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_slice_bang): rdoc description bug fixed.
