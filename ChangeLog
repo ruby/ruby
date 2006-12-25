@@ -1,3 +1,8 @@
+Mon Dec 25 20:08:28 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/openssl/ossl.h: fixed compilation problem on gcc 3.2.
+	  [ruby-talk:214786]
+
 Mon Dec 25 10:40:40 2006  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* stable version 1.8.5-p12 released.
