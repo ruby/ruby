@@ -16,14 +16,16 @@ if defined?(WIN32OLE)
       #
 
       @fso = WIN32OLE.new('Scripting.FileSystemObject')
-      @dummy_path = @fso.GetTempName
+      @dummy_file = @fso.GetTempName
       @cfolder = @fso.getFolder(".")
-      f = @cfolder.CreateTextFile(@dummy_path)
+      f = @cfolder.CreateTextFile(@dummy_file)
       f.close
-      @dummy_path = @cfolder.path + "\\" + @dummy_path
+      @dummy_path = @cfolder.path + "\\" + @dummy_file
 
       @shell=WIN32OLE.new('Shell.Application')
-      @fi2 = @shell.NameSpace(@dummy_path).ParentFolder.ParseName(@shell.NameSpace(@dummy_path).Title)
+      @nsp = @shell.NameSpace(@cfolder.path)
+      @fi2 = @nsp.parseName(@dummy_file)
+
       @shortcut = nil
 
       #
@@ -44,7 +46,7 @@ if defined?(WIN32OLE)
       arlink = []
       @cfolder.files.each do |f|
         if /\.lnk$/ =~ f.path
-          linkinfo = @shell.NameSpace(f.path).self.getlink
+          linkinfo = @nsp.parseName(f.name).getLink
           arlink.push f if linkinfo.path == path
         end
       end
@@ -55,8 +57,9 @@ if defined?(WIN32OLE)
       links = find_link(@dummy_path)
       assert(0, links.size)
 
-      # Now create shortcut to @dummy_path
       assert(@shortcut)
+
+      # Now create shortcut to @dummy_path
       arg = WIN32OLE_VARIANT.new(@shortcut)
       @fi2.InvokeVerb(arg)
 
