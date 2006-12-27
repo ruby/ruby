@@ -1,3 +1,9 @@
+Wed Dec 27 20:52:32 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: remove WIN32OLE::PROPERTY class.
+
+	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
 Tue Dec 26 21:02:14 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_folderitem2_invokeverb.rb: The argument 

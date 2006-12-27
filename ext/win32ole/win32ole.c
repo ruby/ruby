@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.0"
+#define WIN32OLE_VERSION "0.8.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -210,7 +210,6 @@ static HRESULT ole_docinfo_from_type(ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR 
 static char *ole_wc2mb(LPWSTR);
 static VALUE ole_variant2val(VARIANT*);
 static void ole_val2variant(VALUE, VARIANT*);
-static VALUE create_property_object(VALUE, VALUE, HRESULT, VALUE);
   
 typedef struct _Win32OLEIDispatch
 {
@@ -2475,26 +2474,8 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        if (is_bracket) {
-            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s",
-                      StringValuePtr(v));
-        } else {
-            /* 
-             * This is the trick to save following script.
-             * 
-             *   installer = WIN32OLE.new("WindowsInstaller.Installer")
-             *   record = installer.CreateRecord(2)
-             *   record.StringData[1] =  'ffff'
-             * 
-             * record.StringData failed, but we expect [] or []= 
-             * method called next, so we use this trick.
-             *
-             * If this trick may be confused.
-             * If so, we should raise WIN32OLERuntimeError here...
-             * And we give up saving the above script.
-             */
-            return create_property_object(self, cmd, hr, v);
-        }
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s",
+                  StringValuePtr(v));
     }
     obj = ole_variant2val(&result);
     VariantClear(&result);
@@ -6870,48 +6851,6 @@ folevariant_value(VALUE self)
     return val;
 }
 
-static VALUE
-create_property_object(VALUE oleobj, VALUE propname, HRESULT prehr, VALUE premsg)
-{
-    VALUE prop = rb_funcall(cWIN32OLE_PROPERTY, rb_intern("new"), 0);
-    rb_ivar_set(prop, rb_intern("oleobj"), oleobj);
-    rb_ivar_set(prop, rb_intern("property"), propname);
-    rb_ivar_set(prop, rb_intern("prehresult"), INT2NUM(prehr));
-    rb_ivar_set(prop, rb_intern("premsg"), premsg);
-    return prop;
-}
-
-static VALUE
-foleproperty_getproperty(VALUE self, VALUE args)
-{
-    VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
-    VALUE params = rb_ary_new();
-    rb_ary_push(params, rb_ivar_get(self, rb_intern("property")));
-    rb_ary_concat(params, args);
-    return rb_apply(oleobj, rb_intern("[]"), params);
-}
-
-static VALUE
-foleproperty_setproperty(VALUE self, VALUE args)
-{
-    VALUE oleobj = rb_ivar_get(self, rb_intern("oleobj"));
-    VALUE params = rb_ary_new();
-    rb_ary_push(params, rb_ivar_get(self, rb_intern("property")));
-    rb_ary_concat(params, args);
-    return rb_apply(oleobj, rb_intern("setproperty"), params);
-}
-
-static VALUE
-foleproperty_method_missing(VALUE self, VALUE args)
-{
-    HRESULT hr = NUM2INT(rb_ivar_get(self, rb_intern("prehresult")));
-    VALUE prop = rb_ivar_get(self, rb_intern("property"));
-    VALUE msg = rb_ivar_get(self, rb_intern("premsg"));
-    ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s%s",
-              StringValuePtr(prop), StringValuePtr(msg));
-    return Qnil;
-}
-
 void
 Init_win32ole()
 {
@@ -7105,8 +7044,4 @@ Init_win32ole()
 
     eWIN32OLE_RUNTIME_ERROR = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
-    cWIN32OLE_PROPERTY = rb_define_class_under(cWIN32OLE, "PROPERTY", rb_cObject);
-    rb_define_method(cWIN32OLE_PROPERTY, "[]", foleproperty_getproperty, -2);
-    rb_define_method(cWIN32OLE_PROPERTY, "[]=", foleproperty_setproperty, -2);
-    rb_define_method(cWIN32OLE_PROPERTY, "method_missing", foleproperty_method_missing, -2);
 }

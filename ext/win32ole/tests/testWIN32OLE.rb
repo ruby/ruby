@@ -321,10 +321,12 @@ class TestWin32OLE_WITH_MSI < Test::Unit::TestCase
     @record.setproperty( "StringData", 1, 'dddd')
     assert_equal('dddd', @record.StringData(1))
   end
-  def test_bracket_equal_with_arg
-    @record.StringData[1] =  'ffff'
-    assert_equal('ffff', @record.StringData(1))
-  end
+  
+  # Win32OLE does not support this style to set property.
+  # def test_bracket_equal_with_arg
+  #   @record.StringData[1] =  'ffff'
+  #   assert_equal('ffff', @record.StringData(1))
+  # end
 
   def test__invoke
     shell=WIN32OLE.new('Shell.Application')
