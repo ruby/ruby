@@ -2148,7 +2148,7 @@ rb_String(VALUE val)
  *  <code>to_s</code> method.
  *     
  *     String(self)        #=> "main"
- *     String(self.class   #=> "Object"
+ *     String(self.class)  #=> "Object"
  *     String(123456)      #=> "123456"
  */
 
@@ -2164,7 +2164,10 @@ rb_Array(VALUE val)
     VALUE tmp = rb_check_array_type(val);
 
     if (NIL_P(tmp)) {
-	return rb_convert_type(val, T_ARRAY, "Array", "to_a");
+	tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
+	if (NIL_P(tmp)) {
+	    return rb_ary_new3(1, val);
+	}
     }
     return tmp;
 }

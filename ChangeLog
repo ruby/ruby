@@ -1,8 +1,18 @@
+Thu Dec 28 15:27:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::Cookie::initialize): use Array() again.
+	  [ruby-core:09781]
+
 Wed Dec 27 20:52:32 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: remove WIN32OLE::PROPERTY class.
 
 	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
+Wed Dec 27 10:04:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_Array): returns 1-element array if the argument
+	  does not have to_ary nor to_a.
 
 Tue Dec 26 21:02:14 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -18,11 +28,6 @@ Thu Dec 21 15:37:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_slice_bang): rdoc description bug fixed.
 	  [ruby-core:09754]
-
-Thu Dec 21 15:32:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
- 
-	* lib/cgi.rb (CGI::Cookie::initialize): option["value"] may or may
-	  not be string.  [ruby-core:09750]
 
 Wed Dec 20 12:54:31 2006  Koichi Sasada <ko1@atdot.net>
 
