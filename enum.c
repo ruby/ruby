@@ -335,13 +335,14 @@ enum_to_a(VALUE obj)
 }
 
 static VALUE
-inject_i(VALUE i, VALUE *memo)
+inject_i(VALUE i, VALUE memo)
 {
-    if (*memo == Qundef) {
-        *memo = i;
+    if (RARRAY_PTR(memo)[0] == Qundef) {
+        RARRAY_PTR(memo)[0] = i;
     }
     else {
-        *memo = rb_yield_values(2, *memo, i);
+	RARRAY_PTR(memo)[1] = i;
+        RARRAY_PTR(memo)[0] = rb_yield(memo);
     }
     return Qnil;
 }
@@ -380,13 +381,18 @@ inject_i(VALUE i, VALUE *memo)
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE memo = Qundef;
+    VALUE memo, tmp;
 
-    if (rb_scan_args(argc, argv, "01", &memo) == 0)
-	memo = Qundef;
-    rb_block_call(obj, id_each, 0, 0, inject_i, (VALUE)&memo);
-    if (memo == Qundef) return Qnil;
-    return memo;
+    if (rb_scan_args(argc, argv, "01", &tmp) == 0) {
+	memo = rb_ary_new3(2, Qundef, Qnil);
+    }
+    else {
+	memo = rb_ary_new3(2, tmp, Qnil);
+    }
+    rb_block_call(obj, id_each, 0, 0, inject_i, (VALUE)memo);
+    tmp = RARRAY_PTR(memo)[0];
+    if (tmp == Qundef) return Qnil;
+    return tmp;
 }
 
 static VALUE
