@@ -887,7 +887,10 @@ min_ii(VALUE i, VALUE *memo)
 	*memo = i;
     }
     else {
-	cmp = rb_yield_values(2, i, *memo);
+	VALUE ary = memo[1];
+	RARRAY_PTR(ary)[0] = i;
+	RARRAY_PTR(ary)[1] = *memo;
+	cmp = rb_yield(ary);
 	if (rb_cmpint(cmp, i, *memo) < 0) {
 	    *memo = i;
 	}
@@ -913,11 +916,18 @@ min_ii(VALUE i, VALUE *memo)
 static VALUE
 enum_min(VALUE obj)
 {
-    VALUE result = Qundef;
+    VALUE result[2];
 
-    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
-    if (result == Qundef) return Qnil;
-    return result;
+    result[0] = Qundef;
+    if (rb_block_given_p()) {
+	result[1] = rb_ary_new3(2, Qnil, Qnil);
+	rb_block_call(obj, id_each, 0, 0, min_ii, (VALUE)result);
+    }
+    else {
+	rb_block_call(obj, id_each, 0, 0, min_i, (VALUE)result);
+    }
+    if (result[0] == Qundef) return Qnil;
+    return result[0];
 }
 
 static VALUE
@@ -946,7 +956,10 @@ max_ii(VALUE i, VALUE *memo)
 	*memo = i;
     }
     else {
-	cmp = rb_yield_values(2, i, *memo);
+	VALUE ary = memo[1];
+	RARRAY_PTR(ary)[0] = i;
+	RARRAY_PTR(ary)[1] = *memo;
+	cmp = rb_yield(ary);
 	if (rb_cmpint(cmp, i, *memo) > 0) {
 	    *memo = i;
 	}
@@ -971,11 +984,18 @@ max_ii(VALUE i, VALUE *memo)
 static VALUE
 enum_max(VALUE obj)
 {
-    VALUE result = Qundef;
+    VALUE result[2];
 
-    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
-    if (result == Qundef) return Qnil;
-    return result;
+    result[0] = Qundef;
+    if (rb_block_given_p()) {
+	result[1] = rb_ary_new3(2, Qnil, Qnil);
+	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)result);
+    }
+    else {
+	rb_block_call(obj, id_each, 0, 0, max_i, (VALUE)result);
+    }
+    if (result[0] == Qundef) return Qnil;
+    return result[0];
 }
 
 static VALUE
@@ -1095,10 +1115,16 @@ enum_member(VALUE obj, VALUE val)
 }
 
 static VALUE
-each_with_index_i(VALUE val, VALUE *memo)
+each_with_index_i(VALUE val, VALUE memo)
 {
-    rb_yield_values(2, val, INT2FIX(*memo));
-    ++*memo;
+    long n;
+
+    RARRAY_PTR(memo)[0] = val;
+    rb_yield(memo);
+    val = RARRAY_PTR(memo)[1];
+    n = NUM2LONG(val);
+    n++;
+    RARRAY_PTR(memo)[1] = INT2NUM(n);
     return Qnil;
 }
 
@@ -1120,11 +1146,12 @@ each_with_index_i(VALUE val, VALUE *memo)
 static VALUE
 enum_each_with_index(VALUE obj)
 {
-    VALUE memo = 0;
+    VALUE memo;
 
     RETURN_ENUMERATOR(obj, 0, 0);
 
-    rb_block_call(obj, id_each, 0, 0, each_with_index_i, (VALUE)&memo);
+    memo = rb_ary_new3(2, Qnil, INT2FIX(0));
+    rb_block_call(obj, id_each, 0, 0, each_with_index_i, memo);
     return obj;
 }
 
