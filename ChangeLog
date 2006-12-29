@@ -211,6 +211,17 @@ Fri Dec  1 16:31:53 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/tcltklib.c: shouldn't run the killed thread at callback.
 	  [ruby-talk: 227408]
 
+Tue Nov 28 17:25:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_iter_check): should check modification (size
+	  change) during iteration.
+
+	* array.c (rb_ary_initialize, rb_ary_shift, rb_ary_unshift,
+	  rb_ary_splice, rb_ary_reverse, rb_ary_sort, rb_ary_delete,
+	  rb_ary_delete_at, rb_ary_reject_bang, rb_ary_replace,
+	  rb_ary_clear, rb_ary_fill, rb_ary_uniq_bang, rb_ary_compact,
+	  rb_ary_shuffle): add iteration check.
+
 Mon Nov 27 09:00:15 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_ord): typo fixed.  reported from Kornelius
