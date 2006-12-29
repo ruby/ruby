@@ -1,3 +1,27 @@
+Sat Dec 30 02:54:22 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_gets): accepts limit argument.
+
+	* ext/stringio/stringio.c (strio_readline, strio_each,
+	  strio_readlines): ditto.
+
+Sat Dec 30 02:22:32 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): add limit capability.
+
+	* io.c (rb_io_gets_m): accepts limit argument.  [ruby-talk:231563]
+
+	* io.c (rb_io_readline, rb_io_readlines, rb_io_each_line, argf_getline):
+	  ditto.
+
+	* io.c (appendline): add limit capability.
+
+	* io.c (rb_io_getline_fast, rb_io_getline): ditto.
+
+	* io.c (rb_io_getline): small refactoring for DRY.
+
+	* io.c (rb_io_s_foreach, rb_io_s_readlines): small refactoring.
+
 Thu Dec 28 15:27:38 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::Cookie::initialize): use Array() again.

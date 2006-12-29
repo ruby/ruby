@@ -766,15 +766,33 @@ static VALUE
 strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 {
     const char *s, *e, *p;
-    long n;
+    long n, limit;
     VALUE str;
 
     if (argc == 0) {
 	str = rb_rs;
+	limit = 0;
     }
     else {
-	rb_scan_args(argc, argv, "1", &str);
-	if (!NIL_P(str)) StringValue(str);
+	VALUE lim, tmp;
+
+	rb_scan_args(argc, argv, "11", &str, &lim);
+	if (!NIL_P(lim)) limit = NUM2LONG(lim);
+	else if (!NIL_P(str) && TYPE(str) != T_STRING) {
+	    tmp = rb_check_string_type(str);
+	    if (NIL_P(tmp)) {
+		limit = NUM2LONG(str);
+		if (limit == 0) return rb_str_new(0,0);
+		str = rb_rs;
+	    }
+	    else {
+		str = tmp;
+		limit = 0;
+	    }
+	}
+	else {
+	    StringValue(str);
+	}
     }
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
@@ -783,6 +801,9 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
     s = RSTRING_PTR(ptr->string);
     e = s + RSTRING_LEN(ptr->string);
     s += ptr->pos;
+    if (limit > 0 && s + limit < e) {
+	e = s + limit;
+    }
     if (NIL_P(str)) {
 	str = rb_str_substr(ptr->string, ptr->pos, e - s);
     }
@@ -836,7 +857,9 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 
 /*
  * call-seq:
- *   strio.gets(sep_string=$/)   -> string or nil
+ *   strio.gets(sep=$/)     -> string or nil
+ *   strio.gets(limit)      -> string or nil
+ *   strio.gets(sep, limit) -> string or nil
  *
  * See IO#gets.
  */
@@ -851,7 +874,9 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.readline(sep_string=$/)   -> string
+ *   strio.readline(sep=$/)     -> string
+ *   strio.readline(limit)      -> string or nil
+ *   strio.readline(sep, limit) -> string or nil
  *
  * See IO#readline.
  */
@@ -865,8 +890,12 @@ strio_readline(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.each(sep_string=$/)      {|line| block }  -> strio
- *   strio.each_line(sep_string=$/) {|line| block }  -> strio
+ *   strio.each(sep=$/) {|line| block }         -> strio
+ *   strio.each(limit) {|line| block }          -> strio
+ *   strio.each(sep, limit) {|line| block }     -> strio
+ *   strio.each_line(sep=$/) {|line| block }    -> strio
+ *   strio.each_line(limit) {|line| block }     -> strio
+ *   strio.each_line(sep,limit) {|line| block } -> strio
  *
  * See IO#each.
  */
@@ -884,7 +913,9 @@ strio_each(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.readlines(sep_string=$/)  ->   array
+ *   strio.readlines(sep=$/)    ->   array
+ *   strio.readlines(limit)     ->   array
+ *   strio.readlines(sep,limit) ->   array
  *
  * See IO#readlines.
  */

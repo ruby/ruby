@@ -1535,17 +1535,21 @@ io_read(int argc, VALUE *argv, VALUE io)
 }
 
 static int
-appendline(OpenFile *fptr, int delim, VALUE *strp)
+appendline(OpenFile *fptr, int delim, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     int c = EOF;
+    long limit = *lp;
 
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
-	    const char *e = memchr(p, delim, pending);
+	    const char *e;
 	    long last = 0, len = (c != EOF);
+
+	    if (limit > 0 && pending > limit) pending = limit;
+	    e = memchr(p, delim, pending);
 	    if (e) pending = e - p + 1;
 	    len += pending;
 	    if (!NIL_P(str)) {
@@ -1560,6 +1564,9 @@ appendline(OpenFile *fptr, int delim, VALUE *strp)
 		RSTRING_PTR(str)[last++] = c;
 	    }
 	    read_buffered_data(RSTRING_PTR(str) + last, pending, fptr); /* must not fail */
+	    limit -= pending;
+	    *lp = limit;
+	    if (limit == 0) return RSTRING_PTR(str)[RSTRING_LEN(str)-1];
 	    if (e) return delim;
 	}
 	else if (c != EOF) {
@@ -1576,7 +1583,9 @@ appendline(OpenFile *fptr, int delim, VALUE *strp)
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
 	c = io_getc(fptr);
+	limit--;
 	if (c < 0) {
+	    *lp = limit;
 	    return c;
 	}
     } while (c != delim);
@@ -1624,16 +1633,21 @@ swallow(OpenFile *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(OpenFile *fptr, unsigned char delim)
+rb_io_getline_fast(OpenFile *fptr, unsigned char delim, long limit)
 {
     VALUE str = Qnil;
     int c;
 
-    while ((c = appendline(fptr, delim, &str)) != EOF && c != delim);
+    for (;;) {
+	c = appendline(fptr, delim, &str, &limit);
+	if (c == EOF || c == delim || limit == 0) break;
+    }
 
     if (!NIL_P(str)) {
-	fptr->lineno++;
-	lineno = INT2FIX(fptr->lineno);
+	if (limit > 0) {
+	    fptr->lineno++;
+	    lineno = INT2FIX(fptr->lineno);
+	}
 	OBJ_TAINT(str);
     }
 
@@ -1649,10 +1663,31 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 }
 
 static VALUE
-rb_io_getline(VALUE rs, VALUE io)
+rb_io_getline(int argc, VALUE *argv, VALUE io)
 {
-    VALUE str = Qnil;
+    VALUE rs, lim, str = Qnil;
     OpenFile *fptr;
+    long limit;
+
+    if (argc == 0) {
+	rs = rb_rs;
+	lim = Qnil;
+    }
+    else {
+	rb_scan_args(argc, argv, "11", &rs, &lim);
+	if (NIL_P(lim) && !NIL_P(rs) && TYPE(rs) != T_STRING) {
+	    VALUE tmp = rb_check_string_type(rs);
+
+	    if (NIL_P(tmp)) {
+		lim = rs;
+		rs = rb_rs;
+	    }
+	    else {
+		rs = tmp;
+	    }
+	}
+    }
+    limit = NIL_P(lim) ? 0 : NUM2LONG(lim);
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -1660,8 +1695,11 @@ rb_io_getline(VALUE rs, VALUE io)
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
+    else if (!NIL_P(lim) && limit == 0) {
+	return rb_str_new(0,0);
+    }
     else if (rs == rb_default_rs) {
-	return rb_io_getline_fast(fptr, '\n');
+	return rb_io_getline_fast(fptr, '\n', limit);
     }
     else {
 	int c, newline;
@@ -1677,20 +1715,21 @@ rb_io_getline(VALUE rs, VALUE io)
 	    swallow(fptr, '\n');
 	}
 	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0]);
+	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0], limit);
 	}
 	else {
 	    rsptr = RSTRING_PTR(rs);
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, &str)) != EOF) {
+	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
 	    if (c == newline) {
 		if (RSTRING_LEN(str) < rslen) continue;
 		if (!rspara) rscheck(rsptr, rslen, rs);
 		if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - rslen,
 			   rsptr, rslen) == 0) break;
 	    }
+	    if (limit == 0) break;
 	}
 
 	if (rspara) {
@@ -1701,8 +1740,10 @@ rb_io_getline(VALUE rs, VALUE io)
     }
 
     if (!NIL_P(str)) {
-	fptr->lineno++;
-	lineno = INT2FIX(fptr->lineno);
+	if (limit > 0) {
+	    fptr->lineno++;
+	    lineno = INT2FIX(fptr->lineno);
+	}
 	OBJ_TAINT(str);
     }
 
@@ -1716,21 +1757,25 @@ rb_io_gets(VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr, '\n');
+    return rb_io_getline_fast(fptr, '\n', 0);
 }
 
 /*
  *  call-seq:
- *     ios.gets(sep_string=$/)   => string or nil
+ *     ios.gets(sep=$/)     => string or nil
+ *     ios.gets(limit)      => string or nil
+ *     ios.gets(sep, limit) => string or nil
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
- *  <i>sep_string</i>. A separator of <code>nil</code> reads the entire
+ *  <i>sep</i>. A separator of <code>nil</code> reads the entire
  *  contents, and a zero-length separator reads the input a paragraph at
  *  a time (two successive newlines in the input separate paragraphs).
  *  The stream must be opened for reading or an <code>IOError</code>
  *  will be raised. The line read in will be returned and also assigned
  *  to <code>$_</code>. Returns <code>nil</code> if called at end of
- *  file.
+ *  file.  If the first argument is an integer, or optional second
+ *  argument is given, the returning string would not be longer than the
+ *  given value.
  *
  *     File.new("testfile").gets   #=> "This is line one\n"
  *     $_                          #=> "This is line one\n"
@@ -1739,16 +1784,9 @@ rb_io_gets(VALUE io)
 static VALUE
 rb_io_gets_m(int argc, VALUE *argv, VALUE io)
 {
-    VALUE rs, str;
+    VALUE str;
 
-    if (argc == 0) {
-	rs = rb_rs;
-    }
-    else {
-	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) StringValue(rs);
-    }
-    str = rb_io_getline(rs, io);
+    str = rb_io_getline(argc, argv, io);
     rb_lastline_set(str);
 
     return str;
@@ -1834,7 +1872,9 @@ argf_lineno(void)
 
 /*
  *  call-seq:
- *     ios.readline(sep_string=$/)   => string
+ *     ios.readline(sep=$/)     => string
+ *     ios.readline(limit)      => string
+ *     ios.readline(sep, limit) => string
  *
  *  Reads a line as with <code>IO#gets</code>, but raises an
  *  <code>EOFError</code> on end of file.
@@ -1853,14 +1893,17 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.readlines(sep_string=$/)  =>   array
+ *     ios.readlines(sep=$/)     => array
+ *     ios.readlines(limit)      => array
+ *     ios.readlines(sep, limit) => array
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
- *  <i>anArray</i>. Lines are separated by the optional
- *  <i>sep_string</i>. If <i>sep_string</i> is <code>nil</code>, the
- *  rest of the stream is returned as a single record.
- *  The stream must be opened for reading or an
- *  <code>IOError</code> will be raised.
+ *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
+ *  <i>sep</i> is <code>nil</code>, the rest of the stream is returned
+ *  as a single record.  If the first argument is an integer, or
+ *  optional second argument is given, the returning string would not be
+ *  longer than the given value. The stream must be opened for reading
+ *  or an <code>IOError</code> will be raised.
  *
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
@@ -1870,17 +1913,9 @@ static VALUE
 rb_io_readlines(int argc, VALUE *argv, VALUE io)
 {
     VALUE line, ary;
-    VALUE rs;
 
-    if (argc == 0) {
-	rs = rb_rs;
-    }
-    else {
-	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) StringValue(rs);
-    }
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_getline(rs, io))) {
+    while (!NIL_P(line = rb_io_getline(argc, argv, io))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -1888,11 +1923,15 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     ios.each(sep_string=$/)      {|line| block }  => ios
- *     ios.each_line(sep_string=$/) {|line| block }  => ios
+ *     ios.each(sep=$/) {|line| block }         => ios
+ *     ios.each(limit) {|line| block }          => ios
+ *     ios.each(sep,limit) {|line| block }      => ios
+ *     ios.each_line(sep=$/) {|line| block }    => ios
+ *     ios.each_line(limit) {|line| block }     => ios
+ *     ios.each_line(sep,limit) {|line| block } => ios
  *
  *  Executes the block for every line in <em>ios</em>, where lines are
- *  separated by <i>sep_string</i>. <em>ios</em> must be opened for
+ *  separated by <i>sep</i>. <em>ios</em> must be opened for
  *  reading or an <code>IOError</code> will be raised.
  *
  *     f = File.new("testfile")
@@ -1910,17 +1949,9 @@ static VALUE
 rb_io_each_line(int argc, VALUE *argv, VALUE io)
 {
     VALUE str;
-    VALUE rs;
 
     RETURN_ENUMERATOR(io, argc, argv);
-    if (argc == 0) {
-	rs = rb_rs;
-    }
-    else {
-	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) StringValue(rs);
-    }
-    while (!NIL_P(str = rb_io_getline(rs, io))) {
+    while (!NIL_P(str = rb_io_getline(argc, argv, io))) {
 	rb_yield(str);
     }
     return io;
@@ -1963,7 +1994,9 @@ rb_io_each_byte(VALUE io)
 
 /*
  *  call-seq:
- *     str.lines(separator=$/)   => anEnumerator
+ *     str.lines(sep=$/)     => anEnumerator
+ *     str.lines(limit)      => anEnumerator
+ *     str.lines(sep, limit) => anEnumerator
  *  
  *  Returns an enumerator that gives each line in the string.
  *     
@@ -4371,16 +4404,7 @@ argf_getline(int argc, VALUE *argv)
 	line = rb_io_gets(current_file);
     }
     else {
-	VALUE rs;
-
-	if (argc == 0) {
-	    rs = rb_rs;
-	}
-	else {
-	    rb_scan_args(argc, argv, "1", &rs);
-	    if (!NIL_P(rs)) StringValue(rs);
-	}
-	line = rb_io_getline(rs, current_file);
+	line = rb_io_getline(argc, argv, current_file);
     }
     if (NIL_P(line) && next_p != -1) {
 	argf_close(current_file);
@@ -4396,18 +4420,22 @@ argf_getline(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     gets(separator=$/)    => string or nil
+ *     gets(sep=$/)    => string or nil
+ *     gets(limit)     => string or nil
+ *     gets(sep,limit) => string or nil
  *
  *  Returns (and assigns to <code>$_</code>) the next line from the list
- *  of files in +ARGV+ (or <code>$*</code>), or from standard
- *  input if no files are present on the command line. Returns
- *  +nil+ at end of file. The optional argument specifies the
- *  record separator. The separator is included with the contents of
- *  each record. A separator of +nil+ reads the entire
- *  contents, and a zero-length separator reads the input one paragraph
- *  at a time, where paragraphs are divided by two consecutive newlines.
- *  If multiple filenames are present in +ARGV+,
- *  +gets(nil)+ will read the contents one file at a time.
+ *  of files in +ARGV+ (or <code>$*</code>), or from standard input if
+ *  no files are present on the command line. Returns +nil+ at end of
+ *  file. The optional argument specifies the record separator. The
+ *  separator is included with the contents of each record. A separator
+ *  of +nil+ reads the entire contents, and a zero-length separator
+ *  reads the input one paragraph at a time, where paragraphs are
+ *  divided by two consecutive newlines.  If the first argument is an
+ *  integer, or optional second argument is given, the returning string
+ *  would not be longer than the given value.  If multiple filenames are
+ *  present in +ARGV+, +gets(nil)+ will read the contents one file at a
+ *  time.
  *
  *     ARGV << "testfile"
  *     print while gets
@@ -4467,7 +4495,9 @@ rb_gets(void)
 
 /*
  *  call-seq:
- *     readline(separator=$/)   => string
+ *     readline(sep=$/)     => string
+ *     readline(limit)      => string
+ *     readline(sep, limit) => string
  *
  *  Equivalent to <code>Kernel::gets</code>, except
  *  +readline+ raises +EOFError+ at end of file.
@@ -4503,10 +4533,12 @@ rb_f_getc(void)
 
 /*
  *  call-seq:
- *     readlines(separator=$/)    => array
+ *     readlines(sep=$/)    => array
+ *     readlines(limit)     => array
+ *     readlines(sep,limit) => array
  *
  *  Returns an array containing the lines returned by calling
- *  <code>Kernel.gets(<i>separator</i>)</code> until the end of file.
+ *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
  */
 
 static VALUE
@@ -5079,7 +5111,7 @@ rb_io_s_pipe(VALUE klass)
 
 struct foreach_arg {
     int argc;
-    VALUE sep;
+    VALUE *argv;
     VALUE io;
 };
 
@@ -5088,7 +5120,7 @@ io_s_foreach(struct foreach_arg *arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_getline(arg->sep, arg->io))) {
+    while (!NIL_P(str = rb_io_gets_m(arg->argc, arg->argv, arg->io))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -5096,10 +5128,12 @@ io_s_foreach(struct foreach_arg *arg)
 
 /*
  *  call-seq:
- *     IO.foreach(name, sep_string=$/) {|line| block }   => nil
+ *     IO.foreach(name, sep=$/) {|line| block }     => nil
+ *     IO.foreach(name, limit) {|line| block }      => nil
+ *     IO.foreach(name, sep, limit) {|line| block } => nil
  *
  *  Executes the block for every line in the named I/O port, where lines
- *  are separated by <em>sep_string</em>.
+ *  are separated by <em>sep</em>.
  *
  *     IO.foreach("testfile") {|x| print "GOT ", x }
  *
@@ -5118,33 +5152,30 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     struct foreach_arg arg;
 
     RETURN_ENUMERATOR(self, argc, argv);
-    rb_scan_args(argc, argv, "11", &fname, &arg.sep);
+    rb_scan_args(argc, argv, "12", &fname, NULL, NULL);
     FilePathValue(fname);
-    if (argc == 1) {
-	arg.sep = rb_default_rs;
-    }
-    else if (!NIL_P(arg.sep)) {
-	StringValue(arg.sep);
-    }
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
-
+    arg.argc = argc - 1;
+    arg.argv = argv + 1;
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
 
 static VALUE
 io_s_readlines(struct foreach_arg *arg)
 {
-    return rb_io_readlines(arg->argc, &arg->sep, arg->io);
+    return rb_io_readlines(arg->argc, arg->argv, arg->io);
 }
 
 /*
  *  call-seq:
- *     IO.readlines(name, sep_string=$/)   => array
+ *     IO.readlines(name, sep=$/)     => array
+ *     IO.readlines(name, limit)      => array
+ *     IO.readlines(name, sep, limit) => array
  *
  *  Reads the entire file specified by <i>name</i> as individual
  *  lines, and returns those lines in an array. Lines are separated by
- *  <i>sep_string</i>.
+ *  <i>sep</i>.
  *
  *     a = IO.readlines("testfile")
  *     a[0]   #=> "This is line one\n"
@@ -5157,18 +5188,19 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     VALUE fname;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "11", &fname, &arg.sep);
+    rb_scan_args(argc, argv, "12", &fname, NULL, NULL);
     FilePathValue(fname);
-    arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
+    arg.argc = argc - 1;
+    arg.argv = argv + 1;
     return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
 }
 
 static VALUE
 io_s_read(struct foreach_arg *arg)
 {
-    return io_read(arg->argc, &arg->sep, arg->io);
+    return io_read(arg->argc, arg->argv, arg->io);
 }
 
 /*
@@ -5190,9 +5222,10 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     VALUE fname, offset;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
+    rb_scan_args(argc, argv, "12", &fname, NULL, &offset);
     FilePathValue(fname);
-    arg.argc = argc ? 1 : 0;
+    arg.argc = argc > 1 ? 1 : 0;
+    arg.argv = argv + 1;
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
@@ -5278,7 +5311,7 @@ argf_read(int argc, VALUE *argv)
     VALUE tmp, str, length;
     long len = 0;
 
-    rb_scan_args(argc, argv, "02", &length, &str);
+    rb_scan_args(argc, argv, "11", &length, &str);
     if (!NIL_P(length)) {
 	len = NUM2LONG(argv[0]);
     }
