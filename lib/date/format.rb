@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.28 2006-10-25 06:45:12+09 tadf Exp $
+# $Id: format.rb,v 2.29 2006-12-30 21:43:41+09 tadf Exp $
 
 require 'rational'
 
@@ -239,24 +239,24 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n((sec_fraction / (1.to_r/86400/(10**3))).round, 3, f)
+	emit_n((sec_fraction / (1.to_r/(10**3))).round, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M'; emit_n(min, 2, f)
       when 'm'; emit_n(mon, 2, f)
       when 'N'
-	emit_n((sec_fraction / (1.to_r/86400/(10**9))).round, 9, f)
+	emit_n((sec_fraction / (1.to_r/(10**9))).round, 9, f)
       when 'n'; "\n"
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
       when 'Q'
-	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
+	d = ajd - jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400*10**3).to_i
 	emit_sn(s, 1, f)
       when 'R'; emit_a(strftime('%H:%M'), 0, f)
       when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
       when 'S'; emit_n(sec, 2, f)
       when 's'
-	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
+	d = ajd - jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400).to_i
 	emit_sn(s, 1, f)
       when 'T'
@@ -310,21 +310,6 @@ class Date
 	([emit_z(sign * hh, 2, f)] + tail).join(sep)
       when '%'; emit_a('%', 0, f)
       when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 0, f)
-      when '1'
-	if $VERBOSE
-	  warn("warning: strftime: %1 is deprecated; forget this")
-	end
-	emit_n(jd, 1, f)
-      when '2'
-	if $VERBOSE
-	  warn("warning: strftime: %2 is deprecated; use '%Y-%j'")
-	end
-	emit_a(strftime('%Y-%j'), 0, f)
-      when '3'
-	if $VERBOSE
-	  warn("warning: strftime: %3 is deprecated; use '%F'")
-	end
-	emit_a(strftime('%F'), 0, f)
       else
 	c
       end
@@ -337,7 +322,6 @@ class Date
 
   alias_method :ctime, :asctime
 
-=begin
   def iso8601() strftime('%F') end
 
   def rfc3339() iso8601 end
@@ -364,6 +348,7 @@ class Date
     end
   end
 
+=begin
   def beat(n=0)
     i, f = (new_offset(1.to_r/24).day_fraction * 1000).divmod(1)
     ('@%03d' % i) +
@@ -545,23 +530,6 @@ class Date
 	  return unless str.sub!(/\A%/, '')
 	when '+'
 	  return unless _strptime_i(str, '%a %b %e %H:%M:%S %Z %Y', e)
-	when '1'
-	  if $VERBOSE
-	    warn("warning: strptime: %1 is deprecated; forget this")
-	  end
-	  return unless str.sub!(/\A(\d+)/, '')
-	  val = $1.to_i
-	  e.jd = val
-	when '2'
-	  if $VERBOSE
-	    warn("warning: strptime: %2 is deprecated; use '%Y-%j'")
-	  end
-	  return unless _strptime_i(str, '%Y-%j', e)
-	when '3'
-	  if $VERBOSE
-	    warn("warning: strptime: %3 is deprecated; use '%F'")
-	  end
-	  return unless _strptime_i(str, '%F', e)
 	else
 	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(s)), '')
 	end
@@ -1015,39 +983,48 @@ class Date
     e.to_hash
   end
 
-  def self.zone_to_diff(zone) # :nodoc:
-    zone = zone.downcase
-    if zone.sub!(/\s+(standard|daylight)\s+time\z/, '')
-      dst = $1 == 'daylight'
-    else
-      dst = zone.sub!(/\s+dst\z/, '')
-    end
-    if Format::ZONES.include?(zone)
-      offset = Format::ZONES[zone]
-      offset += 3600 if dst
-    elsif zone.sub!(/\A(?:gmt|utc?)?([-+])/, '')
-      sign = $1
-      if zone.include?(':')
-	hour, min, sec, = zone.split(':')
-      elsif zone.include?(',') || zone.include?('.')
-	hour, fr, = zone.split(/[,.]/)
-	min = fr.to_i.to_r / (10**fr.size) * 60
+  t = Module.new do
+
+    private
+
+    def zone_to_diff(zone) # :nodoc:
+      zone = zone.downcase
+      if zone.sub!(/\s+(standard|daylight)\s+time\z/, '')
+	dst = $1 == 'daylight'
       else
-	case zone.size
-	when 3
-	  hour = zone[0,1]
-	  min = zone[1,2]
-	else
-	  hour = zone[0,2]
-	  min = zone[2,2]
-	  sec = zone[4,2]
-	end
+	dst = zone.sub!(/\s+dst\z/, '')
       end
-      offset = hour.to_i * 3600 + min.to_i * 60 + sec.to_i
-      offset *= -1 if sign == '-'
+      if Format::ZONES.include?(zone)
+	offset = Format::ZONES[zone]
+	offset += 3600 if dst
+      elsif zone.sub!(/\A(?:gmt|utc?)?([-+])/, '')
+	sign = $1
+	if zone.include?(':')
+	  hour, min, sec, = zone.split(':')
+	elsif zone.include?(',') || zone.include?('.')
+	  hour, fr, = zone.split(/[,.]/)
+	  min = fr.to_i.to_r / (10**fr.size) * 60
+	else
+	  case zone.size
+	  when 3
+	    hour = zone[0,1]
+	    min = zone[1,2]
+	  else
+	    hour = zone[0,2]
+	    min = zone[2,2]
+	    sec = zone[4,2]
+	  end
+	end
+	offset = hour.to_i * 3600 + min.to_i * 60 + sec.to_i
+	offset *= -1 if sign == '-'
+      end
+      offset
     end
-    offset
+
   end
+
+  extend  t
+  include t
 
 end
 
@@ -1061,13 +1038,12 @@ class DateTime < Date
     super(str, fmt)
   end
 
-=begin
   def iso8601_timediv(n) # :nodoc:
     strftime('T%T' +
 	     if n < 1
 	       ''
 	     else
-	       '.%0*d' % [n, (sec_fraction / (1.to_r/86400/(10**n))).round]
+	       '.%0*d' % [n, (sec_fraction / (1.to_r/(10**n))).round]
 	     end +
 	     '%:z')
   end
@@ -1081,6 +1057,5 @@ class DateTime < Date
   def jisx0301(n=0)
     super() + iso8601_timediv(n)
   end
-=end
 
 end
