@@ -1,5 +1,10 @@
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
+	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
+	value information.
+
+Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
+
 	* ext/bigdecimal/bigdecimal.c: Update constant comments to provide
 	values for RDoc.
 
