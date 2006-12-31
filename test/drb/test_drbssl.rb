@@ -5,8 +5,14 @@ begin
 rescue LoadError
 end
 
-if Object.const_defined?("OpenSSL")
+class TestDRbSSLCore < Test::Unit::TestCase
+  def test_message
+    flunk("YARV doesn't support drb")
+  end
+end
 
+# TODO: YARV doesn't support drb
+if false # Object.const_defined?("OpenSSL")
 
 class DRbSSLService < DRbService
   %w(ut_drb_drbssl.rb ut_array_drbssl.rb).each do |nm|

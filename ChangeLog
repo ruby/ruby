@@ -1,3 +1,7 @@
+Mon Jan 01 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/drb/test_drbssl.rb : fix to skip drb tests
+
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
@@ -16,7 +20,7 @@ Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
 	whitespace handling in constant comments.
 
-Mon Jan 01 00:00:00 2007  Koichi Sasada <ko1@atdot.net>
+Mon Jan 01 00:00:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* Merge YARV
 
@@ -97,7 +101,7 @@ Thu Dec 21 15:37:17 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_slice_bang): rdoc description bug fixed.
 	  [ruby-core:09754]
 
-Wed Dec 20 12:54:31 2006  Koichi Sasada <ko1@atdot.net>
+Wed Dec 20 12:54:31 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* Convert CVS repository to Subversion repository.
 
