@@ -4,32 +4,31 @@ require 'timeout'
 class TestSignal < Test::Unit::TestCase
   def have_fork?
     begin
-      fork{}
-      true
+      Process.fork {}
+      return true
     rescue NotImplementedError
-      false
+      return false
     end
   end
 
   def test_signal
-    defined?(Process.kill) or return
+    return unless Process.method_defined?(:kill)
     begin
-      $x = 0
-      oldtrap = trap "SIGINT", proc{|sig| $x = 2}
-      Process.kill "SIGINT", $$
+      x = 0
+      oldtrap = Signal.trap(:INT) {|sig| x = 2 }
+      Process.kill :INT, Process.pid
       sleep 0.1
-      assert_equal(2, $x)
+      assert_equal 2, x
 
-      trap "SIGINT", proc{raise "Interrupt"}
-
-      x = assert_raises(RuntimeError) do
-        Process.kill "SIGINT", $$
+      Signal.trap(:INT) { raise "Interrupt" }
+      ex = assert_raises(RuntimeError) {
+        Process.kill :INT, Process.pid
         sleep 0.1
-      end
-      assert(x)
-      assert_match(/Interrupt/, x.message)
+      }
+      assert_kind_of Exception, ex
+      assert_match(/Interrupt/, ex.message)
     ensure
-      trap "SIGINT", oldtrap
+      Signal.trap :INT, oldtrap if oldtrap
     end
   end
 
@@ -38,8 +37,8 @@ class TestSignal < Test::Unit::TestCase
     begin
       r, w = IO.pipe
       r0, w0 = IO.pipe
-      pid = fork {
-        trap(:USR1, "EXIT")
+      pid = Process.fork {
+        Signal.trap(:USR1, "EXIT")
         w0.close
         w.syswrite("a")
         Thread.start { Thread.pass }
@@ -50,7 +49,7 @@ class TestSignal < Test::Unit::TestCase
       assert_nothing_raised("[ruby-dev:26128]") {
         Process.kill(:USR1, pid)
         begin
-          Timeout.timeout(1) {
+          Timeout.timeout(3) {
             Process.waitpid pid
           }
         rescue Timeout::Error

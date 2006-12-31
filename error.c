@@ -11,8 +11,8 @@
 **********************************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include "st.h"
+#include "yarv.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -24,21 +24,23 @@
 #endif
 
 extern const char ruby_version[], ruby_release_date[], ruby_platform[];
-
 int ruby_nerrs;
+
+const char *rb_sourcefile();
+int rb_sourceline();
 
 static int
 err_position(char *buf, long len)
 {
     ruby_set_current_source();
-    if (!ruby_sourcefile) {
+    if (!rb_sourcefile()) {
 	return 0;
     }
-    else if (ruby_sourceline == 0) {
-	return snprintf(buf, len, "%s: ", ruby_sourcefile);
+    else if (rb_sourceline() == 0) {
+	return snprintf(buf, len, "%s: ", rb_sourcefile());
     }
     else {
-	return snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
+	return snprintf(buf, len, "%s:%d: ", rb_sourcefile(), rb_sourceline());
     }
 }
 
@@ -67,7 +69,6 @@ void
 rb_compile_error(const char *fmt, ...)
 {
     va_list args;
-
     va_start(args, fmt);
     err_print(fmt, args);
     va_end(args);
@@ -147,6 +148,8 @@ rb_warn_m(VALUE self, VALUE mesg)
     return Qnil;
 }
 
+void yarv_bug();
+
 void
 rb_bug(const char *fmt, ...)
 {
@@ -157,6 +160,7 @@ rb_bug(const char *fmt, ...)
 
     if (fwrite(buf, 1, len, out) == len ||
 	fwrite(buf, 1, len, (out = stdout)) == len) {
+	yarv_bug();
 	fputs("[BUG] ", out);
 	va_start(args, fmt);
 	vfprintf(out, fmt, args);
@@ -164,6 +168,7 @@ rb_bug(const char *fmt, ...)
 	fprintf(out, "\nruby %s (%s) [%s]\n\n",
 		ruby_version, ruby_release_date, ruby_platform);
     }
+
     abort();
 }
 
@@ -190,8 +195,6 @@ static struct types {
     {T_SYMBOL,	"Symbol"},	/* :symbol */
     {T_DATA,	"Data"},	/* internal use: wrapped C pointers */
     {T_MATCH,	"MatchData"},	/* data of $~ */
-    {T_VARMAP,	"Varmap"},	/* internal use: dynamic variables */
-    {T_SCOPE,	"Scope"},	/* internal use: variable scope */
     {T_NODE,	"Node"},	/* internal use: syntax tree node */
     {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
     {-1,	0}
@@ -1024,9 +1027,9 @@ rb_loaderror(const char *fmt, ...)
 void
 rb_notimplement(void)
 {
-    rb_raise(rb_eNotImpError,
-	     "The %s() function is unimplemented on this machine",
-	     rb_id2name(ruby_frame->callee));
+  rb_raise(rb_eNotImpError,
+           "The %s() function is unimplemented on this machine",
+	     rb_id2name(rb_frame_callee()));
 }
 
 void
@@ -1039,7 +1042,6 @@ rb_fatal(const char *fmt, ...)
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
-    ruby_in_eval = 0;
     rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
 }
 
@@ -1471,22 +1473,21 @@ Init_syserr(void)
 static void
 err_append(const char *s)
 {
-    extern VALUE ruby_errinfo;
-
-    if (ruby_in_eval) {
-	if (NIL_P(ruby_errinfo)) {
-	    ruby_errinfo = rb_exc_new2(rb_eSyntaxError, s);
-	}
-	else {
-	    VALUE str = rb_obj_as_string(ruby_errinfo);
-
-	    rb_str_cat2(str, "\n");
-	    rb_str_cat2(str, s);
-	    ruby_errinfo = rb_exc_new3(rb_eSyntaxError, str);
-	}
+  yarv_thread_t *th = GET_THREAD();
+  if (th->parse_in_eval) {
+    if (NIL_P(th->errinfo)) {
+      th->errinfo = rb_exc_new2(rb_eSyntaxError, s);
     }
     else {
-	rb_write_error(s);
-	rb_write_error("\n");
+      VALUE str = rb_obj_as_string(GET_THREAD()->errinfo);
+
+      rb_str_cat2(str, "\n");
+      rb_str_cat2(str, s);
+      th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
     }
+  }
+  else {
+    rb_write_error(s);
+    rb_write_error("\n");
+  }
 }

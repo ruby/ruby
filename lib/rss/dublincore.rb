@@ -69,7 +69,7 @@ module RSS
     }
     
     ELEMENT_NAME_INFOS = DublinCoreModel::TEXT_ELEMENTS.to_a
-    DublinCoreModel::DATE_ELEMENTS.each do |name, |
+    DublinCoreModel::DATE_ELEMENTS.each do |name, _|
       ELEMENT_NAME_INFOS << [name, nil]
     end
     

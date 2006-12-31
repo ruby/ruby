@@ -56,4 +56,7 @@ if File.file?(libruby_so)
   end
 end
 
-exec ruby, *ARGV
+# ruby = "gdb --args #{ruby}"
+cmd = [ruby, *ARGV].join(' ')
+p cmd
+exec cmd

@@ -42,7 +42,7 @@ srcdir = File.dirname(__FILE__)
     print "test succeeded\n"
     exit true
   end
-  error << line if line =~ %r:^(sample/test.rb|not):
+  error << line if %r:^(sample/test.rb|not): =~ line
 end
 print error
 print "test failed\n"

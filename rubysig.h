@@ -26,12 +26,13 @@ typedef LONG rb_atomic_t;
 # define TRAP_BEG do {\
     int saved_errno = 0;\
     rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
+
 # define TRAP_END\
     ATOMIC_SET(rb_trap_immediate, trap_immediate);\
     saved_errno = errno;\
-    CHECK_INTS;\
     errno = saved_errno;\
 } while (0)
+
 # define RUBY_CRITICAL(statements) do {\
     rb_w32_enter_critical();\
     statements;\
@@ -49,9 +50,10 @@ typedef int rb_atomic_t;
     int saved_errno = 0;\
     int trap_immediate = rb_trap_immediate;\
     rb_trap_immediate = 1
-# define TRAP_END rb_trap_immediate = trap_immediate;\
+
+# define TRAP_END \
+    rb_trap_immediate = trap_immediate;\
     saved_errno = errno;\
-    CHECK_INTS;\
     errno = saved_errno;\
 } while (0)
 
@@ -68,7 +70,6 @@ RUBY_EXTERN int rb_prohibit_interrupt;
 #define DEFER_INTS (rb_prohibit_interrupt++)
 #define ALLOW_INTS do {\
     rb_prohibit_interrupt--;\
-    CHECK_INTS;\
 } while (0)
 #define ENABLE_INTS (rb_prohibit_interrupt--)
 
@@ -79,27 +80,5 @@ void rb_trap_restore_mask(void);
 
 RUBY_EXTERN int rb_thread_critical;
 void rb_thread_schedule(void);
-#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
-RUBY_EXTERN int rb_thread_pending;
-# define CHECK_INTS do {\
-    if (!(rb_prohibit_interrupt || rb_thread_critical)) {\
-        if (rb_thread_pending) rb_thread_schedule();\
-	if (rb_trap_pending) rb_trap_exec();\
-    }\
-} while (0)
-#else
-/* pseudo preemptive thread switching */
-RUBY_EXTERN int rb_thread_tick;
-#define THREAD_TICK 500
-#define CHECK_INTS do {\
-    if (!(rb_prohibit_interrupt || rb_thread_critical)) {\
-	if (rb_thread_tick-- <= 0) {\
-	    rb_thread_tick = THREAD_TICK;\
-            rb_thread_schedule();\
-	}\
-    }\
-   if (rb_trap_pending) rb_trap_exec();\
-} while (0)
-#endif
 
 #endif /* ifndef RUBYSIG_H */

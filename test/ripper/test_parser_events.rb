@@ -1,3 +1,5 @@
+begin
+
 require 'dummyparser'
 require 'test/unit'
 
@@ -490,4 +492,7 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
   end
 =end
 
+end
+
+rescue LoadError
 end

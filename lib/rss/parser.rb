@@ -247,7 +247,7 @@ module RSS
             end
           end
           EOT
-          __send__("private", "start_#{name}")
+          __send!("private", "start_#{name}")
         end
       end
 

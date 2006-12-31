@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'ut_eof'
-require 'envutil'
 
 class TestPipe < Test::Unit::TestCase
   include TestEOF

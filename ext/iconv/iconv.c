@@ -302,7 +302,7 @@ iconv_fail(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, co
     }
     error = rb_class_new_instance(3, args, error);
     if (!rb_block_given_p()) rb_exc_raise(error);
-    ruby_errinfo = error;
+    rb_set_errinfo(error);
     return rb_yield(failed);
 }
 

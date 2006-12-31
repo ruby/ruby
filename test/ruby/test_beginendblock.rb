@@ -12,9 +12,9 @@ class TestBeginEndBlock < Test::Unit::TestCase
   def test_beginendblock
     ruby = EnvUtil.rubybin
     target = File.join(DIR, 'beginmainend.rb')
-    io = IO.popen("#{q(ruby)} #{q(target)}")
-    assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), io.read.split)
-    io.close
+    IO.popen("#{q(ruby)} #{q(target)}"){|io|
+      assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), io.read.split)
+    }
   end
 
   def test_begininmethod
@@ -46,11 +46,16 @@ EOF
     errout.close
     erroutpath = errout.path
     system("#{q(ruby)} #{q(launcherpath)} #{q(erroutpath)}")
+#    expected = <<EOW
+#endblockwarn.rb:2: warning: END in method; use at_exit
+#(eval):2: warning: END in method; use at_exit
+#EOW
     expected = <<EOW
-endblockwarn.rb:2: warning: END in method; use at_exit
-(eval):2: warning: END in method; use at_exit
+warning: END in method; use at_exit
+warning: END in method; use at_exit
 EOW
     assert_equal(expected, File.read(erroutpath))
     # expecting Tempfile to unlink launcher and errout file.
   end
+
 end

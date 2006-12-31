@@ -56,10 +56,26 @@ rb_class_new(VALUE super)
     return rb_class_boot(super);
 }
 
+struct clone_method_data {
+    st_table *tbl;
+    VALUE klass;
+};
+
 static int
-clone_method(ID mid, NODE *body, st_table *tbl)
+clone_method(ID mid, NODE *body, struct clone_method_data *data)
 {
-    st_insert(tbl, mid, (st_data_t)NEW_METHOD(body->nd_body, body->nd_noex));
+    if (body == 0) {
+	st_insert(data->tbl, mid, 0);
+    }
+    else {
+	st_insert(data->tbl, mid,
+		  (st_data_t)
+		  NEW_FBODY(
+		      NEW_METHOD(body->nd_body->nd_body,
+				 data->klass, /* TODO */
+				 body->nd_body->nd_noex),
+		      0));
+    }
     return ST_CONTINUE;
 }
 
@@ -82,9 +98,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
     }
     if (RCLASS(orig)->m_tbl) {
-	RCLASS(clone)->m_tbl = st_init_numtable();
+	struct clone_method_data data;
+	data.tbl = RCLASS(clone)->m_tbl = st_init_numtable();
+	data.klass = clone;
 	st_foreach(RCLASS(orig)->m_tbl, clone_method,
-	  (st_data_t)RCLASS(clone)->m_tbl);
+	  (st_data_t)&data);
     }
 
     return clone;
@@ -111,6 +129,7 @@ rb_singleton_class_clone(VALUE obj)
     if (!FL_TEST(klass, FL_SINGLETON))
 	return klass;
     else {
+	struct clone_method_data data;
 	/* copy singleton(unnamed) class */
 	NEWOBJ(clone, struct RClass);
 	OBJSETUP(clone, 0, RBASIC(klass)->flags);
@@ -129,8 +148,10 @@ rb_singleton_class_clone(VALUE obj)
 	    clone->iv_tbl = st_copy(RCLASS(klass)->iv_tbl);
 	}
 	clone->m_tbl = st_init_numtable();
+	data.tbl = clone->m_tbl;
+	data.klass = (VALUE)clone;
 	st_foreach(RCLASS(klass)->m_tbl, clone_method,
-	  (st_data_t)clone->m_tbl);
+	  (st_data_t)&data);
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
@@ -359,27 +380,27 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
-	int superclass_seen = Qfalse;
+       int superclass_seen = Qfalse;
 
 	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
 	    rb_raise(rb_eArgError, "cyclic include detected");
-	/* ignore if the module included already in superclasses */
-	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
-	    switch (BUILTIN_TYPE(p)) {
-	      case T_ICLASS:
-		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		    if (!superclass_seen) {
-			c = p;	/* move insertion point */
-		    }
-		    goto skip;
-		}
-		break;
-	      case T_CLASS:
-		superclass_seen = Qtrue;
-		break;
-	    }
-	}
-	c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+       /* ignore if the module included already in superclasses */
+       for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
+           switch (BUILTIN_TYPE(p)) {
+             case T_ICLASS:
+               if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
+                   if (!superclass_seen) {
+                       c = p;  /* move insertion point */
+                   }
+                   goto skip;
+               }
+               break;
+             case T_CLASS:
+               superclass_seen = Qtrue;
+               break;
+           }
+       }
+       c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
 	changed = 1;
       skip:
 	module = RCLASS(module)->super;
@@ -492,6 +513,7 @@ static int
 ins_methods_push(ID name, long type, VALUE ary, long visi)
 {
     if (type == -1) return ST_CONTINUE;
+
     switch (visi) {
       case NOEX_PRIVATE:
       case NOEX_PROTECTED:
@@ -544,10 +566,17 @@ method_entry(ID key, NODE *body, st_table *list)
 {
     long type;
 
-    if (key == ID_ALLOCATOR) return ST_CONTINUE;
+    if (key == ID_ALLOCATOR) {
+	return ST_CONTINUE;
+    }
+    
     if (!st_lookup(list, key, 0)) {
-	if (!body->nd_body) type = -1; /* none */
-	else type = VISI(body->nd_noex);
+	if (body ==0 || !body->nd_body->nd_body) {
+	    type = -1; /* none */
+	}
+	else {
+	    type = VISI(body->nd_body->nd_noex);
+	}
 	st_add_direct(list, key, type);
     }
     return ST_CONTINUE;

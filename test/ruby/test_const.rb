@@ -15,19 +15,34 @@ class TestConst < Test::Unit::TestCase
   end
 
   def test_const
+    assert defined?(TEST1)
+    assert_equal 1, TEST1
+    assert defined?(TEST2)
+    assert_equal 2, TEST2
+
     self.class.class_eval {
       include Const
     }
-    assert_equal([1,2,3,4], [TEST1,TEST2,TEST3,TEST4])
+    assert defined?(TEST1)
+    assert_equal 1, TEST1
+    assert defined?(TEST2)
+    assert_equal 2, TEST2
+    assert defined?(TEST3)
+    assert_equal 3, TEST3
+    assert defined?(TEST4)
+    assert_equal 4, TEST4
 
     self.class.class_eval {
       include Const2
     }
     STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
-    assert_equal([1,2,6,8], [TEST1,TEST2,TEST3,TEST4])
-
-    assert_equal(-1, (String <=> Object))
-    assert_equal(1, (Object <=> String))
-    assert_equal(nil, (Array <=> String))
+    assert defined?(TEST1)
+    assert_equal 1, TEST1
+    assert defined?(TEST2)
+    assert_equal 2, TEST2
+    assert defined?(TEST3)
+    assert_equal 6, TEST3
+    assert defined?(TEST4)
+    assert_equal 8, TEST4
   end
 end

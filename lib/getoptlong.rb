@@ -76,7 +76,7 @@
 #     end
 #     
 #     dir = ARGV.shift
-#     
+#
 #     Dir.chdir(dir)
 #     for i in (1..repetitions)
 #       print "Hello"
@@ -290,6 +290,7 @@ class GetoptLong
     @argument_flags.clear
 
     arguments.each do |*arg|
+      arg = arg.first # TODO: YARV Hack
       #
       # Find an argument flag and it set to `argument_flag'.
       #
@@ -302,6 +303,7 @@ class GetoptLong
 	  argument_flag = i
 	end
       end
+
       raise ArgumentError, "no argument-flag" if argument_flag == nil
 
       canonical_name = nil

@@ -578,7 +578,8 @@ module DRb
       end
       raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
-      Thread.exclusive do
+      # TODO: YARV doesn't have Thread.exclusive
+      #Thread.exclusive do
         begin
           save = Thread.current[:drb_untaint]
           Thread.current[:drb_untaint] = []
@@ -591,7 +592,7 @@ module DRb
           end
           Thread.current[:drb_untaint] = save
         end
-      end
+      #end
     end
 
     def send_request(stream, ref, msg_id, arg, b) # :nodoc:
@@ -1741,9 +1742,10 @@ module DRb
   @server = {}
   def regist_server(server)
     @server[server.uri] = server
-    Thread.exclusive do
+    # TODO: YARV doesn't have Thread.exclusive
+    #Thread.exclusive do
       @primary_server = server unless @primary_server
-    end
+    #end
   end
   module_function :regist_server
 

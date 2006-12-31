@@ -1801,7 +1801,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     ole_initialize();
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
-    if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
+    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
         rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
                  StringValuePtr(svr_name));
     }
@@ -2182,12 +2182,12 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
-    if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
+    if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
         rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                  StringValuePtr(svr_name));
     }
     if (!NIL_P(host)) {
-        if (ruby_safe_level > 0 && OBJ_TAINTED(host)) {
+        if (rb_safe_level() > 0 && OBJ_TAINTED(host)) {
             rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
                      StringValuePtr(svr_name));
         }
@@ -6645,7 +6645,7 @@ fev_initialize(int argc, VALUE *argv, VALUE self)
     }
 
     if(TYPE(itf) != T_NIL) {
-        if (ruby_safe_level > 0 && OBJ_TAINTED(itf)) {
+        if (rb_safe_level() > 0 && OBJ_TAINTED(itf)) {
             rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
                      StringValuePtr(itf));
         }
@@ -6854,8 +6854,8 @@ folevariant_value(VALUE self)
 void
 Init_win32ole()
 {
-    rb_global_variable(&ary_ole_event);
     ary_ole_event = rb_ary_new();
+    rb_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");
 
     com_vtbl.QueryInterface = QueryInterface;
@@ -6865,8 +6865,8 @@ Init_win32ole()
     com_vtbl.GetTypeInfo = GetTypeInfo;
     com_vtbl.GetIDsOfNames = GetIDsOfNames;
     com_vtbl.Invoke = Invoke;
-    rb_global_variable(&com_hash);
     com_hash = Data_Wrap_Struct(rb_cData, rb_mark_hash, st_free_table, st_init_numtable());
+    rb_register_mark_object(com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
 

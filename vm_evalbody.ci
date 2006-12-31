@@ -1,0 +1,140 @@
+/* -*-c-*- */
+/**********************************************************************
+
+  vm_evalbody.ci -
+
+  $Author$
+  $Date$
+
+  Copyright (C) 2004-2006 Koichi Sasada
+
+**********************************************************************/
+
+#include <math.h>
+
+#if VMDEBUG > 0
+#define DECL_SC_REG(type, r, reg) register type reg_##r
+
+#elif __GNUC__ && __x86_64
+#define DECL_SC_REG(type, r, reg) register type reg_##r asm("r" reg)
+
+#elif __GNUC__ && __i386__
+#define DECL_SC_REG(type, r, reg) register type reg_##r asm("e" reg)
+
+#else
+#define DECL_SC_REG(type, r, reg) register type reg_##r
+#endif
+// #define DECL_SC_REG(r, reg) VALUE reg_##r
+
+typedef yarv_iseq_t *ISEQ;
+
+#if !OPT_CALL_THREADED_CODE
+VALUE
+th_eval(yarv_thread_t *th, VALUE initial)
+{
+
+#if OPT_STACK_CACHING
+#if 0
+#elif __GNUC__ && __x86_64
+    DECL_SC_REG(VALUE, a, "12");
+    DECL_SC_REG(VALUE, b, "13");
+#else
+    register VALUE reg_a;
+    register VALUE reg_b;
+#endif
+#endif
+
+#if __GNUC__ && __i386__
+    DECL_SC_REG(VALUE *, pc, "di");
+    DECL_SC_REG(yarv_control_frame_t *, cfp, "si");
+#define USE_MACHINE_REGS 1
+
+#elif __GNUC__ && __x86_64__
+    DECL_SC_REG(VALUE *, pc, "14");
+    DECL_SC_REG(yarv_control_frame_t *, cfp, "15");
+#define USE_MACHINE_REGS 1
+
+#else
+    register yarv_control_frame_t *reg_cfp;
+    VALUE *reg_pc;
+#endif
+
+#if USE_MACHINE_REGS
+
+#undef  RESTORE_REGS
+#define RESTORE_REGS() \
+{ \
+  REG_CFP = th->cfp; \
+  reg_pc  = reg_cfp->pc; \
+}
+
+#undef  REG_PC
+#define REG_PC reg_pc
+#undef  GET_PC
+#define GET_PC() (reg_pc)
+#undef  SET_PC
+#define SET_PC(x) (reg_cfp->pc = REG_PC = (x))
+#endif
+
+    ID tmp_id;
+    yarv_block_t *tmp_blockptr;
+    num_t tmp_num;
+
+#if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
+#include "vmtc.inc"
+    if (th == 0) {
+#if OPT_STACK_CACHING
+	yarv_finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
+#else
+	yarv_finish_insn_seq[0] = (VALUE)&&LABEL (finish);
+#endif
+	return (VALUE)insns_address_table;
+    }
+#endif
+    reg_cfp = th->cfp;
+    reg_pc = reg_cfp->pc;
+
+#if OPT_STACK_CACHING
+    reg_a = initial;
+    reg_b = 0;
+#endif
+
+  first:
+    INSN_DISPATCH();
+  /******************/
+#include "vm.inc"
+  /******************/
+    END_INSNS_DISPATCH();
+
+    /* unreachable */
+    rb_bug("th_eval_iseq: unreachable");
+    return Qundef;
+}
+
+#else
+
+#include "vm.inc"
+#include "vmtc.inc"
+
+void **
+get_insns_address_table()
+{
+    return (void **)insns_address_table;
+}
+
+VALUE
+th_eval(yarv_thread_t *th, VALUE initial)
+{
+    register yarv_control_frame_t *reg_cfp = th->cfp;
+    SET_PC(reg_cfp->iseq->iseq_encoded);
+
+    while (*GET_PC()) {
+	reg_cfp = ((insn_func_type) (*GET_PC()))(th, reg_cfp);
+    }
+    {
+	VALUE ret = *--reg_cfp->sp;
+	th->cfp--;
+	return ret;
+    }
+}
+#endif

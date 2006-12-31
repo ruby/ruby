@@ -13,11 +13,11 @@
 **********************************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include "node.h"
 #include "st.h"
 #include "util.h"
 
+void rb_vm_change_state(void);
 st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 static ID autoload, classpath, tmp_classpath;
@@ -424,9 +424,7 @@ mark_global_entry(ID key, struct global_entry *entry)
 void
 rb_gc_mark_global_tbl(void)
 {
-    if (rb_global_tbl) {
-	st_foreach(rb_global_tbl, mark_global_entry, 0);
-    }
+    st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
 }
 
 static ID
@@ -1144,7 +1142,7 @@ const_missing(VALUE klass, ID id)
 VALUE
 rb_mod_const_missing(VALUE klass, VALUE name)
 {
-    ruby_frame = ruby_frame->prev; /* pop frame for "const_missing" */
+    rb_frame_pop(); /* pop frame for "const_missing" */
     uninitialized_constant(klass, rb_to_id(name));
     return Qnil;		/* not reached */
 }
@@ -1189,7 +1187,7 @@ rb_autoload(VALUE mod, ID id, const char *file)
     fn = rb_str_new2(file);
     FL_UNSET(fn, FL_TAINT);
     OBJ_FREEZE(fn);
-    st_insert(tbl, id, (st_data_t)rb_node_newnode(NODE_MEMO, fn, ruby_safe_level, 0));
+    st_insert(tbl, id, (st_data_t)rb_node_newnode(NODE_MEMO, fn, rb_safe_level(), 0));
 }
 
 static NODE*
@@ -1275,10 +1273,10 @@ rb_autoload_p(VALUE mod, ID id)
 }
 
 static VALUE
-rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
+rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 {
     VALUE value, tmp;
-    int n_retry = 0;
+    int mod_retry = 0;
 
     tmp = klass;
   retry:
@@ -1294,50 +1292,34 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, NODE *fallback)
 	    }
 	    return value;
 	}
-	if (!recurse) break;
+	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
-	if (tmp == rb_cObject) break;
-	if (ruby_wrapper && tmp && RBASIC(tmp)->klass == ruby_wrapper) {
-	    tmp = RCLASS(tmp)->super;
-	}
     }
-    if (recurse) {
-	if (fallback) {
-	    tmp = fallback->nd_clss;
-	    fallback = fallback->nd_next;
-	    goto retry;
-	}
-	if (!n_retry) {
-	    n_retry = 1;
-	    tmp = rb_cObject;
-	    goto retry;
-	}
+    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
+
     return const_missing(klass, id);
 }
 
 VALUE
 rb_const_get_from(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qtrue, 0);
+    return rb_const_get_0(klass, id, Qtrue, Qtrue);
 }
 
 VALUE
 rb_const_get(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qfalse, Qtrue, 0);
+    return rb_const_get_0(klass, id, Qfalse, Qtrue);
 }
 
 VALUE
 rb_const_get_at(VALUE klass, ID id)
 {
-    return rb_const_get_0(klass, id, Qtrue, Qfalse, 0);
-}
-
-VALUE
-rb_const_get_fallback(VALUE klass, ID id, NODE *fallback)
-{
-    return rb_const_get_0(klass, id, Qfalse, Qtrue, fallback);
+    return rb_const_get_0(klass, id, Qtrue, Qfalse);
 }
 
 /*
@@ -1354,6 +1336,8 @@ rb_mod_remove_const(VALUE mod, VALUE name)
 {
     ID id = rb_to_id(name);
     VALUE val;
+
+    rb_vm_change_state();
 
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
@@ -1439,7 +1423,7 @@ rb_const_list(void *data)
 /*
  *  call-seq:
  *     mod.constants(inherit=true)    => array
- *
+ *  
  *  Returns an array of the names of the constants accessible in
  *  <i>mod</i>. This includes the names of constants in any included
  *  modules (example at start of section), unless the <i>all</i>
@@ -1473,10 +1457,10 @@ rb_mod_constants(int argc, VALUE *argv, VALUE mod)
 }
 
 static int
-rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
+rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 {
     VALUE value, tmp;
-    int n_retry = 0;
+    int mod_retry = 0;
 
     tmp = klass;
   retry:
@@ -1486,20 +1470,13 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
 		return Qfalse;
 	    return Qtrue;
 	}
-	if (!recurse) break;
+	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
     }
-    if (recurse) {
-	if (fallback) {
-	    tmp = fallback->nd_clss;
-	    fallback = fallback->nd_next;
-	    goto retry;
-	}
-	if (!n_retry) {
-	    n_retry = 1;
-	    tmp = rb_cObject;
-	    goto retry;
-	}
+    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
     return Qfalse;
 }
@@ -1507,25 +1484,19 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, NODE* fallback)
 int
 rb_const_defined_from(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qtrue, 0);
+    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
 }
 
 int
 rb_const_defined(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qfalse, Qtrue, 0);
+    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
 }
 
 int
 rb_const_defined_at(VALUE klass, ID id)
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qfalse, 0);
-}
-
-int
-rb_const_defined_fallback(VALUE klass, ID id, NODE *fallback)
-{
-    return rb_const_defined_0(klass, id, Qfalse, Qtrue, fallback);
+    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
 }
 
 static void
@@ -1534,7 +1505,7 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
     const char *dest = isconst ? "constant" : "class variable";
 
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
+      rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
     if (OBJ_FROZEN(klass)) {
 	if (BUILTIN_TYPE(klass) == T_MODULE) {
 	    rb_error_frozen("module");
@@ -1551,12 +1522,15 @@ mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 
 	if (st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
 	    if (value == Qundef)
-		autoload_delete(klass, id);
+	      autoload_delete(klass, id);
 	    else
-		rb_warn("already initialized %s %s", dest, rb_id2name(id));
+	      rb_warn("already initialized %s %s", dest, rb_id2name(id));
 	}
     }
 
+    if(isconst){
+	rb_vm_change_state();
+    }
     st_insert(RCLASS(klass)->iv_tbl, id, val);
 }
 

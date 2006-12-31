@@ -1366,6 +1366,12 @@ time_sec(VALUE time)
     return INT2FIX(tobj->tm.tm_sec);
 }
 
+VALUE
+rb_time_succ(VALUE time)
+{
+  return time_succ(time);
+}
+
 /*
  *  call-seq:
  *     time.min => fixnum
@@ -1939,7 +1945,7 @@ time_mdump(VALUE time)
 
     if ((tm->tm_year & 0xffff) != tm->tm_year)
 	rb_raise(rb_eArgError, "year too big to marshal");
- 
+
     p = 0x1UL        << 31 | /*  1 */
 	tobj->gmt    << 30 | /*  1 */
 	tm->tm_year  << 14 | /* 16 */

@@ -162,7 +162,7 @@ module WEBrick
 
     def timeout(seconds, exception=Timeout::Error)
       return yield if seconds.nil? or seconds.zero?
-      raise ThreadError, "timeout within critical session" if Thread.critical
+      # raise ThreadError, "timeout within critical session" if Thread.critical
       id = TimeoutHandler.register(seconds, exception)
       begin
         yield(seconds)

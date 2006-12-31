@@ -499,7 +499,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
  *
  * @(#) $Revision$
  * @(#) $Id$
- * @(#) $Source$
+ * @(#) $Source: /src/ruby/st.c,v $
  *
  ***
  *

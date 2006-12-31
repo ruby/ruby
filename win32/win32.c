@@ -3012,15 +3012,15 @@ rb_w32_getcwd(char *buffer, int size)
 	size = len;
 	if (!p) {
 	    errno = ENOMEM;
-	    return NULL;
-	}
+        return NULL;
+    }
     }
 
     if (!GetCurrentDirectory(size, p)) {
 	errno = map_errno(GetLastError());
 	if (!buffer)
 	    free(p);
-	return NULL;
+        return NULL;
     }
 
     for (bp = p; *bp != '\0'; bp = CharNext(bp)) {
@@ -3828,7 +3828,6 @@ rb_w32_Sleep(unsigned long msec)
     DWORD ret;
     RUBY_CRITICAL(ret = wait_events(NULL, msec));
     yield_once();
-    CHECK_INTS;
     return ret != WAIT_TIMEOUT;
 }
 
@@ -3837,7 +3836,6 @@ catch_interrupt(void)
 {
     yield_once();
     RUBY_CRITICAL(wait_events(NULL, 0));
-    CHECK_INTS;
 }
 
 #if defined __BORLANDC__ || defined _WIN32_WCE
@@ -3982,10 +3980,6 @@ rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
 
     if (!thr) {
 	rb_fatal("failed to launch waiter thread:%d", GetLastError());
-    }
-
-    if (interrupted) {
-	CHECK_INTS;
     }
 
     return val;
@@ -4150,12 +4144,12 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     }
 
     if (times) {
-	if (unixtime_to_filetime(times->actime, &atime)) {
-	    return -1;
-	}
-	if (unixtime_to_filetime(times->modtime, &mtime)) {
-	    return -1;
-	}
+    if (unixtime_to_filetime(times->actime, &atime)) {
+	return -1;
+    }
+    if (unixtime_to_filetime(times->modtime, &mtime)) {
+	return -1;
+    }
     }
     else {
 	GetSystemTimeAsFileTime(&atime);

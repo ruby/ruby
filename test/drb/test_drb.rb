@@ -1,5 +1,17 @@
 require 'drbtest'
 
+class TestDRbCore
+  def test_drb
+    flunk("YARV doesn't support drb")
+  end
+end
+
+__END__
+
+end
+
+__END__
+
 class TestDRbCore < Test::Unit::TestCase
   include DRbCore
 end

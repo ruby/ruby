@@ -13,7 +13,7 @@ unless defined? Thread
 end
 
 unless defined? ThreadError
-  class ThreadError<StandardError
+  class ThreadError < StandardError
   end
 end
 
@@ -21,143 +21,12 @@ if $DEBUG
   Thread.abort_on_exception = true
 end
 
-class Thread
-  #
-  # Wraps a block in Thread.critical, restoring the original value upon exit
-  # from the critical section.
-  #
-  def Thread.exclusive
-    _old = Thread.critical
-    begin
-      Thread.critical = true
-      return yield
-    ensure
-      Thread.critical = _old
-    end
-  end
-end
-
-#
-# Mutex implements a simple semaphore that can be used to coordinate access to
-# shared data from multiple concurrent threads.
-#
-# Example:
-#
-#   require 'thread'
-#   semaphore = Mutex.new
-#   
-#   a = Thread.new {
-#     semaphore.synchronize {
-#       # access shared resource
-#     }
-#   }
-#   
-#   b = Thread.new {
-#     semaphore.synchronize {
-#       # access shared resource
-#     }
-#   }
-#
 class Mutex
-  #
-  # Creates a new Mutex
-  #
-  def initialize
-    @waiting = []
-    @locked = false;
-    @waiting.taint		# enable tainted comunication
-    self.taint
-  end
-
-  #
-  # Returns +true+ if this lock is currently held by some thread.
-  #
-  def locked?
-    @locked && true
-  end
-
-  #
-  # Attempts to obtain the lock and returns immediately. Returns +true+ if the
-  # lock was granted.
-  #
-  def try_lock
-    result = false
-    Thread.critical = true
-    unless @locked
-      @locked = Thread.current
-      result = true
-    end
-    Thread.critical = false
-    result
-  end
-
-  #
-  # Attempts to grab the lock and waits if it isn't available.
-  #
-  def lock
-    while (Thread.critical = true; @locked)
-      if @locked == Thread.current
-        raise ThreadError, "deadlock; recursive locking"
-      end
-      @waiting.push Thread.current
-      Thread.stop
-    end
-    @locked = Thread.current
-    Thread.critical = false
-    self
-  end
-
-  #
-  # Releases the lock. Returns +nil+ if ref wasn't locked.
-  #
-  def unlock
-    return unless @locked
-    Thread.critical = true
-    @locked = false
-    begin
-      t = @waiting.shift
-      t.wakeup if t
-    rescue ThreadError
-      retry
-    end
-    Thread.critical = false
-    begin
-      t.run if t
-    rescue ThreadError
-    end
-    self
-  end
-
-  #
-  # Obtains a lock, runs the block, and releases the lock when the block
-  # completes.  See the example under Mutex.
-  #
   def synchronize
-    lock
-    begin
-      yield
-    ensure
-      unlock
-    end
-  end
-
-  #
-  # If the mutex is locked, unlocks the mutex, wakes one waiting thread, and
-  # yields in a critical section.
-  #
-  def exclusive_unlock
-    return unless @locked
-    Thread.exclusive do
-      @locked = false
-      begin
-	t = @waiting.shift
-	t.wakeup if t
-      rescue ThreadError
-	retry
-      end
-      yield
-    end
-    self
+    self.lock
+    yield
+  ensure
+    self.unlock
   end
 end
 
@@ -201,12 +70,9 @@ class ConditionVariable
   #
   def wait(mutex)
     begin
-      mutex.exclusive_unlock do
-        @waiters.push(Thread.current)
-        Thread.stop
-      end
-    ensure
-      mutex.lock
+      # TODO: mutex should not be used
+      @waiters.push(Thread.current)
+      mutex.sleep
     end
   end
   
@@ -226,6 +92,7 @@ class ConditionVariable
   # Wakes up all threads waiting for this lock.
   #
   def broadcast
+    # TODO: imcomplete
     waiters0 = nil
     Thread.exclusive do
       waiters0 = @waiters.dup
@@ -277,22 +144,23 @@ class Queue
     @que.taint		# enable tainted comunication
     @waiting.taint
     self.taint
+    @mutex = Mutex.new
   end
 
   #
   # Pushes +obj+ to the queue.
   #
   def push(obj)
-    Thread.critical = true
-    @que.push obj
-    begin
-      t = @waiting.shift
-      t.wakeup if t
-    rescue ThreadError
-      retry
-    ensure
-      Thread.critical = false
-    end
+    t = nil
+    @mutex.synchronize{
+      @que.push obj
+      begin
+        t = @waiting.shift
+        t.wakeup if t
+      rescue ThreadError
+        retry
+      end
+    }
     begin
       t.run if t
     rescue ThreadError
@@ -315,14 +183,17 @@ class Queue
   # thread isn't suspended, and an exception is raised.
   #
   def pop(non_block=false)
-    while (Thread.critical = true; @que.empty?)
-      raise ThreadError, "queue empty" if non_block
-      @waiting.push Thread.current
-      Thread.stop
+    while true
+      @mutex.synchronize{
+        if @que.empty?
+          raise ThreadError, "queue empty" if non_block
+          @waiting.push Thread.current
+          @mutex.sleep
+        else
+          return @que.shift
+        end
+      }
     end
-    @que.shift
-  ensure
-    Thread.critical = false
   end
 
   #
@@ -336,7 +207,7 @@ class Queue
   alias deq pop
 
   #
-  # Returns +true+ is the queue is empty.
+  # Returns +true+ if the queue is empty.
   #
   def empty?
     @que.empty?
@@ -375,7 +246,7 @@ end
 #
 # See Queue for an example of how a SizedQueue works.
 #
-class SizedQueue<Queue
+class SizedQueue < Queue
   #
   # Creates a fixed-length queue with a maximum size of +max+.
   #
@@ -398,14 +269,16 @@ class SizedQueue<Queue
   # Sets the maximum size of the queue.
   #
   def max=(max)
-    Thread.critical = true
-    if max <= @max
-      @max = max
-      Thread.critical = false
-    else
-      diff = max - @max
-      @max = max
-      Thread.critical = false
+    diff = nil
+    @mutex.synchronize {
+      if max <= @max
+        @max = max
+      else
+        diff = max - @max
+        @max = max
+      end
+    }
+    if diff
       diff.times do
 	begin
 	  t = @queue_wait.shift
@@ -423,13 +296,27 @@ class SizedQueue<Queue
   # until space becomes available.
   #
   def push(obj)
-    Thread.critical = true
-    while @que.length >= @max
-      @queue_wait.push Thread.current
-      Thread.stop
-      Thread.critical = true
+    t = nil
+    @mutex.synchronize{
+      while true
+        break if @que.length <= @max
+        @queue_wait.push Thread.current
+        @mutex.sleep
+      end
+    
+      @que.push obj
+      begin
+        t = @waiting.shift
+        t.wakeup if t
+      rescue ThreadError
+        retry
+      end
+    }
+    
+    begin
+      t.run if t
+    rescue ThreadError
     end
-    super
   end
 
   #
@@ -447,20 +334,20 @@ class SizedQueue<Queue
   #
   def pop(*args)
     retval = super
-    Thread.critical = true
-    if @que.length < @max
-      begin
-	t = @queue_wait.shift
-	t.wakeup if t
-      rescue ThreadError
-	retry
-      ensure
-	Thread.critical = false
+    t = nil
+    @mutex.synchronize {
+      if @que.length < @max
+        begin
+          t = @queue_wait.shift
+          t.wakeup if t
+        rescue ThreadError
+          retry
+        end
       end
-      begin
-	t.run if t
-      rescue ThreadError
-      end
+    }
+    begin
+      t.run if t
+    rescue ThreadError
     end
     retval
   end

@@ -32,9 +32,10 @@ module DRb
     def service(name)
       while true
 	server = nil
-	Thread.exclusive do
+        # TODO: YARV doesn't have Thread.exclusive
+	#Thread.exclusive do
 	  server = @servers[name] if @servers[name]
-	end
+	#end
 	return server if server && server.alive?
 	invoke_service(name)
       end
@@ -42,11 +43,12 @@ module DRb
 
     def regist(name, ro)
       ary = nil
-      Thread.exclusive do
+      # TODO: YARV doesn't have Thread.exclusive
+      #Thread.exclusive do
 	@servers[name] = ro
 	ary = @waiting
 	@waiting = []
-      end
+      #end
       ary.each do |th|
 	begin
 	  th.run
@@ -57,9 +59,10 @@ module DRb
     end
     
     def unregist(name)
-      Thread.exclusive do
+      # TODO: YARV doesn't have Thread.exclusive
+      #Thread.exclusive do
 	@servers.delete(name)
-      end
+      #end
     end
 
     private
@@ -81,10 +84,11 @@ module DRb
 
     def invoke_service_command(name, command)
       raise "invalid command. name: #{name}" unless command
-      Thread.exclusive do
+      # TODO: YARV doesn't have Thread.exclusive
+      #Thread.exclusive do
 	return if @servers.include?(name)
 	@servers[name] = false
-      end
+      #end
       uri = @uri || DRb.uri
       Process.detach(Process.spawn("#{command} #{uri} #{name}"))
       true

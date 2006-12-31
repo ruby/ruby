@@ -1,0 +1,441 @@
+/* -*-c-*- */
+/**********************************************************************
+
+  thread_pthread.ci -
+
+  $Author$
+  $Date$
+
+  Copyright (C) 2004-2006 Koichi Sasada
+
+**********************************************************************/
+
+#ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
+
+#define native_mutex_initialize(lock) do { \
+  pthread_mutex_t _lock = PTHREAD_MUTEX_INITIALIZER; \
+  ((*lock) = _lock); \
+} while (0)
+
+#define native_cleanup_push pthread_cleanup_push
+#define native_cleanup_pop  pthread_cleanup_pop
+#define native_thread_yield() sched_yield()
+
+static void yarv_add_signal_thread_list(yarv_thread_t *th);
+static void yarv_remove_signal_thread_list(yarv_thread_t *th);
+
+static yarv_thread_lock_t signal_thread_list_lock;
+
+static void
+null_func()
+{
+}
+
+static void
+Init_native_thread()
+{
+    GET_THREAD()->thread_id = pthread_self();
+    native_mutex_initialize(&signal_thread_list_lock);
+    posix_signal(SIGVTALRM, null_func);
+}
+
+NOINLINE(static int
+	 thread_start_func_2(yarv_thread_t *th, VALUE *stack_start));
+void static thread_cleanup_func(void *th_ptr);
+
+static yarv_thread_t *register_cached_thread_and_wait(void);
+
+#define USE_THREAD_CACHE 0
+
+static void *
+thread_start_func_1(void *th_ptr)
+{
+#if USE_THREAD_CACHE
+  thread_start:
+#endif
+    {
+	yarv_thread_t *th = th_ptr;
+	VALUE stack_start;
+	/* ignore self and klass */
+
+	native_cleanup_push(thread_cleanup_func, th);
+
+	/* run */
+	thread_start_func_2(th, &stack_start);
+
+	/* cleanup */
+	thread_cleanup_func(th);
+	native_cleanup_pop(0);
+    }
+#if USE_THREAD_CACHE
+    if (1) {
+	/* cache thread */
+	yarv_thread_t *th;
+	if ((th = register_cached_thread_and_wait()) != 0) {
+	    th_ptr = (void *)th;
+	    th->thread_id = pthread_self();
+	    goto thread_start;
+	}
+    }
+#endif
+    return 0;
+}
+
+void rb_thread_create_control_thread(void);
+
+static pthread_mutex_t thread_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+
+struct cached_thread_entry {
+    volatile yarv_thread_t **th_area;
+    pthread_cond_t *cond;
+    struct cached_thread_entry *next;
+};
+
+struct cached_thread_entry *cached_thread_root;
+
+static yarv_thread_t *
+register_cached_thread_and_wait(void)
+{
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    volatile yarv_thread_t *th_area = 0;
+    struct cached_thread_entry *entry =
+      (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
+
+    struct timeval tv;
+    struct timespec ts;
+    gettimeofday(&tv, 0);
+    ts.tv_sec = tv.tv_sec + 60;
+    ts.tv_nsec = tv.tv_usec * 1000;
+    
+    pthread_mutex_lock(&thread_cache_lock);
+    {
+	entry->th_area = &th_area;
+	entry->cond = &cond;
+	entry->next = cached_thread_root;
+	cached_thread_root = entry;
+
+	pthread_cond_timedwait(&cond, &thread_cache_lock, &ts);
+
+	{
+	    struct cached_thread_entry *e = cached_thread_root;
+	    struct cached_thread_entry *prev = cached_thread_root;
+
+	    while (e) {
+		if (e == entry) {
+		    if (prev == cached_thread_root) {
+			cached_thread_root = e->next;
+		    }
+		    else {
+			prev->next = e->next;
+		    }
+		    break;
+		}
+		prev = e;
+		e = e->next;
+	    }
+	}
+
+	free(entry);
+	pthread_cond_destroy(&cond);
+    }
+    pthread_mutex_unlock(&thread_cache_lock);
+
+    return (yarv_thread_t *)th_area;
+}
+
+static int
+use_cached_thread(yarv_thread_t *th)
+{
+    int result = 0;
+#if USE_THREAD_CACHE
+    struct cached_thread_entry *entry;
+
+    if (cached_thread_root) {
+	pthread_mutex_lock(&thread_cache_lock);
+	entry = cached_thread_root;
+	{
+	    if (cached_thread_root) {
+		cached_thread_root = entry->next;
+		*entry->th_area = th;
+		result = 1;
+	    }
+	}
+	if (result) {
+	    pthread_cond_signal(entry->cond);
+	}
+	pthread_mutex_unlock(&thread_cache_lock);
+    }
+#endif
+    return result;
+}
+
+static int
+native_thread_create(yarv_thread_t *th)
+{
+    int err = 0;
+
+    if (use_cached_thread(th)) {
+	thread_debug("create (use cahced thread): %p\n", th);
+    }
+    else {
+	pthread_attr_t attr;
+	size_t stack_size = 512 * 1024 - sizeof(int);	/* 512KB */
+
+	if (stack_size < PTHREAD_STACK_MIN) {
+	    stack_size = PTHREAD_STACK_MIN * 2;
+	}
+	
+	thread_debug("create: %p, stack size: %ld\n", th, stack_size);
+
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, stack_size);
+	pthread_attr_setinheritsched(&attr, PTHREAD_INHERIT_SCHED);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
+
+	if (err != 0) {
+	    th->status = THREAD_KILLED;
+	    rb_raise(rb_eThreadError, "can't create Thread (%d)", err);
+	}
+    }
+    return err;
+}
+
+static void
+native_thread_apply_priority(yarv_thread_t *th)
+{
+    struct sched_param sp;
+    int policy;
+    int priority = 0 - th->priority;
+    int max, min;
+    pthread_getschedparam(th->thread_id, &policy, &sp);
+    max = sched_get_priority_max(policy);
+    min = sched_get_priority_min(policy);
+
+    if (min < priority) {
+	priority = max;
+    }
+    else if (max > priority) {
+	priority = min;
+    }
+
+    sp.sched_priority = priority;
+    pthread_setschedparam(th->thread_id, policy, &sp);
+}
+
+static void
+interrupt_using_pthread_cond_signal(yarv_thread_t *th)
+{
+    thread_debug("interrupt_using_pthread_cond_signal (%p)\n", th);
+    pthread_cond_signal(&th->native_thread_data.sleep_cond);
+}
+
+static void
+native_thread_send_interrupt_signal(yarv_thread_t *th)
+{
+    thread_debug("native_thread_send_interrupt_signal (%p)\n", th->thread_id);
+    if (th) {
+	pthread_kill(th->thread_id, SIGVTALRM);
+    }
+}
+
+static void
+native_sleep(yarv_thread_t *th, struct timeval *tv)
+{
+    int prev_status = th->status;
+    struct timespec ts;
+    struct timeval tvn;
+
+    if (tv) {
+	gettimeofday(&tvn, NULL);
+	ts.tv_sec = tvn.tv_sec + tv->tv_sec;
+	ts.tv_nsec = (tvn.tv_usec + tv->tv_usec) * 1000;
+    }
+    
+    th->status = THREAD_STOPPED;
+    pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
+
+    thread_debug("native_sleep %d\n", tv ? tv->tv_sec : -1);
+    GVL_UNLOCK_BEGIN();
+    {
+	pthread_mutex_lock(&th->interrupt_lock);
+	
+	if (th->interrupt_flag) {
+	    /* interrupted.  return immediate */
+	    thread_debug("native_sleep: interrupted before sleep\n");
+	}
+	else {
+	    th->interrupt_function = interrupt_using_pthread_cond_signal;
+	    if (tv == 0) {
+		thread_debug("native_sleep: pthread_cond_wait start\n");
+		pthread_cond_wait(&th->native_thread_data.sleep_cond,
+				  &th->interrupt_lock);
+		thread_debug("native_sleep: pthread_cond_wait end\n");
+	    }
+	    else {
+		int r;
+		thread_debug("native_sleep: pthread_cond_timedwait start (%d, %d)\n",
+			     ts.tv_sec, ts.tv_nsec);
+		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
+					   &th->interrupt_lock, &ts);
+		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
+	    }
+	    th->interrupt_function = 0;
+	}
+	pthread_mutex_unlock(&th->interrupt_lock);
+
+	th->status = prev_status;
+    }
+    GVL_UNLOCK_END();
+    thread_debug("native_sleep done\n");
+}
+
+static void
+native_thread_interrupt(yarv_thread_t *th)
+{
+    yarv_add_signal_thread_list(th);
+}
+
+struct yarv_signal_thread_list {
+    yarv_thread_t *th;
+    struct yarv_signal_thread_list *prev;
+    struct yarv_signal_thread_list *next;
+};
+
+static struct yarv_signal_thread_list signal_thread_list_anchor = {
+    0, 0, 0,
+};
+
+#define FGLOCK(lock, body) do { \
+    native_mutex_lock(lock); \
+    { \
+	body; \
+    } \
+    native_mutex_unlock(lock); \
+} while (0)
+
+static void
+print_signal_list(char *str)
+{
+    struct yarv_signal_thread_list *list =
+      signal_thread_list_anchor.next;
+    thread_debug("list (%s)> ", str);
+    while(list){
+	thread_debug("%p (%p), ", list->th, list->th->thread_id);
+	list = list->next;
+    }
+    thread_debug("\n");
+}
+
+static void
+yarv_add_signal_thread_list(yarv_thread_t *th)
+{
+    if (!th->native_thread_data.signal_thread_list) {
+	FGLOCK(&signal_thread_list_lock, {
+	    struct yarv_signal_thread_list *list =
+	      malloc(sizeof(struct yarv_signal_thread_list));
+
+	    if (list == 0) {
+		fprintf(stderr, "[FATAL] failed to allocate memory\n");
+		exit(1);
+	    }
+
+	    list->th = th;
+
+	    list->prev = &signal_thread_list_anchor;
+	    list->next = signal_thread_list_anchor.next;
+	    if (list->next) {
+		list->next->prev = list;
+	    }
+	    signal_thread_list_anchor.next = list;
+	    th->native_thread_data.signal_thread_list = list;
+	});
+    }
+}
+
+static void
+yarv_remove_signal_thread_list(yarv_thread_t *th)
+{
+    if (th->native_thread_data.signal_thread_list) {
+	FGLOCK(&signal_thread_list_lock, {
+	    struct yarv_signal_thread_list *list =
+	      (struct yarv_signal_thread_list *)
+		th->native_thread_data.signal_thread_list;
+
+	    list->prev->next = list->next;
+	    if (list->next) {
+		list->next->prev = list->prev;
+	    }
+	    th->native_thread_data.signal_thread_list = 0;
+	    list->th = 0;
+	    free(list);
+	});
+    }
+    else {
+	/* */
+    }
+}
+
+static pthread_t timer_thread_id;
+static void timer_thread_function(void);
+
+static void *
+thread_timer(void *dummy)
+{
+    while (system_working) {
+#ifdef HAVE_NANOSLEEP
+	struct timespec req, rem;
+	req.tv_sec = 0;
+	req.tv_nsec = 10 * 1000 * 1000;	/* 10 ms */
+	nanosleep(&req, &rem);
+#else
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 10000;     	/* 10 ms */
+	select(0, NULL, NULL, NULL, &tv);
+#endif
+	if (signal_thread_list_anchor.next) {
+	    FGLOCK(&signal_thread_list_lock, {
+		struct yarv_signal_thread_list *list;
+		list = signal_thread_list_anchor.next;
+		while (list) {
+		    native_thread_send_interrupt_signal(list->th);
+		    list = list->next;
+		}
+	    });
+	}
+	timer_thread_function();
+    }
+    return NULL;
+}
+
+static void
+rb_thread_create_timer_thread(void)
+{
+    rb_enable_interrupt();
+
+    if (!timer_thread_id) {
+	size_t stack_size = PTHREAD_STACK_MIN;
+	pthread_attr_t attr;
+	int err;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, stack_size);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);
+	if (err != 0) {
+	    rb_bug("rb_thread_create_timer_thread: return non-zero (%d)", err);
+	}
+    }
+    rb_disable_interrupt(); /* only timer thread recieve signal */
+}
+
+void
+rb_thread_reset_timer_thread(void)
+{
+    timer_thread_id = 0;
+    rb_thread_create_timer_thread();
+}
+
+#endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

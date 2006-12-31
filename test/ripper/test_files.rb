@@ -1,3 +1,5 @@
+begin
+
 require 'ripper'
 require 'find'
 require 'test/unit'
@@ -17,3 +19,7 @@ class TestRipper_Generic < Test::Unit::TestCase
     }
   end
 end
+
+rescue LoadError
+end
+  

@@ -53,7 +53,6 @@ static char **readline_attempted_completion_function(const char *text,
 static int
 readline_event()
 {
-    CHECK_INTS;
     rb_thread_schedule();
     return 0;
 }

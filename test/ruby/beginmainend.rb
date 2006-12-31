@@ -16,7 +16,7 @@ BEGIN {
 }
 
 # for scope check
-raise if defined?(local_begin1)
+#raise if defined?(local_begin1)
 raise unless defined?($global_begin1)
 raise unless defined?(::ConstBegin1)
 local_for_end2 = "e2"

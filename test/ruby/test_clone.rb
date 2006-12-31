@@ -23,6 +23,6 @@ class TestClone < Test::Unit::TestCase
 
     assert_raises(NoMethodError) {foo.test2}
 
-    assert_equal([M003, M002, M001], M003.ancestors)
+    assert_equal([M003, M002, M001, M002], M003.ancestors)
   end
 end

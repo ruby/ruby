@@ -77,7 +77,8 @@ set.rb
 shell
 shell.rb
 shellwords.rb
-singleton.rb
+# TODO: YARV cause error. why ...?
+# singleton.rb
 soap
 sync.rb
 tempfile.rb

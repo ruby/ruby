@@ -237,10 +237,9 @@ ID rb_sym2id(VALUE);
 #define T_MATCH  0x13
 #define T_SYMBOL 0x14
 
+#define T_VALUES 0x1a
 #define T_BLOCK  0x1b
 #define T_UNDEF  0x1c
-#define T_VARMAP 0x1d
-#define T_SCOPE  0x1e
 #define T_NODE   0x1f
 
 #define T_MASK   0x1f
@@ -274,10 +273,13 @@ VALUE rb_get_path(VALUE);
 #define FilePathValue(v) ((v) = rb_get_path(v))
 
 void rb_secure(int);
-RUBY_EXTERN int ruby_safe_level;
-#define rb_safe_level() (ruby_safe_level)
+int rb_safe_level();
 void rb_set_safe_level(int);
+void rb_set_safe_level_force(int);
 void rb_secure_update(VALUE);
+
+VALUE rb_errinfo(void);
+void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
@@ -351,6 +353,13 @@ struct RObject {
     struct st_table *iv_tbl;
 };
 
+struct RValues {
+    struct RBasic basic;
+    VALUE v1;
+    VALUE v2;
+    VALUE v3;
+};
+
 struct RClass {
     struct RBasic basic;
     struct st_table *iv_tbl;
@@ -370,12 +379,12 @@ struct RString {
     struct RBasic basic;
     union {
 	struct {
-	    long len;
-	    char *ptr;
-	    union {
-		long capa;
-		VALUE shared;
-	    } aux;
+    long len;
+    char *ptr;
+    union {
+	long capa;
+	VALUE shared;
+    } aux;
 	} heap;
 	char ary[RSTRING_EMBED_LEN_MAX];
     } as;
@@ -498,6 +507,7 @@ struct RBignum {
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
+#define RVALUES(obj) (R_CAST(RValues)(obj))
 
 #define FL_SINGLETON FL_USER0
 #define FL_MARK      (1<<5)
@@ -579,6 +589,7 @@ void rb_define_alias(VALUE,const char*,const char*);
 void rb_define_attr(VALUE,const char*,int,int);
 
 void rb_global_variable(VALUE*);
+void rb_register_mark_object(VALUE);
 void rb_gc_register_address(VALUE*);
 void rb_gc_unregister_address(VALUE*);
 
@@ -732,7 +743,6 @@ RUBY_EXTERN VALUE rb_eSyntaxError;
 RUBY_EXTERN VALUE rb_eLoadError;
 
 RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
-RUBY_EXTERN VALUE ruby_errinfo;
 
 static inline VALUE
 rb_class_of(VALUE obj)
@@ -796,14 +806,6 @@ typedef DWORD rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() GetCurrentThreadId()
 # define NATIVETHREAD_EQUAL(t1,t2) ((t1) == (t2))
 # define HAVE_NATIVETHREAD
-#endif
-#ifdef HAVE_NATIVETHREAD
-int is_ruby_native_thread(void);
-#else
-#define is_ruby_native_thread() (1)
-#endif
-#ifdef HAVE_NATIVETHREAD_KILL
-void ruby_native_thread_kill(int);
 #endif
 
 #if defined(__cplusplus)

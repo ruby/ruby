@@ -1,0 +1,310 @@
+/* -*-c-*- */
+/**********************************************************************
+
+  thread_win32.ci -
+
+  $Author$
+  $Date$
+
+  Copyright (C) 2004-2006 Koichi Sasada
+
+**********************************************************************/
+
+#ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
+
+#include <process.h>
+
+#define WIN32_WAIT_TIMEOUT 10	/* 10 ms */
+#undef Sleep
+
+#define native_thread_yield() Sleep(0)
+#define yarv_remove_signal_thread_list(th)
+
+static void
+Init_native_thread()
+{
+    yarv_thread_t *th = GET_THREAD();
+    DuplicateHandle(GetCurrentProcess(),
+		    GetCurrentThread(),
+		    GetCurrentProcess(),
+		    &th->thread_id, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+    th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+
+    thread_debug("initial thread (th: %p, thid: %p, event: %p)\n",
+		 th, GET_THREAD()->thread_id,
+		 th->native_thread_data.interrupt_event);
+}
+
+static void
+w32_show_error_message()
+{
+    LPVOID lpMsgBuf;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		  FORMAT_MESSAGE_FROM_SYSTEM |
+		  FORMAT_MESSAGE_IGNORE_INSERTS,
+		  NULL,
+		  GetLastError(),
+		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		  (LPTSTR) & lpMsgBuf, 0, NULL);
+    // {int *a=0; *a=0;}
+    MessageBox(NULL, (LPCTSTR) lpMsgBuf, "Error", MB_OK | MB_ICONINFORMATION);
+    //  exit(1);
+}
+
+static int
+w32_wait_event(HANDLE event, DWORD timeout, yarv_thread_t *th)
+{
+    HANDLE events[2];
+    int count = 0;
+    DWORD ret;
+
+    if (event) {
+	events[count++] = event;
+	thread_debug("  * handle: %p (count: %d)\n", event, count);
+    }
+
+    if (th) {
+	HANDLE intr = th->native_thread_data.interrupt_event;
+	ResetEvent(intr);
+	if (th->interrupt_flag) {
+	    SetEvent(intr);
+	}
+
+	events[count++] = intr;
+	thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
+    }
+
+    thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
+    ret = WaitForMultipleObjects(count, events, FALSE, timeout);
+    thread_debug("  WaitForMultipleObjects end (ret: %d)\n", ret);
+
+    if (ret == WAIT_OBJECT_0 + count - 1 && th) {
+	errno = EINTR;
+    }
+    if (ret == -1 && THREAD_DEBUG) {
+	int i;
+	DWORD dmy;
+	for (i = 0; i < count; i++) {
+	    thread_debug("  * error handle %d - %s\n", i,
+			 GetHandleInformation(events[i], &dmy) ? "OK" : "NG");
+	}
+    }
+    return ret;
+}
+
+static void
+native_sleep(yarv_thread_t *th, struct timeval *tv)
+{
+    DWORD msec;
+    if (tv) {
+	msec = tv->tv_sec * 1000 + tv->tv_usec / 1000;
+    }
+    else {
+	msec = INFINITE;
+    }
+
+    GVL_UNLOCK_BEGIN();
+    {
+	DWORD ret;
+	int status = th->status;
+	th->status = THREAD_STOPPED;
+	th->interrupt_function = native_thread_interrupt;
+	thread_debug("native_sleep start (%d)\n", (int)msec);
+	ret = w32_wait_event(0, msec, th);
+	thread_debug("native_sleep done (%d)\n", ret);
+	th->interrupt_function = 0;
+	th->status = status;
+    }
+    GVL_UNLOCK_END();
+}
+
+int
+native_mutex_lock(yarv_thread_lock_t *lock)
+{
+#if USE_WIN32_MUTEX
+    DWORD result;
+    while (1) {
+	thread_debug("native_mutex_lock: %p\n", *lock);
+	result = w32_wait_event(*lock, INFINITE, 0);
+	switch (result) {
+	case WAIT_OBJECT_0:
+	    /* get mutex object */
+	    thread_debug("acquire mutex: %p\n", *lock);
+	    return 0;
+	case WAIT_OBJECT_0 + 1:
+	    /* interrupt */
+	    errno = EINTR;
+	    thread_debug("acquire mutex interrupted: %p\n", *lock);
+	    return 0;
+	case WAIT_TIMEOUT:
+	    thread_debug("timeout mutex: %p\n", *lock);
+	    break;
+	case WAIT_ABANDONED:
+	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
+	    break;
+	default:
+	    rb_bug("win32_mutex_lock: unknown result (%d)", result);
+	    break;
+	}
+    }
+    return 0;
+#else
+    EnterCriticalSection(lock);
+    return 0;
+#endif
+}
+
+int
+native_mutex_unlock(yarv_thread_lock_t *lock)
+{
+#if USE_WIN32_MUTEX
+    thread_debug("release mutex: %p\n", *lock);
+    return ReleaseMutex(*lock);
+#else
+    LeaveCriticalSection(lock);
+    return 0;
+#endif
+}
+
+int
+native_mutex_trylock(yarv_thread_lock_t *lock)
+{
+#if USE_WIN32MUTEX
+    int result;
+    thread_debug("native_mutex_trylock: %p\n", *lock);
+    result = w32_wait_event(*lock, 1, 0);
+    thread_debug("native_mutex_trylock result: %d\n", result);
+    switch (result) {
+    case WAIT_OBJECT_0:
+	return 0;
+    case WAIT_TIMEOUT:
+	return EBUSY;
+    }
+    return EINVAL;
+#else
+    return TryEnterCriticalSection(lock) == 0;
+#endif
+}
+
+void
+native_mutex_initialize(yarv_thread_lock_t *lock)
+{
+#if USE_WIN32MUTEX
+    *lock = CreateMutex(NULL, FALSE, NULL);
+    // thread_debug("initialize mutex: %p\n", *lock);
+#else
+    InitializeCriticalSection(lock);
+#endif
+}
+
+NOINLINE(static int
+	 thread_start_func_2(yarv_thread_t *th, VALUE *stack_start));
+void static thread_cleanup_func(void *th_ptr);
+
+static unsigned int _stdcall
+thread_start_func_1(void *th_ptr)
+{
+    yarv_thread_t *th = th_ptr;
+    VALUE stack_start;
+    /* run */
+    th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+
+    thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
+		 th->thread_id, th->native_thread_data.interrupt_event);
+    thread_start_func_2(th, &stack_start);
+    thread_cleanup_func(th);
+
+    // native_mutex_unlock(&GET_VM()->global_interpreter_lock);
+
+    thread_debug("close handle - intr: %p, thid: %p\n",
+		 th->native_thread_data.interrupt_event, th->thread_id);
+    CloseHandle(th->native_thread_data.interrupt_event);
+    CloseHandle(th->thread_id);
+    thread_debug("thread deleted (th: %p)\n", th);
+    return 0;
+}
+
+static void make_timer_thread();
+
+static HANDLE
+w32_create_thread(DWORD stack_size, void *func, void *val)
+{
+    HANDLE handle;
+#ifdef __CYGWIN__
+    DWORD dmy;
+    handle = CreateThread(0, stack_size, func, val, 0, &dmy);
+#else
+    handle = (HANDLE) _beginthreadex(0, stack_size, func, val, 0, 0);
+#endif
+    return handle;
+}
+
+static int
+native_thread_create(yarv_thread_t *th)
+{
+    size_t stack_size = 4 * 1024 - sizeof(int);	/* 4KB */
+
+    if ((th->thread_id =
+	 w32_create_thread(stack_size, thread_start_func_1, th))
+	== 0) {
+	rb_raise(rb_eThreadError, "can't create Thread (%d)", errno);
+    }
+    if (THREAD_DEBUG) {
+	Sleep(0);
+	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %d\n",
+		     th, th->thread_id,
+		     th->native_thread_data.interrupt_event, stack_size);
+    }
+    return 0;
+}
+
+static void
+native_thread_apply_priority(yarv_thread_t *th)
+{
+    int priority = th->priority;
+    if (th->priority > 0) {
+	priority = THREAD_PRIORITY_ABOVE_NORMAL;
+    }
+    else if (th->priority < 0) {
+	priority = THREAD_PRIORITY_BELOW_NORMAL;
+    }
+    else {
+	priority = THREAD_PRIORITY_NORMAL;
+    }
+
+    SetThreadPriority(th->thread_id, priority);
+}
+
+static void
+native_thread_interrupt(yarv_thread_t *th)
+{
+    thread_debug("native_thread_interrupt: %p\n", th);
+    SetEvent(th->native_thread_data.interrupt_event);
+}
+
+static void timer_thread_function(void);
+
+static HANDLE timer_thread_handle = 0;
+
+static unsigned int _stdcall
+timer_thread_func(void *dummy)
+{
+    thread_debug("timer_thread\n");
+    while (system_working) {
+	Sleep(WIN32_WAIT_TIMEOUT);
+	timer_thread_function();
+    }
+    thread_debug("timer killed\n");
+    return 0;
+}
+
+void
+rb_thread_create_timer_thread(void)
+{
+    if (timer_thread_handle == 0) {
+	timer_thread_handle = w32_create_thread(1024, timer_thread_func, 0);
+    }
+}
+
+#endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

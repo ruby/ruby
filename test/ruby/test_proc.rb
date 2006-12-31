@@ -71,6 +71,7 @@ class TestProc < Test::Unit::TestCase
   def m(x)
     lambda { x }
   end
+
   def test_eq
     # [ruby-dev:22592]
     a = m(1)
@@ -88,8 +89,9 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_par
-    assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
-    assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
+    assert false, "TODO: block parameter |&b| not supported"
+    # assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
+    # assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
   end
 
   def test_safe
@@ -122,4 +124,19 @@ class TestProc < Test::Unit::TestCase
     assert_equal(safe + 1, proc {x.method(:inc).to_proc.call; $SAFE}.call)
     assert_equal(safe, $SAFE)
   end
+
+  def m2
+    "OK"
+  end
+
+  def block
+    method(:m2).to_proc
+  end
+
+  # [yarv-dev:777] block made by Method#to_proc
+  def test_method_to_proc
+    b = block()
+    assert_equal "OK", b.call
+  end
+
 end

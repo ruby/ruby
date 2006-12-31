@@ -1,3 +1,5 @@
+
+__END__
 require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'

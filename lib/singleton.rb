@@ -60,7 +60,7 @@
 #    and _dump(depth) hooks allows the (partially) resurrections of
 #    a previous state of ``the instance''.
 
-
+require 'thread'
 
 module Singleton
   #  disable build-in copying methods
@@ -72,65 +72,19 @@ module Singleton
   end
   
   private 
+
   #  default marshalling strategy
-  def _dump(depth=-1) 
+  def _dump(depth = -1) 
     ''
   end
-end
 
-
-class << Singleton
-  #  Method body of first instance call.
-  FirstInstanceCall = proc do
-    #  @__instance__ takes on one of the following values
-    #  * nil     -  before and after a failed creation
-    #  * false  -  during creation
-    #  * sub_class instance  -  after a successful creation
-    #  the form makes up for the lack of returns in progs
-    Thread.critical = true
-    if  @__instance__.nil?
-      @__instance__  = false
-      Thread.critical = false
-      begin
-        @__instance__ = new
-      ensure
-        if @__instance__
-          class <<self
-            remove_method :instance
-            def instance; @__instance__ end
-          end
-        else
-          @__instance__ = nil #  failed instance creation
-        end
-      end
-    elsif  _instantiate?()
-      Thread.critical = false    
-    else
-      @__instance__  = false
-      Thread.critical = false
-      begin
-        @__instance__ = new
-      ensure
-        if @__instance__
-          class <<self
-            remove_method :instance
-            def instance; @__instance__ end
-          end
-        else
-          @__instance__ = nil
-        end
-      end
-    end
-    @__instance__
-  end
-  
   module SingletonClassMethods  
     # properly clone the Singleton pattern - did you know
     # that duping doesn't copy class methods?  
     def clone
       Singleton.__init__(super)
     end
-    
+
     private
     
     #  ensure that the Singleton pattern is properly inherited   
@@ -142,46 +96,47 @@ class << Singleton
     def _load(str) 
       instance 
     end
-    
-    # waiting-loop hook
-    def _instantiate?()
-      while false.equal?(@__instance__)
-        Thread.critical = false
-        sleep(0.08)   # timeout
-        Thread.critical = true
+  end
+
+  class << Singleton
+    def __init__(klass)
+      klass.instance_eval {
+        @__instance__ = nil
+        @__mutex__ = Mutex.new
+      }
+      def klass.instance
+        return @__instance__ if @__instance__
+        @__mutex__.synchronize {
+          return @__instance__ if @__instance__
+          @__instance__ = new()
+        }
+        @__instance__
       end
-      @__instance__
+      klass
+    end
+    
+    private
+
+    #  extending an object with Singleton is a bad idea
+    undef_method :extend_object
+    
+    def append_features(mod)
+      #  help out people counting on transitive mixins
+      unless mod.instance_of?(Class)
+        raise TypeError, "Inclusion of the OO-Singleton module in module #{mod}"
+      end
+      super
+    end
+    
+    def included(klass)
+      super
+      klass.private_class_method  :new, :allocate
+      klass.extend SingletonClassMethods
+      Singleton.__init__(klass)
     end
   end
   
-  def __init__(klass)
-    klass.instance_eval { @__instance__ = nil }
-    class << klass
-      define_method(:instance,FirstInstanceCall)
-    end
-    klass
-  end
-  
-  private
-  #  extending an object with Singleton is a bad idea
-  undef_method :extend_object
-  
-  def append_features(mod)
-    #  help out people counting on transitive mixins
-    unless mod.instance_of?(Class)
-      raise TypeError, "Inclusion of the OO-Singleton module in module #{mod}"
-    end
-    super
-  end
-  
-  def included(klass)
-    super
-    klass.private_class_method  :new, :allocate
-    klass.extend SingletonClassMethods
-    Singleton.__init__(klass)
-  end
 end
- 
 
 
 if __FILE__ == $0
@@ -223,9 +178,9 @@ class << Ups
   def _instantiate?
     @enter.push Thread.current[:i]
     while false.equal?(@__instance__)
-      Thread.critical = false
+      @__mutex__.unlock
       sleep 0.08 
-      Thread.critical = true
+      @__mutex__.lock
     end
     @leave.push Thread.current[:i]
     @__instance__

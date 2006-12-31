@@ -1759,7 +1759,7 @@ gzfile_read_raw_rescue(VALUE arg)
 {
     struct gzfile *gz = (struct gzfile*)arg;
     VALUE str = Qnil;
-    if (rb_obj_is_kind_of(ruby_errinfo, rb_eNoMethodError)) {
+    if (rb_obj_is_kind_of(ruby_errinfo(), rb_eNoMethodError)) {
         str = rb_funcall(gz->io, id_read, 1, INT2FIX(GZFILE_READ_SIZE));
         if (!NIL_P(str)) {
             Check_Type(str, T_STRING);

@@ -71,7 +71,7 @@ VALUE rb_cSymbol;
 	RSTRING(str)->as.heap.len--;\
     }\
 } while (0)
-    
+
 #define RESIZE_CAPA(str,capacity) do {\
     if (STR_EMBED_P(str)) {\
 	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
@@ -201,7 +201,7 @@ str_new3(VALUE klass, VALUE str)
 	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
 	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
 	RSTRING(str2)->as.heap.aux.shared = str;
-	FL_SET(str2, ELTS_SHARED);
+    FL_SET(str2, ELTS_SHARED);
     }
 
     return str2;
@@ -719,7 +719,7 @@ rb_str_resize(VALUE str, long len)
 	    MEMCPY(ptr, RSTRING_PTR(str), char, RSTRING_LEN(str));
 	    RSTRING(str)->as.heap.ptr = ptr;
 	    STR_SET_NOEMBED(str);
-	}
+	    }
 	else if (RSTRING_LEN(str) < len || RSTRING_LEN(str) - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
 	}
@@ -1490,7 +1490,7 @@ succ_char(char *s)
  *     "***".succ         #=> "**+"
  */
 
-static VALUE
+VALUE
 rb_str_succ(VALUE orig)
 {
     VALUE str;
@@ -1822,7 +1822,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 		goto out_of_range;
 	    idx += RSTRING_LEN(str);
 	}
-	rb_str_splice(str, idx, 1, val);
+	    rb_str_splice(str, idx, 1, val);
 	return val;
 
       case T_REGEXP:
@@ -2321,9 +2321,9 @@ rb_str_replace(VALUE str, VALUE str2)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), len+1);
-	FL_SET(str, STR_ASSOC);
+	    FL_SET(str, STR_ASSOC);
 	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
-    }
+	}
     else {
 	rb_str_modify(str);
 	rb_str_resize(str, len);
@@ -4802,7 +4802,10 @@ sym_call(VALUE args, VALUE sym)
 static VALUE
 sym_to_proc(VALUE sym)
 {
-    return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
+    rb_notimplement();
+    return Qnil;
+    // TODO
+    // return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
 }
 
 

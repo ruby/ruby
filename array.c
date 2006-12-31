@@ -44,7 +44,7 @@ static void
 ary_iter_check(VALUE ary)
 {
     if (FL_TEST(ary, ARY_ITERLOCK)) {
-	rb_raise(rb_eRuntimeError, "can't modify array during iteration");
+      rb_raise(rb_eRuntimeError, "can't modify array during iteration");
     }
 }
 #define ARY_SORTLOCK FL_USER3
@@ -143,7 +143,7 @@ ary_new(VALUE klass, long len)
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
-    if (len == 0) len++;
+	if (len == 0) len++;
     RARRAY(ary)->ptr = ALLOC_N(VALUE, len);
     RARRAY(ary)->aux.capa = len;
 
@@ -250,8 +250,6 @@ rb_check_array_type(VALUE ary)
     return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
-static VALUE rb_ary_replace(VALUE, VALUE);
-
 /*
  *  call-seq:
  *     Array.new(size=0, obj=nil)
@@ -325,7 +323,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 	rb_raise(rb_eArgError, "array size too big");
     }
     rb_ary_modify(ary);
-    RESIZE_CAPA(ary, len);
+	RESIZE_CAPA(ary, len);
     if (rb_block_given_p()) {
 	long i;
 
@@ -543,10 +541,10 @@ rb_ary_shift(VALUE ary)
     top = RARRAY_PTR(ary)[0];
     if (!ARY_SHARED_P(ary)) {
 	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
-	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
+	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
 	    RARRAY(ary)->len--;
-	    return top;
-	}
+	return top;
+    }
 	RARRAY_PTR(ary)[0] = Qnil;
 	ary_make_shared(ary);
     }
@@ -590,7 +588,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     if (ARY_SHARED_P(ary)) {
 	RARRAY(ary)->ptr += n;
 	RARRAY(ary)->len -= n;
-    }
+	}
     else {
 	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+n, VALUE, RARRAY_LEN(ary)-n);
 	RARRAY(ary)->len -= n;
@@ -675,7 +673,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     if (len == 0) return ary_new(klass, 0);
 
     shared = ary_make_shared(ary);
-    ptr = RARRAY_PTR(ary);
+	ptr = RARRAY_PTR(ary);
     ary2 = ary_alloc(klass);
     RARRAY(ary2)->ptr = ptr + beg;
     RARRAY(ary2)->len = len;
@@ -775,8 +773,8 @@ rb_ary_at(VALUE ary, VALUE pos)
 /*
  *  call-seq:
  *     array.first     ->   obj or nil
- *     array.first(n)  -> an_array
- *
+ *     array.first(n)  ->   an_array
+ *  
  *  Returns the first element, or the first +n+ elements, of the array.
  *  If the array is empty, the first form returns <code>nil</code>, and the
  *  second form returns an empty array.
@@ -931,7 +929,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     long i = RARRAY_LEN(ary);
 
     if (rb_scan_args(argc, argv, "01", &val) == 0) {
-	RETURN_ENUMERATOR(ary, 0, 0);
+	    RETURN_ENUMERATOR(ary, 0, 0);
 	while (i--) {
 	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i])))
 		return LONG2NUM(i);
@@ -1145,11 +1143,23 @@ each_i(VALUE ary)
  *     a -- b -- c --
  */
 
+VALUE yarv_invoke_Array_each_special_block(VALUE ary);
+
 VALUE
 rb_ary_each(VALUE ary)
 {
+    long i;
+    VALUE val;
+
     RETURN_ENUMERATOR(ary, 0, 0);
+
+    val = yarv_invoke_Array_each_special_block(ary);
+    if(val != Qundef){
+	return val;
+    }
+
     ITERATE(each_i, ary);
+    return ary;
 }
 
 static VALUE
@@ -1158,7 +1168,7 @@ each_index_i(VALUE ary)
     long i;
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	rb_yield(LONG2NUM(i));
+      rb_yield(LONG2NUM(i));
     }
     return ary;
 }
@@ -1530,7 +1540,7 @@ sort_i(VALUE ary)
     data.ary = ary;
     data.ptr = RARRAY_PTR(ary); data.len = RARRAY_LEN(ary);
     ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE),
-	       rb_block_given_p()?sort_1:sort_2, &data);
+	  rb_block_given_p()?sort_1:sort_2, &data);
     return ary;
 }
 
@@ -1890,7 +1900,6 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
     return rb_ary_delete_at(ary, NUM2LONG(arg1));
 }
 
-
 static VALUE
 reject_bang_i(VALUE ary)
 {
@@ -1905,10 +1914,10 @@ reject_bang_i(VALUE ary)
 	}
 	i2++;
     }
+
     if (RARRAY_LEN(ary) == i2) return Qnil;
     if (i2 < RARRAY_LEN(ary))
 	RARRAY(ary)->len = i2;
-
     return ary;
 }
 
@@ -2075,7 +2084,7 @@ rb_ary_transpose(VALUE ary)
  *     a                              #=> ["x", "y", "z"]
  */
 
-static VALUE
+VALUE
 rb_ary_replace(VALUE copy, VALUE orig)
 {
     VALUE shared;
@@ -2087,7 +2096,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
     if (copy == orig) return copy;
     shared = ary_make_shared(orig);
     ptr = RARRAY(copy)->ptr;
-    xfree(ptr);
+	xfree(ptr);
     RARRAY(copy)->ptr = RARRAY(shared)->ptr;
     RARRAY(copy)->len = RARRAY(shared)->len;
     RARRAY(copy)->aux.shared = shared;
@@ -2804,16 +2813,16 @@ flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
     rb_ary_push(memo, id);
     rb_ary_splice(ary, idx, 1, ary2);
     if (level != 0) {
-	while (i < lim) {
-	    VALUE tmp;
+    while (i < lim) {
+	VALUE tmp;
 
-	    tmp = rb_check_array_type(rb_ary_elt(ary, i));
-	    if (!NIL_P(tmp)) {
+	tmp = rb_check_array_type(rb_ary_elt(ary, i));
+	if (!NIL_P(tmp)) {
 		n = flatten(ary, i, tmp, memo, level);
-		i += n; lim += n;
-	    }
-	    i++;
+	    i += n; lim += n;
 	}
+	i++;
+    }
     }
     rb_ary_pop(memo);
 
@@ -2822,7 +2831,7 @@ flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
 
 /*
  *  call-seq:
- *     array.flatten!        -> array or nil
+ *     array.flatten! -> array or nil
  *     array.flatten!(level) -> array or nil
  *  
  *  Flattens _self_ in place.
@@ -2831,9 +2840,9 @@ flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
  *  argument determins the level of recursion to flatten.
  *     
  *     a = [ 1, 2, [3, [4, 5] ] ]
- *     a.flatten!    #=> [1, 2, 3, 4, 5]
- *     a.flatten!    #=> nil
- *     a             #=> [1, 2, 3, 4, 5]
+ *     a.flatten!   #=> [1, 2, 3, 4, 5]
+ *     a.flatten!   #=> nil
+ *     a            #=> [1, 2, 3, 4, 5]
  *     a = [ 1, 2, [3, [4, 5] ] ]
  *     a.flatten!(1) #=> [1, 2, 3, [4, 5]]
  */

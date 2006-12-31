@@ -19,7 +19,11 @@
 
 /* to link startup code with ObjC support */
 #if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
-static void objcdummyfunction( void ) { objc_msgSend(); }
+static void
+objcdummyfunction(void)
+{
+    objc_msgSend();
+}
 #endif
 
 int
@@ -37,10 +41,9 @@ main(int argc, char **argv, char **envp)
 #endif
 
     {
-        RUBY_INIT_STACK
-        ruby_init();
-        ruby_options(argc, argv);
-        ruby_run();
+	RUBY_INIT_STACK ruby_init();
+    ruby_options(argc, argv);
+    ruby_run();
     }
     return 0;
 }

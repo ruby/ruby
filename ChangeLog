@@ -1,3 +1,7 @@
+Mon Jan 01 00:00:00 2007  Koichi Sasada <ko1@atdot.net>
+
+	* Merge YARV
+
 Sun Dec 31 16:22:48 2006  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c: Fix Array#reject.

@@ -38,6 +38,10 @@ VALUE rb_ary_new2(long);
 VALUE rb_ary_new3(long,...);
 VALUE rb_ary_new4(long, const VALUE *);
 void rb_ary_free(VALUE);
+VALUE rb_values_new(long,...);
+VALUE rb_values_new2(long, const VALUE *);
+VALUE rb_values_from_ary(VALUE);
+VALUE rb_ary_from_values(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_aref(int, VALUE*, VALUE);
 void rb_ary_store(VALUE, long, VALUE);
@@ -64,6 +68,7 @@ VALUE rb_ary_assoc(VALUE, VALUE);
 VALUE rb_ary_rassoc(VALUE, VALUE);
 VALUE rb_ary_includes(VALUE, VALUE);
 VALUE rb_ary_cmp(VALUE, VALUE);
+VALUE rb_ary_replace(VALUE copy, VALUE orig);
 VALUE rb_check_array_value(VALUE);
 VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 /* bignum.c */
@@ -226,9 +231,7 @@ VALUE rb_apply(VALUE, ID, VALUE);
 void rb_backtrace(void);
 ID rb_frame_this_func(void);
 VALUE rb_obj_instance_eval(int, VALUE*, VALUE);
-VALUE rb_obj_instance_exec(int, VALUE*, VALUE);
 VALUE rb_mod_module_eval(int, VALUE*, VALUE);
-VALUE rb_mod_module_exec(int, VALUE*, VALUE);
 void rb_load(VALUE, int);
 void rb_load_protect(VALUE, int, int*);
 NORETURN(void rb_jump_tag(int));
@@ -271,10 +274,9 @@ VALUE rb_thread_wakeup(VALUE);
 VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
-void rb_thread_interrupt(void);
 void rb_thread_trap_eval(VALUE, int, int);
-void rb_thread_signal_raise(const char*); /* should pass literal */
-void rb_thread_signal_exit(void);
+void rb_thread_signal_raise(void *, const char*); /* should pass literal */
+void rb_thread_signal_exit(void *);
 int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 void rb_thread_wait_for(struct timeval);
 VALUE rb_thread_current(void);
@@ -450,7 +452,7 @@ const char* rb_get_kcode(void);
 /* ruby.c */
 RUBY_EXTERN VALUE rb_argv;
 RUBY_EXTERN VALUE rb_argv0;
-void rb_load_file(const char*);
+void *rb_load_file(const char*);
 void ruby_script(const char*);
 void ruby_prog_init(void);
 void ruby_set_argv(int, char**);
@@ -568,11 +570,9 @@ VALUE rb_mod_remove_const(VALUE, VALUE);
 int rb_const_defined(VALUE, ID);
 int rb_const_defined_at(VALUE, ID);
 int rb_const_defined_from(VALUE, ID);
-int rb_const_defined_fallback(VALUE, ID, struct RNode *);
 VALUE rb_const_get(VALUE, ID);
 VALUE rb_const_get_at(VALUE, ID);
 VALUE rb_const_get_from(VALUE, ID);
-VALUE rb_const_get_fallback(VALUE, ID, struct RNode *);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_mod_const_missing(VALUE,VALUE);
 VALUE rb_cvar_defined(VALUE, ID);
@@ -587,5 +587,12 @@ VALUE rb_mod_remove_cvar(VALUE, VALUE);
 /* version.c */
 void ruby_show_version(void);
 void ruby_show_copyright(void);
+
+ID rb_frame_callee(void);
+VALUE rb_str_succ(VALUE);
+VALUE rb_time_succ(VALUE);
+void Init_stack(VALUE*);
+void rb_frame_pop(void);
+NORETURN(void rb_thread_start_1(void));
 
 #endif /* RUBY_INTERN_H */

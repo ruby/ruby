@@ -124,6 +124,7 @@ enum node_type {
     NODE_ATTRASGN,
     NODE_PRELUDE,
     NODE_LAMBDA,
+    NODE_OPTBLOCK,
     NODE_LAST
 };
 
@@ -153,9 +154,6 @@ typedef struct RNode {
     } u3;
 } NODE;
 
-extern NODE *ruby_cref;
-extern NODE *ruby_top_cref;
-
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
 /* 0..4:T_TYPES, 5:FL_MARK, 6:reserved, 7:NODE_NEWLINE */
@@ -169,7 +167,7 @@ extern NODE *ruby_top_cref;
     RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|(((t)<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
-#define NODE_LMASK  (((VALUE)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
+#define NODE_LMASK  (((long)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
 #define nd_line(n) ((unsigned int)(((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK))
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))
@@ -197,6 +195,7 @@ extern NODE *ruby_top_cref;
 #define nd_cflag u2.id
 #define nd_cval  u3.value
 
+#define nd_oid   u1.id
 #define nd_cnt   u3.cnt
 #define nd_tbl   u1.tbl
 
@@ -217,7 +216,7 @@ extern NODE *ruby_top_cref;
 #define nd_mid   u2.id
 #define nd_args  u3.node
 
-#define nd_noex  u1.id
+#define nd_noex  u3.id
 #define nd_defn  u3.node
 
 #define nd_cfnc  u1.cfunc
@@ -228,7 +227,6 @@ extern NODE *ruby_top_cref;
 
 #define nd_modl  u1.id
 #define nd_clss  u1.value
-#define nd_vis   u2.argc
 
 #define nd_beg   u1.node
 #define nd_end   u2.node
@@ -240,10 +238,12 @@ extern NODE *ruby_top_cref;
 #define nd_tag   u1.id
 #define nd_tval  u2.value
 
+#define nd_visi  u2.argc
+
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
-#define NEW_METHOD(n,x) NEW_NODE(NODE_METHOD,x,n,0)
-#define NEW_FBODY(n,i,o) NEW_NODE(NODE_FBODY,n,i,o)
+#define NEW_METHOD(n,x,v) NEW_NODE(NODE_METHOD,x,n,v)
+#define NEW_FBODY(n,i) NEW_NODE(NODE_FBODY,i,n,0)
 #define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,p,i,NEW_RFUNC(a,d))
 #define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_RFUNC(a,d))
 #define NEW_CFUNC(f,c) NEW_NODE(NODE_CFUNC,f,c,0)
@@ -329,6 +329,7 @@ extern NODE *ruby_top_cref;
 #define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(b),0)
 #define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
+#define NEW_CREF(c) (NEW_NODE(NODE_CREF,0,0,c))
 #define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
 #define NEW_ATTRSET(a) NEW_NODE(NODE_ATTRSET,a,0,0)
@@ -343,23 +344,27 @@ extern NODE *ruby_top_cref;
 #define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
+#define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
 
-#define NOEX_PUBLIC    0
-#define NOEX_NOSUPER   1
-#define NOEX_PRIVATE   2
-#define NOEX_PROTECTED 4 
-#define NOEX_LOCAL     8
-#define NOEX_MASK      14
+#define NOEX_PUBLIC    0x00
+#define NOEX_NOSUPER   0x01
+#define NOEX_PRIVATE   0x02
+#define NOEX_PROTECTED 0x04
+#define NOEX_LOCAL     0x08
+#define NOEX_MASK      0x0E /* 1110 */
 
 #define NOEX_UNDEF     NOEX_NOSUPER
-#define NOEX_RECV      16
+
+#define NOEX_MODFUNC   0x10
+#define NOEX_SUPER     0x20
+#define NOEX_VCALL     0x40
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 
-NODE *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
-NODE *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_file(VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
+NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_file(volatile VALUE, const char*, VALUE, int);
 
 NODE *rb_compile_cstr(const char*, const char*, int, int);
 NODE *rb_compile_string(const char*, VALUE, int);
@@ -392,99 +397,6 @@ typedef unsigned int rb_event_t;
 typedef void (*rb_event_hook_func_t)(rb_event_t,NODE*,VALUE,ID,VALUE);
 void rb_add_event_hook(rb_event_hook_func_t,rb_event_t);
 int rb_remove_event_hook(rb_event_hook_func_t);
-
-#if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
-#include <ucontext.h>
-#define USE_CONTEXT
-#endif
-#include <setjmp.h>
-#include "st.h"
-
-#ifdef USE_CONTEXT
-typedef struct {
-    ucontext_t context;
-    volatile int status;
-} rb_jmpbuf_t[1];
-#else
-typedef jmp_buf rb_jmpbuf_t;
-#endif
-
-enum thread_status {
-    THREAD_TO_KILL,
-    THREAD_RUNNABLE,
-    THREAD_STOPPED,
-    THREAD_KILLED,
-};
-
-typedef struct thread * rb_thread_t;
-
-struct thread {
-    struct thread *next, *prev;
-    rb_jmpbuf_t context;
-#if (defined _WIN32 && !defined _WIN32_WCE) || defined __CYGWIN__
-    unsigned long win32_exception_list;
-#endif
-
-    VALUE result;
-
-    long   stk_len;
-    long   stk_max;
-    VALUE *stk_ptr;
-    VALUE *stk_pos;
-#ifdef __ia64
-    long   bstr_len;
-    long   bstr_max;
-    VALUE *bstr_ptr;
-    VALUE *bstr_pos;
-#endif
-
-    struct FRAME *frame;
-    struct SCOPE *scope;
-    struct RVarmap *dyna_vars;
-    struct BLOCK *block;
-    struct iter *iter;
-    struct tag *tag;
-    VALUE wrapper;
-    NODE *cref;
-    struct ruby_env *anchor;
-
-    int flags;		/* misc. states (rb_trap_immediate/raised) */
-
-    NODE *node;
-
-    int tracing;
-    VALUE errinfo;
-    VALUE last_status;
-    VALUE last_line;
-    VALUE last_match;
-
-    int safe;
-
-    enum thread_status status;
-    int wait_for;
-    int fd;
-    rb_fdset_t readfds;
-    rb_fdset_t writefds;
-    rb_fdset_t exceptfds;
-    int select_value;
-    double delay;
-    rb_thread_t join;
-
-    int abort;
-    int priority;
-    VALUE thgroup;
-
-    st_table *locals;
-
-    VALUE thread;
-
-    VALUE sandbox;
-};
-
-extern VALUE (*ruby_sandbox_save)(struct thread *); 
-extern VALUE (*ruby_sandbox_restore)(struct thread *); 
-extern rb_thread_t curr_thread;
-extern rb_thread_t main_thread;
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

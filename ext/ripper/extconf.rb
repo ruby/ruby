@@ -4,6 +4,9 @@ require 'mkmf'
 require 'rbconfig'
 
 def main
+  Logging.message "YARV doesn't support Ripper"
+  return
+
   unless find_executable('bison')
     unless File.exist?('ripper.c') or File.exist?("#{$srcdir}/ripper.c")
       Logging.message 'missing bison; abort'

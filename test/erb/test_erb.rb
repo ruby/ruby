@@ -9,7 +9,7 @@ class TestERB < Test::Unit::TestCase
     e = assert_raise(MyError) {
       erb.result
     }
-    assert_equal("(erb):1", e.backtrace[0])
+    assert_equal("(erb):1:in `raise'", e.backtrace[0])
   end
 
   def test_with_filename
@@ -18,7 +18,7 @@ class TestERB < Test::Unit::TestCase
     e = assert_raise(MyError) {
       erb.result
     }
-    assert_equal("test filename:1", e.backtrace[0])
+    assert_equal("test filename:1:in `raise'", e.backtrace[0])
   end
 
   def test_without_filename_with_safe_level
@@ -26,7 +26,7 @@ class TestERB < Test::Unit::TestCase
     e = assert_raise(MyError) {
       erb.result
     }
-    assert_equal("(erb):1", e.backtrace[0])
+    assert_equal("(erb):1:in `raise'", e.backtrace[0])
   end
 
   def test_with_filename_and_safe_level
@@ -35,6 +35,6 @@ class TestERB < Test::Unit::TestCase
     e = assert_raise(MyError) {
       erb.result
     }
-    assert_equal("test filename:1", e.backtrace[0])
+    assert_equal("test filename:1:in `raise'", e.backtrace[0])
   end
 end

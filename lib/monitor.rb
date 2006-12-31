@@ -41,13 +41,14 @@ reads a line from ARGF and push it to buf, then call
 empty_cond.signal.
 
 =end
-  
+
+require 'thread'
 
 #
 # Adds monitor functionality to an arbitrary object by mixing the module with
 # +include+.  For example:
 #
-#    require 'monitor.rb'
+#    require 'monitor'
 #    
 #    buf = []
 #    buf.extend(MonitorMixin)
@@ -86,70 +87,63 @@ module MonitorMixin
   class ConditionVariable
     class Timeout < Exception; end
     
-    # Create a new timer with the argument timeout, and add the
-    # current thread to the list of waiters.  Then the thread is
-    # stopped.  It will be resumed when a corresponding #signal 
-    # occurs.
     def wait(timeout = nil)
       @monitor.funcall(:mon_check_owner)
       timer = create_timer(timeout)
-      
-      Thread.critical = true
-      count = @monitor.funcall(:mon_exit_for_cond)
-      @waiters.push(Thread.current)
+      count = nil
 
-      begin
-	Thread.stop
-        return true
-      rescue Timeout
-        return false
-      ensure
-	Thread.critical = true
-	if timer && timer.alive?
-	  Thread.kill(timer)
-	end
-	if @waiters.include?(Thread.current)  # interrupted?
-	  @waiters.delete(Thread.current)
-	end
+      @mutex.synchronize{
+        count = @monitor.funcall(:mon_exit_for_cond)
+        @waiters.push(Thread.current)
+
+        begin
+          @mutex.sleep
+          return true
+        rescue Timeout
+          return false
+        end
+      }
+    ensure
+      @mutex.synchronize {
+        if timer && timer.alive?
+          Thread.kill(timer)
+        end
+        if @waiters.include?(Thread.current)  # interrupted?
+          @waiters.delete(Thread.current)
+        end
         @monitor.funcall(:mon_enter_for_cond, count)
-	Thread.critical = false
-      end
+      }
     end
     
-
-    # call #wait while the supplied block returns +true+.
     def wait_while
       while yield
 	wait
       end
     end
     
-    # call #wait until the supplied block returns +true+.
     def wait_until
       until yield
 	wait
       end
     end
     
-    # Wake up and run the next waiter
     def signal
       @monitor.funcall(:mon_check_owner)
-      Thread.critical = true
-      t = @waiters.shift
-      t.wakeup if t
-      Thread.critical = false
+      @mutex.synchronize {
+        t = @waiters.shift
+        t.wakeup if t
+      }
       Thread.pass
     end
     
-    # Wake up all the waiters.
     def broadcast
       @monitor.funcall(:mon_check_owner)
-      Thread.critical = true
-      for t in @waiters
-	t.wakeup
-      end
-      @waiters.clear
-      Thread.critical = false
+      @mutex.synchronize {
+        for t in @waiters
+          t.wakeup
+        end
+        @waiters.clear
+      }
       Thread.pass
     end
     
@@ -162,6 +156,7 @@ module MonitorMixin
     def initialize(monitor)
       @monitor = monitor
       @waiters = []
+      @mutex = Mutex.new
     end
 
     def create_timer(timeout)
@@ -170,7 +165,6 @@ module MonitorMixin
 	return Thread.start {
 	  Thread.pass
 	  sleep(timeout)
-	  Thread.critical = true
 	  waiter.raise(Timeout.new)
 	}
       else
@@ -189,15 +183,15 @@ module MonitorMixin
   #
   def mon_try_enter
     result = false
-    Thread.critical = true
-    if @mon_owner.nil?
-      @mon_owner = Thread.current
-    end
-    if @mon_owner == Thread.current
-      @mon_count += 1
-      result = true
-    end
-    Thread.critical = false
+    @mon_mutex.synchronize {
+      if @mon_owner.nil?
+        @mon_owner = Thread.current
+      end
+      if @mon_owner == Thread.current
+        @mon_count += 1
+        result = true
+      end
+    }
     return result
   end
   # For backward compatibility
@@ -207,10 +201,10 @@ module MonitorMixin
   # Enters exclusive section.
   #
   def mon_enter
-    Thread.critical = true
-    mon_acquire(@mon_entering_queue)
-    @mon_count += 1
-    Thread.critical = false
+    @mon_mutex.synchronize {
+      mon_acquire(@mon_entering_queue)
+      @mon_count += 1
+    }
   end
   
   #
@@ -218,12 +212,12 @@ module MonitorMixin
   #
   def mon_exit
     mon_check_owner
-    Thread.critical = true
-    @mon_count -= 1
-    if @mon_count == 0
-      mon_release
-    end
-    Thread.critical = false
+    @mon_mutex.synchronize {
+      @mon_count -= 1
+      if @mon_count == 0
+        mon_release
+      end
+    }
     Thread.pass
   end
 
@@ -244,9 +238,6 @@ module MonitorMixin
   
   #
   # FIXME: This isn't documented in Nutshell.
-  # 
-  # Create a new condition variable for this monitor.
-  # This facilitates control of the monitor with #signal and #wait.
   #
   def new_cond
     return ConditionVariable.new(self)
@@ -259,16 +250,14 @@ module MonitorMixin
     mon_initialize
   end
 
-  # called by initialize method to set defaults for instance variables.
   def mon_initialize
     @mon_owner = nil
     @mon_count = 0
     @mon_entering_queue = []
     @mon_waiting_queue = []
+    @mon_mutex = Mutex.new
   end
 
-  # Throw a ThreadError exception if the current thread
-  # does't own the monitor
   def mon_check_owner
     if @mon_owner != Thread.current
       raise ThreadError, "current thread not owner"
@@ -278,8 +267,8 @@ module MonitorMixin
   def mon_acquire(queue)
     while @mon_owner && @mon_owner != Thread.current
       queue.push(Thread.current)
-      Thread.stop
-      Thread.critical = true
+      @mutex.unlock_and_stop
+      @mutex.lock
     end
     @mon_owner = Thread.current
   end
@@ -304,17 +293,6 @@ module MonitorMixin
   end
 end
 
-# Monitors provide means of mutual exclusion for Thread programming.
-# A critical region is created by means of the synchronize method,
-# which takes a block.
-# The condition variables (created with #new_cond) may be used 
-# to control the execution of a monitor with #signal and #wait.
-#
-# the Monitor class wraps MonitorMixin, and provides aliases
-#  alias try_enter try_mon_enter
-#  alias enter mon_enter
-#  alias exit mon_exit
-# to access its methods more concisely.
 class Monitor
   include MonitorMixin
   alias try_enter try_mon_enter

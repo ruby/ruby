@@ -7,6 +7,7 @@ end
 
 class TestTCPSocket < Test::Unit::TestCase
   def test_recvfrom # [ruby-dev:24705]
+assert false, "TODO: doesn't work on mswin32" if /mswin32/ =~ RUBY_PLATFORM
     c = s = nil
     svr = TCPServer.new("localhost", 0)
     th = Thread.new {

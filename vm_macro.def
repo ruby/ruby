@@ -1,0 +1,330 @@
+/* -*- c -*-                    */
+/* do not use C++ style comment */
+/*                              */
+
+
+MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
+{
+    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
+	yarv_proc_t *po;
+	VALUE proc;
+
+	proc = TOPN(0);
+	if (proc != Qnil) {
+	    if (!yarv_obj_is_proc(proc)) {
+		proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+		if (!yarv_obj_is_proc(proc)) {
+		    rb_raise(rb_eTypeError,
+			     "wrong argument type %s (expected Proc)",
+			     rb_obj_classname(proc));
+		}
+	    }
+	    GetProcPtr(proc, po);
+	    blockptr = &po->block;
+	    GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
+	}
+	INC_SP(-1);
+    }
+    else if (blockiseq) {
+	blockptr = GET_BLOCK_PTR_IN_CFP(reg_cfp);
+	blockptr->iseq = blockiseq;
+	blockptr->proc = 0;
+    }
+
+    /* expand top of stack? */
+    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+	VALUE ary = TOPN(0);
+	VALUE *ptr, *dst;
+	int i;
+	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
+
+	if (NIL_P(tmp)) {
+	    tmp = rb_ary_new3(1, ary);
+	}
+	ary = tmp;
+
+	ptr = RARRAY_PTR(ary);
+	dst = GET_SP() - 1;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    dst[i] = ptr[i];
+	}
+	num += i - 1;
+	INC_SP(i - 1);
+    }
+}
+
+
+MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
+{
+    yarv_control_frame_t *cfp =
+      push_frame(th, 0, FRAME_MAGIC_CFUNC,
+		 recv, (VALUE) blockptr, 0, GET_SP(), 0, 1);
+    cfp->callee_id = id; /* TODO */
+    cfp->method_id = id;
+    cfp->method_klass = klass;
+    
+    reg_cfp->sp -= num + 1;
+
+    val = call_cfunc(mn->nd_cfnc, recv, mn->nd_argc, num, reg_cfp->sp + 1);
+    if (reg_cfp != th->cfp + 1) {
+	SDR2(reg_cfp);
+	SDR2(th->cfp-5);
+	rb_bug("cfp consistency error - send");
+	th->cfp = reg_cfp;
+    }
+    pop_frame(th);
+}
+
+MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
+{
+    yarv_iseq_t *niseq;
+    VALUE *sp = GET_SP();
+    VALUE *rsp = sp - num - 1;
+    int opt_pc = 0, clear_local_size, i;
+
+    /* TODO: eliminate it */
+    GetISeqPtr(niseqval, niseq);
+
+    clear_local_size = niseq->local_size - num;
+    /* set arguments */
+    if (niseq->arg_simple) {
+	if (niseq->argc != num) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%lu for %d)",
+		     (unsigned long)num, niseq->argc);
+	}
+    }
+    else {
+	/* check optional arguments */
+	if (niseq->arg_opts) {
+	    int iseq_argc = niseq->argc;
+	    int opts = niseq->arg_opts - 1;
+
+	    if (num < iseq_argc ||
+		(niseq->arg_rest == 0 && num > iseq_argc + opts)) {
+		if (0) {
+		    printf("num: %lu, iseq_argc: %d, opts: %d\n",
+			   (unsigned long)num, iseq_argc, opts);
+		}
+		rb_raise(rb_eArgError,
+			 "wrong number of arguments (%lu for %d)",
+			 (unsigned long)num, iseq_argc);
+	    }
+
+	    if (0) {
+		printf("num: %lu, opts: %d, iseq_argc: %d\n",
+		       (unsigned long)num, opts, iseq_argc);
+	    }
+	    if (num - iseq_argc < opts) {
+		opt_pc = niseq->arg_opt_tbl[num - iseq_argc];
+		sp += opts - (num - iseq_argc);
+		num += opts - (num - iseq_argc);
+		clear_local_size = niseq->local_size - (iseq_argc + opts);
+	    }
+	    else {
+		opt_pc = niseq->arg_opt_tbl[opts];
+	    }
+	}
+	/* check rest */
+	if (niseq->arg_rest == -1) {
+	    if (niseq->arg_opts) {
+		num = niseq->argc + niseq->arg_opts;
+	    }
+	    else {
+		num = niseq->argc;
+	    }
+	    sp = &rsp[1 + num + 1];
+	}
+	else if (niseq->arg_rest != 0) {
+	    int rest = niseq->arg_rest - 1;
+	    int pack_size = num - rest;
+	    if (0) {
+		printf("num: %lu, rest: %d, ps: %d\n",
+		       (unsigned long)num, niseq->arg_rest, pack_size);
+	    }
+	    if (pack_size < 0) {
+		rb_raise(rb_eArgError,
+			 "wrong number of arguments (%lu for %d)",
+			 (unsigned long)num, rest - niseq->arg_opts);
+	    }
+
+	    /*
+	     * def m(x,y,z,*a) =>
+	     * x, y, z, a, b, c <SP> => x, y, z, [a,b,c], <SP>
+	     */
+	    rsp[1 + rest] = rb_ary_new4(pack_size, &rsp[1 + rest]);
+	    sp = &rsp[2 + rest];
+	    num = rest + 1;
+	    clear_local_size = niseq->local_size - rest - 1;
+	}
+
+	/* block argument */
+	if (niseq->arg_block != 0) {
+	    VALUE arg_block_val = Qnil;
+
+	    if (!((niseq->arg_rest && num == niseq->arg_rest) ||
+		  (niseq->arg_opts
+		   && num == niseq->argc + niseq->arg_opts - 1)
+		  || num == niseq->argc)) {
+		rb_raise(rb_eArgError,
+			 "wrong number of arguments (%lu for %d)",
+			 (unsigned long)num, niseq->argc);
+	    }
+
+	    if (blockptr) {
+		/* make Proc object */
+		if (blockptr->proc == 0) {
+		    yarv_proc_t *proc;
+		    reg_cfp->sp = sp;
+		    arg_block_val = th_make_proc(th, GET_CFP(), blockptr);
+		    GetProcPtr(arg_block_val, proc);
+		    blockptr = &proc->block;
+		}
+		else {
+		    arg_block_val = blockptr->proc;
+		}
+	    }
+
+	    rsp[1 + niseq->arg_block - 1] = arg_block_val;
+	    sp++;
+	    clear_local_size--;
+	}
+    }
+    /* stack overflow check */
+    if (CHECK_STACK_OVERFLOW(th, GET_CFP(), niseq->stack_max + 0x100)) {
+	rb_exc_raise(sysstack_error);
+    }
+
+    for (i = 0; i < clear_local_size; i++) {
+	*sp++ = Qnil;
+    }
+
+    {
+	if (0 && (flag & VM_CALL_TAILCALL_BIT)) {
+	    th->cfp++;
+	    push_frame(th, niseq, FRAME_MAGIC_METHOD,
+		       recv, (VALUE) blockptr,
+		       niseq->iseq_encoded + opt_pc, sp, 0, 0);
+	}
+	else if (0 &&
+		 (flag & VM_CALL_TAILRECURSION_BIT) && niseq == GET_ISEQ()) {
+	    /* do nothing */
+	    GET_CFP()->self = recv;
+	    SET_LFP(sp);
+	    SET_DFP(sp);
+	    *sp++ = (VALUE) blockptr;
+	    reg_cfp->sp = sp;
+	    reg_cfp->bp = sp;
+	    SET_PC(niseq->iseq_encoded + opt_pc);
+	}
+	else {
+	    push_frame(th, niseq,
+		       FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		       niseq->iseq_encoded + opt_pc, sp, 0, 0);
+	    reg_cfp->sp = rsp;
+	}
+	RESTORE_REGS();
+    }
+}
+
+MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
+{
+    /* method missing */
+    if (mn == 0) {
+	/* temporarily */
+	if (id == idMethodMissing) {
+	    rb_bug("method missing");
+	}
+	else {
+	    int stat = 0;
+	    if (flag & VM_CALL_VCALL_BIT) {
+		stat |= NOEX_VCALL;
+	    }
+	    if (flag & VM_CALL_SUPER_BIT) {
+		stat |= NOEX_SUPER;
+	    }
+	    val = eval_method_missing(th, id, recv, num, blockptr, stat);
+	}
+    }
+    else if (!(flag & VM_CALL_FCALL_BIT) &&
+	     (mn->nd_noex & NOEX_MASK) & NOEX_PRIVATE) {
+	int stat = NOEX_PRIVATE;
+	if (flag & VM_CALL_VCALL_BIT) {
+	    stat |= NOEX_VCALL;
+	}
+	val = eval_method_missing(th, id, recv, num, blockptr, stat);
+    }
+    else if ((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) {
+	VALUE defined_class = mn->nd_clss;
+
+	if (TYPE(defined_class) == T_ICLASS) {
+	    defined_class = RBASIC(defined_class)->klass;
+	}
+	if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(defined_class))) {
+	    val =
+		eval_method_missing(th, id, recv, num, blockptr,
+				    NOEX_PROTECTED);
+	}
+	else {
+	    goto INSN_LABEL(normal_method_dispatch);
+	}
+    }
+    else {
+	NODE *node;
+	INSN_LABEL(normal_method_dispatch):
+
+	node = mn->nd_body;
+	switch (nd_type(node)) {
+	  case YARV_METHOD_NODE:{
+	      macro_eval_invoke_func(node->nd_body, recv, klass,
+				     blockptr, num);
+	      NEXT_INSN();
+	  }
+	  case NODE_CFUNC:{
+	      macro_eval_invoke_cfunc(num, id, recv, klass, node, blockptr);
+	      break;
+	  }
+	  case NODE_ATTRSET:{
+	      val = rb_ivar_set(recv, node->nd_vid, TOPN(0));
+	      POPN(2);
+	      break;
+	  }
+	  case NODE_IVAR:{
+	      val = rb_ivar_get(recv, node->nd_vid);
+	      POP();
+	      break;
+	  }
+	  case NODE_BMETHOD:{
+	      VALUE *argv = GET_SP() - num;
+	      val = th_invoke_bmethod(th, id, node->nd_cval,
+				      recv, klass, num, argv);
+	      INC_SP(-num-1);
+	      break;
+	  }
+	  case NODE_ZSUPER:{
+	      klass = RCLASS(mn->nd_clss)->super;
+	      mn = rb_method_node(klass, id);
+
+	      if (mn != 0) {
+		  goto INSN_LABEL(normal_method_dispatch);
+	      }
+	      else {
+		  goto LABEL_IS_SC(start_method_dispatch);
+	      }
+	  }
+	  case NODE_SCOPE:{
+	      dpi(id);
+	      SDR();
+	      rb_bug("eval_invoke_method: NODE_SCOPE should not be appear");
+	      /* unreachable */
+	      break;
+	  }
+	  default:{
+	      printf("node: %s\n", node_name(nd_type(node)));
+	      rb_bug("eval_invoke_method: unreachable");
+	      /* unreachable */
+	      break;
+	  }
+	}
+    }
+}
+

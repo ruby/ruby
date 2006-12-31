@@ -1,4 +1,4 @@
-#--
+#
 #   mutex_m.rb - 
 #   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
@@ -7,26 +7,24 @@
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       modified by matz
 #       patched by akira yamada
-#++
 #
-# == Usage
+# --
+#   Usage:
+#	require "mutex_m.rb"
+#	obj = Object.new
+#	obj.extend Mutex_m
+#	...
+#	extended object can be handled like Mutex
+#       or
+#	class Foo
+#	  include Mutex_m
+#	  ...
+#	end
+#	obj = Foo.new
+#	this obj can be handled like Mutex
 #
-# Extend an object and use it like a Mutex object:
-#
-#   require "mutex_m.rb"
-#   obj = Object.new
-#   obj.extend Mutex_m
-#   # ...
-#
-# Or, include Mutex_m in a class to have its instances behave like a Mutex
-# object:
-#
-#   class Foo
-#     include Mutex_m
-#     # ...
-#   end
-#   
-#   obj = Foo.new
+
+require 'thread'
 
 module Mutex_m
   def Mutex_m.define_aliases(cl)
@@ -61,58 +59,30 @@ module Mutex_m
   end
   
   # locking 
-  def mu_synchronize
-    begin
-      mu_lock
-      yield
-    ensure
-      mu_unlock
-    end
+  def mu_synchronize(&block)
+    @_mutex.synchronize(&block)
   end
   
   def mu_locked?
-    @mu_locked
+    @_mutex.locked?
   end
   
   def mu_try_lock
-    result = false
-    Thread.critical = true
-    unless @mu_locked
-      @mu_locked = true
-      result = true
-    end
-    Thread.critical = false
-    result
+    @_mutex.try_lock
   end
   
   def mu_lock
-    while (Thread.critical = true; @mu_locked)
-      @mu_waiting.push Thread.current
-      Thread.stop
-    end
-    @mu_locked = true
-    Thread.critical = false
-    self
+    @_mutex.lock
   end
   
   def mu_unlock
-    return unless @mu_locked
-    Thread.critical = true
-    wait = @mu_waiting
-    @mu_waiting = []
-    @mu_locked = false
-    Thread.critical = false
-    for w in wait
-      w.run
-    end
-    self
+    @_mutex.unlock
   end
   
   private
   
   def mu_initialize
-    @mu_waiting = []
-    @mu_locked = false;
+    @_mutex = Mutex.new
   end
 
   def initialize(*args)

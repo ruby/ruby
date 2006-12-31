@@ -11,7 +11,6 @@
 **********************************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -180,7 +179,7 @@ rb_num_coerce_relop(VALUE x, VALUE y)
 static VALUE
 num_sadded(VALUE x, VALUE name)
 {
-    ruby_frame = ruby_frame->prev; /* pop frame for "singleton_method_added" */
+  // ruby_frame = ruby_frame->prev; /* pop frame for "singleton_method_added" */
     /* Numerics should be values; singleton_methods should not be added to them */
     rb_raise(rb_eTypeError,
 	     "can't define singleton method \"%s\" for %s",
@@ -1699,7 +1698,7 @@ int_int_p(VALUE num)
 /*
  *  call-seq:
  *     int.odd? -> true or false
- *  
+ *
  *  Returns <code>true</code> if <i>int</i> is an odd number.
  */
 
@@ -1707,7 +1706,7 @@ static VALUE
 int_odd_p(VALUE num)
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
-	return Qtrue;
+      return Qtrue;
     }
     return Qfalse;
 }
@@ -1715,7 +1714,7 @@ int_odd_p(VALUE num)
 /*
  *  call-seq:
  *     int.even? -> true or false
- *  
+ *
  *  Returns <code>true</code> if <i>int</i> is an even number.
  */
 
@@ -1723,9 +1722,27 @@ static VALUE
 int_even_p(VALUE num)
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
-	return Qtrue;
+      return Qtrue;
     }
     return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     fixnum.next    => integer
+ *     fixnum.succ    => integer
+ *  
+ *  Returns the <code>Integer</code> equal to <i>int</i> + 1.
+ *     
+ *     1.next      #=> 2
+ *     (-1).next   #=> 0
+ */
+
+static VALUE
+fix_succ(VALUE num)
+{
+    long i = FIX2LONG(num) + 1;
+    return LONG2NUM(i);
 }
 
 /*
@@ -2788,28 +2805,36 @@ int_downto(VALUE from, VALUE to)
  *     0 1 2 3 4
  */
 
+VALUE yarv_invoke_Integer_times_special_block(VALUE);
+
 static VALUE
 int_dotimes(VALUE num)
 {
-    RETURN_ENUMERATOR(num, 0, 0);
-    if (FIXNUM_P(num)) {
-	long i, end;
+  VALUE val;
 
-	end = FIX2LONG(num);
-	for (i=0; i<end; i++) {
-	    rb_yield(LONG2FIX(i));
-	}
-    }
-    else {
-	VALUE i = INT2FIX(0);
+  RETURN_ENUMERATOR(num, 0, 0);
+  if((val = yarv_invoke_Integer_times_special_block(num)) != Qundef){
+    return val;
+  }
 
-	for (;;) {
-	    if (!RTEST(rb_funcall(i, '<', 1, num))) break;
-	    rb_yield(i);
-	    i = rb_funcall(i, '+', 1, INT2FIX(1));
-	}
+  if (FIXNUM_P(num)) {
+    long i, end;
+
+    end = FIX2LONG(num);
+    for (i=0; i<end; i++) {
+      rb_yield(LONG2FIX(i));
     }
-    return num;
+  }
+  else {
+    VALUE i = INT2FIX(0);
+
+    for (;;) {
+      if (!RTEST(rb_funcall(i, '<', 1, num))) break;
+      rb_yield(i);
+      i = rb_funcall(i, '+', 1, INT2FIX(1));
+    }
+  }
+  return num;
 }
 
 /*
@@ -2976,6 +3001,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
     rb_define_method(rb_cFixnum, "odd?", fix_odd_p, 0);
     rb_define_method(rb_cFixnum, "even?", fix_even_p, 0);
+    rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

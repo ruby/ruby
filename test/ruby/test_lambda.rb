@@ -1,6 +1,14 @@
 require 'test/unit'
 
 class TestLambdaParameters < Test::Unit::TestCase
+  def test_not_supported
+    flunk("YARV doesn't support NODE_LAMBDA")
+  end
+end
+
+__END__
+
+class TestLambdaParametersBackup
   def test_call_simple
     assert_equal(1, ->(a){ a }.call(1))
     assert_equal([1,2], ->(a,b){ [a,b] }.call(1,2))

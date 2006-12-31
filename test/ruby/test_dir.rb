@@ -39,4 +39,14 @@ class TestDir < Test::Unit::TestCase
       dir.close
     end
   end
+
+  def test_JVN_13947696
+    b = lambda {
+      d = Dir.open('.')
+      $SAFE = 4
+      d.close
+    }
+    assert_raise(SecurityError) { b.call }
+  end
+
 end

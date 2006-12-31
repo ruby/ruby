@@ -246,6 +246,8 @@ end
 
 __END__
 
+__END__
+
 require 'test/unit'
 
 class TC_Generator < Test::Unit::TestCase

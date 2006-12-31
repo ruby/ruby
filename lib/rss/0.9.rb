@@ -17,7 +17,7 @@ module RSS
 
     include RSS09
     include RootElementMixin
-    include XMLStyleSheetMixin
+    # include XMLStyleSheetMixin
 
     [
       ["channel", nil],

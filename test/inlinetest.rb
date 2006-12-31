@@ -4,7 +4,7 @@ module InlineTest
     program = File.open(path) { |f| f.read }
     mainpart, endpart = program.split(sep)
     if endpart.nil?
-      raise RuntimeError.new("No #{part} part in the library '#{filename}'")
+      raise RuntimeError.new("No #{part} part in the library '#{path}'")
     end
     eval(endpart, TOPLEVEL_BINDING, path, mainpart.count("\n")+1)
   end
@@ -22,18 +22,14 @@ module InlineTest
 
   def loadtest__END__part(libname)
     require(libname)
-    eval_part(libname, /^__END__$/, '__END__')
+    eval_part(libname, /^__END__\r?$/, '__END__')
   end
   module_function :loadtest__END__part
 
-  def self.in_critical
-    th_criticality = Thread.critical
-    Thread.critical = true
-    begin
-      yield
-    ensure
-      Thread.critical = th_criticality
-    end
+  @mutex = Mutex.new
+
+  def self.in_critical(&block)
+    @mutex.synchronize(&block)
   end
 
   def self.in_progname(progname)

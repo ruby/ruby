@@ -268,14 +268,14 @@ end
 def link_command(ldflags, opt="", libpath=$LIBPATH)
   RbConfig::expand(TRY_LINK.dup,
                  CONFIG.merge('hdrdir' => $hdrdir.quote,
-                              'src' => CONFTEST_C,
-                              'INCFLAGS' => $INCFLAGS,
-                              'CPPFLAGS' => $CPPFLAGS,
-                              'CFLAGS' => "#$CFLAGS",
-                              'ARCH_FLAG' => "#$ARCH_FLAG",
-                              'LDFLAGS' => "#$LDFLAGS #{ldflags}",
-                              'LIBPATH' => libpathflag(libpath),
-                              'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
+		 'src' => CONFTEST_C,
+		 'INCFLAGS' => $INCFLAGS,
+		 'CPPFLAGS' => $CPPFLAGS,
+		 'CFLAGS' => "#$CFLAGS",
+		 'ARCH_FLAG' => "#$ARCH_FLAG",
+		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
+		 'LIBPATH' => libpathflag(libpath),
+		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
                               'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS"))
 end
 
@@ -536,7 +536,7 @@ def message(*s)
 end
 
 def checking_for(m, fmt = nil)
-  f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
+  f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim #'
   m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
   message "%s", m
   a = r = nil
@@ -924,16 +924,16 @@ end
 
 def create_header(header = "extconf.h")
   message "creating %s\n", header
-  sym = header.tr("a-z./\055", "A-Z___")
+    sym = header.tr("a-z./\055", "A-Z___")
   hdr = ["#ifndef #{sym}\n#define #{sym}\n"]
-  for line in $defs
-    case line
-    when /^-D([^=]+)(?:=(.*))?/
+      for line in $defs
+	case line
+	when /^-D([^=]+)(?:=(.*))?/
       hdr << "#define #$1 #{$2 ? Shellwords.shellwords($2)[0] : 1}\n"
-    when /^-U(.*)/
+	when /^-U(.*)/
       hdr << "#undef #$1\n"
-    end
-  end
+	end
+      end
   hdr << "#endif\n"
   hdr = hdr.join
   unless (IO.read(header) == hdr rescue false)
@@ -1236,8 +1236,9 @@ DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 #{!$extout && defined?($installed_list) ? "INSTALLED_LIST = #{$installed_list}\n" : ""}
-"
-  install_dirs.each {|*d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
+" #"
+  # TODO: fixme
+  install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
   n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET).'
   mfile.print "
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
@@ -1378,7 +1379,7 @@ site-install-rb: install-rb
 	  end
 	end
 	if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
-	  suffixes << m[1] << m[2]
+          suffixes << m[1] << m[2]
 	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
 	elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line

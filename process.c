@@ -605,7 +605,7 @@ rb_waitpid(int pid, int *st, int flags)
 	    break;
 	}
 	if (!pid_tbl)
-	    pid_tbl = st_init_numtable();
+	  pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, (st_data_t)st);
 	if (!rb_thread_alone()) rb_thread_schedule();
     }
@@ -891,13 +891,8 @@ proc_detach(VALUE obj, VALUE pid)
 char *strtok();
 #endif
 
-#ifdef HAVE_SETITIMER
-#define before_exec() rb_thread_stop_timer()
-#define after_exec() rb_thread_start_timer()
-#else
-#define before_exec()
-#define after_exec()
-#endif
+#define before_exec() rb_enable_interrupt()
+#define after_exec() rb_disable_interrupt()
 
 extern char *dln_find_exe(const char *fname, const char *path);
 
@@ -1352,6 +1347,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 	    _exit(127);
 #endif
 	}
+	rb_thread_reset_timer_thread();
     }
 #ifdef FD_CLOEXEC
     else if (chfunc) {
@@ -1522,9 +1518,6 @@ rb_spawn(int argc, VALUE *argv)
 {
     int status;
     VALUE prog;
-#if defined HAVE_FORK
-    struct rb_exec_arg earg;
-#endif
 
     prog = rb_check_argv(argc, argv);
 
@@ -1533,11 +1526,14 @@ rb_spawn(int argc, VALUE *argv)
 	prog = *argv++;
     }
 #if defined HAVE_FORK
-    earg.argc = argc;
-    earg.argv = argv;
-    earg.prog = prog ? RSTRING_PTR(prog) : 0;
-    status = rb_fork(&status, (int (*)(void*))rb_exec, &earg);
-    if (prog && argc) argv[0] = prog;
+    {
+	struct rb_exec_arg earg;
+	earg.argc = argc;
+	earg.argv = argv;
+	earg.prog = prog ? RSTRING_PTR(prog) : 0;
+	status = rb_fork(&status, (int (*)(void*))rb_exec, &earg);
+	if (prog && argc) argv[0] = prog;
+    }
 #elif defined HAVE_SPAWNV
     if (!argc) {
 	status = proc_spawn(RSTRING_PTR(prog));
@@ -2952,7 +2948,7 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 		if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
 		SAVED_GROUP_ID = gid;
 		if (setrgid(gid) < 0) rb_sys_fail(0);
-	    }
+	}
 	} else if (/* getegid() != gid && */ getgid() == gid) {
 	    if (setegid(gid) < 0) rb_sys_fail(0);
 	    if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);

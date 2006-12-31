@@ -384,7 +384,7 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
  *     b.kind_of? C       #=> false
  *     b.kind_of? M       #=> true
  */
-
+#include "debug.h"
 VALUE
 rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
@@ -1974,7 +1974,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 
     if (!p) return 0.0;
     q = p;
-    while (ISSPACE(*p)) p++;
+	while (ISSPACE(*p)) p++;
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();
@@ -1982,7 +1982,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	errno = 0;
     }
     if (p == end) {
-      bad:
+	  bad:
 	if (badcheck) {
 	    rb_invalid_str(q, "Float()");
 	}
@@ -1996,8 +1996,8 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	while (*p) {
 	    if (*p == '_') {
 		/* remove underscores between digits */
-		if (n == buf || !ISDIGIT(n[-1])) goto bad;
-		while (*++p == '_');
+		    if (n == buf || !ISDIGIT(n[-1])) goto bad;
+		    while (*++p == '_');
 		if (!ISDIGIT(*p)) {
 		    if (badcheck) goto bad;
 		    break;
@@ -2240,9 +2240,9 @@ VALUE ruby_top_self;
  *  that follows, the vertical arrows represent inheritance, and the
  *  parentheses meta-classes. All metaclasses are instances 
  *  of the class `Class'.
- * 
+ *
  *                             +-----------------+
- *                             |                 |
+ *                            |                  |
  *           BasicObject-->(BasicObject)         |
  *                ^           ^                  |
  *                |           |                  |
@@ -2270,7 +2270,7 @@ VALUE ruby_top_self;
  *  class hierarchy is a direct subclass of <code>BasicObject</code>.  Its
  *  methods are therefore available to all objects unless explicitly
  *  overridden.
- *
+ *     
  *  <code>Object</code> mixes in the <code>Kernel</code> module, making
  *  the built-in kernel functions globally accessible. Although the
  *  instance methods of <code>Object</code> are defined by the
