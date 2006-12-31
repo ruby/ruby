@@ -95,7 +95,8 @@
 
 require "rdoc/code_objects"
 require "rdoc/parsers/parserfactory"
-
+require "rdoc/options"
+require "rdoc/rdoc"
 
 module RDoc
 
@@ -165,6 +166,7 @@ module RDoc
 
   class C_Parser
 
+    attr_accessor :progress
 
     extend ParserFactory
     parse_files_matching(/\.(c|cc|cpp|CC)$/)
@@ -444,14 +446,37 @@ module RDoc
       
       comment = find_const_comment(type, const_name)
 
-      con = Constant.new(const_name, definition, mangle_comment(comment))
+      # In the case of rb_define_const, the definition and comment are in
+      # "/* definition: comment */" form.  The literal ':' and '\' characters
+      # can be escaped with a backslash.
+      if type.downcase == 'const' then
+         elements = mangle_comment(comment).split(':')
+         if elements.nil? or elements.empty? then
+            con = Constant.new(const_name, definition, mangle_comment(comment))
+         else
+            new_definition = elements[0..-2].join(':')
+            if new_definition.empty? then # Default to literal C definition
+               new_definition = definition
+            else
+               new_definition.gsub!("\:", ":")
+               new_definition.gsub!("\\", '\\')
+            end
+            new_definition.sub!(/\A(\s+)/, '')
+            new_comment = $1.nil? ? elements.last : "#{$1}#{elements.last.lstrip}"
+            con = Constant.new(const_name, new_definition,
+                               mangle_comment(new_comment))
+         end
+      else
+         con = Constant.new(const_name, definition, mangle_comment(comment))
+      end
+
       class_obj.add_constant(con)
     end
 
     ###########################################################
 
     def find_const_comment(type, const_name)
-      if @body =~ %r{((?>/\*.*?\*/\s+))
+      if @body =~ %r{((?>^\s*/\*.*?\*/\s+))
                      rb_define_#{type}\((?:\s*(\w+),)?\s*"#{const_name}"\s*,.*?\)\s*;}xmi
         $1
       elsif @body =~ %r{Document-(?:const|global|variable):\s#{const_name}\s*?\n((?>.*?\*/))}m

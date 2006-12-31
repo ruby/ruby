@@ -1,3 +1,11 @@
+Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts):
+	Allow RDoc comment to give friendly value for rb_define_const.  Patch
+	by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
+	whitespace handling in constant comments.
+
 Mon Jan 01 00:00:00 2007  Koichi Sasada <ko1@atdot.net>
 
 	* Merge YARV
