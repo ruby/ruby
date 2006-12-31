@@ -1942,7 +1942,9 @@ static VALUE
 rb_ary_reject(VALUE ary)
 {
     RETURN_ENUMERATOR(ary, 0, 0);
-    return rb_ary_reject_bang(rb_ary_dup(ary));
+    ary = rb_ary_dup(ary);
+    rb_ary_reject_bang(ary);
+    return ary;
 }
 
 /*

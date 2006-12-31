@@ -1,3 +1,7 @@
+Sun Dec 31 16:22:48 2006  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c: Fix Array#reject.
+
 Sun Dec 31 00:46:25 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date2.rb: removed.
