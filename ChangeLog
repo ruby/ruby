@@ -1,3 +1,21 @@
+Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
+	value information.
+
+Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/bigdecimal/bigdecimal.c: Update constant comments to provide
+	values for RDoc.
+
+Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts):
+	Allow RDoc comment to give friendly value for rb_define_const.  Patch
+	by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
+	whitespace handling in constant comments.
+
 Sun Dec 31 00:31:16 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: updated based on date2 4.0.
