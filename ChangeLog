@@ -1,6 +1,12 @@
+Mon Jan 01 08:07:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/tk/tcltklib.c : fix to compile on YARV
+          ruby_errinfo -> rb_errinfo(),
+          ruby_safe_level -> rb_safe_level().
+
 Mon Jan 01 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* test/drb/test_drbssl.rb : fix to skip drb tests
+	* test/drb/test_drbssl.rb : fix to skip drb tests.
 
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 

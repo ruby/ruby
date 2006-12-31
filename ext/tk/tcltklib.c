@@ -1345,11 +1345,11 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             if (status) {
                 switch (status) {
                 case TAG_RAISE:
-                    if (NIL_P(ruby_errinfo)) {
+                    if (NIL_P(rb_errinfo())) {
                         rbtk_pending_exception 
                             = rb_exc_new2(rb_eException, "unknown exception");
                     } else {
-                        rbtk_pending_exception = ruby_errinfo;
+                        rbtk_pending_exception = rb_errinfo();
 
                         if (!NIL_P(rbtk_pending_exception)) {
                             if (rbtk_eventloop_depth == 0) {
@@ -1364,10 +1364,10 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     break;
 
                 case TAG_FATAL:
-                    if (NIL_P(ruby_errinfo)) {
+                    if (NIL_P(rb_errinfo())) {
                         rb_exc_raise(rb_exc_new2(rb_eFatal, "FATAL"));
                     } else {
-                        rb_exc_raise(ruby_errinfo);
+                        rb_exc_raise(rb_errinfo());
                     }
                 }
             }
@@ -1465,12 +1465,12 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     if (status) {
                         switch (status) {
                         case TAG_RAISE:
-                            if (NIL_P(ruby_errinfo)) {
+                            if (NIL_P(rb_errinfo())) {
                                 rbtk_pending_exception 
                                     = rb_exc_new2(rb_eException, 
                                                   "unknown exception");
                             } else {
-                                rbtk_pending_exception = ruby_errinfo;
+                                rbtk_pending_exception = rb_errinfo();
 
                                 if (!NIL_P(rbtk_pending_exception)) {
                                     if (rbtk_eventloop_depth == 0) {
@@ -1485,10 +1485,10 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                             break;
 
                         case TAG_FATAL:
-                            if (NIL_P(ruby_errinfo)) {
+                            if (NIL_P(rb_errinfo())) {
                                 rb_exc_raise(rb_exc_new2(rb_eFatal, "FATAL"));
                             } else {
-                                rb_exc_raise(ruby_errinfo);
+                                rb_exc_raise(rb_errinfo());
                             }
                         }
                     }
@@ -1537,12 +1537,12 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                         if (status) {
                             switch (status) {
                             case TAG_RAISE:
-                                if (NIL_P(ruby_errinfo)) {
+                                if (NIL_P(rb_errinfo())) {
                                     rbtk_pending_exception 
                                         = rb_exc_new2(rb_eException, 
                                                       "unknown exception");
                                 } else {
-                                    rbtk_pending_exception = ruby_errinfo;
+                                    rbtk_pending_exception = rb_errinfo();
 
                                     if (!NIL_P(rbtk_pending_exception)) {
                                         if (rbtk_eventloop_depth == 0) {
@@ -1557,11 +1557,11 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                                 break;
 
                             case TAG_FATAL:
-                                if (NIL_P(ruby_errinfo)) {
+                                if (NIL_P(rb_errinfo())) {
                                     rb_exc_raise(rb_exc_new2(rb_eFatal, 
                                                              "FATAL"));
                                 } else {
-                                    rb_exc_raise(ruby_errinfo);
+                                    rb_exc_raise(rb_errinfo());
                                 }
                             }
                         }
@@ -1618,7 +1618,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
         }
 
         DUMP1("trap check & thread scheduling");
-        if (update_flag == 0) CHECK_INTS;
+        if (update_flag == 0) ; // TODO: CHECK_INTS
 
     }
     return 1;
@@ -1665,19 +1665,19 @@ lib_eventloop_main(args)
 
     switch (status) {
     case TAG_RAISE:
-        if (NIL_P(ruby_errinfo)) {
+        if (NIL_P(rb_errinfo())) {
             rbtk_pending_exception 
                 = rb_exc_new2(rb_eException, "unknown exception");
         } else {
-            rbtk_pending_exception = ruby_errinfo;
+            rbtk_pending_exception = rb_errinfo();
         }
         return Qnil;
 
     case TAG_FATAL:
-        if (NIL_P(ruby_errinfo)) {
+        if (NIL_P(rb_errinfo())) {
             rbtk_pending_exception = rb_exc_new2(rb_eFatal, "FATAL");
         } else {
-            rbtk_pending_exception = ruby_errinfo;
+            rbtk_pending_exception = rb_errinfo();
         }
         return Qnil;
     }
@@ -2030,9 +2030,9 @@ lib_thread_callback(argc, argv, self)
     free(q);
 
     if (NIL_P(rbtk_pending_exception)) {
-        /* return ruby_errinfo; */
+        /* return rb_errinfo(); */
         if (status) {
-            rb_exc_raise(ruby_errinfo);
+            rb_exc_raise(rb_errinfo());
         }
     } else {
         VALUE exc = rbtk_pending_exception;
@@ -2238,50 +2238,50 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
             goto error;
         error:
             str = rb_str_new2("LocalJumpError: ");
-            rb_str_append(str, rb_obj_as_string(ruby_errinfo));
+            rb_str_append(str, rb_obj_as_string(rb_errinfo()));
             exc = rb_exc_new3(type, str);
             break;
 
         case TAG_RETRY:
-            if (NIL_P(ruby_errinfo)) {
+            if (NIL_P(rb_errinfo())) {
                 DUMP1("rb_protect: retry");
                 exc = rb_exc_new2(eTkCallbackRetry, "retry jump error");
             } else {
-                exc = ruby_errinfo;
+                exc = rb_errinfo();
             }
             break;
 
         case TAG_REDO:
-            if (NIL_P(ruby_errinfo)) {
+            if (NIL_P(rb_errinfo())) {
                 DUMP1("rb_protect: redo");
                 exc = rb_exc_new2(eTkCallbackRedo,  "redo jump error");
             } else {
-                exc = ruby_errinfo;
+                exc = rb_errinfo();
             }
             break;
 
         case TAG_RAISE:
-            if (NIL_P(ruby_errinfo)) {
+            if (NIL_P(rb_errinfo())) {
                 exc = rb_exc_new2(rb_eException, "unknown exception");
             } else {
-                exc = ruby_errinfo;
+                exc = rb_errinfo();
             }
             break;
 
         case TAG_FATAL:
-            if (NIL_P(ruby_errinfo)) {
+            if (NIL_P(rb_errinfo())) {
                 exc = rb_exc_new2(rb_eFatal, "FATAL");
             } else {
-                exc = ruby_errinfo;
+                exc = rb_errinfo();
             }
             break;
 
         case TAG_THROW:
-            if (NIL_P(ruby_errinfo)) {
+            if (NIL_P(rb_errinfo())) {
                 DUMP1("rb_protect: throw");
                 exc = rb_exc_new2(eTkCallbackThrow,  "throw jump error");
             } else {
-                exc = ruby_errinfo;
+                exc = rb_errinfo();
             }
             break;
 
@@ -4746,10 +4746,10 @@ ip_init(argc, argv, self)
     Tk_Window mainWin = (Tk_Window)NULL;
 
     /* security check */
-    if (ruby_safe_level >= 4) {
+    if (rb_safe_level() >= 4) {
         rb_raise(rb_eSecurityError, 
                  "Cannot create a TclTkIp object at level %d", 
-                 ruby_safe_level);
+                 rb_safe_level());
     }
 
     /* create object */
@@ -5696,19 +5696,19 @@ ip_eval_real(self, cmd_str, cmd_len)
           ret = rb_protect(call_tcl_eval, (VALUE)&inf, &status);
           switch(status) {
           case TAG_RAISE:
-              if (NIL_P(ruby_errinfo)) {
+              if (NIL_P(rb_errinfo())) {
                   rbtk_pending_exception = rb_exc_new2(rb_eException, 
                                                        "unknown exception");
               } else {
-                  rbtk_pending_exception = ruby_errinfo;
+                  rbtk_pending_exception = rb_errinfo();
               }
               break;
 
           case TAG_FATAL:
-              if (NIL_P(ruby_errinfo)) {
+              if (NIL_P(rb_errinfo())) {
                   rbtk_pending_exception = rb_exc_new2(rb_eFatal, "FATAL");
               } else {
-                  rbtk_pending_exception = ruby_errinfo;
+                  rbtk_pending_exception = rb_errinfo();
               }
           }
 #endif
@@ -6661,19 +6661,19 @@ ip_invoke_core(interp, argc, argv)
     ret = rb_protect(invoke_tcl_proc, (VALUE)&inf, &status);
     switch(status) {
     case TAG_RAISE:
-        if (NIL_P(ruby_errinfo)) {
+        if (NIL_P(rb_errinfo())) {
             rbtk_pending_exception = rb_exc_new2(rb_eException, 
                                                  "unknown exception");
         } else {
-            rbtk_pending_exception = ruby_errinfo;
+            rbtk_pending_exception = rb_errinfo();
         }
         break;
         
     case TAG_FATAL:
-        if (NIL_P(ruby_errinfo)) {
+        if (NIL_P(rb_errinfo())) {
             rbtk_pending_exception = rb_exc_new2(rb_eFatal, "FATAL");
         } else {
-            rbtk_pending_exception = ruby_errinfo;
+            rbtk_pending_exception = rb_errinfo();
         }
     }
 
