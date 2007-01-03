@@ -1644,7 +1644,7 @@ rb_io_getline_fast(OpenFile *fptr, unsigned char delim, long limit)
     }
 
     if (!NIL_P(str)) {
-	if (limit > 0) {
+	if (limit != 0) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
@@ -1740,7 +1740,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
     }
 
     if (!NIL_P(str)) {
-	if (limit > 0) {
+	if (limit != 0) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
