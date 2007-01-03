@@ -1,3 +1,7 @@
+Wed Jan  3 11:36:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (ruby_dup): start GC on ENOMEM as well.
+
 Tue Jan  2 10:29:54 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c: fix to compile on YARV

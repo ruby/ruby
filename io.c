@@ -363,7 +363,7 @@ ruby_dup(int orig)
 
     fd = dup(orig);
     if (fd < 0) {
-	if (errno == EMFILE || errno == ENFILE) {
+	if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
 	    rb_gc();
 	    fd = dup(orig);
 	}
