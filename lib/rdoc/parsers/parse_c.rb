@@ -1,103 +1,15 @@
-  # We attempt to parse C extension files. Basically we look for
-  # the standard patterns that you find in extensions: <tt>rb_define_class,
-  # rb_define_method</tt> and so on. We also try to find the corresponding
-  # C source for the methods and extract comments, but if we fail
-  # we don't worry too much.
-  #
-  # The comments associated with a Ruby method are extracted from the C
-  # comment block associated with the routine that _implements_ that
-  # method, that is to say the method whose name is given in the
-  # <tt>rb_define_method</tt> call. For example, you might write:
-  #
-  #  /*
-  #   * Returns a new array that is a one-dimensional flattening of this
-  #   * array (recursively). That is, for every element that is an array,
-  #   * extract its elements into the new array.
-  #   *
-  #   *    s = [ 1, 2, 3 ]           #=> [1, 2, 3]
-  #   *    t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
-  #   *    a = [ s, t, 9, 10 ]       #=> [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
-  #   *    a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-  #   */
-  #   static VALUE
-  #   rb_ary_flatten(ary)
-  #       VALUE ary;
-  #   {
-  #       ary = rb_obj_dup(ary);
-  #       rb_ary_flatten_bang(ary);
-  #       return ary;
-  #   }
-  #
-  #   ...
-  #
-  #   void
-  #   Init_Array()
-  #   {
-  #     ...
-  #     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, 0);
-  #
-  # Here RDoc will determine from the rb_define_method line that there's a
-  # method called "flatten" in class Array, and will look for the implementation
-  # in the method rb_ary_flatten. It will then use the comment from that
-  # method in the HTML output. This method must be in the same source file
-  # as the rb_define_method.
-  #
-  # C classes can be diagramed (see /tc/dl/ruby/ruby/error.c), and RDoc
-  # integrates C and Ruby source into one tree
-  #
-  # The comment blocks may include special direcives:
-  #
-  # [Document-class: <i>name</i>]
-  #   This comment block is documentation for the given class. Use this
-  #   when the <tt>Init_xxx</tt> method is not named after the class.
-  #
-  # [Document-method: <i>name</i>]
-  #   This comment documents the named method. Use when RDoc cannot outomatically
-  #   find the method from it's declaration
-  #
-  # [call-seq:  <i>text up to an empty line</i>]
-  #   Because C source doesn't give descripive names to Ruby-level parameters,
-  #   you need to document the calling sequence explicitly
-  #
-  # In additon, RDoc assumes by default that the C method implementing a 
-  # Ruby function is in the same source file as the rb_define_method call.
-  # If this isn't the case, add the comment 
-  #
-  #    rb_define_method(....);  // in: filename
-  #
-  # As an example, we might have an extension that defines multiple classes
-  # in its Init_xxx method. We could document them using
-  #
-  #  
-  #  /*
-  #   * Document-class:  MyClass
-  #   *
-  #   * Encapsulate the writing and reading of the configuration
-  #   * file. ...
-  #   */
-  #  
-  #  /*
-  #   * Document-method: read_value
-  #   *
-  #   * call-seq:
-  #   *   cfg.read_value(key)            -> value
-  #   *   cfg.read_value(key} { |key| }  -> value
-  #   *
-  #   * Return the value corresponding to +key+ from the configuration.
-  #   * In the second form, if the key isn't found, invoke the
-  #   * block and return its value.
-  #   */
-  #
-
-
-  # Classes and modules built in to the interpreter. We need
-  # these to define superclasses of user objects
+# Classes and modules built in to the interpreter. We need
+# these to define superclasses of user objects
 
 require "rdoc/code_objects"
 require "rdoc/parsers/parserfactory"
-
+require "rdoc/options"
+require "rdoc/rdoc"
 
 module RDoc
+
+  ##
+  # Ruby's built-in classes.
 
   KNOWN_CLASSES = {
     "rb_cObject"           => "Object",
@@ -158,13 +70,103 @@ module RDoc
     "rb_mGC"               => "GC",
     "rb_mMath"             => "Math",
     "rb_mProcess"          => "Process"
-
   }
 
-  # See rdoc/c_parse.rb
+  ##
+  # We attempt to parse C extension files. Basically we look for
+  # the standard patterns that you find in extensions: <tt>rb_define_class,
+  # rb_define_method</tt> and so on. We also try to find the corresponding
+  # C source for the methods and extract comments, but if we fail
+  # we don't worry too much.
+  #
+  # The comments associated with a Ruby method are extracted from the C
+  # comment block associated with the routine that _implements_ that
+  # method, that is to say the method whose name is given in the
+  # <tt>rb_define_method</tt> call. For example, you might write:
+  #
+  #  /*
+  #   * Returns a new array that is a one-dimensional flattening of this
+  #   * array (recursively). That is, for every element that is an array,
+  #   * extract its elements into the new array.
+  #   *
+  #   *    s = [ 1, 2, 3 ]           #=> [1, 2, 3]
+  #   *    t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
+  #   *    a = [ s, t, 9, 10 ]       #=> [[1, 2, 3], [4, 5, 6, [7, 8]], 9, 10]
+  #   *    a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  #   */
+  #   static VALUE
+  #   rb_ary_flatten(ary)
+  #       VALUE ary;
+  #   {
+  #       ary = rb_obj_dup(ary);
+  #       rb_ary_flatten_bang(ary);
+  #       return ary;
+  #   }
+  #
+  #   ...
+  #
+  #   void
+  #   Init_Array()
+  #   {
+  #     ...
+  #     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, 0);
+  #
+  # Here RDoc will determine from the rb_define_method line that there's a
+  # method called "flatten" in class Array, and will look for the implementation
+  # in the method rb_ary_flatten. It will then use the comment from that
+  # method in the HTML output. This method must be in the same source file
+  # as the rb_define_method.
+  #
+  # C classes can be diagramed (see /tc/dl/ruby/ruby/error.c), and RDoc
+  # integrates C and Ruby source into one tree
+  #
+  # The comment blocks may include special direcives:
+  #
+  # [Document-class: <i>name</i>]
+  #   This comment block is documentation for the given class. Use this
+  #   when the <tt>Init_xxx</tt> method is not named after the class.
+  #
+  # [Document-method: <i>name</i>]
+  #   This comment documents the named method. Use when RDoc cannot
+  #   automatically find the method from it's declaration
+  #
+  # [call-seq:  <i>text up to an empty line</i>]
+  #   Because C source doesn't give descripive names to Ruby-level parameters,
+  #   you need to document the calling sequence explicitly
+  #
+  # In additon, RDoc assumes by default that the C method implementing a 
+  # Ruby function is in the same source file as the rb_define_method call.
+  # If this isn't the case, add the comment 
+  #
+  #    rb_define_method(....);  // in: filename
+  #
+  # As an example, we might have an extension that defines multiple classes
+  # in its Init_xxx method. We could document them using
+  #
+  #  
+  #  /*
+  #   * Document-class:  MyClass
+  #   *
+  #   * Encapsulate the writing and reading of the configuration
+  #   * file. ...
+  #   */
+  #  
+  #  /*
+  #   * Document-method: read_value
+  #   *
+  #   * call-seq:
+  #   *   cfg.read_value(key)            -> value
+  #   *   cfg.read_value(key} { |key| }  -> value
+  #   *
+  #   * Return the value corresponding to +key+ from the configuration.
+  #   * In the second form, if the key isn't found, invoke the
+  #   * block and return its value.
+  #   */
+  #
 
   class C_Parser
 
+    attr_accessor :progress
 
     extend ParserFactory
     parse_files_matching(/\.(c|cc|cpp|CC)$/)
@@ -217,8 +219,9 @@ module RDoc
        comment.sub!(/\/?\*--.*/m, '')
     end
 
-    # remove lines that are commented out that might otherwise get
-    # picked up when scanning for classes and methods
+    ##
+    # removes lines that are commented out that might otherwise get picked up
+    # when scanning for classes and methods
 
     def remove_commented_out_lines
       @body.gsub!(%r{//.*rb_define_}, '//')
@@ -260,7 +263,6 @@ module RDoc
       @classes[var_name] = cm
       @known_classes[var_name] = cm.full_name
     end
-    
 
     ############################################################
 
@@ -425,7 +427,16 @@ module RDoc
       end
    end
 
-    ############################################################
+    ##
+    # Adds constant comments.  By providing some_value: at the start ofthe
+    # comment you can override the C value of the comment to give a friendly
+    # definition.
+    #
+    #   /* 300: The perfect score in bowling */
+    #   rb_define_const(cFoo, "PERFECT", INT2FIX(300);
+    #
+    # Will override +INT2FIX(300)+ with the value +300+ in the output RDoc.
+    # Values may include quotes and escaped colons (\:).
 
     def handle_constants(type, var_name, const_name, definition)
       #@stats.num_constants += 1
@@ -442,14 +453,39 @@ module RDoc
       
       comment = find_const_comment(type, const_name)
 
-      con = Constant.new(const_name, definition, mangle_comment(comment))
+      # In the case of rb_define_const, the definition and comment are in
+      # "/* definition: comment */" form.  The literal ':' and '\' characters
+      # can be escaped with a backslash.
+      if type.downcase == 'const' then
+         elements = mangle_comment(comment).split(':')
+         if elements.nil? or elements.empty? then
+            con = Constant.new(const_name, definition, mangle_comment(comment))
+         else
+            new_definition = elements[0..-2].join(':')
+            if new_definition.empty? then # Default to literal C definition
+               new_definition = definition
+            else
+               new_definition.gsub!("\:", ":")
+               new_definition.gsub!("\\", '\\')
+            end
+            new_definition.sub!(/\A(\s+)/, '')
+            new_comment = $1.nil? ? elements.last : "#{$1}#{elements.last.lstrip}"
+            con = Constant.new(const_name, new_definition,
+                               mangle_comment(new_comment))
+         end
+      else
+         con = Constant.new(const_name, definition, mangle_comment(comment))
+      end
+
       class_obj.add_constant(con)
     end
 
-    ###########################################################
+    ##
+    # Finds a comment matching +type+ and +const_name+ either above the
+    # comment or in the matching Document- section.
 
     def find_const_comment(type, const_name)
-      if @body =~ %r{((?>/\*.*?\*/\s+))
+      if @body =~ %r{((?>^\s*/\*.*?\*/\s+))
                      rb_define_#{type}\((?:\s*(\w+),)?\s*"#{const_name}"\s*,.*?\)\s*;}xmi
         $1
       elsif @body =~ %r{Document-(?:const|global|variable):\s#{const_name}\s*?\n((?>.*?\*/))}m
@@ -610,13 +646,15 @@ module RDoc
     end
 
 
-    ##################################################
-    # 
-    # If the comment block contains a section that looks like
+    ##
+    # If the comment block contains a section that looks like:
+    #
     #    call-seq:
     #        Array.new
     #        Array.new(10)
-    # use it for the parameters
+    #
+    # use it for the parameters.
+
     def find_modifiers(comment, meth_obj)
       if comment.sub!(/:nodoc:\s*^\s*\*?\s*$/m, '') or
          comment.sub!(/\A\/\*\s*:nodoc:\s*\*\/\Z/, '')
@@ -639,10 +677,11 @@ module RDoc
       end
     end
 
-    ############################################################
-
-    # Look for includes of the form
+    ##
+    # Look for includes of the form:
+    #
     #     rb_include_module(rb_cArray, rb_mEnumerable);
+
     def do_includes
       @body.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
         if cls = @classes[c]
@@ -652,8 +691,7 @@ module RDoc
       end
     end
 
-    ############################################################
-
+    ##
     # Remove the /*'s and leading asterisks from C comments
     
     def mangle_comment(comment)
@@ -686,7 +724,8 @@ module RDoc
       end
     end
 
-    # Remove #ifdefs that would otherwise confuse us
+    ##
+    # Removes #ifdefs that would otherwise confuse us
     
     def handle_ifdefs_in(body)
       body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m) { $1 }
@@ -695,3 +734,4 @@ module RDoc
   end
 
 end
+

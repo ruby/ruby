@@ -1,5 +1,5 @@
 =begin
-= $RCSfile: digest.rb,v $ -- Ruby-space predefined Digest subclasses
+= $RCSfile$ -- Ruby-space predefined Digest subclasses
 
 = Info
   'OpenSSL for Ruby 2' project

@@ -12,7 +12,7 @@
 
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: parsearg is deprecated after Ruby 1.8.1; use optparse instead"
 
-$RCS_ID=%q$Header: /var/cvs/src/ruby/lib/parsearg.rb,v 1.2.2.2 2006/08/04 22:00:21 drbrain Exp $
+$RCS_ID=%q$Header$
 
 require "getopts"
 

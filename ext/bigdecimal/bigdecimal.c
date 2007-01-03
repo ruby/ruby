@@ -1811,76 +1811,94 @@ Init_bigdecimal(void)
     /* Exceptions */
 
     /*
-     * Determines whether overflow, underflow or zero divide result in 
+     * 0xff: Determines whether overflow, underflow or zero divide result in 
      * an exception being thrown. See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_ALL",INT2FIX(VP_EXCEPTION_ALL));
 
     /* 
-     * Determines what happens when the result of a computation is not a 
+     * 0x02: Determines what happens when the result of a computation is not a 
      * number (NaN). See BigDecimal.mode. 
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_NaN",INT2FIX(VP_EXCEPTION_NaN));
 
     /* 
-     * Determines what happens when the result of a computation is infinity.
-     * See BigDecimal.mode.
+     * 0x01: Determines what happens when the result of a computation is
+     * infinity.  See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_INFINITY",INT2FIX(VP_EXCEPTION_INFINITY));
 
     /* 
-     * Determines what happens when the result of a computation is an underflow
-     * (a result too small to be represented). See BigDecimal.mode.
+     * 0x04: Determines what happens when the result of a computation is an
+     * underflow (a result too small to be represented). See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_UNDERFLOW",INT2FIX(VP_EXCEPTION_UNDERFLOW));
 
     /* 
-     * Determines what happens when the result of a computation is an underflow
-     * (a result too large to be represented). See BigDecimal.mode.
+     * 0x01: Determines what happens when the result of a computation is an
+     * underflow (a result too large to be represented). See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_OVERFLOW",INT2FIX(VP_EXCEPTION_OVERFLOW));
 
     /* 
-     * Determines what happens when a division by zero is performed.
+     * 0x01: Determines what happens when a division by zero is performed.
      * See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_ZERODIVIDE",INT2FIX(VP_EXCEPTION_ZERODIVIDE));
 
     /* 
-     * Determines what happens when a result must be rounded in order to
-     * fit in the appropriate number of significant digits. See 
+     * 0x100: Determines what happens when a result must be rounded in order to
+     * fit in the appropriate number of significant digits. See
      * BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "ROUND_MODE",INT2FIX(VP_ROUND_MODE));
 
-    /* Indicates that values should be rounded away from zero. See BigDecimal.mode. */
+    /* 1: Indicates that values should be rounded away from zero. See
+     * BigDecimal.mode.
+     */
     rb_define_const(rb_cBigDecimal, "ROUND_UP",INT2FIX(VP_ROUND_UP));
-    /* Indicates that values should be rounded towards zero. See BigDecimal.mode. */
+
+    /* 2: Indicates that values should be rounded towards zero. See
+     * BigDecimal.mode.
+     */
     rb_define_const(rb_cBigDecimal, "ROUND_DOWN",INT2FIX(VP_ROUND_DOWN));
-    /* Indicates that digits >= 5 should be rounded up, others rounded down. See BigDecimal.mode. */
+
+    /* 3: Indicates that digits >= 5 should be rounded up, others rounded down.
+     * See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_HALF_UP",INT2FIX(VP_ROUND_HALF_UP));
-    /* Indicates that digits >= 6 should be rounded up, others rounded down. See BigDecimal.mode. */
+
+    /* 4: Indicates that digits >= 6 should be rounded up, others rounded down.
+     * See BigDecimal.mode.
+     */
     rb_define_const(rb_cBigDecimal, "ROUND_HALF_DOWN",INT2FIX(VP_ROUND_HALF_DOWN));
-    /* Round towards +infinity. See BigDecimal.mode. */
+    /* 5: Round towards +infinity. See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_CEILING",INT2FIX(VP_ROUND_CEIL));
-    /* Round towards -infinity. See BigDecimal.mode. */
+
+    /* 6: Round towards -infinity. See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_FLOOR",INT2FIX(VP_ROUND_FLOOR));
-    /* Round towards the even neighbor. See BigDecimal.mode. */
+
+    /* 7: Round towards the even neighbor. See BigDecimal.mode. */
     rb_define_const(rb_cBigDecimal, "ROUND_HALF_EVEN",INT2FIX(VP_ROUND_HALF_EVEN));
 
-    /* Indicates that a value is not a number. See BigDecimal.sign. */
+    /* 0: Indicates that a value is not a number. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_NaN",INT2FIX(VP_SIGN_NaN));
-    /* Indicates that a value is +0. See BigDecimal.sign. */
+
+    /* 1: Indicates that a value is +0. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_POSITIVE_ZERO",INT2FIX(VP_SIGN_POSITIVE_ZERO));
-    /* Indicates that a value is -0. See BigDecimal.sign. */
+
+    /* -1: Indicates that a value is -0. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_ZERO",INT2FIX(VP_SIGN_NEGATIVE_ZERO));
-    /* Indicates that a value is positive and finite. See BigDecimal.sign. */
+
+    /* 2: Indicates that a value is positive and finite. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_POSITIVE_FINITE",INT2FIX(VP_SIGN_POSITIVE_FINITE));
-    /* Indicates that a value is negative and finite. See BigDecimal.sign. */
+
+    /* -2: Indicates that a value is negative and finite. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_FINITE",INT2FIX(VP_SIGN_NEGATIVE_FINITE));
-    /* Indicates that a value is positive and infinite. See BigDecimal.sign. */
+
+    /* 3: Indicates that a value is positive and infinite. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_POSITIVE_INFINITE",INT2FIX(VP_SIGN_POSITIVE_INFINITE));
-    /* Indicates that a value is negative and infinite. See BigDecimal.sign. */
+
+    /* -3: Indicates that a value is negative and infinite. See BigDecimal.sign. */
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_INFINITE",INT2FIX(VP_SIGN_NEGATIVE_INFINITE));
 
     /* instance methods */

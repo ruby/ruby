@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.29 2006-11-05 18:21:29+09 tadf Exp $
+# $Id: date.rb,v 2.30 2006-12-30 21:43:41+09 tadf Exp $
 #++
 #
 # == Overview
@@ -14,7 +14,7 @@
 # This file provides two classes for working with
 # dates and times.
 #
-# The first class, Date, represents dates. 
+# The first class, Date, represents dates.
 # It works with years, months, weeks, and days.
 # See the Date class documentation for more details.
 #
@@ -80,7 +80,7 @@
 # The standard civil year is 365 days long.  However, the
 # solar year is fractionally longer than this.  To account
 # for this, a *leap* *year* is occasionally inserted.  This
-# is a year with 366 days, the extra day falling on February 29. 
+# is a year with 366 days, the extra day falling on February 29.
 # In the early days of the civil calendar, every fourth
 # year without exception was a leap year.  This way of
 # reckoning leap years is the *Julian* *Calendar*.
@@ -148,7 +148,7 @@
 # of time zones.  Time zones are represented as an offset
 # from UTC, as a fraction of a day.  This offset is the
 # how much local time is later (or earlier) than UTC.
-# UTC offset 0 is centred on England (also known as GMT). 
+# UTC offset 0 is centred on England (also known as GMT).
 # As you travel east, the offset increases until you
 # reach the dateline in the middle of the Pacific Ocean;
 # as you travel west, the offset decreases.  This offset
@@ -323,6 +323,7 @@ class Date
   # the answer is true; or it may a number representing the Day of
   # Calendar Reform. Date::ENGLAND and Date::ITALY are two possible such
   # days.
+
   def self.julian? (jd, sg)
     case sg
     when Numeric
@@ -341,7 +342,7 @@ class Date
   #
   # The reverse of self.os?  See the documentation for that method for
   # more details.
-  def self.gregorian? (jd, sg) not julian?(jd, sg) end
+  def self.gregorian? (jd, sg) !julian?(jd, sg) end
 
   def self.fix_style(jd, sg) # :nodoc:
     if julian?(jd, sg)
@@ -350,6 +351,29 @@ class Date
   end
 
   private_class_method :fix_style
+
+  # Convert an Ordinal Date to a Julian Day Number.
+  #
+  # +y+ and +d+ are the year and day-of-year to convert.
+  # +sg+ specifies the Day of Calendar Reform.
+  #
+  # Returns the corresponding Julian Day Number.
+  def self.ordinal_to_jd(y, d, sg=GREGORIAN)
+    civil_to_jd(y, 1, d, sg)
+  end
+
+  # Convert a Julian Day Number to an Ordinal Date.
+  #
+  # +jd+ is the Julian Day Number to convert.
+  # +sg+ specifies the Day of Calendar Reform.
+  #
+  # Returns the corresponding Ordinal Date as
+  # [year, day_of_year]
+  def self.jd_to_ordinal(jd, sg=GREGORIAN)
+    y = jd_to_civil(jd, sg)[0]
+    doy = jd - civil_to_jd(y - 1, 12, 31, fix_style(jd, sg))
+    return y, doy
+  end
 
   # Convert a Civil Date to a Julian Day Number.
   # +y+, +m+, and +d+ are the year, month, and day of the
@@ -400,27 +424,16 @@ class Date
     return y, m, dom
   end
 
-  # Convert a Julian Day Number to an Ordinal Date.
+  # Convert a Commercial Date to a Julian Day Number.
   #
-  # +jd+ is the Julian Day Number to convert.
+  # +y+, +w+, and +d+ are the (commercial) year, week of the year,
+  # and day of the week of the Commercial Date to convert.
   # +sg+ specifies the Day of Calendar Reform.
-  #
-  # Returns the corresponding Ordinal Date as
-  # [year, day_of_year]
-  def self.jd_to_ordinal(jd, sg=GREGORIAN)
-    y = jd_to_civil(jd, sg)[0]
-    doy = jd - civil_to_jd(y - 1, 12, 31, fix_style(jd, sg))
-    return y, doy
-  end
-
-  # Convert an Ordinal Date to a Julian Day Number.
-  #
-  # +y+ and +d+ are the year and day-of-year to convert.
-  # +sg+ specifies the Day of Calendar Reform.
-  #
-  # Returns the corresponding Julian Day Number.
-  def self.ordinal_to_jd(y, d, sg=GREGORIAN)
-    civil_to_jd(y, 1, d, sg)
+  def self.commercial_to_jd(y, w, d, ns=GREGORIAN)
+    jd = civil_to_jd(y, 1, 4, ns)
+    (jd - (((jd - 1) + 1) % 7)) +
+      7 * (w - 1) +
+      (d - 1)
   end
 
   # Convert a Julian Day Number to a Commercial Date
@@ -436,39 +449,29 @@ class Date
     y = if jd >= commercial_to_jd(a + 1, 1, 1, ns) then a + 1 else a end
     w = 1 + ((jd - commercial_to_jd(y, 1, 1, ns)) / 7).floor
     d = (jd + 1) % 7
-    if d.zero? then d = 7 end
+    d = 7 if d == 0
     return y, w, d
   end
 
-  # Convert a Commercial Date to a Julian Day Number.
-  #
-  # +y+, +w+, and +d+ are the (commercial) year, week of the year,
-  # and day of the week of the Commercial Date to convert.
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.commercial_to_jd(y, w, d, ns=GREGORIAN)
-    jd = civil_to_jd(y, 1, 4, ns)
-    (jd - (((jd - 1) + 1) % 7)) +
-      7 * (w - 1) +
-      (d - 1)
+  def self.weeknum_to_jd(y, w, d, f=0, ns=GREGORIAN) # :nodoc:
+    a = civil_to_jd(y, 1, 1, ns) + 6
+    (a - ((a - f) + 1) % 7 - 7) + 7 * w + d
   end
 
-  def self.jd_to_weeknum(jd, k=0, sg=GREGORIAN) # :nodoc:
+  def self.jd_to_weeknum(jd, f=0, sg=GREGORIAN) # :nodoc:
     ns = fix_style(jd, sg)
     y, m, d = jd_to_civil(jd, ns)
     a = civil_to_jd(y, 1, 1, ns) + 6
-    w, d = (jd - (a - ((a - k) + 1) % 7) + 7).divmod(7)
+    w, d = (jd - (a - ((a - f) + 1) % 7) + 7).divmod(7)
     return y, w, d
   end
 
-  def self.weeknum_to_jd(y, w, d, k=0, ns=GREGORIAN) # :nodoc:
-    a = civil_to_jd(y, 1, 1, ns) + 6
-    (a - ((a - k) + 1) % 7 - 7) + 7 * w + d
-  end
+  private_class_method :weeknum_to_jd, :jd_to_weeknum
 
   # Convert an Astronomical Julian Day Number to a (civil) Julian
   # Day Number.
   #
-  # +ajd+ is the Astronomical Julian Day Number to convert. 
+  # +ajd+ is the Astronomical Julian Day Number to convert.
   # +of+ is the offset from UTC as a fraction of a day (defaults to 0).
   #
   # Returns the (civil) Julian Day Number as [day_number,
@@ -479,7 +482,7 @@ class Date
   # Day Number.
   #
   # +jd+ is the Julian Day Number to convert, and +fr+ is a
-  # fractional day. 
+  # fractional day.
   # +of+ is the offset from UTC as a fraction of a day (defaults to 0).
   #
   # Returns the Astronomical Julian Day Number as a single
@@ -539,26 +542,16 @@ class Date
   #
   # All years divisible by 4 are leap years in the Gregorian calendar,
   # except for years divisible by 100 and not by 400.
-  def self.gregorian_leap? (y) y % 4 == 0 and y % 100 != 0 or y % 400 == 0 end
+  def self.gregorian_leap? (y) y % 4 == 0 && y % 100 != 0 || y % 400 == 0 end
 
   class << self; alias_method :leap?, :gregorian_leap? end
-  class << self; alias_method :new0, :new end
+  class << self; alias_method :new!, :new end
 
   # Is +jd+ a valid Julian Day Number?
   #
   # If it is, returns it.  In fact, any value is treated as a valid
   # Julian Day Number.
   def self.valid_jd? (jd, sg=ITALY) jd end
-
-  # Create a new Date object from a Julian Day Number.
-  #
-  # +jd+ is the Julian Day Number; if not specified, it defaults to
-  # 0. 
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.jd(jd=0, sg=ITALY)
-    jd = valid_jd?(jd, sg)
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
-  end
 
   # Do the year +y+ and day-of-year +d+ make a valid Ordinal Date?
   # Returns the corresponding Julian Day Number if they do, or
@@ -568,7 +561,7 @@ class Date
   # from the end of the year (-1 being the last day of the year).
   # No year wraparound is performed, however, so valid values of
   # +d+ are -365 .. -1, 1 .. 365 on a non-leap-year,
-  # -366 .. -1, 1 .. 366 on a leap year. 
+  # -366 .. -1, 1 .. 366 on a leap year.
   # A date falling in the period skipped in the Day of Calendar Reform
   # adjustment is not valid.
   #
@@ -585,23 +578,6 @@ class Date
       return unless [y, d] == jd_to_ordinal(jd, sg)
     end
     jd
-  end
-
-  # Create a new Date object from an Ordinal Date, specified
-  # by year +y+ and day-of-year +d+. +d+ can be negative,
-  # in which it counts backwards from the end of the year.
-  # No year wraparound is performed, however.  An invalid
-  # value for +d+ results in an ArgumentError being raised.
-  #
-  # +y+ defaults to -4712, and +d+ to 1; this is Julian Day
-  # Number day 0.
-  #
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.ordinal(y=-4712, d=1, sg=ITALY)
-    unless jd = valid_ordinal?(y, d, sg)
-      raise ArgumentError, 'invalid date'
-    end
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
   # Do year +y+, month +m+, and day-of-month +d+ make a
@@ -636,28 +612,6 @@ class Date
 
   class << self; alias_method :valid_date?, :valid_civil? end
 
-  # Create a new Date object for the Civil Date specified by
-  # year +y+, month +m+, and day-of-month +d+.
-  #
-  # +m+ and +d+ can be negative, in which case they count
-  # backwards from the end of the year and the end of the
-  # month respectively.  No wraparound is performed, however,
-  # and invalid values cause an ArgumentError to be raised.
-  # can be negative
-  #
-  # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is
-  # Julian Day Number day 0.
-  #
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.civil(y=-4712, m=1, d=1, sg=ITALY)
-    unless jd = valid_civil?(y, m, d, sg)
-      raise ArgumentError, 'invalid date'
-    end
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
-  end
-
-  class << self; alias_method :new, :civil end
-
   # Do year +y+, week-of-year +w+, and day-of-week +d+ make a
   # valid Commercial Date?  Returns the corresponding Julian
   # Day Number if they do, nil if they don't.
@@ -677,13 +631,105 @@ class Date
       d += 8
     end
     if w < 0
-      w = jd_to_commercial(commercial_to_jd(y + 1, 1, 1) + w * 7)[1]
+      ny, nw, nd =
+	jd_to_commercial(commercial_to_jd(y + 1, 1, 1) + w * 7)
+      return unless ny == y
+      w = nw
     end
     jd = commercial_to_jd(y, w, d)
     return unless gregorian?(jd, sg)
     return unless [y, w, d] == jd_to_commercial(jd)
     jd
   end
+
+  def self.valid_weeknum? (y, w, d, f, sg=ITALY) # :nodoc:
+    if d < 0
+      d += 7
+    end
+    if w < 0
+      ny, nw, nd, nf =
+	jd_to_weeknum(weeknum_to_jd(y + 1, 1, f, f) + w * 7, f)
+      return unless ny == y
+      w = nw
+    end
+    jd = weeknum_to_jd(y, w, d, f)
+    return unless gregorian?(jd, sg)
+    return unless [y, w, d] == jd_to_weeknum(jd, f)
+    jd
+  end
+
+  private_class_method :valid_weeknum?
+
+  # Do hour +h+, minute +min+, and second +s+ constitute a valid time?
+  #
+  # If they do, returns their value as a fraction of a day.  If not,
+  # returns nil.
+  #
+  # The 24-hour clock is used.  Negative values of +h+, +min+, and
+  # +sec+ are treating as counting backwards from the end of the
+  # next larger unit (e.g. a +min+ of -2 is treated as 58).  No
+  # wraparound is performed.
+  def self.valid_time? (h, min, s)
+    h   += 24 if h   < 0
+    min += 60 if min < 0
+    s   += 60 if s   < 0
+    return unless ((0..23) === h &&
+		   (0..59) === min &&
+		   (0..59) === s) ||
+		  (24 == h &&
+		    0 == min &&
+		    0 == s)
+    time_to_day_fraction(h, min, s)
+  end
+
+  # Create a new Date object from a Julian Day Number.
+  #
+  # +jd+ is the Julian Day Number; if not specified, it defaults to
+  # 0.
+  # +sg+ specifies the Day of Calendar Reform.
+  def self.jd(jd=0, sg=ITALY)
+    jd = valid_jd?(jd, sg)
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
+
+  # Create a new Date object from an Ordinal Date, specified
+  # by year +y+ and day-of-year +d+. +d+ can be negative,
+  # in which it counts backwards from the end of the year.
+  # No year wraparound is performed, however.  An invalid
+  # value for +d+ results in an ArgumentError being raised.
+  #
+  # +y+ defaults to -4712, and +d+ to 1; this is Julian Day
+  # Number day 0.
+  #
+  # +sg+ specifies the Day of Calendar Reform.
+  def self.ordinal(y=-4712, d=1, sg=ITALY)
+    unless jd = valid_ordinal?(y, d, sg)
+      raise ArgumentError, 'invalid date'
+    end
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
+
+  # Create a new Date object for the Civil Date specified by
+  # year +y+, month +m+, and day-of-month +d+.
+  #
+  # +m+ and +d+ can be negative, in which case they count
+  # backwards from the end of the year and the end of the
+  # month respectively.  No wraparound is performed, however,
+  # and invalid values cause an ArgumentError to be raised.
+  # can be negative
+  #
+  # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is
+  # Julian Day Number day 0.
+  #
+  # +sg+ specifies the Day of Calendar Reform.
+  def self.civil(y=-4712, m=1, d=1, sg=ITALY)
+    unless jd = valid_civil?(y, m, d, sg)
+      raise ArgumentError, 'invalid date'
+    end
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
+
+  class << self; alias_method :new, :civil end
 
   # Create a new Date object for the Commercial Date specified by
   # year +y+, week-of-year +w+, and day-of-week +d+.
@@ -703,24 +749,19 @@ class Date
     unless jd = valid_commercial?(y, w, d, sg)
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  def self.valid_weeknum? (y, w, d, k, sg=ITALY) # :nodoc:
-    if d < 0
-      d += 7
+  def self.weeknum(y=1582, w=41, d=5, f=0, sg=ITALY) # :nodoc:
+    unless jd = valid_weeknum?(y, w, d, f, sg)
+      raise ArgumentError, 'invalid date'
     end
-    if w < 0
-      w = jd_to_weeknum(weeknum_to_jd(y + 1, 1, k, k) + w * 7, k)[1]
-    end
-    jd = weeknum_to_jd(y, w, d, k)
-    return unless [y, w, d] == jd_to_weeknum(jd, k)
-    jd
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  private_class_method :valid_weeknum?
+  private_class_method :weeknum
 
-  def self.rewrite_hash(elem) # :nodoc:
+  def self.rewrite_frags(elem) # :nodoc:
     elem ||= {}
     if seconds = elem[:seconds]
       d,   fr = seconds.divmod(86400)
@@ -738,7 +779,9 @@ class Date
     elem
   end
 
-  def self.complete_hash(elem) # :nodoc:
+  private_class_method :rewrite_frags
+
+  def self.complete_frags(elem) # :nodoc:
     i = 0
     g = [[:time, [:hour, :min, :sec]],
 	 [nil, [:jd]],
@@ -812,7 +855,9 @@ class Date
     elem
   end
 
-  def self.valid_date_with_hash?(elem, sg) # :nodoc:
+  private_class_method :complete_frags
+
+  def self.valid_date_frags?(elem, sg) # :nodoc:
     catch :jd do
       a = elem.values_at(:jd)
       if a.all?
@@ -870,17 +915,25 @@ class Date
     end
   end
 
-  def self.new_with_hash(elem, sg) # :nodoc:
-    elem = rewrite_hash(elem)
-    elem = complete_hash(elem)
-    unless jd = valid_date_with_hash?(elem, sg)
-      raise ArgumentError, 'invalid date'
-    end
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
+  private_class_method :valid_date_frags?
+
+  def self.valid_time_frags? (elem) # :nodoc:
+    h, min, s = elem.values_at(:hour, :min, :sec)
+    valid_time?(h, min, s)
   end
 
-  private_class_method :rewrite_hash, :complete_hash,
-	:valid_date_with_hash?, :new_with_hash
+  private_class_method :valid_time_frags?
+
+  def self.new_by_frags(elem, sg) # :nodoc:
+    elem = rewrite_frags(elem)
+    elem = complete_frags(elem)
+    unless jd = valid_date_frags?(elem, sg)
+      raise ArgumentError, 'invalid date'
+    end
+    new!(jd_to_ajd(jd, 0, 0), 0, sg)
+  end
+
+  private_class_method :new_by_frags
 
   # Create a new Date object by parsing from a String
   # according to a specified format.
@@ -899,13 +952,13 @@ class Date
   # parsed.
   def self.strptime(str='-4712-01-01', fmt='%F', sg=ITALY)
     elem = _strptime(str, fmt)
-    new_with_hash(elem, sg)
+    new_by_frags(elem, sg)
   end
 
   # Create a new Date object by parsing from a String,
   # without specifying the format.
   #
-  # +str+ is a String holding a date representation. 
+  # +str+ is a String holding a date representation.
   # +comp+ specifies whether to interpret 2-digit years
   # as 19XX (>= 69) or 20XX (< 69); the default is not to.
   # The method will attempt to parse a date from the String
@@ -919,7 +972,7 @@ class Date
   # +sg+ specifies the Day of Calendar Reform.
   def self.parse(str='-4712-01-01', comp=false, sg=ITALY)
     elem = _parse(str, comp)
-    new_with_hash(elem, sg)
+    new_by_frags(elem, sg)
   end
 
   class << self
@@ -940,7 +993,7 @@ class Date
 
   end
 
-  # *NOTE* this is the documentation for the method new0().  If
+  # *NOTE* this is the documentation for the method new!().  If
   # you are reading this as the documentation for new(), that is
   # because rdoc doesn't fully support the aliasing of the
   # initialize() method.
@@ -993,8 +1046,8 @@ class Date
   # Get the date as a Commercial Date, [year, week_of_year, day_of_week]
   def commercial() self.class.jd_to_commercial(jd, @sg) end # :nodoc:
 
-  def weeknum0() self.class.jd_to_weeknum(jd, 0, @sg) end # :nodoc:
-  def weeknum1() self.class.jd_to_weeknum(jd, 1, @sg) end # :nodoc:
+  def weeknum0() self.class.__send__(:jd_to_weeknum, jd, 0, @sg) end # :nodoc:
+  def weeknum1() self.class.__send__(:jd_to_weeknum, jd, 1, @sg) end # :nodoc:
 
   once :civil, :ordinal, :commercial, :weeknum0, :weeknum1
   private :civil, :ordinal, :commercial, :weeknum0, :weeknum1
@@ -1039,7 +1092,8 @@ class Date
   # Get the second of this date.
   def sec() time[2] end
 
-  # Get the fraction-of-a-second of this date.
+  # Get the fraction-of-a-second of this date.  The unit is in days.
+  # I do NOT recommend you to use this method.
   def sec_fraction() time[3] end
 
   private :hour, :min, :sec, :sec_fraction
@@ -1105,7 +1159,7 @@ class Date
   def start() @sg end
 
   # Create a copy of this Date object using a new Day of Calendar Reform.
-  def new_start(sg=self.class::ITALY) self.class.new0(@ajd, @of, sg) end
+  def new_start(sg=self.class::ITALY) self.class.new!(@ajd, @of, sg) end
 
   # Create a copy of this Date object that uses the Italian/Catholic
   # Day of Calendar Reform.
@@ -1129,7 +1183,7 @@ class Date
     if String === of
       of = (self.class.zone_to_diff(of) || 0).to_r/86400
     end
-    self.class.new0(@ajd, of, @sg)
+    self.class.new!(@ajd, of, @sg)
   end
 
   private :offset, :new_offset
@@ -1145,7 +1199,7 @@ class Date
   # particular, two Dates cannot be added to each other.
   def + (n)
     case n
-    when Numeric; return self.class.new0(@ajd + n, @of, @sg)
+    when Numeric; return self.class.new!(@ajd + n, @of, @sg)
     end
     raise TypeError, 'expected numeric'
   end
@@ -1160,7 +1214,7 @@ class Date
   # If +x+ is neither Numeric nor a Date, a TypeError is raised.
   def - (x)
     case x
-    when Numeric; return self.class.new0(@ajd - x, @of, @sg)
+    when Numeric; return self.class.new!(@ajd - x, @of, @sg)
     when Date;    return @ajd - x.ajd
     end
     raise TypeError, 'expected numeric or date'
@@ -1217,7 +1271,7 @@ class Date
   # of the returned Date will be the last day of the target month.
   def >> (n)
     y, m = (year * 12 + (mon - 1) + n).divmod(12)
-    m,   = (m + 1).divmod(1)
+    m,   = (m + 1)                    .divmod(1)
     d = mday
     d -= 1 until jd2 = self.class.valid_civil?(y, m, d, fix_style)
     self + (jd2 - jd)
@@ -1275,7 +1329,7 @@ class Date
   # Is this Date equal to +other+?
   #
   # +other+ must both be a Date object, and represent the same date.
-  def eql? (other) Date === other and self == other end
+  def eql? (other) Date === other && self == other end
 
   # Calculate a hash value for this date.
   def hash() @ajd.hash end
@@ -1291,7 +1345,7 @@ class Date
   # Dump to Marshal format.
   def _dump(limit) Marshal.dump([@ajd, @of, @sg], -1) end
 
-# def self._load(str) new0(*Marshal.load(str)) end
+# def self._load(str) new!(*Marshal.load(str)) end
 
   # Load from Marshall format.
   def self._load(str)
@@ -1303,7 +1357,7 @@ class Date
     else
       ajd, of, sg = a
     end
-    new0(ajd, of, sg)
+    new!(ajd, of, sg)
   end
 
 end
@@ -1338,7 +1392,8 @@ end
 # === sec_fraction()
 #
 # Get the fraction of a second of the time.  This is returned as
-# a +Rational+.
+# a +Rational+.  The unit is in days.
+# I do NOT recommend you to use this method.
 #
 # === zone()
 #
@@ -1358,35 +1413,6 @@ end
 #
 class DateTime < Date
 
-  # Do hour +h+, minute +min+, and second +s+ constitute a valid time?
-  #
-  # If they do, returns their value as a fraction of a day.  If not,
-  # returns nil.
-  #
-  # The 24-hour clock is used.  Negative values of +h+, +min+, and
-  # +sec+ are treating as counting backwards from the end of the
-  # next larger unit (e.g. a +min+ of -2 is treated as 58).  No
-  # wraparound is performed.
-  def self.valid_time? (h, min, s)
-    h   += 24 if h   < 0
-    min += 60 if min < 0
-    s   += 60 if s   < 0
-    return unless ((0..23) === h and
-		   (0..59) === min and
-		   (0..59) === s) or
-		  (24 == h and
-		    0 == min and
-		    0 == s)
-    time_to_day_fraction(h, min, s)
-  end
-
-  def self.valid_time_with_hash? (elem) # :nodoc:
-    h, min, s = elem.values_at(:hour, :min, :sec)
-    valid_time?(h, min, s)
-  end
-
-  private_class_method :valid_time_with_hash?
-
   # Create a new DateTime object corresponding to the specified
   # Julian Day Number +jd+ and hour +h+, minute +min+, second +s+.
   #
@@ -1401,14 +1427,14 @@ class DateTime < Date
   #
   # All day/time values default to 0.
   def self.jd(jd=0, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = valid_jd?(jd, sg)) and
+    unless (jd = valid_jd?(jd, sg)) &&
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
       of = (zone_to_diff(of) || 0).to_r/86400
     end
-    new0(jd_to_ajd(jd, fr, of), of, sg)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
   end
 
   # Create a new DateTime object corresponding to the specified
@@ -1426,14 +1452,14 @@ class DateTime < Date
   # +y+ defaults to -4712, and +d+ to 1; this is Julian Day Number
   # day 0.  The time values default to 0.
   def self.ordinal(y=-4712, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = valid_ordinal?(y, d, sg)) and
+    unless (jd = valid_ordinal?(y, d, sg)) &&
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
       of = (zone_to_diff(of) || 0).to_r/86400
     end
-    new0(jd_to_ajd(jd, fr, of), of, sg)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
   end
 
   # Create a new DateTime object corresponding to the specified
@@ -1451,14 +1477,14 @@ class DateTime < Date
   # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is Julian Day
   # Number day 0.  The time values default to 0.
   def self.civil(y=-4712, m=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = valid_civil?(y, m, d, sg)) and
+    unless (jd = valid_civil?(y, m, d, sg)) &&
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
       of = (zone_to_diff(of) || 0).to_r/86400
     end
-    new0(jd_to_ajd(jd, fr, of), of, sg)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
   end
 
   class << self; alias_method :new, :civil end
@@ -1479,31 +1505,44 @@ class DateTime < Date
   # Calendar Reform for Italy and the Catholic countries.
   # The time values default to 0.
   def self.commercial(y=1582, w=41, d=5, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = valid_commercial?(y, w, d, sg)) and
+    unless (jd = valid_commercial?(y, w, d, sg)) &&
 	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
     if String === of
       of = (zone_to_diff(of) || 0).to_r/86400
     end
-    new0(jd_to_ajd(jd, fr, of), of, sg)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  def self.new_with_hash(elem, sg) # :nodoc:
-    elem = rewrite_hash(elem)
-    elem = complete_hash(elem)
-    unless (jd = valid_date_with_hash?(elem, sg)) and
-	   (fr = valid_time_with_hash?(elem))
+  def self.weeknum(y=1582, w=41, d=5, f=0, h=0, min=0, s=0, of=0, sg=ITALY) # :nodoc:
+    unless (jd = valid_weeknum?(y, w, d, f, sg)) &&
+	   (fr = valid_time?(h, min, s))
+      raise ArgumentError, 'invalid date'
+    end
+    if String === of
+      of = (zone_to_diff(of) || 0).to_r/86400
+    end
+    new!(jd_to_ajd(jd, fr, of), of, sg)
+  end
+
+  private_class_method :weeknum
+
+  def self.new_by_frags(elem, sg) # :nodoc:
+    elem = rewrite_frags(elem)
+    elem = complete_frags(elem)
+    unless (jd = valid_date_frags?(elem, sg)) &&
+	   (fr = valid_time_frags?(elem))
       raise ArgumentError, 'invalid date'
     end
     sf = (elem[:sec_fraction] || 0)
     fr += sf/86400
     of = (elem[:offset] || 0)
     of = of.to_r/86400
-    new0(jd_to_ajd(jd, fr, of), of, sg)
+    new!(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  private_class_method :new_with_hash
+  private_class_method :new_by_frags
 
   # Create a new DateTime object by parsing from a String
   # according to a specified format.
@@ -1521,13 +1560,13 @@ class DateTime < Date
   # parsed.
   def self.strptime(str='-4712-01-01T00:00:00+00:00', fmt='%FT%T%z', sg=ITALY)
     elem = _strptime(str, fmt)
-    new_with_hash(elem, sg)
+    new_by_frags(elem, sg)
   end
 
   # Create a new DateTime object by parsing from a String,
   # without specifying the format.
   #
-  # +str+ is a String holding a date-time representation. 
+  # +str+ is a String holding a date-time representation.
   # +comp+ specifies whether to interpret 2-digit years
   # as 19XX (>= 69) or 20XX (< 69); the default is not to.
   # The method will attempt to parse a date-time from the String
@@ -1541,7 +1580,7 @@ class DateTime < Date
   # +sg+ specifies the Day of Calendar Reform.
   def self.parse(str='-4712-01-01T00:00:00+00:00', comp=false, sg=ITALY)
     elem = _parse(str, comp)
-    new_with_hash(elem, sg)
+    new_by_frags(elem, sg)
   end
 
   public :hour, :min, :sec, :sec_fraction, :zone, :offset, :new_offset
@@ -1554,7 +1593,7 @@ class Time
 
   def to_date
     jd = Date.civil_to_jd(year, mon, mday, Date::ITALY)
-    Date.new0(Date.jd_to_ajd(jd, 0, 0), 0, Date::ITALY)
+    Date.new!(Date.jd_to_ajd(jd, 0, 0), 0, Date::ITALY)
   end
 
   def to_datetime
@@ -1562,7 +1601,7 @@ class Time
     fr = DateTime.time_to_day_fraction(hour, min, [sec, 59].min) +
 	 usec.to_r/86400000000
     of = utc_offset.to_r/86400
-    DateTime.new0(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
+    DateTime.new!(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
   end
 
   private :to_date, :to_datetime
@@ -1574,7 +1613,7 @@ class Date
 =begin
   def to_time() Time.local(year, mon, mday) end
   def to_date() self end
-  def to_datetime() DateTime.new0(self.class.jd_to_ajd(jd, 0, 0), @of, @sg) end
+  def to_datetime() DateTime.new!(self.class.jd_to_ajd(jd, 0, 0), @of, @sg) end
 =end
 
   # Create a new Date object representing today.
@@ -1603,7 +1642,7 @@ class DateTime < Date
 	getlocal
   end
 
-  def to_date() Date.new0(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
+  def to_date() Date.new!(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
   def to_datetime() self end
 =end
 
@@ -1621,6 +1660,7 @@ class Date
     %w(exist3?	valid_date?),
     %w(exist?	valid_date?),
     %w(existw?	valid_commercial?),
+    %w(new0	new!),
     %w(new1	jd),
     %w(new2	ordinal),
     %w(new3	new),

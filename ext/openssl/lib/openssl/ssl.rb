@@ -1,5 +1,5 @@
 =begin
-= $RCSfile: ssl.rb,v $ -- Ruby-space definitions that completes C-space funcs for SSL
+= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for SSL
 
 = Info
   'OpenSSL for Ruby 2' project
