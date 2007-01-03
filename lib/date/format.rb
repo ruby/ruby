@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.29 2006-12-30 21:43:41+09 tadf Exp $
+# $Id: format.rb,v 2.28 2006-10-25 06:45:12+09 tadf Exp $
 
 require 'rational'
 

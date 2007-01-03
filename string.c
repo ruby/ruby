@@ -1863,10 +1863,7 @@ rb_str_insert(str, idx, str2)
  *     str.slice!(other_str)        => new_str or nil
  *  
  *  Deletes the specified portion from <i>str</i>, and returns the portion
- *  deleted. The forms that take a <code>Fixnum</code> will raise an
- *  <code>IndexError</code> if the value is out of range; the <code>Range</code>
- *  form will raise a <code>RangeError</code>, and the <code>Regexp</code> and
- *  <code>String</code> forms will silently ignore the assignment.
+ *  deleted.
  *     
  *     string = "this is a string"
  *     string.slice!(2)        #=> 105

@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Ruby-space predefined Cipher subclasses
+= $RCSfile: cipher.rb,v $ -- Ruby-space predefined Cipher subclasses
 
 = Info
   'OpenSSL for Ruby 2' project

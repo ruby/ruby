@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Loader for all OpenSSL C-space and Ruby-space definitions
+= $RCSfile: openssl.rb,v $ -- Loader for all OpenSSL C-space and Ruby-space definitions
 
 = Info
   'OpenSSL for Ruby 2' project

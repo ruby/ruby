@@ -44,7 +44,7 @@ unless defined? Thread
 end
 
 module Sync_m
-  RCS_ID='-$Header$-'
+  RCS_ID='-$Header: /var/cvs/src/ruby/lib/sync.rb,v 1.4 2001/06/06 14:19:33 keiju Exp $-'
   
   # lock mode
   UN = :UN

@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Generator for Makefile
+= $RCSfile: extconf.rb,v $ -- Generator for Makefile
 
 = Info
   'OpenSSL for Ruby 2' project

@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for X509 and subclasses
+= $RCSfile: x509.rb,v $ -- Ruby-space definitions that completes C-space funcs for X509 and subclasses
 
 = Info
   'OpenSSL for Ruby 2' project

@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Buffering mix-in module.
+= $RCSfile: buffering.rb,v $ -- Buffering mix-in module.
 
 = Info
   'OpenSSL for Ruby 2' project

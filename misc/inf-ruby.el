@@ -34,11 +34,11 @@
 ;;;
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
-;;;	 $Log$
+;;;	 $Log: inf-ruby.el,v $
 ;;;	 Revision 1.6.2.1  2004/07/27 07:51:28  matz
 ;;;	 * object.c (Init_Object): "===" calls rb_obj_equal() directly.
 ;;;	   [ruby-list:39937]
-;;;
+;;;	
 ;;;	 Revision 1.6  2002/09/07 14:35:46  nobu
 ;;;	 * misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
 ;;;	   alist for error message from ruby.
