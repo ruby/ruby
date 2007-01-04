@@ -179,9 +179,9 @@ native_thread_create(yarv_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
+	size_t stack_size = 512 * 1024 - sizeof(int);	/* 512KB */
 
 #ifdef PTHREAD_STACK_MIN
-	size_t stack_size = 512 * 1024 - sizeof(int);	/* 512KB */
 	if (stack_size < PTHREAD_STACK_MIN) {
 	    stack_size = PTHREAD_STACK_MIN * 2;
 	}
@@ -419,15 +419,12 @@ rb_thread_create_timer_thread(void)
     rb_enable_interrupt();
 
     if (!timer_thread_id) {
-#ifdef PTHREAD_STACK_MIN
-	size_t stack_size = PTHREAD_STACK_MIN;
-#endif
 	pthread_attr_t attr;
 	int err;
 
 	pthread_attr_init(&attr);
 #ifdef PTHREAD_STACK_MIN
-	pthread_attr_setstacksize(&attr, stack_size);
+	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
 #endif
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	err = pthread_create(&timer_thread_id, &attr, thread_timer, 0);

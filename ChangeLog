@@ -1,6 +1,10 @@
-Thu Jan 04 13:42:47 2007
+Thu Jan 04 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : restore changes
+	* thread_pthread.ci : fix last changes around PTHREAD_STACK_MIN.
+
+Thu Jan 04 13:42:47 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk : restore changes.
 
 Thu Jan 04 10:33:54 2007  Koichi Sasada  <ko1@atdot.net>
 
