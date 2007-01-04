@@ -569,13 +569,13 @@ allload: miniruby$(EXEEXT)
 	$(MINIRUBY) -I$(srcdir) $(srcdir)/tool/allload.rb `$(BASERUBY) -rrbconfig -e 'print Config::CONFIG["rubylibdir"]'`
 
 run: miniruby$(EXEEXT)
-	$(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb $(RUNOPT)
+	$(MINIRUBY) -I$(srcdir)/lib test.rb $(RUNOPT)
 
 runruby: $(RUBY)
-	./$(RUBY)  -I$(srcdir)/lib -I. $(srcdir)/tool/runruby.rb $(srcdir)/test.rb
+	./$(RUBY)  -I$(srcdir)/lib -I. $(srcdir)/tool/runruby.rb test.rb
 
 parse: miniruby$(EXEEXT)
-	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
+	$(MINIRUBY) $(srcdir)/tool/parse.rb test.rb
 
 benchmark: $(RUBY)
 	$(BASERUBY) -I$(srcdir) -I$(srcdir)/lib $(srcdir)/benchmark/run_rite.rb $(OPT) $(ITEMS) --yarv-program=./$(PROGRAM) --ruby-program=$(BASERUBY) --opts=-I$(srcdir)/lib
@@ -602,12 +602,12 @@ run.gdb:
 	echo run               >> run.gdb
 
 gdb: miniruby$(EXEEXT) run.gdb
-	gdb -x run.gdb --quiet --args $(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb
+	gdb -x run.gdb --quiet --args $(MINIRUBY) -I$(srcdir)/lib test.rb
 
 # Intel VTune
 
 vtune: miniruby$(EXEEXT)
-	vtl activity -c sampling -app ".\miniruby$(EXEEXT)","-I$(srcdir)/lib $(srcdir)/test.rb" run
+	vtl activity -c sampling -app ".\miniruby$(EXEEXT)","-I$(srcdir)/lib test.rb" run
 	vtl view -hf -mn miniruby$(EXEEXT) -sum -sort -cd
 	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(BASERUBY) $(srcdir)/tool/vtlh.rb > ha.lines
 

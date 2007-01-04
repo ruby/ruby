@@ -1,3 +1,8 @@
+Thu Jan  4 19:12:27 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk : fix to use test.rb script in build directory.
+	($(srcdir)/test.rb -> test.rb)
+
 Thu Jan  4 17:28:05 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
