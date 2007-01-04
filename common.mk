@@ -523,6 +523,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h vm_opts.h
 
 
 BASERUBY = ruby
+MATZRUBY = ruby
 
 INSNS2VMOPT = $(CPPFLAGS) --srcdir=$(srcdir)
 
@@ -559,11 +560,11 @@ incs:
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
-yarv-test-all: miniruby$(EXEEXT)
-	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) yarv=$(MINIRUBY) ruby=$(BASERUBY)
+compare-test: miniruby$(EXEEXT)
+	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
-yarv-test-each: miniruby$(EXEEXT)
-	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) yarv=$(MINIRUBY) ruby=$(BASERUBY)
+compare-test-each: miniruby$(EXEEXT)
+	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
 allload: miniruby$(EXEEXT)
 	$(MINIRUBY) -I$(srcdir) $(srcdir)/tool/allload.rb `$(BASERUBY) -rrbconfig -e 'print Config::CONFIG["rubylibdir"]'`

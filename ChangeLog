@@ -1,3 +1,16 @@
+Thu Jan  4 20:01:29 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk : rename yarv-test-[all/each] to compare-test[/-each].
+	purpose of "compare-test" rule is to compare ruby (trunk) and
+	matzruby (branches/matzruby) binary in miniruby level.  MATZRUBY
+	parameter means an path to miniruby of matzruby binary.  to do this
+	comparison test, you should build matzruby branch.
+
+	* yarvtest/yarvtest.rb : fix to use command line option as
+	command names to be compared.
+
+	* yarvtest/runner.rb : remove a debug output.
+
 Thu Jan  4 19:12:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : fix to use test.rb script in build directory.

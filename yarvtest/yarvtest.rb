@@ -1,53 +1,29 @@
 require 'test/unit'
-
-if defined? YARV_PATCHED
-require 'yarvutil'
-
-class YarvTestBase < Test::Unit::TestCase
-
-  def remove_const sym
-    Object.module_eval{
-      remove_const sym
-    }
-  end
-
-  def remove_method sym
-    Object.module_eval{
-      undef sym
-    }
-  end
-  
-  def ae str
-    # puts str
-    # puts YARVUtil.parse(str, $0, 0).disasm
-
-    ruby = YARVUtil.eval_in_wrap(str)
-    yield if block_given?
-
-    yarv = YARVUtil.eval(str)
-    yield if block_given?
-
-    assert_equal(ruby, yarv)
-  end
-  
-  def test_
-  end
-
-end
-
-else
-
 require 'rbconfig'
+require 'optparse'
+
+if /mswin32/ !~ RUBY_PLATFORM
+  $ruby = './miniruby'
+else
+  $ruby = 'miniruby'
+end
+$matzruby = Config::CONFIG['ruby_install_name']
+
+ARGV.each{|opt|
+  if /\Aruby=(.+)/ =~ opt
+    $ruby = $1
+  elsif /\Amatzruby=(.+)/ =~ opt
+    $matzruby = $1
+  end
+}
+
+puts "matzruby: #{`#{$matzruby} -v`}"
+puts "ruby    : #{`#{$ruby} -v`}"
+
 class YarvTestBase < Test::Unit::TestCase
   def initialize *args
     super
 
-    if /mswin32/ !~ RUBY_PLATFORM
-      @yarv = './miniruby'
-    else
-      @yarv = 'miniruby'
-    end
-    @ruby = Config::CONFIG['ruby_install_name']
   end
 
   def remove_const sym
@@ -112,25 +88,23 @@ class YarvTestBase < Test::Unit::TestCase
       })
     }
 
-    ruby = exec(@ruby, evalstr)
-    yarv = exec(@yarv, evalstr)
+    matzruby = exec($matzruby, evalstr)
+    ruby = exec($ruby, evalstr)
 
     if $DEBUG #|| true
-      puts "yarv (#@yarv): #{yarv}"
-      puts "ruby (#@ruby): #{ruby}"
+      puts "matzruby (#$matzruby): #{matzruby}"
+      puts "ruby     (#$ruby): #{ruby}"
     end
 
-    assert_equal(ruby.gsub(/\r/, ''), yarv.gsub(/\r/, ''))
+    assert_equal(ruby.gsub(/\r/, ''), ruby.gsub(/\r/, ''))
 
     # store/load test
     if false # || true
-      yarvasm = dump_and_exec(@yarv, str)
+      yarvasm = dump_and_exec($ruby, str)
       assert_equal(ruby.gsub(/\r/, ''), yarvasm.gsub(/\r/, ''))
     end
   end
   
   def test_
   end
-end
-
 end
