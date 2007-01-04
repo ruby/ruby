@@ -26,7 +26,7 @@ end
 prepare_wc_input
 
 def bm file
-  prog = File.read(file).map{|e| e.rstrip}.join("\n")
+  prog = File.read(file).lines.map{|e| e.rstrip}.join("\n")
   return if prog.empty?
 
   /[a-z]+_(.+)\.rb/ =~ file
