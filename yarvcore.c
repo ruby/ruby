@@ -13,7 +13,6 @@
 #include "ruby.h"
 #include "node.h"
 
-#include "yarv_version.h"
 #include "yarvcore.h"
 #include "yarv.h"
 #include "gc.h"
@@ -891,19 +890,8 @@ void Init_ISeq(void);
 void
 Init_yarvcore(void)
 {
-    const char *rev = "$Rev:$";
-    const char *date = "$Date:$";
-
-    snprintf(yarv_version, 0x20, "YARVCore %d.%d.%d",
-	     MAJOR_VER, MINOR_VER, DEVEL_VER);
-
     /* declare YARVCore module */
     mYarvCore = rb_define_module("YARVCore");
-    rb_define_const(mYarvCore, "VERSION", rb_str_new2(yarv_version));
-    rb_define_const(mYarvCore, "MAJOR", INT2FIX(MAJOR_VER));
-    rb_define_const(mYarvCore, "MINOR", INT2FIX(MINOR_VER));
-    rb_define_const(mYarvCore, "REV", rb_str_new2(rev));
-    rb_define_const(mYarvCore, "DATE", rb_str_new2(date));
     rb_define_const(mYarvCore, "OPTS", rb_str_new2(yarv_options));
 
     Init_ISeq();

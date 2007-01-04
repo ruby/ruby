@@ -506,7 +506,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}version.h {$(VPATH)}yarv_version.h 
+  {$(VPATH)}version.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h \
@@ -517,8 +517,7 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
         insns.inc vm.inc vmtc.inc vm_macro.inc vm_opts.h {$(VPATH)}eval_intern.h
 vm_dump.$(OBJEXT): {$(VPATH)}yarvcore.h {$(VPATH)}vm.h
-yarvcore.$(OBJEXT): {$(VPATH)}yarvcore.c {$(VPATH)}yarvcore.h \
-        {$(VPATH)}yarv_version.h {$(VPATH)}debug.h
+yarvcore.$(OBJEXT): {$(VPATH)}yarvcore.c {$(VPATH)}yarvcore.h  {$(VPATH)}debug.h
 debug.$(OBJEXT): {$(VPATH)}debug.h
 blockinlining.$(OBJEXT): {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h vm_opts.h
 

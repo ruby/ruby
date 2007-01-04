@@ -1,3 +1,11 @@
+Thu Jan  4 16:57:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarv_version.h : removed.
+
+	* common.mk : remove yarv_version.h from rules
+
+	* yarvcore.h (Init_yarvcore) : remove useless constants
+
 Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (Init_ossl_asn1):
