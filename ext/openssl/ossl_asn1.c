@@ -1108,9 +1108,9 @@ Init_ossl_asn1()
     }
 
     cASN1Data = rb_define_class_under(mASN1, "ASN1Data", rb_cObject);
-    rb_attr(cASN1Data, rb_intern("value"), 1, 1, Qtrue);
-    rb_attr(cASN1Data, rb_intern("tag"), 1, 1, Qtrue);
-    rb_attr(cASN1Data, rb_intern("tag_class"), 1, 1, Qtrue);
+    rb_attr(cASN1Data, rb_intern("value"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern("tag"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern("tag_class"), 1, 1, 0);
     rb_define_method(cASN1Data, "initialize", ossl_asn1data_initialize, 3);
     rb_define_method(cASN1Data, "to_der", ossl_asn1data_to_der, 0);
 
@@ -1162,5 +1162,5 @@ do{\
     rb_define_method(cASN1ObjectId, "oid", ossl_asn1obj_get_oid, 0);
     rb_define_alias(cASN1ObjectId, "short_name", "sn");
     rb_define_alias(cASN1ObjectId, "long_name", "ln");
-    rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, Qtrue);
+    rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
 }

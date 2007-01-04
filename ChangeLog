@@ -1,3 +1,9 @@
+Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1):
+	  OpenSSL::ASN1::ASN1Data#value,#tag,#tag_class and 
+	  OpenSSL::ASN1::BitString#unused_bits should be public.
+
 Thu Jan 04 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci : fix last changes around PTHREAD_STACK_MIN.
