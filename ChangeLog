@@ -1,3 +1,8 @@
+Thu Jan  4 17:28:05 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
+	  Arrays could not be modified in its each block. [ruby-dev:30063]
+
 Thu Jan  4 16:57:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv_version.h : removed.

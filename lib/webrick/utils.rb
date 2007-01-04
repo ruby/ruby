@@ -124,7 +124,7 @@ module WEBrick
           while true
             now = Time.now
             @timeout_info.each{|thread, ary|
-              ary.each{|info|
+              ary.dup.each{|info|
                 time, exception = *info
                 interrupt(thread, info.object_id, exception) if time < now
               }
