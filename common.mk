@@ -2,6 +2,8 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
+.SUFFIXES: .inc
+
 RUBYOPT       =
 
 STATIC_RUBY   = static-ruby
