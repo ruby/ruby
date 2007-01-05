@@ -525,7 +525,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h vm_opts.h
 
 
 BASERUBY = ruby
-MATZRUBY = ruby
+MATZRUBY = $(BASERUBY)
 
 INSNS2VMOPT = $(CPPFLAGS) --srcdir=$(srcdir)
 
@@ -580,13 +580,13 @@ parse: miniruby$(EXEEXT)
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
 benchmark: $(RUBY)
-	$(BASERUBY) -I$(srcdir) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --yarv-program=./$(PROGRAM) --ruby-program=$(BASERUBY) --opts=-I$(srcdir)/lib
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 benchmark-each: $(RUBY)
-	$(BASERUBY) -I$(srcdir) $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --yarv-program=./$(RUBY) --ruby-program=$(BASERUBY) --opts=-I$(srcdir)/lib
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 tbench: $(RUBY)
-	$(BASERUBY) -I$(srcdir) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --yarv-program=./$(PROGRAM) --ruby-program=$(BASERUBY) --opts=-I$(srcdir)/lib
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 aotc:
 	$(RUBY) -I$(srcdir) -I. $(srcdir)/tool/aotcompile.rb $(INSNS2VMOPT)
@@ -599,9 +599,9 @@ vmasm:
 
 run.gdb:
 	echo b debug_breakpoint > run.gdb
-	echo handle SIGINT nostop
-	echo handle SIGPIPE nostop
-	echo run               >> run.gdb
+	# echo handle SIGINT nostop >> run.gdb
+	# echo handle SIGPIPE nostop >> run.gdb
+	echo run >> run.gdb
 
 gdb: miniruby$(EXEEXT) run.gdb
 	gdb -x run.gdb --quiet --args $(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb

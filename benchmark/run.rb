@@ -1,11 +1,11 @@
 #
-# YARV benchmark driver
+# Ruby benchmark driver
 #
 
 require 'benchmark'
 require 'rbconfig'
 
-$yarvonly = false
+$matzrubyonly = false
 $rubyonly = false
 
 $results  = []
@@ -31,26 +31,20 @@ def bm file
 
   /[a-z]+_(.+)\.rb/ =~ file
   bm_name = $1
-  puts '-----------------------------------------------------------' unless $yarvonly || $rubyonly
+  puts '-----------------------------------------------------------' unless $rubyonly || $matzrubyonly
   puts "#{bm_name}: "
   
   
-puts <<EOS unless $yarvonly || $rubyonly
+puts <<EOS unless $matzrubyonly || $rubyonly
 #{prog}
 --
 EOS
-  #iseq = YARVUtil.parse(File.read(file))
-  #vm   = YARVCore::VM.new
   begin
     result = [bm_name]
-    result << ruby_exec(file) unless $yarvonly
-    result << yarv_exec(file) unless $rubyonly
+    result << matzruby_exec(file) unless $rubyonly
+    result << ruby_exec(file) unless $matzrubyonly
     $results << result
-    
-    # puts YARVUtil.parse(File.read(file), file, 1).disasm
-    
-    # x.report("ruby"){ load(file, false)    }
-    # x.report("yarv"){ vm.eval iseq }
+
   rescue Exception => e
     puts
     puts "** benchmark failure: #{e}"
@@ -72,35 +66,35 @@ def ruby_exec file
   benchmark file, $ruby_program
 end
 
-def yarv_exec file
-  print 'yarv'
-  benchmark file, $yarv_program
+def matzruby_exec file
+  print 'matz'
+  benchmark file, $matzruby_program
 end
 
 if $0 == __FILE__
   ARGV.each{|arg|
     case arg
-    when /\A--yarv-program=(.+)/
-      $yarv_program = $1
-    when /\A--ruby-program=(.+)/
+    when /\A--ruby=(.+)/
       $ruby_program = $1
+    when /\A--matzruby=(.+)/
+      $matzruby_program = $1
     when /\A--opts=(.+)/
       $opts = $1
-    when /\A(--yarv)|(-y)/
-      $yarvonly = true
-    when /\A(--ruby)|(-r)/
+    when /\A(-r|--only-ruby)\z/
       $rubyonly = true
+    when /\A(-m|--only-matzruby)\z/
+      $matzrubyonly = true
     end
   }
   ARGV.delete_if{|arg|
     /\A-/ =~ arg
   }
   
+  puts "MatzRuby:"
+  system("#{$matzruby_program} -v")
   puts "Ruby:"
   system("#{$ruby_program} -v")
   puts
-  puts "YARV:"
-  system("#{$yarv_program} -v")
 
   if ARGV.empty?
     Dir.glob(File.dirname(__FILE__) + '/bm_*.rb').sort.each{|file|
