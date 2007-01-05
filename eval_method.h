@@ -561,7 +561,7 @@ rb_alias(VALUE klass, ID name, ID def)
     
     if (RTEST(ruby_verbose) &&
 	st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *) & node)) {
-	if (node->nd_cnt == 0 && node->nd_body) {
+	if (node && node->nd_cnt == 0 && node->nd_body) {
 	    rb_warning("discarding old %s", rb_id2name(name));
 	}
     }
