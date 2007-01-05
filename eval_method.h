@@ -146,12 +146,12 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 		if (nd_type(old_node->nd_body->nd_body) == NODE_CFUNC) {
 		    yarv_check_redefinition_opt_method(old_node);
 		}
+		if (RTEST(ruby_verbose) && old_node->nd_cnt == 0 && old_node->nd_body) {
+		    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+		}
 	    }
 	    if (klass == rb_cObject && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
-	    }
-	    if (RTEST(ruby_verbose) && old_node->nd_cnt == 0 && old_node->nd_body) {
-		rb_warning("method redefined; discarding old %s", rb_id2name(mid));
 	    }
 	}
 

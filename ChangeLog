@@ -1,3 +1,7 @@
+Fri Jan  5 13:59:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_method.h (rb_add_method) : fix to check old_node
+
 Fri Jan  5 12:03:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each, set_block_local_tbl) : 
