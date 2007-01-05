@@ -1101,8 +1101,7 @@ def proc_return1
 end
 test_ok(proc_return1() == 43)
 def proc_return2
-  #! ->{return 42}.call+1
-  lambda{return 42}.call+1
+  ->{return 42}.call+1
 end
 test_ok(proc_return2() == 43)
 def proc_return3

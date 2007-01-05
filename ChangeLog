@@ -1,3 +1,12 @@
+Fri Jan  5 12:03:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each, set_block_local_tbl) : 
+	support NODE_LAMBDA (partly).
+
+	* sample/test.rb : restore test of NODE_LAMBDA
+
+	* test/ruby/test_lambda.rb : ditto
+
 Fri Jan  5 12:31:23 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* thread_pthread.ci (native_sleep): fix tv_nsec overflow.

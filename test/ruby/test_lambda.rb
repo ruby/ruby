@@ -1,14 +1,6 @@
 require 'test/unit'
 
 class TestLambdaParameters < Test::Unit::TestCase
-  def test_not_supported
-    flunk("YARV doesn't support NODE_LAMBDA")
-  end
-end
-
-__END__
-
-class TestLambdaParametersBackup
   def test_call_simple
     assert_equal(1, ->(a){ a }.call(1))
     assert_equal([1,2], ->(a,b){ [a,b] }.call(1,2))
@@ -18,6 +10,20 @@ class TestLambdaParametersBackup
     assert_raises(ArgumentError) { ->(a,b){ }.call(1,2,3) }
   end
 
+  def test_lambda_as_iterator
+    a = 0
+    2.times(&->(_){ a += 1 })
+    assert_equal(a, 2)
+  end
+
+  def test_message
+    flunk("YARV doesn't support some argument types for Proc object created by '->' syntax")
+  end
+end
+
+__END__
+
+class TestLambdaParameters
   def test_call_rest_args
     assert_equal([1,2], ->(*a){ a }.call(1,2))
     assert_equal([1,2,[]], ->(a,b,*c){ [a,b,c] }.call(1,2))
@@ -51,11 +57,5 @@ class TestLambdaParametersBackup
 
   def foo
     assert_equal(nil, ->(&b){ b }.call)
-  end
-
-  def test_lambda_as_iterator
-    a = 0
-    2.times(&->(_){ a += 1 })
-    assert_equal(a, 2)
   end
 end

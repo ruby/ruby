@@ -964,48 +964,74 @@ set_block_local_tbl(yarv_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
     else if (node->nd_var) {
 	NODE *nargs = node->nd_var;
 	switch (nd_type(nargs)) {
-	case NODE_MASGN:{
-	    NODE *massign = nargs;
-	    int i = 0;
-	    if (nargs->nd_head != 0) {
-		NODE *lhsn = massign->nd_head;
+	  case NODE_MASGN:{
+	      NODE *massign = nargs;
+	      int i = 0;
+	      if (nargs->nd_head != 0) {
+		  NODE *lhsn = massign->nd_head;
 
-		while (lhsn) {
-		    if (nd_type(lhsn->nd_head) != NODE_DASGN_CURR) {
-			/* idx-th param, current level */
-			set_block_initializer(iseq, lhsn->nd_head,
-					      anchor, iseq->local_size - i);
-		    }
-		    i++;
-		    lhsn = lhsn->nd_next;
-		}
-	    }
+		  while (lhsn) {
+		      if (nd_type(lhsn->nd_head) != NODE_DASGN_CURR) {
+			  /* idx-th param, current level */
+			  set_block_initializer(iseq, lhsn->nd_head,
+						anchor, iseq->local_size - i);
+		      }
+		      i++;
+		      lhsn = lhsn->nd_next;
+		  }
+	      }
 
-	    /* check rest */
-	    if (massign->nd_args != 0 && (long)massign->nd_args != -1) {
-		iseq->argc++;
-		iseq->arg_rest = i + 1;
+	      /* check rest */
+	      if (massign->nd_args != 0 && (long)massign->nd_args != -1) {
+		  iseq->argc++;
+		  iseq->arg_rest = i + 1;
 
-		if (nd_type(massign->nd_args) != NODE_DASGN_CURR) {
-		    set_block_initializer(iseq, massign->nd_args,
-					  anchor, iseq->local_size - i);
-		}
-	    }
-	    else if (i == 1) {
-		iseq->arg_rest = -1;
-	    }
+		  if (nd_type(massign->nd_args) != NODE_DASGN_CURR) {
+		      set_block_initializer(iseq, massign->nd_args,
+					    anchor, iseq->local_size - i);
+		  }
+	      }
+	      else if (i == 1) {
+		  iseq->arg_rest = -1;
+	      }
+	      break;
+	  }
+
+	  case NODE_DASGN_CURR:
 	    break;
-	}
 
-	case NODE_DASGN_CURR:
-	    break;
+	  case NODE_ARGS:{
+	      /* make parameters */
+	      VALUE a = nargs->nd_frml;
+	      int i;
+	      int argc = a ? RARRAY_LEN(a) : 0;
+	      int local_size = argc + iseq->local_size - 1;
+	      ID *local_tbl = local_size > 0 ? ALLOC_N(ID, local_size) : 0;
 
-	    /* for 1.x compatibility */
-	default:{
-		/* first param, current level */
-		set_block_initializer(iseq, nargs, anchor, iseq->local_size);
-		break;
-	    }
+	      for (i=0; i<argc; i++) {
+		  ID id = SYM2ID(RARRAY_PTR(a)[i]);
+		  debugi("NODE_ARGS param", id);
+		  local_tbl[i] = id;
+	      }
+
+	      if (iseq->local_tbl) {
+		  /* copy from old local tbl and delete it */
+		  for (i=1; i<iseq->local_size; i++) {
+		      local_tbl[argc + i - 1] = iseq->local_tbl[i];
+		  }
+		  ruby_xfree(iseq->local_tbl);
+	      }
+	      iseq->local_tbl = local_tbl;
+	      iseq->local_size = local_size;
+	      iseq->argc = argc;
+	      break;
+	  }
+	  default:{
+	      /* for 1.x compatibility */
+	      /* first param, current level */
+	      set_block_initializer(iseq, nargs, anchor, iseq->local_size);
+	      break;
+	  }
 	}
     }
 
@@ -4478,6 +4504,17 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_PRELUDE:{
 	  COMPILE_POPED(ret, "prelude", node->nd_head);
 	  COMPILE_(ret, "body", node->nd_body, poped);
+	  break;
+      }
+      case NODE_LAMBDA:{
+	  VALUE block = NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
+	  VALUE argc = INT2FIX(0);
+	  ADD_INSN  (ret, nd_line(node), putself);
+	  ADD_SEND_R(ret, nd_line(node), ID2SYM(idLambda), argc,
+		     block, INT2FIX(VM_CALL_FCALL_BIT));
+	  if (poped) {
+	      ADD_INSN(ret, nd_line(node), pop);
+	  }
 	  break;
       }
       default:
