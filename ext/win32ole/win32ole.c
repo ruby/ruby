@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.1"
+#define WIN32OLE_VERSION "0.8.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -6923,6 +6923,8 @@ Init_win32ole()
     rb_define_const(cWIN32OLE, "CP_UTF8"      ,INT2FIX(CP_UTF8));
 
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
+    rb_define_const(mWIN32OLE_VARIANT, "VT_EMPTY", INT2FIX(VT_EMPTY));
+    rb_define_const(mWIN32OLE_VARIANT, "VT_NULL", INT2FIX(VT_NULL));
     rb_define_const(mWIN32OLE_VARIANT, "VT_I2", INT2FIX(VT_I2));
     rb_define_const(mWIN32OLE_VARIANT, "VT_I4", INT2FIX(VT_I4));
     rb_define_const(mWIN32OLE_VARIANT, "VT_R4", INT2FIX(VT_R4));

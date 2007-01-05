@@ -8,6 +8,8 @@ if defined?(WIN32OLE::VARIANT)
   class TestWin32OLE_VARIANT_MODULE < Test::Unit::TestCase
     include WIN32OLE::VARIANT
     def test_variant
+      assert_equal(0, VT_EMPTY)
+      assert_equal(1, VT_NULL)
       assert_equal(2, VT_I2)
       assert_equal(3, VT_I4)
       assert_equal(4, VT_R4)
