@@ -18,7 +18,7 @@ def piece(n, a, nb)
     if n == NP-1
       $p << [a.sort]
     else
-      nbc=nb.clone
+      nbc=nb.dup
       [-ROW, -1, 1, ROW].each{|d|
         if x+d > 0 and not a.include?(x+d) and not nbc.include?(x+d)
           nbc << x+d
@@ -113,7 +113,7 @@ def setpiece(a,pos)
           $b[pos+s] = i
         }
         a << i
-        setpiece(a.clone, pos)
+        setpiece(a.dup, pos)
         a.pop
         x.each{|s|
           $b[pos+s] = -1
@@ -148,7 +148,7 @@ def piece(n,a,nb)
     if n == NP-1
       $p << [a.sort]
     else
-      nbc=nb.clone
+      nbc=nb.dup
       for d in [-ROW, -1, 1, ROW]
         if x+d > 0 and not a.include?(x+d) and not nbc.include?(x+d)
           nbc << x+d
@@ -242,7 +242,7 @@ def setpiece(a,pos)
           $b[pos+s] = i
         end
         a << i
-        setpiece(a.clone, pos)
+        setpiece(a.dup, pos)
         a.pop
         for s in x do
           $b[pos+s] = -1

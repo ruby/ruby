@@ -2,7 +2,6 @@
 # YARV benchmark driver
 #
 
-require 'yarvutil'
 require 'benchmark'
 require 'rbconfig'
 
@@ -11,13 +10,23 @@ $rubyonly = false
 
 $results  = []
 
-puts "ruby #{RUBY_VERSION} #{RUBY_PLATFORM}(#{RUBY_RELEASE_DATE})"
-puts YARVCore::VERSION + " rev: #{YARVCore::REV} (#{YARVCore::DATE})"
-puts YARVCore::OPTS
-puts
+# prepare 'wc.input'
+def prepare_wc_input
+  wcinput = File.join(File.dirname($0), 'wc.input')
+  wcbase  = File.join(File.dirname($0), 'wc.input.base')
+  unless FileTest.exist?(wcinput)
+    data = File.read(wcbase)
+    13.times{
+      data << data
+    }
+    open(wcinput, 'w'){|f| f.write data}
+  end
+end
+
+prepare_wc_input
 
 def bm file
-  prog = File.read(file).map{|e| e.rstrip}.join("\n")
+  prog = File.readlines(file).map{|e| e.rstrip}.join("\n")
   return if prog.empty?
 
   /[a-z]+_(.+)\.rb/ =~ file
@@ -33,10 +42,6 @@ EOS
   #iseq = YARVUtil.parse(File.read(file))
   #vm   = YARVCore::VM.new
   begin
-    Benchmark.bm{|x|
-    # x.report("yarv"){ YARVUtil.load_bm(file) }
-    } unless $yarvonly || $rubyonly
-
     result = [bm_name]
     result << ruby_exec(file) unless $yarvonly
     result << yarv_exec(file) unless $rubyonly
@@ -53,55 +58,37 @@ EOS
   end
 end
 
-def exec_command type, file, w
-  <<-EOP
-  $DRIVER_PATH = '#{File.dirname($0)}'
-  $LOAD_PATH.replace $LOAD_PATH | #{$LOAD_PATH.inspect}
-  require 'benchmark'
-  require 'yarvutil'
-  print '#{type}'
-  begin
-    puts Benchmark.measure{
-      #{w}('#{file}')
-    }
-  rescue Exception => exec_command_error_variable
-    puts "\t" + exec_command_error_variable.message
-  end
-  EOP
-end
-
-def benchmark prog
-  rubybin = ENV['RUBY'] || File.join(
-    Config::CONFIG["bindir"],
-    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"])
-
-  #
-  tmpfile = Tempfile.new('yarvbench')
-  tmpfile.write(prog)
-  tmpfile.close
-
-  cmd = "#{rubybin} #{tmpfile.path}"
-  result = `#{cmd}`
-  puts result
-  tmpfile.close(true)
-  result
+def benchmark file, bin
+  m = Benchmark.measure{
+    `#{bin} #{$opts} #{file}`
+  }
+  sec = '%.3f' % m.real
+  puts " #{sec}"
+  sec
 end
 
 def ruby_exec file
-  prog = exec_command 'ruby', file, 'load'
-  benchmark prog
+  print 'ruby'
+  benchmark file, $ruby_program
 end
 
 def yarv_exec file
-  prog = exec_command 'yarv', file, 'YARVUtil.load_bm'
-  benchmark prog
+  print 'yarv'
+  benchmark file, $yarv_program
 end
 
 if $0 == __FILE__
   ARGV.each{|arg|
-    if /\A(--yarv)|(-y)/ =~ arg
+    case arg
+    when /\A--yarv-program=(.+)/
+      $yarv_program = $1
+    when /\A--ruby-program=(.+)/
+      $ruby_program = $1
+    when /\A--opts=(.+)/
+      $opts = $1
+    when /\A(--yarv)|(-y)/
       $yarvonly = true
-    elsif /\A(--ruby)|(-r)/ =~ arg
+    when /\A(--ruby)|(-r)/
       $rubyonly = true
     end
   }
@@ -109,6 +96,12 @@ if $0 == __FILE__
     /\A-/ =~ arg
   }
   
+  puts "Ruby:"
+  system("#{$ruby_program} -v")
+  puts
+  puts "YARV:"
+  system("#{$yarv_program} -v")
+
   if ARGV.empty?
     Dir.glob(File.dirname(__FILE__) + '/bm_*.rb').sort.each{|file|
       bm file
@@ -133,5 +126,4 @@ if $0 == __FILE__
     puts
   }
 end
-
 

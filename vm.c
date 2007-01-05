@@ -236,7 +236,7 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
 
     for (i = 0; i <= local_size; i++) {
 	env->env[i] = envptr[-local_size + i];
-	//dp(env->env[i]);
+	// dp(env->env[i]);
 	if (YARV_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
 	    // envptr[-local_size + i] = 0;
@@ -707,7 +707,7 @@ th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
     volatile int stored_safe = th->safe_level;
     volatile NODE *stored_special_cref_stack = 0;
     yarv_control_frame_t * volatile cfp = th->cfp;
-    
+
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	stored_special_cref_stack =

@@ -1,3 +1,24 @@
+Fri Jan  5 22:21:08 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_app_pentomino.rb : use Array#dup instead of
+	Array#clone
+
+	* benchmark/bmx_temp.rb : removed
+
+	* benchmark/run.rb : use run.rb instead of run_rite.rb
+
+	* common.mk : ditto
+
+	* benchmark/run_rite.rb : removed
+
+	* common.mk : use $(srcdir)/test.rb to run a test program
+	with "make run"
+
+	* benchmark/bmx_temp.rb : removed and
+	set svn:ignore (bmx_*.rb) to benchmark/
+
+	* test.rb : set svn:ignore
+
 Fri Jan  5 21:03:08 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : fix to compare results
