@@ -1,3 +1,8 @@
+Fri Jan  5 20:50:31 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/run_rite.rb : fix to use readlines instead of
+	read(...).lines (because 1.8 doesn't have String#lines).
+
 Fri Jan  5 20:28:19 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_win32.ci (rb_thread_reset_timer_thread) :
