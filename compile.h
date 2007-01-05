@@ -144,8 +144,14 @@ r_value(VALUE value)
 #define ADD_SEND(seq, line, id, argc) \
   ADD_SEND_R(seq, line, id, argc, (VALUE)Qfalse, (VALUE)INT2FIX(0))
 
+#define ADD_CALL_RECEIVER(seq, line) \
+  ADD_INSN(seq, line, putnil)
+
 #define ADD_CALL(seq, line, id, argc) \
   ADD_SEND_R(seq, line, id, argc, (VALUE)Qfalse, (VALUE)INT2FIX(VM_CALL_FCALL_BIT))
+
+#define ADD_CALL_WITH_BLOCK(seq, line, id, argc, block) \
+  ADD_SEND_R(seq, line, id, argc, block, (VALUE)INT2FIX(VM_CALL_FCALL_BIT))
 
 #define ADD_SEND_R(seq, line, id, argc, block, flag) \
   ADD_ELEM(seq, (LINK_ELEMENT *) \

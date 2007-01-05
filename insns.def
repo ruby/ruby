@@ -1158,7 +1158,16 @@ send
     num_t flag = op_flag;
 
     macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq);
-    recv = TOPN(num);
+
+    if (flag & VM_CALL_FCALL_BIT) {
+	/* method(...) */
+	recv = GET_SELF();
+    }
+    else {
+	/* recv.method(...) */
+	recv = TOPN(num);
+    }
+
     klass = CLASS_OF(recv);
 
     mn = eval_method_search(id, klass, ic);
@@ -2110,8 +2119,6 @@ opt_ltlt
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    if (0) {
-    }
     if (!SPECIAL_CONST_P(recv)) {
 	if (0) {
 	}

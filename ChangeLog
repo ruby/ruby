@@ -1,3 +1,16 @@
+Fri Jan  5 20:52:56 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, compile.h : add ADD_CALL_RECEIVER() macro.
+
+	* insns.def (send) : use GET_SELF() direct if FCALL.
+
+	* eval.c (rb_f_send) : check method dispatch type to permit
+	invoking private method when dispatch type is FCALL/VCALL
+
+	* insns.def (opt_ltlt) : remove useless statement.
+
+	* vm.h : remove unused macros.
+
 Fri Jan  5 20:50:31 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run_rite.rb : fix to use readlines instead of

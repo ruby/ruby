@@ -229,12 +229,9 @@ default:                        \
   };
  */
 
-#define ENV_VAL(env)        ((env)[3])
-#define ENV_IN_HEAP_P(env)  ((env)[2] == Qundef)
 #define ORPHAN_ENV_P(env)   ((env)[1] == Qundef)
-
-#define ENV_IN_HEAP(env)    ((env)[2] = Qundef)
-#define ORPHAN_ENV(env)     ((env)[1] = Qundef)
+#define ENV_IN_HEAP_P(env)  ((env)[2] == Qundef)
+#define ENV_VAL(env)        ((env)[3])
 
 #define FRAME_MAGIC_METHOD 0xfaffff11
 #define FRAME_MAGIC_BLOCK  0xfaffff21

@@ -1712,7 +1712,15 @@ send_funcall(int argc, VALUE *argv, VALUE recv, int scope)
 static VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
-    return send_funcall(argc, argv, recv, NOEX_PUBLIC);
+    int scope = NOEX_PUBLIC;
+    yarv_thread_t *th = GET_THREAD();
+    yarv_control_frame_t *cfp = YARV_PREVIOUS_CONTROL_FRAME(th->cfp);
+
+    if (SPECIAL_CONST_P(cfp->sp[0])) {
+	scope = NOEX_NOSUPER | NOEX_PRIVATE;
+    }
+
+    return send_funcall(argc, argv, recv, scope);
 }
 
 /*

@@ -2901,7 +2901,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 				       end_label, redo_label);
 	  }
 	  else {
-	      ADD_INSN(ret, nd_line(node), putself);
+	      ADD_CALL_RECEIVER(ret, nd_line(node));
 	      ADD_CALL(ret, nd_line(node), ID2SYM(idGets), INT2FIX(0));
 	      ADD_INSNL(ret, nd_line(node), branchif, redo_label) ;
 	      /* opt_n */
@@ -3626,7 +3626,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      COMPILE(recv, "recv", node->nd_recv);
 	  }
 	  else if (type == NODE_FCALL || type == NODE_VCALL) {
-	      ADD_INSN(recv, nd_line(node), putself);
+	      ADD_CALL_RECEIVER(recv, nd_line(node));
 	  }
 
 	  /* args */
@@ -4013,7 +4013,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_XSTR:{
-	  ADD_INSN(ret, nd_line(node), putself);
+	  ADD_CALL_RECEIVER(ret, nd_line(node));
 	  ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
 	  ADD_CALL(ret, nd_line(node), ID2SYM(idBackquote), INT2FIX(1));
 
@@ -4023,7 +4023,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_DXSTR:{
-	  ADD_INSN(ret, nd_line(node), putself);
+	  ADD_CALL_RECEIVER(ret, nd_line(node));
 	  compile_dstr(iseq, ret, node);
 	  ADD_CALL(ret, nd_line(node), ID2SYM(idBackquote), INT2FIX(1));
 
@@ -4258,7 +4258,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  }
 	  else {
 	      /* function call */
-	      ADD_INSN(ret, nd_line(node), putself);
+	      ADD_CALL_RECEIVER(ret, nd_line(node));
 	      COMPILE(ret, "colon2#nd_head", node->nd_head);
 	      ADD_CALL(ret, nd_line(node), ID2SYM(node->nd_mid),
 		       INT2FIX(1));
@@ -4507,11 +4507,12 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_LAMBDA:{
+	  /* compile same as lambda{...} */
 	  VALUE block = NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
 	  VALUE argc = INT2FIX(0);
-	  ADD_INSN  (ret, nd_line(node), putself);
-	  ADD_SEND_R(ret, nd_line(node), ID2SYM(idLambda), argc,
-		     block, INT2FIX(VM_CALL_FCALL_BIT));
+	  ADD_CALL_RECEIVER(ret, nd_line(node));
+	  ADD_CALL_WITH_BLOCK(ret, nd_line(node), ID2SYM(idLambda), argc, block);
+
 	  if (poped) {
 	      ADD_INSN(ret, nd_line(node), pop);
 	  }
