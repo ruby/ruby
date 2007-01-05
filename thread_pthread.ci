@@ -254,6 +254,10 @@ native_sleep(yarv_thread_t *th, struct timeval *tv)
 	gettimeofday(&tvn, NULL);
 	ts.tv_sec = tvn.tv_sec + tv->tv_sec;
 	ts.tv_nsec = (tvn.tv_usec + tv->tv_usec) * 1000;
+        if (ts.tv_nsec >= 1000000000){
+	    ts.tv_sec += 1;
+	    ts.tv_nsec -= 1000000000;
+        }
     }
     
     th->status = THREAD_STOPPED;
