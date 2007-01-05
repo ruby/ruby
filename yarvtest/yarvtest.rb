@@ -96,7 +96,7 @@ class YarvTestBase < Test::Unit::TestCase
       puts "ruby     (#$ruby): #{ruby}"
     end
 
-    assert_equal(ruby.gsub(/\r/, ''), ruby.gsub(/\r/, ''))
+    assert_equal(matzruby.gsub(/\r/, ''), ruby.gsub(/\r/, ''), str)
 
     # store/load test
     if false # || true

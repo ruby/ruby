@@ -1,3 +1,7 @@
+Fri Jan  5 21:03:08 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvtest/yarvtest.rb : fix to compare results
+
 Fri Jan  5 20:52:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h : add ADD_CALL_RECEIVER() macro.
