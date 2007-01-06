@@ -1,12 +1,20 @@
+Sat Jan  6 18:46:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_getline_fast, rb_io_getline): increase lineno
+	  when met the delimiter or EOF.  fixed: [ruby-dev:30081]
+
+	* io.c (prepare_getline_args, rb_io_getline_1): split
+	  preparation of arguments and reading.  [ruby-dev:30085]
+
 Sat Jan  6 13:48:36 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def (send) : fix to optimize send() with Symbol.
+	* insns.def (send): fix to optimize send() with Symbol.
 
-	* yarvtest/test_method.rb : add another test.
+	* yarvtest/test_method.rb: add another test.
 
 Sat Jan  6 13:43:55 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : add PHONY dependency to some rules
+	* common.mk: add PHONY dependency to some rules
 
 Sat Jan  6 11:50:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -14,22 +22,22 @@ Sat Jan  6 11:50:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Jan  6 09:10:52 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def : support direct method dispatch with "send" or "funcall".
-	This means that "obj.send :m" skips "BasicObject#send" invocation
-	(method frame creation, etc) and "obj.m" invokes directly.
-	If you make backtrace, there are no enties of "send" method.
+	* insns.def: support direct method dispatch with "send" or "funcall".
+	  This means that "obj.send :m" skips "BasicObject#send" invocation
+	  (method frame creation, etc) and "obj.m" invokes directly.
+	  If you make backtrace, there are no enties of "send" method.
 
-	* compile.c (iseq_specialized_instruction) : fix to support above
+	* compile.c (iseq_specialized_instruction): fix to support above
 
-	* eval.c : ditto (remove "static" from rb_f_send and rb_f_funcall
+	* eval.c: ditto (remove "static" from rb_f_send and rb_f_funcall
 
-	* yarvcore.c : ditto (add a external IDs for compiler)
+	* yarvcore.c: ditto (add a external IDs for compiler)
 
-	* yarvcore.h : ditto (add a VM_CALL_SEND_BIT macro)
+	* yarvcore.h: ditto (add a VM_CALL_SEND_BIT macro)
 
-	* yarvtest/test_method.rb : add tests for above changes
+	* yarvtest/test_method.rb: add tests for above changes
 
-	* eval.c : remove unused "Kernel#send" declaration
+	* eval.c: remove unused "Kernel#send" declaration
 
 Sat Jan  6 08:29:17 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -40,78 +48,78 @@ Sat Jan  6 08:29:17 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Jan  6 03:49:22 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/run.rb : change option format
+	* benchmark/run.rb: change option format
 
-	* common.mk : ditto
+	* common.mk: ditto
 
 Fri Jan  5 22:21:08 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/bm_app_pentomino.rb : use Array#dup instead of
-	Array#clone
+	* benchmark/bm_app_pentomino.rb: use Array#dup instead of
+	  Array#clone
 
-	* benchmark/bmx_temp.rb : removed
+	* benchmark/bmx_temp.rb: removed
 
-	* benchmark/run.rb : use run.rb instead of run_rite.rb
+	* benchmark/run.rb: use run.rb instead of run_rite.rb
 
-	* common.mk : ditto
+	* common.mk: ditto
 
-	* benchmark/run_rite.rb : removed
+	* benchmark/run_rite.rb: removed
 
-	* common.mk : use $(srcdir)/test.rb to run a test program
-	with "make run"
+	* common.mk: use $(srcdir)/test.rb to run a test program
+	  with "make run"
 
-	* benchmark/bmx_temp.rb : removed and
-	set svn:ignore (bmx_*.rb) to benchmark/
+	* benchmark/bmx_temp.rb: removed and
+	  set svn:ignore (bmx_*.rb) to benchmark/
 
-	* test.rb : set svn:ignore
+	* test.rb: set svn:ignore
 
 Fri Jan  5 21:03:08 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* yarvtest/yarvtest.rb : fix to compare results
+	* yarvtest/yarvtest.rb: fix to compare results
 
 Fri Jan  5 20:52:56 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.c, compile.h : add ADD_CALL_RECEIVER() macro.
+	* compile.c, compile.h: add ADD_CALL_RECEIVER() macro.
 
-	* insns.def (send) : use GET_SELF() direct if FCALL.
+	* insns.def (send): use GET_SELF() direct if FCALL.
 
-	* eval.c (rb_f_send) : check method dispatch type to permit
-	invoking private method when dispatch type is FCALL/VCALL
+	* eval.c (rb_f_send): check method dispatch type to permit
+	  invoking private method when dispatch type is FCALL/VCALL
 
-	* insns.def (opt_ltlt) : remove useless statement.
+	* insns.def (opt_ltlt): remove useless statement.
 
-	* vm.h : remove unused macros.
+	* vm.h: remove unused macros.
 
 Fri Jan  5 20:50:31 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/run_rite.rb : fix to use readlines instead of
-	read(...).lines (because 1.8 doesn't have String#lines).
+	* benchmark/run_rite.rb: fix to use readlines instead of
+	  read(...).lines (because 1.8 doesn't have String#lines).
 
 Fri Jan  5 20:28:19 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_win32.ci (rb_thread_reset_timer_thread) :
-	added ([ruby-dev:30086]).
+	* thread_win32.ci (rb_thread_reset_timer_thread):
+	  added ([ruby-dev:30086]).
 
 Fri Jan  5 20:20:36 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : add .SUFFIXES rule
+	* common.mk: add .SUFFIXES rule
 
 Fri Jan  5 15:58:15 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* eval_method.h (rb_alias) : fix to check search result
+	* eval_method.h (rb_alias): fix to check search result
 
 Fri Jan  5 13:59:53 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* eval_method.h (rb_add_method) : fix to check old_node
+	* eval_method.h (rb_add_method): fix to check old_node
 
 Fri Jan  5 12:03:07 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.c (iseq_compile_each, set_block_local_tbl) : 
-	support NODE_LAMBDA (partly).
+	* compile.c (iseq_compile_each, set_block_local_tbl): 
+	  support NODE_LAMBDA (partly).
 
-	* sample/test.rb : restore test of NODE_LAMBDA
+	* sample/test.rb: restore test of NODE_LAMBDA
 
-	* test/ruby/test_lambda.rb : ditto
+	* test/ruby/test_lambda.rb: ditto
 
 Fri Jan  5 12:31:23 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -119,21 +127,21 @@ Fri Jan  5 12:31:23 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Thu Jan  4 20:01:29 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : rename yarv-test-[all/each] to compare-test[/-each].
-	purpose of "compare-test" rule is to compare ruby (trunk) and
-	matzruby (branches/matzruby) binary in miniruby level.  MATZRUBY
-	parameter means an path to miniruby of matzruby binary.  to do this
-	comparison test, you should build matzruby branch.
+	* common.mk: rename yarv-test-[all/each] to compare-test[/-each].
+	  purpose of "compare-test" rule is to compare ruby (trunk) and
+	  matzruby (branches/matzruby) binary in miniruby level.  MATZRUBY
+	  parameter means an path to miniruby of matzruby binary.  to do this
+	  comparison test, you should build matzruby branch.
 
-	* yarvtest/yarvtest.rb : fix to use command line option as
-	command names to be compared.
+	* yarvtest/yarvtest.rb: fix to use command line option as
+	  command names to be compared.
 
-	* yarvtest/runner.rb : remove a debug output.
+	* yarvtest/runner.rb: remove a debug output.
 
 Thu Jan  4 19:12:27 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : fix to use test.rb script in build directory.
-	($(srcdir)/test.rb -> test.rb)
+	* common.mk: fix to use test.rb script in build directory.
+	  ($(srcdir)/test.rb -> test.rb)
 
 Thu Jan  4 17:28:05 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -142,11 +150,11 @@ Thu Jan  4 17:28:05 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Thu Jan  4 16:57:14 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* yarv_version.h : removed.
+	* yarv_version.h: removed.
 
-	* common.mk : remove yarv_version.h from rules
+	* common.mk: remove yarv_version.h from rules
 
-	* yarvcore.h (Init_yarvcore) : remove useless constants
+	* yarvcore.h (Init_yarvcore): remove useless constants
 
 Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -156,20 +164,20 @@ Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Thu Jan 04 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_pthread.ci : fix last changes around PTHREAD_STACK_MIN.
+	* thread_pthread.ci: fix last changes around PTHREAD_STACK_MIN.
 
 Thu Jan 04 13:42:47 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* common.mk : restore changes.
+	* common.mk: restore changes.
 
 Thu Jan 04 10:33:54 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_pthread.ci : fix to skip using PTHREAD_STACK_MIN.
-	[ruby-dev:30063]
+	* thread_pthread.ci: fix to skip using PTHREAD_STACK_MIN.
+	  [ruby-dev:30063]
 
 Thu Jan 04 10:30:11 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* benchmark/run_rite.rb (bm) : fix to use lines.
+	* benchmark/run_rite.rb (bm): fix to use lines.
 
 Wed Jan  3 18:49:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -189,31 +197,31 @@ Tue Jan  2 10:29:54 2007  Eric Hodel  <drbrain@segment7.net>
 
 Mon Jan 01 08:07:06 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* ext/tk/tcltklib.c : fix to compile on YARV
+	* ext/tk/tcltklib.c: fix to compile on YARV
           ruby_errinfo -> rb_errinfo(),
           ruby_safe_level -> rb_safe_level().
 
 Mon Jan 01 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* test/drb/test_drbssl.rb : fix to skip drb tests.
+	* test/drb/test_drbssl.rb: fix to skip drb tests.
 
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
-	value information.
+	  value information.
 
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/bigdecimal/bigdecimal.c: Update constant comments to provide
-	values for RDoc.
+	  values for RDoc.
 
 Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts):
-	Allow RDoc comment to give friendly value for rb_define_const.  Patch
-	by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
+	  Allow RDoc comment to give friendly value for rb_define_const.  Patch
+	  by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
-	whitespace handling in constant comments.
+	  whitespace handling in constant comments.
 
 Mon Jan 01 00:00:00 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -543,9 +551,9 @@ Mon Nov  6 15:41:55 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  fix on 'itemconfiginfo' method, and modify to make it easy to
 	  override 'itemconfiginfo' method.
 
-	* ext/tk/lib/tkextlib/tile/treeview.rb : support Tile 0.7.8.
+	* ext/tk/lib/tkextlib/tile/treeview.rb: support Tile 0.7.8.
 
-	* ext/tk/lib/tkextlib/version.rb : [new] add Tk::Tkextlib_RELEASE_DATE
+	* ext/tk/lib/tkextlib/version.rb: [new] add Tk::Tkextlib_RELEASE_DATE
 	  to get the information from scripts.
 
 	* ext/tk/lib/tk.rb: load 'tkextlib/version.rb', and update RELEASE_DATE
@@ -3631,7 +3639,7 @@ Sun Jun 18 20:28:43 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole.c (ole_propertyput): support
 	  PROPERTYPUTREF. [ruby-talk:183042]
 
-	* test/win32ole/test_propertyputref.rb : ditto.
+	* test/win32ole/test_propertyputref.rb: ditto.
 
 Sat Jun 17 23:42:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -4369,13 +4377,13 @@ Tue Apr  4 22:15:41 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Apr  1 15:11:27 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c :add WIN32OLE_TYPE#inspect,
+	* ext/win32ole/win32ole.c: add WIN32OLE_TYPE#inspect,
 	  WIN32OLE_VARIABLE#inspect
 
 	* remove ext/win32ole/tests/testOLEVARIABLE.rb, testOLETYPE.rb
 	  testOLETYPELIB.rb.
 
-	* testall.rb :ditto.
+	* testall.rb: ditto.
 
 	* add test/win32ole
 
@@ -4470,7 +4478,7 @@ Thu Mar 23 00:01:32 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 	* re.c (rb_reg_regsub): add back reference by name \k<name> in
 	  replace string.
 
-	* re.h : add regexp argument to rb_reg_regsub().
+	* re.h: add regexp argument to rb_reg_regsub().
 
 	* string.c (rb_str_sub_bang): ditto.
 
@@ -4482,7 +4490,7 @@ Tue Mar 21 22:14:01 2006  K.Kosako  <sndgk393 AT ybb.ne.jp>
 
 	* re.c (match_aref): add String and Symbol argument. [ruby-dev:28448]
 
-	* re.h : add member regexp to RMatch.
+	* re.h: add member regexp to RMatch.
 
 	* gc.c (gc_mark_children): add gc_mark() to regexp member.
 
@@ -5418,7 +5426,7 @@ Tue Dec 27 14:17:55 2005  Tanaka Akira  <akr@m17n.org>
 	  (rb_thread_restore_context): just call stack_extend.
 	  (flush_register_windows): removed.
 
-	[ruby-dev:28127]
+	  [ruby-dev:28127]
 
 Tue Dec 27 14:09:39 2005  Minero Aoki  <aamine@loveruby.net>
 
@@ -6157,7 +6165,7 @@ Thu Nov 17 17:40:19 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 Thu Nov 17 13:52:00 2005  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/rss/rss.rb : removed needless argument 'prefix'.
+	* lib/rss/rss.rb: removed needless argument 'prefix'.
 
 	* lib/rss/parser.rb: ditto.
 
@@ -7467,8 +7475,8 @@ Sat Sep 17 09:45:26 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#normalize): fixed
-	strange RSS::Maker::Item#max_size behavior.
-	Thanks to Kazuhiko <kazuhiko@fdiary.net>.
+	  strange RSS::Maker::Item#max_size behavior.
+	  Thanks to Kazuhiko <kazuhiko@fdiary.net>.
 
 	* test/rss/test_maker_1.0.rb (RSS::TestMaker10#test_items): ditto.
 
@@ -7477,7 +7485,7 @@ Sat Sep 17 08:02:53 2005  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/imap.rb: supported DIGEST-MD5.  Thanks, Mathieu Arnold.
 
 	* lib/net/imap.rb: use fcall instead of send.  Thanks, Satoru
-	Takabayashi.
+	  Takabayashi.
 
 Fri Sep 16 22:45:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -9437,7 +9445,7 @@ Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jun 18 01:15:36 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): do not set
-	rl_{in,out}stream.
+	  rl_{in,out}stream.
 
 	* ext/readline/readline.c (readline_s_set_input): new method.
 
@@ -10302,7 +10310,7 @@ Mon Apr 25 13:54:55 2005  speakillof  <speakillof@yahoo.co.jp>
 Mon Apr 25 01:18:43 2005  Tanaka Akira  <akr@m17n.org>
 
 	* oniguruma.h (OnigWarnFunc): add a variadic argument.
-	[ruby-core:4751]
+	  [ruby-core:4751]
 
 Sat Apr 23 19:49:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -12047,7 +12055,7 @@ Wed Feb  2 03:30:58 2005  Minero Aoki  <aamine@loveruby.net>
 Tue Feb  1 21:49:24 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRb::DRbObject#respond_to?): check marshal_dump and
-	_dump.
+	  _dump.
 
 Tue Feb  1 00:20:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -12097,9 +12105,9 @@ Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
 Sat Jan 29 00:10:33 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* ascii.c, euc_jp.c, hash.c, oniggnu.h, oniguruma.h, regcomp.c,
-	regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c, regint.h,
-	regparse.c, regparse.h, sjis.c, st.c, st.h, utf8.c: imported
-	Oni Guruma 3.5.4.
+	  regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c, regint.h,
+	  regparse.c, regparse.h, sjis.c, st.c, st.h, utf8.c: imported
+	  Oni Guruma 3.5.4.
 
 Fri Jan 28 17:16:55 2005  Tanaka Akira  <akr@m17n.org>
 
@@ -13082,7 +13090,7 @@ Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
 Mon Dec 13 02:45:51 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_subwin): call NUM2INT() before
-	GetWINDOW(). fixed: [ruby-dev:25161]
+	  GetWINDOW(). fixed: [ruby-dev:25161]
 
 Mon Dec 13 00:58:02 2004  Tanaka Akira  <akr@m17n.org>
 
@@ -13590,7 +13598,7 @@ Tue Nov 30 00:49:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Nov 30 00:12:57 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c: now handles many alternatives (over 500000)
-	in regexp. [ruby-dev:24773]
+	  in regexp. [ruby-dev:24773]
 
 Mon Nov 29 16:06:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -13660,22 +13668,22 @@ Sun Nov 28 15:51:40 2004  Kouhei Sutou  <kou@cozmixng.org>
 Sun Nov 28 12:14:47 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c (fetch_token): fixed test failure on HP-UX ia64
-	([ruby-dev:24859]).
+	  ([ruby-dev:24859]).
 
 Sun Nov 28 12:08:15 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c, test/ruby/test_regexp.rb: fixed problem with UTF-8
-	characters that have U+00FE or invalid characters.
+	  characters that have U+00FE or invalid characters.
 
 Sun Nov 28 12:07:04 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regexec.c, test/ruby/test_regexp.rb: fixed segmentation fault
-	([ruby-dev:24887]).
+	  ([ruby-dev:24887]).
 
 Sun Nov 28 12:05:48 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regcomp.c, regint.h: fixed PLATFORM_UNALIGNED_WORD_ACCESS
-	problem ([ruby-dev:24802] and [ruby-core:3733])
+	  problem ([ruby-dev:24802] and [ruby-core:3733])
 
 Sat Nov 27 23:43:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -13870,7 +13878,7 @@ Sat Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
+	* test/xmlrpc/test_webrick_server.rb: move `requrie "webrick/https"'
 	  into #setup_http_server method to avoid soap test errors.
 
 Sat Nov 20 01:37:34 2004  Johan Holmberg  <holmberg@iar.se>
@@ -13969,7 +13977,7 @@ Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/ruby/test_stringchar.rb (test_bang): added.
 
 	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
-	(rb_str_swapcase_bang): missing rb_str_modify().
+	  (rb_str_swapcase_bang): missing rb_str_modify().
 
 Thu Nov 18 17:05:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -14346,17 +14354,17 @@ Fri Nov  5 08:34:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Nov  4 23:54:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regexec.c, regparse.c, regint.h: fixed conflicts between
-	vendor branch.
+	  vendor branch.
 
 Thu Nov  4 23:41:55 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
-	regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c,
-	regint.h, regparse.c, regparse.h, sjis.c, utf8.c:
-	imported Oni Guruma 3.4.0.
+	  regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c,
+	  regint.h, regparse.c, regparse.h, sjis.c, utf8.c:
+	  imported Oni Guruma 3.4.0.
 
 	* parse.y, re.c: Now mbclen() takes unsigned char as
-	its argument.
+	  its argument.
 
 Thu Nov  4 21:25:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -14582,7 +14590,7 @@ Fri Oct 29 17:18:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Oct 29 16:34:19 2004  Daiki Ueno  <ueno@unixuser.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): Parse the rest of the
-	line after opening heredoc identifier.  [ruby-dev:24635]
+	  line after opening heredoc identifier.  [ruby-dev:24635]
 
 Fri Oct 29 11:35:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -15057,7 +15065,7 @@ Mon Oct  4 12:53:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Sun Oct  3 21:16:05 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (TEXT_REGEXP): allow 8-bit characters for the german
-	version of Microsoft Exchange Server.
+	  version of Microsoft Exchange Server.
 
 	* lib/net/imap.rb (RTEXT_REGEXP): ditto.
 
@@ -16303,12 +16311,12 @@ Sun Jul 18 03:19:14 2004  Akinori MUSHA  <knu@iDaemons.org>
 Sun Jul 18 02:35:30 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (receive_responses): return if a LOGOUT response
-	received.
+	  received.
 
 Sat Jul 17 23:59:01 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (send_string_data): wait command continuation
-	requests before sending octet data of literals.
+	  requests before sending octet data of literals.
 
 Sat Jul 17 23:54:59 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -16369,7 +16377,7 @@ Thu Jul 15 23:53:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jul 15 22:59:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/extconf.rb: added dir_config for curses, ncurses,
-	termcap.
+	  termcap.
 
 Thu Jul 15 20:44:46 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -16497,11 +16505,11 @@ Fri Jul  9 14:28:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jul  9 01:47:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib : bug fix
-	* ext/tk/lib/tkextlib/itcl : add [incr Tcl] support
-	* ext/tk/lib/tkextlib/itk  : add [incr Tk] support
-	* ext/tk/lib/tkextlib/iwidgets : midway point of [incr Widgets] support
-	* ext/tk/sample/tkextlib/iwidgets : very simple examples of
+	* ext/tk/lib: bug fix
+	* ext/tk/lib/tkextlib/itcl: add [incr Tcl] support
+	* ext/tk/lib/tkextlib/itk: add [incr Tk] support
+	* ext/tk/lib/tkextlib/iwidgets: midway point of [incr Widgets] support
+	* ext/tk/sample/tkextlib/iwidgets: very simple examples of
 	  [incr Widgets]
 
 Thu Jul  8 19:27:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -16532,7 +16540,7 @@ Wed Jul  7 00:48:34 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Jul  6 18:38:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib : improve framework of developping Tcl/Tk extension
+	* ext/tk/lib: improve framework of developping Tcl/Tk extension
 	  wrappers
 
 Mon Jul  5 23:56:42 2004  Kouhei Sutou  <kou@cozmixng.org>
@@ -16657,9 +16665,9 @@ Sat Jul  3 17:19:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Thu Jul  1 18:36:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tcltklib : bug fix
+	* ext/tk/lib/tcltklib: bug fix
 
-	* ext/tk/lib/tk : bug fix and add Tcl/Tk extension support libraries
+	* ext/tk/lib/tk: bug fix and add Tcl/Tk extension support libraries
 
 Thu Jul  1 18:31:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -16793,7 +16801,7 @@ Thu Jun 24 14:23:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jun 24 01:25:21 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* version.h: added declarations of ruby_version,
-	ruby_release_date, ruby_platform.
+	  ruby_release_date, ruby_platform.
 
 Thu Jun 24 01:07:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -17051,7 +17059,7 @@ Thu May 27 20:02:09 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 Thu May 27 15:54:02 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (MDTM_REGEXP): fix for demon's ftp server.
-	Thanks, Rutger Nijlunsing.
+	  Thanks, Rutger Nijlunsing.
 
 Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -17478,7 +17486,7 @@ Sun May  9 13:24:24 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Sun May  9 12:34:26 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
-	* regex.c : removed unused file.
+	* regex.c: removed unused file.
 
 Sat May  8 10:53:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -22688,10 +22696,10 @@ Wed Nov  5 22:55:16 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/README.1st: add the description of '--with-pthread-ext'
 
-	* ext/tk/lib/tktext.rb : add TkText#text_copy, text_cut, text_paste
+	* ext/tk/lib/tktext.rb: add TkText#text_copy, text_cut, text_paste
 	  to support Tcl/Tk8.4's tk_textCopy, tk_textCut, tk_textPaste
 
-	* ext/tk/lib/tk.rb : add TkMenu#set_focus support Tcl/Tk's
+	* ext/tk/lib/tk.rb: add TkMenu#set_focus support Tcl/Tk's
 	  tk_menuSetFocus
 
 Wed Nov  5 17:33:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -23260,10 +23268,10 @@ Wed Oct 15 05:05:53 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 Wed Oct 15 04:31:51 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/demos-en/entry3.rb, ext/tk/sample/demos-jp/entry3.rb :
+	* ext/tk/sample/demos-en/entry3.rb, ext/tk/sample/demos-jp/entry3.rb:
 	  new demo-scripts
 
-	* ext/tk/sample/demos-en/widget, ext/tk/sample/demos-jp/widget :
+	* ext/tk/sample/demos-en/widget, ext/tk/sample/demos-jp/widget:
 	  add entries for 'entry3.rb'
 
 Wed Oct 15 04:31:47 2003  Akinori MUSHA  <knu@iDaemons.org>
@@ -24652,7 +24660,7 @@ Sun Sep  7 16:08:28 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_mainloop_core): fixed signal-trap bug
 
-	* ext/tk/lib/*.rb : Ruby/Tk works at $SAFE == 4
+	* ext/tk/lib/*.rb: Ruby/Tk works at $SAFE == 4
 
 Sat Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -24871,7 +24879,7 @@ Tue Sep  2 14:02:19 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_invoke): fixed bug on passing a exception
 
-	* ext/tk/lib/{tk.rb, tkcanvas.rb, tkfont.rb, tktext.rb} :
+	* ext/tk/lib/{tk.rb, tkcanvas.rb, tkfont.rb, tktext.rb}:
 	  bug fix and improvement of font control
 
 Tue Sep  2 09:51:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -24972,17 +24980,17 @@ Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* process.c: deny handling IDs during evaluating the block given to
 	  the Process::{UID,GID}.switch method
 
-	* ext/tcltklib/tcltklib.c : some methods have no effect if on slave-IP
+	* ext/tcltklib/tcltklib.c: some methods have no effect if on slave-IP
 
-	* ext/tcltklib/tcltklib.c : can create a interpreter without Tk
+	* ext/tcltklib/tcltklib.c: can create a interpreter without Tk
 
-	* ext/tcltklib/tcltklib.c : bug fix on handling exceptions
+	* ext/tcltklib/tcltklib.c: bug fix on handling exceptions
 
-	* ext/tcltklib/MANUAL.euc : modify
+	* ext/tcltklib/MANUAL.euc: modify
 
-	* ext/tk/lib/tk.rb : freeze some core modules
+	* ext/tk/lib/tk.rb: freeze some core modules
 
-	* ext/tk/lib/multi-tk.rb : more secure
+	* ext/tk/lib/multi-tk.rb: more secure
 
 	* ext/tk/lib/tk.rb: TkVariable.new(array) --> treat the array as the
 	  Tk's list
@@ -24990,9 +24998,9 @@ Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: improve accessibility of TkVariable object
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tkfont.rb, ext/tk/lib/tkcanvas.rb,
-	  ext/tk/lib/tktext.rb : fix bug of font handling
+	  ext/tk/lib/tktext.rb: fix bug of font handling
 
-	* ext/tk/lib/tkfont.rb TkFont.new() accepts compound fonts
+	* ext/tk/lib/tkfont.rb: TkFont.new() accepts compound fonts
 
 Thu Aug 28 22:07:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

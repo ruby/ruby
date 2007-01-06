@@ -1636,15 +1636,19 @@ static VALUE
 rb_io_getline_fast(OpenFile *fptr, unsigned char delim, long limit)
 {
     VALUE str = Qnil;
-    int c;
+    int c, nolimit = 0;
 
     for (;;) {
 	c = appendline(fptr, delim, &str, &limit);
-	if (c == EOF || c == delim || limit == 0) break;
+	if (c == EOF || c == delim) break;
+	if (limit == 0) {
+	    nolimit = 1;
+	    break;
+	}
     }
 
     if (!NIL_P(str)) {
-	if (limit != 0) {
+	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
@@ -1662,12 +1666,10 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
     return 0;
 }
 
-static VALUE
-rb_io_getline(int argc, VALUE *argv, VALUE io)
+static void
+prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
 {
-    VALUE rs, lim, str = Qnil;
-    OpenFile *fptr;
-    long limit;
+    VALUE lim, rs;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -1687,7 +1689,16 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
 	    }
 	}
     }
-    limit = NIL_P(lim) ? 0 : NUM2LONG(lim);
+    *rsp = rs;
+    *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
+}
+
+static VALUE
+rb_io_getline_1(VALUE rs, long limit, VALUE io)
+{
+    VALUE str = Qnil;
+    OpenFile *fptr;
+    int nolimit = 0;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -1695,7 +1706,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
-    else if (!NIL_P(lim) && limit == 0) {
+    else if (limit == 0) {
 	return rb_str_new(0,0);
     }
     else if (rs == rb_default_rs) {
@@ -1729,7 +1740,10 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
 		if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - rslen,
 			   rsptr, rslen) == 0) break;
 	    }
-	    if (limit == 0) break;
+	    if (limit == 0) {
+		nolimit = 1;
+		break;
+	    }
 	}
 
 	if (rspara) {
@@ -1740,7 +1754,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
     }
 
     if (!NIL_P(str)) {
-	if (limit != 0) {
+	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
@@ -1748,6 +1762,16 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
     }
 
     return str;
+}
+
+static VALUE
+rb_io_getline(int argc, VALUE *argv, VALUE io)
+{
+    VALUE rs;
+    long limit;
+
+    prepare_getline_args(argc, argv, &rs, &limit);
+    return rb_io_getline_1(rs, limit, io);
 }
 
 VALUE
@@ -1912,10 +1936,12 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_readlines(int argc, VALUE *argv, VALUE io)
 {
-    VALUE line, ary;
+    VALUE line, ary, rs;
+    long limit;
 
+    prepare_getline_args(argc, argv, &rs, &limit);
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_getline(argc, argv, io))) {
+    while (!NIL_P(line = rb_io_getline_1(rs, limit, io))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -1948,10 +1974,12 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_each_line(int argc, VALUE *argv, VALUE io)
 {
-    VALUE str;
+    VALUE str, rs;
+    long limit;
 
     RETURN_ENUMERATOR(io, argc, argv);
-    while (!NIL_P(str = rb_io_getline(argc, argv, io))) {
+    prepare_getline_args(argc, argv, &rs, &limit);
+    while (!NIL_P(str = rb_io_getline_1(rs, limit, io))) {
 	rb_yield(str);
     }
     return io;
