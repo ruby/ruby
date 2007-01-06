@@ -5311,7 +5311,7 @@ argf_read(int argc, VALUE *argv)
     VALUE tmp, str, length;
     long len = 0;
 
-    rb_scan_args(argc, argv, "11", &length, &str);
+    rb_scan_args(argc, argv, "02", &length, &str);
     if (!NIL_P(length)) {
 	len = NUM2LONG(argv[0]);
     }
