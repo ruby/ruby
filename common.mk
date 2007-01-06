@@ -564,28 +564,28 @@ docs:
 
 ##
 
-compare-test: miniruby$(EXEEXT)
+compare-test: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
-compare-test-each: miniruby$(EXEEXT)
+compare-test-each: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
-run: miniruby$(EXEEXT)
+run: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb $(RUNOPT)
 
-runruby: $(RUBY)
+runruby: $(RUBY) PHONY
 	./$(RUBY)  -I$(srcdir)/lib -I. $(srcdir)/tool/runruby.rb $(srcdir)/test.rb
 
-parse: miniruby$(EXEEXT)
+parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
-benchmark: $(RUBY)
+benchmark: $(RUBY) PHONY
 	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
-benchmark-each: $(RUBY)
+benchmark-each: $(RUBY) PHONY
 	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
-tbench: $(RUBY)
+tbench: $(RUBY) PHONY
 	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 aotc:
@@ -603,7 +603,7 @@ run.gdb:
 	# echo handle SIGPIPE nostop >> run.gdb
 	echo run >> run.gdb
 
-gdb: miniruby$(EXEEXT) run.gdb
+gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb
 
 # Intel VTune
