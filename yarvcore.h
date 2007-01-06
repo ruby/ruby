@@ -143,6 +143,12 @@ extern ID idEnd;
 extern ID idBitblt;
 extern ID idAnswer;
 extern ID idSvarPlaceholder;
+extern ID idSend;
+extern ID id__send__;
+extern ID id__send;
+extern ID idFuncall;
+extern ID id__send_bang;
+
 
 extern unsigned long yarvGlobalStateVersion;
 
@@ -534,13 +540,14 @@ typedef struct {
 
 
 /* used by compile time and send insn */
-#define VM_CALL_ARGS_SPLAT_BIT     0x01
-#define VM_CALL_ARGS_BLOCKARG_BIT  0x02
-#define VM_CALL_FCALL_BIT          0x04
-#define VM_CALL_VCALL_BIT          0x08
-#define VM_CALL_TAILCALL_BIT       0x10
-#define VM_CALL_TAILRECURSION_BIT  0x20
-#define VM_CALL_SUPER_BIT          0x40
+#define VM_CALL_ARGS_SPLAT_BIT     (0x01 << 1)
+#define VM_CALL_ARGS_BLOCKARG_BIT  (0x01 << 2)
+#define VM_CALL_FCALL_BIT          (0x01 << 3)
+#define VM_CALL_VCALL_BIT          (0x01 << 4)
+#define VM_CALL_TAILCALL_BIT       (0x01 << 5)
+#define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
+#define VM_CALL_SUPER_BIT          (0x01 << 7)
+#define VM_CALL_SEND_BIT           (0x01 << 8)
 
 /* inline method cache */
 #define NEW_INLINE_CACHE_ENTRY() NEW_WHILE(Qundef, 0, 0)

@@ -1709,7 +1709,7 @@ send_funcall(int argc, VALUE *argv, VALUE recv, int scope)
  *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
  */
 
-static VALUE
+VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
     int scope = NOEX_PUBLIC;
@@ -1736,7 +1736,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
  *     1.funcall(:puts, "hello")  # prints "foo"
  */
 
-static VALUE
+VALUE
 rb_f_funcall(int argc, VALUE *argv, VALUE recv)
 {
     return send_funcall(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
@@ -2894,13 +2894,12 @@ Init_eval()
     rb_define_global_function("global_variables", rb_f_global_variables, 0);	/* in variable.c */
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
 
-    rb_define_method(rb_mKernel, "send", rb_f_send, -1);
-
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "funcall", rb_f_funcall, -1);
     rb_define_method(rb_cBasicObject, "__send!", rb_f_funcall, -1);
+
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
 

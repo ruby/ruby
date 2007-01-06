@@ -1,3 +1,22 @@
+Sat Jan  6 09:10:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def : support direct method dispatch with "send" or "funcall".
+	This means that "obj.send :m" skips "BasicObject#send" invocation
+	(method frame creation, etc) and "obj.m" invokes directly.
+	If you make backtrace, there are no enties of "send" method.
+
+	* compile.c (iseq_specialized_instruction) : fix to support above
+
+	* eval.c : ditto (remove "static" from rb_f_send and rb_f_funcall
+
+	* yarvcore.c : ditto (add a external IDs for compiler)
+
+	* yarvcore.h : ditto (add a VM_CALL_SEND_BIT macro)
+
+	* yarvtest/test_method.rb : add tests for above changes
+
+	* eval.c : remove unused "Kernel#send" declaration
+
 Sat Jan  6 08:29:17 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): add 

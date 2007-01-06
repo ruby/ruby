@@ -59,6 +59,11 @@ ID idEnd;
 ID idBitblt;
 ID idAnswer;
 ID idSvarPlaceholder;
+ID idSend;
+ID id__send__;
+ID id__send;
+ID idFuncall;
+ID id__send_bang;
 
 unsigned long yarvGlobalStateVersion = 1;
 
@@ -995,6 +1000,12 @@ Init_yarvcore(void)
     idBitblt = rb_intern("bitblt");
     idAnswer = rb_intern("the_answer_to_life_the_universe_and_everything");
     idSvarPlaceholder = rb_intern("#svar");
+
+    idSend = rb_intern("send");
+    id__send__ = rb_intern("__send__");
+    id__send = rb_intern("__send");
+    idFuncall = rb_intern("funcall");
+    id__send_bang = rb_intern("__send!");
 
 #if TEST_AOT_COMPILE
     Init_compiled();

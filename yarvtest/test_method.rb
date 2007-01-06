@@ -535,5 +535,64 @@ class TestMethod < YarvTestBase
       C.new.m
     }
   end
+
+  def test_send
+    ae %q{
+      $r = []
+      class C
+        def m *args
+          $r << "C#m #{args.inspect} #{block_given?}"
+        end
+      end
+
+      obj = C.new
+      obj.send :m
+      obj.send :m, :x
+      obj.send :m, :x, :y
+      obj.send(:m){}
+      obj.send(:m, :x){}
+      $r
+    }
+  end
+
+  def test_send_with_private
+    ae %q{
+      begin
+        def m
+        end
+        self.send :m
+      rescue NoMethodError
+        :ok
+      else
+        :ng
+      end
+    }
+    ae %q{
+      begin
+        def m
+        end
+        send :m
+      rescue NoMethodError
+        :ng
+      else
+        :ok
+      end
+    }
+  end
+
+  def test_funcall
+    ae %q{
+      $r = []
+      def m *args
+        $r << "m() #{args.inspect} #{block_given?}"
+      end
+
+      funcall :m
+      funcall :m, :x
+      funcall :m, :x, :y
+      funcall(:m){}
+      funcall(:m, :x){}
+    }
+  end
 end
 

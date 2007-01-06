@@ -1671,6 +1671,11 @@ iseq_specialized_instruction(yarv_iseq_t *iseq, INSN *iobj)
 		}
 	    }
 	}
+
+	if (mid == idSend || mid == id__send__ || mid == id__send ||
+		 mid == idFuncall || mid == id__send_bang) {
+	    OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BIT);
+	}
     }
     return COMPILE_OK;
 }

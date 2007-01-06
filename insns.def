@@ -1146,7 +1146,7 @@ defineclass
  */
 DEFINE_INSN
 send
-(ID id, num_t op_argc, ISEQ blockiseq, num_t op_flag, IC ic)
+(ID op_id, num_t op_argc, ISEQ blockiseq, num_t op_flag, IC ic)
 (...)
 (VALUE val) // inc += - (op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
@@ -1156,6 +1156,7 @@ send
     yarv_block_t *blockptr = 0;
     num_t num = op_argc;
     num_t flag = op_flag;
+    ID id = op_id;
 
     macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq);
 
@@ -1171,6 +1172,31 @@ send
     klass = CLASS_OF(recv);
 
     mn = eval_method_search(id, klass, ic);
+
+    if ((flag & VM_CALL_SEND_BIT) && mn && nd_type(mn->nd_body) == NODE_CFUNC) {
+	NODE *node = mn->nd_body;
+	extern VALUE rb_f_funcall(int argc, VALUE *argv, VALUE recv);
+	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
+
+	if (node->nd_cfnc == rb_f_funcall || node->nd_cfnc == rb_f_send) {
+	    int i;
+	    id = rb_to_id(TOPN(num - 1));
+
+	    /* shift arguments */
+	    for (i=1; i<num; i++) {
+		GET_SP()[-num+i-1] = GET_SP()[(-num+i-1)+1];
+	    }
+
+	    mn = rb_method_node(klass, id);
+
+	    num -= 1;
+	    INC_SP(-1);
+	}
+
+	if (node->nd_cfnc == rb_f_funcall) {
+	    flag |= VM_CALL_FCALL_BIT;
+	}
+    }
 
 #if CURRENT_INSN_send || CURRENT_INSN_send_SC_xx_ax
 #if !YARV_AOT_COMPILED
