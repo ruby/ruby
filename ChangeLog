@@ -1,3 +1,9 @@
+Sat Jan  6 13:48:36 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (send) : fix to optimize send() with Symbol.
+
+	* yarvtest/test_method.rb : add another test.
+
 Sat Jan  6 13:43:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : add PHONY dependency to some rules

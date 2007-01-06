@@ -1180,7 +1180,8 @@ send
 
 	if (node->nd_cfnc == rb_f_funcall || node->nd_cfnc == rb_f_send) {
 	    int i;
-	    id = rb_to_id(TOPN(num - 1));
+	    VALUE sym = TOPN(num - 1);
+	    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
 
 	    /* shift arguments */
 	    for (i=1; i<num; i++) {

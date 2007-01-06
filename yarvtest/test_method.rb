@@ -553,6 +553,14 @@ class TestMethod < YarvTestBase
       obj.send(:m, :x){}
       $r
     }
+    ae %q{
+      class C
+        def send
+          :ok
+        end
+      end
+      C.new.send
+    }
   end
 
   def test_send_with_private
