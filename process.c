@@ -891,8 +891,10 @@ proc_detach(VALUE obj, VALUE pid)
 char *strtok();
 #endif
 
-#define before_exec() rb_enable_interrupt()
-#define after_exec() rb_disable_interrupt()
+#define before_exec() \
+  (rb_enable_interrupt(), rb_thread_stop_timer_thread())
+#define after_exec() \
+  (rb_thread_start_timer_thread(), rb_disable_interrupt())
 
 extern char *dln_find_exe(const char *fname, const char *path);
 
@@ -1332,6 +1334,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 	}
     }
     if (!pid) {
+	rb_thread_reset_timer_thread();
 	if (chfunc) {
 #ifdef FD_CLOEXEC
 	    close(ep[0]);
@@ -1347,7 +1350,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 	    _exit(127);
 #endif
 	}
-	rb_thread_reset_timer_thread();
+	rb_thread_start_timer_thread();
     }
 #ifdef FD_CLOEXEC
     else if (chfunc) {

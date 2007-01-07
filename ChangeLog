@@ -1,3 +1,18 @@
+Sun Jan  7 18:36:05 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_stop_timer_thread(), rb_thread_reset_timer_thread(),
+	  rb_thread_start_timer_thread()): added.
+
+	* thread_pthread.ci: add a native_thread_join() and move
+	  rb_thread_reset_timer_thread() definition to thread.c.
+
+	* thread_win32.ci: ditto
+
+	* process.c: fix before_exec(), after_exec() to stop timer thread
+	  (and restart timer thread if exec failed).  and fix to reset
+	  timer thread information when forked child process starts
+	  (to fix [ruby-core:09822]).
+
 Sun Jan  7 18:28:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: add a "compare" rule and fix MATZRUBY variable

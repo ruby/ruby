@@ -65,7 +65,7 @@ NOINLINE(void yarv_set_stack_end(VALUE **stack_end_p));
 
 static VALUE eKillSignal = INT2FIX(0);
 static VALUE eTerminateSignal = INT2FIX(1);
-static int system_working = 1;
+static volatile int system_working = 1;
 
 inline static void
 st_delete_wrap(st_table * table, VALUE key)
@@ -1600,6 +1600,27 @@ timer_thread_function(void)
 		     vm->bufferd_signal_size, vm->main_thread->exec_signal);
 	rb_thread_interrupt(vm->main_thread);
     }
+}
+
+void
+rb_thread_stop_timer_thread(void)
+{
+    if (timer_thread_id) {
+	system_working = 0;
+	native_thread_join(timer_thread_id);
+    }
+}
+
+void
+rb_thread_reset_timer_thread(void)
+{
+    timer_thread_id = 0;
+}
+
+void
+rb_thread_start_timer_thread(void)
+{
+    rb_thread_create_timer_thread();
 }
 
 /***/
