@@ -40,5 +40,19 @@ if defined?(WIN32OLE)
       name = folder.getDetailsOf({"vItem" => item, :iColumn => 0})
       assert_equal(item.name, name)
     end
+
+    def test_bracket
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      dict.add("foo", "FOO")
+      assert_equal("FOO", dict.item("foo"))
+      assert_equal("FOO", dict["foo"])
+    end
+
+    def test_bracket_equal
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      dict.add("foo", "FOO")
+      dict["foo"] = "BAR"
+      assert_equal("BAR", dict["foo"])
+    end
   end
 end

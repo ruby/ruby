@@ -2746,10 +2746,20 @@ fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 
 /*
  *  call-seq:
- *     WIN32OLE['property']=val 
- *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+ *     WIN32OLE[a1, a2, ...]=val 
  * 
- *  Sets property of OLE object.
+ *  Sets the value to WIN32OLE object specified by a1, a2, ...
+ *     
+ *     dict = WIN32OLE.new('Scripting.Dictionary')
+ *     dict.add('ruby', 'RUBY')
+ *     dict['ruby'] = 'Ruby' 
+ *     puts dict['ruby'] # => 'Ruby'
+ *
+ *  Remark: You can not use this method to set the property value.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     # excel['Visible'] = true # This is error !!!
+ *     excel.Visible = true # You should to use this style to set the property.
  *
  */
 static VALUE
@@ -2780,12 +2790,19 @@ fole_setproperty(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE['property'] 
+ *     WIN32OLE[a1,a2,...] 
  * 
- *  Returns property of OLE object.
+ *  Returns the value of Collection specified by a1, a2,....
  *
+ *     dict = WIN32OLE.new('Scripting.Dictionary')
+ *     dict.add('ruby', 'Ruby')
+ *     puts dict['ruby'] # => 'Ruby' (same as `puts dict.item('ruby')')
+ *    
+ *  Remark: You can not use this method to get the property.
  *     excel = WIN32OLE.new('Excel.Application')
- *     puts excel['Visible'] # => false
+ *     # puts excel['Visible']  This is error !!!
+ *     puts excel.Visible # You should to use this style to get the property.
+ *
  */
 static VALUE
 fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self)

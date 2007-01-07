@@ -1,3 +1,11 @@
+Sun Jan  7 17:47:16 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole.rb: add test for WIN32OLE#[],
+	  WIN32OLE#[]=.
+
+	* ext/win32ole/win32ole.c: update comment for rdoc of
+	  WIN32OLE#[] and WIN32OLE#[]=.
+
 Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net> 
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment):
