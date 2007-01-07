@@ -1,5 +1,5 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2006
-# $Id: format.rb,v 2.29 2006-12-30 21:43:41+09 tadf Exp $
+# format.rb: Written by Tadayoshi Funaba 1999-2007
+# $Id: format.rb,v 2.30 2007-01-07 09:16:24+09 tadf Exp $
 
 require 'rational'
 
@@ -1077,6 +1077,8 @@ class DateTime < Date
   def iso8601(n=0)
     super() + iso8601_timediv(n)
   end
+
+  def rfc3339(n=0) iso8601(n) end
 
   def jisx0301(n=0)
     super() + iso8601_timediv(n)
