@@ -1,3 +1,16 @@
+Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net> 
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment):
+	  Look for class and module comments above rb_define_class and
+	  rb_define_module.  Patch by Daniel Berger <djberg96 at gmail.com>
+
+Sun Jan  7 10:32:12 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constants):
+	  Properly handle escaping of : in comments.
+	* test/rdoc/parsers/test_parse_c.rb:
+	  Test RDoc::C_Parser#do_classes and Rdoc::C_Parser#find_class_comment.
+
 Sun Jan  7 09:31:18 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: updated based on date2 4.0.1.
