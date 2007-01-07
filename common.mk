@@ -525,7 +525,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h vm_opts.h
 
 
 BASERUBY = ruby
-MATZRUBY = $(BASERUBY)
+MATZRUBY = $(MATZRUBYDIR)ruby
 
 INSNS2VMOPT = $(CPPFLAGS) --srcdir=$(srcdir)
 
@@ -563,6 +563,10 @@ docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
 ##
+
+compare: miniruby$(EXEEXT) PHONY
+	@$(MATZRUBY) -v -I$(srcdir) $(srcdir)/test.rb
+	@$(MINIRUBY) -v -I$(srcdir) $(srcdir)/test.rb
 
 compare-test: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
