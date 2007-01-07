@@ -264,7 +264,31 @@ module RDoc
       @known_classes[var_name] = cm.full_name
     end
 
-    ############################################################
+    ##
+    # Look for class or module documentation above Init_+class_name+(void),
+    # in a Document-class +class_name+ (or module) comment or above an
+    # rb_define_class (or module).  If a comment is supplied above a matching
+    # Init_ and a rb_define_class the Init_ comment is used.
+    #
+    #   /*
+    #    * This is a comment for Foo
+    #    */
+    #   Init_Foo(void) {
+    #       VALUE cFoo = rb_define_class("Foo", rb_cObject);
+    #   }
+    #
+    #   /*
+    #    * Document-class: Foo
+    #    * This is a comment for Foo
+    #    */
+    #   Init_foo(void) {
+    #       VALUE cFoo = rb_define_class("Foo", rb_cObject);
+    #   }
+    #
+    #   /*
+    #    * This is a comment for Foo
+    #    */
+    #   VALUE cFoo = rb_define_class("Foo", rb_cObject);
 
     def find_class_comment(class_name, class_meth)
       comment = nil
@@ -273,6 +297,18 @@ module RDoc
         comment = $1
       elsif @body =~ %r{Document-(class|module):\s#{class_name}\s*?\n((?>.*?\*/))}m
         comment = $2
+      else
+        if @body =~ /rb_define_(class|module)/m then
+          class_name = class_name.split("::").last
+          comments = []
+          @body.split(/(\/\*.*?\*\/)\s*?\n/m).each_with_index do |chunk, index|
+            comments[index] = chunk
+            if chunk =~ /rb_define_(class|module).*?"(#{class_name})"/m then
+              comment = comments[index-1]
+              break
+            end
+          end
+        end
       end
       class_meth.comment = mangle_comment(comment) if comment
     end

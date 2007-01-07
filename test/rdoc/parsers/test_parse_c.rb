@@ -1,4 +1,3 @@
-require 'pp'
 require 'stringio'
 require 'tempfile'
 require 'test/unit'
@@ -26,6 +25,66 @@ class TestRdocC_Parser < Test::Unit::TestCase
 
   def teardown
     @tempfile.unlink
+  end
+
+  def test_do_classes_boot_class
+    content = <<-EOF
+/* Document-class: Foo
+ * this is the Foo boot class
+ */
+VALUE cFoo = boot_defclass("Foo", 0);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal "   this is the Foo boot class\n   ", klass.comment
+  end
+
+  def test_do_classes_class
+    content = <<-EOF
+/* Document-class: Foo
+ * this is the Foo class
+ */
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal "   this is the Foo class\n   ", klass.comment
+  end
+
+  def test_do_classes_class_under
+    content = <<-EOF
+/* Document-class: Kernel::Foo
+ * this is the Foo class under Kernel
+ */
+VALUE cFoo = rb_define_class_under(rb_mKernel, "Foo", rb_cObject);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal "   this is the Foo class under Kernel\n   ", klass.comment
+  end
+
+  def test_do_classes_module
+    content = <<-EOF
+/* Document-module: Foo
+ * this is the Foo module
+ */
+VALUE mFoo = rb_define_module("Foo");
+    EOF
+
+    klass = util_get_class content, 'mFoo'
+    assert_equal "   this is the Foo module\n   ", klass.comment
+  end
+
+  def test_do_classes_module_under
+    content = <<-EOF
+/* Document-module: Kernel::Foo
+ * this is the Foo module under Kernel
+ */
+VALUE mFoo = rb_define_module_under(rb_mKernel, "Foo");
+    EOF
+
+    klass = util_get_class content, 'mFoo'
+    assert_equal "   this is the Foo module under Kernel\n   ", klass.comment
   end
 
   def test_do_constants
@@ -83,7 +142,7 @@ void Init_foo(){
     parser.do_classes
     parser.do_constants
 
-    klass = parser.classes['cFoo'] 
+    klass = parser.classes['cFoo']
     assert klass
 
     constants = klass.constants
@@ -136,6 +195,60 @@ void Init_foo(){
     assert_equal ['MULTILINE_NOT_EMPTY', 'INT2FIX(1)', comment], constants.shift
 
     assert constants.empty?, constants.inspect
+  end
+
+  def test_find_class_comment_init
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ */
+void
+Init_Foo(void) {
+  VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "  \n   a comment for class Foo\n   \n", klass.comment
+  end
+
+  def test_find_class_comment_define_class
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ */
+VALUE foo = rb_define_class("Foo", rb_cObject);
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "  \n   a comment for class Foo\n   ", klass.comment
+  end
+
+  def test_find_class_comment_define_class
+    content = <<-EOF
+/*
+ * a comment for class Foo on Init
+ */
+void
+Init_Foo(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "  \n   a comment for class Foo on Init\n   \n", klass.comment
+  end
+
+  def util_get_class(content, name)
+    parser = util_parser content
+    parser.do_classes
+    parser.classes[name]
   end
 
   def util_parser(content)
