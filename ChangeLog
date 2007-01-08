@@ -3,6 +3,8 @@ Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_upto): String#upto from empty string makes
 	  inifinite loop.  [ruby-core:09864]
 
+	* string.c (rb_str_upto): use RSTRING_LEN().
+
 Sun Jan  7 18:36:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_stop_timer_thread(), rb_thread_reset_timer_thread(),
