@@ -1463,7 +1463,7 @@ rb_str_upto(beg, end, excl)
 	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
 	StringValue(current);
-	if (RSTRING(current)->len > RSTRING(end)->len)
+	if (RSTRING(current)->len > RSTRING(end)->len || RSTRING(current)->len == 0)
 	    break;
     }
 
