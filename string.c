@@ -1568,7 +1568,7 @@ rb_str_upto(VALUE beg, VALUE end, int excl)
 	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
 	StringValue(current);
-	if (RSTRING_LEN(current) > RSTRING_LEN(end))
+	if (RSTRING_LEN(current) > RSTRING_LEN(end) || RSTRING(current)->len == 0)
 	    break;
     }
 
