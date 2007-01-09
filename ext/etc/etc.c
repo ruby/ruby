@@ -125,16 +125,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
-#if HAVE_LONG_LONG && HAVE_TYPE_UID_T
-	if (sizeof(uid_t) > sizeof(int)) {
-	    uid = NUM2ULL(id);
-	}
-	else {
-	    uid = NUM2UINT(id);
-	}
-#else
-	uid = NUM2UINT(id);
-#endif
+	uid = PW_VAL2UID(id);
     }
     else {
 	uid = getuid();
@@ -326,14 +317,20 @@ setup_group(struct group *grp)
  *
  */
 static VALUE
-etc_getgrgid(VALUE obj, VALUE id)
+etc_getgrgid(int argc, VALUE *argv, VALUE obj)
 {
 #ifdef HAVE_GETGRENT
-    int gid;
+    VALUE id;
+    gid_t gid;
     struct group *grp;
 
     rb_secure(4);
-    gid = NUM2INT(id);
+    if (rb_scan_args(argc, argv, "01", &id) == 1) {
+	gid = PW_VAL2GID(id);
+    }
+    else {
+	gid = getgid();
+    }
     grp = getgrgid(gid);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
     return setup_group(grp);
@@ -505,7 +502,7 @@ Init_etc(void)
     rb_define_module_function(mEtc, "getpwent", etc_getpwent, 0);
     rb_define_module_function(mEtc, "passwd", etc_passwd, 0);
 
-    rb_define_module_function(mEtc, "getgrgid", etc_getgrgid, 1);
+    rb_define_module_function(mEtc, "getgrgid", etc_getgrgid, -1);
     rb_define_module_function(mEtc, "getgrnam", etc_getgrnam, 1);
     rb_define_module_function(mEtc, "group", etc_group, 0);
     rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);

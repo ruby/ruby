@@ -1,7 +1,9 @@
-Tue Jan  9 17:48:38 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+Tue Jan  9 12:29:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* file.c (rb_find_file): should not call fpath_check() with NULL.
-	  fixed: [ruby-core:09867]
+	* ext/etc/etc.c (etc_getpwuid, etc_getgrgid): fix to correctly
+	  convert uid/gid from VALUE.
+
+	* ext/etc/etc.c (etc_getpwuid): ditto.
 
 Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
