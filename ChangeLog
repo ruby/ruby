@@ -1,3 +1,8 @@
+Tue Jan  9 17:45:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_find_file): should not call fpath_check() with NULL.
+	  fixed: [ruby-core:09867]
+
 Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): String#upto from empty string makes

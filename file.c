@@ -4341,7 +4341,9 @@ rb_find_file(path)
     if (!lpath) {
 	return 0;		/* no path, no load */
     }
-    f = dln_find_file(f, lpath);
+    if (!(f = dln_find_file(f, lpath))) {
+	return 0;
+    }
     if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
