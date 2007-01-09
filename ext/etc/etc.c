@@ -126,12 +126,12 @@ etc_getpwuid(argc, argv, obj)
 {
 #if defined(HAVE_GETPWENT)
     VALUE id;
-    int uid;
+    uid_t uid;
     struct passwd *pwd;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
-	uid = NUM2INT(id);
+	uid = PW_VAL2UID(id);
     }
     else {
 	uid = getuid();
@@ -333,11 +333,11 @@ etc_getgrgid(obj, id)
     VALUE obj, id;
 {
 #ifdef HAVE_GETGRENT
-    int gid;
+    gid_t gid;
     struct group *grp;
 
     rb_secure(4);
-    gid = NUM2INT(id);
+    gid = getgid();
     grp = getgrgid(gid);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
     return setup_group(grp);
