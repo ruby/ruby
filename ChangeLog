@@ -1,3 +1,8 @@
+Wed Jan 10 00:10:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_replace): use ptr and len of orig instead of
+	  shared.  fixed: [ruby-dev:30116]
+
 Tue Jan  9 12:29:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getpwuid, etc_getgrgid): fix to correctly

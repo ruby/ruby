@@ -2090,15 +2090,17 @@ rb_ary_replace(VALUE copy, VALUE orig)
     VALUE shared;
     VALUE *ptr;
 
-    rb_ary_modify(copy);
-    ary_iter_check(copy);
     orig = to_ary(orig);
+    rb_ary_modify_check(copy);
+    ary_iter_check(copy);
     if (copy == orig) return copy;
     shared = ary_make_shared(orig);
-    ptr = RARRAY(copy)->ptr;
+    if (!ARY_SHARED_P(copy)) {
+	ptr = RARRAY(copy)->ptr;
 	xfree(ptr);
-    RARRAY(copy)->ptr = RARRAY(shared)->ptr;
-    RARRAY(copy)->len = RARRAY(shared)->len;
+    }
+    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
+    RARRAY(copy)->len = RARRAY(orig)->len;
     RARRAY(copy)->aux.shared = shared;
     FL_SET(copy, ELTS_SHARED);
 
