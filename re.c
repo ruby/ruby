@@ -200,8 +200,8 @@ kcode_none(re)
 
 static int curr_kcode;
 
-static void
-kcode_set_option(re)
+void
+rb_kcode_set_option(re)
     VALUE re;
 {
     if (!FL_TEST(re, KCODE_FIXED)) return;
@@ -224,8 +224,8 @@ kcode_set_option(re)
     }
 }	  
 
-static void
-kcode_reset_option()
+void
+rb_kcode_reset_option()
 {
     if (reg_kcode == curr_kcode) return;
     switch (reg_kcode) {
@@ -253,9 +253,9 @@ rb_reg_mbclen2(c, re)
 
     if (!FL_TEST(re, KCODE_FIXED))
 	return mbclen(c);
-    kcode_set_option(re);
+    rb_kcode_set_option(re);
     len = mbclen(c);
-    kcode_reset_option();
+    rb_kcode_reset_option();
     return len;
 }
 
@@ -486,11 +486,11 @@ rb_reg_to_s(re)
 	}
 	if (*ptr == ':' && ptr[len-1] == ')') {
 	    Regexp *rp;
-	    kcode_set_option(re);
+	    rb_kcode_set_option(re);
 	    rp = ALLOC(Regexp);
 	    MEMZERO((char *)rp, Regexp, 1);
 	    err = re_compile_pattern(++ptr, len -= 2, rp) != 0;
-	    kcode_reset_option();
+	    rb_kcode_reset_option();
 	    re_free_pattern(rp);
 	}
 	if (err) {
@@ -849,7 +849,7 @@ rb_reg_prepare_re(re)
 	char *err;
 
 	if (FL_TEST(re, KCODE_FIXED))
-	    kcode_set_option(re);
+	    rb_kcode_set_option(re);
 	rb_reg_check(re);
 	RREGEXP(re)->ptr->fastmap_accurate = 0;
 	err = re_compile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr);
@@ -870,9 +870,9 @@ rb_reg_adjust_startpos(re, str, pos, reverse)
     if (may_need_recompile) rb_reg_prepare_re(re);
 
     if (FL_TEST(re, KCODE_FIXED))
-	kcode_set_option(re);
+	rb_kcode_set_option(re);
     else if (reg_kcode != curr_kcode)
-	kcode_reset_option();
+	rb_kcode_reset_option();
 
     if (reverse) {
 	range = -pos;
@@ -904,9 +904,9 @@ rb_reg_search(re, str, pos, reverse)
     if (may_need_recompile) rb_reg_prepare_re(re);
 
     if (FL_TEST(re, KCODE_FIXED))
-	kcode_set_option(re);
+	rb_kcode_set_option(re);
     else if (reg_kcode != curr_kcode)
-	kcode_reset_option();
+	rb_kcode_reset_option();
 
     if (reverse) {
 	range = -pos;
@@ -918,7 +918,7 @@ rb_reg_search(re, str, pos, reverse)
 		       pos, range, &regs);
 
     if (FL_TEST(re, KCODE_FIXED))
-	kcode_reset_option();
+	rb_kcode_reset_option();
 
     if (result == -2) {
 	rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len,
@@ -1364,7 +1364,7 @@ rb_reg_initialize(obj, s, len, options)
     }
 
     if (options & ~0xf) {
-	kcode_set_option((VALUE)re);
+	rb_kcode_set_option((VALUE)re);
     }
     if (ruby_ignorecase) {
 	options |= RE_OPTION_IGNORECASE;
@@ -1376,7 +1376,7 @@ rb_reg_initialize(obj, s, len, options)
     re->str[len] = '\0';
     re->len = len;
     if (options & ~0xf) {
-	kcode_reset_option();
+	rb_kcode_reset_option();
     }
     if (ruby_in_compile) FL_SET(obj, REG_LITERAL);
 }
@@ -1839,7 +1839,7 @@ rb_reg_s_quote(argc, argv)
     }
     StringValue(str);
     str = rb_reg_quote(str);
-    kcode_reset_option();
+    rb_kcode_reset_option();
     return str;
 }
 

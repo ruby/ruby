@@ -370,6 +370,8 @@ VALUE rb_reg_match2 _((VALUE));
 int rb_reg_options _((VALUE));
 void rb_set_kcode _((const char*));
 const char* rb_get_kcode _((void));
+void rb_kcode_set_option _((VALUE));
+void rb_kcode_reset_option _((void));
 /* ruby.c */
 RUBY_EXTERN VALUE rb_argv;
 RUBY_EXTERN VALUE rb_argv0;

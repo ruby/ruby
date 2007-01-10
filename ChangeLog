@@ -1,3 +1,15 @@
+Wed Jan 10 18:57:57 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c (strscan_do_scan): should set kcode option
+	  before match. [ruby-dev:29914]
+
+	* test/strscan/test_stringscanner.rb: test it.
+
+	* re.c: export kcode_set_option and kcode_reset_option (with "rb_"
+	  prefix).
+
+	* intern.h: ditto.
+
 Tue Jan  9 17:45:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_find_file): should not call fpath_check() with NULL.

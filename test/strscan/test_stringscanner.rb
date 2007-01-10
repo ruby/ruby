@@ -247,6 +247,19 @@ class TestStringScanner < Test::Unit::TestCase
     s = StringScanner.new("")
     assert_equal "", s.scan(//)
     assert_equal "", s.scan(//)
+
+    # [ruby-dev:29914]
+    %w( NONE EUC SJIS UTF8 ).each do |kcode|
+      begin
+        $KCODE = kcode
+        assert_equal "a", StringScanner.new("a:b").scan(/[^\x01\:]+/n)
+        assert_equal "a", StringScanner.new("a:b").scan(/[^\x01\:]+/e)
+        assert_equal "a", StringScanner.new("a:b").scan(/[^\x01\:]+/s)
+        assert_equal "a", StringScanner.new("a:b").scan(/[^\x01\:]+/u)
+      ensure
+        $KCODE = 'NONE'
+      end
+    end
   end
 
   def test_skip

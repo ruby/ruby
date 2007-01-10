@@ -403,6 +403,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     if (S_RESTLEN(p) < 0) {
         return Qnil;
     }
+    rb_kcode_set_option(regex);
     if (headonly) {
         ret = re_match(RREGEXP(regex)->ptr,
                        CURPTR(p), S_RESTLEN(p),
@@ -416,6 +417,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
                         S_RESTLEN(p),
                         &(p->regs));
     }
+    rb_kcode_reset_option();
 
     if (ret == -2) rb_raise(ScanError, "regexp buffer overflow");
     if (ret < 0) {
