@@ -1,3 +1,8 @@
+Fri Jan 12 11:13:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getpwuid, etc_getgrgid): fix to correctly
+	  convert uid/gid from VALUE. (backport of r11521)
+
 Wed Jan 10 18:57:57 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c (strscan_do_scan): should set kcode option

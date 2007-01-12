@@ -35,7 +35,9 @@ if  a or b or c
 	f = "U#{f}"
       end
     end
-    $defs.push("-DPW_#{t.chomp('_t').upcase}2VAL=#{f}")
+    t = t.chomp('_t').upcase
+    $defs.push("-DPW_#{t}2VAL=#{f}")
+    $defs.push("-DPW_VAL2#{t}=#{f.sub(/([A-Z]+)2(NUM)/, '\22\1')}")
   end
   create_makefile("etc")
 end
