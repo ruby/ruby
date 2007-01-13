@@ -1,3 +1,9 @@
+Sat Jan 13 23:54:48 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 
+	  olemethod_free, olevariable_free, oleparam_free, 
+	  ole_event_free): fix memory leak.  [ruby-core:09846]
+
 Fri Jan 12 11:13:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getpwuid, etc_getgrgid): fix to correctly
