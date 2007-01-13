@@ -30,8 +30,6 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
-#include <stdlib.h>
-#include <crtdbg.h>
 
 #define DOUT fprintf(stderr,"[%d]\n",__LINE__)
 #define DOUTS(x) fprintf(stderr,"[%d]:" #x "=%s\n",__LINE__,x)
