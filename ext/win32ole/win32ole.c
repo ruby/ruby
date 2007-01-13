@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.2"
+#define WIN32OLE_VERSION "0.8.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -619,12 +619,14 @@ static void
 ole_free(struct oledata *pole)
 {
     OLE_FREE(pole->pDispatch);
+    free(pole);
 }
 
 static void
 oletype_free(struct oletypedata *poletype)
 {
     OLE_FREE(poletype->pTypeInfo);
+    free(poletype);
 }
 
 static void
@@ -632,18 +634,21 @@ olemethod_free(struct olemethoddata *polemethod)
 {
     OLE_FREE(polemethod->pTypeInfo);
     OLE_FREE(polemethod->pOwnerTypeInfo);
+    free(polemethod);
 }
 
 static void
 olevariable_free(struct olevariabledata *polevar)
 {
     OLE_FREE(polevar->pTypeInfo);
+    free(polevar);
 }
 
 static void
 oleparam_free(struct oleparamdata *pole)
 {
     OLE_FREE(pole->pTypeInfo);
+    free(pole);
 }
 
 static LPWSTR
@@ -6604,7 +6609,12 @@ ole_event_free(struct oleeventdata *poleev)
     IConnectionPoint *pcp = NULL;
 
     if (poleev->freed == 1) {
-        return;
+        /* 
+         * this return create memory leak.
+         * but poleev->pEvent->pConnectionPoint shoul'd not be freed
+         * until poleev-> freed == 0.
+         */
+        return; 
     }
     if(poleev->pEvent) {
         pti = poleev->pEvent->pTypeInfo;
@@ -6614,6 +6624,7 @@ ole_event_free(struct oleeventdata *poleev)
             pcp->lpVtbl->Unadvise(pcp, poleev->pEvent->m_dwCookie);
             OLE_RELEASE(pcp);
         }
+        free(poleev);
     }
 }
 
