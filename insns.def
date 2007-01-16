@@ -958,7 +958,7 @@ defined
 	      ip = ip->parent_iseq;
 	  }
 	  if (ip) {
-	      VALUE klass = eval_search_super_klass(ip->klass, GET_SELF());
+	      VALUE klass = search_super_klass(ip->klass, GET_SELF());
 	      if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
 		  expr_type = "super";
 	      }
@@ -1266,7 +1266,7 @@ send
 		    }
 		}
 	    }
-	    klass = eval_search_super_klass(ip->klass, recv);
+	    klass = search_super_klass(ip->klass, recv);
 	    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 	    blockptr = tmp_blockptr;
 	    mn = rb_method_node(klass, id);

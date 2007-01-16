@@ -526,6 +526,25 @@ th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
     return val;
 }
 
+static VALUE
+search_super_klass(VALUE klass, VALUE recv)
+{
+    if (BUILTIN_TYPE(klass) == T_CLASS) {
+	klass = RCLASS(klass)->super;
+    }
+    else if (BUILTIN_TYPE(klass) == T_MODULE) {
+	VALUE k = CLASS_OF(recv);
+	while (k) {
+	    if (BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass) {
+		klass = RCLASS(k)->super;
+		break;
+	    }
+	    k = RCLASS(k)->super;
+	}
+    }
+    return klass;
+}
+
 VALUE
 th_call_super(yarv_thread_t *th, int argc, const VALUE *argv)
 {
@@ -535,9 +554,15 @@ th_call_super(yarv_thread_t *th, int argc, const VALUE *argv)
     NODE *body;
     int nosuper = 0;
     yarv_control_frame_t *cfp = th->cfp;
-    
+
     if (!th->cfp->iseq) {
-	klass = RCLASS(cfp->method_klass)->super;
+	klass = cfp->method_klass;
+	klass = RCLASS(klass)->super;
+
+	if (klass == 0) {
+	    klass = search_super_klass(cfp->method_klass, recv);
+	}
+
 	id = cfp->method_id;
     }
     else {
@@ -545,14 +570,17 @@ th_call_super(yarv_thread_t *th, int argc, const VALUE *argv)
     }
 
     body = rb_method_node(klass, id);	/* this returns NODE_METHOD */
+
     if (body) {
 	body = body->nd_body;
     }
     else {
+	dp(recv);
 	dp(klass);
 	dpi(id);
 	rb_bug("th_call_super: not found");
     }
+
     return th_call0(th, klass, recv, id, id, argc, argv, body, nosuper);
 }
 
@@ -1172,25 +1200,6 @@ eval_define_method(yarv_thread_t *th, VALUE obj,
 	rb_add_method(rb_singleton_class(klass), id, newbody, NOEX_PUBLIC);
     }
     INC_VM_STATE_VERSION();
-}
-
-EVALBODY_HELPER_FUNCTION VALUE
-eval_search_super_klass(VALUE klass, VALUE recv)
-{
-    if (BUILTIN_TYPE(klass) == T_CLASS) {
-	klass = RCLASS(klass)->super;
-    }
-    else if (BUILTIN_TYPE(klass) == T_MODULE) {
-	VALUE k = CLASS_OF(recv);
-	while (k) {
-	    if (BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass) {
-		klass = RCLASS(k)->super;
-		break;
-	    }
-	    k = RCLASS(k)->super;
-	}
-    }
-    return klass;
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
