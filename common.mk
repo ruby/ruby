@@ -551,7 +551,7 @@ vm.inc: $(srcdir)/insns.def
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm.inc
 
 vm_macro.inc: $(srcdir)/vm_macro.def
-	$(BASERUBY) $(srcdir)/rb/insns2vm.rb $(INSNS2VMOPT) vm_macro.inc
+	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm_macro.inc
 
 vm_opts.h: $(srcdir)/vm_opts.h.base
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)

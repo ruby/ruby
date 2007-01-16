@@ -1,3 +1,7 @@
+Tue Jan 16 17:48:11 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: fix ruby script path.
+
 Tue Jan 16 17:39:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (invoke_block): fix to specify self.
