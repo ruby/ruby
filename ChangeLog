@@ -1,3 +1,7 @@
+Tue Jan 16 17:39:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block): fix to specify self.
+
 Tue Jan 16 12:12:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* env.h: removed

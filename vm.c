@@ -663,7 +663,7 @@ th_yield_setup_args(yarv_iseq_t *iseq, int argc, VALUE *argv)
 }
 
 static VALUE
-invoke_block(yarv_thread_t *th, yarv_block_t *block, int argc, VALUE *argv, int magic)
+invoke_block(yarv_thread_t *th, yarv_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
@@ -679,7 +679,7 @@ invoke_block(yarv_thread_t *th, yarv_block_t *block, int argc, VALUE *argv, int 
 	th->cfp->sp += argc;
 
 	push_frame(th, iseq, magic,
-		   block->self, GC_GUARDED_PTR(block->dfp),
+		   self, GC_GUARDED_PTR(block->dfp),
 		   iseq->iseq_encoded, th->cfp->sp, block->lfp,
 		   iseq->local_size - argc);
 	val = th_eval_body(th);
@@ -704,7 +704,7 @@ th_invoke_yield(yarv_thread_t *th, int argc, VALUE *argv)
 	th_localjump_error("no block given", Qnil, 0);
     }
 
-    return invoke_block(th, block, argc, argv, FRAME_MAGIC_BLOCK);
+    return invoke_block(th, block, block->self, argc, argv, FRAME_MAGIC_BLOCK);
 }
 
 VALUE
@@ -723,7 +723,7 @@ th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
 	  lfp_set_special_cref(proc->block.lfp, proc->special_cref_stack);
 	th->safe_level = proc->safe_level;
 
-	val = invoke_block(th, &proc->block, argc, argv,
+	val = invoke_block(th, &proc->block, self, argc, argv,
 			   proc->is_lambda ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_PROC);
     }
     else {
