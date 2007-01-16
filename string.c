@@ -4802,10 +4802,7 @@ sym_call(VALUE args, VALUE sym)
 static VALUE
 sym_to_proc(VALUE sym)
 {
-    rb_notimplement();
-    return Qnil;
-    // TODO
-    // return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
+    return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
 }
 
 

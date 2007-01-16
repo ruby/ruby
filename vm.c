@@ -662,40 +662,49 @@ th_yield_setup_args(yarv_iseq_t *iseq, int argc, VALUE *argv)
     return argc;
 }
 
+static VALUE
+invoke_block(yarv_thread_t *th, yarv_block_t *block, int argc, VALUE *argv, int magic)
+{
+    VALUE val;
+    if (BUILTIN_TYPE(block->iseq) != T_NODE) {
+	yarv_iseq_t *iseq = block->iseq;
+	int i;
+	th_set_finish_env(th);
+
+	/* TODO: check overflow */
+	for (i=0; i<argc; i++) {
+	    th->cfp->sp[i] = argv[i];
+	}
+	argc = th_yield_setup_args(iseq, argc, th->cfp->sp);
+	th->cfp->sp += argc;
+
+	push_frame(th, iseq, magic,
+		   block->self, GC_GUARDED_PTR(block->dfp),
+		   iseq->iseq_encoded, th->cfp->sp, block->lfp,
+		   iseq->local_size - argc);
+	val = th_eval_body(th);
+    }
+    else {
+	if (((NODE*)block->iseq)->u3.state == 1) {
+	    VALUE args = rb_ary_new4(argc, argv);
+	    argc = 1;
+	    argv = &args;
+	}
+	val = th_invoke_yield_cfunc(th, block, block->self, argc, argv);
+    }
+    return val;
+}
+
 VALUE
 th_invoke_yield(yarv_thread_t *th, int argc, VALUE *argv)
 {
-    yarv_control_frame_t *cfp = th->cfp;
-    yarv_block_t *block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
-    VALUE val;
+    yarv_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (block == 0) {
 	th_localjump_error("no block given", Qnil, 0);
     }
-    else {
-	if (BUILTIN_TYPE(block->iseq) != T_NODE) {
-	    yarv_iseq_t *iseq = block->iseq;
-	    int i;
-	    th_set_finish_env(th);
 
-	    /* TODO: check overflow */
-	    for (i=0; i<argc; i++) {
-		th->cfp->sp[i] = argv[i];
-	    }
-	    argc = th_yield_setup_args(iseq, argc, th->cfp->sp);
-	    th->cfp->sp += argc;
-
-	    push_frame(th, iseq, FRAME_MAGIC_BLOCK,
-		       block->self, GC_GUARDED_PTR(block->dfp),
-		       iseq->iseq_encoded, th->cfp->sp, block->lfp,
-		       iseq->local_size - argc);
-	    val = th_eval_body(th);
-	}
-	else {
-	    val = th_invoke_yield_cfunc(th, block, block->self, argc, argv);
-	}
-    }
-    return val;
+    return invoke_block(th, block, argc, argv, FRAME_MAGIC_BLOCK);
 }
 
 VALUE
@@ -705,7 +714,7 @@ th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
     VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
-    volatile NODE *stored_special_cref_stack = 0;
+    volatile NODE *stored_special_cref_stack;
     yarv_control_frame_t * volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
@@ -714,32 +723,8 @@ th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
 	  lfp_set_special_cref(proc->block.lfp, proc->special_cref_stack);
 	th->safe_level = proc->safe_level;
 
-	if (BUILTIN_TYPE(proc->block.iseq) == T_NODE) {
-	    val = th_invoke_yield_cfunc(th, &proc->block,
-					proc->block.self, argc, argv);
-	}
-	else {
-	    yarv_iseq_t *iseq = proc->block.iseq;
-	    yarv_control_frame_t *cfp;
-	    int i;
-	    
-	    th_set_finish_env(th);
-	    cfp = th->cfp;
-
-	    /* TODO: check overflow */
-	    for (i=0; i<argc; i++) {
-		cfp->sp[i] = argv[i];
-	    }
-	    argc = th_yield_setup_args(iseq, argc, cfp->sp);
-	    cfp->sp += argc;
-	    
-	    push_frame(th, iseq,
-		       proc->is_lambda ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_PROC,
-		       self, (VALUE)proc->block.dfp, iseq->iseq_encoded,
-		       cfp->sp, proc->block.lfp,
-		       iseq->local_size - argc);
-	    val = th_eval_body(th);
-	}
+	val = invoke_block(th, &proc->block, argc, argv,
+			   proc->is_lambda ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_PROC);
     }
     else {
 	if (state == TAG_BREAK ||

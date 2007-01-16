@@ -1,3 +1,14 @@
+Tue Jan 16 12:00:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_proc.c (rb_proc_new): added.
+
+	* string.c (sym_to_proc): supported.
+
+	* vm.c (invoke_block, th_invoke_yield, th_invoke_proc): fix to support
+	rb_proc_new.
+
+	* yarvcore.c: add a test code.
+
 Sat Jan 13 23:24:59 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 

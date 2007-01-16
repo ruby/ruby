@@ -815,11 +815,15 @@ yarv_segv()
 }
 
 static VALUE
+proc_func(VALUE v)
+{
+    dp(v);
+}
+
+static VALUE
 cfunc(void)
 {
-    rb_funcall(Qnil, rb_intern("rfunc"), 0, 0);
-    rb_funcall(Qnil, rb_intern("rfunc"), 0, 0);
-    return Qnil;
+    return rb_proc_new(proc_func, INT2FIX(12345));
 }
 
 // VALUE yarv_Hash_each();

@@ -1023,6 +1023,18 @@ bmcall(VALUE args, VALUE method)
     return rb_method_call(RARRAY_LEN(a), RARRAY_PTR(a), method);
 }
 
+VALUE
+rb_proc_new(
+    VALUE (*func)(ANYARGS), /* VALUE yieldarg[, VALUE procarg] */
+    VALUE val)
+{
+    yarv_proc_t *proc;
+    VALUE procval = rb_iterate((VALUE(*)(VALUE))mproc, 0, func, val);
+    GetProcPtr(procval, proc);
+    ((NODE*)proc->block.iseq)->u3.state = 1;
+    return procval;
+}
+
 /*
  *  call-seq:
  *     meth.to_proc    => prc
