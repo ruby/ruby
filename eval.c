@@ -18,7 +18,7 @@ VALUE rb_cProc;
 VALUE rb_cBinding;
 
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
-VALUE rb_f_binding(VALUE);
+VALUE rb_binding_new();
 
 VALUE rb_f_block_given_p(void);
 
@@ -660,7 +660,7 @@ call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass)
 					    srcfile,
 					    INT2FIX(ruby_sourceline),
 					    id ? ID2SYM(id) : Qnil,
-					    self ? rb_f_binding(self) : Qnil,
+					    self ? rb_binding_new() : Qnil,
 					    klass ? klass : Qnil), Qundef, 0);
     }
     if (raised)
@@ -1934,7 +1934,8 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	VALUE iseqval;
 
 	if (scope != Qnil) {
-	    if (CLASS_OF(scope) == cYarvBinding) {
+	    
+	    if (CLASS_OF(scope) == rb_cBinding) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
 		stored_cref_stack = bind->cref_stack;

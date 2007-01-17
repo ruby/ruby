@@ -180,7 +180,6 @@ th_set_eval_stack(yarv_thread_t *th, VALUE iseqval)
 }
 
 static int check_env(yarv_env_t *env);
-VALUE yarv_env_alloc(VALUE klass);
 
 static VALUE
 th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
@@ -216,10 +215,9 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
 	    *envptr = GC_GUARDED_PTR(pcfp->dfp);
 	}
     }
-//SDR2(cfp);
-//fprintf(stderr, "lfp: %p, cfp: %p, endptr: %p\n", cfp->lfp, cfp->dfp, endptr);
+
     /* allocate env */
-    envval = yarv_env_alloc(cYarvEnv);
+    envval = yarv_env_alloc();
     GetEnvPtr(envval, env);
 
     if (!YARV_NORMAL_ISEQ_P(cfp->iseq)) {
@@ -402,7 +400,7 @@ th_make_proc(yarv_thread_t *th, yarv_control_frame_t *cfp,
     if (PROCDEBUG) {
 	check_env_value(envval);
     }
-    procval = yarv_proc_alloc(cYarvProc);
+    procval = yarv_proc_alloc();
     GetProcPtr(procval, proc);
     proc->blockprocval = blockprocval;
     proc->block.self = block->self;

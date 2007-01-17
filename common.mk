@@ -31,7 +31,7 @@ OBJS	      = array.$(OBJEXT) \
 		euc_jp.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		eval_load.$(OBJEXT) \
-		eval_proc.$(OBJEXT) \
+		proc.$(OBJEXT) \
 		eval_thread.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
@@ -408,7 +408,7 @@ eval_thread.$(OBJEXT): {$(VPATH)}eval_thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h {$(VPATH)}yarv.h
-eval_proc.$(OBJEXT): {$(VPATH)}eval_proc.c  {$(VPATH)}eval_intern.h \
+proc.$(OBJEXT): {$(VPATH)}proc.c  {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h config.h  {$(VPATH)}yarvcore.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \

@@ -20,6 +20,8 @@
 // #define MARK_FREE_DEBUG 1
 #include "gc.h"
 
+VALUE rb_cISeq;
+
 static void
 compile_data_free(struct iseq_compile_data *compile_data)
 {
@@ -262,7 +264,7 @@ yarv_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
 				const yarv_compile_option_t *option)
 {
     yarv_iseq_t *iseq;
-    VALUE self = iseq_alloc(cYarvISeq);
+    VALUE self = iseq_alloc(rb_cISeq);
     
     GetISeqPtr(self, iseq);
     iseq->self = self;
@@ -300,7 +302,7 @@ VALUE iseq_build_from_ary(yarv_iseq_t *iseq, VALUE line,
 VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 {
-    VALUE iseqval = iseq_alloc(cYarvISeq);
+    VALUE iseqval = iseq_alloc(rb_cISeq);
 
     VALUE magic, version1, version2, format_type, misc;
     VALUE name, filename, line;
@@ -569,7 +571,7 @@ insn_operand_intern(yarv_iseq_t *iseq,
 	op = ID2SYM(op);
     case TS_VALUE:		/* VALUE */
 	ret = rb_inspect(op);
-	if (CLASS_OF(op) == cYarvISeq) {
+	if (CLASS_OF(op) == rb_cISeq) {
 	    rb_ary_push(child, op);
 	}
 	break;
@@ -1328,18 +1330,18 @@ void
 Init_ISeq(void)
 {
     /* declare YARVCore::InstructionSequence */
-    cYarvISeq = rb_define_class_under(mYarvCore, "InstructionSequence", rb_cObject);
-    rb_define_alloc_func(cYarvISeq, iseq_alloc);
-    rb_define_method(cYarvISeq, "inspect", iseq_inspect, 0);
-    rb_define_method(cYarvISeq, "disasm", iseq_disasm, 0);
-    rb_define_method(cYarvISeq, "to_a", iseq_to_a, 0);
-    rb_define_method(cYarvISeq, "eval", iseq_eval, 0);
+    rb_cISeq = rb_define_class_under(rb_cVM, "InstructionSequence", rb_cObject);
+    rb_define_alloc_func(rb_cISeq, iseq_alloc);
+    rb_define_method(rb_cISeq, "inspect", iseq_inspect, 0);
+    rb_define_method(rb_cISeq, "disasm", iseq_disasm, 0);
+    rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
+    rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 
-    rb_define_singleton_method(cYarvISeq, "load", iseq_s_load, -1);
-    rb_define_singleton_method(cYarvISeq, "compile", iseq_s_compile, -1);
-    rb_define_singleton_method(cYarvISeq, "new", iseq_s_compile, -1);
-    rb_define_singleton_method(cYarvISeq, "compile_file", iseq_s_compile_file, -1);
-    rb_define_singleton_method(cYarvISeq, "compile_option=",
+    rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
+    rb_define_singleton_method(rb_cISeq, "compile", iseq_s_compile, -1);
+    rb_define_singleton_method(rb_cISeq, "new", iseq_s_compile, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_file", iseq_s_compile_file, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_option=",
 			       iseq_s_compile_option_set, 1);
 }
 

@@ -1,3 +1,33 @@
+Wed Jan 17 17:31:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* some refactoring around yarvcore and proc.
+
+	* eval_proc.c: renamed to proc.c.
+
+	* common.mk: ditto.
+
+	* yarvcore.h, yarvcore.c: rename or remove some global variables
+	  removed: mYarvCore, mYarvInsns
+	  renamed: cYarvISeq -> rb_cISeq, 
+                   cYarvProc -> rb_cProc, cYarvBinding -> rb_cBinding
+	  ::YarvCore module is removed and ::YarvCore::VM class becomes ::VM.
+          And change/remove some functions which added with YARV.
+
+	* compile.c: ditto.
+
+	* eval.c: ditto.
+
+	* iseq.c: ditto.
+
+	* vm.c: ditto.
+
+	* inits.c: rename Init_yarvcore to Init_vm.
+
+	* yarvcore.c, proc.c: move some functions and initialization
+	  from yarvcore.c to proc.c.
+
+	* intern.h, proc.c: add global function rb_binding_new(void).
+
 Tue Jan 16 17:49:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (eval_search_super_klass): rename to search_super_klass() and

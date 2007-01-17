@@ -46,8 +46,8 @@ void Init_Struct _((void));
 void Init_Time _((void));
 void Init_var_tables _((void));
 void Init_version _((void));
-void Init_yarvcore _((void));
 void Init_jump _((void));
+void Init_vm _((void));
 
 
 void
@@ -86,6 +86,6 @@ rb_call_inits()
     Init_GC();
     Init_marshal();
     Init_Enumerator();
-    Init_yarvcore();
+    Init_vm();
     Init_version();
 }

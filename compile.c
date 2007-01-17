@@ -4829,7 +4829,7 @@ iseq_build_body(yarv_iseq_t *iseq, LINK_ANCHOR *anchor,
 				    argv[j] =
 				      iseq_load(0, op, iseq->self, Qnil);
 				}
-				else if (CLASS_OF(op) == cYarvISeq) {
+				else if (CLASS_OF(op) == rb_cISeq) {
 				    argv[j] = op;
 				}
 				else {

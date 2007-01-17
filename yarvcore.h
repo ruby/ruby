@@ -100,14 +100,10 @@
 
 
 /* classes and modules */
-extern VALUE mYarvCore;
-extern VALUE cYarvISeq;
 extern VALUE cYarvVM;
 extern VALUE cYarvThread;
-extern VALUE mYarvInsns;
-extern VALUE cYarvEnv;
-extern VALUE cYarvProc;
-extern VALUE cYarvBinding;
+extern VALUE rb_cISeq;
+extern VALUE rb_cVM;
 
 extern VALUE symIFUNC;
 extern VALUE symCFUNC;
@@ -601,10 +597,8 @@ typedef VALUE CDHASH;
 /* VM related object allocate functions */
 /* TODO: should be static functions */
 VALUE yarv_thread_alloc(VALUE klass);
-VALUE yarv_env_alloc(VALUE klass);
-VALUE yarv_proc_alloc(VALUE klass);
-VALUE yarv_binding_alloc(VALUE klass);
-
+VALUE yarv_env_alloc(void);
+VALUE yarv_proc_alloc(void);
 
 /* for debug */
 extern void vm_stack_dump_raw(yarv_thread_t *, yarv_control_frame_t *);
