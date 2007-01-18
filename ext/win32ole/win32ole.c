@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.3"
+#define WIN32OLE_VERSION "0.8.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1148,27 +1148,35 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                 SafeArrayDestroy(psa);
         }
     } else {
-        ole_val2variant(val, &(pvar->realvar));
-        if (vtype & VT_BYREF) {
-            if ( (vtype & ~VT_BYREF) == V_VT(&(pvar->realvar))) {
+        if (val == Qnil) {
+            V_VT(&(pvar->realvar)) = vtype & ~VT_BYREF;
+            V_VT(&(pvar->var)) = vtype;
+            if (vtype & VT_BYREF) {
                 ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
-            } else {
-                VariantInit(&var);
-                hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
-                                     LOCALE_SYSTEM_DEFAULT, 0, (VARTYPE)(vtype & ~VT_BYREF));
-                if (SUCCEEDED(hr)) {
-                    VariantClear(&(pvar->realvar));
-                    hr = VariantCopy(&(pvar->realvar), &var);
-                    VariantClear(&var);
-                    ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
-                }
             }
         } else {
-            if (vtype == V_VT(&(pvar->realvar))) {
-                hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+            ole_val2variant(val, &(pvar->realvar));
+            if (vtype & VT_BYREF) {
+                if ( (vtype & ~VT_BYREF) == V_VT(&(pvar->realvar))) {
+                    ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                } else {
+                    VariantInit(&var);
+                    hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
+                            LOCALE_SYSTEM_DEFAULT, 0, (VARTYPE)(vtype & ~VT_BYREF));
+                    if (SUCCEEDED(hr)) {
+                        VariantClear(&(pvar->realvar));
+                        hr = VariantCopy(&(pvar->realvar), &var);
+                        VariantClear(&var);
+                        ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                    }
+                }
             } else {
-                hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar), 
-                        LOCALE_SYSTEM_DEFAULT, 0, vtype);
+                if (vtype == V_VT(&(pvar->realvar))) {
+                    hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+                } else {
+                    hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar), 
+                            LOCALE_SYSTEM_DEFAULT, 0, vtype);
+                }
             }
         }
     }
@@ -6810,6 +6818,7 @@ olevariant_free(struct olevariantdata *pvar)
 {
     VariantClear(&(pvar->realvar));
     VariantClear(&(pvar->var));
+    free(pvar);
 }
 
 static VALUE

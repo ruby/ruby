@@ -105,5 +105,10 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal([65, 0], obj.value)
     end
 
+    def test_create_nil_dispatch
+      var = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_DISPATCH)
+      assert_nil(var.value)
+    end
+
   end
 end
