@@ -1,3 +1,12 @@
+Fri Jan 19 17:12:23 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (Init_win32ole): add WIN32OLE_VARIANT::Empty,
+	  WIN32OLE_VARIANT::Null, WIN32OLE_VARIANT::Nothing.
+
+    * test/win32ole/test_win32ole_variant.rb: ditto.
+
+	* test/win32ole/test_nil2vtempty.rb(test_openSchema): ditto.
+
 Fri Jan 19 06:53:38 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (olevariant_free): fix memory leak.
@@ -6,7 +15,7 @@ Fri Jan 19 06:53:38 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	  WIN32OLE_VARIANT.new accepts nil as first argument for some VARIANT 
 	  TYPE.
 
-	* test/win32ole/test_win32ole: ditto. 
+	* test/win32ole/test_win32ole_variant.rb: ditto. 
 
 Wed Jan 17 17:31:28 2007  Koichi Sasada  <ko1@atdot.net>
 

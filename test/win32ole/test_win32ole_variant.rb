@@ -110,5 +110,18 @@ if defined?(WIN32OLE_VARIANT)
       assert_nil(var.value)
     end
 
+    def test_c_nothing
+      assert_nil(WIN32OLE_VARIANT::Nothing.value)
+    end
+
+    def test_c_empty
+      assert_nil(WIN32OLE_VARIANT::Empty.value)
+    end
+
+    def test_c_null
+      assert_nil(WIN32OLE_VARIANT::Null.value)
+    end
+
+
   end
 end

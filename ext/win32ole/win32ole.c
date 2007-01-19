@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.4"
+#define WIN32OLE_VERSION "0.8.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2165,6 +2165,40 @@ fole_s_create_guid(VALUE self)
  * Document-class: WIN32OLE
  *
  *   <code>WIN32OLE</code> objects represent OLE Automation object in Ruby.
+ *
+ *   By using WIN32OLE, you can access OLE server like VBScript.
+ *   
+ *   Here is sample script.
+ *
+ *     require 'win32ole'
+ *     
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     excel.visible = true
+ *     workbook = excel.Workbooks.Add();
+ *     worksheet = workbook.Worksheets(1);
+ *     worksheet.Range("A1:D1").value = ["North","South","East","West"];
+ *     worksheet.Range("A2:B2").value = [5.2, 10];
+ *     worksheet.Range("C2").value = 8;
+ *     worksheet.Range("D2").value = 20;
+ *     
+ *     range = worksheet.Range("A1:D2");
+ *     range.select
+ *     chart = workbook.Charts.Add;
+ *     
+ *     workbook.saved = true;
+ *     
+ *     excel.ActiveWorkbook.Close(0);
+ *     excel.Quit();
+ *
+ *  Unfortunately, Win32OLE doesn't support the argument passed by 
+ *  reference directly.
+ *  Instead, Win32OLE provides WIN32OLE::ARGV.
+ *  If you want to get the result value of argument passed by reference,
+ *  you can use WIN32OLE::ARGV.
+ *
+ *     oleobj.method(arg1, arg2, refargv3)
+ *     puts WIN32OLE::ARGV[2]   # the value of refargv3 after called oleobj.method
+ *     
  */
 
 /*
@@ -6833,6 +6867,24 @@ folevariant_s_allocate(VALUE klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_VARIANT.new(val, vartype) #=> WIN32OLE_VARIANT object.
+ *
+ *  Returns Ruby object wrapping OLE variant.
+ *  The first argument specifies Ruby object to convert OLE variant variable.
+ *  The second argument specifies VARIANT type. 
+ *  In some situation, you need the WIN32OLE_VARIANT object to pass OLE method
+ *
+ *     shell = WIN32OLE.new("Shell.Application")
+ *     folder = shell.NameSpace("C:\\Windows")
+ *     item = folder.ParseName("tmp.txt")
+ *     # You can't use Ruby String object to call FolderItem.InvokeVerb.
+ *     # Instead, you have to use WIN32OLE_VARIANT object to call the method.
+ *     shortcut = WIN32OLE_VARIANT.new("Create Shortcut(\&S)")
+ *     item.invokeVerb(shortcut)
+ *
+ */     
 static VALUE
 folevariant_initialize(VALUE self, VALUE args)
 {
@@ -6860,6 +6912,15 @@ folevariant_initialize(VALUE self, VALUE args)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_VARIANT#value #=> Ruby object.
+ *
+ *  Returns Ruby object value from OLE variant.
+ *     obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_BSTR)
+ *     obj.value # => "1" (not Fixnum object, but String object "1")
+ *
+ */     
 static VALUE
 folevariant_value(VALUE self)
 {
@@ -6951,13 +7012,13 @@ Init_win32ole()
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
-    rb_define_const(cWIN32OLE, "CP_ACP"       ,INT2FIX(CP_ACP));
-    rb_define_const(cWIN32OLE, "CP_OEMCP"     ,INT2FIX(CP_OEMCP));
-    rb_define_const(cWIN32OLE, "CP_MACCP"     ,INT2FIX(CP_MACCP));
-    rb_define_const(cWIN32OLE, "CP_THREAD_ACP",INT2FIX(CP_THREAD_ACP));
-    rb_define_const(cWIN32OLE, "CP_SYMBOL"    ,INT2FIX(CP_SYMBOL));
-    rb_define_const(cWIN32OLE, "CP_UTF7"      ,INT2FIX(CP_UTF7));
-    rb_define_const(cWIN32OLE, "CP_UTF8"      ,INT2FIX(CP_UTF8));
+    rb_define_const(cWIN32OLE, "CP_ACP", INT2FIX(CP_ACP));
+    rb_define_const(cWIN32OLE, "CP_OEMCP", INT2FIX(CP_OEMCP));
+    rb_define_const(cWIN32OLE, "CP_MACCP", INT2FIX(CP_MACCP));
+    rb_define_const(cWIN32OLE, "CP_THREAD_ACP", INT2FIX(CP_THREAD_ACP));
+    rb_define_const(cWIN32OLE, "CP_SYMBOL", INT2FIX(CP_SYMBOL));
+    rb_define_const(cWIN32OLE, "CP_UTF7", INT2FIX(CP_UTF7));
+    rb_define_const(cWIN32OLE, "CP_UTF8", INT2FIX(CP_UTF8));
 
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
     rb_define_const(mWIN32OLE_VARIANT, "VT_EMPTY", INT2FIX(VT_EMPTY));
@@ -7080,6 +7141,9 @@ Init_win32ole()
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_method(cWIN32OLE_VARIANT, "initialize", folevariant_initialize, -2);
     rb_define_method(cWIN32OLE_VARIANT, "value", folevariant_value, 0);
+    rb_define_const(cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
+    rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
+    rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
 
     eWIN32OLE_RUNTIME_ERROR = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
