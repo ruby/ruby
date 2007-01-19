@@ -9,7 +9,29 @@ end
 require 'test/unit'
 
 if defined?(WIN32OLE)
+  module CONST1
+  end
+  module CONST2
+  end
   class TestWin32OLE < Test::Unit::TestCase
+    def test_s_new_DCOM
+      rshell = WIN32OLE.new("Shell.Application")
+      assert_instance_of(WIN32OLE, rshell)
+    end
+
+    def test_s_new_from_clsid
+      shell = WIN32OLE.new("{13709620-C279-11CE-A49E-444553540000}")
+      assert_instance_of(WIN32OLE, shell)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        WIN32OLE.new("{000}")
+      }
+      assert_match(/unknown OLE server: `\{000\}'/, exc.message)
+    end
+
+    # test_s_connect was moved to test_word.rb
+    # def test_s_connect
+    # end
+    
     def test_invoke_accept_symbol_hash_key
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       afolder = fso.getFolder(".")
@@ -19,6 +41,94 @@ if defined?(WIN32OLE)
       assert_equal(afolder.path, cfolder.path)
       fso = nil
     end
+
+    def test_setproperty
+      installer = WIN32OLE.new("WindowsInstaller.Installer")
+      record = installer.CreateRecord(2)
+      # this is the way to set property with argument in Win32OLE.
+      record.setproperty( "StringData", 1, 'dddd')
+      assert_equal('dddd', record.StringData(1))
+    end
+
+    def test_setproperty_equal_ended
+      dict1 = WIN32OLE.new('Scripting.Dictionary')
+      dict1.compareMode = 1
+      dict1.add("one", 1)
+      assert_equal(1, dict1.item("ONE"))
+
+      dict2 = WIN32OLE.new('Scripting.Dictionary')
+      dict2.add("one", 1)
+      assert_nil(dict2.item("ONE"))
+      assert_equal(1, dict2.item("one"))
+    end
+
+    def test_non_exist_property
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      assert_raise(WIN32OLERuntimeError) {
+        dict.unknown_property = 1
+      }
+    end
+
+    def test_ole_type
+      fso = WIN32OLE.new('Scripting.FileSystemObject')
+      tobj = fso.ole_type
+      assert_match(/^IFileSystem/, tobj.name)
+    end
+
+    def test_ole_obj_help
+      fso = WIN32OLE.new('Scripting.FileSystemObject')
+      tobj = fso.ole_obj_help
+      assert_match(/^IFileSystem/, tobj.name)
+    end
+
+    def test_ole_methods
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      methods = dict.ole_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Add"))
+    end
+
+    def test_ole_func_methods
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      methods = dict.ole_func_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Add"))
+    end
+
+    def test_ole_put_methods
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      methods = dict.ole_put_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("CompareMode"))
+    end
+
+    def test_ole_get_methods
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      methods = dict.ole_get_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Count"))
+    end
+
+    def test_ole_mehtod_help
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      minfo = dict.ole_method_help("Add")
+      assert_equal(2, minfo.size_params)
+    end
+
+    def test_ole_typelib
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      tlib = dict.ole_typelib
+      assert_equal("Microsoft Scripting Runtime", tlib.name);
+    end
+
     def test_invoke_hash_key_non_str_sym
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       begin
@@ -29,6 +139,13 @@ if defined?(WIN32OLE)
       end
       fso = nil
     end
+
+    def test_get_win32ole_object
+      shell = WIN32OLE.new('Shell.Application')
+      folder = shell.nameSpace(0)
+      assert_instance_of(WIN32OLE, folder)
+    end
+
     def test_invoke_accept_multi_hash_key
       shell = WIN32OLE.new('Shell.Application')
       folder = shell.nameSpace(0)
@@ -39,6 +156,41 @@ if defined?(WIN32OLE)
       assert_equal(item.name, name)
       name = folder.getDetailsOf({"vItem" => item, :iColumn => 0})
       assert_equal(item.name, name)
+    end
+
+    def test_ole_invoke_with_named_arg_last
+      shell = WIN32OLE.new('Shell.Application')
+      folder = shell.nameSpace(0)
+      item = folder.items.item(0)
+      name = folder.getDetailsOf(item, {:iColumn => 0})
+      assert_equal(item.name, name)
+    end
+
+    def test__invoke
+      shell=WIN32OLE.new('Shell.Application')
+      assert_equal(shell.NameSpace(0).title, shell._invoke(0x60020002, [0], [WIN32OLE::VARIANT::VT_VARIANT]).title)
+    end
+
+    def test_s_const_load
+      assert(!defined?(CONST1::SsfWINDOWS))
+      shell=WIN32OLE.new('Shell.Application')
+      WIN32OLE.const_load(shell, CONST1)
+      assert_equal(36, CONST1::SsfWINDOWS)
+
+      assert(!defined?(CONST2::SsfWINDOWS))
+      WIN32OLE.const_load("Microsoft Shell Controls And Automation", CONST2)
+      assert_equal(36, CONST2::SsfWINDOWS)
+    end
+
+    def test_each
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      dict.add("one", 1)
+      dict.add("two", 2)
+      i = 0
+      dict.keys.each do |item|
+        i += 1
+      end
+      assert_equal(2, i)
     end
 
     def test_bracket
@@ -54,5 +206,48 @@ if defined?(WIN32OLE)
       dict["foo"] = "BAR"
       assert_equal("BAR", dict["foo"])
     end
+
+    def test_s_create_guid
+      guid = WIN32OLE.create_guid
+      assert_match(/^\{[A-Z0-9]{8}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{12}/,
+                   guid)
+    end
+
+    def test_s_codepage
+      assert_equal(WIN32OLE::CP_ACP, WIN32OLE.codepage)
+    end
+    def test_s_codepage_set
+      WIN32OLE.codepage = WIN32OLE::CP_UTF8
+      assert_equal(WIN32OLE::CP_UTF8, WIN32OLE.codepage)
+      WIN32OLE.codepage = WIN32OLE::CP_ACP
+    end
+    def test_const_CP_ACP
+      assert_equal(0, WIN32OLE::CP_ACP)
+    end
+
+    def test_const_CP_OEMCP
+      assert_equal(1, WIN32OLE::CP_OEMCP)
+    end
+
+    def test_const_CP_MACCP
+      assert_equal(2, WIN32OLE::CP_MACCP)
+    end
+
+    def test_const_CP_THREAD_ACP
+      assert_equal(3, WIN32OLE::CP_THREAD_ACP)
+    end
+
+    def test_const_CP_SYMBOL
+      assert_equal(42, WIN32OLE::CP_SYMBOL)
+    end
+
+    def test_const_CP_UTF7
+      assert_equal(65000, WIN32OLE::CP_UTF7)
+    end
+
+    def test_const_CP_UTF8
+      assert_equal(65001, WIN32OLE::CP_UTF8)
+    end
+
   end
 end

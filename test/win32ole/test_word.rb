@@ -26,6 +26,14 @@ if defined?(WIN32OLE)
       end
     end
 
+    def test_s_connect
+      if @obj
+        obj2 = WIN32OLE.connect("Word.Application")
+        assert_instance_of(WIN32OLE, obj2)
+        obj2.visible = true
+      end
+    end
+
     def teardown
       if @obj
         @obj.quit
