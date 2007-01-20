@@ -39,6 +39,23 @@ if defined?(WIN32OLE)
       }
     end
 
+    def test_raise_message
+      exc = assert_raise(WIN32OLERuntimeError) {
+        @dict1.add
+      }
+      assert_match(/^\(in OLE method `add': \)/, exc.message)
+
+      exc = assert_raise(WIN32OLERuntimeError) {
+        @dict1._invoke(1, [], [])
+      }
+      assert_match(/^\(in OLE method `<dispatch id:1>': \)/, exc.message)
+
+      exc = assert_raise(WIN32OLERuntimeError) {
+        @dict1.compareMode = 100
+      }
+      assert_match(/^\(in setting property `compareMode': \)/, exc.message)
+    end
+
     def test_ole_methods
       methods = @dict1.ole_methods
       mnames = methods.collect {|m|

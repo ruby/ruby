@@ -2521,7 +2521,8 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "%s",
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in OLE method `%s': )%s",
+                  StringValuePtr(cmd),
                   StringValuePtr(v));
     }
     obj = ole_variant2val(&result);
@@ -2723,7 +2724,8 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "_invoke %s",
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in OLE method `<dispatch id:%d>': )%s",
+                  NUM2INT(dispid),
                   StringValuePtr(v));
     }
 
@@ -2907,7 +2909,9 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     }
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, StringValuePtr(v));
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in setting property `%s': )%s",
+                  StringValuePtr(property),
+                  StringValuePtr(v));
     }
     return Qnil;
 }
