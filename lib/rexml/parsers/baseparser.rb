@@ -146,8 +146,6 @@ module REXML
 
       # Returns true if there are no more events
       def empty?
-        #STDERR.puts "@source.empty? = #{@source.empty?}"
-        #STDERR.puts "@stack.empty? = #{@stack.empty?}"
         return (@source.empty? and @stack.empty?)
       end
 
@@ -365,8 +363,6 @@ module REXML
           else
             md = @source.match( TEXT_PATTERN, true )
             if md[0].length == 0
-              puts "EMPTY = #{empty?}"
-              puts "BUFFER = \"#{@source.buffer}\""
               @source.match( /(\s+)/, true )
             end
             #STDERR.puts "GOT #{md[1].inspect}" unless md[0].length == 0

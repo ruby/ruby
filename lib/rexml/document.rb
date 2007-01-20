@@ -157,8 +157,9 @@ module REXML
 		#   document will be written.
 		# indent::
 		#   An integer.  If -1, no indenting will be used; otherwise, the
-		#   indentation will be this number of spaces, and children will be
-		#   indented an additional amount.  Defaults to -1
+		#   indentation will be twice this number of spaces, and children will be
+		#   indented an additional amount.  For a value of 3, every item will be 
+    #   indented 3 more levels, or 6 more spaces (2 * 3). Defaults to -1
 		# transitive::
 		#   If transitive is true and indent is >= 0, then the output will be
 		#   pretty-printed in such a way that the added whitespace does not affect

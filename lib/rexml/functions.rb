@@ -117,14 +117,28 @@ module REXML
       elsif defined? object.node_type
         if object.node_type == :attribute
           object.value
-        elsif object.node_type == :element
-          object.text
+        elsif object.node_type == :element || object.node_type == :document
+          string_value(object)
         else
           object.to_s
         end
+      elsif object.nil?
+        return ""
       else
         object.to_s
       end
+    end
+
+    def Functions::string_value( o )
+      rv = ""
+      o.children.each { |e|
+        if e.node_type == :text
+          rv << e.to_s
+        elsif e.node_type == :element
+          rv << string_value( e )
+        end
+      }
+      rv
     end
 
     # UNTESTED
@@ -139,7 +153,7 @@ module REXML
 
     # Fixed by Mike Stok
     def Functions::contains( string, test )
-      string(string).include? string(test)
+      string(string).include?(string(test))
     end
 
     # Kouhei fixed this 
@@ -325,8 +339,9 @@ module REXML
         object.to_f
       else
         str = string( object )
-        #puts "STRING OF #{object.inspect} = #{str}"
-        if str =~ /^-?\.?\d/
+        # If XPath ever gets scientific notation...
+        #if str =~ /^\s*-?(\d*\.?\d+|\d+\.)([Ee]\d*)?\s*$/
+        if str =~ /^\s*-?(\d*\.?\d+|\d+\.)\s*$/
           str.to_f
         else
           (0.0 / 0.0)

@@ -160,8 +160,13 @@ module REXML
       node_types = ELEMENTS
       return nodeset if path_stack.length == 0 || nodeset.length == 0
       while path_stack.length > 0
+        #puts "#"*5
         #puts "Path stack = #{path_stack.inspect}"
         #puts "Nodeset is #{nodeset.inspect}"
+        if nodeset.length == 0
+          path_stack.clear
+          return []
+        end
         case (op = path_stack.shift)
         when :document
           nodeset = [ nodeset[0].root_node ]
@@ -235,9 +240,11 @@ module REXML
             name = path_stack.shift
             for element in nodeset
               if element.node_type == :element
-                #puts element.name
-                attr = element.attribute( name, get_namespace(element, prefix) )
-                new_nodeset << attr if attr
+                #puts "Element name = #{element.name}"
+                #puts "get_namespace( #{element.inspect}, #{prefix} ) = #{get_namespace(element, prefix)}"
+                attrib = element.attribute( name, get_namespace(element, prefix) )
+                #puts "attrib = #{attrib.inspect}"
+                new_nodeset << attrib if attrib
               end
             end
           when :any
@@ -299,8 +306,10 @@ module REXML
               #puts "Adding node #{node.inspect}" if result == (index+1)
               new_nodeset << node if result == (index+1)
             elsif result.instance_of? Array
-              #puts "Adding node #{node.inspect}" if result.size > 0
-              new_nodeset << node if result.size > 0
+              if result.size > 0 and result.inject(false) {|k,s| s or k}
+                #puts "Adding node #{node.inspect}" if result.size > 0
+                new_nodeset << node if result.size > 0
+              end
             else
               #puts "Adding node #{node.inspect}" if result
               new_nodeset << node if result
@@ -381,9 +390,25 @@ module REXML
           node_types = ELEMENTS
 
         when :namespace
-          new_set = []
+          #puts "In :namespace"
+          new_nodeset = []
+          prefix = path_stack.shift
           for node in nodeset
-            new_nodeset << node.namespace if node.node_type == :element or node.node_type == :attribute
+            if (node.node_type == :element or node.node_type == :attribute)
+              if @namespaces
+                namespaces = @namespaces
+              elsif (node.node_type == :element)
+                namespaces = node.namespaces
+              else
+                namespaces = node.element.namesapces
+              end
+              #puts "Namespaces = #{namespaces.inspect}"
+              #puts "Prefix = #{prefix.inspect}"
+              #puts "Node.namespace = #{node.namespace}"
+              if (node.namespace == namespaces[prefix])
+                new_nodeset << node
+              end
+            end
           end
           nodeset = new_nodeset
 
@@ -398,6 +423,18 @@ module REXML
         when :eq, :neq, :lt, :lteq, :gt, :gteq, :and, :or
           left = expr( path_stack.shift, nodeset.dup, context )
           #puts "LEFT => #{left.inspect} (#{left.class.name})"
+          right = expr( path_stack.shift, nodeset.dup, context )
+          #puts "RIGHT => #{right.inspect} (#{right.class.name})"
+          res = equality_relational_compare( left, op, right )
+          #puts "RES => #{res.inspect}"
+          return res
+
+        when :and
+          left = expr( path_stack.shift, nodeset.dup, context )
+          #puts "LEFT => #{left.inspect} (#{left.class.name})"
+          if left == false || left.nil? || !left.inject(false) {|a,b| a | b}
+            return []
+          end
           right = expr( path_stack.shift, nodeset.dup, context )
           #puts "RIGHT => #{right.inspect} (#{right.class.name})"
           res = equality_relational_compare( left, op, right )
@@ -477,7 +514,7 @@ module REXML
     # The next two methods are BAD MOJO!
     # This is my achilles heel.  If anybody thinks of a better
     # way of doing this, be my guest.  This really sucks, but 
-    # it took me three days to get it to work at all.
+    # it is a wonder it works at all.
     # ########################################################
     
     def descendant_or_self( path_stack, nodeset )
