@@ -792,6 +792,54 @@ method_unbind(obj)
 
 /*
  *  call-seq:
+ *     meth.receiver    => object
+ *  
+ *  Returns the bound receiver of the method object.
+ */
+
+static VALUE
+method_receiver(VALUE obj)
+{
+    struct METHOD *data;
+
+    Data_Get_Struct(obj, struct METHOD, data);
+    return data->recv;
+}
+
+/*
+ *  call-seq:
+ *     meth.name    => string
+ *  
+ *  Returns the name of the method.
+ */
+
+static VALUE
+method_name(VALUE obj)
+{
+    struct METHOD *data;
+
+    Data_Get_Struct(obj, struct METHOD, data);
+    return rb_str_new2(rb_id2name(data->id));
+}
+
+/*
+ *  call-seq:
+ *     meth.owner    => class_or_module
+ *  
+ *  Returns the class or module that defines the method.
+ */
+
+static VALUE
+method_owner(VALUE obj)
+{
+    struct METHOD *data;
+
+    Data_Get_Struct(obj, struct METHOD, data);
+    return data->klass;
+}
+
+/*
+ *  call-seq:
  *     obj.method(sym)    => method
  *  
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
@@ -1492,6 +1540,9 @@ Init_Proc()
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
+    rb_define_method(rb_cMethod, "receiver", method_receiver, 0);
+    rb_define_method(rb_cMethod, "name", method_name, 0);
+    rb_define_method(rb_cMethod, "owner", method_owner, 0);
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
 
@@ -1506,6 +1557,8 @@ Init_Proc()
     rb_define_method(rb_cUnboundMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
+    rb_define_method(rb_cUnboundMethod, "name", method_name, 0);
+    rb_define_method(rb_cUnboundMethod, "owner", method_owner, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
 
     /* Module#*_method */

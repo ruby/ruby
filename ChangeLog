@@ -12,6 +12,17 @@ Sat Jan 20 11:18:49 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole.rb: ditto.
 
+Sat Jan 20 06:45:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_proc.c (method_receiver): add new method to get the bound
+	  receiver of the method object.  [ruby-talk:234949]
+
+	* eval_proc.c (method_name): new method to get the name of a
+	  method.
+
+	* eval_proc.c (method_owner): a new method to get the class or
+	  module that defines the method.
+
 Fri Jan 19 17:12:23 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): add WIN32OLE_VARIANT::Empty,
