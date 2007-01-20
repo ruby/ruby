@@ -1,5 +1,4 @@
 #
-# This script check that Win32OLE can execute InvokeVerb method of FolderItem2.
 #
 
 begin
@@ -13,7 +12,110 @@ if defined?(WIN32OLE)
   end
   module CONST2
   end
+
+  module TestCaseForDict
+    def test_convert_bignum
+      @dict1.add("a", 9999999999)
+      @dict1.add("b", 999999999)
+      @dict1.add("c", @dict1.item("b") * 10 + 9) 
+      assert_equal(9999999999, @dict1.item("a"))
+      assert_equal(9999999999, @dict1.item("c"))
+    end
+    def test_add
+      @dict1.add("a", 1000)
+      assert_equal(1000, @dict1.item("a"))
+    end
+    def test_setproperty_equal_ended
+      @dict1.compareMode = 1
+      @dict1.add("one", 1)
+      assert_equal(1, @dict1.item("ONE"))
+      @dict2.add("one", 1)
+      assert_nil(@dict2.item("ONE"))
+      assert_equal(1, @dict2.item("one"))
+    end
+    def test_non_exist_property
+      assert_raise(WIN32OLERuntimeError) {
+        @dict1.unknown_property = 1
+      }
+    end
+
+    def test_ole_methods
+      methods = @dict1.ole_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Add"))
+    end
+
+    def test_ole_func_methods
+      methods = @dict1.ole_func_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Add"))
+    end
+
+    def test_ole_put_methods
+      methods = @dict1.ole_put_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("CompareMode"))
+    end
+
+    def test_ole_get_methods
+      methods = @dict1.ole_get_methods
+      mnames = methods.collect {|m|
+        m.name
+      }
+      assert(mnames.include?("Count"))
+    end
+
+    def test_ole_mehtod_help
+      minfo = @dict1.ole_method_help("Add")
+      assert_equal(2, minfo.size_params)
+    end
+
+    def test_ole_typelib
+      tlib = @dict1.ole_typelib
+      assert_equal("Microsoft Scripting Runtime", tlib.name);
+    end
+
+    def test_each
+      @dict1.add("one", 1)
+      @dict1.add("two", 2)
+      i = 0
+      @dict1.keys.each do |item|
+        i += 1
+      end
+      assert_equal(2, i)
+    end
+
+    def test_bracket
+      @dict1.add("foo", "FOO")
+      assert_equal("FOO", @dict1.item("foo"))
+      assert_equal("FOO", @dict1["foo"])
+    end
+
+    def test_bracket_equal
+      @dict1.add("foo", "FOO")
+      @dict1["foo"] = "BAR"
+      assert_equal("BAR", @dict1["foo"])
+    end
+
+  end
+
   class TestWin32OLE < Test::Unit::TestCase
+    include TestCaseForDict
+    def setup
+      @dict1 = WIN32OLE.new('Scripting.Dictionary')
+      @dict2 = WIN32OLE.new('Scripting.Dictionary')
+    end
+    def test_s_new
+      assert_instance_of(WIN32OLE, @dict1)
+      assert_instance_of(WIN32OLE, @dict2)
+    end
+
     def test_s_new_DCOM
       rshell = WIN32OLE.new("Shell.Application")
       assert_instance_of(WIN32OLE, rshell)
@@ -31,7 +133,7 @@ if defined?(WIN32OLE)
     # test_s_connect was moved to test_word.rb
     # def test_s_connect
     # end
-    
+
     def test_invoke_accept_symbol_hash_key
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       afolder = fso.getFolder(".")
@@ -50,25 +152,6 @@ if defined?(WIN32OLE)
       assert_equal('dddd', record.StringData(1))
     end
 
-    def test_setproperty_equal_ended
-      dict1 = WIN32OLE.new('Scripting.Dictionary')
-      dict1.compareMode = 1
-      dict1.add("one", 1)
-      assert_equal(1, dict1.item("ONE"))
-
-      dict2 = WIN32OLE.new('Scripting.Dictionary')
-      dict2.add("one", 1)
-      assert_nil(dict2.item("ONE"))
-      assert_equal(1, dict2.item("one"))
-    end
-
-    def test_non_exist_property
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      assert_raise(WIN32OLERuntimeError) {
-        dict.unknown_property = 1
-      }
-    end
-
     def test_ole_type
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       tobj = fso.ole_type
@@ -81,53 +164,6 @@ if defined?(WIN32OLE)
       assert_match(/^IFileSystem/, tobj.name)
     end
 
-    def test_ole_methods
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      methods = dict.ole_methods
-      mnames = methods.collect {|m|
-        m.name
-      }
-      assert(mnames.include?("Add"))
-    end
-
-    def test_ole_func_methods
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      methods = dict.ole_func_methods
-      mnames = methods.collect {|m|
-        m.name
-      }
-      assert(mnames.include?("Add"))
-    end
-
-    def test_ole_put_methods
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      methods = dict.ole_put_methods
-      mnames = methods.collect {|m|
-        m.name
-      }
-      assert(mnames.include?("CompareMode"))
-    end
-
-    def test_ole_get_methods
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      methods = dict.ole_get_methods
-      mnames = methods.collect {|m|
-        m.name
-      }
-      assert(mnames.include?("Count"))
-    end
-
-    def test_ole_mehtod_help
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      minfo = dict.ole_method_help("Add")
-      assert_equal(2, minfo.size_params)
-    end
-
-    def test_ole_typelib
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      tlib = dict.ole_typelib
-      assert_equal("Microsoft Scripting Runtime", tlib.name);
-    end
 
     def test_invoke_hash_key_non_str_sym
       fso = WIN32OLE.new('Scripting.FileSystemObject')
@@ -182,31 +218,6 @@ if defined?(WIN32OLE)
       assert_equal(36, CONST2::SsfWINDOWS)
     end
 
-    def test_each
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      dict.add("one", 1)
-      dict.add("two", 2)
-      i = 0
-      dict.keys.each do |item|
-        i += 1
-      end
-      assert_equal(2, i)
-    end
-
-    def test_bracket
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      dict.add("foo", "FOO")
-      assert_equal("FOO", dict.item("foo"))
-      assert_equal("FOO", dict["foo"])
-    end
-
-    def test_bracket_equal
-      dict = WIN32OLE.new('Scripting.Dictionary')
-      dict.add("foo", "FOO")
-      dict["foo"] = "BAR"
-      assert_equal("BAR", dict["foo"])
-    end
-
     def test_s_create_guid
       guid = WIN32OLE.create_guid
       assert_match(/^\{[A-Z0-9]{8}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{4}\-[A-Z0-9]{12}/,
@@ -216,11 +227,43 @@ if defined?(WIN32OLE)
     def test_s_codepage
       assert_equal(WIN32OLE::CP_ACP, WIN32OLE.codepage)
     end
+
     def test_s_codepage_set
       WIN32OLE.codepage = WIN32OLE::CP_UTF8
       assert_equal(WIN32OLE::CP_UTF8, WIN32OLE.codepage)
       WIN32OLE.codepage = WIN32OLE::CP_ACP
     end
+
+    def test_s_codepage_changed
+      fso = WIN32OLE.new("Scripting.FileSystemObject")
+      fname = fso.getTempName
+      begin
+        WIN32OLE.codepage = WIN32OLE::CP_UTF8
+        file = fso.opentextfile(fname, 2, true)
+        file.write [0x3042].pack("U*")
+        file.close
+        str = ""
+        open(fname) {|ifs|
+          str = ifs.read
+        }
+        assert_equal("\202\240", str)
+
+        WIN32OLE.codepage = WIN32OLE::CP_ACP
+        file = fso.opentextfile(fname, 2, true)
+        file.write [0x3042].pack("U*")
+        file.close
+        open(fname) {|ifs|
+          str = ifs.read
+        }
+        assert_equal("\343\201", str)
+      ensure
+        WIN32OLE.codepage = WIN32OLE::CP_ACP
+        if (File.exist?(fname))
+          File.unlink(fname)
+        end
+      end
+    end
+
     def test_const_CP_ACP
       assert_equal(0, WIN32OLE::CP_ACP)
     end
@@ -248,6 +291,23 @@ if defined?(WIN32OLE)
     def test_const_CP_UTF8
       assert_equal(65001, WIN32OLE::CP_UTF8)
     end
+  end
 
+  # test of subclass of WIN32OLE
+  class MyDict < WIN32OLE
+    def MyDict.new
+      super('Scripting.Dictionary')
+    end
+  end
+  class TestMyDict < Test::Unit::TestCase
+    include TestCaseForDict
+    def setup
+      @dict1 = MyDict.new
+      @dict2 = MyDict.new
+    end
+    def test_s_new
+      assert_instance_of(MyDict, @dict1)
+      assert_instance_of(MyDict, @dict2)
+    end
   end
 end
