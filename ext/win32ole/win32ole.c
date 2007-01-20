@@ -23,6 +23,7 @@
 #include <ocidl.h>
 #include <olectl.h>
 #include <ole2.h>
+#include <stdlib.h>
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
@@ -62,7 +63,7 @@
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
 #define OLE_FREE(x) {\
-    if(gOLEInitialized == Qtrue) {\
+    if(gOLEInitialized == TRUE) {\
         if(x) {\
             OLE_RELEASE(x);\
             (x) = 0;\
@@ -79,13 +80,14 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.6"
+#define WIN32OLE_VERSION "0.8.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
 
 typedef HWND (WINAPI FNHTMLHELP)(HWND hwndCaller, LPCSTR pszFile,
                                  UINT uCommand, DWORD dwData);
+typedef BOOL (FNENUMSYSEMCODEPAGES) (CODEPAGE_ENUMPROC, DWORD);
 typedef struct {
     struct IEventSinkVtbl * lpVtbl;
 } IEventSink, *PEVENTSINK;
@@ -152,13 +154,15 @@ VALUE cWIN32OLE_PROPERTY;
 
 static VALUE ary_ole_event;
 static ID id_events;
-static BOOL gOLEInitialized = Qfalse;
+static BOOL gOLEInitialized = FALSE;
+static BOOL gCodePageInstalled = FALSE;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
 static UINT  cWIN32OLE_cp = CP_ACP;
+static UINT  gTarget_cp = CP_ACP;
 static VARTYPE g_nil_to = VT_ERROR;
 
 struct oledata {
@@ -583,7 +587,7 @@ void
 ole_uninitialize()
 {
     OleUninitialize();
-    gOLEInitialized = Qfalse;
+    gOLEInitialized = FALSE;
 }
 
 static void
@@ -591,12 +595,12 @@ ole_initialize()
 {
     HRESULT hr;
     
-    if(gOLEInitialized == Qfalse) {
+    if(gOLEInitialized == FALSE) {
         hr = OleInitialize(NULL);
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
-        gOLEInitialized = Qtrue;
+        gOLEInitialized = TRUE;
         /*
          * In some situation, OleUninitialize does not work fine. ;-<
          */
@@ -2103,33 +2107,54 @@ fole_s_get_code_page(VALUE self)
     return INT2FIX(cWIN32OLE_cp);
 }
 
+static BOOL CALLBACK 
+installed_code_page_proc(LPTSTR str) {
+    if (atol(str) == gTarget_cp) {
+        gCodePageInstalled = TRUE;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static BOOL 
+code_page_installed(UINT cp) {
+    gCodePageInstalled = FALSE;
+    gTarget_cp = cp;
+    EnumSystemCodePages(installed_code_page_proc, CP_INSTALLED);
+    return gCodePageInstalled;
+}
+
 /* 
  *  call-seq:
  *     WIN32OLE.codepage = CP
  * 
  *  Sets current codepage.
  *     WIN32OLE.codepage = WIN32OLE::CP_UTF8
+ *     WIN32OLE.codepage = 20932
  */
 static VALUE
 fole_s_set_code_page(VALUE self, VALUE vcp)
 {
     UINT cp = FIX2INT(vcp);
 
-    switch(cp) {
-    case CP_ACP:
-    case CP_OEMCP:
-    case CP_MACCP:
-    case CP_THREAD_ACP:
-    case CP_SYMBOL:
-    case CP_UTF7:
-    case CP_UTF8:
+    if (code_page_installed(cp)) {
         cWIN32OLE_cp = cp;
-        break;
-    default:
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8");
-        break;
+    } else {
+        switch(cp) {
+        case CP_ACP:
+        case CP_OEMCP:
+        case CP_MACCP:
+        case CP_THREAD_ACP:
+        case CP_SYMBOL:
+        case CP_UTF7:
+        case CP_UTF8:
+            cWIN32OLE_cp = cp;
+            break;
+        default:
+            rb_raise(eWIN32OLE_RUNTIME_ERROR, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
+            break;
+        }
     }
-
     /*
      * Should this method return old codepage?
      */

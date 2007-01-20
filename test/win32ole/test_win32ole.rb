@@ -1,5 +1,4 @@
 #
-#
 
 begin
   require 'win32ole'
@@ -273,6 +272,22 @@ if defined?(WIN32OLE)
           str = ifs.read
         }
         assert_equal("\343\201", str)
+
+        # This test fail if codepage 20932 (euc) is not installed.
+        begin 
+          WIN32OLE.codepage = 20932
+        rescue WIN32OLERuntimeError
+        end
+        if (WIN32OLE.codepage == 20932)
+          file = fso.opentextfile(fname, 2, true)
+          file.write [164, 162].pack("c*")
+          file.close
+          open(fname) {|ifs|
+            str = ifs.read
+          }
+          assert_equal("\202\240", str)
+        end
+
       ensure
         WIN32OLE.codepage = WIN32OLE::CP_ACP
         if (File.exist?(fname))
