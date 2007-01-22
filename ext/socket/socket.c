@@ -2893,7 +2893,7 @@ sock_accept(VALUE sock)
  * 	  IO.select([socket])
  * 	  retry
  * 	end
- * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	puts "The client said, '#{client_socket.readline.chomp}'"
  * 	client_socket.puts "Hello from script one!"
  * 	socket.close
  * 
@@ -2947,8 +2947,8 @@ sock_accept_nonblock(VALUE sock)
  * 	socket.bind( sockaddr )
  * 	socket.listen( 5 )
  * 	client_fd, client_sockaddr = socket.sysaccept
- * 	puts "The client said, '#{socket.readline.chomp}'"
  * 	client_socket = Socket.for_fd( client_fd )
+ * 	puts "The client said, '#{client_socket.readline.chomp}'"
  * 	client_socket.puts "Hello from script one!"
  * 	socket.close
  * 
