@@ -2951,7 +2951,7 @@ sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
  * 	socket.bind( sockaddr )
  * 	socket.listen( 5 )
  * 	client, client_sockaddr = socket.accept
- * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	puts "The client said, '#{client.readline.chomp}'"
  * 	client.puts "Hello from script one!"
  * 	socket.close
  * 
@@ -3056,7 +3056,7 @@ sock_accept(sock)
  * 	  IO.select([socket])
  * 	  retry
  * 	end
- * 	puts "The client said, '#{socket.readline.chomp}'"
+ * 	puts "The client said, '#{client_socket.readline.chomp}'"
  * 	client_socket.puts "Hello from script one!"
  * 	socket.close
  *
@@ -3111,8 +3111,8 @@ sock_accept_nonblock(sock)
  * 	socket.bind( sockaddr )
  * 	socket.listen( 5 )
  * 	client_fd, client_sockaddr = socket.sysaccept
- * 	puts "The client said, '#{socket.readline.chomp}'"
  * 	client_socket = Socket.for_fd( client_fd )
+ * 	puts "The client said, '#{client_socket.readline.chomp}'"
  * 	client_socket.puts "Hello from script one!"
  * 	socket.close
  * 

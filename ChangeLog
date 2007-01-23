@@ -1,3 +1,8 @@
+Mon Jan 22 14:57:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: fix errors in socket sample code.
+	  [ruby-core:09992]
+
 Sat Jan 13 23:54:48 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 
