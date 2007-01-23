@@ -2,6 +2,7 @@
 #define RUBY_RELEASE_DATE "2007-01-23"
 #define RUBY_VERSION_CODE 185
 #define RUBY_RELEASE_CODE 20070123
+#define RUBY_PATCHLEVEL 5000
 
 #define RUBY_VERSION_MAJOR 1
 #define RUBY_VERSION_MINOR 8
@@ -13,3 +14,4 @@
 RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
+RUBY_EXTERN const int ruby_patchlevel;
