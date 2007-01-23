@@ -47,6 +47,9 @@ RDOCTARGET = $(RDOCTARGET)
 !if defined(EXTOUT)
 EXTOUT = $(EXTOUT)
 !endif
+!if defined(BASERUBY)
+BASERUBY = $(BASERUBY)
+!endif
 <<
 
 -system-vars-: -osname- -runtime-

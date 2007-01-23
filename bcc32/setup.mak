@@ -53,6 +53,11 @@ $(BANG)ifndef EXTOUT
 EXTOUT = $(EXTOUT)
 $(BANG)endif
 !endif
+!if defined(BASERUBY)
+$(BANG)ifndef BASERUBY
+BASERUBY = $(BASERUBY)
+$(BANG)endif
+!endif
 |
 	@type > usebormm.bat &&|
 @echo off

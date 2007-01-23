@@ -12,6 +12,7 @@ PURIFY =
 AUTOCONF = autoconf
 @SET_MAKE@
 MKFILES = @MAKEFILES@
+BASERUBY = @BASERUBY@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@

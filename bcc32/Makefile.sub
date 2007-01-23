@@ -55,6 +55,9 @@ YFLAGS = -o y.tab.c
 !ifndef AR
 AR = tlib
 !endif
+!ifndef BASERUBY
+BASERUBY = ruby
+!endif
 
 PURIFY =
 AUTOCONF = autoconf

@@ -51,6 +51,9 @@ AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+!if !defined(BASERUBY)
+BASERUBY = ruby
+!endif
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86

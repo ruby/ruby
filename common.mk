@@ -524,7 +524,6 @@ debug.$(OBJEXT): {$(VPATH)}debug.h
 blockinlining.$(OBJEXT): {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h vm_opts.h
 
 
-BASERUBY = ruby
 MATZRUBY = $(MATZRUBYDIR)ruby
 
 INSNS2VMOPT = $(CPPFLAGS) --srcdir=$(srcdir)

@@ -58,6 +58,9 @@ RDOCTARGET = $(RDOCTARGET)
 !if defined(EXTOUT)
 EXTOUT = $(EXTOUT)
 !endif
+!if defined(BASERUBY)
+BASERUBY = $(BASERUBY)
+!endif
 <<
 	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"

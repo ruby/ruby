@@ -1606,6 +1606,23 @@ if test -z "$MANTYPE"; then
 fi
 AC_SUBST(MANTYPE)
 
+AC_ARG_WITH(baseruby,
+	[  --with-baseruby=RUBY use RUBY as baseruby; RUBY is the pathname of ruby],
+	[
+		case "$withval" in
+		*ruby*)
+			BASERUBY=$withval
+			;;
+		*)
+			AC_MSG_ERROR(need ruby)
+			;;
+		esac
+	],
+	[
+		BASERUBY="ruby"
+	])
+AC_SUBST(BASERUBY)
+
 if test -f config.h && tr -d '\015' < confdefs.h | cmp -s config.h -; then
   echo "config.h unchanged"
 else

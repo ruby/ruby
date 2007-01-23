@@ -21,6 +21,7 @@ if "%1" == "--program-name" goto :progname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
 if "%1" == "--extout" goto :extout
+if "%1" == "--with-baseruby" goto :baseruby
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
 if "%1" == "CC" goto :define
@@ -83,6 +84,11 @@ goto :loop
   shift
   shift
 goto :loop
+:baseruby
+  echo>> ~tmp~.mak 	"BASERUBY=%2" \
+  shift
+  shift
+goto :loop
 :help
   echo Configuration:
   echo   --help                  display this help
@@ -92,6 +98,7 @@ goto :loop
   echo System types:
   echo   --target=TARGET         configure for TARGET [i386-mswin32]
   echo Optional Package:
+  echo   --with-baseruby=RUBY    use RUBY as baseruby [ruby]
   echo   --with-static-linked-ext link external modules statically
   echo   --enable-install-doc    install rdoc indexes during install
   del ~tmp~.mak
