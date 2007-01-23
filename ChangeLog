@@ -1,3 +1,8 @@
+Tue Jan 23 18:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): use == instead
+	  of ===.  [ruby-dev:30176]
+
 Mon Jan 22 14:57:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: fix errors in socket sample code.
