@@ -2414,7 +2414,39 @@ env_update(env, hash)
  *  Hashes have a <em>default value</em> that is returned when accessing
  *  keys that do not exist in the hash. By default, that value is
  *  <code>nil</code>.
- *     
+ *  
+ *  <code>Hash</code> uses <code>key.eql?</code> to test keys for equality.
+ *  If you need to use instances of your own classes as keys in a <code>Hash</code>,
+ *  it is recommended that you define both the <code>eql?</code> and <code>hash</code>
+ *  methods. The <code>hash</code> method must have the property that 
+ *  <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ *    class MyClass
+ *      attr_reader :str
+ *      def initialize(str)
+ *        @str = str
+ *      end
+ *      def eql?(o)
+ *        o.is_a?(MyClass) && str == o.str
+ *      end
+ *      def hash
+ *        @str.hash
+ *      end
+ *    end
+ *    
+ *    a = MyClass.new("some string")
+ *    b = MyClass.new("some string")
+ *    a.eql? b  #=> true
+ *    
+ *    h = {}
+ *    
+ *    h[a] = 1
+ *    h[a]      #=> 1
+ *    h[b]      #=> 1
+ *    
+ *    h[b] = 2
+ *    h[a]      #=> 2
+ *    h[b]      #=> 2
  */
 
 void
