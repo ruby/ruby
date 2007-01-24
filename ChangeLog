@@ -1,3 +1,8 @@
+Wed Jan 24 18:05:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): fix
+	  regexp font-lock bug.  [ruby-talk:235758]
+
 Tue Jan 23 18:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): use == instead
