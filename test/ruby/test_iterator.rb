@@ -1,11 +1,3 @@
-# TODO: tmp
-
-class Object
-  Proc_orig = Proc
-  remove_const :Proc
-  Proc = YARVCore::VM::Proc
-end
-
 require 'test/unit'
 
 class Array

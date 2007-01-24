@@ -1,3 +1,7 @@
+Wed Jan 24 20:34:51 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/ruby/test_iterator.rb: removed a needless workaround.
+
 Wed Jan 24 18:05:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): fix
