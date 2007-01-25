@@ -1,3 +1,8 @@
+Fri Jan 26 07:48:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_init_copy): need to copy internal
+	  structure on clone and dup.  [ruby-dev:30192]
+
 Wed Jan 24 20:34:51 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/ruby/test_iterator.rb: removed a needless workaround.

@@ -261,6 +261,21 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
     return enumerator_init(obj, recv, meth, argc, argv);
 }
 
+/* :nodoc: */
+static VALUE
+enumerator_init_copy(VALUE obj, VALUE orig)
+{
+    struct enumerator *ptr0 = enumerator_ptr(orig);
+    struct enumerator *ptr1 = enumerator_ptr(obj);
+
+    ptr1->method = ptr0->method;
+    ptr1->proc = ptr0->proc;
+    ptr1->iter = ptr0->iter;
+    ptr1->args = ptr0->args;
+
+    return obj;
+}
+
 VALUE
 rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
@@ -351,6 +366,7 @@ Init_Enumerator(void)
 
     rb_define_alloc_func(rb_cEnumerator, enumerator_allocate);
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);
+    rb_define_method(rb_cEnumerator, "initialize_copy", enumerator_init_copy, 1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
     rb_define_method(rb_cEnumerator, "to_splat", enumerator_to_splat, 0);
