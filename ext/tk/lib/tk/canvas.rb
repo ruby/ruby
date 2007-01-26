@@ -42,7 +42,7 @@ end
 
 class TkCanvas<TkWindow
   include TkCanvasItemConfig
-  include Scrollable
+  include Tk::Scrollable
 
   TkCommandNames = ['canvas'.freeze].freeze
   WidgetClassName = 'Canvas'.freeze
@@ -543,8 +543,8 @@ class TkCanvas<TkWindow
     tk_send_without_enc('scan', 'mark', x, y)
     self
   end
-  def scan_dragto(x, y)
-    tk_send_without_enc('scan', 'dragto', x, y)
+  def scan_dragto(x, y, gain=None)
+    tk_send_without_enc('scan', 'dragto', x, y, gain)
     self
   end
 

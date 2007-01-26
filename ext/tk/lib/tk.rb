@@ -2829,7 +2829,7 @@ module TkConfigMethod
   def __confinfo_cmd
     __config_cmd
   end
-  private :__config_cmd
+  private :__configinfo_cmd
 
   def __configinfo_struct
     {:key=>0, :alias=>1, :db_name=>1, :db_class=>2, 
@@ -2926,6 +2926,7 @@ module TkConfigMethod
     }
     keys2
   end
+  private :__conv_keyonly_optkeys
 
   def config_hash_kv(keys, enc_mode = nil, conf = nil)
     hash_kv(__conv_keyonly_opts(keys), enc_mode, conf)
@@ -4597,7 +4598,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2006-11-07'.freeze
+  RELEASE_DATE = '2007-01-26'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

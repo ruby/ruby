@@ -4,7 +4,7 @@
 require 'tk'
 
 class TkTextWin<TkWindow
-  TkCommnadNames = [].freeze
+  TkCommandNames = [].freeze
   #def create_self
   #  fail RuntimeError, "TkTextWin is an abstract class"
   #end

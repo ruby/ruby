@@ -1,3 +1,14 @@
+2007-01-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+	* ext/tk/lib/tkextlib/iwidgets/checkbox.rb: wrong number of arguments 
+	  [ruby-Bugs-7776].
+
+	* ext/tk/lib/tkextlib/iwidgets/radiobox.rb: ditto.
+
+	* ext/tk/lib/tkextlib/blt/tile/checkbutton.rb: change primary name 
+	  of class [ruby-dev:30080].
+
+	* ext/tk/lib/tkextlib/blt/tile/radiobutton.rb: ditto.
+
 2006-11-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/tile/treeview.rb : minor bug fix.

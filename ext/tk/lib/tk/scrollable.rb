@@ -4,7 +4,7 @@
 require 'tk'
 
 module Tk
-  module X_Scrollable
+  module XScrollable
     def xscrollcommand(cmd=Proc.new)
       configure_cmd 'xscrollcommand', cmd
       # Tk.update  # avoid scrollbar trouble
@@ -38,7 +38,7 @@ module Tk
     end
   end
 
-  module Y_Scrollable
+  module YScrollable
     def yscrollcommand(cmd=Proc.new)
       configure_cmd 'yscrollcommand', cmd
       # Tk.update  # avoid scrollbar trouble
@@ -72,8 +72,11 @@ module Tk
     end
   end
 
+  X_Scrollable = XScrollable
+  Y_Scrollable = YScrollable
+
   module Scrollable
-    include X_Scrollable
-    include Y_Scrollable
+    include XScrollable
+    include YScrollable
   end
 end
