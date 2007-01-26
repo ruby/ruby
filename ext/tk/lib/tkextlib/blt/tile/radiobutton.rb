@@ -9,9 +9,9 @@ require 'tkextlib/blt/tile.rb'
 
 module Tk::BLT
   module Tile
-    class Radiobutton < TkRadiobutton
+    class RadioButton < TkRadioButton
       TkCommandNames = ['::blt::tile::radiobutton'.freeze].freeze
     end
-    RadioButton = Radiobutton
+    Radiobutton = RadioButton
   end
 end

@@ -1,3 +1,18 @@
+Fri Jan 26 12:03:39 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb (TkConfigMethod#__confinfo_cmd,
+	  __conv_keyonly_optkeys): make them private [ruby-dev:30074].
+
+	* ext/tk/lib/tk/txtwin_abst.rb: fix typo [ruby-dev:30073].
+
+	* ext/tk/lib/tk/canvas.rb (TkCanvas#scan_dragto): lack of an argument.
+
+	* ext/tk/lib/tk/canvas.rb: clarify the including module name
+	  [ruby-dev:30080].
+
+	* ext/tk/lib/tk/scrollable.rb: change primary name of modules
+	  [ruby-dev:30080].
+
 Wed Jan 24 18:05:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): fix

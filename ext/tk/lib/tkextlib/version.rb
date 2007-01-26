@@ -2,5 +2,5 @@
 # release date of tkextlib
 #
 module Tk
-  Tkextlib_RELEASE_DATE = '2006-11-07'.freeze
+  Tkextlib_RELEASE_DATE = '2007-01-26'.freeze
 end

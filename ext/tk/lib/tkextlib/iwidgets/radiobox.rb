@@ -87,7 +87,7 @@ class Tk::Iwidgets::Radiobox
 
   def get(idx)
     simplelist(tk_call(@path, 'get', index(idx))).collect{|id|
-      Tk::Itk::Component.id2obj(id)
+      Tk::Itk::Component.id2obj(self, id)
     }
   end
 
