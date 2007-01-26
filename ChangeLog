@@ -1,3 +1,10 @@
+Fri Jan 26 23:55:56 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: bug fix of WIN32OLE_VARIANT when variant
+	  type is VT_BYREF|VT_VARIANT.
+	
+	* test/win32ole/test_win32ole_variant_with_ie.rb: ditto.
+
 Fri Jan 26 12:03:39 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkConfigMethod#__confinfo_cmd,

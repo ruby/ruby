@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.7"
+#define WIN32OLE_VERSION "0.8.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1153,14 +1153,22 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
         }
     } else {
         if (val == Qnil) {
-            V_VT(&(pvar->realvar)) = vtype & ~VT_BYREF;
-            V_VT(&(pvar->var)) = vtype;
-            if (vtype & VT_BYREF) {
-                ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+            if (vtype == (VT_BYREF | VT_VARIANT)) {
+                V_VARIANTREF(&(pvar->var)) = &(pvar->realvar);
+                V_VT(&(pvar->var)) = vtype;
+            } else {
+                V_VT(&(pvar->realvar)) = vtype & ~VT_BYREF;
+                V_VT(&(pvar->var)) = vtype;
+                if (vtype & VT_BYREF) {
+                    ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                }
             }
         } else {
             ole_val2variant(val, &(pvar->realvar));
-            if (vtype & VT_BYREF) {
+            if (vtype == (VT_BYREF | VT_VARIANT)) {
+                V_VARIANTREF(&(pvar->var)) = &(pvar->realvar);
+                V_VT(&(pvar->var)) = vtype;
+            } else if (vtype & VT_BYREF) {
                 if ( (vtype & ~VT_BYREF) == V_VT(&(pvar->realvar))) {
                     ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
                 } else {
@@ -2536,6 +2544,13 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     }
     /* clear dispatch parameter */
     if(op.dp.cArgs > cNamedArgs) {
+        for(i = cNamedArgs; i < op.dp.cArgs; i++) {
+            n = op.dp.cArgs - i + cNamedArgs - 1;
+            param = rb_ary_entry(paramS, i-cNamedArgs);
+            if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
+                ole_val2variant(param, &realargs[n]);
+            }
+        }
         set_argv(realargs, cNamedArgs, op.dp.cArgs);
     }
     else {
@@ -6956,14 +6971,15 @@ folevariant_value(VALUE self)
     struct olevariantdata *pvar;
     VALUE val = Qnil;
     VARTYPE vt;
+    int dim;
+    VALUE args;
+    SAFEARRAY *psa;
     Data_Get_Struct(self, struct olevariantdata, pvar);
 
     val = ole_variant2val(&(pvar->var));
     vt = V_VT(&(pvar->var));
 
     if ((vt & ~VT_BYREF) == (VT_UI1|VT_ARRAY)) {
-        SAFEARRAY *psa;
-	int dim;
         if (vt & VT_BYREF) {
             psa = *V_ARRAYREF(&(pvar->var));
         } else {
@@ -6971,7 +6987,7 @@ folevariant_value(VALUE self)
         }
         dim = SafeArrayGetDim(psa);
         if (dim == 1) {
-            VALUE args = rb_ary_new3(1, rb_str_new2("C*"));
+            args = rb_ary_new3(1, rb_str_new2("C*"));
             val = rb_apply(val, rb_intern("pack"), args);
         }
     }
