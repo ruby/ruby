@@ -5624,7 +5624,6 @@ method_missing(obj, id, argc, argv, call_status)
 	MEMCPY(nargv+1, argv, VALUE, argc);
 	MEMCPY(nargv+1+argc, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
 	argc += RARRAY(tmp)->len;
-
     }
     else {
 	nargv = ALLOCA_N(VALUE, argc+1);
