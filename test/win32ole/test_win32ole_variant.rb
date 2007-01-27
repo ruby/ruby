@@ -39,30 +39,34 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     def test_new_2_argument
-      ex = nil
-      obj = nil
-      begin
-        obj = WIN32OLE_VARIANT.new('foo', WIN32OLE::VARIANT::VT_BSTR|WIN32OLE::VARIANT::VT_BYREF)
-      rescue
-        ex = $!
-      end
+      obj = WIN32OLE_VARIANT.new('foo', WIN32OLE::VARIANT::VT_BSTR|WIN32OLE::VARIANT::VT_BYREF)
       assert_equal('foo', obj.value);
     end
 
     def test_new_2_argument2
-      ex = nil
-      obj = nil
-      begin
-        obj = WIN32OLE_VARIANT.new('foo', WIN32OLE::VARIANT::VT_BSTR)
-      rescue
-        ex = $!
-      end
+      obj = WIN32OLE_VARIANT.new('foo', WIN32OLE::VARIANT::VT_BSTR)
       assert_equal('foo', obj.value);
     end
 
     def test_conversion_num2str
       obj = WIN32OLE_VARIANT.new(124, WIN32OLE::VARIANT::VT_BSTR)
       assert_equal("124", obj.value);
+    end
+
+    def test_conversion_float2int
+      obj = WIN32OLE_VARIANT.new(12.345, WIN32OLE::VARIANT::VT_I4)
+      assert_equal(12, obj.value)
+    end
+
+    def test_conversion_str2num
+      obj = WIN32OLE_VARIANT.new("12.345", WIN32OLE::VARIANT::VT_R8)
+      assert_equal(12.345, obj.value)
+    end
+
+    def test_conversion_ole_variant2ole_variant
+      obj = WIN32OLE_VARIANT.new("12.345", WIN32OLE::VARIANT::VT_R4)
+      obj = WIN32OLE_VARIANT.new(obj, WIN32OLE::VARIANT::VT_I4)
+      assert_equal(12, obj.value)
     end
 
     def test_conversion_str2date
@@ -84,6 +88,13 @@ if defined?(WIN32OLE_VARIANT)
     def test_create_vt_array
       obj = WIN32OLE_VARIANT.new([1.2, 2.3], WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_R8)
       assert_equal([1.2, 2.3], obj.value)
+    end
+
+    def test_create_vt_array_exc
+      exc = assert_raise(TypeError) {
+        obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
+      }
+      assert_match(/wrong argument type Fixnum \(expected Array\)/, exc.message)
     end
 
     def test_create_vt_array_str2ui1array
@@ -108,6 +119,11 @@ if defined?(WIN32OLE_VARIANT)
     def test_create_nil_dispatch
       var = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_DISPATCH)
       assert_nil(var.value)
+    end
+
+    def test_create_variant_byref
+      obj = WIN32OLE_VARIANT.new("Str", WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF);
+      assert_equal("Str", obj.value);
     end
 
     def test_c_nothing

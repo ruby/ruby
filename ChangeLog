@@ -1,3 +1,11 @@
+Sat Jan 27 18:36:33 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata): bug fix. 
+	  WIN32OLE_VARIANT.new check that 1st argument should T_ARRAY
+	  when variant type is VT_ARRAY.
+
+	* test/win32ole/test_win32ole_variant.rb: add some test. 
+
 Fri Jan 26 23:55:56 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: bug fix of WIN32OLE_VARIANT when variant

@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.8"
+#define WIN32OLE_VERSION "0.8.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1008,65 +1008,62 @@ ole_val2ptr_variant(VALUE val, VARIANT *var)
 }
 
 static void
-ole_var2ptr_var(VARIANT *var, VARIANT *pvar)
+ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vtype)
 {
-    VARTYPE vt = V_VT(var);
-    V_VT(pvar) = V_VT(var) | VT_BYREF;
-    switch(vt) {
-    case VT_UI1:
-        V_UI1REF(pvar) = &V_UI1(var);
-        break;
-    case VT_I2:
-        V_I2REF(pvar) = &V_I2(var);
-        break;
-    case VT_I4:
-        V_I4REF(pvar) = &V_I4(var);
-        break;
-    case VT_UI4:
-        V_UI4REF(pvar) = &V_UI4(var);
-        break;
-/*
-    case VT_I8:
-        V_I8REF(pvar) = &V_I8(var);
-        break;
-*/
-    case VT_R4:
-        V_R4REF(pvar) = &V_R4(var);
-        break;
-    case VT_R8:
-        V_R8REF(pvar) = &V_R8(var);
-        break;
-    case VT_CY:
-        V_CYREF(pvar) = &V_CY(var);
-        break;
-    case VT_DATE:
-        V_DATEREF(pvar) = &V_DATE(var);
-        break;
-    case VT_BSTR:
-        V_BSTRREF(pvar) = &V_BSTR(var);
-        break;
-    case VT_DISPATCH:
-        V_DISPATCHREF(pvar) = &V_DISPATCH(var);
-        break;
-    case VT_ERROR:
-        V_ERRORREF(pvar) = &V_ERROR(var);
-        break;
-    case VT_BOOL:
-        V_BOOLREF(pvar) = &V_BOOL(var);
-        break;
-/*
-    case VT_VARIANT:
-        V_VARIANTREF(pvar) = &V_VARIANT(var);
-        break;
-*/
-    case VT_UNKNOWN:
-        V_UNKNOWNREF(pvar) = &V_UNKNOWN(var);
-        break;
-    case VT_ARRAY:
-        V_ARRAYREF(pvar) = &V_ARRAY(var);
-        break;
-    default:
-        break;
+    V_VT(var) = vtype;
+    if (vtype == (VT_VARIANT|VT_BYREF)) {
+        V_VARIANTREF(var) = realvar;
+    } else {
+        if (V_VT(realvar) != (vtype & ~VT_BYREF)) {
+            rb_raise(eWIN32OLE_RUNTIME_ERROR, "type mismatch");
+        }
+        switch(vtype & ~VT_BYREF) {
+        case VT_UI1:
+            V_UI1REF(var) = &V_UI1(realvar);
+            break;
+        case VT_I2:
+            V_I2REF(var) = &V_I2(realvar);
+            break;
+        case VT_I4:
+            V_I4REF(var) = &V_I4(realvar);
+            break;
+        case VT_UI4:
+            V_UI4REF(var) = &V_UI4(realvar);
+            break;
+        case VT_R4:
+            V_R4REF(var) = &V_R4(realvar);
+            break;
+        case VT_R8:
+            V_R8REF(var) = &V_R8(realvar);
+            break;
+        case VT_CY:
+            V_CYREF(var) = &V_CY(realvar);
+            break;
+        case VT_DATE:
+            V_DATEREF(var) = &V_DATE(realvar);
+            break;
+        case VT_BSTR:
+            V_BSTRREF(var) = &V_BSTR(realvar);
+            break;
+        case VT_DISPATCH:
+            V_DISPATCHREF(var) = &V_DISPATCH(realvar);
+            break;
+        case VT_ERROR:
+            V_ERRORREF(var) = &V_ERROR(realvar);
+            break;
+        case VT_BOOL:
+            V_BOOLREF(var) = &V_BOOL(realvar);
+            break;
+        case VT_UNKNOWN:
+            V_UNKNOWNREF(var) = &V_UNKNOWN(realvar);
+            break;
+        case VT_ARRAY:
+            V_ARRAYREF(var) = &V_ARRAY(realvar);
+            break;
+        default:
+            rb_raise(eWIN32OLE_RUNTIME_ERROR, "unknown type specified:%d", vtype);
+            break;
+        }
     }
 }
 
@@ -1102,6 +1099,8 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
         SAFEARRAYBOUND *psab = NULL;
         SAFEARRAY *psa = NULL;
         long      *pub, *pid;
+
+        Check_Type(val, T_ARRAY);
 
         val1 = val;
         while(TYPE(val1) == T_ARRAY) {
@@ -1153,24 +1152,22 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
         }
     } else {
         if (val == Qnil) {
+            V_VT(&(pvar->var)) = vtype;
             if (vtype == (VT_BYREF | VT_VARIANT)) {
-                V_VARIANTREF(&(pvar->var)) = &(pvar->realvar);
-                V_VT(&(pvar->var)) = vtype;
+                ole_set_byref(&(pvar->realvar), &(pvar->var), vtype);
             } else {
                 V_VT(&(pvar->realvar)) = vtype & ~VT_BYREF;
-                V_VT(&(pvar->var)) = vtype;
                 if (vtype & VT_BYREF) {
-                    ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                    ole_set_byref(&(pvar->realvar), &(pvar->var), vtype);
                 }
             }
         } else {
             ole_val2variant(val, &(pvar->realvar));
             if (vtype == (VT_BYREF | VT_VARIANT)) {
-                V_VARIANTREF(&(pvar->var)) = &(pvar->realvar);
-                V_VT(&(pvar->var)) = vtype;
+                ole_set_byref(&(pvar->realvar), &(pvar->var), vtype);
             } else if (vtype & VT_BYREF) {
                 if ( (vtype & ~VT_BYREF) == V_VT(&(pvar->realvar))) {
-                    ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                    ole_set_byref(&(pvar->realvar), &(pvar->var), vtype);
                 } else {
                     VariantInit(&var);
                     hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
@@ -1179,7 +1176,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                         VariantClear(&(pvar->realvar));
                         hr = VariantCopy(&(pvar->realvar), &var);
                         VariantClear(&var);
-                        ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+                        ole_set_byref(&(pvar->realvar), &(pvar->var), vtype);
                     }
                 }
             } else {
