@@ -63,7 +63,7 @@
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
 #define OLE_FREE(x) {\
-    if(gOLEInitialized == TRUE) {\
+    if(g_ole_initialized == TRUE) {\
         if(x) {\
             OLE_RELEASE(x);\
             (x) = 0;\
@@ -148,21 +148,21 @@ VALUE cWIN32OLE_METHOD;
 VALUE cWIN32OLE_PARAM;
 VALUE cWIN32OLE_EVENT;
 VALUE cWIN32OLE_VARIANT;
-VALUE eWIN32OLE_RUNTIME_ERROR;
+VALUE eWIN32OLERuntimeError;
 VALUE mWIN32OLE_VARIANT;
 VALUE cWIN32OLE_PROPERTY;
 
 static VALUE ary_ole_event;
 static ID id_events;
-static BOOL gOLEInitialized = FALSE;
-static BOOL gCodePageInstalled = FALSE;
+static BOOL g_ole_initialized = FALSE;
+static BOOL g_cp_installed = FALSE;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
 static UINT  cWIN32OLE_cp = CP_ACP;
-static UINT  gTarget_cp = CP_ACP;
+static UINT  g_cp_to_check = CP_ACP;
 static VARTYPE g_nil_to = VT_ERROR;
 
 struct oledata {
@@ -205,15 +205,248 @@ struct olevariantdata {
     VARIANT var;
 };
 
-static VALUE folemethod_s_allocate(VALUE);
-static VALUE olemethod_set_member(VALUE, ITypeInfo *, ITypeInfo *, int, VALUE);
-static VALUE foletype_s_allocate(VALUE);
-static VALUE oletype_set_member(VALUE, ITypeInfo *, VALUE);
-static VALUE olemethod_from_typeinfo(VALUE, ITypeInfo *, VALUE);
-static HRESULT ole_docinfo_from_type(ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR *);
-static char *ole_wc2mb(LPWSTR);
-static VALUE ole_variant2val(VARIANT*);
-static void ole_val2variant(VALUE, VARIANT*);
+
+static HRESULT ( STDMETHODCALLTYPE QueryInterface )(IDispatch __RPC_FAR *, REFIID riid, void __RPC_FAR *__RPC_FAR *ppvObject);
+static ULONG ( STDMETHODCALLTYPE AddRef )(IDispatch __RPC_FAR * This);
+static ULONG ( STDMETHODCALLTYPE Release )(IDispatch __RPC_FAR * This);
+static HRESULT ( STDMETHODCALLTYPE GetTypeInfoCount )(IDispatch __RPC_FAR * This, UINT __RPC_FAR *pctinfo);
+static HRESULT ( STDMETHODCALLTYPE GetTypeInfo )(IDispatch __RPC_FAR * This, UINT iTInfo, LCID lcid, ITypeInfo __RPC_FAR *__RPC_FAR *ppTInfo);
+static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(IDispatch __RPC_FAR * This, REFIID riid, LPOLESTR __RPC_FAR *rgszNames, UINT cNames, LCID lcid, DISPID __RPC_FAR *rgDispId);
+static HRESULT ( STDMETHODCALLTYPE Invoke )( IDispatch __RPC_FAR * This, DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS __RPC_FAR *pDispParams, VARIANT __RPC_FAR *pVarResult, EXCEPINFO __RPC_FAR *pExcepInfo, UINT __RPC_FAR *puArgErr);
+static IDispatch* val2dispatch(VALUE val);
+static void time2d(int hh, int mm, int ss, double *pv);
+static void d2time(double v, int *hh, int *mm, int *ss);
+static void civil2jd(int y, int m, int d, long *jd);
+static void jd2civil(long day, int *yy, int *mm, int *dd);
+static void double2time(double v, int *y, int *m, int *d, int *hh, int *mm, int *ss);
+static double time_object2date(VALUE tmobj);
+static VALUE date2time_str(double date);
+static char *ole_wc2mb(LPWSTR pw);
+static VALUE ole_hresult2msg(HRESULT hr);
+static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
+static void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...);
+static void ole_initialize();
+static void ole_msg_loop();
+static void ole_free(struct oledata *pole);
+static void oletype_free(struct oletypedata *poletype);
+static void olemethod_free(struct olemethoddata *polemethod);
+static void olevariable_free(struct olevariabledata *polevar);
+static void oleparam_free(struct oleparamdata *pole);
+static LPWSTR ole_mb2wc(char *pm, int len);
+static VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
+static VALUE ole_ary_m_entry(VALUE val, long *pid);
+static void ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim);
+static void * get_ptr_of_variant(VARIANT *pvar);
+static void ole_set_safe_array_with_type(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vtype);
+static void ole_val2variant(VALUE val, VARIANT *var);
+static void ole_val2ptr_variant(VALUE val, VARIANT *var);
+static void ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vtype);
+static void ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar);
+static void ole_val2variant2(VALUE val, VARIANT *var);
+static VALUE make_inspect(const char *class_name, VALUE detail);
+static VALUE default_inspect(VALUE self, const char *class_name);
+static VALUE ole_set_member(VALUE self, IDispatch *dispatch);
+static VALUE fole_s_allocate(VALUE klass);
+static VALUE create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv);
+static VALUE ole_variant2val(VARIANT *pvar);
+static LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
+static LONG reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey);
+static VALUE reg_enum_key(HKEY hkey, DWORD i);
+static VALUE reg_get_val(HKEY hkey, const char *subkey);
+static VALUE reg_get_typelib_file_path(HKEY hkey);
+static VALUE typelib_file_from_clsid(VALUE ole);
+static VALUE typelib_file_from_typelib(VALUE ole);
+static VALUE typelib_file(VALUE ole);
+static void ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self);
+static HRESULT clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid);
+static VALUE ole_create_dcom(int argc, VALUE *argv, VALUE self);
+static VALUE ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self);
+static VALUE fole_s_connect(int argc, VALUE *argv, VALUE self);
+static VALUE fole_s_const_load(int argc, VALUE *argv, VALUE self);
+static VALUE ole_classes_from_typelib(ITypeLib *pTypeLib, VALUE classes);
+static ULONG reference_count(struct oledata * pole);
+static VALUE fole_s_reference_count(VALUE self, VALUE obj);
+static VALUE fole_s_free(VALUE self, VALUE obj);
+static HWND ole_show_help(VALUE helpfile, VALUE helpcontext);
+static VALUE fole_s_show_help(int argc, VALUE *argv, VALUE self);
+static VALUE fole_s_get_code_page(VALUE self);
+static BOOL CALLBACK installed_code_page_proc(LPTSTR str);
+static BOOL code_page_installed(UINT cp);
+static VALUE fole_s_set_code_page(VALUE self, VALUE vcp);
+static VALUE fole_s_create_guid(VALUE self);
+static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
+static VALUE set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end);
+static VALUE ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket);
+static VALUE fole_invoke(int argc, VALUE *argv, VALUE self);
+static VALUE ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind);
+static VALUE fole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types);
+static VALUE fole_getproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types);
+static VALUE fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types);
+static VALUE fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self);
+static VALUE fole_setproperty(int argc, VALUE *argv, VALUE self);
+static VALUE fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self);
+static VALUE ole_propertyput(VALUE self, VALUE property, VALUE value);
+static VALUE fole_free(VALUE self);
+static VALUE ole_each_sub(VALUE pEnumV);
+static VALUE ole_ienum_free(VALUE pEnumV);
+static VALUE fole_each(VALUE self);
+static VALUE fole_missing(int argc, VALUE *argv, VALUE self);
+static VALUE ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name);
+static VALUE olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
+static VALUE ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, int mask);
+static VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+static HRESULT typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti);
+static VALUE ole_methods(VALUE self, int mask);
+static VALUE fole_methods(VALUE self);
+static VALUE fole_get_methods(VALUE self);
+static VALUE fole_put_methods(VALUE self);
+static VALUE fole_func_methods(VALUE self);
+static VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
+static VALUE fole_type(VALUE self);
+static VALUE make_oletypelib_obj(VALUE guid, VALUE major_version, VALUE minor_version);
+static VALUE ole_typelib_from_itypelib(ITypeLib *pTypeLib);
+static VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
+static VALUE fole_typelib(VALUE self);
+static HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
+static VALUE ole_usertype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
+static VALUE ole_typedesc2val();
+static VALUE ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
+static VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
+static VALUE fole_method_help(VALUE self, VALUE cmdname);
+static VALUE foletype_s_ole_classes(VALUE self, VALUE typelib);
+static VALUE foletype_s_typelibs(VALUE self);
+static VALUE foletype_s_progids(VALUE self);
+static VALUE foletype_s_allocate(VALUE klass);
+static VALUE oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name);
+static VALUE oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass);
+static VALUE oletypelib_set_member(VALUE self, VALUE typelib, VALUE guid, VALUE version);
+static VALUE foletypelib_s_typelibs(VALUE self);
+static VALUE make_version_str(VALUE major, VALUE minor);
+static VALUE oletypelib_search_registry2(VALUE self, VALUE args);
+static VALUE oletypelib_search_registry(VALUE self, VALUE typelib);
+static VALUE foletypelib_initialize(VALUE self, VALUE args);
+static VALUE foletypelib_guid(VALUE self);
+static VALUE foletypelib_name(VALUE self);
+static VALUE foletypelib_version(VALUE self);
+static VALUE foletypelib_major_version(VALUE self);
+static VALUE foletypelib_minor_version(VALUE self);
+static VALUE oletypelib_path(VALUE guid, VALUE version);
+static VALUE foletypelib_path(VALUE self);
+static VALUE foletypelib_ole_classes(VALUE self);
+static VALUE foletypelib_inspect(VALUE self);
+static VALUE foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass);
+static VALUE foletype_name(VALUE self);
+static VALUE ole_ole_type(ITypeInfo *pTypeInfo);
+static VALUE foletype_ole_type(VALUE self);
+static VALUE ole_type_guid(ITypeInfo *pTypeInfo);
+static VALUE foletype_guid(VALUE self);
+static VALUE ole_type_progid(ITypeInfo *pTypeInfo);
+static VALUE foletype_progid(VALUE self);
+static VALUE ole_type_visible(ITypeInfo *pTypeInfo);
+static VALUE foletype_visible(VALUE self);
+static VALUE ole_type_major_version(ITypeInfo *pTypeInfo);
+static VALUE foletype_major_version(VALUE self);
+static VALUE ole_type_minor_version(ITypeInfo *pTypeInfo);
+static VALUE foletype_minor_version(VALUE self);
+static VALUE ole_type_typekind(ITypeInfo *pTypeInfo);
+static VALUE foletype_typekind(VALUE self);
+static VALUE ole_type_helpstring(ITypeInfo *pTypeInfo);
+static VALUE foletype_helpstring(VALUE self);
+static VALUE ole_type_src_type(ITypeInfo *pTypeInfo);
+static VALUE foletype_src_type(VALUE self);
+static VALUE ole_type_helpfile(ITypeInfo *pTypeInfo);
+static VALUE foletype_helpfile(VALUE self);
+static VALUE ole_type_helpcontext(ITypeInfo *pTypeInfo);
+static VALUE foletype_helpcontext(VALUE self);
+static VALUE foletype_ole_typelib(VALUE self);
+static VALUE ole_type_impl_ole_types(ITypeInfo *pTypeInfo);
+static VALUE foletype_impl_ole_types(VALUE self);
+static VALUE foletype_inspect(VALUE self);
+static VALUE ole_variables(ITypeInfo *pTypeInfo);
+static VALUE foletype_variables(VALUE self);
+static VALUE foletype_methods(VALUE self);
+static VALUE folevariable_name(VALUE self);
+static VALUE ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_ole_type(VALUE self);
+static VALUE ole_variable_ole_type_detail(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_ole_type_detail(VALUE self);
+static VALUE ole_variable_value(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_value(VALUE self);
+static VALUE ole_variable_visible(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_visible(VALUE self);
+static VALUE ole_variable_kind(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_variable_kind(VALUE self);
+static VALUE ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index);
+static VALUE folevariable_varkind(VALUE self);
+static VALUE folevariable_inspect(VALUE self);
+static VALUE olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo, int index, VALUE name);
+static VALUE folemethod_s_allocate(VALUE klass);
+static VALUE folemethod_initialize(VALUE self, VALUE oletype, VALUE method);
+static VALUE folemethod_name(VALUE self);
+static VALUE ole_method_return_type(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_return_type(VALUE self);
+static VALUE ole_method_return_vtype(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_return_vtype(VALUE self);
+static VALUE ole_method_return_type_detail(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_return_type_detail(VALUE self);
+static VALUE ole_method_invkind(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE ole_method_invoke_kind(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_invkind(VALUE self);
+static VALUE folemethod_invoke_kind(VALUE self);
+static VALUE ole_method_visible(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_visible(VALUE self);
+static VALUE ole_method_event(ITypeInfo *pTypeInfo, UINT method_index, VALUE method_name);
+static VALUE folemethod_event(VALUE self);
+static VALUE folemethod_event_interface(VALUE self);
+static VALUE ole_method_docinfo_from_type(ITypeInfo *pTypeInfo, UINT method_index, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
+static VALUE ole_method_helpstring(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_helpstring(VALUE self);
+static VALUE ole_method_helpfile(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_helpfile(VALUE self);
+static VALUE ole_method_helpcontext(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_helpcontext(VALUE self);
+static VALUE ole_method_dispid(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_dispid(VALUE self);
+static VALUE ole_method_offset_vtbl(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_offset_vtbl(VALUE self);
+static VALUE ole_method_size_params(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_size_params(VALUE self);
+static VALUE ole_method_size_opt_params(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_size_opt_params(VALUE self);
+static VALUE ole_method_params(ITypeInfo *pTypeInfo, UINT method_index);
+static VALUE folemethod_params(VALUE self);
+static VALUE folemethod_inspect(VALUE self);
+static VALUE foleparam_name(VALUE self);
+static VALUE ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
+static VALUE  foleparam_ole_type(VALUE self);
+static VALUE ole_param_ole_type_detail(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
+static VALUE  foleparam_ole_type_detail(VALUE self);
+static VALUE ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT mask);
+static VALUE foleparam_input(VALUE self);
+static VALUE foleparam_output(VALUE self);
+static VALUE foleparam_optional(VALUE self);
+static VALUE foleparam_retval(VALUE self);
+static VALUE ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
+static VALUE foleparam_default(VALUE self);
+static VALUE foleparam_inspect(VALUE self);
+static long ole_search_event_at(VALUE ary, VALUE ev);
+static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
+static void ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams);
+static HRESULT find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo);
+static HRESULT find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo);
+static void ole_event_free(struct oleeventdata *poleev);
+static VALUE fev_s_allocate(VALUE klass);
+static VALUE fev_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE fev_s_msg_loop(VALUE klass);
+static void add_event_call_back(VALUE obj, VALUE event, VALUE data);
+static VALUE ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg);
+static VALUE fev_on_event(int argc, VALUE *argv, VALUE self);
+static VALUE fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self);
+static void  olevariant_free(struct olevariantdata *pvar);
+static VALUE folevariant_s_allocate(VALUE klass);
+static VALUE folevariant_initialize(VALUE self, VALUE args);
+static VALUE folevariant_value(VALUE self);
   
 typedef struct _Win32OLEIDispatch
 {
@@ -587,7 +820,7 @@ void
 ole_uninitialize()
 {
     OleUninitialize();
-    gOLEInitialized = FALSE;
+    g_ole_initialized = FALSE;
 }
 
 static void
@@ -595,12 +828,12 @@ ole_initialize()
 {
     HRESULT hr;
     
-    if(gOLEInitialized == FALSE) {
+    if(g_ole_initialized == FALSE) {
         hr = OleInitialize(NULL);
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
-        gOLEInitialized = TRUE;
+        g_ole_initialized = TRUE;
         /*
          * In some situation, OleUninitialize does not work fine. ;-<
          */
@@ -1015,7 +1248,7 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vtype)
         V_VARIANTREF(var) = realvar;
     } else {
         if (V_VT(realvar) != (vtype & ~VT_BYREF)) {
-            rb_raise(eWIN32OLE_RUNTIME_ERROR, "type mismatch");
+            rb_raise(eWIN32OLERuntimeError, "type mismatch");
         }
         switch(vtype & ~VT_BYREF) {
         case VT_UI1:
@@ -1061,7 +1294,7 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vtype)
             V_ARRAYREF(var) = &V_ARRAY(realvar);
             break;
         default:
-            rb_raise(eWIN32OLE_RUNTIME_ERROR, "unknown type specified:%d", vtype);
+            rb_raise(eWIN32OLERuntimeError, "unknown type specified:%d", vtype);
             break;
         }
     }
@@ -1738,7 +1971,7 @@ ole_create_dcom(int argc, VALUE *argv, VALUE self)
         hr = CLSIDFromString(pbuf, &clsid);
     SysFreeString(pbuf);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "unknown OLE server: `%s'",
                   StringValuePtr(ole));
     memset(&serverinfo, 0, sizeof(COSERVERINFO));    
@@ -1748,7 +1981,7 @@ ole_create_dcom(int argc, VALUE *argv, VALUE self)
     hr = gCoCreateInstanceEx(&clsid, NULL, clsctx, &serverinfo, 1, &multi_qi);
     SysFreeString(serverinfo.pwszName);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "failed to create DCOM server `%s' in `%s'",
                   StringValuePtr(ole),
                   StringValuePtr(host));
@@ -1771,7 +2004,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
 
     hr = CreateBindCtx(0, &pBindCtx);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "failed to create bind context");
     }
 
@@ -1780,7 +2013,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
     SysFreeString(pbuf);
     if(FAILED(hr)) {
         OLE_RELEASE(pBindCtx);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
+        ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to parse display name of moniker `%s'",
                   StringValuePtr(moniker));
     }
@@ -1791,7 +2024,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
     OLE_RELEASE(pBindCtx);
 
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
+        ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to bind moniker `%s'",
                   StringValuePtr(moniker));
     }
@@ -1841,14 +2074,14 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
     hr = GetActiveObject(&clsid, 0, &pUnknown);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "OLE server `%s' not running", StringValuePtr(svr_name));
     }
     hr = pUnknown->lpVtbl->QueryInterface(pUnknown, &IID_IDispatch,
                                              (void **)&pDispatch);
     if(FAILED(hr)) {
         OLE_RELEASE(pUnknown);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "failed to create WIN32OLE server `%s'", 
                   StringValuePtr(svr_name));
     }
@@ -1938,7 +2171,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         hr = LoadTypeLibEx(pBuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pBuf);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
         if(TYPE(klass) != T_NIL) {
             ole_const_load(pTypeLib, klass, self);
         }
@@ -2114,8 +2347,8 @@ fole_s_get_code_page(VALUE self)
 
 static BOOL CALLBACK 
 installed_code_page_proc(LPTSTR str) {
-    if (atol(str) == gTarget_cp) {
-        gCodePageInstalled = TRUE;
+    if (atol(str) == g_cp_to_check) {
+        g_cp_installed = TRUE;
         return FALSE;
     }
     return TRUE;
@@ -2123,10 +2356,10 @@ installed_code_page_proc(LPTSTR str) {
 
 static BOOL 
 code_page_installed(UINT cp) {
-    gCodePageInstalled = FALSE;
-    gTarget_cp = cp;
+    g_cp_installed = FALSE;
+    g_cp_to_check = cp;
     EnumSystemCodePages(installed_code_page_proc, CP_INSTALLED);
-    return gCodePageInstalled;
+    return g_cp_installed;
 }
 
 /* 
@@ -2156,7 +2389,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
             cWIN32OLE_cp = cp;
             break;
         default:
-            rb_raise(eWIN32OLE_RUNTIME_ERROR, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
+            rb_raise(eWIN32OLERuntimeError, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
             break;
         }
     }
@@ -2182,7 +2415,7 @@ fole_s_create_guid(VALUE self)
     int len = 0;
     hr = CoCreateGuid(&guid);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to create GUID");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to create GUID");
     }
     len = StringFromGUID2(&guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
     if (len == 0) {
@@ -2279,7 +2512,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     }
     SysFreeString(pBuf);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "unknown OLE server: `%s'",
                   StringValuePtr(svr_name));
     }
@@ -2288,7 +2521,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
                           &IID_IDispatch, (void**)&pDispatch);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
+        ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
@@ -2398,7 +2631,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+            ole_raise(hr, eWIN32OLERuntimeError, 
                     "unknown property or method: `%s'",
                     StringValuePtr(cmd));
         }
@@ -2436,7 +2669,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
             for(i = 0; i < op.dp.cArgs; i++ ) {
                 VariantClear(&op.dp.rgvarg[i]);
             }
-            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+            ole_raise(hr, eWIN32OLERuntimeError, 
                       "failed to get named argument info: `%s'",
                       StringValuePtr(cmd));
         }
@@ -2473,7 +2706,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     /* apparent you need to call propput, you need this */
     if (wFlags & DISPATCH_PROPERTYPUT) {
         if (op.dp.cArgs == 0)
-            ole_raise(ResultFromScode(E_INVALIDARG), eWIN32OLE_RUNTIME_ERROR, "argument error");
+            ole_raise(ResultFromScode(E_INVALIDARG), eWIN32OLERuntimeError, "argument error");
 
         op.dp.cNamedArgs = 1;
         op.dp.rgdispidNamedArgs = ALLOCA_N( DISPID, 1 );
@@ -2558,7 +2791,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in OLE method `%s': )%s",
+        ole_raise(hr, eWIN32OLERuntimeError, "(in OLE method `%s': )%s",
                   StringValuePtr(cmd),
                   StringValuePtr(v));
     }
@@ -2761,7 +2994,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
 
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in OLE method `<dispatch id:%d>': )%s",
+        ole_raise(hr, eWIN32OLERuntimeError, "(in OLE method `<dispatch id:%d>': )%s",
                   NUM2INT(dispid),
                   StringValuePtr(v));
     }
@@ -2931,7 +3164,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     pBuf[0] = NULL;
 
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
+        ole_raise(hr, eWIN32OLERuntimeError, 
                   "unknown property or method: `%s'",
                   StringValuePtr(property));
     }
@@ -2946,7 +3179,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     }
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "(in setting property `%s': )%s",
+        ole_raise(hr, eWIN32OLERuntimeError, "(in setting property `%s': )%s",
                   StringValuePtr(property),
                   StringValuePtr(v));
     }
@@ -3041,7 +3274,7 @@ fole_each(VALUE self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN)
@@ -3103,7 +3336,7 @@ ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALU
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
@@ -3139,7 +3372,7 @@ olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
     method = ole_method_sub(self, 0, pTypeInfo, name);
     if (method != Qnil) {
@@ -3171,7 +3404,7 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
     WORD i;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
         pstr = NULL;
@@ -3210,7 +3443,7 @@ ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask)
     VALUE methods = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
 
     ole_methods_sub(0, pTypeInfo, methods, mask);
@@ -3724,7 +3957,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     obj = olemethod_from_typeinfo(method, pTypeInfo, cmdname);
     OLE_RELEASE(pTypeInfo);
     if (obj == Qnil)
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "not found %s",
+        rb_raise(eWIN32OLERuntimeError, "not found %s",
                  StringValuePtr(cmdname));
     return obj;
 }
@@ -3759,7 +3992,7 @@ foletype_s_ole_classes(VALUE self, VALUE typelib)
         pbuf = ole_mb2wc(StringValuePtr(file), -1);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
         SysFreeString(pbuf);
         ole_classes_from_typelib(pTypeLib, classes);
         OLE_RELEASE(pTypeLib);
@@ -4177,7 +4410,7 @@ foletypelib_initialize(VALUE self, VALUE args)
     }
 
     if (found == Qfalse) {
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "not found type library `%s`",
+        rb_raise(eWIN32OLERuntimeError, "not found type library `%s`",
                  StringValuePtr(typelib));
     }
     return self;
@@ -4337,12 +4570,12 @@ foletypelib_ole_classes(VALUE self)
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pbuf);
         if (FAILED(hr))
-            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx from `%s'",
+            ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx from `%s'",
                       StringValuePtr(path));
         ole_classes_from_typelib(pTypeLib, classes);
         OLE_RELEASE(pTypeLib);
     } else {
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "failed to get type library path");
+        rb_raise(eWIN32OLERuntimeError, "failed to get type library path");
     }
     return classes;
 }
@@ -4387,11 +4620,11 @@ foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
     pbuf = ole_mb2wc(StringValuePtr(file), -1);
     hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
     SysFreeString(pbuf);
     if (oleclass_from_typelib(self, pTypeLib, oleclass) == Qfalse) {
         OLE_RELEASE(pTypeLib);
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "not found `%s` in `%s`",
+        rb_raise(eWIN32OLERuntimeError, "not found `%s` in `%s`",
                  StringValuePtr(oleclass), StringValuePtr(typelib));
     }
     OLE_RELEASE(pTypeLib);
@@ -4585,7 +4818,7 @@ ole_type_major_version(ITypeInfo *pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMajorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -4615,7 +4848,7 @@ ole_type_minor_version(ITypeInfo *pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMinorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -4645,7 +4878,7 @@ ole_type_typekind(ITypeInfo *pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     typekind = INT2FIX(pTypeAttr->typekind);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return typekind;
@@ -4881,7 +5114,7 @@ ole_variables(ITypeInfo *pTypeInfo)
     VALUE variables = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
     }
     
     for(i = 0; i < pTypeAttr->cVars; i++) {
@@ -4998,7 +5231,7 @@ ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index)
     VALUE type;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
     type = ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -5040,7 +5273,7 @@ ole_variable_ole_type_detail(ITypeInfo *pTypeInfo, UINT var_index)
     VALUE type = rb_ary_new();
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
     ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), type);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -5318,7 +5551,7 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
         Data_Get_Struct(oletype, struct oletypedata, ptype);
         obj = olemethod_from_typeinfo(self, ptype->pTypeInfo, method);
         if (obj == Qnil) {
-            rb_raise(eWIN32OLE_RUNTIME_ERROR, "not found %s",
+            rb_raise(eWIN32OLERuntimeError, "not found %s",
                      StringValuePtr(method));
         }
     }
@@ -5354,7 +5587,7 @@ ole_method_return_type(ITypeInfo *pTypeInfo, UINT method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
     
     type = ole_typedesc2val(pTypeInfo, &(pFuncDesc->elemdescFunc.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -5388,7 +5621,7 @@ ole_method_return_vtype(ITypeInfo *pTypeInfo, UINT method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
     
     vt = INT2FIX(pFuncDesc->elemdescFunc.tdesc.vt);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -5455,7 +5688,7 @@ ole_method_invkind(ITypeInfo *pTypeInfo, UINT method_index)
     VALUE invkind;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if(FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
     invkind = INT2FIX(pFuncDesc->invkind);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return invkind;
@@ -7187,6 +7420,6 @@ Init_win32ole()
     rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
 
-    eWIN32OLE_RUNTIME_ERROR = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
+    eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
 }

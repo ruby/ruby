@@ -1,3 +1,7 @@
+Sun Jan 28 08:41:49 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: refactoring.
+
 Sat Jan 27 18:36:33 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2olevariantdata): bug fix. 
