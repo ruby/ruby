@@ -5733,6 +5733,8 @@ top_local_setup()
     local_pop();
 }
 
+#define DVAR_USED FL_USER6
+
 static VALUE
 dyna_var_lookup(id)
     ID id;
@@ -5741,7 +5743,7 @@ dyna_var_lookup(id)
 
     while (vars) {
 	if (vars->id == id) {
-	    vars->val = Qtrue;
+	    FL_SET(vars, DVAR_USED);
 	    return Qtrue;
 	}
 	vars = vars->next;
@@ -5783,7 +5785,7 @@ dyna_init(node, pre)
 
     if (!node || !post || pre == post) return node;
     for (var = 0; post != pre && post->id; post = post->next) {
-	if (RTEST(post->val)) {
+	if (FL_TEST(post, DVAR_USED)) {
 	    var = NEW_DASGN_CURR(post->id, var);
 	}
     }

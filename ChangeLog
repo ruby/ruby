@@ -1,3 +1,10 @@
+Sat Jan 27 15:20:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (dyna_var_lookup): should not alter dvar->val not to
+	  destroy living value.  [ruby-core:10076]
+
+	* parse.y (dyna_init): ditto.
+
 Fri Jan 26 12:03:39 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkConfigMethod#__confinfo_cmd,
