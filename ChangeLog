@@ -1,3 +1,7 @@
+Mon Jan 29 23:52:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* tool/compile.rb: replace YARVCore by VM class.
+
 Mon Jan 29 21:32:37 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.locale=, WIN32OLE.locale,

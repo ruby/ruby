@@ -14,10 +14,10 @@ OutputCompileOption = {
 }
 
 def compile_to_rb infile, outfile
-  iseq = YARVCore::InstructionSequence.compile_file(infile, OutputCompileOption)
+  iseq = VM::InstructionSequence.compile_file(infile, OutputCompileOption)
 
   open(outfile, 'w'){|f|
-    f.puts "YARVCore::InstructionSequence.load(" +
+    f.puts "VM::InstructionSequence.load(" +
            "Marshal.load(<<EOS____.unpack('m*')[0])).eval"
     f.puts [Marshal.dump(iseq.to_a)].pack('m*')
     f.puts "EOS____"
@@ -25,7 +25,7 @@ def compile_to_rb infile, outfile
 end
 
 def compile_to_rbc infile, outfile, type
-  iseq = YARVCore::InstructionSequence.compile_file(infile, OutputCompileOption)
+  iseq = VM::InstructionSequence.compile_file(infile, OutputCompileOption)
 
   case type
   when 'm'
