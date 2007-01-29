@@ -6,7 +6,7 @@ puts '# ' + '-' * 70
 puts $str
 puts '# ' + '-' * 70
 
-$parsed = YARVCore::InstructionSequence.compile_file($file)
+$parsed = VM::InstructionSequence.compile_file($file)
 puts "# disasm result: "
 puts '# ' + '-' * 70
 puts $parsed.disasm

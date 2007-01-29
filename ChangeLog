@@ -1,3 +1,8 @@
+Mon Jan 29 14:14:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* tool/parse.rb: replace YARVCore by VM class.
+	  http://d.hatena.ne.jp/ysano2005/20070128
+
 Sun Jan 28 08:41:49 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: refactoring.
