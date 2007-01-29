@@ -81,8 +81,13 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     def test_conversion_str2cy
-      obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
-      assert_equal("10000", obj.value)
+      begin 
+        WIN32OLE.locale = 0x0411 # set locale Japanese
+        obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
+        assert_equal("10000", obj.value)
+      ensure
+        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+      end
     end
 
     def test_create_vt_array
@@ -105,6 +110,7 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal([65, 0].pack("C*"), obj.value)
 
     end
+
     def test_create_vt_array_int
       obj = WIN32OLE_VARIANT.new([65, 0], WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
       assert_equal([65, 0].pack("C*"), obj.value)
@@ -124,6 +130,11 @@ if defined?(WIN32OLE_VARIANT)
     def test_create_variant_byref
       obj = WIN32OLE_VARIANT.new("Str", WIN32OLE::VARIANT::VT_VARIANT|WIN32OLE::VARIANT::VT_BYREF);
       assert_equal("Str", obj.value);
+    end
+
+    def test_vartype
+      obj = WIN32OLE_VARIANT.new("Str")
+      assert_equal(WIN32OLE::VARIANT::VT_BSTR, obj.vartype)
     end
 
     def test_c_nothing

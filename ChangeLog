@@ -1,3 +1,14 @@
+Mon Jan 29 21:32:37 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE.locale=, WIN32OLE.locale,
+	  WIN32OLE_VARIANT#vartype.
+
+	* test/win32ole/test_win32ole.rb: add test for WIN32OLE.locale=,
+	  WIN32OLE.locale.
+
+	* test/win32ole/test_win32ole_variant.rb: add test for 
+	  WIN32OLE_VARIANT#vartype.
+
 Mon Jan 29 14:14:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* tool/parse.rb: replace YARVCore by VM class.

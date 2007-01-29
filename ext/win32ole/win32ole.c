@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.8.9"
+#define WIN32OLE_VERSION "0.9.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -156,13 +156,16 @@ static VALUE ary_ole_event;
 static ID id_events;
 static BOOL g_ole_initialized = FALSE;
 static BOOL g_cp_installed = FALSE;
+static BOOL g_lcid_installed = FALSE;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
-static UINT  cWIN32OLE_cp = CP_ACP;
-static UINT  g_cp_to_check = CP_ACP;
+static UINT cWIN32OLE_cp = CP_ACP;
+static LCID cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT; 
+static UINT g_cp_to_check = CP_ACP;
+static char g_lcid_to_check[8 + 1];
 static VARTYPE g_nil_to = VT_ERROR;
 
 struct oledata {
@@ -273,6 +276,10 @@ static VALUE fole_s_get_code_page(VALUE self);
 static BOOL CALLBACK installed_code_page_proc(LPTSTR str);
 static BOOL code_page_installed(UINT cp);
 static VALUE fole_s_set_code_page(VALUE self, VALUE vcp);
+static VALUE fole_s_get_locale(VALUE self);
+static BOOL CALLBACK installed_lcid_proc(LPTSTR str);
+static BOOL lcid_installed(LCID lcid);
+static VALUE fole_s_set_locale(VALUE self, VALUE vlcid);
 static VALUE fole_s_create_guid(VALUE self);
 static VALUE fole_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE hash2named_arg(VALUE pair, struct oleparam* pOp);
@@ -447,6 +454,7 @@ static void  olevariant_free(struct olevariantdata *pvar);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_initialize(VALUE self, VALUE args);
 static VALUE folevariant_value(VALUE self);
+static VALUE folevariant_vartype(VALUE self);
   
 typedef struct _Win32OLEIDispatch
 {
@@ -735,7 +743,7 @@ ole_hresult2msg(HRESULT hr)
     dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
                             FORMAT_MESSAGE_FROM_SYSTEM |
                             FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, hr, LOCALE_SYSTEM_DEFAULT,
+                            NULL, hr, cWIN32OLE_lcid,
                             (LPTSTR)&p_msg, 0, NULL);
     if (dwCount > 0) {
 	term = p_msg + strlen(p_msg);
@@ -1023,7 +1031,7 @@ ole_set_safe_array_with_type(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE
         VariantInit(&vart);
         if (vtype != V_VT(&var)) {
             hr = VariantChangeTypeEx(&vart, &var, 
-                    LOCALE_SYSTEM_DEFAULT, 0, (VARTYPE)(vtype & ~VT_BYREF));
+                    cWIN32OLE_lcid, 0, (VARTYPE)(vtype & ~VT_BYREF));
             if (FAILED(hr)) {
                 ole_raise(hr, rb_eRuntimeError, "failed to change type");
             }
@@ -1404,7 +1412,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                 } else {
                     VariantInit(&var);
                     hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
-                            LOCALE_SYSTEM_DEFAULT, 0, (VARTYPE)(vtype & ~VT_BYREF));
+                            cWIN32OLE_lcid, 0, (VARTYPE)(vtype & ~VT_BYREF));
                     if (SUCCEEDED(hr)) {
                         VariantClear(&(pvar->realvar));
                         hr = VariantCopy(&(pvar->realvar), &var);
@@ -1417,7 +1425,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                     hr = VariantCopy(&(pvar->var), &(pvar->realvar));
                 } else {
                     hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar), 
-                            LOCALE_SYSTEM_DEFAULT, 0, vtype);
+                            cWIN32OLE_lcid, 0, vtype);
                 }
             }
         }
@@ -1677,7 +1685,7 @@ ole_variant2val(VARIANT *pvar)
         VARIANT variant;
         VariantInit(&variant);
         hr = VariantChangeTypeEx(&variant, pvar, 
-                                  LOCALE_SYSTEM_DEFAULT, 0, VT_BSTR);
+                                  cWIN32OLE_lcid, 0, VT_BSTR);
         if (SUCCEEDED(hr) && V_VT(&variant) == VT_BSTR) {
             char *p = ole_wc2mb(V_BSTR(&variant));
             obj = rb_str_new2(p);
@@ -2132,7 +2140,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
     HRESULT hr;
     OLECHAR *pBuf;
     VALUE file;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
     
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &klass);
@@ -2399,6 +2407,69 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE.locale -> locale id.
+ *
+ *  Returns current locale id (lcid). The default locale is
+ *  LOCALE_SYSTEM_DEFAULT.
+ *
+ *     lcid = WIN32OLE.locale
+ */
+static VALUE 
+fole_s_get_locale(VALUE self)
+{
+    return INT2FIX(cWIN32OLE_lcid);
+}
+
+static BOOL
+CALLBACK installed_lcid_proc(LPTSTR str)
+{
+    if (strcmp(str, g_lcid_to_check) == 0) {
+        g_lcid_installed = TRUE;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static BOOL
+lcid_installed(LCID lcid)
+{
+    g_lcid_installed = FALSE;
+    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%0.8x", lcid);
+    EnumSystemLocales(installed_lcid_proc, LCID_INSTALLED);
+    return g_lcid_installed;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE.locale = lcid
+ *
+ *  Sets current locale id (lcid).
+ *
+ *     WIN32OLE.locale = 1033 # set locale English(U.S)
+ *     obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+ *
+ */
+static VALUE 
+fole_s_set_locale(VALUE self, VALUE vlcid)
+{
+    LCID lcid = FIX2INT(vlcid);
+    if (lcid_installed(lcid)) {
+        cWIN32OLE_lcid = lcid;
+    } else {
+        switch (lcid) {
+        case LOCALE_SYSTEM_DEFAULT:
+        case LOCALE_USER_DEFAULT:
+            cWIN32OLE_lcid = lcid;
+            break;
+        default:
+            rb_raise(eWIN32OLERuntimeError, "not installed locale: %d", lcid);
+        }
+    }
+    return Qnil;
+}
+
 /* 
  *  call-seq:
  *     WIN32OLE.create_guid
@@ -2585,7 +2656,7 @@ set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end)
 static VALUE
 ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 {
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
     struct oledata *pole;
     HRESULT hr;
     VALUE cmd;
@@ -2892,7 +2963,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
                     if (v != VT_VARIANT)
                     {
                         VariantChangeTypeEx(&velem, &velem,
-                            LOCALE_SYSTEM_DEFAULT, 0, v);
+                            cWIN32OLE_lcid, 0, v);
                     }
                     switch (v)
                     {
@@ -2931,7 +3002,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
                 if ((vt & (~VT_BYREF)) != VT_VARIANT)
                 {
                     hr = VariantChangeTypeEx(&realargs[i], &realargs[i],
-                                             LOCALE_SYSTEM_DEFAULT, 0,
+                                             cWIN32OLE_lcid, 0,
                                              (VARTYPE)(vt & (~VT_BYREF)));
                     if (hr != S_OK)
                     {
@@ -2987,7 +3058,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     }
 
     hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, NUM2INT(dispid),
-                                         &IID_NULL, LOCALE_SYSTEM_DEFAULT,
+                                         &IID_NULL, cWIN32OLE_lcid,
                                          dispkind,
                                          &dispParams, &result,
                                          &excepinfo, &argErr);
@@ -3144,7 +3215,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     VARIANTARG propertyValue[2];
     OLECHAR* pBuf[1];
     VALUE v;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
     dispParams.rgdispidNamedArgs = &dispIDParam;
     dispParams.rgvarg = propertyValue;
     dispParams.cNamedArgs = 1;
@@ -3247,7 +3318,7 @@ ole_ienum_free(VALUE pEnumV)
 static VALUE
 fole_each(VALUE self)
 {
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
 
     struct oledata *pole;
 
@@ -3470,7 +3541,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     VALUE type;
     UINT i;
     UINT count;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
@@ -3626,7 +3697,7 @@ fole_type(VALUE self)
     ITypeInfo *pTypeInfo;
     HRESULT hr;
     struct oledata *pole;
-    LCID  lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID  lcid = cWIN32OLE_lcid;
     VALUE type = Qnil;
 
     OLEData_Get_Struct(self, pole);
@@ -3715,7 +3786,7 @@ fole_typelib(VALUE self)
     struct oledata *pole;
     HRESULT hr;
     ITypeInfo *pTypeInfo;
-    LCID  lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID  lcid = cWIN32OLE_lcid;
     VALUE vtlib = Qnil;
 
     OLEData_Get_Struct(self, pole);
@@ -6735,7 +6806,7 @@ find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo)
     char *pstr;
 
     BOOL is_found = FALSE;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    LCID    lcid = cWIN32OLE_lcid;
 
     OLEData_Get_Struct(ole, pole);
 
@@ -7224,6 +7295,23 @@ folevariant_value(VALUE self)
     return val;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_VARIANT#vartype #=> OLE variant type.
+ *
+ *  Returns OLE variant type.
+ *     obj = WIN32OLE_VARIANT.new("string")
+ *     obj.vartype # => WIN32OLE::VARIANT::VT_BSTR 
+ *
+ */     
+static VALUE
+folevariant_vartype(VALUE self)
+{
+    struct olevariantdata *pvar;
+    Data_Get_Struct(self, struct olevariantdata, pvar);
+    return INT2FIX(V_VT(&pvar->var));
+}
+
 void
 Init_win32ole()
 {
@@ -7255,6 +7343,8 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "ole_show_help", fole_s_show_help, -1);
     rb_define_singleton_method(cWIN32OLE, "codepage", fole_s_get_code_page, 0);
     rb_define_singleton_method(cWIN32OLE, "codepage=", fole_s_set_code_page, 1);
+    rb_define_singleton_method(cWIN32OLE, "locale", fole_s_get_locale, 0);
+    rb_define_singleton_method(cWIN32OLE, "locale=", fole_s_set_locale, 1);
     rb_define_singleton_method(cWIN32OLE, "create_guid", fole_s_create_guid, 0);
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
@@ -7287,6 +7377,7 @@ Init_win32ole()
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
+
     rb_define_const(cWIN32OLE, "CP_ACP", INT2FIX(CP_ACP));
     rb_define_const(cWIN32OLE, "CP_OEMCP", INT2FIX(CP_OEMCP));
     rb_define_const(cWIN32OLE, "CP_MACCP", INT2FIX(CP_MACCP));
@@ -7294,6 +7385,9 @@ Init_win32ole()
     rb_define_const(cWIN32OLE, "CP_SYMBOL", INT2FIX(CP_SYMBOL));
     rb_define_const(cWIN32OLE, "CP_UTF7", INT2FIX(CP_UTF7));
     rb_define_const(cWIN32OLE, "CP_UTF8", INT2FIX(CP_UTF8));
+
+    rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", INT2FIX(LOCALE_SYSTEM_DEFAULT));
+    rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", INT2FIX(LOCALE_USER_DEFAULT));
 
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
     rb_define_const(mWIN32OLE_VARIANT, "VT_EMPTY", INT2FIX(VT_EMPTY));
@@ -7416,6 +7510,7 @@ Init_win32ole()
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_method(cWIN32OLE_VARIANT, "initialize", folevariant_initialize, -2);
     rb_define_method(cWIN32OLE_VARIANT, "value", folevariant_value, 0);
+    rb_define_method(cWIN32OLE_VARIANT, "vartype", folevariant_vartype, 0);
     rb_define_const(cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
     rb_define_const(cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
     rb_define_const(cWIN32OLE_VARIANT, "Nothing", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));

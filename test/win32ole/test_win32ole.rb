@@ -296,6 +296,38 @@ if defined?(WIN32OLE)
       end
     end
 
+    def test_s_locale
+      assert_equal(WIN32OLE::LOCALE_SYSTEM_DEFAULT, WIN32OLE.locale)
+    end
+
+    def test_s_locale_set
+      begin
+        WIN32OLE.locale = 1041
+        assert_equal(1041, WIN32OLE.locale)
+        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+        assert_raise(WIN32OLERuntimeError) {
+          WIN32OLE.locale = 111
+        }
+        assert_equal(WIN32OLE::LOCALE_SYSTEM_DEFAULT, WIN32OLE.locale)
+      ensure
+        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+      end
+    end
+
+    def test_s_locale_change
+      begin
+        WIN32OLE.locale = 0x0411
+        obj = WIN32OLE_VARIANT.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
+        assert_equal("100000", obj.value)
+
+        WIN32OLE.locale = 1033
+        obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+        assert_equal("100000", obj.value)
+      ensure
+        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+      end
+    end
+
     def test_const_CP_ACP
       assert_equal(0, WIN32OLE::CP_ACP)
     end
@@ -322,6 +354,14 @@ if defined?(WIN32OLE)
 
     def test_const_CP_UTF8
       assert_equal(65001, WIN32OLE::CP_UTF8)
+    end
+
+    def test_const_LOCALE_SYSTEM_DEFAULT
+      assert_equal(0x0800, WIN32OLE::LOCALE_SYSTEM_DEFAULT);
+    end
+
+    def test_const_LOCALE_USER_DEFAULT
+      assert_equal(0x0400, WIN32OLE::LOCALE_USER_DEFAULT);
     end
   end
 
