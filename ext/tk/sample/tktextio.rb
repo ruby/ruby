@@ -108,7 +108,7 @@ class TkTextIO < TkText
     @lineno = 0
     @line_offset = 0
 
-    @hist_max = opts['hist_size']
+    @hist_max = opts['hist_size'].to_i
     @hist_index = 0
     @history = Array.new(@hist_max)
     @history[0] = ''
