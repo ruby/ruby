@@ -1768,6 +1768,26 @@ int_succ(VALUE num)
 
 /*
  *  call-seq:
+ *     int.pred    => integer
+ *  
+ *  Returns the <code>Integer</code> equal to <i>int</i> - 1.
+ *     
+ *     1.pred      #=> 0
+ *     (-1).pred   #=> -2
+ */
+
+static VALUE
+int_pred(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	long i = FIX2LONG(num) - 1;
+	return LONG2NUM(i);
+    }
+    return rb_funcall(num, '-', 1, INT2FIX(1));
+}
+
+/*
+ *  call-seq:
  *     int.chr    => string
  *  
  *  Returns a string containing the ASCII character represented by the
@@ -2948,6 +2968,7 @@ Init_Numeric(void)
     rb_include_module(rb_cInteger, rb_mPrecision);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
+    rb_define_method(rb_cInteger, "pred", int_pred, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);

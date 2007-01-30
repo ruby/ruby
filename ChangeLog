@@ -1,3 +1,8 @@
+Tue Jan 30 13:24:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_pred): add Integer#pred corresponding
+	  Integer#succ.  [RCR#5]
+
 Tue Jan 30 12:05:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: autoconf 2.61 support.  [ruby-core:10016]
