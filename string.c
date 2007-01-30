@@ -2027,7 +2027,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
     pat = get_pat(argv[0], 1);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
-	rb_str_modify(str);
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 
@@ -2043,6 +2042,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
 	}
+	rb_str_modify(str);
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	plen = END(0) - BEG(0);
 	if (RSTRING_LEN(repl) > plen) {
