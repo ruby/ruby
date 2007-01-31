@@ -1,3 +1,11 @@
+Wed Jan 31 14:52:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_iterate): need to PUSH_ITER in proper order.
+	  [ruby-core:10125]
+
+	* test/ruby/test_iterator.rb (TestIterator::test_block_given_within_iterator):
+	  add new test.  [ruby-core:10125]
+
 Tue Jan 30 14:58:51 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_sub_bang): calling rb_str_modify() should be just

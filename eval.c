@@ -5284,9 +5284,9 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     NODE *node = NEW_IFUNC(bl_proc, data2);
     VALUE self = ruby_top_self;
 
-    PUSH_ITER(ITER_PRE);
     PUSH_TAG(PROT_LOOP);
     PUSH_BLOCK(0, node);
+    PUSH_ITER(ITER_PRE);
     state = EXEC_TAG();
     if (state == 0) {
   iter_retry:
@@ -5300,9 +5300,9 @@ rb_iterate(it_proc, data1, bl_proc, data2)
 	state = 0;
 	goto iter_retry;
     }
+    POP_ITER();
     POP_BLOCK();
     POP_TAG();
-    POP_ITER();
 
     switch (state) {
       case 0:
