@@ -467,4 +467,16 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(ok, result)
     return
   end
+
+  class IterString < ::String
+    def ===(other)
+      super if !block_given?
+    end
+  end
+
+  # Check that the block passed to an iterator
+  # does not get propagated inappropriately
+  def test_block_given_within_iterator
+    assert_equal(["b"], ["a", "b", "c"].grep(IterString.new("b")) {|s| s})
+  end
 end

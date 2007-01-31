@@ -1,3 +1,8 @@
+Wed Jan 31 14:52:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_iterator.rb (TestIterator::test_block_given_within_iterator):
+	  add new test.  [ruby-core:10125]
+
 Wed Jan 31 14:45:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/open-uri.rb (OpenURI::OpenURI.open_uri): use user and
