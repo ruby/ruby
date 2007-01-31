@@ -3,12 +3,6 @@ Wed Jan 31 14:52:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_iterator.rb (TestIterator::test_block_given_within_iterator):
 	  add new test.  [ruby-core:10125]
 
-Wed Jan 31 14:45:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* lib/open-uri.rb (OpenURI::OpenURI.open_uri): use user and
-	  password from URI unless http_basic_authentication is specified
-	  explicitly.  [ruby-core:10114]
-
 Tue Jan 30 17:01:21 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_sub_bang): calling rb_str_modify() should be just
