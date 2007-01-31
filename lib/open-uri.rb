@@ -125,6 +125,9 @@ module OpenURI
     options = rest.shift if !rest.empty? && Hash === rest.first
     raise ArgumentError.new("extra arguments") if !rest.empty?
     options ||= {}
+    if uri.user and uri.password and not options[:http_basic_authentication]
+      options[:http_basic_authentication] = [uri.user,uri.password] 
+    end
     OpenURI.check_options(options)
 
     unless mode == nil ||
