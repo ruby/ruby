@@ -1,6 +1,6 @@
 .\" digest.txt -  -*- Indented-Text -*- created at: Fri May 25 08:13:50 JST 2001
 $RoughId: digest.txt,v 1.9 2001/07/13 19:46:51 knu Exp $
-$Id$
+$Id: digest.txt,v 1.1 2001/07/13 20:06:13 knu Exp $
 
 ** MD5(Class)
 

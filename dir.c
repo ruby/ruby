@@ -2,8 +2,8 @@
 
   dir.c -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2006/12/14 14:50:13 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: repeater.tcl,v 1.1.2.1 2005/08/02 06:51:26 ocean Exp $
 #
 # Demonstration of custom classes.
 #

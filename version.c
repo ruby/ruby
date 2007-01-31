@@ -2,8 +2,8 @@
 
   version.c -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2006/11/26 09:34:32 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

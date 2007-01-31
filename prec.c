@@ -2,8 +2,8 @@
 
   prec.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/04/09 16:10:36 $
   created at: Tue Jan 26 02:40:41 2000
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -1,5 +1,5 @@
 /* $RoughId: md5init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
-/* $Id$ */
+/* $Id: md5init.c,v 1.5 2002/09/26 16:27:23 knu Exp $ */
 
 #include "digest.h"
 #if defined(HAVE_OPENSSL_MD5_H)

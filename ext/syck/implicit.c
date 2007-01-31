@@ -3,8 +3,8 @@
 /*
  * implicit.re
  *
- * $Author$
- * $Date$
+ * $Author: ocean $
+ * $Date: 2005/10/26 00:28:39 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

@@ -3,7 +3,7 @@
 # 
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id$
+# $Id: create.rb,v 1.1.2.2 2006/06/20 23:43:42 matz Exp $
 #
 
 require "date"

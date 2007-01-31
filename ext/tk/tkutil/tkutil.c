@@ -2,8 +2,8 @@
 
   tkutil.c -
 
-  $Author$
-  $Date$
+  $Author: nagai $
+  $Date: 2006/04/05 16:08:45 $
   created at: Fri Nov  3 00:47:54 JST 1995
 
 ************************************************/

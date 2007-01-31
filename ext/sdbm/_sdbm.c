@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-/*char sdbm_rcsid[] = "$Id$";*/
+/*char sdbm_rcsid[] = "$Id: _sdbm.c,v 1.5.2.1 2005/09/08 05:59:41 matz Exp $";*/
 #endif
 
 #include "sdbm.h"
@@ -626,7 +626,7 @@ register DBM *db;
  */
 
 #ifndef lint
-/*char pair_rcsid[] = "$Id$";*/
+/*char pair_rcsid[] = "$Id: _sdbm.c,v 1.5.2.1 2005/09/08 05:59:41 matz Exp $";*/
 #endif
 
 #ifndef BSD42

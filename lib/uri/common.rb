@@ -1,7 +1,7 @@
 # = uri/common.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
-# Revision:: $Id$
+# Revision:: $Id: common.rb,v 1.11.2.7 2005/06/24 04:15:20 akira Exp $
 # License:: 
 #   You can redistribute it and/or modify it under the same term as Ruby.
 #

@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: config.rb,v 1.1 2003/07/19 10:05:54 matz Exp $
 # Configuration file for XML-RPC for Ruby
 #
 

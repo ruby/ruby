@@ -12,7 +12,7 @@
  */
 
 /*
-  $Date$
+  $Date: 2007/01/13 22:34:25 $
   modified for win32ole (ruby) by Masaki.Suketa <masaki.suketa@nifty.ne.jp>
  */
 

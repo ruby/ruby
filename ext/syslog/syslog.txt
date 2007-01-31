@@ -1,6 +1,6 @@
 .\" syslog.txt -  -*- Indented-Text -*-
 $RoughId: syslog.txt,v 1.18 2002/02/25 08:20:14 knu Exp $
-$Id$
+$Id: syslog.txt,v 1.2 2002/02/25 12:13:30 knu Exp $
 
 UNIX Syslog extension for Ruby
 Amos Gouaux, University of Texas at Dallas

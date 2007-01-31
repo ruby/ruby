@@ -1,6 +1,6 @@
 =begin
 
-= $RCSfile$ -- SSL/TLS enhancement for Net::HTTP.
+= $RCSfile: https.rb,v $ -- SSL/TLS enhancement for Net::HTTP.
 
 == Info
   'OpenSSL for Ruby 2' project
@@ -16,7 +16,7 @@
   You can get it from RAA or Ruby's CVS repository.
 
 == Version
-  $Id$
+  $Id: https.rb,v 1.3.4.2 2006/02/05 09:56:34 aamine Exp $
   
   2001-11-06: Contiributed to Ruby/OpenSSL project.
   2004-03-06: Some code is merged in to net/http.

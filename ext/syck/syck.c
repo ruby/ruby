@@ -1,8 +1,8 @@
 /*
  * syck.c
  *
- * $Author$
- * $Date$
+ * $Author: matz $
+ * $Date: 2006/08/07 08:09:34 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

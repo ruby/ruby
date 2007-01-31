@@ -1,4 +1,4 @@
-# $Id$
+# $Id: test_fileutils.rb,v 1.16.2.6 2005/09/19 01:37:28 aamine Exp $
 
 require 'fileutils'
 require 'fileasserts'

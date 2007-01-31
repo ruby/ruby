@@ -2,8 +2,8 @@
 
   bignum.c -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2006/12/06 10:14:12 $
   created at: Fri Jun 10 00:48:55 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

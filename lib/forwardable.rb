@@ -1,8 +1,8 @@
 # = forwardable - Support for the Delegation Pattern
 #
 #    $Release Version: 1.1$
-#    $Revision$
-#    $Date$
+#    $Revision: 1.2.2.2 $
+#    $Date: 2006/06/02 13:23:01 $
 #    by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 #    Documentation by James Edward Gray II and Gavin Sinclair

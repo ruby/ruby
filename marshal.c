@@ -2,8 +2,8 @@
 
   marshal.c -
 
-  $Author$
-  $Date$
+  $Author: akr $
+  $Date: 2005/12/14 03:04:14 $
   created at: Thu Apr 27 16:30:01 JST 1995
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

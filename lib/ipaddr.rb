@@ -6,7 +6,7 @@
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
 #
-# $Id$
+# $Id: ipaddr.rb,v 1.5.2.3 2006/08/04 22:00:21 drbrain Exp $
 #
 # TODO:
 #   - scope_id support

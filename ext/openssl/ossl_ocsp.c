@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_ocsp.c,v 1.4.2.2 2005/01/22 20:28:02 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2003  Michal Rokos <m.rokos@sh.cvut.cz>
  * Copyright (C) 2003  GOTOU Yuuzou <gotoyuzo@notwork.org>

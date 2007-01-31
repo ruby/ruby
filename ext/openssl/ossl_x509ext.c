@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_x509ext.c,v 1.8.2.3 2005/11/22 22:28:51 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

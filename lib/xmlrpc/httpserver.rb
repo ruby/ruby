@@ -4,7 +4,7 @@
 # 
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id$
+# $Id: httpserver.rb,v 1.1 2003/07/19 10:05:54 matz Exp $
 #
 
 

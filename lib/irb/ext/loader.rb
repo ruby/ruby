@@ -1,8 +1,8 @@
 #
 #   loader.rb - 
 #   	$Release Version: 0.9.5$
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.1.2.1 $
+#   	$Date: 2005/04/19 19:24:58 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -15,7 +15,7 @@ module IRB
   class LoadAbort < Exception;end
 
   module IrbLoader
-    @RCS_ID='-$Id$-'
+    @RCS_ID='-$Id: loader.rb,v 1.1.2.1 2005/04/19 19:24:58 keiju Exp $-'
 
     alias ruby_load load
     alias ruby_require require

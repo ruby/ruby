@@ -2,8 +2,8 @@
 
   re.h -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2003/03/04 14:12:19 $
   created at: Thu Sep 30 14:18:32 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

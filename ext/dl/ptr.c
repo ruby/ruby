@@ -1,5 +1,5 @@
 /* -*- C -*-
- * $Id$
+ * $Id: ptr.c,v 1.19.2.1 2006/05/25 16:37:57 ttate Exp $
  */
 
 #include <ruby.h>

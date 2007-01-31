@@ -1,8 +1,8 @@
 /*
  * yaml2byte.c
  *
- * $Author$
- * $Date$
+ * $Author: matz $
+ * $Date: 2006/05/03 17:41:10 $
  *
  * Copyright (C) 2003 why the lucky stiff, clark evans
  *

@@ -2,8 +2,8 @@
 
   sdbminit.c -
 
-  $Author$
-  $Date$
+  $Author: ocean $
+  $Date: 2005/06/25 05:42:41 $
   created at: Fri May  7 08:34:24 JST 1999
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto

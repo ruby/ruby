@@ -1,8 +1,8 @@
 #
 #   irb/lib/tracer.rb - 
 #   	$Release Version: 0.9.5$
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.1.2.1 $
+#   	$Date: 2005/04/19 19:24:58 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

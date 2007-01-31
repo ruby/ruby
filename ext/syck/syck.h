@@ -1,8 +1,8 @@
 /*
  * syck.h
  *
- * $Author$
- * $Date$
+ * $Author: ocean $
+ * $Date: 2005/12/20 04:13:26 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

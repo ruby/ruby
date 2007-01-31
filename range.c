@@ -2,8 +2,8 @@
 
   range.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2005/08/14 15:39:39 $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

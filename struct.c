@@ -2,8 +2,8 @@
 
   struct.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/02/02 07:18:10 $
   created at: Tue Mar 22 18:44:30 JST 1995
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

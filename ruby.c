@@ -2,8 +2,8 @@
 
   ruby.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/08/16 02:11:21 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

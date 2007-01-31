@@ -39,7 +39,7 @@
 ###  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 ###  SUCH DAMAGE.
 ###
-### $Id$
+### $Id: mdoc2man.rb,v 1.4 2003/01/20 12:10:40 knu Exp $
 ###
 
 class Mdoc2Man

@@ -3,7 +3,7 @@
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
 # License:: You can redistribute it and/or modify it under the same term as Ruby.
-# Revision:: $Id$
+# Revision:: $Id: generic.rb,v 1.13.2.5 2005/06/24 04:15:20 akira Exp $
 #
 
 require 'uri/common'

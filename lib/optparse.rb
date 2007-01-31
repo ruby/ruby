@@ -203,7 +203,7 @@
 #
 class OptionParser
   # :stopdoc:
-  RCSID = %w$Id$[1..-1].each {|s| s.freeze}.freeze
+  RCSID = %w$Id: optparse.rb,v 1.40.2.12 2006/08/04 22:00:21 drbrain Exp $[1..-1].each {|s| s.freeze}.freeze
   Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
   LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
   Release = RCSID[2]

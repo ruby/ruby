@@ -1,12 +1,12 @@
 ;;;
 ;;;  ruby-mode.el -
 ;;;
-;;;  $Author$
-;;;  $Date$
+;;;  $Author: matz $
+;;;  $Date: 2007/01/24 14:46:10 $
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
-(defconst ruby-mode-revision "$Revision$")
+(defconst ruby-mode-revision "$Revision: 1.74.2.14.2.1 $")
 
 (defconst ruby-mode-version
   (progn

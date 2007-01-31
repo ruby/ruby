@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_pkcs7.h,v 1.1.2.1 2005/09/10 01:17:00 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

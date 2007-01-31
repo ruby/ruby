@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl.h,v 1.14.2.4.2.1 2006/12/25 11:16:49 shyouhei Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

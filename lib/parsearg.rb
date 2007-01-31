@@ -1,8 +1,8 @@
 #
 #		parsearg.rb - parse arguments
 #			$Release Version: $
-#			$Revision$
-#			$Date$
+#			$Revision: 1.2.2.2 $
+#			$Date: 2006/08/04 22:00:21 $
 #			by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -12,7 +12,7 @@
 
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: parsearg is deprecated after Ruby 1.8.1; use optparse instead"
 
-$RCS_ID=%q$Header$
+$RCS_ID=%q$Header: /src/ruby/lib/parsearg.rb,v 1.2.2.2 2006/08/04 22:00:21 drbrain Exp $
 
 require "getopts"
 

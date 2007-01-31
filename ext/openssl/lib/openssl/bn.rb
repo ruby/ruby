@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for BN
+= $RCSfile: bn.rb,v $ -- Ruby-space definitions that completes C-space funcs for BN
 
 = Info
   'OpenSSL for Ruby 2' project
@@ -11,7 +11,7 @@
   (See the file 'LICENCE'.)
 
 = Version
-  $Id$
+  $Id: bn.rb,v 1.1 2003/07/23 16:11:30 gotoyuzo Exp $
 =end
 
 ##

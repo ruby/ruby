@@ -34,7 +34,7 @@
  */
 
 /* $RoughId: sha2.h,v 1.3 2002/02/24 08:14:32 knu Exp $ */
-/* $Id$ */
+/* $Id: sha2.h,v 1.2 2002/02/24 08:20:22 knu Exp $ */
 
 #ifndef __SHA2_H__
 #define __SHA2_H__

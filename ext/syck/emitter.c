@@ -1,8 +1,8 @@
 /*
  * emitter.c
  *
- * $Author$
- * $Date$
+ * $Author: matz $
+ * $Date: 2006/05/03 17:29:34 $
  *
  * Copyright (C) 2003 why the lucky stiff
  * 

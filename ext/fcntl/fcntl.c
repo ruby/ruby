@@ -2,7 +2,7 @@
 
   fcntl.c -
 
-  $Author$
+  $Author: matz $
   created at: Mon Apr  7 18:53:05 JST 1997
 
   Copyright (C) 1997-2001 Yukihiro Matsumoto

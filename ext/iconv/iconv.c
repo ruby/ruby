@@ -3,8 +3,8 @@
 
   iconv.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2005/12/12 00:36:51 $
   created at: Wed Dec  1 20:28:09 JST 1999
 
   All the files in this distribution are covered under the Ruby's

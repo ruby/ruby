@@ -2,8 +2,8 @@
 
   math.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/07/27 16:14:03 $
   created at: Tue Jan 25 14:12:56 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

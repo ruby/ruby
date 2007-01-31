@@ -1,8 +1,8 @@
 #
 #   irb/input-method.rb - input methods used irb
 #   	$Release Version: 0.9.5$
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.4.2.2 $
+#   	$Date: 2005/05/25 13:53:41 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -18,7 +18,7 @@ module IRB
   #
   STDIN_FILE_NAME = "(line)"
   class InputMethod
-    @RCS_ID='-$Id$-'
+    @RCS_ID='-$Id: input-method.rb,v 1.4.2.2 2005/05/25 13:53:41 shugo Exp $-'
 
     def initialize(file = STDIN_FILE_NAME)
       @file_name = file

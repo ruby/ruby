@@ -1,8 +1,8 @@
 /*
  * handler.c
  *
- * $Author$
- * $Date$
+ * $Author: why $
+ * $Date: 2005/09/20 06:46:43 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

@@ -2,8 +2,8 @@
 
   enum.c -
 
-  $Author$
-  $Date$
+  $Author: drbrain $
+  $Date: 2006/06/15 01:24:40 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

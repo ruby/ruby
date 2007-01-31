@@ -1,5 +1,5 @@
 #
-# $Id$
+# $Id: toolbutton.tcl,v 1.1.2.1 2005/04/09 09:27:28 nagai Exp $
 #
 # Demonstration of custom widget styles.
 #

@@ -2,8 +2,8 @@
 
   parse.y -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2007/01/27 15:45:51 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

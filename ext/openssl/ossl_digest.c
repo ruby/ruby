@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_digest.c,v 1.4.2.2 2004/12/15 01:54:39 matz Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

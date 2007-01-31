@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # -*- ruby -*-
-# $Id$
+# $Id: h2rb,v 1.1 2002/04/02 10:56:13 ttate Exp $
 
 require 'mkmf'
 require 'ftools'

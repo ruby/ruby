@@ -3,11 +3,11 @@
  *
  *  original nkf2.x is maintained at http://sourceforge.jp/projects/nkf/
  *
- *  $Id$
+ *  $Id: nkf.c,v 1.9.2.4 2006/03/27 13:28:14 naruse Exp $
  *
  */
 
-#define RUBY_NKF_REVISION "$Revision$"
+#define RUBY_NKF_REVISION "$Revision: 1.9.2.4 $"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
 
 #include "ruby.h"

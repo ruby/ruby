@@ -1,7 +1,7 @@
 .\" enumerator.txt -  -*- Indented-Text -*-
 $Idaemons: /home/cvs/rb/enumerator/enumerator.txt,v 1.2 2001/07/15 10:19:24 knu Exp $
 $RoughId: enumerator.txt,v 1.5 2003/02/20 12:24:51 knu Exp $
-$Id$
+$Id: enumerator.txt,v 1.2 2003/10/17 14:09:43 knu Exp $
 
 ** Enumerable::Enumerator(Class)
 

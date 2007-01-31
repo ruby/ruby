@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: sha1ossl.c,v 1.1.2.1 2006/08/07 09:01:27 matz Exp $ */
 
 #include "defs.h"
 #include "sha1ossl.h"

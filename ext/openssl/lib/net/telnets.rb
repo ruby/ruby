@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- SSL/TLS enhancement for Net::Telnet.
+= $RCSfile: telnets.rb,v $ -- SSL/TLS enhancement for Net::Telnet.
 
 = Info
   'OpenSSL for Ruby 2' project
@@ -11,7 +11,7 @@
   (See the file 'LICENCE'.)
 
 = Version
-  $Id$
+  $Id: telnets.rb,v 1.1.2.1 2004/12/20 03:49:16 gotoyuzo Exp $
   
   2001/11/06: Contiributed to Ruby/OpenSSL project.
 

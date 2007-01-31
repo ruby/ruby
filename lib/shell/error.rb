@@ -1,8 +1,8 @@
 #
 #   shell/error.rb - 
 #   	$Release Version: 0.6.0 $
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.2 $
+#   	$Date: 2003/02/07 19:00:21 $
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
 #
 # --

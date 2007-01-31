@@ -2,8 +2,8 @@
 
   env.h -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/02/13 09:10:55 $
   created at: Mon Jul 11 11:53:03 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

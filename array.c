@@ -2,8 +2,8 @@
 
   array.c -
 
-  $Author$
-  $Date$
+  $Author: akr $
+  $Date: 2006/06/24 14:53:36 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

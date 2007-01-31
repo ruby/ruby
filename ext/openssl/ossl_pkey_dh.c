@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_pkey_dh.c,v 1.4.2.3 2005/04/08 09:26:54 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

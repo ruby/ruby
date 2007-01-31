@@ -1,6 +1,6 @@
 #
 #               tk/text.rb - Tk text classes
-#                       $Date$
+#                       $Date: 2005/11/23 12:01:05 $
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 require 'tk'
 require 'tk/itemfont'

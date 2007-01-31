@@ -2,8 +2,8 @@
 
   process.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/08/16 02:46:10 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

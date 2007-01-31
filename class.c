@@ -2,8 +2,8 @@
 
   class.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2005/09/28 14:42:46 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

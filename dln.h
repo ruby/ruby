@@ -2,8 +2,8 @@
 
   dln.h -
 
-  $Author$
-  $Date$
+  $Author: michal $
+  $Date: 2003/01/16 07:34:01 $
   created at: Wed Jan 19 16:53:09 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -3,8 +3,8 @@
 /*
  * token.re
  *
- * $Author$
- * $Date$
+ * $Author: why $
+ * $Date: 2005/09/20 23:56:24 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

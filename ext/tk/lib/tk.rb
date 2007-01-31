@@ -1,6 +1,6 @@
 #
 #               tk.rb - Tk interface module using tcltklib
-#                       $Date$
+#                       $Date: 2006/07/14 04:10:49 $
 #                       by Yukihiro Matsumoto <matz@netlab.jp>
 
 # use Shigehiro's tcltklib

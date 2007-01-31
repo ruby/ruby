@@ -1,7 +1,7 @@
 # just for compatibility; requiring "md5" is obsoleted
 #
 # $RoughId: md5.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
-# $Id$
+# $Id: md5.rb,v 1.1 2001/07/13 20:06:14 knu Exp $
 
 require 'digest/md5'
 

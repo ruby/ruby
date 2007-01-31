@@ -1,8 +1,8 @@
 /*
  * node.c
  *
- * $Author$
- * $Date$
+ * $Author: matz $
+ * $Date: 2005/09/16 09:35:23 $
  *
  * Copyright (C) 2003 why the lucky stiff
  */

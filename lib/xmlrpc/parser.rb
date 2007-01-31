@@ -3,7 +3,7 @@
 # 
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
-# $Id$
+# $Id: parser.rb,v 1.3.2.3 2005/06/24 20:27:42 mneumann Exp $
 #
 
 

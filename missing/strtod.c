@@ -14,7 +14,7 @@
  * software for any purpose.  It is provided "as is" without
  * express or implied warranty.
  *
- * RCS: @(#) $Id$
+ * RCS: @(#) $Id: strtod.c,v 1.3 2000/02/17 07:11:22 matz Exp $
  */
 
 #include "config.h"

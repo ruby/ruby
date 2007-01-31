@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- SSL/TLS enhancement for Net::HTTP.
+= $RCSfile: ftptls.rb,v $ -- SSL/TLS enhancement for Net::HTTP.
 
 = Info
   'OpenSSL for Ruby 2' project
@@ -13,7 +13,7 @@
 = Requirements
 
 = Version
-  $Id$
+  $Id: ftptls.rb,v 1.1 2003/07/23 16:11:30 gotoyuzo Exp $
   
 = Notes
   Tested on FreeBSD 5-CURRENT and 4-STABLE

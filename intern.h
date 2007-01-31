@@ -2,8 +2,8 @@
 
   intern.h -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/05/16 00:25:18 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -1,7 +1,7 @@
 irb -- interactive ruby
 		$Release Version: 0.9 $
-		$Revision$
-		$Date$
+		$Revision: 1.6 $
+		$Date: 2003/07/31 16:34:07 $
 		by Keiju ISHITSUKA(keiju@ishitsuka.com)
 		by gotoken-san who is original translater from japanese version
 

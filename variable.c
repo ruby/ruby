@@ -2,8 +2,8 @@
 
   variable.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/07/20 07:04:17 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

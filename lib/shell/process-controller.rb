@@ -1,8 +1,8 @@
 #
 #   shell/process-controller.rb - 
 #   	$Release Version: 0.6.0 $
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.3 $
+#   	$Date: 2003/10/16 17:47:19 $
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
 #
 # --

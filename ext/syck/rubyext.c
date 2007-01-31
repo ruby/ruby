@@ -2,8 +2,8 @@
 /*
  * rubyext.c
  *
- * $Author$
- * $Date$
+ * $Author: ocean $
+ * $Date: 2006/01/30 15:11:57 $
  *
  * Copyright (C) 2003-2005 why the lucky stiff
  */

@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_asn1.c,v 1.5.2.9 2006/04/29 13:52:15 gotoyuzo Exp $
  * 'OpenSSL for Ruby' team members
  * Copyright (C) 2003
  * All rights reserved.

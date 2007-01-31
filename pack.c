@@ -2,8 +2,8 @@
 
   pack.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/08/04 04:58:25 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -2,8 +2,8 @@
 
   time.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/07/27 13:23:18 $
   created at: Tue Dec 28 14:31:59 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

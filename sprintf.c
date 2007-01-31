@@ -2,8 +2,8 @@
 
   sprintf.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/07/28 16:27:42 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

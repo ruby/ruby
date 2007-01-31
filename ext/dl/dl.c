@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: dl.c,v 1.20.2.5 2005/12/16 13:32:06 ttate Exp $
  */
 
 #include <ruby.h>

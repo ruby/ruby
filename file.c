@@ -2,8 +2,8 @@
 
   file.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/08/19 02:29:18 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

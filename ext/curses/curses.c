@@ -1,5 +1,5 @@
 /* -*- C -*-
- * $Id$
+ * $Id: curses.c,v 1.24.2.8 2006/07/18 05:08:34 matz Exp $
  *
  * ext/curses/curses.c
  * 

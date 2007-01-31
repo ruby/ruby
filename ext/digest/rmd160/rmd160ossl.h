@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: rmd160ossl.h,v 1.1.2.1 2005/08/30 10:43:35 gotoyuzo Exp $ */
 
 #ifndef RMD160OSSL_H_INCLUDED
 #define RMD160OSSL_H_INCLUDED

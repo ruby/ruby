@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 #
 # $RoughId: test.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
-# $Id$
+# $Id: test_digest.rb,v 1.2.2.2 2005/02/17 11:16:57 ocean Exp $
 
 require 'test/unit'
 

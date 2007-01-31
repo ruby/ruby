@@ -1,4 +1,4 @@
-# $Id$
+# $Id: fileasserts.rb,v 1.2.2.2 2005/01/26 15:16:09 aamine Exp $
 
 module Test
   module Unit

@@ -2,8 +2,8 @@
 
   numeric.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/05/01 03:46:46 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

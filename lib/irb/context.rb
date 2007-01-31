@@ -1,8 +1,8 @@
 #
 #   irb/context.rb - irb context
 #   	$Release Version: 0.9.5$
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.8.2.3 $
+#   	$Date: 2005/07/31 15:10:26 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

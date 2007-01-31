@@ -3,8 +3,8 @@
   missing.h - prototype for *.c in ./missing, and
   	      for missing timeval struct
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/01/25 13:30:11 $
   created at: Sat May 11 23:46:03 JST 2002
 
 ************************************************/

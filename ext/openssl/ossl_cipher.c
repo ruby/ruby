@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_cipher.c,v 1.4.2.6 2006/06/20 11:18:15 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

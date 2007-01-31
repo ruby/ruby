@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # $RoughId: test.rb,v 1.9 2002/02/25 08:20:14 knu Exp $
-# $Id$
+# $Id: test.rb,v 1.4 2002/11/27 08:36:22 knu Exp $
 
 # Please only run this test on machines reasonable for testing.
 # If in doubt, ask your admin.

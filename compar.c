@@ -2,8 +2,8 @@
 
   compar.c -
 
-  $Author$
-  $Date$
+  $Author: dave $
+  $Date: 2003/12/19 00:01:18 $
   created at: Thu Aug 26 14:39:48 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

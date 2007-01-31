@@ -1,5 +1,5 @@
 /* $RoughId: sha2init.c,v 1.3 2001/07/13 20:00:43 knu Exp $ */
-/* $Id$ */
+/* $Id: sha2init.c,v 1.2 2002/02/17 12:43:44 nobu Exp $ */
 
 #include "digest.h"
 #include "sha2.h"

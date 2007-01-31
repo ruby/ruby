@@ -2,8 +2,8 @@
 
   main.c -
 
-  $Author$
-  $Date$
+  $Author: eban $
+  $Date: 2004/10/31 16:06:57 $
   created at: Fri Aug 19 13:19:58 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

@@ -11,7 +11,7 @@
 # modify this program under the same terms as Ruby itself,
 # Ruby Distribute License or GNU General Public License.
 #
-# $Id$
+# $Id: protocol.rb,v 1.73.2.3 2005/09/13 07:27:18 aamine Exp $
 #++
 #
 # WARNING: This file is going to remove.

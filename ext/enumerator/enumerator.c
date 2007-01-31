@@ -2,13 +2,13 @@
 
   enumerator.c - provides Enumerator class
 
-  $Author$
+  $Author: matz $
 
   Copyright (C) 2001-2003 Akinori MUSHA
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
   $RoughId: enumerator.c,v 1.6 2003/07/27 11:03:24 nobu Exp $
-  $Id$
+  $Id: enumerator.c,v 1.3.2.3 2005/10/24 00:07:00 matz Exp $
 
 ************************************************/
 

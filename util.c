@@ -2,8 +2,8 @@
 
   util.c -
 
-  $Author$
-  $Date$
+  $Author: nobu $
+  $Date: 2006/07/18 01:55:15 $
   created at: Fri Mar 10 17:22:34 JST 1995
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

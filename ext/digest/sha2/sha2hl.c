@@ -1,6 +1,6 @@
 /* $NetBSD: sha2hl.c,v 1.1 2001/03/12 09:08:40 agc Exp $	 */
 /* $RoughId: sha2hl.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
-/* $Id$ */
+/* $Id: sha2hl.c,v 1.1 2001/07/13 20:06:14 knu Exp $ */
 
 /*
  * sha2hl.c

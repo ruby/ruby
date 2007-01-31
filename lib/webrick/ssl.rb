@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2003 GOTOU Yuuzou All rights reserved.
 # 
-# $Id$
+# $Id: ssl.rb,v 1.2.2.1 2005/01/18 06:03:43 gotoyuzo Exp $
 
 require 'webrick'
 require 'openssl'

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: md5ossl.h,v 1.1.2.1 2005/08/30 10:43:34 gotoyuzo Exp $ */
 
 #ifndef MD5OSSL_H_INCLUDED
 #define MD5OSSL_H_INCLUDED

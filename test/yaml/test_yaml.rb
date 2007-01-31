@@ -1,6 +1,6 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
 #												vim:sw=4:ts=4
-# $Id$
+# $Id: test_yaml.rb,v 1.5.2.5 2006/01/16 01:29:58 ocean Exp $
 #
 require 'test/unit'
 require 'yaml'

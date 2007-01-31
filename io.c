@@ -2,8 +2,8 @@
 
   io.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/07/31 06:34:09 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

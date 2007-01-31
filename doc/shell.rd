@@ -1,7 +1,7 @@
  -- shell.rb
 				$Release Version: 0.6.0 $
-			   	$Revision$
-			   	$Date$
+			   	$Revision: 1.2 $
+			   	$Date: 2001/05/17 10:09:49 $
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 
 =begin

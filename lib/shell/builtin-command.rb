@@ -1,8 +1,8 @@
 #
 #   shell/builtin-command.rb - 
 #   	$Release Version: 0.6.0 $
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.1 $
+#   	$Date: 2001/05/17 10:02:48 $
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
 #
 # --

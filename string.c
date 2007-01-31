@@ -2,8 +2,8 @@
 
   string.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2006/07/31 06:34:10 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

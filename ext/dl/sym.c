@@ -1,5 +1,5 @@
 /* -*- C -*-
- * $Id$
+ * $Id: sym.c,v 1.24.2.3 2005/06/15 23:39:27 ocean Exp $
  */
 
 #include <ruby.h>

@@ -1,7 +1,7 @@
 # just for compatibility; requiring "sha1" is obsoleted
 #
 # $RoughId: sha1.rb,v 1.4 2001/07/13 15:38:27 knu Exp $
-# $Id$
+# $Id: sha1.rb,v 1.1 2001/07/13 20:06:14 knu Exp $
 
 require 'digest/sha1'
 

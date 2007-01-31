@@ -2,8 +2,8 @@
 
   signal.c -
 
-  $Author$
-  $Date$
+  $Author: nagai $
+  $Date: 2006/07/10 05:01:57 $
   created at: Tue Dec 20 10:13:44 JST 1994
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

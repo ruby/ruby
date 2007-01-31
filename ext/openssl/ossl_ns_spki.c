@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_ns_spki.c,v 1.3.2.5 2006/03/17 10:10:53 gotoyuzo Exp $
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.

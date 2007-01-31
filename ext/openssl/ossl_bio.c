@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: ossl_bio.c,v 1.2.2.1 2005/06/19 16:29:17 gotoyuzo Exp $
  * 'OpenSSL for Ruby' team members
  * Copyright (C) 2003
  * All rights reserved.

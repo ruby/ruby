@@ -34,7 +34,7 @@
  */
 
 /* $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $ */
-/* $Id$ */
+/* $Id: sha2.c,v 1.4.2.1 2005/12/24 09:58:56 matz Exp $ */
 
 #include "sha2.h"
 #include <stdio.h>

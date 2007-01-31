@@ -1,8 +1,8 @@
 #
 #   irb/ruby-lex.rb - ruby lexcal analizer
 #   	$Release Version: 0.9.5$
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.22.2.6 $
+#   	$Date: 2006/08/04 10:15:49 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -15,7 +15,7 @@ require "irb/slex"
 require "irb/ruby-token"
 
 class RubyLex
-  @RCS_ID='-$Id$-'
+  @RCS_ID='-$Id: ruby-lex.rb,v 1.22.2.6 2006/08/04 10:15:49 keiju Exp $-'
 
   extend Exception2MessageMapper
   def_exception(:AlreadyDefinedToken, "Already defined token(%s)")

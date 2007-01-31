@@ -1,8 +1,8 @@
  -- forwardable.rb
 						
                                                 $Release Version: 1.1 $
-                                                $Revision$
-                                                $Date$
+                                                $Revision: 1.2 $
+                                                $Date: 2001/05/07 23:52:57 $
 						Original version by Tosh
 
 =begin

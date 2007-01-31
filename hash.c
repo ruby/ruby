@@ -2,8 +2,8 @@
 
   hash.c -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2006/12/05 18:53:00 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

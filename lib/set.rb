@@ -9,7 +9,7 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 #
-#   $Id$
+#   $Id: set.rb,v 1.20.2.7 2005/06/30 06:16:13 matz Exp $
 #
 # == Overview 
 # 

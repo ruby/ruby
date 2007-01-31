@@ -2,8 +2,8 @@
 
   util.h -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 2005/10/30 18:20:53 $
   created at: Thu Mar  9 11:55:53 JST 1995
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

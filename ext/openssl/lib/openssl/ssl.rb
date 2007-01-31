@@ -1,5 +1,5 @@
 =begin
-= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for SSL
+= $RCSfile: ssl.rb,v $ -- Ruby-space definitions that completes C-space funcs for SSL
 
 = Info
   'OpenSSL for Ruby 2' project
@@ -11,7 +11,7 @@
   (See the file 'LICENCE'.)
 
 = Version
-  $Id$
+  $Id: ssl.rb,v 1.5.2.6 2006/05/23 18:14:05 gotoyuzo Exp $
 =end
 
 require "openssl"

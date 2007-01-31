@@ -1,8 +1,8 @@
 #
 #   shell/filter.rb - 
 #   	$Release Version: 0.6.0 $
-#   	$Revision$
-#   	$Date$
+#   	$Revision: 1.3.2.1 $
+#   	$Date: 2004/03/21 12:21:11 $
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
 #
 # --

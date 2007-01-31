@@ -1,6 +1,6 @@
 #
 #               tk/spinbox.rb - Tk spinbox classes
-#                       $Date$
+#                       $Date: 2005/10/22 22:16:24 $
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
 require 'tk'

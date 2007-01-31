@@ -2,8 +2,8 @@
 
   etc.c -
 
-  $Author$
-  $Date$
+  $Author: shyouhei $
+  $Date: 2007/01/09 12:24:20 $
   created at: Tue Mar 22 18:39:19 JST 1994
 
 ************************************************/

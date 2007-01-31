@@ -2,8 +2,8 @@
 
   rubyio.h -
 
-  $Author$
-  $Date$
+  $Author: akr $
+  $Date: 2006/05/22 08:38:31 $
   created at: Fri Nov 12 16:47:09 JST 1993
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

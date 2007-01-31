@@ -2,8 +2,8 @@
 
   rubysig.h -
 
-  $Author$
-  $Date$
+  $Author: ocean $
+  $Date: 2005/10/21 10:23:03 $
   created at: Wed Aug 16 01:15:38 JST 1995
 
   Copyright (C) 1993-2003 Yukihiro Matsumoto

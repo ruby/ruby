@@ -2,8 +2,8 @@
 
   sockport.h -
 
-  $Author$
-  $Date$
+  $Author: eban $
+  $Date: 2000/08/24 06:29:30 $
   created at: Fri Apr 30 23:19:34 JST 1999
 
 ************************************************/
