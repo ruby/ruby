@@ -1,3 +1,7 @@
+Fri Feb  2 18:44:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (setclassvariable): remove warn argument.
+
 Fri Feb  2 18:36:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* common.mk (compile.$(OBJEXT)): add config.h to vm.c and

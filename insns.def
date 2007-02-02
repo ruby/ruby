@@ -231,7 +231,7 @@ setclassvariable
     if (declp == Qtrue && RTEST(ruby_verbose) && FL_TEST(klass, FL_SINGLETON)) {
 	rb_warn("declaring singleton class variable");
     }
-    rb_cvar_set(klass, id, val, declp);
+    rb_cvar_set(klass, id, val);
 }
 
 /**
