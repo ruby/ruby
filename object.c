@@ -1793,7 +1793,7 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
     }
-    rb_cvar_set(obj, id, val, Qfalse);
+    rb_cvar_set(obj, id, val);
     return val;
 }
 

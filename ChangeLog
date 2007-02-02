@@ -8,6 +8,10 @@ Fri Feb  2 18:27:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c: remove duplicated global variables rb_cProc and
 	  rb_cBinding.  [ruby-dev:30242]
 
+Thu Feb  1 20:31:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_cvar_set): remove warn argument.
+
 Wed Jan 31 14:52:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_iterator.rb (TestIterator::test_block_given_within_iterator):

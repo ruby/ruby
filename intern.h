@@ -577,8 +577,7 @@ VALUE rb_const_get_from(VALUE, ID);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_mod_const_missing(VALUE,VALUE);
 VALUE rb_cvar_defined(VALUE, ID);
-#define RB_CVAR_SET_4ARGS 1
-void rb_cvar_set(VALUE, ID, VALUE, int);
+void rb_cvar_set(VALUE, ID, VALUE);
 VALUE rb_cvar_get(VALUE, ID);
 void rb_cv_set(VALUE, const char*, VALUE);
 VALUE rb_cv_get(VALUE, const char*);

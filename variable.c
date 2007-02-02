@@ -1565,7 +1565,7 @@ rb_define_global_const(const char *name, VALUE val)
 }
 
 void
-rb_cvar_set(VALUE klass, ID id, VALUE val, int warn)
+rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
     mod_av_set(klass, id, val, Qfalse);
 }
@@ -1600,7 +1600,7 @@ rb_cv_set(VALUE klass, const char *name, VALUE val)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", name);
     }
-    rb_cvar_set(klass, id, val, Qfalse);
+    rb_cvar_set(klass, id, val);
 }
 
 VALUE
@@ -1621,7 +1621,7 @@ rb_define_class_variable(VALUE klass, const char *name, VALUE val)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", name);
     }
-    rb_cvar_set(klass, id, val, Qtrue);
+    rb_cvar_set(klass, id, val);
 }
 
 static int
