@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "debug.h"
 
 void
 debug_indent(int level, int debug_level, int indent_level)

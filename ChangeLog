@@ -1,3 +1,8 @@
+Fri Feb  2 23:39:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* common.mk (bin): add more dependency.  a patch from Tadashi
+	  Saito <shiba at mail2.accsnet.ne.jp>.  [ruby-dev:30245]
+
 Fri Feb  2 18:44:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insns.def (setclassvariable): remove warn argument.
