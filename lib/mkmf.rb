@@ -1335,7 +1335,7 @@ site-install-rb: install-rb
     end
   end
 
-  sep = config_string('BUILD_FILE_SEPARATOR') {|sep| ":/=#{sep}" if sep != "/"} || ""
+  sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n"
   mfile.print "\t@-$(RM) $(@#{sep})\n"
@@ -1415,9 +1415,9 @@ site-install-rb: install-rb
       headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
     end
     headers << $config_h if $config_h
-    headers << "$(RUBY_EXTCONF_H)" if $extconf_h
     mfile.print "$(OBJS): ", headers.join(' '), "\n"
   end
+  mfile.print "\n$(OBJS): $(RUBY_EXTCONF_H)\n"
 
   $makefile_created = true
 ensure

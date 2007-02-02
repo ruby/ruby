@@ -1,4 +1,4 @@
-Sat Feb  3 01:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb  3 02:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (yarv_proc_alloc): needs return.
 
@@ -10,6 +10,9 @@ Sat Feb  3 01:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  fixed indents and non-C90 comments.
 
 	* regenc.h: revert to before YARV.
+
+	* lib/mkmf.rb (create_makefile): make object files depend on
+	  extconf.h even if depend file exists.
 
 Fri Feb  2 23:39:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
