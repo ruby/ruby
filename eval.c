@@ -14,9 +14,6 @@
 
 #include "eval_intern.h"
 
-VALUE rb_cProc;
-VALUE rb_cBinding;
-
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_binding_new();
 
