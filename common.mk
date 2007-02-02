@@ -594,20 +594,20 @@ compare-test-each: miniruby$(EXEEXT) PHONY
 run: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb $(RUNOPT)
 
-runruby: $(RUBY) PHONY
-	./$(RUBY)  -I$(srcdir)/lib -I. $(srcdir)/tool/runruby.rb $(srcdir)/test.rb
+runruby: $(PROGRAM) PHONY
+	$(RUNRUBY) $(srcdir)/test.rb
 
 parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
-benchmark: $(RUBY) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+benchmark: $(PROGRAM) PHONY
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
-benchmark-each: $(RUBY) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+benchmark-each: $(PROGRAM) PHONY
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
-tbench: $(RUBY) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(RUBY) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+tbench: $(PROGRAM) PHONY
+	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 aotc:
 	$(RUBY) -I$(srcdir) -I. $(srcdir)/tool/aotcompile.rb $(INSNS2VMOPT)
