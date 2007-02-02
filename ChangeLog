@@ -1,3 +1,8 @@
+Fri Feb  2 18:36:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* common.mk (compile.$(OBJEXT)): add config.h to vm.c and
+	  compile.c.
+
 Fri Feb  2 18:27:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove duplicated global variables rb_cProc and

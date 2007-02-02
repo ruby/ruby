@@ -511,11 +511,11 @@ version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}version.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
-        {$(VPATH)}compile.h {$(VPATH)}debug.h \
+        {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h \
         insns.inc insns_info.inc optinsn.inc opt_sc.inc optunifs.inc vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h vm_opts.h
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
-        {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
+        {$(VPATH)}yarvcore.h {$(VPATH)}debug.h  {$(VPATH)}ruby.h config.h\
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
         insns.inc vm.inc vmtc.inc vm_macro.inc vm_opts.h {$(VPATH)}eval_intern.h
 vm_dump.$(OBJEXT): {$(VPATH)}yarvcore.h {$(VPATH)}vm.h
