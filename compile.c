@@ -3347,15 +3347,14 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  }
 	  break;
       }
-      case NODE_CVASGN:
-      case NODE_CVDECL:{
+      case NODE_CVASGN:{
 	  COMPILE(ret, "cvasgn val", node->nd_value);
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
 	  }
 	  ADD_INSN2(ret, nd_line(node), setclassvariable,
 		    ID2SYM(node->nd_vid),
-		    nd_type(node) == NODE_CVDECL ? Qtrue : Qfalse);
+		    Qfalse);
 	  break;
       }
       case NODE_OP_ASGN1:{

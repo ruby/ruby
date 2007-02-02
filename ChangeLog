@@ -12,6 +12,12 @@ Fri Feb  2 18:27:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c: remove duplicated global variables rb_cProc and
 	  rb_cBinding.  [ruby-dev:30242]
 
+Thu Feb  1 21:04:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (assignable_gen): no need to generate NODE_CVDECL.
+
+	* compile.c (iseq_compile_each): no NODE_CVDECL.
+
 Thu Feb  1 20:53:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm.c (eval_get_cvar_base): destination for class variable access

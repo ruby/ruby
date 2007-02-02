@@ -867,8 +867,6 @@ node_name(int node)
 	return "NODE_CDECL";
     case NODE_CVASGN:
 	return "NODE_CVASGN";
-    case NODE_CVDECL:
-	return "NODE_CVDECL";
     case NODE_OP_ASGN1:
 	return "NODE_OP_ASGN1";
     case NODE_OP_ASGN2:

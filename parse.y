@@ -7304,8 +7304,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 	return NEW_CDECL(id, val, 0);
     }
     else if (is_class_id(id)) {
-	if (in_def || in_single) return NEW_CVASGN(id, val);
-	return NEW_CVDECL(id, val);
+	return NEW_CVASGN(id, val);
     }
     else {
 	rb_compile_error("identifier %s is not valid", rb_id2name(id));
@@ -7438,7 +7437,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
       case NODE_DASGN_CURR:
       case NODE_MASGN:
       case NODE_CDECL:
-      case NODE_CVDECL:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
 	break;
