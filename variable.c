@@ -1570,26 +1570,50 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     mod_av_set(klass, id, val, Qfalse);
 }
 
+#define CVAR_LOOKUP(v,r) do {\
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,(v))) {\
+	return (r);\
+    }\
+    if (FL_TEST(klass, FL_SINGLETON) ) {\
+	VALUE obj = rb_iv_get(klass, "__attached__");\
+	switch (TYPE(obj)) {\
+	  case T_MODULE:\
+	  case T_CLASS:\
+	    klass = obj;\
+	    break;\
+	  default:\
+	    klass = RCLASS(klass)->super;\
+	    break;\
+	}\
+    }\
+    else {\
+	klass = RCLASS(klass)->super;\
+    }\
+    while (klass) {\
+	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,(v))) {\
+	    return (r);\
+	}\
+	klass = RCLASS(klass)->super;\
+    }\
+} while(0)
+
 VALUE
 rb_cvar_get(VALUE klass, ID id)
 {
-    VALUE value;
+    VALUE value, tmp;
 
-    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,&value)) {
-	return value;
-    }
-
+    tmp = klass;
+    CVAR_LOOKUP(&value, value);
     rb_name_error(id,"uninitialized class variable %s in %s",
-		  rb_id2name(id), rb_class2name(klass));
+		  rb_id2name(id), rb_class2name(tmp));
     return Qnil;		/* not reached */
 }
 
 VALUE
 rb_cvar_defined(VALUE klass, ID id)
 {
-    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,0)) {
-	return Qtrue;
-    }
+    if (!klass) return Qfalse;
+    CVAR_LOOKUP(0,Qtrue);
     return Qfalse;
 }
 

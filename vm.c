@@ -1141,22 +1141,11 @@ eval_get_cvar_base(yarv_thread_t *th, yarv_iseq_t *iseq)
     NODE *cref = get_cref(iseq, th->cfp->lfp);
     VALUE klass = Qnil;
 
-    while (cref) {
+    if (cref) {
 	klass = cref->nd_clss;
-	cref = cref->nd_next;
-
-	if (cref == 0) {
-	    continue;
+	if (!cref->nd_next) {
+	    rb_warn("class variable access from toplevel");
 	}
-
-	if (NIL_P(klass) || FL_TEST(klass, FL_SINGLETON)) {
-	    if (cref->nd_next == 0) {
-		rb_warn
-		    ("class variable access from toplevel singleton method");
-	    }
-	    continue;
-	}
-	break;
     }
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class variables available");
