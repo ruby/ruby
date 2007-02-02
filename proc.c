@@ -2,8 +2,8 @@
 
   proc.c - Proc, Bindng, Env
 
-  $Author: ko1 $
-  $Date: $
+  $Author$
+  $Date$
   created at: Wed Jan 17 12:13:14 2007
 
   Copyright (C) 2004-2007 Koichi Sasada
