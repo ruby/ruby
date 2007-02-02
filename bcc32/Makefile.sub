@@ -175,6 +175,7 @@ LIBRUBYARG    = $(LIBRUBY)
 PREP          = miniruby$(EXEEXT)
 
 OBJEXT        = obj
+OBJEXT        = asm
 
 INSTALLED_LIST= .installed.list
 
@@ -188,6 +189,9 @@ MINIOBJS      = dmydln.$(OBJEXT)
 
 .c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
+
+.c.asm:
+	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -S $(<:\=/)
 
 .rc.res:
 	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)

@@ -1,4 +1,6 @@
-Sat Feb  3 02:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb  3 03:22:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, */Makefile.sub, common.mk (vmasm): generalized.
 
 	* proc.c (yarv_proc_alloc): needs return.
 

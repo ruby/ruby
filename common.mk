@@ -612,9 +612,7 @@ tbench: $(RUBY) PHONY
 aotc:
 	$(RUBY) -I$(srcdir) -I. $(srcdir)/tool/aotcompile.rb $(INSNS2VMOPT)
 
-# for GCC
-vmasm:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -S $(srcdir)/vm.c
+vmasm: vm.$(ASMEXT)
 
 # vm.o : CFLAGS += -fno-crossjumping
 

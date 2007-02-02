@@ -86,6 +86,7 @@ AS            = @AS@
 ASFLAGS       = @ASFLAGS@
 
 OBJEXT        = @OBJEXT@
+ASMEXT        = S
 MANTYPE	      = @MANTYPE@
 
 INSTALLED_LIST= .installed.list
@@ -169,6 +170,9 @@ lex.c: keywords
 
 .s.@OBJEXT@:
 	$(AS) $(ASFLAGS) -o $@ $<
+
+.c.S:
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -S $<
 
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
