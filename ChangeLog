@@ -12,6 +12,17 @@ Fri Feb  2 18:27:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c: remove duplicated global variables rb_cProc and
 	  rb_cBinding.  [ruby-dev:30242]
 
+Fri Feb  2 00:13:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (SYMBOL_P): make Symbol immediate again for performance. 
+
+	* string.c: redesign symbol methods.
+
+Thu Feb  1 23:25:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id2str): store Strings for operator symbols.
+	  [ruby-dev:30235]
+
 Thu Feb  1 21:04:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (assignable_gen): no need to generate NODE_CVDECL.

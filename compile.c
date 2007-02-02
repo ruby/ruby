@@ -2065,8 +2065,7 @@ case_when_optimizable_literal(NODE * node)
 {
     if (nd_type(node) == NODE_LIT) {
 	VALUE v = node->nd_lit;
-	VALUE klass = CLASS_OF(v);
-	if (klass == rb_cSymbol || rb_obj_is_kind_of(v, rb_cNumeric)) {
+	if (SYMBOL_P(v) || rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    return v;
 	}
     }

@@ -4227,7 +4227,7 @@ rb_str_intern(VALUE s)
     volatile VALUE str = s;
     ID id;
 
-    if (OBJ_TAINTED(str) && rb_safe_level() >= 1 && !rb_sym_interned_p(str)) {
+    if (OBJ_TAINTED(str) && rb_safe_level() >= 1) {
 	rb_raise(rb_eSecurityError, "Insecure: can't intern tainted string");
     }
     id = rb_intern2(RSTRING_PTR(str), RSTRING_LEN(str));
@@ -4631,7 +4631,7 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 static VALUE
 rb_sym_s_intern(VALUE s)
 {
-    if (rb_class_real(s) == rb_cSymbol) {
+    if (SYMBOL_P(s)) {
 	return s;
     }
     StringValue(s);
@@ -4651,48 +4651,7 @@ static VALUE
 sym_equal(VALUE sym1, VALUE sym2)
 {
     if (sym1 == sym2) return Qtrue;
-    if (SYMBOL_P(sym2)) return Qfalse;
-    return rb_str_equal(sym1, sym2);
-}
-
-/*
- * call-seq:
- *   sym.eql?(other)   => true or false
- *
- * Two symbols are equal if they are exactly same symbols.
- */
-
-static VALUE
-sym_eql(VALUE sym1, VALUE sym2)
-{
-    if (sym1 == sym2) return Qtrue;
-    if (SYMBOL_P(sym2)) return Qfalse;
-    return rb_str_eql(sym1, sym2);
-}
-
-/*
- * call-seq:
- *    sym.hash   => fixnum
- *
- * Return a hash based on the symbol's length and content.
- */
-static VALUE
-sym_hash(VALUE sym)
-{
-    int h;
-    VALUE hval;
-
-    if (STR_SHARED_P(sym)) {
-	/* if a symbol has shared value, that's a hash value. */
-	return RSTRING(sym)->as.heap.aux.shared;
-    }
-    h = rb_str_hash(sym);
-    hval = INT2FIX(h);
-    if (!STR_EMBED_P(sym)) {
-	FL_SET(sym, STR_ASSOC);
-	RSTRING(sym)->as.heap.aux.shared = hval;
-    }
-    return hval;
+    return Qfalse;
 }
 
 
@@ -4728,8 +4687,10 @@ sym_to_i(VALUE sym)
 static VALUE
 sym_inspect(VALUE sym)
 {
-    VALUE str;
+    VALUE str, klass = Qundef;
+    ID id = SYM2ID(sym);
 
+    sym = rb_id2str(id);
     str = rb_str_new(0, RSTRING_LEN(sym)+1);
     RSTRING_PTR(str)[0] = ':';
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
@@ -4737,6 +4698,10 @@ sym_inspect(VALUE sym)
 	!rb_symname_p(RSTRING_PTR(sym))) {
 	str = rb_str_dump(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
+    }
+    if (klass != Qundef) {
+	rb_str_cat2(str, "/");
+	rb_str_append(str, rb_inspect(klass));
     }
     return str;
 }
@@ -4753,10 +4718,12 @@ sym_inspect(VALUE sym)
  */
 
 
-static VALUE
-sym_to_s(VALUE sym)
+VALUE
+rb_sym_to_s(VALUE sym)
 {
-    return rb_str_new(RSTRING_PTR(sym), RSTRING_LEN(sym));
+    ID id = SYM2ID(sym);
+
+    return str_new3(rb_cString, rb_id2str(id));
 }
 
 
@@ -4809,14 +4776,73 @@ sym_to_proc(VALUE sym)
 static VALUE
 sym_succ(VALUE sym)
 {
-    return rb_str_intern(rb_str_succ(sym));
+    return rb_str_intern(rb_str_succ(rb_sym_to_s(sym)));
 }
 
-static ID
-str_to_id(VALUE str)
+static VALUE
+sym_cmp(VALUE sym, VALUE other)
 {
-    VALUE sym = rb_str_intern(str);
-    return SYM2ID(sym);
+    if (!SYMBOL_P(other)) {
+	return Qnil;
+    }
+    return rb_str_cmp_m(rb_sym_to_s(sym), rb_sym_to_s(other));
+}
+
+static VALUE
+sym_casecmp(VALUE sym, VALUE other)
+{
+    if (!SYMBOL_P(other)) {
+	return Qnil;
+    }
+    return rb_str_casecmp(rb_sym_to_s(sym), rb_sym_to_s(other));
+}
+
+static VALUE
+sym_match(VALUE sym, VALUE other)
+{
+    return rb_str_match(rb_sym_to_s(sym), other);
+}
+
+static VALUE
+sym_aref(int argc, VALUE *argv, VALUE sym)
+{
+    return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
+}
+
+static VALUE
+sym_length(VALUE sym)
+{
+    return rb_str_length(rb_id2str(SYM2ID(sym)));
+}
+
+static VALUE
+sym_empty(VALUE sym)
+{
+    return rb_str_empty(rb_id2str(SYM2ID(sym)));
+}
+
+static VALUE
+sym_upcase(VALUE sym)
+{
+    return rb_str_intern(rb_str_upcase(rb_id2str(SYM2ID(sym))));
+}
+
+static VALUE
+sym_downcase(VALUE sym)
+{
+    return rb_str_intern(rb_str_downcase(rb_id2str(SYM2ID(sym))));
+}
+
+static VALUE
+sym_capitalize(VALUE sym)
+{
+    return rb_str_intern(rb_str_capitalize(rb_id2str(SYM2ID(sym))));
+}
+
+static VALUE
+sym_swapcase(VALUE sym)
+{
+    return rb_str_intern(rb_str_swapcase(rb_id2str(SYM2ID(sym))));
 }
 
 ID
@@ -4826,24 +4852,18 @@ rb_to_id(VALUE name)
     ID id;
 
     switch (TYPE(name)) {
-      case T_STRING:
-	return str_to_id(name);
-      case T_FIXNUM:
-	rb_warn("do not use Fixnums as Symbols");
-	id = FIX2LONG(name);
-	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "%ld is not a symbol", id);
-	}
-	break;
-      case T_SYMBOL:
-	return SYM2ID(name);
-	break;
       default:
 	tmp = rb_check_string_type(name);
-	if (!NIL_P(tmp)) {
-	    return str_to_id(tmp);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "%s is not a symbol",
+		     RSTRING_PTR(rb_inspect(name)));
 	}
-	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING_PTR(rb_inspect(name)));
+	name = tmp;
+      case T_STRING:
+	name = rb_str_intern(name);
+	/* fall through */
+      case T_SYMBOL:
+	return SYM2ID(name);
     }
     return id;
 }
@@ -4989,60 +5009,30 @@ Init_String(void)
     rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
-    rb_define_method(rb_cSymbol, "eql?", sym_eql, 1);
-    rb_define_method(rb_cSymbol, "hash", sym_hash, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
-    rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);
-
-    rb_define_method(rb_cSymbol, "<=>", rb_str_cmp_m, 1);
-    rb_define_method(rb_cSymbol, "casecmp", rb_str_casecmp, 1);
-    rb_define_method(rb_cSymbol, "+", rb_str_plus, 1);
-    rb_define_method(rb_cSymbol, "*", rb_str_times, 1);
-    rb_define_method(rb_cSymbol, "%", rb_str_format_m, 1);
-    rb_define_method(rb_cSymbol, "[]", rb_str_aref_m, -1);
-    rb_define_method(rb_cSymbol, "length", rb_str_length, 0);
-    rb_define_method(rb_cSymbol, "size", rb_str_length, 0);
-    rb_define_method(rb_cSymbol, "empty?", rb_str_empty, 0);
-    rb_define_method(rb_cSymbol, "=~", rb_str_match, 1);
-    rb_define_method(rb_cSymbol, "match", rb_str_match_m, -1);
-    rb_define_method(rb_cSymbol, "index", rb_str_index_m, -1);
-    rb_define_method(rb_cSymbol, "rindex", rb_str_rindex_m, -1);
-    rb_define_method(rb_cSymbol, "chr", rb_str_chr, 0);
-
-    rb_define_method(rb_cSymbol, "to_f", rb_str_to_f, 0);
-    rb_define_method(rb_cSymbol, "to_str", rb_str_to_s, 0);
     rb_define_method(rb_cSymbol, "dump", rb_str_dump, 0);
 
-    rb_define_method(rb_cSymbol, "upcase", rb_str_upcase, 0);
-    rb_define_method(rb_cSymbol, "downcase", rb_str_downcase, 0);
-    rb_define_method(rb_cSymbol, "capitalize", rb_str_capitalize, 0);
-    rb_define_method(rb_cSymbol, "swapcase", rb_str_swapcase, 0);
+    rb_define_method(rb_cSymbol, "<=>", sym_cmp, 1);
+    rb_define_method(rb_cSymbol, "casecmp", sym_casecmp, 1);
+    rb_define_method(rb_cSymbol, "=~", sym_match, 1);
 
-    rb_define_method(rb_cSymbol, "ord", rb_str_ord, 0);
+    rb_define_method(rb_cSymbol, "[]", sym_aref, -1);
+    rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
+    rb_define_method(rb_cSymbol, "length", sym_length, 0);
+    rb_define_method(rb_cSymbol, "size", sym_length, 0);
+    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
+    rb_define_method(rb_cSymbol, "match", sym_match, -1);
 
-    rb_define_method(rb_cSymbol, "include?", rb_str_include, 1);
-    rb_define_method(rb_cSymbol, "start_with?", rb_str_start_with, -1);
-    rb_define_method(rb_cSymbol, "end_with?", rb_str_end_with, -1);
-
-    rb_define_method(rb_cSymbol, "scan", rb_str_scan, 1);
-
-    rb_define_method(rb_cSymbol, "sub", rb_str_sub, -1);
-    rb_define_method(rb_cSymbol, "gsub", rb_str_gsub, -1);
- 
-    rb_define_method(rb_cSymbol, "tr", rb_str_tr, 2);
-    rb_define_method(rb_cSymbol, "tr_s", rb_str_tr_s, 2);
-    rb_define_method(rb_cSymbol, "delete", rb_str_delete, -1);
-    rb_define_method(rb_cSymbol, "squeeze", rb_str_squeeze, -1);
-    rb_define_method(rb_cSymbol, "count", rb_str_count, -1);
-
-    rb_define_method(rb_cSymbol, "each_byte", rb_str_each_byte, 0);
-
-    rb_define_method(rb_cSymbol, "slice", rb_str_aref_m, -1);
+    rb_define_method(rb_cSymbol, "upcase", sym_upcase, 0);
+    rb_define_method(rb_cSymbol, "downcase", sym_downcase, 0);
+    rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, 0);
+    rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
 }
