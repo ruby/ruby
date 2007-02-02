@@ -126,7 +126,7 @@ proc_alloc(VALUE klass)
 VALUE
 yarv_proc_alloc(void)
 {
-    proc_alloc(rb_cProc);
+    return proc_alloc(rb_cProc);
 }
 
 VALUE

@@ -1,3 +1,7 @@
+Sat Feb  3 00:49:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (yarv_proc_alloc): needs return.
+
 Fri Feb  2 23:39:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* common.mk (bin): add more dependency.  a patch from Tadashi
