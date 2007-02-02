@@ -918,7 +918,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
-			// local_push(0);
+			/* local_push(0); */
 		    /*%
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
@@ -930,8 +930,8 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%%%*/
 			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
 							    $4);
-			// NEW_PREEXE($4));
-		        // local_pop();
+			/* NEW_PREEXE($4)); */
+		        /* local_pop(); */
 		        $$ = 0;
 		    /*%
 			$$ = dispatch1(BEGIN, $4);

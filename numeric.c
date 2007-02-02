@@ -179,7 +179,7 @@ rb_num_coerce_relop(VALUE x, VALUE y)
 static VALUE
 num_sadded(VALUE x, VALUE name)
 {
-  // ruby_frame = ruby_frame->prev; /* pop frame for "singleton_method_added" */
+    /* ruby_frame = ruby_frame->prev; */ /* pop frame for "singleton_method_added" */
     /* Numerics should be values; singleton_methods should not be added to them */
     rb_raise(rb_eTypeError,
 	     "can't define singleton method \"%s\" for %s",

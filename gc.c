@@ -487,7 +487,7 @@ rb_fill_value_cache(yarv_thread_t *th)
     int i;
     VALUE rv;
 
-    // LOCK
+    /* LOCK */
     for (i=0; i<YARV_VALUE_CACHE_SIZE; i++) {
 	VALUE v = rb_newobj_from_heap();
 	
@@ -496,7 +496,7 @@ rb_fill_value_cache(yarv_thread_t *th)
     }
     th->value_cache_ptr = &th->value_cache[0];
     rv = rb_newobj_from_heap();
-    // UNLOCK
+    /* UNLOCK */
     return rv;
 }
 #endif

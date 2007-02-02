@@ -47,9 +47,9 @@ w32_show_error_message()
 		  GetLastError(),
 		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		  (LPTSTR) & lpMsgBuf, 0, NULL);
-    // {int *a=0; *a=0;}
+    /* {int *a=0; *a=0;} */
     MessageBox(NULL, (LPCTSTR) lpMsgBuf, "Error", MB_OK | MB_ICONINFORMATION);
-    //  exit(1);
+    /*  exit(1); */
 }
 
 static int
@@ -192,7 +192,7 @@ native_mutex_initialize(yarv_thread_lock_t *lock)
 {
 #if USE_WIN32MUTEX
     *lock = CreateMutex(NULL, FALSE, NULL);
-    // thread_debug("initialize mutex: %p\n", *lock);
+    /* thread_debug("initialize mutex: %p\n", *lock); */
 #else
     InitializeCriticalSection(lock);
 #endif
@@ -215,7 +215,7 @@ thread_start_func_1(void *th_ptr)
     thread_start_func_2(th, &stack_start);
     thread_cleanup_func(th);
 
-    // native_mutex_unlock(&GET_VM()->global_interpreter_lock);
+    /* native_mutex_unlock(&GET_VM()->global_interpreter_lock); */
 
     thread_debug("close handle - intr: %p, thid: %p\n",
 		 th->native_thread_data.interrupt_event, th->thread_id);

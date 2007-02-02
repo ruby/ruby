@@ -266,7 +266,7 @@ static void call_end_proc _((VALUE data));
 static void
 call_end_proc(VALUE data)
 {
-    // TODO: fix me
+    /* TODO: fix me */
     proc_invoke(data, rb_ary_new2(0), Qundef, 0);
 }
 

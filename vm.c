@@ -639,7 +639,7 @@ th_yield_setup_args(yarv_iseq_t *iseq, int argc, VALUE *argv)
 	}
     }
     else {
-	if (argc == 1 && TYPE(argv[0]) == T_ARRAY) {// && iseq->arg_rest == 0) {
+	if (argc == 1 && TYPE(argv[0]) == T_ARRAY /* && iseq->arg_rest == 0 */) {
 	    VALUE ary = argv[0];
 	    argc = RARRAY_LEN(ary);
 
@@ -965,11 +965,10 @@ check_svar(void)
     yarv_thread_t *th = GET_THREAD();
     yarv_control_frame_t *cfp = th->cfp;
     while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
-//	printf("cfp: %p\n", cfp->magic);
-	if(cfp->lfp)
-	if(cfp->lfp[-1] != Qnil &&
-	   TYPE(cfp->lfp[-1]) != T_VALUES){
-//	    dp(cfp->lfp[-1]);
+	/* printf("cfp: %p\n", cfp->magic); */
+	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
+	    TYPE(cfp->lfp[-1]) != T_VALUES) {
+	    /* dp(cfp->lfp[-1]); */
 	    rb_bug("!!!illegal svar!!!");
 	}
 	cfp++;

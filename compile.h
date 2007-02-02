@@ -213,4 +213,4 @@ r_value(VALUE value)
   LINK_ANCHOR  name##_body__ = {{0,}, &name##_body__.anchor}; \
   LINK_ANCHOR *name = & name##_body__
 
-#endif // _COMPILER_H_INCLUDED_
+#endif /* _COMPILER_H_INCLUDED_ */

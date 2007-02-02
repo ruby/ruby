@@ -35,15 +35,10 @@ typedef long OFFSET;
  * 10: gc check
  */
 
-//#define VMDEBUG 1
-//#define VMDEBUG 5
-
 #if 0
 #undef  VMDEBUG
 #define VMDEBUG 3
 #endif
-
-// #define COLLECT_USAGE_ANALYSIS
 
 #ifdef  COLLECT_USAGE_ANALYSIS
 #define USAGE_ANALYSIS_INSN(insn)           vm_analysis_insn(insn)
@@ -84,7 +79,7 @@ typedef long OFFSET;
 #endif
 
 #define throwdebug if(0)printf
-//#define throwdebug printf
+/* #define throwdebug printf */
 
 #define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
 
@@ -287,4 +282,4 @@ default:                        \
 #define BOP_LENGTH  0x800
 #define BOP_SUCC   0x1000
 
-#endif // _VM_H_INCLUDED_
+#endif /* _VM_H_INCLUDED_ */

@@ -514,7 +514,7 @@ rb_remove_event_hook(rb_event_hook_func_t func)
 static void
 rb_clear_trace_func(void)
 {
-    // TODO: fix me
+    /* TODO: fix me */
 }
 
 /*
@@ -575,8 +575,8 @@ set_trace_func(VALUE obj, VALUE trace)
 	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
     }
 
-    // register trace func
-    // trace_func = trace;
+    /* register trace func */
+    /* trace_func = trace; */
 
     for (hook = event_hooks; hook; hook = hook->next) {
 	if (hook->func == call_trace_func)
@@ -614,7 +614,7 @@ get_event_name(rb_event_t event)
 static void
 call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass)
 {
-    // TODO: fix me
+    /* TODO: fix me */
 #if 0
     int state, raised;
     NODE *node_save;
@@ -905,9 +905,11 @@ rb_longjmp(tag, mesg)
     VALUE at;
     yarv_thread_t *th = GET_THREAD();
 
+    /*
     //while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
     //th->cfp++;
     //}
+    */
 
     if (thread_set_raised(th)) {
 	th->errinfo = exception_error;
@@ -955,7 +957,7 @@ rb_longjmp(tag, mesg)
 
     rb_trap_restore_mask();
     if (tag != TAG_FATAL) {
-	// EXEC_EVENT_HOOK(RUBY_EVENT_RAISE ...)
+	/* EXEC_EVENT_HOOK(RUBY_EVENT_RAISE ...) */
     }
     thread_reset_raised(th);
     JUMP_TAG(tag);
@@ -1072,7 +1074,7 @@ void
 rb_raise_jump(mesg)
     VALUE mesg;
 {
-    // TODO: fix me
+    /* TODO: fix me */
     rb_longjmp(TAG_RAISE, mesg);
 }
 
@@ -1271,7 +1273,7 @@ rb_iterate(VALUE (*it_proc) (VALUE), VALUE data1,
 		th->cfp = cfp;
 	    }
 	    else{
-		// SDR(); printf("%p, %p\n", cdfp, escape_dfp);
+		/* SDR(); printf("%p, %p\n", cdfp, escape_dfp); */
 	    }
 	}
 	else if (state == TAG_RETRY) {
@@ -1432,8 +1434,8 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 	result = (*b_proc) (data1);
     }
     POP_TAG();
-    // TODO: fix me
-    // retval = prot_tag ? prot_tag->retval : Qnil;     /* save retval */
+    /* TODO: fix me */
+    /* retval = prot_tag ? prot_tag->retval : Qnil; */     /* save retval */
     (*e_proc) (data2);
     if (state)
 	JUMP_TAG(state);
@@ -1646,18 +1648,22 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 
     {
 	VALUE val;
+	/*
 	//static int level;
 	//int i;
 	//for(i=0; i<level; i++){printf("  ");}
 	//printf("invoke %s (%s)\n", rb_id2name(mid), node_name(nd_type(body)));
 	//level++;
 	//printf("%s with %d args\n", rb_id2name(mid), argc);
+	*/
 	val =
 	    th_call0(GET_THREAD(), klass, recv, mid, id, argc, argv, body,
 		     noex & NOEX_NOSUPER);
+	/*
 	//level--;
 	//for(i=0; i<level; i++){printf("  ");}
 	//printf("done %s (%s)\n", rb_id2name(mid), node_name(nd_type(body)));
+	*/
 	return val;
     }
 }
@@ -1958,7 +1964,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	th->parse_in_eval--;
 	th_set_eval_stack(th, iseqval);
 	th->base_block = 0;
-	if (0) {		// for debug
+	if (0) {		/* for debug */
 	    printf("%s\n", RSTRING_PTR(iseq_disasm(iseqval)));
 	}
 
@@ -2075,7 +2081,7 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
     pcfp->self = self;
     if ((blockptr = GC_GUARDED_PTR_REF(*th->cfp->lfp)) != 0) {
 	/* copy block info */
-	// TODO: why?
+	/* TODO: why? */
 	block = *blockptr;
 	block.self = self;
 	*th->cfp->lfp = GC_GUARDED_PTR(&block);
@@ -2956,9 +2962,9 @@ rb_dvar_defined(ID id)
 	       iseq->type == ISEQ_TYPE_ENSURE ||
 	       iseq->type == ISEQ_TYPE_EVAL) {
 	    int i;
-	    // printf("local size: %d\n", iseq->local_size);
+	    /* printf("local size: %d\n", iseq->local_size); */
 	    for (i = 0; i < iseq->local_size; i++) {
-		// printf("id (%4d): %s\n", i, rb_id2name(iseq->local_tbl[i]));
+		/* printf("id (%4d): %s\n", i, rb_id2name(iseq->local_tbl[i])); */
 		if (iseq->local_tbl[i] == id) {
 		    return Qtrue;
 		}

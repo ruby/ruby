@@ -1,6 +1,15 @@
-Sat Feb  3 00:49:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb  3 01:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (yarv_proc_alloc): needs return.
+
+	* call_cfunc.ci, compile.c, compile.h, debug.h, eval.c,
+	  eval_error.h, eval_jump.h, eval_load.c, eval_thread.c, gc.c,
+	  insnhelper.h, insns.def, iseq.c, main.c, numeric.c, parse.y,
+	  range.c, ruby.h, signal.c, thread.c, thread_win32.ci, vm.c,
+	  vm.h, vm_dump.c, vm_evalbody.ci, yarvcore.c, yarvcore.h:
+	  fixed indents and non-C90 comments.
+
+	* regenc.h: revert to before YARV.
 
 Fri Feb  2 23:39:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

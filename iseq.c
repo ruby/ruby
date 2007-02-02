@@ -17,7 +17,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-// #define MARK_FREE_DEBUG 1
+/* #define MARK_FREE_DEBUG 1 */
 #include "gc.h"
 
 VALUE rb_cISeq;
@@ -388,7 +388,7 @@ compile_string(VALUE str, VALUE file, VALUE line)
 
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
-	rb_exc_raise(GET_THREAD()->errinfo);	// TODO: check err
+	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
     }
     return node;
 }
@@ -496,7 +496,7 @@ find_line_no(yarv_iseq_t *iseqdat, unsigned long pos)
 	    return iiary[i].line_no;
 	}
     }
-    // rb_bug("find_line_no: can't find %lu", pos);
+    /* rb_bug("find_line_no: can't find %lu", pos); */
     return 0;
 }
 

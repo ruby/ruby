@@ -702,7 +702,7 @@ new_child_iseq(yarv_iseq_t *iseq, NODE *node,
 static int
 iseq_setup(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
-    //  debugs("[compile step 2] (iseq_array_to_linkedlist)\n");
+    /* debugs("[compile step 2] (iseq_array_to_linkedlist)\n"); */
 
     GC_CHECK();
     if (CPDEBUG > 5)
@@ -1256,7 +1256,7 @@ set_sequence(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    }
 		}
 
-		// fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp);
+		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
 
 		operands = iobj->operands;
 		insn = iobj->insn_id;
@@ -1274,7 +1274,7 @@ set_sequence(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 		for (j = 0; types[j]; j++) {
 		    char type = types[j];
-		    // printf("--> [%c - (%d-%d)]\n", type, k, j);
+		    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
 		    switch (type) {
 		    case TS_OFFSET:{
 			    /* label(destination position) */
@@ -1448,7 +1448,7 @@ set_exception_table(yarv_iseq_t *iseq)
 	    entry->cont = 0;
 	}
     }
-    //
+
     iseq->compile_data->catch_table_ary = 0;	/* free */
     return COMPILE_OK;
 }
@@ -1600,8 +1600,8 @@ iseq_peephole_optimize(yarv_iseq_t *iseq, LINK_ELEMENT *list)
 	if (piobj->insn_id == BIN(send)) {
 	    /* TODO: tail call optimization */
 	    if (piobj->operands[2] == 0) {
-		//piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILCALL_BIT);
-		//piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILRECURSION_BIT);
+		/* piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILCALL_BIT); */
+		/* piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILRECURSION_BIT); */
 	    }
 	}
     }
@@ -1869,7 +1869,7 @@ set_sequence_stackcaching(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
     /* initialize */
     state = SCS_XX;
     list = FIRST_ELEMENT(anchor);
-    // dump_disasm_list(list);
+    /* dump_disasm_list(list); */
 
     /* for each list element */
     while (list) {
@@ -1879,7 +1879,7 @@ set_sequence_stackcaching(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 		INSN *iobj = (INSN *)list;
 		insn_id = iobj->insn_id;
 
-		// dump_disasm_list(list);
+		/* dump_disasm_list(list); */
 
 		switch (insn_id) {
 		case BIN(nop):{
@@ -2133,11 +2133,11 @@ make_masgn_lhs(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
     default:{
 	    DECL_ANCHOR(anchor);
 	    COMPILE_POPED(anchor, "masgn lhs", node);
-	    // dump_disasm_list(FIRST_ELEMENT(anchor));
+	    /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
 	    REMOVE_ELEM(FIRST_ELEMENT(anchor));
-	    // dump_disasm_list(FIRST_ELEMENT(anchor));
+	    /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
 	    ADD_SEQ(ret, anchor);
-	    // ADD_ELEM(ret, LAST_ELEMENT(anchor));
+	    /* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
 	}
     }
 
@@ -2249,7 +2249,7 @@ compile_massign(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
 		COMPILE(ret, "rhs to ary (splat/default)", rhsn);
 		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
 			  INT2FIX(lhs_splat));
-		// rb_bug("unknown rhs: %s", node_name(nd_type(rhsn)));
+		/* rb_bug("unknown rhs: %s", node_name(nd_type(rhsn))); */
 	    }
 	}
 	else {
@@ -2464,7 +2464,7 @@ defined_expr(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	  ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish);
 	  return 1;
-	  // rb_bug("unimplemented defined: %s", node_name(nd_type(node)));
+	  /* rb_bug("unimplemented defined: %s", node_name(nd_type(node))); */
       }			/* end of default */
     }
 
@@ -4791,7 +4791,7 @@ iseq_build_body(yarv_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    VALUE insn_id;
 
 	    if (st_lookup(insn_table, rb_ary_entry(obj, 0), &insn_id) == 0) {
-		// TODO: exception
+		/* TODO: exception */
 		rb_bug("unknown instruction: ");
 	    }
 

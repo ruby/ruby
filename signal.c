@@ -307,7 +307,7 @@ int rb_prohibit_interrupt = 1;
 VALUE
 rb_get_trap_cmd(int sig)
 {
-  return trap_list[sig].cmd;
+    return trap_list[sig].cmd;
 }
 
 void
@@ -498,41 +498,41 @@ rb_trap_exit(void)
 void
 rb_signal_exec(yarv_thread_t *th, int sig)
 {
-  VALUE cmd = rb_get_trap_cmd(sig);
+    VALUE cmd = rb_get_trap_cmd(sig);
 
-  if (cmd == 0) {
-    switch (sig) {
-    case SIGINT:
-      rb_interrupt();
-      break;
+    if (cmd == 0) {
+	switch (sig) {
+	  case SIGINT:
+	    rb_interrupt();
+	    break;
 #ifdef SIGHUP
-    case SIGHUP:
+	  case SIGHUP:
 #endif
 #ifdef SIGQUIT
-    case SIGQUIT:
+	  case SIGQUIT:
 #endif
 #ifdef SIGALRM
-    case SIGALRM:
+	  case SIGALRM:
 #endif
 #ifdef SIGUSR1
-    case SIGUSR1:
+	  case SIGUSR1:
 #endif
 #ifdef SIGUSR2
-    case SIGUSR2:
+	  case SIGUSR2:
 #endif
-      rb_thread_signal_raise(th, signo2signm(sig));
-      break;
+	    rb_thread_signal_raise(th, signo2signm(sig));
+	    break;
+	}
     }
-  }
-  else if (cmd == Qundef) {
-    rb_thread_signal_exit(th);
-  }
-  else {
-    yarv_proc_t *proc;
-    VALUE signum = INT2FIX(sig);
-    GetProcPtr(cmd, proc);
-    th_invoke_proc(th, proc, proc->block.self, 1, &signum);
-  }
+    else if (cmd == Qundef) {
+	rb_thread_signal_exit(th);
+    }
+    else {
+	yarv_proc_t *proc;
+	VALUE signum = INT2FIX(sig);
+	GetProcPtr(cmd, proc);
+	th_invoke_proc(th, proc, proc->block.self, 1, &signum);
+    }
 }
 
 void
@@ -544,7 +544,7 @@ rb_trap_exec(void)
     for (i=0; i<NSIG; i++) {
 	if (trap_pending_list[i]) {
 	    trap_pending_list[i] = 0;
-          rb_signal_exec(GET_THREAD(), i);
+	    rb_signal_exec(GET_THREAD(), i);
 	}
     }
 #endif /* MACOS_UNUSE_SIGNAL */

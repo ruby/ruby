@@ -211,7 +211,7 @@ load_wait(char *ftptr)
 	return Qfalse;
     }
 
-    // TODO: write wait routine
+    /* TODO: write wait routine */
     return Qtrue;
 }
 
@@ -376,7 +376,7 @@ rb_require_safe(VALUE fname, int safe)
 		    ruby_current_node = 0;
 		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
 		    ruby_sourceline = 0;
-		    //SCOPE_SET(NOEX_PUBLIC);
+		    /* SCOPE_SET(NOEX_PUBLIC); */
 		    handle = (long)dln_load(RSTRING_PTR(path));
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;

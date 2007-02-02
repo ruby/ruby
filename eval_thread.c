@@ -359,7 +359,7 @@ void
 rb_thread_fd_close(fd)
     int fd;
 {
-    // TODO: fix me
+    /* TODO: fix me */
 }
 
 VALUE

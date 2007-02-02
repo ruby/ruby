@@ -625,7 +625,7 @@ checkincludearray
     if (flag == Qtrue) {
 	/* NODE_CASE */
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    // TODO: fix me (use another method dispatch)
+	    /* TODO: fix me (use another method dispatch) */
 	    if (RTEST(rb_funcall2(RARRAY_PTR(ary)[i], idEqq, 1, &obj))) {
 		result = Qtrue;
 		break;

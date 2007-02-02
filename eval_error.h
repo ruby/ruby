@@ -203,37 +203,37 @@ error_handle(int ex)
     if (thread_set_raised(th))
 	return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
-    case 0:
+      case 0:
 	status = EXIT_SUCCESS;
 	break;
 
-    case TAG_RETURN:
+      case TAG_RETURN:
 	error_pos();
 	warn_print(": unexpected return\n");
 	break;
-    case TAG_NEXT:
+      case TAG_NEXT:
 	error_pos();
 	warn_print(": unexpected next\n");
 	break;
-    case TAG_BREAK:
+      case TAG_BREAK:
 	error_pos();
 	warn_print(": unexpected break\n");
 	break;
-    case TAG_REDO:
+      case TAG_REDO:
 	error_pos();
 	warn_print(": unexpected redo\n");
 	break;
-    case TAG_RETRY:
+      case TAG_RETRY:
 	error_pos();
 	warn_print(": retry outside of rescue clause\n");
 	break;
-    case TAG_THROW:
-	// TODO: fix me
+      case TAG_THROW:
+	/* TODO: fix me */
 	error_pos();
 	warn_printf(": unexpected throw\n");
 	break;
-    case TAG_RAISE:
-    case TAG_FATAL:
+      case TAG_RAISE:
+      case TAG_FATAL:
 	if (rb_obj_is_kind_of(GET_THREAD()->errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(GET_THREAD()->errinfo);
 	}
@@ -241,7 +241,7 @@ error_handle(int ex)
 	    error_print();
 	}
 	break;
-    default:
+      default:
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }

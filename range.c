@@ -684,7 +684,7 @@ range_include(VALUE range, VALUE val)
 	}
 	return Qfalse;
     }
-    // TODO: ruby_frame->this_func = rb_intern("include?");
+    /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);
 }
 

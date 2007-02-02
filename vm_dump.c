@@ -31,7 +31,7 @@ control_frame_dump(yarv_thread_t *th, yarv_control_frame_t *cfp)
     VALUE tmp;
 
     if (cfp->block_iseq != 0 && BUILTIN_TYPE(cfp->block_iseq) != T_NODE) {
-	biseq_name = "";	//RSTRING(cfp->block_iseq->name)->ptr;
+	biseq_name = "";	/* RSTRING(cfp->block_iseq->name)->ptr; */
     }
 
     if (lfp < 0 || lfp > th->stack_size) {
@@ -306,7 +306,7 @@ stack_dump_each(yarv_thread_t *th, yarv_control_frame_t *cfp)
 	    stack_dump_each(th, cfp + 1);
 	}
 	else {
-	    // SDR();
+	    /* SDR(); */
 	}
     }
     else {
@@ -379,10 +379,10 @@ debug_print_post(yarv_thread_t *th, yarv_control_frame_t *cfp
     fprintf(stderr, "        (2)");
     debug_print_register(th);
 #endif
-    // stack_dump_raw(th, cfp);
+    /* stack_dump_raw(th, cfp); */
 
 #if VMDEBUG > 2
-    // stack_dump_thobj(th);
+    /* stack_dump_thobj(th); */
     stack_dump_each(th, th->cfp);
 #if OPT_STACK_CACHING
     {
@@ -512,13 +512,13 @@ vm_analysis_register(int reg, int isset)
     VALUE rhash;
     VALUE valstr;
     char *regstrs[] = {
-	"pc",			// 0
-	"sp",			// 1
-	"cfp",			// 2
-	"lfp",			// 3
-	"dfp",			// 4
-	"self",			// 5
-	"iseq",			// 6
+	"pc",			/* 0 */
+	"sp",			/* 1 */
+	"cfp",			/* 2 */
+	"lfp",			/* 3 */
+	"dfp",			/* 4 */
+	"self",			/* 5 */
+	"iseq",			/* 6 */
     };
     char *getsetstr[] = {
 	"get",

@@ -164,7 +164,7 @@ compile_string(VALUE str, VALUE file, VALUE line)
 
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
-	rb_exc_raise(GET_THREAD()->errinfo);	// TODO: check err
+	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
     }
     return node;
 }
@@ -229,10 +229,10 @@ vm_free(void *ptr)
 	yarv_vm_t *vmobj = ptr;
 
 	st_free_table(vmobj->living_threads);
-	// TODO: MultiVM Instance
-	// VM object should not be cleaned by GC
-	// ruby_xfree(ptr);
-	// theYarvVM = 0;
+	/* TODO: MultiVM Instance */
+	/* VM object should not be cleaned by GC */
+	/* ruby_xfree(ptr); */
+	/* theYarvVM = 0; */
     }
     FREE_REPORT_LEAVE("vm");
 }

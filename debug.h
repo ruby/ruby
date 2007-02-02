@@ -44,4 +44,4 @@ void gc_check_func();
 
 #endif
 
-#endif // _DEBUG_H_INCLUDED_
+#endif /* _DEBUG_H_INCLUDED_ */

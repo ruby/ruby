@@ -24,7 +24,7 @@
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
-// #define DECL_SC_REG(r, reg) VALUE reg_##r
+/* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
 typedef yarv_iseq_t *ISEQ;
 

@@ -339,22 +339,22 @@ typedef struct yarv_vm_struct {
 } yarv_vm_t;
 
 typedef struct {
-    VALUE *pc;			// cfp[0]
-    VALUE *sp;			// cfp[1]
-    VALUE *bp;			// cfp[2]
-    yarv_iseq_t *iseq;		// cfp[3]
-    VALUE magic;		// cfp[4]
-    VALUE self;			// cfp[5] // block[0]
-    VALUE *lfp;			// cfp[6] // block[1]
-    VALUE *dfp;			// cfp[7] // block[2]
-    yarv_iseq_t *block_iseq;	// cfp[8] // block[3]
-    VALUE proc;			// cfp[9] // block[4]
-    ID callee_id;               // cfp[10]
-    ID method_id;               // cfp[11] saved in special case
-    VALUE method_klass;         // cfp[12] saved in special case
-    VALUE prof_time_self;       // cfp[13]
-    VALUE prof_time_chld;       // cfp[14]
-    VALUE dummy;                // cfp[15]
+    VALUE *pc;			/* cfp[0] */
+    VALUE *sp;			/* cfp[1] */
+    VALUE *bp;			/* cfp[2] */
+    yarv_iseq_t *iseq;		/* cfp[3] */
+    VALUE magic;		/* cfp[4] */
+    VALUE self;			/* cfp[5] / block[0] */
+    VALUE *lfp;			/* cfp[6] / block[1] */
+    VALUE *dfp;			/* cfp[7] / block[2] */
+    yarv_iseq_t *block_iseq;	/* cfp[8] / block[3] */
+    VALUE proc;			/* cfp[9] / block[4] */
+    ID callee_id;               /* cfp[10] */
+    ID method_id;               /* cfp[11] saved in special case */
+    VALUE method_klass;         /* cfp[12] saved in special case */
+    VALUE prof_time_self;       /* cfp[13] */
+    VALUE prof_time_chld;       /* cfp[14] */
+    VALUE dummy;                /* cfp[15] */
 } yarv_control_frame_t;
 
 typedef struct {
@@ -636,4 +636,4 @@ void yarv_thread_execute_interrupts(yarv_thread_t *);
 #define YARV_CHECK_INTS() \
   YARV_CHECK_INTS_TH(GET_THREAD())
 
-#endif // _YARVCORE_H_INCLUDED_
+#endif /* _YARVCORE_H_INCLUDED_ */

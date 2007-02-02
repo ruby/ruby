@@ -657,7 +657,7 @@ yarv_thread_execute_interrupts(yarv_thread_t *th)
 void
 rb_gc_mark_threads()
 {
-    // TODO: remove
+    /* TODO: remove */
 }
 
 /*****************************************************/
@@ -678,7 +678,7 @@ yarv_thread_raise(int argc, VALUE *argv, yarv_thread_t *th)
     }
 
     exc = rb_make_exception(argc, argv);
-    // TODO: need synchronization if run threads in parallel
+    /* TODO: need synchronization if run threads in parallel */
     th->throwed_errinfo = exc;
     rb_thread_ready(th);
     return Qnil;

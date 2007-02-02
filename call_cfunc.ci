@@ -9,7 +9,7 @@ call_cfunc(func, recv, len, argc, argv)
     int len, argc;
     const VALUE *argv;
 {
-    // printf("len: %d, argc: %d\n", len, argc);
+    /* printf("len: %d, argc: %d\n", len, argc); */
 
     if (len >= 0 && argc != len) {
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",

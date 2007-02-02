@@ -143,4 +143,4 @@
 #define BASIC_OP_UNREDEFINED_P(op) ((yarv_redefined_flag & (op)) == 0)
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
-#endif // _INSNHELPER_H_INCLUDED_
+#endif /* _INSNHELPER_H_INCLUDED_ */
