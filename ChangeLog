@@ -1,3 +1,8 @@
+Sun Feb  4 02:22:59 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): Remove a debug
+	  print.
+
 Sat Feb  3 14:32:58 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2olevariantdata, ole_val2variant):

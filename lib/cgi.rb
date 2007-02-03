@@ -1032,7 +1032,6 @@ class CGI
           ""
         end
 
-        p body
         body.rewind
 
         /Content-Disposition:.* filename="?([^\";]*)"?/ni.match(head)
