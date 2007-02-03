@@ -1,3 +1,15 @@
+Sat Feb  3 14:32:58 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata, ole_val2variant):
+	  fix the bug of WIN32OLE_VARIANT.new when variant type is 
+	  VT_ARRAY.
+
+	* ext/win32ole/sample/excel1.rb: rewrite using WIN32OLE_VARIANT.
+
+	* test/win32ole/test_win32ole.rb: add some test.
+
+	* test/win32ole/test_win32ole_variant.rb: ditto.
+
 Sat Feb  3 03:35:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, */Makefile.sub, common.mk (vmasm): generalized.

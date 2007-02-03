@@ -93,6 +93,25 @@ if defined?(WIN32OLE_VARIANT)
     def test_create_vt_array
       obj = WIN32OLE_VARIANT.new([1.2, 2.3], WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_R8)
       assert_equal([1.2, 2.3], obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_R8, obj.vartype)
+    end
+
+    def test_create_vt_array2
+      obj = WIN32OLE_VARIANT.new([1.2, "a"], WIN32OLE::VARIANT::VT_ARRAY)
+      assert_equal([1.2, "a"], obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_VARIANT, obj.vartype)
+
+      obj = WIN32OLE_VARIANT.new([1.2, "a"])
+      assert_equal([1.2, "a"], obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_VARIANT, obj.vartype)
+    end
+
+    def test_create_vt_nested_array
+      obj = WIN32OLE_VARIANT.new([[1.2, "a", "b"], [3.4, "C", "D"]], WIN32OLE::VARIANT::VT_ARRAY)
+      assert_equal([[1.2, "a", "b"], [3.4, "C", "D"]], obj.value)
+
+      obj = WIN32OLE_VARIANT.new([[1.2, "a", "b"], [3.4, "C", "D"]])
+      assert_equal([[1.2, "a", "b"], [3.4, "C", "D"]], obj.value)
     end
 
     def test_create_vt_array_exc

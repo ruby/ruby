@@ -119,6 +119,19 @@ if defined?(WIN32OLE)
       assert_equal("BAR", @dict1["foo"])
     end
 
+    def test_invoke_with_array
+      @dict1.add("ary1", [1,2,3])
+      assert_equal([1,2,3], @dict1["ary1"])
+
+      @dict1.add("ary2", [[1,2,"a"], [3,4,"b"]])
+      assert_equal([[1,2,"a"], [3,4,"b"]], @dict1["ary2"])
+
+      @dict1.add("ary3", [[[1]]]) 
+      assert_equal([[[1]]], @dict1["ary3"]) 
+
+      @dict1.add("ary4", [[[1], [2], [3]], [[4], [5], [6]]]) 
+      assert_equal([[[1],[2], [3]], [[4], [5], [6]]], @dict1["ary4"]) 
+    end
   end
 
   class TestWin32OLE < Test::Unit::TestCase
@@ -146,9 +159,10 @@ if defined?(WIN32OLE)
       assert_match(/unknown OLE server: `\{000\}'/, exc.message)
     end
 
-    # test_s_connect was moved to test_word.rb
-    # def test_s_connect
-    # end
+    def test_s_connect
+      obj = WIN32OLE.connect("winmgmts:")
+      assert_instance_of(WIN32OLE, obj)
+    end
 
     def test_invoke_accept_symbol_hash_key
       fso = WIN32OLE.new('Scripting.FileSystemObject')
