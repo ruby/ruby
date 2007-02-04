@@ -1,3 +1,9 @@
+Mon Feb  5 04:09:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_frame_callee): check if prev_cfp can be accessible.
+	  a patch from Yoshinori Sano <yoshinori.sano at gmail.com> in
+	  [ruby-dev:30252].  solves [ruby-dev:30200] and [ruby-core:9856].
+
 Sun Feb  4 20:34:41 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/rss-assertions.rb: removed needless code for backward

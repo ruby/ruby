@@ -1879,7 +1879,13 @@ rb_frame_this_func(void)
 ID
 rb_frame_callee(void)
 {
-    return frame_func_id(GET_THREAD()->cfp + 1);
+    yarv_thread_t *th = GET_THREAD();
+    yarv_control_frame_t *prev_cfp = YARV_PREVIOUS_CONTROL_FRAME(th->cfp);
+    /* check if prev_cfp can be accessible */
+    if ((void *)(th->stack + th->stack_size) == (void *)(prev_cfp)) {
+        return 0;
+    }
+    return frame_func_id(prev_cfp);
 }
 
 void
