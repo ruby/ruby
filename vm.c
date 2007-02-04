@@ -504,7 +504,7 @@ th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
 	  val = rb_ivar_set(recv, body->nd_vid, argv[0]);
 	  break;
       }
-      case NODE_IVAR:{
+      case NODE_IVAR: {
 	  if (argc != 0) {
 	      rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
 		       argc);

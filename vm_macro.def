@@ -293,6 +293,12 @@ MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 	      POP();
 	      break;
 	  }
+	  case NODE_IVAR2:{
+	      ID vid = rb_compose_ivar2(node->nd_vid, mn->nd_clss);
+	      val = rb_ivar_get(recv, vid);
+	      POP();
+	      break;
+	  }
 	  case NODE_BMETHOD:{
 	      VALUE *argv = GET_SP() - num;
 	      val = th_invoke_bmethod(th, id, node->nd_cval,

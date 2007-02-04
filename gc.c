@@ -896,6 +896,7 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
+	  case NODE_IASGN2:
 	  case NODE_CVASGN:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
@@ -935,6 +936,7 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_LVAR:
 	  case NODE_DVAR:
 	  case NODE_IVAR:
+	  case NODE_IVAR2:
 	  case NODE_CVAR:
 	  case NODE_NTH_REF:
 	  case NODE_BACK_REF:

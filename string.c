@@ -4690,6 +4690,9 @@ sym_inspect(VALUE sym)
     VALUE str, klass = Qundef;
     ID id = SYM2ID(sym);
 
+    if (rb_is_instance2_id(id)) {
+	id = rb_decompose_ivar2(id, &klass);
+    }
     sym = rb_id2str(id);
     str = rb_str_new(0, RSTRING_LEN(sym)+1);
     RSTRING_PTR(str)[0] = ':';
@@ -4723,6 +4726,9 @@ rb_sym_to_s(VALUE sym)
 {
     ID id = SYM2ID(sym);
 
+    if (rb_is_instance2_id(id)) {
+	id = rb_decompose_ivar2(id, 0);
+    }
     return str_new3(rb_cString, rb_id2str(id));
 }
 
@@ -4868,6 +4874,27 @@ rb_to_id(VALUE name)
     return id;
 }
 
+static VALUE
+sym_div(VALUE sym, VALUE klass)
+{
+    ID id = SYM2ID(sym);
+
+    if (!rb_is_instance2_id(id)) {
+	rb_raise(rb_eArgError, "symbol %s should be local instance variable",
+		 rb_id2name(id));
+    }
+    switch (TYPE(klass)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	rb_check_type(klass, T_CLASS);
+	break;
+    }
+    id = rb_compose_ivar2(id, klass);
+    return ID2SYM(id);
+}
+
 /*
  *  A <code>String</code> object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
@@ -5008,6 +5035,7 @@ Init_String(void)
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
     rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
 
+    rb_define_method(rb_cSymbol, "/", sym_div, 1);
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);

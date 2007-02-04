@@ -14,6 +14,25 @@ Sun Feb  4 02:22:59 2007  Akinori MUSHA  <knu@iDaemons.org>
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): Remove a debug
 	  print.
 
+Sat Feb  3 23:51:58 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_compose_ivar2): function to create a new ivar2
+	  symbol from a symbol and a class.  back-ported from matzruby.
+
+	* parse.y (rb_decompose_ivar2): reverse function of
+	  rb_compose_ivar2(). 
+
+	* marshal.c (w_symbol): support class local instance variables.
+
+	* marshal.c (r_object0): ditto.
+
+	* compile.c (defined_expr): ditto.
+
+	* compile.c (iseq_compile_each): ditto.
+
+	* insns.def: add two new instructions: getinstancevariable2 and
+	  setinstancevariable2.
+
 Sat Feb  3 23:21:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insns.def (setclassvariable): remove unnecessary operand.

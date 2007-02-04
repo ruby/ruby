@@ -863,6 +863,8 @@ node_name(int node)
 	return "NODE_GASGN";
     case NODE_IASGN:
 	return "NODE_IASGN";
+    case NODE_IASGN2:
+	return "NODE_IASGN2";
     case NODE_CDECL:
 	return "NODE_CDECL";
     case NODE_CVASGN:
@@ -905,6 +907,8 @@ node_name(int node)
 	return "NODE_GVAR";
     case NODE_IVAR:
 	return "NODE_IVAR";
+    case NODE_IVAR2:
+	return "NODE_IVAR2";
     case NODE_CONST:
 	return "NODE_CONST";
     case NODE_CVAR:

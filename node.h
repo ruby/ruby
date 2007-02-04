@@ -48,6 +48,7 @@ enum node_type {
     NODE_DASGN_CURR,
     NODE_GASGN,
     NODE_IASGN,
+    NODE_IASGN2,
     NODE_CDECL,
     NODE_CVASGN,
     NODE_CVDECL,
@@ -70,6 +71,7 @@ enum node_type {
     NODE_DVAR,
     NODE_GVAR,
     NODE_IVAR,
+    NODE_IVAR2,
     NODE_CONST,
     NODE_CVAR,
     NODE_NTH_REF,
@@ -282,6 +284,7 @@ typedef struct RNode {
 #define NEW_DASGN(v,val) NEW_NODE(NODE_DASGN,v,val,0)
 #define NEW_DASGN_CURR(v,val) NEW_NODE(NODE_DASGN_CURR,v,val,0)
 #define NEW_IASGN(v,val) NEW_NODE(NODE_IASGN,v,val,0)
+#define NEW_IASGN2(v,val) NEW_NODE(NODE_IASGN2,v,val,0)
 #define NEW_CDECL(v,val,path) NEW_NODE(NODE_CDECL,v,val,path)
 #define NEW_CVASGN(v,val) NEW_NODE(NODE_CVASGN,v,val,0)
 #define NEW_CVDECL(v,val) NEW_NODE(NODE_CVDECL,v,val,0)
@@ -294,6 +297,7 @@ typedef struct RNode {
 #define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,local_cnt(v))
 #define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0)
 #define NEW_IVAR(v) NEW_NODE(NODE_IVAR,v,0,0)
+#define NEW_IVAR2(v) NEW_NODE(NODE_IVAR2,v,0,0)
 #define NEW_CONST(v) NEW_NODE(NODE_CONST,v,0,0)
 #define NEW_CVAR(v) NEW_NODE(NODE_CVAR,v,0,0)
 #define NEW_NTH_REF(n)  NEW_NODE(NODE_NTH_REF,0,n,local_cnt('~'))

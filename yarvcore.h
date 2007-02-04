@@ -585,14 +585,15 @@ typedef VALUE CDHASH;
 
 /* defined? */
 #define DEFINED_IVAR   INT2FIX(1)
-#define DEFINED_GVAR   INT2FIX(2)
-#define DEFINED_CVAR   INT2FIX(3)
-#define DEFINED_CONST  INT2FIX(4)
-#define DEFINED_METHOD INT2FIX(5)
-#define DEFINED_YIELD  INT2FIX(6)
-#define DEFINED_REF    INT2FIX(7)
-#define DEFINED_ZSUPER INT2FIX(8)
-#define DEFINED_FUNC   INT2FIX(9)
+#define DEFINED_IVAR2  INT2FIX(2)
+#define DEFINED_GVAR   INT2FIX(3)
+#define DEFINED_CVAR   INT2FIX(4)
+#define DEFINED_CONST  INT2FIX(5)
+#define DEFINED_METHOD INT2FIX(6)
+#define DEFINED_YIELD  INT2FIX(7)
+#define DEFINED_REF    INT2FIX(8)
+#define DEFINED_ZSUPER INT2FIX(9)
+#define DEFINED_FUNC   INT2FIX(10)
 
 /* VM related object allocate functions */
 /* TODO: should be static functions */

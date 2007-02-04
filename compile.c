@@ -2345,6 +2345,11 @@ defined_expr(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_IVAR),
 		  ID2SYM(node->nd_vid), needstr);
 	return 1;
+      case NODE_IVAR2:
+	ADD_INSN(ret, nd_line(node), putnil);
+	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_IVAR2),
+		  ID2SYM(node->nd_vid), needstr);
+	return 1;
 
       case NODE_GVAR:
 	ADD_INSN(ret, nd_line(node), putnil);
@@ -3327,6 +3332,15 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ID2SYM(node->nd_vid));
 	  break;
       }
+      case NODE_IASGN2:{
+	  COMPILE(ret, "lvalue", node->nd_value);
+	  if (!poped) {
+	      ADD_INSN(ret, nd_line(node), dup);
+	  }
+	  ADD_INSN1(ret, nd_line(node), setinstancevariable2,
+		    ID2SYM(node->nd_vid));
+	  break;
+      }
       case NODE_CDECL:{
 	  COMPILE(ret, "lvalue", node->nd_value);
 
@@ -3899,6 +3913,14 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  debugi("nd_vid", node->nd_vid);
 	  if (!poped) {
 	      ADD_INSN1(ret, nd_line(node), getinstancevariable,
+			ID2SYM(node->nd_vid));
+	  }
+	  break;
+      }
+      case NODE_IVAR2:{
+	  debugi("nd_vid", node->nd_vid);
+	  if (!poped) {
+	      ADD_INSN1(ret, nd_line(node), getinstancevariable2,
 			ID2SYM(node->nd_vid));
 	  }
 	  break;
