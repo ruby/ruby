@@ -222,16 +222,11 @@ getclassvariable
  */
 DEFINE_INSN
 setclassvariable
-(ID id, VALUE declp)
+(ID id)
 (VALUE val)
 ()
 {
-    VALUE klass = eval_get_cvar_base(th, GET_ISEQ());
-
-    if (declp == Qtrue && RTEST(ruby_verbose) && FL_TEST(klass, FL_SINGLETON)) {
-	rb_warn("declaring singleton class variable");
-    }
-    rb_cvar_set(klass, id, val);
+    rb_cvar_set(eval_get_cvar_base(th, GET_ISEQ()), id, val);
 }
 
 /**

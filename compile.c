@@ -3351,9 +3351,8 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
 	  }
-	  ADD_INSN2(ret, nd_line(node), setclassvariable,
-		    ID2SYM(node->nd_vid),
-		    Qfalse);
+	  ADD_INSN1(ret, nd_line(node), setclassvariable,
+		    ID2SYM(node->nd_vid));
 	  break;
       }
       case NODE_OP_ASGN1:{

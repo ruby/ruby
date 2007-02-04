@@ -558,8 +558,11 @@ optinsn.inc:
 optunifs.inc:
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) optunifs.inc
 
-insns.inc:
+insns.inc: $(srcdir)/insns.def
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+
+insns_info.inc: $(srcdir)/insns.def
+	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) insns_info.inc
 
 vmtc.inc:
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vmtc.inc
