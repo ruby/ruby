@@ -208,6 +208,14 @@ class TestEval < YarvTestBase
       a = :ng
       eval("a", b)
     }
+    ae %q{
+      class C
+        def foo
+          binding
+        end
+      end
+      C.new.foo.eval("self.class.to_s")
+    }
   end
 end
 

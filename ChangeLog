@@ -1,3 +1,9 @@
+Tue Feb  6 03:47:58 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: support Binding#eval.
+
+	* yarvtest/test_eval.rb: add a test for above change.
+
 Tue Feb  6 03:13:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: refactoring (remove K&R style, move Binding stuffs from
