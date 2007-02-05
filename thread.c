@@ -47,6 +47,7 @@
 
 #include "eval_intern.h"
 #include "vm.h"
+#include "gc.h"
 
 #define THREAD_DEBUG 0
 
@@ -60,8 +61,6 @@ static int rb_thread_dead(yarv_thread_t *th);
 
 void rb_signal_exec(yarv_thread_t *th, int sig);
 void rb_disable_interrupt();
-
-NOINLINE(void yarv_set_stack_end(VALUE **stack_end_p));
 
 static VALUE eKillSignal = INT2FIX(0);
 static VALUE eTerminateSignal = INT2FIX(1);
@@ -261,12 +260,17 @@ thread_start_func_2(yarv_thread_t *th, VALUE *stack_start)
 
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == 0) {
-	    GetProcPtr(th->first_proc, proc);
-	    th->errinfo = Qnil;
-	    th->local_lfp = proc->block.lfp;
-	    th->local_svar = Qnil;
-	    th->value = th_invoke_proc(th, proc, proc->block.self,
-				       RARRAY_LEN(args), RARRAY_PTR(args));
+	    if (th->first_proc) {
+		GetProcPtr(th->first_proc, proc);
+		th->errinfo = Qnil;
+		th->local_lfp = proc->block.lfp;
+		th->local_svar = Qnil;
+		th->value = th_invoke_proc(th, proc, proc->block.self,
+					   RARRAY_LEN(args), RARRAY_PTR(args));
+	    }
+	    else {
+		(*th->first_func)(th->first_func_arg);
+	    }
 	}
 	else {
 	    th->value = Qnil;
@@ -292,19 +296,21 @@ thread_start_func_2(yarv_thread_t *th, VALUE *stack_start)
 VALUE yarv_thread_alloc(VALUE klass);
 
 static VALUE
-yarv_thread_s_new(VALUE klass, VALUE args)
+thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
 {
     yarv_thread_t *th;
     VALUE thval;
 
     /* create thread object */
-    thval = yarv_thread_alloc(cYarvThread);
+    thval = yarv_thread_alloc(klass);
     GetThreadPtr(thval, th);
-    
+
     /* setup thread environment */
     th->first_args = args;
     th->first_proc = rb_block_proc();
-    
+    th->first_func = fn;
+    th->first_func_arg = arg;
+
     native_mutex_initialize(&th->interrupt_lock);
 
     /* kick thread */
@@ -313,18 +319,41 @@ yarv_thread_s_new(VALUE klass, VALUE args)
     return thval;
 }
 
+/*
+ *  call-seq:
+ *     Thread.start([args]*) {|args| block }   => thread
+ *     Thread.fork([args]*) {|args| block }    => thread
+ *  
+ *  Basically the same as <code>Thread::new</code>. However, if class
+ *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
+ *  subclass will not invoke the subclass's <code>initialize</code> method.
+ */
+
+static VALUE
+thread_s_new(VALUE klass, VALUE args)
+{
+    return thread_create_core(klass, args, 0, 0);
+}
+
+VALUE
+rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
+{
+    return thread_create_core(rb_cThread, 0, fn, arg);
+}
+
+
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
 VALUE th_make_jump_tag_but_local_jump(int state, VALUE val);
 
 static VALUE
-yarv_thread_join(yarv_thread_t *target_th, double delay)
+thread_join(yarv_thread_t *target_th, double delay)
 {
     yarv_thread_t *th = GET_THREAD();
     double now, limit = timeofday() + delay;
     
-    thread_debug("yarv_thread_join (thid: %p)\n", target_th->thread_id);
+    thread_debug("thread_join (thid: %p)\n", target_th->thread_id);
 
     if (target_th->status != THREAD_KILLED) {
 	th->join_list_next = target_th->join_list_head;
@@ -338,17 +367,17 @@ yarv_thread_join(yarv_thread_t *target_th, double delay)
 	else {
 	    now = timeofday();
 	    if (now > limit) {
-		thread_debug("yarv_thread_join: timeout (thid: %p)\n",
+		thread_debug("thread_join: timeout (thid: %p)\n",
 			     target_th->thread_id);
 		return Qnil;
 	    }
 	    sleep_wait_for_interrupt(th, limit - now);
 	}
-	thread_debug("yarv_thread_join: interrupted (thid: %p)\n",
+	thread_debug("thread_join: interrupted (thid: %p)\n",
 		     target_th->thread_id);
     }
 
-    thread_debug("yarv_thread_join: success (thid: %p)\n",
+    thread_debug("thread_join: success (thid: %p)\n",
 		 target_th->thread_id);
 
     if (target_th->errinfo != Qnil) {
@@ -409,7 +438,7 @@ yarv_thread_join(yarv_thread_t *target_th, double delay)
  */
 
 static VALUE
-yarv_thread_join_m(int argc, VALUE *argv, VALUE self)
+thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     yarv_thread_t *target_th;
     double delay = DELAY_INFTY;
@@ -421,7 +450,7 @@ yarv_thread_join_m(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(limit)) {
 	delay = rb_num2dbl(limit);
     }
-    return yarv_thread_join(target_th, delay);
+    return thread_join(target_th, delay);
 }
 
 /*
@@ -436,11 +465,11 @@ yarv_thread_join_m(int argc, VALUE *argv, VALUE self)
  */
 
 static VALUE
-yarv_thread_value(VALUE self)
+thread_value(VALUE self)
 {
     yarv_thread_t *th;
     GetThreadPtr(self, th);
-    yarv_thread_join(th, DELAY_INFTY);
+    thread_join(th, DELAY_INFTY);
     return th->value;
 }
 
@@ -538,7 +567,7 @@ rb_thread_schedule()
 
 	thread_debug("rb_thread_schedule/switch start\n");
 
-	yarv_save_machine_context(th);
+	rb_gc_save_machine_context(th);
 	native_mutex_unlock(&th->vm->global_interpreter_lock);
 	{
 	    native_thread_yield();
@@ -552,6 +581,7 @@ rb_thread_schedule()
     }
 }
 
+int rb_thread_critical; /* TODO: dummy variable */
 
 static VALUE
 rb_thread_s_critical(VALUE self)
@@ -596,7 +626,7 @@ rb_thread_run_parallel(VALUE(*func)(yarv_thread_t *th, void *), void *data)
  */
 
 static VALUE
-yarv_thread_s_pass(VALUE klass)
+thread_s_pass(VALUE klass)
 {
     rb_thread_schedule();
     return Qnil;
@@ -712,6 +742,31 @@ rb_thread_signal_exit(void *thptr)
     yarv_thread_raise(1, argv, th->vm->main_thread);
 }
 
+int
+thread_set_raised(yarv_thread_t *th)
+{
+    if (th->raised_flag) {
+	return 1;
+    }
+    th->raised_flag = 1;
+    return 0;
+}
+
+int
+thread_reset_raised(yarv_thread_t *th)
+{
+    if (th->raised_flag == 0) {
+	return 0;
+    }
+    th->raised_flag = 0;
+    return 1;
+}
+
+void
+rb_thread_fd_close(int fd)
+{
+    /* TODO: fix me */
+}
 
 /*
  *  call-seq:
@@ -733,7 +788,7 @@ rb_thread_signal_exit(void *thptr)
  */
 
 static VALUE
-yarv_thread_raise_m(int argc, VALUE *argv, VALUE self)
+thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
     yarv_thread_t *th;
     GetThreadPtr(self, th);
@@ -956,6 +1011,12 @@ rb_thread_list(void)
     return ary;
 }
 
+VALUE
+rb_thread_current(void)
+{
+    return GET_THREAD()->self;
+}
+
 /*
  *  call-seq:
  *     Thread.current   => thread
@@ -966,9 +1027,9 @@ rb_thread_list(void)
  */
 
 static VALUE
-yarv_thread_s_current(VALUE klass)
+thread_s_current(VALUE klass)
 {
-    return GET_THREAD()->self;
+    return rb_thread_current();
 }
 
 VALUE
@@ -1468,35 +1529,132 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
 
 /* for IO */
 
+#if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
+void
+rb_fd_init(volatile rb_fdset_t *fds)
+{
+    fds->maxfd = 0;
+    fds->fdset = ALLOC(fd_set);
+    FD_ZERO(fds->fdset);
+}
+
+void
+rb_fd_term(rb_fdset_t *fds)
+{
+    if (fds->fdset) free(fds->fdset);
+    fds->maxfd = 0;
+    fds->fdset = 0;
+}
+
+void
+rb_fd_zero(rb_fdset_t *fds)
+{
+    if (fds->fdset) {
+	MEMZERO(fds->fdset, fd_mask, howmany(fds->maxfd, NFDBITS));
+	FD_ZERO(fds->fdset);
+    }
+}
+
+static void
+rb_fd_resize(int n, rb_fdset_t *fds)
+{
+    int m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
+    int o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
+
+    if (m < sizeof(fd_set)) m = sizeof(fd_set);
+    if (o < sizeof(fd_set)) o = sizeof(fd_set);
+
+    if (m > o) {
+	fds->fdset = realloc(fds->fdset, m);
+	memset((char *)fds->fdset + o, 0, m - o);
+    }
+    if (n >= fds->maxfd) fds->maxfd = n + 1;
+}
+
+void
+rb_fd_set(int n, rb_fdset_t *fds)
+{
+    rb_fd_resize(n, fds);
+    FD_SET(n, fds->fdset);
+}
+
+void
+rb_fd_clr(int n, rb_fdset_t *fds)
+{
+    if (n >= fds->maxfd) return;
+    FD_CLR(n, fds->fdset);
+}
+
+int
+rb_fd_isset(int n, const rb_fdset_t *fds)
+{
+    if (n >= fds->maxfd) return 0;
+    return FD_ISSET(n, fds->fdset) != 0; /* "!= 0" avoids FreeBSD PR 91421 */
+}
+
+void
+rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
+{
+    int size = howmany(max, NFDBITS) * sizeof(fd_mask);
+
+    if (size < sizeof(fd_set)) size = sizeof(fd_set);
+    dst->maxfd = max;
+    dst->fdset = realloc(dst->fdset, size);
+    memcpy(dst->fdset, src, size);
+}
+
+#undef FD_ZERO
+#undef FD_SET
+#undef FD_CLR
+#undef FD_ISSET
+
+#define FD_ZERO(f)	rb_fd_zero(f)
+#define FD_SET(i, f)	rb_fd_set(i, f)
+#define FD_CLR(i, f)	rb_fd_clr(i, f)
+#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+
+#endif
+
+/*
+ * c: 
+ */
+static void
+rb_thread_wait_fd_rw(int fd, char c)
+{
+    rb_fdset_t set;
+    int result = 0;
+    rb_fd_init(&set);
+    FD_SET(fd, &set);
+
+    thread_debug("rb_thread_wait_fd_rw (%d, %c)\n", fd, c);
+
+    while (result <= 0) {
+	switch(c) {
+	  case 'r':
+	    GVL_UNLOCK_RANGE(result = select(fd + 1, rb_fd_ptr(&set), 0, 0, 0));
+	    break;
+
+	  case'w':
+	    GVL_UNLOCK_RANGE(result = select(fd + 1, 0, rb_fd_ptr(&set), 0, 0));
+	    break;
+	  defaut:
+	    rb_bug("unknown wait type: %c", c);
+	}
+    }
+
+    thread_debug("rb_thread_wait_fd_rw (%d, %c): done\n", fd, c);
+}
+
 void
 rb_thread_wait_fd(int fd)
 {
-    fd_set set;
-    int result = 0;
-
-    FD_ZERO(&set);
-    FD_SET(fd, &set);
-    thread_debug("rb_thread_wait_fd (%d)\n", fd);
-    while (result <= 0) {
-	GVL_UNLOCK_RANGE(result = select(fd + 1, &set, 0, 0, 0));
-    }
-    thread_debug("rb_thread_wait_fd done\n", fd);
+    rb_thread_wait_fd_rw(fd, 'r');
 }
 
 int
 rb_thread_fd_writable(int fd)
 {
-    fd_set set;
-    int result = 0;
-
-    FD_ZERO(&set);
-    FD_SET(fd, &set);
-
-    thread_debug("rb_thread_fd_writable (%d)\n", fd);
-    while (result <= 0) {
-	GVL_UNLOCK_RANGE(result = select(fd + 1, 0, &set, 0, 0));
-    }
-    thread_debug("rb_thread_fd_writable done\n");
+    rb_thread_wait_fd_rw(fd, 'w');
     return Qtrue;
 }
 
@@ -1569,16 +1727,16 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
  */
 
 void
-yarv_set_stack_end(VALUE **stack_end_p)
+rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
     *stack_end_p = &stack_end;
 }
 
 void
-yarv_save_machine_context(yarv_thread_t *th)
+rb_gc_save_machine_context(yarv_thread_t *th)
 {
-    yarv_set_stack_end(&th->machine_stack_end);
+    rb_gc_set_stack_end(&th->machine_stack_end);
     setjmp(th->machine_regs);
 }
 
@@ -1971,53 +2129,243 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 }
 
 
+/*
+ *  Document-class: Continuation
+ *
+ *  Continuation objects are generated by
+ *  <code>Kernel#callcc</code>. They hold a return address and execution
+ *  context, allowing a nonlocal return to the end of the
+ *  <code>callcc</code> block from anywhere within a program.
+ *  Continuations are somewhat analogous to a structured version of C's
+ *  <code>setjmp/longjmp</code> (although they contain more state, so
+ *  you might consider them closer to threads).
+ *     
+ *  For instance:
+ *     
+ *     arr = [ "Freddie", "Herbie", "Ron", "Max", "Ringo" ]
+ *     callcc{|$cc|}
+ *     puts(message = arr.shift)
+ *     $cc.call unless message =~ /Max/
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Freddie
+ *     Herbie
+ *     Ron
+ *     Max
+ *     
+ *  This (somewhat contrived) example allows the inner loop to abandon
+ *  processing early:
+ *     
+ *     callcc {|cont|
+ *       for i in 0..4
+ *         print "\n#{i}: "
+ *         for j in i*5...(i+1)*5
+ *           cont.call() if j == 17
+ *           printf "%3d", j
+ *         end
+ *       end
+ *     }
+ *     print "\n"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     0:   0  1  2  3  4
+ *     1:   5  6  7  8  9
+ *     2:  10 11 12 13 14
+ *     3:  15 16
+ */
+
+VALUE rb_cCont;
+
+/*
+ *  call-seq:
+ *     callcc {|cont| block }   =>  obj
+ *  
+ *  Generates a <code>Continuation</code> object, which it passes to the
+ *  associated block. Performing a <em>cont</em><code>.call</code> will
+ *  cause the <code>callcc</code> to return (as will falling through the
+ *  end of the block). The value returned by the <code>callcc</code> is
+ *  the value of the block, or the value passed to
+ *  <em>cont</em><code>.call</code>. See class <code>Continuation</code>
+ *  for more details. Also see <code>Kernel::throw</code> for
+ *  an alternative mechanism for unwinding a call stack.
+ */
+
+static VALUE
+rb_callcc(VALUE self)
+{
+    UNSUPPORTED(rb_callcc);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     cont.call(args, ...)
+ *     cont[args, ...]
+ *  
+ *  Invokes the continuation. The program continues from the end of the
+ *  <code>callcc</code> block. If no arguments are given, the original
+ *  <code>callcc</code> returns <code>nil</code>. If one argument is
+ *  given, <code>callcc</code> returns it. Otherwise, an array
+ *  containing <i>args</i> is returned.
+ *     
+ *     callcc {|cont|  cont.call }           #=> nil
+ *     callcc {|cont|  cont.call 1 }         #=> 1
+ *     callcc {|cont|  cont.call 1, 2, 3 }   #=> [1, 2, 3]
+ */
+
+static VALUE
+rb_cont_call(int argc, VALUE *argv, VALUE cont)
+{
+    UNSUPPORTED(rb_cont_call);
+}
+
+/* variables for recursive traversals */
+static ID recursive_key;
+
+static VALUE
+recursive_check(VALUE obj)
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	return Qfalse;
+    }
+    else {
+	VALUE list = rb_hash_aref(hash, ID2SYM(rb_frame_this_func()));
+
+	if (NIL_P(list) || TYPE(list) != T_ARRAY)
+	    return Qfalse;
+	return rb_ary_includes(list, rb_obj_id(obj));
+    }
+}
+
+static void
+recursive_push(VALUE obj)
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE list, sym;
+
+    sym = ID2SYM(rb_frame_this_func());
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	hash = rb_hash_new();
+	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
+	list = Qnil;
+    }
+    else {
+	list = rb_hash_aref(hash, sym);
+    }
+    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
+	list = rb_ary_new();
+	rb_hash_aset(hash, sym, list);
+    }
+    rb_ary_push(list, rb_obj_id(obj));
+}
+
+static void
+recursive_pop(void)
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE list, sym;
+
+    sym = ID2SYM(rb_frame_this_func());
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	VALUE symname;
+	VALUE thrname;
+	symname = rb_inspect(sym);
+	thrname = rb_inspect(rb_thread_current());
+
+	rb_raise(rb_eTypeError, "invalid inspect_tbl hash for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
+    }
+    list = rb_hash_aref(hash, sym);
+    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
+	VALUE symname = rb_inspect(sym);
+	VALUE thrname = rb_inspect(rb_thread_current());
+	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
+    }
+    rb_ary_pop(list);
+}
+
+VALUE
+rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
+{
+    if (recursive_check(obj)) {
+	return (*func) (obj, arg, Qtrue);
+    }
+    else {
+	VALUE result = Qundef;
+	int state;
+
+	recursive_push(obj);
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    result = (*func) (obj, arg, Qfalse);
+	}
+	POP_TAG();
+	recursive_pop();
+	if (state)
+	    JUMP_TAG(state);
+	return result;
+    }
+}
+
+
+/*
+ *  +Thread+ encapsulates the behavior of a thread of
+ *  execution, including the main thread of the Ruby script.
+ *     
+ *  In the descriptions of the methods in this class, the parameter _sym_
+ *  refers to a symbol, which is either a quoted string or a
+ *  +Symbol+ (such as <code>:name</code>).
+ */
+
 void
-Init_yarvthread()
+Init_Thread(void)
 {
     VALUE cThGroup;
-    VALUE thgroup_default;
     VALUE cMutex;
 
-    rb_define_global_function("raw_gets", raw_gets, 0);
+    rb_define_singleton_method(rb_cThread, "new", thread_s_new, -2);
+    rb_define_singleton_method(rb_cThread, "start", thread_s_new, -2);
+    rb_define_singleton_method(rb_cThread, "fork", thread_s_new, -2);
+    rb_define_singleton_method(rb_cThread, "main", rb_thread_s_main, 0);
+    rb_define_singleton_method(rb_cThread, "current", thread_s_current, 0);
+    rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
+    rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);
+    rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
+    rb_define_singleton_method(rb_cThread, "pass", thread_s_pass, 0);
+    rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
+    rb_define_singleton_method(rb_cThread, "critical", rb_thread_s_critical, 0);
+    rb_define_singleton_method(rb_cThread, "critical=", rb_thread_s_critical, 1);
+    rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
+    rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
 
-    rb_define_singleton_method(cYarvThread, "new", yarv_thread_s_new, -2);
-    rb_define_singleton_method(cYarvThread, "start", yarv_thread_s_new, -2);
-    rb_define_singleton_method(cYarvThread, "fork", yarv_thread_s_new, -2);
-    rb_define_singleton_method(cYarvThread, "main", rb_thread_s_main, 0);
-    rb_define_singleton_method(cYarvThread, "current", yarv_thread_s_current, 0);
-    rb_define_singleton_method(cYarvThread, "stop", rb_thread_stop, 0);
-    rb_define_singleton_method(cYarvThread, "kill", rb_thread_s_kill, 1);
-    rb_define_singleton_method(cYarvThread, "exit", rb_thread_exit, 0);
-    rb_define_singleton_method(cYarvThread, "pass", yarv_thread_s_pass, 0);
-    rb_define_singleton_method(cYarvThread, "list", rb_thread_list, 0);
-    rb_define_singleton_method(cYarvThread, "critical", rb_thread_s_critical, 0);
-    rb_define_singleton_method(cYarvThread, "critical=", rb_thread_s_critical, 1);
-    rb_define_singleton_method(cYarvThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
-    rb_define_singleton_method(cYarvThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
+    rb_define_method(rb_cThread, "raise", thread_raise_m, -1);
+    rb_define_method(rb_cThread, "join", thread_join_m, -1);
+    rb_define_method(rb_cThread, "value", thread_value, 0);
+    rb_define_method(rb_cThread, "kill", rb_thread_kill, 0);
+    rb_define_method(rb_cThread, "terminate", rb_thread_kill, 0);
+    rb_define_method(rb_cThread, "exit", rb_thread_kill, 0);
+    rb_define_method(rb_cThread, "run", rb_thread_run, 0);
+    rb_define_method(rb_cThread, "wakeup", rb_thread_wakeup, 0);
+    rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
+    rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);
+    rb_define_method(rb_cThread, "key?", rb_thread_key_p, 1);
+    rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
+    rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
+    rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
+    rb_define_method(rb_cThread, "status", rb_thread_status, 0);
+    rb_define_method(rb_cThread, "alive?", rb_thread_alive_p, 0);
+    rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
+    rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
+    rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
+    rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
+    rb_define_method(rb_cThread, "group", rb_thread_group, 0);
 
-    rb_define_method(cYarvThread, "raise", yarv_thread_raise_m, -1);
-    rb_define_method(cYarvThread, "join", yarv_thread_join_m, -1);
-    rb_define_method(cYarvThread, "value", yarv_thread_value, 0);
-    rb_define_method(cYarvThread, "kill", rb_thread_kill, 0);
-    rb_define_method(cYarvThread, "terminate", rb_thread_kill, 0);
-    rb_define_method(cYarvThread, "exit", rb_thread_kill, 0);
-    rb_define_method(cYarvThread, "run", rb_thread_run, 0);
-    rb_define_method(cYarvThread, "wakeup", rb_thread_wakeup, 0);
-    rb_define_method(cYarvThread, "[]", rb_thread_aref, 1);
-    rb_define_method(cYarvThread, "[]=", rb_thread_aset, 2);
-    rb_define_method(cYarvThread, "key?", rb_thread_key_p, 1);
-    rb_define_method(cYarvThread, "keys", rb_thread_keys, 0);
-    rb_define_method(cYarvThread, "priority", rb_thread_priority, 0);
-    rb_define_method(cYarvThread, "priority=", rb_thread_priority_set, 1);
-    rb_define_method(cYarvThread, "status", rb_thread_status, 0);
-    rb_define_method(cYarvThread, "alive?", rb_thread_alive_p, 0);
-    rb_define_method(cYarvThread, "stop?", rb_thread_stop_p, 0);
-    rb_define_method(cYarvThread, "abort_on_exception", rb_thread_abort_exc, 0);
-    rb_define_method(cYarvThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
-    rb_define_method(cYarvThread, "safe_level", rb_thread_safe_level, 0);
-    rb_define_method(cYarvThread, "group", rb_thread_group, 0);
-
-    rb_define_method(cYarvThread, "inspect", rb_thread_inspect, 0);
+    rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
@@ -2025,8 +2373,12 @@ Init_yarvthread()
     rb_define_method(cThGroup, "enclose", thgroup_enclose, 0);
     rb_define_method(cThGroup, "enclosed?", thgroup_enclosed_p, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
-    GET_THREAD()->vm->thgroup_default = thgroup_default = rb_obj_alloc(cThGroup);
-    rb_define_const(cThGroup, "Default", thgroup_default);
+
+    {
+	yarv_thread_t *th = GET_THREAD();
+	th->thgroup = th->vm->thgroup_default = rb_obj_alloc(cThGroup);
+	rb_define_const(cThGroup, "Default", th->thgroup);
+    }
 
     cMutex = rb_define_class("Mutex", rb_cObject);
     rb_define_alloc_func(cMutex, mutex_alloc);
@@ -2040,6 +2392,11 @@ Init_yarvthread()
 	"class Mutex;"
 	"  def synchronize; self.lock; yield; ensure; self.unlock; end;"
 	"end;") , rb_str_new2("<preload>"), INT2FIX(1));
+
+    recursive_key = rb_intern("__recursive_key__");
+    rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
+    rb_cCont = rb_define_class("Continuation", rb_cObject);
+
     Init_native_thread();
     {
 	/* main thread setting */

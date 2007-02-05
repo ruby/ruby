@@ -12,43 +12,42 @@
 
 #include "ruby.h"
 
-void Init_Array _((void));
-void Init_Bignum _((void));
-void Init_Binding _((void));
-void Init_Comparable _((void));
-void Init_Dir _((void));
-void Init_Enumerable _((void));
-void Init_Enumerator _((void));
-void Init_Exception _((void));
-void Init_syserr _((void));
-void Init_eval _((void));
-void Init_load _((void));
-void Init_Proc _((void));
-void Init_Thread _((void));
-void Init_File _((void));
-void Init_GC _((void));
-void Init_Hash _((void));
-void Init_IO _((void));
-void Init_Math _((void));
-void Init_marshal _((void));
-void Init_Numeric _((void));
-void Init_Object _((void));
-void Init_pack _((void));
-void Init_Precision _((void));
-void Init_sym _((void));
-void Init_process _((void));
-void Init_Random _((void));
-void Init_Range _((void));
-void Init_Regexp _((void));
-void Init_signal _((void));
-void Init_String _((void));
-void Init_Struct _((void));
-void Init_Time _((void));
-void Init_var_tables _((void));
-void Init_version _((void));
-void Init_jump _((void));
-void Init_vm _((void));
-
+void Init_Array(void);
+void Init_Bignum(void);
+void Init_Binding(void);
+void Init_Comparable(void);
+void Init_Dir(void);
+void Init_Enumerable(void);
+void Init_Enumerator(void);
+void Init_Exception(void);
+void Init_syserr(void);
+void Init_eval(void);
+void Init_load(void);
+void Init_Proc(void);
+void Init_File(void);
+void Init_GC(void);
+void Init_Hash(void);
+void Init_IO(void);
+void Init_Math(void);
+void Init_marshal(void);
+void Init_Numeric(void);
+void Init_Object(void);
+void Init_pack(void);
+void Init_Precision(void);
+void Init_sym(void);
+void Init_process(void);
+void Init_Random(void);
+void Init_Range(void);
+void Init_Regexp(void);
+void Init_signal(void);
+void Init_String(void);
+void Init_Struct(void);
+void Init_Time(void);
+void Init_var_tables(void);
+void Init_version(void);
+void Init_ISeq(void);
+void Init_VM(void);
+void Init_Thread(void);
 
 void
 rb_call_inits()
@@ -63,7 +62,6 @@ rb_call_inits()
     Init_jump();
     Init_String();
     Init_Exception();
-    Init_Thread();
     Init_Numeric();
     Init_Bignum();
     Init_syserr();
@@ -86,6 +84,8 @@ rb_call_inits()
     Init_GC();
     Init_marshal();
     Init_Enumerator();
-    Init_vm();
+    Init_ISeq();
+    Init_VM();
+    Init_Thread();
     Init_version();
 }

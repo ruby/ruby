@@ -5,7 +5,7 @@
   $Author$
   $Date$
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
 
@@ -1488,7 +1488,7 @@ yarv_init_redefined_flag()
     VALUE *dfp;                      // lfp
     yarv_iseq_t * block_iseq; // 0
   };
-  
+
   struct C_METHDO_FRAME{
     VALUE block_ptr;
     VALUE special;

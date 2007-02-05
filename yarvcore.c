@@ -17,8 +17,8 @@
 #include "yarv.h"
 #include "gc.h"
 
-VALUE cYarvThread;
 VALUE rb_cVM;
+VALUE rb_cThread;
 
 VALUE symIFUNC;
 VALUE symCFUNC;
@@ -257,6 +257,7 @@ vm_mark(void *ptr)
 	}
 	MARK_UNLESS_NULL(vm->thgroup_default);
 	MARK_UNLESS_NULL(vm->mark_object_ary);
+	MARK_UNLESS_NULL(vm->last_status);
     }
     MARK_REPORT_LEAVE("vm");
 }
@@ -278,7 +279,6 @@ vm_init2(yarv_vm_t *vm)
 {
     MEMZERO(vm, yarv_vm_t, 1);
 }
-
 
 /**********/
 /* Thread */
@@ -402,7 +402,7 @@ th_init2(yarv_thread_t *th)
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
-    
+
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
 
@@ -467,7 +467,6 @@ yarv_th_eval(yarv_thread_t *th, VALUE iseqval)
 /********************************************************************/
 
 VALUE insns_name_array(void);
-VALUE Init_yarvthread(void);
 extern VALUE *rb_gc_stack_start;
 
 VALUE
@@ -531,17 +530,18 @@ char *yarv_options = ""
 #endif
     ;
 
-void Init_ISeq(void);
-
 void
-Init_vm(void)
+Init_VM(void)
 {
-    Init_ISeq();
-
     /* ::VM */
     rb_cVM = rb_define_class("VM", rb_cObject);
     rb_undef_alloc_func(rb_cVM);
     
+    /* ::Thread */
+    rb_cThread = rb_define_class("Thread", rb_cObject);
+    rb_undef_alloc_func(rb_cThread);
+    rb_define_method(rb_cThread, "initialize", thread_init, 0);
+
     /* ::VM::USAGE_ANALISYS_* */
     rb_define_const(rb_cVM, "USAGE_ANALISYS_INSN", rb_hash_new());
     rb_define_const(rb_cVM, "USAGE_ANALISYS_REGS", rb_hash_new());
@@ -554,13 +554,7 @@ Init_vm(void)
     /* ::VM::eval() */
     rb_define_singleton_method(rb_cVM, "eval", yarvcore_eval, 3);
 
-    /* ::VM::Thread */
-    cYarvThread = rb_define_class_under(rb_cVM, "Thread", rb_cObject);
-    rb_define_global_const("Thread", cYarvThread);
-    rb_undef_alloc_func(cYarvThread);
-    rb_define_method(cYarvThread, "initialize", thread_init, 0);
-
-    /* debug functions */
+    /* debug functions ::VM::SDR(), ::VM::NSDR() */
     rb_define_singleton_method(rb_cVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cVM, "NSDR", sdr, 0);
 
@@ -610,10 +604,7 @@ Init_vm(void)
     idFuncall = rb_intern("funcall");
     id__send_bang = rb_intern("__send!");
 
-#if TEST_AOT_COMPILE
-    Init_compiled();
-#endif
-    /* VM bootstrap: phase 1 */
+    /* VM bootstrap: phase 2 */
     {
 	/* create vm object */
 	VALUE vmval = vm_alloc(rb_cVM);
@@ -632,7 +623,7 @@ Init_vm(void)
 	rb_ary_push(yarvVMArray, vm->self);
 
 	/* create main thread */
-	thval = yarv_thread_alloc(cYarvThread);
+	thval = yarv_thread_alloc(rb_cThread);
 	GetThreadPtr(thval, th);
 
 	vm->main_thread = th;
@@ -645,9 +636,6 @@ Init_vm(void)
 	th->machine_stack_start = rb_gc_stack_start;
 	vm->living_threads = st_init_numtable();
 	st_insert(vm->living_threads, th->self, (st_data_t) th->thread_id);
-
-	Init_yarvthread();
-	th->thgroup = th->vm->thgroup_default;
     }
     yarv_init_redefined_flag();
 }
@@ -667,3 +655,4 @@ Init_yarv(void)
     th->machine_stack_start = rb_gc_stack_start;
     yarv_set_current_running_thread_raw(th);
 }
+

@@ -2970,7 +2970,6 @@ static void
 pipe_finalize(OpenFile *fptr, int noraise)
 {
 #if !defined(HAVE_FORK) && !defined(_WIN32)
-    extern VALUE rb_last_status;
     int status;
     if (fptr->stdio_file) {
 	status = pclose(fptr->stdio_file);
@@ -2980,7 +2979,7 @@ pipe_finalize(OpenFile *fptr, int noraise)
 #if defined DJGPP
     status <<= 8;
 #endif
-    rb_last_status = INT2FIX(status);
+    /* TODO: need it? -> rb_last_status = INT2FIX(status); */
 #else
     fptr_finalize(fptr, noraise);
 #endif

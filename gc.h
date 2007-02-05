@@ -1,4 +1,11 @@
 
+#ifndef RUBY_GC_H
+#define RUBY_GC_H 1
+
+NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
+
+/* for GC debug */
+
 #ifndef MARK_FREE_DEBUG
 #define MARK_FREE_DEBUG 0
 #endif
@@ -46,3 +53,5 @@ rb_gc_debug_body(char *mode, char *msg, int st, void *ptr)
 
 #define MARK_UNLESS_NULL(ptr) if(ptr){rb_gc_mark(ptr);}
 #define FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);}
+#endif /* RUBY_GC_H */
+

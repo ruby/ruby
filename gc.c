@@ -539,9 +539,7 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
     return (VALUE)data;
 }
 
-NOINLINE(void yarv_set_stack_end(VALUE **stack_end_p));
-
-#define YARV_SET_STACK_END yarv_set_stack_end(&th->machine_stack_end)
+#define SET_STACK_END rb_gc_set_stack_end(&th->machine_stack_end)
 #define STACK_START (th->machine_stack_start)
 #define STACK_END (th->machine_stack_end)
 
@@ -565,7 +563,7 @@ static int
 stack_grow_direction(VALUE *addr)
 {
   yarv_thread_t *th = GET_THREAD();
-  YARV_SET_STACK_END;
+  SET_STACK_END;
 
   if (STACK_END > addr) return grow_direction = 1;
   return grow_direction = -1;
@@ -577,7 +575,7 @@ stack_grow_direction(VALUE *addr)
 #define GC_WATER_MARK 512
 
 #define CHECK_STACK(ret) do {\
-    YARV_SET_STACK_END;\
+    SET_STACK_END;\
     (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK);\
 } while (0)
 
@@ -585,7 +583,7 @@ int
 ruby_stack_length(VALUE **p)
 {
   yarv_thread_t *th = GET_THREAD();
-  YARV_SET_STACK_END;
+  SET_STACK_END;
   if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
   return STACK_LENGTH;
 }
@@ -1355,7 +1353,7 @@ garbage_collect(void)
     }
     during_gc++;
 
-    YARV_SET_STACK_END;
+    SET_STACK_END;
 
     init_mark_stack();
 

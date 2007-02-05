@@ -14,6 +14,8 @@
 
 #include "ruby.h"
 #include "rubysig.h"
+#include "yarvcore.h"
+
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
@@ -194,16 +196,21 @@ get_ppid(void)
  */
 
 static VALUE rb_cProcStatus;
-VALUE rb_last_status = Qnil;
 
 static void
 last_status_set(int status, int pid)
 {
-    rb_last_status = rb_obj_alloc(rb_cProcStatus);
-    rb_iv_set(rb_last_status, "status", INT2FIX(status));
-    rb_iv_set(rb_last_status, "pid", INT2FIX(pid));
+    yarv_vm_t *vm = GET_VM();
+    vm->last_status = rb_obj_alloc(rb_cProcStatus);
+    rb_iv_set(vm->last_status, "status", INT2FIX(status));
+    rb_iv_set(vm->last_status, "pid", INT2FIX(pid));
 }
 
+static VALUE
+last_status_get(void)
+{
+    return GET_VM()->last_status;
+}
 
 /*
  *  call-seq:
@@ -636,7 +643,7 @@ static int
 waitall_each(int pid, int status, VALUE ary)
 {
     last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status));
+    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
     return ST_DELETE;
 }
 #endif
@@ -721,7 +728,7 @@ proc_wait(int argc, VALUE *argv)
     if ((pid = rb_waitpid(pid, &status, flags)) < 0)
 	rb_sys_fail(0);
     if (pid == 0) {
-	return rb_last_status = Qnil;
+	return GET_VM()->last_status = Qnil;
     }
     return INT2FIX(pid);
 }
@@ -749,7 +756,7 @@ proc_wait2(int argc, VALUE *argv)
 {
     VALUE pid = proc_wait(argc, argv);
     if (NIL_P(pid)) return Qnil;
-    return rb_assoc_new(pid, rb_last_status);
+    return rb_assoc_new(pid, GET_VM()->last_status);
 }
 
 
@@ -798,10 +805,10 @@ proc_waitall(void)
 	    rb_sys_fail(0);
 	}
 	last_status_set(status, pid);
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status));
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
     }
 #else
-    rb_last_status = Qnil;
+    GET_VM()->last_status = Qnil;
     for (pid = -1;;) {
 	pid = rb_waitpid(-1, &status, 0);
 	if (pid == -1) {
@@ -809,7 +816,7 @@ proc_waitall(void)
 		break;
 	    rb_sys_fail(0);
 	}
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status));
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
     }
 #endif
     return result;
@@ -822,7 +829,7 @@ detach_process_watcher(int *pid_p)
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid != 0) return rb_last_status;
+	if (cpid != 0) return GET_VM()->last_status;
 	rb_thread_sleep(1);
     }
 }
@@ -1601,7 +1608,7 @@ rb_f_system(int argc, VALUE *argv)
     if (status < 0) {
 	rb_sys_fail(RSTRING_PTR(argv[0]));
     }
-    status = NUM2INT(rb_last_status);
+    status = NUM2INT(GET_VM()->last_status);
     if (status == EXIT_SUCCESS) return Qtrue;
     return Qfalse;
 }
@@ -3593,8 +3600,8 @@ VALUE rb_mProcID_Syscall;
 void
 Init_process(void)
 {
+    rb_define_virtual_variable("$?", last_status_get, 0);
     rb_define_virtual_variable("$$", get_pid, 0);
-    rb_define_readonly_variable("$?", &rb_last_status);
     rb_define_global_function("exec", rb_f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);

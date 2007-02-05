@@ -1,3 +1,34 @@
+Mon Feb  5 21:06:50 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_thread.c, common.mk: remove eval_thread.c.
+
+	* yarvcore.c: rename cYarvThread to rb_cThread.
+
+	* gc.c: remove YARV_* prefix.
+
+	* gc.h: add an include guard and prototype of rb_gc_set_stack_end().
+
+	* inits.c: fix to ANSI prototype style and reorder Init_*().
+
+	* io.c (pipe_finalize): TODO: comment out last_status.
+
+	* process.c, yarvcore.h: fix to use yarv_vm_t#last_status instead of
+	  rb_last_status and make last_status_get() to access $?.
+
+	* yarvcore.c (vm_mark): mark yarv_vm_t#last_status.
+
+	* ruby.h: add declarations of rb_cISeq and rb_cVM.
+
+	* thread.c: move eval_thread.c codes to thread.c and remove yarv_*
+	  function prefix.
+
+	* thread.c (thread_start_func_2): use yarv_thread_t#first_func if
+	  it is not null.
+
+	* vm.c: fix copyright year.
+
+	* yarvcore.c (Init_vm): rename to Init_VM().
+
 Mon Feb  5 04:09:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_frame_callee): check if prev_cfp can be accessible.

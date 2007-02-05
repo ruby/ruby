@@ -23,6 +23,7 @@
 #endif
 #include "ruby.h"
 #include "st.h"
+#include "node.h"
 
 #include "debug.h"
 #include "vm_opts.h"
@@ -97,13 +98,7 @@
 #define GCDEBUG   0
 
 
-
-
 /* classes and modules */
-extern VALUE cYarvVM;
-extern VALUE cYarvThread;
-extern VALUE rb_cISeq;
-extern VALUE rb_cVM;
 
 extern VALUE symIFUNC;
 extern VALUE symCFUNC;
@@ -326,10 +321,11 @@ typedef struct yarv_vm_struct {
 
     st_table *living_threads;
     VALUE thgroup_default;
+    VALUE last_status; /* $? */
 
     int thread_abort_on_exception;
-    int exit_code;
     unsigned long trace_flag;
+    int exit_code;
 
     /* object management */
     VALUE mark_object_ary;
@@ -457,6 +453,8 @@ typedef struct yarv_thread_struct
 
     VALUE first_proc;
     VALUE first_args;
+    VALUE (*first_func)(ANYARGS);
+    void *first_func_arg;
 
     /* for GC */
     VALUE *machine_stack_start;
@@ -612,7 +610,7 @@ extern void vm_stack_dump_raw(yarv_thread_t *, yarv_control_frame_t *);
 
 #define GVL_UNLOCK_BEGIN() do { \
   yarv_thread_t *_th_stored = GET_THREAD(); \
-  yarv_save_machine_context(_th_stored); \
+  rb_gc_save_machine_context(_th_stored); \
   native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
 
 #define GVL_UNLOCK_END() \
@@ -620,10 +618,8 @@ extern void vm_stack_dump_raw(yarv_thread_t *, yarv_control_frame_t *);
   yarv_set_current_running_thread(_th_stored); \
 } while(0)
 
-NOINLINE(void yarv_set_stack_end(VALUE **stack_end_p));
-NOINLINE(void yarv_save_machine_context(yarv_thread_t *));
-
-extern int rb_thread_pending;
+NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
+NOINLINE(void rb_gc_save_machine_context(yarv_thread_t *));
 
 void yarv_thread_execute_interrupts(yarv_thread_t *);
 
