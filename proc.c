@@ -157,7 +157,8 @@ proc_dup(VALUE self)
     return procval;
 }
 
-VALUE yarv_proc_dup(VALUE self)
+static VALUE
+yarv_proc_dup(VALUE self)
 {
     return proc_dup(self);
 }
@@ -715,8 +716,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mklass)
 
 
 static VALUE
-method_eq(method, other)
-    VALUE method, other;
+method_eq(VALUE method, VALUE other)
 {
     struct METHOD *m1, *m2;
 
@@ -744,8 +744,7 @@ method_eq(method, other)
  */
 
 static VALUE
-method_hash(method)
-    VALUE method;
+method_hash(VALUE method)
 {
     struct METHOD *m;
     long hash;
@@ -769,8 +768,7 @@ method_hash(method)
  */
 
 static VALUE
-method_unbind(obj)
-    VALUE obj;
+method_unbind(VALUE obj)
 {
     VALUE method;
     struct METHOD *orig, *data;
@@ -867,9 +865,7 @@ method_owner(VALUE obj)
  */
 
 VALUE
-rb_obj_method(obj, vid)
-    VALUE obj;
-    VALUE vid;
+rb_obj_method(VALUE obj, VALUE vid)
 {
     return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod);
 }
@@ -907,9 +903,7 @@ rb_obj_method(obj, vid)
  */
 
 static VALUE
-rb_mod_method(mod, vid)
-    VALUE mod;
-    VALUE vid;
+rb_mod_method(VALUE mod, VALUE vid)
 {
     return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod);
 }
@@ -950,8 +944,6 @@ rb_mod_method(mod, vid)
  *     Charge it!
  *     #<B:0x401b39e8>
  */
-
-VALUE yarv_proc_dup(VALUE self);
 
 static VALUE
 rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
@@ -1022,8 +1014,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
  */
 
 static VALUE
-method_clone(self)
-    VALUE self;
+method_clone(VALUE self)
 {
     VALUE clone;
     struct METHOD *orig, *data;
@@ -1175,8 +1166,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
  */
 
 static VALUE
-umethod_bind(method, recv)
-    VALUE method, recv;
+umethod_bind(VALUE method, VALUE recv)
 {
     struct METHOD *data, *bound;
 
@@ -1192,8 +1182,7 @@ umethod_bind(method, recv)
 	}
     }
 
-    method =
-	Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, free, bound);
+    method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, free, bound);
     *bound = *data;
     bound->recv = recv;
     bound->rklass = CLASS_OF(recv);
@@ -1202,7 +1191,7 @@ umethod_bind(method, recv)
 }
 
 int
-rb_node_arity(NODE * body)
+rb_node_arity(NODE* body)
 {
     int n;
 
@@ -1278,16 +1267,14 @@ rb_node_arity(NODE * body)
  */
 
 static VALUE
-method_arity_m(method)
-    VALUE method;
+method_arity_m(VALUE method)
 {
     int n = method_arity(method);
     return INT2FIX(n);
 }
 
 static int
-method_arity(method)
-    VALUE method;
+method_arity(VALUE method)
 {
     struct METHOD *data;
 
@@ -1296,18 +1283,14 @@ method_arity(method)
 }
 
 int
-rb_mod_method_arity(mod, id)
-    VALUE mod;
-    ID id;
+rb_mod_method_arity(VALUE mod, ID id)
 {
     NODE *node = rb_method_node(mod, id);
     return rb_node_arity(node);
 }
 
 int
-rb_obj_method_arity(obj, id)
-    VALUE obj;
-    ID id;
+rb_obj_method_arity(VALUE obj, ID id)
 {
     return rb_mod_method_arity(CLASS_OF(obj), id);
 }
@@ -1478,7 +1461,7 @@ localjump_reason(VALUE exc)
  */
 
 void
-Init_Proc()
+Init_Proc(void)
 {
     /* Env */
     rb_cVM = rb_define_class("VM", rb_cObject); /* TODO: should be moved to suitable place */
@@ -1501,19 +1484,10 @@ Init_Proc()
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
 
-    /* Binding */
-    rb_cBinding = rb_define_class("Binding", rb_cObject);
-    rb_undef_alloc_func(rb_cBinding);
-    rb_undef_method(CLASS_OF(rb_cBinding), "new");
-    rb_define_method(rb_cBinding, "clone", binding_clone, 0);
-    rb_define_method(rb_cBinding, "dup", binding_dup, 0);
-    rb_define_global_function("binding", rb_f_binding, 0);
-
+    /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
     rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
-
-    /* Exceptions */
     exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
     rb_register_mark_object(exception_error);
 
@@ -1603,8 +1577,13 @@ Init_Proc()
  */
 
 void
-Init_Binding()
+Init_Binding(void)
 {
-    
+    rb_cBinding = rb_define_class("Binding", rb_cObject);
+    rb_undef_alloc_func(rb_cBinding);
+    rb_undef_method(CLASS_OF(rb_cBinding), "new");
+    rb_define_method(rb_cBinding, "clone", binding_clone, 0);
+    rb_define_method(rb_cBinding, "dup", binding_dup, 0);
+    rb_define_global_function("binding", rb_f_binding, 0);
 }
 
