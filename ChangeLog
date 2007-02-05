@@ -1,3 +1,7 @@
+Mon Feb  5 21:26:56 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.h: add a prototype of rb_id2str().
+
 Mon Feb  5 21:06:50 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_thread.c, common.mk: remove eval_thread.c.

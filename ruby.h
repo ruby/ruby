@@ -596,6 +596,7 @@ ID rb_intern(const char*);
 ID rb_intern2(const char*, long);
 const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
+VALUE rb_id2str(ID);
 
 char *rb_class2name(VALUE);
 char *rb_obj_classname(VALUE);
