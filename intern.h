@@ -413,6 +413,8 @@ VALUE rb_sym_all_symbols(void);
 ID rb_compose_ivar2(ID, VALUE);
 ID rb_decompose_ivar2(ID, VALUE*);
 /* process.c */
+void rb_last_status_set(int status, rb_pid_t pid);
+VALUE rb_last_status_get(void);
 struct rb_exec_arg {
     int argc;
     VALUE *argv;

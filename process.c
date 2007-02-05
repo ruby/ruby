@@ -197,8 +197,8 @@ get_ppid(void)
 
 static VALUE rb_cProcStatus;
 
-static void
-last_status_set(int status, int pid)
+void
+rb_last_status_set(int status, rb_pid_t pid)
 {
     yarv_vm_t *vm = GET_VM();
     vm->last_status = rb_obj_alloc(rb_cProcStatus);
@@ -206,8 +206,8 @@ last_status_set(int status, int pid)
     rb_iv_set(vm->last_status, "pid", INT2FIX(pid));
 }
 
-static VALUE
-last_status_get(void)
+VALUE
+rb_last_status_get(void)
 {
     return GET_VM()->last_status;
 }
@@ -588,7 +588,7 @@ rb_waitpid(int pid, int *st, int flags)
     }
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, (st_data_t *)st)) {
-	last_status_set(*st, pid);
+	rb_last_status_set(*st, pid);
 	st_delete(pid_tbl, (st_data_t*)&pid, NULL);
 	return pid;
     }
@@ -618,7 +618,7 @@ rb_waitpid(int pid, int *st, int flags)
     }
 #endif
     if (result > 0) {
-	last_status_set(*st, result);
+	rb_last_status_set(*st, result);
     }
     return result;
 }
@@ -642,7 +642,7 @@ wait_each(int pid, int status, struct wait_data *data)
 static int
 waitall_each(int pid, int status, VALUE ary)
 {
-    last_status_set(status, pid);
+    rb_last_status_set(status, pid);
     rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
     return ST_DELETE;
 }
@@ -804,7 +804,7 @@ proc_waitall(void)
 	    }
 	    rb_sys_fail(0);
 	}
-	last_status_set(status, pid);
+	rb_last_status_set(status, pid);
 	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
     }
 #else
@@ -1103,7 +1103,7 @@ proc_spawn_v(char **argv, char *prog)
 #endif
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
-    last_status_set(status == -1 ? 127 : status, 0);
+    rb_last_status_set(status == -1 ? 127 : status, 0);
     after_exec();
     return status;
 }
@@ -1140,7 +1140,7 @@ proc_spawn(char *str)
 	    char *shell = dln_find_exe("sh", 0);
 	    before_exec();
 	    status = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
-	    last_status_set(status == -1 ? 127 : status, 0);
+	    rb_last_status_set(status == -1 ? 127 : status, 0);
 	    after_exec();
 	    return status;
 	}
@@ -1557,9 +1557,9 @@ rb_spawn(int argc, VALUE *argv)
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
 # if defined(__human68k__) || defined(__DJGPP__)
-    last_status_set(status == -1 ? 127 : status, 0);
+    rb_last_status_set(status == -1 ? 127 : status, 0);
 # else
-    last_status_set((status & 0xff) << 8, 0);
+    rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 #endif
     return status;
@@ -3600,7 +3600,7 @@ VALUE rb_mProcID_Syscall;
 void
 Init_process(void)
 {
-    rb_define_virtual_variable("$?", last_status_get, 0);
+    rb_define_virtual_variable("$?", rb_last_status_get, 0);
     rb_define_virtual_variable("$$", get_pid, 0);
     rb_define_global_function("exec", rb_f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);

@@ -1,3 +1,16 @@
+Tue Feb  6 01:07:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* intern.h: prepare rb_last_status_get() and rb_last_status_set().
+	  Use these functions instead of rb_last_status ([ruby-dev:30264]).
+
+	* process.c: define above functions.
+
+	* ext/pty/pty.c: use above functins.
+
+	* io.c (pipe_finalize): ditto.
+
+	* process.c: ditto.
+
 Mon Feb  5 21:26:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.h: add a prototype of rb_id2str().

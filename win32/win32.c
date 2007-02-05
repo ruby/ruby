@@ -837,8 +837,6 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
     return ret;
 }
 
-extern VALUE rb_last_status;
-
 int
 rb_w32_spawn(int mode, const char *cmd, const char *prog)
 {
@@ -863,7 +861,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     switch (mode) {
       case P_WAIT:
 	rb_syswait(child->pid);
-	return NUM2INT(rb_last_status);
+	return NUM2INT(rb_last_status_get());
       case P_NOWAIT:
 	return child->pid;
       case P_OVERLAY:

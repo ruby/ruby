@@ -2979,7 +2979,7 @@ pipe_finalize(OpenFile *fptr, int noraise)
 #if defined DJGPP
     status <<= 8;
 #endif
-    /* TODO: need it? -> rb_last_status = INT2FIX(status); */
+    rb_last_status_set(status, fptr->pid);
 #else
     fptr_finalize(fptr, noraise);
 #endif

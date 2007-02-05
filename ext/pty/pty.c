@@ -135,13 +135,12 @@ struct pty_info {
 static void
 raise_from_wait(char *state, struct pty_info *info)
 {
-    extern VALUE rb_last_status;
     char buf[1024];
     VALUE exc;
 
     snprintf(buf, sizeof(buf), "pty - %s: %ld", state, (long)info->child_pid);
     exc = rb_exc_new2(eChildExited, buf);
-    rb_iv_set(exc, "status", rb_last_status);
+    rb_iv_set(exc, "status", rb_last_status_get());
     rb_funcall(info->thread, rb_intern("raise"), 1, exc);
 }
 
