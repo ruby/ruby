@@ -3325,7 +3325,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_IASGN:
       case NODE_IASGN2:{
-	  int is_local = (nd_type(node) == NODE_IVAR2) ? 1 : 0;
+	  int is_local = (nd_type(node) == NODE_IASGN2) ? 1 : 0;
 	  COMPILE(ret, "lvalue", node->nd_value);
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);

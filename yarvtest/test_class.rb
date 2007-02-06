@@ -754,6 +754,27 @@ class TestClass < YarvTestBase
     ae %q{
       class C
         def initialize
+          @_v = 1
+        end
+        
+        def foo
+          @_v
+        end
+      end
+      class D < C
+        def initialize
+          @_v = 2
+          super
+        end
+        def foo
+          [@_v, super]
+        end
+      end
+      D.new.foo
+    }
+    ae %q{
+      class C
+        def initialize
           @_c = 1
         end
       end
