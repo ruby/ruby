@@ -1,3 +1,8 @@
+Tue Feb  6 11:18:41 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: check the control connection on EPIPE.
+	  Thanks, Simon Williams. [ruby-core:9547]
+
 Tue Feb  6 11:03:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* complement last commit.

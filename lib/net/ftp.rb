@@ -291,6 +291,13 @@ module Net
 	putline(cmd)
 	voidresp
       end
+    rescue Errno::EPIPE
+      # EPIPE, in this case, means that the data connection was unexpectedly
+      # terminated.  Rather than just raising EPIPE to the caller, check the
+      # response on the control connection.  If getresp doesn't raise a more
+      # appropriate exception, re-raise the original exception.
+      getresp
+      raise
     end
     
     def sendport(host, port)
@@ -427,6 +434,13 @@ module Net
           voidresp
         end
       end
+    rescue Errno::EPIPE
+      # EPIPE, in this case, means that the data connection was unexpectedly
+      # terminated.  Rather than just raising EPIPE to the caller, check the
+      # response on the control connection.  If getresp doesn't raise a more
+      # appropriate exception, re-raise the original exception.
+      getresp
+      raise
     end
     
     #
