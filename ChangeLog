@@ -1,3 +1,9 @@
+Tue Feb  6 16:38:08 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_opts.h: set properties:
+	  svn:keywords:  Author Date Id Revision
+	  svn:eol-style: native
+
 Tue Feb  6 15:55:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (ivar_i): need to support class local instance

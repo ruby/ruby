@@ -3,8 +3,8 @@
 
   vm_opts.h - VM optimize option
 
-  $Author: nobu $
-  $Date: 2007-02-03 00:21:41 +0900 (土, 03 2 2007) $
+  $Author$
+  $Date$
 
   Copyright (C) 2004-2006 Koichi Sasada
 
