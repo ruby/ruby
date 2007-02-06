@@ -1,3 +1,8 @@
+Tue Feb  6 20:29:44 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, lib/rss/parser.rb: removed needless code for
+	backward compatibility.
+
 Tue Feb  6 18:43:17 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb: moved fixes for EPIPE to the correct

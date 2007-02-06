@@ -30,35 +30,6 @@ class Time
   end
 end
 
-module Enumerable
-  unless instance_methods.include?("sort_by")
-    def sort_by
-      collect do |x|
-        [yield(x), x]
-      end.sort do |x, y|
-        x[0] <=> y[0]
-      end.collect! do |x|
-        x[1]
-      end
-    end
-  end
-end
-
-class Hash
-  unless instance_methods.include?("merge")
-    def merge(other)
-      dup.update(other)
-    end
-  end
-end
-
-module Kernel
-  unless methods.include?("funcall")
-    def funcall(*args, &block)
-      __send__(*args, &block)
-    end
-  end
-end
 
 require "English"
 require "rss/utils"
