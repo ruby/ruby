@@ -1,3 +1,8 @@
+Tue Feb  6 18:43:17 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: moved fixes for EPIPE to the correct
+	  place. [ruby-core:10204]
+
 Tue Feb  6 16:38:08 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h: set properties:
