@@ -1,8 +1,12 @@
-Tue Feb  6 10:02:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb  6 11:03:27 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* complement last commit.
 
 	* common.mk (*.inc): use VPATH.
 
 	* vm_opts.h: renamed from vm_opts.h.base.
+
+Tue Feb  6 10:02:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/insns2vm.rb: use vm_opts.h in VPATH.
 

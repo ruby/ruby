@@ -387,7 +387,7 @@ enumerator.$(OBJEXT): {$(VPATH)}enumerator.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}st.h vm_opts.h
+  {$(VPATH)}st.h {$(VPATH)}vm_opts.h
 euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h
 
@@ -508,70 +508,66 @@ compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
         {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}yarv.h \
-        insns.inc insns_info.inc optinsn.inc opt_sc.inc optunifs.inc vm_opts.h
+        {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
+        {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}yarv.h \
-        {$(VPATH)}gc.h vm_opts.h insns.inc insns_info.inc
+        {$(VPATH)}gc.h {$(VPATH)}vm_opts.h \
+        {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
         {$(VPATH)}yarvcore.h {$(VPATH)}debug.h  {$(VPATH)}ruby.h config.h\
         {$(VPATH)}node.h {$(VPATH)}yarv.h {$(VPATH)}version.h \
         {$(VPATH)}util.h {$(VPATH)}rubysig.h {$(VPATH)}dln.h \
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
-        insns.inc vm.inc vmtc.inc vm_macro.inc vm_opts.h {$(VPATH)}eval_intern.h
+        {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
+        {$(VPATH)}vm_macro.inc {$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h
 vm_dump.$(OBJEXT): {$(VPATH)}yarvcore.h {$(VPATH)}vm.h config.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}debug.h \
-        {$(VPATH)}yarv.h {$(VPATH)}version.h vm_opts.h 
+        {$(VPATH)}yarv.h {$(VPATH)}version.h {$(VPATH)}vm_opts.h 
 yarvcore.$(OBJEXT): {$(VPATH)}yarvcore.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-        {$(VPATH)}node.h  {$(VPATH)}yarv.h {$(VPATH)}gc.h vm_opts.h
+        {$(VPATH)}node.h  {$(VPATH)}yarv.h {$(VPATH)}gc.h {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): {$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
         {$(VPATH)}st.h
 blockinlining.$(OBJEXT): {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
         {$(VPATH)}node.h {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h \
-        {$(VPATH)}debug.h vm_opts.h
+        {$(VPATH)}debug.h {$(VPATH)}vm_opts.h
 
 
 MATZRUBY = $(MATZRUBYDIR)ruby
 
-INSNS2VMOPT = $(CPPFLAGS) --srcdir=$(srcdir)
+INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
+	  vmtc.inc vm.inc vm_macro.inc
 
-minsns.inc:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+INSNS2VMOPT = $(CPPFLAGS) --srcdir="$(srcdir)"
 
-opt_sc.inc:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
-optinsn.inc:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) optinsn.inc
+opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl
 
-optunifs.inc:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) optunifs.inc
+optinsn.inc: $(srcdir)/template/optinsn.inc.tmpl
 
-insns.inc: $(srcdir)/insns.def
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+optunifs.inc: $(srcdir)/template/optunifs.inc.tmpl
 
-insns_info.inc: $(srcdir)/insns.def
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) insns_info.inc
+insns.inc: $(srcdir)/template/insns.inc.tmpl
 
-vmtc.inc:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vmtc.inc
+insns_info.inc: $(srcdir)/template/insns_info.inc.tmpl
 
-vm.inc: $(srcdir)/insns.def
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm.inc
+vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
+
+vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 vm_macro.inc: $(srcdir)/vm_macro.def
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm_macro.inc
 
-vm_opts.h: $(srcdir)/vm_opts.h.base
+$(INSNS): $(srcdir)/insns.def vm_opts.h
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
 
-incs:
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+incs: $(INSNS)
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
