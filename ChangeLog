@@ -1,3 +1,15 @@
+Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
+          imported nkf 2007-01-28.
+          * Fixed: can't decode MIME encode JIS string.
+          * Fixed: Fullwitdh-halfwidth conversion.
+          * Support DoCoMo's and Softbank's EMOJI
+          * Support CP932, CP5022x, eucJP-ms UDC
+          * Support UTF-32 encoding
+          * Support beyond BMP
+          [ruby-dev:29700] [ruby-dev:29922] [ruby-dev:30144]
+
 Tue Feb  6 20:36:19 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, lib/rss/parser.rb: followed current Ruby
