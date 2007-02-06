@@ -218,7 +218,7 @@ module RSS
 
       def def_get_text_element(uri, name, file, line)
         register_uri(uri, name)
-        unless private_instance_methods(false).include?("start_#{name}")
+        unless private_instance_methods(false).include?("start_#{name}".to_sym)
           module_eval(<<-EOT, file, line)
           def start_#{name}(name, prefix, attrs, ns)
             uri = ns[prefix]

@@ -25,7 +25,7 @@ class Time
     end
   end
 
-  unless instance_methods.include?("w3cdtf")
+  unless method_defined?(:w3cdtf)
     alias w3cdtf iso8601
   end
 end
@@ -783,7 +783,7 @@ EOC
     def other_element(need_convert, indent='')
       rv = []
       private_methods.each do |meth|
-        if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
+        if /\A([^_]+)_[^_]+_elements?\z/ =~ meth.to_s and
             self.class::NSPOOL.has_key?($1)
           res = __send__(meth, need_convert, indent)
           rv << res if /\A\s*\z/ !~ res

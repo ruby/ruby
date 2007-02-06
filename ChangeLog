@@ -1,3 +1,8 @@
+Tue Feb  6 20:36:19 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, lib/rss/parser.rb: followed current Ruby
+	specification. [ruby-dev:30274]
+
 Tue Feb  6 20:29:44 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, lib/rss/parser.rb: removed needless code for
