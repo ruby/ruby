@@ -1,3 +1,15 @@
+Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
+          imported nkf 2007-01-28.
+          * Fixed: can't decode MIME encode JIS string.
+          * Fixed: Fullwitdh-halfwidth conversion.
+          * Support DoCoMo's and Softbank's EMOJI
+          * Support CP932, CP5022x, eucJP-ms UDC
+          * Support UTF-32 encoding
+          * Support beyond BMP
+          [ruby-dev:29700] [ruby-dev:29922] [ruby-dev:30144]
+
 Wed Jan 31 14:52:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_iterate): need to PUSH_ITER in proper order.
