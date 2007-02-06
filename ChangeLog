@@ -1,3 +1,11 @@
+Tue Feb  6 10:02:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (*.inc): use VPATH.
+
+	* vm_opts.h: renamed from vm_opts.h.base.
+
+	* tool/insns2vm.rb: use vm_opts.h in VPATH.
+
 Tue Feb  6 03:47:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: support Binding#eval.

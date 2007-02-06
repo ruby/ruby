@@ -5,8 +5,71 @@
 # $verbose = true
 # $use_const = true
 
+Version = %w$Revision: 11626 $[1..-1]
+
 require 'pp'
 require 'erb'
+require 'optparse'
+
+module VPATH
+  def search(meth, base, *rest)
+    begin
+      meth.call(base, *rest)
+    rescue Errno::ENOENT => error
+      each do |dir|
+        return meth.call(File.join(dir, base), *rest) rescue nil
+      end
+      raise error
+    end
+  end
+
+  def process(*args, &block)
+    search(File.method(__callee__), *args, &block)
+  end
+
+  alias stat process
+  alias lstat process
+
+  def open(*args)
+    f = search(File.method(:open), *args)
+    if block_given?
+      begin
+        yield f
+      ensure
+        f.close unless f.closed?
+      end
+    else
+      f
+    end
+  end
+
+  def read(*args)
+    open(*args) {|f| f.read}
+  end
+
+  def foreach(file, *args, &block)
+    open(file) {|f| f.each(*args, &block)}
+  end
+
+  def self.def_options(opt)
+    vpath = []
+    path_sep = ':'
+
+    opt.on("-I", "--srcdir=DIR", "add a directory to search path") {|dir|
+      vpath |= [dir]
+    }
+    opt.on("-L", "--vpath=PATH LIST", "add directories to search path") {|dirs|
+      vpath |= dirs.split(path_sep)
+    }
+    opt.on("--path-separator=SEP", /\A\W\z/, "separator for vpath") {|sep|
+      path_sep = sep
+    }
+
+    proc {
+      vpath.extend(self) unless vpath.empty?
+    }
+  end
+end
 
 class InsnsDef
   class InsnInfo
@@ -95,20 +158,51 @@ class InsnsDef
     end
   end
   
-  def initialize file, optopfile, uniffile
+  def initialize file, optopfile, uniffile, opts = {}
     @insns    = []
     @insn_map = {}
-    
+
+    @vpath = opts['VPATH'] || File
+    @use_const = opts['use-const']
+    @verbose   = opts['verbose']
+
+    (@vm_opts = load_vm_opts).each {|k, v|
+      @vm_opts[k] = opts[k] if opts.key?(k)
+    }
+
     load_insns_def       file
-    
+
     load_opt_operand_def optopfile
     load_insn_unification_def uniffile
-    make_stackcaching_insns            if $opts['OPT_STACK_CACHING']
+    make_stackcaching_insns            if vm_opt?('STACK_CACHING')
   end
 
   attr_reader :insns
   attr_reader :insn_map
+
+  attr_reader :vpath
   
+  %w[use_const verbose].each do |attr|
+    attr_reader attr
+    alias_method "#{attr}?", attr
+    remove_method attr
+  end
+
+  def vm_opt? name
+    @vm_opts[name]
+  end
+
+  def load_vm_opts file = nil
+    file ||= 'vm_opts.h'
+    opts = {}
+    vpath.open(file) do |f|
+      f.grep(/^\#define\s+OPT_([A-Z_]+)\s+(\d+)/) do
+        opts[$1] = !$2.to_i.zero?
+      end
+    end
+    opts
+  end
+
   SKIP_COMMENT_PATTERN = Regexp.compile(Regexp.escape('/** ##skip'))
 
   include Enumerable
@@ -169,12 +263,12 @@ class InsnsDef
       :j => j,
     }
   end
-  
+
   def load_insns_def file
     body = insn = opes = pops = rets = nil
     comment = ''
-    
-    open(file){|f|
+
+    vpath.open(file) {|f|
       f.instance_variable_set(:@line_no, 0)
       class << f
         def line_no
@@ -231,6 +325,7 @@ class InsnsDef
         when /^\}/
           if insn_in
             body.instance_variable_set(:@line_no, line_no)
+            body.instance_variable_set(:@file, f.path)
             insn = make_insn(insn, opes, pops, rets, comment, body, sp_inc)
             insn_in = false
             comment = ''
@@ -248,7 +343,7 @@ class InsnsDef
   
   ## opt op
   def load_opt_operand_def file
-    open(file){|f| f.each{|line|
+    vpath.foreach(file) {|line|
       line = line.gsub(/\#.*/, '').strip
       next  if line.length == 0
       break if /__END__/ =~ line
@@ -256,7 +351,7 @@ class InsnsDef
       insn = $1
       opts = $2
       add_opt_operand insn, opts.split(/,/).map{|e| e.strip}
-    }}
+    }
   end
   
   def label_escape label
@@ -300,7 +395,7 @@ class InsnsDef
 
   ## insn unif
   def load_insn_unification_def file
-    open(file){|f| f.each{|line|
+    vpath.foreach(file) {|line|
       line = line.gsub(/\#.*/, '').strip
       next  if line.length == 0
       break if /__END__/ =~ line
@@ -308,7 +403,7 @@ class InsnsDef
         raise "unknown insn: #{e}" unless @insn_map[e]
         @insn_map[e]
       }
-    }}
+    }
   end
 
   def all_combination sets
@@ -329,7 +424,7 @@ class InsnsDef
   end
 
   def make_unified_insns insns
-    if $opts['OPT_UNIFY_ALL_COMBINATION']
+    if vm_opt?('UNIFY_ALL_COMBINATION')
       insn_sets = insns.map{|insn|
         [insn] + insn.optimized
       }
@@ -633,7 +728,7 @@ class InsnsDef
     
     vars.each{|e|
       next if e[1] == '*'
-      if $use_const
+      if use_const?
         ret << "  const #{e[0][0]} #{e[0][1]} = #{e[1]};"
       else
         ret << "  #define #{e[0][1]} #{e[1]}"
@@ -643,7 +738,7 @@ class InsnsDef
   end
 
   def make_footer_default_operands insn
-    if $use_const
+    if use_const?
       "\n"
     else
       ret = []
@@ -720,23 +815,23 @@ class InsnsDef
   
   def make_header insn
     ret  = "\nINSN_ENTRY(#{insn.name}){\n"
-    ret += "  /* prepare stack status */\n"                 if $verbose
+    ret += "  /* prepare stack status */\n"                 if verbose?
     ret += make_header_prepare_stack insn
     ret += "{\n"
-    ret += "  /* declare stack push val */\n"               if $verbose
+    ret += "  /* declare stack push val */\n"               if verbose?
     ret += make_header_stack_val  insn
-    ret += "  /* declare and initialize default opes */\n"  if $verbose
+    ret += "  /* declare and initialize default opes */\n"  if verbose?
     ret += make_header_default_operands insn
-    ret += "  /* declare and get from iseq */\n"            if $verbose
+    ret += "  /* declare and get from iseq */\n"            if verbose?
     ret += make_header_operands   insn
-    ret += "  /* declare and pop from stack */\n"           if $verbose
+    ret += "  /* declare and pop from stack */\n"           if verbose?
     ret += make_header_stack_pops insn
-    ret += "  /* declare temporary vars */\n"               if $verbose
+    ret += "  /* declare temporary vars */\n"               if verbose?
     ret += make_header_temporary_vars insn
     
-    ret += "  /* for debug */\n"                            if $verbose
+    ret += "  /* for debug */\n"                            if verbose?
     ret += "  DEBUG_ENTER_INSN(\"#{insn.name}\");\n"
-    ret += "  /* management */\n"                           if $verbose
+    ret += "  /* management */\n"                           if verbose?
     ret += "  ADD_PC(1+#{@opn});\n"
     ret += "  PREFETCH(GET_PC());\n"
     ret += "  POPN(#{@popn});\n" if @popn > 0
@@ -756,7 +851,7 @@ class InsnsDef
 
   def make_footer insn
     ret  = ''
-    ret  = "  /* push stack val */\n"                       if $verbose
+    ret  = "  /* push stack val */\n"                       if verbose?
     ret += make_footer_stack_val insn
     # debug info
 
@@ -773,7 +868,8 @@ class InsnsDef
   def make_insn_def insn
     ret  = make_header insn
     if line = insn.body.instance_variable_get(:@line_no)
-      ret << "#line #{line+1} \"#{$insns_def}\"" << "\n"
+      file = insn.body.instance_variable_get(:@file)
+      ret << "#line #{line+1} \"#{file}\"" << "\n"
       ret << insn.body
       ret << '#line __CURRENT_LINE__ "vm.inc"' << "\n"
     else
@@ -790,7 +886,7 @@ class InsnsDef
       vm_body << "\n"
       vm_body << make_insn_def(insn)
     }
-    src = File.read(File.join($srcdir, '/template/vm.inc.tmpl'))
+    src = vpath.read('template/vm.inc.tmpl')
     ERB.new(src).result(binding)
   end
 
@@ -809,7 +905,7 @@ class InsnsDef
       insns_end_table << "  ELABEL_PTR(#{insn.name}),\n"
     }
     
-    ERB.new(File.read($srcdir + '/template/vmtc.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/vmtc.inc.tmpl')).result(binding)
   end
 
 
@@ -903,7 +999,7 @@ class InsnsDef
       }
       EOS
     }
-    ERB.new(File.read($srcdir + '/template/insns_info.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/insns_info.inc.tmpl')).result(binding)
   end
 
 
@@ -916,7 +1012,7 @@ class InsnsDef
       insns << "  %-30s = %d,\n" % ["BIN(#{insn.name})", i]
       i+=1
     }
-    ERB.new(File.read($srcdir + '/template/insns.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/insns.inc.tmpl')).result(binding)
   end
 
 
@@ -930,7 +1026,7 @@ class InsnsDef
               ["\"I#{insn.name}\"", i]
       i+=1
     }
-    ERB.new(File.read($srcdir + '/template/minsns.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/minsns.inc.tmpl')).result(binding)
   end
 
 
@@ -1005,7 +1101,7 @@ class InsnsDef
       }
       rule += "  break;\n";
     }
-    ERB.new(File.read($srcdir + '/template/optinsn.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/optinsn.inc.tmpl')).result(binding)
   end
 
   
@@ -1043,7 +1139,7 @@ class InsnsDef
     }
     unif_insns_data = "static int **unified_insns_data[] = {\n" +
                       unif_insns_data.join(",\n") + "};\n"
-    ERB.new(File.read($srcdir + '/template/optunifs.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/optunifs.inc.tmpl')).result(binding)
   end
 
   ###################################################################
@@ -1063,9 +1159,9 @@ class InsnsDef
     
     sc_insn_next = @insns.map{|insn|
       "  SCS_#{complement_name(insn.nextsc).upcase}" +
-      ($verbose ? " /* #{insn.name} */" : '')
+      (verbose? ? " /* #{insn.name} */" : '')
     }.join(",\n")
-    ERB.new(File.read($srcdir + '/template/opt_sc.inc.tmpl')).result(binding)
+    ERB.new(vpath.read('template/opt_sc.inc.tmpl')).result(binding)
   end
 
   ###################################################################
@@ -1075,7 +1171,7 @@ class InsnsDef
     @insns.each_with_index{|insn, i|
       insn_id2no << "        :#{insn.name} => #{i},\n"
     }
-    ERB.new(File.read($srcdir + '/template/yasmdata.rb.tmpl')).result(binding)
+    ERB.new(vpath.read('template/yasmdata.rb.tmpl')).result(binding)
   end
   
   ###################################################################
@@ -1106,18 +1202,18 @@ class InsnsDef
   
   def desc_ja
     d = desc :j
-    ERB.new(File.read($srcdir + '/template/yarvarch.ja')).result(binding)
+    ERB.new(vpath.read('template/yarvarch.ja')).result(binding)
   end
 
   def desc_en
     d = desc :e
-    ERB.new(File.read($srcdir + '/template/yarvarch.en')).result(binding)
+    ERB.new(vpath.read('template/yarvarch.en')).result(binding)
   end
 
   def vm_macro_inc
     ret = ''
     flag = false
-    File.read($srcdir + '/vm_macro.def').each_line{|line|
+    vpath.foreach('vm_macro.def') {|line|
       line.rstrip!
       if /^MACRO\s/ =~ line
         line.sub!(/^MACRO/, '#define')
@@ -1144,17 +1240,65 @@ class InsnsDef
     'vm_macro.inc'   => :vm_macro_inc,
   }
   
-  def self.make_sources insns_def, opopt_def, unif_def, args = []
-    insns = InsnsDef.new(insns_def, opopt_def, unif_def)
-    
+  def make_sources args = []
     args = Files.keys if args.empty?
-    
-    args.each{|fn|
-      s = Files[fn]
 
-      open(fn, 'w'){|f|
-        f.puts(insns.__send__(s))
-      }
+    args.each{|fn|
+      s = __send__(Files[fn])
+      open(fn, 'w') {|f| f.puts(s)}
+    }
+  end
+
+  def self.make_sources insns_def, opopt_def, unif_def, args = [], opts = {}
+    insns = InsnsDef.new(insns_def, opopt_def, unif_def, opts)
+    insns.make_sources(args)
+  end
+
+  def self.def_options(opt)
+    opts = {}
+    insns_def = 'insns.def'
+    opope_def = 'opt_operand.def'
+    unif_def  = 'opt_insn_unif.def'
+
+    opt.on("-Dname", /\AOPT_(\w+)\z/, "enable VM option") {|s, v|
+      opts[v] = true
+    }
+    opt.on("--enable=name[,name...]", Array,
+           "enable VM options (without OPT_ prefix)") {|*a|
+      a.each {|v| opts[v] = true}
+    }
+    opt.on("-Uname", /\A\w+\z/, "disable VM option") {|s, v|
+      opts[v] = false
+    }
+    opt.on("--disable=name[,name...]", Array,
+           "disable VM options (without OPT_ prefix)") {|*a|
+      a.each {|v| opts[v] = false}
+    }
+    opt.on("-i", "--insnsdef=FILE", "--instructions-def",
+           "instructions definition file") {|n|
+      insns_def = n
+    }
+    opt.on("-o", "--opt-operanddef=FILE", "--opt-operand-def",
+           "vm option: operand definition file") {|n|
+      opope_def = n
+    }
+    opt.on("-u", "--opt-insnunifdef=FILE", "--opt-insn-unif-def",
+           "vm option: instruction unification file") {|n|
+      unif_def = n
+    }
+    opt.on("-C", "--[no-]use-const",
+           "use consts for default operands instead of macros") {|v|
+      opts['use-const'] = v
+    }
+    opt.on("-V", "--[no-]verbose") {|v|
+      opts['verbose'] = v
+    }
+
+    vpath = VPATH.def_options(opt)
+
+    proc {
+      opts['VPATH'] = vpath[]
+      new insns_def, opope_def, unif_def, opts
     }
   end
 end
@@ -1163,58 +1307,18 @@ end
 
 
 ##############################################
-files = []
-$opts = {}
-$srcdir = '.'
-insns_def = 'insns.def'
-opope_def = 'opt_operand.def'
-unif_def  = 'opt_insn_unif.def'
-
-ARGV.each{|e|
-  case e
-  when /\A\-D(\w+)/
-    $opts[$1] = true
-  when /\A--srcdir=(.+)/
-    $srcdir = $1
-  when /\A--insnsdef=(.+)/
-    insns_def = $1
-  when /\A--opt-operanddef=(.+)/
-    opope_def = $1
-  when /\A--opt-insnunifdef=(.+)/
-    unif_def  = $1
-  when /\A-/
-    # ignore
-  else
-    files << e
-  end
-}
-
-optfile = File.join(Dir.pwd, 'vm_opts.h')
-basefile = File.join($srcdir, 'vm_opts.h.base')
-if !FileTest.exist?(optfile) || File.mtime(optfile) < File.mtime(basefile)
-  require 'fileutils'
-  FileUtils.cp(File.join($srcdir, 'vm_opts.h.base'), optfile)
-end
-
-if optfile
-  open(optfile){|f|
-    f.each_line{|line|
-      if /^\#define\s+(OPT_[A-Z_]+)\s+1/ =~ line
-        $opts[$1] = true
-      end
-    }
-  }
-end
-
-$insns_def = File.join($srcdir, insns_def)
-$opope_def = File.join($srcdir, opope_def)
-$unif_def  = File.join($srcdir, unif_def)
-
-def insns_def_new
-  InsnsDef.new $insns_def, $opope_def, $unif_def
+def insns_def_new(argv = ARGV)
+  opt = OptionParser.new
+  insn_maker = InsnsDef.def_options(opt)
+  opt.parse(argv)
+  insn_maker[]
 end
 
 if $0 == __FILE__
-  InsnsDef.make_sources $insns_def, $opope_def, $unif_def, files
+  opts = ARGV.options
+  insn_maker = InsnsDef.def_options(opts)
+  files = opts.parse!
+  insns = insn_maker[]
+  insns.make_sources(files)
 end
 
