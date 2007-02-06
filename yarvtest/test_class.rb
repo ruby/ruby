@@ -749,5 +749,24 @@ class TestClass < YarvTestBase
       :ok
     }
   end
+
+  def test_ivar2
+    ae %q{
+      class C
+        def initialize
+          @_c = 1
+        end
+      end
+
+      class D < C
+        def initialize
+          super
+          @_d = 2
+        end
+      end
+
+      D.new.instance_variables
+    }
+  end
 end
 

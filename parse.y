@@ -8592,7 +8592,6 @@ ID
 rb_decompose_ivar2(ID id, VALUE *klassp)
 {
     struct ivar2_key *kp;
-    ID oid;
 
     if (!st_lookup(global_symbols.id_ivar2, (st_data_t)id, (st_data_t *)&kp)) {
 	return id;

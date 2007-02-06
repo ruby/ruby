@@ -1,3 +1,14 @@
+Tue Feb  6 14:15:34 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def: remove (get|set)instancevariable2 and add a
+	  operand is_local to (get|set)instancevariable.
+
+	* yarvtest/test_class.rb: add a test for class local instance variable.
+
+	* parse.y (rb_decompose_ivar2): remove unused variable oid.
+
+	* tool/insns2vm.rb: remove needless require.
+
 Tue Feb  6 11:18:41 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb: check the control connection on EPIPE.

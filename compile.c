@@ -3323,22 +3323,15 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    (((long)node->nd_entry) | 1));
 	  break;
       }
-      case NODE_IASGN:{
-	  COMPILE(ret, "lvalue", node->nd_value);
-	  if (!poped) {
-	      ADD_INSN(ret, nd_line(node), dup);
-	  }
-	  ADD_INSN1(ret, nd_line(node), setinstancevariable,
-		    ID2SYM(node->nd_vid));
-	  break;
-      }
+      case NODE_IASGN:
       case NODE_IASGN2:{
+	  int is_local = (nd_type(node) == NODE_IVAR2) ? 1 : 0;
 	  COMPILE(ret, "lvalue", node->nd_value);
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
 	  }
-	  ADD_INSN1(ret, nd_line(node), setinstancevariable2,
-		    ID2SYM(node->nd_vid));
+	  ADD_INSN2(ret, nd_line(node), setinstancevariable,
+		    ID2SYM(node->nd_vid), INT2FIX(is_local));
 	  break;
       }
       case NODE_CDECL:{
@@ -3909,19 +3902,14 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  }
 	  break;
       }
-      case NODE_IVAR:{
-	  debugi("nd_vid", node->nd_vid);
-	  if (!poped) {
-	      ADD_INSN1(ret, nd_line(node), getinstancevariable,
-			ID2SYM(node->nd_vid));
-	  }
-	  break;
-      }
+      case NODE_IVAR:
       case NODE_IVAR2:{
+	  int is_local = (nd_type(node) == NODE_IVAR2) ? 1 : 0;
+
 	  debugi("nd_vid", node->nd_vid);
 	  if (!poped) {
-	      ADD_INSN1(ret, nd_line(node), getinstancevariable2,
-			ID2SYM(node->nd_vid));
+	      ADD_INSN2(ret, nd_line(node), getinstancevariable,
+			ID2SYM(node->nd_vid), INT2FIX(is_local));
 	  }
 	  break;
       }

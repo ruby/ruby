@@ -1116,8 +1116,6 @@ class InsnsDef
     insns.each{|insn|
       size = insn.unifs.size
       if size > 0
-        require 'pp'
-        
         insn.unifs.sort_by{|unif| -unif[1].size}.each_with_index{|unif, i|
           
           uni_insn, uni_insns = *unif

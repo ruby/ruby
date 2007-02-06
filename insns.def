@@ -175,60 +175,38 @@ setdynamic
 /**
   @c variable
   @e get instance variable id of obj.
+     if is_local is not 0, search as class local variable.
   @j obj のインスタンス変数 id を得る。
+     もし is_local が !0 ならクラスローカル変数を得る
  */
 DEFINE_INSN
 getinstancevariable
-(ID id)
+(ID id, num_t is_local)
 ()
 (VALUE val)
 {
-    val = rb_ivar_get(GET_SELF(), id);
-}
-
-/**
-  @c variable
-  @e get class local instance variable id of obj.
-  @j obj のクラスローカルインスタンス変数 id を得る。
- */
-DEFINE_INSN
-getinstancevariable2
-(ID id)
-()
-(VALUE val)
-{
-    /* need to cache composed id */
-    id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
+    if (is_local) {
+	id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
+    }
     val = rb_ivar_get(GET_SELF(), id);
 }
 
 /**
   @c variable
   @e set instance variable id of obj as val.
+     if is_local is not 0, search as class local variable.
   @j obj のインスタンス変数を val にする。
+     もし is_local が !0 ならクラスローカル変数を得る
  */
 DEFINE_INSN
 setinstancevariable
-(ID id)
+(ID id, num_t is_local)
 (VALUE val)
 ()
 {
-    rb_ivar_set(GET_SELF(), id, val);
-}
-
-/**
-  @c variable
-  @e set class local instance variable id of obj as val.
-  @j obj のクラスローカルインスタンス変数を val にする。
- */
-DEFINE_INSN
-setinstancevariable2
-(ID id)
-(VALUE val)
-()
-{
-    /* need to cache composed id */
-    id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
+    if (is_local) {
+	id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
+    }
     rb_ivar_set(GET_SELF(), id, val);
 }
 
