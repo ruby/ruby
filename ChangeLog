@@ -1,3 +1,26 @@
+Wed Feb  7 03:39:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* blockinlining.c, compile.c, compile.h, error.c, eval.c,
+	  eval_intern.h, eval_jump.h, eval_load.c, eval_method.h,
+	  eval_safe.h, gc.c, insnhelper.h, insns.def, iseq.c, proc.c,
+	  process.c, signal.c, thread.c, thread_pthread.ci, thread_win32.ci,
+	  vm.c, vm.h, vm_dump.c, vm_evalbody.ci, vm_macro.def,
+	  yarv.h, yarvcore.h, yarvcore.c: change type and macro names:
+	  * yarv_*_t -> rb_*_t
+	  * yarv_*_struct -> rb_*_struct
+	  * yarv_tag -> rb_vm_tag
+	  * YARV_* -> RUBY_VM_*
+
+	* proc.c, vm.c: move functions about env object creation
+	  from proc.c to vm.c.
+
+	* proc.c, yarvcore.c: fix rb_cVM initialization place.
+
+	* inits.c: change Init_ISeq() order (after Init_VM).
+
+	* ruby.h, proc.c: change declaration place of rb_cEnv
+	  from proc.c to ruby.c.
+
 Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:

@@ -13,7 +13,7 @@
 #ifndef _YARVCORE_H_INCLUDED_
 #define _YARVCORE_H_INCLUDED_
 
-#define YARV_THREAD_MODEL 2
+#define RUBY_VM_THREAD_MODEL 2
 
 #include <setjmp.h>
 
@@ -184,14 +184,14 @@ struct iseq_compile_data_storage {
 
 struct iseq_compile_data_ensure_node_stack;
 
-typedef struct yarv_compile_option_struct {
+typedef struct rb_compile_option_struct {
     int inline_const_cache;
     int peephole_optimization;
     int specialized_instruction;
     int operands_unification;
     int instructions_unification;
     int stack_caching;
-} yarv_compile_option_t;
+} rb_compile_option_t;
 
 struct iseq_compile_data {
     /* GC is needed */
@@ -212,20 +212,20 @@ struct iseq_compile_data {
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
     int last_line;
-    const yarv_compile_option_t *option;
+    const rb_compile_option_t *option;
 };
 
-#define GetISeqPtr(obj, ptr) Data_Get_Struct(obj, yarv_iseq_t, ptr)
+#define GetISeqPtr(obj, ptr) Data_Get_Struct(obj, rb_iseq_t, ptr)
 
-typedef struct yarv_iseq_profile_struct {
+typedef struct rb_iseq_profile_struct {
     VALUE count;
     VALUE time_self;
     VALUE time_cumu; /* cumulative */
-} yarv_iseq_profile_t;
+} rb_iseq_profile_t;
 
-struct yarv_iseq_struct;
+struct rb_iseq_struct;
 
-struct yarv_iseq_struct {
+struct rb_iseq_struct {
     /* instruction sequence type */
     VALUE type;
 
@@ -288,8 +288,8 @@ struct yarv_iseq_struct {
     int catch_table_size;
 
     /* for child iseq */
-    struct yarv_iseq_struct *parent_iseq;
-    struct yarv_iseq_struct *local_iseq;
+    struct rb_iseq_struct *parent_iseq;
+    struct rb_iseq_struct *local_iseq;
 
     /* block inlining */
     NODE *node;
@@ -299,25 +299,25 @@ struct yarv_iseq_struct {
 
     /* misc */
     ID defined_method_id;	/* for define_method */
-    yarv_iseq_profile_t profile;
-    
+    rb_iseq_profile_t profile;
+
     struct iseq_compile_data *compile_data;
 };
 
-typedef struct yarv_iseq_struct yarv_iseq_t;
+typedef struct rb_iseq_struct rb_iseq_t;
 
 #define GetVMPtr(obj, ptr) \
-  Data_Get_Struct(obj, yarv_vm_t, ptr)
+  Data_Get_Struct(obj, rb_vm_t, ptr)
 
-struct yarv_thread_struct;
+struct rb_thread_struct;
 
-typedef struct yarv_vm_struct {
+typedef struct rb_vm_struct {
     VALUE self;
 
-    yarv_thread_lock_t global_interpreter_lock;
+    rb_thread_lock_t global_interpreter_lock;
 
-    struct yarv_thread_struct *main_thread;
-    struct yarv_thread_struct *running_thread;
+    struct rb_thread_struct *main_thread;
+    struct rb_thread_struct *running_thread;
 
     st_table *living_threads;
     VALUE thgroup_default;
@@ -332,18 +332,18 @@ typedef struct yarv_vm_struct {
 
     int signal_buff[RUBY_NSIG];
     int bufferd_signal_size;
-} yarv_vm_t;
+} rb_vm_t;
 
 typedef struct {
     VALUE *pc;			/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
     VALUE *bp;			/* cfp[2] */
-    yarv_iseq_t *iseq;		/* cfp[3] */
+    rb_iseq_t *iseq;		/* cfp[3] */
     VALUE magic;		/* cfp[4] */
     VALUE self;			/* cfp[5] / block[0] */
     VALUE *lfp;			/* cfp[6] / block[1] */
     VALUE *dfp;			/* cfp[7] / block[2] */
-    yarv_iseq_t *block_iseq;	/* cfp[8] / block[3] */
+    rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
     VALUE proc;			/* cfp[9] / block[4] */
     ID callee_id;               /* cfp[10] */
     ID method_id;               /* cfp[11] saved in special case */
@@ -351,20 +351,20 @@ typedef struct {
     VALUE prof_time_self;       /* cfp[13] */
     VALUE prof_time_chld;       /* cfp[14] */
     VALUE dummy;                /* cfp[15] */
-} yarv_control_frame_t;
+} rb_control_frame_t;
 
 typedef struct {
     VALUE self;			/* share with method frame if it's only block */
     VALUE *lfp;			/* share with method frame if it's only block */
     VALUE *dfp;			/* share with method frame if it's only block */
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     VALUE proc;
-} yarv_block_t;
+} rb_block_t;
 
 #define GetThreadPtr(obj, ptr) \
-  Data_Get_Struct(obj, yarv_thread_t, ptr)
+  Data_Get_Struct(obj, rb_thead_t, ptr)
 
-enum yarv_thread_status {
+enum rb_thread_status {
     THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
@@ -380,27 +380,27 @@ typedef struct {
 typedef jmp_buf rb_jmpbuf_t;
 #endif
 
-struct yarv_tag {
+struct rb_vm_tag {
     rb_jmpbuf_t buf;
     VALUE tag;
     VALUE retval;
-    struct yarv_tag *prev;
+    struct rb_vm_tag *prev;
 };
 
-typedef void yarv_interrupt_function_t(struct yarv_thread_struct *);
+typedef void rb_interrupt_function_t(struct rb_thread_struct *);
 
-#define YARV_VALUE_CACHE_SIZE 0x1000
+#define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 1
 
-typedef struct yarv_thread_struct
+typedef struct rb_thread_struct
 {
     VALUE self;
-    yarv_vm_t *vm;
+    rb_vm_t *vm;
 
     /* execution information */
     VALUE *stack;		/* must free, must mark */
     unsigned long stack_size;
-    yarv_control_frame_t *cfp;
+    rb_control_frame_t *cfp;
     int safe_level;
     int raised_flag;
     
@@ -408,20 +408,20 @@ typedef struct yarv_thread_struct
     int state;
 
     /* for rb_iterate */
-    yarv_block_t *passed_block;
+    rb_block_t *passed_block;
 
     /* passed via parse.y, eval.c (rb_scope_setup_local_tbl) */
     ID *top_local_tbl;
 
     /* eval env */
-    yarv_block_t *base_block;
+    rb_block_t *base_block;
 
     VALUE *local_lfp;
     VALUE local_svar;
 
     /* thread control */
-    yarv_thread_id_t thread_id;
-    enum yarv_thread_status status;
+    rb_thread_id_t thread_id;
+    enum rb_thread_status status;
     int priority;
 
     native_thread_data_t native_thread_data;
@@ -434,22 +434,22 @@ typedef struct yarv_thread_struct
     int exec_signal;
 
     int interrupt_flag;
-    yarv_interrupt_function_t *interrupt_function;
-    yarv_thread_lock_t interrupt_lock;
+    rb_interrupt_function_t *interrupt_function;
+    rb_thread_lock_t interrupt_lock;
 
-    struct yarv_tag *tag;
+    struct rb_vm_tag *tag;
 
     int parse_in_eval;
 
     /* storage */
     st_table *local_storage;
 #if USE_VALUE_CACHE
-    VALUE value_cache[YARV_VALUE_CACHE_SIZE + 1];
+    VALUE value_cache[RUBY_VM_VALUE_CACHE_SIZE + 1];
     VALUE *value_cache_ptr;
 #endif
 
-    struct yarv_thread_struct *join_list_next;
-    struct yarv_thread_struct *join_list_head;
+    struct rb_thread_struct *join_list_next;
+    struct rb_thread_struct *join_list_head;
 
     VALUE first_proc;
     VALUE first_args;
@@ -467,30 +467,30 @@ typedef struct yarv_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
-} yarv_thread_t;
+} rb_thead_t;
 
 /** node -> yarv instruction sequence object */
 VALUE iseq_compile(VALUE self, NODE *node);
 
-VALUE yarv_iseq_new(NODE *node, VALUE name, VALUE file,
-		    VALUE parent, VALUE type);
+VALUE rb_iseq_new(NODE *node, VALUE name, VALUE file,
+		  VALUE parent, VALUE type);
 
-VALUE yarv_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
-			      VALUE parent, VALUE type, VALUE bopt);
+VALUE rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
+			    VALUE parent, VALUE type, VALUE bopt);
 
-VALUE yarv_iseq_new_with_opt(NODE *node, VALUE name, VALUE file,
-			     VALUE parent, VALUE type, 
-			     const yarv_compile_option_t *opt);
+VALUE rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE file,
+			   VALUE parent, VALUE type, 
+			   const rb_compile_option_t *opt);
 
 /** disassemble instruction sequence */
-VALUE iseq_disasm(VALUE self);
-VALUE iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos,
-		       yarv_iseq_t *iseq, VALUE child);
-char *node_name(int node);
+VALUE ruby_iseq_disasm(VALUE self);
+VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos,
+			    rb_iseq_t *iseq, VALUE child);
+char *ruby_node_name(int node);
 
 
 /* each thread has this size stack : 2MB */
-#define YARV_THREAD_STACK_SIZE (128 * 1024)
+#define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)
 
 
 /* from ruby 1.9 variable.c */
@@ -500,10 +500,10 @@ struct global_entry {
 };
 
 #define GetProcPtr(obj, ptr) \
-  Data_Get_Struct(obj, yarv_proc_t, ptr)
+  Data_Get_Struct(obj, rb_proc_t, ptr)
 
 typedef struct {
-    yarv_block_t block;
+    rb_block_t block;
 
     VALUE envval;		/* for GC mark */
     VALUE blockprocval;
@@ -511,26 +511,26 @@ typedef struct {
     int is_lambda;
 
     NODE *special_cref_stack;
-} yarv_proc_t;
+} rb_proc_t;
 
 #define GetEnvPtr(obj, ptr) \
-  Data_Get_Struct(obj, yarv_env_t, ptr)
+  Data_Get_Struct(obj, rb_env_t, ptr)
 
 typedef struct {
     VALUE *env;
     int env_size;
     int local_size;
     VALUE prev_envval;		/* for GC mark */
-    yarv_block_t block;
-} yarv_env_t;
+    rb_block_t block;
+} rb_env_t;
 
 #define GetBindingPtr(obj, ptr) \
-  Data_Get_Struct(obj, yarv_binding_t, ptr)
+  Data_Get_Struct(obj, rb_binding_t, ptr)
 
 typedef struct {
     VALUE env;
     NODE *cref_stack;
-} yarv_binding_t;
+} rb_binding_t;
 
 
 /* used by compile time and send insn */
@@ -558,27 +558,26 @@ typedef VALUE CDHASH;
 #define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)p) & ~0x03))
 #define GC_GUARDED_PTR_P(p)   (((VALUE)p) & 0x01)
 
-#define YARV_METHOD_NODE NODE_METHOD
+#define RUBY_VM_METHOD_NODE NODE_METHOD
 
-#define YARV_PREVIOUS_CONTROL_FRAME(cfp) (cfp+1)
-#define YARV_NEXT_CONTROL_FRAME(cfp) (cfp-1)
-#define YARV_END_CONTROL_FRAME(th) \
-  ((yarv_control_frame_t *)((th)->stack + (th)->stack_size))
-#define YARV_VALID_CONTROL_FRAME_P(cfp, ecfp) \
+#define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) (cfp+1)
+#define RUBY_VM_NEXT_CONTROL_FRAME(cfp) (cfp-1)
+#define RUBY_VM_END_CONTROL_FRAME(th) \
+  ((rb_control_frame_t *)((th)->stack + (th)->stack_size))
+#define RUBY_VM_VALID_CONTROL_FRAME_P(cfp, ecfp) \
   ((void *)(ecfp) > (void *)(cfp))
-#define YARV_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
-  (!YARV_VALID_CONTROL_FRAME_P((cfp), YARV_END_CONTROL_FRAME(th)))
+#define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
+  (!RUBY_VM_VALID_CONTROL_FRAME_P((cfp), RUBY_VM_END_CONTROL_FRAME(th)))
 
-#define YARV_IFUNC_P(ptr)        (BUILTIN_TYPE(ptr) == T_NODE)
-#define YARV_NORMAL_ISEQ_P(ptr) \
-  (ptr && !YARV_IFUNC_P(ptr))
+#define RUBY_VM_IFUNC_P(ptr)        (BUILTIN_TYPE(ptr) == T_NODE)
+#define RUBY_VM_NORMAL_ISEQ_P(ptr) \
+  (ptr && !RUBY_VM_IFUNC_P(ptr))
 
-#define YARV_CLASS_SPECIAL_P(ptr) (((VALUE)(ptr)) & 0x02)
-#define YARV_BLOCK_PTR_P(ptr) (!YARV_CLASS_SPECIAL_P(ptr) && GC_GUARDED_PTR_REF(ptr))
+#define RUBY_VM_CLASS_SPECIAL_P(ptr) (((VALUE)(ptr)) & 0x02)
 
-#define GET_BLOCK_PTR_IN_CFP(cfp) ((yarv_block_t *)(&(cfp)->self))
-#define GET_CFP_FROM_BLOCK_PTR(b) \
-  ((yarv_control_frame_t *)((VALUE *)(b) - 5))
+#define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
+#define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
+  ((rb_control_frame_t *)((VALUE *)(b) - 5))
 
 
 /* defined? */
@@ -595,12 +594,11 @@ typedef VALUE CDHASH;
 
 /* VM related object allocate functions */
 /* TODO: should be static functions */
-VALUE yarv_thread_alloc(VALUE klass);
-VALUE yarv_env_alloc(void);
-VALUE yarv_proc_alloc(void);
+VALUE rb_thread_alloc(VALUE klass);
+VALUE rb_proc_alloc(void);
 
 /* for debug */
-extern void vm_stack_dump_raw(yarv_thread_t *, yarv_control_frame_t *);
+extern void vm_stack_dump_raw(rb_thead_t *, rb_control_frame_t *);
 #define SDR()     vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
 
@@ -609,28 +607,28 @@ extern void vm_stack_dump_raw(yarv_thread_t *, yarv_control_frame_t *);
 #include "yarv.h"
 
 #define GVL_UNLOCK_BEGIN() do { \
-  yarv_thread_t *_th_stored = GET_THREAD(); \
+  rb_thead_t *_th_stored = GET_THREAD(); \
   rb_gc_save_machine_context(_th_stored); \
   native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
 
 #define GVL_UNLOCK_END() \
   native_mutex_lock(&_th_stored->vm->global_interpreter_lock); \
-  yarv_set_current_running_thread(_th_stored); \
+  rb_thread_set_current(_th_stored); \
 } while(0)
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
-NOINLINE(void rb_gc_save_machine_context(yarv_thread_t *));
+NOINLINE(void rb_gc_save_machine_context(rb_thead_t *));
 
-void yarv_thread_execute_interrupts(yarv_thread_t *);
+void rb_thread_execute_interrupts(rb_thead_t *);
 
-#define YARV_CHECK_INTS_TH(th) do { \
+#define RUBY_VM_CHECK_INTS_TH(th) do { \
   if(th->interrupt_flag){ \
     /* TODO: trap something event */ \
-    yarv_thread_execute_interrupts(th); \
+    rb_thread_execute_interrupts(th); \
   } \
 } while (0)
 
-#define YARV_CHECK_INTS() \
-  YARV_CHECK_INTS_TH(GET_THREAD())
+#define RUBY_VM_CHECK_INTS() \
+  RUBY_VM_CHECK_INTS_TH(GET_THREAD())
 
 #endif /* _YARVCORE_H_INCLUDED_ */

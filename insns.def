@@ -961,7 +961,7 @@ defined
 	}
 	break;
       case DEFINED_ZSUPER:{
-	  yarv_iseq_t *ip = GET_ISEQ();
+	  rb_iseq_t *ip = GET_ISEQ();
 	  while (ip) {
 	      if (ip->defined_method_id) {
 		  break;
@@ -1011,10 +1011,10 @@ postexe
 ()
 ()
 {
-    yarv_block_t *blockptr;
+    rb_block_t *blockptr;
     VALUE proc;
 
-    blockptr = GET_BLOCK_PTR_IN_CFP(GET_CFP());
+    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(GET_CFP());
     blockptr->iseq = blockiseq;
     blockptr->proc = 0;
 
@@ -1164,7 +1164,7 @@ send
     NODE *mn;
     VALUE recv;
     VALUE klass;
-    yarv_block_t *blockptr = 0;
+    rb_block_t *blockptr = 0;
     num_t num = op_argc;
     num_t flag = op_flag;
     ID id = op_id;
@@ -1232,8 +1232,8 @@ send
     if (0) {
 	LABEL_IS_SC(start_init_in_super):
 	{
-	    yarv_iseq_t *iseq = GET_ISEQ();
-	    yarv_iseq_t *ip = iseq;
+	    rb_iseq_t *iseq = GET_ISEQ();
+	    rb_iseq_t *ip = iseq;
 
 	    num = tmp_num;
 	    flag = VM_CALL_FCALL_BIT;
@@ -1251,12 +1251,12 @@ send
 	    
 	    if (ip != ip->local_iseq) {
 		/* defined by method_defined() */
-		yarv_control_frame_t *lcfp = GET_CFP();
+		rb_control_frame_t *lcfp = GET_CFP();
 
 		while (lcfp->iseq != ip) {
 		    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
 		    while (1) {
-			lcfp = YARV_PREVIOUS_CONTROL_FRAME(lcfp);
+			lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
 			if (lcfp->dfp == tdfp) {
 			    break;
 			}
@@ -1287,7 +1287,7 @@ send
 #endif
 #endif
     macro_eval_invoke_method(recv, klass, id, num, mn, blockptr);
-    YARV_CHECK_INTS();
+    RUBY_VM_CHECK_INTS();
 }
 
 /**
@@ -1326,8 +1326,8 @@ invokeblock
 (...)
 (VALUE val)  // inc += 1 - num;
 {
-    yarv_block_t *block = GET_BLOCK_PTR();
-    yarv_iseq_t *iseq;
+    rb_block_t *block = GET_BLOCK_PTR();
+    rb_iseq_t *iseq;
     int argc = num;
 
     if (GET_ISEQ()->local_iseq->type != ISEQ_TYPE_METHOD || block == 0) {
@@ -1392,7 +1392,7 @@ leave
 	}
     }
 
-    YARV_CHECK_INTS();
+    RUBY_VM_CHECK_INTS();
     pop_frame(th);
     RESTORE_REGS();
 }
@@ -1451,7 +1451,7 @@ throw
 		}
 	    }
 	    else if (state == TAG_RETURN) {
-		yarv_control_frame_t *cfp = GET_CFP();
+		rb_control_frame_t *cfp = GET_CFP();
 		int is_orphan = 1;
 		VALUE *dfp = GET_DFP();
 		
@@ -1522,7 +1522,7 @@ jump
 ()
 ()
 {
-    YARV_CHECK_INTS();
+    RUBY_VM_CHECK_INTS();
     JUMP(dst);
 }
 
@@ -1538,7 +1538,7 @@ branchif
 ()
 {
     if (RTEST(val)) {
-	YARV_CHECK_INTS();
+	RUBY_VM_CHECK_INTS();
 	JUMP(dst);
     }
 }
@@ -1555,7 +1555,7 @@ branchunless
 ()
 {
     if (!RTEST(val)) {
-	YARV_CHECK_INTS();
+	RUBY_VM_CHECK_INTS();
 	JUMP(dst);
     }
 }
@@ -2394,7 +2394,7 @@ opt_call_native_compiled
 ()
 {
 #if __GNUC__ && OPT_USE_JIT_COMPILE
-    yarv_iseq_t *iseq = GET_ISEQ();
+    rb_iseq_t *iseq = GET_ISEQ();
     void *label = (void *)iseq->jit_compiled;
 
     breakpoint();

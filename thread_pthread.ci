@@ -21,10 +21,10 @@
 #define native_cleanup_pop  pthread_cleanup_pop
 #define native_thread_yield() sched_yield()
 
-static void yarv_add_signal_thread_list(yarv_thread_t *th);
-static void yarv_remove_signal_thread_list(yarv_thread_t *th);
+static void yarv_add_signal_thread_list(rb_thead_t *th);
+static void yarv_remove_signal_thread_list(rb_thead_t *th);
 
-static yarv_thread_lock_t signal_thread_list_lock;
+static rb_thread_lock_t signal_thread_list_lock;
 
 static void
 null_func()
@@ -40,10 +40,10 @@ Init_native_thread()
 }
 
 NOINLINE(static int
-	 thread_start_func_2(yarv_thread_t *th, VALUE *stack_start));
+	 thread_start_func_2(rb_thead_t *th, VALUE *stack_start));
 void static thread_cleanup_func(void *th_ptr);
 
-static yarv_thread_t *register_cached_thread_and_wait(void);
+static rb_thead_t *register_cached_thread_and_wait(void);
 
 #define USE_THREAD_CACHE 0
 
@@ -54,7 +54,7 @@ thread_start_func_1(void *th_ptr)
   thread_start:
 #endif
     {
-	yarv_thread_t *th = th_ptr;
+	rb_thead_t *th = th_ptr;
 	VALUE stack_start;
 	/* ignore self and klass */
 
@@ -70,7 +70,7 @@ thread_start_func_1(void *th_ptr)
 #if USE_THREAD_CACHE
     if (1) {
 	/* cache thread */
-	yarv_thread_t *th;
+	rb_thead_t *th;
 	if ((th = register_cached_thread_and_wait()) != 0) {
 	    th_ptr = (void *)th;
 	    th->thread_id = pthread_self();
@@ -86,18 +86,18 @@ void rb_thread_create_control_thread(void);
 static pthread_mutex_t thread_cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
 struct cached_thread_entry {
-    volatile yarv_thread_t **th_area;
+    volatile rb_thead_t **th_area;
     pthread_cond_t *cond;
     struct cached_thread_entry *next;
 };
 
 struct cached_thread_entry *cached_thread_root;
 
-static yarv_thread_t *
+static rb_thead_t *
 register_cached_thread_and_wait(void)
 {
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-    volatile yarv_thread_t *th_area = 0;
+    volatile rb_thead_t *th_area = 0;
     struct cached_thread_entry *entry =
       (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
 
@@ -140,11 +140,11 @@ register_cached_thread_and_wait(void)
     }
     pthread_mutex_unlock(&thread_cache_lock);
 
-    return (yarv_thread_t *)th_area;
+    return (rb_thead_t *)th_area;
 }
 
 static int
-use_cached_thread(yarv_thread_t *th)
+use_cached_thread(rb_thead_t *th)
 {
     int result = 0;
 #if USE_THREAD_CACHE
@@ -170,7 +170,7 @@ use_cached_thread(yarv_thread_t *th)
 }
 
 static int
-native_thread_create(yarv_thread_t *th)
+native_thread_create(rb_thead_t *th)
 {
     int err = 0;
 
@@ -215,7 +215,7 @@ native_thread_join(pthread_t th)
 }
 
 static void
-native_thread_apply_priority(yarv_thread_t *th)
+native_thread_apply_priority(rb_thead_t *th)
 {
     struct sched_param sp;
     int policy;
@@ -237,14 +237,14 @@ native_thread_apply_priority(yarv_thread_t *th)
 }
 
 static void
-interrupt_using_pthread_cond_signal(yarv_thread_t *th)
+interrupt_using_pthread_cond_signal(rb_thead_t *th)
 {
     thread_debug("interrupt_using_pthread_cond_signal (%p)\n", th);
     pthread_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
 static void
-native_thread_send_interrupt_signal(yarv_thread_t *th)
+native_thread_send_interrupt_signal(rb_thead_t *th)
 {
     thread_debug("native_thread_send_interrupt_signal (%p)\n", th->thread_id);
     if (th) {
@@ -253,7 +253,7 @@ native_thread_send_interrupt_signal(yarv_thread_t *th)
 }
 
 static void
-native_sleep(yarv_thread_t *th, struct timeval *tv)
+native_sleep(rb_thead_t *th, struct timeval *tv)
 {
     int prev_status = th->status;
     struct timespec ts;
@@ -308,13 +308,13 @@ native_sleep(yarv_thread_t *th, struct timeval *tv)
 }
 
 static void
-native_thread_interrupt(yarv_thread_t *th)
+native_thread_interrupt(rb_thead_t *th)
 {
     yarv_add_signal_thread_list(th);
 }
 
 struct yarv_signal_thread_list {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     struct yarv_signal_thread_list *prev;
     struct yarv_signal_thread_list *next;
 };
@@ -345,7 +345,7 @@ print_signal_list(char *str)
 }
 
 static void
-yarv_add_signal_thread_list(yarv_thread_t *th)
+yarv_add_signal_thread_list(rb_thead_t *th)
 {
     if (!th->native_thread_data.signal_thread_list) {
 	FGLOCK(&signal_thread_list_lock, {
@@ -371,7 +371,7 @@ yarv_add_signal_thread_list(yarv_thread_t *th)
 }
 
 static void
-yarv_remove_signal_thread_list(yarv_thread_t *th)
+yarv_remove_signal_thread_list(rb_thead_t *th)
 {
     if (th->native_thread_data.signal_thread_list) {
 	FGLOCK(&signal_thread_list_lock, {

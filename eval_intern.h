@@ -4,7 +4,7 @@
 
 #define PASS_PASSED_BLOCK() \
   (GET_THREAD()->passed_block = \
-   GC_GUARDED_PTR_REF((yarv_block_t *)GET_THREAD()->cfp->lfp[0]))
+   GC_GUARDED_PTR_REF((rb_block_t *)GET_THREAD()->cfp->lfp[0]))
 
 
 #define UNSUPPORTED(func) \
@@ -189,8 +189,8 @@ extern int function_call_may_return_twice_false;
 #include <sys/stat.h>
 
 #define TH_PUSH_TAG(th) do { \
-  yarv_thread_t * const _th = th; \
-  struct yarv_tag _tag; \
+  rb_thead_t * const _th = th; \
+  struct rb_vm_tag _tag; \
   _tag.tag = 0; \
   _tag.prev = _th->tag; \
   _th->tag = &_tag;
@@ -278,8 +278,8 @@ extern VALUE sysstack_error;
 void rb_thread_cleanup _((void));
 void rb_thread_wait_other_threads _((void));
 
-int thread_set_raised(yarv_thread_t *th);
-int thread_reset_raised(yarv_thread_t *th);
+int thread_set_raised(rb_thead_t *th);
+int thread_reset_raised(rb_thead_t *th);
 
 VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
 VALUE rb_make_exception _((int argc, VALUE *argv));
@@ -289,23 +289,22 @@ NORETURN(void print_undef _((VALUE, ID)));
 NORETURN(void th_localjump_error(const char *, VALUE, int));
 NORETURN(void th_jump_tag_but_local_jump(int, VALUE));
 
-rb_thread_t rb_vm_curr_thread();
-VALUE th_compile(yarv_thread_t *th, VALUE str, VALUE file, VALUE line);
+VALUE th_compile(rb_thead_t *th, VALUE str, VALUE file, VALUE line);
 
-NODE *th_get_cref(yarv_thread_t *th, yarv_iseq_t *iseq, yarv_control_frame_t *cfp);
-NODE *th_cref_push(yarv_thread_t *th, VALUE, int);
-NODE *th_set_special_cref(yarv_thread_t *th, VALUE *lfp, NODE * cref_stack);
+NODE *th_get_cref(rb_thead_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
+NODE *th_cref_push(rb_thead_t *th, VALUE, int);
+NODE *th_set_special_cref(rb_thead_t *th, VALUE *lfp, NODE * cref_stack);
 
-static yarv_control_frame_t *
-th_get_ruby_level_cfp(yarv_thread_t *th, yarv_control_frame_t *cfp)
+static rb_control_frame_t *
+th_get_ruby_level_cfp(rb_thead_t *th, rb_control_frame_t *cfp)
 {
-    yarv_iseq_t *iseq = 0;
-    while (!YARV_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
-	if (YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+    rb_iseq_t *iseq = 0;
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    iseq = cfp->iseq;
 	    break;
 	}
-	cfp = YARV_PREVIOUS_CONTROL_FRAME(cfp);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
     if (!iseq) {
 	return 0;
@@ -316,12 +315,13 @@ th_get_ruby_level_cfp(yarv_thread_t *th, yarv_control_frame_t *cfp)
 static NODE *
 ruby_cref()
 {
-    yarv_thread_t *th = GET_THREAD();
-    yarv_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_thead_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     return th_get_cref(th, cfp->iseq, cfp);
 }
 
-VALUE th_get_cbase(yarv_thread_t *th);
+VALUE th_get_cbase(rb_thead_t *th);
+VALUE rb_obj_is_proc(VALUE);
 
 #define ruby_cbase() th_get_cbase(GET_THREAD())
 

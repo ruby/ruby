@@ -124,7 +124,7 @@
 
 /* block */
 #define GET_BLOCK_PTR() \
-  ((yarv_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
+  ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
 
 #define CHECK_STACK_OVERFLOW(th, cfp, margin) \
   (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp))

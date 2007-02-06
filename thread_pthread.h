@@ -13,8 +13,8 @@
 #define THREAD_PTHREAD_H_INCLUDED
 
 #include <pthread.h>
-typedef pthread_t yarv_thread_id_t;
-typedef pthread_mutex_t yarv_thread_lock_t;
+typedef pthread_t rb_thread_id_t;
+typedef pthread_mutex_t rb_thread_lock_t;
 
 #define native_mutex_lock   pthread_mutex_lock
 #define native_mutex_unlock pthread_mutex_unlock

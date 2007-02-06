@@ -392,7 +392,7 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 static RETSIGTYPE
 sighandler(int sig)
 {
-    yarv_vm_t *vm = GET_VM(); /* fix me for Multi-VM */
+    rb_vm_t *vm = GET_VM(); /* fix me for Multi-VM */
     ATOMIC_INC(vm->signal_buff[sig]);
     ATOMIC_INC(vm->bufferd_signal_size);
 }
@@ -431,7 +431,7 @@ rb_enable_interrupt(void)
 }
 
 int
-rb_get_next_signal(yarv_vm_t *vm)
+rb_get_next_signal(rb_vm_t *vm)
 {
     int i, sig = 0;
 
@@ -496,7 +496,7 @@ rb_trap_exit(void)
 }
 
 void
-rb_signal_exec(yarv_thread_t *th, int sig)
+rb_signal_exec(rb_thead_t *th, int sig)
 {
     VALUE cmd = rb_get_trap_cmd(sig);
 
@@ -528,7 +528,7 @@ rb_signal_exec(yarv_thread_t *th, int sig)
 	rb_thread_signal_exit(th);
     }
     else {
-	yarv_proc_t *proc;
+	rb_proc_t *proc;
 	VALUE signum = INT2FIX(sig);
 	GetProcPtr(cmd, proc);
 	th_invoke_proc(th, proc, proc->block.self, 1, &signum);

@@ -200,7 +200,7 @@ static VALUE rb_cProcStatus;
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    yarv_vm_t *vm = GET_VM();
+    rb_vm_t *vm = GET_VM();
     vm->last_status = rb_obj_alloc(rb_cProcStatus);
     rb_iv_set(vm->last_status, "status", INT2FIX(status));
     rb_iv_set(vm->last_status, "pid", INT2FIX(pid));

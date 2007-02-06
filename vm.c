@@ -12,6 +12,7 @@
 #include "ruby.h"
 #include "node.h"
 #include "st.h"
+#include "gc.h"
 
 #include "yarvcore.h"
 #include "vm.h"
@@ -19,6 +20,8 @@
 #include "vm_macro.inc"
 #include "insns.inc"
 #include "eval_intern.h"
+
+VALUE rb_cEnv;
 
 #define PROCDEBUG 0
 #define VM_DEBUG  0
@@ -38,12 +41,12 @@ void vm_analysis_register(int reg, int isset);
 void vm_analysis_insn(int insn);
 
 static inline VALUE
- th_invoke_yield_cfunc(yarv_thread_t *th, yarv_block_t *block,
+ th_invoke_yield_cfunc(rb_thead_t *th, rb_block_t *block,
 		       VALUE self, int argc, VALUE *argv);
-VALUE th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
+VALUE th_invoke_proc(rb_thead_t *th, rb_proc_t *proc,
 		     VALUE self, int argc, VALUE *argv);
 
-VALUE th_eval_body(yarv_thread_t *th);
+VALUE th_eval_body(rb_thead_t *th);
 static NODE *lfp_get_special_cref(VALUE *lfp);
 static NODE *lfp_set_special_cref(VALUE *lfp, NODE * cref);
 
@@ -66,13 +69,13 @@ rb_vm_change_state(void)
 /*
  * prepare stack frame
  */
-static inline yarv_control_frame_t *
-push_frame(yarv_thread_t *th, yarv_iseq_t *iseq, VALUE magic,
+static inline rb_control_frame_t *
+push_frame(rb_thead_t *th, rb_iseq_t *iseq, VALUE magic,
 	   VALUE self, VALUE specval, VALUE *pc,
 	   VALUE *sp, VALUE *lfp, int local_size)
 {
     VALUE *dfp;
-    yarv_control_frame_t *cfp;
+    rb_control_frame_t *cfp;
     int i;
 
     /* nil initialize */
@@ -112,14 +115,14 @@ push_frame(yarv_thread_t *th, yarv_iseq_t *iseq, VALUE magic,
 }
 
 static inline void
-pop_frame(yarv_thread_t *th)
+pop_frame(rb_thead_t *th)
 {
 #if COLLECT_PROFILE
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->cfp;
     
-    if (YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	VALUE current_time = clock();
-	yarv_control_frame_t *cfp = th->cfp;
+	rb_control_frame_t *cfp = th->cfp;
 	cfp->prof_time_self = current_time - cfp->prof_time_self;
 	(cfp+1)->prof_time_chld += cfp->prof_time_self;
 	
@@ -131,13 +134,13 @@ pop_frame(yarv_thread_t *th)
 	
     }
 #endif
-    th->cfp = YARV_PREVIOUS_CONTROL_FRAME(th->cfp);
+    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 }
 
 EXTERN VALUE ruby_top_self;
 
 VALUE
-th_set_finish_env(yarv_thread_t *th)
+th_set_finish_env(rb_thead_t *th)
 {
     push_frame(th, 0, FRAME_MAGIC_FINISH,
 	       Qnil, th->cfp->lfp[0], 0,
@@ -147,9 +150,9 @@ th_set_finish_env(yarv_thread_t *th)
 }
 
 void
-th_set_top_stack(yarv_thread_t *th, VALUE iseqval)
+th_set_top_stack(rb_thead_t *th, VALUE iseqval)
 {
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
 
     if (iseq->type != ISEQ_TYPE_TOP) {
@@ -165,10 +168,10 @@ th_set_top_stack(yarv_thread_t *th, VALUE iseqval)
 }
 
 VALUE
-th_set_eval_stack(yarv_thread_t *th, VALUE iseqval)
+th_set_eval_stack(rb_thead_t *th, VALUE iseqval)
 {
-    yarv_iseq_t *iseq;
-    yarv_block_t *block = th->base_block;
+    rb_iseq_t *iseq;
+    rb_block_t *block = th->base_block;
     GetISeqPtr(iseqval, iseq);
 
     /* for return */
@@ -179,14 +182,69 @@ th_set_eval_stack(yarv_thread_t *th, VALUE iseqval)
     return 0;
 }
 
-static int check_env(yarv_env_t *env);
+
+/* Env */
+
+static void
+env_free(void *ptr)
+{
+    rb_env_t *env;
+    FREE_REPORT_ENTER("env");
+    if (ptr) {
+	env = ptr;
+	FREE_UNLESS_NULL(env->env);
+	ruby_xfree(ptr);
+    }
+    FREE_REPORT_LEAVE("env");
+}
+
+static void
+env_mark(void *ptr)
+{
+    rb_env_t *env;
+    MARK_REPORT_ENTER("env");
+    if (ptr) {
+	env = ptr;
+	if (env->env) {
+	    /* TODO: should mark more restricted range */
+	    GC_INFO("env->env\n");
+	    rb_gc_mark_locations(env->env, env->env + env->env_size);
+	}
+	GC_INFO("env->prev_envval\n");
+	MARK_UNLESS_NULL(env->prev_envval);
+
+	if (env->block.iseq) {
+	    if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
+		MARK_UNLESS_NULL((VALUE)env->block.iseq);
+	    }
+	    else {
+		MARK_UNLESS_NULL(env->block.iseq->self);
+	    }
+	}
+    }
+    MARK_REPORT_LEAVE("env");
+}
 
 static VALUE
-th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
+env_alloc(void)
+{
+    VALUE obj;
+    rb_env_t *env;
+    obj = Data_Make_Struct(rb_cEnv, rb_env_t, env_mark, env_free, env);
+    env->env = 0;
+    env->prev_envval = 0;
+    env->block.iseq = 0;
+    return obj;
+}
+
+static int check_env(rb_env_t *env);
+
+static VALUE
+th_make_env_each(rb_thead_t *th, rb_control_frame_t *cfp,
 		 VALUE *envptr, VALUE *endptr)
 {
     VALUE envval, penvval = 0;
-    yarv_env_t *env;
+    rb_env_t *env;
     VALUE *nenvptr;
     int i, local_size;
 
@@ -196,7 +254,7 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
 
     if (envptr != endptr) {
 	VALUE *penvptr = GC_GUARDED_PTR_REF(*envptr);
-	yarv_control_frame_t *pcfp = cfp;
+	rb_control_frame_t *pcfp = cfp;
 
 	if (ENV_IN_HEAP_P(penvptr)) {
 	    penvval = ENV_VAL(penvptr);
@@ -217,10 +275,10 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
     }
 
     /* allocate env */
-    envval = yarv_env_alloc();
+    envval = env_alloc();
     GetEnvPtr(envval, env);
 
-    if (!YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	local_size = 2;
     }
     else {
@@ -235,7 +293,7 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
     for (i = 0; i <= local_size; i++) {
 	env->env[i] = envptr[-local_size + i];
 	// dp(env->env[i]);
-	if (YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
 	    // envptr[-local_size + i] = 0;
 	}
@@ -266,7 +324,7 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
 	rb_bug("illegal svar");
     }
     
-    if (!YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	/* TODO */
 	env->block.iseq = 0;
     }
@@ -276,7 +334,7 @@ th_make_env_each(yarv_thread_t *th, yarv_control_frame_t *cfp,
 static VALUE check_env_value(VALUE envval);
 
 static int
-check_env(yarv_env_t *env)
+check_env(rb_env_t *env)
 {
     printf("---\n");
     printf("envptr: %p\n", &env->block.dfp[0]);
@@ -299,7 +357,7 @@ check_env(yarv_env_t *env)
 static VALUE
 check_env_value(VALUE envval)
 {
-    yarv_env_t *env;
+    rb_env_t *env;
     GetEnvPtr(envval, env);
 
     if (check_env(env)) {
@@ -310,7 +368,7 @@ check_env_value(VALUE envval)
 }
 
 static int
-collect_local_variables_in_env(yarv_env_t *env, VALUE ary)
+collect_local_variables_in_env(rb_env_t *env, VALUE ary)
 {
     int i;
     if (env->block.lfp == env->block.dfp) {
@@ -330,10 +388,10 @@ collect_local_variables_in_env(yarv_env_t *env, VALUE ary)
 }
 
 int
-th_collect_local_variables_in_heap(yarv_thread_t *th, VALUE *dfp, VALUE ary)
+th_collect_local_variables_in_heap(rb_thead_t *th, VALUE *dfp, VALUE ary)
 {
     if (ENV_IN_HEAP_P(dfp)) {
-	yarv_env_t *env;
+	rb_env_t *env;
 	GetEnvPtr(ENV_VAL(dfp), env);
 	collect_local_variables_in_env(env, ary);
 	return 1;
@@ -345,7 +403,7 @@ th_collect_local_variables_in_heap(yarv_thread_t *th, VALUE *dfp, VALUE ary)
 
 
 VALUE
-th_make_env_object(yarv_thread_t *th, yarv_control_frame_t *cfp)
+th_make_env_object(rb_thead_t *th, rb_control_frame_t *cfp)
 {
     VALUE envval;
     // SDR2(cfp);
@@ -357,18 +415,18 @@ th_make_env_object(yarv_thread_t *th, yarv_control_frame_t *cfp)
 }
 
 static VALUE
-th_make_proc_from_block(yarv_thread_t *th, yarv_control_frame_t *cfp,
-			yarv_block_t *block)
+th_make_proc_from_block(rb_thead_t *th, rb_control_frame_t *cfp,
+			rb_block_t *block)
 {
     VALUE procval;
-    yarv_control_frame_t *bcfp;
+    rb_control_frame_t *bcfp;
     VALUE *bdfp;		/* to gc mark */
 
     if (block->proc) {
 	return block->proc;
     }
 
-    bcfp = GET_CFP_FROM_BLOCK_PTR(block);
+    bcfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
     bdfp = bcfp->dfp;
     procval = th_make_proc(th, bcfp, block);
     return procval;
@@ -377,19 +435,19 @@ th_make_proc_from_block(yarv_thread_t *th, yarv_control_frame_t *cfp,
 struct RObject *rb;
 
 VALUE
-th_make_proc(yarv_thread_t *th, yarv_control_frame_t *cfp,
-	     yarv_block_t *block)
+th_make_proc(rb_thead_t *th, rb_control_frame_t *cfp,
+	     rb_block_t *block)
 {
     VALUE procval, envval, blockprocval = 0;
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
 
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
-	if (!YARV_CLASS_SPECIAL_P(cfp->lfp[0])) {
-	    yarv_proc_t *p;
+	if (!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
+	    rb_proc_t *p;
 
 	    blockprocval =
 	      th_make_proc_from_block(th, cfp,
-				      (yarv_block_t *)GC_GUARDED_PTR_REF(*cfp->
+				      (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->
 									 lfp));
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
@@ -400,7 +458,7 @@ th_make_proc(yarv_thread_t *th, yarv_control_frame_t *cfp,
     if (PROCDEBUG) {
 	check_env_value(envval);
     }
-    procval = yarv_proc_alloc();
+    procval = rb_proc_alloc();
     GetProcPtr(procval, proc);
     proc->blockprocval = blockprocval;
     proc->block.self = block->self;
@@ -424,11 +482,11 @@ th_make_proc(yarv_thread_t *th, yarv_control_frame_t *cfp,
 }
 
 static inline VALUE
-th_invoke_bmethod(yarv_thread_t *th, ID id, VALUE procval, VALUE recv,
+th_invoke_bmethod(rb_thead_t *th, ID id, VALUE procval, VALUE recv,
 		  VALUE klass, int argc, VALUE *argv)
 {
-    yarv_control_frame_t *cfp = th->cfp;
-    yarv_proc_t *proc;
+    rb_control_frame_t *cfp = th->cfp;
+    rb_proc_t *proc;
     VALUE val;
     VALUE values[2] = {
 	id, RCLASS(klass)->super,
@@ -442,12 +500,12 @@ th_invoke_bmethod(yarv_thread_t *th, ID id, VALUE procval, VALUE recv,
 }
 
 VALUE
-th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
+th_call0(rb_thead_t *th, VALUE klass, VALUE recv,
 	 VALUE id, ID oid, int argc, const VALUE *argv,
 	 NODE * body, int nosuper)
 {
     VALUE val;
-    yarv_block_t *blockptr = 0;
+    rb_block_t *blockptr = 0;
 
     if (0) printf("id: %s, nd: %s, argc: %d, passed: %p\n",
 		  rb_id2name(id), node_name(nd_type(body)),
@@ -459,8 +517,8 @@ th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
 	th->passed_block = 0;
     }
     switch (nd_type(body)) {
-      case YARV_METHOD_NODE:{
-	  yarv_control_frame_t *reg_cfp;
+      case RUBY_VM_METHOD_NODE:{
+	  rb_control_frame_t *reg_cfp;
 	  int i;
 	  const int flag = 0;
 
@@ -475,8 +533,8 @@ th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
 	  break;
       }
       case NODE_CFUNC: {
-	  yarv_control_frame_t *reg_cfp = th->cfp;
-	  yarv_control_frame_t *cfp =
+	  rb_control_frame_t *reg_cfp = th->cfp;
+	  rb_control_frame_t *cfp =
 	    push_frame(th, 0, FRAME_MAGIC_CFUNC,
 		       recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
@@ -520,7 +578,7 @@ th_call0(yarv_thread_t *th, VALUE klass, VALUE recv,
       default:
 	rb_bug("unsupported: th_call0");
     }
-    YARV_CHECK_INTS();
+    RUBY_VM_CHECK_INTS();
     return val;
 }
 
@@ -544,14 +602,14 @@ search_super_klass(VALUE klass, VALUE recv)
 }
 
 VALUE
-th_call_super(yarv_thread_t *th, int argc, const VALUE *argv)
+th_call_super(rb_thead_t *th, int argc, const VALUE *argv)
 {
     VALUE recv = th->cfp->self;
     VALUE klass;
     ID id;
     NODE *body;
     int nosuper = 0;
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->cfp;
 
     if (!th->cfp->iseq) {
 	klass = cfp->method_klass;
@@ -583,7 +641,7 @@ th_call_super(yarv_thread_t *th, int argc, const VALUE *argv)
 }
 
 static inline VALUE
-th_invoke_yield_cfunc(yarv_thread_t *th, yarv_block_t *block,
+th_invoke_yield_cfunc(rb_thead_t *th, rb_block_t *block,
 		      VALUE self, int argc, VALUE *argv)
 {
     NODE *ifunc = (NODE *) block->iseq;
@@ -611,7 +669,7 @@ th_invoke_yield_cfunc(yarv_thread_t *th, yarv_block_t *block,
 }
 
 static inline int
-th_yield_setup_args(yarv_iseq_t *iseq, int argc, VALUE *argv)
+th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 {
     int i;
     
@@ -689,11 +747,11 @@ th_yield_setup_args(yarv_iseq_t *iseq, int argc, VALUE *argv)
 }
 
 static VALUE
-invoke_block(yarv_thread_t *th, yarv_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
+invoke_block(rb_thead_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
-	yarv_iseq_t *iseq = block->iseq;
+	rb_iseq_t *iseq = block->iseq;
 	int i;
 	th_set_finish_env(th);
 
@@ -722,9 +780,9 @@ invoke_block(yarv_thread_t *th, yarv_block_t *block, VALUE self, int argc, VALUE
 }
 
 VALUE
-th_invoke_yield(yarv_thread_t *th, int argc, VALUE *argv)
+th_invoke_yield(rb_thead_t *th, int argc, VALUE *argv)
 {
-    yarv_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
+    rb_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (block == 0) {
 	th_localjump_error("no block given", Qnil, 0);
@@ -734,14 +792,14 @@ th_invoke_yield(yarv_thread_t *th, int argc, VALUE *argv)
 }
 
 VALUE
-th_invoke_proc(yarv_thread_t *th, yarv_proc_t *proc,
+th_invoke_proc(rb_thead_t *th, rb_proc_t *proc,
 	       VALUE self, int argc, VALUE *argv)
 {
     VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
     volatile NODE *stored_special_cref_stack;
-    yarv_control_frame_t * volatile cfp = th->cfp;
+    rb_control_frame_t * volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
@@ -791,7 +849,7 @@ static VALUE *
 lfp_svar(VALUE *lfp, int cnt)
 {
     struct RValues *val;
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
 
     if (th->local_lfp != lfp) {
 	val = (struct RValues *)lfp[-1];
@@ -829,7 +887,7 @@ lfp_svar(VALUE *lfp, int cnt)
 
 
 VALUE *
-th_cfp_svar(yarv_control_frame_t *cfp, int cnt)
+th_cfp_svar(rb_control_frame_t *cfp, int cnt)
 {
     while (cfp->pc == 0) {
 	cfp++;
@@ -838,27 +896,27 @@ th_cfp_svar(yarv_control_frame_t *cfp, int cnt)
 }
 
 VALUE *
-th_svar(yarv_thread_t *th, int cnt)
+th_svar(rb_thead_t *th, int cnt)
 {
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->cfp;
     return th_cfp_svar(cfp, cnt);
 }
 
 VALUE *
 thread_svar(VALUE self, int cnt)
 {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     GetThreadPtr(self, th);
     return th_svar(th, cnt);
 }
 
 int
-th_get_sourceline(yarv_control_frame_t *cfp)
+th_get_sourceline(rb_control_frame_t *cfp)
 {
     int line_no = 0;
-    yarv_iseq_t *iseq = cfp->iseq;
+    rb_iseq_t *iseq = cfp->iseq;
 
-    if (YARV_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int i;
 	int pos = cfp->pc - cfp->iseq->iseq_encoded;
 
@@ -875,9 +933,9 @@ th_get_sourceline(yarv_control_frame_t *cfp)
 }
 
 static VALUE
-th_backtrace_each(yarv_thread_t *th,
-		  yarv_control_frame_t *limit_cfp,
-		  yarv_control_frame_t *cfp,
+th_backtrace_each(rb_thead_t *th,
+		  rb_control_frame_t *limit_cfp,
+		  rb_control_frame_t *cfp,
 		  char *file, int line_no, VALUE ary)
 {
     VALUE str;
@@ -886,7 +944,7 @@ th_backtrace_each(yarv_thread_t *th,
 	str = 0;
 	if (cfp->iseq != 0) {
 	    if (cfp->pc != 0) {
-		yarv_iseq_t *iseq = cfp->iseq;
+		rb_iseq_t *iseq = cfp->iseq;
 
 		line_no = th_get_sourceline(cfp);
 		file = RSTRING_PTR(iseq->file_name);
@@ -902,17 +960,17 @@ th_backtrace_each(yarv_thread_t *th,
 			     rb_id2name(cfp->callee_id));
 	    rb_ary_push(ary, str);
 	}
-	cfp = YARV_NEXT_CONTROL_FRAME(cfp);
+	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
     }
     return rb_ary_reverse(ary);
 }
 
 VALUE
-th_backtrace(yarv_thread_t *th, int lev)
+th_backtrace(rb_thead_t *th, int lev)
 {
     VALUE ary;
-    yarv_control_frame_t *cfp = th->cfp;
-    yarv_control_frame_t *top_of_cfp = (void *)(th->stack + th->stack_size);
+    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *top_of_cfp = (void *)(th->stack + th->stack_size);
     top_of_cfp -= 2;
 
     if (lev < 0) {
@@ -929,7 +987,7 @@ th_backtrace(yarv_thread_t *th, int lev)
 	ary = rb_ary_new();
     }
 
-    ary = th_backtrace_each(th, YARV_NEXT_CONTROL_FRAME(cfp),
+    ary = th_backtrace_each(th, RUBY_VM_NEXT_CONTROL_FRAME(cfp),
 			    top_of_cfp, "", 0, ary);
     return ary;
 }
@@ -937,7 +995,7 @@ th_backtrace(yarv_thread_t *th, int lev)
 VALUE
 thread_backtrace(VALUE self, int level)
 {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     GetThreadPtr(self, th);
     return th_backtrace(th, level);
 }
@@ -962,8 +1020,8 @@ lfp_get_special_cref(VALUE *lfp)
 static void
 check_svar(void)
 {
-    yarv_thread_t *th = GET_THREAD();
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_thead_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
     while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
 	/* printf("cfp: %p\n", cfp->magic); */
 	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
@@ -998,7 +1056,7 @@ lfp_set_special_cref(VALUE *lfp, NODE * cref)
 }
 
 NODE *
-th_set_special_cref(yarv_thread_t *th, VALUE *lfp, NODE * cref_stack)
+th_set_special_cref(rb_thead_t *th, VALUE *lfp, NODE * cref_stack)
 {
     return lfp_set_special_cref(lfp, cref_stack);
 }
@@ -1014,7 +1072,7 @@ debug_cref(NODE *cref)
 }
 
 static NODE *
-get_cref(yarv_iseq_t *iseq, VALUE *lfp)
+get_cref(rb_iseq_t *iseq, VALUE *lfp)
 {
     NODE *cref;
     if ((cref = lfp_get_special_cref(lfp)) != 0) {
@@ -1030,16 +1088,16 @@ get_cref(yarv_iseq_t *iseq, VALUE *lfp)
 }
 
 NODE *
-th_get_cref(yarv_thread_t *th, yarv_iseq_t *iseq, yarv_control_frame_t *cfp)
+th_get_cref(rb_thead_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp)
 {
     return get_cref(iseq, cfp->lfp);
 }
 
 NODE *
-th_cref_push(yarv_thread_t *th, VALUE klass, int noex)
+th_cref_push(rb_thead_t *th, VALUE klass, int noex)
 {
     NODE *cref = NEW_BLOCK(klass);
-    yarv_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
 
     cref->nd_file = 0;
     cref->nd_next = get_cref(cfp->iseq, cfp->lfp);
@@ -1048,9 +1106,9 @@ th_cref_push(yarv_thread_t *th, VALUE klass, int noex)
 }
 
 VALUE
-th_get_cbase(yarv_thread_t *th)
+th_get_cbase(rb_thead_t *th)
 {
-    yarv_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     NODE *cref = get_cref(cfp->iseq, cfp->lfp);
     VALUE klass = Qundef;
     
@@ -1064,7 +1122,7 @@ th_get_cbase(yarv_thread_t *th)
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_get_ev_const(yarv_thread_t *th, yarv_iseq_t *iseq,
+eval_get_ev_const(rb_thead_t *th, rb_iseq_t *iseq,
 		  VALUE klass, ID id, int is_defined)
 {
     VALUE val;
@@ -1135,7 +1193,7 @@ eval_get_ev_const(yarv_thread_t *th, yarv_iseq_t *iseq,
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_get_cvar_base(yarv_thread_t *th, yarv_iseq_t *iseq)
+eval_get_cvar_base(rb_thead_t *th, rb_iseq_t *iseq)
 {
     NODE *cref = get_cref(iseq, th->cfp->lfp);
     VALUE klass = Qnil;
@@ -1153,8 +1211,8 @@ eval_get_cvar_base(yarv_thread_t *th, yarv_iseq_t *iseq)
 }
 
 EVALBODY_HELPER_FUNCTION void
-eval_define_method(yarv_thread_t *th, VALUE obj,
-		   ID id, yarv_iseq_t *miseq, num_t is_singleton, NODE *cref)
+eval_define_method(rb_thead_t *th, VALUE obj,
+		   ID id, rb_iseq_t *miseq, num_t is_singleton, NODE *cref)
 {
     NODE *newbody;
     int noex = cref->nd_visi;
@@ -1179,7 +1237,7 @@ eval_define_method(yarv_thread_t *th, VALUE obj,
     COPY_CREF(miseq->cref_stack, cref);
     miseq->klass = klass;
     miseq->defined_method_id = id;
-    newbody = NEW_NODE(YARV_METHOD_NODE, 0, miseq->self, 0);
+    newbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0, miseq->self, 0);
     rb_add_method(klass, id, newbody, noex);
 
     if (!is_singleton && noex == NOEX_MODFUNC) {
@@ -1189,10 +1247,10 @@ eval_define_method(yarv_thread_t *th, VALUE obj,
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_method_missing(yarv_thread_t *th, ID id, VALUE recv, int num,
-		    yarv_block_t *blockptr, int opt)
+eval_method_missing(rb_thead_t *th, ID id, VALUE recv, int num,
+		    rb_block_t *blockptr, int opt)
 {
-    yarv_control_frame_t *reg_cfp = th->cfp;
+    rb_control_frame_t *reg_cfp = th->cfp;
     VALUE *argv = STACK_ADDR_FROM_TOP(num + 1);
     VALUE val;
     argv[0] = ID2SYM(id);
@@ -1318,9 +1376,9 @@ th_jump_tag_but_local_jump(int state, VALUE val)
 }
 
 void
-th_iter_break(yarv_thread_t *th)
+th_iter_break(rb_thead_t *th)
 {
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->cfp;
     VALUE *dfp = GC_GUARDED_PTR_REF(*cfp->dfp);
 
     th->state = TAG_BREAK;
@@ -1404,12 +1462,12 @@ yarv_init_redefined_flag()
     VALUE *pc;                  // cfp[0]
     VALUE *sp;                  // cfp[1]
     VALUE *bp;                  // cfp[2]
-    yarv_iseq_t *iseq;          // cfp[3]
+    rb_iseq_t *iseq;          // cfp[3]
     VALUE magic;                // cfp[4]
     VALUE self;                 // cfp[5]
     VALUE *lfp;                 // cfp[6]
     VALUE *dfp;                 // cfp[7]
-    yarv_iseq_t * block_iseq;   // cfp[8]
+    rb_iseq_t * block_iseq;   // cfp[8]
     VALUE proc;                 // cfp[9] always 0
   };
 
@@ -1417,7 +1475,7 @@ yarv_init_redefined_flag()
     VALUE self;
     VALUE *lfp;
     VALUE *dfp;
-    yarv_iseq_t *block_iseq;
+    rb_iseq_t *block_iseq;
   };
 
   struct PROC {
@@ -1469,24 +1527,24 @@ yarv_init_redefined_flag()
     VALUE *pc;                       // 0
     VALUE *sp;                       // stack pointer
     VALUE *bp;                       // base pointer (used in exception)
-    yarv_iseq_t *iseq;               // cmi
+    rb_iseq_t *iseq;               // cmi
     VALUE magic;                     // C_METHOD_FRAME
     VALUE self;                      // ?
     VALUE *lfp;                      // lfp
     VALUE *dfp;                      // == lfp
-    yarv_iseq_t * block_iseq;        //
+    rb_iseq_t * block_iseq;        //
     VALUE proc;                      // always 0
   };
 
   struct C_BLOCK_CONTROL_FRAME {
     VALUE *pc;                       // point only "finish" insn
     VALUE *sp;                       // sp
-    yarv_iseq_t *iseq;               // ?
+    rb_iseq_t *iseq;               // ?
     VALUE magic;                     // C_METHOD_FRAME
     VALUE self;                      // needed?
     VALUE *lfp;                      // lfp
     VALUE *dfp;                      // lfp
-    yarv_iseq_t * block_iseq; // 0
+    rb_iseq_t * block_iseq; // 0
   };
 
   struct C_METHDO_FRAME{
@@ -1497,7 +1555,7 @@ yarv_init_redefined_flag()
 
 
 VALUE
-th_eval_body(yarv_thread_t *th)
+th_eval_body(rb_thead_t *th)
 {
     int state;
     VALUE result, err;
@@ -1518,7 +1576,7 @@ th_eval_body(yarv_thread_t *th)
 	struct catch_table_entry *entry;
 	unsigned long epc, cont_pc, cont_sp;
 	VALUE catch_iseqval;
-	yarv_control_frame_t *cfp;
+	rb_control_frame_t *cfp;
 	VALUE *escape_dfp = NULL;
 	VALUE type;
 
@@ -1666,7 +1724,7 @@ th_eval_body(yarv_thread_t *th)
 
 	if (catch_iseqval != 0) {
 	    /* found catch table */
-	    yarv_iseq_t *catch_iseq;
+	    rb_iseq_t *catch_iseq;
 
 	    /* enter catch scope */
 	    GetISeqPtr(catch_iseqval, catch_iseq);

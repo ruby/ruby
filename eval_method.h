@@ -156,7 +156,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	}
 
 	if (mid == object_id || mid == __send || mid == __send_bang) {
-	    if (node && nd_type(node) == YARV_METHOD_NODE) {
+	    if (node && nd_type(node) == RUBY_VM_METHOD_NODE) {
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(mid));
 	    }

@@ -40,7 +40,7 @@ compile_data_free(struct iseq_compile_data *compile_data)
 static void
 iseq_free(void *ptr)
 {
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     FREE_REPORT_ENTER("iseq");
 
     if (ptr) {
@@ -67,7 +67,7 @@ iseq_free(void *ptr)
 static void
 iseq_mark(void *ptr)
 {
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     MARK_REPORT_ENTER("iseq");
 
     if (ptr) {
@@ -94,18 +94,18 @@ static VALUE
 iseq_alloc(VALUE klass)
 {
     VALUE volatile obj;
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
 
-    obj = Data_Make_Struct(klass, yarv_iseq_t, iseq_mark, iseq_free, iseq);
-    MEMZERO(iseq, yarv_iseq_t, 1);
+    obj = Data_Make_Struct(klass, rb_iseq_t, iseq_mark, iseq_free, iseq);
+    MEMZERO(iseq, rb_iseq_t, 1);
     return obj;
 }
 
 static VALUE
-prepare_iseq_build(yarv_iseq_t *iseq,
+prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE file_name,
 		   VALUE parent, VALUE type, VALUE block_opt,
-		   const yarv_compile_option_t *option)
+		   const rb_compile_option_t *option)
 {
     iseq->name = name;
     iseq->defined_method_id = 0;
@@ -133,7 +133,7 @@ prepare_iseq_build(yarv_iseq_t *iseq,
 	iseq->cref_stack->nd_file = 0;
     }
     else if (parent) {
-	yarv_iseq_t *piseq;
+	rb_iseq_t *piseq;
 	GetISeqPtr(parent, piseq);
 	iseq->cref_stack = piseq->cref_stack;
     }
@@ -162,13 +162,13 @@ prepare_iseq_build(yarv_iseq_t *iseq,
 	iseq->local_iseq = iseq;
     }
     else {
-	yarv_iseq_t *piseq;
+	rb_iseq_t *piseq;
 	GetISeqPtr(parent, piseq);
 	iseq->local_iseq = piseq->local_iseq;
     }
 
     if (RTEST(parent)) {
-	yarv_iseq_t *piseq;
+	rb_iseq_t *piseq;
 	GetISeqPtr(parent, piseq);
 	iseq->parent_iseq = piseq;
     }
@@ -177,7 +177,7 @@ prepare_iseq_build(yarv_iseq_t *iseq,
 }
 
 static VALUE
-cleanup_iseq_build(yarv_iseq_t *iseq)
+cleanup_iseq_build(rb_iseq_t *iseq)
 {
     struct iseq_compile_data *data = iseq->compile_data;
     iseq->compile_data = 0;
@@ -191,7 +191,7 @@ cleanup_iseq_build(yarv_iseq_t *iseq)
     return Qtrue;
 }
 
-static yarv_compile_option_t COMPILE_OPTION_DEFAULT = {
+static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_INLINE_CONST_CACHE, /* int inline_const_cache; */
     OPT_PEEPHOLE_OPTIMIZATION, /* int peephole_optimization; */
     OPT_SPECIALISED_INSTRUCTION, /* int specialized_instruction; */
@@ -199,10 +199,10 @@ static yarv_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
     OPT_STACK_CACHING, /* int stack_caching; */
 };
-static const yarv_compile_option_t COMPILE_OPTION_FALSE;
+static const rb_compile_option_t COMPILE_OPTION_FALSE;
 
 static void
-make_compile_option(yarv_compile_option_t *option, VALUE opt)
+make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
     if (opt == Qnil) {
 	*option = COMPILE_OPTION_DEFAULT;
@@ -211,7 +211,7 @@ make_compile_option(yarv_compile_option_t *option, VALUE opt)
 	*option = COMPILE_OPTION_FALSE;
     }
     else if (opt == Qtrue) {
-	memset(option, 1, sizeof(yarv_compile_option_t));
+	memset(option, 1, sizeof(rb_compile_option_t));
     }
     else if (CLASS_OF(opt) == rb_cHash) {
 #define SET_COMPILE_OPTION(o, h, mem) \
@@ -233,7 +233,7 @@ make_compile_option(yarv_compile_option_t *option, VALUE opt)
 }
 
 static VALUE
-make_compile_option_value(yarv_compile_option_t *option)
+make_compile_option_value(rb_compile_option_t *option)
 {
     VALUE opt = rb_hash_new();
 #define SET_COMPILE_OPTION(o, h, mem) \
@@ -254,16 +254,16 @@ VALUE
 yarv_iseq_new(NODE *node, VALUE name, VALUE file_name,
 	      VALUE parent, VALUE type)
 {
-    return yarv_iseq_new_with_opt(node, name, file_name, parent, type,
-				  &COMPILE_OPTION_DEFAULT);
+    return rb_iseq_new_with_opt(node, name, file_name, parent, type,
+				&COMPILE_OPTION_DEFAULT);
 }
 
 static VALUE
 yarv_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
 				VALUE parent, VALUE type, VALUE bopt,
-				const yarv_compile_option_t *option)
+				const rb_compile_option_t *option)
 {
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     VALUE self = iseq_alloc(rb_cISeq);
     
     GetISeqPtr(self, iseq);
@@ -276,9 +276,9 @@ yarv_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
 }
 
 VALUE
-yarv_iseq_new_with_opt(NODE *node, VALUE name, VALUE file_name,
-			VALUE parent, VALUE type,
-			const yarv_compile_option_t *option)
+rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE file_name,
+		     VALUE parent, VALUE type,
+		     const rb_compile_option_t *option)
 {
     return yarv_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
 					   Qfalse, option);
@@ -292,7 +292,7 @@ yarv_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
-VALUE iseq_build_from_ary(yarv_iseq_t *iseq, VALUE line,
+VALUE iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
 			  VALUE locals, VALUE args, VALUE exception, VALUE body);
 
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
@@ -310,8 +310,8 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     VALUE iseq_type;
     struct st_table *type_map = 0;
-    yarv_iseq_t *iseq;
-    yarv_compile_option_t option;
+    rb_iseq_t *iseq;
+    rb_compile_option_t option;
 
     /* [magic, major_version, minor_version, format_type, misc,
      *  name, filename, line,
@@ -398,7 +398,7 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
 {
     VALUE str, file = Qnil, line = INT2FIX(1), opt = Qnil;
     NODE *node;
-    yarv_compile_option_t option;
+    rb_compile_option_t option;
     
     rb_scan_args(argc, argv, "13", &str, &file, &line, &opt);
 
@@ -407,8 +407,8 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
 
     node = compile_string(str, file, line);
     make_compile_option(&option, opt);
-    return yarv_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
-				  ISEQ_TYPE_TOP, &option);
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
+				ISEQ_TYPE_TOP, &option);
 }
 
 static VALUE
@@ -419,7 +419,7 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
     VALUE f;
     NODE *node;
     const char *fname;
-    yarv_compile_option_t option;
+    rb_compile_option_t option;
 
     rb_scan_args(argc, argv, "11", &file, &opt);
     fname = StringValueCStr(file);
@@ -429,23 +429,23 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
     make_compile_option(&option, opt);
-    return yarv_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
-				  ISEQ_TYPE_TOP, &option);
+    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
+				ISEQ_TYPE_TOP, &option);
 }
 
 static VALUE
 iseq_s_compile_option_set(VALUE self, VALUE opt)
 {
-    yarv_compile_option_t option;
+    rb_compile_option_t option;
     make_compile_option(&option, opt);
     COMPILE_OPTION_DEFAULT = option;
     return make_compile_option_value(&option);
 }
 
-static yarv_iseq_t *
+static rb_iseq_t *
 iseq_check(VALUE val)
 {
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     GetISeqPtr(val, iseq);
     if (!iseq->name) {
 	rb_raise(rb_eTypeError, "uninitialized InstructionSequence");
@@ -453,19 +453,19 @@ iseq_check(VALUE val)
     return iseq;
 }
 
-VALUE yarv_th_eval(yarv_thread_t *th, VALUE iseqval);
+VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
 
 static VALUE
 iseq_eval(VALUE self)
 {
-    return yarv_th_eval(GET_THREAD(), self);
+    return rb_thread_eval(GET_THREAD(), self);
 }
 
 static VALUE
 iseq_inspect(VALUE self)
 {
     char buff[0x100];
-    yarv_iseq_t *iseq = iseq_check(self);
+    rb_iseq_t *iseq = iseq_check(self);
 
     snprintf(buff, sizeof(buff), "<ISeq:%s@%s>",
 	     RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->file_name));
@@ -473,12 +473,12 @@ iseq_inspect(VALUE self)
     return rb_str_new2(buff);
 }
 
-VALUE iseq_data_to_ary(yarv_iseq_t *iseq);
+VALUE iseq_data_to_ary(rb_iseq_t *iseq);
 
 static VALUE
 iseq_to_a(VALUE self)
 {
-    yarv_iseq_t *iseq = iseq_check(self);
+    rb_iseq_t *iseq = iseq_check(self);
     return iseq_data_to_ary(iseq);
 }
 
@@ -486,7 +486,7 @@ iseq_to_a(VALUE self)
   now, search algorithm is brute force. but this should be binary search.
  */
 static unsigned short
-find_line_no(yarv_iseq_t *iseqdat, unsigned long pos)
+find_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
     struct insn_info_struct *iiary = iseqdat->insn_info_tbl;
@@ -501,7 +501,7 @@ find_line_no(yarv_iseq_t *iseqdat, unsigned long pos)
 }
 
 static unsigned short
-find_prev_line_no(yarv_iseq_t *iseqdat, unsigned long pos)
+find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
     struct insn_info_struct *iiary = iseqdat->insn_info_tbl;
@@ -521,7 +521,7 @@ find_prev_line_no(yarv_iseq_t *iseqdat, unsigned long pos)
 }
 
 static VALUE
-insn_operand_intern(yarv_iseq_t *iseq,
+insn_operand_intern(rb_iseq_t *iseq,
 		    int insn, int op_no, VALUE op,
 		    int len, int pos, VALUE *pnop, VALUE child)
 {
@@ -543,7 +543,7 @@ insn_operand_intern(yarv_iseq_t *iseq,
 
     case TS_LINDEX:
 	{
-	    yarv_iseq_t *ip = iseq->local_iseq;
+	    rb_iseq_t *ip = iseq->local_iseq;
 
 	    ret =
 	      rb_str_new2(
@@ -552,7 +552,7 @@ insn_operand_intern(yarv_iseq_t *iseq,
 	}
     case TS_DINDEX:{
 	    if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-		yarv_iseq_t *ip = iseq;
+		rb_iseq_t *ip = iseq;
 		int level = *pnop;
 		int i;
 		for (i = 0; i < level; i++) {
@@ -578,7 +578,7 @@ insn_operand_intern(yarv_iseq_t *iseq,
 
     case TS_ISEQ:		/* iseq */
 	{
-	    yarv_iseq_t *iseq = (yarv_iseq_t *)op;
+	    rb_iseq_t *iseq = (rb_iseq_t *)op;
 	    if (iseq) {
 		ret = iseq->name;
 		if (child) {
@@ -617,7 +617,7 @@ insn_operand_intern(yarv_iseq_t *iseq,
  */
 VALUE
 iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
-		 yarv_iseq_t *iseqdat, VALUE child)
+		 rb_iseq_t *iseqdat, VALUE child)
 {
     int insn = iseq[pos];
     int len = insn_len(insn);
@@ -696,7 +696,7 @@ catch_type(int type)
 VALUE
 iseq_disasm(VALUE self)
 {
-    yarv_iseq_t *iseqdat = iseq_check(self);
+    rb_iseq_t *iseqdat = iseq_check(self);
     VALUE *iseq;
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
@@ -1080,7 +1080,7 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 }
 
 VALUE
-iseq_data_to_ary(yarv_iseq_t *iseq)
+iseq_data_to_ary(rb_iseq_t *iseq)
 {
     int i, pos, opt = 0;
     VALUE *seq;
@@ -1205,7 +1205,7 @@ iseq_data_to_ary(yarv_iseq_t *iseq)
 		break;
 	      case TS_ISEQ:
 		{
-		    yarv_iseq_t *iseq = (yarv_iseq_t *)*seq;
+		    rb_iseq_t *iseq = (rb_iseq_t *)*seq;
 		    if (iseq) {
 			VALUE val = iseq_data_to_ary(iseq);
 			rb_ary_push(ary, val);
@@ -1260,7 +1260,7 @@ iseq_data_to_ary(yarv_iseq_t *iseq)
 	struct catch_table_entry *entry = &iseq->catch_table[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
-	    yarv_iseq_t *eiseq;
+	    rb_iseq_t *eiseq;
 	    GetISeqPtr(entry->iseq, eiseq);
 	    rb_ary_push(ary, iseq_data_to_ary(eiseq));
 	}

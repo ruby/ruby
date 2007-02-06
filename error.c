@@ -1473,7 +1473,7 @@ Init_syserr(void)
 static void
 err_append(const char *s)
 {
-  yarv_thread_t *th = GET_THREAD();
+  rb_thead_t *th = GET_THREAD();
   if (th->parse_in_eval) {
     if (NIL_P(th->errinfo)) {
       th->errinfo = rb_exc_new2(rb_eSyntaxError, s);

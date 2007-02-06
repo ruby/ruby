@@ -84,8 +84,8 @@ rb_call_inits()
     Init_GC();
     Init_marshal();
     Init_Enumerator();
-    Init_ISeq();
     Init_VM();
+    Init_ISeq();
     Init_Thread();
     Init_version();
 }

@@ -101,12 +101,12 @@ error !
 #define ELABEL(x)
 #define LABEL_PTR(x) &LABEL(x)
 
-typedef yarv_control_frame_t *
-    (*insn_func_type) (yarv_thread_t *, yarv_control_frame_t *)FASTCALL;
+typedef rb_control_frame_t *
+    (*insn_func_type) (rb_thead_t *, rb_control_frame_t *)FASTCALL;
 
 #define INSN_ENTRY(insn) \
-  yarv_control_frame_t * \
-    LABEL(insn)(yarv_thread_t *th, yarv_control_frame_t *reg_cfp) FASTCALL {
+  rb_control_frame_t * \
+    LABEL(insn)(rb_thead_t *th, rb_control_frame_t *reg_cfp) FASTCALL {
 
 #define END_INSN(insn) return reg_cfp;}
 

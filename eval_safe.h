@@ -36,7 +36,7 @@ static void safe_setter _((VALUE val));
 void
 rb_set_safe_level(int level)
 {
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
 
     if (level > th->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
@@ -56,7 +56,7 @@ static void
 safe_setter(VALUE val)
 {
     int level = NUM2INT(val);
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
 
     if (level < th->safe_level) {
 	rb_raise(rb_eSecurityError,

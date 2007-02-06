@@ -111,7 +111,7 @@ rb_provide(const char *feature)
 VALUE rb_load_path;
 
 NORETURN(static void load_failed _((VALUE)));
-void th_klass_init(yarv_thread_t *);
+void th_klass_init(rb_thead_t *);
 
 void
 rb_load(VALUE fname, int wrap)
@@ -339,7 +339,7 @@ rb_require_safe(VALUE fname, int safe)
 {
     VALUE result = Qnil;
     volatile VALUE errinfo = GET_THREAD()->errinfo;
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
     int state;
     char *volatile ftptr = 0;
 

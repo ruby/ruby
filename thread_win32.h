@@ -18,13 +18,13 @@
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-typedef HANDLE yarv_thread_id_t;
-typedef CRITICAL_SECTION yarv_thread_lock_t;
+typedef HANDLE rb_thread_id_t;
+typedef CRITICAL_SECTION rb_thread_lock_t;
 
-int native_mutex_lock(yarv_thread_lock_t *);
-int native_mutex_unlock(yarv_thread_lock_t *);
-int native_mutex_trylock(yarv_thread_lock_t *);
-void native_mutex_initialize(yarv_thread_lock_t *);
+int native_mutex_lock(rb_thread_lock_t *);
+int native_mutex_unlock(rb_thread_lock_t *);
+int native_mutex_trylock(rb_thread_lock_t *);
+void native_mutex_initialize(rb_thread_lock_t *);
 
 typedef struct native_thread_data_struct {
     HANDLE interrupt_event;

@@ -93,37 +93,37 @@ static int insn_ret_num(int insn);
 
 static void ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
-static INSN *new_insn_body(yarv_iseq_t *iseq, int line_no,
+static INSN *new_insn_body(rb_iseq_t *iseq, int line_no,
 			   int insn_id, int argc, ...);
-static LABEL *new_label_body(yarv_iseq_t *iseq, int line);
+static LABEL *new_label_body(rb_iseq_t *iseq, int line);
 
-static int iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *anchor,
+static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			     NODE * n, int);
-static int iseq_setup(yarv_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
-static int iseq_optimize(yarv_iseq_t *iseq, LINK_ANCHOR *anchor);
-static int iseq_insns_unification(yarv_iseq_t *iseq, LINK_ANCHOR *anchor);
-static int set_sequence_stackcaching(yarv_iseq_t *iseq, LINK_ANCHOR *anchor);
-static int set_sequence(yarv_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
-static int set_exception_table(yarv_iseq_t *iseq);
-static int set_localtbl(yarv_iseq_t *iseq, ID *tbl);
-static int set_localtbl_eval(yarv_iseq_t *iseq, ID *tbl);
-static int set_arguments(yarv_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
-static NODE *set_block_local_tbl(yarv_iseq_t *iseq, NODE * node,
+static int set_exception_table(rb_iseq_t *iseq);
+static int set_localtbl(rb_iseq_t *iseq, ID *tbl);
+static int set_localtbl_eval(rb_iseq_t *iseq, ID *tbl);
+static int set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
+static NODE *set_block_local_tbl(rb_iseq_t *iseq, NODE * node,
 				 LINK_ANCHOR *anchor);
-static int set_exception_tbl(yarv_iseq_t *iseq);
-static int set_optargs_table(yarv_iseq_t *iseq);
+static int set_exception_tbl(rb_iseq_t *iseq);
+static int set_optargs_table(rb_iseq_t *iseq);
 
 static int
-iseq_add_mark_object(yarv_iseq_t *iseq, VALUE v)
+iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
 {
     rb_ary_push(iseq->iseq_mark_ary, v);
     return COMPILE_OK;
 }
 
 static int
-iseq_add_mark_object_compile_time(yarv_iseq_t *iseq, VALUE v)
+iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 {
     rb_ary_push(iseq->compile_data->mark_ary, v);
     return COMPILE_OK;
@@ -140,7 +140,7 @@ VALUE
 iseq_compile(VALUE self, NODE *narg)
 {
     DECL_ANCHOR(list_anchor);
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     NODE *node = (NODE *) narg;
     GetISeqPtr(self, iseq);
 
@@ -272,7 +272,7 @@ iseq_compile(VALUE self, NODE *narg)
 VALUE th_eval(void *);
 
 static int
-iseq_translate_direct_threaded_code(yarv_iseq_t *iseq)
+iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 
@@ -305,7 +305,7 @@ iseq_translate_direct_threaded_code(yarv_iseq_t *iseq)
 
 
 static void *
-compile_data_alloc(yarv_iseq_t *iseq, size_t size)
+compile_data_alloc(rb_iseq_t *iseq, size_t size)
 {
     void *ptr = 0;
     struct iseq_compile_data_storage *storage =
@@ -336,13 +336,13 @@ compile_data_alloc(yarv_iseq_t *iseq, size_t size)
 }
 
 static INSN *
-compile_data_alloc_insn(yarv_iseq_t *iseq)
+compile_data_alloc_insn(rb_iseq_t *iseq)
 {
     return (INSN *)compile_data_alloc(iseq, sizeof(INSN));
 }
 
 static LABEL *
-compile_data_alloc_label(yarv_iseq_t *iseq)
+compile_data_alloc_label(rb_iseq_t *iseq)
 {
     return (LABEL *)compile_data_alloc(iseq, sizeof(LABEL));
 }
@@ -620,7 +620,7 @@ debug_list(LINK_ANCHOR *anchor)
 #endif
 
 static LABEL *
-new_label_body(yarv_iseq_t *iseq, int line)
+new_label_body(rb_iseq_t *iseq, int line)
 {
     LABEL *labelobj = compile_data_alloc_label(iseq);
     static int label_no = 0;
@@ -635,7 +635,7 @@ new_label_body(yarv_iseq_t *iseq, int line)
 }
 
 static INSN *
-new_insn_core(yarv_iseq_t *iseq, int line_no,
+new_insn_core(rb_iseq_t *iseq, int line_no,
 	      int insn_id, int argc, VALUE *argv)
 {
     INSN *iobj = compile_data_alloc_insn(iseq);
@@ -651,7 +651,7 @@ new_insn_core(yarv_iseq_t *iseq, int line_no,
 }
 
 static INSN *
-new_insn_body(yarv_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
+new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
 {
     VALUE *operands = 0;
     va_list argv;
@@ -669,7 +669,7 @@ new_insn_body(yarv_iseq_t *iseq, int line_no, int insn_id, int argc, ...)
 }
 
 static INSN *
-new_insn_send(yarv_iseq_t *iseq, int line_no,
+new_insn_send(rb_iseq_t *iseq, int line_no,
 	      VALUE id, VALUE argc, VALUE block, VALUE flag)
 {
     INSN *iobj = 0;
@@ -685,22 +685,22 @@ new_insn_send(yarv_iseq_t *iseq, int line_no,
 }
 
 static VALUE
-new_child_iseq(yarv_iseq_t *iseq, NODE *node,
+new_child_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, VALUE parent, VALUE type)
 {
     VALUE args[6];
     VALUE ret;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
-    ret = yarv_iseq_new_with_opt(node, name, iseq_filename(iseq->self),
-				 parent, type, iseq->compile_data->option);
+    ret = rb_iseq_new_with_opt(node, name, iseq_filename(iseq->self),
+			       parent, type, iseq->compile_data->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, ret);
     return ret;
 }
 
 static int
-iseq_setup(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
+iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     /* debugs("[compile step 2] (iseq_array_to_linkedlist)\n"); */
 
@@ -767,7 +767,7 @@ iseq_assemble_setup(VALUE self, VALUE args, VALUE locals, VALUE insn_ary)
 }
 
 int
-set_exception_tbl(yarv_iseq_t *iseq)
+set_exception_tbl(rb_iseq_t *iseq)
 {
     static ID id_dollar_bang;
 
@@ -806,7 +806,7 @@ search_block_local_variables(NODE * node, VALUE local_vars)
 }
 
 static NODE *
-search_block_local_parameters(yarv_iseq_t *iseq, NODE * lnode)
+search_block_local_parameters(rb_iseq_t *iseq, NODE * lnode)
 {
     NODE *node = lnode;
     NODE *nelem;
@@ -893,7 +893,7 @@ search_block_local_parameters(yarv_iseq_t *iseq, NODE * lnode)
 
     /* translate to block inlining code */
     if (iseq->special_block_builder != 0) {
-	node = ((NODE * (*)(yarv_iseq_t *, NODE *, NODE *, VALUE, VALUE))
+	node = ((NODE * (*)(rb_iseq_t *, NODE *, NODE *, VALUE, VALUE))
 		iseq->special_block_builder) (iseq, node, lnode->nd_var,
 					      param_vars, local_vars);
     }
@@ -917,7 +917,7 @@ search_block_local_parameters(yarv_iseq_t *iseq, NODE * lnode)
 }
 
 static int
-set_block_initializer(yarv_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor, int didx)
+set_block_initializer(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor, int didx)
 {
     DECL_ANCHOR(anc);
     LINK_ELEMENT *elem;
@@ -947,7 +947,7 @@ set_block_initializer(yarv_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor, int d
 }
 
 static NODE *
-set_block_local_tbl(yarv_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
+set_block_local_tbl(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
 {
     NODE *rnode;
 
@@ -1049,7 +1049,7 @@ set_block_local_tbl(yarv_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
 }
 
 static int
-get_dyna_var_idx_at_raw(yarv_iseq_t *iseq, ID id)
+get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 {
     int i;
     for (i = 0; i < iseq->local_size; i++) {
@@ -1061,7 +1061,7 @@ get_dyna_var_idx_at_raw(yarv_iseq_t *iseq, ID id)
 }
 
 static int
-get_dyna_var_idx(yarv_iseq_t *iseq, ID id, int *level, int *ls)
+get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
 {
     int lv = 0, idx;
 
@@ -1081,7 +1081,7 @@ get_dyna_var_idx(yarv_iseq_t *iseq, ID id, int *level, int *ls)
 
  */
 static int
-set_arguments(yarv_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
+set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
 {
     int i, j;
 
@@ -1146,7 +1146,7 @@ set_arguments(yarv_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
 }
 
 static int
-set_localtbl(yarv_iseq_t *iseq, ID *tbl)
+set_localtbl(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
     if (tbl) {
@@ -1164,7 +1164,7 @@ set_localtbl(yarv_iseq_t *iseq, ID *tbl)
 }
 
 static int
-set_localtbl_eval(yarv_iseq_t *iseq, ID *tbl)
+set_localtbl_eval(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
     if (tbl) {
@@ -1185,7 +1185,7 @@ set_localtbl_eval(yarv_iseq_t *iseq, ID *tbl)
   ruby insn object array -> raw instruction sequence
  */
 static int
-set_sequence(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
+set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LABEL *lobj;
     INSN *iobj;
@@ -1320,7 +1320,7 @@ set_sequence(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    case TS_ISEQ:	/* iseq */
 			{
 			    VALUE v = operands[j];
-			    yarv_iseq_t *block = 0;
+			    rb_iseq_t *block = 0;
 			    if (v) {
 				GetISeqPtr(v, block);
 			    }
@@ -1405,7 +1405,7 @@ label_get_sp(LABEL *lobj)
 }
 
 static int
-set_exception_table(yarv_iseq_t *iseq)
+set_exception_table(rb_iseq_t *iseq)
 {
     VALUE *tptr, *ptr;
     int tlen, i;
@@ -1463,7 +1463,7 @@ set_exception_table(yarv_iseq_t *iseq)
  *      expr2
  */
 static int
-set_optargs_table(yarv_iseq_t *iseq)
+set_optargs_table(rb_iseq_t *iseq)
 {
     int i;
 
@@ -1521,7 +1521,7 @@ get_prev_insn(INSN *iobj)
 }
 
 static int
-iseq_peephole_optimize(yarv_iseq_t *iseq, LINK_ELEMENT *list)
+iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
 {
     INSN *iobj = (INSN *)list;
   again:
@@ -1618,7 +1618,7 @@ insn_set_specialized_instruction(INSN *iobj, int insn_id)
 
 
 static int
-iseq_specialized_instruction(yarv_iseq_t *iseq, INSN *iobj)
+iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (iobj->insn_id == BIN(send)) {
 	ID mid = SYM2ID(OPERAND_AT(iobj, 0));
@@ -1681,7 +1681,7 @@ iseq_specialized_instruction(yarv_iseq_t *iseq, INSN *iobj)
 }
 
 static int
-iseq_optimize(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
+iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *list;
     const int do_peephole = iseq->compile_data->option->peephole_optimization;
@@ -1708,7 +1708,7 @@ iseq_optimize(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 #if OPT_INSTRUCTIONS_UNIFICATION
 static INSN *
-new_unified_insn(yarv_iseq_t *iseq,
+new_unified_insn(rb_iseq_t *iseq,
 		 int insn_id, int size, LINK_ELEMENT *seq_list)
 {
     INSN *iobj = 0;
@@ -1748,7 +1748,7 @@ new_unified_insn(yarv_iseq_t *iseq,
  * It's future work (if compile time was bottle neck).
  */
 static int
-iseq_insns_unification(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
+iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
 #if OPT_INSTRUCTIONS_UNIFICATION
     LINK_ELEMENT *list;
@@ -1860,7 +1860,7 @@ label_set_sc_state(LABEL *lobj, int state)
 #endif
 
 static int
-set_sequence_stackcaching(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
+set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
 #if OPT_STACK_CACHING
     LINK_ELEMENT *list;
@@ -1952,7 +1952,7 @@ set_sequence_stackcaching(yarv_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 
 static int
-compile_dstr(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 {
     NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
@@ -1972,7 +1972,7 @@ compile_dstr(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 }
 
 static int
-compile_branch_condition(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
+compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 			 LABEL *then_label, LABEL *else_label)
 {
     switch (nd_type(cond)) {
@@ -2020,7 +2020,7 @@ compile_branch_condition(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 }
 
 static int
-compile_array(yarv_iseq_t *iseq,
+compile_array(rb_iseq_t *iseq,
 	      LINK_ANCHOR *ret, NODE * node_root, VALUE opt_p)
 {
     NODE *node = node_root;
@@ -2076,7 +2076,7 @@ case_when_optimizable_literal(NODE * node)
 }
 
 static VALUE
-when_vals(yarv_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE special_literals)
+when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE special_literals)
 {
     while (vals) {
 	VALUE lit;
@@ -2103,7 +2103,7 @@ when_vals(yarv_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE
 }
 
 static int
-make_masgn_lhs(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 {
 
     switch (nd_type(node)) {
@@ -2145,7 +2145,7 @@ make_masgn_lhs(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 }
 
 static int
-compile_massign(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
+compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		NODE * rhsn, NODE * splatn, NODE * lhsn, int llen)
 {
     if (lhsn != 0) {
@@ -2265,7 +2265,7 @@ compile_massign(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
 }
 
 static int
-compile_colon2(yarv_iseq_t *iseq, NODE * node,
+compile_colon2(rb_iseq_t *iseq, NODE * node,
 	       LINK_ANCHOR *pref, LINK_ANCHOR *body)
 {
     switch (nd_type(node)) {
@@ -2292,7 +2292,7 @@ compile_colon2(yarv_iseq_t *iseq, NODE * node,
 }
 
 static int
-compile_cpath(LINK_ANCHOR *ret, yarv_iseq_t *iseq, NODE *cpath)
+compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
 {
     if(cpath->nd_head) {
 	COMPILE(ret, "nd_else->nd_head", cpath->nd_head);
@@ -2307,7 +2307,7 @@ compile_cpath(LINK_ANCHOR *ret, yarv_iseq_t *iseq, NODE *cpath)
 }
 
 static int
-defined_expr(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
+defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	     NODE * node, LABEL *lfinish, VALUE needstr)
 {
     char *estr = 0;
@@ -2490,7 +2490,7 @@ defined_expr(yarv_iseq_t *iseq, LINK_ANCHOR *ret,
 #define BUFSIZE 0x100
 
 static VALUE
-make_name_for_block(yarv_iseq_t *iseq)
+make_name_for_block(rb_iseq_t *iseq)
 {
     char buf[BUFSIZE];
     if (iseq->parent_iseq == 0) {
@@ -2498,7 +2498,7 @@ make_name_for_block(yarv_iseq_t *iseq)
     }
     else {
 	int level = 1;
-	yarv_iseq_t *ip = iseq;
+	rb_iseq_t *ip = iseq;
 	while (1) {
 	    if (ip->local_iseq != ip) {
 		ip = ip->parent_iseq;
@@ -2523,7 +2523,7 @@ make_name_with_str(const char *fmt, const char *str)
 }
 
 static void
-add_ensure_range(yarv_iseq_t *iseq, struct ensure_range *erange,
+add_ensure_range(rb_iseq_t *iseq, struct ensure_range *erange,
 		 LABEL *lstart, LABEL *lend)
 {
     struct ensure_range *ne =
@@ -2541,7 +2541,7 @@ add_ensure_range(yarv_iseq_t *iseq, struct ensure_range *erange,
 }
 
 static void
-add_ensure_iseq(LINK_ANCHOR *ret, yarv_iseq_t *iseq)
+add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq)
 {
     struct iseq_compile_data_ensure_node_stack *enlp =
 	iseq->compile_data->ensure_node_stack;
@@ -2567,7 +2567,7 @@ add_ensure_iseq(LINK_ANCHOR *ret, yarv_iseq_t *iseq)
 }
 
 static VALUE
-setup_arg(yarv_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
+setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 {
     VALUE argc = INT2FIX(0);
     NODE *argn = node->nd_args;
@@ -2632,7 +2632,7 @@ setup_arg(yarv_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
   poped: This node will be poped
  */
 static int
-iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
+iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 {
     VALUE tmp;			/* reserved for macro */
     int type;
@@ -3002,7 +3002,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      COMPILE_ERROR(("Can't escape from eval with break"));
 	  }
 	  else {
-	      yarv_iseq_t *ip = iseq->parent_iseq;
+	      rb_iseq_t *ip = iseq->parent_iseq;
 	      while (ip) {
 		  level++;
 		  if (ip->compile_data->redo_label != 0) {
@@ -3041,7 +3041,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      COMPILE_ERROR(("Can't escape from eval with next"));
 	  }
 	  else {
-	      yarv_iseq_t *ip = iseq->parent_iseq;
+	      rb_iseq_t *ip = iseq->parent_iseq;
 	      while (ip) {
 		  level = 0x8000;
 		  if (ip->type == ISEQ_TYPE_BLOCK) {
@@ -3085,7 +3085,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      }
 	  }
 	  else {
-	      yarv_iseq_t *ip = iseq->parent_iseq;
+	      rb_iseq_t *ip = iseq->parent_iseq;
 	      unsigned long level = 0x8000 | 0x4000;
 	      while (ip) {
 		  if (ip->type == ISEQ_TYPE_BLOCK) {
@@ -3682,7 +3682,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  else {
 	      /* NODE_ZSUPER */
 	      int i;
-	      yarv_iseq_t *liseq = iseq->local_iseq;
+	      rb_iseq_t *liseq = iseq->local_iseq;
 
 	      argc = INT2FIX(liseq->argc);
 
@@ -3779,7 +3779,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_RETURN:{
-	  yarv_iseq_t *is = iseq;
+	  rb_iseq_t *is = iseq;
 
 	  while (is) {
 	      if (is->type == ISEQ_TYPE_TOP || is->type == ISEQ_TYPE_CLASS) {
@@ -4398,7 +4398,7 @@ iseq_compile_each(yarv_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			    INT2FIX(0));
 	      }
 	      else {
-		  yarv_iseq_t *ip = iseq;
+		  rb_iseq_t *ip = iseq;
 		  int level = 0;
 		  while (ip) {
 		      if (ip->type == ISEQ_TYPE_RESCUE) {
@@ -4588,7 +4588,7 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_ISEQ:	/* iseq */
 		{
-		    yarv_iseq_t *iseq = (yarv_iseq_t *)OPERAND_AT(iobj, j);
+		    rb_iseq_t *iseq = (rb_iseq_t *)OPERAND_AT(iobj, j);
 		    VALUE val = Qnil;
 		    if (iseq) {
 			val = iseq->self;
@@ -4692,7 +4692,7 @@ insns_name_array(void)
 }
 
 static LABEL *
-register_label(yarv_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
+register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 {
     LABEL *label = 0;
     obj = rb_convert_type(obj, T_SYMBOL, "Symbol", "to_sym");
@@ -4732,7 +4732,7 @@ get_exception_sym2type(VALUE sym)
 VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
 
 static int
-iseq_build_exception(yarv_iseq_t *iseq, struct st_table *labels_table,
+iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 		     VALUE exception)
 {
     int i;
@@ -4767,7 +4767,7 @@ iseq_build_exception(yarv_iseq_t *iseq, struct st_table *labels_table,
 struct st_table *insn_make_insn_table(void);
 
 static int
-iseq_build_body(yarv_iseq_t *iseq, LINK_ANCHOR *anchor,
+iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, VALUE line, struct st_table *labels_table)
 {
     /* TODO: body should be freezed */
@@ -4894,7 +4894,7 @@ iseq_build_body(yarv_iseq_t *iseq, LINK_ANCHOR *anchor,
 }
 
 VALUE
-iseq_build_from_ary(yarv_iseq_t *iseq, VALUE line,
+iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
 		    VALUE locals, VALUE args, VALUE exception, VALUE body)
 {
     int i;

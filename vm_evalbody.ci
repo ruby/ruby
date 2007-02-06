@@ -26,11 +26,11 @@
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-typedef yarv_iseq_t *ISEQ;
+typedef rb_iseq_t *ISEQ;
 
 #if !OPT_CALL_THREADED_CODE
 VALUE
-th_eval(yarv_thread_t *th, VALUE initial)
+th_eval(rb_thead_t *th, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
@@ -46,16 +46,16 @@ th_eval(yarv_thread_t *th, VALUE initial)
 
 #if __GNUC__ && __i386__
     DECL_SC_REG(VALUE *, pc, "di");
-    DECL_SC_REG(yarv_control_frame_t *, cfp, "si");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
 
 #elif __GNUC__ && __x86_64__
     DECL_SC_REG(VALUE *, pc, "14");
-    DECL_SC_REG(yarv_control_frame_t *, cfp, "15");
+    DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
 #else
-    register yarv_control_frame_t *reg_cfp;
+    register rb_control_frame_t *reg_cfp;
     VALUE *reg_pc;
 #endif
 
@@ -77,7 +77,7 @@ th_eval(yarv_thread_t *th, VALUE initial)
 #endif
 
     ID tmp_id;
-    yarv_block_t *tmp_blockptr;
+    rb_block_t *tmp_blockptr;
     num_t tmp_num;
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
@@ -123,9 +123,9 @@ get_insns_address_table()
 }
 
 VALUE
-th_eval(yarv_thread_t *th, VALUE initial)
+th_eval(rb_thead_t *th, VALUE initial)
 {
-    register yarv_control_frame_t *reg_cfp = th->cfp;
+    register rb_control_frame_t *reg_cfp = th->cfp;
     SET_PC(reg_cfp->iseq->iseq_encoded);
 
     while (*GET_PC()) {

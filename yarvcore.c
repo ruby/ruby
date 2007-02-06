@@ -71,14 +71,14 @@ unsigned long yarvGlobalStateVersion = 1;
 #define va_init_list(a,b) va_start(a)
 #endif
 
-VALUE yarv_th_eval(yarv_thread_t *th, VALUE iseqval);
+VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
 
 /************/
 /* YARVCore */
 /************/
 
-yarv_thread_t *yarvCurrentThread = 0;
-yarv_vm_t *theYarvVM = 0;
+rb_thead_t *yarvCurrentThread = 0;
+rb_vm_t *theYarvVM = 0;
 static VALUE yarvVMArray = Qnil;
 
 RUBY_EXTERN int rb_thread_critical;
@@ -91,7 +91,7 @@ yarv_load(char *file)
     NODE *node;
     VALUE iseq;
     volatile int critical;
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
 
     critical = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -110,11 +110,11 @@ yarv_load(char *file)
     iseq = yarv_iseq_new(node, rb_str_new2("<top (required)>"),
 			 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 
-    yarv_th_eval(GET_THREAD(), iseq);
+    rb_thread_eval(GET_THREAD(), iseq);
     return 0;
 }
 
-VALUE *th_svar(yarv_thread_t *self, int cnt);
+VALUE *th_svar(rb_thead_t *self, int cnt);
 
 VALUE *
 rb_svar(int cnt)
@@ -172,11 +172,11 @@ compile_string(VALUE str, VALUE file, VALUE line)
 static VALUE
 yarvcore_eval_iseq(VALUE iseq)
 {
-    return yarv_th_eval(GET_THREAD(), iseq);
+    return rb_thread_eval(GET_THREAD(), iseq);
 }
 
 static VALUE
-th_compile_from_node(yarv_thread_t *th, NODE * node, VALUE file)
+th_compile_from_node(rb_thead_t *th, NODE * node, VALUE file)
 {
     VALUE iseq;
     if (th->base_block) {
@@ -194,7 +194,7 @@ th_compile_from_node(yarv_thread_t *th, NODE * node, VALUE file)
 }
 
 VALUE
-th_compile(yarv_thread_t *th, VALUE str, VALUE file, VALUE line)
+th_compile(rb_thead_t *th, VALUE str, VALUE file, VALUE line)
 {
     NODE *node = (NODE *) compile_string(str, file, line);
     return th_compile_from_node(th, (NODE *) node, file);
@@ -226,7 +226,7 @@ vm_free(void *ptr)
 {
     FREE_REPORT_ENTER("vm");
     if (ptr) {
-	yarv_vm_t *vmobj = ptr;
+	rb_vm_t *vmobj = ptr;
 
 	st_free_table(vmobj->living_threads);
 	/* TODO: MultiVM Instance */
@@ -251,7 +251,7 @@ vm_mark(void *ptr)
     MARK_REPORT_ENTER("vm");
     GC_INFO("-------------------------------------------------\n");
     if (ptr) {
-	yarv_vm_t *vm = ptr;
+	rb_vm_t *vm = ptr;
 	if (vm->living_threads) {
 	    st_foreach(vm->living_threads, vm_mark_each_thread_func, 0);
 	}
@@ -266,8 +266,8 @@ static VALUE
 vm_alloc(VALUE klass)
 {
     VALUE volatile obj;
-    yarv_vm_t *vm;
-    obj = Data_Make_Struct(klass, yarv_vm_t, vm_mark, vm_free, vm);
+    rb_vm_t *vm;
+    obj = Data_Make_Struct(klass, rb_vm_t, vm_mark, vm_free, vm);
 
     vm->self = obj;
     vm->mark_object_ary = rb_ary_new();
@@ -275,9 +275,9 @@ vm_alloc(VALUE klass)
 }
 
 static void
-vm_init2(yarv_vm_t *vm)
+vm_init2(rb_vm_t *vm)
 {
-    MEMZERO(vm, yarv_vm_t, 1);
+    MEMZERO(vm, rb_vm_t, 1);
 }
 
 /**********/
@@ -287,7 +287,7 @@ vm_init2(yarv_vm_t *vm)
 static void
 thread_free(void *ptr)
 {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     FREE_REPORT_ENTER("thread");
 
     if (ptr) {
@@ -321,20 +321,20 @@ thread_free(void *ptr)
     FREE_REPORT_LEAVE("thread");
 }
 
-void yarv_machine_stack_mark(yarv_thread_t *th);
+void yarv_machine_stack_mark(rb_thead_t *th);
 
 static void
 thread_mark(void *ptr)
 {
-    yarv_thread_t *th = NULL;
+    rb_thead_t *th = NULL;
     MARK_REPORT_ENTER("thread");
     if (ptr) {
 	th = ptr;
 	if (th->stack) {
 	    VALUE *p = th->stack;
 	    VALUE *sp = th->cfp->sp;
-	    yarv_control_frame_t *cfp = th->cfp;
-	    yarv_control_frame_t *limit_cfp =
+	    rb_control_frame_t *cfp = th->cfp;
+	    rb_control_frame_t *limit_cfp =
 		(void *)(th->stack + th->stack_size);
 
 	    while (p < sp) {
@@ -342,7 +342,7 @@ thread_mark(void *ptr)
 	    }
 	    while (cfp != limit_cfp) {
 		rb_gc_mark(cfp->proc);
-		cfp = YARV_PREVIOUS_CONTROL_FRAME(cfp);
+		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    }
 	}
 
@@ -374,21 +374,21 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
-    yarv_thread_t *th;
-    obj = Data_Make_Struct(klass, yarv_thread_t,
+    rb_thead_t *th;
+    obj = Data_Make_Struct(klass, rb_thead_t,
 			   thread_mark, thread_free, th);
     return obj;
 }
 
 static void
-th_init2(yarv_thread_t *th)
+th_init2(rb_thead_t *th)
 {
-    MEMZERO(th, yarv_thread_t, 1);
+    MEMZERO(th, rb_thead_t, 1);
 
     /* allocate thread stack */
-    th->stack = ALLOC_N(VALUE, YARV_THREAD_STACK_SIZE);
+    th->stack = ALLOC_N(VALUE, RUBY_VM_THREAD_STACK_SIZE);
 
-    th->stack_size = YARV_THREAD_STACK_SIZE;
+    th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;
 
@@ -412,13 +412,13 @@ th_init2(yarv_thread_t *th)
 }
 
 void
-th_klass_init(yarv_thread_t *th)
+th_klass_init(rb_thead_t *th)
 {
     /* */
 }
 
 static void
-th_init(yarv_thread_t *th)
+th_init(rb_thead_t *th)
 {
     th_init2(th);
     th_klass_init(th);
@@ -427,8 +427,8 @@ th_init(yarv_thread_t *th)
 static VALUE
 thread_init(VALUE self)
 {
-    yarv_thread_t *th;
-    yarv_vm_t *vm = GET_THREAD()->vm;
+    rb_thead_t *th;
+    rb_vm_t *vm = GET_THREAD()->vm;
     GetThreadPtr(self, th);
 
     th_init(th);
@@ -438,18 +438,18 @@ thread_init(VALUE self)
 }
 
 VALUE
-yarv_thread_alloc(VALUE klass)
+rb_thread_alloc(VALUE klass)
 {
     VALUE self = thread_alloc(klass);
     thread_init(self);
     return self;
 }
 
-VALUE th_eval_body(yarv_thread_t *th);
-void th_set_top_stack(yarv_thread_t *, VALUE iseq);
+VALUE th_eval_body(rb_thead_t *th);
+void th_set_top_stack(rb_thead_t *, VALUE iseq);
 
 VALUE
-yarv_th_eval(yarv_thread_t *th, VALUE iseqval)
+rb_thread_eval(rb_thead_t *th, VALUE iseqval)
 {
     VALUE val;
     volatile VALUE tmp;
@@ -536,7 +536,11 @@ Init_VM(void)
     /* ::VM */
     rb_cVM = rb_define_class("VM", rb_cObject);
     rb_undef_alloc_func(rb_cVM);
-    
+
+    /* Env */
+    rb_cEnv = rb_define_class_under(rb_cVM, "Env", rb_cObject);
+    rb_undef_alloc_func(rb_cEnv);
+
     /* ::Thread */
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
@@ -610,8 +614,8 @@ Init_VM(void)
 	VALUE vmval = vm_alloc(rb_cVM);
 	VALUE thval;
 
-	yarv_vm_t *vm;
-	yarv_thread_t *th;
+	rb_vm_t *vm;
+	rb_thead_t *th;
 	vm = theYarvVM;
 
 	xfree(RDATA(vmval)->data);
@@ -623,7 +627,7 @@ Init_VM(void)
 	rb_ary_push(yarvVMArray, vm->self);
 
 	/* create main thread */
-	thval = yarv_thread_alloc(rb_cThread);
+	thval = rb_thread_alloc(rb_cThread);
 	GetThreadPtr(thval, th);
 
 	vm->main_thread = th;
@@ -631,7 +635,7 @@ Init_VM(void)
 	GET_THREAD()->vm = vm;
 	thread_free(GET_THREAD());
 	th->vm = vm;
-	yarv_set_current_running_thread(th);
+	rb_thread_set_current(th);
 
 	th->machine_stack_start = rb_gc_stack_start;
 	vm->living_threads = st_init_numtable();
@@ -644,8 +648,8 @@ void
 Init_yarv(void)
 {
     /* VM bootstrap: phase 1 */
-    yarv_vm_t *vm = ALLOC(yarv_vm_t);
-    yarv_thread_t *th = ALLOC(yarv_thread_t);
+    rb_vm_t *vm = ALLOC(rb_vm_t);
+    rb_thead_t *th = ALLOC(rb_thead_t);
 
     vm_init2(vm);
     theYarvVM = vm;
@@ -653,6 +657,6 @@ Init_yarv(void)
     th_init2(th);
     th->vm = vm;
     th->machine_stack_start = rb_gc_stack_start;
-    yarv_set_current_running_thread_raw(th);
+    rb_thread_set_current_raw(th);
 }
 

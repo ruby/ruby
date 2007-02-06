@@ -19,7 +19,7 @@
 #define MAX_POSBUF 128
 
 static void
-control_frame_dump(yarv_thread_t *th, yarv_control_frame_t *cfp)
+control_frame_dump(rb_thead_t *th, rb_control_frame_t *cfp)
 {
     int pc = -1, bp = -1, line = 0;
     unsigned int lfp = cfp->lfp - th->stack;
@@ -94,7 +94,7 @@ control_frame_dump(yarv_thread_t *th, yarv_control_frame_t *cfp)
     }
 
     if (cfp->iseq != 0) {
-	if (YARV_IFUNC_P(cfp->iseq)) {
+	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
 	else {
@@ -115,7 +115,7 @@ control_frame_dump(yarv_thread_t *th, yarv_control_frame_t *cfp)
     }
 
     fprintf(stderr, "c:%04ld ",
-	    (yarv_control_frame_t *)(th->stack + th->stack_size) - cfp);
+	    (rb_control_frame_t *)(th->stack + th->stack_size) - cfp);
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
     }
@@ -139,7 +139,7 @@ control_frame_dump(yarv_thread_t *th, yarv_control_frame_t *cfp)
 }
 
 void
-vm_stack_dump_raw(yarv_thread_t *th, yarv_control_frame_t *cfp)
+vm_stack_dump_raw(rb_thead_t *th, rb_control_frame_t *cfp)
 {
     VALUE *sp = cfp->sp, *bp = cfp->bp;
     VALUE *lfp = cfp->lfp;
@@ -173,7 +173,7 @@ vm_stack_dump_raw(yarv_thread_t *th, yarv_control_frame_t *cfp)
 }
 
 void
-env_dump_raw(yarv_env_t *env, VALUE *lfp, VALUE *dfp)
+env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
 {
     int i;
     fprintf(stderr, "-- env --------------------\n");
@@ -201,9 +201,9 @@ env_dump_raw(yarv_env_t *env, VALUE *lfp, VALUE *dfp)
 }
 
 void
-proc_dump_raw(yarv_proc_t *proc)
+proc_dump_raw(rb_proc_t *proc)
 {
-    yarv_env_t *env;
+    rb_env_t *env;
     char *selfstr;
     VALUE val = rb_inspect(proc->block.self);
     selfstr = StringValueCStr(val);
@@ -217,13 +217,13 @@ proc_dump_raw(yarv_proc_t *proc)
 void
 stack_dump_th(VALUE thval)
 {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     GetThreadPtr(thval, th);
     vm_stack_dump_raw(th, th->cfp);
 }
 
 void
-stack_dump_each(yarv_thread_t *th, yarv_control_frame_t *cfp)
+stack_dump_each(rb_thead_t *th, rb_control_frame_t *cfp)
 {
     int i;
 
@@ -234,7 +234,7 @@ stack_dump_each(yarv_thread_t *th, yarv_control_frame_t *cfp)
 
     int argc, local_size;
     const char *name;
-    yarv_iseq_t *iseq = cfp->iseq;
+    rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq == 0) {
 	if (cfp->method_id) {
@@ -247,7 +247,7 @@ stack_dump_each(yarv_thread_t *th, yarv_control_frame_t *cfp)
 	    local_size = 0;
 	}
     }
-    else if (YARV_IFUNC_P(iseq)) {
+    else if (RUBY_VM_IFUNC_P(iseq)) {
 	argc = 0;
 	local_size = 0;
 	name = "<ifunc>";
@@ -316,15 +316,15 @@ stack_dump_each(yarv_thread_t *th, yarv_control_frame_t *cfp)
 
 
 void
-debug_print_register(yarv_thread_t *th)
+debug_print_register(rb_thead_t *th)
 {
-    yarv_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->cfp;
     int pc = -1;
     int lfp = cfp->lfp - th->stack;
     int dfp = cfp->dfp - th->stack;
     int cfpi;
 
-    if (YARV_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	pc = cfp->pc - cfp->iseq->iseq_encoded;
     }
 
@@ -333,7 +333,7 @@ debug_print_register(yarv_thread_t *th)
     if (dfp < 0 || dfp > th->stack_size)
 	dfp = -1;
 
-    cfpi = ((yarv_control_frame_t *)(th->stack + th->stack_size)) - cfp;
+    cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
     fprintf(stderr, "  [PC] %04d, [SP] %04ld, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
 	   pc, cfp->sp - th->stack, lfp, dfp, cfpi);
 }
@@ -341,15 +341,15 @@ debug_print_register(yarv_thread_t *th)
 void
 thread_dump_regs(VALUE thval)
 {
-    yarv_thread_t *th;
+    rb_thead_t *th;
     GetThreadPtr(thval, th);
     debug_print_register(th);
 }
 
 void
-debug_print_pre(yarv_thread_t *th, yarv_control_frame_t *cfp)
+debug_print_pre(rb_thead_t *th, rb_control_frame_t *cfp)
 {
-    yarv_iseq_t *iseq = cfp->iseq;
+    rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0 && cfp->magic != FRAME_MAGIC_FINISH) {
 	VALUE *seq = iseq->iseq;
@@ -365,7 +365,7 @@ debug_print_pre(yarv_thread_t *th, yarv_control_frame_t *cfp)
 }
 
 void
-debug_print_post(yarv_thread_t *th, yarv_control_frame_t *cfp
+debug_print_post(rb_thead_t *th, rb_control_frame_t *cfp
 #if OPT_STACK_CACHING
 		 , VALUE reg_a, VALUE reg_b
 #endif
@@ -563,8 +563,8 @@ vm_analysis_register(int reg, int isset)
 VALUE
 thread_dump_state(VALUE self)
 {
-    yarv_thread_t *th;
-    yarv_control_frame_t *cfp;
+    rb_thead_t *th;
+    rb_control_frame_t *cfp;
     GetThreadPtr(self, th);
     cfp = th->cfp;
 
@@ -578,7 +578,7 @@ thread_dump_state(VALUE self)
 void
 yarv_bug()
 {
-    yarv_thread_t *th = GET_THREAD();
+    rb_thead_t *th = GET_THREAD();
     VALUE bt;
 
     if (GET_THREAD()->vm) {

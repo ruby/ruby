@@ -24,65 +24,10 @@ VALUE rb_cUnboundMethod;
 VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
-VALUE rb_cEnv;
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
 static VALUE rb_obj_is_method(VALUE m);
-
-/* Env */
-
-static void
-env_free(void *ptr)
-{
-    yarv_env_t *env;
-    FREE_REPORT_ENTER("env");
-    if (ptr) {
-	env = ptr;
-	FREE_UNLESS_NULL(env->env);
-	ruby_xfree(ptr);
-    }
-    FREE_REPORT_LEAVE("env");
-}
-
-static void
-env_mark(void *ptr)
-{
-    yarv_env_t *env;
-    MARK_REPORT_ENTER("env");
-    if (ptr) {
-	env = ptr;
-	if (env->env) {
-	    /* TODO: should mark more restricted range */
-	    GC_INFO("env->env\n");
-	    rb_gc_mark_locations(env->env, env->env + env->env_size);
-	}
-	GC_INFO("env->prev_envval\n");
-	MARK_UNLESS_NULL(env->prev_envval);
-
-	if (env->block.iseq) {
-	    if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
-		MARK_UNLESS_NULL((VALUE)env->block.iseq);
-	    }
-	    else {
-		MARK_UNLESS_NULL(env->block.iseq->self);
-	    }
-	}
-    }
-    MARK_REPORT_LEAVE("env");
-}
-
-VALUE
-yarv_env_alloc(void)
-{
-    VALUE obj;
-    yarv_env_t *env;
-    obj = Data_Make_Struct(rb_cEnv, yarv_env_t, env_mark, env_free, env);
-    env->env = 0;
-    env->prev_envval = 0;
-    env->block.iseq = 0;
-    return obj;
-}
 
 /* Proc */
 
@@ -99,14 +44,14 @@ proc_free(void *ptr)
 static void
 proc_mark(void *ptr)
 {
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     MARK_REPORT_ENTER("proc");
     if (ptr) {
 	proc = ptr;
 	MARK_UNLESS_NULL(proc->envval);
 	MARK_UNLESS_NULL(proc->blockprocval);
 	MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
-	if (proc->block.iseq && YARV_IFUNC_P(proc->block.iseq)) {
+	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
 	}
     }
@@ -117,20 +62,20 @@ static VALUE
 proc_alloc(VALUE klass)
 {
     VALUE obj;
-    yarv_proc_t *proc;
-    obj = Data_Make_Struct(klass, yarv_proc_t, proc_mark, proc_free, proc);
-    MEMZERO(proc, yarv_proc_t, 1);
+    rb_proc_t *proc;
+    obj = Data_Make_Struct(klass, rb_proc_t, proc_mark, proc_free, proc);
+    MEMZERO(proc, rb_proc_t, 1);
     return obj;
 }
 
 VALUE
-yarv_proc_alloc(void)
+rb_proc_alloc(void)
 {
     return proc_alloc(rb_cProc);
 }
 
 VALUE
-yarv_obj_is_proc(VALUE proc)
+rb_obj_is_proc(VALUE proc)
 {
     if (TYPE(proc) == T_DATA &&
 	RDATA(proc)->dfree == (RUBY_DATA_FUNC) proc_free) {
@@ -145,7 +90,7 @@ static VALUE
 proc_dup(VALUE self)
 {
     VALUE procval = proc_alloc(rb_cProc);
-    yarv_proc_t *src, *dst;
+    rb_proc_t *src, *dst;
     GetProcPtr(self, src);
     GetProcPtr(procval, dst);
 
@@ -155,12 +100,6 @@ proc_dup(VALUE self)
     dst->special_cref_stack = src->special_cref_stack;
     
     return procval;
-}
-
-static VALUE
-yarv_proc_dup(VALUE self)
-{
-    return proc_dup(self);
 }
 
 static VALUE
@@ -176,7 +115,7 @@ proc_clone(VALUE self)
 static void
 binding_free(void *ptr)
 {
-    yarv_binding_t *bind;
+    rb_binding_t *bind;
     FREE_REPORT_ENTER("binding");
     if (ptr) {
 	bind = ptr;
@@ -188,7 +127,7 @@ binding_free(void *ptr)
 static void
 binding_mark(void *ptr)
 {
-    yarv_binding_t *bind;
+    rb_binding_t *bind;
     MARK_REPORT_ENTER("binding");
     if (ptr) {
 	bind = ptr;
@@ -202,10 +141,10 @@ static VALUE
 binding_alloc(VALUE klass)
 {
     VALUE obj;
-    yarv_binding_t *bind;
-    obj = Data_Make_Struct(klass, yarv_binding_t,
+    rb_binding_t *bind;
+    obj = Data_Make_Struct(klass, rb_binding_t,
 			   binding_mark, binding_free, bind);
-    MEMZERO(bind, yarv_binding_t, 1);
+    MEMZERO(bind, rb_binding_t, 1);
     return obj;
 }
 
@@ -213,7 +152,7 @@ static VALUE
 binding_dup(VALUE self)
 {
     VALUE bindval = binding_alloc(rb_cBinding);
-    yarv_binding_t *src, *dst;
+    rb_binding_t *src, *dst;
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
@@ -232,10 +171,10 @@ binding_clone(VALUE self)
 VALUE
 rb_binding_new(void)
 {
-    yarv_thread_t *th = GET_THREAD();
-    yarv_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_thead_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     VALUE bindval = binding_alloc(rb_cBinding);
-    yarv_binding_t *bind;
+    rb_binding_t *bind;
 
     GetBindingPtr(bindval, bind);
     bind->env = th_make_env_object(th, cfp);
@@ -302,18 +241,18 @@ static VALUE
 proc_new(VALUE klass, int is_lambda)
 {
     VALUE procval = Qnil;
-    yarv_thread_t *th = GET_THREAD();
-    yarv_control_frame_t *cfp = th->cfp;
-    yarv_block_t *block;
+    rb_thead_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
+    rb_block_t *block;
 
     if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
-	!YARV_CLASS_SPECIAL_P(cfp->lfp[0])) {
+	!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
     }
     else {
-	cfp = YARV_PREVIOUS_CONTROL_FRAME(cfp);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
-	    !YARV_CLASS_SPECIAL_P(cfp->lfp[0])) {
+	    !RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
 
 	    if (is_lambda) {
@@ -326,11 +265,11 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
-    cfp = YARV_PREVIOUS_CONTROL_FRAME(cfp);
+    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     procval = th_make_proc(th, cfp, block);
 
     if (is_lambda) {
-	yarv_proc_t *proc;
+	rb_proc_t *proc;
 	GetProcPtr(procval, proc);
 	proc->is_lambda = Qtrue;
     }
@@ -403,7 +342,7 @@ proc_lambda(void)
 VALUE
 proc_invoke(VALUE self, VALUE args, VALUE alt_self, VALUE alt_klass)
 {
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     GetProcPtr(self, proc);
 
     /* ignore self and klass */
@@ -448,7 +387,7 @@ proc_invoke(VALUE self, VALUE args, VALUE alt_self, VALUE alt_klass)
 static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     GetProcPtr(procval, proc);
     return th_invoke_proc(GET_THREAD(), proc, proc->block.self, argc, argv);
 }
@@ -456,7 +395,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 static VALUE
 proc_yield(int argc, VALUE *argv, VALUE procval)
 {
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     GetProcPtr(procval, proc);
     return th_invoke_proc(GET_THREAD(), proc, proc->block.self, argc, argv);
 }
@@ -490,8 +429,8 @@ rb_proc_call(VALUE proc, VALUE args)
 static VALUE
 proc_arity(VALUE self)
 {
-    yarv_proc_t *proc;
-    yarv_iseq_t *iseq;
+    rb_proc_t *proc;
+    rb_iseq_t *iseq;
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (iseq && BUILTIN_TYPE(iseq) != T_NODE) {
@@ -531,7 +470,7 @@ proc_eq(VALUE self, VALUE other)
 	if (TYPE(other)          == T_DATA &&
 	    RBASIC(other)->klass == rb_cProc &&
 	    CLASS_OF(self)       == CLASS_OF(other)) {
-	    yarv_proc_t *p1, *p2;
+	    rb_proc_t *p1, *p2;
 	    GetProcPtr(self, p1);
 	    GetProcPtr(other, p2);
 	    if (p1->block.iseq == p2->block.iseq && p1->envval == p2->envval) {
@@ -553,7 +492,7 @@ static VALUE
 proc_hash(VALUE self)
 {
     int hash;
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     GetProcPtr(self, proc);
     hash = (long)proc->block.iseq;
     hash ^= (long)proc->envval;
@@ -573,14 +512,14 @@ static VALUE
 proc_to_s(VALUE self)
 {
     VALUE str = 0;
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     char *cname = rb_obj_classname(self);
-    yarv_iseq_t *iseq;
+    rb_iseq_t *iseq;
     
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
 
-    if (YARV_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int line_no = 0;
 	
 	if (iseq->insn_info_tbl) {
@@ -963,7 +902,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     else if (argc == 2) {
 	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (!rb_obj_is_method(body) && !yarv_obj_is_proc(body)) {
+	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
 	    rb_raise(rb_eTypeError,
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
@@ -989,9 +928,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	}
 	node = method->body;
     }
-    else if (yarv_obj_is_proc(body)) {
-	yarv_proc_t *proc;
-	body = yarv_proc_dup(body);
+    else if (rb_obj_is_proc(body)) {
+	rb_proc_t *proc;
+	body = proc_dup(body);
 	GetProcPtr(body, proc);
 	if (BUILTIN_TYPE(proc->block.iseq) != T_NODE) {
 	    proc->block.iseq->defined_method_id = id;
@@ -1221,8 +1160,8 @@ rb_node_arity(NODE* body)
 	if (body->nd_opt || body->nd_rest)
 	    n = -n - 1;
 	return n;
-    case YARV_METHOD_NODE:{
-	    yarv_iseq_t *iseq;
+    case RUBY_VM_METHOD_NODE:{
+	    rb_iseq_t *iseq;
 	    GetISeqPtr((VALUE)body->nd_body, iseq);
 	    if (iseq->arg_rest == 0 && iseq->arg_opts == 0) {
 		return iseq->argc;
@@ -1378,7 +1317,7 @@ rb_proc_new(
     VALUE (*func)(ANYARGS), /* VALUE yieldarg[, VALUE procarg] */
     VALUE val)
 {
-    yarv_proc_t *proc;
+    rb_proc_t *proc;
     VALUE procval = rb_iterate((VALUE(*)(VALUE))mproc, 0, func, val);
     GetProcPtr(procval, proc);
     ((NODE*)proc->block.iseq)->u3.state = 1;
@@ -1466,11 +1405,6 @@ localjump_reason(VALUE exc)
 void
 Init_Proc(void)
 {
-    /* Env */
-    rb_cVM = rb_define_class("VM", rb_cObject); /* TODO: should be moved to suitable place */
-    rb_cEnv = rb_define_class_under(rb_cVM, "Env", rb_cObject);
-    rb_undef_alloc_func(rb_cEnv);
-
     /* Proc */
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);

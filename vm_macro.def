@@ -6,14 +6,14 @@
 MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
 {
     if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
-	yarv_proc_t *po;
+	rb_proc_t *po;
 	VALUE proc;
 
 	proc = TOPN(0);
 	if (proc != Qnil) {
-	    if (!yarv_obj_is_proc(proc)) {
+	    if (!rb_obj_is_proc(proc)) {
 		proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
-		if (!yarv_obj_is_proc(proc)) {
+		if (!rb_obj_is_proc(proc)) {
 		    rb_raise(rb_eTypeError,
 			     "wrong argument type %s (expected Proc)",
 			     rb_obj_classname(proc));
@@ -21,12 +21,12 @@ MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
 	    }
 	    GetProcPtr(proc, po);
 	    blockptr = &po->block;
-	    GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
+	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
 	}
 	INC_SP(-1);
     }
     else if (blockiseq) {
-	blockptr = GET_BLOCK_PTR_IN_CFP(reg_cfp);
+	blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
 	blockptr->iseq = blockiseq;
 	blockptr->proc = 0;
     }
@@ -56,7 +56,7 @@ MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
 
 MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
 {
-    yarv_control_frame_t *cfp =
+    rb_control_frame_t *cfp =
       push_frame(th, 0, FRAME_MAGIC_CFUNC,
 		 recv, (VALUE) blockptr, 0, GET_SP(), 0, 1);
     cfp->callee_id = id; /* TODO */
@@ -77,7 +77,7 @@ MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
 
 MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 {
-    yarv_iseq_t *niseq;
+    rb_iseq_t *niseq;
     VALUE *sp = GET_SP();
     VALUE *rsp = sp - num - 1;
     int opt_pc = 0, clear_local_size, i;
@@ -173,7 +173,7 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	    if (blockptr) {
 		/* make Proc object */
 		if (blockptr->proc == 0) {
-		    yarv_proc_t *proc;
+		    rb_proc_t *proc;
 		    reg_cfp->sp = sp;
 		    arg_block_val = th_make_proc(th, GET_CFP(), blockptr);
 		    GetProcPtr(arg_block_val, proc);
@@ -274,7 +274,7 @@ MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 
 	node = mn->nd_body;
 	switch (nd_type(node)) {
-	  case YARV_METHOD_NODE:{
+	  case RUBY_VM_METHOD_NODE:{
 	      macro_eval_invoke_func(node->nd_body, recv, klass,
 				     blockptr, num);
 	      NEXT_INSN();
