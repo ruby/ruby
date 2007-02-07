@@ -65,12 +65,6 @@ ary_iter_check(VALUE ary)
     return rb_ensure(func, (ary), each_unlock, (ary));\
 } while (0)
 
-static VALUE *
-rb_ary_ptr(VALUE ary)
-{
-    return RARRAY_PTR(ary);
-}
-
 static inline void
 rb_ary_modify_check(VALUE ary)
 {
@@ -1148,7 +1142,6 @@ VALUE yarv_invoke_Array_each_special_block(VALUE ary);
 VALUE
 rb_ary_each(VALUE ary)
 {
-    long i;
     VALUE val;
 
     RETURN_ENUMERATOR(ary, 0, 0);
@@ -1811,7 +1804,7 @@ rb_ary_delete(VALUE ary, VALUE item)
 VALUE
 rb_ary_delete_at(VALUE ary, long pos)
 {
-    long i, len = RARRAY_LEN(ary);
+    long len = RARRAY_LEN(ary);
     VALUE del;
 
     if (pos >= len) return Qnil;

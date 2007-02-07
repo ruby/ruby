@@ -470,17 +470,10 @@ typedef struct rb_thread_struct
 } rb_thead_t;
 
 /** node -> yarv instruction sequence object */
-VALUE iseq_compile(VALUE self, NODE *node);
-
-VALUE rb_iseq_new(NODE *node, VALUE name, VALUE file,
-		  VALUE parent, VALUE type);
-
-VALUE rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
-			    VALUE parent, VALUE type, VALUE bopt);
-
-VALUE rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE file,
-			   VALUE parent, VALUE type, 
-			   const rb_compile_option_t *opt);
+VALUE rb_iseq_compile(VALUE self, NODE *node);
+VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
+VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
+VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
 
 /** disassemble instruction sequence */
 VALUE ruby_iseq_disasm(VALUE self);
@@ -543,7 +536,7 @@ typedef struct {
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_SEND_BIT           (0x01 << 8)
 
-/* inline method cache */
+/* inline (method|const) cache */
 #define NEW_INLINE_CACHE_ENTRY() NEW_WHILE(Qundef, 0, 0)
 #define ic_klass  u1.value
 #define ic_method u2.node
@@ -551,7 +544,10 @@ typedef struct {
 #define ic_vmstat u3.cnt
 typedef NODE *IC;
 
+void rb_vm_change_state();
+
 typedef VALUE CDHASH;
+
 
 
 #define GC_GUARDED_PTR(p)     ((VALUE)((VALUE)(p) | 0x01))
@@ -592,6 +588,7 @@ typedef VALUE CDHASH;
 #define DEFINED_ZSUPER INT2FIX(9)
 #define DEFINED_FUNC   INT2FIX(10)
 
+
 /* VM related object allocate functions */
 /* TODO: should be static functions */
 VALUE rb_thread_alloc(VALUE klass);
@@ -599,12 +596,52 @@ VALUE rb_proc_alloc(void);
 
 /* for debug */
 extern void vm_stack_dump_raw(rb_thead_t *, rb_control_frame_t *);
-#define SDR()     vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
+#define SDR() vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
+void yarv_bug(void);
+
+
+/* functions about thread/vm execution */
+
+VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
+void rb_enable_interrupt(void);
+void rb_disable_interrupt(void);
+
+VALUE th_eval_body(rb_thead_t *th);
+VALUE th_set_eval_stack(rb_thead_t *, VALUE iseq);
+VALUE th_call_super(rb_thead_t *th, int argc, const VALUE *argv);
+VALUE th_invoke_proc(rb_thead_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
+VALUE th_make_proc(rb_thead_t *th, rb_control_frame_t *cfp, rb_block_t *block);
+VALUE th_make_env_object(rb_thead_t *th, rb_control_frame_t *cfp);
+VALUE th_backtrace(rb_thead_t *, int);
+
+VALUE th_invoke_yield(rb_thead_t *th, int argc, VALUE *argv);
+VALUE th_call0(rb_thead_t *th, VALUE klass, VALUE recv,
+	       VALUE id, ID oid, int argc, const VALUE *argv,
+	       NODE * body, int nosuper);
+
+int th_get_sourceline(rb_control_frame_t *);
+
+VALUE yarvcore_eval_parsed(NODE *node, VALUE file);
+VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);
 
 /* for thread */
 
-#include "yarv.h"
+#if RUBY_VM_THREAD_MODEL == 2
+extern rb_thead_t *yarvCurrentThread;
+extern rb_vm_t *theYarvVM;
+
+#define GET_VM() theYarvVM
+#define GET_THREAD() yarvCurrentThread
+#define rb_thread_set_current_raw(th) (yarvCurrentThread = th)
+#define rb_thread_set_current(th) do { \
+    rb_thread_set_current_raw(th); \
+    th->vm->running_thread = th; \
+} while (0)
+
+#else
+#error "unsupported thread model"
+#endif
 
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thead_t *_th_stored = GET_THREAD(); \

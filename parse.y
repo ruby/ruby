@@ -4698,6 +4698,8 @@ rb_compile_string(const char *f, VALUE s, int line)
     return rb_parser_compile_string(vparser, f, s, line);
 }
 
+int rb_parse_in_eval(void);
+
 NODE*
 rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
 {

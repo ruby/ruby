@@ -355,7 +355,7 @@ debug_print_pre(rb_thead_t *th, rb_control_frame_t *cfp)
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 
-	iseq_disasm_insn(0, seq, pc, iseq, 0);
+	ruby_iseq_disasm_insn(0, seq, pc, iseq, 0);
     }
 
 #if VMDEBUG > 3

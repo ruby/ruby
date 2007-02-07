@@ -508,7 +508,7 @@ th_call0(rb_thead_t *th, VALUE klass, VALUE recv,
     rb_block_t *blockptr = 0;
 
     if (0) printf("id: %s, nd: %s, argc: %d, passed: %p\n",
-		  rb_id2name(id), node_name(nd_type(body)),
+		  rb_id2name(id), ruby_node_name(nd_type(body)),
 		  argc, th->passed_block);
     //SDR2(th->cfp);
 
@@ -798,13 +798,12 @@ th_invoke_proc(rb_thead_t *th, rb_proc_t *proc,
     VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
-    volatile NODE *stored_special_cref_stack;
+    volatile NODE *stored_special_cref_stack =
+      lfp_set_special_cref(proc->block.lfp, proc->special_cref_stack);
     rb_control_frame_t * volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	stored_special_cref_stack =
-	  lfp_set_special_cref(proc->block.lfp, proc->special_cref_stack);
 	th->safe_level = proc->safe_level;
 
 	val = invoke_block(th, &proc->block, self, argc, argv,
@@ -895,7 +894,7 @@ th_cfp_svar(rb_control_frame_t *cfp, int cnt)
     return lfp_svar(cfp->lfp, cnt);
 }
 
-VALUE *
+static VALUE *
 th_svar(rb_thead_t *th, int cnt)
 {
     rb_control_frame_t *cfp = th->cfp;
@@ -903,11 +902,43 @@ th_svar(rb_thead_t *th, int cnt)
 }
 
 VALUE *
-thread_svar(VALUE self, int cnt)
+rb_svar(int cnt)
 {
-    rb_thead_t *th;
-    GetThreadPtr(self, th);
-    return th_svar(th, cnt);
+    return th_svar(GET_THREAD(), cnt);
+}
+
+VALUE
+rb_backref_get(void)
+{
+    VALUE *var = rb_svar(1);
+    if (var) {
+	return *var;
+    }
+    return Qnil;
+}
+
+void
+rb_backref_set(VALUE val)
+{
+    VALUE *var = rb_svar(1);
+    *var = val;
+}
+
+VALUE
+rb_lastline_get(void)
+{
+    VALUE *var = rb_svar(0);
+    if (var) {
+	return *var;
+    }
+    return Qnil;
+}
+
+void
+rb_lastline_set(VALUE val)
+{
+    VALUE *var = rb_svar(0);
+    *var = val;
 }
 
 int
@@ -1387,14 +1418,14 @@ th_iter_break(rb_thead_t *th)
 }
 
 static VALUE yarv_redefined_flag = 0;
-static st_table *yarv_opt_method_table = 0;
+static st_table *vm_opt_method_table = 0;
 
 void
-yarv_check_redefinition_opt_method(NODE *node)
+rb_vm_check_redefinition_opt_method(NODE *node)
 {
     VALUE bop;
     
-    if (st_lookup(yarv_opt_method_table, (st_data_t)node, &bop)) {
+    if (st_lookup(vm_opt_method_table, (st_data_t)node, &bop)) {
 	yarv_redefined_flag |= bop;
     }
 }
@@ -1405,15 +1436,15 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
     NODE *node;
     if (st_lookup(RCLASS(klass)->m_tbl, mid, (void *)&node) &&
 	nd_type(node->nd_body->nd_body) == NODE_CFUNC) {
-	st_insert(yarv_opt_method_table, (st_data_t)node, (st_data_t)bop);
+	st_insert(vm_opt_method_table, (st_data_t)node, (st_data_t)bop);
     }
     else {
-	rb_bug("undefined optimized method", mid);
+	rb_bug("undefined optimized method: %s", rb_id2name(mid));
     }
 }
 
 void
-yarv_init_redefined_flag()
+yarv_init_redefined_flag(void)
 {
     VALUE register_info[] = {
 	idPLUS, BOP_PLUS, rb_cFixnum, rb_cFloat, rb_cString, rb_cArray, 0,
@@ -1432,7 +1463,7 @@ yarv_init_redefined_flag()
 	0,
     };
     VALUE *ptr = register_info;
-    yarv_opt_method_table = st_init_numtable();
+    vm_opt_method_table = st_init_numtable();
 
     while (*ptr) {
 	ID mid = *ptr++;
@@ -1758,3 +1789,20 @@ th_eval_body(rb_thead_t *th)
     TH_POP_TAG();
     return result;
 }
+
+VALUE
+rb_thread_eval(rb_thead_t *th, VALUE iseqval)
+{
+    VALUE val;
+    volatile VALUE tmp;
+    
+    th_set_top_stack(th, iseqval);
+
+    if (!rb_const_defined(rb_cObject, rb_intern("TOPLEVEL_BINDING"))) {
+	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
+    }
+    val = th_eval_body(th);
+    tmp = iseqval; /* prohibit tail call optimization */
+    return val;
+}
+

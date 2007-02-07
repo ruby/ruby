@@ -43,8 +43,6 @@ NOINLINE(static int
 	 thread_start_func_2(rb_thead_t *th, VALUE *stack_start));
 void static thread_cleanup_func(void *th_ptr);
 
-static rb_thead_t *register_cached_thread_and_wait(void);
-
 #define USE_THREAD_CACHE 0
 
 static void *
@@ -71,6 +69,7 @@ thread_start_func_1(void *th_ptr)
     if (1) {
 	/* cache thread */
 	rb_thead_t *th;
+	static rb_thead_t *register_cached_thread_and_wait(void);
 	if ((th = register_cached_thread_and_wait()) != 0) {
 	    th_ptr = (void *)th;
 	    th->thread_id = pthread_self();
@@ -83,14 +82,15 @@ thread_start_func_1(void *th_ptr)
 
 void rb_thread_create_control_thread(void);
 
-static pthread_mutex_t thread_cache_lock = PTHREAD_MUTEX_INITIALIZER;
-
 struct cached_thread_entry {
     volatile rb_thead_t **th_area;
     pthread_cond_t *cond;
     struct cached_thread_entry *next;
 };
 
+
+#if USE_THREAD_CACHE
+static pthread_mutex_t thread_cache_lock = PTHREAD_MUTEX_INITIALIZER;
 struct cached_thread_entry *cached_thread_root;
 
 static rb_thead_t *
@@ -142,6 +142,7 @@ register_cached_thread_and_wait(void)
 
     return (rb_thead_t *)th_area;
 }
+#endif
 
 static int
 use_cached_thread(rb_thead_t *th)
@@ -331,6 +332,7 @@ static struct yarv_signal_thread_list signal_thread_list_anchor = {
     native_mutex_unlock(lock); \
 } while (0)
 
+#if 0 /* for debug */
 static void
 print_signal_list(char *str)
 {
@@ -343,6 +345,7 @@ print_signal_list(char *str)
     }
     thread_debug("\n");
 }
+#endif
 
 static void
 yarv_add_signal_thread_list(rb_thead_t *th)

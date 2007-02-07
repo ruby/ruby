@@ -43,11 +43,11 @@ yarv_iseq_special_block(rb_iseq_t *iseq, void *builder)
     if (iseq->parent_iseq) {
 	parent = iseq->parent_iseq->self;
     }
-    iseqval = yarv_iseq_new_with_bopt(iseq->node, iseq->name, iseq->file_name,
+    iseqval = rb_iseq_new_with_bopt(iseq->node, iseq->name, iseq->file_name,
 				      parent, iseq->type,
 				      GC_GUARDED_PTR(builder));
     if (0) {
-	printf("%s\n", RSTRING_PTR(iseq_disasm(iseqval)));
+	printf("%s\n", RSTRING_PTR(ruby_iseq_disasm(iseqval)));
     }
     iseq->cached_special_block = iseqval;
     iseq->cached_special_block_builder = builder;
@@ -104,7 +104,7 @@ new_assign(NODE * lnode, NODE * rhs)
 			      args);
       }
       default:
-	rb_bug("unimplemented (block inlining): %s", node_name(nd_type(lnode)));
+	rb_bug("unimplemented (block inlining): %s", ruby_node_name(nd_type(lnode)));
     }
     return 0;
 }

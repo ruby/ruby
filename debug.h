@@ -15,16 +15,16 @@
 
 #include <ruby.h>
 
-VALUE debug_value(int level, int debug_level, char *header, VALUE v);
-ID debug_id(int level, int debug_level, char *header, ID id);
-void debug_indent(int level, int debug_level, int indent_level);
+#define dpv(h,v) ruby_debug_value(-1, 0, h, v)
+#define dp(v)    ruby_debug_value(-1, 0, "", v)
+#define dpi(i)   ruby_debug_id   (-1, 0, "", i)
+#define bp()     ruby_debug_breakpoint()
 
-#define dpv(h,v) debug_value(-1, 0, h, v)
-#define dp(v)    debug_value(-1, 0, "", v)
-#define dpi(i)   debug_id   (-1, 0, "", i)
-#define bp()     debug_breakpoint()
-
-void gc_check_func();
+VALUE ruby_debug_value(int level, int debug_level, char *header, VALUE v);
+ID    ruby_debug_id(int level, int debug_level, char *header, ID id);
+void  ruby_debug_indent(int level, int debug_level, int indent_level);
+void  ruby_debug_breakpoint(void);
+void  ruby_debug_gc_check_func();
 
 #if GCDEBUG == 1
 
@@ -35,7 +35,7 @@ void gc_check_func();
 
 #define GC_CHECK()                                    \
   (printf("** %s:%d gc start\n", __FILE__, __LINE__), \
-   gc_check_func(),                                   \
+   ruby_debug_gc_check_func(),                        \
    printf("** end\n"))
 
 #else

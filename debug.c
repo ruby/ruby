@@ -14,7 +14,7 @@
 #include "debug.h"
 
 void
-debug_indent(int level, int debug_level, int indent_level)
+ruby_debug_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
 	int i;
@@ -26,7 +26,7 @@ debug_indent(int level, int debug_level, int indent_level)
 }
 
 VALUE
-debug_value(int level, int debug_level, char *header, VALUE obj)
+ruby_debug_value(int level, int debug_level, char *header, VALUE obj)
 {
     if (level < debug_level) {
 	VALUE str;
@@ -39,13 +39,13 @@ debug_value(int level, int debug_level, char *header, VALUE obj)
 }
 
 void
-debug_v(VALUE v)
+ruby_debug_v(VALUE v)
 {
-    debug_value(0, 1, "", v);
+    ruby_debug_value(0, 1, "", v);
 }
 
 ID
-debug_id(int level, int debug_level, char *header, ID id)
+ruby_debug_id(int level, int debug_level, char *header, ID id)
 {
     if (level < debug_level) {
 	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
@@ -55,7 +55,7 @@ debug_id(int level, int debug_level, char *header, ID id)
 }
 
 void
-gc_check_func(void)
+ruby_debug_gc_check_func(void)
 {
     int i;
 #define GCMKMAX 0x10
@@ -66,7 +66,7 @@ gc_check_func(void)
 }
 
 void
-debug_breakpoint(void)
+ruby_debug_breakpoint(void)
 {
     /* */
 }

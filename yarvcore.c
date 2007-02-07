@@ -14,7 +14,6 @@
 #include "node.h"
 
 #include "yarvcore.h"
-#include "yarv.h"
 #include "gc.h"
 
 VALUE rb_cVM;
@@ -71,8 +70,6 @@ unsigned long yarvGlobalStateVersion = 1;
 #define va_init_list(a,b) va_start(a)
 #endif
 
-VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
-
 /************/
 /* YARVCore */
 /************/
@@ -81,80 +78,7 @@ rb_thead_t *yarvCurrentThread = 0;
 rb_vm_t *theYarvVM = 0;
 static VALUE yarvVMArray = Qnil;
 
-RUBY_EXTERN int rb_thread_critical;
 RUBY_EXTERN int ruby_nerrs;
-RUBY_EXTERN NODE *ruby_eval_tree;
-
-VALUE
-yarv_load(char *file)
-{
-    NODE *node;
-    VALUE iseq;
-    volatile int critical;
-    rb_thead_t *th = GET_THREAD();
-
-    critical = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-    {
-	th->parse_in_eval++;
-	node = (NODE *)rb_load_file(file);
-	th->parse_in_eval--;
-	node = ruby_eval_tree;
-    }
-    rb_thread_critical = critical;
-
-    if (ruby_nerrs > 0) {
-	return 0;
-    }
-
-    iseq = yarv_iseq_new(node, rb_str_new2("<top (required)>"),
-			 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
-
-    rb_thread_eval(GET_THREAD(), iseq);
-    return 0;
-}
-
-VALUE *th_svar(rb_thead_t *self, int cnt);
-
-VALUE *
-rb_svar(int cnt)
-{
-    return th_svar(GET_THREAD(), cnt);
-}
-
-VALUE
-rb_backref_get(void)
-{
-    VALUE *var = rb_svar(1);
-    if (var) {
-	return *var;
-    }
-    return Qnil;
-}
-
-void
-rb_backref_set(VALUE val)
-{
-    VALUE *var = rb_svar(1);
-    *var = val;
-}
-
-VALUE
-rb_lastline_get(void)
-{
-    VALUE *var = rb_svar(0);
-    if (var) {
-	return *var;
-    }
-    return Qnil;
-}
-
-void
-rb_lastline_set(VALUE val)
-{
-    VALUE *var = rb_svar(0);
-    *var = val;
-}
 
 static NODE *
 compile_string(VALUE str, VALUE file, VALUE line)
@@ -180,14 +104,14 @@ th_compile_from_node(rb_thead_t *th, NODE * node, VALUE file)
 {
     VALUE iseq;
     if (th->base_block) {
-	iseq = yarv_iseq_new(node,
+	iseq = rb_iseq_new(node,
 			     th->base_block->iseq->name,
 			     file,
 			     th->base_block->iseq->self,
 			     ISEQ_TYPE_EVAL);
     }
     else {
-	iseq = yarv_iseq_new(node, rb_str_new2("<main>"), file,
+	iseq = rb_iseq_new(node, rb_str_new2("<main>"), file,
 			     Qfalse, ISEQ_TYPE_TOP);
     }
     return iseq;
@@ -411,17 +335,10 @@ th_init2(rb_thead_t *th)
 #endif
 }
 
-void
-th_klass_init(rb_thead_t *th)
-{
-    /* */
-}
-
 static void
 th_init(rb_thead_t *th)
 {
     th_init2(th);
-    th_klass_init(th);
 }
 
 static VALUE
@@ -443,25 +360,6 @@ rb_thread_alloc(VALUE klass)
     VALUE self = thread_alloc(klass);
     thread_init(self);
     return self;
-}
-
-VALUE th_eval_body(rb_thead_t *th);
-void th_set_top_stack(rb_thead_t *, VALUE iseq);
-
-VALUE
-rb_thread_eval(rb_thead_t *th, VALUE iseqval)
-{
-    VALUE val;
-    volatile VALUE tmp;
-    
-    th_set_top_stack(th, iseqval);
-
-    if (!rb_const_defined(rb_cObject, rb_intern("TOPLEVEL_BINDING"))) {
-	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
-    }
-    val = th_eval_body(th);
-    tmp = iseqval; /* prohibit tail call optimization */
-    return val;
 }
 
 /********************************************************************/
@@ -500,8 +398,7 @@ nsdr(void)
     return ary;
 }
 
-char yarv_version[0x20];
-char *yarv_options = ""
+static char *yarv_options = ""
 #if   OPT_DIRECT_THREADED_CODE
     "[direct threaded code] "
 #elif OPT_TOKEN_THREADED_CODE
@@ -529,6 +426,8 @@ char *yarv_options = ""
     "[block inlining] "
 #endif
     ;
+
+void yarv_init_redefined_flag(void);
 
 void
 Init_VM(void)
@@ -560,7 +459,7 @@ Init_VM(void)
 
     /* debug functions ::VM::SDR(), ::VM::NSDR() */
     rb_define_singleton_method(rb_cVM, "SDR", sdr, 0);
-    rb_define_singleton_method(rb_cVM, "NSDR", sdr, 0);
+    rb_define_singleton_method(rb_cVM, "NSDR", nsdr, 0);
 
     /* Symbols */
     symIFUNC = ID2SYM(rb_intern("<IFUNC>"));

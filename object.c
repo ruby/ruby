@@ -1257,6 +1257,8 @@ rb_class_s_alloc(VALUE klass)
  *     a.meth2          #=> "bye"
  */
 
+extern VALUE rb_mod_module_exec(int argc, VALUE *argv, VALUE mod);
+
 static VALUE
 rb_mod_initialize(VALUE module)
 {

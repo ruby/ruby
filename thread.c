@@ -229,9 +229,6 @@ rb_thread_terminate_all(void)
     system_working = 0;
 }
 
-
-VALUE th_eval_body(rb_thead_t *th);
-
 static void
 thread_cleanup_func(void *th_ptr)
 {
@@ -239,7 +236,6 @@ thread_cleanup_func(void *th_ptr)
     th->status = THREAD_KILLED;
     th->machine_stack_start = th->machine_stack_end = 0;
 }
-
 
 static int
 thread_start_func_2(rb_thead_t *th, VALUE *stack_start)
@@ -653,15 +649,13 @@ rb_thread_execute_interrupts(rb_thead_t *th)
 	if (th->throwed_errinfo) {
 	    VALUE err = th->throwed_errinfo;
 	    th->throwed_errinfo = 0;
-	    thread_debug("rb_thread_execute_interrupts: %p\n", err);
+	    thread_debug("rb_thread_execute_interrupts: %ld\n", err);
 
 	    if (err == eKillSignal) {
 		th->errinfo = INT2FIX(TAG_FATAL);
 		TH_JUMP_TAG(th, TAG_FATAL);
 	    }
 	    else if (err == eTerminateSignal) {
-		struct rb_vm_tag *tag = th->tag;
-
 		/* rewind to toplevel stack */
 		while (th->tag->prev) {
 		    th->tag = th->tag->prev;
@@ -824,7 +818,7 @@ rb_thread_kill(VALUE thread)
 	rb_exit(EXIT_SUCCESS);
     }
 
-    thread_debug("rb_thread_kill: %p (%p)\n", th, th->thread_id);
+    thread_debug("rb_thread_kill: %p (%p)\n", th, (void *)th->thread_id);
 
     rb_thread_interrupt(th);
     th->throwed_errinfo = eKillSignal;
@@ -1635,7 +1629,8 @@ rb_thread_wait_fd_rw(int fd, char c)
 	  case'w':
 	    GVL_UNLOCK_RANGE(result = select(fd + 1, 0, rb_fd_ptr(&set), 0, 0));
 	    break;
-	  defaut:
+
+	  default:
 	    rb_bug("unknown wait type: %c", c);
 	}
     }
@@ -1792,23 +1787,6 @@ rb_thread_atfork(void)
     vm->living_threads = st_init_numtable();
     st_insert(vm->living_threads, th->self, (st_data_t) th->thread_id);
 }
-
-/*
- * for tests
- */
-
-static VALUE
-raw_gets(VALUE klass)
-{
-    char buff[100];
-    GVL_UNLOCK_BEGIN();
-    {
-	fgets(buff, 100, stdin);
-    }
-    GVL_UNLOCK_END();
-    return rb_str_new2(buff);
-}
-
 
 struct thgroup {
     int enclosed;

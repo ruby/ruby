@@ -396,26 +396,25 @@ eval.$(OBJEXT): {$(VPATH)}eval.c  {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h config.h  {$(VPATH)}yarvcore.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h {$(VPATH)}yarv.h
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 eval_load.$(OBJEXT): {$(VPATH)}eval_load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h  {$(VPATH)}yarvcore.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h {$(VPATH)}yarv.h
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 proc.$(OBJEXT): {$(VPATH)}proc.c  {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h config.h  {$(VPATH)}yarvcore.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h {$(VPATH)}yarv.h
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 
 thread.$(OBJEXT): {$(VPATH)}thread.c  {$(VPATH)}eval_intern.h \
   {$(VPATH)}thread_win32.h {$(VPATH)}thread_pthread.h \
   {$(VPATH)}thread_win32.ci {$(VPATH)}thread_pthread.ci \
-  {$(VPATH)}ruby.h config.h \
+  {$(VPATH)}ruby.h {$(VPATH)}yarvcore.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h \
-  {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 
 file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
@@ -507,17 +506,17 @@ version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-        {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}yarv.h \
+        {$(VPATH)}st.h {$(VPATH)}node.h \
         {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
         {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-        {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}yarv.h \
+        {$(VPATH)}intern.h {$(VPATH)}st.h \
         {$(VPATH)}gc.h {$(VPATH)}vm_opts.h \
         {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
         {$(VPATH)}yarvcore.h {$(VPATH)}debug.h  {$(VPATH)}ruby.h config.h\
-        {$(VPATH)}node.h {$(VPATH)}yarv.h {$(VPATH)}version.h \
+        {$(VPATH)}node.h {$(VPATH)}version.h \
         {$(VPATH)}util.h {$(VPATH)}rubysig.h {$(VPATH)}dln.h \
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
@@ -525,17 +524,17 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
 vm_dump.$(OBJEXT): {$(VPATH)}yarvcore.h {$(VPATH)}vm.h config.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}debug.h \
-        {$(VPATH)}yarv.h {$(VPATH)}version.h {$(VPATH)}vm_opts.h 
+        {$(VPATH)}version.h {$(VPATH)}vm_opts.h 
 yarvcore.$(OBJEXT): {$(VPATH)}yarvcore.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-        {$(VPATH)}node.h  {$(VPATH)}yarv.h {$(VPATH)}gc.h {$(VPATH)}vm_opts.h
+        {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): {$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
         {$(VPATH)}st.h
 blockinlining.$(OBJEXT): {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
-        {$(VPATH)}node.h {$(VPATH)}yarv.h {$(VPATH)}yarvcore.h \
+        {$(VPATH)}node.h {$(VPATH)}yarvcore.h \
         {$(VPATH)}debug.h {$(VPATH)}vm_opts.h
 
 
@@ -610,8 +609,8 @@ vmasm: vm.$(ASMEXT)
 # vm.o : CFLAGS += -fno-crossjumping
 
 run.gdb:
-	echo b debug_breakpoint > run.gdb
-	# echo handle SIGINT nostop >> run.gdb
+	echo b ruby_debug_breakpoint  > run.gdb
+	# echo handle SIGINT nostop  >> run.gdb
 	# echo handle SIGPIPE nostop >> run.gdb
 	echo run >> run.gdb
 

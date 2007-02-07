@@ -1645,7 +1645,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 	//static int level;
 	//int i;
 	//for(i=0; i<level; i++){printf("  ");}
-	//printf("invoke %s (%s)\n", rb_id2name(mid), node_name(nd_type(body)));
+	//printf("invoke %s (%s)\n", rb_id2name(mid), ruby_node_name(nd_type(body)));
 	//level++;
 	//printf("%s with %d args\n", rb_id2name(mid), argc);
 	*/
@@ -1655,7 +1655,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 	/*
 	//level--;
 	//for(i=0; i<level; i++){printf("  ");}
-	//printf("done %s (%s)\n", rb_id2name(mid), node_name(nd_type(body)));
+	//printf("done %s (%s)\n", rb_id2name(mid), ruby_node_name(nd_type(body)));
 	*/
 	return val;
     }
@@ -1911,9 +1911,6 @@ rb_sourceline(void)
     return th_get_sourceline(th->cfp);
 }
 
-VALUE th_set_eval_stack(rb_thead_t *, VALUE iseq);
-VALUE th_eval_body(rb_thead_t *);
-
 static VALUE
 eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 {
@@ -1964,7 +1961,8 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	th_set_eval_stack(th, iseqval);
 	th->base_block = 0;
 	if (0) {		/* for debug */
-	    printf("%s\n", RSTRING_PTR(iseq_disasm(iseqval)));
+	    extern VALUE ruby_iseq_disasm(VALUE);
+	    printf("%s\n", RSTRING_PTR(ruby_iseq_disasm(iseqval)));
 	}
 
 	/* save new env */
@@ -2179,9 +2177,10 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 		SafeStringValue(argv[0]);
 	    }
 	    if (argc > 3) {
+		char *name = rb_id2name(rb_frame_callee());
 		rb_raise(rb_eArgError,
 			 "wrong number of arguments: %s(src) or %s{..}",
-			 rb_frame_callee(), rb_frame_callee());
+			 name, name);
 	    }
 	    if (argc > 2)
 		line = NUM2INT(argv[2]);

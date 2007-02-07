@@ -111,7 +111,33 @@ rb_provide(const char *feature)
 VALUE rb_load_path;
 
 NORETURN(static void load_failed _((VALUE)));
-void th_klass_init(rb_thead_t *);
+
+RUBY_EXTERN NODE *ruby_eval_tree;
+
+static VALUE
+rb_load_internal(char *file)
+{
+    NODE *node;
+    VALUE iseq;
+    rb_thead_t *th = GET_THREAD();
+
+    {
+	th->parse_in_eval++;
+	node = (NODE *)rb_load_file(file);
+	th->parse_in_eval--;
+	node = ruby_eval_tree;
+    }
+
+    if (ruby_nerrs > 0) {
+	return 0;
+    }
+
+    iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
+			 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
+
+    rb_thread_eval(GET_THREAD(), iseq);
+    return 0;
+}
 
 void
 rb_load(VALUE fname, int wrap)
@@ -141,7 +167,7 @@ rb_load(VALUE fname, int wrap)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
-	yarv_load(RSTRING_PTR(fname));
+	rb_load_internal(RSTRING_PTR(fname));
     }
     POP_TAG();
 

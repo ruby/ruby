@@ -251,7 +251,7 @@ make_compile_option_value(rb_compile_option_t *option)
 }
 
 VALUE
-yarv_iseq_new(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new(NODE *node, VALUE name, VALUE file_name,
 	      VALUE parent, VALUE type)
 {
     return rb_iseq_new_with_opt(node, name, file_name, parent, type,
@@ -259,7 +259,7 @@ yarv_iseq_new(NODE *node, VALUE name, VALUE file_name,
 }
 
 static VALUE
-yarv_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
 				VALUE parent, VALUE type, VALUE bopt,
 				const rb_compile_option_t *option)
 {
@@ -280,15 +280,15 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE file_name,
 		     VALUE parent, VALUE type,
 		     const rb_compile_option_t *option)
 {
-    return yarv_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
 					   Qfalse, option);
 }
 
 VALUE
-yarv_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
 		       VALUE parent, VALUE type, VALUE bopt)
 {
-    return yarv_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -453,8 +453,6 @@ iseq_check(VALUE val)
     return iseq;
 }
 
-VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
-
 static VALUE
 iseq_eval(VALUE self)
 {
@@ -606,7 +604,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
     default:
-	rb_bug("iseq_disasm: unknown operand type: %c", type);
+	rb_bug("ruby_iseq_disasm: unknown operand type: %c", type);
     }
     return ret;
 }
@@ -616,7 +614,7 @@ insn_operand_intern(rb_iseq_t *iseq,
  * Iseq -> Iseq inspect object
  */
 VALUE
-iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
+ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 		 rb_iseq_t *iseqdat, VALUE child)
 {
     int insn = iseq[pos];
@@ -694,7 +692,7 @@ catch_type(int type)
 }
 
 VALUE
-iseq_disasm(VALUE self)
+ruby_iseq_disasm(VALUE self)
 {
     rb_iseq_t *iseqdat = iseq_check(self);
     VALUE *iseq;
@@ -728,7 +726,7 @@ iseq_disasm(VALUE self)
 		(int)entry->end, (int)entry->sp, (int)entry->cont);
 	rb_str_cat2(str, buff);
 	if (entry->iseq) {
-	    rb_str_concat(str, iseq_disasm(entry->iseq));
+	    rb_str_concat(str, ruby_iseq_disasm(entry->iseq));
 	}
     }
     if (iseqdat->catch_table_size != 0) {
@@ -788,19 +786,19 @@ iseq_disasm(VALUE self)
 
     /* show each line */
     for (i = 0; i < size;) {
-	i += iseq_disasm_insn(str, iseq, i, iseqdat, child);
+	i += ruby_iseq_disasm_insn(str, iseq, i, iseqdat, child);
     }
 
     for (i = 0; i < RARRAY_LEN(child); i++) {
 	VALUE isv = rb_ary_entry(child, i);
-	rb_str_concat(str, iseq_disasm(isv));
+	rb_str_concat(str, ruby_iseq_disasm(isv));
     }
 
     return str;
 }
 
 char *
-node_name(int node)
+ruby_node_name(int node)
 {
     switch (node) {
     case NODE_METHOD:
@@ -1031,7 +1029,7 @@ int
 debug_node(NODE *node)
 {
     printf("node type: %d\n", nd_type(node));
-    printf("node name: %s\n", node_name(nd_type(node)));
+    printf("node name: %s\n", ruby_node_name(nd_type(node)));
     printf("node filename: %s\n", node->nd_file);
     return 0;
 }
@@ -1335,7 +1333,7 @@ Init_ISeq(void)
     rb_cISeq = rb_define_class_under(rb_cVM, "InstructionSequence", rb_cObject);
     rb_define_alloc_func(rb_cISeq, iseq_alloc);
     rb_define_method(rb_cISeq, "inspect", iseq_inspect, 0);
-    rb_define_method(rb_cISeq, "disasm", iseq_disasm, 0);
+    rb_define_method(rb_cISeq, "disasm", ruby_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 

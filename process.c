@@ -898,6 +898,8 @@ proc_detach(VALUE obj, VALUE pid)
 char *strtok();
 #endif
 
+void rb_thread_stop_timer_thread(void);
+
 #define before_exec() \
   (rb_enable_interrupt(), rb_thread_stop_timer_thread())
 #define after_exec() \

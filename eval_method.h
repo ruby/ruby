@@ -144,7 +144,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	if (st_lookup(RCLASS(klass)->m_tbl, mid, (st_data_t *)&old_node)) {
 	    if (old_node) {
 		if (nd_type(old_node->nd_body->nd_body) == NODE_CFUNC) {
-		    yarv_check_redefinition_opt_method(old_node);
+		    rb_vm_check_redefinition_opt_method(old_node);
 		}
 		if (RTEST(ruby_verbose) && old_node->nd_cnt == 0 && old_node->nd_body) {
 		    rb_warning("method redefined; discarding old %s", rb_id2name(mid));

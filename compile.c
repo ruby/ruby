@@ -27,6 +27,8 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
+VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
+
 /* types */
 
 #define ISEQ_ELEMENT_NONE  INT2FIX(0x00)
@@ -83,7 +85,6 @@ static long gl_tmp = 0;
 static void debug_list(LINK_ANCHOR *anchor);
 #endif
 
-static void dump_disasm_anchor(LINK_ANCHOR *anc);
 static void dump_disasm_list(LINK_ELEMENT *elem);
 
 static int insn_data_length(INSN *iobj);
@@ -688,7 +689,6 @@ static VALUE
 new_child_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, VALUE parent, VALUE type)
 {
-    VALUE args[6];
     VALUE ret;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
@@ -750,7 +750,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     GC_CHECK();
 
     if (CPDEBUG > 1) {
-	VALUE str = iseq_disasm(iseq->self);
+	VALUE str = ruby_iseq_disasm(iseq->self);
 	printf("%s\n", StringValueCStr(str));
 	fflush(stdout);
     }
@@ -2002,12 +2002,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
     case NODE_LIT:		/* NODE_LIT is always not true */
     case NODE_TRUE:
     case NODE_STR:
-	/* printf("useless conditon eliminate (%s)\n",  node_name(nd_type(cond))); */
+	/* printf("useless conditon eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
     case NODE_FALSE:
     case NODE_NIL:
-	/* printf("useless conditon eliminate (%s)\n", node_name(nd_type(cond))); */
+	/* printf("useless conditon eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
 	break;
     default:
@@ -2249,7 +2249,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		COMPILE(ret, "rhs to ary (splat/default)", rhsn);
 		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
 			  INT2FIX(lhs_splat));
-		/* rb_bug("unknown rhs: %s", node_name(nd_type(rhsn))); */
+		/* rb_bug("unknown rhs: %s", ruby_node_name(nd_type(rhsn))); */
 	    }
 	}
 	else {
@@ -2469,7 +2469,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	  ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish);
 	  return 1;
-	  /* rb_bug("unimplemented defined: %s", node_name(nd_type(node))); */
+	  /* rb_bug("unimplemented defined: %s", ruby_node_name(nd_type(node))); */
       }			/* end of default */
     }
 
@@ -2571,7 +2571,6 @@ setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 {
     VALUE argc = INT2FIX(0);
     NODE *argn = node->nd_args;
-    NODE *argp = 0;
     DECL_ANCHOR(arg_block);
     DECL_ANCHOR(args_push);
     
@@ -2718,7 +2717,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_CASE:{
 	  NODE *vals;
-	  NODE *val;
 	  NODE *tempnode = node;
 	  LABEL *endlabel, *elselabel;
 	  DECL_ANCHOR(head);
@@ -2736,7 +2734,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  type = nd_type(node);
 
 	  if (type != NODE_WHEN) {
-	      COMPILE_ERROR(("NODE_CASE: unexpected node. must be NODE_WHEN, but %s", node_name(type)));
+	      COMPILE_ERROR(("NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type)));
 	  }
 
 	  endlabel = NEW_LABEL(nd_line(node));
@@ -2772,7 +2770,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		      ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
 		  }
 		  else {
-		      rb_bug("NODE_CASAE: unknown node (%s)", node_name(nd_type(vals)));
+		      rb_bug("NODE_CASAE: unknown node (%s)", ruby_node_name(nd_type(vals)));
 		  }
 	      }
 	      else {
@@ -3768,7 +3766,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      break;
 
 	    default:
-	      rb_bug("can't make hash with this node: %s", node_name(type));
+	      rb_bug("can't make hash with this node: %s", ruby_node_name(type));
 	  }
 
 	  ADD_INSN1(ret, nd_line(node), newhash, size);
@@ -4531,7 +4529,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       default:
-	COMPILE_ERROR(("BUG: unknown node (default): %s", node_name(type)));
+	COMPILE_ERROR(("BUG: unknown node (default): %s", ruby_node_name(type)));
 	return Qnil;
     }
 
@@ -4630,12 +4628,6 @@ insn_data_to_s_detail(INSN *iobj)
 }
 
 static void
-dump_disasm_anchor(LINK_ANCHOR *anc)
-{
-    dump_disasm_list(FIRST_ELEMENT(anc));
-}
-
-static void
 dump_disasm_list(struct iseq_link_element *link)
 {
     int pos = 0;
@@ -4728,8 +4720,6 @@ get_exception_sym2type(VALUE sym)
     rb_bug("get_exception_sym2type");
     return 0;
 }
-
-VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
 
 static int
 iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,

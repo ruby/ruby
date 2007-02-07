@@ -19,7 +19,7 @@
 #include "node.h"
 #include "util.h"
 #include "rubysig.h"
-#include "yarv.h"
+#include "yarvcore.h"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -312,7 +312,7 @@ th_get_ruby_level_cfp(rb_thead_t *th, rb_control_frame_t *cfp)
     return cfp;
 }
 
-static NODE *
+static inline NODE *
 ruby_cref()
 {
     rb_thead_t *th = GET_THREAD();
@@ -322,6 +322,8 @@ ruby_cref()
 
 VALUE th_get_cbase(rb_thead_t *th);
 VALUE rb_obj_is_proc(VALUE);
+void rb_vm_check_redefinition_opt_method(NODE *node);
+void rb_thread_terminate_all(void);
 
 #define ruby_cbase() th_get_cbase(GET_THREAD())
 

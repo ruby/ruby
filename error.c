@@ -12,7 +12,7 @@
 
 #include "ruby.h"
 #include "st.h"
-#include "yarv.h"
+#include "yarvcore.h"
 
 #include <stdio.h>
 #include <stdarg.h>

@@ -1,3 +1,53 @@
+Wed Feb  7 09:35:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* this commit is a result of refactoring. only renaming functions,
+	  moving definitions place, add/remove prototypes, deleting
+	  unused variables and removing yarv.h.
+	  This commit doesn't change any behavior of ruby/vm.
+
+	* yarv.h, common.mk: remove yarv.h (contents are moved to yarvcore.h).
+
+	* error.c, eval_intern.h: include yarvcore.h instead yarv.h
+
+	* rename some functions:
+	  * debug.[ch]: debug_*() -> ruby_debug_*()
+	  * iseq.c: iseq_*() -> rb_iseq_*(), ruby_iseq_disasm()
+	  * iseq.c: node_name() -> ruby_node_name()
+	  * vm.c: yarv_check_redefinition_opt_method() ->
+	          rb_vm_check_redefinition_opt_method()
+
+	* some refactoring with checking -Wall.
+
+	* array.c: remove rb_ary_ptr() (unused) and remove unused
+	  local variables.
+
+	* object.c: add a prototype of rb_mod_module_exec().
+
+	* eval_intern.h (ruby_cref): set it inline.
+
+	* eval_load.c (rb_load), yarvcore.c: yarv_load() -> rb_load_internal().
+
+	* parse.y: add a prototype of rb_parse_in_eval() (in eval.c).
+
+	* process.c: add a prototype of rb_thread_stop_timer_thread() (in thread.c).
+
+	* thread.c: remove raw_gets() function (unused) and fix some format
+	  mismatch (format mismatchs have remained yet. this is todo).
+
+	* thread.c (rb_thread_wait_fd_rw): fix typo on label name.
+
+	* thread_pthread.ci: comment out codes with USE_THREAD_CACHE.
+
+	* vm.c (rb_svar, rb_backref_get, rb_backref_get, 
+	  rb_lastline_get, rb_lastline_set) : moved from yarvcore.c.
+
+	* vm.c (yarv_init_redefined_flag): add a prototype and rename
+	  yarv_opt_method_table to vm_opt_method_table.
+
+	* vm.c (rb_thread_eval): moved from yarvcore.c.
+
+	* yarvcore.c: remove unused global variables and fix to use nsdr().
+
 Wed Feb  7 03:39:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c, compile.c, compile.h, error.c, eval.c,

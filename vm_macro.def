@@ -325,7 +325,7 @@ MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 	      break;
 	  }
 	  default:{
-	      printf("node: %s\n", node_name(nd_type(node)));
+	      printf("node: %s\n", ruby_node_name(nd_type(node)));
 	      rb_bug("eval_invoke_method: unreachable");
 	      /* unreachable */
 	      break;
