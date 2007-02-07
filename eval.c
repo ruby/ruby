@@ -2165,7 +2165,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 		SafeStringValue(argv[0]);
 	    }
 	    if (argc > 3) {
-		char *name = rb_id2name(rb_frame_callee());
+		const char *name = rb_id2name(rb_frame_callee());
 		rb_raise(rb_eArgError,
 			 "wrong number of arguments: %s(src) or %s{..}",
 			 name, name);

@@ -1,4 +1,6 @@
-Wed Feb  7 23:24:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb  7 23:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (specific_eval): suppress warning.
 
 	* thread_win32.h: undefine _WIN32 on cygwin.  [ruby-dev:30303]
 
