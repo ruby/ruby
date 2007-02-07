@@ -1,3 +1,7 @@
+Wed Feb  7 22:30:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c: fixed to use ANSI function style.
+
 Wed Feb  7 09:35:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* this commit is a result of refactoring. only renaming functions,

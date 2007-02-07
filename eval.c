@@ -90,7 +90,7 @@ void Init_ext _((void));
 void Init_yarv(void);
 
 void
-ruby_init()
+ruby_init(void)
 {
     static int initialized = 0;
     int state;
@@ -148,10 +148,8 @@ ruby_options(int argc, char **argv)
     POP_THREAD_TAG();
 }
 
-void rb_exec_end_proc _((void));
-
 static void
-ruby_finalize_0()
+ruby_finalize_0(void)
 {
     PUSH_TAG(PROT_NONE);
     if (EXEC_TAG() == 0) {
@@ -162,7 +160,7 @@ ruby_finalize_0()
 }
 
 static void
-ruby_finalize_1()
+ruby_finalize_1(void)
 {
     signal(SIGINT, SIG_DFL);
     GET_THREAD()->errinfo = 0;
@@ -220,7 +218,7 @@ ruby_cleanup(int ex)
 extern NODE *ruby_eval_tree;
 
 static int
-ruby_exec_internal()
+ruby_exec_internal(void)
 {
     int state;
     VALUE val;
@@ -235,7 +233,7 @@ ruby_exec_internal()
 }
 
 int
-ruby_exec()
+ruby_exec(void)
 {
     volatile NODE *tmp;
 
@@ -244,14 +242,13 @@ ruby_exec()
 }
 
 void
-ruby_stop(ex)
-    int ex;
+ruby_stop(int ex)
 {
     exit(ruby_cleanup(ex));
 }
 
 void
-ruby_run()
+ruby_run(void)
 {
     int state;
     static int ex;
@@ -269,8 +266,7 @@ ruby_run()
 }
 
 VALUE
-rb_eval_string(str)
-    const char *str;
+rb_eval_string(const char *str)
 {
     VALUE v;
     NODE *oldsrc = ruby_current_node;
@@ -284,17 +280,13 @@ rb_eval_string(str)
 }
 
 VALUE
-rb_eval_string_protect(str, state)
-    const char *str;
-    int *state;
+rb_eval_string_protect(const char *str, int *state)
 {
     return rb_protect((VALUE (*)_((VALUE)))rb_eval_string, (VALUE)str, state);
 }
 
 VALUE
-rb_eval_string_wrap(str, state)
-    const char *str;
-    int *state;
+rb_eval_string_wrap(const char *str, int *state)
 {
     int status;
     VALUE self = ruby_top_self;
@@ -1387,9 +1379,7 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
 }
 
 VALUE
-rb_rescue(b_proc, data1, r_proc, data2)
-    VALUE (*b_proc) (), (*r_proc) ();
-    VALUE data1, data2;
+rb_rescue(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALUE data2)
 {
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError,
 		      (VALUE)0);
@@ -1436,9 +1426,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 }
 
 VALUE
-rb_with_disable_interrupt(proc, data)
-    VALUE (*proc) ();
-    VALUE data;
+rb_with_disable_interrupt(VALUE (*proc)(ANYARGS), VALUE data)
 {
     VALUE result = Qnil;	/* OK */
     int status;
@@ -1463,7 +1451,7 @@ rb_with_disable_interrupt(proc, data)
 }
 
 static inline void
-stack_check()
+stack_check(void)
 {
     static int overflowing = 0;
 
@@ -2848,7 +2836,7 @@ rb_f_local_variables(void)
 
 
 void
-Init_eval()
+Init_eval(void)
 {
     /* TODO: fix position */
     GET_THREAD()->vm->mark_object_ary = rb_ary_new();
