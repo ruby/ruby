@@ -17,10 +17,6 @@
 
 #include <setjmp.h>
 
-#if 0 && defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
-#include <ucontext.h>
-#define USE_CONTEXT
-#endif
 #include "ruby.h"
 #include "st.h"
 #include "node.h"
@@ -371,14 +367,7 @@ enum rb_thread_status {
     THREAD_KILLED,
 };
 
-#ifdef USE_CONTEXT
-typedef struct {
-    ucontext_t context;
-    volatile int status;
-} rb_jmpbuf_t[1];
-#else
 typedef jmp_buf rb_jmpbuf_t;
-#endif
 
 struct rb_vm_tag {
     rb_jmpbuf_t buf;
