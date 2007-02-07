@@ -2171,7 +2171,7 @@ VALUE rb_cCont;
 static VALUE
 rb_callcc(VALUE self)
 {
-    UNSUPPORTED(rb_callcc);
+    rb_notimplement();
     return Qnil;
 }
 
@@ -2194,7 +2194,8 @@ rb_callcc(VALUE self)
 static VALUE
 rb_cont_call(int argc, VALUE *argv, VALUE cont)
 {
-    UNSUPPORTED(rb_cont_call);
+    rb_notimplement();
+    return Qnil;
 }
 
 /* variables for recursive traversals */
@@ -2371,7 +2372,13 @@ Init_Thread(void)
 
     recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
+
     rb_cCont = rb_define_class("Continuation", rb_cObject);
+    rb_undef_alloc_func(rb_cCont);
+    rb_undef_method(CLASS_OF(rb_cCont), "new");
+    rb_define_method(rb_cCont, "call", rb_cont_call, -1);
+    rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
+    rb_define_global_function("callcc", rb_callcc, 0);
 
     Init_native_thread();
     {

@@ -6,15 +6,6 @@
   (GET_THREAD()->passed_block = \
    GC_GUARDED_PTR_REF((rb_block_t *)GET_THREAD()->cfp->lfp[0]))
 
-
-#define UNSUPPORTED(func) \
-{ \
-  int *a = 0; \
-  fprintf(stderr, "%s", "-- unsupported: " #func "\n"); fflush(stderr); \
-  *a = 0; \
-  rb_bug("unsupported: " #func); \
-}
-
 #include "ruby.h"
 #include "node.h"
 #include "util.h"

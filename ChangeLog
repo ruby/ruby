@@ -1,3 +1,10 @@
+Wed Feb  7 22:41:34 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h: remove UNSUPPORTED() macro.
+
+	* thread.c: fix to define Continuation methods
+	  (they only do rb_notimplement()).
+
 Wed Feb  7 22:33:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h, yarvcore.h: remove unused macro definition.
