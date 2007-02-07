@@ -1,3 +1,7 @@
+Wed Feb  7 23:24:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.h: undefine _WIN32 on cygwin.  [ruby-dev:30303]
+
 Wed Feb  7 22:41:34 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h: remove UNSUPPORTED() macro.

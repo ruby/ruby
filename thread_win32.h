@@ -10,10 +10,14 @@
 **********************************************************************/
 
 /* interface */
-#ifndef THREAD_WIN32_H_INCLUDED
-#define THREAD_WIN32_H_INCLUDED
+#ifndef RUBY_THREAD_WIN32_H
+#define RUBY_THREAD_WIN32_H
 
 #include <windows.h>
+
+# ifdef __CYGWIN__
+# undef _WIN32
+# endif
 
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
@@ -30,5 +34,5 @@ typedef struct native_thread_data_struct {
     HANDLE interrupt_event;
 } native_thread_data_t;
 
-#endif /* THREAD_WIN32_H_INCLUDED */
+#endif /* RUBY_THREAD_WIN32_H */
 
