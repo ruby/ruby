@@ -564,6 +564,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 vm_macro.inc: $(srcdir)/vm_macro.def
 
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
+	$(RM) $(PROGRAM)
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
 
 incs: $(INSNS)
@@ -577,11 +578,11 @@ compare: miniruby$(EXEEXT) PHONY
 	@$(MATZRUBY) -v -I$(srcdir) $(srcdir)/test.rb
 	@$(MINIRUBY) -v -I$(srcdir) $(srcdir)/test.rb
 
-compare-test: miniruby$(EXEEXT) PHONY
-	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
+compare-test: miniruby$(EXEEXT) $(PROGRAM) PHONY
+	$(RUNRUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
-compare-test-each: miniruby$(EXEEXT) PHONY
-	$(BASERUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
+compare-test-each: miniruby$(EXEEXT) $(PROGRAM) PHONY
+	$(RUNRUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
 
 run: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb $(RUNOPT)
@@ -593,13 +594,13 @@ parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
 benchmark: $(PROGRAM) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+	$(RUNRUBY) $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 benchmark-each: $(PROGRAM) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+	$(RUNRUBY) $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 tbench: $(PROGRAM) PHONY
-	$(BASERUBY) -I$(srcdir)/lib $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+	$(RUNRUBY) $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
 aotc:
 	$(RUBY) -I$(srcdir) -I. $(srcdir)/tool/aotcompile.rb $(INSNS2VMOPT)
@@ -622,5 +623,5 @@ gdb: miniruby$(EXEEXT) run.gdb PHONY
 vtune: miniruby$(EXEEXT)
 	vtl activity -c sampling -app ".\miniruby$(EXEEXT)","-I$(srcdir)/lib $(srcdir)/test.rb" run
 	vtl view -hf -mn miniruby$(EXEEXT) -sum -sort -cd
-	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(BASERUBY) $(srcdir)/tool/vtlh.rb > ha.lines
+	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
 

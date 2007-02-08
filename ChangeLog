@@ -1,3 +1,9 @@
+Thu Feb  8 16:08:02 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: fix to use RUNRUBY instead of BASERUBY if possible.
+
+	* common.mk ($(INSNS) rule): remove $(PROGRAM) first.
+
 Thu Feb  8 15:43:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* process.c: fix to use rb_status_line_set/get/clear().
