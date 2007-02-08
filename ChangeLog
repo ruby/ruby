@@ -1,3 +1,9 @@
+Thu Feb  8 15:43:05 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* process.c: fix to use rb_status_line_set/get/clear().
+
+	* eval_intern.h: fix line break.
+
 Thu Feb  8 15:00:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c, error.c, eval.c, eval_error.h, eval_intern.h,

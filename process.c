@@ -197,6 +197,12 @@ get_ppid(void)
 
 static VALUE rb_cProcStatus;
 
+VALUE
+rb_last_status_get(void)
+{
+    return GET_VM()->last_status;
+}
+
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
@@ -206,10 +212,11 @@ rb_last_status_set(int status, rb_pid_t pid)
     rb_iv_set(vm->last_status, "pid", INT2FIX(pid));
 }
 
-VALUE
-rb_last_status_get(void)
+static void
+rb_last_status_clear(void)
 {
-    return GET_VM()->last_status;
+    rb_vm_t *vm = GET_VM();
+    vm->last_status = Qnil;
 }
 
 /*
@@ -643,7 +650,7 @@ static int
 waitall_each(int pid, int status, VALUE ary)
 {
     rb_last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
+    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status_get());
     return ST_DELETE;
 }
 #endif
@@ -728,7 +735,8 @@ proc_wait(int argc, VALUE *argv)
     if ((pid = rb_waitpid(pid, &status, flags)) < 0)
 	rb_sys_fail(0);
     if (pid == 0) {
-	return GET_VM()->last_status = Qnil;
+	rb_last_status_clear();
+	return Qnil;
     }
     return INT2FIX(pid);
 }
@@ -756,7 +764,7 @@ proc_wait2(int argc, VALUE *argv)
 {
     VALUE pid = proc_wait(argc, argv);
     if (NIL_P(pid)) return Qnil;
-    return rb_assoc_new(pid, GET_VM()->last_status);
+    return rb_assoc_new(pid, rb_last_status_get());
 }
 
 
@@ -805,10 +813,10 @@ proc_waitall(void)
 	    rb_sys_fail(0);
 	}
 	rb_last_status_set(status, pid);
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status_get()));
     }
 #else
-    GET_VM()->last_status = Qnil;
+    rb_last_status_clear();
     for (pid = -1;;) {
 	pid = rb_waitpid(-1, &status, 0);
 	if (pid == -1) {
@@ -816,7 +824,7 @@ proc_waitall(void)
 		break;
 	    rb_sys_fail(0);
 	}
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), GET_VM()->last_status));
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status_get()));
     }
 #endif
     return result;
@@ -829,7 +837,7 @@ detach_process_watcher(int *pid_p)
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid != 0) return GET_VM()->last_status;
+	if (cpid != 0) return rb_last_status_get();
 	rb_thread_sleep(1);
     }
 }
@@ -1610,7 +1618,7 @@ rb_f_system(int argc, VALUE *argv)
     if (status < 0) {
 	rb_sys_fail(RSTRING_PTR(argv[0]));
     }
-    status = NUM2INT(GET_VM()->last_status);
+    status = NUM2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
     return Qfalse;
 }
