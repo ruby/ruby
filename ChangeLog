@@ -1,3 +1,12 @@
+Thu Feb  8 22:44:04 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_set_safe_array, ole_variant2val,
+	  ole_val_ary2variant_ary): fix WIN32OLE_VARIANT.new bug when
+	  1st argument is empty array, and when 2nd argument is 
+	  VT_ARRAY|VT_BYREF.
+
+	* test/win32ole/test_win32ole_variant.rb: ditto.
+
 Thu Feb  8 22:39:09 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb: check target command names.

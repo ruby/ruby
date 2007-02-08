@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.1"
+#define WIN32OLE_VERSION "0.9.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -239,6 +239,7 @@ static LPWSTR ole_mb2wc(char *pm, int len);
 static VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 static VALUE ole_ary_m_entry(VALUE val, long *pid);
 static void * get_ptr_of_variant(VARIANT *pvar);
+static VALUE is_all_index_under(long *pid, long *pub, long dim);
 static void ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vtype);
 static long dimension(VALUE val);
 static long ary_len_of_dim(VALUE ary, long dim);
@@ -253,6 +254,8 @@ static VALUE default_inspect(VALUE self, const char *class_name);
 static VALUE ole_set_member(VALUE self, IDispatch *dispatch);
 static VALUE fole_s_allocate(VALUE klass);
 static VALUE create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv);
+static VALUE ary_new_dim(VALUE myary, long *pid, long *plb, long dim);
+static void ary_store_dim(VALUE myary, long *pid, long *plb, long dim, VALUE val);
 static VALUE ole_variant2val(VARIANT *pvar);
 static LONG reg_open_key(HKEY hkey, const char *name, HKEY *phkey);
 static LONG reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey);
@@ -982,22 +985,34 @@ static void * get_ptr_of_variant(VARIANT *pvar)
     }
 }
 
+static VALUE
+is_all_index_under(long *pid, long *pub, long dim) 
+{
+  long i = 0;
+  for (i = 0; i < dim; i++) {
+    if (pid[i] > pub[i]) {
+      return Qfalse;
+    }
+  }
+  return Qtrue;
+}
+
 static void
 ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long dim,  VARTYPE vtype)
 {
     VALUE val1;
-    HRESULT hr;
+    HRESULT hr = S_OK;
     VARIANT var;
     VARIANT vart;
     VOID *p = NULL;
     VariantInit(&var);
     VariantInit(&vart);
     if(n < 0) return;
-    if(n == dim) {
+    if(n == dim - 1) {
         val1 = ole_ary_m_entry(val, pid);
         ole_val2variant2(val1, &var);
         VariantInit(&vart);
-        if (vtype == VT_VARIANT) {
+        if ((vtype & ~VT_BYREF) == VT_VARIANT) {
             p = &var;
         } else if (vtype != V_VT(&var)) {
             hr = VariantChangeTypeEx(&vart, &var, 
@@ -1013,14 +1028,16 @@ ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long
         if (p == NULL) {
             rb_raise(rb_eRuntimeError, "failed to get ponter of variant");
         }
-        hr = SafeArrayPutElement(psa, pid, p);
+        if (is_all_index_under(pid, pub, dim) == Qtrue) {
+            hr = SafeArrayPutElement(psa, pid, p);
+        }
         if (FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "failed to SafeArrayPutElement");
         }
     }
     pid[n] += 1;
-    if (pid[n] < pub[n]) {
-        ole_set_safe_array(dim, psa, pid, pub, val, dim, vtype);
+    if (pid[n] <= pub[n]) {
+        ole_set_safe_array(dim-1, psa, pid, pub, val, dim, vtype);
     }
     else {
         pid[n] = 0;
@@ -1102,12 +1119,12 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vtype)
     for (i = 0; i < dim; i++) {
         psab[i].cElements = ary_len_of_dim(val, i);
         psab[i].lLbound = 0;
-        pub[i] = psab[i].cElements;
+        pub[i] = psab[i].cElements - 1;
         pid[i] = 0;
     }
 
     /* Create and fill VARIANT array */
-    if (vtype == VT_ARRAY) {
+    if ((vtype & ~VT_BYREF) == VT_ARRAY) {
         vtype = (vtype | VT_VARIANT);
     }
     psa = SafeArrayCreate(vtype & VT_TYPEMASK, dim, psab);
@@ -1116,7 +1133,7 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vtype)
     else
         hr = SafeArrayLock(psa);
     if (SUCCEEDED(hr)) {
-        ole_set_safe_array(dim-1, psa, pid, pub, val, dim-1, vtype & VT_TYPEMASK);
+        ole_set_safe_array(dim-1, psa, pid, pub, val, dim, vtype & VT_TYPEMASK);
         hr = SafeArrayUnlock(psa);
     }
 
@@ -1278,7 +1295,7 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vtype)
         V_VARIANTREF(var) = realvar;
     } else {
         if (V_VT(realvar) != (vtype & ~VT_BYREF)) {
-            rb_raise(eWIN32OLERuntimeError, "type mismatch");
+            rb_raise(eWIN32OLERuntimeError, "variant type mismatch");
         }
         switch(vtype & ~VT_BYREF) {
         case VT_UI1:
@@ -1355,9 +1372,14 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                 SafeArrayDestroy(psa);
         }
     } else if (vtype & VT_ARRAY) {
-        hr = ole_val_ary2variant_ary(val, &(pvar->realvar), vtype);
+        hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (vtype & ~VT_BYREF));
         if (SUCCEEDED(hr)) {
-            hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+            if (vtype & VT_BYREF) {
+                V_VT(&(pvar->var)) = V_VT(&(pvar->realvar)) | VT_BYREF;
+                V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
+            } else {
+                hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+            }
         }
     } else {
         if (val == Qnil) {
@@ -1463,8 +1485,8 @@ create_win32ole_object(VALUE klass, IDispatch *pDispatch, int argc, VALUE *argv)
     return obj;
 }
 
-static void
-ary_store_dim(VALUE myary, long *pID, long *pLB, long dim, VALUE val) {
+static VALUE
+ary_new_dim(VALUE myary, long *pid, long *plb, long dim) {
     long i;
     VALUE obj = Qnil;
     VALUE pobj = Qnil;
@@ -1473,7 +1495,7 @@ ary_store_dim(VALUE myary, long *pID, long *pLB, long dim, VALUE val) {
         rb_raise(rb_eRuntimeError, "memory allocation error");
     }
     for(i = 0; i < dim; i++) {
-        ids[i] = pID[i] - pLB[i];
+        ids[i] = pid[i] - plb[i];
     }
     obj = myary;
     pobj = myary;
@@ -1485,8 +1507,15 @@ ary_store_dim(VALUE myary, long *pID, long *pLB, long dim, VALUE val) {
         obj = rb_ary_entry(pobj, ids[i]);
         pobj = obj;
     }
-    rb_ary_store(obj, ids[dim-1], val);
     if (ids) free(ids);
+    return obj;
+}
+
+static void
+ary_store_dim(VALUE myary, long *pid, long *plb, long dim, VALUE val) {
+    long id = pid[dim - 1] - plb[dim - 1];
+    VALUE obj = ary_new_dim(myary, pid, plb, dim);
+    rb_ary_store(obj, id, val);
 }
 
 static VALUE
@@ -1503,7 +1532,11 @@ ole_variant2val(VARIANT *pvar)
         long *pid, *plb, *pub;
         VARIANT variant;
         VALUE val;
-        int dim = SafeArrayGetDim(psa);
+        UINT dim = 0;
+        if (!psa) {
+            return obj;
+        }
+        dim = SafeArrayGetDim(psa);
         VariantInit(&variant);
         V_VT(&variant) = (V_VT(pvar) & ~VT_ARRAY) | VT_BYREF;
 
@@ -1527,11 +1560,12 @@ ole_variant2val(VARIANT *pvar)
         if (SUCCEEDED(hr)) {
             obj = rb_ary_new();
             while (i >= 0) {
+                ary_new_dim(obj, pid, plb, dim);
                 hr = SafeArrayPtrOfIndex(psa, pid, &V_BYREF(&variant));
-                if (FAILED(hr))
-                    break;
-                val = ole_variant2val(&variant);
-                ary_store_dim(obj, pid, plb, dim, val);
+                if (SUCCEEDED(hr)) {
+                    val = ole_variant2val(&variant);
+                    ary_store_dim(obj, pid, plb, dim, val);
+                }
                 for (i = dim-1 ; i >= 0 ; --i) {
                     if (++pid[i] <= pub[i])
                         break;
@@ -7271,6 +7305,9 @@ folevariant_value(VALUE self)
             psa = *V_ARRAYREF(&(pvar->var));
         } else {
             psa  = V_ARRAY(&(pvar->var));
+        }
+        if (!psa) {
+            return val;
         }
         dim = SafeArrayGetDim(psa);
         if (dim == 1) {
