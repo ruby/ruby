@@ -6,12 +6,24 @@ require 'test/unit'
 
 if defined?(WIN32OLE_EVENT)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
+    def create_temp_html
+      fso = WIN32OLE.new('Scripting.FileSystemObject')
+      dummy_file = fso.GetTempName + ".html"
+      cfolder = fso.getFolder(".")
+      f = cfolder.CreateTextFile(dummy_file)
+      f.writeLine("<html><body>This is test HTML file for Win32OLE.</body></html>")
+      f.close
+      dummy_path = cfolder.path + "\\" + dummy_file
+      dummy_path
+    end
+
     def setup
       @ie = WIN32OLE.new("InternetExplorer.Application")
       @ie.visible = true
       @event = ""
       @event2 = ""
       @event3 = ""
+      @f = create_temp_html
     end
 
     def default_handler(event, *args)
@@ -21,9 +33,9 @@ if defined?(WIN32OLE_EVENT)
     def test_on_event
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event {|*args| default_handler(*args)}
-      @ie.gohome
+      @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
+        sleep 0.1
       end
       assert_match(/BeforeNavigate/, @event)
       assert_match(/NavigateComplete/, @event)
@@ -33,9 +45,9 @@ if defined?(WIN32OLE_EVENT)
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event('BeforeNavigate') {|*args| handler1}
       ev.on_event('BeforeNavigate') {|*args| handler2}
-      @ie.gohome
+      @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
+        sleep 0.1
       end
       assert_equal("handler2", @event2)
     end
@@ -44,9 +56,9 @@ if defined?(WIN32OLE_EVENT)
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event {|*args| handler1}
       ev.on_event {|*args| handler2}
-      @ie.gohome
+      @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
+        sleep 0.1
       end
       assert_equal("handler2", @event2)
     end
@@ -56,9 +68,9 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event{|*args| handler1}
       ev.on_event{|*args| handler2}
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
-      @ie.gohome
+      @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
+        sleep 0.1
       end
       assert(@event3!="")
       assert("handler2", @event2)
@@ -68,9 +80,9 @@ if defined?(WIN32OLE_EVENT)
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event {|*args| default_handler(*args)}
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
-      @ie.gohome
+      @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
+        sleep 0.1
       end
       assert_match(/BeforeNavigate/, @event)
       assert(/NavigateComplete/ !~ @event)
@@ -90,10 +102,10 @@ if defined?(WIN32OLE_EVENT)
     end
 
     def teardown
+      File.unlink(@f)
       @ie.quit
       @ie = nil
       GC.start
-      sleep 1
     end
   end
 end

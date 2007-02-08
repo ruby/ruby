@@ -1,3 +1,10 @@
+Thu Feb  8 21:35:16 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_propertyputref.rb (setup): fix typo.
+
+	* test/win32ole/test_win32ole_event.rb: should not use
+	  InternetExplorer.gohome to test.
+
 Thu Feb  8 21:02:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (GVL_UNLOCK_RANGE): rename to BLOCKING_REGION().
