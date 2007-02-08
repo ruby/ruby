@@ -173,7 +173,7 @@ class TestModule < Test::Unit::TestCase
   def test_class_eval
     Other.class_eval("CLASS_EVAL = 1")
     assert_equal(1, Other::CLASS_EVAL)
-    assert(Other.constants.include?("CLASS_EVAL"))
+    assert(Other.constants.include?(:CLASS_EVAL))
   end
 
   def test_class_variable_set
@@ -206,8 +206,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_constants
-    assert_equal(["MIXIN"], Mixin.constants)
-    assert_equal(["MIXIN", "USER"], User.constants.sort)
+    assert_equal([:MIXIN], Mixin.constants)
+    assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
   def test_included_modules
@@ -219,15 +219,15 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_instance_methods
-    assert_equal(["user" ], User.instance_methods(false))
-    assert_equal(["user", "mixin"].sort, User.instance_methods(true).sort)
-    assert_equal(["mixin"], Mixin.instance_methods)
-    assert_equal(["mixin"], Mixin.instance_methods(true))
+    assert_equal([:user], User.instance_methods(false))
+    assert_equal([:user, :mixin].sort, User.instance_methods(true).sort)
+    assert_equal([:mixin], Mixin.instance_methods)
+    assert_equal([:mixin], Mixin.instance_methods(true))
     # Ruby 1.8 feature change:
     # #instance_methods includes protected methods.
-    #assert_equal(["aClass"], AClass.instance_methods(false))
-    assert_equal(["aClass", "aClass2"], AClass.instance_methods(false).sort)
-    assert_equal(["aClass", "aClass2"],
+    #assert_equal([:aClass], AClass.instance_methods(false))
+    assert_equal([:aClass, :aClass2], AClass.instance_methods(false).sort)
+    assert_equal([:aClass, :aClass2],
         (AClass.instance_methods(true) - Object.instance_methods(true)).sort)
   end
 
@@ -235,17 +235,17 @@ class TestModule < Test::Unit::TestCase
     assert(!User.method_defined?(:wombat))
     assert(User.method_defined?(:user))
     assert(User.method_defined?(:mixin))
-    assert(!User.method_defined?("wombat"))
-    assert(User.method_defined?("user"))
-    assert(User.method_defined?("mixin"))
+    assert(!User.method_defined?(:wombat))
+    assert(User.method_defined?(:user))
+    assert(User.method_defined?(:mixin))
   end
 
   def test_module_eval
     User.module_eval("MODULE_EVAL = 1")
     assert_equal(1, User::MODULE_EVAL)
-    assert(User.constants.include?("MODULE_EVAL"))
+    assert(User.constants.include?(:MODULE_EVAL))
     User.instance_eval("remove_const(:MODULE_EVAL)")
-    assert(!User.constants.include?("MODULE_EVAL"))
+    assert(!User.constants.include?(:MODULE_EVAL))
   end
 
   def test_name
@@ -261,17 +261,17 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_private_instance_methods
-    assert_equal(["aClass1"], AClass.private_instance_methods(false))
-    assert_equal(["bClass2"], BClass.private_instance_methods(false))
-    assert_equal(["aClass1", "bClass2"],
+    assert_equal([:aClass1], AClass.private_instance_methods(false))
+    assert_equal([:bClass2], BClass.private_instance_methods(false))
+    assert_equal([:aClass1, :bClass2],
         (BClass.private_instance_methods(true) -
          Object.private_instance_methods(true)).sort)
   end
 
   def test_protected_instance_methods
-    assert_equal(["aClass2"], AClass.protected_instance_methods)
-    assert_equal(["bClass3"], BClass.protected_instance_methods(false))
-    assert_equal(["bClass3", "aClass2"].sort,
+    assert_equal([:aClass2], AClass.protected_instance_methods)
+    assert_equal([:bClass3], BClass.protected_instance_methods(false))
+    assert_equal([:bClass3, :aClass2].sort,
                  (BClass.protected_instance_methods(true) -
                   Object.protected_instance_methods(true)).sort)
   end
@@ -283,15 +283,15 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_public_instance_methods
-    assert_equal(["aClass"],  AClass.public_instance_methods(false))
-    assert_equal(["bClass1"], BClass.public_instance_methods(false))
+    assert_equal([:aClass],  AClass.public_instance_methods(false))
+    assert_equal([:bClass1], BClass.public_instance_methods(false))
   end
 
   def test_s_constants
     c1 = Module.constants
     Object.module_eval "WALTER = 99"
     c2 = Module.constants
-    assert_equal(["WALTER"], c2 - c1)
+    assert_equal([:WALTER], c2 - c1)
   end
 
   module M1

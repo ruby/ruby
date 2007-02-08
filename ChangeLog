@@ -1,3 +1,7 @@
+Thu Feb  8 22:24:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_module.rb: fix to use Symbol instead of String
+
 Thu Feb  8 22:02:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/marshaltestlib.rb: eval(sym) -> eval(sym.to_s)
