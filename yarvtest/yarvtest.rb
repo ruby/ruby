@@ -17,8 +17,10 @@ ARGV.each{|opt|
   end
 }
 
-puts "matzruby: #{`#{$matzruby} -v`}"
-puts "ruby    : #{`#{$ruby} -v`}"
+a = "matzruby: #{`#{$matzruby} -v`}"
+b = "ruby    : #{`#{$ruby} -v`}"
+puts a, b
+raise "Using same command" if a == b
 
 class YarvTestBase < Test::Unit::TestCase
   def initialize *args
