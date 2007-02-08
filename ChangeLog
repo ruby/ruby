@@ -17,6 +17,13 @@ Thu Feb  8 15:00:14 2007  Koichi Sasada  <ko1@atdot.net>
 	* common.mk: fix around vm_opts.h path
 	  and remove harmful argument passed to insns2vm.rb.
 
+Thu Feb  8 03:11:47 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::unescapeHTML): invalid decoding for single
+	  unescaped ampersand.  a patch from Tietew
+	  <tietew+ruby-dev at tietew.net> in [ruby-dev:30292].
+	  fixed: [ruby-dev:30289]
+
 Wed Feb  7 23:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (specific_eval): suppress warning.

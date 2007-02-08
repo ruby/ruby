@@ -367,13 +367,13 @@ class CGI
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def CGI::unescapeHTML(string)
-    string.gsub(/&(.*?);/n) do
+    string.gsub(/&(amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/n) do
       match = $1.dup
       case match
-      when /\Aamp\z/ni           then '&'
-      when /\Aquot\z/ni          then '"'
-      when /\Agt\z/ni            then '>'
-      when /\Alt\z/ni            then '<'
+      when 'amp'                 then '&'
+      when 'quot'                then '"'
+      when 'gt'                  then '>'
+      when 'lt'                  then '<'
       when /\A#0*(\d+)\z/n       then
         if Integer($1) < 256
           Integer($1).chr
