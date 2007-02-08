@@ -1,7 +1,7 @@
 #define RUBY_VERSION "1.9.0"
-#define RUBY_RELEASE_DATE "2007-02-08"
+#define RUBY_RELEASE_DATE "2007-02-09"
 #define RUBY_VERSION_CODE 190
-#define RUBY_RELEASE_CODE 20070208
+#define RUBY_RELEASE_CODE 20070209
 #define RUBY_PATCHLEVEL 0
 
 #define RUBY_VERSION_MAJOR 1
@@ -9,7 +9,7 @@
 #define RUBY_VERSION_TEENY 0
 #define RUBY_RELEASE_YEAR 2007
 #define RUBY_RELEASE_MONTH 2
-#define RUBY_RELEASE_DAY 8
+#define RUBY_RELEASE_DAY 9
 
 RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];

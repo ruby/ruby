@@ -247,6 +247,8 @@ thread_cleanup_func(void *th_ptr)
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
     th->machine_stack_start = th->machine_stack_end = 0;
+    native_mutex_destroy(&th->interrupt_lock);
+    native_thread_destroy(th);
 }
 
 static int
@@ -258,7 +260,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     rb_thread_t *join_th;
     th->machine_stack_start = stack_start;
     th->thgroup = th->vm->thgroup_default;
-
     thread_debug("thread start: %p\n", th);
 
     native_mutex_lock(&th->vm->global_interpreter_lock);
@@ -297,6 +298,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 	}
 	st_delete_wrap(th->vm->living_threads, th->self);
     }
+    thread_cleanup_func(th);
     native_mutex_unlock(&th->vm->global_interpreter_lock);
     return 0;
 }
@@ -318,7 +320,6 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
     th->first_func_arg = arg;
 
     native_mutex_initialize(&th->interrupt_lock);
-
     /* kick thread */
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
     native_thread_create(th);
@@ -2082,6 +2083,7 @@ mutex_free(void *ptr)
 	if (mutex->th) {
 	    native_mutex_unlock(&mutex->lock);
 	}
+	native_mutex_destroy(&mutex->lock);
     }
     ruby_xfree(ptr);
 }

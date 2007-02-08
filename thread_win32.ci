@@ -201,29 +201,42 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 #endif
 }
 
+void
+native_mutex_destroy(rb_thread_lock_t *lock)
+{
+    CloseHandle(lock);
+}
+
+
 NOINLINE(static int
 	 thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
-void static thread_cleanup_func(void *th_ptr);
+
+static void
+native_thread_destroy(rb_thread_t *th)
+{
+    CloseHandle(th->native_thread_data.interrupt_event);
+}
 
 static unsigned int _stdcall
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     VALUE stack_start;
+    HANDLE thread_id = th->thread_id;
+    HANDLE interrupt_event;
     /* run */
-    th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+    interrupt_event = th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
 
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
     thread_start_func_2(th, &stack_start);
-    thread_cleanup_func(th);
 
     /* native_mutex_unlock(&GET_VM()->global_interpreter_lock); */
 
     thread_debug("close handle - intr: %p, thid: %p\n",
-		 th->native_thread_data.interrupt_event, th->thread_id);
-    CloseHandle(th->native_thread_data.interrupt_event);
-    CloseHandle(th->thread_id);
+		 interrupt_event, thread_id);
+    CloseHandle(interrupt_event);
+    CloseHandle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);
     return 0;
 }
@@ -246,11 +259,11 @@ w32_create_thread(DWORD stack_size, void *func, void *val)
 static int
 native_thread_create(rb_thread_t *th)
 {
-    size_t stack_size = 4 * 1024 - sizeof(int);	/* 4KB */
+    size_t stack_size = 4 * 1024; /* 4KB */
+    th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
-    if ((th->thread_id =
-	 w32_create_thread(stack_size, thread_start_func_1, th))
-	== 0) {
+    if ((th->thread_id) == 0) {
+	st_delete_wrap(th->vm->living_threads, th->self);
 	rb_raise(rb_eThreadError, "can't create Thread (%d)", errno);
     }
     if (THREAD_DEBUG) {

@@ -16,9 +16,12 @@
 typedef pthread_t rb_thread_id_t;
 typedef pthread_mutex_t rb_thread_lock_t;
 
-#define native_mutex_lock   pthread_mutex_lock
-#define native_mutex_unlock pthread_mutex_unlock
-#define native_mutex_trylock pthread_mutex_trylock
+void native_mutex_lock(pthread_mutex_t *lock);
+void native_mutex_unlock(pthread_mutex_t *lock);
+void native_mutex_destroy(pthread_mutex_t *lock);
+int native_mutex_trylock(pthread_mutex_t *lock);
+void native_mutex_initialize(pthread_mutex_t *lock);
+void native_mutex_destroy(pthread_mutex_t *lock);
 
 typedef struct native_thread_data_struct {
     void *signal_thread_list;

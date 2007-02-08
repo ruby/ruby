@@ -1,3 +1,20 @@
+Fri Feb  9 05:08:17 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c, thread_pthread.ci, thread_win32.ci (thread_start_func_1):
+	  move cleanup function to thread_start_func_2().
+
+	* thread.c, thread_pthread.ci, thread_win32.ci:
+	  add more destruct functions.
+	  (native_thread_destroy() and native_mutex_destroy())
+
+	* thread_pthread.ci, thread_pthread.h: make native_mutex_* functions
+	  (check error, etc), it's not macro any more.
+
+	* thread_win32.ci (thread_start_func_1): store some values before
+	  running thread (to release these after running thread).
+
+	* thread_win32.ci (native_thread_create): fix spaces.
+
 Thu Feb  8 22:44:04 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_set_safe_array, ole_variant2val,
