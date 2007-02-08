@@ -78,8 +78,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("FooBar"), s)
     s[-3,3] = S("Foo")
     assert_equal(S("FooFoo"), s)
-    assert_raise (IndexError) { s[7,3] =  S("Bar") }
-    assert_raise (IndexError) { s[-7,3] = S("Bar") }
+    assert_raise(IndexError) { s[7,3] =  S("Bar") }
+    assert_raise(IndexError) { s[-7,3] = S("Bar") }
 
     s = S("FooBar")
     s[0..2] = S("A")
@@ -88,8 +88,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("AFoo"), s)
     s[-4..-4] = S("Foo")
     assert_equal(S("FooFoo"), s)
-    assert_raise (RangeError) { s[7..10]   = S("Bar") }
-    assert_raise (RangeError) { s[-7..-10] = S("Bar") }
+    assert_raise(RangeError) { s[7..10]   = S("Bar") }
+    assert_raise(RangeError) { s[-7..-10] = S("Bar") }
 
     s = S("FooBar")
     s[/^F../]= S("Bar")
@@ -100,19 +100,19 @@ class TestString < Test::Unit::TestCase
       s[/xyzzy/] = S("None")
       assert_equal(S("BarFoo"), s)
     else
-      assert_raise (IndexError) { s[/xyzzy/] = S("None") }
+      assert_raise(IndexError) { s[/xyzzy/] = S("None") }
     end
     if @aref_re_nth
       s[/([A-Z]..)([A-Z]..)/, 1] = S("Foo")
       assert_equal(S("FooFoo"), s)
       s[/([A-Z]..)([A-Z]..)/, 2] = S("Bar")
       assert_equal(S("FooBar"), s)
-      assert_raise (IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
+      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
       s[/([A-Z]..)([A-Z]..)/, -1] = S("Foo")
       assert_equal(S("FooFoo"), s)
       s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
       assert_equal(S("BarFoo"), s)
-      assert_raise (IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
     end
 
     s = S("FooBar")
@@ -153,7 +153,7 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_EQUAL # '=='
-    assert_equal(true, S("foo") == :foo)
+    assert_equal(false, S("foo") == :foo)
     assert(S("abcdef") == S("abcdef"))
 
     pre_1_7_1 do
@@ -223,7 +223,7 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_VERY_EQUAL # '==='
-    assert_equal(true, S("foo") === :foo)
+    # assert_equal(true, S("foo") === :foo)
     casetest(S("abcdef"), S("abcdef"))
     
     pre_1_7_1 do

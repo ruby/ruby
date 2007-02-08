@@ -1,6 +1,15 @@
+Thu Feb  8 22:26:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_string.rb: ("foo" == :foo) and ("foo" === :foo)
+	  should be false.
+
+	* ChangeLog: fix last messages.
+
 Thu Feb  8 22:24:06 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* test/ruby/test_module.rb: fix to use Symbol instead of String
+	* test/ruby/test_module.rb: fix to use Symbol instead of String.
+
+	* test/ruby/test_module.rb: remove space before argument parentheses.
 
 Thu Feb  8 22:02:14 2007  Koichi Sasada  <ko1@atdot.net>
 
