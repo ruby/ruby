@@ -92,7 +92,7 @@ NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
   rb_thread_set_current(_th_stored); \
 } while(0)
 
-#define GVL_UNLOCK_RANGE(exec, ubf) do { \
+#define BLOCKING_REGION(exec, ubf) do { \
     rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
     set_unblock_function(__th, ubf, 0); \
@@ -596,21 +596,20 @@ rb_thread_s_critical(VALUE self)
     return Qnil;
 }
 
-
 VALUE
-rb_thread_run_parallel(VALUE(*func)(rb_thread_t *th, void *), void *data,
-		       rb_unblock_function_t *ubf)
+rb_thread_blocking_region(
+    VALUE(*func)(rb_thread_t *th, void *), void *data,
+    rb_unblock_function_t *ubf)
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
-    
-    GVL_UNLOCK_RANGE({
+
+    BLOCKING_REGION({
 	val = func(th, data);
     }, ubf);
-    
+
     return val;
 }
-
 
 /*
  *  call-seq:
@@ -1661,7 +1660,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	if (write) orig_write = *write;
 	if (except) orig_except = *except;
 
-	GVL_UNLOCK_RANGE({
+	BLOCKING_REGION({
 	    result = select(n, read, write, except, wait);
 	    if (result < 0) lerrno = errno;
 	}, 0);
@@ -1673,7 +1672,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	wait = &wait_100ms;
     } while (timeout == 0 || subst(timeout, &wait_100ms));
 #else
-    GVL_UNLOCK_RANGE({
+    BLOCKING_REGION({
 	result = select(n, read, write, except, timeout);
 	if (result < 0) lerrno = errno;
     }, ubf_select);

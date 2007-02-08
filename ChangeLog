@@ -1,3 +1,10 @@
+Thu Feb  8 21:02:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (GVL_UNLOCK_RANGE): rename to BLOCKING_REGION().
+
+	* thread.c (rb_thread_run_parallel): rename to
+	  rb_thread_blocking_region().
+
 Thu Feb  8 15:48:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, thread.c: fix to use pthread on cygwin.
