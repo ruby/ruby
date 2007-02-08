@@ -24,7 +24,7 @@
 #include "debug.h"
 #include "vm_opts.h"
 
-#if   defined(_WIN32) || defined(__CYGWIN__)
+#if   defined(_WIN32)
 #include "thread_win32.h"
 #elif defined(HAVE_PTHREAD_H)
 #include "thread_pthread.h"
@@ -376,7 +376,7 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
 };
 
-typedef void rb_interrupt_function_t(struct rb_thread_struct *);
+typedef void rb_unblock_function_t(struct rb_thread_struct *);
 
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 1
@@ -423,7 +423,7 @@ typedef struct rb_thread_struct
     int exec_signal;
 
     int interrupt_flag;
-    rb_interrupt_function_t *interrupt_function;
+    rb_unblock_function_t *unblock_function;
     rb_thread_lock_t interrupt_lock;
 
     struct rb_vm_tag *tag;
@@ -631,19 +631,6 @@ extern rb_vm_t *theYarvVM;
 #else
 #error "unsupported thread model"
 #endif
-
-#define GVL_UNLOCK_BEGIN() do { \
-  rb_thread_t *_th_stored = GET_THREAD(); \
-  rb_gc_save_machine_context(_th_stored); \
-  native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
-
-#define GVL_UNLOCK_END() \
-  native_mutex_lock(&_th_stored->vm->global_interpreter_lock); \
-  rb_thread_set_current(_th_stored); \
-} while(0)
-
-NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
-NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
 void rb_thread_execute_interrupts(rb_thread_t *);
 

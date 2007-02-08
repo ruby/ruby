@@ -21,14 +21,15 @@
 #define native_cleanup_pop  pthread_cleanup_pop
 #define native_thread_yield() sched_yield()
 
-static void yarv_add_signal_thread_list(rb_thread_t *th);
-static void yarv_remove_signal_thread_list(rb_thread_t *th);
+static void add_signal_thread_list(rb_thread_t *th);
+static void remove_signal_thread_list(rb_thread_t *th);
 
 static rb_thread_lock_t signal_thread_list_lock;
 
 static void
 null_func()
 {
+    /* null */
 }
 
 static void
@@ -238,20 +239,29 @@ native_thread_apply_priority(rb_thread_t *th)
 }
 
 static void
-interrupt_using_pthread_cond_signal(rb_thread_t *th)
+ubf_pthread_cond_signal(rb_thread_t *th)
 {
-    thread_debug("interrupt_using_pthread_cond_signal (%p)\n", th);
+    thread_debug("ubf_pthread_cond_signal (%p)\n", th);
     pthread_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
+#ifndef __CYGWIN__
 static void
-native_thread_send_interrupt_signal(rb_thread_t *th)
+ubf_select_each(rb_thread_t *th)
 {
-    thread_debug("native_thread_send_interrupt_signal (%p)\n", th->thread_id);
+    thread_debug("ubf_select_each (%p)\n", th->thread_id);
     if (th) {
 	pthread_kill(th->thread_id, SIGVTALRM);
     }
 }
+
+static void
+ubf_select(rb_thread_t *th)
+{
+    add_signal_thread_list(th);
+    ubf_select_each(th);
+}
+#endif
 
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
@@ -283,7 +293,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    th->interrupt_function = interrupt_using_pthread_cond_signal;
+	    th->unblock_function = ubf_pthread_cond_signal;
 	    if (tv == 0) {
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		pthread_cond_wait(&th->native_thread_data.sleep_cond,
@@ -298,7 +308,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 					   &th->interrupt_lock, &ts);
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
-	    th->interrupt_function = 0;
+	    th->unblock_function = 0;
 	}
 	pthread_mutex_unlock(&th->interrupt_lock);
 
@@ -308,19 +318,13 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     thread_debug("native_sleep done\n");
 }
 
-static void
-native_thread_interrupt(rb_thread_t *th)
-{
-    yarv_add_signal_thread_list(th);
-}
-
-struct yarv_signal_thread_list {
+struct signal_thread_list {
     rb_thread_t *th;
-    struct yarv_signal_thread_list *prev;
-    struct yarv_signal_thread_list *next;
+    struct signal_thread_list *prev;
+    struct signal_thread_list *next;
 };
 
-static struct yarv_signal_thread_list signal_thread_list_anchor = {
+static struct signal_thread_list signal_thread_list_anchor = {
     0, 0, 0,
 };
 
@@ -336,7 +340,7 @@ static struct yarv_signal_thread_list signal_thread_list_anchor = {
 static void
 print_signal_list(char *str)
 {
-    struct yarv_signal_thread_list *list =
+    struct signal_thread_list *list =
       signal_thread_list_anchor.next;
     thread_debug("list (%s)> ", str);
     while(list){
@@ -348,12 +352,12 @@ print_signal_list(char *str)
 #endif
 
 static void
-yarv_add_signal_thread_list(rb_thread_t *th)
+add_signal_thread_list(rb_thread_t *th)
 {
     if (!th->native_thread_data.signal_thread_list) {
 	FGLOCK(&signal_thread_list_lock, {
-	    struct yarv_signal_thread_list *list =
-	      malloc(sizeof(struct yarv_signal_thread_list));
+	    struct signal_thread_list *list =
+	      malloc(sizeof(struct signal_thread_list));
 
 	    if (list == 0) {
 		fprintf(stderr, "[FATAL] failed to allocate memory\n");
@@ -374,12 +378,12 @@ yarv_add_signal_thread_list(rb_thread_t *th)
 }
 
 static void
-yarv_remove_signal_thread_list(rb_thread_t *th)
+remove_signal_thread_list(rb_thread_t *th)
 {
     if (th->native_thread_data.signal_thread_list) {
 	FGLOCK(&signal_thread_list_lock, {
-	    struct yarv_signal_thread_list *list =
-	      (struct yarv_signal_thread_list *)
+	    struct signal_thread_list *list =
+	      (struct signal_thread_list *)
 		th->native_thread_data.signal_thread_list;
 
 	    list->prev->next = list->next;
@@ -414,16 +418,18 @@ thread_timer(void *dummy)
 	tv.tv_usec = 10000;     	/* 10 ms */
 	select(0, NULL, NULL, NULL, &tv);
 #endif
+#ifndef __CYGWIN__
 	if (signal_thread_list_anchor.next) {
 	    FGLOCK(&signal_thread_list_lock, {
-		struct yarv_signal_thread_list *list;
+		struct signal_thread_list *list;
 		list = signal_thread_list_anchor.next;
 		while (list) {
-		    native_thread_send_interrupt_signal(list->th);
+		    ubf_select_each(list->th);
 		    list = list->next;
 		}
 	    });
 	}
+#endif
 	timer_thread_function();
     }
     return NULL;

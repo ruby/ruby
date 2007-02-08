@@ -1,3 +1,22 @@
+Thu Feb  8 15:48:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h, thread.c: fix to use pthread on cygwin.
+
+	* yarvcore.h, thread.c: move GVL_UNLOCK_BEGIN() and GVL_UNLOCK_END()
+	  from yarvcore.h to thread.c.
+
+	* thread.c: change GVL_UNLOCK_RANGE() arguments
+	  (adding ubf as 2nd argument).
+
+	* thread.c: fix to use polling in select on cygwin and mswin32.
+
+	* thread.c, thread_pthread.ci, thread_win32.ci, yarvcore.h: 
+	  rename:
+	  * rb_thread_t#interrupt_function -> unblock_function
+	  * rb_interrupt_function_t -> rb_unblock_function
+	  * some interrupt function name -> ubf_*
+	  * yarv_* -> *
+
 Thu Feb  8 16:08:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: fix to use RUNRUBY instead of BASERUBY if possible.

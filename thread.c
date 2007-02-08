@@ -76,21 +76,33 @@ st_delete_wrap(st_table * table, VALUE key)
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-static void native_thread_interrupt(rb_thread_t *th);
-static void yarv_set_interrupt_function(rb_thread_t *th, rb_interrupt_function_t *func, int is_return);
-static void yarv_clear_interrupt_function(rb_thread_t *th);
+static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, int is_return);
+static void clear_unblock_function(rb_thread_t *th);
 
-#define GVL_UNLOCK_RANGE(exec) do { \
+NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
+NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
+
+#define GVL_UNLOCK_BEGIN() do { \
+  rb_thread_t *_th_stored = GET_THREAD(); \
+  rb_gc_save_machine_context(_th_stored); \
+  native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
+
+#define GVL_UNLOCK_END() \
+  native_mutex_lock(&_th_stored->vm->global_interpreter_lock); \
+  rb_thread_set_current(_th_stored); \
+} while(0)
+
+#define GVL_UNLOCK_RANGE(exec, ubf) do { \
     rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
-    yarv_set_interrupt_function(__th, native_thread_interrupt, 0); \
+    set_unblock_function(__th, ubf, 0); \
     __th->status = THREAD_STOPPED; \
     GVL_UNLOCK_BEGIN(); {\
 	    exec; \
     } \
     GVL_UNLOCK_END(); \
-    yarv_remove_signal_thread_list(__th); \
-    yarv_clear_interrupt_function(__th); \
+    remove_signal_thread_list(__th); \
+    clear_unblock_function(__th); \
     if (__th->status == THREAD_STOPPED) { \
 	__th->status = __prev_status; \
     } \
@@ -103,7 +115,7 @@ void thread_debug(const char *fmt, ...);
 #define thread_debug if(0)printf
 #endif
 
-#if   defined(_WIN32) || defined(__CYGWIN__)
+#if   defined(_WIN32)
 #include "thread_win32.ci"
 
 #define DEBUG_OUT() \
@@ -148,7 +160,7 @@ thread_debug(const char *fmt, ...)
 
 
 static void
-yarv_set_interrupt_function(rb_thread_t *th, rb_interrupt_function_t *func, int is_return)
+set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, int is_return)
 {
   check_ints:
     RUBY_VM_CHECK_INTS();
@@ -163,16 +175,16 @@ yarv_set_interrupt_function(rb_thread_t *th, rb_interrupt_function_t *func, int 
 	}
     }
     else {
-	th->interrupt_function = func;
+	th->unblock_function = func;
     }
     native_mutex_unlock(&th->interrupt_lock);
 }
 
 static void
-yarv_clear_interrupt_function(rb_thread_t *th)
+clear_unblock_function(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
-    th->interrupt_function = 0;
+    th->unblock_function = 0;
     native_mutex_unlock(&th->interrupt_lock);
 }
 
@@ -182,8 +194,8 @@ rb_thread_interrupt(rb_thread_t *th)
     native_mutex_lock(&th->interrupt_lock);
     th->interrupt_flag = 1;
 
-    if (th->interrupt_function) {
-	(th->interrupt_function)(th);
+    if (th->unblock_function) {
+	(th->unblock_function)(th);
     }
     else {
 	/* none */
@@ -586,14 +598,15 @@ rb_thread_s_critical(VALUE self)
 
 
 VALUE
-rb_thread_run_parallel(VALUE(*func)(rb_thread_t *th, void *), void *data)
+rb_thread_run_parallel(VALUE(*func)(rb_thread_t *th, void *), void *data,
+		       rb_unblock_function_t *ubf)
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
     
     GVL_UNLOCK_RANGE({
 	val = func(th, data);
-    });
+    }, ubf);
     
     return val;
 }
@@ -691,7 +704,7 @@ rb_thread_ready(rb_thread_t *th)
 }
 
 static VALUE
-yarv_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
+rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 {
     VALUE exc;
 
@@ -718,7 +731,7 @@ rb_thread_signal_raise(void *thptr, const char *sig)
     }
     snprintf(buf, BUFSIZ, "SIG%s", sig);
     argv[0] = rb_exc_new3(rb_eSignal, rb_str_new2(buf));
-    yarv_thread_raise(1, argv, th->vm->main_thread);
+    rb_thread_raise(1, argv, th->vm->main_thread);
 }
 
 void
@@ -731,7 +744,7 @@ rb_thread_signal_exit(void *thptr)
     args[0] = INT2NUM(EXIT_SUCCESS);
     args[1] = rb_str_new2("exit");
     argv[0] = rb_class_new_instance(2, args, rb_eSystemExit);
-    yarv_thread_raise(1, argv, th->vm->main_thread);
+    rb_thread_raise(1, argv, th->vm->main_thread);
 }
 
 int
@@ -784,7 +797,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *th;
     GetThreadPtr(self, th);
-    yarv_thread_raise(argc, argv, th);
+    rb_thread_raise(argc, argv, th);
     return Qnil;
 }
 
@@ -1607,27 +1620,86 @@ rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 
 #endif
 
-/*
- * c: 
- */
+static long
+cmp_tv(const struct timeval *a, const struct timeval *b)
+{
+    long d = (a->tv_sec - b->tv_sec);
+    return (d != 0) ? d : (a->tv_usec - b->tv_usec);
+}
+
+static int 
+subst(struct timeval *rest, const struct timeval *wait)
+{
+    while (rest->tv_usec < wait->tv_usec) {
+	if (rest->tv_sec <= wait->tv_sec) {
+	    return 0;
+	}
+	rest->tv_sec -= 1;
+	rest->tv_usec += 1000 * 1000;
+    }
+    rest->tv_sec -= wait->tv_sec;
+    rest->tv_usec -= wait->tv_usec;
+    return 1;
+}
+
+static int
+do_select(int n, fd_set *read, fd_set *write, fd_set *except,
+	  struct timeval *timeout)
+{
+    int result, lerrno = 0;
+#if defined(__CYGWIN__) || defined(_WIN32)
+    /* polling port */
+    fd_set orig_read, orig_write, orig_except;
+    struct timeval wait_100ms, *wait;
+
+    wait_100ms.tv_sec = 0;
+    wait_100ms.tv_usec = 100 * 1000; /* 100 ms */
+    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) > 0) ? &wait_100ms : timeout;
+
+    do {
+	if (read) orig_read = *read;
+	if (write) orig_write = *write;
+	if (except) orig_except = *except;
+
+	GVL_UNLOCK_RANGE({
+	    result = select(n, read, write, except, wait);
+	    if (result < 0) lerrno = errno;
+	}, 0);
+
+	if (result != 0) break;
+	if (read) *read = orig_read;
+	if (write) *write = orig_write;
+	if (except) *except = orig_except;
+	wait = &wait_100ms;
+    } while (timeout == 0 || subst(timeout, &wait_100ms));
+#else
+    GVL_UNLOCK_RANGE({
+	result = select(n, read, write, except, timeout);
+	if (result < 0) lerrno = errno;
+    }, ubf_select);
+#endif
+    errno = lerrno;
+    return result;
+}
+
 static void
 rb_thread_wait_fd_rw(int fd, char c)
 {
-    rb_fdset_t set;
     int result = 0;
-    rb_fd_init(&set);
-    FD_SET(fd, &set);
-
     thread_debug("rb_thread_wait_fd_rw (%d, %c)\n", fd, c);
 
     while (result <= 0) {
+	rb_fdset_t set;
+	rb_fd_init(&set);
+	FD_SET(fd, &set);
+
 	switch(c) {
 	  case 'r':
-	    GVL_UNLOCK_RANGE(result = select(fd + 1, rb_fd_ptr(&set), 0, 0, 0));
+	    result = do_select(fd + 1, rb_fd_ptr(&set), 0, 0, 0);
 	    break;
 
 	  case'w':
-	    GVL_UNLOCK_RANGE(result = select(fd + 1, 0, rb_fd_ptr(&set), 0, 0));
+	    result = do_select(fd + 1, 0, rb_fd_ptr(&set), 0, 0);
 	    break;
 
 	  default:
@@ -1656,7 +1728,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 		 struct timeval *timeout)
 {
     struct timeval *tvp = timeout;
-    int lerrno, n;
+    int n;
 #ifndef linux
     double limit;
     struct timeval tv;
@@ -1688,9 +1760,14 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 #endif
 
     for (;;) {
-	GVL_UNLOCK_RANGE(n = select(max, read, write, except, tvp);
-			 lerrno = errno;
-	    );
+#ifndef linux
+	fd_set orig_read, orig_write, orig_except;
+	if (read) orig_read = *read;
+	if (write) orig_write = *write;
+	if (except) orig_except = *except;
+#endif
+
+	n = do_select(max, read, write, except, tvp);
 
 	if (n < 0) {
 	    switch (errno) {
@@ -1704,6 +1781,9 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 		    double d = limit - timeofday();
 		    tv = double2timeval(d);
 		}
+		if (read) *read = orig_read;
+		if (write) *write = orig_write;
+		if (except) *except = orig_except;
 #endif
 		continue;
 	    default:
@@ -2395,3 +2475,8 @@ Init_Thread(void)
     rb_thread_create_timer_thread();
 }
 
+VALUE
+is_ruby_native_thread()
+{
+    return Qtrue;
+}

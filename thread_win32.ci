@@ -18,7 +18,7 @@
 #undef Sleep
 
 #define native_thread_yield() Sleep(0)
-#define yarv_remove_signal_thread_list(th)
+#define remove_signal_thread_list(th)
 
 static void
 Init_native_thread()
@@ -93,6 +93,9 @@ w32_wait_event(HANDLE event, DWORD timeout, rb_thread_t *th)
     return ret;
 }
 
+static void ubf_handle(rb_thread_t *th);
+#define ubf_select ubf_handle
+
 static void
 native_sleep(rb_thread_t *th, struct timeval *tv)
 {
@@ -109,11 +112,11 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	DWORD ret;
 	int status = th->status;
 	th->status = THREAD_STOPPED;
-	th->interrupt_function = native_thread_interrupt;
+	th->unblock_function = ubf_handle;
 	thread_debug("native_sleep start (%d)\n", (int)msec);
 	ret = w32_wait_event(0, msec, th);
 	thread_debug("native_sleep done (%d)\n", ret);
-	th->interrupt_function = 0;
+	th->unblock_function = 0;
 	th->status = status;
     }
     GVL_UNLOCK_END();
@@ -283,9 +286,9 @@ native_thread_apply_priority(rb_thread_t *th)
 }
 
 static void
-native_thread_interrupt(rb_thread_t *th)
+ubf_handle(rb_thread_t *th)
 {
-    thread_debug("native_thread_interrupt: %p\n", th);
+    thread_debug("ubf_handle: %p\n", th);
     SetEvent(th->native_thread_data.interrupt_event);
 }
 
