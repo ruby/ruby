@@ -1,3 +1,8 @@
+Thu Feb  8 22:31:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_clone.rb: fix to current spec
+	  (Module should not be occur many times in ancestors).
+
 Thu Feb  8 22:26:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_string.rb: ("foo" == :foo) and ("foo" === :foo)
