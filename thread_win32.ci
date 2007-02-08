@@ -23,7 +23,7 @@
 static void
 Init_native_thread()
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     DuplicateHandle(GetCurrentProcess(),
 		    GetCurrentThread(),
 		    GetCurrentProcess(),
@@ -53,7 +53,7 @@ w32_show_error_message()
 }
 
 static int
-w32_wait_event(HANDLE event, DWORD timeout, rb_thead_t *th)
+w32_wait_event(HANDLE event, DWORD timeout, rb_thread_t *th)
 {
     HANDLE events[2];
     int count = 0;
@@ -94,7 +94,7 @@ w32_wait_event(HANDLE event, DWORD timeout, rb_thead_t *th)
 }
 
 static void
-native_sleep(rb_thead_t *th, struct timeval *tv)
+native_sleep(rb_thread_t *th, struct timeval *tv)
 {
     DWORD msec;
     if (tv) {
@@ -199,13 +199,13 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 }
 
 NOINLINE(static int
-	 thread_start_func_2(rb_thead_t *th, VALUE *stack_start));
+	 thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
 void static thread_cleanup_func(void *th_ptr);
 
 static unsigned int _stdcall
 thread_start_func_1(void *th_ptr)
 {
-    rb_thead_t *th = th_ptr;
+    rb_thread_t *th = th_ptr;
     VALUE stack_start;
     /* run */
     th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
@@ -241,7 +241,7 @@ w32_create_thread(DWORD stack_size, void *func, void *val)
 }
 
 static int
-native_thread_create(rb_thead_t *th)
+native_thread_create(rb_thread_t *th)
 {
     size_t stack_size = 4 * 1024 - sizeof(int);	/* 4KB */
 
@@ -266,7 +266,7 @@ native_thread_join(HANDLE th)
 }
 
 static void
-native_thread_apply_priority(rb_thead_t *th)
+native_thread_apply_priority(rb_thread_t *th)
 {
     int priority = th->priority;
     if (th->priority > 0) {
@@ -283,7 +283,7 @@ native_thread_apply_priority(rb_thead_t *th)
 }
 
 static void
-native_thread_interrupt(rb_thead_t *th)
+native_thread_interrupt(rb_thread_t *th)
 {
     thread_debug("native_thread_interrupt: %p\n", th);
     SetEvent(th->native_thread_data.interrupt_event);

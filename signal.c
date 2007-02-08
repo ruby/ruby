@@ -496,7 +496,7 @@ rb_trap_exit(void)
 }
 
 void
-rb_signal_exec(rb_thead_t *th, int sig)
+rb_signal_exec(rb_thread_t *th, int sig)
 {
     VALUE cmd = rb_get_trap_cmd(sig);
 

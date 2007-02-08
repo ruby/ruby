@@ -543,7 +543,7 @@ MATZRUBY = $(MATZRUBYDIR)ruby
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
 	  vmtc.inc vm.inc vm_macro.inc
 
-INSNS2VMOPT = $(CPPFLAGS) --srcdir="$(srcdir)"
+INSNS2VMOPT = --srcdir="$(srcdir)"
 
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
@@ -563,7 +563,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 vm_macro.inc: $(srcdir)/vm_macro.def
 
-$(INSNS): $(srcdir)/insns.def vm_opts.h
+$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
 
 incs: $(INSNS)

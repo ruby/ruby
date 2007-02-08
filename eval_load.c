@@ -119,7 +119,7 @@ rb_load_internal(char *file)
 {
     NODE *node;
     VALUE iseq;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
 
     {
 	th->parse_in_eval++;
@@ -365,7 +365,7 @@ rb_require_safe(VALUE fname, int safe)
 {
     VALUE result = Qnil;
     volatile VALUE errinfo = GET_THREAD()->errinfo;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     int state;
     char *volatile ftptr = 0;
 

@@ -183,7 +183,7 @@ build_Integer_times_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 VALUE
 yarv_invoke_Integer_times_special_block(VALUE num)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (orig_block && BUILTIN_TYPE(orig_block->iseq) != T_NODE) {
@@ -300,7 +300,7 @@ VALUE
 yarv_invoke_Range_each_special_block(VALUE range,
 				     VALUE beg, VALUE end, int excl)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (BUILTIN_TYPE(orig_block->iseq) != T_NODE) {
@@ -431,7 +431,7 @@ build_Array_each_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 VALUE
 yarv_invoke_Array_each_special_block(VALUE ary)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (BUILTIN_TYPE(orig_block->iseq) != T_NODE) {

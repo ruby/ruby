@@ -41,12 +41,12 @@ void vm_analysis_register(int reg, int isset);
 void vm_analysis_insn(int insn);
 
 static inline VALUE
- th_invoke_yield_cfunc(rb_thead_t *th, rb_block_t *block,
+ th_invoke_yield_cfunc(rb_thread_t *th, rb_block_t *block,
 		       VALUE self, int argc, VALUE *argv);
-VALUE th_invoke_proc(rb_thead_t *th, rb_proc_t *proc,
+VALUE th_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 		     VALUE self, int argc, VALUE *argv);
 
-VALUE th_eval_body(rb_thead_t *th);
+VALUE th_eval_body(rb_thread_t *th);
 static NODE *lfp_get_special_cref(VALUE *lfp);
 static NODE *lfp_set_special_cref(VALUE *lfp, NODE * cref);
 
@@ -70,7 +70,7 @@ rb_vm_change_state(void)
  * prepare stack frame
  */
 static inline rb_control_frame_t *
-push_frame(rb_thead_t *th, rb_iseq_t *iseq, VALUE magic,
+push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE magic,
 	   VALUE self, VALUE specval, VALUE *pc,
 	   VALUE *sp, VALUE *lfp, int local_size)
 {
@@ -115,7 +115,7 @@ push_frame(rb_thead_t *th, rb_iseq_t *iseq, VALUE magic,
 }
 
 static inline void
-pop_frame(rb_thead_t *th)
+pop_frame(rb_thread_t *th)
 {
 #if COLLECT_PROFILE
     rb_control_frame_t *cfp = th->cfp;
@@ -140,7 +140,7 @@ pop_frame(rb_thead_t *th)
 EXTERN VALUE ruby_top_self;
 
 VALUE
-th_set_finish_env(rb_thead_t *th)
+th_set_finish_env(rb_thread_t *th)
 {
     push_frame(th, 0, FRAME_MAGIC_FINISH,
 	       Qnil, th->cfp->lfp[0], 0,
@@ -150,7 +150,7 @@ th_set_finish_env(rb_thead_t *th)
 }
 
 void
-th_set_top_stack(rb_thead_t *th, VALUE iseqval)
+th_set_top_stack(rb_thread_t *th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
@@ -168,7 +168,7 @@ th_set_top_stack(rb_thead_t *th, VALUE iseqval)
 }
 
 VALUE
-th_set_eval_stack(rb_thead_t *th, VALUE iseqval)
+th_set_eval_stack(rb_thread_t *th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
     rb_block_t *block = th->base_block;
@@ -240,7 +240,7 @@ env_alloc(void)
 static int check_env(rb_env_t *env);
 
 static VALUE
-th_make_env_each(rb_thead_t *th, rb_control_frame_t *cfp,
+th_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 		 VALUE *envptr, VALUE *endptr)
 {
     VALUE envval, penvval = 0;
@@ -388,7 +388,7 @@ collect_local_variables_in_env(rb_env_t *env, VALUE ary)
 }
 
 int
-th_collect_local_variables_in_heap(rb_thead_t *th, VALUE *dfp, VALUE ary)
+th_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
 {
     if (ENV_IN_HEAP_P(dfp)) {
 	rb_env_t *env;
@@ -403,7 +403,7 @@ th_collect_local_variables_in_heap(rb_thead_t *th, VALUE *dfp, VALUE ary)
 
 
 VALUE
-th_make_env_object(rb_thead_t *th, rb_control_frame_t *cfp)
+th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     VALUE envval;
     // SDR2(cfp);
@@ -415,7 +415,7 @@ th_make_env_object(rb_thead_t *th, rb_control_frame_t *cfp)
 }
 
 static VALUE
-th_make_proc_from_block(rb_thead_t *th, rb_control_frame_t *cfp,
+th_make_proc_from_block(rb_thread_t *th, rb_control_frame_t *cfp,
 			rb_block_t *block)
 {
     VALUE procval;
@@ -435,7 +435,7 @@ th_make_proc_from_block(rb_thead_t *th, rb_control_frame_t *cfp,
 struct RObject *rb;
 
 VALUE
-th_make_proc(rb_thead_t *th, rb_control_frame_t *cfp,
+th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp,
 	     rb_block_t *block)
 {
     VALUE procval, envval, blockprocval = 0;
@@ -482,7 +482,7 @@ th_make_proc(rb_thead_t *th, rb_control_frame_t *cfp,
 }
 
 static inline VALUE
-th_invoke_bmethod(rb_thead_t *th, ID id, VALUE procval, VALUE recv,
+th_invoke_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
 		  VALUE klass, int argc, VALUE *argv)
 {
     rb_control_frame_t *cfp = th->cfp;
@@ -500,7 +500,7 @@ th_invoke_bmethod(rb_thead_t *th, ID id, VALUE procval, VALUE recv,
 }
 
 VALUE
-th_call0(rb_thead_t *th, VALUE klass, VALUE recv,
+th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	 VALUE id, ID oid, int argc, const VALUE *argv,
 	 NODE * body, int nosuper)
 {
@@ -602,7 +602,7 @@ search_super_klass(VALUE klass, VALUE recv)
 }
 
 VALUE
-th_call_super(rb_thead_t *th, int argc, const VALUE *argv)
+th_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 {
     VALUE recv = th->cfp->self;
     VALUE klass;
@@ -641,7 +641,7 @@ th_call_super(rb_thead_t *th, int argc, const VALUE *argv)
 }
 
 static inline VALUE
-th_invoke_yield_cfunc(rb_thead_t *th, rb_block_t *block,
+th_invoke_yield_cfunc(rb_thread_t *th, rb_block_t *block,
 		      VALUE self, int argc, VALUE *argv)
 {
     NODE *ifunc = (NODE *) block->iseq;
@@ -747,7 +747,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 }
 
 static VALUE
-invoke_block(rb_thead_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
+invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
@@ -780,7 +780,7 @@ invoke_block(rb_thead_t *th, rb_block_t *block, VALUE self, int argc, VALUE *arg
 }
 
 VALUE
-th_invoke_yield(rb_thead_t *th, int argc, VALUE *argv)
+th_invoke_yield(rb_thread_t *th, int argc, VALUE *argv)
 {
     rb_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
@@ -792,7 +792,7 @@ th_invoke_yield(rb_thead_t *th, int argc, VALUE *argv)
 }
 
 VALUE
-th_invoke_proc(rb_thead_t *th, rb_proc_t *proc,
+th_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 	       VALUE self, int argc, VALUE *argv)
 {
     VALUE val = Qundef;
@@ -848,7 +848,7 @@ static VALUE *
 lfp_svar(VALUE *lfp, int cnt)
 {
     struct RValues *val;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
 
     if (th->local_lfp != lfp) {
 	val = (struct RValues *)lfp[-1];
@@ -895,7 +895,7 @@ th_cfp_svar(rb_control_frame_t *cfp, int cnt)
 }
 
 static VALUE *
-th_svar(rb_thead_t *th, int cnt)
+th_svar(rb_thread_t *th, int cnt)
 {
     rb_control_frame_t *cfp = th->cfp;
     return th_cfp_svar(cfp, cnt);
@@ -964,7 +964,7 @@ th_get_sourceline(rb_control_frame_t *cfp)
 }
 
 static VALUE
-th_backtrace_each(rb_thead_t *th,
+th_backtrace_each(rb_thread_t *th,
 		  rb_control_frame_t *limit_cfp,
 		  rb_control_frame_t *cfp,
 		  char *file, int line_no, VALUE ary)
@@ -997,7 +997,7 @@ th_backtrace_each(rb_thead_t *th,
 }
 
 VALUE
-th_backtrace(rb_thead_t *th, int lev)
+th_backtrace(rb_thread_t *th, int lev)
 {
     VALUE ary;
     rb_control_frame_t *cfp = th->cfp;
@@ -1026,7 +1026,7 @@ th_backtrace(rb_thead_t *th, int lev)
 VALUE
 thread_backtrace(VALUE self, int level)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(self, th);
     return th_backtrace(th, level);
 }
@@ -1051,7 +1051,7 @@ lfp_get_special_cref(VALUE *lfp)
 static void
 check_svar(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
 	/* printf("cfp: %p\n", cfp->magic); */
@@ -1087,7 +1087,7 @@ lfp_set_special_cref(VALUE *lfp, NODE * cref)
 }
 
 NODE *
-th_set_special_cref(rb_thead_t *th, VALUE *lfp, NODE * cref_stack)
+th_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack)
 {
     return lfp_set_special_cref(lfp, cref_stack);
 }
@@ -1119,13 +1119,13 @@ get_cref(rb_iseq_t *iseq, VALUE *lfp)
 }
 
 NODE *
-th_get_cref(rb_thead_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp)
+th_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp)
 {
     return get_cref(iseq, cfp->lfp);
 }
 
 NODE *
-th_cref_push(rb_thead_t *th, VALUE klass, int noex)
+th_cref_push(rb_thread_t *th, VALUE klass, int noex)
 {
     NODE *cref = NEW_BLOCK(klass);
     rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
@@ -1137,7 +1137,7 @@ th_cref_push(rb_thead_t *th, VALUE klass, int noex)
 }
 
 VALUE
-th_get_cbase(rb_thead_t *th)
+th_get_cbase(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     NODE *cref = get_cref(cfp->iseq, cfp->lfp);
@@ -1153,7 +1153,7 @@ th_get_cbase(rb_thead_t *th)
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_get_ev_const(rb_thead_t *th, rb_iseq_t *iseq,
+eval_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 		  VALUE klass, ID id, int is_defined)
 {
     VALUE val;
@@ -1224,7 +1224,7 @@ eval_get_ev_const(rb_thead_t *th, rb_iseq_t *iseq,
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_get_cvar_base(rb_thead_t *th, rb_iseq_t *iseq)
+eval_get_cvar_base(rb_thread_t *th, rb_iseq_t *iseq)
 {
     NODE *cref = get_cref(iseq, th->cfp->lfp);
     VALUE klass = Qnil;
@@ -1242,7 +1242,7 @@ eval_get_cvar_base(rb_thead_t *th, rb_iseq_t *iseq)
 }
 
 EVALBODY_HELPER_FUNCTION void
-eval_define_method(rb_thead_t *th, VALUE obj,
+eval_define_method(rb_thread_t *th, VALUE obj,
 		   ID id, rb_iseq_t *miseq, num_t is_singleton, NODE *cref)
 {
     NODE *newbody;
@@ -1278,7 +1278,7 @@ eval_define_method(rb_thead_t *th, VALUE obj,
 }
 
 EVALBODY_HELPER_FUNCTION VALUE
-eval_method_missing(rb_thead_t *th, ID id, VALUE recv, int num,
+eval_method_missing(rb_thread_t *th, ID id, VALUE recv, int num,
 		    rb_block_t *blockptr, int opt)
 {
     rb_control_frame_t *reg_cfp = th->cfp;
@@ -1407,7 +1407,7 @@ th_jump_tag_but_local_jump(int state, VALUE val)
 }
 
 void
-th_iter_break(rb_thead_t *th)
+th_iter_break(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     VALUE *dfp = GC_GUARDED_PTR_REF(*cfp->dfp);
@@ -1586,7 +1586,7 @@ yarv_init_redefined_flag(void)
 
 
 VALUE
-th_eval_body(rb_thead_t *th)
+th_eval_body(rb_thread_t *th)
 {
     int state;
     VALUE result, err;
@@ -1791,7 +1791,7 @@ th_eval_body(rb_thead_t *th)
 }
 
 VALUE
-rb_thread_eval(rb_thead_t *th, VALUE iseqval)
+rb_thread_eval(rb_thread_t *th, VALUE iseqval)
 {
     VALUE val;
     volatile VALUE tmp;

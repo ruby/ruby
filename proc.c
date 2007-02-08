@@ -171,7 +171,7 @@ binding_clone(VALUE self)
 VALUE
 rb_binding_new(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     VALUE bindval = binding_alloc(rb_cBinding);
     rb_binding_t *bind;
@@ -241,7 +241,7 @@ static VALUE
 proc_new(VALUE klass, int is_lambda)
 {
     VALUE procval = Qnil;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     rb_block_t *block;
 

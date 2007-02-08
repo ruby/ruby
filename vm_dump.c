@@ -19,7 +19,7 @@
 #define MAX_POSBUF 128
 
 static void
-control_frame_dump(rb_thead_t *th, rb_control_frame_t *cfp)
+control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     int pc = -1, bp = -1, line = 0;
     unsigned int lfp = cfp->lfp - th->stack;
@@ -139,7 +139,7 @@ control_frame_dump(rb_thead_t *th, rb_control_frame_t *cfp)
 }
 
 void
-vm_stack_dump_raw(rb_thead_t *th, rb_control_frame_t *cfp)
+vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     VALUE *sp = cfp->sp, *bp = cfp->bp;
     VALUE *lfp = cfp->lfp;
@@ -217,13 +217,13 @@ proc_dump_raw(rb_proc_t *proc)
 void
 stack_dump_th(VALUE thval)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thval, th);
     vm_stack_dump_raw(th, th->cfp);
 }
 
 void
-stack_dump_each(rb_thead_t *th, rb_control_frame_t *cfp)
+stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     int i;
 
@@ -316,7 +316,7 @@ stack_dump_each(rb_thead_t *th, rb_control_frame_t *cfp)
 
 
 void
-debug_print_register(rb_thead_t *th)
+debug_print_register(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     int pc = -1;
@@ -341,13 +341,13 @@ debug_print_register(rb_thead_t *th)
 void
 thread_dump_regs(VALUE thval)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thval, th);
     debug_print_register(th);
 }
 
 void
-debug_print_pre(rb_thead_t *th, rb_control_frame_t *cfp)
+debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
@@ -365,7 +365,7 @@ debug_print_pre(rb_thead_t *th, rb_control_frame_t *cfp)
 }
 
 void
-debug_print_post(rb_thead_t *th, rb_control_frame_t *cfp
+debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 #if OPT_STACK_CACHING
 		 , VALUE reg_a, VALUE reg_b
 #endif
@@ -563,7 +563,7 @@ vm_analysis_register(int reg, int isset)
 VALUE
 thread_dump_state(VALUE self)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     rb_control_frame_t *cfp;
     GetThreadPtr(self, th);
     cfp = th->cfp;
@@ -578,7 +578,7 @@ thread_dump_state(VALUE self)
 void
 yarv_bug()
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     VALUE bt;
 
     if (GET_THREAD()->vm) {

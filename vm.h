@@ -102,11 +102,11 @@ error !
 #define LABEL_PTR(x) &LABEL(x)
 
 typedef rb_control_frame_t *
-    (*insn_func_type) (rb_thead_t *, rb_control_frame_t *)FASTCALL;
+    (*insn_func_type) (rb_thread_t *, rb_control_frame_t *)FASTCALL;
 
 #define INSN_ENTRY(insn) \
   rb_control_frame_t * \
-    LABEL(insn)(rb_thead_t *th, rb_control_frame_t *reg_cfp) FASTCALL {
+    LABEL(insn)(rb_thread_t *th, rb_control_frame_t *reg_cfp) FASTCALL {
 
 #define END_INSN(insn) return reg_cfp;}
 

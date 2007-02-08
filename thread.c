@@ -52,14 +52,14 @@
 #define THREAD_DEBUG 0
 
 static void sleep_for_polling();
-static void sleep_timeval(rb_thead_t *th, struct timeval time);
-static void sleep_wait_for_interrupt(rb_thead_t *th, double sleepsec);
-static void sleep_forever(rb_thead_t *th);
+static void sleep_timeval(rb_thread_t *th, struct timeval time);
+static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
+static void sleep_forever(rb_thread_t *th);
 static double timeofday();
 struct timeval rb_time_interval(VALUE);
-static int rb_thread_dead(rb_thead_t *th);
+static int rb_thread_dead(rb_thread_t *th);
 
-void rb_signal_exec(rb_thead_t *th, int sig);
+void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_disable_interrupt();
 
 static VALUE eKillSignal = INT2FIX(0);
@@ -76,12 +76,12 @@ st_delete_wrap(st_table * table, VALUE key)
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-static void native_thread_interrupt(rb_thead_t *th);
-static void yarv_set_interrupt_function(rb_thead_t *th, rb_interrupt_function_t *func, int is_return);
-static void yarv_clear_interrupt_function(rb_thead_t *th);
+static void native_thread_interrupt(rb_thread_t *th);
+static void yarv_set_interrupt_function(rb_thread_t *th, rb_interrupt_function_t *func, int is_return);
+static void yarv_clear_interrupt_function(rb_thread_t *th);
 
 #define GVL_UNLOCK_RANGE(exec) do { \
-    rb_thead_t *__th = GET_THREAD(); \
+    rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
     yarv_set_interrupt_function(__th, native_thread_interrupt, 0); \
     __th->status = THREAD_STOPPED; \
@@ -148,7 +148,7 @@ thread_debug(const char *fmt, ...)
 
 
 static void
-yarv_set_interrupt_function(rb_thead_t *th, rb_interrupt_function_t *func, int is_return)
+yarv_set_interrupt_function(rb_thread_t *th, rb_interrupt_function_t *func, int is_return)
 {
   check_ints:
     RUBY_VM_CHECK_INTS();
@@ -169,7 +169,7 @@ yarv_set_interrupt_function(rb_thead_t *th, rb_interrupt_function_t *func, int i
 }
 
 static void
-yarv_clear_interrupt_function(rb_thead_t *th)
+yarv_clear_interrupt_function(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
     th->interrupt_function = 0;
@@ -177,7 +177,7 @@ yarv_clear_interrupt_function(rb_thead_t *th)
 }
 
 static void
-rb_thread_interrupt(rb_thead_t *th)
+rb_thread_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
     th->interrupt_flag = 1;
@@ -193,10 +193,10 @@ rb_thread_interrupt(rb_thead_t *th)
 
 
 static int
-terminate_i(st_data_t key, st_data_t val, rb_thead_t *main_thread)
+terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
 {
     VALUE thval = key;
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thval, th);
 
     if (th != main_thread) {
@@ -214,7 +214,7 @@ terminate_i(st_data_t key, st_data_t val, rb_thead_t *main_thread)
 void
 rb_thread_terminate_all(void)
 {
-    rb_thead_t *th = GET_THREAD(); /* main thread */
+    rb_thread_t *th = GET_THREAD(); /* main thread */
     rb_vm_t *vm = th->vm;
     if (vm->main_thread != th) {
 	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)", vm->main_thread, th);
@@ -232,18 +232,18 @@ rb_thread_terminate_all(void)
 static void
 thread_cleanup_func(void *th_ptr)
 {
-    rb_thead_t *th = th_ptr;
+    rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
     th->machine_stack_start = th->machine_stack_end = 0;
 }
 
 static int
-thread_start_func_2(rb_thead_t *th, VALUE *stack_start)
+thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
     int state;
     VALUE args = th->first_args;
     rb_proc_t *proc;
-    rb_thead_t *join_th;
+    rb_thread_t *join_th;
     th->machine_stack_start = stack_start;
     th->thgroup = th->vm->thgroup_default;
 
@@ -292,7 +292,7 @@ thread_start_func_2(rb_thead_t *th, VALUE *stack_start)
 static VALUE
 thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     VALUE thval;
 
     /* create thread object */
@@ -342,9 +342,9 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 VALUE th_make_jump_tag_but_local_jump(int state, VALUE val);
 
 static VALUE
-thread_join(rb_thead_t *target_th, double delay)
+thread_join(rb_thread_t *target_th, double delay)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     double now, limit = timeofday() + delay;
     
     thread_debug("thread_join (thid: %p)\n", target_th->thread_id);
@@ -434,7 +434,7 @@ thread_join(rb_thead_t *target_th, double delay)
 static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
-    rb_thead_t *target_th;
+    rb_thread_t *target_th;
     double delay = DELAY_INFTY;
     VALUE limit;
     
@@ -461,7 +461,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
 static VALUE
 thread_value(VALUE self)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(self, th);
     thread_join(th, DELAY_INFTY);
     return th->value;
@@ -486,14 +486,14 @@ double2timeval(double d)
 }
 
 static void
-sleep_forever(rb_thead_t *th)
+sleep_forever(rb_thread_t *th)
 {
     native_sleep(th, 0);
     RUBY_VM_CHECK_INTS();
 }
 
 static void
-sleep_timeval(rb_thead_t *th, struct timeval tv)
+sleep_timeval(rb_thread_t *th, struct timeval tv)
 {
     native_sleep(th, &tv);
 }
@@ -514,13 +514,13 @@ timeofday(void)
 }
 
 static void
-sleep_wait_for_interrupt(rb_thead_t *th, double sleepsec)
+sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec)
 {
     sleep_timeval(th, double2timeval(sleepsec));
 }
 
 static void
-sleep_for_polling(rb_thead_t *th)
+sleep_for_polling(rb_thread_t *th)
 {
     struct timeval time;
     time.tv_sec = 0;
@@ -531,7 +531,7 @@ sleep_for_polling(rb_thead_t *th)
 void
 rb_thread_wait_for(struct timeval time)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     sleep_timeval(th, time);
 }
 
@@ -539,7 +539,7 @@ void
 rb_thread_polling(void)
 {
     if (!rb_thread_alone()) {
-	rb_thead_t *th = GET_THREAD();
+	rb_thread_t *th = GET_THREAD();
 	sleep_for_polling(th);
     }
 }
@@ -557,7 +557,7 @@ rb_thread_schedule()
 {
     thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
-	rb_thead_t *th = GET_THREAD();
+	rb_thread_t *th = GET_THREAD();
 
 	thread_debug("rb_thread_schedule/switch start\n");
 
@@ -586,10 +586,10 @@ rb_thread_s_critical(VALUE self)
 
 
 VALUE
-rb_thread_run_parallel(VALUE(*func)(rb_thead_t *th, void *), void *data)
+rb_thread_run_parallel(VALUE(*func)(rb_thread_t *th, void *), void *data)
 {
     VALUE val;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     
     GVL_UNLOCK_RANGE({
 	val = func(th, data);
@@ -631,7 +631,7 @@ thread_s_pass(VALUE klass)
  */
 
 void
-rb_thread_execute_interrupts(rb_thead_t *th)
+rb_thread_execute_interrupts(rb_thread_t *th)
 {
     while (th->interrupt_flag) {
 	int status = th->status;
@@ -685,13 +685,13 @@ rb_gc_mark_threads()
 /*****************************************************/
 
 static void
-rb_thread_ready(rb_thead_t *th)
+rb_thread_ready(rb_thread_t *th)
 {
     rb_thread_interrupt(th);
 }
 
 static VALUE
-yarv_thread_raise(int argc, VALUE *argv, rb_thead_t *th)
+yarv_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 {
     VALUE exc;
 
@@ -711,7 +711,7 @@ rb_thread_signal_raise(void *thptr, const char *sig)
 {
     VALUE argv[1];
     char buf[BUFSIZ];
-    rb_thead_t *th = thptr;
+    rb_thread_t *th = thptr;
     
     if (sig == 0) {
 	return;			/* should not happen */
@@ -726,7 +726,7 @@ rb_thread_signal_exit(void *thptr)
 {
     VALUE argv[1];
     VALUE args[2];
-    rb_thead_t *th = thptr;
+    rb_thread_t *th = thptr;
     
     args[0] = INT2NUM(EXIT_SUCCESS);
     args[1] = rb_str_new2("exit");
@@ -735,7 +735,7 @@ rb_thread_signal_exit(void *thptr)
 }
 
 int
-thread_set_raised(rb_thead_t *th)
+thread_set_raised(rb_thread_t *th)
 {
     if (th->raised_flag) {
 	return 1;
@@ -745,7 +745,7 @@ thread_set_raised(rb_thead_t *th)
 }
 
 int
-thread_reset_raised(rb_thead_t *th)
+thread_reset_raised(rb_thread_t *th)
 {
     if (th->raised_flag == 0) {
 	return 0;
@@ -782,7 +782,7 @@ rb_thread_fd_close(int fd)
 static VALUE
 thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(self, th);
     yarv_thread_raise(argc, argv, th);
     return Qnil;
@@ -804,7 +804,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_thread_kill(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
 
     GetThreadPtr(thread, th);
 
@@ -884,7 +884,7 @@ rb_thread_exit()
 VALUE
 rb_thread_wakeup(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (th->status == THREAD_KILLED) {
@@ -959,7 +959,7 @@ static int
 thread_list_i(st_data_t key, st_data_t val, void *data)
 {
     VALUE ary = (VALUE)data;
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr((VALUE)key, th);
 
     switch (th->status) {
@@ -1101,7 +1101,7 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_abort_exc(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
     return th->abort_on_exception ? Qtrue : Qfalse;
 }
@@ -1119,7 +1119,7 @@ rb_thread_abort_exc(VALUE thread)
 static VALUE
 rb_thread_abort_exc_set(VALUE thread, VALUE val)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     rb_secure(4);
 
     GetThreadPtr(thread, th);
@@ -1141,7 +1141,7 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
 VALUE
 rb_thread_group(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     VALUE group;
     GetThreadPtr(thread, th);
     group = th->thgroup;
@@ -1170,7 +1170,7 @@ thread_status_name(enum rb_thread_status status)
 }
 
 static int
-rb_thread_dead(rb_thead_t *th)
+rb_thread_dead(rb_thread_t *th)
 {
     return th->status == THREAD_KILLED;
 }
@@ -1202,7 +1202,7 @@ rb_thread_dead(rb_thead_t *th)
 static VALUE
 rb_thread_status(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (rb_thread_dead(th)) {
@@ -1231,7 +1231,7 @@ rb_thread_status(VALUE thread)
 static VALUE
 rb_thread_alive_p(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (rb_thread_dead(th))
@@ -1254,7 +1254,7 @@ rb_thread_alive_p(VALUE thread)
 static VALUE
 rb_thread_stop_p(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (rb_thread_dead(th))
@@ -1279,7 +1279,7 @@ rb_thread_stop_p(VALUE thread)
 static VALUE
 rb_thread_safe_level(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     return INT2NUM(th->safe_level);
@@ -1296,7 +1296,7 @@ static VALUE
 rb_thread_inspect(VALUE thread)
 {
     char *cname = rb_obj_classname(thread);
-    rb_thead_t *th;
+    rb_thread_t *th;
     const char *status;
     VALUE str;
 
@@ -1311,7 +1311,7 @@ rb_thread_inspect(VALUE thread)
 VALUE
 rb_thread_local_aref(VALUE thread, ID id)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     VALUE val;
 
     GetThreadPtr(thread, th);
@@ -1357,7 +1357,7 @@ rb_thread_aref(VALUE thread, VALUE id)
 VALUE
 rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (rb_safe_level() >= 4 && th != GET_THREAD()) {
@@ -1407,7 +1407,7 @@ rb_thread_aset(VALUE self, ID id, VALUE val)
 static VALUE
 rb_thread_key_p(VALUE self, ID id)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(self, th);
 
     if (!th->local_storage) {
@@ -1454,7 +1454,7 @@ rb_thread_alone()
 static VALUE
 rb_thread_keys(VALUE self)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     VALUE ary = rb_ary_new();
     GetThreadPtr(self, th);
 
@@ -1477,7 +1477,7 @@ rb_thread_keys(VALUE self)
 static VALUE
 rb_thread_priority(VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
     return INT2NUM(th->priority);
 }
@@ -1509,7 +1509,7 @@ rb_thread_priority(VALUE thread)
 static VALUE
 rb_thread_priority_set(VALUE thread, VALUE prio)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     rb_secure(4);
@@ -1727,7 +1727,7 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 }
 
 void
-rb_gc_save_machine_context(rb_thead_t *th)
+rb_gc_save_machine_context(rb_thread_t *th)
 {
     rb_gc_set_stack_end(&th->machine_stack_end);
     setjmp(th->machine_regs);
@@ -1779,7 +1779,7 @@ rb_thread_start_timer_thread(void)
 void
 rb_thread_atfork(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
     vm->main_thread = th;
 
@@ -1830,7 +1830,7 @@ thgroup_list_i(st_data_t key, st_data_t val, st_data_t data)
     VALUE thread = (VALUE)key;
     VALUE ary = ((struct thgroup_list_params *)data)->ary;
     VALUE group = ((struct thgroup_list_params *)data)->group;
-    rb_thead_t *th;
+    rb_thread_t *th;
     GetThreadPtr(thread, th);
 
     if (th->thgroup == group) {
@@ -1941,7 +1941,7 @@ thgroup_enclosed_p(VALUE group)
 static VALUE
 thgroup_add(VALUE group, VALUE thread)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     struct thgroup *data;
 
     rb_secure(4);
@@ -1977,7 +1977,7 @@ thgroup_add(VALUE group, VALUE thread)
  */
 
 typedef struct mutex_struct {
-    rb_thead_t *th;
+    rb_thread_t *th;
     rb_thread_lock_t lock;
 } mutex_t;
 
@@ -2352,7 +2352,7 @@ Init_Thread(void)
     rb_define_method(cThGroup, "add", thgroup_add, 1);
 
     {
-	rb_thead_t *th = GET_THREAD();
+	rb_thread_t *th = GET_THREAD();
 	th->thgroup = th->vm->thgroup_default = rb_obj_alloc(cThGroup);
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }

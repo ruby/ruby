@@ -1,3 +1,16 @@
+Thu Feb  8 15:00:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* blockinlining.c, error.c, eval.c, eval_error.h, eval_intern.h,
+	  eval_jump.h, eval_load.c, eval_safe.h, gc.c, proc.c, signal.c,
+	  thread.c, thread_pthread.ci, thread_win32.ci, vm.c, vm.h,
+	  vm_dump.c, vm_evalbody.ci, yarvcore.c, yarvcore.h:
+	  fix typo (rb_thead_t -> rb_thread_t).
+
+	* eval_intern.h: remove unused definitions.
+
+	* common.mk: fix around vm_opts.h path
+	  and remove harmful argument passed to insns2vm.rb.
+
 Wed Feb  7 23:25:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (specific_eval): suppress warning.

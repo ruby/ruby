@@ -871,7 +871,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     return Qfalse;
 }
 
-NORETURN(void th_iter_break _((rb_thead_t *)));
+NORETURN(void th_iter_break _((rb_thread_t *)));
 
 void
 rb_iter_break()
@@ -888,7 +888,7 @@ rb_longjmp(tag, mesg)
     VALUE mesg;
 {
     VALUE at;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
 
     /*
     //while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
@@ -1073,7 +1073,7 @@ rb_jump_tag(tag)
 int
 rb_block_given_p()
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     if (GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
 	return Qtrue;
     }
@@ -1113,7 +1113,7 @@ rb_iterator_p()
 VALUE
 rb_f_block_given_p()
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     cfp = th_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
@@ -1230,7 +1230,7 @@ rb_iterate(VALUE (*it_proc) (VALUE), VALUE data1,
     int state;
     volatile VALUE retval = Qnil;
     NODE *node = NEW_IFUNC(bl_proc, data2);
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
 
     TH_PUSH_TAG(th);
@@ -1505,7 +1505,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
     VALUE exc = rb_eNoMethodError;
     char *format = 0;
     NODE *cnode = ruby_current_node;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     int last_call_status = th->method_missing_reason;
     if (argc == 0 || !SYMBOL_P(argv[0])) {
 	rb_raise(rb_eArgError, "no id given");
@@ -1697,7 +1697,7 @@ VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
     int scope = NOEX_PUBLIC;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 
     if (SPECIAL_CONST_P(cfp->sp[0])) {
@@ -1860,7 +1860,7 @@ rb_frame_this_func(void)
 ID
 rb_frame_callee(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     /* check if prev_cfp can be accessible */
     if ((void *)(th->stack + th->stack_size) == (void *)(prev_cfp)) {
@@ -1872,7 +1872,7 @@ rb_frame_callee(void)
 void
 rb_frame_pop(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 }
 
@@ -1895,7 +1895,7 @@ rb_sourcefile(void)
 int
 rb_sourceline(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     return th_get_sourceline(th->cfp);
 }
 
@@ -1906,7 +1906,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
     VALUE result = Qundef;
     VALUE envval;
     rb_binding_t *bind = 0;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     NODE *stored_cref_stack = 0;
 
@@ -2051,7 +2051,7 @@ static VALUE
 exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
 {
     VALUE val = Qnil;		/* OK */
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     rb_control_frame_t *pcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     VALUE stored_self = pcfp->self;
@@ -2707,7 +2707,7 @@ VALUE rb_f_untrace_var();
 static VALUE
 get_errinfo(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
@@ -2790,13 +2790,13 @@ errat_setter(VALUE val, ID id, VALUE *var)
  *     local_variables   #=> ["fred", "i"]
  */
 
-int th_collect_local_variables_in_heap(rb_thead_t *th, VALUE *dfp, VALUE ary);
+int th_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 static VALUE
 rb_f_local_variables(void)
 {
     VALUE ary = rb_ary_new();
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	th_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
@@ -2940,7 +2940,7 @@ Init_eval(void)
 VALUE
 rb_dvar_defined(ID id)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_iseq_t *iseq;
     if (th->base_block && (iseq = th->base_block->iseq)) {
 	while (iseq->type == ISEQ_TYPE_BLOCK ||
@@ -2964,7 +2964,7 @@ rb_dvar_defined(ID id)
 void
 rb_scope_setup_top_local_tbl(ID *tbl)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     if (tbl) {
 	if (th->top_local_tbl) {
 	    xfree(th->top_local_tbl);
@@ -2980,7 +2980,7 @@ rb_scope_setup_top_local_tbl(ID *tbl)
 int
 rb_scope_base_local_tbl_size(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     if (th->base_block) {
 	return th->base_block->iseq->local_iseq->local_size +
 	    2 /* $_, $~ */  - 1 /* svar */ ;
@@ -2993,7 +2993,7 @@ rb_scope_base_local_tbl_size(void)
 ID
 rb_scope_base_local_tbl_id(int i)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     switch (i) {
     case 0:
 	return rb_intern("$_");
@@ -3008,7 +3008,7 @@ rb_scope_base_local_tbl_id(int i)
 int
 rb_dvar_current(void)
 {
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     if (th->base_block) {
 	return 1;
     }

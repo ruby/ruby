@@ -482,7 +482,7 @@ rb_newobj_from_heap(void)
 
 #if USE_VALUE_CACHE
 static VALUE
-rb_fill_value_cache(rb_thead_t *th)
+rb_fill_value_cache(rb_thread_t *th)
 {
     int i;
     VALUE rv;
@@ -505,7 +505,7 @@ VALUE
 rb_newobj(void)
 {
 #if USE_VALUE_CACHE && 1
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     VALUE v = *th->value_cache_ptr;
 
     if (v) {
@@ -562,7 +562,7 @@ static int grow_direction;
 static int
 stack_grow_direction(VALUE *addr)
 {
-  rb_thead_t *th = GET_THREAD();
+  rb_thread_t *th = GET_THREAD();
   SET_STACK_END;
 
   if (STACK_END > addr) return grow_direction = 1;
@@ -582,7 +582,7 @@ stack_grow_direction(VALUE *addr)
 int
 ruby_stack_length(VALUE **p)
 {
-  rb_thead_t *th = GET_THREAD();
+  rb_thread_t *th = GET_THREAD();
   SET_STACK_END;
   if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
   return STACK_LENGTH;
@@ -592,7 +592,7 @@ int
 ruby_stack_check(void)
 {
   int ret;
-  rb_thead_t *th = GET_THREAD();
+  rb_thread_t *th = GET_THREAD();
   CHECK_STACK(ret);
   return ret;
 }
@@ -1337,7 +1337,7 @@ garbage_collect(void)
 {
     struct gc_list *list;
     jmp_buf save_regs_gc_mark;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
 
     if (GC_NOTIFY) printf("start garbage_collect()\n");
 
@@ -1442,7 +1442,7 @@ garbage_collect(void)
 }
 
 void
-yarv_machine_stack_mark(rb_thead_t *th)
+yarv_machine_stack_mark(rb_thread_t *th)
 {
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);

@@ -30,7 +30,7 @@ typedef rb_iseq_t *ISEQ;
 
 #if !OPT_CALL_THREADED_CODE
 VALUE
-th_eval(rb_thead_t *th, VALUE initial)
+th_eval(rb_thread_t *th, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
@@ -123,7 +123,7 @@ get_insns_address_table()
 }
 
 VALUE
-th_eval(rb_thead_t *th, VALUE initial)
+th_eval(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
     SET_PC(reg_cfp->iseq->iseq_encoded);

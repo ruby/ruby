@@ -358,7 +358,7 @@ typedef struct {
 } rb_block_t;
 
 #define GetThreadPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_thead_t, ptr)
+  Data_Get_Struct(obj, rb_thread_t, ptr)
 
 enum rb_thread_status {
     THREAD_TO_KILL,
@@ -456,7 +456,7 @@ typedef struct rb_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
-} rb_thead_t;
+} rb_thread_t;
 
 /** node -> yarv instruction sequence object */
 VALUE rb_iseq_compile(VALUE self, NODE *node);
@@ -584,7 +584,7 @@ VALUE rb_thread_alloc(VALUE klass);
 VALUE rb_proc_alloc(void);
 
 /* for debug */
-extern void vm_stack_dump_raw(rb_thead_t *, rb_control_frame_t *);
+extern void vm_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
 #define SDR() vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
 void yarv_bug(void);
@@ -592,20 +592,20 @@ void yarv_bug(void);
 
 /* functions about thread/vm execution */
 
-VALUE rb_thread_eval(rb_thead_t *th, VALUE iseqval);
+VALUE rb_thread_eval(rb_thread_t *th, VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 
-VALUE th_eval_body(rb_thead_t *th);
-VALUE th_set_eval_stack(rb_thead_t *, VALUE iseq);
-VALUE th_call_super(rb_thead_t *th, int argc, const VALUE *argv);
-VALUE th_invoke_proc(rb_thead_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
-VALUE th_make_proc(rb_thead_t *th, rb_control_frame_t *cfp, rb_block_t *block);
-VALUE th_make_env_object(rb_thead_t *th, rb_control_frame_t *cfp);
-VALUE th_backtrace(rb_thead_t *, int);
+VALUE th_eval_body(rb_thread_t *th);
+VALUE th_set_eval_stack(rb_thread_t *, VALUE iseq);
+VALUE th_call_super(rb_thread_t *th, int argc, const VALUE *argv);
+VALUE th_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
+VALUE th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
+VALUE th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+VALUE th_backtrace(rb_thread_t *, int);
 
-VALUE th_invoke_yield(rb_thead_t *th, int argc, VALUE *argv);
-VALUE th_call0(rb_thead_t *th, VALUE klass, VALUE recv,
+VALUE th_invoke_yield(rb_thread_t *th, int argc, VALUE *argv);
+VALUE th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	       VALUE id, ID oid, int argc, const VALUE *argv,
 	       NODE * body, int nosuper);
 
@@ -617,7 +617,7 @@ VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-extern rb_thead_t *yarvCurrentThread;
+extern rb_thread_t *yarvCurrentThread;
 extern rb_vm_t *theYarvVM;
 
 #define GET_VM() theYarvVM
@@ -633,7 +633,7 @@ extern rb_vm_t *theYarvVM;
 #endif
 
 #define GVL_UNLOCK_BEGIN() do { \
-  rb_thead_t *_th_stored = GET_THREAD(); \
+  rb_thread_t *_th_stored = GET_THREAD(); \
   rb_gc_save_machine_context(_th_stored); \
   native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
 
@@ -643,9 +643,9 @@ extern rb_vm_t *theYarvVM;
 } while(0)
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
-NOINLINE(void rb_gc_save_machine_context(rb_thead_t *));
+NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
-void rb_thread_execute_interrupts(rb_thead_t *);
+void rb_thread_execute_interrupts(rb_thread_t *);
 
 #define RUBY_VM_CHECK_INTS_TH(th) do { \
   if(th->interrupt_flag){ \

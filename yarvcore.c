@@ -74,7 +74,7 @@ unsigned long yarvGlobalStateVersion = 1;
 /* YARVCore */
 /************/
 
-rb_thead_t *yarvCurrentThread = 0;
+rb_thread_t *yarvCurrentThread = 0;
 rb_vm_t *theYarvVM = 0;
 static VALUE yarvVMArray = Qnil;
 
@@ -100,7 +100,7 @@ yarvcore_eval_iseq(VALUE iseq)
 }
 
 static VALUE
-th_compile_from_node(rb_thead_t *th, NODE * node, VALUE file)
+th_compile_from_node(rb_thread_t *th, NODE * node, VALUE file)
 {
     VALUE iseq;
     if (th->base_block) {
@@ -118,7 +118,7 @@ th_compile_from_node(rb_thead_t *th, NODE * node, VALUE file)
 }
 
 VALUE
-th_compile(rb_thead_t *th, VALUE str, VALUE file, VALUE line)
+th_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line)
 {
     NODE *node = (NODE *) compile_string(str, file, line);
     return th_compile_from_node(th, (NODE *) node, file);
@@ -211,7 +211,7 @@ vm_init2(rb_vm_t *vm)
 static void
 thread_free(void *ptr)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     FREE_REPORT_ENTER("thread");
 
     if (ptr) {
@@ -245,12 +245,12 @@ thread_free(void *ptr)
     FREE_REPORT_LEAVE("thread");
 }
 
-void yarv_machine_stack_mark(rb_thead_t *th);
+void yarv_machine_stack_mark(rb_thread_t *th);
 
 static void
 thread_mark(void *ptr)
 {
-    rb_thead_t *th = NULL;
+    rb_thread_t *th = NULL;
     MARK_REPORT_ENTER("thread");
     if (ptr) {
 	th = ptr;
@@ -298,16 +298,16 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
-    rb_thead_t *th;
-    obj = Data_Make_Struct(klass, rb_thead_t,
+    rb_thread_t *th;
+    obj = Data_Make_Struct(klass, rb_thread_t,
 			   thread_mark, thread_free, th);
     return obj;
 }
 
 static void
-th_init2(rb_thead_t *th)
+th_init2(rb_thread_t *th)
 {
-    MEMZERO(th, rb_thead_t, 1);
+    MEMZERO(th, rb_thread_t, 1);
 
     /* allocate thread stack */
     th->stack = ALLOC_N(VALUE, RUBY_VM_THREAD_STACK_SIZE);
@@ -336,7 +336,7 @@ th_init2(rb_thead_t *th)
 }
 
 static void
-th_init(rb_thead_t *th)
+th_init(rb_thread_t *th)
 {
     th_init2(th);
 }
@@ -344,7 +344,7 @@ th_init(rb_thead_t *th)
 static VALUE
 thread_init(VALUE self)
 {
-    rb_thead_t *th;
+    rb_thread_t *th;
     rb_vm_t *vm = GET_THREAD()->vm;
     GetThreadPtr(self, th);
 
@@ -514,7 +514,7 @@ Init_VM(void)
 	VALUE thval;
 
 	rb_vm_t *vm;
-	rb_thead_t *th;
+	rb_thread_t *th;
 	vm = theYarvVM;
 
 	xfree(RDATA(vmval)->data);
@@ -548,7 +548,7 @@ Init_yarv(void)
 {
     /* VM bootstrap: phase 1 */
     rb_vm_t *vm = ALLOC(rb_vm_t);
-    rb_thead_t *th = ALLOC(rb_thead_t);
+    rb_thread_t *th = ALLOC(rb_thread_t);
 
     vm_init2(vm);
     theYarvVM = vm;

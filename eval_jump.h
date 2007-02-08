@@ -22,7 +22,7 @@ static VALUE
 rb_f_throw(int argc, VALUE *argv)
 {
     VALUE tag, value;
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     struct rb_vm_tag *tt = th->tag;
 
     rb_scan_args(argc, argv, "11", &tag, &value);
@@ -94,7 +94,7 @@ rb_f_catch(VALUE dmy, VALUE tag)
 {
     int state;
     VALUE val = Qnil;		/* OK */
-    rb_thead_t *th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
 
     tag = ID2SYM(rb_to_id(tag));
     PUSH_TAG(tag);
