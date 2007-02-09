@@ -1,3 +1,15 @@
+Fri Feb  9 12:33:40 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_win32.ci (w32_show_error_message): renamed to w32_error.
+	  this function do rb_bug().
+
+	* thread_win32.ci (w32_set_event, w32_reset_event, w32_close_handle,
+	  w32_resume_thread): added. fix to use these functions instead calling
+	  win32api directly.
+
+	* thread_win32.ci (w32_create_thread): create suspend thread
+	  (caller must call w32_resume_thread()).
+
 Fri Feb  9 11:03:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_readpartial.rb: tests are working on mswin32/cygwin.

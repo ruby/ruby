@@ -37,7 +37,7 @@ Init_native_thread()
 }
 
 static void
-w32_show_error_message()
+w32_error(void)
 {
     LPVOID lpMsgBuf;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -47,9 +47,23 @@ w32_show_error_message()
 		  GetLastError(),
 		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		  (LPTSTR) & lpMsgBuf, 0, NULL);
-    /* {int *a=0; *a=0;} */
-    MessageBox(NULL, (LPCTSTR) lpMsgBuf, "Error", MB_OK | MB_ICONINFORMATION);
-    /*  exit(1); */
+    rb_bug("%s", lpMsgBuf);
+}
+
+static void
+w32_set_event(HANDLE handle)
+{
+    if (SetEvent(handle) == 0) {
+	w32_error();
+    }
+}
+
+static void
+w32_reset_event(HANDLE handle)
+{
+    if (ResetEvent(handle) == 0) {
+	w32_error();
+    }
 }
 
 static int
@@ -66,9 +80,9 @@ w32_wait_event(HANDLE event, DWORD timeout, rb_thread_t *th)
 
     if (th) {
 	HANDLE intr = th->native_thread_data.interrupt_event;
-	ResetEvent(intr);
+	w32_reset_event(intr);
 	if (th->interrupt_flag) {
-	    SetEvent(intr);
+	    w32_set_event(intr);
 	}
 
 	events[count++] = intr;
@@ -91,6 +105,28 @@ w32_wait_event(HANDLE event, DWORD timeout, rb_thread_t *th)
 	}
     }
     return ret;
+}
+
+static void
+w32_close_handle(HANDLE handle)
+{
+    if (CloseHandle(handle) == 0) {
+	w32_error();
+    }
+}
+
+static void
+w32_resume_thread(HANDLE handle)
+{
+    if (ResumeThread(handle) == -1) {
+	w32_error();
+    }
+}
+
+static HANDLE
+w32_create_thread(DWORD stack_size, void *func, void *val)
+{
+    return (HANDLE)_beginthreadex(0, stack_size, func, val, CREATE_SUSPENDED, 0);
 }
 
 static void ubf_handle(rb_thread_t *th);
@@ -195,6 +231,9 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 {
 #if USE_WIN32MUTEX
     *lock = CreateMutex(NULL, FALSE, NULL);
+    if (*lock == NULL) {
+	w32_error();
+    }
     /* thread_debug("initialize mutex: %p\n", *lock); */
 #else
     InitializeCriticalSection(lock);
@@ -204,7 +243,11 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 void
 native_mutex_destroy(rb_thread_lock_t *lock)
 {
-    CloseHandle(lock);
+#if USE_WIN32MUTEX
+    w32_close_handle(lock);
+#else
+    DeleteCriticalSection(lock);
+#endif
 }
 
 
@@ -214,7 +257,9 @@ NOINLINE(static int
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    CloseHandle(th->native_thread_data.interrupt_event);
+    thread_debug("close handle - intr: %p, thid: %p\n",
+		 th->native_thread_data.interrupt_event, th->thread_id);
+    w32_close_handle(th->native_thread_data.interrupt_event);
 }
 
 static unsigned int _stdcall
@@ -222,38 +267,18 @@ thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     VALUE stack_start;
-    HANDLE thread_id = th->thread_id;
-    HANDLE interrupt_event;
-    /* run */
-    interrupt_event = th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+    volatile HANDLE thread_id = th->thread_id;
 
+    th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+
+    /* run */
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
     thread_start_func_2(th, &stack_start);
 
-    /* native_mutex_unlock(&GET_VM()->global_interpreter_lock); */
-
-    thread_debug("close handle - intr: %p, thid: %p\n",
-		 interrupt_event, thread_id);
-    CloseHandle(interrupt_event);
-    CloseHandle(thread_id);
+    w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);
     return 0;
-}
-
-static void make_timer_thread();
-
-static HANDLE
-w32_create_thread(DWORD stack_size, void *func, void *val)
-{
-    HANDLE handle;
-#ifdef __CYGWIN__
-    DWORD dmy;
-    handle = CreateThread(0, stack_size, func, val, 0, &dmy);
-#else
-    handle = (HANDLE) _beginthreadex(0, stack_size, func, val, 0, 0);
-#endif
-    return handle;
 }
 
 static int
@@ -266,6 +291,9 @@ native_thread_create(rb_thread_t *th)
 	st_delete_wrap(th->vm->living_threads, th->self);
 	rb_raise(rb_eThreadError, "can't create Thread (%d)", errno);
     }
+
+    w32_resume_thread(th->thread_id);
+
     if (THREAD_DEBUG) {
 	Sleep(0);
 	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %d\n",
@@ -302,7 +330,7 @@ static void
 ubf_handle(rb_thread_t *th)
 {
     thread_debug("ubf_handle: %p\n", th);
-    SetEvent(th->native_thread_data.interrupt_event);
+    w32_set_event(th->native_thread_data.interrupt_event);
 }
 
 static void timer_thread_function(void);
@@ -326,6 +354,7 @@ rb_thread_create_timer_thread(void)
 {
     if (timer_thread_id == 0) {
 	timer_thread_id = w32_create_thread(1024, timer_thread_func, 0);
+	w32_resume_thread(timer_thread_id);
     }
 }
 
