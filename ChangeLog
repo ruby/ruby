@@ -1,4 +1,4 @@
-Fri Feb  9 20:34:33 2007  MenTaLguY  <mental@rydia.net>
+Fri Feb  9 20:43:01 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/thread: Import the "fastthread" implementation by MenTaLguY
 	  in the original form.  This module is not hooked into the build

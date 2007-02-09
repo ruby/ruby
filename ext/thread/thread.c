@@ -39,8 +39,11 @@ typedef struct _List {
   unsigned long size;
 } List;
 
+static void init_list _((List *));
+
 static void
-init_list(List *list)
+init_list(list)
+  List *list;
 {
   list->entries = NULL;
   list->last_entry = NULL;
@@ -48,8 +51,11 @@ init_list(List *list)
   list->size = 0;
 }
 
+static void mark_list _((List *));
+
 static void
-mark_list(List *list)
+mark_list(list)
+  List *list;
 {
   Entry *entry;
   for ( entry = list->entries ; entry ; entry = entry->next ) {
@@ -57,8 +63,11 @@ mark_list(List *list)
   }
 }
 
+static void free_entries _((Entry *));
+
 static void
-free_entries(Entry *first)
+free_entries(first)
+  Entry *first;
 {
   Entry *next;
   while (first) {
@@ -68,15 +77,22 @@ free_entries(Entry *first)
   }
 }
 
+static void finalize_list _((List *));
+
 static void
-finalize_list(List *list)
+finalize_list(list)
+  List *list;
 {
   free_entries(list->entries);
   free_entries(list->entry_pool);
 }
 
+static void push_list _((List *, VALUE));
+
 static void
-push_list(List *list, VALUE value)
+push_list(list, value)
+  List *list;
+  VALUE value;
 {
   Entry *entry;
 
