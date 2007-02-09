@@ -2829,7 +2829,7 @@ module TkConfigMethod
   def __confinfo_cmd
     __config_cmd
   end
-  private :__configinfo_cmd
+  private :__confinfo_cmd
 
   def __configinfo_struct
     {:key=>0, :alias=>1, :db_name=>1, :db_class=>2, 
@@ -2926,7 +2926,7 @@ module TkConfigMethod
     }
     keys2
   end
-  private :__conv_keyonly_optkeys
+  private :__conv_keyonly_opts
 
   def config_hash_kv(keys, enc_mode = nil, conf = nil)
     hash_kv(__conv_keyonly_opts(keys), enc_mode, conf)

@@ -1,3 +1,8 @@
+Sat Feb 10 00:13:11 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd, 
+	  __conv_keyonly_opts).
+
 Fri Feb  9 12:33:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_win32.ci (w32_show_error_message): renamed to w32_error.
