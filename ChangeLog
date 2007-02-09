@@ -1,3 +1,10 @@
+Fri Feb  9 20:44:53 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread: Make style fixes (mostly de-K&R'ism) to match the
+	  rest of the source code.
+
+	* ext/thread: Make USE_MEM_POOLS an extconf option.
+
 Fri Feb  9 20:43:01 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/thread: Import the "fastthread" implementation by MenTaLguY
