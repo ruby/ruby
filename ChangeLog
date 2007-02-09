@@ -1,3 +1,7 @@
+Fri Feb  9 11:03:40 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_readpartial.rb: tests are working on mswin32/cygwin.
+
 Fri Feb  9 05:08:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, thread_pthread.ci, thread_win32.ci (thread_start_func_1):
