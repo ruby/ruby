@@ -1,3 +1,8 @@
+Sat Feb 10 07:41:52 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): fix the bug when
+	  SAFEARRAY pointer is NULL.
+
 Sat Feb 10 00:13:11 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd, 
