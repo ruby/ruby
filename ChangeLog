@@ -1,3 +1,8 @@
+Sun Feb 11 01:45:31 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/thread/thread.c (Init_thread): Define missing aliases:
+	  Queue#enq and SizedQueue#enq.
+
 Sat Feb 10 09:27:35 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_variant2val): fix compile error
