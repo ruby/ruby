@@ -1,3 +1,8 @@
+Sat Feb 10 09:27:35 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): fix compile error
+	  on VC++.
+
 Sat Feb 10 07:41:52 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_variant2val): fix the bug when
