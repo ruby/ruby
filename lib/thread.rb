@@ -1,4 +1,8 @@
 #
+# NOTE:
+#   This file is overwritten by ext/thread/lib/thread.rb unless ruby
+#   is configured with --disable-fastthread.
+#
 #		thread.rb - thread support classes
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>

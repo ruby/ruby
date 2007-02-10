@@ -1,3 +1,10 @@
+Sun Feb 11 06:27:54 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in, ext/thread/extconf.rb, lib/thread.rb: Add a
+	  configure option `--disable-fastthread', to choose the original,
+	  pure ruby version of the "thread" library instead of the new,
+	  much faster implementation in ext/thread.
+
 Sun Feb 11 06:22:20 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/Setup: Add thread except for platforms without threads
