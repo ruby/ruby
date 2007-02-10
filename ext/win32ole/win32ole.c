@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.2"
+#define WIN32OLE_VERSION "0.9.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -320,6 +320,7 @@ static VALUE make_oletypelib_obj(VALUE guid, VALUE major_version, VALUE minor_ve
 static VALUE ole_typelib_from_itypelib(ITypeLib *pTypeLib);
 static VALUE ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo);
 static VALUE fole_typelib(VALUE self);
+static VALUE fole_query_interface(VALUE self, VALUE str_iid);
 static HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 static VALUE ole_usertype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 static VALUE ole_typedesc2val();
@@ -3821,6 +3822,50 @@ fole_typelib(VALUE self)
         rb_raise(rb_eRuntimeError, "failed to get type library info.");
     }
     return vtlib;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE#ole_query_interface(iid) -> WIN32OLE object
+ * 
+ *  Returns WIN32OLE object for a specific dispatch or dual
+ *  interface specified by iid.
+ *
+ *      ie = WIN32OLE.new('InternetExplorer.Application')
+ *      ie_web_app = ie.ole_query_interface('{0002DF05-0000-0000-C000-000000000046}') # => WIN32OLE object for dispinterface IWebBrowserApp 
+ */
+static VALUE
+fole_query_interface(VALUE self, VALUE str_iid)
+{
+    HRESULT hr;
+    OLECHAR *pBuf;
+    IID iid;
+    struct oledata *pole;
+    IDispatch *pDispatch;
+         
+    pBuf  = ole_mb2wc(StringValuePtr(str_iid), -1);
+    hr = CLSIDFromString(pBuf, &iid);
+    SysFreeString(pBuf);
+    if(FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, 
+                  "illegal iid: `%s'",
+                  StringValuePtr(str_iid));
+    }
+
+    OLEData_Get_Struct(self, pole);
+    if(!pole->pDispatch) {
+        rb_raise(rb_eRuntimeError, "failed to get dispatch interface");
+    }
+
+    hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &iid,
+                                                 (void **)&pDispatch);
+    if(FAILED(hr)) {
+        ole_raise(hr, eWIN32OLERuntimeError, 
+                  "failed to get interface `%s'", 
+                  StringValuePtr(str_iid));
+    }
+
+    return create_win32ole_object(cWIN32OLE, pDispatch, 0, 0);
 }
 
 static HRESULT
@@ -7397,6 +7442,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE, "ole_type", fole_type, 0);
     rb_define_alias(cWIN32OLE, "ole_obj_help", "ole_type");
     rb_define_method(cWIN32OLE, "ole_typelib", fole_typelib, 0);
+    rb_define_method(cWIN32OLE, "ole_query_interface", fole_query_interface, 1);
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());

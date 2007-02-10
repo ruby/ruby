@@ -237,6 +237,15 @@ if defined?(WIN32OLE)
       assert_equal(shell.NameSpace(0).title, shell._invoke(0x60020002, [0], [WIN32OLE::VARIANT::VT_VARIANT]).title)
     end
 
+    def test_ole_query_interface
+      shell=WIN32OLE.new('Shell.Application')
+      assert_raise(ArgumentError) {
+        shell2 = shell.ole_query_interface
+      }
+      shell2 = shell.ole_query_interface('{A4C6892C-3BA9-11D2-9DEA-00C04FB16162}')
+      assert_instance_of(WIN32OLE, shell2)
+    end
+
     def test_s_const_load
       assert(!defined?(CONST1::SsfWINDOWS))
       shell=WIN32OLE.new('Shell.Application')
