@@ -12,15 +12,6 @@ unless defined? Thread
   fail "Thread not available for this ruby interpreter"
 end
 
-unless defined? ThreadError
-  class ThreadError<StandardError
-  end
-end
-
-if $DEBUG
-  Thread.abort_on_exception = true
-end
-
 class Thread
   #
   # Wraps a block in Thread.critical, restoring the original value upon exit

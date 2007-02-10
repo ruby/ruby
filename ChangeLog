@@ -1,3 +1,7 @@
+Sun Feb 11 05:39:47 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/thread.rb: Remove an ineffective part of the code.
+
 Sun Feb 11 05:32:54 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/thread/thread.c (rb_thread_exclusive): Implement
