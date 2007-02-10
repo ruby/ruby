@@ -920,12 +920,13 @@ ole_variant2val(pvar)
         VARIANT variant;
         VALUE val;
         VALUE val2;
-        int dim = SafeArrayGetDim(psa);
+        int dim = 0;
 
         if (!psa) {
             return obj;
         }
 
+        dim = SafeArrayGetDim(psa);
         VariantInit(&variant);
         V_VT(&variant) = (V_VT(pvar) & ~VT_ARRAY) | VT_BYREF;
 

@@ -1,3 +1,7 @@
+Sat Feb 10 09:33:47 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): sorry, fix the enbug.
+
 Sat Feb 10 09:08:01 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_variant2val): fix compile error
