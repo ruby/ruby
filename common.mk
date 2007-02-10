@@ -506,12 +506,12 @@ version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-        {$(VPATH)}st.h {$(VPATH)}node.h \
+        {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}rubysig.h \
         {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
         {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-        {$(VPATH)}intern.h {$(VPATH)}st.h \
+        {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}rubysig.h \
         {$(VPATH)}gc.h {$(VPATH)}vm_opts.h \
         {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
@@ -524,17 +524,17 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
 vm_dump.$(OBJEXT): {$(VPATH)}yarvcore.h {$(VPATH)}vm.h config.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}debug.h \
-        {$(VPATH)}version.h {$(VPATH)}vm_opts.h 
+        {$(VPATH)}rubysig.h {$(VPATH)}version.h {$(VPATH)}vm_opts.h
 yarvcore.$(OBJEXT): {$(VPATH)}yarvcore.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}debug.h {$(VPATH)}ruby.h config.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-        {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_opts.h
+        {$(VPATH)}rubysig.h {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): {$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
         {$(VPATH)}st.h
 blockinlining.$(OBJEXT): {$(VPATH)}ruby.h {$(VPATH)}defines.h \
         {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h config.h \
-        {$(VPATH)}node.h {$(VPATH)}yarvcore.h \
+        {$(VPATH)}node.h {$(VPATH)}yarvcore.h {$(VPATH)}rubysig.h \
         {$(VPATH)}debug.h {$(VPATH)}vm_opts.h
 
 

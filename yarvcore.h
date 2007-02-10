@@ -18,6 +18,7 @@
 #include <setjmp.h>
 
 #include "ruby.h"
+#include "rubysig.h"
 #include "st.h"
 #include "node.h"
 
@@ -326,8 +327,8 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
 
-    int signal_buff[RUBY_NSIG];
-    int bufferd_signal_size;
+    rb_atomic_t signal_buff[RUBY_NSIG];
+    rb_atomic_t bufferd_signal_size;
 } rb_vm_t;
 
 typedef struct {
