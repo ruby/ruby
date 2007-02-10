@@ -1,3 +1,8 @@
+Sun Feb 11 07:46:45 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): Properly parse
+	  a quoted-string in a Content-Disposition value.
+
 Sun Feb 11 06:27:54 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in, ext/thread/extconf.rb, lib/thread.rb: Add a
