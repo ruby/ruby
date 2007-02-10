@@ -18,6 +18,38 @@ static VALUE rb_cConditionVariable;
 static VALUE rb_cQueue;
 static VALUE rb_cSizedQueue;
 
+static VALUE
+thread_exclusive_do()
+{
+    rb_thread_critical = Qtrue;
+
+    return rb_yield(Qundef);
+}
+
+static VALUE
+thread_exclusive_ensure(val)
+    VALUE val;
+{
+    rb_thread_critical = val;
+
+    return Qundef;
+}
+
+/*
+ *  call-seq:
+ *     Thread.exclusive { block }   => obj
+ *  
+ *  Wraps a block in Thread.critical, restoring the original value
+ *  upon exit from the critical section, and returns the value of the
+ *  block.
+ */
+
+static VALUE
+rb_thread_exclusive()
+{
+    return rb_ensure(thread_exclusive_do, Qundef, thread_exclusive_ensure, rb_thread_critical);
+}
+
 typedef struct _Entry {
     VALUE value;
     struct _Entry *next;
@@ -1067,6 +1099,8 @@ dummy_dump(VALUE self)
 void
 Init_thread(void)
 {
+    rb_define_singleton_method(rb_cThread, "exclusive", rb_thread_exclusive, 0);
+
     rb_cMutex = rb_define_class("Mutex", rb_cObject);
     rb_define_alloc_func(rb_cMutex, rb_mutex_alloc);
     rb_define_method(rb_cMutex, "marshal_load", dummy_load, 1);
