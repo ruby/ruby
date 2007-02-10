@@ -1,3 +1,7 @@
+Sun Feb 11 05:26:51 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c: Get rid of use of a dummy function.
+
 Sun Feb 11 01:45:31 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/thread/thread.c (Init_thread): Define missing aliases:

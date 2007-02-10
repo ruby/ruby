@@ -18,12 +18,6 @@ static VALUE rb_cConditionVariable;
 static VALUE rb_cQueue;
 static VALUE rb_cSizedQueue;
 
-static VALUE
-return_value(VALUE value)
-{
-    return value;
-}
-
 typedef struct _Entry {
     VALUE value;
     struct _Entry *next;
@@ -165,14 +159,14 @@ static VALUE
 wake_thread(VALUE thread)
 {
     return rb_rescue2(rb_thread_wakeup, thread,
-      return_value, Qnil, rb_eThreadError, 0);
+      NULL, Qundef, rb_eThreadError, 0);
 }
 
 static VALUE
 run_thread(VALUE thread)
 {
     return rb_rescue2(rb_thread_run, thread,
-      return_value, Qnil, rb_eThreadError, 0);
+      NULL, Qundef, rb_eThreadError, 0);
 }
 
 static VALUE
@@ -1077,7 +1071,6 @@ Init_thread(void)
     rb_define_alloc_func(rb_cMutex, rb_mutex_alloc);
     rb_define_method(rb_cMutex, "marshal_load", dummy_load, 1);
     rb_define_method(rb_cMutex, "marshal_dump", dummy_dump, 0);
-    rb_define_method(rb_cMutex, "initialize", return_value, 0);
     rb_define_method(rb_cMutex, "locked?", rb_mutex_locked_p, 0);
     rb_define_method(rb_cMutex, "try_lock", rb_mutex_try_lock, 0);
     rb_define_method(rb_cMutex, "lock", rb_mutex_lock, 0);
@@ -1089,7 +1082,6 @@ Init_thread(void)
     rb_define_alloc_func(rb_cConditionVariable, rb_condvar_alloc);
     rb_define_method(rb_cConditionVariable, "marshal_load", dummy_load, 1);
     rb_define_method(rb_cConditionVariable, "marshal_dump", dummy_dump, 0);
-    rb_define_method(rb_cConditionVariable, "initialize", return_value, 0);
     rb_define_method(rb_cConditionVariable, "wait", rb_condvar_wait, 1);
     rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
     rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
@@ -1098,7 +1090,6 @@ Init_thread(void)
     rb_define_alloc_func(rb_cQueue, rb_queue_alloc);
     rb_define_method(rb_cQueue, "marshal_load", rb_queue_marshal_load, 1);
     rb_define_method(rb_cQueue, "marshal_dump", rb_queue_marshal_dump, 0);
-    rb_define_method(rb_cQueue, "initialize", return_value, 0);
     rb_define_method(rb_cQueue, "clear", rb_queue_clear, 0);
     rb_define_method(rb_cQueue, "empty?", rb_queue_empty_p, 0);
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
