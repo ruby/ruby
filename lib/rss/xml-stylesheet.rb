@@ -35,6 +35,10 @@ module RSS
     attr_accessor(*ATTRIBUTES)
     attr_accessor(:do_validate)
     def initialize(*attrs)
+      if attrs.size == 1 and
+          (attrs.first.is_a?(Hash) or attrs.first.is_a?(Array))
+        attrs = attrs.first
+      end
       @do_validate = true
       ATTRIBUTES.each do |attr|
         __send__("#{attr}=", nil)

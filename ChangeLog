@@ -1,6 +1,11 @@
+Sun Feb 11 22:11:05 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/xml-stylesheet.rb (RSS::XMLStyleSheet#initialize):
+	kept backward compatibility.
+
 Sun Feb 11 22:10:08 2007  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/rss/parser.rb (RSS::ListenerMixin::start_else_element): used
+	* lib/rss/parser.rb (RSS::ListenerMixin#start_else_element): used
 	const_defined? instead of constants.include?.
 
 Sun Feb 11 18:47:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
