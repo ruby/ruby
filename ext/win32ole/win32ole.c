@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.3"
+#define WIN32OLE_VERSION "0.9.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -323,7 +323,6 @@ static VALUE fole_typelib(VALUE self);
 static VALUE fole_query_interface(VALUE self, VALUE str_iid);
 static HRESULT ole_docinfo_from_type(ITypeInfo *pTypeInfo, BSTR *name, BSTR *helpstr, DWORD *helpcontext, BSTR *helpfile);
 static VALUE ole_usertype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
-static VALUE ole_typedesc2val();
 static VALUE ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 static VALUE ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails);
 static VALUE fole_method_help(VALUE self, VALUE cmdname);
@@ -432,9 +431,9 @@ static VALUE folemethod_params(VALUE self);
 static VALUE folemethod_inspect(VALUE self);
 static VALUE foleparam_name(VALUE self);
 static VALUE ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
-static VALUE  foleparam_ole_type(VALUE self);
+static VALUE foleparam_ole_type(VALUE self);
 static VALUE ole_param_ole_type_detail(ITypeInfo *pTypeInfo, UINT method_index, UINT index);
-static VALUE  foleparam_ole_type_detail(VALUE self);
+static VALUE foleparam_ole_type_detail(VALUE self);
 static VALUE ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT mask);
 static VALUE foleparam_input(VALUE self);
 static VALUE foleparam_output(VALUE self);
@@ -1373,13 +1372,20 @@ ole_val2olevariantdata(VALUE val, VARTYPE vtype, struct olevariantdata *pvar)
                 SafeArrayDestroy(psa);
         }
     } else if (vtype & VT_ARRAY) {
-        hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (vtype & ~VT_BYREF));
-        if (SUCCEEDED(hr)) {
+        if (val == Qnil) {
+            V_VT(&(pvar->var)) = vtype;
             if (vtype & VT_BYREF) {
-                V_VT(&(pvar->var)) = V_VT(&(pvar->realvar)) | VT_BYREF;
                 V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
-            } else {
-                hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+            }
+        } else {
+            hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (vtype & ~VT_BYREF));
+            if (SUCCEEDED(hr)) {
+                if (vtype & VT_BYREF) {
+                    V_VT(&(pvar->var)) = V_VT(&(pvar->realvar)) | VT_BYREF;
+                    V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
+                } else {
+                    hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+                }
             }
         }
     } else {
@@ -2457,7 +2463,7 @@ static BOOL
 lcid_installed(LCID lcid)
 {
     g_lcid_installed = FALSE;
-    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%0.8x", lcid);
+    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%08x", lcid);
     EnumSystemLocales(installed_lcid_proc, LCID_INSTALLED);
     return g_lcid_installed;
 }
@@ -3916,7 +3922,6 @@ ole_usertype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
     return type;
 }
 
-static VALUE ole_typedesc2val();
 static VALUE
 ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {    
@@ -3938,131 +3943,113 @@ static VALUE
 ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {
     VALUE str;
+    VALUE typestr = Qnil;
     switch(pTypeDesc->vt) {
     case VT_I2:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("I2"));
-        return rb_str_new2("I2");
+        typestr = rb_str_new2("I2");
+        break;
     case VT_I4:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("I4"));
-        return rb_str_new2("I4");
+        typestr = rb_str_new2("I4");
+        break;
     case VT_R4:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("R4"));
-        return rb_str_new2("R4");
+        typestr = rb_str_new2("R4");
+        break;
     case VT_R8:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("R8"));
-        return rb_str_new2("R8");
+        typestr = rb_str_new2("R8");
+        break;
     case VT_CY:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("CY"));
-        return rb_str_new2("CY");
+        typestr = rb_str_new2("CY");
+        break;
     case VT_DATE:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("DATE"));
-        return rb_str_new2("DATE");
+        typestr = rb_str_new2("DATE");
+        break;
     case VT_BSTR:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("BSTR"));
-        return rb_str_new2("BSTR");
+        typestr = rb_str_new2("BSTR");
+        break;
     case VT_BOOL:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("BOOL"));
-        return rb_str_new2("BOOL");
+        typestr = rb_str_new2("BOOL");
+        break;
     case VT_VARIANT:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("VARIANT"));
-        return rb_str_new2("VARIANT");
+        typestr = rb_str_new2("VARIANT");
+        break;
     case VT_DECIMAL:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("DECIMAL"));
-        return rb_str_new2("DECIMAL");
+        typestr = rb_str_new2("DECIMAL");
+        break;
     case VT_I1:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("I1"));
-        return rb_str_new2("I1");
+        typestr = rb_str_new2("I1");
+        break;
     case VT_UI1:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("UI1"));
-        return rb_str_new2("UI1");
+        typestr = rb_str_new2("UI1");
+        break;
     case VT_UI2:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("UI2"));
-        return rb_str_new2("UI2");
+        typestr = rb_str_new2("UI2");
+        break;
     case VT_UI4:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("UI4"));
-        return rb_str_new2("UI4");
+        typestr = rb_str_new2("UI4");
+        break;
     case VT_I8:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("I8"));
-        return rb_str_new2("I8");
+        typestr = rb_str_new2("I8");
+        break;
     case VT_UI8:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("UI8"));
-        return rb_str_new2("UI8");
+        typestr = rb_str_new2("UI8");
+        break;
     case VT_INT:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("INT"));
-        return rb_str_new2("INT");
+        typestr = rb_str_new2("INT");
+        break;
     case VT_UINT:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("UINT"));
-        return rb_str_new2("UINT");
+        typestr = rb_str_new2("UINT");
+        break;
     case VT_VOID:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("VOID"));
-        return rb_str_new2("VOID");
+        typestr = rb_str_new2("VOID");
+        break;
     case VT_HRESULT:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("HRESULT"));
-        return rb_str_new2("HRESULT");
+        typestr = rb_str_new2("HRESULT");
+        break;
     case VT_PTR:
+        typestr = rb_str_new2("PTR");
         if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("PTR"));
+            rb_ary_push(typedetails, typestr);
         return ole_ptrtype2val(pTypeInfo, pTypeDesc, typedetails);
     case VT_SAFEARRAY:
+        typestr = rb_str_new2("SAFEARRAY");
         if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("SAFEARRAY"));
+            rb_ary_push(typedetails, typestr);
         return ole_ptrtype2val(pTypeInfo, pTypeDesc, typedetails);
     case VT_CARRAY:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("CARRAY"));
-        return rb_str_new2("CARRAY");
+        typestr = rb_str_new2("CARRAY");
+        break;
     case VT_USERDEFINED:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("USERDEFINED"));
+        typestr = rb_str_new2("USERDEFINED");
+        if (typedetails != Qnil) 
+            rb_ary_push(typedetails, typestr);
         str = ole_usertype2val(pTypeInfo, pTypeDesc, typedetails);
         if (str != Qnil) {
             return str;
         }
-        return rb_str_new2("USERDEFINED");
+        return typestr;
     case VT_UNKNOWN:
-        return rb_str_new2("UNKNOWN");
+        typestr = rb_str_new2("UNKNOWN");
+        break;
     case VT_DISPATCH:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("DISPATCH"));
-        return rb_str_new2("DISPATCH");
+        typestr = rb_str_new2("DISPATCH");
+        break;
     case VT_ERROR:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("ERROR"));
-        return rb_str_new2("ERROR");
-
+        typestr = rb_str_new2("ERROR");
+        break;
     case VT_LPWSTR:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("LPWSTR"));
-        return rb_str_new2("LPWSTR");
+        typestr = rb_str_new2("LPWSTR");
+        break;
     case VT_LPSTR:
-        if(typedetails != Qnil)
-            rb_ary_push(typedetails, rb_str_new2("LPSTR"));
-        return rb_str_new2("LPSTR");
+        typestr = rb_str_new2("LPSTR");
+        break;
     default:
-        str = rb_str_new2("Unknown Type ");
-        rb_str_concat(str, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
-        return str;
+        typestr = rb_str_new2("Unknown Type ");
+        rb_str_concat(typestr, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
+        break;
     }
+    if (typedetails != Qnil)
+        rb_ary_push(typedetails, typestr);
+    return typestr;
 }
 
 /*
@@ -6848,6 +6835,7 @@ void EVENTSINK_Destructor(
     if(pEVObj != NULL) {
         *(pEVObj->ptr_freed) = 1;
         free(pEVObj);
+        pEVObj = NULL;
     }
 }
 
@@ -7064,7 +7052,7 @@ ole_event_free(struct oleeventdata *poleev)
         /* 
          * this return create memory leak.
          * but poleev->pEvent->pConnectionPoint shoul'd not be freed
-         * until poleev-> freed == 0.
+         * until poleev->freed == 0.
          */
         return; 
     }

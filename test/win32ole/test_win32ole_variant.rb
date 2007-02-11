@@ -146,6 +146,18 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal([[],[]], obj.value)
     end
 
+    def test_create_vt_array_nil
+      vartype = WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_DISPATCH|WIN32OLE::VARIANT::VT_BYREF
+      obj = WIN32OLE_VARIANT.new(nil, vartype)
+      assert_nil(obj.value)
+      assert_equal(vartype, obj.vartype)
+
+      vartype = WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_DISPATCH
+      obj = WIN32OLE_VARIANT.new(nil, vartype)
+      assert_nil(obj.value)
+      assert_equal(vartype, obj.vartype)
+    end
+
     def test_create_vt_array_exc
       exc = assert_raise(TypeError) {
         obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
