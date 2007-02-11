@@ -1,3 +1,8 @@
+Sun Feb 11 22:40:17 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_ptrtype2val): ole_type, ole_type_detail
+	  should not return "VARIANT,VARIANT".
+
 Sun Feb 11 22:11:05 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/xml-stylesheet.rb (RSS::XMLStyleSheet#initialize):

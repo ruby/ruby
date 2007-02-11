@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.4"
+#define WIN32OLE_VERSION "0.9.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3927,14 +3927,10 @@ ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 {    
     TYPEDESC *p = pTypeDesc;
     VALUE type = rb_str_new2("");
-    while(p->vt == VT_PTR || p->vt == VT_SAFEARRAY) {
+
+    if (p->vt == VT_PTR || p->vt == VT_SAFEARRAY) {
         p = V_UNION1(p, lptdesc);
-        if(strlen(StringValuePtr(type)) == 0) {
-           type = ole_typedesc2val(pTypeInfo, p, typedetails);
-        } else {
-           rb_str_cat(type, ",", 1);
-           rb_str_concat(type, ole_typedesc2val(pTypeInfo, p, typedetails));
-        }
+        type = ole_typedesc2val(pTypeInfo, p, typedetails);
     }
     return type;
 }
