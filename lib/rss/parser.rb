@@ -330,7 +330,7 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(ns[prefix], local)
       current_class = @last_element.class
-      if current_class.constants.include?(class_name)
+      if current_class.const_defined?(class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
