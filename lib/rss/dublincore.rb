@@ -38,6 +38,9 @@ module RSS
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(0))
         alias date #{DC_PREFIX}_date
         alias date= #{DC_PREFIX}_date=
+
+        # For backward compatibility
+        alias #{DC_PREFIX}_rightses #{DC_PREFIX}_rights_list
       EOC
     end
   end
@@ -61,7 +64,7 @@ module RSS
       "language" => nil,
       "relation" => nil,
       "coverage" => nil,
-      "rights" => "rightses" # FIXME
+      "rights" => "rights_list"
     }
 
     DATE_ELEMENTS = {

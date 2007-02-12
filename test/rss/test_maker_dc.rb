@@ -57,9 +57,14 @@ module RSS
     end
 
     def test_rss10_multiple
+      assert_multiple_dublin_core_rss10("_list")
+      assert_multiple_dublin_core_rss10("es")
+    end
+
+    def assert_multiple_dublin_core_rss10(multiple_rights_suffix)
       elems = []
       @elements.each do |name, value|
-        plural = name.to_s + (name == :rights ? "es" : "s")
+        plural = name.to_s + (name == :rights ? multiple_rights_suffix : "s")
         values = [value]
         if name == :date
           values << value + 60
@@ -68,7 +73,7 @@ module RSS
         end
         elems << [name, values, plural]
       end
-      
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         set_multiple_elements(maker.channel, elems)

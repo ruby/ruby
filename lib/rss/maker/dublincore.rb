@@ -38,6 +38,11 @@ module RSS
             end
 EOC
         end
+
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          # For backward compatibility
+          alias #{DC_PREFIX}_rightses #{DC_PREFIX}_rights_list
+EOC
       end
 
       ::RSS::DublinCoreModel::ELEMENT_NAME_INFOS.each do |name, plural_name|
