@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.5"
+#define WIN32OLE_VERSION "0.9.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1611,7 +1611,32 @@ ole_variant2val(VARIANT *pvar)
         else 
             obj = INT2NUM((long)V_I4(pvar));
         break;
-
+    case VT_I8:
+        /*
+        if(V_ISBYREF(pvar))
+            obj = INT2NUM(*V_I8REF(pvar));
+        else
+            obj = INT2NUM(V_I8(pvar));
+        */
+#ifdef HAVE_LONG_LONG
+        obj = LL2NUM(V_I8(pvar));
+#else
+        obj = INT2NUM(V_I8(pvar));
+#endif
+        break;
+    case VT_UI8:
+        /*
+        if(V_ISBYREF(pvar))
+            obj = INT2NUM(*V_UI8REF(pvar));
+        else
+            obj = INT2NUM(V_UI8(pvar));
+        */
+#ifdef HAVE_LONG_LONG
+        obj = ULL2NUM(V_UI8(pvar));
+#else
+        obj = UINT2NUM(V_UI8(pvar));
+#endif
+        break;
     case VT_R4:
         if(V_ISBYREF(pvar))
             obj = rb_float_new(*V_R4REF(pvar));
@@ -7463,6 +7488,8 @@ Init_win32ole()
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI1", INT2FIX(VT_UI1));
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI2", INT2FIX(VT_UI2));
     rb_define_const(mWIN32OLE_VARIANT, "VT_UI4", INT2FIX(VT_UI4));
+    rb_define_const(mWIN32OLE_VARIANT, "VT_I8", INT2FIX(VT_I8));
+    rb_define_const(mWIN32OLE_VARIANT, "VT_UI8", INT2FIX(VT_UI8));
     rb_define_const(mWIN32OLE_VARIANT, "VT_INT", INT2FIX(VT_INT));
     rb_define_const(mWIN32OLE_VARIANT, "VT_UINT", INT2FIX(VT_UINT));
     rb_define_const(mWIN32OLE_VARIANT, "VT_ARRAY", INT2FIX(VT_ARRAY));
