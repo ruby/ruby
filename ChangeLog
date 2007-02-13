@@ -6,6 +6,16 @@ Wed Feb 14 03:14:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/uri/generic.rb (URI::Generic::set_password): password can be
 	  cleared by nil.  [ruby-core:10290]
 
+Wed Feb 14 03:04:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: RVarmap no longer used as yytype; removed.
+
+	* parse.y (dyna_push_gen): no longer need return value.
+
+	* parse.y (dyna_pop_gen): no longer need argument.
+
+	* parse.y (local_push_gen): initialize nofree.
+
 Wed Feb 14 00:30:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (init_unixsock): path may contain NUL for

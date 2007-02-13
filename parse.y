@@ -393,10 +393,10 @@ static ID  *dyna_tbl_gen(struct parser_params*);
 #define dyna_tbl() dyna_tbl_gen(parser)
 static ID   internal_id(void);
 
-static int dyna_push_gen(struct parser_params*);
+static void dyna_push_gen(struct parser_params*);
 #define dyna_push() dyna_push_gen(parser)
-static void dyna_pop_gen(struct parser_params*, struct RVarmap*);
-#define dyna_pop(vars) dyna_pop_gen(parser, vars)
+static void dyna_pop_gen(struct parser_params*);
+#define dyna_pop() dyna_pop_gen(parser)
 static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
 static NODE *dyna_init_gen(struct parser_params*, NODE*, int);
@@ -1206,7 +1206,7 @@ block_command	: block_call
 cmd_brace_block	: tLBRACE_ARG
 		    {
 		    /*%%%*/
-			$<num>$ = dyna_push();
+			dyna_push();
 			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
@@ -1219,8 +1219,8 @@ cmd_brace_block	: tLBRACE_ARG
 			$3->nd_body = block_append($3->nd_body,
 						   dyna_init($5, $<num>4));
 			$$ = $3;
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
+			nd_set_line($$, $<num>2);
+			dyna_pop();
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $5);
 		    %*/
@@ -3215,7 +3215,7 @@ bvar		:  tIDENTIFIER
 
 lambda		: {
 		    /*%%%*/
-			$<num>$ = dyna_push();
+			dyna_push();
 		    /*%
 		    %*/
 		    }
@@ -3232,7 +3232,7 @@ lambda		: {
 		    /*%%%*/
 			$$ = $3;
                         $$->nd_body = block_append($$->nd_body, $5);
-			dyna_pop($<vars>1);
+			dyna_pop();
 			lpar_beg = $<num>2;
 		    /*%
 		    	$$ = dispatch2(lambda, $3, $5);
@@ -3271,7 +3271,7 @@ lambda_body	: tLAMBEG compstmt '}'
 do_block	: keyword_do_block
 		    {
 		    /*%%%*/
-			$<num>$ = dyna_push();
+			dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3288,8 +3288,8 @@ do_block	: keyword_do_block
 			$3->nd_body = block_append($3->nd_body,
 						   dyna_init($5, $<num>4));
 			$$ = $3;
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
+			nd_set_line($$, $<num>2);
+			dyna_pop();
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $5);
 		    %*/
@@ -3419,7 +3419,7 @@ method_call	: operation paren_args
 brace_block	: '{'
 		    {
 		    /*%%%*/
-			$<num>$ = dyna_push();
+			dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3436,8 +3436,8 @@ brace_block	: '{'
 			$3->nd_body = block_append($3->nd_body,
 						   dyna_init($5, $<num>4));
 			$$ = $3;
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
+			nd_set_line($$, $<num>2);
+			dyna_pop();
 		    /*%
 			$$ = dispatch2(brace_block, escape_Qundef($3), $5);
 		    %*/
@@ -3445,7 +3445,7 @@ brace_block	: '{'
 		| keyword_do
 		    {
 		    /*%%%*/
-			$<num>$ = dyna_push();
+			dyna_push();
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
@@ -3462,8 +3462,8 @@ brace_block	: '{'
 			$3->nd_body = block_append($3->nd_body,
 						   dyna_init($5, $<num>4));
 			$$ = $3;
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
+			nd_set_line($$, $<num>2);
+			dyna_pop();
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $5);
 		    %*/
@@ -8032,6 +8032,7 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->prev = lvtbl;
     local->tbl = 0;
     local->dnames = 0;
+    local->nofree = 0;
     local->dvars = inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE;
     lvtbl = local;
 }
@@ -8173,15 +8174,14 @@ dyna_check_gen(struct parser_params *parser, ID id)
     }
 }
 
-static int
+static void
 dyna_push_gen(struct parser_params *parser)
 {
     lvtbl->dvars = vtable_alloc(lvtbl->dvars);
-    return 0;
 }
 
 static void
-dyna_pop_gen(struct parser_params *parser, struct RVarmap* vars)
+dyna_pop_gen(struct parser_params *parser)
 {
     struct vtable *tmp = lvtbl->dvars;
     lvtbl->dvars = lvtbl->dvars->prev;
