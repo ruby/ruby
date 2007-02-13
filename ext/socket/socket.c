@@ -1602,7 +1602,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
         rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
             (int)sizeof(sockaddr.sun_path)-1);
     }
-    strcpy(sockaddr.sun_path, StringValueCStr(path));
+    memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
     if (server) {
         status = bind(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
@@ -1628,8 +1628,8 @@ init_unixsock(VALUE sock, VALUE path, int server)
     if (server) listen(fd, 5);
 
     init_sock(sock, fd);
-    GetOpenFile(sock, fptr);
     if (server) {
+	GetOpenFile(sock, fptr);
         fptr->path = strdup(RSTRING_PTR(path));
     }
 

@@ -1,3 +1,8 @@
+Wed Feb 14 00:30:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (init_unixsock): path may contain NUL for
+	  abstract unix sockets.  [ruby-core:10288]
+
 Tue Feb 13 02:21:12 2007  Sam Roberts  <sroberts@uniserve.com>
 
 	* io.c (rb_f_syscall): Fix buffer overflow with syscall
