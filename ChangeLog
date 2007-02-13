@@ -581,6 +581,11 @@ Mon Jan 29 23:52:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* tool/compile.rb: replace YARVCore by VM class.
 
+Mon Jan 29 17:52:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/date/format.rb (Date::Format::Bag::method_missing): add
+	  prefix to avoid making t class-local instance variable.
+
 Mon Jan 29 21:32:37 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.locale=, WIN32OLE.locale,

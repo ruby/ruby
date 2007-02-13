@@ -99,7 +99,7 @@ class Date
       def method_missing(t, *args, &block)
 	t = t.to_s
 	set = t.chomp!('=')
-	t = '@' + t
+	t = '@v' + t
 	if set
 	  instance_variable_set(t, *args)
 	else
