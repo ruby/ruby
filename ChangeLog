@@ -1,3 +1,8 @@
+Tue Feb 13 02:21:12 2007  Sam Roberts  <sroberts@uniserve.com>
+
+	* io.c (rb_f_syscall): Fix buffer overflow with syscall
+	  arguments.  [ruby-bugs:PR#8541]
+
 Mon Feb 12 13:57:30 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_variant2val): support VT_I8, VT_UI8.
