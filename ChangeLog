@@ -1,3 +1,11 @@
+Wed Feb 14 03:14:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic::userinfo): should support
+	  empty password.  [ruby-core:10290]
+
+	* lib/uri/generic.rb (URI::Generic::set_password): password can be
+	  cleared by nil.  [ruby-core:10290]
+
 Wed Feb 14 00:30:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (init_unixsock): path may contain NUL for

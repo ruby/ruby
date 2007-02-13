@@ -337,7 +337,7 @@ module URI
     protected :set_user
 
     def set_password(v)
-      set_userinfo(@user, v)
+      @password = v
       v
     end
     protected :set_password
@@ -356,7 +356,9 @@ module URI
     private :escape_userpass
 
     def userinfo
-      if !@password
+      if @user.nil? or @user.empty?
+        nil
+      elsif @password.nil? or @password.empty?
         @user
       else
         @user + ':' + @password
