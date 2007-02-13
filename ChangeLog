@@ -1,3 +1,8 @@
+Tue Feb 13 02:21:12 2007  Sam Roberts  <sroberts@uniserve.com>
+
+	* io.c (rb_f_syscall): Fix buffer overflow with syscall
+	  arguments.  [ruby-bugs:PR#8541]
+
 Sun Feb 11 07:46:45 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::read_multipart): Properly parse
