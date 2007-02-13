@@ -117,7 +117,6 @@ struct vtable {
 
 struct local_vars {
     struct vtable *tbl;
-    struct vtable *dnames;
     struct vtable *dvars;
     struct local_vars *prev;
     int nofree;
@@ -7240,7 +7239,6 @@ gettable_gen(struct parser_params *parser, ID id)
 	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
-        dyna_check(id);
 	return NEW_VCALL(id);
     }
     else if (is_global_id(id)) {
@@ -8031,7 +8029,6 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local = ALLOC(struct local_vars);
     local->prev = lvtbl;
     local->tbl = 0;
-    local->dnames = 0;
     local->nofree = 0;
     local->dvars = inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE;
     lvtbl = local;
@@ -8042,7 +8039,6 @@ local_pop_gen(struct parser_params *parser)
 {
     struct local_vars *local = lvtbl->prev;
     vtable_free(lvtbl->tbl);
-    vtable_free(lvtbl->dnames);
     vtable_free(lvtbl->dvars);
     xfree(lvtbl);
     lvtbl = local;
@@ -8152,26 +8148,6 @@ dyna_var_gen(struct parser_params *parser, ID id)
         lvtbl->dvars = vtable_alloc(lvtbl->dvars);
     }
     vtable_add(lvtbl->dvars, id);
-    if (!vtable_included(lvtbl->dnames, id)) {
-        if (!lvtbl->dnames) {
-            lvtbl->dnames = vtable_alloc(0);
-        }
-        vtable_add(lvtbl->dnames, id);
-    }
-}
-
-static void
-dyna_check_gen(struct parser_params *parser, ID id)
-{
-    int i;
-
-    if (in_defined) return;	/* no check needed */
-    for (i=0; i<vtable_size(lvtbl->dnames); i++) {
-	if (lvtbl->dnames->tbl[i] == id) {
-	    rb_warnS("out-of-scope variable - %s", rb_id2name(id));
-	    return;
-	}
-    }
 }
 
 static void
@@ -9385,4 +9361,3 @@ Init_ripper(void)
     rb_intern("&&");
 }
 #endif /* RIPPER */
-

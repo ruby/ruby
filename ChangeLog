@@ -6,6 +6,11 @@ Wed Feb 14 03:14:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/uri/generic.rb (URI::Generic::set_password): password can be
 	  cleared by nil.  [ruby-core:10290]
 
+Wed Feb 14 03:10:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (struct local_vars): no need to warn out-of-scope
+	  variables; remove dnames member from struct.
+
 Wed Feb 14 03:04:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: RVarmap no longer used as yytype; removed.
