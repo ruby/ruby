@@ -5047,6 +5047,8 @@ rb_f_syscall(argc, argv)
     rb_secure(2);
     if (argc == 0)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
+    if (argc > sizeof(arg) / sizeof(arg[0]))
+	rb_raise(rb_eArgError, "too many arguments for syscall");
     arg[0] = NUM2LONG(argv[0]); argv++;
     while (items--) {
 	VALUE v = rb_check_string_type(*argv);
