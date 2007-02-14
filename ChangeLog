@@ -1,7 +1,9 @@
-Wed Feb 14 21:12:36 2007  Koichi Sasada  <ko1@atdot.net>
+Wed Feb 14 21:19:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci (native_thread_create): adjust 4KB (page size)
 	  alignment.
+
+Wed Feb 14 21:12:36 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci (CHECK_ERR): call rb_bug()
 	  instead of printf() and exit().
