@@ -1,3 +1,9 @@
+Wed Feb 14 19:22:15 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/digest.rb (Digest::self.const_missing): Drop
+	  autoloads for sha2 classes in favor of handling in
+	  const_missing(), to work around a problem exposed on OS X.
+
 Tue Feb 13 02:21:12 2007  Sam Roberts  <sroberts@uniserve.com>
 
 	* io.c (rb_f_syscall): Fix buffer overflow with syscall
