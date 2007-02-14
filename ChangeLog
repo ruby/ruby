@@ -1,3 +1,9 @@
+Wed Feb 14 22:10:21 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* configure.in: change stack limit to 2MB from 32MB.
+
+	* win32/Makefile.sub: ditto.
+
 Wed Feb 14 21:39:36 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb (Digest::self.const_missing): Drop

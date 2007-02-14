@@ -173,7 +173,7 @@ MINIRUBY = .\miniruby$(EXEEXT) $(MINIRUBYOPT)
 RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 !if !defined(STACK)
-STACK = 0x2000000
+STACK = 0x200000
 !endif
 ORGLIBPATH = $(LIB)
 
