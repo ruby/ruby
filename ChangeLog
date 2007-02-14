@@ -1,3 +1,9 @@
+Wed Feb 14 16:48:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/date/format.rb (Date::Format::Bag::method_missing): need not
+	  to use instance variables corresponding each method; use Hash
+	  instead.
+
 Wed Feb 14 13:12:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (reg_operand): allow symbols to be operands for regular

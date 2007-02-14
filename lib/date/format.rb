@@ -95,24 +95,23 @@ class Date
     end
 
     class Bag # :nodoc:
+      def initialize
+        @_dict = {}
+      end
 
       def method_missing(t, *args, &block)
-	t = t.to_s
-	set = t.chomp!('=')
-	t = '@v' + t
-	if set
-	  instance_variable_set(t, *args)
+        if /=$/ =~ t
+          t = t.to_s.chomp('=').to_sym
+          @_dict[t] = args[0]
 	else
-	  if instance_variables.include?(t)
-	    instance_variable_get(t)
+          if @_dict.key?(t)
+            @_dict[t]
 	  end
 	end
       end
 
       def to_hash
-	instance_variables.
-	  select{|n| !instance_variable_get(n).nil?}.grep(/\A@v[^_]/).
-	  inject({}){|r, n| r[n[2..-1].intern] = instance_variable_get(n); r}
+        @_dict.reject{|k,v| /^_/ =~ k}
       end
 
     end
