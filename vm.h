@@ -264,9 +264,9 @@ default:                        \
 
 /* VM state version */
 
-#define GET_VM_STATE_VERSION() (yarvGlobalStateVersion)
+#define GET_VM_STATE_VERSION() (vm_global_state_version)
 #define INC_VM_STATE_VERSION() \
-  (yarvGlobalStateVersion = (yarvGlobalStateVersion+1) & 0x8fffffff)
+  (vm_global_state_version = (vm_global_state_version+1) & 0x8fffffff)
 
 #define BOP_PLUS     0x01
 #define BOP_MINUS    0x02

@@ -60,6 +60,8 @@ static VALUE yarv_finish_insn_seq[1] = { BIN(finish) };
 
 #include "call_cfunc.ci"
 
+static VALUE vm_global_state_version = 1;
+
 void
 rb_vm_change_state(void)
 {

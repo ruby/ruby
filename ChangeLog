@@ -1,3 +1,8 @@
+Thu Feb 15 01:52:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.(c|h), yarvcore.(c|h) (yarvGlobalStateVersion): rename to
+	  ruby_vm_global_state_version.
+
 Thu Feb 15 01:50:26 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/fileutils/test_fileutils.rb (check_singleton): fix to use

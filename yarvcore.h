@@ -138,8 +138,6 @@ extern ID idFuncall;
 extern ID id__send_bang;
 
 
-extern unsigned long yarvGlobalStateVersion;
-
 struct insn_info_struct {
     unsigned short position;
     unsigned short line_no;

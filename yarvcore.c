@@ -58,9 +58,6 @@ ID id__send;
 ID idFuncall;
 ID id__send_bang;
 
-unsigned long yarvGlobalStateVersion = 1;
-
-
 /* from Ruby 1.9 eval.c */
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
