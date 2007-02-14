@@ -1,3 +1,8 @@
+Wed Feb 14 22:52:43 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): VC++6 does not 
+	  support VT_I8, VT_UI8.
+
 Wed Feb 14 22:10:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* configure.in: change stack limit to 2MB from 32MB.

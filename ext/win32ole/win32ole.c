@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.6"
+#define WIN32OLE_VERSION "0.9.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1611,32 +1611,22 @@ ole_variant2val(VARIANT *pvar)
         else 
             obj = INT2NUM((long)V_I4(pvar));
         break;
+#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
-        /*
-        if(V_ISBYREF(pvar))
-            obj = INT2NUM(*V_I8REF(pvar));
-        else
-            obj = INT2NUM(V_I8(pvar));
-        */
 #ifdef HAVE_LONG_LONG
         obj = LL2NUM(V_I8(pvar));
 #else
         obj = INT2NUM(V_I8(pvar));
-#endif
+#endif 
         break;
     case VT_UI8:
-        /*
-        if(V_ISBYREF(pvar))
-            obj = INT2NUM(*V_UI8REF(pvar));
-        else
-            obj = INT2NUM(V_UI8(pvar));
-        */
 #ifdef HAVE_LONG_LONG
         obj = ULL2NUM(V_UI8(pvar));
 #else
         obj = UINT2NUM(V_UI8(pvar));
 #endif
         break;
+#endif  /* (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__) */
     case VT_R4:
         if(V_ISBYREF(pvar))
             obj = rb_float_new(*V_R4REF(pvar));
