@@ -1,3 +1,11 @@
+Wed Feb 14 21:12:36 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.ci (native_thread_create): adjust 4KB (page size)
+	  alignment.
+
+	* thread_pthread.ci (CHECK_ERR): call rb_bug()
+	  instead of printf() and exit().
+
 Wed Feb 14 16:48:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/date/format.rb (Date::Format::Bag::method_missing): need not

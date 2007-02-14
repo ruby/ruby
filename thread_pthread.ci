@@ -218,7 +218,7 @@ use_cached_thread(rb_thread_t *th)
 }
 
 #define CHECK_ERR(expr) \
-  { int err; if ((err = (expr)) != 0) { printf("err: %d - " #expr, err); exit(1); }}
+  { int err; if ((err = (expr)) != 0) { rb_bug("err: %d - %s", err, #expr); }}
 
 static int
 native_thread_create(rb_thread_t *th)
@@ -238,10 +238,10 @@ native_thread_create(rb_thread_t *th)
 	}
 #endif
 
-	thread_debug("create: %p, stack size: %ld\n", th, stack_size);
 	CHECK_ERR(pthread_attr_init(&attr));
 
 #ifdef PTHREAD_STACK_MIN
+	thread_debug("create - stack size: %ld\n", th, stack_size);
 	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 #endif
 
@@ -249,6 +249,7 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
 	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
+	thread_debug("create: %p (%d)", th, err);
 	CHECK_ERR(pthread_attr_destroy(&attr));
 
 	if (err != 0) {
