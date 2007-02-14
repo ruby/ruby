@@ -2334,10 +2334,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	/* variables */
       case NODE_LVAR:
-	estr = "local-variable";
-	break;
       case NODE_DVAR:
-	estr = "local-variable(in-block)";
+	estr = "local-variable";
 	break;
 
       case NODE_IVAR:

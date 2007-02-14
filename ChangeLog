@@ -1,3 +1,8 @@
+Wed Feb 14 08:46:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (defined_expr): no longer distinguish ordinary local
+	  variables and in-block local variables in defined? value.
+
 Wed Feb 14 03:14:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::userinfo): should support
