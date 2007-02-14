@@ -39,7 +39,7 @@
 #    method body is a simple:
 #
 #       def Klass.instance()
-#         return @__instance__
+#         return @singleton__instance__
 #       end
 #
 # *  Klass._load(str)  -  calling Klass.instance()
@@ -101,16 +101,16 @@ module Singleton
   class << Singleton
     def __init__(klass)
       klass.instance_eval {
-        @__instance__ = nil
-        @__mutex__ = Mutex.new
+        @singleton__instance__ = nil
+        @singleton__mutex__ = Mutex.new
       }
       def klass.instance
-        return @__instance__ if @__instance__
-        @__mutex__.synchronize {
-          return @__instance__ if @__instance__
-          @__instance__ = new()
+        return @singleton__instance__ if @singleton__instance__
+        @singleton__mutex__.synchronize {
+          return @singleton__instance__ if @singleton__instance__
+          @singleton__instance__ = new()
         }
-        @__instance__
+        @singleton__instance__
       end
       klass
     end
@@ -177,13 +177,13 @@ end
 class << Ups
   def _instantiate?
     @enter.push Thread.current[:i]
-    while false.equal?(@__instance__)
-      @__mutex__.unlock
+    while false.equal?(@singleton__instance__)
+      @singleton__mutex__.unlock
       sleep 0.08 
-      @__mutex__.lock
+      @singleton__mutex__.lock
     end
     @leave.push Thread.current[:i]
-    @__instance__
+    @singleton__instance__
   end
   
   def __sleep

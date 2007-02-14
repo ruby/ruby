@@ -95,15 +95,15 @@
 #    class SimpleDelegator < Delegator
 #      def initialize(obj)
 #        super             # pass obj to Delegator constructor, required
-#        @_sd_obj = obj    # store obj for future use
+#        @delegate_sd_obj = obj    # store obj for future use
 #      end
 # 
 #      def __getobj__
-#        @_sd_obj          # return object we are delegating to, required
+#        @delegate_sd_obj          # return object we are delegating to, required
 #      end
 # 
 #      def __setobj__(obj)
-#        @_sd_obj = obj    # change delegation object, a feature we're providing
+#        @delegate_sd_obj = obj    # change delegation object, a feature we're providing
 #      end
 # 
 #      # ...
@@ -219,7 +219,7 @@ end
 class SimpleDelegator<Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
-    @_sd_obj
+    @delegate_sd_obj
   end
 
   #
@@ -238,7 +238,7 @@ class SimpleDelegator<Delegator
   #
   def __setobj__(obj)
     raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
-    @_sd_obj = obj
+    @delegate_sd_obj = obj
   end
 end
 
@@ -269,11 +269,11 @@ def DelegateClass(superclass)
   klass.module_eval {
     include Delegator::MethodDelegation
     def __getobj__  # :nodoc:
-      @_dc_obj
+      @delegate_dc_obj
     end
     def __setobj__(obj)  # :nodoc:
       raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
-      @_dc_obj = obj
+      @delegate_dc_obj = obj
     end
   }
   for method in methods
@@ -281,7 +281,7 @@ def DelegateClass(superclass)
       klass.module_eval <<-EOS, __FILE__, __LINE__+1
         def #{method}(*args, &block)
 	  begin
-	    @_dc_obj.__send(:#{method}, *args, &block)
+	    @delegate_dc_obj.__send(:#{method}, *args, &block)
 	  rescue
 	    $@[0,2] = nil
 	    raise
