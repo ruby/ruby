@@ -7,10 +7,7 @@
 extern VALUE ruby_top_self;
 
 VALUE ruby_dln_librefs;
-static VALUE rb_features;
 static st_table *loading_tbl;
-
-NORETURN(void jump_tag_but_local_jump(int, VALUE));
 
 #define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
 #ifdef DLEXT2
@@ -18,6 +15,12 @@ NORETURN(void jump_tag_but_local_jump(int, VALUE));
 #else
 #define IS_DLEXT(e) (strcmp(e, DLEXT) == 0)
 #endif
+
+static VALUE
+get_loaded_features(void)
+{
+    return GET_VM()->loaded_features;
+}
 
 static int
 rb_feature_p(const char *feature, const char *ext, int rb)
@@ -34,8 +37,8 @@ rb_feature_p(const char *feature, const char *ext, int rb)
 	len = strlen(feature);
 	elen = 0;
     }
-    for (i = 0; i < RARRAY_LEN(rb_features); ++i) {
-	v = RARRAY_PTR(rb_features)[i];
+    for (i = 0; i < RARRAY_LEN(get_loaded_features()); ++i) {
+	v = RARRAY_PTR(get_loaded_features())[i];
 	f = StringValuePtr(v);
 	if (strncmp(f, feature, len) != 0)
 	    continue;
@@ -99,7 +102,7 @@ rb_provided(const char *feature)
 static void
 rb_provide_feature(VALUE feature)
 {
-    rb_ary_push(rb_features, feature);
+    rb_ary_push(get_loaded_features(), feature);
 }
 
 void
@@ -518,9 +521,9 @@ Init_load()
     rb_define_readonly_variable("$-I", &rb_load_path);
     rb_define_readonly_variable("$LOAD_PATH", &rb_load_path);
 
-    rb_features = rb_ary_new();
-    rb_define_readonly_variable("$\"", &rb_features);
-    rb_define_readonly_variable("$LOADED_FEATURES", &rb_features);
+    rb_define_virtual_variable("$\"", get_loaded_features, 0);
+    rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
+    GET_VM()->loaded_features = rb_ary_new();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

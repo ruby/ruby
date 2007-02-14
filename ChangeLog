@@ -1,3 +1,10 @@
+Wed Feb 14 11:12:02 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_load.c, yarvcore.h: use rb_vm_t#loaded_features instead of
+	  rb_features (global variable).
+
+	* yarvcore.c: mark rb_vm_t#loaded_features.
+
 Wed Feb 14 08:46:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): no longer distinguish ordinary local

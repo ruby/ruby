@@ -182,7 +182,9 @@ vm_mark(void *ptr)
 	MARK_UNLESS_NULL(vm->thgroup_default);
 	MARK_UNLESS_NULL(vm->mark_object_ary);
 	MARK_UNLESS_NULL(vm->last_status);
+	MARK_UNLESS_NULL(vm->loaded_features);
     }
+
     MARK_REPORT_LEAVE("vm");
 }
 
@@ -512,9 +514,9 @@ Init_VM(void)
 	/* create vm object */
 	VALUE vmval = vm_alloc(rb_cVM);
 	VALUE thval;
-
 	rb_vm_t *vm;
 	rb_thread_t *th;
+
 	vm = theYarvVM;
 
 	xfree(RDATA(vmval)->data);

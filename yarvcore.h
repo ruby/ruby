@@ -327,6 +327,10 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
 
+    /* load */
+    VALUE loaded_features;
+    
+    /* signal */
     rb_atomic_t signal_buff[RUBY_NSIG];
     rb_atomic_t bufferd_signal_size;
 } rb_vm_t;
