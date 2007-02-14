@@ -1,19 +1,21 @@
 require 'digest.so'
 
 module Digest
-  autoload "SHA256", "digest/sha2.so"
-  autoload "SHA384", "digest/sha2.so"
-  autoload "SHA512", "digest/sha2.so"
-
   def self.const_missing(name)
-    begin
-      require File.join('digest', name.downcase)
-
-      return Digest.const_get(name) if Digest.const_defined?(name)
-    rescue LoadError => e
+    case name
+    when :SHA256, :SHA384, :SHA512
+      lib = 'digest/sha2.so'
+    else
+      lib = File.join('digest', name.to_s.downcase)
     end
 
-    raise NameError, "Digest class not found: Digest::#{name}"
+    begin
+      require lib
+    rescue LoadError => e
+      raise LoadError, "library not found for class Digest::#{name} -- #{lib}"
+    end
+
+    Digest.const_get(name)
   end
 
   class ::Digest::Class
