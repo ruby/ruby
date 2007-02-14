@@ -76,7 +76,7 @@ st_delete_wrap(st_table * table, VALUE key)
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, int is_return);
+static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func);
 static void clear_unblock_function(rb_thread_t *th);
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
@@ -95,7 +95,7 @@ NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 #define BLOCKING_REGION(exec, ubf) do { \
     rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
-    set_unblock_function(__th, ubf, 0); \
+    set_unblock_function(__th, ubf); \
     __th->status = THREAD_STOPPED; \
     GVL_UNLOCK_BEGIN(); {\
 	    exec; \
@@ -160,20 +160,15 @@ thread_debug(const char *fmt, ...)
 
 
 static void
-set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, int is_return)
+set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func)
 {
   check_ints:
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(); /* check signal or so */
     native_mutex_lock(&th->interrupt_lock);
     if (th->interrupt_flag) {
 	native_mutex_unlock(&th->interrupt_lock);
-	if (is_return) {
-	    return;
-	}
-	else {
 	    goto check_ints;
 	}
-    }
     else {
 	th->unblock_function = func;
     }
@@ -193,7 +188,6 @@ rb_thread_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
     th->interrupt_flag = 1;
-
     if (th->unblock_function) {
 	(th->unblock_function)(th);
     }
@@ -398,6 +392,7 @@ thread_join(rb_thread_t *target_th, double delay)
 		GET_THROWOBJ_STATE(err), GET_THROWOBJ_VAL(err)));
 	}
 	else {
+	    /* normal exception */
 	    rb_exc_raise(err);
 	}
     }
