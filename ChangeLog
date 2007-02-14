@@ -1,3 +1,13 @@
+Wed Feb 14 13:12:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (reg_operand): allow symbols to be operands for regular
+	  expression matches.
+
+	* string.c (Init_String): allow Symbol#===.
+
+	* lib/date/format.rb (Date::Format::Bag::to_hash): string
+	  added prefixes.
+
 Wed Feb 14 12:58:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (do_select): fix to iterate select().

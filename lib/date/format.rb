@@ -111,8 +111,8 @@ class Date
 
       def to_hash
 	instance_variables.
-	  select{|n| !instance_variable_get(n).nil?}.grep(/\A@[^_]/).
-	  inject({}){|r, n| r[n[1..-1].intern] = instance_variable_get(n); r}
+	  select{|n| !instance_variable_get(n).nil?}.grep(/\A@v[^_]/).
+	  inject({}){|r, n| r[n[2..-1].intern] = instance_variable_get(n); r}
       end
 
     end

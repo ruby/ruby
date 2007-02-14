@@ -1586,13 +1586,29 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 static VALUE
+reg_operand(VALUE s, int check)
+{
+    if (SYMBOL_P(s)) {
+	return rb_sym_to_s(s);
+    }
+    else {
+	VALUE tmp = rb_check_string_type(s);
+	if (check && NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "can't convert %s to String",
+		     rb_obj_classname(s));
+	}
+	return tmp;
+    }
+}
+
+static VALUE
 rb_reg_match_pos(VALUE re, VALUE str, long pos)
 {
     if (NIL_P(str)) {
 	rb_backref_set(Qnil);
 	return Qnil;
     }
-    StringValue(str);
+    str = reg_operand(str, Qtrue);
     if (pos != 0) {
 	if (pos < 0) {
 	    pos += RSTRING_LEN(str);
@@ -1647,14 +1663,11 @@ rb_reg_eqq(VALUE re, VALUE str)
 {
     long start;
 
-    if (TYPE(str) != T_STRING) {
-	str = rb_check_string_type(str);
-	if (NIL_P(str)) {
-	    rb_backref_set(Qnil);
-	    return Qfalse;
-	}
+    str = reg_operand(str, Qfalse);
+    if (NIL_P(str)) {
+	rb_backref_set(Qnil);
+	return Qfalse;
     }
-    StringValue(str);
     start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
 	return Qfalse;
@@ -1912,7 +1925,7 @@ rb_reg_s_quote(int argc, VALUE *argv)
 	curr_kcode = reg_kcode;
 	reg_kcode = kcode_saved;
     }
-    StringValue(str);
+    str = reg_operand(str, Qtrue);
     str = rb_reg_quote(str);
     kcode_reset_option();
     return str;
