@@ -1641,80 +1641,120 @@ static int
 do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	  struct timeval *timeout)
 {
-    int result, lerrno = 0;
-#if defined(__CYGWIN__) || defined(_WIN32)
-    /* polling port */
+    int result, lerrno;
     fd_set orig_read, orig_write, orig_except;
-    struct timeval wait_100ms, *wait;
 
-    wait_100ms.tv_sec = 0;
-    wait_100ms.tv_usec = 100 * 1000; /* 100 ms */
-    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) > 0) ? &wait_100ms : timeout;
+#ifndef linux
+    double limit;
+    struct timeval wait_rest;
 
-    do {
-	if (read) orig_read = *read;
-	if (write) orig_write = *write;
-	if (except) orig_except = *except;
+    if (timeout) {
+	limit = timeofday() +
+	  (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
+	wait_rest = *timeout;
+	timeout = &wait_rest;
+    }
+#endif
 
-	BLOCKING_REGION({
-	    result = select(n, read, write, except, wait);
-	    if (result < 0) lerrno = errno;
-	}, 0);
+    if (read) orig_read = *read;
+    if (write) orig_write = *write;
+    if (except) orig_except = *except;
 
-	if (result != 0) break;
-	if (read) *read = orig_read;
-	if (write) *write = orig_write;
-	if (except) *except = orig_except;
-	wait = &wait_100ms;
-    } while (timeout == 0 || subst(timeout, &wait_100ms));
+  retry:
+    lerrno = 0;
+
+#if defined(__CYGWIN__) || defined(_WIN32)
+    {
+	/* polling duration: 100ms */
+	struct timeval wait_100ms, *wait;
+	wait_100ms.tv_sec = 0;
+	wait_100ms.tv_usec = 100 * 1000; /* 100 ms */
+
+	do {
+	    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) > 0) ? &wait_100ms : timeout;
+	    BLOCKING_REGION({
+		do {
+		    result = select(n, read, write, except, wait);
+		    if (result < 0) lerrno = errno;
+		    if (result != 0) break;
+
+		    if (read) *read = orig_read;
+		    if (write) *write = orig_write;
+		    if (except) *except = orig_except;
+		    wait = &wait_100ms;
+		} while (__th->interrupt_flag == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
+	    }, 0);
+	} while (result == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
+    }
 #else
     BLOCKING_REGION({
 	result = select(n, read, write, except, timeout);
 	if (result < 0) lerrno = errno;
     }, ubf_select);
 #endif
+
     errno = lerrno;
+
+    if (result < 0) {
+	if (errno == EINTR
+#ifdef ERESTART
+	    || errno == ERESTART
+#endif
+	    ) {
+	    if (read) *read = orig_read;
+	    if (write) *write = orig_write;
+	    if (except) *except = orig_except;
+#ifndef linux
+	    if (timeout) {
+		double d = limit - timeofday();
+
+		wait_rest.tv_sec = (unsigned int)d;
+		wait_rest.tv_usec = (long)((d-(double)wait_rest.tv_sec)*1e6);
+		if (wait_rest.tv_sec < 0)  wait_rest.tv_sec = 0;
+		if (wait_rest.tv_usec < 0) wait_rest.tv_usec = 0;
+	    }
+#endif
+	    goto retry;
+	}
+	else {
+	    rb_bug("fatal error on select() - errno: %d\n", lerrno);
+	}
+    }
     return result;
 }
 
 static void
-rb_thread_wait_fd_rw(int fd, char c)
+rb_thread_wait_fd_rw(int fd, int read)
 {
     int result = 0;
-    thread_debug("rb_thread_wait_fd_rw (%d, %c)\n", fd, c);
+    thread_debug("rb_thread_wait_fd_rw(%d, %s)\n", fd, read ? "read" : "write");
 
     while (result <= 0) {
 	rb_fdset_t set;
 	rb_fd_init(&set);
 	FD_SET(fd, &set);
 
-	switch(c) {
-	  case 'r':
+	if (read) {
 	    result = do_select(fd + 1, rb_fd_ptr(&set), 0, 0, 0);
-	    break;
-
-	  case'w':
+	}
+	else {
 	    result = do_select(fd + 1, 0, rb_fd_ptr(&set), 0, 0);
-	    break;
-
-	  default:
-	    rb_bug("unknown wait type: %c", c);
 	}
     }
 
-    thread_debug("rb_thread_wait_fd_rw (%d, %c): done\n", fd, c);
+    thread_debug("rb_thread_wait_fd_rw(%d, %s): done\n", fd, read ? "read" : "write");
 }
 
 void
 rb_thread_wait_fd(int fd)
 {
-    rb_thread_wait_fd_rw(fd, 'r');
+    rb_thread_wait_fd_rw(fd, 1);
 }
 
 int
 rb_thread_fd_writable(int fd)
 {
-    rb_thread_wait_fd_rw(fd, 'w');
+    rb_thread_wait_fd_rw(fd, 0);
     return Qtrue;
 }
 
@@ -1722,13 +1762,6 @@ int
 rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 		 struct timeval *timeout)
 {
-    struct timeval *tvp = timeout;
-    int n;
-#ifndef linux
-    double limit;
-    struct timeval tv;
-#endif
-
     if (!read && !write && !except) {
 	if (!timeout) {
 	    rb_thread_sleep_forever();
@@ -1737,57 +1770,10 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 	rb_thread_wait_for(*timeout);
 	return 0;
     }
-
-#ifndef linux
-    if (timeout) {
-	limit = timeofday() +
-	    (double)timeout->tv_sec + (double)timeout->tv_usec * 1e-6;
+    else {
+	return do_select(max, read, write, except, timeout);
     }
-#endif
-
-#ifndef linux
-    if (timeout) {
-	tv = *timeout;
-	tvp = &tv;
     }
-#else
-    tvp = timeout;
-#endif
-
-    for (;;) {
-#ifndef linux
-	fd_set orig_read, orig_write, orig_except;
-	if (read) orig_read = *read;
-	if (write) orig_write = *write;
-	if (except) orig_except = *except;
-#endif
-
-	n = do_select(max, read, write, except, tvp);
-
-	if (n < 0) {
-	    switch (errno) {
-	    case EINTR:
-#ifdef ERESTART
-	    case ERESTART:
-#endif
-
-#ifndef linux
-		if (timeout) {
-		    double d = limit - timeofday();
-		    tv = double2timeval(d);
-		}
-		if (read) *read = orig_read;
-		if (write) *write = orig_write;
-		if (except) *except = orig_except;
-#endif
-		continue;
-	    default:
-		break;
-	    }
-	}
-	return n;
-    }
-}
 
 
 /*
