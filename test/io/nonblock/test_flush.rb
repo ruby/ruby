@@ -6,7 +6,6 @@ end
 
 class TestIONonblock < Test::Unit::TestCase
   def test_flush                # [ruby-dev:24985]
-    flunk "YARV doesn't support io/nonblock"
     r,w = IO.pipe
     w.nonblock = true
     w.sync = false

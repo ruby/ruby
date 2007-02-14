@@ -1,3 +1,12 @@
+Thu Feb 15 01:50:26 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/fileutils/test_fileutils.rb (check_singleton): fix to use
+	  symbole instead of string.
+
+	* test/io/nonblock/test_flush.rb: enable tests.
+
+	* test/xmlrpc/test_webrick_server.rb: ditto.
+
 Thu Feb 15 01:43:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/delegate.rb: catch up with class local variable (@_v) spec.

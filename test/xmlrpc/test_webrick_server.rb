@@ -52,7 +52,6 @@ class Test_Webrick < Test::Unit::TestCase
 
   PORT = 8070
   def test_client_server
-assert false, "This tests doesn't work on YARV"
     # NOTE: I don't enable SSL testing as this hangs
     [false].each do |use_ssl|
       begin

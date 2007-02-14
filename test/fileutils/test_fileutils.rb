@@ -77,7 +77,7 @@ class TestFileUtils
   include FileUtils
 
   def check_singleton(name)
-    assert_equal true, ::FileUtils.public_methods.include?(name.to_s)
+    assert_equal true, ::FileUtils.public_methods.include?(name.to_sym)
   end
 
   def my_rm_rf(path)
