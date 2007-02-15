@@ -1,3 +1,16 @@
+Thu Feb 15 11:00:26 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/uri/generic.rb (URI::Generic::userinfo): should support
+	  empty password.  [ruby-core:10290]
+
+	* lib/uri/generic.rb (URI::Generic::set_password): password can be
+	  cleared by nil.  [ruby-core:10290]
+
+	* lib/uri/common.rb (escape): regard second string argument as a
+	  character set properly. [ruby-dev:27692]
+
+	* lib/uri: Lovely RDOC patches from mathew (metaATpoboxDOTcom).
+
 Thu Feb 15 10:57:38 2007  Tietew  <tietew@tietew.net>>
 
 	* lib/cgi.rb (CGI::unescapeHTML): invalid decoding for single

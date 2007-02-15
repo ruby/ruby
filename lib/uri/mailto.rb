@@ -61,11 +61,29 @@ module URI
     #
     # == Description
     #
-    # Creates a new URI::MailTo object from components of URI::MailTo
-    # with check.  It is to and headers. It provided by an Array of a
-    # Hash. You can provide headers as String like
-    # "subject=subscribe&cc=addr" or Array like [["subject",
-    # "subscribe"], ["cc", "addr"]]
+    # Creates a new URI::MailTo object from components, with syntax checking.
+    #
+    # Components can be provided as an Array or Hash. If an Array is used,
+    # the components must be supplied as [to, headers].
+    #
+    # If a Hash is used, the keys are the component names preceded by colons.
+    #
+    # The headers can be supplied as a pre-encoded string, such as 
+    # "subject=subscribe&cc=address", or as an Array of Arrays like
+    # [['subject', 'subscribe'], ['cc', 'address']]
+    #
+    # Examples:
+    # 
+    #    require 'uri'
+    #    
+    #    m1 = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
+    #    puts m1.to_s  ->  mailto:joe@example.com?subject=Ruby
+    #    
+    #    m2 = URI::MailTo.build(['john@example.com', [['Subject', 'Ruby'], ['Cc', 'jack@example.com']]])
+    #    puts m2.to_s  ->  mailto:john@example.com?Subject=Ruby&Cc=jack@example.com
+    #    
+    #    m3 = URI::MailTo.build({:to => 'listman@example.com', :headers => [['subject', 'subscribe']]})
+    #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
     #
     def self.build(args)
       tmp = Util::make_components_hash(self, args)
@@ -104,9 +122,11 @@ module URI
     #
     # == Description
     #
-    # Creates a new URI::MailTo object from ``generic'' components with
-    # no check. Because, this method is usually called from URI::parse
-    # and the method checks validity of each components.
+    # Creates a new URI::MailTo object from generic URL components with
+    # no syntax checking.
+    #
+    # This method is usually called from URI::parse, which checks
+    # the validity of each component.
     #
     def initialize(*arg)
       super(*arg)
@@ -128,7 +148,11 @@ module URI
           "unrecognised opaque part for mailtoURL: #{@opaque}"
       end
     end
+
+    # The primary e-mail address of the URL, as a String
     attr_reader :to
+
+    # E-mail headers set by the URL, as an Array of Arrays
     attr_reader :headers
 
     def check_to(v)
@@ -203,8 +227,11 @@ module URI
           ''
         end
     end
+    
+    # Returns the RFC822 e-mail text equivalent of the URL, as a String.
     #
-    # == Usage
+    # Example:
+    #
     #   require 'uri'
     #
     #   uri = URI.parse("mailto:ruby-list@ruby-lang.org?Subject=subscribe&cc=myaddr")
