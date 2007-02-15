@@ -1,3 +1,8 @@
+Thu Feb 15 16:55:33 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* version.h: Branch off ruby_1_8_6 from ruby_1_8 in preparation
+	  for the forthcoming 1.8.6 release.
+
 Thu Feb 15 16:44:14 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/generic.rb (URI::Generic::userinfo): Considering how
