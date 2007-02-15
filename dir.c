@@ -1214,7 +1214,7 @@ glob_func_caller(val)
 
 #define glob_call_func(func, path, arg) (*func)(path, arg)
 
-static int glob_helper _((const char *path, const char *sub, int flags, int (*func)(const char *,VALUE), VALUE arg));
+static int glob_helper _((const char *, int, enum answer, enum answer, struct glob_pattern **, struct glob_pattern **, int, ruby_glob_func *, VALUE));
 
 static int
 glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
