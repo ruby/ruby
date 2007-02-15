@@ -231,6 +231,7 @@ char *rb_path_next _((const char *));
 char *rb_path_skip_prefix _((const char *));
 char *rb_path_last_separator _((const char *));
 char *rb_path_end _((const char *));
+VALUE rb_file_directory_p _((VALUE,VALUE));
 /* gc.c */
 NORETURN(void rb_memerror __((void)));
 int ruby_stack_check _((void));

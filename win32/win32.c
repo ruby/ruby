@@ -1106,7 +1106,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    status = ruby_globi(buf, 0, insert, (VALUE)&tail);
+    status = ruby_glob(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 
@@ -1420,6 +1420,9 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 // return the pointer to the current file name. 
 //
 
+#define GetBit(bits, i) ((bits)[(i) / 8] &  (1 << (i) % 8))
+#define SetBit(bits, i) ((bits)[(i) / 8] |= (1 << (i) % 8))
+
 DIR *
 rb_w32_opendir(const char *filename)
 {
@@ -1481,7 +1484,7 @@ rb_w32_opendir(const char *filename)
     //
 
     idx = strlen(fd.cFileName)+1;
-    if (!(p->start = (char *)malloc(idx))) {
+    if (!(p->start = (char *)malloc(idx)) || !(p->bits = (char *)malloc(1))) {
       error:
 	rb_w32_closedir(p);
 	FindClose(fh);
@@ -1489,6 +1492,11 @@ rb_w32_opendir(const char *filename)
 	return NULL;
     }
     strcpy(p->start, fd.cFileName);
+    p->bits[0] = 0;
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	SetBit(p->bits, 0);
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	SetBit(p->bits, 1);
     p->nfiles++;
 
     //
@@ -1562,6 +1570,12 @@ rb_w32_readdir(DIR *dirp)
 	dirp->dirstr.d_ino = dummy++;
 
 	//
+	// Attributes
+	//
+	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->loc * 2);
+	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->loc * 2 + 1);
+
+	//
 	// Now set up for the next call to readdir
 	//
 
@@ -1623,6 +1637,7 @@ void
 rb_w32_closedir(DIR *dirp)
 {
     free(dirp->start);
+    free(dirp->bits);
     free(dirp);
 }
 

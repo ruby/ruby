@@ -488,8 +488,11 @@ struct RBignum {
 
 void rb_obj_infect _((VALUE,VALUE));
 
+typedef int ruby_glob_func(const char*,VALUE);
 void rb_glob _((const char*,void(*)(const char*,VALUE),VALUE));
 void rb_globi _((const char*,void(*)(const char*,VALUE),VALUE));
+int ruby_brace_expand _((const char*,int,ruby_glob_func*,VALUE));
+int ruby_brace_glob _((const char*,int,ruby_glob_func*,VALUE));
 
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));
