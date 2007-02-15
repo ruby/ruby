@@ -1,3 +1,7 @@
+Thu Feb 15 20:31:07 2007  Akinori MUSHA  <knu@iDaemons.org>
+ 
+	* lib/uri/ftp.rb: Revert the previous change pending discussion.
+ 
 Thu Feb 15 18:10:09 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (glob_helper): Fix the function declaration.
@@ -31,6 +35,9 @@ Thu Feb 15 11:00:26 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/common.rb (escape): regard second string argument as a
 	  character set properly. [ruby-dev:27692]
+
+	* lib/uri/ftp.rb: Attempt to conform to RFC 1738 with regard to
+	  relative/absolute paths.
 
 	* lib/uri: Lovely RDOC patches from mathew (metaATpoboxDOTcom).
 
