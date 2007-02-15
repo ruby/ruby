@@ -304,19 +304,19 @@ module URI
       end
       check_userinfo(*userinfo)
       set_userinfo(*userinfo)
-      userinfo
+      # returns userinfo
     end
 
     def user=(user)
       check_user(user)
       set_user(user)
-      user
+      # returns user
     end
     
     def password=(password)
       check_password(password)
       set_password(password)
-      password
+      # returns password
     end
 
     def set_userinfo(user, password = nil)
@@ -338,7 +338,7 @@ module URI
 
     def set_password(v)
       @password = v
-      v
+      # returns v
     end
     protected :set_password
 
@@ -356,9 +356,9 @@ module URI
     private :escape_userpass
 
     def userinfo
-      if @user.nil? or @user.empty?
+      if @user.nil?
         nil
-      elsif @password.nil? or @password.empty?
+      elsif @password.nil?
         @user
       else
         @user + ':' + @password
