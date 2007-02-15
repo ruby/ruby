@@ -1,3 +1,8 @@
+Thu Feb 15 10:48:40 2007  MenTaLguY  <mental@rydia.net>
+
+	* ext/thread/thread.c: Handle interrupted waits correctly.
+	  [ruby-bugs:PR#8663]
+
 Wed Feb 14 19:22:15 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/digest.rb (Digest::self.const_missing): Drop

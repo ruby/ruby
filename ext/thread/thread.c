@@ -132,6 +132,18 @@ push_multiple_list(List *list, VALUE *values, unsigned count)
     }
 }
 
+static void
+recycle_entries(List *list, Entry *first_entry, Entry *last_entry)
+{
+#ifdef USE_MEM_POOLS
+    last_entry->next = list->entry_pool;
+    list->entry_pool = first_entry;
+#else
+    last_entry->next = NULL;
+    free_entries(first_entry);
+#endif
+}
+
 static VALUE
 shift_list(List *list)
 {
@@ -149,26 +161,33 @@ shift_list(List *list)
     --list->size;
 
     value = entry->value;
-#ifdef USE_MEM_POOLS
-    entry->next = list->entry_pool;
-    list->entry_pool = entry;
-#else
-    free(entry);
-#endif
+    recycle_entries(list, entry, entry);
 
     return value;
+}
+
+static void
+remove_one(List *list, VALUE value)
+{
+    Entry **ref;
+    Entry *entry;
+
+    for (ref = &list->entries, entry = list->entries;
+              entry != NULL;
+              ref = &entry->next, entry = entry->next) {
+        if (entry->value == value) {
+            *ref = entry->next;
+            recycle_entries(list, entry, entry);
+            break;
+        }
+    }
 }
 
 static void
 clear_list(List *list)
 {
     if (list->last_entry) {
-#ifdef USE_MEM_POOLS
-        list->last_entry->next = list->entry_pool;
-        list->entry_pool = list->entries;
-#else
-        free_entries(list->entries);
-#endif
+        recycle_entries(list, list->entries, list->last_entry);
         list->entries = NULL;
         list->last_entry = NULL;
         list->size = 0;
@@ -221,6 +240,30 @@ wake_all(List *list)
         wake_one(list);
     }
     return Qnil;
+}
+
+static VALUE
+wait_list_inner(List *list)
+{
+    push_list(list, rb_thread_current());
+    rb_thread_stop();
+    return Qnil;
+}
+
+static VALUE
+wait_list_cleanup(List *list)
+{
+    /* cleanup in case of spurious wakeups */
+    rb_thread_critical = 1;
+    remove_one(list, rb_thread_current());
+    rb_thread_critical = 0;
+    return Qnil;
+}
+
+static void
+wait_list(List *list)
+{
+    rb_ensure(wait_list_inner, (VALUE)list, wait_list_cleanup, (VALUE)list);
 }
 
 static void
@@ -371,9 +414,7 @@ lock_mutex(Mutex *mutex)
     rb_thread_critical = 1;
 
     while (RTEST(mutex->owner)) {
-        push_list(&mutex->waiting, current);
-        rb_thread_stop();
-
+        wait_list(&mutex->waiting);
         rb_thread_critical = 1;
     }
     mutex->owner = current; 
@@ -606,8 +647,7 @@ wait_condvar(ConditionVariable *condvar, Mutex *mutex)
         rb_raise(rb_eThreadError, "Not owner");
     }
     mutex->owner = Qnil;
-    push_list(&condvar->waiting, rb_thread_current());
-    rb_thread_stop();
+    wait_list(&condvar->waiting);
 
     lock_mutex(mutex);
 }
@@ -626,8 +666,7 @@ typedef struct {
 static VALUE
 legacy_wait(VALUE unused, legacy_wait_args *args)
 {
-    push_list(&args->condvar->waiting, rb_thread_current());
-    rb_thread_stop();
+    wait_list(&args->condvar->waiting);
     rb_funcall(args->mutex, rb_intern("lock"), 0);
     return Qnil;
 }
