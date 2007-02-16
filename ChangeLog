@@ -1,3 +1,7 @@
+Fri Feb 16 20:59:10 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* intern.h: add a prototype of rb_sym_to_s().
+
 Fri Feb 16 19:24:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_log): update document to mention second optional
