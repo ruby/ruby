@@ -8,6 +8,7 @@
 
 English.rb
 Env.rb
+README
 abbrev.rb
 base64.rb
 benchmark.rb
@@ -35,6 +36,7 @@ getopts.rb
 gserver.rb
 importenv.rb
 ipaddr.rb
+irb
 irb.rb
 jcode.rb
 logger.rb

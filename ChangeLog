@@ -1,3 +1,10 @@
+Fri Feb 16 11:18:21 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/.document: Apply patch for irb, e2mmap and README by Hugh Sasse
+	<hgs at dmu.ac.uk> from [ruby-core:10135]
+
+	* lib/prettyprint.rb: Suppress RDoc for PrettyPrint test suite.
+
 Thu Feb 15 20:48:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (get_pioinfo_extra): new function for VC++8 SP1
