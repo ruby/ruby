@@ -381,7 +381,7 @@ end
 if __FILE__ == $0
   require 'test/unit'
 
-  class WadlerExample < Test::Unit::TestCase
+  class WadlerExample < Test::Unit::TestCase # :nodoc:
     def setup
       @tree = Tree.new("aaaa", Tree.new("bbbbb", Tree.new("ccc"),
                                                  Tree.new("dd")),
@@ -561,7 +561,7 @@ End
       assert_equal(expected, tree_alt(50))
     end
 
-    class Tree
+    class Tree # :nodoc:
       def initialize(string, *children)
         @string = string
         @children = children
@@ -618,7 +618,7 @@ End
     end
   end
 
-  class StrictPrettyExample < Test::Unit::TestCase
+  class StrictPrettyExample < Test::Unit::TestCase # :nodoc:
     def prog(width)
       PrettyPrint.format('', width) {|q|
         q.group {
@@ -763,7 +763,7 @@ End
 
   end
 
-  class TailGroup < Test::Unit::TestCase
+  class TailGroup < Test::Unit::TestCase # :nodoc:
     def test_1
       out = PrettyPrint.format('', 10) {|q|
         q.group {
@@ -783,7 +783,7 @@ End
     end
   end
 
-  class NonString < Test::Unit::TestCase
+  class NonString < Test::Unit::TestCase # :nodoc:
     def format(width)
       PrettyPrint.format([], width, 'newline', lambda {|n| "#{n} spaces"}) {|q|
         q.text(3, 3)
@@ -802,7 +802,7 @@ End
 
   end
 
-  class Fill < Test::Unit::TestCase
+  class Fill < Test::Unit::TestCase # :nodoc:
     def format(width)
       PrettyPrint.format('', width) {|q|
         q.group {

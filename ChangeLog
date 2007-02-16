@@ -1,3 +1,10 @@
+Fri Feb 16 11:18:21 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/.document: Apply patch for irb, e2mmap and README by Hugh Sasse
+	<hgs at dmu.ac.uk> from [ruby-core:10135]
+
+	* lib/prettyprint.rb: Suppress RDoc for PrettyPrint test suite.
+
 Thu Feb 15 20:26:30 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/ftp.rb: Revert the previous change pending discussion.
