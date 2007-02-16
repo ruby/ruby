@@ -305,8 +305,11 @@ math_exp(VALUE obj, VALUE x)
 /*
  *  call-seq:
  *     Math.log(numeric)    => float
+ *     Math.log(num,base)   => float
  *  
  *  Returns the natural logarithm of <i>numeric</i>.
+ *  If additional second argument is given, it will be the base
+ *  of logarithm.
  */
 
 static VALUE

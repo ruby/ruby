@@ -1,3 +1,8 @@
+Fri Feb 16 19:24:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (math_log): update document to mention second optional
+	  argument for logarithm base. 
+
 Fri Feb 16 19:19:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (mrhs): need to append by arg_append().
