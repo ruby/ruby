@@ -2412,7 +2412,7 @@ args 		: arg_value
 mrhs		: args ',' arg_value
 		    {
 		    /*%%%*/
-			$$ = list_append($1, $3);
+			$$ = arg_append($1, $3);
 		    /*%
 			$$ = mrhs_add(args2mrhs($1), $3);
 		    %*/

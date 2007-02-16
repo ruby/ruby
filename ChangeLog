@@ -1,3 +1,8 @@
+Fri Feb 16 19:19:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (mrhs): need to append by arg_append().
+	  [ruby-talk:239385]
+
 Fri Feb 16 11:18:21 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/.document: Apply patch for irb, e2mmap and README by Hugh Sasse
