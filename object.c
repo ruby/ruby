@@ -1673,13 +1673,13 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
  *     fred.instance_variable_get(:@a)    #=> "cat"
  *     fred.instance_variable_get("@b")   #=> 99
  */
-
+#include "debug.h"
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
     ID id = rb_to_id(iv);
 
-    if (!rb_is_instance_id(id)) {
+    if (!rb_is_instance_id(id) && !rb_is_instance2_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
     return rb_ivar_get(obj, id);
@@ -1710,7 +1710,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 {
     ID id = rb_to_id(iv);
 
-    if (!rb_is_instance_id(id)) {
+    if (!rb_is_instance_id(id) && !rb_is_instance2_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
     return rb_ivar_set(obj, id, val);
@@ -1739,7 +1739,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
     ID id = rb_to_id(iv);
 
-    if (!rb_is_instance_id(id)) {
+    if (!rb_is_instance_id(id) && !rb_is_instance2_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
     return rb_ivar_defined(obj, id);

@@ -1,3 +1,10 @@
+Fri Feb 16 21:34:33 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* object.c (rb_obj_ivar_set/get/defined): fix to check :@_v/C id.
+
+	* test/testunit/test_testcase.rb: fix to use instance_variable_get()
+	  to access @_result.
+
 Fri Feb 16 20:59:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* intern.h: add a prototype of rb_sym_to_s().
