@@ -326,7 +326,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
-	gid = PW_VAL2GID(id);
+	gid = NUM2GIDT(id);
     }
     else {
 	gid = getgid();

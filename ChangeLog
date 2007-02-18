@@ -1,3 +1,7 @@
+Sun Feb 18 22:56:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getgrgid): missed to replace a macro.
+
 Sun Feb 18 19:33:00 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: updated based on date2 4.0.3.
