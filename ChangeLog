@@ -1,3 +1,13 @@
+Sun Feb 18 13:11:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (pid_t, uid_t, gid_t): check if defined.
+
+	* intern.h, process.c, rubyio.h, ext/etc/etc.c, ext/pty/pty.c: use
+	  rb_{pid,uid,gid}_t instead of plain int.  [ruby-dev:30376]
+
+	* ext/etc/extconf.rb (PIDT2NUM, NUM2PIDT, UIDT2NUM, NUM2UIDT, GIDT2NUM,
+	  NUM2GIDT): moved to configure.in.
+
 Fri Feb 16 21:34:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* object.c (rb_obj_ivar_set/get/defined): fix to check :@_v/C id.

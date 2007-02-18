@@ -24,7 +24,7 @@ typedef struct OpenFile {
     int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
     int mode;			/* mode flags */
-    int pid;			/* child's pid (for pipes) */
+    rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
     void (*finalize)(struct OpenFile*,int); /* finalize proc */

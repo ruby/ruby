@@ -106,6 +106,13 @@ static VALUE S_Tms;
 #define BROKEN_SETREGID 1
 #endif
 
+#ifdef BROKEN_SETREUID
+#define setreuid ruby_setreuid
+#endif
+#ifdef BROKEN_SETREGID
+#define setregid ruby_setregid
+#endif
+
 #if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
 #if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
 #define OBSOLETE_SETREUID 1
@@ -133,7 +140,7 @@ static VALUE
 get_pid(void)
 {
     rb_secure(2);
-    return INT2FIX(getpid());
+    return PIDT2NUM(getpid());
 }
 
 
@@ -160,7 +167,7 @@ get_ppid(void)
 #ifdef _WIN32
     return INT2FIX(0);
 #else
-    return INT2FIX(getppid());
+    return PIDT2NUM(getppid());
 #endif
 }
 
@@ -209,7 +216,7 @@ rb_last_status_set(int status, rb_pid_t pid)
     rb_vm_t *vm = GET_VM();
     vm->last_status = rb_obj_alloc(rb_cProcStatus);
     rb_iv_set(vm->last_status, "status", INT2FIX(status));
-    rb_iv_set(vm->last_status, "pid", INT2FIX(pid));
+    rb_iv_set(vm->last_status, "pid", PIDT2NUM(pid));
 }
 
 static void
@@ -562,10 +569,10 @@ pst_wcoredump(VALUE st)
 static st_table *pid_tbl;
 #endif
 
-int
-rb_waitpid(int pid, int *st, int flags)
+rb_pid_t
+rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
-    int result;
+    rb_pid_t result;
 #ifndef NO_WAITPID
     int oflags = flags;
     if (!rb_thread_alone()) {	/* there're other threads to run */
@@ -632,12 +639,12 @@ rb_waitpid(int pid, int *st, int flags)
 
 #ifdef NO_WAITPID
 struct wait_data {
-    int pid;
+    rb_pid_t pid;
     int status;
 };
 
 static int
-wait_each(int pid, int status, struct wait_data *data)
+wait_each(rb_pid_t pid, int status, struct wait_data *data)
 {
     if (data->status != -1) return ST_STOP;
 
@@ -647,10 +654,10 @@ wait_each(int pid, int status, struct wait_data *data)
 }
 
 static int
-waitall_each(int pid, int status, VALUE ary)
+waitall_each(rb_pid_t pid, int status, VALUE ary)
 {
     rb_last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status_get());
+    rb_ary_push(ary, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get());
     return ST_DELETE;
 }
 #endif
@@ -718,7 +725,8 @@ static VALUE
 proc_wait(int argc, VALUE *argv)
 {
     VALUE vpid, vflags;
-    int pid, flags, status;
+    rb_pid_t pid;
+    int flags, status;
 
     rb_secure(2);
     flags = 0;
@@ -727,7 +735,7 @@ proc_wait(int argc, VALUE *argv)
 	pid = -1;
     }
     else {
-	pid = NUM2INT(vpid);
+	pid = NUM2PIDT(vpid);
 	if (argc == 2 && !NIL_P(vflags)) {
 	    flags = NUM2UINT(vflags);
 	}
@@ -738,7 +746,7 @@ proc_wait(int argc, VALUE *argv)
 	rb_last_status_clear();
 	return Qnil;
     }
-    return INT2FIX(pid);
+    return PIDT2NUM(pid);
 }
 
 
@@ -792,7 +800,8 @@ static VALUE
 proc_waitall(void)
 {
     VALUE result;
-    int pid, status;
+    rb_pid_t pid;
+    int status;
 
     rb_secure(2);
     result = rb_ary_new();
@@ -813,7 +822,7 @@ proc_waitall(void)
 	    rb_sys_fail(0);
 	}
 	rb_last_status_set(status, pid);
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status_get()));
+	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     }
 #else
     rb_last_status_clear();
@@ -824,7 +833,7 @@ proc_waitall(void)
 		break;
 	    rb_sys_fail(0);
 	}
-	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status_get()));
+	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     }
 #endif
     return result;
@@ -833,7 +842,8 @@ proc_waitall(void)
 static VALUE
 detach_process_watcher(int *pid_p)
 {
-    int cpid, status;
+    rb_pid_t cpid;
+    int status;
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
@@ -843,7 +853,7 @@ detach_process_watcher(int *pid_p)
 }
 
 VALUE
-rb_detach_process(int pid)
+rb_detach_process(rb_pid_t pid)
 {
     return rb_thread_create(detach_process_watcher, (void*)&pid);
 }
@@ -899,7 +909,7 @@ static VALUE
 proc_detach(VALUE obj, VALUE pid)
 {
     rb_secure(2);
-    return rb_detach_process(NUM2INT(pid));
+    return rb_detach_process(NUM2PIDT(pid));
 }
 
 #ifndef HAVE_STRING_H
@@ -1074,11 +1084,11 @@ rb_proc_exec(const char *str)
 #if defined(_WIN32)
 #define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, prog, argv)
 #else
-static int
+static rb_pid_t
 proc_spawn_v(char **argv, char *prog)
 {
     char *extension;
-    int status;
+    rb_pid_t status;
 
     if (!prog)
 	prog = argv[0];
@@ -1119,7 +1129,7 @@ proc_spawn_v(char **argv, char *prog)
 }
 #endif
 
-static int
+static rb_pid_t
 proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 {
     char **args;
@@ -1138,12 +1148,12 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 #if defined(_WIN32)
 #define proc_spawn(str) rb_w32_spawn(P_NOWAIT, str, 0)
 #else
-static int
+static rb_pid_t
 proc_spawn(char *str)
 {
     char *s, *t;
     char **argv, **a;
-    int status;
+    rb_pid_t status;
 
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
@@ -1303,10 +1313,11 @@ proc_syswait(VALUE pid)
  *
  * +chfunc+ must not raise any exceptions.
  */
-int
+rb_pid_t
 rb_fork(int *status, int (*chfunc)(void*), void *charg)
 {
-    int pid, err, state = 0;
+    rb_pid_t pid;
+    int err, state = 0;
 #ifdef FD_CLOEXEC
     int ep[2];
 #endif
@@ -1417,7 +1428,7 @@ static VALUE
 rb_f_fork(VALUE obj)
 {
 #ifdef HAVE_FORK
-    int pid;
+    rb_pid_t pid;
 
     rb_secure(2);
 
@@ -1440,7 +1451,7 @@ rb_f_fork(VALUE obj)
 	return Qnil;
 
       default:
-	return INT2FIX(pid);
+	return PIDT2NUM(pid);
     }
 #else
     rb_notimplement();
@@ -1492,7 +1503,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 #endif
 
 void
-rb_syswait(int pid)
+rb_syswait(rb_pid_t pid)
 {
     static int overriding;
 #ifdef SIGHUP
@@ -1533,10 +1544,10 @@ rb_syswait(int pid)
     }
 }
 
-int
+rb_pid_t
 rb_spawn(int argc, VALUE *argv)
 {
-    int status;
+    rb_pid_t status;
     VALUE prog;
 
     prog = rb_check_argv(argc, argv);
@@ -1634,12 +1645,12 @@ rb_f_system(int argc, VALUE *argv)
 static VALUE
 rb_f_spawn(int argc, VALUE *argv)
 {
-    int pid;
+    rb_pid_t pid;
 
     pid = rb_spawn(argc, argv);
     if (pid == -1) rb_sys_fail(RSTRING_PTR(argv[0]));
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
-    return INT2NUM(pid);
+    return PIDT2NUM(pid);
 #else
     return Qnil;
 #endif
@@ -1698,18 +1709,18 @@ rb_f_sleep(int argc, VALUE *argv)
 static VALUE
 proc_getpgrp(void)
 {
-    int pgrp;
+    rb_pid_t pgrp;
 
     rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     pgrp = getpgrp();
     if (pgrp < 0) rb_sys_fail(0);
-    return INT2FIX(pgrp);
+    return PIDT2NUM(pgrp);
 #else
 # ifdef HAVE_GETPGID
     pgrp = getpgid(0);
     if (pgrp < 0) rb_sys_fail(0);
-    return INT2FIX(pgrp);
+    return PIDT2NUM(pgrp);
 # else
     rb_notimplement();
 # endif
@@ -1758,12 +1769,12 @@ static VALUE
 proc_getpgid(VALUE obj, VALUE pid)
 {
 #if defined(HAVE_GETPGID) && !defined(__CHECKER__)
-    int i;
+    rb_pid_t i;
 
     rb_secure(2);
-    i = getpgid(NUM2INT(pid));
+    i = getpgid(NUM2PIDT(pid));
     if (i < 0) rb_sys_fail(0);
-    return INT2NUM(i);
+    return PIDT2NUM(i);
 #else
     rb_notimplement();
 #endif
@@ -1782,11 +1793,11 @@ static VALUE
 proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 {
 #ifdef HAVE_SETPGID
-    int ipid, ipgrp;
+    rb_pid_t ipid, ipgrp;
 
     rb_secure(2);
-    ipid = NUM2INT(pid);
-    ipgrp = NUM2INT(pgrp);
+    ipid = NUM2PIDT(pid);
+    ipgrp = NUM2PIDT(pgrp);
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
     return INT2FIX(0);
@@ -1811,33 +1822,33 @@ static VALUE
 proc_setsid(void)
 {
 #if defined(HAVE_SETSID)
-    int pid;
+    rb_pid_t pid;
 
     rb_secure(2);
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
-    return INT2FIX(pid);
+    return PIDT2NUM(pid);
 #elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
-  rb_pid_t pid;
-  int ret;
+    rb_pid_t pid;
+    int ret;
 
-  rb_secure(2);
-  pid = getpid();
+    rb_secure(2);
+    pid = getpid();
 #if defined(SETPGRP_VOID)
-  ret = setpgrp();
-  /* If `pid_t setpgrp(void)' is equivalent to setsid(),
-     `ret' will be the same value as `pid', and following open() will fail.
-     In Linux, `int setpgrp(void)' is equivalent to setpgid(0, 0). */
+    ret = setpgrp();
+    /* If `pid_t setpgrp(void)' is equivalent to setsid(),
+       `ret' will be the same value as `pid', and following open() will fail.
+       In Linux, `int setpgrp(void)' is equivalent to setpgid(0, 0). */
 #else
-  ret = setpgrp(0, pid);
+    ret = setpgrp(0, pid);
 #endif
-  if (ret == -1) rb_sys_fail(0);
+    if (ret == -1) rb_sys_fail(0);
 
-  if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
-    ioctl(fd, TIOCNOTTY, NULL);
-    close(fd);
-  }
-  return INT2FIX(pid);
+    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
+	ioctl(fd, TIOCNOTTY, NULL);
+	close(fd);
+    }
+    return PIDT2NUM(pid);
 #else
     rb_notimplement();
 #endif
@@ -2067,7 +2078,7 @@ p_sys_setuid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETUID
     check_uid_switch();
-    if (setuid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (setuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2090,7 +2101,7 @@ p_sys_setruid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETRUID
     check_uid_switch();
-    if (setruid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (setruid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2112,7 +2123,7 @@ p_sys_seteuid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETEUID
     check_uid_switch();
-    if (seteuid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (seteuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2136,7 +2147,7 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 {
 #if defined HAVE_SETREUID
     check_uid_switch();
-    if (setreuid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
+    if (setreuid(NUM2UIDT(rid),NUM2UIDT(eid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2160,7 +2171,7 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
 #if defined HAVE_SETRESUID
     check_uid_switch();
-    if (setresuid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
+    if (setresuid(NUM2UIDT(rid),NUM2UIDT(eid),NUM2UIDT(sid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2182,8 +2193,8 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 proc_getuid(VALUE obj)
 {
-    int uid = getuid();
-    return INT2FIX(uid);
+    rb_uid_t uid = getuid();
+    return UIDT2NUM(uid);
 }
 
 
@@ -2198,9 +2209,11 @@ proc_getuid(VALUE obj)
 static VALUE
 proc_setuid(VALUE obj, VALUE id)
 {
-    int uid = NUM2INT(id);
+    rb_uid_t uid;
 
     check_uid_switch();
+
+    uid = NUM2UIDT(id);
 #if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
     if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -2219,7 +2232,7 @@ proc_setuid(VALUE obj, VALUE id)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(uid);
+    return id;
 }
 
 
@@ -2233,7 +2246,7 @@ proc_setuid(VALUE obj, VALUE id)
  *
  */
 
-static int SAVED_USER_ID = -1;
+static rb_uid_t SAVED_USER_ID = -1;
 
 #ifdef BROKEN_SETREUID
 int
@@ -2266,11 +2279,11 @@ setreuid(rb_uid_t ruid, rb_uid_t euid)
 static VALUE
 p_uid_change_privilege(VALUE obj, VALUE id)
 {
-    int uid;
+    rb_uid_t uid;
 
     check_uid_switch();
 
-    uid = NUM2INT(id);
+    uid = NUM2UIDT(id);
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESUID)
@@ -2398,7 +2411,7 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 	rb_notimplement();
 #endif
     }
-    return INT2FIX(uid);
+    return id;
 }
 
 
@@ -2417,7 +2430,7 @@ p_sys_setgid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETGID
     check_gid_switch();
-    if (setgid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (setgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2439,7 +2452,7 @@ p_sys_setrgid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETRGID
     check_gid_switch();
-    if (setrgid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (setrgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2462,7 +2475,7 @@ p_sys_setegid(VALUE obj, VALUE id)
 {
 #if defined HAVE_SETEGID
     check_gid_switch();
-    if (setegid(NUM2INT(id)) != 0) rb_sys_fail(0);
+    if (setegid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2486,7 +2499,7 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
 #if defined HAVE_SETREGID
     check_gid_switch();
-    if (setregid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
+    if (setregid(NUM2GIDT(rid),NUM2GIDT(eid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2509,7 +2522,7 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
 #if defined HAVE_SETRESGID
     check_gid_switch();
-    if (setresgid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
+    if (setresgid(NUM2GIDT(rid),NUM2GIDT(eid),NUM2GIDT(sid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
 #endif
@@ -2560,8 +2573,8 @@ p_sys_issetugid(VALUE obj)
 static VALUE
 proc_getgid(VALUE obj)
 {
-    int gid = getgid();
-    return INT2FIX(gid);
+    rb_gid_t gid = getgid();
+    return GIDT2NUM(gid);
 }
 
 
@@ -2575,9 +2588,11 @@ proc_getgid(VALUE obj)
 static VALUE
 proc_setgid(VALUE obj, VALUE id)
 {
-    int gid = NUM2INT(id);
+    rb_gid_t gid;
 
     check_gid_switch();
+
+    gid = NUM2GIDT(id);
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -2596,7 +2611,7 @@ proc_setgid(VALUE obj, VALUE id)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(gid);
+    return GIDT2NUM(gid);
 }
 
 
@@ -2675,13 +2690,13 @@ proc_setgroups(VALUE obj, VALUE ary)
 	VALUE g = RARRAY_PTR(ary)[i];
 
 	if (FIXNUM_P(g)) {
-	    groups[i] = FIX2INT(g);
+	    groups[i] = NUM2GIDT(g);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(g);
 
 	    if (NIL_P(tmp)) {
-		groups[i] = NUM2INT(g);
+		groups[i] = NUM2GIDT(g);
 	    }
 	    else {
 		gr = getgrnam(RSTRING_PTR(tmp));
@@ -2726,7 +2741,7 @@ static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
 #ifdef HAVE_INITGROUPS
-    if (initgroups(StringValuePtr(uname), (rb_gid_t)NUM2INT(base_grp)) != 0) {
+    if (initgroups(StringValuePtr(uname), NUM2GIDT(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);
@@ -2872,11 +2887,11 @@ setregid(rb_gid_t rgid, rb_gid_t egid)
 static VALUE
 p_gid_change_privilege(VALUE obj, VALUE id)
 {
-    int gid;
+    rb_gid_t gid;
 
     check_gid_switch();
 
-    gid = NUM2INT(id);
+    gid = NUM2GIDT(id);
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESGID)
@@ -3005,7 +3020,7 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 	rb_notimplement();
 #endif
     }
-    return INT2FIX(gid);
+    return id;
 }
 
 
@@ -3023,8 +3038,8 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 static VALUE
 proc_geteuid(VALUE obj)
 {
-    int euid = geteuid();
-    return INT2FIX(euid);
+    rb_uid_t euid = geteuid();
+    return NUM2UIDT(euid);
 }
 
 
@@ -3039,17 +3054,20 @@ proc_geteuid(VALUE obj)
 static VALUE
 proc_seteuid(VALUE obj, VALUE euid)
 {
+    rb_uid_t uid;
+
     check_uid_switch();
+
+    uid = NUM2UIDT(euid);
 #if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
-    if (setresuid(-1, NUM2INT(euid), -1) < 0) rb_sys_fail(0);
+    if (setresuid(-1, uid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
-    if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
+    if (setreuid(-1, uid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETEUID
-    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
+    if (seteuid(uid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETUID
-    euid = NUM2INT(euid);
-    if (euid == getuid()) {
-	if (setuid(euid) < 0) rb_sys_fail(0);
+    if (uid == getuid()) {
+	if (setuid(uid) < 0) rb_sys_fail(0);
     }
     else {
 	rb_notimplement();
@@ -3060,10 +3078,10 @@ proc_seteuid(VALUE obj, VALUE euid)
     return euid;
 }
 
-static VALUE
-rb_seteuid_core(int euid)
+static rb_uid_t
+rb_seteuid_core(rb_uid_t euid)
 {
-    int uid;
+    rb_uid_t uid;
 
     check_uid_switch();
 
@@ -3091,7 +3109,7 @@ rb_seteuid_core(int euid)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(euid);
+    return euid;
 }
 
 
@@ -3112,7 +3130,8 @@ rb_seteuid_core(int euid)
 static VALUE
 p_uid_grant_privilege(VALUE obj, VALUE id)
 {
-    return rb_seteuid_core(NUM2INT(id));
+    rb_seteuid_core(NUM2UIDT(id));
+    return id;
 }
 
 
@@ -3131,9 +3150,9 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
 static VALUE
 proc_getegid(VALUE obj)
 {
-    int egid = getegid();
+    rb_gid_t egid = getegid();
 
-    return INT2FIX(egid);
+    return GIDT2NUM(egid);
 }
 
 
@@ -3148,18 +3167,20 @@ proc_getegid(VALUE obj)
 static VALUE
 proc_setegid(VALUE obj, VALUE egid)
 {
+    rb_gid_t gid;
+
     check_gid_switch();
 
+    gid = NUM2GIDT(egid);
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
-    if (setresgid(-1, NUM2INT(egid), -1) < 0) rb_sys_fail(0);
+    if (setresgid(-1, gid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
-    if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);
+    if (setregid(-1, gid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETEGID
-    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
+    if (setegid(gid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETGID
-    egid = NUM2INT(egid);
-    if (egid == getgid()) {
-	if (setgid(egid) < 0) rb_sys_fail(0);
+    if (gid == getgid()) {
+	if (setgid(gid) < 0) rb_sys_fail(0);
     }
     else {
 	rb_notimplement();
@@ -3170,10 +3191,10 @@ proc_setegid(VALUE obj, VALUE egid)
     return egid;
 }
 
-static VALUE
-rb_setegid_core(int egid)
+static rb_gid_t
+rb_setegid_core(rb_gid_t egid)
 {
-    int gid;
+    rb_gid_t gid;
 
     check_gid_switch();
 
@@ -3201,7 +3222,7 @@ rb_setegid_core(int egid)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(egid);
+    return egid;
 }
 
 
@@ -3222,7 +3243,8 @@ rb_setegid_core(int egid)
 static VALUE
 p_gid_grant_privilege(VALUE obj, VALUE id)
 {
-    return rb_setegid_core(NUM2INT(id));
+    rb_setegid_core(NUM2GIDT(id));
+    return id;
 }
 
 
@@ -3263,7 +3285,7 @@ p_uid_exchangeable(void)
 static VALUE
 p_uid_exchange(VALUE obj)
 {
-    int uid, euid;
+    rb_uid_t uid, euid;
 
     check_uid_switch();
 
@@ -3279,7 +3301,7 @@ p_uid_exchange(VALUE obj)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(uid);
+    return UIDT2NUM(uid);
 }
 
 
@@ -3320,7 +3342,7 @@ p_gid_exchangeable(void)
 static VALUE
 p_gid_exchange(VALUE obj)
 {
-    int gid, egid;
+    rb_gid_t gid, egid;
 
     check_gid_switch();
 
@@ -3336,7 +3358,7 @@ p_gid_exchange(VALUE obj)
 #else
     rb_notimplement();
 #endif
-    return INT2FIX(gid);
+    return GIDT2NUM(gid);
 }
 
 /* [MG] :FIXME: Is this correct? I'm not sure how to phrase this. */
@@ -3363,10 +3385,11 @@ p_uid_have_saved_id(void)
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_uid_sw_ensure(int id)
+p_uid_sw_ensure(rb_uid_t id)
 {
     under_uid_switch = 0;
-    return rb_seteuid_core(id);
+    id = rb_seteuid_core(id);
+    return UIDT2NUM(id);
 }
 
 
@@ -3386,7 +3409,7 @@ p_uid_sw_ensure(int id)
 static VALUE
 p_uid_switch(VALUE obj)
 {
-    int uid, euid;
+    rb_uid_t uid, euid;
 
     check_uid_switch();
 
@@ -3394,26 +3417,26 @@ p_uid_switch(VALUE obj)
     euid = geteuid();
 
     if (uid != euid) {
-	proc_seteuid(obj, INT2FIX(uid));
+	proc_seteuid(obj, UIDT2NUM(uid));
 	if (rb_block_given_p()) {
 	    under_uid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, SAVED_USER_ID);
 	} else {
-	    return INT2FIX(euid);
+	    return UIDT2NUM(euid);
 	}
     } else if (euid != SAVED_USER_ID) {
-	proc_seteuid(obj, INT2FIX(SAVED_USER_ID));
+	proc_seteuid(obj, UIDT2NUM(SAVED_USER_ID));
 	if (rb_block_given_p()) {
 	    under_uid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, euid);
 	} else {
-	    return INT2FIX(uid);
+	    return UIDT2NUM(uid);
 	}
     } else {
 	errno = EPERM;
 	rb_sys_fail(0);
     }
-
+}
 #else
 static VALUE
 p_uid_sw_ensure(VALUE obj)
@@ -3425,7 +3448,7 @@ p_uid_sw_ensure(VALUE obj)
 static VALUE
 p_uid_switch(VALUE obj)
 {
-    int uid, euid;
+    rb_uid_t uid, euid;
 
     check_uid_switch();
 
@@ -3441,10 +3464,10 @@ p_uid_switch(VALUE obj)
 	under_uid_switch = 1;
 	return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, obj);
     } else {
-	return INT2FIX(euid);
+	return UIDT2NUM(euid);
     }
-#endif
 }
+#endif
 
 
 /* [MG] :FIXME: Is this correct? I'm not sure how to phrase this. */
@@ -3470,10 +3493,11 @@ p_gid_have_saved_id(void)
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
 static VALUE
-p_gid_sw_ensure(int id)
+p_gid_sw_ensure(rb_gid_t id)
 {
     under_gid_switch = 0;
-    return rb_setegid_core(id);
+    id = rb_setegid_core(id);
+    return GIDT2NUM(id);
 }
 
 
@@ -3501,25 +3525,26 @@ p_gid_switch(VALUE obj)
     egid = getegid();
 
     if (gid != egid) {
-	proc_setegid(obj, INT2FIX(gid));
+	proc_setegid(obj, GIDT2NUM(gid));
 	if (rb_block_given_p()) {
 	    under_gid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, SAVED_GROUP_ID);
 	} else {
-	    return INT2FIX(egid);
+	    return GIDT2NUM(egid);
 	}
     } else if (egid != SAVED_GROUP_ID) {
-	proc_setegid(obj, INT2FIX(SAVED_GROUP_ID));
+	proc_setegid(obj, GIDT2NUM(SAVED_GROUP_ID));
 	if (rb_block_given_p()) {
 	    under_gid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, egid);
 	} else {
-	    return INT2FIX(gid);
+	    return GIDT2NUM(gid);
 	}
     } else {
 	errno = EPERM;
 	rb_sys_fail(0);
     }
+}
 #else
 static VALUE
 p_gid_sw_ensure(VALUE obj)
@@ -3531,7 +3556,7 @@ p_gid_sw_ensure(VALUE obj)
 static VALUE
 p_gid_switch(VALUE obj)
 {
-    int gid, egid;
+    rb_gid_t gid, egid;
 
     check_gid_switch();
 
@@ -3547,10 +3572,10 @@ p_gid_switch(VALUE obj)
 	under_gid_switch = 1;
 	return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, obj);
     } else {
-	return INT2FIX(egid);
+	return GIDT2NUM(egid);
     }
-#endif
 }
+#endif
 
 
 /*
