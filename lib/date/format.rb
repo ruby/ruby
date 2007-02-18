@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.30 2007-01-07 09:16:24+09 tadf Exp $
+# $Id: format.rb,v 2.31 2007-02-18 12:08:09+09 tadf Exp $
 
 require 'rational'
 
@@ -95,23 +95,24 @@ class Date
     end
 
     class Bag # :nodoc:
+
       def initialize
-        @_dict = {}
+	@elem = {}
       end
 
       def method_missing(t, *args, &block)
-        if /=$/ =~ t
-          t = t.to_s.chomp('=').to_sym
-          @_dict[t] = args[0]
+	t = t.to_s
+	set = t.chomp!('=')
+	t = t.intern
+	if set
+	  @elem[t] = args[0]
 	else
-          if @_dict.key?(t)
-            @_dict[t]
-	  end
+	  @elem[t]
 	end
       end
 
       def to_hash
-        @_dict.reject{|k,v| /^_/ =~ k}
+	@elem.reject{|k, v| /\A_/ =~ k.to_s || v.nil?}
       end
 
     end
