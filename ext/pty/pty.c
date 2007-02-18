@@ -147,7 +147,8 @@ raise_from_wait(char *state, struct pty_info *info)
 static VALUE
 pty_syswait(struct pty_info *info)
 {
-    int cpid, status;
+    rb_pid_t cpid;
+    int status;
 
     for (;;) {
 	cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
@@ -192,6 +193,7 @@ static void
 establishShell(int argc, VALUE *argv, struct pty_info *info)
 {
     int 		i,master,slave;
+    rb_pid_t		pid;
     char		*p,*getenv();
     struct passwd	*pwent;
     VALUE		v;
@@ -218,13 +220,13 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
     getDevice(&master,&slave);
 
     info->thread = rb_thread_current();
-    if((i = fork()) < 0) {
+    if ((pid = fork()) < 0) {
 	close(master);
 	close(slave);
 	rb_sys_fail("fork failed");
     }
 
-    if(i == 0) {	/* child */
+    if (pid == 0) {	/* child */
 	/*
 	 * Set free from process group and controlling terminal
 	 */
@@ -282,7 +284,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
 
     close(slave);
 
-    info->child_pid = i;
+    info->child_pid = pid;
     info->fd = master;
 }
 
@@ -420,7 +422,7 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     res = rb_ary_new2(3);
     rb_ary_store(res,0,(VALUE)rport);
     rb_ary_store(res,1,(VALUE)wport);
-    rb_ary_store(res,2,INT2FIX(info.child_pid));
+    rb_ary_store(res,2,PIDT2NUM(info.child_pid));
 
     thinfo.thread = rb_thread_create(pty_syswait, (void*)&info);
     thinfo.child_pid = info.child_pid;

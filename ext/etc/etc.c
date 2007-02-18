@@ -76,8 +76,8 @@ setup_passwd(struct passwd *pwd)
 #ifdef HAVE_ST_PW_PASSWD
 			 safe_setup_str(pwd->pw_passwd),
 #endif
-			 PW_UID2VAL(pwd->pw_uid),
-			 PW_GID2VAL(pwd->pw_gid),
+			 UIDT2NUM(pwd->pw_uid),
+			 GIDT2NUM(pwd->pw_gid),
 #ifdef HAVE_ST_PW_GECOS
 			 safe_setup_str(pwd->pw_gecos),
 #endif
@@ -125,7 +125,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
-	uid = PW_VAL2UID(id);
+	uid = NUM2UIDT(id);
     }
     else {
 	uid = getuid();
@@ -301,7 +301,7 @@ setup_group(struct group *grp)
 #ifdef HAVE_ST_GR_PASSWD
 			 safe_setup_str(grp->gr_passwd),
 #endif
-			 PW_GID2VAL(grp->gr_gid),
+			 GIDT2NUM(grp->gr_gid),
 			 mem);
 }
 #endif

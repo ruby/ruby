@@ -840,7 +840,7 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
     return ret;
 }
 
-int
+rb_pid_t
 rb_w32_spawn(int mode, const char *cmd, const char *prog)
 {
     struct ChildRecord *child;
@@ -877,7 +877,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     }
 }
 
-int
+rb_pid_t
 rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
     int len = rb_w32_argv_size(argv);
@@ -2952,7 +2952,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 }
 
 rb_pid_t
-waitpid (rb_pid_t pid, int *stat_loc, int options)
+waitpid(rb_pid_t pid, int *stat_loc, int options)
 {
     DWORD timeout;
 
