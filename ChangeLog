@@ -1,3 +1,9 @@
+Mon Feb 19 17:14:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (unix_peeraddr): wrong syscall name in error
+	  message for #peeraddr. a patch from Sam Roberts
+	  <sroberts at uniserve.com>.  [ruby-core:10366]
+
 Sun Feb 18 22:56:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getgrgid): missed to replace a macro.

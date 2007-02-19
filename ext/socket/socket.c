@@ -2166,7 +2166,7 @@ unix_peeraddr(VALUE sock)
     GetOpenFile(sock, fptr);
 
     if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
-	rb_sys_fail("getsockname(2)");
+	rb_sys_fail("getpeername(2)");
     return unixaddr(&addr, len);
 }
 #endif
