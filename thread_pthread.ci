@@ -226,7 +226,7 @@ native_thread_create(rb_thread_t *th)
     int err = 0;
 
     if (use_cached_thread(th)) {
-	thread_debug("create (use cahced thread): %p\n", th);
+	thread_debug("create (use cached thread): %p\n", th);
     }
     else {
 	pthread_attr_t attr;
@@ -241,7 +241,7 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_init(&attr));
 
 #ifdef PTHREAD_STACK_MIN
-	thread_debug("create - stack size: %ld\n", th, stack_size);
+	thread_debug("create - stack size: %u\n", stack_size);
 	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 #endif
 
@@ -337,7 +337,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     th->status = THREAD_STOPPED;
     pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
 
-    thread_debug("native_sleep %d\n", tv ? tv->tv_sec : -1);
+    thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
     GVL_UNLOCK_BEGIN();
     {
 	pthread_mutex_lock(&th->interrupt_lock);
@@ -356,7 +356,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    }
 	    else {
 		int r;
-		thread_debug("native_sleep: pthread_cond_timedwait start (%d, %d)\n",
+		thread_debug("native_sleep: pthread_cond_timedwait start (%d, %ld)\n",
 			     ts.tv_sec, ts.tv_nsec);
 		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
 					   &th->interrupt_lock, &ts);
