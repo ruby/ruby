@@ -9,6 +9,7 @@ Mon Feb 19 18:27:42 2007  Akinori MUSHA  <knu@iDaemons.org>
 	* configure.in, defines.h, eval.c (rb_feature_p, rb_provided,
 	  load_wait, search_required, rb_require_safe), ext/extmk.rb: Fix
 	  a bug where a statically linked extension cannot be autoloaded.
+	  [ruby-dev:30023] / [ruby-dev:30239]
 
 Thu Feb 15 20:31:07 2007  Akinori MUSHA  <knu@iDaemons.org>
  
