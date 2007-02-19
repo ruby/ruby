@@ -40,8 +40,8 @@
 **    まで御連絡をお願いします。
 ***********************************************************************/
 /* $Id$ */
-#define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-01-28"
+#define NKF_VERSION "2.0.7"
+#define NKF_RELEASE_DATE "2006-06-13"
 #include "config.h"
 #include "utf8tbl.h"
 
@@ -62,7 +62,7 @@
 **
 ** t    no operation
 **
-** j    Output code is JIS 7 bit        (DEFAULT SELECT) 
+** j    Outout code is JIS 7 bit        (DEFAULT SELECT) 
 ** s    Output code is MS Kanji         (DEFAULT SELECT) 
 ** e    Output code is AT&T JIS         (DEFAULT SELECT) 
 ** w    Output code is AT&T JIS         (DEFAULT SELECT) 
@@ -219,7 +219,6 @@ void  djgpp_setbinmode(FILE *fp)
 /* Input Assumption */
 
 #define         JIS_INPUT       4
-#define         EUC_INPUT      16
 #define         SJIS_INPUT      5
 #define         LATIN1_INPUT    6
 #define         FIXED_MIME      7
@@ -233,15 +232,8 @@ void  djgpp_setbinmode(FILE *fp)
 
 #define		UTF8           12
 #define		UTF8_INPUT     13
-#define		UTF16_INPUT    1015
-#define		UTF32_INPUT    1017
-
-/* byte order */
-
-#define		ENDIAN_BIG	1234
-#define		ENDIAN_LITTLE	4321
-#define		ENDIAN_2143	2143
-#define		ENDIAN_3412	3412
+#define		UTF16BE_INPUT  14
+#define		UTF16LE_INPUT  15
 
 #define         WISH_TRUE      15
 
@@ -361,8 +353,8 @@ static int ms_ucs_map_f = UCS_MAP_ASCII;
 /* no NEC special, NEC-selected IBM extended and IBM extended characters */
 static  int     no_cp932ext_f = FALSE;
 /* ignore ZERO WIDTH NO-BREAK SPACE */
+static  int     ignore_zwnbsp_f = TRUE;
 static  int     no_best_fit_chars_f = FALSE;
-static  int     input_endian = ENDIAN_BIG;
 static  nkf_char     unicode_subchar = '?'; /* the regular substitution character */
 static  void    nkf_each_char_to_hex(void (*f)(nkf_char c2,nkf_char c1), nkf_char c);
 static  void    encode_fallback_html(nkf_char c);
@@ -374,21 +366,18 @@ static  void    (*encode_fallback)(nkf_char c) = NULL;
 static  nkf_char     w2e_conv(nkf_char c2,nkf_char c1,nkf_char c0,nkf_char *p2,nkf_char *p1);
 static  nkf_char     w_iconv(nkf_char c2,nkf_char c1,nkf_char c0);
 static  nkf_char     w_iconv16(nkf_char c2,nkf_char c1,nkf_char c0);
-static  nkf_char     w_iconv32(nkf_char c2,nkf_char c1,nkf_char c0);
 static  nkf_char	unicode_to_jis_common(nkf_char c2,nkf_char c1,nkf_char c0,nkf_char *p2,nkf_char *p1);
 static  nkf_char	w_iconv_common(nkf_char c1,nkf_char c0,const unsigned short *const *pp,nkf_char psize,nkf_char *p2,nkf_char *p1);
 static  void    w16w_conv(nkf_char val, nkf_char *p2, nkf_char *p1, nkf_char *p0);
 static  nkf_char     ww16_conv(nkf_char c2, nkf_char c1, nkf_char c0);
 static  nkf_char     w16e_conv(nkf_char val,nkf_char *p2,nkf_char *p1);
-static  void    w_status(struct input_code *, nkf_char);
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-static  int     output_bom_f = FALSE;
-static  int     output_endian = ENDIAN_BIG;
+static  int     unicode_bom_f= 0;   /* Output Unicode BOM */
+static  int     w_oconv16_LE = 0;   /* utf-16 little endian */
 static  nkf_char     e2w_conv(nkf_char c2,nkf_char c1);
 static  void    w_oconv(nkf_char c2,nkf_char c1);
 static  void    w_oconv16(nkf_char c2,nkf_char c1);
-static  void    w_oconv32(nkf_char c2,nkf_char c1);
 #endif
 static  void    e_oconv(nkf_char c2,nkf_char c1);
 static  nkf_char     e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1);
@@ -448,7 +437,7 @@ static unsigned char   stdibuf[IOBUF_SIZE];
 static unsigned char   stdobuf[IOBUF_SIZE];
 #endif
 static unsigned char   hold_buf[HOLD_SIZE*2];
-static int             hold_count = 0;
+static int             hold_count;
 
 /* MIME preprocessor fifo */
 
@@ -512,10 +501,10 @@ static nkf_char url_ungetc(nkf_char c,FILE *f);
 #endif
 #define PREFIX_EUCG3	NKF_INT32_C(0x8F00)
 #define CLASS_MASK	NKF_INT32_C(0xFF000000)
-#define CLASS_UNICODE	NKF_INT32_C(0x01000000)
+#define CLASS_UTF16	NKF_INT32_C(0x01000000)
 #define VALUE_MASK	NKF_INT32_C(0x00FFFFFF)
 #define UNICODE_MAX	NKF_INT32_C(0x0010FFFF)
-#define is_unicode_capsule(c) ((c & CLASS_MASK) == CLASS_UNICODE)
+#define is_unicode_capsule(c) ((c & CLASS_MASK) == CLASS_UTF16)
 #define is_unicode_bmp(c) ((c & VALUE_MASK) <= NKF_INT32_C(0xFFFF))
 
 #ifdef NUMCHAR_OPTION
@@ -548,7 +537,7 @@ static int exec_f = 0;
 
 #ifdef SHIFTJIS_CP932
 /* invert IBM extended characters to others */
-static int cp51932_f = FALSE;
+static int cp51932_f = TRUE;
 
 /* invert NEC-selected IBM extended characters to IBM extended characters */
 static int cp932inv_f = TRUE;
@@ -576,13 +565,18 @@ static void status_check(struct input_code *ptr, nkf_char c);
 static void e_status(struct input_code *, nkf_char);
 static void s_status(struct input_code *, nkf_char);
 
+#ifdef UTF8_INPUT_ENABLE
+static void w_status(struct input_code *, nkf_char);
+static void w16_status(struct input_code *, nkf_char);
+static int             utf16_mode = UTF16BE_INPUT;
+#endif
+
 struct input_code input_code_list[] = {
     {"EUC-JP",    0, 0, 0, {0, 0, 0}, e_status, e_iconv, 0},
     {"Shift_JIS", 0, 0, 0, {0, 0, 0}, s_status, s_iconv, 0},
 #ifdef UTF8_INPUT_ENABLE
     {"UTF-8",     0, 0, 0, {0, 0, 0}, w_status, w_iconv, 0},
-    {"UTF-16",    0, 0, 0, {0, 0, 0},     NULL, w_iconv16, 0},
-    {"UTF-32",    0, 0, 0, {0, 0, 0},     NULL, w_iconv32, 0},
+    {"UTF-16",    0, 0, 0, {0, 0, 0}, w16_status, w_iconv16, 0},
 #endif
     {0}
 };
@@ -854,7 +848,6 @@ int main(int argc, char **argv)
       }
     } else {
       int nfiles = argc;
-	int is_argument_error = FALSE;
       while (argc--) {
 	    is_inputcode_mixed = FALSE;
 	    is_inputcode_set   = FALSE;
@@ -864,9 +857,7 @@ int main(int argc, char **argv)
 #endif
           if ((fin = fopen((origfname = *argv++), "r")) == NULL) {
               perror(*--argv);
-		*argv++;
-		is_argument_error = TRUE;
-		continue;
+              return(-1);
           } else {
 #ifdef OVERWRITE
               int fd = 0;
@@ -1014,8 +1005,6 @@ int main(int argc, char **argv)
 #endif
           }
       }
-	if (is_argument_error)
-	    return(-1);
     }
 #ifdef EASYWIN /*Easy Win */
     if (file_out_f == FALSE) 
@@ -1196,19 +1185,13 @@ void options(unsigned char *cp)
 			codeset[i] = nkf_toupper(p[i]);
 		    }
 		    codeset[i] = 0;
-		    if(strcmp(codeset, "ISO-2022-JP") == 0){
-			input_f = JIS_INPUT;
-		    }else if(strcmp(codeset, "X-ISO2022JP-CP932") == 0 ||
+		    if(strcmp(codeset, "ISO-2022-JP") == 0 ||
+		      strcmp(codeset, "X-ISO2022JP-CP932") == 0 ||
 		      strcmp(codeset, "CP50220") == 0 ||
 		      strcmp(codeset, "CP50221") == 0 ||
-		      strcmp(codeset, "CP50222") == 0){
+		      strcmp(codeset, "CP50222") == 0 ||
+		      strcmp(codeset, "ISO-2022-JP-MS") == 0){
 			input_f = JIS_INPUT;
-#ifdef SHIFTJIS_CP932
-			cp51932_f = TRUE;
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-			ms_ucs_map_f = UCS_MAP_CP932;
-#endif
 		    }else if(strcmp(codeset, "ISO-2022-JP-1") == 0){
 			input_f = JIS_INPUT;
 #ifdef X0212_ENABLE
@@ -1222,11 +1205,13 @@ void options(unsigned char *cp)
 			x0213_f = TRUE;
 		    }else if(strcmp(codeset, "SHIFT_JIS") == 0){
 			input_f = SJIS_INPUT;
+			if (x0201_f==NO_X0201) x0201_f=TRUE;
 		    }else if(strcmp(codeset, "WINDOWS-31J") == 0 ||
 			     strcmp(codeset, "CSWINDOWS31J") == 0 ||
 			     strcmp(codeset, "CP932") == 0 ||
 			     strcmp(codeset, "MS932") == 0){
 			input_f = SJIS_INPUT;
+			x0201_f = FALSE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1235,9 +1220,10 @@ void options(unsigned char *cp)
 #endif
 		    }else if(strcmp(codeset, "EUCJP") == 0 ||
 			     strcmp(codeset, "EUC-JP") == 0){
-			input_f = EUC_INPUT;
+			input_f = JIS_INPUT;
 		    }else if(strcmp(codeset, "CP51932") == 0){
-			input_f = EUC_INPUT;
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1247,7 +1233,8 @@ void options(unsigned char *cp)
 		    }else if(strcmp(codeset, "EUC-JP-MS") == 0 ||
 			     strcmp(codeset, "EUCJP-MS") == 0 ||
 			     strcmp(codeset, "EUCJPMS") == 0){
-			input_f = EUC_INPUT;
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
 #endif
@@ -1256,7 +1243,8 @@ void options(unsigned char *cp)
 #endif
 		    }else if(strcmp(codeset, "EUC-JP-ASCII") == 0 ||
 			     strcmp(codeset, "EUCJP-ASCII") == 0){
-			input_f = EUC_INPUT;
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
 #endif
@@ -1269,13 +1257,17 @@ void options(unsigned char *cp)
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
+			cp932inv_f = FALSE;
 #endif
+			if (x0201_f==NO_X0201) x0201_f=TRUE;
 		    }else if(strcmp(codeset, "EUC-JISX0213") == 0 ||
 			     strcmp(codeset, "EUC-JIS-2004") == 0){
-			input_f = EUC_INPUT;
+			input_f = JIS_INPUT;
+			x0201_f = FALSE;
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
+			cp932inv_f = FALSE;
 #endif
 #ifdef UTF8_INPUT_ENABLE
 		    }else if(strcmp(codeset, "UTF-8") == 0 ||
@@ -1288,69 +1280,43 @@ void options(unsigned char *cp)
 			input_f = UTF8_INPUT;
 			nfc_f = TRUE;
 #endif
-		    }else if(strcmp(codeset, "UTF-16") == 0 ||
-			     strcmp(codeset, "UTF-16BE") == 0 ||
+		    }else if(strcmp(codeset, "UTF-16") == 0){
+			input_f = UTF16BE_INPUT;
+			utf16_mode = UTF16BE_INPUT;
+		    }else if(strcmp(codeset, "UTF-16BE") == 0 ||
 			     strcmp(codeset, "UTF-16BE-BOM") == 0){
-			input_f = UTF16_INPUT;
-			input_endian = ENDIAN_BIG;
+			input_f = UTF16BE_INPUT;
+			utf16_mode = UTF16BE_INPUT;
 		    }else if(strcmp(codeset, "UTF-16LE") == 0 ||
 			     strcmp(codeset, "UTF-16LE-BOM") == 0){
-			input_f = UTF16_INPUT;
-			input_endian = ENDIAN_LITTLE;
-		    }else if(strcmp(codeset, "UTF-32") == 0 ||
-			     strcmp(codeset, "UTF-32BE") == 0 ||
-			     strcmp(codeset, "UTF-32BE-BOM") == 0){
-			input_f = UTF32_INPUT;
-			input_endian = ENDIAN_BIG;
-		    }else if(strcmp(codeset, "UTF-32LE") == 0 ||
-			     strcmp(codeset, "UTF-32LE-BOM") == 0){
-			input_f = UTF32_INPUT;
-			input_endian = ENDIAN_LITTLE;
+			input_f = UTF16LE_INPUT;
+			utf16_mode = UTF16LE_INPUT;
 #endif
 		    }
                     continue;
 		}
                 if (strcmp(long_option[i].name, "oc=") == 0){
-		    x0201_f = FALSE;
 		    for (i=0; i < 16 && SPACE < p[i] && p[i] < DEL; i++){
 			codeset[i] = nkf_toupper(p[i]);
 		    }
 		    codeset[i] = 0;
-		    if(strcmp(codeset, "ISO-2022-JP") == 0){
+		    if(strcmp(codeset, "ISO-2022-JP") == 0 ||
+		       strcmp(codeset, "CP50220") == 0){
 			output_conv = j_oconv;
 		    }else if(strcmp(codeset, "X-ISO2022JP-CP932") == 0){
 			output_conv = j_oconv;
 			no_cp932ext_f = TRUE;
-#ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-			ms_ucs_map_f = UCS_MAP_CP932;
-#endif
-		    }else if(strcmp(codeset, "CP50220") == 0){
+		    }else if(strcmp(codeset, "CP50221") == 0 ||
+			     strcmp(codeset, "ISO-2022-JP-MS") == 0){
 			output_conv = j_oconv;
-			x0201_f = TRUE;
-#ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-			ms_ucs_map_f = UCS_MAP_CP932;
-#endif
-		    }else if(strcmp(codeset, "CP50221") == 0){
-			output_conv = j_oconv;
-#ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
-#endif
-#ifdef UTF8_OUTPUT_ENABLE
-			ms_ucs_map_f = UCS_MAP_CP932;
-#endif
+			x0201_f = FALSE;
 		    }else if(strcmp(codeset, "ISO-2022-JP-1") == 0){
 			output_conv = j_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
 #ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
+			cp51932_f = FALSE;
 #endif
 		    }else if(strcmp(codeset, "ISO-2022-JP-3") == 0){
 			output_conv = j_oconv;
@@ -1359,7 +1325,16 @@ void options(unsigned char *cp)
 #endif
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
+			cp51932_f = FALSE;
+#endif
+		    }else if(strcmp(codeset, "ISO-2022-JP-MS") == 0){
+			output_conv = j_oconv;
+			x0201_f = FALSE;
+#ifdef X0212_ENABLE
+			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
 #endif
 		    }else if(strcmp(codeset, "SHIFT_JIS") == 0){
 			output_conv = s_oconv;
@@ -1368,6 +1343,11 @@ void options(unsigned char *cp)
 			     strcmp(codeset, "CP932") == 0 ||
 			     strcmp(codeset, "MS932") == 0){
 			output_conv = s_oconv;
+			x0201_f = FALSE;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+			cp932inv_f = TRUE;
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP932;
 #endif
@@ -1376,8 +1356,9 @@ void options(unsigned char *cp)
 			output_conv = e_oconv;
 		    }else if(strcmp(codeset, "CP51932") == 0){
 			output_conv = e_oconv;
+			x0201_f = FALSE;
 #ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
+			cp51932_f = TRUE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP932;
@@ -1386,8 +1367,12 @@ void options(unsigned char *cp)
 			     strcmp(codeset, "EUCJP-MS") == 0 ||
 			     strcmp(codeset, "EUCJPMS") == 0){
 			output_conv = e_oconv;
+			x0201_f = FALSE;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_MS;
@@ -1395,8 +1380,12 @@ void options(unsigned char *cp)
 		    }else if(strcmp(codeset, "EUC-JP-ASCII") == 0 ||
 			     strcmp(codeset, "EUCJP-ASCII") == 0){
 			output_conv = e_oconv;
+			x0201_f = FALSE;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
+#endif
+#ifdef SHIFTJIS_CP932
+			cp51932_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_ASCII;
@@ -1416,42 +1405,32 @@ void options(unsigned char *cp)
 #endif
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
-			cp932inv_f = FALSE;
+			cp51932_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
 		    }else if(strcmp(codeset, "UTF-8") == 0){
 			output_conv = w_oconv;
 		    }else if(strcmp(codeset, "UTF-8N") == 0){
 			output_conv = w_oconv;
+			unicode_bom_f=1;
 		    }else if(strcmp(codeset, "UTF-8-BOM") == 0){
 			output_conv = w_oconv;
-			output_bom_f = TRUE;
+			unicode_bom_f=2;
 		    }else if(strcmp(codeset, "UTF-16BE") == 0){
-			output_conv = w_oconv16;
+			output_conv = w_oconv16; 
+			unicode_bom_f=1;
 		    }else if(strcmp(codeset, "UTF-16") == 0 ||
 			     strcmp(codeset, "UTF-16BE-BOM") == 0){
-			output_conv = w_oconv16;
-			output_bom_f = TRUE;
+			output_conv = w_oconv16; 
+			unicode_bom_f=2;
 		    }else if(strcmp(codeset, "UTF-16LE") == 0){
-			output_conv = w_oconv16;
-			output_endian = ENDIAN_LITTLE;
+			output_conv = w_oconv16; 
+			w_oconv16_LE = 1;
+			unicode_bom_f=1;
 		    }else if(strcmp(codeset, "UTF-16LE-BOM") == 0){
-			output_conv = w_oconv16;
-			output_endian = ENDIAN_LITTLE;
-			output_bom_f = TRUE;
-		    }else if(strcmp(codeset, "UTF-32") == 0 ||
-			     strcmp(codeset, "UTF-32BE") == 0){
-			output_conv = w_oconv32;
-		    }else if(strcmp(codeset, "UTF-32BE-BOM") == 0){
-			output_conv = w_oconv32;
-			output_bom_f = TRUE;
-		    }else if(strcmp(codeset, "UTF-32LE") == 0){
-			output_conv = w_oconv32;
-			output_endian = ENDIAN_LITTLE;
-		    }else if(strcmp(codeset, "UTF-32LE-BOM") == 0){
-			output_conv = w_oconv32;
-			output_endian = ENDIAN_LITTLE;
-			output_bom_f = TRUE;
+			output_conv = w_oconv16; 
+			w_oconv16_LE = 1;
+			unicode_bom_f=2;
 #endif
 		    }
                     continue;
@@ -1670,7 +1649,6 @@ void options(unsigned char *cp)
             continue;
         case 'e':           /* AT&T EUC output */
             output_conv = e_oconv;
-            cp932inv_f = FALSE;
             continue;
         case 's':           /* SJIS output */
             output_conv = s_oconv;
@@ -1717,71 +1695,56 @@ void options(unsigned char *cp)
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
         case 'w':           /* UTF-8 output */
-            if (cp[0] == '8') {
-		output_conv = w_oconv; cp++;
-		if (cp[0] == '0'){
-		    cp++;
-		} else {
-		    output_bom_f = TRUE;
-		}
-	    } else {
-		if ('1'== cp[0] && '6'==cp[1]) {
-		    output_conv = w_oconv16; cp+=2;
-		} else if ('3'== cp[0] && '2'==cp[1]) {
-		    output_conv = w_oconv32; cp+=2;
-		} else {
-		    output_conv = w_oconv;
-		    continue;
-		}
+            if ('1'== cp[0] && '6'==cp[1]) {
+		output_conv = w_oconv16; cp+=2;
 		if (cp[0]=='L') {
-		    cp++;
-		    output_endian = ENDIAN_LITTLE;
+		    unicode_bom_f=2; cp++;
+		    w_oconv16_LE = 1;
+                    if (cp[0] == '0'){
+                        unicode_bom_f=1; cp++;
+                    }
 		} else if (cp[0] == 'B') {
-		    cp++;
-                } else {
-		    continue;
-                }
+		    unicode_bom_f=2; cp++;
+                    if (cp[0] == '0'){
+                        unicode_bom_f=1; cp++;
+                    }
+                } 
+	    } else if (cp[0] == '8') {
+		output_conv = w_oconv; cp++;
+		unicode_bom_f=2;
 		if (cp[0] == '0'){
-		    cp++;
-		} else {
-		    output_bom_f = TRUE;
+		    unicode_bom_f=1; cp++;
 		}
-	    }
+	    } else
+                output_conv = w_oconv;
             continue;
 #endif
 #ifdef UTF8_INPUT_ENABLE
-        case 'W':           /* UTF input */
-	    if (cp[0] == '8') {
-		cp++;
-		input_f = UTF8_INPUT;
-	    }else{
-		if ('1'== cp[0] && '6'==cp[1]) {
-		    cp += 2;
-		    input_f = UTF16_INPUT;
-		    input_endian = ENDIAN_BIG;
-		} else if ('3'== cp[0] && '2'==cp[1]) {
-		    cp += 2;
-		    input_f = UTF32_INPUT;
-		    input_endian = ENDIAN_BIG;
-		} else {
-		    input_f = UTF8_INPUT;
-		    continue;
-		}
+        case 'W':           /* UTF-8 input */
+            if ('1'== cp[0] && '6'==cp[1]) {
+		input_f = UTF16BE_INPUT;
+		utf16_mode = UTF16BE_INPUT;
+		cp += 2;
 		if (cp[0]=='L') {
 		    cp++;
-		    input_endian = ENDIAN_LITTLE;
+		    input_f = UTF16LE_INPUT;
+		    utf16_mode = UTF16LE_INPUT;
 		} else if (cp[0] == 'B') {
 		    cp++;
+		    input_f = UTF16BE_INPUT;
+		    utf16_mode = UTF16BE_INPUT;
 		}
-	    }
+	    } else if (cp[0] == '8') {
+		cp++;
+		input_f = UTF8_INPUT;
+	    } else
+                input_f = UTF8_INPUT;
             continue;
 #endif
         /* Input code assumption */
         case 'J':   /* JIS input */
-            input_f = JIS_INPUT;
-            continue;
         case 'E':   /* AT&T EUC input */
-            input_f = EUC_INPUT;
+            input_f = JIS_INPUT;
             continue;
         case 'S':   /* MS Kanji input */
             input_f = SJIS_INPUT;
@@ -1911,7 +1874,12 @@ void options(unsigned char *cp)
     }
 }
 
+#ifdef ANSI_C_PROTOTYPE
 struct input_code * find_inputcode_byfunc(nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
+#else
+struct input_code * find_inputcode_byfunc(iconv_func)
+     nkf_char (*iconv_func)();
+#endif
 {
     if (iconv_func){
         struct input_code *p = input_code_list;
@@ -2167,6 +2135,52 @@ void e_status(struct input_code *ptr, nkf_char c)
 }
 
 #ifdef UTF8_INPUT_ENABLE
+void w16_status(struct input_code *ptr, nkf_char c)
+{
+    switch (ptr->stat){
+      case -1:
+          break;
+      case 0:
+          if (ptr->_file_stat == 0){
+              if (c == 0xfe || c == 0xff){
+                  ptr->stat = c;
+                  status_push_ch(ptr, c);
+                  ptr->_file_stat = 1;
+              }else{
+                  status_disable(ptr);
+                  ptr->_file_stat = -1;
+              }
+          }else if (ptr->_file_stat > 0){
+              ptr->stat = 1;
+              status_push_ch(ptr, c);
+          }else if (ptr->_file_stat < 0){
+              status_disable(ptr);
+          }
+          break;
+
+      case 1:
+          if (c == EOF){
+              status_disable(ptr);
+              ptr->_file_stat = -1;
+          }else{
+              status_push_ch(ptr, c);
+              status_clear(ptr);
+          }
+          break;
+
+      case 0xfe:
+      case 0xff:
+          if (ptr->stat != c && (c == 0xfe || c == 0xff)){
+              status_push_ch(ptr, c);
+              status_clear(ptr);
+          }else{
+              status_disable(ptr);
+              ptr->_file_stat = -1;
+          }
+          break;
+    }
+}
+
 void w_status(struct input_code *ptr, nkf_char c)
 {
     switch (ptr->stat){
@@ -2185,9 +2199,6 @@ void w_status(struct input_code *ptr, nkf_char c)
               status_push_ch(ptr, c);
           }else if (0xe0 <= c && c <= 0xef){
               ptr->stat = 2;
-              status_push_ch(ptr, c);
-          }else if (0xf0 <= c && c <= 0xf4){
-              ptr->stat = 3;
               status_push_ch(ptr, c);
           }else{
               status_disable(ptr);
@@ -2211,17 +2222,6 @@ void w_status(struct input_code *ptr, nkf_char c)
               status_disable(ptr);
           }
           break;
-      case 3:
-	if (0x80 <= c && c <= 0xbf){
-	    if (ptr->index < ptr->stat){
-		status_push_ch(ptr, c);
-	    } else {
-	    	status_clear(ptr);
-	    }
-          }else{
-              status_disable(ptr);
-          }
-          break;
     }
 }
 #endif
@@ -2232,12 +2232,6 @@ void code_status(nkf_char c)
     struct input_code *result = 0;
     struct input_code *p = input_code_list;
     while (p->name){
-        if (!p->status_func) {
-	    ++p;
-	    continue;
-	}
-        if (!p->status_func)
-	    continue;
         (p->status_func)(p, c);
         if (p->stat > 0){
             action_flag = 0;
@@ -2380,17 +2374,17 @@ void module_connection(void)
 	i_bgetc = i_getc; i_getc = broken_getc;
 	i_bungetc = i_ungetc; i_ungetc = broken_ungetc;
     }
-    if (input_f == JIS_INPUT || input_f == EUC_INPUT || input_f == LATIN1_INPUT) {
+    if (input_f == JIS_INPUT || input_f == LATIN1_INPUT) {
         set_iconv(-TRUE, e_iconv);
     } else if (input_f == SJIS_INPUT) {
         set_iconv(-TRUE, s_iconv);
 #ifdef UTF8_INPUT_ENABLE
     } else if (input_f == UTF8_INPUT) {
         set_iconv(-TRUE, w_iconv);
-    } else if (input_f == UTF16_INPUT) {
+    } else if (input_f == UTF16BE_INPUT) {
         set_iconv(-TRUE, w_iconv16);
-    } else if (input_f == UTF32_INPUT) {
-        set_iconv(-TRUE, w_iconv32);
+    } else if (input_f == UTF16LE_INPUT) {
+        set_iconv(-TRUE, w_iconv16);
 #endif
     } else {
         set_iconv(FALSE, e_iconv);
@@ -2405,132 +2399,26 @@ void module_connection(void)
 }
 
 /*
- * Check and Ignore BOM
- */
-void check_bom(FILE *f)
-{
-    int c2;
-    switch(c2 = (*i_getc)(f)){
-    case 0x00:
-	if((c2 = (*i_getc)(f)) == 0x00){
-	    if((c2 = (*i_getc)(f)) == 0xFE){
-		if((c2 = (*i_getc)(f)) == 0xFF){
-		    if(!input_f){
-			set_iconv(TRUE, w_iconv32);
-		    }
-		    if (iconv == w_iconv32) {
-			input_endian = ENDIAN_BIG;
-			return;
-		    }
-		    (*i_ungetc)(0xFF,f);
-		}else (*i_ungetc)(c2,f);
-		(*i_ungetc)(0xFE,f);
-	    }else if(c2 == 0xFF){
-		if((c2 = (*i_getc)(f)) == 0xFE){
-		    if(!input_f){
-			set_iconv(TRUE, w_iconv32);
-		    }
-		    if (iconv == w_iconv32) {
-			input_endian = ENDIAN_2143;
-			return;
-		    }
-		    (*i_ungetc)(0xFF,f);
-		}else (*i_ungetc)(c2,f);
-		(*i_ungetc)(0xFF,f);
-	    }else (*i_ungetc)(c2,f);
-	    (*i_ungetc)(0x00,f);
-	}else (*i_ungetc)(c2,f);
-	(*i_ungetc)(0x00,f);
-	break;
-    case 0xEF:
-	if((c2 = (*i_getc)(f)) == 0xBB){
-	    if((c2 = (*i_getc)(f)) == 0xBF){
-		if(!input_f){
-		    set_iconv(TRUE, w_iconv);
-		}
-		if (iconv == w_iconv) {
-		    return;
-		}
-		(*i_ungetc)(0xBF,f);
-	    }else (*i_ungetc)(c2,f);
-	    (*i_ungetc)(0xBB,f);
-	}else (*i_ungetc)(c2,f);
-	(*i_ungetc)(0xEF,f);
-	break;
-    case 0xFE:
-	if((c2 = (*i_getc)(f)) == 0xFF){
-	    if((c2 = (*i_getc)(f)) == 0x00){
-		if((c2 = (*i_getc)(f)) == 0x00){
-		    if(!input_f){
-			set_iconv(TRUE, w_iconv32);
-		    }
-		    if (iconv == w_iconv32) {
-			input_endian = ENDIAN_3412;
-			return;
-		    }
-		    (*i_ungetc)(0x00,f);
-		}else (*i_ungetc)(c2,f);
-		(*i_ungetc)(0x00,f);
-	    }else (*i_ungetc)(c2,f);
-	    if(!input_f){
-		set_iconv(TRUE, w_iconv16);
-	    }
-	    if (iconv == w_iconv16) {
-		input_endian = ENDIAN_BIG;
-		return;
-	    }
-	    (*i_ungetc)(0xFF,f);
-	}else (*i_ungetc)(c2,f);
-	(*i_ungetc)(0xFE,f);
-	break;
-    case 0xFF:
-	if((c2 = (*i_getc)(f)) == 0xFE){
-	    if((c2 = (*i_getc)(f)) == 0x00){
-		if((c2 = (*i_getc)(f)) == 0x00){
-		    if(!input_f){
-			set_iconv(TRUE, w_iconv32);
-		    }
-		    if (iconv == w_iconv32) {
-			input_endian = ENDIAN_LITTLE;
-			return;
-		    }
-		    (*i_ungetc)(0x00,f);
-		}else (*i_ungetc)(c2,f);
-		(*i_ungetc)(0x00,f);
-	    }else (*i_ungetc)(c2,f);
-	    if(!input_f){
-		set_iconv(TRUE, w_iconv16);
-	    }
-	    if (iconv == w_iconv16) {
-		input_endian = ENDIAN_LITTLE;
-		return;
-	    }
-	    (*i_ungetc)(0xFE,f);
-	}else (*i_ungetc)(c2,f);
-	(*i_ungetc)(0xFF,f);
-	break;
-    default:
-	(*i_ungetc)(c2,f);
-	break;
-    }
-}
-
-/*
    Conversion main loop. Code detection only. 
  */
 
 nkf_char kanji_convert(FILE *f)
 {
-    nkf_char    c3, c2=0, c1, c0=0;
+    nkf_char    c1,
+                    c2, c3;
     int is_8bit = FALSE;
 
-    if(input_f == SJIS_INPUT || input_f == EUC_INPUT
+    module_connection();
+    c2 = 0;
+
+    if(input_f == SJIS_INPUT
 #ifdef UTF8_INPUT_ENABLE
-       || input_f == UTF8_INPUT || input_f == UTF16_INPUT
+       || input_f == UTF8_INPUT || input_f == UTF16BE_INPUT || input_f == UTF16LE_INPUT
 #endif
       ){
 	is_8bit = TRUE;
     }
+
 
     input_mode = ASCII;
     output_mode = ASCII;
@@ -2540,9 +2428,6 @@ nkf_char kanji_convert(FILE *f)
 #define SEND ;             /* output c1 and c2, get next */
 #define LAST break         /* end of loop, go closing  */
 
-    module_connection();
-    check_bom(f);
-
     while ((c1 = (*i_getc)(f)) != EOF) {
 #ifdef INPUT_CODE_FIX
 	if (!input_f)
@@ -2550,7 +2435,7 @@ nkf_char kanji_convert(FILE *f)
 	    code_status(c1);
         if (c2) {
             /* second byte */
-            if (c2 > ((input_f == JIS_INPUT && ms_ucs_map_f) ? 0x92 : DEL)) {
+            if (c2 > DEL) {
                 /* in case of 8th bit is on */
                 if (!estab_f&&!mime_decode_mode) {
                     /* in case of not established yet */
@@ -2560,16 +2445,14 @@ nkf_char kanji_convert(FILE *f)
                     else 
                         c2 = 0;
                     NEXT;
-                } else {
-		    /* in case of already established */
-		    if (c1 < AT) {
-			/* ignore bogus code and not CP5022x UCD */
-			c2 = 0;
-			NEXT;
-		    } else {
-			SEND;
-		    }
-		}
+                } else
+                    /* in case of already established */
+                    if (c1 < AT) {
+                        /* ignore bogus code */
+                        c2 = 0;
+                        NEXT;
+                    } else
+                        SEND;
             } else
                 /* second byte, 7 bit code */
                 /* it might be kanji shitfted */
@@ -2581,68 +2464,25 @@ nkf_char kanji_convert(FILE *f)
                     SEND;
         } else {
             /* first byte */
+	    if (
 #ifdef UTF8_INPUT_ENABLE
-	    if (iconv == w_iconv16) {
-		if (input_endian == ENDIAN_BIG) {
-		    c2 = c1;
-		    if ((c1 = (*i_getc)(f)) != EOF) {
-			if (0xD8 <= c2 && c2 <= 0xDB) {
-			    if ((c0 = (*i_getc)(f)) != EOF) {
-				c0 <<= 8;
-				if ((c3 = (*i_getc)(f)) != EOF) {
-				    c0 |= c3;
-				} else c2 = EOF;
-			    } else c2 = EOF;
-			}
-		    } else c2 = EOF;
-		} else {
-		    if ((c2 = (*i_getc)(f)) != EOF) {
-			if (0xD8 <= c2 && c2 <= 0xDB) {
-			    if ((c3 = (*i_getc)(f)) != EOF) {
-				if ((c0 = (*i_getc)(f)) != EOF) {
-				    c0 <<= 8;
-				    c0 |= c3;
-				} else c2 = EOF;
-			    } else c2 = EOF;
-			}
-		    } else c2 = EOF;
-		}
-		SEND;
-            } else if(iconv == w_iconv32){
-		int c3 = c1;
-		if((c2 = (*i_getc)(f)) != EOF &&
-		   (c1 = (*i_getc)(f)) != EOF &&
-		   (c0 = (*i_getc)(f)) != EOF){
-		    switch(input_endian){
-		    case ENDIAN_BIG:
-			c1 = (c2&0xFF)<<16 | (c1&0xFF)<<8 | (c0&0xFF);
-			break;
-		    case ENDIAN_LITTLE:
-			c1 = (c3&0xFF) | (c2&0xFF)<<8 | (c1&0xFF)<<16;
-			break;
-		    case ENDIAN_2143:
-			c1 = (c3&0xFF)<<16 | (c1&0xFF) | (c0&0xFF)<<8;
-			break;
-		    case ENDIAN_3412:
-			c1 = (c3&0xFF)<<8 | (c2&0xFF) | (c0&0xFF)<<16;
-			break;
-		    }
-		    c2 = 0;
-		}else{
-		    c2 = EOF;
-		}
-		SEND;
-            } else
+                iconv == w_iconv16
+#else
+                0
 #endif
+                ) {
+		c2 = c1;
+		c1 = (*i_getc)(f);
+		SEND;
 #ifdef NUMCHAR_OPTION
-            if (is_unicode_capsule(c1)){
+            } else if (is_unicode_capsule(c1)){
                 SEND;
-	    } else
 #endif
-	    if (c1 > ((input_f == JIS_INPUT && ms_ucs_map_f) ? 0x92 : DEL)) {
+	    } else if (c1 > DEL) {
                 /* 8 bit code */
                 if (!estab_f && !iso8859_f) {
                     /* not established yet */
+		    if (!is_8bit) is_8bit = TRUE;
                     c2 = c1;
                     NEXT;
                 } else { /* estab_f==TRUE */
@@ -2733,13 +2573,13 @@ nkf_char kanji_convert(FILE *f)
                     /* normal ASCII code */ 
                     SEND;
                 }
-            } else if (c1 == SI && (!is_8bit || mime_decode_mode)) {
+            } else if (!is_8bit && c1 == SI) {
                 shift_mode = FALSE; 
                 NEXT;
-            } else if (c1 == SO && (!is_8bit || mime_decode_mode)) {
+            } else if (!is_8bit && c1 == SO) {
                 shift_mode = TRUE; 
                 NEXT;
-            } else if (c1 == ESC && (!is_8bit || mime_decode_mode)) {
+            } else if (!is_8bit && c1 == ESC ) {
                 if ((c1 = (*i_getc)(f)) == EOF) {
                     /*  (*oconv)(0, ESC); don't send bogus code */
                     LAST;
@@ -2847,44 +2687,6 @@ nkf_char kanji_convert(FILE *f)
                     (*oconv)(0, ESC);
                     SEND;
                 }
-	    } else if (c1 == ESC && iconv == s_iconv) {
-		/* ESC in Shift_JIS */
-		if ((c1 = (*i_getc)(f)) == EOF) {
-		    /*  (*oconv)(0, ESC); don't send bogus code */
-		    LAST;
-		} else if (c1 == '$') {
-		    /* J-PHONE emoji */
-		    if ((c1 = (*i_getc)(f)) == EOF) {
-			/*
-			   (*oconv)(0, ESC); don't send bogus code 
-			   (*oconv)(0, '$'); */
-			LAST;
-		    } else {
-			if (('E' <= c1 && c1 <= 'G') ||
-			    ('O' <= c1 && c1 <= 'Q')) {
-			    /*
-			       NUM : 0 1 2 3 4 5
-			       BYTE: G E F O P Q
-			       C%7 : 1 6 0 2 3 4
-			       C%7 : 0 1 2 3 4 5 6
-			       NUM : 2 0 3 4 5 X 1
-			     */
-			    static const int jphone_emoji_first_table[7] = {2, 0, 3, 4, 5, 0, 1};
-			    c0 = (jphone_emoji_first_table[c1 % 7] << 8) - SPACE + 0xE000 + CLASS_UNICODE;
-			    while ((c1 = (*i_getc)(f)) != EOF) {
-				if (SPACE <= c1 && c1 <= 'z') {
-				    (*oconv)(0, c1 + c0);
-				} else break; /* c1 == SO */
-			    }
-			}
-		    }
-		    if (c1 == EOF) LAST;
-		    NEXT;
-		} else {
-		    /* lonely ESC  */
-		    (*oconv)(0, ESC);
-		    SEND;
-		}
             } else if ((c1 == NL || c1 == CR) && broken_f&4) {
                 input_mode = ASCII; set_iconv(FALSE, 0);
                 SEND;
@@ -2914,47 +2716,22 @@ nkf_char kanji_convert(FILE *f)
 		}
 		c1 = CR;
 		SEND;
-	    } else if (c1 == DEL && input_mode == X0208 ) {
-		/* CP5022x */
-		c2 = c1;
-		NEXT;
 	    } else 
                 SEND;
         }
         /* send: */
 	switch(input_mode){
 	case ASCII:
-	    switch ((*iconv)(c2, c1, c0)) {  /* can be EUC / SJIS / UTF-8 / UTF-16 */
-	    case -2:
-		/* 4 bytes UTF-8 */
-		if ((c0 = (*i_getc)(f)) != EOF) {
-		    code_status(c0);
-		    c0 <<= 8;
-		    if ((c3 = (*i_getc)(f)) != EOF) {
-			code_status(c3);
-			(*iconv)(c2, c1, c0|c3);
-		    }
-		}
-		break;
-	    case -1:
-		/* 3 bytes EUC or UTF-8 */
-		if ((c0 = (*i_getc)(f)) != EOF) {
+	    if ((*iconv)(c2, c1, 0) < 0){  /* can be EUC/SJIS */
+		nkf_char c0 = (*i_getc)(f);
+		if (c0 != EOF){
 		    code_status(c0);
 		    (*iconv)(c2, c1, c0);
 		}
-		break;
 	    }
 	    break;
 	case X0208:
 	case X0213_1:
-	    if (ms_ucs_map_f &&
-		0x7F <= c2 && c2 <= 0x92 &&
-		0x21 <= c1 && c1 <= 0x7E) {
-		/* CP932 UDC */
-		if(c1 == 0x7F) return 0;
-		c1 = (c2 - 0x7F) * 94 + c1 - 0x21 + 0xE000 + CLASS_UNICODE;
-		c2 = 0;
-	    }
 	    (*oconv)(c2, c1); /* this is JIS, not SJIS/EUC case */
 	    break;
 #ifdef X0212_ENABLE
@@ -2970,7 +2747,6 @@ nkf_char kanji_convert(FILE *f)
 	}
 
         c2 = 0;
-        c0 = 0;
         continue;
         /* goto next_word */
     }
@@ -2995,8 +2771,7 @@ nkf_char kanji_convert(FILE *f)
 nkf_char
 h_conv(FILE *f, nkf_char c2, nkf_char c1)
 {
-    nkf_char ret, c3, c0;
-    int hold_index;
+    nkf_char    wc,c3;
 
 
     /** it must NOT be in the kanji shifte sequence      */
@@ -3043,10 +2818,10 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
      ** Kanji codes by oconv and leave estab_f unchanged.
      **/
 
-    ret = c1;
-    hold_index = 0;
-    while (hold_index < hold_count){
-        c2 = hold_buf[hold_index++];
+    c3=c1;
+    wc = 0;
+    while (wc < hold_count){
+        c2 = hold_buf[wc++];
         if (c2 <= DEL
 #ifdef NUMCHAR_OPTION
             || is_unicode_capsule(c2)
@@ -3058,8 +2833,8 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
             (*iconv)(X0201, c2, 0);
             continue;
         }
-        if (hold_index < hold_count){
-            c1 = hold_buf[hold_index++];
+        if (wc < hold_count){
+            c1 = hold_buf[wc++];
         }else{
             c1 = (*i_getc)(f);
             if (c1 == EOF){
@@ -3068,48 +2843,28 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
             }
             code_status(c1);
         }
-        c0 = 0;
-        switch ((*iconv)(c2, c1, 0)) {  /* can be EUC/SJIS/UTF-8 */
-	case -2:
-	    /* 4 bytes UTF-8 */
-            if (hold_index < hold_count){
-                c0 = hold_buf[hold_index++];
-            } else if ((c0 = (*i_getc)(f)) == EOF) {
-		ret = EOF;
-		break;
-	    } else {
-                code_status(c0);
-		c0 <<= 8;
-		if (hold_index < hold_count){
-		    c3 = hold_buf[hold_index++];
-		} else if ((c3 = (*i_getc)(f)) == EOF) {
-		    c0 = ret = EOF;
-		    break;
-		} else {
-		    code_status(c3);
-		    (*iconv)(c2, c1, c0|c3);
-		}
-            }
-	    break;
-	case -1:
-	    /* 3 bytes EUC or UTF-8 */
-            if (hold_index < hold_count){
-                c0 = hold_buf[hold_index++];
-            } else if ((c0 = (*i_getc)(f)) == EOF) {
-		ret = EOF;
-		break;
-	    } else {
+        if ((*iconv)(c2, c1, 0) < 0){
+            nkf_char c0;
+            if (wc < hold_count){
+                c0 = hold_buf[wc++];
+            }else{
+                c0 = (*i_getc)(f);
+                if (c0 == EOF){
+                    c3 = EOF;
+                    break;
+                }
                 code_status(c0);
             }
             (*iconv)(c2, c1, c0);
-            break;
-	}
-	if (c0 == EOF) break;
+        }
     }
-    return ret;
+    return c3;
 }
 
-nkf_char push_hold_buf(nkf_char c2)
+
+
+nkf_char
+push_hold_buf(nkf_char c2)
 {
     if (hold_count >= HOLD_SIZE*2)
         return (EOF);
@@ -3124,7 +2879,7 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 #endif
     static const nkf_char shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
 #ifdef SHIFTJIS_CP932
-    if (!cp932inv_f && is_ibmext_in_sjis(c2)){
+    if (cp51932_f && is_ibmext_in_sjis(c2)){
 #if 0
         extern const unsigned short shiftjis_cp932[3][189];
 #endif
@@ -3132,17 +2887,6 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
         if (val){
             c2 = val >> 8;
             c1 = val & 0xff;
-        }
-    }
-    if (cp932inv_f
-        && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-#if 0
-        extern const unsigned short cp932inv[2][189];
-#endif
-        nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
-        if (c){
-            c2 = c >> 8;
-            c1 = c & 0xff;
         }
     }
 #endif /* SHIFTJIS_CP932 */
@@ -3154,7 +2898,7 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
         val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
         if (val){
             if (val > 0x7FFF){
-                c2 = PREFIX_EUCG3 | ((val >> 8) & 0x7f);
+                c2 = PREFIX_EUCG3 | (val >> 8);
                 c1 = val & 0xff;
             }else{
                 c2 = val >> 8;
@@ -3199,11 +2943,6 @@ nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 	c1 &= 0x7f;
     } else if ((c2 == EOF) || (c2 == 0) || c2 < SPACE) {
         /* NOP */
-    } else if (!x0213_f && 0xF0 <= c2 && c2 <= 0xF9 && 0x40 <= c1 && c1 <= 0xFC) {
-	/* CP932 UDC */
-	if(c1 == 0x7F) return 0;
-	c1 = (c2 - 0xF0) * 188 + (c1 - 0x40 - (0x7E < c1)) + 0xE000 + CLASS_UNICODE;
-	c2 = 0;
     } else {
         nkf_char ret = s2e_conv(c2, c1, &c2, &c1);
         if (ret) return ret;
@@ -3221,26 +2960,20 @@ nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
         if (c0 == 0){
             return -1;
         }
-	if (!cp51932_f && !x0213_f && 0xF5 <= c1 && c1 <= 0xFE && 0xA1 <= c0 && c0 <= 0xFE) {
-	    /* encoding is eucJP-ms, so invert to Unicode Private User Area */
-	    c1 = (c1 - 0xF5) * 94 + c0 - 0xA1 + 0xE3AC + CLASS_UNICODE;
-	    c2 = 0;
-	} else {
-	    c2 = (c2 << 8) | (c1 & 0x7f);
-	    c1 = c0 & 0x7f;
+        c2 = (c2 << 8) | (c1 & 0x7f);
+        c1 = c0 & 0x7f;
 #ifdef SHIFTJIS_CP932
-	    if (cp51932_f){
-		nkf_char s2, s1;
-		if (e2s_conv(c2, c1, &s2, &s1) == 0){
-		    s2e_conv(s2, s1, &c2, &c1);
-		    if (c2 < 0x100){
-			c1 &= 0x7f;
-			c2 &= 0x7f;
-		    }
-		}
-	    }
-#endif /* SHIFTJIS_CP932 */
+        if (cp51932_f){
+            nkf_char s2, s1;
+            if (e2s_conv(c2, c1, &s2, &s1) == 0){
+                s2e_conv(s2, s1, &c2, &c1);
+                if (c2 < 0x100){
+                    c1 &= 0x7f;
+                    c2 &= 0x7f;
+                }
+            }
         }
+#endif /* SHIFTJIS_CP932 */
 #endif /* X0212_ENABLE */
     } else if (c2 == SSO){
         c2 = X0201;
@@ -3248,26 +2981,8 @@ nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
     } else if ((c2 == EOF) || (c2 == 0) || c2 < SPACE) {
         /* NOP */
     } else {
-	if (!cp51932_f && ms_ucs_map_f && 0xF5 <= c2 && c2 <= 0xFE && 0xA1 <= c1 && c1 <= 0xFE) {
-	    /* encoding is eucJP-ms, so invert to Unicode Private User Area */
-	    c1 = (c2 - 0xF5) * 94 + c1 - 0xA1 + 0xE000 + CLASS_UNICODE;
-	    c2 = 0;
-	} else {
-	    c1 &= 0x7f;
-	    c2 &= 0x7f;
-#ifdef SHIFTJIS_CP932
-	    if (cp51932_f && 0x79 <= c2 && c2 <= 0x7c){
-		nkf_char s2, s1;
-		if (e2s_conv(c2, c1, &s2, &s1) == 0){
-		    s2e_conv(s2, s1, &c2, &c1);
-		    if (c2 < 0x100){
-			c1 &= 0x7f;
-			c2 &= 0x7f;
-		    }
-		}
-	    }
-#endif /* SHIFTJIS_CP932 */
-        }
+        c1 &= 0x7f;
+        c2 &= 0x7f;
     }
     (*oconv)(c2, c1);
     return 0;
@@ -3286,7 +3001,7 @@ nkf_char w2e_conv(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char 
 #ifdef NUMCHAR_OPTION
         if (ret > 0){
             if (p2) *p2 = 0;
-            if (p1) *p1 = CLASS_UNICODE | ww16_conv(c2, c1, c0);
+            if (p1) *p1 = CLASS_UTF16 | ww16_conv(c2, c1, c0);
             ret = 0;
         }
 #endif
@@ -3297,63 +3012,43 @@ nkf_char w2e_conv(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char 
 nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 {
     nkf_char ret = 0;
-    static const int w_iconv_utf8_1st_byte[] =
-    { /* 0xC0 - 0xFF */
-	20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-	21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-	30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 33, 33,
-	40, 41, 41, 41, 42, 43, 43, 43, 50, 50, 50, 50, 60, 60, 70, 70};
     
-    if (c2 < 0 || 0xff < c2) {
-    }else if (c2 == 0) { /* 0 : 1 byte*/
-	c0 = 0;
-    } else if ((c2 & 0xc0) == 0x80) { /* 0x80-0xbf : trail byte */
-	return 0;
-    } else{
-    	switch (w_iconv_utf8_1st_byte[c2 - 0xC0]) {
-	case 21:
-	    if (c1 < 0x80 || 0xBF < c1) return 0;
-	    break;
-	case 30:
-	    if (c0 == 0) return -1;
-	    if (c1 < 0xA0 || 0xBF < c1 || (c0 & 0xc0) != 0x80)
-		return 0;
-	    break;
-	case 31:
-	case 33:
-	    if (c0 == 0) return -1;
-	    if ((c1 & 0xc0) != 0x80 || (c0 & 0xc0) != 0x80)
-		return 0;
-	    break;
-	case 32:
-	    if (c0 == 0) return -1;
-	    if (c1 < 0x80 || 0x9F < c1 || (c0 & 0xc0) != 0x80)
-		return 0;
-	    break;
-	case 40:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x90 || 0xBF < c1 || (c0 & 0xc0c0) != 0x8080)
-		return 0;
-	    break;
-	case 41:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x80 || 0xBF < c1 || (c0 & 0xc0c0) != 0x8080)
-		return 0;
-	    break;
-	case 42:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x80 || 0x8F < c1 || (c0 & 0xc0c0) != 0x8080)
-		return 0;
-	    break;
-	default:
+    /* throw away ZERO WIDTH NO-BREAK SPACE (U+FEFF) */
+    if(ignore_zwnbsp_f){
+	ignore_zwnbsp_f = FALSE;
+	if(c2 == 0xef && c1 == 0xbb && c0 == 0xbf)
 	    return 0;
-	    break;
-	}
+    }
+    
+    if (c2 == 0) /* 0x00-0x7f */
+	c1 &= 0x7F; /* 1byte */
+    else if (c0 == 0){
+	if ((c2 & 0xe0) == 0xc0){ /* 0xc0-0xdf */
+	    /* 2ytes */
+	    if((c2 & 0xFE) == 0xC0 || c1 < 0x80 || 0xBF < c1) return 0;
+	}else if ((c2 & 0xf0) == 0xe0) /* 0xe0-0xef */
+	    return -1; /* 3bytes */
+#ifdef __COMMENT__
+	else if (0xf0 <= c2)
+	    return 0; /* 4,5,6bytes */
+	else if ((c2 & 0xc0) == 0x80) /* 0x80-0xbf */
+	    return 0; /* trail byte */
+#endif
+	else return 0;
+    }else{
+	/* must be 3bytes */
+	if(c2 == 0xE0){
+	    if(c1 < 0xA0 || 0xBF < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else if(c2 == 0xED){
+	    if(c1 < 0x80 || 0x9F < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else if((c2 & 0xf0) == 0xe0){
+	    if(c1 < 0x80 || 0xBF < c1 || c0 < 0x80 || 0xBF < c0)
+		return 0;
+	}else return 0;
     }
     if (c2 == 0 || c2 == EOF){
-    } else if ((c2 & 0xf8) == 0xf0) { /* 4 bytes */
-	c1 = CLASS_UNICODE | ww16_conv(c2, c1, c0);
-	c2 = 0;
     } else {
 	ret = w2e_conv(c2, c1, c0, &c2, &c1);
     }
@@ -3380,10 +3075,6 @@ void w16w_conv(nkf_char val, nkf_char *p2, nkf_char *p1, nkf_char *p0)
         *p2 = 0xe0 | (val >> 12);
         *p1 = 0x80 | ((val >> 6) & 0x3f);
         *p0 = 0x80 | (val        & 0x3f);
-    } else if (val <= NKF_INT32_C(0x10FFFF)) {
-        *p2 = 0xe0 |  (val >> 16);
-        *p1 = 0x80 | ((val >> 12) & 0x3f);
-        *p0 = 0x8080 | ((val << 2) & 0x3f00)| (val & 0x3f);
     } else {
         *p2 = 0;
         *p1 = 0;
@@ -3396,14 +3087,8 @@ void w16w_conv(nkf_char val, nkf_char *p2, nkf_char *p1, nkf_char *p0)
 nkf_char ww16_conv(nkf_char c2, nkf_char c1, nkf_char c0)
 {
     nkf_char val;
-    if (c2 >= 0xf8) {
+    if (c2 >= 0xf0){
 	val = -1;
-    } else if (c2 >= 0xf0){
-	/* c2: 1st, c1: 2nd, c0: 3rd/4th */
-	val = (c2 & 0x0f) << 18;
-        val |= (c1 & 0x3f) << 12;
-        val |= (c0 & 0x3f00) >> 2;
-        val |= (c0 & 0x3f);
     }else if (c2 >= 0xe0){
         val = (c2 & 0x0f) << 12;
         val |= (c1 & 0x3f) << 6;
@@ -3431,7 +3116,7 @@ nkf_char w16e_conv(nkf_char val, nkf_char *p2, nkf_char *p1)
 #ifdef NUMCHAR_OPTION
 	if (ret > 0){
 	    *p2 = 0;
-	    *p1 = CLASS_UNICODE | val;
+	    *p1 = CLASS_UTF16 | val;
 	    ret = 0;
 	}
 #endif
@@ -3443,37 +3128,29 @@ nkf_char w16e_conv(nkf_char val, nkf_char *p2, nkf_char *p1)
 #ifdef UTF8_INPUT_ENABLE
 nkf_char w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0)
 {
-    nkf_char ret = 0;
+    nkf_char ret;
+
+    /* throw away ZERO WIDTH NO-BREAK SPACE (U+FEFF) */
+    if(ignore_zwnbsp_f){
+	ignore_zwnbsp_f = FALSE;
+	if (c2==0376 && c1==0377){
+	    utf16_mode = UTF16BE_INPUT;
+	    return 0;
+	}else if(c2==0377 && c1==0376){
+	    utf16_mode = UTF16LE_INPUT;
+	    return 0;
+	}
+    }
+    if (c2 != EOF && utf16_mode == UTF16LE_INPUT) {
+	nkf_char tmp;
+	tmp=c1; c1=c2; c2=tmp;
+    }
     if ((c2==0 && c1 < 0x80) || c2==EOF) {
 	(*oconv)(c2, c1);
 	return 0;
-    }else if (0xD8 <= c2 && c2 <= 0xDB) {
-	if (c0 < NKF_INT32_C(0xDC00) || NKF_INT32_C(0xDFFF) < c0)
-	    return -2;
-	c1 =  CLASS_UNICODE | ((c2 << 18) + (c1 << 10) + c0 - NKF_INT32_C(0x35FDC00));
-	c2 = 0;
-    }else if ((c2>>3) == 27) { /* unpaired surrogate */
-	/*
-	   return 2;
-	*/
+    }else if((c2>>3)==27){ /* surrogate pair */
 	return 1;
     }else ret = w16e_conv(((c2 & 0xff)<<8) + c1, &c2, &c1);
-    if (ret) return ret;
-    (*oconv)(c2, c1);
-    return 0;
-}
-
-nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0)
-{
-    int ret = 0;
-
-    if ((c2 == 0 && c1 < 0x80) || c2==EOF) {
-    } else if (is_unicode_bmp(c1)) {
-	ret = w16e_conv(c1, &c2, &c1);
-    } else {
-	c2 = 0;
-	c1 =  CLASS_UNICODE | c1;
-    }
     if (ret) return ret;
     (*oconv)(c2, c1);
     return 0;
@@ -3527,7 +3204,7 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 		    if(no_best_fit_chars_table_932_C3[c1&0x3F]) return 1;
 		    break;
 		}
-	    }else if(!cp932inv_f){
+	    }else if(cp51932_f){
 		switch(c2){
 		case 0xC2:
 		    if(no_best_fit_chars_table_C2[c1&0x3F]) return 1;
@@ -3583,7 +3260,7 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 			if(c0 == 0x8D) return 1;
 			break;
 		    case 0xBD:
-			if(c0 == 0x9E && !cp932inv_f) return 1;
+			if(c0 == 0x9E && cp51932_f) return 1;
 			break;
 		    case 0xBF:
 			if(0xA0 <= c0 && c0 <= 0xA5) return 1;
@@ -3600,7 +3277,7 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 	ret = w_iconv_common(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
     }else return -1;
 #ifdef SHIFTJIS_CP932
-    if (!ret && !cp932inv_f && is_eucg3(*p2)) {
+    if (!ret && cp51932_f && is_eucg3(*p2)) {
 	nkf_char s2, s1;
 	if (e2s_conv(*p2, *p1, &s2, &s1) == 0) {
 	    s2e_conv(s2, s1, p2, p1);
@@ -3779,17 +3456,16 @@ void w_oconv(nkf_char c2, nkf_char c1)
 {
     nkf_char c0;
     nkf_char val;
-
-    if (output_bom_f) {
-	output_bom_f = FALSE;
-    	(*o_putc)('\357');
-	(*o_putc)('\273');
-	(*o_putc)('\277');
-    }
-
     if (c2 == EOF) {
         (*o_putc)(EOF);
         return;
+    }
+
+    if (unicode_bom_f==2) {
+	(*o_putc)('\357');
+	(*o_putc)('\273');
+	(*o_putc)('\277');
+	unicode_bom_f=1;
     }
 
 #ifdef NUMCHAR_OPTION
@@ -3805,7 +3481,7 @@ void w_oconv(nkf_char c2, nkf_char c1)
             (*o_putc)(0x80 | ((val >> 6) & 0x3f));
             (*o_putc)(0x80 | (val        & 0x3f));
         } else if (val <= NKF_INT32_C(0x10FFFF)) {
-            (*o_putc)(0xF0 | ( val>>18));
+            (*o_putc)(0xE0 | ( val>>18));
             (*o_putc)(0x80 | ((val>>12) & 0x3f));
             (*o_putc)(0x80 | ((val>> 6) & 0x3f));
             (*o_putc)(0x80 | ( val      & 0x3f));
@@ -3836,20 +3512,20 @@ void w_oconv(nkf_char c2, nkf_char c1)
 
 void w_oconv16(nkf_char c2, nkf_char c1)
 {
-    if (output_bom_f) {
-	output_bom_f = FALSE;
-        if (output_endian == ENDIAN_LITTLE){
+    if (c2 == EOF) {
+        (*o_putc)(EOF);
+        return;
+    }    
+
+    if (unicode_bom_f==2) {
+        if (w_oconv16_LE){
             (*o_putc)((unsigned char)'\377');
             (*o_putc)('\376');
         }else{
             (*o_putc)('\376');
             (*o_putc)((unsigned char)'\377');
         }
-    }
-
-    if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	unicode_bom_f=1;
     }
 
     if (c2 == ISO8859_1) {
@@ -3865,7 +3541,7 @@ void w_oconv16(nkf_char c2, nkf_char c1)
             if (c1 <= UNICODE_MAX) {
                 c2 = (c1 >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
                 c1 = (c1 & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
-                if (output_endian == ENDIAN_LITTLE){
+                if (w_oconv16_LE){
                     (*o_putc)(c2 & 0xff);
                     (*o_putc)((c2 >> 8) & 0xff);
                     (*o_putc)(c1 & 0xff);
@@ -3884,9 +3560,8 @@ void w_oconv16(nkf_char c2, nkf_char c1)
         nkf_char val = e2w_conv(c2, c1);
         c2 = (val >> 8) & 0xff;
         c1 = val & 0xff;
-	if (!val) return;
     }
-    if (output_endian == ENDIAN_LITTLE){
+    if (w_oconv16_LE){
         (*o_putc)(c1);
         (*o_putc)(c2);
     }else{
@@ -3895,50 +3570,6 @@ void w_oconv16(nkf_char c2, nkf_char c1)
     }
 }
 
-void w_oconv32(nkf_char c2, nkf_char c1)
-{
-    if (output_bom_f) {
-	output_bom_f = FALSE;
-        if (output_endian == ENDIAN_LITTLE){
-            (*o_putc)((unsigned char)'\377');
-            (*o_putc)('\376');
-	    (*o_putc)('\000');
-	    (*o_putc)('\000');
-        }else{
-	    (*o_putc)('\000');
-	    (*o_putc)('\000');
-            (*o_putc)('\376');
-            (*o_putc)((unsigned char)'\377');
-        }
-    }
-
-    if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
-    }
-
-    if (c2 == ISO8859_1) {
-        c1 |= 0x80;
-#ifdef NUMCHAR_OPTION
-    } else if (c2 == 0 && is_unicode_capsule(c1)) {
-	c1 &= VALUE_MASK;
-#endif
-    } else if (c2) {
-        c1 = e2w_conv(c2, c1);
-	if (!c1) return;
-    }
-    if (output_endian == ENDIAN_LITTLE){
-        (*o_putc)( c1 & NKF_INT32_C(0x000000FF));
-        (*o_putc)((c1 & NKF_INT32_C(0x0000FF00)) >>  8);
-        (*o_putc)((c1 & NKF_INT32_C(0x00FF0000)) >> 16);
-	(*o_putc)('\000');
-    }else{
-	(*o_putc)('\000');
-        (*o_putc)((c1 & NKF_INT32_C(0x00FF0000)) >> 16);
-        (*o_putc)((c1 & NKF_INT32_C(0x0000FF00)) >>  8);
-        (*o_putc)( c1 & NKF_INT32_C(0x000000FF));
-    }
-}
 #endif
 
 void e_oconv(nkf_char c2, nkf_char c1)
@@ -3947,26 +3578,8 @@ void e_oconv(nkf_char c2, nkf_char c1)
     if (c2 == 0 && is_unicode_capsule(c1)){
         w16e_conv(c1, &c2, &c1);
         if (c2 == 0 && is_unicode_capsule(c1)){
-	    c2 = c1 & VALUE_MASK;
-	    if (x0212_f && 0xE000 <= c2 && c2 <= 0xE757) {
-		/* eucJP-ms UDC */
-		c1 &= 0xFFF;
-		c2 = c1 / 94;
-		c2 += c2 < 10 ? 0x75 : 0x8FEB;
-		c1 = 0x21 + c1 % 94;
-		if (is_eucg3(c2)){
-		    (*o_putc)(0x8f);
-		    (*o_putc)((c2 & 0x7f) | 0x080);
-		    (*o_putc)(c1 | 0x080);
-		}else{
-		    (*o_putc)((c2 & 0x7f) | 0x080);
-		    (*o_putc)(c1 | 0x080);
-		}
-		return;
-	    } else {
-		if (encode_fallback) (*encode_fallback)(c1);
-		return;
-	    }
+	    if(encode_fallback)(*encode_fallback)(c1);
+            return;
         }
     }
 #endif
@@ -3986,7 +3599,7 @@ void e_oconv(nkf_char c2, nkf_char c1)
     } else if (is_eucg3(c2)){
 	output_mode = JAPANESE_EUC;
 #ifdef SHIFTJIS_CP932
-        if (!cp932inv_f){
+        if (cp51932_f){
             nkf_char s2, s1;
             if (e2s_conv(c2, c1, &s2, &s1) == 0){
                 s2e_conv(s2, s1, &c2, &c1);
@@ -4052,7 +3665,7 @@ nkf_char e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 {
     nkf_char ndx;
     if (is_eucg3(c2)){
-	ndx = c2 & 0x7f;
+	ndx = c2 & 0xff;
 	if (x0213_f){
 	    if((0x21 <= ndx && ndx <= 0x2F)){
 		if (p2) *p2 = ((ndx - 1) >> 1) + 0xec - ndx / 8 * 3;
@@ -4099,21 +3712,9 @@ void s_oconv(nkf_char c2, nkf_char c1)
     if (c2 == 0 && is_unicode_capsule(c1)){
         w16e_conv(c1, &c2, &c1);
         if (c2 == 0 && is_unicode_capsule(c1)){
-	    c2 = c1 & VALUE_MASK;
-	    if (!x0213_f && 0xE000 <= c2 && c2 <= 0xE757) {
-		/* CP932 UDC */
-		c1 &= 0xFFF;
-		c2 = c1 / 188 + 0xF0;
-		c1 = c1 % 188;
-		c1 += 0x40 + (c1 > 0x3e);
-		(*o_putc)(c2);
-		(*o_putc)(c1);
-		return;
-	    } else {
-		if(encode_fallback)(*encode_fallback)(c1);
-		return;
-	    }
-	}
+	    if(encode_fallback)(*encode_fallback)(c1);
+            return;
+        }
     }
 #endif
     if (c2 == EOF) {
@@ -4172,16 +3773,8 @@ void j_oconv(nkf_char c2, nkf_char c1)
     if (c2 == 0 && is_unicode_capsule(c1)){
         w16e_conv(c1, &c2, &c1);
         if (c2 == 0 && is_unicode_capsule(c1)){
-	    c2 = c1 & VALUE_MASK;
-	    if (ms_ucs_map_f && 0xE000 <= c2 && c2 <= 0xE757) {
-		/* CP5022x UDC */
-		c1 &= 0xFFF;
-		c2 = 0x7F + c1 / 94;
-		c1 = 0x21 + c1 % 94;
-	    } else {
-		if (encode_fallback) (*encode_fallback)(c1);
-		return;
-	    }
+	    if(encode_fallback)(*encode_fallback)(c1);
+            return;
         }
     }
 #endif
@@ -4238,9 +3831,7 @@ void j_oconv(nkf_char c2, nkf_char c1)
         }
         (*o_putc)(c1);
     } else {
-	if(ms_ucs_map_f
-	   ? c2<0x20 || 0x92<c2 || c1<0x20 || 0x7e<c1
-	   : c2<0x20 || 0x7e<c2 || c1<0x20 || 0x7e<c1) return;
+	if(c2<0x20 || 0x7e<c2 || c1<0x20 || 0x7e<c1) return;
 	if(x0213_f){
 	    if (output_mode!=X0213_1) {
 		output_mode = X0213_1;
@@ -4644,7 +4235,7 @@ void hira_conv(nkf_char c2, nkf_char c1)
                 return;
             } else if (c1 == 0x74 && (output_conv == w_oconv || output_conv == w_oconv16)) {
                 c2 = 0;
-                c1 = CLASS_UNICODE | 0x3094;
+                c1 = CLASS_UTF16 | 0x3094;
                 (*o_hira_conv)(c2,c1);
                 return;
             }
@@ -4655,7 +4246,7 @@ void hira_conv(nkf_char c2, nkf_char c1)
         }
     }
     if (hira_f & 2) {
-        if (c2 == 0 && c1 == (CLASS_UNICODE | 0x3094)) {
+        if (c2 == 0 && c1 == (CLASS_UTF16 | 0x3094)) {
             c2 = 0x25;
             c1 = 0x74;
         } else if (c2 == 0x24 && 0x20 < c1 && c1 < 0x74) {
@@ -5043,7 +4634,7 @@ nkf_char numchar_getc(FILE *f)
         }
     }
     if (c != -1){
-        return CLASS_UNICODE | c;
+        return CLASS_UTF16 | c;
     }
     while (i > 0){
         (*u)(buf[i], f);
@@ -5818,14 +5409,14 @@ void reinit(void)
 #endif
 #ifdef UTF8_INPUT_ENABLE
     no_cp932ext_f = FALSE;
+    ignore_zwnbsp_f = TRUE;
     no_best_fit_chars_f = FALSE;
     encode_fallback = NULL;
     unicode_subchar  = '?';
-    input_endian = ENDIAN_BIG;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-    output_bom_f = FALSE;
-    output_endian = ENDIAN_BIG;
+    unicode_bom_f = 0;
+    w_oconv16_LE = 0;
 #endif
 #ifdef UNICODE_NORMALIZATION
     nfc_f = FALSE;
@@ -5859,7 +5450,9 @@ void reinit(void)
             prefix_table[i] = 0;
         }
     }
-    hold_count = 0;
+#ifdef UTF8_INPUT_ENABLE
+    utf16_mode = UTF16BE_INPUT;
+#endif
     mimeout_buf_count = 0;
     mimeout_mode = 0;
     base64_count = 0;
@@ -5932,16 +5525,16 @@ void usage(void)
     fprintf(stderr,"Flags:\n");
     fprintf(stderr,"b,u      Output is buffered (DEFAULT),Output is unbuffered\n");
 #ifdef DEFAULT_CODE_SJIS
-    fprintf(stderr,"j,s,e,w  Output code is JIS 7 bit, Shift_JIS (DEFAULT), EUC-JP, UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift_JIS (DEFAULT), EUC-JP, UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_JIS
-    fprintf(stderr,"j,s,e,w  Output code is JIS 7 bit (DEFAULT), Shift JIS, EUC-JP, UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit (DEFAULT), Shift JIS, EUC-JP, UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_EUC
-    fprintf(stderr,"j,s,e,w  Output code is JIS 7 bit, Shift JIS, EUC-JP (DEFAULT), UTF-8N\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, EUC-JP (DEFAULT), UTF-8N\n");
 #endif
 #ifdef DEFAULT_CODE_UTF8
-    fprintf(stderr,"j,s,e,w  Output code is JIS 7 bit, Shift JIS, EUC-JP, UTF-8N (DEFAULT)\n");
+    fprintf(stderr,"j,s,e,w  Outout code is JIS 7 bit, Shift JIS, EUC-JP, UTF-8N (DEFAULT)\n");
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
     fprintf(stderr,"         After 'w' you can add more options. -w[ 8 [0], 16 [[BL] [0]] ]\n");

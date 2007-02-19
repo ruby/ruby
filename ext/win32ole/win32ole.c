@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.1"
+#define WIN32OLE_VERSION "0.7.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -921,13 +921,8 @@ ole_variant2val(pvar)
         VARIANT variant;
         VALUE val;
         VALUE val2;
-        int dim = 0;
 
-        if (!psa) {
-            return obj;
-        }
-        dim = SafeArrayGetDim(psa);
-
+        int dim = SafeArrayGetDim(psa);
         VariantInit(&variant);
         V_VT(&variant) = (V_VT(pvar) & ~VT_ARRAY) | VT_BYREF;
 

@@ -224,14 +224,14 @@ GetVpValue(VALUE v, int must)
 #ifdef ENABLE_NUMERIC_STRING
     case T_STRING:
         SafeStringValue(v);
-        return VpCreateRbObject(strlen(RSTRING_PTR(v)) + VpBaseFig() + 1,
-                                RSTRING_PTR(v));
+        return VpCreateRbObject(strlen(RSTRING(v)->ptr) + VpBaseFig() + 1,
+                                RSTRING(v)->ptr);
 #endif /* ENABLE_NUMERIC_STRING */
 
     case T_BIGNUM:
         bg = rb_big2str(v, 10);
-        return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
-                                RSTRING_PTR(bg));
+        return VpCreateRbObject(strlen(RSTRING(bg)->ptr) + VpBaseFig() + 1,
+                                RSTRING(bg)->ptr);
     default:
         goto SomeOneMayDoIt;
     }
@@ -240,7 +240,7 @@ SomeOneMayDoIt:
     if(must) {
         rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
                     rb_special_const_p(v)?
-                    RSTRING_PTR(rb_inspect(v)):
+                    RSTRING(rb_inspect(v))->ptr:
                     rb_obj_classname(v)
                 );
     }
@@ -332,7 +332,7 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned long m=0;
 
     SafeStringValue(str);
-    pch = RSTRING_PTR(str);
+    pch = RSTRING(str)->ptr;
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -474,7 +474,7 @@ VpNewRbClass(U_LONG mx, char *str, VALUE klass)
 }
 
 VP_EXPORT Real *
-VpCreateRbObject(U_LONG mx, const char *str)
+VpCreateRbObject(U_LONG mx, char *str)
 {
     Real *pv = VpAlloc(mx,str);
     pv->obj = (VALUE)Data_Wrap_Struct(rb_cBigDecimal, 0, BigDecimal_delete, pv);
@@ -779,6 +779,17 @@ static VALUE
 BigDecimal_eq(VALUE self, VALUE r)
 {
     return BigDecimalCmp(self, r, '=');
+}
+
+/* Returns true if the values are not equal in value. Values may be coerced
+ * to perform the comparison:
+ *
+ * BigDecimal.new('1.0') != 1.0  -> false
+ */
+static VALUE
+BigDecimal_ne(VALUE self, VALUE r)
+{
+    return BigDecimalCmp(self, r, '!');
 }
 
 /* call-seq:
@@ -1265,7 +1276,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
     Real   *c, *a;
-    int    iLoc = 0;
+    int    iLoc;
     U_LONG mx;
     VALUE  vLoc;
     VALUE  vRound;
@@ -1499,7 +1510,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc,argv,"01",&f)==1) {
         if(TYPE(f)==T_STRING) {
             SafeStringValue(f);
-            psz = RSTRING_PTR(f);
+            psz = RSTRING(f)->ptr;
             if(*psz==' ') {
                 fPlus = 1; psz++;
             } else if(*psz=='+') {
@@ -1676,7 +1687,7 @@ BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
         mf = GetPositiveInt(nFig);
     }
     SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpCreateRbObject(mf, RSTRING_PTR(iniValue)));
+    GUARD_OBJ(pv,VpCreateRbObject(mf, RSTRING(iniValue)->ptr));
     return ToValue(pv);
 }
 
@@ -1707,7 +1718,7 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
         mf = GetPositiveInt(nFig);
     }
     SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING_PTR(iniValue),self));
+    GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING(iniValue)->ptr,self));
     return ToValue(pv);
 }
 
@@ -1928,6 +1939,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "==", BigDecimal_eq, 1);
     rb_define_method(rb_cBigDecimal, "===", BigDecimal_eq, 1);
     rb_define_method(rb_cBigDecimal, "eql?", BigDecimal_eq, 1);
+    rb_define_method(rb_cBigDecimal, "!=", BigDecimal_ne, 1);
     rb_define_method(rb_cBigDecimal, "<", BigDecimal_lt, 1);
     rb_define_method(rb_cBigDecimal, "<=", BigDecimal_le, 1);
     rb_define_method(rb_cBigDecimal, ">", BigDecimal_gt, 1);
@@ -2175,7 +2187,7 @@ VpIsNegDoubleZero(double v)
 }
 
 VP_EXPORT int
-VpException(unsigned short f, const char *str,int always)
+VpException(unsigned short f,char *str,int always)
 {
     VALUE exc;
     int   fatal=0;
@@ -2317,7 +2329,7 @@ NaN:
  *    returns number of chars needed to represent vp in specified format.
  */
 VP_EXPORT U_LONG
-VpNumOfChars(Real *vp,const char *pszFmt)
+VpNumOfChars(Real *vp,char *pszFmt)
 {
     S_INT  ex;
     U_LONG nc;
@@ -2420,7 +2432,7 @@ VpInit(U_LONG BaseVal)
 }
 
 VP_EXPORT Real *
-VpOne(void)
+VpOne()
 {
     return VpConstOne;
 }
@@ -2470,7 +2482,7 @@ overflow:
  *   NULL be returned if memory allocation is failed,or any error.
  */
 VP_EXPORT Real *
-VpAlloc(U_LONG mx, const char *szVal)
+VpAlloc(U_LONG mx, char *szVal)
 {
     U_LONG i, ni, ipn, ipf, nf, ipe, ne, nalloc;
     char v,*psz;
@@ -3885,7 +3897,7 @@ VpToFString(Real *a,char *psz,int fFmt,int fPlus)
  *   ne   ... number of characters in exp_chr[],not including '+/-'.
  */
 VP_EXPORT int
-VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, const char *exp_chr, U_LONG ne)
+VpCtoV(Real *a, char *int_chr, U_LONG ni, char *frac, U_LONG nf, char *exp_chr, U_LONG ne)
 {
     U_LONG i, j, ind_a, ma, mi, me;
     U_LONG loc;
