@@ -26,12 +26,9 @@ The Ruby distribution can be found on:
 
   ftp://ftp.ruby-lang.org/pub/ruby/
 
-You can get it by anonymous CVS.  How to check out is:
+You can get it by anonymous SVN.  How to check out is:
 
-  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/src login
-  (Logging in to anonymous@cvs.ruby-lang.org)
-  CVS password: anonymous
-  $ cvs -z4 -d :pserver:anonymous@cvs.ruby-lang.org:/src checkout ruby
+  $ svn co http://svn.ruby-lang.org/repos/ruby/branches/ruby_1_8 ruby
 
 
 * Ruby home-page

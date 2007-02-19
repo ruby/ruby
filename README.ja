@@ -32,12 +32,9 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい強力
 
   ftp://ftp.ruby-lang.org/pub/ruby/
 
-** CVSで
+** SVNで
 
-  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/src login
-  (Logging in to anonymous@cvs.ruby-lang.org)
-  CVS password: anonymous
-  $ cvs -z4 -d :pserver:anonymous@cvs.ruby-lang.org:src checkout ruby
+  $ svn co http://svn.ruby-lang.org/repos/ruby/branches/ruby_1_8 ruby
 
 
 * ホームページ
