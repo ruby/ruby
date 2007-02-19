@@ -366,7 +366,7 @@ rb_thread_alloc(VALUE klass)
 VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
 
-VALUE
+static VALUE
 sdr(void)
 {
     yarv_bug();
