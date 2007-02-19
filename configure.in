@@ -239,46 +239,40 @@ AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
 
+dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
 AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
-    AC_CHECK_SIZEOF($1, 0, $3)
-    u=
-    size=$ac_cv_sizeof_[$1]
-    if test $size -gt 0; then
-	typ=$1
+    AC_CHECK_TYPE([$1],
+	[AC_DEFINE_UNQUOTED(rb_[$1], [$1])],
+	[AC_DEFINE_UNQUOTED(rb_[$1], [$2])],
+	[$4])
+    AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
+	u= t=
 	AC_COMPILE_IFELSE(
 	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
-				      [$3], [($typ)-1 > 0])],
+				      [$4], [(rb_[$1])-1 > 0])],
 	    [u=U])
-    else
-	typ=$2
-	size=$ac_cv_sizeof_[$2]
-    fi
-    if test $size -gt $ac_cv_sizeof_long; then
-	f=LL
-    elif test $size = $ac_cv_sizeof_long; then
-	f=LONG
-    else
-	f=INT
-    fi
-    AC_DEFINE_UNQUOTED(rb_$1, $typ)
-    AC_DEFINE_UNQUOTED(SIZEOF_RB_`echo $1 | tr a-z A-Z`,
-		       SIZEOF_`echo $typ | tr a-z A-Z`)
-    typ=`echo $1 | tr a-z A-Z | tr -d _`
-    AC_DEFINE_UNQUOTED(${typ}2NUM, ${u}${f}2NUM)
-    AC_DEFINE_UNQUOTED(NUM2${typ}, NUM2${u}${f})
+	if test x"$t" = x; then
+	    AC_COMPILE_IFELSE(
+		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
+					  [$4], [sizeof(rb_[$1]) > sizeof(long)])],
+		[t=LL])
+	fi
+	if test x"$t" = x; then
+	    AC_COMPILE_IFELSE(
+		[AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT]
+					  [$4], [sizeof(rb_[$1]) == sizeof(long)])],
+		[t=LONG])
+	fi
+	if test x"$t" = x; then
+	    t=INT
+	fi
+	rb_cv_[$1]_convertible=${u}${t}])
+    AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
+    AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
 ])
-RUBY_REPLACE_TYPE(pid_t, int, [
-#include <sys/types.h>
-#include <unistd.h>
-])
-RUBY_REPLACE_TYPE(uid_t, int, [
-#include <sys/types.h>
-#include <pwd.h>
-])
-RUBY_REPLACE_TYPE(gid_t, int, [
-#include <sys/types.h>
-#include <grp.h>
-])
+RUBY_REPLACE_TYPE(pid_t, int, PIDT)
+RUBY_REPLACE_TYPE(uid_t, int, UIDT)
+RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],

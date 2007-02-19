@@ -187,6 +187,25 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 # define OFFT2NUM(v) INT2NUM(v)
 #endif
 
+#ifndef PIDT2NUM
+#define PIDT2NUM(v) LONG2NUM(v)
+#endif
+#ifndef NUM2PIDT
+#define NUM2PIDT(v) NUM2LONG(v)
+#endif
+#ifndef UIDT2NUM
+#define UIDT2NUM(v) LONG2NUM(v)
+#endif
+#ifndef NUM2UIDT
+#define NUM2UIDT(v) NUM2LONG(v)
+#endif
+#ifndef GIDT2NUM
+#define GIDT2NUM(v) LONG2NUM(v)
+#endif
+#ifndef NUM2GIDT
+#define NUM2GIDT(v) NUM2LONG(v)
+#endif
+
 #define FIX2LONG(x) RSHIFT((SIGNED_VALUE)x,1)
 #define FIX2ULONG(x) (((VALUE)(x))>>1)
 #define FIXNUM_P(f) (((SIGNED_VALUE)(f))&FIXNUM_FLAG)

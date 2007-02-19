@@ -430,7 +430,7 @@ rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
 rb_pid_t rb_spawn(int, VALUE*);
 VALUE rb_proc_times(VALUE);
-VALUE rb_detach_process(pid_t pid);
+VALUE rb_detach_process(rb_pid_t pid);
 /* range.c */
 VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
