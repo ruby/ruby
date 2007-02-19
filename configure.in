@@ -1144,30 +1144,24 @@ if test "$dln_a_out_works" = yes; then
     STATIC=-Bstatic
   fi
   DLEXT=so
-  AC_DEFINE(DLEXT, ".so")
   CCDLFLAGS=
 else
   case "$target_os" in
-    hpux*)	DLEXT=sl
-	 	AC_DEFINE(DLEXT, ".sl");;
-    nextstep*)	DLEXT=bundle
-	 	AC_DEFINE(DLEXT, ".bundle");;
-    openstep*)	DLEXT=bundle
-	 	AC_DEFINE(DLEXT, ".bundle");;
-    rhapsody*)	DLEXT=bundle
-	 	AC_DEFINE(DLEXT, ".bundle");;
-    darwin*)	DLEXT=bundle
-	 	AC_DEFINE(DLEXT, ".bundle");;
-    os2-emx*)	DLEXT=dll
-	 	AC_DEFINE(DLEXT, ".dll");;
-    cygwin*|mingw*)	DLEXT=so
-	 	AC_DEFINE(DLEXT, ".so")
-		DLEXT2=dll
-	 	AC_DEFINE(DLEXT2, ".dll");;
-    *)		DLEXT=so
-    		AC_DEFINE(DLEXT, ".so");;
+    hpux*)	DLEXT=sl;;
+    nextstep*|openstep*|rhapsody*|darwin*)
+		DLEXT=bundle;;
+    os2-emx*)	DLEXT=dll;;
+    cygwin*|mingw*)
+		DLEXT=so DLEXT2=dll;;
+    *)		DLEXT=so;;
   esac
 fi
+len=2 # .rb
+n=`expr "$DLEXT"  : '.*'`; test "$n" -gt "$len" && len=$n
+n=`expr "$DLEXT2" : '.*'`; test "$n" -gt "$len" && len=$n
+AC_DEFINE_UNQUOTED(DLEXT_MAXLEN, `expr $len + 1`)
+test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
+test ".$DLEXT2" = "." || AC_DEFINE_UNQUOTED(DLEXT2, ".$DLEXT2")
 
 AC_SUBST(STRIP)dnl
 if test "$with_dln_a_out" = yes; then
