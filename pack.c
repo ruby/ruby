@@ -1402,7 +1402,6 @@ pack_unpack(str, fmt)
 	    s += len;
 	    break;
 
-
 	  case 'b':
 	    {
 		VALUE bitstr;
@@ -1562,6 +1561,7 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
+
 	  case 'L':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
@@ -1582,7 +1582,8 @@ pack_unpack(str, fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	case 'Q':
+
+	  case 'Q':
 	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
 	    while (len-- > 0) {
 		char *tmp = (char*)s;
