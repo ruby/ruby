@@ -379,7 +379,7 @@ after every n digits for readability.
 <CODE><PRE>
 BigDecimal("0.1234567890123456789").to_s(10)   #  ==> "0.1234567890 123456789E0"
 </PRE></CODE>
-n can be an string representing a positive integer number.
+n can be a string representing a positive integer number.
 <CODE><PRE>
 BigDecimal("0.1234567890123456789").to_s("10") #  ==> "0.1234567890 123456789E0"
 </PRE></CODE>
@@ -678,10 +678,9 @@ structure.
 </DL>
 
 <H3>Disadvantage of decimal representation</H3>
-Advantages stated so far can also be disadvantages if the input from outside is
- represented in binary.
-Translation error from decimal to binary or vice versa is inevitable.
-So,translation from Float(binary) to BigDecimal(decimal) is not alway done exactly.
+Because most computers have no internal decimal representaion.
+Once you use BigDecimal,you need to keep using it without
+considering computation cost if exact computation is required.
 
 <H4>Which is the first input?</H4>
 Because most people uses decimal notatin for numeric data representation,

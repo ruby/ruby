@@ -105,7 +105,7 @@ typedef struct {
 VP_EXPORT  Real *
 VpNewRbClass(U_LONG mx,char *str,VALUE klass);
 
-VP_EXPORT  Real *VpCreateRbObject(U_LONG mx,char *str);
+VP_EXPORT  Real *VpCreateRbObject(U_LONG mx,const char *str);
 
 VP_EXPORT U_LONG VpBaseFig(void);
 VP_EXPORT U_LONG VpDblFig(void);
@@ -126,13 +126,13 @@ VP_EXPORT int           VpIsRoundMode(unsigned long n);
 VP_EXPORT unsigned long VpGetRoundMode(void);
 VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
 
-VP_EXPORT int VpException(unsigned short f,char *str,int always);
+VP_EXPORT int VpException(unsigned short f,const char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
-VP_EXPORT U_LONG VpNumOfChars(Real *vp,char *pszFmt);
+VP_EXPORT U_LONG VpNumOfChars(Real *vp,const char *pszFmt);
 VP_EXPORT U_LONG VpInit(U_LONG BaseVal);
 VP_EXPORT void *VpMemAlloc(U_LONG mb);
 VP_EXPORT void VpFree(Real *pv);
-VP_EXPORT Real *VpAlloc(U_LONG mx, char *szVal);
+VP_EXPORT Real *VpAlloc(U_LONG mx, const char *szVal);
 VP_EXPORT int VpAsgn(Real *c,Real *a,int isw);
 VP_EXPORT int VpAddSub(Real *c,Real *a,Real *b,int operation);
 VP_EXPORT int VpMult(Real *c,Real *a,Real *b);
@@ -143,7 +143,7 @@ VP_EXPORT void VpSzMantissa(Real *a,char *psz);
 VP_EXPORT int VpToSpecialString(Real *a,char *psz,int fPlus);
 VP_EXPORT void VpToString(Real *a,char *psz,int fFmt,int fPlus);
 VP_EXPORT void VpToFString(Real *a,char *psz,int fFmt,int fPlus);
-VP_EXPORT int VpCtoV(Real *a,char *int_chr,U_LONG ni,char *frac,U_LONG nf,char *exp_chr,U_LONG ne);
+VP_EXPORT int VpCtoV(Real *a,const char *int_chr,U_LONG ni,const char *frac,U_LONG nf,const char *exp_chr,U_LONG ne);
 VP_EXPORT int VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
@@ -155,7 +155,7 @@ VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 
 /* VP constants */
-VP_EXPORT Real *VpOne();
+VP_EXPORT Real *VpOne(void);
 
 /*  
  *  ------------------
