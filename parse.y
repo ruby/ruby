@@ -6105,7 +6105,7 @@ rb_id2name(id)
     char *name;
 
     if (id < tLAST_TOKEN) {
-	int i = 0;
+	int i;
 
 	for (i=0; op_tbl[i].token; i++) {
 	    if (op_tbl[i].token == id)
