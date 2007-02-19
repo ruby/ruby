@@ -1,3 +1,9 @@
+Mon Feb 19 18:33:30 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/socket/socket.c (unix_peeraddr): wrong syscall name in error
+	  message for #peeraddr. a patch from Sam Roberts
+	  <sroberts at uniserve.com>.  [ruby-core:10366]
+
 Mon Feb 19 18:27:42 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in, defines.h, eval.c (rb_feature_p, rb_provided,
