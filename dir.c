@@ -1061,7 +1061,7 @@ find_dirsep(const char *s, int flags)
     return (char *)p-1;
 }
 
-/* Remove escaping baskclashes */
+/* Remove escaping baskslashes */
 static void
 remove_backslashes(p)
     char *p;
