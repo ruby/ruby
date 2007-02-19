@@ -1,3 +1,12 @@
+Mon Feb 19 22:15:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_REPLACE_TYPE): cache convertible type info.
+
+	* intern.h (rb_detach_process): use rb_pid_t instead of pid_t.
+
+	* ruby.h (PIDT2NUM, NUM2PIDT, UIDT2NUM, NUM2UIDT, GIDT2NUM, NUM2GIDT):
+	  defaulted to conversion using long.
+
 Mon Feb 19 17:14:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (unix_peeraddr): wrong syscall name in error
