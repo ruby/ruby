@@ -398,8 +398,7 @@ class OptionParser
       self
     end
 
-    # :nodoc:
-    def add_banner(to)
+    def add_banner(to)  # :nodoc:
       unless @short or @long
         s = desc.join
         to << " [" + s + "]..." unless s.empty?
@@ -407,8 +406,7 @@ class OptionParser
       to
     end
 
-    # :nodoc:
-    def match_nonswitch?(str)
+    def match_nonswitch?(str) # :nodoc:
       @pattern =~ str unless @short or @long
     end
 
@@ -643,8 +641,7 @@ class OptionParser
       end
     end
 
-    # :nodoc:
-    def add_banner(to)
+    def add_banner(to)  # :nodoc:
       list.each do |opt|
         if opt.respond_to?(:add_banner)
           opt.add_banner(to)
@@ -1244,8 +1241,7 @@ class OptionParser
     parse_in_order(argv, &nonopt)
   end
 
-  # :nodoc:
-  def parse_in_order(argv = default_argv, setter = nil, &nonopt)
+  def parse_in_order(argv = default_argv, setter = nil, &nonopt)  # :nodoc:
     opt, arg, sw, val, rest = nil
     nonopt ||= proc {|arg| throw :terminate, arg}
     argv.unshift(arg) if arg = catch(:terminate) {

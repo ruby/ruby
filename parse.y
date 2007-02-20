@@ -83,11 +83,11 @@ static int yyerror();
 
 static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
-    EXPR_END,			/* newline significant, +/- is a operator. */
-    EXPR_ARG,			/* newline significant, +/- is a operator. */
-    EXPR_CMDARG,		/* newline significant, +/- is a operator. */
-    EXPR_ENDARG,		/* newline significant, +/- is a operator. */
-    EXPR_MID,			/* newline significant, +/- is a operator. */
+    EXPR_END,			/* newline significant, +/- is an operator. */
+    EXPR_ARG,			/* newline significant, +/- is an operator. */
+    EXPR_CMDARG,		/* newline significant, +/- is an operator. */
+    EXPR_ENDARG,		/* newline significant, +/- is an operator. */
+    EXPR_MID,			/* newline significant, +/- is an operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
@@ -6105,7 +6105,7 @@ rb_id2name(id)
     char *name;
 
     if (id < tLAST_TOKEN) {
-	int i = 0;
+	int i;
 
 	for (i=0; op_tbl[i].token; i++) {
 	    if (op_tbl[i].token == id)
