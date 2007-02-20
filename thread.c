@@ -1716,9 +1716,6 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 #endif
 	    goto retry;
 	}
-	else {
-	    rb_bug("fatal error on select() - errno: %d\n", lerrno);
-	}
     }
     return result;
 }
@@ -1739,6 +1736,10 @@ rb_thread_wait_fd_rw(int fd, int read)
 	}
 	else {
 	    result = do_select(fd + 1, 0, rb_fd_ptr(&set), 0, 0);
+	}
+
+	if (result < 0 && errno != EBADF) {
+	    rb_sys_fail(0);
 	}
     }
 
@@ -1773,7 +1774,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
     else {
 	return do_select(max, read, write, except, timeout);
     }
-    }
+}
 
 
 /*
