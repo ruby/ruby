@@ -22,13 +22,24 @@ Perl).  It is simple, straight-forward, and extensible.
 
 * How to get Ruby
 
-The Ruby distribution can be found on:
+The Ruby distribution files can be found in the following FTP site:
 
   ftp://ftp.ruby-lang.org/pub/ruby/
 
-You can get it by anonymous SVN.  How to check out is:
+The latest source code of this version series can be checked out
+through SVN with the following command:
 
-  $ svn co http://svn.ruby-lang.org/repos/ruby/branches/ruby_1_8 ruby
+  $ svn co http://svn.ruby-lang.org/repos/ruby/branches/ruby_1_8/
+
+The trunk of the Ruby source tree can be checked out with the
+following command:
+
+  $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+
+There are some other branches under development.  Try the following
+command and see the list of branches:
+
+  $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
 
 * Ruby home-page
