@@ -603,7 +603,7 @@ search_super_klass(VALUE klass, VALUE recv)
     return klass;
 }
 
-VALUE
+static VALUE
 th_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 {
     VALUE recv = th->cfp->self;
@@ -640,6 +640,12 @@ th_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     }
 
     return th_call0(th, klass, recv, id, id, argc, argv, body, nosuper);
+}
+
+VALUE
+rb_call_super(int argc, const VALUE *argv)
+{
+    return th_call_super(GET_THREAD(), argc, argv);
 }
 
 static inline VALUE

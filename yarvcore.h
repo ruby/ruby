@@ -601,7 +601,6 @@ void rb_disable_interrupt(void);
 
 VALUE th_eval_body(rb_thread_t *th);
 VALUE th_set_eval_stack(rb_thread_t *, VALUE iseq);
-VALUE th_call_super(rb_thread_t *th, int argc, const VALUE *argv);
 VALUE th_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
 VALUE th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
 VALUE th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);

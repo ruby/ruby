@@ -1,3 +1,8 @@
+Tue Feb 20 15:11:42 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm.c, yarvcore.h: move definition of rb_call_super() to
+	  vm.c from eval.c.  change th_call_super() to static function.
+
 Tue Feb 20 15:08:25 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/io/nonblock/test_flush.rb: YARV doesn't raise any errors if

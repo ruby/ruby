@@ -1763,12 +1763,6 @@ rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, NOEX_PUBLIC);
 }
 
-VALUE
-rb_call_super(int argc, const VALUE *argv)
-{
-    return th_call_super(GET_THREAD(), argc, argv);
-}
-
 static VALUE
 backtrace(int lev)
 {
