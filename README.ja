@@ -26,18 +26,25 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい強力
 
 * 入手法
 
-** ftpで
+** FTPで
 
 以下の場所においてあります．
 
   ftp://ftp.ruby-lang.org/pub/ruby/
 
-** CVSで
+** Subversionで
 
-  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/src login
-  (Logging in to anonymous@cvs.ruby-lang.org)
-  CVS password: anonymous
-  $ cvs -z4 -d :pserver:anonymous@cvs.ruby-lang.org:src checkout ruby
+本ブランチのRubyの最新のソースコードは次のコマンドで取得できます．
+
+  $ svn co http://svn.ruby-lang.org/repos/ruby/branches/ruby_1_8_6/
+
+開発先端のソースコードは次のコマンドで取得できます．
+
+  $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+
+他に開発中のブランチの一覧は次のコマンドで見られます．
+
+  $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
 
 * ホームページ
