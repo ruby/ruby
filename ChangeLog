@@ -1,3 +1,8 @@
+Tue Feb 20 15:08:25 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/io/nonblock/test_flush.rb: YARV doesn't raise any errors if
+	  another thread close IO object which current thread is blocking with.
+
 Tue Feb 20 15:03:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (do_select, rb_thread_wait_fd_rw): raise sys error if

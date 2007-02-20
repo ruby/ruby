@@ -4,8 +4,10 @@ begin
 rescue LoadError
 end
 
+Thread.abort_on_exception = true
 class TestIONonblock < Test::Unit::TestCase
   def test_flush                # [ruby-dev:24985]
+    flunk "IO#close can't interrupt IO blocking on YARV"
     r,w = IO.pipe
     w.nonblock = true
     w.sync = false
