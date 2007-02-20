@@ -1,3 +1,8 @@
+Tue Feb 20 21:19:29 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (installed_code_page_proc, 
+	  ole_variant2val): small refactoring.
+
 Tue Feb 20 15:11:42 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, vm.c, yarvcore.h: move definition of rb_call_super() to

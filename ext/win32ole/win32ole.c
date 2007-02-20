@@ -80,7 +80,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.9.7"
+#define WIN32OLE_VERSION "0.9.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1535,7 +1535,7 @@ ole_variant2val(VARIANT *pvar)
 
     if(V_ISARRAY(pvar)) {
         SAFEARRAY *psa = V_ISBYREF(pvar) ? *V_ARRAYREF(pvar) : V_ARRAY(pvar);
-        long i;
+        UINT i = 0;
         long *pid, *plb, *pub;
         VARIANT variant;
         VALUE val;
@@ -1566,14 +1566,15 @@ ole_variant2val(VARIANT *pvar)
         hr = SafeArrayLock(psa);
         if (SUCCEEDED(hr)) {
             obj = rb_ary_new();
-            while (i >= 0) {
+            i = 0;
+            while (i < dim) {
                 ary_new_dim(obj, pid, plb, dim);
                 hr = SafeArrayPtrOfIndex(psa, pid, &V_BYREF(&variant));
                 if (SUCCEEDED(hr)) {
                     val = ole_variant2val(&variant);
                     ary_store_dim(obj, pid, plb, dim, val);
                 }
-                for (i = dim-1 ; i >= 0 ; --i) {
+                for (i = 0; i < dim; ++i) {
                     if (++pid[i] <= pub[i])
                         break;
                     pid[i] = plb[i];
@@ -2396,7 +2397,7 @@ fole_s_get_code_page(VALUE self)
 
 static BOOL CALLBACK 
 installed_code_page_proc(LPTSTR str) {
-    if (atol(str) == g_cp_to_check) {
+    if (strtoul(str, NULL, 10) == g_cp_to_check) {
         g_cp_installed = TRUE;
         return FALSE;
     }
