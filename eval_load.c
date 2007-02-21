@@ -370,9 +370,15 @@ rb_require_safe(VALUE fname, int safe)
     volatile VALUE errinfo = GET_THREAD()->errinfo;
     rb_thread_t *th = GET_THREAD();
     int state;
+    struct {
+	NODE *node;
+	int safe;
+    } volatile saved;
     char *volatile ftptr = 0;
 
     PUSH_TAG(PROT_NONE);
+    saved.node = ruby_current_node;
+    saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
 	VALUE path;
 	long handle;
@@ -422,6 +428,8 @@ rb_require_safe(VALUE fname, int safe)
 	    free(ftptr);
 	}
     }
+    ruby_current_node = saved.node;
+    rb_set_safe_level_force(saved.safe);
     if (state) {
 	JUMP_TAG(state);
     }

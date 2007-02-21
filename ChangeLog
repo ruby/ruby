@@ -1,3 +1,7 @@
+Wed Feb 21 09:14:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_load.c (rb_require_safe): should restore safe level.
+
 Tue Feb 20 21:19:29 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (installed_code_page_proc, 
