@@ -1,3 +1,11 @@
+Wed Feb 21 17:40:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_equal): remove FIX2LONG() to optimize.  suggested
+	  in http://t-a-w.blogspot.com/2007/02/making-ruby-faster.html.
+	  [ruby-talk:240223]
+
+	* numeric.c (fix_cmp): ditto.
+
 Wed Feb 21 09:14:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_load.c (rb_require_safe): should restore safe level.

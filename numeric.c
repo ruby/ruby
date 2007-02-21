@@ -2312,7 +2312,7 @@ static VALUE
 fix_equal(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	return (FIX2LONG(x) == FIX2LONG(y))?Qtrue:Qfalse;
+	return (x == y)?Qtrue:Qfalse;
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
@@ -2336,11 +2336,9 @@ fix_equal(VALUE x, VALUE y)
 static VALUE
 fix_cmp(VALUE x, VALUE y)
 {
+    if (x == y) return INT2FIX(0);
     if (FIXNUM_P(y)) {
-	long a = FIX2LONG(x), b = FIX2LONG(y);
-
-	if (a == b) return INT2FIX(0);
-	if (a > b) return INT2FIX(1);
+	if (FIX2LONG(x) > FIX2LONG(y)) return INT2FIX(1);
 	return INT2FIX(-1);
     }
     switch (TYPE(y)) {
@@ -2365,9 +2363,7 @@ static VALUE
 fix_gt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a = FIX2LONG(x), b = FIX2LONG(y);
-
-	if (a > b) return Qtrue;
+	if (FIX2LONG(x) > FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
     switch (TYPE(y)) {
@@ -2392,9 +2388,7 @@ static VALUE
 fix_ge(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a = FIX2LONG(x), b = FIX2LONG(y);
-
-	if (a >= b) return Qtrue;
+	if (FIX2LONG(x) >= FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
     switch (TYPE(y)) {
@@ -2419,9 +2413,7 @@ static VALUE
 fix_lt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a = FIX2LONG(x), b = FIX2LONG(y);
-
-	if (a < b) return Qtrue;
+	if (FIX2LONG(x) < FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
     switch (TYPE(y)) {
@@ -2446,9 +2438,7 @@ static VALUE
 fix_le(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a = FIX2LONG(x), b = FIX2LONG(y);
-
-	if (a <= b) return Qtrue;
+	if (FIX2LONG(x) <= FIX2LONG(y)) return Qtrue;
 	return Qfalse;
     }
     switch (TYPE(y)) {
