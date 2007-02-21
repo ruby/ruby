@@ -2311,9 +2311,8 @@ fix_pow(VALUE x, VALUE y)
 static VALUE
 fix_equal(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	return (x == y)?Qtrue:Qfalse;
-    }
+    if (x == y) return Qtrue;
+    if (FIXNUM_P(y)) return Qfalse;
     switch (TYPE(y)) {
       case T_BIGNUM:
 	return rb_big_eq(y, x);
