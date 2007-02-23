@@ -1,3 +1,10 @@
+Fri Feb 23 13:04:43 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (fix_cmp, fix_equal): Remove FIX2LONG() to optimize.
+	  suggested in
+	  http://t-a-w.blogspot.com/2007/02/making-ruby-faster.html.
+	  [ruby-talk:240223]
+
 Fri Feb 23 12:47:13 2007  James Edward Gray II  <james@grayproductions.net>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): Make the

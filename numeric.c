@@ -2226,12 +2226,9 @@ static VALUE
 fix_equal(x, y)
     VALUE x, y;
 {
-    if (FIXNUM_P(y)) {
-	return (FIX2LONG(x) == FIX2LONG(y))?Qtrue:Qfalse;
-    }
-    else {
-	return num_equal(x, y);
-    }
+    if (x == y) return Qtrue;
+    if (FIXNUM_P(y)) return Qfalse;
+    return num_equal(x, y);
 }
 
 /*
@@ -2247,10 +2244,10 @@ static VALUE
 fix_cmp(x, y)
     VALUE x, y;
 {
+    if (x == y) return INT2FIX(0);
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
 
-	if (a == b) return INT2FIX(0);
 	if (a > b) return INT2FIX(1);
 	return INT2FIX(-1);
     }
