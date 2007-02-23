@@ -1,3 +1,8 @@
+Fri Feb 23 10:03:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_ord): need not to check string length;  ord
+	  returns a codepoint for the first character in the string.
+
 Wed Feb 21 22:29:45 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (fix_equal): A bit more optimization.
