@@ -1,3 +1,13 @@
+Fri Feb 23 12:47:13 2007  James Edward Gray II  <james@grayproductions.net>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): Make the
+	  Content-Length parameter optional for responses in
+	  xmlrpc/client.rb; suggested by Daniel Berger
+	  <Daniel.Berger@qwest.com> and approved by the maintainer.
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create::conv2value): Add DateTime
+	  support to xmlrpc; approved by the maintainer.
+
 Mon Feb 19 18:33:30 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/socket/socket.c (unix_peeraddr): wrong syscall name in error
