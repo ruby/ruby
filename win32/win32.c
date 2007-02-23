@@ -3323,6 +3323,12 @@ setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
 #endif
 }
 
+void
+rb_w32_interrupted(void)
+{
+    SetSignal(interrupted_event);
+}
+
 int
 rb_w32_main_context(int arg, void (*handler)(int))
 {
@@ -3334,7 +3340,7 @@ rb_w32_main_context(int arg, void (*handler)(int))
 
     if (GetCurrentThreadId() == main_thread.id) return FALSE;
 
-    SetSignal(interrupted_event);
+    rb_w32_interrupted();
 
     RUBY_CRITICAL({		/* the main thread must be in user state */
 	CONTEXT ctx;

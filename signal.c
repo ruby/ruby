@@ -493,6 +493,9 @@ sighandler(sig)
     else {
 	ATOMIC_INC(rb_trap_pending);
 	ATOMIC_INC(trap_pending_list[sig]);
+#ifdef _WIN32
+	rb_w32_interrupted();
+#endif
     }
 }
 
