@@ -395,7 +395,10 @@ NtInitialize(int *argc, char ***argv)
     int ret;
 
 #if _MSC_VER >= 1400
+    static void set_pioinfo_extra(void);
+
     _set_invalid_parameter_handler(invalid_parameter);
+    set_pioinfo_extra();
 #endif
 
     //
@@ -1683,10 +1686,35 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
-#define _pioinfo(i)	(__pioinfo[i >> IOINFO_L2E] + (i & (IOINFO_ARRAY_ELTS - 1)))
+#define _pioinfo(i)	((ioinfo*)((char*)(__pioinfo[i >> IOINFO_L2E]) + (i & (IOINFO_ARRAY_ELTS - 1)) * (sizeof(ioinfo) + pioinfo_extra)))
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
+
+#if _MSC_VER >= 1400
+static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
+
+static void
+set_pioinfo_extra(void)
+{
+    int fd;
+
+    fd = open("NUL", O_RDONLY);
+    for (pioinfo_extra = 0; pioinfo_extra <= 64; pioinfo_extra += sizeof(void *)) {
+	if (_osfhnd(fd) == _get_osfhandle(fd)) {
+	    break;
+	}
+    }
+    close(fd);
+
+    if (pioinfo_extra > 64) {
+	/* not found, maybe something wrong... */
+	pioinfo_extra = 0;
+    }
+}
+#else
+#define pioinfo_extra 0
+#endif
 
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 #define _set_osflags(fh, flags) (_osfile(fh) = (flags))
