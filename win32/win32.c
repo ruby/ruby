@@ -1672,59 +1672,37 @@ typedef struct	{
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
-#if _MSC_VER >= 1400
-static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
-
-static void
-set_pioinfo_extra(void)
-{
-    char libpath[MAXPATHLEN+1];
-    HMODULE msvcrt = NULL;
-    MEMORY_BASIC_INFORMATION m;
-    DWORD dummy;
-    DWORD size;
-    void *buf;
-    VS_FIXEDFILEINFO *pffi;
-    int major, minor, teeny, build;
-
-    memset(&m, 0, sizeof(m));
-    if (VirtualQuery(stdin, &m, sizeof(m)) && m.State == MEM_COMMIT)
-	msvcrt = (HMODULE)m.AllocationBase;
-    if (!msvcrt)
-	return;
-    if (!GetModuleFileName(msvcrt, libpath, sizeof(libpath)))
-	return;
-
-    size = GetFileVersionInfoSize(libpath, &dummy);
-    if (size == 0)
-	return;
-    buf = malloc(size);
-    if (!GetFileVersionInfo(libpath, 0, size, buf) ||
-	!VerQueryValue(buf, "\\", &pffi, &dummy)) {
-	free(buf);
-	return;
-    }
-    major = HIWORD(pffi->dwFileVersionMS);
-    minor = LOWORD(pffi->dwFileVersionMS);
-    teeny = HIWORD(pffi->dwFileVersionLS);
-    build = LOWORD(pffi->dwFileVersionLS);
-    free(buf);
-
-    if (major == 8 && minor == 0 &&
-	(teeny > 50727 || (teeny == 50727 && build >= 762))) {
-	pioinfo_extra = 16;
-    }
-}
-#else
-#define pioinfo_extra 0
-#endif
-
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _pioinfo(i)	((ioinfo*)((char*)(__pioinfo[i >> IOINFO_L2E]) + (i & (IOINFO_ARRAY_ELTS - 1)) * (sizeof(ioinfo) + pioinfo_extra)))
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
+
+#if _MSC_VER >= 1400
+static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
+
+static void
+set_pioinfo_extra(void)
+{
+    int fd;
+
+    fd = open("NUL", O_RDONLY);
+    for (pioinfo_extra = 0; pioinfo_extra <= 64; pioinfo_extra += sizeof(void *)) {
+	if (_osfhnd(fd) == _get_osfhandle(fd)) {
+	    break;
+	}
+    }
+    close(fd);
+
+    if (pioinfo_extra > 64) {
+	/* not found, maybe something wrong... */
+	pioinfo_extra = 0;
+    }
+}
+#else
+#define pioinfo_extra 0
+#endif
 
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 #define _set_osflags(fh, flags) (_osfile(fh) = (flags))
