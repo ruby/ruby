@@ -47,7 +47,7 @@ shortlen(long len, BDIGIT *ds)
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   9
+#define MARSHAL_MINOR   8
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -73,7 +73,6 @@ shortlen(long len, BDIGIT *ds)
 #define TYPE_MODULE	'm'
 
 #define TYPE_SYMBOL	':'
-#define TYPE_SYMBOL2	','
 #define TYPE_SYMLINK	';'
 
 #define TYPE_IVAR	'I'
@@ -313,22 +312,9 @@ w_symbol(ID id, struct dump_arg *arg)
 	w_long((long)num, arg);
     }
     else {
-	if (rb_is_instance2_id(id)) {
-	    VALUE klass;
-	    volatile VALUE path;
-
-	    id = rb_decompose_ivar2(id, &klass);
-	    path = class2path(klass);
-	    w_byte(TYPE_SYMBOL2, arg);
-	    sym = rb_id2name(id);
-	    w_bytes(sym, strlen(sym), arg);
-	    w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
-	}
-	else {
-	    sym = rb_id2name(id);
-	    w_byte(TYPE_SYMBOL, arg);
-	    w_bytes(sym, strlen(sym), arg);
-	}
+	sym = rb_id2name(id);
+	w_byte(TYPE_SYMBOL, arg);
+	w_bytes(sym, strlen(sym), arg);
 	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
     }
 }
@@ -883,21 +869,6 @@ r_symreal(struct load_arg *arg)
 }
 
 static ID
-r_symivar2(struct load_arg *arg)
-{
-    volatile VALUE s = r_bytes(arg);
-    ID id = rb_intern(RSTRING_PTR(s));
-    VALUE klass;
-
-    s = r_bytes(arg);
-    klass = r_entry(path2class(RSTRING_PTR(s)), arg);
-    id = rb_compose_ivar2(id, klass);
-    st_insert(arg->symbols, arg->symbols->num_entries, id);
-
-    return id;
-}
-
-static ID
 r_symbol(struct load_arg *arg)
 {
     int type;
@@ -905,8 +876,6 @@ r_symbol(struct load_arg *arg)
     switch ((type = r_byte(arg))) {
       case TYPE_SYMBOL:
 	return r_symreal(arg);
-      case TYPE_SYMBOL2:
-	return r_symivar2(arg);
       case TYPE_SYMLINK:
 	return r_symlink(arg);
       default:
@@ -1314,10 +1283,6 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_SYMBOL:
 	v = ID2SYM(r_symreal(arg));
-	break;
-
-      case TYPE_SYMBOL2:
-	v = ID2SYM(r_symivar2(arg));
 	break;
 
       case TYPE_SYMLINK:

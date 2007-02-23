@@ -985,7 +985,7 @@ rb_ivar_defined(VALUE obj, ID id)
 static int
 ivar_i(ID key, struct global_entry *entry, VALUE ary)
 {
-    if (rb_is_instance_id(key) || rb_is_instance2_id(key)) {
+    if (rb_is_instance_id(key)) {
 	rb_ary_push(ary, ID2SYM(key));
     }
     return ST_CONTINUE;

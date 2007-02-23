@@ -398,7 +398,6 @@ ID rb_id_attrset(ID);
 void rb_gc_mark_parser(void);
 int rb_is_const_id(ID);
 int rb_is_instance_id(ID);
-int rb_is_instance2_id(ID);
 int rb_is_class_id(ID);
 int rb_is_local_id(ID);
 int rb_is_junk_id(ID);
@@ -410,8 +409,6 @@ void rb_backref_set(VALUE);
 VALUE rb_lastline_get(void);
 void rb_lastline_set(VALUE);
 VALUE rb_sym_all_symbols(void);
-ID rb_compose_ivar2(ID, VALUE);
-ID rb_decompose_ivar2(ID, VALUE*);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);

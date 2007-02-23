@@ -905,8 +905,6 @@ ruby_node_name(int node)
 	return "NODE_GVAR";
     case NODE_IVAR:
 	return "NODE_IVAR";
-    case NODE_IVAR2:
-	return "NODE_IVAR2";
     case NODE_CONST:
 	return "NODE_CONST";
     case NODE_CVAR:

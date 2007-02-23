@@ -1,3 +1,13 @@
+Fri Feb 23 11:41:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y, compile.c, gc.c, insns.def, intern.h, iseq.c, node.h,
+	  object.c, string.c, variable.c, vm_macro.def: revert private
+	  instance variable feature, which is postponed until next major
+	  release.
+
+	* marshal.c: TYPE_SYMBOL2 removed; MARSHAL_MINOR reverted back to
+	  8th version.
+
 Fri Feb 23 10:53:21 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* thread_pthread.ci (native_mutex_lock): do not call

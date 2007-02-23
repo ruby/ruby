@@ -2343,11 +2343,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_IVAR),
 		  ID2SYM(node->nd_vid), needstr);
 	return 1;
-      case NODE_IVAR2:
-	ADD_INSN(ret, nd_line(node), putnil);
-	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_IVAR2),
-		  ID2SYM(node->nd_vid), needstr);
-	return 1;
 
       case NODE_GVAR:
 	ADD_INSN(ret, nd_line(node), putnil);
@@ -3321,13 +3316,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_IASGN:
       case NODE_IASGN2:{
-	  int is_local = (nd_type(node) == NODE_IASGN2) ? 1 : 0;
 	  COMPILE(ret, "lvalue", node->nd_value);
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
 	  }
-	  ADD_INSN2(ret, nd_line(node), setinstancevariable,
-		    ID2SYM(node->nd_vid), INT2FIX(is_local));
+	  ADD_INSN1(ret, nd_line(node), setinstancevariable,
+		    ID2SYM(node->nd_vid));
 	  break;
       }
       case NODE_CDECL:{
@@ -3898,14 +3892,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  }
 	  break;
       }
-      case NODE_IVAR:
-      case NODE_IVAR2:{
-	  int is_local = (nd_type(node) == NODE_IVAR2) ? 1 : 0;
-
+      case NODE_IVAR:{
 	  debugi("nd_vid", node->nd_vid);
 	  if (!poped) {
-	      ADD_INSN2(ret, nd_line(node), getinstancevariable,
-			ID2SYM(node->nd_vid), INT2FIX(is_local));
+	      ADD_INSN1(ret, nd_line(node), getinstancevariable,
+			ID2SYM(node->nd_vid));
 	  }
 	  break;
       }

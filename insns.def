@@ -181,13 +181,10 @@ setdynamic
  */
 DEFINE_INSN
 getinstancevariable
-(ID id, num_t is_local)
+(ID id)
 ()
 (VALUE val)
 {
-    if (is_local) {
-	id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
-    }
     val = rb_ivar_get(GET_SELF(), id);
 }
 
@@ -200,13 +197,10 @@ getinstancevariable
  */
 DEFINE_INSN
 setinstancevariable
-(ID id, num_t is_local)
+(ID id)
 (VALUE val)
 ()
 {
-    if (is_local) {
-	id = rb_compose_ivar2(id, eval_get_cvar_base(th, GET_ISEQ()));
-    }
     rb_ivar_set(GET_SELF(), id, val);
 }
 
@@ -913,9 +907,6 @@ defined
 	break;
       case DEFINED_IVAR2:
 	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
-	if (rb_ivar_defined(GET_SELF(), rb_compose_ivar2(SYM2ID(obj), klass))) {
-	    expr_type = "class local instance-variable";
-	}
 	break;
       case DEFINED_GVAR:
 	if (rb_gvar_defined((struct global_entry *)(obj & ~1))) {

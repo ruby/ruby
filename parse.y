@@ -37,7 +37,6 @@
 #define ID_SCOPE_MASK 0x07
 #define ID_LOCAL      0x00
 #define ID_INSTANCE   0x01
-#define ID_INSTANCE2  0x02
 #define ID_GLOBAL     0x03
 #define ID_ATTRSET    0x04
 #define ID_CONST      0x05
@@ -49,7 +48,6 @@
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
 #define is_global_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
-#define is_instance2_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE2)
 #define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 #define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
@@ -7247,9 +7245,6 @@ gettable_gen(struct parser_params *parser, ID id)
     else if (is_instance_id(id)) {
 	return NEW_IVAR(id);
     }
-    else if (is_instance2_id(id)) {
-	return NEW_IVAR2(id);
-    }
     else if (is_const_id(id)) {
 	return NEW_CONST(id);
     }
@@ -7302,9 +7297,6 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
     }
     else if (is_instance_id(id)) {
 	return NEW_IASGN(id, val);
-    }
-    else if (is_instance2_id(id)) {
-	return NEW_IASGN2(id, val);
     }
     else if (is_const_id(id)) {
 	if (in_def || in_single)
@@ -8482,9 +8474,6 @@ rb_intern2(const char *name, long len)
 	    m++;
 	    id |= ID_CLASS;
 	}
-	else if (name[1] == '_') {
-	    id |= ID_INSTANCE2;
-	}
 	else {
 	    id |= ID_INSTANCE;
 	}
@@ -8544,38 +8533,6 @@ ID
 rb_intern(const char *name)
 {
     return rb_intern2(name, strlen(name));
-}
-
-ID
-rb_compose_ivar2(ID oid, VALUE klass)
-{
-    struct ivar2_key key, *kp;
-    ID id;
-
-    key.id = oid;
-    key.klass = klass;
-    if (st_lookup(global_symbols.ivar2_id, (st_data_t)&key, (st_data_t *)&id))
-	return id;
-
-    kp = ALLOC_N(struct ivar2_key, 1);
-    kp->id = oid; kp->klass = klass;
-    id = ID_INSTANCE2;
-    id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
-    st_add_direct(global_symbols.ivar2_id, (st_data_t)kp, (st_data_t)id);
-    st_add_direct(global_symbols.id_ivar2, (st_data_t)id, (st_data_t)kp);
-    return id;
-}
-
-ID
-rb_decompose_ivar2(ID id, VALUE *klassp)
-{
-    struct ivar2_key *kp;
-
-    if (!st_lookup(global_symbols.id_ivar2, (st_data_t)id, (st_data_t *)&kp)) {
-	return id;
-    }
-    if (klassp) *klassp = kp->klass;
-    return kp->id;
 }
 
 VALUE
@@ -8683,13 +8640,6 @@ int
 rb_is_instance_id(ID id)
 {
     if (is_instance_id(id)) return Qtrue;
-    return Qfalse;
-}
-
-int
-rb_is_instance2_id(ID id)
-{
-    if (is_instance2_id(id)) return Qtrue;
     return Qfalse;
 }
 
