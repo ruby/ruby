@@ -1,3 +1,9 @@
+Fri Feb 23 18:13:22 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ruby/test_optimization.rb: new test (merges test_opts.rb).
+
+	* yarvtest/test_opts.rb: removed.
+
 Fri Feb 23 16:59:39 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_assignment.rb: merge yarvtest/test_massign.
