@@ -241,7 +241,7 @@ module XMLRPC
 	    @writer.ele("data", *a)
 	  )
 
-	when Time, Date
+	when Time, Date, ::DateTime
 	  @writer.tag("dateTime.iso8601", param.strftime("%Y%m%dT%H:%M:%S"))  
 
 	when XMLRPC::DateTime

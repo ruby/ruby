@@ -558,7 +558,7 @@ module XMLRPC
       expected = resp["Content-Length"] || "<unknown>"
       if data.nil? or data.size == 0 
         raise "Wrong size. Was #{data.size}, should be #{expected}" 
-      elsif expected.to_i != data.size and resp["Transfer-Encoding"].nil?
+      elsif expected != "<unknown>" and expected.to_i != data.size and resp["Transfer-Encoding"].nil?
         raise "Wrong size. Was #{data.size}, should be #{expected}"
       end
 
