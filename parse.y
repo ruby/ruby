@@ -400,8 +400,6 @@ static NODE *dyna_init_gen(struct parser_params*, NODE*, int);
 #define dyna_init(node, pre) dyna_init_gen(parser, node, pre)
 static void dyna_var_gen(struct parser_params*,ID);
 #define dyna_var(id) dyna_var_gen(parser, id)
-static void dyna_check_gen(struct parser_params*,ID);
-#define dyna_check(id) dyna_check_gen(parser, id)
 static int dvar_defined_gen(struct parser_params*,ID);
 #define dvar_defined(id) dvar_defined_gen(parser, id)
 static int dvar_curr_gen(struct parser_params*,ID);

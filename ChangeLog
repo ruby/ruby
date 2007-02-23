@@ -1,3 +1,7 @@
+Fri Feb 23 12:16:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: remove dyna_check_gen() prototype.
+
 Fri Feb 23 11:41:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y, compile.c, gc.c, insns.def, intern.h, iseq.c, node.h,
