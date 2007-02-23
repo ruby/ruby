@@ -203,6 +203,10 @@ class TestAssignment < Test::Unit::TestCase
     def r; return *[*[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
     def r; return *[*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
     def r; return *[*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
+
+    def r; return 1, *[]; end; a,b = r(); assert_equal([1,nil], [a,b]); undef r
+    def r; return 1,2,*[1]; end; a,b = r(); assert_equal([1,2], [a,b]); undef r
+    def r; return 1,2,3,*[1,2]; end; a,b = r(); assert_equal([1,2], [a,b]); undef r
   end
 
   def test_lambda
@@ -378,26 +382,57 @@ class TestAssignment < Test::Unit::TestCase
     undef r
   end
 
-  def test_assign2
+  def test_massign
     a = nil
     assert(defined?(a))
     assert_nil(a)
 
     # multiple asignment
     a, b = 1, 2
-    assert(a == 1 && b == 2)
+    assert_equal 1, a
+    assert_equal 2, b
 
+    a, b, c = 1, 2, 3
+    assert_equal 1, a
+    assert_equal 2, b
+    assert_equal 3, c
+
+    a = 1
+    b = 2
     a, b = b, a
-    assert(a == 2 && b == 1)
+    assert_equal 2, a
+    assert_equal 1, b
 
-    a, = 1,2
-    assert_equal(1, a)
+    a, = 1, 2
+    assert_equal 1, a
+
+    a, = 1, 2, 3
+    assert_equal 1, a
+
+    a, * = 1, 2, 3
+    assert_equal 1, a
 
     a, *b = 1, 2, 3
-    assert(a == 1 && b == [2, 3])
+    assert_equal 1, a
+    assert_equal [2, 3], b
+
+    # not supported yet
+    #a, *b, c = 1, 2, 3, 4
+    #assert_equal 1, a
+    #assert_equal [2,3], b
+    #assert_equal 4, c
+
+    a = 1, 2
+    assert_equal [1, 2], a
+
+    a = [1, 2], [3, 4]
+    assert_equal [[1,2], [3,4]], a
 
     a, (b, c), d = 1, [2, 3], 4
-    assert(a == 1 && b == 2 && c == 3 && d == 4)
+    assert_equal 1, a
+    assert_equal 2, b
+    assert_equal 3, c
+    assert_equal 4, d
 
     *a = 1, 2, 3
     assert_equal([1, 2, 3], a)
@@ -407,5 +442,50 @@ class TestAssignment < Test::Unit::TestCase
 
     *a = nil
     assert_equal([nil], a)
+
+    a, b = 1
+    assert_equal 1, a
+    assert_nil b
+
+    a, b = [1, 2]
+    assert_equal 1, a
+    assert_equal 2, b
+  end
+
+  def test_nested_massign
+    (a, b), c = [[1, 2], 3]; assert_equal [1,2,3], [a,b,c]
+    a, (b, c) = [[1, 2], 3]; assert_equal [[1,2], 3, nil], [a,b,c]
+    a, (b, c) = [1, [2, 3]]; assert_equal [1,2,3], [a,b,c]
+    (a, b), *c = [[1, 2], 3]; assert_equal [1,2,[3]], [a,b,c]
+    (a,b),c,(d,e) = [[1,2],3,[4,5]]; assert_equal [1,2,3,4,5],[a,b,c,d,e]
+    (a,*b),c,(d,e,*) = [[1,2],3,[4,5]]; assert_equal [1,[2],3,4,5],[a,b,c,d,e]
+    (a,b),c,(d,*e) = [[1,2,3],4,[5,6,7,8]]; assert_equal [1,2,4,5,[6,7,8]],[a,b,c,d,e]
+    (a,(b1,b2)),c,(d,e) = [[1,2],3,[4,5]]; assert_equal [1,2,nil,3,4,5],[a,b1,b2,c,d,e]
+    (a,(b1,b2)),c,(d,e) = [[1,[21,22]],3,[4,5]]; assert_equal [1,21,22,3,4,5],[a,b1,b2,c,d,e]
+  end
+
+  class MyObj
+    def to_ary
+      [[1,2],[3,4]]
+    end
+  end
+
+  def test_to_ary_splat
+    a, b = MyObj.new
+    assert_equal [[1,2],[3,4]], [a,b]
+  end
+
+  A = 1
+  B = 2
+  X, Y = A, B
+  class Base
+    A = 3
+    B = 4
+  end
+
+  def test_const_massign
+    assert_equal [1,2], [X,Y]
+    a, b = Base::A, Base::B
+    assert_equal [3,4], [a,b]
   end
 end

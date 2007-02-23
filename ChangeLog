@@ -1,3 +1,10 @@
+Fri Feb 23 16:59:39 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ruby/test_assignment.rb: merge yarvtest/test_massign.
+
+	* yarvtest/test_massign.rb: removed (merged to
+	  test_assignment.rb).
+
 Fri Feb 23 15:58:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* signal.c (sighandler): need to re-install sighandler on some
