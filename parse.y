@@ -3208,29 +3208,30 @@ bvar		:  tIDENTIFIER
 		    }
 		;
 
-lambda		: {
+lambda		:   {
 		    /*%%%*/
 			dyna_push();
+			$<num>$ = lpar_beg;
+			lpar_beg = ++paren_nest;
 		    /*%
 		    %*/
 		    }
-                  {
-			$<num>$ = lpar_beg;
- 			lpar_beg = ++paren_nest;
-		  }
 		  f_larglist
 		    {
-		        $<num>$ = vtable_size(lvtbl->dvars);
+                    /*%%%*/
+			$<num>$ = vtable_size(lvtbl->dvars);
+                    /*%
+                    %*/
 		    }
 		  lambda_body
 		    {
 		    /*%%%*/
-			$$ = $3;
-                        $$->nd_body = block_append($$->nd_body, $5);
+			$$ = $2;
+			$$->nd_body = block_append($$->nd_body, $4);
 			dyna_pop();
-			lpar_beg = $<num>2;
+			lpar_beg = $<num>1;
 		    /*%
-		    	$$ = dispatch2(lambda, $3, $5);
+			$$ = dispatch2(lambda, $2, $4);
 		    %*/
 		    }
 		;

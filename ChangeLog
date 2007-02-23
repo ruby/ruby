@@ -1,3 +1,10 @@
+Fri Feb 23 12:24:46 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (lambda): add ripper event.  This fixes bus error on
+	  "make test-all".
+
+	* ext/ripper/extconf.rb: do not stop build.
+
 Fri Feb 23 12:16:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: remove dyna_check_gen() prototype.
