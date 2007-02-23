@@ -1,4 +1,4 @@
-Fri Feb 23 12:40:12 2007  Akinori MUSHA  <knu@iDaemons.org>
+Fri Feb 23 12:40:12 2007  James Edward Gray II  <james@grayproductions.net>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): Make the
 	  Content-Length parameter optional for responses in
