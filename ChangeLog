@@ -1,3 +1,9 @@
+Fri Feb 23 18:37:55 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ruby/test_yield.rb: new test.
+
+	* yarvtest/test_yield.rb: removed (moved to test_yield.rb).
+
 Fri Feb 23 18:27:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_thread_polling): check interrupts here.
