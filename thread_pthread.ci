@@ -16,13 +16,8 @@ void
 native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
-    r = pthread_mutex_trylock(lock);
-    if (r == EBUSY) {
-	r = pthread_mutex_lock(lock);
-	
-	if (r != 0) {
-	    rb_bug("pthread_mutex_lock: %d", r);
-	}
+    if ((r = pthread_mutex_lock(lock)) != 0) {
+	rb_bug("pthread_mutex_lock: %d", r);
     }
 }
 

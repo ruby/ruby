@@ -1,3 +1,8 @@
+Fri Feb 23 10:53:21 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* thread_pthread.ci (native_mutex_lock): do not call
+	  pthread_mutex_trylock().
+
 Fri Feb 23 10:31:16 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* dln.c: use dlopen on Mac OS X 10.3 or later.
