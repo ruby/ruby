@@ -395,6 +395,10 @@ sighandler(int sig)
     rb_vm_t *vm = GET_VM(); /* fix me for Multi-VM */
     ATOMIC_INC(vm->signal_buff[sig]);
     ATOMIC_INC(vm->bufferd_signal_size);
+
+#if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
+    ruby_signal(sig, sighandler);
+#endif
 }
 
 # ifdef HAVE_SIGPROCMASK

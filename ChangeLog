@@ -1,3 +1,8 @@
+Fri Feb 23 15:58:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* signal.c (sighandler): need to re-install sighandler on some
+	  platforms.
+
 Fri Feb 23 15:05:57 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (set_pioinfo_extra): simplified.
