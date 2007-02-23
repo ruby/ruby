@@ -49,6 +49,40 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal('foo', obj.value);
     end
 
+    def test_s_array
+      obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4)
+      assert_instance_of(WIN32OLE_VARIANT, obj)
+      assert_equal(WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_ARRAY, obj.vartype)
+      assert_equal([[0, 0, 0],[0, 0, 0]], obj.value)
+
+      obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_BYREF)
+      assert_equal(WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_ARRAY, obj.vartype)
+      assert_equal([[0, 0, 0],[0, 0, 0]], obj.value)
+      
+      obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_ARRAY)
+      assert_instance_of(WIN32OLE_VARIANT, obj)
+      assert_equal(WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_ARRAY, obj.vartype)
+      assert_equal([[0, 0, 0],[0, 0, 0]], obj.value)
+
+      assert_equal(0, obj[0,0])
+      obj[0,0] = 10
+      assert_equal([[10, 0, 0],[0, 0, 0]], obj.value)
+      obj[0,1] = "13.2"
+      assert_equal([[10, 13, 0],[0, 0, 0]], obj.value)
+
+      obj = WIN32OLE_VARIANT.array([3, 2], WIN32OLE::VARIANT::VT_VARIANT)
+      obj[0,0] = 10
+      obj[0,1] = "string"
+      obj[1,0] = 12.735
+      assert_equal([[10, "string"],[12.735, nil],[nil,nil]], obj.value)
+    end
+
+    def test_s_array_exc
+      assert_raise(TypeError) {
+        obj = WIN32OLE_VARIANT.array(2, WIN32OLE::VARIANT::VT_I4)
+      }
+    end
+
     def test_conversion_num2str
       obj = WIN32OLE_VARIANT.new(124, WIN32OLE::VARIANT::VT_BSTR)
       assert_equal("124", obj.value);
@@ -56,6 +90,8 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_conversion_float2int
       obj = WIN32OLE_VARIANT.new(12.345, WIN32OLE::VARIANT::VT_I4)
+      assert_equal(12, obj.value)
+      obj = WIN32OLE_VARIANT.new(12.345, WIN32OLE::VARIANT::VT_I4|WIN32OLE::VARIANT::VT_BYREF)
       assert_equal(12, obj.value)
     end
 
@@ -169,6 +205,11 @@ if defined?(WIN32OLE_VARIANT)
       obj = WIN32OLE_VARIANT.new("ABC", WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
       assert_equal("ABC", obj.value)
 
+      obj.value = "DEF"
+      assert_equal("DEF", obj.value)
+      obj[0] = 71
+      assert_equal("GEF", obj.value)
+
       obj = WIN32OLE_VARIANT.new([65, 0].pack("C*"), WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_UI1)
       assert_equal([65, 0].pack("C*"), obj.value)
 
@@ -183,6 +224,41 @@ if defined?(WIN32OLE_VARIANT)
 
       obj = WIN32OLE_VARIANT.new([65, 0], WIN32OLE::VARIANT::VT_I2|WIN32OLE::VARIANT::VT_ARRAY)
       assert_equal([65, 0], obj.value)
+
+    end
+
+    def test_vt_array_bracket
+      obj = WIN32OLE_VARIANT.new([[1,2,3],[4,5,6]])
+      assert_equal(1, obj[0,0])
+      assert_equal(2, obj[0,1])
+      assert_equal(3, obj[0,2])
+      assert_equal(4, obj[1,0])
+      assert_equal(5, obj[1,1])
+      assert_equal(6, obj[1,2])
+
+      assert_raise(WIN32OLERuntimeError) {
+        obj[0,4]
+      }
+      assert_raise(WIN32OLERuntimeError) {
+        obj[0,-1]
+      }
+      assert_raise(ArgumentError) {
+        obj[0]
+      }
+
+      obj[0,0] = 7
+      obj[1,2] = 8
+      assert_equal([[7,2,3], [4,5,8]], obj.value)
+
+      assert_raise(WIN32OLERuntimeError) {
+        obj[0,4] = 9
+      }
+      assert_raise(WIN32OLERuntimeError) {
+        obj[0,-1] = 10
+      }
+      assert_raise(ArgumentError) {
+        obj[0] = 11
+      }
     end
 
     def test_create_nil_dispatch
@@ -198,6 +274,34 @@ if defined?(WIN32OLE_VARIANT)
     def test_vartype
       obj = WIN32OLE_VARIANT.new("Str")
       assert_equal(WIN32OLE::VARIANT::VT_BSTR, obj.vartype)
+    end
+
+    def test_set_value
+      obj = WIN32OLE_VARIANT.new(10)
+      obj.value = 12
+      assert_equal(12, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_I4, obj.vartype)
+      obj.value = "14"
+      assert_equal(14, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_I4, obj.vartype)
+      obj.value = 11.2
+      assert_equal(11, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_I4, obj.vartype)
+
+      obj = WIN32OLE_VARIANT.new([1,2])
+      assert_raise(NoMethodError) {
+        obj.value = [3,4]
+      }
+
+      obj = WIN32OLE_VARIANT.new("2007/01/01", WIN32OLE::VARIANT::VT_DATE)
+      assert_raise(WIN32OLERuntimeError) {
+        obj.value = "hogehoge"
+      }
+      assert_equal("2007/01/01 00:00:00", obj.value)
+
+      obj2 = WIN32OLE_VARIANT.new("2006/01/01", WIN32OLE::VARIANT::VT_DATE)
+      obj.value = obj2
+      assert_equal("2006/01/01 00:00:00", obj.value)
     end
 
     def test_c_nothing
