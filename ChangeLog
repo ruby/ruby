@@ -1,3 +1,13 @@
+Fri Feb 23 12:43:17 2007  James Edward Gray II  <james@grayproductions.net>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): Make the
+	  Content-Length parameter optional for responses in
+	  xmlrpc/client.rb; suggested by Daniel Berger
+	  <Daniel.Berger@qwest.com> and approved by the maintainer.
+
+	* lib/xmlrpc/create.rb (XMLRPC::Create::conv2value): Add DateTime
+	  support to xmlrpc; approved by the maintainer.
+
 Mon Feb 19 18:22:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, defines.h, eval.c (rb_feature_p, rb_provided,
