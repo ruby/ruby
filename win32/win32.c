@@ -82,7 +82,7 @@
 static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int has_redirection(const char *);
 static void StartSockets(void);
-static DWORD wait_events(HANDLE event, DWORD timeout);
+int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 #if !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
 #else
@@ -230,9 +230,6 @@ static struct {
     HANDLE handle;
     DWORD id;
 } main_thread;
-
-/* interrupt stuff */
-static HANDLE interrupted_event;
 
 HANDLE
 GetCurrentThreadHandle(void)
@@ -2208,9 +2205,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	trap = *ex;
     else
 	trap.fd_count = 0;
-    if (trap.fd_count < FD_SETSIZE)
-	trap.fd_array[trap.fd_count++] = (SOCKET)interrupted_event;
-    // else unable to catch interrupt.
     ex = &trap;
 #endif /* USE_INTERRUPT_WINSOCK */
 
@@ -2253,7 +2247,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	r = do_select(nfds, rd, wr, ex, timeout);
 
 #if USE_INTERRUPT_WINSOCK
-    RUBY_CRITICAL(ret = __WSAFDIsSet((SOCKET)interrupted_event, ex));
     if (ret) {
 	// In this case, we must restore all FDs. But this is only a test
 	// code, so we think about that later.
@@ -2286,9 +2279,6 @@ StartSockets(void)
     main_thread.handle = GetCurrentThreadHandle();
     main_thread.id = GetCurrentThreadId();
 
-    interrupted_event = CreateSignal();
-    if (!interrupted_event)
-	rb_fatal("Unable to create interrupt event!\n");
     NtSocketsInitialized = 1;
 }
 
@@ -2943,7 +2933,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
     if (pid == -1) {
 	int count = 0;
 	DWORD ret;
-	HANDLE events[MAXCHILDNUM + 1];
+	HANDLE events[MAXCHILDNUM];
 
 	FOREACH_CHILD(child) {
 	    if (!child->pid || child->pid < 0) continue;
@@ -2954,13 +2944,10 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    errno = ECHILD;
 	    return -1;
 	}
-	events[count] = interrupted_event;
 
-	ret = WaitForMultipleEvents(count + 1, events, FALSE, timeout, TRUE);
+	ret = rb_w32_wait_events(events, count, timeout);
 	if (ret == WAIT_TIMEOUT) return 0;
 	if ((ret -= WAIT_OBJECT_0) == count) {
-	    ResetSignal(interrupted_event);
-	    errno = EINTR;
 	    return -1;
 	}
 	if (ret > count) {
@@ -2979,7 +2966,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 	while (!(pid = poll_child_status(child, stat_loc))) {
 	    /* wait... */
-	    if (wait_events(child->hProcess, timeout) != WAIT_OBJECT_0) {
+	    if (rb_w32_wait_events(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
 		/* still active */
 		pid = 0;
 		break;
@@ -3658,28 +3645,6 @@ rb_w32_times(struct tms *tmbuf)
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-static DWORD
-wait_events(HANDLE event, DWORD timeout)
-{
-    HANDLE events[2];
-    int count = 0;
-    DWORD ret;
-
-    if (event) {
-	events[count++] = event;
-    }
-    events[count++] = interrupted_event;
-
-    ret = WaitForMultipleEvents(count, events, FALSE, timeout, TRUE);
-
-    if (ret == WAIT_OBJECT_0 + count - 1) {
-	ResetSignal(interrupted_event);
-	errno = EINTR;
-    }
-
-    return ret;
-}
-
 static CRITICAL_SECTION *
 system_state(void)
 {
@@ -3780,88 +3745,11 @@ setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
 #endif
 }
 
-int
-rb_w32_main_context(int arg, void (*handler)(int))
-{
-    static HANDLE interrupt_done = NULL;
-    struct handler_arg_t harg;
-    CONTEXT ctx_orig;
-    HANDLE current_thread = GetCurrentThread();
-    int old_priority = GetThreadPriority(current_thread);
-
-    if (GetCurrentThreadId() == main_thread.id) return FALSE;
-
-    SetSignal(interrupted_event);
-
-    RUBY_CRITICAL({		/* the main thread must be in user state */
-	CONTEXT ctx;
-
-	SuspendThread(main_thread.handle);
-	SetThreadPriority(current_thread, GetThreadPriority(main_thread.handle));
-
-	ZeroMemory(&ctx, sizeof(CONTEXT));
-	ctx.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
-	GetThreadContext(main_thread.handle, &ctx);
-	ctx_orig = ctx;
-
-	/* handler context setup */
-	if (!interrupt_done) {
-	    interrupt_done = CreateEvent(NULL, FALSE, FALSE, NULL);
-	    /* anonymous one-shot event */
-	}
-	else {
-	    ResetEvent(interrupt_done);
-	}
-	setup_call(&ctx, setup_handler(&harg, arg, handler, interrupt_done));
-
-	ctx.ContextFlags = CONTEXT_CONTROL;
-	SetThreadContext(main_thread.handle, &ctx);
-	ResumeThread(main_thread.handle);
-    });
-
-    /* give a chance to the main thread */
-    yield_once();
-    WaitForSingleObject(interrupt_done, INFINITE); /* handshaking */
-
-    if (!harg.status) {
-	/* no exceptions raised, restore old context. */
-	RUBY_CRITICAL({
-	    /* ensure the main thread is in user state. */
-	    yield_until(harg.finished);
-
-	    SuspendThread(main_thread.handle);
-	    ctx_orig.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
-	    SetThreadContext(main_thread.handle, &ctx_orig);
-	    ResumeThread(main_thread.handle);
-	});
-    }
-    /* otherwise leave the main thread raised */
-
-    SetThreadPriority(current_thread, old_priority);
-
-    return TRUE;
-}
-
-int
-rb_w32_sleep(unsigned long msec)
-{
-    return rb_w32_Sleep(msec);
-}
-
-int WINAPI
-rb_w32_Sleep(unsigned long msec)
-{
-    DWORD ret;
-    RUBY_CRITICAL(ret = wait_events(NULL, msec));
-    yield_once();
-    return ret != WAIT_TIMEOUT;
-}
-
 static void
 catch_interrupt(void)
 {
     yield_once();
-    RUBY_CRITICAL(wait_events(NULL, 0));
+    RUBY_CRITICAL(rb_w32_wait_events(NULL, 0, 0));
 }
 
 #if defined __BORLANDC__ || defined _WIN32_WCE
@@ -3972,7 +3860,7 @@ rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
 	if (thr) {
 	    yield_until(arg.stackaddr);
 
-	    if (wait_events(thr, INFINITE) != WAIT_OBJECT_0) {
+	    if (rb_w32_wait_events(&thr, 1, INFINITE) != WAIT_OBJECT_0) {
 		interrupted = TRUE;
 
 		if (TerminateThread(thr, intrval)) {

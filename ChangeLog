@@ -1,3 +1,17 @@
+Fri Feb 23 18:27:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (rb_thread_polling): check interrupts here.
+
+	* thread_win32.ci (w32_wait_events): rename from w32_wait_event(), and
+	  now receive multiple event handles.
+
+	* win32/win32.c (wait_events, rb_w32_main_context): removed.
+
+	* thread_win32.ci (rb_w32_wait_events): new function.
+
+	* thread_win32.ci, win32/win32.c (rb_w32_sleep, rb_w32_Sleep): move
+	  from win32/win32.c to thread_win32.ci, and use w32_wait_events().
+
 Fri Feb 23 18:13:22 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_optimization.rb: new test (merges test_opts.rb).

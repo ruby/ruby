@@ -546,6 +546,7 @@ rb_thread_wait_for(struct timeval time)
 void
 rb_thread_polling(void)
 {
+    RUBY_VM_CHECK_INTS();
     if (!rb_thread_alone()) {
 	rb_thread_t *th = GET_THREAD();
 	sleep_for_polling(th);
