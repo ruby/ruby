@@ -1,3 +1,11 @@
+Sat Feb 24 15:57:19 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/thread.rb (ConditionVariable#broadcast): use Mutex
+	  instead of Thread.exclusive.
+
+	* lib/monitor.rb (MonitorMixin#mon_exit): unset @mon_owner
+	  before calling Mutex#unlock.
+
 Sat Feb 24 15:51:45 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (program): remove useless assignment to reduce warning.

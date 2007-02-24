@@ -174,8 +174,8 @@ module MonitorMixin
     mon_check_owner
     @mon_count -=1
     if @mon_count == 0
-      @mon_mutex.unlock
       @mon_owner = nil
+      @mon_mutex.unlock
     end
   end
 

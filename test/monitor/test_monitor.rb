@@ -94,7 +94,9 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal(true, result1)
       assert_equal("bar", a)
     end
+  end
 
+  def _test_timedwait
     b = "foo"
     queue2 = Queue.new
     Thread.start do

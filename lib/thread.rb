@@ -54,6 +54,7 @@ class ConditionVariable
   #
   def initialize
     @waiters = []
+    @waiters_mutex = Mutex.new
   end
   
   #
@@ -62,7 +63,9 @@ class ConditionVariable
   def wait(mutex)
     begin
       # TODO: mutex should not be used
-      @waiters.push(Thread.current)
+      @waiters_mutex.synchronize do
+        @waiters.push(Thread.current)
+      end
       mutex.sleep
     end
   end
@@ -72,7 +75,7 @@ class ConditionVariable
   #
   def signal
     begin
-      t = @waiters.shift
+      t = @waiters_mutex.synchronize { @waiters.shift }
       t.run if t
     rescue ThreadError
       retry
@@ -85,7 +88,7 @@ class ConditionVariable
   def broadcast
     # TODO: imcomplete
     waiters0 = nil
-    Thread.exclusive do
+    @waiters_mutex.synchronize do
       waiters0 = @waiters.dup
       @waiters.clear
     end
