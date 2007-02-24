@@ -20,14 +20,14 @@
 #include <stdio_ext.h>
 #endif
 
-typedef struct OpenFile {
+typedef struct rb_io_t {
     int fd;                     /* file descriptor */
     FILE *stdio_file;		/* stdio ptr for read/write if available */
     int mode;			/* mode flags */
     rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
-    void (*finalize)(struct OpenFile*,int); /* finalize proc */
+    void (*finalize)(struct rb_io_t*,int); /* finalize proc */
     long refcnt;
     char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
     int wbuf_off;
@@ -37,7 +37,7 @@ typedef struct OpenFile {
     int rbuf_off;
     int rbuf_len;
     int rbuf_capa;
-} OpenFile;
+} rb_io_t;
 
 #define FMODE_READABLE  1
 #define FMODE_WRITABLE  2
@@ -60,7 +60,7 @@ typedef struct OpenFile {
 	RFILE(obj)->fptr = 0;\
     }\
     fp = 0;\
-    fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
+    fp = RFILE(obj)->fptr = ALLOC(rb_io_t);\
     fp->fd = -1;\
     fp->stdio_file = NULL;\
     fp->mode = 0;\
@@ -79,27 +79,27 @@ typedef struct OpenFile {
     fp->rbuf_capa = 0;\
 } while (0)
 
-FILE *rb_io_stdio_file(OpenFile *fptr);
+FILE *rb_io_stdio_file(rb_io_t *fptr);
 
 FILE *rb_fopen(const char*, const char*);
 FILE *rb_fdopen(int, const char*);
 int  rb_io_mode_flags(const char*);
 int  rb_io_modenum_flags(int);
-void rb_io_check_writable(OpenFile*);
-void rb_io_check_readable(OpenFile*);
-int rb_io_fptr_finalize(OpenFile*);
-void rb_io_synchronized(OpenFile*);
-void rb_io_check_initialized(OpenFile*);
-void rb_io_check_closed(OpenFile*);
+void rb_io_check_writable(rb_io_t*);
+void rb_io_check_readable(rb_io_t*);
+int rb_io_fptr_finalize(rb_io_t*);
+void rb_io_synchronized(rb_io_t*);
+void rb_io_check_initialized(rb_io_t*);
+void rb_io_check_closed(rb_io_t*);
 int rb_io_wait_readable(int);
 int rb_io_wait_writable(int);
-void rb_io_set_nonblock(OpenFile *fptr);
+void rb_io_set_nonblock(rb_io_t *fptr);
 
 VALUE rb_io_taint_check(VALUE);
 NORETURN(void rb_eof_error(void));
 
-void rb_io_read_check(OpenFile*);
-int rb_io_read_pending(OpenFile*);
+void rb_io_read_check(rb_io_t*);
+int rb_io_read_pending(rb_io_t*);
 void rb_read_check(FILE*);
 
 DEPRECATED(int rb_getc(FILE*));

@@ -418,7 +418,7 @@ VALUE
 rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 {
     if( rb_obj_is_kind_of(val, rb_cIO) == Qtrue ){
-	OpenFile *fptr;
+	rb_io_t *fptr;
 	FILE *fp;
 	GetOpenFile(val, fptr);
 #if RUBY_VERSION_CODE >= 190

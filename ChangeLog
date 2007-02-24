@@ -1,3 +1,12 @@
+Sat Feb 24 19:30:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c, gc.c, io.c, ruby.h, rubyio.h, win32/win32.h (rb_io_t):
+	  renamed from OpenFile.
+
+	* ext/dl/cptr.c, ext/io/wait/wait.c, ext/openssl/ossl.h,
+	  ext/openssl/ossl_bio.c, ext/openssl/ossl_ssl.c, ext/pty/pty.c,
+	  ext/readline/readline.c, ext/socket/socket.c: ditto.
+
 Sat Feb 24 19:28:23 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* bootstraptest/runner.rb: new option -v,--verbose.

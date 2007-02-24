@@ -212,7 +212,7 @@ rb_io_taint_check(VALUE io)
 }
 
 void
-rb_io_check_initialized(OpenFile *fptr)
+rb_io_check_initialized(rb_io_t *fptr)
 {
     if (!fptr) {
 	rb_raise(rb_eIOError, "uninitialized stream");
@@ -220,7 +220,7 @@ rb_io_check_initialized(OpenFile *fptr)
 }
 
 void
-rb_io_check_closed(OpenFile *fptr)
+rb_io_check_closed(rb_io_t *fptr)
 {
     rb_io_check_initialized(fptr);
     if (fptr->fd < 0) {
@@ -228,7 +228,7 @@ rb_io_check_closed(OpenFile *fptr)
     }
 }
 
-static int io_fflush(OpenFile *);
+static int io_fflush(rb_io_t *);
 
 static VALUE
 rb_io_get_io(VALUE io)
@@ -243,7 +243,7 @@ rb_io_check_io(VALUE io)
 }
 
 static void
-io_unread(OpenFile *fptr)
+io_unread(rb_io_t *fptr)
 {
     off_t r;
     rb_io_check_closed(fptr);
@@ -262,7 +262,7 @@ io_unread(OpenFile *fptr)
 }
 
 static int
-io_ungetc(int c, OpenFile *fptr)
+io_ungetc(int c, rb_io_t *fptr)
 {
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
@@ -284,8 +284,8 @@ io_ungetc(int c, OpenFile *fptr)
     return c;
 }
 
-static OpenFile *
-flush_before_seek(OpenFile *fptr)
+static rb_io_t *
+flush_before_seek(rb_io_t *fptr)
 {
     io_fflush(fptr);
     io_unread(fptr);
@@ -304,7 +304,7 @@ flush_before_seek(OpenFile *fptr)
 #define FMODE_SYNCWRITE (FMODE_SYNC|FMODE_WRITABLE)
 
 void
-rb_io_check_readable(OpenFile *fptr)
+rb_io_check_readable(rb_io_t *fptr)
 {
     rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
@@ -316,7 +316,7 @@ rb_io_check_readable(OpenFile *fptr)
 }
 
 void
-rb_io_check_writable(OpenFile *fptr)
+rb_io_check_writable(rb_io_t *fptr)
 {
     rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
@@ -334,7 +334,7 @@ rb_read_pending(FILE *fp)
 }
 
 int
-rb_io_read_pending(OpenFile *fptr)
+rb_io_read_pending(rb_io_t *fptr)
 {
     return READ_DATA_PENDING(fptr);
 }
@@ -348,7 +348,7 @@ rb_read_check(FILE *fp)
 }
 
 void
-rb_io_read_check(OpenFile *fptr)
+rb_io_read_check(rb_io_t *fptr)
 {
     if (!READ_DATA_PENDING(fptr)) {
 	rb_thread_wait_fd(fptr->fd);
@@ -390,7 +390,7 @@ io_alloc(VALUE klass)
 #endif
 
 static int
-wsplit_p(OpenFile *fptr)
+wsplit_p(rb_io_t *fptr)
 {
     int r;
     if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
@@ -410,7 +410,7 @@ wsplit_p(OpenFile *fptr)
 }
 
 static int
-io_fflush(OpenFile *fptr)
+io_fflush(rb_io_t *fptr)
 {
     int r, l;
     int wbuf_off, wbuf_len;
@@ -539,7 +539,7 @@ rb_io_wait_writable(int f)
 
 /* writing functions */
 static long
-io_fwrite(VALUE str, OpenFile *fptr)
+io_fwrite(VALUE str, rb_io_t *fptr)
 {
     long len, n, r, l, offset = 0;
 
@@ -611,7 +611,7 @@ io_fwrite(VALUE str, OpenFile *fptr)
 long
 rb_io_fwrite(const char *ptr, long len, FILE *f)
 {
-    OpenFile of;
+    rb_io_t of;
 
     of.fd = fileno(f);
     of.stdio_file = f;
@@ -641,7 +641,7 @@ rb_io_fwrite(const char *ptr, long len, FILE *f)
 static VALUE
 io_write(VALUE io, VALUE str)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long n;
     VALUE tmp;
 
@@ -712,7 +712,7 @@ rb_io_addstr(VALUE io, VALUE str)
 VALUE
 rb_io_flush(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (TYPE(io) != T_FILE) {
         return rb_funcall(io, id_flush, 0);
@@ -746,7 +746,7 @@ rb_io_flush(VALUE io)
 static VALUE
 rb_io_tell(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     off_t pos;
 
     GetOpenFile(io, fptr);
@@ -758,7 +758,7 @@ rb_io_tell(VALUE io)
 static VALUE
 rb_io_seek(VALUE io, VALUE offset, int whence)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     off_t pos;
 
     pos = NUM2OFFT(offset);
@@ -817,7 +817,7 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_set_pos(VALUE io, VALUE offset)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     off_t pos;
 
     pos = NUM2OFFT(offset);
@@ -845,7 +845,7 @@ rb_io_set_pos(VALUE io, VALUE offset)
 static VALUE
 rb_io_rewind(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (io_seek(fptr, 0L, 0) < 0) rb_sys_fail(fptr->path);
@@ -858,11 +858,11 @@ rb_io_rewind(VALUE io)
 }
 
 static int
-io_getc(OpenFile *fptr)
+io_getc(rb_io_t *fptr)
 {
     int r;
     if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
-        OpenFile *ofp;
+        rb_io_t *ofp;
         GetOpenFile(rb_stdout, ofp);
         if (ofp->mode & FMODE_TTY) {
             rb_io_flush(rb_stdout);
@@ -929,7 +929,7 @@ io_getc(OpenFile *fptr)
 VALUE
 rb_io_eof(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int ch;
 
     GetOpenFile(io, fptr);
@@ -962,7 +962,7 @@ rb_io_eof(VALUE io)
 static VALUE
 rb_io_sync(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     return (fptr->mode & FMODE_SYNC) ? Qtrue : Qfalse;
@@ -986,7 +986,7 @@ rb_io_sync(VALUE io)
 static VALUE
 rb_io_set_sync(VALUE io, VALUE mode)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (RTEST(mode)) {
@@ -1014,7 +1014,7 @@ static VALUE
 rb_io_fsync(VALUE io)
 {
 #ifdef HAVE_FSYNC
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
 
@@ -1043,7 +1043,7 @@ rb_io_fsync(VALUE io)
 static VALUE
 rb_io_fileno(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int fd;
 
     GetOpenFile(io, fptr);
@@ -1075,7 +1075,7 @@ rb_io_fileno(VALUE io)
 static VALUE
 rb_io_pid(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (!fptr->pid)
@@ -1094,7 +1094,7 @@ rb_io_pid(VALUE io)
 static VALUE
 rb_io_inspect(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     char *cname;
     const char *st = "";
 
@@ -1122,7 +1122,7 @@ rb_io_to_io(VALUE io)
 
 /* reading functions */
 static long
-read_buffered_data(char *ptr, long len, OpenFile *fptr)
+read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 {
     long n;
 
@@ -1136,7 +1136,7 @@ read_buffered_data(char *ptr, long len, OpenFile *fptr)
 }
 
 static long
-io_fread(VALUE str, long offset, OpenFile *fptr)
+io_fread(VALUE str, long offset, rb_io_t *fptr)
 {
     long len = RSTRING_LEN(str) - offset;
     long n = len;
@@ -1164,7 +1164,7 @@ io_fread(VALUE str, long offset, OpenFile *fptr)
 long
 rb_io_fread(char *ptr, long len, FILE *f)
 {
-    OpenFile of;
+    rb_io_t of;
     VALUE str;
     long n;
 
@@ -1180,7 +1180,7 @@ rb_io_fread(char *ptr, long len, FILE *f)
 #define SMALLBUF 100
 
 static long
-remain_size(OpenFile *fptr)
+remain_size(rb_io_t *fptr)
 {
     struct stat st;
     off_t siz = READ_DATA_PENDING_COUNT(fptr);
@@ -1208,7 +1208,7 @@ remain_size(OpenFile *fptr)
 }
 
 static VALUE
-read_all(OpenFile *fptr, long siz, VALUE str)
+read_all(rb_io_t *fptr, long siz, VALUE str)
 {
     long bytes = 0;
     long n;
@@ -1237,7 +1237,7 @@ read_all(OpenFile *fptr, long siz, VALUE str)
     return str;
 }
 
-void rb_io_set_nonblock(OpenFile *fptr)
+void rb_io_set_nonblock(rb_io_t *fptr)
 {
     int flags;
 #ifdef F_GETFL
@@ -1259,7 +1259,7 @@ void rb_io_set_nonblock(OpenFile *fptr)
 static VALUE
 io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE length, str;
     long n, len;
 
@@ -1443,7 +1443,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_write_nonblock(VALUE io, VALUE str)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long n;
 
     rb_secure(4);
@@ -1488,7 +1488,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
 static VALUE
 io_read(int argc, VALUE *argv, VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long n, len;
     VALUE length, str;
 
@@ -1535,7 +1535,7 @@ io_read(int argc, VALUE *argv, VALUE io)
 }
 
 static int
-appendline(OpenFile *fptr, int delim, VALUE *strp, long *lp)
+appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     int c = EOF;
@@ -1604,7 +1604,7 @@ appendline(OpenFile *fptr, int delim, VALUE *strp, long *lp)
 }
 
 static inline int
-swallow(OpenFile *fptr, int term)
+swallow(rb_io_t *fptr, int term)
 {
     int c;
 
@@ -1633,7 +1633,7 @@ swallow(OpenFile *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(OpenFile *fptr, unsigned char delim, long limit)
+rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
 {
     VALUE str = Qnil;
     int c, nolimit = 0;
@@ -1697,7 +1697,7 @@ static VALUE
 rb_io_getline_1(VALUE rs, long limit, VALUE io)
 {
     VALUE str = Qnil;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int nolimit = 0;
 
     GetOpenFile(io, fptr);
@@ -1777,7 +1777,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
 VALUE
 rb_io_gets(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -1838,7 +1838,7 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_lineno(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -1865,7 +1865,7 @@ rb_io_lineno(VALUE io)
 static VALUE
 rb_io_set_lineno(VALUE io, VALUE lineno)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -2002,7 +2002,7 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_each_byte(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int c;
 
     RETURN_ENUMERATOR(io, 0, 0);
@@ -2056,7 +2056,7 @@ rb_io_bytes(VALUE str)
 VALUE
 rb_io_getc(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int c;
 
     GetOpenFile(io, fptr);
@@ -2087,7 +2087,7 @@ VALUE
 rb_io_getc_m(VALUE io)
 {
     char ch;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int c;
 
     GetOpenFile(io, fptr);
@@ -2156,7 +2156,7 @@ rb_io_readchar(VALUE io)
 VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int cc;
 
     GetOpenFile(io, fptr);
@@ -2193,7 +2193,7 @@ rb_io_ungetc(VALUE io, VALUE c)
 static VALUE
 rb_io_isatty(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (isatty(fptr->fd) == 0)
@@ -2206,7 +2206,7 @@ rb_io_isatty(VALUE io)
 #define PREP_STDIO_NAME(f) ((f)->path)
 
 static void
-fptr_finalize(OpenFile *fptr, int noraise)
+fptr_finalize(rb_io_t *fptr, int noraise)
 {
     if (fptr->wbuf_len) {
         io_fflush(fptr);
@@ -2235,7 +2235,7 @@ fptr_finalize(OpenFile *fptr, int noraise)
 }
 
 static void
-rb_io_fptr_cleanup(OpenFile *fptr, int noraise)
+rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
 {
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr, noraise);
@@ -2246,7 +2246,7 @@ rb_io_fptr_cleanup(OpenFile *fptr, int noraise)
 }
 
 int
-rb_io_fptr_finalize(OpenFile *fptr)
+rb_io_fptr_finalize(rb_io_t *fptr)
 {
     if (!fptr) return 0;
     if (fptr->refcnt <= 0 || --fptr->refcnt) return 0;
@@ -2271,7 +2271,7 @@ rb_io_fptr_finalize(OpenFile *fptr)
 VALUE
 rb_io_close(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int fd;
 
     fptr = RFILE(io)->fptr;
@@ -2349,7 +2349,7 @@ io_close(VALUE io)
 static VALUE
 rb_io_closed(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     fptr = RFILE(io)->fptr;
     rb_io_check_initialized(fptr);
@@ -2377,7 +2377,7 @@ rb_io_closed(VALUE io)
 static VALUE
 rb_io_close_read(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
@@ -2422,7 +2422,7 @@ rb_io_close_read(VALUE io)
 static VALUE
 rb_io_close_write(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
@@ -2464,7 +2464,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
 {
     VALUE offset, ptrname;
     int whence = SEEK_SET;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     off_t pos;
 
     if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
@@ -2500,7 +2500,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_syswrite(VALUE io, VALUE str)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long n;
 
     rb_secure(4);
@@ -2545,7 +2545,7 @@ static VALUE
 rb_io_sysread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, str;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long n, ilen;
 
     rb_scan_args(argc, argv, "11", &len, &str);
@@ -2604,7 +2604,7 @@ VALUE
 rb_io_binmode(VALUE io)
 {
 #if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
@@ -2866,7 +2866,7 @@ rb_fdopen(int fd, const char *mode)
 }
 
 static void
-io_check_tty(OpenFile *fptr)
+io_check_tty(rb_io_t *fptr)
 {
     if (isatty(fptr->fd))
         fptr->mode |= FMODE_TTY|FMODE_DUPLEX;
@@ -2875,7 +2875,7 @@ io_check_tty(OpenFile *fptr)
 static VALUE
 rb_file_open_internal(VALUE io, const char *fname, const char *mode)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     MakeOpenFile(io, fptr);
     fptr->mode = rb_io_mode_flags(mode);
@@ -2895,7 +2895,7 @@ rb_file_open(const char *fname, const char *mode)
 static VALUE
 rb_file_sysopen_internal(VALUE io, const char *fname, int flags, int mode)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     MakeOpenFile(io, fptr);
 
@@ -2915,12 +2915,12 @@ rb_file_sysopen(const char *fname, int flags, int mode)
 
 #if defined(__CYGWIN__) || !defined(HAVE_FORK)
 static struct pipe_list {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct pipe_list *next;
 } *pipe_list;
 
 static void
-pipe_add_fptr(OpenFile *fptr)
+pipe_add_fptr(rb_io_t *fptr)
 {
     struct pipe_list *list;
 
@@ -2931,7 +2931,7 @@ pipe_add_fptr(OpenFile *fptr)
 }
 
 static void
-pipe_del_fptr(OpenFile *fptr)
+pipe_del_fptr(rb_io_t *fptr)
 {
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
@@ -2967,7 +2967,7 @@ pipe_atexit(void)
 }
 
 static void
-pipe_finalize(OpenFile *fptr, int noraise)
+pipe_finalize(rb_io_t *fptr, int noraise)
 {
 #if !defined(HAVE_FORK) && !defined(_WIN32)
     int status;
@@ -2988,13 +2988,13 @@ pipe_finalize(OpenFile *fptr, int noraise)
 #endif
 
 void
-rb_io_synchronized(OpenFile *fptr)
+rb_io_synchronized(rb_io_t *fptr)
 {
     fptr->mode |= FMODE_SYNC;
 }
 
 void
-rb_io_unbuffered(OpenFile *fptr)
+rb_io_unbuffered(rb_io_t *fptr)
 {
     rb_io_synchronized(fptr);
 }
@@ -3051,7 +3051,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE port, prog;
 #if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     int status;
@@ -3497,7 +3497,7 @@ rb_io_open(const char *fname, const char *mode)
 static VALUE
 io_reopen(VALUE io, VALUE nfile)
 {
-    OpenFile *fptr, *orig;
+    rb_io_t *fptr, *orig;
     int fd, fd2;
     off_t pos = 0;
 
@@ -3530,7 +3530,7 @@ io_reopen(VALUE io, VALUE nfile)
 	io_fflush(fptr);
     }
 
-    /* copy OpenFile structure */
+    /* copy rb_io_t structure */
     fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
@@ -3602,7 +3602,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 {
     VALUE fname, nmode;
     const char *mode;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
@@ -3616,8 +3616,8 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
     if (!fptr) {
-	fptr = RFILE(file)->fptr = ALLOC(OpenFile);
-	MEMZERO(fptr, OpenFile, 1);
+	fptr = RFILE(file)->fptr = ALLOC(rb_io_t);
+	MEMZERO(fptr, rb_io_t, 1);
     }
 
     if (!NIL_P(nmode)) {
@@ -3674,7 +3674,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 static VALUE
 rb_io_init_copy(VALUE dest, VALUE io)
 {
-    OpenFile *fptr, *orig;
+    rb_io_t *fptr, *orig;
     int fd;
 
     io = rb_io_get_io(io);
@@ -3684,7 +3684,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
     rb_io_flush(io);
 
-    /* copy OpenFile structure */
+    /* copy rb_io_t structure */
     fptr->mode = orig->mode & ~FMODE_PREP;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
@@ -4068,7 +4068,7 @@ deferr_setter(VALUE val, ID id, VALUE *variable)
 static VALUE
 prep_io(int fd, int mode, VALUE klass, const char *path)
 {
-    OpenFile *fp;
+    rb_io_t *fp;
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
@@ -4089,7 +4089,7 @@ prep_io(int fd, int mode, VALUE klass, const char *path)
 static VALUE
 prep_stdio(FILE *f, int mode, VALUE klass, const char *path)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE io = prep_io(fileno(f), mode|FMODE_PREP, klass, path);
 
     GetOpenFile(io, fptr);
@@ -4098,7 +4098,7 @@ prep_stdio(FILE *f, int mode, VALUE klass, const char *path)
     return io;
 }
 
-FILE *rb_io_stdio_file(OpenFile *fptr)
+FILE *rb_io_stdio_file(rb_io_t *fptr)
 {
     if (!fptr->stdio_file) {
         fptr->stdio_file = rb_fdopen(fptr->fd, rb_io_flags_mode(fptr->mode));
@@ -4131,7 +4131,7 @@ static VALUE
 rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
     VALUE fnum, mode, orig;
-    OpenFile *fp, *ofp = NULL;
+    rb_io_t *fp, *ofp = NULL;
     int fd, flags, fmode;
 
     rb_secure(4);
@@ -4307,7 +4307,7 @@ next_argv(void)
 {
     extern VALUE rb_argv;
     char *fn;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int stdout_binmode = 0;
 
     if (TYPE(rb_stdout) == T_FILE) {
@@ -4601,7 +4601,7 @@ rb_f_backquote(VALUE obj, VALUE str)
 {
     volatile VALUE port;
     VALUE result;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     SafeStringValue(str);
     port = pipe_open(1, &str, "r");
@@ -4623,7 +4623,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 {
     VALUE res, list;
     fd_set *rp, *wp, *ep;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long i;
     int max = 0, n;
     int interrupt_flag = 0;
@@ -4821,7 +4821,7 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 {
 #if !defined(MSDOS) && !defined(__human68k__)
     int cmd = NUM2ULONG(req);
-    OpenFile *fptr;
+    rb_io_t *fptr;
     long len = 0;
     long narg = 0;
     int retval;

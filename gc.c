@@ -34,7 +34,7 @@
 #include <windows.h>
 #endif
 
-int rb_io_fptr_finalize(struct OpenFile*);
+int rb_io_fptr_finalize(struct rb_io_t*);
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)

@@ -19,7 +19,7 @@ ossl_obj2bio(VALUE obj)
     BIO *bio;
 
     if (TYPE(obj) == T_FILE) {
-	OpenFile *fptr;
+	rb_io_t *fptr;
 	FILE *fp;
 	int fd;
 

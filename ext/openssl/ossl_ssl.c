@@ -533,7 +533,7 @@ ossl_ssl_setup(VALUE self)
     VALUE io, v_ctx, cb;
     SSL_CTX *ctx;
     SSL *ssl;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     Data_Get_Struct(self, SSL, ssl);
     if(!ssl){
@@ -573,7 +573,7 @@ static VALUE
 ossl_start_ssl(VALUE self, int (*func)())
 {
     SSL *ssl;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int ret;
 
     Data_Get_Struct(self, SSL, ssl);
@@ -617,7 +617,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     SSL *ssl;
     int ilen, nread = 0;
     VALUE len, str;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2INT(len);
@@ -673,7 +673,7 @@ ossl_ssl_write(VALUE self, VALUE str)
 {
     SSL *ssl;
     int nwrite = 0;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     StringValue(str);
     Data_Get_Struct(self, SSL, ssl);

@@ -19,11 +19,8 @@
 //
 
 // #include <stdarg.h> conflict with varargs.h?
-// There is function-name conflitct, so we rename it
 #if !defined(WSAAPI)
-#define OpenFile  WINAPI_OpenFile
 #include <winsock2.h>
-#undef OpenFile
 #endif
 
 #define NT 1			/* deprecated */

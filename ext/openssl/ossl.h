@@ -40,7 +40,6 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
-#  define OpenFile WINAPI_OpenFile
 #  define OSSL_NO_CONF_API 1
 #  include <winsock2.h>
 #endif
@@ -64,9 +63,6 @@ extern "C" {
 #if defined(HAVE_OPENSSL_OCSP_H)
 #  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>
-#endif
-#if defined(_WIN32)
-#  undef OpenFile
 #endif
 
 /*

@@ -448,7 +448,7 @@ struct RHash {
 
 struct RFile {
     struct RBasic basic;
-    struct OpenFile *fptr;
+    struct rb_io_t *fptr;
 };
 
 struct RData {

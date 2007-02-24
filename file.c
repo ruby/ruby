@@ -151,7 +151,7 @@ apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 static VALUE
 rb_file_path(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     rb_io_check_initialized(fptr);
@@ -627,7 +627,7 @@ rb_stat(VALUE file, struct stat *st)
     rb_secure(2);
     tmp = rb_check_convert_type(file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
-	OpenFile *fptr;
+	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
 	return fstat(fptr->fd, st);
@@ -645,7 +645,7 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 
     tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
-	OpenFile *fptr;
+	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
 	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
@@ -710,7 +710,7 @@ rb_file_s_stat(VALUE klass, VALUE fname)
 static VALUE
 rb_io_stat(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -770,7 +770,7 @@ static VALUE
 rb_file_lstat(VALUE obj)
 {
 #ifdef HAVE_LSTAT
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     rb_secure(2);
@@ -1609,7 +1609,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 static VALUE
 rb_file_atime(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1652,7 +1652,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
 static VALUE
 rb_file_mtime(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1698,7 +1698,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 static VALUE
 rb_file_ctime(VALUE obj)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1760,7 +1760,7 @@ rb_file_s_chmod(int argc, VALUE *argv)
 static VALUE
 rb_file_chmod(VALUE obj, VALUE vmode)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int mode;
 
     rb_secure(2);
@@ -1891,7 +1891,7 @@ rb_file_s_chown(int argc, VALUE *argv)
 static VALUE
 rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int o, g;
 
     rb_secure(2);
@@ -3043,7 +3043,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 static VALUE
 rb_file_truncate(VALUE obj, VALUE len)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     off_t pos;
 
     rb_secure(2);
@@ -3134,7 +3134,7 @@ static VALUE
 rb_file_flock(VALUE obj, VALUE operation)
 {
 #ifndef __CHECKER__
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int op[2];
 
     rb_secure(2);

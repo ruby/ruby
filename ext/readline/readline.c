@@ -104,7 +104,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 static VALUE
 readline_s_set_input(VALUE self, VALUE input)
 {
-    OpenFile *ifp;
+    rb_io_t *ifp;
 
     rb_secure(4);
     Check_Type(input, T_FILE);
@@ -116,7 +116,7 @@ readline_s_set_input(VALUE self, VALUE input)
 static VALUE
 readline_s_set_output(VALUE self, VALUE output)
 {
-    OpenFile *ofp;
+    rb_io_t *ofp;
 
     rb_secure(4);
     Check_Type(output, T_FILE);

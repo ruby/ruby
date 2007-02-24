@@ -50,7 +50,7 @@ EXTERN struct timeval rb_time_interval _((VALUE time));
 static VALUE
 io_ready_p(VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     ioctl_arg n;
 
     GetOpenFile(io, fptr);
@@ -90,7 +90,7 @@ wait_readable(VALUE p)
 static VALUE
 io_wait(int argc, VALUE *argv, VALUE io)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct wait_readable_arg arg;
     int fd, i;
     ioctl_arg n;
