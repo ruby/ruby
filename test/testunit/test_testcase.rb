@@ -265,7 +265,7 @@ module Test
       end
       
       def check(message, passed)
-        instance_variable_get(:@_result/TestCase).add_assertion
+        @_result.add_assertion
         if ! passed
           raise AssertionFailedError.new(message)
         end

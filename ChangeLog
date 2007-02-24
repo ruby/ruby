@@ -1,3 +1,8 @@
+Sat Feb 24 10:46:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/testunit/test_testcase.rb: catch up with current instance
+	  variable spec.
+
 Sat Feb 24 10:32:59 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: change vm_macro.def rule.
