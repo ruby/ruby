@@ -1,3 +1,7 @@
+Sat Feb 24 16:29:15 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (StartSocket): remove unnecessary code.
+
 Sat Feb 24 16:04:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (struct local_vars): remove unused nofree member from

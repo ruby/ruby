@@ -225,12 +225,6 @@ rb_w32_osid(void)
 #define IsWinNT() rb_w32_iswinnt()
 #define IsWin95() rb_w32_iswin95()
 
-/* main thread constants */
-static struct {
-    HANDLE handle;
-    DWORD id;
-} main_thread;
-
 HANDLE
 GetCurrentThreadHandle(void)
 {
@@ -2275,9 +2269,6 @@ StartSockets(void)
 	rb_fatal("could not find version 2 of winsock dll\n");
 
     fWinsock = TRUE;
-
-    main_thread.handle = GetCurrentThreadHandle();
-    main_thread.id = GetCurrentThreadId();
 
     NtSocketsInitialized = 1;
 }
