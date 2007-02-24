@@ -3082,51 +3082,24 @@ rb_file_truncate(VALUE obj, VALUE len)
 
 #ifdef __CYGWIN__
 #include <winerror.h>
-static int
-cygwin_flock(int fd, int op)
+#endif
+
+static VALUE
+rb_thread_flock(rb_thread_t *th, void *data)
 {
+#ifdef __CYGWIN__
     int old_errno = errno;
-    int ret = flock(fd, op);
+#endif
+    int *op = data, ret = flock(op[0], op[1]);
+
+#ifdef __CYGWIN__
     if (GetLastError() == ERROR_NOT_LOCKED) {
 	ret = 0;
 	errno = old_errno;
     }
-    return ret;
+#endif
+    return (VALUE)ret;
 }
-# define flock(fd, op) cygwin_flock(fd, op)
-#endif
-
-static int
-rb_thread_flock(int fd, int op, OpenFile *fptr)
-{
-    if (rb_thread_alone() || (op & LOCK_NB)) {
-	int ret;
-	TRAP_BEG;
-	ret = flock(fd, op);
-	TRAP_END;
-	return ret;
-    }
-    op |= LOCK_NB;
-    while (flock(fd, op) < 0) {
-	switch (errno) {
-	  case EAGAIN:
-	  case EACCES:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-	  case EWOULDBLOCK:
-#endif
-	    rb_thread_polling();	/* busy wait */
-	    rb_io_check_closed(fptr);
-	    continue;
-	  default:
-	    return -1;
-	}
-    }
-    return 0;
-}
-#ifdef __CYGWIN__
-# undef flock
-#endif
-#define flock(fd, op) rb_thread_flock(fd, op, fptr)
 
 /*
  *  call-seq:
@@ -3162,31 +3135,36 @@ rb_file_flock(VALUE obj, VALUE operation)
 {
 #ifndef __CHECKER__
     OpenFile *fptr;
-    int op;
+    int op[2];
 
     rb_secure(2);
-    op = NUM2INT(operation);
+    op[1] = NUM2INT(operation);
     GetOpenFile(obj, fptr);
+    op[0] = fptr->fd;
 
     if (fptr->mode & FMODE_WRITABLE) {
 	rb_io_flush(obj);
     }
-  retry:
-    if (flock(fptr->fd, op) < 0) {
+    while ((int)rb_thread_blocking_region(rb_thread_flock, op, RB_UBF_DFL) < 0) {
 	switch (errno) {
 	  case EAGAIN:
 	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-	      return Qfalse;
+	    rb_thread_polling();
+	    rb_io_check_closed(fptr);
+	    continue;
+
 	  case EINTR:
 #if defined(ERESTART)
 	  case ERESTART:
 #endif
-	    goto retry;
+	    break;
+
+	  default:
+	    rb_sys_fail(fptr->path);
 	}
-	rb_sys_fail(fptr->path);
     }
 #endif
     return INT2FIX(0);

@@ -3851,7 +3851,7 @@ rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
 	if (thr) {
 	    yield_until(arg.stackaddr);
 
-	    if (rb_w32_wait_events(&thr, 1, INFINITE) != WAIT_OBJECT_0) {
+	    if (rb_w32_wait_events_blocking(&thr, 1, INFINITE) != WAIT_OBJECT_0) {
 		interrupted = TRUE;
 
 		if (TerminateThread(thr, intrval)) {
