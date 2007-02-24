@@ -1,6 +1,8 @@
-Sat Feb 24 18:43:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 24 18:44:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (rb_thread_blocking_region): add prototype.
+
+	* file.c (rb_thread_flock, rb_file_flock): use UBF feature.
 
 	* process.c (rb_waitpid_blocking, rb_waitpid): use UBF feature.
 
