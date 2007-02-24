@@ -49,7 +49,9 @@
 #include "vm.h"
 #include "gc.h"
 
+#ifndef THREAD_DEBUG
 #define THREAD_DEBUG 0
+#endif
 
 static void sleep_for_polling();
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
@@ -110,7 +112,27 @@ NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 } while(0)
 
 #if THREAD_DEBUG
-void thread_debug(const char *fmt, ...);
+void rb_thread_debug(const char *fmt, ...);
+
+# if THREAD_DEBUG < 0
+static int rb_thread_debug_enabled;
+
+static VALUE
+rb_thread_s_debug(void)
+{
+    return INT2NUM(rb_thread_debug_enabled);
+}
+
+static VALUE
+rb_thread_s_debug_set(VALUE self, VALUE val)
+{
+    rb_thread_debug_enabled = RTEST(val);
+    return val;
+}
+# else
+# define rb_thread_debug_enabled THREAD_DEBUG
+# endif
+#define thread_debug rb_thread_debug
 #else
 #define thread_debug if(0)printf
 #endif
@@ -120,7 +142,8 @@ void thread_debug(const char *fmt, ...);
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
-  printf("%8p - %s", GetCurrentThreadId(), buf); \
+  printf("%p - %s", GetCurrentThreadId(), buf); \
+  fflush(stdout); \
   ReleaseMutex(&debug_mutex);
 
 #elif defined(HAVE_PTHREAD_H)
@@ -129,6 +152,7 @@ void thread_debug(const char *fmt, ...);
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
   printf("%8p - %s", pthread_self(), buf); \
+  fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
 #else
@@ -140,10 +164,12 @@ static int debug_mutex_initialized = 1;
 static rb_thread_lock_t debug_mutex;
 
 void
-thread_debug(const char *fmt, ...)
+rb_thread_debug(const char *fmt, ...)
 {
     va_list args;
     char buf[BUFSIZ];
+
+    if (!rb_thread_debug_enabled) return;
 
     if (debug_mutex_initialized == 1) {
 	debug_mutex_initialized = 0;
@@ -2383,6 +2409,10 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "critical=", rb_thread_s_critical, 1);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
+#if THREAD_DEBUG < 0
+    rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
+    rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
+#endif
 
     rb_define_method(rb_cThread, "raise", thread_raise_m, -1);
     rb_define_method(rb_cThread, "join", thread_join_m, -1);

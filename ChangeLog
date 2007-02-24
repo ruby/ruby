@@ -1,3 +1,7 @@
+Sat Feb 24 18:39:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_debug): added runtime debugging flag.
+
 Sat Feb 24 17:45:48 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (f_arg, opt_f_block_arg): ripper should export VALUE.
