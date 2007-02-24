@@ -20,7 +20,7 @@ def main
       tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")
       puts tests.map {|path| File.basename(path) }.inspect
       true
-    when /\A(-h|--h(elp)?\z/
+    when /\A(-h|--h(elp)?)\z/
       puts(<<-End)
 Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
     --sets=NAME,NAME,...        Name of test sets.

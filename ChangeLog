@@ -1,3 +1,7 @@
+Sat Feb 24 16:52:55 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* bootstraptest/runner.rb: fix syntax error.
+
 Sat Feb 24 16:51:09 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* bootstraptest/runner.rb: new option --help.
