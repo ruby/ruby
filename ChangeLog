@@ -1,3 +1,9 @@
+Sat Feb 24 18:55:50 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* yarvtest/test_method.rb: removed (merged to bootstraptest).
+
+	* yarvtest/test_class.rb: ditto.
+
 Sat Feb 24 18:44:39 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* bootstraptest/test_class.rb: new file.
