@@ -1,3 +1,7 @@
+Sat Feb 24 17:04:01 2007   Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: updated based on date2 4.0.3.
+
 Sat Feb 24 17:01:02 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c (cparse_params_mark): remove useless
