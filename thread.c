@@ -78,7 +78,7 @@ st_delete_wrap(st_table * table, VALUE key)
 
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-static void set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func);
+static rb_unblock_function_t* set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func);
 static void clear_unblock_function(rb_thread_t *th);
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
@@ -97,14 +97,16 @@ NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 #define BLOCKING_REGION(exec, ubf) do { \
     rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
-    set_unblock_function(__th, ubf); \
+    rb_unblock_function_t *__oldubf = set_unblock_function(__th, ubf); \
     __th->status = THREAD_STOPPED; \
+    thread_debug("enter blocking region (%p)\n", __th); \
     GVL_UNLOCK_BEGIN(); {\
 	    exec; \
     } \
     GVL_UNLOCK_END(); \
+    thread_debug("leave blocking region (%p)\n", __th); \
     remove_signal_thread_list(__th); \
-    clear_unblock_function(__th); \
+    set_unblock_function(__th, __oldubf); \
     if (__th->status == THREAD_STOPPED) { \
 	__th->status = __prev_status; \
     } \
@@ -185,20 +187,26 @@ rb_thread_debug(const char *fmt, ...)
 #endif
 
 
-static void
+static rb_unblock_function_t *
 set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func)
 {
+    rb_unblock_function_t *oldfunc;
+    int interrupted;
+
   check_ints:
     RUBY_VM_CHECK_INTS(); /* check signal or so */
     native_mutex_lock(&th->interrupt_lock);
     if (th->interrupt_flag) {
 	native_mutex_unlock(&th->interrupt_lock);
-	    goto check_ints;
-	}
+	goto check_ints;
+    }
     else {
+	oldfunc = th->unblock_function;
 	th->unblock_function = func;
     }
     native_mutex_unlock(&th->interrupt_lock);
+
+    return oldfunc;
 }
 
 static void
@@ -621,12 +629,15 @@ rb_thread_s_critical(VALUE self)
 
 VALUE
 rb_thread_blocking_region(
-    VALUE(*func)(rb_thread_t *th, void *), void *data,
+    rb_blocking_function_t *func, void *data,
     rb_unblock_function_t *ubf)
 {
     VALUE val;
     rb_thread_t *th = GET_THREAD();
 
+    if (ubf == RB_UBF_DFL) {
+	ubf = ubf_select;
+    }
     BLOCKING_REGION({
 	val = func(th, data);
     }, ubf);

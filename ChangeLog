@@ -1,6 +1,16 @@
-Sat Feb 24 18:39:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Feb 24 18:41:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (rb_thread_blocking_region): add prototype.
 
 	* thread.c (rb_thread_debug): added runtime debugging flag.
+
+	* thread.c (BLOCKING_REGION): restore previous UBF.
+
+	* thread.c (rb_thread_blocking_region): default UBF to interrupt
+	  in system dependent way by RB_UBF_DFL.
+	  + ubf_select() on posix system
+	  + ubf_handle() on Win32
+	  + none on cygwin
 
 Sat Feb 24 17:45:48 2007  Minero Aoki  <aamine@loveruby.net>
 

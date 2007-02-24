@@ -304,8 +304,6 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define GetVMPtr(obj, ptr) \
   Data_Get_Struct(obj, rb_vm_t, ptr)
 
-struct rb_thread_struct;
-
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -379,12 +377,10 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
 };
 
-typedef void rb_unblock_function_t(struct rb_thread_struct *);
-
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 1
 
-typedef struct rb_thread_struct
+struct rb_thread_struct
 {
     VALUE self;
     rb_vm_t *vm;
@@ -459,7 +455,7 @@ typedef struct rb_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
-} rb_thread_t;
+};
 
 /** node -> yarv instruction sequence object */
 VALUE rb_iseq_compile(VALUE self, NODE *node);

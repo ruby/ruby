@@ -310,6 +310,8 @@ ubf_select(rb_thread_t *th)
     add_signal_thread_list(th);
     ubf_select_each(th);
 }
+#else
+#define ubf_select 0
 #endif
 
 static void
