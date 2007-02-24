@@ -542,10 +542,15 @@ insn_operand_intern(rb_iseq_t *iseq,
     case TS_LINDEX:
 	{
 	    rb_iseq_t *ip = iseq->local_iseq;
+	    int lidx = ip->local_size - op + 1;
+	    ID id = ip->local_tbl[lidx];
 
-	    ret =
-	      rb_str_new2(
-		  rb_id2name(ip->local_tbl[ip->local_size - op + 1]));
+	    if (id) {
+		ret = rb_str_new2(rb_id2name(id));
+	    }
+	    else {
+		ret = rb_str_new2("*");
+	    }
 	    break;
 	}
     case TS_DINDEX:{

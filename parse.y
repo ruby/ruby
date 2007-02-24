@@ -346,7 +346,7 @@ static NODE *evstr2dstr(NODE*);
 static NODE *call_op_gen(struct parser_params*,NODE*,ID,int,NODE*);
 #define call_op(recv,id,narg,arg1) call_op_gen(parser, recv,id,narg,arg1)
 
-static NODE *new_args_gen(struct parser_params*,VALUE,NODE*,NODE*,NODE*,NODE*);
+static NODE *new_args_gen(struct parser_params*,int,NODE*,ID,NODE*,ID);
 #define new_args(f,o,r,p,b) new_args_gen(parser, f,o,r,p,b)
 static void shadowing_lvar_gen(struct parser_params*,ID);
 #define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
@@ -617,15 +617,15 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
-%type <node> f_arglist f_args f_rest_arg f_post_arg
-%type <node> f_optarg f_opt f_block_arg opt_f_block_arg
+%type <node> f_arglist f_args f_post_arg
+%type <node> f_optarg f_opt 
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def bparam_list bparam_item
 %type <node> opt_bv_decl bv_decls bvar lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post
 %type <id>   fsym variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_norm_arg
+%type <id>   cname fname op f_norm_arg f_rest_arg f_block_arg opt_f_block_arg
 %type <val>  f_arg
 /*%%%*/
 /*%
@@ -4151,13 +4151,7 @@ f_norm_arg	: tCONSTANT
 		    /*%%%*/
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
-			if (dyna_in_block()) {
-		            shadowing_lvar($1);
-			    dyna_var($1);
-			}
-			else {
-			    local_cnt($1);
-			}
+			shadowing_lvar($1);
 			$$ = $1;
 		    /*%
 			$$ = $1;
@@ -4167,32 +4161,18 @@ f_norm_arg	: tCONSTANT
 
 f_arg		: f_norm_arg
 		    {
-		    /*%%%*/
-			VALUE arg = ID2SYM($1);
-		    /*%
-			VALUE arg = $1;
-		    %*/
-		        $$ = rb_ary_new3(1, arg);
+		        $$ = 1;
 		    }
 		| f_arg ',' f_norm_arg
 		    {
-		    /*%%%*/
-			VALUE arg = ID2SYM($3);
-			$$ = $1;
-			if (rb_ary_includes($$, arg)) {
-			    yyerror("duplicated argument name");
-			}
-			rb_ary_push($$, arg);
-		    /*%
-			rb_ary_push($$, $3);
-		    %*/
+		        $$ = $1 + 1;
 		    }
 		;
 
 f_post_arg	: f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(assignable($1, 0));
+			$$ = NEW_ARGS_AUX($1, 1);
 		    /*%
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
@@ -4200,7 +4180,8 @@ f_post_arg	: f_norm_arg
 		| f_post_arg ',' f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = list_append($1, assignable($3, 0));
+			$1->nd_alen++;
+			$$ = $1;
 		    /*%
 		        $$ = mlhs_add($1, $3);
 		    %*/
@@ -4212,11 +4193,8 @@ f_opt		: tIDENTIFIER '=' arg_value
 		    /*%%%*/
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
-			if (dyna_in_block()) {
-		            shadowing_lvar($1);
-			    dyna_var($1);
-			}
-		        $$ = assignable($1, $3);
+		        shadowing_lvar($1);
+		        $$ = NEW_OPT_ARG(0, assignable($1, $3));
 		    /*%
 			$$ = rb_assoc_new($1, $3);
 		    %*/
@@ -4226,8 +4204,7 @@ f_opt		: tIDENTIFIER '=' arg_value
 f_optarg	: f_opt
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK($1);
-			$$->nd_end = $$;
+			$$ = $1;
 		    /*%
 			$$ = rb_ary_new3(1, $1);
 		    %*/
@@ -4235,7 +4212,13 @@ f_optarg	: f_opt
 		| f_optarg ',' f_opt
 		    {
 		    /*%%%*/
-			$$ = block_append($1, $3);
+			NODE *opts = $1;
+
+			while (opts->nd_next) {
+			    opts = opts->nd_next;
+			}
+			opts->nd_next = $3;
+			$$ = $1;
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
@@ -4251,11 +4234,8 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    /*%%%*/
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
-			if (dyna_in_block()) {
-		            shadowing_lvar($2);
-			    dyna_var($2);
-			}
-			$$ = assignable($2, 0);
+		        shadowing_lvar($2);
+			$$ = $2;
 		    /*%
 			$$ = dispatch1(restparam, $2);
 		    %*/
@@ -4264,10 +4244,11 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 		    /*%%%*/
 			if (dyna_in_block()) {
-			    $$ = NEW_DASGN_CURR(internal_id(), 0);
+			    $$ = internal_id();
 			}
 			else {
-			    $$ = NEW_NODE(NODE_LASGN,0,0,local_append(0));
+			    local_append(0);
+			    $$ = -1;
 			}
 		    /*%
 			$$ = dispatch1(restparam, Qnil);
@@ -4286,14 +4267,8 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 			    yyerror("block argument must be local variable");
 			else if (!dyna_in_block() && local_id($2))
 			    yyerror("duplicated block argument name");
-			if (dyna_in_block()) {
-		            shadowing_lvar($2);
-			    dyna_var($2);
-			    $$ = assignable($2, 0);
-			}
-		        else {
-			    $$ = NEW_BLOCK_ARG($2);
-		        }
+		        shadowing_lvar($2);
+			$$ = $2;
 		    /*%
 			$$ = $2;
 		    %*/
@@ -4305,6 +4280,9 @@ opt_f_block_arg	: ',' f_block_arg
 			$$ = $2;
 		    }
 		| none
+		    {
+			$$ = 0	;
+		    }
 		;
 
 singleton	: var_ref
@@ -7314,9 +7292,21 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 static void
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
-    if (dvar_defined(name) || local_id(name)) {
-	rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
-    }
+     if (dyna_in_block()) {
+	 if (dvar_curr(name)) {
+	     yyerror("duplicated argument name");
+	 }
+	 else if (dvar_defined(name) || local_id(name)) {
+	     rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+	 }
+	 dyna_var(name);
+     }
+     else {
+	 if (local_id(name)) {
+	     yyerror("duplicated argument name");
+	 }
+	 local_cnt(name);
+     }
 }
 
 static NODE*
@@ -7966,47 +7956,14 @@ arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
 }
 
 static NODE*
-new_args_gen(struct parser_params *parser, VALUE m, NODE *o, NODE *r, NODE *p, NODE *b)
+new_args_gen(struct parser_params *parser, int m, NODE *o, ID r, NODE *p, ID b)
 {
     int saved_line = ruby_sourceline;
-    NODE *node;
-    VALUE list;
+    NODE *node = NEW_ARGS(m, o);
 
-    list = rb_ary_new();
-    node = o;
-    while (node) {
-	if (!node->nd_head) break;
-	if (arg_dup_check(node->nd_head->nd_vid, m, list, node)) {
-	    yyerror("duplicated optional argument name");
-	    return 0;	
-	}
-	node = node->nd_next;
-    }
-    if (RTEST(r)) {
-	if (arg_dup_check(r->nd_vid, m, list, r)) {
-	    yyerror("duplicated rest argument name");
-	    return 0;
-	}
-    }
+    node->nd_next = NEW_ARGS_AUX(r, b);
     if (p) {
-	node = p;
-	while (node) {
-	    if (!node->nd_head) break;
-	    if (arg_dup_check(node->nd_head->nd_vid, m, list, node)) {
-		yyerror("duplicated argument name");
-		return 0;
-	    }
-	    node = node->nd_next;
-	}
-	r = NEW_POSTARG(r, p);
-    }
-    node = NEW_ARGS(m, o, r);
-    if (b) {
-	if (arg_dup_check(b->nd_vid, m, list, b)) {
-	    yyerror("duplicated block argument name");
-	    return 0;
-	}
-	node = block_append(node, b);
+	node->nd_next->nd_next = p;
     }
     ruby_sourceline = saved_line;
     return node;

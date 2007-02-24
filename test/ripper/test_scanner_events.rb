@@ -17,7 +17,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   def scan(target, str)
     sym = "on_#{target}".intern
-    Ripper.lex(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
+    Ripper.lex(str).select {|_1,type,_2| type == sym }.map {|_1,_2,tok| tok }
   end
 
   def test_tokenize

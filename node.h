@@ -87,6 +87,8 @@ enum node_type {
     NODE_DREGX,
     NODE_DREGX_ONCE,
     NODE_ARGS,
+    NODE_ARGS_AUX,
+    NODE_OPT_ARG,
     NODE_POSTARG,
     NODE_ARGSCAT,
     NODE_ARGSPUSH,
@@ -209,9 +211,11 @@ typedef struct RNode {
 
 #define nd_lit   u1.value
 
-#define nd_frml  u3.value
-#define nd_rest  u2.node
+#define nd_frml  u2.argc
+#define nd_rest  u1.id
 #define nd_opt   u1.node
+#define nd_pid   u1.id
+#define nd_plen  u2.argc
 
 #define nd_recv  u1.node
 #define nd_mid   u2.id
@@ -315,8 +319,10 @@ typedef struct RNode {
 #define NEW_VCALL(m) NEW_NODE(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() NEW_NODE(NODE_ZSUPER,0,0,0)
-#define NEW_ARGS(f,o,r) NEW_NODE(NODE_ARGS,o,r,f)
-#define NEW_POSTARG(r,m) NEW_NODE(NODE_POSTARG,m,0,r)
+#define NEW_ARGS(m,o) NEW_NODE(NODE_ARGS,o,m,0)
+#define NEW_ARGS_AUX(r,b) NEW_NODE(NODE_ARGS_AUX,r,b,0)
+#define NEW_OPT_ARG(i,v) NEW_NODE(NODE_OPT_ARG,i,v,0)
+#define NEW_POSTARG(i,v) NEW_NODE(NODE_POSTARG,i,v,0)
 #define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
 #define NEW_SPLAT(a) NEW_NODE(NODE_SPLAT,a,0,0)

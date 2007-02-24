@@ -86,7 +86,8 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
     GetISeqPtr(niseqval, niseq);
 
     clear_local_size = niseq->local_size - num;
-    /* set arguments */
+
+    /* simple (only mandatory) arguments */
     if (niseq->arg_simple) {
 	if (niseq->argc != num) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%lu for %d)",
@@ -94,7 +95,7 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	}
     }
     else {
-	/* check optional arguments */
+	/* optional arguments */
 	if (niseq->arg_opts) {
 	    int iseq_argc = niseq->argc;
 	    int opts = niseq->arg_opts - 1;
@@ -110,10 +111,9 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 			 (unsigned long)num, iseq_argc);
 	    }
 
-	    if (0) {
-		printf("num: %lu, opts: %d, iseq_argc: %d\n",
-		       (unsigned long)num, opts, iseq_argc);
-	    }
+	    if (0) printf("num: %lu, opts: %d, iseq_argc: %d\n",
+			  (unsigned long)num, opts, iseq_argc);
+
 	    if (num - iseq_argc < opts) {
 		opt_pc = niseq->arg_opt_tbl[num - iseq_argc];
 		sp += opts - (num - iseq_argc);
@@ -124,23 +124,17 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 		opt_pc = niseq->arg_opt_tbl[opts];
 	    }
 	}
-	/* check rest */
-	if (niseq->arg_rest == -1) {
-	    if (niseq->arg_opts) {
-		num = niseq->argc + niseq->arg_opts;
-	    }
-	    else {
-		num = niseq->argc;
-	    }
-	    sp = &rsp[1 + num + 1];
-	}
-	else if (niseq->arg_rest != 0) {
+
+	/* rest argument */
+	if (niseq->arg_rest != 0) {
 	    int rest = niseq->arg_rest - 1;
 	    int pack_size = num - rest;
+
 	    if (0) {
 		printf("num: %lu, rest: %d, ps: %d\n",
 		       (unsigned long)num, niseq->arg_rest, pack_size);
 	    }
+
 	    if (pack_size < 0) {
 		rb_raise(rb_eArgError,
 			 "wrong number of arguments (%lu for %d)",
@@ -165,6 +159,10 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 		  (niseq->arg_opts
 		   && num == niseq->argc + niseq->arg_opts - 1)
 		  || num == niseq->argc)) {
+
+		if (0) printf("num: %d, rest: %d, opts: %d, argc: %d\n",
+			      num, niseq->arg_rest, niseq->arg_opts, niseq->argc);
+
 		rb_raise(rb_eArgError,
 			 "wrong number of arguments (%lu for %d)",
 			 (unsigned long)num, niseq->argc);
@@ -189,6 +187,7 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	    clear_local_size--;
 	}
     }
+
     /* stack overflow check */
     if (CHECK_STACK_OVERFLOW(th, GET_CFP(), niseq->stack_max + 0x100)) {
 	rb_exc_raise(sysstack_error);
@@ -198,32 +197,30 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	*sp++ = Qnil;
     }
 
-    {
-	if (0 && (flag & VM_CALL_TAILCALL_BIT)) {
-	    th->cfp++;
-	    push_frame(th, niseq, FRAME_MAGIC_METHOD,
-		       recv, (VALUE) blockptr,
-		       niseq->iseq_encoded + opt_pc, sp, 0, 0);
-	}
-	else if (0 &&
-		 (flag & VM_CALL_TAILRECURSION_BIT) && niseq == GET_ISEQ()) {
-	    /* do nothing */
-	    GET_CFP()->self = recv;
-	    SET_LFP(sp);
-	    SET_DFP(sp);
-	    *sp++ = (VALUE) blockptr;
-	    reg_cfp->sp = sp;
-	    reg_cfp->bp = sp;
-	    SET_PC(niseq->iseq_encoded + opt_pc);
-	}
-	else {
-	    push_frame(th, niseq,
-		       FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
-		       niseq->iseq_encoded + opt_pc, sp, 0, 0);
-	    reg_cfp->sp = rsp;
-	}
-	RESTORE_REGS();
+    if (0 && (flag & VM_CALL_TAILCALL_BIT)) {
+	th->cfp++;
+	push_frame(th, niseq, FRAME_MAGIC_METHOD,
+		   recv, (VALUE) blockptr,
+		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
     }
+    else if (0 &&
+	     (flag & VM_CALL_TAILRECURSION_BIT) && niseq == GET_ISEQ()) {
+	/* do nothing */
+	GET_CFP()->self = recv;
+	SET_LFP(sp);
+	SET_DFP(sp);
+	*sp++ = (VALUE) blockptr;
+	reg_cfp->sp = sp;
+	reg_cfp->bp = sp;
+	SET_PC(niseq->iseq_encoded + opt_pc);
+    }
+    else {
+	push_frame(th, niseq,
+		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
+	reg_cfp->sp = rsp;
+    }
+    RESTORE_REGS();
 }
 
 MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)

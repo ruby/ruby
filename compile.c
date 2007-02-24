@@ -147,7 +147,6 @@ iseq_compile(VALUE self, NODE *narg)
 
     debugs("[compile step 1 (traverse each node)]\n");
 
-
     iseq->node = node;
 
     if (iseq->type == ISEQ_TYPE_BLOCK) {
@@ -1035,7 +1034,7 @@ set_block_local_tbl(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
 	}
     }
 
-    if (iseq->arg_opts || iseq->arg_rest) {
+    if (iseq->arg_opts || iseq->arg_rest || iseq->arg_block) {
 	iseq->arg_simple = 0;
     }
     else {
@@ -1077,9 +1076,96 @@ get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
     return -1;
 }
 
-/**
+#if 1
 
- */
+static int
+set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_arg)
+{
+    NODE *node_aux = node_arg->nd_next;
+    int mandatory_len = 0;
+    NODE *node_opt = 0;
+    ID rest_id = 0;
+    ID block_id = 0;
+    ID post_start_id = 0;
+    int post_len = 0;
+    NODE *node_init = 0;
+
+    iseq->argc = node_arg->nd_frml;
+    node_opt = node_arg->nd_opt;
+
+    if (node_aux) {
+	rest_id = node_aux->nd_rest;
+	block_id = (ID)node_aux->nd_body;
+	node_aux = node_aux->nd_next;
+
+	if (node_aux) {
+	    post_start_id = node_aux->nd_pid;
+	    post_len = node_aux->nd_plen;
+	    node_init = node_aux->nd_next;
+	}
+    }
+
+    if (node_init) {
+	COMPILE(optargs, "arguments", node_init);
+    }
+
+    if (node_opt) {
+	NODE *node = node_opt;
+	LABEL *label;
+	VALUE labels = rb_ary_new();
+	int i = 0, j;
+
+	while (node) {
+	    label = NEW_LABEL(nd_line(node));
+	    rb_ary_push(labels, (VALUE)label | 1);
+	    ADD_LABEL(optargs, label);
+	    COMPILE_POPED(optargs, "optarg", node->nd_body);
+
+	    node = node->nd_next;
+	    i += 1;
+	}
+	/* last label */
+	label = NEW_LABEL(nd_line(node_arg));
+	rb_ary_push(labels, (VALUE)label | 1);
+	ADD_LABEL(optargs, label);
+	i += 1;
+
+	iseq->arg_opts = i;
+	iseq->arg_opt_tbl = ALLOC_N(VALUE, i);
+	MEMCPY(iseq->arg_opt_tbl, RARRAY_PTR(labels), VALUE, i);
+	for (j = 0; j < i; j++) {
+	    iseq->arg_opt_tbl[j] &= ~1;
+	}
+    }
+    else {
+	iseq->arg_opts = 0;
+    }
+
+    if ((long)rest_id == -1) {
+	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, 0 /* dummy var */);
+    }
+    else if (rest_id) {
+	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id);
+    }
+    if (iseq->arg_rest == -1) rb_bug("arg_rest: -1");
+    
+
+    if (block_id) {
+	iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id);
+    }
+
+    if (iseq->arg_rest != 0 || iseq->arg_opts != 0 || iseq->arg_block != 0) {
+	iseq->arg_simple = 0;
+    }
+    else {
+	iseq->arg_simple = 1;
+    }
+
+    return COMPILE_OK;
+}
+
+#else
+
 static int
 set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
 {
@@ -1121,7 +1207,9 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
 
 	    iseq->arg_opts = i;
 	    iseq->arg_opt_tbl = ALLOC_N(VALUE, i);
+
 	    MEMCPY(iseq->arg_opt_tbl, RARRAY_PTR(labels), VALUE, i);
+
 	    for (j = 0; j < i; j++) {
 		iseq->arg_opt_tbl[j] &= ~1;
 	    }
@@ -1144,6 +1232,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
     }
     return COMPILE_OK;
 }
+#endif
 
 static int
 set_localtbl(rb_iseq_t *iseq, ID *tbl)
@@ -3681,6 +3770,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  int idx = liseq->local_size - i;
 		  ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
 	      }
+
 	      if (!liseq->arg_simple) {
 		  if (liseq->arg_opts) {
 		      /* optional arguments */
@@ -3693,13 +3783,20 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		      i += j;
 		      argc = INT2FIX(i);
 		  }
+
 		  if (liseq->arg_rest) {
 		      /* rest arguments */
-		      int idx = liseq->local_size - liseq->arg_rest + 1;
-		      ADD_INSN1(args, nd_line(node), getlocal,
-				INT2FIX(idx));
-		      argc = INT2FIX(liseq->arg_rest);
-		      flag |= VM_CALL_ARGS_SPLAT_BIT;
+
+		      if (liseq->arg_rest == -1) {
+			  /* TODO */
+		      }
+		      else {
+			  int idx = liseq->local_size - liseq->arg_rest + 1;
+			  ADD_INSN1(args, nd_line(node), getlocal,
+				    INT2FIX(idx));
+			  argc = INT2FIX(liseq->arg_rest);
+			  flag |= VM_CALL_ARGS_SPLAT_BIT;
+		      }
 		  }
 	      }
 	  }

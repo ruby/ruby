@@ -1,3 +1,27 @@
+Sat Feb 24 10:49:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y, node.h, compile.c: change node tree structure.  a purpose
+	  of this change is to unify argument structure of method and block.
+          this change prohibits duplicate block parameter name.
+          new argument infromation:
+            NODE_ARGS     [m: int, o: NODE_OPT_ARG, ->]
+            NODE_ARGS_AUX [r: ID, b: ID, ->]
+            NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
+          optarg information:
+            NODE_OPT_ARGS [idx, expr, ->]
+
+	* vm_macro.def: ditto.
+
+	* gc.c: ditto.
+
+	* iseq.c: ditto.
+
+	* compile.h: fix debug function name.
+
+	* test/ripper/test_scanner_events.rb: |_,_,foo| -> |_1,_2,foo|
+
+	* test/ruby/test_lambda.rb: disalbe test temporarily.
+
 Sat Feb 24 10:46:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/testunit/test_testcase.rb: catch up with current instance

@@ -41,27 +41,27 @@
 #if CPDEBUG > 0
 
 #define debugp(header, value)                   \
-  (debug_indent(0, CPDEBUG, gl_node_level * 2), \
+  (ruby_debug_indent(0, CPDEBUG, gl_node_level * 2), \
    ruby_debug_value(0, CPDEBUG, header, value))
 
 #define debugi(header, id)                      \
-  (debug_indent(0, CPDEBUG, gl_node_level * 2), \
-   debug_id(0, CPDEBUG, header, id))
+  (ruby_debug_indent(0, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_id(0, CPDEBUG, header, id))
 
 #define debugp_param(header, value)             \
-  (debug_indent(1, CPDEBUG, gl_node_level * 2), \
+  (ruby_debug_indent(1, CPDEBUG, gl_node_level * 2), \
    ruby_debug_value(1, CPDEBUG, header, value))
 
 #define debugp_verbose(header, value)           \
-  (debug_indent(2, CPDEBUG, gl_node_level * 2), \
+  (ruby_debug_indent(2, CPDEBUG, gl_node_level * 2), \
    ruby_debug_value(2, CPDEBUG, header, value))
 
 #define debugp_verbose_node(header, value)       \
-  (debug_indent(10, CPDEBUG, gl_node_level * 2), \
+  (ruby_debug_indent(10, CPDEBUG, gl_node_level * 2), \
    ruby_debug_value(10, CPDEBUG, header, value))
 
 #define debug_nodeprint(node)                    \
-  debug_indent(-1, CPDEBUG, gl_node_level*2);    \
+  ruby_debug_indent(-1, CPDEBUG, gl_node_level*2);    \
   printf("node: %s (%d)\n", ruby_node_name(nd_type(node)), nd_line(node)); \
   gl_node_level ++;
 
@@ -91,8 +91,8 @@ r_value(VALUE value)
 #endif
 
 #if CPDEBUG > 1
-#define debugs debug_indent(-1, CPDEBUG, gl_node_level*2), printf
-#define debug_compile(msg, v) (debug_indent(-1, CPDEBUG, gl_node_level*2), printf("%s", msg), (v))
+#define debugs ruby_debug_indent(-1, CPDEBUG, gl_node_level*2), printf
+#define debug_compile(msg, v) (ruby_debug_indent(-1, CPDEBUG, gl_node_level*2), printf("%s", msg), (v))
 #else
 #define debugs                             if(0)printf
 #define debug_compile(msg, v) (v)

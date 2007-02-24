@@ -1,5 +1,7 @@
 require 'test/unit'
 
+__END__
+
 class TestLambdaParameters < Test::Unit::TestCase
   def test_call_simple
     assert_equal(1, ->(a){ a }.call(1))

@@ -844,7 +844,6 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
-	  case NODE_ARGS:
 	  case NODE_BLOCK_PASS:
 	    gc_mark((VALUE)obj->as.node.u2.node, lev);
 	    /* fall through */
@@ -859,11 +858,13 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
+	  case NODE_ARGS:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
 	  case NODE_DEFN:
+	  case NODE_ARGS_AUX:
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;
 
@@ -922,6 +923,7 @@ gc_mark_children(VALUE ptr, int lev)
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CDECL:
+	  case NODE_OPT_ARG:
 	    gc_mark((VALUE)obj->as.node.u3.node, lev);
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
