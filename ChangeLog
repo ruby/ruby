@@ -1,3 +1,13 @@
+Sat Feb 24 16:47:33 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* bootstraptest: new test suite.
+
+	* bootstraptest/runner.rb: new file.
+
+	* bootstraptest/test_literal.rb: new file.
+
+	* bootstraptest/test_method.rb: new file.
+
 Sat Feb 24 16:29:15 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (StartSocket): remove unnecessary code.
