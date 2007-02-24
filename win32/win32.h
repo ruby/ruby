@@ -531,6 +531,7 @@ int rb_w32_times(struct tms *);
 
 /* thread stuff */
 HANDLE GetCurrentThreadHandle(void);
+void rb_w32_interrupted(void);
 int  rb_w32_main_context(int arg, void (*handler)(int));
 int  rb_w32_sleep(unsigned long msec);
 void rb_w32_enter_critical(void);
