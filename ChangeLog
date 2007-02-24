@@ -1,3 +1,7 @@
+Sat Feb 24 15:51:45 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (program): remove useless assignment to reduce warning.
+
 Sat Feb 24 15:41:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lambda): remove unused clause from the rule to stop

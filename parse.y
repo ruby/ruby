@@ -698,7 +698,6 @@ program		:  {
 			top_local_init();
 		    /*%
 		        lex_state = EXPR_BEG;
-		        $$ = Qnil;
 		    %*/
 		    }
 		  compstmt
