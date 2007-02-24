@@ -9,6 +9,7 @@ require 'fileutils'
 
 def main
   @ruby = nil
+  @verbose = false
   dir = 'bootstraptest.tmpwd'
   tests = nil
   ARGV.delete_if {|arg|
@@ -20,11 +21,14 @@ def main
       tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")
       puts tests.map {|path| File.basename(path) }.inspect
       true
+    when /\A(-v|--v(erbose))\z/
+      @verbose = true
     when /\A(-h|--h(elp)?)\z/
       puts(<<-End)
 Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
-    --sets=NAME,NAME,...        Name of test sets.
-    --help                      Print this message and quit.
+        --sets=NAME,NAME,...        Name of test sets.
+    -v, --verbose                   Output test name before exec.
+    -h, --help                      Print this message and quit.
 End
       exit 0
     else
@@ -66,6 +70,7 @@ end
 
 def assert_equal(expected, really)
   newtest
+  $stderr.puts "\##{@count} #{@location}" if @verbose
   restr = get_result_string(really)
   check_coredump
   if expected == restr
