@@ -51,7 +51,7 @@ class Factory
     else
       # should we sort instance_variables?
       obj.instance_variables.each do |var|
-        name = var.sub(/^@/, '')
+        name = var.to_s.sub(/^@/, '')
         elename = Mapping.name2elename(name)
         node.add(elename,
           Mapping._obj2soap(obj.instance_variable_get(var), map))

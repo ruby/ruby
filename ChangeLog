@@ -1,3 +1,10 @@
+Sat Feb 24 13:25:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/soap/mapping/factory.rb: catch up with spec changes (return
+	  Symbols instead of Strings).
+
+	* lib/soap/mapping/mapping.rb: ditto.
+
 Sat Feb 24 10:49:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y, node.h, compile.c: change node tree structure.  a purpose
