@@ -117,7 +117,6 @@ struct local_vars {
     struct vtable *tbl;
     struct vtable *dvars;
     struct local_vars *prev;
-    int nofree;
 };
 
 #define DVARS_INHERIT ((void*)1)
@@ -7970,7 +7969,6 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local = ALLOC(struct local_vars);
     local->prev = lvtbl;
     local->tbl = 0;
-    local->nofree = 0;
     local->dvars = inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE;
     lvtbl = local;
 }
@@ -8684,8 +8682,7 @@ parser_free(void *ptr)
         xfree(p->parser_tokenbuf);
     }
     for (local = p->parser_lvtbl; local; local = prev) {
-	if (local->tbl && !local->nofree)
-	    xfree(local->tbl);
+	if (local->tbl) xfree(local->tbl);
 	prev = local->prev;
 	xfree(local);
     }

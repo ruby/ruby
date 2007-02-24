@@ -1,3 +1,10 @@
+Sat Feb 24 16:04:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (struct local_vars): remove unused nofree member from
+	  struct.
+
+	* parse.y (parser_free): ditto.
+
 Sat Feb 24 15:57:19 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/thread.rb (ConditionVariable#broadcast): use Mutex
