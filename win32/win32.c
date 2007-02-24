@@ -2936,7 +2936,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 
-	ret = rb_w32_wait_events(events, count, timeout);
+	ret = rb_w32_wait_events_blocking(events, count, timeout);
 	if (ret == WAIT_TIMEOUT) return 0;
 	if ((ret -= WAIT_OBJECT_0) == count) {
 	    return -1;
@@ -2957,7 +2957,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 	while (!(pid = poll_child_status(child, stat_loc))) {
 	    /* wait... */
-	    if (rb_w32_wait_events(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
+	    if (rb_w32_wait_events_blocking(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
 		/* still active */
 		pid = 0;
 		break;

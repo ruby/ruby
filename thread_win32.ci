@@ -110,11 +110,17 @@ static void ubf_handle(rb_thread_t *th);
 #define ubf_select ubf_handle
 
 int
+rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout)
+{
+    return w32_wait_events(events, num, timeout, GET_THREAD());
+}
+
+int
 rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
 {
     int ret;
 
-    BLOCKING_REGION(ret = w32_wait_events(events, num, timeout, GET_THREAD()), ubf_handle);
+    BLOCKING_REGION(ret = rb_w32_wait_events_blocking(events, num, timeout), ubf_handle);
     return ret;
 }
 

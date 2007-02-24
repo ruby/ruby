@@ -567,37 +567,58 @@ pst_wcoredump(VALUE st)
 #if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
 #define NO_WAITPID
 static st_table *pid_tbl;
+#else
+struct waitpid_arg {
+    rb_pid_t pid;
+    int *st;
+    int flags;
+};
 #endif
+
+static VALUE
+rb_waitpid_blocking(rb_thread_t *th, void *data)
+{
+    rb_pid_t result;
+#ifndef NO_WAITPID
+    struct waitpid_arg *arg = data;
+#endif
+
+    TRAP_BEG;
+#if defined NO_WAITPID
+    result = wait(data);
+#elif defined HAVE_WAITPID
+    result = waitpid(arg->pid, arg->st, arg->flags);
+#else  /* HAVE_WAIT4 */
+    result = wait4(arg->pid, arg->st, arg->flags, NULL);
+#endif
+    TRAP_END;
+    return (VALUE)result;
+}
 
 rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     rb_pid_t result;
 #ifndef NO_WAITPID
-    int oflags = flags;
-    if (!rb_thread_alone()) {	/* there're other threads to run */
-	flags |= WNOHANG;
-    }
+    struct waitpid_arg arg;
 
+    arg.pid = pid;
+    arg.st = st;
+    arg.flags = flags;
   retry:
-    TRAP_BEG;
-#ifdef HAVE_WAITPID
-    result = waitpid(pid, st, flags);
-#else  /* HAVE_WAIT4 */
-    result = wait4(pid, st, flags, NULL);
-#endif
-    TRAP_END;
+    result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
+						 &arg, RB_UBF_DFL);
     if (result < 0) {
+#if 0
 	if (errno == EINTR) {
 	    rb_thread_polling();
 	    goto retry;
 	}
+#endif
 	return -1;
     }
     if (result == 0) {
-	if (oflags & WNOHANG) return 0;
 	rb_thread_polling();
-	if (rb_thread_alone()) flags = oflags;
 	goto retry;
     }
 #else  /* NO_WAITPID */
@@ -612,9 +633,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     }
 
     for (;;) {
-	TRAP_BEG;
-	result = wait(st);
-	TRAP_END;
+	result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
+						     st, RB_UBF_DFL);
 	if (result < 0) {
 	    if (errno == EINTR) {
 		rb_thread_schedule();
