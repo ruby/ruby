@@ -1,3 +1,8 @@
+Sat Feb 24 10:38:05 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c (cparse_params_mark): remove useless
+	  rb_gc_mark.  Thanks Tomoyuki Chikanaga. [ruby-dev:30405]
+
 Sat Feb 24 07:31:35 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_VARIANT.array, 

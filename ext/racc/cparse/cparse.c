@@ -393,10 +393,6 @@ cparse_params_mark(void *ptr)
     rb_gc_mark(v->goto_check);
     rb_gc_mark(v->goto_default);
     rb_gc_mark(v->goto_pointer);
-    rb_gc_mark(v->goto_pointer);
-    rb_gc_mark(v->goto_pointer);
-    rb_gc_mark(v->goto_pointer);
-    rb_gc_mark(v->goto_pointer);
     rb_gc_mark(v->reduce_table);
     rb_gc_mark(v->token_table);
     rb_gc_mark(v->state);
