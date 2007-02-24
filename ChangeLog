@@ -1,3 +1,8 @@
+Sat Feb 24 10:42:01 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/racc/cparse/cparse.c (cparse_params_mark): remove useless
+	  rb_gc_mark.  Thanks Tomoyuki Chikanaga. [ruby-dev:30405]
+
 Fri Feb 23 15:10:46 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (set_pioinfo_extra): new function for VC++8 SP1
