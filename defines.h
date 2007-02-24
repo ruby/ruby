@@ -203,6 +203,11 @@ void xfree _((void*));
 #define EXTERN RUBY_EXTERN	/* deprecated */
 #endif
 
+#ifndef RUBY_MBCHAR_MAXSIZE
+#define RUBY_MBCHAR_MAXSIZE INT_MAX
+        /* MB_CUR_MAX will not work well in C locale */
+#endif
+
 #if defined(sparc) || defined(__sparc__)
 static inline void
 flush_register_windows(void)
