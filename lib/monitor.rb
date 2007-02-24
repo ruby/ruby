@@ -88,31 +88,17 @@ module MonitorMixin
     class Timeout < Exception; end
     
     def wait(timeout = nil)
+      if timeout
+        raise NotImplementedError, "timeout is not implemented yet"
+      end
       @monitor.funcall(:mon_check_owner)
-      timer = create_timer(timeout)
-      count = nil
-
-      @mutex.synchronize{
-        count = @monitor.funcall(:mon_exit_for_cond)
-        @waiters.push(Thread.current)
-
-        begin
-          @mutex.sleep
-          return true
-        rescue Timeout
-          return false
-        end
-      }
-    ensure
-      @mutex.synchronize {
-        if timer && timer.alive?
-          Thread.kill(timer)
-        end
-        if @waiters.include?(Thread.current)  # interrupted?
-          @waiters.delete(Thread.current)
-        end
+      count = @monitor.funcall(:mon_exit_for_cond)
+      begin
+        @cond.wait(@monitor.instance_variable_get("@mon_mutex"))
+        return true
+      ensure
         @monitor.funcall(:mon_enter_for_cond, count)
-      }
+      end
     end
     
     def wait_while
@@ -129,47 +115,23 @@ module MonitorMixin
     
     def signal
       @monitor.funcall(:mon_check_owner)
-      @mutex.synchronize {
-        t = @waiters.shift
-        t.wakeup if t
-      }
-      Thread.pass
+      @cond.signal
     end
     
     def broadcast
       @monitor.funcall(:mon_check_owner)
-      @mutex.synchronize {
-        for t in @waiters
-          t.wakeup
-        end
-        @waiters.clear
-      }
-      Thread.pass
+      @cond.broadcast
     end
     
     def count_waiters
-      return @waiters.length
+      raise NotImplementedError
     end
     
     private
 
     def initialize(monitor)
       @monitor = monitor
-      @waiters = []
-      @mutex = Mutex.new
-    end
-
-    def create_timer(timeout)
-      if timeout
-	waiter = Thread.current
-	return Thread.start {
-	  Thread.pass
-	  sleep(timeout)
-	  waiter.raise(Timeout.new)
-	}
-      else
-        return nil
-      end
+      @cond = ::ConditionVariable.new
     end
   end
   
@@ -182,17 +144,14 @@ module MonitorMixin
   # Attempts to enter exclusive section.  Returns +false+ if lock fails.
   #
   def mon_try_enter
-    result = false
-    @mon_mutex.synchronize {
-      if @mon_owner.nil?
-        @mon_owner = Thread.current
+    if @mon_owner != Thread.current
+      unless @mon_owner.trylock
+        return false
       end
-      if @mon_owner == Thread.current
-        @mon_count += 1
-        result = true
-      end
-    }
-    return result
+      @mon_owner = Thread.current
+    end
+    @mon_count += 1
+    return true
   end
   # For backward compatibility
   alias try_mon_enter mon_try_enter
@@ -201,10 +160,11 @@ module MonitorMixin
   # Enters exclusive section.
   #
   def mon_enter
-    @mon_mutex.synchronize {
-      mon_acquire(@mon_entering_queue)
-      @mon_count += 1
-    }
+    if @mon_owner != Thread.current
+      @mon_mutex.lock
+      @mon_owner = Thread.current
+    end
+    @mon_count += 1
   end
   
   #
@@ -212,13 +172,11 @@ module MonitorMixin
   #
   def mon_exit
     mon_check_owner
-    @mon_mutex.synchronize {
-      @mon_count -= 1
-      if @mon_count == 0
-        mon_release
-      end
-    }
-    Thread.pass
+    @mon_count -=1
+    if @mon_count == 0
+      @mon_mutex.unlock
+      @mon_owner = nil
+    end
   end
 
   #
@@ -253,8 +211,6 @@ module MonitorMixin
   def mon_initialize
     @mon_owner = nil
     @mon_count = 0
-    @mon_entering_queue = []
-    @mon_waiting_queue = []
     @mon_mutex = Mutex.new
   end
 
@@ -264,31 +220,15 @@ module MonitorMixin
     end
   end
 
-  def mon_acquire(queue)
-    while @mon_owner && @mon_owner != Thread.current
-      queue.push(Thread.current)
-      @mutex.unlock_and_stop
-      @mutex.lock
-    end
-    @mon_owner = Thread.current
-  end
-
-  def mon_release
-    @mon_owner = nil
-    t = @mon_waiting_queue.shift
-    t = @mon_entering_queue.shift unless t
-    t.wakeup if t
-  end
-
   def mon_enter_for_cond(count)
-    mon_acquire(@mon_waiting_queue)
+    @mon_owner = Thread.current
     @mon_count = count
   end
 
   def mon_exit_for_cond
     count = @mon_count
+    @mon_owner = nil
     @mon_count = 0
-    mon_release
     return count
   end
 end
