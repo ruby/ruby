@@ -1,3 +1,8 @@
+Sun Feb 25 02:50:51 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* defines.h: Pull the RUBY_MBCHAR_MAXSIZE definition from trunk,
+	  which is necessary for dir.c to compile on djgpp and emx.
+
 Sat Feb 24 17:04:01 2007   Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: updated based on date2 4.0.3.
