@@ -1,3 +1,7 @@
+Sat Feb 24 10:32:59 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: change vm_macro.def -> vm_macro.inc rule.
+
 Sat Feb 24 10:38:05 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c (cparse_params_mark): remove useless
@@ -11,6 +15,7 @@ Sat Feb 24 07:31:35 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* test/win32ole/test_win32ole_variant.rb: add some test for
 	  WIN32OLE_VARIANT.array, WIN32OLE_VARIANT#value=.
 
+>>>>>>> .r11835
 Fri Feb 23 18:37:55 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_yield.rb: new test.

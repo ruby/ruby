@@ -541,7 +541,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}ruby.h {$(VPATH)}defines.h \
 MATZRUBY = $(MATZRUBYDIR)ruby
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
-	  vmtc.inc vm.inc vm_macro.inc
+	  vmtc.inc vm.inc
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
@@ -561,11 +561,13 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-vm_macro.inc: $(srcdir)/vm_macro.def
-
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
 	$(RM) $(PROGRAM)
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+
+vm_macro.inc: $(srcdir)/vm_macro.def
+	$(RM) $(PROGRAM)
+	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm_macro.inc
 
 incs: $(INSNS)
 
