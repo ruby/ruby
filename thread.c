@@ -153,7 +153,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
-  printf("%8p - %s", pthread_self(), buf); \
+  printf("%p - %s", pthread_self(), buf); \
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
