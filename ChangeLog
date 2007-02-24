@@ -1,3 +1,7 @@
+Sat Feb 24 17:45:48 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (f_arg, opt_f_block_arg): ripper should export VALUE.
+
 Sat Feb 24 16:52:55 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* bootstraptest/runner.rb: fix syntax error.

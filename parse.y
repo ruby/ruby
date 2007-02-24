@@ -4153,11 +4153,19 @@ f_norm_arg	: tCONSTANT
 
 f_arg		: f_norm_arg
 		    {
+                    /*%%%*/
 		        $$ = 1;
+                    /*%
+                        $$ = rb_ary_new();
+                    %*/
 		    }
 		| f_arg ',' f_norm_arg
 		    {
+                    /*%%%*/
 		        $$ = $1 + 1;
+                    /*%
+                        rb_ary_push($$, $3);
+                    %*/
 		    }
 		;
 
@@ -4273,7 +4281,11 @@ opt_f_block_arg	: ',' f_block_arg
 		    }
 		| none
 		    {
-			$$ = 0	;
+                    /*%%%*/
+			$$ = 0;
+                    /*%
+                        $$ = Qundef;
+                    %*/
 		    }
 		;
 
