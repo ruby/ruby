@@ -3217,21 +3217,15 @@ lambda		:   {
 		    %*/
 		    }
 		  f_larglist
-		    {
-                    /*%%%*/
-			$<num>$ = vtable_size(lvtbl->dvars);
-                    /*%
-                    %*/
-		    }
 		  lambda_body
 		    {
 		    /*%%%*/
 			$$ = $2;
-			$$->nd_body = block_append($$->nd_body, $4);
+			$$->nd_body = block_append($$->nd_body, $3);
 			dyna_pop();
 			lpar_beg = $<num>1;
 		    /*%
-			$$ = dispatch2(lambda, $2, $4);
+			$$ = dispatch2(lambda, $2, $3);
 		    %*/
 		    }
 		;

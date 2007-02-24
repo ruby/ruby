@@ -1,3 +1,8 @@
+Sat Feb 24 15:41:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (lambda): remove unused clause from the rule to stop
+	  warning.
+
 Sat Feb 24 15:41:22 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/thread.rb: do not redefine Mutex#synchronize.
