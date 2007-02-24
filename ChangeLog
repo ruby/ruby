@@ -1,3 +1,9 @@
+Sat Feb 24 18:44:39 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* bootstraptest/test_class.rb: new file.
+
+	* bootstraptest/test_method.rb: add tests.
+
 Sat Feb 24 18:44:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (rb_thread_blocking_region): add prototype.
@@ -19,7 +25,6 @@ Sat Feb 24 18:44:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* thread_win32.ci (rb_w32_wait_events_blocking): blocking version.
 
 	* win32/win32.c (waitpid): use rb_w32_wait_events_blocking().
-
 
 Sat Feb 24 17:45:48 2007  Minero Aoki  <aamine@loveruby.net>
 

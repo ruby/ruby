@@ -189,6 +189,33 @@ assert_equal '1',       %q( class C
                             end
                             C.new.m )
 
+# undef
+assert_equal '1',       %q( class C
+                              def m() end
+                              undef m
+                            end
+                            begin C.new.m; rescue NoMethodError; 1 end )
+assert_equal '1',       %q( class A
+                              def m() end
+                            end
+                            class C < A
+                              def m() end
+                              undef m
+                            end
+                            begin C.new.m; rescue NoMethodError; 1 end )
+assert_equal '1',       %q( class A; def a() end end   # [yarv-dev:999]
+                            class B < A
+                              def b() end
+                              undef a, b
+                            end
+                            begin B.new.a; rescue NoMethodError; 1 end )
+assert_equal '1',       %q( class A; def a() end end   # [yarv-dev:999]
+                            class B < A
+                              def b() end
+                              undef a, b
+                            end
+                            begin B.new.b; rescue NoMethodError; 1 end )
+
 # private
 assert_equal '1',       %q( class C
                               def m() mm() end
