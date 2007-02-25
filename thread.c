@@ -962,8 +962,7 @@ rb_thread_wakeup(VALUE thread)
  */
 
 VALUE
-rb_thread_run(thread)
-    VALUE thread;
+rb_thread_run(VALUE thread)
 {
     rb_thread_wakeup(thread);
     rb_thread_schedule();
