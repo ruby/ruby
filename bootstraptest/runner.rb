@@ -1,10 +1,11 @@
-# $Id: $
+# $Id$
 
 # NOTE:
 # Never use optparse in this file.
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
 
+$LOAD_PATH.unshift "#{File.dirname($0)}/lib"
 require 'fileutils'
 
 def main
@@ -116,9 +117,7 @@ end
 
 def cleanup_coredump
   FileUtils.rm_f 'core'
-  Dir.glob('core.*').each do |ent|
-    FileUtils.rm_f ent
-  end
+  FileUtils.rm_f Dir.glob('core.*')
 end
 
 class CoreDumpError < StandardError; end
