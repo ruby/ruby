@@ -1,3 +1,22 @@
+Mon Feb 26 00:58:39 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h: add rb_thread_t#top_wrapper, top_self.
+
+	* eval_load.c (rb_load): support eval in wrapper module
+	  (load(file, true)).
+
+	* eval.c: ditto.
+
+	* eval_jump.h: ditto.
+
+	* iseq.c: ditto.
+
+	* vm.c: ditto.
+
+	* yarvcore.c: ditto.
+
+	* insns.def: add a empty line.
+
 Mon Feb 26 00:54:36 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: change "gdb" rule.  You can debug miniruby with

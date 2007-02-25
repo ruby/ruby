@@ -1058,6 +1058,7 @@ defineclass
 	if (super == Qnil) {
 	    super = rb_cObject;
 	}
+
 	if (cbase == Qnil) {
 	    cbase = th_get_cbase(th);
 	}

@@ -318,8 +318,9 @@ rb_set_end_proc(void (*func)(VALUE), VALUE data)
 {
     struct end_proc_data *link = ALLOC(struct end_proc_data);
     struct end_proc_data **list;
+    rb_thread_t *th = GET_THREAD();
 
-    if (ruby_wrapper) {
+    if (th->top_wrapper) {
 	list = &ephemeral_end_procs;
     }
     else {

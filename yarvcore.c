@@ -277,6 +277,8 @@ thread_mark(void *ptr)
 	MARK_UNLESS_NULL(th->value);
 	MARK_UNLESS_NULL(th->errinfo);
 	MARK_UNLESS_NULL(th->local_svar);
+	MARK_UNLESS_NULL(th->top_self);
+	MARK_UNLESS_NULL(th->top_wrapper);
 
 	rb_mark_tbl(th->local_storage);
 
@@ -340,6 +342,8 @@ th_init(rb_thread_t *th)
     th_init2(th);
 }
 
+extern VALUE ruby_top_self;
+
 static VALUE
 thread_init(VALUE self)
 {
@@ -350,6 +354,9 @@ thread_init(VALUE self)
     th_init(th);
     th->self = self;
     th->vm = vm;
+
+    th->top_wrapper = 0;
+    th->top_self = ruby_top_self;
     return self;
 }
 

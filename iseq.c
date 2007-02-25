@@ -107,12 +107,14 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE parent, VALUE type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
+    rb_thread_t *th = GET_THREAD();
+
     iseq->name = name;
     iseq->defined_method_id = 0;
     iseq->filename = filename;
     iseq->iseq_mark_ary = rb_ary_new();
     RBASIC(iseq->iseq_mark_ary)->klass = 0;
-    
+
     iseq->type = type;
     iseq->arg_rest = 0;
     iseq->arg_block = 0;
@@ -124,7 +126,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     /* set class nest stack */
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
-	iseq->cref_stack = NEW_BLOCK(rb_cObject);
+	iseq->cref_stack = NEW_BLOCK(th->top_wrapper ? th->top_wrapper : rb_cObject);
 	iseq->cref_stack->nd_file = 0;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
     }
@@ -144,17 +146,17 @@ prepare_iseq_build(rb_iseq_t *iseq,
     RBASIC(iseq->compile_data->mark_ary)->klass = 0;
 
     iseq->compile_data->storage_head = iseq->compile_data->storage_current =
-	(struct iseq_compile_data_storage *)
-    ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
+      (struct iseq_compile_data_storage *)
+	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
 		sizeof(struct iseq_compile_data_storage));
 
     iseq->compile_data->catch_table_ary = rb_ary_new();
     iseq->compile_data->storage_head->pos = 0;
     iseq->compile_data->storage_head->next = 0;
     iseq->compile_data->storage_head->size =
-	INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
+      INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
     iseq->compile_data->storage_head->buff =
-	(char *)(&iseq->compile_data->storage_head->buff + 1);
+      (char *)(&iseq->compile_data->storage_head->buff + 1);
     iseq->compile_data->option = option;
 
     if (type == ISEQ_TYPE_TOP ||

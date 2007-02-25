@@ -35,8 +35,6 @@ VALUE rb_eSysStackError;
 extern int ruby_nerrs;
 extern VALUE ruby_top_self;
 
-static VALUE ruby_wrapper;	/* security wrapper */
-
 static VALUE eval _((VALUE, VALUE, VALUE, char *, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
@@ -289,17 +287,20 @@ VALUE
 rb_eval_string_wrap(const char *str, int *state)
 {
     int status;
-    VALUE self = ruby_top_self;
-    VALUE wrapper = ruby_wrapper;
+    rb_thread_t *th = GET_THREAD();
+    VALUE self = th->top_self;
+    VALUE wrapper = th->top_wrapper;
     VALUE val;
 
-    ruby_top_self = rb_obj_clone(ruby_top_self);
-    rb_extend_object(ruby_top_self, ruby_wrapper);
+    th->top_wrapper = rb_module_new();
+    th->top_self = rb_obj_clone(ruby_top_self);
+    rb_extend_object(th->top_self, th->top_wrapper);
 
     val = rb_eval_string_protect(str, &status);
-    ruby_top_self = self;
 
-    ruby_wrapper = wrapper;
+    th->top_self = self;
+    th->top_wrapper = wrapper;
+
     if (state) {
 	*state = status;
     }
@@ -2687,11 +2688,13 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 static VALUE
 top_include(int argc, VALUE *argv, VALUE self)
 {
+    rb_thread_t *th = GET_THREAD();
+
     rb_secure(4);
-    if (ruby_wrapper) {
+    if (th->top_wrapper) {
 	rb_warning
 	    ("main#include in the wrapped load is effective only in wrapper module");
-	return rb_mod_include(argc, argv, ruby_wrapper);
+	return rb_mod_include(argc, argv, th->top_wrapper);
     }
     return rb_mod_include(argc, argv, rb_cObject);
 }

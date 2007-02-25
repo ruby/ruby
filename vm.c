@@ -139,8 +139,6 @@ pop_frame(rb_thread_t *th)
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 }
 
-EXTERN VALUE ruby_top_self;
-
 VALUE
 th_set_finish_env(rb_thread_t *th)
 {
@@ -165,7 +163,7 @@ th_set_top_stack(rb_thread_t *th, VALUE iseqval)
     th_set_finish_env(th);
 
     push_frame(th, iseq, FRAME_MAGIC_TOP,
-	       ruby_top_self, 0, iseq->iseq_encoded,
+	       th->top_self, 0, iseq->iseq_encoded,
 	       th->cfp->sp, 0, iseq->local_size);
 }
 
@@ -1150,7 +1148,7 @@ th_get_cbase(rb_thread_t *th)
     rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
     NODE *cref = get_cref(cfp->iseq, cfp->lfp);
     VALUE klass = Qundef;
-    
+
     while (cref) {
 	if ((klass = cref->nd_clss) != 0) {
 	    break;

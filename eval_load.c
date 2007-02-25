@@ -136,7 +136,7 @@ rb_load_internal(char *file)
     }
 
     iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
-			 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
+		       rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 
     rb_thread_eval(GET_THREAD(), iseq);
     return 0;
@@ -147,7 +147,9 @@ rb_load(VALUE fname, int wrap)
 {
     VALUE tmp;
     int state;
-    volatile VALUE self = ruby_top_self;
+    rb_thread_t *th = GET_THREAD();
+    VALUE wrapper = th->top_wrapper;
+    VALUE self = th->top_self;
 
     FilePathValue(fname);
     fname = rb_str_new4(fname);
@@ -157,14 +159,17 @@ rb_load(VALUE fname, int wrap)
     }
     fname = tmp;
 
-    GET_THREAD()->errinfo = Qnil;	/* ensure */
-    
+    th->errinfo = Qnil; /* ensure */
+
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
+	th->top_wrapper = 0;
     }
     else {
 	/* load in anonymous module as toplevel */
-	self = rb_obj_clone(ruby_top_self);
+	th->top_self = rb_obj_clone(ruby_top_self);
+	th->top_wrapper = rb_module_new();
+	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
     PUSH_TAG(PROT_NONE);
@@ -173,6 +178,9 @@ rb_load(VALUE fname, int wrap)
 	rb_load_internal(RSTRING_PTR(fname));
     }
     POP_TAG();
+
+    th->top_self = self;
+    th->top_wrapper = wrapper;
 
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
@@ -184,7 +192,7 @@ rb_load(VALUE fname, int wrap)
 
     if (!NIL_P(GET_THREAD()->errinfo)) {
 	/* exception during load */
-	rb_exc_raise(GET_THREAD()->errinfo);
+	rb_exc_raise(th->errinfo);
     }
 }
 

@@ -404,6 +404,10 @@ struct rb_thread_struct
     /* passed via parse.y, eval.c (rb_scope_setup_local_tbl) */
     ID *top_local_tbl;
 
+    /* for load(true) */
+    VALUE top_self;
+    VALUE top_wrapper;
+
     /* eval env */
     rb_block_t *base_block;
 
