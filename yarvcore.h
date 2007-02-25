@@ -240,9 +240,12 @@ struct rb_iseq_struct {
     unsigned int insn_info_size;
 
     /* file information where this sequence from */
-    VALUE file_name;
+    VALUE filename;
 
-    ID *local_tbl;		/* must free */
+    ID *local_table;		/* must free */
+    int local_table_size;
+
+    /* method, class frame: sizeof(vars) + 1, block frame: sizeof(vars) */
     int local_size;
 
     /* jit compiled or not */

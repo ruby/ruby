@@ -103,7 +103,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    line = th_get_sourceline(cfp);
 	    if (line) {
 		char fn[MAX_POSBUF+1];
-		snprintf(fn, MAX_POSBUF, "%s", RSTRING_PTR(cfp->iseq->file_name));
+		snprintf(fn, MAX_POSBUF, "%s", RSTRING_PTR(cfp->iseq->filename));
 		snprintf(posbuf, MAX_POSBUF, "%s:%d", fn, line);
 	    }
 	}

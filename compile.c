@@ -773,9 +773,9 @@ set_exception_tbl(rb_iseq_t *iseq)
     if (!id_dollar_bang) {
 	id_dollar_bang = rb_intern("#$!");
     }
-    iseq->local_tbl = (ID *)ALLOC_N(ID *, 1);
-    iseq->local_size = 1;
-    iseq->local_tbl[0] = id_dollar_bang;
+    iseq->local_table = (ID *)ALLOC_N(ID *, 1);
+    iseq->local_table_size = iseq->local_size = 1;
+    iseq->local_table[0] = id_dollar_bang;
     return COMPILE_OK;
 }
 
@@ -904,13 +904,13 @@ search_block_local_parameters(rb_iseq_t *iseq, NODE * lnode)
 	int i, size = RARRAY_LEN(local_vars);
 
 	if (size > 0) {
-	    iseq->local_tbl = ALLOC_N(ID, size);
+	    iseq->local_table = ALLOC_N(ID, size);
 	    for (i = 0; i < size; i++) {
-		iseq->local_tbl[i] = SYM2ID(RARRAY_PTR(local_vars)[i]);
-		debugi("block local variable", iseq->local_tbl[i]);
+		iseq->local_table[i] = SYM2ID(RARRAY_PTR(local_vars)[i]);
+		debugi("block local variable", iseq->local_table[i]);
 	    }
 	}
-	iseq->local_size = size;
+	iseq->local_table_size = iseq->local_size = size;
     }
     return node;
 }
@@ -1013,14 +1013,14 @@ set_block_local_tbl(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
 		  local_tbl[i] = id;
 	      }
 
-	      if (iseq->local_tbl) {
+	      if (iseq->local_table) {
 		  /* copy from old local tbl and delete it */
 		  for (i=1; i<iseq->local_size; i++) {
-		      local_tbl[argc + i - 1] = iseq->local_tbl[i];
+		      local_tbl[argc + i - 1] = iseq->local_table[i];
 		  }
-		  ruby_xfree(iseq->local_tbl);
+		  ruby_xfree(iseq->local_table);
 	      }
-	      iseq->local_tbl = local_tbl;
+	      iseq->local_table = local_tbl;
 	      iseq->local_size = local_size;
 	      iseq->argc = argc;
 	      break;
@@ -1051,12 +1051,25 @@ static int
 get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 {
     int i;
-    for (i = 0; i < iseq->local_size; i++) {
-	if (iseq->local_tbl[i] == id) {
+
+    for (i = 0; i < iseq->local_table_size; i++) {
+	if (iseq->local_table[i] == id) {
 	    return i;
 	}
     }
     return -1;
+}
+
+static int
+get_local_var_idx(rb_iseq_t *iseq, ID id)
+{
+    int idx = get_dyna_var_idx_at_raw(iseq->local_iseq, id);
+
+    if (idx == -1) {
+	rb_bug("get_local_var_idx: -1");
+    }
+
+    return idx;
 }
 
 static int
@@ -1073,6 +1086,8 @@ get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
 	iseq = iseq->parent_iseq;
 	lv++;
     }
+
+    rb_bug("get_dyna_var_idx: -1");
     return -1;
 }
 
@@ -1089,6 +1104,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_arg)
     ID post_start_id = 0;
     int post_len = 0;
     NODE *node_init = 0;
+    int d = iseq->local_size - iseq->local_table_size;
 
     iseq->argc = node_arg->nd_frml;
     node_opt = node_arg->nd_opt;
@@ -1142,16 +1158,17 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_arg)
     }
 
     if ((long)rest_id == -1) {
-	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, 0 /* dummy var */);
+	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, 0 /* dummy var */) + d;
     }
     else if (rest_id) {
-	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id);
+	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id) + d;
     }
-    if (iseq->arg_rest == -1) rb_bug("arg_rest: -1");
-    
+    if (iseq->arg_rest == -1) {
+	rb_bug("arg_rest: -1");
+    }
 
     if (block_id) {
-	iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id);
+	iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id) + d;
     }
 
     if (iseq->arg_rest != 0 || iseq->arg_opts != 0 || iseq->arg_block != 0) {
@@ -1238,17 +1255,22 @@ static int
 set_localtbl(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
+
     if (tbl) {
-	size = *tbl - 2 /* $~, $_ */  + 1 /* svar location */ ;
+	size = *tbl - 2 /* $~, $_ */;
     }
     else {
-	size = 1;
+	size = 0;
     }
-    iseq->local_tbl = (ID *)ALLOC_N(ID *, size);
-    if (tbl && size > 1) {
-	MEMCPY(iseq->local_tbl + 1, tbl + 3, ID *, size - 1);
+
+    if (size > 0) {
+	iseq->local_table = (ID *)ALLOC_N(ID *, size);
+	MEMCPY(iseq->local_table, tbl + 3 /* size, $~, $_ */, ID *, size);
     }
-    iseq->local_size = size;
+
+    iseq->local_table_size = size;
+    iseq->local_size = size + 1 /* svar */;
+
     return COMPILE_OK;
 }
 
@@ -1263,10 +1285,10 @@ set_localtbl_eval(rb_iseq_t *iseq, ID *tbl)
 	size = 0;
     }
     if (tbl) {
-	iseq->local_tbl = (ID *)ALLOC_N(ID *, size);
-	MEMCPY(iseq->local_tbl, tbl + 1, ID *, size);
+	iseq->local_table = (ID *)ALLOC_N(ID *, size);
+	MEMCPY(iseq->local_table, tbl + 1, ID *, size);
     }
-    iseq->local_size = size;
+    iseq->local_table_size = iseq->local_size = size;
     return COMPILE_OK;
 }
 
@@ -3354,8 +3376,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
 
       case NODE_LASGN:{
-	  int idx = iseq->local_iseq->local_size + 2 - node->nd_cnt;
-	  debugs("lvar: %d\n", idx);
+	  ID id = node->nd_vid;
+	  int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
+
+	  debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
 	  COMPILE(ret, "lvalue", node->nd_value);
 
 	  if (!poped) {
@@ -3962,8 +3986,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_LVAR:{
 	  if (!poped) {
-	      int idx = iseq->local_iseq->local_size + 2 - node->nd_cnt;
-	      debugs("idx: %d\n", idx);
+	      ID id = node->nd_vid;
+	      int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
+
+	      debugs("id: %s idx: %d\n", rb_id2name(id), idx);
 	      ADD_INSN1(ret, nd_line(node), getlocal, INT2FIX(idx));
 	  }
 	  break;
@@ -4029,12 +4055,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_NTH_REF:{
-	  ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(node->nd_cnt),
+	  ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~'  */,
 		    INT2FIX(node->nd_nth << 1));
 	  break;
       }
       case NODE_BACK_REF:{
-	  ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(node->nd_cnt),
+	  ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~' */,
 		    INT2FIX(0x01 | (node->nd_nth << 1)));
 	  break;
       }
@@ -4193,11 +4219,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_TO_ARY:{
 	  /* OK */
 	  COMPILE_ERROR(("BUG: unknown node: NODE_TO_ARY"));
-	  break;
-      }
-      case NODE_BLOCK_ARG:{
-	  iseq->arg_block = node->nd_cnt - 2 + 1;
-	  iseq->arg_simple = 0;
 	  break;
       }
       case NODE_BLOCK_PASS:{
@@ -4987,8 +5008,9 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
     }
 
     iseq->local_size = opt + RARRAY_LEN(locals);
-    iseq->local_tbl = (ID *)ALLOC_N(ID *, iseq->local_size);
-    tbl = iseq->local_tbl + opt;
+    iseq->local_table_size = iseq->local_size;
+    iseq->local_table = (ID *)ALLOC_N(ID *, iseq->local_size);
+    tbl = iseq->local_table + opt;
     
     for (i=0; i<RARRAY_LEN(locals); i++) {
 	tbl[i] = SYM2ID(RARRAY_PTR(locals)[i]);

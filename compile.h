@@ -103,7 +103,7 @@ r_value(VALUE value)
 #define NEW_LABEL(l) new_label_body(iseq, l)
 
 #define iseq_filename(iseq) \
-  (((rb_iseq_t*)DATA_PTR(iseq))->file_name)
+  (((rb_iseq_t*)DATA_PTR(iseq))->filename)
 
 #define NEW_ISEQVAL(node, name, type)       \
   new_child_iseq(iseq, node, name, 0, type)

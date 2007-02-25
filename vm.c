@@ -376,8 +376,8 @@ collect_local_variables_in_env(rb_env_t *env, VALUE ary)
     if (env->block.lfp == env->block.dfp) {
 	return 0;
     }
-    for (i = 0; i < env->block.iseq->local_size; i++) {
-	ID lid = env->block.iseq->local_tbl[i];
+    for (i = 0; i < env->block.iseq->local_table_size; i++) {
+	ID lid = env->block.iseq->local_table[i];
 	if (lid) {
 	    rb_ary_push(ary, rb_str_new2(rb_id2name(lid)));
 	}
@@ -986,7 +986,7 @@ th_backtrace_each(rb_thread_t *th,
 		rb_iseq_t *iseq = cfp->iseq;
 
 		line_no = th_get_sourceline(cfp);
-		file = RSTRING_PTR(iseq->file_name);
+		file = RSTRING_PTR(iseq->filename);
 		str = rb_sprintf("%s:%d:in `%s'",
 				 file, line_no, RSTRING_PTR(iseq->name));
 		rb_ary_push(ary, str);

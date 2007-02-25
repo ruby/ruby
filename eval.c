@@ -1881,7 +1881,7 @@ rb_sourcefile(void)
 {
     rb_iseq_t *iseq = GET_THREAD()->cfp->iseq;
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	return RSTRING_PTR(iseq->file_name);
+	return RSTRING_PTR(iseq->filename);
     }
     return 0;
 }
@@ -1909,6 +1909,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
+
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
@@ -1935,7 +1936,6 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	    th->base_block->iseq = cfp->iseq;	/* TODO */
 	}
 
-
 	/* make eval iseq */
 	th->parse_in_eval++;
 	iseqval = th_compile(th, src, rb_str_new2(file), INT2FIX(line));
@@ -1958,6 +1958,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	    stored_cref_stack =
 		th_set_special_cref(th, env->block.lfp, stored_cref_stack);
 	}
+
 	/* kick */
 	result = th_eval_body(th);
     }
@@ -2797,12 +2798,8 @@ rb_f_local_variables(void)
 
     while (1) {
 	if (cfp->iseq) {
-	    int start = 0;
-	    if (cfp->lfp == cfp->dfp) {
-		start = 1;
-	    }
-	    for (i = start; i < cfp->iseq->local_size; i++) {
-		ID lid = cfp->iseq->local_tbl[i];
+	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
+		ID lid = cfp->iseq->local_table[i];
 		if (lid) {
 		    rb_ary_push(ary, rb_str_new2(rb_id2name(lid)));
 		}
@@ -2942,10 +2939,11 @@ rb_dvar_defined(ID id)
 	       iseq->type == ISEQ_TYPE_ENSURE ||
 	       iseq->type == ISEQ_TYPE_EVAL) {
 	    int i;
+
 	    /* printf("local size: %d\n", iseq->local_size); */
-	    for (i = 0; i < iseq->local_size; i++) {
+	    for (i = 0; i < iseq->local_table_size; i++) {
 		/* printf("id (%4d): %s\n", i, rb_id2name(iseq->local_tbl[i])); */
-		if (iseq->local_tbl[i] == id) {
+		if (iseq->local_table[i] == id) {
 		    return Qtrue;
 		}
 	    }
@@ -2994,8 +2992,7 @@ rb_scope_base_local_tbl_id(int i)
     case 1:
 	return rb_intern("$~");
     default:
-	return th->base_block->iseq->local_iseq->
-	    local_tbl[i - 1 /* tbl[0] is reserved by svar */ ];
+	return th->base_block->iseq->local_iseq->local_table[i-2];
     }
 }
 

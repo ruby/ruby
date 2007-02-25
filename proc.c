@@ -526,7 +526,7 @@ proc_to_s(VALUE self)
 	    line_no = iseq->insn_info_tbl[0].line_no;
 	}
 	str = rb_sprintf("#<%s:%lx@%s:%d>", cname, self,
-			 RSTRING_PTR(iseq->file_name),
+			 RSTRING_PTR(iseq->filename),
 			 line_no);
     }
     else {

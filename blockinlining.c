@@ -43,7 +43,7 @@ yarv_iseq_special_block(rb_iseq_t *iseq, void *builder)
     if (iseq->parent_iseq) {
 	parent = iseq->parent_iseq->self;
     }
-    iseqval = rb_iseq_new_with_bopt(iseq->node, iseq->name, iseq->file_name,
+    iseqval = rb_iseq_new_with_bopt(iseq->node, iseq->name, iseq->filename,
 				      parent, iseq->type,
 				      GC_GUARDED_PTR(builder));
     if (0) {

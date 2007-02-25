@@ -1,3 +1,29 @@
+Sun Feb 25 09:39:50 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h:
+	  rename:
+	    rb_iseq_t#file_name -> filename
+	    rb_iseq_t#local_tbl -> local_table
+	  add:
+	    rb_iseq_t#local_table_size
+
+	* compile.c: separate local_table_size and local_size
+	  (local variable size)
+
+	* blockinlining.c: apply above rename.
+
+	* compile.h: ditto.
+
+	* eval.c: ditto.
+
+	* iseq.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm.c: ditto.
+
+	* vm_dump.c: ditto.
+
 Sun Feb 25 10:27:17 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* bootstraptest/runner.rb: add lib/ to load path.

@@ -47,7 +47,7 @@ iseq_free(void *ptr)
 	iseq = ptr;
 	/* It's possible that strings are freed
          * GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
-         *                      RSTRING_PTR(iseq->file_name));
+         *                      RSTRING_PTR(iseq->filename));
 	 */
 	if (iseq->iseq != iseq->iseq_encoded) {
 	    FREE_UNLESS_NULL(iseq->iseq_encoded);
@@ -55,7 +55,7 @@ iseq_free(void *ptr)
 	
 	FREE_UNLESS_NULL(iseq->iseq);
 	FREE_UNLESS_NULL(iseq->insn_info_tbl);
-	FREE_UNLESS_NULL(iseq->local_tbl);
+	FREE_UNLESS_NULL(iseq->local_table);
 	FREE_UNLESS_NULL(iseq->catch_table);
 	FREE_UNLESS_NULL(iseq->arg_opt_tbl);
 	compile_data_free(iseq->compile_data);
@@ -72,10 +72,10 @@ iseq_mark(void *ptr)
 
     if (ptr) {
 	iseq = ptr;
-	GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->file_name));
+	GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
 	MARK_UNLESS_NULL(iseq->iseq_mark_ary);
 	MARK_UNLESS_NULL(iseq->name);
-	MARK_UNLESS_NULL(iseq->file_name);
+	MARK_UNLESS_NULL(iseq->filename);
 	MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	MARK_UNLESS_NULL(iseq->klass);
 	MARK_UNLESS_NULL((VALUE)iseq->node);
@@ -103,13 +103,13 @@ iseq_alloc(VALUE klass)
 
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
-		   VALUE name, VALUE file_name,
+		   VALUE name, VALUE filename,
 		   VALUE parent, VALUE type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
     iseq->name = name;
     iseq->defined_method_id = 0;
-    iseq->file_name = file_name;
+    iseq->filename = filename;
     iseq->iseq_mark_ary = rb_ary_new();
     RBASIC(iseq->iseq_mark_ary)->klass = 0;
     
@@ -251,15 +251,15 @@ make_compile_option_value(rb_compile_option_t *option)
 }
 
 VALUE
-rb_iseq_new(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new(NODE *node, VALUE name, VALUE filename,
 	      VALUE parent, VALUE type)
 {
-    return rb_iseq_new_with_opt(node, name, file_name, parent, type,
+    return rb_iseq_new_with_opt(node, name, filename, parent, type,
 				&COMPILE_OPTION_DEFAULT);
 }
 
 static VALUE
-rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
 				VALUE parent, VALUE type, VALUE bopt,
 				const rb_compile_option_t *option)
 {
@@ -269,26 +269,26 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE file_name,
     GetISeqPtr(self, iseq);
     iseq->self = self;
 
-    prepare_iseq_build(iseq, name, file_name, parent, type, bopt, option);
+    prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
     iseq_compile(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
 
 VALUE
-rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE filename,
 		     VALUE parent, VALUE type,
 		     const rb_compile_option_t *option)
 {
-    return rb_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
 					   Qfalse, option);
 }
 
 VALUE
-rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE file_name,
+rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename,
 		       VALUE parent, VALUE type, VALUE bopt)
 {
-    return rb_iseq_new_with_bopt_and_opt(node, name, file_name, parent, type,
+    return rb_iseq_new_with_bopt_and_opt(node, name, filename, parent, type,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -466,7 +466,7 @@ iseq_inspect(VALUE self)
     rb_iseq_t *iseq = iseq_check(self);
 
     snprintf(buff, sizeof(buff), "<ISeq:%s@%s>",
-	     RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->file_name));
+	     RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
 
     return rb_str_new2(buff);
 }
@@ -542,8 +542,8 @@ insn_operand_intern(rb_iseq_t *iseq,
     case TS_LINDEX:
 	{
 	    rb_iseq_t *ip = iseq->local_iseq;
-	    int lidx = ip->local_size - op + 1;
-	    ID id = ip->local_tbl[lidx];
+	    int lidx = ip->local_size - op;
+	    ID id = ip->local_table[lidx];
 
 	    if (id) {
 		ret = rb_str_new2(rb_id2name(id));
@@ -561,9 +561,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 		for (i = 0; i < level; i++) {
 		    ip = ip->parent_iseq;
 		}
-		ret =
-		    rb_str_new2(rb_id2name
-				(ip->local_tbl[ip->local_size - op]));
+		ret = rb_str_new2(rb_id2name(ip->local_table[ip->local_size - op]));
 	    }
 	    else {
 		ret = rb_inspect(INT2FIX(op));
@@ -740,23 +738,16 @@ ruby_iseq_disasm(VALUE self)
     }
 
     /* show local table information */
-    tbl = iseqdat->local_tbl;
+    tbl = iseqdat->local_table;
 
     if (tbl) {
-	int opt = 0;
-	if (iseqdat->type == ISEQ_TYPE_METHOD ||
-	    iseqdat->type == ISEQ_TYPE_TOP ||
-	    iseqdat->type == ISEQ_TYPE_CLASS) {
-	    opt = 1;
-	}
-
 	snprintf(buff, sizeof(buff),
 		 "local scope table (size: %d, argc: %d)\n",
 		 iseqdat->local_size, iseqdat->argc);
 	rb_str_cat2(str, buff);
 
-	for (i = 0; i < iseqdat->local_size - opt; i++) {
-	    const char *name = rb_id2name(tbl[i + opt]);
+	for (i = 0; i < iseqdat->local_table_size; i++) {
+	    const char *name = rb_id2name(tbl[i]);
 	    char info[0x100];
 	    char argi[0x100] = "";
 	    char opti[0x100] = "";
@@ -1132,15 +1123,9 @@ iseq_data_to_ary(rb_iseq_t *iseq)
       default: rb_bug("unsupported iseq type");
     };
 
-    if (iseq->type == ISEQ_TYPE_METHOD ||
-	iseq->type == ISEQ_TYPE_TOP ||
-	iseq->type == ISEQ_TYPE_CLASS) {
-	opt = 1;
-    }
-
     /* locals */
-    for (i=opt; i<iseq->local_size; i++) {
-	ID lid = iseq->local_tbl[i];
+    for (i=0; i<iseq->local_table_size; i++) {
+	ID lid = iseq->local_table[i];
 	if (lid) {
 	    rb_ary_push(locals, ID2SYM(lid));
 	}
@@ -1304,7 +1289,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, Qnil);
     rb_ary_push(val, iseq->name);
-    rb_ary_push(val, iseq->file_name);
+    rb_ary_push(val, iseq->filename);
     rb_ary_push(val, line);
     rb_ary_push(val, type);
     rb_ary_push(val, locals);
