@@ -39,6 +39,8 @@ typedef struct rb_io_t {
     int rbuf_capa;
 } rb_io_t;
 
+#define HAVE_RB_IO_T 1
+
 #define FMODE_READABLE  1
 #define FMODE_WRITABLE  2
 #define FMODE_READWRITE 3

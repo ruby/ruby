@@ -1,3 +1,7 @@
+Sat Feb 25 10:16:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubyio.h (HAVE_RB_IO_T): macro to tell if rb_io_t is defined.
+
 Sat Feb 24 19:39:16 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* common.mk: new target "btest", to run bootstraptests.
