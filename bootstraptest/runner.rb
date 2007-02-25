@@ -9,7 +9,7 @@ $LOAD_PATH.unshift "#{File.dirname($0)}/lib"
 require 'fileutils'
 
 def main
-  @ruby = nil
+  @ruby = File.expand_path('miniruby')
   @verbose = false
   dir = 'bootstraptest.tmpwd'
   tests = nil
@@ -69,20 +69,35 @@ def exec_test(pathes)
   end
 end
 
-def assert_equal(expected, really)
+def assert_equal(expected, testsrc)
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
-  restr = get_result_string(really)
+  result = get_result_string(testsrc)
   check_coredump
-  if expected == restr
+  if expected == result
     $stderr.print '.'
   else
     $stderr.print 'F'
-    error "expected #{expected.inspect} but is: #{restr.inspect}"
+    error pretty(testsrc, expected, result)
   end
 rescue Exception => err
   $stderr.print 'E'
   error err.message
+end
+
+def pretty(src, ex, result)
+  (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) +
+      "  #=> #{result.inspect} (expected #{ex.inspect})"
+end
+
+INDENT = 27
+
+def adjust_indent(src)
+  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ')
+end
+
+def untabify(str)
+  str.gsub(/^\t+/) {|tabs| ' ' * (8 * tabs.size) }
 end
 
 def get_result_string(src)
