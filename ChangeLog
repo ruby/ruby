@@ -1,3 +1,10 @@
+Mon Feb 26 00:54:36 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: change "gdb" rule.  You can debug miniruby with
+	  $(srcdir)/test.rb on gdb by this rule (type "make gdb").
+	  If you write break points to "breakpoints.gdb" on $srcdir,
+	  gdb runs with this file.
+
 Sun Feb 25 11:46:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/Makefile.sub: enable -Zi (debug) option.

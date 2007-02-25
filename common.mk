@@ -617,10 +617,12 @@ vmasm: vm.$(ASMEXT)
 # vm.o : CFLAGS += -fno-crossjumping
 
 run.gdb:
-	echo b ruby_debug_breakpoint  > run.gdb
-	# echo handle SIGINT nostop  >> run.gdb
-	# echo handle SIGPIPE nostop >> run.gdb
-	echo run >> run.gdb
+	echo b ruby_debug_breakpoint           > run.gdb
+	echo '# handle SIGINT nostop'         >> run.gdb
+	echo '# handle SIGPIPE nostop'        >> run.gdb
+	echo '# b rb_longjmp'                 >> run.gdb
+	echo source $(srcdir)/breakpoints.gdb >> run.gdb
+	echo run                              >> run.gdb
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb
