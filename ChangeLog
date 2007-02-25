@@ -1,3 +1,12 @@
+Sun Feb 25 11:38:40 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.h: define RUBY_VM macro and remove NATIVETHREAD* macros.
+
+	* intern.h: ditto.
+
+	* signal.c (posix_signal): remove unused function
+	  posix_nativethread_signal().
+
 Sun Feb 25 11:31:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_run): fix to ANSI style.

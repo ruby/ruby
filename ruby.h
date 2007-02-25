@@ -812,23 +812,8 @@ rb_special_const_p(VALUE obj)
 static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
-#if defined(HAVE_LIBPTHREAD)
-#ifdef HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
-typedef pthread_t rb_nativethread_t;
-# define NATIVETHREAD_CURRENT() pthread_self()
-# define NATIVETHREAD_EQUAL(t1,t2) pthread_equal((t1),(t2))
-# define HAVE_NATIVETHREAD
-
-# define NATIVETHREAD_KILL(th,sig) pthread_kill((th),(sig))
-# define HAVE_NATIVETHREAD_KILL
-#elif defined(_WIN32) || defined(_WIN32_WCE)
-typedef DWORD rb_nativethread_t;
-# define NATIVETHREAD_CURRENT() GetCurrentThreadId()
-# define NATIVETHREAD_EQUAL(t1,t2) ((t1) == (t2))
-# define HAVE_NATIVETHREAD
-#endif
+#define RUBY_VM 1 /* YARV */
+#define HAVE_NATIVETHREAD
 
 #if defined(__cplusplus)
 #if 0

@@ -354,23 +354,6 @@ posix_signal(int signum, sighandler_t handler)
     ruby_signal(signum, handler);
 }
 
-#ifdef HAVE_NATIVETHREAD
-static sighandler_t
-ruby_nativethread_signal(int signum, sighandler_t handler)
-{
-    sighandler_t old;
-
-    old = ruby_signal(signum, handler);
-    rb_trap_accept_nativethreads[signum] = 1;
-    return old;
-}
-
-void
-posix_nativethread_signal(int signum, sighandler_t handler)
-{
-    ruby_nativethread_signal(signum, handler);
-}
-#endif
 #else /* !POSIX_SIGNAL */
 #define ruby_signal(sig,handler) (rb_trap_accept_nativethreads[sig] = 0, signal((sig),(handler)))
 #ifdef HAVE_NATIVETHREAD
