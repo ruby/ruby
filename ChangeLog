@@ -1,3 +1,9 @@
+Sun Feb 25 23:02:55 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::initialize):
+	  Initialize @workdir properly to silence a warning under -w.
+	  Submitted by <tommy at tmtm.org> in [ruby-dev:30400].
+
 Sun Feb 25 02:47:43 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* defines.h: Pull the RUBY_MBCHAR_MAXSIZE definition from trunk,
