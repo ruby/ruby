@@ -75,7 +75,7 @@ ARCH = i386
 CPU = $(PROCESSOR_ARCHITECTURE)
 ARCH = $(PROCESSOR_ARCHITECTURE)
 !endif
-!if !defined(DEBUGFLAGS) && $(MSC_VER) < 1400
+!if !defined(DEBUGFLAGS)
 DEBUGFLAGS = -Zi
 !endif
 !if !defined(OPTFLAGS)

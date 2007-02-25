@@ -1,3 +1,7 @@
+Sun Feb 25 11:46:58 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* win32/Makefile.sub: enable -Zi (debug) option.
+
 Sun Feb 25 11:38:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.h: define RUBY_VM macro and remove NATIVETHREAD* macros.
