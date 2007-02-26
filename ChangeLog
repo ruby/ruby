@@ -1,3 +1,8 @@
+Tue Feb 27 03:40:09 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c: Consistently use 0 and 1 for
+	  rb_thread_critical values.
+
 Mon Feb 26 15:18:23 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/thread/thread.c: Use xmalloc()/xfree() instead of

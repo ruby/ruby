@@ -21,7 +21,7 @@ static VALUE rb_cSizedQueue;
 static VALUE
 thread_exclusive_do()
 {
-    rb_thread_critical = Qtrue;
+    rb_thread_critical = 1;
 
     return rb_yield(Qundef);
 }
@@ -639,11 +639,11 @@ wait_condvar(ConditionVariable *condvar, Mutex *mutex)
 {
     rb_thread_critical = 1;
     if (!RTEST(mutex->owner)) {
-        rb_thread_critical = Qfalse;
+        rb_thread_critical = 0;
         return;
     }
     if (mutex->owner != rb_thread_current()) {
-        rb_thread_critical = Qfalse;
+        rb_thread_critical = 0;
         rb_raise(rb_eThreadError, "Not owner");
     }
     mutex->owner = Qnil;
