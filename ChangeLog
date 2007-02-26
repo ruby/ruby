@@ -1,3 +1,8 @@
+Tue Feb 27 00:45:23 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ruby/test_optimization.rb: restore method before calling
+	  assert_equal.
+
 Mon Feb 26 00:58:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h: add rb_thread_t#top_wrapper, top_self.

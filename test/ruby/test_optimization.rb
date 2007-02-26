@@ -16,6 +16,30 @@ class TestRubyOptimization < Test::Unit::TestCase
     FIXNUM_MIN = -1073741824          # -2 ** 30
   end
 
+  def redefine_method(klass, method)
+    (@redefine_method_seq ||= 0)
+    seq = (@redefine_method_seq += 1)
+    eval(<<-End, ::TOPLEVEL_BINDING)
+      class #{klass}
+        alias redefine_method_orig_#{seq} #{method}
+        undef #{method}
+        def #{method}(*args)
+          args[0]
+        end
+      end
+    End
+    begin
+      return yield
+    ensure
+      eval(<<-End, ::TOPLEVEL_BINDING)
+        class #{klass}
+          undef #{method}
+          alias #{method} redefine_method_orig_#{seq}
+        end
+      End
+    end
+  end
+
   def test_fixnum_plus
     a, b = 1, 2
     assert_equal 3, a + b
@@ -23,23 +47,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_instance_of Bignum, FIXNUM_MAX + 1
 
     assert_equal 21, 10 + 11
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Fixnum
-        alias orig_plus +
-        undef +
-        def +(other)
-          other
-        end
-      end
-    End
-    assert_equal 11, 10 + 11
-  ensure
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Fixnum
-        undef +
-        alias + orig_plus
-      end
-    End
+    assert_equal 11, redefine_method('Fixnum', '+') { 10 + 11 }
     assert_equal 21, 10 + 11
   end
 
@@ -49,23 +57,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_instance_of Bignum, FIXNUM_MIN - 1
 
     assert_equal 5, 8 - 3
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Fixnum
-        alias orig_minus -
-        undef -
-        def -(other)
-          other
-        end
-      end
-    End
-    assert_equal 3, 8 - 3
-  ensure
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Fixnum
-        undef -
-        alias - orig_minus
-      end
-    End
+    assert_equal 3, redefine_method('Fixnum', '-') { 8 - 3 }
     assert_equal 5, 8 - 3
   end
 
@@ -83,44 +75,13 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_float_plus
     assert_equal 4.0, 2.0 + 2.0
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Float
-        alias orig_plus +
-        undef +
-        def +(other)
-          other
-        end
-      end
-    End
-    assert_equal 2.0, 2.0 + 2.0
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class Float
-        undef +
-        alias + orig_plus
-      end
-    End
+    assert_equal 2.0, redefine_method('Float', '+') { 2.0 + 2.0 }
     assert_equal 4.0, 2.0 + 2.0
   end
 
   def test_string_length
     assert_equal 6, "string".length
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class String
-        alias orig_length length
-        undef length
-        def length
-          99
-        end
-      end
-    End
-    assert_equal 99, "string".length
-  ensure
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class String
-        undef length
-        alias length orig_length
-      end
-    End
+    assert_nil redefine_method('String', 'length') { "string".length }
     assert_equal 6, "string".length
   end
 
@@ -129,23 +90,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "x", "x" + ""
     assert_equal "x", "" + "x"
     assert_equal "ab", "a" + "b"
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class String
-        alias orig_plus +
-        undef +
-        def +(other)
-          'OK'
-        end
-      end
-    End
-    assert_equal 'OK', "a" + "b"
-  ensure
-    eval(<<-End, ::TOPLEVEL_BINDING)
-      class String
-        undef +
-        alias + orig_plus
-      end
-    End
+    assert_equal 'b', redefine_method('String', '+') { "a" + "b" }
     assert_equal "ab", "a" + "b"
   end
 
