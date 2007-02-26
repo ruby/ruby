@@ -1360,8 +1360,8 @@ invokeblock
 	/* unreachable */
     }
     else {
-	val = th_invoke_yield_cfunc(th, block, block->self,
-				    num, STACK_ADDR_FROM_TOP(num));
+	val = th_yield_with_cfunc(th, block, block->self,
+				  num, STACK_ADDR_FROM_TOP(num));
 	POPN(num);
     }
 }

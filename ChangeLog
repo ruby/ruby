@@ -1,3 +1,17 @@
+Tue Feb 27 07:47:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h, vm.h: rename th_invoke_yield() to th_yield().
+
+	* blockinlining.c: ditto.
+
+	* eval.c: ditto.
+
+	* vm.c, insns.def: rename th_invoke_yield_cfunc()
+	  to th_yield_with_cfunc().
+
+	* yarvcore.h, yarvcore.c: rename theYarvVM to ruby_current_vm and
+	  yarvCurrentThread to ruby_current_thread.  remove yarvVMArray.
+
 Tue Feb 27 00:45:23 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_optimization.rb: restore method before calling

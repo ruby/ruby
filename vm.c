@@ -41,8 +41,9 @@ void vm_analysis_register(int reg, int isset);
 void vm_analysis_insn(int insn);
 
 static inline VALUE
- th_invoke_yield_cfunc(rb_thread_t *th, rb_block_t *block,
-		       VALUE self, int argc, VALUE *argv);
+th_yield_cfunc(rb_thread_t *th, rb_block_t *block,
+	       VALUE self, int argc, VALUE *argv);
+
 VALUE th_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 		     VALUE self, int argc, VALUE *argv);
 
@@ -647,8 +648,8 @@ rb_call_super(int argc, const VALUE *argv)
 }
 
 static inline VALUE
-th_invoke_yield_cfunc(rb_thread_t *th, rb_block_t *block,
-		      VALUE self, int argc, VALUE *argv)
+th_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
+		    VALUE self, int argc, VALUE *argv)
 {
     NODE *ifunc = (NODE *) block->iseq;
     VALUE val;
@@ -780,13 +781,13 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    argc = 1;
 	    argv = &args;
 	}
-	val = th_invoke_yield_cfunc(th, block, block->self, argc, argv);
+	val = th_yield_with_cfunc(th, block, block->self, argc, argv);
     }
     return val;
 }
 
 VALUE
-th_invoke_yield(rb_thread_t *th, int argc, VALUE *argv)
+th_yield(rb_thread_t *th, int argc, VALUE *argv)
 {
     rb_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 

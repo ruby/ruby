@@ -1140,8 +1140,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */ , int flags,
 	   int avalue)
 {
     if (avalue) {
-	return th_invoke_yield(GET_THREAD(),
-			       RARRAY_LEN(val), RARRAY_PTR(val));
+	return th_yield(GET_THREAD(), RARRAY_LEN(val), RARRAY_PTR(val));
     }
     else {
 	int argc = (val == Qundef) ? 0 : 1;
@@ -1153,7 +1152,7 @@ rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */ , int flags,
 	    argv = RARRAY_PTR(argv[0]);
 	}
 	  */
-	return th_invoke_yield(GET_THREAD(), argc, argv);
+	return th_yield(GET_THREAD(), argc, argv);
     }
 }
 

@@ -609,7 +609,7 @@ VALUE th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
 VALUE th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE th_backtrace(rb_thread_t *, int);
 
-VALUE th_invoke_yield(rb_thread_t *th, int argc, VALUE *argv);
+VALUE th_yield(rb_thread_t *th, int argc, VALUE *argv);
 VALUE th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	       VALUE id, ID oid, int argc, const VALUE *argv,
 	       NODE * body, int nosuper);
@@ -622,12 +622,12 @@ VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-extern rb_thread_t *yarvCurrentThread;
-extern rb_vm_t *theYarvVM;
+extern rb_thread_t *ruby_current_thread;
+extern rb_vm_t *ruby_current_vm;
 
-#define GET_VM() theYarvVM
-#define GET_THREAD() yarvCurrentThread
-#define rb_thread_set_current_raw(th) (yarvCurrentThread = th)
+#define GET_VM() ruby_current_vm
+#define GET_THREAD() ruby_current_thread
+#define rb_thread_set_current_raw(th) (ruby_current_thread = th)
 #define rb_thread_set_current(th) do { \
     rb_thread_set_current_raw(th); \
     th->vm->running_thread = th; \

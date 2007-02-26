@@ -71,9 +71,9 @@ ID id__send_bang;
 /* YARVCore */
 /************/
 
-rb_thread_t *yarvCurrentThread = 0;
-rb_vm_t *theYarvVM = 0;
-static VALUE yarvVMArray = Qnil;
+rb_thread_t *ruby_current_thread = 0;
+rb_vm_t *ruby_current_vm = 0;
+static VALUE ruby_vm_list = Qnil;
 
 RUBY_EXTERN int ruby_nerrs;
 
@@ -153,7 +153,7 @@ vm_free(void *ptr)
 	/* TODO: MultiVM Instance */
 	/* VM object should not be cleaned by GC */
 	/* ruby_xfree(ptr); */
-	/* theYarvVM = 0; */
+	/* ruby_current_vm = 0; */
     }
     FREE_REPORT_LEAVE("vm");
 }
@@ -521,15 +521,11 @@ Init_VM(void)
 	rb_vm_t *vm;
 	rb_thread_t *th;
 
-	vm = theYarvVM;
+	vm = ruby_current_vm;
 
 	xfree(RDATA(vmval)->data);
 	RDATA(vmval)->data = vm;
 	vm->self = vmval;
-
-	yarvVMArray = rb_ary_new();
-	rb_register_mark_object(yarvVMArray);
-	rb_ary_push(yarvVMArray, vm->self);
 
 	/* create main thread */
 	thval = rb_thread_alloc(rb_cThread);
@@ -557,7 +553,7 @@ Init_yarv(void)
     rb_thread_t *th = ALLOC(rb_thread_t);
 
     vm_init2(vm);
-    theYarvVM = vm;
+    ruby_current_vm = vm;
 
     th_init2(th);
     th->vm = vm;
