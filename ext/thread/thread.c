@@ -86,7 +86,7 @@ free_entries(Entry *first)
     Entry *next;
     while (first) {
         next = first->next;
-        free(first);
+        xfree(first);
         first = next;
     }
 }
@@ -107,7 +107,7 @@ push_list(List *list, VALUE value)
         entry = list->entry_pool;
         list->entry_pool = entry->next;
     } else {
-        entry = (Entry *)malloc(sizeof(Entry));
+        entry = (Entry *)xmalloc(sizeof(Entry));
     }
 
     entry->value = value;
@@ -325,7 +325,7 @@ free_mutex(Mutex *mutex)
 {
     assert_no_survivors(&mutex->waiting, "mutex", mutex);
     finalize_mutex(mutex);
-    free(mutex);
+    xfree(mutex);
 }
 
 static void
@@ -347,7 +347,7 @@ static VALUE
 rb_mutex_alloc(VALUE klass)
 {
     Mutex *mutex;
-    mutex = (Mutex *)malloc(sizeof(Mutex));
+    mutex = (Mutex *)xmalloc(sizeof(Mutex));
     init_mutex(mutex);
     return Data_Wrap_Struct(klass, mark_mutex, free_mutex, mutex);
 }
@@ -598,7 +598,7 @@ free_condvar(ConditionVariable *condvar)
 {
     assert_no_survivors(&condvar->waiting, "condition variable", condvar);
     finalize_condvar(condvar);
-    free(condvar);
+    xfree(condvar);
 }
 
 static void
@@ -620,7 +620,7 @@ rb_condvar_alloc(VALUE klass)
 {
     ConditionVariable *condvar;
 
-    condvar = (ConditionVariable *)malloc(sizeof(ConditionVariable));
+    condvar = (ConditionVariable *)xmalloc(sizeof(ConditionVariable));
     init_condvar(condvar);
 
     return Data_Wrap_Struct(klass, mark_condvar, free_condvar, condvar);
@@ -806,7 +806,7 @@ free_queue(Queue *queue)
     assert_no_survivors(&queue->space_available.waiting, "queue", queue);
     assert_no_survivors(&queue->value_available.waiting, "queue", queue);
     finalize_queue(queue);
-    free(queue);
+    xfree(queue);
 }
 
 static void
@@ -831,7 +831,7 @@ static VALUE
 rb_queue_alloc(VALUE klass)
 {
     Queue *queue;
-    queue = (Queue *)malloc(sizeof(Queue));
+    queue = (Queue *)xmalloc(sizeof(Queue));
     init_queue(queue);
     return Data_Wrap_Struct(klass, mark_queue, free_queue, queue);
 }

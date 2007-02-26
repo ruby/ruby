@@ -1,3 +1,8 @@
+Mon Feb 26 15:18:23 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c: Use xmalloc()/xfree() instead of
+	  malloc()/free(); pointed out by shugo in [ruby-dev:30412].
+
 Sun Feb 25 23:02:55 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::initialize):
