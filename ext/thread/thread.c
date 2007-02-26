@@ -18,21 +18,14 @@ static VALUE rb_cConditionVariable;
 static VALUE rb_cQueue;
 static VALUE rb_cSizedQueue;
 
+static VALUE set_critical(VALUE value);
+
 static VALUE
 thread_exclusive_do()
 {
     rb_thread_critical = 1;
 
     return rb_yield(Qundef);
-}
-
-static VALUE
-thread_exclusive_ensure(val)
-    VALUE val;
-{
-    rb_thread_critical = val;
-
-    return Qundef;
 }
 
 /*
@@ -456,7 +449,7 @@ static VALUE
 set_critical(VALUE value)
 {
     rb_thread_critical = (int)value;
-    return Qnil;
+    return Qundef;
 }
 
 static VALUE
