@@ -21,7 +21,7 @@ static VALUE rb_cSizedQueue;
 static VALUE set_critical(VALUE value);
 
 static VALUE
-thread_exclusive_do()
+thread_exclusive_do(void)
 {
     rb_thread_critical = 1;
 
@@ -38,9 +38,9 @@ thread_exclusive_do()
  */
 
 static VALUE
-rb_thread_exclusive()
+rb_thread_exclusive(void)
 {
-    return rb_ensure(thread_exclusive_do, Qundef, thread_exclusive_ensure, rb_thread_critical);
+    return rb_ensure(thread_exclusive_do, Qundef, set_critical, rb_thread_critical);
 }
 
 typedef struct _Entry {
