@@ -1,5 +1,9 @@
 Tue Feb 27 03:40:09 2007  Akinori MUSHA  <knu@iDaemons.org>
 
+	* ext/thread/thread.c (wait_list_cleanup, rb_mutex_try_lock):
+	  Eliminate rb_thread_critical switching where unnecessary;
+	  implied by shugo in [ruby-dev:30412].
+
 	* ext/thread/thread.c (set_critical): Merge in
 	  thread_exclusive_ensure().
 

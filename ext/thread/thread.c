@@ -247,9 +247,7 @@ static VALUE
 wait_list_cleanup(List *list)
 {
     /* cleanup in case of spurious wakeups */
-    rb_thread_critical = 1;
     remove_one(list, rb_thread_current());
-    rb_thread_critical = 0;
     return Qnil;
 }
 
@@ -374,20 +372,14 @@ static VALUE
 rb_mutex_try_lock(VALUE self)
 {
     Mutex *mutex;
-    VALUE result;
 
     Data_Get_Struct(self, Mutex, mutex);
 
-    result = Qfalse;
+    if (RTEST(mutex->owner))
+        return Qfalse;
 
-    rb_thread_critical = 1;
-    if (!RTEST(mutex->owner)) {
-        mutex->owner = rb_thread_current();
-        result = Qtrue;
-    }
-    rb_thread_critical = 0;
-
-    return result;
+    mutex->owner = rb_thread_current();
+    return Qtrue;
 }
 
 /*
