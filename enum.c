@@ -1224,8 +1224,6 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 static VALUE
 take_i(VALUE i, VALUE *arg)
 {
-    long n = arg[1];
-
     if (arg[1]-- == 0) rb_iter_break();
     rb_ary_push(arg[0], i);
     return Qnil;
@@ -1250,8 +1248,8 @@ take_iter_i(VALUE i, VALUE *arg)
  *     
  *     a = [1, 2, 3, 4, 5]
  *     
- *     a.take(3)             # => [4, 5]
- *     a.take {|i| i < 3 }   # => [3, 4, 5]
+ *     a.take(3)             # => [1, 2, 3]
+ *     a.take {|i| i < 3 }   # => [1, 2]
  *     
  */
 
@@ -1278,8 +1276,6 @@ enum_take(int argc, VALUE *argv, VALUE obj)
 static VALUE
 drop_i(VALUE i, VALUE *arg)
 {
-    long n = arg[1];
-
     if (arg[1] == 0) {
 	rb_ary_push(arg[0], i);
     }
