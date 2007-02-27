@@ -358,7 +358,7 @@ __crt0_glob_function(char *path)
     info.count = 0;
     info.head = 0;
 
-    rb_globi(buf, push_element, (VALUE)&info);
+    ruby_glob(buf, 0, push_element, (VALUE)&info);
 
     if (buf != path_buffer)
 	ruby_xfree(buf);

@@ -1,3 +1,9 @@
+Tue Feb 27 21:50:10 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* util.c (__crt0_glob_function): use ruby_glob() instead of rb_globi().
+
+	* configure.in (ac_cv_func_setrlimit): workaround for djgpp.
+
 Tue Feb 27 20:49:19 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/base64.rb (Base64::b64encode): Fix documentation; submitted
