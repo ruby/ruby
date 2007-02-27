@@ -62,7 +62,7 @@ rb_nkf_putchar(unsigned int c)
     o_len += incsize;
     rb_str_resize(result, o_len);
     incsize *= 2;
-    output = RSTRING_PTR(result);
+    output = (unsigned char *)RSTRING_PTR(result);
   }
   output[output_ctr++] = c;
 
@@ -155,13 +155,13 @@ rb_nkf_kconv(VALUE obj, VALUE opt, VALUE src)
 
   input_ctr = 0;
   StringValue(src);
-  input = RSTRING_PTR(src);
+  input = (unsigned char *)RSTRING_PTR(src);
   i_len = RSTRING_LEN(src);
   result = rb_str_new(0, i_len*3 + 10);
   v = result;
 
   output_ctr = 0;
-  output     = RSTRING_PTR(result);
+  output     = (unsigned char *)RSTRING_PTR(result);
   o_len      = RSTRING_LEN(result);
   *output    = '\0';
 
@@ -208,7 +208,7 @@ rb_nkf_guess1(VALUE obj, VALUE src)
   int sequence_counter = 0;
 
   StringValue(src);
-  p = RSTRING_PTR(src);
+  p = (unsigned char *)RSTRING_PTR(src);
   pend = p + RSTRING_LEN(src);
   if (p == pend) return INT2FIX(_UNKNOWN);
 
@@ -324,7 +324,7 @@ rb_nkf_guess2(VALUE obj, VALUE src)
 
   input_ctr = 0;
   StringValue(src);
-  input = RSTRING_PTR(src);
+  input = (unsigned char *)RSTRING_PTR(src);
   i_len = RSTRING_LEN(src);
 
   if(x0201_f == WISH_TRUE)

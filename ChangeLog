@@ -1,3 +1,10 @@
+Tue Feb 27 19:26:31 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/nkf/nkf.c (rb_str_resize, rb_nkf_kconv, rb_nkf_guess1,
+	  rb_nkf_guess2): Silence warnings regarding char * vs. unsigned
+	  char * mismatch; submitted by Lyle Johnson
+	  <lyle.johnson@gmail.com> in [ruby-core:10416].
+
 Tue Feb 27 19:15:01 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/base64.rb (Base64::b64encode): Fix documentation; submitted
