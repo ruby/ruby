@@ -4,7 +4,7 @@ Tue Feb 27 21:36:47 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Feb 27 21:33:04 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* configure:in (ac_cv_func_setrlimit): workaround for djgpp.
+	* configure.in (ac_cv_func_setrlimit): workaround for djgpp.
 
 Tue Feb 27 19:38:52 2007  Akinori MUSHA  <knu@iDaemons.org>
 
