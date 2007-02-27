@@ -18,21 +18,14 @@ static VALUE rb_cConditionVariable;
 static VALUE rb_cQueue;
 static VALUE rb_cSizedQueue;
 
+static VALUE set_critical(VALUE value);
+
 static VALUE
-thread_exclusive_do()
+thread_exclusive_do(void)
 {
-    rb_thread_critical = Qtrue;
+    rb_thread_critical = 1;
 
     return rb_yield(Qundef);
-}
-
-static VALUE
-thread_exclusive_ensure(val)
-    VALUE val;
-{
-    rb_thread_critical = val;
-
-    return Qundef;
 }
 
 /*
@@ -45,9 +38,9 @@ thread_exclusive_ensure(val)
  */
 
 static VALUE
-rb_thread_exclusive()
+rb_thread_exclusive(void)
 {
-    return rb_ensure(thread_exclusive_do, Qundef, thread_exclusive_ensure, rb_thread_critical);
+    return rb_ensure(thread_exclusive_do, Qundef, set_critical, rb_thread_critical);
 }
 
 typedef struct _Entry {
@@ -86,7 +79,7 @@ free_entries(Entry *first)
     Entry *next;
     while (first) {
         next = first->next;
-        free(first);
+        xfree(first);
         first = next;
     }
 }
@@ -107,7 +100,7 @@ push_list(List *list, VALUE value)
         entry = list->entry_pool;
         list->entry_pool = entry->next;
     } else {
-        entry = (Entry *)malloc(sizeof(Entry));
+        entry = (Entry *)xmalloc(sizeof(Entry));
     }
 
     entry->value = value;
@@ -254,9 +247,7 @@ static VALUE
 wait_list_cleanup(List *list)
 {
     /* cleanup in case of spurious wakeups */
-    rb_thread_critical = 1;
     remove_one(list, rb_thread_current());
-    rb_thread_critical = 0;
     return Qnil;
 }
 
@@ -325,7 +316,7 @@ free_mutex(Mutex *mutex)
 {
     assert_no_survivors(&mutex->waiting, "mutex", mutex);
     finalize_mutex(mutex);
-    free(mutex);
+    xfree(mutex);
 }
 
 static void
@@ -347,7 +338,7 @@ static VALUE
 rb_mutex_alloc(VALUE klass)
 {
     Mutex *mutex;
-    mutex = (Mutex *)malloc(sizeof(Mutex));
+    mutex = (Mutex *)xmalloc(sizeof(Mutex));
     init_mutex(mutex);
     return Data_Wrap_Struct(klass, mark_mutex, free_mutex, mutex);
 }
@@ -381,20 +372,14 @@ static VALUE
 rb_mutex_try_lock(VALUE self)
 {
     Mutex *mutex;
-    VALUE result;
 
     Data_Get_Struct(self, Mutex, mutex);
 
-    result = Qfalse;
+    if (RTEST(mutex->owner))
+        return Qfalse;
 
-    rb_thread_critical = 1;
-    if (!RTEST(mutex->owner)) {
-        mutex->owner = rb_thread_current();
-        result = Qtrue;
-    }
-    rb_thread_critical = 0;
-
-    return result;
+    mutex->owner = rb_thread_current();
+    return Qtrue;
 }
 
 /*
@@ -456,7 +441,7 @@ static VALUE
 set_critical(VALUE value)
 {
     rb_thread_critical = (int)value;
-    return Qnil;
+    return Qundef;
 }
 
 static VALUE
@@ -598,7 +583,7 @@ free_condvar(ConditionVariable *condvar)
 {
     assert_no_survivors(&condvar->waiting, "condition variable", condvar);
     finalize_condvar(condvar);
-    free(condvar);
+    xfree(condvar);
 }
 
 static void
@@ -620,7 +605,7 @@ rb_condvar_alloc(VALUE klass)
 {
     ConditionVariable *condvar;
 
-    condvar = (ConditionVariable *)malloc(sizeof(ConditionVariable));
+    condvar = (ConditionVariable *)xmalloc(sizeof(ConditionVariable));
     init_condvar(condvar);
 
     return Data_Wrap_Struct(klass, mark_condvar, free_condvar, condvar);
@@ -639,11 +624,11 @@ wait_condvar(ConditionVariable *condvar, Mutex *mutex)
 {
     rb_thread_critical = 1;
     if (!RTEST(mutex->owner)) {
-        rb_thread_critical = Qfalse;
+        rb_thread_critical = 0;
         return;
     }
     if (mutex->owner != rb_thread_current()) {
-        rb_thread_critical = Qfalse;
+        rb_thread_critical = 0;
         rb_raise(rb_eThreadError, "Not owner");
     }
     mutex->owner = Qnil;
@@ -806,7 +791,7 @@ free_queue(Queue *queue)
     assert_no_survivors(&queue->space_available.waiting, "queue", queue);
     assert_no_survivors(&queue->value_available.waiting, "queue", queue);
     finalize_queue(queue);
-    free(queue);
+    xfree(queue);
 }
 
 static void
@@ -831,7 +816,7 @@ static VALUE
 rb_queue_alloc(VALUE klass)
 {
     Queue *queue;
-    queue = (Queue *)malloc(sizeof(Queue));
+    queue = (Queue *)xmalloc(sizeof(Queue));
     init_queue(queue);
     return Data_Wrap_Struct(klass, mark_queue, free_queue, queue);
 }

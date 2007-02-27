@@ -332,7 +332,7 @@ BigDecimal_load(VALUE self, VALUE str)
     unsigned long m=0;
 
     SafeStringValue(str);
-    pch = RSTRING_PTR(str);
+    pch = (unsigned char *)RSTRING_PTR(str);
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
         if(!ISDIGIT(ch)) {
@@ -341,7 +341,7 @@ BigDecimal_load(VALUE self, VALUE str)
         m = m*10 + (unsigned long)(ch-'0');
     }
     if(m>VpBaseFig()) m -= VpBaseFig();
-    GUARD_OBJ(pv,VpNewRbClass(m,pch,self));
+    GUARD_OBJ(pv,VpNewRbClass(m,(char *)pch,self));
     m /= VpBaseFig();
     if(m && pv->MaxPrec>m) pv->MaxPrec = m+1;
     return ToValue(pv);

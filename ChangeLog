@@ -1,3 +1,42 @@
+Tue Feb 27 20:49:19 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/base64.rb (Base64::b64encode): Fix documentation; submitted
+	  by David Symonds <dsymonds@gmail.com> in [ruby-core:10432].
+
+	* regex.c (calculate_must_string, slow_search, re_search): Silence
+	  warnings regarding char * vs. unsigned char * mismatch;
+	  submitted by Lyle Johnson <lyle.johnson@gmail.com>
+	  in [ruby-core:10416].
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_load): Ditto.
+
+	* ext/digest/sha1/sha1ossl.c (SHA1_Finish): Ditto.
+
+	* ext/digest/rmd160/rmd160ossl.c (RMD160_Finish): Ditto.
+
+	* ext/digest/digest.c (rb_digest_base_finish,
+	  rb_digest_base_update): Ditto.
+
+	* ext/nkf/nkf.c (rb_str_resize, rb_nkf_kconv, rb_nkf_guess1,
+	  rb_nkf_guess2): Ditto.
+
+	* ext/thread/thread.c (wait_list_cleanup, rb_mutex_try_lock):
+	  Eliminate rb_thread_critical switching where unnecessary;
+	  implied by shugo in [ruby-dev:30412].
+
+	* ext/thread/thread.c (set_critical): Merge in
+	  thread_exclusive_ensure().
+
+	* ext/thread/thread.c: Consistently use 0 and 1 for
+	  rb_thread_critical values.
+
+	* ext/thread/thread.c: Use xmalloc()/xfree() instead of
+	  malloc()/free(); pointed out by shugo in [ruby-dev:30412].
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::initialize):
+	  Initialize @workdir properly to silence a warning under -w.
+	  Submitted by <tommy at tmtm.org> in [ruby-dev:30400].
+
 Sun Feb 25 02:50:51 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* defines.h: Pull the RUBY_MBCHAR_MAXSIZE definition from trunk,

@@ -81,6 +81,7 @@ module Test
         @filters = []
         @to_run = []
         @output_level = UI::NORMAL
+        @workdir = nil
         yield(self) if(block_given?)
       end
 
