@@ -12,7 +12,7 @@ if defined? DBM
   class TestDBM < Test::Unit::TestCase
     def TestDBM.uname_s
       require 'rbconfig'
-      case RbConfig::CONFIG['host_os']
+      case RbConfig::CONFIG['target_os']
       when 'cygwin'
         require 'Win32API'
         uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
@@ -21,7 +21,7 @@ if defined? DBM
 
         utsname.unpack('A20' * 5)[0]
       else
-        RbConfig::CONFIG['host_os']
+        RbConfig::CONFIG['target_os']
       end
     end
     SYSTEM = uname_s
