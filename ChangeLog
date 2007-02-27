@@ -1,3 +1,10 @@
+Tue Feb 27 21:19:35 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (set_pioinfo_extra): new function for VC++8 SP1
+	  workaround. [ruby-core:10259]
+
+	* win32/win32.c (NtInitialize): call above function.
+
 Mon Feb 26 09:57:58 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (ruby_signal): don't set SA_RESTART.  a backport from
