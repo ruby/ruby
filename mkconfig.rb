@@ -86,6 +86,7 @@ unless has_version
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
   }
+  print "   CONFIG[\"PATCHLEVEL\"] = \"" + RUBY_PATCHLEVEL + "\"\n"
 end
 
 dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
