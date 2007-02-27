@@ -1,3 +1,11 @@
+Tue Feb 27 21:36:47 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* util.c (__crt0_glob_function): use ruby_glob() instead of rb_globi().
+
+Tue Feb 27 21:33:04 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (ac_cv_func_setrlimit): workaround for djgpp.
+
 Tue Feb 27 20:35:28 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (error.c, process.c): depend on yarvcore.h and rubysig.h.
