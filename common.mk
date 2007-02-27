@@ -324,7 +324,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 .PRECIOUS: $(MKFILES)
 
-.PHONY: test install install-nodoc install-doc
+.PHONY: test install install-nodoc install-doc dist
 
 PHONY:
 
@@ -632,3 +632,5 @@ vtune: miniruby$(EXEEXT)
 	vtl view -hf -mn miniruby$(EXEEXT) -sum -sort -cd
 	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
 
+dist: $(PROGRAM)
+	$(RUNRUBY) $(srcdir)/distruby.rb
