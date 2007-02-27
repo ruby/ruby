@@ -102,7 +102,7 @@ module Base64
   #
   #    require 'base64'
   #    data = "Now is the time for all good coders\nto learn Ruby" 
-  #    puts Base64.b64encode(data)
+  #    Base64.b64encode(data)
   #
   # <i>Generates:</i>
   #

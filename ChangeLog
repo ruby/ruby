@@ -1,3 +1,8 @@
+Tue Feb 27 19:15:01 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/base64.rb (Base64::b64encode): Fix documentation; submitted
+	  by David Symonds <dsymonds@gmail.com> in [ruby-core:10432].
+
 Tue Feb 27 18:59:42 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_load): Silence warnings
