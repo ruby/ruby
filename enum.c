@@ -1221,6 +1221,123 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     return result;
 }
 
+static VALUE
+take_i(VALUE i, VALUE *arg)
+{
+    long n = arg[1];
+
+    if (arg[1]-- == 0) rb_iter_break();
+    rb_ary_push(arg[0], i);
+    return Qnil;
+}
+
+static VALUE
+take_iter_i(VALUE i, VALUE *arg)
+{
+    if (!rb_yield(i)) rb_iter_break();
+    rb_ary_push(arg[0], i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.take(n)               => array
+ *     enum.take {|arr| block }   => array
+ *  
+ *  Without a block, returns first n elements from <i>enum</i>
+ *  With a block, takes elements during block evaluation gives
+ *  true.
+ *     
+ *     a = [1, 2, 3, 4, 5]
+ *     
+ *     a.take(3)             # => [4, 5]
+ *     a.take {|i| i < 3 }   # => [3, 4, 5]
+ *     
+ */
+
+static VALUE
+enum_take(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE args[2];
+
+    if (!rb_block_given_p()) {
+	VALUE vlen;
+
+	rb_scan_args(argc, argv, "1", &vlen);
+	args[1] = NUM2LONG(vlen);
+	args[0] = rb_ary_new2(args[1]);
+	rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
+	return args[0];
+    }
+    rb_scan_args(argc, argv, "0");
+    args[0] = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, take_iter_i, (VALUE)args);
+    return args[0];
+}
+
+static VALUE
+drop_i(VALUE i, VALUE *arg)
+{
+    long n = arg[1];
+
+    if (arg[1] == 0) {
+	rb_ary_push(arg[0], i);
+    }
+    else {
+	arg[1]--;
+    }
+    return Qnil;
+}
+
+static VALUE
+drop_iter_i(VALUE i, VALUE *arg)
+{
+    if (!arg[1] && !rb_yield(i)) {
+	arg[1] = Qtrue;
+    }
+    if (arg[1]) {
+	rb_ary_push(arg[0], i);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.drop(n)               => array
+ *     enum.drop {|arr| block }   => array
+ *  
+ *  Without a block, drops first n elements from <i>enum</i>, and returns
+ *  rest elements in an array.  With a block, drops elements during block
+ *  evaluation gives true.
+ *     
+ *     a = [1, 2, 3, 4, 5]
+ *     
+ *     a.drop(3)             # => [4, 5]
+ *     a.drop {|i| i < 3 }   # => [3, 4, 5]
+ *     
+ */
+
+static VALUE
+enum_drop(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE args[2];
+
+    if (!rb_block_given_p()) {
+	VALUE vlen;
+
+	rb_scan_args(argc, argv, "1", &vlen);
+	args[1] = NUM2LONG(vlen);
+	args[0] = rb_ary_new2(args[1]);
+	rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
+	return args[0];
+    }
+    rb_scan_args(argc, argv, "0");
+    args[0] = rb_ary_new();
+    args[1] = Qfalse;
+    rb_block_call(obj, id_each, 0, 0, drop_iter_i, (VALUE)args);
+    return args[0];
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -1268,6 +1385,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
+    rb_define_method(rb_mEnumerable, "take", enum_take, -1);
+    rb_define_method(rb_mEnumerable, "drop", enum_drop, -1);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");

@@ -1,3 +1,9 @@
+Tue Feb 27 18:12:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_take): new method.  [ruby-dev:30407]
+
+	* enum.c (enum_drop): ditto.
+
 Tue Feb 27 07:47:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, vm.h: rename th_invoke_yield() to th_yield().
