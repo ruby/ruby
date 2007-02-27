@@ -392,35 +392,20 @@ enumerator.$(OBJEXT): {$(VPATH)}enumerator.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}st.h {$(VPATH)}vm_opts.h
+  {$(VPATH)}st.h {$(VPATH)}vm_opts.h {$(VPATH)}rubysig.h {$(VPATH)}yarvcore.h
 euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h
-
-eval.$(OBJEXT): {$(VPATH)}eval.c  {$(VPATH)}eval_intern.h \
+eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}eval_method.h {$(VPATH)}eval_safe.h {$(VPATH)}eval_jump.h \
-  {$(VPATH)}ruby.h config.h  {$(VPATH)}yarvcore.h \
+  {$(VPATH)}ruby.h config.h {$(VPATH)}yarvcore.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 eval_load.$(OBJEXT): {$(VPATH)}eval_load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}node.h {$(VPATH)}util.h  {$(VPATH)}yarvcore.h \
+  {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}yarvcore.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
-proc.$(OBJEXT): {$(VPATH)}proc.c  {$(VPATH)}eval_intern.h \
-  {$(VPATH)}ruby.h config.h  {$(VPATH)}yarvcore.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
-
-thread.$(OBJEXT): {$(VPATH)}thread.c  {$(VPATH)}eval_intern.h \
-  {$(VPATH)}thread_win32.h {$(VPATH)}thread_pthread.h \
-  {$(VPATH)}thread_win32.ci {$(VPATH)}thread_pthread.ci \
-  {$(VPATH)}ruby.h {$(VPATH)}yarvcore.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}node.h {$(VPATH)}util.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
-
 file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h {$(VPATH)}util.h \
@@ -436,7 +421,7 @@ inits.$(OBJEXT): {$(VPATH)}inits.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 io.$(OBJEXT): {$(VPATH)}io.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h  {$(VPATH)}util.h
+  {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h {$(VPATH)}util.h
 main.$(OBJEXT): {$(VPATH)}main.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h config.h \
@@ -458,9 +443,14 @@ parse.$(OBJEXT): {$(VPATH)}parse.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c
 prec.$(OBJEXT): {$(VPATH)}prec.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
+  {$(VPATH)}ruby.h config.h {$(VPATH)}yarvcore.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}node.h {$(VPATH)}util.h \
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 process.$(OBJEXT): {$(VPATH)}process.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}rubysig.h {$(VPATH)}st.h
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}yarvcore.h
 random.$(OBJEXT): {$(VPATH)}random.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h config.h \
@@ -487,13 +477,21 @@ signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h config.h \
 sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h config.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}vsnprintf.c
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}re.h {$(VPATH)}regex.h
 struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
+  {$(VPATH)}thread_win32.h {$(VPATH)}thread_pthread.h \
+  {$(VPATH)}thread_win32.ci {$(VPATH)}thread_pthread.ci \
+  {$(VPATH)}ruby.h {$(VPATH)}yarvcore.h config.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}node.h {$(VPATH)}util.h \
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
