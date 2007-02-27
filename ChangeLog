@@ -1,3 +1,22 @@
+Tue Feb 27 19:36:57 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* regex.c (calculate_must_string, slow_search, re_search): Silence
+	  warnings regarding char * vs. unsigned char * mismatch;
+	  submitted by Lyle Johnson <lyle.johnson@gmail.com>
+	  in [ruby-core:10416].
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_load): Ditto.
+
+	* ext/digest/sha1/sha1ossl.c (SHA1_Finish): Ditto.
+
+	* ext/digest/rmd160/rmd160ossl.c (RMD160_Finish): Ditto.
+
+	* ext/digest/digest.c (rb_digest_base_finish,
+	  rb_digest_base_update): Ditto.
+
+	* ext/nkf/nkf.c (rb_str_resize, rb_nkf_kconv, rb_nkf_guess1,
+	  rb_nkf_guess2): Ditto.
+
 Tue Feb 27 03:40:09 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/thread/thread.c (wait_list_cleanup, rb_mutex_try_lock):

@@ -1014,8 +1014,8 @@ calculate_must_string(start, end)
 {
   int mcnt;
   int max = 0;
-  unsigned char *p = start;
-  unsigned char *pend = end;
+  unsigned char *p = (unsigned char *)start;
+  unsigned char *pend = (unsigned char *)end;
   char *must = 0;
 
   if (start == NULL) return 0;
@@ -1029,7 +1029,7 @@ calculate_must_string(start, end)
     case exactn:
       mcnt = *p;
       if (mcnt > max) {
-	must = p;
+	must = (char *)p;
 	max = mcnt;
       }
       p += mcnt+1;
@@ -2689,7 +2689,7 @@ slow_search(little, llen, big, blen, translate)
       }
     }
 
-    if (slow_match(little, little+llen, big, bend, translate))
+    if (slow_match(little, little+llen, big, bend, (unsigned char *)translate))
       return big - bsave;
 
     big+=mbclen(*big);
@@ -3222,13 +3222,13 @@ re_search(bufp, string, size, startpos, range, regs)
     }
     pend = size;
     if (bufp->options & RE_OPTIMIZE_NO_BM) {
-      pos = slow_search(bufp->must+1, len,
-			string+pbeg, pend-pbeg,
-			MAY_TRANSLATE()?translate:0);
+      pos = slow_search((unsigned char *)(bufp->must+1), len,
+			(unsigned char*)(string+pbeg), pend-pbeg,
+			(char *)(MAY_TRANSLATE()?translate:0));
     }
     else {
-      pos = bm_search(bufp->must+1, len,
-		      string+pbeg, pend-pbeg,
+      pos = bm_search((unsigned char *)(bufp->must+1), len,
+		      (unsigned char *)(string+pbeg), pend-pbeg,
 		      bufp->must_skip,
 		      MAY_TRANSLATE()?translate:0);
     }

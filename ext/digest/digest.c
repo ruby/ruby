@@ -519,7 +519,7 @@ rb_digest_base_update(VALUE self, VALUE str)
     Data_Get_Struct(self, void, pctx);
 
     StringValue(str);
-    algo->update_func(pctx, RSTRING_PTR(str), RSTRING_LEN(str));
+    algo->update_func(pctx, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
 
     return self;
 }
@@ -537,7 +537,7 @@ rb_digest_base_finish(VALUE self)
     Data_Get_Struct(self, void, pctx);
 
     str = rb_str_new(0, algo->digest_len);
-    algo->finish_func(pctx, RSTRING_PTR(str));
+    algo->finish_func(pctx, (unsigned char *)RSTRING_PTR(str));
 
     /* avoid potential coredump caused by use of a finished context */
     algo->init_func(pctx);
