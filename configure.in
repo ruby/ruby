@@ -411,6 +411,7 @@ msdosdjgpp*)	LIBS="-lm $LIBS"
 		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
                 ac_cv_sizeof_rlim_t=4
+		ac_cv_func_setrlimit=no
 		;;
 bsdi*)          LIBS="-lm $LIBS"
                 ac_cv_sizeof_rlim_t=8;;
