@@ -297,7 +297,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 .PRECIOUS: $(MKFILES)
 
-.PHONY: test install install-nodoc install-doc
+.PHONY: test install install-nodoc install-doc dist
 
 PHONY:
 
@@ -441,3 +441,6 @@ variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h config.h \
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}version.h
+
+dist: $(PROGRAM)
+	$(RUNRUBY) $(srcdir)/distruby.rb
