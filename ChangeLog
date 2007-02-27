@@ -1,3 +1,8 @@
+Wed Feb 28 01:22:58 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/{dbm,gdbm}/test_{dbm,gdbm}.rb: shouldn't use host_os. use
+	  target_os instead. reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
 Wed Feb 28 00:08:11 2007  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 	* mkconfig.rb (RbConfig): add CONFIG['PATCHLEVEL']
