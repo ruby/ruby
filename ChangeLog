@@ -1,3 +1,16 @@
+Tue Feb 27 18:59:42 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_load): Silence warnings
+	  regarding char * vs. unsigned char * mismatch; submitted by Lyle
+	  Johnson <lyle.johnson@gmail.com> in [ruby-core:10416].
+
+	* ext/digest/sha1/sha1ossl.c (SHA1_Finish): Ditto.
+
+	* ext/digest/rmd160/rmd160ossl.c (RMD160_Finish): Ditto.
+
+	* ext/digest/digest.c (rb_digest_base_finish,
+	  rb_digest_base_update): Ditto.
+
 Tue Feb 27 18:12:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_take): new method.  [ruby-dev:30407]
