@@ -36,8 +36,6 @@ end
 message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
-have_header("unistd.h")
-have_header("sys/time.h")
 have_header("assert.h")
 
 message "=== Checking for required stuff... ===\n"
