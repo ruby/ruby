@@ -1,3 +1,9 @@
+Wed Feb 28 18:34:48 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb ($DEFLIBPATH): default library paths ($(topdir), etc)
+	  should be the first elements of library paths list.
+	  reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
 Wed Feb 28 18:31:32 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/NEWS-1.8.0: Rename NEWS to NEWS-1.8.0.  This is way too old
