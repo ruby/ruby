@@ -6982,7 +6982,7 @@ rb_feature_p(feature, ext, rb)
 	else {
 	    char *buf;
 
-	    if (ext) return 0;
+	    if (ext && *ext) return 0;
 	    buf = ALLOCA_N(char, len + DLEXT_MAXLEN + 1);
 	    strcpy(buf, feature);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
