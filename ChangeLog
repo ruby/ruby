@@ -1,3 +1,9 @@
+Thu Mar  1 03:42:09 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (get_digest_base_metadata): Allow inheriting
+	  Digest::Base subclasses, which was unintentionally made
+	  impossible while restructuring Digest classes.
+
 Wed Feb 28 22:10:55 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/NEWS-1.8.0: Rename NEWS to NEWS-1.8.0.  This is way too old
