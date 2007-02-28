@@ -435,7 +435,7 @@ get_digest_base_metadata(VALUE klass)
     }
 
     if (!p)
-        rb_raise(rb_eRuntimeError, "Digest::Base cannot be inherited in Ruby");
+        rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
 
