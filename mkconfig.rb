@@ -112,7 +112,10 @@ unless has_version
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
   }
-  print "   CONFIG[\"PATCHLEVEL\"] = \"" + RUBY_PATCHLEVEL + "\"\n"
+  patchlevel = IO.foreach(File.join(srcdir, "version.h")) {|l|
+    m = /^\s*#\s*define\s+RUBY_PATCHLEVEL\s+(\d+)/.match(l) and break m[1]
+  }
+  print "  CONFIG[\"PATCHLEVEL\"] = \"#{patchlevel}\"\n"
 end
 
 dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
