@@ -6984,7 +6984,7 @@ rb_feature_p(feature, ext, rb)
 
 	    if (ext && *ext) return 0;
 	    buf = ALLOCA_N(char, len + DLEXT_MAXLEN + 1);
-	    strcpy(buf, feature);
+	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
 		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
 		if (st_lookup(loading_tbl, (st_data_t)buf, 0)) {

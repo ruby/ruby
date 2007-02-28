@@ -1,7 +1,9 @@
-Thu Mar  1 08:53:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar  1 08:55:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_feature_p): check loading_tbl if the given ext is
 	  empty.  [ruby-dev:30452]
+
+	* eval.c (rb_feature_p): fix possible buffer overrun.
 
 Thu Mar  1 03:30:21 2007  Akinori MUSHA  <knu@iDaemons.org>
 
