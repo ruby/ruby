@@ -170,6 +170,7 @@ LIBRUBY_A     = $(RUBY_SO_NAME)-static.lib
 LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
+THREAD_MODEL  = win32
 
 PREP          = fake.rb
 

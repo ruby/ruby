@@ -98,7 +98,6 @@
 #define xfree       free
 #else
 #include "ruby.h"
-#include "version.h"
 #include "rubysig.h"      /* for DEFER_INTS, ENABLE_INTS */
 
 #define USE_COMBINATION_EXPLOSION_CHECK        /* (X*)* */

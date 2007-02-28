@@ -13,7 +13,6 @@
 #ifndef _COMPILER_H_INCLUDED_
 #define _COMPILER_H_INCLUDED_
 
-#include "version.h"
 
 #if YARVDEBUG > CPDEBUG
 #undef  CPDEBUG

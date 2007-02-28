@@ -1,3 +1,10 @@
+Wed Feb 28 10:33:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in, */Makefile.sub (THREAD_MODEL): system
+	  specific thread model.
+
+	* compile.h, regint.h, vm.h, array.c: removed unnecessary #include.
+
 Wed Feb 28 04:03:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (take_i): small cosmetic / documentation patch from

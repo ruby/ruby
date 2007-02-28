@@ -15,7 +15,6 @@
 #include "ruby.h"
 #include "util.h"
 #include "st.h"
-#include "node.h"
 
 VALUE rb_cArray;
 

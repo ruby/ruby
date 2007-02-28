@@ -13,7 +13,6 @@
 #ifndef _VM_H_INCLUDED_
 #define _VM_H_INCLUDED_
 
-#include "version.h"
 
 #if YARVDEBUG > VMDEBUG
 #undef  VMDEBUG

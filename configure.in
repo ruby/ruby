@@ -1407,6 +1407,9 @@ if test "$install_doc" != no; then
 fi
 AC_SUBST(RDOCTARGET)
 
+if test "$rb_with_pthread" = "yes"; then
+    THREAD_MODEL=pthread
+fi
 case "$target_os" in
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"
@@ -1476,6 +1479,7 @@ case "$target_os" in
 	    COMMON_LIBS=m
 #	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="winsock2.h windows.h"
+	    THREAD_MODEL=win32
 	    ;;
 	esac
 	LIBRUBY_ALIASES=''
@@ -1531,6 +1535,7 @@ AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
 AC_SUBST(EXPORT_PREFIX)
 AC_SUBST(MINIOBJS)
+AC_SUBST(THREAD_MODEL)
 
 MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'`"
 MAKEFILES="`echo $MAKEFILES`"
