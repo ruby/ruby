@@ -1,3 +1,9 @@
+Wed Feb 28 18:35:50 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: no need to check unistd.h and sys/time.h.
+	  they are already checked at configure.
+	  reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
 Wed Feb 28 18:34:48 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb ($DEFLIBPATH): default library paths ($(topdir), etc)
