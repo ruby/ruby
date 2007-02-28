@@ -423,15 +423,19 @@ rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 static rb_digest_metadata_t *
 get_digest_base_metadata(VALUE klass)
 {
+    VALUE p;
     VALUE obj;
     rb_digest_metadata_t *algo;
 
-    if (rb_ivar_defined(klass, id_metadata) == Qfalse) {
-        /* This class should not be subclassed in Ruby */
-        rb_notimplement();
+    for (p = klass; p; p = RCLASS(p)->super) {
+        if (rb_ivar_defined(p, id_metadata)) {
+            obj = rb_ivar_get(p, id_metadata);
+            break;
+        }
     }
 
-    obj = rb_ivar_get(klass, id_metadata);
+    if (!p)
+        rb_raise(rb_eRuntimeError, "Digest::Base cannot be inherited in Ruby");
 
     Data_Get_Struct(obj, rb_digest_metadata_t, algo);
 

@@ -1,3 +1,9 @@
+Thu Mar  1 02:55:25 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (get_digest_base_metadata): Allow inheriting
+	  Digest::Base subclasses, which was unintentionally made
+	  impossible while restructuring Digest classes.
+
 Thu Mar  1 02:05:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (patchlevel): read from version.h.
