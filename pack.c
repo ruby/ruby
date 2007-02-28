@@ -1804,20 +1804,27 @@ pack_unpack(str, fmt)
 		    }
 		}
 		while (s < send) {
-		    while (s[0] == '\r' || s[0] == '\n') { s++; }
-		    if ((a = b64_xtable[(int)s[0]]) == -1) break;
-		    if ((b = b64_xtable[(int)s[1]]) == -1) break;
-		    if ((c = b64_xtable[(int)s[2]]) == -1) break;
-		    if ((d = b64_xtable[(int)s[3]]) == -1) break;
+		    a = b = c = d = -1;
+		    while((a = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { s++; }
+		    if( s >= send ) break;
+		    s++;
+		    while((b = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { s++; }
+		    if( s >= send ) break;
+		    s++;
+		    while((c = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { if( *s == '=' ) break; s++; }
+		    if( *s == '=' || s >= send ) break;
+		    s++;
+		    while((d = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { if( *s == '=' ) break; s++; }
+		    if( *s == '=' || s >= send ) break;
+		    s++;
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
 		    *ptr++ = c << 6 | d;
-		    s += 4;
 		}
 		if (a != -1 && b != -1) {
-		    if (s + 2 < send && s[2] == '=')
+		    if (c == -1 && *s == '=')
 			*ptr++ = a << 2 | b >> 4;
-		    if (c != -1 && s + 3 < send && s[3] == '=') {
+		    else if (c != -1 && *s == '=') {
 			*ptr++ = a << 2 | b >> 4;
 			*ptr++ = b << 4 | c >> 2;
 		    }
