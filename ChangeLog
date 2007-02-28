@@ -1,3 +1,37 @@
+Wed Feb 28 22:10:55 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/NEWS-1.8.0: Rename NEWS to NEWS-1.8.0.  This is way too old
+	  NEWS.
+
+	* NEWS: Add NEWS, a document file to keep user visible feature
+	  changes between releases.
+
+	* configure.in (ac_cv_func_fcntl): fcntl support for MinGW.
+
+	* missing/flock.c: workaround for MinGW.
+
+	* ext/openssl/extconf.rb: no need to check unistd.h and sys/time.h.
+	  they are already checked at configure.
+	  reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
+	* lib/mkmf.rb ($DEFLIBPATH): default library paths ($(topdir), etc)
+	  should be the first elements of library paths list.
+	  reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
+	* test/{dbm,gdbm}/test_{dbm,gdbm}.rb: shouldn't use host_os. use
+	  target_os instead. reported by KOBAYASHI Yasuhiro [ruby-list:43225]
+
+	* mkconfig.rb (RbConfig): add CONFIG['PATCHLEVEL']
+
+	* common.mk: new target dist
+
+	* distruby.rb: new file
+
+	* configure.in (--enable-auto-image-base): avoid the neccessity to
+	  rebase the shared libs as much as possible;
+	  submitted by Corinna Vinschen <spam at vinschen.de> in
+	  [ruby-talk:240964].
+
 Wed Feb 28 20:51:32 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* pack.c (pack_unpack): properly ignore non-base64 octets such as
