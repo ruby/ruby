@@ -265,7 +265,7 @@ ensure
   log_src(src)
 end
 
-def link_command(ldflags, opt="", libpath=$LIBPATH)
+def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
   RbConfig::expand(TRY_LINK.dup,
                  CONFIG.merge('hdrdir' => $hdrdir.quote,
 		 'src' => CONFTEST_C,
@@ -289,7 +289,7 @@ def cpp_command(outfile, opt="")
 		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
 end
 
-def libpathflag(libpath=$LIBPATH)
+def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
   libpath.map{|x|
     (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x.quote
   }.join
@@ -1151,7 +1151,7 @@ end
 #
 def create_makefile(target, srcprefix = nil)
   $target = target
-  libpath = $LIBPATH
+  libpath = $DEFLIBPATH|$LIBPATH
   message "creating Makefile\n"
   rm_f "conftest*"
   if CONFIG["DLEXT"] == $OBJEXT
@@ -1217,7 +1217,7 @@ def create_makefile(target, srcprefix = nil)
   mfile = open("Makefile", "wb")
   mfile.print(*configuration(srcprefix))
   mfile.print "
-libpath = #{$LIBPATH.join(" ")}
+libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
@@ -1442,7 +1442,8 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG = ""
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
-  $LIBPATH = $extmk ? ["$(topdir)"] : CROSS_COMPILING ? [] : ["$(libdir)"]
+  $DEFLIBPATH = $extmk ? ["$(topdir)"] : CROSS_COMPILING ? [] : ["$(libdir)"]
+  $LIBPATH = []
   $INSTALLFILES = nil
 
   $objs = nil
