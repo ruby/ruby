@@ -404,6 +404,7 @@ mingw*)		if test "$with_winsock2" = yes; then
 		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=no
 		enable_pthread=no
+		ac_cv_func_fcntl=yes
 		;;
 os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;

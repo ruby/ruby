@@ -1,3 +1,9 @@
+Wed Feb 28 21:15:00 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (ac_cv_func_fcntl): fcntl support for MinGW.
+
+	* missing/flock.c: workaround for MinGW.
+
 Wed Feb 28 20:51:32 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* pack.c (pack_unpack): properly ignore non-base64 octets such as

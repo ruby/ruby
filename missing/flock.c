@@ -1,6 +1,7 @@
 #include "config.h"
 
-#if defined HAVE_FCNTL && defined HAVE_FCNTL_H
+#if defined _WIN32
+#elif defined HAVE_FCNTL && defined HAVE_FCNTL_H
 
 /* These are the flock() constants.  Since this sytems doesn't have
    flock(), the values of the constants are probably not available.
@@ -122,7 +123,7 @@ flock(fd, operation)
         return -1;
     }
 }
-#elif !defined _WIN32
+#else
 int
 flock(fd, operation)
     int fd;
