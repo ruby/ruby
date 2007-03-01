@@ -1,3 +1,9 @@
+Fri Mar  2 07:58:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_ivar_set): RDoc updated according to a
+	  suggestion from Brian Candler <B.Candler AT pobox.com>.
+	  [ruby-core:10469]
+
 Thu Mar  1 21:38:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, arg): should not omit lhs of OP_ASGN1 even if
