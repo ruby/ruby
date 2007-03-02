@@ -1,3 +1,17 @@
+Fri Mar  2 21:17:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (get_ptr_of_variant, ole_set_safe_array,
+	  ole_val2ptr_variant, ole_val2olevariantdata, ole_variant2val,
+	  ): fix some bugs of WIN32OLE_VARIANT.new when variant type is 
+	  VT_ARRAY|VT_BSTR or VT_BYREF.
+
+	* ext/win32ole/win32ole.c (folevariant_s_array, folevariant_initialize):
+	  WIN32OLE_VARIANT#[], WIN32OLE_VARIANT#[]=, WIN32OLE_VARIANT#value=
+	  is defined as instance method of WIN32OLE_VARIANT.
+
+	* test/win32ole/test_win32ole_variant.rb: add some test for 
+	  VT_ARRAY, VT_BYREF variant type.
+
 Fri Mar  2 07:58:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_ivar_set): RDoc updated according to a
