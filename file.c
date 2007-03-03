@@ -1989,13 +1989,16 @@ static VALUE
 rb_file_s_utime(int argc, VALUE *argv)
 {
     VALUE atime, mtime, rest;
-    struct timeval tvp[2];
+    struct timeval tvs[2], *tvp = NULL;
     long n;
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
-    tvp[0] = rb_time_timeval(atime);
-    tvp[1] = rb_time_timeval(mtime);
+    if (!NIL_P(atime) || !NIL_P(mtime)) {
+	tvp = tvs;
+	tvp[0] = rb_time_timeval(atime);
+	tvp[1] = rb_time_timeval(mtime);
+    }
 
     n = apply2files(utime_internal, rest, tvp);
     return LONG2FIX(n);
@@ -2024,7 +2027,7 @@ rb_file_s_utime(int argc, VALUE *argv)
     VALUE atime, mtime, rest;
     long n;
     struct timeval tv;
-    struct utimbuf utbuf;
+    struct utimbuf utbuf, *utp = NULL;
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 

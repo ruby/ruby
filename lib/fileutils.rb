@@ -1007,22 +1007,33 @@ module FileUtils
   def touch(list, options = {})
     fu_check_options options, OPT_TABLE['touch']
     list = fu_list(list)
-    fu_output_message "touch #{list.join ' '}" if options[:verbose]
+    created = nocreate = options[:nocreate]
+    t = options[:mtime]
+    if options[:verbose]
+      fu_output_message "touch #{
+        nocreate ? ' -c' : ''
+      }#{
+        t ? t.strftime(' -t %Y%m%d%H%M.%S') : ''
+      }#{list.join ' '}"
+    end
     return if options[:noop]
-    t = Time.now
     list.each do |path|
+      created = nocreate
       begin
         File.utime(t, t, path)
       rescue Errno::ENOENT
+        raise if created
         File.open(path, 'a') {
           ;
         }
+        created = true
+        retry if t
       end
     end
   end
   module_function :touch
 
-  OPT_TABLE['touch'] = [:noop, :verbose]
+  OPT_TABLE['touch'] = [:noop, :verbose, :mtime, :nocreate]
 
   private
 
