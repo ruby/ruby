@@ -1966,10 +1966,12 @@ rb_obj_public_methods(argc, argv, obj)
 /*
  *  call-seq:
  *     obj.instance_variable_get(symbol)    => obj
- *  
- *  Returns the value of the given instance variable (or throws a
- *  <code>NameError</code> exception). The <code>@</code> part of the
- *  variable name should be included for regular instance variables
+ *
+ *  Returns the value of the given instance variable, or nil if the
+ *  instance variable is not set. The <code>@</code> part of the
+ *  variable name should be included for regular instance
+ *  variables. Throws a <code>NameError</code> exception if the
+ *  supplied symbol is not valid as an instance variable name.
  *     
  *     class Fred
  *       def initialize(p1, p2)
