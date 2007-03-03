@@ -1012,13 +1012,9 @@ module FileUtils
     fu_check_options options, OPT_TABLE['touch']
     list = fu_list(list)
     created = nocreate = options[:nocreate]
-    t = options[:mtime]
+    t = options[:mtime] || Time.now
     if options[:verbose]
-      fu_output_message "touch #{
-        nocreate ? ' -c' : ''
-      }#{
-        t ? t.strftime(' -t %Y%m%d%H%M.%S') : ''
-      }#{list.join ' '}"
+      fu_output_message "touch #{nocreate ? ' -c' : ''}#{t ? t.strftime(' -t %Y%m%d%H%M.%S') : ''}#{list.join ' '}"
     end
     return if options[:noop]
     list.each do |path|
