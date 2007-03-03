@@ -1,3 +1,13 @@
+Sat Mar  3 18:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_provided): return true only for features loaded from
+	  .rb files, and not search actual library type.  [ruby-dev:30414]
+
+	* eval.c (rb_feature_p): check loading_tbl if the given ext is
+	  empty.  [ruby-dev:30452]
+
+	* eval.c (rb_feature_p): fix possible buffer overrun.
+
 Sat Mar  3 16:30:39 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* env.h (SCOPE_CLONE): Introduce a new scope flag to prevent a

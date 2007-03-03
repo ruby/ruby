@@ -6937,6 +6937,9 @@ static const char *const loadable_ext[] = {
     0
 };
 
+static int rb_feature_p _((const char *, const char *, int));
+static int search_required _((VALUE, VALUE *, VALUE *));
+
 static int
 rb_feature_p(feature, ext, rb)
     const char *feature, *ext;
@@ -6973,15 +6976,15 @@ rb_feature_p(feature, ext, rb)
     }
     if (loading_tbl) {
 	if (st_lookup(loading_tbl, (st_data_t)feature, 0)) {
-	    if (ext) return 'u';
+	    if (!ext) return 'u';
 	    return strcmp(ext, ".rb") ? 's' : 'r';
 	}
 	else {
 	    char *buf;
 
-	    if (ext) return 0;
+	    if (ext && *ext) return 0;
 	    buf = ALLOCA_N(char, len + DLEXT_MAXLEN + 1);
-	    strcpy(buf, feature);
+	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
 		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
 		if (st_lookup(loading_tbl, (st_data_t)buf, 0)) {
@@ -6993,21 +6996,24 @@ rb_feature_p(feature, ext, rb)
     return 0;
 }
 
-static int search_required(VALUE, VALUE *, VALUE *);
-
 int
 rb_provided(feature)
     const char *feature;
 {
-    VALUE fname, path;
+    const char *ext = strrchr(feature, '.');
 
-    if (rb_feature_p(feature, 0, Qfalse))
-	return Qtrue;
-    if (search_required(rb_str_new2(feature), &fname, &path) != 0) {
-	feature = RSTRING_PTR(fname);
-	if (rb_feature_p(feature, strrchr(feature, '.'), Qfalse))
-	    return Qtrue;
+    if (ext && !strchr(ext, '/')) {
+	if (strcmp(".rb", ext) == 0) {
+	    if (rb_feature_p(feature, ext, Qtrue)) return Qtrue;
+	    return Qfalse;
+	}
+	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
+	    return Qfalse;	/* may be overriden by .rb file */
+	}
     }
+    if (rb_feature_p(feature, feature + strlen(feature), Qtrue))
+	return Qtrue;
+
     return Qfalse;
 }
 
