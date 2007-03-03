@@ -100,7 +100,7 @@ push_list(List *list, VALUE value)
         entry = list->entry_pool;
         list->entry_pool = entry->next;
     } else {
-        entry = (Entry *)xmalloc(sizeof(Entry));
+        entry = ALLOC(Entry);
     }
 
     entry->value = value;
@@ -338,7 +338,7 @@ static VALUE
 rb_mutex_alloc(VALUE klass)
 {
     Mutex *mutex;
-    mutex = (Mutex *)xmalloc(sizeof(Mutex));
+    mutex = ALLOC(Mutex);
     init_mutex(mutex);
     return Data_Wrap_Struct(klass, mark_mutex, free_mutex, mutex);
 }
@@ -605,7 +605,7 @@ rb_condvar_alloc(VALUE klass)
 {
     ConditionVariable *condvar;
 
-    condvar = (ConditionVariable *)xmalloc(sizeof(ConditionVariable));
+    condvar = ALLOC(ConditionVariable);
     init_condvar(condvar);
 
     return Data_Wrap_Struct(klass, mark_condvar, free_condvar, condvar);
@@ -816,7 +816,7 @@ static VALUE
 rb_queue_alloc(VALUE klass)
 {
     Queue *queue;
-    queue = (Queue *)xmalloc(sizeof(Queue));
+    queue = ALLOC(Queue);
     init_queue(queue);
     return Data_Wrap_Struct(klass, mark_queue, free_queue, queue);
 }

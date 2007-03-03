@@ -1,3 +1,11 @@
+Sat Mar  3 19:05:31 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c (push_list): Use ALLOC().
+
+	* ext/thread/thread.c (rb_mutex_alloc): Ditto.
+
+	* ext/thread/thread.c (rb_condvar_alloc): Ditto.
+
 Sat Mar  3 18:53:11 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* NEWS: Add a note for String#intern.
