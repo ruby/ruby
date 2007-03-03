@@ -1,3 +1,10 @@
+Sat Mar  3 22:37:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_utime): allow nil to set the current time.
+
+	* lib/fileutils.rb (touch): ditto, and added :mtime and :nocreate
+	  options.  fixed: [ruby-talk:219037]
+
 Sat Mar  3 21:17:35 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (stack_check): Unset inline to fix build with GCC 3.4.6;
