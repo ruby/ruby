@@ -1,3 +1,9 @@
+Sun Mar  4 01:05:57 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#^, Set#&): Correct documentation.  Those methods
+	  return sets, not arrays; noted by Oliver Frank Wittich <nietz AT
+	  mangabrain.de>.
+
 Sat Mar  3 23:01:07 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): could not move a directory between

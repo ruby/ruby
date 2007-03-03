@@ -286,7 +286,7 @@ class Set
   end
   alias difference -	##
 
-  # Returns a new array containing elements common to the set and the
+  # Returns a new set containing elements common to the set and the
   # given enumerable object.
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -296,7 +296,7 @@ class Set
   end
   alias intersection &	##
 
-  # Returns a new array containing elements exclusive between the set
+  # Returns a new set containing elements exclusive between the set
   # and the given enumerable object.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
   def ^(enum)
