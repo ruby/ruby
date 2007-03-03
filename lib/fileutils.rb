@@ -1,7 +1,7 @@
 # 
 # = fileutils.rb
 # 
-# Copyright (c) 2000-2006 Minero Aoki
+# Copyright (c) 2000-2007 Minero Aoki
 # 
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
@@ -504,7 +504,11 @@ module FileUtils
           File.rename s, d
         rescue Errno::EXDEV
           copy_entry s, d, true
-          File.unlink s
+          if options[:secure]
+            remove_entry_secure s, options[:force]
+          else
+            remove_entry s, options[:force]
+          end
         end
       rescue SystemCallError
         raise unless options[:force]
@@ -517,7 +521,7 @@ module FileUtils
   module_function :move
 
   OPT_TABLE['mv']   =
-  OPT_TABLE['move'] = [:force, :noop, :verbose]
+  OPT_TABLE['move'] = [:force, :noop, :verbose, :secure]
 
   def rename_cannot_overwrite_file?   #:nodoc:
     /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM

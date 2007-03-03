@@ -1,3 +1,8 @@
+Sat Mar  3 22:51:29 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mv): could not move directory between
+	  different file systems. [ruby-dev:30411]
+
 Sat Mar  3 22:37:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_utime): allow nil to set the current time.
