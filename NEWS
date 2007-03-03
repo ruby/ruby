@@ -85,6 +85,9 @@ with all sufficient information, see the ChangeLog file.
       # After
       "Wed, Mar 03 2007 12:34:56 +0900"
 
+  * String#intern now raises SecurityError when $SAFE level is greater
+    than zero.
+
 * fileutils
 
   * A minor implementation change breaks Rake <=0.7.1.

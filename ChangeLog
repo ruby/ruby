@@ -1,3 +1,7 @@
+Sat Mar  3 18:53:11 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* NEWS: Add a note for String#intern.
+
 Sat Mar  3 16:23:13 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* env.h (SCOPE_CLONE): Introduce a new scope flag to prevent a
