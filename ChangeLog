@@ -1,3 +1,8 @@
+Sat Mar  3 15:52:26 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* object.c (instance_variable_get): Restore rdoc markups lost in
+	  the last commit.
+
 Fri Mar  2 21:17:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (get_ptr_of_variant, ole_set_safe_array,
