@@ -1,3 +1,16 @@
+Sat Mar  3 16:23:13 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* env.h (SCOPE_CLONE): Introduce a new scope flag to prevent a
+	  local_tbl region from getting freed many times; submitted by
+	  Chikanaga Tomoyuki <chikanag AT nippon-control-system.co.jp> in
+	  [ruby-dev:30460].
+
+	* eval.c (proc_invoke): Ditto.
+
+	* gc.c (obj_free): Ditto.
+
+	* parse.y (top_local_setup_gen): Ditto.
+
 Sat Mar  3 16:07:02 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_obj_ivar_set): RDoc updated according to a
