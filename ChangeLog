@@ -1,3 +1,9 @@
+Sun Mar  4 01:06:55 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#^, Set#&): Correct documentation.  Those methods
+	  return sets, not arrays; noted by Oliver Frank Wittich <nietz AT
+	  mangabrain.de>.
+
 Sat Mar  3 21:41:31 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (stack_check): Unset inline to fix build with GCC 3.4.6;
