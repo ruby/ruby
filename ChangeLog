@@ -1,3 +1,8 @@
+Sat Mar  3 15:41:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt, arg): should not omit lhs of OP_ASGN1 even if
+	  empty.  [ruby-dev:30452]
+
 Thu Mar  1 04:08:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (patchlevel): read from version.h.
