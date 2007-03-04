@@ -1,4 +1,7 @@
-Sun Mar  4 23:38:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Mar  4 23:41:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_uid, rb_stat_gid, eaccess): use rb_uid_t and
+	  rb_gid_t instead of int.
 
 	* file.c (rb_stat_s_utime): fixed a commit miss for the platforms
 	  where utimes() does not exist.

@@ -351,7 +351,7 @@ rb_stat_nlink(VALUE self)
 static VALUE
 rb_stat_uid(VALUE self)
 {
-    return UINT2NUM(get_stat(self)->st_uid);
+    return UIDT2NUM(get_stat(self)->st_uid);
 }
 
 /*
@@ -367,7 +367,7 @@ rb_stat_uid(VALUE self)
 static VALUE
 rb_stat_gid(VALUE self)
 {
-    return UINT2NUM(get_stat(self)->st_gid);
+    return GIDT2NUM(get_stat(self)->st_gid);
 }
 
 
@@ -828,7 +828,7 @@ eaccess(const char *path, int mode)
 {
 #ifdef USE_GETEUID
     struct stat st;
-    int euid;
+    rb_uid_t euid;
 
     if (stat(path, &st) < 0) return -1;
 
