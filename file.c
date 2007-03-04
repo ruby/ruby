@@ -2054,12 +2054,15 @@ rb_file_s_utime(argc, argv)
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
-    tv = rb_time_timeval(atime);
-    utbuf.actime = tv.tv_sec;
-    tv = rb_time_timeval(mtime);
-    utbuf.modtime = tv.tv_sec;
+    if (!NIL_P(atime) || !NIL_P(mtime)) {
+	utp = &utbuf;
+	tv = rb_time_timeval(atime);
+	utp->actime = tv.tv_sec;
+	tv = rb_time_timeval(mtime);
+	utp->modtime = tv.tv_sec;
+    }
 
-    n = apply2files(utime_internal, rest, &utbuf);
+    n = apply2files(utime_internal, rest, utp);
     return LONG2FIX(n);
 }
 

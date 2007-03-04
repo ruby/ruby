@@ -1,3 +1,10 @@
+Sun Mar  4 23:38:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_s_utime): fixed a commit miss for the platforms
+	  where utimes() does not exist.
+
+	* lib/fileutils.rb (touch): ditto.
+
 Sun Mar  4 14:46:56 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (push_element): should return a int value.
