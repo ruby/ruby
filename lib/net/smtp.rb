@@ -1,8 +1,8 @@
 # = net/smtp.rb
 # 
-# Copyright (c) 1999-2006 Yukihiro Matsumoto.
+# Copyright (c) 1999-2007 Yukihiro Matsumoto.
 #
-# Copyright (c) 1999-2006 Minero Aoki.
+# Copyright (c) 1999-2007 Minero Aoki.
 # 
 # Written & maintained by Minero Aoki <aamine@loveruby.net>.
 #
@@ -31,8 +31,8 @@ module Net
 
   # Module mixed in to all SMTP error classes
   module SMTPError
-    # This *class* is module for some reason.
-    # In ruby 1.9.x, this module becomes a class.
+    # This *class* is a module for backward compatibility.
+    # In later release, this module becomes a class.
   end
 
   # Represents an SMTP authentication error.
@@ -169,73 +169,27 @@ module Net
 
     Revision = %q$Revision$.split[1]
 
-    # The default SMTP port, port 25.
+    # The default SMTP port number, 25.
     def SMTP.default_port
       25
     end
 
-    # The default SMTP/SSL port, port 465.
-    def SMTP.default_ssl_port
-      465
-    end
-
-    # The default SMTP/TLS (STARTTLS) port, port 587.
-    def SMTP.default_tls_port
+    # The default mail submission port number, 587.
+    def SMTP.default_submission_port
       587
     end
 
-    @ssl = false
-    @tls = false
-    @ssl_context = nil
-
-    # Enables SMTP/SSL for all new objects.
-    # +context+ is a OpenSSL::SSL::SSLContext object.
-    def SMTP.enable_ssl(context = SMTP.default_ssl_context)
-      raise 'openssl library not installed' unless defined?(OpenSSL)
-      raise ArgumentError, "SSL and TLS is exclusive" if @tls
-      @ssl = true
-      @ssl_context = context
+    # The default SMTPS port number, 465.
+    def SMTP.default_tls_port
+      465
     end
 
-    # Disables SMTP/SSL for all new objects.
-    def SMTP.disable_ssl
-      @ssl = false
-      @ssl_context = nil
-    end
-
-    # true if new objects use SMTP/SSL.
-    def SMTP.use_ssl?
-      @ssl
-    end
-
-    # Enables SMTP/SSL for all new objects.
-    # +context+ is a OpenSSL::SSL::Context object.
-    def SMTP.enable_tls(context = SMTP.default_ssl_context)
-      raise 'openssl library not installed' unless defined?(OpenSSL)
-      raise ArgumentError, "SSL and TLS is exclusive" if @ssl
-      @tls = false
-      @ssl_context = context
-    end
-
-    # Disable SMTP/TLS for all new objects.
-    def SMTP.disable_tls
-      @tls = false
-      @ssl_context = nil
-    end
-
-    # true if new objects use SMTP/TLS.
-    def SMTP.use_tls?
-      @tls
-    end
-
-    def SMTP.ssl_context
-      @ssl_context
+    class << self
+      alias default_ssl_port default_tls_port
     end
 
     def SMTP.default_ssl_context
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      ctx
+      OpenSSL::SSL::SSLContext.new
     end
     
     #
@@ -259,16 +213,9 @@ module Net
       @read_timeout = 60
       @error_occured = false
       @debug_output = nil
-      if SMTP.use_ssl? or SMTP.use_tls?
-        @ssl = true
-        if SMTP.use_ssl?
-          @ssl_mode = :ssl
-        else
-          @ssl_mode = :tls
-        end
-        @certs = SMTP.certs
-        @verify = SMTP.verify      
-      end
+      @tls = false
+      @starttls = false
+      @ssl_context = nil
     end
     
     # Provide human-readable stringification of class state.
@@ -294,46 +241,63 @@ module Net
 
     alias esmtp esmtp?
 
-    # true if this object uses SMTP/SSL.
-    def use_ssl?
-      @ssl
-    end
-
-    # true if this object uses SMTP/TLS
-    def use_tls?
+    # true if this object uses SMTPS.
+    def tls?
       @tls
     end
 
-    # Enables SMTP/SSL for this object.  Must be called before the
-    # connection is established to have any effect.
-    # +context+ is a OpenSSL::SSL::SSLContext object.
-    def enable_ssl(context = SMTP.default_ssl_context)
+    alias ssl? tls?
+
+    # Enables SMTP/TLS (SMTPS: SMTP over direct TLS connection) for
+    # this object.  Must be called before the connection is established
+    # to have any effect.  +context+ is a OpenSSL::SSL::SSLContext object.
+    def enable_tls(context = SMTP.default_ssl_context)
       raise 'openssl library not installed' unless defined?(OpenSSL)
-      raise ArgumentError, "SSL and TLS is exclusive" if @tls
-      @ssl = true
+      raise ArgumentError, "SMTPS and STARTTLS is exclusive" if @starttls
+      @tls = true
       @ssl_context = context
     end
+
+    alias enable_ssl enable_tls
     
-    # Disables SMTP/SSL for this object.  Must be called before the
+    # Disables SMTP/TLS for this object.  Must be called before the
     # connection is established to have any effect.
-    def disable_ssl
-      @ssl = false
+    def disable_tls
+      @tls = false
       @ssl_context = nil
+    end
+
+    alias disable_ssl disable_tls
+
+    # Returns truth value if this object uses STARTTLS.
+    # If this object always uses STARTTLS, returns :always.
+    # If this object uses STARTTLS when the server support TLS, returns :auto.
+    def starttls?
+      @starttls
     end
     
     # Enables SMTP/TLS (STARTTLS) for this object.
     # +context+ is a OpenSSL::SSL::SSLContext object.
-    def enable_tls(context = SMTP.default_ssl_context)
+    def enable_starttls(context = SMTP.default_ssl_context)
       raise 'openssl library not installed' unless defined?(OpenSSL)
-      raise ArgumentError, "SSL and TLS is exclusive" if @ssl
-      @tls = true
+      raise ArgumentError, "SMTPS and STARTTLS is exclusive" if @tls
+      @starttls = :always
+      @ssl_context = context
+    end
+
+    # Enables SMTP/TLS (STARTTLS) for this object if server accepts.
+    # +context+ is a OpenSSL::SSL::SSLContext object.
+    def enable_starttls_auto(context = SMTP.default_ssl_context)
+      raise 'openssl library not installed' unless defined?(OpenSSL)
+      raise ArgumentError, "SMTPS and STARTTLS is exclusive" if @tls
+      @starttls = :auto
       @ssl_context = context
     end
 
     # Disables SMTP/TLS (STARTTLS) for this object.  Must be called
     # before the connection is established to have any effect.
-    def disable_tls
-      @ssl = false
+    def disable_starttls
+      @starttls = false
       @ssl_context = nil
     end
 
@@ -525,20 +489,12 @@ module Net
       end
       s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }   
       logging "Connection opened: #{@address}:#{@port}"
-      if use_ssl?
-        s = new_ssl_socket(s)
-        s.connect
-        logging "SMTP/SSL started"
-      end
-      @socket = new_internet_message_io(s)
+      @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)
       check_response(critical { recv_response() })
       do_helo helo_domain
-      if use_tls?
-        s = new_ssl_socket(s)
+      if starttls?
         starttls
-        s.connect
-        logging "SMTP/TLS started"
-        @socket = new_internet_message_io(s)
+        @socket = new_internet_message_io(tlsconnect(s))
         # helo response may be different after STARTTLS
         do_helo helo_domain
       end
@@ -552,17 +508,19 @@ module Net
       end
     end
 
+    def tlsconnect(s)
+      s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
+      logging "TLS connection started"
+      s.sync_close = true
+      s.connect
+      s
+    end
+
     def new_internet_message_io(s)
       io = InternetMessageIO.new(s)
       io.read_timeout = @read_timeout
       io.debug_output = @debug_output
       io
-    end
-
-    def new_ssl_socket(s)
-      s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
-      s.sync_close = true
-      s
     end
 
     def do_helo(helo_domain)
@@ -872,7 +830,7 @@ module Net
       while true
         line = @socket.readline
         res << line << "\n"
-        break unless line[3] == ?-   # "210-PIPELINING"
+        break unless line[3,1] == '-'   # "210-PIPELINING"
       end
       res
     end

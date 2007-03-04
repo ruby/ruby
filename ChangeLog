@@ -1,3 +1,16 @@
+Mon Mar  5 07:13:28 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: reconstruct SMTPS/STARTTLS interface.  New
+	  interface is incompatible from current 1.9 interface at all.
+
+	* lib/net/smtp.rb: All SSL-related class methods are removed; use
+	  instance methods instead.
+
+	* lib/net/smtp.rb: rename methods: *ssl -> *tls (with alias
+	  "ssl").
+
+	* lib/net/smtp.rb: rename methods: *tls -> *starttls.
+
 Mon Mar  5 01:36:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex), win32/win32.c (rb_w32_utime): fixed
