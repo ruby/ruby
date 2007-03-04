@@ -4049,12 +4049,12 @@ rb_w32_utime(const char *path, const struct utimbuf *times)
     }
 
     if (times) {
-    if (unixtime_to_filetime(times->actime, &atime)) {
-	return -1;
-    }
-    if (unixtime_to_filetime(times->modtime, &mtime)) {
-	return -1;
-    }
+	if (unixtime_to_filetime(times->actime, &atime)) {
+	    return -1;
+	}
+	if (unixtime_to_filetime(times->modtime, &mtime)) {
+	    return -1;
+	}
     }
     else {
 	GetSystemTimeAsFileTime(&atime);

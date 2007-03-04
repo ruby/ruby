@@ -6085,8 +6085,8 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '>') {
 	    lex_state = EXPR_ARG;
-		return tLAMBDA;
-	    }
+	    return tLAMBDA;
+	}
 	if (IS_BEG() ||
 	    (IS_ARG() && space_seen && !ISSPACE(c))) {
 	    if (IS_ARG()) arg_ambiguous();

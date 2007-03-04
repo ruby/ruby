@@ -1,3 +1,8 @@
+Mon Mar  5 01:36:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex), win32/win32.c (rb_w32_utime): fixed
+	  indentation broken at YARV merger.
+
 Sun Mar  4 23:41:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_uid, rb_stat_gid, eaccess): use rb_uid_t and
