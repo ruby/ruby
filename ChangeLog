@@ -1,3 +1,10 @@
+Sun Mar  4 23:46:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_utime): allow nil to set the current time.
+
+	* lib/fileutils.rb (touch): ditto, and added :mtime and :nocreate
+	  options.  fixed: [ruby-talk:219037]
+
 Sun Mar  4 23:19:00 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (push_element): should return a int value.
