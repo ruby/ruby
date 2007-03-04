@@ -305,7 +305,7 @@ struct PathInfo {
     int count;
 };
 
-static void
+static int
 push_element(const char *path, VALUE vinfo)
 {
     struct PathList *p;
@@ -317,6 +317,8 @@ push_element(const char *path, VALUE vinfo)
     p->next = info->head;
     info->head = p;
     info->count++;
+
+    return 0;
 }
 
 #include <dirent.h>
