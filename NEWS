@@ -37,6 +37,18 @@ with all sufficient information, see the ChangeLog file.
 
 * tk
 
+  * Tk::X_Scrollable (Y_Scrollable) is renamed to Tk::XScrollable
+    (YScrollable). Tk::X_Scrollable (Y_Scrollable) is still available,
+    but it is an alias name.
+
+  * Updated Tile extension support based on Tile 0.7.8.
+
+  * Support --without-X11 configure option for non-X11 versions of
+    Tcl/Tk (e.g. Tcl/Tk Aqua).
+
+  * New sample script: irbtkw.rbw -- IRB on Ruby/Tk. It has no trouble
+    about STDIN blocking on Windows.
+
 === New methods and features
 
 * builtin classes
