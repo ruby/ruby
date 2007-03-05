@@ -1,3 +1,17 @@
+Mon Mar  5 09:16:40 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: support automatic STARTTLS.
+
+	* lib/net/smtp.rb: check server advertisement.
+
+	* lib/net/smtp.rb: introduce new class SMTP::Response.
+
+	* lib/net/smtp.rb (getok): should not use sprintf.
+
+	* lib/net/smtp.rb (get_response): ditto.
+
+	* lib/net/protocol.rb: reduce syntax warning on 1.9.
+
 Mon Mar  5 07:13:28 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: reconstruct SMTPS/STARTTLS interface.  New

@@ -60,6 +60,11 @@ module Net
     include SMTPError
   end
 
+  # Command is not supported on server.
+  class SMTPUnsupportedCommand < ProtocolError
+    include SMTPError
+  end
+
   #
   # = Net::SMTP
   #
@@ -207,6 +212,7 @@ module Net
       @address = address
       @port = (port || SMTP.default_port)
       @esmtp = true
+      @capabilities = nil
       @socket = nil
       @started = false
       @open_timeout = 30
@@ -241,7 +247,52 @@ module Net
 
     alias esmtp esmtp?
 
-    # true if this object uses SMTPS.
+    # true if server advertises STARTTLS.
+    # You cannot get valid value before opening SMTP session.
+    def capable_starttls?
+      capable?('STARTTLS')
+    end
+
+    def capable?(key)
+      return nil unless @capabilities
+      @capabilities[key] ? true : false
+    end
+    private :capable?
+
+    # true if server advertises AUTH PLAIN.
+    # You cannot get valid value before opening SMTP session.
+    def capable_plain_auth?
+      auth_capable?('PLAIN')
+    end
+
+    # true if server advertises AUTH LOGIN.
+    # You cannot get valid value before opening SMTP session.
+    def capable_login_auth?
+      auth_capable?('LOGIN')
+    end
+
+    # true if server advertises AUTH CRAM-MD5.
+    # You cannot get valid value before opening SMTP session.
+    def capable_cram_md5_auth?
+      auth_capable?('CRAM-MD5')
+    end
+
+    def auth_capable?(type)
+      return nil unless @capabilities
+      return false unless @capabilities['AUTH']
+      @capabilities['AUTH'].include?(type)
+    end
+    private :auth_capable?
+
+    # Returns supported authentication methods on this server.
+    # You cannot get valid value before opening SMTP session.
+    def capable_auth_types
+      return [] unless @capabilities
+      return [] unless @capabilities['AUTH']
+      @capabilities['AUTH']
+    end
+
+    # true if this object uses SMTP/TLS (SMTPS).
     def tls?
       @tls
     end
@@ -274,6 +325,16 @@ module Net
     # If this object uses STARTTLS when the server support TLS, returns :auto.
     def starttls?
       @starttls
+    end
+
+    # true if this object uses STARTTLS.
+    def starttls_always?
+      @starttls == :always
+    end
+
+    # true if this object uses STARTTLS when server advertises STARTTLS.
+    def starttls_auto?
+      @starttls == :auto
     end
     
     # Enables SMTP/TLS (STARTTLS) for this object.
@@ -484,21 +545,25 @@ module Net
     def do_start(helo_domain, user, secret, authtype)
       raise IOError, 'SMTP session already started' if @started
       if user or secret
-        check_auth_method authtype
+        check_auth_method(authtype || DEFAULT_AUTH_TYPE)
         check_auth_args user, secret
       end
       s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }   
       logging "Connection opened: #{@address}:#{@port}"
       @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)
-      check_response(critical { recv_response() })
+      check_response critical { recv_response() }
       do_helo helo_domain
-      if starttls?
+      if starttls_always? or (capable_starttls? and starttls_auto?)
+        unless capable_starttls?
+          raise SMTPUnsupportedCommand,
+              "STARTTLS is not supported on this server"
+        end
         starttls
         @socket = new_internet_message_io(tlsconnect(s))
         # helo response may be different after STARTTLS
         do_helo helo_domain
       end
-      authenticate user, secret, authtype if user
+      authenticate user, secret, (authtype || DEFAULT_AUTH_TYPE) if user
       @started = true
     ensure
       unless @started
@@ -524,20 +589,15 @@ module Net
     end
 
     def do_helo(helo_domain)
-       begin
-        if @esmtp
-          ehlo helo_domain
-        else
-          helo helo_domain
-        end
-      rescue ProtocolError
-        if @esmtp
-          @esmtp = false
-          @error_occured = false
-          retry
-        end
-        raise
+      res = @esmtp ? ehlo(helo_domain) : helo(helo_domain)
+      @capabilities = res.capabilities
+    rescue SMTPError
+      if @esmtp
+        @esmtp = false
+        @error_occured = false
+        retry
       end
+      raise
     end
 
     def do_finish
@@ -654,61 +714,55 @@ module Net
 
     public
 
-    def authenticate(user, secret, authtype)
+    DEFAULT_AUTH_TYPE = :plain
+
+    def authenticate(user, secret, authtype = DEFAULT_AUTH_TYPE)
       check_auth_method authtype
       check_auth_args user, secret
-      funcall "auth_#{authtype || 'cram_md5'}", user, secret
+      funcall auth_method(authtype), user, secret
     end
 
     def auth_plain(user, secret)
       check_auth_args user, secret
-      res = critical { get_response('AUTH PLAIN %s',
-                                    base64_encode("\0#{user}\0#{secret}")) }
-      raise SMTPAuthenticationError, res unless /\A2../ =~ res
+      res = critical {
+        get_response('AUTH PLAIN ' + base64_encode("\0#{user}\0#{secret}"))
+      }
+      check_auth_response res
+      res
     end
 
     def auth_login(user, secret)
       check_auth_args user, secret
       res = critical {
-        check_response(get_response('AUTH LOGIN'), true)
-        check_response(get_response(base64_encode(user)), true)
+        check_auth_continue get_response('AUTH LOGIN')
+        check_auth_continue get_response(base64_encode(user))
         get_response(base64_encode(secret))
       }
-      raise SMTPAuthenticationError, res unless /\A2../ =~ res
+      check_auth_response res
+      res
     end
 
     def auth_cram_md5(user, secret)
       check_auth_args user, secret
-      # CRAM-MD5: [RFC2195]
-      res = nil
-      critical {
-        res = check_response(get_response('AUTH CRAM-MD5'), true)
-        challenge = res.split(/ /)[1].unpack('m')[0]
-        secret = Digest::MD5.digest(secret) if secret.size > 64
-
-        isecret = secret + "\0" * (64 - secret.size)
-        osecret = isecret.dup
-        0.upto(63) do |i|
-          c = isecret[i].ord ^ 0x36
-          isecret[i] = c.chr
-          c = osecret[i].ord ^ 0x5c
-          osecret[i] = c.chr
-        end
-        tmp = Digest::MD5.digest(isecret + challenge)
-        tmp = Digest::MD5.hexdigest(osecret + tmp)
-
-        res = get_response(base64_encode(user + ' ' + tmp))
+      res = critical {
+        check_auth_continue get_response('AUTH CRAM-MD5')
+        crammed = cram_md5_response(secret, res.cram_md5_challenge)
+        get_response(base64_encode("#{user} #{crammed}"))
       }
-      raise SMTPAuthenticationError, res  unless /\A2../ =~ res
+      check_auth_response res
+      res
     end
 
     private
 
     def check_auth_method(type)
-      mid = "auth_#{type || 'cram_md5'}"
-      unless respond_to?(mid, true)
+      unless respond_to?(auth_method(type), true)
         raise ArgumentError, "wrong authentication type #{type}"
       end
+    end
+
+    def auth_method(type)
+      "auth_#{type.to_s.downcase}".intern
     end
 
     def check_auth_args(user, secret)
@@ -725,6 +779,26 @@ module Net
       [str].pack('m').gsub(/\s+/, '')
     end
 
+    IMASK = 0x36
+    OMASK = 0x5c
+
+    # CRAM-MD5: [RFC2195]
+    def cram_md5_response(secret, challenge)
+      tmp = Digest::MD5.digest(cram_secret(secret, IMASK) + challenge)
+      Digest::MD5.hexdigest(cram_secret(secret, OMASK) + tmp)
+    end
+
+    CRAM_BUFSIZE = 64
+
+    def cram_secret(secret, mask)
+      secret = Digest::MD5.digest(secret) if secret.size > CRAM_BUFSIZE
+      buf = secret.ljust(CRAM_BUFSIZE, "\0")
+      0.upto(buf.size) do |i|
+        buf[i] = (buf[i].ord ^ mask).chr
+      end
+      buf
+    end
+
     #
     # SMTP command dispatcher
     #
@@ -736,18 +810,18 @@ module Net
     end
 
     def helo(domain)
-      getok('HELO %s', domain)
+      getok("HELO #{domain}")
     end
 
     def ehlo(domain)
-      getok('EHLO %s', domain)
+      getok("EHLO #{domain}")
     end
 
     def mailfrom(from_addr)
       if $SAFE > 0
         raise SecurityError, 'tainted from_addr' if from_addr.tainted?
       end
-      getok('MAIL FROM:<%s>', from_addr)
+      getok("MAIL FROM:<#{from_addr}>")
     end
 
     def rcptto_list(to_addrs)
@@ -761,7 +835,7 @@ module Net
       if $SAFE > 0
         raise SecurityError, 'tainted to_addr' if to.tainted?
       end
-      getok('RCPT TO:<%s>', to_addr)
+      getok("RCPT TO:<#{to_addr}>")
     end
 
     # This method sends a message.
@@ -795,7 +869,7 @@ module Net
         raise ArgumentError, "message or block is required"
       end
       res = critical {
-        check_response(get_response('DATA'), true)
+        check_continue get_response('DATA')
         if msgstr
           @socket.write_message msgstr
         else
@@ -803,7 +877,8 @@ module Net
         end
         recv_response()
       }
-      check_response(res)
+      check_response res
+      res
     end
 
     def quit
@@ -812,48 +887,28 @@ module Net
 
     private
 
-    def getok(fmt, *args)
+    def getok(reqline)
       res = critical {
-        @socket.writeline sprintf(fmt, *args)
+        @socket.writeline reqline
         recv_response()
       }
-      return check_response(res)
+      check_response res
+      res
     end
 
-    def get_response(fmt, *args)
-      @socket.writeline sprintf(fmt, *args)
+    def get_response(reqline)
+      @socket.writeline reqline
       recv_response()
     end
 
     def recv_response
-      res = ''
+      buf = ''
       while true
         line = @socket.readline
-        res << line << "\n"
+        buf << line << "\n"
         break unless line[3,1] == '-'   # "210-PIPELINING"
       end
-      res
-    end
-
-    def check_response(res, allow_continue = false)
-      case res
-      when /\A2/
-        return res
-      when /\A3/
-        unless allow_continue
-          raise SMTPUnknownError,
-              "got response 3xx but not DATA: #{res.inspect}"
-        end
-        return res
-      when /\A4/
-        raise SMTPServerBusy, res
-      when /\A50/
-        raise SMTPSyntaxError, res
-      when /\A55/
-        raise SMTPFatalError, res
-      else
-        raise SMTPUnknownError, res
-      end
+      Response.parse(buf)
     end
 
     def critical(&block)
@@ -863,6 +918,84 @@ module Net
       rescue Exception
         @error_occured = true
         raise
+      end
+    end
+
+    def check_response(res)
+      unless res.success?
+        raise res.exception_class, res.message
+      end
+    end
+
+    def check_continue(res)
+      unless res.continue?
+        raise SMTPUnknownError, "could not get 3xx (#{res.status})"
+      end
+    end
+
+    def check_auth_response(res)
+      unless res.success?
+        raise SMTPAuthenticationError, res.message
+      end
+    end
+
+    def check_auth_continue(res)
+      unless res.continue?
+        raise res.exception_class, res.message
+      end
+    end
+
+    class Response
+      def Response.parse(str)
+        new(str[0,3], str)
+      end
+
+      def initialize(status, string)
+        @status = status
+        @string = string
+      end
+
+      attr_reader :status
+      attr_reader :string
+
+      def status_type_char
+        @status[0, 1]
+      end
+
+      def success?
+        status_type_char() == '2'
+      end
+
+      def continue?
+        status_type_char() == '3'
+      end
+
+      def message
+        @string.lines.first
+      end
+
+      def cram_md5_challenge
+        @string.split(/ /)[1].unpack('m')[0]
+      end
+
+      def capabilities
+        return {} unless @string[3, 1] == '-'
+        h = {}
+        @string.lines.to_a[1..-1].each do |line|
+          k, *v = line[4..-1].chomp.split(nil)
+          h[k] = v
+        end
+        h
+      end
+
+      def exception_class
+        case @status
+        when /\A4/  then SMTPServerBusy
+        when /\A50/ then SMTPSyntaxError
+        when /\A53/ then SMTPAuthenticationError
+        when /\A5/  then SMTPFatalError
+        else             SMTPUnknownError
+        end
       end
     end
 

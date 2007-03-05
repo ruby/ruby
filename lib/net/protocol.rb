@@ -305,8 +305,8 @@ module Net # :nodoc:
           yield
         end
       else    # generic reader
-        src.each do |s|
-          buf << s
+        src.each do |str|
+          buf << str
           yield if buf.size > 1024
         end
         yield unless buf.empty?
