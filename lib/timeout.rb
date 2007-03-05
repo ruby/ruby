@@ -27,23 +27,23 @@ module Timeout
   class Error < Interrupt
   end
 
-  # Executes the method's block. If the block execution terminates before +sec+
-  # seconds has passed, it returns true. If not, it terminates the execution
-  # and raises +exception+ (which defaults to Timeout::Error).
+  # Executes the method's block.  If the block execution terminates before
+  # +sec+ seconds has passed, it returns the result value of the block.
+  # If not, it terminates the execution and raises +exception+ (which defaults
+  # to Timeout::Error).
   #
   # Note that this is both a method of module Timeout, so you can 'include Timeout'
   # into your classes so they have a #timeout method, as well as a module method,
   # so you can call it directly as Timeout.timeout().
-  def timeout(sec, exception=Error)
-    return yield if sec == nil or sec.zero?
+  def timeout(sec, exception = Error)   #:yield: +sec+
+    return yield(sec) if sec == nil or sec.zero?
     begin
       x = Thread.current
       y = Thread.start {
         sleep sec
         x.raise exception, "execution expired" if x.alive?
       }
-      yield sec
-      return true
+      return yield(sec)
     ensure
       y.kill if y and y.alive?
     end
