@@ -1239,11 +1239,11 @@ time_asctime(time)
  *     time.to_s    => string
  *  
  *  Returns a string representing <i>time</i>. Equivalent to calling
- *  <code>Time#strftime</code> with a format string of ``<code>%a</code>
- *  <code>%b</code> <code>%d</code> <code>%H:%M:%S</code>
- *  <code>%Z</code> <code>%Y</code>''.
+ *  <code>Time#strftime</code> with a format string of ``<code>%a,</code>
+ *  <code>%d</code> <code>%b</code> <code>%H:%M:%S</code>
+ *  <code>%Z</code> <code>%Y</code>'' (the RFC 2822 style).
  *     
- *     Time.now.to_s   #=> "Wed Apr 09 08:56:04 CDT 2003"
+ *     Time.now.to_s   #=> "Wed 09 Apr 08:56:04 CDT 2003"
  */
 
 static VALUE
@@ -1274,7 +1274,7 @@ time_to_s(time)
 	sign = '-';
 	off = -off;
     }
-    sprintf(buf2, "%%a, %%b %%d %%Y %%H:%%M:%%S %c%02d%02d",
+    sprintf(buf2, "%%a, %%d %%b %%Y %%H:%%M:%%S %c%02d%02d",
 	    sign, (int)(off/3600), (int)(off%3600/60));
     len = strftime(buf, 128, buf2, &tobj->tm);
     return rb_str_new(buf, len);

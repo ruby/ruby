@@ -1,3 +1,9 @@
+Mon Mar  5 20:26:10 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* time.c (time_to_s): Correct the wrong format which did not
+	  really conform to RFC 2822; pointed out by: OHARA Shigeki <os at
+	  iij.ad.jp> in [ruby-dev:30487].
+
 Sun Mar  4 23:53:27 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): could not move a directory between
