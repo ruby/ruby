@@ -1,4 +1,4 @@
-`LANG=C date +%c`  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar  6 10:23:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: added --pure (turned on by default) and --debugger
 	  options.
