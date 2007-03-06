@@ -1,3 +1,24 @@
+Tue Mar  6 19:03:42 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Do not modify
+	  Digest::MD5.
+
+	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
+
+	* lib/shell/process-controller.rb: fix thread synchronization
+	  problem for [ruby-dev:30477].
+
+	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Catch up with
+	  Digest's API changes; noted by: Kazuhiro Yoshida <moriq AT
+	  moriq.com> in [ruby-dev:30500].
+
+	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
+	
+	* time.c (time_to_s): Back out the format changes; discussed
+	  in [ruby-dev:30495].
+
+	* ext/tk/sample/irbtkw.rbw: fails to exit process.
+
 Mon Mar  5 20:26:10 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* time.c (time_to_s): Correct the wrong format which did not

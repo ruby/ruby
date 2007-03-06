@@ -26,7 +26,11 @@ console.yscrollbar(TkScrollbar.new(top, :width=>10).pack(:before=>console,
                                                          :side=>:right, 
                                                          :expand=>false, 
                                                          :fill=>:y))
-ev_loop = Thread.new{Tk.mainloop}
+irb_thread = nil
+ev_loop = Thread.new{
+  Tk.mainloop
+  irb_thread.kill if irb_thread
+}
 
 # window position control
 root = Tk.root
@@ -116,4 +120,5 @@ console.bind('Control-c'){
 irb_thread.join
 
 # exit
+ev_thread.kill
 Tk.exit
