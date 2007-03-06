@@ -1,3 +1,8 @@
+`LANG=C date +%c`  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: added --pure (turned on by default) and --debugger
+	  options.
+
 Mon Mar  5 09:19:33 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/timeout.rb (Timeout.timeout): should return the block value
