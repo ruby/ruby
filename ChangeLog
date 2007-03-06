@@ -1,3 +1,8 @@
+Tue Mar  6 18:24:19 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* time.c (time_to_s): Back out the format changes; discussed
+	  in [ruby-dev:30495].
+
 Tue Mar  6 11:53:25 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/irbtkw.rbw: fails to exit process.

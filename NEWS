@@ -89,14 +89,6 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
-  * Time#to_s now returns a string in a form that
-    conforms to RFC2822.
-
-      # Before
-      "Wed Mar 03 12:34:56 JST 2007"
-      # After
-      "Wed, 03 Mar 2007 12:34:56 +0900"
-
   * String#intern now raises SecurityError when $SAFE level is greater
     than zero.
 
