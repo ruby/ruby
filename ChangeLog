@@ -1,3 +1,7 @@
+Tue Mar  6 16:35:04 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
+	
+	* lib/shell/process-controller.rb: fix thread synchronization problem for [ruby-dev:30477].
+	
 Tue Mar  6 11:53:25 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/irbtkw.rbw: fails to exit process.
