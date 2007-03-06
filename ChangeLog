@@ -1,3 +1,11 @@
+Tue Mar  6 18:44:26 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Catch up with
+	  Digest's API changes; noted by: Kazuhiro Yoshida <moriq AT
+	  moriq.com> in [ruby-dev:30500].
+
+	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
+	
 Tue Mar  6 18:24:19 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* time.c (time_to_s): Back out the format changes; discussed

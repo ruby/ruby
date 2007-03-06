@@ -7,8 +7,17 @@ require 'digest/md5'
 
 MD5 = Digest::MD5
 
-class MD5
-  def self.md5(*args)
+class << MD5
+  alias orig_new new
+  def new(str = nil)
+    if str
+      orig_new.update(str)
+    else
+      orig_new
+    end
+  end
+
+  def md5(*args)
     new(*args)
   end
 end
