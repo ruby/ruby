@@ -1,3 +1,10 @@
+Tue Mar  6 19:08:46 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Do not modify
+	  Digest::MD5.
+
+	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
+
 Tue Mar  6 18:58:37 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	
 	* lib/shell/process-controller.rb: fix thread synchronization
