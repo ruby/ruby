@@ -8496,11 +8496,12 @@ proc_invoke(proc, args, self, klass)
     if (klass) _block.frame.last_class = klass;
     _block.frame.argc = RARRAY(tmp)->len;
     _block.frame.flags = ruby_frame->flags;
-    if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
+    if (_block.frame.argc && DMETHOD_P()) {
         NEWOBJ(scope, struct SCOPE);
         OBJSETUP(scope, tmp, T_SCOPE);
         scope->local_tbl = _block.scope->local_tbl;
         scope->local_vars = _block.scope->local_vars;
+        scope->flags |= SCOPE_CLONE;
         _block.scope = scope;
     }
     /* modify current frame */

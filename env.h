@@ -43,6 +43,7 @@ extern struct SCOPE {
 #define SCOPE_MALLOC  1
 #define SCOPE_NOSTACK 2
 #define SCOPE_DONT_RECYCLE 4
+#define SCOPE_CLONE   8
 
 extern int ruby_in_eval;
 

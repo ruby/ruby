@@ -5732,7 +5732,8 @@ top_local_setup()
 		rb_mem_clear(ruby_scope->local_vars+i, len-i);
 	    }
 	    if (ruby_scope->local_tbl && ruby_scope->local_vars[-1] == 0) {
-		xfree(ruby_scope->local_tbl);
+               if (!(ruby_scope->flags & SCOPE_CLONE))
+                   xfree(ruby_scope->local_tbl);
 	    }
 	    ruby_scope->local_tbl = local_tbl();
 	}
