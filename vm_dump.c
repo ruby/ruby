@@ -122,7 +122,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     else {
 	fprintf(stderr, "p:%04d ", pc);
     }
-    fprintf(stderr, "s:%04ld b:%04d ", cfp->sp - th->stack, bp);
+    fprintf(stderr, "s:%04d b:%04d ", cfp->sp - th->stack, bp);
     fprintf(stderr, lfp_in_heap == ' ' ? "l:%06d " : "l:%06p ", lfp % 10000);
     fprintf(stderr, dfp_in_heap == ' ' ? "d:%06d " : "d:%06p ", dfp % 10000);
     fprintf(stderr, "%-6s ", magic);

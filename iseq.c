@@ -272,7 +272,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
     iseq->self = self;
 
     prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
-    iseq_compile(self, node);
+    rb_iseq_compile(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
@@ -1076,7 +1076,7 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    int i, pos, opt = 0;
+    int i, pos;
     VALUE *seq;
 
     VALUE val = rb_ary_new();

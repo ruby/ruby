@@ -1,3 +1,25 @@
+Thu Mar  8 09:17:59 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* compile.c: iseq_compile -> rb_iseq_compile.
+
+	* iseq.c: ditto.
+
+	* intern.h: provide function prototype of Init_jump.
+
+	* eval_jump.h (Init_jump): declare function type.
+
+	* thread.c: platform-dependent functions should be surrounded by #ifdef.
+
+	* iseq.c (iseq_data_to_ary): remove unused variable.
+
+	* compile.c (set_arguments): ditto.
+
+	* thread.c (set_unblock_function): ditto.
+
+	* thread_pthread.ci: reduce printf warning.
+
+	* vm_dump.c: ditto.
+
 Tue Mar  6 16:35:04 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	
 	* lib/shell/process-controller.rb: fix thread synchronization problem for [ruby-dev:30477].

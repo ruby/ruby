@@ -255,6 +255,7 @@ VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
 void rb_mark_end_proc(void);
 void rb_exec_end_proc(void);
+void Init_jump(void);
 void ruby_finalize(void);
 NORETURN(void ruby_stop(int));
 int ruby_cleanup(int);

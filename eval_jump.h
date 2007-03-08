@@ -402,7 +402,7 @@ rb_exec_end_proc(void)
 }
 
 void
-Init_jump()
+Init_jump(void)
 {
     rb_define_global_function("catch", rb_f_catch, 1);
     rb_define_global_function("throw", rb_f_throw, -1);

@@ -191,7 +191,6 @@ static rb_unblock_function_t *
 set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func)
 {
     rb_unblock_function_t *oldfunc;
-    int interrupted;
 
   check_ints:
     RUBY_VM_CHECK_INTS(); /* check signal or so */
@@ -1652,6 +1651,7 @@ rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 
 #endif
 
+#if defined(__CYGWIN__) || defined(_WIN32)
 static long
 cmp_tv(const struct timeval *a, const struct timeval *b)
 {
@@ -1673,6 +1673,7 @@ subst(struct timeval *rest, const struct timeval *wait)
     rest->tv_usec -= wait->tv_usec;
     return 1;
 }
+#endif
 
 static int
 do_select(int n, fd_set *read, fd_set *write, fd_set *except,

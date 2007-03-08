@@ -138,7 +138,7 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 #endif
 
 VALUE
-iseq_compile(VALUE self, NODE *narg)
+rb_iseq_compile(VALUE self, NODE *narg)
 {
     DECL_ANCHOR(list_anchor);
     rb_iseq_t *iseq;
@@ -1097,7 +1097,6 @@ static int
 set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_arg)
 {
     NODE *node_aux = node_arg->nd_next;
-    int mandatory_len = 0;
     NODE *node_opt = 0;
     ID rest_id = 0;
     ID block_id = 0;
