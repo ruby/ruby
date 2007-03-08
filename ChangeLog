@@ -1,3 +1,10 @@
+Sat Mar  3 21:41:31 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (stack_check): Unset inline to fix build with GCC 3.4.6;
+	  submitted by: NISHIMATSU Takeshi <t_nissie AT yahoo.co.jp> in
+	  [ruby-list:43218].
+	  cf. http://gcc.gnu.org/bugzilla/show_bug.cgi?id=24556
+
 Sat Mar  3 16:30:39 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* env.h (SCOPE_CLONE): Introduce a new scope flag to prevent a

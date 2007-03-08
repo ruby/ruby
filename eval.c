@@ -5485,7 +5485,7 @@ rb_with_disable_interrupt(proc, data)
     return result;
 }
 
-static inline void
+static void
 stack_check()
 {
     static int overflowing = 0;
