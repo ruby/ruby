@@ -1,3 +1,8 @@
+Tue Mar  6 18:58:37 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
+	
+	* lib/shell/process-controller.rb: fix thread synchronization
+	  problem for [ruby-dev:30477].
+	
 Sun Mar  4 23:53:27 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): could not move a directory between

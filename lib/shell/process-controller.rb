@@ -246,9 +246,11 @@ class Shell
 	    redo
 	  end
 	  Thread.exclusive do
-	    terminate_job(command)
-	    @job_condition.signal
-	    command.notify "job(%id) finish.", @shell.debug?
+	    @job_monitor.synchronize do 
+	      terminate_job(command)
+	      @job_condition.signal
+	      command.notify "job(%id) finish.", @shell.debug?
+	    end
 	  end
 	end
       }
