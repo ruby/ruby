@@ -1,3 +1,8 @@
+Sat Mar  3 15:41:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt, arg): should not omit lhs of OP_ASGN1 even if
+	  empty.  [ruby-dev:30452]
+
 Wed Feb 28 20:51:32 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* pack.c (pack_unpack): properly ignore non-base64 octets such as
