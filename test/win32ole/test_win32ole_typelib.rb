@@ -73,6 +73,16 @@ if defined?(WIN32OLE_TYPELIB)
       assert_match(/shell32\.dll$/i, tlib.path)
     end
 
+    def test_visible?
+      tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
+      assert(tlib.visible?)
+    end
+
+    def test_library_name
+      tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
+      assert_equal("Shell32", tlib.library_name)
+    end
+
     def test_to_s
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
       assert_equal("Microsoft Shell Controls And Automation", tlib.to_s)

@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.0"
+#define WIN32OLE_VERSION "1.0.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -382,6 +382,9 @@ static VALUE foletypelib_major_version(VALUE self);
 static VALUE foletypelib_minor_version(VALUE self);
 static VALUE oletypelib_path(VALUE guid, VALUE version);
 static VALUE foletypelib_path(VALUE self);
+static void  oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib);
+static VALUE foletypelib_visible(VALUE self);
+static VALUE foletypelib_library_name(VALUE self);
 static VALUE foletypelib_ole_classes(VALUE self);
 static VALUE foletypelib_inspect(VALUE self);
 static VALUE foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass);
@@ -1169,7 +1172,6 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt)
         pub[i] = psab[i].cElements - 1;
         pid[i] = 0;
     }
-
     /* Create and fill VARIANT array */
     if ((vt & ~VT_BYREF) == VT_ARRAY) {
         vt = (vt | VT_VARIANT);
@@ -4841,6 +4843,93 @@ foletypelib_path(VALUE self)
     return oletypelib_path(guid, version);
 }
 
+static void
+oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib)
+{
+    VALUE path = Qnil;
+    OLECHAR *pbuf;
+    HRESULT hr = S_OK;
+    path = rb_funcall(self, rb_intern("path"), 0);
+    if (path != Qnil) {
+        pbuf = ole_mb2wc(StringValuePtr(path), -1);
+        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, ppTypeLib);
+        SysFreeString(pbuf);
+        if (FAILED(hr))
+            ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx from `%s'",
+                      StringValuePtr(path));
+    } else {
+        rb_raise(eWIN32OLERuntimeError, "failed to get type library path");
+    }
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#visible? 
+ *
+ *  Returns true if the type library information is not hidden.
+ *  If wLibFlags of TLIBATTR is 0 or LIBFLAG_FRESTRICTED or LIBFLAG_FHIDDEN,
+ *  the method returns false, otherwise, returns true.
+ *  If the method fails to access the TLIBATTR information, then
+ *  WIN32OLERuntimeError is raised.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib.visible? # => true
+ */
+static VALUE
+foletypelib_visible(VALUE self)
+{
+    HRESULT hr;
+    ITypeLib *pTypeLib = NULL;
+    VALUE visible = Qtrue;
+    TLIBATTR *pTLibAttr;
+
+    oletypelib2itypelib(self, &pTypeLib);
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+    if (FAILED(hr)) {
+        OLE_RELEASE(pTypeLib);
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to get TLIBATTR information");
+    }
+    if ((pTLibAttr->wLibFlags == 0) ||
+        (pTLibAttr->wLibFlags & LIBFLAG_FRESTRICTED) ||
+        (pTLibAttr->wLibFlags & LIBFLAG_FHIDDEN)) {
+        visible = Qfalse;
+    }
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    OLE_RELEASE(pTypeLib);
+    return visible;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#library_name 
+ *
+ *  Returns library name.
+ *  If the method fails to access library name, WIN32OLERuntimeError is raised.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib.library_name # => Excel
+ */
+static VALUE
+foletypelib_library_name(VALUE self)
+{
+    HRESULT hr;
+    ITypeLib *pTypeLib = NULL;
+    VALUE libname = Qnil;
+    BSTR bstr;
+
+    oletypelib2itypelib(self, &pTypeLib);
+    hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, -1,
+                                            &bstr, NULL, NULL, NULL);
+    if (FAILED(hr)) {
+        OLE_RELEASE(pTypeLib);
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to get library name");
+    }
+    OLE_RELEASE(pTypeLib);
+    libname = WC2VSTR(bstr);
+    return libname;
+}
+
 
 /*
  *  call-seq:
@@ -4854,24 +4943,11 @@ foletypelib_path(VALUE self)
 static VALUE
 foletypelib_ole_classes(VALUE self)
 {
-    OLECHAR * pbuf;
-    HRESULT hr;
-    ITypeLib *pTypeLib;
-    VALUE path = Qnil;
+    ITypeLib *pTypeLib = NULL;
     VALUE classes = rb_ary_new();
-    path = rb_funcall(self, rb_intern("path"), 0);
-    if (path != Qnil) {
-        pbuf = ole_mb2wc(StringValuePtr(path), -1);
-        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
-        SysFreeString(pbuf);
-        if (FAILED(hr))
-            ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx from `%s'",
-                      StringValuePtr(path));
-        ole_classes_from_typelib(pTypeLib, classes);
-        OLE_RELEASE(pTypeLib);
-    } else {
-        rb_raise(eWIN32OLERuntimeError, "failed to get type library path");
-    }
+    oletypelib2itypelib(self, &pTypeLib);
+    ole_classes_from_typelib(pTypeLib, classes);
+    OLE_RELEASE(pTypeLib);
     return classes;
 }
 
@@ -7942,6 +8018,8 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPELIB, "minor_version", foletypelib_minor_version, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "path", foletypelib_path, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "ole_classes", foletypelib_ole_classes, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "visible?", foletypelib_visible, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "library_name", foletypelib_library_name, 0);
     rb_define_alias(cWIN32OLE_TYPELIB, "to_s", "name");
     rb_define_method(cWIN32OLE_TYPELIB, "inspect", foletypelib_inspect, 0);
     
