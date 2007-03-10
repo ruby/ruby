@@ -1,3 +1,9 @@
+Sun Mar 11 05:45:46 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/README, misc/rdebug.el: Add rdebug.el, Emacs ruby-debug
+	  interface based on rubydb3x.el; submitted by Martin Nordholts
+	  <enselic AT gmail.com> in [ruby-bugs:PR#9023].
+
 Sat Mar 10 07:20:28 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_TYPELIB#library_name,
