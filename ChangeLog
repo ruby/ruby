@@ -1,3 +1,12 @@
+Mon Mar 12 01:05:17 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/sym.c (rb_dlsym_inspect): Use "0x%x" rather for pointers.
+	  This might not be very right but it is commonly used in other
+	  parts of the code; submitted by sheepman <sheepman AT
+	  sheepman.sakura.ne.jp> in [ruby-dev:30532].
+
+	* ext/dl/ptr.c (rb_dlptr_inspect): Ditto.
+
 Mon Mar 12 00:59:19 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/lib/dl/import.rb (DL::Importable::Internal::import,
