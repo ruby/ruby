@@ -1,3 +1,10 @@
+Sun Mar 11 17:51:46 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/mkcallback.rb (mkfunc): Make sure that a callback
+	  function is found in the function table before trying to call
+	  it; submitted by sheepman <sheepman AT sheepman.sakura.ne.jp>
+	  in [ruby-dev:30524].
+
 Sun Mar 11 17:30:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (error_handle): no message when exiting by signal.
