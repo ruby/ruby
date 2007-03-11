@@ -1,3 +1,17 @@
+Mon Mar 12 01:23:50 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/sym.c (rb_dlsym_inspect): Use "0x%x" rather for pointers.
+	  This might not be very right but it is commonly used in other
+	  parts of the code; submitted by sheepman <sheepman AT
+	  sheepman.sakura.ne.jp> in [ruby-dev:30532].
+
+	* ext/dl/ptr.c (rb_dlptr_inspect): Ditto.
+
+	* ext/dl/lib/dl/import.rb (DL::Importable::Internal::import,
+	  DL::Importable::Internal::callback): Avoid race condition for an
+	  instance variable; submitted by sheepman <sheepman AT
+	  sheepman.sakura.ne.jp> in [ruby-dev:30530].
+
 Sun Mar 11 19:04:29 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/README: Add a note about ruby-electric.el. 
