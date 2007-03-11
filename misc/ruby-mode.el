@@ -45,7 +45,7 @@
   (concat ruby-modifier-beg-re "\\|" ruby-block-op-re)
   )
 
-(defconst ruby-block-end-re "\\<end\\>\\|;;")
+(defconst ruby-block-end-re "\\<end\\>")
 
 (defconst ruby-here-doc-beg-re
   "<<\\(-\\)?\\(\\([a-zA-Z0-9_]+\\)\\|[\"]\\([^\"]+\\)[\"]\\|[']\\([^']+\\)[']\\)")

@@ -1,3 +1,8 @@
+Sun Mar 11 18:42:01 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/ruby-mode.el (ruby-block-end-re): Support for the
+	  exprimental ';;' terminator had been dropped.
+
 Sun Mar 11 05:45:46 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/README, misc/rdebug.el: Add rdebug.el, Emacs ruby-debug
