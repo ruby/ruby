@@ -87,7 +87,7 @@ module DL
 	  "  rs = dec.call(rs) if (dec && rs)",
 	  "  @retval = r",
 	  "  @args   = rs",
-	  "  @retval",
+	  "  r",
 	  "}",
 	].join("\n"))
 
@@ -169,7 +169,7 @@ module DL
 	  "  rs = dec.call(rs) if dec",
 	  "  @retval = r",
 	  "  @args   = rs",
-	  "  return @retval",
+	  "  return r",
 	  "end",
 	  "module_function :#{mname}",
 	].join("\n")

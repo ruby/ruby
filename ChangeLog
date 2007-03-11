@@ -1,3 +1,10 @@
+Mon Mar 12 00:59:19 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/lib/dl/import.rb (DL::Importable::Internal::import,
+	  DL::Importable::Internal::callback): Avoid race condition for an
+	  instance variable; submitted by sheepman <sheepman AT
+	  sheepman.sakura.ne.jp> in [ruby-dev:30530].
+
 Sun Mar 11 18:57:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/README: Add a note about ruby-electric.el. 
