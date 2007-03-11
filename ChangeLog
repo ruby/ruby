@@ -153,7 +153,7 @@ Fri Mar  2 07:58:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Mar  1 21:38:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, arg): should not omit lhs of OP_ASGN1 even if
-	  empty.  [ruby-dev:30452]
+	  empty.  [ruby-dev:30455]
 
 Thu Mar  1 02:55:25 2007  Akinori MUSHA  <knu@iDaemons.org>
 
