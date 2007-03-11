@@ -1,3 +1,10 @@
+Sun Mar 11 17:45:51 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/mkcallback.rb (mkfunc): Make sure that a callback
+	  function is found in the function table before trying to call
+	  it; submitted by sheepman <sheepman AT sheepman.sakura.ne.jp>
+	  in [ruby-dev:30524].
+
 Tue Mar  6 18:58:37 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	
 	* lib/shell/process-controller.rb: fix thread synchronization
