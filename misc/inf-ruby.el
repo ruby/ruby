@@ -35,7 +35,15 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log: inf-ruby.el,v $
-;;;	 Revision 1.6.2.1  2004/07/27 07:51:28  matz
+;;;	 Revision 1.7  2004/07/27 08:11:36  matz
+;;;	 * eval.c (rb_eval): copy on write for argument local variable
+;;;	   assignment.
+;;;
+;;;	 * eval.c (assign): ditto.
+;;;
+;;;	 * eval.c (rb_call0): update ruby_frame->argv with the default
+;;;	   value used for the optional arguments.
+;;;
 ;;;	 * object.c (Init_Object): "===" calls rb_obj_equal() directly.
 ;;;	   [ruby-list:39937]
 ;;;	
