@@ -170,7 +170,7 @@ static struct signals {
 
 static int
 signm2signo(nm)
-    char *nm;
+    const char *nm;
 {
     struct signals *sigs;
 
@@ -197,6 +197,93 @@ ruby_signal_name(no)
     int no;
 {
     return signo2signm(no);
+}
+
+/*
+ * call-seq:
+ *    SignalException.new(sig)   =>  signal_exception
+ *
+ *  Construct a new SignalException object.  +sig+ should be a known
+ *  signal name, or a signal number.
+ */
+
+static VALUE
+esignal_init(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    int argnum = 1;
+    VALUE sig = Qnil;
+    int signo;
+    const char *signm;
+    char tmpnm[(sizeof(int)*CHAR_BIT)/3+4];
+
+    if (argc > 0) {
+	sig = argv[0];
+	if (FIXNUM_P(sig)) argnum = 2;
+    }
+    if (argc < 1 || argnum < argc) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		 argc, argnum);
+    }
+    if (argnum == 2) {
+	signo = FIX2INT(sig);
+	if (signo < 0 || signo > NSIG) {
+	    rb_raise(rb_eArgError, "invalid signal number (%d)", signo);
+	}
+	if (argc > 1) {
+	    sig = argv[1];
+	}
+	else {
+	    signm = signo2signm(signo);
+	    if (signm) {
+		snprintf(tmpnm, sizeof(tmpnm), "SIG%s", signm);
+	    }
+	    else {
+		snprintf(tmpnm, sizeof(tmpnm), "SIG%u", signo);
+	    }
+	    sig = rb_str_new2(signm = tmpnm);
+	}
+    }
+    else {
+	signm = SYMBOL_P(sig) ? rb_id2name(SYM2ID(sig)) : StringValuePtr(sig);
+	if (strncmp(signm, "SIG", 3) == 0) signm += 3;
+	signo = signm2signo(signm);
+	if (!signo) {
+	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", signm);
+	}
+	if (SYMBOL_P(sig)) {
+	    sig = rb_str_new2(signm);
+	}
+    }
+    rb_call_super(1, &sig);
+    rb_iv_set(self, "signo", INT2NUM(signo));
+
+    return self;
+}
+
+static VALUE
+interrupt_init(self, mesg)
+    VALUE self, mesg;
+{
+    VALUE argv[2];
+
+    argv[0] = INT2FIX(SIGINT);
+    argv[1] = mesg;
+    return rb_call_super(2, argv);
+}
+
+void
+ruby_default_signal(sig)
+    int sig;
+{
+#ifndef MACOS_UNUSE_SIGNAL
+    extern rb_pid_t getpid _((void));
+
+    signal(sig, SIG_DFL);
+    kill(getpid(), sig);
+#endif
 }
 
 /*
@@ -413,6 +500,9 @@ signal_exec(sig)
 #ifdef SIGQUIT
 	  case SIGQUIT:
 #endif
+#ifdef SIGTERM
+	  case SIGTERM:
+#endif
 #ifdef SIGALRM
 	  case SIGALRM:
 #endif
@@ -422,7 +512,7 @@ signal_exec(sig)
 #ifdef SIGUSR2
 	  case SIGUSR2:
 #endif
-	    rb_thread_signal_raise(signo2signm(sig));
+	    rb_thread_signal_raise(sig);
 	    break;
 	}
     }
@@ -679,6 +769,9 @@ trap(arg)
 #endif
 #ifdef SIGQUIT
 	  case SIGQUIT:
+#endif
+#ifdef SIGTERM
+	  case SIGTERM:
 #endif
 #ifdef SIGALRM
 	  case SIGALRM:
@@ -974,6 +1067,11 @@ Init_signal()
     rb_define_global_function("trap", sig_trap, -1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
+
+    rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
+    rb_attr(rb_eSignal, rb_intern("signo"), 1, 0, 0);
+    rb_alias(rb_eSignal, rb_intern("signm"), rb_intern("message"));
+    rb_define_method(rb_eInterrupt, "initialize", interrupt_init, 1);
 
     install_sighandler(SIGINT, sighandler);
 #ifdef SIGHUP

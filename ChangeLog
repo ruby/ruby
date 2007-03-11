@@ -1,3 +1,26 @@
+Sun Mar 11 12:09:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (error_handle): no message when exiting by signal.
+
+	* eval.c (ruby_cleanup): re-send signal.  [ruby-dev:30516]
+
+	* eval.c (rb_thread_interrupt): instantiate SignalException.
+
+	* eval.c (rb_thread_signal_raise): now takes signal number instead
+	  of signal name.
+
+	* intern.h (rb_thread_signal_raise, ruby_default_signal): prototypes.
+
+	* signal.c (esignal_init): takes a signal number and an optional
+	  signal name.
+
+	* signal.c (interrupt_init): pass SIGINT always.
+
+	* signal.c (ruby_default_signal): invoke system default signal
+	  handler.
+
+	* signal.c (rb_signal_exec, trap): handle SIGTERM.  [ruby-dev:30505]
+
 Tue Mar  6 19:08:46 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Do not modify

@@ -1492,6 +1492,9 @@ error_handle(ex)
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(ruby_errinfo);
 	}
+	else if (rb_obj_is_instance_of(ruby_errinfo, rb_eSignal)) {
+	    /* no message when exiting by signal */
+	}
 	else {
 	    error_print();
 	}
@@ -1579,9 +1582,15 @@ ruby_cleanup(ex)
     ruby_finalize_1();
     POP_TAG();
 
-    if (err && rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	VALUE st = rb_iv_get(err, "status");
-	return NUM2INT(st);
+    if (err) {
+	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
+	    VALUE st = rb_iv_get(err, "status");
+	    return NUM2INT(st);
+	}
+	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
+	    VALUE sig = rb_iv_get(err, "signo");
+	    ruby_default_signal(NUM2INT(sig));
+	}
     }
     return ex;
 }
@@ -10155,7 +10164,6 @@ static VALUE th_raise_exception;
 static NODE *th_raise_node;
 static VALUE th_cmd;
 static int   th_sig, th_safe;
-static char *th_signm;
 
 #define RESTORE_NORMAL		1
 #define RESTORE_FATAL		2
@@ -10261,7 +10269,7 @@ rb_thread_switch(n)
 	rb_raise_jump(th_raise_exception);
 	break;
       case RESTORE_SIGNAL:
-	rb_raise(rb_eSignal, "SIG%s", th_signm);
+	rb_thread_signal_raise(th_sig);
 	break;
       case RESTORE_EXIT:
 	ruby_errinfo = th_raise_exception;
@@ -12262,13 +12270,15 @@ rb_thread_interrupt()
 
 void
 rb_thread_signal_raise(sig)
-    char *sig;
+    int sig;
 {
-    if (sig == 0) return;	/* should not happen */
     rb_thread_critical = 0;
     if (curr_thread == main_thread) {
+	VALUE argv[1];
+
 	rb_thread_ready(curr_thread);
-	rb_raise(rb_eSignal, "SIG%s", sig);
+	argv[0] = INT2FIX(sig);
+	rb_exc_raise(rb_class_new_instance(1, argv, rb_eSignal));
     }
     rb_thread_ready(main_thread);
     if (!rb_thread_dead(curr_thread)) {
@@ -12276,7 +12286,7 @@ rb_thread_signal_raise(sig)
 	    return;
 	}
     }
-    th_signm = sig;
+    th_sig = sig;
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_SIGNAL);
 }
