@@ -1,3 +1,16 @@
+Sun Mar 11 19:04:29 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/README: Add a note about ruby-electric.el. 
+
+	* misc/ruby-mode.el (ruby-non-block-do-re): Fix
+	  ruby-non-block-do-re. [ruby-core:03719]
+
+	* misc/inf-ruby.el: Synchronize the comment section with trunk.
+
+	* misc/README, misc/rdebug.el: Add rdebug.el, Emacs ruby-debug
+	  interface based on rubydb3x.el; submitted by Martin Nordholts
+	  <enselic AT gmail.com> in [ruby-bugs:PR#9023].
+
 Sun Mar 11 17:51:46 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/mkcallback.rb (mkfunc): Make sure that a callback
