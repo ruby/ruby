@@ -1,3 +1,7 @@
+Mon Mar 12 16:09:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb (patchlevel): read from version.h.
+
 Sun Mar 11 18:57:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/README: Add a note about ruby-electric.el. 
