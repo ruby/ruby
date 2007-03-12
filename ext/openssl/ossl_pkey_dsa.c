@@ -377,6 +377,11 @@ OSSL_PKEY_BN(dsa, priv_key);
 void
 Init_ossl_dsa()
 {
+#if 0 /* let rdoc know about mOSSL and mPKey */
+    mOSSL = rb_define_module("OpenSSL");
+    mPKey = rb_define_module_under(mOSSL, "PKey");
+#endif
+
     eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
 
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);

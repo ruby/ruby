@@ -207,6 +207,10 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 void
 Init_ossl_pkey()
 {
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+        
     mPKey = rb_define_module_under(mOSSL, "PKey");
 	
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
