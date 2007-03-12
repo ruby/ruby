@@ -484,7 +484,7 @@ module FileUtils
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
   # 
   def mv(src, dest, options = {})
-    fu_check_options options, :force, :noop, :verbose
+    fu_check_options options, :force, :noop, :verbose, :secure
     fu_output_message "mv#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
     fu_each_src_dest(src, dest) do |s, d|

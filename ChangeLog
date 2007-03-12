@@ -1,3 +1,8 @@
+Mon Mar 12 17:22:44 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::mv): fix incomplete backport of
+	  FileUtils.mv changes at r11988
+
 Mon Mar 12 16:09:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb (patchlevel): read from version.h.
