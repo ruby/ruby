@@ -855,6 +855,10 @@ Init_ossl_ssl()
 {
     int i;
 
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_vcb_idx",0,0,0);
     ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,"ossl_ssl_ex_store_p",0,0,0);
     ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_ptr_idx",0,0,0);

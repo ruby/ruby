@@ -418,6 +418,11 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
 void
 Init_ossl_dh()
 {
+#if 0 /* let rdoc know about mOSSL and mPKey */
+    mOSSL = rb_define_module("OpenSSL");
+    mPKey = rb_define_module_under(mOSSL, "PKey");
+#endif
+
     eDHError = rb_define_class_under(mPKey, "DHError", ePKeyError);
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);

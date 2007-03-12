@@ -380,6 +380,10 @@ CIPHER_0ARG_INT(block_size)
 void 
 Init_ossl_cipher(void)
 {
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     mCipher = rb_define_module_under(mOSSL, "Cipher");
     eCipherError = rb_define_class_under(mOSSL, "CipherError", eOSSLError);
     cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);

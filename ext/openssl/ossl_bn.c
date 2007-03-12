@@ -600,6 +600,10 @@ ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 void
 Init_ossl_bn()
 {
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     if (!(ossl_bn_ctx = BN_CTX_new())) {
 	ossl_raise(rb_eRuntimeError, "Cannot init BN_CTX");
     }
