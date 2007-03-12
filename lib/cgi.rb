@@ -566,7 +566,8 @@ class CGI
     end
 
     options.delete("nph") if defined?(MOD_RUBY)
-    if options.delete("nph") or /IIS/n.match(env_table['SERVER_SOFTWARE'])
+    if options.delete("nph") or
+        (/IIS\/(\d+)/n.match(env_table['SERVER_SOFTWARE']) and $1.to_i < 5)
       buf += (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " +
              (HTTP_STATUS[options["status"]] or options["status"] or "200 OK") +
              EOL +

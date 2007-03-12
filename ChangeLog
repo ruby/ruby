@@ -1,3 +1,9 @@
+Tue Mar 13 02:42:58 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/cgi.rb (CGI::header): IIS >= 5.0 does not need the nph
+	  assumption any more; submitted by MIYASAKA Masaru <alkaid AT
+	  coral.ocn.ne.jp> in [ruby-dev:30537].
+
 Mon Mar 12 10:53:28 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): Let rdoc know about
