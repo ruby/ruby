@@ -1,3 +1,8 @@
+Tue Mar 13 03:24:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: added --pure (turned on by default) and --debugger
+	  options.
+
 Tue Mar 13 02:50:28 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/cgi.rb (CGI::header): IIS >= 5.0 does not need the nph
