@@ -1,7 +1,7 @@
 = NEWS
 
 This document is a list of user visible feature changes made between
-releases excluding bug fixes.
+releases except for bug fixes.
 
 Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
@@ -28,6 +28,11 @@ with all sufficient information, see the ChangeLog file.
   * New internal APIs for C and Ruby.
 
   * Support for autoloading.
+
+      require 'digest'
+
+      # autoloads digest/md5
+      md = Digest::MD5.digest("string")
 
   * See below for new features and compatibility issues.
 
@@ -63,9 +68,8 @@ with all sufficient information, see the ChangeLog file.
 
   * New digest class methods: file
 
-  * New digest instance methods: clone, reset, new,
-    inspect, digest_length (alias size or length),
-    block_length()
+  * New digest instance methods: clone, reset, new, inspect,
+    digest_length (alias size or length), block_length()
 
   * New library: digest/bubblebabble
 
@@ -78,8 +82,8 @@ with all sufficient information, see the ChangeLog file.
 * thread
 
   * Replaced with much faster mutex implementation in C.
-    The former implementation is available with a
-    configure option `--disable-fastthread'.
+    The former implementation is available with a configure option
+    `--disable-fastthread'.
 
 * webrick
 
@@ -95,14 +99,12 @@ with all sufficient information, see the ChangeLog file.
 * fileutils
 
   * A minor implementation change breaks Rake <=0.7.1.
-    Updating Rake to 0.7.2 fixes the problem.
+    Updating Rake to 0.7.2 or higher fixes the problem.
 
 * digest
 
-  * The constructor does no longer take an initial
-    string to feed; digest() and hexdigest() now do,
-    instead.  The following examples show how to
-    migrate:
+  * The constructor does no longer take an initial string to feed.
+    The following examples show how to migrate:
 
       # Before
       md = Digest::MD5.new("string")
