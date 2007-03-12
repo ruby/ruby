@@ -264,6 +264,10 @@ ossl_digest_size(VALUE self)
 void
 Init_ossl_digest()
 {
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     mDigest = rb_define_module_under(mOSSL, "Digest");
 	
     eDigestError = rb_define_class_under(mDigest, "DigestError", eOSSLError);

@@ -1,3 +1,29 @@
+Mon Mar 12 11:07:44 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_asn1.c (Init_ossl_asn1): Let rdoc know about
+	  externally defined modules; submitted by Technorama
+	  Ltd. <oss-ruby AT technorama.net> in [ruby-bugs:PR#4704].
+
+	* ext/openssl/ossl_bn.c (Init_ossl_bn): Ditto.
+
+	* ext/openssl/ossl_cipher.c (Init_ossl_cipher): Ditto.
+
+	* ext/openssl/ossl_digest.c (Init_ossl_digest): Ditto.
+
+	* ext/openssl/ossl_hmac.c (Init_ossl_hmac): Ditto.
+
+	* ext/openssl/ossl_pkey.c (Init_ossl_pkey): Ditto.
+
+	* ext/openssl/ossl_pkey_dh.c (Init_ossl_dh): Ditto.
+
+	* ext/openssl/ossl_pkey_dsa.c (Init_ossl_dsa): Ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c (Init_ossl_rsa): Ditto.
+
+	* ext/openssl/ossl_rand.c (Init_ossl_rand): Ditto.
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Ditto.
+
 Mon Mar 12 01:23:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/sym.c (rb_dlsym_inspect): Use "0x%x" rather for pointers.

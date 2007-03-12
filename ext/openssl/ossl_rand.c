@@ -115,6 +115,10 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 void
 Init_ossl_rand()
 {
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     mRandom = rb_define_module_under(mOSSL, "Random");
 	
     eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);

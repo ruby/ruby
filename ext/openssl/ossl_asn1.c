@@ -1087,6 +1087,10 @@ Init_ossl_asn1()
     VALUE ary;
     int i;
 
+#if 0 /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     sUNIVERSAL = rb_intern("UNIVERSAL");
     sCONTEXT_SPECIFIC = rb_intern("CONTEXT_SPECIFIC");
     sAPPLICATION = rb_intern("APPLICATION");
