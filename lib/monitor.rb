@@ -145,7 +145,7 @@ module MonitorMixin
   #
   def mon_try_enter
     if @mon_owner != Thread.current
-      unless @mon_owner.trylock
+      unless @mon_mutex.try_lock
         return false
       end
       @mon_owner = Thread.current

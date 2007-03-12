@@ -1,3 +1,8 @@
+Tue Mar 13 07:23:20 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb (mon_try_enter): call @mon_muetx.try_lock.
+	  Thanks, Keiju ISHITSUKA. [ruby-dev:30507]
+
 Tue Mar 13 02:42:58 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/cgi.rb (CGI::header): IIS >= 5.0 does not need the nph
