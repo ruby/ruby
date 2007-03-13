@@ -24,7 +24,7 @@ module Test
 
       def assert_file_exist(path)
         _wrap_assertion {
-          assert_block("file not exist: #{path}") {
+          assert_block("file not exists: #{path}") {
             File.exist?(path)
           }
         }
@@ -32,7 +32,7 @@ module Test
 
       def assert_file_not_exist(path)
         _wrap_assertion {
-          assert_block("file not exist: #{path}") {
+          assert_block("file does exist: #{path}") {
             not File.exist?(path)
           }
         }
@@ -40,7 +40,7 @@ module Test
 
       def assert_directory(path)
         _wrap_assertion {
-          assert_block("is not directory: #{path}") {
+          assert_block("is not a directory: #{path}") {
             File.directory?(path)
           }
         }

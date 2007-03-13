@@ -1,3 +1,10 @@
+Tue Mar 13 14:42:10 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb: Fix wrong error message.
+
+	* lib/fileutils.rb (FileUtils::mv): Type Error; should utilize
+	  Strings instead of Symbols here.
+
 Mon Mar 12 17:22:44 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::mv): fix incomplete backport of
