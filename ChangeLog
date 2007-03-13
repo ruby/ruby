@@ -1,3 +1,7 @@
+Tue Mar 13 19:04:30 2007  Keiju Ishitsuka <keiju@ruby-lang.org>
+
+	* lib/sync.rb: support for ruby 1.9(YARV) thread model.
+	
 Tue Mar 13 09:25:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clear-installed-list): separated from install-prereq.

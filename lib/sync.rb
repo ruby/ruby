@@ -23,9 +23,8 @@
 #   Sync_m#sync_lock, lock
 #   Sync_m#sync_unlock, unlock
 #
-#   Sync, Synchronicer:
-#	include Sync_m
-#   Usage:
+#  Sync, Synchronizer:
+#  Usage:
 #   sync = Sync.new
 #
 #   Sync#mode
@@ -89,19 +88,18 @@ module Sync_m
   
   def Sync_m.append_features(cl)
     super
-    unless cl.instance_of?(Module)
-      # do nothing for Modules
-      # make aliases and include the proper module.
-      define_aliases(cl)
-    end
+    # do nothing for Modules
+    # make aliases for Classes.
+    define_aliases(cl) unless cl.instance_of?(Module)
+    self
   end
   
   def Sync_m.extend_object(obj)
     super
-    obj.sync_extended
+    obj.sync_extend
   end
-
-  def sync_extended
+  
+  def sync_extend
     unless (defined? locked? and
 	    defined? shared? and
 	    defined? exclusive? and
@@ -130,102 +128,101 @@ module Sync_m
   # locking methods.
   def sync_try_lock(mode = EX)
     return unlock if sync_mode == UN
-    
-    Thread.critical = true
-    ret = sync_try_lock_sub(sync_mode)
-    Thread.critical = false
+    @sync_mutex.synchronize do
+      ret = sync_try_lock_sub(sync_mode)
+    end
     ret
   end
   
   def sync_lock(m = EX)
     return unlock if m == UN
 
-    until (Thread.critical = true; sync_try_lock_sub(m))
-      if sync_sh_locker[Thread.current]
-	sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
-	sync_sh_locker.delete(Thread.current)
-      else
-	sync_waiting.push Thread.current
+    while true
+      @sync_mutex.synchronize do
+	if sync_try_lock_sub(m)
+	  return self
+	else
+	  if sync_sh_locker[Thread.current]
+	    sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
+	    sync_sh_locker.delete(Thread.current)
+	  else
+	    sync_waiting.push Thread.current
+	  end
+	  @sync_mutex.sleep
+	end
       end
-      Thread.stop
     end
-    Thread.critical = false
     self
   end
   
   def sync_unlock(m = EX)
-    Thread.critical = true
-    if sync_mode == UN
-      Thread.critical = false
-      Err::UnknownLocker.Fail(Thread.current)
-    end
-    
-    m = sync_mode if m == EX and sync_mode == SH
-    
-    runnable = false
-    case m
-    when UN
-      Thread.critical = false
-      Err::UnknownLocker.Fail(Thread.current)
-      
-    when EX
-      if sync_ex_locker == Thread.current
-	if (self.sync_ex_count = sync_ex_count - 1) == 0
-	  self.sync_ex_locker = nil
-	  if sync_sh_locker.include?(Thread.current)
-	    self.sync_mode = SH
-	  else
-	    self.sync_mode = UN
-	  end
-	  runnable = true
-	end
-      else
+    wakeup_threads = []
+    @sync_mutex.synchronize do
+      if sync_mode == UN
 	Err::UnknownLocker.Fail(Thread.current)
       end
       
-    when SH
-      if (count = sync_sh_locker[Thread.current]).nil?
+      m = sync_mode if m == EX and sync_mode == SH
+      
+      runnable = false
+      case m
+      when UN
 	Err::UnknownLocker.Fail(Thread.current)
-      else
-	if (sync_sh_locker[Thread.current] = count - 1) == 0 
-	  sync_sh_locker.delete(Thread.current)
-	  if sync_sh_locker.empty? and sync_ex_count == 0
-	    self.sync_mode = UN
+	
+      when EX
+	if sync_ex_locker == Thread.current
+	  if (self.sync_ex_count = sync_ex_count - 1) == 0
+	    self.sync_ex_locker = nil
+	    if sync_sh_locker.include?(Thread.current)
+	      self.sync_mode = SH
+	    else
+	      self.sync_mode = UN
+	    end
 	    runnable = true
 	  end
+	else
+	  Err::UnknownLocker.Fail(Thread.current)
 	end
-      end
-    end
-    
-    if runnable
-      if sync_upgrade_waiting.size > 0
-	for k, v in sync_upgrade_waiting
-	  sync_sh_locker[k] = v
-	end
-	wait = sync_upgrade_waiting
-	self.sync_upgrade_waiting = []
-	Thread.critical = false
 	
-	for w, v in wait
-	  w.run
+      when SH
+	if (count = sync_sh_locker[Thread.current]).nil?
+	  Err::UnknownLocker.Fail(Thread.current)
+	else
+	  if (sync_sh_locker[Thread.current] = count - 1) == 0 
+	    sync_sh_locker.delete(Thread.current)
+	    if sync_sh_locker.empty? and sync_ex_count == 0
+	      self.sync_mode = UN
+	      runnable = true
+	    end
+	  end
 	end
-      else
-	wait = sync_waiting
-	self.sync_waiting = []
-	Thread.critical = false
-	for w in wait
-	  w.run
+      end
+      
+      if runnable
+	if sync_upgrade_waiting.size > 0
+	  th, count = sync_upgrade_waiting.shift
+	  sync_sh_locker[th] = count
+	  th.wakeup
+	  wakeup_threads.push th
+	else
+	  wait = sync_waiting
+	  self.sync_waiting = []
+	  for th in wait
+	    th.wakeup
+	    wakeup_threads.push th
+	  end
 	end
       end
     end
-    
-    Thread.critical = false
+    for th in wakeup_threads
+      th.run
+    end
     self
   end
   
   def sync_synchronize(mode = EX)
+    sync_lock(mode)
     begin
-      sync_lock(mode)
       yield
     ensure
       sync_unlock
@@ -239,7 +236,12 @@ module Sync_m
   attr_accessor :sync_sh_locker
   attr_accessor :sync_ex_locker
   attr_accessor :sync_ex_count
-    
+
+  def sync_inspect
+    sync_iv = instance_variables.select{|iv| /^@sync_/ =~ iv.id2name}.collect{|iv| iv.id2name + '=' + instance_eval(iv.id2name).inspect}.join(",")
+    print "<#{self.class}.extend Sync_m: #{inspect}, <Sync_m: #{sync_iv}>"
+  end
+
   private
 
   def sync_initialize
@@ -249,11 +251,13 @@ module Sync_m
     @sync_sh_locker = Hash.new
     @sync_ex_locker = nil
     @sync_ex_count = 0
+
+    @sync_mutex = Mutex.new
   end
 
   def initialize(*args)
-    sync_initialize
     super
+    sync_initialize
   end
     
   def sync_try_lock_sub(m)
@@ -279,7 +283,7 @@ module Sync_m
       end
     when EX
       if sync_mode == UN or
-	sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current) 
+	  sync_mode == SH && sync_sh_locker.size == 1 && sync_sh_locker.include?(Thread.current) 
 	self.sync_mode = m
 	self.sync_ex_locker = Thread.current
 	self.sync_ex_count = 1
@@ -291,7 +295,6 @@ module Sync_m
 	ret = false
       end
     else
-      Thread.critical = false
       Err::LockModeFailer.Fail mode
     end
     return ret
@@ -300,12 +303,6 @@ end
 Synchronizer_m = Sync_m
 
 class Sync
-  #Sync_m.extend_class self
   include Sync_m
-    
-  def initialize
-    super
-  end
-    
 end
 Synchronizer = Sync
