@@ -280,7 +280,11 @@ dont-install-doc::
 post-no-install-doc::
 	@$(NULLCMD)
 
-install-prereq:
+CLEAR_INSTALLED_LIST = clear-installed-list
+
+install-prereq: $(CLEAR_INSTALLED_LIST)
+
+clear-installed-list:
 	@exit > $(INSTALLED_LIST)
 
 clean: clean-ext clean-local

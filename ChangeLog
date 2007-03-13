@@ -1,3 +1,7 @@
+Tue Mar 13 09:25:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clear-installed-list): separated from install-prereq.
+
 Tue Mar 13 07:23:20 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (mon_try_enter): call @mon_muetx.try_lock.
