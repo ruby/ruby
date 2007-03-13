@@ -1,3 +1,7 @@
+Tue Mar 13 17:29:43 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* stable version 1.8.5-p35 released.
+
 Tue Mar 13 14:42:10 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/fileutils/fileasserts.rb: Fix wrong error message.
