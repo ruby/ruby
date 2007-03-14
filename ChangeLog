@@ -1,3 +1,8 @@
+Wed Mar 14 12:30:00 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
+
+	* ext/bigdecimal/bigdecimal.c: BigDecimal("-.31") is now
+	  treated as ("-0.31") not as ("0.31").
+
 Tue Mar 13 09:25:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clear-installed-list): separated from install-prereq.
