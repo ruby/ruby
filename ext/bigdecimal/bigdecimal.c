@@ -3921,7 +3921,7 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
     /* get integer part */
     i = 0;
     sign = 1;
-    if(ni > 0) {
+    if(ni >= 0) {
         if(int_chr[0] == '-') {
             sign = -1;
             ++i;
