@@ -430,8 +430,13 @@ unlock_mutex_inner(Mutex *mutex)
     VALUE waking;
 
     if (!RTEST(mutex->owner)) {
-        return Qundef;
+	rb_raise(rb_eThreadError, "not owner");
     }
+
+    if (mutex->owner != rb_thread_current()) {
+	rb_raise(rb_eThreadError, "not owner");
+    }
+
     mutex->owner = Qnil;
     waking = wake_one(&mutex->waiting);
 
