@@ -1,3 +1,25 @@
+Fri Mar 16 16:33:58 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c (unlock_mutex_inner): Make sure that the
+	  given mutex is actually owned by the caller; submitted by:
+	  Sylvain Joyeux <sylvain.joyeux AT m4x.org> in [ruby-core:10598].
+
+Fri Mar 16 16:21:35 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c (wait_condvar, lock_mutex): Fix a problem in
+	  ConditionVariable#wait that occurs when two threads that are
+	  trying to access the condition variable are also in concurrence
+	  for the given mutex; submitted by: Sylvain Joyeux
+	  <sylvain.joyeux AT m4x.org> and MenTaLguY <mental AT rydia.net>
+	  in [ruby-core:10598].
+
+Fri Mar 16 16:17:27 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/thread/test_thread.rb: Add a test script for the `thread'
+	  library.  This should result in failure as of now with
+	  ext/thread; submitted by: Sylvain Joyeux <sylvain.joyeux AT
+	  m4x.org> in [ruby-core:10598].
+
 Wed Mar 14 12:30:00 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
 
 	* ext/bigdecimal/bigdecimal.c: BigDecimal("-.31") is now
