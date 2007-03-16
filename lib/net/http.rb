@@ -1,8 +1,8 @@
 #
 # = net/http.rb
 #
-# Copyright (c) 1999-2006 Yukihiro Matsumoto
-# Copyright (c) 1999-2006 Minero Aoki
+# Copyright (c) 1999-2007 Yukihiro Matsumoto
+# Copyright (c) 1999-2007 Minero Aoki
 # Copyright (c) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
@@ -1035,26 +1035,31 @@ module Net   #:nodoc:
         }
       end
       if proxy_user()
-        unless use_ssl?
-          req.proxy_basic_auth proxy_user(), proxy_pass()
-        end
+        req.proxy_basic_auth proxy_user(), proxy_pass() unless use_ssl?
       end
-
       req.set_body_internal body
-      begin_transport req
-        req.exec @socket, @curr_http_version, edit_path(req.path)
-        begin
-          res = HTTPResponse.read_new(@socket)
-        end while res.kind_of?(HTTPContinue)
-        res.reading_body(@socket, req.response_body_permitted?) {
-          yield res if block_given?
-        }
-      end_transport req, res
-
+      res = transport_request(req, &block)
+      if sspi_auth?(res)
+        sspi_auth(req)
+        res = transport_request(req, &block)
+      end
       res
     end
 
     private
+
+    def transport_request(req)
+      begin_transport req
+      req.exec @socket, @curr_http_version, edit_path(req.path)
+      begin
+        res = HTTPResponse.read_new(@socket)
+      end while res.kind_of?(HTTPContinue)
+      res.reading_body(@socket, req.response_body_permitted?) {
+        yield res if block_given?
+      }
+      end_transport req, res
+      res
+    end
 
     def begin_transport(req)
       if @socket.closed?
@@ -1094,6 +1099,34 @@ module Net   #:nodoc:
       return true  if /keep-alive/i =~ res['proxy-connection'].to_s
       return false if /close/i      =~ res['proxy-connection'].to_s
       (@curr_http_version == '1.1')
+    end
+
+    def sspi_auth?(res)
+      return false unless @sspi_enabled
+      if res.kind_of?(HTTPProxyAuthenticationRequired) and
+          proxy? and res["Proxy-Authenticate"].include?("Negotiate")
+        begin
+          require 'win32/sspi'
+          true
+        rescue LoadError
+          false
+        end
+      else
+        false
+      end
+    end
+
+    def sspi_auth(req)
+      n = Win32::SSPI::NegotiateAuth.new
+      req["Proxy-Authorization"] = "Negotiate #{n.get_initial_token}"
+      # Some versions of ISA will close the connection if this isn't present.
+      req["Connection"] = "Keep-Alive"
+      req["Proxy-Connection"] = "Keep-Alive"
+      res = transport_request(req)
+      authphrase = res["Proxy-Authenticate"]  or return res
+      req["Proxy-Authorization"] = "Negotiate #{n.complete_authentication(authphrase)}"
+    rescue => err
+      raise HTTPAuthenticationError.new('HTTP authentication failed', err)
     end
 
     #

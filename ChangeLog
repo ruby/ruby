@@ -1,3 +1,10 @@
+Fri Mar 16 22:16:58 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: merge Ruby-SSPI patch contributed by Justin
+	  Bailey.
+
+	* ext/Win32API/lib/win32/sspi.rb: new file.
+
 Wed Mar 14 12:30:00 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
 
 	* ext/bigdecimal/bigdecimal.c: BigDecimal("-.31") is now
