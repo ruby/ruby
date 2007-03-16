@@ -459,7 +459,7 @@ rb_ary2cary(char t, VALUE v, long *size)
   VALUE val0;
 
   val0 = rb_check_array_type(v);
-  if(NIL_P(TYPE(val0))) {
+  if(NIL_P(val0)) {
     rb_raise(rb_eDLTypeError, "an array is expected.");
   }
   v = val0;
