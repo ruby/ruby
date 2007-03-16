@@ -390,7 +390,7 @@ rb_mutex_try_lock(VALUE self)
  *
  */
 
-static void
+static VALUE
 lock_mutex(Mutex *mutex)
 {
     VALUE current;
@@ -405,6 +405,7 @@ lock_mutex(Mutex *mutex)
     mutex->owner = current; 
 
     rb_thread_critical = 0;
+    return Qnil;
 }
 
 static VALUE
@@ -623,18 +624,12 @@ static void
 wait_condvar(ConditionVariable *condvar, Mutex *mutex)
 {
     rb_thread_critical = 1;
-    if (!RTEST(mutex->owner)) {
+    if (rb_thread_current() != mutex->owner) {
         rb_thread_critical = 0;
-        return;
+        rb_raise(rb_eThreadError, "not owner of the synchronization mutex");
     }
-    if (mutex->owner != rb_thread_current()) {
-        rb_thread_critical = 0;
-        rb_raise(rb_eThreadError, "Not owner");
-    }
-    mutex->owner = Qnil;
-    wait_list(&condvar->waiting);
-
-    lock_mutex(mutex);
+    unlock_mutex_inner(mutex);
+    rb_ensure(wait_list, (VALUE)&condvar->waiting, lock_mutex, (VALUE)mutex);
 }
 
 static VALUE
