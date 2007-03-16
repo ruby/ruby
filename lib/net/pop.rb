@@ -1,8 +1,8 @@
 # = net/pop.rb
 #
-# Copyright (c) 1999-2003 Yukihiro Matsumoto.
+# Copyright (c) 1999-2007 Yukihiro Matsumoto.
 #
-# Copyright (c) 1999-2003 Minero Aoki.
+# Copyright (c) 1999-2007 Minero Aoki.
 # 
 # Written & maintained by Minero Aoki <aamine@loveruby.net>.
 #
@@ -328,10 +328,10 @@ module Net
 
     # Enable SSL for all new instances.
     # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_PEER.
+    # to OpenSSL::SSL::VERIFY_NONE.
     # +certs+ is a file or directory holding CA certs to use to verify the 
     # server cert; Defaults to nil.
-    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
+    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil)
       @use_ssl = true
       @verify = verify
       @certs = certs  
@@ -425,11 +425,11 @@ module Net
     # Enables SSL for this instance.  Must be called before the connection is
     # established to have any effect.
     # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_PEER.
+    # to OpenSSL::SSL::VERIFY_NONE.
     # +certs+ is a file or directory holding CA certs to use to verify the 
     # server cert; Defaults to nil.
     # +port+ is port to establish the SSL connection on; Defaults to 995.
-    def enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil, 
+    def enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil, 
                    port = POP3.default_pop3s_port)
       @use_ssl = true
       @verify = verify
