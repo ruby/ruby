@@ -3915,7 +3915,7 @@ VpCtoV(Real *a, char *int_chr, U_LONG ni, char *frac, U_LONG nf, char *exp_chr, 
     /* get integer part */
     i = 0;
     sign = 1;
-    if(ni > 0) {
+    if(ni >= 0) {
         if(int_chr[0] == '-') {
             sign = -1;
             ++i;
