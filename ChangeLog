@@ -1,3 +1,10 @@
+Fri Mar 16 18:28:06 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/etc/etc.c (etc_getgrgid): Fix a bug in Etc::getgrgid()
+	  always returning the (real) group entry of the running process;
+	  reported by: UEDA Hiroyuki <ueda AT netforest.ad.jp>
+	  in [ruby-dev:30586].
+
 Wed Mar 14 12:30:00 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
 
 	* ext/bigdecimal/bigdecimal.c: BigDecimal("-.31") is now

@@ -337,7 +337,7 @@ etc_getgrgid(obj, id)
     struct group *grp;
 
     rb_secure(4);
-    gid = getgid();
+    gid = PW_VAL2GID(id);
     grp = getgrgid(gid);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
     return setup_group(grp);
