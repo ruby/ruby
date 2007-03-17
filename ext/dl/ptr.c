@@ -344,7 +344,7 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
       n = data->size / sizeof(void*);
       break;
     case 'S': case 's':
-      for (n=0; ((void**)(data->ptr))[n]; n++) {};
+      n = data->size / sizeof(char*);
       break;
     default:
 	n = 0;
