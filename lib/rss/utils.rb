@@ -1,7 +1,5 @@
 module RSS
-
   module Utils
-
     module_function
     def to_class_name(name)
       name.split(/_/).collect do |part|
@@ -26,6 +24,9 @@ module RSS
         klass.new(value)
       end
     end
-  end
 
+    def element_initialize_arguments?(args)
+      [true, false].include?(args[0]) and args[1].is_a?(Hash)
+    end
+  end
 end

@@ -107,14 +107,16 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.channel.date = t1
-        date = maker.channel.dc_dates.new_date
-        date.value = t2
+        maker.channel.dc_dates.new_date do |date|
+          date.value = t2
+        end
 
         setup_dummy_item(maker)
         item = maker.items.last
         item.date = t2
-        date = item.dc_dates.new_date
-        date.value = t1
+        item.dc_dates.new_date do |date|
+          date.value = t1
+        end
       end
       assert_equal([t1, t2], rss.channel.dc_dates.collect{|x| x.value})
       assert_equal([t2, t1], rss.items.last.dc_dates.collect{|x| x.value})
@@ -136,8 +138,9 @@ module RSS
         plural ||= "#{name}s"
         dc_elems = target.__send__("dc_#{plural}")
         values.each do |value|
-          new_dc_elem = dc_elems.__send__("new_#{name}")
-          new_dc_elem.value = value
+          dc_elems.__send__("new_#{name}") do |new_dc_elem|
+            new_dc_elem.value = value
+          end
         end
       end
     end

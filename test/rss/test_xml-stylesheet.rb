@@ -14,7 +14,7 @@ module RSS
         {:media => "print", :title => "FOO"},
         {:charset => "UTF-8", :alternate => "yes"},
       ].each do |attrs|
-        assert_xml_stylesheet_attrs(attrs, XMLStyleSheet.new(*attrs))
+        assert_xml_stylesheet_attrs(attrs, XMLStyleSheet.new(attrs))
       end
     end
     
@@ -35,8 +35,8 @@ module RSS
          :media => "printer", :charset => "UTF-8",
          :alternate => "yes"},
       ].each do |attrs|
-        target, contents = parse_pi(XMLStyleSheet.new(*attrs).to_s)
-        assert_xml_stylesheet(target, attrs, XMLStyleSheet.new(*contents))
+        target, contents = parse_pi(XMLStyleSheet.new(attrs).to_s)
+        assert_xml_stylesheet(target, attrs, XMLStyleSheet.new(contents))
       end
     end
     

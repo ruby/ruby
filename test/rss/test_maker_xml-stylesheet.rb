@@ -14,15 +14,17 @@ module RSS
       alternate = 'yes'
 
       rss = RSS::Maker.make("1.0") do |maker|
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
 
       xss = rss.xml_stylesheets.first
@@ -37,10 +39,12 @@ module RSS
       href = 'http://example.com/index.xsl'
       type = 'text/xsl'
       rss = RSS::Maker.make("1.0") do |maker|
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
 
       xss = rss.xml_stylesheets.first
@@ -53,20 +57,24 @@ module RSS
       type = "text/xsl"
       
       rss = RSS::Maker.make("1.0") do |maker|
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        # xss.href = href
-        xss.type = type
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          # xss.href = href
+          xss.type = type
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       assert(rss.xml_stylesheets.empty?)
 
       rss = RSS::Maker.make("1.0") do |maker|
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        # xss.type = type
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          # xss.type = type
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       assert(rss.xml_stylesheets.empty?)
     end

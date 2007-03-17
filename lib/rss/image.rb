@@ -17,9 +17,11 @@ module RSS
   end
   
   module ImageModelUtils
-    def validate_one_tag_name(name, tags)
-      invalid = tags.find {|tag| tag != name}
-      raise UnknownTagError.new(invalid, IMAGE_URI) if invalid
+    def validate_one_tag_name(ignore_unknown_element, name, tags)
+      if !ignore_unknown_element
+        invalid = tags.find {|tag| tag != name}
+        raise UnknownTagError.new(invalid, IMAGE_URI) if invalid
+      end
       raise TooMuchTagError.new(name, tag_name) if tags.size > 1
     end
   end
@@ -31,13 +33,11 @@ module RSS
     def self.append_features(klass)
       super
 
-      klass.install_have_child_element("#{IMAGE_PREFIX}_item")
+      klass.install_have_child_element("item", IMAGE_URI, "?",
+                                       "#{IMAGE_PREFIX}_item")
+      klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
     end
 
-    def image_validate(tags)
-      validate_one_tag_name("item", tags)
-    end
-    
     class ImageItem < Element
       include RSS10
       include DublinCoreModel
@@ -53,19 +53,23 @@ module RSS
           IMAGE_URI
         end
       end
-      
+
+      install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
+
       [
         ["about", ::RSS::RDF::URI, true],
         ["resource", ::RSS::RDF::URI, false],
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       %w(width height).each do |tag|
         full_name = "#{IMAGE_PREFIX}_#{tag}"
         disp_name = "#{IMAGE_PREFIX}:#{tag}"
-        install_text_element(full_name, :integer, disp_name)
-        BaseListener.install_get_text_element(IMAGE_URI, tag, "#{full_name}=")
+        install_text_element(tag, IMAGE_URI, "?",
+                             full_name, :integer, disp_name)
+        BaseListener.install_get_text_element(IMAGE_URI, tag, full_name)
       end
 
       alias width= image_width=
@@ -73,43 +77,21 @@ module RSS
       alias height= image_height=
       alias height image_height
 
-      def initialize(about=nil, resource=nil)
-        super()
-        self.about = about
-        self.resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+          self.resource = args[1]
+        end
       end
 
       def full_name
         tag_name_with_prefix(IMAGE_PREFIX)
       end
-      
-      def to_s(need_convert=true, indent=calc_indent)
-        rv = tag(indent) do |next_indent|
-          [
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
 
       private
-      def _tags
-        [
-          [IMAGE_URI, 'width'],
-          [IMAGE_URI, 'height'],
-        ].delete_if do |uri, name|
-          __send__(name).nil?
-        end
-      end
-        
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:about", true, "about"],
-          ["#{::RSS::RDF::PREFIX}:resource", false, "resource"],
-        ]
-      end
-
       def maker_target(target)
         target.image_item
       end
@@ -129,14 +111,12 @@ module RSS
       super
 
       unless klass.class == Module
-        klass.install_have_child_element("#{IMAGE_PREFIX}_favicon")
+        klass.install_have_child_element("favicon", IMAGE_URI, "?",
+                                         "#{IMAGE_PREFIX}_favicon")
+        klass.install_must_call_validator(IMAGE_PREFIX, IMAGE_URI)
       end
     end
 
-    def image_validate(tags)
-      validate_one_tag_name("favicon", tags)
-    end
-    
     class ImageFavicon < Element
       include RSS10
       include DublinCoreModel
@@ -152,12 +132,13 @@ module RSS
           IMAGE_URI
         end
       end
-      
+
       [
-        ["about", ::RSS::RDF::URI, true],
-        ["size", IMAGE_URI, true],
-      ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        ["about", ::RSS::RDF::URI, true, ::RSS::RDF::PREFIX],
+        ["size", IMAGE_URI, true, IMAGE_PREFIX],
+      ].each do |name, uri, required, prefix|
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{prefix}:#{name}")
       end
 
       AVAILABLE_SIZES = %w(small medium large)
@@ -171,40 +152,27 @@ module RSS
             raise NotAvailableValueError.new(full_name, new_value, attr_name)
           end
         end
-        funcall(:_size=, new_value)
+        __send!(:_size=, new_value)
       end
       
       alias image_size= size=
       alias image_size size
 
-      def initialize(about=nil, size=nil)
-        super()
-        self.about = about
-        self.size = size
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.about = args[0]
+          self.size = args[1]
+        end
       end
 
       def full_name
         tag_name_with_prefix(IMAGE_PREFIX)
       end
-      
-      def to_s(need_convert=true, indent=calc_indent)
-        rv = tag(indent) do |next_indent|
-          [
-            other_element(false, next_indent),
-          ]
-        end
-        rv = convert(rv) if need_convert
-        rv
-      end
 
       private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:about", true, "about"],
-          ["#{IMAGE_PREFIX}:size", true, "size"],
-        ]
-      end
-
       def maker_target(target)
         target.image_favicon
       end

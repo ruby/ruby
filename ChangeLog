@@ -1,3 +1,10 @@
+Sat Mar 17 19:10:39 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss, test/rss:
+	- supported Atom.
+	- bumped version 0.1.6 to 0.1.7.
+	* sample/rss/convert.rb: added new sample.
+
 Fri Mar 16 22:32:20 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: change default verification mode from

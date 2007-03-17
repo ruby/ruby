@@ -46,18 +46,21 @@ module RSS
         maker.channel.lastBuildDate = lastBuildDate
 
         skipDays.each do |day|
-          new_day = maker.channel.skipDays.new_day
-          new_day.content = day
+          maker.channel.skipDays.new_day do |new_day|
+            new_day.content = day
+          end
         end
         skipHours.each do |hour|
-          new_hour = maker.channel.skipHours.new_hour
-          new_hour.content = hour
+          maker.channel.skipHours.new_hour do |new_hour|
+            new_hour.content = hour
+          end
         end
 
 
         categories.each do |category|
-          new_category = maker.channel.categories.new_category
-          new_category.content = category
+          maker.channel.categories.new_category do |new_category|
+            new_category.content = category
+          end
         end
         
         maker.channel.generator = generator
@@ -189,27 +192,28 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
-          item.author = "#{author}#{i}"
-          item.comments = "#{comments}#{i}"
-          item.date = pubDate
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+            item.author = "#{author}#{i}"
+            item.comments = "#{comments}#{i}"
+            item.date = pubDate
 
-          item.guid.isPermaLink = guid_isPermaLink
-          item.guid.content = guid_content
+            item.guid.isPermaLink = guid_isPermaLink
+            item.guid.content = guid_content
 
-          item.enclosure.url = enclosure_url
-          item.enclosure.length = enclosure_length
-          item.enclosure.type = enclosure_type
+            item.enclosure.url = enclosure_url
+            item.enclosure.length = enclosure_length
+            item.enclosure.type = enclosure_type
 
-          item.source.url = source_url
-          item.source.content = source_content
+            item.source.url = source_url
+            item.source.content = source_content
 
-          category = item.categories.new_category
-          category.domain = category_domain
-          category.content = category_content
+            category = item.categories.new_category
+            category.domain = category_domain
+            category.content = category_content
+          end
         end
       end
       
@@ -270,14 +274,15 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         setup_dummy_channel(maker)
       end
       

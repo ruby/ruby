@@ -1,11 +1,8 @@
-require "rss/1.0"
+require "rss/rss"
 
 module RSS
-
   DC_PREFIX = 'dc'
   DC_URI = "http://purl.org/dc/elements/1.1/"
-  
-  RDF.install_ns(DC_PREFIX, DC_URI)
 
   module BaseDublinCoreModel
     def append_features(klass)
@@ -17,10 +14,10 @@ module RSS
         full_name = "#{DC_PREFIX}_#{name}"
         full_plural_name = "#{DC_PREFIX}_#{plural}"
         klass_name = "DublinCore#{Utils.to_class_name(name)}"
+        klass.install_must_call_validator(DC_PREFIX, DC_URI)
+        klass.install_have_children_element(name, DC_URI, "*",
+                                            full_name, full_plural_name)
         klass.module_eval(<<-EOC, *get_file_and_line_from_caller(0))
-          install_have_children_element(#{full_name.dump},
-                                        #{full_plural_name.dump})
-
           remove_method :#{full_name}
           remove_method :#{full_name}=
           remove_method :set_#{full_name}
@@ -36,8 +33,17 @@ module RSS
         EOC
       end
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(0))
-        alias date #{DC_PREFIX}_date
-        alias date= #{DC_PREFIX}_date=
+        if method_defined?(:date)
+          alias date_without_#{DC_PREFIX}_date= date=
+
+          def date=(value)
+            self.date_without_#{DC_PREFIX}_date = value
+            self.#{DC_PREFIX}_date = value
+          end
+        else
+          alias date #{DC_PREFIX}_date
+          alias date= #{DC_PREFIX}_date=
+        end
 
         # For backward compatibility
         alias #{DC_PREFIX}_rightses #{DC_PREFIX}_rights_list
@@ -72,7 +78,7 @@ module RSS
     }
     
     ELEMENT_NAME_INFOS = DublinCoreModel::TEXT_ELEMENTS.to_a
-    DublinCoreModel::DATE_ELEMENTS.each do |name, _|
+    DublinCoreModel::DATE_ELEMENTS.each do |name, |
       ELEMENT_NAME_INFOS << [name, nil]
     end
     
@@ -100,9 +106,13 @@ module RSS
           alias_method(:value, :content)
           alias_method(:value=, :content=)
           
-          def initialize(content=nil)
-            super()
-            self.content = content
+          def initialize(*args)
+            if Utils.element_initialize_arguments?(args)
+              super
+            else
+              super()
+              self.content = args[0]
+            end
           end
       
           def full_name
@@ -121,38 +131,22 @@ module RSS
     end
 
     DATE_ELEMENTS.each do |name, type|
+      tag_name = "#{DC_PREFIX}:#{name}"
       module_eval(<<-EOC, *get_file_and_line_from_caller(0))
         class DublinCore#{Utils.to_class_name(name)} < Element
           remove_method(:content=)
           remove_method(:value=)
 
-          date_writer("content", #{type.dump}, #{name.dump})
-          
+          date_writer("content", #{type.dump}, #{tag_name.dump})
+
           alias_method(:value=, :content=)
         end
       EOC
     end
-      
-    def dc_validate(tags)
-      tags.each do |tag|
-        key = "#{DC_PREFIX}_#{tag}"
-        unless DublinCoreModel::ELEMENTS.include?(key)
-          raise UnknownTagError.new(tag, DC_URI)
-        end
-      end
-    end
-
   end
 
   # For backward compatibility
   DublincoreModel = DublinCoreModel
-
-  class RDF
-    class Channel; include DublinCoreModel; end
-    class Image; include DublinCoreModel; end
-    class Item; include DublinCoreModel; end
-    class Textinput; include DublinCoreModel; end
-  end
 
   DublinCoreModel::ELEMENTS.each do |name|
     class_name = Utils.to_class_name(name)
@@ -161,3 +155,7 @@ module RSS
 
   DublinCoreModel::ELEMENTS.collect! {|name| "#{DC_PREFIX}_#{name}"}
 end
+
+require 'rss/dublincore/1.0'
+require 'rss/dublincore/2.0'
+require 'rss/dublincore/atom'

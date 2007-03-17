@@ -11,16 +11,24 @@ module RSS
         name = "#{RSS::IMAGE_PREFIX}_item"
         klass.add_need_initialize_variable(name, "make_#{name}")
         klass.add_other_element(name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           attr_reader :#{name}
-          def setup_#{name}(rss, current)
+          def setup_#{name}(feed, current)
             if @#{name}
-              @#{name}.to_rss(rss, current)
+              @#{name}.to_feed(feed, current)
             end
           end
 
           def make_#{name}
             self.class::#{Utils.to_class_name(name)}.new(@maker)
+          end
+EOC
+      end
+
+      def self.install_image_item(klass)
+	klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          class ImageItem < ImageItemBase
+            DublinCoreModel.install_dublin_core(self)
           end
 EOC
       end
@@ -42,6 +50,15 @@ EOC
         def have_required_values?
           @about
         end
+
+        def to_feed(feed, current)
+          if current.respond_to?(:image_item=) and have_required_values?
+            item = current.class::ImageItem.new
+            setup_values(item)
+            setup_other_elements(item)
+            current.image_item = item
+          end
+        end
       end
     end
 
@@ -54,14 +71,22 @@ EOC
         klass.add_other_element(name)
         klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
           attr_reader :#{name}
-          def setup_#{name}(rss, current)
+          def setup_#{name}(feed, current)
             if @#{name}
-              @#{name}.to_rss(rss, current)
+              @#{name}.to_feed(feed, current)
             end
           end
 
           def make_#{name}
             self.class::#{Utils.to_class_name(name)}.new(@maker)
+          end
+EOC
+      end
+
+      def self.install_image_favicon(klass)
+	klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          class ImageFavicon < ImageFaviconBase
+            DublinCoreModel.install_dublin_core(self)
           end
 EOC
       end
@@ -79,6 +104,15 @@ EOC
         def have_required_values?
           @about and @image_size
         end
+
+        def to_feed(feed, current)
+          if current.respond_to?(:image_favicon=) and have_required_values?
+            favicon = current.class::ImageFavicon.new
+            setup_values(favicon)
+            setup_other_elements(favicon)
+            current.image_favicon = favicon
+          end
+        end
       end
     end
 
@@ -88,58 +122,18 @@ EOC
       class ItemBase; include Maker::ImageItemModel; end
     end
 
-    class RSS10
-      class Items
-        class Item
-          class ImageItem < ImageItemBase
-            DublinCoreModel.install_dublin_core(self)
-            def to_rss(rss, current)
-              if @about
-                item = ::RSS::ImageItemModel::ImageItem.new(@about, @resource)
-                setup_values(item)
-                setup_other_elements(item)
-                current.image_item = item
-              end
-            end
-          end
+    makers.each do |maker|
+      maker.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        class Channel
+          ImageFaviconModel.install_image_favicon(self)
         end
-      end
-      
-      class Channel
-        class ImageFavicon < ImageFaviconBase
-          DublinCoreModel.install_dublin_core(self)
-          def to_rss(rss, current)
-            if @about and @image_size
-              args = [@about, @image_size]
-              favicon = ::RSS::ImageFaviconModel::ImageFavicon.new(*args)
-              setup_values(favicon)
-              setup_other_elements(favicon)
-              current.image_favicon = favicon
-            end
-          end
-        end
-      end
-    end
 
-    class RSS09
-      class Items
-        class Item
-          class ImageItem < ImageItemBase
-            DublinCoreModel.install_dublin_core(self)
-            def to_rss(*args)
-            end
+        class Items
+          class Item
+            ImageItemModel.install_image_item(self)
           end
         end
-      end
-      
-      class Channel
-        class ImageFavicon < ImageFaviconBase
-          DublinCoreModel.install_dublin_core(self)
-          def to_rss(*args)
-          end
-        end
-      end
+      EOC
     end
-
   end
 end

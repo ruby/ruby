@@ -11,28 +11,15 @@ module RSS
 
   module TrackBackUtils
     private
-    def trackback_validate(tags)
-      counter = {}
-      %w(ping about).each do |name|
-        counter["#{TRACKBACK_PREFIX}_#{name}"] = 0
-      end
-
-      tags.each do |tag|
-        key = "#{TRACKBACK_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, TRACKBACK_URI) unless counter.has_key?(key)
-        counter[key] += 1
-        if tag != "about" and counter[key] > 1
-          raise TooMuchTagError.new(tag, tag_name)
-        end
-      end
-
-      if counter["#{TRACKBACK_PREFIX}_ping"].zero? and
-          counter["#{TRACKBACK_PREFIX}_about"].nonzero?
+    def trackback_validate(ignore_unknown_element, tags, uri)
+      return if tags.nil?
+      if tags.find {|tag| tag == "about"} and
+          !tags.find {|tag| tag == "ping"}
         raise MissingTagError.new("#{TRACKBACK_PREFIX}:ping", tag_name)
       end
     end
   end
-  
+
   module BaseTrackBackModel
 
     ELEMENTS = %w(ping about)
@@ -43,10 +30,11 @@ module RSS
       unless klass.class == Module
         klass.module_eval {include TrackBackUtils}
 
+        klass.install_must_call_validator(TRACKBACK_PREFIX, TRACKBACK_URI)
         %w(ping).each do |name|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
-          klass.install_have_child_element(var_name)
+          klass.install_have_child_element(name, TRACKBACK_URI, "?", var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}
@@ -63,7 +51,8 @@ module RSS
         [%w(about s)].each do |name, postfix|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"
           klass_name = "TrackBack#{Utils.to_class_name(name)}"
-          klass.install_have_children_element(var_name)
+          klass.install_have_children_element(name, TRACKBACK_URI, "*",
+                                              var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}
             def #{var_name}(*args)
@@ -124,38 +113,28 @@ module RSS
       end
 
       @tag_name = "ping"
-      
+
       [
         ["resource", ::RSS::RDF::URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
-      
-      def initialize(resource=nil)
-        super()
-        @resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.resource = args[0]
+        end
       end
 
       def full_name
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
-      
-      def to_s(need_convert=true, indent=calc_indent)
-        rv = tag(indent)
-        rv = convert(rv) if need_convert
-        rv
-      end
-
-      private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:resource", true, "resource"],
-        ]
-      end
-
     end
 
     class TrackBackAbout < Element
@@ -174,38 +153,31 @@ module RSS
       end
       
       @tag_name = "about"
-      
+
       [
         ["resource", ::RSS::RDF::URI, true]
       ].each do |name, uri, required|
-        install_get_attribute(name, uri, required)
+        install_get_attribute(name, uri, required, nil, nil,
+                              "#{::RSS::RDF::PREFIX}:#{name}")
       end
 
       alias_method(:value, :resource)
       alias_method(:value=, :resource=)
       
-      def initialize(resource=nil)
-        super()
-        @resource = resource
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.resource = args[0]
+        end
       end
 
       def full_name
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
-      
-      def to_s(need_convert=true, indent=calc_indent)
-        rv = tag(indent)
-        rv = convert(rv) if need_convert
-        rv
-      end
 
       private
-      def _attrs
-        [
-          ["#{::RSS::RDF::PREFIX}:resource", true, "resource"],
-        ]
-      end
-
       def maker_target(abouts)
         abouts.new_about
       end
@@ -243,9 +215,13 @@ module RSS
       alias_method(:value, :content)
       alias_method(:value=, :content=)
 
-      def initialize(content=nil)
-        super()
-        @content = content
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.content = args[0]
+        end
       end
       
       def full_name
@@ -276,9 +252,13 @@ module RSS
       alias_method(:value, :content)
       alias_method(:value=, :content=)
 
-      def initialize(content=nil)
-        super()
-        @content = content
+      def initialize(*args)
+        if Utils.element_initialize_arguments?(args)
+          super
+        else
+          super()
+          self.content = args[0]
+        end
       end
       
       def full_name

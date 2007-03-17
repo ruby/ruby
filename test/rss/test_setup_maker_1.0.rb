@@ -87,10 +87,15 @@ module RSS
         @sy_elems.each do |var, value|
           maker.channel.__send__("sy_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
 
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       channel = new_rss.channel
       
@@ -98,7 +103,7 @@ module RSS
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
-      assert_equal(true, channel.items.Seq.lis.empty?)
+      assert_equal(1, channel.items.Seq.lis.size)
       assert_nil(channel.image)
       assert_nil(channel.textinput)
 
@@ -128,11 +133,16 @@ module RSS
         @dc_elems.each do |var, value|
           maker.image.__send__("dc_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.image.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       
       image = new_rss.image
@@ -164,11 +174,16 @@ module RSS
         @dc_elems.each do |var, value|
           maker.textinput.__send__("dc_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.textinput.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       
       textinput = new_rss.textinput
@@ -195,23 +210,25 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
 
-          @dc_elems.each do |var, value|
-            item.__send__("dc_#{var}=", value)
-          end
-          
-          @content_elems.each do |var, value|
-            item.__send__("content_#{var}=", value)
-          end
+            @dc_elems.each do |var, value|
+              item.__send__("dc_#{var}=", value)
+            end
 
-          item.trackback_ping = @trackback_elems[:ping]
-          @trackback_elems[:about].each do |value|
-            new_about = item.trackback_abouts.new_about
-            new_about.value = value
+            @content_elems.each do |var, value|
+              item.__send__("content_#{var}=", value)
+            end
+
+            item.trackback_ping = @trackback_elems[:ping]
+            @trackback_elems[:about].each do |value|
+              item.trackback_abouts.new_about do |new_about|
+                new_about.value = value
+              end
+            end
           end
         end
       end
@@ -321,15 +338,17 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
@@ -384,14 +403,15 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         maker.channel.about = channel_about
         maker.channel.title = channel_title
         maker.channel.link = channel_link
@@ -418,23 +438,25 @@ module RSS
         end
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{item_title}#{i}"
-          item.link = "#{item_link}#{i}"
-          item.description = "#{item_description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{item_title}#{i}"
+            item.link = "#{item_link}#{i}"
+            item.description = "#{item_description}#{i}"
 
-          @dc_elems.each do |var, value|
-            item.__send__("dc_#{var}=", value)
-          end
-          
-          @content_elems.each do |var, value|
-            item.__send__("content_#{var}=", value)
-          end
+            @dc_elems.each do |var, value|
+              item.__send__("dc_#{var}=", value)
+            end
 
-          item.trackback_ping = @trackback_elems[:ping]
-          @trackback_elems[:about].each do |value|
-            new_about = item.trackback_abouts.new_about
-            new_about.value = value
+            @content_elems.each do |var, value|
+              item.__send__("content_#{var}=", value)
+            end
+
+            item.trackback_ping = @trackback_elems[:ping]
+            @trackback_elems[:about].each do |value|
+              item.trackback_abouts.new_about do |new_about|
+                new_about.value = value
+              end
+            end
           end
         end
 

@@ -82,17 +82,20 @@ module RSS
         maker.channel.lastBuildDate = lastBuildDate
 
         skipDays.each do |day|
-          new_day = maker.channel.skipDays.new_day
-          new_day.content = day
+          maker.channel.skipDays.new_day do |new_day|
+            new_day.content = day
+          end
         end
         skipHours.each do |hour|
-          new_hour = maker.channel.skipHours.new_hour
-          new_hour.content = hour
+          maker.channel.skipHours.new_hour do |new_hour|
+            new_hour.content = hour
+          end
         end
         
         categories.each do |category|
-          new_category = maker.channel.categories.new_category
-          new_category.content = category
+          maker.channel.categories.new_category do |new_category|
+            new_category.content = category
+          end
         end
         
         maker.channel.generator = generator
@@ -368,13 +371,14 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
-          item.author = "#{author}#{i}"
-          item.comments = "#{comments}#{i}"
-          item.date = pubDate
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+            item.author = "#{author}#{i}"
+            item.comments = "#{comments}#{i}"
+            item.date = pubDate
+          end
         end
         maker.items.do_sort = true
       end
@@ -393,16 +397,17 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
-          item.author = "#{author}#{i}"
-          item.comments = "#{comments}#{i}"
-          item.date = pubDate
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+            item.author = "#{author}#{i}"
+            item.comments = "#{comments}#{i}"
+            item.date = pubDate
+          end
         end
         maker.items.do_sort = Proc.new do |x, y|
-          y.title[-1] <=> x.title[-1]
+          y.title.content[-1] <=> x.title.content[-1]
         end
       end
       assert_equal(item_size, rss.items.size)
@@ -557,9 +562,10 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
 
-        category = maker.items.last.categories.new_category
-        category.domain = domain
-        category.content = content
+        maker.items.last.categories.new_category do |category|
+          category.domain = domain
+          category.content = content
+        end
       end
       category = rss.channel.items.last.categories.last
       assert_equal(domain, category.domain)
@@ -573,8 +579,9 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
 
-        category = maker.items.last.categories.new_category
-        # category.content = content
+        maker.items.last.categories.new_category do |category|
+          # category.content = content
+        end
       end
       assert(rss.channel.items.last.categories.empty?)
     end
@@ -599,15 +606,16 @@ module RSS
       assert_equal(name, textInput.name)
       assert_equal(link, textInput.link)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        # setup_dummy_channel(maker)
+      assert_not_set_error("maker.channel", %w(link description title)) do
+        RSS::Maker.make("2.0") do |maker|
+          # setup_dummy_channel(maker)
 
-        maker.textinput.title = title
-        maker.textinput.description = description
-        maker.textinput.name = name
-        maker.textinput.link = link
+          maker.textinput.title = title
+          maker.textinput.description = description
+          maker.textinput.name = name
+          maker.textinput.link = link
+        end
       end
-      assert_nil(rss)
     end
     
     def test_not_valid_textInput

@@ -40,17 +40,28 @@ module RSS
         maker.channel.lastBuildDate = lastBuildDate
 
         skipDays.each do |day|
-          new_day = maker.channel.skipDays.new_day
-          new_day.content = day
+          maker.channel.skipDays.new_day do |new_day|
+            new_day.content = day
+          end
         end
         skipHours.each do |hour|
-          new_hour = maker.channel.skipHours.new_hour
-          new_hour.content = hour
+          maker.channel.skipHours.new_hour do |new_hour|
+            new_hour.content = hour
+          end
+        end
+
+        setup_dummy_image(maker)
+      end
+
+      assert_not_set_error("maker.image", %w(title url)) do
+        RSS::Maker.make("0.91") do |maker|
+          rss.channel.setup_maker(maker)
         end
       end
 
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.channel.setup_maker(maker)
+        setup_dummy_image(maker)
       end
       channel = new_rss.channel
       
@@ -72,9 +83,8 @@ module RSS
       skipHours.each_with_index do |hour, i|
         assert_equal(hour.to_i, channel.skipHours.hours[i].content)
       end
-      
+
       assert(channel.items.empty?)
-      assert_nil(channel.image)
       assert_nil(channel.textInput)
     end
 
@@ -119,6 +129,7 @@ module RSS
 
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)
+        setup_dummy_image(maker)
 
         maker.textinput.title = title
         maker.textinput.description = description
@@ -128,6 +139,7 @@ module RSS
 
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.channel.setup_maker(maker)
+        rss.image.setup_maker(maker)
         rss.textinput.setup_maker(maker)
       end
       
@@ -149,11 +161,14 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          item = maker.items.new_item
-          item.title = "#{title}#{i}"
-          item.link = "#{link}#{i}"
-          item.description = "#{description}#{i}"
+          maker.items.new_item do |item|
+            item.title = "#{title}#{i}"
+            item.link = "#{link}#{i}"
+            item.description = "#{description}#{i}"
+          end
         end
+
+        setup_dummy_image(maker)
       end
       
       new_rss = RSS::Maker.make("0.91") do |maker|
@@ -166,15 +181,16 @@ module RSS
             item.setup_maker(maker.items)
           end
         end
+
+        rss.image.setup_maker(maker)
       end
-      
+
       assert_equal(item_size, new_rss.items.size)
       new_rss.items.each_with_index do |item, i|
         assert_equal("#{title}#{i}", item.title)
         assert_equal("#{link}#{i}", item.link)
         assert_equal("#{description}#{i}", item.description)
       end
-
     end
 
     def test_setup_maker_items_backward_compatibility
@@ -196,17 +212,19 @@ module RSS
         maker.encoding = encoding
         maker.standalone = standalone
 
-        xss = maker.xml_stylesheets.new_xml_stylesheet
-        xss.href = href
-        xss.type = type
-        xss.title = title
-        xss.media = media
-        xss.charset = charset
-        xss.alternate = alternate
-        
+        maker.xml_stylesheets.new_xml_stylesheet do |xss|
+          xss.href = href
+          xss.type = type
+          xss.title = title
+          xss.media = media
+          xss.charset = charset
+          xss.alternate = alternate
+        end
+
         setup_dummy_channel(maker)
+        setup_dummy_image(maker)
       end
-      
+
       new_rss = RSS::Maker.make("0.91") do |maker|
         rss.setup_maker(maker)
       end
@@ -224,6 +242,5 @@ module RSS
       assert_equal(charset, xss.charset)
       assert_equal(alternate, xss.alternate)
     end
-    
   end
 end

@@ -74,7 +74,7 @@ EOR
         excepted = "<#{@prefix}:#{name}>#{CGI.escapeHTML(value)}</#{@prefix}:#{name}>"
         @parents.each do |parent|
           meth = "#{RSS::CONTENT_PREFIX}_#{name}_element"
-          assert_equal(excepted, @rss.__send__(parent).funcall(meth))
+          assert_equal(excepted, @rss.__send__(parent).__send!(meth))
         end
       end
 

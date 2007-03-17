@@ -15,28 +15,13 @@ module RSS
 
     def self.append_features(klass)
       super
-      
-      klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
-        %w(encoded).each do |name|
-          install_text_element("\#{CONTENT_PREFIX}_\#{name}")
-        end
-      EOC
-    end
 
-    def content_validate(tags)
-      counter = {}
-      ELEMENTS.each do |name|
-        counter[name] = 0
-      end
-
-      tags.each do |tag|
-        key = "#{CONTENT_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, CONTENT_URI) unless counter.has_key?(key)
-        counter[key] += 1
-        raise TooMuchTagError.new(tag, tag_name) if counter[key] > 1
+      klass.install_must_call_validator(CONTENT_PREFIX, CONTENT_URI)
+      %w(encoded).each do |name|
+        klass.install_text_element(name, CONTENT_URI, "?",
+                                   "#{CONTENT_PREFIX}_#{name}")
       end
     end
-
   end
 
   class RDF
@@ -47,7 +32,7 @@ module RSS
   ContentModel::ELEMENTS.uniq!
   ContentModel::ELEMENTS.each do |full_name|
     name = full_name[prefix_size..-1]
-    BaseListener.install_get_text_element(CONTENT_URI, name, "#{full_name}=")
+    BaseListener.install_get_text_element(CONTENT_URI, name, full_name)
   end
 
 end

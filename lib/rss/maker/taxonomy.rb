@@ -15,17 +15,17 @@ module RSS
           def make_taxo_topics
             self.class::TaxonomyTopics.new(@maker)
           end
-            
-          def setup_taxo_topics(rss, current)
-            @taxo_topics.to_rss(rss, current)
+
+          def setup_taxo_topics(feed, current)
+            @taxo_topics.to_feed(feed, current)
           end
 EOC
       end
 
       def self.install_taxo_topics(klass)
-        klass.module_eval(<<-EOC, *Utils.get_file_and_line_from_caller(1))
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class TaxonomyTopics < TaxonomyTopicsBase
-            def to_rss(rss, current)
+            def to_feed(feed, current)
               if current.respond_to?(:taxo_topics)
                 topics = current.class::TaxonomyTopics.new
                 bag = topics.Bag
@@ -43,7 +43,8 @@ EOC
         include Base
 
         attr_reader :resources
-        def_array_element("resources")
+        def_array_element("resource")
+        remove_method :new_resource
       end
     end
 
@@ -59,8 +60,8 @@ EOC
             self.class::TaxonomyTopics.new(@maker)
           end
             
-          def setup_taxo_topics(rss, current)
-            @taxo_topics.to_rss(rss, current)
+          def setup_taxo_topics(feed, current)
+            @taxo_topics.to_feed(feed, current)
           end
 
           def taxo_topic
@@ -75,24 +76,20 @@ EOC
       end
     
       def self.install_taxo_topic(klass)
-        klass.module_eval(<<-EOC, *Utils.get_file_and_line_from_caller(1))
+        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class TaxonomyTopics < TaxonomyTopicsBase
             class TaxonomyTopic < TaxonomyTopicBase
               DublinCoreModel.install_dublin_core(self)
               TaxonomyTopicsModel.install_taxo_topics(self)
 
-              def to_rss(rss, current)
+              def to_feed(feed, current)
                 if current.respond_to?(:taxo_topics)
                   topic = current.class::TaxonomyTopic.new(value)
                   topic.taxo_link = value
-                  taxo_topics.to_rss(rss, topic) if taxo_topics
+                  taxo_topics.to_feed(feed, topic) if taxo_topics
                   current.taxo_topics << topic
-                  setup_other_elements(rss)
+                  setup_other_elements(feed, topic)
                 end
-              end
-
-              def current_element(rss)
-                super.taxo_topics.last
               end
             end
           end
@@ -102,20 +99,8 @@ EOC
       class TaxonomyTopicsBase
         include Base
         
-        def_array_element("taxo_topics")
-                            
-        def new_taxo_topic
-          taxo_topic = self.class::TaxonomyTopic.new(self)
-          @taxo_topics << taxo_topic
-          taxo_topic
-        end
+        def_array_element("taxo_topic", nil, "self.class::TaxonomyTopic")
 
-        def to_rss(rss, current)
-          @taxo_topics.each do |taxo_topic|
-            taxo_topic.to_rss(rss, current)
-          end
-        end
-        
         class TaxonomyTopicBase
           include Base
           include DublinCoreModel
@@ -147,32 +132,20 @@ EOC
       end
     end
 
-    class RSS10
-      TaxonomyTopicModel.install_taxo_topic(self)
-      
-      class Channel
-        TaxonomyTopicsModel.install_taxo_topics(self)
-      end
+    makers.each do |maker|
+      maker.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        TaxonomyTopicModel.install_taxo_topic(self)
 
-      class Items
-        class Item
+        class Channel
           TaxonomyTopicsModel.install_taxo_topics(self)
         end
-      end
-    end
-    
-    class RSS09
-      TaxonomyTopicModel.install_taxo_topic(self)
-      
-      class Channel
-        TaxonomyTopicsModel.install_taxo_topics(self)
-      end
 
-      class Items
-        class Item
-          TaxonomyTopicsModel.install_taxo_topics(self)
+        class Items
+          class Item
+            TaxonomyTopicsModel.install_taxo_topics(self)
+          end
         end
-      end
+      EOC
     end
   end
 end
