@@ -12,7 +12,7 @@ struct direct
 {
     long d_namlen;
     ino_t d_ino;
-    char d_name[256];
+    char *d_name;
     char d_isdir; /* directory */
     char d_isrep; /* reparse point */
 };

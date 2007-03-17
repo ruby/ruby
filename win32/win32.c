@@ -1084,7 +1084,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     if (patt->len >= MAXPATHLEN)
 	if (!(buf = malloc(patt->len + 1))) return 0;
 
-    strncpy (buf, patt->str, patt->len);
+    strncpy(buf, patt->str, patt->len);
     buf[patt->len] = '\0';
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
@@ -1373,7 +1373,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     ptr = buffer + (elements+1) * sizeof(char *);
 
     while (curr = cmdhead) {
-	strncpy (ptr, curr->str, curr->len);
+	strncpy(ptr, curr->str, curr->len);
 	ptr[curr->len] = '\0';
 	*vptr++ = ptr;
 	ptr += curr->len + 1;
@@ -1409,8 +1409,7 @@ rb_w32_opendir(const char *filename)
     DIR               *p;
     long               len;
     long               idx;
-    char               scannamespc[PATHLEN];
-    char	      *scanname = scannamespc;
+    char	      *scanname;
     struct stati64     sbuf;
     WIN32_FIND_DATA fd;
     HANDLE          fh;
@@ -1432,14 +1431,17 @@ rb_w32_opendir(const char *filename)
     // Get us a DIR structure
     //
 
-    p = xcalloc(sizeof(DIR), 1);
+    p = calloc(sizeof(DIR), 1);
     if (p == NULL)
 	return NULL;
     
     //
     // Create the search pattern
     //
-
+    if (!(scanname = malloc(strlen(filename) + 2 + 1))) {
+	free(p);
+	return NULL;
+    }
     strcpy(scanname, filename);
 
     if (index("/\\:", *CharPrev(scanname, scanname + strlen(scanname))) == NULL)
@@ -1452,6 +1454,7 @@ rb_w32_opendir(const char *filename)
     //
 
     fh = FindFirstFile(scanname, &fd);
+    free(scanname);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
 	free(p);
@@ -1553,9 +1556,10 @@ rb_w32_readdir(DIR *dirp)
 	//
 	// first set up the structure to return
 	//
-
-	strcpy(dirp->dirstr.d_name, dirp->curr);
 	dirp->dirstr.d_namlen = strlen(dirp->curr);
+	if (!(dirp->dirstr.d_name = malloc(dirp->dirstr.d_namlen + 1)))
+	    return NULL;
+	strcpy(dirp->dirstr.d_name, dirp->curr);
 
 	//
 	// Fake inode
@@ -1622,6 +1626,8 @@ rb_w32_rewinddir(DIR *dirp)
 void
 rb_w32_closedir(DIR *dirp)
 {
+    if (dirp->dirstr.d_name)
+	free(dirp->dirstr.d_name);
     free(dirp->start);
     free(dirp->bits);
     free(dirp);
