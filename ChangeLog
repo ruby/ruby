@@ -1,3 +1,13 @@
+Sun Mar 18 04:23:52 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* NEWS: Add a note about the new `date' library defining
+	  Time#to_date and Time#to_datetime private methods.
+
+	* NEWS: Inform that the old `thread' library is considered to be
+	  stable.
+
+	* NEWS: Sort library entries in alphabetical order.
+
 Fri Mar 16 21:48:11 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/dl.c (rb_ary2cary): Fix a bug in type validation;

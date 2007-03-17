@@ -81,9 +81,9 @@ with all sufficient information, see the ChangeLog file.
 
 * thread
 
-  * Replaced with much faster mutex implementation in C.
-    The former implementation is available with a configure option
-    `--disable-fastthread'.
+  * Replaced with much faster mutex implementation in C.  The former
+    implementation, which is slow but considered to be stable, is
+    available with a configure option `--disable-fastthread'.
 
 * webrick
 
@@ -96,10 +96,12 @@ with all sufficient information, see the ChangeLog file.
   * String#intern now raises SecurityError when $SAFE level is greater
     than zero.
 
-* fileutils
+* date
 
-  * A minor implementation change breaks Rake <=0.7.1.
-    Updating Rake to 0.7.2 or higher fixes the problem.
+  * Time#to_date and Time#to_datetime are added as private methods.
+    They cause name conflict error in ActiveSupport 1.4.1 and prior,
+    which comes with Rails 1.2.2 and prior.  Updating ActiveSupport
+    and/or Rails to the latest versions fixes the problem.
 
 * digest
 
@@ -115,3 +117,8 @@ with all sufficient information, see the ChangeLog file.
       hd = Digest::MD5.new("string").hexdigest
       # After (works with any version)
       hd = Digest::MD5.hexdigest("string")
+
+* fileutils
+
+  * A minor implementation change breaks Rake <=0.7.1.
+    Updating Rake to 0.7.2 or higher fixes the problem.
