@@ -341,7 +341,7 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
 
     /* setup thread environment */
     th->first_args = args;
-    th->first_proc = rb_block_proc();
+    th->first_proc = fn ? Qfalse : rb_block_proc();
     th->first_func = fn;
     th->first_func_arg = arg;
 
