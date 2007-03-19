@@ -133,7 +133,7 @@ EXTLIBS =
 !endif
 LIBS = coredll.lib ceshell.lib winsock.lib  $(EXTLIBS)
 MISSING = acosh.obj crypt.obj dup2.obj erf.obj hypot.obj \
-          isinf.obj isnan.obj strftime.obj win32.obj \
+          isinf.obj isnan.obj strftime.obj strlcat.obj strlcpy.obj win32.obj \
           assert.obj direct.obj errno.obj io_wce.obj process_wce.obj \
           signal_wce.obj stdio.obj stdlib.obj string_wce.obj \
           time_wce.obj wince.obj winsock2.obj \
@@ -371,7 +371,7 @@ s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@CP@,copy > nul,;t t
-s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj isinf.obj isnan.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj isinf.obj isnan.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t

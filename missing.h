@@ -137,4 +137,12 @@ extern int snprintf(char *, size_t n, char const *, ...);
 extern int vsnprintf(char *, size_t n, char const *, va_list);
 #endif
 
+#ifndef HAVE_STRLCPY
+extern size_t strlcpy(char *, const char*, size_t);
+#endif
+
+#ifndef HAVE_STRLCAT
+extern size_t strlcat(char *, const char*, size_t);
+#endif
+
 #endif /* MISSING_H */

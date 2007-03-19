@@ -561,8 +561,8 @@ powerpc-darwin*)
 esac
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove strcasecmp strncasecmp strerror strftime\
-		 strchr strstr strtoul crypt flock\
-		 isnan finite isinf hypot acosh erf)
+		 strchr strstr strtoul crypt flock vsnprintf\
+		 isnan finite isinf hypot acosh erf strlcpy strlcat)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd eaccess\
 	      truncate chsize times utimes fcntl lockf lstat link symlink readlink\
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\

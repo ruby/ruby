@@ -136,7 +136,7 @@ EXTLIBS =
 MEMLIB =
 !endif
 LIBS = $(MEMLIB) cw32i.lib import32.lib ws2_32.lib $(EXTLIBS)
-MISSING = acosh.obj crypt.obj erf.obj win32.obj
+MISSING = acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj
 
 !ifndef STACK
 STACK = 0x2000000
@@ -357,7 +357,7 @@ s,@ARFLAGS@,$(ARFLAGS) ,;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@CP@,copy > nul,;t t
-s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
