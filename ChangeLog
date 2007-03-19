@@ -1,3 +1,9 @@
+Fri Mar 16 21:48:11 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/dl.c (rb_ary2cary): Fix a bug in type validation;
+	  submitted by sheepman <sheepman AT sheepman.sakura.ne.jp>
+	  in [ruby-dev:30554].
+
 Fri Mar 16 18:28:06 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/etc/etc.c (etc_getgrgid): Fix a bug in Etc::getgrgid()
