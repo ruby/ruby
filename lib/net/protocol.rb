@@ -128,9 +128,11 @@ module Net # :nodoc:
 
     private
 
+    BUFSIZE = 1024 * 16
+
     def rbuf_fill
       timeout(@read_timeout) {
-        @rbuf << @io.sysread(1024)
+        @rbuf << @io.sysread(BUFSIZE)
       }
     end
 
