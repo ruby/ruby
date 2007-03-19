@@ -304,7 +304,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 					   RARRAY_LEN(args), RARRAY_PTR(args));
 	    }
 	    else {
-		(*th->first_func)(th->first_func_arg);
+		th->value = (*th->first_func)(th->first_func_arg);
 	    }
 	}
 	else {

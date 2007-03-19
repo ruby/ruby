@@ -1,4 +1,7 @@
-Tue Mar 20 01:02:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 20 01:38:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): store the result of first_func
+	  as well as first_proc.
 
 	* thread.c (thread_create_core): block is not used if first_func
 	  is given.
