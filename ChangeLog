@@ -1,3 +1,9 @@
+Mon Mar 19 14:12:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/matrix.rb (Matrix::inverse_from): adding partial pivoting to
+	  the Gauss-Jordan algorithm, making it stable.  a patch from
+	  Peter Vanbroekhoven.  [ruby-core:10641]
+
 Mon Mar 19 12:13:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regparse.c, etc.: K&R to ANSI code cleanup patch from Stefan
