@@ -1,3 +1,8 @@
+Mon Mar 19 12:13:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regparse.c, etc.: K&R to ANSI code cleanup patch from Stefan
+	  Huehner <stefan at huehner.org>.  [ruby-core:10543]
+
 Mon Mar 19 11:27:13 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (rbuf_read): extend buffer size for speed.

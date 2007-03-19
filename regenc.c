@@ -32,13 +32,13 @@
 OnigEncoding OnigEncDefaultCharEncoding = ONIG_ENCODING_INIT_DEFAULT;
 
 extern int
-onigenc_init()
+onigenc_init(void)
 {
   return 0;
 }
 
 extern OnigEncoding
-onigenc_get_default_encoding()
+onigenc_get_default_encoding(void)
 {
   return OnigEncDefaultCharEncoding;
 }

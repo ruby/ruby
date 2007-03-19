@@ -26,8 +26,8 @@
 extern const char ruby_version[], ruby_release_date[], ruby_platform[];
 int ruby_nerrs;
 
-const char *rb_sourcefile();
-int rb_sourceline();
+const char *rb_sourcefile(void);
+int rb_sourceline(void);
 
 static int
 err_position(char *buf, long len)
@@ -148,7 +148,7 @@ rb_warn_m(VALUE self, VALUE mesg)
     return Qnil;
 }
 
-void yarv_bug();
+void yarv_bug(void);
 
 void
 rb_bug(const char *fmt, ...)

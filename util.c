@@ -393,9 +393,7 @@ __crt0_glob_function(char *path)
 
 #define mmarg mmkind, size, high, low
 
-static void mmswap_(a, b, mmarg)
-    register char *a, *b;
-    int mmarg;
+static void mmswap_(register char *a, register char *b, int mmkind, int size, int high, int low)
 {
  register int s;
  if (a == b) return;
@@ -420,9 +418,7 @@ static void mmswap_(a, b, mmarg)
 }
 #define mmswap(a,b) mmswap_((a),(b),mmarg)
 
-static void mmrot3_(a, b, c, mmarg)
-    register char *a, *b, *c;
-    int mmarg;
+static void mmrot3_(register char *a, register char *b, register char *c, int mmkind, int size, int high, int low)
 {
  register int s;
  if (mmkind >= 0) {

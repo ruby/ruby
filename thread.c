@@ -53,7 +53,6 @@
 #define THREAD_DEBUG 0
 #endif
 
-static void sleep_for_polling();
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
 static void sleep_forever(rb_thread_t *th);
@@ -62,7 +61,7 @@ struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
 
 void rb_signal_exec(rb_thread_t *th, int sig);
-void rb_disable_interrupt();
+void rb_disable_interrupt(void);
 
 static VALUE eKillSignal = INT2FIX(0);
 static VALUE eTerminateSignal = INT2FIX(1);
@@ -595,7 +594,7 @@ rb_thread_sleep(int sec)
 }
 
 void
-rb_thread_schedule()
+rb_thread_schedule(void)
 {
     thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
@@ -722,7 +721,7 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 
 
 void
-rb_gc_mark_threads()
+rb_gc_mark_threads(void)
 {
     /* TODO: remove */
 }
@@ -905,7 +904,7 @@ rb_thread_s_kill(VALUE obj, VALUE th)
  */
 
 static VALUE
-rb_thread_exit()
+rb_thread_exit(void)
 {
     return rb_thread_kill(GET_THREAD()->self);
 }
@@ -1094,7 +1093,7 @@ rb_thread_s_main(VALUE klass)
  */
 
 static VALUE
-rb_thread_s_abort_exc()
+rb_thread_s_abort_exc(void)
 {
     return GET_THREAD()->vm->thread_abort_on_exception ? Qtrue : Qfalse;
 }
@@ -1980,8 +1979,7 @@ thgroup_list(VALUE group)
  */
 
 VALUE
-thgroup_enclose(group)
-    VALUE group;
+thgroup_enclose(VALUE group)
 {
     struct thgroup *data;
 
@@ -2501,7 +2499,7 @@ Init_Thread(void)
 }
 
 VALUE
-is_ruby_native_thread()
+is_ruby_native_thread(void)
 {
     return Qtrue;
 }

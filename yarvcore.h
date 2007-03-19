@@ -539,7 +539,7 @@ typedef struct {
 #define ic_vmstat u3.cnt
 typedef NODE *IC;
 
-void rb_vm_change_state();
+void rb_vm_change_state(void);
 
 typedef VALUE CDHASH;
 

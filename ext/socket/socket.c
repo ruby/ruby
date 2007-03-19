@@ -750,7 +750,7 @@ bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 
 static VALUE
-bsock_do_not_rev_lookup()
+bsock_do_not_rev_lookup(void)
 {
     return do_not_reverse_lookup?Qtrue:Qfalse;
 }

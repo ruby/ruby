@@ -60,10 +60,10 @@ static VALUE oDefaultResolver, oGenericResolver;
 /*
  * my private collection of numerical oddities.
  */
-static double S_zero()    { return 0.0; }
-static double S_one() { return 1.0; }
-static double S_inf() { return S_one() / S_zero(); }
-static double S_nan() { return S_zero() / S_zero(); }
+static double S_zero(void)    { return 0.0; }
+static double S_one(void) { return 1.0; }
+static double S_inf(void) { return S_one() / S_zero(); }
+static double S_nan(void) { return S_zero() / S_zero(); }
 
 static VALUE syck_node_transform( VALUE );
 

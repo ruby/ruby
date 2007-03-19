@@ -72,9 +72,9 @@ struct windata {
 
 #define CHECK(c) c
 
-static VALUE window_attroff();
-static VALUE window_attron();
-static VALUE window_attrset();
+static VALUE window_attroff(VALUE obj, VALUE attrs);
+static VALUE window_attron(VALUE obj, VALUE attrs);
+static VALUE window_attrset(VALUE obj, VALUE attrs);
 
 static void
 no_window(void)

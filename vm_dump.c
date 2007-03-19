@@ -576,7 +576,7 @@ thread_dump_state(VALUE self)
 }
 
 void
-yarv_bug()
+yarv_bug(void)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE bt;

@@ -425,11 +425,11 @@ OnigUChar* onigenc_step_back P_((OnigEncoding enc, const OnigUChar* start, const
 
 /* encoding API */
 ONIG_EXTERN
-int onigenc_init P_(());
+int onigenc_init P_((void));
 ONIG_EXTERN
 int onigenc_set_default_encoding P_((OnigEncoding enc));
 ONIG_EXTERN
-OnigEncoding onigenc_get_default_encoding P_(());
+OnigEncoding onigenc_get_default_encoding P_((void));
 ONIG_EXTERN
 void  onigenc_set_default_caseconv_table P_((const OnigUChar* table));
 ONIG_EXTERN
@@ -888,7 +888,7 @@ int onig_set_meta_char P_((OnigEncoding enc, unsigned int what, OnigCodePoint co
 ONIG_EXTERN
 void onig_copy_encoding P_((OnigEncoding to, OnigEncoding from));
 ONIG_EXTERN
-OnigAmbigType onig_get_default_ambig_flag P_(());
+OnigAmbigType onig_get_default_ambig_flag P_((void));
 ONIG_EXTERN
 int onig_set_default_ambig_flag P_((OnigAmbigType ambig_flag));
 ONIG_EXTERN

@@ -34,7 +34,7 @@ OnigAmbigType OnigDefaultAmbigFlag =
    ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE);
 
 extern OnigAmbigType
-onig_get_default_ambig_flag()
+onig_get_default_ambig_flag(void)
 {
   return OnigDefaultAmbigFlag;
 }
@@ -5402,9 +5402,9 @@ onig_init()
 
 
 extern int
-onig_end()
+onig_end(void)
 {
-  extern int onig_free_shared_cclass_table();
+  extern int onig_free_shared_cclass_table(void);
 
   THREAD_ATOMIC_START;
 

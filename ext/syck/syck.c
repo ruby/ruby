@@ -155,7 +155,7 @@ syck_parser_set_root_on_error( SyckParser *p, SYMID roer )
  * Allocate the parser
  */
 SyckParser *
-syck_new_parser()
+syck_new_parser(void)
 {
     SyckParser *p;
     p = S_ALLOC( SyckParser );

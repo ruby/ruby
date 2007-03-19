@@ -24,7 +24,7 @@ VALUE ruby_debug_value(int level, int debug_level, char *header, VALUE v);
 ID    ruby_debug_id(int level, int debug_level, char *header, ID id);
 void  ruby_debug_indent(int level, int debug_level, int indent_level);
 void  ruby_debug_breakpoint(void);
-void  ruby_debug_gc_check_func();
+void  ruby_debug_gc_check_func(void);
 
 #if GCDEBUG == 1
 

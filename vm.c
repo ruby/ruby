@@ -843,7 +843,7 @@ th_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 }
 
 static struct RValues *
-new_value()
+new_value(void)
 {
     struct RValues *val = RVALUES(rb_newobj());
     OBJSETUP(val, 0, T_VALUES);

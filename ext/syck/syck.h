@@ -390,7 +390,7 @@ SyckLevel *syck_emitter_parent_level( SyckEmitter * );
 void syck_emitter_pop_level( SyckEmitter * );
 void syck_emitter_add_level( SyckEmitter *, int, enum syck_level_status );
 void syck_emitter_reset_levels( SyckEmitter * );
-SyckParser *syck_new_parser();
+SyckParser *syck_new_parser(void);
 void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
@@ -416,9 +416,9 @@ char *syck_yaml2byte( char * );
 /*
  * Allocation prototypes
  */
-SyckNode *syck_alloc_map();
-SyckNode *syck_alloc_seq();
-SyckNode *syck_alloc_str();
+SyckNode *syck_alloc_map(void);
+SyckNode *syck_alloc_seq(void);
+SyckNode *syck_alloc_str(void);
 void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( const char *, enum scalar_style );

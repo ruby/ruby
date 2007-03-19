@@ -291,7 +291,7 @@ VALUE rb_get_path(VALUE);
 #define FilePathValue(v) ((v) = rb_get_path(v))
 
 void rb_secure(int);
-int rb_safe_level();
+int rb_safe_level(void);
 void rb_set_safe_level(int);
 void rb_set_safe_level_force(int);
 void rb_secure_update(VALUE);
