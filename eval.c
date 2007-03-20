@@ -2830,7 +2830,7 @@ rb_f_local_variables(void)
 
 /*
  *  call-seq:
- *     __method__         => string
+ *     __method__         => symbol
  *  
  *  Returns the name of the current method as a Symbol.
  *  If called from inside of an aliased method it will return the original
@@ -2855,7 +2855,7 @@ rb_f_method_name(void)
 
 /*
  *  call-seq:
- *     __callee__         => string
+ *     __callee__         => symbol
  *  
  *  Returns the name of the current method as Symbol.
  *  If called from inside of an aliased method it will return the aliased
