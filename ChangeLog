@@ -1,3 +1,11 @@
+Tue Mar 21 08:20:00 2007  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* test/testunit/collector/test_dir.rb: Fixed test/unit tests that 
+	  were breaking due to Module#public_instance_methods now 
+	  returning a Symbol instead of a String.
+
+	* test/testunit/collector/test_objectspace.rb: Ditto.
+
 Tue Mar 20 22:54:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_extended): erroneous check condition when dump
