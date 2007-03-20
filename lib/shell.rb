@@ -1,9 +1,9 @@
 #
 #   shell.rb - 
-#   	$Release Version: 0.6.0 $
-#   	$Revision: 1.8 $
-#   	$Date: 2001/03/19 09:01:11 $
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	$Release Version: 0.7 $
+#   	$Revision: 1.9 $
+#   	$Date: 2002/03/04 12:01:10 $
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -11,14 +11,17 @@
 #
 
 require "e2mmap"
-require "thread"
+
+require "thread" unless defined?(Mutex)
+
+require "forwardable"
 
 require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
 
 class Shell
-  @RCS_ID='-$Id: shell.rb,v 1.8 2001/03/19 09:01:11 keiju Exp keiju $-'
+  @RCS_ID='-$Id: shell.rb,v 1.9 2002/03/04 12:01:10 keiju Exp keiju $-'
 
   include Error
   extend Exception2MessageMapper
@@ -30,7 +33,13 @@ class Shell
   @debug = false
   @verbose = true
 
+  @debug_display_process_id = false
+  @debug_display_thread_id = true
+  @debug_output_mutex = Mutex.new
+
   class << Shell
+    extend Forwardable
+
     attr_accessor :cascade, :debug, :verbose
 
 #    alias cascade? cascade
@@ -44,9 +53,7 @@ class Shell
     end
 
     def cd(path)
-      sh = new
-      sh.cd path
-      sh
+      new(path)
     end
 
     def default_system_path
@@ -72,12 +79,19 @@ class Shell
     def default_record_separator=(rs)
       @default_record_separator = rs
     end
+
+    # os resource mutecs
+    mutex_methods = ["unlock", "lock", "locked?", "synchronize", "try_lock", "exclusive_unlock"]
+    for m in mutex_methods
+      def_delegator("@debug_output_mutex", m, "debug_output_"+m.to_s)
+    end
+
   end
 
-  def initialize
-    @cwd = Dir.pwd
+  def initialize(pwd = Dir.pwd, umask = nil)
+    @cwd = File.expand_path(pwd)
     @dir_stack = []
-    @umask = nil
+    @umask = umask
 
     @system_path = Shell.default_system_path
     @record_separator = Shell.default_record_separator
@@ -126,49 +140,58 @@ class Shell
   # Shell#mkdir
   # Shell#rmdir
 
-  attr :cwd
+  attr_reader :cwd
   alias dir cwd
   alias getwd cwd
   alias pwd cwd
 
-  attr :dir_stack
+  attr_reader :dir_stack
   alias dirs dir_stack
 
   # If called as iterator, it restores the current directory when the
   # block ends.
-  def chdir(path = nil)
+  def chdir(path = nil, verbose = @verbose)
+    check_point
+
     if iterator?
+      notify("chdir(with block) #{path}") if verbose
       cwd_old = @cwd
       begin
-	chdir(path)
+	chdir(path, nil)
 	yield
       ensure
-	chdir(cwd_old)
+	chdir(cwd_old, nil)
       end
     else
+      notify("chdir #{path}") if verbose
       path = "~" unless path
       @cwd = expand_path(path)
       notify "current dir: #{@cwd}"
       rehash
-      self
+      Void.new(self)
     end
   end
   alias cd chdir
 
-  def pushdir(path = nil)
+  def pushdir(path = nil, verbose = @verbose)
+    check_point
+
     if iterator?
-      pushdir(path)
+      notify("pushdir(with block) #{path}") if verbose
+      pushdir(path, nil)
       begin
 	yield
       ensure
 	popdir
       end
     elsif path
+      notify("pushdir #{path}") if verbose
       @dir_stack.push @cwd
-      chdir path
+      chdir(path, nil)
       notify "dir stack: [#{@dir_stack.join ', '}]"
       self
     else
+      notify("pushdir") if verbose
       if pop = @dir_stack.pop
 	@dir_stack.push @cwd
 	chdir pop
@@ -178,10 +201,14 @@ class Shell
 	Shell.Fail DirStackEmpty
       end
     end
+    Void.new(self)
   end
   alias pushd pushdir
 
   def popdir
+    check_point
+
+    notify("popdir")
     if pop = @dir_stack.pop
       chdir pop
       notify "dir stack: [#{@dir_stack.join ', '}]"
@@ -189,9 +216,9 @@ class Shell
     else
       Shell.Fail DirStackEmpty
     end
+    Void.new(self)
   end
   alias popd popdir
-
 
   #
   # process management
@@ -237,25 +264,35 @@ class Shell
   end
 
   def self.notify(*opts, &block)
-    Thread.exclusive do
-    if opts[-1].kind_of?(String)
-      yorn = verbose?
-    else
-      yorn = opts.pop
-    end
-    return unless yorn
-
-    _head = true
-    print opts.collect{|mes|
-      mes = mes.dup
-      yield mes if iterator?
-      if _head
-	_head = false
-	"shell: " + mes
+    Shell::debug_output_synchronize do
+      if opts[-1].kind_of?(String)
+	yorn = verbose?
       else
-	"       " + mes
+	yorn = opts.pop
       end
-    }.join("\n")+"\n"
+      return unless yorn
+
+      if @debug_display_thread_id
+	if @debug_display_process_id
+	  prefix = "shell(##{Process.pid}:#{Thread.current.to_s.sub("Thread", "Th")}): "
+	else
+	  prefix = "shell(#{Thread.current.to_s.sub("Thread", "Th")}): "
+	end
+      else
+	prefix = "shell: "
+      end
+      _head = true
+      STDERR.print opts.collect{|mes|
+	mes = mes.dup
+	yield mes if iterator?
+	if _head
+	  _head = false
+#	  "shell" " + mes
+	  prefix + mes
+	else
+	  " "* prefix.size + mes
+	end
+      }.join("\n")+"\n"
     end
   end
 

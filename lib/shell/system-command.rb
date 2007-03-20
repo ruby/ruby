@@ -1,9 +1,9 @@
 #
 #   shell/system-command.rb - 
-#   	$Release Version: 0.6.0 $
+#   	$Release Version: 0.7 $
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #

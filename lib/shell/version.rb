@@ -1,9 +1,9 @@
 #
 #   version.rb - shell version definition file
-#   	$Release Version: 0.6.0$
+#   	$Release Version: 0.7$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -11,6 +11,6 @@
 #
 
 class Shell
-  @RELEASE_VERSION = "0.6.0"
-  @LAST_UPDATE_DATE = "01/03/19"
+  @RELEASE_VERSION = "0.7"
+  @LAST_UPDATE_DATE = "07/03/20"
 end

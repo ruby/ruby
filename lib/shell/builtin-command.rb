@@ -1,9 +1,9 @@
 #
 #   shell/builtin-command.rb - 
-#   	$Release Version: 0.6.0 $
+#   	$Release Version: 0.7 $
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -19,6 +19,16 @@ class Shell
     end
     def active?
       true
+    end
+  end
+
+  class Void < BuiltInCommand
+    def initialize(sh, *opts)
+      super sh
+    end
+    
+    def each(rs = nil)
+      # do nothing
     end
   end
 
@@ -58,20 +68,17 @@ class Shell
       super sh
 
       @pattern = pattern
-      Thread.critical = true
-      back = Dir.pwd
-      begin
-	Dir.chdir @shell.cwd
-	@files = Dir[pattern]
-      ensure
-	Dir.chdir back
-	Thread.critical = false
-      end
     end
 
     def each(rs = nil)
+      if @pattern[0] == ?/ 
+	@files = Dir[@pattern]
+      else
+	prefix = @shell.pwd+"/"
+	@files = Dir[prefix+@pattern].collect{|p| p.sub(prefix, "")}
+      end
       rs =  @shell.record_separator unless rs
-      for f  in @files
+      for f in @files
 	yield f+rs
       end
     end

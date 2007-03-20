@@ -1,9 +1,9 @@
 #
 #   shell/command-controller.rb - 
-#   	$Release Version: 0.6.0 $
+#   	$Release Version: 0.7 $
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -26,7 +26,13 @@ class Shell
     #
     # initialize of Shell and related classes.
     #
-    NoDelegateMethods = ["initialize", "expand_path"]
+    m = [:initialize, :expand_path]
+    if Object.methods.first.kind_of?(String)
+      NoDelegateMethods = m.collect{|m| m.id2name}
+    else
+      NoDelegateMethods = m
+    end
+
     def self.initialize
 
       install_builtin_commands
@@ -111,13 +117,20 @@ class Shell
     #	  Dir#open  (when path is directory)
     #	mode has an effect only when path is a file
     #
-    def open(path, mode)
+    def open(path, mode = nil, perm = 0666, &b)
       path = expand_path(path)
       if File.directory?(path)
-	Dir.open(path)
+	Dir.open(path, &b)
       else
-	effect_umask do
-	  File.open(path, mode)
+	if @shell.umask
+	  f = File.open(path, mode, perm)
+	  File.chmod(perm & ~@shell.umask, path)
+	  if block_given?
+	    f.each &b
+	  end
+	  f
+	else
+	  f = File.open(path, mode, perm, &b)
 	end
       end
     end
@@ -130,12 +143,15 @@ class Shell
     #	  File#unlink (when path is file)
     #
     def unlink(path)
+      @shell.check_point
+
       path = expand_path(path)
       if File.directory?(path)
 	Dir.unlink(path)
       else
 	IO.unlink(path)
       end
+      Void.new(@shell)
     end
 
     #
@@ -155,6 +171,7 @@ class Shell
     #	  sh[:exists?, "foo"]
     #	  sh["exists?", "foo"]
     #	  
+    alias top_level_test test
     def test(command, file1, file2=nil)
       file1 = expand_path(file1)
       file2 = expand_path(file2) if file2
@@ -162,7 +179,11 @@ class Shell
 
       case command
       when Integer
-	top_level_test(command, file1, file2)
+	if file2
+	  top_level_test(command, file1, file2)
+	else
+	  top_level_test(command, file1)
+	end
       when String
 	if command.size == 1
 	  if file2
@@ -194,9 +215,23 @@ class Shell
     #	same as Dir.mkdir()
     #	  
     def mkdir(*path)
-      for dir in path
-	Dir.mkdir(expand_path(dir))
+      @shell.check_point
+      notify("mkdir #{path.join(' ')}")
+      
+      perm = nil
+      if path.last.kind_of?(Integer)
+	perm = path.pop
       end
+      for dir in path
+	d = expand_path(dir)
+	if perm
+	  Dir.mkdir(d, perm)
+	else
+	  Dir.mkdir(d)
+	end
+	File.chmod(d, 0666 & ~@shell.umask) if @shell.umask
+      end
+      Void.new(@shell)
     end
 
     #
@@ -205,9 +240,13 @@ class Shell
     #	same as Dir.rmdir()
     #	  
     def rmdir(*path)
+      @shell.check_point
+      notify("rmdir #{path.join(' ')}")
+
       for dir in path
 	Dir.rmdir(expand_path(dir))
       end
+      Void.new(@shell)
     end
 
     #
@@ -299,35 +338,17 @@ class Shell
 
     # %pwd, %cwd -> @pwd
     def notify(*opts, &block)
-      Thread.exclusive do
-	Shell.notify(*opts) {|mes|
-	  yield mes if iterator?
+      Shell.notify(*opts) {|mes|
+	yield mes if iterator?
 	
-	  mes.gsub!("%pwd", "#{@cwd}")
-	  mes.gsub!("%cwd", "#{@cwd}")
-	}
-      end
+	mes.gsub!("%pwd", "#{@cwd}")
+	mes.gsub!("%cwd", "#{@cwd}")
+      }
     end
 
     #
     # private functions
     #
-    def effect_umask
-      if @shell.umask
-	Thread.critical = true
-	save = File.umask
-	begin
-	  yield
-	ensure
-	  File.umask save
-	  Thread.critical = false
-	end
-      else
-	yield
-      end
-    end
-    private :effect_umask
-
     def find_system_command(command)
       return command if /^\// =~ command
       case path = @system_commands[command]
@@ -343,7 +364,7 @@ class Shell
 
       for p in @shell.system_path
 	path = join(p, command)
-	if FileTest.exists?(path)
+	if FileTest.exist?(path)
 	  @system_commands[command] = path
 	  return path
 	end
