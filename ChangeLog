@@ -1,3 +1,9 @@
+Wed Mar 21 07:21:24 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/thread/thread.c (remove_one): Preserve List invariants;
+	  submitted by: MenTaLguY <mental AT rydia.net>
+	  in [ruby-core:10598] and [ruby-bugs:PR#9388].
+
 Tue Mar 20 22:54:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_extended): erroneous check condition when dump
