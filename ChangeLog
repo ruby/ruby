@@ -1,3 +1,8 @@
+Tue Mar 20 22:54:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_extended): erroneous check condition when dump
+	  method is defined.  [ruby-core:10646]
+
 Tue Mar 20 21:36:47 2007  Keiju Ishitsuka <keiju@ruby-lang.org>
 	
 	* lib/shell.rb, lib/shell: support for ruby 1.9(YARV) thread model.
