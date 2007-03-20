@@ -1,3 +1,11 @@
+Tue Mar 20 11:09:00 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb: Revise rdoc.
+
+	* lib/set.rb (Set#freeze, Set#taint, Set#untaint): Implement
+	  Set#freeze, Set#taint, and Set#untaint; requested by: Dan
+	  Hutchings <dan AT moltoagitato.com> in [ruby-bugs:PR#9359].
+
 Tue Mar 20 09:13:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork): flush stdouts always before fork(2).

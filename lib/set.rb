@@ -28,14 +28,13 @@
 # This is a hybrid of Array's intuitive inter-operation facilities and
 # Hash's fast lookup.
 #
-# Several methods accept any Enumerable object (implementing +each+)
-# for greater flexibility: new, replace, merge, subtract, |, &, -, ^.
-#
 # The equality of each couple of elements is determined according to
 # Object#eql? and Object#hash, since Set uses Hash as storage.
 #
-# Finally, if you are using class Set, you can also use Enumerable#to_set
-# for convenience.
+# Set is easy to use with Enumerable objects (implementing +each+).
+# Most of the initializer methods and binary operators accept generic
+# Enumerable objects besides sets and arrays.  An Enumerable object
+# can be converted to Set using the +to_set+ method.
 #
 # == Example
 #
@@ -76,6 +75,24 @@ class Set
   # Copy internal hash.
   def initialize_copy(orig)
     @hash = orig.instance_eval{@hash}.dup
+  end
+
+  def freeze	# :nodoc:
+    super
+    @hash.freeze
+    self
+  end
+
+  def taint	# :nodoc:
+    super
+    @hash.taint
+    self
+  end
+
+  def untaint	# :nodoc:
+    super
+    @hash.untaint
+    self
   end
 
   # Returns the number of elements.
@@ -190,7 +207,7 @@ class Set
   end
 
   # Adds the given object to the set and returns self.  Use +merge+ to
-  # add several elements at once.
+  # add many elements at once.
   def add(o)
     @hash[o] = true
     self
@@ -208,7 +225,7 @@ class Set
   end
 
   # Deletes the given object from the set and returns self.  Use +subtract+ to
-  # delete several items at once.
+  # delete many items at once.
   def delete(o)
     @hash.delete(o)
     self
