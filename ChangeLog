@@ -1,3 +1,9 @@
+Tue Mar 20 11:28:41 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/matrix.rb (Matrix::inverse_from): adding partial pivoting to
+	  the Gauss-Jordan algorithm, making it stable.  a patch from
+	  Peter Vanbroekhoven.  [ruby-core:10641]
+
 Mon Mar 19 11:39:29 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (rbuf_read): extend buffer size for speed.

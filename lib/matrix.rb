@@ -590,15 +590,21 @@ class Matrix
     a = src.to_a
     
     for k in 0..size
-      if (akk = a[k][k]) == 0
-        i = k
-        begin
-          Matrix.Raise ErrNotRegular if (i += 1) > size
-        end while a[i][k] == 0
+      i = k
+      akk = a[k][k].abs
+      for j in (k+1)..size
+        v = a[j][k].abs
+        if v > akk
+          i = j
+          akk = v
+        end
+      end
+      Matrix.Raise ErrNotRegular if akk == 0
+      if i != k
         a[i], a[k] = a[k], a[i]
         @rows[i], @rows[k] = @rows[k], @rows[i]
-        akk = a[k][k]
       end
+      akk = a[k][k]
       
       for i in 0 .. size
         next if i == k
