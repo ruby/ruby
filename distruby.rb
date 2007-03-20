@@ -7,7 +7,9 @@ else
 	dirname = sprintf 'ruby-%s-p%u', RUBY_VERSION, RUBY_PATCHLEVEL
 	tagname = dirname.gsub /ruby-(\d)\.(\d)\.(\d)-p/, 'v\1_\2_\3_'
 end
-tarname = dirname + '.tar.gz'
+tgzname = dirname + '.tar.gz'
+tbzname = dirname + '.tar.bz2'
+zipname = dirname + '.zip'
 repos   = 'http://svn.ruby-lang.org/repos/ruby/tags/' + tagname
 
 STDERR.puts 'exporting sources...'
@@ -21,16 +23,24 @@ Dir.chdir dirname do
 	system 'bison', '-y', '-o', 'parse.c', 'parse.y'
 end
 
-STDERR.puts 'generating tarball...'
-system 'tar', 'chofzp', tarname, dirname
+STDERR.puts 'generating tarballs...'
+ENV['GZIP'] = '-9'
+system 'tar', 'chofzp', tgzname, dirname
+system 'tar', 'chojfp', tbzname, dirname
+system 'zip', '-q9r', zipname, dirname
 
-open tarname, 'rb' do |fp|
-	require 'digest/md5'
-	require 'digest/sha1'
-	str = fp.read
-	md5 = Digest::MD5.hexdigest str
-	sha = Digest::SHA1.hexdigest str
-	printf "MD5(%s)= %s\nSHA1(%s)= %s\n", tarname, md5, tarname, sha
+require 'digest/md5'
+require 'digest/sha2'
+for name in [tgzname, tbzname, zipname] do
+	open name, 'rb' do |fp|
+		str = fp.read
+		md5 = Digest::MD5.hexdigest str
+		sha = Digest::SHA256.hexdigest str
+		printf "MD5(%s)= %s\nSHA256(%s)= %s\nSIZE(%s)= %s\n\n",
+				 name, md5,
+				 name, sha,
+				 name, str.size
+	end
 end
 
 
