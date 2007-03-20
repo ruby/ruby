@@ -1343,9 +1343,15 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 #endif
 
 #ifndef __VMS
-    rb_io_flush(rb_stdout);
-    rb_io_flush(rb_stderr);
+#define prefork() (		\
+	rb_io_flush(rb_stdout), \
+	rb_io_flush(rb_stderr)	\
+	)
+#else
+#define prefork() ((void)0)
 #endif
+
+    prefork();
 
 #ifdef FD_CLOEXEC
     if (chfunc) {
@@ -1356,7 +1362,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 	}
     }
 #endif
-    while ((pid = fork()) < 0) {
+    for (; (pid = fork()) < 0; prefork()) {
 	switch (errno) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN

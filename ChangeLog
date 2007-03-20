@@ -1,3 +1,8 @@
+Tue Mar 20 09:13:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork): flush stdouts always before fork(2).
+	  fixed: [ruby-dev:30612]
+
 Tue Mar 20 01:38:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): store the result of first_func
