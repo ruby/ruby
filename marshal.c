@@ -143,8 +143,8 @@ w_bytes(const char *s, int n, struct dump_arg *arg)
 static void
 w_short(int x, struct dump_arg *arg)
 {
-    w_byte((x >> 0) & 0xff, arg);
-    w_byte((x >> 8) & 0xff, arg);
+    w_byte((char)((x >> 0) & 0xff), arg);
+    w_byte((char)((x >> 8) & 0xff), arg);
 }
 
 static void
@@ -165,11 +165,11 @@ w_long(long x, struct dump_arg *arg)
 	return;
     }
     if (0 < x && x < 123) {
-	w_byte(x + 5, arg);
+	w_byte((char)(x + 5), arg);
 	return;
     }
     if (-124 < x && x < 0) {
-	w_byte((x - 5)&0xff, arg);
+	w_byte((char)((x - 5)&0xff), arg);
 	return;
     }
     for (i=1;i<sizeof(long)+1;i++) {
@@ -548,7 +548,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_uclass(obj, rb_cRegexp, arg);
 	    w_byte(TYPE_REGEXP, arg);
 	    w_bytes(RREGEXP(obj)->str, RREGEXP(obj)->len, arg);
-	    w_byte(rb_reg_options(obj), arg);
+	    w_byte((char)rb_reg_options(obj), arg);
 	    break;
 
 	  case T_ARRAY:

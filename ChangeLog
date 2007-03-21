@@ -1,3 +1,7 @@
+Wed Mar 21 20:38:06 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* marshal.c (w_short, w_long, w_object): get rid of VC++ warnings.
+
 Wed Mar 21 20:05:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, parse.y, eval.c, intern.h, iseq.c, lex.c, node.h,
