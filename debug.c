@@ -54,6 +54,17 @@ ruby_debug_id(int level, int debug_level, char *header, ID id)
     return id;
 }
 
+NODE *
+ruby_debug_node(int level, int debug_level, char *header, NODE *node)
+{
+    if (level < debug_level) {
+	fprintf(stderr, "DBG> %s: %s\n", header, ruby_node_name(nd_type(node)));
+	fflush(stderr);
+    }
+    return node;
+}
+
+
 void
 ruby_debug_gc_check_func(void)
 {

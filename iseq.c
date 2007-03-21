@@ -116,8 +116,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     RBASIC(iseq->iseq_mark_ary)->klass = 0;
 
     iseq->type = type;
-    iseq->arg_rest = 0;
-    iseq->arg_block = 0;
+    iseq->arg_rest = -1;
+    iseq->arg_block = -1;
     iseq->klass = 0;
     iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
     iseq->cached_special_block_builder = 0;
@@ -545,10 +545,10 @@ insn_operand_intern(rb_iseq_t *iseq,
 	{
 	    rb_iseq_t *ip = iseq->local_iseq;
 	    int lidx = ip->local_size - op;
-	    ID id = ip->local_table[lidx];
+	    const char *name = rb_id2name(ip->local_table[lidx]);
 
-	    if (id) {
-		ret = rb_str_new2(rb_id2name(id));
+	    if (name) {
+		ret = rb_str_new2(name);
 	    }
 	    else {
 		ret = rb_str_new2("*");
@@ -558,12 +558,17 @@ insn_operand_intern(rb_iseq_t *iseq,
     case TS_DINDEX:{
 	    if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
 		rb_iseq_t *ip = iseq;
-		int level = *pnop;
-		int i;
+		int level = *pnop, i;
+		const char *name;
 		for (i = 0; i < level; i++) {
 		    ip = ip->parent_iseq;
 		}
-		ret = rb_str_new2(rb_id2name(ip->local_table[ip->local_size - op]));
+		name = rb_id2name(ip->local_table[ip->local_size - op]);
+
+		if (!name) {
+		    name = "*";
+		}
+		ret = rb_str_new2(name);
 	    }
 	    else {
 		ret = rb_inspect(INT2FIX(op));
@@ -704,7 +709,7 @@ ruby_iseq_disasm(VALUE self)
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
     unsigned long size;
-    int i;
+    int i, d = iseqdat->local_size - iseqdat->local_table_size;
     ID *tbl;
     char buff[0x200];
 
@@ -744,8 +749,11 @@ ruby_iseq_disasm(VALUE self)
 
     if (tbl) {
 	snprintf(buff, sizeof(buff),
-		 "local scope table (size: %d, argc: %d)\n",
-		 iseqdat->local_size, iseqdat->argc);
+		 "local table (size: %d, argc: %d "
+		 "[opts: %d, rest: %d, block: %d] %s)\n",
+		 iseqdat->local_size, iseqdat->argc,
+		 iseqdat->arg_opts, iseqdat->arg_rest, iseqdat->arg_block,
+		 iseqdat->arg_simple ? "s" : "c");
 	rb_str_cat2(str, buff);
 
 	for (i = 0; i < iseqdat->local_table_size; i++) {
@@ -766,8 +774,8 @@ ruby_iseq_disasm(VALUE self)
 	    snprintf(argi, sizeof(argi), "%s%s%s%s",	/* arg, opts, rest, block */
 		     iseqdat->argc > i ? "Arg" : "",
 		     opti,
-		     iseqdat->arg_rest - 1 == i ? "Rest" : "",
-		     iseqdat->arg_block - 1 == i ? "Block" : "");
+		     iseqdat->arg_rest - d == i ? "Rest" : "",
+		     iseqdat->arg_block - d == i ? "Block" : "");
 
 	    snprintf(info, sizeof(info), "%s%s%s%s", name ? name : "?",
 		     *argi ? "<" : "", argi, *argi ? ">" : "");

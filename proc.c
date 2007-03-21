@@ -1163,7 +1163,7 @@ rb_node_arity(NODE* body)
     case RUBY_VM_METHOD_NODE:{
 	    rb_iseq_t *iseq;
 	    GetISeqPtr((VALUE)body->nd_body, iseq);
-	    if (iseq->arg_rest == 0 && iseq->arg_opts == 0) {
+	    if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
 		return iseq->argc;
 	    }
 	    else {

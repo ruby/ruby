@@ -203,7 +203,6 @@ typedef struct RNode {
 #define nd_tbl   u1.tbl
 
 #define nd_var   u1.node
-#define nd_ibdy  u2.node
 #define nd_iter  u3.node
 
 #define nd_value u2.node
@@ -249,12 +248,11 @@ typedef struct RNode {
 
 #define NEW_METHOD(n,x,v) NEW_NODE(NODE_METHOD,x,n,v)
 #define NEW_FBODY(n,i) NEW_NODE(NODE_FBODY,i,n,0)
-#define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,p,i,NEW_RFUNC(a,d))
-#define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_RFUNC(a,d))
+#define NEW_DEFN(i,a,d,p) NEW_NODE(NODE_DEFN,0,i,NEW_SCOPE(a,d))
+#define NEW_DEFS(r,i,a,d) NEW_NODE(NODE_DEFS,r,i,NEW_SCOPE(a,d))
 #define NEW_CFUNC(f,c) NEW_NODE(NODE_CFUNC,f,c,0)
 #define NEW_IFUNC(f,c) NEW_NODE(NODE_IFUNC,f,c,0)
-#define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
-#define NEW_SCOPE(b) NEW_NODE(NODE_SCOPE,local_tbl(),0,(b))
+#define NEW_SCOPE(a,b) NEW_NODE(NODE_SCOPE,local_tbl(),b,a)
 #define NEW_BLOCK(a) NEW_NODE(NODE_BLOCK,a,0,0)
 #define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)
 #define NEW_UNLESS(c,t,e) NEW_IF(c,e,t)
@@ -264,8 +262,8 @@ typedef struct RNode {
 #define NEW_WHILE(c,b,n) NEW_NODE(NODE_WHILE,c,b,n)
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) NEW_NODE(NODE_FOR,v,b,i)
-#define NEW_ITER(v,i,b) NEW_NODE(NODE_ITER,v,b,i)
-#define NEW_LAMBDA(a,b) NEW_NODE(NODE_LAMBDA,a,b,0)
+#define NEW_ITER(a,b) NEW_NODE(NODE_ITER,0,NEW_SCOPE(a,b),0)
+#define NEW_LAMBDA(a) NEW_NODE(NODE_LAMBDA,a,0,0)
 #define NEW_BREAK(s) NEW_NODE(NODE_BREAK,s,0,0)
 #define NEW_NEXT(s) NEW_NODE(NODE_NEXT,s,0,0)
 #define NEW_REDO() NEW_NODE(NODE_REDO,0,0,0)
@@ -283,7 +281,7 @@ typedef struct RNode {
 #define NEW_NOT(a)   NEW_NODE(NODE_NOT,0,a,0)
 #define NEW_MASGN(l,r)   NEW_NODE(NODE_MASGN,l,0,r)
 #define NEW_GASGN(v,val) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v))
-#define NEW_LASGN(v,val) NEW_NODE(NODE_LASGN,v,val,local_cnt(v))
+#define NEW_LASGN(v,val) NEW_NODE(NODE_LASGN,v,val,0)
 #define NEW_DASGN(v,val) NEW_NODE(NODE_DASGN,v,val,0)
 #define NEW_DASGN_CURR(v,val) NEW_NODE(NODE_DASGN_CURR,v,val,0)
 #define NEW_IASGN(v,val) NEW_NODE(NODE_IASGN,v,val,0)
@@ -297,13 +295,13 @@ typedef struct RNode {
 #define NEW_OP_ASGN_OR(i,val) NEW_NODE(NODE_OP_ASGN_OR,i,val,0)
 #define NEW_OP_ASGN_AND(i,val) NEW_NODE(NODE_OP_ASGN_AND,i,val,0)
 #define NEW_GVAR(v) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v))
-#define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,local_cnt(v))
+#define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,0)
 #define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0)
 #define NEW_IVAR(v) NEW_NODE(NODE_IVAR,v,0,0)
 #define NEW_CONST(v) NEW_NODE(NODE_CONST,v,0,0)
 #define NEW_CVAR(v) NEW_NODE(NODE_CVAR,v,0,0)
-#define NEW_NTH_REF(n)  NEW_NODE(NODE_NTH_REF,0,n,local_cnt('~'))
-#define NEW_BACK_REF(n) NEW_NODE(NODE_BACK_REF,0,n,local_cnt('~'))
+#define NEW_NTH_REF(n)  NEW_NODE(NODE_NTH_REF,0,n,0)
+#define NEW_BACK_REF(n) NEW_NODE(NODE_BACK_REF,0,n,0)
 #define NEW_MATCH(c) NEW_NODE(NODE_MATCH,c,0,0)
 #define NEW_MATCH2(n1,n2) NEW_NODE(NODE_MATCH2,n1,n2,0)
 #define NEW_MATCH3(r,n2) NEW_NODE(NODE_MATCH3,r,n2,0)
@@ -332,9 +330,9 @@ typedef struct RNode {
 #define NEW_ALIAS(n,o) NEW_NODE(NODE_ALIAS,n,o,0)
 #define NEW_VALIAS(n,o) NEW_NODE(NODE_VALIAS,n,o,0)
 #define NEW_UNDEF(i) NEW_NODE(NODE_UNDEF,0,i,0)
-#define NEW_CLASS(n,b,s) NEW_NODE(NODE_CLASS,n,NEW_SCOPE(b),(s))
-#define NEW_SCLASS(r,b) NEW_NODE(NODE_SCLASS,r,NEW_SCOPE(b),0)
-#define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(b),0)
+#define NEW_CLASS(n,b,s) NEW_NODE(NODE_CLASS,n,NEW_SCOPE(0,b),(s))
+#define NEW_SCLASS(r,b) NEW_NODE(NODE_SCLASS,r,NEW_SCOPE(0,b),0)
+#define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(0,b),0)
 #define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
 #define NEW_CREF(c) (NEW_NODE(NODE_CREF,0,0,c))

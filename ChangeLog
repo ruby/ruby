@@ -1,3 +1,14 @@
+Wed Mar 21 20:05:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, parse.y, eval.c, intern.h, iseq.c, lex.c, node.h,
+	  proc.c, vm.c, vm_macro.def, vm_macro.def, yarvcore.c, yarvcore.h,
+	  debug.c, debug.h: merge half-baked-1.9 changes.  The biggest change
+	  is to change node structure around NODE_SCOPE, NODE_ARGS.  Every
+	  scope (method/class/block) has own NODE_SCOPE node and NODE_ARGS
+	  represents more details of arguments information.  I'll write a
+	  document about detail of node structure.
+
+
 Wed Mar 21 17:04:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big2str0): round up for the most significant digit.

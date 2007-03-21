@@ -16,6 +16,7 @@
 #include "yarvcore.h"
 #include "gc.h"
 
+
 VALUE rb_cVM;
 VALUE rb_cThread;
 
@@ -216,7 +217,6 @@ thread_free(void *ptr)
     if (ptr) {
 	th = ptr;
 	FREE_UNLESS_NULL(th->stack);
-	FREE_UNLESS_NULL(th->top_local_tbl);
 
 	if (th->local_storage) {
 	    st_free_table(th->local_storage);

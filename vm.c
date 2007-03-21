@@ -678,7 +678,7 @@ th_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 static inline int
 th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 {
-    int i;
+    int i, arg_n = iseq->argc + (iseq->arg_rest == -1 ? 0 : 1);
     
     if (0) { /* for debug */
 	int i;
@@ -686,6 +686,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 	for(i=0; i<argc; i++){
 	    dp(argv[i]);
 	}
+
 	printf("     argc: %d\n", argc);
 	printf("iseq argc: %d\n", iseq->argc);
 	printf("iseq rest: %d\n", iseq->arg_rest);
@@ -693,61 +694,49 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 	GET_THREAD()->cfp->sp -= argc;
     }
 
-    if (iseq->argc == 1 && iseq->arg_rest != -1) {
-	if (argc > 1) {
-	    argv[0] = rb_ary_new4(argc, argv);
-	    argc = 1;
+    if (argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
+	VALUE ary = argv[0];
+	argc = RARRAY_LEN(ary);
+
+	/* TODO: check overflow */
+
+	for (i=0; i<argc; i++) {
+	    argv[i] = RARRAY_PTR(ary)[i];
 	}
-	else if (iseq->arg_rest > 0) {
-	    argv[0] = rb_ary_new4(argc, argv);
-	    argc = 1;
+    }
+
+    if (iseq->arg_rest == -1) {
+	if (iseq->argc == 1) {
+	    if (argc != 1) {
+		/* yield 1, 2, 3 for iter{|a| ...}
+		 *
+		 * ruby 1.8 warns on this timing.
+		 * rb_warn("multiple values for a block parameter (%d for %d)", argc, iseq->argc);
+		 */
+		argv[0] = rb_ary_new4(argc, argv);
+		argc = 1;
+	    }
+	}
+
+	if (iseq->argc < argc) {
+	    /* simple truncate */
+	    argc = iseq->argc;
 	}
     }
     else {
-	if (argc == 1 && TYPE(argv[0]) == T_ARRAY /* && iseq->arg_rest == 0 */) {
-	    VALUE ary = argv[0];
-	    argc = RARRAY_LEN(ary);
+	int r = iseq->arg_rest;
 
+	if (argc < r) {
 	    /* TODO: check overflow */
-	    for (i=0; i<argc; i++) {
-		argv[i] = RARRAY_PTR(ary)[i];
+	    for (i=argc; i<r; i++) {
+		argv[i] = Qnil;
 	    }
+	    argv[r] = rb_ary_new();
 	}
-
-	if (iseq->arg_rest != 0) {
-	    if (iseq->arg_rest == -1) {
-		/* */
-	    }
-	    else {
-		int rest = iseq->arg_rest - 1;
-		if (argc <= rest) {
-		    /*  param: a, b, c, *r
-		     *  args : x, y
-		     * =>
-		     *       : x, y, nil, []
-		     */
-		    for (i=argc; i<rest; i++) {
-			argv[i] = Qnil; /* initialize */
-		    }
-		    argv[rest] = rb_ary_new();
-		    argc = rest + 1;
-		}
-		else {
-		    /*  param: a, *r
-		     *  args : x, y, z
-		     * =>
-		     *       : x, [y, z]
-		     */
-		    /* TODO: check overflow */
-		    argv[rest] = rb_ary_new4(argc - rest, &argv[rest]);
-		    argc = rest + 1;
-		}
-	    }
+	else {
+	    argv[r] = rb_ary_new4(argc-r, &argv[r]);
 	}
-    }
-
-    if (argc > iseq->argc) {
-	argc = iseq->argc;
+	argc = iseq->arg_rest + 1;
     }
 
     return argc;

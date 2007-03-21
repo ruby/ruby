@@ -90,8 +90,8 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
     /* simple (only mandatory) arguments */
     if (niseq->arg_simple) {
 	if (niseq->argc != num) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%lu for %d)",
-		     (unsigned long)num, niseq->argc);
+	    rb_raise(rb_eArgError, "%d - wrong number of arguments (%lu for %d)",
+		     0, (unsigned long)num, niseq->argc);
 	}
     }
     else {
@@ -101,14 +101,14 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	    int opts = niseq->arg_opts - 1;
 
 	    if (num < iseq_argc ||
-		(niseq->arg_rest == 0 && num > iseq_argc + opts)) {
+		(niseq->arg_rest == -1 && num > iseq_argc + opts)) {
 		if (0) {
 		    printf("num: %lu, iseq_argc: %d, opts: %d\n",
 			   (unsigned long)num, iseq_argc, opts);
 		}
 		rb_raise(rb_eArgError,
-			 "wrong number of arguments (%lu for %d)",
-			 (unsigned long)num, iseq_argc);
+			 "%d - wrong number of arguments (%lu for %d)",
+			 1, (unsigned long)num, iseq_argc);
 	    }
 
 	    if (0) printf("num: %lu, opts: %d, iseq_argc: %d\n",
@@ -126,46 +126,46 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	}
 
 	/* rest argument */
-	if (niseq->arg_rest != 0) {
-	    int rest = niseq->arg_rest - 1;
+	if (niseq->arg_rest != -1) {
+	    int rest = niseq->arg_rest - 1 /* spec val */;
 	    int pack_size = num - rest;
 
 	    if (0) {
 		printf("num: %lu, rest: %d, ps: %d\n",
-		       (unsigned long)num, niseq->arg_rest, pack_size);
+		       (unsigned long)num, rest, pack_size);
 	    }
 
 	    if (pack_size < 0) {
 		rb_raise(rb_eArgError,
-			 "wrong number of arguments (%lu for %d)",
-			 (unsigned long)num, rest - niseq->arg_opts);
+			 "%d - wrong number of arguments (%lu for %d)",
+			 2, (unsigned long)num, rest - niseq->arg_opts);
 	    }
 
 	    /*
-	     * def m(x,y,z,*a) =>
-	     * x, y, z, a, b, c <SP> => x, y, z, [a,b,c], <SP>
+	     * def m(x, y, z, *a)       (rest: 3) =>
+	     *    x, y, z, a, b, c <SP> (num: 6, pack_size = 3)
+             * => x, y, z, [a,b,c] <SP> (num: 4)
 	     */
-	    rsp[1 + rest] = rb_ary_new4(pack_size, &rsp[1 + rest]);
-	    sp = &rsp[2 + rest];
+	    rsp[rest + 1] = rb_ary_new4(pack_size, &rsp[rest + 1]);
+	    sp = &rsp[rest + 1 + 1];
 	    num = rest + 1;
-	    clear_local_size = niseq->local_size - rest - 1;
+	    clear_local_size = niseq->local_size - (rest + 1);
 	}
 
 	/* block argument */
-	if (niseq->arg_block != 0) {
+	if (niseq->arg_block != -1) {
 	    VALUE arg_block_val = Qnil;
 
-	    if (!((niseq->arg_rest && num == niseq->arg_rest) ||
-		  (niseq->arg_opts
-		   && num == niseq->argc + niseq->arg_opts - 1)
+	    if (!((num == niseq->arg_rest) ||
+		  (niseq->arg_opts && num == niseq->argc + niseq->arg_opts - 1)
 		  || num == niseq->argc)) {
 
 		if (0) printf("num: %d, rest: %d, opts: %d, argc: %d\n",
 			      num, niseq->arg_rest, niseq->arg_opts, niseq->argc);
 
 		rb_raise(rb_eArgError,
-			 "wrong number of arguments (%lu for %d)",
-			 (unsigned long)num, niseq->argc);
+			 "%d - wrong number of arguments (%lu for %d)",
+			 3, (unsigned long)num, niseq->argc);
 	    }
 
 	    if (blockptr) {

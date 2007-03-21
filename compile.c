@@ -108,8 +108,8 @@ static int set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
 static int set_exception_table(rb_iseq_t *iseq);
-static int set_localtbl(rb_iseq_t *iseq, ID *tbl);
-static int set_localtbl_eval(rb_iseq_t *iseq, ID *tbl);
+static int set_local_table(rb_iseq_t *iseq, ID *tbl);
+static int set_local_table_eval(rb_iseq_t *iseq, ID *tbl);
 static int set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
 static NODE *set_block_local_tbl(rb_iseq_t *iseq, NODE * node,
 				 LINK_ANCHOR *anchor);
@@ -138,118 +138,56 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 #endif
 
 VALUE
-rb_iseq_compile(VALUE self, NODE *narg)
+rb_iseq_compile(VALUE self, NODE *node)
 {
-    DECL_ANCHOR(list_anchor);
+    DECL_ANCHOR(ret);
     rb_iseq_t *iseq;
-    NODE *node = (NODE *) narg;
     GetISeqPtr(self, iseq);
 
-    debugs("[compile step 1 (traverse each node)]\n");
+    if (nd_type(node) == NODE_SCOPE) {
+	/* iseq type of top, method, class, block */
+	set_local_table(iseq, node->nd_tbl);
+	set_arguments(iseq, ret, node->nd_args);
 
-    iseq->node = node;
-
-    if (iseq->type == ISEQ_TYPE_BLOCK) {
-	node = set_block_local_tbl(iseq, node, list_anchor);
-    }
-
-    if (node && nd_type(node) == NODE_SCOPE) {
-	/* with node scope */
-	NODE *sn_body = node->nd_next;	/* sn: scope node */
-	NODE *ndargs = 0;
-
-	if (iseq->type != ISEQ_TYPE_BLOCK) {
-	    set_localtbl(iseq, ((NODE *) node)->nd_tbl);
-	}
-
-	if (sn_body) {
-	    switch (nd_type(sn_body)) {
-	    case NODE_BLOCK:
-		if (nd_type(sn_body->nd_head) == NODE_ARGS) {
-		    /* some method attribute process */
-		    ndargs = sn_body->nd_head;
-		    set_arguments(iseq, list_anchor, ndargs);
-
-		    /* with sn_body->nd_head */
-		    if (iseq->type == ISEQ_TYPE_METHOD) {
-			COMPILE(list_anchor, "normal method",
-				sn_body->nd_next);
-		    }
-		    else if (iseq->type == ISEQ_TYPE_CLASS) {
-			COMPILE(list_anchor, "class/module",
-				sn_body->nd_next);
-		    }
-		    else {
-			rb_bug("must be class or method");
-		    }
-		}
-		else {
-		    /* normal block */
-		    if (iseq->type == ISEQ_TYPE_CLASS) {
-			COMPILE(list_anchor, "class/module", sn_body);
-		    }
-		    else if (iseq->type == ISEQ_TYPE_BLOCK) {
-			COMPILE(list_anchor, "normal block", sn_body);
-		    }
-		    else {
-			rb_bug("must be class or block");
-		    }
-		}
-		break;
-	    case NODE_ARGS:
-		/* empty method */
-		/* some method attribute process */
-		debugs("empty method\n");
-
-		set_arguments(iseq, list_anchor, sn_body);
-		ADD_INSN(list_anchor, nd_line(sn_body), putnil);
-		break;
-
-	    default:
-		COMPILE(list_anchor, "other scope", sn_body);
-		break;
-	    }
-	}
-	else {
-	    /* sn_body == 0 */
-	    ADD_INSN(list_anchor, 0, putnil);
-	}
-    }
-    else {
 	if (iseq->type == ISEQ_TYPE_BLOCK) {
-	    VALUE tmp;
+	    VALUE tmp; /* required by ADD_LABEL */
 	    LABEL *start = iseq->compile_data->start_label = NEW_LABEL(0);
 	    LABEL *end = iseq->compile_data->end_label = NEW_LABEL(0);
 
-	    ADD_LABEL(list_anchor, iseq->compile_data->start_label);
-	    COMPILE(list_anchor, "block body", node);
-	    ADD_LABEL(list_anchor, iseq->compile_data->end_label);
+	    ADD_LABEL(ret, iseq->compile_data->start_label);
+	    COMPILE(ret, "block body", node->nd_body);
+	    ADD_LABEL(ret, iseq->compile_data->end_label);
 
 	    /* wide range catch handler must put at last */
 	    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
 	    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
 	}
-	else if (iseq->type == ISEQ_TYPE_TOP) {
-	    set_localtbl(iseq, GET_THREAD()->top_local_tbl);
-	    COMPILE(list_anchor, "top level node", node);
+	else {
+	    COMPILE(ret, "scoped node", node->nd_body);
 	}
-	else if (iseq->type == ISEQ_TYPE_EVAL) {
-	    set_localtbl_eval(iseq, GET_THREAD()->top_local_tbl);
-	    COMPILE(list_anchor, "eval node", node);
+    }
+    else {
+	if (iseq->type == ISEQ_TYPE_METHOD ||
+	    iseq->type == ISEQ_TYPE_CLASS  ||
+	    iseq->type == ISEQ_TYPE_BLOCK  ||
+	    iseq->type == ISEQ_TYPE_EVAL   ||
+	    iseq->type == ISEQ_TYPE_TOP) {
+	    dpn(node);
+	    rb_bug("compile/should not be reached: %s:%d", __FILE__, __LINE__);
 	}
 	else if (iseq->type == ISEQ_TYPE_RESCUE) {
 	    set_exception_tbl(iseq);
-	    COMPILE(list_anchor, "rescue", node);
+	    COMPILE(ret, "rescue", node);
 	}
 	else if (iseq->type == ISEQ_TYPE_ENSURE) {
 	    set_exception_tbl(iseq);
-	    COMPILE_POPED(list_anchor, "ensure", node);
+	    COMPILE_POPED(ret, "ensure", node);
 	}
 	else if (iseq->type == ISEQ_TYPE_DEFINED_GUARD) {
-	    COMPILE(list_anchor, "defined guard", node);
+	    COMPILE(ret, "defined guard", node);
 	}
 	else if (node == 0) {
-	    COMPILE(list_anchor, "nil", node);
+	    COMPILE(ret, "nil", node);
 	}
 	else {
 	    rb_bug("unknown scope");
@@ -259,14 +197,14 @@ rb_iseq_compile(VALUE self, NODE *narg)
     GC_CHECK();
 
     if (iseq->type == ISEQ_TYPE_RESCUE || iseq->type == ISEQ_TYPE_ENSURE) {
-	ADD_INSN2(list_anchor, 0, getdynamic, INT2FIX(1), INT2FIX(0));
-	ADD_INSN1(list_anchor, 0, throw, INT2FIX(0) /* continue throw */ );
+	ADD_INSN2(ret, 0, getdynamic, INT2FIX(1), INT2FIX(0));
+	ADD_INSN1(ret, 0, throw, INT2FIX(0) /* continue throw */ );
     }
     else {
-	ADD_INSN(list_anchor, iseq->compile_data->last_line, leave);
+	ADD_INSN(ret, iseq->compile_data->last_line, leave);
     }
 
-    return iseq_setup(iseq, list_anchor);
+    return iseq_setup(iseq, ret);
 }
 
 VALUE th_eval(void *);
@@ -323,7 +261,6 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 					sizeof(struct
 					       iseq_compile_data_storage));
 	storage = iseq->compile_data->storage_current = storage->next;
-
 	storage->next = 0;
 	storage->pos = 0;
 	storage->size = alloc_size;
@@ -780,274 +717,6 @@ set_exception_tbl(rb_iseq_t *iseq)
 }
 
 static int
-search_block_local_variables(NODE * node, VALUE local_vars)
-{
-    switch (nd_type(node)) {
-    case NODE_DASGN_CURR:{
-	    rb_ary_push(local_vars, ID2SYM(node->nd_vid));
-	    break;
-	}
-    case NODE_MASGN:{
-	    NODE *narg = node->nd_head;
-	    while (narg) {
-		search_block_local_variables(narg->nd_head, local_vars);
-		narg = narg->nd_next;
-	    }
-	    if (node->nd_args != 0 && (long)node->nd_args != -1) {
-		search_block_local_variables(node->nd_args, local_vars);
-		break;
-	    }
-	}
-    default:
-	break;
-    }
-    return COMPILE_OK;
-}
-
-static NODE *
-search_block_local_parameters(rb_iseq_t *iseq, NODE * lnode)
-{
-    NODE *node = lnode;
-    NODE *nelem;
-    VALUE local_vars = rb_ary_new();
-    VALUE param_vars = rb_ary_new();
-
-    /* search args */
-    if (node->nd_var && (VALUE)node->nd_var != 1) {
-	switch (nd_type(node->nd_var)) {
-	case NODE_DASGN_CURR:
-	    iseq->argc = 1;
-	    rb_ary_push(param_vars, ID2SYM(node->nd_var->nd_vid));
-	    debugi("block 1arg", node->nd_var->nd_vid);
-	    break;
-	case NODE_MASGN:{
-		int i;
-		nelem = node->nd_var->nd_head;
-		if (nelem != 0) {
-		    iseq->argc = node->nd_var->nd_head->nd_alen;
-		    for (i = 0; i < iseq->argc; i++, nelem = nelem->nd_next) {
-			if (nd_type(nelem->nd_head) == NODE_DASGN_CURR) {
-			    rb_ary_push(param_vars,
-					ID2SYM(nelem->nd_head->nd_vid));
-			    debugi("block arg", nelem->nd_head->nd_vid);
-			}
-			else {
-			    char buff[0x20];
-			    ID id;
-			    int idx = iseq->argc - RARRAY_LEN(param_vars);
-			    snprintf(buff, 0x20, "#blp%d", idx);
-			    id = rb_intern(buff);
-			    rb_ary_push(param_vars, ID2SYM(id));
-			    debugi("block arg (auto)", id);
-			    search_block_local_variables(nelem->nd_head,
-							 local_vars);
-			}
-		    }
-		}
-		if (node->nd_var->nd_args) {
-		    NODE *sn = node->nd_var->nd_args;
-		    if ((long)sn != -1) {
-			if (nd_type(sn) == NODE_DASGN_CURR) {
-			    rb_ary_push(param_vars, ID2SYM(sn->nd_vid));
-			}
-			else {
-			    rb_ary_push(param_vars,
-					ID2SYM(rb_intern("#blp_splat")));
-			    debugi("block/splat (auto)",
-				   rb_intern("#blp_splat"));
-			}
-		    }
-		}
-		break;
-	    }
-	default:
-	    rb_ary_push(param_vars, ID2SYM(rb_intern("#blp")));
-	    debugi("block 1arg (auto)", rb_intern("#blp"));
-	    iseq->argc = 1;
-	    break;
-	}
-    }
-    else {
-	iseq->argc = 0;
-    }
-
-    node = node->nd_body;
-
-    /* other block local variables 2 */
-    if (node && nd_type(node) == NODE_BLOCK) {
-	nelem = node->nd_head;
-	if (nelem && nd_type(nelem) == NODE_DASGN_CURR) {
-	    while (nelem && nd_type(nelem) == NODE_DASGN_CURR) {
-		if (!rb_ary_includes(local_vars, ID2SYM(nelem->nd_vid))) {
-		    debugi("block initialized variable", nelem->nd_vid);
-		    rb_ary_push(local_vars, ID2SYM(nelem->nd_vid));
-		}
-		nelem = nelem->nd_value;
-	    }
-	    if (nelem == 0) {
-		node = node->nd_next;
-	    }
-	}
-    }
-
-    /* translate to block inlining code */
-    if (iseq->special_block_builder != 0) {
-	node = ((NODE * (*)(rb_iseq_t *, NODE *, NODE *, VALUE, VALUE))
-		iseq->special_block_builder) (iseq, node, lnode->nd_var,
-					      param_vars, local_vars);
-    }
-
-    rb_ary_concat(param_vars, local_vars);
-    local_vars = param_vars;
-
-    {
-	int i, size = RARRAY_LEN(local_vars);
-
-	if (size > 0) {
-	    iseq->local_table = ALLOC_N(ID, size);
-	    for (i = 0; i < size; i++) {
-		iseq->local_table[i] = SYM2ID(RARRAY_PTR(local_vars)[i]);
-		debugi("block local variable", iseq->local_table[i]);
-	    }
-	}
-	iseq->local_table_size = iseq->local_size = size;
-    }
-    return node;
-}
-
-static int
-set_block_initializer(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor, int didx)
-{
-    DECL_ANCHOR(anc);
-    LINK_ELEMENT *elem;
-
-    COMPILE_POPED(anc, "set_block_local_tbl#masgn/other", node);
-
-    if (nd_type(node) == NODE_ATTRASGN) {
-	INSN *iobj = (INSN *)anc->last->prev;
-	iobj->operands[1] = INT2FIX(FIX2INT(iobj->operands[1]) + 1);
-	INSERT_ELEM_PREV((void *)iobj,
-			 (void *)new_insn_body(iseq, nd_line(node),
-					       BIN(getdynamic), 2,
-					       INT2FIX(didx), INT2FIX(0)));
-    }
-    else {
-	ADD_INSN2(anchor, nd_line(node), getdynamic,
-		  INT2FIX(didx), INT2FIX(0));
-	elem = FIRST_ELEMENT(anc);
-	if (elem->type == ISEQ_ELEMENT_INSN &&
-	    ((INSN *)elem)->insn_id == BIN(putnil)) {
-	    SHIFT_ELEMENT(anc);
-	}
-    }
-    APPEND_LIST(anchor, anc);
-
-    return COMPILE_OK;
-}
-
-static NODE *
-set_block_local_tbl(rb_iseq_t *iseq, NODE * node, LINK_ANCHOR *anchor)
-{
-    NODE *rnode;
-
-    /* argument check */
-    if (iseq->type != ISEQ_TYPE_BLOCK) {
-	rb_bug("set_block_local_tbl: unexpected iseq type");
-    }
-
-    rnode = search_block_local_parameters(iseq, node);
-
-    if ((VALUE)node->nd_var == 1) {
-	/* TODO */
-    }
-    else if (node->nd_var) {
-	NODE *nargs = node->nd_var;
-	switch (nd_type(nargs)) {
-	  case NODE_MASGN:{
-	      NODE *massign = nargs;
-	      int i = 0;
-	      if (nargs->nd_head != 0) {
-		  NODE *lhsn = massign->nd_head;
-
-		  while (lhsn) {
-		      if (nd_type(lhsn->nd_head) != NODE_DASGN_CURR) {
-			  /* idx-th param, current level */
-			  set_block_initializer(iseq, lhsn->nd_head,
-						anchor, iseq->local_size - i);
-		      }
-		      i++;
-		      lhsn = lhsn->nd_next;
-		  }
-	      }
-
-	      /* check rest */
-	      if (massign->nd_args != 0 && (long)massign->nd_args != -1) {
-		  iseq->argc++;
-		  iseq->arg_rest = i + 1;
-
-		  if (nd_type(massign->nd_args) != NODE_DASGN_CURR) {
-		      set_block_initializer(iseq, massign->nd_args,
-					    anchor, iseq->local_size - i);
-		  }
-	      }
-	      else if (i == 1) {
-		  iseq->arg_rest = -1;
-	      }
-	      break;
-	  }
-
-	  case NODE_DASGN_CURR:
-	    break;
-
-	  case NODE_ARGS:{
-	      /* make parameters */
-	      VALUE a = nargs->nd_frml;
-	      int i;
-	      int argc = a ? RARRAY_LEN(a) : 0;
-	      int local_size = argc + iseq->local_size - 1;
-	      ID *local_tbl = local_size > 0 ? ALLOC_N(ID, local_size) : 0;
-
-	      for (i=0; i<argc; i++) {
-		  ID id = SYM2ID(RARRAY_PTR(a)[i]);
-		  debugi("NODE_ARGS param", id);
-		  local_tbl[i] = id;
-	      }
-
-	      if (iseq->local_table) {
-		  /* copy from old local tbl and delete it */
-		  for (i=1; i<iseq->local_size; i++) {
-		      local_tbl[argc + i - 1] = iseq->local_table[i];
-		  }
-		  ruby_xfree(iseq->local_table);
-	      }
-	      iseq->local_table = local_tbl;
-	      iseq->local_size = local_size;
-	      iseq->argc = argc;
-	      break;
-	  }
-	  default:{
-	      /* for 1.x compatibility */
-	      /* first param, current level */
-	      set_block_initializer(iseq, nargs, anchor, iseq->local_size);
-	      break;
-	  }
-	}
-    }
-
-    if (iseq->arg_opts || iseq->arg_rest || iseq->arg_block) {
-	iseq->arg_simple = 0;
-    }
-    else {
-	iseq->arg_simple = 1;
-    }
-
-    if (nd_type(node) == NODE_FOR) {
-	iseq->compile_data->for_iseq = 1;
-    }
-    return rnode;
-}
-
-static int
 get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 {
     int i;
@@ -1066,6 +735,7 @@ get_local_var_idx(rb_iseq_t *iseq, ID id)
     int idx = get_dyna_var_idx_at_raw(iseq->local_iseq, id);
 
     if (idx == -1) {
+	dpi(id);
 	rb_bug("get_local_var_idx: -1");
     }
 
@@ -1091,141 +761,69 @@ get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
     return -1;
 }
 
-#if 1
-
 static int
-set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_arg)
+set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 {
-    NODE *node_aux = node_arg->nd_next;
-    NODE *node_opt = 0;
-    ID rest_id = 0;
-    ID block_id = 0;
-    ID post_start_id = 0;
-    int post_len = 0;
-    NODE *node_init = 0;
-    int d = iseq->local_size - iseq->local_table_size;
+    debugs("set_arguments: %s\n", node_args ? "" : "0");
 
-    iseq->argc = node_arg->nd_frml;
-    node_opt = node_arg->nd_opt;
+    if (node_args) {
+	NODE *node_aux = node_args->nd_next;
+	int mandatory_len = 0;
+	NODE *node_opt = node_args->nd_opt;
+	ID rest_id = 0;
+	ID block_id = 0;
+	ID post_start_id = 0;
+	int post_len = 0;
+	NODE *node_init = 0;
+	int d = iseq->local_size - iseq->local_table_size;
 
-    if (node_aux) {
-	rest_id = node_aux->nd_rest;
-	block_id = (ID)node_aux->nd_body;
-	node_aux = node_aux->nd_next;
+	if (nd_type(node_args) != NODE_ARGS) {
+	    rb_bug("set_arguments: NODE_ARGS is expected, but %s", ruby_node_name(nd_type(node_args)));
+	}
+
+	iseq->argc = node_args->nd_frml;
+	debugs("  - argc: %d\n", iseq->argc);
 
 	if (node_aux) {
-	    post_start_id = node_aux->nd_pid;
-	    post_len = node_aux->nd_plen;
-	    node_init = node_aux->nd_next;
-	}
-    }
+	    rest_id = node_aux->nd_rest;
+	    block_id = (ID)node_aux->nd_body;
+	    node_aux = node_aux->nd_next;
 
-    if (node_init) {
-	COMPILE(optargs, "arguments", node_init);
-    }
-
-    if (node_opt) {
-	NODE *node = node_opt;
-	LABEL *label;
-	VALUE labels = rb_ary_new();
-	int i = 0, j;
-
-	while (node) {
-	    label = NEW_LABEL(nd_line(node));
-	    rb_ary_push(labels, (VALUE)label | 1);
-	    ADD_LABEL(optargs, label);
-	    COMPILE_POPED(optargs, "optarg", node->nd_body);
-
-	    node = node->nd_next;
-	    i += 1;
-	}
-	/* last label */
-	label = NEW_LABEL(nd_line(node_arg));
-	rb_ary_push(labels, (VALUE)label | 1);
-	ADD_LABEL(optargs, label);
-	i += 1;
-
-	iseq->arg_opts = i;
-	iseq->arg_opt_tbl = ALLOC_N(VALUE, i);
-	MEMCPY(iseq->arg_opt_tbl, RARRAY_PTR(labels), VALUE, i);
-	for (j = 0; j < i; j++) {
-	    iseq->arg_opt_tbl[j] &= ~1;
-	}
-    }
-    else {
-	iseq->arg_opts = 0;
-    }
-
-    if ((long)rest_id == -1) {
-	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, 0 /* dummy var */) + d;
-    }
-    else if (rest_id) {
-	iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id) + d;
-    }
-    if (iseq->arg_rest == -1) {
-	rb_bug("arg_rest: -1");
-    }
-
-    if (block_id) {
-	iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id) + d;
-    }
-
-    if (iseq->arg_rest != 0 || iseq->arg_opts != 0 || iseq->arg_block != 0) {
-	iseq->arg_simple = 0;
-    }
-    else {
-	iseq->arg_simple = 1;
-    }
-
-    return COMPILE_OK;
-}
-
-#else
-
-static int
-set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
-{
-    int i, j;
-
-    if (node) {
-	/* normal method */
-	if (node->nd_frml) {
-	    iseq->argc = RARRAY_LEN(node->nd_frml);
-	}
-	else {
-	    iseq->argc = 0;
+	    if (node_aux) {
+		post_start_id = node_aux->nd_pid;
+		post_len = node_aux->nd_plen;
+		node_init = node_aux->nd_next;
+	    }
 	}
 
-	if (node->nd_rest) {
-	    iseq->arg_rest = node->nd_rest->nd_cnt - 2 + 1;
+	if (node_init) {
+	    COMPILE_POPED(optargs, "init arguments", node_init);
 	}
 
-	/* optional initializer */
-	if (node->nd_opt) {
-	    NODE *optarg = node->nd_opt;
+	if (node_opt) {
+	    NODE *node = node_opt;
 	    LABEL *label;
 	    VALUE labels = rb_ary_new();
-	    i = 0;
-	    while (optarg) {
+	    int i = 0, j;
+
+	    while (node) {
 		label = NEW_LABEL(nd_line(node));
 		rb_ary_push(labels, (VALUE)label | 1);
 		ADD_LABEL(optargs, label);
-		COMPILE_POPED(optargs, "optarg", optarg->nd_head);
-
-		optarg = optarg->nd_next;
+		COMPILE_POPED(optargs, "optarg", node->nd_body);
+		node = node->nd_next;
 		i += 1;
 	    }
+
 	    /* last label */
-	    label = NEW_LABEL(nd_line(node));
+	    label = NEW_LABEL(nd_line(node_args));
 	    rb_ary_push(labels, (VALUE)label | 1);
 	    ADD_LABEL(optargs, label);
 	    i += 1;
 
 	    iseq->arg_opts = i;
 	    iseq->arg_opt_tbl = ALLOC_N(VALUE, i);
-
 	    MEMCPY(iseq->arg_opt_tbl, RARRAY_PTR(labels), VALUE, i);
-
 	    for (j = 0; j < i; j++) {
 		iseq->arg_opt_tbl[j] &= ~1;
 	    }
@@ -1233,30 +831,37 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE * node)
 	else {
 	    iseq->arg_opts = 0;
 	}
-    }
-    else {
-	iseq->argc = 0;
-	iseq->arg_rest = 0;
-	iseq->arg_opts = 0;
-    }
 
-    if (iseq->arg_rest != 0 || iseq->arg_opts != 0) {
-	iseq->arg_simple = 0;
-    }
-    else {
-	iseq->arg_simple = 1;
+	if (rest_id) {
+	    iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id) + d;
+
+	    if (iseq->arg_rest == -1) {
+		rb_bug("arg_rest: -1");
+	    }
+	}
+
+	if (block_id) {
+	    iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id) + d;
+	}
+
+	if (iseq->arg_opts != 0 || iseq->arg_rest != -1 || iseq->arg_block != -1) {
+	    iseq->arg_simple = 0;
+	}
+	else {
+	    iseq->arg_simple = 1;
+	}
     }
     return COMPILE_OK;
 }
-#endif
 
 static int
-set_localtbl(rb_iseq_t *iseq, ID *tbl)
+set_local_table(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
 
     if (tbl) {
-	size = *tbl - 2 /* $~, $_ */;
+	size = *tbl;
+	tbl++;
     }
     else {
 	size = 0;
@@ -1264,17 +869,23 @@ set_localtbl(rb_iseq_t *iseq, ID *tbl)
 
     if (size > 0) {
 	iseq->local_table = (ID *)ALLOC_N(ID *, size);
-	MEMCPY(iseq->local_table, tbl + 3 /* size, $~, $_ */, ID *, size);
+	MEMCPY(iseq->local_table, tbl, ID *, size);
     }
 
-    iseq->local_table_size = size;
-    iseq->local_size = size + 1 /* svar */;
+    iseq->local_size = iseq->local_table_size = size;
 
+    if (iseq->type == ISEQ_TYPE_METHOD ||
+	iseq->type == ISEQ_TYPE_CLASS  ||
+	iseq->type == ISEQ_TYPE_TOP) {
+	iseq->local_size += 1 /* svar */;
+    }
+
+    debugs("set_local_table: %d, %d\n", iseq->local_size, iseq->local_table_size);
     return COMPILE_OK;
 }
 
 static int
-set_localtbl_eval(rb_iseq_t *iseq, ID *tbl)
+set_local_table_eval(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
     if (tbl) {
@@ -3058,7 +2669,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      COMPILE(ret, "iter caller (for)", node->nd_iter);
 
 	      iseq->compile_data->current_block =
-		NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq),
+		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
 
 	      mid = idEach;
@@ -3070,7 +2681,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  }
 	  else {
 	      iseq->compile_data->current_block =
-		NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq),
+		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
 	      COMPILE_(ret, "iter caller", node->nd_iter, poped);
 	  }
@@ -3364,7 +2975,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
 
       case NODE_MASGN:{
-	  compile_massign(iseq, ret, node->nd_value,	/* rhsn  */
+	  compile_massign(iseq, ret,
+			  node->nd_value,	/* rhsn  */
 			  node->nd_args,	/* splat */
 			  node->nd_head,	/* lhsn  */
 			  0);
@@ -3379,7 +2991,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
 	  debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
-	  COMPILE(ret, "lvalue", node->nd_value);
+	  COMPILE(ret, "rvalue", node->nd_value);
 
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
@@ -3397,16 +3009,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), dup);
 	  }
-	  idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
-	  if (nd_type(node) == NODE_DASGN_CURR &&
-	      lv > 0 &&
-	      iseq->type == ISEQ_TYPE_BLOCK &&
-	      iseq->compile_data->for_iseq != 1) {
 
-	      dpi(node->nd_vid);
-	      rb_bug("NODE_DASGN_CURR, but lv == %d (line: %d)", lv,
-		     nd_line(node));
-	  }
+	  idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	  if (idx < 0) {
 	      debugi("unknown id", node->nd_vid);
@@ -4531,7 +4135,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_POSTEXE:{
-	  VALUE block = NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
+	  VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
 	  ADD_INSN1(ret, nd_line(node), postexe, block);
 	  if (!poped) {
 	      ADD_INSN(ret, nd_line(node), putnil);
@@ -4624,7 +4228,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_LAMBDA:{
 	  /* compile same as lambda{...} */
-	  VALUE block = NEW_CHILD_ISEQVAL(node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
+	  VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
 	  VALUE argc = INT2FIX(0);
 	  ADD_CALL_RECEIVER(ret, nd_line(node));
 	  ADD_CALL_WITH_BLOCK(ret, nd_line(node), ID2SYM(idLambda), argc, block);
