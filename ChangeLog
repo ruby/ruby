@@ -1,3 +1,8 @@
+Wed Mar 21 17:04:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): round up for the most significant digit.
+	  [ruby-core:10686]
+
 Tue Mar 21 08:20:00 2007  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* test/testunit/collector/test_dir.rb: Fixed test/unit tests that 
