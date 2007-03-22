@@ -1,3 +1,8 @@
+Thu Mar 22 23:13:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_provided): check for extension library if SOEXT is
+	  explicitly given.  [ruby-dev:30657]
+
 Thu Mar 22 10:29:25 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_bignum.rb (test_to_s): add tests for Bignum#to_s.
