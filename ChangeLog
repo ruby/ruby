@@ -1,3 +1,7 @@
+Thu Mar 22 10:27:58 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_bignum.rb (test_to_s): add tests for Bignum#to_s.
+
 Wed Mar 21 20:38:06 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* marshal.c (w_short, w_long, w_object): get rid of VC++ warnings.
