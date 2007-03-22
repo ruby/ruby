@@ -143,7 +143,7 @@ RFLAGS = -r
 !if !defined(EXTLIBS)
 EXTLIBS =
 !endif
-LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib version.lib ws2_32.lib $(EXTLIBS)
+LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib $(EXTLIBS)
 MISSING = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj
 
 ARFLAGS = -machine:$(MACHINE) -out:
