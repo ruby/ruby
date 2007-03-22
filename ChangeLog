@@ -1,3 +1,7 @@
+Fri Mar 23 00:24:52 2007  Keiju Ishitsuka <keiju@ruby-lang.org>
+	
+	* lib/shell: commit miss(support for ruby 1.9(YARV) thread model).
+
 Thu Mar 22 13:32:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (LIBS): remove an unnecessary library.

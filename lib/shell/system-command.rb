@@ -47,12 +47,15 @@ class Shell
     end
 
     def start
+      notify([@command, *@opts].join(" "))
+
       @pid, @pipe_in, @pipe_out = @shell.process_controller.sfork(self) {
 	Dir.chdir @shell.pwd
+	$0 = @command
 	exec(@command, *@opts)
       }
       if @input
-	start_export
+ 	start_export
       end
       start_import
     end
@@ -78,17 +81,12 @@ class Shell
       end
     end
 
-
     def start_import
-#      Thread.critical = true
       notify "Job(%id) start imp-pipe.", @shell.debug?
       rs = @shell.record_separator unless rs
       _eop = true
-#      Thread.critical = false
       th = Thread.start {
-	Thread.critical = true
 	begin
-	  Thread.critical = false
 	  while l = @pipe_in.gets
 	    @input_queue.push l
 	  end
@@ -96,19 +94,15 @@ class Shell
 	rescue Errno::EPIPE
 	  _eop = false
 	ensure
-	  if _eop
+	  if !ProcessController::USING_AT_EXIT_WHEN_PROCESS_EXIT and _eop
 	    notify("warn: Process finishing...",
 		   "wait for Job[%id] to finish pipe importing.",
 		   "You can use Shell#transact or Shell#check_point for more safe execution.")
-#	    Tracer.on
-	    Thread.current.run
 	    redo
 	  end
-	  Thread.exclusive do
-	    notify "job(%id}) close imp-pipe.", @shell.debug?
-	    @input_queue.push :EOF
-	    @pipe_in.close
-	  end
+	  notify "job(%id}) close imp-pipe.", @shell.debug?
+	  @input_queue.push :EOF
+	  @pipe_in.close
 	end
       }
     end
@@ -117,25 +111,24 @@ class Shell
       notify "job(%id) start exp-pipe.", @shell.debug?
       _eop = true
       th = Thread.start{
-	Thread.critical = true
 	begin
-	  Thread.critical = false
-	  @input.each{|l| @pipe_out.print l}
+	  @input.each do |l|
+	    ProcessController::block_output_synchronize do
+	      @pipe_out.print l
+	    end
+	  end
 	  _eop = false
-	rescue Errno::EPIPE
+	rescue Errno::EPIPE, Errno::EIO
 	  _eop = false
 	ensure
-	  if _eop
+	  if !ProcessController::USING_AT_EXIT_WHEN_PROCESS_EXIT and _eop
 	    notify("shell: warn: Process finishing...",
 		   "wait for Job(%id) to finish pipe exporting.",
 		   "You can use Shell#transact or Shell#check_point for more safe execution.")
-#	    Tracer.on
 	    redo
 	  end
-	  Thread.exclusive do
-	    notify "job(%id) close exp-pipe.", @shell.debug?
-	    @pipe_out.close
-	  end
+	  notify "job(%id) close exp-pipe.", @shell.debug?
+	  @pipe_out.close
 	end
       }
     end
@@ -154,14 +147,13 @@ class Shell
     #	    mes: "job(%id) close pipe-out."
     #    yorn: Boolean(@shell.debug? or @shell.verbose?)
     def notify(*opts, &block)
-      Thread.exclusive do
-	@shell.notify(*opts) {|mes|
-	  yield mes if iterator?
+      @shell.notify(*opts) do |mes|
+	yield mes if iterator?
 
-	  mes.gsub!("%id", "#{@command}:##{@pid}")
-	  mes.gsub!("%name", "#{@command}")
-	  mes.gsub!("%pid", "#{@pid}")
-	}
+	mes.gsub!("%id", "#{@command}:##{@pid}")
+	mes.gsub!("%name", "#{@command}")
+	mes.gsub!("%pid", "#{@pid}")
+	mes
       end
     end
   end
