@@ -403,7 +403,7 @@ init_env(void)
     }
     NTLoginName = (char *)malloc(len+1);
     if (!NTLoginName) return;
-    strncpy(NTLoginName, env, len);
+    strlcpy(NTLoginName, env, len + 1);
     NTLoginName[len] = '\0';
 }
 
@@ -1059,7 +1059,7 @@ insert(const char *path, VALUE vinfo)
     tmpcurr->str = (char *)malloc(tmpcurr->len + 1);
     if (!tmpcurr->str) return -1;
     tmpcurr->flags |= NTMALLOC;
-    strcpy(tmpcurr->str, path);
+    strlcpy(tmpcurr->str, path, tmpcurr->len + 1);
     **tail = tmpcurr;
     *tail = &tmpcurr->next;
 
@@ -1084,7 +1084,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     if (patt->len >= MAXPATHLEN)
 	if (!(buf = malloc(patt->len + 1))) return 0;
 
-    strncpy(buf, patt->str, patt->len);
+    strlcpy(buf, patt->str, patt->len + 1);
     buf[patt->len] = '\0';
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
@@ -1373,8 +1373,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     ptr = buffer + (elements+1) * sizeof(char *);
 
     while (curr = cmdhead) {
-	strncpy(ptr, curr->str, curr->len);
-	ptr[curr->len] = '\0';
+	strlcpy(ptr, curr->str, len - (elements + 1));
 	*vptr++ = ptr;
 	ptr += curr->len + 1;
 	cmdhead = curr->next;
@@ -1410,6 +1409,7 @@ rb_w32_opendir(const char *filename)
     long               len;
     long               idx;
     char	      *scanname;
+    char	      *tmp;
     struct stati64     sbuf;
     WIN32_FIND_DATA fd;
     HANDLE          fh;
@@ -1417,7 +1417,6 @@ rb_w32_opendir(const char *filename)
     //
     // check to see if we've got a directory
     //
-
     if (rb_w32_stati64(filename, &sbuf) < 0)
 	return NULL;
     if (!(sbuf.st_mode & S_IFDIR) &&
@@ -1430,29 +1429,28 @@ rb_w32_opendir(const char *filename)
     //
     // Get us a DIR structure
     //
-
     p = calloc(sizeof(DIR), 1);
     if (p == NULL)
 	return NULL;
-    
+
     //
     // Create the search pattern
     //
-    if (!(scanname = malloc(strlen(filename) + 2 + 1))) {
+    len = strlen(filename) + 2 + 1;
+    if (!(scanname = malloc(len))) {
 	free(p);
 	return NULL;
     }
-    strcpy(scanname, filename);
+    strlcpy(scanname, filename, len);
 
     if (index("/\\:", *CharPrev(scanname, scanname + strlen(scanname))) == NULL)
-	strcat(scanname, "/*");
+	strlcat(scanname, "/*", len);
     else
-	strcat(scanname, "*");
+	strlcat(scanname, "*", len);
 
     //
     // do the FindFirstFile call
     //
-
     fh = FindFirstFile(scanname, &fd);
     free(scanname);
     if (fh == INVALID_HANDLE_VALUE) {
@@ -1465,7 +1463,6 @@ rb_w32_opendir(const char *filename)
     // now allocate the first part of the string table for the
     // filenames that we find.
     //
-
     idx = strlen(fd.cFileName)+1;
     if (!(p->start = (char *)malloc(idx)) || !(p->bits = (char *)malloc(1))) {
       error:
@@ -1474,14 +1471,14 @@ rb_w32_opendir(const char *filename)
 	errno = ENOMEM;
 	return NULL;
     }
-    strcpy(p->start, fd.cFileName);
+    strlcpy(p->start, fd.cFileName, idx);
     p->bits[0] = 0;
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 	SetBit(p->bits, 0);
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	SetBit(p->bits, 1);
     p->nfiles++;
-    
+
     //
     // loop finding all the files that match the wildcard
     // (which should be all of them in this directory!).
@@ -1489,26 +1486,23 @@ rb_w32_opendir(const char *filename)
     // of the previous string found.
     //
     while (FindNextFile(fh, &fd)) {
-	len = strlen(fd.cFileName);
+	len = strlen(fd.cFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
 	// new name and it's null terminator 
 	//
-
-	#define Renew(x, y, z) (x = (z *)xrealloc(x, y))
-
-	Renew (p->start, idx+len+1, char);
-	if (p->start == NULL) {
+	tmp = realloc(p->start, idx + len);
+	if (!tmp)
 	    goto error;
-	}
-	strcpy(&p->start[idx], fd.cFileName);
+	p->start = tmp;
+	strlcpy(&p->start[idx], fd.cFileName, len);
 
 	if (p->nfiles % 4 == 0) {
-	    Renew (p->bits, p->nfiles / 4 + 1, char);
-	    if (p->bits == NULL) {
+	    tmp = realloc(p->bits, p->nfiles / 4 + 1);
+	    if (!tmp)
 		goto error;
-	    }
+	    p->bits = tmp;
 	    p->bits[p->nfiles / 4] = 0;
 	}
 	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -1517,7 +1511,7 @@ rb_w32_opendir(const char *filename)
 	    SetBit(p->bits, p->nfiles * 2 + 1);
 
 	p->nfiles++;
-	idx += len+1;
+	idx += len;
     }
     FindClose(fh);
     p->size = idx;
@@ -1559,7 +1553,7 @@ rb_w32_readdir(DIR *dirp)
 	dirp->dirstr.d_namlen = strlen(dirp->curr);
 	if (!(dirp->dirstr.d_name = malloc(dirp->dirstr.d_namlen + 1)))
 	    return NULL;
-	strcpy(dirp->dirstr.d_name, dirp->curr);
+	strlcpy(dirp->dirstr.d_name, dirp->curr, dirp->dirstr.d_namlen + 1);
 
 	//
 	// Fake inode
@@ -1626,11 +1620,15 @@ rb_w32_rewinddir(DIR *dirp)
 void
 rb_w32_closedir(DIR *dirp)
 {
-    if (dirp->dirstr.d_name)
-	free(dirp->dirstr.d_name);
-    free(dirp->start);
-    free(dirp->bits);
-    free(dirp);
+    if (dirp) {
+	if (dirp->dirstr.d_name)
+	    free(dirp->dirstr.d_name);
+	if (dirp->start)
+	    free(dirp->start);
+	if (dirp->bits)
+	    free(dirp->bits);
+	free(dirp);
+    }
 }
 
 #if (defined _MT || defined __MSVCRT__) && !defined __BORLANDC__
@@ -1863,14 +1861,11 @@ rb_w32_strerror(int e)
 	    e = GetLastError();
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e, 0,
-			  buffer, 512, NULL) == 0) {
-	    strcpy(buffer, "Unknown Error");
-	}
+			  buffer, 512, NULL) == 0)
+	    strlcpy(buffer, "Unknown Error", sizeof(buffer));
     }
-    else {
-	strncpy(buffer, strerror(e), sizeof(buffer));
-	buffer[sizeof(buffer) - 1] = 0;
-    }
+    else
+	strlcpy(buffer, strerror(e), sizeof(buffer));
 
     p = buffer;
     while ((p = strpbrk(p, "\r\n")) != NULL) {
@@ -3436,14 +3431,15 @@ rb_w32_stati64(const char *path, struct stati64 *st)
 {
     const char *p;
     char *buf1, *s, *end;
-    int len;
+    int len, size;
     int ret;
 
     if (!path || !st) {
 	errno = EFAULT;
 	return -1;
     }
-    buf1 = ALLOCA_N(char, strlen(path) + 2);
+    size = strlen(path) + 2;
+    buf1 = ALLOCA_N(char, size);
     for (p = path, s = buf1; *p; p++, s++) {
 	if (*p == '/')
 	    *s = '\\';
@@ -3462,10 +3458,10 @@ rb_w32_stati64(const char *path, struct stati64 *st)
 	if (*end == '.')
 	    *end = '\0';
 	else if (*end != '\\')
-	    strcat(buf1, "\\");
+	    strlcat(buf1, "\\", size);
     }
     else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
-	strcat(buf1, ".");
+	strlcat(buf1, ".", size);
 
     ret = IsWinNT() ? winnt_stat(buf1, st) : stati64(buf1, st);
     if (ret == 0) {
@@ -3919,10 +3915,11 @@ rb_w32_get_environ(void)
     myenvtop = (char **)malloc(sizeof(char *) * (num + 1));
     for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
 	if (*env != '=') {
-	    if (!(*myenv = (char *)malloc(strlen(env) + 1))) {
+	    int len = strlen(env) + 1;
+	    if (!(*myenv = (char *)malloc(len))) {
 		break;
 	    }
-	    strcpy(*myenv, env);
+	    strlcpy(*myenv, env, len);
 	    myenv++;
 	}
     }
