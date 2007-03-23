@@ -1,3 +1,14 @@
+Sat Mar 24 01:54:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): exit by SystemExit and SignalException in END
+	  block.  [ruby-core:10609]
+
+	* test/ruby/test_beginendblock.rb (test_should_propagate_exit_code):
+	  test for exit in END block.  [ruby-core:10760]
+
+	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):
+	  test for signal in END block.
+
 Thu Mar 22 23:13:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_provided): check for extension library if SOEXT is

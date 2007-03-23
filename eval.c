@@ -1562,11 +1562,15 @@ ruby_cleanup(ex)
     int ex;
 {
     int state;
-    volatile VALUE err = ruby_errinfo;
+    VALUE err;
+    volatile VALUE errs[2];
+    int nerr;
 
+    errs[0] = ruby_errinfo;
     ruby_safe_level = 0;
     Init_stack((void*)&state);
     ruby_finalize_0();
+    errs[1] = ruby_errinfo;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
@@ -1577,15 +1581,15 @@ ruby_cleanup(ex)
 	ex = state;
     }
     POP_ITER();
-    ruby_errinfo = err;
+    ruby_errinfo = errs[0];
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_TAG();
 
-    if (err) {
+    for (nerr = sizeof(errs) / sizeof(errs[0]); nerr;) {
+	if (!(err = errs[--nerr])) continue;
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	    VALUE st = rb_iv_get(err, "status");
-	    return NUM2INT(st);
+	    return sysexit_status(err);
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
 	    VALUE sig = rb_iv_get(err, "signo");
