@@ -338,8 +338,8 @@ extern NODE *ruby_top_cref;
 #define NOEX_PUBLIC    0
 #define NOEX_NOSUPER   1
 #define NOEX_PRIVATE   2
-#define NOEX_PROTECTED 4 
-#define NOEX_MASK      6 
+#define NOEX_PROTECTED 4
+#define NOEX_MASK      6
 
 #define NOEX_UNDEF     NOEX_NOSUPER
 
@@ -390,17 +390,17 @@ typedef struct {
 typedef jmp_buf rb_jmpbuf_t;
 #endif
 
-enum thread_status {
+enum rb_thread_status {
     THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
     THREAD_KILLED,
 };
 
-typedef struct thread * rb_thread_t;
+typedef struct rb_thread *rb_thread_t;
 
-struct thread {
-    struct thread *next, *prev;
+struct rb_thread {
+    rb_thread_t next, prev;
     rb_jmpbuf_t context;
 #if (defined _WIN32 && !defined _WIN32_WCE) || defined __CYGWIN__
     unsigned long win32_exception_list;
@@ -441,7 +441,7 @@ struct thread {
 
     int safe;
 
-    enum thread_status status;
+    enum rb_thread_status status;
     int wait_for;
     int fd;
     fd_set readfds;
@@ -455,17 +455,17 @@ struct thread {
     int priority;
     VALUE thgroup;
 
-    st_table *locals;
+    struct st_table *locals;
 
     VALUE thread;
 
     VALUE sandbox;
 };
 
-extern VALUE (*ruby_sandbox_save)(struct thread *); 
-extern VALUE (*ruby_sandbox_restore)(struct thread *); 
-extern rb_thread_t curr_thread;
-extern rb_thread_t main_thread;
+extern VALUE (*ruby_sandbox_save)_((rb_thread_t));
+extern VALUE (*ruby_sandbox_restore)_((rb_thread_t));
+extern rb_thread_t rb_curr_thread;
+extern rb_thread_t rb_main_thread;
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

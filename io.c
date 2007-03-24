@@ -1052,7 +1052,7 @@ read_buffered_data(ptr, len, f)
 #endif
 }
 
-long
+static long
 io_fread(ptr, len, fptr)
     char *ptr;
     long len;
