@@ -36,6 +36,11 @@ ossl_rand_seed(VALUE self, VALUE str)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     load_random_file(filename) -> true
+ *
+ */
 static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
@@ -47,6 +52,11 @@ ossl_rand_load_file(VALUE self, VALUE filename)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     write_random_file(filename) -> true
+ *
+ */
 static VALUE
 ossl_rand_write_file(VALUE self, VALUE filename)
 {
@@ -57,6 +67,11 @@ ossl_rand_write_file(VALUE self, VALUE filename)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     random_bytes(length) -> aString
+ *
+ */
 static VALUE
 ossl_rand_bytes(VALUE self, VALUE len)
 {
@@ -70,6 +85,11 @@ ossl_rand_bytes(VALUE self, VALUE len)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     pseudo_bytes(length) -> aString
+ *
+ */
 static VALUE
 ossl_rand_pseudo_bytes(VALUE self, VALUE len)
 {
@@ -83,6 +103,11 @@ ossl_rand_pseudo_bytes(VALUE self, VALUE len)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     egd(filename) -> true
+ *
+ */
 static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
@@ -94,6 +119,11 @@ ossl_rand_egd(VALUE self, VALUE filename)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     egd_bytes(filename, length) -> true
+ *
+ */
 static VALUE
 ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {

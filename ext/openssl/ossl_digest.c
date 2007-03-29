@@ -36,11 +36,23 @@ static VALUE ossl_digest_alloc(VALUE klass);
 const EVP_MD *
 GetDigestPtr(VALUE obj)
 {
-    EVP_MD_CTX *ctx;
+    const EVP_MD *md;
 
-    SafeGetDigest(obj, ctx);
+    if (TYPE(obj) == T_STRING) {
+    	const char *name = STR2CSTR(obj);
 
-    return EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+        md = EVP_get_digestbyname(name);
+        if (!md)
+            ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
+    } else {
+        EVP_MD_CTX *ctx;
+
+        SafeGetDigest(obj, ctx);
+
+        md = EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+    }
+
+    return md;
 }
 
 VALUE
@@ -77,6 +89,11 @@ ossl_digest_alloc(VALUE klass)
 
 VALUE ossl_digest_update(VALUE, VALUE);
 
+/*
+ *  call-seq:
+ *     Digest.new(string) -> digest
+ *
+ */
 static VALUE
 ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -118,6 +135,11 @@ ossl_digest_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     digest.reset -> self
+ *
+ */
 static VALUE
 ossl_digest_reset(VALUE self)
 {
@@ -129,6 +151,11 @@ ossl_digest_reset(VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     digest.update(string) -> aString
+ *
+ */
 VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
@@ -157,6 +184,11 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
     EVP_MD_CTX_cleanup(&final);
 }
 
+/*
+ *  call-seq:
+ *      digest.final -> aString
+ *
+ */
 static VALUE
 ossl_digest_digest(VALUE self)
 {
@@ -172,6 +204,11 @@ ossl_digest_digest(VALUE self)
     return digest;
 }
 
+/*
+ *  call-seq:
+ *      digest.hexdigest -> aString
+ *
+ */
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
@@ -212,6 +249,11 @@ ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
     return ossl_digest_hexdigest(obj);
 }
 
+/*
+ *  call-seq:
+ *      digest1 == digest2 -> true | false
+ *
+ */
 static VALUE
 ossl_digest_equal(VALUE self, VALUE other)
 {
@@ -238,6 +280,11 @@ ossl_digest_equal(VALUE self, VALUE other)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *      digest.name -> string
+ *
+ */
 static VALUE
 ossl_digest_name(VALUE self)
 {
@@ -248,6 +295,12 @@ ossl_digest_name(VALUE self)
     return rb_str_new2(EVP_MD_name(EVP_MD_CTX_md(ctx)));
 }
 
+/*
+ *  call-seq:
+ *      digest.size -> integer
+ *
+ *  Returns the output size of the digest.
+ */
 static VALUE
 ossl_digest_size(VALUE self)
 {

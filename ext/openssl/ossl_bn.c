@@ -233,6 +233,11 @@ ossl_bn_coerce(VALUE self, VALUE other)
 }
 
 #define BIGNUM_BOOL1(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> true | false			\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
@@ -248,6 +253,11 @@ BIGNUM_BOOL1(is_one);
 BIGNUM_BOOL1(is_odd);
 
 #define BIGNUM_1c(func)					\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
@@ -267,6 +277,11 @@ BIGNUM_BOOL1(is_odd);
 BIGNUM_1c(sqr);
 
 #define BIGNUM_2(func)					\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bn2) -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
@@ -287,6 +302,11 @@ BIGNUM_2(add);
 BIGNUM_2(sub);
 
 #define BIGNUM_2c(func)						\
+    /*								\
+     * call-seq:						\
+     *   bn.##func(bn2) -> aBN					\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other)			\
     {								\
@@ -337,6 +357,11 @@ ossl_bn_div(VALUE self, VALUE other)
 }
 
 #define BIGNUM_3c(func)						\
+    /*								\
+     * call-seq:						\
+     *   bn.##func(bn1, bn2) -> aBN				\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other1, VALUE other2)	\
     {								\
@@ -360,6 +385,11 @@ BIGNUM_3c(mod_mul);
 BIGNUM_3c(mod_exp);
 
 #define BIGNUM_BIT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bit) -> self				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bit)		\
     {							\
@@ -389,6 +419,11 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 }
 
 #define BIGNUM_SHIFT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bits) -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bits)		\
     {							\
@@ -410,7 +445,32 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 BIGNUM_SHIFT(lshift);
 BIGNUM_SHIFT(rshift);
 
+#define BIGNUM_SELF_SHIFT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func!(bits) -> self			\
+     *							\
+     */							\
+    static VALUE					\
+    ossl_bn_self_##func(VALUE self, VALUE bits)		\
+    {							\
+	BIGNUM *bn;					\
+	int b;						\
+	b = NUM2INT(bits);				\
+	GetBN(self, bn);				\
+	if (!BN_##func(bn, bn, b))			\
+		ossl_raise(eBNError, NULL);		\
+	return self;					\
+    }
+BIGNUM_SELF_SHIFT(lshift);
+BIGNUM_SELF_SHIFT(rshift);
+
 #define BIGNUM_RAND(func)					\
+    /*								\
+     * call-seq:						\
+     *   BN.##func(bits [, fill [, odd]]) -> aBN		\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)	\
     {								\
@@ -440,6 +500,11 @@ BIGNUM_RAND(rand);
 BIGNUM_RAND(pseudo_rand);
 
 #define BIGNUM_RAND_RANGE(func)					\
+    /*								\
+     * call-seq:						\
+     *   BN.##func(range) -> aBN				\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
     {								\
@@ -493,6 +558,11 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 }
 
 #define BIGNUM_NUM(func)			\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> integer				\
+     *							\
+     */							\
     static VALUE 				\
     ossl_bn_##func(VALUE self)			\
     {						\
@@ -522,6 +592,11 @@ ossl_bn_copy(VALUE self, VALUE other)
 }
 
 #define BIGNUM_CMP(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bn2) -> integer			\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
@@ -676,8 +751,10 @@ Init_ossl_bn()
     rb_define_method(cBN, "bit_set?", ossl_bn_is_bit_set, 1);
     rb_define_method(cBN, "mask_bits!", ossl_bn_mask_bits, 1);
     rb_define_method(cBN, "<<", ossl_bn_lshift, 1);
-    /* lshift1 - DON'T IMPL. */
     rb_define_method(cBN, ">>", ossl_bn_rshift, 1);
+    rb_define_method(cBN, "lshift!", ossl_bn_self_lshift, 1);
+    rb_define_method(cBN, "rshift!", ossl_bn_self_rshift, 1);
+    /* lshift1 - DON'T IMPL. */
     /* rshift1 - DON'T IMPL. */
 
     /*

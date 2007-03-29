@@ -99,6 +99,14 @@ dsa_generate(int size)
     return dsa;
 }
 
+/*
+ *  call-seq:
+ *    DSA.generate(size) -> dsa
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.
+ *
+ */
 static VALUE
 ossl_dsa_s_generate(VALUE klass, VALUE size)
 {
@@ -113,6 +121,22 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *    DSA.new([size | string [, pass]) -> dsa
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.
+ *  * +string+ contains a DER or PEM encoded key.
+ *  * +pass+ is a string that contains a optional password.
+ *
+ *  === Examples
+ *  * DSA.new -> dsa
+ *  * DSA.new(1024) -> dsa
+ *  * DSA.new(File.read('dsa.pem')) -> dsa
+ *  * DSA.new(File.read('dsa.pem'), 'mypassword') -> dsa
+ *
+ */
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -163,6 +187,11 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *    dsa.public? -> true | false
+ *
+ */
 static VALUE
 ossl_dsa_is_public(VALUE self)
 {
@@ -170,13 +199,14 @@ ossl_dsa_is_public(VALUE self)
 
     GetPKeyDSA(self, pkey);
 
-    /*
-     * Do we need to check dsap->dsa->public_pkey?
-     * return Qtrue;
-     */
     return (pkey->pkey.dsa->pub_key) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    dsa.private? -> true | false
+ *
+ */
 static VALUE
 ossl_dsa_is_private(VALUE self)
 {
@@ -187,6 +217,19 @@ ossl_dsa_is_private(VALUE self)
     return (DSA_PRIVATE(self, pkey->pkey.dsa)) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    dsa.to_pem([cipher, password]) -> aString
+ *
+ *  === Parameters
+ *  +cipher+ is an OpenSSL::Cipher.
+ *  +password+ is a string containing your password.
+ *
+ *  === Examples
+ *  * DSA.to_pem -> aString
+ *  * DSA.to_pem(cipher, 'mypassword') -> aString
+ *
+ */
 static VALUE
 ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 {
@@ -224,6 +267,11 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *    dsa.to_der -> aString
+ *
+ */
 static VALUE
 ossl_dsa_to_der(VALUE self)
 {
@@ -250,6 +298,9 @@ ossl_dsa_to_der(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    dsa.params -> hash
+ *
  * Stores all parameters of key to the hash
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -274,6 +325,9 @@ ossl_dsa_get_params(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    dsa.to_text -> aString
+ *
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -299,6 +353,9 @@ ossl_dsa_to_text(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *    dsa.public_key -> aDSA
+ *
  * Makes new instance DSA PUBLIC_KEY from PRIVATE_KEY
  */
 static VALUE
@@ -321,6 +378,11 @@ ossl_dsa_to_public_key(VALUE self)
 
 #define ossl_dsa_buf_size(pkey) (DSA_size((pkey)->pkey.dsa)+16)
 
+/*
+ *  call-seq:
+ *    dsa.syssign(string) -> aString
+ *
+ */
 static VALUE
 ossl_dsa_sign(VALUE self, VALUE data)
 {
@@ -343,6 +405,11 @@ ossl_dsa_sign(VALUE self, VALUE data)
     return str;
 }
 
+/*
+ *  call-seq:
+ *    dsa.sysverify(digest, sig) -> true | false
+ *
+ */
 static VALUE
 ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
 {

@@ -84,9 +84,19 @@ rsa_generate(int size, int exp)
 	    NULL);
 }
 
+/*
+ *  call-seq:
+ *     RSA.generate(size [, exponent]) -> rsa
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
+ *  * +exponent+ is an odd number normally 3, 17, or 65537.
+ *
+ */
 static VALUE
 ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 {
+/* why does this method exist?  why can't initialize take an optional exponent? */
     RSA *rsa;
     VALUE size, exp;
     VALUE obj;
@@ -104,6 +114,20 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     RSA.new([size | encoded_key] [, pass]) -> rsa
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.
+ *  * +encoded_key+ is a string containing PEM or DER encoded key.
+ *  * +pass+ is an optional string with the password to decrypt the encoded key.
+ *
+ *  === Examples
+ *  * RSA.new(2048) -> rsa 
+ *  * RSA.new(File.read("rsa.pem")) -> rsa
+ *  * RSA.new(File.read("rsa.pem"), "mypassword") -> rsa
+ */
 static VALUE
 ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -157,6 +181,13 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     rsa.public? -> true
+ *
+ *  The return value is always true since every private key is also a public key.
+ *
+ */
 static VALUE
 ossl_rsa_is_public(VALUE self)
 {
@@ -164,12 +195,16 @@ ossl_rsa_is_public(VALUE self)
 
     GetPKeyRSA(self, pkey);
     /*
-     * SURPRISE! :-))
-     * Every key is public at the same time!
+     * This method should check for n and e.  BUG.
      */
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     rsa.private? -> true | false
+ *
+ */
 static VALUE
 ossl_rsa_is_private(VALUE self)
 {
@@ -180,6 +215,18 @@ ossl_rsa_is_private(VALUE self)
     return (RSA_PRIVATE(self, pkey->pkey.rsa)) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     rsa.to_pem([cipher, pass]) -> aString
+ *
+ *  === Parameters
+ *  * +cipher+ is a Cipher object.
+ *  * +pass+ is a string.
+ *
+ *  === Examples
+ *  * rsa.to_pem -> aString
+ *  * rsa.to_pem(cipher, pass) -> aString
+ */
 static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
@@ -219,6 +266,11 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     rsa.to_der -> aString
+ *
+ */
 static VALUE
 ossl_rsa_to_der(VALUE self)
 {
@@ -246,6 +298,11 @@ ossl_rsa_to_der(VALUE self)
 
 #define ossl_rsa_buf_size(pkey) (RSA_size((pkey)->pkey.rsa)+16)
 
+/*
+ *  call-seq:
+ *     rsa.public_encrypt(string [, padding]) -> aString
+ *
+ */
 static VALUE
 ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
 {
@@ -267,6 +324,11 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     rsa.public_decrypt(string [, padding]) -> aString
+ *
+ */
 static VALUE
 ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
 {
@@ -288,6 +350,11 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     rsa.private_encrypt(string [, padding]) -> aString
+ *
+ */
 static VALUE
 ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
 {
@@ -312,6 +379,12 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+
+/*
+ *  call-seq:
+ *     rsa.private_decrypt(string [, padding]) -> aString
+ *
+ */
 static VALUE
 ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
 {
@@ -337,6 +410,9 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     rsa.params -> hash
+ *
  * Stores all parameters of key to the hash
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -364,6 +440,9 @@ ossl_rsa_get_params(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     rsa.to_text -> aString
+ *
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (It's up to you)
@@ -389,6 +468,9 @@ ossl_rsa_to_text(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     rsa.public_key -> aRSA
+ *
  * Makes new instance RSA PUBLIC_KEY from PRIVATE_KEY
  */
 static VALUE

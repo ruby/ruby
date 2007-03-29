@@ -57,6 +57,12 @@ ossl_hmac_alloc(VALUE klass)
     return obj;
 }
 
+
+/*
+ *  call-seq:
+ *     HMAC.new(key, digest) -> hmac
+ *
+ */
 static VALUE
 ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
@@ -87,6 +93,11 @@ ossl_hmac_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     hmac.update(string) -> self
+ *
+ */
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
 {
@@ -116,6 +127,11 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
     HMAC_CTX_cleanup(&final);
 }
 
+/*
+ *  call-seq:
+ *     hmac.digest -> aString
+ *
+ */
 static VALUE
 ossl_hmac_digest(VALUE self)
 {
@@ -131,6 +147,11 @@ ossl_hmac_digest(VALUE self)
     return digest;
 }
 
+/*
+ *  call-seq:
+ *     hmac.hexdigest -> aString
+ *
+ */
 static VALUE
 ossl_hmac_hexdigest(VALUE self)
 {
@@ -151,6 +172,11 @@ ossl_hmac_hexdigest(VALUE self)
     return hexdigest;
 }
 
+/*
+ *  call-seq:
+ *     HMAC.digest(digest, key, data) -> aString
+ *
+ */
 static VALUE
 ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
@@ -165,6 +191,11 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     return rb_str_new(buf, buf_len);
 }
 
+/*
+ *  call-seq:
+ *     HMAC.digest(digest, key, data) -> aString
+ *
+ */
 static VALUE
 ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {

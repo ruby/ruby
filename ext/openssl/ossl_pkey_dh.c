@@ -99,6 +99,15 @@ dh_generate(int size, int gen)
     return dh;
 }
 
+/*
+ *  call-seq:
+ *     DH.generate(size [, generator]) -> dh
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
+ *  * +generator+ is a small number > 1, typically 2 or 5.
+ *
+ */
 static VALUE
 ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
 {
@@ -119,6 +128,21 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     DH.new([size [, generator] | string]) -> dh
+ *
+ *  === Parameters
+ *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
+ *  * +generator+ is a small number > 1, typically 2 or 5.
+ *  * +string+ contains the DER or PEM encoded key.
+ *
+ *  === Examples
+ *  * DH.new -> dh
+ *  * DH.new(1024) -> dh
+ *  * DH.new(1024, 5) -> dh
+ *  * DH.new(File.read('key.pem')) -> dh
+ */
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -158,19 +182,26 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     dh.public? -> true | false
+ *
+ */
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
     EVP_PKEY *pkey;
 
     GetPKeyDH(self, pkey);
-    /*
-     * Do we need to check dhp->dh->public_pkey?
-     * return Qtrue;
-     */
+
     return (pkey->pkey.dh->pub_key) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     dh.private? -> true | false
+ *
+ */
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
@@ -181,6 +212,11 @@ ossl_dh_is_private(VALUE self)
     return (DH_PRIVATE(pkey->pkey.dh)) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     dh.to_pem -> aString
+ *
+ */
 static VALUE
 ossl_dh_export(VALUE self)
 {
@@ -201,6 +237,11 @@ ossl_dh_export(VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     dh.to_der -> aString
+ *
+ */
 static VALUE
 ossl_dh_to_der(VALUE self)
 {       
@@ -222,6 +263,9 @@ ossl_dh_to_der(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     dh.params -> hash
+ *
  * Stores all parameters of key to the hash
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -245,6 +289,9 @@ ossl_dh_get_params(VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     dh.to_text -> aString
+ *
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
  * Don't use :-)) (I's up to you)
@@ -270,7 +317,10 @@ ossl_dh_to_text(VALUE self)
 }
 
 /*
- * Makes new instance DH PUBLIC_KEY from PRIVATE_KEY
+ *  call-seq:
+ *     dh.public_key -> aDH
+ *
+ *  Makes new instance DH PUBLIC_KEY from PRIVATE_KEY
  */
 static VALUE
 ossl_dh_to_public_key(VALUE self)
@@ -290,6 +340,11 @@ ossl_dh_to_public_key(VALUE self)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     dh.check_params -> true | false
+ *
+ */
 static VALUE
 ossl_dh_check_params(VALUE self)
 {
@@ -307,6 +362,11 @@ ossl_dh_check_params(VALUE self)
     return codes == 0 ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     dh.generate_key -> self
+ *
+ */
 static VALUE
 ossl_dh_generate_key(VALUE self)
 {
@@ -321,6 +381,18 @@ ossl_dh_generate_key(VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     dh.compute_key(pub_bn) -> aString
+ *
+ *  === Parameters
+ *  * +pub_bn+ is a OpenSSL::BN.
+ *
+ *  Returns aString containing a shared secret computed from the other parties public value.
+ *
+ *  See DH_compute_key() for further information.
+ *
+ */
 static VALUE
 ossl_dh_compute_key(VALUE self, VALUE pub)
 {
@@ -411,9 +483,9 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
     return dh;
 }
 
-/*
- * INIT
- */
+    /*
+     * TEST
+     */
 void
 Init_ossl_dh()
 {

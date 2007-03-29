@@ -84,6 +84,14 @@ ossl_cipher_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     Cipher.new(string) -> cipher
+ *
+ *  The string must contain a valid cipher name like "AES-128-CBC" or "3DES".
+ *
+ *  A list of cipher names is available by calling OpenSSL::Cipher.ciphers.
+ */
 static VALUE
 ossl_cipher_initialize(VALUE self, VALUE str)
 {
@@ -124,6 +132,12 @@ add_cipher_name_to_ary(const OBJ_NAME *name, VALUE ary)
     return NULL;
 }
 
+/*
+ *  call-seq:
+ *     Cipher.ciphers -> array[string...]
+ *
+ *  Returns the names of all available ciphers in an array.
+ */
 static VALUE
 ossl_s_ciphers(VALUE self)
 {
@@ -141,6 +155,12 @@ ossl_s_ciphers(VALUE self)
 #endif
 }
 
+/*
+ *  call-seq:
+ *     cipher.reset -> self
+ *
+ *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1).
+ */
 static VALUE
 ossl_cipher_reset(VALUE self)
 {
@@ -197,18 +217,54 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     cipher.encrypt -> self
+ *
+ *  Make sure to call .encrypt or .decrypt before using any of the following methods:
+ *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
+ *
+ *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 1).
+ */
 static VALUE
 ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
 {
     return ossl_cipher_init(argc, argv, self, 1);
 }
 
+/*
+ *  call-seq:
+ *     cipher.decrypt -> self
+ *
+ *  Make sure to call .encrypt or .decrypt before using any of the following methods:
+ *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
+ *
+ *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 0).
+ */
 static VALUE
 ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 {
     return ossl_cipher_init(argc, argv, self, 0);
 }
 
+/*
+ *  call-seq:
+ *     cipher.pkcs5_keyivgen(pass [, salt [, iterations [, digest]]] ) -> nil
+ *
+ *  Generates and sets the key/iv based on a password.
+ *
+ *  WARNING: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40, or DES
+ *  with MD5 or SHA1.  Using anything else (like AES) will generate the key/iv using an
+ *  OpenSSL specific method.  Use a PKCS5 v2 key generation method instead.
+ *
+ *  === Parameters
+ *  +salt+ must be an 8 byte string if provided.
+ *  +iterations+ is a integer with a default of 2048.
+ *  +digest+ is a Digest object that defaults to 'MD5'
+ *
+ *  A minimum of 1000 iterations is recommended.
+ *
+ */
 static VALUE
 ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 {
@@ -239,6 +295,11 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     cipher.update(string) -> aString
+ *
+ */
 static VALUE 
 ossl_cipher_update(VALUE self, VALUE data)
 {
@@ -261,6 +322,14 @@ ossl_cipher_update(VALUE self, VALUE data)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     cipher.final -> aString
+ *
+ *  Returns the remaining data held in the cipher object.  Further calls to update() or final() will return garbage.
+ *
+ *  See EVP_CipherFinal_ex for further information.
+ */
 static VALUE 
 ossl_cipher_final(VALUE self)
 {
@@ -278,6 +347,12 @@ ossl_cipher_final(VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     cipher.name -> string
+ *
+ *  Returns the name of the cipher which may differ slightly from the original name provided.
+ */
 static VALUE
 ossl_cipher_name(VALUE self)
 {
@@ -288,6 +363,14 @@ ossl_cipher_name(VALUE self)
     return rb_str_new2(EVP_CIPHER_name(EVP_CIPHER_CTX_cipher(ctx)));
 }
 
+/*
+ *  call-seq:
+ *     cipher.key = string -> string
+ *
+ *  Sets the cipher key.
+ *
+ *  Only call this method after calling cipher.encrypt or cipher.decrypt.
+ */
 static VALUE
 ossl_cipher_set_key(VALUE self, VALUE key)
 {
@@ -305,6 +388,14 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     return key;
 }
 
+/*
+ *  call-seq:
+ *     cipher.iv = string -> string
+ *
+ *  Sets the cipher iv.
+ *
+ *  Only call this method after calling cipher.encrypt or cipher.decrypt.
+ */
 static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
 {
@@ -322,6 +413,18 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     return iv;
 }
 
+
+/*
+ *  call-seq:
+ *     cipher.key_length = integer -> integer
+ *
+ *  Sets the key length of the cipher.  If the cipher is a fixed length cipher then attempting to set the key
+ *  length to any value other than the fixed value is an error.
+ *
+ *  Under normal circumstances you do not need to call this method (and probably shouldn't).
+ *
+ *  See EVP_CIPHER_CTX_set_key_length for further information.
+ */
 static VALUE
 ossl_cipher_set_key_length(VALUE self, VALUE key_length)
 {
@@ -335,6 +438,16 @@ ossl_cipher_set_key_length(VALUE self, VALUE key_length)
     return key_length;
 }
 
+/*
+ *  call-seq:
+ *     cipher.padding = integer -> integer
+ *
+ *  Enables or disables padding. By default encryption operations are padded using standard block padding and the
+ *  padding is checked and removed when decrypting. If the pad parameter is zero then no padding is performed, the
+ *  total amount of data encrypted or decrypted must then be a multiple of the block size or an error will occur.
+ *
+ *  See EVP_CIPHER_CTX_set_padding for further information.
+ */
 static VALUE
 ossl_cipher_set_padding(VALUE self, VALUE padding)
 {
@@ -363,6 +476,27 @@ CIPHER_0ARG_INT(key_length)
 CIPHER_0ARG_INT(iv_length)
 CIPHER_0ARG_INT(block_size)
 
+#if 0
+/*
+ *  call-seq:
+ *     cipher.key_length -> integer
+ *
+ */
+static VALUE ossl_cipher_key_length() { }
+/*
+ *  call-seq:
+ *     cipher.iv_length -> integer
+ *
+ */
+static VALUE ossl_cipher_iv_length() { }
+/*
+ *  call-seq:
+ *     cipher.block_size -> integer
+ *
+ */
+static VALUE ossl_cipher_block_size() { }
+#endif
+
 /*
  * INIT
  */
@@ -372,7 +506,6 @@ Init_ossl_cipher(void)
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
 #endif
-
     mCipher = rb_define_module_under(mOSSL, "Cipher");
     eCipherError = rb_define_class_under(mOSSL, "CipherError", eOSSLError);
     cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);
@@ -395,4 +528,6 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
+
+    rb_define_const(mCipher, "PKCS5_SALT_LEN", PKCS5_SALT_LEN);
 }
