@@ -401,10 +401,7 @@ init_env(void)
 	NTLoginName = "<Unknown>";
 	return;
     }
-    NTLoginName = (char *)malloc(len+1);
-    if (!NTLoginName) return;
-    strlcpy(NTLoginName, env, len + 1);
-    NTLoginName[len] = '\0';
+    NTLoginName = strdup(env);
 }
 
 static void init_stdhandle(void);
@@ -1056,10 +1053,9 @@ insert(const char *path, VALUE vinfo)
     if (!tmpcurr) return -1;
     MEMZERO(tmpcurr, NtCmdLineElement, 1);
     tmpcurr->len = strlen(path);
-    tmpcurr->str = (char *)malloc(tmpcurr->len + 1);
+    tmpcurr->str = strdup(path);
     if (!tmpcurr->str) return -1;
     tmpcurr->flags |= NTMALLOC;
-    strlcpy(tmpcurr->str, path, tmpcurr->len + 1);
     **tail = tmpcurr;
     *tail = &tmpcurr->next;
 
@@ -1373,7 +1369,7 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     ptr = buffer + (elements+1) * sizeof(char *);
 
     while (curr = cmdhead) {
-	strlcpy(ptr, curr->str, len - (elements + 1));
+	strlcpy(ptr, curr->str, curr->len + 1);
 	*vptr++ = ptr;
 	ptr += curr->len + 1;
 	cmdhead = curr->next;
@@ -1861,7 +1857,7 @@ rb_w32_strerror(int e)
 	    e = GetLastError();
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
 			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e, 0,
-			  buffer, 512, NULL) == 0)
+			  buffer, sizeof(buffer), NULL) == 0)
 	    strlcpy(buffer, "Unknown Error", sizeof(buffer));
     }
     else
@@ -3916,10 +3912,9 @@ rb_w32_get_environ(void)
     for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
 	if (*env != '=') {
 	    int len = strlen(env) + 1;
-	    if (!(*myenv = (char *)malloc(len))) {
+	    if (!(*myenv = strdup(env))) {
 		break;
 	    }
-	    strlcpy(*myenv, env, len);
 	    myenv++;
 	}
     }
