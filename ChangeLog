@@ -1,3 +1,14 @@
+Fri Mar 30 02:29:04 2007  Technorama  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_{bn,cipher,digest,hmac,rand,pkey_{dh,dsa,rsa}}.c:
+	  Add Documentation for various methods.
+
+	* ext/openssl/lib/openssl/cipher.rb: Ditto
+
+	* ext/openssl/ossl_bn.c: add lshift! and rshift! methods.
+
+	* ext/openssl/ossl_digest.c: GetDigestPtr() also accept a string.
+
 Fri Mar 23 11:28:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (init_env, insert, cmdglob, rb_w32_cmdvector,
@@ -33,7 +44,6 @@ Wed Mar 21 20:05:07 2007  Koichi Sasada  <ko1@atdot.net>
 	  scope (method/class/block) has own NODE_SCOPE node and NODE_ARGS
 	  represents more details of arguments information.  I'll write a
 	  document about detail of node structure.
-
 
 Wed Mar 21 17:04:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
