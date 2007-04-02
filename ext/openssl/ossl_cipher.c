@@ -295,25 +295,59 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+
 /*
  *  call-seq:
- *     cipher.update(string) -> aString
+ *     cipher << data -> string
  *
+ *  === Parameters
+ *  +data+ is a nonempty string.
+ *
+ * This method is deprecated and not available in 1.9.x or later.
+ */
+static VALUE
+ossl_cipher_update_deprecated(VALUE self, VALUE data)
+{
+    char *cname;
+
+    cname = rb_class2name(rb_obj_class(self));
+    rb_warning("%s#<< is deprecated; use %s#update instead", cname, cname);
+    return rb_funcall(self, rb_intern("update"), 1, data);
+}
+
+
+/*
+ *  call-seq:
+ *     cipher.update(data [, buffer]) -> string or buffer
+ *
+ *  === Parameters
+ *  +data+ is a nonempty string.
+ *  +buffer+ is an optional string to store the result.
  */
 static VALUE 
-ossl_cipher_update(VALUE self, VALUE data)
+ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
     char *in;
     int in_len, out_len;
-    VALUE str;
+    VALUE data, str;
+
+    rb_scan_args(argc, argv, "11", &data, &str);
 
     StringValue(data);
     in = RSTRING_PTR(data);
     if ((in_len = RSTRING_LEN(data)) == 0)
         rb_raise(rb_eArgError, "data must not be empty");
     GetCipher(self, ctx);
-    str = rb_str_new(0, in_len+EVP_CIPHER_CTX_block_size(ctx));
+    out_len = in_len+EVP_CIPHER_CTX_block_size(ctx);
+
+    if (NIL_P(str)) {
+        str = rb_str_new(0, out_len);
+    } else {
+        StringValue(str);
+        rb_str_resize(str, out_len);
+    }
+
     if (!EVP_CipherUpdate(ctx, RSTRING_PTR(str), &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
     assert(out_len < RSTRING_LEN(str));
@@ -518,7 +552,10 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
     rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
     rb_define_method(cCipher, "pkcs5_keyivgen", ossl_cipher_pkcs5_keyivgen, -1);
-    rb_define_method(cCipher, "update", ossl_cipher_update, 1);
+    rb_define_method(cCipher, "update", ossl_cipher_update, -1);
+#if RUBY_VERSION_CODE < 190
+    rb_define_method(cCipher, "<<", ossl_cipher_update_deprecated, 1);
+#endif
     rb_define_method(cCipher, "final", ossl_cipher_final, 0);
     rb_define_method(cCipher, "name", ossl_cipher_name, 0);
     rb_define_method(cCipher, "key=", ossl_cipher_set_key, 1);
@@ -528,6 +565,5 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
-
-    rb_define_const(mCipher, "PKCS5_SALT_LEN", PKCS5_SALT_LEN);
 }
+

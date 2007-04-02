@@ -17,6 +17,11 @@
 extern "C" {
 #endif
 
+#if 0
+  mOSSL = rb_define_module("OpenSSL");
+  mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
 /*
 * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
 */

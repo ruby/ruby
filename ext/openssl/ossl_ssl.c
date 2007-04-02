@@ -550,7 +550,7 @@ ossl_ssl_setup(VALUE self)
         GetOpenFile(io, fptr);
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
-        SSL_set_fd(ssl, TO_SOCKET(fptr->fd));
+        SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr)));
 	SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void*)self);
 	cb = ossl_sslctx_get_verify_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void*)cb);
@@ -582,10 +582,10 @@ ossl_start_ssl(VALUE self, int (*func)())
 	if((ret = func(ssl)) > 0) break;
 	switch(ssl_get_error(ssl, ret)){
 	case SSL_ERROR_WANT_WRITE:
-            rb_io_wait_writable(fptr->fd);
+            rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_WANT_READ:
-            rb_io_wait_readable(fptr->fd);
+            rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_SYSCALL:
 	    if (errno) rb_sys_fail(0);
@@ -633,7 +633,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     if (ssl) {
 	if(SSL_pending(ssl) <= 0)
-	    rb_thread_wait_fd(fptr->fd);
+	    rb_thread_wait_fd(FPTR_TO_FD(fptr));
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LEN(str));
 	    switch(ssl_get_error(ssl, nread)){
@@ -642,10 +642,10 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 	    case SSL_ERROR_ZERO_RETURN:
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-                rb_io_wait_writable(fptr->fd);
+                rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-                rb_io_wait_readable(fptr->fd);
+                rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
@@ -686,10 +686,10 @@ ossl_ssl_write(VALUE self, VALUE str)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
-                rb_io_wait_writable(fptr->fd);
+                rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-                rb_io_wait_readable(fptr->fd);
+                rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_SYSCALL:
 		if (errno) rb_sys_fail(0);

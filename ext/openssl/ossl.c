@@ -310,6 +310,14 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new(exc, buf, len));
 }
 
+/*
+ * call-seq:
+ *   OpenSSL.errors -> [String...]
+ *
+ * See any remaining errors held in queue.
+ *
+ * Any errors you see here are probably due to a bug in ruby's OpenSSL implementation.
+ */
 VALUE
 ossl_get_errors()
 {
@@ -345,12 +353,23 @@ ossl_debug(const char *fmt, ...)
 }
 #endif
 
+/*
+ * call-seq:
+ *   OpenSSL.debug -> true | false
+ */
 static VALUE
 ossl_debug_get(VALUE self)
 {
     return dOSSL;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL.debug = boolean -> boolean
+ *
+ * Turns on or off CRYPTO_MEM_CHECK.
+ * Also shows some debugging message on stderr.
+ */
 static VALUE
 ossl_debug_set(VALUE self, VALUE val)
 {
@@ -427,8 +446,8 @@ Init_openssl()
     /*
      * Verify callback Proc index for ext-data
      */
-    ossl_verify_cb_idx =
-	X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0);
+    if ((ossl_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0)) < 0)
+        ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
 
     /*
      * Init debug core

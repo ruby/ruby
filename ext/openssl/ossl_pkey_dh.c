@@ -483,9 +483,9 @@ ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
     return dh;
 }
 
-    /*
-     * TEST
-     */
+/*
+ * INIT
+ */
 void
 Init_ossl_dh()
 {

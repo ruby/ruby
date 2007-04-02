@@ -1,3 +1,14 @@
+Mon Apr  2 14:55:58 2007  Technorama  <oss-ruby@technorama.net>
+	* ext/openssl/{ossl.[ch],ossl_pkey.c} Add documentation.
+
+	* ext/openssl/ossl_hmac.c Add reset method.
+
+	* ext/openssl/ossl_cipher.c (Cipher#update) Take additional
+	  buffer argument.
+
+	* ext/openssl/{ossl_bio.c,ossl_ssl.c,ruby_missing.h}
+	  compatibility with 1.8.
+
 Mon Apr  2 21:55:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (throw), thread.c, yarvcore.h (throwed_errinfo): fixed

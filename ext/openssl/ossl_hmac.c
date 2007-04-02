@@ -174,6 +174,22 @@ ossl_hmac_hexdigest(VALUE self)
 
 /*
  *  call-seq:
+ *     hmac.reset -> self
+ *
+ */
+static VALUE
+ossl_hmac_reset(VALUE self)
+{
+    HMAC_CTX *ctx;
+
+    GetHMAC(self, ctx);
+    HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
+
+    return self;
+}
+
+/*
+ *  call-seq:
  *     HMAC.digest(digest, key, data) -> aString
  *
  */
@@ -237,6 +253,7 @@ Init_ossl_hmac()
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
     rb_define_copy_func(cHMAC, ossl_hmac_copy);
 
+    rb_define_method(cHMAC, "reset", ossl_hmac_reset, 0);
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
     rb_define_alias(cHMAC, "<<", "update");
     rb_define_method(cHMAC, "digest", ossl_hmac_digest, 0);
