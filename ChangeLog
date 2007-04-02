@@ -1,3 +1,8 @@
+Mon Apr  2 21:55:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (throw), thread.c, yarvcore.h (throwed_errinfo): fixed
+	  typo.
+
 Fri Mar 30 11:46:51 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_cmdvector): fixed buffer size. reported by

@@ -240,7 +240,7 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
     if (th != main_thread) {
 	thread_debug("terminate_i: %p\n", th);
 	rb_thread_interrupt(th);
-	th->throwed_errinfo = eTerminateSignal;
+	th->thrown_errinfo = eTerminateSignal;
 	th->status = THREAD_TO_KILL;
     }
     else {
@@ -690,9 +690,9 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	}
 
 	/* exception from another thread */
-	if (th->throwed_errinfo) {
-	    VALUE err = th->throwed_errinfo;
-	    th->throwed_errinfo = 0;
+	if (th->thrown_errinfo) {
+	    VALUE err = th->thrown_errinfo;
+	    th->thrown_errinfo = 0;
 	    thread_debug("rb_thread_execute_interrupts: %ld\n", err);
 
 	    if (err == eKillSignal) {
@@ -745,7 +745,7 @@ rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 
     exc = rb_make_exception(argc, argv);
     /* TODO: need synchronization if run threads in parallel */
-    th->throwed_errinfo = exc;
+    th->thrown_errinfo = exc;
     rb_thread_ready(th);
     return Qnil;
 }
@@ -865,7 +865,7 @@ rb_thread_kill(VALUE thread)
     thread_debug("rb_thread_kill: %p (%p)\n", th, (void *)th->thread_id);
 
     rb_thread_interrupt(th);
-    th->throwed_errinfo = eKillSignal;
+    th->thrown_errinfo = eKillSignal;
     th->status = THREAD_TO_KILL;
 
     return thread;

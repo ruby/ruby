@@ -1472,7 +1472,7 @@ throw
 		pt = GET_LFP();
 	    }
 	    else {
-		rb_bug("isns(throw): unsupport thorw type");
+		rb_bug("isns(throw): unsupport throw type");
 	    }
 	}
 	th->state = state;

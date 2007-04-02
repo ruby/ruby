@@ -422,7 +422,7 @@ struct rb_thread_struct
     VALUE value;
 
     VALUE errinfo;
-    VALUE throwed_errinfo;
+    VALUE thrown_errinfo;
     int exec_signal;
 
     int interrupt_flag;
