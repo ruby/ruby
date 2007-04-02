@@ -1,3 +1,10 @@
+Mon Apr  2 17:35:46 2007  Technorama  <oss-ruby@technorama.net>
+	* ext/openssl/ossl_{ssl.[ch],ssl_session.c},
+	  ext/openssl/lib/openssl/lib/openssl/ssl.rb:
+	  New SSL::Session class.  Add session cb's, getter/setters,
+	  config, and statistics methods.
+
+
 Mon Apr  2 14:55:58 2007  Technorama  <oss-ruby@technorama.net>
 	* ext/openssl/{ossl.[ch],ossl_pkey.c} Add documentation.
 

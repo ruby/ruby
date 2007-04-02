@@ -3,6 +3,7 @@
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2000-2002  GOTOU Yuuzou <gotoyuzo@notwork.org>
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
+ * Copyright (C) 2001-2007  Technorama Ltd. <oss-ruby@technorama.net>
  * All rights reserved.
  */
 /*
@@ -67,6 +68,7 @@ static const char *ossl_sslctx_attrs[] = {
     "timeout", "verify_mode", "verify_depth",
     "verify_callback", "options", "cert_store", "extra_chain_cert",
     "client_cert_cb", "tmp_dh_callback", "session_id_context",
+    "session_get_cb", "session_new_cb", "session_remove_cb",
 };
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -85,6 +87,8 @@ static const char *ossl_sslctx_attrs[] = {
 
 static const char *ossl_ssl_attr_readers[] = { "io", "context", };
 static const char *ossl_ssl_attrs[] = { "sync_close", };
+
+ID ID_callback_state;
 
 /*
  * SSLContext class
@@ -271,6 +275,143 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 }
 
 static VALUE
+ossl_call_session_get_cb(VALUE ary)
+{
+    VALUE ssl_obj, sslctx_obj, cb, ret;
+    
+    Check_Type(ary, T_ARRAY);
+    ssl_obj = rb_ary_entry(ary, 0);
+
+    sslctx_obj = rb_iv_get(ssl_obj, "@context");
+    if (NIL_P(sslctx_obj)) return Qnil;
+    cb = rb_iv_get(sslctx_obj, "@session_get_cb");
+    if (NIL_P(cb)) return Qnil;
+
+    return rb_funcall(cb, rb_intern("call"), 1, ary);
+}
+
+/* this method is currently only called for servers (in OpenSSL <= 0.9.8e) */
+static SSL_SESSION *
+ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
+{
+    VALUE ary, ssl_obj, ret_obj;
+    SSL_SESSION *sess;
+    void *ptr;
+    int state = 0;
+
+    OSSL_Debug("SSL SESSION get callback entered");
+    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
+    	return NULL;
+    ssl_obj = (VALUE)ptr;
+    ary = rb_ary_new2(2);
+    rb_ary_push(ary, ssl_obj);
+    rb_ary_push(ary, rb_str_new(buf, len));
+
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_get_cb, ary, &state);
+    if (state) {
+        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+        return NULL;
+    }
+    if (!rb_obj_is_instance_of(ret_obj, cSSLSession))
+        return NULL;
+
+    SafeGetSSLSession(ret_obj, sess);
+    *copy = 1;
+
+    return sess;
+}
+
+static VALUE
+ossl_call_session_new_cb(VALUE ary)
+{
+    VALUE ssl_obj, sslctx_obj, cb, ret;
+    
+    Check_Type(ary, T_ARRAY);
+    ssl_obj = rb_ary_entry(ary, 0);
+
+    sslctx_obj = rb_iv_get(ssl_obj, "@context");
+    if (NIL_P(sslctx_obj)) return Qnil;
+    cb = rb_iv_get(sslctx_obj, "@session_new_cb");
+    if (NIL_P(cb)) return Qnil;
+
+    return rb_funcall(cb, rb_intern("call"), 1, ary);
+}
+
+/* return 1 normal.  return 0 removes the session */
+static int
+ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
+{
+    VALUE ary, ssl_obj, sess_obj, ret_obj;
+    void *ptr;
+    int state = 0;
+
+    OSSL_Debug("SSL SESSION new callback entered");
+
+    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
+    	return 1;
+    ssl_obj = (VALUE)ptr;
+    sess_obj = rb_obj_alloc(cSSLSession);
+    CRYPTO_add(&sess->references, 1, CRYPTO_LOCK_SSL_SESSION);
+    DATA_PTR(sess_obj) = sess;
+
+    ary = rb_ary_new2(2);
+    rb_ary_push(ary, ssl_obj);
+    rb_ary_push(ary, sess_obj);
+
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
+    if (state) {
+        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+        return 0; /* what should be returned here??? */
+    }
+
+    return RTEST(ret_obj) ? 1 : 0;
+}
+
+static VALUE
+ossl_call_session_remove_cb(VALUE ary)
+{
+    VALUE sslctx_obj, cb, ret;
+    
+    Check_Type(ary, T_ARRAY);
+    sslctx_obj = rb_ary_entry(ary, 0);
+
+    cb = rb_iv_get(sslctx_obj, "@session_remove_cb");
+    if (NIL_P(cb)) return Qnil;
+
+    return rb_funcall(cb, rb_intern("call"), 1, ary);
+}
+
+static void
+ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
+{
+    VALUE ary, sslctx_obj, sess_obj, ret_obj;
+    void *ptr;
+    int state = 0;
+
+    OSSL_Debug("SSL SESSION remove callback entered");
+
+    if ((ptr = SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_ptr_idx)) == NULL)
+    	return;
+    sslctx_obj = (VALUE)ptr;
+    sess_obj = rb_obj_alloc(cSSLSession);
+    CRYPTO_add(&sess->references, 1, CRYPTO_LOCK_SSL_SESSION);
+    DATA_PTR(sess_obj) = sess;
+
+    ary = rb_ary_new2(2);
+    rb_ary_push(ary, sslctx_obj);
+    rb_ary_push(ary, sess_obj);
+
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
+    if (state) {
+/*
+  the SSL_CTX is frozen, nowhere to save state.
+  there is no common accessor method to check it either.
+        rb_ivar_set(sslctx_obj, ID_callback_state, INT2NUM(state));
+*/
+    }
+}
+
+static VALUE
 ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
 {
     X509 *x509;
@@ -308,6 +449,7 @@ ossl_sslctx_setup(VALUE self)
 	SSL_CTX_set_tmp_dh_callback(ctx, ossl_default_tmp_dh_callback);
     }
 #endif
+    SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)self);
 
     val = ossl_sslctx_get_cert_store(self);
     if(!NIL_P(val)){
@@ -400,6 +542,18 @@ ossl_sslctx_setup(VALUE self)
 	}
     }
 
+    if (RTEST(rb_iv_get(self, "@session_get_cb"))) {
+	SSL_CTX_sess_set_get_cb(ctx, ossl_sslctx_session_get_cb);
+	OSSL_Debug("SSL SESSION get callback added");
+    }
+    if (RTEST(rb_iv_get(self, "@session_new_cb"))) {
+	SSL_CTX_sess_set_new_cb(ctx, ossl_sslctx_session_new_cb);
+	OSSL_Debug("SSL SESSION new callback added");
+    }
+    if (RTEST(rb_iv_get(self, "@session_remove_cb"))) {
+	SSL_CTX_sess_set_remove_cb(ctx, ossl_sslctx_session_remove_cb);
+	OSSL_Debug("SSL SESSION remove callback added");
+    }
     return Qtrue;
 }
 
@@ -481,6 +635,166 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     }
 
     return v;
+}
+
+
+/*
+ *  call-seq:
+ *     ctx.session_add(session) -> true | false
+ *
+ */
+static VALUE
+ossl_sslctx_session_add(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+    SSL_SESSION *sess;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+    SafeGetSSLSession(arg, sess);
+
+    return SSL_CTX_add_session(ctx, sess) == 1 ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_remove(session) -> true | false
+ *
+ */
+static VALUE
+ossl_sslctx_session_remove(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+    SSL_SESSION *sess;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+    SafeGetSSLSession(arg, sess);
+
+    return SSL_CTX_remove_session(ctx, sess) == 1 ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_cache_mode -> integer
+ *
+ */
+static VALUE
+ossl_sslctx_get_session_cache_mode(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    return LONG2NUM(SSL_CTX_get_session_cache_mode(ctx));
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_cache_mode=(integer) -> integer
+ *
+ */
+static VALUE
+ossl_sslctx_set_session_cache_mode(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    SSL_CTX_set_session_cache_mode(ctx, NUM2LONG(arg));
+
+    return arg;
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_cache_size -> integer
+ *
+ */
+static VALUE
+ossl_sslctx_get_session_cache_size(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    return LONG2NUM(SSL_CTX_sess_get_cache_size(ctx));
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_cache_size=(integer) -> integer
+ *
+ */
+static VALUE
+ossl_sslctx_set_session_cache_size(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    SSL_CTX_sess_set_cache_size(ctx, NUM2LONG(arg));
+
+    return arg;
+}
+
+/*
+ *  call-seq:
+ *     ctx.session_cache_stats -> Hash
+ *
+ */
+static VALUE
+ossl_sslctx_get_session_cache_stats(VALUE self)
+{
+    SSL_CTX *ctx;
+    VALUE hash;
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    hash = rb_hash_new();
+    rb_hash_aset(hash, rb_str_new2("cache_num"), LONG2NUM(SSL_CTX_sess_number(ctx)));
+    rb_hash_aset(hash, rb_str_new2("connect"), LONG2NUM(SSL_CTX_sess_connect(ctx)));
+    rb_hash_aset(hash, rb_str_new2("connect_good"), LONG2NUM(SSL_CTX_sess_connect_good(ctx)));
+    rb_hash_aset(hash, rb_str_new2("connect_renegotiate"), LONG2NUM(SSL_CTX_sess_connect_renegotiate(ctx)));
+    rb_hash_aset(hash, rb_str_new2("accept"), LONG2NUM(SSL_CTX_sess_accept(ctx)));
+    rb_hash_aset(hash, rb_str_new2("accept_good"), LONG2NUM(SSL_CTX_sess_accept_good(ctx)));
+    rb_hash_aset(hash, rb_str_new2("accept_renegotiate"), LONG2NUM(SSL_CTX_sess_accept_renegotiate(ctx)));
+    rb_hash_aset(hash, rb_str_new2("cache_hits"), LONG2NUM(SSL_CTX_sess_hits(ctx)));
+    rb_hash_aset(hash, rb_str_new2("cb_hits"), LONG2NUM(SSL_CTX_sess_cb_hits(ctx)));
+    rb_hash_aset(hash, rb_str_new2("cache_misses"), LONG2NUM(SSL_CTX_sess_misses(ctx)));
+    rb_hash_aset(hash, rb_str_new2("cache_full"), LONG2NUM(SSL_CTX_sess_cache_full(ctx)));
+    rb_hash_aset(hash, rb_str_new2("timeouts"), LONG2NUM(SSL_CTX_sess_timeouts(ctx)));
+
+    return hash;
+}
+
+
+/*
+ *  call-seq:
+ *     ctx.flush_sessions(time | nil) -> self
+ *
+ */
+static VALUE
+ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
+{
+    VALUE arg1;
+    SSL_CTX *ctx;
+    time_t tm = 0;
+    int cb_state;
+
+    rb_scan_args(argc, argv, "01", &arg1);
+
+    Data_Get_Struct(self, SSL_CTX, ctx);
+
+    if (NIL_P(arg1)) {
+        tm = time(0);
+    } else if (rb_obj_is_instance_of(arg1, rb_cTime)) {
+        tm = NUM2LONG(rb_funcall(arg1, rb_intern("to_i"), 0));
+    } else {
+        rb_raise(rb_eArgError, "arg must be Time or nil");
+    }
+
+    SSL_CTX_flush_sessions(ctx, tm);
+
+    return self;
 }
 
 /*
@@ -570,17 +884,20 @@ ossl_ssl_setup(VALUE self)
 #endif
 
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)())
+ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
 {
     SSL *ssl;
     rb_io_t *fptr;
-    int ret;
+    int ret, ret2;
+    VALUE cb_state;
+
+    rb_ivar_set(self, ID_callback_state, Qnil);
 
     Data_Get_Struct(self, SSL, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     for(;;){
 	if((ret = func(ssl)) > 0) break;
-	switch(ssl_get_error(ssl, ret)){
+	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
             rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
@@ -588,11 +905,16 @@ ossl_start_ssl(VALUE self, int (*func)())
             rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_SYSCALL:
-	    if (errno) rb_sys_fail(0);
+	    if (errno) rb_sys_fail(funcname);
+	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 	default:
-	    ossl_raise(eSSLError, NULL);
+	    ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 	}
     }
+
+    cb_state = rb_ivar_get(self, ID_callback_state);
+    if (!NIL_P(cb_state))
+        rb_jump_tag(NUM2INT(cb_state));
 
     return self;
 }
@@ -601,14 +923,14 @@ static VALUE
 ossl_ssl_connect(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect");
 }
 
 static VALUE
 ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept);
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept");
 }
 
 static VALUE
@@ -845,6 +1167,58 @@ ossl_ssl_pending(VALUE self)
     return INT2NUM(SSL_pending(ssl));
 }
 
+/*
+ *  call-seq:
+ *     ssl.session_reused? -> true | false
+ *
+ */
+static VALUE
+ossl_ssl_session_reused(VALUE self)
+{
+    SSL *ssl;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+        rb_warning("SSL session is not started yet.");
+        return Qnil;
+    }
+
+    switch(SSL_session_reused(ssl)) {
+    case 1:	return Qtrue;
+    case 0:	return Qfalse;
+    default:	ossl_raise(eSSLError, "SSL_session_reused");
+    }
+}
+
+/*
+ *  call-seq:
+ *     ssl.session = session -> session
+ *
+ */
+static VALUE
+ossl_ssl_set_session(VALUE self, VALUE arg1)
+{
+    SSL *ssl;
+    SSL_SESSION *sess;
+
+/* why is ossl_ssl_setup delayed? */
+    ossl_ssl_setup(self);
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+        rb_warning("SSL session is not started yet.");
+        return Qnil;
+    }
+
+    SafeGetSSLSession(arg1, sess);
+
+    if (SSL_set_session(ssl, sess) != 1)
+        ossl_raise(eSSLError, "SSL_set_session");
+
+    return arg1;
+}
+
+
 void
 Init_ossl_ssl()
 {
@@ -853,6 +1227,8 @@ Init_ossl_ssl()
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
 #endif
+
+    ID_callback_state = rb_intern("@callback_state");
 
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_vcb_idx",0,0,0);
     ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,"ossl_ssl_ex_store_p",0,0,0);
@@ -874,6 +1250,24 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
 
+    
+    rb_define_const(cSSLContext, "SESSION_CACHE_OFF", LONG2FIX(SSL_SESS_CACHE_OFF));
+    rb_define_const(cSSLContext, "SESSION_CACHE_CLIENT", LONG2FIX(SSL_SESS_CACHE_CLIENT)); /* doesn't actually do anything in 0.9.8e */
+    rb_define_const(cSSLContext, "SESSION_CACHE_SERVER", LONG2FIX(SSL_SESS_CACHE_SERVER));
+    rb_define_const(cSSLContext, "SESSION_CACHE_BOTH", LONG2FIX(SSL_SESS_CACHE_BOTH)); /* no different than CACHE_SERVER in 0.9.8e */
+    rb_define_const(cSSLContext, "SESSION_CACHE_NO_AUTO_CLEAR", LONG2FIX(SSL_SESS_CACHE_NO_AUTO_CLEAR));
+    rb_define_const(cSSLContext, "SESSION_CACHE_NO_INTERNAL_LOOKUP", LONG2FIX(SSL_SESS_CACHE_NO_INTERNAL_LOOKUP));
+    rb_define_const(cSSLContext, "SESSION_CACHE_NO_INTERNAL_STORE", LONG2FIX(SSL_SESS_CACHE_NO_INTERNAL_STORE));
+    rb_define_const(cSSLContext, "SESSION_CACHE_NO_INTERNAL", LONG2FIX(SSL_SESS_CACHE_NO_INTERNAL));
+    rb_define_method(cSSLContext, "session_add",     ossl_sslctx_session_add, 1);
+    rb_define_method(cSSLContext, "session_remove",     ossl_sslctx_session_remove, 1);
+    rb_define_method(cSSLContext, "session_cache_mode",     ossl_sslctx_get_session_cache_mode, 0);
+    rb_define_method(cSSLContext, "session_cache_mode=",     ossl_sslctx_set_session_cache_mode, 1);
+    rb_define_method(cSSLContext, "session_cache_size",     ossl_sslctx_get_session_cache_size, 0);
+    rb_define_method(cSSLContext, "session_cache_size=",     ossl_sslctx_set_session_cache_size, 1);
+    rb_define_method(cSSLContext, "session_cache_stats",     ossl_sslctx_get_session_cache_stats, 0);
+    rb_define_method(cSSLContext, "flush_sessions",     ossl_sslctx_flush_sessions, -1);
+
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
@@ -894,6 +1288,8 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "cipher",     ossl_ssl_get_cipher, 0);
     rb_define_method(cSSLSocket, "state",      ossl_ssl_get_state, 0);
     rb_define_method(cSSLSocket, "pending",    ossl_ssl_pending, 0);
+    rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
+    rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
 
