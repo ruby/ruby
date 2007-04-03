@@ -77,6 +77,19 @@ extern DH *OSSL_DEFAULT_DH_1024;
 VALUE ossl_dh_new(EVP_PKEY *);
 void Init_ossl_dh(void);
 
+/*
+ * EC
+ */
+extern VALUE cEC;
+extern VALUE eECError;
+extern VALUE cEC_GROUP;
+extern VALUE eEC_GROUP;
+extern VALUE cEC_POINT;
+extern VALUE eEC_POINT;
+VALUE ossl_ec_new(EVP_PKEY *);
+void Init_ossl_ec(void);
+
+
 #define OSSL_PKEY_BN(keytype, name)					\
 /*									\
  *  call-seq:								\

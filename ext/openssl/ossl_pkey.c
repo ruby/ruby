@@ -55,6 +55,10 @@ ossl_pkey_new(EVP_PKEY *pkey)
     case EVP_PKEY_DH:
 	return ossl_dh_new(pkey);
 #endif
+#if !defined(OPENSSL_NO_EC) && (OPENSSL_VERSION_NUMBER >= 0x0090802fL)
+    case EVP_PKEY_EC:
+	return ossl_ec_new(pkey);
+#endif
     default:
 	ossl_raise(ePKeyError, "unsupported key type");
     }
@@ -226,10 +230,11 @@ Init_ossl_pkey()
     id_private_q = rb_intern("private?");
 	
     /*
-     * INIT rsa, dsa
+     * INIT rsa, dsa, dh, ec
      */
     Init_ossl_rsa();
     Init_ossl_dsa();
     Init_ossl_dh();
+    Init_ossl_ec();
 }
 

@@ -40,7 +40,7 @@ VALUE eBNError;
  * Public
  */
 VALUE
-ossl_bn_new(BIGNUM *bn)
+ossl_bn_new(const BIGNUM *bn)
 {
     BIGNUM *newbn;
     VALUE obj;
@@ -100,6 +100,12 @@ ossl_bn_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    BN.new => aBN
+ *    BN.new(bn) => aBN
+ *    BN.new(string, 0 | 2 | 10 | 16) => aBN
+ */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -189,6 +195,10 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    bn.to_i => integer
+ */
 static VALUE
 ossl_bn_to_i(VALUE self)
 {

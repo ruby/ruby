@@ -493,7 +493,6 @@ ossl_rsa_to_public_key(VALUE self)
 
 /*
  * TODO: Test me
-extern BN_CTX *ossl_bn_ctx;
 
 static VALUE
 ossl_rsa_blinding_on(VALUE self)
