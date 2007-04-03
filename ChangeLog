@@ -5,7 +5,8 @@ Tue Apr  3 16:22:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/openssl/ruby_missing.h: check per features instead by
 	  checking version code.  [ruby-core:10845]
 
-Tue Apr  3 02:48:48 2007  Technorama  <oss-ruby@technorama.net>
+Tue Apr  3 16:02:44 2007  Technorama  <oss-ruby@technorama.net>
+
 	* ext/openssl/ossl_bn.c: More documentation.
 
 	* ext/openssl/lib/ossl_{pkey,pkey_ec}.[ch]: Add elliptic curves.
@@ -21,14 +22,16 @@ Tue Apr  3 09:36:55 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* ext/openssl/ruby_missing.h: need to include version.h to check
 	  RUBY_VERSION_CODE.
 
-Mon Apr  2 17:35:46 2007  Technorama  <oss-ruby@technorama.net>
+Mon Apr  3 07:10:12 2007  Technorama  <oss-ruby@technorama.net>
+
 	* ext/openssl/ossl_{ssl.[ch],ssl_session.c},
 	  ext/openssl/lib/openssl/lib/openssl/ssl.rb:
 	  New SSL::Session class.  Add session cb's, getter/setters,
 	  config, and statistics methods.
 
 
-Mon Apr  2 14:55:58 2007  Technorama  <oss-ruby@technorama.net>
+Mon Apr  3 04:00:23 2007  Technorama  <oss-ruby@technorama.net>
+
 	* ext/openssl/{ossl.[ch],ossl_pkey.c} Add documentation.
 
 	* ext/openssl/ossl_hmac.c Add reset method.
