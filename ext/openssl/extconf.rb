@@ -59,6 +59,8 @@ unless have_header("openssl/conf_api.h")
   exit 1
 end
 
+%w"rb_str_set_len rb_block_call".each {|func| have_func(func, "ruby.h")}
+
 message "=== Checking for OpenSSL features... ===\n"
 have_func("ERR_peek_last_error")
 have_func("BN_mod_add")
