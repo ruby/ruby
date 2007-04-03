@@ -1,3 +1,9 @@
+Tue Apr  3 15:50:41 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recv, s_recvfrom): some systems (such as
+	  windows) doesn't set fromlen if the socket is connection-oriented.
+	  reported by Bram Whillock in [ruby-core:10512] [ruby-Bugs#9061]
+
 Tue Apr  3 09:36:55 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ruby_missing.h: need to include version.h to check

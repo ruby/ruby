@@ -621,7 +621,7 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
-	if (alen) /* OSX doesn't return a from result for connection-oriented sockets */
+	if (alen && alen != sizeof(buf)) /* OSX doesn't return a from result for connection-oriented sockets */
 	    return rb_assoc_new(str, ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP));
 	else
 	    return rb_assoc_new(str, Qnil);
@@ -686,7 +686,7 @@ s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
         return str;
 
       case RECV_IP:
-        if (alen) /* connection-oriented socket may not return a from result */
+        if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
             addr = ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
