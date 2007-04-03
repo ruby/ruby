@@ -141,6 +141,14 @@ ossl_sslctx_s_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
 
+/*
+ * call-seq:
+ *    SSLContext.new => ctx
+ *    SSLContext.new(:TLSv1) => ctx
+ *    SSLContext.new("SSLv23_client") => ctx
+ *
+ * You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+ */
 static VALUE
 ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -573,6 +581,10 @@ ossl_ssl_cipher_to_ary(SSL_CIPHER *cipher)
     return ary;
 }
 
+/*
+ * call-seq:
+ *    ctx.ciphers => [[name, version, bits, alg_bits], ...]
+ */
 static VALUE
 ossl_sslctx_get_ciphers(VALUE self)
 {
@@ -601,6 +613,12 @@ ossl_sslctx_get_ciphers(VALUE self)
     return ary;
 }
 
+/*
+ * call-seq:
+ *    ctx.ciphers = "cipher1:cipher2:..."
+ *    ctx.ciphers = [name, ...]
+ *    ctx.ciphers = [[name, version, bits, alg_bits], ...]
+ */
 static VALUE
 ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 {
@@ -822,6 +840,20 @@ ossl_ssl_s_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, ossl_ssl_free, NULL);
 }
 
+/*
+ * call-seq:
+ *    SSLSocket.new(io) => aSSLSocket
+ *    SSLSocket.new(io, ctx) => aSSLSocket
+ *
+ * === Parameters
+ * * +io+ is a real ruby IO object.  Not an IO like object that responds to read/write.
+ * * +ctx+ is an OpenSSLSSL::SSLContext.
+ *
+ * The OpenSSL::Buffering module provides additional IO methods.
+ *
+ * This method will freeze the SSLContext if one is provided;
+ * however, session management is still allowed in the frozen SSLContext.
+ */
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -919,6 +951,10 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname)
     return self;
 }
 
+/*
+ * call-seq:
+ *    ssl.connect => self
+ */
 static VALUE
 ossl_ssl_connect(VALUE self)
 {
@@ -926,6 +962,10 @@ ossl_ssl_connect(VALUE self)
     return ossl_start_ssl(self, SSL_connect, "SSL_connect");
 }
 
+/*
+ * call-seq:
+ *    ssl.accept => self
+ */
 static VALUE
 ossl_ssl_accept(VALUE self)
 {
@@ -933,6 +973,15 @@ ossl_ssl_accept(VALUE self)
     return ossl_start_ssl(self, SSL_accept, "SSL_accept");
 }
 
+/*
+ * call-seq:
+ *    ssl.sysread(length) => string
+ *    ssl.sysread(length, buffer) => buffer
+ *
+ * === Parameters
+ * * +length+ is a positive integer.
+ * * +buffer+ is a string used to store the result.
+ */
 static VALUE
 ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 {
@@ -990,6 +1039,10 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    ssl.syswrite(string) => integer
+ */
 static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
@@ -1030,6 +1083,10 @@ ossl_ssl_write(VALUE self, VALUE str)
     return INT2NUM(nwrite);
 }
 
+/*
+ * call-seq:
+ *    ssl.sysclose => nil
+ */
 static VALUE
 ossl_ssl_close(VALUE self)
 {
@@ -1043,6 +1100,10 @@ ossl_ssl_close(VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *    ssl.cert => cert or nil
+ */
 static VALUE
 ossl_ssl_get_cert(VALUE self)
 {
@@ -1067,6 +1128,10 @@ ossl_ssl_get_cert(VALUE self)
     return ossl_x509_new(cert);
 }
 
+/*
+ * call-seq:
+ *    ssl.peer_cert => cert or nil
+ */
 static VALUE
 ossl_ssl_get_peer_cert(VALUE self)
 {
@@ -1092,6 +1157,10 @@ ossl_ssl_get_peer_cert(VALUE self)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    ssl.peer_cert_chain => [cert, ...] or nil
+ */
 static VALUE
 ossl_ssl_get_peer_cert_chain(VALUE self)
 {
@@ -1118,6 +1187,10 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
     return ary;
 }
 
+/*
+ * call-seq:
+ *    ssl.cipher => [name, version, bits, alg_bits]
+ */
 static VALUE
 ossl_ssl_get_cipher(VALUE self)
 {
@@ -1134,6 +1207,10 @@ ossl_ssl_get_cipher(VALUE self)
     return ossl_ssl_cipher_to_ary(cipher);
 }
 
+/*
+ * call-seq:
+ *    ssl.state => string
+ */
 static VALUE
 ossl_ssl_get_state(VALUE self)
 {
@@ -1153,6 +1230,10 @@ ossl_ssl_get_state(VALUE self)
     return ret;
 }
 
+/*
+ * call-seq:
+ *    ssl.pending => integer
+ */
 static VALUE
 ossl_ssl_pending(VALUE self)
 {
@@ -1223,6 +1304,7 @@ void
 Init_ossl_ssl()
 {
     int i;
+    VALUE ary;
 
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
@@ -1241,7 +1323,14 @@ Init_ossl_ssl()
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
 
-    /* class SSLContext */
+    /* class SSLContext
+     *
+     * The following attributes are available but don't show up in rdoc.
+     * All attributes must be set before calling SSLSocket.new(io, ctx).
+     * * cert, key, client_ca, ca_file, ca_path, timeout, verify_mode, verify_depth
+     * * client_cert_cb, tmp_dh_callback, session_id_context,
+     * * session_add_cb, session_new_cb, session_remove_cb
+     */
     cSSLContext = rb_define_class_under(mSSL, "SSLContext", rb_cObject);
     rb_define_alloc_func(cSSLContext, ossl_sslctx_s_alloc);
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++)
@@ -1268,7 +1357,20 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "session_cache_stats",     ossl_sslctx_get_session_cache_stats, 0);
     rb_define_method(cSSLContext, "flush_sessions",     ossl_sslctx_flush_sessions, -1);
 
-    /* class SSLSocket */
+    ary = rb_ary_new2(numberof(ossl_ssl_method_tab));
+    for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
+        rb_ary_push(ary, ID2SYM(rb_intern(ossl_ssl_method_tab[i].name)));
+    }
+    rb_obj_freeze(ary);
+    /* holds a list of available SSL/TLS methods */
+    rb_define_const(cSSLContext, "METHODS", ary);
+
+    /* class SSLSocket
+     *
+     * The following attributes are available but don't show up in rdoc.
+     * * io, context, sync_close
+     *
+     */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     for(i = 0; i < numberof(ossl_ssl_attr_readers); i++)
