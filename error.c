@@ -1029,7 +1029,7 @@ rb_notimplement(void)
 {
   rb_raise(rb_eNotImpError,
            "The %s() function is unimplemented on this machine",
-	     rb_id2name(rb_frame_callee()));
+	     rb_id2name(rb_frame_this_func()));
 }
 
 void
