@@ -3031,6 +3031,7 @@ pipe_open(pstr, pname, mode)
     FILE *f;
 
     if (!pname) pname = StringValueCStr(pstr);
+    if (strcmp("-", pname) == 0) rb_notimplement();
     f = popen(pname, mode);
     
     if (!f) rb_sys_fail(pname);
@@ -3056,6 +3057,7 @@ pipe_open(pstr, pname, mode)
     FILE *fpr, *fpw;
 
     if (!pname) pname = StringValueCStr(pstr);
+    if (strcmp("-", pname) == 0) rb_notimplement();
 retry:
     pid = pipe_exec(pname, rb_io_mode_modenum(mode), &fpr, &fpw);
     if (pid == -1) {		/* exec failed */

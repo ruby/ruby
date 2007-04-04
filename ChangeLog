@@ -1,3 +1,8 @@
+Wed Apr  4 10:18:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): raise NotImplementedError for command "-" on
+	  platforms where fork(2) is not available.  [ruby-dev:30681]
+
 Tue Apr  3 15:45:41 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (s_recv, s_recvfrom): some systems (such as
