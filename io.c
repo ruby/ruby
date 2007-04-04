@@ -3040,6 +3040,9 @@ popen_exec(void *pp)
 
     popen_redirect(p);
     for (fd = 3; fd < NOFILE; fd++) {
+#ifdef FD_CLOEXEC
+	if (fcntl(fd, F_GETFD) & FD_CLOEXEC) continue;
+#endif
 	close(fd);
     }
     return rb_exec(&p->exec);

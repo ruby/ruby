@@ -1,3 +1,8 @@
+Wed Apr  4 10:01:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (popen_exec): should not close close-on-exec FDs.
+	  [ruby-dev:30679]
+
 Tue Apr  4 04:17:18 2007  Technorama Ltd. <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_ssl.c: Add documentation.
