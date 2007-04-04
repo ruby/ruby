@@ -1,3 +1,8 @@
+Wed Apr  4 17:09:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): refined the message of NotImplementedError.
+	  [ruby-dev:30685]
+
 Wed Apr  4 10:18:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): raise NotImplementedError for command "-" on
