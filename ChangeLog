@@ -1,3 +1,8 @@
+Wed Apr  4 17:09:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): refined the message of NotImplementedError.
+	  [ruby-dev:30685]
+
 Wed Apr  4 12:29:02 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* error.c (rb_notimplement): should show the name of this func,

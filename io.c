@@ -3056,7 +3056,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     int pid = 0;
     rb_io_t *fptr;
     VALUE port, prog;
-#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
+#if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
 #elif defined(_WIN32)
@@ -3077,7 +3077,14 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     cmd = StringValueCStr(prog);
     doexec = (strcmp("-", cmd) != 0);
 
-#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
+#if !defined(HAVE_FORK)
+    if (!doexec) {
+	rb_raise(rb_eNotImpError,
+		 "The fork(2) function is unimplemented on this machine");
+    }
+#endif
+
+#if defined(HAVE_FORK)
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
         rb_io_flush(rb_stdout);
@@ -3085,19 +3092,22 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     }
     arg.modef = modef;
     arg.pair[0] = arg.pair[1] = -1;
-    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
+    switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
+#if defined(HAVE_SOCKETPAIR)
+      case FMODE_READABLE|FMODE_WRITABLE:
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, arg.pair) < 0)
             rb_sys_fail(cmd);
-    }
-    else if (modef & FMODE_READABLE) {
+	break;
+#endif
+      case FMODE_READABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
-    }
-    else if (modef & FMODE_WRITABLE) {
+	break;
+      case FMODE_WRITABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
-    }
-    else {
+	break;
+      default:
         rb_sys_fail(cmd);
     }
     if (doexec) {
@@ -3137,7 +3147,6 @@ pipe_open(int argc, VALUE *argv, const char *mode)
         fd = arg.pair[1];
     }
 #elif defined(_WIN32)
-    if (!doexec) rb_notimplement();
     if (argc) {
 	char **args = ALLOCA_N(char *, argc+1);
 	int i;
@@ -3165,7 +3174,6 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	}
     }
 #else
-    if (!doexec) rb_notimplement();
     if (argc) {
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 	cmd = StringValueCStr(prog);
