@@ -3044,7 +3044,7 @@ pipe_open(pstr, pname, mode)
 #if defined(DJGPP) || defined(__human68k__) || defined(__VMS) || defined(_WIN32)
     if (!doexec) {
 	rb_raise(rb_eNotImpError,
-		 "The fork(2) function is unimplemented on this machine");
+		 "fork() function is unimplemented on this machine");
     }
 #endif
 
