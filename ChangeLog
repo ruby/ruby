@@ -1,7 +1,10 @@
-Wed Apr  4 10:01:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr  4 10:18:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (popen_exec): should not close close-on-exec FDs.
 	  [ruby-dev:30679]
+
+	* io.c (pipe_open): raise NotImplementedError for command "-" on
+	  platforms where fork(2) is not available.  [ruby-dev:30681]
 
 Tue Apr  4 04:17:18 2007  Technorama Ltd. <oss-ruby@technorama.net>
 

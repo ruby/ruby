@@ -3059,11 +3059,11 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 #if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     int status;
     struct popen_arg arg;
-    volatile int doexec;
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
     char *exename = NULL;
 #endif
+    volatile int doexec;
     char *cmd;
     FILE *fp = 0;
     int fd = -1;
@@ -3074,9 +3074,10 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	prog = argv[0];
     }
 
-#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     cmd = StringValueCStr(prog);
     doexec = (strcmp("-", cmd) != 0);
+
+#if defined(HAVE_FORK) && defined(HAVE_SOCKETPAIR)
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
         rb_io_flush(rb_stdout);
@@ -3136,6 +3137,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
         fd = arg.pair[1];
     }
 #elif defined(_WIN32)
+    if (!doexec) rb_notimplement();
     if (argc) {
 	char **args = ALLOCA_N(char *, argc+1);
 	int i;
@@ -3147,9 +3149,6 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
 	rb_w32_join_argv(cmd, args);
 	exename = RSTRING_PTR(prog);
-    }
-    else {
-	cmd = StringValueCStr(prog);
     }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd)) == -1) {
 	/* exec failed */
@@ -3166,9 +3165,12 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 	}
     }
 #else
-    if (argc)
+    if (!doexec) rb_notimplement();
+    if (argc) {
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-    fp = popen(StringValueCStr(prog), mode);
+	cmd = StringValueCStr(prog);
+    }
+    fp = popen(cmd, mode);
     if (!fp) rb_sys_fail(RSTRING_PTR(prog));
     fd = fileno(fp);
 #endif
