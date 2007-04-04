@@ -1,3 +1,8 @@
+Thu Apr  5 00:42:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_notimplement), io.c (pipe_open): removed definite
+	  articles and UNIX manual section from messages.  [ruby-dev:30690]
+
 Wed Apr  4 17:09:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): refined the message of NotImplementedError.

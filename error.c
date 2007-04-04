@@ -1027,8 +1027,8 @@ rb_loaderror(const char *fmt, ...)
 void
 rb_notimplement(void)
 {
-  rb_raise(rb_eNotImpError,
-           "The %s() function is unimplemented on this machine",
+    rb_raise(rb_eNotImpError,
+	     "%s() function is unimplemented on this machine",
 	     rb_id2name(rb_frame_this_func()));
 }
 
@@ -1473,21 +1473,21 @@ Init_syserr(void)
 static void
 err_append(const char *s)
 {
-  rb_thread_t *th = GET_THREAD();
-  if (th->parse_in_eval) {
-    if (NIL_P(th->errinfo)) {
-      th->errinfo = rb_exc_new2(rb_eSyntaxError, s);
+    rb_thread_t *th = GET_THREAD();
+    if (th->parse_in_eval) {
+	if (NIL_P(th->errinfo)) {
+	    th->errinfo = rb_exc_new2(rb_eSyntaxError, s);
+	}
+	else {
+	    VALUE str = rb_obj_as_string(GET_THREAD()->errinfo);
+
+	    rb_str_cat2(str, "\n");
+	    rb_str_cat2(str, s);
+	    th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	}
     }
     else {
-      VALUE str = rb_obj_as_string(GET_THREAD()->errinfo);
-
-      rb_str_cat2(str, "\n");
-      rb_str_cat2(str, s);
-      th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	rb_write_error(s);
+	rb_write_error("\n");
     }
-  }
-  else {
-    rb_write_error(s);
-    rb_write_error("\n");
-  }
 }

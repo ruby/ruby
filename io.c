@@ -3080,7 +3080,7 @@ pipe_open(int argc, VALUE *argv, const char *mode)
 #if !defined(HAVE_FORK)
     if (!doexec) {
 	rb_raise(rb_eNotImpError,
-		 "The fork(2) function is unimplemented on this machine");
+		 "fork() function is unimplemented on this machine");
     }
 #endif
 
