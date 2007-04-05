@@ -1,3 +1,8 @@
+Thu Apr  5 15:13:34 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_alloc): should
+	  return value.
+
 Thu Apr  5 14:58:49 2007  Technorama Ltd. <oss-ruby@technorama.net>
 	* ext/openssl/ossl_pkcs5.c: New module.
 

@@ -22,7 +22,7 @@ static VALUE eSSLSession;
 
 static VALUE ossl_ssl_session_alloc(VALUE klass)
 {
-	Data_Wrap_Struct(klass, 0, SSL_SESSION_free, NULL);
+	return Data_Wrap_Struct(klass, 0, SSL_SESSION_free, NULL);
 }
 
 /*
