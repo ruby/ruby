@@ -104,6 +104,7 @@ ossl_bn_alloc(VALUE klass)
  * call-seq:
  *    BN.new => aBN
  *    BN.new(bn) => aBN
+ *    BN.new(string) => aBN
  *    BN.new(string, 0 | 2 | 10 | 16) => aBN
  */
 static VALUE
@@ -155,6 +156,19 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    bn.to_s => string
+ *    bn.to_s(base) => string
+ *
+ * === Parameters
+ * * +base+ - integer
+ * * * Valid values:
+ * * * * 0 - MPI
+ * * * * 2 - binary
+ * * * * 10 - the default
+ * * * * 16 - hex
+ */
 static VALUE
 ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 {
@@ -340,6 +354,10 @@ BIGNUM_2c(gcd);
 BIGNUM_2c(mod_sqr);
 BIGNUM_2c(mod_inverse);
 
+/*
+ * call-seq:
+ *    bn1 / bn2 => [result, remainder]
+ */
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
 {
@@ -414,6 +432,10 @@ BIGNUM_BIT(set_bit);
 BIGNUM_BIT(clear_bit);
 BIGNUM_BIT(mask_bits);
 
+/*
+ * call-seq:
+ *    bn.bit_set?(bit) => true | false
+ */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
 {
@@ -533,6 +555,16 @@ BIGNUM_RAND(pseudo_rand);
 BIGNUM_RAND_RANGE(rand);
 BIGNUM_RAND_RANGE(pseudo_rand);
 
+/*
+ * call-seq:
+ *    BN.generate_prime(bits, [, safe [, add [, rem]]]) => bn
+ *
+ * === Parameters
+ * * +bits+ - integer
+ * * +safe+ - boolean
+ * * +add+ - BN
+ * * +rem+ - BN
+ */
 static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 {
@@ -548,12 +580,8 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	safe = 0;
     }
     if (!NIL_P(vadd)) {
-	if (NIL_P(vrem)) {
-	    ossl_raise(rb_eArgError,
-		       "if ADD is specified, REM must be also given");
-	}
 	add = GetBNPtr(vadd);
-	rem = GetBNPtr(vrem);
+	rem = NIL_P(vrem) ? NULL : GetBNPtr(vrem);
     }
     if (!(result = BN_new())) {
 	ossl_raise(eBNError, NULL);
@@ -564,7 +592,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
     }
     WrapBN(klass, obj, result);
     
-	return obj;
+    return obj;
 }
 
 #define BIGNUM_NUM(func)			\
@@ -626,6 +654,14 @@ ossl_bn_eql(VALUE self, VALUE other)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    bn.prime? => true | false
+ *    bn.prime?(checks) => true | false
+ *
+ * === Parameters
+ * * +checks+ - integer
+ */
 static VALUE
 ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
 {
@@ -649,6 +685,16 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *    bn.prime_fasttest? => true | false
+ *    bn.prime_fasttest?(checks) => true | false
+ *    bn.prime_fasttest?(checks, trial_div) => true | false
+ *
+ * === Parameters
+ * * +checks+ - integer
+ * * +trial_div+ - boolean
+ */
 static VALUE
 ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 {

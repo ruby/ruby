@@ -109,6 +109,13 @@ ossl_x509name_init_i(VALUE i, VALUE args)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *    X509::Name.new => name
+ *    X509::Name.new(string) => name
+ *    X509::Name.new(dn) => name
+ *    X509::Name.new(dn, template) => name
+ */
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -141,6 +148,10 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    name.add_entry(oid, value [, type]) => self
+ */
 static
 VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
 {
@@ -175,6 +186,11 @@ ossl_x509name_to_s_old(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    name.to_s => string
+ *    name.to_s(integer) => string
+ */
 static VALUE
 ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
 {
@@ -199,6 +215,10 @@ ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    name.to_a => [[name, data, type], ...]
+ */
 static VALUE 
 ossl_x509name_to_a(VALUE self)
 {
@@ -266,6 +286,10 @@ ossl_x509name_eql(VALUE self, VALUE other)
     return (result == 0) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *    name.hash => integer
+ */
 static VALUE
 ossl_x509name_hash(VALUE self)
 {
@@ -279,6 +303,10 @@ ossl_x509name_hash(VALUE self)
     return ULONG2NUM(hash);
 }
 
+/*
+ * call-seq:
+ *    name.to_der => string
+ */
 static VALUE
 ossl_x509name_to_der(VALUE self)
 {

@@ -118,11 +118,18 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     return cb;
 }
 
+
+/*
+ * call-seq:
+ *    X509::Store.new => store
+ *
+ */
 static VALUE
 ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
+/* BUG: This method takes any number of arguments but appears to ignore them. */
     GetX509Store(self, store);
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
@@ -550,6 +557,10 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
     return trust;
 }
 
+/*
+ * call-seq:
+ *    storectx.time = time => time
+ */
 static VALUE
 ossl_x509stctx_set_time(VALUE self, VALUE time)
 {

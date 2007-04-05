@@ -84,6 +84,10 @@ ossl_x509attr_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    Attribute.new(oid [, value]) => attr
+ */
 static VALUE
 ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -108,6 +112,10 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    attr.oid = string => string
+ */
 static VALUE
 ossl_x509attr_set_oid(VALUE self, VALUE oid)
 {
@@ -125,6 +133,10 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     return oid;
 }
 
+/*
+ * call-seq:
+ *    attr.oid => string
+ */
 static VALUE
 ossl_x509attr_get_oid(VALUE self)
 {
@@ -156,6 +168,10 @@ ossl_x509attr_get_oid(VALUE self)
 #  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->set = 0)
 #endif
 
+/*
+ * call-seq:
+ *    attr.value = asn1 => asn1
+ */
 static VALUE
 ossl_x509attr_set_value(VALUE self, VALUE value)
 {
@@ -179,6 +195,10 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     return value;
 }
 
+/*
+ * call-seq:
+ *    attr.value => asn1
+ */
 static VALUE
 ossl_x509attr_get_value(VALUE self)
 {
@@ -210,6 +230,10 @@ ossl_x509attr_get_value(VALUE self)
     return asn1;
 }
 
+/*
+ * call-seq:
+ *    attr.to_der => string
+ */
 static VALUE
 ossl_x509attr_to_der(VALUE self)
 {

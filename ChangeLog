@@ -1,3 +1,9 @@
+Fri Apr  6 04:00:24 2007  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_{bn,x509{attr,cert,name,store}}.c:
+	  Add documentation.
+
+
 Thu Apr  5 17:59:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (defined_expr): support for assignment.
