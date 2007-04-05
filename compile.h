@@ -10,8 +10,8 @@
 
 **********************************************************************/
 
-#ifndef _COMPILER_H_INCLUDED_
-#define _COMPILER_H_INCLUDED_
+#ifndef RUBY_COMPILE_H
+#define RUBY_COMPILE_H
 
 
 #if YARVDEBUG > CPDEBUG
@@ -161,14 +161,11 @@ r_value(VALUE value)
 #define ADD_LABEL(seq, label) \
   ADD_ELEM(seq, (LINK_ELEMENT *)label)
 
-#define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc) \
-  (tmp = rb_ary_new(),                               \
-   rb_ary_push(tmp, type),                           \
-   rb_ary_push(tmp, (VALUE) ls | 1),                 \
-   rb_ary_push(tmp, (VALUE) le | 1),                 \
-   rb_ary_push(tmp, iseqv),                          \
-   rb_ary_push(tmp, (VALUE) lc | 1),                 \
-   rb_ary_push(iseq->compile_data->catch_table_ary, tmp))
+#define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc)		\
+    (rb_ary_push(iseq->compile_data->catch_table_ary,		\
+		 rb_ary_new3(5, type,				\
+			     (VALUE)(ls) | 1, (VALUE)(le) | 1,	\
+			     iseqv, (VALUE)(lc) | 1)))
 
 /* compile node */
 #define COMPILE(anchor, desc, node) \
@@ -212,4 +209,4 @@ r_value(VALUE value)
   LINK_ANCHOR  name##_body__ = {{0,}, &name##_body__.anchor}; \
   LINK_ANCHOR *name = & name##_body__
 
-#endif /* _COMPILER_H_INCLUDED_ */
+#endif /* RUBY_COMPILE_H */
