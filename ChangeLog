@@ -3,6 +3,8 @@ Thu Apr  5 17:59:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* compile.c (defined_expr): support for assignment.
 	  [ruby-core:10867]
 
+	* compile.h (ADD_CATCH_ENTRY): removed temporary variable.
+
 Thu Apr  5 15:13:34 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_alloc): should
