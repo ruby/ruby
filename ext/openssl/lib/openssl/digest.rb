@@ -19,7 +19,7 @@
 #require 'openssl'
 
 module OpenSSL
-  module Digest
+  class Digest
 
     alg = %w(DSS DSS1 MD2 MD4 MD5 MDC2 RIPEMD160 SHA SHA1)
     if OPENSSL_VERSION_NUMBER > 0x00908000
@@ -43,6 +43,11 @@ module OpenSSL
       }
       const_set(name, klass)
     }
+
+    # This class is only provided for backwards compatibility.  Use OpenSSL::Digest in the future.
+    class Digest < Digest
+      # add warning
+    end
 
   end # Digest
 end # OpenSSL

@@ -30,7 +30,6 @@
 /*
  * Classes
  */
-VALUE mPKCS12;
 VALUE cPKCS12;
 VALUE ePKCS12Error;
 
@@ -49,32 +48,85 @@ ossl_pkcs12_s_allocate(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    PKCS12.create(pass, name, key, cert [, ca, [, key_pbe [, cert_pbe [, key_iter [, mac_iter [, keytype]]]]]])
+ *
+ * === Parameters
+ * * +pass+ - string
+ * * +name+ - A string describing the key.
+ * * +key+ - Any PKey.
+ * * +cert+ - A X509::Certificate.
+ * * * The public_key portion of the certificate must contain a valid public key.
+ * * * The not_before and not_after fields must be filled in.
+ * * +ca+ - An optional array of X509::Certificate's.
+ * * +key_pbe+ - string
+ * * +cert_pbe+ - string
+ * * +key_iter+ - integer
+ * * +mac_iter+ - integer
+ * * +keytype+ - An integer representing an MSIE specific extension.
+ *
+ * Any optional arguments may be supplied as nil to preserve the OpenSSL defaults.
+ *
+ * See the OpenSSL documentation for PKCS12_create().
+ */
 static VALUE
 ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
 {
-    VALUE pass, name, pkey, cert, ca;
+    VALUE pass, name, pkey, cert, ca, key_nid, cert_nid, key_iter, mac_iter, keytype;
     VALUE obj;
     char *passphrase, *friendlyname;
     EVP_PKEY *key;
     X509 *x509;
     STACK_OF(X509) *x509s;
+    int nkey = 0, ncert = 0, kiter = 0, miter = 0, ktype = 0;
     PKCS12 *p12;
     
-    rb_scan_args(argc, argv, "41", &pass, &name, &pkey, &cert, &ca);
+    rb_scan_args(argc, argv, "46", &pass, &name, &pkey, &cert, &ca, &key_nid, &cert_nid, &key_iter, &mac_iter, &keytype);
     passphrase = NIL_P(pass) ? NULL : StringValuePtr(pass);
     friendlyname = NIL_P(name) ? NULL : StringValuePtr(name);
     key = GetPKeyPtr(pkey);
     x509 = GetX509CertPtr(cert);
     x509s = NIL_P(ca) ? NULL : ossl_x509_ary2sk(ca);
+/* TODO: make a VALUE to nid function */
+    if (!NIL_P(key_nid)) {
+        if ((nkey = OBJ_txt2nid(StringValuePtr(key_nid))) == NID_undef)
+            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(key_nid));
+    }
+    if (!NIL_P(cert_nid)) {
+        if ((ncert = OBJ_txt2nid(StringValuePtr(cert_nid))) == NID_undef)
+            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(cert_nid));
+    }
+    if (!NIL_P(key_iter))
+        kiter = NUM2INT(key_iter);
+    if (!NIL_P(mac_iter))
+        miter = NUM2INT(mac_iter);
+    if (!NIL_P(keytype))
+        ktype = NUM2INT(keytype);
+
     p12 = PKCS12_create(passphrase, friendlyname, key, x509, x509s,
-                        0, 0, 0, 0, 0);
+                        nkey, ncert, kiter, miter, ktype);
     sk_X509_pop_free(x509s, X509_free);
     if(!p12) ossl_raise(ePKCS12Error, NULL);
     WrapPKCS12(cPKCS12, obj, p12);
 
+    ossl_pkcs12_set_key(obj, pkey);
+    ossl_pkcs12_set_cert(obj, cert);
+    ossl_pkcs12_set_ca_certs(obj, ca);
+
     return obj;
 }
 
+/*
+ * call-seq:
+ *    PKCS12.new -> pkcs12
+ *    PKCS12.new(str) -> pkcs12
+ *    PKCS12.new(str, pass) -> pkcs12
+ *
+ * === Parameters
+ * * +str+ - Must be a DER encoded PKCS12 string.
+ * * +pass+ - string
+ */
 static VALUE
 ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -94,7 +146,7 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 
     pkey = cert = ca = Qnil;
     if(!PKCS12_parse((PKCS12*)DATA_PTR(self), passphrase, &key, &x509, &x509s))
-	ossl_raise(ePKCS12Error, NULL);
+	ossl_raise(ePKCS12Error, "PKCS12_parse");
     pkey = rb_protect((VALUE(*)_((VALUE)))ossl_pkey_new, (VALUE)key,
 		      &st); /* NO DUP */
     if(st) goto err;
@@ -140,10 +192,14 @@ ossl_pkcs12_to_der(VALUE self)
 void
 Init_ossl_pkcs12()
 {
-    mPKCS12 = rb_define_module_under(mOSSL, "PKCS12");
-    cPKCS12 = rb_define_class_under(mPKCS12, "PKCS12", rb_cObject);
-    ePKCS12Error = rb_define_class_under(mPKCS12, "PKCS12Error", eOSSLError);
-    rb_define_module_function(mPKCS12, "create", ossl_pkcs12_s_create, -1);
+    /*
+     * Defines a file format commonly used to store private keys with
+     * accompanying public key certificates, protected with a password-based
+     * symmetric key.
+     */
+    cPKCS12 = rb_define_class_under(mOSSL, "PKCS12", rb_cObject);
+    ePKCS12Error = rb_define_class_under(cPKCS12, "PKCS12Error", eOSSLError);
+    rb_define_singleton_method(cPKCS12, "create", ossl_pkcs12_s_create, -1);
 
     rb_define_alloc_func(cPKCS12, ossl_pkcs12_s_allocate);
     rb_attr(cPKCS12, rb_intern("key"), 1, 0, Qfalse);

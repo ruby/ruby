@@ -24,7 +24,6 @@
 /*
  * Classes
  */
-VALUE mDigest;
 VALUE cDigest;
 VALUE eDigestError;
 
@@ -321,11 +320,8 @@ Init_ossl_digest()
     mOSSL = rb_define_module("OpenSSL");
 #endif
 
-    mDigest = rb_define_module_under(mOSSL, "Digest");
-	
-    eDigestError = rb_define_class_under(mDigest, "DigestError", eOSSLError);
-	
-    cDigest = rb_define_class_under(mDigest, "Digest", rb_cObject);
+    cDigest = rb_define_class_under(mOSSL, "Digest", rb_cObject);
+    eDigestError = rb_define_class_under(cDigest, "DigestError", eOSSLError);
 	
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
     rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 2);

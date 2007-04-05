@@ -473,6 +473,7 @@ Init_openssl()
     Init_ossl_ns_spki();
     Init_ossl_pkcs12();
     Init_ossl_pkcs7();
+    Init_ossl_pkcs5();
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();

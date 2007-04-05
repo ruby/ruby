@@ -19,7 +19,7 @@
 #require 'openssl'
 
 module OpenSSL
-  module Cipher
+  class Cipher
     %w(AES CAST5 BF DES IDEA RC2 RC4 RC5).each{|name|
       klass = Class.new(Cipher){
         define_method(:initialize){|*args|
@@ -41,22 +41,25 @@ module OpenSSL
       const_set("AES#{keylen}", klass)
     }
 
-    class Cipher
-      # Generate, set, and return a random key.
-      # You must call cipher.encrypt or cipher.decrypt before calling this method.
-      def random_key
-        str = OpenSSL::Random.random_bytes(self.key_len)
-        self.key = str
-        return str
-      end
+    # Generate, set, and return a random key.
+    # You must call cipher.encrypt or cipher.decrypt before calling this method.
+    def random_key
+      str = OpenSSL::Random.random_bytes(self.key_len)
+      self.key = str
+      return str
+    end
 
-      # Generate, set, and return a random iv.
-      # You must call cipher.encrypt or cipher.decrypt before calling this method.
-      def random_iv
-        str = OpenSSL::Random.random_bytes(self.iv_len)
-        self.iv = str
-        return str
-      end
+    # Generate, set, and return a random iv.
+    # You must call cipher.encrypt or cipher.decrypt before calling this method.
+    def random_iv
+      str = OpenSSL::Random.random_bytes(self.iv_len)
+      self.iv = str
+      return str
+    end
+
+    # This class is only provided for backwards compatibility.  Use OpenSSL::Digest in the future.
+    class Cipher < Cipher
+      # add warning
     end
   end # Cipher
 end # OpenSSL

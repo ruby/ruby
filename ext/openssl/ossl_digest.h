@@ -11,7 +11,6 @@
 #if !defined(_OSSL_DIGEST_H_)
 #define _OSSL_DIGEST_H_
 
-extern VALUE mDigest;
 extern VALUE cDigest;
 extern VALUE eDigestError;
 

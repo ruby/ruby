@@ -26,7 +26,6 @@
 /*
  * Classes
  */
-VALUE mCipher;
 VALUE cCipher;
 VALUE eCipherError;
 
@@ -540,13 +539,12 @@ Init_ossl_cipher(void)
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
 #endif
-    mCipher = rb_define_module_under(mOSSL, "Cipher");
-    eCipherError = rb_define_class_under(mOSSL, "CipherError", eOSSLError);
-    cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);
+    cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
+    eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
 
     rb_define_alloc_func(cCipher, ossl_cipher_alloc);
     rb_define_copy_func(cCipher, ossl_cipher_copy);
-    rb_define_module_function(mCipher, "ciphers", ossl_s_ciphers, 0);
+    rb_define_module_function(cCipher, "ciphers", ossl_s_ciphers, 0);
     rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
     rb_define_method(cCipher, "reset", ossl_cipher_reset, 0);
     rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);

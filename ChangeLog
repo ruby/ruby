@@ -1,3 +1,15 @@
+Thu Apr  5 14:58:49 2007  Technorama Ltd. <oss-ruby@technorama.net>
+	* ext/openssl/ossl_pkcs5.c: New module.
+
+	* ext/openssl/ossl_{cipher,digest,pkcs7,pkcs12}.c:
+	  Remove redundant module namespace.
+
+	* ext/openssl/lib/openssl/{cipher,digest}.rb
+	  Add backwards compatibile classes for rearranged classes.
+
+	* ext/openssl/ossl_{pkcs7,pkcs12}.c: Add documentation.
+
+
 Thu Apr  5 00:42:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_notimplement), io.c (pipe_open): removed definite
