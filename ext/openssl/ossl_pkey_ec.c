@@ -249,7 +249,7 @@ static VALUE ossl_ec_key_get_group(VALUE self)
     if (!NIL_P(group_v))
         return group_v;
 
-    if ((group = EC_KEY_get0_group(ec)) != NULL) {
+    if ((group = (EC_GROUP *)EC_KEY_get0_group(ec)) != NULL) {
         group_v = rb_obj_alloc(cEC_GROUP);
         SafeGet_ec_group(group_v, ec_group);
         ec_group->group = group;
