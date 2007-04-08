@@ -2031,8 +2031,9 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	     NODE * node, LABEL *lfinish, VALUE needstr)
 {
     char *estr = 0;
+    enum node_type type;
 
-    switch (nd_type(node)) {
+    switch (type = nd_type(node)) {
 
 	/* easy literals */
       case NODE_NIL:
@@ -2146,14 +2147,16 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	LABEL *lfalse = NULL;
 	int self = Qtrue;
 
-	switch (nd_type(node)) {
+	switch (type) {
 	  case NODE_ATTRASGN:
-	    lfalse = NEW_LABEL(nd_line(node));
-	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
 	    if (node->nd_recv == (NODE *)1) break;
 	  case NODE_CALL:
 	    self = Qfalse;
 	    break;
+	}
+	if (node->nd_args) {
+	    lfalse = NEW_LABEL(nd_line(node));
+	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
 	}
 	if (!self) {
 	    LABEL *lcont = NEW_LABEL(nd_line(node));

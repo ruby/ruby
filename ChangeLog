@@ -1,3 +1,8 @@
+Sun Apr  8 13:28:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (defined_expr): test arguments of NODE_CALL and so
+	  on as well as NODE_ATTRASGN.  [ruby-core:10886]
+
 Fri Apr  6 10:56:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_get_group): get rid of
