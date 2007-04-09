@@ -1,3 +1,10 @@
+Mon Apr  9 18:27:26 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (do_select): use ubf_select() as UBF on windows.
+
+	* win32/win32.c (do_select): shouldn't call catch_interrupt() here.
+	  fixed: [ruby-dev:30674], reported by wanabe.
+
 Mon Apr  9 09:24:32 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnect): call shutdown for

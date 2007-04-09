@@ -2110,9 +2110,6 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    rb_w32_sleep(INFINITE);
     }
     else {
-#if !USE_INTERRUPT_WINSOCK
-	int trap_immediate = rb_trap_immediate;
-#endif	/* !USE_INTERRUPT_WINSOCK */
 	RUBY_CRITICAL(
 	    r = select(nfds, rd, wr, ex, timeout);
 	    if (r == SOCKET_ERROR) {
@@ -2120,10 +2117,6 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		r = -1;
 	    }
 	);
-#if !USE_INTERRUPT_WINSOCK
-	rb_trap_immediate = trap_immediate;
-	catch_interrupt();
-#endif	/* !USE_INTERRUPT_WINSOCK */
     }
 
     return r;

@@ -1720,7 +1720,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		    if (except) *except = orig_except;
 		    wait = &wait_100ms;
 		} while (__th->interrupt_flag == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
-	    }, 0);
+	    }, do_select);
 	} while (result == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
     }
 #else
