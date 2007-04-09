@@ -287,7 +287,11 @@ module Net
 
     # Disconnects from the server.
     def disconnect
-      @sock.shutdown unless @usessl
+      if SSL::SSLSocket === @sock
+        @sock.io.shutdown
+      else
+        @sock.shutdown
+      end
       @receiver_thread.join
       @sock.close
     end

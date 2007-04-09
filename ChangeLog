@@ -1,3 +1,8 @@
+Mon Apr  9 09:24:32 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnect): call shutdown for
+	  SSLSocket. Thanks, Technorama Ltd.
+
 Sun Apr  8 13:28:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (defined_expr): test arguments of NODE_CALL and so
