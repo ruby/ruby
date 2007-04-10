@@ -70,12 +70,12 @@ static int
 w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 {
     HANDLE *targets = events;
+    HANDLE intr;
     DWORD ret;
 
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
 		 events, count, timeout, th);
-    if (th) {
-	HANDLE intr = th->native_thread_data.interrupt_event;
+    if (th && (intr = th->native_thread_data.interrupt_event)) {
 	w32_reset_event(intr);
 	if (th->interrupt_flag) {
 	    w32_set_event(intr);
@@ -286,9 +286,10 @@ NOINLINE(static int
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    thread_debug("close handle - intr: %p, thid: %p\n",
-		 th->native_thread_data.interrupt_event, th->thread_id);
-    w32_close_handle(th->native_thread_data.interrupt_event);
+    HANDLE intr = th->native_thread_data.interrupt_event;
+    thread_debug("close handle - intr: %p, thid: %p\n", intr, th->thread_id);
+    th->native_thread_data.interrupt_event = 0;
+    w32_close_handle(intr);
 }
 
 static unsigned int _stdcall
