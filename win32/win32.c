@@ -3944,6 +3944,7 @@ rb_w32_fclose(FILE *fp)
 {
     int fd = fileno(fp);
     SOCKET sock = TO_SOCKET(fd);
+    int save_errno = errno;
 
     if (fflush(fp)) return -1;
     if (!is_socket(sock)) {
@@ -3952,6 +3953,7 @@ rb_w32_fclose(FILE *fp)
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     fclose(fp);
+    errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;
@@ -3963,6 +3965,7 @@ int
 rb_w32_close(int fd)
 {
     SOCKET sock = TO_SOCKET(fd);
+    int save_errno = errno;
 
     if (!is_socket(sock)) {
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
@@ -3970,6 +3973,7 @@ rb_w32_close(int fd)
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     _close(fd);
+    errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;

@@ -1,3 +1,8 @@
+Tue Apr 10 17:02:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_fclose, rb_w32_close): need to save errno
+	  before calling original fclose()/close().
+
 Tue Apr 10 16:14:22 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.ci (w32_wait_events): check whether interrupt_event is
