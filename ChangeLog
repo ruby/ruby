@@ -1,3 +1,8 @@
+Tue Apr 10 15:53:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_pthread.ci (native_thread_create): initialize sleep_cond.
+	  fixed: [ruby-dev:30675]
+
 Mon Apr  9 18:48:57 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (do_select): ubf_select() is not necessary. interrupt is
