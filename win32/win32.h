@@ -508,8 +508,6 @@ int rb_w32_times(struct tms *);
 /* thread stuff */
 HANDLE GetCurrentThreadHandle(void);
 int  rb_w32_sleep(unsigned long msec);
-void rb_w32_enter_critical(void);
-void rb_w32_leave_critical(void);
 int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
 int  rb_w32_close(int);

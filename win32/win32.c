@@ -3627,56 +3627,6 @@ rb_w32_times(struct tms *tmbuf)
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-static CRITICAL_SECTION *
-system_state(void)
-{
-    static int initialized = 0;
-    static CRITICAL_SECTION syssect;
-
-    if (!initialized) {
-	InitializeCriticalSection(&syssect);
-	initialized = 1;
-    }
-    return &syssect;
-}
-
-static LONG flag_interrupt = -1;
-static volatile DWORD tlsi_interrupt = TLS_OUT_OF_INDEXES;
-
-void
-rb_w32_enter_critical(void)
-{
-    if (IsWinNT()) {
-	EnterCriticalSection(system_state());
-	return;
-    }
-
-    if (tlsi_interrupt == TLS_OUT_OF_INDEXES) {
-	tlsi_interrupt = TlsAlloc();
-    }
-
-    {
-	DWORD ti = (DWORD)TlsGetValue(tlsi_interrupt);
-	while (InterlockedIncrement(&flag_interrupt) > 0 && !ti) {
-	    InterlockedDecrement(&flag_interrupt);
-	    Sleep(1);
-	}
-	TlsSetValue(tlsi_interrupt, (PVOID)++ti);
-    }
-}
-
-void
-rb_w32_leave_critical(void)
-{
-    if (IsWinNT()) {
-	LeaveCriticalSection(system_state());
-	return;
-    }
-
-    InterlockedDecrement(&flag_interrupt);
-    TlsSetValue(tlsi_interrupt, (PVOID)((DWORD)TlsGetValue(tlsi_interrupt) - 1));
-}
-
 struct handler_arg_t {
     void (*handler)(int);
     int arg;

@@ -1,3 +1,12 @@
+Wed Apr 11 16:35:16 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.[ch] (rb_w32_enter_critical, rb_w32_leave_critical): no
+	  need to reject reentrance. removed.
+
+	* rubysig.h (RUBY_CRITICAL): follow above changes.
+
+	* rubysig.h (TRAP_BEG, TRAP_END): no need to save errno.
+
 Tue Apr 10 17:02:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_fclose, rb_w32_close): need to save errno
