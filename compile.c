@@ -2670,7 +2670,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  iseq->compile_data->loopval_popped = 0;
 	  iseq->compile_data->ensure_node_stack = 0;
 
-	  if (type == NODE_OPT_N || node->nd_state) {
+	  if (type == NODE_OPT_N || node->nd_state == 1) {
 	      ADD_INSNL(ret, nd_line(node), jump, next_label);
 	  }
 

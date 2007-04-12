@@ -1,3 +1,7 @@
+Thu Apr 12 16:04:31 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): check node->nd_state == 1, not !0.
+
 Wed Apr 11 16:35:16 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_enter_critical, rb_w32_leave_critical): no
