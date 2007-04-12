@@ -1,3 +1,7 @@
+Thu Apr 12 16:06:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_protect): restore cfp ([ruby-dev:30671]).
+
 Thu Apr 12 16:04:31 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): check node->nd_state == 1, not !0.

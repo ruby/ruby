@@ -1390,16 +1390,20 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
 {
     VALUE result = Qnil;	/* OK */
     int status;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
 
     PUSH_THREAD_TAG();
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc) (data);
     }
     POP_THREAD_TAG();
+
     if (state) {
 	*state = status;
     }
     if (status != 0) {
+	th->cfp = cfp;
 	return Qnil;
     }
 
