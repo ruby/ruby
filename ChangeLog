@@ -1,3 +1,9 @@
+Thu Apr 12 17:13:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (mutex_try_lock): check and set owner thread.
+
+	* thread_pthread.ci: fix to show error code in error message.
+
 Thu Apr 12 17:11:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_rescue2): restore cfp ([ruby-dev:30582]).

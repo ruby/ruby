@@ -2138,7 +2138,12 @@ mutex_try_lock(VALUE self)
     mutex_t *mutex;
     GetMutexVal(self, mutex);
 
+    if (mutex->th == GET_THREAD()) {
+	rb_raise(rb_eThreadError, "deadlock; recursive locking");
+    }
+
     if (native_mutex_trylock(&mutex->lock) != EBUSY) {
+	mutex->th = GET_THREAD();
 	return Qtrue;
     }
     else {

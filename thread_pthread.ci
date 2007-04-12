@@ -48,16 +48,18 @@ native_mutex_trylock(pthread_mutex_t *lock)
 void
 native_mutex_initialize(pthread_mutex_t *lock)
 {
-    if (pthread_mutex_init(lock, 0) != 0) {
-	rb_bug("native_mutex_initialize return non-zero");
+    int r = pthread_mutex_init(lock, 0);
+    if (r != 0) {
+	rb_bug("native_mutex_initialize return non-zero: %d", r);
     }
 }
 
 void
 native_mutex_destroy(pthread_mutex_t *lock)
 {
-    if (pthread_mutex_destroy(lock) != 0) {
-	rb_bug("native_mutex_destroy return non-zero");
+    int r = pthread_mutex_destroy(lock);
+    if (r != 0) {
+	rb_bug("native_mutex_destroy return non-zero: %d", r);
     }
 }
 
