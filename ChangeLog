@@ -1,3 +1,7 @@
+Thu Apr 12 17:11:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_rescue2): restore cfp ([ruby-dev:30582]).
+
 Thu Apr 12 16:06:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_protect): restore cfp ([ruby-dev:30671]).

@@ -1327,8 +1327,10 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
 	   VALUE data2, ...)
 {
     int state;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->cfp;
     volatile VALUE result;
-    volatile VALUE e_info = GET_THREAD()->errinfo;
+    volatile VALUE e_info = th->errinfo;
     va_list args;
 
     PUSH_TAG(PROT_NONE);
@@ -1336,38 +1338,42 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
       retry_entry:
 	result = (*b_proc) (data1);
     }
-    else if (state == TAG_RAISE) {
-	int handle = Qfalse;
-	VALUE eclass;
+    else {
+	th->cfp = cfp; /* restore */
 
-	va_init_list(args, data2);
-	while (eclass = va_arg(args, VALUE)) {
-	    if (rb_obj_is_kind_of(GET_THREAD()->errinfo, eclass)) {
-		handle = Qtrue;
-		break;
-	    }
-	}
-	va_end(args);
+	if (state == TAG_RAISE) {
+	    int handle = Qfalse;
+	    VALUE eclass;
 
-	if (handle) {
-	    if (r_proc) {
-		PUSH_TAG(PROT_NONE);
-		if ((state = EXEC_TAG()) == 0) {
-		    result = (*r_proc) (data2, GET_THREAD()->errinfo);
+	    va_init_list(args, data2);
+	    while (eclass = va_arg(args, VALUE)) {
+		if (rb_obj_is_kind_of(th->errinfo, eclass)) {
+		    handle = Qtrue;
+		    break;
 		}
-		POP_TAG();
-		if (state == TAG_RETRY) {
+	    }
+	    va_end(args);
+
+	    if (handle) {
+		if (r_proc) {
+		    PUSH_TAG(PROT_NONE);
+		    if ((state = EXEC_TAG()) == 0) {
+			result = (*r_proc) (data2, th->errinfo);
+		    }
+		    POP_TAG();
+		    if (state == TAG_RETRY) {
+			state = 0;
+			th->errinfo = Qnil;
+			goto retry_entry;
+		    }
+		}
+		else {
+		    result = Qnil;
 		    state = 0;
-		    GET_THREAD()->errinfo = Qnil;
-		    goto retry_entry;
 		}
-	    }
-	    else {
-		result = Qnil;
-		state = 0;
-	    }
-	    if (state == 0) {
-		GET_THREAD()->errinfo = e_info;
+		if (state == 0) {
+		    th->errinfo = e_info;
+		}
 	    }
 	}
     }
