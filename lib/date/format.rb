@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.31 2007-02-18 12:08:09+09 tadf Exp $
+# $Id: format.rb,v 2.33 2007-04-14 12:56:06+09 tadf Exp $
 
 require 'rational'
 
@@ -40,16 +40,33 @@ class Date
       'r'   => -5*3600, 's'   => -6*3600, 't'   => -7*3600, 'u'   => -8*3600,
       'v'   => -9*3600, 'w'   =>-10*3600, 'x'   =>-11*3600, 'y'   =>-12*3600,
       'z'   =>  0*3600,
-      'utc' =>  0*3600, 'wet' =>  0*3600, 'bst' =>  1*3600, 'wat' => -1*3600,
-      'at'  => -2*3600, 'ast' => -4*3600, 'adt' => -3*3600, 'yst' => -9*3600,
-      'ydt' => -8*3600, 'hst' =>-10*3600, 'hdt' => -9*3600, 'cat' =>-10*3600,
-      'ahst'=>-10*3600, 'nt'  =>-11*3600, 'idlw'=>-12*3600, 'cet' =>  1*3600,
-      'met' =>  1*3600, 'mewt'=>  1*3600, 'mest'=>  2*3600, 'mesz'=>  2*3600,
-      'swt' =>  1*3600, 'sst' =>  2*3600, 'fwt' =>  1*3600, 'fst' =>  2*3600,
-      'eet' =>  2*3600, 'bt'  =>  3*3600, 'zp4' =>  4*3600, 'zp5' =>  5*3600,
-      'zp6' =>  6*3600, 'wast'=>  7*3600, 'wadt'=>  8*3600, 'cct' =>  8*3600,
-      'jst' =>  9*3600, 'east'=> 10*3600, 'eadt'=> 11*3600, 'gst' => 10*3600,
-      'nzt' => 12*3600, 'nzst'=> 12*3600, 'nzdt'=> 13*3600, 'idle'=> 12*3600,
+
+      'utc' =>  0*3600, 'wet' =>  0*3600,
+      'at'  => -2*3600, 'brst'=> -2*3600, 'ndt' => -(2*3600+1800),
+      'art' => -3*3600, 'adt' => -3*3600, 'brt' => -3*3600, 'clst'=> -3*3600,
+      'nst' => -(3*3600+1800),
+      'ast' => -4*3600, 'clt' => -4*3600,
+      'akdt'=> -8*3600, 'ydt' => -8*3600,
+      'akst'=> -9*3600, 'hadt'=> -9*3600, 'hdt' => -9*3600, 'yst' => -9*3600,
+      'ahst'=>-10*3600, 'cat' =>-10*3600, 'hast'=>-10*3600, 'hst' =>-10*3600,
+      'nt'  =>-11*3600,
+      'idlw'=>-12*3600,
+      'bst' =>  1*3600, 'cet' =>  1*3600, 'fwt' =>  1*3600, 'met' =>  1*3600,
+      'mewt'=>  1*3600, 'mez' =>  1*3600, 'swt' =>  1*3600, 'wat' =>  1*3600,
+      'west'=>  1*3600,
+      'cest'=>  2*3600, 'eet' =>  2*3600, 'fst' =>  2*3600, 'mest'=>  2*3600,
+      'mesz'=>  2*3600, 'sast'=>  2*3600, 'sst' =>  2*3600,
+      'bt'  =>  3*3600, 'eat' =>  3*3600, 'eest'=>  3*3600, 'msk' =>  3*3600,
+      'msd' =>  4*3600, 'zp4' =>  4*3600,
+      'zp5' =>  5*3600, 'ist' =>  (5*3600+1800),
+      'zp6' =>  6*3600,
+      'wast'=>  7*3600,
+      'cct' =>  8*3600, 'sgt' =>  8*3600, 'wadt'=>  8*3600,
+      'jst' =>  9*3600, 'kst' =>  9*3600,
+      'east'=> 10*3600, 'gst' => 10*3600,
+      'eadt'=> 11*3600,
+      'idle'=> 12*3600, 'nzst'=> 12*3600, 'nzt' => 12*3600,
+      'nzdt'=> 13*3600,
 
       'afghanistan'           =>   16200, 'alaskan'               =>  -32400,
       'arab'                  =>   10800, 'arabian'               =>   14400,
@@ -842,23 +859,16 @@ class Date
     end
   end
 
-  def self._parse_sla_ja(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
-      s3e(e, $1, $2, $3)
-      true
-    end
-  end
-
-  def self._parse_sla_eu(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
-      s3e(e, $3, $2, $1)
-      true
-    end
-  end
-
-  def self._parse_sla_us(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)[/.]\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+  def self._parse_sla(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
       s3e(e, $3, $1, $2)
+      true
+    end
+  end
+
+  def self._parse_dot(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)[^\d]\s*('?-?\d+)|n, ' ') # '
+      s3e(e, $1, $2, $3)
       true
     end
   end
@@ -952,7 +962,7 @@ class Date
   private_class_method :_parse_day, :_parse_time, :_parse_beat,
 	:_parse_eu, :_parse_us, :_parse_iso, :_parse_iso2,
 	:_parse_jis, :_parse_vms,
-	:_parse_sla_ja, :_parse_sla_eu, :_parse_sla_us,
+	:_parse_sla, :_parse_dot,
 	:_parse_year, :_parse_mon, :_parse_mday, :_parse_ddd
 
   def self._parse(str, comp=false)
@@ -972,7 +982,8 @@ class Date
     _parse_iso(str, e)    ||
     _parse_jis(str, e)    ||
     _parse_vms(str, e)    ||
-    _parse_sla_us(str, e) ||
+    _parse_sla(str, e)    ||
+    _parse_dot(str, e)    ||
     _parse_iso2(str, e)   ||
     _parse_year(str, e)   ||
     _parse_mon(str, e)    ||
