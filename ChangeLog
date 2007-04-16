@@ -1,3 +1,8 @@
+Mon Apr 16 16:49:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_seek): consistent behavior with
+	  IO#seek.  patch by sheepman in [ruby-dev:30710].
+
 Mon Apr 16 16:34:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): should set command_start after block
