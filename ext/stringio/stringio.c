@@ -597,6 +597,9 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", NULL, &whence);
     offset = NUM2LONG(argv[0]);
+    if (CLOSED(ptr)) {
+	rb_raise(rb_eIOError, "closed stream");
+    }
     switch (NIL_P(whence) ? 0 : NUM2LONG(whence)) {
       case 0:
 	break;
@@ -607,7 +610,7 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 	offset += RSTRING_LEN(ptr->string);
 	break;
       default:
-	rb_raise(rb_eArgError, "invalid whence %ld", NUM2LONG(whence));
+	error_inval("invalid whence");
     }
     if (offset < 0) {
 	error_inval(0);
