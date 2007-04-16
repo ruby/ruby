@@ -1144,14 +1144,14 @@ each_with_index_i(VALUE val, VALUE memo)
  */
 
 static VALUE
-enum_each_with_index(VALUE obj)
+enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_ENUMERATOR(obj, argc, argv);
 
     memo = rb_ary_new3(2, Qnil, INT2FIX(0));
-    rb_block_call(obj, id_each, 0, 0, each_with_index_i, memo);
+    rb_block_call(obj, id_each, argc, argv, each_with_index_i, memo);
     return obj;
 }
 
@@ -1379,7 +1379,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
-    rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
+    rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, -1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, -1);
     rb_define_method(rb_mEnumerable, "drop", enum_drop, -1);

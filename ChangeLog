@@ -1,3 +1,8 @@
+Mon Apr 16 10:51:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_each_with_index): each_with_index to forward
+	  arguments to each.  [ruby-core:10921]
+
 Mon Apr 16 10:43:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_arg): should allow to specify 24:00.
