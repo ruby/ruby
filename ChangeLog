@@ -1,3 +1,9 @@
+Mon Apr 16 22:56:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/pty/expect_sample.rb: avoid symbolic link representation for
+	  expect.  a patch from Kazuhiro NISHIYAMA <zn at mbf.nifty.com>.
+	  [ruby-dev:30714]
+
 Mon Apr 16 22:51:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample: replace TRUE, FALSE with true, false respectively.

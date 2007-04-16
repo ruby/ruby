@@ -37,9 +37,9 @@ PTY.spawn("ftp ftp.ruby-lang.org") do |r_f,w_f,pid|
     w_f.print "dir\n"
   end
   
-  r_f.expect("> ") do |output|
+  r_f.expect(/[^\-]> /) do |output|
     for x in output[0].split("\n")
-      if x =~ /(ruby.*\.tar\.gz)/ then
+      if x =~ /(ruby.*?\.tar\.gz)/ then
          fnames.push $1
       end
     end
