@@ -1,3 +1,8 @@
+Mon Apr 16 10:43:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_arg): should allow to specify 24:00.
+	  [ruby-core:10915]
+
 Sun Apr 15 09:12:54 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: added some zone names.

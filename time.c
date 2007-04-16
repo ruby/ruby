@@ -368,7 +368,8 @@ time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
 #endif
 	   tm->tm_mon  < 0 || tm->tm_mon  > 11
 	|| tm->tm_mday < 1 || tm->tm_mday > 31
-	|| tm->tm_hour < 0 || tm->tm_hour > 23
+	|| tm->tm_hour < 0 || tm->tm_hour > 24
+	|| (tm->tm_hour == 24 && (tm->tm_min > 0 || tm->tm_sec > 0))
 	|| tm->tm_min  < 0 || tm->tm_min  > 59
 	|| tm->tm_sec  < 0 || tm->tm_sec  > 60)
 	rb_raise(rb_eArgError, "argument out of range");
