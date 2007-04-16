@@ -26,7 +26,7 @@ end
     ls = mysock	# copy to dynamic variable
     t = Thread.current
     STDERR.print "socket #{myname} listener started, pid #{$$} thread #{t}\n"
-    while TRUE
+    while true
       as = ls.accept
       Thread.start do
 	STDERR.print "socket #{myname} accepted, thread ", Thread.current, "\n"

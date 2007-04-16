@@ -3,7 +3,7 @@ en = "\033[m"
 #st = "<<"
 #en = ">>"
 
-while TRUE
+while true
   print "str> "
   STDOUT.flush
   input = gets

@@ -26,7 +26,7 @@ class String
 end
 
 if ARGV[0] == '-w'
-  wait = TRUE
+  wait = true
   ARGV.shift
 end
 

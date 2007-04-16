@@ -1,3 +1,9 @@
+Mon Apr 16 22:51:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample: replace TRUE, FALSE with true, false respectively.
+	  a patch from Kazuhiro NISHIYAMA <zn at mbf.nifty.com>.
+	  [ruby-dev:30713]
+
 Mon Apr 16 17:08:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (make_switch): do not clobber converter if pattern
