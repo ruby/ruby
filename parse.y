@@ -4146,6 +4146,7 @@ yylex()
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;
+	if (c != tLBRACE) command_start = Qtrue;
 	return c;
 
       case '\\':
@@ -4449,6 +4450,7 @@ yylex()
 			return kw->id[0];
 		    }
 		    if (kw->id[0] == kDO) {
+			command_start = Qtrue;
 			if (COND_P()) return kDO_COND;
 			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return kDO_BLOCK;
