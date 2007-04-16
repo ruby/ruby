@@ -1076,7 +1076,7 @@ class OptionParser
       # directly specified pattern(any object possible to match)
       if !(String === o) and o.respond_to?(:match)
         pattern = notwice(o, pattern, 'pattern')
-        conv = (pattern.method(:convert).to_proc if pattern.respond_to?(:convert))
+        conv ||= pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
         next
       end
 
@@ -1089,7 +1089,7 @@ class OptionParser
         when CompletingHash
         when nil
           pattern = CompletingHash.new
-          conv = (pattern.method(:convert).to_proc if pattern.respond_to?(:convert))
+          conv ||= pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
         else
           raise ArgumentError, "argument pattern given twice"
         end
