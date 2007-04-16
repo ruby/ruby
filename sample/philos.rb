@@ -25,7 +25,7 @@ def eat(n)
 end
 
 def philosopher(n)
-  while TRUE
+  while true
     think n
     $forks[n].lock
     if not $forks[(n+1)%N].try_lock

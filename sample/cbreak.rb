@@ -6,11 +6,11 @@ TIOCGETP = 0x40067408
 TIOCSETP = 0x80067409
 
 def cbreak ()
-  set_cbreak(TRUE)
+  set_cbreak(true)
 end
 
 def cooked ()
-  set_cbreak(FALSE)
+  set_cbreak(false)
 end
 
 def set_cbreak (on)

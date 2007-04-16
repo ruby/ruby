@@ -1,6 +1,6 @@
 line = ''
 indent = 0
-$stdout.sync = TRUE
+$stdout.sync = true
 print "ruby> "
 loop do
   l = gets
