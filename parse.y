@@ -6444,6 +6444,7 @@ parser_yylex(struct parser_params *parser)
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;
+	if (c != tLBRACE) command_start = Qtrue;
 	return c;
 
       case '\\':
@@ -6765,6 +6766,7 @@ parser_yylex(struct parser_params *parser)
 			return kw->id[0];
 		    }
 		    if (kw->id[0] == keyword_do) {
+			command_start = Qtrue;
 			if (lpar_beg && lpar_beg == paren_nest) {
 			    lpar_beg = 0;
 			    --paren_nest;
