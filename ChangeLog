@@ -1,7 +1,10 @@
-Wed Apr 18 02:17:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 18 02:30:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDFLAGS): prepend -L. instead appending it to
 	  XLDFLAGS.  [ruby-core:10933]
+
+	* configure.in (Makefile): remove $U for automake from MISSING.
+	  [ruby-talk:248171]
 
 Mon Apr 16 22:56:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
