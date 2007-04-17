@@ -1,3 +1,11 @@
+Tue Apr 17 16:46:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): should not clear state on TAG_NEXT when
+	  it's invoked from within lambda body.  [ruby-talk:248136]
+
+	* eval.c (proc_invoke): handle TAG_NEXT which would be caused by
+	  next in the lambda body as well.
+
 Mon Apr 16 22:56:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/pty/expect_sample.rb: avoid symbolic link representation for
