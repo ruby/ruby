@@ -1,3 +1,8 @@
+Wed Apr 18 02:50:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* yarvcore.c (th_init2): push initial blockptr value for
+	  rb_block_given_p() outside ruby_exec().  [ruby-core:10923]
+
 Wed Apr 18 02:30:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDFLAGS): prepend -L. instead appending it to

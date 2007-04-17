@@ -318,9 +318,10 @@ th_init2(rb_thread_t *th)
     th->cfp--;
 
     th->cfp->pc = 0;
-    th->cfp->sp = th->stack;
+    th->cfp->sp = th->stack + 1;
     th->cfp->bp = 0;
     th->cfp->lfp = th->stack;
+    *th->cfp->lfp = 0;
     th->cfp->dfp = th->stack;
     th->cfp->self = Qnil;
     th->cfp->magic = 0;
