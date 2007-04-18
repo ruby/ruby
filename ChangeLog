@@ -1,3 +1,7 @@
+Wed Apr 18 10:41:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): exponent is radix 10.  [ruby-talk:248272]
+
 Wed Apr 18 02:50:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* yarvcore.c (th_init2): push initial blockptr value for

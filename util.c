@@ -664,8 +664,8 @@ ruby_getcwd(void)
  *
  */
 
-#define MDMINEXPT DBL_MIN_EXP
-#define MDMAXEXPT DBL_MAX_EXP
+#define MDMINEXPT DBL_MIN_10_EXP
+#define MDMAXEXPT DBL_MAX_10_EXP
 
 static const double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
     10.0,			/* is 10^2^i.  Used to convert decimal */
