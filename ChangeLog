@@ -1,3 +1,32 @@
+Fri Apr 20 02:37:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): re-send signal.  [ruby-dev:30516]
+
+	* eval_error.h (error_handle): no message when exiting by signal.
+
+	* intern.h (rb_thread_signal_raise, ruby_default_signal): prototypes.
+
+	* signal.c (esignal_init): takes a signal number and an optional
+	  signal name.
+
+	* signal.c (interrupt_init): pass SIGINT always.
+
+	* signal.c (ruby_default_signal): invoke system default signal
+	  handler.
+
+	* signal.c (rb_f_kill): use NUM2PIDT instead of NUM2INT.
+
+	* signal.c (rb_signal_exec, trap): handle SIGTERM.  [ruby-dev:30505]
+
+	* thread.c (rb_thread_signal_raise): now takes signal number instead
+	  of signal name.
+
+	* thread.c (rb_thread_signal_exit): since rb_make_exception() calls
+	  #exception method, rb_class_new_instance() is not needed here.
+
+	* yarvcore.h (struct rb_vm_struct), eval_jump.h (terminate_process):
+	  exit_code is no longer stored in VM.
+
 Thu Apr 19 18:37:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, node.h, thread.c, yarvcore.[ch], eval_intern.h:

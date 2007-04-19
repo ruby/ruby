@@ -153,40 +153,41 @@ ruby_finalize(void)
 int
 ruby_cleanup(int ex)
 {
-    int state;
-    volatile VALUE err = GET_THREAD()->errinfo;
+    int state, i;
+    volatile VALUE errs[2] = {GET_THREAD()->errinfo, 0};
     rb_vm_t *vm = GET_THREAD()->vm;
-
-    /* th->errinfo contains a NODE while break'ing */
-    if (RTEST(err) && (TYPE(err) != T_NODE) &&
-	rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	vm->exit_code = NUM2INT(rb_iv_get(err, "status"));
-    }
-    else {
-	vm->exit_code = 0;
-    }
 
     GET_THREAD()->safe_level = 0;
     Init_stack((void *)&state);
     PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	if (GET_THREAD()->errinfo) {
-	    err = GET_THREAD()->errinfo;
-	}
 	ruby_finalize_0();
     }
     else if (ex == 0) {
 	ex = state;
     }
+    errs[1] = GET_THREAD()->errinfo;
     rb_thread_terminate_all();
-    GET_THREAD()->errinfo = err;
+    GET_THREAD()->errinfo = errs[0];
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_THREAD_TAG();
+    rb_thread_stop_timer_thread();
 
-    if (vm->exit_code) {
-	return vm->exit_code;
+    for (i = 2; i > 0; --i) {
+	VALUE err = errs[i];
+
+	/* th->errinfo contains a NODE while break'ing */
+	if (!RTEST(err) || (TYPE(err) == T_NODE)) continue;
+
+	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
+	    return sysexit_status(err);
+	}
+	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
+	    ruby_default_signal(NUM2INT(rb_iv_get(err, "signo")));
+	}
     }
+
     return ex;
 }
 

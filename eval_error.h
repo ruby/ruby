@@ -233,14 +233,19 @@ error_handle(int ex)
 	warn_printf(": unexpected throw\n");
 	break;
       case TAG_RAISE:
-      case TAG_FATAL:
-	if (rb_obj_is_kind_of(GET_THREAD()->errinfo, rb_eSystemExit)) {
-	    status = sysexit_status(GET_THREAD()->errinfo);
+      case TAG_FATAL: {
+	VALUE errinfo = GET_THREAD()->errinfo;
+	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+	    status = sysexit_status(errinfo);
+	}
+	else if (rb_obj_is_instance_of(errinfo, rb_eSignal)) {
+	    /* no message when exiting by signal */
 	}
 	else {
 	    error_print();
 	}
 	break;
+      }
       default:
 	rb_bug("Unknown longjmp status %d", ex);
 	break;

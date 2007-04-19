@@ -143,7 +143,6 @@ terminate_process(int status, const char *mesg, long mlen)
     args[0] = INT2NUM(status);
     args[1] = rb_str_new(mesg, mlen);
 
-    vm->exit_code = status;
     rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
 }
 

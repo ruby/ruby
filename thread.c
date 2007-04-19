@@ -751,31 +751,25 @@ rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 }
 
 void
-rb_thread_signal_raise(void *thptr, const char *sig)
+rb_thread_signal_raise(void *thptr, int sig)
 {
-    VALUE argv[1];
-    char buf[BUFSIZ];
+    VALUE argv[2];
     rb_thread_t *th = thptr;
-    
-    if (sig == 0) {
-	return;			/* should not happen */
-    }
-    snprintf(buf, BUFSIZ, "SIG%s", sig);
-    argv[0] = rb_exc_new3(rb_eSignal, rb_str_new2(buf));
-    rb_thread_raise(1, argv, th->vm->main_thread);
+
+    argv[0] = rb_eSignal;
+    argv[1] = INT2FIX(sig);
+    rb_thread_raise(2, argv, th->vm->main_thread);
 }
 
 void
 rb_thread_signal_exit(void *thptr)
 {
-    VALUE argv[1];
-    VALUE args[2];
+    VALUE argv[2];
     rb_thread_t *th = thptr;
-    
-    args[0] = INT2NUM(EXIT_SUCCESS);
-    args[1] = rb_str_new2("exit");
-    argv[0] = rb_class_new_instance(2, args, rb_eSystemExit);
-    rb_thread_raise(1, argv, th->vm->main_thread);
+
+    argv[0] = rb_eSystemExit;
+    argv[1] = rb_str_new2("exit");
+    rb_thread_raise(2, argv, th->vm->main_thread);
 }
 
 int

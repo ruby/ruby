@@ -14,6 +14,8 @@
 
 #include "ruby.h"
 #include "rubysig.h"
+#include "node.h"
+#include "yarvcore.h"
 #include <signal.h>
 #include <stdio.h>
 
@@ -197,6 +199,84 @@ ruby_signal_name(int no)
 }
 
 /*
+ * call-seq:
+ *    SignalException.new(sig)   =>  signal_exception
+ *
+ *  Construct a new SignalException object.  +sig+ should be a known
+ *  signal name, or a signal number.
+ */
+
+static VALUE
+esignal_init(int argc, VALUE *argv, VALUE self)
+{
+    int argnum = 1;
+    VALUE sig = Qnil;
+    int signo;
+    const char *signm;
+
+    if (argc > 0) {
+	sig = rb_check_to_integer(argv[0], "to_int");
+	if (!NIL_P(sig)) argnum = 2;
+    }
+    if (argc < 1 || argnum < argc) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		 argc, argnum);
+    }
+    if (argnum == 2) {
+	signo = NUM2INT(sig);
+	if (signo < 0 || signo > NSIG) {
+	    rb_raise(rb_eArgError, "invalid signal number (%d)", signo);
+	}
+	if (argc > 1) {
+	    sig = argv[1];
+	}
+	else {
+	    signm = signo2signm(signo);
+	    if (signm) {
+		sig = rb_sprintf("SIG%s", signm);
+	    }
+	    else {
+		sig = rb_sprintf("SIG%u", signo);
+	    }
+	}
+    }
+    else {
+	signm = SYMBOL_P(sig) ? rb_id2name(SYM2ID(sig)) : StringValuePtr(sig);
+	if (strncmp(signm, "SIG", 3) == 0) signm += 3;
+	signo = signm2signo(signm);
+	if (!signo) {
+	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", signm);
+	}
+	if (SYMBOL_P(sig)) {
+	    sig = rb_str_new2(signm);
+	}
+    }
+    rb_call_super(1, &sig);
+    rb_iv_set(self, "signo", INT2NUM(signo));
+
+    return self;
+}
+
+static VALUE
+interrupt_init(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[2];
+
+    rb_scan_args(argc, argv, "01", &args[1]);
+    args[0] = INT2FIX(SIGINT);
+    return rb_call_super(argc + 1, args);
+}
+
+void
+ruby_default_signal(int sig)
+{
+#ifndef MACOS_UNUSE_SIGNAL
+    signal(sig, SIG_DFL);
+    raise(sig);
+#endif
+}
+
+/*
  *  call-seq:
  *     Process.kill(signal, pid, ...)    => fixnum
  *  
@@ -223,6 +303,9 @@ ruby_signal_name(int no)
 VALUE
 rb_f_kill(int argc, VALUE *argv)
 {
+#ifndef HAS_KILLPG
+#define killpg(pg, sig) kill(-(pg), sig)
+#endif
     int negative = 0;
     int sig;
     int i;
@@ -275,22 +358,17 @@ rb_f_kill(int argc, VALUE *argv)
     if (sig < 0) {
 	sig = -sig;
 	for (i=1; i<argc; i++) {
-	    int pid = NUM2INT(argv[i]);
-#ifdef HAS_KILLPG
-	    if (killpg(pid, sig) < 0)
-#else
-	    if (kill(-pid, sig) < 0)
-#endif
+	    if (killpg(NUM2PIDT(argv[i]), sig) < 0)
 		rb_sys_fail(0);
 	}
     }
     else {
 	for (i=1; i<argc; i++) {
-	    Check_Type(argv[i], T_FIXNUM);
-	    if (kill(FIX2INT(argv[i]), sig) < 0)
+	    if (kill(NUM2PIDT(argv[i]), sig) < 0)
 		rb_sys_fail(0);
 	}
     }
+    rb_thread_polling();
     return INT2FIX(i-1);
 }
 
@@ -368,9 +446,6 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 }
 #endif
 #endif
-
-#include <node.h>
-#include "yarvcore.h"
 
 static RETSIGTYPE
 sighandler(int sig)
@@ -498,6 +573,9 @@ rb_signal_exec(rb_thread_t *th, int sig)
 #ifdef SIGQUIT
 	  case SIGQUIT:
 #endif
+#ifdef SIGTERM
+	  case SIGTERM:
+#endif
 #ifdef SIGALRM
 	  case SIGALRM:
 #endif
@@ -507,7 +585,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
 #ifdef SIGUSR2
 	  case SIGUSR2:
 #endif
-	    rb_thread_signal_raise(th, signo2signm(sig));
+	    rb_thread_signal_raise(th, sig);
 	    break;
 	}
     }
@@ -637,6 +715,9 @@ trap(struct trap_arg *arg)
 #endif
 #ifdef SIGQUIT
 	  case SIGQUIT:
+#endif
+#ifdef SIGTERM
+	  case SIGTERM:
 #endif
 #ifdef SIGALRM
 	  case SIGALRM:
@@ -897,6 +978,11 @@ Init_signal(void)
     rb_define_global_function("trap", sig_trap, -1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
+
+    rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
+    rb_attr(rb_eSignal, rb_intern("signo"), 1, 0, 0);
+    rb_alias(rb_eSignal, rb_intern("signm"), rb_intern("message"));
+    rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 
     install_sighandler(SIGINT, sighandler);
 #ifdef SIGHUP

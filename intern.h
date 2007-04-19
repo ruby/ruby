@@ -274,7 +274,7 @@ VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
 void rb_thread_trap_eval(VALUE, int, int);
-void rb_thread_signal_raise(void *, const char*); /* should pass literal */
+void rb_thread_signal_raise(void *, int);
 void rb_thread_signal_exit(void *);
 int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 void rb_thread_wait_for(struct timeval);
@@ -471,6 +471,7 @@ void posix_signal(int, RETSIGTYPE (*)(int));
 void rb_trap_exit(void);
 void rb_trap_exec(void);
 const char *ruby_signal_name(int);
+void ruby_default_signal(int);
 /* sprintf.c */
 VALUE rb_f_sprintf(int, const VALUE*);
 PRINTF_ARGS(VALUE rb_sprintf(const char*, ...), 1, 2);

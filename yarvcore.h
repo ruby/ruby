@@ -345,7 +345,6 @@ typedef struct rb_vm_struct {
 
     int thread_abort_on_exception;
     unsigned long trace_flag;
-    int exit_code;
 
     /* object management */
     VALUE mark_object_ary;
