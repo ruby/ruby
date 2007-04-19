@@ -1,3 +1,8 @@
+Thu Apr 19 14:53:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/monitor.rb (ConditionVariable#wait, mon_enter, mon_exit_for_cond):
+	  ensures Thread.critical to be false.  [ruby-talk:248300]
+
 Wed Apr 18 10:41:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): exponent is radix 10.  [ruby-talk:248272]
