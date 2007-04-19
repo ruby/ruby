@@ -1,3 +1,7 @@
+Thu Apr 19 17:46:36 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/optparse.rb: fix to override conv proc.
+
 Wed Apr 18 10:41:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): exponent is radix 10.  [ruby-talk:248272]

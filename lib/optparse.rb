@@ -1089,7 +1089,7 @@ class OptionParser
         when CompletingHash
         when nil
           pattern = CompletingHash.new
-          conv ||= pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
+          conv = pattern.method(:convert).to_proc if pattern.respond_to?(:convert)
         else
           raise ArgumentError, "argument pattern given twice"
         end
