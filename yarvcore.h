@@ -186,6 +186,7 @@ typedef struct rb_compile_option_struct {
     int operands_unification;
     int instructions_unification;
     int stack_caching;
+    int trace_instruction;
 } rb_compile_option_t;
 
 struct iseq_compile_data {
@@ -304,6 +305,29 @@ struct rb_iseq_struct {
 
 typedef struct rb_iseq_struct rb_iseq_t;
 
+#define RUBY_EVENT_NONE     0x00
+#define RUBY_EVENT_LINE     0x01
+#define RUBY_EVENT_CLASS    0x02
+#define RUBY_EVENT_END      0x04
+#define RUBY_EVENT_CALL     0x08
+#define RUBY_EVENT_RETURN   0x10
+#define RUBY_EVENT_C_CALL   0x20
+#define RUBY_EVENT_C_RETURN 0x40
+#define RUBY_EVENT_RAISE    0x80
+#define RUBY_EVENT_ALL      0xff
+#define RUBY_EVENT_VM      0x100
+
+typedef unsigned int rb_event_flag_t;
+typedef void (*rb_event_hook_func_t)(rb_event_flag_t, VALUE data, VALUE, ID, VALUE klass);
+
+typedef struct rb_event_hook_struct {
+    rb_event_flag_t flag;
+    rb_event_hook_func_t func;
+    VALUE data;
+    struct rb_event_hook_struct *next;
+} rb_event_hook_t;
+
+
 #define GetVMPtr(obj, ptr) \
   Data_Get_Struct(obj, rb_vm_t, ptr)
 
@@ -332,6 +356,9 @@ typedef struct rb_vm_struct {
     /* signal */
     rb_atomic_t signal_buff[RUBY_NSIG];
     rb_atomic_t bufferd_signal_size;
+
+    /* hook */
+    rb_event_hook_t *event_hooks;
 } rb_vm_t;
 
 typedef struct {
@@ -455,6 +482,11 @@ struct rb_thread_struct
 
     /* statistics data for profiler */
     VALUE stat_insn_usage;
+
+    /* tracer */
+    rb_event_hook_t *event_hooks;
+    rb_event_flag_t event_flags;
+    int tracing;
 
     /* misc */
     int method_missing_reason;

@@ -200,6 +200,7 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_OPERANDS_UNIFICATION, /* int operands_unification; */
     OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
     OPT_STACK_CACHING, /* int stack_caching; */
+    OPT_TRACE_INSTRUCTION,
 };
 static const rb_compile_option_t COMPILE_OPTION_FALSE;
 
@@ -227,6 +228,7 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	SET_COMPILE_OPTION(option, opt, operands_unification);
 	SET_COMPILE_OPTION(option, opt, instructions_unification);
 	SET_COMPILE_OPTION(option, opt, stack_caching);
+	SET_COMPILE_OPTION(option, opt, trace_instruction);
 #undef SET_COMPILE_OPTION
     }
     else {

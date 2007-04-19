@@ -40,29 +40,6 @@ static VALUE eval _((VALUE, VALUE, VALUE, char *, int));
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 
-static void rb_clear_trace_func(void);
-
-typedef struct event_hook {
-    rb_event_hook_func_t func;
-    rb_event_t events;
-    struct event_hook *next;
-} rb_event_hook_t;
-
-static rb_event_hook_t *event_hooks;
-
-#define EXEC_EVENT_HOOK(event, node, self, id, klass) \
-    do { \
-	rb_event_hook_t *hook; \
-	\
-	for (hook = event_hooks; hook; hook = hook->next) { \
-	    if (hook->events & event) \
-		(*hook->func)(event, node, self, id, klass); \
-	} \
-    } while (0)
-
-static void call_trace_func _((rb_event_t, NODE *, VALUE, ID, VALUE));
-
-
 #include "eval_error.h"
 #include "eval_method.h"
 #include "eval_safe.h"
@@ -162,8 +139,8 @@ ruby_finalize_1(void)
 {
     signal(SIGINT, SIG_DFL);
     GET_THREAD()->errinfo = 0;
-    rb_gc_call_finalizer_at_exit();
     rb_clear_trace_func();
+    rb_gc_call_finalizer_at_exit();
 }
 
 void
@@ -446,219 +423,6 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-#ifdef C_ALLOCA
-# define TMP_PROTECT NODE * volatile tmp__protect_tmp=0
-# define TMP_ALLOC(n)							\
-    (tmp__protect_tmp = NEW_NODE(NODE_ALLOCA,				\
-				 ALLOC_N(VALUE,n),tmp__protect_tmp,n),	\
-     (void*)tmp__protect_tmp->nd_head)
-#else
-# define TMP_PROTECT typedef int foobazzz
-# define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
-#endif
-
-#define MATCH_DATA *rb_svar(node->nd_cnt)
-
-void
-rb_add_event_hook(func, events)
-    rb_event_hook_func_t func;
-    rb_event_t events;
-{
-    rb_event_hook_t *hook;
-
-    hook = ALLOC(rb_event_hook_t);
-    hook->func = func;
-    hook->events = events;
-    hook->next = event_hooks;
-    event_hooks = hook;
-}
-
-int
-rb_remove_event_hook(rb_event_hook_func_t func)
-{
-    rb_event_hook_t *prev, *hook;
-
-    prev = NULL;
-    hook = event_hooks;
-    while (hook) {
-	if (hook->func == func) {
-	    if (prev) {
-		prev->next = hook->next;
-	    }
-	    else {
-		event_hooks = hook->next;
-	    }
-	    xfree(hook);
-	    return 0;
-	}
-	prev = hook;
-	hook = hook->next;
-    }
-    return -1;
-}
-
-static void
-rb_clear_trace_func(void)
-{
-    /* TODO: fix me */
-}
-
-/*
- *  call-seq:
- *     set_trace_func(proc)    => proc
- *     set_trace_func(nil)     => nil
- *  
- *  Establishes _proc_ as the handler for tracing, or disables
- *  tracing if the parameter is +nil+. _proc_ takes up
- *  to six parameters: an event name, a filename, a line number, an
- *  object id, a binding, and the name of a class. _proc_ is
- *  invoked whenever an event occurs. Events are: <code>c-call</code>
- *  (call a C-language routine), <code>c-return</code> (return from a
- *  C-language routine), <code>call</code> (call a Ruby method),
- *  <code>class</code> (start a class or module definition),
- *  <code>end</code> (finish a class or module definition),
- *  <code>line</code> (execute code on a new line), <code>raise</code>
- *  (raise an exception), and <code>return</code> (return from a Ruby
- *  method). Tracing is disabled within the context of _proc_.
- *
- *      class Test
- *	def test
- *	  a = 1
- *	  b = 2
- *	end
- *      end
- *
- *      set_trace_func proc { |event, file, line, id, binding, classname|
- *	   printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
- *      }
- *      t = Test.new
- *      t.test
- *
- *	  line prog.rb:11               false
- *      c-call prog.rb:11        new    Class
- *      c-call prog.rb:11 initialize   Object
- *    c-return prog.rb:11 initialize   Object
- *    c-return prog.rb:11        new    Class
- *	  line prog.rb:12               false
- *  	  call prog.rb:2        test     Test
- *	  line prog.rb:3        test     Test
- *	  line prog.rb:4        test     Test
- *      return prog.rb:4        test     Test
- */
-
-
-static VALUE
-set_trace_func(VALUE obj, VALUE trace)
-{
-    rb_event_hook_t *hook;
-
-    if (NIL_P(trace)) {
-	rb_clear_trace_func();
-	rb_remove_event_hook(call_trace_func);
-	return Qnil;
-    }
-    if (!rb_obj_is_proc(trace)) {
-	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
-    }
-
-    /* register trace func */
-    /* trace_func = trace; */
-
-    for (hook = event_hooks; hook; hook = hook->next) {
-	if (hook->func == call_trace_func)
-	    return trace;
-    }
-    rb_add_event_hook(call_trace_func, RUBY_EVENT_ALL);
-    return trace;
-}
-
-static char *
-get_event_name(rb_event_t event)
-{
-    switch (event) {
-    case RUBY_EVENT_LINE:
-	return "line";
-    case RUBY_EVENT_CLASS:
-	return "class";
-    case RUBY_EVENT_END:
-	return "end";
-    case RUBY_EVENT_CALL:
-	return "call";
-    case RUBY_EVENT_RETURN:
-	return "return";
-    case RUBY_EVENT_C_CALL:
-	return "c-call";
-    case RUBY_EVENT_C_RETURN:
-	return "c-return";
-    case RUBY_EVENT_RAISE:
-	return "raise";
-    default:
-	return "unknown";
-    }
-}
-
-static void
-call_trace_func(rb_event_t event, NODE *node, VALUE self, ID id, VALUE klass)
-{
-    /* TODO: fix me */
-#if 0
-    int state, raised;
-    NODE *node_save;
-    VALUE srcfile;
-    char *event_name;
-
-    if (!trace_func)
-	return;
-    if (tracing)
-	return;
-    if (id == ID_ALLOCATOR)
-	return;
-    if (!node && ruby_sourceline == 0)
-      return;
-
-    if (!(node_save = ruby_current_node)) {
-	node_save = NEW_BEGIN(0);
-    }
-    tracing = 1;
-
-    if (node) {
-	ruby_current_node = node;
-	ruby_sourcefile = node->nd_file;
-	ruby_sourceline = nd_line(node);
-    }
-    if (klass) {
-	if (TYPE(klass) == T_ICLASS) {
-	    klass = RBASIC(klass)->klass;
-	}
-	else if (FL_TEST(klass, FL_SINGLETON)) {
-	    klass = self;
-	}
-    }
-    PUSH_TAG(PROT_NONE);
-    raised = thread_reset_raised(th);
-    if ((state = EXEC_TAG()) == 0) {
-	srcfile = rb_str_new2(ruby_sourcefile ? ruby_sourcefile : "(ruby)");
-	event_name = get_event_name(event);
-	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event_name),
-					    srcfile,
-					    INT2FIX(ruby_sourceline),
-					    id ? ID2SYM(id) : Qnil,
-					    self ? rb_binding_new() : Qnil,
-					    klass ? klass : Qnil), Qundef, 0);
-    }
-    if (raised)
-	thread_set_raised(th);
-    POP_TAG();
-
-    tracing = 0;
-    ruby_current_node = node_save;
-    SET_CURRENT_SOURCE();
-    if (state)
-	JUMP_TAG(state);
-#endif
-}
-
-
 /*
  *  call-seq:
  *     obj.respond_to?(symbol, include_private=false) => true or false
@@ -884,18 +648,10 @@ NORETURN(static void rb_longjmp _((int, VALUE)));
 static VALUE make_backtrace _((void));
 
 static void
-rb_longjmp(tag, mesg)
-    int tag;
-    VALUE mesg;
+rb_longjmp(int tag, VALUE mesg)
 {
     VALUE at;
     rb_thread_t *th = GET_THREAD();
-
-    /*
-    //while (th->cfp->pc == 0 || th->cfp->iseq == 0) {
-    //th->cfp++;
-    //}
-    */
 
     if (thread_set_raised(th)) {
 	th->errinfo = exception_error;
@@ -943,7 +699,8 @@ rb_longjmp(tag, mesg)
 
     rb_trap_restore_mask();
     if (tag != TAG_FATAL) {
-	/* EXEC_EVENT_HOOK(RUBY_EVENT_RAISE ...) */
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self,
+			0 /* TODO: id */, 0 /* TODO: klass */);
     }
     thread_reset_raised(th);
     JUMP_TAG(tag);
@@ -1889,18 +1646,29 @@ rb_frame_self(void)
 const char *
 rb_sourcefile(void)
 {
-    rb_iseq_t *iseq = GET_THREAD()->cfp->iseq;
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	return RSTRING_PTR(iseq->filename);
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return RSTRING_PTR(cfp->iseq->filename);
     }
-    return 0;
+    else {
+	return "";
+    }
 }
 
 int
 rb_sourceline(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return th_get_sourceline(th->cfp);
+    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return th_get_sourceline(cfp);
+    }
+    else {
+	return 0;
+    }
 }
 
 static VALUE
@@ -2990,8 +2758,6 @@ Init_eval(void)
 
     rb_define_global_function("trace_var", rb_f_trace_var, -1);	/* in variable.c */
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
-
-    rb_define_global_function("set_trace_func", set_trace_func, 1);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }

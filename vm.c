@@ -534,25 +534,28 @@ th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	  break;
       }
       case NODE_CFUNC: {
-	  rb_control_frame_t *reg_cfp = th->cfp;
-	  rb_control_frame_t *cfp =
-	    push_frame(th, 0, FRAME_MAGIC_CFUNC,
-		       recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
+	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+	  {
+	      rb_control_frame_t *reg_cfp = th->cfp;
+	      rb_control_frame_t *cfp =
+		push_frame(th, 0, FRAME_MAGIC_CFUNC,
+			   recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
-	  cfp->callee_id = oid;
-	  cfp->method_id = id;
-	  cfp->method_klass = klass;
+	      cfp->callee_id = oid;
+	      cfp->method_id = id;
+	      cfp->method_klass = klass;
 
-	  val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
+	      val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
 
-	  if (reg_cfp != th->cfp + 1) {
-	      SDR2(reg_cfp);
-	      SDR2(th->cfp-5);
-	      rb_bug("cfp consistency error - call0");
-	      th->cfp = reg_cfp;
+	      if (reg_cfp != th->cfp + 1) {
+		  SDR2(reg_cfp);
+		  SDR2(th->cfp-5);
+		  rb_bug("cfp consistency error - call0");
+		  th->cfp = reg_cfp;
+	      }
+	      pop_frame(th);
 	  }
-	  pop_frame(th);
-
+	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
 	  break;
       }
       case NODE_ATTRSET:{
@@ -1471,6 +1474,8 @@ yarv_init_redefined_flag(void)
 	ptr++;
     }
 }
+
+
 
 #include "vm_evalbody.ci"
 

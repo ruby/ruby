@@ -56,23 +56,28 @@ MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
 
 MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
 {
-    rb_control_frame_t *cfp =
-      push_frame(th, 0, FRAME_MAGIC_CFUNC,
-		 recv, (VALUE) blockptr, 0, GET_SP(), 0, 1);
-    cfp->callee_id = id; /* TODO */
-    cfp->method_id = id;
-    cfp->method_klass = klass;
-    
-    reg_cfp->sp -= num + 1;
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+    {
+	rb_control_frame_t *cfp =
+	  push_frame(th, 0, FRAME_MAGIC_CFUNC,
+		     recv, (VALUE) blockptr, 0, GET_SP(), 0, 1);
+	cfp->callee_id = id; /* TODO */
+	cfp->method_id = id;
+	cfp->method_klass = klass;
 
-    val = call_cfunc(mn->nd_cfnc, recv, mn->nd_argc, num, reg_cfp->sp + 1);
-    if (reg_cfp != th->cfp + 1) {
-	SDR2(reg_cfp);
-	SDR2(th->cfp-5);
-	rb_bug("cfp consistency error - send");
-	th->cfp = reg_cfp;
+	reg_cfp->sp -= num + 1;
+
+	val = call_cfunc(mn->nd_cfnc, recv, mn->nd_argc, num, reg_cfp->sp + 1);
+
+	if (reg_cfp != th->cfp + 1) {
+	    SDR2(reg_cfp);
+	    SDR2(th->cfp-5);
+	    rb_bug("cfp consistency error - send");
+	    th->cfp = reg_cfp;
+	}
+	pop_frame(th);
     }
-    pop_frame(th);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
 }
 
 MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)

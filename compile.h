@@ -157,6 +157,11 @@ r_value(VALUE value)
            new_insn_send(iseq, line, \
                          (VALUE)id, (VALUE)argc, (VALUE)block, (VALUE)flag))
 
+#define ADD_TRACE(seq, line, event) \
+  if (iseq->compile_data->option->trace_instruction) { \
+      ADD_INSN1(seq, line, trace, INT2FIX(event)); \
+  }
+
 /* add label */
 #define ADD_LABEL(seq, label) \
   ADD_ELEM(seq, (LINK_ELEMENT *)label)

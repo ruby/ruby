@@ -387,23 +387,6 @@ VALUE rb_gvar_get(struct global_entry *);
 VALUE rb_gvar_set(struct global_entry *, VALUE);
 VALUE rb_gvar_defined(struct global_entry *);
 
-typedef unsigned int rb_event_t;
-
-#define RUBY_EVENT_NONE     0x00
-#define RUBY_EVENT_LINE     0x01
-#define RUBY_EVENT_CLASS    0x02
-#define RUBY_EVENT_END      0x04
-#define RUBY_EVENT_CALL     0x08
-#define RUBY_EVENT_RETURN   0x10
-#define RUBY_EVENT_C_CALL   0x20
-#define RUBY_EVENT_C_RETURN 0x40
-#define RUBY_EVENT_RAISE    0x80
-#define RUBY_EVENT_ALL      0xff
-
-typedef void (*rb_event_hook_func_t)(rb_event_t,NODE*,VALUE,ID,VALUE);
-void rb_add_event_hook(rb_event_hook_func_t,rb_event_t);
-int rb_remove_event_hook(rb_event_hook_func_t);
-
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif

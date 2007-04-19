@@ -168,6 +168,15 @@ vm_mark_each_thread_func(st_data_t key, st_data_t value, st_data_t dummy)
 }
 
 static void
+mark_event_hooks(rb_event_hook_t *hook)
+{
+    while (hook) {
+	rb_gc_mark(hook->data);
+	hook = hook->next;
+    }
+}
+
+static void
 vm_mark(void *ptr)
 {
     MARK_REPORT_ENTER("vm");
@@ -181,6 +190,8 @@ vm_mark(void *ptr)
 	MARK_UNLESS_NULL(vm->mark_object_ary);
 	MARK_UNLESS_NULL(vm->last_status);
 	MARK_UNLESS_NULL(vm->loaded_features);
+
+	mark_event_hooks(vm->event_hooks);
     }
 
     MARK_REPORT_LEAVE("vm");
@@ -289,6 +300,8 @@ thread_mark(void *ptr)
 				 (VALUE *)(&th->machine_regs) +
 				 sizeof(th->machine_regs) / sizeof(VALUE));
 	}
+
+	mark_event_hooks(th->event_hooks);
     }
 
     MARK_UNLESS_NULL(th->stat_insn_usage);

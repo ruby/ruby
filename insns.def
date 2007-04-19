@@ -843,7 +843,6 @@ definemethod
 		       get_cref(GET_ISEQ(), GET_LFP()));
 }
 
-
 /**
   @c setting
   @e make alias (if v_p is Qtrue, make valias)
@@ -1020,15 +1019,12 @@ postexe
  */
 DEFINE_INSN
 trace
-(num_t flag, VALUE args)
+(num_t nf)
 ()
 ()
 {
-    /* TODO: trace instruction design */
-    if (th->vm->trace_flag & flag) {
-	/* */
-	args = Qnil;
-    }
+    rb_event_flag_t flag = nf;
+    EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
 }
 
 /**********************************************************/

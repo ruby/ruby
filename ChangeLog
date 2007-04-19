@@ -1,3 +1,21 @@
+Thu Apr 19 18:37:49 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, node.h, thread.c, yarvcore.[ch], eval_intern.h:
+	  support set_trace_func (incomplete.  id and klass
+	  don't be passed).  And support Thread#set_trace_func
+	  which hook only specified thread and Thread#add_trace_func
+	  which add new trace func instead of replace old one.
+	  C level API was modified.  See thread.c (logic) and
+	  yarvcore.h (data structures).
+
+	* vm.c, vm_macro.def: add hook points.
+
+	* compile.c, insns.def: fix "trace" instruction.
+
+	* iseq.c, vm_macro.h: add compile option "trace_instruction".
+
+	* test/ruby/test_settracefunc.rb: hook "c-return" of set_trace_func.
+
 Thu Apr 19 17:46:36 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/optparse.rb: fix to override conv proc.

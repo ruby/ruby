@@ -162,7 +162,19 @@ rb_iseq_compile(VALUE self, NODE *node)
 	    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
 	}
 	else {
-	    COMPILE(ret, "scoped node", node->nd_body);
+	    if (iseq->type == ISEQ_TYPE_CLASS) {
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CLASS);
+		COMPILE(ret, "scoped node", node->nd_body);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
+	    }
+	    else if (iseq->type == ISEQ_TYPE_METHOD) {
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CALL);
+		COMPILE(ret, "scoped node", node->nd_body);
+		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
+	    }
+	    else {
+		COMPILE(ret, "scoped node", node->nd_body);
+	    }
 	}
     }
     else {
@@ -2432,6 +2444,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
     debug_nodeprint(node);
 
     type = nd_type(node);
+
+    if (node->flags & NODE_NEWLINE) {
+	ADD_TRACE(ret, nd_line(node), RUBY_EVENT_LINE);
+    }
 
     switch (type) {
 

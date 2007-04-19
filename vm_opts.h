@@ -22,6 +22,7 @@
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1
+#define OPT_TRACE_INSTRUCTION        1
 
 /* at compile */
 #define OPT_INLINE_CONST_CACHE       1

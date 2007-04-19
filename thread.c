@@ -2393,6 +2393,289 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
     }
 }
 
+/* tracer */
+
+static rb_event_hook_t *
+alloc_event_fook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+{
+    rb_event_hook_t *hook = ALLOC(rb_event_hook_t);
+    hook->func = func;
+    hook->flag = events;
+    hook->data = data;
+}
+
+static void
+thread_reset_event_flags(rb_thread_t *th)
+{
+    rb_event_hook_t *hook = th->event_hooks;
+    rb_event_flag_t flag = th->event_flags & RUBY_EVENT_VM;
+
+    while (hook) {
+	flag |= hook->flag;
+	hook = hook->next;
+    }
+}
+
+void
+rb_thread_add_event_hook(rb_thread_t *th,
+			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+{
+    rb_event_hook_t *hook = alloc_event_fook(func, events, data);
+    hook->next = th->event_hooks;
+    th->event_hooks = hook;
+    thread_reset_event_flags(th);
+}
+
+static int
+set_threads_event_flags_i(st_data_t key, st_data_t val, st_data_t flag)
+{
+    VALUE thval = key;
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    if (flag) {
+	th->event_flags |= RUBY_EVENT_VM;
+    }
+    else {
+	th->event_flags &= (~RUBY_EVENT_VM);
+    }
+    return ST_CONTINUE;
+}
+
+static void
+set_threads_event_flags(int flag)
+{
+    st_foreach(GET_VM()->living_threads, set_threads_event_flags_i, (st_data_t) flag);
+}
+
+void
+rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+{
+    rb_event_hook_t *hook = alloc_event_fook(func, events, data);
+    rb_vm_t *vm = GET_VM();
+
+    hook->next = vm->event_hooks;
+    vm->event_hooks = hook;
+
+    set_threads_event_flags(1);
+}
+
+static int
+remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
+{
+    rb_event_hook_t *prev = NULL, *hook = *root;
+
+    while (hook) {
+	if (func == 0 || hook->func == func) {
+	    if (prev) {
+		prev->next = hook->next;
+	    }
+	    else {
+		*root = hook->next;
+	    }
+	    xfree(hook);
+	}
+	prev = hook;
+	hook = hook->next;
+    }
+    return -1;
+}
+
+int
+rb_thread_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
+{
+    remove_event_hook(&th->event_hooks, func);
+    thread_reset_event_flags(th);
+}
+
+int
+rb_remove_event_hook(rb_event_hook_func_t func)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_event_hook_t *hook = vm->event_hooks;
+    int ret = remove_event_hook(&vm->event_hooks, func);
+
+    if (hook != NULL && vm->event_hooks == NULL) {
+	set_threads_event_flags(0);
+    }
+
+    return ret;
+}
+
+static int
+clear_trace_func_i(st_data_t key, st_data_t val, st_data_t flag)
+{
+    rb_thread_t *th;
+    GetThreadPtr((VALUE)key, th);
+    rb_thread_remove_event_hook(th, 0);
+    return ST_CONTINUE;
+}
+
+void
+rb_clear_trace_func(void)
+{
+    st_foreach(GET_VM()->living_threads, clear_trace_func_i, (st_data_t) 0);
+    rb_remove_event_hook(0);
+}
+
+/*
+ *  call-seq:
+ *     set_trace_func(proc)    => proc
+ *     set_trace_func(nil)     => nil
+ *  
+ *  Establishes _proc_ as the handler for tracing, or disables
+ *  tracing if the parameter is +nil+. _proc_ takes up
+ *  to six parameters: an event name, a filename, a line number, an
+ *  object id, a binding, and the name of a class. _proc_ is
+ *  invoked whenever an event occurs. Events are: <code>c-call</code>
+ *  (call a C-language routine), <code>c-return</code> (return from a
+ *  C-language routine), <code>call</code> (call a Ruby method),
+ *  <code>class</code> (start a class or module definition),
+ *  <code>end</code> (finish a class or module definition),
+ *  <code>line</code> (execute code on a new line), <code>raise</code>
+ *  (raise an exception), and <code>return</code> (return from a Ruby
+ *  method). Tracing is disabled within the context of _proc_.
+ *
+ *      class Test
+ *	def test
+ *	  a = 1
+ *	  b = 2
+ *	end
+ *      end
+ *
+ *      set_trace_func proc { |event, file, line, id, binding, classname|
+ *	   printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
+ *      }
+ *      t = Test.new
+ *      t.test
+ *
+ *	  line prog.rb:11               false
+ *      c-call prog.rb:11        new    Class
+ *      c-call prog.rb:11 initialize   Object
+ *    c-return prog.rb:11 initialize   Object
+ *    c-return prog.rb:11        new    Class
+ *	  line prog.rb:12               false
+ *  	  call prog.rb:2        test     Test
+ *	  line prog.rb:3        test     Test
+ *	  line prog.rb:4        test     Test
+ *      return prog.rb:4        test     Test
+ */
+
+static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALUE klass);
+
+static VALUE
+set_trace_func(VALUE obj, VALUE trace)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_remove_event_hook(call_trace_func);
+
+    if (NIL_P(trace)) {
+	return Qnil;
+    }
+
+    if (!rb_obj_is_proc(trace)) {
+	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
+    }
+
+    rb_add_event_hook(call_trace_func, RUBY_EVENT_ALL, trace);
+    return trace;
+}
+
+static void
+thread_add_trace_func(rb_thread_t *th, VALUE trace)
+{
+    if (!rb_obj_is_proc(trace)) {
+	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
+    }
+
+    rb_thread_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
+}
+
+static VALUE
+thread_add_trace_func_m(VALUE obj, VALUE trace)
+{
+    rb_thread_t *th;
+    GetThreadPtr(obj, th);
+    thread_add_trace_func(th, trace);
+    return trace;
+}
+
+static VALUE
+thread_set_trace_func_m(VALUE obj, VALUE trace)
+{
+    rb_thread_t *th;
+    GetThreadPtr(obj, th);
+    rb_thread_remove_event_hook(th, call_trace_func);
+
+    if (!NIL_P(trace)) {
+	return Qnil;
+    }
+    thread_add_trace_func(th, trace);
+    return trace;
+}
+
+static char *
+get_event_name(rb_event_flag_t event)
+{
+    switch (event) {
+    case RUBY_EVENT_LINE:
+	return "line";
+    case RUBY_EVENT_CLASS:
+	return "class";
+    case RUBY_EVENT_END:
+	return "end";
+    case RUBY_EVENT_CALL:
+	return "call";
+    case RUBY_EVENT_RETURN:
+	return "return";
+    case RUBY_EVENT_C_CALL:
+	return "c-call";
+    case RUBY_EVENT_C_RETURN:
+	return "c-return";
+    case RUBY_EVENT_RAISE:
+	return "raise";
+    default:
+	return "unknown";
+    }
+}
+
+static void
+call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    rb_thread_t *th = GET_THREAD();
+    int state, raised;
+    VALUE eventname = rb_str_new2(get_event_name(event));
+    VALUE filename = rb_str_new2(rb_sourcefile());
+    int line = rb_sourceline();
+
+    if (th->tracing) {
+	return;
+    }
+    else {
+	th->tracing = 1;
+    }
+
+    raised = thread_reset_raised(th);
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	proc_invoke(proc, rb_ary_new3(6,
+				      eventname, filename, INT2FIX(line),
+				      id ? ID2SYM(id) : Qnil,
+				      self ? rb_binding_new() : Qnil,
+				      klass ? klass : Qnil), Qundef, 0);
+    }
+
+    if (raised) {
+	thread_set_raised(th);
+    }
+    POP_TAG();
+
+    th->tracing = 0;
+    if (state) {
+	JUMP_TAG(state);
+    }
+}
 
 /*
  *  +Thread+ encapsulates the behavior of a thread of
@@ -2488,6 +2771,12 @@ Init_Thread(void)
     rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
 
+    /* trace */
+    rb_define_global_function("set_trace_func", set_trace_func, 1);
+    rb_define_method(rb_cThread, "set_trace_func", thread_set_trace_func_m, 1);
+    rb_define_method(rb_cThread, "add_trace_func", thread_add_trace_func_m, 1);
+
+    /* init thread core */
     Init_native_thread();
     {
 	/* main thread setting */
