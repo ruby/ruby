@@ -153,38 +153,42 @@ ruby_finalize(void)
 int
 ruby_cleanup(int ex)
 {
-    int state, i;
-    volatile VALUE errs[2] = {GET_THREAD()->errinfo, 0};
-    rb_vm_t *vm = GET_THREAD()->vm;
+    int state, nerr;
+    VALUE err;
+    rb_thread_t *th = GET_THREAD();
+    volatile VALUE errs[2];
+    rb_vm_t *vm = th->vm;
 
-    GET_THREAD()->safe_level = 0;
+    errs[0] = th->errinfo;
+    th->safe_level = 0;
     Init_stack((void *)&state);
+    ruby_finalize_0();
+    errs[1] = th->errinfo;
     PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	ruby_finalize_0();
+	rb_thread_terminate_all();
     }
     else if (ex == 0) {
 	ex = state;
     }
-    errs[1] = GET_THREAD()->errinfo;
-    rb_thread_terminate_all();
-    GET_THREAD()->errinfo = errs[0];
+    th->errinfo = errs[0];
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_THREAD_TAG();
     rb_thread_stop_timer_thread();
 
-    for (i = 2; i > 0; --i) {
-	VALUE err = errs[i];
+    for (nerr = sizeof(errs) / sizeof(errs[0]); nerr;) {
+	if (!RTEST(err = errs[--nerr])) continue;
 
 	/* th->errinfo contains a NODE while break'ing */
-	if (!RTEST(err) || (TYPE(err) == T_NODE)) continue;
+	if (TYPE(err) == T_NODE) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	    return sysexit_status(err);
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
-	    ruby_default_signal(NUM2INT(rb_iv_get(err, "signo")));
+	    VALUE sig = rb_iv_get(err, "signo");
+	    ruby_default_signal(NUM2INT(sig));
 	}
     }
 

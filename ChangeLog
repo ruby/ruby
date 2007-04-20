@@ -1,3 +1,8 @@
+Fri Apr 20 12:21:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): fixed access to out of bound, and inversed
+	  the order of errinfos.
+
 Fri Apr 20 10:33:23 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h: add prototypes of rb_sourceline() and
