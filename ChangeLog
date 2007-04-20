@@ -1,3 +1,8 @@
+Fri Apr 20 10:33:23 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h: add prototypes of rb_sourceline() and
+	  rb_sourcefile().
+
 Fri Apr 20 02:37:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): re-send signal.  [ruby-dev:30516]
