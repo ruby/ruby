@@ -153,17 +153,17 @@ ruby_finalize(void)
 int
 ruby_cleanup(int ex)
 {
-    int state, nerr;
-    VALUE err;
-    rb_thread_t *th = GET_THREAD();
+    int state;
     volatile VALUE errs[2];
+    rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
+    int nerr;
 
-    errs[0] = th->errinfo;
+    errs[1] = th->errinfo;
     th->safe_level = 0;
     Init_stack((void *)&state);
     ruby_finalize_0();
-    errs[1] = th->errinfo;
+    errs[0] = th->errinfo;
     PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_terminate_all();
@@ -171,14 +171,16 @@ ruby_cleanup(int ex)
     else if (ex == 0) {
 	ex = state;
     }
-    th->errinfo = errs[0];
+    th->errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_THREAD_TAG();
     rb_thread_stop_timer_thread();
 
-    for (nerr = sizeof(errs) / sizeof(errs[0]); nerr;) {
-	if (!RTEST(err = errs[--nerr])) continue;
+    for (nerr = 0; nerr < sizeof(errs) / sizeof(errs[0]); ++nerr) {
+	VALUE err = errs[nerr];
+
+	if (!RTEST(err)) continue;
 
 	/* th->errinfo contains a NODE while break'ing */
 	if (TYPE(err) == T_NODE) continue;
