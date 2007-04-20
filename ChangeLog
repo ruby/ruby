@@ -64,6 +64,19 @@ Thu Apr 19 18:37:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: hook "c-return" of set_trace_func.
 
+Thu Apr 19 20:57:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (symbol): symbols should be followed by EXPR_ENDARG.
+
+	* parse.y (dsym): ditto.
+
+	* parse.y (parser_yylex): strings should be followed by
+	  EXPR_ENDARG.
+
+	* parse.y (parser_yylex): ditto for numbers.
+
+	* parse.y (parser_yylex): EXPR_ENDARG after ']' and '}'.
+
 Thu Apr 19 17:46:36 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/optparse.rb: fix to override conv proc.
