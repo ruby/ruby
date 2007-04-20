@@ -1,3 +1,8 @@
+Fri Apr 20 16:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG, RPATHFLAG): no needs to be quoted,
+	  it is done by libpathflag in mkmf.rb.
+
 Fri Apr 20 12:27:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb: fix to override conv proc.
