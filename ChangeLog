@@ -1,3 +1,7 @@
+Fri Apr 20 12:27:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: fix to override conv proc.
+
 Fri Apr 20 12:21:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): fixed access to out of bound, and inversed
