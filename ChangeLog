@@ -1,4 +1,7 @@
-Mon Apr 23 22:09:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr 23 22:14:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb ($ruby): add extout directory to include path.
+	  [ruby-core:11003]
 
 	* lib/mkmf.rb (libpathflag): not to append RPATHFLAG to current
 	  directory.
