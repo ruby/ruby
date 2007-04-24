@@ -1,3 +1,8 @@
+Tue Apr 24 09:33:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (do_stat, do_lstat, do_opendir): should not warn ENOTDIR.
+	  [ruby-talk:248288]
+
 Mon Apr 23 22:14:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb ($ruby): add extout directory to include path.
