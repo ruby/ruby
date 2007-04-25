@@ -1,3 +1,8 @@
+Wed Apr 25 19:49:16 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (unix_send_io, unix_recv_io): use CMSG_DATA to
+	  align file descriptor appropriately.
+
 Wed Apr 25 15:23:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (NtInitialize, exit_handler): add initializing and
