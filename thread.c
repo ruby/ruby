@@ -2396,6 +2396,7 @@ alloc_event_fook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
     hook->func = func;
     hook->flag = events;
     hook->data = data;
+    return hook;
 }
 
 static void
@@ -2478,8 +2479,9 @@ remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 int
 rb_thread_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 {
-    remove_event_hook(&th->event_hooks, func);
+    int ret = remove_event_hook(&th->event_hooks, func);
     thread_reset_event_flags(th);
+    return ret;
 }
 
 int

@@ -1,3 +1,8 @@
+Wed Apr 25 10:33:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (alloc_event_fook, rb_thread_remove_event_hook): should
+	  return value.
+
 Tue Apr 24 09:33:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (do_stat, do_lstat, do_opendir): should not warn ENOTDIR.
