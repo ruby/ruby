@@ -1988,6 +1988,7 @@ unix_send_io(sock, val)
     msg.msg_control = (caddr_t)&cmsg;
     msg.msg_controllen = CMSG_LEN(sizeof(int));
     msg.msg_flags = 0;
+    MEMZERO((char*)&cmsg, char, sizeof(cmsg));
     cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
