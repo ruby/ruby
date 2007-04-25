@@ -18,14 +18,14 @@ pprof_hook(rb_event_flag_t flag, VALUE data,
 	   VALUE dmyid, VALUE dmyklass)
 {
     rb_thread_t *th = GET_THREAD();
-    VALUE sig = rb_thread_current_sig(th);
+    VALUE sig = rb_thread_current_status(th);
     hash_inc(data, sig);
 }
 
 static VALUE
 pprof_data(VALUE mod)
 {
-    rb_const_get_at(mod, rb_intern("#pprof_data"));
+    return rb_const_get_at(mod, rb_intern("#pprof_data"));
 }
 
 static VALUE
