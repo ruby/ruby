@@ -1,3 +1,8 @@
+Wed Apr 25 19:49:16 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (unix_send_io, unix_recv_io): use CMSG_DATA to
+	  align file descriptor appropriately.
+
 Tue Apr 24 09:33:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (do_stat, do_lstat, do_opendir): should not warn ENOTDIR.
