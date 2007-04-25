@@ -84,7 +84,7 @@ ruby_init(void)
     Init_yarv();
     Init_heap();
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 
@@ -112,7 +112,7 @@ ruby_options(int argc, char **argv)
     int state;
 
     Init_stack((void *)&state);
-    PUSH_THREAD_TAG();
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
@@ -120,13 +120,13 @@ ruby_options(int argc, char **argv)
 	rb_clear_trace_func();
 	exit(error_handle(state));
     }
-    POP_THREAD_TAG();
+    POP_TAG();
 }
 
 static void
 ruby_finalize_0(void)
 {
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if (EXEC_TAG() == 0) {
 	rb_trap_exit();
     }
@@ -164,7 +164,7 @@ ruby_cleanup(int ex)
     Init_stack((void *)&state);
     ruby_finalize_0();
     errs[0] = th->errinfo;
-    PUSH_THREAD_TAG();
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_terminate_all();
     }
@@ -174,7 +174,7 @@ ruby_cleanup(int ex)
     th->errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
-    POP_THREAD_TAG();
+    POP_TAG();
     rb_thread_stop_timer_thread();
 
     for (nerr = 0; nerr < sizeof(errs) / sizeof(errs[0]); ++nerr) {
@@ -204,7 +204,7 @@ ruby_exec_internal(void)
 {
     int state;
     VALUE val;
-    PUSH_TAG(0);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	GET_THREAD()->base_block = 0;
 	val = yarvcore_eval_parsed(ruby_eval_tree,
@@ -306,7 +306,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     }
     if (TYPE(cmd) != T_STRING) {
 
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
 	    val =
@@ -322,7 +322,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	return val;
     }
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
@@ -687,7 +687,7 @@ rb_longjmp(int tag, VALUE mesg)
 	VALUE e = GET_THREAD()->errinfo;
 	int status;
 
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
 	    e = rb_obj_as_string(e);
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
@@ -1097,7 +1097,7 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
     volatile VALUE e_info = th->errinfo;
     va_list args;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc) (data1);
@@ -1120,7 +1120,7 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
 
 	    if (handle) {
 		if (r_proc) {
-		    PUSH_TAG(PROT_NONE);
+		    PUSH_TAG();
 		    if ((state = EXEC_TAG()) == 0) {
 			result = (*r_proc) (data2, th->errinfo);
 		    }
@@ -1163,11 +1163,11 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
 
-    PUSH_THREAD_TAG();
+    PUSH_TAG();
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc) (data);
     }
-    POP_THREAD_TAG();
+    POP_TAG();
 
     if (state) {
 	*state = status;
@@ -1186,7 +1186,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     int state;
     volatile VALUE result = Qnil;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc) (data1);
     }
@@ -1210,7 +1210,7 @@ rb_with_disable_interrupt(VALUE (*proc)(ANYARGS), VALUE data)
 	int thr_critical = rb_thread_critical;
 
 	rb_thread_critical = Qtrue;
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
 	    result = (*proc) (data);
 	}
@@ -1232,7 +1232,7 @@ stack_check(void)
     if (!overflowing && ruby_stack_check()) {
 	int state;
 	overflowing = 1;
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    rb_exc_raise(sysstack_error);
 	}
@@ -1695,7 +1695,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	line = ruby_sourceline;
     }
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
 	VALUE iseqval;
@@ -1861,7 +1861,7 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
     stored_cref = *pcref;
     *pcref = th_cref_push(th, under, NOEX_PUBLIC);
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	val = (*func) (args);
     }

@@ -131,23 +131,9 @@ char *strrchr _((const char *, const char));
 #define TH_POP_TAG2() \
   _th->tag = _tag.prev
 
-#define PUSH_TAG(ptag) TH_PUSH_TAG(GET_THREAD())
+#define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 #define POP_TAG_INIT() } while (0)
-
-#define PUSH_THREAD_TAG() \
-  PUSH_TAG(PROT_THREAD)
-
-#define POP_THREAD_TAG()  \
-  POP_TAG()
-
-#define PROT_NONE   Qfalse	/* 0 */
-#define PROT_THREAD Qtrue	/* 2 */
-#define PROT_FUNC   INT2FIX(0)	/* 1 */
-#define PROT_LOOP   INT2FIX(1)	/* 3 */
-#define PROT_LAMBDA INT2FIX(2)	/* 5 */
-#define PROT_YIELD  INT2FIX(3)	/* 7 */
-#define PROT_TOP    INT2FIX(4)	/* 9 */
 
 #define TH_EXEC_TAG() \
   (FLUSH_REGISTER_WINDOWS, ruby_setjmp(_th->tag->buf))

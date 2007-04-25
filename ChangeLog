@@ -1,4 +1,9 @@
-Wed Apr 25 10:33:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 25 10:36:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (PUSH_TAG): no argument now.
+
+	* eval.c, eval_error.h, eval_jump.h, eval_load.c, proc.c, thread.c:
+	  ditto.
 
 	* thread.c (alloc_event_fook, rb_thread_remove_event_hook): should
 	  return value.

@@ -74,7 +74,7 @@ error_print(void)
     if (NIL_P(GET_THREAD()->errinfo))
 	return;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if (EXEC_TAG() == 0) {
 	errat = get_backtrace(GET_THREAD()->errinfo);
     }

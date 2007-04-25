@@ -172,7 +172,7 @@ rb_load(VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     state = EXEC_TAG();
     if (state == 0) {
 	rb_load_internal(RSTRING_PTR(fname));
@@ -201,11 +201,11 @@ rb_load_protect(VALUE fname, int wrap, int *state)
 {
     int status;
 
-    PUSH_THREAD_TAG();
+    PUSH_TAG();
     if ((status = EXEC_TAG()) == 0) {
 	rb_load(fname, wrap);
     }
-    POP_THREAD_TAG();
+    POP_TAG();
     if (state)
 	*state = status;
 }
@@ -384,7 +384,7 @@ rb_require_safe(VALUE fname, int safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     saved.node = ruby_current_node;
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {

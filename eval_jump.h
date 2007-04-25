@@ -97,7 +97,7 @@ rb_f_catch(VALUE dmy, VALUE tag)
     rb_thread_t *th = GET_THREAD();
 
     tag = ID2SYM(rb_to_id(tag));
-    PUSH_TAG(tag);
+    PUSH_TAG();
 
     th->tag->tag = tag;
 
@@ -365,7 +365,7 @@ rb_exec_end_proc(void)
 	tmp_end_procs = link = ephemeral_end_procs;
 	ephemeral_end_procs = 0;
 	while (link) {
-	    PUSH_TAG(PROT_NONE);
+	    PUSH_TAG();
 	    if ((status = EXEC_TAG()) == 0) {
 		rb_set_safe_level_force(link->safe);
 		(*link->func) (link->data);
@@ -383,7 +383,7 @@ rb_exec_end_proc(void)
 	tmp_end_procs = link = end_procs;
 	end_procs = 0;
 	while (link) {
-	    PUSH_TAG(PROT_NONE);
+	    PUSH_TAG();
 	    if ((status = EXEC_TAG()) == 0) {
 		rb_set_safe_level_force(link->safe);
 		(*link->func) (link->data);

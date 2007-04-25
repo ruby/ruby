@@ -995,7 +995,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG();
     if (OBJ_TAINTED(method)) {
 	safe = rb_safe_level();
 	if (rb_safe_level() < 4) {

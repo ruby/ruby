@@ -2375,7 +2375,7 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 	int state;
 
 	recursive_push(obj);
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func) (obj, arg, Qfalse);
 	}
