@@ -1,3 +1,14 @@
+Wed Apr 25 15:23:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (NtInitialize, exit_handler): add initializing and
+	  cleanup of critical section object for select.
+
+	* win32/win32.c (do_select): block reentrance.
+
+	* win32/win32.c (rb_w32_select): 0 sec polling of socket. this is
+	  workaround because winsock cannot do select at same socket at the
+	  same time by two or more threads.
+
 Wed Apr 25 14:10:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/probeprofiler/probeprofiler.c: fix function name and

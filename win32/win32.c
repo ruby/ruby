@@ -55,22 +55,6 @@
 #  define enough_to_put(n) (--(n) >= 0)
 #endif
 
-#if HAVE_WSAWAITFORMULTIPLEEVENTS
-# define USE_INTERRUPT_WINSOCK 1
-#endif
-
-#if USE_INTERRUPT_WINSOCK
-# define WaitForMultipleEvents WSAWaitForMultipleEvents
-# define CreateSignal() (HANDLE)WSACreateEvent()
-# define SetSignal(ev) WSASetEvent(ev)
-# define ResetSignal(ev) WSAResetEvent(ev)
-#else  /* USE_INTERRUPT_WINSOCK */
-# define WaitForMultipleEvents WaitForMultipleObjectsEx
-# define CreateSignal() CreateEvent(NULL, FALSE, FALSE, NULL);
-# define SetSignal(ev) SetEvent(ev)
-# define ResetSignal(ev) (void)0
-#endif /* USE_INTERRUPT_WINSOCK */
-
 #ifdef WIN32_DEBUG
 #define Debug(something) something
 #else
@@ -413,6 +397,7 @@ static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wc
 }
 #endif
 
+static CRITICAL_SECTION select_mutex;
 static BOOL fWinsock;
 static char *envarea;
 static void
@@ -426,6 +411,7 @@ exit_handler(void)
 	FreeEnvironmentStrings(envarea);
 	envarea = NULL;
     }
+    DeleteCriticalSection(&select_mutex);
 }
 
 //
@@ -459,6 +445,8 @@ NtInitialize(int *argc, char ***argv)
     init_env();
 
     init_stdhandle();
+
+    InitializeCriticalSection(&select_mutex);
 
     atexit(exit_handler);
 
@@ -2096,7 +2084,6 @@ is_readable_console(SOCKET sock) /* call this for console only */
     return ret;
 }
 
-static void catch_interrupt(void);
 static int
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             struct timeval *timeout)
@@ -2111,7 +2098,9 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     }
     else {
 	RUBY_CRITICAL(
+	    EnterCriticalSection(&select_mutex);
 	    r = select(nfds, rd, wr, ex, timeout);
+	    LeaveCriticalSection(&select_mutex);
 	    if (r == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
 		r = -1;
@@ -2122,7 +2111,7 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     return r;
 }
 
-static int 
+static inline int
 subst(struct timeval *rest, const struct timeval *wait)
 {
     while (rest->tv_usec < wait->tv_usec) {
@@ -2137,6 +2126,21 @@ subst(struct timeval *rest, const struct timeval *wait)
     return 1;
 }
 
+static inline int
+compare(const struct timeval *t1, const struct timeval *t2)
+{
+    if (t1->tv_sec < t2->tv_sec)
+	return -1;
+    if (t1->tv_sec > t2->tv_sec)
+	return 1;
+    if (t1->tv_usec < t2->tv_usec)
+	return -1;
+    if (t1->tv_usec > t2->tv_usec)
+	return 1;
+    return 0;
+}
+
+#undef Sleep
 int WSAAPI
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	       struct timeval *timeout)
@@ -2146,10 +2150,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set cons_rd;
     fd_set else_rd;
     fd_set else_wr;
-#if USE_INTERRUPT_WINSOCK
-    fd_set trap;
-    int ret;
-#endif /* USE_INTERRUPT_WINSOCK */
     int nonsock = 0;
 
     if (nfds < 0 || (timeout && (timeout->tv_sec < 0 || timeout->tv_usec < 0))) {
@@ -2184,15 +2184,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     if (ex && ex->fd_count > r) r = ex->fd_count;
     if (nfds > r) nfds = r;
 
-#if USE_INTERRUPT_WINSOCK
-    if (ex)
-	trap = *ex;
-    else
-	trap.fd_count = 0;
-    ex = &trap;
-#endif /* USE_INTERRUPT_WINSOCK */
-
-    if (nonsock) {
+    {
 	struct timeval rest;
 	struct timeval wait;
 	struct timeval zero;
@@ -2200,10 +2192,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
 	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
 	do {
-	    // modifying {else,pipe,cons}_rd is safe because
-	    // if they are modified, function returns immediately.
-	    extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
-	    extract_fd(&else_rd, &cons_rd, is_readable_console);
+	    if (nonsock) {
+		// modifying {else,pipe,cons}_rd is safe because
+		// if they are modified, function returns immediately.
+		extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
+		extract_fd(&else_rd, &cons_rd, is_readable_console);
+	    }
 
 	    if (else_rd.fd_count || else_wr.fd_count) {
 		r = do_select(nfds, rd, wr, ex, &zero); // polling
@@ -2213,31 +2207,26 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
+		struct timeval *dowait =
+		    compare(&rest, &wait) < 0 ? &rest : &wait;
+
 		fd_set orig_rd;
 		fd_set orig_wr;
 		fd_set orig_ex;
 		if (rd) orig_rd = *rd;
 		if (wr) orig_wr = *wr;
 		if (ex) orig_ex = *ex;
-		r = do_select(nfds, rd, wr, ex, &wait);
+		r = do_select(nfds, rd, wr, ex, &zero);	// polling
 		if (r != 0) break; // signaled or error
 		if (rd) *rd = orig_rd;
 		if (wr) *wr = orig_wr;
 		if (ex) *ex = orig_ex;
+
+		// XXX: should check the time select spent
+		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
 	    }
 	} while (!timeout || subst(&rest, &wait));
     }
-    else
-	r = do_select(nfds, rd, wr, ex, timeout);
-
-#if USE_INTERRUPT_WINSOCK
-    if (ret) {
-	// In this case, we must restore all FDs. But this is only a test
-	// code, so we think about that later.
-	errno = EINTR;
-	r = -1;
-    }
-#endif /* USE_INTERRUPT_WINSOCK */
 
     return r;
 }
@@ -3623,7 +3612,6 @@ rb_w32_times(struct tms *tmbuf)
     return 0;
 }
 
-#undef Sleep
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
