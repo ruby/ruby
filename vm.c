@@ -106,7 +106,7 @@ push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE magic,
     cfp->dfp = dfp;
     cfp->proc = 0;
     cfp->method_id = 0;
-    cfp->callee_id = 0;
+    cfp->method_klass = 0;
 
 #define COLLECT_PROFILE 0
 #if COLLECT_PROFILE
@@ -541,7 +541,6 @@ th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 		push_frame(th, 0, FRAME_MAGIC_CFUNC,
 			   recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
-	      cfp->callee_id = oid;
 	      cfp->method_id = id;
 	      cfp->method_klass = klass;
 
@@ -983,11 +982,10 @@ th_backtrace_each(rb_thread_t *th,
 		rb_ary_push(ary, str);
 	    }
 	}
-	else if (cfp->callee_id) {
+	else if (cfp->method_id) {
 	    str = rb_sprintf("%s:%d:in `%s'",
 			     file, line_no,
-			     /* TODO: method_id? callee_id? */
-			     rb_id2name(cfp->callee_id));
+			     rb_id2name(cfp->method_id));
 	    rb_ary_push(ary, str);
 	}
 	cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp);
@@ -1807,3 +1805,48 @@ rb_thread_eval(rb_thread_t *th, VALUE iseqval)
     return val;
 }
 
+int
+rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp)
+{
+    rb_control_frame_t *cfp = th->cfp;
+
+    if (cfp->iseq) {
+	if (cfp->pc != 0) {
+	    rb_iseq_t *iseq = cfp->iseq->local_iseq;
+	    if (idp) *idp = rb_intern(RSTRING_PTR(iseq->name));
+	    if (klassp) *klassp = iseq->klass;
+	    return 1;
+	}
+    }
+    else {
+	if (idp) *idp = cfp->method_id;
+	if (klassp) *klassp = cfp->method_klass;
+	return 1;
+    }
+    *idp = *klassp = 0;
+    return 0;
+}
+
+VALUE
+rb_thread_current_status(rb_thread_t *th)
+{
+    rb_control_frame_t *cfp = th->cfp;
+    VALUE str = Qnil;
+
+    if (cfp->iseq != 0) {
+	if (cfp->pc != 0) {
+	    rb_iseq_t *iseq = cfp->iseq;
+	    int line_no = th_get_sourceline(cfp);
+	    char *file = RSTRING_PTR(iseq->filename);
+	    str = rb_sprintf("%s:%d:in `%s'",
+			     file, line_no, RSTRING_PTR(iseq->name));
+	}
+    }
+    else if (cfp->method_id) {
+	str = rb_sprintf("`%s#%s' (cfunc)",
+			 RSTRING_PTR(rb_class_name(cfp->method_klass)),
+			 rb_id2name(cfp->method_id));
+    }
+
+    return str;
+}

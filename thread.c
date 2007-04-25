@@ -717,6 +717,7 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	/* thread pass */
 	rb_thread_schedule();
     }
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 }
 
 
@@ -1836,14 +1837,28 @@ static void
 timer_thread_function(void)
 {
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
+
+    /* for time slice */
     vm->running_thread->interrupt_flag = 1;
-    
+
+    /* check signal */
     if (vm->bufferd_signal_size && vm->main_thread->exec_signal == 0) {
 	vm->main_thread->exec_signal = rb_get_next_signal(vm);
 	thread_debug("bufferd_signal_size: %d, sig: %d\n",
 		     vm->bufferd_signal_size, vm->main_thread->exec_signal);
 	rb_thread_interrupt(vm->main_thread);
     }
+
+#if 0
+    /* prove profiler */
+    if (vm->prove_profile.enable) {
+	rb_thread_t *th = vm->running_thread;
+
+	if (vm->during_gc) {
+	    /* GC prove profiling */
+	}
+    }
+#endif
 }
 
 void

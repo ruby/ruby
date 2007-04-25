@@ -234,7 +234,9 @@ static void inline
 exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
     while (hook) {
-	(*hook->func)(flag, hook->data, self, id, klass);
+	if (flag & hook->flag) {
+	    (*hook->func)(flag, hook->data, self, id, klass);
+	}
 	hook = hook->next;
     }
 }
@@ -242,13 +244,15 @@ exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id,
 #define EXEC_EVENT_HOOK(th, flag, self, id, klass) do { \
     rb_event_flag_t wait_event__ = th->event_flags; \
     if (UNLIKELY(wait_event__)) { \
-	VALUE self__ = (self), klass__ = (klass); \
-	ID id__ = (id); \
-	if (wait_event__ & flag) { \
-	    exec_event_hooks(th->event_hooks, flag, self__, id__, klass__); \
-	} \
-	if (wait_event__ & RUBY_EVENT_VM) { \
-	    exec_event_hooks(th->vm->event_hooks, flag, self__, id__, klass__); \
+	if (wait_event__ & (flag | RUBY_EVENT_VM)) { \
+	    VALUE self__ = (self), klass__ = (klass); \
+	    ID id__ = (id); \
+	    if (wait_event__ & flag) { \
+		exec_event_hooks(th->event_hooks, flag, self__, id__, klass__); \
+	    } \
+	    if (wait_event__ & RUBY_EVENT_VM) { \
+		exec_event_hooks(th->vm->event_hooks, flag, self__, id__, klass__); \
+	    } \
 	} \
     } \
 } while (0)

@@ -253,20 +253,20 @@ struct rb_iseq_struct {
     void *jit_compiled;
     void *iseq_orig;
 
-  /**
-   * argument information
-   *
-   *  def m(a1, a2, ..., aM, b1=(...), b2=(...), ..., bN=(...), *c, &d)
-   * =>
-   *
-   *  argc          = M
-   *  arg_rest      = M+N + 1 // if no rest arguments, rest is 0
-   *  arg_opts      = N
-   *  arg_opts_tbl  = [ (N entries) ]
-   *  arg_block     = M+N + 1 (rest) + 1 (block)
-   *  check:
-   *    M <= num
-   */
+    /**
+     * argument information
+     *
+     *  def m(a1, a2, ..., aM, b1=(...), b2=(...), ..., bN=(...), *c, &d)
+     * =>
+     *
+     *  argc          = M
+     *  arg_rest      = M+N + 1 // if no rest arguments, rest is 0
+     *  arg_opts      = N
+     *  arg_opts_tbl  = [ (N entries) ]
+     *  arg_block     = M+N + 1 (rest) + 1 (block)
+     *  check:
+     *    M <= num
+     */
 
     int argc;
     int arg_simple;
@@ -316,6 +316,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define RUBY_EVENT_RAISE    0x80
 #define RUBY_EVENT_ALL      0xff
 #define RUBY_EVENT_VM      0x100
+#define RUBY_EVENT_SWITCH  0x200
 
 typedef unsigned int rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t, VALUE data, VALUE, ID, VALUE klass);
@@ -371,12 +372,10 @@ typedef struct {
     VALUE *dfp;			/* cfp[7] / block[2] */
     rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
     VALUE proc;			/* cfp[9] / block[4] */
-    ID callee_id;               /* cfp[10] */
-    ID method_id;               /* cfp[11] saved in special case */
-    VALUE method_klass;         /* cfp[12] saved in special case */
-    VALUE prof_time_self;       /* cfp[13] */
-    VALUE prof_time_chld;       /* cfp[14] */
-    VALUE dummy;                /* cfp[15] */
+    ID method_id;               /* cfp[10] saved in special case */
+    VALUE method_klass;         /* cfp[11] saved in special case */
+    VALUE prof_time_self;       /* cfp[12] */
+    VALUE prof_time_chld;       /* cfp[13] */
 } rb_control_frame_t;
 
 typedef struct {
@@ -629,6 +628,7 @@ void yarv_bug(void);
 VALUE rb_thread_eval(rb_thread_t *th, VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
+int rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp);
 
 VALUE th_eval_body(rb_thread_t *th);
 VALUE th_set_eval_stack(rb_thread_t *, VALUE iseq);

@@ -1,3 +1,20 @@
+Wed Apr 25 12:42:40 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h: remove rb_control_frame_t#callee_id.
+
+	* vm_macro.def: ditto.
+
+	* eval_intern.h (exec_event_hooks): fix to check event flags
+
+	* eval_intern.h (EXEC_EVENT_HOOK): fix to re-check event flags.
+
+	* ext/probeprofiler : added.  this profiler is sampling based
+	  profiler.
+
+	* vm.c: add rb_thread_current_status() API for probeprofiler.
+
+	* thread.c (rb_thread_execute_interrupts): add comments.
+
 Wed Apr 25 10:36:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (PUSH_TAG): no argument now.
