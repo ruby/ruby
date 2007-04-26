@@ -1,3 +1,10 @@
+Thu Apr 26 17:31:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): reduce multiplying for even number.
+
+	* numeric.c (int_pow): calculate power in Fixnum as possible.
+	  [ruby-dev:30726]
+
 Thu Apr 26 17:18:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: fixes for ripper.

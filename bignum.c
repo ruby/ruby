@@ -1552,22 +1552,20 @@ rb_big_pow(VALUE x, VALUE y)
       case T_FIXNUM:
 	yy = FIX2LONG(y);
 	if (yy > 0) {
-	    VALUE z = x;
+	    VALUE z = (yy & 1) ? x : 0;
 
 	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
 	    }
-	    for (;;) {
-		yy -= 1;
-		if (yy == 0) break;
-		while (yy % 2 == 0) {
+	    while (yy &= ~1) {
+		do {
 		    yy /= 2;
 		    x = rb_big_mul0(x, x);
 		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
-		}
-		z = rb_big_mul0(z, x);
+		} while (yy % 2 == 0);
+		z = z ? rb_big_mul0(z, x) : x;
 		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
 	    }
 	    return bignorm(z);
