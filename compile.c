@@ -1760,6 +1760,11 @@ compile_array(rb_iseq_t *iseq,
     DECL_ANCHOR(anchor);
 
     while (node) {
+	if (nd_type(node) != NODE_ARRAY) {
+	    rb_bug("compile_array: This node is not NODE_ARRAY, but %s",
+		   ruby_node_name(nd_type(node)));
+	}
+
 	i++;
 	if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
 	    opt_p = Qfalse;
@@ -1945,38 +1950,11 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 			  INT2FIX(lhs_splat));
 		break;
 
-	    case NODE_ARGSCAT:{
-		    NODE *ary = rhsn->nd_head;
-		    int idx = 0;
-
-		    while (ary) {
-			if (idx < llen || lhs_splat) {
-			    COMPILE(ret, "rhs aggscat each head",
-				    ary->nd_head);
-			}
-			else {
-			    COMPILE_POPED(ret,
-					  "rhs aggscat each head (popped)",
-					  ary->nd_head);
-			}
-			ary = ary->nd_next;
-			idx++;
-		    }
-
-		    if (llen > idx) {
-			COMPILE(ret, "rhs to ary (argscat/splat)",
-				rhsn->nd_body);
-			ADD_INSN2(ret, nd_line(rhsn), expandarray,
-				  INT2FIX(llen - idx), INT2FIX(lhs_splat));
-		    }
-		    else if (lhs_splat) {
-			COMPILE(ret, "rhs to ary (argscat/splat)",
-				rhsn->nd_body);
-			ADD_INSN2(ret, nd_line(rhsn), expandarray,
-				  INT2FIX(llen - idx), INT2FIX(lhs_splat));
-		    }
-		    break;
-		}
+	    case NODE_ARGSCAT:
+		COMPILE(ret, "rhs to argscat", rhsn);
+		ADD_INSN2(ret, nd_line(rhsn), expandarray,
+			  INT2FIX(llen), INT2FIX(lhs_splat));
+		break;
 	    default:
 		COMPILE(ret, "rhs to ary (splat/default)", rhsn);
 		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
@@ -2364,9 +2342,10 @@ setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 {
     VALUE argc = INT2FIX(0);
     NODE *argn = node->nd_args;
+    int nsplat = 0;
     DECL_ANCHOR(arg_block);
-    DECL_ANCHOR(args_push);
-    
+    DECL_ANCHOR(args_splat);
+
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
 	COMPILE(arg_block, "block", argn->nd_body);
 	*flag |= VM_CALL_ARGS_BLOCKARG_BIT;
@@ -2382,31 +2361,57 @@ setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 	      *flag |= VM_CALL_ARGS_SPLAT_BIT;
 	      break;
 	  }
-	  case NODE_ARGSCAT: {
-	      argc = INT2FIX(compile_array(iseq, args, argn->nd_head, Qfalse) + 1);
-	      POP_ELEMENT(args);
-	      COMPILE(args, "args (cat: splat)", argn->nd_body);
+	  case NODE_ARGSCAT:
+	  case NODE_ARGSPUSH: {
+	      int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
+	      DECL_ANCHOR(tmp);
+
+	      COMPILE(tmp, "args (cat: splat)", argn->nd_body);
+	      if (next_is_array && nsplat == 0) {
+		  /* none */
+	      }
+	      else {
+		  if (nd_type(argn) == NODE_ARGSCAT) {
+		      ADD_INSN1(tmp, nd_line(argn), splatarray, Qfalse);
+		  }
+		  else {
+		      ADD_INSN1(tmp, nd_line(argn), newarray, INT2FIX(1));
+		  }
+	      }
+	      INSERT_LIST(args_splat, tmp);
+	      nsplat++;
 	      *flag |= VM_CALL_ARGS_SPLAT_BIT;
+
+	      if (next_is_array) {
+		  argc = INT2FIX(compile_array(iseq, args, argn->nd_head, Qfalse) + 1);
+		  POP_ELEMENT(args);
+	      }
+	      else {
+		  argn = argn->nd_head;
+		  goto setup_argn;
+	      }
 	      break;
 	  }
-	  case NODE_ARGSPUSH: {
-	      DECL_ANCHOR(args_push_e);
-	      COMPILE(args_push_e, "argspush (cdr)", argn->nd_body);
-	      ADD_INSN(args_push_e, nd_line(node), concatarray);
-	      INSERT_LIST(args_push, args_push_e);
-	      argn = argn->nd_head;
-	      goto setup_argn;
-	  }
-	  default: {
+	  case NODE_ARRAY: {
 	      argc = INT2FIX(compile_array(iseq, args, argn, Qfalse));
 	      POP_ELEMENT(args);
 	      break;
 	  }
+	  default: {
+	      rb_bug("setup_arg: unknown node: %s\n", ruby_node_name(nd_type(node)));
+	  }
 	}
     }
 
-    if (!LIST_SIZE_ZERO(args_push)) {
-	ADD_SEQ(args, args_push);
+    if (nsplat > 1) {
+	int i;
+	for (i=1; i<nsplat; i++) {
+	    ADD_INSN(args_splat, nd_line(args), concatarray);
+	}
+    }
+
+    if (!LIST_SIZE_ZERO(args_splat)) {
+	ADD_SEQ(args, args_splat);
     }
 
     if (*flag & VM_CALL_ARGS_BLOCKARG_BIT) {
@@ -3892,8 +3897,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break;
       }
       case NODE_ARGSPUSH:{
-	  /* OK */
-	  COMPILE_ERROR(("BUG: unknown node: NODE_ARGSPUSH"));
+	  COMPILE(ret, "arsgpush head", node->nd_head);
+	  COMPILE(ret, "argspush body", node->nd_body);
+	  ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
+	  ADD_INSN(ret, nd_line(node), concatarray);
 	  break;
       }
       case NODE_SPLAT:{
