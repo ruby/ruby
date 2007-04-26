@@ -1,3 +1,7 @@
+Thu Apr 26 13:54:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el: new file.  C/C++ style for ruby source code.
+
 Wed Apr 25 19:49:16 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (unix_send_io, unix_recv_io): use CMSG_DATA to
