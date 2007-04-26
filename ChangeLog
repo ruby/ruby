@@ -1,3 +1,18 @@
+Thu Apr 26 17:18:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: fixes for ripper.
+
+	* parse.y (primary): reduced duplcated code.
+
+	* parse.y (f_arg_item): should not override by meaningless value.
+
+	* parse.y (f_arg, assocs): should not use $$ before assigned.
+
+	* parse.y (assoc_list): dispatch assoclist_from_args for assocs as
+	  well as args.
+
+	* parse.y (assoc): return assoc if dispatched result is $1.
+
 Thu Apr 26 13:54:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el: new file.  C/C++ style for ruby source code.

@@ -2778,15 +2778,12 @@ primary		: literal
 		    }
 		| keyword_def fname
 		    {
-		    /*%%%*/
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
+		    /*%%%*/
 			local_push(0);
 		    /*%
-			$<id>$ = cur_mid;
-			cur_mid = $2;
-			in_def++;
 		    %*/
 		    }
 		  f_arglist
@@ -2809,13 +2806,11 @@ primary		: literal
 		    }
 		| keyword_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
-		    /*%%%*/
 			in_single++;
-			local_push(0);
 		        lex_state = EXPR_END; /* force for args */
+		    /*%%%*/
+			local_push(0);
 		    /*%
-			in_single++;
-		        lex_state = EXPR_END;
 		    %*/
 		    }
 		  f_arglist
@@ -4102,7 +4097,6 @@ f_arg_item	: f_norm_arg
 			arg_var($1);
 			$$ = NEW_ARGS_AUX($1, 1);
                     /*%
-                        $$ = rb_ary_new();
                     %*/
 		    }
 		| tLPAREN f_margs rparen
@@ -4133,7 +4127,7 @@ f_arg		: f_arg_item
 			$$->nd_next = block_append($$->nd_next, $3->nd_next);
 		        rb_gc_force_recycle((VALUE)$3);
 		    /*%
-			rb_ary_push($$, $3);
+			$$ = rb_ary_push($1, $3);
 		    %*/
 		    }
  		;
@@ -4278,7 +4272,11 @@ singleton	: var_ref
 assoc_list	: none
 		| assocs trailer
 		    {
+		    /*%%%*/
 			$$ = $1;
+		    /*%
+		    	$$ = dispatch1(assoclist_from_args, $1);
+		    %*/
 		    }
 		| args trailer
 		    {
@@ -4305,7 +4303,7 @@ assocs		: assoc
 		    /*%%%*/
 			$$ = list_concat($1, $3);
 		    /*%
-			rb_ary_push($$, $3);
+			$$ = rb_ary_push($1, $3);
 		    %*/
 		    }
 		;
@@ -4316,6 +4314,7 @@ assoc		: arg_value tASSOC arg_value
 			$$ = list_append(NEW_LIST($1), $3);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $3);
+			if ($$ == $1) $$ = rb_assoc_new($1, $3);
 		    %*/
 		    }
 		| tLABEL arg_value
@@ -4323,7 +4322,8 @@ assoc		: arg_value tASSOC arg_value
 		    /*%%%*/
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
 		    /*%
-		    	$$ = dispatch2(assoc_new, $1, $2);
+			$$ = dispatch2(assoc_new, $1, $2);
+			if ($$ == $1) $$ = rb_assoc_new($1, $2);
 		    %*/
 		    }
 		;
