@@ -1,3 +1,10 @@
+Fri Apr 27 02:00:17 2007  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* signal.c: Fixed backwards compatibility for 'raise Interrupt'.
+	
+	* lib/yaml/tag.rb: Running rdoc over the 1.8.6 tree skips
+	Module. Patch from James Britt
+	
 Thu Apr 26 13:54:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el: new file.  C/C++ style for ruby source code.
