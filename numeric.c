@@ -2283,7 +2283,7 @@ int_pow(long x, unsigned long y)
 	}
 	{
 	    long xz = x * z;
-	    if (xz < z || xz < x || !POSFIXABLE(xz)) {
+	    if (!POSFIXABLE(xz) || xz / x != z) {
 		goto bignum;
 	    }
 	    z = xz;

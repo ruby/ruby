@@ -1,4 +1,6 @@
-Fri Apr 27 12:54:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Apr 27 17:05:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_pow): bugfix of overflow detection.
 
 	* numeric.c (int_pow): rb_big_pow() may return other than Bignum.
 
