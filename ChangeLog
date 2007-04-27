@@ -1,3 +1,7 @@
+Fri Apr 27 12:54:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_pow): rb_big_pow() may return other than Bignum.
+
 Fri Apr 27 01:51:50 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: support multiple splat (e.g, [a, *b, *c, e, *f]).

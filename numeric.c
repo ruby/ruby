@@ -2272,9 +2272,11 @@ int_pow(long x, unsigned long y)
 	while (y % 2 == 0) {
 	    long x2 = x * x;
 	    if (x2 < x || !POSFIXABLE(x2)) {
+		VALUE v;
 	      bignum:
-		return rb_big_mul(rb_big_pow(rb_int2big(x), LONG2NUM(y)),
-				  rb_int2big(neg ? -z : z));
+		v = rb_big_pow(rb_int2big(neg ? -x : x), LONG2NUM(y));
+		if (z != 1) v = rb_big_mul(rb_int2big(z), v);
+		return v;
 	    }
 	    x = x2;
 	    y >>= 1;
