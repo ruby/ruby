@@ -1,3 +1,8 @@
+Mon Apr 30 01:17:51 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (TupleSpace#create_entry, TupleBag#push,
+	  delete): extract method, and rename parameter.
+
 Fri Apr 27 02:00:17 2007  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* signal.c: Fixed backwards compatibility for 'raise Interrupt'.

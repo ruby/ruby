@@ -304,20 +304,20 @@ module Rinda
     end
 
     ##
-    # Add +ary+ to the TupleBag.
+    # Add +tuple+ to the TupleBag.
 
-    def push(ary)
-      size = ary.size
+    def push(tuple)
+      size = tuple.size
       @hash[size] ||= []
-      @hash[size].push(ary)
+      @hash[size].push(tuple)
     end
 
     ##
-    # Removes +ary+ from the TupleBag.
+    # Removes +tuple+ from the TupleBag.
 
-    def delete(ary)
-      size = ary.size
-      @hash.fetch(size, []).delete(ary)
+    def delete(tuple)
+      size = tuple.size
+      @hash.fetch(size, []).delete(tuple)
     end
 
     ##
@@ -403,7 +403,7 @@ module Rinda
     # Adds +tuple+
 
     def write(tuple, sec=nil)
-      entry = TupleEntry.new(tuple, sec)
+      entry = create_entry(tuple, sec)
       start_keeper
       synchronize do
         if entry.expired?
@@ -528,6 +528,10 @@ module Rinda
     end
 
     private
+
+    def create_entry(tuple, sec)
+      TupleEntry.new(tuple, sec)
+    end
 
     ##
     # Removes dead tuples.
