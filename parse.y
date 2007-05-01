@@ -491,11 +491,11 @@ static VALUE ripper_id2sym(ID);
 #endif
 
 #ifndef RIPPER
-# define rb_warn0(fmt)    rb_warn(fmt)
-# define rb_warnI(fmt,a)  rb_warn(fmt,a)
-# define rb_warnS(fmt,a)  rb_warn(fmt,a)
-# define rb_warning0(fmt) rb_warning(fmt)
-# define rb_warningS(fmt,a) rb_warning(fmt,a)
+# define rb_warn0(fmt)    rb_compile_warn(fmt)
+# define rb_warnI(fmt,a)  rb_compile_warn(fmt,a)
+# define rb_warnS(fmt,a)  rb_compile_warn(fmt,a)
+# define rb_warning0(fmt) rb_compile_warning(fmt)
+# define rb_warningS(fmt,a) rb_compile_warning(fmt,a)
 #else
 # define rb_warn0(fmt)    ripper_warn0(parser, fmt)
 # define rb_warnI(fmt,a)  ripper_warnI(parser, fmt, a)
@@ -735,7 +735,7 @@ bodystmt	: compstmt
 			    $$ = NEW_RESCUE($1, $2, $3);
 			}
 			else if ($3) {
-			    rb_warn("else without rescue is useless");
+			    rb_warn0("else without rescue is useless");
 			    $$ = block_append($$, $3);
 			}
 			if ($4) {
@@ -2231,7 +2231,7 @@ opt_call_args	: none
 
 call_args	: command
 		    {
-			rb_warn("parenthesize argument(s) for future version");
+			rb_warn0("parenthesize argument(s) for future version");
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%
@@ -6927,7 +6927,7 @@ parser_warn(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warn("%s", mesg);
+    rb_warnS("%s", mesg);
     ruby_sourceline = line;
 }
 
@@ -7547,7 +7547,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 	int line = ruby_sourceline;
 
 	ruby_sourceline = nd_line(node);
-	rb_warn("useless use of %s in void context", useless);
+	rb_warnS("useless use of %s in void context", useless);
 	ruby_sourceline = line;
     }
 }
@@ -7742,7 +7742,7 @@ cond0(struct parser_params *parser, NODE *node)
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
-	rb_warn("string literal in condition");
+	rb_warn0("string literal in condition");
 	break;
 
       case NODE_DREGX:

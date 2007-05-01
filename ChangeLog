@@ -1,3 +1,9 @@
+Wed May  2 06:46:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c, parse.y, ruby.h (rb_compile_warn, rb_compile_warning): warn
+	  for compilation.  the parser should no longer use rb_warn() and
+	  rb_warning().  [ruby-dev:30121]
+
 Wed May  2 05:45:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assoc): result of assoc_new needs to be an assoc.

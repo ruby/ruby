@@ -650,10 +650,11 @@ NORETURN(void rb_notimplement(void));
 
 /* reports if `-w' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
-/* reports if `-w' specified */
+PRINTF_ARGS(void rb_compile_warning(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
+PRINTF_ARGS(void rb_compile_warn(const char*, ...), 1, 2);
 
 VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);

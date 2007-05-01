@@ -30,18 +30,30 @@ const char *rb_sourcefile(void);
 int rb_sourceline(void);
 
 static int
-err_position(char *buf, long len)
+err_position_0(char *buf, long len, const char *file, long line)
 {
-    ruby_set_current_source();
-    if (!rb_sourcefile()) {
+    if (!file) {
 	return 0;
     }
-    else if (rb_sourceline() == 0) {
-	return snprintf(buf, len, "%s: ", rb_sourcefile());
+    else if (line == 0) {
+	return snprintf(buf, len, "%s: ", file);
     }
     else {
-	return snprintf(buf, len, "%s:%d: ", rb_sourcefile(), rb_sourceline());
+	return snprintf(buf, len, "%s:%d: ", file, line);
     }
+}
+
+static int
+err_position(char *buf, long len)
+{
+    return err_position_0(buf, len, rb_sourcefile(), rb_sourceline());
+}
+
+static int
+compile_position(char *buf, long len)
+{
+    ruby_set_current_source();
+    return err_position_0(buf, len, ruby_sourcefile, ruby_sourceline);
 }
 
 static void
@@ -55,23 +67,29 @@ err_snprintf(char *buf, long len, const char *fmt, va_list args)
     }
 }
 
-static void err_append(const char*);
 static void
-err_print(const char *fmt, va_list args)
+compile_snprintf(char *buf, long len, const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
+    long n;
 
-    err_snprintf(buf, BUFSIZ, fmt, args);
-    err_append(buf);
+    n = compile_position(buf, len);
+    if (len > n) {
+	vsnprintf((char*)buf+n, len-n, fmt, args);
+    }
 }
+
+static void err_append(const char*);
 
 void
 rb_compile_error(const char *fmt, ...)
 {
     va_list args;
+    char buf[BUFSIZ];
+
     va_start(args, fmt);
-    err_print(fmt, args);
+    compile_snprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
+    err_append(buf);
     ruby_nerrs++;
 }
 
@@ -85,6 +103,49 @@ rb_compile_error_append(const char *fmt, ...)
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     err_append(buf);
+}
+
+static void
+compile_warn_print(const char *fmt, va_list args)
+{
+    char buf[BUFSIZ];
+    int len;
+
+    compile_snprintf(buf, BUFSIZ, fmt, args);
+    len = strlen(buf);
+    buf[len++] = '\n';
+    rb_write_error2(buf, len);
+}
+
+void
+rb_compile_warn(const char *fmt, ...)
+{
+    char buf[BUFSIZ];
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
+
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+
+    va_start(args, fmt);
+    compile_warn_print(buf, args);
+    va_end(args);
+}
+
+/* rb_compile_warning() reports only in verbose mode */
+void
+rb_compile_warning(const char *fmt, ...)
+{
+    char buf[BUFSIZ];
+    va_list args;
+
+    if (!RTEST(ruby_verbose)) return;
+
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+
+    va_start(args, fmt);
+    compile_warn_print(buf, args);
+    va_end(args);
 }
 
 static void
@@ -1063,21 +1124,21 @@ rb_sys_fail(const char *mesg)
 void
 rb_sys_warning(const char *fmt, ...)
 {
-     char buf[BUFSIZ];
-     va_list args;
-     int errno_save;
-     
-     errno_save = errno;
+    char buf[BUFSIZ];
+    va_list args;
+    int errno_save;
 
-     if (!RTEST(ruby_verbose)) return;
+    errno_save = errno;
 
-     snprintf(buf, BUFSIZ, "warning: %s", fmt);
-     snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
-     
-     va_start(args, fmt);
-     warn_print(buf, args);
-     va_end(args);
-     errno = errno_save;
+    if (!RTEST(ruby_verbose)) return;
+
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+    snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
+
+    va_start(args, fmt);
+    warn_print(buf, args);
+    va_end(args);
+    errno = errno_save;
 }
 
 void
