@@ -2943,7 +2943,7 @@ rb_ary_shuffle(VALUE ary)
 
 /*
  *  call-seq:
- *     array.choice        -> an_array
+ *     array.choice        -> obj
  *  
  *  Choose a random element from an array.
  */
