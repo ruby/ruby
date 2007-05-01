@@ -8,6 +8,8 @@ class TestMethod < Test::Unit::TestCase
   def mo2(a, b = nil) end
   def mo3(*a) end
   def mo4(a, *b, &c) end
+  def mo5(a, *b, c) end
+  def mo6(a, *b, c, &d) end
 
   class Base
     def foo() :base end
@@ -24,6 +26,8 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(-2, method(:mo2).arity)
     assert_equal(-1, method(:mo3).arity)
     assert_equal(-2, method(:mo4).arity)
+    assert_equal(-3, method(:mo5).arity)
+    assert_equal(-3, method(:mo6).arity)
   end
 
   def test_unbind

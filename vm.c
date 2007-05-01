@@ -105,8 +105,6 @@ push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE magic,
     cfp->lfp = lfp;
     cfp->dfp = dfp;
     cfp->proc = 0;
-    cfp->method_id = 0;
-    cfp->method_klass = 0;
 
 #define COLLECT_PROFILE 0
 #if COLLECT_PROFILE
@@ -436,8 +434,8 @@ th_make_proc_from_block(rb_thread_t *th, rb_control_frame_t *cfp,
 struct RObject *rb;
 
 VALUE
-th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp,
-	     rb_block_t *block)
+th_make_proc(rb_thread_t *th,
+	     rb_control_frame_t *cfp, rb_block_t *block)
 {
     VALUE procval, envval, blockprocval = 0;
     rb_proc_t *proc;
@@ -448,8 +446,7 @@ th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp,
 
 	    blockprocval =
 	      th_make_proc_from_block(th, cfp,
-				      (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->
-									 lfp));
+				      (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
 	}
@@ -489,12 +486,11 @@ th_invoke_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
     rb_control_frame_t *cfp = th->cfp;
     rb_proc_t *proc;
     VALUE val;
-    VALUE values[2] = {
-	id, RCLASS(klass)->super,
-    };
 
-    /* dirty hack */
-    (cfp-1)->block_iseq = (void *)values;
+    /* control block frame */
+    (cfp-2)->method_id = id;
+    (cfp-2)->method_klass = klass;
+
     GetProcPtr(procval, proc);
     val = th_invoke_proc(th, proc, recv, argc, argv);
     return val;
@@ -741,6 +737,17 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 	argc = iseq->arg_rest + 1;
     }
 
+    if (iseq->arg_block != -1) {
+	VALUE proc = Qnil;
+
+	if (rb_block_given_p()) {
+	    proc = rb_block_proc();
+	}
+
+	argv[iseq->arg_block] = proc;
+	argc = iseq->arg_block + 1;
+    }
+
     return argc;
 }
 
@@ -982,7 +989,7 @@ th_backtrace_each(rb_thread_t *th,
 		rb_ary_push(ary, str);
 	    }
 	}
-	else if (cfp->method_id) {
+	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    str = rb_sprintf("%s:%d:in `%s'",
 			     file, line_no,
 			     rb_id2name(cfp->method_id));

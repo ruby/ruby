@@ -245,6 +245,9 @@ default:                        \
   }                                                \
 }
 
+#define RUBYVM_CFUNC_FRAME_P(cfp) \
+  ((cfp)->magic == FRAME_MAGIC_CFUNC)
+
 /*
  * Excception
  */

@@ -1251,9 +1251,8 @@ send
 		    }
 		}
 
-		/* dirty hack */
-		id    = (ID) ((VALUE *)(lcfp+1)->block_iseq)[0];
-		klass =      ((VALUE *)(lcfp+1)->block_iseq)[1];
+		id = lcfp->method_id;
+		klass = search_super_klass(lcfp->method_klass, recv);
 
 		if (TOPN(num) == Qfalse) {
 		    /* for ZSUPER */
@@ -1265,7 +1264,10 @@ send
 		    }
 		}
 	    }
+	    else {
 	    klass = search_super_klass(ip->klass, recv);
+	    }
+
 	    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 	    blockptr = tmp_blockptr;
 	    mn = rb_method_node(klass, id);

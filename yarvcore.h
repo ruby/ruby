@@ -273,6 +273,7 @@ struct rb_iseq_struct {
     int arg_rest;
     int arg_block;
     int arg_opts;
+    int arg_post_len;
     VALUE *arg_opt_tbl;
 
     /* for stack overflow check */

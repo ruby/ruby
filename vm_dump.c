@@ -237,7 +237,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq == 0) {
-	if (cfp->method_id) {
+	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    argc = 0;
 	    local_size = 0;
 	    name = rb_id2name(cfp->method_id);

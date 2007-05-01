@@ -1,3 +1,17 @@
+Tue May  1 13:12:49 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h, compile.c (set_arguments): support post arguments.
+
+	* test/ruby/test_method.rb: add tests for above.
+
+	* test/ruby/test_proc.rb: ditto.
+
+	* proc.c: fix an arity bug ([ruby-core:11029]).
+
+	* vm.c, vm.h, insns.def, vm_dump.h: fix bmethod process.
+
+	* vm.c: support block argument on block parameter.
+
 Fri Apr 27 17:05:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (int_pow): bugfix of overflow detection.

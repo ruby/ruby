@@ -57,12 +57,15 @@ class TestProc < Test::Unit::TestCase
     assert_equal(-2, proc{|x, *y|}.arity)
     assert_equal(-1, proc{|*x|}.arity)
     assert_equal(-1, proc{|*|}.arity)
+    assert_equal(-3, proc{|x, *y, z|}.arity)
+    assert_equal(-4, proc{|x, *y, z, a|}.arity)
 
     assert_arity(0) {}
     assert_arity(0) {||}
     assert_arity(1) {|x|}
     assert_arity(2) {|x, y|}
     assert_arity(-2) {|x, *y|}
+    assert_arity(-3) {|x, *y, z|}
     assert_arity(-1) {|*x|}
     assert_arity(-1) {|*|}
   end
@@ -89,9 +92,8 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_par
-    assert false, "TODO: block parameter |&b| not supported"
-    # assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
-    # assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
+    assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
+    assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
   end
 
   def test_safe

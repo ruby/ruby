@@ -849,6 +849,83 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    if (iseq->arg_rest == -1) {
 		rb_bug("arg_rest: -1");
 	    }
+
+	    if (post_len) {
+		/*
+		 * if rest.length < post_len
+		 *   raise ArgumentError
+		 * end
+		 * post1 = rest.shift
+		 * post2 = rest.shift
+		 * ...
+		 *
+		 * #=> yarv insns
+		 *   push rest
+		 *   call :length
+		 *   put 1
+		 *   call :<
+		 *   branchunless :success
+		 *   put ArgumentsError
+		 *   put "wrong number of arugments (%d of %d)"
+		 *   call :new, 1
+		 *   call :raise
+		 * success:
+		 *   push rest
+		 *   call :shift
+		 *   set post1
+		 *   push rest
+		 *   call :shift
+		 *   set post2
+		 *   ...
+		 */
+		LABEL *lsuccess = NEW_LABEL(nd_line(node_args));
+		int i;
+
+#define GET_LOCAL(idx) do { \
+    if (iseq->type == ISEQ_TYPE_METHOD) { \
+	ADD_INSN1(optargs, nd_line(node_args), getlocal, INT2FIX(iseq->local_size - (idx) + 1)); \
+    } \
+    else { \
+	ADD_INSN2(optargs, nd_line(node_args), getdynamic, INT2FIX(iseq->local_size - (idx)), INT2FIX(0)); \
+    } \
+} while (0)
+
+#define SET_LOCAL(idx) do { \
+    if (iseq->type == ISEQ_TYPE_METHOD) { \
+	ADD_INSN1(optargs, nd_line(node_args), setlocal, INT2FIX(iseq->local_size - (idx) + 1)); \
+    } \
+    else { \
+	ADD_INSN2(optargs, nd_line(node_args), setdynamic, INT2FIX(iseq->local_size - (idx)), INT2FIX(0)); \
+    } \
+} while (0)
+
+		GET_LOCAL(iseq->arg_rest);
+		ADD_SEND (optargs, nd_line(node_args), ID2SYM(idLength), INT2FIX(0));
+		ADD_INSN1(optargs, nd_line(node_args), putobject, INT2FIX(1));
+		ADD_SEND (optargs, nd_line(node_args), ID2SYM(idLT), INT2FIX(1));
+		ADD_INSNL(optargs, nd_line(node_args), branchunless, lsuccess);
+		ADD_CALL_RECEIVER(optargs, nd_line(node_args));
+
+		/* error */
+		ADD_INSN1(optargs, nd_line(node_args), putobject, rb_eArgError);
+		ADD_INSN1(optargs, nd_line(node_args), putstring, rb_str_new2("wrong number of arguments"));
+		ADD_SEND (optargs, nd_line(node_args), ID2SYM(rb_intern("new")), INT2FIX(1));
+		ADD_CALL (optargs, nd_line(node_args), ID2SYM(rb_intern("raise")), INT2FIX(1));
+		ADD_INSN (optargs, nd_line(node_args), pop); /* dummy */
+
+		ADD_LABEL(optargs, lsuccess);
+
+		for (i=0; i<post_len; i++) {
+		    GET_LOCAL(iseq->arg_rest);
+		    ADD_SEND (optargs, nd_line(node_args), ID2SYM(rb_intern("pop")),
+			      INT2FIX(0));
+		    SET_LOCAL(iseq->arg_rest + i + 1);
+	}
+
+		iseq->arg_post_len = post_len;
+	    }
+#undef GET_LOCAL
+#undef SET_LOCAL
 	}
 
 	if (block_id) {

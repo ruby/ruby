@@ -61,6 +61,7 @@ MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
 	rb_control_frame_t *cfp =
 	  push_frame(th, 0, FRAME_MAGIC_CFUNC,
 		     recv, (VALUE) blockptr, 0, GET_SP(), 0, 1);
+
 	cfp->method_id = id;
 	cfp->method_klass = klass;
 
@@ -311,13 +312,6 @@ MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 	      else {
 		  goto LABEL_IS_SC(start_method_dispatch);
 	      }
-	  }
-	  case NODE_SCOPE:{
-	      dpi(id);
-	      SDR();
-	      rb_bug("eval_invoke_method: NODE_SCOPE should not be appear");
-	      /* unreachable */
-	      break;
 	  }
 	  default:{
 	      printf("node: %s\n", ruby_node_name(nd_type(node)));

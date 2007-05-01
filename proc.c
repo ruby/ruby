@@ -247,13 +247,22 @@ proc_new(VALUE klass, int is_lambda)
 
     if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
 	!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
+
 	block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
     else {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+
 	if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0 &&
 	    !RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
+
 	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
+
+	    /* TODO: check more (cfp limit, called via cfunc, etc) */
+	    while (cfp->dfp != block->dfp) {
+		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	    }
 
 	    if (is_lambda) {
 		rb_warn("tried to create Proc object without a block");
@@ -265,7 +274,6 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
-    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     procval = th_make_proc(th, cfp, block);
 
     if (is_lambda) {
@@ -389,6 +397,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 {
     rb_proc_t *proc;
     GetProcPtr(procval, proc);
+
     return th_invoke_proc(GET_THREAD(), proc, proc->block.self, argc, argv);
 }
 
@@ -424,6 +433,7 @@ rb_proc_call(VALUE proc, VALUE args)
  *     Proc.new {|a,b,c|}.arity   #=>  3
  *     Proc.new {|*a|}.arity      #=> -1
  *     Proc.new {|a,*b|}.arity    #=> -2
+ *     Proc.new {|a,*b, c|}.arity    #=> -3
  */
 
 static VALUE
@@ -434,11 +444,11 @@ proc_arity(VALUE self)
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (iseq && BUILTIN_TYPE(iseq) != T_NODE) {
-	if (iseq->arg_rest == 0 && iseq->arg_opts == 0) {
+	if (iseq->arg_rest < 0) {
 	    return INT2FIX(iseq->argc);
 	}
 	else {
-	    return INT2FIX(-iseq->argc - 1);
+	    return INT2FIX(-(iseq->argc + 1 + iseq->arg_post_len));
 	}
     }
     else {
@@ -1150,16 +1160,6 @@ rb_node_arity(NODE* body)
 	return 0;
     case NODE_BMETHOD:
 	return rb_proc_arity(body->nd_cval);
-    case NODE_SCOPE:
-	body = body->nd_next;	/* skip NODE_SCOPE */
-	if (nd_type(body) == NODE_BLOCK)
-	    body = body->nd_head;
-	if (!body)
-	    return 0;
-	n = body->nd_frml ? RARRAY_LEN(body->nd_frml) : 0;
-	if (body->nd_opt || body->nd_rest)
-	    n = -n - 1;
-	return n;
     case RUBY_VM_METHOD_NODE:{
 	    rb_iseq_t *iseq;
 	    GetISeqPtr((VALUE)body->nd_body, iseq);
@@ -1167,7 +1167,7 @@ rb_node_arity(NODE* body)
 		return iseq->argc;
 	    }
 	    else {
-		return -iseq->argc - 1;
+		return -(iseq->argc + 1 + iseq->arg_post_len);
 	    }
 	}
     default:
