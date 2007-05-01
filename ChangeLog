@@ -1,3 +1,8 @@
+Wed May  2 05:40:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): improvement by calculating from MSB and using
+	  factorization.  <http://yowaken.dip.jp/tdiary/20070426.html#p01>
+
 Tue May  1 18:45:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* sample/test.rb: import matzruby's sample/test.rb.

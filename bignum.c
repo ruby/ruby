@@ -1533,6 +1533,49 @@ rb_big_quo(VALUE x, VALUE y)
     return rb_float_new(dx / dy);
 }
 
+static VALUE
+bigsqr(VALUE x)
+{
+    long len = RBIGNUM(x)->len, k = len / 2, i;
+    VALUE a, b, a2, z;
+    BDIGIT_DBL num;
+
+    if (len < 4000 / BITSPERDIG) {
+	return rb_big_mul0(x, x);
+    }
+
+    a = bignew(len - k, 1);
+    MEMCPY(BDIGITS(a), BDIGITS(x) + k, BDIGIT, len - k);
+    b = bignew(k, 1);
+    MEMCPY(BDIGITS(b), BDIGITS(x), BDIGIT, k);
+
+    a2 = bigtrunc(bigsqr(a));
+    z = bigsqr(b);
+    REALLOC_N(RBIGNUM(z)->digits, BDIGIT, (len = 2 * k + RBIGNUM(a2)->len) + 1);
+    while (RBIGNUM(z)->len < 2 * k) BDIGITS(z)[RBIGNUM(z)->len++] = 0;
+    MEMCPY(BDIGITS(z) + 2 * k, BDIGITS(a2), BDIGIT, RBIGNUM(a2)->len);
+    RBIGNUM(z)->len = len;
+    a2 = bigtrunc(rb_big_mul0(a, b));
+    len = RBIGNUM(a2)->len;
+    for (i = 0, num = 0; i < len; i++) {
+	num += (BDIGIT_DBL)BDIGITS(z)[i + k] + ((BDIGIT_DBL)BDIGITS(a2)[i] << 1);
+	BDIGITS(z)[i + k] = BIGLO(num);
+	num = BIGDN(num);
+    }
+    if (num) {
+	len = RBIGNUM(z)->len;
+	for (i += k; i < len && num; ++i) {
+	    num += (BDIGIT_DBL)BDIGITS(z)[i];
+	    BDIGITS(z)[i] = BIGLO(num);
+	    num = BIGDN(num);
+	}
+	if (num) {
+	    BDIGITS(z)[RBIGNUM(z)->len++] = BIGLO(num);
+	}
+    }
+    return bigtrunc(z);
+}
+
 /*
  *  call-seq:
  *     big ** exponent   #=> numeric
@@ -1550,8 +1593,8 @@ VALUE
 rb_big_pow(VALUE x, VALUE y)
 {
     double d;
-    long yy;
-    
+    SIGNED_VALUE yy;
+
     if (y == INT2FIX(0)) return INT2FIX(1);
     switch (TYPE(y)) {
       case T_FLOAT:
@@ -1566,21 +1609,31 @@ rb_big_pow(VALUE x, VALUE y)
       case T_FIXNUM:
 	yy = FIX2LONG(y);
 	if (yy > 0) {
-	    VALUE z = (yy & 1) ? x : 0;
+	    VALUE z = 0;
+	    SIGNED_VALUE mask, n = 1;
 
 	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
 	    }
-	    while (yy &= ~1) {
-		do {
-		    yy /= 2;
-		    x = rb_big_mul0(x, x);
-		    bigtrunc(x);
-		} while (yy % 2 == 0);
-		z = z ? rb_big_mul0(z, x) : x;
-		bigtrunc(z);
+	    for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {
+		if (!z) {
+		    SIGNED_VALUE n2 = n * n;
+		    if (!POSFIXABLE(n2) || (n2 / n != n)) {
+			z = bigtrunc(bigsqr(rb_int2big(n)));
+		    }
+		    else {
+			n = n2;
+		    }
+		}
+		else {
+		    z = bigtrunc(bigsqr(z));
+		}
+		if (yy & mask) {
+		    if (!z) z = rb_int2big(n);
+		    z = bigtrunc(rb_big_mul0(z, x));
+		}
 	    }
 	    return bignorm(z);
 	}
