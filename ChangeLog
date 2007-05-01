@@ -1,3 +1,7 @@
+Tue May  1 18:45:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* sample/test.rb: import matzruby's sample/test.rb.
+
 Tue May  1 17:46:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_choice): a new method to choose an element
