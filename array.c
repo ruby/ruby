@@ -2899,7 +2899,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     array.shuffle!        -> array or
+ *     array.shuffle!        -> array or nil
  *  
  *  Shuffles elements in _self_ in place.
  */
@@ -2938,6 +2938,24 @@ rb_ary_shuffle(VALUE ary)
     ary = rb_ary_dup(ary);
     rb_ary_shuffle_bang(ary);
     return ary;
+}
+
+
+/*
+ *  call-seq:
+ *     array.choice        -> an_array
+ *  
+ *  Choose a random element from an array.
+ */
+
+
+static VALUE
+rb_ary_choice(VALUE ary)
+{
+    long i = RARRAY_LEN(ary);
+    long j = genrand_real()*i;
+
+    return RARRAY_PTR(ary)[j];
 }
 
 
@@ -3037,6 +3055,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
+    rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
 
     id_cmp = rb_intern("<=>");
 }

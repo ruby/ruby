@@ -11,7 +11,9 @@
 #define RUBY_RELEASE_MONTH 5
 #define RUBY_RELEASE_DAY 1
 
+#ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
 RUBY_EXTERN const int ruby_patchlevel;
+#endif
