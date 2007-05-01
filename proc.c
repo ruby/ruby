@@ -443,17 +443,24 @@ proc_arity(VALUE self)
     rb_iseq_t *iseq;
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
-    if (iseq && BUILTIN_TYPE(iseq) != T_NODE) {
-	if (iseq->arg_rest < 0) {
-	    return INT2FIX(iseq->argc);
+    if (iseq) {
+	if (BUILTIN_TYPE(iseq) != T_NODE) {
+	    if (iseq->arg_rest < 0) {
+		return INT2FIX(iseq->argc);
+	    }
+	    else {
+		return INT2FIX(-(iseq->argc + 1 + iseq->arg_post_len));
+	    }
 	}
 	else {
-	    return INT2FIX(-(iseq->argc + 1 + iseq->arg_post_len));
+	    NODE *node = (NODE *)iseq;
+	    if (nd_type(node) == NODE_IFUNC && node->nd_cfnc == bmcall) {
+		/* method(:foo).to_proc.arity */
+		return INT2FIX(method_arity(node->nd_tval));
+	    }
 	}
     }
-    else {
-	return INT2FIX(-1);
-    }
+    return INT2FIX(-1);
 }
 
 int

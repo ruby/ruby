@@ -1,3 +1,7 @@
+Tue May  1 13:59:18 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_arity): fix an arity bug ([ruby-core:11060]).
+
 Tue May  1 13:12:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, compile.c (set_arguments): support post arguments.
