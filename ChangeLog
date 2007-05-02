@@ -1,3 +1,9 @@
+Wed May  2 11:22:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: use Qtrue instead of 2.
+
+	* vm.c, insns.def: support "lambda" calling convention.
+
 Wed May  2 06:46:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c, parse.y, ruby.h (rb_compile_warn, rb_compile_warning): warn

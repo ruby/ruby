@@ -1335,6 +1335,7 @@ invokeblock
 		VALUE *ptr = RARRAY_PTR(ary);
 		VALUE *dst = GET_SP() - 1;
 		int i, len = RARRAY_LEN(ary);
+
 		for (i = 0; i < len; i++) {
 		    dst[i] = ptr[i];
 		}
@@ -1344,7 +1345,7 @@ invokeblock
 	}
 
 	INC_SP(-argc);
-	argc = th_yield_setup_args(iseq, argc, GET_SP());
+	argc = th_yield_setup_args(iseq, argc, GET_SP(), 0);
 	INC_SP(argc);
 
 	push_frame(th, iseq,

@@ -674,10 +674,10 @@ th_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 }
 
 static inline int
-th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
+th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 {
     int i, arg_n = iseq->argc + (iseq->arg_rest == -1 ? 0 : 1);
-    
+
     if (0) { /* for debug */
 	int i;
 	GET_THREAD()->cfp->sp += argc;
@@ -689,10 +689,11 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 	printf("iseq argc: %d\n", iseq->argc);
 	printf("iseq rest: %d\n", iseq->arg_rest);
 	printf("iseq blck: %d\n", iseq->arg_block);
+	printf("   lambda: %s\n", lambda ? "true" : "false");
 	GET_THREAD()->cfp->sp -= argc;
     }
 
-    if (argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
+    if (lambda == 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
 	VALUE ary = argv[0];
 	argc = RARRAY_LEN(ary);
 
@@ -704,8 +705,8 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
     }
 
     if (iseq->arg_rest == -1) {
-	if (iseq->argc == 1) {
-	    if (argc != 1) {
+	if (lambda == 0 && iseq->argc == 1) {
+	    if (argc > 1) {
 		/* yield 1, 2, 3 for iter{|a| ...}
 		 *
 		 * ruby 1.8 warns on this timing.
@@ -717,19 +718,31 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv)
 	}
 
 	if (iseq->argc < argc) {
-	    /* simple truncate */
-	    argc = iseq->argc;
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
+	    }
+	    else {
+		/* simple truncate */
+		argc = iseq->argc;
+	    }
 	}
     }
     else {
 	int r = iseq->arg_rest;
 
 	if (argc < r) {
-	    /* TODO: check overflow */
-	    for (i=argc; i<r; i++) {
-		argv[i] = Qnil;
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
 	    }
-	    argv[r] = rb_ary_new();
+	    else {
+		/* TODO: check overflow */
+		for (i=argc; i<r; i++) {
+		    argv[i] = Qnil;
+		}
+		argv[r] = rb_ary_new();
+	    }
 	}
 	else {
 	    argv[r] = rb_ary_new4(argc-r, &argv[r]);
@@ -764,7 +777,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	for (i=0; i<argc; i++) {
 	    th->cfp->sp[i] = argv[i];
 	}
-	argc = th_yield_setup_args(iseq, argc, th->cfp->sp);
+	argc = th_yield_setup_args(iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
 	th->cfp->sp += argc;
 
 	push_frame(th, iseq, magic,

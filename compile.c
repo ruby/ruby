@@ -3702,6 +3702,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		       p = p->nd_next, argc++) {
 		      /* count argc */
 		  }
+
 		  if (argc == 1) {
 		      COMPILE(args, "yield with an arg", node->nd_head);
 		  }
@@ -3713,7 +3714,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      }
 	      else {
 		  if (nd_type(node->nd_head) == NODE_ARGSCAT) {
-		      if (node->nd_state == 2) {
+		      if (node->nd_state == Qtrue) {
 			  flag |= VM_CALL_ARGS_SPLAT_BIT;
 		      }
 
@@ -3726,7 +3727,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			      node->nd_head->nd_body);
 		  }
 		  else if (nd_type(node->nd_head) == NODE_SPLAT) {
-		      if (node->nd_state == 2) {
+		      if (node->nd_state == Qtrue) {
 			  flag |= VM_CALL_ARGS_SPLAT_BIT;
 		      }
 
