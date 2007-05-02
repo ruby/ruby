@@ -1345,7 +1345,7 @@ invokeblock
 	}
 
 	INC_SP(-argc);
-	argc = th_yield_setup_args(iseq, argc, GET_SP(), 0);
+	argc = th_yield_setup_args(th, iseq, argc, GET_SP(), 0);
 	INC_SP(argc);
 
 	push_frame(th, iseq,

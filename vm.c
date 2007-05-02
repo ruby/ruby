@@ -674,9 +674,11 @@ th_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 }
 
 static inline int
-th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
+th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
+		    int argc, VALUE *argv, int lambda)
 {
     int i, arg_n = iseq->argc + (iseq->arg_rest == -1 ? 0 : 1);
+    th->mark_stack_len = argc;
 
     if (0) { /* for debug */
 	int i;
@@ -695,7 +697,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 
     if (lambda == 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
 	VALUE ary = argv[0];
-	argc = RARRAY_LEN(ary);
+	th->mark_stack_len = argc = RARRAY_LEN(ary);
 
 	/* TODO: check overflow */
 
@@ -713,7 +715,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 		 * rb_warn("multiple values for a block parameter (%d for %d)", argc, iseq->argc);
 		 */
 		argv[0] = rb_ary_new4(argc, argv);
-		argc = 1;
+		th->mark_stack_len = argc = 1;
 	    }
 	}
 
@@ -724,7 +726,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 	    }
 	    else {
 		/* simple truncate */
-		argc = iseq->argc;
+		th->mark_stack_len = argc = iseq->argc;
 	    }
 	}
     }
@@ -747,7 +749,7 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 	else {
 	    argv[r] = rb_ary_new4(argc-r, &argv[r]);
 	}
-	argc = iseq->arg_rest + 1;
+	th->mark_stack_len = argc = iseq->arg_rest + 1;
     }
 
     if (iseq->arg_block != -1) {
@@ -758,9 +760,10 @@ th_yield_setup_args(rb_iseq_t *iseq, int argc, VALUE *argv, int lambda)
 	}
 
 	argv[iseq->arg_block] = proc;
-	argc = iseq->arg_block + 1;
+	th->mark_stack_len = argc = iseq->arg_block + 1;
     }
 
+    th->mark_stack_len = 0;
     return argc;
 }
 
@@ -777,7 +780,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	for (i=0; i<argc; i++) {
 	    th->cfp->sp[i] = argv[i];
 	}
-	argc = th_yield_setup_args(iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
+	argc = th_yield_setup_args(th, iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
 	th->cfp->sp += argc;
 
 	push_frame(th, iseq, magic,

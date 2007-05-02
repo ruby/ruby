@@ -266,7 +266,7 @@ thread_mark(void *ptr)
 	th = ptr;
 	if (th->stack) {
 	    VALUE *p = th->stack;
-	    VALUE *sp = th->cfp->sp;
+	    VALUE *sp = th->cfp->sp + th->mark_stack_len;
 	    rb_control_frame_t *cfp = th->cfp;
 	    rb_control_frame_t *limit_cfp =
 		(void *)(th->stack + th->stack_size);

@@ -478,6 +478,7 @@ struct rb_thread_struct
     VALUE *machine_stack_start;
     VALUE *machine_stack_end;
     jmp_buf machine_regs;
+    int mark_stack_len;
 
     /* statistics data for profiler */
     VALUE stat_insn_usage;
