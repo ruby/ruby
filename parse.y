@@ -3450,7 +3450,7 @@ exc_list	: arg_value
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%
-		    	$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, $1);
 		    %*/
 		    }
 		| mrhs
@@ -4139,7 +4139,7 @@ f_arg		: f_arg_item
 			$$ = rb_ary_push($1, $3);
 		    %*/
 		    }
- 		;
+		;
 
 f_opt		: tIDENTIFIER '=' arg_value
 		    {
@@ -4397,7 +4397,7 @@ none		: /* none */
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-		    	$$ = Qundef;
+			$$ = Qundef;
 		    %*/
 		    }
 		;
