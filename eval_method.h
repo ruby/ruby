@@ -293,6 +293,11 @@ remove_method(VALUE klass, ID mid)
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
+
+    if (nd_type(body->nd_body->nd_body) == NODE_CFUNC) {
+	rb_vm_check_redefinition_opt_method(body);
+    }
+
     rb_clear_cache_for_undef(klass, mid);
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_funcall(rb_iv_get(klass, "__attached__"), singleton_removed, 1,
@@ -559,10 +564,14 @@ rb_alias(VALUE klass, ID name, ID def)
 
     orig_fbody->nd_cnt++;
     
-    if (RTEST(ruby_verbose) &&
-	st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *) & node)) {
-	if (node && node->nd_cnt == 0 && node->nd_body) {
-	    rb_warning("discarding old %s", rb_id2name(name));
+    if (st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *) & node)) {
+	if (node) {
+	    if (RTEST(ruby_verbose) && node->nd_cnt == 0 && node->nd_body) {
+		rb_warning("discarding old %s", rb_id2name(name));
+	    }
+	    if (nd_type(node->nd_body->nd_body) == NODE_CFUNC) {
+		rb_vm_check_redefinition_opt_method(node);
+	    }
 	}
     }
 

@@ -1,3 +1,7 @@
+Wed May  2 15:14:56 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_method.h: add redefine checks ([ruby-dev:30751]).
+
 Wed May  2 11:22:52 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: use Qtrue instead of 2.
