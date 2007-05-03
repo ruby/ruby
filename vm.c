@@ -30,11 +30,11 @@ VALUE rb_cEnv;
 
 #define EVALBODY_HELPER_FUNCTION static inline
 
-typedef unsigned long num_t;
+typedef unsigned long rb_num_t;
 typedef unsigned long lindex_t;
 typedef unsigned long dindex_t;
 
-typedef num_t GENTRY;
+typedef rb_num_t GENTRY;
 
 void vm_analysis_operand(int insn, int n, VALUE op);
 void vm_analysis_register(int reg, int isset);
@@ -1263,7 +1263,7 @@ eval_get_cvar_base(rb_thread_t *th, rb_iseq_t *iseq)
 
 EVALBODY_HELPER_FUNCTION void
 eval_define_method(rb_thread_t *th, VALUE obj,
-		   ID id, rb_iseq_t *miseq, num_t is_singleton, NODE *cref)
+		   ID id, rb_iseq_t *miseq, rb_num_t is_singleton, NODE *cref)
 {
     NODE *newbody;
     int noex = cref->nd_visi;

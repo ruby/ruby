@@ -81,7 +81,7 @@ setlocal
  */
 DEFINE_INSN
 getspecial
-(num_t idx, num_t type)
+(rb_num_t idx, rb_num_t type)
 ()
 (VALUE val)
 {
@@ -122,7 +122,7 @@ getspecial
  */
 DEFINE_INSN
 setspecial
-(num_t idx)
+(rb_num_t idx)
 (VALUE obj)
 ()
 {
@@ -139,7 +139,7 @@ setspecial
  */
 DEFINE_INSN
 getdynamic
-(dindex_t idx, num_t level)
+(dindex_t idx, rb_num_t level)
 ()
 (VALUE val)
 {
@@ -160,7 +160,7 @@ getdynamic
  */
 DEFINE_INSN
 setdynamic
-(dindex_t idx, num_t level)
+(dindex_t idx, rb_num_t level)
 (VALUE val)
 ()
 {
@@ -406,7 +406,7 @@ putstring
  */
 DEFINE_INSN
 concatstrings
-(num_t num)
+(rb_num_t num)
 (...)
 (VALUE val) // inc += 1 - num;
 {
@@ -442,7 +442,7 @@ tostring
  */
 DEFINE_INSN
 toregexp
-(num_t flag)
+(rb_num_t flag)
 (VALUE str)
 (VALUE val)
 {
@@ -456,7 +456,7 @@ toregexp
  */
 DEFINE_INSN
 newarray
-(num_t num)
+(rb_num_t num)
 (...)
 (VALUE val) // inc += 1 - num;
 {
@@ -489,7 +489,7 @@ duparray
  */
 DEFINE_INSN
 expandarray
-(num_t num, num_t flag)
+(rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
 (...) // inc += (num > 0) ? num - 1 + (flag ? 1 : 0) : num + 1 - (flag ? 1 : 0);
 {
@@ -650,7 +650,7 @@ checkincludearray
  */
 DEFINE_INSN
 newhash
-(num_t num)
+(rb_num_t num)
 (...)
 (VALUE val) // inc += 1 - num;
 {
@@ -673,7 +673,7 @@ newhash
  */
 DEFINE_INSN
 newrange
-(num_t flag)
+(rb_num_t flag)
 (VALUE low, VALUE high)
 (VALUE val)
 {
@@ -740,7 +740,7 @@ dup
  */
 DEFINE_INSN
 dupn
-(num_t n)
+(rb_num_t n)
 (...)
 (...) // inc += n;
 {
@@ -788,7 +788,7 @@ reput
  */
 DEFINE_INSN
 topn
-(num_t n)
+(rb_num_t n)
 (...)
 (VALUE val) // inc += 1;
 {
@@ -802,7 +802,7 @@ topn
  */
 DEFINE_INSN
 setn
-(num_t n)
+(rb_num_t n)
 (..., VALUE val)
 (VALUE val) // inc += 0
 {
@@ -835,7 +835,7 @@ emptstack
  */
 DEFINE_INSN
 definemethod
-(ID id, ISEQ body, num_t is_singleton)
+(ID id, ISEQ body, rb_num_t is_singleton)
 (VALUE obj)
 ()
 {
@@ -888,7 +888,7 @@ undef
  */
 DEFINE_INSN
 defined
-(num_t type, VALUE obj, VALUE needstr)
+(rb_num_t type, VALUE obj, VALUE needstr)
 (VALUE v)
 (VALUE val)
 {
@@ -1019,7 +1019,7 @@ postexe
  */
 DEFINE_INSN
 trace
-(num_t nf)
+(rb_num_t nf)
 ()
 ()
 {
@@ -1042,7 +1042,7 @@ trace
  */
 DEFINE_INSN
 defineclass
-(ID id, ISEQ klass_iseq, num_t define_type)
+(ID id, ISEQ klass_iseq, rb_num_t define_type)
 (VALUE cbase, VALUE super)
 (VALUE val)
 {
@@ -1145,7 +1145,7 @@ defineclass
  */
 DEFINE_INSN
 send
-(ID op_id, num_t op_argc, ISEQ blockiseq, num_t op_flag, IC ic)
+(ID op_id, rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag, IC ic)
 (...)
 (VALUE val) // inc += - (op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
@@ -1153,8 +1153,8 @@ send
     VALUE recv;
     VALUE klass;
     rb_block_t *blockptr = 0;
-    num_t num = op_argc;
-    num_t flag = op_flag;
+    rb_num_t num = op_argc;
+    rb_num_t flag = op_flag;
     ID id = op_id;
 
     macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq);
@@ -1287,7 +1287,7 @@ send
  */
 DEFINE_INSN
 invokesuper
-(num_t op_argc, ISEQ blockiseq, num_t flag)
+(rb_num_t op_argc, ISEQ blockiseq, rb_num_t flag)
 (...)
 (VALUE val) // inc += - op_argc;
 {
@@ -1312,7 +1312,7 @@ invokesuper
  */
 DEFINE_INSN
 invokeblock
-(num_t num, num_t flag)
+(rb_num_t num, rb_num_t flag)
 (...)
 (VALUE val)  // inc += 1 - num;
 {
@@ -1414,13 +1414,13 @@ finish
  */
 DEFINE_INSN
 throw
-(num_t throw_state)
+(rb_num_t throw_state)
 (VALUE throwobj)
 (VALUE val)
 {
-    num_t state = throw_state & 0xff;
-    num_t flag = throw_state & 0x8000;
-    num_t level = throw_state >> 16;
+    rb_num_t state = throw_state & 0xff;
+    rb_num_t flag = throw_state & 0x8000;
+    rb_num_t level = throw_state >> 16;
     val = Qnil;			/* dummy */
 
     if (state != 0) {

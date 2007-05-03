@@ -135,12 +135,12 @@ class InsnsDef
         ret = "int inc = 0;\n"
 
         @opes.each_with_index{|(t, v), i|
-          if t == 'num_t'
+          if t == 'rb_num_t'
             ret << "        unsigned long #{v} = FIX2INT(opes[#{i}]);\n"
           end
         }
         @defopes.each_with_index{|((t, var), val), i|
-          if t == 'num_t' && val != '*'
+          if t == 'rb_num_t' && val != '*'
             ret << "        unsigned long #{var} = #{val};\n"
           end
         }
@@ -916,7 +916,7 @@ class InsnsDef
     case op
     when /^OFFSET/
       "TS_OFFSET"
-    when /^num_t/
+    when /^rb_num_t/
       "TS_NUM"
     when /^lindex_t/
       "TS_LINDEX"
@@ -1037,7 +1037,7 @@ class InsnsDef
     val  = op[1]
 
     case type
-    when /^long/, /^num_t/, /^lindex_t/, /^dindex_t/
+    when /^long/, /^rb_num_t/, /^lindex_t/, /^dindex_t/
       "INT2FIX(#{val})"
     when /^VALUE/
       val

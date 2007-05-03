@@ -78,7 +78,7 @@ th_eval(rb_thread_t *th, VALUE initial)
 
     ID tmp_id;
     rb_block_t *tmp_blockptr;
-    num_t tmp_num;
+    rb_num_t tmp_num;
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"

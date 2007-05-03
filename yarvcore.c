@@ -359,7 +359,7 @@ th_init(rb_thread_t *th)
 extern VALUE ruby_top_self;
 
 static VALUE
-thread_init(VALUE self)
+ruby_thread_init(VALUE self)
 {
     rb_thread_t *th;
     rb_vm_t *vm = GET_THREAD()->vm;
@@ -378,7 +378,7 @@ VALUE
 rb_thread_alloc(VALUE klass)
 {
     VALUE self = thread_alloc(klass);
-    thread_init(self);
+    ruby_thread_init(self);
     return self;
 }
 
@@ -463,7 +463,7 @@ Init_VM(void)
     /* ::Thread */
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
-    rb_define_method(rb_cThread, "initialize", thread_init, 0);
+    rb_define_method(rb_cThread, "initialize", ruby_thread_init, 0);
 
     /* ::VM::USAGE_ANALISYS_* */
     rb_define_const(rb_cVM, "USAGE_ANALISYS_INSN", rb_hash_new());
