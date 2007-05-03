@@ -538,6 +538,16 @@ typedef VALUE rb_blocking_function_t(rb_thread_t *th, void *);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data,
 				rb_unblock_function_t *ubf);
 #define RB_UBF_DFL ((rb_unblock_function_t *)-1)
+VALUE rb_mutex_new(void);
+VALUE rb_mutex_locked_p(VALUE mutex);
+VALUE rb_mutex_try_lock(VALUE mutex);
+VALUE rb_mutex_lock(VALUE mutex);
+VALUE rb_mutex_unlock(VALUE mutex);
+VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
+VALUE rb_mutex_synchronize(VALUE self);
+VALUE rb_barrier_new(void);
+VALUE rb_barrier_wait(VALUE self);
+VALUE rb_barrier_release(VALUE self);
 /* time.c */
 VALUE rb_time_new(time_t, time_t);
 /* variable.c */

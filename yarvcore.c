@@ -190,6 +190,7 @@ vm_mark(void *ptr)
 	MARK_UNLESS_NULL(vm->mark_object_ary);
 	MARK_UNLESS_NULL(vm->last_status);
 	MARK_UNLESS_NULL(vm->loaded_features);
+	if (vm->loading_table) rb_mark_tbl(vm->loading_table);
 
 	mark_event_hooks(vm->event_hooks);
     }

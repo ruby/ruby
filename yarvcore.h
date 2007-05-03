@@ -353,6 +353,7 @@ typedef struct rb_vm_struct {
 
     /* load */
     VALUE loaded_features;
+    struct st_table *loading_table;
     
     /* signal */
     rb_atomic_t signal_buff[RUBY_NSIG];

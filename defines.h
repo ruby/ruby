@@ -257,6 +257,10 @@ void rb_ia64_flushrs(void);
 #define ENV_IGNORECASE
 #endif
 
+#ifndef DLEXT_MAXLEN
+#define DLEXT_MAXLEN 4
+#endif
+
 #ifndef RUBY_PLATFORM
 #define RUBY_PLATFORM "unknown-unknown"
 #endif

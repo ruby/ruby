@@ -452,14 +452,14 @@ unless $extlist.empty?
   src = %{\
 #include "ruby.h"
 
-#define init(func, name) {				\
-    void func _((void));				\
-    ruby_sourcefile = src = rb_source_filename(name);	\
-    func();						\
-    rb_provide(src);					\
+#define init(func, name) {	\\
+    extern void func _((void));	\\
+    ruby_init_ext(name, func);	\\
 }
 
-void Init_ext _((void))\n{\n    char *src;#$extinit}
+void ruby_init_ext _((const char *name, void (*init)(void)));
+
+void Init_ext _((void))\n{\n#$extinit}
 }
   if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
     open(extinit.c, "w") {|fe| fe.print src}

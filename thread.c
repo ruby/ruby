@@ -53,6 +53,9 @@
 #define THREAD_DEBUG 0
 #endif
 
+VALUE rb_cMutex;
+VALUE rb_cBarrier;
+
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
 static void sleep_forever(rb_thread_t *th);
@@ -2173,8 +2176,8 @@ rb_mutex_new(void)
  *
  * Returns +true+ if this lock is currently held by some thread.
  */
-static VALUE
-mutex_locked_p(VALUE self)
+VALUE
+rb_mutex_locked_p(VALUE self)
 {
     mutex_t *mutex;
     GetMutexVal(self, mutex);
@@ -2188,8 +2191,8 @@ mutex_locked_p(VALUE self)
  * Attempts to obtain the lock and returns immediately. Returns +true+ if the
  * lock was granted.
  */
-static VALUE
-mutex_try_lock(VALUE self)
+VALUE
+rb_mutex_try_lock(VALUE self)
 {
     mutex_t *mutex;
     GetMutexVal(self, mutex);
@@ -2214,8 +2217,8 @@ mutex_try_lock(VALUE self)
  * Attempts to grab the lock and waits if it isn't available.
  * Raises +ThreadError+ if +mutex+ was locked by the current thread.
  */
-static VALUE
-mutex_lock(VALUE self)
+VALUE
+rb_mutex_lock(VALUE self)
 {
     mutex_t *mutex;
     GetMutexVal(self, mutex);
@@ -2242,8 +2245,8 @@ mutex_lock(VALUE self)
  * Releases the lock.
  * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
  */
-static VALUE
-mutex_unlock(VALUE self)
+VALUE
+rb_mutex_unlock(VALUE self)
 {
     mutex_t *mutex;
     GetMutexVal(self, mutex);
@@ -2257,6 +2260,28 @@ mutex_unlock(VALUE self)
     return self;
 }
 
+VALUE
+rb_mutex_sleep(VALUE self, VALUE timeout)
+{
+    time_t beg, end;
+    struct timeval t;
+
+    if (!NIL_P(timeout)) {
+        t = rb_time_interval(timeout);
+    }
+    rb_mutex_unlock(self);
+    beg = time(0);
+    if (NIL_P(timeout)) {
+	rb_thread_sleep_forever();
+    }
+    else {
+	rb_thread_wait_for(t);
+    }
+    rb_mutex_lock(self);
+    end = time(0) - beg;
+    return INT2FIX(end);
+}
+
 /*
  * call-seq:
  *    mutex.sleep(timeout = nil)    => self
@@ -2268,22 +2293,153 @@ mutex_unlock(VALUE self)
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
-    int beg, end;
-    mutex_unlock(self);
+    VALUE timeout;
 
-    beg = time(0);
-    if (argc == 0) {
-	rb_thread_sleep_forever();
+    rb_scan_args(argc, argv, "01", &timeout);
+    return rb_mutex_sleep(self, timeout);
+}
+
+/*
+ * call-seq:
+ *    mutex.synchronize { ... }    => result of the block
+ *
+ * Obtains a lock, runs the block, and releases the lock when the block
+ * completes.  See the example under +Mutex+.
+ */
+
+VALUE
+rb_thread_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
+{
+    rb_mutex_lock(mutex);
+    return rb_ensure(func, arg, rb_mutex_unlock, mutex);
+}
+
+/*
+ * Document-class: Barrier
+ */
+typedef struct rb_thread_list_struct rb_thread_list_t;
+
+struct rb_thread_list_struct {
+    rb_thread_t *th;
+    rb_thread_list_t *next;
+};
+
+static void
+thlist_mark(void *ptr)
+{
+    rb_thread_list_t *q = ptr;
+
+    for (; q; q = q->next) {
+	rb_gc_mark(q->th->self);
     }
-    else if (argc == 1) {
-	rb_thread_wait_for(rb_time_interval(argv[0]));
+}
+
+static void
+thlist_free(void *ptr)
+{
+    rb_thread_list_t *q = ptr, *next;
+
+    for (; q; q = next) {
+	next = q->next;
+	ruby_xfree(q);
+    }
+}
+
+static int
+thlist_signal(rb_thread_list_t **list, unsigned int maxth)
+{
+    int woken = 0;
+    rb_thread_list_t *q;
+
+    while (q = *list) {
+	rb_thread_t *th = q->th;
+
+	*list = q->next;
+	ruby_xfree(q);
+	if (th->status != THREAD_KILLED) {
+	    rb_thread_ready(th);
+	    if (++woken >= maxth && maxth) break;
+	}
+    }
+    return woken;
+}
+
+typedef struct {
+    rb_thread_t *owner;
+    rb_thread_list_t *waiting, **tail;
+} rb_barrier_t;
+
+static void
+barrier_mark(void *ptr)
+{
+    rb_barrier_t *b = ptr;
+
+    if (b->owner) rb_gc_mark(b->owner->self);
+    thlist_mark(b->waiting);
+}
+
+static void
+barrier_free(void *ptr)
+{
+    rb_barrier_t *b = ptr;
+
+    b->owner = 0;
+    thlist_free(b->waiting);
+    b->waiting = 0;
+    ruby_xfree(ptr);
+}
+
+static VALUE
+barrier_alloc(VALUE klass)
+{
+    VALUE volatile obj;
+    rb_barrier_t *barrier;
+
+    obj = Data_Make_Struct(klass, rb_barrier_t,
+			   barrier_mark, barrier_free, barrier);
+    barrier->owner = GET_THREAD();
+    barrier->waiting = 0;
+    barrier->tail = &barrier->waiting;
+    return obj;
+}
+
+VALUE
+rb_barrier_new(void)
+{
+    return barrier_alloc(rb_cBarrier);
+}
+
+VALUE
+rb_barrier_wait(VALUE self)
+{
+    rb_barrier_t *barrier;
+    rb_thread_list_t *q;
+
+    Data_Get_Struct(self, rb_barrier_t, barrier);
+    if (!barrier->owner || barrier->owner->status == THREAD_KILLED) {
+	barrier->owner = 0;
+	thlist_signal(&barrier->waiting, 0);
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+	*barrier->tail = q = ALLOC(rb_thread_list_t);
+	q->th = GET_THREAD();
+	q->next = 0;
+	barrier->tail = &q->next;
+	rb_thread_sleep_forever();
     }
-    mutex_lock(self);
-    end = time(0) - beg;
-    return INT2FIX(end);
+    return self;
+}
+
+VALUE
+rb_barrier_release(VALUE self)
+{
+    rb_barrier_t *barrier;
+    unsigned int n;
+
+    Data_Get_Struct(self, rb_barrier_t, barrier);
+    barrier->owner = 0;
+    n = thlist_signal(&barrier->waiting, 0);
+    return n ? UINT2NUM(n) : Qfalse;
 }
 
 
@@ -2770,7 +2926,6 @@ void
 Init_Thread(void)
 {
     VALUE cThGroup;
-    VALUE cMutex;
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -2);
     rb_define_singleton_method(rb_cThread, "start", thread_s_new, -2);
@@ -2828,18 +2983,18 @@ Init_Thread(void)
 	rb_define_const(cThGroup, "Default", th->thgroup);
     }
 
-    cMutex = rb_define_class("Mutex", rb_cObject);
-    rb_define_alloc_func(cMutex, mutex_alloc);
-    rb_define_method(cMutex, "initialize", mutex_initialize, 0);
-    rb_define_method(cMutex, "locked?", mutex_locked_p, 0);
-    rb_define_method(cMutex, "try_lock", mutex_try_lock, 0);
-    rb_define_method(cMutex, "lock", mutex_lock, 0);
-    rb_define_method(cMutex, "unlock", mutex_unlock, 0);
-    rb_define_method(cMutex, "sleep", mutex_sleep, -1);
+    rb_cMutex = rb_define_class("Mutex", rb_cObject);
+    rb_define_alloc_func(rb_cMutex, mutex_alloc);
+    rb_define_method(rb_cMutex, "initialize", mutex_initialize, 0);
+    rb_define_method(rb_cMutex, "locked?", rb_mutex_locked_p, 0);
+    rb_define_method(rb_cMutex, "try_lock", rb_mutex_try_lock, 0);
+    rb_define_method(rb_cMutex, "lock", rb_mutex_lock, 0);
+    rb_define_method(rb_cMutex, "unlock", rb_mutex_unlock, 0);
+    rb_define_method(rb_cMutex, "sleep", mutex_sleep, -1);
     yarvcore_eval(Qnil, rb_str_new2(
 	"class Mutex;"
 	"  def synchronize; self.lock; yield; ensure; self.unlock; end;"
-	"end;") , rb_str_new2("<preload>"), INT2FIX(1));
+	"end;"), rb_str_new2("<preload>"), INT2FIX(1));
 
     recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);

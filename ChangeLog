@@ -1,6 +1,15 @@
-Thu May  3 22:05:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May  3 22:20:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, defines.h, eval_load.c (rb_feature_p, rb_provided,
+	  search_required, rb_require_safe), ext/extmk.rb: Fix
+	  a bug where a statically linked extension cannot be autoloaded.
+	  [ruby-dev:30023] / [ruby-dev:30239]
+
+	* thread.c: added an internal class, Barrier.
 
 	* thread.c: copied rdocs from fastthread.
+
+	* yarvcore.h (struct rb_vm_struct): moved loading_table from global.
 
 Thu May  3 18:10:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
