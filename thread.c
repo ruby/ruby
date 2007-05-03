@@ -56,7 +56,7 @@
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
 static void sleep_forever(rb_thread_t *th);
-static double timeofday();
+static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
 
@@ -2079,8 +2079,30 @@ thgroup_add(VALUE group, VALUE thread)
     return group;
 }
 
+
 /*
-  Mutex
+ *  Document-class: Mutex
+ *
+ *  Mutex implements a simple semaphore that can be used to coordinate access to
+ *  shared data from multiple concurrent threads.
+ *
+ *  Example:
+ *
+ *    require 'thread'
+ *    semaphore = Mutex.new
+ *
+ *    a = Thread.new {
+ *      semaphore.synchronize {
+ *        # access shared resource
+ *      }
+ *    }
+ *
+ *    b = Thread.new {
+ *      semaphore.synchronize {
+ *        # access shared resource
+ *      }
+ *    }
+ *
  */
 
 typedef struct mutex_struct {
@@ -2127,12 +2149,30 @@ mutex_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     Mutex.new   => mutex
+ *
+ *  Creates a new Mutex
+ */
 static VALUE
 mutex_initialize(VALUE self)
 {
     return self;
 }
 
+VALUE
+rb_mutex_new(void)
+{
+    return mutex_alloc(rb_cMutex);
+}
+
+/*
+ * call-seq:
+ *    mutex.locked?  => true or false
+ *
+ * Returns +true+ if this lock is currently held by some thread.
+ */
 static VALUE
 mutex_locked_p(VALUE self)
 {
@@ -2141,6 +2181,13 @@ mutex_locked_p(VALUE self)
     return mutex->th ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *    mutex.try_lock  => true or false
+ *
+ * Attempts to obtain the lock and returns immediately. Returns +true+ if the
+ * lock was granted.
+ */
 static VALUE
 mutex_try_lock(VALUE self)
 {
@@ -2160,6 +2207,13 @@ mutex_try_lock(VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *    mutex.lock  => true or false
+ *
+ * Attempts to grab the lock and waits if it isn't available.
+ * Raises +ThreadError+ if +mutex+ was locked by the current thread.
+ */
 static VALUE
 mutex_lock(VALUE self)
 {
@@ -2181,6 +2235,13 @@ mutex_lock(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    mutex.unlock    => self
+ *
+ * Releases the lock.
+ * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
+ */
 static VALUE
 mutex_unlock(VALUE self)
 {
@@ -2196,6 +2257,14 @@ mutex_unlock(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    mutex.sleep(timeout = nil)    => self
+ *
+ * Releases the lock and sleeps +timeout+ seconds if it is given and
+ * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by 
+ * the current thread.
+ */
 static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
 {

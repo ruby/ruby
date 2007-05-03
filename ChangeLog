@@ -1,3 +1,7 @@
+Thu May  3 22:05:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c: copied rdocs from fastthread.
+
 Thu May  3 18:10:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_evalbody.ci, insns.def, vm.c, tool/insns2vm.rb (rb_num_t):
