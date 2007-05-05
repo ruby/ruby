@@ -1,3 +1,8 @@
+Sat May  5 16:26:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/date/format.rb (Format::Bag#method_missing): get rid of
+	  modifying orginal argument.  [ruby-core:11090]
+
 Thu May  3 22:20:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, defines.h, eval_load.c (rb_feature_p, rb_provided,
