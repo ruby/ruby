@@ -1,3 +1,8 @@
+Sun May  6 17:54:36 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: Connection header field might include both of
+	  "keep-alive" token and "close" token. [ruby-core:10818]
+
 Sat May  5 16:26:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/date/format.rb (Format::Bag#method_missing): get rid of

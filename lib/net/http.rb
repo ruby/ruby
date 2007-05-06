@@ -461,7 +461,7 @@ module Net   #:nodoc:
       @address = address
       @port    = (port || HTTP.default_port)
       @curr_http_version = HTTPVersion
-      @seems_1_0_server = false
+      @no_keepalive_server = false
       @close_on_empty_response = false
       @socket  = nil
       @started = false
@@ -1062,12 +1062,7 @@ module Net   #:nodoc:
     end
 
     def begin_transport(req)
-      if @socket.closed?
-        connect
-      end
-      if @seems_1_0_server
-        req['connection'] ||= 'close'
-      end
+      connect if @socket.closed?
       if not req.response_body_permitted? and @close_on_empty_response
         req['connection'] ||= 'close'
       end
@@ -1076,15 +1071,13 @@ module Net   #:nodoc:
 
     def end_transport(req, res)
       @curr_http_version = res.http_version
-      if not res.body and @close_on_empty_response
+      if @socket.closed?
+        D 'Conn socket closed'
+      elsif not res.body and @close_on_empty_response
         D 'Conn close'
         @socket.close
       elsif keep_alive?(req, res)
         D 'Conn keep-alive'
-        if @socket.closed?
-          D 'Conn (but seems 1.0 server)'
-          @seems_1_0_server = true
-        end
       else
         D 'Conn close'
         @socket.close
@@ -1092,13 +1085,12 @@ module Net   #:nodoc:
     end
 
     def keep_alive?(req, res)
-      return false if /close/i =~ req['connection'].to_s
-      return false if @seems_1_0_server
-      return true  if /keep-alive/i =~ res['connection'].to_s
-      return false if /close/i      =~ res['connection'].to_s
-      return true  if /keep-alive/i =~ res['proxy-connection'].to_s
-      return false if /close/i      =~ res['proxy-connection'].to_s
-      (@curr_http_version == '1.1')
+      return false if req.connection_close?
+      if @curr_http_version <= '1.0'
+        res.connection_keep_alive?
+      else   # HTTP/1.1 or later
+        not res.connection_close?
+      end
     end
 
     def sspi_auth?(res)
@@ -1479,6 +1471,24 @@ module Net   #:nodoc:
       'Basic ' + ["#{account}:#{password}"].pack('m').delete("\r\n")
     end
     private :basic_encode
+
+    def connection_close?
+      tokens(@header['connection']).include?('close') or
+      tokens(@header['proxy-connection']).include?('close')
+    end
+
+    def connection_keep_alive?
+      tokens(@header['connection']).include?('keep-alive') or
+      tokens(@header['proxy-connection']).include?('keep-alive')
+    end
+
+    def tokens(vals)
+      return [] unless vals
+      vals.map {|v| v.split(',') }.flatten\
+          .reject {|str| str.strip.empty? }\
+          .map {|tok| tok.downcase }
+    end
+    private :tokens
 
   end
 
