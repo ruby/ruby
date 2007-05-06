@@ -86,19 +86,20 @@ module Net   #:nodoc:
   #
   #     #1: Simple POST
   #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
-  #                               {'q'=>'ruby', 'max'=>'50'})
+  #                               {'q' => 'ruby', 'max' => '50'})
   #     puts res.body
   #
   #     #2: POST with basic authentication
   #     res = Net::HTTP.post_form(URI.parse('http://jack:pass@www.example.com/todo.cgi'),
-  #                                         {'from'=>'2005-01-01', 'to'=>'2005-03-31'})
+  #                                         {'from' => '2005-01-01',
+  #                                          'to' => '2005-03-31'})
   #     puts res.body
   #
   #     #3: Detailed control
   #     url = URI.parse('http://www.example.com/todo.cgi')
   #     req = Net::HTTP::Post.new(url.path)
   #     req.basic_auth 'jack', 'pass'
-  #     req.set_form_data({'from'=>'2005-01-01', 'to'=>'2005-03-31'}, ';')
+  #     req.set_form_data({'from' => '2005-01-01', 'to' => '2005-03-31'}, ';')
   #     res = Net::HTTP.new(url.host, url.port).start {|http| http.request(req) }
   #     case res
   #     when Net::HTTPSuccess, Net::HTTPRedirection
@@ -106,6 +107,11 @@ module Net   #:nodoc:
   #     else
   #       res.error!
   #     end
+  #
+  #     #4: Multiple values
+  #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
+  #                               {'q' => ['ruby', 'perl'], 'max' => '50'})
+  #     puts res.body
   # 
   # === Accessing via Proxy
   # 
@@ -1445,12 +1451,23 @@ module Net   #:nodoc:
     #
     # This method also set Content-Type: header field to
     # application/x-www-form-urlencoded.
+    #
+    # Example:
+    #    http.form_data = {"q" => "ruby", "lang" => "en"}
+    #    http.form_data = {"q" => ["ruby", "perl"], "lang" => "en"}
+    #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
+    #    
     def set_form_data(params, sep = '&')
-      self.body = params.map {|k,v| "#{urlencode(k.to_s)}=#{urlencode(v.to_s)}" }.join(sep)
+      self.body = params.map {|k, v| encode_kvpair(k, v) }.flatten.join(sep)
       self.content_type = 'application/x-www-form-urlencoded'
     end
 
     alias form_data= set_form_data
+
+    def encode_kvpair(k, vs)
+      Array(vs).map {|v| "#{urlencode(k)}=#{urlencode(v.to_s)}" }
+    end
+    private :encode_kvpair
 
     def urlencode(str)
       str.gsub(/[^a-zA-Z0-9_\.\-]/n) {|s| sprintf('%%%02x', s[0]) }

@@ -1,3 +1,10 @@
+Sun May  6 18:44:11 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (Net::HTTP.post_form): allow an Array of String
+	  for pairs argument. [ruby-Bugs:10340]
+
+	* lib/net/http.rb (Net::HTTP#set_form_data): ditto.
+
 Sun May  6 17:54:36 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: Connection header field might include both of
