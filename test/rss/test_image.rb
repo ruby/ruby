@@ -11,7 +11,7 @@ module RSS
 
     def setup
       @prefix = "image"
-      @uri = "http://web.resource.org/rss/1.0/modules/image/"
+      @uri = "http://purl.org/rss/1.0/modules/image/"
 
       @favicon_attrs = {
         "rdf:about" => "http://www.kuro5hin.org/favicon.ico",

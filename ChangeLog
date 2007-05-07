@@ -1,3 +1,8 @@
+Mon May  7 10:59:55 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/image.rb, test/rss/test_image.rb: fixed Image module
+	namespace URI. reported by Dmitry Borodaenko. Thanks.
+
 Sun May  6 18:44:11 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (Net::HTTP.post_form): allow an Array of String

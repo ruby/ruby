@@ -4,7 +4,7 @@ require 'rss/dublincore'
 module RSS
 
   IMAGE_PREFIX = 'image'
-  IMAGE_URI = 'http://web.resource.org/rss/1.0/modules/image/'
+  IMAGE_URI = 'http://purl.org/rss/1.0/modules/image/'
 
   RDF.install_ns(IMAGE_PREFIX, IMAGE_URI)
 
