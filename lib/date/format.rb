@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.33 2007-04-14 12:56:06+09 tadf Exp $
+# $Id: format.rb,v 2.34 2007-05-08 21:17:02+09 tadf Exp $
 
 require 'rational'
 
@@ -752,6 +752,7 @@ class Date
     end
   end
 
+=begin
   def self._parse_beat(str, e) # :nodoc:
     if str.sub!(/@\s*(\d+)(?:[,.](\d*))?/, ' ')
       beat = $1.to_i.to_r
@@ -766,6 +767,7 @@ class Date
       true
     end
   end
+=end
 
   def self._parse_eu(str, e) # :nodoc:
     if str.sub!(
@@ -813,22 +815,24 @@ class Date
   end
 
   def self._parse_iso2(str, e) # :nodoc:
-    if str.sub!(/\b(\d{2}|\d{4})?-?w(\d{2})(?:-?(\d+))?/in, ' ')
+    if str.sub!(/\b(\d{2}|\d{4})?-?w(\d{2})(?:-?(\d))?\b/in, ' ')
       e.cwyear = $1.to_i if $1
       e.cweek = $2.to_i
       e.cwday = $3.to_i if $3
       true
-    elsif str.sub!(/--(\d{2})-(\d{2})\b/n, ' ')
-      e.mon = $1.to_i
+    elsif str.sub!(/-w-(\d)\b/in, ' ')
+      e.cwday = $1.to_i 
+      true
+    elsif str.sub!(/--(\d{2})?-(\d{2})\b/n, ' ')
+      e.mon = $1.to_i if $1
       e.mday = $2.to_i
       true
-    elsif str.sub!(/\b(\d{2}|\d{4})-(\d{2,3})\b/n, ' ')
-      e.year = $1.to_i
-      if $2.size < 3
-	e.mon = $2.to_i
-      else
-	e.yday = $2.to_i
-      end
+    elsif str.sub!(/--(\d{2})(\d{2})?\b/n, ' ')
+      e.mon = $1.to_i
+      e.mday = $2.to_i if $2
+      true
+    elsif str.sub!(/-(\d{3})\b/n, ' ')
+      e.yday = $1.to_i
       true
     end
   end
@@ -867,7 +871,7 @@ class Date
   end
 
   def self._parse_dot(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)[^\d]\s*('?-?\d+)|n, ' ') # '
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)[^-+\d]\s*('?-?\d+)|n, ' ') # '
       s3e(e, $1, $2, $3)
       true
     end
@@ -901,7 +905,7 @@ class Date
 		    \s*
 		    T?
 		    \s*
-		    (\d{2,6})(?:[,.](\d*))?
+		    (\d{2,6})?(?:[,.](\d*))?
 		  )?
 		  (?:
 		    \s*
@@ -916,37 +920,96 @@ class Date
 		' ')
       case $2.size
       when 2
-	e.mday = $2[ 0, 2].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	else
+	  e.mday = $2[ 0, 2].to_i
+	end
       when 4
-	e.mon  = $2[ 0, 2].to_i
-	e.mday = $2[ 2, 2].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-4, 2].to_i
+	else
+	  e.mon  = $2[ 0, 2].to_i
+	  e.mday = $2[ 2, 2].to_i
+	end
       when 6
-	e.year = ($1 + $2[ 0, 2]).to_i
-	e.mon  = $2[ 2, 2].to_i
-	e.mday = $2[ 4, 2].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-4, 2].to_i
+	  e.hour = $2[-6, 2].to_i
+	else
+	  e.year = ($1 + $2[ 0, 2]).to_i
+	  e.mon  = $2[ 2, 2].to_i
+	  e.mday = $2[ 4, 2].to_i
+	end
       when 8, 10, 12, 14
-	e.year = ($1 + $2[ 0, 4]).to_i
-	e.mon  = $2[ 4, 2].to_i
-	e.mday = $2[ 6, 2].to_i
-	e.hour = $2[ 8, 2].to_i if $2.size >= 10
-	e.min  = $2[10, 2].to_i if $2.size >= 12
-	e.sec  = $2[12, 2].to_i if $2.size >= 14
-	e._comp = false
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-4, 2].to_i
+	  e.hour = $2[-6, 2].to_i
+	  e.mday = $2[-8, 2].to_i
+	  if $2.size >= 10
+	    e.mon  = $2[-10, 2].to_i
+	  end
+	  if $2.size == 12
+	    e.year = ($1 + $2[-12, 2]).to_i
+	  end
+	  if $2.size == 14
+	    e.year = ($1 + $2[-14, 4]).to_i
+	    e._comp = false
+	  end
+	else
+	  e.year = ($1 + $2[ 0, 4]).to_i
+	  e.mon  = $2[ 4, 2].to_i
+	  e.mday = $2[ 6, 2].to_i
+	  e.hour = $2[ 8, 2].to_i if $2.size >= 10
+	  e.min  = $2[10, 2].to_i if $2.size >= 12
+	  e.sec  = $2[12, 2].to_i if $2.size >= 14
+	  e._comp = false
+	end
       when 3
-	e.yday = $2[ 0, 3].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-3, 1].to_i
+	else
+	  e.yday = $2[ 0, 3].to_i
+	end
       when 5
-	e.year = ($1 + $2[ 0, 2]).to_i
-	e.yday = $2[ 2, 3].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-4, 2].to_i
+	  e.hour = $2[-5, 1].to_i
+	else
+	  e.year = ($1 + $2[ 0, 2]).to_i
+	  e.yday = $2[ 2, 3].to_i
+	end
       when 7
-	e.year = ($1 + $2[ 0, 4]).to_i
-	e.yday = $2[ 4, 3].to_i
+	if $3.nil? && $4
+	  e.sec  = $2[-2, 2].to_i
+	  e.min  = $2[-4, 2].to_i
+	  e.hour = $2[-6, 2].to_i
+	  e.mday = $2[-7, 1].to_i
+	else
+	  e.year = ($1 + $2[ 0, 4]).to_i
+	  e.yday = $2[ 4, 3].to_i
+	end
       end
       if $3
-	case $3.size
-	when 2, 4, 6
-	  e.hour = $3[ 0, 2].to_i
-	  e.min  = $3[ 2, 2].to_i if $3.size >= 4
-	  e.sec  = $3[ 4, 2].to_i if $3.size >= 6
+	if $4
+	  case $3.size
+	  when 2, 4, 6
+	    e.sec  = $3[-2, 2].to_i
+	    e.min  = $3[-4, 2].to_i if $3.size >= 4
+	    e.hour = $3[-6, 2].to_i if $3.size >= 6
+	  end
+	else
+	  case $3.size
+	  when 2, 4, 6
+	    e.hour = $3[ 0, 2].to_i
+	    e.min  = $3[ 2, 2].to_i if $3.size >= 4
+	    e.sec  = $3[ 4, 2].to_i if $3.size >= 6
+	  end
 	end
       end
       if $4
@@ -959,10 +1022,9 @@ class Date
     end
   end
 
-  private_class_method :_parse_day, :_parse_time, :_parse_beat,
+  private_class_method :_parse_day, :_parse_time, # :_parse_beat,
 	:_parse_eu, :_parse_us, :_parse_iso, :_parse_iso2,
-	:_parse_jis, :_parse_vms,
-	:_parse_sla, :_parse_dot,
+	:_parse_jis, :_parse_vms, :_parse_sla, :_parse_dot,
 	:_parse_year, :_parse_mon, :_parse_mday, :_parse_ddd
 
   def self._parse(str, comp=false)
@@ -1011,8 +1073,8 @@ class Date
       end
     end
 
-    if e._comp and e.year
-      if e.year >= 0 and e.year <= 99
+    if e._comp && e.year
+      if e.year >= 0 && e.year <= 99
 	if e.year >= 69
 	  e.year += 1900
 	else
