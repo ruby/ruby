@@ -118,7 +118,7 @@ class Date
       end
 
       def method_missing(t, *args, &block)
-	t = "#{t}"
+	t = t.to_s
 	set = t.chomp!('=')
 	t = t.intern
 	if set
