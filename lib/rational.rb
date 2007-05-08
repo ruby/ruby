@@ -354,7 +354,7 @@ class Rational < Numeric
   # Converts the rational to a Float.
   #
   def to_f
-    @numerator.to_f/@denominator.to_f
+    @numerator.quof(@denominator)
   end
 
   #
@@ -476,6 +476,7 @@ class Integer
 end
 
 class Fixnum
+  alias quof quo
   undef quo
   # If Rational is defined, returns a Rational number instead of a Fixnum.
   def quo(other)
@@ -503,6 +504,7 @@ class Bignum
     alias power! **
   end
 
+  alias quof quo
   undef quo
   # If Rational is defined, returns a Rational number instead of a Bignum.
   def quo(other)

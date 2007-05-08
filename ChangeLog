@@ -1,3 +1,9 @@
+Tue May  8 19:32:18 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/rational.rb: fix high-precision Rationals cannot be
+	converted to Floats. [ruby-Bugs:10502], [ruby-core:11069],
+	[ruby-dev:30743]
+
 Mon May  7 10:59:55 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/image.rb, test/rss/test_image.rb: fixed Image module
