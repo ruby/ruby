@@ -1,3 +1,7 @@
+Tue May  8 20:23:07 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: reverted.
+
 Tue May  8 19:32:18 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/rational.rb: fix high-precision Rationals cannot be
