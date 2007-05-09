@@ -521,7 +521,7 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
 	    s = p;
 	}
     }
-    return rb_cstr_to_inum(s, base, badcheck); 
+    return rb_cstr_to_inum(s, base, badcheck);
 }
 
 #if HAVE_LONG_LONG
@@ -579,7 +579,7 @@ rb_ll2inum(LONG_LONG n)
 }
 
 #endif  /* HAVE_LONG_LONG */
- 
+
 VALUE
 rb_cstr2inum(const char *str, int base)
 {
@@ -690,10 +690,10 @@ rb_big2str(VALUE x, int base)
 /*
  *  call-seq:
  *     big.to_s(base=10)   =>  string
- *  
+ *
  *  Returns a string containing the representation of <i>big</i> radix
  *  <i>base</i> (2 through 36).
- *     
+ *
  *     12345654321.to_s         #=> "12345654321"
  *     12345654321.to_s(2)      #=> "1011011111110110111011110000110001"
  *     12345654321.to_s(8)      #=> "133766736061"
@@ -882,10 +882,10 @@ rb_big2dbl(VALUE x)
 /*
  *  call-seq:
  *     big.to_f -> float
- *  
+ *
  *  Converts <i>big</i> to a <code>Float</code>. If <i>big</i> doesn't
  *  fit in a <code>Float</code>, the result is infinity.
- *     
+ *
  */
 
 static VALUE
@@ -897,11 +897,11 @@ rb_big_to_f(VALUE x)
 /*
  *  call-seq:
  *     big <=> numeric   => -1, 0, +1
- *  
+ *
  *  Comparison---Returns -1, 0, or +1 depending on whether <i>big</i> is
  *  less than, equal to, or greater than <i>numeric</i>. This is the
  *  basis for the tests in <code>Comparable</code>.
- *     
+ *
  */
 
 VALUE
@@ -941,11 +941,11 @@ rb_big_cmp(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big == obj  => true or false
- *  
+ *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>big</i>. Contrast this with <code>Bignum#eql?</code>, which
  *  requires <i>obj</i> to be a <code>Bignum</code>.
- *     
+ *
  *     68719476736 == 68719476736.0   #=> true
  */
 
@@ -979,11 +979,11 @@ rb_big_eq(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big.eql?(obj)   => true or false
- *  
+ *
  *  Returns <code>true</code> only if <i>obj</i> is a
  *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
  *  with <code>Bignum#==</code>, which performs type conversions.
- *     
+ *
  *     68719476736.eql?(68719476736.0)   #=> false
  */
 
@@ -1022,7 +1022,7 @@ rb_big_uminus(VALUE x)
  * length, the result acts as if it had an infinite number of one
  * bits to the left. In hex representations, this is displayed
  * as two periods to the left of the digits.
- *  
+ *
  *   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
  */
 
@@ -1052,7 +1052,7 @@ bigsub(VALUE x, VALUE y)
     BDIGIT *zds;
     BDIGIT_DBL_SIGNED num;
     long i = RBIGNUM(x)->len;
-    
+
     /* if x is larger than y, swap */
     if (RBIGNUM(x)->len < RBIGNUM(y)->len) {
 	z = x; x = y; y = z;	/* swap x y */
@@ -1073,11 +1073,11 @@ bigsub(VALUE x, VALUE y)
     z = bignew(RBIGNUM(x)->len, z==0);
     zds = BDIGITS(z);
 
-    for (i = 0, num = 0; i < RBIGNUM(y)->len; i++) { 
+    for (i = 0, num = 0; i < RBIGNUM(y)->len; i++) {
 	num += (BDIGIT_DBL_SIGNED)BDIGITS(x)[i] - BDIGITS(y)[i];
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
-    } 
+    }
     while (num && i < RBIGNUM(x)->len) {
 	num += BDIGITS(x)[i];
 	zds[i++] = BIGLO(num);
@@ -1087,7 +1087,7 @@ bigsub(VALUE x, VALUE y)
 	zds[i] = BDIGITS(x)[i];
 	i++;
     }
-    
+
     return z;
 }
 
@@ -1212,7 +1212,7 @@ rb_big_mul0(VALUE x, VALUE y)
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM(x)->len; i++) {
-	BDIGIT_DBL dd = BDIGITS(x)[i]; 
+	BDIGIT_DBL dd = BDIGITS(x)[i];
 	if (dd == 0) continue;
 	n = 0;
 	for (j = 0; j < RBIGNUM(y)->len; j++) {
@@ -1450,9 +1450,9 @@ rb_big_modulo(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big.remainder(numeric)    => number
- *  
+ *
  *  Returns the remainder after dividing <i>big</i> by <i>numeric</i>.
- *     
+ *
  *     -1234567890987654321.remainder(13731)      #=> -6966
  *     -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
  */
@@ -1480,9 +1480,9 @@ rb_big_remainder(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big.divmod(numeric)   => array
- *  
+ *
  *  See <code>Numeric#divmod</code>.
- *     
+ *
  */
 VALUE
 rb_big_divmod(VALUE x, VALUE y)
@@ -1532,13 +1532,13 @@ static VALUE rb_big_rshift(VALUE,VALUE);
  *  call-seq:
  *     big.quo(numeric) -> float
  *     big.fdiv(numeric) -> float
- *  
+ *
  *  Returns the floating point result of dividing <i>big</i> by
  *  <i>numeric</i>.
- *     
+ *
  *     -1234567890987654321.quo(13731)      #=> -89910996357705.5
  *     -1234567890987654321.quo(13731.24)   #=> -89909424858035.7
- *     
+ *
  */
 
 static VALUE
@@ -1970,20 +1970,20 @@ rb_big_rshift(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big[n] -> 0, 1
- *  
+ *
  *  Bit Reference---Returns the <em>n</em>th bit in the (assumed) binary
  *  representation of <i>big</i>, where <i>big</i>[0] is the least
  *  significant bit.
- *     
+ *
  *     a = 9**15
  *     50.downto(0) do |n|
  *       print a[n]
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     000101110110100000111000011110010100111100010111001
- *     
+ *
  */
 
 static VALUE
@@ -2057,9 +2057,9 @@ rb_big_coerce(VALUE x, VALUE y)
 /*
  *  call-seq:
  *     big.abs -> aBignum
- *  
+ *
  *  Returns the absolute value of <i>big</i>.
- *     
+ *
  *     -1234567890987654321.abs   #=> 1234567890987654321
  */
 
@@ -2076,10 +2076,10 @@ rb_big_abs(VALUE x)
 /*
  *  call-seq:
  *     big.size -> integer
- *  
+ *
  *  Returns the number of bytes in the machine representation of
  *  <i>big</i>.
- *     
+ *
  *     (256**10 - 1).size   #=> 12
  *     (256**20 - 1).size   #=> 20
  *     (256**40 - 1).size   #=> 40
@@ -2098,15 +2098,15 @@ rb_big_size(VALUE big)
  *  Fixnum. When a calculation involving
  *  Bignum objects returns a result that will fit in a
  *  Fixnum, the result is automatically converted.
- *     
+ *
  *  For the purposes of the bitwise operations and <code>[]</code>, a
  *  Bignum is treated as if it were an infinite-length
  *  bitstring with 2's complement representation.
- *     
+ *
  *  While Fixnum values are immediate, Bignum
  *  objects are not---assignment and parameter passing work with
  *  references to objects, not the objects themselves.
- *     
+ *
  */
 
 void
