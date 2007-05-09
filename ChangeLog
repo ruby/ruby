@@ -1,3 +1,15 @@
+Wed May  9 11:51:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): reduce multiplying for even number.
+
+	* bignum.c (rb_big_pow): truncate all zero BDIGITs. [ruby-dev:30733]
+
+	* bignum.c (rb_big_pow): improvement by calculating from MSB and using
+	  factorization.  <http://yowaken.dip.jp/tdiary/20070426.html#p01>
+
+	* numeric.c (int_pow): calculate power in Fixnum as possible.
+	  [ruby-dev:30726]
+
 Tue May  8 23:42:51 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (Date._parse): revised treatment of

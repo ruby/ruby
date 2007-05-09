@@ -96,31 +96,47 @@ rb_big_2comp(x)			/* get 2's complement */
 }
 
 static VALUE
+bigtrunc(x)
+    VALUE x;
+{
+    long len = RBIGNUM(x)->len;
+    BDIGIT *ds = BDIGITS(x);
+
+    while (len-- && !ds[len]);
+    RBIGNUM(x)->len = ++len;
+    return x;
+}
+
+static VALUE
+bigfixize(x)
+    VALUE x;
+{
+    long len = RBIGNUM(x)->len;
+    BDIGIT *ds = BDIGITS(x);
+
+    if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
+	long num = 0;
+	while (len--) {
+	    num = BIGUP(num) + ds[len];
+	}
+	if (num >= 0) {
+	    if (RBIGNUM(x)->sign) {
+		if (POSFIXABLE(num)) return LONG2FIX(num);
+	    }
+	    else {
+		if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
+	    }
+	}
+    }
+    return x;
+}
+
+static VALUE
 bignorm(x)
     VALUE x;
 {
-    if (FIXNUM_P(x)) {
-      return x;
-    }
-    else if (TYPE(x) == T_BIGNUM) {
-	long len = RBIGNUM(x)->len;
-	BDIGIT *ds = BDIGITS(x);
-
-	while (len-- && !ds[len]) ;
-	RBIGNUM(x)->len = ++len;
-
-	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
-	    long num = 0;
-	    while (len--) {
-		num = BIGUP(num) + ds[len];
-	    }
-	    if (num >= 0) {
-		if (RBIGNUM(x)->sign) {
-		    if (POSFIXABLE(num)) return LONG2FIX(num);
-		}
-		else if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
-	    }
-	}
+    if (!FIXNUM_P(x) && TYPE(x) == T_BIGNUM) {
+	x = bigfixize(bigtrunc(x));
     }
     return x;
 }
@@ -1594,6 +1610,50 @@ rb_big_quo(x, y)
     return rb_float_new(dx / dy);
 }
 
+static VALUE
+bigsqr(x)
+    VALUE x;
+{
+    long len = RBIGNUM(x)->len, k = len / 2, i;
+    VALUE a, b, a2, z;
+    BDIGIT_DBL num;
+
+    if (len < 4000 / BITSPERDIG) {
+	return rb_big_mul0(x, x);
+    }
+
+    a = bignew(len - k, 1);
+    MEMCPY(BDIGITS(a), BDIGITS(x) + k, BDIGIT, len - k);
+    b = bignew(k, 1);
+    MEMCPY(BDIGITS(b), BDIGITS(x), BDIGIT, k);
+
+    a2 = bigtrunc(bigsqr(a));
+    z = bigsqr(b);
+    REALLOC_N(RBIGNUM(z)->digits, BDIGIT, (len = 2 * k + RBIGNUM(a2)->len) + 1);
+    while (RBIGNUM(z)->len < 2 * k) BDIGITS(z)[RBIGNUM(z)->len++] = 0;
+    MEMCPY(BDIGITS(z) + 2 * k, BDIGITS(a2), BDIGIT, RBIGNUM(a2)->len);
+    RBIGNUM(z)->len = len;
+    a2 = bigtrunc(rb_big_mul0(a, b));
+    len = RBIGNUM(a2)->len;
+    for (i = 0, num = 0; i < len; i++) {
+	num += (BDIGIT_DBL)BDIGITS(z)[i + k] + ((BDIGIT_DBL)BDIGITS(a2)[i] << 1);
+	BDIGITS(z)[i + k] = BIGLO(num);
+	num = BIGDN(num);
+    }
+    if (num) {
+	len = RBIGNUM(z)->len;
+	for (i += k; i < len && num; ++i) {
+	    num += (BDIGIT_DBL)BDIGITS(z)[i];
+	    BDIGITS(z)[i] = BIGLO(num);
+	    num = BIGDN(num);
+	}
+	if (num) {
+	    BDIGITS(z)[RBIGNUM(z)->len++] = BIGLO(num);
+	}
+    }
+    return bigtrunc(z);
+}
+
 /*
  *  call-seq:
  *     big ** exponent   #=> numeric
@@ -1613,7 +1673,7 @@ rb_big_pow(x, y)
 {
     double d;
     long yy;
-    
+
     if (y == INT2FIX(0)) return INT2FIX(1);
     switch (TYPE(y)) {
       case T_FLOAT:
@@ -1628,23 +1688,31 @@ rb_big_pow(x, y)
       case T_FIXNUM:
 	yy = FIX2LONG(y);
 	if (yy > 0) {
-	    VALUE z = x;
+	    VALUE z = 0;
+	    long mask, n = 1;
 
 	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
 	    }
-	    for (;;) {
-		yy -= 1;
-		if (yy == 0) break;
-		while (yy % 2 == 0) {
-		    yy /= 2;
-		    x = rb_big_mul0(x, x);
-		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
+	    for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {
+		if (!z) {
+		    long n2 = n * n;
+		    if (!POSFIXABLE(n2) || (n2 / n != n)) {
+			z = bigtrunc(bigsqr(rb_int2big(n)));
+		    }
+		    else {
+			n = n2;
+		    }
 		}
-		z = rb_big_mul0(z, x);
-		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
+		else {
+		    z = bigtrunc(bigsqr(z));
+		}
+		if (yy & mask) {
+		    if (!z) z = rb_int2big(n);
+		    z = bigtrunc(rb_big_mul0(z, x));
+		}
 	    }
 	    return bignorm(z);
 	}
