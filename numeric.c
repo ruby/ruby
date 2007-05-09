@@ -244,6 +244,7 @@ num_uminus(num)
 /*
  *  call-seq:
  *     num.quo(numeric)    =>   result
+ *     num.fdiv(numeric)   =>   result
  *  
  *  Equivalent to <code>Numeric#/</code>, but overridden in subclasses.
  */
@@ -2093,6 +2094,7 @@ fixdivmod(x, y, divp, modp)
 /*
  *  call-seq:
  *     fix.quo(numeric)    => float
+ *     fix.fdiv(numeric)   => float
  *  
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
@@ -2831,6 +2833,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "quo", num_quo, 1);
+    rb_define_method(rb_cNumeric, "fdiv", num_quo, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
@@ -2887,6 +2890,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
     rb_define_method(rb_cFixnum, "quo", fix_quo, 1);
+    rb_define_method(rb_cFixnum, "fdiv", fix_quo, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
     rb_define_method(rb_cFixnum, "abs", fix_abs, 0);

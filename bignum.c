@@ -1608,6 +1608,7 @@ rb_big_divmod(x, y)
 /*
  *  call-seq:
  *     big.quo(numeric) -> float
+ *     big.fdiv(numeric) -> float
  *  
  *  Returns the floating point result of dividing <i>big</i> by
  *  <i>numeric</i>.
@@ -2239,6 +2240,7 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "quo", rb_big_quo, 1);
+    rb_define_method(rb_cBignum, "fdiv", rb_big_quo, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);
