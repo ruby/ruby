@@ -13,6 +13,7 @@
 #include "ruby.h"
 
 #include <math.h>
+#include <float.h>
 #include <ctype.h>
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
@@ -906,8 +907,8 @@ rb_dbl2big(d)
     return bignorm(dbl2big(d));
 }
 
-double
-rb_big2dbl(x)
+static double
+big2dbl(x)
     VALUE x;
 {
     double d = 0.0;
@@ -917,11 +918,20 @@ rb_big2dbl(x)
     while (i--) {
 	d = ds[i] + BIGRAD*d;
     }
+    if (!RBIGNUM(x)->sign) d = -d;
+    return d;
+}
+
+double
+rb_big2dbl(x)
+    VALUE x;
+{
+    double d = big2dbl(x);
+
     if (isinf(d)) {
 	rb_warn("Bignum out of Float range");
 	d = HUGE_VAL;
     }
-    if (!RBIGNUM(x)->sign) d = -d;
     return d;
 }
 
@@ -1543,6 +1553,29 @@ rb_big_remainder(x, y)
     return bignorm(z);
 }
 
+static int
+bdigbitsize(BDIGIT x)
+{
+    int size = 1;
+    int nb = BITSPERDIG / 2;
+    BDIGIT bits = (~0 << nb);
+
+    if (!x) return 0;
+    while (x > 1) {
+	if (x & bits) {
+	    size += nb;
+	    x >>= nb;
+	}
+	x &= ~bits;
+	nb /= 2;
+	bits >>= nb;
+    }
+
+    return size;
+}
+
+static VALUE rb_big_rshift _((VALUE,VALUE));
+
 /*
  *  call-seq:
  *     big.divmod(numeric)   => array
@@ -1588,9 +1621,37 @@ static VALUE
 rb_big_quo(x, y)
     VALUE x, y;
 {
-    double dx = rb_big2dbl(x);
+    double dx = big2dbl(x);
     double dy;
 
+    if (isinf(dx)) {
+#define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
+	VALUE z;
+	int ex, ey;
+
+	ex = (RBIGNUM(bigtrunc(x))->len - 1) * BITSPERDIG;
+	ex += bdigbitsize(BDIGITS(x)[RBIGNUM(x)->len - 1]);
+	ex -= 2 * DBL_BIGDIG * BITSPERDIG;
+	if (ex) x = rb_big_rshift(x, INT2FIX(ex));
+
+	switch (TYPE(y)) {
+	  case T_FIXNUM:
+	    y = rb_int2big(FIX2LONG(y));
+	  case T_BIGNUM: {
+	    ey = (RBIGNUM(bigtrunc(y))->len - 1) * BITSPERDIG;
+	    ey += bdigbitsize(BDIGITS(y)[RBIGNUM(y)->len - 1]);
+	    ey -= DBL_BIGDIG * BITSPERDIG;
+	    if (ey) y = rb_big_rshift(y, INT2FIX(ey));
+	  bignum:
+	    bigdivrem(x, y, &z, 0);
+	    return rb_float_new(ldexp(big2dbl(z), ex - ey));
+	  }
+	  case T_FLOAT:
+	    y = dbl2big(ldexp(frexp(RFLOAT(y)->value, &ey), DBL_MANT_DIG));
+	    ey -= DBL_MANT_DIG;
+	    goto bignum;
+	}
+    }
     switch (TYPE(y)) {
       case T_FIXNUM:
 	dy = (double)FIX2LONG(y);
@@ -1897,8 +1958,6 @@ rb_big_xor(xx, yy)
 
     return bignorm(z);
 }
-
-static VALUE rb_big_rshift _((VALUE,VALUE));
 
 /*
  * call-seq:

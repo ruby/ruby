@@ -1,3 +1,7 @@
+Wed May  9 11:55:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_quo): now calculate in integer.  [ruby-dev:30753]
+
 Wed May  9 11:51:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_pow): reduce multiplying for even number.
