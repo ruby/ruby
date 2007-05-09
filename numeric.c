@@ -2177,6 +2177,40 @@ fix_divmod(x, y)
     return rb_num_coerce_bin(x, y);
 }
 
+static VALUE
+int_pow(x, y)
+    long x;
+    unsigned long y;
+{
+    int neg = x < 0;
+    long z = 1;
+
+    if (neg) x = -x;
+    if (y & 1) z = x;
+    y &= ~1;
+    do {
+	while (y % 2 == 0) {
+	    long x2 = x * x;
+	    if (x2 < x || !POSFIXABLE(x2)) {
+	      bignum:
+		return rb_big_mul(rb_big_pow(rb_int2big(x), LONG2NUM(y)),
+				  rb_int2big(neg ? -z : z));
+	    }
+	    x = x2;
+	    y >>= 1;
+	}
+	{
+	    long xz = x * z;
+	    if (xz < z || xz < x || !POSFIXABLE(xz)) {
+		goto bignum;
+	    }
+	    z = xz;
+	}
+    } while (--y);
+    if (neg) z = -z;
+    return LONG2NUM(z);
+}
+
 /*
  *  call-seq:
  *    fix ** other         => Numeric
@@ -2201,7 +2235,7 @@ fix_pow(x, y)
 	if (b == 1) return x;
 	a = FIX2LONG(x);
 	if (b > 0) {
-	    return rb_big_pow(rb_int2big(a), y);
+	    return int_pow(a, b);
 	}
 	return rb_float_new(pow((double)a, (double)b));
     } else if (TYPE(y) == T_FLOAT) {
