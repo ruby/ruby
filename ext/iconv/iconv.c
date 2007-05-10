@@ -645,7 +645,7 @@ iconv_s_iconv(int argc, VALUE *argv, VALUE self)
 
 /*
  * Document-method: Iconv::conv
- * call-seq: Iconv.conv(to, from, *strs)
+ * call-seq: Iconv.conv(to, from, str)
  *
  * Shorthand for
  *   Iconv.iconv(to, from, str).join
