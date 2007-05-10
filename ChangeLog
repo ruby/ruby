@@ -1,3 +1,10 @@
+Thu May 10 15:09:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (POINTER_P): pointer may be larger than long.
+
+	* parse.y (vtable_size, vtable_included, vtable_tblcpy,
+	  vtable_to_tbl): constified.
+
 Thu May 10 10:13:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_priority): rdoc fix; the initial value is

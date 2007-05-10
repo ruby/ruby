@@ -122,11 +122,11 @@ struct local_vars {
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
 #define DVARS_SPECIAL_P(tbl) (!POINTER_P(tbl))
-#define POINTER_P(val) ((unsigned long)(val) & ~3UL)
+#define POINTER_P(val) ((VALUE)(val) & ~(VALUE)3)
 
 #ifndef RIPPER
 static int
-vtable_size(struct vtable *tbl)
+vtable_size(const struct vtable *tbl)
 {
     if (POINTER_P(tbl)) {
         return tbl->pos;
@@ -180,7 +180,7 @@ vtable_add(struct vtable *tbl, ID id)
 }
 
 static int
-vtable_included(struct vtable * tbl, ID id)
+vtable_included(const struct vtable * tbl, ID id)
 {
     int i;
 
@@ -7964,7 +7964,7 @@ local_pop_gen(struct parser_params *parser)
 }
 
 static ID*
-vtable_tblcpy(ID *buf, struct vtable *src)
+vtable_tblcpy(ID *buf, const struct vtable *src)
 {
     int i, cnt = vtable_size(src);
 
@@ -7979,7 +7979,7 @@ vtable_tblcpy(ID *buf, struct vtable *src)
 }
 
 static ID*
-vtable_to_tbl(struct vtable *src)
+vtable_to_tbl(const struct vtable *src)
 {
     int cnt = vtable_size(src);
     ID *buf;
