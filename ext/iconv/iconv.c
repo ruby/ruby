@@ -649,7 +649,7 @@ iconv_s_iconv
 
 /*
  * Document-method: Iconv::conv
- * call-seq: Iconv.iconv(to, from, *strs)
+ * call-seq: Iconv.conv(to, from, str)
  *
  * Shorthand for
  *   Iconv.iconv(to, from, str).join

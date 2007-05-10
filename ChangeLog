@@ -1,3 +1,7 @@
+Thu May 10 15:21:51 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_s_conv): rdoc fix.
+
 Thu May 10 10:14:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_priority): rdoc fix; the initial value is
