@@ -43,6 +43,12 @@ class TestSuper < Test::Unit::TestCase
   class Optional3 < Base
     def single(a = 1) super end
   end
+  class Optional4 < Base
+    def array(a = 1, *) super end
+  end
+  class Optional5 < Base
+    def array(a = 1, b = 2, *) super end
+  end
 
   def test_single1
     assert_equal(1, Single1.new.single(1))
@@ -93,6 +99,17 @@ class TestSuper < Test::Unit::TestCase
     assert_equal(9, Optional3.new.single(9))
     # call Base#single with 1 argument; the arg is supplied
     assert_equal(1, Optional3.new.single)
+  end
+  def test_optional4
+    assert_equal([1], Optional4.new.array)
+    assert_equal([9], Optional4.new.array(9))
+    assert_equal([9, 8], Optional4.new.array(9, 8))
+  end
+  def test_optional5
+    assert_equal([1, 2], Optional5.new.array)
+    assert_equal([9, 2], Optional5.new.array(9))
+    assert_equal([9, 8], Optional5.new.array(9, 8))
+    assert_equal([9, 8, 7], Optional5.new.array(9, 8, 7))
   end
 
   class A

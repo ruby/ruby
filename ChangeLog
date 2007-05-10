@@ -1,3 +1,7 @@
+Thu May 10 15:15:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_super.rb: add tests.
+
 Thu May 10 15:14:05 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_s_conv): rdoc fix.
