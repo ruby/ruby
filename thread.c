@@ -1508,10 +1508,12 @@ rb_thread_keys(VALUE self)
 /*
  *  call-seq:
  *     thr.priority   => integer
- *  
- *  Returns the priority of <i>thr</i>. Default is zero; higher-priority threads
- *  will run before lower-priority threads.
- *     
+ *
+ *  Returns the priority of <i>thr</i>. Default is inherited from the
+ *  current thread which creating the new thread, or zero for the
+ *  initial main thread; higher-priority threads will run before
+ *  lower-priority threads.
+ *
  *     Thread.current.priority   #=> 0
  */
 
