@@ -387,7 +387,8 @@ static int  local_id_gen(struct parser_params*, ID);
 #define local_id(id) local_id_gen(parser, id)
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
-static ID   internal_id(void);
+static ID   internal_id_gen(struct parser_params*);
+#define internal_id() internal_id_gen(parser)
 
 static void dyna_push_gen(struct parser_params*);
 #define dyna_push() dyna_push_gen(parser)
@@ -8270,9 +8271,10 @@ rb_gc_mark_symbols(void)
 }
 
 static ID
-internal_id(void)
+internal_id_gen(struct parser_params *parser)
 {
-    return ID_INTERNAL | (++global_symbols.last_id << ID_SCOPE_SHIFT);
+    ID id = (ID)vtable_size(lvtbl->args) + (ID)vtable_size(lvtbl->vars);
+    return ID_INTERNAL | (id << ID_SCOPE_SHIFT);
 }
 
 static int

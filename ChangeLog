@@ -1,3 +1,11 @@
+Fri May 11 15:27:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_data_to_ary): internal IDs must not be exposed.
+	  [ruby-core:11073]
+
+	* parse.y (internal_id_gen): now returns scope local ID instead of
+	  global one.
+
 Thu May 10 15:15:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_super.rb: add tests.

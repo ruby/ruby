@@ -52,7 +52,7 @@ iseq_free(void *ptr)
 	if (iseq->iseq != iseq->iseq_encoded) {
 	    FREE_UNLESS_NULL(iseq->iseq_encoded);
 	}
-	
+
 	FREE_UNLESS_NULL(iseq->iseq);
 	FREE_UNLESS_NULL(iseq->insn_info_tbl);
 	FREE_UNLESS_NULL(iseq->local_table);
@@ -184,7 +184,7 @@ cleanup_iseq_build(rb_iseq_t *iseq)
     struct iseq_compile_data *data = iseq->compile_data;
     iseq->compile_data = 0;
     compile_data_free(data);
-    
+
     if (ruby_nerrs > 0) {
 	VALUE str = rb_str_buf_new2("compile error");
 	ruby_nerrs = 0;
@@ -269,7 +269,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
 {
     rb_iseq_t *iseq;
     VALUE self = iseq_alloc(rb_cISeq);
-    
+
     GetISeqPtr(self, iseq);
     iseq->self = self;
 
@@ -323,7 +323,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
      */
 
     data        = CHECK_ARRAY(data);
-    
+
     magic       = CHECK_STRING(rb_ary_entry(data, 0));
     version1    = CHECK_INTEGER(rb_ary_entry(data, 1));
     version2    = CHECK_INTEGER(rb_ary_entry(data, 2));
@@ -380,7 +380,7 @@ iseq_s_load(int argc, VALUE *argv, VALUE self)
 {
     VALUE data, opt=Qnil;
     rb_scan_args(argc, argv, "11", &data, &opt);
-    
+
     return iseq_load(self, data, 0, opt);
 }
 
@@ -403,7 +403,7 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
     VALUE str, file = Qnil, line = INT2FIX(1), opt = Qnil;
     NODE *node;
     rb_compile_option_t option;
-    
+
     rb_scan_args(argc, argv, "13", &str, &file, &line, &opt);
 
     file = file == Qnil ? rb_str_new2("<compiled>") : file;
@@ -533,17 +533,17 @@ insn_operand_intern(rb_iseq_t *iseq,
     char buff[0x100];
 
     switch (type) {
-    case TS_OFFSET:		/* LONG */
+      case TS_OFFSET:		/* LONG */
 	snprintf(buff, sizeof(buff), "%ld", pos + len + op);
 	ret = rb_str_new2(buff);
 	break;
 
-    case TS_NUM:		/* ULONG */
+      case TS_NUM:		/* ULONG */
 	snprintf(buff, sizeof(buff), "%lu", op);
 	ret = rb_str_new2(buff);
 	break;
 
-    case TS_LINDEX:
+      case TS_LINDEX:
 	{
 	    rb_iseq_t *ip = iseq->local_iseq;
 	    int lidx = ip->local_size - op;
@@ -557,36 +557,36 @@ insn_operand_intern(rb_iseq_t *iseq,
 	    }
 	    break;
 	}
-    case TS_DINDEX:{
-	    if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-		rb_iseq_t *ip = iseq;
-		int level = *pnop, i;
-		const char *name;
-		for (i = 0; i < level; i++) {
-		    ip = ip->parent_iseq;
-		}
-		name = rb_id2name(ip->local_table[ip->local_size - op]);
+      case TS_DINDEX:{
+	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
+	    rb_iseq_t *ip = iseq;
+	    int level = *pnop, i;
+	    const char *name;
+	    for (i = 0; i < level; i++) {
+		ip = ip->parent_iseq;
+	    }
+	    name = rb_id2name(ip->local_table[ip->local_size - op]);
 
-		if (!name) {
-		    name = "*";
-		}
-		ret = rb_str_new2(name);
+	    if (!name) {
+		name = "*";
 	    }
-	    else {
-		ret = rb_inspect(INT2FIX(op));
-	    }
-	    break;
+	    ret = rb_str_new2(name);
 	}
-    case TS_ID:		/* ID (symbol) */
+	else {
+	    ret = rb_inspect(INT2FIX(op));
+	}
+	break;
+      }
+      case TS_ID:		/* ID (symbol) */
 	op = ID2SYM(op);
-    case TS_VALUE:		/* VALUE */
+      case TS_VALUE:		/* VALUE */
 	ret = rb_inspect(op);
 	if (CLASS_OF(op) == rb_cISeq) {
 	    rb_ary_push(child, op);
 	}
 	break;
 
-    case TS_ISEQ:		/* iseq */
+      case TS_ISEQ:		/* iseq */
 	{
 	    rb_iseq_t *iseq = (rb_iseq_t *)op;
 	    if (iseq) {
@@ -600,22 +600,22 @@ insn_operand_intern(rb_iseq_t *iseq,
 	    }
 	    break;
 	}
-    case TS_GENTRY:
+      case TS_GENTRY:
 	{
 	    struct global_entry *entry = (struct global_entry *)op;
 	    ret = rb_str_new2(rb_id2name(entry->id));
 	}
 	break;
 
-    case TS_IC:
+      case TS_IC:
 	ret = rb_str_new2("<ic>");
 	break;
 
-    case TS_CDHASH:
+      case TS_CDHASH:
 	ret = rb_str_new2("<cdhash>");
 	break;
 
-    default:
+      default:
 	rb_bug("ruby_iseq_disasm: unknown operand type: %c", type);
     }
     return ret;
@@ -685,19 +685,19 @@ static char *
 catch_type(int type)
 {
     switch (type) {
-    case CATCH_TYPE_RESCUE:
+      case CATCH_TYPE_RESCUE:
 	return "rescue";
-    case CATCH_TYPE_ENSURE:
+      case CATCH_TYPE_ENSURE:
 	return "ensure";
-    case CATCH_TYPE_RETRY:
+      case CATCH_TYPE_RETRY:
 	return "retry";
-    case CATCH_TYPE_BREAK:
+      case CATCH_TYPE_BREAK:
 	return "break";
-    case CATCH_TYPE_REDO:
+      case CATCH_TYPE_REDO:
 	return "redo";
-    case CATCH_TYPE_NEXT:
+      case CATCH_TYPE_NEXT:
 	return "next";
-    default:
+      default:
 	rb_bug("unknown catch type (%d)", type);
 	return 0;
     }
@@ -809,223 +809,223 @@ char *
 ruby_node_name(int node)
 {
     switch (node) {
-    case NODE_METHOD:
+      case NODE_METHOD:
 	return "NODE_METHOD";
-    case NODE_FBODY:
+      case NODE_FBODY:
 	return "NODE_FBODY";
-    case NODE_CFUNC:
+      case NODE_CFUNC:
 	return "NODE_CFUNC";
-    case NODE_SCOPE:
+      case NODE_SCOPE:
 	return "NODE_SCOPE";
-    case NODE_BLOCK:
+      case NODE_BLOCK:
 	return "NODE_BLOCK";
-    case NODE_IF:
+      case NODE_IF:
 	return "NODE_IF";
-    case NODE_CASE:
+      case NODE_CASE:
 	return "NODE_CASE";
-    case NODE_WHEN:
+      case NODE_WHEN:
 	return "NODE_WHEN";
-    case NODE_OPT_N:
+      case NODE_OPT_N:
 	return "NODE_OPT_N";
-    case NODE_WHILE:
+      case NODE_WHILE:
 	return "NODE_WHILE";
-    case NODE_UNTIL:
+      case NODE_UNTIL:
 	return "NODE_UNTIL";
-    case NODE_ITER:
+      case NODE_ITER:
 	return "NODE_ITER";
-    case NODE_FOR:
+      case NODE_FOR:
 	return "NODE_FOR";
-    case NODE_BREAK:
+      case NODE_BREAK:
 	return "NODE_BREAK";
-    case NODE_NEXT:
+      case NODE_NEXT:
 	return "NODE_NEXT";
-    case NODE_REDO:
+      case NODE_REDO:
 	return "NODE_REDO";
-    case NODE_RETRY:
+      case NODE_RETRY:
 	return "NODE_RETRY";
-    case NODE_BEGIN:
+      case NODE_BEGIN:
 	return "NODE_BEGIN";
-    case NODE_RESCUE:
+      case NODE_RESCUE:
 	return "NODE_RESCUE";
-    case NODE_RESBODY:
+      case NODE_RESBODY:
 	return "NODE_RESBODY";
-    case NODE_ENSURE:
+      case NODE_ENSURE:
 	return "NODE_ENSURE";
-    case NODE_AND:
+      case NODE_AND:
 	return "NODE_AND";
-    case NODE_OR:
+      case NODE_OR:
 	return "NODE_OR";
-    case NODE_NOT:
+      case NODE_NOT:
 	return "NODE_NOT";
-    case NODE_MASGN:
+      case NODE_MASGN:
 	return "NODE_MASGN";
-    case NODE_LASGN:
+      case NODE_LASGN:
 	return "NODE_LASGN";
-    case NODE_DASGN:
+      case NODE_DASGN:
 	return "NODE_DASGN";
-    case NODE_DASGN_CURR:
+      case NODE_DASGN_CURR:
 	return "NODE_DASGN_CURR";
-    case NODE_GASGN:
+      case NODE_GASGN:
 	return "NODE_GASGN";
-    case NODE_IASGN:
+      case NODE_IASGN:
 	return "NODE_IASGN";
-    case NODE_IASGN2:
+      case NODE_IASGN2:
 	return "NODE_IASGN2";
-    case NODE_CDECL:
+      case NODE_CDECL:
 	return "NODE_CDECL";
-    case NODE_CVASGN:
+      case NODE_CVASGN:
 	return "NODE_CVASGN";
-    case NODE_OP_ASGN1:
+      case NODE_OP_ASGN1:
 	return "NODE_OP_ASGN1";
-    case NODE_OP_ASGN2:
+      case NODE_OP_ASGN2:
 	return "NODE_OP_ASGN2";
-    case NODE_OP_ASGN_AND:
+      case NODE_OP_ASGN_AND:
 	return "NODE_OP_ASGN_AND";
-    case NODE_OP_ASGN_OR:
+      case NODE_OP_ASGN_OR:
 	return "NODE_OP_ASGN_OR";
-    case NODE_CALL:
+      case NODE_CALL:
 	return "NODE_CALL";
-    case NODE_FCALL:
+      case NODE_FCALL:
 	return "NODE_FCALL";
-    case NODE_VCALL:
+      case NODE_VCALL:
 	return "NODE_VCALL";
-    case NODE_SUPER:
+      case NODE_SUPER:
 	return "NODE_SUPER";
-    case NODE_ZSUPER:
+      case NODE_ZSUPER:
 	return "NODE_ZSUPER";
-    case NODE_ARRAY:
+      case NODE_ARRAY:
 	return "NODE_ARRAY";
-    case NODE_ZARRAY:
+      case NODE_ZARRAY:
 	return "NODE_ZARRAY";
-    case NODE_VALUES:
+      case NODE_VALUES:
 	return "NODE_VALUES";
-    case NODE_HASH:
+      case NODE_HASH:
 	return "NODE_HASH";
-    case NODE_RETURN:
+      case NODE_RETURN:
 	return "NODE_RETURN";
-    case NODE_YIELD:
+      case NODE_YIELD:
 	return "NODE_YIELD";
-    case NODE_LVAR:
+      case NODE_LVAR:
 	return "NODE_LVAR";
-    case NODE_DVAR:
+      case NODE_DVAR:
 	return "NODE_DVAR";
-    case NODE_GVAR:
+      case NODE_GVAR:
 	return "NODE_GVAR";
-    case NODE_IVAR:
+      case NODE_IVAR:
 	return "NODE_IVAR";
-    case NODE_CONST:
+      case NODE_CONST:
 	return "NODE_CONST";
-    case NODE_CVAR:
+      case NODE_CVAR:
 	return "NODE_CVAR";
-    case NODE_NTH_REF:
+      case NODE_NTH_REF:
 	return "NODE_NTH_REF";
-    case NODE_BACK_REF:
+      case NODE_BACK_REF:
 	return "NODE_BACK_REF";
-    case NODE_MATCH:
+      case NODE_MATCH:
 	return "NODE_MATCH";
-    case NODE_MATCH2:
+      case NODE_MATCH2:
 	return "NODE_MATCH2";
-    case NODE_MATCH3:
+      case NODE_MATCH3:
 	return "NODE_MATCH3";
-    case NODE_LIT:
+      case NODE_LIT:
 	return "NODE_LIT";
-    case NODE_STR:
+      case NODE_STR:
 	return "NODE_STR";
-    case NODE_DSTR:
+      case NODE_DSTR:
 	return "NODE_DSTR";
-    case NODE_XSTR:
+      case NODE_XSTR:
 	return "NODE_XSTR";
-    case NODE_DXSTR:
+      case NODE_DXSTR:
 	return "NODE_DXSTR";
-    case NODE_EVSTR:
+      case NODE_EVSTR:
 	return "NODE_EVSTR";
-    case NODE_DREGX:
+      case NODE_DREGX:
 	return "NODE_DREGX";
-    case NODE_DREGX_ONCE:
+      case NODE_DREGX_ONCE:
 	return "NODE_DREGX_ONCE";
-    case NODE_ARGS:
+      case NODE_ARGS:
 	return "NODE_ARGS";
-    case NODE_POSTARG:
+      case NODE_POSTARG:
 	return "NODE_POSTARG";
-    case NODE_ARGSCAT:
+      case NODE_ARGSCAT:
 	return "NODE_ARGSCAT";
-    case NODE_ARGSPUSH:
+      case NODE_ARGSPUSH:
 	return "NODE_ARGSPUSH";
-    case NODE_SPLAT:
+      case NODE_SPLAT:
 	return "NODE_SPLAT";
-    case NODE_TO_ARY:
+      case NODE_TO_ARY:
 	return "NODE_TO_ARY";
-    case NODE_BLOCK_ARG:
+      case NODE_BLOCK_ARG:
 	return "NODE_BLOCK_ARG";
-    case NODE_BLOCK_PASS:
+      case NODE_BLOCK_PASS:
 	return "NODE_BLOCK_PASS";
-    case NODE_DEFN:
+      case NODE_DEFN:
 	return "NODE_DEFN";
-    case NODE_DEFS:
+      case NODE_DEFS:
 	return "NODE_DEFS";
-    case NODE_ALIAS:
+      case NODE_ALIAS:
 	return "NODE_ALIAS";
-    case NODE_VALIAS:
+      case NODE_VALIAS:
 	return "NODE_VALIAS";
-    case NODE_UNDEF:
+      case NODE_UNDEF:
 	return "NODE_UNDEF";
-    case NODE_CLASS:
+      case NODE_CLASS:
 	return "NODE_CLASS";
-    case NODE_MODULE:
+      case NODE_MODULE:
 	return "NODE_MODULE";
-    case NODE_SCLASS:
+      case NODE_SCLASS:
 	return "NODE_SCLASS";
-    case NODE_COLON2:
+      case NODE_COLON2:
 	return "NODE_COLON2";
-    case NODE_COLON3:
+      case NODE_COLON3:
 	return "NODE_COLON3";
-    case NODE_CREF:
+      case NODE_CREF:
 	return "NODE_CREF";
-    case NODE_DOT2:
+      case NODE_DOT2:
 	return "NODE_DOT2";
-    case NODE_DOT3:
+      case NODE_DOT3:
 	return "NODE_DOT3";
-    case NODE_FLIP2:
+      case NODE_FLIP2:
 	return "NODE_FLIP2";
-    case NODE_FLIP3:
+      case NODE_FLIP3:
 	return "NODE_FLIP3";
-    case NODE_ATTRSET:
+      case NODE_ATTRSET:
 	return "NODE_ATTRSET";
-    case NODE_SELF:
+      case NODE_SELF:
 	return "NODE_SELF";
-    case NODE_NIL:
+      case NODE_NIL:
 	return "NODE_NIL";
-    case NODE_TRUE:
+      case NODE_TRUE:
 	return "NODE_TRUE";
-    case NODE_FALSE:
+      case NODE_FALSE:
 	return "NODE_FALSE";
-    case NODE_ERRINFO:
+      case NODE_ERRINFO:
 	return "NODE_ERRINFO";
-    case NODE_DEFINED:
+      case NODE_DEFINED:
 	return "NODE_DEFINED";
-    case NODE_POSTEXE:
+      case NODE_POSTEXE:
 	return "NODE_POSTEXE";
-    case NODE_ALLOCA:
+      case NODE_ALLOCA:
 	return "NODE_ALLOCA";
-    case NODE_BMETHOD:
+      case NODE_BMETHOD:
 	return "NODE_BMETHOD";
-    case NODE_MEMO:
+      case NODE_MEMO:
 	return "NODE_MEMO";
-    case NODE_IFUNC:
+      case NODE_IFUNC:
 	return "NODE_IFUNC";
-    case NODE_DSYM:
+      case NODE_DSYM:
 	return "NODE_DSYM";
-    case NODE_ATTRASGN:
+      case NODE_ATTRASGN:
 	return "NODE_ATTRASGN";
-    case NODE_PRELUDE:
+      case NODE_PRELUDE:
 	return "NODE_PRELUDE";
-    case NODE_LAMBDA:
+      case NODE_LAMBDA:
 	return "NODE_LAMBDA";
-    case NODE_OPTBLOCK:
+      case NODE_OPTBLOCK:
 	return "NODE_OPTBLOCK";
-    case NODE_LAST:
+      case NODE_LAST:
 	return "NODE_LAST";
-    default:
+      default:
 	rb_bug("unknown node (%d)", node);
 	return 0;
     }
@@ -1097,10 +1097,10 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     VALUE nbody;
     VALUE line = rb_ary_new();
     VALUE exception = rb_ary_new(); /* [[....]] */
-    
+
     static VALUE insn_syms[YARV_MAX_INSTRUCTION_SIZE];
     struct st_table *labels_table = st_init_numtable();
-    
+
     DECL_SYMBOL(toplevel);
     DECL_SYMBOL(method);
     DECL_SYMBOL(block);
@@ -1122,7 +1122,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	INIT_SYMBOL(ensure);
 	INIT_SYMBOL(eval);
     }
-    
+
     /* type */
     switch(iseq->type) {
       case ISEQ_TYPE_TOP:    type = sym_toplevel; break;
@@ -1139,7 +1139,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     for (i=0; i<iseq->local_table_size; i++) {
 	ID lid = iseq->local_table[i];
 	if (lid) {
-	    rb_ary_push(locals, ID2SYM(lid));
+	    if (rb_id2str(lid)) rb_ary_push(locals, ID2SYM(lid));
 	}
 	else {
 	    rb_ary_push(locals, ID2SYM(rb_intern("#arg_rest")));
@@ -1180,18 +1180,18 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     /* body */
     for (seq = iseq->iseq; seq < iseq->iseq + iseq->size; ) {
-	VALUE ary = rb_ary_new();
 	VALUE insn = *seq++;
 	int j, len = insn_len(insn);
 	VALUE *nseq = seq + len - 1;
-	
+	VALUE ary = rb_ary_new2(len);
+
 	rb_ary_push(ary, insn_syms[insn]);
 	for (j=0; j<len-1; j++, seq++) {
 	    switch (insn_op_type(insn, j)) {
 	      case TS_OFFSET: {
-		  unsigned int idx = nseq - iseq->iseq + *seq;
-		  rb_ary_push(ary, register_label(labels_table, idx));
-		  break;
+		unsigned int idx = nseq - iseq->iseq + *seq;
+		rb_ary_push(ary, register_label(labels_table, idx));
+		break;
 	      }
 	      case TS_LINDEX:
 	      case TS_DINDEX:
@@ -1230,7 +1230,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		    VALUE hash = *seq;
 		    VALUE val = rb_ary_new();
 		    int i;
-		    
+
 		    rb_hash_foreach(hash, cdhash_each, val);
 
 		    for (i=0; i<RARRAY_LEN(val); i+=2) {
@@ -1290,7 +1290,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     st_free_table(labels_table);
 
     /* build array */
-    
+
     /* [magic, major_version, minor_version, format_type, misc,
      *  name, filename, line,
      *  type, args, vars, exception_table, body]
