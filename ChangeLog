@@ -1,3 +1,9 @@
+Sat May 12 18:26:36 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (tokens): forgot to add strip. [ruby-core:11120]
+
+	* test/net/http/test_http.rb: test Net::HTTP.post_form.
+
 Fri May 11 15:27:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_data_to_ary): internal IDs must not be exposed.

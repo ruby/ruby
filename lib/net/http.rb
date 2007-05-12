@@ -1503,7 +1503,7 @@ module Net   #:nodoc:
       return [] unless vals
       vals.map {|v| v.split(',') }.flatten\
           .reject {|str| str.strip.empty? }\
-          .map {|tok| tok.downcase }
+          .map {|tok| tok.strip.downcase }
     end
     private :tokens
 

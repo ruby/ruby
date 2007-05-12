@@ -139,6 +139,25 @@ module TestNetHTTP_version_1_1_methods
     assert_equal data, f.string
   end
 
+  def test_s_post_form
+    res = Net::HTTP.post_form(
+              URI.parse("http://#{config('host')}:#{config('port')}/"),
+              "a" => "x")
+    assert_equal ["a=x"], res.body.split(/[;&]/).sort
+
+    res = Net::HTTP.post_form(
+              URI.parse("http://#{config('host')}:#{config('port')}/"),
+              "a" => "x",
+              "b" => "y")
+    assert_equal ["a=x", "b=y"], res.body.split(/[;&]/).sort
+
+    res = Net::HTTP.post_form(
+              URI.parse("http://#{config('host')}:#{config('port')}/"),
+              "a" => ["x1", "x2"],
+              "b" => "y")
+    assert_equal ["a=x1", "a=x2", "b=y"], res.body.split(/[;&]/).sort
+  end
+
 end
 
 
@@ -312,6 +331,7 @@ module TestNetHTTPUtils
       res.body = $test_net_http_data
     end
 
+    # echo server
     def do_POST(req, res)
       res['Content-Type'] = req['Content-Type']
       res.body = req.body
