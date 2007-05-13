@@ -1,3 +1,8 @@
+Mon May 14 01:54:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_choice): should return nil when the array is
+	  empty.
+
 Sat May 12 18:26:36 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (tokens): forgot to add strip. [ruby-core:11120]

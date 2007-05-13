@@ -2952,9 +2952,11 @@ rb_ary_shuffle(VALUE ary)
 static VALUE
 rb_ary_choice(VALUE ary)
 {
-    long i = RARRAY_LEN(ary);
-    long j = genrand_real()*i;
+    long i, j;
 
+    i = RARRAY_LEN(ary);
+    if (i == 0) return Qnil;
+    j = genrand_real()*i;
     return RARRAY_PTR(ary)[j];
 }
 
