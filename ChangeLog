@@ -1,3 +1,12 @@
+Mon May 14 02:12:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_zip): a.zip(b,c) should return an array, not
+	  enumerator.
+
+	* array.c (rb_ary_zip): a.zip(b,c) should return array with size
+	  truncated to the size of its shortest argument array.
+	  [incompatible]
+
 Mon May 14 01:54:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_choice): should return nil when the array is

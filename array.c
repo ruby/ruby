@@ -1974,18 +1974,17 @@ rb_ary_delete_if(VALUE ary)
  *  Converts any arguments to arrays, then merges elements of
  *  <i>self</i> with corresponding elements from each argument. This
  *  generates a sequence of <code>self.size</code> <em>n</em>-element
- *  arrays, where <em>n</em> is one more that the count of arguments. If
- *  the size of any argument is less than <code>enumObj.size</code>,
- *  <code>nil</code> values are supplied. If a block given, it is
- *  invoked for each output array, otherwise an array of arrays is
- *  returned.
+ *  arrays, where <em>n</em> is one more that the count of arguments.
+ *  The size of returned array is truncated to the size of the
+ *  shortest argument enumerable.  If a block given, it is invoked
+ *  for each output array, otherwise an array of arrays is returned.
  *     
  *     a = [ 4, 5, 6 ]
  *     b = [ 7, 8, 9 ]
  *     
  *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
  *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1,2],[8])       #=> [[4,1,8], [5,2,nil], [6,nil,nil]]
+ *     a.zip([1,2],[8])       #=> [[4,1,8]]
  */
 
 static VALUE
@@ -1995,12 +1994,14 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
     long len;
     VALUE result;
 
-    RETURN_ENUMERATOR(ary, argc, argv);
+    len = RARRAY_LEN(ary);
     for (i=0; i<argc; i++) {
 	argv[i] = to_a(argv[i]);
+	if (len > RARRAY_LEN(argv[i]))
+	    len = RARRAY_LEN(argv[i]);
     }
     if (rb_block_given_p()) {
-	for (i=0; i<RARRAY_LEN(ary); i++) {
+	for (i=0; i<len; i++) {
 	    VALUE tmp = rb_ary_new2(argc+1);
 
 	    rb_ary_push(tmp, rb_ary_elt(ary, i));
@@ -2011,7 +2012,6 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 	}
 	return Qnil;
     }
-    len = RARRAY_LEN(ary);
     result = rb_ary_new2(len);
     for (i=0; i<len; i++) {
 	VALUE tmp = rb_ary_new2(argc+1);
