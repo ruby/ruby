@@ -256,10 +256,10 @@ wait_list_cleanup(List *list)
     return Qnil;
 }
 
-static void
+static VALUE
 wait_list(List *list)
 {
-    rb_ensure(wait_list_inner, (VALUE)list, wait_list_cleanup, (VALUE)list);
+    return rb_ensure(wait_list_inner, (VALUE)list, wait_list_cleanup, (VALUE)list);
 }
 
 static void
@@ -793,8 +793,8 @@ static void
 free_queue(Queue *queue)
 {
     assert_no_survivors(&queue->mutex.waiting, "queue", queue);
-    assert_no_survivors(&queue->space_available.waiting, "queue", queue);
-    assert_no_survivors(&queue->value_available.waiting, "queue", queue);
+    assert_no_survivors(&queue->space_available.waiting, "queue(push)", queue);
+    assert_no_survivors(&queue->value_available.waiting, "queue(pop)", queue);
     finalize_queue(queue);
     xfree(queue);
 }
