@@ -46,13 +46,9 @@ EOF
     errout.close
     erroutpath = errout.path
     system("#{q(ruby)} #{q(launcherpath)} #{q(erroutpath)}")
-#    expected = <<EOW
-#endblockwarn.rb:2: warning: END in method; use at_exit
-#(eval):2: warning: END in method; use at_exit
-#EOW
     expected = <<EOW
-warning: END in method; use at_exit
-warning: END in method; use at_exit
+endblockwarn.rb:2: warning: END in method; use at_exit
+(eval):2: warning: END in method; use at_exit
 EOW
     assert_equal(expected, File.read(erroutpath))
     # expecting Tempfile to unlink launcher and errout file.
