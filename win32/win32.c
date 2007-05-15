@@ -1754,6 +1754,7 @@ init_stdhandle(void)
 	stderr->_file = open_null(2);
     }
     if (nullfd >= 0 && !keep) close(nullfd);
+    setvbuf(stderr, NULL, _IONBF, 0);
 }
 #else
 

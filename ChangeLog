@@ -1,3 +1,8 @@
+Tue May 15 15:01:38 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_stdhandle): stderr should be without buffering,
+	  but mswin32 use buffering when stderr is not connected to tty.
+
 Mon May 14 02:12:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_zip): a.zip(b,c) should return an array, not
