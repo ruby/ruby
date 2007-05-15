@@ -1,3 +1,8 @@
+Tue May 15 14:54:07 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_stdhandle): stderr should be without buffering,
+	  but mswin32 use buffering when stderr is not connected to tty.
+
 Mon May 14 13:28:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (wait_list): supress a warning.
