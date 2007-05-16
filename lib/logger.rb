@@ -3,6 +3,8 @@
 
 require 'monitor'
 
+# = logger.rb
+#
 # Simple logging utility.
 #
 # Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
@@ -11,6 +13,11 @@ require 'monitor'
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
 # Revision:: $Id$
+#
+# See Logger for documentation.
+#
+
+
 #
 # == Description
 #
@@ -149,8 +156,8 @@ require 'monitor'
 #
 # == Format
 #
-# Log messages are rendered in the output stream in a certain format.  The
-# default format and a sample are shown below:
+# Log messages are rendered in the output stream in a certain format by
+# default.  The default format and a sample are shown below:
 #
 # Log format:
 #   SeverityID, [Date Time mSec #pid] SeverityLabel -- ProgName: message
@@ -163,8 +170,12 @@ require 'monitor'
 #   logger.datetime_format = "%Y-%m-%d %H:%M:%S"
 #         # e.g. "2004-01-03 00:54:26"
 #
-# There is currently no supported way to change the overall format, but you may
-# have some luck hacking the Format constant.
+# You may change the overall format with Logger#formatter= method.
+#
+#   logger.formatter = proc { |severity, datetime, progname, msg|
+#     "#{datetime}: #{msg}\n"
+#   }
+#         # e.g. "Thu Sep 22 08:51:08 GMT+9:00 2005: hello world"
 #
 
 
@@ -625,8 +636,8 @@ private
   class Application
     include Logger::Severity
 
+    # Name of the application given at initialize.
     attr_reader :appname
-    attr_reader :logdev
 
     #
     # == Synopsis
@@ -665,9 +676,21 @@ private
       status
     end
 
+    # Logger for this application.  See the class Logger for an explanation.
+    def logger
+      @log
+    end
+
     #
-    # Sets the log device for this application.  See the class Logger for an
-    # explanation of the arguments.
+    # Sets the logger for this application.  See the class Logger for an explanation.
+    #
+    def logger=(logger)
+      @log = logger
+    end
+
+    #
+    # Sets the log device for this application.  See <tt>Logger.new</tt> for an explanation
+    # of the arguments.
     #
     def set_log(logdev, shift_age = 0, shift_size = 1024000)
       @log = Logger.new(logdev, shift_age, shift_size)

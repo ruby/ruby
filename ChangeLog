@@ -1,3 +1,9 @@
+Wed May 16 21:48:44 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/logger.rb (Logger::Application): remove meaningless logdev
+	  attribute and added logger attribute instead.  [ruby-core:11143]
+	  also added Logger#formatter rdoc comment.
+
 Tue May 15 16:40:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb (test_endblockwarn): now parser
