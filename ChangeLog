@@ -1,3 +1,10 @@
+Fri May 18 03:02:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/mkexports.rb: preserve prefixed underscores for WINAPI
+	  symbols.
+
+	* wince/mkconfig_wce.rb, wince/mkexports.rb: obsolete.
+
 Thu May 17 17:03:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-label-indent): for yacc rules.
