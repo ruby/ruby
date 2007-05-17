@@ -1,3 +1,7 @@
+Thu May 17 12:56:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* debug.c (ruby_debug_node): fix to show node line.
+
 Wed May 16 21:48:44 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb (Logger::Application): remove meaningless logdev

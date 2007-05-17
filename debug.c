@@ -58,8 +58,8 @@ NODE *
 ruby_debug_node(int level, int debug_level, char *header, NODE *node)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s\n", header, ruby_node_name(nd_type(node)));
-	fflush(stderr);
+	fprintf(stderr, "DBG> %s: %s (%d)\n", header,
+		ruby_node_name(nd_type(node)), nd_line(node));
     }
     return node;
 }
