@@ -4,18 +4,25 @@
 (defun ruby-style-case-indent (x)
   (save-excursion
     (goto-char (cdr x))
-    (if (looking-at "\\<case\\|default\\>")
-	(- c-basic-offset
-	   (% (current-column) c-basic-offset)))))
+    (if (looking-at "\\<case\\|default\\>") '*)))
+
+(defun ruby-style-label-indent (x)
+  (save-excursion
+    (goto-char (cdr x))
+    (backward-up-list)
+    (backward-sexp 2)
+    (if (looking-at "\\<switch\\>") '/)))
 
 (require 'cc-styles)
 (c-add-style
  "ruby"
  '("bsd"
    (c-basic-offset . 4)
+   (tab-width . 8)
+   (indent-tabs-mode . t)
    (c-offsets-alist
     (case-label . *)
-    (label . *)
+    (label . (ruby-style-label-indent *))
     (statement-case-intro . *)
     (statement-case-open . *)
     (statement-block-intro . (ruby-style-case-indent +))
