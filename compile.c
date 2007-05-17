@@ -789,8 +789,20 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	int d = iseq->local_size - iseq->local_table_size;
 
 	if (nd_type(node_args) != NODE_ARGS) {
-	    rb_bug("set_arguments: NODE_ARGS is expected, but %s", ruby_node_name(nd_type(node_args)));
+	    rb_bug("set_arguments: NODE_ARGS is expected, but %s",
+		   ruby_node_name(nd_type(node_args)));
 	}
+
+	/*
+         * new argument infromation:
+         *   NODE_ARGS     [m: int, o: NODE_OPT_ARG, ->]
+         *   NODE_ARGS_AUX [r: ID, b: ID, ->]
+         *   NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
+         *  optarg information:
+         *   NODE_OPT_ARGS [idx, expr, ->]
+	 *  init arg:
+	 *   NODE_AND(m_init, p_init)
+	 */
 
 	iseq->argc = node_args->nd_frml;
 	debugs("  - argc: %d\n", iseq->argc);
@@ -805,10 +817,6 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		post_len = node_aux->nd_plen;
 		node_init = node_aux->nd_next;
 	    }
-	}
-
-	if (node_init) {
-	    COMPILE_POPED(optargs, "init arguments", node_init);
 	}
 
 	if (node_opt) {
@@ -841,6 +849,15 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 	else {
 	    iseq->arg_opts = 0;
+	}
+
+	if (node_init) {
+	    if (node_init->nd_1st) { /* m_init */
+		COMPILE_POPED(optargs, "init arguments (m)", node_init->nd_1st);
+	    }
+	    if (node_init->nd_2nd) { /* p_init */
+		COMPILE_POPED(optargs, "init arguments (p)", node_init->nd_2nd);
+	    }
 	}
 
 	if (rest_id) {
@@ -920,7 +937,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		    ADD_SEND (optargs, nd_line(node_args), ID2SYM(rb_intern("pop")),
 			      INT2FIX(0));
 		    SET_LOCAL(iseq->arg_rest + i + 1);
-	}
+		}
 
 		iseq->arg_post_len = post_len;
 	    }

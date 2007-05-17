@@ -2689,16 +2689,11 @@ primary		: literal
 		    /*%%%*/
 			ID id = internal_id();
 			ID *tbl = ALLOC_N(ID, 2);
-			NODE *args = NEW_ARGS(1 /* m */, 0 /* o */);
-			NODE *init;
+			NODE *args =new_args(NEW_NODE(NODE_ARGS_AUX, 0, 1 /* nd_plen */,
+						      node_assign($2, NEW_DVAR(id))),
+					     0, 0, 0, 0);
 			NODE *scope = NEW_NODE(NODE_SCOPE, tbl, $8, args);
 			tbl[0] = 1; tbl[1] = id;
-
-			init = node_assign($2, NEW_DVAR(id));
-			args->nd_next = NEW_ARGS_AUX(0, 0);
-			args->nd_next->nd_next = NEW_ARGS_AUX(0, 0);
-			args->nd_next->nd_next->nd_next = init;
-
 			$$ = NEW_FOR(0, $5, scope);
 			fixpos($$, $2);
 		    /*%
@@ -4114,7 +4109,12 @@ f_arg_item	: f_norm_arg
 		    /*%%%*/
 			ID tid = internal_id();
 			arg_var(tid);
-			$2->nd_value = NEW_DVAR(tid);
+			if (dyna_in_block()) {
+			    $2->nd_value = NEW_DVAR(tid);
+			}
+			else {
+			    $2->nd_value = NEW_LVAR(tid);
+			}
 			$$ = NEW_ARGS_AUX(tid, 1);
 			$$->nd_next = $2;
 		    /*%
@@ -4128,11 +4128,12 @@ f_arg		: f_arg_item
 		    /*%c
 		    {
 			$$ = rb_ary_new3(1, $1);
-		    }
+n		    }
 		    c%*/
 		| f_arg ',' f_arg_item
 		    {
 		    /*%%%*/
+			$$ = $1;
 			$$->nd_plen++;
 			$$->nd_next = block_append($$->nd_next, $3->nd_next);
 			rb_gc_force_recycle((VALUE)$3);
@@ -7928,6 +7929,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b
     node = NEW_ARGS(m ? m->nd_plen : 0, o);
     i1 = m ? m->nd_next : 0;
     node->nd_next = NEW_ARGS_AUX(r, b);
+
     if (p) {
 	i2 = p->nd_next;
 	node->nd_next->nd_next = NEW_ARGS_AUX(p->nd_pid, p->nd_plen);

@@ -1,3 +1,8 @@
+Thu May 17 13:23:38 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y, compile.c (set_arguments): fix to support in-paren
+	  parameter (ex: def foo((a, b))).
+
 Thu May 17 13:01:52 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (ruby_iseq_disasm): fix to show post arg info.
