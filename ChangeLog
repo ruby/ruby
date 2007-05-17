@@ -1,3 +1,7 @@
+Thu May 17 13:30:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_arg): remove typo from ripper description.
+
 Thu May 17 13:23:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y, compile.c (set_arguments): fix to support in-paren

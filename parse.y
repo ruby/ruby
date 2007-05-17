@@ -4128,7 +4128,7 @@ f_arg		: f_arg_item
 		    /*%c
 		    {
 			$$ = rb_ary_new3(1, $1);
-n		    }
+		    }
 		    c%*/
 		| f_arg ',' f_arg_item
 		    {
