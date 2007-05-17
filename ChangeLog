@@ -1,3 +1,7 @@
+Thu May 17 13:01:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (ruby_iseq_disasm): fix to show post arg info.
+
 Thu May 17 12:56:52 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* debug.c (ruby_debug_node): fix to show node line.

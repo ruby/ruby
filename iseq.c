@@ -752,9 +752,10 @@ ruby_iseq_disasm(VALUE self)
     if (tbl) {
 	snprintf(buff, sizeof(buff),
 		 "local table (size: %d, argc: %d "
-		 "[opts: %d, rest: %d, block: %d] %s)\n",
+		 "[opts: %d, rest: %d, post: %d, block: %d] %s)\n",
 		 iseqdat->local_size, iseqdat->argc,
-		 iseqdat->arg_opts, iseqdat->arg_rest, iseqdat->arg_block,
+		 iseqdat->arg_opts, iseqdat->arg_rest,
+		 iseqdat->arg_post_len, iseqdat->arg_block,
 		 iseqdat->arg_simple ? "s" : "c");
 	rb_str_cat2(str, buff);
 
