@@ -4346,9 +4346,9 @@ Init_File(void)
     define_filetest_function("exist?", rb_file_exist_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
-    define_filetest_function("world_readable?", rb_file_world_writable_p, 1);
+    define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
     define_filetest_function("writable?", rb_file_writable_p, 1);
-    define_filetest_function("writable_real?", rb_file_world_writable_p, 1);
+    define_filetest_function("writable_real?", rb_file_writable_real_p, 1);
     define_filetest_function("world_writable?", rb_file_world_writable_p, 1);
     define_filetest_function("executable?", rb_file_executable_p, 1);
     define_filetest_function("executable_real?", rb_file_executable_real_p, 1);

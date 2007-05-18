@@ -1,3 +1,7 @@
+Sat May 19 01:05:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (Init_File): method definition mismatch.
+
 Fri May 18 16:44:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (Init_File): add to_path method to File objects.
