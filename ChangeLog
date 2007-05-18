@@ -1,8 +1,12 @@
+Fri May 18 23:07:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_first): call rb_ary_subseq() instead of pushing
+	  values by itself.  [ruby-talk:252062]
+
 Fri May 18 17:10:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (move_to_next_entry): loc also must move forward.
 	  [ruby-talk:251987]
-
 
 Fri May 18 03:02:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

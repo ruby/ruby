@@ -748,17 +748,10 @@ rb_ary_first(argc, argv, ary)
 	return RARRAY(ary)->ptr[0];
     }
     else {
-	VALUE nv, result;
-	long n, i;
+	VALUE n;
 
-	rb_scan_args(argc, argv, "01", &nv);
-	n = NUM2LONG(nv);
-	if (n > RARRAY(ary)->len) n = RARRAY(ary)->len;
-	result = rb_ary_new2(n);
-	for (i=0; i<n; i++) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
-	}
-	return result;
+	rb_scan_args(argc, argv, "01", &n);
+	return rb_ary_subseq(ary, 0, NUM2LONG(n));
     }
 }
 
