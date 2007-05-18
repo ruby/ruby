@@ -748,10 +748,15 @@ rb_ary_first(argc, argv, ary)
 	return RARRAY(ary)->ptr[0];
     }
     else {
-	VALUE n;
+	VALUE nv;
+	long n;
 
-	rb_scan_args(argc, argv, "01", &n);
-	return rb_ary_subseq(ary, 0, NUM2LONG(n));
+	rb_scan_args(argc, argv, "01", &nv);
+	n = NUM2LONG(nv);
+	if (n < 0) {
+	    rb_raise(rb_eArgError, "negative array size");
+	}
+	return rb_ary_subseq(ary, 0, n);
     }
 }
 
