@@ -1,3 +1,9 @@
+Fri May 18 17:10:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (move_to_next_entry): loc also must move forward.
+	  [ruby-talk:251987]
+
+
 Fri May 18 03:02:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb: preserve prefixed underscores for WINAPI
