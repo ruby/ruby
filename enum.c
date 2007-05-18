@@ -347,8 +347,27 @@ inject_i(VALUE i, VALUE memo)
     return Qnil;
 }
 
+static VALUE
+inject_op_i(VALUE i, NODE *node)
+{
+    VALUE memo = node->nd_rval;
+
+    if (RARRAY_PTR(memo)[0] == Qundef) {
+        RARRAY_PTR(memo)[0] = i;
+    }
+    else {
+	VALUE v = RARRAY_PTR(memo)[0];
+	RARRAY_PTR(memo)[1] = i;
+        RARRAY_PTR(memo)[0] = rb_funcall(v, node->nd_vid, 1, i);
+    }
+    return Qnil;
+}
+
 /*
+ *  Document-method: inject
  *  call-seq:
+ *     enum.inject(sym)          => obj
+ *     enum.inject(sym, initial) => obj
  *     enum.inject(initial) {| memo, obj | block }  => obj
  *     enum.inject          {| memo, obj | block }  => obj
  *  
@@ -358,6 +377,7 @@ inject_i(VALUE i, VALUE memo)
  *  first form lets you supply an initial value for <i>memo</i>. The
  *  second form uses the first element of the collection as a the
  *  initial value (and skips that element while iterating).
+ *  See also <code>Enumerable#reduce</code>.
  *     
  *     # Sum some numbers
  *     (5..10).inject {|sum, n| sum + n }              #=> 45
@@ -378,18 +398,64 @@ inject_i(VALUE i, VALUE memo)
  *     
  */
 
+/*
+ *  Document-method: reduce
+ *  call-seq:
+ *     enum.reduce(sym)          => obj
+ *     enum.reduce(sym, initial) => obj
+ *     enum.reduce          {| memo, obj | block }  => obj
+ *     enum.reduce(initial) {| memo, obj | block }  => obj
+ *  
+ *  Combines all elements of <i>enum</i> by applying a binary
+ *  operation, specified by the block or metho-name symbol, for
+ *  example, ary.reduce(:+) adds up all the elements.  If no block is
+ *  specified, the first argument is a method (or operator) name that
+ *  takes two arguments.  The second optional argument is the initial
+ *  value.  If a block is specified, the first optional value is the
+ *  initial value.
+ *     
+ *     # Sum some numbers
+ *     (5..10).reduce(:+)                            #=> 45
+ *     # Same using a block
+ *     (5..10).reduce {|sum, n| sum + n }            #=> 45
+ *     # Multiply some numbers
+ *     (5..10).reduce(:*, 1)                         #=> 151200
+ *     # Same using a block
+ *     (5..10).reduce(1) {|product, n| product * n } #=> 151200
+ *     
+ */
+
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE memo, tmp;
+    VALUE memo, a1, a2, tmp;
+    NODE *node = 0;
 
-    if (rb_scan_args(argc, argv, "01", &tmp) == 0) {
+    switch (rb_scan_args(argc, argv, "02", &a1, &a2)) {
+      case 0:
 	memo = rb_ary_new3(2, Qundef, Qnil);
+	rb_block_call(obj, id_each, 0, 0, inject_i, memo);
+	break;
+      case 1:
+	if (rb_block_given_p()) {
+	    memo = rb_ary_new3(2, a1, Qnil);
+	    rb_block_call(obj, id_each, 0, 0, inject_i, memo);
+	}
+	else {
+	    memo = rb_ary_new3(2, Qundef, Qnil);
+	    node = rb_node_newnode(NODE_MEMO, rb_to_id(a1), memo, 0);
+	    rb_block_call(obj, id_each, 0, 0, inject_op_i, (VALUE)node);
+	}
+	break;
+      case 2:
+	if (rb_block_given_p()) {
+	    rb_warning("given block not used");
+	}
+	memo = rb_ary_new3(2, a2, Qnil);
+	node = rb_node_newnode(NODE_MEMO, rb_to_id(a1), memo, 0);
+	rb_block_call(obj, id_each, 0, 0, inject_op_i, (VALUE)node);
+	break;
     }
-    else {
-	memo = rb_ary_new3(2, tmp, Qnil);
-    }
-    rb_block_call(obj, id_each, 0, 0, inject_i, (VALUE)memo);
     tmp = RARRAY_PTR(memo)[0];
     if (tmp == Qundef) return Qnil;
     return tmp;
@@ -1366,6 +1432,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
+    rb_define_method(rb_mEnumerable,"reduce", enum_inject, -1);
     rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable,"group_by", enum_group_by, 0);
     rb_define_method(rb_mEnumerable,"first", enum_first, -1);

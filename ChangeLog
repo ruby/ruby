@@ -1,3 +1,10 @@
+Sat May 19 01:07:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_inject): it is now can work without block.  you
+	  have to specify two argument method name as the first argument.
+
+	* enum.c (Init_Enumerable): reduce is new alias to inject.
+
 Sat May 19 01:05:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (Init_File): method definition mismatch.
