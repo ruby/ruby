@@ -259,6 +259,18 @@ translate_char(char *p, int from, int to)
 }
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+static HMODULE libruby;
+
+BOOL WINAPI
+DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
+{
+    if (reason == DLL_PROCESS_ATTACH)
+	libruby = dll;
+    return TRUE;
+}
+#endif
+
 void
 ruby_init_loadpath(void)
 {
@@ -266,16 +278,8 @@ ruby_init_loadpath(void)
     char libpath[MAXPATHLEN + 1];
     char *p;
     int rest;
-#if defined _WIN32 || defined __CYGWIN__
-    HMODULE libruby = NULL;
-    MEMORY_BASIC_INFORMATION m;
 
-#ifndef _WIN32_WCE
-    memset(&m, 0, sizeof(m));
-    if (VirtualQuery(ruby_init_loadpath, &m, sizeof(m))
-	&& m.State == MEM_COMMIT)
-	libruby = (HMODULE) m.AllocationBase;
-#endif
+#if defined _WIN32 || defined __CYGWIN__
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;

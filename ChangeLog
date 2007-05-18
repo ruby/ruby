@@ -1,3 +1,9 @@
+Fri May 18 11:12:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (DllMain, ruby_init_loadpath): use DLL instance handle given
+	  to DllMain instead of VirtualQuery so that loadpath becomes relative
+	  from the DLL on WinCE too.
+
 Thu May 17 17:03:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-label-indent): for yacc rules.
