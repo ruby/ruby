@@ -4435,6 +4435,7 @@ Init_File(void)
     rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
+    rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);
     rb_define_global_function("test", rb_f_test, -1);
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);

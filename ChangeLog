@@ -1,3 +1,7 @@
+Fri May 18 16:44:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (Init_File): add to_path method to File objects.
+
 Fri May 18 11:12:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (DllMain, ruby_init_loadpath): use DLL instance handle given
