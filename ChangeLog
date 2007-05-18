@@ -1,3 +1,13 @@
+Sat May 19 03:08:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_inject): minor improvement.  [ruby-dev:30792]
+
+	* enum.c (one_i): no needs to iterate once the result became false.
+
+	* enum.c (enum_one): fix for an example.
+
+	* enum.c (one_iter_i, none_iter_i): DRY.;
+
 Sat May 19 01:07:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_inject): it is now can work without block.  you

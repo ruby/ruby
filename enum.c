@@ -335,30 +335,28 @@ enum_to_a(VALUE obj)
 }
 
 static VALUE
-inject_i(VALUE i, VALUE memo)
+inject_i(VALUE i, VALUE p)
 {
-    if (RARRAY_PTR(memo)[0] == Qundef) {
-        RARRAY_PTR(memo)[0] = i;
+    VALUE *memo = (VALUE *)p;
+    if (memo[0] == Qundef) {
+	memo[0] = i;
     }
     else {
-	RARRAY_PTR(memo)[1] = i;
-        RARRAY_PTR(memo)[0] = rb_yield(memo);
+	memo[0] = rb_yield_values(2, memo[0], i);
     }
     return Qnil;
 }
 
 static VALUE
-inject_op_i(VALUE i, NODE *node)
+inject_op_i(VALUE i, VALUE p)
 {
-    VALUE memo = node->nd_rval;
+    VALUE *memo = (VALUE *)p;
 
-    if (RARRAY_PTR(memo)[0] == Qundef) {
-        RARRAY_PTR(memo)[0] = i;
+    if (memo[0] == Qundef) {
+	memo[0] = i;
     }
     else {
-	VALUE v = RARRAY_PTR(memo)[0];
-	RARRAY_PTR(memo)[1] = i;
-        RARRAY_PTR(memo)[0] = rb_funcall(v, node->nd_vid, 1, i);
+	memo[0] = rb_funcall(memo[0], (ID)memo[1], 1, i);
     }
     return Qnil;
 }
@@ -428,37 +426,32 @@ inject_op_i(VALUE i, NODE *node)
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE memo, a1, a2, tmp;
-    NODE *node = 0;
+    VALUE memo[2];
+    VALUE (*iter)(VALUE, VALUE) = inject_i;
 
-    switch (rb_scan_args(argc, argv, "02", &a1, &a2)) {
+    switch (rb_scan_args(argc, argv, "02", &memo[0], &memo[1])) {
       case 0:
-	memo = rb_ary_new3(2, Qundef, Qnil);
-	rb_block_call(obj, id_each, 0, 0, inject_i, memo);
+	memo[0] = Qundef;
 	break;
       case 1:
 	if (rb_block_given_p()) {
-	    memo = rb_ary_new3(2, a1, Qnil);
-	    rb_block_call(obj, id_each, 0, 0, inject_i, memo);
+	    break;
 	}
-	else {
-	    memo = rb_ary_new3(2, Qundef, Qnil);
-	    node = rb_node_newnode(NODE_MEMO, rb_to_id(a1), memo, 0);
-	    rb_block_call(obj, id_each, 0, 0, inject_op_i, (VALUE)node);
-	}
+	memo[1] = (VALUE)rb_to_id(memo[0]);
+	memo[0] = Qundef;
+	iter = inject_op_i;
 	break;
       case 2:
 	if (rb_block_given_p()) {
 	    rb_warning("given block not used");
 	}
-	memo = rb_ary_new3(2, a2, Qnil);
-	node = rb_node_newnode(NODE_MEMO, rb_to_id(a1), memo, 0);
-	rb_block_call(obj, id_each, 0, 0, inject_op_i, (VALUE)node);
+	memo[1] = (VALUE)rb_to_id(memo[1]);
+	iter = inject_op_i;
 	break;
     }
-    tmp = RARRAY_PTR(memo)[0];
-    if (tmp == Qundef) return Qnil;
-    return tmp;
+    rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+    if (memo[0] == Qundef) return Qnil;
+    return memo[0];
 }
 
 static VALUE
@@ -830,20 +823,6 @@ enum_any(VALUE obj)
 }
 
 static VALUE
-one_iter_i(VALUE i, VALUE *memo)
-{
-    if (RTEST(rb_yield(i))) {
-	if (*memo == Qundef) {
-	    *memo = Qtrue;
-	}
-	else if (*memo == Qtrue) {
-	    *memo = Qfalse;
-	}
-    }
-    return Qnil;
-}
-
-static VALUE
 one_i(VALUE i, VALUE *memo)
 {
     if (RTEST(i)) {
@@ -852,9 +831,16 @@ one_i(VALUE i, VALUE *memo)
 	}
 	else if (*memo == Qtrue) {
 	    *memo = Qfalse;
+	    rb_iter_break();
 	}
     }
     return Qnil;
+}
+
+static VALUE
+one_iter_i(VALUE i, VALUE *memo)
+{
+    return one_i(rb_yield(i), memo);
 }
 
 /*
@@ -869,7 +855,8 @@ one_i(VALUE i, VALUE *memo)
  *     
  *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
  *     %w{ant bear cat}.one? {|word| word.length >= 4}   #=> false
- *     [ nil, true, 99 ].one?                            #=> true
+ *     [ nil, true, 99 ].one?                            #=> false
+ *     [ nil, true, false ].one?                         #=> true
  *     
  */
 
@@ -884,16 +871,6 @@ enum_one(VALUE obj)
 }
 
 static VALUE
-none_iter_i(VALUE i, VALUE *memo)
-{
-    if (RTEST(rb_yield(i))) {
-	*memo = Qfalse;
-	rb_iter_break();
-    }
-    return Qnil;
-}
-
-static VALUE
 none_i(VALUE i, VALUE *memo)
 {
     if (RTEST(i)) {
@@ -901,6 +878,12 @@ none_i(VALUE i, VALUE *memo)
 	rb_iter_break();
     }
     return Qnil;
+}
+
+static VALUE
+none_iter_i(VALUE i, VALUE *memo)
+{
+    return none_i(rb_yield(i), memo);
 }
 
 /*
