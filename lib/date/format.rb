@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.34 2007-05-08 21:17:02+09 tadf Exp $
+# $Id: format.rb,v 2.35 2007-05-19 09:23:48+09 tadf Exp $
 
 require 'rational'
 
@@ -871,7 +871,7 @@ class Date
   end
 
   def self._parse_dot(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)[^-+\d]\s*('?-?\d+)|n, ' ') # '
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $1, $2, $3)
       true
     end
@@ -910,11 +910,12 @@ class Date
 		  (?:
 		    \s*
 		    (
-		      Z
+		      Z\b
 		    |
-		      [-+]\d{1,4}
+		      [-+]\d{1,4}\b
+		    |
+		      \[[-+]?\d[^\]]*\]
 		    )
-		    \b
 		  )?
 		/inx,
 		' ')
@@ -1017,6 +1018,14 @@ class Date
       end
       if $5
 	e.zone = $5
+	if e.zone[0,1] == '['
+	  o, n, = e.zone[1..-2].split(':')
+	  e.zone = n || o
+	  if /\A\d/ =~ o
+	    o = format('+%s', o)
+	  end
+	  e.offset = zone_to_diff(o)
+	end
       end
       true
     end
@@ -1034,7 +1043,7 @@ class Date
 
     e._comp = comp
 
-    str.gsub!(/[^-+',.\/:0-9@a-z\x80-\xff]+/in, ' ')
+    str.gsub!(/[^-+',.\/:0-9@a-z\[\]\x80-\xff]+/in, ' ')
 
     _parse_time(str, e) # || _parse_beat(str, e)
     _parse_day(str, e)
