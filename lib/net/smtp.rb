@@ -745,8 +745,9 @@ module Net
     def auth_cram_md5(user, secret)
       check_auth_args user, secret
       res = critical {
-        check_auth_continue get_response('AUTH CRAM-MD5')
-        crammed = cram_md5_response(secret, res.cram_md5_challenge)
+        res0 = get_response('AUTH CRAM-MD5')
+        check_auth_continue res0
+        crammed = cram_md5_response(secret, res0.cram_md5_challenge)
         get_response(base64_encode("#{user} #{crammed}"))
       }
       check_auth_response res
@@ -793,7 +794,7 @@ module Net
     def cram_secret(secret, mask)
       secret = Digest::MD5.digest(secret) if secret.size > CRAM_BUFSIZE
       buf = secret.ljust(CRAM_BUFSIZE, "\0")
-      0.upto(buf.size) do |i|
+      0.upto(buf.size - 1) do |i|
         buf[i] = (buf[i].ord ^ mask).chr
       end
       buf
@@ -981,7 +982,7 @@ module Net
       def capabilities
         return {} unless @string[3, 1] == '-'
         h = {}
-        @string.lines.to_a[1..-1].each do |line|
+        @string.lines.drop(1).each do |line|
           k, *v = line[4..-1].chomp.split(nil)
           h[k] = v
         end
