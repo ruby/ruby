@@ -196,11 +196,12 @@ cleanup_iseq_build(rb_iseq_t *iseq)
 static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_INLINE_CONST_CACHE, /* int inline_const_cache; */
     OPT_PEEPHOLE_OPTIMIZATION, /* int peephole_optimization; */
+    OPT_TAILCALL_OPTIMIZATION, /* int tailcall_optimization */
     OPT_SPECIALISED_INSTRUCTION, /* int specialized_instruction; */
     OPT_OPERANDS_UNIFICATION, /* int operands_unification; */
     OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
     OPT_STACK_CACHING, /* int stack_caching; */
-    OPT_TRACE_INSTRUCTION,
+    OPT_TRACE_INSTRUCTION, /* int trace_instruction */
 };
 static const rb_compile_option_t COMPILE_OPTION_FALSE;
 
@@ -217,13 +218,16 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	memset(option, 1, sizeof(rb_compile_option_t));
     }
     else if (CLASS_OF(opt) == rb_cHash) {
+	*option = COMPILE_OPTION_DEFAULT;
+
 #define SET_COMPILE_OPTION(o, h, mem) \
-  { VALUE flag = rb_hash_aref(h, ID2SYM(rb_intern(#mem))); dp(flag);\
+  { VALUE flag = rb_hash_aref(h, ID2SYM(rb_intern(#mem))); \
       if (flag == Qtrue)  { o->mem = 1; } \
-      if (flag == Qfalse) { o->mem = 0; } \
+      else if (flag == Qfalse)  { o->mem = 0; } \
   }
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
+	SET_COMPILE_OPTION(option, opt, tailcall_optimization);
 	SET_COMPILE_OPTION(option, opt, specialized_instruction);
 	SET_COMPILE_OPTION(option, opt, operands_unification);
 	SET_COMPILE_OPTION(option, opt, instructions_unification);
@@ -245,6 +249,7 @@ make_compile_option_value(rb_compile_option_t *option)
     {
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
+	SET_COMPILE_OPTION(option, opt, tailcall_optimization);
 	SET_COMPILE_OPTION(option, opt, specialized_instruction);
 	SET_COMPILE_OPTION(option, opt, operands_unification);
 	SET_COMPILE_OPTION(option, opt, instructions_unification);

@@ -198,33 +198,38 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
 	rb_exc_raise(sysstack_error);
     }
 
-    for (i = 0; i < clear_local_size; i++) {
-	*sp++ = Qnil;
-    }
+    if (flag & VM_CALL_TAILCALL_BIT) {
+	/* copy arguments */
+	VALUE *p_rsp, *p_sp;
+	reg_cfp = ++th->cfp;
+	p_rsp = th->cfp->sp;
 
-    if (0 && (flag & VM_CALL_TAILCALL_BIT)) {
-	th->cfp++;
-	push_frame(th, niseq, FRAME_MAGIC_METHOD,
-		   recv, (VALUE) blockptr,
-		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
-    }
-    else if (0 &&
-	     (flag & VM_CALL_TAILRECURSION_BIT) && niseq == GET_ISEQ()) {
-	/* do nothing */
-	GET_CFP()->self = recv;
-	SET_LFP(sp);
-	SET_DFP(sp);
-	*sp++ = (VALUE) blockptr;
-	reg_cfp->sp = sp;
-	reg_cfp->bp = sp;
-	SET_PC(niseq->iseq_encoded + opt_pc);
-    }
-    else {
+	for (i=0; i < (sp - rsp); i++) {
+	    p_rsp[i] = rsp[i];
+	}
+
+	sp -= rsp - p_rsp;
+
+	for (i = 0; i < clear_local_size; i++) {
+	    *sp++ = Qnil;
+	}
+
 	push_frame(th, niseq,
 		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
 		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
+    }
+    else {
+	for (i = 0; i < clear_local_size; i++) {
+	    *sp++ = Qnil;
+	}
+
+	push_frame(th, niseq,
+		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
+
 	reg_cfp->sp = rsp;
     }
+
     RESTORE_REGS();
 }
 

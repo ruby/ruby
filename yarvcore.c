@@ -31,6 +31,8 @@ ID idMOD;
 ID idLT;
 ID idLTLT;
 ID idLE;
+ID idGT;
+ID idGE;
 ID idEq;
 ID idEqq;
 ID idBackquote;
@@ -495,6 +497,8 @@ Init_VM(void)
     idLT = rb_intern("<");
     idLTLT = rb_intern("<<");
     idLE = rb_intern("<=");
+    idGT = rb_intern(">");
+    idGE = rb_intern(">=");
     idEq = rb_intern("==");
     idEqq = rb_intern("===");
     idBackquote = rb_intern("`");

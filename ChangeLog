@@ -1,3 +1,16 @@
+Mon May 21 13:40:00 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, vm_macro.def: support tail call optimization
+	  (on default, this feature is not enabled).
+
+	* iseq.c, compile.c, vm_opts.h: add "tailcall_optimization"
+	  option.
+
+	* sample/test.rb (test_ok): fix to adjust tailcall stack layout.
+
+	* insns.def, vm.c, compile.c, yarvcore.c, yarvcore.h:
+	  add opt_gt, opt_le instructions.
+
 Mon May 21 03:34:06 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: CRAM-MD5 authentication did not work.

@@ -1347,7 +1347,7 @@ get_prev_insn(INSN *iobj)
 }
 
 static int
-iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
+iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *iobj = (INSN *)list;
   again:
@@ -1367,6 +1367,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
 	niobj = (INSN *)get_next_insn(iobj);
 
 	if (diobj == niobj) {
+	    /*
+	     *   jump LABEL
+	     *  LABEL:
+	     * =>
+	     *   LABEL:
+	     */
 	    REMOVE_ELEM(&iobj->link);
 	}
 	else if (iobj != diobj && diobj->insn_id == BIN(jump)) {
@@ -1374,11 +1380,23 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
 	    goto again;
 	}
 	else if (diobj->insn_id == BIN(leave)) {
+	    /*
+	     *  jump LABEL
+	     *  ...
+	     * LABEL:
+	     *  leave
+	     * =>
+	     *  leave
+	     *  ...
+	     * LABEL:
+	     *  leave
+	     */
 	    INSN *eiobj = new_insn_core(iseq, iobj->line_no, BIN(leave),
 					diobj->operand_size,
 					diobj->operands);
 	    /* replace */
 	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
+	    iobj = eiobj;
 	}
 	/*
 	 * useless jump elimination (if/unless destination):
@@ -1405,6 +1423,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
 	    }
 	}
     }
+
     if (iobj->insn_id == BIN(branchif) ||
 	iobj->insn_id == BIN(branchunless)) {
 	/*
@@ -1421,14 +1440,20 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list)
 	}
     }
 
-    if (iobj->insn_id == BIN(leave)) {
+    if (do_tailcallopt && iobj->insn_id == BIN(leave)) {
+	/*
+	 *  send ...
+	 *  leave
+	 * =>
+	 *  send ..., ... | VM_CALL_TAILCALL_BIT, ...
+	 *  leave # unreachable
+	 */
 	INSN *piobj = (INSN *)get_prev_insn((INSN *)list);
-	if (piobj->insn_id == BIN(send)) {
-	    /* TODO: tail call optimization */
-	    if (piobj->operands[2] == 0) {
-		/* piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILCALL_BIT); */
-		/* piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILRECURSION_BIT); */
-	    }
+
+	if (piobj->insn_id == BIN(send) &&
+	    piobj->operands[2] == 0 /* block */
+	    ) {
+	    piobj->operands[3] = INT2FIX(FIX2INT(piobj->operands[3]) | VM_CALL_TAILCALL_BIT);
 	}
     }
     return COMPILE_OK;
@@ -1489,6 +1514,12 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		else if (mid == idLE) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_le));
 		}
+		else if (mid == idGT) {
+		    insn_set_specialized_instruction(iobj, BIN(opt_gt));
+		}
+		else if (mid == idGE) {
+		    insn_set_specialized_instruction(iobj, BIN(opt_ge));
+		}
 		else if (mid == idLTLT) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_ltlt));
 		}
@@ -1510,15 +1541,16 @@ static int
 iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *list;
-    const int do_peephole = iseq->compile_data->option->peephole_optimization;
+    const int do_peepholeopt = iseq->compile_data->option->peephole_optimization;
+    const int do_tailcallopt = iseq->compile_data->option->tailcall_optimization;
     const int do_si = iseq->compile_data->option->specialized_instruction;
     const int do_ou = iseq->compile_data->option->operands_unification;
     list = FIRST_ELEMENT(anchor);
     
     while (list) {
 	if (list->type == ISEQ_ELEMENT_INSN) {
-	    if (do_peephole) {
-		iseq_peephole_optimize(iseq, list);
+	    if (do_peepholeopt) {
+		iseq_peephole_optimize(iseq, list, do_tailcallopt);
 	    }
 	    if (do_si) {
 		iseq_specialized_instruction(iseq, (INSN *)list);

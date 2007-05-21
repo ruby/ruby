@@ -109,6 +109,8 @@ extern ID idMOD;
 extern ID idLT;
 extern ID idLTLT;
 extern ID idLE;
+extern ID idGT;
+extern ID idGE;
 extern ID idEq;
 extern ID idEqq;
 extern ID idBackquote;
@@ -182,6 +184,7 @@ struct iseq_compile_data_ensure_node_stack;
 typedef struct rb_compile_option_struct {
     int inline_const_cache;
     int peephole_optimization;
+    int tailcall_optimization;
     int specialized_instruction;
     int operands_unification;
     int instructions_unification;

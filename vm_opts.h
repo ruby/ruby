@@ -22,10 +22,11 @@
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1
-#define OPT_TRACE_INSTRUCTION        1
+#define OPT_TRACE_INSTRUCTION        0 /* default value */
 
 /* at compile */
 #define OPT_INLINE_CONST_CACHE       1
+#define OPT_TAILCALL_OPTIMIZATION    0 /* default value */
 #define OPT_PEEPHOLE_OPTIMIZATION    1
 #define OPT_SPECIALISED_INSTRUCTION  1
 

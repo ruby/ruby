@@ -1480,6 +1480,8 @@ yarv_init_redefined_flag(void)
 	idASET, BOP_ASET, rb_cArray, rb_cHash, 0,
 	idLength, BOP_LENGTH, rb_cArray, rb_cString, rb_cHash, 0,
 	idSucc, BOP_SUCC, rb_cFixnum, rb_cString, rb_cTime, 0,
+	idGT, BOP_GT, rb_cFixnum, 0,
+	idGE, BOP_GE, rb_cFixnum, 0,
 	0,
     };
     VALUE *ptr = register_info;

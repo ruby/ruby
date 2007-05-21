@@ -283,5 +283,7 @@ default:                        \
 #define BOP_ASET    0x400
 #define BOP_LENGTH  0x800
 #define BOP_SUCC   0x1000
+#define BOP_GT     0x2000
+#define BOP_GE     0x4000
 
 #endif /* _VM_H_INCLUDED_ */

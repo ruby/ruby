@@ -2139,6 +2139,76 @@ opt_le
 
 /**
   @c optimize
+  @e optimized X>Y.
+  @j 最適化された X>Y。
+ */
+DEFINE_INSN
+opt_gt
+()
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    if (FIXNUM_2_P(recv, obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP_GT)) {
+	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+
+	if (a > b) {
+	    val = Qtrue;
+	}
+	else {
+	    val = Qfalse;
+	}
+    }
+    else {
+	/* other */
+#ifdef YARV_AOT_COMPILED
+	val = rb_funcall(recv, idGT, 1, obj);
+#else
+	PUSH(recv);
+	PUSH(obj);
+	tmp_id = idGT;
+	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
+#endif
+    }
+}
+
+/**
+  @c optimize
+  @e optimized X>=Y.
+  @j 最適化された X>=Y。
+ */
+DEFINE_INSN
+opt_ge
+()
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    if (FIXNUM_2_P(recv, obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP_GE)) {
+	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+
+	if (a >= b) {
+	    val = Qtrue;
+	}
+	else {
+	    val = Qfalse;
+	}
+    }
+    else {
+	/* other */
+#ifdef YARV_AOT_COMPILED
+	val = rb_funcall(recv, idGE, 1, obj);
+#else
+	PUSH(recv);
+	PUSH(obj);
+	tmp_id = idGE;
+	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
+#endif
+    }
+}
+
+/**
+  @c optimize
   @e <<
   @j <<
  */
