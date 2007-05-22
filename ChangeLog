@@ -1,3 +1,8 @@
+Wed May 23 06:51:46 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#[]): get rid of exceptions being raised.
+	  [ruby-dev:30740], Thanks Kentaro KAWAMOTO.
+
 Wed May 23 06:14:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (move_to_next_entry): loc also must move forward.
