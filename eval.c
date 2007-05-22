@@ -11747,21 +11747,31 @@ catch_timer(sig)
     /* cause EINTR */
 }
 
+static int time_thread_alive_p = 0;
 static pthread_t time_thread;
 
 static void*
 thread_timer(dummy)
     void *dummy;
 {
+#ifdef _THREAD_SAFE
+#define test_cancel() pthread_testcancel()
+#else
+#define test_cancel() /* void */
+#endif
+
     for (;;) {
 #ifdef HAVE_NANOSLEEP
 	struct timespec req, rem;
 
+	test_cancel();
 	req.tv_sec = 0;
 	req.tv_nsec = 10000000;
 	nanosleep(&req, &rem);
 #else
 	struct timeval tv;
+
+	test_cancel();
 	tv.tv_sec = 0;
 	tv.tv_usec = 10000;
 	select(0, NULL, NULL, NULL, &tv);
@@ -11773,6 +11783,7 @@ thread_timer(dummy)
 	    }
 	}
     }
+#undef test_cancel
 }
 
 void
@@ -11783,6 +11794,20 @@ rb_thread_start_timer()
 void
 rb_thread_stop_timer()
 {
+}
+
+void
+rb_thread_cancel_timer()
+{
+#ifdef _THREAD_SAFE
+    if( time_thread_alive_p )
+    {
+	pthread_cancel( time_thread );
+	pthread_join( time_thread, NULL );
+	time_thread_alive_p = 0;
+    }
+    thread_init = 0;
+#endif
 }
 #elif defined(HAVE_SETITIMER)
 static void
@@ -11821,6 +11846,12 @@ rb_thread_stop_timer()
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
+
+void
+rb_thread_cancel_timer()
+{
+}
+
 #else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
 #endif
@@ -11853,6 +11884,7 @@ rb_thread_start_0(fn, arg, th)
 
 #ifdef _THREAD_SAFE
 	pthread_create(&time_thread, 0, thread_timer, 0);
+        time_thread_alive_p = 1;
 #else
 	rb_thread_start_timer();
 #endif

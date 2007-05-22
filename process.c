@@ -981,6 +981,7 @@ proc_exec_v(argv, prog)
     }
 #endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
+    rb_thread_cancel_timer();
     execv(prog, argv);
     after_exec();
     return -1;
