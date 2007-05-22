@@ -149,6 +149,11 @@ if test x"${build}" != x"${host}"; then
 fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
+if test "$GCC" = yes; then
+    linker_flag=-Wl,
+else
+    linker_flag=
+fi
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
@@ -1053,15 +1058,12 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
         aix*)           if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
-			    DLDFLAGS='-Wl,-G -eInit_$(TARGET)'
-			    LDFLAGS='-Wl,-brtl'
-			    XLDFLAGS='-Wl,-bE:ruby.imp'
 			else
 			    : ${LDSHARED='/usr/ccs/bin/ld'}
-			    DLDFLAGS='-G -eInit_$(TARGET)'
-			    LDFLAGS='-brtl'
-			    XLDFLAGS='-bE:ruby.imp'
-                        fi
+			fi
+			DLDFLAGS="${linker_flag}-G"' -eInit_$(TARGET)'
+			LDFLAGS="${LDFLAGS} ${linker_flag}-brtl"
+			XLDFLAGS="${linker_flag}-bE:ruby.imp"
                         : ${ARCHFILE="ruby.imp"}
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
@@ -1107,11 +1109,7 @@ if test "$with_dln_a_out" != yes; then
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
     LIBPATHFLAG=" -L'%1\$-s'"
-    if test "$GCC" = yes; then
-       RPATHFLAG=" -Wl,-R'%1\$-s'"
-    else
-       RPATHFLAG=" -R'%1\$-s'"
-    fi
+    RPATHFLAG=" ${linker_flag}-R'%1\$-s'"
   fi
 fi
 AC_SUBST(LINK_SO)
@@ -1361,12 +1359,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	;;
     aix*)
-	if test "$GCC" = yes; then
-	    LIBRUBY_DLDFLAGS='-Wl,-G -Wl,-bnoentry'
-	else
-	    LIBRUBY_DLDFLAGS='-G -bnoentry'
-	fi
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS $XLDFLAGS"
+	LIBRUBY_DLDFLAGS="${linker_flag}-G ${linker_flag}-bnoentry $XLDFLAGS"
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	;;
@@ -1384,21 +1377,17 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_SO_NAME).dylib'
 	;;
     interix*)
-	LIBRUBYARG_SHARED='-L${libdir} -L. -l$(RUBY_SO_NAME)'
+	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
 	;;
     *)
 	;;
   esac
 fi
 if test "$enable_rpath" = yes; then
-    if test "$GCC" = yes; then
-       LIBRUBYARG_SHARED='-Wl,-R -Wl,$(libdir) -L$(libdir) -L. '"$LIBRUBYARG_SHARED"
-    else
-       LIBRUBYARG_SHARED='-R $(libdir) -L$(libdir) -L. '"$LIBRUBYARG_SHARED"
-    fi
+    LIBRUBYARG_SHARED="${linker_flag}-R ${linker_flag}\$(libdir) -L. -L\$(libdir) $LIBRUBYARG_SHARED"
 fi
 
-XLDFLAGS="$XLDFLAGS -L."
+LDFLAGS="-L. $LDFLAGS"
 AC_SUBST(ARCHFILE)
 
 dnl build rdoc index if requested
