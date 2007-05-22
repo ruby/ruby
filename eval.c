@@ -11468,10 +11468,12 @@ rb_thread_sleep_forever()
 /*
  *  call-seq:
  *     thr.priority   => integer
- *  
- *  Returns the priority of <i>thr</i>. Default is zero; higher-priority threads
- *  will run before lower-priority threads.
- *     
+ *
+ *  Returns the priority of <i>thr</i>. Default is inherited from the
+ *  current thread which creating the new thread, or zero for the
+ *  initial main thread; higher-priority threads will run before
+ *  lower-priority threads.
+ *
  *     Thread.current.priority   #=> 0
  */
 
@@ -11486,10 +11488,10 @@ rb_thread_priority(thread)
 /*
  *  call-seq:
  *     thr.priority= integer   => thr
- *  
+ *
  *  Sets the priority of <i>thr</i> to <i>integer</i>. Higher-priority threads
  *  will run before lower-priority threads.
- *     
+ *
  *     count1 = count2 = 0
  *     a = Thread.new do
  *           loop { count1 += 1 }
