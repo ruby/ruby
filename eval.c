@@ -7017,7 +7017,8 @@ rb_provided(feature)
 	    return Qfalse;
 	}
 	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    return Qfalse;	/* may be overriden by .rb file */
+	    if (rb_feature_p(feature, ext, Qfalse)) return Qtrue;
+	    return Qfalse;
 	}
     }
     if (rb_feature_p(feature, feature + strlen(feature), Qtrue))

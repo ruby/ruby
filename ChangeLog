@@ -1,3 +1,8 @@
+Tue May 22 23:14:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_provided): check for extension library if SOEXT is
+	  explicitly given.  [ruby-dev:30657]
+
 Tue May 22 21:29:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big2str0): round up for the most significant digit.
