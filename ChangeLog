@@ -1,3 +1,7 @@
+Wed May 23 03:25:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): exponent is radix 10.  [ruby-talk:248272]
+
 Wed May 23 03:12:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDFLAGS): prepend -L. instead appending it to
