@@ -47,7 +47,9 @@ config["bindir"] = abs_archdir
 ENV["RUBY"] = File.expand_path(ruby)
 ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
-if !pure and e = ENV["RUBYLIB"]
+if pure
+  libs << File.expand_path("ext", srcdir) << "-"
+elsif e = ENV["RUBYLIB"]
   libs |= e.split(File::PATH_SEPARATOR)
 end
 ENV["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
@@ -61,15 +63,9 @@ if File.file?(libruby_so)
     ENV["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
   end
 end
-begin
-  open("puretest.rb", IO::EXCL|IO::CREAT|IO::WRONLY) do |f|
-    f.puts('$LOAD_PATH.replace(ENV["RUBYLIB"].split(File::PATH_SEPARATOR))')
-  end
-rescue Errno::EEXIST
-end
 
 cmd = [ruby]
-cmd << "-rpuretest.rb" if pure
+cmd << "-rpurelib.rb" if pure
 cmd.concat(ARGV)
 cmd.unshift(*debugger) if debugger
 exec(*cmd)
