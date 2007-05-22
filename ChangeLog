@@ -1,3 +1,8 @@
+Wed May 23 04:22:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (do_stat, do_lstat, do_opendir): should not warn ENOTDIR.
+	  [ruby-talk:248288]
+
 Wed May 23 03:50:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (libpathflag): not to append RPATHFLAG to current
