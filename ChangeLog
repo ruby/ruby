@@ -1,3 +1,9 @@
+Wed May 23 00:03:42 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recv, s_recvfrom): some systems (such as
+	  windows) doesn't set fromlen if the socket is connection-oriented.
+	  reported by Bram Whillock in [ruby-core:10512] [ruby-Bugs#9061]
+
 Sat Mar 24 23:40:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (struct rb_thread.locals): explicit as struct.
