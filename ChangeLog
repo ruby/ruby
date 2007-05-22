@@ -1,3 +1,9 @@
+Wed May 23 05:49:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, ext/purelib.rb, lib/mkmf.rb, runruby.rb: clear default
+	  load path to get rid of load pre-installed extensions/libraries.
+	  [ruby-core:11017]
+
 Tue May 22 16:37:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (set_arg0): support RSTRING_LEN on HP-UX.  a patch from

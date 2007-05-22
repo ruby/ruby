@@ -323,8 +323,11 @@ else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
 $ruby << " -I'$(topdir)' -I'$(hdrdir)/lib'"
-$ruby << " -I'#{$extout}'" if $extout
+$ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
+$ruby << " -I'$(hdrdir)/ext' -rpurelib.rb"
 $config_h = '$(topdir)/config.h'
+ENV["RUBYLIB"] = "-"
+ENV["RUBYOPT"] = "-rpurelib.rb"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 

@@ -1059,6 +1059,9 @@ topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
+  if $extmk
+    mk << "RUBYLIB = -\nRUBYOPT = -rpurelib.rb\n"
+  end
   if destdir = CONFIG["prefix"][$dest_prefix_pattern, 1]
     mk << "\nDESTDIR = #{destdir}\n"
   end
