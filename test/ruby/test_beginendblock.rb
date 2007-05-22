@@ -54,4 +54,34 @@ EOW
     assert_equal(expected, File.read(erroutpath))
     # expecting Tempfile to unlink launcher and errout file.
   end
+
+  def test_raise_in_at_exit
+    # [ruby-core:09675]
+    ruby = EnvUtil.rubybin
+    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
+		   "at_exit{raise %[SomethingBad]};" \
+		   "raise %[SomethingElse]'") {|f|
+      f.read
+    }
+    assert_match /SomethingBad/, out
+    assert_match /SomethingElse/, out
+  end
+
+  def test_should_propagate_exit_code
+    ruby = EnvUtil.rubybin
+    assert_equal false, system("#{q(ruby)} -e 'at_exit{exit 2}'")
+    assert_equal 2, $?.exitstatus
+    assert_nil $?.termsig
+  end
+
+  def test_should_propagate_signaled
+    ruby = EnvUtil.rubybin
+    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
+		   "at_exit{Process.kill(:INT, $$)}'"){|f|
+      f.read
+    }
+    assert_match /Interrupt$/, out
+    assert_nil $?.exitstatus
+    assert_equal Signal.list["INT"], $?.termsig
+  end
 end
