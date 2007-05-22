@@ -1,4 +1,8 @@
-Thu May 10 10:14:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 23 05:17:33 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_s_conv): rdoc fix.
+
+Wed May 23 05:10:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_priority): rdoc fix; the initial value is
 	  inherited from the creating thread.  [ruby-core:10607]
