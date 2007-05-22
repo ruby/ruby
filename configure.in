@@ -1639,8 +1639,10 @@ fi
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
+	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
 	sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
-} >> Makefile], [RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
+      } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
+[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
 AC_OUTPUT
