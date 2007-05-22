@@ -1,3 +1,9 @@
+Wed May 23 00:06:19 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recv, s_recvfrom): some systems (such as
+	  windows) doesn't set fromlen if the socket is connection-oriented.
+	  reported by Bram Whillock in [ruby-core:10512] [ruby-Bugs#9061]
+
 Tue Mar 20 15:37:24 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* distruby.rb: Add zip generation.
