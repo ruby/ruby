@@ -163,13 +163,18 @@ static void
 remove_one(List *list, VALUE value)
 {
     Entry **ref;
+    Entry *prev;
     Entry *entry;
 
-    for (ref = &list->entries, entry = list->entries;
+    for (ref = &list->entries, prev = NULL, entry = list->entries;
               entry != NULL;
-              ref = &entry->next, entry = entry->next) {
+              ref = &entry->next, prev = entry, entry = entry->next) {
         if (entry->value == value) {
             *ref = entry->next;
+            list->size--;
+            if (!entry->next) {
+                list->last_entry = prev;
+            }
             recycle_entries(list, entry, entry);
             break;
         }
