@@ -1778,6 +1778,7 @@ init_stdhandle(void)
     if (fileno(stderr) < 0) {
 	stderr->_file = 2;
     }
+    setvbuf(stderr, NULL, _IONBF, 0);
 }
 #else
 
