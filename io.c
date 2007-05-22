@@ -3026,11 +3026,29 @@ pipe_open(pstr, pname, mode)
 {
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
-
 #if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
     FILE *f;
+#else
+    int pid;
+#ifdef _WIN32
+    FILE *fpr, *fpw;
+#else
+    int pr[2], pw[2];
+#endif
+#endif
+    volatile int doexec;
 
     if (!pname) pname = StringValueCStr(pstr);
+    doexec = (strcmp("-", pname) != 0);
+
+#if defined(DJGPP) || defined(__human68k__) || defined(__VMS) || defined(_WIN32)
+    if (!doexec) {
+	rb_raise(rb_eNotImpError,
+		 "fork() function is unimplemented on this machine");
+    }
+#endif
+
+#if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
     f = popen(pname, mode);
     
     if (!f) rb_sys_fail(pname);
@@ -3052,10 +3070,6 @@ pipe_open(pstr, pname, mode)
     }
 #else
 #ifdef _WIN32
-    int pid;
-    FILE *fpr, *fpw;
-
-    if (!pname) pname = StringValueCStr(pstr);
 retry:
     pid = pipe_exec(pname, rb_io_mode_modenum(mode), &fpr, &fpw);
     if (pid == -1) {		/* exec failed */
@@ -3085,16 +3099,10 @@ retry:
 	return (VALUE)port;
     }
 #else
-    int pid, pr[2], pw[2];
-    volatile int doexec;
-
-    if (!pname) pname = StringValueCStr(pstr);
-
     if (((modef & FMODE_READABLE) && pipe(pr) == -1) ||
 	((modef & FMODE_WRITABLE) && pipe(pw) == -1))
 	rb_sys_fail(pname);
 
-    doexec = (strcmp("-", pname) != 0);
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
 	fflush(stdout);

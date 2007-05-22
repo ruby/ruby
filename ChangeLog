@@ -1,3 +1,11 @@
+Wed May 23 01:28:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_notimplement), io.c (pipe_open): removed definite
+	  articles and UNIX manual section from messages.  [ruby-dev:30690]
+
+	* io.c (pipe_open): raise NotImplementedError for command "-" on
+	  platforms where fork(2) is not available.  [ruby-dev:30681]
+
 Wed May 23 00:03:42 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (s_recv, s_recvfrom): some systems (such as

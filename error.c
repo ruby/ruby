@@ -1083,7 +1083,7 @@ void
 rb_notimplement()
 {
     rb_raise(rb_eNotImpError,
-	     "the %s() function is unimplemented on this machine",
+	     "%s() function is unimplemented on this machine",
 	     rb_id2name(ruby_frame->last_func));
 }
 
