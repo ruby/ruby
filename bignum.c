@@ -96,31 +96,45 @@ rb_big_2comp(x)			/* get 2's complement */
 }
 
 static VALUE
-bignorm(x)
+bigtrunc(x)
     VALUE x;
 {
-    if (FIXNUM_P(x)) {
-      return x;
-    }
-    else if (TYPE(x) == T_BIGNUM) {
-	long len = RBIGNUM(x)->len;
-	BDIGIT *ds = BDIGITS(x);
+    long len = RBIGNUM(x)->len;
+    BDIGIT *ds = BDIGITS(x);
 
-	while (len-- && !ds[len]) ;
-	RBIGNUM(x)->len = ++len;
+    while (len-- && !ds[len]);
+    RBIGNUM(x)->len = ++len;
+    return x;
+}
 
-	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
-	    long num = 0;
-	    while (len--) {
-		num = BIGUP(num) + ds[len];
+static VALUE
+bigfixize(VALUE x)
+{
+    long len = RBIGNUM(x)->len;
+    BDIGIT *ds = BDIGITS(x);
+
+    if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
+	long num = 0;
+	while (len--) {
+	    num = BIGUP(num) + ds[len];
+	}
+	if (num >= 0) {
+	    if (RBIGNUM(x)->sign) {
+		if (POSFIXABLE(num)) return LONG2FIX(num);
 	    }
-	    if (num >= 0) {
-		if (RBIGNUM(x)->sign) {
-		    if (POSFIXABLE(num)) return LONG2FIX(num);
-		}
-		else if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
+	    else {
+		if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
 	    }
 	}
+    }
+    return x;
+}
+
+static VALUE
+bignorm(VALUE x)
+{
+    if (!FIXNUM_P(x) && TYPE(x) == T_BIGNUM) {
+	x = bigfixize(bigtrunc(x));
     }
     return x;
 }
@@ -1641,10 +1655,10 @@ rb_big_pow(x, y)
 		while (yy % 2 == 0) {
 		    yy /= 2;
 		    x = rb_big_mul0(x, x);
-		    if (!BDIGITS(x)[RBIGNUM(x)->len-1]) RBIGNUM(x)->len--;
+		    bigtrunc(x);
 		}
 		z = rb_big_mul0(z, x);
-		if (!BDIGITS(z)[RBIGNUM(z)->len-1]) RBIGNUM(z)->len--;
+		bigtrunc(z);
 	    }
 	    return bignorm(z);
 	}
