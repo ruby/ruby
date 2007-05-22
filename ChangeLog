@@ -1,3 +1,7 @@
+Wed May 23 03:25:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): exponent is radix 10.  [ruby-talk:248272]
+
 Wed May 23 02:09:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): should not clear state on TAG_NEXT when
