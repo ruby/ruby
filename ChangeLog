@@ -1,3 +1,9 @@
+Wed May 23 05:49:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, ext/purelib.rb, lib/mkmf.rb, runruby.rb: clear default
+	  load path to get rid of load pre-installed extensions/libraries.
+	  [ruby-core:11017]
+
 Wed May 23 06:14:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (move_to_next_entry): loc also must move forward.
