@@ -291,7 +291,12 @@ end
 
 def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
   libpath.map{|x|
-    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x.quote
+    case x
+    when "$(topdir)", /\A\./
+      LIBPATHFLAG
+    else
+      LIBPATHFLAG+RPATHFLAG
+    end % x.quote
   }.join
 end
 
@@ -1425,6 +1430,7 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $DEFLIBPATH = $extmk ? ["$(topdir)"] : CROSS_COMPILING ? [] : ["$(libdir)"]
+  $DEFLIBPATH.unshift(".")
   $LIBPATH = []
   $INSTALLFILES = nil
 
@@ -1516,8 +1522,8 @@ LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
     "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
   else
-    "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$@ " \
-    "$(OBJS) $(LOCAL_LIBS) $(LIBS)"
+    "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
+    "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
   end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''

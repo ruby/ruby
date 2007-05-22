@@ -1,3 +1,13 @@
+Wed May 23 03:50:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (libpathflag): not to append RPATHFLAG to current
+	  directory.
+
+	* lib/mkmf.rb (init_mkmf): add current directory to default
+	  library path with highest priority.  [ruby-core:10960]
+
+	* lib/mkmf.rb (LINK_SO): LIBPATH to be placed before DLDFLAGS.
+
 Wed May 23 03:33:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/monitor.rb (ConditionVariable#wait, mon_enter, mon_exit_for_cond):
