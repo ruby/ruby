@@ -1,3 +1,8 @@
+Tue May 22 16:37:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (set_arg0): support RSTRING_LEN on HP-UX.  a patch from
+	  WATANABE Tetsuya <Tetsuya.WATANABE AT nifty.com>.  [ruby-dev:30806]
+
 Mon May 21 13:40:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, vm_macro.def: support tail call optimization

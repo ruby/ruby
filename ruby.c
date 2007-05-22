@@ -1092,18 +1092,18 @@ set_arg0(VALUE val, ID id)
     s = RSTRING_PTR(val);
     i = RSTRING_LEN(val);
 #if defined(PSTAT_SETCMD)
-    if (i >= PST_CLEN) {
-	union pstun j;
-	j.pst_command = s;
-	i = PST_CLEN;
-	RSTRING_LEN(val) = i;
-	*(s + i) = '\0';
-	pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
+    if (i > PST_CLEN) {
+	union pstun un;
+	char buf[PST_CLEN + 1];	/* PST_CLEN is 64 (HP-UX 11.23) */
+	strncpy(buf, s, PST_CLEN);
+	buf[PST_CLEN] = '\0';
+	un.pst_command = buf;
+	pstat(PSTAT_SETCMD, un, PST_CLEN, 0, 0);
     }
     else {
-	union pstun j;
-	j.pst_command = s;
-	pstat(PSTAT_SETCMD, j, i, 0, 0);
+	union pstun un;
+	un.pst_command = s;
+	pstat(PSTAT_SETCMD, un, i, 0, 0);
     }
     rb_progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
