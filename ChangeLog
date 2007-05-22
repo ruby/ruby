@@ -1,3 +1,8 @@
+Wed May 23 01:42:29 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnect): call shutdown for
+	  SSLSocket. Thanks, Technorama Ltd.
+
 Wed May 23 01:28:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_notimplement), io.c (pipe_open): removed definite
