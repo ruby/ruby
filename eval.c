@@ -243,8 +243,8 @@ static int scope_vmode;
 #define SCOPE_SET(f)  (scope_vmode=(f))
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
-VALUE (*ruby_sandbox_save)(struct thread *) = NULL; 
-VALUE (*ruby_sandbox_restore)(struct thread *) = NULL; 
+VALUE (*ruby_sandbox_save)_((rb_thread_t));
+VALUE (*ruby_sandbox_restore)_((rb_thread_t));
 NODE* ruby_current_node;
 int ruby_safe_level = 0;
 /* safe-level:
@@ -1073,8 +1073,11 @@ NODE *ruby_top_cref;
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC
 
-rb_thread_t curr_thread = 0;
-rb_thread_t main_thread;
+rb_thread_t rb_curr_thread;
+rb_thread_t rb_main_thread;
+#define main_thread rb_main_thread
+#define curr_thread rb_curr_thread
+
 static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
@@ -9832,8 +9835,6 @@ extern VALUE rb_last_status;
 # endif
 #endif
 
-/* typedef struct thread * rb_thread_t; */
-
 #define THREAD_RAISED 0x200	 /* temporary flag */
 #define THREAD_TERMINATING 0x400 /* persistent flag */
 #define THREAD_NO_ENSURE 0x800   /* persistent flag */
@@ -9856,7 +9857,7 @@ struct thread_status_t {
 
     int safe;
 
-    enum thread_status status;
+    enum rb_thread_status status;
     int wait_for;
     int fd;
     fd_set readfds;
@@ -9958,7 +9959,7 @@ rb_trap_eval(cmd, sig, safe)
 
 static const char *
 thread_status_name(status)
-    enum thread_status status;
+    enum rb_thread_status status;
 {
     switch (status) {
       case THREAD_RUNNABLE:
@@ -11016,7 +11017,7 @@ rb_thread_join(th, limit)
     rb_thread_t th;
     double limit;
 {
-    enum thread_status last_status = THREAD_RUNNABLE;
+    enum rb_thread_status last_status = THREAD_RUNNABLE;
 
     if (rb_thread_critical) rb_thread_deadlock();
     if (!rb_thread_dead(th)) {
@@ -11399,7 +11400,7 @@ rb_thread_pass()
 VALUE
 rb_thread_stop()
 {
-    enum thread_status last_status = THREAD_RUNNABLE;
+    enum rb_thread_status last_status = THREAD_RUNNABLE;
 
     rb_thread_critical = 0;
     if (curr_thread == curr_thread->next) {
@@ -11663,7 +11664,7 @@ rb_thread_group(thread)
 #endif
 
 #define THREAD_ALLOC(th) do {\
-    th = ALLOC(struct thread);\
+    th = ALLOC(struct rb_thread);\
 \
     th->next = 0;\
     th->prev = 0;\
@@ -11828,7 +11829,7 @@ rb_thread_start_0(fn, arg, th)
     volatile rb_thread_t th_save = th;
     volatile VALUE thread = th->thread;
     struct BLOCK *volatile saved_block = 0;
-    enum thread_status status;
+    enum rb_thread_status status;
     int state;
 
     if (OBJ_FROZEN(curr_thread->thgroup)) {

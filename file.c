@@ -2433,7 +2433,7 @@ rb_path_last_separator(path)
     return last;
 }
 
-char *
+static char *
 chompdirsep(path)
     const char *path;
 {
