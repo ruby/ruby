@@ -1213,6 +1213,7 @@ class CGI
     # retrieved; use #params() to get the array of values.
     def [](key)
       params = @params[key]
+      return '' unless params
       value = params[0]
       if @multipart
         if value
