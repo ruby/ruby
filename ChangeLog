@@ -1,3 +1,7 @@
+Wed May 23 15:39:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* common.mk: add a rule for regsyntax.c.
+
 Wed May 23 10:31:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* oniguruma.h: updated to Oniguruma 5.7.0.

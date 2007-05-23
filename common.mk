@@ -53,6 +53,7 @@ OBJS	      = array.$(OBJEXT) \
 		regerror.$(OBJEXT) \
 		regexec.$(OBJEXT) \
 		regparse.$(OBJEXT) \
+		regsyntax.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		signal.$(OBJEXT) \
 		sjis.$(OBJEXT) \
@@ -492,6 +493,9 @@ regparse.$(OBJEXT): {$(VPATH)}regparse.c {$(VPATH)}oniguruma.h \
   {$(VPATH)}regint.h {$(VPATH)}regparse.h {$(VPATH)}regenc.h config.h \
   {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}rubysig.h
+regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c {$(VPATH)}oniguruma.h \
+  {$(VPATH)}regint.h {$(VPATH)}regenc.h config.h \
+  {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}dln.h {$(VPATH)}node.h {$(VPATH)}util.h
