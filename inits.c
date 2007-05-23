@@ -87,5 +87,6 @@ rb_call_inits()
     Init_VM();
     Init_ISeq();
     Init_Thread();
+    Init_Cont();
     Init_version();
 }

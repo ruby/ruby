@@ -75,6 +75,7 @@ OBJS	      = array.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		yarvcore.$(OBJEXT) \
 		thread.$(OBJEXT) \
+		cont.$(OBJEXT) \
 		$(MISSING)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
@@ -519,6 +520,11 @@ struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h config.h \
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}thread_win32.h {$(VPATH)}thread_pthread.h \
   {$(VPATH)}thread_win32.ci {$(VPATH)}thread_pthread.ci \
+  {$(VPATH)}ruby.h {$(VPATH)}yarvcore.h config.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}node.h {$(VPATH)}util.h \
+  {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
+cont.$(OBJEXT):  {$(VPATH)}cont.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}yarvcore.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \

@@ -1,3 +1,16 @@
+Thu May 24 01:54:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: support callcc which everyone love.
+	  incomplete. please give me bug reports.
+
+	* common.mk, inits.c, thread.c: ditto.
+
+	* yarvcore.c: export thread_mark().
+
+	* yarvcore.h: disable value cache option.
+
+	* eval_intern.h: set th_get_ruby_level_cfp to inline.
+
 Wed May 23 15:39:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* common.mk: add a rule for regsyntax.c.
