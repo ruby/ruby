@@ -61,6 +61,7 @@ OBJS	      = array.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
+		unicode.$(OBJEXT) \
 		utf8.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
@@ -520,6 +521,8 @@ thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h config.h
 utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h config.h
 util.$(OBJEXT): {$(VPATH)}util.c {$(VPATH)}ruby.h config.h \

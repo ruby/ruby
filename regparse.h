@@ -4,7 +4,7 @@
   regparse.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
 #define N_CTYPE        (1<< 2)
 #define N_ANYCHAR      (1<< 3)
 #define N_BACKREF      (1<< 4)
-#define N_QUALIFIER    (1<< 5)
+#define N_QUANTIFIER   (1<< 5)
 #define N_EFFECT       (1<< 6)
 #define N_ANCHOR       (1<< 7)
 #define N_LIST         (1<< 8)
@@ -52,20 +52,11 @@
 #define NSTRING(node)      ((node)->u.str)
 #define NCCLASS(node)      ((node)->u.cclass)
 #define NCTYPE(node)       ((node)->u.ctype)
-#define NQUALIFIER(node)   ((node)->u.qualifier)
+#define NQUANTIFIER(node)  ((node)->u.quant)
 #define NANCHOR(node)      ((node)->u.anchor)
 #define NBACKREF(node)     ((node)->u.backref)
 #define NEFFECT(node)      ((node)->u.effect)
 #define NCALL(node)        ((node)->u.call)
-
-#define CTYPE_WORD              (1<<0)
-#define CTYPE_NOT_WORD          (1<<1)
-#define CTYPE_WHITE_SPACE       (1<<2)
-#define CTYPE_NOT_WHITE_SPACE   (1<<3)
-#define CTYPE_DIGIT             (1<<4)
-#define CTYPE_NOT_DIGIT         (1<<5)
-#define CTYPE_XDIGIT            (1<<6)
-#define CTYPE_NOT_XDIGIT        (1<<7)
 
 #define ANCHOR_ANYCHAR_STAR_MASK (ANCHOR_ANYCHAR_STAR | ANCHOR_ANYCHAR_STAR_ML)
 #define ANCHOR_END_BUF_MASK      (ANCHOR_END_BUF | ANCHOR_SEMI_END_BUF)
@@ -80,17 +71,18 @@
 
 #define NSTR_RAW                (1<<0) /* by backslashed number */
 #define NSTR_AMBIG              (1<<1)
-#define NSTR_AMBIG_REDUCE       (1<<2)
+#define NSTR_DONT_GET_OPT_INFO  (1<<2)
 
 #define NSTRING_LEN(node)             ((node)->u.str.end - (node)->u.str.s)
 #define NSTRING_SET_RAW(node)          (node)->u.str.flag |= NSTR_RAW
 #define NSTRING_CLEAR_RAW(node)        (node)->u.str.flag &= ~NSTR_RAW
 #define NSTRING_SET_AMBIG(node)        (node)->u.str.flag |= NSTR_AMBIG
-#define NSTRING_SET_AMBIG_REDUCE(node) (node)->u.str.flag |= NSTR_AMBIG_REDUCE
+#define NSTRING_SET_DONT_GET_OPT_INFO(node) \
+  (node)->u.str.flag |= NSTR_DONT_GET_OPT_INFO
 #define NSTRING_IS_RAW(node)          (((node)->u.str.flag & NSTR_RAW)   != 0)
 #define NSTRING_IS_AMBIG(node)        (((node)->u.str.flag & NSTR_AMBIG) != 0)
-#define NSTRING_IS_AMBIG_REDUCE(node) \
-  (((node)->u.str.flag & NSTR_AMBIG_REDUCE) != 0)
+#define NSTRING_IS_DONT_GET_OPT_INFO(node) \
+  (((node)->u.str.flag & NSTR_DONT_GET_OPT_INFO) != 0)
 
 #define BACKREFS_P(br) \
   (IS_NOT_NULL((br)->back_dynamic) ? (br)->back_dynamic : (br)->back_static);
@@ -109,15 +101,6 @@ typedef struct {
   UChar  buf[NODE_STR_BUF_SIZE];
 } StrNode;
 
-/* move to regint.h */
-#if 0
-typedef struct {
-  int    flags;
-  BitSet bs;
-  BBuf*  mbuf;     /* multi-byte info or NULL */
-} CClassNode;
-#endif
-
 typedef struct {
   int state;
   struct _Node* target;
@@ -131,7 +114,7 @@ typedef struct {
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   int comb_exp_check_num;  /* 1,2,3...: check,  0: no check  */
 #endif
-} QualifierNode;
+} QuantifierNode;
 
 /* status bits */
 #define NST_MIN_FIXED             (1<<0)
@@ -170,21 +153,21 @@ typedef struct {
 #define IS_CALL_NAME_REF(cn)           (((cn)->state & NST_NAME_REF)   != 0)
 #define IS_BACKREF_NAME_REF(bn)        (((bn)->state & NST_NAME_REF)   != 0)
 #define IS_BACKREF_NEST_LEVEL(bn)      (((bn)->state & NST_NEST_LEVEL) != 0)
-#define IS_QUALIFIER_IN_REPEAT(qn)     (((qn)->state & NST_IN_REPEAT)  != 0)
-#define IS_QUALIFIER_BY_NUMBER(qn)     (((qn)->state & NST_BY_NUMBER)  != 0)
+#define IS_QUANTIFIER_IN_REPEAT(qn)    (((qn)->state & NST_IN_REPEAT)  != 0)
+#define IS_QUANTIFIER_BY_NUMBER(qn)    (((qn)->state & NST_BY_NUMBER)  != 0)
 
 typedef struct {
   int state;
   int type;
   int regnum;
   OnigOptionType option;
-  struct _Node* target;
-  AbsAddrType call_addr;
+  struct _Node*  target;
+  AbsAddrType    call_addr;
   /* for multiple call reference */
   OnigDistance min_len; /* min length (byte) */
   OnigDistance max_len; /* max length (byte) */ 
-  int char_len;        /* character length  */
-  int opt_count;       /* referenced count in optimize_node_left() */
+  int char_len;         /* character length  */
+  int opt_count;        /* referenced count in optimize_node_left() */
 } EffectNode;
 
 #define CALLNODE_REFNUM_UNDEF  -1
@@ -192,13 +175,13 @@ typedef struct {
 #ifdef USE_SUBEXP_CALL
 
 typedef struct {
-  int offset;
+  int           offset;
   struct _Node* target;
 } UnsetAddr;
 
 typedef struct {
-  int num;
-  int alloc;
+  int        num;
+  int        alloc;
   UnsetAddr* us;
 } UnsetAddrList;
 
@@ -207,18 +190,18 @@ typedef struct {
   int     ref_num;
   UChar*  name;
   UChar*  name_end;
-  struct _Node* target;  /* EffectNode : EFFECT_MEMORY */
+  struct _Node*  target;  /* EffectNode : EFFECT_MEMORY */
   UnsetAddrList* unset_addr_list;
 } CallNode;
 
 #endif
 
 typedef struct {
-  int     state;
-  int     back_num;
-  int     back_static[NODE_BACKREFS_SIZE];
-  int*    back_dynamic;
-  int     nest_level;
+  int  state;
+  int  back_num;
+  int  back_static[NODE_BACKREFS_SIZE];
+  int* back_dynamic;
+  int  nest_level;
 } BackrefNode;
 
 typedef struct {
@@ -230,21 +213,22 @@ typedef struct {
 typedef struct _Node {
   int type;
   union {
-    StrNode       str;
-    CClassNode    cclass;
-    QualifierNode qualifier;
-    EffectNode    effect;
+    StrNode        str;
+    CClassNode     cclass;
+    QuantifierNode quant;
+    EffectNode     effect;
 #ifdef USE_SUBEXP_CALL
-    CallNode      call;
+    CallNode       call;
 #endif
-    BackrefNode   backref;
-    AnchorNode    anchor;
+    BackrefNode    backref;
+    AnchorNode     anchor;
     struct {
       struct _Node* left;
       struct _Node* right;
     } cons;
     struct {
-      int type;
+      int ctype;
+      int not;
     } ctype;
   } u;
 } Node;
@@ -257,30 +241,30 @@ typedef struct _Node {
     (senv)->mem_nodes_dynamic : (senv)->mem_nodes_static)
 
 typedef struct {
-  OnigOptionType  option;
-  OnigAmbigType   ambig_flag;
-  OnigEncoding    enc;
-  OnigSyntaxType* syntax;
-  BitStatusType   capture_history;
-  BitStatusType   bt_mem_start;
-  BitStatusType   bt_mem_end;
-  BitStatusType   backrefed_mem;
-  UChar*          pattern;
-  UChar*          pattern_end;
-  UChar*          error;
-  UChar*          error_end;
-  regex_t*        reg;       /* for reg->names only */
-  int             num_call;
+  OnigOptionType   option;
+  OnigCaseFoldType case_fold_flag;
+  OnigEncoding     enc;
+  OnigSyntaxType*  syntax;
+  BitStatusType    capture_history;
+  BitStatusType    bt_mem_start;
+  BitStatusType    bt_mem_end;
+  BitStatusType    backrefed_mem;
+  UChar*           pattern;
+  UChar*           pattern_end;
+  UChar*           error;
+  UChar*           error_end;
+  regex_t*         reg;       /* for reg->names only */
+  int              num_call;
 #ifdef USE_SUBEXP_CALL
-  UnsetAddrList*  unset_addr_list;
+  UnsetAddrList*   unset_addr_list;
 #endif
-  int             num_mem;
+  int              num_mem;
 #ifdef USE_NAMED_GROUP
-  int             num_named;
+  int              num_named;
 #endif
-  int             mem_alloc;
-  Node*           mem_nodes_static[SCANENV_MEMNODES_SIZE];
-  Node**          mem_nodes_dynamic;
+  int              mem_alloc;
+  Node*            mem_nodes_static[SCANENV_MEMNODES_SIZE];
+  Node**           mem_nodes_dynamic;
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   int num_comb_exp_check;
   int comb_exp_max_regnum;
@@ -294,7 +278,6 @@ typedef struct {
 #define IS_SYNTAX_OP2(syn, opm)   (((syn)->op2 & (opm)) != 0)
 #define IS_SYNTAX_BV(syn, bvm)    (((syn)->behavior & (bvm)) != 0)
 
-
 #ifdef USE_NAMED_GROUP
 typedef struct {
   int new_val;
@@ -304,18 +287,22 @@ extern int    onig_renumber_name_table P_((regex_t* reg, GroupNumRemap* map));
 #endif
 
 extern int    onig_strncmp P_((const UChar* s1, const UChar* s2, int n));
+extern void   onig_strcpy P_((UChar* dest, const UChar* src, const UChar* end));
 extern void   onig_scan_env_set_error_string P_((ScanEnv* env, int ecode, UChar* arg, UChar* arg_end));
 extern int    onig_scan_unsigned_number P_((UChar** src, const UChar* end, OnigEncoding enc));
-extern void   onig_reduce_nested_qualifier P_((Node* pnode, Node* cnode));
+extern void   onig_reduce_nested_quantifier P_((Node* pnode, Node* cnode));
 extern void   onig_node_conv_to_str_node P_((Node* node, int raw));
 extern int    onig_node_str_cat P_((Node* node, const UChar* s, const UChar* end));
+extern int    onig_node_str_set P_((Node* node, const UChar* s, const UChar* end));
 extern void   onig_node_free P_((Node* node));
 extern Node*  onig_node_new_effect P_((int type));
 extern Node*  onig_node_new_anchor P_((int type));
 extern Node*  onig_node_new_str P_((const UChar* s, const UChar* end));
 extern Node*  onig_node_new_list P_((Node* left, Node* right));
+extern Node*  onig_node_list_add P_((Node* list, Node* x));
+extern Node*  onig_node_new_alt P_((Node* left, Node* right));
 extern void   onig_node_str_clear P_((Node* node));
-extern int    onig_free_node_list(void);
+extern int    onig_free_node_list P_((void));
 extern int    onig_names_free P_((regex_t* reg));
 extern int    onig_parse_make_tree P_((Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env));
 

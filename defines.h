@@ -12,6 +12,7 @@
 
 #define RUBY
 
+#include <stdlib.h>
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
 #  define HAVE_PROTOTYPES 1

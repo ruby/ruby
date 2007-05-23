@@ -2,7 +2,7 @@
   regexec.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -76,7 +76,7 @@ history_root_free(OnigRegion* r)
 }
 
 static OnigCaptureTreeNode*
-history_node_new()
+history_node_new(void)
 {
   OnigCaptureTreeNode* node;
 
@@ -233,7 +233,7 @@ onig_region_init(OnigRegion* region)
 }
 
 extern OnigRegion*
-onig_region_new()
+onig_region_new(void)
 {
   OnigRegion* r;
 
@@ -297,47 +297,6 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 
 /** stack **/
 #define INVALID_STACK_INDEX   -1
-typedef long StackIndex;
-
-typedef struct _StackType {
-  unsigned int type;
-  union {
-    struct {
-      UChar *pcode;      /* byte code position */
-      UChar *pstr;       /* string position */
-      UChar *pstr_prev;  /* previous char position of pstr */
-#ifdef USE_COMBINATION_EXPLOSION_CHECK
-      unsigned int state_check;
-#endif
-    } state;
-    struct {
-      int   count;       /* for OP_REPEAT_INC, OP_REPEAT_INC_NG */
-      UChar *pcode;      /* byte code position (head of repeated target) */
-      int   num;         /* repeat id */
-    } repeat;
-    struct {
-      StackIndex si;     /* index of stack */
-    } repeat_inc;
-    struct {
-      int num;           /* memory num */
-      UChar *pstr;       /* start/end position */
-      /* Following information is setted, if this stack type is MEM-START */
-      StackIndex start;  /* prev. info (for backtrack  "(...)*" ) */
-      StackIndex end;    /* prev. info (for backtrack  "(...)*" ) */
-    } mem;
-    struct {
-      int num;           /* null check id */
-      UChar *pstr;       /* start position */
-    } null_check;
-#ifdef USE_SUBEXP_CALL
-    struct {
-      UChar *ret_addr;   /* byte code position */
-      int    num;        /* null check id */
-      UChar *pstr;       /* string position */
-    } call_frame;
-#endif
-  } u;
-} StackType;
 
 /* stack type */
 /* used by normal-POP */
@@ -365,24 +324,22 @@ typedef struct _StackType {
 #define STK_MASK_TO_VOID_TARGET    0x10ff
 #define STK_MASK_MEM_END_OR_MARK   0x8000  /* MEM_END or MEM_END_MARK */
 
-typedef struct {
-  void* stack_p;
-  int   stack_n;
-  OnigOptionType options;
-  OnigRegion*    region;
-  const UChar* start;   /* search start position (for \G: BEGIN_POSITION) */
-#ifdef USE_COMBINATION_EXPLOSION_CHECK
-  void* state_check_buff;
-  int   state_check_buff_size;
-#endif
-} MatchArg;
-
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start) do {\
-  (msa).stack_p = (void* )0;\
-  (msa).options = (arg_option);\
-  (msa).region  = (arg_region);\
-  (msa).start   = (arg_start);\
+  (msa).stack_p  = (void* )0;\
+  (msa).options  = (arg_option);\
+  (msa).region   = (arg_region);\
+  (msa).start    = (arg_start);\
+  (msa).best_len = ONIG_MISMATCH;\
 } while (0)
+#else
+#define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start) do {\
+  (msa).stack_p  = (void* )0;\
+  (msa).options  = (arg_option);\
+  (msa).region   = (arg_region);\
+  (msa).start    = (arg_start);\
+} while (0)
+#endif
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
 
@@ -428,15 +385,15 @@ typedef struct {
 #define STACK_INIT(alloc_addr, ptr_num, stack_num)  do {\
   if (msa->stack_p) {\
     alloc_addr = (char* )xalloca(sizeof(char*) * (ptr_num));\
-    stk_alloc  = (StackType* )(msa->stack_p);\
+    stk_alloc  = (OnigStackType* )(msa->stack_p);\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
     stk_end    = stk_base + msa->stack_n;\
   }\
   else {\
     alloc_addr = (char* )xalloca(sizeof(char*) * (ptr_num)\
-		       + sizeof(StackType) * (stack_num));\
-    stk_alloc  = (StackType* )(alloc_addr + sizeof(char*) * (ptr_num));\
+		       + sizeof(OnigStackType) * (stack_num));\
+    stk_alloc  = (OnigStackType* )(alloc_addr + sizeof(char*) * (ptr_num));\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
     stk_end    = stk_base + (stack_num);\
@@ -466,11 +423,11 @@ onig_set_match_stack_limit_size(unsigned int size)
 }
 
 static int
-stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
-	     StackType** arg_stk, StackType* stk_alloc, MatchArg* msa)
+stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
+	     OnigStackType** arg_stk, OnigStackType* stk_alloc, OnigMatchArg* msa)
 {
   unsigned int n;
-  StackType *x, *stk_base, *stk_end, *stk;
+  OnigStackType *x, *stk_base, *stk_end, *stk;
 
   stk_base = *arg_stk_base;
   stk_end  = *arg_stk_end;
@@ -478,12 +435,12 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 
   n = stk_end - stk_base;
   if (stk_base == stk_alloc && IS_NULL(msa->stack_p)) {
-    x = (StackType* )xmalloc(sizeof(StackType) * n * 2);
+    x = (OnigStackType* )xmalloc(sizeof(OnigStackType) * n * 2);
     if (IS_NULL(x)) {
       STACK_SAVE;
       return ONIGERR_MEMORY;
     }
-    xmemcpy(x, stk_base, n * sizeof(StackType));
+    xmemcpy(x, stk_base, n * sizeof(OnigStackType));
     n *= 2;
   }
   else {
@@ -494,7 +451,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
       else
         n = MatchStackLimitSize;
     }
-    x = (StackType* )xrealloc(stk_base, sizeof(StackType) * n);
+    x = (OnigStackType* )xrealloc(stk_base, sizeof(OnigStackType) * n);
     if (IS_NULL(x)) {
       STACK_SAVE;
       return ONIGERR_MEMORY;
@@ -830,7 +787,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 } while(0)
 
 #define STACK_STOP_BT_END do {\
-  StackType *k = stk;\
+  OnigStackType *k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_STOP_BT_END"); \
@@ -845,7 +802,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 } while(0)
 
 #define STACK_NULL_CHECK(isnull,id,s) do {\
-  StackType* k = stk;\
+  OnigStackType* k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK"); \
@@ -860,7 +817,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 
 #define STACK_NULL_CHECK_REC(isnull,id,s) do {\
   int level = 0;\
-  StackType* k = stk;\
+  OnigStackType* k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_REC"); \
@@ -880,7 +837,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 } while(0)
 
 #define STACK_NULL_CHECK_MEMST(isnull,id,s,reg) do {\
-  StackType* k = stk;\
+  OnigStackType* k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_MEMST"); \
@@ -920,7 +877,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 
 #define STACK_NULL_CHECK_MEMST_REC(isnull,id,s,reg) do {\
   int level = 0;\
-  StackType* k = stk;\
+  OnigStackType* k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_MEMST_REC"); \
@@ -986,7 +943,7 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 
 #define STACK_RETURN(addr)  do {\
   int level = 0;\
-  StackType* k = stk;\
+  OnigStackType* k = stk;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_RETURN"); \
@@ -1009,25 +966,25 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
   }\
 } while(0)
 
-#define STRING_CMP_IC(ambig_flag,s1,ps2,len) do {\
-  if (string_cmp_ic(encode, ambig_flag, s1, ps2, len) == 0) \
+#define STRING_CMP_IC(case_fold_flag,s1,ps2,len) do {\
+  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len) == 0) \
     goto fail; \
 } while(0)
 
-static int string_cmp_ic(OnigEncoding enc, int ambig_flag,
+static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 			 UChar* s1, UChar** ps2, int mblen)
 {
-  UChar buf1[ONIGENC_MBC_NORMALIZE_MAXLEN];
-  UChar buf2[ONIGENC_MBC_NORMALIZE_MAXLEN];
-  UChar *p1, *p2, *end, *s2, *end2;
+  UChar buf1[ONIGENC_MBC_CASE_FOLD_MAXLEN];
+  UChar buf2[ONIGENC_MBC_CASE_FOLD_MAXLEN];
+  UChar *p1, *p2, *end1, *s2, *end2;
   int len1, len2;
 
   s2   = *ps2;
-  end  = s1 + mblen;
+  end1 = s1 + mblen;
   end2 = s2 + mblen;
-  while (s1 < end) {
-    len1 = ONIGENC_MBC_TO_NORMALIZE(enc, ambig_flag, &s1, end, buf1);
-    len2 = ONIGENC_MBC_TO_NORMALIZE(enc, ambig_flag, &s2, end2, buf2);
+  while (s1 < end1) {
+    len1 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s1, end1, buf1);
+    len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, end2, buf2);
     if (len1 != len2) return 0;
     p1 = buf1;
     p2 = buf2;
@@ -1051,31 +1008,36 @@ static int string_cmp_ic(OnigEncoding enc, int ambig_flag,
   }\
 } while(0)
 
-#define STRING_CMP_VALUE_IC(ambig_flag,s1,ps2,len,is_fail) do {\
-  if (string_cmp_ic(encode, ambig_flag, s1, ps2, len) == 0) \
+#define STRING_CMP_VALUE_IC(case_fold_flag,s1,ps2,len,is_fail) do {\
+  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len) == 0) \
     is_fail = 1; \
   else \
     is_fail = 0; \
 } while(0)
 
 
-#define ON_STR_BEGIN(s)  ((s) == str)
-#define ON_STR_END(s)    ((s) == end)
-#define IS_EMPTY_STR     (str == end)
-
-#define DATA_ENSURE(n) \
-  if (s + (n) > end) goto fail
-
+#define IS_EMPTY_STR           (str == end)
+#define ON_STR_BEGIN(s)       ((s) == str)
+#define ON_STR_END(s)         ((s) == end)
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+#define DATA_ENSURE_CHECK1     (s < right_range)
+#define DATA_ENSURE_CHECK(n)   (s + (n) <= right_range)
+#define DATA_ENSURE(n)         if (s + (n) > right_range) goto fail
+#else
+#define DATA_ENSURE_CHECK1     (s < end)
 #define DATA_ENSURE_CHECK(n)   (s + (n) <= end)
+#define DATA_ENSURE(n)         if (s + (n) > end) goto fail
+#endif /* USE_MATCH_RANGE_IS_COMPLETE_RANGE */
+
 
 #ifdef USE_CAPTURE_HISTORY
 static int
-make_capture_history_tree(OnigCaptureTreeNode* node, StackType** kp,
-                          StackType* stk_top, UChar* str, regex_t* reg)
+make_capture_history_tree(OnigCaptureTreeNode* node, OnigStackType** kp,
+                          OnigStackType* stk_top, UChar* str, regex_t* reg)
 {
   int n, r;
   OnigCaptureTreeNode* child;
-  StackType* k = *kp;
+  OnigStackType* k = *kp;
 
   while (k < stk_top) {
     if (k->type == STK_MEM_START) {
@@ -1124,13 +1086,13 @@ static int mem_is_in_memp(int mem, int num, UChar* memp)
 }
 
 static int backref_match_at_nested_level(regex_t* reg
-	 , StackType* top, StackType* stk_base
-	 , int ignore_case, int ambig_flag
+	 , OnigStackType* top, OnigStackType* stk_base
+	 , int ignore_case, int case_fold_flag
 	 , int nest, int mem_num, UChar* memp, UChar** s, const UChar* send)
 {
   UChar *ss, *p, *pstart, *pend = NULL_UCHARP;
   int level;
-  StackType* k;
+  OnigStackType* k;
 
   level = 0;
   k = top;
@@ -1152,7 +1114,7 @@ static int backref_match_at_nested_level(regex_t* reg
 	    ss = *s;
 
 	    if (ignore_case != 0) {
-	      if (string_cmp_ic(reg->enc, ambig_flag,
+	      if (string_cmp_ic(reg->enc, case_fold_flag,
 				pstart, &ss, (int )(pend - pstart)) == 0)
 		return 0; /* or goto next_mem; */
 	    }
@@ -1180,68 +1142,6 @@ static int backref_match_at_nested_level(regex_t* reg
 }
 #endif /* USE_BACKREF_AT_LEVEL */
 
-
-#ifdef RUBY_PLATFORM
-
-typedef struct {
-  int state;
-  regex_t*  reg;
-  MatchArg* msa;
-  StackType* stk_base;
-} TrapEnsureArg;
-
-static VALUE
-trap_ensure(VALUE arg)
-{
-  TrapEnsureArg* ta = (TrapEnsureArg* )arg;
-
-  if (ta->state == 0) { /* trap_exec() is not normal return */
-    ONIG_STATE_DEC_THREAD(ta->reg);
-    if (! IS_NULL(ta->msa->stack_p) && ta->stk_base != ta->msa->stack_p)
-      xfree(ta->stk_base);
-
-    MATCH_ARG_FREE(*(ta->msa));
-  }
-
-  return Qnil;
-}
-
-static VALUE
-trap_exec(VALUE arg)
-{
-  TrapEnsureArg* ta;
-
-  rb_trap_exec();
-
-  ta = (TrapEnsureArg* )arg;
-  ta->state = 1; /* normal return */
-  return Qnil;
-}
-
-extern void
-onig_exec_trap(regex_t* reg, MatchArg* msa, StackType* stk_base)
-{
-  VALUE arg;
-  TrapEnsureArg ta;
-
-  ta.state    = 0;
-  ta.reg      = reg;
-  ta.msa      = msa;
-  ta.stk_base = stk_base;
-  arg = (VALUE )(&ta);
-  rb_ensure(trap_exec, arg, trap_ensure, arg);
-}
-
-#define CHECK_INTERRUPT_IN_MATCH_AT do {\
-  if (rb_trap_pending) {\
-    if (! rb_prohibit_interrupt) {\
-      onig_exec_trap(reg, msa, stk_base);\
-    }\
-  }\
-} while (0)
-#else
-#define CHECK_INTERRUPT_IN_MATCH_AT
-#endif /* RUBY_PLATFORM */
 
 #ifdef ONIG_DEBUG_STATISTICS
 
@@ -1286,29 +1186,14 @@ static int MaxStackDepth = 0;
   OpTime[OpCurr] += TIMEDIFF(te, ts);\
 } while (0)
 
-#ifdef RUBY_PLATFORM
-
-/*
- * :nodoc:
- */
-static VALUE onig_stat_print()
-{
-  onig_print_statistics(stderr);
-  return Qnil;
-}
-#endif
-
-extern void onig_statistics_init()
+extern void
+onig_statistics_init(void)
 {
   int i;
   for (i = 0; i < 256; i++) {
     OpCounter[i] = OpPrevCounter[i] = 0; OpTime[i] = 0;
   }
   MaxStackDepth = 0;
-
-#ifdef RUBY_PLATFORM
-  rb_define_global_function("onig_stat_print", onig_stat_print, 0);
-#endif
 }
 
 extern void
@@ -1406,8 +1291,11 @@ typedef struct {
 /* match data(str - end) from position (sstart). */
 /* if sstart == str then set sprev to NULL. */
 static int
-match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
-	 UChar* sprev, MatchArg* msa)
+match_at(regex_t* reg, const UChar* str, const UChar* end,
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+	 const UChar* right_range,
+#endif
+	 const UChar* sstart, UChar* sprev, OnigMatchArg* msa)
 {
   static UChar FinishCode[] = { OP_FINISH };
 
@@ -1417,15 +1305,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
   RelAddrType addr;
   OnigOptionType option = reg->options;
   OnigEncoding encode = reg->enc;
-  OnigAmbigType ambig_flag = reg->ambig_flag;
+  OnigCaseFoldType case_fold_flag = reg->case_fold_flag;
   UChar *s, *q, *sbegin;
   UChar *p = reg->p;
   char *alloca_base;
-  StackType *stk_alloc, *stk_base, *stk, *stk_end;
-  StackType *stkp; /* used as any purpose. */
-  StackIndex si;
-  StackIndex *repeat_stk;
-  StackIndex *mem_start_stk, *mem_end_stk;
+  OnigStackType *stk_alloc, *stk_base, *stk, *stk_end;
+  OnigStackType *stkp; /* used as any purpose. */
+  OnigStackIndex si;
+  OnigStackIndex *repeat_stk;
+  OnigStackIndex *mem_start_stk, *mem_end_stk;
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   int scv;
   unsigned char* state_check_buff = msa->state_check_buff;
@@ -1436,9 +1324,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
   STACK_INIT(alloca_base, n, INIT_MATCH_STACK_SIZE);
   pop_level = reg->stack_pop_level;
   num_mem = reg->num_mem;
-  repeat_stk = (StackIndex* )alloca_base;
+  repeat_stk = (OnigStackIndex* )alloca_base;
 
-  mem_start_stk = (StackIndex* )(repeat_stk + reg->num_repeat);
+  mem_start_stk = (OnigStackIndex* )(repeat_stk + reg->num_repeat);
   mem_end_stk   = mem_start_stk + num_mem;
   mem_start_stk--; /* for index start from 1,
 		      mem_start_stk[1]..mem_start_stk[num_mem] */
@@ -1472,7 +1360,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       if (q < end) { xmemcpy(bp, "...\"", 4); bp += 4; }
       else         { xmemcpy(bp, "\"",    1); bp += 1; }
       *bp = 0;
-      fputs(buf, stderr);
+      fputs((char* )buf, stderr);
       for (i = 0; i < 20 - (bp - buf); i++) fputc(' ', stderr);
       onig_print_compiled_byte_code(stderr, p, NULL, encode);
       fprintf(stderr, "\n");
@@ -1484,8 +1372,19 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
     case OP_END:  STAT_OP_IN(OP_END);
       n = s - sstart;
       if (n > best_len) {
-	OnigRegion* region = msa->region;
+	OnigRegion* region;
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
+	if (IS_FIND_LONGEST(option)) {
+	  if (n > msa->best_len) {
+	    msa->best_len = n;
+	    msa->best_s   = (UChar* )sstart;
+	  }
+	  else
+	    goto end_best_len;
+        }
+#endif
 	best_len = n;
+	region = msa->region;
 	if (region) {
 #ifdef USE_POSIX_REGION_OPTION
 	  if (IS_POSIX_REGION(msa->options)) {
@@ -1561,6 +1460,10 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 #endif
 	} /* if (region) */
       } /* n > best_len */
+
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
+    end_best_len:
+#endif
       STAT_OP_OUT;
 
       if (IS_FIND_CONDITION(option)) {
@@ -1568,7 +1471,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	  best_len = ONIG_MISMATCH;
 	  goto fail; /* for retry */
 	}
-	if (IS_FIND_LONGEST(option) && s < end) {
+	if (IS_FIND_LONGEST(option) && DATA_ENSURE_CHECK1) {
 	  goto fail; /* for retry */
 	}
       }
@@ -1592,30 +1495,21 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
     case OP_EXACT1_IC:  STAT_OP_IN(OP_EXACT1_IC);
       {
 	int len;
-	UChar *q, *ss, *sp, lowbuf[ONIGENC_MBC_NORMALIZE_MAXLEN];
+	UChar *q, *ss, *sp, lowbuf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
 
 	DATA_ENSURE(1);
         ss = s;
         sp = p;
 
-      exact1_ic_retry:
-	len = ONIGENC_MBC_TO_NORMALIZE(encode, ambig_flag, &s, end, lowbuf);
+	len = ONIGENC_MBC_CASE_FOLD(encode,
+		    /* DISABLE_CASE_FOLD_MULTI_CHAR(case_fold_flag), */
+		    case_fold_flag,
+		    &s, end, lowbuf);
 	DATA_ENSURE(0);
 	q = lowbuf;
 	while (len-- > 0) {
 	  if (*p != *q) {
-#if 1
-            if ((ambig_flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
-              ambig_flag &= ~ONIGENC_AMBIGUOUS_MATCH_COMPOUND;
-              s = ss;
-              p = sp;
-              goto exact1_ic_retry;
-            }
-            else
-              goto fail;
-#else
             goto fail;
-#endif
           }
 	  p++; q++;
 	}
@@ -1693,7 +1587,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
     case OP_EXACTN_IC:  STAT_OP_IN(OP_EXACTN_IC);
       {
 	int len;
-	UChar *ss, *sp, *q, *endp, lowbuf[ONIGENC_MBC_NORMALIZE_MAXLEN];
+	UChar *ss, *sp, *q, *endp, lowbuf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
 
 	GET_LENGTH_INC(tlen, p);
 	endp = p + tlen;
@@ -1704,25 +1598,14 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
           ss = s;
           sp = p;
 
-        exactn_ic_retry:
-	  len = ONIGENC_MBC_TO_NORMALIZE(encode, ambig_flag, &s, end, lowbuf);
+	  len = ONIGENC_MBC_CASE_FOLD(encode,
+		      /* DISABLE_CASE_FOLD_MULTI_CHAR(case_fold_flag), */
+		      case_fold_flag,
+		      &s, end, lowbuf);
 	  DATA_ENSURE(0);
 	  q = lowbuf;
 	  while (len-- > 0) {
-	    if (*p != *q) {
-#if 1
-              if ((ambig_flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
-                ambig_flag &= ~ONIGENC_AMBIGUOUS_MATCH_COMPOUND;
-                s = ss;
-                p = sp;
-                goto exactn_ic_retry;
-              }
-              else
-                goto fail;
-#else
-              goto fail;
-#endif
-            }
+	    if (*p != *q) goto fail;
 	    p++; q++;
 	  }
 	}
@@ -1898,7 +1781,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	UChar *ss;
 	int mb_len = enc_len(encode, s);
 
-	if (s + mb_len > end) {
+	if (! DATA_ENSURE_CHECK(mb_len)) {
           DATA_ENSURE(1);
 	  s = (UChar* )end;
 	  p += tlen;
@@ -1978,7 +1861,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       break;
 
     case OP_ANYCHAR_STAR:  STAT_OP_IN(OP_ANYCHAR_STAR);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	STACK_PUSH_ALT(p, s, sprev);
 	n = enc_len(encode, s);
         DATA_ENSURE(n);
@@ -1990,7 +1873,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       break;
 
     case OP_ANYCHAR_ML_STAR:  STAT_OP_IN(OP_ANYCHAR_ML_STAR);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	STACK_PUSH_ALT(p, s, sprev);
 	n = enc_len(encode, s);
 	if (n > 1) {
@@ -2007,7 +1890,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       break;
 
     case OP_ANYCHAR_STAR_PEEK_NEXT:  STAT_OP_IN(OP_ANYCHAR_STAR_PEEK_NEXT);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	if (*p == *s) {
 	  STACK_PUSH_ALT(p + 1, s, sprev);
 	}
@@ -2022,7 +1905,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       break;
 
     case OP_ANYCHAR_ML_STAR_PEEK_NEXT:STAT_OP_IN(OP_ANYCHAR_ML_STAR_PEEK_NEXT);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	if (*p == *s) {
 	  STACK_PUSH_ALT(p + 1, s, sprev);
 	}
@@ -2044,7 +1927,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
     case OP_STATE_CHECK_ANYCHAR_STAR:  STAT_OP_IN(OP_STATE_CHECK_ANYCHAR_STAR);
       GET_STATE_CHECK_NUM_INC(mem, p);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	STATE_CHECK_VAL(scv, mem);
 	if (scv) goto fail;
 
@@ -2062,7 +1945,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
       STAT_OP_IN(OP_STATE_CHECK_ANYCHAR_ML_STAR);
 
       GET_STATE_CHECK_NUM_INC(mem, p);
-      while (s < end) {
+      while (DATA_ENSURE_CHECK1) {
 	STATE_CHECK_VAL(scv, mem);
 	if (scv) goto fail;
 
@@ -2121,7 +2004,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
     case OP_NOT_WORD_BOUND:  STAT_OP_IN(OP_NOT_WORD_BOUND);
       if (ON_STR_BEGIN(s)) {
-	if (DATA_ENSURE_CHECK(1) && ONIGENC_IS_MBC_WORD(encode, s, end))
+	if (DATA_ENSURE_CHECK1 && ONIGENC_IS_MBC_WORD(encode, s, end))
 	  goto fail;
       }
       else if (ON_STR_END(s)) {
@@ -2139,7 +2022,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
 #ifdef USE_WORD_BEGIN_END
     case OP_WORD_BEGIN:  STAT_OP_IN(OP_WORD_BEGIN);
-      if (DATA_ENSURE_CHECK(1) && ONIGENC_IS_MBC_WORD(encode, s, end)) {
+      if (DATA_ENSURE_CHECK1 && ONIGENC_IS_MBC_WORD(encode, s, end)) {
 	if (ON_STR_BEGIN(s) || !ONIGENC_IS_MBC_WORD(encode, sprev, end)) {
 	  STAT_OP_OUT;
 	  continue;
@@ -2257,7 +2140,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
     case OP_MEMORY_START:  STAT_OP_IN(OP_MEMORY_START);
       GET_MEMNUM_INC(mem, p);
-      mem_start_stk[mem] = (StackIndex )((void* )s);
+      mem_start_stk[mem] = (OnigStackIndex )((void* )s);
       STAT_OP_OUT;
       continue;
       break;
@@ -2271,7 +2154,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
     case OP_MEMORY_END:  STAT_OP_IN(OP_MEMORY_END);
       GET_MEMNUM_INC(mem, p);
-      mem_end_stk[mem] = (StackIndex )((void* )s);
+      mem_end_stk[mem] = (OnigStackIndex )((void* )s);
       STAT_OP_OUT;
       continue;
       break;
@@ -2288,13 +2171,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
     case OP_MEMORY_END_REC:  STAT_OP_IN(OP_MEMORY_END_REC);
       GET_MEMNUM_INC(mem, p);
-      mem_end_stk[mem] = (StackIndex )((void* )s);
+      mem_end_stk[mem] = (OnigStackIndex )((void* )s);
       STACK_GET_MEM_START(mem, stkp);
 
       if (BIT_STATUS_AT(reg->bt_mem_start, mem))
 	mem_start_stk[mem] = GET_STACK_INDEX(stkp);
       else
-	mem_start_stk[mem] = (StackIndex )((void* )stkp->u.mem.pstr);
+	mem_start_stk[mem] = (OnigStackIndex )((void* )stkp->u.mem.pstr);
 
       STACK_PUSH_MEM_END_MARK(mem);
       STAT_OP_OUT;
@@ -2368,7 +2251,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	n = pend - pstart;
 	DATA_ENSURE(n);
 	sprev = s;
-	STRING_CMP_IC(ambig_flag, pstart, &s, n);
+	STRING_CMP_IC(case_fold_flag, pstart, &s, n);
 	while (sprev + (len = enc_len(encode, sprev)) < s)
 	  sprev += len;
 
@@ -2440,7 +2323,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	  DATA_ENSURE(n);
 	  sprev = s;
 	  swork = s;
-	  STRING_CMP_VALUE_IC(ambig_flag, pstart, &swork, n, is_fail);
+	  STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, is_fail);
 	  if (is_fail) continue;
 	  s = swork;
 	  while (sprev + (len = enc_len(encode, sprev)) < s)
@@ -2467,8 +2350,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	GET_LENGTH_INC(tlen,  p);
 
 	sprev = s;
-	if (backref_match_at_nested_level(reg, stk, stk_base, ic, ambig_flag
-				  , (int )level, (int )tlen, p, &s, end)) {
+	if (backref_match_at_nested_level(reg, stk, stk_base, ic
+		  , case_fold_flag, (int )level, (int )tlen, p, &s, end)) {
 	  while (sprev + (len = enc_len(encode, sprev)) < s)
 	    sprev += len;
 
@@ -2649,7 +2532,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 
     case OP_PUSH_OR_JUMP_EXACT1:  STAT_OP_IN(OP_PUSH_OR_JUMP_EXACT1);
       GET_RELADDR_INC(addr, p);
-      if (*p == *s && DATA_ENSURE_CHECK(1)) {
+      if (*p == *s && DATA_ENSURE_CHECK1) {
 	p++;
 	STACK_PUSH_ALT(p + addr, s, sprev);
 	STAT_OP_OUT;
@@ -2945,33 +2828,18 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
 }
 
 static int
-str_lower_case_match(OnigEncoding enc, int ambig_flag,
+str_lower_case_match(OnigEncoding enc, int case_fold_flag,
                      const UChar* t, const UChar* tend,
 		     const UChar* p, const UChar* end)
 {
   int lowlen;
-  UChar *q, lowbuf[ONIGENC_MBC_NORMALIZE_MAXLEN];
-  const UChar* tsave;
-  const UChar* psave;
+  UChar *q, lowbuf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
 
-  tsave = t;
-  psave = p;
-
- retry:
   while (t < tend) {
-    lowlen = ONIGENC_MBC_TO_NORMALIZE(enc, ambig_flag, &p, end, lowbuf);
+    lowlen = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &p, end, lowbuf);
     q = lowbuf;
     while (lowlen > 0) {
-      if (*t++ != *q++) {
-        if ((ambig_flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
-          ambig_flag &= ~ONIGENC_AMBIGUOUS_MATCH_COMPOUND;
-          t = tsave;
-          p = psave;
-          goto retry;
-        }
-        else
-          return 0;
-      }
+      if (*t++ != *q++)	return 0;
       lowlen--;
     }
   }
@@ -2980,7 +2848,7 @@ str_lower_case_match(OnigEncoding enc, int ambig_flag,
 }
 
 static UChar*
-slow_search_ic(OnigEncoding enc, int ambig_flag,
+slow_search_ic(OnigEncoding enc, int case_fold_flag,
 	       UChar* target, UChar* target_end,
 	       const UChar* text, const UChar* text_end, UChar* text_range)
 {
@@ -2994,7 +2862,8 @@ slow_search_ic(OnigEncoding enc, int ambig_flag,
   s = (UChar* )text;
 
   while (s < end) {
-    if (str_lower_case_match(enc, ambig_flag, target, target_end, s, text_end))
+    if (str_lower_case_match(enc, case_fold_flag, target, target_end,
+			     s, text_end))
       return s;
 
     s += enc_len(enc, s);
@@ -3036,7 +2905,7 @@ slow_search_backward(OnigEncoding enc, UChar* target, UChar* target_end,
 }
 
 static UChar*
-slow_search_backward_ic(OnigEncoding enc, int ambig_flag,
+slow_search_backward_ic(OnigEncoding enc, int case_fold_flag,
 			UChar* target, UChar* target_end,
 			const UChar* text, const UChar* adjust_text,
 			const UChar* text_end, const UChar* text_start)
@@ -3051,7 +2920,7 @@ slow_search_backward_ic(OnigEncoding enc, int ambig_flag,
     s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s);
 
   while (s >= text) {
-    if (str_lower_case_match(enc, ambig_flag,
+    if (str_lower_case_match(enc, case_fold_flag,
                              target, target_end, s, text_end))
       return s;
 
@@ -3242,7 +3111,7 @@ onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, On
 {
   int r;
   UChar *prev;
-  MatchArg msa;
+  OnigMatchArg msa;
 
 #if defined(USE_RECOMPILE_API) && defined(USE_MULTI_THREAD_SYSTEM)
  start:
@@ -3289,7 +3158,11 @@ onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, On
 
   if (r == 0) {
     prev = (UChar* )onigenc_get_prev_char_head(reg->enc, str, at);
-    r = match_at(reg, str, end, at, prev, &msa);
+    r = match_at(reg, str, end,
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+		 end,
+#endif
+		 at, prev, &msa);
   }
 
   MATCH_ARG_FREE(msa);
@@ -3325,7 +3198,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
     p = slow_search(reg->enc, reg->exact, reg->exact_end, p, end, range);
     break;
   case ONIG_OPTIMIZE_EXACT_IC:
-    p = slow_search_ic(reg->enc, reg->ambig_flag,
+    p = slow_search_ic(reg->enc, reg->case_fold_flag,
                        reg->exact, reg->exact_end, p, end, range);
     break;
 
@@ -3446,7 +3319,7 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
     break;
 
   case ONIG_OPTIMIZE_EXACT_IC:
-    p = slow_search_backward_ic(reg->enc, reg->ambig_flag,
+    p = slow_search_backward_ic(reg->enc, reg->case_fold_flag,
                                 reg->exact, reg->exact_end,
                                 range, adjrange, end, p);
     break;
@@ -3535,8 +3408,11 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 {
   int r;
   UChar *s, *prev;
-  MatchArg msa;
+  OnigMatchArg msa;
   const UChar *orig_start = start;
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+  const UChar *orig_range = range;
+#endif
 
 #if defined(USE_RECOMPILE_API) && defined(USE_MULTI_THREAD_SYSTEM)
  start:
@@ -3580,16 +3456,57 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
   if (start > end || start < str) goto mismatch_no_msa;
 
-#define MATCH_AND_RETURN_CHECK \
+
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
+#define MATCH_AND_RETURN_CHECK(upper_range) \
+  r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
+  if (r != ONIG_MISMATCH) {\
+    if (r >= 0) {\
+      if (! IS_FIND_LONGEST(reg->options)) {\
+        goto match;\
+      }\
+    }\
+    else goto finish; /* error */ \
+  }
+#else
+#define MATCH_AND_RETURN_CHECK(upper_range) \
+  r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
+  if (r != ONIG_MISMATCH) {\
+    if (r >= 0) {\
+      goto match;\
+    }\
+    else goto finish; /* error */ \
+  }
+#endif /* USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE */
+#else
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
+#define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
   if (r != ONIG_MISMATCH) {\
-    if (r >= 0) goto match;\
-    goto finish; /* error */ \
+    if (r >= 0) {\
+      if (! IS_FIND_LONGEST(reg->options)) {\
+        goto match;\
+      }\
+    }\
+    else goto finish; /* error */ \
   }
+#else
+#define MATCH_AND_RETURN_CHECK(none) \
+  r = match_at(reg, str, end, s, prev, &msa);\
+  if (r != ONIG_MISMATCH) {\
+    if (r >= 0) {\
+      goto match;\
+    }\
+    else goto finish; /* error */ \
+  }
+#endif /* USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE */
+#endif /* USE_MATCH_RANGE_IS_COMPLETE_RANGE */
+
 
   /* anchor optimize: resume search range */
   if (reg->anchor != 0 && str < end) {
-    UChar* semi_end;
+    UChar *min_semi_end, *max_semi_end;
 
     if (reg->anchor & ANCHOR_BEGIN_POSITION) {
       /* search start-position only */
@@ -3615,49 +3532,50 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
       }
     }
     else if (reg->anchor & ANCHOR_END_BUF) {
-      semi_end = (UChar* )end;
+      min_semi_end = max_semi_end = (UChar* )end;
 
     end_buf:
-      if ((OnigDistance )(semi_end - str) < reg->anchor_dmin)
+      if ((OnigDistance )(max_semi_end - str) < reg->anchor_dmin)
 	goto mismatch_no_msa;
 
       if (range > start) {
-	if ((OnigDistance )(semi_end - start) > reg->anchor_dmax) {
-	  start = semi_end - reg->anchor_dmax;
+	if ((OnigDistance )(min_semi_end - start) > reg->anchor_dmax) {
+	  start = min_semi_end - reg->anchor_dmax;
 	  if (start < end)
 	    start = onigenc_get_right_adjust_char_head(reg->enc, str, start);
 	  else { /* match with empty at end */
 	    start = onigenc_get_prev_char_head(reg->enc, str, end);
 	  }
 	}
-	if ((OnigDistance )(semi_end - (range - 1)) < reg->anchor_dmin) {
-	  range = semi_end - reg->anchor_dmin + 1;
+	if ((OnigDistance )(max_semi_end - (range - 1)) < reg->anchor_dmin) {
+	  range = max_semi_end - reg->anchor_dmin + 1;
 	}
 
 	if (start >= range) goto mismatch_no_msa;
       }
       else {
-	if ((OnigDistance )(semi_end - range) > reg->anchor_dmax) {
-	  range = semi_end - reg->anchor_dmax;
+	if ((OnigDistance )(min_semi_end - range) > reg->anchor_dmax) {
+	  range = min_semi_end - reg->anchor_dmax;
 	}
-	if ((OnigDistance )(semi_end - start) < reg->anchor_dmin) {
-	  start = semi_end - reg->anchor_dmin;
+	if ((OnigDistance )(max_semi_end - start) < reg->anchor_dmin) {
+	  start = max_semi_end - reg->anchor_dmin;
 	  start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, start);
-	  if (range > start) goto mismatch_no_msa;
 	}
+	if (range > start) goto mismatch_no_msa;
       }
     }
     else if (reg->anchor & ANCHOR_SEMI_END_BUF) {
       UChar* pre_end = ONIGENC_STEP_BACK(reg->enc, str, end, 1);
 
+      max_semi_end = (UChar* )end;
       if (ONIGENC_IS_MBC_NEWLINE(reg->enc, pre_end, end)) {
-	semi_end = pre_end;
-	if (semi_end > str && start <= semi_end) {
+	min_semi_end = pre_end;
+	if (min_semi_end > str && start <= min_semi_end) {
 	  goto end_buf;
 	}
       }
       else {
-	semi_end = (UChar* )end;
+	min_semi_end = (UChar* )end;
 	goto end_buf;
       }
     }
@@ -3679,10 +3597,10 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
       MATCH_ARG_INIT(msa, option, region, start);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-      msa.state_check_buff      = (void* )0;
-      msa.state_check_buff_size = 0;
+      msa.state_check_buff = (void* )0;
+      msa.state_check_buff_size = 0;   /* NO NEED, for valgrind */
 #endif
-      MATCH_AND_RETURN_CHECK;
+      MATCH_AND_RETURN_CHECK(end);
       goto mismatch;
     }
     goto mismatch_no_msa;
@@ -3733,7 +3651,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	    prev = low_prev;
 	  }
 	  while (s <= high) {
-	    MATCH_AND_RETURN_CHECK;
+	    MATCH_AND_RETURN_CHECK(orig_range);
 	    prev = s;
 	    s += enc_len(reg->enc, s);
 	  }
@@ -3746,7 +3664,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
         if ((reg->anchor & ANCHOR_ANYCHAR_STAR) != 0) {
           do {
-            MATCH_AND_RETURN_CHECK;
+            MATCH_AND_RETURN_CHECK(orig_range);
             prev = s;
             s += enc_len(reg->enc, s);
 
@@ -3761,16 +3679,21 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
     }
 
     do {
-      MATCH_AND_RETURN_CHECK;
+      MATCH_AND_RETURN_CHECK(orig_range);
       prev = s;
       s += enc_len(reg->enc, s);
     } while (s < range);
 
     if (s == range) { /* because empty match with /$/. */
-      MATCH_AND_RETURN_CHECK;
+      MATCH_AND_RETURN_CHECK(orig_range);
     }
   }
   else {  /* backward search */
+#ifdef USE_MATCH_RANGE_IS_COMPLETE_RANGE
+    if (orig_start < end)
+      orig_start += enc_len(reg->enc, orig_start); /* is upper range */
+#endif
+
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
       UChar *low, *high, *adjrange, *sch_start;
 
@@ -3793,7 +3716,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
 	  while (s >= low) {
 	    prev = onigenc_get_prev_char_head(reg->enc, str, s);
-	    MATCH_AND_RETURN_CHECK;
+	    MATCH_AND_RETURN_CHECK(orig_start);
 	    s = prev;
 	  }
 	} while (s >= range);
@@ -3821,12 +3744,20 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 
     do {
       prev = onigenc_get_prev_char_head(reg->enc, str, s);
-      MATCH_AND_RETURN_CHECK;
+      MATCH_AND_RETURN_CHECK(orig_start);
       s = prev;
     } while (s >= range);
   }
 
  mismatch:
+#ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
+  if (IS_FIND_LONGEST(reg->options)) {
+    if (msa.best_len >= 0) {
+      s = msa.best_s;
+      goto match;
+    }
+  }
+#endif
   r = ONIG_MISMATCH;
 
  finish:
@@ -3877,10 +3808,10 @@ onig_get_options(regex_t* reg)
   return reg->options;
 }
 
-extern  OnigAmbigType
-onig_get_ambig_flag(regex_t* reg)
+extern  OnigCaseFoldType
+onig_get_case_fold_flag(regex_t* reg)
 {
-  return reg->ambig_flag;
+  return reg->case_fold_flag;
 }
 
 extern OnigSyntaxType*

@@ -198,7 +198,7 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
       if (code >= 0x80) {
 	if (len + 5 <= buf_size) {
 	  sprintf((char* )(&(buf[len])), "\\%03o",
-		  (unsigned int)(code & 0377));
+		  (unsigned int )(code & 0377));
 	  len += 5;
 	}
 	else {
@@ -328,13 +328,13 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
 
     p = pat;
     while (p < pat_end) {
-      if (*p == MC_ESC(enc)) {
+      if (*p == '\\') {
 	*s++ = *p++;
 	len = enc_len(enc, p);
 	while (len-- > 0) *s++ = *p++;
       }
       else if (*p == '/') {
-	*s++ = (unsigned char )MC_ESC(enc);
+	*s++ = (unsigned char )'\\';
 	*s++ = *p++;
       }
       else if (ONIGENC_IS_MBC_HEAD(enc, p)) {

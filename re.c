@@ -554,7 +554,7 @@ rb_reg_to_s(VALUE re)
 	    Regexp *rp;
 	    kcode_set_option(re);
             r = onig_alloc_init(&rp, ONIG_OPTION_DEFAULT,
-                                ONIGENC_AMBIGUOUS_MATCH_DEFAULT,
+                                ONIGENC_CASE_FOLD_DEFAULT,
                                 onigenc_get_default_encoding(),
                                 OnigDefaultSyntax);
 	    if (r == 0) {
@@ -697,7 +697,7 @@ make_regexp(const char *s, long len, int flags, int ce)
     */
 
     r = onig_alloc_init(&rp, flags,
-                        ONIGENC_AMBIGUOUS_MATCH_DEFAULT,
+                        ONIGENC_CASE_FOLD_DEFAULT,
                         onigenc_get_default_encoding(),
                         OnigDefaultSyntax);
     if (r) {
