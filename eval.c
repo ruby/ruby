@@ -1162,11 +1162,16 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
     int status;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
+    struct rb_vm_trap_tag trap_tag = {
+	th->trap_tag,
+    };
 
     PUSH_TAG();
+    th->trap_tag = &trap_tag;
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc) (data);
     }
+    th->trap_tag = trap_tag.prev;
     POP_TAG();
 
     if (state) {

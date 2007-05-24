@@ -270,8 +270,9 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     if (cont->saved_thread.value != th->value) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
-    /* TODO: check "continuation called across trap" */
-    printf("--> %p\n", cont);
+    if (cont->saved_thread.trap_tag != th->trap_tag) {
+	rb_raise(rb_eRuntimeError, "continuation called across trap");
+    }
 
     switch(argc) {
       case 0:
