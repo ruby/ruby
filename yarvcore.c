@@ -12,7 +12,6 @@
 
 #include "ruby.h"
 #include "node.h"
-
 #include "yarvcore.h"
 #include "gc.h"
 
@@ -192,6 +191,7 @@ vm_mark(void *ptr)
 	MARK_UNLESS_NULL(vm->mark_object_ary);
 	MARK_UNLESS_NULL(vm->last_status);
 	MARK_UNLESS_NULL(vm->loaded_features);
+
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
 	}
@@ -200,6 +200,12 @@ vm_mark(void *ptr)
     }
 
     MARK_REPORT_LEAVE("vm");
+}
+
+void
+rb_vm_mark(void *ptr)
+{
+    vm_mark(ptr);
 }
 
 static VALUE

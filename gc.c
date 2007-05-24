@@ -504,7 +504,7 @@ rb_fill_value_cache(rb_thread_t *th)
 VALUE
 rb_newobj(void)
 {
-#if USE_VALUE_CACHE && 1
+#if USE_VALUE_CACHE
     rb_thread_t *th = GET_THREAD();
     VALUE v = *th->value_cache_ptr;
 
@@ -1333,6 +1333,8 @@ int rb_setjmp (rb_jmp_buf);
 
 #define GC_NOTIFY 0
 
+void rb_vm_mark(void *ptr);
+
 static int
 garbage_collect(void)
 {
@@ -1358,8 +1360,7 @@ garbage_collect(void)
 
     init_mark_stack();
 
-    rb_gc_mark(th->vm->self);
-    rb_gc_mark(th->vm->mark_object_ary);
+    th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
     if (finalizer_table) {
 	mark_tbl(finalizer_table, 0);

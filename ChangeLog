@@ -1,3 +1,9 @@
+Thu May 24 11:46:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, yarvcore.c: fix to mark VM structure on startup.
+
+	* yarvcore.h: disable USE_CACHED_VALUE.
+
 Thu May 24 01:54:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: support callcc which everyone love.

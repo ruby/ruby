@@ -411,7 +411,7 @@ struct rb_vm_tag {
 };
 
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
-#define USE_VALUE_CACHE 1
+#define USE_VALUE_CACHE 0
 
 struct rb_thread_struct
 {
