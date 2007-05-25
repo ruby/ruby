@@ -7,6 +7,9 @@ Sat May 26 00:38:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):
+	  skip tests for exitstatus and termsig on the platforms where
+	  signals not supported.
 
 Fri May 25 16:04:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
