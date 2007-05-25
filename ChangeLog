@@ -1,3 +1,8 @@
+Fri May 25 16:04:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* yarvcore.c (Init_VM): wrap already initialized structs to use
+	  it directly.
+
 Fri May 25 11:09:47 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regint.h (include): on some platform, defines.h redefines

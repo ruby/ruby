@@ -208,18 +208,6 @@ rb_vm_mark(void *ptr)
     vm_mark(ptr);
 }
 
-static VALUE
-vm_alloc(VALUE klass)
-{
-    VALUE volatile obj;
-    rb_vm_t *vm;
-    obj = Data_Make_Struct(klass, rb_vm_t, vm_mark, vm_free, vm);
-
-    vm->self = obj;
-    vm->mark_object_ary = rb_ary_new();
-    return obj;
-}
-
 static void
 vm_init2(rb_vm_t *vm)
 {
@@ -548,30 +536,22 @@ Init_VM(void)
 
     /* VM bootstrap: phase 2 */
     {
+	rb_vm_t *vm = ruby_current_vm;
+	rb_thread_t *th = GET_THREAD();
+
 	/* create vm object */
-	VALUE vmval = vm_alloc(rb_cVM);
-	VALUE thval;
-	rb_vm_t *vm;
-	rb_thread_t *th;
-
-	vm = ruby_current_vm;
-
-	xfree(RDATA(vmval)->data);
-	RDATA(vmval)->data = vm;
-	vm->self = vmval;
+	vm->self = Data_Wrap_Struct(rb_cVM, vm_mark, vm_free, vm);
 
 	/* create main thread */
-	thval = rb_thread_alloc(rb_cThread);
-	GetThreadPtr(thval, th);
+	th->self = Data_Wrap_Struct(rb_cThread, thread_mark, thread_free, th);
 
 	vm->main_thread = th;
 	vm->running_thread = th;
-	GET_THREAD()->vm = vm;
-	thread_free(GET_THREAD());
 	th->vm = vm;
+	th->top_wrapper = 0;
+	th->top_self = ruby_top_self;
 	rb_thread_set_current(th);
 
-	th->machine_stack_start = rb_gc_stack_start;
 	vm->living_threads = st_init_numtable();
 	st_insert(vm->living_threads, th->self, (st_data_t) th->thread_id);
     }
