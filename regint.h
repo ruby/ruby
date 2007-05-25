@@ -80,8 +80,10 @@
 
 /* */
 /* escape other system UChar definition */
+#ifndef DEFINES_H
 #include "config.h"
 #include "defines.h"
+#endif
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
@@ -107,7 +109,7 @@
 
 #define CHECK_INTERRUPT_IN_MATCH_AT
 
-#if defined(_WIN32) && !defined(__GNUC__)
+#if defined(_WIN32) && !defined(__GNUC__) && !defined(vsnprintf)
 #define vsnprintf   _vsnprintf
 #endif
 
