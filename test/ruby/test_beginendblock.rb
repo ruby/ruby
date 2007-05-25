@@ -13,9 +13,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   def test_beginendblock
     ruby = EnvUtil.rubybin
     target = File.join(DIR, 'beginmainend.rb')
-    io = IO.popen("#{q(ruby)} #{q(target)}")
-    assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), io.read.split)
-    io.close
+    result = IO.popen("#{q(ruby)} #{q(target)}"){|io|io.read}
+    assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), result.split)
   end
 
   def test_begininmethod
@@ -81,6 +80,7 @@ EOW
       f.read
     }
     assert_match /Interrupt$/, out
+    Process.kill(0, 0) rescue return # check if signal works
     assert_nil $?.exitstatus
     assert_equal Signal.list["INT"], $?.termsig
   end

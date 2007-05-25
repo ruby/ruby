@@ -1,3 +1,6 @@
+Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+
 Wed May 23 06:51:46 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#[]): get rid of exceptions being raised.
