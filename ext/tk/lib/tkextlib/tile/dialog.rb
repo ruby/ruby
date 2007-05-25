@@ -51,7 +51,7 @@ class Tk::Tile::Dialog
   alias display show
 
   def client_frame
-    window(tk_call_without_enc('::ttk::dialog::clientframe'))
+    window(tk_call_without_enc('::ttk::dialog::clientframe', @path))
   end
 
   def cget(slot)
