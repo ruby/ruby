@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tempfile'
+$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase
@@ -12,9 +13,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
   def test_beginendblock
     ruby = EnvUtil.rubybin
     target = File.join(DIR, 'beginmainend.rb')
-    IO.popen("#{q(ruby)} #{q(target)}"){|io|
-      assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), io.read.split)
-    }
+    result = IO.popen("#{q(ruby)} #{q(target)}"){|io|io.read}
+    assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), result.split)
   end
 
   def test_begininmethod
@@ -54,4 +54,34 @@ EOW
     # expecting Tempfile to unlink launcher and errout file.
   end
 
+  def test_raise_in_at_exit
+    # [ruby-core:09675]
+    ruby = EnvUtil.rubybin
+    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
+		   "at_exit{raise %[SomethingBad]};" \
+		   "raise %[SomethingElse]'") {|f|
+      f.read
+    }
+    assert_match /SomethingBad/, out
+    assert_match /SomethingElse/, out
+  end
+
+  def test_should_propagate_exit_code
+    ruby = EnvUtil.rubybin
+    assert_equal false, system("#{q(ruby)} -e 'at_exit{exit 2}'")
+    assert_equal 2, $?.exitstatus
+    assert_nil $?.termsig
+  end
+
+  def test_should_propagate_signaled
+    ruby = EnvUtil.rubybin
+    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
+		   "at_exit{Process.kill(:INT, $$)}'"){|f|
+      f.read
+    }
+    assert_match /Interrupt$/, out
+    Process.kill(0, 0) rescue return # check if signal works
+    assert_nil $?.exitstatus
+    assert_equal Signal.list["INT"], $?.termsig
+  end
 end

@@ -1,3 +1,6 @@
+Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+
 Fri May 25 16:04:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* yarvcore.c (Init_VM): wrap already initialized structs to use
