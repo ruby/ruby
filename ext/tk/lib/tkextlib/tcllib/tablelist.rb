@@ -23,5 +23,5 @@ else
   # TkPackage.require('Tablelist', '4.2')
   TkPackage.require('Tablelist')
 
-  requrie 'tkextlib/tcllib/tablelist_core'
+  require 'tkextlib/tcllib/tablelist_core'
 end

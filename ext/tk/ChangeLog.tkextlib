@@ -1,4 +1,13 @@
+2007-05-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tcllib/tablelist.rb: fix typo.
+
+	* ext/tk/lib/tkextlib/tile/dialog.rb: forget to give an argument.
+
+	* ext/tk/lib/tkextlib/version.rb: update RELEASE_DATE.
+
 2007-01-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
 	* ext/tk/lib/tkextlib/iwidgets/checkbox.rb: wrong number of arguments 
 	  [ruby-Bugs-7776].
 
