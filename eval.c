@@ -204,6 +204,8 @@ ruby_exec_internal(void)
 {
     int state;
     VALUE val;
+
+    if (!ruby_eval_tree) return 0;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	GET_THREAD()->base_block = 0;

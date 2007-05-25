@@ -1,3 +1,10 @@
+Sat May 26 00:38:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_exec_internal): do nothing if no code.
+
+	* compile.c (rb_iseq_compile): check node if NULL before check
+	  nd_type.  [ruby-talk:252956]
+
 Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 

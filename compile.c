@@ -144,7 +144,10 @@ rb_iseq_compile(VALUE self, NODE *node)
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
 
-    if (nd_type(node) == NODE_SCOPE) {
+    if (node == 0) {
+	COMPILE(ret, "nil", node);
+    }
+    else if (nd_type(node) == NODE_SCOPE) {
 	/* iseq type of top, method, class, block */
 	set_local_table(iseq, node->nd_tbl);
 	set_arguments(iseq, ret, node->nd_args);
@@ -196,9 +199,6 @@ rb_iseq_compile(VALUE self, NODE *node)
 	}
 	else if (iseq->type == ISEQ_TYPE_DEFINED_GUARD) {
 	    COMPILE(ret, "defined guard", node);
-	}
-	else if (node == 0) {
-	    COMPILE(ret, "nil", node);
 	}
 	else {
 	    rb_bug("unknown scope");
