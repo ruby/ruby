@@ -11,8 +11,13 @@ class TestMethod < Test::Unit::TestCase
 
   class Base
     def foo() :base end
+    def bar() :bar end
+  end
+  module SuperBar
+    def bar() super end
   end
   class Derived < Base
+    include SuperBar
     def foo() :derived end
   end
 
@@ -37,6 +42,12 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:derived, um.bind(Derived.new).call)
     assert_raise(TypeError) do
       um.bind(Base.new)
+    end
+  end
+
+  def test_method_super
+    assert_nothing_raised do
+      assert_equal(:bar, Derived.new.method(:bar).call)
     end
   end
 end

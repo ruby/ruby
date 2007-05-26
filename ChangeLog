@@ -1,3 +1,11 @@
+Sun May 27 05:52:37 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* eval.c (mnew): call of super via a method object should work again.
+	  [ruby-talk:248647], Thanks Calamitas.
+
+	* test/ruby/test_method.rb (TestMethod::test_method_super): test for
+	  above fix.
+
 Wed May 23 06:51:46 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#[]): get rid of exceptions being raised.
