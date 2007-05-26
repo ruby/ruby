@@ -41,11 +41,7 @@ config["bindir"] = abs_archdir
 ENV["RUBY"] = File.expand_path(ruby)
 ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
-if pure
   libs << File.expand_path("ext", srcdir) << "-"
-elsif e = ENV["RUBYLIB"]
-  libs |= e.split(File::PATH_SEPARATOR)
-end
 ENV["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
 libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
@@ -59,7 +55,6 @@ if File.file?(libruby_so)
 end
 
 cmd = [ruby]
-cmd << "-rpurelib.rb" if pure
+cmd << "-rpurelib.rb"
 cmd.concat(ARGV)
-cmd.unshift(*debugger) if debugger
 exec(*cmd)

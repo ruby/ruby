@@ -1,3 +1,8 @@
+Sun May 27 05:24:56 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* runruby.rb: eliminate uninitialized variable.
+	  [ruby-core:11255]
+
 Sun May 27 05:19:03 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* eval.c (mnew): call of super via a method object should work again.
