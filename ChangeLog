@@ -1,3 +1,11 @@
+Sun May 27 05:19:03 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* eval.c (mnew): call of super via a method object should work again.
+	  [ruby-talk:248647], Thanks Calamitas.
+
+	* test/ruby/test_method.rb (TestMethod::test_method_super): test for
+	  above fix.
+
 Wed May 23 07:29:53 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* process.c (proc_exec_v): terminate timer thread in advance.
