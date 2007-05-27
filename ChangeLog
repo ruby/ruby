@@ -1,3 +1,8 @@
+Mon May 28 02:54:05 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleBag#delete): use rindex and 
+	  delete_at instead of delete for little improvement.
+
 Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):

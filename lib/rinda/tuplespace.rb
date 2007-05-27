@@ -316,8 +316,13 @@ module Rinda
     # Removes +tuple+ from the TupleBag.
 
     def delete(tuple)
-      size = tuple.size
-      @hash.fetch(size, []).delete(tuple)
+      key = tuple.size
+      ary = @hash[key]
+      return unless ary
+      pos = ary.rindex(tuple)
+      return unless pos
+      ary.delete_at(pos)
+      @hash.delete(key) if ary.empty?
     end
 
     ##
