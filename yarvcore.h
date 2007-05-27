@@ -497,6 +497,11 @@ struct rb_thread_struct
     rb_event_flag_t event_flags;
     int tracing;
 
+    /* fiber */
+    VALUE fiber;
+    VALUE root_fiber;
+    rb_jmpbuf_t root_jmpbuf;
+
     /* misc */
     int method_missing_reason;
     int abort_on_exception;

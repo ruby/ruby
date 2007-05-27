@@ -45,7 +45,6 @@ static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 #include "eval_safe.h"
 #include "eval_jump.h"
 
-
 /* initialize ruby */
 
 #if defined(__APPLE__)
@@ -114,7 +113,7 @@ ruby_options(int argc, char **argv)
     Init_stack((void *)&state);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	ruby_process_options(argc, argv);
+	SAVE_ROOT_JMPBUF(GET_THREAD(), ruby_process_options(argc, argv));
     }
     else {
 	rb_clear_trace_func();
@@ -166,7 +165,7 @@ ruby_cleanup(int ex)
     errs[0] = th->errinfo;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	rb_thread_terminate_all();
+	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else if (ex == 0) {
 	ex = state;
@@ -204,13 +203,16 @@ ruby_exec_internal(void)
 {
     int state;
     VALUE val;
+    rb_thread_t *th = GET_THREAD();
 
     if (!ruby_eval_tree) return 0;
+
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	GET_THREAD()->base_block = 0;
-	val = yarvcore_eval_parsed(ruby_eval_tree,
-				   rb_str_new2(ruby_sourcefile));
+	SAVE_ROOT_JMPBUF(th, {
+	    th->base_block = 0;
+	    val = yarvcore_eval_parsed(ruby_eval_tree, rb_str_new2(ruby_sourcefile));
+	});
     }
     POP_TAG();
     return state;
@@ -1171,7 +1173,7 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
     PUSH_TAG();
     th->trap_tag = &trap_tag;
     if ((status = EXEC_TAG()) == 0) {
-	result = (*proc) (data);
+	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     th->trap_tag = trap_tag.prev;
     POP_TAG();

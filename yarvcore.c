@@ -268,7 +268,7 @@ thread_mark(void *ptr)
 	    VALUE *sp = th->cfp->sp + th->mark_stack_len;
 	    rb_control_frame_t *cfp = th->cfp;
 	    rb_control_frame_t *limit_cfp =
-		(void *)(th->stack + th->stack_size);
+	      (void *)(th->stack + th->stack_size);
 
 	    while (p < sp) {
 		rb_gc_mark(*p++);
@@ -282,18 +282,19 @@ thread_mark(void *ptr)
 	/* mark ruby objects */
 	MARK_UNLESS_NULL(th->first_proc);
 	MARK_UNLESS_NULL(th->first_args);
-	
+
 	MARK_UNLESS_NULL(th->thgroup);
 	MARK_UNLESS_NULL(th->value);
 	MARK_UNLESS_NULL(th->errinfo);
 	MARK_UNLESS_NULL(th->local_svar);
 	MARK_UNLESS_NULL(th->top_self);
 	MARK_UNLESS_NULL(th->top_wrapper);
+	MARK_UNLESS_NULL(th->fiber);
+	MARK_UNLESS_NULL(th->root_fiber);
 
 	rb_mark_tbl(th->local_storage);
 
-	if (GET_THREAD() != th &&
-	    th->machine_stack_start && th->machine_stack_end) {
+	if (GET_THREAD() != th && th->machine_stack_start && th->machine_stack_end) {
 	    yarv_machine_stack_mark(th);
 	    rb_gc_mark_locations((VALUE *)&th->machine_regs,
 				 (VALUE *)(&th->machine_regs) +

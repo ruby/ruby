@@ -15,18 +15,24 @@
 #include "gc.h"
 #include "eval_intern.h"
 
-typedef struct rb_continuation_struct {
-    rb_thread_t saved_thread;
-    rb_jmpbuf_t jmpbuf;
+typedef struct rb_context_struct {
+    VALUE self;
     VALUE retval;
+    VALUE prev; /* for fiber */
     VALUE *vm_stack;
     VALUE *machine_stack;
     VALUE *machine_stack_src;
+    rb_thread_t saved_thread;
+    rb_jmpbuf_t jmpbuf;
     int machine_stack_size;
-} rb_continuation_t;
+    int alive;
+} rb_context_t;
+
+VALUE rb_cCont;
+VALUE rb_cFiber;
 
 #define GetContPtr(obj, ptr)  \
-  Data_Get_Struct(obj, rb_continuation_t, ptr)
+  Data_Get_Struct(obj, rb_context_t, ptr)
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
@@ -37,8 +43,10 @@ cont_mark(void *ptr)
 {
     MARK_REPORT_ENTER("cont");
     if (ptr) {
-	rb_continuation_t *cont = ptr;
+	rb_context_t *cont = ptr;
 	rb_gc_mark(cont->retval);
+	rb_gc_mark(cont->prev);
+
 	rb_thread_mark(&cont->saved_thread);
 
 	if (cont->vm_stack) {
@@ -59,7 +67,8 @@ cont_free(void *ptr)
 {
     FREE_REPORT_ENTER("cont");
     if (ptr) {
-	rb_continuation_t *cont = ptr;
+	rb_context_t *cont = ptr;
+	FREE_UNLESS_NULL(cont->saved_thread.stack);
 	FREE_UNLESS_NULL(cont->machine_stack);
 	FREE_UNLESS_NULL(cont->vm_stack);
 	ruby_xfree(ptr);
@@ -67,23 +76,10 @@ cont_free(void *ptr)
     FREE_REPORT_LEAVE("cont");
 }
 
-static VALUE
-cont_capture(volatile int *stat)
+static void
+cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
-    rb_continuation_t *cont;
-    VALUE contval;
-    rb_thread_t *th = GET_THREAD(), *sth;
     int size;
-
-    contval = Data_Make_Struct(rb_cCont, rb_continuation_t,
-			       cont_mark, cont_free, cont);
-
-    /* save context */
-    cont->saved_thread = *th;
-    sth = &cont->saved_thread;
-    sth->stack = 0; /* clear to skip GC marking */
-    cont->vm_stack = ALLOC_N(VALUE, sth->stack_size);
-    MEMCPY(cont->vm_stack, th->stack, VALUE, sth->stack_size);
 
     rb_gc_set_stack_end(&th->machine_stack_end);
     if (th->machine_stack_start > th->machine_stack_end) {
@@ -95,8 +91,45 @@ cont_capture(volatile int *stat)
 	cont->machine_stack_src = th->machine_stack_start;
     }
 
-    cont->machine_stack = ALLOC_N(VALUE, size);
+    if (cont->machine_stack) {
+	REALLOC_N(cont->machine_stack, VALUE, size);
+    }
+    else {
+	cont->machine_stack = ALLOC_N(VALUE, size);
+    }
+
     MEMCPY(cont->machine_stack, cont->machine_stack_src, VALUE, size);
+}
+
+static rb_context_t *
+cont_new(VALUE klass)
+{
+    rb_context_t *cont;
+    volatile VALUE contval;
+    rb_thread_t *th = GET_THREAD(), *sth;
+
+    contval = Data_Make_Struct(klass, rb_context_t,
+			       cont_mark, cont_free, cont);
+    cont->self = contval;
+    cont->alive = Qtrue;
+
+    /* save context */
+    cont->saved_thread = *th;
+    sth = &cont->saved_thread;
+
+    return cont;
+}
+
+static VALUE
+cont_capture(volatile int *stat)
+{
+    rb_context_t *cont = cont_new(rb_cCont);
+    rb_thread_t *th = &cont->saved_thread;
+
+    cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
+    MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
+
+    cont_save_machine_stack(th, cont);
 
     if (ruby_setjmp(cont->jmpbuf)) {
 	VALUE retval;
@@ -108,17 +141,25 @@ cont_capture(volatile int *stat)
     }
     else {
 	*stat = 0;
-	return contval;
+	return cont->self;
     }
 }
 
 static void
-cont_restore_context_1(rb_continuation_t *cont)
+cont_restore_1(rb_context_t *cont)
 {
     rb_thread_t *th = GET_THREAD(), *sth = &cont->saved_thread;
 
     /* restore thread context */
-    MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+    if (sth->stack) {
+	/* fiber */
+	th->stack = sth->stack;
+	th->stack_size = sth->stack_size;
+    }
+    else {
+	/* continuation */
+	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+    }
 
     th->cfp = sth->cfp;
     th->safe_level = sth->safe_level;
@@ -126,45 +167,53 @@ cont_restore_context_1(rb_continuation_t *cont)
     th->state = sth->state;
     th->status = sth->status;
     th->tag = sth->tag;
+    th->errinfo = sth->errinfo;
+    th->first_proc = sth->first_proc;
+
+    th->fiber = cont->self;
 
     /* restore machine stack */
-    MEMCPY(cont->machine_stack_src, cont->machine_stack,
-	   VALUE, cont->machine_stack_size);
+    if (cont->machine_stack_src) {
+	MEMCPY(cont->machine_stack_src, cont->machine_stack,
+	       VALUE, cont->machine_stack_size);
+    }
 
     ruby_longjmp(cont->jmpbuf, 1);
 }
 
-NORETURN(NOINLINE(static void restore_context_0(rb_continuation_t *, VALUE *)));
+NORETURN(NOINLINE(static void restore_context_0(rb_context_t *, VALUE *)));
 
 static void
-cont_restore_context_0(rb_continuation_t *cont, VALUE *addr_in_prev_frame)
+cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 {
+    if (cont->machine_stack_src) {
 #define STACK_PAD_SIZE 1024
-    VALUE space[STACK_PAD_SIZE];
+	VALUE space[STACK_PAD_SIZE];
 
 #if STACK_GROW_DIRECTION < 0 /* downward */
-    if (addr_in_prev_frame > cont->machine_stack_src) {
-	cont_restore_context_0(cont, &space[0]);
-    }
+	if (addr_in_prev_frame > cont->machine_stack_src) {
+	    cont_restore_0(cont, &space[0]);
+	}
 #elif STACK_GROW_DIRECTION > 0 /* upward */
-    if (addr_in_prev_frame < cont->machine_stack_src + cont->machine_stack_size) {
-	cont_restore_context_0(cont, &space[STACK_PAD_SIZE-1]);
-    }
-#else
-    if (addr_in_prev_frame > &space[0]) {
-	/* Stack grows downward */
-	if (addr_in_prev_frame > cont->saved_thread.machine_stack_src) {
-	    cont_restore_context_0(cont, &space[0]);
-	}
-    }
-    else {
-	/* Stack grows upward */
 	if (addr_in_prev_frame < cont->machine_stack_src + cont->machine_stack_size) {
-	    cont_restore_context_0(cont, &space[STACK_PAD_SIZE-1]);
+	    cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
 	}
-    }
+#else
+	if (addr_in_prev_frame > &space[0]) {
+	    /* Stack grows downward */
+	    if (addr_in_prev_frame > cont->saved_thread.machine_stack_src) {
+		cont_restore_0(cont, &space[0]);
+	    }
+	}
+	else {
+	    /* Stack grows upward */
+	    if (addr_in_prev_frame < cont->machine_stack_src + cont->machine_stack_size) {
+		cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
+	    }
+	}
 #endif
-    cont_restore_context_1(cont);
+    }
+    cont_restore_1(cont);
 }
 
 /*
@@ -214,8 +263,6 @@ cont_restore_context_0(rb_continuation_t *cont, VALUE *addr_in_prev_frame)
  *     3:  15 16
  */
 
-VALUE rb_cCont;
-
 /*
  *  call-seq:
  *     callcc {|cont| block }   =>  obj
@@ -244,6 +291,19 @@ rb_callcc(VALUE self)
     }
 }
 
+static VALUE
+make_passing_arg(int argc, VALUE *argv)
+{
+    switch(argc) {
+      case 0:
+	return Qnil;
+      case 1:
+	return argv[0];
+      default:
+	return rb_ary_new4(argc, argv);
+    }
+}
+
 /*
  *  call-seq:
  *     cont.call(args, ...)
@@ -263,31 +323,216 @@ rb_callcc(VALUE self)
 static VALUE
 rb_cont_call(int argc, VALUE *argv, VALUE contval)
 {
-    rb_continuation_t *cont;
+    rb_context_t *cont;
     rb_thread_t *th = GET_THREAD();
     GetContPtr(contval, cont);
 
-    if (cont->saved_thread.value != th->value) {
+    if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
     if (cont->saved_thread.trap_tag != th->trap_tag) {
 	rb_raise(rb_eRuntimeError, "continuation called across trap");
     }
 
-    switch(argc) {
-      case 0:
-	cont->retval = Qnil;
-	break;
-      case 1:
-	cont->retval = argv[0];
-	break;
-      default:
-	cont->retval = rb_ary_new4(argc, argv);
-	break;
+    cont->retval = make_passing_arg(argc, argv);
+
+    cont_restore_0(cont, (VALUE *)&cont);
+    return Qnil; /* unreachable */
+}
+
+/*********/
+/* fiber */
+/*********/
+
+#define FIBER_STACK_SIZE (4 * 1024)
+
+static VALUE
+rb_fiber_s_new(int argc, VALUE *argv, VALUE self)
+{
+    rb_context_t *cont = cont_new(rb_cFiber);
+    rb_thread_t *th = &cont->saved_thread;
+    volatile VALUE fval = cont->self;
+
+    /* initialize */
+    cont->prev = Qnil;
+    cont->vm_stack = 0;
+
+    th->stack = 0;
+    th->stack_size = FIBER_STACK_SIZE;
+    th->stack = ALLOC_N(VALUE, th->stack_size);
+    th->cfp = (void *)(th->stack + th->stack_size);
+    th->cfp--;
+    th->cfp->pc = 0;
+    th->cfp->sp = th->stack + 1;
+    th->cfp->bp = 0;
+    th->cfp->lfp = th->stack;
+    *th->cfp->lfp = 0;
+    th->cfp->dfp = th->stack;
+    th->cfp->self = Qnil;
+    th->cfp->magic = 0;
+    th->cfp->iseq = 0;
+    th->cfp->proc = 0;
+    th->cfp->block_iseq = 0;
+
+    th->first_proc = rb_block_proc();
+    th->first_args = rb_ary_new4(argc, argv);
+
+    MEMCPY(&cont->jmpbuf, &th->root_jmpbuf, rb_jmpbuf_t, 1);
+
+    return cont->self;
+}
+
+static VALUE rb_fiber_pass(int argc, VALUE *args, VALUE fval);
+
+static void
+rb_fiber_terminate(rb_context_t *cont)
+{
+    rb_context_t *prev_cont;
+    VALUE retval = cont->retval;
+
+    GetContPtr(cont->prev, prev_cont);
+
+    cont->alive = Qfalse;
+
+
+    if (prev_cont->alive == Qfalse) {
+	rb_fiber_pass(1, &retval, GET_THREAD()->root_fiber);
+    }
+    else {
+	rb_fiber_pass(1, &retval, cont->prev);
+    }
+}
+
+void
+rb_fiber_start(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_context_t *cont;
+    rb_proc_t *proc;
+    VALUE args;
+    int state;
+
+    TH_PUSH_TAG(th);
+    if ((state = EXEC_TAG()) == 0) {
+	GetContPtr(th->fiber, cont);
+	GetProcPtr(cont->saved_thread.first_proc, proc);
+	args = cont->saved_thread.first_args;
+	th->errinfo = Qnil;
+	th->local_lfp = proc->block.lfp;
+	th->local_svar = Qnil;
+	cont->retval = th_invoke_proc(th, proc, proc->block.self,
+				      RARRAY_LEN(args), RARRAY_PTR(args));
+    }
+    TH_POP_TAG();
+
+    if (state) {
+	th->thrown_errinfo = th->errinfo;
+	th->interrupt_flag = 1;
     }
 
-    cont_restore_context_0(cont, (VALUE *)&cont);
-    return Qnil; /* unreachable */
+    rb_fiber_terminate(cont);
+    rb_bug("rb_fiber_start: unreachable");
+}
+
+static VALUE
+rb_fiber_current(rb_thread_t *th)
+{
+    if (th->fiber == 0) {
+	/* save root */
+	th->root_fiber = th->fiber = cont_new(rb_cFiber)->self;
+    }
+    return th->fiber;
+}
+
+static VALUE
+cont_store(rb_context_t *next_cont)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_context_t *cont;
+
+    if (th->fiber) {
+	GetContPtr(th->fiber, cont);
+	cont->saved_thread = *th;
+    }
+    else {
+	/* create current fiber */
+	cont = cont_new(rb_cFiber); /* no need to allocate vm stack */
+	th->root_fiber = th->fiber = cont->self;
+    }
+
+    if (cont->alive) {
+	next_cont->prev = cont->self;
+    }
+    cont_save_machine_stack(th, cont);
+
+    if (ruby_setjmp(cont->jmpbuf)) {
+	/* restored */
+	GetContPtr(th->fiber, cont);
+	return cont->retval;
+    }
+    else {
+	return Qundef;
+    }
+}
+
+static VALUE
+rb_fiber_pass(int argc, VALUE *argv, VALUE fval)
+{
+    VALUE retval;
+    rb_context_t *cont;
+    rb_thread_t *th = GET_THREAD();
+
+    GetContPtr(fval, cont);
+
+    if (cont->saved_thread.self != th->self) {
+	rb_raise(rb_eRuntimeError, "fiber called across threads");
+    }
+    if (cont->saved_thread.trap_tag != th->trap_tag) {
+	rb_raise(rb_eRuntimeError, "fiber called across trap");
+    }
+
+    cont->retval = make_passing_arg(argc, argv);
+
+    if ((retval = cont_store(cont)) == Qundef) {
+	cont_restore_0(cont, (VALUE *)&cont);
+	rb_bug("rb_fiber_pass: unreachable");
+    }
+
+    return retval;
+}
+
+static VALUE
+rb_fiber_prev(VALUE fval)
+{
+    rb_context_t *cont;
+    GetContPtr(fval, cont);
+    return cont->prev;
+}
+
+static VALUE
+rb_fiber_alive_p(VALUE fval)
+{
+    rb_context_t *cont;
+    GetContPtr(fval, cont);
+    return cont->alive;
+}
+
+static VALUE
+rb_fiber_s_current(VALUE klass)
+{
+    return rb_fiber_current(GET_THREAD());
+}
+
+static VALUE
+rb_fiber_s_prev(VALUE klass)
+{
+    return rb_fiber_prev(rb_fiber_s_current(Qnil));
+}
+
+static VALUE
+rb_fiber_s_pass(int argc, VALUE *argv, VALUE fval)
+{
+    return rb_fiber_pass(argc, argv, rb_fiber_s_prev(Qnil));
 }
 
 void
@@ -299,5 +544,17 @@ Init_Cont(void)
     rb_define_method(rb_cCont, "call", rb_cont_call, -1);
     rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
+
+    rb_cFiber = rb_define_class("Fiber", rb_cObject);
+    rb_undef_alloc_func(rb_cFiber);
+    rb_define_method(rb_cFiber, "pass", rb_fiber_pass, -1);
+    rb_define_method(rb_cFiber, "prev", rb_fiber_prev, 0);
+    rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
+
+    rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
+    rb_define_singleton_method(rb_cFiber, "prev", rb_fiber_s_prev, 0);
+    rb_define_singleton_method(rb_cFiber, "pass", rb_fiber_s_pass, -1);
+    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, -1);
+    rb_define_singleton_method(rb_cFiber, "start", rb_fiber_s_new, -1);
 }
 

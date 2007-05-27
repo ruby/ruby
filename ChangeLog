@@ -1,3 +1,14 @@
+Mon May 28 03:56:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: support Fiber.  Check test/ruby/test_fiber.rb for detail.
+	  Fiber is known as "Micro Thread", "Coroutine", and other terms.
+	  At this time, only Fiber#pass is supported to change context.
+	  I want to know more suitable method name/API for Fiber (... do you
+	  know more suitable class name instead of Fiber?) as "suspend/resume",
+	  "call", "yield", "start/kick/stop/restart", ....
+
+	* eval.c, eval_intern.h, thread.c, yarvcore.c, yarvcore.h: ditto.
+
 Sat May 26 00:38:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_exec_internal): do nothing if no code.

@@ -117,6 +117,14 @@ char *strrchr _((const char *, const char));
 
 #include <sys/stat.h>
 
+#define SAVE_ROOT_JMPBUF(th, stmt) do \
+  if (ruby_setjmp((th)->root_jmpbuf) == 0) { \
+      stmt; \
+  } \
+  else { \
+      rb_fiber_start(th); \
+  } while (0)
+
 #define TH_PUSH_TAG(th) do { \
   rb_thread_t * const _th = th; \
   struct rb_vm_tag _tag; \
