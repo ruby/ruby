@@ -145,6 +145,8 @@ cont_capture(volatile int *stat)
     }
 }
 
+NORETURN(static void cont_restore_1(rb_context_t *));
+
 static void
 cont_restore_1(rb_context_t *cont)
 {
@@ -181,7 +183,7 @@ cont_restore_1(rb_context_t *cont)
     ruby_longjmp(cont->jmpbuf, 1);
 }
 
-NORETURN(NOINLINE(static void restore_context_0(rb_context_t *, VALUE *)));
+NORETURN(NOINLINE(static void cont_restore_0(rb_context_t *, VALUE *)));
 
 static void
 cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
