@@ -1,3 +1,8 @@
+Mon May 28 19:37:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (move_to_next_entry): revert r12338. not necessary
+	  on ruby_1_8_5.
+
 Sun May 27 05:52:37 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* eval.c (mnew): call of super via a method object should work again.

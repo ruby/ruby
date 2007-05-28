@@ -1533,7 +1533,6 @@ static void
 move_to_next_entry(DIR *dirp)
 {
     if (dirp->curr) {
-	dirp->loc++;
 	dirp->curr += strlen(dirp->curr) + 1;
 	if (dirp->curr >= (dirp->start + dirp->size)) {
 	    dirp->curr = NULL;
