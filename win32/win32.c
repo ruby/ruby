@@ -1383,8 +1383,12 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 // return the pointer to the current file name. 
 //
 
-#define GetBit(bits, i) ((bits)[(i) / 8] &  (1 << (i) % 8))
-#define SetBit(bits, i) ((bits)[(i) / 8] |= (1 << (i) % 8))
+#define GetBit(bits, i) ((bits)[(i) / CHAR_BIT] &  (1 << (i) % CHAR_BIT))
+#define SetBit(bits, i) ((bits)[(i) / CHAR_BIT] |= (1 << (i) % CHAR_BIT))
+
+#define BitOfIsDir(n) ((n) * 2)
+#define BitOfIsRep(n) ((n) * 2 + 1)
+#define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
 DIR *
 rb_w32_opendir(const char *filename)
@@ -1458,9 +1462,9 @@ rb_w32_opendir(const char *filename)
     strlcpy(p->start, fd.cFileName, idx);
     p->bits[0] = 0;
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	SetBit(p->bits, 0);
+	SetBit(p->bits, BitOfIsDir(0));
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	SetBit(p->bits, 1);
+	SetBit(p->bits, BitOfIsRep(0));
     p->nfiles++;
 
     //
@@ -1482,17 +1486,17 @@ rb_w32_opendir(const char *filename)
 	p->start = tmp;
 	strlcpy(&p->start[idx], fd.cFileName, len);
 
-	if (p->nfiles % 4 == 0) {
-	    tmp = realloc(p->bits, p->nfiles / 4 + 1);
+	if (p->nfiles % DIRENT_PER_CHAR == 0) {
+	    tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
 	    if (!tmp)
 		goto error;
 	    p->bits = tmp;
-	    p->bits[p->nfiles / 4] = 0;
+	    p->bits[p->nfiles / DIRENT_PER_CHAR] = 0;
 	}
 	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	    SetBit(p->bits, p->nfiles * 2);
+	    SetBit(p->bits, BitOfIsDir(p->nfiles));
 	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	    SetBit(p->bits, p->nfiles * 2 + 1);
+	    SetBit(p->bits, BitOfIsRep(p->nfiles));
 
 	p->nfiles++;
 	idx += len;
@@ -1547,8 +1551,8 @@ rb_w32_readdir(DIR *dirp)
 	//
 	// Attributes
 	//
-	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->loc * 2);
-	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->loc * 2 + 1);
+	dirp->dirstr.d_isdir = GetBit(dirp->bits, BitOfIsDir(dirp->loc));
+	dirp->dirstr.d_isrep = GetBit(dirp->bits, BitOfIsRep(dirp->loc));
 
 	//
 	// Now set up for the next call to readdir

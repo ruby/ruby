@@ -1,3 +1,8 @@
+Tue May 29 10:54:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_opendir, rb_w32_readdir): eliminate magic
+	  numbers.
+
 Mon May 28 10:27:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c: fixed a function name.
