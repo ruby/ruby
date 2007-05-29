@@ -53,7 +53,7 @@ cont_mark(void *ptr)
 	    rb_gc_mark_locations(cont->vm_stack,
 				 cont->vm_stack + cont->saved_thread.stack_size);
 	}
-	
+
 	if (cont->machine_stack) {
 	    rb_gc_mark_locations(cont->machine_stack,
 				 cont->machine_stack + cont->machine_stack_size);
@@ -128,6 +128,7 @@ cont_capture(volatile int *stat)
 
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
+    th->stack = 0;
 
     cont_save_machine_stack(th, cont);
 
@@ -157,10 +158,12 @@ cont_restore_1(rb_context_t *cont)
 	/* fiber */
 	th->stack = sth->stack;
 	th->stack_size = sth->stack_size;
+	th->fiber = cont->self;
     }
     else {
 	/* continuation */
 	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+	th->fiber = sth->fiber;
     }
 
     th->cfp = sth->cfp;
@@ -169,10 +172,9 @@ cont_restore_1(rb_context_t *cont)
     th->state = sth->state;
     th->status = sth->status;
     th->tag = sth->tag;
+    th->trap_tag = sth->trap_tag;
     th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
-
-    th->fiber = cont->self;
 
     /* restore machine stack */
     if (cont->machine_stack_src) {

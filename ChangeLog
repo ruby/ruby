@@ -1,3 +1,9 @@
+Tue May 29 10:55:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: fix bug around Continuation and Fiber.
+
+	* test/ruby/test_continuation.rb: add tests for Continuation.
+
 Tue May 29 10:54:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_opendir, rb_w32_readdir): eliminate magic
