@@ -11756,6 +11756,11 @@ static void*
 thread_timer(dummy)
     void *dummy;
 {
+    sigset_t all_signals;
+
+    sigfillset(&all_signals);
+    pthread_sigmask(SIG_BLOCK, &all_signals, 0);
+
     for (;;) {
 #ifdef HAVE_NANOSLEEP
 	struct timespec req, rem;
