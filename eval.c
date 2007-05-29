@@ -3504,6 +3504,10 @@ rb_eval(self, n)
 		    }
 		    argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;
 		}
+		else if (!ruby_scope->local_vars) {
+		    argc = 0;
+		    argv = 0;
+		}
 		else {
 		    argv = ruby_scope->local_vars + 2;
 		}

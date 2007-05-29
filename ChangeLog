@@ -1,3 +1,8 @@
+Wed May 30 05:17:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): get rid of SEGV at ZSUPER in a block
+	  [ruby-dev:30836]
+
 Wed May 30 04:29:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (thread_timer): timer thread should not receive any
