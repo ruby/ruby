@@ -1447,25 +1447,7 @@ rb_w32_opendir(const char *filename)
 	return NULL;
     }
 
-    //
-    // now allocate the first part of the string table for the
-    // filenames that we find.
-    //
-    idx = strlen(fd.cFileName)+1;
-    if (!(p->start = (char *)malloc(idx)) || !(p->bits = (char *)malloc(1))) {
-      error:
-	rb_w32_closedir(p);
-	FindClose(fh);
-	errno = ENOMEM;
-	return NULL;
-    }
-    strlcpy(p->start, fd.cFileName, idx);
-    p->bits[0] = 0;
-    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	SetBit(p->bits, BitOfIsDir(0));
-    if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	SetBit(p->bits, BitOfIsRep(0));
-    p->nfiles++;
+    idx = 0;
 
     //
     // loop finding all the files that match the wildcard
@@ -1473,7 +1455,7 @@ rb_w32_opendir(const char *filename)
     // the variable idx should point one past the null terminator
     // of the previous string found.
     //
-    while (FindNextFile(fh, &fd)) {
+    do {
 	len = strlen(fd.cFileName) + 1;
 
 	//
@@ -1481,8 +1463,14 @@ rb_w32_opendir(const char *filename)
 	// new name and it's null terminator 
 	//
 	tmp = realloc(p->start, idx + len);
-	if (!tmp)
-	    goto error;
+	if (!tmp) {
+	  error:
+	    rb_w32_closedir(p);
+	    FindClose(fh);
+	    errno = ENOMEM;
+	    return NULL;
+	}
+
 	p->start = tmp;
 	strlcpy(&p->start[idx], fd.cFileName, len);
 
@@ -1500,7 +1488,7 @@ rb_w32_opendir(const char *filename)
 
 	p->nfiles++;
 	idx += len;
-    }
+    } while (FindNextFile(fh, &fd));
     FindClose(fh);
     p->size = idx;
     p->curr = p->start;
