@@ -1,4 +1,6 @@
-Wed May 30 00:47:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 30 00:50:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_source_filename, obj_free): supress warnings.
 
 	* gc.c (garbage_collect, yarv_machine_stack_mark): fixed typo.
 	  http://bugs.debian.org/426267

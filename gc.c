@@ -18,6 +18,7 @@
 #include "node.h"
 #include "re.h"
 #include "yarvcore.h"
+#include "gc.h"
 #include <stdio.h>
 #include <setjmp.h>
 #include <sys/types.h>
@@ -611,17 +612,19 @@ static st_table *source_filenames;
 char *
 rb_source_filename(const char *f)
 {
-    char *name;
+    st_data_t name;
 
-    if (!st_lookup(source_filenames, (st_data_t)f, (st_data_t *)&name)) {
+    if (!st_lookup(source_filenames, (st_data_t)f, &name)) {
 	long len = strlen(f) + 1;
-	char *ptr = name = ALLOC_N(char, len + 1);
+	char *ptr = ALLOC_N(char, len + 1);
+
+	name = (st_data_t)ptr;
 	*ptr++ = 0;
 	MEMCPY(ptr, f, char, len);
-	st_add_direct(source_filenames, (st_data_t)ptr, (st_data_t)name);
+	st_add_direct(source_filenames, (st_data_t)ptr, name);
 	return ptr;
     }
-    return name + 1;
+    return (char *)name + 1;
 }
 
 static void
@@ -1281,7 +1284,7 @@ obj_free(VALUE obj)
 	return;			/* no need to free iv_tbl */
 
       case T_STRUCT:
-	if (RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK == 0 &&
+	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.rstruct.as.heap.ptr));
 	}
