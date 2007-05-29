@@ -262,9 +262,9 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE args[2];
 
-    rb_scan_args(argc, argv, "01", &args[1]);
     args[0] = INT2FIX(SIGINT);
-    return rb_call_super(argc + 1, args);
+    rb_scan_args(argc, argv, "01", &args[1]);
+    return rb_call_super(2, args);
 }
 
 void

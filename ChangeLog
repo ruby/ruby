@@ -1,4 +1,7 @@
-Wed May 30 02:09:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 30 02:14:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (interrupt_init): needs to pass nil for Interrupt.
+	  [ruby-core:11038]
 
 	* signal.c (trap): fixed segfaults.  [ruby-dev:30830]
 
