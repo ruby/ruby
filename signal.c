@@ -374,7 +374,6 @@ rb_f_kill(int argc, VALUE *argv)
 
 static struct {
     VALUE cmd;
-    int safe;
 } trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
 static char rb_trap_accept_nativethreads[NSIG];
@@ -544,6 +543,15 @@ sigpipe(int sig)
 }
 #endif
 
+static void
+signal_exec(VALUE cmd, int sig)
+{
+    rb_proc_t *proc;
+    VALUE signum = INT2FIX(sig);
+    GetProcPtr(cmd, proc);
+    th_invoke_proc(GET_THREAD(), proc, proc->block.self, 1, &signum);
+}
+
 void
 rb_trap_exit(void)
 {
@@ -552,7 +560,7 @@ rb_trap_exit(void)
 	VALUE trap_exit = trap_list[0].cmd;
 
 	trap_list[0].cmd = 0;
-	rb_eval_cmd(trap_exit, rb_ary_new3(1, INT2FIX(0)), trap_list[0].safe);
+	signal_exec(trap_exit, 0);
     }
 #endif
 }
@@ -593,10 +601,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	rb_thread_signal_exit(th);
     }
     else {
-	rb_proc_t *proc;
-	VALUE signum = INT2FIX(sig);
-	GetProcPtr(cmd, proc);
-	th_invoke_proc(th, proc, proc->block.self, 1, &signum);
+	signal_exec(cmd, sig);
     }
 }
 
@@ -624,23 +629,22 @@ struct trap_arg {
     int mask;
 # endif
 #endif
-    VALUE sig, cmd;
+    int sig;
+    sighandler_t func;
+    VALUE cmd;
 };
 
-static VALUE
-trap(struct trap_arg *arg)
+static sighandler_t
+trap_handler(VALUE *cmd)
 {
-    sighandler_t func, oldfunc;
-    VALUE command, oldcmd;
-    int sig = -1;
-    const char *s;
+    sighandler_t func = 0;
+    VALUE command;
 
-    func = sighandler;
-    if (NIL_P(arg->cmd)) {
+    if (NIL_P(*cmd)) {
 	func = SIG_IGN;
     }
     else {
-	command = rb_check_string_type(arg->cmd);
+	command = rb_check_string_type(*cmd);
 	if (!NIL_P(command)) {
 	    SafeStringValue(command);	/* taint check */
 	    switch (RSTRING_LEN(command)) {
@@ -665,31 +669,49 @@ trap(struct trap_arg *arg)
 		break;
 	      case 4:
 		if (strncmp(RSTRING_PTR(command), "EXIT", 4) == 0) {
-		    arg->cmd = Qundef;
+		    func = sighandler;
+		    *cmd = Qundef;
 		}
 		break;
 	    }
+	    if (!func) {
+		rb_raise(rb_eArgError, "wrong trap - %s", RSTRING_PTR(command));
+	    }
+	}
+	else {
+	    rb_proc_t *proc;
+	    GetProcPtr(*cmd, proc);
+	    func = sighandler;
 	}
     }
     if (func == SIG_IGN || func == SIG_DFL) {
-	command = 0;
-    }
-    else {
-	command = arg->cmd;
+	*cmd = 0;
     }
 
-    switch (TYPE(arg->sig)) {
+    return func;
+}
+
+static int
+trap_signm(VALUE vsig)
+{
+    int sig = -1;
+    const char *s;
+
+    switch (TYPE(vsig)) {
       case T_FIXNUM:
-	sig = FIX2INT(arg->sig);
+	sig = FIX2INT(vsig);
+	if (sig < 0 || sig >= NSIG) {
+	    rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
+	}
 	break;
 
       case T_SYMBOL:
-	s = rb_id2name(SYM2ID(arg->sig));
+	s = rb_id2name(SYM2ID(vsig));
 	if (!s) rb_raise(rb_eArgError, "bad signal");
 	goto str_signal;
 
-      case T_STRING:
-	s = RSTRING_PTR(arg->sig);
+      default:
+	s = StringValuePtr(vsig);
 
       str_signal:
 	if (strncmp("SIG", s, 3) == 0)
@@ -699,14 +721,17 @@ trap(struct trap_arg *arg)
 	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
     }
 
-    if (sig < 0 || sig >= NSIG) {
-	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
-    }
 #if defined(HAVE_SETITIMER)
     if (sig == SIGVTALRM) {
 	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; can't set handler");
     }
 #endif
+    return sig;
+}
+
+static sighandler_t
+default_handler(sighandler_t func, int sig)
+{
     if (func == SIG_DFL) {
 	switch (sig) {
 	  case SIGINT:
@@ -747,16 +772,31 @@ trap(struct trap_arg *arg)
 #endif
 	}
     }
+
+    return func;
+}
+
+static VALUE
+trap(struct trap_arg *arg)
+{
+    sighandler_t oldfunc, func = arg->func;
+    VALUE oldcmd, command = arg->cmd;
+    int sig = arg->sig;
+
     oldfunc = ruby_signal(sig, func);
     oldcmd = trap_list[sig].cmd;
-    if (!oldcmd) {
+    switch (oldcmd) {
+      case 0:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
+	break;
+      case Qundef:
+	oldcmd = rb_str_new2("EXIT");
+	break;
     }
 
     trap_list[sig].cmd = command;
-    trap_list[sig].safe = rb_safe_level();
     /* enable at least specified signal. */
 #ifndef _WIN32
 #ifdef HAVE_SIGPROCMASK
@@ -833,12 +873,14 @@ sig_trap(int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "wrong number of arguments -- trap(sig, cmd)/trap(sig){...}");
     }
 
-    arg.sig = argv[0];
+    arg.sig = trap_signm(argv[0]);
     if (argc == 1) {
 	arg.cmd = rb_block_proc();
+	arg.func = sighandler;
     }
     else if (argc == 2) {
 	arg.cmd = argv[1];
+	arg.func = default_handler(trap_handler(&arg.cmd), arg.sig);
     }
 
     if (OBJ_TAINTED(arg.cmd)) {

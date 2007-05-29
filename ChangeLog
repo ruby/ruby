@@ -1,3 +1,7 @@
+Wed May 30 02:09:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (trap): fixed segfaults.  [ruby-dev:30830]
+
 Wed May 30 00:50:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_source_filename, obj_free): supress warnings.
