@@ -1865,7 +1865,7 @@ rb_eval_cmd(cmd, arg, level)
     POP_TAG();
     POP_FRAME();
 
-    jump_tag_but_local_jump(state, val);
+    if (state) jump_tag_but_local_jump(state, val);
     return val;
 }
 
