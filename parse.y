@@ -2339,7 +2339,7 @@ open_args	: call_args
 		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-			rb_warning("don't put space before argument parentheses");
+			rb_warning0("don't put space before argument parentheses");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, arg_new()));
@@ -2348,7 +2348,7 @@ open_args	: call_args
 		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-			rb_warning("don't put space before argument parentheses");
+			rb_warning0("don't put space before argument parentheses");
 			$$ = $2;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, $2));
@@ -5398,7 +5398,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 static void
 arg_ambiguous(void)
 {
-    rb_warning("ambiguous first argument; put parentheses or even spaces");
+    rb_warning0("ambiguous first argument; put parentheses or even spaces");
 }
 #else
 static void
@@ -6920,7 +6920,7 @@ parser_warning(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
-    rb_warning("%s", mesg);
+    rb_warningS("%s", mesg);
     ruby_sourceline = line;
 }
 

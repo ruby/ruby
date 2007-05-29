@@ -1,3 +1,8 @@
+Wed May 30 00:24:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (open_args, arg_ambiguous, parser_warning): should not use
+	  rb_warning in the parser.
+
 Tue May 29 12:31:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_opendir): removed duplicated code.
