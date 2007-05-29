@@ -1,3 +1,8 @@
+Wed May 30 04:18:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval_cmd): just return if no exceptions.
+	  [ruby-dev:30820]
+
 Wed May 30 02:14:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (interrupt_init): needs to pass nil for Interrupt.
