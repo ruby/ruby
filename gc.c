@@ -1374,12 +1374,12 @@ garbage_collect(void)
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
 #elif STACK_GROW_DIRECTION > 0
-    rb_gc_mark_locations(th->machin_stack_start, th->machine_stack_end + 1);
+    rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
 #else
-    if (th->machine_stack_end < th->machin_stack_start)
-      rb_gc_mark_locations(th->machine_stack_end, th->machin_stack_start);
+    if (th->machine_stack_end < th->machine_stack_start)
+      rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
     else
-      rb_gc_mark_locations(th->machin_stack_start, th->machine_stack_end + 1);
+      rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
 #endif
 #ifdef __ia64__
     /* mark backing store (flushed register window on the stack) */
@@ -1449,10 +1449,10 @@ yarv_machine_stack_mark(rb_thread_t *th)
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
 #elif STACK_GROW_DIRECTION > 0
-    rb_gc_mark_locations(th->machin_stack_start, th->machine_stack_end);
+    rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end);
 #else
-    if (th->machin_stack_start < th->machine_stack_end) {
-	rb_gc_mark_locations(th->machin_stack_start, th->machine_stack_end);
+    if (th->machine_stack_start < th->machine_stack_end) {
+	rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end);
     }
     else {
 	rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);

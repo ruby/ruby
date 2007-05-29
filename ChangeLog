@@ -1,3 +1,8 @@
+Wed May 30 00:47:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (garbage_collect, yarv_machine_stack_mark): fixed typo.
+	  http://bugs.debian.org/426267
+
 Wed May 30 00:24:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (open_args, arg_ambiguous, parser_warning): should not use
