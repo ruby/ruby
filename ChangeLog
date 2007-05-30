@@ -1,3 +1,8 @@
+Wed May 30 13:27:40 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#transfercmd): skip 2XX
+	  responses for some FTP servers. (backported from HEAD)
+
 Wed May 30 05:17:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): get rid of SEGV at ZSUPER in a block
