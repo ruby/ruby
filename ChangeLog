@@ -1,3 +1,14 @@
+Wed May 30 14:43:00 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_capture): store all local variables in heap
+	  ([ruby-dev:30832]).
+
+	* vm.c (th_stack_to_heap): added.
+
+	* test/ruby/test_continuation.rb: add a test for above.
+
+	* eval_intern.h (th_get_ruby_level_cfp): fix to clean code.
+
 Wed May 30 13:32:34 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (ResponseParser#next_token): fixed

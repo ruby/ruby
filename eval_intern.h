@@ -207,18 +207,13 @@ NODE *th_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
 static rb_control_frame_t *
 th_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    rb_iseq_t *iseq = 0;
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	    iseq = cfp->iseq;
-	    break;
+	    return cfp;
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
-    if (!iseq) {
-	return 0;
-    }
-    return cfp;
+    return 0;
 }
 
 static inline NODE *

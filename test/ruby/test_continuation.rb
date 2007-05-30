@@ -18,6 +18,20 @@ class TestContinuation < Test::Unit::TestCase
     assert_equal([:a, :b, :b], ary)
   end
 
+  def test_check_localvars
+    vv = 0
+    @v = 0
+    @ary = []
+    [1, 2, 3].each{|i|
+      callcc {|k| @k = k}
+      @v += 1
+      vv += 1
+    }
+    @ary << [vv, @v]
+    @k.call if @v < 10
+    assert_equal((3..10).map{|e| [e, e]}, @ary)
+  end
+
   def test_error
     cont = callcc{|c| c}
     assert_raise(RuntimeError){

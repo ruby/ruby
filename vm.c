@@ -400,7 +400,6 @@ th_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
     }
 }
 
-
 VALUE
 th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
 {
@@ -411,6 +410,16 @@ th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
 	check_env_value(envval);
     }
     return envval;
+}
+
+void
+th_stack_to_heap(rb_thread_t *th)
+{
+    rb_control_frame_t *cfp = th->cfp;
+    while ((cfp = th_get_ruby_level_cfp(th, cfp)) != 0) {
+	th_make_env_object(th, cfp);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
 }
 
 static VALUE

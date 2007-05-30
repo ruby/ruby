@@ -120,11 +120,17 @@ cont_new(VALUE klass)
     return cont;
 }
 
+void th_stack_to_heap(rb_thread_t *th);
+
 static VALUE
 cont_capture(volatile int *stat)
 {
-    rb_context_t *cont = cont_new(rb_cCont);
-    rb_thread_t *th = &cont->saved_thread;
+    rb_context_t *cont;
+    rb_thread_t *th;
+
+    th_stack_to_heap(GET_THREAD());
+    cont = cont_new(rb_cCont);
+    th = &cont->saved_thread;
 
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
