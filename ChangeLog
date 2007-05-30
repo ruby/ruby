@@ -1,9 +1,3 @@
-Wed May 30 04:29:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread_pthread.ci (thread_timer): timer thread should not
-	  receive any signals.  submitted by Sylvain Joyeux.
-	  [ruby-core:08546]
-
 Wed May 30 04:18:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval_cmd): just return if no exceptions.
