@@ -1221,34 +1221,46 @@ flo_ceil(VALUE num)
 
 /*
  *  call-seq:
- *     flt.round   => integer
+ *     flt.round([ndigits])   => integer or float
  *
- *  Rounds <i>flt</i> to the nearest integer. Equivalent to:
- *
- *     def round
- *       return floor(self+0.5) if self > 0.0
- *       return ceil(self-0.5)  if self < 0.0
- *       return 0.0
- *     end
+ *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
+ *  Precision may be negative.  Returns a a floating point number when ndigits
+ *  is more than one.  
  *
  *     1.5.round      #=> 2
  *     (-1.5).round   #=> -2
- *
  */
 
 static VALUE
-flo_round(VALUE num)
+flo_round(int argc, VALUE *argv, VALUE num)
 {
-    double f = RFLOAT(num)->value;
+    VALUE nd;
+    double number, f;
+    int ndigits = 0, i;
     long val;
 
-    if (f > 0.0) f = floor(f+0.5);
-    if (f < 0.0) f = ceil(f-0.5);
+    if (rb_scan_args(argc, argv, "01", &nd) == 1) {
+	ndigits = NUM2INT(nd);
+    }
+    number  = RFLOAT(num)->value;
+    f = 1.0;
+    i = abs(ndigits);
+    while  (--i >= 0)
+	f = f*10.0;
+
+    if (ndigits < 0) number /= f;
+    else number *= f;
+    if (number > 0.0) number = floor(number+0.5);
+    if (number < 0.0) number = ceil(number-0.5);
+    if (ndigits < 0) number *= f;
+    else number /= f;
+
+    if (ndigits > 0) return rb_float_new(number);
 
     if (!FIXABLE(f)) {
-	return rb_dbl2big(f);
+	return rb_dbl2big(number);
     }
-    val = f;
+    val = number;
     return LONG2FIX(val);
 }
 
@@ -1320,17 +1332,22 @@ num_ceil(VALUE num)
 
 /*
  *  call-seq:
- *     num.round    => integer
+ *     num.round([ndigits])    => integer or float
  *
- *  Rounds <i>num</i> to the nearest integer. <code>Numeric</code>
- *  implements this by converting itself to a
- *  <code>Float</code> and invoking <code>Float#round</code>.
+ *  Rounds <i>num</i> to a given precision in decimal digits (default 0 digits).
+ *  Precision may be negative.  Returns a a floating point number when ndigits
+ *  is more than one.  <code>Numeric</code> implements this by converting itself
+ *  to a <code>Float</code> and invoking <code>Float#round</code>.
  */
 
 static VALUE
-num_round(VALUE num)
+num_round(int argc, VALUE* argv, VALUE num)
 {
-    return flo_round(rb_Float(num));
+    VALUE nd;
+
+    rb_scan_args(argc, argv, "01", &nd);
+    nd = rb_Float(nd);
+    return flo_round(argc, &nd, num);
 }
 
 /*
@@ -2977,7 +2994,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cNumeric, "floor", num_floor, 0);
     rb_define_method(rb_cNumeric, "ceil", num_ceil, 0);
-    rb_define_method(rb_cNumeric, "round", num_round, 0);
+    rb_define_method(rb_cNumeric, "round", num_round, -1);
     rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
     rb_define_method(rb_cNumeric, "step", num_step, -1);
 
@@ -3098,7 +3115,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "to_int", flo_truncate, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, 0);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
-    rb_define_method(rb_cFloat, "round", flo_round, 0);
+    rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, 0);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);

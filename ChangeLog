@@ -1,3 +1,10 @@
+Fri Jun  1 02:01:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_round): now takes optional argument to specify
+	  number of digits, like round() in Python/PHP.
+
+	* numeric.c (num_round): ditto.
+
 Fri Jun  1 01:58:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (each_with_index_i): should work well with continuation.
