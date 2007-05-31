@@ -1,3 +1,9 @@
+Fri Jun  1 01:58:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (each_with_index_i): should work well with continuation.
+	  a patch from sheepman <sheepman AT sheepman.sakura.ne.jp>.
+	  [ruby-dev:30846]
+
 Thu May 31 17:27:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/benchmark.rb (Benchmark::Job::item): avoid modifying the

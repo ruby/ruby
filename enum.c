@@ -1167,11 +1167,11 @@ static VALUE
 each_with_index_i(VALUE val, VALUE memo)
 {
     long n;
+    VALUE idx = RARRAY_PTR(memo)[1];
 
     RARRAY_PTR(memo)[0] = val;
     rb_yield(memo);
-    val = RARRAY_PTR(memo)[1];
-    n = NUM2LONG(val);
+    n = NUM2LONG(idx);
     n++;
     RARRAY_PTR(memo)[1] = INT2NUM(n);
     return Qnil;
