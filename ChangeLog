@@ -1,3 +1,8 @@
+Thu May 31 17:27:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/benchmark.rb (Benchmark::Job::item): avoid modifying the
+	  argument unintentionally.  [ruby-talk:253676]
+
 Thu May 31 02:12:32 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (Rinda::TupleBag): create index on tuple bag
