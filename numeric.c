@@ -1343,11 +1343,7 @@ num_ceil(VALUE num)
 static VALUE
 num_round(int argc, VALUE* argv, VALUE num)
 {
-    VALUE nd;
-
-    rb_scan_args(argc, argv, "01", &nd);
-    nd = rb_Float(nd);
-    return flo_round(argc, &nd, num);
+    return flo_round(argc, argv, rb_Float(num));
 }
 
 /*
