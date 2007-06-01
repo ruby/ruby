@@ -806,7 +806,7 @@ setn
 (..., VALUE val)
 (VALUE val) // inc += 0
 {
-    GET_SP()[-n] = val;
+    TOPN(n-1) = val;
 }
 
 /**
@@ -1183,8 +1183,8 @@ send
 	    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
 
 	    /* shift arguments */
-	    for (i=1; i<num; i++) {
-		GET_SP()[-num+i-1] = GET_SP()[(-num+i-1)+1];
+	    for (i=num-1; i>0; i--) {
+		TOPN(i) = TOPN(i-1);
 	    }
 
 	    mn = rb_method_node(klass, id);

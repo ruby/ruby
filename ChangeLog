@@ -1,3 +1,12 @@
+Fri Jun  1 13:02:35 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* insnhelper.h (INC_SP): shouldn't cast ``x'' to unsigned type because
+	  it might be a negative value.
+
+	* insnhelper.h, insns.def: shoudn't use unary minus operator in index
+	  operator. some compilers (such as VC++8 x64) cannot deal it with
+	  expected way.
+
 Fri Jun  1 11:33:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_round): should convert self to Float.

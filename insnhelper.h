@@ -27,7 +27,7 @@
 #define TOPN(n) (*(GET_SP()-(n)-1))
 #define POPN(n) (INC_SP(-(n)))
 #define POP()   (INC_SP(-1))
-#define STACK_ADDR_FROM_TOP(n) (&GET_SP()[-(n)])
+#define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
 
 #define GET_TOS()  (tos)	/* dummy */
 
@@ -83,7 +83,7 @@
 /* SP */
 #define GET_SP()   (USAGE_ANALYSIS_REGISTER_HELPER(1, 0, REG_SP))
 #define SET_SP(x)  (REG_SP  = (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
-#define INC_SP(x)  (REG_SP += ((VALUE)(USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (VALUE)(x)))))
+#define INC_SP(x)  (REG_SP += (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
@@ -98,7 +98,7 @@
 /* deal with variables                                    */
 /**********************************************************/
 
-#define GET_CURRENT_DYNAMIC(idx)         (GET_DFP()[-idx])
+#define GET_CURRENT_DYNAMIC(idx)         (*(GET_DFP() -(idx)))
 #define GET_PREV_DFP(dfp)                ((VALUE *)((dfp)[0] & ~0x03))
 
 #define GET_GLOBAL(entry)       rb_gvar_get((struct global_entry*)entry)
