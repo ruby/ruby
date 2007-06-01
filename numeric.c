@@ -2308,6 +2308,22 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
+static VALUE
+int_round(int argc, VALUE* argv, VALUE num)
+{
+    VALUE nd;
+    int ndigits;
+
+    if (argc == 0) return num;
+    rb_scan_args(argc, argv, "1", &nd);
+    ndigits = NUM2INT(nd);
+    if (ndigits > 0) {
+	return rb_Float(num);
+    }
+    ndigits = -ndigits;
+    return rb_funcall(num, '-', 1, rb_funcall(num, '%', 1, int_pow(10, ndigits)));
+}
+
 /*
  *  call-seq:
  *    fix ** other         => Numeric
@@ -3013,8 +3029,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "floor", int_to_i, 0);
     rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
-    rb_define_method(rb_cInteger, "round", int_to_i, 0);
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
+    rb_define_method(rb_cInteger, "round", int_round, -1);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
     rb_include_module(rb_cFixnum, rb_mPrecision);
