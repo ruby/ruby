@@ -4,25 +4,27 @@ class TestFiber < Test::Unit::TestCase
   def test_normal
     f = Fiber.current
     assert_equal(:ok2,
-      Fiber.new(:ok1){|e|
+      Fiber.new{|e|
         assert_equal(:ok1, e)
         assert_equal(f, Fiber.prev)
-        Fiber.pass :ok2
-      }.pass)
+        Fiber.yield :ok2
+      }.yield(:ok1)
+    )
+    assert_equal([:a, :b], Fiber.new{|a, b| [a, b]}.yield(:a, :b))
   end
 
   def test_term
-    assert_equal(:ok, Fiber.new{:ok}.pass)
+    assert_equal(:ok, Fiber.new{:ok}.yield)
     assert_equal([:a, :b, :c, :d, :e],
       Fiber.new{
         Fiber.new{
           Fiber.new{
             Fiber.new{
               [:a]
-            }.pass + [:b]
-          }.pass + [:c]
-        }.pass + [:d]
-      }.pass + [:e])
+            }.yield + [:b]
+          }.yield + [:c]
+        }.yield + [:d]
+      }.yield + [:e])
   end
 
   def test_many_fibers
@@ -33,7 +35,7 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(max,
       max.times{|i|
         Fiber.new{
-        }.pass
+        }.yield
       }
     )
   end
@@ -42,9 +44,14 @@ class TestFiber < Test::Unit::TestCase
     assert_raise(ArgumentError){
       Fiber.new # Fiber without block
     }
-    assert_raise(RuntimeError){
+    assert_raise(FiberError){
       f = Fiber.new{}
-      Thread.new{f.pass}.join # Fiber passing across thread
+      Thread.new{f.yield}.join # Fiber yielding across thread
+    }
+    assert_raise(FiberError){
+      f = Fiber.new{}
+      f.yield
+      f.yield
     }
   end
 
@@ -52,14 +59,14 @@ class TestFiber < Test::Unit::TestCase
     ary = []
     f2 = nil
     f1 = Fiber.new{
-      ary << f2.pass(:foo)
+      ary << f2.yield(:foo)
       :bar
     }
     f2 = Fiber.new{
-      ary << f1.pass(:baz)
+      ary << f1.yield(:baz)
       :ok
     }
-    assert_equal(:ok, f1.pass)
+    assert_equal(:ok, f1.yield)
     assert_equal([:baz, :bar], ary)
   end
 end

@@ -17,7 +17,7 @@
 
 typedef struct rb_context_struct {
     VALUE self;
-    VALUE retval;
+    VALUE value;
     VALUE prev; /* for fiber */
     VALUE *vm_stack;
     VALUE *machine_stack;
@@ -30,6 +30,7 @@ typedef struct rb_context_struct {
 
 VALUE rb_cCont;
 VALUE rb_cFiber;
+VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
   Data_Get_Struct(obj, rb_context_t, ptr)
@@ -44,7 +45,7 @@ cont_mark(void *ptr)
     MARK_REPORT_ENTER("cont");
     if (ptr) {
 	rb_context_t *cont = ptr;
-	rb_gc_mark(cont->retval);
+	rb_gc_mark(cont->value);
 	rb_gc_mark(cont->prev);
 
 	rb_thread_mark(&cont->saved_thread);
@@ -139,12 +140,12 @@ cont_capture(volatile int *stat)
     cont_save_machine_stack(th, cont);
 
     if (ruby_setjmp(cont->jmpbuf)) {
-	VALUE retval;
+	VALUE value;
 
-	retval = cont->retval;
-	cont->retval = Qnil;
+	value = cont->value;
+	cont->value = Qnil;
 	*stat = 1;
-	return retval;
+	return value;
     }
     else {
 	*stat = 0;
@@ -344,7 +345,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	rb_raise(rb_eRuntimeError, "continuation called across trap");
     }
 
-    cont->retval = make_passing_arg(argc, argv);
+    cont->value = make_passing_arg(argc, argv);
 
     cont_restore_0(cont, (VALUE *)&cont);
     return Qnil; /* unreachable */
@@ -357,11 +358,10 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 #define FIBER_STACK_SIZE (4 * 1024)
 
 static VALUE
-rb_fiber_s_new(int argc, VALUE *argv, VALUE self)
+rb_fiber_s_new(VALUE self)
 {
-    rb_context_t *cont = cont_new(rb_cFiber);
+    rb_context_t *cont = cont_new(self);
     rb_thread_t *th = &cont->saved_thread;
-    volatile VALUE fval = cont->self;
 
     /* initialize */
     cont->prev = Qnil;
@@ -385,20 +385,19 @@ rb_fiber_s_new(int argc, VALUE *argv, VALUE self)
     th->cfp->block_iseq = 0;
 
     th->first_proc = rb_block_proc();
-    th->first_args = rb_ary_new4(argc, argv);
 
     MEMCPY(&cont->jmpbuf, &th->root_jmpbuf, rb_jmpbuf_t, 1);
 
     return cont->self;
 }
 
-static VALUE rb_fiber_pass(int argc, VALUE *args, VALUE fval);
+static VALUE rb_fiber_yield(int argc, VALUE *args, VALUE fval);
 
 static void
 rb_fiber_terminate(rb_context_t *cont)
 {
     rb_context_t *prev_cont;
-    VALUE retval = cont->retval;
+    VALUE value = cont->value;
 
     GetContPtr(cont->prev, prev_cont);
 
@@ -406,10 +405,10 @@ rb_fiber_terminate(rb_context_t *cont)
 
 
     if (prev_cont->alive == Qfalse) {
-	rb_fiber_pass(1, &retval, GET_THREAD()->root_fiber);
+	rb_fiber_yield(1, &value, GET_THREAD()->root_fiber);
     }
     else {
-	rb_fiber_pass(1, &retval, cont->prev);
+	rb_fiber_yield(1, &value, cont->prev);
     }
 }
 
@@ -426,12 +425,13 @@ rb_fiber_start(void)
     if ((state = EXEC_TAG()) == 0) {
 	GetContPtr(th->fiber, cont);
 	GetProcPtr(cont->saved_thread.first_proc, proc);
-	args = cont->saved_thread.first_args;
+	args = cont->value;
+	cont->value = Qnil;
 	th->errinfo = Qnil;
 	th->local_lfp = proc->block.lfp;
 	th->local_svar = Qnil;
-	cont->retval = th_invoke_proc(th, proc, proc->block.self,
-				      RARRAY_LEN(args), RARRAY_PTR(args));
+
+	cont->value = th_invoke_proc(th, proc, proc->block.self, 1, &args);
     }
     TH_POP_TAG();
 
@@ -478,7 +478,7 @@ cont_store(rb_context_t *next_cont)
     if (ruby_setjmp(cont->jmpbuf)) {
 	/* restored */
 	GetContPtr(th->fiber, cont);
-	return cont->retval;
+	return cont->value;
     }
     else {
 	return Qundef;
@@ -486,29 +486,32 @@ cont_store(rb_context_t *next_cont)
 }
 
 static VALUE
-rb_fiber_pass(int argc, VALUE *argv, VALUE fval)
+rb_fiber_yield(int argc, VALUE *argv, VALUE fval)
 {
-    VALUE retval;
+    VALUE value;
     rb_context_t *cont;
     rb_thread_t *th = GET_THREAD();
 
     GetContPtr(fval, cont);
 
     if (cont->saved_thread.self != th->self) {
-	rb_raise(rb_eRuntimeError, "fiber called across threads");
+	rb_raise(rb_eFiberError, "fiber called across threads");
     }
     if (cont->saved_thread.trap_tag != th->trap_tag) {
-	rb_raise(rb_eRuntimeError, "fiber called across trap");
+	rb_raise(rb_eFiberError, "fiber called across trap");
+    }
+    if (!cont->alive) {
+	rb_raise(rb_eFiberError, "dead fiber called");
     }
 
-    cont->retval = make_passing_arg(argc, argv);
+    cont->value = make_passing_arg(argc, argv);
 
-    if ((retval = cont_store(cont)) == Qundef) {
+    if ((value = cont_store(cont)) == Qundef) {
 	cont_restore_0(cont, (VALUE *)&cont);
-	rb_bug("rb_fiber_pass: unreachable");
+	rb_bug("rb_fiber_yield: unreachable");
     }
 
-    return retval;
+    return value;
 }
 
 static VALUE
@@ -540,9 +543,9 @@ rb_fiber_s_prev(VALUE klass)
 }
 
 static VALUE
-rb_fiber_s_pass(int argc, VALUE *argv, VALUE fval)
+rb_fiber_s_yield(int argc, VALUE *argv, VALUE fval)
 {
-    return rb_fiber_pass(argc, argv, rb_fiber_s_prev(Qnil));
+    return rb_fiber_yield(argc, argv, rb_fiber_s_prev(Qnil));
 }
 
 void
@@ -557,14 +560,15 @@ Init_Cont(void)
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
-    rb_define_method(rb_cFiber, "pass", rb_fiber_pass, -1);
+    rb_define_method(rb_cFiber, "yield", rb_fiber_yield, -1);
     rb_define_method(rb_cFiber, "prev", rb_fiber_prev, 0);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "prev", rb_fiber_s_prev, 0);
-    rb_define_singleton_method(rb_cFiber, "pass", rb_fiber_s_pass, -1);
-    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, -1);
-    rb_define_singleton_method(rb_cFiber, "start", rb_fiber_s_new, -1);
+    rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
+    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
+
+    rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
 }
 

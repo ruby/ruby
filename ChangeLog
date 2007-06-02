@@ -1,3 +1,13 @@
+Sat Jun  2 16:48:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (Fiber#pass): rename to Fiber#yield.  Block parameter
+	  of fiber body receive first yield values.
+	  e.g.: Fiber.new{|x| p x}.yield(:ok) #=> :ok
+
+	* cont.c: rename rb_context_t#retval to rb_context_t#value.
+
+	* test/ruby/test_fiber.rb: ditto.
+
 Sat Jun  2 16:45:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (Init_Proc): remove a line break.
