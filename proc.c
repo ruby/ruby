@@ -1481,8 +1481,7 @@ Init_Proc(void)
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
-    rb_define_private_method(rb_cModule, "define_method",
-			     rb_mod_define_method, -1);
+    rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 }
 
 /*

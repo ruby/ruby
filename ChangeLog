@@ -1,3 +1,7 @@
+Sat Jun  2 16:45:21 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (Init_Proc): remove a line break.
+
 Sat Jun  2 01:27:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_round): small optimization to handle bignums.
