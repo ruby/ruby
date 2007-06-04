@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-01-28"
+#define NKF_RELEASE_DATE "2007-05-28"
 #include "config.h"
 #include "utf8tbl.h"
 
@@ -351,10 +351,12 @@ static  nkf_char     e_iconv(nkf_char c2,nkf_char c1,nkf_char c0);
  * 0: Shift_JIS, eucJP-ascii
  * 1: eucJP-ms
  * 2: CP932, CP51932
+ * 3: CP10001
  */
-#define UCS_MAP_ASCII 0
-#define UCS_MAP_MS    1
-#define UCS_MAP_CP932 2
+#define UCS_MAP_ASCII   0
+#define UCS_MAP_MS      1
+#define UCS_MAP_CP932   2
+#define UCS_MAP_CP10001 3
 static int ms_ucs_map_f = UCS_MAP_ASCII;
 #endif
 #ifdef UTF8_INPUT_ENABLE
@@ -1233,6 +1235,14 @@ void options(unsigned char *cp)
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP932;
 #endif
+		    }else if(strcmp(codeset, "CP10001") == 0){
+			input_f = SJIS_INPUT;
+#ifdef SHIFTJIS_CP932
+			cp51932_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP10001;
+#endif
 		    }else if(strcmp(codeset, "EUCJP") == 0 ||
 			     strcmp(codeset, "EUC-JP") == 0){
 			input_f = EUC_INPUT;
@@ -1370,6 +1380,11 @@ void options(unsigned char *cp)
 			output_conv = s_oconv;
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP932;
+#endif
+		    }else if(strcmp(codeset, "CP10001") == 0){
+			output_conv = s_oconv;
+#ifdef UTF8_OUTPUT_ENABLE
+			ms_ucs_map_f = UCS_MAP_CP10001;
 #endif
 		    }else if(strcmp(codeset, "EUCJP") == 0 ||
 			     strcmp(codeset, "EUC-JP") == 0){
@@ -2676,6 +2691,12 @@ nkf_char kanji_convert(FILE *f)
                         } else  { /* bogus code, skip SSO and one byte */
                             NEXT;
                         }
+		    } else if (ms_ucs_map_f == UCS_MAP_CP10001 &&
+			       (c1 == 0xFD || c1 == 0xFE)) {
+			/* CP10001 */
+			c2 = X0201;
+			c1 &= 0x7f;
+			SEND;
                     } else {
                        /* already established */
                        c2 = c1;
@@ -2885,35 +2906,41 @@ nkf_char kanji_convert(FILE *f)
 		    (*oconv)(0, ESC);
 		    SEND;
 		}
-            } else if ((c1 == NL || c1 == CR) && broken_f&4) {
-                input_mode = ASCII; set_iconv(FALSE, 0);
-                SEND;
-	    } else if (c1 == NL && mime_decode_f && !mime_decode_mode ) {
-		if ((c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
-		    i_ungetc(SPACE,f);
-		    continue;
-		} else {
-		    i_ungetc(c1,f);
-		}
-		c1 = NL;
-		SEND;
-	    } else if (c1 == CR && mime_decode_f && !mime_decode_mode ) {
-		if ((c1=(*i_getc)(f))!=EOF) {
-		    if (c1==SPACE) {
-			i_ungetc(SPACE,f);
-			continue;
-		    } else if (c1 == NL && (c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
-			i_ungetc(SPACE,f);
-			continue;
-		    } else {
-			i_ungetc(c1,f);
+	    } else if (c1 == NL || c1 == CR) {
+		if (broken_f&4) {
+		    input_mode = ASCII; set_iconv(FALSE, 0);
+		    SEND;
+		} else if (mime_decode_f && !mime_decode_mode){
+		    if (c1 == NL) {
+			if ((c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
+			    i_ungetc(SPACE,f);
+			    continue;
+			} else {
+			    i_ungetc(c1,f);
+			}
+			c1 = NL;
+			SEND;
+		    } else  { /* if (c1 == CR)*/
+			if ((c1=(*i_getc)(f))!=EOF) {
+			    if (c1==SPACE) {
+				i_ungetc(SPACE,f);
+				continue;
+			    } else if (c1 == NL && (c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
+				i_ungetc(SPACE,f);
+				continue;
+			    } else {
+				i_ungetc(c1,f);
+			    }
+			    i_ungetc(NL,f);
+			} else {
+			    i_ungetc(c1,f);
+			}
+			c1 = CR;
+			SEND;
 		    }
-		    i_ungetc(NL,f);
-		} else {
-		    i_ungetc(c1,f);
 		}
-		c1 = CR;
-		SEND;
+		if (crmode_f == CR && c1 == NL) crmode_f = CRLF;
+		else crmode_f = c1;
 	    } else if (c1 == DEL && input_mode == X0208 ) {
 		/* CP5022x */
 		c2 = c1;
@@ -3125,9 +3152,6 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     static const nkf_char shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
 #ifdef SHIFTJIS_CP932
     if (!cp932inv_f && is_ibmext_in_sjis(c2)){
-#if 0
-        extern const unsigned short shiftjis_cp932[3][189];
-#endif
         val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
         if (val){
             c2 = val >> 8;
@@ -3136,9 +3160,6 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     }
     if (cp932inv_f
         && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-#if 0
-        extern const unsigned short cp932inv[2][189];
-#endif
         nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
         if (c){
             c2 = c >> 8;
@@ -3148,9 +3169,6 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 #endif /* SHIFTJIS_CP932 */
 #ifdef X0212_ENABLE
     if (!x0213_f && is_ibmext_in_sjis(c2)){
-#if 0
-        extern const unsigned short shiftjis_x0212[3][189];
-#endif
         val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
         if (val){
             if (val > 0x7FFF){
@@ -3481,14 +3499,6 @@ nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0)
 
 nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char *p1)
 {
-#if 0
-    extern const unsigned short *const utf8_to_euc_2bytes[];
-    extern const unsigned short *const utf8_to_euc_2bytes_ms[];
-    extern const unsigned short *const utf8_to_euc_2bytes_932[];
-    extern const unsigned short *const *const utf8_to_euc_3bytes[];
-    extern const unsigned short *const *const utf8_to_euc_3bytes_ms[];
-    extern const unsigned short *const *const utf8_to_euc_3bytes_932[];
-#endif
     const unsigned short *const *pp;
     const unsigned short *const *const *ppp;
     static const int no_best_fit_chars_table_C2[] =
@@ -3538,11 +3548,27 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 		}
 	    }else if(ms_ucs_map_f == UCS_MAP_MS){
 		if(c2 == 0xC2 && no_best_fit_chars_table_C2_ms[c1&0x3F]) return 1;
+	    }else if(ms_ucs_map_f == UCS_MAP_CP10001){
+		switch(c2){
+		case 0xC2:
+		    switch(c1){
+		    case 0xA2:
+		    case 0xA3:
+		    case 0xA5:
+		    case 0xA6:
+		    case 0xAC:
+		    case 0xAF:
+		    case 0xB8:
+			return 1;
+		    }
+		    break;
+		}
 	    }
 	}
 	pp =
 	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_2bytes_932 :
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_2bytes_ms :
+	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_2bytes_mac :
 	    utf8_to_euc_2bytes;
 	ret =  w_iconv_common(c2, c1, pp, sizeof_utf8_to_euc_2bytes, p2, p1);
     }else if(c0 < 0xF0){
@@ -3563,6 +3589,19 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 		    break;
 		case 0xE3:
 		    if(c1 == 0x80 || c0 == 0x9C) return 1;
+		    break;
+		}
+	    }else if(ms_ucs_map_f == UCS_MAP_CP10001){
+		switch(c2){
+		case 0xE3:
+		    switch(c1){
+		    case 0x82:
+			    if(c0 == 0x94) return 1;
+			break;
+		    case 0x83:
+			    if(c0 == 0xBB) return 1;
+			break;
+		    }
 		    break;
 		}
 	    }else{
@@ -3596,8 +3635,10 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 	ppp =
 	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_3bytes_932 :
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_3bytes_ms :
+	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_3bytes_mac :
 	    utf8_to_euc_3bytes;
 	ret = w_iconv_common(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
+//	fprintf(stderr, "wret: %X %X %X -> %X %X\n",c2,c1,c0,*p2,*p1,ret);
     }else return -1;
 #ifdef SHIFTJIS_CP932
     if (!ret && !cp932inv_f && is_eucg3(*p2)) {
@@ -3739,15 +3780,17 @@ void encode_fallback_subchar(nkf_char c)
 #ifdef UTF8_OUTPUT_ENABLE
 nkf_char e2w_conv(nkf_char c2, nkf_char c1)
 {
-#if 0
-    extern const unsigned short euc_to_utf8_1byte[];
-    extern const unsigned short *const euc_to_utf8_2bytes[];
-    extern const unsigned short *const euc_to_utf8_2bytes_ms[];
-    extern const unsigned short *const x0212_to_utf8_2bytes[];
-#endif
     const unsigned short *p;
 
     if (c2 == X0201) {
+	if (ms_ucs_map_f == UCS_MAP_CP10001) {
+	    switch (c1) {
+	    case 0x20:
+		return 0xA0;
+	    case 0x7D:
+		return 0xA9;
+	    }
+	}
         p = euc_to_utf8_1byte;
 #ifdef X0212_ENABLE
     } else if (is_eucg3(c2)){
@@ -3764,7 +3807,10 @@ nkf_char e2w_conv(nkf_char c2, nkf_char c1)
         c2 &= 0x7f;
         c2 = (c2&0x7f) - 0x21;
         if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
-            p = ms_ucs_map_f != UCS_MAP_ASCII ? euc_to_utf8_2bytes_ms[c2] : euc_to_utf8_2bytes[c2];
+            p =
+		ms_ucs_map_f == UCS_MAP_ASCII ? euc_to_utf8_2bytes[c2] :
+		ms_ucs_map_f == UCS_MAP_CP10001 ? euc_to_utf8_2bytes_mac[c2] :
+		euc_to_utf8_2bytes_ms[c2];
 	else
 	    return 0;
     }
@@ -4069,9 +4115,6 @@ nkf_char e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 	else if(nkf_isgraph(ndx)){
 	    nkf_char val = 0;
 	    const unsigned short *ptr;
-#if 0
-	    extern const unsigned short *const x0212_shiftjis[];
-#endif
 	    ptr = x0212_shiftjis[ndx - 0x21];
 	    if (ptr){
 		val = ptr[(c1 & 0x7f) - 0x21];
@@ -4147,9 +4190,6 @@ void s_oconv(nkf_char c2, nkf_char c1)
 #ifdef SHIFTJIS_CP932
         if (cp932inv_f
             && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-#if 0
-            extern const unsigned short cp932inv[2][189];
-#endif
             nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
             if (c){
                 c2 = c >> 8;
@@ -4539,6 +4579,10 @@ void z_conv(nkf_char c2, nkf_char c1)
 
     /* if (c2) c1 &= 0x7f; assertion */
 
+    if (c2 == X0201 && (c1 == 0x20 || c1 == 0x7D || c1 == 0x7E)) {
+	(*o_zconv)(c2,c1);
+	return;
+    }
     if (x0201_f && z_prev2==X0201) {  /* X0201 */
         if (c1==(0xde&0x7f)) { /* 濁点 */
             z_prev2=0;
@@ -4942,15 +4986,20 @@ void set_input_codename(char *codename)
 void print_guessed_code(char *filename)
 {
     char *codename = "BINARY";
+    char *str_crmode = NULL;
     if (!is_inputcode_mixed) {
         if (strcmp(input_codename, "") == 0) {
             codename = "ASCII";
         } else {
             codename = input_codename;
         }
+        if (crmode_f == CR) str_crmode = "CR";
+        else if (crmode_f == NL) str_crmode = "LF";
+        else if (crmode_f == CRLF) str_crmode = "CRLF";
     }
     if (filename != NULL) printf("%s:", filename);
-    printf("%s\n", codename);
+    if (str_crmode != NULL) printf("%s (%s)\n", codename, str_crmode);
+    else printf("%s\n", codename);
 }
 #endif /*WIN32DLL*/
 
@@ -5068,9 +5117,6 @@ nkf_char nfc_getc(FILE *f)
     int i=0, j, k=1, lower, upper;
     nkf_char buf[9];
     const nkf_nfchar *array;
-#if 0
-    extern const struct normalization_pair normalization_table[];
-#endif
     
     buf[i] = (*g)(f);
     while (k > 0 && ((buf[i] & 0xc0) != 0x80)){
@@ -5437,7 +5483,7 @@ void open_mime(nkf_char mode)
     int i;
     int j;
     p  = mime_pattern[0];
-    for(i=0;mime_encode[i];i++) {
+    for(i=0;mime_pattern[i];i++) {
 	if (mode == mime_encode[i]) {
 	    p = mime_pattern[i];
 	    break;
@@ -5643,10 +5689,21 @@ void mime_putc(nkf_char c)
 
     if (mimeout_mode=='Q') {
         if (c <= DEL && (output_mode==ASCII ||output_mode == ISO8859_1 ) ) {
-            if (c <= SPACE) {
+	    if (c == CR || c == NL) {
+		close_mime();
+		(*o_mputc)(c);
+		base64_count = 0;
+		return;
+            } else if (c <= SPACE) {
                 close_mime();
-                (*o_mputc)(SPACE);
-                base64_count++;
+		if (base64_count > 70) {
+		    (*o_mputc)(NL);
+		    base64_count = 0;
+		}
+		if (!nkf_isblank(c)) {
+		    (*o_mputc)(SPACE);
+		    base64_count++;
+		}
             }
             (*o_mputc)(c);
             base64_count++;
@@ -5678,7 +5735,8 @@ void mime_putc(nkf_char c)
                 mimeout_buf_count = 1;
             }else{
                 if (base64_count > 1
-                    && base64_count + mimeout_buf_count > 76){
+                    && base64_count + mimeout_buf_count > 76
+		    && mimeout_buf[0] != CR && mimeout_buf[0] != NL){
                     (*o_mputc)(NL);
                     base64_count = 0;
                     if (!nkf_isspace(mimeout_buf[0])){

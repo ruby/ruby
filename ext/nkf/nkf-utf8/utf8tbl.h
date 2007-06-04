@@ -5,6 +5,7 @@
 extern const unsigned short euc_to_utf8_1byte[];
 extern const unsigned short *const euc_to_utf8_2bytes[];
 extern const unsigned short *const euc_to_utf8_2bytes_ms[];
+extern const unsigned short *const euc_to_utf8_2bytes_mac[];
 extern const unsigned short *const x0212_to_utf8_2bytes[];
 #endif /* UTF8_OUTPUT_ENABLE */
 
@@ -12,9 +13,11 @@ extern const unsigned short *const x0212_to_utf8_2bytes[];
 extern const unsigned short *const utf8_to_euc_2bytes[];
 extern const unsigned short *const utf8_to_euc_2bytes_ms[];
 extern const unsigned short *const utf8_to_euc_2bytes_932[];
+extern const unsigned short *const utf8_to_euc_2bytes_mac[];
 extern const unsigned short *const *const utf8_to_euc_3bytes[];
 extern const unsigned short *const *const utf8_to_euc_3bytes_ms[];
 extern const unsigned short *const *const utf8_to_euc_3bytes_932[];
+extern const unsigned short *const *const utf8_to_euc_3bytes_mac[];
 #endif /* UTF8_INPUT_ENABLE */
 
 #ifdef UNICODE_NORMALIZATION

@@ -201,6 +201,20 @@ const unsigned short euc_to_utf8_AC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
+const unsigned short euc_to_utf8_AC_mac[] = {
+         0x2664, 0x2667, 0x2661, 0x2662, 0x2660, 0x2663, 0x2665,
+ 0x2666,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0, 0x3020, 0x260E, 0x3004,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0, 0x261E, 0x261C, 0x261D, 0x261F, 0x21C6, 0x21C4, 0x21C5,
+      0, 0x21E8, 0x21E6, 0x21E7, 0x21E9, 0x2192, 0x2190, 0x2191,
+ 0x2193,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,
+};
 const unsigned short euc_to_utf8_AD[] = {
          0x2460, 0x2461, 0x2462, 0x2463, 0x2464, 0x2465, 0x2466,
  0x2467, 0x2468, 0x2469, 0x246A, 0x246B, 0x246C, 0x246D, 0x246E,
@@ -214,6 +228,20 @@ const unsigned short euc_to_utf8_AD[] = {
  0x32A7, 0x32A8, 0x3231, 0x3232, 0x3239, 0x337E, 0x337D, 0x337C,
  0x2252, 0x2261, 0x222B, 0x222E, 0x2211, 0x221A, 0x22A5, 0x2220,
  0x221F, 0x22BF, 0x2235, 0x2229, 0x222A,      0, 0x3299,
+};
+const unsigned short euc_to_utf8_AD_mac[] = {
+         0x65E5, 0x6708, 0x706B, 0x6C34, 0x6728, 0x91D1, 0x571F,
+ 0x796D, 0x795D, 0x81EA, 0x81F3, 0x3239, 0x547C, 0x3231, 0x8CC7,
+ 0x540D, 0x3232, 0x5B66, 0x8CA1, 0x793E, 0x7279, 0x76E3, 0x4F01,
+ 0x5354, 0x52B4, 0x2165, 0x2166, 0x2167, 0x2168, 0x2169,      0,
+ 0x3349, 0x3314, 0x3322, 0x334D, 0x3318, 0x3327, 0x3303, 0x3336,
+ 0x3351, 0x3357, 0x330D, 0x3326, 0x3323, 0x332B, 0x334A, 0x333B,
+ 0x339C, 0x339D, 0x339E, 0x338E, 0x338F, 0x33C4, 0x33A1,      0,
+      0,      0,      0,      0,      0,      0,      0, 0x337B,
+ 0x301D, 0x301F, 0x2116, 0x33CD, 0x2121, 0x32A4, 0x32A5, 0x32A6,
+ 0x32A7, 0x32A8, 0x3231, 0x3232, 0x3239, 0x337E, 0x337D, 0x337C,
+ 0x2252, 0x5927, 0x5C0F, 0x32A4, 0x32A5, 0x32A6, 0x32A7, 0x32A8,
+ 0x533B, 0x8CA1, 0x512A, 0x52B4, 0x5370, 0x63A7, 0x79D8,
 };
 const unsigned short euc_to_utf8_AE[] = {
          0x3349, 0x3322, 0x334D, 0x3314, 0x3316, 0x3305, 0x3333,
@@ -2346,6 +2374,33 @@ const unsigned short *const euc_to_utf8_2bytes_ms[] = {
               0, euc_to_utf8_F9, euc_to_utf8_FA, euc_to_utf8_FB,
  euc_to_utf8_FC_ms,              0,              0,
 };
+/* CP10001 */
+const unsigned short *const euc_to_utf8_2bytes_mac[] = {
+                 euc_to_utf8_A1_ms, euc_to_utf8_A2_ms, euc_to_utf8_A3,
+ euc_to_utf8_A4, euc_to_utf8_A5, euc_to_utf8_A6, euc_to_utf8_A7,
+ euc_to_utf8_A8, euc_to_utf8_A9, euc_to_utf8_AA, euc_to_utf8_AB,
+ euc_to_utf8_AC_mac, euc_to_utf8_AD_mac, euc_to_utf8_AE, euc_to_utf8_AF,
+ euc_to_utf8_B0, euc_to_utf8_B1, euc_to_utf8_B2, euc_to_utf8_B3,
+ euc_to_utf8_B4, euc_to_utf8_B5, euc_to_utf8_B6, euc_to_utf8_B7,
+ euc_to_utf8_B8, euc_to_utf8_B9, euc_to_utf8_BA, euc_to_utf8_BB,
+ euc_to_utf8_BC, euc_to_utf8_BD, euc_to_utf8_BE, euc_to_utf8_BF,
+ euc_to_utf8_C0, euc_to_utf8_C1, euc_to_utf8_C2, euc_to_utf8_C3,
+ euc_to_utf8_C4, euc_to_utf8_C5, euc_to_utf8_C6, euc_to_utf8_C7,
+ euc_to_utf8_C8, euc_to_utf8_C9, euc_to_utf8_CA, euc_to_utf8_CB,
+ euc_to_utf8_CC, euc_to_utf8_CD, euc_to_utf8_CE, euc_to_utf8_CF,
+ euc_to_utf8_D0, euc_to_utf8_D1, euc_to_utf8_D2, euc_to_utf8_D3,
+ euc_to_utf8_D4, euc_to_utf8_D5, euc_to_utf8_D6, euc_to_utf8_D7,
+ euc_to_utf8_D8, euc_to_utf8_D9, euc_to_utf8_DA, euc_to_utf8_DB,
+ euc_to_utf8_DC, euc_to_utf8_DD, euc_to_utf8_DE, euc_to_utf8_DF,
+ euc_to_utf8_E0, euc_to_utf8_E1, euc_to_utf8_E2, euc_to_utf8_E3,
+ euc_to_utf8_E4, euc_to_utf8_E5, euc_to_utf8_E6, euc_to_utf8_E7,
+ euc_to_utf8_E8, euc_to_utf8_E9, euc_to_utf8_EA, euc_to_utf8_EB,
+ euc_to_utf8_EC, euc_to_utf8_ED, euc_to_utf8_EE, euc_to_utf8_EF,
+ euc_to_utf8_F0, euc_to_utf8_F1, euc_to_utf8_F2, euc_to_utf8_F3,
+ euc_to_utf8_F4, euc_to_utf8_F5,              0,              0,
+              0, euc_to_utf8_F9, euc_to_utf8_FA, euc_to_utf8_FB,
+ euc_to_utf8_FC_ms,              0,              0,
+};
 
 #ifdef X0212_ENABLE
 const unsigned short *const x0212_to_utf8_2bytes[] = {
@@ -2394,6 +2449,16 @@ const unsigned short utf8_to_euc_C2_ms[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0xA242, 0x2171, 0x2172, 0xA270,   0x5C, 0xA243, 0x2178,
  0x212F, 0xA26D, 0xA26C,      0, 0x224C,      0, 0xA26E, 0xA234,
+ 0x216B, 0x215E,      0,      0, 0x212D,      0, 0x2279,      0,
+ 0xA231,      0, 0xA26B,      0,      0,      0,      0, 0xA244,
+};
+const unsigned short utf8_to_euc_C2_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+ 0x0220, 0xA242, 0x2171, 0x2172, 0xA270,   0x5C, 0xA243, 0x2178,
+ 0x212F, 0x027D, 0xA26C,      0, 0x224C,      0, 0xA26E, 0xA234,
  0x216B, 0x215E,      0,      0, 0x212D,      0, 0x2279,      0,
  0xA231,      0, 0xA26B,      0,      0,      0,      0, 0xA244,
 };
@@ -2547,6 +2612,16 @@ const unsigned short utf8_to_euc_E284[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
+const unsigned short utf8_to_euc_E284_mac[] = {
+      0,      0,      0, 0x216E,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0, 0x2B7B,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0, 0x2B7D, 0x027E,      0,      0,      0,      0,      0,
+      0,      0,      0, 0x2272,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+};
 const unsigned short utf8_to_euc_E285[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2556,6 +2631,16 @@ const unsigned short utf8_to_euc_E285[] = {
  0x2D3D, 0x2D3E,      0,      0,      0,      0,      0,      0,
  0xF373, 0xF374, 0xF375, 0xF376, 0xF377, 0xF378, 0xF379, 0xF37A,
  0xF37B, 0xF37C,      0,      0,      0,      0,      0,      0,
+};
+const unsigned short utf8_to_euc_E285_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+ 0x2A21, 0x2A22, 0x2A23, 0x2A24, 0x2A25, 0x2A26, 0x2A27, 0x2A28,
+ 0x2A29, 0x2A2A,      0,      0,      0,      0,      0,      0,
+ 0x2A35, 0x2A36, 0x2A37, 0x2A38, 0x2A39, 0x2A3A, 0x2A3B, 0x2A3C,
+ 0x2A3D, 0x2A3E,      0,      0,      0,      0,      0,      0,
 };
 const unsigned short utf8_to_euc_E286[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2597,6 +2682,16 @@ const unsigned short utf8_to_euc_E288_932[] = {
       0,      0,      0,      0, 0x2168, 0x2268,      0,      0,
       0,      0,      0,      0,      0, 0x2266,      0,      0,
 };
+const unsigned short utf8_to_euc_E288_mac[] = {
+ 0x224F,      0, 0x225F, 0x2250,      0,      0,      0, 0x2260,
+ 0x223A,      0,      0, 0x223B,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0, 0x2265,      0,      0, 0x2267, 0x2167, 0x2F22,
+ 0x225C,      0,      0,      0,      0, 0x2142,      0, 0x224A,
+ 0x224B, 0x2241, 0x2240, 0x2269, 0x226A,      0, 0x2F21,      0,
+      0,      0,      0,      0, 0x2168, 0x2268,      0,      0,
+      0,      0,      0,      0,      0, 0x2266,      0,      0,
+};
 const unsigned short utf8_to_euc_E289[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2617,6 +2712,16 @@ const unsigned short utf8_to_euc_E28A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0x2D79,
 };
+const unsigned short utf8_to_euc_E28A_mac[] = {
+      0,      0, 0x223E, 0x223F,      0,      0, 0x223C, 0x223D,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0, 0x225D,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0, 0x2F23,
+};
 const unsigned short utf8_to_euc_E28C[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2635,6 +2740,16 @@ const unsigned short utf8_to_euc_E291[] = {
  0x2D21, 0x2D22, 0x2D23, 0x2D24, 0x2D25, 0x2D26, 0x2D27, 0x2D28,
  0x2D29, 0x2D2A, 0x2D2B, 0x2D2C, 0x2D2D, 0x2D2E, 0x2D2F, 0x2D30,
  0x2D31, 0x2D32, 0x2D33, 0x2D34,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+};
+const unsigned short utf8_to_euc_E291_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+ 0x2921, 0x2922, 0x2923, 0x2924, 0x2925, 0x2926, 0x2927, 0x2928,
+ 0x2929, 0x292A, 0x292B, 0x292C, 0x292D, 0x292E, 0x292F, 0x2930,
+ 0x2931, 0x2932, 0x2933, 0x2934,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
 const unsigned short utf8_to_euc_E294[] = {
@@ -2767,6 +2882,16 @@ const unsigned short utf8_to_euc_E388[] = {
       0, 0x2D6A, 0x2D6B,      0,      0,      0,      0,      0,
       0, 0x2D6C,      0,      0,      0,      0,      0,      0,
 };
+const unsigned short utf8_to_euc_E388_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0, 0x2D2E, 0x2D31,      0,      0,      0,      0,      0,
+      0, 0x2D2C,      0,      0,      0,      0,      0,      0,
+};
 const unsigned short utf8_to_euc_E38A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2774,6 +2899,16 @@ const unsigned short utf8_to_euc_E38A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0x2D65, 0x2D66, 0x2D67, 0x2D68,
  0x2D69,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+};
+const unsigned short utf8_to_euc_E38A_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0, 0x2D73, 0x2D74, 0x2D75, 0x2D76,
+ 0x2D77,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
@@ -2787,6 +2922,16 @@ const unsigned short utf8_to_euc_E38C[] = {
       0,      0,      0,      0,      0,      0, 0x2D47,      0,
       0,      0,      0, 0x2D4F,      0,      0,      0,      0,
 };
+const unsigned short utf8_to_euc_E38C_mac[] = {
+      0,      0,      0, 0x2E29,      0,      0,      0,      0,
+      0,      0,      0,      0,      0, 0x2E32,      0,      0,
+      0,      0,      0,      0, 0x2E24,      0,      0,      0,
+ 0x2E2B,      0,      0,      0,      0,      0,      0,      0,
+      0,      0, 0x2E22, 0x2E34,      0,      0, 0x2E35, 0x2E2D,
+      0,      0,      0, 0x2E37,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0, 0x2E2A,      0,
+      0,      0,      0, 0x2E36,      0,      0,      0,      0,
+};
 const unsigned short utf8_to_euc_E38D[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0x2D40, 0x2D4E,      0,      0, 0x2D43,      0,      0,
@@ -2796,6 +2941,16 @@ const unsigned short utf8_to_euc_E38D[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x2D5F, 0x2D6F, 0x2D6E, 0x2D6D,      0,
+};
+const unsigned short utf8_to_euc_E38D_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0, 0x2E21, 0x2E2F,      0,      0, 0x2E23,      0,      0,
+      0, 0x2E2E,      0,      0,      0,      0,      0, 0x2E31,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0, 0x2E6A, 0x2E69, 0x2E68, 0x2E67,      0,
 };
 const unsigned short utf8_to_euc_E38E[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2807,9 +2962,29 @@ const unsigned short utf8_to_euc_E38E[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
+const unsigned short utf8_to_euc_E38E_mac[] = {
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0, 0x2B2B, 0x2B2D,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0, 0x2B21, 0x2B23, 0x2B29,      0,
+      0, 0x2B27,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+};
 const unsigned short utf8_to_euc_E38F[] = {
       0,      0,      0,      0, 0x2D55,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2D63,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+};
+const unsigned short utf8_to_euc_E38F_mac[] = {
+      0,      0,      0,      0, 0x2B2E,      0,      0,      0,
+      0,      0,      0,      0,      0, 0x2B7C,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6171,6 +6346,24 @@ const unsigned short *const utf8_to_euc_E2_932[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
+const unsigned short *const utf8_to_euc_E2_mac[] = {
+ utf8_to_euc_E280_932,                0,                0,                0,
+ utf8_to_euc_E284_mac, utf8_to_euc_E285_mac, utf8_to_euc_E286, utf8_to_euc_E287,
+ utf8_to_euc_E288_mac, utf8_to_euc_E289, utf8_to_euc_E28A_mac,                0,
+ utf8_to_euc_E28C,                0,                0,                0,
+                0, utf8_to_euc_E291_mac,                0,                0,
+ utf8_to_euc_E294, utf8_to_euc_E295, utf8_to_euc_E296, utf8_to_euc_E297,
+ utf8_to_euc_E298, utf8_to_euc_E299,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+};
 const unsigned short *const utf8_to_euc_E3[] = {
  utf8_to_euc_E380, utf8_to_euc_E381, utf8_to_euc_E382, utf8_to_euc_E383,
                 0,                0,                0,                0,
@@ -6194,6 +6387,24 @@ const unsigned short *const utf8_to_euc_E3_932[] = {
                 0,                0,                0,                0,
  utf8_to_euc_E388,                0, utf8_to_euc_E38A,                0,
  utf8_to_euc_E38C, utf8_to_euc_E38D, utf8_to_euc_E38E, utf8_to_euc_E38F,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+                0,                0,                0,                0,
+};
+const unsigned short *const utf8_to_euc_E3_mac[] = {
+ utf8_to_euc_E380_932, utf8_to_euc_E381, utf8_to_euc_E382_932, utf8_to_euc_E383,
+                0,                0,                0,                0,
+ utf8_to_euc_E388_mac,                0, utf8_to_euc_E38A_mac,                0,
+ utf8_to_euc_E38C_mac, utf8_to_euc_E38D_mac, utf8_to_euc_E38E_mac, utf8_to_euc_E38F_mac,
                 0,                0,                0,                0,
                 0,                0,                0,                0,
                 0,                0,                0,                0,
@@ -6441,6 +6652,36 @@ const unsigned short *const utf8_to_euc_2bytes_932[] = {
               0,              0,              0,              0,
               0,              0,              0,              0,
 };
+const unsigned short *const utf8_to_euc_2bytes_mac[] = {
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0, utf8_to_euc_C2_mac, utf8_to_euc_C3,
+ utf8_to_euc_C4, utf8_to_euc_C5,              0, utf8_to_euc_C7,
+              0,              0,              0, utf8_to_euc_CB,
+              0,              0, utf8_to_euc_CE, utf8_to_euc_CF,
+ utf8_to_euc_D0, utf8_to_euc_D1,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+              0,              0,              0,              0,
+};
 const unsigned short *const *const utf8_to_euc_3bytes[] = {
               0,              0, utf8_to_euc_E2, utf8_to_euc_E3,
  utf8_to_euc_E4, utf8_to_euc_E5, utf8_to_euc_E6, utf8_to_euc_E7,
@@ -6455,6 +6696,12 @@ const unsigned short *const *const utf8_to_euc_3bytes_ms[] = {
 };
 const unsigned short *const *const utf8_to_euc_3bytes_932[] = {
               0,              0, utf8_to_euc_E2_932, utf8_to_euc_E3_932,
+ utf8_to_euc_E4, utf8_to_euc_E5, utf8_to_euc_E6, utf8_to_euc_E7,
+ utf8_to_euc_E8, utf8_to_euc_E9,              0,              0,
+              0,              0,              0, utf8_to_euc_EF_ms,
+};
+const unsigned short *const *const utf8_to_euc_3bytes_mac[] = {
+              0,              0, utf8_to_euc_E2_mac, utf8_to_euc_E3_mac,
  utf8_to_euc_E4, utf8_to_euc_E5, utf8_to_euc_E6, utf8_to_euc_E7,
  utf8_to_euc_E8, utf8_to_euc_E9,              0,              0,
               0,              0,              0, utf8_to_euc_EF_ms,
