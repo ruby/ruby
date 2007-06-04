@@ -1,3 +1,12 @@
+Mon Jun  4 11:11:12 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (ResponseParser#next_token): fixed
+	  error message. (backported from HEAD)
+
+	* lib/net/imap.rb (ResponseParser#parse_error): fixed
+	  the condition not to refer @token.symbol unexpectedly.
+	  Thanks, Dick Monahan. (backported from HEAD)
+
 Thu May 31 17:27:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/benchmark.rb (Benchmark::Job::item): avoid modifying the
