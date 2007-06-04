@@ -3,6 +3,9 @@ Mon Jun 04 21:15:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 	* lib/json.rb, lib/json, ext/json, test/json:
 	  import JSON library.
 
+	* ext/nkf: import nkf.c rev:1.124
+	  Support CP10001.
+
 Sat Jun  2 16:48:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (Fiber#pass): rename to Fiber#yield.  Block parameter
