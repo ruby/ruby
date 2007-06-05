@@ -1652,7 +1652,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	
+
 	  case 'E':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
@@ -1666,7 +1666,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	
+
 	  case 'D':
 	  case 'd':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
@@ -1692,7 +1692,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	
+
 	  case 'G':
 	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
@@ -1706,7 +1706,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-	
+
 	  case 'U':
 	    if (len > send - s) len = send - s;
 	    while (len > 0 && s < send) {

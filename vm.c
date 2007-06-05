@@ -126,13 +126,13 @@ pop_frame(rb_thread_t *th)
 	rb_control_frame_t *cfp = th->cfp;
 	cfp->prof_time_self = current_time - cfp->prof_time_self;
 	(cfp+1)->prof_time_chld += cfp->prof_time_self;
-	
+
 	cfp->iseq->profile.count++;
 	cfp->iseq->profile.time_cumu = cfp->prof_time_self;
 	cfp->iseq->profile.time_self = cfp->prof_time_self - cfp->prof_time_chld;
     }
     else if (0 /* c method? */) {
-	
+
     }
 #endif
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
@@ -1195,7 +1195,7 @@ eval_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 	while (cref && cref->nd_next) {
 	    klass = cref->nd_clss;
 	    cref = cref->nd_next;
-	
+
 	    if (klass == 0) {
 		continue;
 	    }

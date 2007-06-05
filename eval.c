@@ -1710,7 +1710,7 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	VALUE iseqval;
 
 	if (scope != Qnil) {
-	
+
 	    if (CLASS_OF(scope) == rb_cBinding) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;

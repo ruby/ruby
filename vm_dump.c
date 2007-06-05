@@ -584,7 +584,7 @@ yarv_bug(void)
     if (GET_THREAD()->vm) {
 	int i;
 	SDR();
-	
+
 	bt = th_backtrace(th, 0);
 	if (TYPE(bt) == T_ARRAY)
 	for (i = 0; i < RARRAY_LEN(bt); i++) {

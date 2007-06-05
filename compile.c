@@ -1106,7 +1106,8 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    char type = types[j];
 		    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
 		    switch (type) {
-		    case TS_OFFSET:{
+		      case TS_OFFSET:
+			{
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
 			    if (lobj->set != Qtrue) {
@@ -1119,7 +1120,8 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				lobj->position - (pos + len);
 			    break;
 			}
-		    case TS_CDHASH:{
+		      case TS_CDHASH:
+			{
 			    /*
 			     * [obj, label, ...]
 			     */
@@ -1131,7 +1133,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				VALUE obj = rb_ary_entry(lits, i);
 				VALUE lv  = rb_ary_entry(lits, i+1);
 				lobj = (LABEL *)(lv & ~1);
-				
+
 				if (lobj->set != Qtrue) {
 				    rb_bug("unknown label");
 				}
@@ -1142,12 +1144,12 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    iseq_add_mark_object(iseq, map);
 			    break;
 			}
-		    case TS_LINDEX:
-		    case TS_DINDEX:
-		    case TS_NUM:	/* ulong */
+		      case TS_LINDEX:
+		      case TS_DINDEX:
+		      case TS_NUM:	/* ulong */
 			generated_iseq[pos + 1 + j] = FIX2INT(operands[j]);
 			break;
-		    case TS_ISEQ:	/* iseq */
+		      case TS_ISEQ:	/* iseq */
 			{
 			    VALUE v = operands[j];
 			    rb_iseq_t *block = 0;
@@ -1157,7 +1159,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    generated_iseq[pos + 1 + j] = (VALUE)block;
 			    break;
 			}
-		    case TS_VALUE:	/* VALUE */
+		      case TS_VALUE:	/* VALUE */
 			{
 			    VALUE v = operands[j];
 			    generated_iseq[pos + 1 + j] = v;
@@ -1167,24 +1169,24 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    }
 			    break;
 			}
-		    case TS_IC:	/* inline cache */
+		      case TS_IC: /* inline cache */
 			{
 			    VALUE v = (VALUE)NEW_INLINE_CACHE_ENTRY();
 			    generated_iseq[pos + 1 + j] = v;
 			    iseq_add_mark_object(iseq, v);
 			    break;
 			}
-		    case TS_ID:	/* ID */
+		      case TS_ID: /* ID */
 			generated_iseq[pos + 1 + j] = SYM2ID(operands[j]);
 			break;
-		    case TS_GENTRY:
+		      case TS_GENTRY:
 			{
 			    struct global_entry *entry =
 				(struct global_entry *)(operands[j] & (~1));
 			    generated_iseq[pos + 1 + j] = (VALUE)entry;
 			}
 			break;
-		    default:
+		      default:
 			rb_bug("unknown operand type: %c", type);
 			return 0;
 		    }
@@ -2778,7 +2780,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    else if (nd_type(vals) == NODE_SPLAT || nd_type(vals) == NODE_ARGSCAT) {
 		NODE *val = vals->nd_head;
-		
+
 		if (nd_type(vals) == NODE_ARGSCAT) {
 		    NODE *vs = vals->nd_head;
 		    val = vals->nd_body;
@@ -3468,15 +3470,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_OP_ASGN_OR:{
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *lassign = NEW_LABEL(nd_line(node));
-	
+
 	if (nd_type(node) == NODE_OP_ASGN_OR) {
 	    defined_expr(iseq, ret, node->nd_head, lassign, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lassign);
 	}
-	
+
 	COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_head", node->nd_head);
 	ADD_INSN(ret, nd_line(node), dup);
-	
+
 	if (nd_type(node) == NODE_OP_ASGN_AND) {
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfin);
 	}
@@ -4879,7 +4881,7 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
 	iseq->arg_block = FIX2INT(arg_block);
 
 	iseq->arg_opt_tbl = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
-	
+
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
 	    iseq->arg_opt_tbl[i] =
 	      (VALUE)register_label(iseq, labels_table,

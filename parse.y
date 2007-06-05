@@ -7915,7 +7915,7 @@ arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
 	ruby_sourceline = nd_line(node);
 	return 1;
     }
-    rb_ary_push(list, sym);		
+    rb_ary_push(list, sym);
     return 0;
 }
 
