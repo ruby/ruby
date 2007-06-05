@@ -1,3 +1,7 @@
+Tue Jun 05 14:11:15 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (kanji_convert): Fix guess fallback.
+
 Tue Jun  5 13:32:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c, dir.c, eval.c, eval_jump.h, eval_method.h, numeric.c,

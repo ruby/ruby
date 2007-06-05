@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-05-28"
+#define NKF_RELEASE_DATE "2007-06-05"
 #include "config.h"
 #include "utf8tbl.h"
 
@@ -3052,12 +3052,12 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
             code_status(c1);
         }
         while (p->name){
-            if (p->score < result->score){
+            if (p->status_func && p->score < result->score){
                 result = p;
             }
             ++p;
         }
-        set_iconv(FALSE, result->iconv_func);
+        set_iconv(TRUE, result->iconv_func);
     }
 
 
@@ -3638,7 +3638,6 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_3bytes_mac :
 	    utf8_to_euc_3bytes;
 	ret = w_iconv_common(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
-//	fprintf(stderr, "wret: %X %X %X -> %X %X\n",c2,c1,c0,*p2,*p1,ret);
     }else return -1;
 #ifdef SHIFTJIS_CP932
     if (!ret && !cp932inv_f && is_eucg3(*p2)) {
