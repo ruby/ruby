@@ -1,3 +1,7 @@
+Tue Jun  5 16:30:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_p): returns arguments to intervene.  [ruby-dev:29736]
+
 Tue Jun  5 14:07:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (invokeblock): check block is created by lambda

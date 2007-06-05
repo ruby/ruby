@@ -3980,17 +3980,24 @@ rb_p(VALUE obj) /* for debug print within C code */
  */
 
 static VALUE
-rb_f_p(int argc, VALUE *argv)
+rb_f_p(int argc, VALUE *argv, VALUE self)
 {
     int i;
+    VALUE ret = Qnil;
 
     for (i=0; i<argc; i++) {
 	rb_p(argv[i]);
     }
+    if (argc == 1) {
+	ret = argv[0];
+    }
+    else {
+	ret = rb_ary_new4(argc, argv);
+    }
     if (TYPE(rb_stdout) == T_FILE) {
 	rb_io_flush(rb_stdout);
     }
-    return Qnil;
+    return ret;
 }
 
 /*
