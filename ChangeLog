@@ -1,4 +1,9 @@
-Tue Jun 05 14:11:15 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Jun  5 14:47:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/pp.rb (PP::PPMethods::seplist): revert last change to work
+	  around wrapper bug.  [ruby-dev:30840]
+
+Tue Jun  5 14:11:15 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (kanji_convert): Fix guess fallback.
 

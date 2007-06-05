@@ -220,13 +220,13 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
-      list.__send__(iter_method) {|v|
+      list.__send__(iter_method) {|*v|
         if first
           first = false
         else
           sep.call
         end
-        yield(v)
+        yield(*v)
       }
     end
 
