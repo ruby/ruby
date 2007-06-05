@@ -3,7 +3,7 @@
 /* from ruby1.9/eval.c */
 
 static inline VALUE
-call_cfunc(VALUE (*func) (), VALUE recv, int len, int argc const VALUE *argv)
+call_cfunc(VALUE (*func)(), VALUE recv, int len, int argc, const VALUE *argv)
 {
     /* printf("len: %d, argc: %d\n", len, argc); */
 
