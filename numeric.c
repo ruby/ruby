@@ -2308,22 +2308,6 @@ int_pow(long x, unsigned long y)
     return LONG2NUM(z);
 }
 
-static VALUE
-int_round(int argc, VALUE* argv, VALUE num)
-{
-    VALUE nd;
-    int ndigits;
-
-    if (argc == 0) return num;
-    rb_scan_args(argc, argv, "1", &nd);
-    ndigits = NUM2INT(nd);
-    if (ndigits > 0) {
-	return rb_Float(num);
-    }
-    ndigits = -ndigits;
-    return rb_funcall(num, '-', 1, rb_funcall(num, '%', 1, int_pow(10, ndigits)));
-}
-
 /*
  *  call-seq:
  *    fix ** other         => Numeric
@@ -2909,6 +2893,31 @@ int_dotimes(VALUE num)
     }
   }
   return num;
+}
+
+static VALUE
+int_round(int argc, VALUE* argv, VALUE num)
+{
+    VALUE n, f, h, r;
+    int ndigits;
+
+    if (argc == 0) return num;
+    if (FIXNUM_P(num)) return num_round(argc, argv, num);
+
+    rb_scan_args(argc, argv, "1", &n);
+    ndigits = NUM2INT(n);
+    if (ndigits > 0) {
+	return rb_Float(num);
+    }
+    ndigits = -ndigits;
+    f = int_pow(10, ndigits);
+    h = rb_funcall(f, '/', 1, INT2FIX(2));
+    r = rb_funcall(num, '%', 1, f);
+    n = rb_funcall(num, '-', 1, r);
+    if (!RTEST(rb_funcall(r, '<', 1, h))) {
+	n = rb_funcall(n, '+', 1, f);
+    }
+    return n;
 }
 
 /*

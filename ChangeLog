@@ -18,13 +18,17 @@ Tue Jun  5 13:17:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  pack.c, re.c, thread.c, thread_win32.ci, vm.c, vm_dump.c: fixed
 	  indentation.
 
-Mon Jun 04 21:15:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+Mon Jun  4 21:15:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json.rb, lib/json, ext/json, test/json:
 	  import JSON library.
 
 	* ext/nkf: import nkf.c rev:1.124
 	  Support CP10001.
+
+Mon Jun  4 20:52:58 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_round): should not just truncate.
 
 Sat Jun  2 16:48:55 2007  Koichi Sasada  <ko1@atdot.net>
 
