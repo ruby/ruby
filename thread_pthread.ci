@@ -150,7 +150,7 @@ register_cached_thread_and_wait(void)
     gettimeofday(&tv, 0);
     ts.tv_sec = tv.tv_sec + 60;
     ts.tv_nsec = tv.tv_usec * 1000;
-    
+
     pthread_mutex_lock(&thread_cache_lock);
     {
 	entry->th_area = &th_area;
@@ -335,7 +335,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    ts.tv_nsec -= 1000000000;
         }
     }
-    
+
     th->status = THREAD_STOPPED;
     pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
 

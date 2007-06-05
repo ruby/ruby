@@ -1225,7 +1225,7 @@ flo_ceil(VALUE num)
  *
  *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
  *  Precision may be negative.  Returns a a floating point number when ndigits
- *  is more than one.  
+ *  is more than one.
  *
  *     1.5.round      #=> 2
  *     (-1.5).round   #=> -2
@@ -1624,7 +1624,7 @@ rb_num2ll(VALUE val)
     if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
 
     switch (TYPE(val)) {
-    case T_FLOAT:
+      case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)LLONG_MAX
 	    && RFLOAT(val)->value >= (double)LLONG_MIN) {
 	    return (LONG_LONG)(RFLOAT(val)->value);
@@ -1638,21 +1638,21 @@ rb_num2ll(VALUE val)
 	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
 	}
 
-    case T_BIGNUM:
+      case T_BIGNUM:
 	return rb_big2ll(val);
 
-    case T_STRING:
+      case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion from string");
 	return Qnil;            /* not reached */
 
-    case T_TRUE:
-    case T_FALSE:
+      case T_TRUE:
+      case T_FALSE:
 	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
 	return Qnil;		/* not reached */
 
       default:
-	  val = rb_to_int(val);
-	  return NUM2LL(val);
+	val = rb_to_int(val);
+	return NUM2LL(val);
     }
 }
 
@@ -1867,14 +1867,14 @@ static VALUE
 rb_int_induced_from(VALUE klass, VALUE x)
 {
     switch (TYPE(x)) {
-    case T_FIXNUM:
-    case T_BIGNUM:
-       return x;
-    case T_FLOAT:
-       return rb_funcall(x, id_to_i, 0);
-    default:
-       rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-                rb_obj_classname(x));
+      case T_FIXNUM:
+      case T_BIGNUM:
+	return x;
+      case T_FLOAT:
+	return rb_funcall(x, id_to_i, 0);
+      default:
+	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
+		 rb_obj_classname(x));
     }
 }
 
@@ -1889,14 +1889,14 @@ static VALUE
 rb_flo_induced_from(VALUE klass, VALUE x)
 {
     switch (TYPE(x)) {
-    case T_FIXNUM:
-    case T_BIGNUM:
-       return rb_funcall(x, rb_intern("to_f"), 0);
-    case T_FLOAT:
-       return x;
-    default:
-       rb_raise(rb_eTypeError, "failed to convert %s into Float",
-                rb_obj_classname(x));
+      case T_FIXNUM:
+      case T_BIGNUM:
+	return rb_funcall(x, rb_intern("to_f"), 0);
+      case T_FLOAT:
+	return x;
+      default:
+	rb_raise(rb_eTypeError, "failed to convert %s into Float",
+		 rb_obj_classname(x));
     }
 }
 

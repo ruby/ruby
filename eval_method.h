@@ -317,7 +317,7 @@ rb_remove_method(VALUE klass, const char *name)
 /*
  *  call-seq:
  *     remove_method(symbol)   => self
- *  
+ *
  *  Removes the method identified by _symbol_ from the current
  *  class. For an example, see <code>Module.undef_method</code>.
  */
@@ -460,8 +460,8 @@ rb_undef(VALUE klass, ID id)
 	    VALUE obj = rb_iv_get(klass, "__attached__");
 
 	    switch (TYPE(obj)) {
-	    case T_MODULE:
-	    case T_CLASS:
+	      case T_MODULE:
+	      case T_CLASS:
 		c = obj;
 		s0 = "";
 	    }
@@ -487,12 +487,12 @@ rb_undef(VALUE klass, ID id)
 /*
  *  call-seq:
  *     undef_method(symbol)    => self
- *  
+ *
  *  Prevents the current class from responding to calls to the named
  *  method. Contrast this with <code>remove_method</code>, which deletes
  *  the method from the particular class; Ruby will still search
  *  superclasses and mixed-in modules for a possible receiver.
- *     
+ *
  *     class Parent
  *       def hello
  *         puts "In parent"
@@ -503,25 +503,25 @@ rb_undef(VALUE klass, ID id)
  *         puts "In child"
  *       end
  *     end
- *     
- *     
+ *
+ *
  *     c = Child.new
  *     c.hello
- *     
- *     
+ *
+ *
  *     class Child
  *       remove_method :hello  # remove from child, still in parent
  *     end
  *     c.hello
- *     
- *     
+ *
+ *
  *     class Child
  *       undef_method :hello   # prevent any calls to 'hello'
  *     end
  *     c.hello
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     In child
  *     In parent
  *     prog.rb:23: undefined method `hello' for #<Child:0x401b3bb4> (NoMethodError)
@@ -563,7 +563,7 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
     orig_fbody->nd_cnt++;
-    
+
     if (st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *) & node)) {
 	if (node) {
 	    if (RTEST(ruby_verbose) && node->nd_cnt == 0 && node->nd_body) {
@@ -594,10 +594,10 @@ rb_alias(VALUE klass, ID name, ID def)
 /*
  *  call-seq:
  *     alias_method(new_name, old_name)   => self
- *  
+ *
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
- *     
+ *
  *     module Mod
  *       alias_method :orig_exit, :exit
  *       def exit(code=0)
@@ -607,9 +607,9 @@ rb_alias(VALUE klass, ID name, ID def)
  *     end
  *     include Mod
  *     exit(99)
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Exiting with code 99
  */
 

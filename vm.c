@@ -120,7 +120,7 @@ pop_frame(rb_thread_t *th)
 {
 #if COLLECT_PROFILE
     rb_control_frame_t *cfp = th->cfp;
-    
+
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	VALUE current_time = clock();
 	rb_control_frame_t *cfp = th->cfp;
@@ -322,7 +322,7 @@ th_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 	  BUILTIN_TYPE(cfp->lfp[-1]) == T_VALUES))) {
 	rb_bug("illegal svar");
     }
-    
+
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	/* TODO */
 	env->block.iseq = 0;
@@ -524,64 +524,64 @@ th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
     }
     switch (nd_type(body)) {
       case RUBY_VM_METHOD_NODE:{
-	  rb_control_frame_t *reg_cfp;
-	  int i;
-	  const int flag = 0;
+	rb_control_frame_t *reg_cfp;
+	int i;
+	const int flag = 0;
 
-	  th_set_finish_env(th);
-	  reg_cfp = th->cfp;
-	  for (i = 0; i < argc; i++) {
-	      *reg_cfp->sp++ = argv[i];
-	  }
-	  macro_eval_invoke_func(body->nd_body, recv, klass, blockptr,
-				 argc);
-	  val = th_eval_body(th);
-	  break;
+	th_set_finish_env(th);
+	reg_cfp = th->cfp;
+	for (i = 0; i < argc; i++) {
+	    *reg_cfp->sp++ = argv[i];
+	}
+	macro_eval_invoke_func(body->nd_body, recv, klass, blockptr,
+			       argc);
+	val = th_eval_body(th);
+	break;
       }
       case NODE_CFUNC: {
-	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
-	  {
-	      rb_control_frame_t *reg_cfp = th->cfp;
-	      rb_control_frame_t *cfp =
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+	{
+	    rb_control_frame_t *reg_cfp = th->cfp;
+	    rb_control_frame_t *cfp =
 		push_frame(th, 0, FRAME_MAGIC_CFUNC,
 			   recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
-	      cfp->method_id = id;
-	      cfp->method_klass = klass;
+	    cfp->method_id = id;
+	    cfp->method_klass = klass;
 
-	      val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
+	    val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
 
-	      if (reg_cfp != th->cfp + 1) {
-		  SDR2(reg_cfp);
-		  SDR2(th->cfp-5);
-		  rb_bug("cfp consistency error - call0");
-		  th->cfp = reg_cfp;
-	      }
-	      pop_frame(th);
-	  }
-	  EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
-	  break;
+	    if (reg_cfp != th->cfp + 1) {
+		SDR2(reg_cfp);
+		SDR2(th->cfp-5);
+		rb_bug("cfp consistency error - call0");
+		th->cfp = reg_cfp;
+	    }
+	    pop_frame(th);
+	}
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
+	break;
       }
       case NODE_ATTRSET:{
-	  if (argc != 1) {
-	      rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
-		       argc);
-	  }
-	  val = rb_ivar_set(recv, body->nd_vid, argv[0]);
-	  break;
+	if (argc != 1) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
+		     argc);
+	}
+	val = rb_ivar_set(recv, body->nd_vid, argv[0]);
+	break;
       }
       case NODE_IVAR: {
-	  if (argc != 0) {
-	      rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
-		       argc);
-	  }
-	  val = rb_attr_get(recv, body->nd_vid);
-	  break;
+	if (argc != 0) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
+		     argc);
+	}
+	val = rb_attr_get(recv, body->nd_vid);
+	break;
       }
       case NODE_BMETHOD:{
-	  val = th_invoke_bmethod(th, id, body->nd_cval,
-				  recv, klass, argc, (VALUE *)argv);
-	  break;
+	val = th_invoke_bmethod(th, id, body->nd_cval,
+				recv, klass, argc, (VALUE *)argv);
+	break;
       }
       default:
 	rb_bug("unsupported: th_call0");
@@ -895,22 +895,22 @@ lfp_svar(VALUE *lfp, int cnt)
 	}
     }
     switch (cnt) {
-    case -1:
+      case -1:
 	return &val->basic.klass;
-    case 0:
+      case 0:
 	return &val->v1;
-    case 1:
+      case 1:
 	return &val->v2;
-    default:{
-	    VALUE ary;
-	    if ((ary = val->v3) == Qnil) {
-		ary = val->v3 = rb_ary_new();
-	    }
-	    if (RARRAY_LEN(ary) <= cnt) {
-		rb_ary_store(ary, cnt, Qnil);
-	    }
-	    return &RARRAY_PTR(ary)[cnt];
+      default:{
+	VALUE ary;
+	if ((ary = val->v3) == Qnil) {
+	    ary = val->v3 = rb_ary_new();
 	}
+	if (RARRAY_LEN(ary) <= cnt) {
+	    rb_ary_store(ary, cnt, Qnil);
+	}
+	return &RARRAY_PTR(ary)[cnt];
+      }
     }
 }
 
@@ -1195,7 +1195,7 @@ eval_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 	while (cref && cref->nd_next) {
 	    klass = cref->nd_clss;
 	    cref = cref->nd_next;
-	    
+	
 	    if (klass == 0) {
 		continue;
 	    }
@@ -1236,10 +1236,10 @@ eval_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
     }
     else {
 	switch (TYPE(klass)) {
-	case T_CLASS:
-	case T_MODULE:
+	  case T_CLASS:
+	  case T_MODULE:
 	    break;
-	default:
+	  default:
 	    rb_raise(rb_eTypeError, "%s is not a class/module",
 		     RSTRING_PTR(rb_obj_as_string(klass)));
 	}
@@ -1361,24 +1361,24 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
 	rb_exc_new2(rb_const_get(rb_cObject, rb_intern("LocalJumpError")),
 		    mesg);
     ID id;
-    
+
     switch (reason) {
-    case TAG_BREAK:
+      case TAG_BREAK:
 	id = rb_intern("break");
 	break;
-    case TAG_REDO:
+      case TAG_REDO:
 	id = rb_intern("redo");
 	break;
-    case TAG_RETRY:
+      case TAG_RETRY:
 	id = rb_intern("retry");
 	break;
-    case TAG_NEXT:
+      case TAG_NEXT:
 	id = rb_intern("next");
 	break;
-    case TAG_RETURN:
+      case TAG_RETURN:
 	id = rb_intern("return");
 	break;
-    default:
+      default:
 	id = rb_intern("noreason");
 	break;
     }
@@ -1398,28 +1398,28 @@ VALUE
 th_make_jump_tag_but_local_jump(int state, VALUE val)
 {
     VALUE result = Qnil;
-    
+
     if (val == Qundef)
 	val = GET_THREAD()->tag->retval;
     switch (state) {
-    case 0:
+      case 0:
 	break;
-    case TAG_RETURN:
+      case TAG_RETURN:
 	result = make_localjump_error("unexpected return", val, state);
 	break;
-    case TAG_BREAK:
+      case TAG_BREAK:
 	result = make_localjump_error("unexpected break", val, state);
 	break;
-    case TAG_NEXT:
+      case TAG_NEXT:
 	result = make_localjump_error("unexpected next", val, state);
 	break;
-    case TAG_REDO:
+      case TAG_REDO:
 	result = make_localjump_error("unexpected redo", Qnil, state);
 	break;
-    case TAG_RETRY:
+      case TAG_RETRY:
 	result = make_localjump_error("retry outside of rescue clause", Qnil, state);
 	break;
-    default:
+      default:
 	break;
     }
     return result;
@@ -1453,7 +1453,7 @@ void
 rb_vm_check_redefinition_opt_method(NODE *node)
 {
     VALUE bop;
-    
+
     if (st_lookup(vm_opt_method_table, (st_data_t)node, &bop)) {
 	yarv_redefined_flag |= bop;
     }
@@ -1828,7 +1828,7 @@ rb_thread_eval(rb_thread_t *th, VALUE iseqval)
 {
     VALUE val;
     volatile VALUE tmp;
-    
+
     th_set_top_stack(th, iseqval);
 
     if (!rb_const_defined(rb_cObject, rb_intern("TOPLEVEL_BINDING"))) {

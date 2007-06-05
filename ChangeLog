@@ -1,3 +1,15 @@
+Tue Jun  5 13:26:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c, dir.c, eval.c, eval_jump.h, eval_method.h, numeric.c,
+	  pack.c, parse.y, re.c, thread.c, vm.c, vm_dump.c, call_cfunc.ci,
+	  thread_pthread.ci, thread_win32.ci: fixed indentation.
+
+Tue Jun  5 13:17:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* call_cfunc.ci, compile.c, dir.c, eval.c, eval_jump.h, numeric.c,
+	  pack.c, re.c, thread.c, thread_win32.ci, vm.c, vm_dump.c: fixed
+	  indentation.
+
 Mon Jun 04 21:15:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json.rb, lib/json, ext/json, test/json:
@@ -965,8 +977,8 @@ Wed Mar 21 17:04:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Mar 21 08:20:00 2007  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
-	* test/testunit/collector/test_dir.rb: Fixed test/unit tests that 
-	  were breaking due to Module#public_instance_methods now 
+	* test/testunit/collector/test_dir.rb: Fixed test/unit tests that
+	  were breaking due to Module#public_instance_methods now
 	  returning a Symbol instead of a String.
 
 	* test/testunit/collector/test_objectspace.rb: Ditto.
@@ -1256,14 +1268,14 @@ Fri Mar  2 21:17:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (get_ptr_of_variant, ole_set_safe_array,
 	  ole_val2ptr_variant, ole_val2olevariantdata, ole_variant2val,
-	  ): fix some bugs of WIN32OLE_VARIANT.new when variant type is 
+	  ): fix some bugs of WIN32OLE_VARIANT.new when variant type is
 	  VT_ARRAY|VT_BSTR or VT_BYREF.
 
 	* ext/win32ole/win32ole.c (folevariant_s_array, folevariant_initialize):
 	  WIN32OLE_VARIANT#[], WIN32OLE_VARIANT#[]=, WIN32OLE_VARIANT#value=
 	  is defined as instance method of WIN32OLE_VARIANT.
 
-	* test/win32ole/test_win32ole_variant.rb: add some test for 
+	* test/win32ole/test_win32ole_variant.rb: add some test for
 	  VT_ARRAY, VT_BYREF variant type.
 
 Fri Mar  2 07:58:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1642,7 +1654,7 @@ Sat Feb 24 10:38:05 2007  Minero Aoki  <aamine@loveruby.net>
 
 Sat Feb 24 07:31:35 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: add WIN32OLE_VARIANT.array, 
+	* ext/win32ole/win32ole.c: add WIN32OLE_VARIANT.array,
 	  WIN32OLE_VARIANT#value=, refactoring.
 
 	* test/win32ole/test_win32ole_variant.rb: add some test for
@@ -1757,7 +1769,7 @@ Wed Feb 21 09:14:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Feb 20 21:19:29 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (installed_code_page_proc, 
+	* ext/win32ole/win32ole.c (installed_code_page_proc,
 	  ole_variant2val): small refactoring.
 
 Tue Feb 20 15:11:42 2007  Koichi Sasada  <ko1@atdot.net>
@@ -1822,7 +1834,7 @@ Fri Feb 16 20:59:10 2007  Koichi Sasada  <ko1@atdot.net>
 Fri Feb 16 19:24:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_log): update document to mention second optional
-	  argument for logarithm base. 
+	  argument for logarithm base.
 
 Fri Feb 16 19:19:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1872,7 +1884,7 @@ Thu Feb 15 01:43:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 Wed Feb 14 22:52:43 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_variant2val): VC++6 does not 
+	* ext/win32ole/win32ole.c (ole_variant2val): VC++6 does not
 	  support VT_I8, VT_UI8.
 
 Wed Feb 14 22:10:21 2007  Koichi Sasada  <ko1@atdot.net>
@@ -1998,7 +2010,7 @@ Sun Feb 11 22:10:08 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 Sun Feb 11 18:47:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_val2olevariantdata): 
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata):
 	  WIN32OLE_VARIANT#new accepts nil when variant type is VT_ARRAY.
 
 	* test/win32ole/test_win32ole_variant.rb: ditto.
@@ -2026,7 +2038,7 @@ Sat Feb 10 17:46:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Feb 10 00:13:11 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd, 
+	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd,
 	  __conv_keyonly_opts).
 
 Fri Feb  9 12:33:40 2007  Koichi Sasada  <ko1@atdot.net>
@@ -2066,7 +2078,7 @@ Thu Feb  8 22:44:04 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_set_safe_array, ole_variant2val,
 	  ole_val_ary2variant_ary): fix WIN32OLE_VARIANT.new bug when
-	  1st argument is empty array, and when 2nd argument is 
+	  1st argument is empty array, and when 2nd argument is
 	  VT_ARRAY|VT_BYREF.
 
 	* test/win32ole/test_win32ole_variant.rb: ditto.
@@ -2123,7 +2135,7 @@ Thu Feb  8 15:48:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: fix to use polling in select on cygwin and mswin32.
 
-	* thread.c, thread_pthread.ci, thread_win32.ci, yarvcore.h: 
+	* thread.c, thread_pthread.ci, thread_win32.ci, yarvcore.h:
 	  rename:
 	  * rb_thread_t#interrupt_function -> unblock_function
 	  * rb_interrupt_function_t -> rb_unblock_function
@@ -2223,7 +2235,7 @@ Wed Feb  7 09:35:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci: comment out codes with USE_THREAD_CACHE.
 
-	* vm.c (rb_svar, rb_backref_get, rb_backref_get, 
+	* vm.c (rb_svar, rb_backref_get, rb_backref_get,
 	  rb_lastline_get, rb_lastline_set) : moved from yarvcore.c.
 
 	* vm.c (yarv_init_redefined_flag): add a prototype and rename
@@ -2409,7 +2421,7 @@ Sat Feb  3 23:51:58 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  symbol from a symbol and a class.  back-ported from matzruby.
 
 	* parse.y (rb_decompose_ivar2): reverse function of
-	  rb_compose_ivar2(). 
+	  rb_compose_ivar2().
 
 	* marshal.c (w_symbol): support class local instance variables.
 
@@ -2433,7 +2445,7 @@ Sat Feb  3 23:21:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Feb  3 14:32:58 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2olevariantdata, ole_val2variant):
-	  fix the bug of WIN32OLE_VARIANT.new when variant type is 
+	  fix the bug of WIN32OLE_VARIANT.new when variant type is
 	  VT_ARRAY.
 
 	* ext/win32ole/sample/excel1.rb: rewrite using WIN32OLE_VARIANT.
@@ -2484,7 +2496,7 @@ Fri Feb  2 18:27:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Feb  2 00:13:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ruby.h (SYMBOL_P): make Symbol immediate again for performance. 
+	* ruby.h (SYMBOL_P): make Symbol immediate again for performance.
 
 	* string.c: redesign symbol methods.
 
@@ -2556,7 +2568,7 @@ Mon Jan 29 21:32:37 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* test/win32ole/test_win32ole.rb: add test for WIN32OLE.locale=,
 	  WIN32OLE.locale.
 
-	* test/win32ole/test_win32ole_variant.rb: add test for 
+	* test/win32ole/test_win32ole_variant.rb: add test for
 	  WIN32OLE_VARIANT#vartype.
 
 Mon Jan 29 14:14:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2570,11 +2582,11 @@ Sun Jan 28 08:41:49 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Jan 27 18:36:33 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_val2olevariantdata): bug fix. 
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata): bug fix.
 	  WIN32OLE_VARIANT.new check that 1st argument should T_ARRAY
 	  when variant type is VT_ARRAY.
 
-	* test/win32ole/test_win32ole_variant.rb: add some test. 
+	* test/win32ole/test_win32ole_variant.rb: add some test.
 
 Fri Jan 26 23:55:56 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -2629,14 +2641,14 @@ Mon Jan 22 14:57:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Jan 20 21:05:18 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (fole_s_set_code_page): WIN32OLE.codepage= 
+	* ext/win32ole/win32ole.c (fole_s_set_code_page): WIN32OLE.codepage=
 	  accepts installed codepage.
 
 	* test/win32ole/test_win32ole.rb (test_s_codepage_changed): ditto.
 
 Sat Jan 20 11:18:49 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_invoke, ole_invoke2, ole_propertyput): 
+	* ext/win32ole/win32ole.c (ole_invoke, ole_invoke2, ole_propertyput):
 	  modify WIN32OLERuntimeError message.
 
 	* test/win32ole/test_win32ole.rb: ditto.
@@ -2665,11 +2677,11 @@ Fri Jan 19 06:53:38 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (olevariant_free): fix memory leak.
 
-	* ext/win32ole/win32ole.c (ole_val2olevariantdata): 
-	  WIN32OLE_VARIANT.new accepts nil as first argument for some VARIANT 
+	* ext/win32ole/win32ole.c (ole_val2olevariantdata):
+	  WIN32OLE_VARIANT.new accepts nil as first argument for some VARIANT
 	  TYPE.
 
-	* test/win32ole/test_win32ole_variant.rb: ditto. 
+	* test/win32ole/test_win32ole_variant.rb: ditto.
 
 Wed Jan 17 17:31:28 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -2681,7 +2693,7 @@ Wed Jan 17 17:31:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c: rename or remove some global variables
 	  removed: mYarvCore, mYarvInsns
-	  renamed: cYarvISeq -> rb_cISeq, 
+	  renamed: cYarvISeq -> rb_cISeq,
                    cYarvProc -> rb_cProc, cYarvBinding -> rb_cBinding
 	  ::YarvCore module is removed and ::YarvCore::VM class becomes ::VM.
           And change/remove some functions which added with YARV.
@@ -2733,8 +2745,8 @@ Tue Jan 16 12:00:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 Sat Jan 13 23:24:59 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 
-	  olemethod_free, olevariable_free, oleparam_free, 
+	* ext/win32ole/win32ole.c (ole_free, ole_type_free,
+	  olemethod_free, olevariable_free, oleparam_free,
 	  ole_event_free): fix memory leak.  [ruby-core:09846]
 
 Wed Jan 10 00:10:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -2783,7 +2795,7 @@ Sun Jan  7 17:47:16 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole.c: update comment for rdoc of
 	  WIN32OLE#[] and WIN32OLE#[]=.
 
-Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net> 
+Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment):
 	  Look for class and module comments above rb_define_class and
@@ -2843,7 +2855,7 @@ Sat Jan  6 09:10:52 2007  Koichi Sasada  <ko1@atdot.net>
 
 Sat Jan  6 08:29:17 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (Init_win32ole): add 
+	* ext/win32ole/win32ole.c (Init_win32ole): add
 	  WIN32OLE::VARIANT::VT_EMPTY, WIN32OLE::VARIANT::VT_NULL
 
 	* test/win32ole/test_win32ole_variant_m.rb (test_variant): ditto.
@@ -2916,7 +2928,7 @@ Fri Jan  5 13:59:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 Fri Jan  5 12:03:07 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.c (iseq_compile_each, set_block_local_tbl): 
+	* compile.c (iseq_compile_each, set_block_local_tbl):
 	  support NODE_LAMBDA (partly).
 
 	* sample/test.rb: restore test of NODE_LAMBDA
@@ -2961,7 +2973,7 @@ Thu Jan  4 16:57:14 2007  Koichi Sasada  <ko1@atdot.net>
 Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (Init_ossl_asn1):
-	  OpenSSL::ASN1::ASN1Data#value,#tag,#tag_class and 
+	  OpenSSL::ASN1::ASN1Data#value,#tag,#tag_class and
 	  OpenSSL::ASN1::BitString#unused_bits should be public.
 
 Thu Jan 04 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
@@ -3093,7 +3105,7 @@ Wed Dec 27 10:04:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Dec 26 21:02:14 2006  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* test/win32ole/test_folderitem2_invokeverb.rb: The argument 
+	* test/win32ole/test_folderitem2_invokeverb.rb: The argument
 	  of Shell.NameSpace should not be file path.
 
 Tue Dec 26 06:13:08 2006  Minero Aoki  <aamine@loveruby.net>

@@ -171,7 +171,7 @@ vtable_add(struct vtable *tbl, ID id)
         rb_bug("vtable_add: vtable is not allocated (%p)", tbl);
     }
     if (VTBL_DEBUG) printf("vtable_add: %p, %s\n", tbl, rb_id2name(id));
-    
+
     if (tbl->pos == tbl->capa) {
         tbl->capa = tbl->capa * 2;
         REALLOC_N(tbl->tbl, ID, tbl->capa);
@@ -4055,7 +4055,7 @@ f_norm_arg	: tCONSTANT
 		    {
 		    /*%%%*/
 			yyerror("formal argument cannot be a constant");
-			$$ = 0; 
+			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
@@ -4064,7 +4064,7 @@ f_norm_arg	: tCONSTANT
 		    {
 		    /*%%%*/
 			yyerror("formal argument cannot be an instance variable");
-			$$ = 0; 
+			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
@@ -4073,7 +4073,7 @@ f_norm_arg	: tCONSTANT
 		    {
 		    /*%%%*/
 			yyerror("formal argument cannot be a global variable");
-			$$ = 0; 
+			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
@@ -4082,7 +4082,7 @@ f_norm_arg	: tCONSTANT
 		    {
 		    /*%%%*/
 			yyerror("formal argument cannot be a class variable");
-			$$ = 0; 
+			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
 		    %*/
@@ -4642,7 +4642,7 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
     struct parser_params *parser;
     NODE *node;
     volatile VALUE tmp;
-    
+
     Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
@@ -4688,7 +4688,7 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     struct parser_params *parser;
     volatile VALUE tmp;
     NODE *node;
-    
+
     Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_io_gets;
     lex_input = file;
@@ -5489,7 +5489,7 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
     if (!(end = pragma_marker(beg, str + len - beg))) return Qfalse;
     str = beg;
     len = end - beg - 3;
-    
+
     /* %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*" */
     while (len > 0) {
 #ifndef RIPPER
@@ -6314,7 +6314,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
-	if (lex_state == EXPR_END || 
+	if (lex_state == EXPR_END ||
 	    lex_state == EXPR_ENDARG || ISSPACE(c)) {
 	    pushback(c);
 	    lex_state = EXPR_BEG;
@@ -7915,7 +7915,7 @@ arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
 	ruby_sourceline = nd_line(node);
 	return 1;
     }
-    rb_ary_push(list, sym);		  
+    rb_ary_push(list, sym);		
     return 0;
 }
 
@@ -8114,7 +8114,7 @@ rb_parser_append_print(NODE *node)
     NODE *prelude = 0;
     NODE *scope = node;
     node = node->nd_body;
-    
+
     if (node && (nd_type(node) == NODE_PRELUDE)) {
 	prelude = node;
 	node = node->nd_body;
@@ -8523,15 +8523,15 @@ symbols_i(VALUE sym, ID value, VALUE ary)
 /*
  *  call-seq:
  *     Symbol.all_symbols    => array
- *  
+ *
  *  Returns an array of all the symbols currently in Ruby's symbol
  *  table.
- *     
+ *
  *     Symbol.all_symbols.size    #=> 903
  *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
- *                                     :chown, :EOFError, :$;, :String, 
- *                                     :LOCK_SH, :"setuid?", :$<, 
- *                                     :default_proc, :compact, :extend, 
+ *                                     :chown, :EOFError, :$;, :String,
+ *                                     :LOCK_SH, :"setuid?", :$<,
+ *                                     :default_proc, :compact, :extend,
  *                                     :Tms, :getwd, :$=, :ThreadGroup,
  *                                     :wait2, :$>]
  */

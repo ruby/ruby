@@ -47,40 +47,40 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     switch (cfp->magic) {
-    case FRAME_MAGIC_TOP:
+      case FRAME_MAGIC_TOP:
 	magic = "TOP";
 	break;
-    case FRAME_MAGIC_METHOD:
+      case FRAME_MAGIC_METHOD:
 	magic = "METHOD";
 	break;
-    case FRAME_MAGIC_CLASS:
+      case FRAME_MAGIC_CLASS:
 	magic = "CLASS";
 	break;
-    case FRAME_MAGIC_BLOCK:
+      case FRAME_MAGIC_BLOCK:
 	magic = "BLOCK";
 	break;
-    case FRAME_MAGIC_FINISH:
+      case FRAME_MAGIC_FINISH:
 	magic = "FINISH";
 	break;
-    case FRAME_MAGIC_CFUNC:
+      case FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
 	break;
-    case FRAME_MAGIC_PROC:
+      case FRAME_MAGIC_PROC:
 	magic = "PROC";
 	break;
       case FRAME_MAGIC_LAMBDA:
 	magic = "LAMBDA";
 	break;
-    case FRAME_MAGIC_IFUNC:
+      case FRAME_MAGIC_IFUNC:
 	magic = "IFUNC";
 	break;
-    case FRAME_MAGIC_EVAL:
+      case FRAME_MAGIC_EVAL:
 	magic = "EVAL";
 	break;
-    case 0:
+      case 0:
 	magic = "------";
 	break;
-    default:
+      default:
 	magic = "(none)";
 	break;
     }

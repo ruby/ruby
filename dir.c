@@ -1209,19 +1209,19 @@ glob_helper(
 	    p = p->next;
 	}
 	switch (p->type) {
-	case PLAIN:
+	  case PLAIN:
 	    plain = 1;
 	    break;
-	case MAGICAL:
+	  case MAGICAL:
 	    magical = 1;
 	    break;
-	case MATCH_ALL:
+	  case MATCH_ALL:
 	    match_all = 1;
 	    break;
-	case MATCH_DIR:
+	  case MATCH_DIR:
 	    match_dir = 1;
 	    break;
-	case RECURSIVE:
+	  case RECURSIVE:
 	    rb_bug("continuous RECURSIVEs");
 	}
     }
@@ -1593,7 +1593,7 @@ dir_globs(long argc, VALUE *argv, int flags)
  *     Dir[ string [, string ...] ] => array
  *
  *  Equivalent to calling
- *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and 
+ *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and
  *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
  *
  */

@@ -9,7 +9,7 @@ NORETURN(static VALUE rb_f_throw _((int, VALUE *)));
 /*
  *  call-seq:
  *     throw(symbol [, obj])
- *  
+ *
  *  Transfers control to the end of the active +catch+ block
  *  waiting for _symbol_. Raises +NameError+ if there
  *  is no +catch+ block for the symbol. The optional second
@@ -61,7 +61,7 @@ rb_throw(const char *tag, VALUE val)
 /*
  *  call-seq:
  *     catch(symbol) {| | block }  > obj
- *  
+ *
  *  +catch+ executes its block. If a +throw+ is
  *  executed, Ruby searches up its stack for a +catch+ block
  *  with a tag corresponding to the +throw+'s
@@ -71,18 +71,18 @@ rb_throw(const char *tag, VALUE val)
  *  the value of +catch+ is the value of the last expression
  *  evaluated. +catch+ expressions may be nested, and the
  *  +throw+ call need not be in lexical scope.
- *     
+ *
  *     def routine(n)
  *       puts n
  *       throw :done if n <= 0
  *       routine(n-1)
  *     end
- *     
- *     
+ *
+ *
  *     catch(:done) { routine(3) }
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     3
  *     2
  *     1
@@ -162,12 +162,12 @@ rb_exit(int status)
  *     exit(integer=0)
  *     Kernel::exit(integer=0)
  *     Process::exit(integer=0)
- *  
+ *
  *  Initiates the termination of the Ruby script by raising the
  *  <code>SystemExit</code> exception. This exception may be caught. The
  *  optional parameter is used to return a status code to the invoking
  *  environment.
- *     
+ *
  *     begin
  *       exit
  *       puts "never get here"
@@ -175,22 +175,22 @@ rb_exit(int status)
  *       puts "rescued a SystemExit exception"
  *     end
  *     puts "after begin block"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     rescued a SystemExit exception
  *     after begin block
- *     
+ *
  *  Just prior to termination, Ruby executes any <code>at_exit</code> functions
  *  (see Kernel::at_exit) and runs any object finalizers (see
  *  ObjectSpace::define_finalizer).
- *     
+ *
  *     at_exit { puts "at_exit function" }
  *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
  *     exit
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     at_exit function
  *     in finalizer
  */
@@ -204,13 +204,13 @@ rb_f_exit(int argc, VALUE *argv)
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &status) == 1) {
 	switch (status) {
-	case Qtrue:
+	  case Qtrue:
 	    istatus = EXIT_SUCCESS;
 	    break;
-	case Qfalse:
+	  case Qfalse:
 	    istatus = EXIT_FAILURE;
 	    break;
-	default:
+	  default:
 	    istatus = NUM2INT(status);
 #if EXIT_SUCCESS != 0
 	    if (istatus == 0)
@@ -232,7 +232,7 @@ rb_f_exit(int argc, VALUE *argv)
  *     abort
  *     Kernel::abort
  *     Process::abort
- *  
+ *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
  *  to STDERR prior to terminating.
@@ -272,21 +272,21 @@ call_end_proc(VALUE data)
 /*
  *  call-seq:
  *     at_exit { block } -> proc
- *  
+ *
  *  Converts _block_ to a +Proc+ object (and therefore
  *  binds it at the point of call) and registers it for execution when
  *  the program exits. If multiple handlers are registered, they are
  *  executed in reverse order of registration.
- *     
+ *
  *     def do_at_exit(str1)
  *       at_exit { print str1 }
  *     end
  *     at_exit { puts "cruel world" }
  *     do_at_exit("goodbye ")
  *     exit
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     goodbye cruel world
  */
 

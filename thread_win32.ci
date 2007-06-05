@@ -196,22 +196,22 @@ native_mutex_lock(rb_thread_lock_t *lock)
 	thread_debug("native_mutex_lock: %p\n", *lock);
 	result = w32_wait_events(&*lock, 1, INFINITE, 0);
 	switch (result) {
-	case WAIT_OBJECT_0:
+	  case WAIT_OBJECT_0:
 	    /* get mutex object */
 	    thread_debug("acquire mutex: %p\n", *lock);
 	    return 0;
-	case WAIT_OBJECT_0 + 1:
+	  case WAIT_OBJECT_0 + 1:
 	    /* interrupt */
 	    errno = EINTR;
 	    thread_debug("acquire mutex interrupted: %p\n", *lock);
 	    return 0;
-	case WAIT_TIMEOUT:
+	  case WAIT_TIMEOUT:
 	    thread_debug("timeout mutex: %p\n", *lock);
 	    break;
-	case WAIT_ABANDONED:
+	  case WAIT_ABANDONED:
 	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
 	    break;
-	default:
+	  default:
 	    rb_bug("win32_mutex_lock: unknown result (%d)", result);
 	    break;
 	}
@@ -244,9 +244,9 @@ native_mutex_trylock(rb_thread_lock_t *lock)
     result = w32_wait_events(&*lock, 1, 1, 0);
     thread_debug("native_mutex_trylock result: %d\n", result);
     switch (result) {
-    case WAIT_OBJECT_0:
+      case WAIT_OBJECT_0:
 	return 0;
-    case WAIT_TIMEOUT:
+      case WAIT_TIMEOUT:
 	return EBUSY;
     }
     return EINVAL;
