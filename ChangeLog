@@ -1,3 +1,9 @@
+Wed Jun  6 02:40:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* insnhelper.h, insns.def (DEC_SP): shoudn't use unary minus operator
+	  in pointer operation. some compilers (such as VC++8 x64) cannot deal
+	  it with expected way.
+
 Wed Jun  6 02:19:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y (new_yield), compile.c (iseq_compile_each): fix

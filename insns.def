@@ -1190,7 +1190,7 @@ send
 	    mn = rb_method_node(klass, id);
 
 	    num -= 1;
-	    INC_SP(-1);
+	    DEC_SP(1);
 	}
 
 	if (node->nd_cfnc == rb_f_funcall) {
@@ -1344,7 +1344,7 @@ invokeblock
 	    }
 	}
 
-	INC_SP(-argc);
+	DEC_SP(argc);
 	argc = th_yield_setup_args(th, iseq, argc, GET_SP(),
 				   block_proc_is_lambda(block->proc));
 	INC_SP(argc);
