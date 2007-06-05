@@ -69,5 +69,21 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(:ok, f1.yield)
     assert_equal([:baz, :bar], ary)
   end
+
+  def test_return
+    assert_raise(LocalJumpError){
+      Fiber.new do
+        return
+      end.yield
+    }
+  end
+
+  def test_throw
+    assert_raise(RuntimeError){
+      Fiber.new do
+        throw :a
+      end.yield
+    }
+  end
 end
 

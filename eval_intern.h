@@ -122,7 +122,7 @@ char *strrchr _((const char *, const char));
       stmt; \
   } \
   else { \
-      rb_fiber_start(th); \
+      rb_fiber_start(); \
   } while (0)
 
 #define TH_PUSH_TAG(th) do { \
@@ -193,6 +193,8 @@ int thread_reset_raised(rb_thread_t *th);
 VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
 VALUE rb_make_exception _((int argc, VALUE *argv));
 
+NORETURN(void rb_fiber_start(void));
+
 NORETURN(void rb_raise_jump _((VALUE)));
 NORETURN(void print_undef _((VALUE, ID)));
 NORETURN(void th_localjump_error(const char *, VALUE, int));
@@ -203,6 +205,7 @@ VALUE th_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line);
 NODE *th_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
 NODE *th_cref_push(rb_thread_t *th, VALUE, int);
 NODE *th_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
+VALUE th_make_jump_tag_but_local_jump(int state, VALUE val);
 
 static rb_control_frame_t *
 th_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)

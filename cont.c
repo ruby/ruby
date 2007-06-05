@@ -421,6 +421,8 @@ rb_fiber_start(void)
     VALUE args;
     int state;
 
+    th->tag = 0;
+
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	GetContPtr(th->fiber, cont);
@@ -436,7 +438,7 @@ rb_fiber_start(void)
     TH_POP_TAG();
 
     if (state) {
-	th->thrown_errinfo = th->errinfo;
+	th->thrown_errinfo = th_make_jump_tag_but_local_jump(state, th->errinfo);
 	th->interrupt_flag = 1;
     }
 

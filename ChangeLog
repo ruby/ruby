@@ -1,3 +1,12 @@
+Wed Jun  6 02:50:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_start): clear th->tag and check error to fix
+	  [ruby-dev:30888] and [ruby-dev:30889].
+
+	* eval_intern.h: fix rb_fiber_start() prototype.
+
+	* test/ruby/test_fiber.rb: add tests for above.
+
 Wed Jun  6 02:40:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* insnhelper.h, insns.def (DEC_SP): shoudn't use unary minus operator
