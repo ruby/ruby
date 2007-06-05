@@ -1351,6 +1351,21 @@ call_yarv_end_proc(VALUE data)
     rb_proc_call(data, rb_ary_new2(0));
 }
 
+static inline int
+block_proc_is_lambda(VALUE procval)
+{
+    rb_proc_t *proc;
+
+    if (procval) {
+	GetProcPtr(procval, proc);
+	return proc->is_lambda;
+    }
+    else {
+	return 0;
+    }
+}
+
+
 /*********************************************************/
 /*********************************************************/
 

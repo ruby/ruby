@@ -1238,7 +1238,7 @@ send
 	    id = ip->defined_method_id;
 	    
 	    if (ip != ip->local_iseq) {
-		/* defined by method_defined() */
+		/* defined by Module#define_method() */
 		rb_control_frame_t *lcfp = GET_CFP();
 
 		while (lcfp->iseq != ip) {
@@ -1345,7 +1345,8 @@ invokeblock
 	}
 
 	INC_SP(-argc);
-	argc = th_yield_setup_args(th, iseq, argc, GET_SP(), 0);
+	argc = th_yield_setup_args(th, iseq, argc, GET_SP(),
+				   block_proc_is_lambda(block->proc));
 	INC_SP(argc);
 
 	push_frame(th, iseq,

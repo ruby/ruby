@@ -1,3 +1,10 @@
+Tue Jun  5 14:07:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (invokeblock): check block is created by lambda
+	  or Proc.new.
+
+	* vm.c (block_proc_is_lambda): added.
+
 Tue Jun  5 14:47:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/pp.rb (PP::PPMethods::seplist): revert last change to work
