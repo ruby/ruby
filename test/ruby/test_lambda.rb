@@ -1,9 +1,19 @@
 require 'test/unit'
 
-__END__
-
 class TestLambdaParameters < Test::Unit::TestCase
+
+  def test_exact_parameter
+    assert_raise(ArgumentError){(1..3).each(&lambda{})}
+  end
+
   def test_call_simple
+    assert_equal(1, lambda{|a| a}.call(1))
+    assert_equal([1,2], lambda{|a, b| [a,b]}.call(1,2))
+    assert_raises(ArgumentError) { lambda{|a|}.call(1,2) }
+    assert_raises(ArgumentError) { lambda{|a|}.call() }
+    assert_raises(ArgumentError) { lambda{}.call(1) }
+    assert_raises(ArgumentError) { lambda{|a, b|}.call(1,2,3) }
+
     assert_equal(1, ->(a){ a }.call(1))
     assert_equal([1,2], ->(a,b){ [a,b] }.call(1,2))
     assert_raises(ArgumentError) { ->(a){ }.call(1,2) }
@@ -12,20 +22,15 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raises(ArgumentError) { ->(a,b){ }.call(1,2,3) }
   end
 
+end
+
+__END__
   def test_lambda_as_iterator
     a = 0
     2.times(&->(_){ a += 1 })
     assert_equal(a, 2)
   end
 
-  def test_message
-    flunk("YARV doesn't support some argument types for Proc object created by '->' syntax")
-  end
-end
-
-__END__
-
-class TestLambdaParameters
   def test_call_rest_args
     assert_equal([1,2], ->(*a){ a }.call(1,2))
     assert_equal([1,2,[]], ->(a,b,*c){ [a,b,c] }.call(1,2))

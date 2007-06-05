@@ -3767,13 +3767,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    /* count argc */
 		}
 
-		if (argc == 1) {
-		    COMPILE(args, "yield with an arg", node->nd_head);
-		}
-		else {
-		    compile_array(iseq, args, node->nd_head, Qfalse);
-		    POP_ELEMENT(args);
-		}
+		compile_array(iseq, args, node->nd_head, Qfalse);
+		POP_ELEMENT(args);
 		debugs("argc: %d\n", argc);
 	    }
 	    else {

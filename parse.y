@@ -7860,13 +7860,9 @@ new_yield(NODE *node)
 
     if (node) {
         no_blockarg(node);
-        if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
-            node = node->nd_head;
-            state = Qfalse;
-        }
-        else if (node && nd_type(node) == NODE_SPLAT) {
-            state = Qtrue;
-        }
+	if (node && nd_type(node) == NODE_SPLAT) {
+	    state = Qtrue;
+	}
     }
     else {
         state = Qfalse;

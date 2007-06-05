@@ -1,3 +1,21 @@
+Wed Jun  6 02:19:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (new_yield), compile.c (iseq_compile_each): fix
+	  passing parameter.
+
+	* eval.c, eval_jump.h: simplify rb_yield*.
+
+	* proc.c (proc_mark): fix to mark proc->block.proc.
+
+	* proc.c (Init_Proc): add Proc#lambda?
+
+	* test/ruby/test_lambda.rb: add some tests.
+
+	* vm.c (invoke_block): fix to check lambda block or not.
+
+	* vm.c (th_yield_setup_args): fix to check arguments size
+	  when lambda block.
+
 Tue Jun  5 16:30:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_p): returns arguments to intervene.  [ruby-dev:29736]

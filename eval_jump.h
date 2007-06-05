@@ -102,7 +102,7 @@ rb_f_catch(VALUE dmy, VALUE tag)
     th->tag->tag = tag;
 
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(tag, 0, 0, 0, Qfalse);
+	val = rb_yield_0(1, &tag);
     }
     else if (state == TAG_THROW && th->errinfo == tag) {
 	val = th->tag->retval;

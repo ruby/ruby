@@ -51,6 +51,8 @@ VALUE th_eval_body(rb_thread_t *th);
 static NODE *lfp_get_special_cref(VALUE *lfp);
 static NODE *lfp_set_special_cref(VALUE *lfp, NODE * cref);
 
+static inline int block_proc_is_lambda(VALUE procval);
+
 #if OPT_STACK_CACHING
 static VALUE yarv_finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
 #elif OPT_CALL_THREADED_CODE
@@ -738,6 +740,12 @@ th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 		th->mark_stack_len = argc = iseq->argc;
 	    }
 	}
+	else if (iseq->argc > argc) {
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
+	    }
+	}
     }
     else {
 	int r = iseq->arg_rest;
@@ -777,18 +785,23 @@ th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 }
 
 static VALUE
-invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv, int magic)
+invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	rb_iseq_t *iseq = block->iseq;
 	int i;
+	int magic = block_proc_is_lambda(block->proc) ?
+	  FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
+
 	th_set_finish_env(th);
 
 	/* TODO: check overflow */
+
 	for (i=0; i<argc; i++) {
 	    th->cfp->sp[i] = argv[i];
 	}
+
 	argc = th_yield_setup_args(th, iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
 	th->cfp->sp += argc;
 
@@ -818,7 +831,7 @@ th_yield(rb_thread_t *th, int argc, VALUE *argv)
 	th_localjump_error("no block given", Qnil, 0);
     }
 
-    return invoke_block(th, block, block->self, argc, argv, FRAME_MAGIC_BLOCK);
+    return invoke_block(th, block, block->self, argc, argv);
 }
 
 VALUE
@@ -836,8 +849,7 @@ th_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
 
-	val = invoke_block(th, &proc->block, self, argc, argv,
-			   proc->is_lambda ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_PROC);
+	val = invoke_block(th, &proc->block, self, argc, argv);
     }
     else {
 	if (state == TAG_BREAK ||

@@ -35,9 +35,9 @@ VALUE rb_eSysStackError;
 extern int ruby_nerrs;
 extern VALUE ruby_top_self;
 
-static VALUE eval _((VALUE, VALUE, VALUE, char *, int));
+static VALUE eval(VALUE, VALUE, VALUE, char *, int);
 
-static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
+static inline VALUE rb_yield_0(int argc, VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 
 #include "eval_error.h"
@@ -903,67 +903,53 @@ rb_need_block()
     }
 }
 
-static VALUE
-rb_yield_0(VALUE val, VALUE self, VALUE klass /* OK */ , int flags,
-	   int avalue)
+static inline VALUE
+rb_yield_0(int argc, VALUE *argv)
 {
-    if (avalue) {
-	return th_yield(GET_THREAD(), RARRAY_LEN(val), RARRAY_PTR(val));
-    }
-    else {
-	int argc = (val == Qundef) ? 0 : 1;
-	VALUE *argv = &val;
-
-	/* TODO:
-	if (argc == 1 && CLASS_OF(argv[0]) == rb_cValues) {
-	    argc = RARRAY_LEN(argv[0]);
-	    argv = RARRAY_PTR(argv[0]);
-	}
-	  */
-	return th_yield(GET_THREAD(), argc, argv);
-    }
+    return th_yield(GET_THREAD(), argc, argv);
 }
 
 
 VALUE
 rb_yield(VALUE val)
 {
-    return rb_yield_0(val, 0, 0, 0, Qfalse);
+    volatile VALUE tmp = val;
+    tmp = rb_yield_0(1, &val);
+    return tmp;
 }
 
 VALUE
 rb_yield_values(int n, ...)
 {
     int i;
+    VALUE *argv;
     va_list args;
-    VALUE val;
 
     if (n == 0) {
-	return rb_yield_0(Qundef, 0, 0, 0, Qfalse);
+	return rb_yield_0(0, 0);
     }
-    val = rb_ary_new2(n);
-    va_start(args, n);
+
+    argv = ALLOCA_N(VALUE, n);
+
+    va_init_list(args, n);
     for (i=0; i<n; i++) {
-	rb_ary_push(val, va_arg(args, VALUE));
+	argv[i] = va_arg(args, VALUE);
     }
     va_end(args);
-    return rb_yield_0(val, 0, 0, 0, Qtrue);
+
+    return rb_yield_0(n, argv);
 }
 
 VALUE
 rb_yield_splat(VALUE values)
 {
-    int avalue = Qfalse;
-
-    if (TYPE(values) == T_ARRAY) {
-	if (RARRAY_LEN(values) == 0) {
-	    values = Qundef;
-	}
-	else {
-	    avalue = Qtrue;
-	}
+    VALUE tmp = rb_check_array_type(values);
+    volatile VALUE v;
+    if (NIL_P(tmp)) {
+        rb_raise(rb_eArgError, "not an array");
     }
-    return rb_yield_0(values, 0, 0, 0, avalue);
+    v = rb_yield_0(RARRAY_LEN(tmp), RARRAY_PTR(tmp));
+    return v;
 }
 
 /*
@@ -984,7 +970,7 @@ static VALUE
 rb_f_loop(void)
 {
     for (;;) {
-	rb_yield_0(Qundef, 0, 0, 0, Qfalse);
+	rb_yield_0(0, 0);
     }
     return Qnil;		/* dummy */
 }
@@ -1889,12 +1875,12 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
 static VALUE
 yield_under_i(VALUE arg)
 {
-    int avalue = Qtrue;
-
     if (arg == Qundef) {
-	avalue = Qfalse;
+	return rb_yield_0(0, 0);
     }
-    return rb_yield_0(arg, 0, 0, 0, avalue);
+    else {
+	return rb_yield_0(RARRAY_LEN(arg), RARRAY_PTR(arg));
+    }
 }
 
 /* block eval under the class/module context */

@@ -51,6 +51,7 @@ proc_mark(void *ptr)
 	MARK_UNLESS_NULL(proc->envval);
 	MARK_UNLESS_NULL(proc->blockprocval);
 	MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
+	MARK_UNLESS_NULL(proc->block.proc);
 	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
 	}
@@ -108,6 +109,15 @@ proc_clone(VALUE self)
     VALUE procval = proc_dup(self);
     CLONESETUP(procval, self);
     return procval;
+}
+
+static VALUE
+proc_lambda_p(VALUE procval)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procval, proc);
+
+    return proc->is_lambda ? Qtrue : Qfalse;
 }
 
 /* Binding */
@@ -1427,6 +1437,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
+    rb_define_method(rb_cProc, "lambda?", proc_lambda_p, 0);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
