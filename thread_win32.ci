@@ -238,7 +238,7 @@ native_mutex_unlock(rb_thread_lock_t *lock)
 int
 native_mutex_trylock(rb_thread_lock_t *lock)
 {
-#if USE_WIN32MUTEX
+#if USE_WIN32_MUTEX
     int result;
     thread_debug("native_mutex_trylock: %p\n", *lock);
     result = w32_wait_events(&*lock, 1, 1, 0);
@@ -258,7 +258,7 @@ native_mutex_trylock(rb_thread_lock_t *lock)
 void
 native_mutex_initialize(rb_thread_lock_t *lock)
 {
-#if USE_WIN32MUTEX
+#if USE_WIN32_MUTEX
     *lock = CreateMutex(NULL, FALSE, NULL);
     if (*lock == NULL) {
 	w32_error();
@@ -272,7 +272,7 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 void
 native_mutex_destroy(rb_thread_lock_t *lock)
 {
-#if USE_WIN32MUTEX
+#if USE_WIN32_MUTEX
     w32_close_handle(lock);
 #else
     DeleteCriticalSection(lock);

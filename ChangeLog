@@ -1,10 +1,12 @@
-Tue Jun  5 13:29:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun  5 13:32:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c, dir.c, eval.c, eval_jump.h, eval_method.h, numeric.c,
 	  pack.c, parse.y, re.c, thread.c, vm.c, vm_dump.c, call_cfunc.ci,
 	  thread_pthread.ci, thread_win32.ci: fixed indentation.
 
 	* call_cfunc.ci: protoized.
+
+	* thread_win32.ci: fixed typo.
 
 Tue Jun  5 13:17:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
