@@ -1328,7 +1328,9 @@ invokeblock
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	if (flag & VM_CALL_ARGS_SPLAT_BIT) {
 	    VALUE ary = TOPN(0);
-	    if (CLASS_OF(ary) != rb_cArray) {
+	    ary = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
+
+	    if (NIL_P(ary)) {
 		/* not a [BUG] */
 	    }
 	    else {
