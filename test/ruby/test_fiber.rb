@@ -102,5 +102,21 @@ class TestFiber < Test::Unit::TestCase
       end.yield
     }
   end
+
+  def test_with_callcc
+    c = nil
+    f1 = f2 = nil
+    f1 = Fiber.new do
+      callcc do |c2|
+        c = c2
+        f2.yield
+      end
+      :ok
+    end
+    f2 = Fiber.new do
+      c.call
+    end
+    assert_equal(f1.yield, :ok)
+  end
 end
 

@@ -1,3 +1,7 @@
+Thu Jun  7 03:29:18 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test_fiber.rb: add a test (Continuation and Fiber).
+
 Thu Jun  7 03:17:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_new): add debug message.
