@@ -914,7 +914,12 @@ VALUE
 rb_yield(VALUE val)
 {
     volatile VALUE tmp = val;
-    tmp = rb_yield_0(1, &val);
+    if (val == Qundef) {
+	tmp = rb_yield_0(0, 0);
+    }
+    else {
+	tmp = rb_yield_0(1, &val);
+    }
     return tmp;
 }
 
