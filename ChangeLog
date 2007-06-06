@@ -1,3 +1,16 @@
+Thu Jun  7 03:17:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_new): add debug message.
+
+	* cont.c (cont_restore_1): copy stack information from fiber.
+
+	* cont.c (rb_fiber_s_new): fix to mark created fiber.
+
+	* test/ruby/test_fiber.rb: add some tests around Thread and Fiber.
+
+	* yarvcore.c (thread_free): fix to skip freeing stack if root fiber
+	  is available.
+
 Thu Jun  7 01:03:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h, eval.c (ruby_init): remove POP_TAG_INIT().

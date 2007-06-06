@@ -226,7 +226,10 @@ thread_free(void *ptr)
 
     if (ptr) {
 	th = ptr;
-	FREE_UNLESS_NULL(th->stack);
+
+	if (!th->root_fiber) {
+	    FREE_UNLESS_NULL(th->stack);
+	}
 
 	if (th->local_storage) {
 	    st_free_table(th->local_storage);

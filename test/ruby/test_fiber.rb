@@ -40,6 +40,23 @@ class TestFiber < Test::Unit::TestCase
     )
   end
 
+  def test_many_fibers_with_threads
+    max = 1000
+    @cnt = 0
+    (1..100).map{|ti|
+      Thread.new{
+        max.times{|i|
+          Fiber.new{
+            @cnt += 1
+          }.yield
+        }
+      }
+    }.each{|t|
+      t.join
+    }
+    assert_equal(:ok, :ok)
+  end
+
   def test_error
     assert_raise(ArgumentError){
       Fiber.new # Fiber without block

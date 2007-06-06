@@ -111,6 +111,10 @@ cont_new(VALUE klass)
 
     contval = Data_Make_Struct(klass, rb_context_t,
 			       cont_mark, cont_free, cont);
+
+    GC_INFO("cont alloc: %p (klass: %s)\n", cont,
+	    klass == rb_cFiber ? "Fiber": "Continuation");
+
     cont->self = contval;
     cont->alive = Qtrue;
 
@@ -169,8 +173,15 @@ cont_restore_1(rb_context_t *cont)
     }
     else {
 	/* continuation */
-	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
 	th->fiber = sth->fiber;
+
+	if (th->fiber) {
+	    rb_context_t *fcont;
+	    GetContPtr(th->fiber, fcont);
+	    th->stack_size = fcont->saved_thread.stack_size;
+	    th->stack = fcont->saved_thread.stack;
+	}
+	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
     }
 
     th->cfp = sth->cfp;
@@ -369,6 +380,7 @@ static VALUE
 rb_fiber_s_new(VALUE self)
 {
     rb_context_t *cont = cont_new(self);
+    VALUE contval = cont->self;
     rb_thread_t *th = &cont->saved_thread;
 
     /* initialize */
@@ -396,7 +408,7 @@ rb_fiber_s_new(VALUE self)
 
     MEMCPY(&cont->jmpbuf, &th->root_jmpbuf, rb_jmpbuf_t, 1);
 
-    return cont->self;
+    return contval;
 }
 
 static VALUE rb_fiber_yield(int argc, VALUE *args, VALUE fval);
