@@ -1,3 +1,8 @@
+Wed Jun  6 10:55:42 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_cont_call): forbid calling dead fiber with
+	  Cotinuation#call.
+
 Wed Jun  6 10:50:01 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix around yield arguments

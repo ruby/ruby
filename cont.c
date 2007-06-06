@@ -344,6 +344,14 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     if (cont->saved_thread.trap_tag != th->trap_tag) {
 	rb_raise(rb_eRuntimeError, "continuation called across trap");
     }
+    if (cont->saved_thread.fiber) {
+	rb_context_t *fcont;
+	GetContPtr(cont->saved_thread.fiber, fcont);
+
+	if (!fcont->alive) {
+	    rb_raise(rb_eRuntimeError, "continuation called dead fiber");
+	}
+    }
 
     cont->value = make_passing_arg(argc, argv);
 
