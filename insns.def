@@ -1265,7 +1265,7 @@ send
 		}
 	    }
 	    else {
-	    klass = search_super_klass(ip->klass, recv);
+		klass = search_super_klass(ip->klass, recv);
 	    }
 
 	    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
