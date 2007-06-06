@@ -429,8 +429,6 @@ rb_fiber_start(void)
     VALUE args;
     int state;
 
-    th->tag = 0;
-
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	GetContPtr(th->fiber, cont);

@@ -96,7 +96,7 @@ ruby_init(void)
 	ruby_prog_init();
 	ALLOW_INTS;
     }
-    POP_TAG_INIT();
+    POP_TAG();
 
     if (state) {
 	error_print();
