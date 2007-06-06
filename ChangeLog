@@ -1,3 +1,7 @@
+Wed Jun  6 10:57:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_continuation.rb: add a test for last commit.
+
 Wed Jun  6 10:55:42 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_cont_call): forbid calling dead fiber with

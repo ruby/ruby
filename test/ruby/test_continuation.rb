@@ -40,6 +40,13 @@ class TestContinuation < Test::Unit::TestCase
     assert_raise(LocalJumpError){
       callcc
     }
+    assert_raise(RuntimeError){
+      c = nil
+      Fiber.new do
+        callcc {|c2| c = c2 }
+      end.yield
+      c.call
+    }
   end
 end
 
