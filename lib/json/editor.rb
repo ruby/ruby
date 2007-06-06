@@ -52,14 +52,12 @@ module JSON
         MessageDialog::ERROR, 
         MessageDialog::BUTTONS_CLOSE, text)
       dialog.show_all
-      window.focus = dialog
       dialog.run
     rescue TypeError
       dialog = MessageDialog.new(Editor.window, Dialog::MODAL, 
         MessageDialog::ERROR, 
         MessageDialog::BUTTONS_CLOSE, text)
       dialog.show_all
-      window.focus = dialog
       dialog.run
     ensure
       dialog.destroy if dialog
@@ -73,7 +71,6 @@ module JSON
         MessageDialog::QUESTION, 
         MessageDialog::BUTTONS_YES_NO, text)
       dialog.show_all
-      window.focus = dialog
       dialog.run do |response|
         return Gtk::Dialog::RESPONSE_YES === response
       end
@@ -1102,9 +1099,11 @@ module JSON
       # Quit this editor, that is, leave this editor's main loop.
       def quit
         ask_save if @changed
-        destroy
-        Gtk.main_quit
-        true
+        if Gtk.main_level > 0
+          destroy
+          Gtk.main_quit
+        end
+        nil
       end
 
       # Display the new title according to the editor's current state.
@@ -1185,20 +1184,21 @@ module JSON
         if filename
           if File.directory?(filename)
             Editor.error_dialog(self, "Try to select a JSON file!")
-            return
+            nil
           else
-            data = read_data(filename)
             @filename = filename
-            toplevel.display_status("Loaded data from '#@filename'.")
+            if data = read_data(filename)
+              toplevel.display_status("Loaded data from '#@filename'.")
+            end
             display_title
-            return data
+            data
           end
         end
       end
 
       # Load the data at location _uri_ into the editor as a JSON document.
       def load_location(uri)
-        data = read_data(uri)
+        data = read_data(uri) or return
         @filename = nil
         toplevel.display_status("Loaded data from '#{uri}'.")
         display_title
@@ -1217,11 +1217,9 @@ module JSON
           end
           return JSON::parse(json, :max_nesting => false)
         end
-      rescue JSON::JSONError => e
+      rescue => e
         Editor.error_dialog(self, "Failed to parse JSON file: #{e}!")
         return
-      rescue SystemCallError => e
-        quit
       end
 
       # Open a file selecton dialog, displaying _message_, and return the

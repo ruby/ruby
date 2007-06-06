@@ -40,7 +40,7 @@ EOT
 
   def test_unparse
     json = unparse(@hash)
-    assert_equal(@json2, json)
+    assert_equal(JSON.parse(@json2), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = generate({1=>2})
@@ -51,7 +51,7 @@ EOT
 
   def test_unparse_pretty
     json = pretty_unparse(@hash)
-    assert_equal(@json3, json)
+    assert_equal(JSON.parse(@json3), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = pretty_generate({1=>2})

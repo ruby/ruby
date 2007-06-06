@@ -39,15 +39,17 @@ class TC_JSONUnicode < Test::Unit::TestCase
 
   def test_chars
     (0..0x7f).each do |i|
-      c = ('%c' % i)[0] # c is a character object
       json = '["\u%04x"]' % i
-      assert_equal c, JSON.parse(json).first
-      if c == ?\b
+      if RUBY_VERSION >= "1.9."
+        i = i.chr
+      end
+      assert_equal i, JSON.parse(json).first[0]
+      if i == ?\b
         generated = JSON.generate(["" << i])
         assert '["\b"]' == generated || '["\10"]' == generated
-      elsif [?\n, ?\r, ?\t, ?\f].include?(c)
+      elsif [?\n, ?\r, ?\t, ?\f].include?(i)
         assert_equal '[' << ('' << i).dump << ']', JSON.generate(["" << i])
-      elsif i < 0x20
+      elsif i.chr < 0x20.chr
         assert_equal json, JSON.generate(["" << i])
       end
     end

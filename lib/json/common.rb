@@ -101,8 +101,24 @@ module JSON
   # _opts_ can have the following
   # keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false.
+  #   structures. Disable depth checking with :max_nesting => false. This value
+  #   defaults to 19.
   def parse(source, opts = {})
+    JSON.parser.new(source, opts).parse
+  end
+
+  # Parse the JSON string _source_ into a Ruby data structure and return it.
+  #
+  # _opts_ can have the following
+  # keys:
+  # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
+  #   structures. Enable depth checking with :max_nesting => anInteger. The parse!
+  #   methods defaults to not doing max depth checking: This can be dangerous,
+  #   if someone wants to fill up your stack.
+  def parse!(source, opts = {})
+    opts = {
+      :max_nesting => false
+    }.update(opts)
     JSON.parser.new(source, opts).parse
   end
 
