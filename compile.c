@@ -3762,11 +3762,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (node->nd_head) {
 	    if (nd_type(node->nd_head) == NODE_ARRAY) {
 		NODE *p;
-		for (argc = 0, p = node->nd_head; p;
-		     p = p->nd_next, argc++) {
-		    /* count argc */
-		}
 
+		argc = node->nd_head->nd_alen;
 		compile_array(iseq, args, node->nd_head, Qfalse);
 		POP_ELEMENT(args);
 		debugs("argc: %d\n", argc);
@@ -3777,10 +3774,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			flag |= VM_CALL_ARGS_SPLAT_BIT;
 		    }
 
-		    compile_array(iseq, args, node->nd_head->nd_head,
-				  Qfalse);
+		    argc = node->nd_head->nd_head->nd_alen + 1;
+		    compile_array(iseq, args, node->nd_head->nd_head, Qfalse);
 		    POP_ELEMENT(args);
-		    argc = LIST_SIZE(args) + 1;
 
 		    COMPILE(args, "args(cat: splat)",
 			    node->nd_head->nd_body);
