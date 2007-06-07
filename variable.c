@@ -53,8 +53,8 @@ fc_path(struct fc_result *fc, ID name)
 	    tmp = rb_str_dup(tmp);
 	    rb_str_cat2(tmp, "::");
 	    rb_str_append(tmp, path);
-
-	    return tmp;
+	    path = tmp;
+	    break;
 	}
 	tmp = rb_str_new2(rb_id2name(fc->name));
 	rb_str_cat2(tmp, "::");
@@ -62,6 +62,7 @@ fc_path(struct fc_result *fc, ID name)
 	path = tmp;
 	fc = fc->prev;
     }
+    OBJ_FREEZE(path);
     return path;
 }
 
@@ -148,6 +149,7 @@ classname(VALUE klass)
 		return find_class_path(klass);
 	    }
 	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
+	    OBJ_FREEZE(path);
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
 	    st_delete(RCLASS(klass)->iv_tbl, (st_data_t*)&classid, 0);
 	}
@@ -197,6 +199,7 @@ rb_class_path(VALUE klass)
 	    }
 	}
 	path = rb_sprintf("#<%s:%p>", s, (void*)klass);
+	OBJ_FREEZE(path);
 	rb_ivar_set(klass, tmp_classpath, path);
 
 	return path;
@@ -216,6 +219,7 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
     }
+    OBJ_FREEZE(str);
     rb_ivar_set(klass, classpath, str);
 }
 

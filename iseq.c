@@ -109,9 +109,12 @@ prepare_iseq_build(rb_iseq_t *iseq,
 {
     rb_thread_t *th = GET_THREAD();
 
+    OBJ_FREEZE(name);
+    OBJ_FREEZE(filename);
+
     iseq->name = name;
-    iseq->defined_method_id = 0;
     iseq->filename = filename;
+    iseq->defined_method_id = 0;
     iseq->iseq_mark_ary = rb_ary_new();
     RBASIC(iseq->iseq_mark_ary)->klass = 0;
 

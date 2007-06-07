@@ -1,3 +1,9 @@
+Thu Jun  7 17:20:57 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (prepare_iseq_build): freeze filename and name string.
+
+	* variable.c: freeze class name string.
+
 Thu Jun  7 12:48:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_restore_1): fix to check root fiber [ruby-dev:30911].
