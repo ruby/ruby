@@ -116,7 +116,15 @@ class TestFiber < Test::Unit::TestCase
     f2 = Fiber.new do
       c.call
     end
-    assert_equal(f1.yield, :ok)
+    assert_equal(:ok, f1.yield)
+
+    assert_equal(:ok,
+      callcc {|c|
+        Fiber.new {
+          c.call :ok
+        }.yield
+      }
+    )
   end
 end
 

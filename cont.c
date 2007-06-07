@@ -173,11 +173,14 @@ cont_restore_1(rb_context_t *cont)
     }
     else {
 	/* continuation */
-	th->fiber = sth->fiber;
+	VALUE fval;
 
-	if (th->fiber) {
+	th->fiber = sth->fiber;
+	fval = th->fiber ? th->fiber : th->root_fiber;
+
+	if (fval) {
 	    rb_context_t *fcont;
-	    GetContPtr(th->fiber, fcont);
+	    GetContPtr(fval, fcont);
 	    th->stack_size = fcont->saved_thread.stack_size;
 	    th->stack = fcont->saved_thread.stack;
 	}

@@ -1,3 +1,9 @@
+Thu Jun  7 12:48:33 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_restore_1): fix to check root fiber [ruby-dev:30911].
+
+	* test/ruby/test_fiber.rb: add a test.
+
 Thu Jun 07 07:24:36 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json/common.rb: Ponder offering parse! method.
