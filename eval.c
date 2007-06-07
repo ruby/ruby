@@ -9451,8 +9451,12 @@ method_inspect(method)
     else {
 	rb_str_buf_cat2(str, rb_class2name(data->rklass));
 	if (data->rklass != data->klass) {
+	    VALUE klass = data -> klass;
+	    if (TYPE(klass) == T_ICLASS) {
+		klass = RBASIC(klass)->klass;
+	    }
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_cat2(str, rb_class2name(data->klass));
+	    rb_str_buf_cat2(str, rb_class2name(klass));
 	    rb_str_buf_cat2(str, ")");
 	}
     }
