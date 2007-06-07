@@ -11213,10 +11213,19 @@ VALUE
 rb_thread_wakeup(thread)
     VALUE thread;
 {
+    if (!RTEST(rb_thread_wakeup_alive(thread)))
+	rb_raise(rb_eThreadError, "killed thread");
+    return thread;
+}
+
+VALUE
+rb_thread_wakeup_alive(thread)
+    VALUE thread;
+{
     rb_thread_t th = rb_thread_check(thread);
 
     if (th->status == THREAD_KILLED)
-	rb_raise(rb_eThreadError, "killed thread");
+	return Qnil;
     rb_thread_ready(th);
 
     return thread;
@@ -11291,7 +11300,7 @@ rb_thread_kill(thread)
     rb_thread_t th = rb_thread_check(thread);
 
     kill_thread(th, 0);
-	return thread;
+    return thread;
 }
 
 
@@ -11641,6 +11650,15 @@ rb_thread_abort_exc_set(thread, val)
     rb_secure(4);
     rb_thread_check(thread)->abort = RTEST(val);
     return val;
+}
+
+
+enum rb_thread_status
+rb_thread_status(thread)
+    VALUE thread;
+{
+    rb_thread_t th = rb_thread_check(thread);
+    return th->status;
 }
 
 
@@ -12152,7 +12170,7 @@ rb_thread_value(thread)
  */
 
 static VALUE
-rb_thread_status(thread)
+rb_thread_status_name(thread)
     VALUE thread;
 {
     rb_thread_t th = rb_thread_check(thread);
@@ -12179,7 +12197,7 @@ rb_thread_status(thread)
  *     thr.alive?              #=> false
  */
 
-static VALUE
+VALUE
 rb_thread_alive_p(thread)
     VALUE thread;
 {
@@ -13013,7 +13031,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "terminate!", rb_thread_kill_bang, 0);
     rb_define_method(rb_cThread, "exit!", rb_thread_kill_bang, 0);
     rb_define_method(rb_cThread, "value", rb_thread_value, 0);
-    rb_define_method(rb_cThread, "status", rb_thread_status, 0);
+    rb_define_method(rb_cThread, "status", rb_thread_status_name, 0);
     rb_define_method(rb_cThread, "join", rb_thread_join_m, -1);
     rb_define_method(rb_cThread, "alive?", rb_thread_alive_p, 0);
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);

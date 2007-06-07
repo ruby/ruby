@@ -1,3 +1,9 @@
+Thu Jun  7 20:10:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, intern.h, ext/thread/thread.c: should not free queue
+	  while any live threads are waiting.
+	  [ruby-dev:30653]
+
 Thu Jun  7 14:53:46 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* eval.c (method_inspect): show proper class name.
