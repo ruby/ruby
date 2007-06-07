@@ -700,16 +700,7 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	    th->thrown_errinfo = 0;
 	    thread_debug("rb_thread_execute_interrupts: %ld\n", err);
 
-	    if (err == eKillSignal) {
-		th->errinfo = INT2FIX(TAG_FATAL);
-		TH_JUMP_TAG(th, TAG_FATAL);
-	    }
-	    else if (err == eTerminateSignal) {
-		/* rewind to toplevel stack */
-		while (th->tag->prev) {
-		    th->tag = th->tag->prev;
-		}
-
+	    if (err == eKillSignal || err == eTerminateSignal) {
 		th->errinfo = INT2FIX(TAG_FATAL);
 		TH_JUMP_TAG(th, TAG_FATAL);
 	    }
