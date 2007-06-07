@@ -1,3 +1,7 @@
+Thu Jun  7 19:02:48 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb: call original "method" method instead of redefined one.
+
 Mon Jun  4 11:11:12 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (ResponseParser#next_token): fixed

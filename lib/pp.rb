@@ -255,9 +255,9 @@ class PP < PrettyPrint
     # This module provides predefined #pretty_print methods for some of
     # the most commonly used built-in classes for convenience.
     def pretty_print(q)
-      if /\(Kernel\)#/ !~ method(:inspect).inspect
+      if /\(Kernel\)#/ !~ Object.instance_method(:method).bind(self).call(:inspect).inspect
         q.text self.inspect
-      elsif /\(Kernel\)#/ !~ method(:to_s).inspect && instance_variables.empty?
+      elsif /\(Kernel\)#/ !~ Object.instance_method(:method).bind(self).call(:to_s).inspect && instance_variables.empty?
         q.text self.to_s
       else
         q.pp_object(self)
@@ -289,7 +289,7 @@ class PP < PrettyPrint
     # However, doing this requires that every class that #inspect is called on
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
-      if /\(PP::ObjectMixin\)#/ =~ method(:pretty_print).inspect
+      if /\(PP::ObjectMixin\)#/ =~ Object.instance_method(:method).bind(self).call(:pretty_print).inspect
         raise "pretty_print is not overridden for #{self.class}"
       end
       PP.singleline_pp(self, '')
@@ -487,6 +487,13 @@ if __FILE__ == $0
     def test_struct_override_members # [ruby-core:7865]
       a = OverriddenStruct.new(1,2)
       assert_equal("#<struct Struct::OverriddenStruct members=1, class=2>\n", PP.pp(a, ''))
+    end
+
+    def test_redefined_method
+      o = ""
+      def o.method
+      end
+      assert_equal(%(""\n), PP.pp(o, ""))
     end
   end
 
