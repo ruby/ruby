@@ -1,3 +1,8 @@
+Fri Jun  8 16:34:20 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/zlib.c (gzfile_s_open): use FilePathValue to support
+	  to_path.
+
 Fri Jun  8 16:11:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_jump.h: th->errinfo should clear with nil.

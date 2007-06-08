@@ -2287,7 +2287,7 @@ gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
 	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
     }
     filename = argv[0];
-    SafeStringValue(filename);
+    FilePathValue(filename);
     io = rb_file_open(RSTRING_PTR(filename), mode);
 
     argv[0] = io;
