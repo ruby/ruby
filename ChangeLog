@@ -1,3 +1,7 @@
+Fri Jun  8 16:11:00 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_jump.h: th->errinfo should clear with nil.
+
 Fri Jun  8 14:53:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (call_args): allow splat argument after unpacked

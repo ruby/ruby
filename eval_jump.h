@@ -106,7 +106,7 @@ rb_f_catch(VALUE dmy, VALUE tag)
     }
     else if (state == TAG_THROW && th->errinfo == tag) {
 	val = th->tag->retval;
-	th->errinfo = 0;
+	th->errinfo = Qnil;
 	state = 0;
     }
     POP_TAG();
