@@ -1,3 +1,7 @@
+Fri Jun  8 14:26:18 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/secrand.rb: new file for secure random interface.
+
 Fri Jun  8 12:44:37 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {win32,wince}/Makefile.sub: add lex.c rule.
