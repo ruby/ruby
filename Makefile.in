@@ -160,9 +160,12 @@ $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
 lex.c: keywords
-	@-$(RM) $@
-	gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@ || \
-	cp "$(srcdir)/$@" .
+	( \
+	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
+	  cp $@.tmp $@ && \
+	  mv $@.tmp "$(srcdir)/$@.blt" \
+	) || \
+	cp "$(srcdir)/$@.blt" $@
 
 .y.c:
 	$(YACC) $(YFLAGS) -o $@ $<
