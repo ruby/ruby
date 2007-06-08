@@ -1,7 +1,7 @@
 # = Secure random number generator interface.
 #
 # This library is a interface for secure random number generator which is
-# suitable for HTTP cookies, etc.
+# suitable for HTTP cookies, nonces, etc.
 #
 # It supports following secure random number generators.
 #
@@ -16,6 +16,7 @@
 # p SecRand.hex(11) #=> "6aca1b5c58e4863e6b81b8"
 # p SecRand.hex(12) #=> "94b2fff3e7fd9b9c391a2306"
 # p SecRand.hex(13) #=> "39b290146bea6ce975c37cfc23"
+# ...
 #
 # # random base64 string.
 # p SecRand.base64(10) #=> "EcmTPZwWRAozdA=="
@@ -94,32 +95,34 @@ module SecRand
   def self.base64(n=nil)
     [random_bytes(n)].pack("m*").delete("\n")
   end
-end
 
-# SecRand() generates a random number.
-#
-# If an positive integer is given as n,
-# SecRand() returns an integer: 0 <= SecRand(n) < n.
-#
-# If 0 is given or an argument is not given,
-# SecRand() returns an float: 0.0 <= SecRand() < 1.0.
-def SecRand(n=0)
-  if 0 < n
-    hex = n.to_s(16)
-    hex = '0' + hex if (hex.length & 1) == 1
-    bin = [hex].pack("H*")
-    mask = bin[0].ord
-    mask |= mask >> 1
-    mask |= mask >> 2
-    mask |= mask >> 4
-    begin
-      rnd = SecRand.random_bytes(bin.length)
-      rnd[0] = (rnd[0].ord & mask).chr
-    end until rnd < bin
-    rnd.unpack("H*")[0].hex
-  else
-    # assumption: Float::MANT_DIG <= 64
-    i64 = SecRand.random_bytes(8).unpack("Q")[0]
-    Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
+  # SecRand.random_number generates a random number.
+  #
+  # If an positive integer is given as n,
+  # SecRand.random_number returns an integer:
+  # 0 <= SecRand.random_number(n) < n.
+  #
+  # If 0 is given or an argument is not given,
+  # SecRand.random_number returns an float:
+  # 0.0 <= SecRand.random_number() < 1.0.
+  def self.random_number(n=0)
+    if 0 < n
+      hex = n.to_s(16)
+      hex = '0' + hex if (hex.length & 1) == 1
+      bin = [hex].pack("H*")
+      mask = bin[0].ord
+      mask |= mask >> 1
+      mask |= mask >> 2
+      mask |= mask >> 4
+      begin
+        rnd = SecRand.random_bytes(bin.length)
+        rnd[0] = (rnd[0].ord & mask).chr
+      end until rnd < bin
+      rnd.unpack("H*")[0].hex
+    else
+      # assumption: Float::MANT_DIG <= 64
+      i64 = SecRand.random_bytes(8).unpack("Q")[0]
+      Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
+    end
   end
 end

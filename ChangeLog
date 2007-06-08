@@ -1,3 +1,7 @@
+2007-06-08  Tanaka Akira  <akr@fsij.org>
+
+	* lib/secrand.rb: rename SecRand() to SecRand.random_number.
+
 Fri Jun  8 16:34:20 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ext/zlib/zlib.c (gzfile_s_open): use FilePathValue to support
