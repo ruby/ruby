@@ -11884,6 +11884,11 @@ rb_thread_cancel_timer()
 
 #else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
+
+void
+rb_thread_cancel_timer()
+{
+}
 #endif
 
 static VALUE

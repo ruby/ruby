@@ -1,3 +1,7 @@
+Fri Jun  8 17:50:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_thread_cancel_timer): fix undefined function
+
 Wed May 30 05:17:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): get rid of SEGV at ZSUPER in a block
