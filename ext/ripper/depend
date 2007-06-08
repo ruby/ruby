@@ -5,7 +5,7 @@ BISON = bison
 
 src: ripper.c eventids1.c eventids2table.c
 
-ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c eventids2table.c
+ripper.o: ripper.c $(topdir)/lex.c eventids1.c $(srcdir)/eventids2.c eventids2table.c
 
 .y.c:
 	$(BISON) -t -v -o$@ $<
