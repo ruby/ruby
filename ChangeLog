@@ -1,3 +1,10 @@
+Fri Jun  8 14:53:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (call_args): allow splat argument after unpacked
+	  assocs like 1.8 does.
+
+	* parse.y (call_args): ditto.
+
 Fri Jun  8 14:26:18 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/secrand.rb: new file for secure random interface.
