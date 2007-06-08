@@ -81,8 +81,6 @@
 
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
-bool NtSyncProcess = TRUE;
-
 static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static bool has_redirection(const char *);
 static void StartSockets ();
@@ -499,26 +497,6 @@ FindFreeChildSlot(void)
 	}
     } END_FOREACH_CHILD;
     return NULL;
-}
-
-
-int
-SafeFree(char **vec, int vecc)
-{
-    //   vec
-    //   |
-    //   V       ^---------------------V
-    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    //   |   |       | ....  |  NULL |   | ..... |\0 |   | ..... |\0 |...
-    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    //   |-  elements+1             -| ^ 1st element   ^ 2nd element
-
-	char *p;
-
-	p = (char *)vec;
-	free(p);
-
-	return 0;
 }
 
 
@@ -1423,8 +1401,12 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 // return the pointer to the current file name. 
 //
 
-#define GetBit(bits, i) ((bits)[(i) / 8] &  (1 << (i) % 8))
-#define SetBit(bits, i) ((bits)[(i) / 8] |= (1 << (i) % 8))
+#define GetBit(bits, i) ((bits)[(i) / CHAR_BIT] &  (1 << (i) % CHAR_BIT))
+#define SetBit(bits, i) ((bits)[(i) / CHAR_BIT] |= (1 << (i) % CHAR_BIT))
+
+#define BitOfIsDir(n) ((n) * 2)
+#define BitOfIsRep(n) ((n) * 2 + 1)
+#define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
 DIR *
 rb_w32_opendir(const char *filename)
@@ -1497,9 +1479,9 @@ rb_w32_opendir(const char *filename)
     strcpy(p->start, fd.cFileName);
     p->bits[0] = 0;
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	SetBit(p->bits, 0);
+	SetBit(p->bits, BitOfIsDir(0));
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	SetBit(p->bits, 1);
+	SetBit(p->bits, BitOfIsRep(0));
     p->nfiles++;
 
     //
@@ -1511,21 +1493,34 @@ rb_w32_opendir(const char *filename)
     while (FindNextFile(fh, &fd)) {
 	char *newpath;
 
-	len = strlen(fd.cFileName);
+	len = strlen(fd.cFileName) + 1;
 
 	//
 	// bump the string table size by enough for the
 	// new name and it's null terminator 
 	//
 
-	newpath = (char *)realloc(p->start, idx+len+1);
+	newpath = (char *)realloc(p->start, idx + len);
 	if (newpath == NULL) {
 	    goto error;
 	}
 	p->start = newpath;
 	strcpy(&p->start[idx], fd.cFileName);
+
+	if (p->nfiles % DIRENT_PER_CHAR == 0) {
+	    char *tmp = realloc(p->bits, p->nfiles / DIRENT_PER_CHAR + 1);
+	    if (!tmp)
+		goto error;
+	    p->bits = tmp;
+	    p->bits[p->nfiles / DIRENT_PER_CHAR] = 0;
+	}
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	    SetBit(p->bits, BitOfIsDir(p->nfiles));
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	    SetBit(p->bits, BitOfIsRep(p->nfiles));
+
 	p->nfiles++;
-	idx += len+1;
+	idx += len;
     }
     FindClose(fh);
     p->size = idx;
@@ -1576,8 +1571,8 @@ rb_w32_readdir(DIR *dirp)
 	//
 	// Attributes
 	//
-	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->loc * 2);
-	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->loc * 2 + 1);
+	dirp->dirstr.d_isdir = GetBit(dirp->bits, BitOfIsDir(dirp->loc));
+	dirp->dirstr.d_isrep = GetBit(dirp->bits, BitOfIsRep(dirp->loc));
 
 	//
 	// Now set up for the next call to readdir
@@ -2698,7 +2693,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 }
 
 rb_pid_t
-waitpid (rb_pid_t pid, int *stat_loc, int options)
+waitpid(rb_pid_t pid, int *stat_loc, int options)
 {
     DWORD timeout;
 
