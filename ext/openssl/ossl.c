@@ -59,7 +59,7 @@ ossl_x509_ary2sk0(VALUE ary)
     sk = sk_X509_new_null();
     if (!sk) ossl_raise(eOSSLError, NULL); 
 
-    for (i = 0; i < RARRAY(ary)->len; i++) {
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
         val = rb_ary_entry(ary, i);
         if (!rb_obj_is_kind_of(val, cX509Cert)) {
             sk_X509_pop_free(sk, X509_free);
@@ -131,7 +131,7 @@ ossl_buf2str(char *buf, int len)
     int status = 0;
 
     str = rb_protect((VALUE(*)_((VALUE)))ossl_str_new, len, &status);
-    if(!NIL_P(str)) memcpy(RSTRING(str)->ptr, buf, len);
+    if(!NIL_P(str)) memcpy(RSTRING_PTR(str), buf, len);
     OPENSSL_free(buf);
     if(status) rb_jump_tag(status);
 
@@ -170,7 +170,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	rflag = flag ? Qtrue : Qfalse;
 	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
 	if (status) return -1; /* exception was raised. */
-	len = RSTRING(pass)->len;
+	len = RSTRING_LEN(pass);
 	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
 	    rb_warning("password must be longer than 4 bytes");
 	    continue;
@@ -179,7 +179,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	    rb_warning("password must be shorter then %d bytes", max_len-1);
 	    continue;
 	}
-	memcpy(buf, RSTRING(pass)->ptr, len);
+	memcpy(buf, RSTRING_PTR(pass), len);
 	break;
     }
     return len;
@@ -310,6 +310,14 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new(exc, buf, len));
 }
 
+/*
+ * call-seq:
+ *   OpenSSL.errors -> [String...]
+ *
+ * See any remaining errors held in queue.
+ *
+ * Any errors you see here are probably due to a bug in ruby's OpenSSL implementation.
+ */
 VALUE
 ossl_get_errors()
 {
@@ -345,12 +353,23 @@ ossl_debug(const char *fmt, ...)
 }
 #endif
 
+/*
+ * call-seq:
+ *   OpenSSL.debug -> true | false
+ */
 static VALUE
 ossl_debug_get(VALUE self)
 {
     return dOSSL;
 }
 
+/*
+ * call-seq:
+ *   OpenSSL.debug = boolean -> boolean
+ *
+ * Turns on or off CRYPTO_MEM_CHECK.
+ * Also shows some debugging message on stderr.
+ */
 static VALUE
 ossl_debug_set(VALUE self, VALUE val)
 {
@@ -427,8 +446,8 @@ Init_openssl()
     /*
      * Verify callback Proc index for ext-data
      */
-    ossl_verify_cb_idx =
-	X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0);
+    if ((ossl_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0)) < 0)
+        ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
 
     /*
      * Init debug core
@@ -454,6 +473,7 @@ Init_openssl()
     Init_ossl_ns_spki();
     Init_ossl_pkcs12();
     Init_ossl_pkcs7();
+    Init_ossl_pkcs5();
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();

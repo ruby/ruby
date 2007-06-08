@@ -11,7 +11,6 @@
 #if !defined(_OSSL_CIPHER_H_)
 #define _OSSL_CIPHER_H_
 
-extern VALUE mCipher;
 extern VALUE cCipher;
 extern VALUE eCipherError;
 

@@ -71,7 +71,6 @@
 /* 
  * Classes
  */
-VALUE mPKCS7;
 VALUE cPKCS7;
 VALUE cPKCS7Signer;
 VALUE cPKCS7Recipient;
@@ -134,7 +133,8 @@ DupPKCS7RecipientPtr(VALUE obj)
 }
 
 /*
- * Private
+ * call-seq:
+ *    PKCS7.read_smime(string) => pkcs7
  */
 static VALUE
 ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
@@ -156,6 +156,10 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     return ret;
 }
 
+/*
+ * call-seq:
+ *    PKCS7.write_smime(pkcs7 [, data [, flags]]) => string
+ */
 static VALUE
 ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
 {
@@ -187,6 +191,10 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     return str;
 }
 
+/*
+ * call-seq:
+ *    PKCS7.sign(cert, key, data, [, certs [, flags]]) => pkcs7
+ */
 static VALUE
 ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
 {
@@ -226,6 +234,10 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
+/*
+ * call-seq:
+ *    PKCS7.encrypt(certs, data, [, cipher [, flags]]) => pkcs7
+ */
 static VALUE
 ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 {
@@ -287,6 +299,13 @@ ossl_pkcs7_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    PKCS7.new => pkcs7
+ *    PKCS7.new(string) => pkcs7
+ *
+ * Many methods in this class aren't documented.
+ */
 static VALUE
 ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -335,7 +354,7 @@ static int
 ossl_pkcs7_sym2typeid(VALUE sym)
 {
     int i, ret = Qnil;
-    char *s;
+    const char *s;
 
     static struct {
         const char *name;
@@ -364,6 +383,10 @@ ossl_pkcs7_sym2typeid(VALUE sym)
     return ret;
 }
 
+/*
+ * call-seq:
+ *    pkcs7.type = type => type
+ */
 static VALUE
 ossl_pkcs7_set_type(VALUE self, VALUE type)
 {
@@ -376,6 +399,10 @@ ossl_pkcs7_set_type(VALUE self, VALUE type)
     return type;
 }
 
+/*
+ * call-seq:
+ *    pkcs7.type => string or nil
+ */
 static VALUE
 ossl_pkcs7_get_type(VALUE self)
 {
@@ -583,7 +610,7 @@ ossl_pkcs7_set_certificates(VALUE self, VALUE ary)
 
     certs = pkcs7_get_certs_or_crls(self, 1);
     while((cert = sk_X509_pop(certs))) X509_free(cert);
-    rb_iterate(rb_each, ary, ossl_pkcs7_set_certs_i, self);
+    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_certs_i, self);
 
     return ary;
 }
@@ -623,7 +650,7 @@ ossl_pkcs7_set_crls(VALUE self, VALUE ary)
 
     crls = pkcs7_get_certs_or_crls(self, 0);
     while((crl = sk_X509_CRL_pop(crls))) X509_CRL_free(crl);
-    rb_iterate(rb_each, ary, ossl_pkcs7_set_crls_i, self);
+    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_crls_i, self);
 
     return ary;
 }
@@ -751,7 +778,7 @@ ossl_pkcs7_to_der(VALUE self)
     if((len = i2d_PKCS7(pkcs7, NULL)) <= 0)
 	ossl_raise(ePKCS7Error, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_PKCS7(pkcs7, &p) <= 0)
 	ossl_raise(ePKCS7Error, NULL);
     ossl_str_adjust(str, p);
@@ -926,15 +953,12 @@ ossl_pkcs7ri_get_enc_key(VALUE self)
 void
 Init_ossl_pkcs7()
 {
-    mPKCS7 = rb_define_module_under(mOSSL, "PKCS7");
-
-    ePKCS7Error = rb_define_class_under(mPKCS7, "PKCS7Error", eOSSLError);
-
-    cPKCS7 = rb_define_class_under(mPKCS7, "PKCS7", rb_cObject);
-    rb_define_singleton_method(mPKCS7, "read_smime", ossl_pkcs7_s_read_smime, 1);
-    rb_define_singleton_method(mPKCS7, "write_smime", ossl_pkcs7_s_write_smime, -1);
-    rb_define_singleton_method(mPKCS7, "sign",  ossl_pkcs7_s_sign, -1);
-    rb_define_singleton_method(mPKCS7, "encrypt", ossl_pkcs7_s_encrypt, -1);
+    cPKCS7 = rb_define_class_under(mOSSL, "PKCS7", rb_cObject);
+    ePKCS7Error = rb_define_class_under(cPKCS7, "PKCS7Error", eOSSLError);
+    rb_define_singleton_method(cPKCS7, "read_smime", ossl_pkcs7_s_read_smime, 1);
+    rb_define_singleton_method(cPKCS7, "write_smime", ossl_pkcs7_s_write_smime, -1);
+    rb_define_singleton_method(cPKCS7, "sign",  ossl_pkcs7_s_sign, -1);
+    rb_define_singleton_method(cPKCS7, "encrypt", ossl_pkcs7_s_encrypt, -1);
     rb_attr(cPKCS7, rb_intern("data"), 1, 0, Qfalse);
     rb_attr(cPKCS7, rb_intern("error_string"), 1, 1, Qfalse);
     rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
@@ -964,8 +988,8 @@ Init_ossl_pkcs7()
     rb_define_alias(cPKCS7,  "to_s", "to_pem");
     rb_define_method(cPKCS7, "to_der", ossl_pkcs7_to_der, 0);
 
-    cPKCS7Signer = rb_define_class_under(mPKCS7, "SignerInfo", rb_cObject);
-    rb_define_const(mPKCS7, "Signer", cPKCS7Signer);
+    cPKCS7Signer = rb_define_class_under(cPKCS7, "SignerInfo", rb_cObject);
+    rb_define_const(cPKCS7, "Signer", cPKCS7Signer);
     rb_define_alloc_func(cPKCS7Signer, ossl_pkcs7si_alloc);
     rb_define_method(cPKCS7Signer, "initialize", ossl_pkcs7si_initialize,3);
     rb_define_method(cPKCS7Signer, "issuer", ossl_pkcs7si_get_issuer, 0);
@@ -973,14 +997,14 @@ Init_ossl_pkcs7()
     rb_define_method(cPKCS7Signer, "serial", ossl_pkcs7si_get_serial,0);
     rb_define_method(cPKCS7Signer,"signed_time",ossl_pkcs7si_get_signed_time,0);
 
-    cPKCS7Recipient = rb_define_class_under(mPKCS7,"RecipientInfo",rb_cObject);
+    cPKCS7Recipient = rb_define_class_under(cPKCS7,"RecipientInfo",rb_cObject);
     rb_define_alloc_func(cPKCS7Recipient, ossl_pkcs7ri_alloc);
     rb_define_method(cPKCS7Recipient, "initialize", ossl_pkcs7ri_initialize,1); 
     rb_define_method(cPKCS7Recipient, "issuer", ossl_pkcs7ri_get_issuer,0);
     rb_define_method(cPKCS7Recipient, "serial", ossl_pkcs7ri_get_serial,0);
     rb_define_method(cPKCS7Recipient, "enc_key", ossl_pkcs7ri_get_enc_key,0); 
 
-#define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2NUM(PKCS7_##x))
+#define DefPKCS7Const(x) rb_define_const(cPKCS7, #x, INT2NUM(PKCS7_##x))
 
     DefPKCS7Const(TEXT);
     DefPKCS7Const(NOCERTS);

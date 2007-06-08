@@ -57,6 +57,12 @@ ossl_hmac_alloc(VALUE klass)
     return obj;
 }
 
+
+/*
+ *  call-seq:
+ *     HMAC.new(key, digest) -> hmac
+ *
+ */
 static VALUE
 ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 {
@@ -64,7 +70,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, RSTRING(key)->ptr, RSTRING(key)->len,
+    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LEN(key),
 		 GetDigestPtr(digest), NULL);
 
     return self;
@@ -87,6 +93,11 @@ ossl_hmac_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     hmac.update(string) -> self
+ *
+ */
 static VALUE
 ossl_hmac_update(VALUE self, VALUE data)
 {
@@ -94,7 +105,7 @@ ossl_hmac_update(VALUE self, VALUE data)
 
     StringValue(data);
     GetHMAC(self, ctx);
-    HMAC_Update(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+    HMAC_Update(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
 
     return self;
 }
@@ -116,6 +127,11 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
     HMAC_CTX_cleanup(&final);
 }
 
+/*
+ *  call-seq:
+ *     hmac.digest -> aString
+ *
+ */
 static VALUE
 ossl_hmac_digest(VALUE self)
 {
@@ -131,6 +147,11 @@ ossl_hmac_digest(VALUE self)
     return digest;
 }
 
+/*
+ *  call-seq:
+ *     hmac.hexdigest -> aString
+ *
+ */
 static VALUE
 ossl_hmac_hexdigest(VALUE self)
 {
@@ -151,6 +172,27 @@ ossl_hmac_hexdigest(VALUE self)
     return hexdigest;
 }
 
+/*
+ *  call-seq:
+ *     hmac.reset -> self
+ *
+ */
+static VALUE
+ossl_hmac_reset(VALUE self)
+{
+    HMAC_CTX *ctx;
+
+    GetHMAC(self, ctx);
+    HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
+
+    return self;
+}
+
+/*
+ *  call-seq:
+ *     HMAC.digest(digest, key, data) -> aString
+ *
+ */
 static VALUE
 ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
@@ -159,12 +201,17 @@ ossl_hmac_s_digest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 	
     StringValue(key);
     StringValue(data);
-    buf = HMAC(GetDigestPtr(digest), RSTRING(key)->ptr, RSTRING(key)->len,
-	       RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+	       RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
 
     return rb_str_new(buf, buf_len);
 }
 
+/*
+ *  call-seq:
+ *     HMAC.digest(digest, key, data) -> aString
+ *
+ */
 static VALUE
 ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
 {
@@ -175,8 +222,8 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     StringValue(key);
     StringValue(data);
 	
-    buf = HMAC(GetDigestPtr(digest), RSTRING(key)->ptr, RSTRING(key)->len,
-	       RSTRING(data)->ptr, RSTRING(data)->len, NULL, &buf_len);
+    buf = HMAC(GetDigestPtr(digest), RSTRING_PTR(key), RSTRING_LEN(key),
+	       RSTRING_PTR(data), RSTRING_LEN(data), NULL, &buf_len);
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
     }
@@ -206,6 +253,7 @@ Init_ossl_hmac()
     rb_define_method(cHMAC, "initialize", ossl_hmac_initialize, 2);
     rb_define_copy_func(cHMAC, ossl_hmac_copy);
 
+    rb_define_method(cHMAC, "reset", ossl_hmac_reset, 0);
     rb_define_method(cHMAC, "update", ossl_hmac_update, 1);
     rb_define_alias(cHMAC, "<<", "update");
     rb_define_method(cHMAC, "digest", ossl_hmac_digest, 0);

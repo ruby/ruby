@@ -109,6 +109,13 @@ ossl_x509name_init_i(VALUE i, VALUE args)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *    X509::Name.new => name
+ *    X509::Name.new(string) => name
+ *    X509::Name.new(dn) => name
+ *    X509::Name.new(dn, template) => name
+ */
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -125,14 +132,14 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	    VALUE args;
 	    if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
 	    args = rb_ary_new3(2, self, template);
-	    rb_iterate(rb_each, tmp, ossl_x509name_init_i, args);
+	    rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i, args);
 	}
 	else{
 	    unsigned char *p;
 	    VALUE str = ossl_to_der_if_possible(arg);
 	    StringValue(str);
-	    p = RSTRING(str)->ptr;
-	    if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING(str)->len)){
+	    p = RSTRING_PTR(str);
+	    if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING_LEN(str))){
 		ossl_raise(eX509NameError, NULL);
 	    }
 	}
@@ -141,6 +148,10 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    name.add_entry(oid, value [, type]) => self
+ */
 static
 VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
 {
@@ -152,8 +163,8 @@ VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
     StringValue(value);
     if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
     GetX509Name(self, name);
-    if (!X509_NAME_add_entry_by_txt(name, RSTRING(oid)->ptr, NUM2INT(type),
-		RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
+    if (!X509_NAME_add_entry_by_txt(name, RSTRING_PTR(oid), NUM2INT(type),
+		RSTRING_PTR(value), RSTRING_LEN(value), -1, 0)) {
 	ossl_raise(eX509NameError, NULL);
     }
 
@@ -175,9 +186,14 @@ ossl_x509name_to_s_old(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    name.to_s => string
+ *    name.to_s(integer) => string
+ */
 static VALUE
 ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
-{           
+{
     X509_NAME *name;
     VALUE flag, str;
     BIO *out;
@@ -199,6 +215,10 @@ ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    name.to_a => [[name, data, type], ...]
+ */
 static VALUE 
 ossl_x509name_to_a(VALUE self)
 {
@@ -266,6 +286,10 @@ ossl_x509name_eql(VALUE self, VALUE other)
     return (result == 0) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq:
+ *    name.hash => integer
+ */
 static VALUE
 ossl_x509name_hash(VALUE self)
 {
@@ -279,6 +303,10 @@ ossl_x509name_hash(VALUE self)
     return ULONG2NUM(hash);
 }
 
+/*
+ * call-seq:
+ *    name.to_der => string
+ */
 static VALUE
 ossl_x509name_to_der(VALUE self)
 {
@@ -291,7 +319,7 @@ ossl_x509name_to_der(VALUE self)
     if((len = i2d_X509_NAME(name, NULL)) <= 0)
 	ossl_raise(eX509NameError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_X509_NAME(name, &p) <= 0)
 	ossl_raise(eX509NameError, NULL);
     ossl_str_adjust(str, p);

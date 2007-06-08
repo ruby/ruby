@@ -17,6 +17,11 @@
 extern "C" {
 #endif
 
+#if 0
+  mOSSL = rb_define_module("OpenSSL");
+  mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
 /*
 * OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
 */
@@ -40,8 +45,8 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
-#  define OpenFile WINAPI_OpenFile
 #  define OSSL_NO_CONF_API 1
+#  include <winsock2.h>
 #endif
 #include <errno.h>
 #include <openssl/err.h>
@@ -63,9 +68,6 @@ extern "C" {
 #if defined(HAVE_OPENSSL_OCSP_H)
 #  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>
-#endif
-#if defined(_WIN32)
-#  undef OpenFile
 #endif
 
 /*
@@ -117,11 +119,10 @@ VALUE ossl_x509crl_sk2ary(STACK_OF(X509_CRL) *crl);
 VALUE ossl_buf2str(char *buf, int len);
 #define ossl_str_adjust(str, p) \
 do{\
-    int len = RSTRING(str)->len;\
-    int newlen = (p) - (unsigned char*)RSTRING(str)->ptr;\
+    int len = RSTRING_LEN(str);\
+    int newlen = (p) - (unsigned char*)RSTRING_PTR(str);\
     assert(newlen <= len);\
-    RSTRING(str)->len = newlen;\
-    RSTRING(str)->ptr[newlen] = 0;\
+    rb_str_set_len(str, newlen);\
 }while(0)
 
 /*

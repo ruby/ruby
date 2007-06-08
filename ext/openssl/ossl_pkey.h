@@ -77,7 +77,24 @@ extern DH *OSSL_DEFAULT_DH_1024;
 VALUE ossl_dh_new(EVP_PKEY *);
 void Init_ossl_dh(void);
 
+/*
+ * EC
+ */
+extern VALUE cEC;
+extern VALUE eECError;
+extern VALUE cEC_GROUP;
+extern VALUE eEC_GROUP;
+extern VALUE cEC_POINT;
+extern VALUE eEC_POINT;
+VALUE ossl_ec_new(EVP_PKEY *);
+void Init_ossl_ec(void);
+
+
 #define OSSL_PKEY_BN(keytype, name)					\
+/*									\
+ *  call-seq:								\
+ *     key.##name -> aBN						\
+ */									\
 static VALUE ossl_##keytype##_get_##name(VALUE self)			\
 {									\
 	EVP_PKEY *pkey;							\
@@ -89,6 +106,10 @@ static VALUE ossl_##keytype##_get_##name(VALUE self)			\
 		return Qnil;						\
 	return ossl_bn_new(bn);						\
 }									\
+/*									\
+ *  call-seq:								\
+ *     key.##name = bn -> bn						\
+ */									\
 static VALUE ossl_##keytype##_set_##name(VALUE self, VALUE bignum)	\
 {									\
 	EVP_PKEY *pkey;							\

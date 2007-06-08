@@ -118,11 +118,18 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     return cb;
 }
 
+
+/*
+ * call-seq:
+ *    X509::Store.new => store
+ *
+ */
 static VALUE
 ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_STORE *store;
 
+/* BUG: This method takes any number of arguments but appears to ignore them. */
     GetX509Store(self, store);
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
@@ -206,7 +213,7 @@ ossl_x509store_add_file(VALUE self, VALUE file)
 
     if(file != Qnil){
         Check_SafeStr(file);
-	path = RSTRING(file)->ptr;
+	path = RSTRING_PTR(file);
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
@@ -227,7 +234,7 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
 
     if(dir != Qnil){
         Check_SafeStr(dir);
-	path = RSTRING(dir)->ptr;
+	path = RSTRING_PTR(dir);
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
@@ -550,6 +557,10 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
     return trust;
 }
 
+/*
+ * call-seq:
+ *    storectx.time = time => time
+ */
 static VALUE
 ossl_x509stctx_set_time(VALUE self, VALUE time)
 {

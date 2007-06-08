@@ -171,7 +171,7 @@ ossl_x509req_to_der(VALUE self)
     if ((len = i2d_X509_REQ(req, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if (i2d_X509_REQ(req, &p) <= 0)
 	ossl_raise(eX509ReqError, NULL);
     ossl_str_adjust(str, p);
@@ -403,14 +403,14 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
-    for (i=0;i<RARRAY(ary)->len; i++) {
-	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Attr);
+    for (i=0;i<RARRAY_LEN(ary); i++) {
+	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Attr);
     }
     GetX509Req(self, req);
     sk_X509_ATTRIBUTE_pop_free(req->req_info->attributes, X509_ATTRIBUTE_free);
     req->req_info->attributes = NULL;
-    for (i=0;i<RARRAY(ary)->len; i++) {
-	item = RARRAY(ary)->ptr[i];
+    for (i=0;i<RARRAY_LEN(ary); i++) {
+	item = RARRAY_PTR(ary)[i];
 	attr = DupX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
 	    ossl_raise(eX509ReqError, NULL);

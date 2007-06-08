@@ -55,6 +55,10 @@ ossl_pkey_new(EVP_PKEY *pkey)
     case EVP_PKEY_DH:
 	return ossl_dh_new(pkey);
 #endif
+#if !defined(OPENSSL_NO_EC) && (OPENSSL_VERSION_NUMBER >= 0x0090802fL)
+    case EVP_PKEY_EC:
+	return ossl_ec_new(pkey);
+#endif
     default:
 	ossl_raise(ePKeyError, "unsupported key type");
     }
@@ -68,7 +72,7 @@ ossl_pkey_new_from_file(VALUE filename)
     EVP_PKEY *pkey;
 
     SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
+    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(ePKeyError, "%s", strerror(errno));
     }
 
@@ -108,7 +112,7 @@ EVP_PKEY *
 DupPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
-
+	
     SafeGetPKey(obj, pkey);
     CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 
@@ -169,13 +173,12 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     GetPKey(self, pkey);
     EVP_SignInit(&ctx, GetDigestPtr(digest));
     StringValue(data);
-    EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+    EVP_SignUpdate(&ctx, RSTRING_PTR(data), RSTRING_LEN(data));
     str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
-    if (!EVP_SignFinal(&ctx, RSTRING(str)->ptr, &buf_len, pkey))
+    if (!EVP_SignFinal(&ctx, RSTRING_PTR(str), &buf_len, pkey))
 	ossl_raise(ePKeyError, NULL);
-    assert(buf_len <= RSTRING(str)->len);
-    RSTRING(str)->len = buf_len;
-    RSTRING(str)->ptr[buf_len] = 0;
+    assert(buf_len <= RSTRING_LEN(str));
+    rb_str_set_len(str, buf_len);
 
     return str;
 }
@@ -190,8 +193,8 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     EVP_VerifyInit(&ctx, GetDigestPtr(digest));
     StringValue(sig);
     StringValue(data);
-    EVP_VerifyUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
-    switch (EVP_VerifyFinal(&ctx, RSTRING(sig)->ptr, RSTRING(sig)->len, pkey)) {
+    EVP_VerifyUpdate(&ctx, RSTRING_PTR(data), RSTRING_LEN(data));
+    switch (EVP_VerifyFinal(&ctx, RSTRING_PTR(sig), RSTRING_LEN(sig), pkey)) {
     case 0:
 	return Qfalse;
     case 1:
@@ -227,10 +230,11 @@ Init_ossl_pkey()
     id_private_q = rb_intern("private?");
 	
     /*
-     * INIT rsa, dsa
+     * INIT rsa, dsa, dh, ec
      */
     Init_ossl_rsa();
     Init_ossl_dsa();
     Init_ossl_dh();
+    Init_ossl_ec();
 }
 

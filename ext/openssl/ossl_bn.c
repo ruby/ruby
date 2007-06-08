@@ -40,7 +40,7 @@ VALUE eBNError;
  * Public
  */
 VALUE
-ossl_bn_new(BIGNUM *bn)
+ossl_bn_new(const BIGNUM *bn)
 {
     BIGNUM *newbn;
     VALUE obj;
@@ -100,6 +100,13 @@ ossl_bn_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    BN.new => aBN
+ *    BN.new(bn) => aBN
+ *    BN.new(string) => aBN
+ *    BN.new(string, 0 | 2 | 10 | 16) => aBN
+ */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -124,22 +131,22 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 
     switch (base) {
     case 0:
-	if (!BN_mpi2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+	if (!BN_mpi2bn(RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn(RSTRING(str)->ptr, RSTRING(str)->len, bn)) {
+	if (!BN_bin2bn(RSTRING_PTR(str), RSTRING_LEN(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 10:
-	if (!BN_dec2bn(&bn, RSTRING(str)->ptr)) {
+	if (!BN_dec2bn(&bn, RSTRING_PTR(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 16:
-	if (!BN_hex2bn(&bn, RSTRING(str)->ptr)) {
+	if (!BN_hex2bn(&bn, RSTRING_PTR(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
@@ -149,6 +156,19 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    bn.to_s => string
+ *    bn.to_s(base) => string
+ *
+ * === Parameters
+ * * +base+ - integer
+ * * * Valid values:
+ * * * * 0 - MPI
+ * * * * 2 - binary
+ * * * * 10 - the default
+ * * * * 16 - hex
+ */
 static VALUE
 ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 {
@@ -165,13 +185,13 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
     case 0:
 	len = BN_bn2mpi(bn, NULL);
         str = rb_str_new(0, len);
-	if (BN_bn2mpi(bn, RSTRING(str)->ptr) != len)
+	if (BN_bn2mpi(bn, RSTRING_PTR(str)) != len)
 	    ossl_raise(eBNError, NULL);
 	break;
     case 2:
 	len = BN_num_bytes(bn);
         str = rb_str_new(0, len);
-	if (BN_bn2bin(bn, RSTRING(str)->ptr) != len)
+	if (BN_bn2bin(bn, RSTRING_PTR(str)) != len)
 	    ossl_raise(eBNError, NULL);
 	break;
     case 10:
@@ -189,6 +209,10 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    bn.to_i => integer
+ */
 static VALUE
 ossl_bn_to_i(VALUE self)
 {
@@ -233,6 +257,11 @@ ossl_bn_coerce(VALUE self, VALUE other)
 }
 
 #define BIGNUM_BOOL1(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> true | false			\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
@@ -248,6 +277,11 @@ BIGNUM_BOOL1(is_one);
 BIGNUM_BOOL1(is_odd);
 
 #define BIGNUM_1c(func)					\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
@@ -267,6 +301,11 @@ BIGNUM_BOOL1(is_odd);
 BIGNUM_1c(sqr);
 
 #define BIGNUM_2(func)					\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bn2) -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
@@ -287,6 +326,11 @@ BIGNUM_2(add);
 BIGNUM_2(sub);
 
 #define BIGNUM_2c(func)						\
+    /*								\
+     * call-seq:						\
+     *   bn.##func(bn2) -> aBN					\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other)			\
     {								\
@@ -310,6 +354,10 @@ BIGNUM_2c(gcd);
 BIGNUM_2c(mod_sqr);
 BIGNUM_2c(mod_inverse);
 
+/*
+ * call-seq:
+ *    bn1 / bn2 => [result, remainder]
+ */
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
 {
@@ -337,6 +385,11 @@ ossl_bn_div(VALUE self, VALUE other)
 }
 
 #define BIGNUM_3c(func)						\
+    /*								\
+     * call-seq:						\
+     *   bn.##func(bn1, bn2) -> aBN				\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other1, VALUE other2)	\
     {								\
@@ -360,6 +413,11 @@ BIGNUM_3c(mod_mul);
 BIGNUM_3c(mod_exp);
 
 #define BIGNUM_BIT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bit) -> self				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bit)		\
     {							\
@@ -374,6 +432,10 @@ BIGNUM_BIT(set_bit);
 BIGNUM_BIT(clear_bit);
 BIGNUM_BIT(mask_bits);
 
+/*
+ * call-seq:
+ *    bn.bit_set?(bit) => true | false
+ */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
 {
@@ -389,6 +451,11 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 }
 
 #define BIGNUM_SHIFT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bits) -> aBN				\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bits)		\
     {							\
@@ -410,7 +477,32 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 BIGNUM_SHIFT(lshift);
 BIGNUM_SHIFT(rshift);
 
+#define BIGNUM_SELF_SHIFT(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func!(bits) -> self			\
+     *							\
+     */							\
+    static VALUE					\
+    ossl_bn_self_##func(VALUE self, VALUE bits)		\
+    {							\
+	BIGNUM *bn;					\
+	int b;						\
+	b = NUM2INT(bits);				\
+	GetBN(self, bn);				\
+	if (!BN_##func(bn, bn, b))			\
+		ossl_raise(eBNError, NULL);		\
+	return self;					\
+    }
+BIGNUM_SELF_SHIFT(lshift);
+BIGNUM_SELF_SHIFT(rshift);
+
 #define BIGNUM_RAND(func)					\
+    /*								\
+     * call-seq:						\
+     *   BN.##func(bits [, fill [, odd]]) -> aBN		\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)	\
     {								\
@@ -440,6 +532,11 @@ BIGNUM_RAND(rand);
 BIGNUM_RAND(pseudo_rand);
 
 #define BIGNUM_RAND_RANGE(func)					\
+    /*								\
+     * call-seq:						\
+     *   BN.##func(range) -> aBN				\
+     *								\
+     */								\
     static VALUE						\
     ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
     {								\
@@ -458,6 +555,16 @@ BIGNUM_RAND(pseudo_rand);
 BIGNUM_RAND_RANGE(rand);
 BIGNUM_RAND_RANGE(pseudo_rand);
 
+/*
+ * call-seq:
+ *    BN.generate_prime(bits, [, safe [, add [, rem]]]) => bn
+ *
+ * === Parameters
+ * * +bits+ - integer
+ * * +safe+ - boolean
+ * * +add+ - BN
+ * * +rem+ - BN
+ */
 static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 {
@@ -473,12 +580,8 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	safe = 0;
     }
     if (!NIL_P(vadd)) {
-	if (NIL_P(vrem)) {
-	    ossl_raise(rb_eArgError,
-		       "if ADD is specified, REM must be also given");
-	}
 	add = GetBNPtr(vadd);
-	rem = GetBNPtr(vrem);
+	rem = NIL_P(vrem) ? NULL : GetBNPtr(vrem);
     }
     if (!(result = BN_new())) {
 	ossl_raise(eBNError, NULL);
@@ -489,10 +592,15 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
     }
     WrapBN(klass, obj, result);
     
-	return obj;
+    return obj;
 }
 
 #define BIGNUM_NUM(func)			\
+    /*							\
+     * call-seq:					\
+     *   bn.##func -> integer				\
+     *							\
+     */							\
     static VALUE 				\
     ossl_bn_##func(VALUE self)			\
     {						\
@@ -522,6 +630,11 @@ ossl_bn_copy(VALUE self, VALUE other)
 }
 
 #define BIGNUM_CMP(func)				\
+    /*							\
+     * call-seq:					\
+     *   bn.##func(bn2) -> integer			\
+     *							\
+     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
@@ -541,6 +654,14 @@ ossl_bn_eql(VALUE self, VALUE other)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    bn.prime? => true | false
+ *    bn.prime?(checks) => true | false
+ *
+ * === Parameters
+ * * +checks+ - integer
+ */
 static VALUE
 ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
 {
@@ -564,6 +685,16 @@ ossl_bn_is_prime(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *    bn.prime_fasttest? => true | false
+ *    bn.prime_fasttest?(checks) => true | false
+ *    bn.prime_fasttest?(checks, trial_div) => true | false
+ *
+ * === Parameters
+ * * +checks+ - integer
+ * * +trial_div+ - boolean
+ */
 static VALUE
 ossl_bn_is_prime_fasttest(int argc, VALUE *argv, VALUE self)
 {
@@ -676,8 +807,10 @@ Init_ossl_bn()
     rb_define_method(cBN, "bit_set?", ossl_bn_is_bit_set, 1);
     rb_define_method(cBN, "mask_bits!", ossl_bn_mask_bits, 1);
     rb_define_method(cBN, "<<", ossl_bn_lshift, 1);
-    /* lshift1 - DON'T IMPL. */
     rb_define_method(cBN, ">>", ossl_bn_rshift, 1);
+    rb_define_method(cBN, "lshift!", ossl_bn_self_lshift, 1);
+    rb_define_method(cBN, "rshift!", ossl_bn_self_rshift, 1);
+    /* lshift1 - DON'T IMPL. */
     /* rshift1 - DON'T IMPL. */
 
     /*

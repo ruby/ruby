@@ -11,7 +11,6 @@
 #if !defined(_OSSL_PKCS7_H_)
 #define _OSSL_PKCS7_H_
 
-extern VALUE mPKCS7;
 extern VALUE cPKCS7;
 extern VALUE cPKCS7Signer;
 extern VALUE cPKCS7Recipient;

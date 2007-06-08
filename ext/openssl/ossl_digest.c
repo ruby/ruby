@@ -24,7 +24,6 @@
 /*
  * Classes
  */
-VALUE mDigest;
 VALUE cDigest;
 VALUE eDigestError;
 
@@ -36,11 +35,23 @@ static VALUE ossl_digest_alloc(VALUE klass);
 const EVP_MD *
 GetDigestPtr(VALUE obj)
 {
-    EVP_MD_CTX *ctx;
+    const EVP_MD *md;
 
-    SafeGetDigest(obj, ctx);
+    if (TYPE(obj) == T_STRING) {
+    	const char *name = STR2CSTR(obj);
 
-    return EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+        md = EVP_get_digestbyname(name);
+        if (!md)
+            ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
+    } else {
+        EVP_MD_CTX *ctx;
+
+        SafeGetDigest(obj, ctx);
+
+        md = EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+    }
+
+    return md;
 }
 
 VALUE
@@ -77,6 +88,11 @@ ossl_digest_alloc(VALUE klass)
 
 VALUE ossl_digest_update(VALUE, VALUE);
 
+/*
+ *  call-seq:
+ *     Digest.new(string) -> digest
+ *
+ */
 static VALUE
 ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -118,6 +134,11 @@ ossl_digest_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     digest.reset -> self
+ *
+ */
 static VALUE
 ossl_digest_reset(VALUE self)
 {
@@ -129,6 +150,11 @@ ossl_digest_reset(VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *     digest.update(string) -> aString
+ *
+ */
 VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
@@ -136,7 +162,7 @@ ossl_digest_update(VALUE self, VALUE data)
 
     StringValue(data);
     GetDigest(self, ctx);
-    EVP_DigestUpdate(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
+    EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
 
     return self;
 }
@@ -157,6 +183,11 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
     EVP_MD_CTX_cleanup(&final);
 }
 
+/*
+ *  call-seq:
+ *      digest.final -> aString
+ *
+ */
 static VALUE
 ossl_digest_digest(VALUE self)
 {
@@ -172,6 +203,11 @@ ossl_digest_digest(VALUE self)
     return digest;
 }
 
+/*
+ *  call-seq:
+ *      digest.hexdigest -> aString
+ *
+ */
 static VALUE
 ossl_digest_hexdigest(VALUE self)
 {
@@ -212,6 +248,11 @@ ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
     return ossl_digest_hexdigest(obj);
 }
 
+/*
+ *  call-seq:
+ *      digest1 == digest2 -> true | false
+ *
+ */
 static VALUE
 ossl_digest_equal(VALUE self, VALUE other)
 {
@@ -225,12 +266,12 @@ ossl_digest_equal(VALUE self, VALUE other)
 	str2 = other;
     }
     GetDigest(self, ctx);
-    if (RSTRING(str2)->len == EVP_MD_CTX_size(ctx)) {
+    if (RSTRING_LEN(str2) == EVP_MD_CTX_size(ctx)) {
 	str1 = ossl_digest_digest(self);
     } else {
 	str1 = ossl_digest_hexdigest(self);
     }
-    if (RSTRING(str1)->len == RSTRING(str2)->len
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
 	&& rb_str_cmp(str1, str2) == 0) {
 	return Qtrue;
     }
@@ -238,6 +279,11 @@ ossl_digest_equal(VALUE self, VALUE other)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *      digest.name -> string
+ *
+ */
 static VALUE
 ossl_digest_name(VALUE self)
 {
@@ -248,6 +294,12 @@ ossl_digest_name(VALUE self)
     return rb_str_new2(EVP_MD_name(EVP_MD_CTX_md(ctx)));
 }
 
+/*
+ *  call-seq:
+ *      digest.size -> integer
+ *
+ *  Returns the output size of the digest.
+ */
 static VALUE
 ossl_digest_size(VALUE self)
 {
@@ -268,11 +320,8 @@ Init_ossl_digest()
     mOSSL = rb_define_module("OpenSSL");
 #endif
 
-    mDigest = rb_define_module_under(mOSSL, "Digest");
-	
-    eDigestError = rb_define_class_under(mDigest, "DigestError", eOSSLError);
-	
-    cDigest = rb_define_class_under(mDigest, "Digest", rb_cObject);
+    cDigest = rb_define_class_under(mOSSL, "Digest", rb_cObject);
+    eDigestError = rb_define_class_under(cDigest, "DigestError", eOSSLError);
 	
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
     rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 2);

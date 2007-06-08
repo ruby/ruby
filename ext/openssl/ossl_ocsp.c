@@ -109,9 +109,9 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
     if(!NIL_P(arg)){
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
-	p = (unsigned char*)RSTRING(arg)->ptr;
+	p = (unsigned char*)RSTRING_PTR(arg);
 	if(!d2i_OCSP_REQUEST((OCSP_REQUEST**)&DATA_PTR(self), &p,
-			     RSTRING(arg)->len)){
+			     RSTRING_LEN(arg))){
 	    ossl_raise(eOCSPError, "cannot load DER encoded request");
 	}
     }
@@ -134,7 +134,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPReq(self, req);
-	ret = OCSP_request_add1_nonce(req, RSTRING(val)->ptr, RSTRING(val)->len);
+	ret = OCSP_request_add1_nonce(req, RSTRING_PTR(val), RSTRING_LEN(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -265,7 +265,7 @@ ossl_ocspreq_to_der(VALUE self)
     if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_OCSP_REQUEST(req, &p) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
@@ -316,9 +316,9 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
     if(!NIL_P(arg)){
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
-	p = RSTRING(arg)->ptr;
+	p = RSTRING_PTR(arg);
 	if(!d2i_OCSP_RESPONSE((OCSP_RESPONSE**)&DATA_PTR(self), &p,
-			      RSTRING(arg)->len)){
+			      RSTRING_LEN(arg))){
 	    ossl_raise(eOCSPError, "cannot load DER encoded response");
 	}
     }
@@ -377,7 +377,7 @@ ossl_ocspres_to_der(VALUE self)
     if((len = i2d_OCSP_RESPONSE(res, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if(i2d_OCSP_RESPONSE(res, NULL) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
@@ -436,7 +436,7 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPBasicRes(self, bs);
-	ret = OCSP_basic_add1_nonce(bs, RSTRING(val)->ptr, RSTRING(val)->len);
+	ret = OCSP_basic_add1_nonce(bs, RSTRING_PTR(val), RSTRING_LEN(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -461,8 +461,8 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     if(!NIL_P(ext)){
 	/* All ary's members should be X509Extension */
 	Check_Type(ext, T_ARRAY);
-	for (i = 0; i < RARRAY(ext)->len; i++)
-	    OSSL_Check_Kind(RARRAY(ext)->ptr[i], cX509Ext);
+	for (i = 0; i < RARRAY_LEN(ext); i++)
+	    OSSL_Check_Kind(RARRAY_PTR(ext)[i], cX509Ext);
     }
 
     error = 0;
@@ -490,8 +490,8 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 	X509_EXTENSION *x509ext;
 	sk_X509_EXTENSION_pop_free(single->singleExtensions, X509_EXTENSION_free);
 	single->singleExtensions = NULL;
-	for(i = 0; i < RARRAY(ext)->len; i++){
-	    x509ext = DupX509ExtPtr(RARRAY(ext)->ptr[i]);
+	for(i = 0; i < RARRAY_LEN(ext); i++){
+	    x509ext = DupX509ExtPtr(RARRAY_PTR(ext)[i]);
 	    if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){
 		X509_EXTENSION_free(x509ext);
 		error = 1;

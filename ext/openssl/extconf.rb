@@ -59,6 +59,8 @@ unless have_header("openssl/conf_api.h")
   exit 1
 end
 
+%w"rb_str_set_len rb_block_call".each {|func| have_func(func, "ruby.h")}
+
 message "=== Checking for OpenSSL features... ===\n"
 have_func("ERR_peek_last_error")
 have_func("BN_mod_add")
@@ -81,6 +83,8 @@ have_func("HMAC_CTX_cleanup")
 have_func("HMAC_CTX_copy")
 have_func("HMAC_CTX_init")
 have_func("PEM_def_callback")
+have_func("PKCS5_PBKDF2_HMAC")
+have_func("PKCS5_PBKDF2_HMAC_SHA1")
 have_func("X509V3_set_nconf")
 have_func("X509V3_EXT_nconf_nid")
 have_func("X509_CRL_add0_revoked")

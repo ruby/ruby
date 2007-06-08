@@ -7,6 +7,26 @@ Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file.
 
+== Changes with Ruby 1.8.6
+
+=== Library updates (outstanding ones only)
+
+* openssl
+
+  * New classes:
+    OpenSSL::PKey::EC
+    OpenSSL::PKey::EC::Group
+    OpenSSL::PKey::EC::Point
+    OpenSSL::PKey::PKCS5
+    OpenSSL::SSL::Session
+
+  * Documentation!
+
+  * Various new methods (see documentation).
+
+  * Remove redundant module namespace in Cipher, Digest, PKCS7, PKCS12.
+    Compatibility classes are provided which will be removed in Ruby 1.9.
+          
 == Changes with Ruby 1.8.5
 
 === New platforms/build tools support

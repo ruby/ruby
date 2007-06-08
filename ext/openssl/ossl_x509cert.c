@@ -63,7 +63,7 @@ ossl_x509_new_from_file(VALUE filename)
     VALUE obj;
 
     SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING(filename)->ptr, "r"))) {
+    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
     x509 = PEM_read_X509(fp, NULL, NULL, NULL);
@@ -125,6 +125,11 @@ ossl_x509_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    Certificate.new => cert
+ *    Certificate.new(string) => cert
+ */
 static VALUE 
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -169,6 +174,10 @@ ossl_x509_copy(VALUE self, VALUE other)
     return self;
 }
 
+/*
+ * call-seq:
+ *    cert.to_der => string
+ */
 static VALUE 
 ossl_x509_to_der(VALUE self)
 {
@@ -181,7 +190,7 @@ ossl_x509_to_der(VALUE self)
     if ((len = i2d_X509(x509, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
+    p = RSTRING_PTR(str);
     if (i2d_X509(x509, &p) <= 0)
 	ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);
@@ -189,6 +198,10 @@ ossl_x509_to_der(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    cert.to_pem => string
+ */
 static VALUE 
 ossl_x509_to_pem(VALUE self)
 {
@@ -209,6 +222,10 @@ ossl_x509_to_pem(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    cert.to_text => string
+ */
 static VALUE
 ossl_x509_to_text(VALUE self)
 {
@@ -252,6 +269,10 @@ ossl_x509_to_req(VALUE self)
 }
 #endif
 
+/*
+ * call-seq:
+ *    cert.version => integer
+ */
 static VALUE 
 ossl_x509_get_version(VALUE self)
 {
@@ -262,6 +283,10 @@ ossl_x509_get_version(VALUE self)
     return LONG2NUM(X509_get_version(x509));
 }
 
+/*
+ * call-seq:
+ *    cert.version = integer => integer
+ */
 static VALUE 
 ossl_x509_set_version(VALUE self, VALUE version)
 {
@@ -279,6 +304,10 @@ ossl_x509_set_version(VALUE self, VALUE version)
     return version;
 }
 
+/*
+ * call-seq:
+ *    cert.serial => integer
+ */
 static VALUE 
 ossl_x509_get_serial(VALUE self)
 {
@@ -289,6 +318,10 @@ ossl_x509_get_serial(VALUE self)
     return asn1integer_to_num(X509_get_serialNumber(x509));
 }
 
+/*
+ * call-seq:
+ *    cert.serial = integer => integer
+ */
 static VALUE 
 ossl_x509_set_serial(VALUE self, VALUE num)
 {
@@ -302,6 +335,10 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     return num;
 }
 
+/*
+ * call-seq:
+ *    cert.signature_algorithm => string
+ */
 static VALUE 
 ossl_x509_get_signature_algorithm(VALUE self)
 {
@@ -322,6 +359,10 @@ ossl_x509_get_signature_algorithm(VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *    cert.subject => name
+ */
 static VALUE 
 ossl_x509_get_subject(VALUE self)
 {
@@ -336,6 +377,10 @@ ossl_x509_get_subject(VALUE self)
     return ossl_x509name_new(name);
 }
 
+/*
+ * call-seq:
+ *    cert.subject = name => name
+ */
 static VALUE 
 ossl_x509_set_subject(VALUE self, VALUE subject)
 {
@@ -349,6 +394,10 @@ ossl_x509_set_subject(VALUE self, VALUE subject)
     return subject;
 }
 
+/*
+ * call-seq:
+ *    cert.issuer => name
+ */
 static VALUE 
 ossl_x509_get_issuer(VALUE self)
 {
@@ -363,6 +412,10 @@ ossl_x509_get_issuer(VALUE self)
     return ossl_x509name_new(name);
 }
 
+/*
+ * call-seq:
+ *    cert.issuer = name => name
+ */
 static VALUE 
 ossl_x509_set_issuer(VALUE self, VALUE issuer)
 {
@@ -376,6 +429,10 @@ ossl_x509_set_issuer(VALUE self, VALUE issuer)
     return issuer;
 }
 
+/*
+ * call-seq:
+ *    cert.not_before => time
+ */
 static VALUE 
 ossl_x509_get_not_before(VALUE self)
 {
@@ -390,6 +447,10 @@ ossl_x509_get_not_before(VALUE self)
     return asn1time_to_time(asn1time);
 }
 
+/*
+ * call-seq:
+ *    cert.not_before = time => time
+ */
 static VALUE 
 ossl_x509_set_not_before(VALUE self, VALUE time)
 {
@@ -405,6 +466,10 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
     return time;
 }
 
+/*
+ * call-seq:
+ *    cert.not_after => time
+ */
 static VALUE 
 ossl_x509_get_not_after(VALUE self)
 {
@@ -419,6 +484,10 @@ ossl_x509_get_not_after(VALUE self)
     return asn1time_to_time(asn1time);
 }
 
+/*
+ * call-seq:
+ *    cert.not_before = time => time
+ */
 static VALUE 
 ossl_x509_set_not_after(VALUE self, VALUE time)
 {
@@ -434,6 +503,10 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
     return time;
 }
 
+/*
+ * call-seq:
+ *    cert.public_key => key
+ */
 static VALUE 
 ossl_x509_get_public_key(VALUE self)
 {
@@ -448,6 +521,10 @@ ossl_x509_get_public_key(VALUE self)
     return ossl_pkey_new(pkey); /* NO DUP - OK */
 }
 
+/*
+ * call-seq:
+ *    cert.public_key = key => key
+ */
 static VALUE 
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
@@ -461,6 +538,10 @@ ossl_x509_set_public_key(VALUE self, VALUE key)
     return key;
 }
 
+/*
+ * call-seq:
+ *    cert.sign(key, digest) => self
+ */
 static VALUE 
 ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 {
@@ -479,6 +560,9 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
 }
 
 /*
+ * call-seq:
+ *    cert.verify(key) => true | false
+ *
  * Checks that cert signature is made with PRIVversion of this PUBLIC 'key'
  */
 static VALUE 
@@ -501,6 +585,9 @@ ossl_x509_verify(VALUE self, VALUE key)
 }
 
 /*
+ * call-seq:
+ *    cert.check_private_key(key)
+ *
  * Checks if 'key' is PRIV key for this cert
  */
 static VALUE 
@@ -521,7 +608,8 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
 }
 
 /*
- * Gets X509v3 extensions as array of X509Ext objects
+ * call-seq:
+ *    cert.extensions => [extension...]
  */
 static VALUE 
 ossl_x509_get_extensions(VALUE self)
@@ -546,7 +634,8 @@ ossl_x509_get_extensions(VALUE self)
 }
 
 /*
- * Sets X509_EXTENSIONs
+ * call-seq:
+ *    cert.extensions = [ext...] => [ext...]
  */
 static VALUE 
 ossl_x509_set_extensions(VALUE self, VALUE ary)
@@ -557,14 +646,14 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 	
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Ext);
     }
     GetX509(self, x509);
     sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
     x509->cert_info->extensions = NULL;
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	ext = DupX509ExtPtr(RARRAY(ary)->ptr[i]);
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	ext = DupX509ExtPtr(RARRAY_PTR(ary)[i]);
 	
 	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
 	    X509_EXTENSION_free(ext);
@@ -576,6 +665,10 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
     return ary;
 }
 
+/*
+ * call-seq:
+ *    cert.add_extension(extension) => extension
+ */
 static VALUE 
 ossl_x509_add_extension(VALUE self, VALUE extension)
 {
