@@ -33,6 +33,7 @@ Fri Jun  8 11:54:18 2007  Tanaka Akira  <akr@fsij.org>
 	* lex.c.blt: moved from lex.c.
 
 	* Makefile.in: use lex.c.blt if gperf is not available.
+	  [ruby-list:8212], [ruby-list:8214], [ruby-dev:28102]
 
 Thu Jun  7 21:38:39 2007  Koichi Sasada  <ko1@atdot.net>
 
