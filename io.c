@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/signal.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -87,7 +87,7 @@ extern void Init_File(void);
 #include <net/socket.h>
 #endif
 
-#include "util.h"
+#include "ruby/util.h"
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)

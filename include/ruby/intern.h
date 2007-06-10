@@ -15,12 +15,19 @@
 #ifndef RUBY_INTERN_H
 #define RUBY_INTERN_H 1
 
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
 #ifdef HAVE_STDARG_PROTOTYPES
 # include <stdarg.h>
 #else
 # include <varargs.h>
 #endif
-#include <st.h>
+#include <ruby/st.h>
 
 /* 
  * Functions and variables that are used by more than one source file of
@@ -609,5 +616,12 @@ VALUE rb_time_succ(VALUE);
 void Init_stack(VALUE*);
 void rb_frame_pop(void);
 NORETURN(void rb_thread_start_1(void));
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
 
 #endif /* RUBY_INTERN_H */

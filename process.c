@@ -12,8 +12,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/signal.h"
 #include "yarvcore.h"
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ struct timeval rb_time_interval(VALUE);
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
-#include "st.h"
+#include "ruby/st.h"
 
 #ifdef __EMX__
 #undef HAVE_GETPGRP

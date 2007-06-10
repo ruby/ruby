@@ -7,8 +7,8 @@
  * $Id$
  */
 
-#include "ruby.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/util.h"
 #include <syslog.h>
 
 /* Syslog class */

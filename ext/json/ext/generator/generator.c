@@ -1,8 +1,8 @@
 /* vim: set cin et sw=4 ts=4: */
 
 #include <string.h>
-#include "ruby.h"
-#include "st.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
 #include "unicode.h"
 
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,

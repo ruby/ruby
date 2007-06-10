@@ -38,7 +38,7 @@
  * - PF_UNSPEC case would be handled in getipnodebyname() with the AI_ALL flag.
  */
 
-#include "config.h"
+#include "ruby/config.h"
 #include <sys/types.h>
 #ifndef _WIN32
 #include <sys/param.h>

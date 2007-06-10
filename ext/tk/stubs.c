@@ -1,5 +1,5 @@
 #include "stubs.h"
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include <tcl.h>
 #include <tk.h>
 

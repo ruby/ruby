@@ -12,10 +12,10 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "st.h"
-#include "util.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
+#include "ruby/signal.h"
 
 #ifdef __APPLE__
 #include <crt_externs.h>

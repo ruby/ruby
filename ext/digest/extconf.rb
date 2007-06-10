@@ -4,7 +4,7 @@
 require "mkmf"
 
 $INSTALLFILES = {
-  "digest.h" => "$(RUBYARCHDIR)"
+  "digest.h" => "$(HDRDIR)"
 }
 
 create_makefile("digest")

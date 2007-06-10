@@ -10,9 +10,9 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "node.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/node.h"
+#include "ruby/util.h"
 
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;

@@ -11,7 +11,7 @@
 **********************************************************************/
 
 #undef RUBY_EXPORT
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #if defined(__MACOS__) && defined(__MWERKS__)
 #include <console.h>

@@ -10,8 +10,15 @@
 
 **********************************************************************/
 
-#ifndef RUBYIO_H
-#define RUBYIO_H
+#ifndef RUBY_IO_H
+#define RUBY_IO_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 #include <stdio.h>
 #include <errno.h>
@@ -108,4 +115,12 @@ DEPRECATED(int rb_getc(FILE*));
 DEPRECATED(long rb_io_fread(char *, long, FILE *));
 DEPRECATED(long rb_io_fwrite(const char *, long, FILE *));
 DEPRECATED(int rb_read_pending(FILE*));
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
 #endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_IO_H */

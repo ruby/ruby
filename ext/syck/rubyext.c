@@ -8,7 +8,7 @@
  * Copyright (C) 2003-2005 why the lucky stiff
  */
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include "syck.h"
 #include <sys/types.h>
 #include <time.h>

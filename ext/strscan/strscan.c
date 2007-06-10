@@ -8,8 +8,8 @@
     the Ruby License. For details, see the file COPYING.
 */
 
-#include "ruby.h"
-#include "re.h"
+#include "ruby/ruby.h"
+#include "ruby/re.h"
 
 #define STRSCAN_VERSION "0.7.0"
 

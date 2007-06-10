@@ -1,9 +1,9 @@
 #line 1 "parser.rl"
-/* vim: set cin et sw=4 ts=4: */
+/* -*-c-*- vim: set cin et sw=4 ts=4: */
 
-#include "ruby.h"
-#include "re.h"
-#include "st.h"
+#include "ruby/ruby.h"
+#include "ruby/re.h"
+#include "ruby/st.h"
 #include "unicode.h"
 
 #define EVIL 0x666

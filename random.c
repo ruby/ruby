@@ -176,7 +176,7 @@ genrand_real(void)
 
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

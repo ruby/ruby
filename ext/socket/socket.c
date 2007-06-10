@@ -10,10 +10,10 @@
 
 ************************************************/
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "rubysig.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/signal.h"
+#include "ruby/util.h"
 #include <stdio.h>
 #include <sys/types.h>
 

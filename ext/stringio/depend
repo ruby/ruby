@@ -1,2 +1,2 @@
-stringio.o: stringio.c $(hdrdir)/ruby.h $(topdir)/config.h \
-  $(hdrdir)/defines.h $(hdrdir)/intern.h $(hdrdir)/rubyio.h
+stringio.o: stringio.c $(hdrdir)/ruby/ruby.h $(arch_hdrdir)/ruby/config.h \
+  $(hdrdir)/ruby/defines.h $(hdrdir)/ruby/intern.h $(hdrdir)/ruby/io.h

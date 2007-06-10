@@ -8,7 +8,7 @@
  *
  * Copyright (C) 2003 why the lucky stiff
  */
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include "syck.h"
 #include "gram.h"
 

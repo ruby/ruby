@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -61,7 +61,7 @@ char *strchr(char*,char);
 
 #include <ctype.h>
 
-#include "util.h"
+#include "ruby/util.h"
 
 #if !defined HAVE_LSTAT && !defined lstat
 #define lstat stat

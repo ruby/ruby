@@ -1,5 +1,12 @@
 #ifndef RUBY_WIN32_H
-#define RUBY_WIN32_H
+#define RUBY_WIN32_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 /*
  *  Copyright (c) 1993, Intergraph Corporation
@@ -527,4 +534,11 @@ in asynchronous_func_t.
 typedef DWORD (*asynchronous_func_t)(DWORD self, int argc, DWORD* argv);
 DWORD rb_w32_asynchronize(asynchronous_func_t func, DWORD self, int argc, DWORD* argv, DWORD intrval);
 
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
 #endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_WIN32_H */

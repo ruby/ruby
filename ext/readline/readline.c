@@ -5,7 +5,7 @@
 #include RUBY_EXTCONF_H
 #endif
 
-#include "config.h"
+#include "ruby/config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -20,9 +20,9 @@
 #include <editline/readline.h>
 #endif
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/signal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

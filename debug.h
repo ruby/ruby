@@ -13,8 +13,8 @@
 #ifndef _DEBUG_H_INCLUDED_
 #define _DEBUG_H_INCLUDED_
 
-#include <ruby.h>
-#include <node.h>
+#include "ruby/ruby.h"
+#include "ruby/node.h"
 
 #define dpv(h,v) ruby_debug_value(-1, 0, h, v)
 #define dp(v)    ruby_debug_value(-1, 0, "", v)

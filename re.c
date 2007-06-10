@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "re.h"
+#include "ruby/ruby.h"
+#include "ruby/re.h"
 #include "regint.h"
 #include <ctype.h>
 

@@ -10,8 +10,8 @@
  *
  */
 
-#include "ruby.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/signal.h"
 #include "dln.h"
 #include <fcntl.h>
 #include <process.h>
@@ -30,7 +30,7 @@
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
-#include "win32.h"
+#include "ruby/win32.h"
 #include "win32/dir.h"
 #ifdef _WIN32_WCE
 #include "wince.h"

@@ -11,7 +11,15 @@
 **********************************************************************/
 
 #ifndef RUBYSIG_H
-#define RUBYSIG_H
+#define RUBYSIG_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
 #include <errno.h>
 
 #ifdef _WIN32
@@ -75,4 +83,11 @@ void rb_trap_restore_mask(void);
 RUBY_EXTERN int rb_thread_critical;
 void rb_thread_schedule(void);
 
-#endif /* ifndef RUBYSIG_H */
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBYSIG_H */

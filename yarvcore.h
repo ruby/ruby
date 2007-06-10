@@ -17,10 +17,10 @@
 
 #include <setjmp.h>
 
-#include "ruby.h"
-#include "rubysig.h"
-#include "st.h"
-#include "node.h"
+#include "ruby/ruby.h"
+#include "ruby/signal.h"
+#include "ruby/st.h"
+#include "ruby/node.h"
 
 #include "debug.h"
 #include "vm_opts.h"

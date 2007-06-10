@@ -9,10 +9,21 @@
 
 **********************************************************************/
 
-#ifndef REGEX_H
-#define REGEX_H
+#ifndef ONIGURUMA_REGEX_H
+#define ONIGURUMA_REGEX_H 1
 
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
+
+#ifdef RUBY
+#include "ruby/oniguruma.h"
+#else
 #include "oniguruma.h"
+#endif
 
 #ifndef ONIG_RUBY_M17N
 
@@ -25,4 +36,11 @@ ONIG_EXTERN OnigEncoding    OnigEncDefaultCharEncoding;
 
 #endif /* ifndef ONIG_RUBY_M17N */
 
-#endif /* !REGEX_H */
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
+
+#endif /* ONIGURUMA_REGEX_H */

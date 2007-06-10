@@ -10,10 +10,10 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "st.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H

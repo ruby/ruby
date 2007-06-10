@@ -16,8 +16,8 @@
   modified for win32ole (ruby) by Masaki.Suketa <masaki.suketa@nifty.ne.jp>
  */
 
-#include "ruby.h"
-#include "st.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
 #include <ctype.h>
 #include <windows.h>
 #include <ocidl.h>
@@ -1076,8 +1076,8 @@ ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long
         val1 = ole_ary_m_entry(val, pid);
         p = val2variant_ptr(val1, &var, vt);
         if (is_all_index_under(pid, pub, dim) == Qtrue) {
-            if (V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL ||
-                V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL) {
+	  if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
+	      (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
                 rb_raise(eWIN32OLERuntimeError, "argument does not have IDispatch or IUnknown Interface");
             }
             hr = SafeArrayPutElement(psa, pid, p);
@@ -2669,7 +2669,7 @@ fole_s_set_locale(VALUE self, VALUE vlcid)
             cWIN32OLE_lcid = lcid;
             break;
         default:
-            rb_raise(eWIN32OLERuntimeError, "not installed locale: %d", lcid);
+            rb_raise(eWIN32OLERuntimeError, "not installed locale: %u", (unsigned int)lcid);
         }
     }
     return Qnil;
@@ -7827,7 +7827,6 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
 {
     struct olevariantdata *pvar;
     SAFEARRAY *psa;
-    VALUE val = Qnil;
     VARIANT var;
     VARTYPE vt;
     long *pid;
@@ -7849,8 +7848,8 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
     VariantInit(&var);
     vt = (V_VT(&(pvar->var)) & ~VT_ARRAY);
     p = val2variant_ptr(argv[argc-1], &var, vt);
-    if (V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL ||
-        V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL) {
+    if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
+        (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
         rb_raise(eWIN32OLERuntimeError, "argument does not have IDispatch or IUnknown Interface");
     }
     hr = SafeArrayPutElement(psa, pid, p);

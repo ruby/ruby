@@ -9,7 +9,7 @@
  *   WARNING WARNING WARNING  --- THIS IS *NOT JUST* PLAYING
  *   ANYMORE! -- WHY HAS EMBRACED THIS AS THE REAL THING!
  */ 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include <syck.h>
 #include <assert.h>
 #define YAMLBYTE_UTF8

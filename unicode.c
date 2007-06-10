@@ -10787,7 +10787,7 @@ onigenc_utf16_32_get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
   return onigenc_unicode_ctype_code_range(ctype, ranges);
 }
 
-#include "st.h"
+#include "ruby/st.h"
 
 #define PROPERTY_NAME_MAX_SIZE    20
 

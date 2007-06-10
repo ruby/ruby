@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -22,7 +22,7 @@
 #include "missing/file.h"
 #endif
 
-#include "util.h"
+#include "ruby/util.h"
 
 unsigned long
 ruby_scan_oct(const char *start, int len, int *retlen)

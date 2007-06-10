@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>

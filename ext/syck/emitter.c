@@ -9,7 +9,7 @@
  * All Base64 code from Ruby's pack.c.
  * Ruby is Copyright (C) 1993-2003 Yukihiro Matsumoto 
  */
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #include <stdio.h>
 #include <string.h>

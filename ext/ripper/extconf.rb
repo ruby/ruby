@@ -12,8 +12,10 @@ def main
   end
   $objs = %w(ripper.o)
   $cleanfiles.concat %w(ripper.y ripper.c ripper.E ripper.output eventids1.c eventids2table.c)
-  $CPPFLAGS += ' -DRIPPER'
-  $CPPFLAGS += ' -DRIPPER_DEBUG' if $debug
+  $defs << '-DRIPPER'
+  $defs << '-DRIPPER_DEBUG' if $debug
+  $VPATH << '$(topdir)' << '$(top_srcdir)'
+  $INCFLAGS << ' -I$(topdir) -I$(top_srcdir)'
   create_makefile 'ripper'
 end
 

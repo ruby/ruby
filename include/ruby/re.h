@@ -10,13 +10,20 @@
 
 **********************************************************************/
 
-#ifndef RE_H
-#define RE_H
+#ifndef RUBY_RE_H
+#define RUBY_RE_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "regex.h"
+#include "ruby/regex.h"
 
 typedef struct re_pattern_buffer Regexp;
 
@@ -40,4 +47,12 @@ RUBY_EXTERN int ruby_ignorecase;
 
 int rb_reg_mbclen2(unsigned int, VALUE);
 #define mbclen2(c,re) rb_reg_mbclen2((c),(re))
+
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
 #endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_RE_H */

@@ -1,4 +1,4 @@
-#include "config.h"
+#include "ruby/config.h"
 
 #if defined _WIN32
 #elif defined HAVE_FCNTL && defined HAVE_FCNTL_H

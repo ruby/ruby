@@ -2,9 +2,15 @@
 
 /* @(#) st.h 5.1 89/12/14 */
 
-#ifndef ST_INCLUDED
+#ifndef RUBY_ST_H
+#define RUBY_ST_H 1
 
-#define ST_INCLUDED
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long st_data_t;
@@ -63,4 +69,11 @@ st_table *st_copy(st_table *);
 int st_numcmp(long, long);
 int st_numhash(long);
 
-#endif /* ST_INCLUDED */
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_ST_H */

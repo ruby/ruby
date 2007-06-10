@@ -34,7 +34,7 @@
  *   but INRIA implementation returns EAI_xxx defined for getaddrinfo().
  */
 
-#include "config.h"
+#include "ruby/config.h"
 #include <sys/types.h>
 #ifndef _WIN32
 #if defined(__BEOS__)

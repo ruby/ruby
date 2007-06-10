@@ -61,7 +61,7 @@ $(RUBY_EXP): $(LIBRUBY_A)
 GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 
 ifeq (@target_os@,mingw32)
-$(OBJS) $(MAINOBJ): win32/win32.h
+$(OBJS) $(MAINOBJ): win32.h
 
 $(LIBRUBY_SO): $(RUBYDEF)
 

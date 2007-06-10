@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include "version.h"
 #include <stdio.h>
 

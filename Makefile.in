@@ -4,7 +4,7 @@ NULLCMD = :
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-VPATH = $(srcdir):$(srcdir)/missing
+hdrdir = $(srcdir)/include
 
 CC = @CC@
 YACC = bison
@@ -32,11 +32,13 @@ RDOCTARGET = @RDOCTARGET@
 
 EXTOUT = @EXTOUT@
 RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
+arch_hdrdir = $(EXTOUT)/include/$(arch)
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
 
 empty =
 OUTFLAG = @OUTFLAG@$(empty)
 CFLAGS = @CFLAGS@ @ARCH_FLAG@
-XCFLAGS = -I. -I$(srcdir) @XCFLAGS@
+XCFLAGS = -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = 

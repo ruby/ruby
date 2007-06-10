@@ -80,9 +80,9 @@
 
 /* */
 /* escape other system UChar definition */
-#ifndef DEFINES_H
-#include "config.h"
-#include "defines.h"
+#ifndef RUBY_DEFINES_H
+#include "ruby/config.h"
+#include "ruby/defines.h"
 #endif
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION

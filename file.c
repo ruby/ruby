@@ -16,10 +16,10 @@
 #include "missing/file.h"
 #endif
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "rubysig.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/signal.h"
+#include "ruby/util.h"
 #include "dln.h"
 
 #ifdef HAVE_UNISTD_H

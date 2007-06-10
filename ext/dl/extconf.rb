@@ -5,7 +5,7 @@ if( RbConfig::CONFIG['CC'] =~ /gcc/ )
 end
 
 $INSTALLFILES = [
-  ["dl.h", "$(archdir)$(target_prefix)", ""],
+  ["dl.h", "$(HDRDIR)"],
 ]
 $distcleanfiles << "callback.h"
 
@@ -26,5 +26,7 @@ else
 end
 
 if( check )
+  have_func("rb_io_stdio_file", "ruby/ruby.h")
+  $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
   create_makefile("dl")
 end

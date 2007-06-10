@@ -73,11 +73,13 @@ end
 
 INSTALL_DIRS = [
   [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
-  [dir_re("sitedir"), "$(RUBYCOMMONDIR)"],
+  [dir_re('sitedir'), "$(RUBYCOMMONDIR)"],
   [dir_re('rubylibdir'), "$(RUBYLIBDIR)"],
   [dir_re('archdir'), "$(RUBYARCHDIR)"],
   [dir_re('sitelibdir'), "$(RUBYLIBDIR)"],
-  [dir_re('sitearchdir'), "$(RUBYARCHDIR)"]
+  [dir_re('sitearchdir'), "$(RUBYARCHDIR)"],
+  [dir_re('rubyhdrdir'), "$(RUBYHDRDIR)"],
+  [dir_re('sitehdrdir'), "$(SITEHDRDIR)"],
 ]
 
 def install_dirs(target_prefix = nil)
@@ -86,6 +88,8 @@ def install_dirs(target_prefix = nil)
       ['RUBYCOMMONDIR', '$(extout)/common'],
       ['RUBYLIBDIR',    '$(RUBYCOMMONDIR)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(extout)/$(arch)$(target_prefix)'],
+      ['HDRDIR',        '$(extout)/include/ruby$(target_prefix)'],
+      ['ARCHHDRDIR',    '$(extout)/include/$(arch)/ruby$(target_prefix)'],
       ['extout',        "#$extout"],
       ['extout_prefix', "#$extout_prefix"],
     ]
@@ -94,12 +98,16 @@ def install_dirs(target_prefix = nil)
       ['RUBYCOMMONDIR', '$(rubylibdir)'],
       ['RUBYLIBDIR',    '$(rubylibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(archdir)$(target_prefix)'],
+      ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
+      ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
     ]
   else
-    dirs = [
+n    dirs = [
       ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
       ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
+      ['HDRDIR',        '$(rubyhdrdir)/ruby$(target_prefix)'],
+      ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
     ]
   end
   dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
@@ -114,11 +122,13 @@ end
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
 $extmk = File.expand_path($0)[0, extdir.size+1] == extdir+"/"
-if not $extmk and File.exist?(RbConfig::CONFIG["archdir"] + "/ruby.h")
-  $hdrdir = $topdir = RbConfig::CONFIG["archdir"]
-elsif File.exist?(($top_srcdir ||= topdir)  + "/ruby.h") and
-    File.exist?(($topdir ||= RbConfig::CONFIG["topdir"]) + "/config.h")
-  $hdrdir = $top_srcdir
+if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
+  $topdir = $hdrdir
+  $arch_hdrdir = $hdrdir + "/$(arch)"
+elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h") and
+    File.exist?("#{CONFIG["EXTOUT"]}/include/#{CONFIG["arch"]}/ruby/config.h")
+  $topdir ||= RbConfig::CONFIG["topdir"]
+  $arch_hdrdir = "$(extout)/include/$(arch)"
 else
   abort "can't find header files for ruby."
 end
@@ -126,11 +136,11 @@ end
 OUTFLAG = CONFIG['OUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
 
-CONFTEST_C = "conftest.c"
+CONFTEST_C = "conftest.c".freeze
 
 class String
   def quote
-    /\s/ =~ self ? "\"#{self}\"" : self
+    /\s/ =~ self ? "\"#{self}\"" : "#{self}"
   end
 end
 class Array
@@ -269,8 +279,10 @@ def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
   RbConfig::expand(TRY_LINK.dup,
                    CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => CONFTEST_C,
-                                'INCFLAGS' => $INCFLAGS,
-                                'CPPFLAGS' => $CPPFLAGS,
+                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'top_srcdir' => $top_srcdir.quote,
+                                'INCFLAGS' => "#$INCFLAGS",
+                                'CPPFLAGS' => "#$CPPFLAGS",
                                 'CFLAGS' => "#$CFLAGS",
                                 'ARCH_FLAG' => "#$ARCH_FLAG",
                                 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
@@ -281,12 +293,16 @@ end
 
 def cc_command(opt="")
   RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
-		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
+		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
+                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'top_srcdir' => $top_srcdir.quote))
 end
 
 def cpp_command(outfile, opt="")
   RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
-		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
+		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
+                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'top_srcdir' => $top_srcdir.quote))
 end
 
 def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
@@ -1037,12 +1053,12 @@ end
 
 def configuration(srcdir)
   mk = []
-  vpath = %w[$(srcdir) $(topdir) $(hdrdir)]
+  vpath = $VPATH.dup
   if !CROSS_COMPILING
     case CONFIG['build_os']
     when 'cygwin'
       if CONFIG['target_os'] != 'cygwin'
-        vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
+        vpath = vpath.map {|p| p.sub(/.*/, '$(shell cygpath -u \&)')}
       end
     when 'msdosdjgpp', 'mingw32'
       CONFIG['PATH_SEPARATOR'] = ';'
@@ -1053,10 +1069,15 @@ def configuration(srcdir)
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
-
+#{
+if $extmk
+  "top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/")
+end
+}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}.quote}
 topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
-hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
+hdrdir = #{CONFIG["hdrdir"].quote}
+arch_hdrdir = #{$arch_hdrdir}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   if $extmk
@@ -1071,7 +1092,8 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   end
   CONFIG.each do |key, var|
     next if /^abs_/ =~ key
-    next unless /^(?:src|top|hdr|(.*))dir$/ =~ key and $1
+    next if /^(?:src|top|hdr)dir$/ =~ key
+    next unless /dir$/ =~ key
     mk << "#{key} = #{with_destdir(var)}\n"
   end
   if !$extmk and !$configure_args.has_key?('--ruby') and
@@ -1397,7 +1419,8 @@ site-install-rb: install-rb
       end
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
+	line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
+	line.gsub!(%r"\$\(hdrdir\)/(?!ruby/)", '\&ruby/')
 	if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
 	  (cont ||= []) << line
 	  next
@@ -1442,7 +1465,7 @@ def init_mkmf(config = CONFIG)
   $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
-  $INCFLAGS = "-I$(topdir) -I$(hdrdir) -I$(srcdir)"
+  $INCFLAGS = "-I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)"
   $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
@@ -1454,6 +1477,7 @@ def init_mkmf(config = CONFIG)
   $DEFLIBPATH.unshift(".")
   $LIBPATH = []
   $INSTALLFILES = nil
+  $VPATH = %w[$(srcdir) $(arch_hdrdir)/ruby $(hdrdir)/ruby]
 
   $objs = nil
   $srcs = nil

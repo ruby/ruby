@@ -2,10 +2,9 @@
  * $Id$
  */
 
-#include <ruby.h>
-#include <rubyio.h>
+#include <ruby/ruby.h>
+#include <ruby/io.h>
 #include <ctype.h>
-#include <version.h> /* for ruby version code */
 #include "dl.h"
 
 VALUE rb_cDLCPtr;
@@ -421,7 +420,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	rb_io_t *fptr;
 	FILE *fp;
 	GetOpenFile(val, fptr);
-#if RUBY_VERSION_CODE >= 190
+#if HAVE_RB_IO_STDIO_FILE
 	fp = rb_io_stdio_file(fptr);
 #else
 	fp = fptr->f;

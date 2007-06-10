@@ -12,8 +12,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "re.h"
+#include "ruby/ruby.h"
+#include "ruby/re.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdarg.h>

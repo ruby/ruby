@@ -1,4 +1,4 @@
-#include <ruby.h>
+#include <ruby/ruby.h>
 #include <yarvcore.h>
 
 static void

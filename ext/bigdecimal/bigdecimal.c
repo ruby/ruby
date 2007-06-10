@@ -13,7 +13,7 @@
  *
  */
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,6 @@
 #include <float.h>
 #include <math.h>
 #include "math.h"
-#include "version.h"
  
 /* #define ENABLE_NUMERIC_STRING */
 

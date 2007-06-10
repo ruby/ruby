@@ -40,7 +40,7 @@ class Exports
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal
     end
-    win32h = File.join(File.dirname(__FILE__), "win32.h")
+    win32h = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby/win32.h")
     IO.foreach(win32h) do |line|
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
@@ -80,7 +80,7 @@ end
 
 class Exports::Mswin < Exports
   def each_export(objs)
-    noprefix = ($arch and /^sh/ !~ $arch)
+    noprefix = ($arch ||= nil and /^sh/ !~ $arch)
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
     IO.popen(%w"dumpbin -symbols -exports" + objs) do |f|

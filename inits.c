@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 void Init_Array(void);
 void Init_Bignum(void);

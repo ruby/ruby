@@ -12,7 +12,7 @@
 #endif
 
 #include "sdbm.h"
-#include "config.h"
+#include "ruby/config.h"
 
 /*
  * sdbm - ndbm work-alike hashed database library

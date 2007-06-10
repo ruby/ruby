@@ -112,10 +112,12 @@ def extmake(target)
     Dir.chdir target
     top_srcdir = $top_srcdir
     topdir = $topdir
+    hdrdir = $hdrdir
     mk_srcdir = CONFIG["srcdir"]
     mk_topdir = CONFIG["topdir"]
     prefix = "../" * (target.count("/")+1)
-    $hdrdir = $top_srcdir = relative_from(top_srcdir, prefix)
+    $top_srcdir = relative_from(top_srcdir, prefix)
+    $hdrdir = relative_from(hdrdir, prefix)
     $topdir = prefix + $topdir
     $target = target
     $mdir = target
@@ -130,8 +132,8 @@ def extmake(target)
       RbConfig::CONFIG["hdrdir"] = $hdrdir
       RbConfig::CONFIG["srcdir"] = $srcdir
       RbConfig::CONFIG["topdir"] = $topdir
-      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1]
-      CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
+      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(top_srcdir)/include"
+      CONFIG["srcdir"] = "$(top_srcdir)/ext/#{$mdir}"
       CONFIG["topdir"] = $topdir
       begin
 	$extconf_h = nil
@@ -200,8 +202,9 @@ def extmake(target)
     CONFIG["srcdir"] = mk_srcdir
     CONFIG["topdir"] = mk_topdir
     CONFIG.delete("hdrdir")
-    $hdrdir = $top_srcdir = top_srcdir
+    $top_srcdir = top_srcdir
     $topdir = topdir
+    $hdrdir = hdrdir
     Dir.chdir dir
   end
   begin
@@ -284,6 +287,7 @@ def parse_args()
   $continue = $mflags.set?(?k)
   if $extout
     $extout = '$(topdir)/'+$extout
+    RbConfig::CONFIG["extout"] = CONFIG["extout"] = $extout
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
     $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
@@ -322,10 +326,10 @@ elsif sep = config_string('BUILD_FILE_SEPARATOR')
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)' -I'$(hdrdir)/lib'"
+$ruby << " -I'$(topdir)' -I'$(top_srcdir)/lib'"
 $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
-$ruby << " -I'$(hdrdir)/ext' -rpurelib.rb"
-$config_h = '$(topdir)/config.h'
+$ruby << " -I'$(top_srcdir)/ext' -rpurelib.rb"
+$config_h = '$(arch_hdrdir)/ruby/config.h'
 ENV["RUBYLIB"] = "-"
 ENV["RUBYOPT"] = "-rpurelib.rb"
 
@@ -404,12 +408,14 @@ dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
-$hdrdir = $top_srcdir = relative_from(srcdir, $topdir = "..")
+hdrdir = $hdrdir
+$hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
   extmake(d) or abort
 end
-$hdrdir = $top_srcdir = srcdir
+$top_srcdir = srcdir
 $topdir = "."
+$hdrdir = hdrdir
 
 extinit = Struct.new(:c, :o) {
   def initialize(src)

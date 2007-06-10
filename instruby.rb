@@ -127,7 +127,14 @@ def install_recursive(srcdir, dest, options = {})
   subpath = srcdir.size..-1
   Dir.glob("#{srcdir}/**/*", File::FNM_DOTMATCH) do |src|
     next if /\A\.{1,2}\z/ =~ (base = File.basename(src))
-    next if noinst and File.fnmatch?(noinst, File.basename(src))
+    if noinst
+      base = File.basename(src)
+      if Array === noinst
+        next if noinst.any? {|n| File.fnmatch?(n, base)}
+      else
+        next if File.fnmatch?(noinst, base)
+      end
+    end
     d = dest + src[subpath]
     if File.directory?(src)
       makedirs(d)
@@ -158,6 +165,8 @@ rubyw_install_name = CONFIG["rubyw_install_name"]
 version = CONFIG["ruby_version"]
 bindir = CONFIG["bindir"]
 libdir = CONFIG["libdir"]
+archhdrdir = rubyhdrdir = CONFIG["rubyhdrdir"]
+archhdrdir += "/" + CONFIG["arch"]
 rubylibdir = CONFIG["rubylibdir"]
 archlibdir = CONFIG["archdir"]
 sitelibdir = CONFIG["sitelibdir"]
@@ -172,7 +181,7 @@ arc = CONFIG["LIBRUBY_A"]
 install?(:local, :arch, :bin) do
   puts "installing binary commands"
 
-  makedirs [bindir, libdir, archlibdir]
+  makedirs [bindir, libdir, archlibdir, archhdrdir]
 
   install ruby_install_name+exeext, bindir, :mode => 0755
   if rubyw_install_name and !rubyw_install_name.empty?
@@ -183,7 +192,6 @@ install?(:local, :arch, :bin) do
   end
   install lib, libdir, :mode => 0755 unless lib == arc
   install arc, libdir, :mode => 0644
-  install "config.h", archlibdir, :mode => 0644
   install "rbconfig.rb", archlibdir, :mode => 0644
   if CONFIG["ARCHFILE"]
     for file in CONFIG["ARCHFILE"].split
@@ -207,11 +215,13 @@ if $extout
       noinst = nil
     end
     install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst)
+    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir)
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
     makedirs [rubylibdir, sitelibdir]
     install_recursive("#{extout}/common", rubylibdir)
+    install_recursive("#{extout}/include", rubyhdrdir)
   end
 end
 
@@ -297,16 +307,13 @@ install?(:local, :arch, :lib) do
   puts "installing headers"
 
   Dir.chdir(srcdir)
-  makedirs [archlibdir]
-  for f in Dir["*.h"]
-    install f, archlibdir, :mode => 0644
+  makedirs [rubyhdrdir]
+  noinst = []
+  unless RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
+    noinst << "win32.h"
   end
-
-  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-    win32libdir = File.join(archlibdir, "win32")
-    makedirs win32libdir
-    install "win32/win32.h", win32libdir, :mode => 0644
-  end
+  noinst = nil if noinst.empty?
+  install_recursive("include", rubyhdrdir, :no_install => noinst)
 end
 
 install?(:local, :comm, :man) do

@@ -14,12 +14,12 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include <errno.h>
 #include <iconv.h>
 #include <assert.h>
-#include "st.h"
-#include "intern.h"
+#include "ruby/st.h"
+#include "ruby/intern.h"
 
 /*
  * Document-class: Iconv

@@ -307,6 +307,8 @@ if tcltk_framework ||
     $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
     # create
+    $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
+    $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
     create_makefile("tcltklib")
   end
 end

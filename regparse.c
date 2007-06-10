@@ -302,7 +302,7 @@ typedef struct {
 
 #ifdef USE_ST_HASH_TABLE
 
-#include "st.h"
+#include "ruby/st.h"
 
 typedef struct {
   unsigned char* s;

@@ -31,6 +31,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
 #endif
 
 #define ONIGURUMA
@@ -804,6 +807,9 @@ ONIG_EXTERN
 const char* onig_copyright P_((void));
 
 #ifdef __cplusplus
+#if 0
+{ /* satisfy cc-mode */
+#endif
 }
 #endif
 

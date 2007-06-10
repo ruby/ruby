@@ -6,10 +6,10 @@
   (GET_THREAD()->passed_block = \
    GC_GUARDED_PTR_REF((rb_block_t *)GET_THREAD()->cfp->lfp[0]))
 
-#include "ruby.h"
-#include "node.h"
-#include "util.h"
-#include "rubysig.h"
+#include "ruby/ruby.h"
+#include "ruby/node.h"
+#include "ruby/util.h"
+#include "ruby/signal.h"
 #include "yarvcore.h"
 
 #ifdef HAVE_STDLIB_H
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-#include "st.h"
+#include "ruby/st.h"
 #include "dln.h"
 
 #ifdef __APPLE__

@@ -216,10 +216,11 @@ AC_MINIX
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
 if $as_mkdir_p; then
-  AC_SUBST(MAKEDIRS, ['mkdir -p'])
+  MAKEDIRS='mkdir -p'
 else
-  AC_SUBST(MAKEDIRS, ['install -d'])
+  MAKEDIRS='install -d'
 fi
+AC_SUBST(MAKEDIRS)
 
 dnl check for large file stuff
 AC_SYS_LARGEFILE
@@ -1271,7 +1272,7 @@ fi
 AC_SUBST(MINIRUBY)
 AC_SUBST(PREP)
 AC_SUBST(RUNRUBY)
-AC_SUBST(EXTOUT, [${EXTOUT-.ext}])
+AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
 
 FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
@@ -1607,6 +1608,19 @@ if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
 fi
 
+AC_ARG_WITH(rubyhdrdir,
+	    [  --with-ruby-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
+	    [rubyhdrdir=$withval],
+	    [rubyhdrdir='${includedir}/ruby-${MAJOR}.${MINOR}'])
+
+AC_ARG_WITH(sitehdrdir,
+	    [  --with-site-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
+	    [sitehdrdir=$withval],
+	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
+
+AC_SUBST(rubyhdrdir)dnl
+AC_SUBST(sitehdrdir)dnl
+
 AC_ARG_WITH(mantype,
 		[  --with-mantype=TYPE specify man page type; TYPE is one of man and doc],
 		[
@@ -1646,11 +1660,14 @@ AC_ARG_WITH(baseruby,
 	])
 AC_SUBST(BASERUBY)
 
-if test -f config.h && tr -d '\015' < confdefs.h | cmp -s config.h -; then
+arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
+$MAKEDIRS "${arch_hdrdir}"
+config_h="${arch_hdrdir}/config.h"
+if test -f "${config_h}" && tr -d '\015' < confdefs.h | cmp -s "${config_h}" -; then
   echo "config.h unchanged"
 else
   echo "creating config.h"
-  tr -d '\015' < confdefs.h > config.h
+  tr -d '\015' < confdefs.h > "${config_h}"
 fi
 : > confdefs.h
 

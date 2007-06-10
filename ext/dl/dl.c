@@ -1,6 +1,5 @@
-#include <ruby.h>
-#include <rubyio.h>
-#include <version.h>
+#include <ruby/ruby.h>
+#include <ruby/io.h>
 #include <ctype.h>
 #include "dl.h"
 

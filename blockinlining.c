@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "node.h"
+#include "ruby/ruby.h"
+#include "ruby/node.h"
 #include "yarvcore.h"
 
 VALUE yarv_new_iseqval(VALUE node, VALUE name, VALUE file,

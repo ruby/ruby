@@ -10,8 +10,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "st.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
 #include "yarvcore.h"
 
 #include <stdio.h>

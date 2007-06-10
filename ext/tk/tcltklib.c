@@ -6,9 +6,8 @@
 
 #define TCLTKLIB_RELEASE_DATE "2006-12-01"
 
-#include "ruby.h"
-#include "rubysig.h"
-#include "version.h"
+#include "ruby/ruby.h"
+#include "ruby/signal.h"
 #undef EXTERN   /* avoid conflict with tcl.h of tcl8.2 or before */
 #include <stdio.h>
 #ifdef HAVE_STDARG_PROTOTYPES

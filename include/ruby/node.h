@@ -10,11 +10,14 @@
 
 **********************************************************************/
 
-#ifndef NODE_H
-#define NODE_H
+#ifndef RUBY_NODE_H
+#define RUBY_NODE_H 1
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
 #endif
 
 enum node_type {
@@ -388,7 +391,10 @@ VALUE rb_gvar_set(struct global_entry *, VALUE);
 VALUE rb_gvar_defined(struct global_entry *);
 
 #if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
 }  /* extern "C" { */
 #endif
 
-#endif
+#endif /* RUBY_NODE_H */

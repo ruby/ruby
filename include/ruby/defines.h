@@ -7,8 +7,16 @@
   created at: Wed May 18 00:21:44 JST 1994
 
 ************************************************/
-#ifndef DEFINES_H
-#define DEFINES_H
+
+#ifndef RUBY_DEFINES_H
+#define RUBY_DEFINES_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 #define RUBY
 
@@ -185,7 +193,7 @@ void xfree(void*);
 #endif /* NeXT */
 
 #ifdef _WIN32
-#include "win32/win32.h"
+#include "ruby/win32.h"
 #endif
 
 #if defined(__VMS)
@@ -266,4 +274,11 @@ void rb_ia64_flushrs(void);
 #define RUBY_PLATFORM "unknown-unknown"
 #endif
 
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
 #endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_DEFINES_H */

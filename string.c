@@ -12,8 +12,8 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "re.h"
+#include "ruby/ruby.h"
+#include "ruby/re.h"
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]

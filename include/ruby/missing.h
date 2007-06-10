@@ -9,8 +9,15 @@
 
 ************************************************/
 
-#ifndef MISSING_H
-#define MISSING_H
+#ifndef RUBY_MISSING_H
+#define RUBY_MISSING_H 1
+
+#if defined(__cplusplus)
+extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
+#endif
 
 #if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>
@@ -145,4 +152,11 @@ extern size_t strlcpy(char *, const char*, size_t);
 extern size_t strlcat(char *, const char*, size_t);
 #endif
 
-#endif /* MISSING_H */
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
+
+#endif /* RUBY_MISSING_H */

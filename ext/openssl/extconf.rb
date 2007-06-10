@@ -19,6 +19,8 @@ require "mkmf"
 dir_config("openssl")
 dir_config("kerberos")
 
+$defs << "-DRUBY_VERSION_CODE=#{RUBY_VERSION.gsub(/\D/, '')}"
+
 message "=== OpenSSL for Ruby configurator ===\n"
 
 ##

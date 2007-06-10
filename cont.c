@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include "yarvcore.h"
 #include "gc.h"
 #include "eval_intern.h"

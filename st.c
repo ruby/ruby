@@ -2,19 +2,20 @@
 
 /* static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible"; */
 
-#include "config.h"
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 #include <string.h>
-#include "defines.h"
 
 #ifdef NOT_RUBY
 #include "regint.h"
-#endif
-
 #include "st.h"
+#else
+#include "ruby/config.h"
+#include "ruby/defines.h"
+#include "ruby/st.h"
+#endif
 
 typedef struct st_table_entry st_table_entry;
 

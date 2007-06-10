@@ -1,4 +1,4 @@
-#include	"config.h"
+#include	"ruby/config.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
@@ -25,9 +25,9 @@
 #endif
 #include <ctype.h>
 
-#include "ruby.h"
-#include "rubyio.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/io.h"
+#include "ruby/util.h"
 
 #include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H
@@ -192,7 +192,7 @@ pty_exec(VALUE v)
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info)
 {
-    int 		i,master,slave;
+    int 		master,slave;
     rb_pid_t		pid;
     char		*p,*getenv();
     struct passwd	*pwent;
@@ -240,9 +240,9 @@ establishShell(int argc, VALUE *argv, struct pty_info *info)
 #  else /* SETGRP_VOID */
 	if (setpgrp(0, getpid()) == -1)
 	    rb_sys_fail("setpgrp()");
-	if ((i = open("/dev/tty", O_RDONLY)) < 0)
-	    rb_sys_fail("/dev/tty");
-	else {
+	{
+	    int i = open("/dev/tty", O_RDONLY);
+	    if (i < 0) rb_sys_fail("/dev/tty");
 	    if (ioctl(i, TIOCNOTTY, (char *)0))
 		perror("ioctl(TIOCNOTTY)");
 	    close(i);

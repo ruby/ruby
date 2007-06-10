@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "util.h"
-#include "st.h"
+#include "ruby/ruby.h"
+#include "ruby/util.h"
+#include "ruby/st.h"
 
 VALUE rb_cArray;
 

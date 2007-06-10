@@ -29,12 +29,12 @@
  * SUCH DAMAGE.
  */
 #ifndef REGINT_H
-#include "config.h"
+#include "ruby/config.h"
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
 #endif
-#include "oniguruma.h"
+#include "ruby/oniguruma.h"
 
 typedef struct {
   OnigCodePoint from;

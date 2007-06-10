@@ -12,9 +12,10 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "st.h"
-#include "util.h"
+#include "ruby/ruby.h"
+#include "ruby/st.h"
+#include "ruby/util.h"
+#include "debug.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
@@ -384,7 +385,7 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
  *     b.kind_of? C       #=> false
  *     b.kind_of? M       #=> true
  */
-#include "debug.h"
+
 VALUE
 rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
@@ -1675,7 +1676,7 @@ rb_obj_public_methods(int argc, VALUE *argv, VALUE obj)
  *     fred.instance_variable_get(:@a)    #=> "cat"
  *     fred.instance_variable_get("@b")   #=> 99
  */
-#include "debug.h"
+
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {

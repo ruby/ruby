@@ -12,11 +12,11 @@
 
 **********************************************************************/
 
-#include "ruby.h"
-#include "rubysig.h"
-#include "st.h"
-#include "node.h"
-#include "re.h"
+#include "ruby/ruby.h"
+#include "ruby/signal.h"
+#include "ruby/st.h"
+#include "ruby/node.h"
+#include "ruby/re.h"
 #include "yarvcore.h"
 #include "gc.h"
 #include <stdio.h>

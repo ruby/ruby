@@ -11,8 +11,7 @@
 
 */
 
-#include "ruby.h"
-#include "version.h"
+#include "ruby/ruby.h"
 
 /* -----------------------------------------------------------------------
                         Important Constants
@@ -64,9 +63,6 @@ static ID id_d_e_pop;
 #endif
 #ifndef LONG2NUM
 #  define LONG2NUM(i) INT2NUM(i)
-#endif
-#if RUBY_VERSION_CODE >= 190
-#  define HAVE_RB_BLOCK_CALL 1
 #endif
 
 static ID value_to_id _((VALUE v));

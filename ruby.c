@@ -17,11 +17,11 @@
 #endif
 #ifdef _WIN32_WCE
 #include <winsock.h>
-#include "wince.h"
+#include "ruby/wince.h"
 #endif
-#include "ruby.h"
+#include "ruby/ruby.h"
+#include "ruby/node.h"
 #include "dln.h"
-#include "node.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <ctype.h>
@@ -40,7 +40,7 @@
 # define MAXPATHLEN 1024
 #endif
 
-#include "util.h"
+#include "ruby/util.h"
 
 #ifndef HAVE_STDLIB_H
 char *getenv();

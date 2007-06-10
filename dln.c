@@ -10,7 +10,7 @@
 
 **********************************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 #include "dln.h"
 
 #ifdef HAVE_STDLIB_H
@@ -182,8 +182,8 @@ static int dln_init_p = 0;
 
 #define INVALID_OBJECT(h) (N_MAGIC(h) != OMAGIC)
 
-#include "util.h"
-#include "st.h"
+#include "ruby/util.h"
+#include "ruby/st.h"
 
 static st_table *sym_tbl;
 static st_table *undef_tbl;

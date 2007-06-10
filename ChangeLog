@@ -1,3 +1,7 @@
+Sun Jun 10 12:07:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby: moved public headers.
+
 Sun Jun 10 10:42:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: renamed from lib/secrand.rb.

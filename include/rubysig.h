@@ -1,0 +1,1 @@
+#include <ruby/signal.h>

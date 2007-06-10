@@ -12,7 +12,7 @@
 **********************************************************************/
 
 #ifndef RUBY_H
-#define RUBY_H
+#define RUBY_H 1
 
 #if defined(__cplusplus)
 extern "C" {
@@ -21,7 +21,7 @@ extern "C" {
 #endif
 #endif
 
-#include "config.h"
+#include "ruby/config.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
@@ -805,8 +805,8 @@ rb_special_const_p(VALUE obj)
     return Qfalse;
 }
 
-#include "missing.h"
-#include "intern.h"
+#include "ruby/missing.h"
+#include "ruby/intern.h"
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
 /* hook for external modules */
@@ -823,4 +823,4 @@ static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 }  /* extern "C" { */
 #endif
 
-#endif /* ifndef RUBY_H */
+#endif /* RUBY_H */

@@ -12,7 +12,7 @@
 
 ************************************************/
 
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 /*
  * Document-class: Enumerable::Enumerator
