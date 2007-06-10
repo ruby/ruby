@@ -1,3 +1,7 @@
+Sun Jun 10 15:44:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): rubyhdrdir was missing.
+
 Sun Jun 10 15:26:36 2007  Tanaka Akira  <akr@fsij.org>
 
 	* Makefile.in: use --output-file for gperf to not leave lex.c.tmp.
