@@ -142,6 +142,7 @@ def install_recursive(srcdir, dest, options = {})
     if File.directory?(src)
       makedirs(d)
     else
+      makedirs(File.dirname(d))
       install src, d
     end
   end

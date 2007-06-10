@@ -1,3 +1,8 @@
+Sun Jun 10 17:49:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (install_recursive): should check parent directoris of
+	  the destination.  [ruby-dev:30947]
+
 Sun Jun 10 16:59:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (do_block, brace_block): fix line numbers.  [ruby-dev:30831]
