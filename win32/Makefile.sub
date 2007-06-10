@@ -151,7 +151,7 @@ ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing
+XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
