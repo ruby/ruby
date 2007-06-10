@@ -184,7 +184,7 @@ arc = CONFIG["LIBRUBY_A"]
 install?(:local, :arch, :bin) do
   puts "installing binary commands"
 
-  makedirs [bindir, libdir, archlibdir, archhdrdir]
+  makedirs [bindir, libdir, archlibdir]
 
   install ruby_install_name+exeext, bindir, :mode => 0755
   if rubyw_install_name and !rubyw_install_name.empty?
@@ -213,7 +213,7 @@ if $extout
   extout = "#$extout"
   install?(:ext, :arch, :'ext-arch') do
     puts "installing extension objects"
-    makedirs [archlibdir, sitearchlibdir]
+    makedirs [archlibdir, sitearchlibdir, archhdrdir]
     if noinst = CONFIG["no_install_files"] and noinst.empty?
       noinst = nil
     end
@@ -222,9 +222,10 @@ if $extout
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
-    makedirs [rubylibdir, sitelibdir]
+    hdrdir = rubyhdrdir + "/ruby"
+    makedirs [rubylibdir, sitelibdir, hdrdir]
     install_recursive("#{extout}/common", rubylibdir)
-    install_recursive("#{extout}/include/ruby", rubyhdrdir + "/ruby", :glob => "*.h")
+    install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h")
   end
 end
 
