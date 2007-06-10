@@ -1,3 +1,8 @@
+Sun Jun 10 13:47:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):
+	  get rid of invoking shell.  [ruby-dev:30942]
+
 Sun Jun 10 12:56:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby: moved public headers.

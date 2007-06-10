@@ -13,7 +13,7 @@ class TestBeginEndBlock < Test::Unit::TestCase
   def test_beginendblock
     ruby = EnvUtil.rubybin
     target = File.join(DIR, 'beginmainend.rb')
-    result = IO.popen("#{q(ruby)} #{q(target)}"){|io|io.read}
+    result = IO.popen([ruby, target]){|io|io.read}
     assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), result.split)
   end
 
@@ -38,14 +38,13 @@ errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
 STDERR.sync = true
 Dir.chdir(#{q(DIR)})
-cmd = "\\"#{ruby}\\" \\"endblockwarn.rb\\""
-system(cmd)
+system("#{ruby}", "endblockwarn.rb")
 EOF
     launcher.close
     launcherpath = launcher.path
     errout.close
     erroutpath = errout.path
-    system("#{q(ruby)} #{q(launcherpath)} #{q(erroutpath)}")
+    system(ruby, launcherpath, erroutpath)
     expected = <<EOW
 endblockwarn.rb:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
@@ -57,9 +56,9 @@ EOW
   def test_raise_in_at_exit
     # [ruby-core:09675]
     ruby = EnvUtil.rubybin
-    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
-		   "at_exit{raise %[SomethingBad]};" \
-		   "raise %[SomethingElse]'") {|f|
+    out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
+                     '-e', 'at_exit{raise %[SomethingBad]}'
+                     '-e', 'raise %[SomethingElse]') {|f|
       f.read
     }
     assert_match /SomethingBad/, out
@@ -68,15 +67,15 @@ EOW
 
   def test_should_propagate_exit_code
     ruby = EnvUtil.rubybin
-    assert_equal false, system("#{q(ruby)} -e 'at_exit{exit 2}'")
+    assert_equal false, system(ruby, '-e', 'at_exit{exit 2}')
     assert_equal 2, $?.exitstatus
     assert_nil $?.termsig
   end
 
   def test_should_propagate_signaled
     ruby = EnvUtil.rubybin
-    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
-		   "at_exit{Process.kill(:INT, $$)}'"){|f|
+    out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
+                     '-e', 'at_exit{Process.kill(:INT, $$)}']) {|f|
       f.read
     }
     assert_match /Interrupt$/, out
