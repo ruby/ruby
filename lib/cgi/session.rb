@@ -174,9 +174,9 @@ class CGI
     # is used internally for automatically generated
     # session ids. 
     def create_new_id
-      require 'secrand'
+      require 'securerandom'
       begin
-        session_id = SecRand.hex(16)
+        session_id = SecureRandom.hex(16)
       rescue NotImplementedError
         require 'digest/md5'
         md5 = Digest::MD5::new
