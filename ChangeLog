@@ -1,3 +1,7 @@
+Sun Jun 10 15:26:36 2007  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in: use --output-file for gperf to not leave lex.c.tmp.
+
 Sun Jun 10 15:11:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (XCFLAGS): -I. is needed for *.inc.

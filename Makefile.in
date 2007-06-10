@@ -163,7 +163,7 @@ $(srcdir)/configure: $(srcdir)/configure.in
 
 lex.c: keywords
 	( \
-	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
+	  gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && \
 	  cp $@.tmp $@ && \
 	  mv $@.tmp "$(srcdir)/$@.blt" \
 	) || \
