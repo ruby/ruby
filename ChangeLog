@@ -1,6 +1,10 @@
-Sun Jun 10 12:07:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 10 12:56:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby: moved public headers.
+
+	* instruby.rb (install_recursive): skip backup files.
+
+	* instruby.rb (ext-comm): install only current platform headers.
 
 Sun Jun 10 10:42:04 2007  Tanaka Akira  <akr@fsij.org>
 

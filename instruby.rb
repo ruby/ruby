@@ -126,9 +126,8 @@ def install_recursive(srcdir, dest, options = {})
   noinst = options.delete(:no_install)
   subpath = srcdir.size..-1
   Dir.glob("#{srcdir}/**/*", File::FNM_DOTMATCH) do |src|
-    next if /\A\.{1,2}\z/ =~ (base = File.basename(src))
+    next if /\A\.{1,2}\z|\A\.\#|\A\#.*\#\z|~\z/ =~ (base = File.basename(src))
     if noinst
-      base = File.basename(src)
       if Array === noinst
         next if noinst.any? {|n| File.fnmatch?(n, base)}
       else
@@ -221,7 +220,7 @@ if $extout
     puts "installing extension scripts"
     makedirs [rubylibdir, sitelibdir]
     install_recursive("#{extout}/common", rubylibdir)
-    install_recursive("#{extout}/include", rubyhdrdir)
+    install_recursive("#{extout}/include/ruby", rubyhdrdir + "/ruby")
   end
 end
 
