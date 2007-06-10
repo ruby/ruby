@@ -1,3 +1,7 @@
+Sun Jun 10 16:59:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (do_block, brace_block): fix line numbers.  [ruby-dev:30831]
+
 Sun Jun 10 16:57:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (install_recursive): add :glob option rather than

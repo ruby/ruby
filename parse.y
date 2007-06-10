@@ -2516,7 +2516,7 @@ primary		: literal
 		| keyword_begin
 		    {
 		    /*%%%*/
-			$<num>1 = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
 		    }
@@ -2530,10 +2530,10 @@ primary		: literal
 			else {
 			    if (nd_type($3) == NODE_RESCUE ||
 				nd_type($3) == NODE_ENSURE)
-				nd_set_line($3, $<num>1);
+				nd_set_line($3, $<num>2);
 			    $$ = NEW_BEGIN($3);
 			}
-			nd_set_line($$, $<num>1);
+			nd_set_line($$, $<num>2);
 		    /*%
 			$$ = dispatch1(begin, $3);
 		    %*/
@@ -3292,7 +3292,7 @@ do_block	: keyword_do_block
 		    {
 		    /*%%%*/
 			dyna_push();
-			$<num>1 = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*% %*/
 		    }
 		  opt_block_param
@@ -3301,7 +3301,7 @@ do_block	: keyword_do_block
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3,$4);
-			nd_set_line($$, $<num>1);
+			nd_set_line($$, $<num>2);
 			dyna_pop();
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $5);
@@ -3433,7 +3433,7 @@ brace_block	: '{'
 		    {
 		    /*%%%*/
 			dyna_push();
-			$<num>1 = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*% %*/
 		    }
 		  opt_block_param
@@ -3451,7 +3451,7 @@ brace_block	: '{'
 		    {
 		    /*%%%*/
 			dyna_push();
-			$<num>1 = ruby_sourceline;
+			$<num>$ = ruby_sourceline;
 		    /*% %*/
 		    }
 		  opt_block_param
