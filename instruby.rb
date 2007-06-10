@@ -123,11 +123,12 @@ def makedirs(dirs)
 end
 
 def install_recursive(srcdir, dest, options = {})
-  noinst = options.delete(:no_install)
+  noinst = options[:no_install]
+  glob = options[:glob] || "*"
   subpath = srcdir.size..-1
-  Dir.glob("#{srcdir}/**/*", File::FNM_DOTMATCH) do |src|
+  Dir.glob("#{srcdir}/**/#{glob}") do |src|
     case base = File.basename(src)
-    when /\A\.{1,2}\z/, /\A\.\#/, /\A\#.*\#\z/, /~\z/, /\A\.svn\z/
+    when /\A\#.*\#\z/, /~\z/
       next
     end
     if noinst
@@ -217,13 +218,13 @@ if $extout
       noinst = nil
     end
     install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst)
-    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir)
+    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h")
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
     makedirs [rubylibdir, sitelibdir]
     install_recursive("#{extout}/common", rubylibdir)
-    install_recursive("#{extout}/include/ruby", rubyhdrdir + "/ruby")
+    install_recursive("#{extout}/include/ruby", rubyhdrdir + "/ruby", :glob => "*.h")
   end
 end
 
@@ -315,7 +316,7 @@ install?(:local, :arch, :lib) do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive("include", rubyhdrdir, :no_install => noinst)
+  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h")
 end
 
 install?(:local, :comm, :man) do
