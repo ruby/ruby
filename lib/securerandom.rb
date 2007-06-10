@@ -42,6 +42,9 @@ module SecureRandom
   #
   # The argument n specifies the length of the result string.
   #
+  # If n is not specified, 16 is assumed.
+  # It may be larger in future.
+  #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
@@ -79,6 +82,9 @@ module SecureRandom
   # The argument n specifies the length of the random length.
   # The length of the result string is twice of n.
   #
+  # If n is not specified, 16 is assumed.
+  # It may be larger in future.
+  #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.hex(n=nil)
@@ -89,6 +95,9 @@ module SecureRandom
   #
   # The argument n specifies the length of the random length.
   # The length of the result string is about 4/3 of n.
+  #
+  # If n is not specified, 16 is assumed.
+  # It may be larger in future.
   #
   # If secure random number generator is not available,
   # NotImplementedError is raised.
