@@ -1,12 +1,16 @@
 #include <ruby/ruby.h>
 #include <yarvcore.h>
 
+VALUE rb_thread_current_status(rb_thread_t *);
+void rb_add_event_hook(rb_event_hook_func_t, rb_event_flag_t, VALUE);
+int rb_remove_event_hook(rb_event_hook_func_t);
+
 static void
 hash_inc(VALUE data, VALUE key)
 {
     VALUE num = INT2FIX(0);
 
-    if (num = rb_hash_aref(data, key)) {
+    if (RTEST(num = rb_hash_aref(data, key))) {
 	num = INT2FIX(FIX2INT(num) + 1);
     }
 
@@ -15,7 +19,7 @@ hash_inc(VALUE data, VALUE key)
 
 static void
 pprof_hook(rb_event_flag_t flag, VALUE data,
-	   VALUE dmyid, VALUE dmyklass)
+	   VALUE self, ID dmyid, VALUE dmyklass)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE sig = rb_thread_current_status(th);
@@ -43,13 +47,7 @@ pprof_stop(VALUE self)
     return Qnil;
 }
 
-static int
-hash_to_ary_i(VALUE key, VALUE value, VALUE ary)
-{
-    rb_ary_push(ary, rb_ary_new3(2, value, key));
-    return ST_CONTINUE;
-}
-
+void
 Init_probeprofiler(void)
 {
     VALUE mPProf;

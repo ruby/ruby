@@ -1,3 +1,7 @@
+Sun Jun 10 18:37:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/probeprofiler/probeprofiler.c: clean warnings.
+
 Sun Jun 10 18:32:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/isinf.c, missing/dup2.c, missing/strtod.c, missing/x68.c,
