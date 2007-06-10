@@ -289,7 +289,7 @@ def parse_args()
     $extout = '$(topdir)/'+$extout
     RbConfig::CONFIG["extout"] = CONFIG["extout"] = $extout
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
-    $mflags << "topdir=#$topdir" << "extout=#$extout" << "extout_prefix=#$extout_prefix"
+    $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
 end
 
@@ -523,6 +523,7 @@ if $nmake == ?b
     vars.each {|flag| flag.sub!(/\A/, "-D")}
   end
 end
+$mflags.unshift("topdir=#$topdir")
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:

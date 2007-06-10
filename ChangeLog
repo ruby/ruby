@@ -1,8 +1,8 @@
-Sun Jun 10 14:48:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 10 15:11:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, win32/Makefile.sub (XCFLAGS): -I. is needed for *.inc.
 
-	* ext/extmk.rb (parse_args): add also topdir to mflags.
+	* ext/extmk.rb: prepend also topdir to mflags at last.
 
 Sun Jun 10 13:47:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
