@@ -57,8 +57,8 @@ EOW
     # [ruby-core:09675]
     ruby = EnvUtil.rubybin
     out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
-                     '-e', 'at_exit{raise %[SomethingBad]}'
-                     '-e', 'raise %[SomethingElse]') {|f|
+                     '-e', 'at_exit{raise %[SomethingBad]}',
+                     '-e', 'raise %[SomethingElse]']) {|f|
       f.read
     }
     assert_match /SomethingBad/, out
