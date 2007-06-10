@@ -126,7 +126,10 @@ def install_recursive(srcdir, dest, options = {})
   noinst = options.delete(:no_install)
   subpath = srcdir.size..-1
   Dir.glob("#{srcdir}/**/*", File::FNM_DOTMATCH) do |src|
-    next if /\A\.{1,2}\z|\A\.\#|\A\#.*\#\z|~\z/ =~ (base = File.basename(src))
+    case base = File.basename(src)
+    when /\A\.{1,2}\z/, /\A\.\#/, /\A\#.*\#\z/, /~\z/, /\A\.svn\z/
+      next
+    end
     if noinst
       if Array === noinst
         next if noinst.any? {|n| File.fnmatch?(n, base)}
