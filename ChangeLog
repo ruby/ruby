@@ -1,3 +1,8 @@
+Sun Jun 10 13:47:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):
+	  get rid of invoking shell.  [ruby-dev:30942]
+
 Thu Jun  7 19:02:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb: call original "method" method instead of redefined one.
