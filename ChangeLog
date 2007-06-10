@@ -1,3 +1,8 @@
+Sun Jun 10 18:32:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/isinf.c, missing/dup2.c, missing/strtod.c, missing/x68.c,
+	  missing/alloca.c: use "ruby/config.h".
+
 Sun Jun 10 17:49:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (install_recursive): should check parent directoris of

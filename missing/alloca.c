@@ -29,7 +29,7 @@
 static char	SCCSid[] = "@(#)alloca.c	1.1";	/* for the "what" utility */
 #endif
 
-#include "config.h"
+#include "ruby/config.h"
 #ifdef emacs
 #ifdef static
 /* actually, only want this if static is defined as ""

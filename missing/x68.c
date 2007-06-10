@@ -1,6 +1,6 @@
 /* x68 compatibility functions -- follows Ruby's license */
 
-#include "config.h"
+#include "ruby/config.h"
 
 #if !HAVE_SELECT
 #include "x68/select.c"
