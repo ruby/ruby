@@ -63,7 +63,7 @@ Sun Jun 10 10:42:04 2007  Tanaka Akira  <akr@fsij.org>
 	* lib/securerandom.rb: renamed from lib/secrand.rb.
 	  suggested by NaHi.
 
-Sat Jun  8 06:40:05 2007  Tanaka Akira  <akr@fsij.org>
+Sat Jun  9 06:40:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/secrand.rb: rename SecRand() to SecRand.random_number.
 
