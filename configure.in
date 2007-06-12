@@ -1384,7 +1384,7 @@ if test "$enable_shared" = 'yes'; then
   esac
 fi
 if test "$enable_rpath" = yes; then
-    LIBRUBYARG_SHARED="${linker_flag}-R ${linker_flag}\$(libdir) -L. -L\$(libdir) $LIBRUBYARG_SHARED"
+    LIBRUBYARG_SHARED="${linker_flag}-R ${linker_flag}\$(libdir) -L\$(libdir) $LIBRUBYARG_SHARED"
 fi
 
 LDFLAGS="-L. $LDFLAGS"
@@ -1420,6 +1420,7 @@ case "$target_os" in
 	;;
     darwin*)
     	CFLAGS="$CFLAGS -pipe -fno-common"
+	MINIOBJS=dmydln.o
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2 -Zmts"
@@ -1442,7 +1443,7 @@ case "$target_os" in
 	  rm -f /tmp/main.o
 	  CFLAGS="$CFLAGS -std"
 	fi
-		;;
+	;;
     beos*)
 	case "$target_cpu" in
 	powerpc*)
