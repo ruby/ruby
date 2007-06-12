@@ -181,6 +181,7 @@ module Logging
   @orgerr = $stderr.dup
   @orgout = $stdout.dup
   @postpone = 0
+  @quiet = $extmk
 
   def self::open
     @log ||= File::open(@logfile, 'w')
@@ -223,6 +224,10 @@ module Logging
         rm_f tmplog
       end
     end
+  end
+
+  class << self
+    attr_accessor :quiet
   end
 end
 
@@ -550,7 +555,7 @@ def append_library(libs, lib)
 end
 
 def message(*s)
-  unless $extmk and not $VERBOSE
+  unless Logging.quiet and not $VERBOSE
     printf(*s)
     $stdout.flush
   end

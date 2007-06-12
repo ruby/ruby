@@ -1,4 +1,7 @@
-Tue Jun 12 14:44:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 12 14:53:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.quiet, Logging.message): added quiet flag and
+	  use it.  [ruby-core:10909]
 
 	* lib/mkmf.rb (find_header): use header names in the message.
 
