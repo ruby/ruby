@@ -700,8 +700,9 @@ end
 # of included directories that are sent to the compiler (via the -I switch).
 #
 def find_header(header, *paths)
+  message = checking_message(header, paths)
   header = cpp_include(header)
-  checking_for header do
+  checking_for message do
     if try_cpp(header)
       true
     else
