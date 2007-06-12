@@ -3824,8 +3824,8 @@ Init_process(void)
     rb_define_module_function(rb_mProcGID, "change_privilege", p_gid_change_privilege, 1);
     rb_define_module_function(rb_mProcUID, "grant_privilege", p_uid_grant_privilege, 1);
     rb_define_module_function(rb_mProcGID, "grant_privilege", p_gid_grant_privilege, 1);
-    rb_define_alias(rb_mProcUID, "eid=", "grant_privilege");
-    rb_define_alias(rb_mProcGID, "eid=", "grant_privilege");
+    rb_define_alias(rb_singleton_class(rb_mProcUID), "eid=", "grant_privilege");
+    rb_define_alias(rb_singleton_class(rb_mProcGID), "eid=", "grant_privilege");
     rb_define_module_function(rb_mProcUID, "re_exchange", p_uid_exchange, 0);
     rb_define_module_function(rb_mProcGID, "re_exchange", p_gid_exchange, 0);
     rb_define_module_function(rb_mProcUID, "re_exchangeable?", p_uid_exchangeable, 0);
