@@ -1,3 +1,7 @@
+Sat Jun  9 10:40:00 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* stable version 1.8.6-p36 released.
+
 Fri Jun  8 17:50:17 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_thread_cancel_timer): fix undefined function
