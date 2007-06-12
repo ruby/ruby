@@ -1,3 +1,7 @@
+Sat Jun  9 10:40:00 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* stable version 1.8.5-p52 released.
+
 Thu Jun  7 14:53:46 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* eval.c (method_inspect): show proper class name.
