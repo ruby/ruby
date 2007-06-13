@@ -1385,29 +1385,9 @@ garbage_collect(void)
       rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
 #endif
 #ifdef __ia64__
-    /* mark backing store (flushed register window on the stack) */
+    /* mark backing store (flushed register stack) */
     /* the basic idea from guile GC code                         */
-    {
-	ucontext_t ctx;
-	VALUE *top, *bot;
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-#endif
-
-	getcontext(&ctx);
-	mark_locations_array((VALUE*)&ctx.uc_mcontext,
-			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
-#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
-	_UNW_currentContext(unwctx);
-	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
-	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
-	_UNW_destroyContext(unwctx);
-#else
-	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
-#endif
-	rb_gc_mark_locations(bot, top);
-    }
+    rb_gc_mark_locations(rb_gc_register_stack_start, (VALUE*)rb_ia64_bsp());
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
     rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
