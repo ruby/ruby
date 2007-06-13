@@ -2257,18 +2257,6 @@ call_args	: command
 			$$ = arg_add_optblock($$, $2);
 		    %*/
 		    }
-		| assocs ',' tSTAR arg_value opt_block_arg
-		    {
-		    /*%%%*/
-			$$ = NEW_LIST(NEW_HASH($1));
-			$$ = arg_concat($$, $4);
-			$$ = arg_blk_pass($$, $5);
-		    /*%
-			$$ = arg_add_assocs(arg_new(), $1);
-			$$ = arg_add_star($$, $4);
-			$$ = arg_add_optblock($$, $5);
-		    %*/
-		    }
 		| args ',' assocs opt_block_arg
 		    {
 		    /*%%%*/
@@ -2276,18 +2264,6 @@ call_args	: command
 			$$ = arg_blk_pass($$, $4);
 		    /*%
 			$$ = arg_add_optblock(arg_add_assocs($1, $3), $4);
-		    %*/
-		    }
-		| args ',' assocs ',' tSTAR arg_value opt_block_arg
-		    {
-		    /*%%%*/
-			$$ = arg_append($1, NEW_HASH($3));
-			$$ = arg_concat($$, $6);
-			$$ = arg_blk_pass($$, $7);
-		    /*%
-			$$ = arg_add_assocs($1, $3);
-			$$ = arg_add_star($$, $6);
-			$$ = arg_add_optblock($$, $7);
 		    %*/
 		    }
 		| block_arg
@@ -2325,18 +2301,6 @@ call_args2	: arg_value ',' args opt_block_arg
 			$$ = arg_add_optblock($$, $2);
 		    %*/
 		    }
-		| assocs ',' tSTAR arg_value opt_block_arg
-		    {
-		    /*%%%*/
-			$$ = NEW_LIST(NEW_HASH($1));
-			$$ = arg_concat($$, $4);
-			$$ = arg_blk_pass($$, $5);
-		    /*%
-			$$ = arg_add_assocs(arg_new(), $1);
-			$$ = arg_add_star($$, $4);
-			$$ = arg_add_optblock($$, $5);
-		    %*/
-		    }
 		| arg_value ',' assocs opt_block_arg
 		    {
 		    /*%%%*/
@@ -2347,18 +2311,6 @@ call_args2	: arg_value ',' args opt_block_arg
 			$$ = arg_add_optblock($$, $4);
 		    %*/
 		    }
-		| arg_value ',' assocs ',' tSTAR arg_value opt_block_arg
-		    {
-		    /*%%%*/
-			$$ = arg_append(NEW_LIST($1), NEW_HASH($3));
-			$$ = arg_concat($$, $6);
-			$$ = arg_blk_pass($$, $7);
-		    /*%
-			$$ = arg_add_assocs(arg_add(arg_new(), $1), $3);
-			$$ = arg_add_star($$, $6);
-			$$ = arg_add_optblock($$, $7);
-		    %*/
-		    }
 		| arg_value ',' args ',' assocs opt_block_arg
 		    {
 		    /*%%%*/
@@ -2367,18 +2319,6 @@ call_args2	: arg_value ',' args opt_block_arg
 		    /*%
 			$$ = arg_add_assocs(arg_prepend($3, $1), $5);
 			$$ = arg_add_optblock($$, $6);
-		    %*/
-		    }
-		| arg_value ',' args ',' assocs ',' tSTAR arg_value opt_block_arg
-		    {
-		    /*%%%*/
-			$$ = arg_append(list_concat(NEW_LIST($1),$3), NEW_HASH($5));
-			$$ = arg_concat($$, $8);
-			$$ = arg_blk_pass($$, $9);
-		    /*%
-			$$ = arg_add_assocs(arg_prepend($3, $1), $5);
-			$$ = arg_add_star($$, $8);
-			$$ = arg_add_optblock($$, $9);
 		    %*/
 		    }
 		| block_arg

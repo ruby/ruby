@@ -3,6 +3,13 @@ Wed Jun 13 06:05:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (darwin): prohibit loading extension libraries to
 	  miniruby.
 
+Tue Jun 12 21:50:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (call_args): no allow splat after assocs.  takes
+	  consistency over compatibility.
+
+	* parse.y (call_args2): ditto
+
 Tue Jun 12 14:53:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (Logging.quiet, Logging.message): added quiet flag and
