@@ -1,3 +1,8 @@
+Thu Jun 14 17:09:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser): handle more
+	  extensions.  [ruby-dev:30972]
+
 Thu Jun 14 14:40:42 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: documente updated.
