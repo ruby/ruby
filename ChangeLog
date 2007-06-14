@@ -1,3 +1,8 @@
+Sun Jun 10 13:47:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):
+	  get rid of invoking shell.  [ruby-dev:30942]
+
 Sat Jun  9 10:40:00 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* stable version 1.8.6-p36 released.

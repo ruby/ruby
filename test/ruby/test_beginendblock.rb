@@ -69,15 +69,14 @@ EOW
 
   def test_should_propagate_exit_code
     ruby = EnvUtil.rubybin
-    assert_equal false, system("#{q(ruby)} -e 'at_exit{exit 2}'")
+    assert_equal false, system(ruby, '-e', 'at_exit{exit 2}')
     assert_equal 2, $?.exitstatus
     assert_nil $?.termsig
   end
 
   def test_should_propagate_signaled
     ruby = EnvUtil.rubybin
-    out = IO.popen("#{q(ruby)} -e 'STDERR.reopen(STDOUT);" \
-		   "at_exit{Process.kill(:INT, $$)}'"){|f|
+    out = IO.popen("#{ruby} #{File.dirname(__FILE__)}/suicide.rb"){|f|
       f.read
     }
     assert_match /Interrupt$/, out
