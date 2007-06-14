@@ -111,7 +111,11 @@ thread_start_func_1(void *th_ptr)
 	VALUE stack_start;
 
 	/* run */
-	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
+	thread_start_func_2(th, &stack_start
+#ifdef __ia64
+          , rb_ia64_bsp()
+#endif
+        );
     }
 #if USE_THREAD_CACHE
     if (1) {
