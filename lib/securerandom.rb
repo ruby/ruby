@@ -1,7 +1,7 @@
 # = Secure random number generator interface.
 #
-# This library is a interface for secure random number generator which is
-# suitable for HTTP cookies, nonces, etc.
+# This library is an interface for secure random number generator which is
+# suitable for generating session key in HTTP cookies, etc.
 #
 # It supports following secure random number generators.
 #

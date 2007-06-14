@@ -1,3 +1,8 @@
+Thu Jun 14 14:40:42 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: documente updated.
+	  suggested by NaHi.  [ruby-dev:30966]
+
 Wed Jun 13 22:42:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (garbage_collect): update IA64 register stack code.
