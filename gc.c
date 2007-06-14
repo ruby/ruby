@@ -540,7 +540,12 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
     return (VALUE)data;
 }
 
+#ifdef __ia64
+#define SET_STACK_END (rb_gc_set_stack_end(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
+#else
 #define SET_STACK_END rb_gc_set_stack_end(&th->machine_stack_end)
+#endif
+
 #define STACK_START (th->machine_stack_start)
 #define STACK_END (th->machine_stack_end)
 
@@ -1384,10 +1389,10 @@ garbage_collect(void)
     else
       rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
 #endif
-#ifdef __ia64__
+#ifdef __ia64
     /* mark backing store (flushed register stack) */
     /* the basic idea from guile GC code                         */
-    rb_gc_mark_locations(rb_gc_register_stack_start, (VALUE*)rb_ia64_bsp());
+    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
     rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
@@ -1440,6 +1445,9 @@ yarv_machine_stack_mark(rb_thread_t *th)
     else {
 	rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
     }
+#endif
+#ifdef __ia64
+    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif
 }
 

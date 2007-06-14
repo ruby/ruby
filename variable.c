@@ -428,7 +428,8 @@ mark_global_entry(ID key, struct global_entry *entry)
 void
 rb_gc_mark_global_tbl(void)
 {
-    st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
+    if (rb_global_tbl)
+        st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
 }
 
 static ID

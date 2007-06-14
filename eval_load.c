@@ -574,10 +574,10 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
 void
 Init_load()
 {
-    rb_load_path = rb_ary_new();
     rb_define_readonly_variable("$:", &rb_load_path);
     rb_define_readonly_variable("$-I", &rb_load_path);
     rb_define_readonly_variable("$LOAD_PATH", &rb_load_path);
+    rb_load_path = rb_ary_new();
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);

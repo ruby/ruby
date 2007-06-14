@@ -22,6 +22,11 @@ typedef struct rb_context_struct {
     VALUE *vm_stack;
     VALUE *machine_stack;
     VALUE *machine_stack_src;
+#ifdef __ia64
+    VALUE *machine_register_stack;
+    VALUE *machine_register_stack_src;
+    int machine_register_stack_size;
+#endif
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
     int machine_stack_size;
@@ -59,6 +64,12 @@ cont_mark(void *ptr)
 	    rb_gc_mark_locations(cont->machine_stack,
 				 cont->machine_stack + cont->machine_stack_size);
 	}
+#ifdef __ia64
+	if (cont->machine_register_stack) {
+	    rb_gc_mark_locations(cont->machine_register_stack,
+				 cont->machine_register_stack + cont->machine_register_stack_size);
+	}
+#endif
     }
     MARK_REPORT_LEAVE("cont");
 }
@@ -71,6 +82,9 @@ cont_free(void *ptr)
 	rb_context_t *cont = ptr;
 	FREE_UNLESS_NULL(cont->saved_thread.stack);
 	FREE_UNLESS_NULL(cont->machine_stack);
+#ifdef __ia64
+	FREE_UNLESS_NULL(cont->machine_register_stack);
+#endif
 	FREE_UNLESS_NULL(cont->vm_stack);
 	ruby_xfree(ptr);
     }
@@ -83,6 +97,10 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     int size;
 
     rb_gc_set_stack_end(&th->machine_stack_end);
+#ifdef __ia64
+    th->machine_register_stack_end = rb_ia64_bsp();
+#endif
+
     if (th->machine_stack_start > th->machine_stack_end) {
 	size = cont->machine_stack_size = th->machine_stack_start - th->machine_stack_end;
 	cont->machine_stack_src = th->machine_stack_end;
@@ -100,6 +118,20 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     }
 
     MEMCPY(cont->machine_stack, cont->machine_stack_src, VALUE, size);
+
+#ifdef __ia64
+    rb_ia64_flushrs();
+    size = cont->machine_register_stack_size = th->machine_register_stack_end - th->machine_register_stack_start;
+    cont->machine_register_stack_src = th->machine_register_stack_start;
+    if (cont->machine_register_stack) {
+	REALLOC_N(cont->machine_register_stack, VALUE, size);
+    }
+    else {
+	cont->machine_register_stack = ALLOC_N(VALUE, size);
+    }
+
+    MEMCPY(cont->machine_register_stack, cont->machine_register_stack_src, VALUE, size);
+#endif
 }
 
 static rb_context_t *
@@ -132,9 +164,11 @@ cont_capture(volatile int *stat)
 {
     rb_context_t *cont;
     rb_thread_t *th;
+    volatile VALUE contval;
 
     th_stack_to_heap(GET_THREAD());
     cont = cont_new(rb_cCont);
+    contval = cont->self;
     th = &cont->saved_thread;
 
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
@@ -203,10 +237,49 @@ cont_restore_1(rb_context_t *cont)
 	       VALUE, cont->machine_stack_size);
     }
 
+#ifdef __ia64
+    if (cont->machine_register_stack_src) {
+	MEMCPY(cont->machine_register_stack_src, cont->machine_register_stack,
+	       VALUE, cont->machine_register_stack_size);
+    }
+#endif
+
     ruby_longjmp(cont->jmpbuf, 1);
 }
 
 NORETURN(NOINLINE(static void cont_restore_0(rb_context_t *, VALUE *)));
+
+#ifdef __ia64
+#define C(a) rse_##a##0, rse_##a##1, rse_##a##2, rse_##a##3, rse_##a##4
+#define E(a) rse_##a##0= rse_##a##1= rse_##a##2= rse_##a##3= rse_##a##4
+static volatile int C(a), C(b), C(c), C(d), C(e);
+static volatile int C(f), C(g), C(h), C(i), C(j);
+static volatile int C(k), C(l), C(m), C(n), C(o);
+static volatile int C(p), C(q), C(r), C(s), C(t);
+int rb_dummy_false = 0;
+NORETURN(NOINLINE(static void register_stack_extend(rb_context_t *, VALUE *)));
+static void
+register_stack_extend(rb_context_t *cont, VALUE *curr_bsp)
+{
+    if (rb_dummy_false) {
+        /* use registers as much as possible */
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+        E(a) = E(b) = E(c) = E(d) = E(e) =
+        E(f) = E(g) = E(h) = E(i) = E(j) =
+        E(k) = E(l) = E(m) = E(n) = E(o) =
+        E(p) = E(q) = E(r) = E(s) = E(t) = 0;
+    }
+    if (curr_bsp < cont->machine_register_stack_src+cont->machine_register_stack_size) {
+        register_stack_extend(cont, (VALUE*)rb_ia64_bsp());
+    }
+    cont_restore_1(cont);
+}
+#undef C
+#undef E
+#endif
 
 static void
 cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
@@ -238,7 +311,11 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	}
 #endif
     }
+#ifdef __ia64
+    register_stack_extend(cont, (VALUE*)rb_ia64_bsp());
+#else
     cont_restore_1(cont);
+#endif
 }
 
 /*

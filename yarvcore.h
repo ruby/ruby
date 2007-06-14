@@ -486,6 +486,10 @@ struct rb_thread_struct
     /* for GC */
     VALUE *machine_stack_start;
     VALUE *machine_stack_end;
+#ifdef __ia64
+    VALUE *machine_register_stack_start;
+    VALUE *machine_register_stack_end;
+#endif
     jmp_buf machine_regs;
     int mark_stack_len;
 

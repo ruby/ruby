@@ -276,18 +276,28 @@ thread_cleanup_func(void *th_ptr)
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
     th->machine_stack_start = th->machine_stack_end = 0;
+#ifdef __ia64
+    th->machine_register_stack_start = th->machine_register_stack_end = 0;
+#endif
     native_mutex_destroy(&th->interrupt_lock);
     native_thread_destroy(th);
 }
 
 static int
-thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
+thread_start_func_2(rb_thread_t *th, VALUE *stack_start
+#ifdef __ia64
+    , VALUE *register_stack_start
+#endif
+)
 {
     int state;
     VALUE args = th->first_args;
     rb_proc_t *proc;
     rb_thread_t *join_th;
     th->machine_stack_start = stack_start;
+#ifdef __ia64
+    th->machine_register_stack_start = register_stack_start;
+#endif
     th->thgroup = th->vm->thgroup_default;
     thread_debug("thread start: %p\n", th);
 
@@ -1822,6 +1832,9 @@ void
 rb_gc_save_machine_context(rb_thread_t *th)
 {
     rb_gc_set_stack_end(&th->machine_stack_end);
+#ifdef __ia64
+    th->machine_register_stack_end = rb_ia64_bsp();
+#endif
     setjmp(th->machine_regs);
 }
 

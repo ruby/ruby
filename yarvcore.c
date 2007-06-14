@@ -395,6 +395,9 @@ rb_thread_alloc(VALUE klass)
 
 VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
+#ifdef __ia64
+extern VALUE *rb_gc_register_stack_start;
+#endif
 
 static VALUE
 sdr(void)
@@ -542,12 +545,13 @@ Init_VM(void)
     {
 	rb_vm_t *vm = ruby_current_vm;
 	rb_thread_t *th = GET_THREAD();
+        volatile VALUE th_self;
 
 	/* create vm object */
 	vm->self = Data_Wrap_Struct(rb_cVM, vm_mark, vm_free, vm);
 
 	/* create main thread */
-	th->self = Data_Wrap_Struct(rb_cThread, thread_mark, thread_free, th);
+	th_self = th->self = Data_Wrap_Struct(rb_cThread, thread_mark, thread_free, th);
 
 	vm->main_thread = th;
 	vm->running_thread = th;
@@ -557,7 +561,7 @@ Init_VM(void)
 	rb_thread_set_current(th);
 
 	vm->living_threads = st_init_numtable();
-	st_insert(vm->living_threads, th->self, (st_data_t) th->thread_id);
+	st_insert(vm->living_threads, th_self, (st_data_t) th->thread_id);
     }
     yarv_init_redefined_flag();
 }
@@ -575,6 +579,9 @@ Init_yarv(void)
     th_init2(th);
     th->vm = vm;
     th->machine_stack_start = rb_gc_stack_start;
+#ifdef __ia64
+    th->machine_register_stack_start = rb_gc_register_stack_start;
+#endif
     rb_thread_set_current_raw(th);
 }
 

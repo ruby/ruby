@@ -1,3 +1,46 @@
+Thu Jun 14 17:16:05 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval_load.c (Init_load): delay allocating an array for rb_load_path
+	  to avoid GC problem in very early stage.
+	  (RUBY_GC_STRESS causes GC in such stage.)
+
+	* variable.c (rb_gc_mark_global_tbl): rb_global_tbl may be 0 in
+	  very early stage.
+
+	* thread.c (thread_cleanup_func) [IA64]: clear register stack position.
+	  (thread_start_func_2) [IA64]: record the beginning of register
+	  stack using extra argument.
+	  (rb_gc_save_machine_context) [IA64]: record the end of register
+	  stack.
+
+	* gc.c [IA64] (SET_STACK_END): record the end of register stack.
+	  (garbage_collect) [IA64]: use recorded register stack area for
+	  GC marking.
+	  (yarv_machine_stack_mark) [IA64]: GC mark from the register stack
+	  area.
+
+	* yarvcore.c [IA64] (rb_gc_register_stack_start): defined.
+	  (Init_VM): store th->self on stack to fix GC problem.
+	  (Init_yarv) [IA64]: initialize the beginning of register stack.
+
+	* yarvcore.h (struct rb_thread_struct) [IA64]: new members for
+	  register stack area.
+
+	* thread_pthread.ci (thread_start_func_1) [IA64]: call
+	  thread_start_func_2 with the end of register stack.
+
+	* cont.c (struct rb_context_struct) [IA64]: new members for register
+	  stack area.
+	  (cont_mark) [IA64]: GC mark from register stack area.
+	  (cont_free) [IA64]: free saved register stack.
+	  (cont_save_machine_stack) [IA64]: record the position and contents
+	  of the register stack.
+	  (cont_capture): store cont->self on stack to fix GC problem.
+	  (cont_restore_1) [IA64]: restore the register stack.
+	  [IA64] (register_stack_extend): new function.
+	  (cont_restore_0) [IA64]: call register_stack_extend instead of
+	  cont_restore_1.
+
 Thu Jun 14 17:09:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser): handle more
