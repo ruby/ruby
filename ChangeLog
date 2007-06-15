@@ -1,3 +1,7 @@
+Fri Jun 15 15:55:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def(setconstant, toregexp): fix to mark object correctly.
+
 Fri Jun 15 13:24:18 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* hash.c: exchange semantics of Hash#each and Hash#each_pair.

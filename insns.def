@@ -285,9 +285,11 @@ setconstant
     case T_CLASS:
     case T_MODULE:
 	break;
-    default:
+    default: {
+	volatile VALUE tmp = rb_obj_as_string(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 RSTRING_PTR(rb_obj_as_string(klass)));
+		 RSTRING_PTR(tmp));
+    }
     }
 
     rb_const_set(klass, id, val);
@@ -446,6 +448,7 @@ toregexp
 (VALUE str)
 (VALUE val)
 {
+    volatile VALUE tmp = str;
     val = rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str), flag);
 }
 
