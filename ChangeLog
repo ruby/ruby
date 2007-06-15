@@ -1,3 +1,8 @@
+Fri Jun 15 12:22:10 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (ruby_finalize_1): rb_thread_t#errinfo should be clear with
+	  Qnil.
+
 Fri Jun 15 12:20:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_cont_call): forbid cross fiber continuation call.

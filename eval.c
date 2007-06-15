@@ -137,7 +137,7 @@ static void
 ruby_finalize_1(void)
 {
     signal(SIGINT, SIG_DFL);
-    GET_THREAD()->errinfo = 0;
+    GET_THREAD()->errinfo = Qnil;
     rb_clear_trace_func();
     rb_gc_call_finalizer_at_exit();
 }
@@ -668,6 +668,7 @@ rb_longjmp(int tag, VALUE mesg)
 	th->errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }
+
     if (NIL_P(mesg))
       mesg = GET_THREAD()->errinfo;
     if (NIL_P(mesg)) {
@@ -709,10 +710,12 @@ rb_longjmp(int tag, VALUE mesg)
     }
 
     rb_trap_restore_mask();
+
     if (tag != TAG_FATAL) {
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self,
 			0 /* TODO: id */, 0 /* TODO: klass */);
     }
+
     thread_reset_raised(th);
     JUMP_TAG(tag);
 }
