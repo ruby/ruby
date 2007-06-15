@@ -1,3 +1,9 @@
+Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (realclean): separate local and ext.
+
+	* ext/extmk.rb: not remove unrelated directories.
+
 Fri Jun 15 20:50:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* keywords: enclose C code in declaration section by %{ and %}.
