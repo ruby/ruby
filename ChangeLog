@@ -1,3 +1,7 @@
+Fri Jun 15 12:38:29 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_iterator.rb: remove debug code (GC.stress=true).
+
 Fri Jun 15 12:25:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (th_yield_setup_args): |v| should work as |v,|.

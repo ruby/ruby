@@ -480,4 +480,3 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(["b"], ["a", "b", "c"].grep(IterString.new("b")) {|s| s})
   end
 end
-GC.stress=true
