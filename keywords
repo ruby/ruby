@@ -1,7 +1,10 @@
+%{
 struct kwtable {char *name; int id[2]; enum lex_state_e state;};
 const struct kwtable *rb_reserved_word _((const char *, unsigned int));
 #ifndef RIPPER
+%}
 
+struct kwtable;
 %%
 __LINE__, {keyword__LINE__, keyword__LINE__}, EXPR_END
 __FILE__, {keyword__FILE__, keyword__FILE__}, EXPR_END

@@ -1,3 +1,7 @@
+Fri Jun 15 20:50:02 2007  Tanaka Akira  <akr@fsij.org>
+
+	* keywords: enclose C code in declaration section by %{ and %}.
+
 Fri Jun 15 18:56:52 2007  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (trap_handler): trap("SIGSEGV", "DEFAULT") may cause wrong
