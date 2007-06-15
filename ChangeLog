@@ -1,3 +1,9 @@
+Fri Jun 15 12:20:11 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_cont_call): forbid cross fiber continuation call.
+
+	* test/ruby/test_fiber.rb: ditto.
+
 Fri Jun 15 12:14:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* sample/test.rb: fix to show line information whether test succeeds.

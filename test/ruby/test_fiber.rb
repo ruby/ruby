@@ -70,6 +70,12 @@ class TestFiber < Test::Unit::TestCase
       f.yield
       f.yield
     }
+    assert_raise(RuntimeError){
+      f = Fiber.new{
+        @c = callcc{|c| @c = c}
+      }.yield
+      @c.call # cross fiber callcc
+    }
   end
 
   def test_loop
@@ -101,30 +107,6 @@ class TestFiber < Test::Unit::TestCase
         throw :a
       end.yield
     }
-  end
-
-  def test_with_callcc
-    c = nil
-    f1 = f2 = nil
-    f1 = Fiber.new do
-      callcc do |c2|
-        c = c2
-        f2.yield
-      end
-      :ok
-    end
-    f2 = Fiber.new do
-      c.call
-    end
-    assert_equal(:ok, f1.yield)
-
-    assert_equal(:ok,
-      callcc {|c|
-        Fiber.new {
-          c.call :ok
-        }.yield
-      }
-    )
   end
 end
 

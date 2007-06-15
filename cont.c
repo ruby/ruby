@@ -439,6 +439,10 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	rb_context_t *fcont;
 	GetContPtr(cont->saved_thread.fiber, fcont);
 
+	if (th->fiber != cont->saved_thread.fiber) {
+	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
+	}
+	
 	if (!fcont->alive) {
 	    rb_raise(rb_eRuntimeError, "continuation called dead fiber");
 	}
@@ -610,7 +614,7 @@ rb_fiber_yield(int argc, VALUE *argv, VALUE fval)
 	cont_restore_0(cont, (VALUE *)&cont);
 	rb_bug("rb_fiber_yield: unreachable");
     }
-
+    
     return value;
 }
 
