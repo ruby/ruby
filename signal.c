@@ -634,10 +634,15 @@ struct trap_arg {
     VALUE cmd;
 };
 
+static RETSIGTYPE
+wrong_trap(int sig)
+{
+}
+
 static sighandler_t
 trap_handler(VALUE *cmd)
 {
-    sighandler_t func = 0;
+    sighandler_t func = wrong_trap;
     VALUE command;
 
     if (NIL_P(*cmd)) {
@@ -674,7 +679,7 @@ trap_handler(VALUE *cmd)
 		}
 		break;
 	    }
-	    if (!func) {
+	    if (func == wrong_trap) {
 		rb_raise(rb_eArgError, "wrong trap - %s", RSTRING_PTR(command));
 	    }
 	}
@@ -1047,14 +1052,10 @@ Init_signal(void)
 #endif
 
 #ifdef SIGBUS
-# ifndef RUBY_GC_STRESS
     install_sighandler(SIGBUS, sigbus);
-# endif
 #endif
 #ifdef SIGSEGV
-# ifndef RUBY_GC_STRESS
     install_sighandler(SIGSEGV, sigsegv);
-# endif
 #endif
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sigpipe);

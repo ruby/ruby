@@ -1,6 +1,11 @@
+Fri Jun 15 18:56:52 2007  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (trap_handler): trap("SIGSEGV", "DEFAULT") may cause wrong
+	  trap error because SIG_DFL may be zero.
+
 Fri Jun 15 15:55:55 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* insns.def(setconstant, toregexp): fix to mark object correctly.
+	* insns.def (setconstant, toregexp): fix to mark object correctly.
 
 Fri Jun 15 13:24:18 2007  Koichi Sasada  <ko1@atdot.net>
 
