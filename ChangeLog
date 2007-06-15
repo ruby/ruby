@@ -1,3 +1,7 @@
+Fri Jun 15 12:14:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* sample/test.rb: fix to show line information whether test succeeds.
+
 Thu Jun 14 17:16:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval_load.c (Init_load): delay allocating an array for rb_load_path

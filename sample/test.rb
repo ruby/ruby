@@ -14,10 +14,10 @@ end
 def test_ok(cond,n=1)
   $testnum+=1
   $ntest+=1
+  where = (st = caller(n)) ? st[0] : "caller error! (n=#{n}, trace=#{caller(0).join(', ')}"
   if cond
-    printf "ok %d\n", $testnum
+    printf "ok %d (%s)\n", $testnum, where
   else
-    where = (st = caller(n)) ? st[0] : "caller error! (n=#{n}, trace=#{caller(0).join(', ')}"
     printf "not ok %s %d -- %s\n", $what, $testnum, where
     $failed+=1 
   end
