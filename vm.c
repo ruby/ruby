@@ -718,17 +718,6 @@ th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
     }
 
     if (iseq->arg_rest == -1) {
-	if (lambda == 0 && iseq->argc == 1) {
-	    if (argc > 1) {
-		/* yield 1, 2, 3 for iter{|a| ...}
-		 *
-		 * ruby 1.8 warns on this timing.
-		 * rb_warn("multiple values for a block parameter (%d for %d)", argc, iseq->argc);
-		 */
-		argv[0] = rb_ary_new4(argc, argv);
-		th->mark_stack_len = argc = 1;
-	    }
-	}
 
 	if (iseq->argc < argc) {
 	    if (lambda) {

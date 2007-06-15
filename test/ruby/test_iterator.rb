@@ -365,7 +365,7 @@ class TestIterator < Test::Unit::TestCase
 
   def test_assoc_yield
     [{:key=>:value}, H.new].each {|h|
-      h.each{|a| assert_equal([:key, :value], a)}
+      h.each{|a| assert_equal(:key, a)} # changed at 1.9
       h.each{|*a| assert_equal([:key, :value], a)}
       h.each{|k,v| assert_equal([:key, :value], [k,v])}
     }
@@ -480,3 +480,4 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(["b"], ["a", "b", "c"].grep(IterString.new("b")) {|s| s})
   end
 end
+GC.stress=true

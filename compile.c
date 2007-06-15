@@ -3232,7 +3232,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_DASGN_CURR:{
 	int idx, lv, ls;
 	COMPILE(ret, "dvalue", node->nd_value);
-	debugp_param("dassn id", rb_str_new2(rb_id2name(node->nd_vid)));
+	debugp_param("dassn id", rb_str_new2(rb_id2name(node->nd_vid) ? rb_id2name(node->nd_vid) : "*"));
 
 	if (!poped) {
 	    ADD_INSN(ret, nd_line(node), dup);

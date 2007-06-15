@@ -2691,12 +2691,46 @@ primary		: literal
 		  keyword_end
 		    {
 		    /*%%%*/
+			/*
+			 *  for a, b, c in e
+			 *  #=>
+			 *  e.each{|*x| a, b, c = x
+			 *
+			 *  for a in e
+			 *  #=>
+			 *  e.each{|x| a, = x}
+			 */
 			ID id = internal_id();
 			ID *tbl = ALLOC_N(ID, 2);
-			NODE *args =new_args(NEW_NODE(NODE_ARGS_AUX, 0, 1 /* nd_plen */,
-						      node_assign($2, NEW_DVAR(id))),
-					     0, 0, 0, 0);
-			NODE *scope = NEW_NODE(NODE_SCOPE, tbl, $8, args);
+			NODE *m = NEW_ARGS_AUX(0, 0);
+			NODE *args, *scope;
+
+			if (nd_type($2) == NODE_MASGN) {
+			    /* if args.length == 1 && args[0].kind_of?(Array)
+			     *   args = args[0]
+			     * end
+			     */
+			    NODE *one = NEW_LIST(NEW_LIT(INT2FIX(1)));
+			    NODE *zero = NEW_LIST(NEW_LIT(INT2FIX(0)));
+			    m->nd_next = block_append(
+				NEW_IF(cond(
+				    NEW_NODE(NODE_AND,
+					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("length"), 0),
+						      rb_intern("=="), one),
+					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero),
+						      rb_intern("kind_of?"), NEW_LIST(NEW_LIT(rb_cArray))),
+					     0)),
+					NEW_DASGN_CURR(id,
+						       NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero)),
+					0),
+				node_assign($2, NEW_DVAR(id)));
+			}
+			else {
+			    m->nd_next = node_assign(NEW_MASGN(NEW_LIST($2), 0), NEW_DVAR(id));
+			}
+
+			args = new_args(m, 0, id, 0, 0);
+			scope = NEW_NODE(NODE_SCOPE, tbl, $8, args);
 			tbl[0] = 1; tbl[1] = id;
 			$$ = NEW_FOR(0, $5, scope);
 			fixpos($$, $2);

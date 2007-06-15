@@ -621,8 +621,8 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal [1, 2, 3], [1, *a]
 
     a = nil
-    assert_equal [nil], [*a]       # FIXME: []? [nil]?  error?
-    assert_equal [1], [1, *a]   # FIXME: [1, nil]?  error?
+    assert_equal [], [*a]
+    assert_equal [1], [1, *a]
   end
 
 end
