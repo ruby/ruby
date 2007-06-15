@@ -1,3 +1,10 @@
+Fri Jun 15 22:33:55 2007  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (default_handler): func argument removed.
+	  (trap_handler): support SYSTEM_DEFAULT.  call default_handler
+	  internally.
+	  (sig_trap): don't call default_handler.
+
 Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (realclean): separate local and ext.
@@ -6,7 +13,8 @@ Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jun 15 20:50:02 2007  Tanaka Akira  <akr@fsij.org>
 
-	* keywords: enclose C code in declaration section by %{ and %}.
+	* keywords: enclose C code in declaration section by %{ and %} to
+	  avoid extra semicolon after #ifdef RIPPER.
 
 Fri Jun 15 18:56:52 2007  Tanaka Akira  <akr@fsij.org>
 

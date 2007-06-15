@@ -634,13 +634,62 @@ struct trap_arg {
     VALUE cmd;
 };
 
+static sighandler_t
+default_handler(int sig)
+{
+    sighandler_t func;
+    switch (sig) {
+      case SIGINT:
+#ifdef SIGHUP
+      case SIGHUP:
+#endif
+#ifdef SIGQUIT
+      case SIGQUIT:
+#endif
+#ifdef SIGTERM
+      case SIGTERM:
+#endif
+#ifdef SIGALRM
+      case SIGALRM:
+#endif
+#ifdef SIGUSR1
+      case SIGUSR1:
+#endif
+#ifdef SIGUSR2
+      case SIGUSR2:
+#endif
+        func = sighandler;
+        break;
+#ifdef SIGBUS
+      case SIGBUS:
+        func = sigbus;
+        break;
+#endif
+#ifdef SIGSEGV
+      case SIGSEGV:
+        func = sigsegv;
+        break;
+#endif
+#ifdef SIGPIPE
+      case SIGPIPE:
+        func = sigpipe;
+        break;
+#endif
+      default:
+        func = SIG_DFL;
+        break;
+    }
+
+    return func;
+}
+
 static RETSIGTYPE
 wrong_trap(int sig)
 {
 }
 
 static sighandler_t
-trap_handler(VALUE *cmd)
+trap_handler(VALUE *cmd, int sig)
 {
     sighandler_t func = wrong_trap;
     VALUE command;
@@ -654,22 +703,32 @@ trap_handler(VALUE *cmd)
 	    SafeStringValue(command);	/* taint check */
 	    switch (RSTRING_LEN(command)) {
 	      case 0:
-		func = SIG_IGN;
+                goto sig_ign;
 		break;
+              case 14:
+		if (strncmp(RSTRING_PTR(command), "SYSTEM_DEFAULT", 14) == 0) {
+                    func = SIG_DFL;
+                    *cmd = 0;
+		}
+                break;
 	      case 7:
 		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
-		    func = SIG_IGN;
+sig_ign:
+                    func = SIG_IGN;
+                    *cmd = 0;
 		}
 		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
-		    func = SIG_DFL;
+sig_dfl:
+                    func = default_handler(sig);
+                    *cmd = 0;
 		}
 		else if (strncmp(RSTRING_PTR(command), "DEFAULT", 7) == 0) {
-		    func = SIG_DFL;
+                    goto sig_dfl;
 		}
 		break;
 	      case 6:
 		if (strncmp(RSTRING_PTR(command), "IGNORE", 6) == 0) {
-		    func = SIG_IGN;
+                    goto sig_ign;
 		}
 		break;
 	      case 4:
@@ -688,9 +747,6 @@ trap_handler(VALUE *cmd)
 	    GetProcPtr(*cmd, proc);
 	    func = sighandler;
 	}
-    }
-    if (func == SIG_IGN || func == SIG_DFL) {
-	*cmd = 0;
     }
 
     return func;
@@ -732,53 +788,6 @@ trap_signm(VALUE vsig)
     }
 #endif
     return sig;
-}
-
-static sighandler_t
-default_handler(sighandler_t func, int sig)
-{
-    if (func == SIG_DFL) {
-	switch (sig) {
-	  case SIGINT:
-#ifdef SIGHUP
-	  case SIGHUP:
-#endif
-#ifdef SIGQUIT
-	  case SIGQUIT:
-#endif
-#ifdef SIGTERM
-	  case SIGTERM:
-#endif
-#ifdef SIGALRM
-	  case SIGALRM:
-#endif
-#ifdef SIGUSR1
-	  case SIGUSR1:
-#endif
-#ifdef SIGUSR2
-	  case SIGUSR2:
-#endif
-	    func = sighandler;
-	    break;
-#ifdef SIGBUS
-	  case SIGBUS:
-	    func = sigbus;
-	    break;
-#endif
-#ifdef SIGSEGV
-	  case SIGSEGV:
-	    func = sigsegv;
-	    break;
-#endif
-#ifdef SIGPIPE
-	  case SIGPIPE:
-	    func = sigpipe;
-	    break;
-#endif
-	}
-    }
-
-    return func;
 }
 
 static VALUE
@@ -851,10 +860,12 @@ rb_trap_restore_mask(void)
  * signal name. The command or block specifies code to be run when the
  * signal is raised. If the command is the string ``IGNORE'' or
  * ``SIG_IGN'', the signal will be ignored. If the command is
- * ``DEFAULT'' or ``SIG_DFL'', the operating system's default handler
+ * ``DEFAULT'' or ``SIG_DFL'', the Ruby's default handler
  * will be invoked. If the command is ``EXIT'', the script will be
  * terminated by the signal. Otherwise, the given command or block
  * will be run.
+ * If the command is ``SYSTEM_DEFAULT'', the operating system's default
+ * handler will be invoked.
  * The special signal name ``EXIT'' or signal number zero will be
  * invoked just prior to program termination.
  * trap returns the previous handler for the given signal.
@@ -885,7 +896,7 @@ sig_trap(int argc, VALUE *argv)
     }
     else if (argc == 2) {
 	arg.cmd = argv[1];
-	arg.func = default_handler(trap_handler(&arg.cmd), arg.sig);
+	arg.func = trap_handler(&arg.cmd, arg.sig);
     }
 
     if (OBJ_TAINTED(arg.cmd)) {
