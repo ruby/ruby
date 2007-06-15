@@ -99,6 +99,8 @@ Thu Jun 14 17:16:05 2007  Tanaka Akira  <akr@fsij.org>
 	  (cont_restore_0) [IA64]: call register_stack_extend instead of
 	  cont_restore_1.
 
+	[ruby-dev:30982]
+
 Thu Jun 14 17:09:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser): handle more
@@ -196,11 +198,12 @@ Sun Jun 10 12:56:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Jun 10 10:42:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: renamed from lib/secrand.rb.
-	  suggested by NaHi.
+	  suggested by NaHi.  [ruby-dev:30934]
 
 Sat Jun  9 06:40:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/secrand.rb: rename SecRand() to SecRand.random_number.
+	  suggested by NaHi.  [ruby-dev:30934]
 
 Fri Jun  8 16:34:20 2007  Tanaka Akira  <akr@fsij.org>
 
@@ -233,7 +236,8 @@ Fri Jun  8 11:54:18 2007  Tanaka Akira  <akr@fsij.org>
 	* lex.c.blt: moved from lex.c.
 
 	* Makefile.in: use lex.c.blt if gperf is not available.
-	  [ruby-list:8212], [ruby-list:8214], [ruby-dev:28102]
+	  [ruby-list:8212], [ruby-list:8214], [ruby-list:24667],
+	  [ruby-talk:120857], [ruby-dev:28102]
 
 Thu Jun  7 21:38:39 2007  Koichi Sasada  <ko1@atdot.net>
 
