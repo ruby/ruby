@@ -294,9 +294,9 @@ parse_args()
 
 if target = ARGV.shift and /^[a-z-]+$/ =~ target
   $mflags.push(target)
-  target = target.sub(/^(dist|real)(?=(?:clean)?$)/, '')
   case target
-  when /clean/
+  when /^(dist|real)?(clean)$/
+    target = $2
     $ignore ||= true
     $clean = $1 ? $1[0] : true
   when /^install\b/
@@ -421,7 +421,15 @@ if $ignore
   Dir.chdir ".."
   if $clean
     Dir.rmdir('ext') rescue nil
-    FileUtils.rm_rf(extout) if $extout
+    if $extout
+      FileUtils.rm_rf([extout+"/common", extout+"/include/ruby"])
+      FileUtils.rm_rf(extout+"/"+CONFIG["arch"])
+      if $clean != true
+	FileUtils.rm_rf(extout+"/include/"+CONFIG["arch"])
+	Dir.rmdir(extout+"/include") rescue nil
+	Dir.rmdir(extout) rescue nil
+      end
+    end
   end
   exit
 end

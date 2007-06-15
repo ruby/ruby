@@ -1,3 +1,9 @@
+Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (realclean): separate local and ext.
+
+	* ext/extmk.rb: not remove unrelated directories.
+
 Fri Jun 15 17:01:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/lib/dl/win32.rb: seems that dl doesn't accept void argument.

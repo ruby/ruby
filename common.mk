@@ -279,8 +279,11 @@ distclean-local:: clean-local
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
 
-realclean:: distclean
+realclean:: realclean-ext realclean-local
+realclean-local:: distclean-local
 	@$(RM) parse.c lex.c
+realclean-ext::
+	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) realclean
 
 check: test test-all
 
