@@ -1,3 +1,12 @@
+Fri Jun 15 13:24:18 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* hash.c: exchange semantics of Hash#each and Hash#each_pair.
+	  pointed out by [ruby-dev:30997].
+
+	* test/ruby/test_iterator.rb: ditto.
+
+	* test/ruby/test_yield.rb: ditto.
+
 Fri Jun 15 12:38:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_iterator.rb: remove debug code (GC.stress=true).

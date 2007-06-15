@@ -17,7 +17,7 @@ class TestRubyYield < Test::Unit::TestCase
       assert_equal 1, v
     end
     h.each do |k|
-      assert_equal :a, k # changed at 1.9
+      assert_equal [:a, 1], k
     end
   end
 

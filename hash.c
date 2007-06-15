@@ -994,7 +994,7 @@ static int
 each_pair_i(VALUE key, VALUE value)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield(rb_assoc_new(key, value));
+    rb_yield_values(2, key, value);
     return ST_CONTINUE;
 }
 
@@ -1027,7 +1027,7 @@ static int
 each_i(VALUE key, VALUE value)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield_values(2, key, value);
+    rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
