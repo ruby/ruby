@@ -102,7 +102,7 @@ def install_dirs(target_prefix = nil)
       ['ARCHHDRDIR',    '$(rubyhdrdir)/$(arch)/ruby$(target_prefix)'],
     ]
   else
-n    dirs = [
+    dirs = [
       ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
       ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
