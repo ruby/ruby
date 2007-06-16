@@ -1376,6 +1376,8 @@ garbage_collect(void)
 
     init_mark_stack();
 
+    gc_mark((VALUE)ruby_current_node, 0);
+
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
     if (finalizer_table) {

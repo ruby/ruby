@@ -1,3 +1,8 @@
+Sat Jun 16 22:24:17 2007  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (garbage_collect): re-introduce ruby_current_node marking code.
+	  [ruby-dev:31005]
+
 Sat Jun 16 21:37:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (gc_sweep): re-introduce heap extension strategy change.
