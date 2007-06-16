@@ -1109,6 +1109,14 @@ gc_sweep(void)
     int freed = 0;
     int i;
     unsigned long live = 0;
+    unsigned long free_min = 0;
+
+    for (i = 0; i < heaps_used; i++) {
+        free_min += heaps[i].limit;
+    }
+    free_min = free_min * 0.2;
+    if (free_min < FREE_MIN)
+        free_min = FREE_MIN;
 
     mark_source_filename(ruby_sourcefile);
     if (source_filenames) {
@@ -1151,7 +1159,7 @@ gc_sweep(void)
 	    }
 	    p++;
 	}
-	if (n == heaps[i].limit && freed > FREE_MIN) {
+	if (n == heaps[i].limit && freed > free_min) {
 	    RVALUE *pp;
 
 	    heaps[i].limit = 0;
@@ -1169,7 +1177,7 @@ gc_sweep(void)
 	if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
     }
     malloc_increase = 0;
-    if (freed < FREE_MIN) {
+    if (freed < free_min) {
 	add_heap();
     }
     during_gc = 0;
