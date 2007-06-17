@@ -529,7 +529,9 @@ sigsegv(int sig)
 	exit(1);
     }
     else {
+	extern int gc_stress;
 	segv_received = 1;
+	gc_stress = 0;
 	rb_bug("Segmentation fault");
     }
 }

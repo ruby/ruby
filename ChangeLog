@@ -1,3 +1,7 @@
+Mon Jun 18 02:43:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c (sigsegv): clear gc_stress flag on SEGV.
+
 Mon Jun 18 01:14:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_path2class): get rid of dangling pointer caused by
