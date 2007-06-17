@@ -1,3 +1,8 @@
+Mon Jun 18 00:58:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_path2class): get rid of dangling pointer caused by
+	  optimized out value.
+
 Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (realclean): separate local and ext.
