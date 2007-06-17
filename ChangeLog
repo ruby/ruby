@@ -1,3 +1,8 @@
+Sun Jun 17 11:11:07 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_method_missing): avoid an warning "too many arguments
+	  for format string" on "./ruby -ve 'def m() super end; m'".
+
 Sat Jun 16 22:24:17 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (garbage_collect): re-introduce ruby_current_node marking code.

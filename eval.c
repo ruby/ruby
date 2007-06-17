@@ -1303,7 +1303,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 	exc = rb_eNameError;
     }
     else if (last_call_status & NOEX_SUPER) {
-	format = "super: no superclass method `%s'";
+	format = "super: no superclass method `%s' for %s";
     }
     if (!format) {
 	format = "undefined method `%s' for %s";
