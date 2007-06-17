@@ -1,6 +1,6 @@
 Sun Jun 17 11:11:07 2007  Tanaka Akira  <akr@fsij.org>
 
-	* eval.c (rb_method_missing): avoid an warning "too many arguments
+	* eval.c (rb_method_missing): avoid a warning "too many arguments
 	  for format string" on "./ruby -ve 'def m() super end; m'".
 
 Sat Jun 16 22:24:17 2007  Tanaka Akira  <akr@fsij.org>
@@ -143,7 +143,7 @@ Thu Jun 14 17:09:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Jun 14 14:40:42 2007  Tanaka Akira  <akr@fsij.org>
 
-	* lib/securerandom.rb: documente updated.
+	* lib/securerandom.rb: document updated.
 	  suggested by NaHi.  [ruby-dev:30966]
 
 Wed Jun 13 22:42:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -181,7 +181,7 @@ Sun Jun 10 18:32:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jun 10 17:49:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* instruby.rb (install_recursive): should check parent directoris of
+	* instruby.rb (install_recursive): should check parent directories of
 	  the destination.  [ruby-dev:30947]
 
 Sun Jun 10 16:59:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -349,7 +349,7 @@ Wed Jun  6 10:57:45 2007  Koichi Sasada  <ko1@atdot.net>
 Wed Jun  6 10:55:42 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_cont_call): forbid calling dead fiber with
-	  Cotinuation#call.
+	  Continuation#call.
 
 Wed Jun  6 10:50:01 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -367,7 +367,7 @@ Wed Jun  6 02:50:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 Wed Jun  6 02:40:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* insnhelper.h, insns.def (DEC_SP): shoudn't use unary minus operator
+	* insnhelper.h, insns.def (DEC_SP): shouldn't use unary minus operator
 	  in pointer operation. some compilers (such as VC++8 x64) cannot deal
 	  it with expected way.
 
@@ -460,7 +460,7 @@ Fri Jun  1 13:02:35 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* insnhelper.h (INC_SP): shouldn't cast ``x'' to unsigned type because
 	  it might be a negative value.
 
-	* insnhelper.h, insns.def: shoudn't use unary minus operator in index
+	* insnhelper.h, insns.def: shouldn't use unary minus operator in index
 	  operator. some compilers (such as VC++8 x64) cannot deal it with
 	  expected way.
 
@@ -526,7 +526,7 @@ Wed May 30 02:14:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed May 30 00:50:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (rb_source_filename, obj_free): supress warnings.
+	* gc.c (rb_source_filename, obj_free): suppress warnings.
 
 	* gc.c (garbage_collect, yarv_machine_stack_mark): fixed typo.
 	  http://bugs.debian.org/426267
@@ -587,7 +587,7 @@ Fri May 25 16:04:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri May 25 11:09:47 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regint.h (include): on some platform, defines.h redefines
-	  SIZE_OF_LONG_LONG so souldn't re-include config.h after included
+	  SIZE_OF_LONG_LONG so shouldn't re-include config.h after included
 	  defines.h.
 
 	* regint.h (vsnprintf): ruby on windows already have vsnprintf macro.
@@ -824,7 +824,7 @@ Sun May  6 17:54:36 2007  Minero Aoki  <aamine@loveruby.net>
 Sat May  5 16:26:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/date/format.rb (Format::Bag#method_missing): get rid of
-	  modifying orginal argument.  [ruby-core:11090]
+	  modifying original argument.  [ruby-core:11090]
 
 Thu May  3 22:20:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -934,7 +934,7 @@ Thu Apr 26 17:18:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: fixes for ripper.
 
-	* parse.y (primary): reduced duplcated code.
+	* parse.y (primary): reduced duplicated code.
 
 	* parse.y (f_arg_item): should not override by meaningless value.
 
@@ -1026,7 +1026,7 @@ Fri Apr 20 12:27:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Apr 20 12:21:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (ruby_cleanup): fixed access to out of bound, and inversed
+	* eval.c (ruby_cleanup): fixed access to out of bound, and inverted
 	  the order of errinfos.
 
 Fri Apr 20 10:33:23 2007  Koichi Sasada  <ko1@atdot.net>
@@ -1255,7 +1255,7 @@ Thu Apr  5 14:58:49 2007  Technorama Ltd. <oss-ruby@technorama.net>
 	  Remove redundant module namespace.
 
 	* ext/openssl/lib/openssl/{cipher,digest}.rb
-	  Add backwards compatibile classes for rearranged classes.
+	  Add backwards compatible classes for rearranged classes.
 
 	* ext/openssl/ossl_{pkcs7,pkcs12}.c: Add documentation.
 
@@ -1549,7 +1549,7 @@ Mon Mar 12 10:53:28 2007  Akinori MUSHA  <knu@iDaemons.org>
 Sun Mar 11 18:42:01 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-mode.el (ruby-block-end-re): Support for the
-	  exprimental ';;' terminator had been dropped.
+	  experimental ';;' terminator had been dropped.
 
 Sun Mar 11 05:45:46 2007  Akinori MUSHA  <knu@iDaemons.org>
 
