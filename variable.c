@@ -321,8 +321,9 @@ struct global_entry*
 rb_global_entry(ID id)
 {
     struct global_entry *entry;
+    st_data_t data;
 
-    if (!st_lookup(rb_global_tbl, id, (st_data_t *)&entry)) {
+    if (!st_lookup(rb_global_tbl, id, &data)) {
 	struct global_variable *var;
 	entry = ALLOC(struct global_entry);
 	var = ALLOC(struct global_variable);
@@ -337,6 +338,9 @@ rb_global_entry(ID id)
 	var->block_trace = 0;
 	var->trace = 0;
 	st_add_direct(rb_global_tbl, id, (st_data_t)entry);
+    }
+    else {
+	entry = (struct global_entry *)data;
     }
     return entry;
 }
@@ -580,14 +584,15 @@ rb_f_untrace_var(int argc, VALUE *argv)
     ID id;
     struct global_entry *entry;
     struct trace_var *trace;
+    st_data_t data;
 
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_to_id(var);
-    if (!st_lookup(rb_global_tbl, id, (st_data_t *)&entry)) {
+    if (!st_lookup(rb_global_tbl, id, &data)) {
 	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
 
-    trace = entry->var->trace;
+    trace = (entry = (struct global_entry *)data)->var->trace;
     if (NIL_P(cmd)) {
 	VALUE ary = rb_ary_new();
 
@@ -727,17 +732,18 @@ void
 rb_alias_variable(ID name1, ID name2)
 {
     struct global_entry *entry1, *entry2;
+    st_data_t data1;
 
     if (rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't alias global variable");
 
     entry2 = rb_global_entry(name2);
-    if (!st_lookup(rb_global_tbl, name1, (st_data_t *)&entry1)) {
+    if (!st_lookup(rb_global_tbl, name1, &data1)) {
 	entry1 = ALLOC(struct global_entry);
 	entry1->id = name1;
 	st_add_direct(rb_global_tbl, name1, (st_data_t)entry1);
     }
-    else if (entry1->var != entry2->var) {
+    else if ((entry1 = (struct global_entry *)data1)->var != entry2->var) {
 	struct global_variable *var = entry1->var;
 	if (var->block_trace) {
 	    rb_raise(rb_eRuntimeError, "can't alias in tracer");
@@ -766,26 +772,26 @@ static st_table *generic_iv_tbl;
 st_table*
 rb_generic_ivar_table(VALUE obj)
 {
-    st_table *tbl;
+    st_data_t tbl;
 
     if (!FL_TEST(obj, FL_EXIVAR)) return 0;
     if (!generic_iv_tbl) return 0;
-    if (!st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) return 0;
-    return tbl;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return 0;
+    return (st_table *)tbl;
 }
 
 static VALUE
 generic_ivar_get(VALUE obj, ID id, int warn)
 {
-    st_table *tbl;
+    st_data_t tbl;
     VALUE val;
 
     if (generic_iv_tbl) {
-      if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-	if (st_lookup(tbl, id, &val)) {
-	  return val;
+	if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	    if (st_lookup((st_table *)tbl, id, &val)) {
+		return val;
+	    }
 	}
-      }
     }
     if (warn) {
 	rb_warning("instance variable %s not initialized", rb_id2name(id));
@@ -797,6 +803,7 @@ static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     st_table *tbl;
+    st_data_t data;
 
     if (rb_special_const_p(obj)) {
 	special_generic_ivar = 1;
@@ -805,24 +812,26 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 	generic_iv_tbl = st_init_numtable();
     }
 
-    if (!st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
+    if (!st_lookup(generic_iv_tbl, obj, &data)) {
 	FL_SET(obj, FL_EXIVAR);
 	tbl = st_init_numtable();
 	st_add_direct(generic_iv_tbl, obj, (st_data_t)tbl);
 	st_add_direct(tbl, id, val);
 	return;
     }
-    st_insert(tbl, id, val);
+    st_insert((st_table *)data, id, val);
 }
 
 static VALUE
 generic_ivar_defined(VALUE obj, ID id)
 {
     st_table *tbl;
+    st_data_t data;
     VALUE val;
 
     if (!generic_iv_tbl) return Qfalse;
-    if (!st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) return Qfalse;
+    if (!st_lookup(generic_iv_tbl, obj, &data)) return Qfalse;
+    tbl = (st_table *)data;
     if (st_lookup(tbl, id, &val)) {
 	return Qtrue;
     }
@@ -833,14 +842,16 @@ static int
 generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 {
     st_table *tbl;
+    st_data_t data;
     int status;
 
     if (!generic_iv_tbl) return 0;
-    if (!st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) return 0;
+    if (!st_lookup(generic_iv_tbl, obj, &data)) return 0;
+    tbl = (st_table *)data;
     status = st_delete(tbl, &id, valp);
     if (tbl->num_entries == 0) {
-	st_delete(generic_iv_tbl, &obj, (st_data_t *)&tbl);
-	st_free_table(tbl);
+	st_delete(generic_iv_tbl, &obj, &data);
+	st_free_table((st_table *)data);
     }
     return status;
 }
@@ -848,11 +859,11 @@ generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    st_table *tbl;
+    st_data_t tbl;
 
     if (!generic_iv_tbl) return;
-    if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-	rb_mark_tbl(tbl);
+    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	rb_mark_tbl((st_table *)tbl);
     }
 }
 
@@ -883,25 +894,25 @@ rb_mark_generic_ivar_tbl(void)
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    st_table *tbl;
+    st_data_t tbl;
 
     if (!generic_iv_tbl) return;
-    if (st_delete(generic_iv_tbl, &obj, (st_data_t *)&tbl))
-	st_free_table(tbl);
+    if (st_delete(generic_iv_tbl, &obj, &tbl))
+	st_free_table((st_table *)tbl);
 }
 
 void
 rb_copy_generic_ivar(VALUE clone, VALUE obj)
 {
-    st_table *tbl;
+    st_data_t data;
 
     if (!generic_iv_tbl) return;
     if (!FL_TEST(obj, FL_EXIVAR)) return;
-    if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-	st_table *old;
+    if (st_lookup(generic_iv_tbl, obj, &data)) {
+	st_table *tbl = (st_table *)data;
 
-	if (st_lookup(generic_iv_tbl, clone, (st_data_t *)&old)) {
-	    st_free_table(old);
+	if (st_lookup(generic_iv_tbl, clone, &data)) {
+	    st_free_table((st_table *)data);
 	    st_insert(generic_iv_tbl, clone, (st_data_t)st_copy(tbl));
 	}
 	else {
@@ -1027,10 +1038,10 @@ rb_obj_instance_variables(VALUE obj)
       default:
 	if (!generic_iv_tbl) break;
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
-	    st_table *tbl;
+	    st_data_t tbl;
 
-	    if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-		st_foreach_safe(tbl, ivar_i, ary);
+	    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+		st_foreach_safe((st_table *)tbl, ivar_i, ary);
 	    }
 	}
 	break;
