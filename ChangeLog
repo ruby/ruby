@@ -1,3 +1,7 @@
+Mon Jun 18 02:48:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c (vm_stack_dump_raw): hide VM stack trace.
+
 Mon Jun 18 02:43:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c (sigsegv): clear gc_stress flag on SEGV.

@@ -146,6 +146,7 @@ vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *dfp = cfp->dfp;
     VALUE *p, *st, *t;
 
+#if 0
     fprintf(stderr, "-- stack frame ------------\n");
     for (p = st = th->stack; p < sp; p++) {
 	fprintf(stderr, "%04ld (%p): %08lx", p - st, p, *p);
@@ -164,6 +165,7 @@ vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	fprintf(stderr, "\n");
     }
+#endif
     fprintf(stderr, "-- control frame ----------\n");
     while ((void *)cfp < (void *)(th->stack + th->stack_size)) {
 	control_frame_dump(th, cfp);
