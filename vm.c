@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
+// #define MARK_FREE_DEBUG 1
 #include "gc.h"
 
 #include "yarvcore.h"
@@ -211,8 +212,10 @@ env_mark(void *ptr)
 	    GC_INFO("env->env\n");
 	    rb_gc_mark_locations(env->env, env->env + env->env_size);
 	}
+
 	GC_INFO("env->prev_envval\n");
 	MARK_UNLESS_NULL(env->prev_envval);
+	MARK_UNLESS_NULL(env->block.proc);
 
 	if (env->block.iseq) {
 	    if (BUILTIN_TYPE(env->block.iseq) == T_NODE) {
@@ -438,11 +441,9 @@ th_make_proc_from_block(rb_thread_t *th, rb_control_frame_t *cfp,
 
     bcfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
     bdfp = bcfp->dfp;
-    procval = th_make_proc(th, bcfp, block);
+    block->proc = procval = th_make_proc(th, bcfp, block);
     return procval;
 }
-
-struct RObject *rb;
 
 VALUE
 th_make_proc(rb_thread_t *th,
@@ -455,9 +456,9 @@ th_make_proc(rb_thread_t *th,
 	if (!RUBY_VM_CLASS_SPECIAL_P(cfp->lfp[0])) {
 	    rb_proc_t *p;
 
-	    blockprocval =
-	      th_make_proc_from_block(th, cfp,
-				      (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
+	    blockprocval = th_make_proc_from_block(
+		th, cfp, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
+
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
 	}
@@ -487,6 +488,7 @@ th_make_proc(rb_thread_t *th,
 	    rb_bug("invalid ptr: block->lfp");
 	}
     }
+
     return procval;
 }
 

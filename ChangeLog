@@ -1,3 +1,9 @@
+Mon Jun 18 02:49:16 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (env_mark): fix to mark block.proc.
+
+	* vm.c (th_make_proc_from_block): set created proc to block->proc.
+
 Mon Jun 18 02:48:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c (vm_stack_dump_raw): hide VM stack trace.
