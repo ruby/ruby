@@ -235,11 +235,8 @@ rb_path2class(const char *path)
     }
     pbeg = p = path;
     while (*p) {
-	VALUE str;
-
 	while (*p && *p != ':') p++;
-	str = rb_str_new(pbeg, p-pbeg);
-	id = rb_intern(RSTRING_PTR(str));
+	id = rb_intern2(pbeg, p-pbeg);
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
 	    p += 2;
