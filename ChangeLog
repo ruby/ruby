@@ -1,7 +1,13 @@
-Mon Jun 18 00:58:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 18 01:14:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_path2class): get rid of dangling pointer caused by
 	  optimized out value.
+
+	* variable.c (rb_global_entry, rb_f_untrace_var, rb_alias_variable,
+	  rb_generic_ivar_table, generic_ivar_get, generic_ivar_set,
+	  generic_ivar_defined, generic_ivar_remove, rb_mark_generic_ivar,
+	  rb_free_generic_ivar, rb_copy_generic_ivar,
+	  rb_obj_instance_variables): suppress warnings.
 
 Fri Jun 15 22:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
