@@ -19,45 +19,6 @@ end
 SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 
 class DEBUGGER__
-class Mutex
-  def initialize
-    @locker = nil
-    @waiting = []
-    @locked = false;
-  end
-
-  def locked?
-    @locked
-  end
-
-  def lock
-    return if Thread.critical
-    return if @locker == Thread.current
-    while (Thread.critical = true; @locked)
-      @waiting.push Thread.current
-      Thread.stop
-    end
-    @locked = true
-    @locker = Thread.current
-    Thread.critical = false
-    self
-  end
-
-  def unlock
-    return if Thread.critical
-    return unless @locked
-    unless @locker == Thread.current
-      raise RuntimeError, "unlocked by other"
-    end
-    Thread.critical = true
-    t = @waiting.shift
-    @locked = false
-    @locker = nil
-    Thread.critical = false
-    t.run if t
-    self
-  end
-end
 MUTEX = Mutex.new
 
 class Context
@@ -118,13 +79,14 @@ class Context
   end
 
   def check_suspend
-    return if Thread.critical
-    while (Thread.critical = true; @suspend_next)
-      DEBUGGER__.waiting.push Thread.current
-      @suspend_next = false
-      Thread.stop
+    while MUTEX.synchronize {
+	if @suspend_next
+	  DEBUGGER__.waiting.push Thread.current
+	  @suspend_next = false
+	  true
+	end
+      }
     end
-    Thread.critical = false
   end
 
   def trace?
@@ -790,13 +752,12 @@ class << DEBUGGER__
   end
 
   def set_trace( arg )
-    saved_crit = Thread.critical
-    Thread.critical = true
-    make_thread_list
-    for th, in @thread_list
-      context(th).set_trace arg
+    MUTEX.synchronize do
+      make_thread_list
+      for th, in @thread_list
+	context(th).set_trace arg
+      end
     end
-    Thread.critical = saved_crit
     arg
   end
 
@@ -805,31 +766,29 @@ class << DEBUGGER__
   end
 
   def suspend
-    saved_crit = Thread.critical
-    Thread.critical = true
-    make_thread_list
-    for th, in @thread_list
-      next if th == Thread.current
-      context(th).set_suspend
+    MUTEX.synchronize do
+      make_thread_list
+      for th, in @thread_list
+	next if th == Thread.current
+	context(th).set_suspend
+      end
     end
-    Thread.critical = saved_crit
     # Schedule other threads to suspend as soon as possible.
-    Thread.pass unless Thread.critical
+    Thread.pass
   end
 
   def resume
-    saved_crit = Thread.critical
-    Thread.critical = true
-    make_thread_list
-    for th, in @thread_list
-      next if th == Thread.current
-      context(th).clear_suspend
+    MUTEX.synchronize do
+      make_thread_list
+      for th, in @thread_list
+	next if th == Thread.current
+	context(th).clear_suspend
+      end
+      waiting.each do |th|
+	th.run
+      end
+      waiting.clear
     end
-    waiting.each do |th|
-      th.run
-    end
-    waiting.clear
-    Thread.critical = saved_crit
     # Schedule other threads to restart as soon as possible.
     Thread.pass
   end
@@ -943,5 +902,8 @@ stdout.printf "Debug.rb\n"
 stdout.printf "Emacs support available.\n\n"
 set_trace_func proc { |event, file, line, id, binding, klass, *rest|
   DEBUGGER__.context.trace_func event, file, line, id, binding, klass
+}
+VM::InstructionSequence.compile_option = {
+  trace_instruction: true
 }
 end

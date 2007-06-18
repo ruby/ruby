@@ -1,3 +1,13 @@
+Mon Jun 18 16:57:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): disable trace while creating ruby_debug_lines.
+	  [ruby-talk:253586]
+
+	* thread.c (ruby_suppress_tracing): new function to call a function
+	  with suppressing trace.
+
+	* lib/debug.rb, lib/tracer.rb: for YARV.
+
 Mon Jun 18 13:54:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): return EXIT_FAILURE if any exceptions occured

@@ -2789,17 +2789,47 @@ get_event_name(rb_event_flag_t event)
     }
 }
 
-static void
-call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+VALUE ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg);
+
+struct call_trace_func_args {
+    rb_event_flag_t event;
+    VALUE proc;
+    VALUE self;
+    ID id;
+    VALUE klass;
+};
+
+static VALUE
+call_trace_proc(VALUE args)
 {
-    rb_thread_t *th = GET_THREAD();
-    int state, raised;
-    VALUE eventname = rb_str_new2(get_event_name(event));
+    struct call_trace_func_args *p = (struct call_trace_func_args *)args;
+    VALUE eventname = rb_str_new2(get_event_name(p->event));
     VALUE filename = rb_str_new2(rb_sourcefile());
     int line = rb_sourceline();
 
+    return rb_proc_call(p->proc, rb_ary_new3(6,
+					     eventname, filename, INT2FIX(line),
+					     p->id ? ID2SYM(p->id) : Qnil,
+					     p->self ? rb_binding_new() : Qnil,
+					     p->klass ? p->klass : Qnil));
+}
+
+static void
+call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
+{
+    struct call_trace_func_args args = {event, proc, self, id, klass};
+    ruby_suppress_tracing(call_trace_proc, (VALUE)&args);
+}
+
+VALUE
+ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg)
+{
+    rb_thread_t *th = GET_THREAD();
+    int state, raised;
+    VALUE result = Qnil;
+
     if (th->tracing) {
-	return;
+	return Qnil;
     }
     else {
 	th->tracing = 1;
@@ -2809,11 +2839,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	proc_invoke(proc, rb_ary_new3(6,
-				      eventname, filename, INT2FIX(line),
-				      id ? ID2SYM(id) : Qnil,
-				      self ? rb_binding_new() : Qnil,
-				      klass ? klass : Qnil), Qundef, 0);
+	result = (*func)(arg);
     }
 
     if (raised) {
@@ -2825,6 +2851,8 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (state) {
 	JUMP_TAG(state);
     }
+
+    return result;
 }
 
 /*

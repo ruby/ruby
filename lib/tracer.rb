@@ -118,8 +118,8 @@ class Tracer
       return unless p.call event, file, line, id, binding, klass
     end
     
-    saved_crit = Thread.critical
-    Thread.critical = true
+    # saved_crit = Thread.critical
+    # Thread.critical = true
     stdout.printf("#%d:%s:%d:%s:%s: %s",
       get_thread_no,
       file,
@@ -127,7 +127,7 @@ class Tracer
       klass || '',
       EVENT_SYMBOL[event],
       get_line(file, line))
-    Thread.critical = saved_crit
+    # Thread.critical = saved_crit
   end
 
   Single = new

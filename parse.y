@@ -4584,26 +4584,35 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
+VALUE ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg);
+
+static VALUE
+debug_lines(VALUE f)
+{
+    if (rb_const_defined_at(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
+	VALUE hash = rb_const_get_at(rb_cObject, rb_intern("SCRIPT_LINES__"));
+	if (TYPE(hash) == T_HASH) {
+	    VALUE fname = rb_str_new2((const char *)f);
+	    VALUE lines = rb_hash_aref(hash, fname);
+	    if (NIL_P(lines)) {
+		lines = rb_ary_new();
+		rb_hash_aset(hash, fname, lines);
+	    }
+	    return lines;
+	}
+    }
+    return 0;
+}
+
 static NODE*
 yycompile(struct parser_params *parser, const char *f, int line)
 {
     int n;
     const char *kcode_save;
 
-    if (!compile_for_eval && rb_safe_level() == 0 &&
-	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
-	VALUE hash, fname;
-
-	hash = rb_const_get(rb_cObject, rb_intern("SCRIPT_LINES__"));
-	if (TYPE(hash) == T_HASH) {
-	    fname = rb_str_new2(f);
-	    ruby_debug_lines = rb_hash_aref(hash, fname);
-	    if (NIL_P(ruby_debug_lines)) {
-		ruby_debug_lines = rb_ary_new();
-		rb_hash_aset(hash, fname, ruby_debug_lines);
-	    }
-	}
-	if (line > 1) {
+    if (!compile_for_eval && rb_safe_level() == 0) {
+	ruby_debug_lines = ruby_suppress_tracing(debug_lines, (VALUE)f);
+	if (ruby_debug_lines && line > 1) {
 	    VALUE str = rb_str_new(0,0);
 	    n = line - 1;
 	    do {
