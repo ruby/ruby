@@ -1600,7 +1600,21 @@ ruby_cleanup(ex)
 	    VALUE sig = rb_iv_get(err, "signo");
 	    ruby_default_signal(NUM2INT(sig));
 	}
+	else if (ex == 0) {
+	    ex = 1;
+	}
     }
+
+#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
+    switch (ex) {
+#if EXIT_SUCCESS != 0
+      case 0: return EXIT_SUCCESS;
+#endif
+#if EXIT_FAILURE != 1
+      case 1: return EXIT_FAILURE;
+#endif
+    }
+#endif
 
     return ex;
 }
