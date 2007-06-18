@@ -408,6 +408,13 @@ load_failed(VALUE fname)
 	     RSTRING_PTR(fname));
 }
 
+static VALUE
+load_ext(VALUE arg)
+{
+    SCOPE_SET(NOEX_PUBLIC);
+    return (VALUE)dln_load((const char *)arg);
+}
+
 VALUE
 rb_require_safe(VALUE fname, int safe)
 {
@@ -448,8 +455,8 @@ rb_require_safe(VALUE fname, int safe)
 		    ruby_current_node = 0;
 		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
 		    ruby_sourceline = 0;
-		    /* SCOPE_SET(NOEX_PUBLIC); */
-		    handle = (long)dln_load(RSTRING_PTR(path));
+		    handle = (long)rb_vm_call_cfunc(ruby_top_self, load_ext,
+						    ruby_source_filename, 0, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
@@ -484,18 +491,22 @@ rb_require(const char *fname)
     return rb_require_safe(fn, rb_safe_level());
 }
 
+static VALUE
+init_ext_call(VALUE arg)
+{
+    SCOPE_SET(NOEX_PUBLIC);
+    (*(void (*)(void))arg)();
+    return Qnil;
+}
+
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    rb_control_frame_t *frame = GET_THREAD()->cfp;
-
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(name);
     ruby_sourceline = 0;
-    frame->method_id = 0;
-    SCOPE_SET(NOEX_PUBLIC);
     if (load_lock(name)) {
-	(*init)();
+	rb_vm_call_cfunc(ruby_top_self, init_ext_call, (VALUE)init, 0, rb_str_new2(name));
 	rb_provide(name);
 	load_unlock(name);
     }

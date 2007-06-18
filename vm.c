@@ -1902,3 +1902,18 @@ rb_thread_current_status(rb_thread_t *th)
 
     return str;
 }
+
+VALUE
+rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *reg_cfp = th->cfp;
+    volatile VALUE iseq = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
+    VALUE val;
+
+    push_frame(th, DATA_PTR(iseq), FRAME_MAGIC_TOP,
+	       recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
+    val = (*func)(arg);
+    pop_frame(th);
+    return val;
+}

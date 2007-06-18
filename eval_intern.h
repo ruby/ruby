@@ -229,6 +229,7 @@ ruby_cref()
 VALUE th_get_cbase(rb_thread_t *th);
 VALUE rb_obj_is_proc(VALUE);
 void rb_vm_check_redefinition_opt_method(NODE *node);
+VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
 
 #define ruby_cbase() th_get_cbase(GET_THREAD())

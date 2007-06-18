@@ -1,3 +1,11 @@
+Mon Jun 18 17:04:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_load.c (rb_require_safe, ruby_init_ext): load with ruby level
+	  cfp.  [ruby-core:10779]
+
+	* eval_intern.h, vm.c (rb_vm_call_cfunc): new function to call a
+	  function with ruby level cfp.
+
 Mon Jun 18 16:57:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yycompile): disable trace while creating ruby_debug_lines.
