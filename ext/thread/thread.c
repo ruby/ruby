@@ -14,6 +14,8 @@
 #include <rubysig.h>
 #include <node.h>
 
+enum rb_thread_status rb_thread_status _((VALUE));
+
 static VALUE rb_cMutex;
 static VALUE rb_cConditionVariable;
 static VALUE rb_cQueue;

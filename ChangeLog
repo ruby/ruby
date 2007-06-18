@@ -1,3 +1,8 @@
+Mon Jun 18 11:29:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, ext/thread/thread.c: moved prototype of rb_thread_status()
+	  to get rid of error in C++.  [ruby-list:43615]
+
 Sun Jun 10 13:47:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb (test_should_propagate_signaled):

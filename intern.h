@@ -204,7 +204,6 @@ int rb_thread_alone _((void));
 void rb_thread_polling _((void));
 void rb_thread_sleep _((int));
 void rb_thread_sleep_forever _((void));
-enum rb_thread_status rb_thread_status _((VALUE));
 VALUE rb_thread_stop _((void));
 VALUE rb_thread_wakeup _((VALUE));
 VALUE rb_thread_wakeup_alive _((VALUE));
