@@ -1,3 +1,14 @@
+Mon Jun 18 08:47:54 2007  Technorama Ltd.  <oss-ruby@technorama.net>
+	* ext/openssl/{extconf.rb,ossl_ssl_session.c}:
+	  Fix ruby-Bugs-11513.
+
+	* ext/openssl/ossl_pkey_ec.c
+	  New methods EC::Point.[eql,make_affine!,invert!,on_curve?,infinity?]
+	  By default output the same key form as the openssl command.
+
+	* ext/openssl/ossl_rand.c
+	  New method Random.status?
+
 Mon Jun 18 13:54:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): return EXIT_FAILURE if any exceptions occured

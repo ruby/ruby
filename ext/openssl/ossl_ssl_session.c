@@ -157,6 +157,7 @@ static VALUE ossl_ssl_session_get_timeout(VALUE self)
 SSLSESSION_SET_TIME(time)
 SSLSESSION_SET_TIME(timeout)
 
+#ifdef HAVE_SSL_SESSION_GET_ID
 /*
  * call-seq:
  *    session.id -> aString
@@ -175,6 +176,7 @@ static VALUE ossl_ssl_session_get_id(VALUE self)
 
 	return rb_str_new(p, i);
 }
+#endif
 
 /*
  * call-seq:
@@ -285,7 +287,9 @@ void Init_ossl_ssl_session(void)
 	rb_define_method(cSSLSession, "timeout", ossl_ssl_session_get_timeout, 0);
 	rb_define_method(cSSLSession, "timeout=", ossl_ssl_session_set_timeout, 1);
 
+#ifdef HAVE_SSL_SESSION_GET_ID
 	rb_define_method(cSSLSession, "id", ossl_ssl_session_get_id, 0);
+#endif
 	rb_define_method(cSSLSession, "to_der", ossl_ssl_session_to_der, 0);
 	rb_define_method(cSSLSession, "to_pem", ossl_ssl_session_to_pem, 0);
 	rb_define_method(cSSLSession, "to_text", ossl_ssl_session_to_text, 0);

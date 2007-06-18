@@ -135,6 +135,18 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     status? => true | false
+ *
+ * Return true if the PRNG has been seeded with enough data, false otherwise.
+ */
+static VALUE
+ossl_rand_status(VALUE self)
+{
+    return RAND_status() ? Qtrue : Qfalse;
+}
+
 #define DEFMETH(class, name, func, argc) \
 	rb_define_method(class, name, func, argc); \
 	rb_define_singleton_method(class, name, func, argc);
@@ -160,5 +172,6 @@ Init_ossl_rand()
     DEFMETH(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
     DEFMETH(mRandom, "egd", ossl_rand_egd, 1);
     DEFMETH(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);	
+    DEFMETH(mRandom, "status?", ossl_rand_status, 0)
 }
 

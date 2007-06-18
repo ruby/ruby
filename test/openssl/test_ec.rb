@@ -5,7 +5,7 @@ rescue LoadError
 end
 require "test/unit"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::PKey::EC)
 
 class OpenSSL::TestEC < Test::Unit::TestCase
   def setup
