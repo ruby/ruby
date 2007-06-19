@@ -155,6 +155,7 @@ error_print(void)
 	long i;
 	long len = RARRAY_LEN(errat);
 	VALUE *ptr = RARRAY_PTR(errat);
+        int skip = eclass == rb_eSysStackError;
 	
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
@@ -164,7 +165,7 @@ error_print(void)
 	    if (TYPE(ptr[i]) == T_STRING) {
 		warn_printf("\tfrom %s\n", RSTRING_PTR(ptr[i]));
 	    }
-	    if (i == TRACE_HEAD && len > TRACE_MAX) {
+	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
 			    len - TRACE_HEAD - TRACE_TAIL);
 		i = len - TRACE_TAIL;

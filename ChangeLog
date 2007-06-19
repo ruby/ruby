@@ -1,3 +1,8 @@
+Wed Jun 20 08:27:57 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval_error.h (error_print): show full stacktrace on
+	  non-SystemStackError.
+
 Wed Jun 20 04:45:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern2): use rb_intern2 to intern without trailing
