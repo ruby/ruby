@@ -409,10 +409,10 @@ load_failed(VALUE fname)
 }
 
 static VALUE
-load_ext(VALUE arg)
+load_ext(VALUE path)
 {
     SCOPE_SET(NOEX_PUBLIC);
-    return (VALUE)dln_load((const char *)arg);
+    return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
 VALUE
@@ -456,7 +456,7 @@ rb_require_safe(VALUE fname, int safe)
 		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
 		    ruby_sourceline = 0;
 		    handle = (long)rb_vm_call_cfunc(ruby_top_self, load_ext,
-						    ruby_source_filename, 0, path);
+						    path, 0, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
