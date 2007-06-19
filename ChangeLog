@@ -1,3 +1,10 @@
+Wed Jun 20 04:45:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern2): use rb_intern2 to intern without trailing
+	  equal sign.
+
+	* parse.y (rb_intern2, ripper_id2sym): fixed indent.
+
 Tue Jun 19 10:55:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_load.c (load_ext, rb_require_safe): pass VALUE instead of

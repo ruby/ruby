@@ -8461,11 +8461,7 @@ rb_intern2(const char *name, long len)
 
 	if (name[last] == '=') {
 	    /* attribute assignment */
-	    char *buf = ALLOCA_N(char,last+1);
-
-	    strncpy(buf, name, last);
-	    buf[last] = '\0';
-	    id = rb_intern(buf);
+	    id = rb_intern2(name, last);
 	    if (id > tLAST_TOKEN && !is_attrset_id(id)) {
 		id = rb_id_attrset(id);
 		goto id_register;
@@ -8481,9 +8477,9 @@ rb_intern2(const char *name, long len)
 	break;
     }
     if (!ISDIGIT(*m)) {
-    while (m <= name + last && is_identchar(*m)) {
-	m += mbclen(*m);
-    }
+	while (m <= name + last && is_identchar(*m)) {
+	    m += mbclen(*m);
+	}
     }
     if (*m) id = ID_JUNK;
   new_id:
@@ -8976,13 +8972,13 @@ ripper_id2sym(ID id)
         return ID2SYM(rb_intern(name));
     }
     switch (id) {
-    case tOROP:
+      case tOROP:
         name = "||";
         break;
-    case tANDOP:
+      case tANDOP:
         name = "&&";
         break;
-    default:
+      default:
         name = rb_id2name(id);
         if (!name) {
             rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
