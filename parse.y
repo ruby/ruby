@@ -8420,8 +8420,8 @@ rb_symname_p(const char *name)
 ID
 rb_intern2(const char *name, long len)
 {
+    const char *m = name;
     VALUE str = rb_str_new(name, len);
-    const char *m = RSTRING_PTR(str);
     ID id;
     int last;
 
@@ -8481,7 +8481,7 @@ rb_intern2(const char *name, long len)
 	    m += mbclen(*m);
 	}
     }
-    if (*m) id = ID_JUNK;
+    if (m - name < len) id = ID_JUNK;
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:

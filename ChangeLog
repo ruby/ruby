@@ -1,3 +1,7 @@
+Thu Jun 21 23:08:19 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_intern2): ID_JUNK test based on len, not by NUL.
+
 Thu Jun 21 19:42:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* yarvcore.c (rb_thread_mark): mark also thrown_errinfo.
