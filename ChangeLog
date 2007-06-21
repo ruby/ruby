@@ -1,3 +1,7 @@
+Thu Jun 21 17:13:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern2): name may not be NUL-terminated.
+
 Wed Jun 20 08:27:57 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval_error.h (error_print): show full stacktrace on

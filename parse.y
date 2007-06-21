@@ -8420,8 +8420,8 @@ rb_symname_p(const char *name)
 ID
 rb_intern2(const char *name, long len)
 {
-    const char *m = name;
     VALUE str = rb_str_new(name, len);
+    const char *m = RSTRING_PTR(str);
     ID id;
     int last;
 
