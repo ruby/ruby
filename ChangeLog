@@ -1,3 +1,7 @@
+Thu Jun 21 19:42:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* yarvcore.c (rb_thread_mark): mark also thrown_errinfo.
+
 Thu Jun 21 17:13:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern2): name may not be NUL-terminated.

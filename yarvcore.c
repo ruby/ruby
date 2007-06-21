@@ -259,8 +259,8 @@ thread_free(void *ptr)
 
 void yarv_machine_stack_mark(rb_thread_t *th);
 
-static void
-thread_mark(void *ptr)
+void
+rb_thread_mark(void *ptr)
 {
     rb_thread_t *th = NULL;
     MARK_REPORT_ENTER("thread");
@@ -289,6 +289,7 @@ thread_mark(void *ptr)
 	MARK_UNLESS_NULL(th->thgroup);
 	MARK_UNLESS_NULL(th->value);
 	MARK_UNLESS_NULL(th->errinfo);
+	MARK_UNLESS_NULL(th->thrown_errinfo);
 	MARK_UNLESS_NULL(th->local_svar);
 	MARK_UNLESS_NULL(th->top_self);
 	MARK_UNLESS_NULL(th->top_wrapper);
@@ -311,19 +312,13 @@ thread_mark(void *ptr)
     MARK_REPORT_LEAVE("thread");
 }
 
-void
-rb_thread_mark(void *ptr)
-{
-    thread_mark(ptr);
-}
-
 static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
     rb_thread_t *th;
     obj = Data_Make_Struct(klass, rb_thread_t,
-			   thread_mark, thread_free, th);
+			   rb_thread_mark, thread_free, th);
     return obj;
 }
 
@@ -551,7 +546,8 @@ Init_VM(void)
 	vm->self = Data_Wrap_Struct(rb_cVM, vm_mark, vm_free, vm);
 
 	/* create main thread */
-	th_self = th->self = Data_Wrap_Struct(rb_cThread, thread_mark, thread_free, th);
+	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark,
+					      thread_free, th);
 
 	vm->main_thread = th;
 	vm->running_thread = th;
