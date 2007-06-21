@@ -734,15 +734,6 @@ rb_hash_reject(VALUE hash)
     return rb_hash_delete_if(rb_obj_dup(hash));
 }
 
-static int
-select_i(VALUE key, VALUE value, VALUE result)
-{
-    if (key == Qundef) return ST_CONTINUE;
-    if (RTEST(rb_yield_values(2, key, value)))
-	rb_ary_push(result, rb_assoc_new(key, value));
-    return ST_CONTINUE;
-}
-
 /*
  * call-seq:
  *   hsh.values_at(key, ...)   => array
@@ -766,17 +757,24 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
     return result;
 }
 
+static int
+select_i(VALUE key, VALUE value, VALUE result)
+{
+    if (key == Qundef) return ST_CONTINUE;
+    if (RTEST(rb_yield_values(2, key, value)))
+	rb_hash_aset(result, key, value);
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
- *     hsh.select {|key, value| block}   => array
+ *     hsh.select {|key, value| block}   => a_hash
  *  
- *  Returns a new array consisting of <code>[key,value]</code>
- *  pairs for which the block returns true.
- *  Also see <code>Hash.values_at</code>.
+ *  Returns a new hash consisting of entries which the block returns true.
  *     
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.select {|k,v| k > "a"}  #=> [["b", 200], ["c", 300]]
- *     h.select {|k,v| v < 200}  #=> [["a", 100]]
+ *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
+ *     h.select {|k,v| v < 200}  #=> {"a" => 100}
  */
 
 VALUE
@@ -785,7 +783,7 @@ rb_hash_select(VALUE hash)
     VALUE result;
 
     RETURN_ENUMERATOR(hash, 0, 0);
-    result = rb_ary_new();
+    result = rb_hash_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
 }
@@ -1086,29 +1084,6 @@ rb_hash_to_a(VALUE hash)
     if (OBJ_TAINTED(hash)) OBJ_TAINT(ary);
 
     return ary;
-}
-
-/*
- *  call-seq:
- *     hsh.sort                    => array 
- *     hsh.sort {| a, b | block }  => array 
- * 
- *  Converts <i>hsh</i> to a nested array of <code>[</code> <i>key,
- *  value</i> <code>]</code> arrays and sorts it, using
- *  <code>Array#sort</code>.
- *     
- *     h = { "a" => 20, "b" => 30, "c" => 10  }
- *     h.sort                       #=> [["a", 20], ["b", 30], ["c", 10]]
- *     h.sort {|a,b| a[1]<=>b[1]}   #=> [["c", 10], ["a", 20], ["b", 30]]
- *     
- */
-
-static VALUE
-rb_hash_sort(VALUE hash)
-{
-    VALUE entries = rb_hash_to_a(hash);
-    rb_ary_sort_bang(entries);
-    return entries;
 }
 
 static int
@@ -2059,7 +2034,7 @@ env_select(VALUE ehash)
 
     RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
-    result = rb_ary_new();
+    result = rb_hash_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -2067,7 +2042,7 @@ env_select(VALUE ehash)
 	    VALUE k = env_str_new(*env, s-*env);
 	    VALUE v = env_str_new2(s+1);
 	    if (RTEST(rb_yield_values(2, k, v))) {
-		rb_ary_push(result, rb_assoc_new(k, v));
+		rb_hash_aset(result, k, v);
 	    }
 	}
 	env++;
@@ -2415,7 +2390,6 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"each_value", rb_hash_each_value, 0);
     rb_define_method(rb_cHash,"each_key", rb_hash_each_key, 0);
     rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
-    rb_define_method(rb_cHash,"sort", rb_hash_sort, 0);
 
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);
