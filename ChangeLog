@@ -1,3 +1,11 @@
+Sat Jun 23 00:37:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_select): remove unnecessary varargs for
+	  rb_hash_select.  a patch from Daniel Berger
+	  <Daniel.Berger at qwest.com>.   [ruby-core:11527]
+
+	* hash.c: ditto.
+
 Mon Jun 18 08:47:54 2007  Technorama Ltd.  <oss-ruby@technorama.net>
 	* ext/openssl/{extconf.rb,ossl_ssl_session.c}:
 	  Fix ruby-Bugs-11513.

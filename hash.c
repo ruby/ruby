@@ -853,16 +853,11 @@ rb_hash_values_at(argc, argv, hash)
  */
 
 VALUE
-rb_hash_select(argc, argv, hash)
-    int argc;
-    VALUE *argv;
+rb_hash_select(hash)
     VALUE hash;
 {
     VALUE result;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
@@ -2082,16 +2077,11 @@ env_values_at(argc, argv)
 }
 
 static VALUE
-env_select(argc, argv)
-    int argc;
-    VALUE *argv;
+env_select()
 {
     VALUE result;
     char **env;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2499,7 +2489,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
     rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
-    rb_define_method(rb_cHash,"select", rb_hash_select, -1);
+    rb_define_method(rb_cHash,"select", rb_hash_select, 0);
     rb_define_method(rb_cHash,"reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash,"reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
@@ -2534,7 +2524,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"clear", env_clear, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
-    rb_define_singleton_method(envtbl,"select", env_select, -1);
+    rb_define_singleton_method(envtbl,"select", env_select, 0);
     rb_define_singleton_method(envtbl,"shift", env_shift, 0);
     rb_define_singleton_method(envtbl,"invert", env_invert, 0);
     rb_define_singleton_method(envtbl,"replace", env_replace, 1);
