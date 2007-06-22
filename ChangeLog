@@ -1,3 +1,7 @@
+Fri Jun 22 19:33:49 2007  Tanaka Akira  <akr@fsij.org>
+
+	* proc.c (proc_to_s): show is_lambda.
+
 Thu Jun 21 20:36:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_sort): remove hash specific implementation.

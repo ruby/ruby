@@ -552,12 +552,14 @@ proc_to_s(VALUE self)
 	if (iseq->insn_info_tbl) {
 	    line_no = iseq->insn_info_tbl[0].line_no;
 	}
-	str = rb_sprintf("#<%s:%lx@%s:%d>", cname, self,
+	str = rb_sprintf("#<%s:%lx@%s:%d%s>", cname, self,
 			 RSTRING_PTR(iseq->filename),
-			 line_no);
+			 line_no,
+                         proc->is_lambda ? " (lambda)" : "");
     }
     else {
-	str = rb_sprintf("#<%s:%p>", cname, proc->block.iseq);
+	str = rb_sprintf("#<%s:%p%s>", cname, proc->block.iseq,
+                         proc->is_lambda ? " (lambda)" : "");
     }
 
     if (OBJ_TAINTED(self)) {
