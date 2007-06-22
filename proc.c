@@ -552,7 +552,7 @@ proc_to_s(VALUE self)
 	if (iseq->insn_info_tbl) {
 	    line_no = iseq->insn_info_tbl[0].line_no;
 	}
-	str = rb_sprintf("#<%s:%lx@%s:%d%s>", cname, self,
+	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, self,
 			 RSTRING_PTR(iseq->filename),
 			 line_no,
                          proc->is_lambda ? " (lambda)" : "");

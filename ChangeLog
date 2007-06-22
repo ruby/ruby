@@ -1,3 +1,8 @@
+Fri Jun 22 19:55:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* proc.c (proc_to_s): revert the change from %p to %lx at YARV
+	  merge time.
+
 Fri Jun 22 19:33:49 2007  Tanaka Akira  <akr@fsij.org>
 
 	* proc.c (proc_to_s): show is_lambda.
