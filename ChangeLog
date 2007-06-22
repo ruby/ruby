@@ -1,3 +1,11 @@
+Sat Jun 23 01:25:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_assoc): new method.
+
+	* hash.c (rb_hash_rassoc): ditto.
+
+	* hash.c (rb_hash_flatten): ditto.
+
 Fri Jun 22 23:55:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): add optional argument to specify

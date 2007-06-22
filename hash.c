@@ -1517,6 +1517,103 @@ rb_hash_merge(VALUE hash1, VALUE hash2)
     return rb_hash_update(rb_obj_dup(hash1), hash2);
 }
 
+static int
+assoc_i(VALUE key, VALUE val, VALUE *args)
+{
+    if (key == Qundef) return ST_CONTINUE;
+    if (RTEST(rb_equal(args[0], key))) {
+	args[1] = rb_assoc_new(key, val);
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+/* 
+ *  call-seq:
+ *     hash.assoc(obj)   ->  an_array  or  nil
+ *
+ *  Searches through the hash comparing _obj_ with the key using <code>==</code>.
+ *  Returns the key-value pair (two elements array) or +nil+
+ *  if no match is found.  See <code>Array#assoc</code>.
+ *
+ *     h = {"colors"  => ["red", "blue", "green"],
+ *          "letters" => ["a", "b", "c" ]}
+ *     h.assoc("letters")  #=> ["letters", ["a", "b", "c"]]
+ *     h.assoc("foo")      #=> nil
+ */
+
+VALUE
+rb_hash_assoc(VALUE hash, VALUE obj)
+{
+    VALUE args[2];
+
+    args[0] = obj;
+    args[1] = Qnil;
+    rb_hash_foreach(hash, assoc_i, (st_data_t)args);
+    return args[1];
+}
+
+static int
+rassoc_i(VALUE key, VALUE val, VALUE *args)
+{
+    if (key == Qundef) return ST_CONTINUE;
+    if (RTEST(rb_equal(args[0], val))) {
+	args[1] = rb_assoc_new(key, val);
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hash.rassoc(key) -> an_array or nil
+ *  
+ *  Searches through the hash comparing _obj_ with the value using <code>==</code>.
+ *  Returns the first key-value pair (two elements array) that matches. See
+ *  also <code>Array#rassoc</code>.
+ *     
+ *     a = {1=> "one", 2 => "two", 3 => "three", "ii" => "two"}
+ *     a.rassoc("two")    #=> [2, "two"]
+ *     a.rassoc("four")   #=> nil
+ */
+
+VALUE
+rb_hash_rassoc(VALUE hash, VALUE obj)
+{
+    VALUE args[2];
+
+    args[0] = obj;
+    args[1] = Qnil;
+    rb_hash_foreach(hash, rassoc_i, (st_data_t)args);
+    return args[1];
+}
+
+/*
+ *  call-seq:
+ *     hash.flatten -> an_array
+ *     hash.flatten(level) -> an_array
+ *  
+ *  Returns a new array that is a one-dimensional flattening of this
+ *  hash. That is, for every key or value that is an array, extract
+ *  its elements into the new array.  Unlike Array#flatten, this
+ *  method does not flatten recursively by default.  If the optional
+ *  <i>level</i> argument determins the level of recursion to flatten.
+ *     
+ *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
+ *     a.flatten    # => [1, "one", 2, [2, "two"], 3, "three"]
+ *     a.flatten(2) # => [1, "one", 2, 2, "two", 3, "three"]
+ */
+
+static VALUE
+rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
+{
+    VALUE ary, lv;
+
+    ary = rb_hash_to_a(hash);
+    rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
+    return ary;
+}
+
 static struct st_hash_type identhash = {
     st_numcmp,
     st_numhash,
@@ -2176,18 +2273,33 @@ env_has_key(VALUE env, VALUE key)
 }
 
 static VALUE
-env_has_value(VALUE dmy, VALUE value)
+env_assoc(VALUE env, VALUE key)
+{
+    char *s, *e;
+
+    rb_secure(4);
+    s = StringValuePtr(key);
+    if (strlen(s) != RSTRING_LEN(key))
+	rb_raise(rb_eArgError, "bad environment variable name");
+    e = getenv(s);
+    if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
+    return Qnil;
+}
+
+static VALUE
+env_has_value(VALUE dmy, VALUE obj)
 {
     char **env;
 
     rb_secure(4);
-    if (TYPE(value) != T_STRING) return Qfalse;
+    obj = rb_check_string_type(obj);
+    if (NIL_P(obj)) return Qnil;
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s++) {
 	    long len = strlen(s);
-	    if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
+	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
 		FREE_ENVIRON(environ);
 		return Qtrue;
 	    }
@@ -2196,6 +2308,30 @@ env_has_value(VALUE dmy, VALUE value)
     }
     FREE_ENVIRON(environ);
     return Qfalse;
+}
+
+static VALUE
+env_rassoc(VALUE dmy, VALUE obj)
+{
+    char **env;
+
+    rb_secure(4);
+    obj = rb_check_string_type(obj);
+    if (NIL_P(obj)) return Qnil;
+    env = GET_ENVIRON(environ);
+    while (*env) {
+	char *s = strchr(*env, '=');
+	if (s++) {
+	    long len = strlen(s);
+	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
+		FREE_ENVIRON(environ);
+		return rb_assoc_new(rb_tainted_str_new(*env, s-*env-1), obj);
+	    }
+	}
+	env++;
+    }
+    FREE_ENVIRON(environ);
+    return Qnil;
 }
 
 static VALUE
@@ -2407,6 +2543,9 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"replace", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"merge!", rb_hash_update, 1);
     rb_define_method(rb_cHash,"merge", rb_hash_merge, 1);
+    rb_define_method(rb_cHash, "assoc", rb_hash_assoc, 1);
+    rb_define_method(rb_cHash, "rassoc", rb_hash_rassoc, 1);
+    rb_define_method(rb_cHash, "flatten", rb_hash_flatten, -1);
 
     rb_define_method(rb_cHash,"include?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash,"member?", rb_hash_has_key, 1);
@@ -2460,6 +2599,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"key?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
     rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl,"assoc", env_assoc, 1);
+    rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
 
     rb_define_global_const("ENV", envtbl);
 #else /* __MACOS__ */

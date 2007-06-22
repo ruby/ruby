@@ -2342,10 +2342,10 @@ rb_ary_assoc(VALUE ary, VALUE key)
 
 /*
  *  call-seq:
- *     array.rassoc(key) -> an_array or nil
+ *     array.rassoc(obj) -> an_array or nil
  *  
  *  Searches through the array whose elements are also arrays. Compares
- *  <em>key</em> with the second element of each contained array using
+ *  _obj_ with the second element of each contained array using
  *  <code>==</code>. Returns the first contained array that matches. See
  *  also <code>Array#assoc</code>.
  *     
