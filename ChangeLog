@@ -1,3 +1,12 @@
+Fri Jun 22 23:55:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_upto): add optional argument to specify
+	  exclusiveness.
+
+	* range.c (range_step): use String#upto with optional argument.
+
+	* range.c (range_each): ditto.
+
 Fri Jun 22 19:55:51 2007  Tanaka Akira  <akr@fsij.org>
 
 	* proc.c (proc_to_s): revert the change from %p to %lx at YARV

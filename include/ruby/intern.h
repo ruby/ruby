@@ -518,7 +518,6 @@ VALUE rb_str_concat(VALUE, VALUE);
 int rb_memhash(const void *ptr, long len);
 int rb_str_hash(VALUE);
 int rb_str_cmp(VALUE, VALUE);
-VALUE rb_str_upto(VALUE, VALUE, int);
 void rb_str_update(VALUE, long, long, VALUE);
 VALUE rb_str_inspect(VALUE);
 VALUE rb_str_dump(VALUE);

@@ -1549,13 +1549,39 @@ rb_str_succ_bang(VALUE str)
     return str;
 }
 
-VALUE
-rb_str_upto(VALUE beg, VALUE end, int excl)
-{
-    VALUE current, after_end;
-    ID succ = rb_intern("succ");
-    int n;
 
+/*
+ *  call-seq:
+ *     str.upto(other_str, exclusive=false) {|s| block }   => str
+ *  
+ *  Iterates through successive values, starting at <i>str</i> and
+ *  ending at <i>other_str</i> inclusive, passing each value in turn to
+ *  the block. The <code>String#succ</code> method is used to generate
+ *  each value.  If optional second arguent excle is omitted or is <code>false</code>,
+ *  the last value will be included; otherwise it will be excluded.
+ *     
+ *     "a8".upto("b6") {|s| print s, ' ' }
+ *     for s in "a8".."b6"
+ *       print s, ' '
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     a8 a9 b0 b1 b2 b3 b4 b5 b6
+ *     a8 a9 b0 b1 b2 b3 b4 b5 b6
+ */
+
+static VALUE
+rb_str_upto(int argc, VALUE *argv, VALUE beg)
+{
+    VALUE end, exclusive;
+    VALUE current, after_end;
+    ID succ;
+    int n, excl;
+
+    rb_scan_args(argc, argv, "11", &end, &exclusive);
+    excl = RTEST(exclusive);
+    succ = rb_intern("succ");
     StringValue(end);
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
@@ -1573,33 +1599,6 @@ rb_str_upto(VALUE beg, VALUE end, int excl)
     }
 
     return beg;
-}
-
-
-/*
- *  call-seq:
- *     str.upto(other_str) {|s| block }   => str
- *  
- *  Iterates through successive values, starting at <i>str</i> and
- *  ending at <i>other_str</i> inclusive, passing each value in turn to
- *  the block. The <code>String#succ</code> method is used to generate
- *  each value.
- *     
- *     "a8".upto("b6") {|s| print s, ' ' }
- *     for s in "a8".."b6"
- *       print s, ' '
- *     end
- *     
- *  <em>produces:</em>
- *     
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- *     a8 a9 b0 b1 b2 b3 b4 b5 b6
- */
-
-static VALUE
-rb_str_upto_m(VALUE beg, VALUE end)
-{
-    return rb_str_upto(beg, end, Qfalse);
 }
 
 static VALUE
@@ -4911,7 +4910,7 @@ Init_String(void)
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
-    rb_define_method(rb_cString, "upto", rb_str_upto_m, 1);
+    rb_define_method(rb_cString, "upto", rb_str_upto, -1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);

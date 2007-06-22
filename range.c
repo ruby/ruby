@@ -218,14 +218,6 @@ range_hash(VALUE range)
     return LONG2FIX(hash);
 }
 
-static VALUE
-str_step(VALUE arg)
-{
-    VALUE *args = (VALUE *)arg;
-
-    return rb_str_upto(args[0], args[1], EXCL(args[2]));
-}
-
 static void
 range_each_func(VALUE range, VALUE (*func) (VALUE, void *), VALUE v, VALUE e,
 		void *arg)
@@ -323,16 +315,15 @@ range_step(int argc, VALUE *argv, VALUE range)
 	VALUE tmp = rb_check_string_type(b);
 
 	if (!NIL_P(tmp)) {
-	    VALUE args[5];
+	    VALUE args[2];
 	    long iter[2];
 
 	    b = tmp;
-	    args[0] = b;
-	    args[1] = e;
-	    args[2] = range;
+	    args[0] = e;
+	    args[1] = EXCL(range) ? Qtrue : Qfalse;
 	    iter[0] = 1;
 	    iter[1] = unit;
-	    rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
+	    rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
 	}
 	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
 	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
@@ -409,15 +400,11 @@ range_each(VALUE range)
 	}
     }
     else if (TYPE(beg) == T_STRING) {
-	VALUE args[5];
-	long iter[2];
+	VALUE args[2];
 
-	args[0] = beg;
-	args[1] = end;
-	args[2] = range;
-	iter[0] = 1;
-	iter[1] = 1;
-	rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
+	args[0] = end;
+	args[1] = EXCL(range) ? Qtrue : Qfalse;
+	rb_block_call(beg, rb_intern("upto"), 2, args, rb_yield, 0);
     }
     else {
 	range_each_func(range, each_i, beg, end, NULL);
