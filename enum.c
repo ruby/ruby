@@ -1048,6 +1048,90 @@ enum_max(VALUE obj)
 }
 
 static VALUE
+minmax_i(VALUE i, VALUE *memo)
+{
+    int n;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+	memo[1] = i;
+    }
+    else {
+	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[0]), i, memo[0]);
+	if (n < 0) {
+	    memo[0] = i;
+	}
+	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[1]), i, memo[1]);
+	if (n > 0) {
+	    memo[1] = i;
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
+minmax_ii(VALUE i, VALUE *memo)
+{
+    int n;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+	memo[1] = i;
+    }
+    else {
+	VALUE ary = memo[2];
+
+	RARRAY_PTR(ary)[0] = i;
+	RARRAY_PTR(ary)[1] = memo[0];
+	n = rb_cmpint(rb_yield(ary), i, memo[0]);
+	if (n < 0) {
+	    memo[0] = i;
+	}
+	RARRAY_PTR(ary)[0] = i;
+	RARRAY_PTR(ary)[1] = memo[1];
+	n = rb_cmpint(rb_yield(ary), i, memo[1]);
+	if (n > 0) {
+	    memo[1] = i;
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.minmax                   => [min,max]
+ *     enum.minmax {|a,b| block }    => [min,max]
+ *  
+ *  Returns two elements array which contains the mininum and the
+ *  maxinum value in the enumerable.  The first form assumes all
+ *  objects implement <code>Comparable</code>; the second uses the
+ *  block to return <em>a <=> b</em>.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.minmax                                  #=> ["albatross", "horse"]
+ *     a.minmax {|a,b| a.length <=> b.length }   #=> ["dog", "albatross"]
+ */  
+
+static VALUE
+enum_minmax(VALUE obj)
+{
+    VALUE result[3];
+    VALUE ary = rb_ary_new3(2, Qnil, Qnil);
+
+    result[0] = Qundef;
+    if (rb_block_given_p()) {
+	result[2] = ary;
+	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)result);
+    }
+    else {
+	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)result);
+    }
+    RARRAY_PTR(ary)[0] = result[0];
+    RARRAY_PTR(ary)[1] = result[1];
+    return ary;
+}
+
+static VALUE
 min_by_i(VALUE i, VALUE *memo)
 {
     VALUE v;
@@ -1127,6 +1211,58 @@ enum_max_by(VALUE obj)
     memo[1] = Qnil;
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
     return memo[1];
+}
+
+static VALUE
+minmax_by_i(VALUE i, VALUE *memo)
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (memo[0] == Qundef) {
+	memo[0] = v;
+	memo[1] = v;
+	memo[2] = i;
+	memo[3] = i;
+    }
+    else {
+	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) < 0) {
+	    memo[0] = v;
+	    memo[2] = i;
+	}
+	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[1]), v, memo[1]) > 0) {
+	    memo[1] = v;
+	    memo[3] = i;
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.minmax_by {| obj| block }   => [min, max]
+ *  
+ *  Returns two elements array array containing the objects in
+ *  <i>enum</i> that gives the minmum and maximum values respectively
+ *  from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.minmax_by {|x| x.length }   #=> ["dog", "albatross"]
+ */
+
+static VALUE
+enum_minmax_by(VALUE obj)
+{
+    VALUE memo[4];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    memo[0] = Qundef;
+    memo[1] = Qundef;
+    memo[2] = Qnil;
+    memo[3] = Qnil;
+    rb_block_call(obj, id_each, 0, 0, minmax_by_i, (VALUE)memo);
+    return rb_assoc_new(memo[2], memo[3]);
 }
 
 static VALUE
@@ -1425,8 +1561,9 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"none?", enum_none, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
-    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);
-    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);
+    rb_define_method(rb_mEnumerable,"minmax", enum_minmax, 0);
+    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);  
+    rb_define_method(rb_mEnumerable,"minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, -1);

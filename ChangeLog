@@ -2,6 +2,13 @@ Sat Jun 23 17:18:19 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (match_inspect): MatchData#inspect implemented.
 
+Sat Jun 23 15:00:16 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_minmax): new method to get the minimum and maximum
+	  values from the enumerable at once.
+
+	* enum.c (enum_minmax_by): ditto.
+
 Sat Jun 23 01:25:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_assoc): new method.
