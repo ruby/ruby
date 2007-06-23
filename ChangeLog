@@ -1,3 +1,7 @@
+Sun Jun 24 03:05:00 2007  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_minmax): fix SEGV by [].minmax.
+
 Sat Jun 23 17:18:19 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (match_inspect): MatchData#inspect implemented.

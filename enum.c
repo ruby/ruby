@@ -1126,8 +1126,10 @@ enum_minmax(VALUE obj)
     else {
 	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)result);
     }
-    RARRAY_PTR(ary)[0] = result[0];
-    RARRAY_PTR(ary)[1] = result[1];
+    if (result[0] != Qundef) {
+        RARRAY_PTR(ary)[0] = result[0];
+        RARRAY_PTR(ary)[1] = result[1];
+    }
     return ary;
 }
 
@@ -1563,6 +1565,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"minmax", enum_minmax, 0);
     rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);  
+    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);  
     rb_define_method(rb_mEnumerable,"minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
