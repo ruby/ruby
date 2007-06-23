@@ -1434,6 +1434,30 @@ match_string(VALUE match)
     return RMATCH(match)->str;	/* str is frozen */
 }
 
+static VALUE
+match_inspect(VALUE match)
+{
+    char *cname = rb_obj_classname(match);
+    VALUE str;
+    int i;
+
+    str = rb_str_buf_new2("#<");
+    rb_str_buf_cat2(str, cname);
+
+    for (i = 0; i < RMATCH(match)->regs->num_regs; i++) {
+        VALUE v;
+        rb_str_buf_cat2(str, " ");
+        v = rb_reg_nth_match(i, match);
+        if (v == Qnil)
+            rb_str_buf_cat2(str, "nil");
+        else
+            rb_str_buf_append(str, rb_str_inspect(v));
+    }
+    rb_str_buf_cat2(str, ">");
+
+    return str;
+}
+
 VALUE rb_cRegexp;
 
 static void
@@ -2396,6 +2420,6 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0); /* in object.c */
+    rb_define_method(rb_cMatch, "inspect", match_inspect, 0);
     rb_define_method(rb_cMatch, "string", match_string, 0);
 }
