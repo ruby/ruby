@@ -2313,7 +2313,7 @@ match_setter(VALUE val)
  *  <code>MatchData</code> object.
  *
  *     /c(.)t/ =~ 'cat'       #=> 0
- *     Regexp.last_match      #=> #<MatchData:0x401b3d30>
+ *     Regexp.last_match      #=> #<MatchData "cat" "a">
  *     Regexp.last_match(0)   #=> "cat"
  *     Regexp.last_match(1)   #=> "a"
  *     Regexp.last_match(2)   #=> nil
