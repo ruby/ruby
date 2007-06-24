@@ -542,10 +542,11 @@ proc_to_s(VALUE self)
     rb_proc_t *proc;
     char *cname = rb_obj_classname(self);
     rb_iseq_t *iseq;
-    const char *is_lambda = proc->is_lambda ? " (lambda)" : "";
+    const char *is_lambda;
     
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
+    is_lambda = proc->is_lambda ? " (lambda)" : "";
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int line_no = 0;
@@ -1164,22 +1165,21 @@ umethod_bind(VALUE method, VALUE recv)
 int
 rb_node_arity(NODE* body)
 {
-    int n;
-
     switch (nd_type(body)) {
-    case NODE_CFUNC:
+      case NODE_CFUNC:
 	if (body->nd_argc < 0)
 	    return -1;
 	return body->nd_argc;
-    case NODE_ZSUPER:
+      case NODE_ZSUPER:
 	return -1;
-    case NODE_ATTRSET:
+      case NODE_ATTRSET:
 	return 1;
-    case NODE_IVAR:
+      case NODE_IVAR:
 	return 0;
-    case NODE_BMETHOD:
+      case NODE_BMETHOD:
 	return rb_proc_arity(body->nd_cval);
-    case RUBY_VM_METHOD_NODE:{
+      case RUBY_VM_METHOD_NODE:
+	{
 	    rb_iseq_t *iseq;
 	    GetISeqPtr((VALUE)body->nd_body, iseq);
 	    if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
@@ -1189,7 +1189,7 @@ rb_node_arity(NODE* body)
 		return -(iseq->argc + 1 + iseq->arg_post_len);
 	    }
 	}
-    default:
+      default:
 	rb_raise(rb_eArgError, "invalid node 0x%x", nd_type(body));
     }
 }

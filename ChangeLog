@@ -1,3 +1,7 @@
+Sun Jun 24 16:35:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_to_s): used a variable before initialized.
+
 Sun Jun 24 16:05:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (callee_setup_arg): added.  support correct post arg.
