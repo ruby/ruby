@@ -1155,7 +1155,7 @@ send
     NODE *mn;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
-    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, blockiseq, &blockptr);
+    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, blockiseq, &blockptr, 1);
     rb_num_t flag = op_flag;
     ID id = op_id;
 
@@ -1216,7 +1216,7 @@ invokesuper
 {
     rb_block_t *blockptr = 0;
     VALUE flag = op_flag;
-    int num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &blockptr);
+    int num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &blockptr, 1);
     rb_iseq_t *iseq = GET_ISEQ();
     rb_iseq_t *ip = iseq;
     VALUE recv, klass;
@@ -1292,11 +1292,11 @@ invokeblock
     iseq = block->iseq;
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
-	argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0);
+	argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0, 0);
+
 	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 
 	DEC_SP(argc);
-
 	argc = vm_yield_setup_args(th, iseq, argc, GET_SP(),
 				   block_proc_is_lambda(block->proc));
 	INC_SP(argc);

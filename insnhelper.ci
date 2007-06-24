@@ -191,36 +191,39 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 static inline int
 caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp,
-		  VALUE flag, int argc, rb_iseq_t *blockiseq, rb_block_t **block)
+		  VALUE flag, int argc, rb_iseq_t *blockiseq,
+		  rb_block_t **block, int need_block_check)
 {
     rb_block_t *blockptr = 0;
 
-    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
-	rb_proc_t *po;
-	VALUE proc;
+    if (need_block_check) {
+	if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
+	    rb_proc_t *po;
+	    VALUE proc;
 
-	proc = *(--cfp->sp);
+	    proc = *(--cfp->sp);
 
-	if (proc != Qnil) {
-	    if (!rb_obj_is_proc(proc)) {
-		proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+	    if (proc != Qnil) {
 		if (!rb_obj_is_proc(proc)) {
-		    rb_raise(rb_eTypeError,
-			     "wrong argument type %s (expected Proc)",
-			     rb_obj_classname(proc));
+		    proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+		    if (!rb_obj_is_proc(proc)) {
+			rb_raise(rb_eTypeError,
+				 "wrong argument type %s (expected Proc)",
+				 rb_obj_classname(proc));
+		    }
 		}
+		GetProcPtr(proc, po);
+		blockptr = &po->block;
+		RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp)->proc = proc;
+		*block = blockptr;
 	    }
-	    GetProcPtr(proc, po);
-	    blockptr = &po->block;
-	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp)->proc = proc;
+	}
+	else if (blockiseq) {
+	    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+	    blockptr->iseq = blockiseq;
+	    blockptr->proc = 0;
 	    *block = blockptr;
 	}
-    }
-    else if (blockiseq) {
-	blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
-	blockptr->iseq = blockiseq;
-	blockptr->proc = 0;
-	*block = blockptr;
     }
 
     /* expand top of stack? */

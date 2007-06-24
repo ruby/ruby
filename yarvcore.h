@@ -214,7 +214,16 @@ struct iseq_compile_data {
     const rb_compile_option_t *option;
 };
 
-#define GetISeqPtr(obj, ptr) Data_Get_Struct(obj, rb_iseq_t, ptr)
+#if 1
+#define GetCoreDataFromValue(obj, type, ptr) do { \
+    ptr = (type*)DATA_PTR(obj); \
+} while (0)
+#else
+#define GetCoreDataFromValue(obj, type, ptr) Data_Get_Struct(obj, type, ptr)
+#endif
+
+#define GetISeqPtr(obj, ptr) \
+  GetCoreDataFromValue(obj, rb_iseq_t, ptr)
 
 typedef struct rb_iseq_profile_struct {
     VALUE count;
@@ -337,7 +346,7 @@ typedef struct rb_event_hook_struct {
 
 
 #define GetVMPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_vm_t, ptr)
+  GetCoreDataFromValue(obj, rb_vm_t, ptr)
 
 typedef struct rb_vm_struct {
     VALUE self;
@@ -395,7 +404,7 @@ typedef struct {
 } rb_block_t;
 
 #define GetThreadPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_thread_t, ptr)
+  GetCoreDataFromValue(obj, rb_thread_t, ptr)
 
 enum rb_thread_status {
     THREAD_TO_KILL,
@@ -538,7 +547,7 @@ struct global_entry {
 };
 
 #define GetProcPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_proc_t, ptr)
+  GetCoreDataFromValue(obj, rb_proc_t, ptr)
 
 typedef struct {
     rb_block_t block;
@@ -552,7 +561,7 @@ typedef struct {
 } rb_proc_t;
 
 #define GetEnvPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_env_t, ptr)
+  GetCoreDataFromValue(obj, rb_env_t, ptr)
 
 typedef struct {
     VALUE *env;
@@ -563,7 +572,7 @@ typedef struct {
 } rb_env_t;
 
 #define GetBindingPtr(obj, ptr) \
-  Data_Get_Struct(obj, rb_binding_t, ptr)
+  GetCoreDataFromValue(obj, rb_binding_t, ptr)
 
 typedef struct {
     VALUE env;

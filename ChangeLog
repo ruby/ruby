@@ -1,3 +1,11 @@
+Mon Jun 25 03:37:20 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (caller_setup_args): add need_block_check option.
+
+	* insns.def: ditto.
+
+	* yarvcore.h: add GetCoreDataFromValue().
+
 Mon Jun 25 02:14:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* call_cfunc.ci: removed.
