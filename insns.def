@@ -1258,7 +1258,7 @@ invokesuper
 
 	if (TOPN(num) == Qfalse) {
 	    /* zsuper */
-	    rb_raise(rb_eRuntimeError, "zsuper from method defined by define_method() is not supported. Specify all arguments.");
+	    rb_raise(rb_eRuntimeError, "implicit argument passing of super from method defined by define_method() is not supported. Specify all arguments explicitly.");
 	}
     }
     else {
