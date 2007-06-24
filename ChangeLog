@@ -1,3 +1,7 @@
+Sun Jun 24 22:32:00 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_method.h (rb_add_method): fix to check 0.
+
 Sun Jun 24 22:00:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insn_send.ci: removed.

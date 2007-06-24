@@ -150,7 +150,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 		    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
 		}
 	    }
-	    if (klass == rb_cObject && node->nd_mid == init) {
+	    if (klass == rb_cObject && node && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
 	    }
 	}
