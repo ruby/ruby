@@ -871,7 +871,7 @@ th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 	VALUE ary = argv[0];
 	th->mark_stack_len = argc = RARRAY_LEN(ary);
 
-	/* TODO: check overflow */
+	CHECK_STACK_OVERFLOW(th->cfp, argc);
 
 	for (i=0; i<argc; i++) {
 	    argv[i] = RARRAY_PTR(ary)[i];
@@ -906,7 +906,6 @@ th_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 			 argc, iseq->argc);
 	    }
 	    else {
-		/* TODO: check overflow */
 		for (i=argc; i<r; i++) {
 		    argv[i] = Qnil;
 		}
@@ -946,7 +945,8 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 
 	th_set_finish_env(th);
 
-	/* TODO: check overflow */
+	CHECK_STACK_OVERFLOW(th->cfp, argc);
+	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
 	    th->cfp->sp[i] = argv[i];

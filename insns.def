@@ -1329,8 +1329,10 @@ invokeblock
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0);
+	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 
 	DEC_SP(argc);
+
 	argc = th_yield_setup_args(th, iseq, argc, GET_SP(),
 				   block_proc_is_lambda(block->proc));
 	INC_SP(argc);
