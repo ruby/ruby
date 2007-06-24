@@ -783,8 +783,6 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	NODE *node_opt = node_args->nd_opt;
 	ID rest_id = 0;
 	ID block_id = 0;
-	ID post_start_id = 0;
-	int post_len = 0;
 	NODE *node_init = 0;
 	int d = iseq->local_size - iseq->local_table_size;
 
@@ -813,8 +811,9 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    node_aux = node_aux->nd_next;
 
 	    if (node_aux) {
-		post_start_id = node_aux->nd_pid;
-		post_len = node_aux->nd_plen;
+		ID post_start_id = node_aux->nd_pid;
+		iseq->arg_post_start = get_dyna_var_idx_at_raw(iseq, post_start_id);
+		iseq->arg_post_len = node_aux->nd_plen;
 		node_init = node_aux->nd_next;
 	    }
 	}
@@ -861,99 +860,45 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 
 	if (rest_id) {
-	    iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id) + d;
+	    iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id);
 
 	    if (iseq->arg_rest == -1) {
 		rb_bug("arg_rest: -1");
 	    }
 
-	    if (post_len) {
-		/*
-		 * if rest.length < post_len
-		 *   raise ArgumentError
-		 * end
-		 * post1 = rest.shift
-		 * post2 = rest.shift
-		 * ...
-		 *
-		 * #=> yarv insns
-		 *   push rest
-		 *   call :length
-		 *   put 1
-		 *   call :<
-		 *   branchunless :success
-		 *   put ArgumentsError
-		 *   put "wrong number of arugments (%d of %d)"
-		 *   call :new, 1
-		 *   call :raise
-		 * success:
-		 *   push rest
-		 *   call :shift
-		 *   set post1
-		 *   push rest
-		 *   call :shift
-		 *   set post2
-		 *   ...
-		 */
-		LABEL *lsuccess = NEW_LABEL(nd_line(node_args));
-		int i;
-
-#define GET_LOCAL(idx) do { \
-    if (iseq->type == ISEQ_TYPE_METHOD) { \
-	ADD_INSN1(optargs, nd_line(node_args), getlocal, INT2FIX(iseq->local_size - (idx) + 1)); \
-    } \
-    else { \
-	ADD_INSN2(optargs, nd_line(node_args), getdynamic, INT2FIX(iseq->local_size - (idx)), INT2FIX(0)); \
-    } \
-} while (0)
-
-#define SET_LOCAL(idx) do { \
-    if (iseq->type == ISEQ_TYPE_METHOD) { \
-	ADD_INSN1(optargs, nd_line(node_args), setlocal, INT2FIX(iseq->local_size - (idx) + 1)); \
-    } \
-    else { \
-	ADD_INSN2(optargs, nd_line(node_args), setdynamic, INT2FIX(iseq->local_size - (idx)), INT2FIX(0)); \
-    } \
-} while (0)
-
-		GET_LOCAL(iseq->arg_rest);
-		ADD_SEND (optargs, nd_line(node_args), ID2SYM(idLength), INT2FIX(0));
-		ADD_INSN1(optargs, nd_line(node_args), putobject, INT2FIX(1));
-		ADD_SEND (optargs, nd_line(node_args), ID2SYM(idLT), INT2FIX(1));
-		ADD_INSNL(optargs, nd_line(node_args), branchunless, lsuccess);
-		ADD_CALL_RECEIVER(optargs, nd_line(node_args));
-
-		/* error */
-		ADD_INSN1(optargs, nd_line(node_args), putobject, rb_eArgError);
-		ADD_INSN1(optargs, nd_line(node_args), putstring, rb_str_new2("wrong number of arguments"));
-		ADD_SEND (optargs, nd_line(node_args), ID2SYM(rb_intern("new")), INT2FIX(1));
-		ADD_CALL (optargs, nd_line(node_args), ID2SYM(rb_intern("raise")), INT2FIX(1));
-		ADD_INSN (optargs, nd_line(node_args), pop); /* dummy */
-
-		ADD_LABEL(optargs, lsuccess);
-
-		for (i=0; i<post_len; i++) {
-		    GET_LOCAL(iseq->arg_rest);
-		    ADD_SEND (optargs, nd_line(node_args), ID2SYM(rb_intern("pop")),
-			      INT2FIX(0));
-		    SET_LOCAL(iseq->arg_rest + i + 1);
+	    if (iseq->arg_post_start == 0) {
+		iseq->arg_post_start = iseq->arg_rest + 1;
 		}
-
-		iseq->arg_post_len = post_len;
 	    }
-#undef GET_LOCAL
-#undef SET_LOCAL
-	}
 
 	if (block_id) {
-	    iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id) + d;
+	    iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id);
 	}
 
-	if (iseq->arg_opts != 0 || iseq->arg_rest != -1 || iseq->arg_block != -1) {
+	if (iseq->arg_opts != 0 || iseq->arg_post_len != 0 ||
+	    iseq->arg_rest != -1 || iseq->arg_block != -1) {
 	    iseq->arg_simple = 0;
+
+	    /* set arg_size: size of arguments */
+	    if (iseq->arg_block != -1) {
+		iseq->arg_size = iseq->arg_block + 1;
+	}
+	    else if (iseq->arg_post_len) {
+		iseq->arg_size = iseq->arg_post_start + iseq->arg_post_len;
+	    }
+	    else if (iseq->arg_rest != -1) {
+		iseq->arg_size = iseq->arg_rest + 1;
+	    }
+	    else if (iseq->arg_opts) {
+		iseq->arg_size = iseq->argc + iseq->arg_opts - 1;
+	    }
+	else {
+		iseq->arg_size = iseq->argc;
+	    }
 	}
 	else {
 	    iseq->arg_simple = 1;
+	    iseq->arg_size = iseq->argc;
 	}
     }
     return COMPILE_OK;
@@ -3632,28 +3577,45 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    int j;
 		    for (j = 0; j < liseq->arg_opts - 1; j++) {
 			int idx = liseq->local_size - (i + j);
-			ADD_INSN1(args, nd_line(node), getlocal,
-				  INT2FIX(idx));
+			ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
 		    }
 		    i += j;
 		    argc = INT2FIX(i);
 		}
 
-		if (liseq->arg_rest) {
-		    /* rest arguments */
+		if (liseq->arg_rest != -1) {
+		    /* rest argument */
+		    int idx = liseq->local_size - liseq->arg_rest;
+		    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+		    argc = INT2FIX(liseq->arg_rest + 1);
+		    flag |= VM_CALL_ARGS_SPLAT_BIT;
+		}
 
-		    if (liseq->arg_rest == -1) {
-			/* TODO */
+		if (liseq->arg_post_len) {
+		    /* post arguments */
+		    int post_len = liseq->arg_post_len;
+		    int post_start = liseq->arg_post_start;
+
+		    if (liseq->arg_rest != -1) {
+			int j;
+			for (j=0; j<post_len; j++) {
+			    int idx = liseq->local_size - (post_start + j);
+			    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+		    }
+			ADD_INSN1(args, nd_line(node), newarray, INT2FIX(j));
+			ADD_INSN (args, nd_line(node), concatarray);
+			/* argc is setteled at above */
 		    }
 		    else {
-			int idx = liseq->local_size - liseq->arg_rest + 1;
-			ADD_INSN1(args, nd_line(node), getlocal,
-				  INT2FIX(idx));
-			argc = INT2FIX(liseq->arg_rest);
-			flag |= VM_CALL_ARGS_SPLAT_BIT;
+			int j;
+			for (j=0; j<post_len; j++) {
+			    int idx = liseq->local_size - (post_start + j);
+			    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
 		    }
+			argc = INT2FIX(post_len + post_start);
 		}
 	    }
+	}
 	}
 
 	/* dummy reciever */

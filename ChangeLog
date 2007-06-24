@@ -1,3 +1,20 @@
+Sun Jun 24 16:05:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (callee_setup_arg): added.  support correct post arg.
+
+	* vm_macro.def (macro_eval_invoke_func): fix to use
+	  callee_setup_arg.
+
+	* compile.c (set_arguments): adjust for above changes.
+
+	* compile.c (iseq_compile_each): ditto.
+
+	* iseq.c (ruby_iseq_disasm): ditto.
+
+	* yarvcore.h: add rb_iseq_t#post_arg_start and arg_size.
+
+	* bootstraptest/test_method.rb: add post arg tests.
+
 Sun Jun 24 16:10:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_to_s): suppress warning, and reduced duplicated code.

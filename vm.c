@@ -184,6 +184,103 @@ th_set_eval_stack(rb_thread_t *th, VALUE iseqval)
     return 0;
 }
 
+/* return opt_pc */
+static inline int
+callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
+	       int argc, VALUE *argv, rb_block_t **block)
+{
+    const int m = iseq->argc;
+    const int orig_argc = argc;
+
+    if (iseq->arg_simple) {
+	/* simple check */
+	if (argc != m) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		     argc, m);
+	}
+	return 0;
+    }
+    else {
+	VALUE * const dst = argv;
+	int opt_pc = 0;
+
+	/* mandatory */
+	if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		     argc, m + iseq->arg_post_len);
+	}
+
+	argv += m;
+	argc -= m;
+
+	/* post arguments */
+	if (iseq->arg_post_len) {
+	    int i;
+
+	    if (!(orig_argc < iseq->arg_post_start)) {
+		VALUE *new_argv = ALLOCA_N(VALUE, argc);
+		MEMCPY(new_argv, argv, VALUE, argc);
+		argv = new_argv;
+	    }
+
+	    for (i=0; i<iseq->arg_post_len; i++) {
+		dst[iseq->arg_post_start + iseq->arg_post_len - (i + 1)] = argv[argc - 1];
+		argc = argc - 1;
+	    }
+	}
+
+	/* opt arguments */
+	if (iseq->arg_opts) {
+	    const int opts = iseq->arg_opts - 1 /* no opt */;
+
+	    if (iseq->arg_rest == -1 && argc > opts) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", orig_argc, m + opts);
+	    }
+
+	    if (argc > opts) {
+		argc -= opts;
+		argv += opts;
+		opt_pc = iseq->arg_opt_tbl[opts]; /* no opt */
+	    }
+	    else {
+		opt_pc = iseq->arg_opt_tbl[argc];
+		argc = 0;
+	    }
+	}
+
+	/* rest arguments */
+	if (iseq->arg_rest != -1) {
+	    dst[iseq->arg_rest] = rb_ary_new4(argc, argv);
+	}
+
+	/* block arguments */
+	if (iseq->arg_block != -1) {
+	    VALUE blockval = Qnil;
+	    rb_block_t * const blockptr = *block;
+
+	    if (blockptr) {
+		/* make Proc object */
+		if (blockptr->proc == 0) {
+		    rb_proc_t *proc;
+
+		    th->mark_stack_len = orig_argc; /* for GC */
+		    blockval = th_make_proc(th, th->cfp, blockptr);
+		    th->mark_stack_len = 0;
+
+		    GetProcPtr(blockval, proc);
+		    *block = &proc->block;
+		}
+		else {
+		    blockval = blockptr->proc;
+		}
+	    }
+
+	    dst[iseq->arg_block] = blockval; /* Proc or nil */
+	}
+
+	return opt_pc;
+    }
+}
 
 /* Env */
 

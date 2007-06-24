@@ -1,11 +1,25 @@
 # regular argument
 assert_equal '1',       'def m() 1 end; m()'
 assert_equal '1',       'def m(a) a end; m(1)'
-assert_equal '1',       'def m(a,b) a end; m(1,7)'
-assert_equal '1',       'def m(a,b) b end; m(7,1)'
-assert_equal '1',       'def m(a,b,c) a end; m(1,7,7)'
-assert_equal '1',       'def m(a,b,c) b end; m(7,1,7)'
-assert_equal '1',       'def m(a,b,c) c end; m(7,7,1)'
+assert_equal '[1, 2]',  'def m(a,b) [a, b] end; m(1,2)'
+assert_equal '[1, 2, 3]', 'def m(a,b,c) [a, b, c] end; m(1,2,3)'
+assert_equal 'wrong number of arguments (1 for 0)', %q{
+  def m; end
+  begin
+    m(1)
+  rescue => e
+    e.message
+  end
+}
+
+assert_equal 'wrong number of arguments (0 for 1)', %q{
+  def m a; end
+  begin
+    m
+  rescue => e
+    e.message
+  end
+}
 
 # default argument
 assert_equal '1',       'def m(x=1) x end; m()'
@@ -303,3 +317,487 @@ assert_equal '1',       %q( class C; def m() 7 end; private :m end
                             begin C.new.send(:m); rescue NoMethodError; 1 end )
 assert_equal '1',       %q( class C; def m() 1 end; private :m end
                             C.new.funcall(:m) )
+
+
+# post test
+assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4)}
+
+assert_equal %q{[1, 2, 3, :o2, [], 4, 5, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5)}
+
+assert_equal %q{[1, 2, 3, 4, [], 5, 6, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6)}
+
+assert_equal %q{[1, 2, 3, 4, [5], 6, 7, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7)}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6], 7, 8, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8)}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7], 8, 9, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9)}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7, 8], 9, 10, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7, 8, 9], 10, 11, NilClass, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)}
+
+assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4){}}
+
+assert_equal %q{[1, 2, 3, :o2, [], 4, 5, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5){}}
+
+assert_equal %q{[1, 2, 3, 4, [], 5, 6, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6){}}
+
+assert_equal %q{[1, 2, 3, 4, [5], 6, 7, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7){}}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6], 7, 8, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8){}}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7], 8, 9, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9){}}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7, 8], 9, 10, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10){}}
+
+assert_equal %q{[1, 2, 3, 4, [5, 6, 7, 8, 9], 10, 11, Proc, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, b.class, x, y]
+end
+; m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11){}}
+
+assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, x, y]
+end
+; m(1, 2, 3, 4)}
+
+assert_equal %q{[1, 2, 3, :o2, [], 4, 5, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, x, y]
+end
+; m(1, 2, 3, 4, 5)}
+
+assert_equal %q{[1, 2, 3, 4, [], 5, 6, nil, nil]}, %q{
+def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2)
+  x, y = :x, :y if $foo
+  [m1, m2, o1, o2, r, p1, p2, x, y]
+end
+; m(1, 2, 3, 4, 5, 6)}
+
+
+#
+# super
+#
+=begin
+# below programs are generated by this program:
+
+BASE = <<EOS__
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; <TEST>; super; end; end
+EOS__
+
+tests = {
+%q{
+  def m
+} => %q{
+  C1.new.m
+},
+#
+%q{
+  def m a
+} => %q{
+  C1.new.m 1
+},
+%q{
+  def m a
+    a = :a
+} => %q{
+  C1.new.m 1
+},
+#
+%q{
+  def m a, o=:o
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+},
+%q{
+  def m a, o=:o
+    a = :a
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+},
+%q{
+  def m a, o=:o
+    o = :x
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+},
+#
+%q{
+  def m a, *r
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+  C1.new.m 1, 2, 3
+},
+%q{
+  def m a, *r
+    r = [:x, :y]
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+  C1.new.m 1, 2, 3
+},
+#
+%q{
+  def m a, o=:o, *r
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+  C1.new.m 1, 2, 3
+  C1.new.m 1, 2, 3, 4
+},
+#
+%q{
+  def m a, o=:o, *r, &b
+} => %q{
+  C1.new.m 1
+  C1.new.m 1, 2
+  C1.new.m 1, 2, 3
+  C1.new.m 1, 2, 3, 4
+  C1.new.m(1){}
+  C1.new.m(1, 2){}
+  C1.new.m(1, 2, 3){}
+  C1.new.m(1, 2, 3, 4){}
+},
+#
+"def m(m1, m2, o1=:o1, o2=:o2, p1, p2)" =>
+%q{
+C1.new.m(1,2,3,4)
+C1.new.m(1,2,3,4,5)
+C1.new.m(1,2,3,4,5,6)
+},
+#
+"def m(m1, m2, *r, p1, p2)" =>
+%q{
+C1.new.m(1,2,3,4)
+C1.new.m(1,2,3,4,5)
+C1.new.m(1,2,3,4,5,6)
+C1.new.m(1,2,3,4,5,6,7)
+C1.new.m(1,2,3,4,5,6,7,8)
+},
+#
+"def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2)" =>
+%q{
+C1.new.m(1,2,3,4)
+C1.new.m(1,2,3,4,5)
+C1.new.m(1,2,3,4,5,6)
+C1.new.m(1,2,3,4,5,6,7)
+C1.new.m(1,2,3,4,5,6,7,8)
+C1.new.m(1,2,3,4,5,6,7,8,9)
+},
+
+###
+}
+
+
+tests.each{|setup, methods| setup = setup.dup; setup.strip!
+  setup = BASE.gsub(/<TEST>/){setup}
+  methods.split(/\n/).each{|m| m = m.dup; m.strip!
+    next if m.empty?
+    expr = "#{setup}; #{m}"
+    result = eval(expr)
+    puts "assert_equal %q{#{result.inspect}}, %q{\n#{expr}}"
+    puts
+  }
+}
+
+=end
+
+assert_equal %q{[:C0_m, [1, 2, :o1, :o2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, p1, p2); super; end; end
+; C1.new.m(1,2,3,4)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, :o2, 4, 5]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6)}
+
+assert_equal %q{[:C0_m, [1, :o]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [1, 2, 3]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r; super; end; end
+; C1.new.m 1, 2, 3}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r; super; end; end
+; C1.new.m 1, 2, 3, 4}
+
+assert_equal %q{[:C0_m, [:a]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a
+    a = :a; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6, 7]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6,7)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6, 7, 8]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6,7,8)}
+
+assert_equal %q{[:C0_m, [1, :o]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [1, 2, 3]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m 1, 2, 3}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m 1, 2, 3, 4}
+
+assert_equal %q{[:C0_m, [1, :o]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m(1){}}
+
+assert_equal %q{[:C0_m, [1, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m(1, 2){}}
+
+assert_equal %q{[:C0_m, [1, 2, 3]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m(1, 2, 3){}}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o, *r, &b; super; end; end
+; C1.new.m(1, 2, 3, 4){}}
+
+assert_equal %q{[:C0_m, [1, :x]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o
+    o = :x; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, :x]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o
+    o = :x; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [:a, :o]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o
+    a = :a; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [:a, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o
+    a = :a; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [1]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, :x, :y]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r
+    r = [:x, :y]; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, :x, :y]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r
+    r = [:x, :y]; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [1, :x, :y]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r
+    r = [:x, :y]; super; end; end
+; C1.new.m 1, 2, 3}
+
+assert_equal %q{[:C0_m, [1, 2, :o1, :o2, 3, 4]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, :o2, 4, 5]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6, 7]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6,7)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6, 7, 8]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6,7,8)}
+
+assert_equal %q{[:C0_m, [1, 2, 3, 4, 5, 6, 7, 8, 9]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2); super; end; end
+; C1.new.m(1,2,3,4,5,6,7,8,9)}
+
+assert_equal %q{[:C0_m, [1]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r; super; end; end
+; C1.new.m 1, 2}
+
+assert_equal %q{[:C0_m, [1, 2, 3]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, *r; super; end; end
+; C1.new.m 1, 2, 3}
+
+assert_equal %q{[:C0_m, []]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m; super; end; end
+; C1.new.m}
+
+assert_equal %q{[:C0_m, [1, :o]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o; super; end; end
+; C1.new.m 1}
+
+assert_equal %q{[:C0_m, [1, 2]]}, %q{
+class C0; def m *args; [:C0_m, args]; end; end
+class C1 < C0; def m a, o=:o; super; end; end
+; C1.new.m 1, 2}
+
+
+

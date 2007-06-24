@@ -782,11 +782,13 @@ ruby_iseq_disasm(VALUE self)
 		}
 	    }
 
-	    snprintf(argi, sizeof(argi), "%s%s%s%s",	/* arg, opts, rest, block */
+	    snprintf(argi, sizeof(argi), "%s%s%s%s%s",	/* arg, opts, rest, post  block */
 		     iseqdat->argc > i ? "Arg" : "",
 		     opti,
-		     iseqdat->arg_rest - d == i ? "Rest" : "",
-		     iseqdat->arg_block - d == i ? "Block" : "");
+		     iseqdat->arg_rest == i ? "Rest" : "",
+		     (iseqdat->arg_post_start <= i &&
+		      i < iseqdat->arg_post_start + iseqdat->arg_post_len) ? "Post" : "",
+		     iseqdat->arg_block == i ? "Block" : "");
 
 	    snprintf(info, sizeof(info), "%s%s%s%s", name ? name : "?",
 		     *argi ? "<" : "", argi, *argi ? ">" : "");
