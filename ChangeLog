@@ -1,3 +1,8 @@
+Sun Jun 24 19:02:33 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, vm_macro.def : remove macro_eval_invoke_cfunc() and
+	  add vm_call_cfunc().
+
 Sun Jun 24 17:54:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, vm.c: add/fix stack overflow check.

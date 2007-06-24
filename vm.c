@@ -343,6 +343,34 @@ caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp,
     return argc;
 }
 
+static inline VALUE
+vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
+	      ID id, VALUE recv, VALUE klass, NODE *mn, rb_block_t *blockptr)
+{
+    VALUE val;
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+    {
+	rb_control_frame_t *cfp =
+	  push_frame(th, 0, FRAME_MAGIC_CFUNC,
+		     recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
+
+	cfp->method_id = id;
+	cfp->method_klass = klass;
+
+	reg_cfp->sp -= num + 1;
+
+	val = call_cfunc(mn->nd_cfnc, recv, mn->nd_argc, num, reg_cfp->sp + 1);
+
+	if (reg_cfp != th->cfp + 1) {
+	    rb_bug("cfp consistency error - send");
+	}
+	pop_frame(th);
+    }
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
+
+    return val;
+}
 
 /* Env */
 
