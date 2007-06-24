@@ -1,3 +1,17 @@
+Sun Jun 24 20:01:08 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_macro.def: removed.
+
+	* insn_send.ci: added.  this file includes send instruction body.
+
+	* common.mk: ditto.
+
+	* insns.def: ditto.
+
+	* tool/insns2vm.rb: ditto.
+
+	* vm.c: ditto.
+
 Sun Jun 24 19:30:37 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.h (RESTORE_REGS): add do/while(0) around macro.

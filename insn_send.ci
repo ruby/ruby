@@ -1,0 +1,226 @@
+/* -*-c-*- */
+/* send instruction body */
+
+{
+    NODE *mn;
+    VALUE recv;
+    VALUE klass;
+    rb_block_t *blockptr = 0;
+    rb_num_t num;
+    rb_num_t flag = op_flag;
+    ID id = op_id;
+
+    num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &blockptr);
+
+    if (flag & VM_CALL_FCALL_BIT) {
+	/* method(...) */
+	recv = GET_SELF();
+    }
+    else {
+	/* recv.method(...) */
+	recv = TOPN(num);
+    }
+
+    klass = CLASS_OF(recv);
+
+    mn = eval_method_search(id, klass, ic);
+
+    if ((flag & VM_CALL_SEND_BIT) && mn && nd_type(mn->nd_body) == NODE_CFUNC) {
+	NODE *node = mn->nd_body;
+	extern VALUE rb_f_funcall(int argc, VALUE *argv, VALUE recv);
+	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
+
+	if (node->nd_cfnc == rb_f_funcall || node->nd_cfnc == rb_f_send) {
+	    int i;
+	    VALUE sym = TOPN(num - 1);
+	    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
+
+	    /* shift arguments */
+	    for (i=num-1; i>0; i--) {
+		TOPN(i) = TOPN(i-1);
+	    }
+
+	    mn = rb_method_node(klass, id);
+
+	    num -= 1;
+	    DEC_SP(1);
+	}
+
+	if (node->nd_cfnc == rb_f_funcall) {
+	    flag |= VM_CALL_FCALL_BIT;
+	}
+    }
+
+#if CURRENT_INSN_send || CURRENT_INSN_send_SC_xx_ax
+#if !YARV_AOT_COMPILED
+    if (0) {
+	if (0) {
+	    LABEL_IS_SC(start_init_in_send_for_opt_1):
+	    num = 1;
+	    recv = TOPN(1);
+	}
+	else if (0) {
+	    LABEL_IS_SC(start_init_in_send_for_opt_2):
+	    num = 2;
+	    recv = TOPN(2);
+	}
+	flag = 0;
+	id = tmp_id;
+	klass = CLASS_OF(recv);
+	blockptr = 0;
+	mn = rb_method_node(klass, id);
+    }
+    if (0) {
+	LABEL_IS_SC(start_init_in_super):
+	{
+	    rb_iseq_t *iseq = GET_ISEQ();
+	    rb_iseq_t *ip = iseq;
+
+	    num = tmp_num;
+	    flag = VM_CALL_FCALL_BIT;
+	    recv = GET_SELF();
+
+	    while (ip && !ip->klass) {
+		ip = ip->parent_iseq;
+	    }
+
+	    if (ip == 0) {
+		rb_raise(rb_eNoMethodError, "super called outside of method");
+	    }
+
+	    id = ip->defined_method_id;
+
+	    if (ip != ip->local_iseq) {
+		/* defined by Module#define_method() */
+		rb_control_frame_t *lcfp = GET_CFP();
+
+		while (lcfp->iseq != ip) {
+		    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
+		    while (1) {
+			lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
+			if (lcfp->dfp == tdfp) {
+			    break;
+			}
+		    }
+		}
+
+		id = lcfp->method_id;
+		klass = search_super_klass(lcfp->method_klass, recv);
+
+		if (TOPN(num) == Qfalse) {
+		    /* for ZSUPER */
+		    int i;
+		    POPN(num);
+		    num = ip->argc;
+		    for (i = 0; i < ip->argc; i++) {
+			PUSH(lcfp->dfp[i - ip->local_size]);
+		    }
+		}
+	    }
+	    else {
+		klass = search_super_klass(ip->klass, recv);
+	    }
+
+	    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
+	    blockptr = tmp_blockptr;
+	    mn = rb_method_node(klass, id);
+	}
+    }
+    LABEL_IS_SC(start_method_dispatch):
+#endif
+#endif
+    /* method missing */
+    if (mn == 0) {
+	/* temporarily */
+	if (id == idMethodMissing) {
+	    rb_bug("method missing");
+	}
+	else {
+	    int stat = 0;
+	    if (flag & VM_CALL_VCALL_BIT) {
+		stat |= NOEX_VCALL;
+	    }
+	    if (flag & VM_CALL_SUPER_BIT) {
+		stat |= NOEX_SUPER;
+	    }
+	    val = eval_method_missing(th, id, recv, num, blockptr, stat);
+	}
+    }
+    else if (!(flag & VM_CALL_FCALL_BIT) &&
+	     (mn->nd_noex & NOEX_MASK) & NOEX_PRIVATE) {
+	int stat = NOEX_PRIVATE;
+	if (flag & VM_CALL_VCALL_BIT) {
+	    stat |= NOEX_VCALL;
+	}
+	val = eval_method_missing(th, id, recv, num, blockptr, stat);
+    }
+    else if ((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) {
+	VALUE defined_class = mn->nd_clss;
+
+	if (TYPE(defined_class) == T_ICLASS) {
+	    defined_class = RBASIC(defined_class)->klass;
+	}
+	if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(defined_class))) {
+	    val =
+	      eval_method_missing(th, id, recv, num, blockptr,
+				  NOEX_PROTECTED);
+	}
+	else {
+	    goto INSN_LABEL(normal_method_dispatch);
+	}
+    }
+    else {
+	NODE *node;
+	INSN_LABEL(normal_method_dispatch):
+
+	node = mn->nd_body;
+	switch (nd_type(node)) {
+	  case RUBY_VM_METHOD_NODE:{
+	      vm_setup_method(th, GET_CFP(), num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+	      RESTORE_REGS();
+	      NEXT_INSN();
+	  }
+	  case NODE_CFUNC:{
+	      val = vm_call_cfunc(th, GET_CFP(), num, id, recv, klass, node, blockptr);
+	      break;
+	  }
+	  case NODE_ATTRSET:{
+	      val = rb_ivar_set(recv, node->nd_vid, TOPN(0));
+	      POPN(2);
+	      break;
+	  }
+	  case NODE_IVAR:{
+	      val = rb_ivar_get(recv, node->nd_vid);
+	      POP();
+	      break;
+	  }
+	  case NODE_BMETHOD:{
+	      VALUE *argv = GET_SP() - num;
+	      val = th_invoke_bmethod(th, id, node->nd_cval,
+				      recv, klass, num, argv);
+	      INC_SP(-num-1);
+	      break;
+	  }
+	  case NODE_ZSUPER:{
+	      klass = RCLASS(mn->nd_clss)->super;
+	      mn = rb_method_node(klass, id);
+
+	      if (mn != 0) {
+		  goto INSN_LABEL(normal_method_dispatch);
+	      }
+	      else {
+		  goto LABEL_IS_SC(start_method_dispatch);
+	      }
+	  }
+	  default:{
+	      printf("node: %s\n", ruby_node_name(nd_type(node)));
+	      rb_bug("eval_invoke_method: unreachable");
+	      /* unreachable */
+	      break;
+	  }
+	}
+    }
+
+    RUBY_VM_CHECK_INTS();
+}
+

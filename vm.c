@@ -18,7 +18,6 @@
 #include "yarvcore.h"
 #include "vm.h"
 #include "insnhelper.h"
-#include "vm_macro.inc"
 #include "insns.inc"
 #include "eval_intern.h"
 

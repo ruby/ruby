@@ -566,7 +566,7 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
         {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
-        {$(VPATH)}vm_macro.inc {$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
+        {$(VPATH)}insn_send.ci {$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
         {$(VPATH)}gc.h {$(VPATH)}thread_$(THREAD_MODEL).h
 vm_dump.$(OBJEXT):  {$(VPATH)}vm_dump.c {$(VPATH)}yarvcore.h {$(VPATH)}vm.h \
@@ -615,10 +615,6 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
 	$(RM) $(PROGRAM)
 	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
-
-vm_macro.inc: $(srcdir)/vm_macro.def
-	$(RM) $(PROGRAM)
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) vm_macro.inc
 
 incs: $(INSNS)
 

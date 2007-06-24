@@ -1208,23 +1208,6 @@ class InsnsDef
     ERB.new(vpath.read('template/yarvarch.en')).result(binding)
   end
 
-  def vm_macro_inc
-    ret = ''
-    flag = false
-    vpath.foreach('vm_macro.def') {|line|
-      line.rstrip!
-      if /^MACRO\s/ =~ line
-        line.sub!(/^MACRO/, '#define')
-        flag = true
-      elsif /^\}/ =~ line
-        flag = false
-      end
-
-      ret << line + (flag ? " \\" : '') + "\n"
-    }
-    ret
-  end
-  
   Files = { # codes
     'vm.inc'         => :vm_inc,
     'vmtc.inc'       => :vmtc_inc,
@@ -1235,7 +1218,6 @@ class InsnsDef
     'optunifs.inc'   => :optunifs_unc,
     'opt_sc.inc'     => :opt_sc_inc,
     'yasmdata.rb'    => :yasmdata_rb,
-    'vm_macro.inc'   => :vm_macro_inc,
   }
   
   def make_sources args = []
