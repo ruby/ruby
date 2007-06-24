@@ -937,6 +937,8 @@ char *strtok();
 #endif
 
 void rb_thread_stop_timer_thread(void);
+void rb_thread_start_timer_thread(void);
+void rb_thread_reset_timer_thread(void);
 
 #define before_exec() \
   (rb_enable_interrupt(), rb_thread_stop_timer_thread())

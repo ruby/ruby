@@ -100,7 +100,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	else {
 	    pc = cfp->pc - cfp->iseq->iseq_encoded;
 	    iseq_name = RSTRING_PTR(cfp->iseq->name);
-	    line = th_get_sourceline(cfp);
+	    line = vm_get_sourceline(cfp);
 	    if (line) {
 		char fn[MAX_POSBUF+1];
 		snprintf(fn, MAX_POSBUF, "%s", RSTRING_PTR(cfp->iseq->filename));
@@ -141,12 +141,12 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
+#if 0
     VALUE *sp = cfp->sp, *bp = cfp->bp;
     VALUE *lfp = cfp->lfp;
     VALUE *dfp = cfp->dfp;
     VALUE *p, *st, *t;
 
-#if 0
     fprintf(stderr, "-- stack frame ------------\n");
     for (p = st = th->stack; p < sp; p++) {
 	fprintf(stderr, "%04ld (%p): %08lx", p - st, p, *p);
@@ -166,6 +166,7 @@ vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "\n");
     }
 #endif
+
     fprintf(stderr, "-- control frame ----------\n");
     while ((void *)cfp < (void *)(th->stack + th->stack_size)) {
 	control_frame_dump(th, cfp);
@@ -587,7 +588,7 @@ yarv_bug(void)
 	int i;
 	SDR();
 
-	bt = th_backtrace(th, 0);
+	bt = vm_backtrace(th, 0);
 	if (TYPE(bt) == T_ARRAY)
 	for (i = 0; i < RARRAY_LEN(bt); i++) {
 	    dp(RARRAY_PTR(bt)[i]);

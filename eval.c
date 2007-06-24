@@ -57,6 +57,9 @@ char **rb_origenviron;
 jmp_buf function_call_may_return_twice_jmp_buf;
 int function_call_may_return_twice_false = 0;
 
+void rb_clear_trace_func(void);
+void rb_thread_stop_timer_thread(void);
+
 void rb_call_inits _((void));
 void Init_stack _((VALUE *));
 void Init_heap _((void));
@@ -155,7 +158,6 @@ ruby_cleanup(int ex)
     int state;
     volatile VALUE errs[2];
     rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
     int nerr;
 
     errs[1] = th->errinfo;
@@ -347,7 +349,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     POP_TAG();
 
     rb_set_safe_level_force(safe);
-    if (state) th_jump_tag_but_local_jump(state, val);
+    if (state) vm_jump_tag_but_local_jump(state, val);
     return val;
 }
 
@@ -661,12 +663,12 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     return Qfalse;
 }
 
-NORETURN(void th_iter_break _((rb_thread_t *)));
+NORETURN(void vm_iter_break _((rb_thread_t *)));
 
 void
 rb_iter_break()
 {
-    th_iter_break(GET_THREAD());
+    vm_iter_break(GET_THREAD());
 }
 
 NORETURN(static void rb_longjmp _((int, VALUE)));
@@ -901,7 +903,7 @@ rb_f_block_given_p()
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
-    cfp = th_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    cfp = vm_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	return Qtrue;
     }
@@ -916,16 +918,15 @@ void
 rb_need_block()
 {
     if (!rb_block_given_p()) {
-	th_localjump_error("no block given", Qnil, 0);
+	vm_localjump_error("no block given", Qnil, 0);
     }
 }
 
 static inline VALUE
 rb_yield_0(int argc, VALUE *argv)
 {
-    return th_yield(GET_THREAD(), argc, argv);
+    return vm_yield(GET_THREAD(), argc, argv);
 }
-
 
 VALUE
 rb_yield(VALUE val)
@@ -1429,7 +1430,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 	//printf("%s with %d args\n", rb_id2name(mid), argc);
 	*/
 	val =
-	    th_call0(GET_THREAD(), klass, recv, mid, id, argc, argv, body,
+	    vm_call0(GET_THREAD(), klass, recv, mid, id, argc, argv, body,
 		     noex & NOEX_NOSUPER);
 	/*
 	//level--;
@@ -1557,7 +1558,7 @@ rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 static VALUE
 backtrace(int lev)
 {
-    return th_backtrace(GET_THREAD(), lev);
+    return vm_backtrace(GET_THREAD(), lev);
 }
 
 /*
@@ -1671,7 +1672,7 @@ const char *
 rb_sourcefile(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
 
     if (cfp) {
 	return RSTRING_PTR(cfp->iseq->filename);
@@ -1685,10 +1686,10 @@ int
 rb_sourceline(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
 
     if (cfp) {
-	return th_get_sourceline(cfp);
+	return vm_get_sourceline(cfp);
     }
     else {
 	return 0;
@@ -1733,16 +1734,16 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	    th->base_block = &env->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
+	    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
 	    th->base_block = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
 	    th->base_block->iseq = cfp->iseq;	/* TODO */
 	}
 
 	/* make eval iseq */
 	th->parse_in_eval++;
-	iseqval = th_compile(th, src, rb_str_new2(file), INT2FIX(line));
+	iseqval = vm_compile(th, src, rb_str_new2(file), INT2FIX(line));
 	th->parse_in_eval--;
-	th_set_eval_stack(th, iseqval);
+	vm_set_eval_stack(th, iseqval);
 	th->base_block = 0;
 
 	if (0) {		/* for debug */
@@ -1753,22 +1754,22 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
 	/* save new env */
 	GetISeqPtr(iseqval, iseq);
 	if (bind && iseq->local_size > 0) {
-	    bind->env = th_make_env_object(th, th->cfp);
+	    bind->env = vm_make_env_object(th, th->cfp);
 	}
 
 	/* push tag */
 	if (stored_cref_stack) {
 	    stored_cref_stack =
-		th_set_special_cref(th, env->block.lfp, stored_cref_stack);
+	      vm_set_special_cref(th, env->block.lfp, stored_cref_stack);
 	}
 
 	/* kick */
-	result = th_eval_body(th);
+	result = vm_eval_body(th);
     }
     POP_TAG();
 
     if (stored_cref_stack) {
-	th_set_special_cref(th, env->block.lfp, stored_cref_stack);
+	vm_set_special_cref(th, env->block.lfp, stored_cref_stack);
     }
 
     if (state) {
@@ -1842,7 +1843,7 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     return eval(self, src, scope, file, line);
 }
 
-VALUE *th_cfp_svar(rb_control_frame_t *cfp, int idx);
+VALUE *vm_cfp_svar(rb_control_frame_t *cfp, int idx);
 
 /* function to call func under the specified class/module context */
 static VALUE
@@ -1874,9 +1875,9 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
-    pcref = (NODE **) th_cfp_svar(cfp, -1);
+    pcref = (NODE **) vm_cfp_svar(cfp, -1);
     stored_cref = *pcref;
-    *pcref = th_cref_push(th, under, NOEX_PUBLIC);
+    *pcref = vm_cref_push(th, under, NOEX_PUBLIC);
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -2590,7 +2591,7 @@ errat_setter(VALUE val, ID id, VALUE *var)
  *     local_variables   #=> ["fred", "i"]
  */
 
-int th_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 static VALUE
 rb_f_local_variables(void)
@@ -2598,7 +2599,7 @@ rb_f_local_variables(void)
     VALUE ary = rb_ary_new();
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
-	th_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
+	vm_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
     while (1) {
@@ -2618,7 +2619,7 @@ rb_f_local_variables(void)
 	    /* block */
 	    VALUE *dfp = GC_GUARDED_PTR_REF(cfp->dfp[0]);
 
-	    if (th_collect_local_variables_in_heap(th, dfp, ary)) {
+	    if (vm_collect_local_variables_in_heap(th, dfp, ary)) {
 		break;
 	    }
 	    else {

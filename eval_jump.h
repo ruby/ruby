@@ -138,7 +138,6 @@ static VALUE
 terminate_process(int status, const char *mesg, long mlen)
 {
     VALUE args[2];
-    rb_vm_t *vm = GET_THREAD()->vm;
 
     args[0] = INT2NUM(status);
     args[1] = rb_str_new(mesg, mlen);

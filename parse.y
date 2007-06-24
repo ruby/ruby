@@ -7946,22 +7946,6 @@ arg_blk_pass(NODE *node1, NODE *node2)
     return node1;
 }
 
-static int
-arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
-{
-    VALUE sym;
-
-    if (!vid) return 0;
-    if (is_junk_id(vid)) return 0;
-    sym = ID2SYM(vid);
-    if ((m && rb_ary_includes(m, sym)) || rb_ary_includes(list, sym)) {
-	ruby_sourceline = nd_line(node);
-	return 1;
-    }
-    rb_ary_push(list, sym);
-    return 0;
-}
-
 static NODE*
 new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b)
 {
@@ -8022,18 +8006,6 @@ vtable_tblcpy(ID *buf, const struct vtable *src)
         return buf;
     }
     return 0;
-}
-
-static ID*
-vtable_to_tbl(const struct vtable *src)
-{
-    int cnt = vtable_size(src);
-    ID *buf;
-
-    if (cnt <= 0) return 0;
-    buf = ALLOC_N(ID, cnt + 1);
-    vtable_tblcpy(buf+1, src);
-    return buf;
 }
 
 static ID*

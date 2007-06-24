@@ -719,7 +719,7 @@ ruby_iseq_disasm(VALUE self)
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
     unsigned long size;
-    int i, d = iseqdat->local_size - iseqdat->local_table_size;
+    int i;
     ID *tbl;
     char buff[0x200];
 

@@ -157,7 +157,7 @@ cont_new(VALUE klass)
     return cont;
 }
 
-void th_stack_to_heap(rb_thread_t *th);
+void vm_stack_to_heap(rb_thread_t *th);
 
 static VALUE
 cont_capture(volatile int *stat)
@@ -166,7 +166,7 @@ cont_capture(volatile int *stat)
     rb_thread_t *th;
     volatile VALUE contval;
 
-    th_stack_to_heap(GET_THREAD());
+    vm_stack_to_heap(GET_THREAD());
     cont = cont_new(rb_cCont);
     contval = cont->self;
     th = &cont->saved_thread;
@@ -535,12 +535,12 @@ rb_fiber_start(void)
 	th->local_lfp = proc->block.lfp;
 	th->local_svar = Qnil;
 
-	cont->value = th_invoke_proc(th, proc, proc->block.self, 1, &args);
+	cont->value = vm_invoke_proc(th, proc, proc->block.self, 1, &args);
     }
     TH_POP_TAG();
 
     if (state) {
-	th->thrown_errinfo = th_make_jump_tag_but_local_jump(state, th->errinfo);
+	th->thrown_errinfo = vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	th->interrupt_flag = 1;
     }
 

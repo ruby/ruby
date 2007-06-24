@@ -653,19 +653,19 @@ void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 int rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp);
 
-VALUE th_eval_body(rb_thread_t *th);
-VALUE th_set_eval_stack(rb_thread_t *, VALUE iseq);
-VALUE th_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
-VALUE th_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
-VALUE th_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
-VALUE th_backtrace(rb_thread_t *, int);
+VALUE vm_eval_body(rb_thread_t *th);
+VALUE vm_set_eval_stack(rb_thread_t *, VALUE iseq);
+VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
+VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
+VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+VALUE vm_backtrace(rb_thread_t *, int);
 
-VALUE th_yield(rb_thread_t *th, int argc, VALUE *argv);
-VALUE th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
+VALUE vm_yield(rb_thread_t *th, int argc, VALUE *argv);
+VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	       VALUE id, ID oid, int argc, const VALUE *argv,
 	       NODE * body, int nosuper);
 
-int th_get_sourceline(rb_control_frame_t *);
+int vm_get_sourceline(rb_control_frame_t *);
 
 VALUE yarvcore_eval_parsed(NODE *node, VALUE file);
 VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);

@@ -75,7 +75,6 @@ ID id__send_bang;
 
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
-static VALUE ruby_vm_list = Qnil;
 
 RUBY_EXTERN int ruby_nerrs;
 
@@ -99,7 +98,7 @@ yarvcore_eval_iseq(VALUE iseq)
 }
 
 static VALUE
-th_compile_from_node(rb_thread_t *th, NODE * node, VALUE file)
+vm_compile_from_node(rb_thread_t *th, NODE * node, VALUE file)
 {
     VALUE iseq;
     if (th->base_block) {
@@ -117,16 +116,16 @@ th_compile_from_node(rb_thread_t *th, NODE * node, VALUE file)
 }
 
 VALUE
-th_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line)
+vm_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line)
 {
     NODE *node = (NODE *) compile_string(str, file, line);
-    return th_compile_from_node(th, (NODE *) node, file);
+    return vm_compile_from_node(th, (NODE *) node, file);
 }
 
 VALUE
 yarvcore_eval_parsed(NODE *node, VALUE file)
 {
-    VALUE iseq = th_compile_from_node(GET_THREAD(), node, file);
+    VALUE iseq = vm_compile_from_node(GET_THREAD(), node, file);
     return yarvcore_eval_iseq(iseq);
 }
 

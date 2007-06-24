@@ -196,18 +196,18 @@ NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_raise_jump _((VALUE)));
 NORETURN(void print_undef _((VALUE, ID)));
-NORETURN(void th_localjump_error(const char *, VALUE, int));
-NORETURN(void th_jump_tag_but_local_jump(int, VALUE));
+NORETURN(void vm_localjump_error(const char *, VALUE, int));
+NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 
-VALUE th_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line);
+VALUE vm_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line);
 
-NODE *th_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
-NODE *th_cref_push(rb_thread_t *th, VALUE, int);
-NODE *th_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
-VALUE th_make_jump_tag_but_local_jump(int state, VALUE val);
+NODE *vm_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
+NODE *vm_cref_push(rb_thread_t *th, VALUE, int);
+NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
+VALUE vm_make_jump_tag_but_local_jump(int state, VALUE val);
 
 static rb_control_frame_t *
-th_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
@@ -222,17 +222,17 @@ static inline NODE *
 ruby_cref()
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th_get_ruby_level_cfp(th, th->cfp);
-    return th_get_cref(th, cfp->iseq, cfp);
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+    return vm_get_cref(th, cfp->iseq, cfp);
 }
 
-VALUE th_get_cbase(rb_thread_t *th);
+VALUE vm_get_cbase(rb_thread_t *th);
 VALUE rb_obj_is_proc(VALUE);
 void rb_vm_check_redefinition_opt_method(NODE *node);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
 
-#define ruby_cbase() th_get_cbase(GET_THREAD())
+#define ruby_cbase() vm_get_cbase(GET_THREAD())
 
 
 /* tracer */

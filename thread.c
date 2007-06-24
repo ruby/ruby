@@ -81,7 +81,6 @@ st_delete_wrap(st_table * table, VALUE key)
 #define THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 static rb_unblock_function_t* set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func);
-static void clear_unblock_function(rb_thread_t *th);
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
@@ -211,14 +210,6 @@ set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func)
 }
 
 static void
-clear_unblock_function(rb_thread_t *th)
-{
-    native_mutex_lock(&th->interrupt_lock);
-    th->unblock_function = 0;
-    native_mutex_unlock(&th->interrupt_lock);
-}
-
-static void
 rb_thread_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
@@ -314,7 +305,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start
 		    th->errinfo = Qnil;
 		    th->local_lfp = proc->block.lfp;
 		    th->local_svar = Qnil;
-		    th->value = th_invoke_proc(th, proc, proc->block.self,
+		    th->value = vm_invoke_proc(th, proc, proc->block.self,
 					       RARRAY_LEN(args), RARRAY_PTR(args));
 		}
 		else {
@@ -393,8 +384,6 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
-VALUE th_make_jump_tag_but_local_jump(int state, VALUE val);
-
 static VALUE
 thread_join(rb_thread_t *target_th, double delay)
 {
@@ -435,7 +424,7 @@ thread_join(rb_thread_t *target_th, double delay)
 	    /* */
 	}
 	else if (TYPE(target_th->errinfo) == T_NODE) {
-	    rb_exc_raise(th_make_jump_tag_but_local_jump(
+	    rb_exc_raise(vm_make_jump_tag_but_local_jump(
 		GET_THROWOBJ_STATE(err), GET_THROWOBJ_VAL(err)));
 	}
 	else {
@@ -2716,7 +2705,6 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 static VALUE
 set_trace_func(VALUE obj, VALUE trace)
 {
-    rb_vm_t *vm = GET_VM();
     rb_remove_event_hook(call_trace_func);
 
     if (NIL_P(trace)) {

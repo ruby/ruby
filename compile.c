@@ -90,7 +90,6 @@ static void dump_disasm_list(LINK_ELEMENT *elem);
 static int insn_data_length(INSN *iobj);
 static int insn_data_line_no(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
-static int insn_ret_num(int insn);
 
 static void ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
@@ -109,10 +108,7 @@ static int set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
 static int set_exception_table(rb_iseq_t *iseq);
 static int set_local_table(rb_iseq_t *iseq, ID *tbl);
-static int set_local_table_eval(rb_iseq_t *iseq, ID *tbl);
 static int set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
-static NODE *set_block_local_tbl(rb_iseq_t *iseq, NODE * node,
-				 LINK_ANCHOR *anchor);
 static int set_exception_tbl(rb_iseq_t *iseq);
 static int set_optargs_table(rb_iseq_t *iseq);
 
@@ -218,7 +214,7 @@ rb_iseq_compile(VALUE self, NODE *node)
     return iseq_setup(iseq, ret);
 }
 
-VALUE th_eval(void *);
+VALUE vm_eval(void *);
 
 static int
 iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
@@ -226,7 +222,7 @@ iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 
 #if OPT_DIRECT_THREADED_CODE
-    void **table = (void **)th_eval(0);
+    void **table = (void **)vm_eval(0);
 #else
     extern void **insns_address_table();
     void **table = get_insns_address_table();
@@ -353,6 +349,7 @@ INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 }
 #endif
 
+#if 0 /* unused */
 /*
  * elemX, elem1 => elemX, elem2, elem1
  */
@@ -366,6 +363,8 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 	elem2->prev->next = elem2;
     }
 }
+#endif
+
 /*******************************************/
 
 /*
@@ -417,6 +416,7 @@ POP_ELEMENT(LINK_ANCHOR *anchor)
     return elem;
 }
 
+#if 0 /* unused */
 static LINK_ELEMENT *
 SHIFT_ELEMENT(LINK_ANCHOR *anchor)
 {
@@ -426,7 +426,9 @@ SHIFT_ELEMENT(LINK_ANCHOR *anchor)
     }
     return elem;
 }
+#endif
 
+#if 0 /* unused */
 static int
 LIST_SIZE(LINK_ANCHOR *anchor)
 {
@@ -438,6 +440,7 @@ LIST_SIZE(LINK_ANCHOR *anchor)
     }
     return size;
 }
+#endif
 
 static int
 LIST_SIZE_ZERO(LINK_ANCHOR *anchor)
@@ -779,12 +782,10 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 
     if (node_args) {
 	NODE *node_aux = node_args->nd_next;
-	int mandatory_len = 0;
 	NODE *node_opt = node_args->nd_opt;
 	ID rest_id = 0;
 	ID block_id = 0;
 	NODE *node_init = 0;
-	int d = iseq->local_size - iseq->local_table_size;
 
 	if (nd_type(node_args) != NODE_ARGS) {
 	    rb_bug("set_arguments: NODE_ARGS is expected, but %s",
@@ -931,24 +932,6 @@ set_local_table(rb_iseq_t *iseq, ID *tbl)
     }
 
     debugs("set_local_table: %d, %d\n", iseq->local_size, iseq->local_table_size);
-    return COMPILE_OK;
-}
-
-static int
-set_local_table_eval(rb_iseq_t *iseq, ID *tbl)
-{
-    int size;
-    if (tbl) {
-	size = *tbl;
-    }
-    else {
-	size = 0;
-    }
-    if (tbl) {
-	iseq->local_table = (ID *)ALLOC_N(ID *, size);
-	MEMCPY(iseq->local_table, tbl + 1, ID *, size);
-    }
-    iseq->local_table_size = iseq->local_size = size;
     return COMPILE_OK;
 }
 
@@ -2130,8 +2113,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	NODE *vals = node;
 
 	do {
-	    NODE *val = vals->nd_head;
 	    defined_expr(iseq, ret, vals->nd_head, lfinish, Qfalse);
+
 	    if (lfalse) {
 		ADD_INSNL(ret, nd_line(node), branchunless, lfalse);
 	    }
@@ -3723,8 +3706,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (node->nd_head) {
 	    if (nd_type(node->nd_head) == NODE_ARRAY) {
-		NODE *p;
-
 		argc = node->nd_head->nd_alen;
 		compile_array(iseq, args, node->nd_head, Qfalse);
 		POP_ELEMENT(args);

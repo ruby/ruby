@@ -551,7 +551,7 @@ signal_exec(VALUE cmd, int sig)
     rb_proc_t *proc;
     VALUE signum = INT2FIX(sig);
     GetProcPtr(cmd, proc);
-    th_invoke_proc(GET_THREAD(), proc, proc->block.self, 1, &signum);
+    vm_invoke_proc(GET_THREAD(), proc, proc->block.self, 1, &signum);
 }
 
 void

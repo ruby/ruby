@@ -1,3 +1,15 @@
+Mon Jun 25 00:14:13 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: some refactoring.
+	  * rename th_* to vm_*.
+	  * remove unused variables functions.
+	  * add prototypes.
+
+	* blockinlining.c, compile.c, cont.c, eval.c, eval_intern.h,
+	  eval_jump.h, eval_load.c, inits.c, insns.def, iseq.c, parse.y, 
+	  proc.c, process.c, signal.c, thread.c, vm.c, vm_dump.c,
+	  vm_evalbody.ci, yarvcore.c, yarvcore.h: ditto.
+
 Sun Jun 24 22:32:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_method.h (rb_add_method): fix to check 0.

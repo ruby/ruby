@@ -48,6 +48,7 @@ void Init_version(void);
 void Init_ISeq(void);
 void Init_VM(void);
 void Init_Thread(void);
+void Init_Cont(void);
 
 void
 rb_call_inits()

@@ -30,7 +30,7 @@ typedef rb_iseq_t *ISEQ;
 
 #if !OPT_CALL_THREADED_CODE
 VALUE
-th_eval(rb_thread_t *th, VALUE initial)
+vm_eval(rb_thread_t *th, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
@@ -97,13 +97,13 @@ th_eval(rb_thread_t *th, VALUE initial)
 
   first:
     INSN_DISPATCH();
-  /******************/
-#include "vm.inc"
-  /******************/
+/*****************/
+ #include "vm.inc"
+/*****************/
     END_INSNS_DISPATCH();
 
     /* unreachable */
-    rb_bug("th_eval_iseq: unreachable");
+    rb_bug("vm_eval: unreachable");
     return Qundef;
 }
 
@@ -119,7 +119,7 @@ get_insns_address_table()
 }
 
 VALUE
-th_eval(rb_thread_t *th, VALUE initial)
+vm_eval(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
     SET_PC(reg_cfp->iseq->iseq_encoded);
