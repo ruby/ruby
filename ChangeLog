@@ -1,3 +1,10 @@
+Sun Jun 24 19:30:37 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.h (RESTORE_REGS): add do/while(0) around macro.
+
+	* vm.c, vm_macro.def: remove macro_eval_invoke_func() and
+	  add vm_setup_method().  use it instead.
+
 Sun Jun 24 19:02:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_macro.def : remove macro_eval_invoke_cfunc() and

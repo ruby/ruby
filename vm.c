@@ -372,6 +372,63 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
     return val;
 }
 
+static inline void
+vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
+		int argc, rb_block_t *blockptr, VALUE flag,
+		VALUE iseqval, VALUE recv, VALUE klass)
+{
+    rb_iseq_t *iseq;
+    int opt_pc, i;
+    VALUE *rsp = cfp->sp - argc;
+    VALUE *sp;
+
+    /* TODO: eliminate it */
+    GetISeqPtr(iseqval, iseq);
+
+    opt_pc = callee_setup_arg(th, iseq, argc, rsp, &blockptr);
+    sp = rsp + iseq->arg_size;
+
+    /* stack overflow check */
+    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max + 0x10);
+
+    if (flag & VM_CALL_TAILCALL_BIT) {
+	VALUE *p_rsp, *p_sp;
+	cfp = ++th->cfp; /* pop cf */
+	p_rsp = th->cfp->sp;
+
+	/* copy arguments */
+	for (i=0; i < (sp - rsp); i++) {
+	    p_rsp[i] = rsp[i];
+	}
+
+	sp -= rsp - p_rsp;
+
+	/* clear local variables */
+	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+	    *sp++ = Qnil;
+	}
+
+	push_frame(th, iseq,
+		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		   iseq->iseq_encoded + opt_pc, sp, 0, 0);
+    }
+    else {
+	if (0) printf("local_size: %d, arg_size: %d\n",
+		      iseq->local_size, iseq->arg_size);
+
+	/* clear local variables */
+	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+	    *sp++ = Qnil;
+	}
+
+	push_frame(th, iseq,
+		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		   iseq->iseq_encoded + opt_pc, sp, 0, 0);
+
+	cfp->sp = rsp - 1 /* recv */;
+    }
+}
+
 /* Env */
 
 static void
@@ -721,11 +778,14 @@ th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 
 	th_set_finish_env(th);
 	reg_cfp = th->cfp;
+
+	CHECK_STACK_OVERFLOW(reg_cfp, argc);
+
 	for (i = 0; i < argc; i++) {
 	    *reg_cfp->sp++ = argv[i];
 	}
-	macro_eval_invoke_func(body->nd_body, recv, klass, blockptr,
-			       argc);
+
+	vm_setup_method(th, reg_cfp, argc, blockptr, 0, (VALUE)body->nd_body, recv, klass);
 	val = th_eval_body(th);
 	break;
       }

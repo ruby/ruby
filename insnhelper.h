@@ -41,10 +41,9 @@
 #define REG_LFP (REG_CFP->lfp)
 #define REG_DFP (REG_CFP->dfp)
 
-#define RESTORE_REGS() \
-{ \
+#define RESTORE_REGS() do { \
   REG_CFP = th->cfp; \
-}
+} while (0)
 
 #define REG_A   reg_a
 #define REG_B   reg_b

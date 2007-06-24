@@ -2,60 +2,6 @@
 /* do not use C++ style comment */
 /*                              */
 
-MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
-{
-    rb_iseq_t *niseq;
-    int opt_pc, i;
-    VALUE *rsp = GET_SP() - num;
-    VALUE *sp;
-
-    /* TODO: eliminate it */
-    GetISeqPtr(niseqval, niseq);
-
-    opt_pc = callee_setup_arg(th, niseq, num, rsp, &blockptr);
-    sp = rsp + niseq->arg_size;
-
-    /* stack overflow check */
-    CHECK_STACK_OVERFLOW(GET_CFP(), niseq->stack_max + 0x10);
-
-    if (flag & VM_CALL_TAILCALL_BIT) {
-	/* copy arguments */
-	VALUE *p_rsp, *p_sp;
-	reg_cfp = ++th->cfp;
-	p_rsp = th->cfp->sp;
-
-	for (i=0; i < (sp - rsp); i++) {
-	    p_rsp[i] = rsp[i];
-	}
-
-	sp -= rsp - p_rsp;
-
-	for (i = 0; i < niseq->local_size - niseq->arg_size; i++) {
-	    *sp++ = Qnil;
-	}
-
-	push_frame(th, niseq,
-		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
-		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
-    }
-    else {
-	if (0) printf("local_size: %d, arg_size: %d\n",
-		      niseq->local_size, niseq->arg_size);
-
-	for (i = 0; i < niseq->local_size - niseq->arg_size; i++) {
-	    *sp++ = Qnil;
-	}
-
-	push_frame(th, niseq,
-		   FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
-		   niseq->iseq_encoded + opt_pc, sp, 0, 0);
-
-	reg_cfp->sp = rsp - 1 /* recv */;
-    }
-
-    RESTORE_REGS();
-}
-
 MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 {
     /* method missing */
@@ -105,8 +51,8 @@ MACRO macro_eval_invoke_method(recv, klass, id, num, mn, blockptr)
 	node = mn->nd_body;
 	switch (nd_type(node)) {
 	  case RUBY_VM_METHOD_NODE:{
-	      macro_eval_invoke_func(node->nd_body, recv, klass,
-				     blockptr, num);
+	      vm_setup_method(th, GET_CFP(), num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+	      RESTORE_REGS();
 	      NEXT_INSN();
 	  }
 	  case NODE_CFUNC:{
