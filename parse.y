@@ -4622,7 +4622,6 @@ yycompile(struct parser_params *parser, const char *f, int line)
     }
 
     kcode_save = rb_get_kcode();
-    ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
     ruby_sourceline = line - 1;
     parser_prepare(parser);

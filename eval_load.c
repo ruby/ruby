@@ -423,13 +423,11 @@ rb_require_safe(VALUE fname, int safe)
     volatile VALUE errinfo = th->errinfo;
     int state;
     struct {
-	NODE *node;
 	int safe;
     } volatile saved;
     char *volatile ftptr = 0;
 
     PUSH_TAG();
-    saved.node = ruby_current_node;
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
 	VALUE path;
@@ -452,7 +450,6 @@ rb_require_safe(VALUE fname, int safe)
 		    break;
 
 		  case 's':
-		    ruby_current_node = 0;
 		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
 		    ruby_sourceline = 0;
 		    handle = (long)rb_vm_call_cfunc(ruby_top_self, load_ext,
@@ -468,7 +465,6 @@ rb_require_safe(VALUE fname, int safe)
     POP_TAG();
     load_unlock(ftptr);
 
-    ruby_current_node = saved.node;
     rb_set_safe_level_force(saved.safe);
     if (state) {
 	JUMP_TAG(state);
@@ -502,9 +498,9 @@ init_ext_call(VALUE arg)
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(name);
     ruby_sourceline = 0;
+
     if (load_lock(name)) {
 	rb_vm_call_cfunc(ruby_top_self, init_ext_call, (VALUE)init, 0, rb_str_new2(name));
 	rb_provide(name);

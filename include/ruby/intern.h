@@ -173,6 +173,9 @@ NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
 void rb_check_frozen(VALUE);
 /* eval.c */
+int rb_sourceline(void);
+const char *rb_sourcefile(void);
+
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {
     int maxfd;

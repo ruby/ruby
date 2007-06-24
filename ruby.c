@@ -373,14 +373,11 @@ require_libraries(void)
     save[0] = ruby_eval_tree;
     save[1] = NEW_BEGIN(0);
     ruby_eval_tree = 0;
-    ruby_current_node = 0;
     Init_ext();		/* should be called here for some reason :-( */
-    ruby_current_node = save[1];
     req_list_last = 0;
     while (list) {
 	int state;
 
-	ruby_current_node = 0;
 	rb_protect((VALUE (*)(VALUE))rb_require, (VALUE)list->name, &state);
 	if (state)
 	    rb_jump_tag(state);
@@ -388,12 +385,10 @@ require_libraries(void)
 	free(list->name);
 	free(list);
 	list = tmp;
-	ruby_current_node = save[1];
     }
     req_list_head.next = 0;
     ruby_eval_tree = save[0];
     rb_gc_force_recycle((VALUE)save[1]);
-    ruby_current_node = 0;
 }
 
 static void

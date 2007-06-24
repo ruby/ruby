@@ -475,8 +475,8 @@ rb_newobj_from_heap(void)
 
     MEMZERO((void*)obj, RVALUE, 1);
 #ifdef GC_DEBUG
-    RANY(obj)->file = ruby_sourcefile;
-    RANY(obj)->line = ruby_sourceline;
+    RANY(obj)->file = rb_sourcefile();
+    RANY(obj)->line = rb_sourceline();
 #endif
     return obj;
 }
@@ -1375,8 +1375,6 @@ garbage_collect(void)
     SET_STACK_END;
 
     init_mark_stack();
-
-    gc_mark((VALUE)ruby_current_node, 0);
 
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 

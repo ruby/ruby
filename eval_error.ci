@@ -2,6 +2,34 @@
  * included by eval.c
  */
 
+const char *
+rb_sourcefile(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return RSTRING_PTR(cfp->iseq->filename);
+    }
+    else {
+	return 0;
+    }
+}
+
+int
+rb_sourceline(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return vm_get_sourceline(cfp);
+    }
+    else {
+	return 0;
+    }
+}
+
 static void
 warn_printf(const char *fmt, ...)
 {
@@ -20,16 +48,19 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    if (ruby_sourcefile) {
-	if (ruby_sourceline == 0) {
-	    warn_printf("%s", ruby_sourcefile);
+    const char *sourcefile = rb_sourcefile();
+    int sourceline = rb_sourceline();
+
+    if (sourcefile) {
+	if (sourceline == 0) {
+	    warn_printf("%s", sourcefile);
 	}
 	else if (rb_frame_callee()) {
-	    warn_printf("%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
+	    warn_printf("%s:%d:in `%s'", sourcefile, sourceline,
 			rb_id2name(rb_frame_callee()));
 	}
 	else {
-	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
+	    warn_printf("%s:%d", sourcefile, sourceline);
 	}
     }
 }
@@ -72,10 +103,10 @@ error_print(void)
     if (EXEC_TAG())
 	goto error;
     if (NIL_P(errat)) {
-	if (ruby_sourcefile)
-	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
+	if (rb_sourcefile())
+	    warn_printf("%s:%d", rb_sourcefile(), rb_sourceline());
 	else
-	    warn_printf("%d", ruby_sourceline);
+	    warn_printf("%d", rb_sourceline());
     }
     else if (RARRAY_LEN(errat) == 0) {
 	error_pos();

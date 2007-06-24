@@ -1501,6 +1501,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockp
     vm_push_frame(th, DATA_PTR(iseq), FRAME_MAGIC_TOP,
 		  recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
     val = (*func)(arg);
+
     vm_pop_frame(th);
     return val;
 }

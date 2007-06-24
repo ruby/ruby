@@ -12,6 +12,8 @@
 
 #define SAFE_LEVEL_MAX 4
 
+/* $SAFE accessor */
+
 int
 rb_safe_level(void)
 {
@@ -24,7 +26,6 @@ rb_set_safe_level_force(int safe)
     GET_THREAD()->safe_level = safe;
 }
 
-/* $SAFE accessor */
 void
 rb_set_safe_level(int level)
 {

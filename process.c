@@ -1295,7 +1295,7 @@ rb_exec(const struct rb_exec_arg *e)
 #ifndef FD_CLOEXEC
     preserving_errno({
 	fprintf(stderr, "%s:%d: command not found: %s\n",
-		ruby_sourcefile, ruby_sourceline, prog);
+		rb_sourcefile(), rb_sourceline(), prog);
     });
 #endif
     return -1;

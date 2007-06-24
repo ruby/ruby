@@ -22,8 +22,6 @@ VALUE rb_f_block_given_p(void);
 ID rb_frame_callee(void);
 static VALUE rb_frame_self(void);
 
-NODE *ruby_current_node;
-
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
@@ -35,7 +33,7 @@ VALUE rb_eSysStackError;
 extern int ruby_nerrs;
 extern VALUE ruby_top_self;
 
-static VALUE eval(VALUE, VALUE, VALUE, char *, int);
+static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
 
 static inline VALUE rb_yield_0(int argc, VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
@@ -270,15 +268,7 @@ ruby_run(void)
 VALUE
 rb_eval_string(const char *str)
 {
-    VALUE v;
-    NODE *oldsrc = ruby_current_node;
-
-    ruby_current_node = 0;
-    ruby_sourcefile = rb_source_filename("(eval)");
-    v = eval(ruby_top_self, rb_str_new2(str), Qnil, 0, 0);
-    ruby_current_node = oldsrc;
-
-    return v;
+    return eval(ruby_top_self, rb_str_new2(str), Qnil, "(eval)", 0);
 }
 
 VALUE
@@ -324,14 +314,13 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     if (OBJ_TAINTED(cmd)) {
 	level = 4;
     }
-    if (TYPE(cmd) != T_STRING) {
 
+    if (TYPE(cmd) != T_STRING) {
 	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {
-	    val =
-	      rb_funcall2(cmd, rb_intern("call"), RARRAY_LEN(arg),
-			  RARRAY_PTR(arg));
+	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY_LEN(arg),
+			      RARRAY_PTR(arg));
 	}
 	POP_TAG();
 
@@ -712,7 +701,7 @@ rb_longjmp(int tag, VALUE mesg)
 	    e = rb_obj_as_string(e);
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
 			rb_obj_classname(GET_THREAD()->errinfo),
-			ruby_sourcefile, ruby_sourceline, RSTRING_PTR(e));
+			rb_sourcefile(), rb_sourceline(), RSTRING_PTR(e));
 	}
 	POP_TAG();
 	if (status == TAG_FATAL && GET_THREAD()->errinfo == exception_error) {
@@ -1295,7 +1284,6 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
     ID id;
     VALUE exc = rb_eNoMethodError;
     char *format = 0;
-    NODE *cnode = ruby_current_node;
     rb_thread_t *th = GET_THREAD();
     int last_call_status = th->method_missing_reason;
     if (argc == 0 || !SYMBOL_P(argv[0])) {
@@ -1323,7 +1311,6 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 	format = "undefined method `%s' for %s";
     }
 
-    ruby_current_node = cnode;
     {
 	int n = 0;
 	VALUE args[3];
@@ -1667,36 +1654,8 @@ rb_frame_self(void)
     return GET_THREAD()->cfp->self;
 }
 
-const char *
-rb_sourcefile(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-
-    if (cfp) {
-	return RSTRING_PTR(cfp->iseq->filename);
-    }
-    else {
-	return "";
-    }
-}
-
-int
-rb_sourceline(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-
-    if (cfp) {
-	return vm_get_sourceline(cfp);
-    }
-    else {
-	return 0;
-    }
-}
-
 static VALUE
-eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
+eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 {
     int state;
     VALUE result = Qundef;
@@ -1707,8 +1666,8 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
     NODE *stored_cref_stack = 0;
 
     if (file == 0) {
-	file = ruby_sourcefile;
-	line = ruby_sourceline;
+	file = rb_sourcefile();
+	line = rb_sourceline();
     }
 
     PUSH_TAG();

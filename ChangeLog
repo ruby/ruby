@@ -1,3 +1,13 @@
+Mon Jun 25 05:27:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c: remove ruby_current_node and change eval() prototype.
+	  fix to use rb_sourcefile/line() instead of ruby_sourcefile/line.
+
+	* error.c, eval_error.ci, eval_load.c, eval_safe.ci, gc.c,
+	  include/ruby/intern.h, parse.y, process.c, ruby.c: ditto.
+
+	* vm.c: fix spaces.
+
 Mon Jun 25 04:20:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_*.h: rename to eval_*.ci.

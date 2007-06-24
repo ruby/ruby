@@ -183,9 +183,6 @@ extern VALUE sysstack_error;
 void rb_thread_cleanup _((void));
 void rb_thread_wait_other_threads _((void));
 
-int rb_sourceline(void);
-const char *rb_sourcefile(void);
-
 int thread_set_raised(rb_thread_t *th);
 int thread_reset_raised(rb_thread_t *th);
 

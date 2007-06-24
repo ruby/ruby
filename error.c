@@ -26,9 +26,6 @@
 extern const char ruby_version[], ruby_release_date[], ruby_platform[];
 int ruby_nerrs;
 
-const char *rb_sourcefile(void);
-int rb_sourceline(void);
-
 static int
 err_position_0(char *buf, long len, const char *file, long line)
 {
@@ -52,7 +49,7 @@ err_position(char *buf, long len)
 static int
 compile_position(char *buf, long len)
 {
-    return err_position_0(buf, len, ruby_sourcefile, ruby_sourceline);
+    return err_position_0(buf, len, rb_sourcefile(), rb_sourceline());
 }
 
 static void
