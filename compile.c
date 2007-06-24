@@ -201,8 +201,6 @@ rb_iseq_compile(VALUE self, NODE *node)
 	}
     }
 
-    GC_CHECK();
-
     if (iseq->type == ISEQ_TYPE_RESCUE || iseq->type == ISEQ_TYPE_ENSURE) {
 	ADD_INSN2(ret, 0, getdynamic, INT2FIX(1), INT2FIX(0));
 	ADD_INSN1(ret, 0, throw, INT2FIX(0) /* continue throw */ );
@@ -654,24 +652,20 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     /* debugs("[compile step 2] (iseq_array_to_linkedlist)\n"); */
 
-    GC_CHECK();
     if (CPDEBUG > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
-    GC_CHECK();
 
     debugs("[compile step 3.1 (iseq_optimize)]\n");
     iseq_optimize(iseq, anchor);
 
     if (CPDEBUG > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
-    GC_CHECK();
 
     if (iseq->compile_data->option->instructions_unification) {
 	debugs("[compile step 3.2 (iseq_insns_unification)]\n");
 	iseq_insns_unification(iseq, anchor);
 	if (CPDEBUG > 5)
 	  dump_disasm_list(FIRST_ELEMENT(anchor));
-	GC_CHECK();
     }
 
     if (iseq->compile_data->option->stack_caching) {
@@ -679,16 +673,13 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	set_sequence_stackcaching(iseq, anchor);
 	if (CPDEBUG > 5)
 	  dump_disasm_list(FIRST_ELEMENT(anchor));
-	GC_CHECK();
     }
 
     debugs("[compile step 4.1 (set_sequence)]\n");
     set_sequence(iseq, anchor);
     if (CPDEBUG > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
-    GC_CHECK();
 
-    GC_CHECK();
     debugs("[compile step 4.2 (set_exception_table)]\n");
     set_exception_table(iseq);
 
@@ -697,7 +688,6 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     debugs("[compile step 5 (iseq_translate_direct_threaded_code)] \n");
     iseq_translate_direct_threaded_code(iseq);
-    GC_CHECK();
 
     if (CPDEBUG > 1) {
 	VALUE str = ruby_iseq_disasm(iseq->self);
@@ -949,8 +939,6 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     int k, pos, sp, stack_max = 0;
 
-    GC_CHECK();
-
     /* set label position */
     list = FIRST_ELEMENT(anchor);
     k = pos = 0;
@@ -988,8 +976,6 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
     insn_info_tbl = ALLOC_N(struct insn_info_struct, k);
-
-    GC_CHECK();
 
     list = FIRST_ELEMENT(anchor);
     k = pos = sp = 0;
@@ -2502,8 +2488,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 {
     int type;
 
-    GC_CHECK();
-
     if (node == 0) {
 	if (!poped) {
 	    debug_nodeprint("NODE_NIL(implicit)");
@@ -2527,7 +2511,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
       case NODE_METHOD:{
 	/* OK */
-	bp();
 	COMPILE_ERROR(("BUG: unknown node: NODE_METHOD"));
 	break;
       }

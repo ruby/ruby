@@ -39,32 +39,31 @@
 
 #if CPDEBUG > 0
 
-#define debugp(header, value)                   \
-  (ruby_debug_indent(0, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_value(0, CPDEBUG, header, value))
+#define debugp(header, value) \
+  (ruby_debug_print_indent(0, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_print_value(0, CPDEBUG, header, value))
 
-#define debugi(header, id)                      \
-  (ruby_debug_indent(0, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_id(0, CPDEBUG, header, id))
+#define debugi(header, id) \
+  (ruby_debug_print_indent(0, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_print_id(0, CPDEBUG, header, id))
 
-#define debugp_param(header, value)             \
-  (ruby_debug_indent(1, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_value(1, CPDEBUG, header, value))
+#define debugp_param(header, value) \
+  (ruby_debug_print_indent(1, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_print_value(1, CPDEBUG, header, value))
 
-#define debugp_verbose(header, value)           \
-  (ruby_debug_indent(2, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_value(2, CPDEBUG, header, value))
+#define debugp_verbose(header, value) \
+  (ruby_debug_print_indent(2, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_print_value(2, CPDEBUG, header, value))
 
-#define debugp_verbose_node(header, value)       \
-  (ruby_debug_indent(10, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_value(10, CPDEBUG, header, value))
+#define debugp_verbose_node(header, value) \
+  (ruby_debug_print_indent(10, CPDEBUG, gl_node_level * 2), \
+   ruby_debug_print_value(10, CPDEBUG, header, value))
 
-#define debug_nodeprint(node)                    \
-  ruby_debug_indent(-1, CPDEBUG, gl_node_level*2);    \
-  printf("node: %s (%d)\n", ruby_node_name(nd_type(node)), nd_line(node)); \
-  gl_node_level ++;
+#define debug_node_start(node) \
+  (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), \
+   ruby_debug_print_node(10, CPDEBUG, header, node), gl_node_level++) \
 
-#define debug_nodeprint_close()  gl_node_level --;
+#define debug_node_end()  gl_node_level --;
 
 #else
 

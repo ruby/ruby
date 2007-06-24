@@ -3,6 +3,7 @@
 #define RUBY_GC_H 1
 
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
+NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
 /* for GC debug */
 

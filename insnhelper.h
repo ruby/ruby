@@ -13,7 +13,9 @@
 #ifndef _INSNHELPER_H_INCLUDED_
 #define _INSNHELPER_H_INCLUDED_
 
+#include "ruby/ruby.h"
 #include "vm.h"
+
 
 /*
  * deal with control frame pointer
@@ -143,7 +145,7 @@ while (0)
 
 /* optimize insn */
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#define BASIC_OP_UNREDEFINED_P(op) ((yarv_redefined_flag & (op)) == 0)
+#define BASIC_OP_UNREDEFINED_P(op) ((ruby_vm_redefined_flag & (op)) == 0)
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
 #define CALL_METHOD(num, blockptr, flag, id, mn, recv, klass) do { \

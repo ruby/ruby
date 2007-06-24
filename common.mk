@@ -560,10 +560,10 @@ iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}signal.h \
         {$(VPATH)}gc.h {$(VPATH)}vm_opts.h  {$(VPATH)}config.h {$(VPATH)}node.h \
         {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns_info.inc
-vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
-        {$(VPATH)}yarvcore.h {$(VPATH)}debug.h  {$(VPATH)}ruby.h {$(VPATH)}config.h\
-        {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
-        {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
+vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}yarvcore.h \
+	{$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
+	{$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
+	{$(VPATH)}insnhelper.h {$(VPATH)}insnhelper.ci {$(VPATH)}vm_evalbody.ci \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
 	{$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \

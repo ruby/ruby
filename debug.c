@@ -14,7 +14,7 @@
 #include "debug.h"
 
 void
-ruby_debug_indent(int level, int debug_level, int indent_level)
+ruby_debug_print_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
 	int i;
@@ -26,7 +26,7 @@ ruby_debug_indent(int level, int debug_level, int indent_level)
 }
 
 VALUE
-ruby_debug_value(int level, int debug_level, char *header, VALUE obj)
+ruby_debug_print_value(int level, int debug_level, char *header, VALUE obj)
 {
     if (level < debug_level) {
 	VALUE str;
@@ -39,13 +39,13 @@ ruby_debug_value(int level, int debug_level, char *header, VALUE obj)
 }
 
 void
-ruby_debug_v(VALUE v)
+ruby_debug_print_v(VALUE v)
 {
-    ruby_debug_value(0, 1, "", v);
+    ruby_debug_print_value(0, 1, "", v);
 }
 
 ID
-ruby_debug_id(int level, int debug_level, char *header, ID id)
+ruby_debug_print_id(int level, int debug_level, char *header, ID id)
 {
     if (level < debug_level) {
 	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
@@ -55,25 +55,13 @@ ruby_debug_id(int level, int debug_level, char *header, ID id)
 }
 
 NODE *
-ruby_debug_node(int level, int debug_level, char *header, NODE *node)
+ruby_debug_print_node(int level, int debug_level, char *header, NODE *node)
 {
     if (level < debug_level) {
 	fprintf(stderr, "DBG> %s: %s (%d)\n", header,
 		ruby_node_name(nd_type(node)), nd_line(node));
     }
     return node;
-}
-
-
-void
-ruby_debug_gc_check_func(void)
-{
-    int i;
-#define GCMKMAX 0x10
-    for (i = 0; i < GCMKMAX; i++) {
-	rb_ary_new2(1000);
-    }
-    rb_gc();
 }
 
 void

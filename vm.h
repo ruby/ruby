@@ -13,13 +13,21 @@
 #ifndef _VM_H_INCLUDED_
 #define _VM_H_INCLUDED_
 
-
 #if YARVDEBUG > VMDEBUG
 #undef  VMDEBUG
 #define VMDEBUG YARVDEBUG
 #endif
 
 typedef long OFFSET;
+typedef unsigned long rb_num_t;
+typedef unsigned long lindex_t;
+typedef unsigned long dindex_t;
+typedef rb_num_t GENTRY;
+
+extern VALUE rb_cEnv;
+extern VALUE ruby_vm_global_state_version;
+extern VALUE ruby_vm_redefined_flag;
+
 
 /**
  * VM Debug Level
@@ -167,7 +175,6 @@ typedef rb_control_frame_t *
 #endif /* DISPATCH_DIRECT_THREADED_CODE */
 
 #define END_INSN(insn)      \
-  GC_CHECK();               \
   DEBUG_END_INSN();         \
   TC_DISPATCH(insn);        \
 
@@ -189,7 +196,6 @@ typedef rb_control_frame_t *
 case BIN(insn):
 
 #define END_INSN(insn)                        \
-  GC_CHECK();                                 \
   DEBUG_END_INSN();                           \
   break;
 
@@ -266,9 +272,9 @@ default:                        \
 
 /* VM state version */
 
-#define GET_VM_STATE_VERSION() (vm_global_state_version)
+#define GET_VM_STATE_VERSION() (ruby_vm_global_state_version)
 #define INC_VM_STATE_VERSION() \
-  (vm_global_state_version = (vm_global_state_version+1) & 0x8fffffff)
+  (ruby_vm_global_state_version = (ruby_vm_global_state_version+1) & 0x8fffffff)
 
 #define BOP_PLUS     0x01
 #define BOP_MINUS    0x02

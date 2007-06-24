@@ -664,7 +664,6 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 					  child);
 	rb_str_concat(str, opstr);
 
-	GC_CHECK();
 	if (types[j + 1]) {
 	    rb_str_cat2(str, ", ");
 	}
@@ -800,8 +799,6 @@ ruby_iseq_disasm(VALUE self)
 	}
 	rb_str_cat2(str, "\n");
     }
-
-    GC_CHECK();
 
     /* show each line */
     for (i = 0; i < size;) {

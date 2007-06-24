@@ -1,3 +1,24 @@
+Mon Jun 25 02:14:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* call_cfunc.ci: removed.
+
+	* insnhelper.ci: added. this function includes all functions that
+	  vm insns need.
+
+	* common.mk: ditto.
+
+	* insnhelper.h, vm.h, vm.c: move some declaration.
+
+	* gc.h: remove GC_CHECK() macro because GC.stress is more useful.
+
+	* compile.c, iseq.c, vm_dump: ditto.
+
+	* gc.h, thread.c: move a prototype decalaration.
+
+	* debug.c, debug.h: rename some functions.
+
+	* compile.h: ditto.
+
 Mon Jun 25 00:45:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (invokesuper): fix error message.

@@ -399,10 +399,6 @@ debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
     printf
 	("--------------------------------------------------------------\n");
 #endif
-
-#if VMDEBUG > 9
-    GC_CHECK();
-#endif
 }
 
 #ifdef COLLECT_USAGE_ANALYSIS

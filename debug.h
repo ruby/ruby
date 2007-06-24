@@ -16,35 +16,18 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 
-#define dpv(h,v) ruby_debug_value(-1, 0, h, v)
-#define dp(v)    ruby_debug_value(-1, 0, "", v)
-#define dpi(i)   ruby_debug_id(-1, 0, "", i)
-#define bp()     ruby_debug_breakpoint()
-#define dpn(n)   ruby_debug_node(-1, 0, "", n)
+#define dpv(h,v) ruby_debug_print_value(-1, 0, h, v)
+#define dp(v)    ruby_debug_print_value(-1, 0, "", v)
+#define dpi(i)   ruby_debug_print_id(-1, 0, "", i)
+#define dpn(n)   ruby_debug_print_node(-1, 0, "", n)
 
-VALUE ruby_debug_value(int level, int debug_level, char *header, VALUE v);
-ID    ruby_debug_id(int level, int debug_level, char *header, ID id);
-NODE *ruby_debug_node(int level, int debug_level, char *header, NODE *node);
-void  ruby_debug_indent(int level, int debug_level, int indent_level);
+#define bp()     ruby_debug_breakpoint()
+
+VALUE ruby_debug_print_value(int level, int debug_level, char *header, VALUE v);
+ID    ruby_debug_print_id(int level, int debug_level, char *header, ID id);
+NODE *ruby_debug_print_node(int level, int debug_level, char *header, NODE *node);
+void  ruby_debug_print_indent(int level, int debug_level, int indent_level);
 void  ruby_debug_breakpoint(void);
 void  ruby_debug_gc_check_func(void);
-
-#if GCDEBUG == 1
-
-#define GC_CHECK() \
-  gc_check_func()
-
-#elif GCDEBUG == 2
-
-#define GC_CHECK()                                    \
-  (printf("** %s:%d gc start\n", __FILE__, __LINE__), \
-   ruby_debug_gc_check_func(),                        \
-   printf("** end\n"))
-
-#else
-
-#define GC_CHECK()
-
-#endif
 
 #endif /* _DEBUG_H_INCLUDED_ */
