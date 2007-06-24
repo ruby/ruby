@@ -1152,7 +1152,55 @@ send
 (...)
 (VALUE val) // inc += - (op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
-#include "insn_send.ci"
+    NODE *mn;
+    VALUE recv, klass, v;
+    rb_block_t *blockptr = 0;
+    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, blockiseq, &blockptr);
+    rb_num_t flag = op_flag;
+    ID id = op_id;
+
+    /* get receiver */
+    if (flag & VM_CALL_FCALL_BIT) {
+	/* method(...) */
+	recv = GET_SELF();
+    }
+    else {
+	/* recv.method(...) */
+	recv = TOPN(num);
+    }
+
+    klass = CLASS_OF(recv);
+
+    mn = eval_method_search(id, klass, ic);
+
+    /* send/funcall optimization */
+    if ((flag & VM_CALL_SEND_BIT) && mn && nd_type(mn->nd_body) == NODE_CFUNC) {
+	NODE *node = mn->nd_body;
+	extern VALUE rb_f_funcall(int argc, VALUE *argv, VALUE recv);
+	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
+
+	if (node->nd_cfnc == rb_f_funcall || node->nd_cfnc == rb_f_send) {
+	    int i;
+	    VALUE sym = TOPN(num - 1);
+	    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
+
+	    /* shift arguments */
+	    for (i=num-1; i>0; i--) {
+		TOPN(i) = TOPN(i-1);
+	    }
+
+	    mn = rb_method_node(klass, id);
+
+	    num -= 1;
+	    DEC_SP(1);
+	}
+
+	if (node->nd_cfnc == rb_f_funcall) {
+	    flag |= VM_CALL_FCALL_BIT;
+	}
+    }
+
+    CALL_METHOD(num, blockptr, flag, id, mn, recv, klass);
 }
 
 /**
@@ -1162,21 +1210,65 @@ send
  */
 DEFINE_INSN
 invokesuper
-(rb_num_t op_argc, ISEQ blockiseq, rb_num_t flag)
+(rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag)
 (...)
 (VALUE val) // inc += - op_argc;
 {
-#if YARV_AOT_COMPILED
-    /* TODO: */
-    rb_bug("...");
-#else
-    tmp_blockptr = 0;
-    tmp_num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &tmp_blockptr);
-    if (!tmp_blockptr && !(flag & VM_CALL_ARGS_BLOCKARG_BIT)) {
-	tmp_blockptr = GET_BLOCK_PTR();
+    rb_block_t *blockptr = 0;
+    VALUE flag = op_flag;
+    int num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &blockptr);
+    rb_iseq_t *iseq = GET_ISEQ();
+    rb_iseq_t *ip = iseq;
+    VALUE recv, klass;
+    ID id;
+    NODE *mn;
+
+    if (!blockptr && !(flag & VM_CALL_ARGS_BLOCKARG_BIT)) {
+	blockptr = GET_BLOCK_PTR();
     }
-    goto LABEL_IS_SC(start_init_in_super);
-#endif
+
+    recv = GET_SELF();
+
+    while (ip && !ip->klass) {
+	ip = ip->parent_iseq;
+    }
+
+    if (ip == 0) {
+	rb_raise(rb_eNoMethodError, "super called outside of method");
+    }
+
+    id = ip->defined_method_id;
+
+    if (ip != ip->local_iseq) {
+	/* defined by Module#define_method() */
+	rb_control_frame_t *lcfp = GET_CFP();
+
+	while (lcfp->iseq != ip) {
+	    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
+	    while (1) {
+		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
+		if (lcfp->dfp == tdfp) {
+		    break;
+		}
+	    }
+	}
+
+	id = lcfp->method_id;
+	klass = search_super_klass(lcfp->method_klass, recv);
+
+	if (TOPN(num) == Qfalse) {
+	    /* zsuper */
+	    rb_raise(rb_eRuntimeError, "zsuper from method defined by define_method() is not supported. Specify all arguments.");
+	}
+    }
+    else {
+	klass = search_super_klass(ip->klass, recv);
+    }
+
+    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
+    mn = rb_method_node(klass, id);
+
+    CALL_METHOD(num, blockptr, flag, id, mn, recv, klass);
 }
 
 /**
@@ -1581,15 +1673,9 @@ opt_plus
     }
     else {
       INSN_LABEL(normal_dispatch):
-
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idPLUS, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idPLUS;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idPLUS, recv);
     }
 }
 
@@ -1619,14 +1705,9 @@ opt_minus
     }
     else {
 	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idMINUS, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idMINUS;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idMINUS, recv);
     }
 }
 
@@ -1675,16 +1756,9 @@ opt_mult
     }
     else {
       INSN_LABEL(normal_dispatch):
-
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idMULT, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idMULT;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idMULT, recv);
     }
 }
 
@@ -1746,16 +1820,9 @@ opt_div
     }
     else {
       INSN_LABEL(normal_dispatch):
-
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idDIV, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idDIV;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idDIV, recv);
     }
 }
 
@@ -1837,16 +1904,9 @@ opt_mod
     }
     else {
       INSN_LABEL(normal_dispatch):
-
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idMOD, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idMOD;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idMOD, recv);
     }
 }
 
@@ -1916,14 +1976,9 @@ opt_eq
     else {
       INSN_LABEL(normal_dispatch):
 	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idEq, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idEq;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idEq, recv);
     }
 }
 
@@ -1951,15 +2006,9 @@ opt_lt
 	}
     }
     else {
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idLT, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idLT;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idLT, recv);
     }
 }
 
@@ -1987,14 +2036,9 @@ opt_le
     }
     else {
 	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idLE, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idLE;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idLE, recv);
     }
 }
 
@@ -2021,15 +2065,9 @@ opt_gt
 	}
     }
     else {
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idGT, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idGT;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idGT, recv);
     }
 }
 
@@ -2056,15 +2094,9 @@ opt_ge
 	}
     }
     else {
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idGE, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idGE;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idGE, recv);
     }
 }
 
@@ -2096,15 +2128,9 @@ opt_ltlt
     }
     else {
       INSN_LABEL(normal_dispatch):
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idLTLT, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idLTLT;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idLTLT, recv);
     }
 }
 
@@ -2132,15 +2158,9 @@ opt_aref
     }
     else {
       INSN_LABEL(normal_dispatch):
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idAREF, 1, obj);
-#else
 	PUSH(recv);
 	PUSH(obj);
-	tmp_id = idAREF;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_1);
-#endif
+	CALL_SIMPLE_METHOD(1, idAREF, recv);
     }
 }
 
@@ -2171,16 +2191,10 @@ opt_aset
     }
     else {
       INSN_LABEL(normal_dispatch):
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idASET, 2, obj, set);
-#else
 	PUSH(recv);
 	PUSH(obj);
 	PUSH(set);
-	tmp_id = idASET;
-	goto LABEL_IS_SC(start_init_in_send_for_opt_2);
-#endif
+	CALL_SIMPLE_METHOD(2, idASET, recv);
     }
 }
 
@@ -2212,12 +2226,8 @@ opt_length
     }
     else {
       INSN_LABEL(normal_dispatch):
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idLength, 0);
-#else
-	val = rb_funcall(recv, idLength, 0);
-#endif
+	PUSH(recv);
+	CALL_SIMPLE_METHOD(0, idLength, recv);
     }
 }
 
@@ -2262,12 +2272,8 @@ opt_succ
     }
     if (0) {
       INSN_LABEL(normal_dispatch):
-	/* other */
-#ifdef YARV_AOT_COMPILED
-	val = rb_funcall(recv, idSucc, 0);
-#else
-	val = rb_funcall(recv, idSucc, 0);
-#endif
+	PUSH(recv);
+	CALL_SIMPLE_METHOD(0, idSucc, recv);
     }
 }
 

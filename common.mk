@@ -552,21 +552,20 @@ compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}yarvcore.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
         {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}signal.h \
-        {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
+        {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc \
         {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc {$(VPATH)}vm_opts.h \
         {$(VPATH)}thread_$(THREAD_MODEL).h
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}yarvcore.h {$(VPATH)}debug.h \
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}signal.h \
         {$(VPATH)}gc.h {$(VPATH)}vm_opts.h  {$(VPATH)}config.h {$(VPATH)}node.h \
-        {$(VPATH)}thread_$(THREAD_MODEL).h\
-        {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc
+        {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}insnhelper.h \
         {$(VPATH)}yarvcore.h {$(VPATH)}debug.h  {$(VPATH)}ruby.h {$(VPATH)}config.h\
         {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
         {$(VPATH)}vm_evalbody.ci {$(VPATH)}call_cfunc.ci \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
-        {$(VPATH)}insn_send.ci {$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
+	{$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
         {$(VPATH)}gc.h {$(VPATH)}thread_$(THREAD_MODEL).h
 vm_dump.$(OBJEXT):  {$(VPATH)}vm_dump.c {$(VPATH)}yarvcore.h {$(VPATH)}vm.h \

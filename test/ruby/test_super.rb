@@ -120,7 +120,7 @@ class TestSuper < Test::Unit::TestCase
     def uu(a)
       class << self
         define_method(:tt) do |sym|
-          super
+          super(sym)
         end
       end
     end

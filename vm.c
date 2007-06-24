@@ -371,6 +371,38 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
     return val;
 }
 
+static inline VALUE
+vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
+		VALUE klass, int argc, VALUE *argv)
+{
+    rb_control_frame_t *cfp = th->cfp;
+    rb_proc_t *proc;
+    VALUE val;
+
+    /* control block frame */
+    (cfp-2)->method_id = id;
+    (cfp-2)->method_klass = klass;
+
+    GetProcPtr(procval, proc);
+    val = th_invoke_proc(th, proc, recv, argc, argv);
+    return val;
+}
+
+static inline VALUE
+vm_method_missing(rb_thread_t *th, ID id, VALUE recv, int num,
+		  rb_block_t *blockptr, int opt)
+{
+    rb_control_frame_t *reg_cfp = th->cfp;
+    VALUE *argv = STACK_ADDR_FROM_TOP(num + 1);
+    VALUE val;
+    argv[0] = ID2SYM(id);
+    th->method_missing_reason = opt;
+    th->passed_block = blockptr;
+    val = rb_funcall2(recv, idMethodMissing, num + 1, argv);
+    POPN(num + 1);
+    return val;
+}
+
 static inline void
 vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		int argc, rb_block_t *blockptr, VALUE flag,
@@ -427,6 +459,110 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	cfp->sp = rsp - 1 /* recv */;
     }
 }
+
+static inline VALUE
+vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
+	       int num, rb_block_t *blockptr, VALUE flag,
+	       ID id, NODE *mn, VALUE recv, VALUE klass)
+{
+    VALUE val;
+
+  start_method_dispatch:
+
+    /* method missing */
+    if (mn == 0) {
+	if (id == idMethodMissing) {
+	    rb_bug("method missing");
+	}
+	else {
+	    int stat = 0;
+	    if (flag & VM_CALL_VCALL_BIT) {
+		stat |= NOEX_VCALL;
+	    }
+	    if (flag & VM_CALL_SUPER_BIT) {
+		stat |= NOEX_SUPER;
+	    }
+	    val = vm_method_missing(th, id, recv, num, blockptr, stat);
+	}
+    }
+    else if (!(flag & VM_CALL_FCALL_BIT) &&
+	     (mn->nd_noex & NOEX_MASK) & NOEX_PRIVATE) {
+	int stat = NOEX_PRIVATE;
+	if (flag & VM_CALL_VCALL_BIT) {
+	    stat |= NOEX_VCALL;
+	}
+	val = vm_method_missing(th, id, recv, num, blockptr, stat);
+    }
+    else if ((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) {
+	VALUE defined_class = mn->nd_clss;
+
+	if (TYPE(defined_class) == T_ICLASS) {
+	    defined_class = RBASIC(defined_class)->klass;
+	}
+
+	if (!rb_obj_is_kind_of(cfp->self, rb_class_real(defined_class))) {
+	    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
+	}
+	else {
+	    goto normal_method_dispatch;
+	}
+    }
+
+    /* dispatch method */
+    else {
+	NODE *node;
+      normal_method_dispatch:
+
+	node = mn->nd_body;
+	switch (nd_type(node)) {
+	  case RUBY_VM_METHOD_NODE:{
+	      vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+	      return Qundef;
+	  }
+	  case NODE_CFUNC:{
+	      val = vm_call_cfunc(th, cfp, num, id, recv, klass, node, blockptr);
+	      break;
+	  }
+	  case NODE_ATTRSET:{
+	      val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
+	      cfp->sp -= 2;
+	      break;
+	  }
+	  case NODE_IVAR:{
+	      val = rb_ivar_get(recv, node->nd_vid);
+	      cfp->sp -= 1;
+	      break;
+	  }
+	  case NODE_BMETHOD:{
+	      VALUE *argv = cfp->sp - num;
+	      val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
+	      cfp->sp += - num - 1;
+	      break;
+	  }
+	  case NODE_ZSUPER:{
+	      klass = RCLASS(mn->nd_clss)->super;
+	      mn = rb_method_node(klass, id);
+
+	      if (mn != 0) {
+		  goto normal_method_dispatch;
+	      }
+	      else {
+		  goto start_method_dispatch;
+	      }
+	  }
+	  default:{
+	      printf("node: %s\n", ruby_node_name(nd_type(node)));
+	      rb_bug("eval_invoke_method: unreachable");
+	      /* unreachable */
+	      break;
+	  }
+	}
+    }
+
+    RUBY_VM_CHECK_INTS();
+    return val;
+}
+
 
 /* Env */
 
@@ -735,23 +871,6 @@ th_make_proc(rb_thread_t *th,
     return procval;
 }
 
-static inline VALUE
-th_invoke_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
-		  VALUE klass, int argc, VALUE *argv)
-{
-    rb_control_frame_t *cfp = th->cfp;
-    rb_proc_t *proc;
-    VALUE val;
-
-    /* control block frame */
-    (cfp-2)->method_id = id;
-    (cfp-2)->method_klass = klass;
-
-    GetProcPtr(procval, proc);
-    val = th_invoke_proc(th, proc, recv, argc, argv);
-    return val;
-}
-
 VALUE
 th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	 VALUE id, ID oid, int argc, const VALUE *argv,
@@ -829,8 +948,8 @@ th_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	break;
       }
       case NODE_BMETHOD:{
-	val = th_invoke_bmethod(th, id, body->nd_cval,
-				recv, klass, argc, (VALUE *)argv);
+	val = vm_call_bmethod(th, id, body->nd_cval,
+			      recv, klass, argc, (VALUE *)argv);
 	break;
       }
       default:
@@ -1553,21 +1672,6 @@ eval_define_method(rb_thread_t *th, VALUE obj,
 	rb_add_method(rb_singleton_class(klass), id, newbody, NOEX_PUBLIC);
     }
     INC_VM_STATE_VERSION();
-}
-
-EVALBODY_HELPER_FUNCTION VALUE
-eval_method_missing(rb_thread_t *th, ID id, VALUE recv, int num,
-		    rb_block_t *blockptr, int opt)
-{
-    rb_control_frame_t *reg_cfp = th->cfp;
-    VALUE *argv = STACK_ADDR_FROM_TOP(num + 1);
-    VALUE val;
-    argv[0] = ID2SYM(id);
-    th->method_missing_reason = opt;
-    th->passed_block = blockptr;
-    val = rb_funcall2(recv, idMethodMissing, num + 1, argv);
-    POPN(num + 1);
-    return val;
 }
 
 EVALBODY_HELPER_FUNCTION NODE *

@@ -146,4 +146,20 @@ while (0)
 #define BASIC_OP_UNREDEFINED_P(op) ((yarv_redefined_flag & (op)) == 0)
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
+#define CALL_METHOD(num, blockptr, flag, id, mn, recv, klass) do { \
+    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv, klass); \
+    if (v == Qundef) { \
+	RESTORE_REGS(); \
+	NEXT_INSN(); \
+    } \
+    else { \
+	val = v; \
+    } \
+} while (0)
+
+#define CALL_SIMPLE_METHOD(num, id, recv) do { \
+    VALUE klass = CLASS_OF(recv); \
+    CALL_METHOD(num, 0, 0, id, rb_method_node(klass, id), recv, CLASS_OF(recv)); \
+} while (0)
+
 #endif /* _INSNHELPER_H_INCLUDED_ */

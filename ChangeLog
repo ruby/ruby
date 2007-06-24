@@ -1,3 +1,24 @@
+Sun Jun 24 22:00:17 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insn_send.ci: removed.
+
+	* common.mk: ditto.
+
+	* vm.c (vm_call_bmethod), isnsn.def: added.  fix to use this
+	  function instead of using goto.
+
+	* vm.c (vm_call_bmethod): renamed from th_invoke_bmethod().
+
+	* vm.c (vm_method_missing): renamed from eval_methdo_missing().
+
+	* vm_evalbody.ci: remove tmp_* variables.
+
+	* insnhelper.h: add some macros.
+
+	* insns.def: forbid zsuper from method defined by define_method().
+
+	* test/ruby/test_super.rb: ditto.
+
 Sun Jun 24 20:01:08 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def: removed.
