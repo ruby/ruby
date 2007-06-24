@@ -92,7 +92,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 TESTSDIR      = $(srcdir)/test
 TESTWORKDIR   = testwork
 
-BOOTSTRAPRUBY = $(MINIRUBY)
+BOOTSTRAPRUBY = $(BASERUBY)
 
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
@@ -315,7 +315,7 @@ realclean-ext::
 check: test test-all
 
 btest: $(MINIRUBY) PHONY
-	@$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)"
+	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
 test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb

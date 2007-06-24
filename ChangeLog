@@ -1,3 +1,12 @@
+Sun Jun 24 15:33:47 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: set default directory to
+	  '/tmp/bootstraptest.tmpwd' and add --dir option.
+	  fix to output driver and target information.
+
+	* common.mk: fix to run btest on BASERUBY and
+	  add OPTS to pass option ("make btest OPTS=...").
+
 Sun Jun 24 03:05:00 2007  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_minmax): fix SEGV by [].minmax.

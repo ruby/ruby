@@ -11,7 +11,7 @@ require 'fileutils'
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
-  dir = 'bootstraptest.tmpwd'
+  dir = '/tmp/bootstraptest.tmpwd'
   tests = nil
   ARGV.delete_if {|arg|
     case arg
@@ -22,12 +22,17 @@ def main
       tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")
       puts tests.map {|path| File.basename(path) }.inspect
       true
+    when /\A--dir=(.*)/
+      dir = $1
+      true
     when /\A(-v|--v(erbose))\z/
       @verbose = true
     when /\A(-h|--h(elp)?)\z/
       puts(<<-End)
 Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
         --sets=NAME,NAME,...        Name of test sets.
+        --dir=DIRECTORY             Working directory.
+                                    default: /tmp/bootstraptest.tmpwd
     -v, --verbose                   Output test name before exec.
     -h, --help                      Print this message and quit.
 End
@@ -43,6 +48,13 @@ End
   tests ||= ARGV
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb") if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
+
+  puts Time.now
+  patchlevel = defined?(RUBY_PATCHLEVEL) ? " pachlevel #{RUBY_PATCHLEVEL}" : ''
+  puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{patchlevel}) [#{RUBY_PLATFORM}]"
+  puts "Target is #{`#{@ruby} -v`}"
+  puts
+
   in_temporary_working_directory(dir) {
     exec_test pathes
   }
