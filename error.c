@@ -52,7 +52,6 @@ err_position(char *buf, long len)
 static int
 compile_position(char *buf, long len)
 {
-    ruby_set_current_source();
     return err_position_0(buf, len, ruby_sourcefile, ruby_sourceline);
 }
 

@@ -10,6 +10,8 @@
    4 - no global (non-tainted) variable modification/no direct output
 */
 
+#define SAFE_LEVEL_MAX 4
+
 int
 rb_safe_level(void)
 {
@@ -21,16 +23,6 @@ rb_set_safe_level_force(int safe)
 {
     GET_THREAD()->safe_level = safe;
 }
-
-static VALUE safe_getter _((void));
-static void safe_setter _((VALUE val));
-
-#define PROC_TSHIFT (FL_USHIFT+1)
-#define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
-#define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
-#define PROC_NOSAFE FL_USER4
-
-#define SAFE_LEVEL_MAX PROC_TMASK
 
 /* $SAFE accessor */
 void

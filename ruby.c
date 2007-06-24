@@ -376,7 +376,6 @@ require_libraries(void)
     ruby_current_node = 0;
     Init_ext();		/* should be called here for some reason :-( */
     ruby_current_node = save[1];
-    ruby_set_current_source();
     req_list_last = 0;
     while (list) {
 	int state;
@@ -390,7 +389,6 @@ require_libraries(void)
 	free(list);
 	list = tmp;
 	ruby_current_node = save[1];
-	ruby_set_current_source();
     }
     req_list_head.next = 0;
     ruby_eval_tree = save[0];

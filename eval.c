@@ -40,10 +40,10 @@ static VALUE eval(VALUE, VALUE, VALUE, char *, int);
 static inline VALUE rb_yield_0(int argc, VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 
-#include "eval_error.h"
-#include "eval_method.h"
-#include "eval_safe.h"
-#include "eval_jump.h"
+#include "eval_error.ci"
+#include "eval_method.ci"
+#include "eval_safe.ci"
+#include "eval_jump.ci"
 
 /* initialize ruby */
 
@@ -691,7 +691,6 @@ rb_longjmp(int tag, VALUE mesg)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
 
-    ruby_set_current_source();
     if (ruby_sourcefile && !NIL_P(mesg)) {
 	at = get_backtrace(mesg);
 	if (NIL_P(at)) {
@@ -1708,7 +1707,6 @@ eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
     NODE *stored_cref_stack = 0;
 
     if (file == 0) {
-	ruby_set_current_source();
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }

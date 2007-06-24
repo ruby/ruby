@@ -2,17 +2,6 @@
  * included by eval.c
  */
 
-#define SET_CURRENT_SOURCE() ((void)0)
-
-void
-ruby_set_current_source(void)
-{
-    if (ruby_current_node) {
-	ruby_sourcefile = ruby_current_node->nd_file;
-	ruby_sourceline = nd_line(ruby_current_node);
-    }
-}
-
 static void
 warn_printf(const char *fmt, ...)
 {
@@ -31,7 +20,6 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    ruby_set_current_source();
     if (ruby_sourcefile) {
 	if (ruby_sourceline == 0) {
 	    warn_printf("%s", ruby_sourcefile);
@@ -84,7 +72,6 @@ error_print(void)
     if (EXEC_TAG())
 	goto error;
     if (NIL_P(errat)) {
-	ruby_set_current_source();
 	if (ruby_sourcefile)
 	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
 	else

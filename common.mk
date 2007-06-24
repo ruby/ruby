@@ -407,8 +407,8 @@ error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}config.h
-eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_error.h {$(VPATH)}eval_intern.h \
-  {$(VPATH)}eval_method.h {$(VPATH)}eval_safe.h {$(VPATH)}eval_jump.h \
+eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_error.ci {$(VPATH)}eval_intern.h \
+  {$(VPATH)}eval_method.ci {$(VPATH)}eval_safe.ci {$(VPATH)}eval_jump.ci \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}yarvcore.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h \

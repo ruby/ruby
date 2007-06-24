@@ -240,13 +240,6 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
-#define PROC_TSHIFT (FL_USHIFT+1)
-#define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
-#define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
-#define PROC_NOSAFE FL_USER4
-
-#define SAFE_LEVEL_MAX PROC_TMASK
-
 static VALUE
 proc_new(VALUE klass, int is_lambda)
 {

@@ -1,3 +1,15 @@
+Mon Jun 25 04:20:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_*.h: rename to eval_*.ci.
+
+	* common.mk: ditto.
+
+	* eval_error.ci: remove ruby_set_current_source().
+
+	* error.c, eval.c, ruby.c: ditto.
+
+	* eval_safe.c, proc.c: remove unused macros.
+
 Mon Jun 25 03:37:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (caller_setup_args): add need_block_check option.
