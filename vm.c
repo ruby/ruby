@@ -282,6 +282,68 @@ callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     }
 }
 
+static inline int
+caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp,
+		  VALUE flag, int argc, rb_iseq_t *blockiseq, rb_block_t **block)
+{
+    rb_block_t *blockptr = 0;
+
+    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
+	rb_proc_t *po;
+	VALUE proc;
+
+	proc = *(--cfp->sp);
+
+	if (proc != Qnil) {
+	    if (!rb_obj_is_proc(proc)) {
+		proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+		if (!rb_obj_is_proc(proc)) {
+		    rb_raise(rb_eTypeError,
+			     "wrong argument type %s (expected Proc)",
+			     rb_obj_classname(proc));
+		}
+	    }
+	    GetProcPtr(proc, po);
+	    blockptr = &po->block;
+	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp)->proc = proc;
+	    *block = blockptr;
+	}
+    }
+    else if (blockiseq) {
+	blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+	blockptr->iseq = blockiseq;
+	blockptr->proc = 0;
+	*block = blockptr;
+    }
+
+    /* expand top of stack? */
+    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+	VALUE ary = *(cfp->sp - 1);
+	VALUE *ptr, *dst;
+	int i;
+	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
+
+	if (NIL_P(tmp)) {
+	    /* do nothing */
+	}
+	else {
+	    int len = RARRAY_LEN(tmp);
+	    ptr = RARRAY_PTR(tmp);
+	    cfp->sp -= 1;
+
+	    CHECK_STACK_OVERFLOW(cfp, len);
+
+	    for (i = 0; i < len; i++) {
+		*cfp->sp++ = ptr[i];
+	    }
+	    argc += i-1;
+	}
+    }
+
+    return argc;
+}
+
+
 /* Env */
 
 static void

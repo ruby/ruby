@@ -318,6 +318,33 @@ assert_equal '1',       %q( class C; def m() 7 end; private :m end
 assert_equal '1',       %q( class C; def m() 1 end; private :m end
                             C.new.funcall(:m) )
 
+# splat and block arguments
+assert_equal %q{[[[:x, :y, :z], NilClass], [[1, :x, :y, :z], NilClass], [[1, 2, :x, :y, :z], NilClass], [[:obj], NilClass], [[1, :obj], NilClass], [[1, 2, :obj], NilClass], [[], Proc], [[1], Proc], [[1, 2], Proc], [[], Proc], [[1], Proc], [[1, 2], Proc], [[:x, :y, :z], Proc], [[1, :x, :y, :z], Proc], [[1, 2, :x, :y, :z], Proc]]}, %q{
+def m(*args, &b)
+  $result << [args, b.class]
+end
+$result = []
+ary = [:x, :y, :z]
+obj = :obj
+b = Proc.new{}
+
+m(*ary)
+m(1,*ary)
+m(1,2,*ary)
+m(*obj)
+m(1,*obj)
+m(1,2,*obj)
+m(){}
+m(1){}
+m(1,2){}
+m(&b)
+m(1,&b)
+m(1,2,&b)
+m(*ary,&b)
+m(1,*ary,&b)
+m(1,2,*ary,&b)
+$result
+}
 
 # post test
 assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, NilClass, nil, nil]}, %q{

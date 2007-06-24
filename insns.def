@@ -1156,11 +1156,11 @@ send
     VALUE recv;
     VALUE klass;
     rb_block_t *blockptr = 0;
-    rb_num_t num = op_argc;
+    rb_num_t num;
     rb_num_t flag = op_flag;
     ID id = op_id;
 
-    macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq);
+    num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &blockptr);
 
     if (flag & VM_CALL_FCALL_BIT) {
 	/* method(...) */
@@ -1298,9 +1298,8 @@ invokesuper
     /* TODO: */
     rb_bug("...");
 #else
-    tmp_num = op_argc;
     tmp_blockptr = 0;
-    macro_eval_setup_send_arguments(tmp_num, tmp_blockptr, flag, blockiseq);
+    tmp_num = caller_setup_args(th, GET_CFP(), flag, op_argc, blockiseq, &tmp_blockptr);
     if (!tmp_blockptr && !(flag & VM_CALL_ARGS_BLOCKARG_BIT)) {
 	tmp_blockptr = GET_BLOCK_PTR();
     }
@@ -1329,25 +1328,7 @@ invokeblock
     iseq = block->iseq;
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
-	if (flag & VM_CALL_ARGS_SPLAT_BIT) {
-	    VALUE ary = TOPN(0);
-	    ary = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
-
-	    if (NIL_P(ary)) {
-		/* not a [BUG] */
-	    }
-	    else {
-		VALUE *ptr = RARRAY_PTR(ary);
-		VALUE *dst = GET_SP() - 1;
-		int i, len = RARRAY_LEN(ary);
-
-		for (i = 0; i < len; i++) {
-		    dst[i] = ptr[i];
-		}
-		argc += i - 1;
-		INC_SP(i - 1);
-	    }
-	}
+	argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0);
 
 	DEC_SP(argc);
 	argc = th_yield_setup_args(th, iseq, argc, GET_SP(),

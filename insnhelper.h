@@ -127,8 +127,11 @@
 #define GET_BLOCK_PTR() \
   ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
 
-#define CHECK_STACK_OVERFLOW(th, cfp, margin) \
-  (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp))
+#define CHECK_STACK_OVERFLOW(cfp, margin) do \
+  if (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp)) { \
+      rb_exc_raise(sysstack_error); \
+  } \
+while (0)
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */

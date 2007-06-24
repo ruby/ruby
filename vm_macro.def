@@ -2,57 +2,6 @@
 /* do not use C++ style comment */
 /*                              */
 
-MACRO macro_eval_setup_send_arguments(num, blockptr, flag, blockiseq)
-{
-    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
-	rb_proc_t *po;
-	VALUE proc;
-
-	proc = TOPN(0);
-	if (proc != Qnil) {
-	    if (!rb_obj_is_proc(proc)) {
-		proc = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
-		if (!rb_obj_is_proc(proc)) {
-		    rb_raise(rb_eTypeError,
-			     "wrong argument type %s (expected Proc)",
-			     rb_obj_classname(proc));
-		}
-	    }
-	    GetProcPtr(proc, po);
-	    blockptr = &po->block;
-	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
-	}
-	INC_SP(-1);
-    }
-    else if (blockiseq) {
-	blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	blockptr->iseq = blockiseq;
-	blockptr->proc = 0;
-    }
-
-    /* expand top of stack? */
-    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
-	VALUE ary = TOPN(0);
-	VALUE *ptr, *dst;
-	int i;
-	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
-
-	if (NIL_P(tmp)) {
-	    tmp = rb_ary_new3(1, ary);
-	}
-	ary = tmp;
-
-	ptr = RARRAY_PTR(ary);
-	dst = GET_SP() - 1;
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    dst[i] = ptr[i];
-	}
-	num += i - 1;
-	INC_SP(i - 1);
-    }
-}
-
-
 MACRO macro_eval_invoke_cfunc(num, id, recv, klass, mn, blockptr)
 {
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
@@ -93,9 +42,7 @@ MACRO macro_eval_invoke_func(niseqval, recv, klass, blockptr, num)
     sp = rsp + niseq->arg_size;
 
     /* stack overflow check */
-    if (CHECK_STACK_OVERFLOW(th, GET_CFP(), niseq->stack_max + 0x100)) {
-	rb_exc_raise(sysstack_error);
-    }
+    CHECK_STACK_OVERFLOW(GET_CFP(), niseq->stack_max + 0x10);
 
     if (flag & VM_CALL_TAILCALL_BIT) {
 	/* copy arguments */

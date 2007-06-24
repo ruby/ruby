@@ -1,3 +1,14 @@
+Sun Jun 24 17:28:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.h: change CHECK_STACK_OVERFLOW() to throw exception.
+
+	* vm.c (caller_setup_arg), vm_macro.def: remove
+	  macro_eval_setup_send_arguments and add caller_setup_arg().
+
+	* insns.def: ditto.
+
+	* bootstraptest/test_method.rb: add splat arg tests.
+
 Sun Jun 24 16:35:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_to_s): used a variable before initialized.
