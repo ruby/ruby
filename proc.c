@@ -542,6 +542,7 @@ proc_to_s(VALUE self)
     rb_proc_t *proc;
     char *cname = rb_obj_classname(self);
     rb_iseq_t *iseq;
+    const char *is_lambda = proc->is_lambda ? " (lambda)" : "";
     
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
@@ -552,14 +553,13 @@ proc_to_s(VALUE self)
 	if (iseq->insn_info_tbl) {
 	    line_no = iseq->insn_info_tbl[0].line_no;
 	}
-	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, self,
+	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
 			 RSTRING_PTR(iseq->filename),
-			 line_no,
-                         proc->is_lambda ? " (lambda)" : "");
+			 line_no, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, proc->block.iseq,
-                         proc->is_lambda ? " (lambda)" : "");
+			 is_lambda);
     }
 
     if (OBJ_TAINTED(self)) {

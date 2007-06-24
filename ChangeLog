@@ -1,3 +1,7 @@
+Sun Jun 24 16:10:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_to_s): suppress warning, and reduced duplicated code.
+
 Sun Jun 24 15:33:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb: set default directory to
