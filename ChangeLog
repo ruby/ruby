@@ -1,3 +1,7 @@
+Mon Jun 25 18:02:55 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/pty/extconf.rb: skip wince and win64.
+
 Mon Jun 25 17:59:32 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/node.h (NODE_LMASK, nd_line): shouldn't use int and/or

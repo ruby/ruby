@@ -1,6 +1,6 @@
 require 'mkmf'
 
-if /mswin32|mingw|bccwin32/ !~ RUBY_PLATFORM
+if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
   have_header("sys/stropts.h")
   have_func("setresuid")
   have_header("libutil.h")
