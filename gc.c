@@ -84,6 +84,8 @@ static VALUE mark_stack[MARK_STACK_MAX];
 static VALUE *mark_stack_ptr;
 static int mark_stack_overflow;
 
+int ruby_gc_debug_indent = 0;
+
 #undef GC_DEBUG
 
 #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__CYGWIN__)

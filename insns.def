@@ -962,7 +962,7 @@ defined
 	      ip = ip->parent_iseq;
 	  }
 	  if (ip) {
-	      VALUE klass = search_super_klass(ip->klass, GET_SELF());
+	      VALUE klass = vm_search_super_klass(ip->klass, GET_SELF());
 	      if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
 		  expr_type = "super";
 	      }
@@ -1254,7 +1254,7 @@ invokesuper
 	}
 
 	id = lcfp->method_id;
-	klass = search_super_klass(lcfp->method_klass, recv);
+	klass = vm_search_super_klass(lcfp->method_klass, recv);
 
 	if (TOPN(num) == Qfalse) {
 	    /* zsuper */
@@ -1262,7 +1262,7 @@ invokesuper
 	}
     }
     else {
-	klass = search_super_klass(ip->klass, recv);
+	klass = vm_search_super_klass(ip->klass, recv);
     }
 
     flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;

@@ -47,7 +47,7 @@ void rb_thread_mark(rb_thread_t *th);
 static void
 cont_mark(void *ptr)
 {
-    MARK_REPORT_ENTER("cont");
+    RUBY_MARK_ENTER("cont");
     if (ptr) {
 	rb_context_t *cont = ptr;
 	rb_gc_mark(cont->value);
@@ -71,24 +71,24 @@ cont_mark(void *ptr)
 	}
 #endif
     }
-    MARK_REPORT_LEAVE("cont");
+    RUBY_MARK_LEAVE("cont");
 }
 
 static void
 cont_free(void *ptr)
 {
-    FREE_REPORT_ENTER("cont");
+    RUBY_FREE_ENTER("cont");
     if (ptr) {
 	rb_context_t *cont = ptr;
-	FREE_UNLESS_NULL(cont->saved_thread.stack);
-	FREE_UNLESS_NULL(cont->machine_stack);
+	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
+	RUBY_FREE_UNLESS_NULL(cont->machine_stack);
 #ifdef __ia64
-	FREE_UNLESS_NULL(cont->machine_register_stack);
+	RUBY_FREE_UNLESS_NULL(cont->machine_register_stack);
 #endif
-	FREE_UNLESS_NULL(cont->vm_stack);
+	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
 	ruby_xfree(ptr);
     }
-    FREE_REPORT_LEAVE("cont");
+    RUBY_FREE_LEAVE("cont");
 }
 
 static void
@@ -144,8 +144,8 @@ cont_new(VALUE klass)
     contval = Data_Make_Struct(klass, rb_context_t,
 			       cont_mark, cont_free, cont);
 
-    GC_INFO("cont alloc: %p (klass: %s)\n", cont,
-	    klass == rb_cFiber ? "Fiber": "Continuation");
+    RUBY_GC_INFO("cont alloc: %p (klass: %s)\n", cont,
+		 klass == rb_cFiber ? "Fiber": "Continuation");
 
     cont->self = contval;
     cont->alive = Qtrue;

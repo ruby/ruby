@@ -561,6 +561,124 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
     return val;
 }
 
+/* yield */
+
+static inline VALUE
+vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
+		    VALUE self, int argc, VALUE *argv)
+{
+    NODE *ifunc = (NODE *) block->iseq;
+    VALUE val;
+    VALUE arg;
+
+    if (argc == 1) {
+	arg = *argv;
+    }
+    else if (argc > 1) {
+	arg = rb_ary_new4(argc, argv);
+    }
+    else {
+	arg = rb_ary_new();
+    }
+
+    vm_push_frame(th, 0, FRAME_MAGIC_IFUNC,
+		  self, (VALUE)block->dfp,
+		  0, th->cfp->sp, block->lfp, 1);
+
+    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, Qnil);
+
+    th->cfp++;
+    return val;
+}
+
+static inline int
+vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
+		    int argc, VALUE *argv, int lambda)
+{
+    int i, arg_n = iseq->argc + (iseq->arg_rest == -1 ? 0 : 1);
+    th->mark_stack_len = argc;
+
+    if (0) { /* for debug */
+	int i;
+	GET_THREAD()->cfp->sp += argc;
+	for(i=0; i<argc; i++){
+	    dp(argv[i]);
+	}
+
+	printf("     argc: %d\n", argc);
+	printf("iseq argc: %d\n", iseq->argc);
+	printf("iseq rest: %d\n", iseq->arg_rest);
+	printf("iseq blck: %d\n", iseq->arg_block);
+	printf("   lambda: %s\n", lambda ? "true" : "false");
+	GET_THREAD()->cfp->sp -= argc;
+    }
+
+    if (lambda == 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
+	VALUE ary = argv[0];
+	th->mark_stack_len = argc = RARRAY_LEN(ary);
+
+	CHECK_STACK_OVERFLOW(th->cfp, argc);
+
+	for (i=0; i<argc; i++) {
+	    argv[i] = RARRAY_PTR(ary)[i];
+	}
+    }
+
+    if (iseq->arg_rest == -1) {
+
+	if (iseq->argc < argc) {
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
+	    }
+	    else {
+		/* simple truncate */
+		th->mark_stack_len = argc = iseq->argc;
+	    }
+	}
+	else if (iseq->argc > argc) {
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
+	    }
+	}
+    }
+    else {
+	int r = iseq->arg_rest;
+
+	if (argc < r) {
+	    if (lambda) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 argc, iseq->argc);
+	    }
+	    else {
+		for (i=argc; i<r; i++) {
+		    argv[i] = Qnil;
+		}
+		argv[r] = rb_ary_new();
+	    }
+	}
+	else {
+	    argv[r] = rb_ary_new4(argc-r, &argv[r]);
+	}
+	th->mark_stack_len = argc = iseq->arg_rest + 1;
+    }
+
+    if (iseq->arg_block != -1) {
+	VALUE proc = Qnil;
+
+	if (rb_block_given_p()) {
+	    proc = rb_block_proc();
+	}
+
+	argv[iseq->arg_block] = proc;
+	th->mark_stack_len = argc = iseq->arg_block + 1;
+    }
+
+    th->mark_stack_len = 0;
+    return argc;
+}
+
 /* cref */
 
 static NODE *
@@ -572,22 +690,6 @@ lfp_get_special_cref(VALUE *lfp)
     }
     else {
 	return 0;
-    }
-}
-
-static void
-check_svar(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
-	/* printf("cfp: %p\n", cfp->magic); */
-	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
-	    TYPE(cfp->lfp[-1]) != T_VALUES) {
-	    /* dp(cfp->lfp[-1]); */
-	    rb_bug("!!!illegal svar!!!");
-	}
-	cfp++;
     }
 }
 
@@ -638,28 +740,6 @@ lfp_svar(VALUE *lfp, int cnt)
 	return &RARRAY_PTR(ary)[cnt];
       }
     }
-}
-
-static NODE *
-lfp_set_special_cref(VALUE *lfp, NODE * cref)
-{
-    struct RValues *values = (void *) lfp[-1];
-    VALUE *pv;
-    NODE *old_cref;
-
-    if (VMDEBUG) {
-	check_svar();
-    }
-
-    if (cref == 0 && ((VALUE)values == Qnil || values->basic.klass == 0)) {
-	old_cref = 0;
-    }
-    else {
-	pv = lfp_svar(lfp, -1);
-	old_cref = (NODE *) * pv;
-	*pv = (VALUE)cref;
-    }
-    return old_cref;
 }
 
 static NODE *
@@ -825,6 +905,25 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
     mn = rb_method_node(klass, id);
 #endif
     return mn;
+}
+
+static VALUE
+vm_search_super_klass(VALUE klass, VALUE recv)
+{
+    if (BUILTIN_TYPE(klass) == T_CLASS) {
+	klass = RCLASS(klass)->super;
+    }
+    else if (BUILTIN_TYPE(klass) == T_MODULE) {
+	VALUE k = CLASS_OF(recv);
+	while (k) {
+	    if (BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass) {
+		klass = RCLASS(k)->super;
+		break;
+	    }
+	    k = RCLASS(k)->super;
+	}
+    }
+    return klass;
 }
 
 static inline int

@@ -146,7 +146,7 @@ void native_thread_cleanup(void *);
 static void
 vm_free(void *ptr)
 {
-    FREE_REPORT_ENTER("vm");
+    RUBY_FREE_ENTER("vm");
     if (ptr) {
 	rb_vm_t *vmobj = ptr;
 
@@ -156,7 +156,7 @@ vm_free(void *ptr)
 	/* ruby_xfree(ptr); */
 	/* ruby_current_vm = 0; */
     }
-    FREE_REPORT_LEAVE("vm");
+    RUBY_FREE_LEAVE("vm");
 }
 
 static int
@@ -179,17 +179,17 @@ mark_event_hooks(rb_event_hook_t *hook)
 static void
 vm_mark(void *ptr)
 {
-    MARK_REPORT_ENTER("vm");
-    GC_INFO("-------------------------------------------------\n");
+    RUBY_MARK_ENTER("vm");
+    RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
 	rb_vm_t *vm = ptr;
 	if (vm->living_threads) {
 	    st_foreach(vm->living_threads, vm_mark_each_thread_func, 0);
 	}
-	MARK_UNLESS_NULL(vm->thgroup_default);
-	MARK_UNLESS_NULL(vm->mark_object_ary);
-	MARK_UNLESS_NULL(vm->last_status);
-	MARK_UNLESS_NULL(vm->loaded_features);
+	RUBY_MARK_UNLESS_NULL(vm->thgroup_default);
+	RUBY_MARK_UNLESS_NULL(vm->mark_object_ary);
+	RUBY_MARK_UNLESS_NULL(vm->last_status);
+	RUBY_MARK_UNLESS_NULL(vm->loaded_features);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -198,7 +198,7 @@ vm_mark(void *ptr)
 	mark_event_hooks(vm->event_hooks);
     }
 
-    MARK_REPORT_LEAVE("vm");
+    RUBY_MARK_LEAVE("vm");
 }
 
 void
@@ -221,13 +221,13 @@ static void
 thread_free(void *ptr)
 {
     rb_thread_t *th;
-    FREE_REPORT_ENTER("thread");
+    RUBY_FREE_ENTER("thread");
 
     if (ptr) {
 	th = ptr;
 
 	if (!th->root_fiber) {
-	    FREE_UNLESS_NULL(th->stack);
+	    RUBY_FREE_UNLESS_NULL(th->stack);
 	}
 
 	if (th->local_storage) {
@@ -247,13 +247,13 @@ thread_free(void *ptr)
 #endif
 
 	if (th->vm->main_thread == th) {
-	    GC_INFO("main thread\n");
+	    RUBY_GC_INFO("main thread\n");
 	}
 	else {
 	    ruby_xfree(ptr);
 	}
     }
-    FREE_REPORT_LEAVE("thread");
+    RUBY_FREE_LEAVE("thread");
 }
 
 void yarv_machine_stack_mark(rb_thread_t *th);
@@ -262,7 +262,7 @@ void
 rb_thread_mark(void *ptr)
 {
     rb_thread_t *th = NULL;
-    MARK_REPORT_ENTER("thread");
+    RUBY_MARK_ENTER("thread");
     if (ptr) {
 	th = ptr;
 	if (th->stack) {
@@ -282,18 +282,18 @@ rb_thread_mark(void *ptr)
 	}
 
 	/* mark ruby objects */
-	MARK_UNLESS_NULL(th->first_proc);
-	MARK_UNLESS_NULL(th->first_args);
+	RUBY_MARK_UNLESS_NULL(th->first_proc);
+	RUBY_MARK_UNLESS_NULL(th->first_args);
 
-	MARK_UNLESS_NULL(th->thgroup);
-	MARK_UNLESS_NULL(th->value);
-	MARK_UNLESS_NULL(th->errinfo);
-	MARK_UNLESS_NULL(th->thrown_errinfo);
-	MARK_UNLESS_NULL(th->local_svar);
-	MARK_UNLESS_NULL(th->top_self);
-	MARK_UNLESS_NULL(th->top_wrapper);
-	MARK_UNLESS_NULL(th->fiber);
-	MARK_UNLESS_NULL(th->root_fiber);
+	RUBY_MARK_UNLESS_NULL(th->thgroup);
+	RUBY_MARK_UNLESS_NULL(th->value);
+	RUBY_MARK_UNLESS_NULL(th->errinfo);
+	RUBY_MARK_UNLESS_NULL(th->thrown_errinfo);
+	RUBY_MARK_UNLESS_NULL(th->local_svar);
+	RUBY_MARK_UNLESS_NULL(th->top_self);
+	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
+	RUBY_MARK_UNLESS_NULL(th->fiber);
+	RUBY_MARK_UNLESS_NULL(th->root_fiber);
 
 	rb_mark_tbl(th->local_storage);
 
@@ -307,8 +307,8 @@ rb_thread_mark(void *ptr)
 	mark_event_hooks(th->event_hooks);
     }
 
-    MARK_UNLESS_NULL(th->stat_insn_usage);
-    MARK_REPORT_LEAVE("thread");
+    RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
+    RUBY_MARK_LEAVE("thread");
 }
 
 static VALUE

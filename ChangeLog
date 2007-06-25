@@ -1,3 +1,16 @@
+Mon Jun 25 11:36:35 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.h: add RUBY_ prefix to debug macros.
+
+	* cont.c, proc.c, yarvcore.c,
+
+	* gc.c: define ruby_gc_debug_indent variable to debug mark/free.
+
+	* vm.c, insnhelper.ci: rename some functions to vm_* or rb_vm_*.
+	  move some functions, definitions, declarations to suitable files.
+
+	* eval.c, yarvcore.h, eval_error.ci, insnhelper.ci: ditto.
+
 Mon Jun 25 09:45:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.ci, eval_jump.ci, eval_method.ci, eval_safe.ci: c-mode.

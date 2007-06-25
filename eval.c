@@ -29,6 +29,8 @@ static ID object_id, __send, __send_bang, respond_to;
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
+VALUE exception_error;
+VALUE sysstack_error;
 
 extern int ruby_nerrs;
 extern VALUE ruby_top_self;
@@ -652,16 +654,8 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     return Qfalse;
 }
 
-NORETURN(void vm_iter_break _((rb_thread_t *)));
-
-void
-rb_iter_break()
-{
-    vm_iter_break(GET_THREAD());
-}
-
-NORETURN(static void rb_longjmp _((int, VALUE)));
-static VALUE make_backtrace _((void));
+NORETURN(static void rb_longjmp(int, VALUE));
+static VALUE make_backtrace(void);
 
 static void
 rb_longjmp(int tag, VALUE mesg)
@@ -1700,7 +1694,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	th->parse_in_eval++;
 	iseqval = vm_compile(th, src, rb_str_new2(file), INT2FIX(line));
 	th->parse_in_eval--;
-	vm_set_eval_stack(th, iseqval);
+	rb_vm_set_eval_stack(th, iseqval);
 	th->base_block = 0;
 
 	if (0) {		/* for debug */

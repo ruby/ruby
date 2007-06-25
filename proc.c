@@ -34,29 +34,29 @@ static VALUE rb_obj_is_method(VALUE m);
 static void
 proc_free(void *ptr)
 {
-    FREE_REPORT_ENTER("proc");
+    RUBY_FREE_ENTER("proc");
     if (ptr) {
 	ruby_xfree(ptr);
     }
-    FREE_REPORT_LEAVE("proc");
+    RUBY_FREE_LEAVE("proc");
 }
 
 static void
 proc_mark(void *ptr)
 {
     rb_proc_t *proc;
-    MARK_REPORT_ENTER("proc");
+    RUBY_MARK_ENTER("proc");
     if (ptr) {
 	proc = ptr;
-	MARK_UNLESS_NULL(proc->envval);
-	MARK_UNLESS_NULL(proc->blockprocval);
-	MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
-	MARK_UNLESS_NULL(proc->block.proc);
+	RUBY_MARK_UNLESS_NULL(proc->envval);
+	RUBY_MARK_UNLESS_NULL(proc->blockprocval);
+	RUBY_MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
+	RUBY_MARK_UNLESS_NULL(proc->block.proc);
 	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	    MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
+	    RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
 	}
     }
-    MARK_REPORT_LEAVE("proc");
+    RUBY_MARK_LEAVE("proc");
 }
 
 static VALUE
@@ -126,25 +126,25 @@ static void
 binding_free(void *ptr)
 {
     rb_binding_t *bind;
-    FREE_REPORT_ENTER("binding");
+    RUBY_FREE_ENTER("binding");
     if (ptr) {
 	bind = ptr;
 	ruby_xfree(ptr);
     }
-    FREE_REPORT_LEAVE("binding");
+    RUBY_FREE_LEAVE("binding");
 }
 
 static void
 binding_mark(void *ptr)
 {
     rb_binding_t *bind;
-    MARK_REPORT_ENTER("binding");
+    RUBY_MARK_ENTER("binding");
     if (ptr) {
 	bind = ptr;
-	MARK_UNLESS_NULL(bind->env);
-	MARK_UNLESS_NULL((VALUE)bind->cref_stack);
+	RUBY_MARK_UNLESS_NULL(bind->env);
+	RUBY_MARK_UNLESS_NULL((VALUE)bind->cref_stack);
     }
-    MARK_REPORT_LEAVE("binding");
+    RUBY_MARK_LEAVE("binding");
 }
 
 static VALUE

@@ -663,7 +663,6 @@ void rb_disable_interrupt(void);
 int rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp);
 
 VALUE vm_eval_body(rb_thread_t *th);
-VALUE vm_set_eval_stack(rb_thread_t *, VALUE iseq);
 VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);
 VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
 VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);

@@ -204,9 +204,6 @@ print_undef(VALUE klass, ID id)
 		  rb_class2name(klass));
 }
 
-VALUE exception_error;
-VALUE sysstack_error;
-
 static int
 sysexit_status(VALUE err)
 {

@@ -229,6 +229,8 @@ void rb_vm_check_redefinition_opt_method(NODE *node);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
 
+VALUE rb_vm_set_eval_stack(rb_thread_t *, VALUE iseq);
+
 #define ruby_cbase() vm_get_cbase(GET_THREAD())
 
 

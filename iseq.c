@@ -41,7 +41,7 @@ static void
 iseq_free(void *ptr)
 {
     rb_iseq_t *iseq;
-    FREE_REPORT_ENTER("iseq");
+    RUBY_FREE_ENTER("iseq");
 
     if (ptr) {
 	iseq = ptr;
@@ -50,44 +50,44 @@ iseq_free(void *ptr)
          *                      RSTRING_PTR(iseq->filename));
 	 */
 	if (iseq->iseq != iseq->iseq_encoded) {
-	    FREE_UNLESS_NULL(iseq->iseq_encoded);
+	    RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
 	}
 
-	FREE_UNLESS_NULL(iseq->iseq);
-	FREE_UNLESS_NULL(iseq->insn_info_tbl);
-	FREE_UNLESS_NULL(iseq->local_table);
-	FREE_UNLESS_NULL(iseq->catch_table);
-	FREE_UNLESS_NULL(iseq->arg_opt_tbl);
+	RUBY_FREE_UNLESS_NULL(iseq->iseq);
+	RUBY_FREE_UNLESS_NULL(iseq->insn_info_tbl);
+	RUBY_FREE_UNLESS_NULL(iseq->local_table);
+	RUBY_FREE_UNLESS_NULL(iseq->catch_table);
+	RUBY_FREE_UNLESS_NULL(iseq->arg_opt_tbl);
 	compile_data_free(iseq->compile_data);
 	ruby_xfree(ptr);
     }
-    FREE_REPORT_LEAVE("iseq");
+    RUBY_FREE_LEAVE("iseq");
 }
 
 static void
 iseq_mark(void *ptr)
 {
     rb_iseq_t *iseq;
-    MARK_REPORT_ENTER("iseq");
+    RUBY_MARK_ENTER("iseq");
 
     if (ptr) {
 	iseq = ptr;
-	GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
-	MARK_UNLESS_NULL(iseq->iseq_mark_ary);
-	MARK_UNLESS_NULL(iseq->name);
-	MARK_UNLESS_NULL(iseq->filename);
-	MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
-	MARK_UNLESS_NULL(iseq->klass);
-	MARK_UNLESS_NULL((VALUE)iseq->node);
-	MARK_UNLESS_NULL(iseq->cached_special_block);
+	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
+	RUBY_MARK_UNLESS_NULL(iseq->iseq_mark_ary);
+	RUBY_MARK_UNLESS_NULL(iseq->name);
+	RUBY_MARK_UNLESS_NULL(iseq->filename);
+	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
+	RUBY_MARK_UNLESS_NULL(iseq->klass);
+	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node);
+	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block);
 
 	if (iseq->compile_data != 0) {
-	    MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
-	    MARK_UNLESS_NULL(iseq->compile_data->err_info);
-	    MARK_UNLESS_NULL(iseq->compile_data->catch_table_ary);
+	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
+	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->err_info);
+	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->catch_table_ary);
 	}
     }
-    MARK_REPORT_LEAVE("iseq");
+    RUBY_MARK_LEAVE("iseq");
 }
 
 static VALUE
