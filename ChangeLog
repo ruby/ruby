@@ -1,3 +1,8 @@
+Tue Jun 26 03:15:27 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: rename setup_arg() to setup_args().
+	  fix to use setup_args() at processing NODE_YIELD.
+
 Tue Jun 26 02:50:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (setup_arg): support kind of "m(*ary, x)" method call.

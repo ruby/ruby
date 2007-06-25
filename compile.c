@@ -2410,10 +2410,9 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq)
 }
 
 static VALUE
-setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 {
     VALUE argc = INT2FIX(0);
-    NODE *argn = node->nd_args;
     int nsplat = 0;
     DECL_ANCHOR(arg_block);
     DECL_ANCHOR(args_splat);
@@ -2471,7 +2470,7 @@ setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 	    break;
 	  }
 	  default: {
-	    rb_bug("setup_arg: unknown node: %s\n", ruby_node_name(nd_type(node)));
+	    rb_bug("setup_arg: unknown node: %s\n", ruby_node_name(nd_type(argn)));
 	  }
 	}
     }
@@ -3503,7 +3502,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	/* args */
 	if (nd_type(node) != NODE_VCALL) {
-	    argc = setup_arg(iseq, args, node, &flag);
+	    argc = setup_args(iseq, args, node->nd_args, &flag);
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -3540,7 +3539,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	iseq->compile_data->current_block = Qfalse;
 
 	if (nd_type(node) == NODE_SUPER) {
-	    argc = setup_arg(iseq, args, node, &flag);
+	    argc = setup_args(iseq, args, node->nd_args, &flag);
 	}
 	else {
 	    /* NODE_ZSUPER */
@@ -3706,45 +3705,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	if (node->nd_head) {
-	    if (nd_type(node->nd_head) == NODE_ARRAY) {
-		argc = node->nd_head->nd_alen;
-		compile_array(iseq, args, node->nd_head, Qfalse);
-		POP_ELEMENT(args);
-		debugs("argc: %d\n", argc);
-	    }
-	    else {
-		if (nd_type(node->nd_head) == NODE_ARGSCAT) {
-		    if (node->nd_state == Qtrue) {
-			flag |= VM_CALL_ARGS_SPLAT_BIT;
-		    }
-
-		    argc = node->nd_head->nd_head->nd_alen + 1;
-		    compile_array(iseq, args, node->nd_head->nd_head, Qfalse);
-		    POP_ELEMENT(args);
-
-		    COMPILE(args, "args(cat: splat)",
-			    node->nd_head->nd_body);
-		}
-		else if (nd_type(node->nd_head) == NODE_SPLAT) {
-		    if (node->nd_state == Qtrue) {
-			flag |= VM_CALL_ARGS_SPLAT_BIT;
-		    }
-
-		    argc = 1;
-		    COMPILE(args, "splat", node->nd_head->nd_head);
-		}
-		else {
-		    COMPILE(args, "nd_head(1)", node->nd_head);
-		    argc = 1;
-		}
-	    }
+	    argc = setup_args(iseq, args, node->nd_head, &flag);
 	}
 	else {
 	    argc = 0;
 	}
+
 	ADD_SEQ(ret, args);
-	ADD_INSN2(ret, nd_line(node), invokeblock, INT2FIX(argc),
-		  INT2FIX(flag));
+	ADD_INSN2(ret, nd_line(node), invokeblock, argc, INT2FIX(flag));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4346,7 +4314,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE flag = 0;
 	VALUE argc;
 
-	argc = setup_arg(iseq, args, node, &flag);
+	argc = setup_args(iseq, args, node->nd_args, &flag);
 
 	if (node->nd_recv == (NODE *) 1) {
 	    ADD_INSN(recv, nd_line(node), putself);
