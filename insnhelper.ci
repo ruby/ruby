@@ -161,7 +161,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 	}
 
 	/* block arguments */
-	if (iseq->arg_block != -1) {
+	if (block && iseq->arg_block != -1) {
 	    VALUE blockval = Qnil;
 	    rb_block_t * const blockptr = *block;
 
@@ -190,13 +190,12 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 }
 
 static inline int
-caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp,
-		  VALUE flag, int argc, rb_iseq_t *blockiseq,
-		  rb_block_t **block, int need_block_check)
+caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
+		  int argc, rb_iseq_t *blockiseq, rb_block_t **block)
 {
     rb_block_t *blockptr = 0;
 
-    if (need_block_check) {
+    if (block) {
 	if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
 	    rb_proc_t *po;
 	    VALUE proc;
@@ -595,88 +594,133 @@ static inline int
 vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 		    int argc, VALUE *argv, int lambda)
 {
-    int i, arg_n = iseq->argc + (iseq->arg_rest == -1 ? 0 : 1);
-    th->mark_stack_len = argc;
-
     if (0) { /* for debug */
-	int i;
-	GET_THREAD()->cfp->sp += argc;
-	for(i=0; i<argc; i++){
-	    dp(argv[i]);
-	}
-
 	printf("     argc: %d\n", argc);
 	printf("iseq argc: %d\n", iseq->argc);
+	printf("iseq opts: %d\n", iseq->arg_opts);
 	printf("iseq rest: %d\n", iseq->arg_rest);
+	printf("iseq post: %d\n", iseq->arg_post_len);
 	printf("iseq blck: %d\n", iseq->arg_block);
+	printf("iseq smpl: %d\n", iseq->arg_simple);
 	printf("   lambda: %s\n", lambda ? "true" : "false");
-	GET_THREAD()->cfp->sp -= argc;
     }
 
-    if (lambda == 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY && arg_n != 1) {
-	VALUE ary = argv[0];
-	th->mark_stack_len = argc = RARRAY_LEN(ary);
+    if (lambda) {
+	/* call as method */
+	if (iseq->arg_block != -1) {
+	    volatile VALUE procval = Qnil;
 
-	CHECK_STACK_OVERFLOW(th->cfp, argc);
-
-	for (i=0; i<argc; i++) {
-	    argv[i] = RARRAY_PTR(ary)[i];
-	}
-    }
-
-    if (iseq->arg_rest == -1) {
-
-	if (iseq->argc < argc) {
-	    if (lambda) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-			 argc, iseq->argc);
-	    }
-	    else {
-		/* simple truncate */
-		th->mark_stack_len = argc = iseq->argc;
+	    if (rb_block_given_p()) {
+		rb_block_t *blockptr;
+		rb_proc_t *proc;
+		procval = rb_block_proc();
+		GetProcPtr(procval, proc);
+		blockptr = &proc->block;
+		return vm_callee_setup_arg(th, iseq, argc, argv, &blockptr);
 	    }
 	}
-	else if (iseq->argc > argc) {
-	    if (lambda) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-			 argc, iseq->argc);
-	    }
-	}
+	return vm_callee_setup_arg(th, iseq, argc, argv, 0);
     }
     else {
-	int r = iseq->arg_rest;
+	int i;
+	const int m = iseq->argc;
 
-	if (argc < r) {
-	    if (lambda) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-			 argc, iseq->argc);
+	th->mark_stack_len = argc;
+
+	/*
+	 * yield [1, 2]
+	 *  => {|a|} => a = [1, 2]
+	 *  => {|a, b|} => a, b = [1, 2]
+	 */
+	if (iseq->arg_simple != 2 && m > 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY) {
+	    VALUE ary = argv[0];
+	    th->mark_stack_len = argc = RARRAY_LEN(ary);
+
+	    CHECK_STACK_OVERFLOW(th->cfp, argc);
+
+	    for (i=0; i<argc; i++) {
+		argv[i] = RARRAY_PTR(ary)[i];
 	    }
-	    else {
-		for (i=argc; i<r; i++) {
-		    argv[i] = Qnil;
-		}
-		argv[r] = rb_ary_new();
+	}
+
+	for (i=argc; i<m; i++) {
+	    argv[i] = Qnil;
+	}
+
+	if (iseq->arg_rest == -1) {
+	    if (m < argc) {
+		/*
+		 * yield 1, 2
+		 * => {|a|} # truncate
+		 */
+		th->mark_stack_len = argc = m;
 	    }
 	}
 	else {
-	    argv[r] = rb_ary_new4(argc-r, &argv[r]);
+	    int r = iseq->arg_rest;
+
+	    if (iseq->arg_post_len) {
+		int len = iseq->arg_post_len;
+		int start = iseq->arg_post_start;
+		int rsize = argc - m;
+		int psize = rsize;
+		VALUE ary;
+
+		if (rsize < 0) rsize = 0;
+		if (psize > len) psize = len;
+
+		ary = rb_ary_new4(rsize, &argv[r]);
+
+		if (0) {
+		    printf(" argc: %d\n", argc);
+		    printf("  len: %d\n", len);
+		    printf("start: %d\n", start);
+		    printf("rsize: %d\n", rsize);
+		}
+
+		/* copy post argument */
+		for (i=0; i<psize; i++) {
+		    argv[start + psize - i - 1] = rb_ary_pop(ary);
+		}
+
+		for (; i<len; i++) {
+		    argv[start + i] = Qnil;
+		}
+		argv[r] = ary;
+	    }
+	    else {
+		if (argc < r) {
+		    /* yield 1
+		     * => {|a, b, *r|}
+		     */
+		    for (i=argc; i<r; i++) {
+			argv[i] = Qnil;
+		    }
+		    argv[r] = rb_ary_new();
+		}
+		else {
+		    argv[r] = rb_ary_new4(argc-r, &argv[r]);
+		}
+	    }
+
+	    th->mark_stack_len = iseq->arg_size;
 	}
-	th->mark_stack_len = argc = iseq->arg_rest + 1;
-    }
 
-    if (iseq->arg_block != -1) {
-	VALUE proc = Qnil;
+	/* {|&b|} */
+	if (iseq->arg_block != -1) {
+	    VALUE proc = Qnil;
 
-	if (rb_block_given_p()) {
-	    proc = rb_block_proc();
+	    if (rb_block_given_p()) {
+		proc = rb_block_proc();
+	    }
+
+	    argv[iseq->arg_block] = proc;
+	    th->mark_stack_len = iseq->arg_block + 1;
 	}
 
-	argv[iseq->arg_block] = proc;
-	th->mark_stack_len = argc = iseq->arg_block + 1;
+	th->mark_stack_len = 0;
+	return 0;
     }
-
-    th->mark_stack_len = 0;
-    return argc;
 }
 
 /* cref */

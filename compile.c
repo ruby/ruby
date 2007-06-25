@@ -774,6 +774,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	NODE *node_aux = node_args->nd_next;
 	NODE *node_opt = node_args->nd_opt;
 	ID rest_id = 0;
+	int last_comma = 0;
 	ID block_id = 0;
 	NODE *node_init = 0;
 
@@ -784,13 +785,14 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 
 	/*
          * new argument infromation:
-         *   NODE_ARGS     [m: int, o: NODE_OPT_ARG, ->]
-         *   NODE_ARGS_AUX [r: ID, b: ID, ->]
-         *   NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
+         *   NODE_ARGS     [m: int,  o: NODE_OPT_ARG, ->]
+         *   NODE_ARGS_AUX [r: ID,   b: ID,           ->]
+         *   NODE_ARGS_AUX [Pst: id, Plen: int,       init: NODE*]
          *  optarg information:
-         *   NODE_OPT_ARGS [idx, expr, ->]
+         *   NODE_OPT_ARGS [idx,     expr,            next ->]
 	 *  init arg:
 	 *   NODE_AND(m_init, p_init)
+	 *  if "r" is 1, it's means "{|x,|}" type block parameter.
 	 */
 
 	iseq->argc = node_args->nd_frml;
@@ -798,6 +800,10 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 
 	if (node_aux) {
 	    rest_id = node_aux->nd_rest;
+	    if (rest_id == 1) {
+		last_comma = 1;
+		rest_id = 0;
+	    }
 	    block_id = (ID)node_aux->nd_body;
 	    node_aux = node_aux->nd_next;
 
@@ -891,7 +897,18 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    iseq->arg_simple = 1;
 	    iseq->arg_size = iseq->argc;
 	}
+
+	if (iseq->type == ISEQ_TYPE_BLOCK) {
+	    if (iseq->argc == 1 && iseq->arg_simple == 1 && last_comma == 0) {
+		/* {|a|} */
+		iseq->arg_simple = 2;
+	    }
+	}
     }
+    else {
+	iseq->arg_simple = 1;
+    }
+
     return COMPILE_OK;
 }
 

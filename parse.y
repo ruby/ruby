@@ -3091,9 +3091,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		| f_arg ','
 		    {
 		    /*%%%*/
-			ID id = internal_id();
-			arg_var(id);
-			$$ = new_args($1, 0, id, 0, 0);
+			$$ = new_args($1, 0, 1, 0, 0);
 		    /*%
 		      #if 0
 			TODO: check me (anonymous rest)

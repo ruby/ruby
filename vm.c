@@ -539,7 +539,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	rb_iseq_t *iseq = block->iseq;
-	int i;
+	int i, opt_pc;
 	int magic = block_proc_is_lambda(block->proc) ?
 	  FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
 
@@ -552,12 +552,13 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    th->cfp->sp[i] = argv[i];
 	}
 
-	argc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
+	opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
+	argc = iseq->arg_size;
 	th->cfp->sp += argc;
 
 	vm_push_frame(th, iseq, magic,
 		      self, GC_GUARDED_PTR(block->dfp),
-		      iseq->iseq_encoded, th->cfp->sp, block->lfp,
+		      iseq->iseq_encoded + opt_pc, th->cfp->sp, block->lfp,
 		      iseq->local_size - argc);
 	val = vm_eval_body(th);
     }
