@@ -489,6 +489,7 @@ rb_fiber_s_new(VALUE self)
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
+    th->tag = 0;
 
     th->first_proc = rb_block_proc();
 
@@ -506,9 +507,7 @@ rb_fiber_terminate(rb_context_t *cont)
     VALUE value = cont->value;
 
     GetContPtr(cont->prev, prev_cont);
-
     cont->alive = Qfalse;
-
 
     if (prev_cont->alive == Qfalse) {
 	rb_fiber_yield(1, &value, GET_THREAD()->root_fiber);
