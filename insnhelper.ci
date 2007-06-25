@@ -562,6 +562,20 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
 /* yield */
 
+static inline int
+block_proc_is_lambda(VALUE procval)
+{
+    rb_proc_t *proc;
+
+    if (procval) {
+	GetProcPtr(procval, proc);
+	return proc->is_lambda;
+    }
+    else {
+	return 0;
+    }
+}
+
 static inline VALUE
 vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 		    VALUE self, int argc, VALUE *argv)
@@ -569,15 +583,21 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
     NODE *ifunc = (NODE *) block->iseq;
     VALUE val;
     VALUE arg;
+    int lambda = block_proc_is_lambda(block->proc);
 
-    if (argc == 1) {
-	arg = *argv;
-    }
-    else if (argc > 1) {
+    if (lambda) {
 	arg = rb_ary_new4(argc, argv);
     }
     else {
-	arg = rb_ary_new();
+	if (argc == 1) {
+	    arg = *argv;
+	}
+	else if (argc > 1) {
+	    arg = rb_ary_new4(argc, argv);
+	}
+	else {
+	    arg = rb_ary_new();
+	}
     }
 
     vm_push_frame(th, 0, FRAME_MAGIC_IFUNC,
@@ -968,20 +988,6 @@ vm_search_super_klass(VALUE klass, VALUE recv)
 	}
     }
     return klass;
-}
-
-static inline int
-block_proc_is_lambda(VALUE procval)
-{
-    rb_proc_t *proc;
-
-    if (procval) {
-	GetProcPtr(procval, proc);
-	return proc->is_lambda;
-    }
-    else {
-	return 0;
-    }
 }
 
 static void

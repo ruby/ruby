@@ -1313,9 +1313,16 @@ mproc(VALUE method)
 }
 
 static VALUE
+mlambda(VALUE method)
+{
+    return rb_funcall(Qnil, rb_intern("lambda"), 0);
+}
+
+static VALUE
 bmcall(VALUE args, VALUE method)
 {
     volatile VALUE a;
+
     if (CLASS_OF(args) != rb_cArray) {
 	args = rb_ary_new3(1, args);
     }
@@ -1356,7 +1363,7 @@ method_proc(VALUE method)
      *   end
      * end
      */
-    proc = rb_iterate((VALUE (*)(VALUE))mproc, 0, bmcall, method);
+    proc = rb_iterate((VALUE (*)(VALUE))mlambda, 0, bmcall, method);
     return proc;
 }
 
