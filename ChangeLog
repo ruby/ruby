@@ -1,3 +1,8 @@
+Tue Jun 26 02:50:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (setup_arg): support kind of "m(*ary, x)" method call.
+	  ([ruby-dev:31048]).
+
 Tue Jun 26 00:28:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci, vm.c: complete block parameter support.

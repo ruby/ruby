@@ -2430,6 +2430,7 @@ setup_arg(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *node, VALUE *flag)
 	  case NODE_SPLAT: {
 	    COMPILE(args, "args (splat)", argn->nd_head);
 	    argc = INT2FIX(1);
+	    nsplat++;
 	    *flag |= VM_CALL_ARGS_SPLAT_BIT;
 	    break;
 	  }
