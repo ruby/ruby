@@ -1,3 +1,7 @@
+Mon Jun 25 20:18:44 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (RVALUE): in RVALUE and RBasic, flags must be the same type.
+
 Mon Jun 25 18:02:55 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/pty/extconf.rb: skip wince and win64.

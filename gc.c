@@ -95,7 +95,7 @@ int ruby_gc_debug_indent = 0;
 typedef struct RVALUE {
     union {
 	struct {
-	    unsigned long flags;	/* always 0 for freed obj */
+	    VALUE flags;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RBasic  basic;
