@@ -1,3 +1,7 @@
+Mon Jun 25 09:45:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.ci, eval_jump.ci, eval_method.ci, eval_safe.ci: c-mode.
+
 Mon Jun 25 05:27:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c: remove ruby_current_node and change eval() prototype.
