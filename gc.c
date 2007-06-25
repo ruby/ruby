@@ -439,9 +439,9 @@ add_heap(void)
 	}
 	heaps[heaps_used].membase = p;
 	if ((VALUE)p % sizeof(RVALUE) == 0)
-	  heap_slots += 1;
+	    heap_slots += 1;
 	else
-	  p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
+	    p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
 	heaps[heaps_used].slot = p;
 	heaps[heaps_used].limit = heap_slots;
 	break;
@@ -707,7 +707,7 @@ is_pointer_to_heap(void *ptr)
     for (i=0; i < heaps_used; i++) {
 	heap_org = heaps[i].slot;
 	if (heap_org <= p && p < heap_org + heaps[i].limit)
-	  return Qtrue;
+	    return Qtrue;
     }
     return Qfalse;
 }
@@ -2008,7 +2008,7 @@ id2ref(VALUE obj, VALUE objid)
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
         ID symid = ptr / sizeof(RVALUE);
         if (rb_id2name(symid) == 0)
-	  rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
+	    rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
 	return ID2SYM(symid);
     }
 
