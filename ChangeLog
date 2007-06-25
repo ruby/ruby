@@ -1,3 +1,8 @@
+Tue Jun 26 03:38:31 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_s_new), yarvcore.c (th_init2): fix to clear
+	  VM stack ([ruby-dev:31046]).
+
 Tue Jun 26 03:15:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: rename setup_arg() to setup_args().

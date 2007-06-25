@@ -474,6 +474,8 @@ rb_fiber_s_new(VALUE self)
     th->stack = 0;
     th->stack_size = FIBER_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
+    MEMZERO(th->stack, VALUE, th->stack_size);
+
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;
     th->cfp->pc = 0;
