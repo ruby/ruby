@@ -1,3 +1,9 @@
+Wed Jun 27 00:18:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_clear): need to check STR_EMBED_P() before
+	  free()ing memory.  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>.
+	  [ruby-dev:31062]
+
 Tue Jun 26 16:39:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_getgroups): use GIDT2NUM for rb_gid_t.

@@ -2347,7 +2347,7 @@ static VALUE
 rb_str_clear(VALUE str)
 {
     /* rb_str_modify() */	/* no need for str_make_independent */
-    if (str_independent(str)) {
+    if (str_independent(str) && !STR_EMBED_P(str)) {
 	free(RSTRING_PTR(str));
     }
     STR_SET_EMBED(str);
