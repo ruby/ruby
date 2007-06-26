@@ -1,3 +1,7 @@
+Tue Jun 26 16:22:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (ruby_node_name): update node names.
+
 Tue Jun 26 15:21:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/ruby.h: IL32LLP64 support.
