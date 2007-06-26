@@ -1911,43 +1911,40 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE s
 }
 
 static int
-make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
-
     switch (nd_type(node)) {
-      case NODE_ATTRASGN:{
-	INSN *iobj;
-	VALUE dupidx;
+      case NODE_ATTRASGN: {
+	  INSN *iobj;
+	  VALUE dupidx;
 
-	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
-	POP_ELEMENT(ret);        /* pop pop insn */
-	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
+	  COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
+	  POP_ELEMENT(ret);        /* pop pop insn */
+	  iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
 
-	dupidx = iobj->operands[1];
-	dupidx = INT2FIX(FIX2INT(dupidx) + 1);
-	iobj->operands[1] = dupidx;
+	  dupidx = iobj->operands[1];
+	  dupidx = INT2FIX(FIX2INT(dupidx) + 1);
+	  iobj->operands[1] = dupidx;
 
-	ADD_INSN1(ret, nd_line(node), topn, dupidx);
-	ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
-	ADD_INSN(ret, nd_line(node), pop);	/* result */
-	ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
-	break;
+	  ADD_INSN1(ret, nd_line(node), topn, dupidx);
+	  ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
+	  ADD_INSN(ret, nd_line(node), pop);	/* result */
+	  ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
+	  break;
       }
-
-      case NODE_MASGN:
-	COMPILE_POPED(ret, "nest masgn lhs", node);
-	break;
-
-      default:
-	{
-	    DECL_ANCHOR(anchor);
-	    COMPILE_POPED(anchor, "masgn lhs", node);
-	    /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
-	    REMOVE_ELEM(FIRST_ELEMENT(anchor));
-	    /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
-	    ADD_SEQ(ret, anchor);
-	    /* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
-	}
+      case NODE_MASGN: {
+	  COMPILE_POPED(ret, "nest masgn lhs", node);
+	  break;
+      }
+      default: {
+	  DECL_ANCHOR(anchor);
+	  COMPILE_POPED(anchor, "masgn lhs", node);
+	  /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
+	  REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	  /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
+	  ADD_SEQ(ret, anchor);
+	  /* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
+      }
     }
 
     return COMPILE_OK;
@@ -1955,7 +1952,7 @@ make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 
 static int
 compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
-		NODE * rhsn, NODE * splatn, NODE * lhsn, int llen)
+		NODE *rhsn, NODE *splatn, NODE *lhsn, int llen)
 {
     if (lhsn != 0) {
 	compile_massign(iseq, ret, rhsn, splatn, lhsn->nd_next, llen + 1);
@@ -2040,7 +2037,27 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	}
 
 	if (lhs_splat) {
-	    make_masgn_lhs(iseq, ret, splatn);
+	    if (nd_type(splatn) == NODE_POSTARG) {
+		int i, num = splatn->nd_2nd->nd_alen;
+		NODE *n = splatn->nd_2nd;
+
+		ADD_INSN (ret, nd_line(n), dup);
+		ADD_INSN2(ret, nd_line(n), expandarray, INT2FIX(num), INT2FIX(2));
+
+		while (n) {
+		    DECL_ANCHOR(lhs);
+
+		    COMPILE_POPED(lhs, "post", n->nd_head);
+		    REMOVE_ELEM(FIRST_ELEMENT(lhs));
+		    ADD_SEQ(ret, lhs);
+		    n = n->nd_next;
+		}
+
+		make_masgn_lhs(iseq, ret, splatn->nd_1st);
+	    }
+	    else {
+		make_masgn_lhs(iseq, ret, splatn);
+	    }
 	}
     }
     return COMPILE_OK;
@@ -2507,8 +2524,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
     if (node == 0) {
 	if (!poped) {
-	    debug_nodeprint("NODE_NIL(implicit)");
-	    debug_nodeprint_close();
+	    debug_node_start("NODE_NIL(implicit)");
+	    debug_node_end();
 	    ADD_INSN(ret, 0, putnil);
 	    return COMPILE_OK;
 	}
@@ -2516,7 +2533,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
     }
 
     iseq->compile_data->last_line = nd_line(node);
-    debug_nodeprint(node);
+    debug_node_start(node);
 
     type = nd_type(node);
 
@@ -4378,7 +4395,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	return Qnil;
     }
 
-    debug_nodeprint_close();
+    debug_node_end();
     return COMPILE_OK;
 }
 

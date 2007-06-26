@@ -1,3 +1,12 @@
+Wed Jun 27 03:26:15 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (compile_massign), insns.def (expandarray): support 
+	  postarg with massign (a, *b, c = ...).
+
+	* bootstraptest/test_massign.rb: add tests for above.
+
+	* compile.h: fix debug macro names.
+
 Wed Jun 27 00:18:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_clear): need to check STR_EMBED_P() before

@@ -61,7 +61,7 @@
 
 #define debug_node_start(node) \
   (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), \
-   ruby_debug_print_node(10, CPDEBUG, header, node), gl_node_level++) \
+   ruby_debug_print_node(10, CPDEBUG, "", (NODE *)node), gl_node_level++) \
 
 #define debug_node_end()  gl_node_level --;
 
@@ -84,13 +84,13 @@ r_value(VALUE value)
 #define debugp_verbose(header, value)      r_value(value)
 #define debugp_verbose_node(header, value) r_value(value)
 #define debugp_param(header, value)        r_value(value)
-#define debug_nodeprint(node)
-#define debug_nodeprint_close()
+#define debug_node_start(node)
+#define debug_node_end()
 #endif
 
 #if CPDEBUG > 1
-#define debugs ruby_debug_indent(-1, CPDEBUG, gl_node_level*2), printf
-#define debug_compile(msg, v) (ruby_debug_indent(-1, CPDEBUG, gl_node_level*2), printf("%s", msg), (v))
+#define debugs ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), printf
+#define debug_compile(msg, v) (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), printf("%s", msg), (v))
 #else
 #define debugs                             if(0)printf
 #define debug_compile(msg, v) (v)
