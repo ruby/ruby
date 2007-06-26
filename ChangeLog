@@ -1,4 +1,7 @@
-Tue Jun 26 16:33:45 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 26 16:35:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (ruby_setreuid, ruby_setregid): rename to get rid of name
+	  clash.
 
 	* process.c (proc_exec_v, rb_proc_exec): preserve errno.
 

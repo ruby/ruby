@@ -101,6 +101,13 @@ static VALUE S_Tms;
 #define BROKEN_SETREGID 1
 #endif
 
+#ifdef BROKEN_SETREUID
+#define setreuid ruby_setreuid
+#endif
+#ifdef BROKEN_SETREGID
+#define setregid ruby_setregid
+#endif
+
 #if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
 #if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
 #define OBSOLETE_SETREUID 1
