@@ -2787,7 +2787,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_LABEL(ret, end_label);
 
 	if (node->nd_state == Qundef) {
-	    ADD_INSN(ret, nd_line(node), putundef);
+	    /* ADD_INSN(ret, nd_line(node), putundef); */
+	    rb_bug("unsupported: putundef");
 	}
 	else {
 	    ADD_INSN(ret, nd_line(node), putnil);

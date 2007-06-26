@@ -359,20 +359,6 @@ putself
 
 /**
   @c put
-  @e put Qundef.  DO NOT USE in NORMAL RUBY PROGRAM
-  @j put Qundef.
- */
-DEFINE_INSN
-putundef
-()
-()
-(VALUE val)
-{
-    val = Qundef;
-}
-
-/**
-  @c put
   @e put some object.
      i.e. Fixnum, true, false, nil, and so on.
   @j オブジェクトを置く。i.e. Fixnum, true, false, nil, and so on.

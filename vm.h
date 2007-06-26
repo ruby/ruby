@@ -222,16 +222,14 @@ default:                        \
 /*
   env{
     env[0] // special (block or prev env)
-    env[1] // orphan
-    env[2] // in heap
-    env[3] // env object
-    env[4] // prev env val
+    env[1] // env object
+    env[2] // prev env val
   };
  */
 
-#define ORPHAN_ENV_P(env)   ((env)[1] == Qundef)
-#define ENV_IN_HEAP_P(env)  ((env)[2] == Qundef)
-#define ENV_VAL(env)        ((env)[3])
+#define ENV_IN_HEAP_P(th, env)  \
+  (!((th)->stack < (env) && (env) < ((th)->stack + (th)->stack_size)))
+#define ENV_VAL(env)        ((env)[1])
 
 #define FRAME_MAGIC_METHOD 0xfaffff11
 #define FRAME_MAGIC_BLOCK  0xfaffff21

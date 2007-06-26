@@ -190,7 +190,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
     VALUE *nenvptr;
     int i, local_size;
 
-    if (ENV_IN_HEAP_P(envptr)) {
+    if (ENV_IN_HEAP_P(th, envptr)) {
 	return ENV_VAL(envptr);
     }
 
@@ -198,7 +198,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 	VALUE *penvptr = GC_GUARDED_PTR_REF(*envptr);
 	rb_control_frame_t *pcfp = cfp;
 
-	if (ENV_IN_HEAP_P(penvptr)) {
+	if (ENV_IN_HEAP_P(th, penvptr)) {
 	    penvval = ENV_VAL(penvptr);
 	}
 	else {
@@ -227,7 +227,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 	local_size = cfp->iseq->local_size;
     }
 
-    env->env_size = local_size + 1 + 4;
+    env->env_size = local_size + 1 + 2;
     env->local_size = local_size;
     env->env = ALLOC_N(VALUE, env->env_size);
     env->prev_envval = penvval;
@@ -243,10 +243,8 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 
     *envptr = envval;		/* GC mark */
     nenvptr = &env->env[i - 1];
-    nenvptr[1] = Qfalse;	/* frame is not orphan */
-    nenvptr[2] = Qundef;	/* frame is in heap    */
-    nenvptr[3] = envval;	/* frame self */
-    nenvptr[4] = penvval;	/* frame prev env object */
+    nenvptr[1] = envval;	/* frame self */
+    nenvptr[2] = penvval;	/* frame prev env object */
 
     /* reset lfp/dfp in cfp */
     cfp->dfp = nenvptr;
@@ -296,7 +294,7 @@ collect_local_variables_in_env(rb_env_t *env, VALUE ary)
 int
 vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary)
 {
-    if (ENV_IN_HEAP_P(dfp)) {
+    if (ENV_IN_HEAP_P(th, dfp)) {
 	rb_env_t *env;
 	GetEnvPtr(ENV_VAL(dfp), env);
 	collect_local_variables_in_env(env, ary);
@@ -313,6 +311,7 @@ vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE envval;
 
     envval = vm_make_env_each(th, cfp, cfp->dfp, cfp->lfp);
+
     if (PROCDEBUG) {
 	check_env_value(envval);
     }

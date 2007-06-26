@@ -329,7 +329,6 @@ th_init2(rb_thread_t *th)
     /* allocate thread stack */
     th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
-    MEMZERO(th->stack, VALUE, th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;

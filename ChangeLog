@@ -1,3 +1,18 @@
+Tue Jun 26 15:04:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_s_new): revert initializing VM stack.
+
+	* yarvcore.c (th_init2): ditto.
+
+	* vm.c, vm.h: fix to stop using Qundef on VM stack.  According to 
+	  this change, VM stack should not include Qundef value.
+
+	* insns.def (putundef): removed.
+
+	* compile.c (iseq_compile_each): ditto.
+
+	* eval.c (eval): fix spacing.
+
 Tue Jun 26 04:03:50 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_yield_with_cfunc), proc.c: fix Method#to_proc
