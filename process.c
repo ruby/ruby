@@ -2674,7 +2674,7 @@ proc_getgroups(VALUE obj)
 
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
-	rb_ary_push(ary, INT2NUM(groups[i]));
+	rb_ary_push(ary, GIDT2NUM(groups[i]));
 
     return ary;
 #else

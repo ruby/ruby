@@ -1,3 +1,7 @@
+Tue Jun 26 16:39:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_getgroups): use GIDT2NUM for rb_gid_t.
+
 Tue Jun 26 16:28:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_wait_fd_rw): terminate fdset.
