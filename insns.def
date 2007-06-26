@@ -1623,12 +1623,25 @@ opt_plus
     else if (FIXNUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
 	/* fixnum + fixnum */
+#ifndef LONG_LONG_VALUE
 	val = (recv + (obj & (~1)));
 	if ((~(recv ^ obj) & (recv ^ val)) &
 	    ((VALUE)0x01 << ((sizeof(VALUE) * CHAR_BIT) - 1))) {
 	    val = rb_big_plus(rb_int2big(FIX2INT(recv)),
 			      rb_int2big(FIX2INT(obj)));
 	}
+#else
+	long a, b, c;
+	a = FIX2LONG(recv);
+	b = FIX2LONG(obj);
+	c = a + b;
+	if (FIXABLE(c)) {
+	    val = LONG2FIX(c);
+	}
+	else {
+	    val = rb_big_plus(rb_int2big(a), rb_int2big(b));
+	}
+#endif
     }
 #endif
 
@@ -1686,9 +1699,11 @@ opt_minus
 	a = FIX2LONG(recv);
 	b = FIX2LONG(obj);
 	c = a - b;
-	val = LONG2FIX(c);
 
-	if (FIX2LONG(val) != c) {
+	if (FIXABLE(c)) {
+	    val = LONG2FIX(c);
+	}
+	else {
 	    val = rb_big_minus(rb_int2big(a), rb_int2big(b));
 	}
     }
@@ -1722,9 +1737,11 @@ opt_mult
 	else {
 	    b = FIX2LONG(obj);
 	    c = a * b;
-	    val = LONG2FIX(c);
 
-	    if (FIX2LONG(val) != c || c / a != b) {
+	    if (FIXABLE(c) && c / a == b) {
+		val = LONG2FIX(c);
+	    }
+	    else {
 		val = rb_big_mul(rb_int2big(a), rb_int2big(b));
 	    }
 	}

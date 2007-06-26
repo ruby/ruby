@@ -151,13 +151,8 @@ typedef unsigned LONG_LONG ID;
 # endif
 #endif
 
-#ifdef LONG_LONG_VALUE
-# define FIXNUM_MAX (LLONG_MAX>>1)
-# define FIXNUM_MIN RSHIFT((LONG_LONG)LLONG_MIN,1)
-#else
-# define FIXNUM_MAX (LONG_MAX>>1)
-# define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
-#endif
+#define FIXNUM_MAX (LONG_MAX>>1)
+#define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
 #define FIXNUM_FLAG 0x01
 #define INT2FIX(i) ((VALUE)(((SIGNED_VALUE)(i))<<1 | FIXNUM_FLAG))

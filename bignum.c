@@ -107,8 +107,8 @@ bigfixize(VALUE x)
     long len = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(x);
 
-    if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
-	SIGNED_VALUE num = 0;
+    if (len*SIZEOF_BDIGITS <= sizeof(long)) {
+	long num = 0;
 	while (len--) {
 	    num = BIGUP(num) + ds[len];
 	}
@@ -415,7 +415,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
     len *= strlen(str)*sizeof(char);
 
-    if (len <= (sizeof(VALUE)*CHAR_BIT)) {
+    if (len <= (sizeof(long)*CHAR_BIT)) {
 	unsigned long val = strtoul(str, &end, base);
 
 	if (str < end && *end == '_') goto bigparse;
