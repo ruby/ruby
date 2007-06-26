@@ -1,3 +1,7 @@
+Tue Jun 26 16:28:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_wait_fd_rw): terminate fdset.
+
 Tue Jun 26 16:26:58 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regint.h: IL32LLP64 support.

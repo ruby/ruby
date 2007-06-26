@@ -1764,6 +1764,8 @@ rb_thread_wait_fd_rw(int fd, int read)
 	    result = do_select(fd + 1, 0, rb_fd_ptr(&set), 0, 0);
 	}
 
+	rb_fd_term(&set);
+
 	if (result < 0 && errno != EBADF) {
 	    rb_sys_fail(0);
 	}
