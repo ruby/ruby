@@ -2427,7 +2427,7 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned long *flag)
 {
     VALUE argc = INT2FIX(0);
     int nsplat = 0;
@@ -3434,7 +3434,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	ID mid = node->nd_mid;
 	VALUE argc;
-	VALUE flag = 0;
+	unsigned long flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
 	iseq->compile_data->current_block = Qfalse;
 
@@ -3520,7 +3520,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_SEND_R(ret, nd_line(node), ID2SYM(mid),
-		   argc, parent_block, INT2FIX(flag));
+		   argc, parent_block, LONG2FIX(flag));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -3531,7 +3531,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ZSUPER:{
 	DECL_ANCHOR(args);
 	VALUE argc;
-	VALUE flag = 0;
+	unsigned long flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
 	iseq->compile_data->current_block = Qfalse;
 
@@ -3603,7 +3603,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
 	ADD_INSN3(ret, nd_line(node), invokesuper,
-		  argc, parent_block, INT2FIX(flag));
+		  argc, parent_block, LONG2FIX(flag));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -3709,7 +3709,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_SEQ(ret, args);
-	ADD_INSN2(ret, nd_line(node), invokeblock, argc, INT2FIX(flag));
+	ADD_INSN2(ret, nd_line(node), invokeblock, argc, LONG2FIX(flag));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4264,7 +4264,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ATTRASGN:{
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
-	VALUE flag = 0;
+	unsigned long flag = 0;
 	VALUE argc;
 
 	argc = setup_args(iseq, args, node->nd_args, &flag);
@@ -4289,7 +4289,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_SEQ(ret, recv);
 	    ADD_SEQ(ret, args);
 	}
-	ADD_SEND_R(ret, nd_line(node), ID2SYM(node->nd_mid), argc, 0, INT2FIX(flag));
+	ADD_SEND_R(ret, nd_line(node), ID2SYM(node->nd_mid), argc, 0, LONG2FIX(flag));
 	ADD_INSN(ret, nd_line(node), pop);
 
 	break;

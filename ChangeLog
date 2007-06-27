@@ -1,3 +1,7 @@
+Thu Jun 28 02:03:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (setup_args): change parameter type.
+
 Thu Jun 28 02:03:39 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (rb_intern2): unconstify cast.
