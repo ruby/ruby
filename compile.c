@@ -2542,27 +2542,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
     }
 
     switch (type) {
-
-      case NODE_METHOD:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_METHOD"));
-	break;
-      }
-      case NODE_FBODY:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_FBODY"));
-	break;
-      }
-      case NODE_CFUNC:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_CFUNC"));
-	break;
-      }
-      case NODE_SCOPE:{
-	/* OK */
-	COMPILE_ERROR(("BUG: shouldn't reach: NODE_SCOPE"));
-	break;
-      }
       case NODE_BLOCK:{
 	while (node && nd_type(node) == NODE_BLOCK) {
 	    COMPILE_(ret, "BLOCK body", node->nd_head,
@@ -3187,9 +3166,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	if (idx < 0) {
-	    debugi("unknown id", node->nd_vid);
-	    COMPILE_ERROR(("NODE_DASGN error"));
+	    rb_bug("NODE_DASGN(_CURR): unknown id (%s)", rb_id2name(node->nd_vid));
 	}
+
 	ADD_INSN2(ret, nd_line(node), setdynamic,
 		  INT2FIX(ls - idx), INT2FIX(lv));
 	break;
@@ -3808,13 +3787,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_NTH_REF:{
-	ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~'  */,
-		  INT2FIX(node->nd_nth << 1));
+        if (!poped) {
+	    ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~'  */,
+		      INT2FIX(node->nd_nth << 1));
+	}
 	break;
       }
       case NODE_BACK_REF:{
-	ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~' */,
-		  INT2FIX(0x01 | (node->nd_nth << 1)));
+	if (!poped) {
+	    ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(1) /* '~' */,
+		      INT2FIX(0x01 | (node->nd_nth << 1)));
+	}
 	break;
       }
       case NODE_MATCH:
@@ -3928,7 +3911,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_DREGX_ONCE:{
-	/* fix me: once? */
+	/* TODO: once? */
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
 
@@ -3948,11 +3931,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
-      case NODE_ARGS:{
-	/* OK */
-	COMPILE_ERROR(("BUG: should not reach here: compile_each#NODE_ARGS"));
-	break;
-      }
       case NODE_ARGSCAT:{
 	COMPILE(ret, "argscat head", node->nd_head);
 	COMPILE(ret, "argscat body", node->nd_body);
@@ -3969,16 +3947,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_SPLAT:{
 	COMPILE(ret, "splat", node->nd_head);
 	ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
-	break;
-      }
-      case NODE_TO_ARY:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_TO_ARY"));
-	break;
-      }
-      case NODE_BLOCK_PASS:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_BLOCK_PASS"));
 	break;
       }
       case NODE_DEFN:{
@@ -4166,11 +4134,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
-      case NODE_CREF:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_CREF"));
-	break;
-      }
       case NODE_DOT2:
       case NODE_DOT3:{
 	int flag = type == NODE_DOT2 ? INT2FIX(0) : INT2FIX(1);
@@ -4221,16 +4184,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_LABEL(ret, lfin);
 	break;
       }
-      case NODE_ATTRSET:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_ATTRSET"));
-	break;
-      }
       case NODE_SELF:{
 	if (!poped) {
 	    ADD_INSN(ret, nd_line(node), putself);
 	}
-
 	break;
       }
       case NODE_NIL:{
@@ -4292,28 +4249,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (!poped) {
 	    ADD_INSN(ret, nd_line(node), putnil);
 	}
-	break;
-      }
-#ifdef C_ALLOCA
-      case NODE_ALLOCA:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_ALLOCA"));
-	break;
-      }
-#endif
-      case NODE_BMETHOD:{
-	/* block method, OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_BMETHOD"));
-	break;
-      }
-      case NODE_MEMO:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_MEMO"));
-	break;
-      }
-      case NODE_IFUNC:{
-	/* OK */
-	COMPILE_ERROR(("BUG: unknown node: NODE_IFUNC"));
 	break;
       }
       case NODE_DSYM:{
@@ -4391,7 +4326,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       default:
-	COMPILE_ERROR(("BUG: unknown node (default): %s", ruby_node_name(type)));
+	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
 	return Qnil;
     }
 

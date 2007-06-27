@@ -1,3 +1,10 @@
+Thu Jun 28 01:19:43 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): fix popped backref and others.
+	  ([ruby-dev:31068]).
+
+	* compile.c (iseq_compile_each): remove needless statements.
+
 Wed Jun 27 23:51:33 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c: remove unused functions.
