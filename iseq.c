@@ -1005,8 +1005,6 @@ end
 	return "NODE_COLON2";
       case NODE_COLON3:
 	return "NODE_COLON3";
-      case NODE_CREF:
-	return "NODE_CREF";
       case NODE_DOT2:
 	return "NODE_DOT2";
       case NODE_DOT3:

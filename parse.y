@@ -7552,7 +7552,6 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 	useless = "a variable";
 	break;
       case NODE_CONST:
-      case NODE_CREF:
 	useless = "a constant";
 	break;
       case NODE_LIT:

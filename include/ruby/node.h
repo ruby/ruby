@@ -109,7 +109,6 @@ enum node_type {
     NODE_SCLASS,
     NODE_COLON2,
     NODE_COLON3,
-    NODE_CREF,
     NODE_DOT2,
     NODE_DOT3,
     NODE_FLIP2,
@@ -338,7 +337,6 @@ typedef struct RNode {
 #define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(0,b),0)
 #define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
-#define NEW_CREF(c) (NEW_NODE(NODE_CREF,0,0,c))
 #define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
 #define NEW_ATTRSET(a) NEW_NODE(NODE_ATTRSET,a,0,0)

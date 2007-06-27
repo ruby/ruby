@@ -848,7 +848,6 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
 	  case NODE_ITER:
-	  case NODE_CREF:
 	  case NODE_WHEN:
 	  case NODE_MASGN:
 	  case NODE_RESCUE:
