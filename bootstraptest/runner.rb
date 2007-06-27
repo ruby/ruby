@@ -5,7 +5,6 @@
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
 
-$LOAD_PATH.unshift "#{File.dirname($0)}/lib"
 require 'fileutils'
 
 def main

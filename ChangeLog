@@ -1,3 +1,7 @@
+Thu Jun 28 02:12:08 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: fix to untouch $:.
+
 Thu Jun 28 02:03:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (setup_args): change parameter type.
