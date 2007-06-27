@@ -1,3 +1,7 @@
+Thu Jun 28 02:03:39 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (rb_intern2): unconstify cast.
+
 Thu Jun 28 01:44:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (rb_intern2): don't allocate a string object at first.

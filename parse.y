@@ -8396,7 +8396,7 @@ rb_intern2(const char *name, long len)
     fake_str.basic.flags = T_STRING|RSTRING_NOEMBED|FL_FREEZE;
     fake_str.basic.klass = rb_cString;
     fake_str.as.heap.len = len;
-    fake_str.as.heap.ptr = name;
+    fake_str.as.heap.ptr = (char *)name;
     fake_str.as.heap.aux.capa = len;
 
     if (st_lookup(global_symbols.sym_id, (st_data_t)&fake_str, (st_data_t *)&id))
