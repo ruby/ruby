@@ -3608,60 +3608,6 @@ rb_w32_times(struct tms *tmbuf)
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-struct handler_arg_t {
-    void (*handler)(int);
-    int arg;
-    int status;
-    int finished;
-    HANDLE handshake;
-};
-
-static void
-rb_w32_call_handler(struct handler_arg_t* h)
-{
-    int status;
-    RUBY_CRITICAL(rb_protect((VALUE (*)(VALUE))h->handler, (VALUE)h->arg, &h->status);
-		  status = h->status;
-		  SetEvent(h->handshake));
-    if (status) {
-	rb_jump_tag(status);
-    }
-    h->finished = 1;
-    yield_until(0);
-}
-
-static struct handler_arg_t *
-setup_handler(struct handler_arg_t *harg, int arg, void (*handler)(int),
-	      HANDLE handshake)
-{
-    harg->handler = handler;
-    harg->arg = arg;
-    harg->status = 0;
-    harg->finished = 0;
-    harg->handshake = handshake;
-    return harg;
-}
-
-static void
-setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
-{
-#ifdef _M_IX86
-    DWORD *esp = (DWORD *)ctx->Esp;
-    *--esp = (DWORD)harg;
-    *--esp = ctx->Eip;
-    ctx->Esp = (DWORD)esp;
-    ctx->Eip = (DWORD)rb_w32_call_handler;
-#elif defined(_M_AMD64)
-    DWORD64 *rsp = (DWORD64 *)ctx->Rsp;
-    *--rsp = (DWORD64)harg;
-    *--rsp = ctx->Rip;
-    ctx->Rsp = (DWORD64)rsp;
-    ctx->Rip = (DWORD64)rb_w32_call_handler;
-#else !defined(_WIN32_WCE)
-#error unsupported processor
-#endif
-}
-
 static void
 catch_interrupt(void)
 {
