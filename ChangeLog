@@ -1,3 +1,11 @@
+Wed Jun 27 17:08:42 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_evalbody.ci: support OPT_CALL_THREADED_CODE.
+
+	* insns.def, vm.c, vm.h: ditto.
+
+	* vm.h: add VM_CFP_CNT() and VM_SP_CNT().
+
 Wed Jun 27 04:23:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix type error.

@@ -1325,8 +1325,8 @@ leave
 {
     if (OPT_CHECKED_RUN) {
 	if (reg_cfp->sp != reg_cfp->bp) {
-	    rb_bug("Stack consistency error (sp: %p, bp: %p)",
-		   reg_cfp->sp, reg_cfp->bp);
+	    rb_bug("Stack consistency error (sp: %d, bp: %d)",
+		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, reg_cfp->bp));
 	}
     }
 
@@ -1346,8 +1346,12 @@ finish
 (VALUE val)
 (VALUE val)
 {
+#if OPT_CALL_THREADED_CODE
+    rb_bug("unused instruction on OPT_CALL_THREADED_CODE");
+#else
     th->cfp++;
     return val;
+#endif
 }
 
 /**********************************************************/
@@ -1422,7 +1426,7 @@ throw
 	    }
 	}
 	th->state = state;
-	return (VALUE) NEW_THROW_OBJECT(throwobj, (VALUE) pt, state);
+	THROW_EXCEPTION(NEW_THROW_OBJECT(throwobj, (VALUE) pt, state));
     }
     else {
 	/* continue throw */
@@ -1440,7 +1444,7 @@ throw
 	else {
 	    th->state = FIX2INT(rb_ivar_get(err, idThrowState));
 	}
-	return err;
+	THROW_EXCEPTION(err);
     }
     /* unreachable */
 }

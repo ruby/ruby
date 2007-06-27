@@ -122,15 +122,24 @@ VALUE
 vm_eval(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
-    SET_PC(reg_cfp->iseq->iseq_encoded);
+    VALUE ret;
 
     while (*GET_PC()) {
 	reg_cfp = ((insn_func_type) (*GET_PC()))(th, reg_cfp);
+
+	if (reg_cfp == 0) {
+	    VALUE err = th->errinfo;
+	    th->errinfo = Qnil;
+	    return err;
+	}
     }
-    {
-	VALUE ret = *--reg_cfp->sp;
-	th->cfp--;
-	return ret;
+
+    if (th->cfp->magic != FRAME_MAGIC_FINISH) {
+	rb_bug("cfp consistency error");
     }
+
+    ret = *(th->cfp->sp-1); /* pop */
+    th->cfp++; /* pop cf */
+    return ret;
 }
 #endif

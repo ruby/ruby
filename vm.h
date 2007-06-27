@@ -112,7 +112,7 @@ typedef rb_control_frame_t *
     (*insn_func_type) (rb_thread_t *, rb_control_frame_t *)FASTCALL;
 
 #define INSN_ENTRY(insn) \
-  rb_control_frame_t * \
+  static rb_control_frame_t * \
     LABEL(insn)(rb_thread_t *th, rb_control_frame_t *reg_cfp) FASTCALL {
 
 #define END_INSN(insn) return reg_cfp;}
@@ -219,6 +219,10 @@ default:                        \
 /************************************************/
 /************************************************/
 
+#define VM_CFP_CNT(th, cfp) \
+  ((rb_control_frame_t *)(th->stack + th->stack_size) - (rb_control_frame_t *)(cfp))
+#define VM_SP_CNT(th, sp) ((sp) - (th)->stack)
+
 /*
   env{
     env[0] // special (block or prev env)
@@ -265,6 +269,15 @@ default:                        \
   (RNODE((obj))->u2.value = (val))
 #define SET_THROWOBJ_STATE(obj, val) \
   (RNODE((obj))->u3.value = (val))
+
+#if OPT_CALL_THREADED_CODE
+#define THROW_EXCEPTION(exc) do { \
+    th->errinfo = (VALUE)(exc); \
+    return 0; \
+} while (0)
+#else
+#define THROW_EXCEPTION(exc) return (exc)
+#endif
 
 #define SCREG(r) (reg_##r)
 

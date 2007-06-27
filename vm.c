@@ -409,7 +409,6 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
     if (0) printf("id: %s, nd: %s, argc: %d, passed: %p\n",
 		  rb_id2name(id), ruby_node_name(nd_type(body)),
 		  argc, th->passed_block);
-    //SDR2(th->cfp);
 
     if (th->passed_block) {
 	blockptr = th->passed_block;
@@ -418,18 +417,20 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
     switch (nd_type(body)) {
       case RUBY_VM_METHOD_NODE:{
 	rb_control_frame_t *reg_cfp;
+	VALUE iseqval = (VALUE)body->nd_body;
 	int i;
 
 	rb_vm_set_finish_env(th);
 	reg_cfp = th->cfp;
 
-	CHECK_STACK_OVERFLOW(reg_cfp, argc);
+	CHECK_STACK_OVERFLOW(reg_cfp, argc + 1);
 
+	*reg_cfp->sp++ = recv;
 	for (i = 0; i < argc; i++) {
 	    *reg_cfp->sp++ = argv[i];
 	}
 
-	vm_setup_method(th, reg_cfp, argc, blockptr, 0, (VALUE)body->nd_body, recv, klass);
+	vm_setup_method(th, reg_cfp, argc, blockptr, 0, iseqval, recv, klass);
 	val = vm_eval_body(th);
 	break;
       }
