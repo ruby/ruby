@@ -276,7 +276,7 @@ default:                        \
     return 0; \
 } while (0)
 #else
-#define THROW_EXCEPTION(exc) return (exc)
+#define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
 
 #define SCREG(r) (reg_##r)

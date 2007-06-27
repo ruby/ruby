@@ -222,7 +222,7 @@ iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
 #if OPT_DIRECT_THREADED_CODE
     void **table = (void **)vm_eval(0);
 #else
-    extern void **insns_address_table();
+    extern void **get_insns_address_table();
     void **table = get_insns_address_table();
 #endif
     int i;

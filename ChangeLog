@@ -1,3 +1,10 @@
+Wed Jun 27 20:31:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_translate_direct_threaded_code): fix prototype
+	  function name.
+
+	* vm.h: add correct cast.
+
 Wed Jun 27 17:08:42 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_evalbody.ci: support OPT_CALL_THREADED_CODE.
