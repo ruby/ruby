@@ -1,3 +1,9 @@
+Thu Jun 28 01:24:02 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: fix to show file name.
+
+	* bootstraptest/test_*.rb: add bootstarp tests.
+
 Thu Jun 28 01:22:15 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/node.h, parse.y, gc.c, iseq.c: remove NODE_CREF.

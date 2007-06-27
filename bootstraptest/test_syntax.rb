@@ -1,0 +1,525 @@
+assert_equal %q{4}, %q{1 && 2 && 3 && 4}
+assert_equal %q{}, %q{1 && nil && 3 && 4}
+assert_equal %q{}, %q{1 && 2 && 3 && nil}
+assert_equal %q{false}, %q{1 && 2 && 3 && false}
+assert_equal %q{4}, %q{1 and 2 and 3 and 4}
+assert_equal %q{}, %q{1 and nil and 3 and 4}
+assert_equal %q{}, %q{1 and 2 and 3 and nil}
+assert_equal %q{false}, %q{1 and 2 and 3 and false}
+assert_equal %q{}, %q{nil && true}
+assert_equal %q{false}, %q{false && true}
+assert_equal %q{}, %q{
+  case 1
+  when 2
+    :ng
+  end}
+assert_equal %q{ok}, %q{
+  case 1
+  when 10,20,30
+    :ng1
+  when 1,2,3
+    :ok
+  when 100,200,300
+    :ng2
+  else
+    :elseng
+  end}
+assert_equal %q{elseok}, %q{
+  case 123
+  when 10,20,30
+    :ng1
+  when 1,2,3
+    :ng2
+  when 100,200,300
+    :ng3
+  else
+    :elseok
+  end
+}
+assert_equal %q{ok}, %q{
+  case 'test'
+  when /testx/
+    :ng1
+  when /test/
+    :ok
+  when /tetxx/
+    :ng2
+  else
+    :ng_else
+  end
+}
+assert_equal %q{ok}, %q{
+  case Object.new
+  when Object
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  case Object
+  when Object.new
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  case 'test'
+  when 'tes'
+    :ng
+  when 'te'
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  case 'test'
+  when 'tes'
+    :ng
+  when 'te'
+    :ng
+  when 'test'
+    :ok
+  end
+}
+assert_equal %q{ng}, %q{
+  case 'test'
+  when 'tes'
+    :ng
+  when /te/
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  case 'test'
+  when 'tes'
+    :ng
+  when /test/
+    :ok
+  else
+    :ng
+  end
+}
+assert_equal %q{100}, %q{
+  def test(arg)
+    case 1
+    when 2
+      3
+    end
+    return arg
+  end
+  
+  test(100)
+}
+assert_equal %q{ok}, %q{
+  ary = [1, 2]
+  case 1
+  when *ary
+    :ok
+  else
+    :ng
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [1, 2]
+  case 3
+  when *ary
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [1, 2]
+  case 1
+  when :x, *ary
+    :ok
+  when :z
+    :ng1
+  else
+    :ng2
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [1, 2]
+  case 3
+  when :x, *ary
+    :ng1
+  when :z
+    :ng2
+  else
+    :ok
+  end
+}
+assert_equal %q{[:false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :false, :false, :false, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :then, :false, :then, :then, :then, :false, :false, :false, :false, :false, :false, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :false, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :false, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :false, :then, :then, :then, :then, :then, :then, :then, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep, :then, :sep]}, %q{
+
+  def make_perm ary, num
+    if num == 1
+      ary.map{|e| [e]}
+    else
+      base = make_perm(ary, num-1)
+      res  = []
+      base.each{|b|
+        ary.each{|e|
+          res << [e] + b
+        }
+      }
+      res
+    end
+  end
+  
+  def each_test
+    conds = make_perm(['fv', 'tv'], 3)
+    bangs = make_perm(['', '!'], 3)
+    exprs = make_perm(['and', 'or'], 3)
+    ['if', 'unless'].each{|syn|
+      conds.each{|cs|
+        bangs.each{|bs|
+          exprs.each{|es|
+            yield(syn, cs, bs, es)
+          }
+        }
+      }
+    }
+  end
+  
+  fv = false
+  tv = true
+  
+  $ans = []
+  each_test{|syn, conds, bangs, exprs|
+    c1, c2, c3 = conds
+    bang1, bang2, bang3 = bangs
+    e1, e2 = exprs
+    eval %Q{
+      #{syn} #{bang1}#{c1} #{e1} #{bang2}#{c2} #{e2} #{bang3}#{c3}
+        $ans << :then
+      else
+        $ans << :false
+      end
+    }
+  }
+
+  each_test{|syn, conds, bangs, exprs|
+    c1, c2, c3 = conds
+    bang1, bang2, bang3 = bangs
+    e1, e2 = exprs
+    eval %Q{
+      #{syn} #{bang1}#{c1} #{e1} #{bang2}#{c2} #{e2} #{bang3}#{c3}
+        $ans << :then
+      end
+      $ans << :sep
+    }
+  }
+  $ans
+}
+assert_equal %q{}, %q{
+  defined?(m)
+}
+assert_equal %q{method}, %q{
+  def m
+  end
+  defined?(m)
+}
+assert_equal %q{}, %q{
+  defined?(a.class)
+}
+assert_equal %q{method}, %q{
+  a = 1
+  defined?(a.class)
+}
+assert_equal %q{["method", "method", "method", "method", nil, nil, "method", "method", "method", nil]}, %q{
+  class C
+    def test
+      [defined?(m1()), defined?(self.m1), defined?(C.new.m1),
+       defined?(m2()), defined?(self.m2), defined?(C.new.m2),
+       defined?(m3()), defined?(self.m3), defined?(C.new.m3)]
+    end
+    def m1
+    end
+    private
+    def m2
+    end
+    protected
+    def m3
+    end
+  end
+  C.new.test + [defined?(C.new.m3)]
+}
+assert_equal %q{[nil, nil, nil, nil, "$1", "$2", nil, nil]}, %q{
+  $ans = [defined?($1), defined?($2), defined?($3), defined?($4)]
+  /(a)(b)/ =~ 'ab'
+  $ans + [defined?($1), defined?($2), defined?($3), defined?($4)]
+}
+assert_equal %q{nilselftruefalse}, %q{
+  defined?(nil) + defined?(self) +
+    defined?(true) + defined?(false)
+}
+assert_equal %q{}, %q{
+  defined?(@a)
+}
+assert_equal %q{instance-variable}, %q{
+  @a = 1
+  defined?(@a)
+}
+assert_equal %q{}, %q{
+  defined?(@@a)
+}
+assert_equal %q{class variable}, %q{
+  @@a = 1
+  defined?(@@a)
+}
+assert_equal %q{}, %q{
+  defined?($a)
+}
+assert_equal %q{global-variable}, %q{
+  $a = 1
+  defined?($a)
+}
+assert_equal %q{}, %q{
+  defined?(C_definedtest)
+}
+assert_equal %q{constant}, %q{
+  C_definedtest = 1
+  defined?(C_definedtest)
+}
+assert_equal %q{}, %q{
+  defined?(::C_definedtest)
+}
+assert_equal %q{constant}, %q{
+  C_definedtest = 1
+  defined?(::C_definedtest)
+}
+assert_equal %q{}, %q{
+  defined?(C_definedtestA::C_definedtestB::C_definedtestC)
+}
+assert_equal %q{constant}, %q{
+  class C_definedtestA
+    class C_definedtestB
+      C_definedtestC = 1
+    end
+  end
+  defined?(C_definedtestA::C_definedtestB::C_definedtestC)
+}
+assert_equal %q{30}, %q{
+  sum = 0
+  30.times{|ib|
+    if ib % 10 == 0 .. true
+      sum += ib
+    end
+  }
+  sum
+}
+assert_equal %q{63}, %q{
+  sum = 0
+  30.times{|ib|
+    if ib % 10 == 0 ... true
+      sum += ib
+    end
+  }
+  sum
+}
+assert_equal %q{[["NUM", "Type: NUM\n"], ["NUM", "123\n"], ["NUM", "456\n"], ["NUM", "Type: ARP\n"], ["NUM", "aaa\n"], ["NUM", "bbb\n"], ["NUM", "\f\n"], ["ARP", "Type: ARP\n"], ["ARP", "aaa\n"], ["ARP", "bbb\n"]]}, %q{
+  t = nil
+  unless ''.respond_to? :lines
+    class String
+      def lines
+        self
+      end
+    end
+  end
+  ary = []
+"this must not print
+Type: NUM
+123
+456
+Type: ARP
+aaa
+bbb
+\f
+this must not print
+hoge
+Type: ARP
+aaa
+bbb
+".lines.each{|l|
+    if (t = l[/^Type: (.*)/, 1])..(/^\f/ =~ l)
+      ary << [t, l]
+    end
+  }
+  ary
+}
+assert_equal %q{1}, %q{if true  then 1 ; end}
+assert_equal %q{}, %q{if false then 1 ; end}
+assert_equal %q{1}, %q{if true  then 1 ; else; 2; end}
+assert_equal %q{2}, %q{if false then 1 ; else; 2; end}
+assert_equal %q{}, %q{if true  then   ; elsif true then ; 1 ; end}
+assert_equal %q{1}, %q{if false then   ; elsif true then ; 1 ; end}
+assert_equal %q{}, %q{unless true  then 1 ; end}
+assert_equal %q{1}, %q{unless false then 1 ; end}
+assert_equal %q{2}, %q{unless true  then 1 ; else; 2; end}
+assert_equal %q{1}, %q{unless false then 1 ; else; 2; end}
+assert_equal %q{1}, %q{1 if true}
+assert_equal %q{}, %q{1 if false}
+assert_equal %q{}, %q{1 if nil}
+assert_equal %q{}, %q{1 unless true}
+assert_equal %q{1}, %q{1 unless false}
+assert_equal %q{1}, %q{1 unless nil}
+assert_equal %q{1}, %q{1 || 2 || 3 || 4}
+assert_equal %q{1}, %q{1 || false || 3 || 4}
+assert_equal %q{2}, %q{nil || 2 || 3 || 4}
+assert_equal %q{2}, %q{false || 2 || 3 || 4}
+assert_equal %q{false}, %q{nil || false || nil || false}
+assert_equal %q{1}, %q{1 or 2 or 3 or 4}
+assert_equal %q{1}, %q{1 or false or 3 or 4}
+assert_equal %q{2}, %q{nil or 2 or 3 or 4}
+assert_equal %q{2}, %q{false or 2 or 3 or 4}
+assert_equal %q{false}, %q{nil or false or nil or false}
+assert_equal %q{elseng}, %q{
+  case
+  when 1==2, 2==3
+    :ng1
+  when false, 4==5
+    :ok
+  when false
+    :ng2
+  else
+    :elseng
+  end
+}
+assert_equal %q{ok}, %q{
+  case
+  when nil, nil
+    :ng1
+  when 1,2,3
+    :ok
+  when false, false
+    :ng2
+  else
+    :elseng
+  end
+}
+assert_equal %q{elseok}, %q{
+  case
+  when nil
+    :ng1
+  when false
+    :ng2
+  else
+    :elseok
+  end}
+assert_equal %q{}, %q{
+  case
+  when 1
+  end
+}
+assert_equal %q{ok}, %q{
+  r = nil
+  ary = []
+  case
+  when false
+    r = :ng1
+  when false, false
+    r = :ng2
+  when *ary
+    r = :ng3
+  when false, *ary
+    r = :ng4
+  when true, *ary
+    r = :ok
+  end
+  r
+}
+assert_equal %q{ok}, %q{
+  ary = []
+  case
+  when false, *ary
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [false, nil]
+  case
+  when *ary
+    :ng
+  else
+    :ok
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [false, nil]
+  case
+  when *ary
+    :ng
+  when true
+    :ok
+  else
+    :ng2
+  end
+}
+assert_equal %q{ng}, %q{
+  ary = [false, nil]
+  case
+  when *ary
+    :ok
+  else
+    :ng
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [false, true]
+  case
+  when *ary
+    :ok
+  else
+    :ng
+  end
+}
+assert_equal %q{ok}, %q{
+  ary = [false, true]
+  case
+  when false, false
+  when false, *ary
+    :ok
+  else
+    :ng
+  end
+}
+assert_equal %q{}, %q{
+  i = 0
+  while i < 10
+    i+=1
+  end}
+assert_equal %q{10}, %q{
+  i = 0
+  while i < 10
+    i+=1
+  end; i}
+assert_equal %q{}, %q{
+  i = 0
+  until i > 10
+    i+=1
+  end}
+assert_equal %q{11}, %q{
+  i = 0
+  until i > 10
+    i+=1
+  end; i}
+assert_equal %q{1}, %q{
+  i = 0
+  begin
+    i+=1
+  end while false
+  i
+}
+assert_equal %q{1}, %q{
+  i = 0
+  begin
+    i+=1
+  end until true
+  i
+}

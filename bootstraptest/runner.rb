@@ -66,6 +66,8 @@ def exec_test(pathes)
   @errbuf = []
   @location = nil
   pathes.each do |path|
+    puts
+    puts File.basename(path)
     load File.expand_path(path)
   end
   $stderr.puts
