@@ -52,7 +52,7 @@ rb_vm_set_finish_env(rb_thread_t *th)
     vm_push_frame(th, 0, FRAME_MAGIC_FINISH,
 		  Qnil, th->cfp->lfp[0], 0,
 		  th->cfp->sp, 0, 1);
-    th->cfp->pc = &yarv_finish_insn_seq[0];
+    th->cfp->pc = (VALUE *)&yarv_finish_insn_seq[0];
     return Qtrue;
 }
 

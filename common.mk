@@ -663,6 +663,7 @@ run.gdb:
 	echo '# handle SIGPIPE nostop'        >> run.gdb
 	echo '# b rb_longjmp'                 >> run.gdb
 	echo source $(srcdir)/breakpoints.gdb >> run.gdb
+	echo source $(srcdir)/.gdbinit        >> run.gdb
 	echo run                              >> run.gdb
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY

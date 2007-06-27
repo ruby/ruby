@@ -97,23 +97,32 @@ error !
 /************************************************/
 #elif OPT_CALL_THREADED_CODE
 
-#if __GCC__
-#define FASTCALL __attribute__ ((fastcall))
-#else
-#define FASTCALL
-#endif
-
-
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
 #define LABEL_PTR(x) &LABEL(x)
 
+#if __GCC__
+#define FASTCALL(x) x __attribute__ ((fastcall))
+#define FASTCALL_KWD_GCC __attribute__ ((fastcall))
+#define FASTCALL_KWD_VC
+
+#elif defined(_MSC_VER)
+#define FASTCALL(x) __fastcall x
+#define FASTCALL_KWD_GCC
+#define FASTCALL_KWD_VC __fastcall
+#else
+
+#define FASTCALL
+#define FASTCALL_KWD_GCC
+#define FASTCALL_KWD_VC
+#endif
+
 typedef rb_control_frame_t *
-    (*insn_func_type) (rb_thread_t *, rb_control_frame_t *)FASTCALL;
+  (FASTCALL_KWD_VC *insn_func_type)(rb_thread_t *, rb_control_frame_t *) FASTCALL_KWD_GCC;
 
 #define INSN_ENTRY(insn) \
   static rb_control_frame_t * \
-    LABEL(insn)(rb_thread_t *th, rb_control_frame_t *reg_cfp) FASTCALL {
+    FASTCALL(LABEL(insn)(rb_thread_t *th, rb_control_frame_t *reg_cfp)) {
 
 #define END_INSN(insn) return reg_cfp;}
 
