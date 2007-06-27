@@ -8389,11 +8389,17 @@ ID
 rb_intern2(const char *name, long len)
 {
     const char *m = name;
-    VALUE str = rb_str_new(name, len);
+    VALUE str;
     ID id;
     int last;
+    struct RString fake_str;
+    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED|FL_FREEZE;
+    fake_str.basic.klass = rb_cString;
+    fake_str.as.heap.len = len;
+    fake_str.as.heap.ptr = name;
+    fake_str.as.heap.aux.capa = len;
 
-    if (st_lookup(global_symbols.sym_id, (st_data_t)str, (st_data_t *)&id))
+    if (st_lookup(global_symbols.sym_id, (st_data_t)&fake_str, (st_data_t *)&id))
 	return id;
 
     last = len-1;
@@ -8453,6 +8459,7 @@ rb_intern2(const char *name, long len)
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:
+    str = rb_str_new(name, len);
     OBJ_FREEZE(str);
     st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);
