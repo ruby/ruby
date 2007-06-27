@@ -1,3 +1,9 @@
+Wed Jun 27 20:46:05 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h, win32/Makefile.sub, win32/configure.bat,
+	  win32/mkexports.rb, win32/setup.mak, win32/win32.c: import
+	  x64-mswin64 port.
+
 Wed Jun 27 20:31:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_translate_direct_threaded_code): fix prototype

@@ -80,7 +80,7 @@ end
 
 class Exports::Mswin < Exports
   def each_export(objs)
-    noprefix = ($arch ||= nil and /^sh/ !~ $arch)
+    noprefix = ($arch ||= nil and /^(sh|i\d86)/ !~ $arch)
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
     IO.popen(%w"dumpbin -symbols -exports" + objs) do |f|

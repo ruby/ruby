@@ -68,7 +68,7 @@ static int has_redirection(const char *);
 static void StartSockets(void);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 #if !defined(_WIN32_WCE)
-static int rb_w32_open_osfhandle(long osfhandle, int flags);
+static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 #else
 #define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
 #endif
@@ -243,8 +243,8 @@ GetCurrentThreadHandle(void)
     } while (0)
 #define LK_LEN      ULONG_MAX
 
-static VALUE
-flock_winnt(VALUE self, int argc, VALUE* argv)
+static uintptr_t
+flock_winnt(uintptr_t self, int argc, uintptr_t* argv)
 {
     OVERLAPPED o;
     int i = -1;
@@ -280,8 +280,8 @@ flock_winnt(VALUE self, int argc, VALUE* argv)
 }
 
 #ifdef WIN95
-static VALUE
-flock_win95(VALUE self, int argc, VALUE* argv)
+static uintptr_t
+flock_win95(uintptr_t self, int argc, uintptr_t* argv)
 {
     int i = -1;
     const HANDLE fh = (HANDLE)self;
@@ -802,7 +802,7 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 	}
 
 	/* associate handle to file descritor */
-	*pipe = rb_w32_open_osfhandle((long)hDupFile, pipemode);
+	*pipe = rb_w32_open_osfhandle((intptr_t)hDupFile, pipemode);
 	CloseHandle(hOrg);
 	if (*pipe == -1) {
 	    CloseHandle(hDupFile);
@@ -1622,9 +1622,9 @@ rb_w32_closedir(DIR *dirp)
 #endif
 
 typedef struct	{
-    long osfhnd;    /* underlying OS file HANDLE */
-    char osfile;    /* attributes of file (e.g., open in text mode?) */
-    char pipech;    /* one char buffer for handles opened on pipes */
+    intptr_t osfhnd;	/* underlying OS file HANDLE */
+    char osfile;	/* attributes of file (e.g., open in text mode?) */
+    char pipech;	/* one char buffer for handles opened on pipes */
 #ifdef MSVCRT_THREADS
     int lockinitflag;
     CRITICAL_SECTION lock;
@@ -1685,7 +1685,7 @@ set_pioinfo_extra(void)
 #define FTEXT			0x80	/* file handle is in text mode */
 
 static int
-rb_w32_open_osfhandle(long osfhandle, int flags)
+rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 {
     int fh;
     char fileflags;		/* _osfile flags */
@@ -3651,10 +3651,14 @@ setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
     *--esp = ctx->Eip;
     ctx->Esp = (DWORD)esp;
     ctx->Eip = (DWORD)rb_w32_call_handler;
-#else
-#ifndef _WIN32_WCE
+#elif defined(_M_AMD64)
+    DWORD64 *rsp = (DWORD64 *)ctx->Rsp;
+    *--rsp = (DWORD64)harg;
+    *--rsp = ctx->Rip;
+    ctx->Rsp = (DWORD64)rsp;
+    ctx->Rip = (DWORD64)rb_w32_call_handler;
+#else !defined(_WIN32_WCE)
 #error unsupported processor
-#endif
 #endif
 }
 
@@ -3733,10 +3737,10 @@ struct asynchronous_arg_t {
     int errnum;
 
     /* input field */
-    VALUE (*func)(VALUE self, int argc, VALUE* argv);
-    VALUE self;
+    uintptr_t (*func)(uintptr_t self, int argc, uintptr_t* argv);
+    uintptr_t self;
     int argc;
-    VALUE* argv;
+    uintptr_t* argv;
 };
 
 static DWORD WINAPI
@@ -3750,9 +3754,9 @@ call_asynchronous(PVOID argp)
     return ret;
 }
 
-VALUE
-rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
-		    int argc, VALUE* argv, VALUE intrval)
+uintptr_t
+rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self,
+		    int argc, uintptr_t* argv, uintptr_t intrval)
 {
     DWORD val;
     BOOL interrupted = FALSE;

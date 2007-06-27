@@ -12,7 +12,9 @@ srcdir = $(WIN32DIR)/..
 !ifndef prefix
 prefix = /usr
 !endif
+!if "$(OS)" != "mswin64"
 OS = mswin32
+!endif
 BANG = !
 APPEND = echo>>$(MAKEFILE)
 !ifdef MAKEFILE
@@ -26,13 +28,17 @@ CC = cl -nologo
 CPP = $(CC) -EP
 
 all: -prologue- -generic- -epilogue-
-i386-$(OS): -prologue- -i386- -epilogue-
-i486-$(OS): -prologue- -i486- -epilogue-
-i586-$(OS): -prologue- -i586- -epilogue-
-i686-$(OS): -prologue- -i686- -epilogue-
-alpha-$(OS): -prologue- -alpha- -epilogue-
+i386-mswin32: -prologue- -i386- -epilogue-
+i486-mswin32: -prologue- -i486- -epilogue-
+i586-mswin32: -prologue- -i586- -epilogue-
+i686-mswin32: -prologue- -i686- -epilogue-
+alpha-mswin32: -prologue- -alpha- -epilogue-
+x64-mswin64: -prologue64- -x64- -epilogue-
+ia64-mswin64: -prologue64- -ia64- -epilogue-
 
 -prologue-: -basic-vars- -system-vars- -version- -program-name-
+
+-prologue64-: -basic-vars- -system-vars64- -version- -program-name-
 
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
@@ -54,8 +60,13 @@ BASERUBY = $(BASERUBY)
 
 -system-vars-: -osname- -runtime-
 
+-system-vars64-: -osname64- -runtime-
+
 -osname-: nul
 	@echo OS = mswin32 >>$(MAKEFILE)
+
+-osname64-: nul
+	@echo OS = mswin64 >>$(MAKEFILE)
 
 -runtime-: nul
 	@$(CC) -MD <<rtname.c user32.lib > nul
@@ -151,6 +162,10 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 -alpha-: nul
 	@$(APPEND) $(ARCH) = alpha
+-x64-: nul
+	@$(APPEND) $(ARCH) = x64
+-ia64-: nul
+	@$(APPEND) $(ARCH) = ia64
 -ix86-: nul
 	@$(APPEND) $(ARCH) = x86
 

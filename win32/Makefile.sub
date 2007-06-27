@@ -255,7 +255,11 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define SIZEOF___INT64 8
 #define _INTEGRAL_MAX_BITS 64
 #define SIZEOF_OFF_T 8
+!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+#define SIZEOF_VOIDP 8
+!else
 #define SIZEOF_VOIDP 4
+!endif
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 !if $(MSC_VER) >= 1400
@@ -520,7 +524,8 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(LDSHARED_2)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
-		$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
+		$(MINIRUBY) $(srcdir)/win32/mkexports.rb \
+		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
 
 {$(srcdir)/win32}.def.lib:
 		$(AR) $(ARFLAGS)$@ -def:$<

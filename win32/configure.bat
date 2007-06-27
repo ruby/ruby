@@ -65,6 +65,11 @@ goto :loop
 :target
   echo>> ~tmp~.mak 	"%2" \
   echo>>confargs.tmp --target=%2 \
+  if "%2" == "x64-mswin64" goto target2
+  if NOT "%2" == "ia64-mswin64" goto target3
+:target2
+  echo>> ~tmp~.mak 	"OS=mswin64" \
+:target3
   shift
   shift
 goto :loop

@@ -67,6 +67,26 @@ extern "C++" {
 #endif
 #include <io.h>
 #include <malloc.h>
+#ifdef __MINGW32__
+# include <stdint.h>
+#else
+# if !defined(_INTPTR_T_DEFINED)
+#  ifdef _WIN64
+typedef __int64 intptr_t;
+#  else
+typedef int intptr_t;
+#  endif
+#  define _INTPTR_T_DEFINED
+# endif
+# if !defined(_UINTPTR_T_DEFINED)
+#  ifdef _WIN64
+typedef unsigned __int64 uintptr_t;
+#  else
+typedef unsigned int uintptr_t;
+#  endif
+#  define _UINTPTR_T_DEFINED
+# endif
+#endif
 
 #if defined(__cplusplus)
 }
@@ -531,8 +551,8 @@ Since this function is very dangerous, ((*NEVER*))
 * use anything like TRAP_BEG...TRAP_END block structure,
 in asynchronous_func_t.
 */
-typedef DWORD (*asynchronous_func_t)(DWORD self, int argc, DWORD* argv);
-DWORD rb_w32_asynchronize(asynchronous_func_t func, DWORD self, int argc, DWORD* argv, DWORD intrval);
+typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t* argv);
+uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc, uintptr_t* argv, uintptr_t intrval);
 
 #if defined(__cplusplus)
 #if 0
