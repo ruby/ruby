@@ -1,3 +1,8 @@
+Thu Jun 28 15:00:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): local variable to be
+	  initialized.  [ruby-dev:31077]
+
 Thu Jun 28 11:30:39 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (rb_obj_id): use SIGNED_VALUE instead of long.

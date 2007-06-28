@@ -769,12 +769,11 @@ static VALUE
 strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 {
     const char *s, *e, *p;
-    long n, limit;
+    long n, limit = 0;
     VALUE str;
 
     if (argc == 0) {
 	str = rb_rs;
-	limit = 0;
     }
     else {
 	VALUE lim, tmp;
@@ -790,7 +789,6 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	    }
 	    else {
 		str = tmp;
-		limit = 0;
 	    }
 	}
 	else {
