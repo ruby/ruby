@@ -29,9 +29,21 @@ objcdummyfunction(void)
 int
 main(int argc, char **argv, char **envp)
 {
-#ifdef RUBY_GC_STRESS
+#ifdef RUBY_DEBUG_ENV
     RUBY_EXTERN int gc_stress;
-    gc_stress = getenv("RUBY_GC_STRESS") != NULL;
+    RUBY_EXTERN int enable_coredump;
+    char *str;
+    str = getenv("RUBY_DEBUG");
+    if (str) {
+        for (str = strtok(str, ","); str; str = strtok(NULL, ",")) {
+            if (strcmp(str, "gc_stress") == 0)
+              gc_stress = 1;
+            else if (strcmp(str, "core") == 0)
+              enable_coredump = 1;
+            else
+              fprintf(stderr, "unexpected debug option: %s\n", str);
+        }
+    }
 #endif
 #ifdef _WIN32
     NtInitialize(&argc, &argv);

@@ -993,6 +993,10 @@ init_sigchld(int sig)
 #endif
 }
 
+#ifdef RUBY_DEBUG_ENV
+int enable_coredump = 0;
+#endif
+
 /*
  * Many operating systems allow signals to be sent to running
  * processes. Some signals have a defined effect on the process, while
@@ -1065,11 +1069,17 @@ Init_signal(void)
     install_sighandler(SIGUSR2, sighandler);
 #endif
 
+#ifdef RUBY_DEBUG_ENV
+    if (!enable_coredump) {
+#endif
 #ifdef SIGBUS
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
     install_sighandler(SIGSEGV, sigsegv);
+#endif
+#ifdef RUBY_DEBUG_ENV
+    }
 #endif
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sigpipe);
