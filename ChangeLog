@@ -1,3 +1,7 @@
+Thu Jun 28 18:53:01 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_hash): fix hash area.
+
 Thu Jun 28 15:00:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_getline): local variable to be

@@ -2029,7 +2029,7 @@ rb_big_hash(VALUE x)
 {
     int hash;
 
-    hash = rb_memhash(BDIGITS(x), BITSPERDIG*RBIGNUM(x)->len) ^ RBIGNUM(x)->sign;
+    hash = rb_memhash(BDIGITS(x), sizeof(*BDIGITS(x))*RBIGNUM(x)->len) ^ RBIGNUM(x)->sign;
     return INT2FIX(hash);
 }
 
