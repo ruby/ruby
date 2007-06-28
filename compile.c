@@ -1846,7 +1846,7 @@ compile_array(rb_iseq_t *iseq,
 
     if (len != i) {
 	if (0) rb_bug("node error: compile_array (%d: %d-%d)",
-		      nd_line(node_root), len, i);
+		      (int)nd_line(node_root), len, i);
 	len = i;
     }
 
@@ -2038,7 +2038,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	if (lhs_splat) {
 	    if (nd_type(splatn) == NODE_POSTARG) {
-		int i, num = splatn->nd_2nd->nd_alen;
+		int num = splatn->nd_2nd->nd_alen;
 		NODE *n = splatn->nd_2nd;
 
 		ADD_INSN (ret, nd_line(n), dup);
@@ -2140,14 +2140,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	    }
 	    else {
 		LABEL *lcont = NEW_LABEL(nd_line(node));
-		ADD_INSNL(ret, nd_line(node), branchif, lcont);
 		lfalse = NEW_LABEL(nd_line(node));
+		ADD_INSNL(ret, nd_line(node), branchif, lcont);
 		ADD_LABEL(ret, lfalse);
 		ADD_INSN(ret, nd_line(node), putnil);
 		ADD_INSNL(ret, nd_line(node), jump, lfinish);
 		ADD_LABEL(ret, lcont);
 	    }
-	} while (vals = vals->nd_next);
+	} while ((vals = vals->nd_next));
       }
       case NODE_STR:
       case NODE_LIT:
@@ -2232,6 +2232,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	  case NODE_CALL:
 	    self = Qfalse;
 	    break;
+	  default:
+	    /* through */;
 	}
 	if (node->nd_args) {
 	    lfalse = NEW_LABEL(nd_line(node));
@@ -2371,14 +2373,6 @@ make_name_for_block(rb_iseq_t *iseq)
 	snprintf(buf, BUFSIZE, "block (%d levels) in %s", level,
 		 RSTRING_PTR(ip->name));
     }
-    return rb_str_new2(buf);
-}
-
-static VALUE
-make_name_with_str(const char *fmt, const char *str)
-{
-    char buf[BUFSIZE];
-    snprintf(buf, BUFSIZE, fmt, str);
     return rb_str_new2(buf);
 }
 
@@ -4020,8 +4014,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE iseqval =
 	    NEW_CHILD_ISEQVAL(
 		node->nd_body,
-		make_name_with_str("<class:%s>",
-				   rb_id2name(node->nd_cpath->nd_mid)),
+		rb_sprintf("<class:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 		ISEQ_TYPE_CLASS);
 	compile_cpath(ret, iseq, node->nd_cpath);
 	COMPILE(ret, "super", node->nd_super);
@@ -4034,11 +4027,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_MODULE:{
-	VALUE iseqval = NEW_CHILD_ISEQVAL(node->nd_body,
-					  make_name_with_str
-					  ("<module:%s>",
-					   rb_id2name(node->nd_cpath->
-						      nd_mid)),
+	VALUE iseqval = NEW_CHILD_ISEQVAL(
+	    node->nd_body,
+	    rb_sprintf("<module:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 					  ISEQ_TYPE_CLASS);
 
 	COMPILE(ret, "mbase", node->nd_cpath->nd_head);
@@ -4487,11 +4478,15 @@ static LABEL *
 register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 {
     LABEL *label = 0;
+    st_data_t tmp;
     obj = rb_convert_type(obj, T_SYMBOL, "Symbol", "to_sym");
 
-    if (st_lookup(labels_table, obj, (st_data_t *)&label) == 0) {
+    if (st_lookup(labels_table, obj, &tmp) == 0) {
 	label = NEW_LABEL(0);
 	st_insert(labels_table, obj, (st_data_t)label);
+    }
+    else {
+	label = (LABEL *)tmp;
     }
     return label;
 }

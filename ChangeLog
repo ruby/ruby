@@ -1,3 +1,9 @@
+Thu Jun 28 19:38:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: fix to remove -Wall warnings on gcc.
+
+	* compile.c (make_name_with_str): removed. use rb_sprintf() instead.
+
 Thu Jun 28 18:53:01 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_hash): fix hash area.
