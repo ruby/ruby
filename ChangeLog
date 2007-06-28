@@ -1,3 +1,7 @@
+Thu Jun 28 11:30:39 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (rb_obj_id): use SIGNED_VALUE instead of long.
+
 Thu Jun 28 05:01:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk (run.gdb): fix to load $(srcdir)/.gdbinit

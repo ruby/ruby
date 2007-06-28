@@ -2058,7 +2058,7 @@ rb_obj_id(VALUE obj)
      *  nil     00000000000000000000000000000100
      *  undef   00000000000000000000000000000110
      *  symbol  ssssssssssssssssssssssss00001110
-     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE)
+     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE))
      *  fixnum  fffffffffffffffffffffffffffffff1
      *
      *                    object_id space
@@ -2067,7 +2067,7 @@ rb_obj_id(VALUE obj)
      *  true    00000000000000000000000000000010
      *  nil     00000000000000000000000000000100
      *  undef   00000000000000000000000000000110
-     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = 
+     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = s...s * A + 4)
      *  object   oooooooooooooooooooooooooooooo0        o...o % A = 0
      *  fixnum  fffffffffffffffffffffffffffffff1        bignum if required
      *
@@ -2082,9 +2082,9 @@ rb_obj_id(VALUE obj)
         return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
     }
     if (SPECIAL_CONST_P(obj)) {
-        return LONG2NUM((long)obj);
+        return LONG2NUM((SIGNED_VALUE)obj);
     }
-    return (VALUE)((long)obj|FIXNUM_FLAG);
+    return (VALUE)((SIGNED_VALUE)obj|FIXNUM_FLAG);
 }
 
 /*
