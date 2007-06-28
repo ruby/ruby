@@ -4328,7 +4328,7 @@ assoc_list	: none
 		| args trailer
 		    {
 		    /*%%%*/
-			if ($1->nd_alen%2 != 0) {
+			if (nd_type($1) == NODE_ARRAY && $1->nd_alen%2 != 0) {
 			    yyerror("odd number list for Hash");
 			}
 			$$ = $1;
