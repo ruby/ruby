@@ -1,3 +1,10 @@
+Thu Jun 28 22:24:33 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* win32/Makefile.sub: define FUNC_FASTCALL macro.
+
+	* vm.h: fix to use FUNC_FASTCALL macro.
+	  TODO: add FUNC_FASTCALL macro by configure.
+
 Thu Jun 28 19:38:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: fix to remove -Wall warnings on gcc.
