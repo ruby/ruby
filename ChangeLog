@@ -1,7 +1,7 @@
 Fri Jun 29 16:39:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_new): fix to return a proc object
-	  which block is contained.
+	  which block is contained ([ruby-dev:31056]).
 
 Fri Jun 29 15:43:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
