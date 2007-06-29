@@ -1070,17 +1070,16 @@ Init_signal(void)
 #endif
 
 #ifdef RUBY_DEBUG_ENV
-    if (!enable_coredump) {
+    if (!enable_coredump)
 #endif
+    {
 #ifdef SIGBUS
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
     install_sighandler(SIGSEGV, sigsegv);
 #endif
-#ifdef RUBY_DEBUG_ENV
     }
-#endif
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sigpipe);
 #endif
