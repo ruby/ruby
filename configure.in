@@ -356,6 +356,7 @@ RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
 RUBY_FUNC_ATTRIBUTE(stdcall)
 RUBY_FUNC_ATTRIBUTE(cdecl)
+RUBY_FUNC_ATTRIBUTE(fastcall)
 
 AC_CACHE_CHECK([for RUBY_EXTERN], rb_cv_ruby_extern,
 [rb_cv_ruby_extern=no
