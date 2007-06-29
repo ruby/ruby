@@ -1,3 +1,9 @@
+Fri Jun 29 16:57:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* debug.c (ruby_set_debug_option): separated from main.c.
+
+	* gc.c (ruby_gc_stress), signal.c (ruby_enable_coredump): prefixed.
+
 Fri Jun 29 16:39:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_new): fix to return a proc object

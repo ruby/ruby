@@ -148,7 +148,7 @@ VALUE *rb_gc_stack_start = 0;
 VALUE *rb_gc_register_stack_start = 0;
 #endif
 
-int gc_stress = 0;
+int ruby_gc_stress = 0;
 
 
 #ifdef DJGPP
@@ -201,7 +201,7 @@ rb_memerror(void)
 static VALUE
 gc_stress_get(VALUE self)
 {
-    return gc_stress ? Qtrue : Qfalse;
+    return ruby_gc_stress ? Qtrue : Qfalse;
 }
 
 /*
@@ -220,7 +220,7 @@ static VALUE
 gc_stress_set(VALUE self, VALUE bool)
 {
     rb_secure(2);
-    gc_stress = RTEST(bool);
+    ruby_gc_stress = RTEST(bool);
     return bool;
 }
 
@@ -235,7 +235,7 @@ ruby_xmalloc(size_t size)
     if (size == 0) size = 1;
     malloc_increase += size;
 
-    if (gc_stress || malloc_increase > malloc_limit) {
+    if (ruby_gc_stress || malloc_increase > malloc_limit) {
 	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -283,7 +283,7 @@ ruby_xrealloc(void *ptr, size_t size)
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
     malloc_increase += size;
-    if (gc_stress) garbage_collect();
+    if (ruby_gc_stress) garbage_collect();
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	if (garbage_collect()) {
@@ -466,7 +466,7 @@ rb_newobj_from_heap(void)
 {
     VALUE obj;
 
-    if (gc_stress || !freelist) {
+    if (ruby_gc_stress || !freelist) {
 	if(!garbage_collect()) {
 	    rb_memerror();
 	}

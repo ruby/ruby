@@ -529,9 +529,9 @@ sigsegv(int sig)
 	exit(1);
     }
     else {
-	extern int gc_stress;
+	extern int ruby_gc_stress;
 	segv_received = 1;
-	gc_stress = 0;
+	ruby_gc_stress = 0;
 	rb_bug("Segmentation fault");
     }
 }
@@ -994,7 +994,7 @@ init_sigchld(int sig)
 }
 
 #ifdef RUBY_DEBUG_ENV
-int enable_coredump = 0;
+int ruby_enable_coredump = 0;
 #endif
 
 /*
@@ -1070,7 +1070,7 @@ Init_signal(void)
 #endif
 
 #ifdef RUBY_DEBUG_ENV
-    if (!enable_coredump)
+    if (!ruby_enable_coredump)
 #endif
     {
 #ifdef SIGBUS
