@@ -1,3 +1,11 @@
+Fri Jun 29 14:48:18 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/insns2vm.rb, lib/vm/instruction.rb: move process body
+	  to lib/vm/instruction.rb.
+
+	* common.mk: fix aotc rule.
+	  experimental. bin/ruby2cext is not added yet.
+
 Fri Jun 29 11:23:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (dsym): return non-null NODE even if yyerror().  based on a

@@ -650,8 +650,8 @@ benchmark-each: $(PROGRAM) PHONY
 tbench: $(PROGRAM) PHONY
 	$(RUNRUBY) $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
 
-aotc:
-	$(RUBY) -I$(srcdir) -I. $(srcdir)/tool/aotcompile.rb $(INSNS2VMOPT)
+aotc: $(PROGRAM) PHONY
+	./$(PROGRAM) -I$(srcdir)/lib $(srcdir)/bin/ruby2cext $(srcdir)/test.rb
 
 vmasm: vm.$(ASMEXT)
 
