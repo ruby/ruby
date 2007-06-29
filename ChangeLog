@@ -1,3 +1,8 @@
+Fri Jun 29 20:51:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/cgi/session.rb (create_new_id): don't cut off md5.hexdigest to
+	  follow Ruby 1.8.
+
 Fri Jun 29 17:10:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.h: constified.

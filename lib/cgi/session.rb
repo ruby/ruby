@@ -186,7 +186,7 @@ class CGI
         md5.update(String(rand(0)))
         md5.update(String($$))
         md5.update('foobar')
-        session_id = md5.hexdigest[0,16]
+        session_id = md5.hexdigest
       end
       @new_session = true
       session_id
