@@ -277,6 +277,10 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
+    if (block->proc) {
+	return block->proc;
+    }
+
     procval = vm_make_proc(th, cfp, block);
 
     if (is_lambda) {

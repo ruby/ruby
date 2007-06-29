@@ -1,3 +1,8 @@
+Fri Jun 29 16:39:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_new): fix to return a proc object
+	  which block is contained.
+
 Fri Jun 29 15:43:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_pow): get rid of division by zero.  reported by
