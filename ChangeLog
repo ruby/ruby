@@ -1,3 +1,7 @@
+Fri Jun 29 23:38:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmts): fix for ripper.
+
 Fri Jun 29 21:55:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: fix to show line number of blank block.

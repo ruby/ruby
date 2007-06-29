@@ -771,15 +771,13 @@ compstmt	: stmts opt_terms
 
 stmts		: none
                     {
+		    /*%%%*/
 			$$ = NEW_NIL();
-                    }
-		    /*%c%*/
-		    /*%c
-		    {
+		    /*%
 			$$ = dispatch2(stmts_add, dispatch0(stmts_new),
 						  dispatch0(void_stmt));
-		    }
 		    %*/
+		    }
 		| stmt
 		    {
 		    /*%%%*/
