@@ -714,11 +714,11 @@ flo_divmod(VALUE x, VALUE y)
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
     if (FIXABLE(div)) {
-        val = div;
-        a = LONG2FIX(val);
+	val = div;
+	a = LONG2FIX(val);
     }
     else {
-        a = rb_dbl2big(div);
+	a = rb_dbl2big(div);
     }
     b = rb_float_new(mod);
     return rb_assoc_new(a, b);
@@ -737,13 +737,13 @@ flo_pow(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-        return rb_float_new(pow(RFLOAT(x)->value, (double)FIX2LONG(y)));
+	return rb_float_new(pow(RFLOAT(x)->value, (double)FIX2LONG(y)));
       case T_BIGNUM:
 	return rb_float_new(pow(RFLOAT(x)->value, rb_big2dbl(y)));
       case T_FLOAT:
-        return rb_float_new(pow(RFLOAT(x)->value, RFLOAT(y)->value));
+	return rb_float_new(pow(RFLOAT(x)->value, RFLOAT(y)->value));
       default:
-        return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y);
     }
 }
 
@@ -1577,7 +1577,7 @@ rb_fix2uint(VALUE val)
     unsigned long num;
 
     if (!FIXNUM_P(val)) {
-        return rb_num2uint(val);
+	return rb_num2uint(val);
     }
     num = FIX2ULONG(val);
     if (FIX2LONG(val) > 0) {
@@ -1720,7 +1720,7 @@ static VALUE
 int_odd_p(VALUE num)
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
-      return Qtrue;
+	return Qtrue;
     }
     return Qfalse;
 }
@@ -1736,7 +1736,7 @@ static VALUE
 int_even_p(VALUE num)
 {
     if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
-      return Qtrue;
+	return Qtrue;
     }
     return Qfalse;
 }
@@ -2052,7 +2052,7 @@ fix_mul(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 #ifdef __HP_cc
 /* avoids an optimization bug of HP aC++/ANSI C B3910B A.06.05 [Jul 25 2005] */
-        volatile
+	volatile
 #endif
 	SIGNED_VALUE a, b;
 #if SIZEOF_VALUE * 2 <= SIZEOF_LONG_LONG
@@ -2868,31 +2868,31 @@ VALUE yarv_invoke_Integer_times_special_block(VALUE);
 static VALUE
 int_dotimes(VALUE num)
 {
-  VALUE val;
+    VALUE val;
 
-  RETURN_ENUMERATOR(num, 0, 0);
-  if((val = yarv_invoke_Integer_times_special_block(num)) != Qundef){
-    return val;
-  }
-
-  if (FIXNUM_P(num)) {
-    long i, end;
-
-    end = FIX2LONG(num);
-    for (i=0; i<end; i++) {
-      rb_yield(LONG2FIX(i));
+    RETURN_ENUMERATOR(num, 0, 0);
+    if((val = yarv_invoke_Integer_times_special_block(num)) != Qundef){
+	return val;
     }
-  }
-  else {
-    VALUE i = INT2FIX(0);
 
-    for (;;) {
-      if (!RTEST(rb_funcall(i, '<', 1, num))) break;
-      rb_yield(i);
-      i = rb_funcall(i, '+', 1, INT2FIX(1));
+    if (FIXNUM_P(num)) {
+	long i, end;
+
+	end = FIX2LONG(num);
+	for (i=0; i<end; i++) {
+	    rb_yield(LONG2FIX(i));
+	}
     }
-  }
-  return num;
+    else {
+	VALUE i = INT2FIX(0);
+
+	for (;;) {
+	    if (!RTEST(rb_funcall(i, '<', 1, num))) break;
+	    rb_yield(i);
+	    i = rb_funcall(i, '+', 1, INT2FIX(1));
+	}
+    }
+    return num;
 }
 
 static VALUE
