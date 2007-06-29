@@ -750,12 +750,11 @@ test_ok($x == [1,2,3,1,2,3])
 
 test_check "hash"
 $x = {1=>2, 2=>4, 3=>6}
-$y = {1, 2, 2, 4, 3, 6}
 
 test_ok($x[1] == 2)
 
 test_ok(begin   
-     for k,v in $y
+     for k,v in $x
        raise if k*2 != v
      end
      true
@@ -769,19 +768,19 @@ test_ok($x.has_value?(4))
 test_ok($x.values_at(2,3) == [4,6])
 test_ok($x == {1=>2, 2=>4, 3=>6})
 
-$z = $y.keys.sort.join(":")
+$z = $x.keys.sort.join(":")
 test_ok($z == "1:2:3")
 
-$z = $y.values.sort.join(":")
+$z = $x.values.sort.join(":")
 test_ok($z == "2:4:6")
-test_ok($x == $y)
+test_ok($x == $x)
 
-$y.shift
-test_ok($y.length == 2)
+$x.shift
+test_ok($x.length == 2)
 
 $z = [1,2]
-$y[$z] = 256
-test_ok($y[$z] == 256)
+$x[$z] = 256
+test_ok($x[$z] == 256)
 
 $x = Hash.new(0)
 $x[1] = 1

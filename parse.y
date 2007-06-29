@@ -4326,17 +4326,6 @@ assoc_list	: none
 			$$ = dispatch1(assoclist_from_args, $1);
 		    %*/
 		    }
-		| args trailer
-		    {
-		    /*%%%*/
-			if (nd_type($1) == NODE_ARRAY && $1->nd_alen%2 != 0) {
-			    yyerror("odd number list for Hash");
-			}
-			$$ = $1;
-		    /*%
-			$$ = dispatch1(assoclist_from_args, $1);
-		    %*/
-		    }
 		;
 
 assocs		: assoc
