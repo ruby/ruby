@@ -6705,6 +6705,7 @@ parser_yylex(struct parser_params *parser)
 	    else {
 		rb_compile_error(PARSER_ARG  "`@@%c' is not allowed as a class variable name", c);
 	    }
+	    return 0;
 	}
         uc = (unsigned char)c;
 	if (!is_identchar(uc)) {

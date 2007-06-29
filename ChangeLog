@@ -1,3 +1,9 @@
+Sat Jun 30 00:17:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): return non-valid token for an invalid
+	  instance/class variable name.  a patch from from Yusuke ENDOH
+	  <mame AT tsg.ne.jp>.  [ruby-dev:31095]
+
 Fri Jun 29 23:38:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmts): fix for ripper.
