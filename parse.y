@@ -770,6 +770,9 @@ compstmt	: stmts opt_terms
 		;
 
 stmts		: none
+                    {
+			$$ = NEW_NIL();
+                    }
 		    /*%c%*/
 		    /*%c
 		    {
