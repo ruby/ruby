@@ -1,4 +1,6 @@
-Fri Jun 29 16:57:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 29 17:10:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* debug.h: constified.
 
 	* debug.c (ruby_set_debug_option): separated from main.c.
 

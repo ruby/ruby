@@ -10,8 +10,8 @@
 
 **********************************************************************/
 
-#ifndef _DEBUG_H_INCLUDED_
-#define _DEBUG_H_INCLUDED_
+#ifndef RUBY_DEBUG_H
+#define RUBY_DEBUG_H
 
 #include "ruby/ruby.h"
 #include "ruby/node.h"
@@ -23,11 +23,11 @@
 
 #define bp()     ruby_debug_breakpoint()
 
-VALUE ruby_debug_print_value(int level, int debug_level, char *header, VALUE v);
-ID    ruby_debug_print_id(int level, int debug_level, char *header, ID id);
-NODE *ruby_debug_print_node(int level, int debug_level, char *header, NODE *node);
+VALUE ruby_debug_print_value(int level, int debug_level, const char *header, VALUE v);
+ID    ruby_debug_print_id(int level, int debug_level, const char *header, ID id);
+NODE *ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node);
 void  ruby_debug_print_indent(int level, int debug_level, int indent_level);
 void  ruby_debug_breakpoint(void);
 void  ruby_debug_gc_check_func(void);
 
-#endif /* _DEBUG_H_INCLUDED_ */
+#endif /* RUBY_DEBUG_H */
