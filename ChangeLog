@@ -1,3 +1,8 @@
+Fri Jun 29 11:23:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (dsym): return non-null NODE even if yyerror().  based on a
+	  patch from from Yusuke ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:31085]
+
 Thu Jun 28 23:29:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (assoc_list): odd number check only for NODE_ARRAY.

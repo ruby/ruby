@@ -3829,6 +3829,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 		    /*%%%*/
 			lex_state = EXPR_ENDARG;
 			if (!($$ = $2)) {
+			    $$ = NEW_NIL();
 			    yyerror("empty symbol literal");
 			}
 			else {
