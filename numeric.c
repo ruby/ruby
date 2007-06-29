@@ -2330,6 +2330,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	a = FIX2LONG(x);
+	if (a == 0) return INT2FIX(0);
 	if (b > 0) {
 	    return int_pow(a, b);
 	}
@@ -2901,16 +2902,28 @@ int_round(int argc, VALUE* argv, VALUE num)
     VALUE n, f, h, r;
     int ndigits;
 
-    if (argc == 0) return num;
-    if (FIXNUM_P(num)) return num_round(argc, argv, num);
-
+    if (argc == 0) return 0;
     rb_scan_args(argc, argv, "1", &n);
     ndigits = NUM2INT(n);
     if (ndigits > 0) {
 	return rb_Float(num);
     }
+    if (ndigits == 0) {
+	return num;
+    }
     ndigits = -ndigits;
+    if (ndigits < 0) {
+	rb_raise(rb_eArgError, "ndigits out of range");
+    }
     f = int_pow(10, ndigits);
+    if (FIXNUM_P(num) && FIXNUM_P(f)) {
+	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
+	int neg = x < 0;
+	if (neg) x = -x;
+	x = (x + y / 2) / y * y;
+	if (neg) x = -x;
+	return LONG2NUM(x);
+    }
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
     n = rb_funcall(num, '-', 1, r);

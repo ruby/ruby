@@ -1,3 +1,11 @@
+Fri Jun 29 15:43:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_pow): get rid of division by zero.  reported by
+	  Yusuke ENDOH <mame AT tsg.ne.jp> [ruby-dev:31040]
+
+	* numeric.c (int_round): do nothing when rounding by zeroth digit.
+	  check underflow.  [ruby-dev:31043]
+
 Fri Jun 29 15:32:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* configure.in: add fastcall attribute check.
