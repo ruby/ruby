@@ -1,3 +1,10 @@
+Sun Jul  1 03:02:29 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h: some refactoring on rb_iseq_t.
+	  rename some variable names, add comments, etc.
+
+	* compile.c, iseq.c, proc.c, vm.c: ditto.
+
 Sun Jul  1 02:57:57 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h: rename insn_func_type to rb_insn_func_type.

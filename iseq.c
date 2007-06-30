@@ -54,7 +54,7 @@ iseq_free(void *ptr)
 	}
 
 	RUBY_FREE_UNLESS_NULL(iseq->iseq);
-	RUBY_FREE_UNLESS_NULL(iseq->insn_info_tbl);
+	RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
 	RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	RUBY_FREE_UNLESS_NULL(iseq->catch_table);
 	RUBY_FREE_UNLESS_NULL(iseq->arg_opt_tbl);
@@ -499,7 +499,7 @@ static unsigned short
 find_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
-    struct insn_info_struct *iiary = iseqdat->insn_info_tbl;
+    struct insn_info_struct *iiary = iseqdat->insn_info_table;
 
     for (i = 0; i < size; i++) {
 	if (iiary[i].position == pos) {
@@ -514,7 +514,7 @@ static unsigned short
 find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
-    struct insn_info_struct *iiary = iseqdat->insn_info_tbl;
+    struct insn_info_struct *iiary = iseqdat->insn_info_table;
 
     for (i = 0; i < size; i++) {
 	if (iiary[i].position == pos) {
@@ -723,7 +723,7 @@ ruby_iseq_disasm(VALUE self)
     char buff[0x200];
 
     iseq = iseqdat->iseq;
-    size = iseqdat->size;
+    size = iseqdat->iseq_size;
 
     rb_str_cat2(str, "== disasm: ");
 
@@ -1201,7 +1201,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     }
 
     /* body */
-    for (seq = iseq->iseq; seq < iseq->iseq + iseq->size; ) {
+    for (seq = iseq->iseq; seq < iseq->iseq + iseq->iseq_size; ) {
 	VALUE insn = *seq++;
 	int j, len = insn_len(insn);
 	VALUE *nseq = seq + len - 1;

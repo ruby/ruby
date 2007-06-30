@@ -548,8 +548,8 @@ proc_to_s(VALUE self)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int line_no = 0;
 	
-	if (iseq->insn_info_tbl) {
-	    line_no = iseq->insn_info_tbl[0].line_no;
+	if (iseq->insn_info_table) {
+	    line_no = iseq->insn_info_table[0].line_no;
 	}
 	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
 			 RSTRING_PTR(iseq->filename),

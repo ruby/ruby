@@ -234,50 +234,50 @@ typedef struct rb_iseq_profile_struct {
 struct rb_iseq_struct;
 
 struct rb_iseq_struct {
-    /* instruction sequence type */
-    VALUE type;
+    /***************/
+    /* static data */
+    /***************/
 
-    VALUE self;
-    VALUE name;			/* String: iseq name */
-    VALUE *iseq;		/* iseq */
-    VALUE *iseq_encoded;
+    VALUE type;          /* instruction sequence type */
+    VALUE name;	         /* String: iseq name */
+    VALUE filename;      /* file information where this sequence from */
+    VALUE *iseq;         /* iseq (insn number and openrads) */
+    VALUE *iseq_encoded; /* encoded iseq */
+    unsigned long iseq_size;
     VALUE iseq_mark_ary;	/* Array: includes operands which should be GC marked */
 
-    /* sequence size */
-    unsigned long size;
 
     /* insn info, must be freed */
-    struct insn_info_struct *insn_info_tbl;
-
-    /* insn info size, this value shows also instruction count */
-    unsigned int insn_info_size;
-
-    /* file information where this sequence from */
-    VALUE filename;
+    struct insn_info_struct *insn_info_table;
+    unsigned long insn_info_size;
 
     ID *local_table;		/* must free */
     int local_table_size;
 
     /* method, class frame: sizeof(vars) + 1, block frame: sizeof(vars) */
-    int local_size;
-
-    /* jit compiled or not */
-    void *jit_compiled;
-    void *iseq_orig;
+    int local_size; 
 
     /**
      * argument information
      *
-     *  def m(a1, a2, ..., aM, b1=(...), b2=(...), ..., bN=(...), *c, &d)
+     *  def m(a1, a2, ..., aM,                    # mandatory
+     *        b1=(...), b2=(...), ..., bN=(...),  # optinal
+     *        *c,                                 # rest
+     *        d1, d2, ..., dO,                    # post
+     *        &e)                                 # block
      * =>
      *
-     *  argc          = M
-     *  arg_rest      = M+N + 1 // if no rest arguments, rest is 0
-     *  arg_opts      = N
-     *  arg_opts_tbl  = [ (N entries) ]
-     *  arg_block     = M+N + 1 (rest) + 1 (block)
-     *  check:
-     *    M <= num
+     *  argc           = M
+     *  arg_rest       = M+N+1 // or -1 if no rest arg
+     *  arg_opts       = N
+     *  arg_opts_tbl   = [ (N entries) ]
+     *  arg_post_len   = O // 0 if no post arguments
+     *  arg_post_start = M+N+2
+     *  arg_block      = M+N + 1 + O + 1 // -1 if no block arg
+     *  arg_simple     = 0 if not simple arguments.
+     *                 = 1 if no opt, rest, post, block.
+     *                 = 2 if ambiguos block parameter ({|a|}).
+     *  arg_size       = argument size.
      */
 
     int argc;
@@ -288,15 +288,9 @@ struct rb_iseq_struct {
     int arg_post_len;
     int arg_post_start;
     int arg_size;
-
     VALUE *arg_opt_tbl;
 
-    /* for stack overflow check */
-    int stack_max;
-
-    /* klass/module nest information stack (cref) */
-    NODE *cref_stack;
-    VALUE klass;
+    int stack_max; /* for stack overflow check */
 
     /* catch table */
     struct catch_table_entry *catch_table;
@@ -306,16 +300,27 @@ struct rb_iseq_struct {
     struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq;
 
+    /****************/
+    /* dynamic data */
+    /****************/
+
+    VALUE self;
+
     /* block inlining */
     NODE *node;
     void *special_block_builder;
     void *cached_special_block_builder;
     VALUE cached_special_block;
 
+    /* klass/module nest information stack (cref) */
+    NODE *cref_stack;
+    VALUE klass;
+
     /* misc */
     ID defined_method_id;	/* for define_method */
     rb_iseq_profile_t profile;
 
+    /* used at compile time */
     struct iseq_compile_data *compile_data;
 };
 

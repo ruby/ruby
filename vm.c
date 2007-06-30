@@ -699,12 +699,12 @@ vm_get_sourceline(rb_control_frame_t *cfp)
 	int pos = cfp->pc - cfp->iseq->iseq_encoded;
 
 	for (i = 0; i < iseq->insn_info_size; i++) {
-	    if (iseq->insn_info_tbl[i].position == pos) {
-		line_no = iseq->insn_info_tbl[i - 1].line_no;
+	    if (iseq->insn_info_table[i].position == pos) {
+		line_no = iseq->insn_info_table[i - 1].line_no;
 		goto found;
 	    }
 	}
-	line_no = iseq->insn_info_tbl[i - 1].line_no;
+	line_no = iseq->insn_info_table[i - 1].line_no;
     }
   found:
     return line_no;

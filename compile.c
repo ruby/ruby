@@ -227,10 +227,10 @@ iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
 #endif
     int i;
 
-    iseq->iseq_encoded = ALLOC_N(VALUE, iseq->size);
-    MEMCPY(iseq->iseq_encoded, iseq->iseq, VALUE, iseq->size);
+    iseq->iseq_encoded = ALLOC_N(VALUE, iseq->iseq_size);
+    MEMCPY(iseq->iseq_encoded, iseq->iseq, VALUE, iseq->iseq_size);
 
-    for (i = 0; i < iseq->size; /* */ ) {
+    for (i = 0; i < iseq->iseq_size; /* */ ) {
 	int insn = iseq->iseq_encoded[i];
 	int len = insn_len(insn);
 	iseq->iseq_encoded[i] = (VALUE)table[insn];
@@ -950,7 +950,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LABEL *lobj;
     INSN *iobj;
-    struct insn_info_struct *insn_info_tbl;
+    struct insn_info_struct *insn_info_table;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
@@ -992,7 +992,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
-    insn_info_tbl = ALLOC_N(struct insn_info_struct, k);
+    insn_info_table = ALLOC_N(struct insn_info_struct, k);
 
     list = FIRST_ELEMENT(anchor);
     k = pos = sp = 0;
@@ -1122,8 +1122,8 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			return 0;
 		    }
 		}
-		insn_info_tbl[k].line_no = iobj->line_no;
-		insn_info_tbl[k].position = pos;
+		insn_info_table[k].line_no = iobj->line_no;
+		insn_info_table[k].position = pos;
 		pos += len;
 		k++;
 		break;
@@ -1146,13 +1146,12 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	list = list->next;
     }
 
-    {
-	iseq->iseq = (void *)generated_iseq;
-	iseq->size = pos;
-	iseq->insn_info_tbl = insn_info_tbl;
-	iseq->insn_info_size = k;
-	iseq->stack_max = stack_max;
-    }
+    iseq->iseq = (void *)generated_iseq;
+    iseq->iseq_size = pos;
+    iseq->insn_info_table = insn_info_table;
+    iseq->insn_info_size = k;
+    iseq->stack_max = stack_max;
+
     return COMPILE_OK;
 }
 
