@@ -16,11 +16,6 @@
 #include "ruby/ruby.h"
 #include "vm.h"
 
-
-/*
- * deal with control frame pointer
- */
-
 /**********************************************************/
 /* deal with stack                                        */
 /**********************************************************/
@@ -54,8 +49,7 @@
 #define USAGE_ANALYSIS_REGISTER_HELPER(a, b, v) \
   (USAGE_ANALYSIS_REGISTER(a, b), (v))
 #else
-#define USAGE_ANALYSIS_REGISTER_HELPER(a, b, v) \
-  (v)
+#define USAGE_ANALYSIS_REGISTER_HELPER(a, b, v) (v)
 #endif
 
 /* PC */
@@ -66,13 +60,10 @@
 #define ADD_PC(n)          (SET_PC(REG_PC + (n)))
 
 #define GET_PC_COUNT()        (REG_PC - GET_ISEQ()->iseq_encoded)
-
 #define JUMP(dst)          (REG_PC += (dst))
-
 
 /* FP */
 #define GET_CFP()  (USAGE_ANALYSIS_REGISTER_HELPER(2, 0, REG_CFP))
-
 #define GET_LFP()  (USAGE_ANALYSIS_REGISTER_HELPER(3, 0, REG_LFP))
 #define SET_LFP(x) (REG_LFP = (USAGE_ANALYSIS_REGISTER_HELPER(3, 1, (x))))
 #define GET_DFP()  (USAGE_ANALYSIS_REGISTER_HELPER(4, 0, REG_DFP))
@@ -95,7 +86,6 @@
 #define GET_ISEQ() (GET_CFP()->iseq)
 #define CLEAR_ENV(env) (GET_ENV_CTRL(env)->is_orphan = Qundef)
 
-
 /**********************************************************/
 /* deal with variables                                    */
 /**********************************************************/
@@ -112,27 +102,30 @@
 
 #define GET_SELF() (USAGE_ANALYSIS_REGISTER_HELPER(5, 0, GET_CFP()->self))
 
-
 /**********************************************************/
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-#define COPY_CREF(c1, c2) {  \
+#define COPY_CREF(c1, c2) do {  \
   NODE *__tmp_c2 = (c2); \
   c1->nd_clss = __tmp_c2->nd_clss; \
   c1->nd_visi = __tmp_c2->nd_visi; \
   c1->nd_next = __tmp_c2->nd_next; \
-}
+} while (0)
 
-/* block */
+#define CALL_METHOD(num, blockptr, flag, id, mn, recv, klass) do { \
+    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv, klass); \
+    if (v == Qundef) { \
+	RESTORE_REGS(); \
+	NEXT_INSN(); \
+    } \
+    else { \
+	val = v; \
+    } \
+} while (0)
+
 #define GET_BLOCK_PTR() \
   ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
-
-#define CHECK_STACK_OVERFLOW(cfp, margin) do \
-  if (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp)) { \
-      rb_exc_raise(sysstack_error); \
-  } \
-while (0)
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
@@ -147,17 +140,6 @@ while (0)
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
 #define BASIC_OP_UNREDEFINED_P(op) ((ruby_vm_redefined_flag & (op)) == 0)
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
-
-#define CALL_METHOD(num, blockptr, flag, id, mn, recv, klass) do { \
-    VALUE v = vm_call_method(th, GET_CFP(), num, blockptr, flag, id, mn, recv, klass); \
-    if (v == Qundef) { \
-	RESTORE_REGS(); \
-	NEXT_INSN(); \
-    } \
-    else { \
-	val = v; \
-    } \
-} while (0)
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \
     VALUE klass = CLASS_OF(recv); \

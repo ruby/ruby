@@ -1,3 +1,8 @@
+Sun Jul  1 03:25:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.h, vm.h: some refactoring.
+	  remove useless comments, etc.
+
 Sun Jul  1 03:02:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h: some refactoring on rb_iseq_t.
