@@ -2331,21 +2331,21 @@ opt_regexpmatch2
   @j ネイティブコンパイルしたメソッドを kick
  */
 DEFINE_INSN
-opt_call_native_compiled
-()
+opt_call_c_function
+(VALUE func)
 ()
 ()
 {
-#if __GNUC__ && OPT_USE_JIT_COMPILE
-    rb_iseq_t *iseq = GET_ISEQ();
-    void *label = (void *)iseq->jit_compiled;
+    rb_insn_func_t funcptr = (rb_insn_func_t) func;
+    reg_cfp = (funcptr)(th, reg_cfp);
 
-    breakpoint();
-    SET_PC(iseq->iseq_orig);
-    goto *label;
-#else
-    rb_bug("opt_call_native_compiled is not supported");
-#endif
+    if (reg_cfp == 0) {
+	VALUE err = th->errinfo;
+	th->errinfo = Qnil;
+	return err;
+    }
+
+    NEXT_INSN();
 }
 
 /**

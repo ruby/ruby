@@ -1,3 +1,12 @@
+Sun Jul  1 02:57:57 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.h: rename insn_func_type to rb_insn_func_type.
+
+	* vm_evalbody.ci: ditt.
+
+	* insns.def: add opt_call_native_compiled instruction
+	  instead of opt_call_native_compiled.
+
 Sat Jun 30 00:17:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): return non-valid token for an invalid

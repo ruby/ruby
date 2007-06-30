@@ -125,7 +125,7 @@ vm_eval(rb_thread_t *th, VALUE initial)
     VALUE ret;
 
     while (*GET_PC()) {
-	reg_cfp = ((insn_func_type) (*GET_PC()))(th, reg_cfp);
+	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
 
 	if (reg_cfp == 0) {
 	    VALUE err = th->errinfo;
