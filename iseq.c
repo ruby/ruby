@@ -57,7 +57,7 @@ iseq_free(void *ptr)
 	RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
 	RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	RUBY_FREE_UNLESS_NULL(iseq->catch_table);
-	RUBY_FREE_UNLESS_NULL(iseq->arg_opt_tbl);
+	RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
 	compile_data_free(iseq->compile_data);
 	ruby_xfree(ptr);
     }
@@ -73,7 +73,7 @@ iseq_mark(void *ptr)
     if (ptr) {
 	iseq = ptr;
 	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
-	RUBY_MARK_UNLESS_NULL(iseq->iseq_mark_ary);
+	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
 	RUBY_MARK_UNLESS_NULL(iseq->name);
 	RUBY_MARK_UNLESS_NULL(iseq->filename);
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
@@ -115,8 +115,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->name = name;
     iseq->filename = filename;
     iseq->defined_method_id = 0;
-    iseq->iseq_mark_ary = rb_ary_new();
-    RBASIC(iseq->iseq_mark_ary)->klass = 0;
+    iseq->mark_ary = rb_ary_new();
+    RBASIC(iseq->mark_ary)->klass = 0;
 
     iseq->type = type;
     iseq->arg_rest = -1;
@@ -499,7 +499,7 @@ static unsigned short
 find_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
-    struct insn_info_struct *iiary = iseqdat->insn_info_table;
+    struct iseq_insn_info_entry *iiary = iseqdat->insn_info_table;
 
     for (i = 0; i < size; i++) {
 	if (iiary[i].position == pos) {
@@ -514,7 +514,7 @@ static unsigned short
 find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 {
     unsigned long i, size = iseqdat->insn_info_size;
-    struct insn_info_struct *iiary = iseqdat->insn_info_table;
+    struct iseq_insn_info_entry *iiary = iseqdat->insn_info_table;
 
     for (i = 0; i < size; i++) {
 	if (iiary[i].position == pos) {
@@ -738,7 +738,7 @@ ruby_iseq_disasm(VALUE self)
 	rb_str_cat2(str, "== catch table\n");
     }
     for (i = 0; i < iseqdat->catch_table_size; i++) {
-	struct catch_table_entry *entry = &iseqdat->catch_table[i];
+	struct iseq_catch_table_entry *entry = &iseqdat->catch_table[i];
 	sprintf(buff,
 		"| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 		catch_type((int)entry->type), (int)entry->start,
@@ -777,7 +777,7 @@ ruby_iseq_disasm(VALUE self)
 		int opts = iseqdat->arg_opts;
 		if (i >= argc && i < argc + opts - 1) {
 		    snprintf(opti, sizeof(opti), "Opt=%ld",
-			     iseqdat->arg_opt_tbl[i - argc]);
+			     iseqdat->arg_opt_table[i - argc]);
 		}
 	    }
 
@@ -1184,7 +1184,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
 	for (j=0; j<iseq->arg_opts; j++) {
 	    rb_ary_push(arg_opt_labels,
-			register_label(labels_table, iseq->arg_opt_tbl[j]));
+			register_label(labels_table, iseq->arg_opt_table[j]));
 	}
 
 	/* commit */
@@ -1277,7 +1277,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     /* exception */
     for (i=0; i<iseq->catch_table_size; i++) {
 	VALUE ary = rb_ary_new();
-	struct catch_table_entry *entry = &iseq->catch_table[i];
+	struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
 	    rb_iseq_t *eiseq;
@@ -1347,6 +1347,47 @@ insn_make_insn_table(void)
     return table;
 }
 
+/* ruby2cext */
+
+VALUE
+rb_iseq_build_for_ruby2cext(
+    const rb_iseq_t *iseq_template,
+    const rb_insn_func_t *func,
+    const struct iseq_insn_info_entry *insn_info_table,
+    const char **local_table,
+    const VALUE *arg_opt_table,
+    const struct iseq_catch_table_entry *catch_table,
+    const char *name,
+    const char *filename)
+{
+    VALUE iseqval = iseq_alloc(rb_cISeq);
+    rb_iseq_t *iseq;
+    GetISeqPtr(iseqval, iseq);
+
+    /* copy iseq */
+    *iseq = *iseq_template;
+    iseq->name = rb_str_new2(name);
+    iseq->filename = rb_str_new2(filename);
+    iseq->mark_ary = rb_ary_new();
+
+#define ALLOC_AND_COPY(dst, src, type, size) do { \
+  if (size) { \
+      (dst) = ALLOC_N(type, (size)); \
+      MEMCPY((dst), (src), type, (size)); \
+  } \
+} while (0)
+
+    ALLOC_AND_COPY(iseq->insn_info_table, insn_info_table,
+		   struct iseq_insn_info_entry, iseq->insn_info_size);
+
+    ALLOC_AND_COPY(iseq->catch_table, catch_table,
+		   struct iseq_catch_table_entry, iseq->catch_table_size);
+
+    ALLOC_AND_COPY(iseq->arg_opt_table, arg_opt_table,
+		   VALUE, iseq->arg_opts);
+
+    return iseqval;
+}
 
 void
 Init_ISeq(void)

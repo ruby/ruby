@@ -1,3 +1,15 @@
+Mon Jul  2 03:09:36 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h, compile.c, insnhelper.ci, iseq.c, vm.c:
+	  rename structure names and field names.
+
+	* insnhelper.h, insns.def: add GET_CONST_INLINE_CACHE().
+
+	* iseq.c: add rb_iseq_build_for_ruby2cext().
+
+	* yarvcore.h, vm.h: move declaration of rb_insn_func_t
+	  to yarvcore.h.
+
 Sun Jul  1 03:25:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.h, vm.h: some refactoring.

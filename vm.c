@@ -1156,7 +1156,7 @@ vm_eval_body(rb_thread_t *th)
     }
     else {
 	int i;
-	struct catch_table_entry *entry;
+	struct iseq_catch_table_entry *entry;
 	unsigned long epc, cont_pc, cont_sp;
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;

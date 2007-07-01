@@ -147,10 +147,10 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 	    if (argc > opts) {
 		argc -= opts;
 		argv += opts;
-		opt_pc = iseq->arg_opt_tbl[opts]; /* no opt */
+		opt_pc = iseq->arg_opt_table[opts]; /* no opt */
 	    }
 	    else {
-		opt_pc = iseq->arg_opt_tbl[argc];
+		opt_pc = iseq->arg_opt_table[argc];
 		argc = 0;
 	    }
 	}

@@ -140,7 +140,7 @@ extern ID idFuncall;
 extern ID id__send_bang;
 
 
-struct insn_info_struct {
+struct iseq_insn_info_entry {
     unsigned short position;
     unsigned short line_no;
 };
@@ -161,7 +161,7 @@ struct insn_info_struct {
 #define CATCH_TYPE_REDO   INT2FIX(5)
 #define CATCH_TYPE_NEXT   INT2FIX(6)
 
-struct catch_table_entry {
+struct iseq_catch_table_entry {
     VALUE type;
     VALUE iseq;
     unsigned long start;
@@ -244,11 +244,10 @@ struct rb_iseq_struct {
     VALUE *iseq;         /* iseq (insn number and openrads) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
-    VALUE iseq_mark_ary;	/* Array: includes operands which should be GC marked */
-
+    VALUE mark_ary;	/* Array: includes operands which should be GC marked */
 
     /* insn info, must be freed */
-    struct insn_info_struct *insn_info_table;
+    struct iseq_insn_info_entry *insn_info_table;
     unsigned long insn_info_size;
 
     ID *local_table;		/* must free */
@@ -288,12 +287,12 @@ struct rb_iseq_struct {
     int arg_post_len;
     int arg_post_start;
     int arg_size;
-    VALUE *arg_opt_tbl;
+    VALUE *arg_opt_table;
 
     int stack_max; /* for stack overflow check */
 
     /* catch table */
-    struct catch_table_entry *catch_table;
+    struct iseq_catch_table_entry *catch_table;
     int catch_table_size;
 
     /* for child iseq */
@@ -607,7 +606,12 @@ void rb_vm_change_state(void);
 
 typedef VALUE CDHASH;
 
+#ifndef FUNC_FASTCALL
+#define FUNC_FASTCALL(x) x
+#endif
 
+typedef rb_control_frame_t *
+  (FUNC_FASTCALL(*rb_insn_func_t))(rb_thread_t *, rb_control_frame_t *);
 
 #define GC_GUARDED_PTR(p)     ((VALUE)((VALUE)(p) | 0x01))
 #define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)p) & ~0x03))

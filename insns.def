@@ -1560,7 +1560,7 @@ setinlinecache
 (VALUE val)
 (VALUE val)
 {
-    IC ic = (IC) * (GET_PC() + dst + 1);
+    IC ic = GET_CONST_INLINE_CACHE(dst);
 
     ic->ic_value = val;
     ic->ic_vmstat = GET_VM_STATE_VERSION();

@@ -115,14 +115,18 @@ static int set_optargs_table(rb_iseq_t *iseq);
 static int
 iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
 {
-    rb_ary_push(iseq->iseq_mark_ary, v);
+    if (!SPECIAL_CONST_P(v)) {
+	rb_ary_push(iseq->mark_ary, v);
+    }
     return COMPILE_OK;
 }
 
 static int
 iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 {
-    rb_ary_push(iseq->compile_data->mark_ary, v);
+    if (!SPECIAL_CONST_P(v)) {
+	rb_ary_push(iseq->compile_data->mark_ary, v);
+    }
     return COMPILE_OK;
 }
 
@@ -837,10 +841,10 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    i += 1;
 
 	    iseq->arg_opts = i;
-	    iseq->arg_opt_tbl = ALLOC_N(VALUE, i);
-	    MEMCPY(iseq->arg_opt_tbl, RARRAY_PTR(labels), VALUE, i);
+	    iseq->arg_opt_table = ALLOC_N(VALUE, i);
+	    MEMCPY(iseq->arg_opt_table, RARRAY_PTR(labels), VALUE, i);
 	    for (j = 0; j < i; j++) {
-		iseq->arg_opt_tbl[j] &= ~1;
+		iseq->arg_opt_table[j] &= ~1;
 	    }
 	}
 	else {
@@ -950,7 +954,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LABEL *lobj;
     INSN *iobj;
-    struct insn_info_struct *insn_info_table;
+    struct iseq_insn_info_entry *insn_info_table;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
@@ -992,7 +996,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
-    insn_info_table = ALLOC_N(struct insn_info_struct, k);
+    insn_info_table = ALLOC_N(struct iseq_insn_info_entry, k);
 
     list = FIRST_ELEMENT(anchor);
     k = pos = sp = 0;
@@ -1095,9 +1099,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    VALUE v = operands[j];
 			    generated_iseq[pos + 1 + j] = v;
 			    /* to mark ruby object */
-			    if (!SPECIAL_CONST_P(v)) {
-				iseq_add_mark_object(iseq, v);
-			    }
+			    iseq_add_mark_object(iseq, v);
 			    break;
 			}
 		      case TS_IC: /* inline cache */
@@ -1172,12 +1174,12 @@ set_exception_table(rb_iseq_t *iseq)
 {
     VALUE *tptr, *ptr;
     int tlen, i;
-    struct catch_table_entry *entry;
+    struct iseq_catch_table_entry *entry;
 
     tlen = RARRAY_LEN(iseq->compile_data->catch_table_ary);
     tptr = RARRAY_PTR(iseq->compile_data->catch_table_ary);
 
-    iseq->catch_table = ALLOC_N(struct catch_table_entry, tlen);
+    iseq->catch_table = ALLOC_N(struct iseq_catch_table_entry, tlen);
     iseq->catch_table_size = tlen;
 
     for (i = 0; i < tlen; i++) {
@@ -1232,8 +1234,8 @@ set_optargs_table(rb_iseq_t *iseq)
 
     if (iseq->arg_opts != 0) {
 	for (i = 0; i < iseq->arg_opts; i++) {
-	    iseq->arg_opt_tbl[i] =
-		label_get_position((LABEL *)iseq->arg_opt_tbl[i]);
+	    iseq->arg_opt_table[i] =
+		label_get_position((LABEL *)iseq->arg_opt_table[i]);
 	}
     }
     return COMPILE_OK;
@@ -4456,12 +4458,6 @@ dump_disasm_list(struct iseq_link_element *link)
     printf("---------------------\n");
 }
 
-int
-nd_line_debug(NODE * n)
-{
-    return nd_line(n);
-}
-
 VALUE
 insns_name_array(void)
 {
@@ -4608,9 +4604,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_VALUE:
 			argv[j] = op;
-			if (!SPECIAL_CONST_P(op)) {
-			    iseq_add_mark_object(iseq, op);
-			}
+			iseq_add_mark_object(iseq, op);
 			break;
 		      case TS_ISEQ:
 			{
@@ -4730,10 +4724,10 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
 	iseq->arg_rest = FIX2INT(arg_rest);
 	iseq->arg_block = FIX2INT(arg_block);
 
-	iseq->arg_opt_tbl = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
+	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
 
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
-	    iseq->arg_opt_tbl[i] =
+	    iseq->arg_opt_table[i] =
 	      (VALUE)register_label(iseq, labels_table,
 				    rb_ary_entry(arg_opt_labels, i));
 	}

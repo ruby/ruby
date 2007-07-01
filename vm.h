@@ -24,13 +24,6 @@ typedef unsigned long lindex_t;
 typedef unsigned long dindex_t;
 typedef rb_num_t GENTRY;
 
-#ifndef FUNC_FASTCALL
-#define FUNC_FASTCALL(x) x
-#endif
-
-typedef rb_control_frame_t *
-  (FUNC_FASTCALL(*rb_insn_func_t))(rb_thread_t *, rb_control_frame_t *);
-
 extern VALUE rb_cEnv;
 extern VALUE ruby_vm_global_state_version;
 extern VALUE ruby_vm_redefined_flag;
