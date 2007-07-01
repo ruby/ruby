@@ -4542,12 +4542,11 @@ iseq_build_exception(rb_iseq_t *iseq, struct st_table *labels_table,
     return COMPILE_OK;
 }
 
-
 struct st_table *insn_make_insn_table(void);
 
 static int
 iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
-		VALUE body, VALUE line, struct st_table *labels_table)
+		VALUE body, struct st_table *labels_table)
 {
     /* TODO: body should be freezed */
     VALUE *ptr = RARRAY_PTR(body);
@@ -4577,14 +4576,16 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    VALUE *argv = 0;
 	    int argc = RARRAY_LEN(obj) - 1;
 	    VALUE insn_id;
+	    VALUE insn;
 
-	    if (st_lookup(insn_table, rb_ary_entry(obj, 0), &insn_id) == 0) {
+	    insn = rb_ary_entry(obj, 0);
+	    if (st_lookup(insn_table, insn, &insn_id) == 0) {
 		/* TODO: exception */
-		rb_bug("unknown instruction: ");
+		rb_raise(rb_eRuntimeError, "unknown instruction: %s", rb_inspect(insn));
 	    }
 
 	    if (argc != insn_len(insn_id)-1) {
-		rb_bug("operand size mismatch");
+		rb_raise(rb_eRuntimeError, "operand size mismatch");
 	    }
 
 	    if (argc > 0) {
@@ -4610,15 +4611,13 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			{
 			    if (op != Qnil) {
 				if (TYPE(op) == T_ARRAY) {
-				    argv[j] =
-				      iseq_load(0, op, iseq->self, Qnil);
+				    argv[j] = iseq_load(0, op, iseq->self, Qnil);
 				}
 				else if (CLASS_OF(op) == rb_cISeq) {
 				    argv[j] = op;
 				}
 				else {
-				    /* TODO: exception */
-				    rb_bug("not an iseq");
+				    rb_raise(rb_eRuntimeError, "ISEQ is required");
 				}
 				iseq_add_mark_object(iseq, argv[j]);
 			    }
@@ -4670,9 +4669,14 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     return COMPILE_OK;
 }
 
+#define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
+#define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
+#define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
+#define CHECK_INTEGER(v) (NUM2LONG(v), v)
+
 VALUE
-iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
-		    VALUE locals, VALUE args, VALUE exception, VALUE body)
+iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+		    VALUE exception, VALUE body)
 {
     int i;
     int opt = 0;
@@ -4687,44 +4691,49 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
 	opt = 1;
     }
 
-    iseq->local_size = opt + RARRAY_LEN(locals);
-    iseq->local_table_size = iseq->local_size;
-    iseq->local_table = (ID *)ALLOC_N(ID *, iseq->local_size);
-    tbl = iseq->local_table + opt;
+    iseq->local_table_size = opt + RARRAY_LEN(locals);
+    iseq->local_table = tbl = (ID *)ALLOC_N(ID *, iseq->local_table_size);
+    iseq->local_size = opt + iseq->local_table_size;
 
     for (i=0; i<RARRAY_LEN(locals); i++) {
-	tbl[i] = SYM2ID(RARRAY_PTR(locals)[i]);
+	tbl[i] = SYM2ID(CHECK_SYMBOL(RARRAY_PTR(locals)[i]));
     }
 
     /* args */
     if (FIXNUM_P(args)) {
-	iseq->argc = FIX2INT(args);
+	iseq->arg_size = iseq->argc = FIX2INT(args);
 	iseq->arg_simple = 1;
     }
     else {
-	/*
-	 * [argc,                 # argc
-	 *  opts,                 # opts
-	 *  [label1, label2, ...] # opt labels
-	 *  rest_iex,
-	 *  block_idx,
-	 * ]
-	 * or
-	 *  argc (Fixnum) # arg_simple
-	 */
 	int i = 0;
-	VALUE argc  = rb_ary_entry(args, i++);
-	VALUE arg_opts = rb_ary_entry(args, i++);
-	VALUE arg_opt_labels = rb_ary_entry(args, i++);
-	VALUE arg_rest = rb_ary_entry(args, i++);
-	VALUE arg_block = rb_ary_entry(args, i++);
+	VALUE argc = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_opts = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_opt_labels = CHECK_ARRAY(rb_ary_entry(args, i++));
+	VALUE arg_post_len = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_post_start = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_rest = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_block = CHECK_INTEGER(rb_ary_entry(args, i++));
 
 	iseq->argc = FIX2INT(argc);
 	iseq->arg_opts = FIX2INT(arg_opts);
 	iseq->arg_rest = FIX2INT(arg_rest);
+	iseq->arg_post_len = FIX2INT(arg_post_len);
+	iseq->arg_post_start = FIX2INT(arg_post_start);
 	iseq->arg_block = FIX2INT(arg_block);
-
 	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
+
+	if (iseq->arg_block != -1) {
+	    iseq->arg_size = iseq->arg_block + 1;
+	}
+	else if (iseq->arg_post_len) {
+	    iseq->arg_size = iseq->arg_post_start + iseq->arg_post_len;
+	}
+	else if (iseq->arg_rest != -1) {
+	    iseq->arg_size = iseq->arg_rest + 1;
+	}
+	else {
+	    iseq->arg_size = iseq->argc + iseq->arg_opts;
+	}
 
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
 	    iseq->arg_opt_table[i] =
@@ -4737,6 +4746,6 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
     iseq_build_exception(iseq, labels_table, exception);
 
     /* body */
-    iseq_build_body(iseq, anchor, body, line, labels_table);
+    iseq_build_body(iseq, anchor, body, labels_table);
     return iseq->self;
 }

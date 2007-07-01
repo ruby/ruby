@@ -304,8 +304,8 @@ rb_iseq_new_with_bopt(NODE *node, VALUE name, VALUE filename,
 					   bopt, &COMPILE_OPTION_DEFAULT);
 }
 
-VALUE iseq_build_from_ary(rb_iseq_t *iseq, VALUE line,
-			  VALUE locals, VALUE args, VALUE exception, VALUE body);
+VALUE iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+			  VALUE exception, VALUE body);
 
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
 #define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
@@ -344,10 +344,12 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     type        = CHECK_SYMBOL(rb_ary_entry(data, 8));
     locals      = CHECK_ARRAY(rb_ary_entry(data, 9));
-    args = rb_ary_entry(data, 10);
+
+    args        = rb_ary_entry(data, 10);
     if (FIXNUM_P(args) || (args = CHECK_ARRAY(args))) {
 	/* */
     }
+
     exception   = CHECK_ARRAY(rb_ary_entry(data, 11));
     body        = CHECK_ARRAY(rb_ary_entry(data, 12));
 
@@ -377,7 +379,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     prepare_iseq_build(iseq, name, filename,
 		       parent, iseq_type, 0, &option);
 
-    iseq_build_from_ary(iseq, line, locals, args, exception, body);
+    iseq_build_from_ary(iseq, locals, args, exception, body);
 
     cleanup_iseq_build(iseq);
     return iseqval;
@@ -1108,7 +1110,7 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    int i, pos;
+    int i, pos, line = 0, insn_pos = 0;
     VALUE *seq;
 
     VALUE val = rb_ary_new();
@@ -1117,8 +1119,8 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     VALUE args = rb_ary_new();
     VALUE body = rb_ary_new(); /* [[:insn1, ...], ...] */
     VALUE nbody;
-    VALUE line = rb_ary_new();
     VALUE exception = rb_ary_new(); /* [[....]] */
+    VALUE misc = rb_hash_new();
 
     static VALUE insn_syms[YARV_MAX_INSTRUCTION_SIZE];
     struct st_table *labels_table = st_init_numtable();
@@ -1173,11 +1175,12 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	/*
 	 * [argc,                 # argc
 	 *  [label1, label2, ...] # opts
-	 *  rest_iex,
-	 *  block_idx,
+	 *  rest index,
+	 *  post_len
+	 *  post_start
+	 *  block index,
+	 *  simple,
          * ]
-	 * or
-	 *  argc (Fixnum) # arg_simple
 	 */
 	VALUE arg_opt_labels = rb_ary_new();
 	int j;
@@ -1188,15 +1191,17 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	}
 
 	/* commit */
-	if (iseq->arg_simple) {
+	if (iseq->arg_simple == 1) {
 	    args = INT2FIX(iseq->argc);
 	}
 	else {
 	    rb_ary_push(args, INT2FIX(iseq->argc));
-	    rb_ary_push(args, INT2FIX(iseq->arg_opts));
 	    rb_ary_push(args, arg_opt_labels);
+	    rb_ary_push(args, INT2FIX(iseq->arg_post_len));
+	    rb_ary_push(args, INT2FIX(iseq->arg_post_start));
 	    rb_ary_push(args, INT2FIX(iseq->arg_rest));
 	    rb_ary_push(args, INT2FIX(iseq->arg_block));
+	    rb_ary_push(args, INT2FIX(iseq->arg_simple));
 	}
     }
 
@@ -1294,7 +1299,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	rb_ary_push(exception, ary);
     }
 
-    /* make body with labels */
+    /* make body with labels and insert line number */
     body = rb_ary_new();
 
     for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
@@ -1305,26 +1310,33 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	    rb_ary_push(body, label);
 	}
 
+	if (iseq->insn_info_table[i].line_no != line) {
+	    line = iseq->insn_info_table[i].line_no;
+	    rb_ary_push(body, INT2FIX(line));
+	}
+
 	rb_ary_push(body, ary);
 	pos += RARRAY_LEN(ary);
     }
 
     st_free_table(labels_table);
 
-    /* build array */
+    rb_hash_aset(misc, ID2SYM(rb_intern("arg_size")), INT2FIX(iseq->arg_size));
+    rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq->local_size));
+    rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq->stack_max));
 
-    /* [magic, major_version, minor_version, format_type, misc,
-     *  name, filename, line,
-     *  type, args, vars, exception_table, body]
+    /* 
+     * [:magic, :major_version, :minor_version, :format_type, :misc,
+     *  :name, :filename, :type, :locals, :args,
+     *  :catch_table, :bytecode]
      */
     rb_ary_push(val, rb_str_new2("YARVInstructionSimpledataFormat"));
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, INT2FIX(1));
-    rb_ary_push(val, Qnil);
+    rb_ary_push(val, misc);
     rb_ary_push(val, iseq->name);
     rb_ary_push(val, iseq->filename);
-    rb_ary_push(val, line);
     rb_ary_push(val, type);
     rb_ary_push(val, locals);
     rb_ary_push(val, args);

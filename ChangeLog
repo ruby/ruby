@@ -1,3 +1,7 @@
+Mon Jul  2 05:29:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, iseq.c: fix iseq some of load/store process.
+
 Mon Jul  2 03:09:36 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, compile.c, insnhelper.ci, iseq.c, vm.c:
