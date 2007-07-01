@@ -358,13 +358,13 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 
     if (type_map == 0) {
 	type_map = st_init_numtable();
-	st_insert(type_map, ID2SYM(rb_intern("toplevel")), ISEQ_TYPE_TOP);
-	st_insert(type_map, ID2SYM(rb_intern("method")),   ISEQ_TYPE_METHOD);
-	st_insert(type_map, ID2SYM(rb_intern("block")),    ISEQ_TYPE_BLOCK);
-	st_insert(type_map, ID2SYM(rb_intern("class")),    ISEQ_TYPE_CLASS);
-	st_insert(type_map, ID2SYM(rb_intern("rescue")),   ISEQ_TYPE_RESCUE);
-	st_insert(type_map, ID2SYM(rb_intern("ensure")),   ISEQ_TYPE_ENSURE);
-	st_insert(type_map, ID2SYM(rb_intern("eval")),     ISEQ_TYPE_EVAL);
+	st_insert(type_map, ID2SYM(rb_intern("top")), ISEQ_TYPE_TOP);
+	st_insert(type_map, ID2SYM(rb_intern("method")), ISEQ_TYPE_METHOD);
+	st_insert(type_map, ID2SYM(rb_intern("block")), ISEQ_TYPE_BLOCK);
+	st_insert(type_map, ID2SYM(rb_intern("class")), ISEQ_TYPE_CLASS);
+	st_insert(type_map, ID2SYM(rb_intern("rescue")), ISEQ_TYPE_RESCUE);
+	st_insert(type_map, ID2SYM(rb_intern("ensure")), ISEQ_TYPE_ENSURE);
+	st_insert(type_map, ID2SYM(rb_intern("eval")), ISEQ_TYPE_EVAL);
     }
 
     if (st_lookup(type_map, type, &iseq_type) == 0) {
@@ -1125,7 +1125,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     static VALUE insn_syms[YARV_MAX_INSTRUCTION_SIZE];
     struct st_table *labels_table = st_init_numtable();
 
-    DECL_SYMBOL(toplevel);
+    DECL_SYMBOL(top);
     DECL_SYMBOL(method);
     DECL_SYMBOL(block);
     DECL_SYMBOL(class);
@@ -1133,12 +1133,12 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     DECL_SYMBOL(ensure);
     DECL_SYMBOL(eval);
 
-    if (sym_toplevel == 0) {
+    if (sym_top == 0) {
 	int i;
 	for (i=0; i<YARV_MAX_INSTRUCTION_SIZE; i++) {
 	    insn_syms[i] = ID2SYM(rb_intern(insn_name(i)));
 	}
-	INIT_SYMBOL(toplevel);
+	INIT_SYMBOL(top);
 	INIT_SYMBOL(method);
 	INIT_SYMBOL(block);
 	INIT_SYMBOL(class);
@@ -1149,13 +1149,13 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     /* type */
     switch(iseq->type) {
-      case ISEQ_TYPE_TOP:    type = sym_toplevel; break;
-      case ISEQ_TYPE_METHOD: type = sym_method;   break;
-      case ISEQ_TYPE_BLOCK:  type = sym_block;    break;
-      case ISEQ_TYPE_CLASS:  type = sym_class;    break;
-      case ISEQ_TYPE_RESCUE: type = sym_rescue;   break;
-      case ISEQ_TYPE_ENSURE: type = sym_ensure;   break;
-      case ISEQ_TYPE_EVAL:   type = sym_eval;     break;
+      case ISEQ_TYPE_TOP:    type = sym_top;    break;
+      case ISEQ_TYPE_METHOD: type = sym_method; break;
+      case ISEQ_TYPE_BLOCK:  type = sym_block;  break;
+      case ISEQ_TYPE_CLASS:  type = sym_class;  break;
+      case ISEQ_TYPE_RESCUE: type = sym_rescue; break;
+      case ISEQ_TYPE_ENSURE: type = sym_ensure; break;
+      case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
       default: rb_bug("unsupported iseq type");
     };
 

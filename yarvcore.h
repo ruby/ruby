@@ -687,6 +687,8 @@ int vm_get_sourceline(rb_control_frame_t *);
 VALUE yarvcore_eval_parsed(NODE *node, VALUE file);
 VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);
 
+RUBY_EXTERN VALUE sysstack_error;
+
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2

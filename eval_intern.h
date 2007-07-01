@@ -178,7 +178,6 @@ char *strrchr _((const char *, const char));
 }
 
 extern VALUE exception_error;
-extern VALUE sysstack_error;
 
 void rb_thread_cleanup _((void));
 void rb_thread_wait_other_threads _((void));

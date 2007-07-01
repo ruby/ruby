@@ -1,3 +1,13 @@
+Mon Jul  2 08:53:47 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h, yarvcore.h: move declaration of sysstack_error
+	  to yarvcore.h.
+
+	* iseq.c: fix symbol name (:toplevel -> :top).
+
+	* lib/vm/instruction.rb, template/vm.inc.tmpl: replacable
+	  current file name.
+
 Mon Jul  2 05:29:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, iseq.c: fix iseq some of load/store process.

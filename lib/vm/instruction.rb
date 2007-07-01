@@ -839,7 +839,7 @@ module RubyVM
         file = insn.body.instance_variable_get(:@file)
         ret << "#line #{line+1} \"#{file}\"" << "\n"
         ret << insn.body
-        ret << '#line __CURRENT_LINE__ "vm.inc"' << "\n"
+        ret << '#line __CURRENT_LINE__ "__CURRENT_FILE__"' << "\n"
       else
         ret << insn.body
       end

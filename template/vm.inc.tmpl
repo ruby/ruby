@@ -12,17 +12,17 @@
  */
 
 <%=
-ret = ''
-offset = 15
-line_no = 0
-vm_body.each_line{|line|
-  if line =~ /^\#line __CURRENT_LINE__/
-    ret << line.sub(/__CURRENT_LINE__/, "#{line_no+offset}")
+line = 15
+vm_body.gsub(/\n|__CURRENT_LINE__|__CURRENT_FILE__/){|e|
+  case e
+  when '__CURRENT_LINE__'
+    line.to_s
+  when '__CURRENT_FILE__'
+    "vm.inc"
   else
-    ret <<line
+    line += 1
+    e
   end
-  line_no += 1
 }
-ret
 %>
 
