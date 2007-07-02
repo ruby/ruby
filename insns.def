@@ -1,5 +1,4 @@
-/** ##skip
-  -*-c-*-
+/** ##skip -*- mode:c; style:ruby -*-
   insns.def - YARV instruction definitions
 
   $Author: $
@@ -93,19 +92,19 @@ getspecial
 	VALUE backref = *lfp_svar(GET_LFP(), 1);
 	if (type & 0x01) {
 	    switch (type >> 1) {
-	    case '&':
+	      case '&':
 		val = rb_reg_last_match(backref);
 		break;
-	    case '`':
+	      case '`':
 		val = rb_reg_match_pre(backref);
 		break;
-	    case '\'':
+	      case '\'':
 		val = rb_reg_match_post(backref);
 		break;
-	    case '+':
+	      case '+':
 		val = rb_reg_match_last(backref);
 		break;
-	    default:
+	      default:
 		rb_bug("unexpected back-ref");
 	    }
 	}
@@ -282,14 +281,14 @@ setconstant
     }
 
     switch (TYPE(klass)) {
-    case T_CLASS:
-    case T_MODULE:
+      case T_CLASS:
+      case T_MODULE:
 	break;
-    default: {
+      default: {
 	volatile VALUE tmp = rb_obj_as_string(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
 		 RSTRING_PTR(tmp));
-    }
+      }
     }
 
     rb_const_set(klass, id, val);
@@ -1042,7 +1041,8 @@ defineclass
 {
     VALUE klass;
 
-    if (define_type == 0) {
+    switch ((int)define_type) {
+      case 0:
 	/* val is dummy.  classdef returns class scope value */
 
 	if (super == Qnil) {
@@ -1078,13 +1078,13 @@ defineclass
 	    rb_const_set(cbase, id, klass);
 	    rb_class_inherited(super, klass);
 	}
-    }
-    else if (define_type == 1) {
+	break;
+      case 1:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
 	klass = rb_singleton_class(cbase);
-    }
-    else if (define_type == 2) {
+	break;
+      case 2:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
 	if (cbase == Qnil) {
@@ -1105,9 +1105,9 @@ defineclass
 	    rb_set_class_path(klass, cbase, rb_id2name(id));
 	    rb_const_set(cbase, id, klass);
 	}
-    }
-    else {
-	rb_bug("unknown defineclass type: %d", define_type);
+	break;
+      default:
+	rb_bug("unknown defineclass type: %d", (int)define_type);
     }
     
     COPY_CREF(klass_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC));
@@ -2342,7 +2342,7 @@ opt_call_c_function
     if (reg_cfp == 0) {
 	VALUE err = th->errinfo;
 	th->errinfo = Qnil;
-	return err;
+	THROW_EXCEPTION(err);
     }
 
     NEXT_INSN();

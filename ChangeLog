@@ -1,3 +1,10 @@
+Mon Jul  2 11:59:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): suppress a warning.
+
+	* insns.def (opt_call_c_function): should raise the thrown exception
+	  instead of returning it.
+
 Mon Jul  2 08:53:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h, yarvcore.h: move declaration of sysstack_error
