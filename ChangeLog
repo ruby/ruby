@@ -1,3 +1,17 @@
+Mon Jul  2 21:45:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: rename iseq_translate_direct_threaded_code()
+	  to iseq_translate_threaded_code().
+
+	* eval_intern.h, yarvcore.h: mv EXEC_EVENT_HOOK() and
+	  exec_event_hooks() to yarvcore.h.
+
+	* insnhelper.ci, vm.c: mv yarv_finish_insn_seq to vm.c.
+
+	* insns.def (opt_call_c_function): fix to use RESTORE_REGS().
+
+	* iseq.c (rb_iseq_build_for_ruby2cext): fix to allocate iseq.
+
 Mon Jul  2 11:59:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass): suppress a warning.

@@ -38,6 +38,14 @@ static NODE *lfp_set_special_cref(VALUE *lfp, NODE * cref);
 
 static inline int block_proc_is_lambda(VALUE procval);
 
+#if OPT_STACK_CACHING
+static VALUE yarv_finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
+#elif OPT_CALL_THREADED_CODE
+static VALUE const yarv_finish_insn_seq[1] = { 0 };
+#else
+static VALUE yarv_finish_insn_seq[1] = { BIN(finish) };
+#endif
+
 void
 rb_vm_change_state(void)
 {
@@ -56,7 +64,7 @@ rb_vm_set_finish_env(rb_thread_t *th)
     return Qtrue;
 }
 
-static void
+void
 rb_vm_set_top_stack(rb_thread_t *th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
@@ -74,7 +82,7 @@ rb_vm_set_top_stack(rb_thread_t *th, VALUE iseqval)
 		  th->cfp->sp, 0, iseq->local_size);
 }
 
-VALUE
+void
 rb_vm_set_eval_stack(rb_thread_t *th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
@@ -86,7 +94,6 @@ rb_vm_set_eval_stack(rb_thread_t *th, VALUE iseqval)
     vm_push_frame(th, iseq, FRAME_MAGIC_EVAL, block->self,
 		  GC_GUARDED_PTR(block->dfp), iseq->iseq_encoded,
 		  th->cfp->sp, block->lfp, iseq->local_size);
-    return 0;
 }
 
 /* Env */

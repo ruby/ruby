@@ -218,8 +218,8 @@ rb_iseq_compile(VALUE self, NODE *node)
 
 VALUE vm_eval(void *);
 
-static int
-iseq_translate_direct_threaded_code(rb_iseq_t *iseq)
+int
+iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 
@@ -690,8 +690,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     debugs("[compile step 4.3 (set_optargs_table)] \n");
     set_optargs_table(iseq);
 
-    debugs("[compile step 5 (iseq_translate_direct_threaded_code)] \n");
-    iseq_translate_direct_threaded_code(iseq);
+    debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
+    iseq_translate_threaded_code(iseq);
 
     if (CPDEBUG > 1) {
 	VALUE str = ruby_iseq_disasm(iseq->self);

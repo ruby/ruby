@@ -379,11 +379,11 @@ putobject
 
 DEFINE_INSN
 putstring
-(VALUE val)
+(VALUE str)
 ()
 (VALUE val)
 {
-    val = rb_str_new3(val);
+    val = rb_str_new3(str);
 }
 
 /**
@@ -2337,6 +2337,7 @@ opt_call_c_function
 ()
 {
     rb_insn_func_t funcptr = (rb_insn_func_t) func;
+
     reg_cfp = (funcptr)(th, reg_cfp);
 
     if (reg_cfp == 0) {
@@ -2345,6 +2346,7 @@ opt_call_c_function
 	THROW_EXCEPTION(err);
     }
 
+    RESTORE_REGS();
     NEXT_INSN();
 }
 

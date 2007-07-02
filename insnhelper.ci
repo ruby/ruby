@@ -14,14 +14,6 @@
 
 #include "insns.inc"
 
-#if OPT_STACK_CACHING
-static VALUE yarv_finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
-#elif OPT_CALL_THREADED_CODE
-static VALUE const yarv_finish_insn_seq[1] = { 0 };
-#else
-static VALUE yarv_finish_insn_seq[1] = { BIN(finish) };
-#endif
-
 /* control stack frame */
 
 static inline rb_control_frame_t *

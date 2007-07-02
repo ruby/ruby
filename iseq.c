@@ -1372,6 +1372,7 @@ rb_iseq_build_for_ruby2cext(
     const char *name,
     const char *filename)
 {
+    int i;
     VALUE iseqval = iseq_alloc(rb_cISeq);
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
@@ -1381,6 +1382,15 @@ rb_iseq_build_for_ruby2cext(
     iseq->name = rb_str_new2(name);
     iseq->filename = rb_str_new2(filename);
     iseq->mark_ary = rb_ary_new();
+
+    iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);
+
+    for (i=0; i<iseq->iseq_size; i+=2) {
+	iseq->iseq[i] = BIN(opt_call_c_function);
+	iseq->iseq[i+1] = (VALUE)func;
+    }
+
+    iseq_translate_threaded_code(iseq);
 
 #define ALLOC_AND_COPY(dst, src, type, size) do { \
   if (size) { \
