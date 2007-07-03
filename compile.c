@@ -2049,12 +2049,22 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		    DECL_ANCHOR(lhs);
 
 		    COMPILE_POPED(lhs, "post", n->nd_head);
-		    REMOVE_ELEM(FIRST_ELEMENT(lhs));
+
+		    if (nd_type(n->nd_head) != NODE_MASGN) {
+			REMOVE_ELEM(FIRST_ELEMENT(lhs));
+		    }
+
 		    ADD_SEQ(ret, lhs);
 		    n = n->nd_next;
 		}
 
-		make_masgn_lhs(iseq, ret, splatn->nd_1st);
+		if (splatn->nd_1st == (NODE*)(VALUE)-1) {
+		    /* v1, *, v2 = expr */
+		    ADD_INSN(ret, nd_line(splatn), pop);
+		}
+		else {
+		    make_masgn_lhs(iseq, ret, splatn->nd_1st);
+		}
 	    }
 	    else {
 		make_masgn_lhs(iseq, ret, splatn);
