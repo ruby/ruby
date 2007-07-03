@@ -30,6 +30,7 @@
  */
 #ifndef REGINT_H
 #include "ruby/config.h"
+#include "ruby/defines.h"
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif

@@ -1,3 +1,11 @@
+Tue Jul  3 23:12:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/onigiruma.h (ONIG_EXTERN): use RUBY_EXTERN if defined.
+
+	* regenc.h: include ruby/defines.h.
+
+	* regint.h: x64-mswin64 support.
+
 Tue Jul  3 13:47:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_save_machine_stack): clear saved_thread.machine_stack*.

@@ -74,11 +74,15 @@ extern "C" {
 #endif
 
 #ifndef ONIG_EXTERN
+#ifdef RUBY_EXTERN
+#define ONIG_EXTERN   RUBY_EXTERN
+#else
 #if defined(_WIN32) && !defined(__GNUC__)
 #if defined(EXPORT) || defined(RUBY_EXPORT)
 #define ONIG_EXTERN   extern __declspec(dllexport)
 #else
 #define ONIG_EXTERN   extern __declspec(dllimport)
+#endif
 #endif
 #endif
 #endif
