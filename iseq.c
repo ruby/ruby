@@ -101,14 +101,52 @@ iseq_alloc(VALUE klass)
     return obj;
 }
 
+static void
+set_relation(rb_iseq_t *iseq, const VALUE parent)
+{
+    const int type = iseq->type;
+    rb_thread_t *th = GET_THREAD();
+
+    /* set class nest stack */
+    if (type == ISEQ_TYPE_TOP) {
+	/* toplevel is private */
+	iseq->cref_stack = NEW_BLOCK(th->top_wrapper ? th->top_wrapper : rb_cObject);
+	iseq->cref_stack->nd_file = 0;
+	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
+    }
+    else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
+	iseq->cref_stack = NEW_BLOCK(0); /* place holder */
+	iseq->cref_stack->nd_file = 0;
+    }
+    else if (RTEST(parent)) {
+	rb_iseq_t *piseq;
+	GetISeqPtr(parent, piseq);
+	iseq->cref_stack = piseq->cref_stack;
+    }
+
+    if (type == ISEQ_TYPE_TOP ||
+	type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
+	iseq->local_iseq = iseq;
+    }
+    else if (RTEST(parent)) {
+	rb_iseq_t *piseq;
+	GetISeqPtr(parent, piseq);
+	iseq->local_iseq = piseq->local_iseq;
+    }
+
+    if (RTEST(parent)) {
+	rb_iseq_t *piseq;
+	GetISeqPtr(parent, piseq);
+	iseq->parent_iseq = piseq;
+    }
+}
+
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE name, VALUE filename,
 		   VALUE parent, VALUE type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
-    rb_thread_t *th = GET_THREAD();
-
     OBJ_FREEZE(name);
     OBJ_FREEZE(filename);
 
@@ -125,23 +163,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
     iseq->cached_special_block_builder = 0;
     iseq->cached_special_block = 0;
-
-    /* set class nest stack */
-    if (type == ISEQ_TYPE_TOP) {
-	/* toplevel is private */
-	iseq->cref_stack = NEW_BLOCK(th->top_wrapper ? th->top_wrapper : rb_cObject);
-	iseq->cref_stack->nd_file = 0;
-	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
-    }
-    else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-	iseq->cref_stack = NEW_BLOCK(0); /* place holder */
-	iseq->cref_stack->nd_file = 0;
-    }
-    else if (parent) {
-	rb_iseq_t *piseq;
-	GetISeqPtr(parent, piseq);
-	iseq->cref_stack = piseq->cref_stack;
-    }
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
@@ -162,21 +183,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
       (char *)(&iseq->compile_data->storage_head->buff + 1);
     iseq->compile_data->option = option;
 
-    if (type == ISEQ_TYPE_TOP ||
-	type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
-	iseq->local_iseq = iseq;
-    }
-    else {
-	rb_iseq_t *piseq;
-	GetISeqPtr(parent, piseq);
-	iseq->local_iseq = piseq->local_iseq;
-    }
-
-    if (RTEST(parent)) {
-	rb_iseq_t *piseq;
-	GetISeqPtr(parent, piseq);
-	iseq->parent_iseq = piseq;
-    }
+    set_relation(iseq, parent);
 
     return Qtrue;
 }
@@ -1382,6 +1389,7 @@ rb_iseq_build_for_ruby2cext(
     iseq->name = rb_str_new2(name);
     iseq->filename = rb_str_new2(filename);
     iseq->mark_ary = rb_ary_new();
+    iseq->self = iseqval;
 
     iseq->iseq = ALLOC_N(VALUE, iseq->iseq_size);
 
@@ -1407,6 +1415,8 @@ rb_iseq_build_for_ruby2cext(
 
     ALLOC_AND_COPY(iseq->arg_opt_table, arg_opt_table,
 		   VALUE, iseq->arg_opts);
+
+    set_relation(iseq, 0);
 
     return iseqval;
 }
