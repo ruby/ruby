@@ -336,6 +336,21 @@ assert_equal '[[:ok1, :foo], [:ok2, :foo, :bar]]',
   $ary
 }
 
+# with
+assert_equal '[:ok1, [:ok2, 11]]', %q{
+  class C
+    def []
+      $ary << :ok1
+      10
+    end
+    def []=(a)
+      $ary << [:ok2, a]
+    end
+  end
+  $ary = []
+  C.new[]+=1
+  $ary
+}
 
 # splat and block arguments
 assert_equal %q{[[[:x, :y, :z], NilClass], [[1, :x, :y, :z], NilClass], [[1, 2, :x, :y, :z], NilClass], [[:obj], NilClass], [[1, :obj], NilClass], [[1, 2, :obj], NilClass], [[], Proc], [[1], Proc], [[1, 2], Proc], [[], Proc], [[1], Proc], [[1, 2], Proc], [[:x, :y, :z], Proc], [[1, :x, :y, :z], Proc], [[1, 2, :x, :y, :z], Proc]]}, %q{

@@ -1,3 +1,10 @@
+Wed Jul  4 04:07:00 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (compile_array): ignore NODE_ZARRAY.
+	  [ruby-dev:31110]
+
+	* bootstraptest/test_method.rb: add a test for above.
+
 Wed Jul  4 04:04:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.h: fix debug print level.

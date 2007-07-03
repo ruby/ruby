@@ -1831,18 +1831,20 @@ compile_array(rb_iseq_t *iseq,
     int len = node->nd_alen, line = nd_line(node), i=0;
     DECL_ANCHOR(anchor);
 
-    while (node) {
-	if (nd_type(node) != NODE_ARRAY) {
-	    rb_bug("compile_array: This node is not NODE_ARRAY, but %s",
-		   ruby_node_name(nd_type(node)));
-	}
+    if (nd_type(node) != NODE_ZARRAY) {
+	while (node) {
+	    if (nd_type(node) != NODE_ARRAY) {
+		rb_bug("compile_array: This node is not NODE_ARRAY, but %s",
+		       ruby_node_name(nd_type(node)));
+	    }
 
-	i++;
-	if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
-	    opt_p = Qfalse;
+	    i++;
+	    if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
+		opt_p = Qfalse;
+	    }
+	    COMPILE(anchor, "array element", node->nd_head);
+	    node = node->nd_next;
 	}
-	COMPILE(anchor, "array element", node->nd_head);
-	node = node->nd_next;
     }
 
     if (len != i) {
