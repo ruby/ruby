@@ -1,3 +1,8 @@
+Wed Jul  4 04:58:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (caller_setup_args): fix to show correct class
+	  on an error message (ex: m(&1)). [ruby-dev:31101]
+
 Wed Jul  4 04:30:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (compile_array, iseq_compile_each): fix about array
