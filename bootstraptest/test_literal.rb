@@ -112,6 +112,7 @@ assert_equal 'Array',           'a = [obj = Object.new]; a.class'
 assert_equal '1',               'a = [obj = Object.new]; a.size'
 assert_equal 'true',            'a = [obj = Object.new]; a[0] == obj'
 assert_equal '5',               'a = [1,2,3]; a[1] = 5; a[1]'
+assert_equal 'bar',             '[*:foo];:bar'
 
 # hash
 assert_equal 'Hash',            '{}.class'

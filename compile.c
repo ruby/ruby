@@ -1824,8 +1824,8 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 }
 
 static int
-compile_array(rb_iseq_t *iseq,
-	      LINK_ANCHOR *ret, NODE * node_root, VALUE opt_p)
+compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
+	       VALUE opt_p, int poped)
 {
     NODE *node = node_root;
     int len = node->nd_alen, line = nd_line(node), i=0;
@@ -1842,7 +1842,7 @@ compile_array(rb_iseq_t *iseq,
 	    if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
 		opt_p = Qfalse;
 	    }
-	    COMPILE(anchor, "array element", node->nd_head);
+	    COMPILE_(anchor, "array element", node->nd_head, poped);
 	    node = node->nd_next;
 	}
     }
@@ -1854,21 +1854,31 @@ compile_array(rb_iseq_t *iseq,
     }
 
     if (opt_p == Qtrue) {
-	VALUE ary = rb_ary_new();
-	node = node_root;
-	while (node) {
-	    rb_ary_push(ary, node->nd_head->nd_lit);
-	    node = node->nd_next;
-	}
+	if (!poped) {
+	    VALUE ary = rb_ary_new();
+	    node = node_root;
+	    while (node) {
+		rb_ary_push(ary, node->nd_head->nd_lit);
+		node = node->nd_next;
+	    }
 
-	iseq_add_mark_object_compile_time(iseq, ary);
-	ADD_INSN1(ret, nd_line(node_root), duparray, ary);
+	    iseq_add_mark_object_compile_time(iseq, ary);
+	    ADD_INSN1(ret, nd_line(node_root), duparray, ary);
+	}
     }
     else {
-	ADD_INSN1(anchor, line, newarray, INT2FIX(len));
+	if (!poped) {
+	    ADD_INSN1(anchor, line, newarray, INT2FIX(len));
+	}
 	APPEND_LIST(ret, anchor);
     }
     return len;
+}
+
+static VALUE
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root, VALUE opt_p)
+{
+    return compile_array_(iseq, ret, node_root, opt_p, 0);
 }
 
 static VALUE
@@ -3618,10 +3628,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ARRAY:{
-	compile_array(iseq, ret, node, Qtrue);
-	if (poped) {
-	    ADD_INSN(ret, nd_line(node), pop);
-	}
+	compile_array_(iseq, ret, node, Qtrue, poped);
 	break;
       }
       case NODE_ZARRAY:{
@@ -3952,9 +3959,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_SPLAT:{
-	COMPILE(ret, "splat", node->nd_head);
-	ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
-	break;
+	  COMPILE_(ret, "splat", node->nd_head, poped);
+	  if (!poped) {
+	      ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+	  }
+	  break;
       }
       case NODE_DEFN:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
