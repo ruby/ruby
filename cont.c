@@ -95,6 +95,7 @@ static void
 cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
     int size;
+    rb_thread_t *sth = &cont->saved_thread;
 
     rb_gc_set_stack_end(&th->machine_stack_end);
 #ifdef __ia64
@@ -132,6 +133,11 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
     MEMCPY(cont->machine_register_stack, cont->machine_register_stack_src, VALUE, size);
 #endif
+
+    sth->machine_stack_start = sth->machine_stack_end = 0;
+#ifdef __ia64
+    sth->machine_register_stack_start = sth->machine_register_stack_end = 0;
+#endif
 }
 
 static rb_context_t *
@@ -139,7 +145,7 @@ cont_new(VALUE klass)
 {
     rb_context_t *cont;
     volatile VALUE contval;
-    rb_thread_t *th = GET_THREAD(), *sth;
+    rb_thread_t *th = GET_THREAD();
 
     contval = Data_Make_Struct(klass, rb_context_t,
 			       cont_mark, cont_free, cont);
@@ -150,9 +156,8 @@ cont_new(VALUE klass)
     cont->self = contval;
     cont->alive = Qtrue;
 
-    /* save context */
+    /* save thread context */
     cont->saved_thread = *th;
-    sth = &cont->saved_thread;
 
     return cont;
 }
@@ -163,17 +168,17 @@ static VALUE
 cont_capture(volatile int *stat)
 {
     rb_context_t *cont;
-    rb_thread_t *th;
+    rb_thread_t *th = GET_THREAD(), *sth;
     volatile VALUE contval;
 
-    vm_stack_to_heap(GET_THREAD());
+    vm_stack_to_heap(th);
     cont = cont_new(rb_cCont);
     contval = cont->self;
-    th = &cont->saved_thread;
+    sth = &cont->saved_thread;
 
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
-    th->stack = 0;
+    sth->stack = 0;
 
     cont_save_machine_stack(th, cont);
 

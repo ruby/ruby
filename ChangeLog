@@ -1,3 +1,7 @@
+Tue Jul  3 13:47:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_save_machine_stack): clear saved_thread.machine_stack*.
+
 Mon Jul  2 21:45:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: rename iseq_translate_direct_threaded_code()
