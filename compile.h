@@ -61,7 +61,7 @@
 
 #define debug_node_start(node) \
   (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), \
-   ruby_debug_print_node(10, CPDEBUG, "", (NODE *)node), gl_node_level++) \
+   ruby_debug_print_node(1, CPDEBUG, "", (NODE *)node), gl_node_level++) \
 
 #define debug_node_end()  gl_node_level --;
 
