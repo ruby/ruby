@@ -318,6 +318,25 @@ assert_equal '1',       %q( class C; def m() 7 end; private :m end
 assert_equal '1',       %q( class C; def m() 1 end; private :m end
                             C.new.funcall(:m) )
 
+# with block
+assert_equal '[[:ok1, :foo], [:ok2, :foo, :bar]]',
+%q{
+  class C
+    def [](a)
+      $ary << [yield, a]
+    end
+    def []=(a, b)
+      $ary << [yield, a, b]
+    end
+  end
+
+  $ary = []
+  C.new[:foo, &lambda{:ok1}]
+  C.new[:foo, &lambda{:ok2}] = :bar
+  $ary
+}
+
+
 # splat and block arguments
 assert_equal %q{[[[:x, :y, :z], NilClass], [[1, :x, :y, :z], NilClass], [[1, 2, :x, :y, :z], NilClass], [[:obj], NilClass], [[1, :obj], NilClass], [[1, 2, :obj], NilClass], [[], Proc], [[1], Proc], [[1, 2], Proc], [[], Proc], [[1], Proc], [[1, 2], Proc], [[:x, :y, :z], Proc], [[1, :x, :y, :z], Proc], [[1, 2, :x, :y, :z], Proc]]}, %q{
 def m(*args, &b)
