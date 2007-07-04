@@ -16,8 +16,8 @@ class TestRubyYield < Test::Unit::TestCase
       assert_equal :a, k
       assert_equal 1, v
     end
-    h.each do |k|
-      assert_equal [:a, 1], k
+    h.each do |kv|
+      assert_equal [:a, 1], kv
     end
   end
 
