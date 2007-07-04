@@ -42,7 +42,7 @@ module WEBrick
           error("no credentials in the request.")
           return nil 
         end  
-        unless match = /^#{@auth_scheme}\s+/.match(credentials)
+        unless match = /^#{@auth_scheme}\s+/i.match(credentials)
           error("invalid scheme in %s.", credentials)
           info("%s: %s", @request_field, credentials) if $DEBUG
           return nil
