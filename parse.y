@@ -626,7 +626,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> bv_decls opt_bv_decl bvar
 %type <node> lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
-%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post
+%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg
 /*%%%*/
@@ -1305,7 +1305,18 @@ command		: operation command_args       %prec tLOWEST
 		;
 
 mlhs		: mlhs_basic
-		| tLPAREN mlhs rparen
+		| tLPAREN mlhs_inner rparen
+		    {
+		    /*%%%*/
+			$$ = $2;
+		    /*%
+			$$ = dispatch1(mlhs_paren, $2);
+		    %*/
+		    }
+		;
+
+mlhs_inner	: mlhs_basic
+		| tLPAREN mlhs_inner rparen
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(NEW_LIST($2), 0);
@@ -1398,7 +1409,7 @@ mlhs_basic	: mlhs_head
 		;
 
 mlhs_item	: mlhs_node
-		| tLPAREN mlhs rparen
+		| tLPAREN mlhs_inner rparen
 		    {
 		    /*%%%*/
 			$$ = $2;

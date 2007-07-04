@@ -1,3 +1,7 @@
+Wed Jul  4 18:30:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (mlhs_inner): new rule.  [ruby-dev:31132]
+
 Wed Jul  4 05:11:57 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (set_relation): added.
