@@ -1,3 +1,8 @@
+Thu Jul  5 18:44:12 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (mlhs_basic): use mlhs_post after tSTAR.
+	  [ruby-dev:31109]
+
 Thu Jul  5 18:27:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/{intern,ruby}.h, compile.[ch], error.c, eval.c,

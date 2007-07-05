@@ -1411,7 +1411,7 @@ mlhs_basic	: mlhs_head
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' mlhs_head
+		| tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1,$3));
