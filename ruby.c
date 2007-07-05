@@ -456,6 +456,8 @@ process_sflag(void)
     sflag = 0;
 }
 
+NODE *rb_parser_append_print(VALUE, NODE *);
+NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
 static NODE *proc_options(int argc, char **argv);
 
 static char *
@@ -881,6 +883,13 @@ proc_options(int argc, char **argv)
 	FL_UNSET(rb_load_path, FL_TAINT);
     }
 
+    if (do_print) {
+	tree = rb_parser_append_print(parser, tree);
+    }
+    if (do_loop) {
+	tree = rb_parser_while_loop(parser, tree, do_line, do_split);
+    }
+
     return tree;
 }
 
@@ -1232,9 +1241,6 @@ ruby_set_argv(int argc, char **argv)
     }
 }
 
-NODE *rb_parser_append_print(NODE *);
-NODE *rb_parser_while_loop(NODE *, int, int);
-
 void *
 ruby_process_options(int argc, char **argv)
 {
@@ -1254,12 +1260,6 @@ ruby_process_options(int argc, char **argv)
     if (do_check && tree) {
 	printf("Syntax OK\n");
 	exit(0);
-    }
-    if (do_print) {
-	tree = rb_parser_append_print(tree);
-    }
-    if (do_loop) {
-	tree = rb_parser_while_loop(tree, do_line, do_split);
     }
     return tree;
 }

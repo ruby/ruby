@@ -1,9 +1,12 @@
-Thu Jul  5 17:12:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul  5 18:27:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/{intern,ruby}.h, compile.[ch], error.c, eval.c,
 	  eval_load.c, gc.c, iseq.c, main.c, parse.y, re.c, ruby.c,
 	  yarvcore.[ch] (ruby_eval_tree, ruby_sourcefile, ruby_sourceline,
 	  ruby_nerrs): purge global variables.
+
+	* ruby.c (proc_options): moved do_print and do_loop options
+	  handling from ruby_process_options().
 
 Thu Jul  5 16:37:34 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
