@@ -17,7 +17,7 @@
 /* control stack frame */
 
 static inline rb_control_frame_t *
-vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE magic,
+vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
 	      VALUE self, VALUE specval, VALUE *pc,
 	      VALUE *sp, VALUE *lfp, int local_size)
 {
@@ -44,7 +44,7 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE magic,
     cfp->sp = sp + 1;
     cfp->bp = sp + 1;
     cfp->iseq = iseq;
-    cfp->magic = magic;
+    cfp->flag = VM_FRAME_FLAG(type);
     cfp->self = self;
     cfp->lfp = lfp;
     cfp->dfp = dfp;

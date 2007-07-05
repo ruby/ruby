@@ -1406,7 +1406,7 @@ throw
 		    rb_bug("VM (throw): can't find break base.");
 		}
 
-		if (cfp->magic == FRAME_MAGIC_LAMBDA) {
+		if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA) {
 		    /* lambda{... break ...} */
 		    is_orphan = 0;
 		    pt = dfp;
@@ -1465,7 +1465,7 @@ throw
 		 */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
 		    if (GET_DFP() == dfp) {
-			if (cfp->magic == FRAME_MAGIC_LAMBDA) {
+			if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA) {
 			    /* in lambda */
 			    is_orphan = 0;
 			    break;

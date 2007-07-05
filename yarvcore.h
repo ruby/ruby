@@ -387,7 +387,7 @@ typedef struct {
     VALUE *sp;			/* cfp[1] */
     VALUE *bp;			/* cfp[2] */
     rb_iseq_t *iseq;		/* cfp[3] */
-    VALUE magic;		/* cfp[4] */
+    VALUE flag;			/* cfp[4] */
     VALUE self;			/* cfp[5] / block[0] */
     VALUE *lfp;			/* cfp[6] / block[1] */
     VALUE *dfp;			/* cfp[7] / block[2] */

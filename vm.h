@@ -231,26 +231,25 @@ while (0)
   (!((th)->stack < (env) && (env) < ((th)->stack + (th)->stack_size)))
 #define ENV_VAL(env)        ((env)[1])
 
-#define FRAME_MAGIC_METHOD 0xfaffff11
-#define FRAME_MAGIC_BLOCK  0xfaffff21
-#define FRAME_MAGIC_CLASS  0xfaffff31
-#define FRAME_MAGIC_TOP    0xfaffff41
-#define FRAME_MAGIC_FINISH 0xfaffff51
-#define FRAME_MAGIC_CFUNC  0xfaffff61
-#define FRAME_MAGIC_PROC   0xfaffff71
-#define FRAME_MAGIC_IFUNC  0xfaffff81
-#define FRAME_MAGIC_EVAL   0xfaffff91
-#define FRAME_MAGIC_LAMBDA 0xfaffffa1
+#define FRAME_MAGIC_METHOD 0x11
+#define FRAME_MAGIC_BLOCK  0x21
+#define FRAME_MAGIC_CLASS  0x31
+#define FRAME_MAGIC_TOP    0x41
+#define FRAME_MAGIC_FINISH 0x51
+#define FRAME_MAGIC_CFUNC  0x61
+#define FRAME_MAGIC_PROC   0x71
+#define FRAME_MAGIC_IFUNC  0x81
+#define FRAME_MAGIC_EVAL   0x91
+#define FRAME_MAGIC_LAMBDA 0xa1
+#define FRAME_MAGIC_MASK   0xff
 
-#define CHECK_FRAME_MAGIC(magic)                   \
-{                                                  \
-  if((magic & 0xffffff00) != 0xfaffff00){          \
-    rb_bug("YARV Stack frame error: %08x", magic); \
-  }                                                \
-}
+#define VM_FRAME_FLAG(type) ((VALUE)((type) & FRAME_MAGIC_MASK))
+
+#define VM_FRAME_TYPE(cfp) \
+  ((cfp)->flag & FRAME_MAGIC_MASK)
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
-  ((cfp)->magic == FRAME_MAGIC_CFUNC)
+  (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CFUNC)
 
 /*
  * Excception

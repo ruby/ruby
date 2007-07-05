@@ -340,7 +340,7 @@ th_init2(rb_thread_t *th)
     *th->cfp->lfp = 0;
     th->cfp->dfp = th->stack;
     th->cfp->self = Qnil;
-    th->cfp->magic = 0;
+    th->cfp->flag = 0;
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;

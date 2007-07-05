@@ -46,7 +46,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	bp = cfp->bp - th->stack;
     }
 
-    switch (cfp->magic) {
+    switch (VM_FRAME_TYPE(cfp)) {
       case FRAME_MAGIC_TOP:
 	magic = "TOP";
 	break;
@@ -263,15 +263,15 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     /* stack trace header */
 
-    if (cfp->magic == FRAME_MAGIC_METHOD ||
-	cfp->magic == FRAME_MAGIC_TOP ||
-	cfp->magic == FRAME_MAGIC_BLOCK ||
-	cfp->magic == FRAME_MAGIC_CLASS ||
-	cfp->magic == FRAME_MAGIC_PROC ||
-	cfp->magic == FRAME_MAGIC_LAMBDA ||
-	cfp->magic == FRAME_MAGIC_CFUNC ||
-	cfp->magic == FRAME_MAGIC_IFUNC ||
-	cfp->magic == FRAME_MAGIC_EVAL) {
+    if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_METHOD ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_TOP ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_BLOCK ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CLASS ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_PROC ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CFUNC ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_IFUNC ||
+	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_EVAL) {
 
 	VALUE *ptr = dfp - local_size;
 
@@ -304,7 +304,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		   ptr - th->stack);
 	}
     }
-    else if (cfp->magic == FRAME_MAGIC_FINISH) {
+    else if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_FINISH) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 2)) {
 	    stack_dump_each(th, cfp + 1);
 	}
@@ -313,7 +313,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	}
     }
     else {
-	rb_bug("unsupport frame type: %08lx", cfp->magic);
+	rb_bug("unsupport frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
 }
 
@@ -354,7 +354,7 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq != 0 && cfp->magic != FRAME_MAGIC_FINISH) {
+    if (iseq != 0 && VM_FRAME_TYPE(cfp) != FRAME_MAGIC_FINISH) {
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 

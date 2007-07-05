@@ -547,7 +547,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	rb_iseq_t *iseq = block->iseq;
 	int i, opt_pc;
-	int magic = block_proc_is_lambda(block->proc) ?
+	int type = block_proc_is_lambda(block->proc) ?
 	  FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
 
 	rb_vm_set_finish_env(th);
@@ -559,11 +559,11 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    th->cfp->sp[i] = argv[i];
 	}
 
-	opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, magic == FRAME_MAGIC_LAMBDA);
+	opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, type == FRAME_MAGIC_LAMBDA);
 	argc = iseq->arg_size;
 	th->cfp->sp += argc;
 
-	vm_push_frame(th, iseq, magic,
+	vm_push_frame(th, iseq, type,
 		      self, GC_GUARDED_PTR(block->dfp),
 		      iseq->iseq_encoded + opt_pc, th->cfp->sp, block->lfp,
 		      iseq->local_size - argc);
@@ -783,7 +783,7 @@ check_svar(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
-	/* printf("cfp: %p\n", cfp->magic); */
+	/* printf("cfp: %p\n", cfp->type); */
 	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
 	    TYPE(cfp->lfp[-1]) != T_VALUES) {
 	    /* dp(cfp->lfp[-1]); */
@@ -1050,12 +1050,12 @@ yarv_init_redefined_flag(void)
     VALUE *pc;                  // cfp[0]
     VALUE *sp;                  // cfp[1]
     VALUE *bp;                  // cfp[2]
-    rb_iseq_t *iseq;          // cfp[3]
-    VALUE magic;                // cfp[4]
+    rb_iseq_t *iseq;            // cfp[3]
+    VALUE flag;                 // cfp[4]
     VALUE self;                 // cfp[5]
     VALUE *lfp;                 // cfp[6]
     VALUE *dfp;                 // cfp[7]
-    rb_iseq_t * block_iseq;   // cfp[8]
+    rb_iseq_t * block_iseq;     // cfp[8]
     VALUE proc;                 // cfp[9] always 0
   };
 

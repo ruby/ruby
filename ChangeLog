@@ -1,3 +1,12 @@
+Thu Jul  5 19:45:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* yarvcore.h: rename rb_control_frame_t#magic to flag.
+
+	* vm.h: add VM_FRAME_TYPE() and VM_FRAME_FLAG().
+
+	* cont.c, insnhelper.ci, insns.def, vm.c, vm_dump.c,
+	  vm_evalbody.ci, yarvcore.c: apply above changes.
+
 Thu Jul  5 19:16:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_basicinstructions.rb: remove an assertion using
