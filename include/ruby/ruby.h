@@ -154,7 +154,6 @@ typedef unsigned LONG_LONG ID;
 #define FIXNUM_MAX (LONG_MAX>>1)
 #define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
-#define FIXNUM_FLAG 0x01
 #define INT2FIX(i) ((VALUE)(((SIGNED_VALUE)(i))<<1 | FIXNUM_FLAG))
 #define LONG2FIX(i) INT2FIX(i)
 #define rb_fix_new(v) INT2FIX(v)
@@ -208,54 +207,93 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
-#define IMMEDIATE_MASK 0x03
 #define IMMEDIATE_P(x) ((VALUE)(x) & IMMEDIATE_MASK)
 
-#define SYMBOL_FLAG 0x0e
 #define SYMBOL_P(x) (((VALUE)(x)&0xff)==SYMBOL_FLAG)
 #define ID2SYM(x) ((VALUE)(((long)(x))<<8|SYMBOL_FLAG))
 #define SYM2ID(x) RSHIFT((unsigned long)x,8)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
-#define Qfalse ((VALUE)0)
-#define Qtrue  ((VALUE)2)
-#define Qnil   ((VALUE)4)
-#define Qundef ((VALUE)6)	/* undefined value for placeholder */
+enum ruby_special_consts {
+    RUBY_Qfalse = 0,
+    RUBY_Qtrue  = 2,
+    RUBY_Qnil   = 4,
+    RUBY_Qundef = 6,
+
+    RUBY_IMMEDIATE_MASK = 0x03,
+    RUBY_FIXNUM_FLAG    = 0x01,
+    RUBY_SYMBOL_FLAG    = 0x0e,
+};
+
+#define Qfalse ((VALUE)RUBY_Qfalse)
+#define Qtrue  ((VALUE)RUBY_Qtrue)
+#define Qnil   ((VALUE)RUBY_Qnil)
+#define Qundef ((VALUE)RUBY_Qundef)	/* undefined value for placeholder */
+#define IMMEDIATE_MASK RUBY_IMMEDIATE_MASK
+#define FIXNUM_FLAG RUBY_FIXNUM_FLAG
+#define SYMBOL_FLAG RUBY_SYMBOL_FLAG
 
 #define RTEST(v) (((VALUE)(v) & ~Qnil) != 0)
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
 
-#define T_NONE   0x00
+enum ruby_value_type {
+    RUBY_T_NONE   = 0x00,
+#define T_NONE   RUBY_T_NONE
 
-#define T_NIL    0x01
-#define T_OBJECT 0x02
-#define T_CLASS  0x03
-#define T_ICLASS 0x04
-#define T_MODULE 0x05
-#define T_FLOAT  0x06
-#define T_STRING 0x07
-#define T_REGEXP 0x08
-#define T_ARRAY  0x09
-#define T_FIXNUM 0x0a
-#define T_HASH   0x0b
-#define T_STRUCT 0x0c
-#define T_BIGNUM 0x0d
-#define T_FILE   0x0e
+    RUBY_T_NIL    = 0x01,
+#define T_NIL    RUBY_T_NIL
+    RUBY_T_OBJECT = 0x02,
+#define T_OBJECT RUBY_T_OBJECT
+    RUBY_T_CLASS  = 0x03,
+#define T_CLASS  RUBY_T_CLASS
+    RUBY_T_ICLASS = 0x04,
+#define T_ICLASS RUBY_T_ICLASS
+    RUBY_T_MODULE = 0x05,
+#define T_MODULE RUBY_T_MODULE
+    RUBY_T_FLOAT  = 0x06,
+#define T_FLOAT  RUBY_T_FLOAT
+    RUBY_T_STRING = 0x07,
+#define T_STRING RUBY_T_STRING
+    RUBY_T_REGEXP = 0x08,
+#define T_REGEXP RUBY_T_REGEXP
+    RUBY_T_ARRAY  = 0x09,
+#define T_ARRAY  RUBY_T_ARRAY
+    RUBY_T_FIXNUM = 0x0a,
+#define T_FIXNUM RUBY_T_FIXNUM
+    RUBY_T_HASH   = 0x0b,
+#define T_HASH   RUBY_T_HASH
+    RUBY_T_STRUCT = 0x0c,
+#define T_STRUCT RUBY_T_STRUCT
+    RUBY_T_BIGNUM = 0x0d,
+#define T_BIGNUM RUBY_T_BIGNUM
+    RUBY_T_FILE   = 0x0e,
+#define T_FILE   RUBY_T_FILE
 
-#define T_TRUE   0x10
-#define T_FALSE  0x11
-#define T_DATA   0x12
-#define T_MATCH  0x13
-#define T_SYMBOL 0x14
+    RUBY_T_TRUE   = 0x10,
+#define T_TRUE   RUBY_T_TRUE
+    RUBY_T_FALSE  = 0x11,
+#define T_FALSE  RUBY_T_FALSE
+    RUBY_T_DATA   = 0x12,
+#define T_DATA   RUBY_T_DATA
+    RUBY_T_MATCH  = 0x13,
+#define T_MATCH  RUBY_T_MATCH
+    RUBY_T_SYMBOL = 0x14,
+#define T_SYMBOL RUBY_T_SYMBOL
 
-#define T_VALUES 0x1a
-#define T_BLOCK  0x1b
-#define T_UNDEF  0x1c
-#define T_NODE   0x1f
+    RUBY_T_VALUES = 0x1a,
+#define T_VALUES RUBY_T_VALUES
+    RUBY_T_BLOCK  = 0x1b,
+#define T_BLOCK  RUBY_T_BLOCK
+    RUBY_T_UNDEF  = 0x1c,
+#define T_UNDEF  RUBY_T_UNDEF
+    RUBY_T_NODE   = 0x1f,
+#define T_NODE   RUBY_T_NODE
 
-#define T_MASK   0x1f
+    RUBY_T_MASK   = 0x1f,
+#define T_MASK   RUBY_T_MASK
+};
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 
@@ -522,24 +560,42 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RVALUES(obj) (R_CAST(RValues)(obj))
 
-#define FL_SINGLETON FL_USER0
-#define FL_MARK      (1<<5)
-#define FL_RESERVED  (1<<6)	/* will be used in the future GC */
-#define FL_FINALIZE  (1<<7)
-#define FL_TAINT     (1<<8)
-#define FL_EXIVAR    (1<<9)
-#define FL_FREEZE    (1<<10)
+enum ruby_value_flags {
+    RUBY_FL_MARK      = (1<<5),
+#define FL_MARK      RUBY_FL_MARK
+    RUBY_FL_RESERVED  = (1<<6)	/* will be used in the future GC */,
+#define FL_RESERVED  RUBY_FL_RESERVED
+    RUBY_FL_FINALIZE  = (1<<7),
+#define FL_FINALIZE  RUBY_FL_FINALIZE
+    RUBY_FL_TAINT     = (1<<8),
+#define FL_TAINT     RUBY_FL_TAINT
+    RUBY_FL_EXIVAR    = (1<<9),
+#define FL_EXIVAR    RUBY_FL_EXIVAR
+    RUBY_FL_FREEZE    = (1<<10),
+#define FL_FREEZE    RUBY_FL_FREEZE
+    RUBY_FL_SINGLETON = (1<<11),
+#define FL_SINGLETON RUBY_FL_SINGLETON
 
-#define FL_USHIFT    11
+    RUBY_FL_USHIFT    = 11,
+#define FL_USHIFT    RUBY_FL_USHIFT
 
-#define FL_USER0     (1<<(FL_USHIFT+0))
-#define FL_USER1     (1<<(FL_USHIFT+1))
-#define FL_USER2     (1<<(FL_USHIFT+2))
-#define FL_USER3     (1<<(FL_USHIFT+3))
-#define FL_USER4     (1<<(FL_USHIFT+4))
-#define FL_USER5     (1<<(FL_USHIFT+5))
-#define FL_USER6     (1<<(FL_USHIFT+6))
-#define FL_USER7     (1<<(FL_USHIFT+7))
+    RUBY_FL_USER0     = (1<<(FL_USHIFT+0)),
+#define FL_USER0     RUBY_FL_USER0
+    RUBY_FL_USER1     = (1<<(FL_USHIFT+1)),
+#define FL_USER1     RUBY_FL_USER1
+    RUBY_FL_USER2     = (1<<(FL_USHIFT+2)),
+#define FL_USER2     RUBY_FL_USER2
+    RUBY_FL_USER3     = (1<<(FL_USHIFT+3)),
+#define FL_USER3     RUBY_FL_USER3
+    RUBY_FL_USER4     = (1<<(FL_USHIFT+4)),
+#define FL_USER4     RUBY_FL_USER4
+    RUBY_FL_USER5     = (1<<(FL_USHIFT+5)),
+#define FL_USER5     RUBY_FL_USER5
+    RUBY_FL_USER6     = (1<<(FL_USHIFT+6)),
+#define FL_USER6     RUBY_FL_USER6
+    RUBY_FL_USER7     = (1<<(FL_USHIFT+7)),
+#define FL_USER7     RUBY_FL_USER7
+};
 
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 

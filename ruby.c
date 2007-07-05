@@ -42,6 +42,15 @@
 
 #include "ruby/util.h"
 
+/* for gdb */
+static const union {
+    enum ruby_special_consts	special_consts;
+    enum ruby_value_type	value_type;
+    enum ruby_value_flags	value_flags;
+    enum node_type		node_type;
+    enum ruby_node_flags	node_flags;
+} dummy_gdb_enums;
+
 #ifndef HAVE_STDLIB_H
 char *getenv();
 #endif

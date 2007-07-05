@@ -1,3 +1,10 @@
+Thu Jul  5 10:42:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/{node,ruby}.h, ruby.c: added enum constants for gdb
+	  support.  [ruby-dev:31066]
+
+	* .gdbinit: some improvements.
+
 Thu Jul  5 10:13:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (global_symbols.last_id): reduce unused ID numbers.
