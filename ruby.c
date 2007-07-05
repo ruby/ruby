@@ -61,7 +61,7 @@ static int sflag = 0;
 static int xflag = 0;
 extern int ruby_yydebug;
 
-char *ruby_inplace_mode = Qfalse;
+char *ruby_inplace_mode = 0;
 
 static NODE *load_file(VALUE, const char *, int);
 static void forbid_setid(const char *);

@@ -1,3 +1,7 @@
+Thu Jul  5 19:12:22 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c: Qfalse is VALUE, not pointer.
+
 Thu Jul  5 18:42:01 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): add break catch point.
