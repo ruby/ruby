@@ -113,6 +113,8 @@ assert_equal '1',               'a = [obj = Object.new]; a.size'
 assert_equal 'true',            'a = [obj = Object.new]; a[0] == obj'
 assert_equal '5',               'a = [1,2,3]; a[1] = 5; a[1]'
 assert_equal 'bar',             '[*:foo];:bar'
+assert_equal '[1, 2]',          'def nil.to_splat; [2]; end; [1, *nil]'
+assert_equal '[1, 2]',          'def nil.to_splat; [1, 2]; end; [*nil]'
 
 # hash
 assert_equal 'Hash',            '{}.class'

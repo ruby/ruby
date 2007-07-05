@@ -1,3 +1,10 @@
+Fri Jul  6 02:08:25 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: fix to invoke nil.to_splat on NODE_ARGSCAT.
+	  [ruby-dev:31138].
+
+	* bootstraptest/test_literal.rb: add tests for above.
+
 Thu Jul  5 19:45:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h: rename rb_control_frame_t#magic to flag.

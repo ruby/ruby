@@ -555,27 +555,21 @@ concatarray
 (VALUE ary)
 {
     VALUE ary2 = ary2st;
+    VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_splat");
+    VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_splat");
 
-    if (ary2 == Qnil) {
-	ary = ary1;
+    if (NIL_P(tmp1)) {
+	tmp1 = rb_ary_new3(1, ary1);
     }
-    else {
-	VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_splat");
-	VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_splat");
 
-	if (NIL_P(tmp1)) {
-	    tmp1 = rb_ary_new3(1, ary1);
-	}
-	
-	if (NIL_P(tmp2)) {
-	    tmp2 = rb_ary_new3(1, ary2);
-	}
-
-	if (tmp1 == ary1) {
-	    tmp1 = rb_ary_dup(ary1);
-	}
-	ary = rb_ary_concat(tmp1, tmp2);
+    if (NIL_P(tmp2)) {
+	tmp2 = rb_ary_new3(1, ary2);
     }
+
+    if (tmp1 == ary1) {
+	tmp1 = rb_ary_dup(ary1);
+    }
+    ary = rb_ary_concat(tmp1, tmp2);
 }
 
 /**
