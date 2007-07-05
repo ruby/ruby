@@ -1,3 +1,10 @@
+Thu Jul  5 19:16:14 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_basicinstructions.rb: remove an assertion using
+	  unsupported hash literal (such as {1, 2}).
+
+	* test/ruby/test_hash.rb: ditto.
+
 Thu Jul  5 19:12:22 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c: Qfalse is VALUE, not pointer.

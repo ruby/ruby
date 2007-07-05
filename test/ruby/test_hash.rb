@@ -4,7 +4,7 @@ class TestHash < Test::Unit::TestCase
 
   def test_hash
     x = {1=>2, 2=>4, 3=>6}
-    y = {1, 2, 2, 4, 3, 6}
+    y = {1=>2, 2=>4, 3=>6} # y = {1, 2, 2, 4, 3, 6} # 1.9 doesn't support
 
     assert_equal(2, x[1])
 
