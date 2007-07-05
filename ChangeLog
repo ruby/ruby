@@ -1,3 +1,7 @@
+Thu Jul  5 15:56:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_pow): even number multiplication never be negative.
+
 Mon Jul  2 14:34:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): sign bit extension should not be done

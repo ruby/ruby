@@ -2209,7 +2209,7 @@ int_pow(x, y)
 	    z = xz;
 	}
     } while (--y);
-    if (neg) z = -z;
+    if (neg && (y & 1)) z = -z;
     return LONG2NUM(z);
 }
 
