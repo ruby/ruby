@@ -2304,7 +2304,7 @@ int_pow(long x, unsigned long y)
 	    z = xz;
 	}
     } while (--y);
-    if (neg) z = -z;
+    if (neg && (y & 1)) z = -z;
     return LONG2NUM(z);
 }
 

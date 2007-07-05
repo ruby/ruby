@@ -1,3 +1,7 @@
+Thu Jul  5 15:56:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_pow): even number multiplication never be negative.
+
 Thu Jul  5 10:42:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/{node,ruby}.h, ruby.c: added enum constants for gdb
