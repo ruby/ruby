@@ -8239,7 +8239,7 @@ static struct symbols {
     VALUE op_sym[tLAST_TOKEN];
 } global_symbols = {tLAST_TOKEN};
 
-static struct st_hash_type symhash = {
+static const struct st_hash_type symhash = {
     rb_str_cmp,
     rb_str_hash,
 };
@@ -8264,7 +8264,7 @@ ivar2_hash(struct ivar2_key *key)
     return (key->id << 8) ^ (key->klass >> 2);
 }
 
-static struct st_hash_type ivar2_hash_type = {
+static const struct st_hash_type ivar2_hash_type = {
     ivar2_cmp,
     ivar2_hash,
 };

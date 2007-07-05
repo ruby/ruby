@@ -1,3 +1,8 @@
+Thu Jul  5 10:06:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/st.h, st.c (st_init_table, st_init_table_with_size):
+	  constified.
+
 Wed Jul  4 23:36:27 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/webrick/httpauth/authenticator.rb

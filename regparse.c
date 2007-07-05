@@ -312,7 +312,7 @@ typedef struct {
 static int strend_cmp(st_strend_key*, st_strend_key*);
 static int strend_hash(st_strend_key*);
 
-static struct st_hash_type type_strend_hash = {
+static const struct st_hash_type type_strend_hash = {
   strend_cmp,
   strend_hash,
 };
@@ -4736,7 +4736,7 @@ static int type_cclass_hash(type_cclass_key* key)
   return val + (val >> 5);
 }
 
-static struct st_hash_type type_type_cclass_hash = {
+static const struct st_hash_type type_type_cclass_hash = {
     type_cclass_cmp,
     type_cclass_hash,
 };

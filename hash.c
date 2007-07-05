@@ -94,7 +94,7 @@ rb_any_hash(VALUE a)
     }
 }
 
-static struct st_hash_type objhash = {
+static const struct st_hash_type objhash = {
     rb_any_cmp,
     rb_any_hash,
 };
@@ -1614,7 +1614,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     return ary;
 }
 
-static struct st_hash_type identhash = {
+static const struct st_hash_type identhash = {
     st_numcmp,
     st_numhash,
 };

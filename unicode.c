@@ -10861,7 +10861,7 @@ code2_hash(OnigCodePoint* x)
   return (int )(x[0] + x[1]);
 }
 
-static struct st_hash_type type_code2_hash = {
+static const struct st_hash_type type_code2_hash = {
   code2_cmp,
   code2_hash,
 };
@@ -10879,7 +10879,7 @@ code3_hash(OnigCodePoint* x)
   return (int )(x[0] + x[1] + x[2]);
 }
 
-static struct st_hash_type type_code3_hash = {
+static const struct st_hash_type type_code3_hash = {
   code3_cmp,
   code3_hash,
 };

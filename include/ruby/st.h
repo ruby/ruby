@@ -30,7 +30,7 @@ struct st_hash_type {
 };
 
 struct st_table {
-    struct st_hash_type *type;
+    const struct st_hash_type *type;
     int num_bins;
     int num_entries;
     struct st_table_entry **bins;
@@ -51,8 +51,8 @@ enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 # endif
 #endif
 
-st_table *st_init_table(struct st_hash_type *);
-st_table *st_init_table_with_size(struct st_hash_type *, int);
+st_table *st_init_table(const struct st_hash_type *);
+st_table *st_init_table_with_size(const struct st_hash_type *, int);
 st_table *st_init_numtable(void);
 st_table *st_init_numtable_with_size(int);
 st_table *st_init_strtable(void);

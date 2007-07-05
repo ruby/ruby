@@ -39,14 +39,14 @@ struct st_table_entry {
      *
      */
 
-static struct st_hash_type type_numhash = {
+static const struct st_hash_type type_numhash = {
     st_numcmp,
     st_numhash,
 };
 
 /* extern int strcmp(const char *, const char *); */
 static int strhash(const char *);
-static struct st_hash_type type_strhash = {
+static const struct st_hash_type type_strhash = {
     strcmp,
     strhash,
 };
@@ -145,7 +145,7 @@ stat_col()
 #endif
 
 st_table*
-st_init_table_with_size(struct st_hash_type *type, int size)
+st_init_table_with_size(const struct st_hash_type *type, int size)
 {
     st_table *tbl;
 
@@ -168,7 +168,7 @@ st_init_table_with_size(struct st_hash_type *type, int size)
 }
 
 st_table*
-st_init_table(struct st_hash_type *type)
+st_init_table(const struct st_hash_type *type)
 {
     return st_init_table_with_size(type, 0);
 }
