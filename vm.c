@@ -606,12 +606,15 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
-
 	val = invoke_block(th, &proc->block, self, argc, argv);
     }
-    else {
-	if (state == TAG_BREAK ||
-	    (state == TAG_RETURN && proc->is_lambda)) {
+    TH_POP_TAG();
+
+    th->safe_level = stored_safe;
+    lfp_set_special_cref(proc->block.lfp, (NODE*)stored_special_cref_stack);
+
+    if (state) {
+	if (state == TAG_RETURN && proc->is_lambda) {
 	    VALUE err = th->errinfo;
 	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
 	    VALUE *cdfp = proc->block.dfp;
@@ -624,10 +627,6 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 	    }
 	}
     }
-    TH_POP_TAG();
-
-    th->safe_level = stored_safe;
-    lfp_set_special_cref(proc->block.lfp, (NODE*)stored_special_cref_stack);
 
     if (state) {
 	JUMP_TAG(state);
@@ -873,9 +872,8 @@ vm_get_cbase(rb_thread_t *th)
 static VALUE
 make_localjump_error(const char *mesg, VALUE value, int reason)
 {
-    VALUE exc =
-	rb_exc_new2(rb_const_get(rb_cObject, rb_intern("LocalJumpError")),
-		    mesg);
+    extern VALUE rb_eLocalJumpError;
+    VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
     ID id;
 
     switch (reason) {

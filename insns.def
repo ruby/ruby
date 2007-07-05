@@ -1386,7 +1386,70 @@ throw
 	    }
 	}
 	else {
-	    if (state == TAG_BREAK || state == TAG_RETRY) {
+	    if (state == TAG_BREAK) {
+		rb_control_frame_t *cfp = GET_CFP();
+		VALUE *dfp = GET_DFP();
+		int is_orphan = 1;
+		rb_iseq_t *base_iseq = GET_ISEQ();
+
+	      INSN_LABEL(search_parent):
+		if (cfp->iseq->type != ISEQ_TYPE_BLOCK) {
+		    dfp = GC_GUARDED_PTR_REF((VALUE *) *dfp);
+		    base_iseq = base_iseq->parent_iseq;
+
+		    while ((VALUE *) cfp < th->stack + th->stack_size) {
+			if (cfp->dfp == dfp) {
+			    goto INSN_LABEL(search_parent);
+			}
+			cfp++;
+		    }
+		    rb_bug("VM (throw): can't find break base.");
+		}
+
+		if (cfp->magic == FRAME_MAGIC_LAMBDA) {
+		    /* lambda{... break ...} */
+		    is_orphan = 0;
+		    pt = dfp;
+		}
+		else {
+		    dfp = GC_GUARDED_PTR_REF((VALUE *) *dfp);
+
+		    while ((VALUE *)cfp < th->stack + th->stack_size) {
+			if (cfp->dfp == dfp) {
+			    VALUE epc = epc = cfp->pc - cfp->iseq->iseq_encoded;
+			    rb_iseq_t *iseq = cfp->iseq;
+			    int i;
+
+			    for (i=0; i<iseq->catch_table_size; i++) {
+				struct iseq_catch_table_entry *entry = &iseq->catch_table[i];
+
+				if (entry->type == CATCH_TYPE_BREAK &&
+				    entry->start < epc && entry->end >= epc) {
+				    if (entry->cont == epc) {
+					goto INSN_LABEL(found);
+				    }
+				    else {
+					break;
+				    }
+				}
+			    }
+			    break;
+
+			    INSN_LABEL(found):
+
+			    pt = dfp;
+			    is_orphan = 0;
+			    break;
+			}
+			cfp++;
+		    }
+		}
+
+		if (is_orphan) {
+		    vm_localjump_error("break from proc-closure", throwobj, TAG_BREAK);
+		}
+	    }
+	    else if (state == TAG_RETRY) {
 		pt = GC_GUARDED_PTR_REF((VALUE *) * GET_DFP());
 		for (i = 0; i < level; i++) {
 		    pt = GC_GUARDED_PTR_REF((VALUE *) * pt);
@@ -1394,31 +1457,32 @@ throw
 	    }
 	    else if (state == TAG_RETURN) {
 		rb_control_frame_t *cfp = GET_CFP();
-		int is_orphan = 1;
 		VALUE *dfp = GET_DFP();
-		
-		/* check orphan */
+		int is_orphan = 1;
+
+		/**
+		 * check orphan:
+		 */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
-		    if (GET_LFP() == cfp->lfp) {
-			is_orphan = 0;
-			break;
-		    }
-		    else if (dfp == cfp->dfp) {
-			/* return from lambda{} */
+		    if (GET_DFP() == dfp) {
 			if (cfp->magic == FRAME_MAGIC_LAMBDA) {
+			    /* in lambda */
 			    is_orphan = 0;
 			    break;
 			}
-			dfp = GC_GUARDED_PTR_REF(*cfp->dfp);
 		    }
 		    cfp++;
-		}
-		if (is_orphan) {
-		    vm_localjump_error("unexpected return", throwobj,
-				       TAG_RETURN);
+		    if (GET_LFP() == cfp->lfp &&
+			cfp->iseq->type == ISEQ_TYPE_METHOD) {
+			is_orphan = 0;
+			break;
+		    }
 		}
 
-		/* set current lfp */
+		if (is_orphan) {
+		    vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
+		}
+
 		pt = GET_LFP();
 	    }
 	    else {

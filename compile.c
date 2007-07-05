@@ -2839,38 +2839,41 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_ITER:
       case NODE_FOR:{
-	VALUE prevblock = iseq->compile_data->current_block;
-	LABEL *retry_label = NEW_LABEL(nd_line(node));
-	LABEL *retry_end_l = NEW_LABEL(nd_line(node));
-	ID mid = 0;
+	  VALUE prevblock = iseq->compile_data->current_block;
+	  LABEL *retry_label = NEW_LABEL(nd_line(node));
+	  LABEL *retry_end_l = NEW_LABEL(nd_line(node));
+	  ID mid = 0;
 
-	ADD_LABEL(ret, retry_label);
-	if (nd_type(node) == NODE_FOR) {
-	    COMPILE(ret, "iter caller (for)", node->nd_iter);
+	  ADD_LABEL(ret, retry_label);
+	  if (nd_type(node) == NODE_FOR) {
+	      COMPILE(ret, "iter caller (for)", node->nd_iter);
 
-	    iseq->compile_data->current_block =
+	      iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
 
-	    mid = idEach;
-	    ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
-		       iseq->compile_data->current_block, INT2FIX(0));
-	    if (poped) {
-		ADD_INSN(ret, nd_line(node), pop);
-	    }
-	}
-	else {
-	    iseq->compile_data->current_block =
+	      mid = idEach;
+	      ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
+			 iseq->compile_data->current_block, INT2FIX(0));
+	  }
+	  else {
+	      iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
-	    COMPILE_(ret, "iter caller", node->nd_iter, poped);
-	}
-	ADD_LABEL(ret, retry_end_l);
-	iseq->compile_data->current_block = prevblock;
+	      COMPILE(ret, "iter caller", node->nd_iter);
+	  }
+	  ADD_LABEL(ret, retry_end_l);
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, retry_label, retry_end_l, 0,
-			retry_label);
-	break;
+	  if (poped) {
+	      ADD_INSN(ret, nd_line(node), pop);
+	  }
+
+	  iseq->compile_data->current_block = prevblock;
+
+	  ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, retry_label, retry_end_l, 0, retry_label);
+	  ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
+
+	  break;
       }
       case NODE_BREAK:{
 	unsigned long level = 0;
