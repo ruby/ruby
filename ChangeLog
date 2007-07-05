@@ -1,3 +1,9 @@
+Thu Jul  5 16:44:28 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (int_pow): fix previous nubu's commit.
+
+	* test/ruby/test_fixnum.rb: new test.
+
 Thu Jul  5 15:56:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (int_pow): even number multiplication never be negative.

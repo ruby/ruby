@@ -2188,7 +2188,10 @@ int_pow(x, y)
     long z = 1;
 
     if (neg) x = -x;
-    if (y & 1) z = x;
+    if (y & 1)
+	z = x;
+    else
+	neg = 0;
     y &= ~1;
     do {
 	while (y % 2 == 0) {
@@ -2209,7 +2212,7 @@ int_pow(x, y)
 	    z = xz;
 	}
     } while (--y);
-    if (neg && (y & 1)) z = -z;
+    if (neg) z = -z;
     return LONG2NUM(z);
 }
 
