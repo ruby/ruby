@@ -505,40 +505,24 @@ expandarray
 	}
     }
     else {
-	if ((long)num >= 0) {
-	    int len;
-	    if (TYPE(ary) != T_ARRAY) {
-		ary = rb_ary_to_ary(ary);
-	    }
-	    len = RARRAY_LEN(ary);
-	    for (i = 0; i < len && i < num; i++) {
-		PUSH(RARRAY_PTR(ary)[i]);
-	    }
-	    for (; i < num; i++) {
-		PUSH(Qnil);
-	    }
-	    if (flag) {
-		if (len > num) {
-		    PUSH(rb_ary_new4(len - num, &RARRAY_PTR(ary)[num]));
-		}
-		else {
-		    PUSH(rb_ary_new());
-		}
-	    }
+	int len;
+	if (TYPE(ary) != T_ARRAY) {
+	    ary = rb_ary_to_ary(ary);
 	}
-	else {
-	    long holdnum = -num;
-	    VALUE val;
-
-	    val = rb_ary_new4(holdnum, STACK_ADDR_FROM_TOP(holdnum));
-	    if (CLASS_OF(ary) == rb_cArray) {
-		val = rb_ary_concat(val, ary);
+	len = RARRAY_LEN(ary);
+	for (i = 0; i < len && i < num; i++) {
+	    PUSH(RARRAY_PTR(ary)[i]);
+	}
+	for (; i < num; i++) {
+	    PUSH(Qnil);
+	}
+	if (flag) {
+	    if (len > num) {
+		PUSH(rb_ary_new4(len - num, &RARRAY_PTR(ary)[num]));
 	    }
 	    else {
-		rb_ary_push(val, ary);
+		PUSH(rb_ary_new());
 	    }
-	    POPN(holdnum);
-	    PUSH(val);
 	}
     }
 }

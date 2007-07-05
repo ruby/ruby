@@ -2044,21 +2044,18 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		break;
 
 	      case NODE_SPLAT:
-		COMPILE(ret, "rhs to ary (splat)", rhsn->nd_head);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
-			  INT2FIX(lhs_splat));
+		COMPILE(ret, "rhs to ary (splat)", rhsn);
+		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
 		break;
 
 	      case NODE_ARGSCAT:
 		COMPILE(ret, "rhs to argscat", rhsn);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray,
-			  INT2FIX(llen), INT2FIX(lhs_splat));
+		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
 		break;
+
 	      default:
 		COMPILE(ret, "rhs to ary (splat/default)", rhsn);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
-			  INT2FIX(lhs_splat));
-		/* rb_compile_error(ERROR_ARGS "unknown rhs: %s", ruby_node_name(nd_type(rhsn))); */
+		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
 	    }
 	}
 	else {
@@ -3974,9 +3971,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_SPLAT:{
-	  COMPILE_(ret, "splat", node->nd_head, poped);
-	  if (!poped) {
-	      ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+	  COMPILE(ret, "splat", node->nd_head);
+	  ADD_INSN1(ret, nd_line(node), splatarray, Qfalse);
+
+	  if (poped) {
+	      ADD_INSN(ret, nd_line(node), pop);
 	  }
 	  break;
       }

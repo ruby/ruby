@@ -1,3 +1,15 @@
+Fri Jul  6 03:06:58 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: remove unused code.
+
+	* compile.c (compile_massign): fix to invoke to_splat on
+	  splat rhs (example: *a = *nil). [ruby-dev:31136]
+
+	* bootstraptest/test_massign.rb: add tests for above.
+
+	* compile.c (iseq_compile_each): disable excess optimization.
+	  [ruby-dev:31126]
+
 Fri Jul  6 02:08:25 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: fix to invoke nil.to_splat on NODE_ARGSCAT.
