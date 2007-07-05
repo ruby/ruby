@@ -1145,7 +1145,7 @@ expr		: command_call
 expr_value	: expr
 		    {
 		    /*%%%*/
-			value_expr($$);
+			value_expr($1);
 			$$ = $1;
 		    /*%
 			$$ = $1;
@@ -5233,10 +5233,10 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
            return tREGEXP_END;
        }
        else {
-	ruby_sourceline = nd_line(quote);
-	rb_compile_error(PARSER_ARG  "unterminated string meets end of file");
-	return tSTRING_END;
-    }
+	   ruby_sourceline = nd_line(quote);
+	   rb_compile_error(PARSER_ARG  "unterminated string meets end of file");
+	   return tSTRING_END;
+       }
     }
 
     tokfix();
@@ -8237,7 +8237,7 @@ static struct symbols {
     st_table *ivar2_id;
     st_table *id_ivar2;
     VALUE op_sym[tLAST_TOKEN];
-} global_symbols = {tLAST_TOKEN};
+} global_symbols = {tLAST_TOKEN >> ID_SCOPE_SHIFT};
 
 static const struct st_hash_type symhash = {
     rb_str_cmp,
