@@ -130,33 +130,6 @@ VALUE rb_load_path;
 
 NORETURN(static void load_failed _((VALUE)));
 
-RUBY_EXTERN NODE *ruby_eval_tree;
-
-static VALUE
-rb_load_internal(char *file)
-{
-    NODE *node;
-    VALUE iseq;
-    rb_thread_t *th = GET_THREAD();
-
-    {
-	th->parse_in_eval++;
-	node = (NODE *)rb_load_file(file);
-	th->parse_in_eval--;
-	node = ruby_eval_tree;
-    }
-
-    if (ruby_nerrs > 0) {
-	return 0;
-    }
-
-    iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
-		       rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
-
-    rb_thread_eval(GET_THREAD(), iseq);
-    return 0;
-}
-
 void
 rb_load(VALUE fname, int wrap)
 {
@@ -165,6 +138,8 @@ rb_load(VALUE fname, int wrap)
     rb_thread_t *th = GET_THREAD();
     VALUE wrapper = th->top_wrapper;
     VALUE self = th->top_self;
+    volatile int parse_in_eval;
+    volatile int loaded = Qfalse;
 
     FilePathValue(fname);
     fname = rb_str_new4(fname);
@@ -172,7 +147,7 @@ rb_load(VALUE fname, int wrap)
     if (!tmp) {
 	load_failed(fname);
     }
-    fname = tmp;
+    RB_GC_GUARD(fname) = rb_str_new4(tmp);
 
     th->errinfo = Qnil; /* ensure */
 
@@ -187,18 +162,28 @@ rb_load(VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
+    parse_in_eval = th->parse_in_eval;
     PUSH_TAG();
     state = EXEC_TAG();
     if (state == 0) {
-	rb_load_internal(RSTRING_PTR(fname));
+	NODE *node;
+	VALUE iseq;
+
+	th->parse_in_eval++;
+	node = (NODE *)rb_load_file(RSTRING_PTR(fname));
+	th->parse_in_eval--;
+	loaded = Qtrue;
+	iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
+			   fname, Qfalse, ISEQ_TYPE_TOP);
+	rb_thread_eval(th, iseq);
     }
     POP_TAG();
 
+    th->parse_in_eval = parse_in_eval;
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (ruby_nerrs > 0) {
-	ruby_nerrs = 0;
+    if (!loaded) {
 	rb_exc_raise(GET_THREAD()->errinfo);
     }
     if (state) {
@@ -318,7 +303,7 @@ rb_f_require(VALUE obj, VALUE fname)
 }
 
 static int
-search_required(VALUE fname, VALUE *path)
+search_required(VALUE fname, volatile VALUE *path)
 {
     VALUE tmp;
     char *ext, *ftptr;
@@ -330,7 +315,7 @@ search_required(VALUE fname, VALUE *path)
 	if (strcmp(".rb", ext) == 0) {
 	    if (rb_feature_p(ftptr, ext, Qtrue))
 		return 'r';
-	    if (tmp = rb_find_file(fname)) {
+	    if ((tmp = rb_find_file(fname)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qtrue))
@@ -355,7 +340,7 @@ search_required(VALUE fname, VALUE *path)
 #else
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
-	    if (tmp = rb_find_file(tmp)) {
+	    if ((tmp = rb_find_file(tmp)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse))
@@ -367,7 +352,7 @@ search_required(VALUE fname, VALUE *path)
 	else if (IS_DLEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, Qfalse))
 		return 's';
-	    if (tmp = rb_find_file(fname)) {
+	    if ((tmp = rb_find_file(fname)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 		if (!rb_feature_p(ftptr, ext, Qfalse))
@@ -450,8 +435,6 @@ rb_require_safe(VALUE fname, int safe)
 		    break;
 
 		  case 's':
-		    ruby_sourcefile = rb_source_filename(RSTRING_PTR(path));
-		    ruby_sourceline = 0;
 		    handle = (long)rb_vm_call_cfunc(ruby_top_self, load_ext,
 						    path, 0, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
@@ -498,11 +481,9 @@ init_ext_call(VALUE arg)
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    ruby_sourcefile = rb_source_filename(name);
-    ruby_sourceline = 0;
-
     if (load_lock(name)) {
-	rb_vm_call_cfunc(ruby_top_self, init_ext_call, (VALUE)init, 0, rb_str_new2(name));
+	rb_vm_call_cfunc(ruby_top_self, init_ext_call, (VALUE)init,
+			 0, rb_str_new2(name));
 	rb_provide(name);
 	load_unlock(name);
     }

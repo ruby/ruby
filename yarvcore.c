@@ -76,16 +76,16 @@ ID id__send_bang;
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
 
-RUBY_EXTERN int ruby_nerrs;
-
 static NODE *
 compile_string(VALUE str, VALUE file, VALUE line)
 {
+    VALUE parser = rb_parser_new();
     NODE *node;
-    node = rb_compile_string(StringValueCStr(file), str, NUM2INT(line));
 
-    if (ruby_nerrs > 0) {
-	ruby_nerrs = 0;
+    node = rb_parser_compile_string(parser, StringValueCStr(file),
+				    str, NUM2INT(line));
+
+    if (!node) {
 	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
     }
     return node;

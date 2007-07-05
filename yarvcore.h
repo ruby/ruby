@@ -537,7 +537,7 @@ VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_o
 VALUE ruby_iseq_disasm(VALUE self);
 VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos,
 			    rb_iseq_t *iseq, VALUE child);
-char *ruby_node_name(int node);
+const char *ruby_node_name(int node);
 
 
 /* each thread has this size stack : 2MB */

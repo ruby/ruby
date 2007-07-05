@@ -37,6 +37,8 @@
 #define CPDEBUG 2
 #endif
 
+NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
+
 #if CPDEBUG > 0
 
 #define debugp(header, value) \
@@ -204,6 +206,8 @@ r_value(VALUE value)
   ret = 0;                                         \
   break;                                           \
 }
+
+#define ERROR_ARGS (node)->nd_file, nd_line(node),
 
 
 #define COMPILE_OK 1

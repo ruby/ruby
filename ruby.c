@@ -63,8 +63,7 @@ extern int ruby_yydebug;
 
 char *ruby_inplace_mode = Qfalse;
 
-static void load_stdin(void);
-static NODE *load_file(const char *, int);
+static NODE *load_file(VALUE, const char *, int);
 static void forbid_setid(const char *);
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
@@ -374,14 +373,9 @@ extern void Init_ext(void);
 static void
 require_libraries(void)
 {
-    extern NODE *ruby_eval_tree;
-    NODE *save[3];
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
-    save[0] = ruby_eval_tree;
-    save[1] = NEW_BEGIN(0);
-    ruby_eval_tree = 0;
     Init_ext();		/* should be called here for some reason :-( */
     req_list_last = 0;
     while (list) {
@@ -396,8 +390,6 @@ require_libraries(void)
 	list = tmp;
     }
     req_list_head.next = 0;
-    ruby_eval_tree = save[0];
-    rb_gc_force_recycle((VALUE)save[1]);
 }
 
 static void
@@ -464,7 +456,7 @@ process_sflag(void)
     sflag = 0;
 }
 
-static void proc_options(int argc, char **argv);
+static NODE *proc_options(int argc, char **argv);
 
 static char *
 moreswitches(const char *s)
@@ -487,16 +479,15 @@ moreswitches(const char *s)
     return (char *)s;
 }
 
-NODE *ruby_eval_tree;
-
-static void
+static NODE *
 proc_options(int argc, char **argv)
 {
     char *argv0 = argv[0];
     int do_search;
     const char *s;
     char *script = 0;
-    NODE *volatile script_node = 0;
+    NODE *tree;
+    VALUE parser;
 
     int version = 0;
     int copyright = 0;
@@ -504,7 +495,7 @@ proc_options(int argc, char **argv)
     VALUE e_script = Qfalse;
 
     if (argc == 0)
-	return;
+	return 0;
 
     do_search = Qfalse;
 
@@ -780,7 +771,7 @@ proc_options(int argc, char **argv)
 
   switch_end:
     if (argv0 == 0)
-	return;
+	return 0;
 
     if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	while (ISSPACE(*s))
@@ -855,8 +846,6 @@ proc_options(int argc, char **argv)
 		}
 		if (!script)
 		    script = argv[0];
-		script = ruby_sourcefile = rb_source_filename(script);
-		script_node = NEW_BEGIN(0);
 	    }
 #if defined DOSISH || defined __CYGWIN__
 	    /* assume that we can change argv[n] if never change its length. */
@@ -872,16 +861,16 @@ proc_options(int argc, char **argv)
     process_sflag();
 
     ruby_init_loadpath();
-    ruby_sourcefile = rb_source_filename(argv0);
+    parser = rb_parser_new();
     if (e_script) {
 	require_libraries();
-	ruby_eval_tree = rb_compile_string(script, e_script, 1);
-    }
-    else if (strlen(script) == 1 && script[0] == '-') {
-	load_stdin();
+	tree = rb_parser_compile_string(parser, script, e_script, 1);
     }
     else {
-	load_file(script, 1);
+	if (script[0] == '-' && !script[1]) {
+	    forbid_setid("program input from stdin");
+	}
+	tree = load_file(parser, script, 1);
     }
 
     process_sflag();
@@ -891,13 +880,14 @@ proc_options(int argc, char **argv)
 	FL_UNSET(rb_argv, FL_TAINT);
 	FL_UNSET(rb_load_path, FL_TAINT);
     }
+
+    return tree;
 }
 
 static NODE *
-load_file(const char *fname, int script)
+load_file(VALUE parser, const char *fname, int script)
 {
     extern VALUE rb_stdin;
-    volatile VALUE parser;
     VALUE f;
     int line_start = 1;
     NODE *tree = 0;
@@ -949,11 +939,7 @@ load_file(const char *fname, int script)
 	c = rb_io_getc(f);
 	if (c == INT2FIX('#')) {
 	    c = rb_io_getc(f);
-	    if (c == INT2FIX('!')) {
-		line = rb_io_gets(f);
-		if (NIL_P(line))
-		    return 0;
-
+	    if (c == INT2FIX('!') && !NIL_P(line = rb_io_gets(f))) {
 		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
 		    /* not ruby script, kick the program */
 		    char **argv;
@@ -983,8 +969,6 @@ load_file(const char *fname, int script)
 		    argv[0] = path;
 		    execv(path, argv);
 
-		    ruby_sourcefile = rb_source_filename(fname);
-		    ruby_sourceline = 1;
 		    rb_fatal("Can't exec %s", path);
 		}
 
@@ -1013,11 +997,8 @@ load_file(const char *fname, int script)
 	    rb_io_ungetc(f, c);
 	}
 	require_libraries();	/* Why here? unnatural */
-	if (NIL_P(c))
-	    return 0;
     }
-    parser = rb_parser_new();
-    ruby_eval_tree = tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
+    tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
     }
@@ -1030,14 +1011,7 @@ load_file(const char *fname, int script)
 void *
 rb_load_file(const char *fname)
 {
-    return load_file(fname, 0);
-}
-
-static void
-load_stdin(void)
-{
-    forbid_setid("program input from stdin");
-    load_file("-", 1);
+    return load_file(rb_parser_new(), fname, 0);
 }
 
 VALUE rb_progname;
@@ -1155,7 +1129,6 @@ ruby_script(const char *name)
 {
     if (name) {
 	rb_progname = rb_tainted_str_new2(name);
-	ruby_sourcefile = rb_source_filename(name);
     }
 }
 
@@ -1211,7 +1184,6 @@ ruby_prog_init(void)
 {
     init_ids();
 
-    ruby_sourcefile = rb_source_filename("ruby");
     rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
@@ -1263,9 +1235,11 @@ ruby_set_argv(int argc, char **argv)
 NODE *rb_parser_append_print(NODE *);
 NODE *rb_parser_while_loop(NODE *, int, int);
 
-void
+void *
 ruby_process_options(int argc, char **argv)
 {
+    NODE *tree;
+
     origargc = argc;
     origargv = argv;
 
@@ -1275,17 +1249,17 @@ ruby_process_options(int argc, char **argv)
     dln_argv0 = argv[0];
 #endif
     set_arg0space();
-    proc_options(argc, argv);
+    tree = proc_options(argc, argv);
 
-    if (do_check && ruby_nerrs == 0) {
+    if (do_check && tree) {
 	printf("Syntax OK\n");
 	exit(0);
     }
     if (do_print) {
-	ruby_eval_tree = rb_parser_append_print(ruby_eval_tree);
+	tree = rb_parser_append_print(tree);
     }
     if (do_loop) {
-	ruby_eval_tree =
-	    rb_parser_while_loop(ruby_eval_tree, do_line, do_split);
+	tree = rb_parser_while_loop(tree, do_line, do_split);
     }
+    return tree;
 }

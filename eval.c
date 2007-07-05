@@ -32,7 +32,6 @@ VALUE rb_eSysStackError;
 VALUE exception_error;
 VALUE sysstack_error;
 
-extern int ruby_nerrs;
 extern VALUE ruby_top_self;
 
 static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
@@ -108,21 +107,23 @@ ruby_init(void)
     ruby_running = 1;
 }
 
-void
+void *
 ruby_options(int argc, char **argv)
 {
     int state;
+    void *tree = 0;
 
     Init_stack((void *)&state);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	SAVE_ROOT_JMPBUF(GET_THREAD(), ruby_process_options(argc, argv));
+	SAVE_ROOT_JMPBUF(GET_THREAD(), tree = ruby_process_options(argc, argv));
     }
     else {
 	rb_clear_trace_func();
 	exit(error_handle(state));
     }
     POP_TAG();
+    return tree;
 }
 
 static void
@@ -212,35 +213,25 @@ ruby_cleanup(int ex)
     return ex;
 }
 
-extern NODE *ruby_eval_tree;
-
-static int
-ruby_exec_internal(void)
+int
+ruby_exec_node(void *n)
 {
     int state;
     VALUE val;
+    NODE *node = n;
     rb_thread_t *th = GET_THREAD();
 
-    if (!ruby_eval_tree) return 0;
+    if (!node) return 0;
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, {
 	    th->base_block = 0;
-	    val = yarvcore_eval_parsed(ruby_eval_tree, rb_str_new2(ruby_sourcefile));
+	    val = yarvcore_eval_parsed(node, rb_str_new2(node->nd_file));
 	});
     }
     POP_TAG();
     return state;
-}
-
-int
-ruby_exec(void)
-{
-    volatile NODE *tmp;
-
-    Init_stack((void *)&tmp);
-    return ruby_exec_internal();
 }
 
 void
@@ -249,28 +240,20 @@ ruby_stop(int ex)
     exit(ruby_cleanup(ex));
 }
 
-void
-ruby_run(void)
+int
+ruby_run_node(void *n)
 {
-    int state;
-    static int ex;
-
-    if (ruby_nerrs > 0) {
-	exit(EXIT_FAILURE);
+    if (!n) {
+	return EXIT_FAILURE;
     }
-
-    state = ruby_exec();
-
-    if (state && !ex) {
-	ex = state;
-    }
-    ruby_stop(ex);
+    Init_stack((void *)&n);
+    return ruby_cleanup(ruby_exec_node(n));
 }
 
 VALUE
 rb_eval_string(const char *str)
 {
-    return eval(ruby_top_self, rb_str_new2(str), Qnil, "(eval)", 0);
+    return eval(ruby_top_self, rb_str_new2(str), Qnil, "(eval)", 1);
 }
 
 VALUE
@@ -662,6 +645,8 @@ rb_longjmp(int tag, VALUE mesg)
 {
     VALUE at;
     rb_thread_t *th = GET_THREAD();
+    const char *file;
+    int line = 0;
 
     if (thread_set_raised(th)) {
 	th->errinfo = exception_error;
@@ -674,7 +659,9 @@ rb_longjmp(int tag, VALUE mesg)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
 
-    if (ruby_sourcefile && !NIL_P(mesg)) {
+    file = rb_sourcefile();
+    if (file) line = rb_sourceline();
+    if (file && !NIL_P(mesg)) {
 	at = get_backtrace(mesg);
 	if (NIL_P(at)) {
 	    at = make_backtrace();
@@ -695,7 +682,7 @@ rb_longjmp(int tag, VALUE mesg)
 	    e = rb_obj_as_string(e);
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
 			rb_obj_classname(GET_THREAD()->errinfo),
-			rb_sourcefile(), rb_sourceline(), RSTRING_PTR(e));
+			file, line, RSTRING_PTR(e));
 	}
 	POP_TAG();
 	if (status == TAG_FATAL && GET_THREAD()->errinfo == exception_error) {
@@ -1105,7 +1092,7 @@ rb_rescue2(VALUE (*b_proc) (ANYARGS), VALUE data1, VALUE (*r_proc) (ANYARGS),
 	    VALUE eclass;
 
 	    va_init_list(args, data2);
-	    while (eclass = va_arg(args, VALUE)) {
+	    while ((eclass = va_arg(args, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(th->errinfo, eclass)) {
 		    handle = Qtrue;
 		    break;
@@ -2661,8 +2648,6 @@ Init_eval(void)
     object_id = rb_intern("object_id");
     __send = rb_intern("__send");
     __send_bang = rb_intern("__send!");
-
-    rb_global_variable((VALUE *)&ruby_eval_tree);
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, errinfo_setter);

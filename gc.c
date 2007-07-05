@@ -529,6 +529,21 @@ rb_newobj(void)
 #endif
 }
 
+NODE*
+rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
+{
+    NODE *n = (NODE*)rb_newobj();
+
+    n->flags |= T_NODE;
+    nd_set_type(n, type);
+
+    n->u1.value = a0;
+    n->u2.value = a1;
+    n->u3.value = a2;
+
+    return n;
+}
+
 VALUE
 rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
@@ -634,8 +649,8 @@ rb_source_filename(const char *f)
     return (char *)name + 1;
 }
 
-static void
-mark_source_filename(char *f)
+void
+rb_mark_source_filename(char *f)
 {
     if (f) {
 	f[-1] = 1;
@@ -843,7 +858,7 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_NODE:
-	mark_source_filename(obj->as.node.nd_file);
+	rb_mark_source_filename(obj->as.node.nd_file);
 	switch (nd_type(obj)) {
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
@@ -1119,7 +1134,6 @@ gc_sweep(void)
     if (free_min < FREE_MIN)
         free_min = FREE_MIN;
 
-    mark_source_filename(ruby_sourcefile);
     if (source_filenames) {
         st_foreach(source_filenames, sweep_source_filename, 0);
     }
@@ -1426,8 +1440,8 @@ garbage_collect(void)
     rb_gc_mark_parser();
 
     /* gc_mark objects whose marking are not completed*/
-    while (!MARK_STACK_EMPTY){
-	if (mark_stack_overflow){
+    while (!MARK_STACK_EMPTY) {
+	if (mark_stack_overflow) {
 	    gc_mark_all();
 	}
 	else {

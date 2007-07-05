@@ -299,6 +299,8 @@ enum ruby_value_type {
 
 #define TYPE(x) rb_type((VALUE)(x))
 
+#define RB_GC_GUARD(v) (*(volatile VALUE *)&(v))
+
 void rb_check_type(VALUE,int);
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
 
@@ -701,11 +703,11 @@ NORETURN(void rb_notimplement(void));
 
 /* reports if `-w' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_compile_warning(const char*, ...), 1, 2);
+PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
 PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
-PRINTF_ARGS(void rb_compile_warn(const char*, ...), 1, 2);
+PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 VALUE rb_each(VALUE);
 VALUE rb_yield(VALUE);
@@ -735,7 +737,8 @@ void ruby_init_stack(VALUE*);
     ruby_init_stack(&variable_in_this_stack_frame);
 #endif
 void ruby_init(void);
-void ruby_options(int, char**);
+void *ruby_options(int, char**);
+int ruby_run_node(void *);
 NORETURN(void ruby_run(void));
 
 RUBY_EXTERN VALUE rb_mKernel;

@@ -192,13 +192,13 @@ static VALUE
 cleanup_iseq_build(rb_iseq_t *iseq)
 {
     struct iseq_compile_data *data = iseq->compile_data;
+    VALUE err = data->err_info;
     iseq->compile_data = 0;
     compile_data_free(data);
 
-    if (ruby_nerrs > 0) {
-	VALUE str = rb_str_buf_new2("compile error");
-	ruby_nerrs = 0;
-	rb_exc_raise(rb_exc_new3(rb_eSyntaxError, str));
+    if (RTEST(err)) {
+	rb_funcall2(err, rb_intern("set_backtrace"), 1, &iseq->filename);
+	rb_exc_raise(err);
     }
     return Qtrue;
 }
@@ -375,7 +375,11 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     }
 
     if (st_lookup(type_map, type, &iseq_type) == 0) {
-	rb_raise(rb_eTypeError, "unsupport type: %p", type);
+	const char *typename = rb_id2name(type);
+	if (typename)
+	    rb_raise(rb_eTypeError, "unsupport type: :%s", typename);
+	else
+	    rb_raise(rb_eTypeError, "unsupport type: %p", (void *)type);
     }
 
     if (parent == Qnil) {
@@ -404,11 +408,11 @@ iseq_s_load(int argc, VALUE *argv, VALUE self)
 static NODE *
 compile_string(VALUE str, VALUE file, VALUE line)
 {
-    NODE *node;
-    node = rb_compile_string(StringValueCStr(file), str, NUM2INT(line));
+    VALUE parser = rb_parser_new();
+    NODE *node = rb_parser_compile_string(parser, StringValueCStr(file),
+					  str, NUM2INT(line));
 
-    if (ruby_nerrs > 0) {
-	ruby_nerrs = 0;
+    if (!node) {
 	rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
     }
     return node;
@@ -822,7 +826,7 @@ ruby_iseq_disasm(VALUE self)
     return str;
 }
 
-char *
+const char *
 ruby_node_name(int node)
 {
     switch (node) {

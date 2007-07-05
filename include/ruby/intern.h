@@ -160,14 +160,13 @@ VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);
 				    argc, argv);			\
     } while (0)
 /* error.c */
-RUBY_EXTERN int ruby_nerrs;
 VALUE rb_exc_new(VALUE, const char*, long);
 VALUE rb_exc_new2(VALUE, const char*);
 VALUE rb_exc_new3(VALUE, VALUE);
 PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
-PRINTF_ARGS(void rb_compile_error(const char*, ...), 1, 2);
+PRINTF_ARGS(void rb_compile_error(const char*, int, const char*, ...), 3, 4);
 PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
@@ -454,7 +453,7 @@ VALUE rb_reg_match_pre(VALUE);
 VALUE rb_reg_match_post(VALUE);
 VALUE rb_reg_match_last(VALUE);
 VALUE rb_reg_new(const char*, long, int);
-VALUE rb_reg_compile(const char*, long, int);
+VALUE rb_reg_compile(const char*, long, int, const char*, int);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);
@@ -467,8 +466,7 @@ void *rb_load_file(const char*);
 void ruby_script(const char*);
 void ruby_prog_init(void);
 void ruby_set_argv(int, char**);
-void ruby_process_options(int, char**);
-void ruby_load_script(void);
+void *ruby_process_options(int, char**);
 void ruby_init_loadpath(void);
 void ruby_incpush(const char*);
 /* signal.c */
