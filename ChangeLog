@@ -1,3 +1,7 @@
+Fri Jul  6 15:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_interrupt): suppress a gcc's officious warning.
+
 Fri Jul  6 14:57:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (keyword_to_name): constified.
