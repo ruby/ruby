@@ -1,3 +1,10 @@
+Fri Jul  6 12:15:01 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/sentgen.rb: new file.
+
+	* test/ruby/test_assignment.rb: tests implemeneted using assignment
+	  generator and emulator.
+
 Fri Jul  6 03:06:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: remove unused code.

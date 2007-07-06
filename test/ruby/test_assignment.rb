@@ -489,3 +489,188 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal [3,4], [a,b]
   end
 end
+
+require 'sentgen'
+class TestAssignmentGen < Test::Unit::TestCase
+  Syntax = {
+    :exp => [["0"],
+             ["nil"],
+             ["false"],
+             ["[]"],
+             ["[",:exps,"]"]],
+    :exps => [[:exp],
+              [:exp,",",:exps]],
+    :arg => [[:exp]],
+    :mrhs => [[:args,",",:arg],
+              [:args,",","*",:arg],
+              ["*",:arg]],
+    :args => [[:arg],
+              ["*",:arg],
+              [:args,",",:arg],
+              [:args,",","*",:arg]],
+    :mlhs => [[:mlhs_basic],
+              ["(",:mlhs_inner,")"]],
+    :mlhs_inner => [[:mlhs_basic],
+              ["(",:mlhs_inner,")"]],
+    :mlhs_basic => [[:mlhs_head],
+                    [:mlhs_head,:mlhs_item],
+                    [:mlhs_head,"*",:mlhs_node],
+                    [:mlhs_head,"*",:mlhs_node,",",:mlhs_post],
+                    [:mlhs_head,"*"],
+                    [:mlhs_head,"*",",",           :mlhs_post],
+                    [           "*",:mlhs_node],
+                    [           "*",:mlhs_node,",",:mlhs_post],
+                    [           "*"],
+                    [           "*",",",           :mlhs_post]],
+    :mlhs_head => [[:mlhs_item,","],
+                   [:mlhs_head,:mlhs_item,","]],
+    :mlhs_post => [[:mlhs_item],
+                   [:mlhs_post,",",:mlhs_item]],
+    :mlhs_item => [[:mlhs_node],
+                   ["(",:mlhs_inner,")"]],
+    :mlhs_node => [["var"]],
+    :xassign => [["var"," = ",:exp],
+                 ["var"," = ",:mrhs],
+                 [:mlhs," = ",:exp],
+                 [:mlhs," = ",:mrhs]],
+  }
+
+  def rename_var(obj, nbox=[0])
+    if obj.respond_to? :to_ary
+      a = []
+      obj.each {|e| a << rename_var(e, nbox) }
+      a
+    elsif obj == 'var'
+      n = nbox[0]
+      nbox[0] += 1
+      "v#{n}"
+    else
+      obj
+    end
+  end
+
+  def expand_except_paren(obj, r=[])
+    if obj.respond_to? :to_ary
+      if (obj[0] == '(' && obj[-1] == ')') || (obj[0] == '[' && obj[-1] == ']')
+        a = []
+        obj[1...-1].each {|o|
+          expand_except_paren(o, a)
+        }
+        r << a
+      else
+        obj.each {|o|
+          expand_except_paren(o, r)
+        }
+      end
+    else
+      r << obj
+    end
+    r
+  end
+
+  def extract_single_element(ary)
+    raise "not a single element array: #{ary.inspect}" if ary.length != 1
+    ary[0]
+  end
+
+  def emu_assign_ary(lhs, rv, h)
+    rv = rv.respond_to?(:to_ary) ? rv : [rv]
+    rv = rv.dup
+    a = [[]]
+    lhs.each {|e|
+      if e == ','
+        a << []
+      else
+        a.last << e
+      end
+    }
+    a.pop if a.last == []
+    pre = []
+    star = post = nil
+    a.each {|e|
+      if post
+        post << e
+      elsif e[0] == '*'
+        star = e
+        post = []
+      else
+        pre << e
+      end
+    }
+
+    until pre.empty?
+      emu_assign_single(extract_single_element(pre.shift), rv.shift, h)
+    end
+
+    if post
+      if rv.length < post.length
+        until post.empty?
+          emu_assign_single(extract_single_element(post.shift), rv.shift, h)
+        end
+      else
+        until post.empty?
+          emu_assign_single(extract_single_element(post.pop), rv.pop, h)
+        end
+      end
+    end
+
+    if star && 1 < star.length
+      emu_assign_single(extract_single_element(star[1..-1]), rv, h)
+    end
+  end
+
+  def emu_assign_single(lhs, rv, h={})
+    if lhs.respond_to? :to_str
+      if /\A[a-z0-9]+\z/ =~ lhs
+        h[lhs] = rv
+      else
+        raise "unexpected lhs string: #{lhs.inspect}"
+      end
+    elsif lhs.respond_to? :to_ary
+      emu_assign_ary(lhs, rv, h)
+    else
+      raise "unexpected lhs: #{lhs.inspect}"
+    end
+    h
+  end
+
+  def emu_assign(assign)
+    lhs = expand_except_paren(assign[0])
+    rhs = expand_except_paren(assign[2])
+    lopen = lhs.any? {|e| e == '*' || e == ',' }
+    ropen = rhs.any? {|e| e == '*' || e == ',' }
+    lhs = extract_single_element(lhs) if !lopen
+    rhs = ["(",rhs,")"] if ropen
+    begin
+      rv = eval((ropen ? ["[",assign[2],"]"] : assign[2]).join(''))
+    rescue Exception
+      rv = $!.message
+    end
+    emu_assign_single(lhs, rv)
+  end
+
+  def do_assign(assign)
+    assign = assign.join('')
+    vars = []
+    vars = assign.scan(/v[0-9]+/)
+    code = "#{assign}; [#{vars.join(",")}]"
+    begin
+      vals = eval(code)
+    rescue Exception
+      return {:ex=>$!.message}
+    end
+    h = {}
+    [vars, vals].transpose.each {|k,v| h[k] = v }
+    h
+  end
+
+  def test_assignment
+    SentGen.new(Syntax).each_tree(:xassign, 3) {|assign|
+      assign[0] = rename_var(assign[0])
+      sent = [assign].join('')
+      bruby = do_assign(assign).to_a.sort
+      bemu = emu_assign(assign).to_a.sort
+      assert_equal(bemu, bruby, sent)
+    }
+  end
+end
