@@ -112,7 +112,7 @@ ripper_init_eventids2(VALUE self)
     ripper_init_eventids2_table(self);
 }
 
-static struct token_assoc {
+static const struct token_assoc {
     int token;
     ID *id;
 } token_to_eventid[] = {
@@ -264,7 +264,7 @@ static struct token_assoc {
 static ID
 ripper_token2eventid(int tok)
 {
-    struct token_assoc *a;
+    const struct token_assoc *a;
 
     for (a = token_to_eventid; a->id != NULL; a++) {
         if (a->token == tok)

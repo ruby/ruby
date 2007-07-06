@@ -8873,7 +8873,7 @@ ripper_dispatch5(struct parser_params *parser, ID mid, VALUE a, VALUE b, VALUE c
     return rb_funcall(parser->value, mid, 5, a, b, c, d, e);
 }
 
-static struct kw_assoc {
+static const struct kw_assoc {
     ID id;
     const char *name;
 } keyword_to_name[] = {
@@ -8930,7 +8930,7 @@ static struct kw_assoc {
 static const char*
 keyword_id_to_str(ID id)
 {
-    struct kw_assoc *a;
+    const struct kw_assoc *a;
 
     for (a = keyword_to_name; a->id; a++) {
         if (a->id == id)
