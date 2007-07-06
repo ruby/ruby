@@ -1,3 +1,7 @@
+Fri Jul  6 15:37:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_iterator.rb: fix test to 1.9 spec.
+
 Fri Jul  6 15:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_interrupt): suppress a gcc's officious warning.
