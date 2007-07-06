@@ -2995,7 +2995,7 @@ for_var		: lhs
 f_marg		: f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = assignable($1, 0);
+			$$ = NEW_LIST(assignable($1, 0));
 		    /*%
 			$$ = dispatch1(mlhs_paren, $1);
 		    %*/
