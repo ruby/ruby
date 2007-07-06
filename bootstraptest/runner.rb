@@ -11,6 +11,7 @@ def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
   dir = '/tmp/bootstraptest.tmpwd'
+  quiet = false
   tests = nil
   ARGV.delete_if {|arg|
     case arg
@@ -24,6 +25,9 @@ def main
     when /\A--dir=(.*)/
       dir = $1
       true
+    when /\A(-q|--q(uiet))\z/
+      quiet = true
+      true
     when /\A(-v|--v(erbose))\z/
       @verbose = true
     when /\A(-h|--h(elp)?)\z/
@@ -33,6 +37,7 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
         --dir=DIRECTORY             Working directory.
                                     default: /tmp/bootstraptest.tmpwd
     -v, --verbose                   Output test name before exec.
+    -q, --quiet                     Don\'t print header message.
     -h, --help                      Print this message and quit.
 End
       exit 0
@@ -48,11 +53,14 @@ End
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb") if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
 
-  puts Time.now
-  patchlevel = defined?(RUBY_PATCHLEVEL) ? " pachlevel #{RUBY_PATCHLEVEL}" : ''
-  puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{patchlevel}) [#{RUBY_PLATFORM}]"
-  puts "Target is #{`#{@ruby} -v`}"
-  puts
+  unless quiet
+    puts Time.now
+    patchlevel = defined?(RUBY_PATCHLEVEL) ? " pachlevel #{RUBY_PATCHLEVEL}" : ''
+    puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{patchlevel}) [#{RUBY_PLATFORM}]"
+    puts "Target is #{`#{@ruby} -v`}"
+    puts
+    $stdout.flush
+  end
 
   in_temporary_working_directory(dir) {
     exec_test pathes

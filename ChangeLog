@@ -1,3 +1,7 @@
+Fri Jul  6 14:50:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb: added --quiet option.
+
 Fri Jul  6 14:35:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_marg): wrap f_norm_arg assignment node with NODE_LIST.
