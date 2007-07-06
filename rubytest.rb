@@ -39,7 +39,7 @@ error = ''
 srcdir = File.dirname(__FILE__)
 `#{ruby} -I#{srcdir}/lib #{srcdir}/sample/test.rb`.each_line do |line|
   if line =~ /^end of test/
-    print "test succeeded\n"
+    print "\ntest succeeded\n"
     exit true
   end
   error << line if %r:^(sample/test.rb|not): =~ line

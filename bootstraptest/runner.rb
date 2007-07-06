@@ -5,12 +5,18 @@
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
 
-require 'fileutils'
+begin
+  require 'fileutils'
+  require 'tmpdir'
+rescue LoadError
+  $:.unshift File.join(File.dirname(__FILE__), '../lib')
+  retry
+end
 
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
-  dir = '/tmp/bootstraptest.tmpwd'
+  dir = File.join(Dir.tmpdir, 'bootstraptest.tmpwd')
   quiet = false
   tests = nil
   ARGV.delete_if {|arg|
@@ -73,8 +79,7 @@ def exec_test(pathes)
   @errbuf = []
   @location = nil
   pathes.each do |path|
-    puts
-    puts File.basename(path)
+    $stderr.print "\n#{File.basename(path)} "
     load File.expand_path(path)
   end
   $stderr.puts

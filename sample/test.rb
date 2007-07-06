@@ -6,7 +6,7 @@ $ntest=0
 $failed = 0
 
 def test_check(what)
-  printf "%s\n", what
+  STDERR.print "\nsample/test.rb:#{what} "
   $what = what
   $testnum = 0
 end
@@ -16,11 +16,15 @@ def test_ok(cond,n=1)
   $ntest+=1
   where = (st = caller(n)) ? st[0] : "caller error! (n=#{n}, trace=#{caller(0).join(', ')}"
   if cond
+    STDERR.print "."
     printf "ok %d (%s)\n", $testnum, where
   else
+    STDERR.print "F"
     printf "not ok %s %d -- %s\n", $what, $testnum, where
     $failed+=1 
   end
+  STDOUT.flush
+  STDERR.flush
 end
 
 # make sure conditional operators work
