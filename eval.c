@@ -4625,7 +4625,8 @@ rb_exc_fatal(mesg)
 void
 rb_interrupt()
 {
-    rb_raise(rb_eInterrupt, "");
+    static const char fmt[1] = {'\0'};
+    rb_raise(rb_eInterrupt, fmt);
 }
 
 /*
