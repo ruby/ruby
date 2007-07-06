@@ -85,7 +85,7 @@ module IRB
   end
 
   #
-  # irb interpriter main routine 
+  # irb interpreter main routine 
   #
   class Irb
     def initialize(workspace = nil, input_method = nil, output_method = nil)

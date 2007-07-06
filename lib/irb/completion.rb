@@ -9,6 +9,8 @@
 
 require "readline"
 
+X=1
+
 module IRB
   module InputCompletor
 
@@ -45,7 +47,7 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($2)
 
-	candidates = Regexp.instance_methods(true)
+	candidates = Regexp.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
 
       when /^([^\]]*\])\.([^.]*)$/
@@ -53,7 +55,7 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($2)
 
-	candidates = Array.instance_methods(true)
+	candidates = Array.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
 
       when /^([^\}]*\})\.([^.]*)$/
@@ -61,7 +63,8 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($2)
 
-	candidates = Proc.instance_methods(true) | Hash.instance_methods(true)
+	candidates = Proc.instance_methods.collect{|m| m.to_s}
+	candidates |= Hash.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
 	
       when /^(:[^:.]*)$/
@@ -77,7 +80,7 @@ module IRB
       when /^::([A-Z][^:\.\(]*)$/
 	# Absolute Constant or class methods
 	receiver = $1
-	candidates = Object.constants
+	candidates = Object.constants.collect{|m| m.to_s}
 	candidates.grep(/^#{receiver}/).collect{|e| "::" + e}
 
       when /^(((::)?[A-Z][^:.\(]*)+)::?([^:.]*)$/
@@ -85,7 +88,8 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($4)
 	begin
-	  candidates = eval("#{receiver}.constants | #{receiver}.methods", bind)
+	  candidates = eval("#{receiver}.constants.collect{|m| m.to_s}", bind)
+	  candidates |= eval("#{receiver}.methods.collect{|m| m.to_s}", bind)
 	rescue Exception
 	  candidates = []
 	end
@@ -96,7 +100,7 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($2)
 
-	candidates = Symbol.instance_methods(true)
+	candidates = Symbol.instance_methods.collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
 
       when /^(-?(0[dbo])?[0-9_]+(\.[0-9_]+)?([eE]-?[0-9]+)?)\.([^.]*)$/
@@ -105,7 +109,7 @@ module IRB
 	message = Regexp.quote($5)
 
 	begin
-	  candidates = eval(receiver, bind).methods
+	  candidates = eval(receiver, bind).methods.collect{|m| m.to_s}
 	rescue Exception
 	  candidates = []
 	end
@@ -117,14 +121,15 @@ module IRB
 	message = Regexp.quote($2)
 
 	begin
-	  candidates = eval(receiver, bind).methods
+	  candidates = eval(receiver, bind).methods.collect{|m| m.to_s}
 	rescue Exception
 	  candidates = []
 	end
 	select_message(receiver, message, candidates)
 
       when /^(\$[^.]*)$/
-	candidates = global_variables.grep(Regexp.new(Regexp.quote($1)))
+	regmessage = Regexp.new(Regexp.quote($1))
+	candidates = global_variables.collect{|m| m.to_s}.grep(regmessage)
 
 #      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
       when /^((\.?[^.]+)+)\.([^.]*)$/
@@ -132,17 +137,17 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($3)
 
-	gv = eval("global_variables", bind)
-	lv = eval("local_variables", bind)
-	cv = eval("self.class.constants", bind)
+	gv = eval("global_variables", bind).collect{|m| m.to_s}
+	lv = eval("local_variables", bind).collect{|m| m.to_s}
+	cv = eval("self.class.constants", bind).collect{|m| m.to_s}
 	
 	if (gv | lv | cv).include?(receiver)
 	  # foo.func and foo is local var.
-	  candidates = eval("#{receiver}.methods", bind)
+	  candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}
 	elsif /^[A-Z]/ =~ receiver and /\./ !~ receiver
 	  # Foo::Bar.func
 	  begin
-	    candidates = eval("#{receiver}.methods", bind)
+	    candidates = eval("#{receiver}.methods", bind).collect{|m| m.to_s}
 	  rescue Exception
 	    candidates = []
 	  end
@@ -157,7 +162,7 @@ module IRB
 	    end
 	    next if name != "IRB::Context" and 
 	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
-	    candidates.concat m.instance_methods(false)
+	    candidates.concat m.instance_methods(false).collect{|m| m.to_s}
 	  }
 	  candidates.sort!
 	  candidates.uniq!
@@ -170,11 +175,11 @@ module IRB
 	receiver = ""
 	message = Regexp.quote($1)
 
-	candidates = String.instance_methods(true)
+	candidates = String.instance_methods(true).collect{|m| m.to_s}
 	select_message(receiver, message, candidates)
 
       else
-	candidates = eval("methods | private_methods | local_variables | self.class.constants", bind)
+	candidates = eval("methods | private_methods | local_variables | self.class.constants", bind).collect{|m| m.to_s}
 			  
 	(candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
       end
