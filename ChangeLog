@@ -1,3 +1,8 @@
+Sat Jul  7 15:36:50 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (PP::PPMethods#pp_hash): sort if
+	  all keys are strings, symbols or integers.
+
 Sat Jul  7 15:30:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_yield_setup_args), vm.c, insns.def: 
