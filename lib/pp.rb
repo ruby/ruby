@@ -248,10 +248,11 @@ class PP < PrettyPrint
     def pp_hash(obj)
       group(1, '{', '}') {
         keys = obj.keys
-        if keys.all? {|k| k.respond_to? :to_str } ||
-           keys.all? {|k| k.is_a? Symbol } ||
-           keys.all? {|k| k.is_a? Integer }
-          keys.sort!
+        if 0 < keys.length
+          key_class = keys[0].class
+          if key_class < Comparable && keys.all? {|k| k.class == key_class }
+            keys.sort!
+          end
         end
         seplist(keys, nil, :each) {|k|
           v = obj[k]

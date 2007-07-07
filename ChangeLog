@@ -1,3 +1,8 @@
+Sat Jul  7 21:59:29 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (PP::PPMethods#pp_hash): sort condition changed:
+	  all keys have a same class which is kind of Comparable.
+
 Sat Jul  7 17:12:37 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: use rb_bug() instead of rb_compile_error().
