@@ -1268,7 +1268,7 @@ invokeblock
 	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
 
 	DEC_SP(argc);
-	opt_pc = vm_yield_setup_args(th, iseq, argc, GET_SP(),
+	opt_pc = vm_yield_setup_args(th, iseq, argc, GET_SP(), 0,
 				     block_proc_is_lambda(block->proc));
 	argc = iseq->arg_size;
 	INC_SP(argc);

@@ -335,3 +335,11 @@ assert_equal %q{[1, nil]}, %q{
     [i, j]
   }
 }
+
+# [ruby-dev:31147]
+assert_equal 'nil', %q{
+  def m
+    yield
+  end
+  m{|&b| b}.inspect
+}

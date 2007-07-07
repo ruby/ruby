@@ -559,7 +559,22 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    th->cfp->sp[i] = argv[i];
 	}
 
-	opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, type == FRAME_MAGIC_LAMBDA);
+	if (iseq->arg_block == -1) {
+	    opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, 0,
+					 type == FRAME_MAGIC_LAMBDA);
+	}
+	else {
+	    rb_block_t *blockptr = 0;
+	    if (rb_block_given_p()) {
+		rb_proc_t *proc;
+		VALUE procval;
+		procval = rb_block_proc();
+		GetProcPtr(procval, proc);
+		blockptr = &proc->block;
+	    }
+	    opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp,
+					 blockptr, type == FRAME_MAGIC_LAMBDA);
+	}
 	argc = iseq->arg_size;
 	th->cfp->sp += argc;
 

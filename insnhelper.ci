@@ -605,7 +605,7 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 
 static inline int
 vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
-		    int argc, VALUE *argv, int lambda)
+		    int argc, VALUE *argv, rb_block_t *blockptr, int lambda)
 {
     if (0) { /* for debug */
 	printf("     argc: %d\n", argc);
@@ -620,20 +620,8 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 
     if (lambda) {
 	/* call as method */
-	if (iseq->arg_block != -1) {
-	    volatile VALUE procval = Qnil;
-
-	    if (rb_block_given_p()) {
-		rb_block_t *blockptr;
-		rb_proc_t *proc;
-		procval = rb_block_proc();
-		GetProcPtr(procval, proc);
-		blockptr = &proc->block;
 		return vm_callee_setup_arg(th, iseq, argc, argv, &blockptr);
 	    }
-	}
-	return vm_callee_setup_arg(th, iseq, argc, argv, 0);
-    }
     else {
 	int i;
 	const int m = iseq->argc;
@@ -721,13 +709,13 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 
 	/* {|&b|} */
 	if (iseq->arg_block != -1) {
-	    VALUE proc = Qnil;
+	    VALUE procval = Qnil;
 
-	    if (rb_block_given_p()) {
-		proc = rb_block_proc();
+	    if (blockptr) {
+		procval = blockptr->proc;
 	    }
 
-	    argv[iseq->arg_block] = proc;
+	    argv[iseq->arg_block] = procval;
 	    th->mark_stack_len = iseq->arg_block + 1;
 	}
 
