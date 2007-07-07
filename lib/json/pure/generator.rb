@@ -89,15 +89,22 @@ module JSON
         # * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
         # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
         # * *check_circular*: true if checking for circular data structures
+        #   should be done (the default), false otherwise.
+        # * *check_circular*: true if checking for circular data structures
         #   should be done, false (the default) otherwise.
+        # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
+        #   generated, otherwise an exception is thrown, if these values are
+        #   encountered. This options defaults to false.
         def initialize(opts = {})
-          @indent         = opts[:indent]       || ''
-          @space          = opts[:space]        || ''
-          @space_before   = opts[:space_before] || ''
-          @object_nl      = opts[:object_nl]    || ''
-          @array_nl       = opts[:array_nl]     || ''
-          @check_circular = !!(opts[:check_circular] || false)
-          @seen           = {}
+          @seen = {}
+          @indent         = ''
+          @space          = ''
+          @space_before   = ''
+          @object_nl      = ''
+          @array_nl       = ''
+          @check_circular = true
+          @allow_nan      = false
+          configure opts
         end
 
         # This string is used to indent levels in the JSON text.
@@ -117,10 +124,27 @@ module JSON
         # This string is put at the end of a line that holds a JSON array.
         attr_accessor :array_nl
 
+        # This integer returns the maximum level of data structure nesting in
+        # the generated JSON, max_nesting = 0 if no maximum is checked.
+        attr_accessor :max_nesting
+
+        def check_max_nesting(depth) # :nodoc:
+          return if @max_nesting.zero?
+          current_nesting = depth + 1
+          current_nesting > @max_nesting and
+            raise NestingError, "nesting of #{current_nesting} is too deep"
+        end
+
         # Returns true, if circular data structures should be checked,
         # otherwise returns false.
         def check_circular?
           @check_circular
+        end
+
+        # Returns true if NaN, Infinity, and -Infinity should be considered as
+        # valid JSON and output.
+        def allow_nan?
+          @allow_nan
         end
 
         # Returns _true_, if _object_ was already seen during this generating
@@ -138,6 +162,36 @@ module JSON
         # Forget _object_ for this generating run.
         def forget(object)
           @seen.delete object.__id__
+        end
+
+        # Configure this State instance with the Hash _opts_, and return
+        # itself.
+        def configure(opts)
+          @indent         = opts[:indent] if opts.key?(:indent)
+          @space          = opts[:space] if opts.key?(:space)
+          @space_before   = opts[:space_before] if opts.key?(:space_before)
+          @object_nl      = opts[:object_nl] if opts.key?(:object_nl)
+          @array_nl       = opts[:array_nl] if opts.key?(:array_nl)
+          @check_circular = !!opts[:check_circular] if opts.key?(:check_circular)
+          @allow_nan      = !!opts[:allow_nan] if opts.key?(:allow_nan)
+          if !opts.key?(:max_nesting) # defaults to 19
+            @max_nesting = 19
+          elsif opts[:max_nesting]
+            @max_nesting = opts[:max_nesting]
+          else
+            @max_nesting = 0
+          end
+          self
+        end
+
+        # Returns the configuration instance variables as a hash, that can be
+        # passed to the configure method.
+        def to_h
+          result = {}
+          for iv in %w[indent space space_before object_nl array_nl check_circular allow_nan max_nesting]
+            result[iv.intern] = instance_variable_get("@#{iv}")
+          end
+          result
         end
       end
 
@@ -158,6 +212,7 @@ module JSON
           def to_json(state = nil, depth = 0, *)
             if state
               state = JSON.state.from_state(state)
+              state.check_max_nesting(depth)
               json_check_circular(state) { json_transform(state, depth) }
             else
               json_transform(state, depth)
@@ -167,7 +222,7 @@ module JSON
           private
 
           def json_check_circular(state)
-            if state
+            if state and state.check_circular?
               state.seen?(self) and raise JSON::CircularDatastructure,
                   "circular data structures not supported!"
               state.remember self
@@ -211,6 +266,7 @@ module JSON
           def to_json(state = nil, depth = 0, *)
             if state
               state = JSON.state.from_state(state)
+              state.check_max_nesting(depth)
               json_check_circular(state) { json_transform(state, depth) }
             else
               json_transform(state, depth)
@@ -220,7 +276,7 @@ module JSON
           private
 
           def json_check_circular(state)
-            if state
+            if state and state.check_circular?
               state.seen?(self) and raise JSON::CircularDatastructure,
                 "circular data structures not supported!"
               state.remember self
@@ -257,7 +313,24 @@ module JSON
 
         module Float
           # Returns a JSON string representation for this Float number.
-          def to_json(*) to_s end
+          def to_json(state = nil, *)
+            case
+            when infinite?
+              if !state || state.allow_nan?
+                to_s
+              else
+                raise GeneratorError, "#{self} not allowed in JSON"
+              end
+            when nan?
+              if !state || state.allow_nan?
+                to_s
+              else
+                raise GeneratorError, "#{self} not allowed in JSON"
+              end
+            else
+              to_s
+            end
+          end
         end
 
         module String

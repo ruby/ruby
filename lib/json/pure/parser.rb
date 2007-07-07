@@ -19,6 +19,9 @@ module JSON
                                   (?i:e[+-]?\d+)
                                 )
                                 )/x
+      NAN                   = /NaN/
+      INFINITY              = /Infinity/
+      MINUS_INFINITY        = /-Infinity/
       OBJECT_OPEN           = /\{/
       OBJECT_CLOSE          = /\}/
       ARRAY_OPEN            = /\[/
@@ -50,7 +53,11 @@ module JSON
       # It will be configured by the _opts_ hash. _opts_ can have the following
       # keys:
       # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-      #   structures. Disable depth checking with :max_nesting => false.
+      #   structures. Disable depth checking with :max_nesting => false|nil|0,
+      #   it defaults to 19.
+      # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
+      #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
+      #   to false.
       def initialize(source, opts = {})
         super
         if !opts.key?(:max_nesting) # defaults to 19
@@ -60,6 +67,7 @@ module JSON
         else
           @max_nesting = 0
         end
+        @allow_nan = !!opts[:allow_nan]
         @create_id = JSON.create_id
       end
 
@@ -153,6 +161,12 @@ module JSON
           obj = parse_object
           @current_nesting -= 1
           obj
+        when @allow_nan && scan(NAN)
+          NaN
+        when @allow_nan && scan(INFINITY)
+          Infinity
+        when @allow_nan && scan(MINUS_INFINITY)
+          MinusInfinity
         else
           UNPARSED
         end

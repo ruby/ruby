@@ -2,8 +2,8 @@ require 'mkmf'
 require 'rbconfig'
 
 if CONFIG['CC'] =~ /gcc/
-  #CONFIG['CC'] += ' -Wall -ggdb'
-  CONFIG['CC'] += ' -Wall'
+  #$CFLAGS += ' -Wall -ggdb'
+  $CFLAGS += ' -Wall'
 end
 
 have_header 'st.h'

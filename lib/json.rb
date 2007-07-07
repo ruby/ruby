@@ -47,6 +47,27 @@ require 'json/common'
 #
 # * http://json.rubyforge.org
 #
+# == Usage
+# 
+# To use JSON you can
+#   require 'json'
+# to load the installed variant (either the extension 'json' or the pure
+# variant 'json_pure'). If you have installed the extension variant, you can
+# pick either the extension variant or the pure variant by typing
+#   require 'json/ext'
+# or
+#   require 'json/pure'
+#
+# You can choose to load a set of common additions to ruby core's objects if
+# you
+#   require 'json/add/core'
+#
+# To get the best compatibility to rails' JSON implementation, you can
+#   require 'json/add/rails'
+#
+# Both of the additions attempt to require 'json' (like above) first, if it has
+# not been required yet.
+#
 # == Speed Comparisons
 #
 # I have created some benchmark results (see the benchmarks subdir of the
@@ -207,4 +228,6 @@ module JSON
       require 'json/pure'
     end
   end
+
+  JSON_LOADED = true
 end

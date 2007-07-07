@@ -8,8 +8,12 @@
 #define EVIL 0x666
 
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
+static VALUE CNaN, CInfinity, CMinusInfinity;
 
-static ID i_json_creatable_p, i_json_create, i_create_id, i_chr, i_max_nesting; 
+static ID i_json_creatable_p, i_json_create, i_create_id, i_chr, i_max_nesting,
+          i_allow_nan; 
+
+#define MinusInfinity "-Infinity"
 
 typedef struct JSON_ParserStruct {
     VALUE Vsource;
@@ -19,6 +23,7 @@ typedef struct JSON_ParserStruct {
     VALUE create_id;
     int max_nesting;
     int current_nesting;
+    int allow_nan;
 } JSON_Parser;
 
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result);
@@ -47,7 +52,10 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     Vnull               = 'null';
     Vfalse              = 'false';
     Vtrue               = 'true';
-    begin_value         = [nft"\-[{] | digit;
+    VNaN                = 'NaN';
+    VInfinity           = 'Infinity';
+    VMinusInfinity      = '-Infinity';
+    begin_value         = [nft"\-[{NI] | digit;
     begin_object        = '{';
     end_object          = '}';
     begin_array         = '[';
@@ -133,6 +141,20 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     action parse_true {
         *result = Qtrue;
     }
+    action parse_nan {
+        if (json->allow_nan) {
+            *result = CNaN;
+        } else {
+            rb_raise(eParserError, "unexpected token at '%s'", p - 2);
+        }
+    }
+    action parse_infinity {
+        if (json->allow_nan) {
+            *result = CInfinity;
+        } else {
+            rb_raise(eParserError, "unexpected token at '%s'", p - 8);
+        }
+    }
     action parse_string {
         char *np = JSON_parse_string(json, fpc, pe, result);
         if (np == NULL) fbreak; else fexec np;
@@ -140,6 +162,15 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_number {
         char *np;
+        if(pe > fpc + 9 && !strncmp(MinusInfinity, fpc, 9)) {
+            if (json->allow_nan) {
+                *result = CMinusInfinity;
+                fexec p + 10;
+                fbreak;
+            } else {
+                rb_raise(eParserError, "unexpected token at '%s'", p);
+            }
+        }
         np = JSON_parse_float(json, fpc, pe, result);
         if (np != NULL) fexec np;
         np = JSON_parse_integer(json, fpc, pe, result);
@@ -169,6 +200,8 @@ main := (
               Vnull @parse_null |
               Vfalse @parse_false |
               Vtrue @parse_true |
+              VNaN @parse_nan |
+              VInfinity @parse_infinity |
               begin_number >parse_number |
               begin_string >parse_string |
               begin_array >parse_array |
@@ -435,7 +468,11 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
  *
  * _opts_ can have the following keys:
  * * *max_nesting*: The maximum depth of nesting allowed in the parsed data
- *   structures. Disable depth checking with :max_nesting => false.
+ *   structures. Disable depth checking with :max_nesting => false|nil|0, it
+ *   defaults to 19.
+ * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
+ *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
+ *   false.
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -451,20 +488,26 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         rb_raise(eParserError, "A JSON text must at least contain two octets!");
     }
     json->max_nesting = 19;
+    json->allow_nan = 0;
     if (!NIL_P(opts)) {
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
-            VALUE s_max_nesting = ID2SYM(i_max_nesting);
-            if (st_lookup(RHASH(opts)->tbl, s_max_nesting, 0)) {
-                VALUE max_nesting = rb_hash_aref(opts, s_max_nesting);
+            VALUE tmp = ID2SYM(i_max_nesting);
+            if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+                VALUE max_nesting = rb_hash_aref(opts, tmp);
                 if (RTEST(max_nesting)) {
                     Check_Type(max_nesting, T_FIXNUM);
                     json->max_nesting = FIX2INT(max_nesting);
                 } else {
                     json->max_nesting = 0;
                 }
+            }
+            tmp = ID2SYM(i_allow_nan);
+            if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+                VALUE allow_nan = rb_hash_aref(opts, tmp);
+                if (RTEST(allow_nan)) json->allow_nan = 1;
             }
         }
     }
@@ -561,9 +604,14 @@ void Init_parser()
     rb_define_method(cParser, "parse", cParser_parse, 0);
     rb_define_method(cParser, "source", cParser_source, 0);
 
+    CNaN = rb_const_get(mJSON, rb_intern("NaN"));
+    CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
+    CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
+
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
     i_create_id = rb_intern("create_id");
     i_chr = rb_intern("chr");
     i_max_nesting = rb_intern("max_nesting");
+    i_allow_nan = rb_intern("allow_nan");
 }

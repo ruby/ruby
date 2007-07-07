@@ -2,14 +2,17 @@ require 'json/version'
 
 module JSON
   class << self
-    # If object is string like parse the string and return the parsed result as a
-    # Ruby data structure. Otherwise generate a JSON text from the Ruby data
-    # structure object and return it.
-    def [](object)
+    # If _object_ is string like parse the string and return the parsed result
+    # as a Ruby data structure. Otherwise generate a JSON text from the Ruby
+    # data structure object and return it.
+    #
+    # The _opts_ argument is passed through to generate/parse respectively, see
+    # generate and parse for their documentation.
+    def [](object, opts = {})
       if object.respond_to? :to_str
-        JSON.parse(object.to_str)
+        JSON.parse(object.to_str, opts => {})
       else
-        JSON.generate(object)
+        JSON.generate(object, opts => {})
       end
     end
 
@@ -71,6 +74,12 @@ module JSON
   end
   self.create_id = 'json_class'
 
+  NaN           = (-1.0) ** 0.5
+
+  Infinity      = 1.0/0
+
+  MinusInfinity = -Infinity
+
   # The base exception for JSON errors.
   class JSONError < StandardError; end
 
@@ -101,45 +110,79 @@ module JSON
   # _opts_ can have the following
   # keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false. This value
-  #   defaults to 19.
+  #   structures. Disable depth checking with :max_nesting => false, it defaults
+  #   to 19.
+  # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
+  #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
+  #   to false.
   def parse(source, opts = {})
     JSON.parser.new(source, opts).parse
   end
 
   # Parse the JSON string _source_ into a Ruby data structure and return it.
+  # The bang version of the parse method, defaults to the more dangerous values
+  # for the _opts_ hash, so be sure only to parse trusted _source_ strings.
   #
-  # _opts_ can have the following
-  # keys:
+  # _opts_ can have the following keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
   #   structures. Enable depth checking with :max_nesting => anInteger. The parse!
   #   methods defaults to not doing max depth checking: This can be dangerous,
   #   if someone wants to fill up your stack.
+  # * *allow_nan*: If set to true, allow NaN, Infinity, and -Infinity in
+  #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
+  #   to true.
   def parse!(source, opts = {})
     opts = {
-      :max_nesting => false
+      :max_nesting => false,
+      :allow_nan => true
     }.update(opts)
     JSON.parser.new(source, opts).parse
   end
 
   # Unparse the Ruby data structure _obj_ into a single line JSON string and
-  # return it. _state_ is a JSON::State object, that can be used to configure
-  # the output further.
+  # return it. _state_ is
+  # * a JSON::State object,
+  # * or a Hash like object (responding to to_hash),
+  # * an object convertible into a hash by a to_h method,
+  # that is used as or to configure a State object.
   #
   # It defaults to a state object, that creates the shortest possible JSON text
-  # in one line and only checks for circular data structures. If you are sure,
-  # that the objects don't contain any circles, you can set _state_ to nil, to
-  # disable these checks in order to create the JSON text faster. See also
-  # fast_generate.
-  def generate(obj, state = JSON.state.new)
+  # in one line, checks for circular data structures and doesn't allow NaN,
+  # Infinity, and -Infinity.
+  #
+  # A _state_ hash can have the following keys:
+  # * *indent*: a string used to indent levels (default: ''),
+  # * *space*: a string that is put after, a : or , delimiter (default: ''),
+  # * *space_before*: a string that is put before a : pair delimiter (default: ''),
+  # * *object_nl*: a string that is put at the end of a JSON object (default: ''), 
+  # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
+  # * *check_circular*: true if checking for circular data structures
+  #   should be done (the default), false otherwise.
+  # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
+  #   generated, otherwise an exception is thrown, if these values are
+  #   encountered. This options defaults to false.
+  #
+  # See also the fast_generate for the fastest creation method with the least
+  # amount of sanity checks, and the pretty_generate method for some
+  # defaults for a pretty output.
+  def generate(obj, state = nil)
+    if state
+      state = State.from_state(state)
+    else
+      state = State.new
+    end
     obj.to_json(state)
   end
 
+  # :stopdoc:
+  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
   alias unparse generate
   module_function :unparse
+  # :startdoc:
 
   # Unparse the Ruby data structure _obj_ into a single line JSON string and
-  # return it. This method disables the checks for circles in Ruby objects.
+  # return it. This method disables the checks for circles in Ruby objects, and
+  # also generates NaN, Infinity, and, -Infinity float values.
   #
   # *WARNING*: Be careful not to pass any Ruby data structures with circles as
   # _obj_ argument, because this will cause JSON to go into an infinite loop.
@@ -147,12 +190,18 @@ module JSON
     obj.to_json(nil)
   end
 
+  # :stopdoc:
+  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
   alias fast_unparse fast_generate
   module_function :fast_unparse
+  # :startdoc:
 
   # Unparse the Ruby data structure _obj_ into a JSON string and return it. The
   # returned string is a prettier form of the string returned by #unparse.
-  def pretty_generate(obj)
+  #
+  # The _opts_ argument can be used to configure the generator, see the
+  # generate method for a more detailed explanation.
+  def pretty_generate(obj, opts = nil)
     state = JSON.state.new(
       :indent     => '  ',
       :space      => ' ',
@@ -160,11 +209,94 @@ module JSON
       :array_nl   => "\n",
       :check_circular => true
     )
+    if opts
+      if opts.respond_to? :to_hash
+        opts = opts.to_hash
+      elsif opts.respond_to? :to_h
+        opts = opts.to_h
+      else
+        raise TypeError, "can't convert #{opts.class} into Hash"
+      end
+      state.configure(opts)
+    end
     obj.to_json(state)
   end
 
+  # :stopdoc:
+  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
   alias pretty_unparse pretty_generate
   module_function :pretty_unparse
+  # :startdoc:
+
+  # Load a ruby data structure from a JSON _source_ and return it. A source can
+  # either be a string like object, an IO like object, or an object responding
+  # to the read method. If _proc_ was given, it will be called with any nested
+  # Ruby object as an argument recursively in depth first order.
+  #
+  # This method is part of the implementation of the load/dump interface of
+  # Marshal and YAML.
+  def load(source, proc = nil)
+    if source.respond_to? :to_str
+      source = source.to_str
+    elsif source.respond_to? :to_io
+      source = source.to_io.read
+    else
+      source = source.read
+    end
+    result = parse(source, :max_nesting => false, :allow_nan => true)
+    recurse_proc(result, &proc) if proc
+    result
+  end
+
+  def recurse_proc(result, &proc)
+    case result
+    when Array
+      result.each { |x| recurse_proc x, &proc }
+      proc.call result
+    when Hash
+      result.each { |x, y| recurse_proc x, &proc; recurse_proc y, &proc }
+      proc.call result
+    else
+      proc.call result
+    end
+  end
+  private :recurse_proc
+  module_function :recurse_proc
+
+  alias restore load
+  module_function :restore
+
+  # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
+  # the result.
+  #
+  # If anIO (an IO like object or an object that responds to the write method)
+  # was given, the resulting JSON is written to it.
+  #
+  # If the number of nested arrays or objects exceeds _limit_ an ArgumentError
+  # exception is raised. This argument is similar (but not exactly the
+  # same!) to the _limit_ argument in Marshal.dump.
+  #
+  # This method is part of the implementation of the load/dump interface of
+  # Marshal and YAML.
+  def dump(obj, anIO = nil, limit = nil)
+    if anIO and limit.nil?
+      anIO = anIO.to_io if anIO.respond_to?(:to_io)
+      unless anIO.respond_to?(:write)
+        limit = anIO
+        anIO = nil
+      end
+    end
+    limit ||= 0
+    result = generate(obj, :allow_nan => true, :max_nesting => limit)
+    if anIO
+      anIO.write result
+      anIO
+    else
+      result
+    end
+  rescue JSON::NestingError
+    raise ArgumentError, "exceed depth limit"
+  end
 end
 
 module ::Kernel
@@ -172,7 +304,7 @@ module ::Kernel
   # one line.
   def j(*objs)
     objs.each do |obj|
-      puts JSON::generate(obj)
+      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -181,19 +313,22 @@ module ::Kernel
   # indentation and over many lines.
   def jj(*objs)
     objs.each do |obj|
-      puts JSON::pretty_generate(obj)
+      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
 
-  # If object is string like parse the string and return the parsed result as a
-  # Ruby data structure. Otherwise generate a JSON text from the Ruby data
+  # If _object_ is string like parse the string and return the parsed result as
+  # a Ruby data structure. Otherwise generate a JSON text from the Ruby data
   # structure object and return it.
-  def JSON(object)
+  #
+  # The _opts_ argument is passed through to generate/parse respectively, see
+  # generate and parse for their documentation.
+  def JSON(object, opts = {})
     if object.respond_to? :to_str
-      JSON.parse(object.to_str)
+      JSON.parse(object.to_str, opts)
     else
-      JSON.generate(object)
+      JSON.generate(object, opts)
     end
   end
 end

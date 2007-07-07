@@ -1,3 +1,8 @@
+Sun Jul 08 02:08:53 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/json.rb, lib/json/, ext/json/:
+	  import JSON 1.1.1
+
 Sat Jul  7 21:59:29 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (PP::PPMethods#pp_hash): sort condition changed:

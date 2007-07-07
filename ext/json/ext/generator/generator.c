@@ -4,15 +4,22 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "unicode.h"
+#include <math.h>
+
+#define check_max_nesting(state, depth) do {                                   \
+    long current_nesting = 1 + depth;                                          \
+    if (state->max_nesting != 0 && current_nesting > state->max_nesting)       \
+        rb_raise(eNestingError, "nesting of %u is too deep", current_nesting); \
+} while (0);
 
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
              mHash, mArray, mInteger, mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eCircularDatastructure;
+             eCircularDatastructure, eNestingError;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
-          i_object_nl, i_array_nl, i_check_circular, i_pack, i_unpack,
-          i_create_id, i_extend;
+          i_object_nl, i_array_nl, i_check_circular, i_max_nesting,
+          i_allow_nan, i_pack, i_unpack, i_create_id, i_extend;
 
 typedef struct JSON_Generator_StateStruct {
     VALUE indent;
@@ -24,7 +31,9 @@ typedef struct JSON_Generator_StateStruct {
     VALUE seen;
     VALUE memo;
     VALUE depth;
+    long max_nesting;
     int flag;
+    int allow_nan;
 } JSON_Generator_State;
 
 #define GET_STATE(self)                       \
@@ -138,6 +147,7 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
         rb_str_buf_cat2(result, "}");
     } else {
         GET_STATE(Vstate);
+        check_max_nesting(state, depth);
         if (state->check_circular) {
             VALUE self_id = rb_obj_id(self);
             if (RTEST(rb_hash_aref(state->seen, self_id))) {
@@ -162,6 +172,7 @@ inline static VALUE mArray_json_transfrom(VALUE self, VALUE Vstate, VALUE Vdepth
     VALUE delim = rb_str_new2(",");
     GET_STATE(Vstate);
 
+    check_max_nesting(state, depth);
     if (state->check_circular) {
         VALUE self_id = rb_obj_id(self);
         rb_hash_aset(state->seen, self_id, Qtrue);
@@ -170,6 +181,7 @@ inline static VALUE mArray_json_transfrom(VALUE self, VALUE Vstate, VALUE Vdepth
         shift = rb_str_times(state->indent, LONG2FIX(depth + 1));
 
         rb_str_buf_cat2(result, "[");
+        OBJ_INFECT(result, self);
         rb_str_buf_append(result, state->array_nl);
         for (i = 0;  i < len; i++) {
             VALUE element = RARRAY_PTR(self)[i];
@@ -190,6 +202,7 @@ inline static VALUE mArray_json_transfrom(VALUE self, VALUE Vstate, VALUE Vdepth
         rb_hash_delete(state->seen, self_id);
     } else {
         result = rb_str_buf_new(len);
+        OBJ_INFECT(result, self);
         if (RSTRING_LEN(state->array_nl)) rb_str_append(delim, state->array_nl);
         shift = rb_str_times(state->indent, LONG2FIX(depth + 1));
 
@@ -228,6 +241,7 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
         long i, len = RARRAY_LEN(self);
         result = rb_str_buf_new(2 + 2 * len);
         rb_str_buf_cat2(result, "[");
+        OBJ_INFECT(result, self);
         for (i = 0;  i < len; i++) {
             VALUE element = RARRAY_PTR(self)[i];
             OBJ_INFECT(result, element);
@@ -259,7 +273,28 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
 {
-    return rb_funcall(self, i_to_s, 0);
+    JSON_Generator_State *state = NULL;
+    VALUE Vstate, rest, tmp;
+    double value = RFLOAT(self)->value;
+    rb_scan_args(argc, argv, "01*", &Vstate, &rest);
+    if (!NIL_P(Vstate)) Data_Get_Struct(Vstate, JSON_Generator_State, state);
+    if (isinf(value)) {
+        if (!state || state->allow_nan) {
+            return rb_funcall(self, i_to_s, 0);
+        } else {
+            tmp = rb_funcall(self, i_to_s, 0);
+            rb_raise(eGeneratorError, "%s not allowed in JSON", StringValueCStr(tmp));
+        }
+    } else if (isnan(value)) {
+        if (!state || state->allow_nan) {
+            return rb_funcall(self, i_to_s, 0);
+        } else {
+            tmp = rb_funcall(self, i_to_s, 0);
+            rb_raise(eGeneratorError, "%s not allowed in JSON", StringValueCStr(tmp));
+        }
+    } else {
+        return rb_funcall(self, i_to_s, 0);
+    }
 }
 
 /*
@@ -404,6 +439,92 @@ static VALUE cState_s_allocate(VALUE klass)
 }
 
 /*
+ * call-seq: configure(opts)
+ *
+ * Configure this State instance with the Hash _opts_, and return
+ * itself.
+ */
+static inline VALUE cState_configure(VALUE self, VALUE opts)
+{
+    VALUE tmp;
+    GET_STATE(self);
+    tmp = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
+    if (NIL_P(tmp)) tmp = rb_convert_type(opts, T_HASH, "Hash", "to_h");
+    if (NIL_P(tmp)) {
+        rb_raise(rb_eArgError, "opts has to be hash like or convertable into a hash");
+    }
+    opts = tmp;
+    tmp = rb_hash_aref(opts, ID2SYM(i_indent));
+    if (RTEST(tmp)) {
+        Check_Type(tmp, T_STRING);
+        state->indent = tmp;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_space));
+    if (RTEST(tmp)) {
+        Check_Type(tmp, T_STRING);
+        state->space = tmp;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_space_before));
+    if (RTEST(tmp)) {
+        Check_Type(tmp, T_STRING);
+        state->space_before = tmp;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_array_nl));
+    if (RTEST(tmp)) {
+        Check_Type(tmp, T_STRING);
+        state->array_nl = tmp;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_object_nl));
+    if (RTEST(tmp)) {
+        Check_Type(tmp, T_STRING);
+        state->object_nl = tmp;
+    }
+    tmp = ID2SYM(i_check_circular);
+    if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+        tmp = rb_hash_aref(opts, ID2SYM(i_check_circular));
+        state->check_circular = RTEST(tmp);
+    } else {
+        state->check_circular = 1;
+    }
+    tmp = ID2SYM(i_max_nesting);
+    state->max_nesting = 19;
+    if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+        VALUE max_nesting = rb_hash_aref(opts, tmp);
+        if (RTEST(max_nesting)) {
+            Check_Type(max_nesting, T_FIXNUM);
+            state->max_nesting = FIX2LONG(max_nesting);
+        } else {
+            state->max_nesting = 0;
+        }
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_allow_nan));
+    state->allow_nan = RTEST(tmp);
+    return self;
+}
+
+/*
+ * call-seq: to_h
+ *
+ * Returns the configuration instance variables as a hash, that can be
+ * passed to the configure method.
+ */
+static VALUE cState_to_h(VALUE self)
+{
+    VALUE result = rb_hash_new();
+    GET_STATE(self);
+    rb_hash_aset(result, ID2SYM(i_indent), state->indent);
+    rb_hash_aset(result, ID2SYM(i_space), state->space);
+    rb_hash_aset(result, ID2SYM(i_space_before), state->space_before);
+    rb_hash_aset(result, ID2SYM(i_object_nl), state->object_nl);
+    rb_hash_aset(result, ID2SYM(i_array_nl), state->array_nl);
+    rb_hash_aset(result, ID2SYM(i_check_circular), state->check_circular ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_allow_nan), state->allow_nan ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_max_nesting), LONG2FIX(state->max_nesting));
+    return result;
+}
+
+
+/*
  * call-seq: new(opts = {})
  *
  * Instantiates a new State object, configured by _opts_.
@@ -417,6 +538,9 @@ static VALUE cState_s_allocate(VALUE klass)
  * * *array_nl*: a string that is put at the end of a JSON array (default: ''),
  * * *check_circular*: true if checking for circular data structures
  *   should be done, false (the default) otherwise.
+ * * *allow_nan*: true if NaN, Infinity, and -Infinity should be
+ *   generated, otherwise an exception is thrown, if these values are
+ *   encountered. This options defaults to false.
  */
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -424,53 +548,17 @@ static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
     GET_STATE(self);
 
     rb_scan_args(argc, argv, "01", &opts);
+    state->indent = rb_str_new2("");
+    state->space = rb_str_new2("");
+    state->space_before = rb_str_new2("");
+    state->array_nl = rb_str_new2("");
+    state->object_nl = rb_str_new2("");
     if (NIL_P(opts)) {
-        state->indent = rb_str_new2("");
-        state->space = rb_str_new2("");
-        state->space_before = rb_str_new2("");
-        state->array_nl = rb_str_new2("");
-        state->object_nl = rb_str_new2("");
-        state->check_circular = 0;
+        state->check_circular = 1;
+        state->allow_nan = 0;
+        state->max_nesting = 19;
     } else {
-        VALUE tmp;
-        opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
-        tmp = rb_hash_aref(opts, ID2SYM(i_indent));
-        if (RTEST(tmp)) {
-            Check_Type(tmp, T_STRING);
-            state->indent = tmp;
-        } else {
-            state->indent = rb_str_new2("");
-        }
-        tmp = rb_hash_aref(opts, ID2SYM(i_space));
-        if (RTEST(tmp)) {
-            Check_Type(tmp, T_STRING);
-            state->space = tmp;
-        } else {
-            state->space = rb_str_new2("");
-        }
-        tmp = rb_hash_aref(opts, ID2SYM(i_space_before));
-        if (RTEST(tmp)) {
-            Check_Type(tmp, T_STRING);
-            state->space_before = tmp;
-        } else {
-            state->space_before = rb_str_new2("");
-        }
-        tmp = rb_hash_aref(opts, ID2SYM(i_array_nl));
-        if (RTEST(tmp)) {
-            Check_Type(tmp, T_STRING);
-            state->array_nl = tmp;
-        } else {
-            state->array_nl = rb_str_new2("");
-        }
-        tmp = rb_hash_aref(opts, ID2SYM(i_object_nl));
-        if (RTEST(tmp)) {
-            Check_Type(tmp, T_STRING);
-            state->object_nl = tmp;
-        } else {
-            state->object_nl = rb_str_new2("");
-        }
-        tmp = rb_hash_aref(opts, ID2SYM(i_check_circular));
-        state->check_circular = RTEST(tmp);
+        cState_configure(self, opts);
     }
     state->seen = rb_hash_new();
     state->memo = Qnil;
@@ -616,7 +704,7 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 }
 
 /*
- * call-seq: check_circular?(object)
+ * call-seq: check_circular?
  *
  * Returns true, if circular data structures should be checked,
  * otherwise returns false.
@@ -625,6 +713,44 @@ static VALUE cState_check_circular_p(VALUE self)
 {
     GET_STATE(self);
     return state->check_circular ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq: max_nesting
+ *
+ * This integer returns the maximum level of data structure nesting in
+ * the generated JSON, max_nesting = 0 if no maximum is checked.
+ */
+static VALUE cState_max_nesting(VALUE self)
+{
+    GET_STATE(self);
+    return LONG2FIX(state->max_nesting);
+}
+
+/*
+ * call-seq: max_nesting=(depth)
+ *
+ * This sets the maximum level of data structure nesting in the generated JSON
+ * to the integer depth, max_nesting = 0 if no maximum should be checked.
+ */
+static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
+{
+    GET_STATE(self);
+    Check_Type(depth, T_FIXNUM);
+    state->max_nesting = FIX2LONG(depth);
+    return Qnil;
+}
+
+/*
+ * call-seq: allow_nan?
+ *
+ * Returns true, if NaN, Infinity, and -Infinity should be generated, otherwise
+ * returns false.
+ */
+static VALUE cState_allow_nan_p(VALUE self)
+{
+    GET_STATE(self);
+    return state->allow_nan ? Qtrue : Qfalse;
 }
 
 /*
@@ -668,6 +794,7 @@ void Init_generator()
     mGenerator = rb_define_module_under(mExt, "Generator");
     eGeneratorError = rb_path2class("JSON::GeneratorError");
     eCircularDatastructure = rb_path2class("JSON::CircularDatastructure");
+    eNestingError = rb_path2class("JSON::NestingError");
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
@@ -684,9 +811,15 @@ void Init_generator()
     rb_define_method(cState, "array_nl", cState_array_nl, 0);
     rb_define_method(cState, "array_nl=", cState_array_nl_set, 1);
     rb_define_method(cState, "check_circular?", cState_check_circular_p, 0);
+    rb_define_method(cState, "max_nesting", cState_max_nesting, 0);
+    rb_define_method(cState, "max_nesting=", cState_max_nesting_set, 1);
+    rb_define_method(cState, "allow_nan?", cState_allow_nan_p, 0);
     rb_define_method(cState, "seen?", cState_seen_p, 1);
     rb_define_method(cState, "remember", cState_remember, 1);
     rb_define_method(cState, "forget", cState_forget, 1);
+    rb_define_method(cState, "configure", cState_configure, 1);
+    rb_define_method(cState, "to_h", cState_to_h, 0);
+
     mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
     mObject = rb_define_module_under(mGeneratorMethods, "Object");
     rb_define_method(mObject, "to_json", mObject_to_json, -1);
@@ -721,6 +854,8 @@ void Init_generator()
     i_object_nl = rb_intern("object_nl");
     i_array_nl = rb_intern("array_nl");
     i_check_circular = rb_intern("check_circular");
+    i_max_nesting = rb_intern("max_nesting");
+    i_allow_nan = rb_intern("allow_nan");
     i_pack = rb_intern("pack");
     i_unpack = rb_intern("unpack");
     i_create_id = rb_intern("create_id");
