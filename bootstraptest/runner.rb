@@ -61,7 +61,7 @@ End
 
   unless quiet
     puts Time.now
-    patchlevel = defined?(RUBY_PATCHLEVEL) ? " pachlevel #{RUBY_PATCHLEVEL}" : ''
+    patchlevel = defined?(RUBY_PATCHLEVEL) ? " patchlevel #{RUBY_PATCHLEVEL}" : ''
     puts "Driver is ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}#{patchlevel}) [#{RUBY_PLATFORM}]"
     puts "Target is #{`#{@ruby} -v`}"
     puts
