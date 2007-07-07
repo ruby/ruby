@@ -3003,7 +3003,7 @@ f_marg		: f_norm_arg
 		| tLPAREN f_margs rparen
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = NEW_LIST($2);
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/
@@ -3013,7 +3013,7 @@ f_marg		: f_norm_arg
 f_marg_head	: f_marg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST($1);
+			$$ = $1;
 		    /*%
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
@@ -3047,7 +3047,7 @@ f_margs		: f_marg_head
 		| f_marg_head ',' tSTAR f_norm_arg ',' f_marg
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG($4,$6));
+			$$ = NEW_MASGN($1, NEW_POSTARG(assignable($4, 0), $6));
 		    /*%
 			$$ = mlhs_add_star($1, $4);
 		    %*/
@@ -3063,7 +3063,7 @@ f_margs		: f_marg_head
 		| f_marg_head ',' tSTAR ',' f_marg
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(-1,$5));
+			$$ = NEW_MASGN($1, NEW_POSTARG(-1, $5));
 		    /*%
 			$$ = mlhs_add_star($1, $5);
 		    %*/

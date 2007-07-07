@@ -336,6 +336,36 @@ assert_equal %q{[1, nil]}, %q{
   }
 }
 
+# block parameter (shouldn't SEGV: [ruby-dev:31143])
+assert_equal '0', %q{
+def m()
+end
+m {|(v0,*,(*)),|}
+m {|(*v0,(*)),|}
+m {|(v0,*v1,(*)),|}
+m {|((v0,*v1,v2)),|}
+m {|(v0,*v1,v2),|}
+m {|(v0,*v1,(v2)),|}
+m {|((*),*v0,v1),|}
+m {|((v0),*v1,v2),|}
+m {|(v0,v1,*v2,v3),|}
+m {|v0,(v1,*v2,v3),|}
+m {|(v0,*v1,v2),v3,|}
+m {|(v0,*v1,v2)|}
+m {|(v0,*v1,v2),&v3|}
+m {|(v0,*v1,v2),*|}
+m {|(v0,*v1,v2),*,&v3|}
+m {|*,(v0,*v1,v2)|}
+m {|*,(v0,*v1,v2),&v3|}
+m {|v0,*,(v1,*v2,v3)|}
+m {|v0,*,(v1,*v2,v3),&v4|}
+m {|(v0,*v1,v2),*,v3|}
+m {|(v0,*v1,v2),*,v3,&v4|}
+m {|(v0, *v1, v2)|}
+m {|(*,v)|}
+0
+}
+
 # [ruby-dev:31147]
 assert_equal 'nil', %q{
   def m
@@ -343,3 +373,4 @@ assert_equal 'nil', %q{
   end
   m{|&b| b}.inspect
 }
+

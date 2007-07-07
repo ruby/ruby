@@ -620,8 +620,8 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 
     if (lambda) {
 	/* call as method */
-		return vm_callee_setup_arg(th, iseq, argc, argv, &blockptr);
-	    }
+	return vm_callee_setup_arg(th, iseq, argc, argv, &blockptr);
+    }
     else {
 	int i;
 	const int m = iseq->argc;

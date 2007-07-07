@@ -1,3 +1,12 @@
+Sat Jul  7 16:12:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: fix node construction (around f_margs).
+	  [ruby-dev:31143]
+
+	* bootstraptest/test_block.rb: add a test for above.
+
+	* insnhelper.ci: fix indent.
+
 Sat Jul  7 15:36:50 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (PP::PPMethods#pp_hash): sort if
