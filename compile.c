@@ -81,7 +81,6 @@ struct iseq_compile_data_ensure_node_stack {
 /* for debug */
 #if CPDEBUG > 0
 static long gl_node_level = 0;
-static long gl_tmp = 0;
 static void debug_list(LINK_ANCHOR *anchor);
 #endif
 
@@ -203,7 +202,7 @@ rb_iseq_compile(VALUE self, NODE *node)
 	    COMPILE(ret, "defined guard", node);
 	    break;
 	  default:
-	    rb_compile_error(ERROR_ARGS "unknown scope");
+	    rb_bug("unknown scope");
 	}
     }
 
@@ -319,8 +318,7 @@ verify_list(char *info, LINK_ANCHOR *anchor)
     }
 
     if (flag != 0) {
-	rb_compile_error(ERROR_ARGS "list verify error: %08x (%s)",
-			 flag, info);
+	rb_bug("list verify error: %08x (%s)", flag, info);
     }
 #endif
 }
@@ -741,28 +739,35 @@ get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 }
 
 static int
-get_local_var_idx(rb_iseq_t *iseq, ID id, NODE *node)
+get_local_var_idx(rb_iseq_t *iseq, ID id)
 {
     int idx = get_dyna_var_idx_at_raw(iseq->local_iseq, id);
 
-    if (idx == -1) {
-	dpi(id);
-	rb_compile_error(ERROR_ARGS "get_local_var_idx: -1");
+    if (idx < 0) {
+	rb_bug("get_local_var_idx: %d", idx);
     }
 
     return idx;
 }
 
 static int
-get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls, NODE *node)
+get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
 {
-    int lv = 0, idx;
+    int lv = 0, idx = -1;
 
-    while (iseq ? (idx = get_dyna_var_idx_at_raw(iseq, id)) < 0 :
-	   (rb_compile_error(ERROR_ARGS "get_dyna_var_idx: -1"), 0)) {
+    while (iseq) {
+	idx = get_dyna_var_idx_at_raw(iseq, id);
+	if (idx >= 0) {
+	    break;
+	}
 	iseq = iseq->parent_iseq;
 	lv++;
     }
+
+    if (idx < 0) {
+	rb_bug("get_dyna_var_idx: -1");
+    }
+
     *level = lv;
     *ls = iseq->local_size;
     return idx;
@@ -782,9 +787,8 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	NODE *node_init = 0;
 
 	if (nd_type(node_args) != NODE_ARGS) {
-	    NODE *node = node_args;
-	    rb_compile_error(ERROR_ARGS "set_arguments: NODE_ARGS is expected, but %s",
-			     ruby_node_name(nd_type(node_args)));
+	    rb_bug("set_arguments: NODE_ARGS is expected, but %s",
+		   ruby_node_name(nd_type(node_args)));
 	}
 
 	/*
@@ -864,8 +868,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    iseq->arg_rest = get_dyna_var_idx_at_raw(iseq, rest_id);
 
 	    if (iseq->arg_rest == -1) {
-		NODE *node = node_aux;
-		rb_compile_error(ERROR_ARGS "arg_rest: -1");
+		rb_bug("arg_rest: -1");
 	    }
 
 	    if (iseq->arg_post_start == 0) {
@@ -990,8 +993,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  default:
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
 	    dump_disasm_list(list);
-	    rb_compile_error(RSTRING_PTR(iseq->filename), line,
-			     "error: set_sequence");
+	    rb_bug("error: set_sequence");
 	    break;
 	}
 	list = list->next;
@@ -1035,9 +1037,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		/* operand check */
 		if (iobj->operand_size != len - 1) {
 		    dump_disasm_list(list);
-		    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
-				     "operand size miss! (%d for %d)",
-				     iobj->operand_size, len - 1);
+		    rb_bug("operand size miss! (%d for %d)", iobj->operand_size, len - 1);
 		    return 0;
 		}
 
@@ -1050,9 +1050,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
 			    if (lobj->set != Qtrue) {
-				rb_compile_error(RSTRING_PTR(iseq->filename),
-						 iobj->line_no,
-						 "unknown label");
+				rb_bug("unknown label");
 			    }
 			    if (lobj->sp == -1) {
 				lobj->sp = sp;
@@ -1076,12 +1074,9 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				lobj = (LABEL *)(lv & ~1);
 
 				if (lobj->set != Qtrue) {
-				    rb_compile_error(RSTRING_PTR(iseq->filename),
-						     iobj->line_no,
-						     "unknown label");
+				    rb_bug("unknown label");
 				}
-				rb_hash_aset(map, obj,
-					     INT2FIX(lobj->position - (pos+len)));
+				rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
 			    }
 			    generated_iseq[pos + 1 + j] = map;
 			    iseq_add_mark_object(iseq, map);
@@ -1128,8 +1123,7 @@ set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 			break;
 		      default:
-			rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
-					 "unknown operand type: %c", type);
+			rb_bug("unknown operand type: %c", type);
 			return 0;
 		    }
 		}
@@ -1629,8 +1623,7 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 		dump_disasm_list((LINK_ELEMENT *)iobj);
 		dump_disasm_list((LINK_ELEMENT *)lobj);
 		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		rb_compile_error(RSTRING_PTR(iseq->filename), iobj->lineno,
-				 "insn_set_sc_state error\n");
+		rb_bug("insn_set_sc_state error\n");
 		return 0;
 	    }
 	}
@@ -1731,7 +1724,7 @@ set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    rb_compile_error(ERROR_ARGS "unreachable");
+			    rb_bug("unreachable");
 			}
 			/* remove useless pop */
 			REMOVE_ELEM(list);
@@ -1844,8 +1837,8 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
     if (nd_type(node) != NODE_ZARRAY) {
 	while (node) {
 	    if (nd_type(node) != NODE_ARRAY) {
-		rb_compile_error(ERROR_ARGS "compile_array: This node is not NODE_ARRAY, but %s",
-				 ruby_node_name(nd_type(node)));
+		rb_bug("compile_array: This node is not NODE_ARRAY, but %s",
+		       ruby_node_name(nd_type(node)));
 	    }
 
 	    i++;
@@ -1859,8 +1852,8 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 
     if (len != i) {
 	if (0) {
-	    rb_compile_error(ERROR_ARGS "node error: compile_array (%d: %d-%d)",
-			     (int)nd_line(node_root), len, i);
+	    rb_bug("node error: compile_array (%d: %d-%d)",
+		   (int)nd_line(node_root), len, i);
 	}
 	len = i;
     }
@@ -2368,8 +2361,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish);
 	return 1;
-	/* rb_compile_error(ERROR_ARGS "unimplemented defined: %s", ruby_node_name(nd_type(node))); */
-      }			/* end of default */
+      } /* end of default */
     }
 
     if (estr != 0) {
@@ -2510,9 +2502,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned long *flag)
 	    break;
 	  }
 	  default: {
-	    NODE *node = argn;
-	    rb_compile_error(ERROR_ARGS "setup_arg: unknown node: %s\n",
-			     ruby_node_name(nd_type(argn)));
+	    rb_bug("setup_arg: unknown node: %s\n", ruby_node_name(nd_type(argn)));
 	  }
 	}
     }
@@ -2659,12 +2649,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
 		}
 		else {
-		    rb_compile_error(ERROR_ARGS "NODE_CASAE: unknown node (%s)",
-				     ruby_node_name(nd_type(vals)));
+		    rb_bug("NODE_CASAE: unknown node (%s)",
+			   ruby_node_name(nd_type(vals)));
 		}
 	    }
 	    else {
-		rb_compile_error(ERROR_ARGS "NODE_CASAE: must be NODE_ARRAY, but 0");
+		rb_bug("NODE_CASAE: must be NODE_ARRAY, but 0");
 	    }
 
 	    node = node->nd_next;
@@ -2748,7 +2738,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSNL(ret, nd_line(val), branchif, l1);
 	    }
 	    else {
-		rb_compile_error(ERROR_ARGS "err");
+		rb_bug("err");
 	    }
 	    node = node->nd_next;
 	}
@@ -2808,7 +2798,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (node->nd_state == Qundef) {
 	    /* ADD_INSN(ret, nd_line(node), putundef); */
-	    rb_compile_error(ERROR_ARGS "unsupported: putundef");
+	    rb_bug("unsupported: putundef");
 	}
 	else {
 	    ADD_INSN(ret, nd_line(node), putnil);
@@ -3168,7 +3158,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
       case NODE_LASGN:{
 	ID id = node->nd_vid;
-	int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id, node);
+	int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
 	debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
 	COMPILE(ret, "rvalue", node->nd_value);
@@ -3190,11 +3180,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), dup);
 	}
 
-	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls, node);
+	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	if (idx < 0) {
-	    rb_compile_error(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%s)",
-			     rb_id2name(node->nd_vid));
+	    rb_bug("NODE_DASGN(_CURR): unknown id (%s)", rb_id2name(node->nd_vid));
 	}
 
 	ADD_INSN2(ret, nd_line(node), setdynamic,
@@ -3503,7 +3492,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    }
 		}
 		else {
-		    rb_compile_error(ERROR_ARGS "illegal goto/label format");
+		    rb_bug("illegal goto/label format");
 		}
 
 
@@ -3677,8 +3666,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    break;
 
 	  default:
-	    rb_compile_error(ERROR_ARGS "can't make hash with this node: %s",
-			     ruby_node_name(type));
+	    rb_bug("can't make hash with this node: %s", ruby_node_name(type));
 	}
 
 	ADD_INSN1(ret, nd_line(node), newhash, size);
@@ -3745,7 +3733,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_LVAR:{
 	if (!poped) {
 	    ID id = node->nd_vid;
-	    int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id, node);
+	    int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
 	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
 	    ADD_INSN1(ret, nd_line(node), getlocal, INT2FIX(idx));
@@ -3756,9 +3744,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	int lv, idx, ls;
 	debugi("nd_vid", node->nd_vid);
 	if (!poped) {
-	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls, node);
+	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 	    if (idx < 0) {
-		rb_compile_error(ERROR_ARGS "unknown dvar (%s)", rb_id2name(node->nd_vid));
+		rb_bug("unknown dvar (%s)", rb_id2name(node->nd_vid));
 	    }
 	    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(ls - idx),
 		      INT2FIX(lv));
@@ -4015,7 +4003,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (nd_type(node->u1.node) != NODE_LIT ||
 	    nd_type(node->u2.node) != NODE_LIT) {
-	    rb_compile_error(ERROR_ARGS "alias args must be NODE_LIT");
+	    rb_bug("alias args must be NODE_LIT");
 	}
 	s1 = node->u1.node->nd_lit;
 	s2 = node->u2.node->nd_lit;
@@ -4037,7 +4025,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_UNDEF:{
 	if (nd_type(node->u2.node) != NODE_LIT) {
-	    rb_compile_error(ERROR_ARGS "undef args must be NODE_LIT");
+	    rb_bug("undef args must be NODE_LIT");
 	}
 	ADD_INSN1(ret, nd_line(node), undef,
 		  ID2SYM(rb_to_id(node->u2.node->nd_lit)));
@@ -4361,8 +4349,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       default:
-	rb_compile_error(ERROR_ARGS "iseq_compile_each: unknown node: %s",
-			 ruby_node_name(type));
+	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
 	return Qnil;
     }
 
