@@ -237,6 +237,15 @@ cont_restore_1(rb_context_t *cont)
     th->first_proc = sth->first_proc;
 
     /* restore machine stack */
+#ifdef _M_AMD64
+    {
+	/* workaround for x64 SEH */
+	jmp_buf buf;
+	setjmp(buf);
+	((_JUMP_BUFFER*)(&cont->jmpbuf))->Frame =
+	    ((_JUMP_BUFFER*)(&buf))->Frame;
+    }
+#endif
     if (cont->machine_stack_src) {
 	MEMCPY(cont->machine_stack_src, cont->machine_stack,
 	       VALUE, cont->machine_stack_size);

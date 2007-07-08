@@ -1,7 +1,10 @@
-Sun Jul 08 02:08:53 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+Mon Jul  9 02:17:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/json.rb, lib/json/, ext/json/:
-	  import JSON 1.1.1
+	* cont.c (cont_restore_1): workaround for x64-mswin64's SEH.
+
+Sun Jul  8 02:08:53 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/json.rb, lib/json/, ext/json/: import JSON 1.1.1
 
 Sat Jul  7 21:59:29 2007  Tanaka Akira  <akr@fsij.org>
 
