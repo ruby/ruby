@@ -1781,7 +1781,8 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     return eval(self, src, scope, file, line);
 }
 
-VALUE *vm_cfp_svar(rb_control_frame_t *cfp, int idx);
+VALUE vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key);
+void vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, VALUE val);
 
 /* function to call func under the specified class/module context */
 static VALUE
@@ -1793,7 +1794,6 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
     rb_control_frame_t *pcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     VALUE stored_self = pcfp->self;
     NODE *stored_cref = 0;
-    NODE **pcref = 0;
 
     rb_block_t block;
     rb_block_t *blockptr;
@@ -1813,9 +1813,8 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
-    pcref = (NODE **) vm_cfp_svar(cfp, -1);
-    stored_cref = *pcref;
-    *pcref = vm_cref_push(th, under, NOEX_PUBLIC);
+    stored_cref = vm_cfp_svar_get(th, cfp, -1);
+    vm_cfp_svar_set(th, cfp, -1, vm_cref_push(th, under, NOEX_PUBLIC));
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -1824,7 +1823,7 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
     POP_TAG();
 
     /* restore environment */
-    *pcref = stored_cref;
+    vm_cfp_svar_set(th, cfp, -1, stored_cref);
     pcfp->self = stored_self;
 
     if (state) {

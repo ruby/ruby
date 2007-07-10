@@ -110,7 +110,7 @@ vm_compile_from_node(rb_thread_t *th, NODE * node, VALUE file)
     }
     else {
 	iseq = rb_iseq_new(node, rb_str_new2("<main>"), file,
-			     Qfalse, ISEQ_TYPE_TOP);
+			   Qfalse, ISEQ_TYPE_TOP);
     }
     return iseq;
 }

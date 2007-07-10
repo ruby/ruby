@@ -747,42 +747,75 @@ new_value(void)
     return val;
 }
 
-static VALUE *
-lfp_svar(VALUE *lfp, int cnt)
+static struct RValues *
+lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 {
-    struct RValues *val;
-    rb_thread_t *th = GET_THREAD();
+    struct RValues *svar;
 
     if (th->local_lfp != lfp) {
-	val = (struct RValues *)lfp[-1];
-	if ((VALUE)val == Qnil) {
-	    val = new_value();
-	    lfp[-1] = (VALUE)val;
+	svar = (struct RValues *)lfp[-1];
+	if ((VALUE)svar == Qnil) {
+	    svar = new_value();
+	    lfp[-1] = (VALUE)svar;
 	}
     }
     else {
-	val = (struct RValues *)th->local_svar;
-	if ((VALUE)val == Qnil) {
-	    val = new_value();
-	    th->local_svar = (VALUE)val;
+	svar = (struct RValues *)th->local_svar;
+	if ((VALUE)svar == Qnil) {
+	    svar = new_value();
+	    th->local_svar = (VALUE)svar;
 	}
     }
-    switch (cnt) {
-      case -1:
-	return &val->basic.klass;
+    return svar;
+}
+
+static VALUE
+lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
+{
+    struct RValues *svar = lfp_svar_place(th, lfp);
+
+    switch (key) {
+      case (VALUE)-1:
+	return svar->basic.klass;
       case 0:
-	return &val->v1;
+	return svar->v1;
       case 1:
-	return &val->v2;
-      default:{
-	VALUE ary;
-	if ((ary = val->v3) == Qnil) {
-	    ary = val->v3 = rb_ary_new();
-	}
-	if (RARRAY_LEN(ary) <= cnt) {
-	    rb_ary_store(ary, cnt, Qnil);
-	}
-	return &RARRAY_PTR(ary)[cnt];
+	return svar->v2;
+      default: {
+	  VALUE hash = svar->v3;
+
+	  if (hash == Qnil) {
+	      return Qnil;
+	  }
+	  else {
+	      return rb_hash_aref(hash, key);
+	  }
+      }
+    }
+}
+
+static void
+lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
+{
+    struct RValues *svar = lfp_svar_place(th, lfp);
+
+    switch (key) {
+      case (VALUE)-1:
+	svar->basic.klass = val;
+	return;
+      case 0:
+	svar->v1 = val;
+	return;
+      case 1:
+	svar->v2 = val;
+	return;
+      default: {
+	  VALUE hash = svar->v3;
+
+	  if (hash == Qnil) {
+	      svar->v3 = hash = rb_hash_new();
+	  }
+	  rb_hash_aset(hash, key, val);
       }
     }
 }

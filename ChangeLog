@@ -1,3 +1,16 @@
+Tue Jul 10 16:58:16 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, insnhelper.ci: fix svar interface.
+
+	* compile.c (iseq_compile_each), yarvcore.h: fix to use new
+	  svar interface for flip flop.
+
+	* eval.c: ditto.
+
+	* insns.def: ditto.
+
+	* include/ruby/intern.h: remove "rb_svar()" declaration.
+
 Tue Jul 10 16:52:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (rb_iseq_compile): formatted if/else to switch statement.

@@ -228,7 +228,6 @@ void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
 void rb_dvar_asgn(ID, VALUE);
 void rb_dvar_push(ID, VALUE);
-VALUE *rb_svar(int);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);

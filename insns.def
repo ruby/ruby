@@ -80,16 +80,16 @@ setlocal
  */
 DEFINE_INSN
 getspecial
-(rb_num_t idx, rb_num_t type)
+(VALUE key, rb_num_t type)
 ()
 (VALUE val)
 {
     if (type == 0) {
-	VALUE *pv = lfp_svar(GET_LFP(), idx);
-	val = *pv;
+	val = lfp_svar_get(th, GET_LFP(), key);
     }
     else {
-	VALUE backref = *lfp_svar(GET_LFP(), 1);
+	VALUE backref = lfp_svar_get(th, GET_LFP(), 1);
+
 	if (type & 0x01) {
 	    switch (type >> 1) {
 	      case '&':
@@ -121,12 +121,11 @@ getspecial
  */
 DEFINE_INSN
 setspecial
-(rb_num_t idx)
+(VALUE key)
 (VALUE obj)
 ()
 {
-    VALUE *pv = lfp_svar(GET_LFP(), idx);
-    *pv = obj;
+    lfp_svar_set(th, GET_LFP(), key, obj);
 }
 
 /**
@@ -939,7 +938,7 @@ defined
       }
       case DEFINED_REF:{
 	  int nth = FIX2INT(obj);
-	  VALUE backref = *lfp_svar(GET_LFP(), 1);
+	  VALUE backref = lfp_svar_get(th, GET_LFP(), 1);
 	  
 	  if (rb_reg_nth_match(nth, backref) != Qnil) {
 	      snprintf(buf, 0x10, "$%d", nth);

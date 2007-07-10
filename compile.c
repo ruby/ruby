@@ -4172,9 +4172,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *ltrue = NEW_LABEL(nd_line(node));
+	VALUE key = rb_sprintf("flipflag/%s-%p-%d",
+			       RSTRING_PTR(iseq->name), iseq,
+			       iseq->compile_data->flip_cnt++);
 
-	ADD_INSN2(ret, nd_line(node), getspecial, INT2FIX(node->nd_cnt),
-		  INT2FIX(0));
+	iseq_add_mark_object_compile_time(iseq, key);
+	ADD_INSN2(ret, nd_line(node), getspecial, key, INT2FIX(0));
 	ADD_INSNL(ret, nd_line(node), branchif, lend);
 
 	/* *flip == 0 */
@@ -4183,11 +4186,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSNL(ret, nd_line(node), branchunless, lfin);
 	if (nd_type(node) == NODE_FLIP3) {
 	    ADD_INSN(ret, nd_line(node), dup);
-	    ADD_INSN1(ret, nd_line(node), setspecial, INT2FIX(node->nd_cnt));
+	    ADD_INSN1(ret, nd_line(node), setspecial, key);
 	    ADD_INSNL(ret, nd_line(node), jump, lfin);
 	}
 	else {
-	    ADD_INSN1(ret, nd_line(node), setspecial, INT2FIX(node->nd_cnt));
+	    ADD_INSN1(ret, nd_line(node), setspecial, key);
 	}
 
 	/* *flip == 1 */
@@ -4195,7 +4198,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	COMPILE(ret, "flip2 end", node->nd_end);
 	ADD_INSNL(ret, nd_line(node), branchunless, ltrue);
 	ADD_INSN1(ret, nd_line(node), putobject, Qfalse);
-	ADD_INSN1(ret, nd_line(node), setspecial, INT2FIX(node->nd_cnt));
+	ADD_INSN1(ret, nd_line(node), setspecial, key);
 
 	ADD_LABEL(ret, ltrue);
 	ADD_INSN1(ret, nd_line(node), putobject, Qtrue);

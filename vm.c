@@ -651,60 +651,60 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 
 /* special variable */
 
-VALUE *
-vm_cfp_svar(rb_control_frame_t *cfp, int cnt)
+VALUE
+vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key)
 {
     while (cfp->pc == 0) {
 	cfp++;
     }
-    return lfp_svar(cfp->lfp, cnt);
+    return lfp_svar_get(th, cfp->lfp, key);
 }
 
-static VALUE *
-vm_svar(rb_thread_t *th, int cnt)
+void
+vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, VALUE val)
 {
-    rb_control_frame_t *cfp = th->cfp;
-    return vm_cfp_svar(cfp, cnt);
+    while (cfp->pc == 0) {
+	cfp++;
+    }
+    lfp_svar_set(th, cfp->lfp, key, val);
 }
 
-VALUE *
-rb_svar(int cnt)
+static VALUE
+vm_svar_get(VALUE key)
 {
-    return vm_svar(GET_THREAD(), cnt);
+    rb_thread_t *th = GET_THREAD();
+    return vm_cfp_svar_get(th, th->cfp, key);
+}
+
+static void
+vm_svar_set(VALUE key, VALUE val)
+{
+    rb_thread_t *th = GET_THREAD();
+    vm_cfp_svar_set(th, th->cfp, key, val);
 }
 
 VALUE
 rb_backref_get(void)
 {
-    VALUE *var = rb_svar(1);
-    if (var) {
-	return *var;
-    }
-    return Qnil;
+    return vm_svar_get(1);
 }
 
 void
 rb_backref_set(VALUE val)
 {
-    VALUE *var = rb_svar(1);
-    *var = val;
+    vm_svar_set(1, val);
 }
 
 VALUE
 rb_lastline_get(void)
 {
-    VALUE *var = rb_svar(0);
-    if (var) {
-	return *var;
-    }
-    return Qnil;
+    return vm_svar_get(0);
 }
 
 void
 rb_lastline_set(VALUE val)
 {
-    VALUE *var = rb_svar(0);
-    *var = val;
+    vm_svar_set(0, val);
 }
 
 /* backtrace */
@@ -823,9 +823,8 @@ lfp_set_special_cref(VALUE *lfp, NODE * cref)
 	old_cref = 0;
     }
     else {
-	pv = lfp_svar(lfp, -1);
-	old_cref = (NODE *) * pv;
-	*pv = (VALUE)cref;
+	old_cref = lfp_svar_get(GET_THREAD(), lfp, -1);
+	lfp_svar_set(GET_THREAD(), lfp, -1, cref);
     }
     return old_cref;
 }
