@@ -1,3 +1,7 @@
+Tue Jul 10 15:57:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/test_flip.rb: new test for flip-flop operator.
+
 Tue Jul 10 14:50:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/{Makefile.sub,setup.mak}: remove surplus slash from srcdir.
