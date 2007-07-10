@@ -1,3 +1,7 @@
+Tue Jul 10 14:50:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bcc32/{Makefile.sub,setup.mak}: remove surplus slash from srcdir.
+
 Mon Jul  9 02:17:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* cont.c (cont_restore_1): workaround for x64-mswin64's SEH.
