@@ -788,7 +788,7 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
 	      return Qnil;
 	  }
 	  else {
-	      return rb_hash_aref(hash, key);
+	      return rb_hash_lookup(hash, key);
 	  }
       }
     }

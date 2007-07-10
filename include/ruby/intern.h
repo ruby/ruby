@@ -329,6 +329,7 @@ VALUE rb_hash(VALUE);
 VALUE rb_hash_new(void);
 VALUE rb_hash_freeze(VALUE);
 VALUE rb_hash_aref(VALUE, VALUE);
+VALUE rb_hash_lookup(VALUE, VALUE);
 VALUE rb_hash_aset(VALUE, VALUE, VALUE);
 VALUE rb_hash_delete_if(VALUE);
 VALUE rb_hash_delete(VALUE,VALUE);
