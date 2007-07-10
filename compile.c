@@ -151,7 +151,8 @@ rb_iseq_compile(VALUE self, NODE *node)
 	set_local_table(iseq, node->nd_tbl);
 	set_arguments(iseq, ret, node->nd_args);
 
-	if (iseq->type == ISEQ_TYPE_BLOCK) {
+	switch (iseq->type) {
+	  case ISEQ_TYPE_BLOCK: {
 	    LABEL *start = iseq->compile_data->start_label = NEW_LABEL(0);
 	    LABEL *end = iseq->compile_data->end_label = NEW_LABEL(0);
 
@@ -162,21 +163,24 @@ rb_iseq_compile(VALUE self, NODE *node)
 	    /* wide range catch handler must put at last */
 	    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
 	    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
-	}
-	else {
-	    if (iseq->type == ISEQ_TYPE_CLASS) {
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CLASS);
-		COMPILE(ret, "scoped node", node->nd_body);
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
-	    }
-	    else if (iseq->type == ISEQ_TYPE_METHOD) {
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CALL);
-		COMPILE(ret, "scoped node", node->nd_body);
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
-	    }
-	    else {
-		COMPILE(ret, "scoped node", node->nd_body);
-	    }
+	    break;
+	  }
+	  case ISEQ_TYPE_CLASS: {
+	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CLASS);
+	    COMPILE(ret, "scoped node", node->nd_body);
+	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
+	    break;
+	  }
+	  case ISEQ_TYPE_METHOD: {
+	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_CALL);
+	    COMPILE(ret, "scoped node", node->nd_body);
+	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
+	    break;
+	  }
+	  default: {
+	    COMPILE(ret, "scoped node", node->nd_body);
+	    break;
+	  }
 	}
     }
     else {

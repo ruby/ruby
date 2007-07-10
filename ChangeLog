@@ -1,3 +1,7 @@
+Tue Jul 10 16:52:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (rb_iseq_compile): formatted if/else to switch statement.
+
 Tue Jul 10 15:57:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/test_flip.rb: new test for flip-flop operator.
