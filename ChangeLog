@@ -1,3 +1,7 @@
+Tue Jul 10 19:16:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, insnhelper.ci, vm.c: change cref index (-1 -> 2).
+
 Tue Jul 10 18:49:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (exec_under): add proper casts.

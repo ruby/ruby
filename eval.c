@@ -1813,8 +1813,8 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
-    stored_cref = (NODE *)vm_cfp_svar_get(th, cfp, (VALUE)-1);
-    vm_cfp_svar_set(th, cfp, (VALUE)-1, (VALUE)vm_cref_push(th, under, NOEX_PUBLIC));
+    stored_cref = (NODE *)vm_cfp_svar_get(th, cfp, 2);
+    vm_cfp_svar_set(th, cfp, 2, (VALUE)vm_cref_push(th, under, NOEX_PUBLIC));
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -1823,7 +1823,7 @@ exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
     POP_TAG();
 
     /* restore environment */
-    vm_cfp_svar_set(th, cfp, (VALUE)-1, (VALUE)stored_cref);
+    vm_cfp_svar_set(th, cfp, 2, (VALUE)stored_cref);
     pcfp->self = stored_self;
 
     if (state) {

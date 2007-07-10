@@ -812,7 +812,6 @@ static NODE *
 lfp_set_special_cref(VALUE *lfp, NODE * cref)
 {
     struct RValues *values = (void *) lfp[-1];
-    VALUE *pv;
     NODE *old_cref;
 
     if (VMDEBUG) {
@@ -823,8 +822,8 @@ lfp_set_special_cref(VALUE *lfp, NODE * cref)
 	old_cref = 0;
     }
     else {
-	old_cref = lfp_svar_get(GET_THREAD(), lfp, -1);
-	lfp_svar_set(GET_THREAD(), lfp, -1, cref);
+	old_cref = (NODE *)lfp_svar_get(GET_THREAD(), lfp, 2);
+	lfp_svar_set(GET_THREAD(), lfp, 2, (VALUE)cref);
     }
     return old_cref;
 }

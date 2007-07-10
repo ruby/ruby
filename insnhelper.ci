@@ -775,12 +775,12 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
     struct RValues *svar = lfp_svar_place(th, lfp);
 
     switch (key) {
-      case (VALUE)-1:
-	return svar->basic.klass;
       case 0:
 	return svar->v1;
       case 1:
 	return svar->v2;
+      case 2:
+	return svar->basic.klass;
       default: {
 	  VALUE hash = svar->v3;
 
@@ -800,14 +800,14 @@ lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
     struct RValues *svar = lfp_svar_place(th, lfp);
 
     switch (key) {
-      case (VALUE)-1:
-	svar->basic.klass = val;
-	return;
       case 0:
 	svar->v1 = val;
 	return;
       case 1:
 	svar->v2 = val;
+	return;
+      case 2:
+	svar->basic.klass = val;
 	return;
       default: {
 	  VALUE hash = svar->v3;
