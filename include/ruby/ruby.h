@@ -201,7 +201,7 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 #endif
 
 #define FIX2LONG(x) RSHIFT((SIGNED_VALUE)x,1)
-#define FIX2ULONG(x) (((VALUE)(x))>>1)
+#define FIX2ULONG(x) ((((VALUE)(x))>>1)&LONG_MAX)
 #define FIXNUM_P(f) (((SIGNED_VALUE)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) <= FIXNUM_MAX)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
