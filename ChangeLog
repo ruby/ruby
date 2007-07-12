@@ -1,3 +1,15 @@
+Thu Jul 12 18:42:18 2007  Tanaka Akira  <akr@fsij.org>
+
+	* range.c (range_max): use FIX2LONG instead of FIX2INT to avoid
+	  RangeError by ((-0x80000001)...(-0x80000001)).max on LP64.
+
+	* insns.def (opt_plus): use FIX2LONG instead of FIX2INT to avoid
+	  RangeError by 0x3fffffffffffffff+1 on LP64.
+
+	* insns.def (opt_succ): don't use 0x80000000 which assumes 32bit VALUE.
+	  use FIX2LONG instead of FIX2INT.
+	  [ruby-dev:31190]
+
 Thu Jul 12 17:03:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (rb_struct_init_copy): disallow changing the size.

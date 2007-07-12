@@ -503,7 +503,7 @@ range_max(VALUE range)
 	    return Qnil;
 	if (EXCL(range)) {
 	    if (FIXNUM_P(e)) {
-		return INT2NUM(FIX2INT(e) - 1);
+		return LONG2NUM(FIX2LONG(e) - 1);
 	    }
 	    return rb_funcall(e, '-', 1, INT2FIX(1));
 	}

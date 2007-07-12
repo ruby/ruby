@@ -1677,8 +1677,8 @@ opt_plus
 	val = (recv + (obj & (~1)));
 	if ((~(recv ^ obj) & (recv ^ val)) &
 	    ((VALUE)0x01 << ((sizeof(VALUE) * CHAR_BIT) - 1))) {
-	    val = rb_big_plus(rb_int2big(FIX2INT(recv)),
-			      rb_int2big(FIX2INT(obj)));
+	    val = rb_big_plus(rb_int2big(FIX2LONG(recv)),
+			      rb_int2big(FIX2LONG(obj)));
 	}
 #else
 	long a, b, c;
@@ -2304,9 +2304,10 @@ opt_succ
 	    const VALUE obj = INT2FIX(1);
 	    /* fixnum + INT2FIX(1) */
 	    val = (recv + (obj & (~1)));
-	    if ((~(recv ^ obj) & (recv ^ val)) & 0x80000000) {
-		val = rb_big_plus(rb_int2big(FIX2INT(recv)),
-				  rb_int2big(FIX2INT(obj)));
+	    if ((~(recv ^ obj) & (recv ^ val)) &
+		((VALUE)0x01 << ((sizeof(VALUE) * CHAR_BIT) - 1))) {
+		val = rb_big_plus(rb_int2big(FIX2LONG(recv)),
+				  rb_int2big(FIX2LONG(obj)));
 	    }
 	}
 	else {
