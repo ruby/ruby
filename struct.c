@@ -226,7 +226,7 @@ rb_struct_define(const char *name, ...)
     ary = rb_ary_new();
 
     va_start(ar, name);
-    while (mem = va_arg(ar, char*)) {
+    while ((mem = va_arg(ar, char*)) != 0) {
 	ID slot = rb_intern(mem);
 	rb_ary_push(ary, ID2SYM(slot));
     }
@@ -515,13 +515,8 @@ rb_struct_init_copy(VALUE copy, VALUE s)
     if (!rb_obj_is_instance_of(s, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
-    if (0 < RSTRUCT_LEN(s) && RSTRUCT_LEN(s) <= RSTRUCT_EMBED_LEN_MAX) {
-        RBASIC(copy)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
-        RBASIC(copy)->flags |= RSTRUCT_LEN(s) << RSTRUCT_EMBED_LEN_SHIFT;
-    }
-    else {
-	RSTRUCT(copy)->as.heap.ptr = ALLOC_N(VALUE, RSTRUCT_LEN(s));
-	RSTRUCT(copy)->as.heap.len = RSTRUCT_LEN(s);
+    if (RSTRUCT_LEN(copy) != RSTRUCT_LEN(s)) {
+	rb_raise(rb_eTypeError, "struct size mismatch");
     }
     MEMCPY(RSTRUCT_PTR(copy), RSTRUCT_PTR(s), VALUE, RSTRUCT_LEN(copy));
 

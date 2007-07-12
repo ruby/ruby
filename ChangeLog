@@ -1,3 +1,8 @@
+Thu Jul 12 17:03:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_init_copy): disallow changing the size.
+	  [ruby-dev:31168]
+
 Thu Jul 12 12:58:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c: remove "yarv" prefix.
