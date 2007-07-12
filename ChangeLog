@@ -1,3 +1,7 @@
+Thu Jul 12 12:24:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (opt_succ): fixed typo.  [ruby-dev:31189]
+
 Thu Jul 12 10:30:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): moved prototye from thread_*.ci.

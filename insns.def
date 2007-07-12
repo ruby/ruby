@@ -2305,8 +2305,8 @@ opt_succ
 	    /* fixnum + INT2FIX(1) */
 	    val = (recv + (obj & (~1)));
 	    if ((~(recv ^ obj) & (recv ^ val)) & 0x80000000) {
-		val = rb_big_plus(rb_int2big(INT2FIX(recv)),
-				  rb_int2big(INT2FIX(obj)));
+		val = rb_big_plus(rb_int2big(FIX2INT(recv)),
+				  rb_int2big(FIX2INT(obj)));
 	    }
 	}
 	else {
