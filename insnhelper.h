@@ -69,9 +69,6 @@
 #define GET_DFP()  (USAGE_ANALYSIS_REGISTER_HELPER(4, 0, REG_DFP))
 #define SET_DFP(x) (REG_DFP = (USAGE_ANALYSIS_REGISTER_HELPER(4, 1, (x))))
 
-#define GET_CONTINUATION_FRAME_PTR(cfp) \
-  ((struct continuation_frame *)((cfp) + CC_DIFF_WC()))
-
 /* SP */
 #define GET_SP()   (USAGE_ANALYSIS_REGISTER_HELPER(1, 0, REG_SP))
 #define SET_SP(x)  (REG_SP  = (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
@@ -84,13 +81,11 @@
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
-#define CLEAR_ENV(env) (GET_ENV_CTRL(env)->is_orphan = Qundef)
 
 /**********************************************************/
 /* deal with variables                                    */
 /**********************************************************/
 
-#define GET_CURRENT_DYNAMIC(idx)         (*(GET_DFP() -(idx)))
 #define GET_PREV_DFP(dfp)                ((VALUE *)((dfp)[0] & ~0x03))
 
 #define GET_GLOBAL(entry)       rb_gvar_get((struct global_entry*)entry)

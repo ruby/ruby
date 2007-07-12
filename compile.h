@@ -13,12 +13,6 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
-
-#if YARVDEBUG > CPDEBUG
-#undef  CPDEBUG
-#define CPDEBUG YARVDEBUG
-#endif
-
 /*  */
 /**
  * debug function(macro) interface depend on CPDEBUG
@@ -31,6 +25,10 @@
  *  5: show other parameters
  * 10: show every AST array
  */
+
+#ifndef CPDEBUG
+#define CPDEBUG 0
+#endif
 
 #if 0
 #undef  CPDEBUG

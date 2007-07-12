@@ -11,7 +11,6 @@
 **********************************************************************/
 
 /* finish iseq array */
-
 #include "insns.inc"
 
 /* control stack frame */
@@ -1005,7 +1004,7 @@ vm_search_super_klass(VALUE klass, VALUE recv)
 }
 
 static void
-call_yarv_end_proc(VALUE data)
+call_end_proc(VALUE data)
 {
     rb_proc_call(data, rb_ary_new2(0));
 }

@@ -10,13 +10,8 @@
 
 **********************************************************************/
 
-#ifndef _VM_H_INCLUDED_
-#define _VM_H_INCLUDED_
-
-#if YARVDEBUG > VMDEBUG
-#undef  VMDEBUG
-#define VMDEBUG YARVDEBUG
-#endif
+#ifndef RUBY_VM_H
+#define RUBY_VM_H
 
 typedef long OFFSET;
 typedef unsigned long rb_num_t;
@@ -42,6 +37,11 @@ extern VALUE ruby_vm_redefined_flag;
  * 10: gc check
  */
 
+
+#ifndef VMDEBUG
+#define VMDEBUG 0
+#endif
+
 #if 0
 #undef  VMDEBUG
 #define VMDEBUG 3
@@ -52,9 +52,9 @@ extern VALUE ruby_vm_redefined_flag;
 #define USAGE_ANALYSIS_OPERAND(insn, n, op) vm_analysis_operand(insn, n, (VALUE)op)
 #define USAGE_ANALYSIS_REGISTER(reg, s)     vm_analysis_register(reg, s)
 #else
-#define USAGE_ANALYSIS_INSN(insn)	/* none */
+#define USAGE_ANALYSIS_INSN(insn)		/* none */
 #define USAGE_ANALYSIS_OPERAND(insn, n, op)	/* none */
-#define USAGE_ANALYSIS_REGISTER(reg, s)	/* none */
+#define USAGE_ANALYSIS_REGISTER(reg, s)		/* none */
 #endif
 
 #ifdef __GCC__
@@ -298,4 +298,4 @@ while (0)
 #define BOP_GT     0x2000
 #define BOP_GE     0x4000
 
-#endif /* _VM_H_INCLUDED_ */
+#endif /* RUBY_VM_H */

@@ -59,20 +59,14 @@ proc_mark(void *ptr)
     RUBY_MARK_LEAVE("proc");
 }
 
-static VALUE
-proc_alloc(VALUE klass)
+VALUE
+rb_proc_alloc(VALUE klass)
 {
     VALUE obj;
     rb_proc_t *proc;
     obj = Data_Make_Struct(klass, rb_proc_t, proc_mark, proc_free, proc);
     MEMZERO(proc, rb_proc_t, 1);
     return obj;
-}
-
-VALUE
-rb_proc_alloc(void)
-{
-    return proc_alloc(rb_cProc);
 }
 
 VALUE
@@ -90,7 +84,7 @@ rb_obj_is_proc(VALUE proc)
 static VALUE
 proc_dup(VALUE self)
 {
-    VALUE procval = proc_alloc(rb_cProc);
+    VALUE procval = rb_proc_alloc(rb_cProc);
     rb_proc_t *src, *dst;
     GetProcPtr(self, src);
     GetProcPtr(procval, dst);

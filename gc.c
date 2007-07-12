@@ -17,7 +17,7 @@
 #include "ruby/st.h"
 #include "ruby/node.h"
 #include "ruby/re.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 #include "gc.h"
 #include <stdio.h>
 #include <setjmp.h>
@@ -1455,7 +1455,7 @@ garbage_collect(void)
 }
 
 void
-yarv_machine_stack_mark(rb_thread_t *th)
+rb_gc_mark_machine_stack(rb_thread_t *th)
 {
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);

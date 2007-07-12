@@ -10,7 +10,7 @@
 #include "ruby/node.h"
 #include "ruby/util.h"
 #include "ruby/signal.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -195,8 +195,6 @@ NORETURN(void print_undef _((VALUE, ID)));
 NORETURN(void vm_localjump_error(const char *, VALUE, int));
 NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 
-VALUE vm_compile(rb_thread_t *th, VALUE str, VALUE file, VALUE line);
-
 NODE *vm_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
 NODE *vm_cref_push(rb_thread_t *th, VALUE, int);
 NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
@@ -228,6 +226,7 @@ void rb_vm_check_redefinition_opt_method(NODE *node);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
 void rb_vm_set_eval_stack(rb_thread_t *, VALUE iseq);
+VALUE rb_vm_top_self();
 
 #define ruby_cbase() vm_get_cbase(GET_THREAD())
 

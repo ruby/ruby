@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  compile.c - ruby node tree -> yarv instruction sequence
+  compile.c - ruby node tree -> VM instruction sequence
 
   $Author$
   $Date$
@@ -13,11 +13,10 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 
-#include "yarvcore.h"
+#include "vm_core.h"
 #include "compile.h"
 #include "insns.inc"
 #include "insns_info.inc"
-
 
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
@@ -27,7 +26,11 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
+/* iseq.c */
 VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
+
+/* vm.c */
+VALUE vm_eval(void *);
 
 /* types */
 
@@ -77,6 +80,10 @@ struct iseq_compile_data_ensure_node_stack {
     struct ensure_range *erange;
 };
 
+#include "optinsn.inc"
+#if OPT_INSTRUCTIONS_UNIFICATION
+#include "optunifs.inc"
+#endif
 
 /* for debug */
 #if CPDEBUG > 0
@@ -92,24 +99,22 @@ static int calc_sp_depth(int depth, INSN *iobj);
 
 static void ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
-static INSN *new_insn_body(rb_iseq_t *iseq, int line_no,
-			   int insn_id, int argc, ...);
+static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, int line);
 
-static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
-			     NODE * n, int);
+static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
-
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
-static int set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
-static int set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 
-static int set_exception_table(rb_iseq_t *iseq);
-static int set_local_table(rb_iseq_t *iseq, ID *tbl);
-static int set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
-static int set_exception_tbl(rb_iseq_t *iseq);
-static int set_optargs_table(rb_iseq_t *iseq);
+static int iseq_set_local_table(rb_iseq_t *iseq, ID *tbl);
+static int iseq_set_exception_local_table(rb_iseq_t *iseq);
+static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * node);
+
+static int iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
+static int iseq_set_exception_table(rb_iseq_t *iseq);
+static int iseq_set_optargs_table(rb_iseq_t *iseq);
 
 static int
 iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
@@ -129,15 +134,8 @@ iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
-
-#include "optinsn.inc"
-
-#if OPT_INSTRUCTIONS_UNIFICATION
-#include "optunifs.inc"
-#endif
-
 VALUE
-rb_iseq_compile(VALUE self, NODE *node)
+iseq_compile(VALUE self, NODE *node)
 {
     DECL_ANCHOR(ret);
     rb_iseq_t *iseq;
@@ -148,8 +146,8 @@ rb_iseq_compile(VALUE self, NODE *node)
     }
     else if (nd_type(node) == NODE_SCOPE) {
 	/* iseq type of top, method, class, block */
-	set_local_table(iseq, node->nd_tbl);
-	set_arguments(iseq, ret, node->nd_args);
+	iseq_set_local_table(iseq, node->nd_tbl);
+	iseq_set_arguments(iseq, ret, node->nd_args);
 
 	switch (iseq->type) {
 	  case ISEQ_TYPE_BLOCK: {
@@ -195,11 +193,11 @@ rb_iseq_compile(VALUE self, NODE *node)
 			     __FILE__, __LINE__);
 	    break;
 	  case ISEQ_TYPE_RESCUE:
-	    set_exception_tbl(iseq);
+	    iseq_set_exception_local_table(iseq);
 	    COMPILE(ret, "rescue", node);
 	    break;
 	  case ISEQ_TYPE_ENSURE:
-	    set_exception_tbl(iseq);
+	    iseq_set_exception_local_table(iseq);
 	    COMPILE_POPED(ret, "ensure", node);
 	    break;
 	  case ISEQ_TYPE_DEFINED_GUARD:
@@ -220,8 +218,6 @@ rb_iseq_compile(VALUE self, NODE *node)
 
     return iseq_setup(iseq, ret);
 }
-
-VALUE vm_eval(void *);
 
 int
 iseq_translate_threaded_code(rb_iseq_t *iseq)
@@ -678,22 +674,22 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
 
     if (iseq->compile_data->option->stack_caching) {
-	debugs("[compile step 3.3 (set_sequence_stackcaching)]\n");
-	set_sequence_stackcaching(iseq, anchor);
+	debugs("[compile step 3.3 (iseq_set_sequence_stackcaching)]\n");
+	iseq_set_sequence_stackcaching(iseq, anchor);
 	if (CPDEBUG > 5)
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
     }
 
-    debugs("[compile step 4.1 (set_sequence)]\n");
-    set_sequence(iseq, anchor);
+    debugs("[compile step 4.1 (iseq_set_sequence)]\n");
+    iseq_set_sequence(iseq, anchor);
     if (CPDEBUG > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
-    debugs("[compile step 4.2 (set_exception_table)]\n");
-    set_exception_table(iseq);
+    debugs("[compile step 4.2 (iseq_set_exception_table)]\n");
+    iseq_set_exception_table(iseq);
 
     debugs("[compile step 4.3 (set_optargs_table)] \n");
-    set_optargs_table(iseq);
+    iseq_set_optargs_table(iseq);
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
     iseq_translate_threaded_code(iseq);
@@ -708,15 +704,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     return 0;
 }
 
-VALUE
-iseq_assemble_setup(VALUE self, VALUE args, VALUE locals, VALUE insn_ary)
-{
-    /* unsupported */
-    return Qnil;
-}
-
-int
-set_exception_tbl(rb_iseq_t *iseq)
+static int
+iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
     static ID id_dollar_bang;
 
@@ -778,9 +767,9 @@ get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
 }
 
 static int
-set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
+iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 {
-    debugs("set_arguments: %s\n", node_args ? "" : "0");
+    debugs("iseq_set_arguments: %s\n", node_args ? "" : "0");
 
     if (node_args) {
 	NODE *node_aux = node_args->nd_next;
@@ -791,7 +780,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	NODE *node_init = 0;
 
 	if (nd_type(node_args) != NODE_ARGS) {
-	    rb_bug("set_arguments: NODE_ARGS is expected, but %s",
+	    rb_bug("iseq_set_arguments: NODE_ARGS is expected, but %s",
 		   ruby_node_name(nd_type(node_args)));
 	}
 
@@ -925,7 +914,7 @@ set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 }
 
 static int
-set_local_table(rb_iseq_t *iseq, ID *tbl)
+iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
 {
     int size;
 
@@ -950,7 +939,7 @@ set_local_table(rb_iseq_t *iseq, ID *tbl)
 	iseq->local_size += 1 /* svar */;
     }
 
-    debugs("set_local_table: %d, %d\n", iseq->local_size, iseq->local_table_size);
+    debugs("iseq_set_local_table: %d, %d\n", iseq->local_size, iseq->local_table_size);
     return COMPILE_OK;
 }
 
@@ -958,7 +947,7 @@ set_local_table(rb_iseq_t *iseq, ID *tbl)
   ruby insn object array -> raw instruction sequence
  */
 static int
-set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
+iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LABEL *lobj;
     INSN *iobj;
@@ -1177,7 +1166,7 @@ label_get_sp(LABEL *lobj)
 }
 
 static int
-set_exception_table(rb_iseq_t *iseq)
+iseq_set_exception_table(rb_iseq_t *iseq)
 {
     VALUE *tptr, *ptr;
     int tlen, i;
@@ -1235,7 +1224,7 @@ set_exception_table(rb_iseq_t *iseq)
  *      expr2
  */
 static int
-set_optargs_table(rb_iseq_t *iseq)
+iseq_set_optargs_table(rb_iseq_t *iseq)
 {
     int i;
 
@@ -1664,7 +1653,7 @@ label_set_sc_state(LABEL *lobj, int state)
 #endif
 
 static int
-set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
+iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
 #if OPT_STACK_CACHING
     LINK_ELEMENT *list;

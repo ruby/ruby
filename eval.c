@@ -32,8 +32,6 @@ VALUE rb_eSysStackError;
 VALUE exception_error;
 VALUE sysstack_error;
 
-extern VALUE ruby_top_self;
-
 static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
 
 static inline VALUE rb_yield_0(int argc, VALUE *argv);
@@ -63,7 +61,7 @@ void rb_call_inits _((void));
 void Init_stack _((VALUE *));
 void Init_heap _((void));
 void Init_ext _((void));
-void Init_yarv(void);
+void Init_BareVM(void);
 
 void
 ruby_init(void)
@@ -82,7 +80,7 @@ ruby_init(void)
 #endif
 
     Init_stack((void *)&state);
-    Init_yarv();
+    Init_BareVM();
     Init_heap();
 
     PUSH_TAG();
@@ -214,7 +212,7 @@ ruby_cleanup(int ex)
 }
 
 int
-ruby_exec_node(void *n)
+ruby_exec_node(void *n, char *file)
 {
     int state;
     VALUE val;
@@ -226,8 +224,10 @@ ruby_exec_node(void *n)
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, {
+	    VALUE iseq = rb_iseq_new(n, rb_str_new2("<main>"),
+				     rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 	    th->base_block = 0;
-	    val = yarvcore_eval_parsed(node, rb_str_new2(node->nd_file));
+	    val = rb_iseq_eval(iseq);
 	});
     }
     POP_TAG();
@@ -243,17 +243,18 @@ ruby_stop(int ex)
 int
 ruby_run_node(void *n)
 {
+    NODE *node = (NODE *)n;
     if (!n) {
 	return EXIT_FAILURE;
     }
     Init_stack((void *)&n);
-    return ruby_cleanup(ruby_exec_node(n));
+    return ruby_cleanup(ruby_exec_node(node, node->nd_file));
 }
 
 VALUE
 rb_eval_string(const char *str)
 {
-    return eval(ruby_top_self, rb_str_new2(str), Qnil, "(eval)", 1);
+    return eval(rb_vm_top_self(), rb_str_new2(str), Qnil, "(eval)", 1);
 }
 
 VALUE
@@ -272,7 +273,7 @@ rb_eval_string_wrap(const char *str, int *state)
     VALUE val;
 
     th->top_wrapper = rb_module_new();
-    th->top_self = rb_obj_clone(ruby_top_self);
+    th->top_self = rb_obj_clone(rb_vm_top_self());
     rb_extend_object(th->top_self, th->top_wrapper);
 
     val = rb_eval_string_protect(str, &status);
@@ -318,7 +319,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
+	val = eval(rb_vm_top_self(), cmd, Qnil, 0, 0);
     }
     POP_TAG();
 
@@ -1679,7 +1680,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 
 	/* make eval iseq */
 	th->parse_in_eval++;
-	iseqval = vm_compile(th, src, rb_str_new2(file), INT2FIX(line));
+	iseqval = rb_iseq_compile(src, rb_str_new2(file), INT2FIX(line));
 	th->parse_in_eval--;
 	rb_vm_set_eval_stack(th, iseqval);
 	th->base_block = 0;
@@ -2710,9 +2711,9 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
-    rb_define_singleton_method(ruby_top_self, "include", top_include, -1);
-    rb_define_singleton_method(ruby_top_self, "public", top_public, -1);
-    rb_define_singleton_method(ruby_top_self, "private", top_private, -1);
+    rb_define_singleton_method(rb_vm_top_self(), "include", top_include, -1);
+    rb_define_singleton_method(rb_vm_top_self(), "public", top_public, -1);
+    rb_define_singleton_method(rb_vm_top_self(), "private", top_private, -1);
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 

@@ -14,7 +14,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/signal.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 
 #include <stdio.h>
 #include <errno.h>

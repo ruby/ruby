@@ -11,7 +11,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 #include "gc.h"
 #include "eval_intern.h"
 

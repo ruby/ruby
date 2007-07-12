@@ -13,12 +13,16 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 
-#include "yarvcore.h"
+/* #define MARK_FREE_DEBUG 1 */
+#include "gc.h"
+#include "vm_core.h"
+
 #include "insns.inc"
 #include "insns_info.inc"
 
-/* #define MARK_FREE_DEBUG 1 */
-#include "gc.h"
+/* compile.c */
+void iseq_compile(VALUE self, NODE *node);
+int iseq_translate_threaded_code(rb_iseq_t *iseq);
 
 VALUE rb_cISeq;
 
@@ -289,7 +293,7 @@ rb_iseq_new_with_bopt_and_opt(NODE *node, VALUE name, VALUE filename,
     iseq->self = self;
 
     prepare_iseq_build(iseq, name, filename, parent, type, bopt, option);
-    rb_iseq_compile(self, node);
+    iseq_compile(self, node);
     cleanup_iseq_build(iseq);
     return self;
 }
@@ -418,22 +422,41 @@ compile_string(VALUE str, VALUE file, VALUE line)
     return node;
 }
 
+VALUE
+rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
+{
+    rb_compile_option_t option;
+    NODE *node = compile_string(src, file, line);
+    rb_thread_t *th = GET_THREAD();
+    make_compile_option(&option, opt);
+
+    if (th->base_block) {
+	return rb_iseq_new_with_opt(node, th->base_block->iseq->name,
+				    file, th->base_block->iseq->self,
+				    ISEQ_TYPE_EVAL, &option);
+    }
+    else {
+	return rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, Qfalse,
+				    ISEQ_TYPE_TOP, &option);
+    }
+}
+
+VALUE
+rb_iseq_compile(VALUE src, VALUE file, VALUE line)
+{
+    return rb_iseq_compile_with_option(src, file, line, Qnil);
+}
+
 static VALUE
 iseq_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str, file = Qnil, line = INT2FIX(1), opt = Qnil;
-    NODE *node;
-    rb_compile_option_t option;
+    VALUE src, file = Qnil, line = INT2FIX(1), opt = Qnil;
 
-    rb_scan_args(argc, argv, "13", &str, &file, &line, &opt);
-
+    rb_scan_args(argc, argv, "13", &src, &file, &line, &opt);
     file = file == Qnil ? rb_str_new2("<compiled>") : file;
     line = line == Qnil ? INT2FIX(1) : line;
 
-    node = compile_string(str, file, line);
-    make_compile_option(&option, opt);
-    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file, Qfalse,
-				ISEQ_TYPE_TOP, &option);
+    return rb_iseq_compile_with_option(src, file, line, opt);
 }
 
 static VALUE
@@ -481,7 +504,7 @@ iseq_check(VALUE val)
 static VALUE
 iseq_eval(VALUE self)
 {
-    return rb_thread_eval(GET_THREAD(), self);
+    return rb_iseq_eval(self);
 }
 
 static VALUE
@@ -1066,15 +1089,6 @@ end
     }
 }
 
-int
-debug_node(NODE *node)
-{
-    printf("node type: %d\n", nd_type(node));
-    printf("node name: %s\n", ruby_node_name(nd_type(node)));
-    printf("node filename: %s\n", node->nd_file);
-    return 0;
-}
-
 #define DECL_SYMBOL(name) \
   static VALUE sym_##name
 
@@ -1121,7 +1135,7 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    int i, pos, line = 0, insn_pos = 0;
+    int i, pos, line = 0;
     VALUE *seq;
 
     VALUE val = rb_ary_new();
@@ -1133,7 +1147,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     VALUE exception = rb_ary_new(); /* [[....]] */
     VALUE misc = rb_hash_new();
 
-    static VALUE insn_syms[YARV_MAX_INSTRUCTION_SIZE];
+    static VALUE insn_syms[VM_INSTRUCTION_SIZE];
     struct st_table *labels_table = st_init_numtable();
 
     DECL_SYMBOL(top);
@@ -1146,7 +1160,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     if (sym_top == 0) {
 	int i;
-	for (i=0; i<YARV_MAX_INSTRUCTION_SIZE; i++) {
+	for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
 	    insn_syms[i] = ID2SYM(rb_intern(insn_name(i)));
 	}
 	INIT_SYMBOL(top);
@@ -1341,7 +1355,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
      *  :name, :filename, :type, :locals, :args,
      *  :catch_table, :bytecode]
      */
-    rb_ary_push(val, rb_str_new2("YARVInstructionSimpledataFormat"));
+    rb_ary_push(val, rb_str_new2("YARVInstructionSequence/SimpleDataFormat"));
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, INT2FIX(1));
@@ -1363,7 +1377,7 @@ insn_make_insn_table(void)
     int i;
     table = st_init_numtable();
 
-    for (i=0; i<YARV_MAX_INSTRUCTION_SIZE; i++) {
+    for (i=0; i<VM_INSTRUCTION_SIZE; i++) {
 	st_insert(table, ID2SYM(rb_intern(insn_name(i))), i);
     }
 
@@ -1428,7 +1442,7 @@ rb_iseq_build_for_ruby2cext(
 void
 Init_ISeq(void)
 {
-    /* declare YARVCore::InstructionSequence */
+    /* declare ::VM::InstructionSequence */
     rb_cISeq = rb_define_class_under(rb_cVM, "InstructionSequence", rb_cObject);
     rb_define_alloc_func(rb_cISeq, iseq_alloc);
     rb_define_method(rb_cISeq, "inspect", iseq_inspect, 0);

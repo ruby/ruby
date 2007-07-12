@@ -13,7 +13,7 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 
-#include "yarvcore.h"
+#include "vm_core.h"
 #include "vm.h"
 
 #define MAX_POSBUF 128
@@ -114,7 +114,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	line = -1;
     }
 
-    fprintf(stderr, "c:%04ld ",
+    fprintf(stderr, "c:%04d ",
 	    (rb_control_frame_t *)(th->stack + th->stack_size) - cfp);
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
@@ -123,8 +123,8 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "p:%04d ", pc);
     }
     fprintf(stderr, "s:%04d b:%04d ", cfp->sp - th->stack, bp);
-    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06d " : "l:%06p ", lfp % 10000);
-    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06d " : "d:%06p ", dfp % 10000);
+    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06d " : "l:%06x ", lfp % 10000);
+    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06d " : "d:%06x ", dfp % 10000);
     fprintf(stderr, "%-6s ", magic);
     if (line) {
 	fprintf(stderr, "%s", posbuf);
@@ -235,7 +235,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *lfp = cfp->lfp;
     VALUE *dfp = cfp->dfp;
 
-    int argc, local_size;
+    int argc = 0, local_size;
     const char *name;
     rb_iseq_t *iseq = cfp->iseq;
 
@@ -300,7 +300,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    else {
 		rstr = rb_inspect(*ptr);
 	    }
-	    fprintf(stderr, "  stack %2d: %8s (%ld)\n", i, StringValueCStr(rstr),
+	    fprintf(stderr, "  stack %2d: %8s (%d)\n", i, StringValueCStr(rstr),
 		   ptr - th->stack);
 	}
     }
@@ -337,7 +337,7 @@ debug_print_register(rb_thread_t *th)
 	dfp = -1;
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04d, [SP] %04ld, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
+    fprintf(stderr, "  [PC] %04d, [SP] %04d, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
 	   pc, cfp->sp - th->stack, lfp, dfp, cfpi);
 }
 
@@ -424,13 +424,11 @@ vm_analysis_insn(int insn)
     VALUE ihash;
     VALUE cv;
 
-    SET_YARV_STOP();
-
     if (usage_hash == 0) {
 	usage_hash = rb_intern("USAGE_ANALISYS_INSN");
 	bigram_hash = rb_intern("USAGE_ANALISYS_INSN_BIGRAM");
     }
-    uh = rb_const_get(mYarvCore, usage_hash);
+    uh = rb_const_get(rb_cVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
 	rb_hash_aset(uh, INT2FIX(insn), ihash);
@@ -450,15 +448,13 @@ vm_analysis_insn(int insn)
 	ary[1] = INT2FIX(insn);
 	bi = rb_ary_new4(2, &ary[0]);
 
-	uh = rb_const_get(mYarvCore, bigram_hash);
+	uh = rb_const_get(rb_cVM, bigram_hash);
 	if ((cv = rb_hash_aref(uh, bi)) == Qnil) {
 	    cv = INT2FIX(0);
 	}
 	rb_hash_aset(uh, bi, INT2FIX(FIX2INT(cv) + 1));
     }
     prev_insn = insn;
-
-    SET_YARV_START();
 }
 
 /* from disasm.c */
@@ -476,13 +472,11 @@ vm_analysis_operand(int insn, int n, VALUE op)
     VALUE valstr;
     VALUE cv;
 
-    SET_YARV_STOP();
-
     if (usage_hash == 0) {
 	usage_hash = rb_intern("USAGE_ANALISYS_INSN");
     }
 
-    uh = rb_const_get(mYarvCore, usage_hash);
+    uh = rb_const_get(rb_cVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
 	rb_hash_aset(uh, INT2FIX(insn), ihash);
@@ -499,8 +493,6 @@ vm_analysis_operand(int insn, int n, VALUE op)
 	cv = INT2FIX(0);
     }
     rb_hash_aset(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
-
-    SET_YARV_START();
 }
 
 void
@@ -527,8 +519,6 @@ vm_analysis_register(int reg, int isset)
 
     VALUE cv;
 
-    SET_YARV_STOP();
-
     if (usage_hash == 0) {
 	char buff[0x10];
 	int i;
@@ -546,13 +536,11 @@ vm_analysis_register(int reg, int isset)
     }
     valstr = syms[reg][isset];
 
-    uh = rb_const_get(mYarvCore, usage_hash);
+    uh = rb_const_get(rb_cVM, usage_hash);
     if ((cv = rb_hash_aref(uh, valstr)) == Qnil) {
 	cv = INT2FIX(0);
     }
     rb_hash_aset(uh, valstr, INT2FIX(FIX2INT(cv) + 1));
-
-    SET_YARV_START();
 }
 
 
@@ -575,7 +563,7 @@ thread_dump_state(VALUE self)
 }
 
 void
-yarv_bug(void)
+rb_vm_bugreport(void)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE bt;

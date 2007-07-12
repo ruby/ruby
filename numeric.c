@@ -2867,17 +2867,12 @@ int_downto(VALUE from, VALUE to)
  *     0 1 2 3 4
  */
 
-VALUE yarv_invoke_Integer_times_special_block(VALUE);
-
 static VALUE
 int_dotimes(VALUE num)
 {
     VALUE val;
 
     RETURN_ENUMERATOR(num, 0, 0);
-    if((val = yarv_invoke_Integer_times_special_block(num)) != Qundef){
-	return val;
-    }
 
     if (FIXNUM_P(num)) {
 	long i, end;

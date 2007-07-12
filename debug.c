@@ -12,7 +12,7 @@
 
 #include "ruby/ruby.h"
 #include "debug.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 
 void
 ruby_debug_print_indent(int level, int debug_level, int indent_level)

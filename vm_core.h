@@ -1,17 +1,17 @@
 /**********************************************************************
 
-  yarvcore.h - 
+  vm_core.h - 
 
   $Author$
   $Date$
   created at: 04/01/01 19:41:38 JST
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
 
-#ifndef _YARVCORE_H_INCLUDED_
-#define _YARVCORE_H_INCLUDED_
+#ifndef RUBY_CORE_H
+#define RUBY_CORE_H
 
 #define RUBY_VM_THREAD_MODEL 2
 
@@ -24,6 +24,7 @@
 
 #include "debug.h"
 #include "vm_opts.h"
+#include "id.h"
 
 #if   defined(_WIN32)
 #include "thread_win32.h"
@@ -77,7 +78,6 @@
 #if    OPT_STACK_CACHING
 #undef OPT_STACK_CACHING
 #endif /* OPT_STACK_CACHING */
-#define YARV_AOT_COMPILED 1
 #endif /* OPT_CALL_THREADED_CODE */
 
 /* likely */
@@ -88,62 +88,6 @@
 #define LIKELY(x)   (x)
 #define UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
-
-#define YARVDEBUG 0
-#define CPDEBUG   0
-#define VMDEBUG   0
-#define GCDEBUG   0
-
-
-/* classes and modules */
-
-extern VALUE symIFUNC;
-extern VALUE symCFUNC;
-
-/* special id */
-extern ID idPLUS;
-extern ID idMINUS;
-extern ID idMULT;
-extern ID idDIV;
-extern ID idMOD;
-extern ID idLT;
-extern ID idLTLT;
-extern ID idLE;
-extern ID idGT;
-extern ID idGE;
-extern ID idEq;
-extern ID idEqq;
-extern ID idBackquote;
-extern ID idEqTilde;
-extern ID idThrowState;
-extern ID idAREF;
-extern ID idASET;
-extern ID idIntern;
-extern ID idMethodMissing;
-extern ID idLength;
-extern ID idGets;
-extern ID idSucc;
-extern ID idEach;
-extern ID idLambda;
-extern ID idRangeEachLT;
-extern ID idRangeEachLE;
-extern ID idArrayEach;
-extern ID idTimes;
-extern ID idEnd;
-extern ID idBitblt;
-extern ID idAnswer;
-extern ID idSvarPlaceholder;
-extern ID idSend;
-extern ID id__send__;
-extern ID id__send;
-extern ID idFuncall;
-extern ID id__send_bang;
-
-
-struct iseq_insn_info_entry {
-    unsigned short position;
-    unsigned short line_no;
-};
 
 #define ISEQ_TYPE_TOP    INT2FIX(1)
 #define ISEQ_TYPE_METHOD INT2FIX(2)
@@ -160,6 +104,11 @@ struct iseq_insn_info_entry {
 #define CATCH_TYPE_BREAK  INT2FIX(4)
 #define CATCH_TYPE_REDO   INT2FIX(5)
 #define CATCH_TYPE_NEXT   INT2FIX(6)
+
+struct iseq_insn_info_entry {
+    unsigned short position;
+    unsigned short line_no;
+};
 
 struct iseq_catch_table_entry {
     VALUE type;
@@ -349,7 +298,6 @@ typedef struct rb_event_hook_struct {
     struct rb_event_hook_struct *next;
 } rb_event_hook_t;
 
-
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue(obj, rb_vm_t, ptr)
 
@@ -372,6 +320,7 @@ typedef struct rb_vm_struct {
     VALUE mark_object_ary;
 
     /* load */
+    VALUE top_self;
     VALUE loaded_features;
     struct st_table *loading_table;
     
@@ -528,24 +477,19 @@ struct rb_thread_struct
     int abort_on_exception;
 };
 
-/** node -> yarv instruction sequence object */
-VALUE rb_iseq_compile(VALUE self, NODE *node);
+/* iseq.c */
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_compile_option_t*);
-
-/** disassemble instruction sequence */
+VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 VALUE ruby_iseq_disasm(VALUE self);
-VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos,
-			    rb_iseq_t *iseq, VALUE child);
+VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 
 
-/* each thread has this size stack : 2MB */
+/* each thread has this size stack : 128KB */
 #define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)
 
-
-/* from ruby 1.9 variable.c */
 struct global_entry {
     struct global_variable *var;
     ID id;
@@ -639,7 +583,6 @@ typedef rb_control_frame_t *
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
   ((rb_control_frame_t *)((VALUE *)(b) - 5))
 
-
 /* defined? */
 #define DEFINED_IVAR   INT2FIX(1)
 #define DEFINED_IVAR2  INT2FIX(2)
@@ -652,22 +595,21 @@ typedef rb_control_frame_t *
 #define DEFINED_ZSUPER INT2FIX(9)
 #define DEFINED_FUNC   INT2FIX(10)
 
-
 /* VM related object allocate functions */
 /* TODO: should be static functions */
 VALUE rb_thread_alloc(VALUE klass);
-VALUE rb_proc_alloc(void);
+VALUE rb_proc_alloc(VALUE klass);
 
 /* for debug */
 extern void vm_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
 #define SDR() vm_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) vm_stack_dump_raw(GET_THREAD(), (cfp))
-void yarv_bug(void);
+void rb_vm_bugreport(void);
 
 
 /* functions about thread/vm execution */
 
-VALUE rb_thread_eval(rb_thread_t *th, VALUE iseqval);
+VALUE rb_iseq_eval(VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 int rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp);
@@ -679,14 +621,10 @@ VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE vm_backtrace(rb_thread_t *, int);
 
 VALUE vm_yield(rb_thread_t *th, int argc, VALUE *argv);
-VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
-	       VALUE id, ID oid, int argc, const VALUE *argv,
-	       NODE * body, int nosuper);
+VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv, VALUE id, ID oid,
+	       int argc, const VALUE *argv, NODE *body, int nosuper);
 
 int vm_get_sourceline(rb_control_frame_t *);
-
-VALUE yarvcore_eval_parsed(NODE *node, VALUE file);
-VALUE yarvcore_eval(VALUE self, VALUE str, VALUE file, VALUE line);
 
 RUBY_EXTERN VALUE sysstack_error;
 
@@ -748,4 +686,4 @@ exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id,
     } \
 } while (0)
 
-#endif /* _YARVCORE_H_INCLUDED_ */
+#endif /* RUBY_CORE_H */

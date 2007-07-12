@@ -1,5 +1,5 @@
 #include <ruby/ruby.h>
-#include <yarvcore.h>
+#include <vm_core.h>
 
 VALUE rb_thread_current_status(rb_thread_t *);
 void rb_add_event_hook(rb_event_hook_func_t, rb_event_flag_t, VALUE);

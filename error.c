@@ -12,7 +12,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
-#include "yarvcore.h"
+#include "vm_core.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -197,7 +197,7 @@ rb_warn_m(VALUE self, VALUE mesg)
     return Qnil;
 }
 
-void yarv_bug(void);
+void rb_vm_bugreport(void);
 
 static void
 report_bug(const char *file, int line, const char *fmt, va_list args)
@@ -208,7 +208,7 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 
     if (fwrite(buf, 1, len, out) == len ||
 	fwrite(buf, 1, len, (out = stdout)) == len) {
-	yarv_bug();
+	rb_vm_bugreport();
 	fputs("[BUG] ", out);
 	vfprintf(out, fmt, args);
 	fprintf(out, "\nruby %s (%s) [%s]\n\n",

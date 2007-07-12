@@ -4,8 +4,6 @@
 
 #include "eval_intern.h"
 
-extern VALUE ruby_top_self;
-
 VALUE ruby_dln_librefs;
 
 #define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
@@ -157,7 +155,7 @@ rb_load(VALUE fname, int wrap)
     }
     else {
 	/* load in anonymous module as toplevel */
-	th->top_self = rb_obj_clone(ruby_top_self);
+	th->top_self = rb_obj_clone(rb_vm_top_self());
 	th->top_wrapper = rb_module_new();
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
@@ -175,7 +173,7 @@ rb_load(VALUE fname, int wrap)
 	loaded = Qtrue;
 	iseq = rb_iseq_new(node, rb_str_new2("<top (required)>"),
 			   fname, Qfalse, ISEQ_TYPE_TOP);
-	rb_thread_eval(th, iseq);
+	rb_iseq_eval(iseq);
     }
     POP_TAG();
 
@@ -435,7 +433,7 @@ rb_require_safe(VALUE fname, int safe)
 		    break;
 
 		  case 's':
-		    handle = (long)rb_vm_call_cfunc(ruby_top_self, load_ext,
+		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
 						    path, 0, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
@@ -482,7 +480,7 @@ void
 ruby_init_ext(const char *name, void (*init)(void))
 {
     if (load_lock(name)) {
-	rb_vm_call_cfunc(ruby_top_self, init_ext_call, (VALUE)init,
+	rb_vm_call_cfunc(rb_vm_top_self(), init_ext_call, (VALUE)init,
 			 0, rb_str_new2(name));
 	rb_provide(name);
 	load_unlock(name);

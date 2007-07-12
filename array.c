@@ -1136,20 +1136,11 @@ each_i(VALUE ary)
  *     a -- b -- c --
  */
 
-VALUE yarv_invoke_Array_each_special_block(VALUE ary);
-
 VALUE
 rb_ary_each(VALUE ary)
 {
     VALUE val;
-
     RETURN_ENUMERATOR(ary, 0, 0);
-
-    val = yarv_invoke_Array_each_special_block(ary);
-    if(val != Qundef){
-	return val;
-    }
-
     ITERATE(each_i, ary);
     return ary;
 }

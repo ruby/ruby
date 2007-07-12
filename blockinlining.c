@@ -11,13 +11,10 @@
 
 #include "ruby/ruby.h"
 #include "ruby/node.h"
-#include "yarvcore.h"
-
-VALUE yarv_new_iseqval(VALUE node, VALUE name, VALUE file,
-		       VALUE parent, VALUE type, VALUE block_opt, VALUE opt);
+#include "vm_core.h"
 
 static VALUE
-yarv_iseq_special_block(rb_iseq_t *iseq, void *builder)
+iseq_special_block(rb_iseq_t *iseq, void *builder)
 {
 #if OPT_BLOCKINLINING
     VALUE parent = Qfalse;
@@ -181,14 +178,14 @@ build_Integer_times_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 }
 
 VALUE
-yarv_invoke_Integer_times_special_block(VALUE num)
+invoke_Integer_times_special_block(VALUE num)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (orig_block && BUILTIN_TYPE(orig_block->iseq) != T_NODE) {
-	VALUE tsiseqval = yarv_iseq_special_block(orig_block->iseq,
-						  build_Integer_times_node);
+	VALUE tsiseqval = iseq_special_block(orig_block->iseq,
+					     build_Integer_times_node);
 	rb_iseq_t *tsiseq;
 	VALUE argv[2], val;
 
@@ -297,8 +294,8 @@ build_Range_each_node_LT(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 }
 
 VALUE
-yarv_invoke_Range_each_special_block(VALUE range,
-				     VALUE beg, VALUE end, int excl)
+invoke_Range_each_special_block(VALUE range,
+				VALUE beg, VALUE end, int excl)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
@@ -306,7 +303,7 @@ yarv_invoke_Range_each_special_block(VALUE range,
     if (BUILTIN_TYPE(orig_block->iseq) != T_NODE) {
 	void *builder =
 	    excl ? build_Range_each_node_LT : build_Range_each_node_LE;
-	VALUE tsiseqval = yarv_iseq_special_block(orig_block->iseq, builder);
+	VALUE tsiseqval = iseq_special_block(orig_block->iseq, builder);
 	rb_iseq_t *tsiseq;
 	VALUE argv[2];
 
@@ -429,14 +426,14 @@ build_Array_each_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 }
 
 VALUE
-yarv_invoke_Array_each_special_block(VALUE ary)
+invoke_Array_each_special_block(VALUE ary)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t *orig_block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (BUILTIN_TYPE(orig_block->iseq) != T_NODE) {
-	VALUE tsiseqval = yarv_iseq_special_block(orig_block->iseq,
-						  build_Array_each_node);
+	VALUE tsiseqval = iseq_special_block(orig_block->iseq,
+					     build_Array_each_node);
 	rb_iseq_t *tsiseq;
 	VALUE argv[2];
 

@@ -1,3 +1,52 @@
+Thu Jul 12 12:58:21 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* blockinlining.c: remove "yarv" prefix.
+
+	* array.c, numeric.c: ditto.
+
+	* insnhelper.ci, insns.def, vm_evalbody.ci: ditto.
+
+	* yarvcore.c: removed.
+
+	* yarvcore.h: renamed to core.h.
+
+	* cont.c, debug.c, error.c, process.c, signal.c : ditto.
+
+	* ext/probeprofiler/probeprofiler.c: ditto.
+
+	* id.c, id.h: added.
+
+	* inits.c: ditto.
+
+	* compile.c: rename internal functions.
+
+	* compile.h: fix debug flag.
+
+	* eval.c, object.c, vm.c: remove ruby_top_self.
+	  use rb_vm_top_self() instead.
+
+	* eval_intern.h, eval_load: ditto.
+
+	* gc.c: rename yarv_machine_stack_mark() to
+	  rb_gc_mark_machine_stack().
+
+	* insnhelper.h: remove unused macros.
+
+	* iseq.c: add iseq_compile() to create iseq object
+	  from source string.
+
+	* proc.c: rename a internal function.
+
+	* template/insns.inc.tmpl: remove YARV prefix.
+
+	* thread.c: 
+
+	* vm.c (rb_iseq_eval): added.
+
+	* vm.c: move some functions from yarvcore.c.
+
+	* vm_dump.c: fix to remove compiler warning.
+
 Thu Jul 12 12:24:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (opt_succ): fixed typo.  [ruby-dev:31189]

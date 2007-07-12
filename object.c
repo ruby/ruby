@@ -792,13 +792,6 @@ nil_plus(VALUE x, VALUE y)
 }
 #endif
 
-static VALUE
-main_to_s(VALUE obj)
-{
-    return rb_str_new2("main");
-}
-
-
 /***********************************************************************
  *  Document-class: TrueClass
  *
@@ -2206,8 +2199,6 @@ boot_defclass(const char *name, VALUE super)
     return obj;
 }
 
-VALUE ruby_top_self;
-
 /*
  *  Document-class: Class
  *
@@ -2441,10 +2432,6 @@ Init_Object(void)
 
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
-
-    rb_global_variable(&ruby_top_self);
-    ruby_top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(ruby_top_self, "to_s", main_to_s, 0);
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);

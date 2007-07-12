@@ -979,7 +979,7 @@ postexe
     blockptr->proc = 0;
 
     proc = vm_make_proc(th, GET_CFP(), blockptr);
-    rb_set_end_proc(call_yarv_end_proc, proc);
+    rb_set_end_proc(call_end_proc, proc);
 }
 
 /**

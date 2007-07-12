@@ -80,9 +80,9 @@ vm_eval(rb_thread_t *th, VALUE initial)
 #include "vmtc.inc"
     if (th == 0) {
 #if OPT_STACK_CACHING
-	yarv_finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
+	finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
 #else
-	yarv_finish_insn_seq[0] = (VALUE)&&LABEL (finish);
+	finish_insn_seq[0] = (VALUE)&&LABEL (finish);
 #endif
 	return (VALUE)insns_address_table;
     }

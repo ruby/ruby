@@ -35,6 +35,7 @@ void Init_Object(void);
 void Init_pack(void);
 void Init_Precision(void);
 void Init_sym(void);
+void Init_id(void);
 void Init_process(void);
 void Init_Random(void);
 void Init_Range(void);
@@ -49,13 +50,16 @@ void Init_ISeq(void);
 void Init_VM(void);
 void Init_Thread(void);
 void Init_Cont(void);
+void Init_top_self(void);
 
 void
 rb_call_inits()
 {
     Init_sym();
+    Init_id();
     Init_var_tables();
     Init_Object();
+    Init_top_self();
     Init_Comparable();
     Init_Enumerable();
     Init_Precision();
