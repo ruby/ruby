@@ -280,9 +280,6 @@ native_mutex_destroy(rb_thread_lock_t *lock)
 }
 
 
-NOINLINE(static int
-	 thread_start_func_2(rb_thread_t *th, VALUE *stack_start));
-
 static void
 native_thread_destroy(rb_thread_t *th)
 {
@@ -304,7 +301,7 @@ thread_start_func_1(void *th_ptr)
     /* run */
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
-    thread_start_func_2(th, &stack_start);
+    thread_start_func_2(th, &stack_start, 0);
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);

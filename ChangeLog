@@ -1,3 +1,8 @@
+Thu Jul 12 10:19:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.ci (thread_start_func_2): not use a directive inside
+	  a macro argument.  [ruby-talk:258763]
+
 Thu Jul 12 05:32:28 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/ruby.h (FIX2ULONG): drop sign bit for LLP64 platform.

@@ -137,6 +137,12 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #define thread_debug if(0)printf
 #endif
 
+#ifndef __ia64
+#define thread_start_func_2(th, st, rst) thread_start_func_2(th, st)
+#endif
+NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
+					VALUE *register_stack_start));
+
 #if   defined(_WIN32)
 #include "thread_win32.ci"
 
@@ -272,11 +278,7 @@ thread_cleanup_func(void *th_ptr)
 }
 
 static int
-thread_start_func_2(rb_thread_t *th, VALUE *stack_start
-#ifdef __ia64
-    , VALUE *register_stack_start
-#endif
-)
+thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
     int state;
     VALUE args = th->first_args;
