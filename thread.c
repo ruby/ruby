@@ -389,7 +389,7 @@ thread_join(rb_thread_t *target_th, double delay)
     rb_thread_t *th = GET_THREAD();
     double now, limit = timeofday() + delay;
 
-    thread_debug("thread_join (thid: %p)\n", target_th->thread_id);
+    thread_debug("thread_join (thid: %p)\n", (void*)target_th->thread_id);
 
     if (target_th->status != THREAD_KILLED) {
 	th->join_list_next = target_th->join_list_head;
@@ -404,17 +404,17 @@ thread_join(rb_thread_t *target_th, double delay)
 	    now = timeofday();
 	    if (now > limit) {
 		thread_debug("thread_join: timeout (thid: %p)\n",
-			     target_th->thread_id);
+			     (void*)target_th->thread_id);
 		return Qnil;
 	    }
 	    sleep_wait_for_interrupt(th, limit - now);
 	}
 	thread_debug("thread_join: interrupted (thid: %p)\n",
-		     target_th->thread_id);
+		     (void*)target_th->thread_id);
     }
 
     thread_debug("thread_join: success (thid: %p)\n",
-		 target_th->thread_id);
+		 (void*)target_th->thread_id);
 
     if (target_th->errinfo != Qnil) {
 	VALUE err = target_th->errinfo;
@@ -2349,7 +2349,7 @@ thlist_signal(rb_thread_list_t **list, unsigned int maxth)
     int woken = 0;
     rb_thread_list_t *q;
 
-    while (q = *list) {
+    while ((q = *list) != 0) {
 	rb_thread_t *th = q->th;
 
 	*list = q->next;

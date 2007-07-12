@@ -301,7 +301,7 @@ ubf_pthread_cond_signal(rb_thread_t *th)
 static void
 ubf_select_each(rb_thread_t *th)
 {
-    thread_debug("ubf_select_each (%p)\n", th->thread_id);
+    thread_debug("ubf_select_each (%p)\n", (void*)th->thread_id);
     if (th) {
 	pthread_kill(th->thread_id, SIGVTALRM);
     }

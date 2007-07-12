@@ -1,7 +1,13 @@
-Thu Jul 12 10:19:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 12 10:30:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread_pthread.ci (thread_start_func_2): not use a directive inside
-	  a macro argument.  [ruby-talk:258763]
+	* thread.c (thread_start_func_2): moved prototye from thread_*.ci.
+
+	* thread_pthread.ci (thread_start_func_2): not use a directive
+	  inside a macro argument.  [ruby-talk:258763]
+
+	* thread.c (thread_join): pthread_t may not be pointer.
+
+	* thread_pthread.ci (ubf_select_each): ditto.
 
 Thu Jul 12 05:32:28 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
