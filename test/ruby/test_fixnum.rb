@@ -23,4 +23,14 @@ class TestFixnum < Test::Unit::TestCase
       end
     end
   end
+
+  def test_succ
+    assert_equal(0x40000000, 0x3fffffff.succ, "[ruby-dev:31189]")
+    assert_equal(0x4000000000000000, 0x3fffffffffffffff.succ, "[ruby-dev:31190]")
+  end
+
+  def test_plus
+    assert_equal(0x4000000000000000, 0x3fffffffffffffff+1)
+  end
+
 end
