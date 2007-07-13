@@ -382,3 +382,12 @@ assert_equal 'nil', %q{
   m {|(v,(*))|}.inspect
 }
 
+
+# [ruby-dev:31153]
+assert_equal 'nil', %q{
+  def m()
+    yield
+  end
+  m {|(*,a,b)|}.inspect
+}
+
