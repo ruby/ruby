@@ -1,3 +1,8 @@
+Sat Jul 14 02:51:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_pow): 0**2 should not raise floating point
+	  exception.  [ruby-dev:31216]
+
 Sat Jul 14 02:25:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_pow): wrong overflow detection.  [ruby-dev:31213]
