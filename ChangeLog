@@ -1,3 +1,8 @@
+Sat Jul 14 00:34:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_round): should not return false, but self.
+	  [ruby-dev:31212]
+
 Fri Jul 13 18:31:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h: remove unused function declarations.

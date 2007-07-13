@@ -2900,7 +2900,7 @@ int_round(int argc, VALUE* argv, VALUE num)
     VALUE n, f, h, r;
     int ndigits;
 
-    if (argc == 0) return 0;
+    if (argc == 0) return num;
     rb_scan_args(argc, argv, "1", &n);
     ndigits = NUM2INT(n);
     if (ndigits > 0) {
