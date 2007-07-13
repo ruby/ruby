@@ -1,3 +1,8 @@
+Sat Jul 14 02:27:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_pow): overflow detection using FIT_SQRT_LONG().
+	  [ruby-dev:31215]
+
 Sat Jul 14 02:05:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insns.def (opt_div): LONG2FIX() may not work for corner cases,

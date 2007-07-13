@@ -2046,6 +2046,10 @@ fix_minus(VALUE x, VALUE y)
  * result.
  */
 
+#define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
+/*tests if N*N would overflow*/
+#define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
+
 static VALUE
 fix_mul(VALUE x, VALUE y)
 {
@@ -2070,9 +2074,6 @@ fix_mul(VALUE x, VALUE y)
 	if (FIXABLE(d)) return LONG2FIX(d);
 	return rb_ll2inum(d);
 #else
-#	define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
-	/*tests if N*N would overflow*/
-#	define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 	if (FIT_SQRT_LONG(a) && FIT_SQRT_LONG(b))
 	    return LONG2FIX(a*b);
 	c = a * b;
@@ -2288,15 +2289,14 @@ int_pow(long x, unsigned long y)
     y &= ~1;
     do {
 	while (y % 2 == 0) {
-	    long x2 = x * x;
-	    if (x2 < x || !POSFIXABLE(x2)) {
+	    if (!FIT_SQRT_LONG(x)) {
 		VALUE v;
 	      bignum:
 		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
 		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
 		return v;
 	    }
-	    x = x2;
+	    x = x * x;
 	    y >>= 1;
 	}
 	{
