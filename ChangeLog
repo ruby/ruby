@@ -1,3 +1,8 @@
+Sat Jul 14 02:05:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (opt_div): FIX2NUM may not work for corner cases.
+	  [ruby-dev:31210]
+
 Sat Jul 14 00:34:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_round): should not return false, but self.

@@ -1858,7 +1858,7 @@ opt_div
 		div -= 1;
 	    }
 	}
-	val = LONG2FIX(div);
+	val = LONG2NUM(div);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (0) {
