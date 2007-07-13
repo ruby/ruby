@@ -2304,7 +2304,7 @@ opt_succ
 	    const VALUE obj = INT2FIX(1);
 	    /* fixnum + INT2FIX(1) */
 	    val = (recv + (obj & (~1)));
-	    if ((~(recv ^ obj) & (recv ^ val)) & (LONG_MAX + 1)) {
+	    if ((~(recv ^ obj) & (recv ^ val)) & ((unsigned long)LONG_MAX + 1)) {
 		val = rb_big_plus(rb_int2big(FIX2LONG(recv)),
 				  rb_int2big(FIX2LONG(obj)));
 	    }

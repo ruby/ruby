@@ -3,6 +3,8 @@ Fri Jul 13 17:32:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* vm.c (vm_free): clear free'ed living_threads field.
 	  [ruby-dev:31163]
 
+	* insns.def (opt_succ): use cast to shut a warning up.
+
 Fri Jul 13 16:10:00 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): use ENV.to_hash to access
