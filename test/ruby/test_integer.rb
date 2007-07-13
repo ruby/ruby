@@ -65,6 +65,10 @@ class TestInteger < Test::Unit::TestCase
         c = a + b
         assert_equal(a, c - b, "(#{a} + #{b}) - #{b}")
         assert_equal(b, c - a, "(#{a} + #{b}) - #{a}")
+        assert_equal(a-~b-1, c, "#{a} + #{b}") # Hacker's Delight
+        assert_equal((a^b)+2*(a&b), c, "#{a} + #{b}") # Hacker's Delight
+        assert_equal((a|b)+(a&b), c, "#{a} + #{b}") # Hacker's Delight
+        assert_equal(2*(a|b)-(a^b), c, "#{a} + #{b}") # Hacker's Delight
       }
     }
   end
@@ -75,6 +79,10 @@ class TestInteger < Test::Unit::TestCase
         c = a - b
         assert_equal(a, c + b, "(#{a} - #{b}) + #{b}")
         assert_equal(-b, c - a, "(#{a} - #{b}) - #{a}")
+        assert_equal(a+~b+1, c, "#{a} - #{b}") # Hacker's Delight
+        assert_equal((a^b)-2*(b&~a), c, "#{a} - #{b}") # Hacker's Delight
+        assert_equal((a&~b)-(b&~a), c, "#{a} - #{b}") # Hacker's Delight
+        assert_equal(2*(a&~b)-(a^b), c, "#{a} - #{b}") # Hacker's Delight
       }
     }
   end
@@ -121,6 +129,8 @@ class TestInteger < Test::Unit::TestCase
   def test_not
     VS.each {|a|
       b = ~a
+      assert_equal(-1 ^ a, b, "~#{a}")
+      assert_equal(-a-1, b, "~#{a}") # Hacker's Delight
       assert_equal(0, a & b, "#{a} & ~#{a}")
       assert_equal(-1, a | b, "#{a} | ~#{a}")
     }
@@ -130,6 +140,8 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a | b
+        assert_equal(a + b - (a&b), c, "#{a} | #{b}")
+        assert_equal((a & ~b) + b, c, "#{a} | #{b}") # Hacker's Delight
         assert_equal(-1, c | ~a, "(#{a} | #{b}) | ~#{a})")
         assert_equal(-1, c | ~b, "(#{a} | #{b}) | ~#{b})")
       }
@@ -140,6 +152,8 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a & b
+        assert_equal(a + b - (a|b), c, "#{a} & #{b}")
+        assert_equal((~a | b) - ~a, c, "#{a} & #{b}") # Hacker's Delight
         assert_equal(0, c & ~a, "(#{a} & #{b}) & ~#{a}")
         assert_equal(0, c & ~b, "(#{a} & #{b}) & ~#{b}")
       }
@@ -150,6 +164,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a ^ b
+        assert_equal((a|b)-(a&b), c, "#{a} ^ #{b}") # Hacker's Delight
         assert_equal(b, c ^ a, "(#{a} ^ #{b}) ^ #{a}")
         assert_equal(a, c ^ b, "(#{a} ^ #{b}) ^ #{b}")
       }
