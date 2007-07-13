@@ -40,6 +40,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
     assert_equal(1, (1.0...2.0).min)
+
+    assert_equal(0, (0..0).min)
+    assert_equal(nil, (0...0).min)
   end
 
   def test_max
@@ -52,5 +55,8 @@ class TestRange < Test::Unit::TestCase
     assert_raise(TypeError) { (1.0...2.0).max }
 
     assert_equal(-0x80000002, ((-0x80000002)...(-0x80000001)).max)
+
+    assert_equal(0, (0..0).max)
+    assert_equal(nil, (0...0).max)
   end
 end

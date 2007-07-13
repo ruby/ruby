@@ -468,7 +468,7 @@ range_min(VALUE range)
 	VALUE e = rb_ivar_get(range, id_end);
 	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
 
-	if (c > 0)
+	if (c > 0 || (c == 0 && EXCL(range)))
 	    return Qnil;
 	return b;
     }
@@ -502,6 +502,7 @@ range_max(VALUE range)
 	if (c > 0)
 	    return Qnil;
 	if (EXCL(range)) {
+	    if (c == 0) return Qnil;
 	    if (FIXNUM_P(e)) {
 		return LONG2NUM(FIX2LONG(e) - 1);
 	    }
