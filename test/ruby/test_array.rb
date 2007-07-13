@@ -691,6 +691,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], @cls[].flatten)
     assert_equal(@cls[], 
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
+
+    assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
   end
 
   def test_flatten!
