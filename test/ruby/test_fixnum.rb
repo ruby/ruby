@@ -64,5 +64,6 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(-0x40000001, 0xc0000003/(-3))
     assert_equal(-0x4000000000000001, 0xc000000000000003/(-3))
     assert_equal(0x40000000, (-0x40000000)/(-1), "[ruby-dev:31210]")
+    assert_equal(0x4000000000000000, (-0x4000000000000000)/(-1))
   end
 end
