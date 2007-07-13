@@ -3864,12 +3864,9 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				    yyerror("empty symbol literal");
 				    break;
 				}
-				if (strlen(RSTRING_PTR(lit)) == RSTRING_LEN(lit)) {
-				    $$->nd_lit = ID2SYM(rb_intern(RSTRING_PTR($$->nd_lit)));
-				    nd_set_type($$, NODE_LIT);
-				    break;
-				}
-				/* fall through */
+				$$->nd_lit = ID2SYM(rb_intern2(RSTRING_PTR(lit), RSTRING_LEN(lit)));
+				nd_set_type($$, NODE_LIT);
+				break;
 			      default:
 				$$ = NEW_NODE(NODE_DSYM, rb_str_new(0, 0), 1, NEW_LIST($$));
 				break;

@@ -1,6 +1,9 @@
-Fri Jul 13 11:09:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 13 11:16:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (program, stmt, primary): reduced duplicated code.
+
+	* parse.y (dsym): convert also literals containing NUL to
+	  symbol.
 
 Fri Jul 13 10:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
