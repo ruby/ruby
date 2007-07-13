@@ -1,4 +1,4 @@
-Fri Jul 13 11:17:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 13 11:25:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (program, stmt, primary): reduced duplicated code.
 
@@ -7,6 +7,8 @@ Fri Jul 13 11:17:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (debug_lines): use rb_hash_lookup() to get rid of
 	  call of Hash#default.
+
+	* parse.y (ripper_warningS): unused in ripper right now.
 
 Fri Jul 13 10:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

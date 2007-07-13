@@ -9003,12 +9003,14 @@ ripper_warning0(struct parser_params *parser, const char *fmt)
     rb_funcall(parser->value, rb_intern("warning"), 1, rb_str_new2(fmt));
 }
 
+#if 0				/* unused in ripper right now */
 static void
 ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
     	       rb_str_new2(fmt), rb_str_new2(str));
 }
+#endif
 
 static VALUE
 ripper_lex_get_generic(struct parser_params *parser, VALUE src)
