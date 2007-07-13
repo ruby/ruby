@@ -1,3 +1,8 @@
+Fri Jul 13 11:28:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (bvar): semicolon was lost for ripper description.
+	  [ruby-dev:31140]
+
 Fri Jul 13 11:25:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (program, stmt, primary): reduced duplicated code.

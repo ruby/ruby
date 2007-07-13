@@ -3222,7 +3222,7 @@ bvar		:  f_norm_arg
 		    /*%%%*/
 			new_bv($1);
 		    /*%
-			$$ = dispatch0(new_blockvars)
+			$$ = dispatch0(new_blockvars);
 		    %*/
 		    }
 		;
