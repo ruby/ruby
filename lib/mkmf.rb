@@ -281,8 +281,7 @@ ensure
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
-  RbConfig::expand(TRY_LINK.dup,
-                   CONFIG.merge('hdrdir' => $hdrdir.quote,
+  conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => CONFTEST_C,
                                 'arch_hdrdir' => "#$arch_hdrdir",
                                 'top_srcdir' => $top_srcdir.quote,
@@ -293,21 +292,24 @@ def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
                                 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                 'LIBPATH' => libpathflag(libpath),
                                 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                                'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS"))
+                                'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+  RbConfig::expand(TRY_LINK.dup, conf)
 end
 
 def cc_command(opt="")
-  RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
-		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
+  conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                 'arch_hdrdir' => "#$arch_hdrdir",
-                                'top_srcdir' => $top_srcdir.quote))
+                                'top_srcdir' => $top_srcdir.quote)
+  RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
+		   conf)
 end
 
 def cpp_command(outfile, opt="")
-  RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
-		   CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
+  conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                 'arch_hdrdir' => "#$arch_hdrdir",
-                                'top_srcdir' => $top_srcdir.quote))
+                                'top_srcdir' => $top_srcdir.quote)
+  RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
+		   conf)
 end
 
 def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
