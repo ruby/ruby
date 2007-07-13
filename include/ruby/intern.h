@@ -45,10 +45,6 @@ VALUE rb_ary_new2(long);
 VALUE rb_ary_new3(long,...);
 VALUE rb_ary_new4(long, const VALUE *);
 void rb_ary_free(VALUE);
-VALUE rb_values_new(long,...);
-VALUE rb_values_new2(long, const VALUE *);
-VALUE rb_values_from_ary(VALUE);
-VALUE rb_ary_from_values(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_aref(int, VALUE*, VALUE);
 void rb_ary_store(VALUE, long, VALUE);
@@ -76,7 +72,6 @@ VALUE rb_ary_rassoc(VALUE, VALUE);
 VALUE rb_ary_includes(VALUE, VALUE);
 VALUE rb_ary_cmp(VALUE, VALUE);
 VALUE rb_ary_replace(VALUE copy, VALUE orig);
-VALUE rb_check_array_value(VALUE);
 VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 /* bignum.c */
 VALUE rb_big_clone(VALUE);
@@ -209,8 +204,6 @@ typedef fd_set rb_fdset_t;
 
 #endif
 
-RUBY_EXTERN struct RNode *ruby_current_node;
-void ruby_set_current_source(void);
 NORETURN(void rb_exc_raise(VALUE));
 NORETURN(void rb_exc_fatal(VALUE));
 VALUE rb_f_exit(int,VALUE*);
@@ -226,8 +219,6 @@ void rb_clear_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
 void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
-void rb_dvar_asgn(ID, VALUE);
-void rb_dvar_push(ID, VALUE);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
@@ -264,10 +255,7 @@ void Init_jump(void);
 void ruby_finalize(void);
 NORETURN(void ruby_stop(int));
 int ruby_cleanup(int);
-int ruby_exec(void);
 void rb_gc_mark_threads(void);
-void rb_thread_start_timer(void);
-void rb_thread_stop_timer(void);
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
@@ -281,7 +269,6 @@ VALUE rb_thread_wakeup(VALUE);
 VALUE rb_thread_run(VALUE);
 VALUE rb_thread_kill(VALUE);
 VALUE rb_thread_create(VALUE (*)(ANYARGS), void*);
-void rb_thread_trap_eval(VALUE, int, int);
 void rb_thread_signal_raise(void *, int);
 void rb_thread_signal_exit(void *);
 int rb_thread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
@@ -438,7 +425,6 @@ VALUE rb_detach_process(rb_pid_t pid);
 /* range.c */
 VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
-VALUE rb_length_by_each(VALUE);
 /* random.c */
 unsigned long genrand_int32(void);
 double genrand_real(void);
@@ -615,7 +601,6 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 void Init_stack(VALUE*);
 void rb_frame_pop(void);
-NORETURN(void rb_thread_start_1(void));
 
 #if defined(__cplusplus)
 #if 0

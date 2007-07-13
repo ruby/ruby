@@ -739,7 +739,6 @@ void ruby_init_stack(VALUE*);
 void ruby_init(void);
 void *ruby_options(int, char**);
 int ruby_run_node(void *);
-NORETURN(void ruby_run(void));
 
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;
