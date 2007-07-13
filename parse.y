@@ -708,11 +708,10 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 
 %%
 program		:  {
-		    /*%%%*/
 			lex_state = EXPR_BEG;
+		    /*%%%*/
 			local_push(compile_for_eval);
 		    /*%
-			lex_state = EXPR_BEG;
 		    %*/
 		    }
 		  compstmt
@@ -926,15 +925,12 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| keyword_BEGIN
 		    {
-		    /*%%%*/
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
+		    /*%%%*/
 			/* local_push(0); */
 		    /*%
-			if (in_def || in_single) {
-			    yyerror("BEGIN in method");
-			}
 		    %*/
 		    }
 		  '{' compstmt '}'
@@ -2765,14 +2761,12 @@ primary		: literal
 		    }
 		| keyword_class cpath superclass
 		    {
-		    /*%%%*/
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
+		    /*%%%*/
 			local_push(0);
 			$<num>$ = ruby_sourceline;
 		    /*%
-			if (in_def || in_single)
-			    yyerror("class definition in method body");
 		    %*/
 		    }
 		  bodystmt
@@ -2823,14 +2817,12 @@ primary		: literal
 		    }
 		| keyword_module cpath
 		    {
-		    /*%%%*/
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
+		    /*%%%*/
 			local_push(0);
 			$<num>$ = ruby_sourceline;
 		    /*%
-			if (in_def || in_single)
-			    yyerror("module definition in method body");
 		    %*/
 		    }
 		  bodystmt

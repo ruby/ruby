@@ -1,3 +1,7 @@
+Fri Jul 13 11:09:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (program, stmt, primary): reduced duplicated code.
+
 Fri Jul 13 10:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_flatten_bang): check argument if valid
