@@ -2197,16 +2197,18 @@ int_pow(x, y)
 	while (y % 2 == 0) {
 	    long x2 = x * x;
 	    if (x2 < x || !POSFIXABLE(x2)) {
+		VALUE v;
 	      bignum:
-		return rb_big_mul(rb_big_pow(rb_int2big(x), LONG2NUM(y)),
-				  rb_int2big(neg ? -z : z));
+		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
+		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
+		return v;
 	    }
 	    x = x2;
 	    y >>= 1;
 	}
 	{
 	    long xz = x * z;
-	    if (xz < z || xz < x || !POSFIXABLE(xz)) {
+	    if (!POSFIXABLE(xz) || xz / x != z) {
 		goto bignum;
 	    }
 	    z = xz;

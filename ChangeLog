@@ -1,3 +1,7 @@
+Sat Jul 14 01:44:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_pow): wrong overflow detection.  [ruby-dev:31213]
+
 Fri Jul 13 16:10:00 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): use ENV.to_hash to access
