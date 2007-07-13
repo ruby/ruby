@@ -2196,7 +2196,7 @@ int_pow(x, y)
     do {
 	while (y % 2 == 0) {
 	    long x2 = x * x;
-	    if (x2 < x || !POSFIXABLE(x2)) {
+	    if (x2/x != x || !POSFIXABLE(x2)) {
 		VALUE v;
 	      bignum:
 		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
