@@ -1139,7 +1139,6 @@ each_i(VALUE ary)
 VALUE
 rb_ary_each(VALUE ary)
 {
-    VALUE val;
     RETURN_ENUMERATOR(ary, 0, 0);
     ITERATE(each_i, ary);
     return ary;
@@ -2842,7 +2841,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     VALUE lv;
 
     rb_scan_args(argc, argv, "01", &lv);
-    if (!NIL_P(lv)) level = FIX2INT(lv);
+    if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return ary;
     while (i<RARRAY_LEN(ary)) {
 	VALUE ary2 = RARRAY_PTR(ary)[i];

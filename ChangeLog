@@ -1,3 +1,8 @@
+Fri Jul 13 10:33:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_flatten_bang): check argument if valid
+	  integer.  [ruby-dev:31197]
+
 Fri Jul 13 10:10:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (link_command, cc_command, cpp_command): do not expand
