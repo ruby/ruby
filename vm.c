@@ -1448,6 +1448,7 @@ vm_free(void *ptr)
 	rb_vm_t *vmobj = ptr;
 
 	st_free_table(vmobj->living_threads);
+	vmobj->living_threads = 0;
 	/* TODO: MultiVM Instance */
 	/* VM object should not be cleaned by GC */
 	/* ruby_xfree(ptr); */
