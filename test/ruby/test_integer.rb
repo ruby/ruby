@@ -2,24 +2,30 @@ require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
   VS = [
+    -0x10000000000000002,
     -0x10000000000000001,
     -0x10000000000000000,
     -0xffffffffffffffff,
+    -0x4000000000000002,
     -0x4000000000000001,
     -0x4000000000000000,
     -0x3fffffffffffffff,
+    -0x100000002,
     -0x100000001,
     -0x100000000,
     -0xffffffff,
     -0xc717a08d,
     -0x524b2245,
+    -0x40000002,
     -0x40000001,
     -0x40000000,
     -0x3fffffff,
+    -0x10002,
     -0x10001,
     -0x10000,
     -0xffff,
     -0x8101,
+    -0x8002,
     -0x8001,
     -0x8000,
     -0x7fff,
@@ -51,24 +57,30 @@ class TestInteger < Test::Unit::TestCase
     0x7ffe,
     0x7fff,
     0x8000,
+    0x8001,
     0x8101,
     0xfffe,
     0xffff,
     0x10000,
+    0x10001,
     0x3ffffffe,
     0x3fffffff,
     0x40000000,
+    0x40000001,
     0x524b2245,
     0xc717a08d,
+    0xfffffffe,
     0xffffffff,
     0x100000000,
     0x100000001,
     0x3ffffffffffffffe,
     0x3fffffffffffffff,
     0x4000000000000000,
+    0x4000000000000001,
     0xfffffffffffffffe,
     0xffffffffffffffff,
     0x10000000000000000,
+    0x10000000000000001,
   ]
 
   def test_aref
@@ -135,7 +147,7 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_pow
-    small_values = VS.find_all {|v| 0 < v && v < 1000 }
+    small_values = VS.find_all {|v| 0 <= v && v < 1000 }
     VS.each {|a|
       small_values.each {|b|
         c = a ** b
@@ -325,25 +337,18 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
-  def test_nonzero?
+  def test_zero_nonzero
     VS.each {|a|
-      b = a.nonzero?
+      z = a.zero?
+      n = a.nonzero?
       if a == 0
-        assert_equal(nil, b, "(#{a}).nonzero?")
+        assert_equal(true, z, "(#{a}).zero?")
+        assert_equal(nil, n, "(#{a}).nonzero?")
       else
-        assert_equal(a, b, "(#{a}).nonzero?")
+        assert_equal(false, z, "(#{a}).zero?")
+        assert_equal(a, n, "(#{a}).nonzero?")
       end
-    }
-  end
-
-  def test_zero?
-    VS.each {|a|
-      b = a.zero?
-      if a == 0
-        assert_equal(true, b, "(#{a}).zero?")
-      else
-        assert_equal(false, b, "(#{a}).zero?")
-      end
+      assert(z ^ n)
     }
   end
 
