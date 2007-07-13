@@ -98,7 +98,7 @@ Thu Jul 12 12:58:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* template/insns.inc.tmpl: remove YARV prefix.
 
-	* thread.c: 
+	* thread.c: use rb_iseq_eval() and rb_str_new2().
 
 	* vm.c (rb_iseq_eval): added.
 
