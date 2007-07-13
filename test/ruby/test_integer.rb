@@ -59,6 +59,14 @@ class TestInteger < Test::Unit::TestCase
     0x10000000000000000,
   ]
 
+  def test_aref
+    VS.each {|a|
+      100.times {|i|
+        assert_equal((a >> i).odd? ? 1 : 0, a[i], "(#{a})[#{i}]")
+      }
+    }
+  end
+
   def test_plus
     VS.each {|a|
       VS.each {|b|
@@ -231,6 +239,18 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
+  def test_cmp
+    VS.each_with_index {|a, i|
+      VS.each_with_index {|b, j|
+        assert_equal(i <=> j, a <=> b, "#{a} <=> #{b}")
+        assert_equal(i < j, a < b, "#{a} < #{b}")
+        assert_equal(i <= j, a <= b, "#{a} <= #{b}")
+        assert_equal(i > j, a > b, "#{a} > #{b}")
+        assert_equal(i >= j, a >= b, "#{a} >= #{b}")
+      }
+    }
+  end
+
   def test_eq
     VS.each_with_index {|a, i|
       VS.each_with_index {|b, j|
@@ -312,6 +332,16 @@ class TestInteger < Test::Unit::TestCase
       else
         assert_equal(false, b, "(#{a}).zero?")
       end
+    }
+  end
+
+  def test_even_odd
+    VS.each {|a|
+      e = a.even?
+      o = a.odd?
+      assert_equal((a % 2) == 0, e, "(#{a}).even?")
+      assert_equal((a % 2) == 1, o, "(#{a}).odd")
+      assert(e ^ o)
     }
   end
 end
