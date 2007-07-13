@@ -665,7 +665,8 @@ class TestAssignmentGen < Test::Unit::TestCase
   end
 
   def test_assignment
-    SentGen.new(Syntax).each_tree(:xassign, 3) {|assign|
+    syntax = SentGen.expand_syntax(Syntax)
+    SentGen.each_tree(syntax, :xassign, 3) {|assign|
       assign[0] = rename_var(assign[0])
       sent = [assign].join('')
       bruby = do_assign(assign).to_a.sort
