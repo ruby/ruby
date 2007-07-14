@@ -1,3 +1,11 @@
+Sat Jul 14 22:49:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_pow): integer power calculation: 0**n => 0, 
+	  1**n => 1, -1**n => 1 (n: even) / -1 (n: odd).
+
+	* test/ruby/test_fixnum.rb (TestFixnum::test_pow): update test
+	  suite.  pow(-3, 2^64) gives NaN when pow(3, 2^64) gives Inf.
+
 Sat Jul 14 18:46:35 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: add --with-valgrind.

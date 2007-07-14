@@ -12,7 +12,7 @@ class TestFixnum < Test::Unit::TestCase
 
   def test_pow
     [1, 2, 2**64, 2**63*3, 2**64*3].each do |y|
-      [1, 3].each do |x|
+      [-1, 0, 1].each do |x|
         z1 = x**y
         z2 = (-x)**y
         if y % 2 == 1

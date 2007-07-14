@@ -2326,14 +2326,21 @@ int_pow(long x, unsigned long y)
 static VALUE
 fix_pow(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	long a, b;
+    long a = FIX2LONG(x);
 
-	b = FIX2LONG(y);
+    if (FIXNUM_P(y)) {
+	long b = FIX2LONG(y);
+
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
-	a = FIX2LONG(x);
 	if (a == 0) return INT2FIX(0);
+	if (a == 1) return INT2FIX(1);
+	if (a == -1) {
+	    if (b % 2 == 0)
+		return INT2FIX(1);
+	    else 
+		return INT2FIX(-1);
+	}
 	if (b > 0) {
 	    return int_pow(a, b);
 	}
@@ -2341,10 +2348,18 @@ fix_pow(VALUE x, VALUE y)
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
+	if (a == 0) return INT2FIX(0);
+	if (a == 1) return INT2FIX(1);
+	if (a == -1) {
+	    if (int_even_p(y)) return INT2FIX(1);
+	    else return INT2FIX(-1);
+	}
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
       case T_FLOAT:
-	return rb_float_new(pow((double)FIX2LONG(x), RFLOAT(y)->value));
+	if (a == 0) return rb_float_new(0.0);
+	if (a == 1) return rb_float_new(1.0);
+	return rb_float_new(pow((double)a, RFLOAT(y)->value));
       default:
 	return rb_num_coerce_bin(x, y);
     }
