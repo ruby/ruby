@@ -1377,7 +1377,7 @@ int rb_setjmp (rb_jmp_buf);
 void rb_vm_mark(void *ptr);
 
 static void
-mark_current_thread(rb_thread_t *th)
+mark_current_machine_context(rb_thread_t *th)
 {
     jmp_buf save_regs_gc_mark;
     VALUE *stack_start, *stack_end;
@@ -1470,7 +1470,7 @@ garbage_collect(void)
 	mark_tbl(finalizer_table, 0);
     }
 
-    mark_current_thread(th);
+    mark_current_machine_context(th);
 
     rb_gc_mark_threads();
     rb_gc_mark_symbols();

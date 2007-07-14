@@ -1,4 +1,4 @@
-Sat Jul 14 16:11:24 2007  Tanaka Akira  <akr@fsij.org>
+Sat Jul 14 18:46:35 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: add --with-valgrind.
 
@@ -9,7 +9,7 @@ Sat Jul 14 16:11:24 2007  Tanaka Akira  <akr@fsij.org>
 	* thread.c (rb_gc_set_stack_end): don't define if asm-version
 	  SET_MACHINE_STACK_END is available.
 
-	* gc.c (mark_current_thread): extracted from garbage_collect.
+	* gc.c (mark_current_machine_context): extracted from garbage_collect.
 	  it use SET_MACHINE_STACK_END to not scan out of stack area.
 	  it notify conservative GC information to valgrind if
 	  --with-valgrind.
