@@ -46,7 +46,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
 
     data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
     tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
-    p7 = OpenSSL::PKCS7::PKCS7.new(tmp.to_der)
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
     certs = p7.certificates
     signers = p7.signers
     assert(p7.verify([], store))
@@ -65,7 +65,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     data = "aaaaa\nbbbbb\nccccc\n"
     flag = OpenSSL::PKCS7::BINARY
     tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
-    p7 = OpenSSL::PKCS7::PKCS7.new(tmp.to_der)
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
     certs = p7.certificates
     signers = p7.signers
     assert(p7.verify([], store))
@@ -87,7 +87,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     tmp1.add_signer(tmp2.signers[0])
     tmp1.add_certificate(@ee2_cert)  
 
-    p7 = OpenSSL::PKCS7::PKCS7.new(tmp1.to_der)
+    p7 = OpenSSL::PKCS7.new(tmp1.to_der)
     certs = p7.certificates
     signers = p7.signers
     assert(p7.verify([], store))
@@ -108,7 +108,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     data = "aaaaa\nbbbbb\nccccc\n"
     flag = OpenSSL::PKCS7::BINARY|OpenSSL::PKCS7::DETACHED
     tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
-    p7 = OpenSSL::PKCS7::PKCS7.new(tmp.to_der)
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
     a1 = OpenSSL::ASN1.decode(p7)
 
     certs = p7.certificates
@@ -136,7 +136,7 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     data = "aaaaa\nbbbbb\nccccc\n"
 
     tmp = OpenSSL::PKCS7.encrypt(certs, data, cipher, OpenSSL::PKCS7::BINARY)
-    p7 = OpenSSL::PKCS7::PKCS7.new(tmp.to_der)
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
     recip = p7.recipients
     assert_equal(:enveloped, p7.type)
     assert_equal(2, recip.size)

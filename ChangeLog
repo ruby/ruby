@@ -1,3 +1,10 @@
+Sat Jul 14 12:16:17 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_pkcs7.rb: follow the library change.  applied a
+	  patch from <zn at mbf.nifty.com> [ruby-dev:31214].
+	  NOTE: r12496 imports the latest openssl libs from trunk to ruby_1_8
+	  though its's not ChangeLog-ed.  maintainer should aware that.
+
 Sat Jul 14 02:51:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): 0**2 should not raise floating point
