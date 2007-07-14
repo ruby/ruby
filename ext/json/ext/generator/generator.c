@@ -9,7 +9,7 @@
 #define check_max_nesting(state, depth) do {                                   \
     long current_nesting = 1 + depth;                                          \
     if (state->max_nesting != 0 && current_nesting > state->max_nesting)       \
-        rb_raise(eNestingError, "nesting of %u is too deep", current_nesting); \
+        rb_raise(eNestingError, "nesting of %ld is too deep", current_nesting); \
 } while (0);
 
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,

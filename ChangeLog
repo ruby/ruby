@@ -1,3 +1,9 @@
+Sat Jul 14 11:08:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/json/ext/generator/generator.c (check_max_nesting): wrong
+	  format specifier.  a patch from pegacorn <subscriber.jp AT gmail.com>.
+	  [ruby-dev:31217]
+
 Sat Jul 14 02:27:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (int_pow): overflow detection using FIT_SQRT_LONG().
