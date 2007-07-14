@@ -1,3 +1,9 @@
+Sat Jul 14 12:44:14 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/openssl/test_pkcs7.rb: reverted the previous patch.  it should
+	  be as it was to check interface compatibility.  sorry for bothering
+	  with this.
+
 Sat Jul 14 12:16:17 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/openssl/test_pkcs7.rb: follow the library change.  applied a
