@@ -1376,7 +1376,7 @@ int rb_setjmp (rb_jmp_buf);
 
 void rb_vm_mark(void *ptr);
 
-void
+static void
 mark_current_thread(rb_thread_t *th)
 {
     jmp_buf save_regs_gc_mark;
