@@ -1,3 +1,7 @@
+Sun Jul 15 04:42:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (get2comp): do nothing for empty Bignum.  [ruby-dev:31225]
+
 Sat Jul 14 22:49:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): integer power calculation: 0**n => 0, 
