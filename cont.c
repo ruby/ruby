@@ -97,7 +97,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     int size;
     rb_thread_t *sth = &cont->saved_thread;
 
-    rb_gc_set_stack_end(&th->machine_stack_end);
+    SET_MACHINE_STACK_END(&th->machine_stack_end);
 #ifdef __ia64
     th->machine_register_stack_end = rb_ia64_bsp();
 #endif

@@ -1,3 +1,19 @@
+Sat Jul 14 16:11:24 2007  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: add --enable-valgrind.
+
+	* gc.h (SET_MACHINE_STACK_END): new macro to replace
+	  rb_gc_set_stack_end.  it find out accurate stack boundary by
+	  asm using gcc on x86.
+
+	* thread.c (rb_gc_set_stack_end): don't define if asm-version
+	  SET_MACHINE_STACK_END is available.
+
+	* gc.c (mark_current_thread): extracted from garbage_collect.
+	  it use SET_MACHINE_STACK_END to not scan out of stack area.
+	  it notify conservative GC information to valgrind if
+	  --enable-valgrind.
+
 Sat Jul 14 14:04:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (sort_by_cmp): check if reentered.  [ruby-dev:24291]

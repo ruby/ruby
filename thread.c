@@ -1811,17 +1811,19 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
  * for GC
  */
 
+#ifdef USE_CONSERVATIVE_STACK_END
 void
 rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
     *stack_end_p = &stack_end;
 }
+#endif
 
 void
 rb_gc_save_machine_context(rb_thread_t *th)
 {
-    rb_gc_set_stack_end(&th->machine_stack_end);
+    SET_MACHINE_STACK_END(&th->machine_stack_end);
 #ifdef __ia64
     th->machine_register_stack_end = rb_ia64_bsp();
 #endif

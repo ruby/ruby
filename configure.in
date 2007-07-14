@@ -873,6 +873,10 @@ fi
 
 AC_CHECK_FUNCS(backtrace)
 
+AC_ARG_ENABLE(valgrind,
+        [  --enable-valgrind       enable valgrind memcheck support.],
+        [AC_CHECK_HEADERS(valgrind/memcheck.h)])
+
 dnl default value for $KANJI
 DEFAULT_KCODE="KCODE_NONE"
 

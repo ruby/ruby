@@ -35,6 +35,15 @@
 #include <windows.h>
 #endif
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+# ifndef VALGRIND_MAKE_MEM_DEFINED
+#  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE(p, n)
+# endif
+#else
+# define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
+#endif
+
 int rb_io_fptr_finalize(struct rb_io_t*);
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
@@ -558,9 +567,9 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 }
 
 #ifdef __ia64
-#define SET_STACK_END (rb_gc_set_stack_end(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
+#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine_stack_end), th->machine_register_stack_end = rb_ia64_bsp())
 #else
-#define SET_STACK_END rb_gc_set_stack_end(&th->machine_stack_end)
+#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine_stack_end)
 #endif
 
 #define STACK_START (th->machine_stack_start)
@@ -733,6 +742,7 @@ mark_locations_array(register VALUE *x, register long n)
     VALUE v;
     while (n--) {
         v = *x;
+        VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
 	if (is_pointer_to_heap((void *)v)) {
 	    gc_mark(v, 0);
 	}
@@ -1366,11 +1376,74 @@ int rb_setjmp (rb_jmp_buf);
 
 void rb_vm_mark(void *ptr);
 
+void
+mark_current_thread(rb_thread_t *th)
+{
+    jmp_buf save_regs_gc_mark;
+    VALUE *stack_start, *stack_end;
+
+    SET_STACK_END;
+#if STACK_GROW_DIRECTION < 0
+    stack_start = th->machine_stack_end;
+    stack_end = th->machine_stack_start;
+#elif STACK_GROW_DIRECTION > 0
+    stack_start = th->machine_stack_start;
+    stack_end = th->machine_stack_end + 1;
+#else
+    if (th->machine_stack_end < th->machine_stack_start) {
+        stack_start = th->machine_stack_end;
+        stack_end = th->machine_stack_start;
+    }
+    else {
+        stack_start = th->machine_stack_start;
+        stack_end = th->machine_stack_end + 1;
+    }
+#endif
+
+    FLUSH_REGISTER_WINDOWS;
+    /* This assumes that all registers are saved into the jmp_buf (and stack) */
+    setjmp(save_regs_gc_mark);
+
+    {
+        struct { VALUE *start; VALUE *end; } regions[] = {
+            { (VALUE*)save_regs_gc_mark,
+              (VALUE*)save_regs_gc_mark +
+                  sizeof(save_regs_gc_mark) / sizeof(VALUE *) },
+            { stack_start, stack_end }
+#ifdef __ia64
+            , { th->machine_register_stack_start,
+                th->machine_register_stack_end }
+#endif
+#if defined(__human68k__) || defined(__mc68000__)
+            , { (VALUE*)((char*)STACK_END + 2),
+                (VALUE*)((char*)STACK_START + 2) }
+#endif
+        };
+        int i;
+        for (i = 0; i < sizeof(regions)/sizeof(*regions); i++) {
+            /* stack scanning code is inlined here
+             * because function call grows stack.
+             * don't call mark_locations_array,
+             * rb_gc_mark_locations, etc. */
+            VALUE *x, n, v;
+            x = regions[i].start;
+            n = regions[i].end - x;
+            while (n--) {
+                v = *x;
+                VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
+                if (is_pointer_to_heap((void *)v)) {
+                    gc_mark(v, 0);
+                }
+                x++;
+            }
+        }
+    }
+}
+
 static int
 garbage_collect(void)
 {
     struct gc_list *list;
-    jmp_buf save_regs_gc_mark;
     rb_thread_t *th = GET_THREAD();
 
     if (GC_NOTIFY) printf("start garbage_collect()\n");
@@ -1397,30 +1470,8 @@ garbage_collect(void)
 	mark_tbl(finalizer_table, 0);
     }
 
-    FLUSH_REGISTER_WINDOWS;
-    /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    setjmp(save_regs_gc_mark);
-    mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
+    mark_current_thread(th);
 
-#if STACK_GROW_DIRECTION < 0
-    rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
-#elif STACK_GROW_DIRECTION > 0
-    rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
-#else
-    if (th->machine_stack_end < th->machine_stack_start)
-      rb_gc_mark_locations(th->machine_stack_end, th->machine_stack_start);
-    else
-      rb_gc_mark_locations(th->machine_stack_start, th->machine_stack_end + 1);
-#endif
-#ifdef __ia64
-    /* mark backing store (flushed register stack) */
-    /* the basic idea from guile GC code                         */
-    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
-#endif
-#if defined(__human68k__) || defined(__mc68000__)
-    rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
-			 (VALUE*)((char*)STACK_START + 2));
-#endif
     rb_gc_mark_threads();
     rb_gc_mark_symbols();
 
