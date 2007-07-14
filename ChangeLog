@@ -1,6 +1,6 @@
 Sat Jul 14 16:11:24 2007  Tanaka Akira  <akr@fsij.org>
 
-	* configure.in: add --enable-valgrind.
+	* configure.in: add --with-valgrind.
 
 	* gc.h (SET_MACHINE_STACK_END): new macro to replace
 	  rb_gc_set_stack_end.  it find out accurate stack boundary by
@@ -12,7 +12,7 @@ Sat Jul 14 16:11:24 2007  Tanaka Akira  <akr@fsij.org>
 	* gc.c (mark_current_thread): extracted from garbage_collect.
 	  it use SET_MACHINE_STACK_END to not scan out of stack area.
 	  it notify conservative GC information to valgrind if
-	  --enable-valgrind.
+	  --with-valgrind.
 
 Sat Jul 14 14:04:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
