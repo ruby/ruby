@@ -1,3 +1,7 @@
+Sat Jul 14 14:04:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (sort_by_cmp): check if reentered.  [ruby-dev:24291]
+
 Sat Jul 14 11:08:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/json/ext/generator/generator.c (check_max_nesting): wrong

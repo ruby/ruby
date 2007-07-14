@@ -627,7 +627,11 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
 {
     VALUE a = (*(NODE *const *)ap)->u1.value;
     VALUE b = (*(NODE *const *)bp)->u1.value;
+    VALUE ary = (VALUE)data;
 
+    if (RBASIC(ary)->klass) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 
@@ -717,7 +721,8 @@ enum_sort_by(VALUE obj)
     RBASIC(ary)->klass = 0;
     rb_block_call(obj, id_each, 0, 0, sort_by_i, ary);
     if (RARRAY_LEN(ary) > 1) {
-	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE), sort_by_cmp, 0);
+	ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE),
+		   sort_by_cmp, (void *)ary);
     }
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
