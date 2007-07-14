@@ -75,6 +75,7 @@ get2comp(x)
     BDIGIT *ds = BDIGITS(x);
     BDIGIT_DBL num;
 
+    if (!i) return;
     while (i--) ds[i] = ~ds[i];
     i = 0; num = 1;
     do {
