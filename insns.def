@@ -85,6 +85,7 @@ getspecial
 (VALUE val)
 {
     if (type == 0) {
+	if (FIXNUM_P(key)) key = FIX2INT(key);
 	val = lfp_svar_get(th, GET_LFP(), key);
     }
     else {
