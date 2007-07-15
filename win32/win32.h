@@ -193,6 +193,7 @@ extern struct protoent * rb_w32_getprotobyname(char *);
 extern struct protoent * rb_w32_getprotobynumber(int);
 extern struct servent  * rb_w32_getservbyname(char *, char *);
 extern struct servent  * rb_w32_getservbyport(int, char *);
+extern char * rb_w32_getcwd(char *, int);
 extern char * rb_w32_getenv(const char *);
 extern int    rb_w32_rename(const char *, const char *);
 extern int    rb_w32_stat(const char *, struct stat *);
