@@ -83,6 +83,8 @@ class TestInteger < Test::Unit::TestCase
     0x10000000000000001,
   ]
 
+  #VS.map! {|v| 0x40000000.coerce(v)[0] }
+
   def test_aref
     VS.each {|a|
       100.times {|i|
@@ -97,7 +99,6 @@ class TestInteger < Test::Unit::TestCase
         c = a + b
         assert_equal(b + a, c, "#{a} + #{b}")
         assert_equal(a, c - b, "(#{a} + #{b}) - #{b}")
-        assert_equal(b, c - a, "(#{a} + #{b}) - #{a}")
         assert_equal(a-~b-1, c, "#{a} + #{b}") # Hacker's Delight
         assert_equal((a^b)+2*(a&b), c, "#{a} + #{b}") # Hacker's Delight
         assert_equal((a|b)+(a&b), c, "#{a} + #{b}") # Hacker's Delight
@@ -125,7 +126,6 @@ class TestInteger < Test::Unit::TestCase
       VS.each {|b|
         c = a * b
         assert_equal(b * a, c, "#{a} * #{b}")
-        assert_equal(a, c / b, "(#{a} * #{b}) / #{b}") if b != 0
         assert_equal(b, c / a, "(#{a} * #{b}) / #{a}") if a != 0
         assert_equal(a.abs * b.abs, (a * b).abs, "(#{a} * #{b}).abs")
         assert_equal((a-100)*(b-100)+(a-100)*100+(b-100)*100+10000, c, "#{a} * #{b}")
@@ -158,6 +158,11 @@ class TestInteger < Test::Unit::TestCase
         d = 1
         b.times { d *= a }
         assert_equal(d, c, "(#{a}) ** #{b}")
+        if a != 0
+          d = c
+          b.times { d /= a }
+          assert_equal(1, d, "((#{a}) ** #{b}) ** (-#{b})")
+        end
       }
     }
   end
@@ -180,7 +185,6 @@ class TestInteger < Test::Unit::TestCase
         assert_equal(a + b - (a&b), c, "#{a} | #{b}")
         assert_equal((a & ~b) + b, c, "#{a} | #{b}") # Hacker's Delight
         assert_equal(-1, c | ~a, "(#{a} | #{b}) | ~#{a})")
-        assert_equal(-1, c | ~b, "(#{a} | #{b}) | ~#{b})")
       }
     }
   end
@@ -193,7 +197,6 @@ class TestInteger < Test::Unit::TestCase
         assert_equal(a + b - (a|b), c, "#{a} & #{b}")
         assert_equal((~a | b) - ~a, c, "#{a} & #{b}") # Hacker's Delight
         assert_equal(0, c & ~a, "(#{a} & #{b}) & ~#{a}")
-        assert_equal(0, c & ~b, "(#{a} & #{b}) & ~#{b}")
       }
     }
   end
@@ -205,7 +208,6 @@ class TestInteger < Test::Unit::TestCase
         assert_equal(b ^ a, c, "#{a} ^ #{b}")
         assert_equal((a|b)-(a&b), c, "#{a} ^ #{b}") # Hacker's Delight
         assert_equal(b, c ^ a, "(#{a} ^ #{b}) ^ #{a}")
-        assert_equal(a, c ^ b, "(#{a} ^ #{b}) ^ #{b}")
       }
     }
   end
@@ -245,6 +247,7 @@ class TestInteger < Test::Unit::TestCase
       b = a.succ
       assert_equal(a+1, b, "(#{a}).succ")
       assert_equal(a, b.pred, "(#{a}).succ.pred")
+      assert_equal(a, b-1, "(#{a}).succ - 1")
     }
   end
 
@@ -253,6 +256,7 @@ class TestInteger < Test::Unit::TestCase
       b = a.pred
       assert_equal(a-1, b, "(#{a}).pred")
       assert_equal(a, b.succ, "(#{a}).pred.succ")
+      assert_equal(a, b + 1, "(#{a}).pred + 1")
     }
   end
 
@@ -267,6 +271,8 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       b = -a
       assert_equal(0-a, b, "-(#{a})")
+      assert_equal(~a+1, b, "-(#{a})")
+      assert_equal(0, a+b, "#{a}+(-(#{a}))")
     }
   end
 
@@ -286,6 +292,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each_with_index {|a, i|
       VS.each_with_index {|b, j|
         c = a == b
+        assert_equal(b == a, c, "#{a} == #{b}")
         assert_equal(i == j, c, "#{a} == #{b}")
       }
     }
