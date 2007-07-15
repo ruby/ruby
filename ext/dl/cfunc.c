@@ -460,7 +460,13 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	}
     }
     else{
-	rb_raise(rb_eDLError, "unsupported call type: %x", cfunc->calltype);
+	rb_raise(rb_eDLError,
+#ifndef LONG_LONG_VALUE
+		 "unsupported call type: %lx",
+#else
+		 "unsupported call type: %llx",
+#endif
+		 cfunc->calltype);
     }
 
     rb_dl_set_last_error(self, INT2NUM(errno));

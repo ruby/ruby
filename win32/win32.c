@@ -27,6 +27,7 @@
 #include <wincon.h>
 #include <share.h>
 #include <shlobj.h>
+#include <mbstring.h>
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
