@@ -1674,7 +1674,7 @@ rb_big_pow(VALUE x, VALUE y)
 	yy = FIX2LONG(y);
 	if (yy > 0) {
 	    VALUE z = 0;
-	    SIGNED_VALUE mask, n = 1;
+	    SIGNED_VALUE mask;
 
 	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
 		rb_warn("in a**b, b may be too big");
@@ -1682,21 +1682,9 @@ rb_big_pow(VALUE x, VALUE y)
 		break;
 	    }
 	    for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {
-		if (!z) {
-		    SIGNED_VALUE n2 = n * n;
-		    if (!POSFIXABLE(n2) || (n2 / n != n)) {
-			z = bigtrunc(bigsqr(rb_int2big(n)));
-		    }
-		    else {
-			n = n2;
-		    }
-		}
-		else {
-		    z = bigtrunc(bigsqr(z));
-		}
+		if (z) z = bigtrunc(bigsqr(z));
 		if (yy & mask) {
-		    if (!z) z = rb_int2big(n);
-		    z = bigtrunc(rb_big_mul0(z, x));
+		    z = z ? bigtrunc(rb_big_mul0(z, x)) : x;
 		}
 	    }
 	    return bignorm(z);

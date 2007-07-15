@@ -1,3 +1,7 @@
+Mon Jul 16 00:26:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): removed invariant variable.  [ruby-dev:31236]
+
 Sun Jul 15 22:24:37 2007  pegacorn  <subscriber.jp AT gmail.com>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): adjust format.  [ruby-dev:31222]
