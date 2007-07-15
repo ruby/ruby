@@ -97,7 +97,7 @@ bigtrunc(VALUE x)
     long len = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(x);
 
-    while (len-- && !ds[len]);
+    while (--len && !ds[len]);
     RBIGNUM(x)->len = ++len;
     return x;
 }
@@ -1038,6 +1038,7 @@ rb_big_neg(VALUE x)
     if (!RBIGNUM(x)->sign) get2comp(z);
     ds = BDIGITS(z);
     i = RBIGNUM(x)->len;
+    if (!i) return INT2FIX(~(SIGNED_VALUE)0);
     while (i--) {
 	ds[i] = ~ds[i];
     }
