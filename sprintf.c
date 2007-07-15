@@ -79,6 +79,7 @@ sign_bits(int base, const char *p)
 #define FSPACE 16
 #define FWIDTH 32
 #define FPREC  64
+#define FPREC0 128
 
 #define CHECK(l) do {\
     while (blen + (l) >= bsiz) {\
@@ -113,9 +114,7 @@ sign_bits(int base, const char *p)
 #define GETNTHARG(nth) \
     ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
 
-#define GETASTER(val) do { \
-    t = p++; \
-    n = 0; \
+#define GETNUM(n, val) \
     for (; p < end && ISDIGIT(*p); p++) { \
 	int next_n = 10 * n + (*p - '0'); \
         if (next_n / 10 != n) {\
@@ -125,7 +124,12 @@ sign_bits(int base, const char *p)
     } \
     if (p >= end) { \
 	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
-    } \
+    }
+
+#define GETASTER(val) do { \
+    t = p++; \
+    n = 0; \
+    GETNUM(n, val); \
     if (*p == '$') { \
 	tmp = GETPOSARG(n); \
     } \
@@ -263,6 +267,21 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     VALUE tmp;
     VALUE str;
 
+#define CHECK_FOR_WIDTH(f)				 \
+    if ((f) & FWIDTH) {					 \
+	rb_raise(rb_eArgError, "width given twice");	 \
+    }							 \
+    if ((f) & FPREC0) {					 \
+	rb_raise(rb_eArgError, "width after precision"); \
+    }
+#define CHECK_FOR_FLAGS(f)				 \
+    if ((f) & FWIDTH) {					 \
+	rb_raise(rb_eArgError, "flag after width");	 \
+    }							 \
+    if ((f) & FPREC0) {					 \
+	rb_raise(rb_eArgError, "flag after precision"); \
+    }
+
     ++argc;
     --argv;
     if (OBJ_TAINTED(fmt)) tainted = 1;
@@ -299,43 +318,40 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    break;
 
 	  case ' ':
+	    CHECK_FOR_FLAGS(flags);
 	    flags |= FSPACE;
 	    p++;
 	    goto retry;
 
 	  case '#':
+	    CHECK_FOR_FLAGS(flags);
 	    flags |= FSHARP;
 	    p++;
 	    goto retry;
 
 	  case '+':
+	    CHECK_FOR_FLAGS(flags);
 	    flags |= FPLUS;
 	    p++;
 	    goto retry;
 
 	  case '-':
+	    CHECK_FOR_FLAGS(flags);
 	    flags |= FMINUS;
 	    p++;
 	    goto retry;
 
 	  case '0':
+	    CHECK_FOR_FLAGS(flags);
 	    flags |= FZERO;
 	    p++;
 	    goto retry;
 
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
+	    CHECK_FOR_WIDTH(flags);
 	    n = 0;
-	    for (; p < end && ISDIGIT(*p); p++) {
-		int next_n = 10 * n + (*p - '0');
-		if (next_n / 10 != n) {
-		    rb_raise(rb_eArgError, "width too big");
-		}
-		n = next_n;
-	    }
-	    if (p >= end) {
-		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
-	    }
+	    GETNUM(n, width);
 	    if (*p == '$') {
 		if (nextvalue != Qundef) {
 		    rb_raise(rb_eArgError, "value given twice - %d$", n);
@@ -349,9 +365,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    goto retry;
 
 	  case '*':
-	    if (flags & FWIDTH) {
-		rb_raise(rb_eArgError, "width given twice");
-	    }
+	    CHECK_FOR_WIDTH(flags);
 	    flags |= FWIDTH;
 	    GETASTER(width);
 	    if (width < 0) {
@@ -362,10 +376,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    goto retry;
 
 	  case '.':
-	    if (flags & FPREC) {
+	    if (flags & FPREC0) {
 		rb_raise(rb_eArgError, "precision given twice");
 	    }
-	    flags |= FPREC;
+	    flags |= FPREC|FPREC0;
 
 	    prec = 0;
 	    p++;
@@ -378,17 +392,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		goto retry;
 	    }
 
-	    for (; p < end && ISDIGIT(*p); p++) {
-		prec = 10 * prec + (*p - '0');
-	    }
-	    if (p >= end) {
-		rb_raise(rb_eArgError, "malformed format string - %%.[0-9]");
-	    }
+	    GETNUM(prec, precision);
 	    goto retry;
 
 	  case '\n':
-	    p--;
 	  case '\0':
+	    p--;
 	  case '%':
 	    if (flags != FNONE) {
 		rb_raise(rb_eArgError, "illegal format character - %%");

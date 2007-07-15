@@ -138,4 +138,37 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("-Inf    ", sprintf("%- 08f", -inf))
     assert_equal("-0000Inf", sprintf("%+ 08f", -inf))
   end
+
+  def test_invalid
+    # [ruby-core:11569]
+
+    # Star precision before star width:
+    assert_raise(ArgumentError) {sprintf("%.**d", 5, 10, 1)}
+
+    # Precision before flags and width:
+    assert_raise(ArgumentError) {sprintf("%.5+05d", 5)}
+    assert_raise(ArgumentError) {sprintf("%.5 5d", 5)}
+
+    # Overriding a star width with a numeric one:
+    assert_raise(ArgumentError) {sprintf("%*1s", 5, 1)}
+
+    # Width before flags:
+    assert_raise(ArgumentError) {sprintf("%5+0d", 1)}
+    assert_raise(ArgumentError) {sprintf("%5 0d", 1)}
+
+    # Specifying width multiple times:
+    assert_raise(ArgumentError) {sprintf("%50+30+20+10+5d", 5)}
+    assert_raise(ArgumentError) {sprintf("%50 30 20 10 5d", 5)}
+
+    # [ruby-core:11570]
+    # Specifying the precision multiple times with negative star arguments:
+    assert_raise(ArgumentError) {sprintf("%.*.*.*.*f", -1, -1, -1, 5, 1)}
+
+    # [ruby-core:11571]
+    # Null bytes after percent signs are removed:
+    assert_equal("%\0x hello", sprintf("%\0x hello"))
+
+    # [ruby-core:11573]
+    assert_raise(ArgumentError) {sprintf("%.25555555555555555555555555555555555555s", "hello")}
+  end
 end
