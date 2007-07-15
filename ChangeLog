@@ -1,6 +1,6 @@
 Sun Jul 15 21:07:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* bignum.c (get2comp): do nothing for empty Bignum.  [ruby-dev:31225]
+	* bignum.c (bigtrunc): do not empty Bignum.  [ruby-dev:31229]
 
 Sun Jul 15 19:05:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
