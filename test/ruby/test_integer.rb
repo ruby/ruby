@@ -375,4 +375,16 @@ class TestInteger < Test::Unit::TestCase
       assert(e ^ o)
     }
   end
+
+  def test_Integer
+    assert_raise(ArgumentError) {Integer("0x-1")}
+    assert_raise(ArgumentError) {Integer("-0x-1")}
+    assert_raise(ArgumentError) {Integer("0x     123")}
+    assert_raise(ArgumentError) {Integer("0x      123")}
+    assert_raise(ArgumentError) {Integer("0x0x5")}
+    assert_raise(ArgumentError) {Integer("0x0x000000005")}
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(1540841, "0x0x5".to_i(36))
+    }
+  end
 end
