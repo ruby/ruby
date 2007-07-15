@@ -11,6 +11,10 @@
 // So rb_ia64_flushrs flushes stack frames including caller's one.
 // rb_ia64_bsp returns the address next to caller's register stack frame. 
 //
+// See also
+// Intel Itanium Architecture Software Developer's Manual
+// Volume 2: System Architecture.
+//
 	.file	"ia64.c"
 	.text
 	.align 16
