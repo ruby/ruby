@@ -15,6 +15,10 @@ class TestInteger < Test::Unit::TestCase
     -0x100000000,
     -0xffffffff,
     -0xc717a08d, # 0xc717a08d * 0x524b2245 = 0x4000000000000001
+    -0x80000002,
+    -0x80000001,
+    -0x80000000,
+    -0x7fffffff,
     -0x524b2245,
     -0x40000002,
     -0x40000001,
@@ -68,6 +72,10 @@ class TestInteger < Test::Unit::TestCase
     0x40000000,
     0x40000001,
     0x524b2245,
+    0x7ffffffe,
+    0x7fffffff,
+    0x80000000,
+    0x80000001,
     0xc717a08d,
     0xfffffffe,
     0xffffffff,
@@ -83,7 +91,7 @@ class TestInteger < Test::Unit::TestCase
     0x10000000000000001,
   ]
 
-  #VS.map! {|v| 0x40000000.coerce(v)[0] }
+  #VS.map! {|v| 0x4000000000000000.coerce(v)[0] }
 
   def test_aref
     VS.each {|a|
@@ -161,7 +169,7 @@ class TestInteger < Test::Unit::TestCase
         if a != 0
           d = c
           b.times { d /= a }
-          assert_equal(1, d, "((#{a}) ** #{b}) ** (-#{b})")
+          assert_equal(1, d, "((#{a}) ** #{b}) / #{a} / ...(#{b} times)...")
         end
       }
     }
@@ -340,10 +348,10 @@ class TestInteger < Test::Unit::TestCase
         r = a.remainder(b)
         if a < 0
           assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
-          assert_operator(r, :<=, 0, "#{a}.remainder(#{b})")
+          assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
         elsif 0 < a
           assert_operator(0, :<=, r, "#{a}.remainder(#{b})")
-          assert_operator(r, :<, b.abs, "#{a}.remainder(#{b})")
+          assert_operator(b.abs, :>, r, "#{a}.remainder(#{b})")
         else
           assert_equal(0, r, "#{a}.remainder(#{b})")
         end
@@ -362,7 +370,7 @@ class TestInteger < Test::Unit::TestCase
         assert_equal(false, z, "(#{a}).zero?")
         assert_equal(a, n, "(#{a}).nonzero?")
       end
-      assert(z ^ n)
+      assert(z ^ n, "(#{a}).zero? ^ (#{a}).nonzero?")
     }
   end
 
@@ -372,7 +380,9 @@ class TestInteger < Test::Unit::TestCase
       o = a.odd?
       assert_equal((a % 2) == 0, e, "(#{a}).even?")
       assert_equal((a % 2) == 1, o, "(#{a}).odd")
-      assert(e ^ o)
+      assert_equal((a & 1) == 0, e, "(#{a}).even?")
+      assert_equal((a & 1) == 1, o, "(#{a}).odd")
+      assert(e ^ o, "(#{a}).even? ^ (#{a}).odd?")
     }
   end
 
