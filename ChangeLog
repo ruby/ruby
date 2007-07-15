@@ -1,3 +1,7 @@
+Mon Jul 16 00:26:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): removed invariant variable.  [ruby-dev:31236]
+
 Sun Jul 15 23:59:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_neg): SIGNED_VALUE isn't in 1.8.
