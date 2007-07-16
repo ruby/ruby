@@ -491,14 +491,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		switch (*p) {
 		  case 'd':
 		  case 'i':
+		  case 'u':
 		    sign = 1; break;
 		  case 'o':
 		  case 'x':
 		  case 'X':
 		  case 'b':
 		  case 'B':
-		  case 'u':
-		  default:
 		    if (flags&(FPLUS|FSPACE)) sign = 1;
 		    break;
 		}
@@ -584,13 +583,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    else {
 			s = nbuf;
 			if (v < 0) {
-			    if (base == 10) {
-				rb_warning("negative number for %%u specifier");
-			    }
-			    else if (!(flags&(FPREC|FZERO))) {
-				strcpy(s, "..");
-				s += 2;
-			    }
+			    strcpy(s, "..");
+			    s += 2;
 			}
 			sprintf(fbuf, "%%l%c", *p == 'X' ? 'x' : *p);
 			sprintf(s, fbuf, v);
