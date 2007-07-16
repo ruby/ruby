@@ -1129,27 +1129,26 @@ rb_str_index_m(argc, argv, str)
 	pos = rb_reg_search(sub, str, pos, 0);
 	break;
 
-      case T_FIXNUM:
-      {
-	  int c = FIX2INT(sub);
-	  long len = RSTRING(str)->len;
-	  unsigned char *p = (unsigned char*)RSTRING(str)->ptr;
+      case T_FIXNUM: {
+	int c = FIX2INT(sub);
+	long len = RSTRING(str)->len;
+	unsigned char *p = (unsigned char*)RSTRING(str)->ptr;
 
-	  for (;pos<len;pos++) {
-	      if (p[pos] == c) return LONG2NUM(pos);
-	  }
-	  return Qnil;
+	for (;pos<len;pos++) {
+	    if (p[pos] == c) return LONG2NUM(pos);
+	}
+	return Qnil;
       }
 
       default: {
-	  VALUE tmp;
+	VALUE tmp;
 
-	  tmp = rb_check_string_type(sub);
-	  if (NIL_P(tmp)) {
-	      rb_raise(rb_eTypeError, "type mismatch: %s given",
-		       rb_obj_classname(sub));
-	  }
-	  sub = tmp;
+	tmp = rb_check_string_type(sub);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sub));
+	}
+	sub = tmp;
       }
 	/* fall through */
       case T_STRING:
@@ -1247,31 +1246,37 @@ rb_str_rindex_m(argc, argv, str)
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
+      default: {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sub);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sub));
+	}
+	sub = tmp;
+      }
+	/* fall through */
       case T_STRING:
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
-      case T_FIXNUM:
-      {
-	  int c = FIX2INT(sub);
-	  unsigned char *p = (unsigned char*)RSTRING(str)->ptr + pos;
-	  unsigned char *pbeg = (unsigned char*)RSTRING(str)->ptr;
+      case T_FIXNUM: {
+	int c = FIX2INT(sub);
+	unsigned char *p = (unsigned char*)RSTRING(str)->ptr + pos;
+	unsigned char *pbeg = (unsigned char*)RSTRING(str)->ptr;
 
-	  if (pos == RSTRING(str)->len) {
-	      if (pos == 0) return Qnil;
-	      --p;
-	  }
-	  while (pbeg <= p) {
-	      if (*p == c) return LONG2NUM((char*)p - RSTRING(str)->ptr);
-	      p--;
-	  }
-	  return Qnil;
+	if (pos == RSTRING(str)->len) {
+	    if (pos == 0) return Qnil;
+	    --p;
+	}
+	while (pbeg <= p) {
+	    if (*p == c) return LONG2NUM((char*)p - RSTRING(str)->ptr);
+	    p--;
+	}
+	return Qnil;
       }
-
-      default:
-	rb_raise(rb_eTypeError, "type mismatch: %s given",
-		 rb_obj_classname(sub));
     }
     return Qnil;
 }
