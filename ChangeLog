@@ -1,3 +1,8 @@
+Mon Jul 16 23:07:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/base64.rb (Base64::b64encode): should not specify /o option
+	  for regular expression.  [ruby-dev:31221]
+
 Mon Jul 16 18:29:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_rindex_m): accept string-like object convertible
