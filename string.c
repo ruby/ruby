@@ -1238,27 +1238,26 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = rb_reg_search(sub, str, pos, 0);
 	break;
 
-      case T_FIXNUM:
-      {
-	  int c = FIX2INT(sub);
-	  long len = RSTRING_LEN(str);
-	  char *p = RSTRING_PTR(str);
+      case T_FIXNUM: {
+	int c = FIX2INT(sub);
+	long len = RSTRING_LEN(str);
+	char *p = RSTRING_PTR(str);
 
-	  for (;pos<len;pos++) {
-	      if ((unsigned char)p[pos] == c) return LONG2NUM(pos);
-	  }
-	  return Qnil;
+	for (;pos<len;pos++) {
+	    if ((unsigned char)p[pos] == c) return LONG2NUM(pos);
+	}
+	return Qnil;
       }
 
       default: {
-	  VALUE tmp;
+	VALUE tmp;
 
-	  tmp = rb_check_string_type(sub);
-	  if (NIL_P(tmp)) {
-	      rb_raise(rb_eTypeError, "type mismatch: %s given",
-		       rb_obj_classname(sub));
-	  }
-	  sub = tmp;
+	tmp = rb_check_string_type(sub);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sub));
+	}
+	sub = tmp;
       }
 	/* fall through */
       case T_STRING:
@@ -1351,32 +1350,38 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
+      default: {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sub);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sub));
+	}
+	sub = tmp;
+      }
+	/* fall through */
       case T_STRING:
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
-      case T_FIXNUM:
-      {
-	  int c = FIX2INT(sub);
-	  char *p = RSTRING_PTR(str) + pos;
-	  char *pbeg = RSTRING_PTR(str);
+      case T_FIXNUM: {
+	int c = FIX2INT(sub);
+	char *p = RSTRING_PTR(str) + pos;
+	char *pbeg = RSTRING_PTR(str);
 
-	  if (pos == RSTRING_LEN(str)) {
-	      if (pos == 0) return Qnil;
-	      --p;
-	  }
-	  while (pbeg <= p) {
-	      if ((unsigned char)*p == c)
-		  return LONG2NUM((char*)p - RSTRING_PTR(str));
-	      p--;
-	  }
-	  return Qnil;
+	if (pos == RSTRING_LEN(str)) {
+	    if (pos == 0) return Qnil;
+	    --p;
+	}
+	while (pbeg <= p) {
+	    if ((unsigned char)*p == c)
+		return LONG2NUM((char*)p - RSTRING_PTR(str));
+	    p--;
+	}
+	return Qnil;
       }
-
-      default:
-	rb_raise(rb_eTypeError, "type mismatch: %s given",
-		 rb_obj_classname(sub));
     }
     return Qnil;
 }
@@ -4223,7 +4228,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 VALUE
 rb_str_intern(VALUE s)
 {
-    volatile VALUE str = s;
+    VALUE str = RB_GC_GUARD(s);
     ID id;
 
     if (OBJ_TAINTED(str) && rb_safe_level() >= 1) {
@@ -4860,6 +4865,7 @@ rb_to_id(VALUE name)
 		     RSTRING_PTR(rb_inspect(name)));
 	}
 	name = tmp;
+	/* fall through */
       case T_STRING:
 	name = rb_str_intern(name);
 	/* fall through */

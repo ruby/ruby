@@ -1,3 +1,8 @@
+Mon Jul 16 18:29:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_rindex_m): accept string-like object convertible
+	  with #to_str method, as well as rb_str_index_m.  [ruby-core:11692]
+
 Mon Jul 16 07:17:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (getspecial): lfp_svar_get() requires int for special
