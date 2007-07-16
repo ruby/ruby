@@ -2218,6 +2218,15 @@ int_pow(x, y)
     return LONG2NUM(z);
 }
 
+static VALUE
+int_even_p(VALUE num)
+{
+    if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 /*
  *  call-seq:
  *    fix ** other         => Numeric
@@ -2234,23 +2243,45 @@ static VALUE
 fix_pow(x, y)
     VALUE x, y;
 {
+    long a = FIX2LONG(x);
+
     if (FIXNUM_P(y)) {
-	long a, b;
+	long b;
 
 	b = FIX2LONG(y);
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	a = FIX2LONG(x);
 	if (a == 0) return INT2FIX(0);
+	if (a == 1) return INT2FIX(1);
+	if (a == -1) {
+	    if (b % 2 == 0)
+		return INT2FIX(1);
+	    else 
+		return INT2FIX(-1);
+	}
 	if (b > 0) {
 	    return int_pow(a, b);
 	}
 	return rb_float_new(pow((double)a, (double)b));
-    } else if (TYPE(y) == T_FLOAT) {
-        long a = FIX2LONG(x);
-        return rb_float_new(pow((double)a, RFLOAT(y)->value));
     }
-    return rb_num_coerce_bin(x, y);
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	if (a == 0) return INT2FIX(0);
+	if (a == 1) return INT2FIX(1);
+	if (a == -1) {
+	    if (int_even_p(y)) return INT2FIX(1);
+	    else return INT2FIX(-1);
+	}
+	x = rb_int2big(FIX2LONG(x));
+	return rb_big_pow(x, y);
+      case T_FLOAT:
+	if (a == 0) return rb_float_new(0.0);
+	if (a == 1) return rb_float_new(1.0);
+	return rb_float_new(pow((double)a, RFLOAT(y)->value));
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
 }
 
 /*
