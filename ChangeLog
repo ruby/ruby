@@ -1,3 +1,8 @@
+Wed Jul 18 08:47:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_succ): Time#succ should return a time object in the
+	  same timezone mode to the original.  [ruby-talk:260256]
+
 Mon Jul 16 23:07:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/base64.rb (Base64::b64encode): should not specify /o option
