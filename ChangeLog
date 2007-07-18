@@ -1,3 +1,11 @@
+Wed Jul 18 09:19:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parser_append_print, rb_parser_while_loop): moved check
+	  for node to the head.
+
+	* ruby.c (proc_options): do nothing for -p/-n options if tree is null.
+	  submitted by Yusuke ENDOH <mame AT tsg.ne.jp> at [ruby-dev:31243].
+
 Wed Jul 18 08:47:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_succ): Time#succ should return a time object in the

@@ -883,10 +883,10 @@ proc_options(int argc, char **argv)
 	FL_UNSET(rb_load_path, FL_TAINT);
     }
 
-    if (do_print) {
+    if (tree && do_print) {
 	tree = rb_parser_append_print(parser, tree);
     }
-    if (do_loop) {
+    if (tree && do_loop) {
 	tree = rb_parser_while_loop(parser, tree, do_line, do_split);
     }
 

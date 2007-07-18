@@ -8110,11 +8110,13 @@ rb_parser_append_print(VALUE vparser, NODE *node)
     NODE *scope = node;
     struct parser_params *parser;
 
+    if (!node) return node;
+
     Data_Get_Struct(vparser, struct parser_params, parser);
 
     node = node->nd_body;
 
-    if (node && (nd_type(node) == NODE_PRELUDE)) {
+    if (nd_type(node) == NODE_PRELUDE) {
 	prelude = node;
 	node = node->nd_body;
     }
@@ -8140,11 +8142,13 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
     NODE *scope = node;
     struct parser_params *parser;
 
+    if (!node) return node;
+
     Data_Get_Struct(vparser, struct parser_params, parser);
 
     node = node->nd_body;
 
-    if (node && (nd_type(node) == NODE_PRELUDE)) {
+    if (nd_type(node) == NODE_PRELUDE) {
 	prelude = node;
 	node = node->nd_body;
     }
