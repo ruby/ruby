@@ -1,3 +1,7 @@
+Wed Jul 18 16:57:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): refine overflow check.  [ruby-dev:31242]
+
 Wed Jul 18 09:19:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_parser_append_print, rb_parser_while_loop): moved check
