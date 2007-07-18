@@ -1755,8 +1755,10 @@ rb_big_pow(x, y)
 	if (yy > 0) {
 	    VALUE z = 0;
 	    long mask;
+	    const long BIGLEN_LIMIT = 1024*1024 / SIZEOF_BDIGITS;
 
-	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
+	    if ((RBIGNUM(x)->len > BIGLEN_LIMIT) ||
+		(RBIGNUM(x)->len > BIGLEN_LIMIT / yy)) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
