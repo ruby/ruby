@@ -114,6 +114,7 @@ VALUE rb_big_and(VALUE, VALUE);
 VALUE rb_big_or(VALUE, VALUE);
 VALUE rb_big_xor(VALUE, VALUE);
 VALUE rb_big_lshift(VALUE, VALUE);
+VALUE rb_big_rshift(VALUE, VALUE);
 /* class.c */
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new(VALUE);

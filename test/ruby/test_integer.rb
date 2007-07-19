@@ -93,6 +93,14 @@ class TestInteger < Test::Unit::TestCase
 
   #VS.map! {|v| 0x4000000000000000.coerce(v)[0] }
 
+  BDSIZE = 0x4000000000000000.coerce(0)[0].size
+  def self.bdsize(x)
+    ((x + 1) / 8 + BDSIZE) / BDSIZE * BDSIZE
+  end
+  def bdsize(x)
+    self.class.bdsize(x)
+  end
+
   def test_aref
     VS.each {|a|
       100.times {|i|
@@ -233,6 +241,11 @@ class TestInteger < Test::Unit::TestCase
         end
       }
     }
+    assert_equal(0, 1 << -0x40000000)
+    assert_equal(0, 1 << -0x40000001)
+    assert_equal(0, 1 << -0x80000000)
+    assert_equal(0, 1 << -0x80000001)
+    # assert_equal(bdsize(0x80000000), (1 << 0x80000000).size)
   end
 
   def test_rshift
@@ -248,6 +261,12 @@ class TestInteger < Test::Unit::TestCase
         end
       }
     }
+    # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
+    assert((1 >> 0x80000000).zero?)
+    assert((1 >> 0xffffffff).zero?)
+    assert((1 >> 0x100000000).zero?)
+    # assert_equal((1 << 0x40000000), (1 >> -0x40000000))
+    # assert_equal((1 << 0x40000001), (1 >> -0x40000001))
   end
 
   def test_succ

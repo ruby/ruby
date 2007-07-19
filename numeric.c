@@ -2591,7 +2591,8 @@ fix_xor(VALUE x, VALUE y)
     return LONG2NUM(val);
 }
 
-static VALUE fix_rshift(VALUE, VALUE);
+static VALUE fix_lshift(long, unsigned long);
+static VALUE fix_rshift(long, unsigned long);
 
 /*
  * call-seq:
@@ -2601,17 +2602,25 @@ static VALUE fix_rshift(VALUE, VALUE);
  */
 
 static VALUE
-fix_lshift(VALUE x, VALUE y)
+rb_fix_lshift(VALUE x, VALUE y)
 {
     long val, width;
 
     val = NUM2LONG(x);
-    width = NUM2LONG(y);
+    if (!FIXNUM_P(y))
+	return rb_big_lshift(rb_int2big(val), y);
+    width = FIX2LONG(y);
     if (width < 0)
-	return fix_rshift(x, LONG2FIX(-width));
+	return fix_rshift(val, (unsigned long)-width);
+    return fix_lshift(val, width);
+}
+
+static VALUE
+fix_lshift(long val, unsigned long width)
+{
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
-	return rb_big_lshift(rb_int2big(val), y);
+	return rb_big_lshift(rb_int2big(val), ULONG2NUM(width));
     }
     val = val << width;
     return LONG2NUM(val);
@@ -2625,15 +2634,23 @@ fix_lshift(VALUE x, VALUE y)
  */
 
 static VALUE
-fix_rshift(VALUE x, VALUE y)
+rb_fix_rshift(VALUE x, VALUE y)
 {
     long i, val;
 
-    i = NUM2LONG(y);
-    if (i < 0)
-	return fix_lshift(x, LONG2FIX(-i));
-    if (i == 0) return x;
     val = FIX2LONG(x);
+    if (!FIXNUM_P(y))
+	return rb_big_rshift(rb_int2big(val), y);
+    i = FIX2LONG(y);
+    if (i == 0) return x;
+    if (i < 0)
+	return fix_lshift(val, (unsigned long)-i);
+    return fix_rshift(val, i);
+}
+
+static VALUE
+fix_rshift(long val, unsigned long i)
+{
     if (i >= sizeof(long)*CHAR_BIT-1) {
 	if (val < 0) return INT2FIX(-1);
 	return INT2FIX(0);
@@ -2885,8 +2902,6 @@ int_downto(VALUE from, VALUE to)
 static VALUE
 int_dotimes(VALUE num)
 {
-    VALUE val;
-
     RETURN_ENUMERATOR(num, 0, 0);
 
     if (FIXNUM_P(num)) {
@@ -3105,8 +3120,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "^", fix_xor, 1);
     rb_define_method(rb_cFixnum, "[]", fix_aref, 1);
 
-    rb_define_method(rb_cFixnum, "<<", fix_lshift, 1);
-    rb_define_method(rb_cFixnum, ">>", fix_rshift, 1);
+    rb_define_method(rb_cFixnum, "<<", rb_fix_lshift, 1);
+    rb_define_method(rb_cFixnum, ">>", rb_fix_rshift, 1);
 
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
