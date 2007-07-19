@@ -495,14 +495,14 @@ exc_inspect(VALUE exc)
 static VALUE
 exc_backtrace(VALUE exc)
 {
-    ID bt = rb_intern("bt");
+    static ID bt;
 
-    if (!rb_ivar_defined(exc, bt)) return Qnil;
-    return rb_ivar_get(exc, bt);
+    if (!bt) bt = rb_intern("bt");
+    return rb_attr_get(exc, bt);
 }
 
-static VALUE
-check_backtrace(VALUE bt)
+VALUE
+rb_check_backtrace(VALUE bt)
 {
     long i;
     static const char *err = "backtrace must be Array of String";
@@ -536,7 +536,7 @@ check_backtrace(VALUE bt)
 static VALUE
 exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_iv_set(exc, "bt", check_backtrace(bt));
+    return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
 }
 
 /*
