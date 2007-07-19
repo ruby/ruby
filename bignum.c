@@ -1577,7 +1577,19 @@ bdigbitsize(BDIGIT x)
     return size;
 }
 
-static VALUE rb_big_rshift _((VALUE,VALUE));
+static VALUE big_lshift _((VALUE, unsigned int));
+static VALUE big_rshift _((VALUE, unsigned int));
+
+static VALUE big_shift(x, n)
+    VALUE x;
+    int n;
+{
+    if (n < 0)
+	return big_lshift(x, (unsigned int)n);
+    else if (n > 0)
+	return big_rshift(x, (unsigned int)n);
+    return x;
+}
 
 /*
  *  call-seq:
@@ -1636,7 +1648,7 @@ rb_big_quo(x, y)
 	ex = (RBIGNUM(bigtrunc(x))->len - 1) * BITSPERDIG;
 	ex += bdigbitsize(BDIGITS(x)[RBIGNUM(x)->len - 1]);
 	ex -= 2 * DBL_BIGDIG * BITSPERDIG;
-	if (ex) x = rb_big_rshift(x, INT2FIX(ex));
+	if (ex) x = big_shift(x, ex);
 
 	switch (TYPE(y)) {
 	  case T_FIXNUM:
@@ -1645,7 +1657,7 @@ rb_big_quo(x, y)
 	    ey = (RBIGNUM(bigtrunc(y))->len - 1) * BITSPERDIG;
 	    ey += bdigbitsize(BDIGITS(y)[RBIGNUM(y)->len - 1]);
 	    ey -= DBL_BIGDIG * BITSPERDIG;
-	    if (ey) y = rb_big_rshift(y, INT2FIX(ey));
+	    if (ey) y = big_shift(y, ey);
 	  bignum:
 	    bigdivrem(x, y, &z, 0);
 	    return rb_float_new(ldexp(big2dbl(z), ex - ey));
@@ -1953,6 +1965,16 @@ rb_big_xor(xx, yy)
     return bignorm(z);
 }
 
+static VALUE
+check_shiftdown(VALUE y, VALUE x)
+{
+    if (!RBIGNUM(x)->len) return INT2FIX(0);
+    if (RBIGNUM(y)->len > SIZEOF_LONG / SIZEOF_BDIGITS) {
+	return RBIGNUM(x)->sign ? INT2FIX(0) : INT2FIX(-1);
+    }
+    return Qnil;
+}
+
 /*
  * call-seq:
  *     big << numeric   =>  integer
@@ -1964,15 +1986,45 @@ VALUE
 rb_big_lshift(x, y)
     VALUE x, y;
 {
+    int shift, neg = 0;
+
+    for (;;) {
+	if (FIXNUM_P(y)) {
+	    shift = FIX2INT(y);
+	    if (shift < 0) {
+		neg = 1;
+		shift = -shift;
+	    }
+	    break;
+	}
+	else if (TYPE(y) == T_BIGNUM) {
+	    if (!RBIGNUM(y)->sign) {
+		VALUE t = check_shiftdown(y, x);
+		if (!NIL_P(t)) return t;
+		neg = 1;
+	    }
+	    shift = big2ulong(y, "long", Qtrue);
+	    break;
+	}
+	y = rb_to_int(y);
+    }
+
+    if (neg) return big_rshift(x, shift);
+    return big_lshift(x, shift);
+}
+
+static VALUE
+big_lshift(x, shift)
+    VALUE x;
+    unsigned int shift;
+{
     BDIGIT *xds, *zds;
-    int shift = NUM2INT(y);
     int s1 = shift/BITSPERDIG;
     int s2 = shift%BITSPERDIG;
     VALUE z;
     BDIGIT_DBL num = 0;
     long len, i;
 
-    if (shift < 0) return rb_big_rshift(x, INT2FIX(-shift));
     len = RBIGNUM(x)->len;
     z = bignew(len+s1+1, RBIGNUM(x)->sign);
     zds = BDIGITS(z);
@@ -1996,20 +2048,52 @@ rb_big_lshift(x, y)
  * Shifts big right _numeric_ positions (left if _numeric_ is negative).
  */
 
-static VALUE
+VALUE
 rb_big_rshift(x, y)
     VALUE x, y;
 {
+    int shift;
+    int neg = 0;
+
+    for (;;) {
+	if (FIXNUM_P(y)) {
+	    shift = FIX2INT(y);
+	    if (shift < 0) {
+		neg = 1;
+		shift = -shift;
+	    }
+	    break;
+	}
+	else if (TYPE(y) == T_BIGNUM) {
+	    if (RBIGNUM(y)->sign) {
+		VALUE t = check_shiftdown(y, x);
+		if (!NIL_P(t)) return t;
+	    }
+	    else {
+		neg = 1;
+	    }
+	    shift = big2ulong(y, "long", Qtrue);
+	    break;
+	}
+	y = rb_to_int(y);
+    }
+
+    if (neg) return big_lshift(x, shift);
+    return big_rshift(x, shift);
+}
+
+static VALUE
+big_rshift(x, shift)
+    VALUE x;
+    unsigned int shift;
+{
     BDIGIT *xds, *zds;
-    int shift = NUM2INT(y);
     long s1 = shift/BITSPERDIG;
     long s2 = shift%BITSPERDIG;
     VALUE z;
     BDIGIT_DBL num = 0;
     long i, j;
     volatile VALUE save_x;
-
-    if (shift < 0) return rb_big_lshift(x, INT2FIX(-shift));
 
     if (s1 > RBIGNUM(x)->len) {
 	if (RBIGNUM(x)->sign)
