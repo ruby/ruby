@@ -107,6 +107,16 @@ class TestInteger < Test::Unit::TestCase
         assert_equal((a >> i).odd? ? 1 : 0, a[i], "(#{a})[#{i}]")
       }
     }
+    VS.each {|a|
+      VS.each {|b|
+        c = a[b]
+        if b < 0
+          assert_equal(0, c, "(#{a})[#{b}]")
+        else
+          assert_equal((a >> b).odd? ? 1 : 0, c, "(#{a})[#{b}]")
+        end
+      }
+    }
   end
 
   def test_plus
@@ -229,16 +239,17 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_lshift
-    small_values = VS.find_all {|v| -1000 < v && v < 1000 }
+    small_values = VS.find_all {|v| v < 8000 }
     VS.each {|a|
       small_values.each {|b|
         c = a << b
         if 0 <= b
           assert_equal(a, c >> b, "(#{a} << #{b}) >> #{b}")
           assert_equal(a * 2**b, c, "#{a} << #{b}")
-        else
-          assert_equal(a / 2**(-b), c, "#{a} << #{b}")
         end
+        0.upto(c.size*8+10) {|nth|
+          assert_equal(a[nth-b], c[nth], "(#{a} << #{b})[#{nth}]")
+        }
       }
     }
     assert_equal(0, 1 << -0x40000000)
@@ -249,16 +260,17 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_rshift
-    small_values = VS.find_all {|v| -1000 < v && v < 1000 }
+    small_values = VS.find_all {|v| -8000 < v }
     VS.each {|a|
       small_values.each {|b|
         c = a >> b
-        if 0 < b
-          assert_equal(a / 2**b, c, "#{a} >> #{b}")
-        else
+        if b <= 0
           assert_equal(a, c << b, "(#{a} >> #{b}) << #{b}")
           assert_equal(a * 2**(-b), c, "#{a} >> #{b}")
         end
+        0.upto(c.size*8+10) {|nth|
+          assert_equal(a[nth+b], c[nth], "(#{a} >> #{b})[#{nth}]")
+        }
       }
     }
     # assert_equal(bdsize(0x40000001), (1 >> -0x40000001).size)
@@ -415,5 +427,16 @@ class TestInteger < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {
       assert_equal(1540841, "0x0x5".to_i(36))
     }
+    assert_raise(ArgumentError) { Integer("--0") }
+    assert_raise(ArgumentError) { Integer("-+0") }
+    assert_raise(ArgumentError) { Integer("++1") }
+    assert_raise(ArgumentError) { Integer("") }
+    assert_raise(ArgumentError) { Integer("10  x") }
+    assert_raise(ArgumentError) { Integer("1__2") }
+    assert_raise(ArgumentError) { Integer("1z") }
+    assert_raise(ArgumentError) { Integer("46116860184273__87904") }
+    assert_raise(ArgumentError) { Integer("4611686018427387904_") }
+    assert_raise(ArgumentError) { Integer("4611686018427387904  :") }
+    assert_equal(0x4000000000000000, Integer("46_11_686_0184273_87904"))
   end
 end

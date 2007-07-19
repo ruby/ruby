@@ -1145,6 +1145,32 @@ class TestString < Test::Unit::TestCase
   def test_to_i
     assert_equal(1480, S("1480ft/sec").to_i)
     assert_equal(0,    S("speed of sound in water @20C = 1480ft/sec)").to_i)
+    assert_equal(0, " 0".to_i)
+    assert_equal(0, "+0".to_i)
+    assert_equal(0, "-0".to_i)
+    assert_equal(0, "--0".to_i)
+    assert_equal(16, "0x10".to_i(0))
+    assert_equal(16, "0X10".to_i(0))
+    assert_equal(2, "0b10".to_i(0))
+    assert_equal(2, "0B10".to_i(0))
+    assert_equal(8, "0o10".to_i(0))
+    assert_equal(8, "0O10".to_i(0))
+    assert_equal(10, "0d10".to_i(0))
+    assert_equal(10, "0D10".to_i(0))
+    assert_equal(8, "010".to_i(0))
+    assert_raise(ArgumentError) { "010".to_i(-10) }
+    2.upto(36) {|radix|
+      assert_equal(radix, "10".to_i(radix))
+      assert_equal(radix**2, "100".to_i(radix))
+    }
+    assert_raise(ArgumentError) { "0".to_i(1) }
+    assert_raise(ArgumentError) { "0".to_i(37) }
+    assert_equal(0, "z".to_i(10))
+    assert_equal(12, "1_2".to_i(10))
+    assert_equal(0x40000000, "1073741824".to_i(10))
+    assert_equal(0x4000000000000000, "4611686018427387904".to_i(10))
+    assert_equal(12, "1__2".to_i(10))
+    assert_equal(1, "1_z".to_i(10))
   end
 
   def test_to_s
