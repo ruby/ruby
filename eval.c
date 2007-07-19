@@ -1197,6 +1197,8 @@ error_pos()
     }
 }
 
+VALUE rb_check_backtrace(VALUE);
+
 static VALUE
 get_backtrace(info)
     VALUE info;
@@ -1204,7 +1206,7 @@ get_backtrace(info)
     if (NIL_P(info)) return Qnil;
     info = rb_funcall(info, rb_intern("backtrace"), 0);
     if (NIL_P(info)) return Qnil;
-    return rb_check_array_type(info);
+    return rb_check_backtrace(info);
 }
 
 static void
