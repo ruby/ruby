@@ -523,3 +523,23 @@ assert_equal %q{1}, %q{
   end until true
   i
 }
+def assert_syntax_error expected, code
+  assert_equal "#{expected}",
+    "begin eval(%q{#{code}}, nil, '', 0)"'; rescue SyntaxError => e; e.message[/\A:(?:\d+:)? (.*)/, 1] end'
+end
+assert_syntax_error "unterminated string meets end of file", '().."' # [ruby-dev:29732]
+assert_equal %q{[]}, %q{$&;[]}	# [ruby-dev:31068]
+assert_syntax_error "syntax error, unexpected tSTAR, expecting '}'", %q{{*0}} # [ruby-dev:31072]
+assert_syntax_error "empty symbol literal", %q{0..:""} # [ruby-dev:31085]
+assert_syntax_error "`@0' is not allowed as an instance variable name", %q{@0..0} # [ruby-dev:31095]
+assert_syntax_error "identifier $00 is not valid to get", %q{$00..0} # [ruby-dev:31100]
+assert_syntax_error "identifier $00 is not valid to set", %q{0..$00=1}
+assert_equal %q{0}, %q{[*0];0}	# [ruby-dev:31102]
+assert_syntax_error "syntax error, unexpected ')'", %q{v0,(*,v1,) = 0} # [ruby-dev:31104]
+assert_equal %q{1}, %q{class << (ary=[]); def []; 0; end; def []=(x); super(0,x);end;end; ary[]+=1} # [ruby-dev:31110]
+assert_syntax_error "Can't set variable $1", %q{0..$1=1} # [ruby-dev:31118]
+assert_equal %q{1}, %q{1.times{1+(1&&next)}} # [ruby-dev:31119]
+assert_equal %q{1}, %q{x=-1;loop{x+=1&&redo if (x+=1).zero?}} # [ruby-dev:31119]
+assert_syntax_error %q{syntax error, unexpected $end}, %q{!} # [ruby-dev:31243]
+assert_equal %q{[nil]}, %q{[()]} # [ruby-dev:31252]
+assert_equal %q{true}, %q{!_=()} # [ruby-dev:31253]
