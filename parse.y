@@ -520,7 +520,9 @@ static void ripper_warn0(struct parser_params*, const char*);
 static void ripper_warnI(struct parser_params*, const char*, int);
 static void ripper_warnS(struct parser_params*, const char*, const char*);
 static void ripper_warning0(struct parser_params*, const char*);
+#if 0				/* unused in ripper right now */
 static void ripper_warningS(struct parser_params*, const char*, const char*);
+#endif
 #endif
 
 #ifdef RIPPER
@@ -843,7 +845,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			yyerror("can't make alias for the number variables");
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
 			$$ = dispatch1(alias_error, $$);
@@ -998,7 +1000,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			    }
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_BEGIN(0);
 			}
 		    /*%
 			$$ = dispatch3(opassign, $1, $2, $3);
@@ -1080,7 +1082,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			rb_backref_error($1);
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch2(assign, dispatch1(var_field, $1), $3);
 			$$ = dispatch1(assign_error, $$);
@@ -1530,7 +1532,7 @@ mlhs_node	: variable
 		    {
 		    /*%%%*/
 			rb_backref_error($1);
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(var_field, $1);
 			$$ = dispatch1(assign_error, $$);
@@ -1541,7 +1543,7 @@ mlhs_node	: variable
 lhs		: variable
 		    {
 		    /*%%%*/
-			$$ = assignable($1, 0);
+			if (!($$ = assignable($1, 0))) $$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(var_field, $1);
 		    %*/
@@ -1608,7 +1610,7 @@ lhs		: variable
 		    {
 		    /*%%%*/
 			rb_backref_error($1);
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(assign_error, $1);
 		    %*/
@@ -1790,7 +1792,7 @@ arg		: lhs '=' arg
 			    }
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_BEGIN(0);
 			}
 		    /*%
 			$$ = dispatch3(opassign, $1, $2, $3);
@@ -1872,7 +1874,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			yyerror("constant re-assignment");
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch2(constpath_field, $1, $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
@@ -1883,7 +1885,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			yyerror("constant re-assignment");
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(topconst_field, $2);
 			$$ = dispatch3(opassign, $$, $3, $4);
@@ -1894,7 +1896,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			rb_backref_error($1);
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(var_field, $1);
 			$$ = dispatch3(opassign, $$, $2, $3);
@@ -2511,8 +2513,7 @@ primary		: literal
 		| tLPAREN compstmt ')'
 		    {
 		    /*%%%*/
-			if (!$2) $$ = NEW_NIL();
-			else $$ = $2;
+			$$ = $2;
 		    /*%
 			$$ = dispatch1(paren, $2);
 		    %*/
@@ -3915,7 +3916,7 @@ variable	: tIDENTIFIER
 var_ref		: variable
 		    {
 		    /*%%%*/
-			$$ = gettable($1);
+			if (!($$ = gettable($1))) $$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(var_ref, $1);
 		    %*/
@@ -7598,12 +7599,9 @@ void_stmts_gen(struct parser_params *parser, NODE *node)
 static NODE *
 remove_begin(NODE *node)
 {
-    NODE **n = &node;
-    while (*n) {
-	if (nd_type(*n) != NODE_BEGIN) {
-	    return node;
-	}
-	*n = (*n)->nd_body;
+    NODE **n = &node, *n1 = node;
+    while (n1 && nd_type(n1) == NODE_BEGIN && n1->nd_body) {
+	*n = n1 = n1->nd_body;
     }
     return node;
 }
