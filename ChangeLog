@@ -1,3 +1,11 @@
+Fri Jul 20 09:50:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (get_result_string): check $?.coredump?
+	  first.
+
+	* bootstraptest/runner.rb (cleanup_coredump, check_coredump): see
+	  stackdump file too.
+
 Thu Jul 19 19:24:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.ci (get_backtrace): check the result more.

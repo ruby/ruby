@@ -131,7 +131,11 @@ def get_result_string(src)
     File.open('bootstraptest.tmp.rb', 'w') {|f|
       f.puts "print(begin; #{src}; end)"
     }
-    `#{@ruby} bootstraptest.tmp.rb`
+    begin
+      `#{@ruby} -W0 bootstraptest.tmp.rb`
+    ensure
+      raise CoreDumpError, "core dumped" if $? and $?.coredump?
+    end
   else
     eval(src).to_s
   end
@@ -159,12 +163,14 @@ end
 def cleanup_coredump
   FileUtils.rm_f 'core'
   FileUtils.rm_f Dir.glob('core.*')
+  FileUtils.rm_f @ruby+'.stackdump' if @ruby
 end
 
 class CoreDumpError < StandardError; end
 
 def check_coredump
-  if File.file?('core') or not Dir.glob('core.*').empty?
+  if File.file?('core') or not Dir.glob('core.*').empty? or
+      (@ruby and File.exist?(@ruby+'.stackdump'))
     raise CoreDumpError, "core dumped"
   end
 end
