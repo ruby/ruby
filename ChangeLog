@@ -3,8 +3,8 @@ Fri Jul 20 10:39:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (stmt, mlhs_node, lhs, arg, var_ref): return dummy
 	  NODE_BEGIN after errors.  [ruby-dev:31100], [ruby-dev:31118]
 
-	* parse.y (remove_begin): make empty NODE_BEGIN to NODE_NIL, instead
-	  of null.  [ruby-dev:31252], [ruby-dev:31263]
+	* parse.y (remove_begin): keep empty NODE_BEGIN, instead of null.
+	  [ruby-dev:31252], [ruby-dev:31263]
 
 Fri Jul 20 09:50:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
