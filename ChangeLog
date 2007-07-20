@@ -1,3 +1,8 @@
+Fri Jul 20 15:22:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c (ossl_config_set_section): do not
+	  initialize aggregations with dynamic values.  [ruby-talk:259306]
+
 Fri Jul 20 10:39:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, mlhs_node, lhs, arg, var_ref): return dummy
