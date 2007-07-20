@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.35 2007-05-19 09:23:48+09 tadf Exp $
+# $Id: format.rb,v 2.36 2007-07-21 00:21:04+09 tadf Exp $
 
 require 'rational'
 
@@ -684,7 +684,7 @@ class Date
   private_class_method :s3e
 
   def self._parse_day(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/ino, ' ')
+    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/in, ' ')
       e.wday = Format::ABBR_DAYS[$1.downcase]
       true
 =begin
@@ -780,7 +780,7 @@ class Date
 		   \s*
 		   ('?-?\d+(?:(?:st|nd|rd|th)\b)?)
 		 )?
-		/inox,
+		/inx,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$2.downcase], $1,
 	  $3 && $3[0,1].downcase == 'b')
@@ -799,7 +799,7 @@ class Date
 		   \s*
 		   ('?-?\d+)
 		 )?
-		/inox,
+		/inx,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$1.downcase], $2,
 	  $3 && $3[0,1].downcase == 'b')
@@ -821,7 +821,7 @@ class Date
       e.cwday = $3.to_i if $3
       true
     elsif str.sub!(/-w-(\d)\b/in, ' ')
-      e.cwday = $1.to_i 
+      e.cwday = $1.to_i
       true
     elsif str.sub!(/--(\d{2})?-(\d{2})\b/n, ' ')
       e.mon = $1.to_i if $1
@@ -831,14 +831,15 @@ class Date
       e.mon = $1.to_i
       e.mday = $2.to_i if $2
       true
-    elsif str.sub!(/-(\d{3})\b/n, ' ')
-      e.yday = $1.to_i
+    elsif str.sub!(/\b(\d{2}|\d{4})?-(\d{3})\b/n, ' ')
+      e.year = $1.to_i if $1
+      e.yday = $2.to_i
       true
     end
   end
 
   def self._parse_jis(str, e) # :nodoc:
-    if str.sub!(/\b([MTSH])(\d+)\.(\d+)\.(\d+)/in, ' ')
+    if str.sub!(/\b([mtsh])(\d+)\.(\d+)\.(\d+)/in, ' ')
       era = { 'm'=>1867,
 	      't'=>1911,
 	      's'=>1925,
@@ -853,11 +854,11 @@ class Date
 
   def self._parse_vms(str, e) # :nodoc:
     if str.sub!(/('?-?\d+)-(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)/inox, ' ')
+		-('?-?\d+)/inx, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$2.downcase], $1)
       true
     elsif str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)(?:-('?-?\d+))?/inox, ' ')
+		-('?-?\d+)(?:-('?-?\d+))?/inx, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$1.downcase], $2)
       true
     end
@@ -885,7 +886,7 @@ class Date
   end
 
   def self._parse_mon(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/ino, ' ')
+    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/in, ' ')
       e.mon = Format::ABBR_MONTHS[$1.downcase]
       true
     end
@@ -1082,12 +1083,17 @@ class Date
       end
     end
 
-    if e._comp && e.year
-      if e.year >= 0 && e.year <= 99
-	if e.year >= 69
-	  e.year += 1900
-	else
-	  e.year += 2000
+    if e._comp
+      if e.cwyear
+	if e.cwyear >= 0 && e.cwyear <= 99
+	  e.cwyear += if e.cwyear >= 69
+		      then 1900 else 2000 end
+	end
+      end
+      if e.year
+	if e.year >= 0 && e.year <= 99
+	  e.year += if e.year >= 69
+		    then 1900 else 2000 end
 	end
       end
     end
