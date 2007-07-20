@@ -1,3 +1,10 @@
+Fri Jul 20 16:30:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_sequence): raise SyntaxError instead of rb_bug
+	  since this function can be called from VM::InstructionSequence.load.
+
+	* compile.c (insn_set_sc_state, iseq_set_sequence_stackcaching): ditto.
+
 Fri Jul 20 16:11:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c, compile.h (DECL_ANCHOR, INIT_ANCHOR): split not to

@@ -867,8 +867,8 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 
 	    if (iseq->arg_post_start == 0) {
 		iseq->arg_post_start = iseq->arg_rest + 1;
-		}
 	    }
+	}
 
 	if (block_id) {
 	    iseq->arg_block = get_dyna_var_idx_at_raw(iseq, block_id);
@@ -987,7 +987,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  default:
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
 	    dump_disasm_list(list);
-	    rb_bug("error: set_sequence");
+	    rb_compile_error(RSTRING_PTR(iseq->filename), line,
+			     "error: set_sequence");
 	    break;
 	}
 	list = list->next;
@@ -1031,7 +1032,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		/* operand check */
 		if (iobj->operand_size != len - 1) {
 		    dump_disasm_list(list);
-		    rb_bug("operand size miss! (%d for %d)", iobj->operand_size, len - 1);
+		    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+				     "operand size miss! (%d for %d)",
+				     iobj->operand_size, len - 1);
 		    return 0;
 		}
 
@@ -1044,7 +1047,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
 			    if (lobj->set != Qtrue) {
-				rb_bug("unknown label");
+				rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+						 "unknown label");
 			    }
 			    if (lobj->sp == -1) {
 				lobj->sp = sp;
@@ -1068,7 +1072,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				lobj = (LABEL *)(lv & ~1);
 
 				if (lobj->set != Qtrue) {
-				    rb_bug("unknown label");
+				    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+						     "unknown label");
 				}
 				rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
 			    }
@@ -1117,7 +1122,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 			break;
 		      default:
-			rb_bug("unknown operand type: %c", type);
+			rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+					 "unknown operand type: %c", type);
 			return 0;
 		    }
 		}
@@ -1617,7 +1623,8 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 		dump_disasm_list((LINK_ELEMENT *)iobj);
 		dump_disasm_list((LINK_ELEMENT *)lobj);
 		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		rb_bug("insn_set_sc_state error\n");
+		rb_compile_error(RSTRING_PTR(iseq->filename), iobj->lineno,
+				 "insn_set_sc_state error\n");
 		return 0;
 	    }
 	}
@@ -1718,7 +1725,8 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    rb_bug("unreachable");
+			    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+					     "unreachable");
 			}
 			/* remove useless pop */
 			REMOVE_ELEM(list);
