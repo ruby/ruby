@@ -1964,9 +1964,10 @@ static VALUE
 thgroup_list(VALUE group)
 {
     VALUE ary = rb_ary_new();
-    struct thgroup_list_params param = {
-	ary, group,
-    };
+    struct thgroup_list_params param;
+    
+    param.ary = ary;
+    param.group = group;
     st_foreach(GET_THREAD()->vm->living_threads, thgroup_list_i, (st_data_t) & param);
     return ary;
 }
@@ -2808,7 +2809,13 @@ call_trace_proc(VALUE args)
 static void
 call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    struct call_trace_func_args args = {event, proc, self, id, klass};
+    struct call_trace_func_args args;
+    
+    args.event = event;
+    args.proc = proc;
+    args.self = self;
+    args.id = id;
+    args.klass = klass;
     ruby_suppress_tracing(call_trace_proc, (VALUE)&args);
 }
 

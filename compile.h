@@ -211,8 +211,12 @@ r_value(VALUE value)
 #define COMPILE_OK 1
 #define COMPILE_NG 0
 
+
+/* leave name uninitialized so that compiler warn if INIT_ANCHOR is
+ * missing */
 #define DECL_ANCHOR(name) \
-  LINK_ANCHOR  name##_body__ = {{0,}, &name##_body__.anchor}; \
-  LINK_ANCHOR *name = & name##_body__
+  LINK_ANCHOR *name, name##_body__ = {{0,},}
+#define INIT_ANCHOR(name) \
+  (name##_body__.last = &name##_body__.anchor, name = &name##_body__)
 
 #endif /* RUBY_COMPILE_H */

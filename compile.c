@@ -139,6 +139,7 @@ iseq_compile(VALUE self, NODE *node)
 {
     DECL_ANCHOR(ret);
     rb_iseq_t *iseq;
+    INIT_ANCHOR(ret);
     GetISeqPtr(self, iseq);
 
     if (node == 0) {
@@ -1827,6 +1828,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
     int len = node->nd_alen, line = nd_line(node), i=0;
     DECL_ANCHOR(anchor);
 
+    INIT_ANCHOR(anchor);
     if (nd_type(node) != NODE_ZARRAY) {
 	while (node) {
 	    if (nd_type(node) != NODE_ARRAY) {
@@ -1951,6 +1953,7 @@ make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
       }
       default: {
 	  DECL_ANCHOR(anchor);
+	  INIT_ANCHOR(anchor);
 	  COMPILE_POPED(anchor, "masgn lhs", node);
 	  /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
 	  REMOVE_ELEM(FIRST_ELEMENT(anchor));
@@ -2060,6 +2063,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		while (n) {
 		    DECL_ANCHOR(lhs);
 
+		    INIT_ANCHOR(lhs);
 		    COMPILE_POPED(lhs, "post", n->nd_head);
 
 		    if (nd_type(n->nd_head) != NODE_MASGN) {
@@ -2416,10 +2420,13 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq)
     struct iseq_compile_data_ensure_node_stack *prev_enlp = enlp;
     DECL_ANCHOR(ensure);
 
+    INIT_ANCHOR(ensure);
     while (enlp) {
 	DECL_ANCHOR(ensure_part);
 	LABEL *lstart = NEW_LABEL(0);
 	LABEL *lend = NEW_LABEL(0);
+
+	INIT_ANCHOR(ensure_part);
 	add_ensure_range(iseq, enlp->erange, lstart, lend);
 
 	iseq->compile_data->ensure_node_stack = enlp->prev;
@@ -2442,6 +2449,8 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned long *flag)
     DECL_ANCHOR(arg_block);
     DECL_ANCHOR(args_splat);
 
+    INIT_ANCHOR(arg_block);
+    INIT_ANCHOR(args_splat);
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
 	COMPILE(arg_block, "block", argn->nd_body);
 	*flag |= VM_CALL_ARGS_BLOCKARG_BIT;
@@ -2463,6 +2472,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned long *flag)
 	    int next_is_array = (nd_type(argn->nd_head) == NODE_ARRAY);
 	    DECL_ANCHOR(tmp);
 
+	    INIT_ANCHOR(tmp);
 	    COMPILE(tmp, "args (cat: splat)", argn->nd_body);
 	    if (next_is_array && nsplat == 0) {
 		/* none */
@@ -2565,6 +2575,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(else_seq);
 	LABEL *then_label, *else_label, *end_label;
 
+	INIT_ANCHOR(cond_seq);
+	INIT_ANCHOR(then_seq);
+	INIT_ANCHOR(else_seq);
 	then_label = NEW_LABEL(nd_line(node));
 	else_label = NEW_LABEL(nd_line(node));
 	end_label = NEW_LABEL(nd_line(node));
@@ -2596,6 +2609,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(cond_seq);
 	VALUE special_literals = rb_ary_new();
 
+	INIT_ANCHOR(head);
+	INIT_ANCHOR(body_seq);
+	INIT_ANCHOR(cond_seq);
 	if (node->nd_head == 0) {
 	    COMPILE_(ret, "when", node->nd_body, poped);
 	    break;
@@ -2692,6 +2708,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *endlabel;
 	DECL_ANCHOR(body_seq);
 
+	INIT_ANCHOR(body_seq);
 	endlabel = NEW_LABEL(nd_line(node));
 
 	while (node && nd_type(node) == NODE_WHEN) {
@@ -3075,14 +3092,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
 	LABEL *lcont = NEW_LABEL(nd_line(node));
-	struct ensure_range er = { lstart, lend, 0 };
-	struct iseq_compile_data_ensure_node_stack enl = {
-	    node->nd_ensr,
-	    iseq->compile_data->ensure_node_stack,	/* prev */
-	    &er,
-	};
+	struct ensure_range er = { 0 };
+	struct iseq_compile_data_ensure_node_stack enl;
 	struct ensure_range *erange;
 
+	INIT_ANCHOR(ensr);
+	er.begin = lstart;
+	er.end = lend;
+	enl.ensure_node = node->nd_ensr;
+	enl.prev = iseq->compile_data->ensure_node_stack;	/* prev */
+	enl.erange = &er;
 	COMPILE_POPED(ensr, "ensure ensr", node->nd_ensr);
 
 	iseq->compile_data->ensure_node_stack = &enl;
@@ -3256,6 +3275,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	 *              nd_mid
 	 */
 
+	INIT_ANCHOR(args);
 	COMPILE(ret, "NODE_OP_ASGN1 recv", node->nd_recv);
 	argc = compile_array(iseq, args, node->nd_args->nd_body, Qfalse);
 	POP_ELEMENT(args);
@@ -3448,6 +3468,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE parent_block = iseq->compile_data->current_block;
 	iseq->compile_data->current_block = Qfalse;
 
+	INIT_ANCHOR(recv);
+	INIT_ANCHOR(args);
 #if SUPPORT_JOKE
 	if (nd_type(node) == NODE_VCALL) {
 	    if (mid == idBitblt) {
@@ -3543,8 +3565,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE argc;
 	unsigned long flag = 0;
 	VALUE parent_block = iseq->compile_data->current_block;
-	iseq->compile_data->current_block = Qfalse;
 
+	INIT_ANCHOR(args);
+	iseq->compile_data->current_block = Qfalse;
 	if (nd_type(node) == NODE_SUPER) {
 	    argc = setup_args(iseq, args, node->nd_args, &flag);
 	}
@@ -3647,6 +3670,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE size = 0;
 	int type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
 
+	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:{
 	    compile_array(iseq, list, node->nd_head, Qfalse);
@@ -3704,6 +3728,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE argc;
 	unsigned long flag = 0;
 
+	INIT_ANCHOR(args);
 	if (iseq->type == ISEQ_TYPE_TOP || iseq->type == ISEQ_TYPE_CLASS) {
 	    COMPILE_ERROR((ERROR_ARGS "Illegal yield"));
 	}
@@ -3813,6 +3838,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(val);
 
+	INIT_ANCHOR(recv);
+	INIT_ANCHOR(val);
 	switch(nd_type(node)) {
 	  case NODE_MATCH:
 	    ADD_INSN1(recv, nd_line(node), putobject, node->nd_lit);
@@ -4081,6 +4108,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    DECL_ANCHOR(pref);
 	    DECL_ANCHOR(body);
 
+	    INIT_ANCHOR(pref);
+	    INIT_ANCHOR(body);
 	    compile_colon2(iseq, node, pref, body);
 	    if (LIST_SIZE_ZERO(pref)) {
 		if (iseq->compile_data->option->inline_const_cache) {
@@ -4278,6 +4307,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	unsigned long flag = 0;
 	VALUE argc;
 
+	INIT_ANCHOR(recv);
+	INIT_ANCHOR(args);
 	argc = setup_args(iseq, args, node->nd_args, &flag);
 
 	if (node->nd_recv == (NODE *) 1) {
@@ -4717,6 +4748,7 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 
     DECL_ANCHOR(anchor);
 
+    INIT_ANCHOR(anchor);
     if (iseq->type == ISEQ_TYPE_METHOD ||
 	iseq->type == ISEQ_TYPE_TOP ||
 	iseq->type == ISEQ_TYPE_CLASS) {

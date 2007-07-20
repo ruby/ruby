@@ -1009,36 +1009,30 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 static void
 vm_init_redefined_flag(void)
 {
-    const VALUE register_info[] = {
-	idPLUS, BOP_PLUS, rb_cFixnum, rb_cFloat, rb_cString, rb_cArray, 0,
-	idMINUS, BOP_MINUS, rb_cFixnum, 0,
-	idMULT, BOP_MULT, rb_cFixnum, rb_cFloat, 0,
-	idDIV, BOP_DIV, rb_cFixnum, rb_cFloat, 0,
-	idMOD, BOP_MOD, rb_cFixnum, rb_cFloat, 0,
-	idEq, BOP_EQ, rb_cFixnum, rb_cFloat, rb_cString, 0,
-	idLT, BOP_LT, rb_cFixnum, 0,
-	idLE, BOP_LE, rb_cFixnum, 0,
-	idLTLT, BOP_LTLT, rb_cString, rb_cArray, 0,
-	idAREF, BOP_AREF, rb_cArray, rb_cHash, 0,
-	idASET, BOP_ASET, rb_cArray, rb_cHash, 0,
-	idLength, BOP_LENGTH, rb_cArray, rb_cString, rb_cHash, 0,
-	idSucc, BOP_SUCC, rb_cFixnum, rb_cString, rb_cTime, 0,
-	idGT, BOP_GT, rb_cFixnum, 0,
-	idGE, BOP_GE, rb_cFixnum, 0,
-	0,
-    };
-    const VALUE *ptr = register_info;
+    ID mid;
+    VALUE bop;
+
     vm_opt_method_table = st_init_numtable();
 
-    while (*ptr) {
-	ID mid = *ptr++;
-	VALUE bop = *ptr++;
-	while(*ptr) {
-	    VALUE klass = *ptr++;
-	    add_opt_method(klass, mid, bop);
-	}
-	ptr++;
-    }
+#define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_)
+#define C(k) add_opt_method(rb_c##k, mid, bop)
+    OP(PLUS, PLUS), (C(Fixnum), C(Float), C(String), C(Array));
+    OP(MINUS, MINUS), (C(Fixnum));
+    OP(MULT, MULT), (C(Fixnum), C(Float));
+    OP(DIV, DIV), (C(Fixnum), C(Float));
+    OP(MOD, MOD), (C(Fixnum), C(Float));
+    OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
+    OP(LT, LT), (C(Fixnum));
+    OP(LE, LE), (C(Fixnum));
+    OP(LTLT, LTLT), (C(String), C(Array));
+    OP(AREF, AREF), (C(Array), C(Hash));
+    OP(ASET, ASET), (C(Array), C(Hash));
+    OP(Length, LENGTH), (C(Array), C(String), C(Hash));
+    OP(Succ, SUCC), (C(Fixnum), C(String), C(Time));
+    OP(GT, GT), (C(Fixnum));
+    OP(GE, GE), (C(Fixnum));
+#undef C
+#undef OP
 }
 
 /* evaluator body */

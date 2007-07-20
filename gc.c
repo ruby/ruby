@@ -1403,41 +1403,18 @@ mark_current_machine_context(rb_thread_t *th)
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
     setjmp(save_regs_gc_mark);
+    mark_locations_array((VALUE*)save_regs_gc_mark,
+			 sizeof(save_regs_gc_mark) / sizeof(VALUE));
 
-    {
-        struct { VALUE *start; VALUE *end; } regions[] = {
-            { (VALUE*)save_regs_gc_mark,
-              (VALUE*)save_regs_gc_mark +
-                  sizeof(save_regs_gc_mark) / sizeof(VALUE *) },
-            { stack_start, stack_end }
+    mark_locations_array(stack_start, stack_end - stack_start);
 #ifdef __ia64
-            , { th->machine_register_stack_start,
-                th->machine_register_stack_end }
+    mark_locations_array(th->machine_register_stack_start,
+			 th->machine_register_stack_end - th->machine_register_stack_start);
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
-            , { (VALUE*)((char*)STACK_END + 2),
-                (VALUE*)((char*)STACK_START + 2) }
+    mark_locations_array((VALUE*)((char*)STACK_END + 2),
+			 (STACK_START - STACK_END));
 #endif
-        };
-        int i;
-        for (i = 0; i < sizeof(regions)/sizeof(*regions); i++) {
-            /* stack scanning code is inlined here
-             * because function call grows stack.
-             * don't call mark_locations_array,
-             * rb_gc_mark_locations, etc. */
-            VALUE *x, n, v;
-            x = regions[i].start;
-            n = regions[i].end - x;
-            while (n--) {
-                v = *x;
-                VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
-                if (is_pointer_to_heap((void *)v)) {
-                    gc_mark(v, 0);
-                }
-                x++;
-            }
-        }
-    }
 }
 
 static int

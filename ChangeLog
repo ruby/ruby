@@ -1,3 +1,17 @@
+Fri Jul 20 16:11:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c, compile.h (DECL_ANCHOR, INIT_ANCHOR): split not to
+	  initialize aggregations with dynamic values.  [ruby-talk:259306]
+
+	* eval.c (rb_protect): not to initialize aggregations with dynamic
+	  values.  [ruby-talk:259306]
+
+	* gc.c (mark_current_machine_context): ditto.
+
+	* thread.c (thgroup_list, call_trace_func): ditto.
+
+	* vm.c (vm_init_redefined_flag): ditto.
+
 Fri Jul 20 15:22:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c (ossl_config_set_section): do not
