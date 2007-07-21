@@ -1771,7 +1771,7 @@ init_stdhandle(void)
 
 #ifdef __BORLANDC__
 static int
-rb_w32_open_osfhandle(long osfhandle, int flags)
+rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 {
     int fd = _open_osfhandle(osfhandle, flags);
     if (fd == -1) {
