@@ -1037,8 +1037,40 @@ class Date
   # Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.parse(str='-4712-01-01', comp=false, sg=ITALY)
-    elem = _parse(str, comp)
+  def self.parse(str='-4712-01-01', hints={}, sg=ITALY)
+    elem = _parse(str, hints)
+    new_by_frags(elem, sg)
+  end
+
+  def self.iso8601(str='-4712-01-01', sg=ITALY) # :nodoc:
+    elem = _iso8601(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.rfc3339(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
+    elem = _rfc3339(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.xmlschema(str='-4712-01-01', sg=ITALY) # :nodoc:
+    elem = _xmlschema(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.rfc2822(str='Mon, 1 Jan -4712 00:00:00 +0000', sg=ITALY) # :nodoc:
+    elem = _rfc2822(str)
+    new_by_frags(elem, sg)
+  end
+
+  class << self; alias_method :rfc822, :rfc2822 end
+
+  def self.httpdate(str='Mon, 01 Jan -4712 00:00:00 GMT', sg=ITALY) # :nodoc:
+    elem = _httpdate(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.jisx0301(str='-4712-01-01', sg=ITALY) # :nodoc:
+    elem = _jisx0301(str)
     new_by_frags(elem, sg)
   end
 
@@ -1644,8 +1676,40 @@ class DateTime < Date
   # Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.parse(str='-4712-01-01T00:00:00+00:00', comp=false, sg=ITALY)
-    elem = _parse(str, comp)
+  def self.parse(str='-4712-01-01T00:00:00+00:00', hints={}, sg=ITALY)
+    elem = _parse(str, hints)
+    new_by_frags(elem, sg)
+  end
+
+  def self.iso8601(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
+    elem = _iso8601(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.rfc3339(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
+    elem = _rfc3339(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.xmlschema(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
+    elem = _xmlschema(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.rfc2822(str='Mon, 1 Jan -4712 00:00:00 +0000', sg=ITALY) # :nodoc:
+    elem = _rfc2822(str)
+    new_by_frags(elem, sg)
+  end
+
+  class << self; alias_method :rfc822, :rfc2822 end
+
+  def self.httpdate(str='Mon, 01 Jan -4712 00:00:00 GMT', sg=ITALY) # :nodoc:
+    elem = _httpdate(str)
+    new_by_frags(elem, sg)
+  end
+
+  def self.jisx0301(str='-4712-01-01T00:00:00+00:00', sg=ITALY) # :nodoc:
+    elem = _jisx0301(str)
     new_by_frags(elem, sg)
   end
 

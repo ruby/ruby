@@ -343,9 +343,13 @@ class Date
 
   def rfc3339() iso8601 end
 
+  def xmlschema() iso8601 end # :nodoc:
+
   def rfc2822() strftime('%a, %-d %b %Y %T %z') end
 
   alias_method :rfc822, :rfc2822
+
+  def httpdate() new_offset(0).strftime('%a, %d %b %Y %T GMT') end # :nodoc:
 
   def jisx0301
     if jd < 2405160
@@ -832,16 +836,44 @@ class Date
     end
   end
 
-  def self._parse_sla(str, e) # :nodoc:
+  def self._parse_sla_jp(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+      s3e(e, $1, $2, $3)
+      true
+    end
+  end
+
+  def self._parse_sla_eu(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+      s3e(e, $3, $2, $1)
+      true
+    end
+  end
+
+  def self._parse_sla_us(str, e) # :nodoc:
     if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
       s3e(e, $3, $1, $2)
       true
     end
   end
 
-  def self._parse_dot(str, e) # :nodoc:
+  def self._parse_dot_jp(str, e) # :nodoc:
     if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $1, $2, $3)
+      true
+    end
+  end
+
+  def self._parse_dot_eu(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
+      s3e(e, $3, $2, $1)
+      true
+    end
+  end
+
+  def self._parse_dot_us(str, e) # :nodoc:
+    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
+      s3e(e, $3, $1, $2)
       true
     end
   end
@@ -1002,33 +1034,108 @@ class Date
 
   private_class_method :_parse_day, :_parse_time, # :_parse_beat,
 	:_parse_eu, :_parse_us, :_parse_iso, :_parse_iso2,
-	:_parse_jis, :_parse_vms, :_parse_sla, :_parse_dot,
+	:_parse_jis, :_parse_vms,
+	:_parse_sla_jp, :_parse_sla_eu, :_parse_sla_us,
+	:_parse_dot_jp, :_parse_dot_eu, :_parse_dot_us,
 	:_parse_year, :_parse_mon, :_parse_mday, :_parse_ddd
 
-  def self._parse(str, comp=false)
+  def self._parse(str, hints={})
     str = str.dup
 
     e = Format::Bag.new
 
-    e._comp = comp
+    e._comp = true
+
+    unless Hash === hints
+      e._comp = hints
+    else
+      hints.each do |k, v|
+	case k
+	when :comp, :complete
+	  e._comp = v
+	when :style, :endian, :endianness, :order
+	  v = {
+	    :jp     => :jp,
+	    :eu     => :eu,
+	    :us     => :us,
+	    :big    => :jp,
+	    :little => :eu,
+	    :middle => :us,
+	    :ymd    => :jp,
+	    :dmy    => :eu,
+	    :mdy    => :us
+	  }[v]
+	  e._style = v
+	else
+	  raise ArgumentError, 'unknown hint'
+	end
+      end
+    end
 
     str.gsub!(/[^-+',.\/:0-9@a-z\[\]\x80-\xff]+/in, ' ')
 
-    _parse_time(str, e) # || _parse_beat(str, e)
-    _parse_day(str, e)
-
-    _parse_eu(str, e)     ||
-    _parse_us(str, e)     ||
-    _parse_iso(str, e)    ||
-    _parse_jis(str, e)    ||
-    _parse_vms(str, e)    ||
-    _parse_sla(str, e)    ||
-    _parse_dot(str, e)    ||
-    _parse_iso2(str, e)   ||
-    _parse_year(str, e)   ||
-    _parse_mon(str, e)    ||
-    _parse_mday(str, e)   ||
-    _parse_ddd(str, e)
+    case e._style
+    when :jp
+      _parse_time(str, e) # || _parse_beat(str, e)
+      _parse_eu(str, e)     ||
+      _parse_us(str, e)     ||
+      _parse_iso(str, e)    ||
+      _parse_jis(str, e)    ||
+      _parse_vms(str, e)    ||
+      _parse_sla_jp(str, e) ||
+      _parse_dot_jp(str, e) ||
+      _parse_iso2(str, e)   ||
+      _parse_year(str, e)   ||
+      _parse_mon(str, e)    ||
+      _parse_mday(str, e)   ||
+      _parse_ddd(str, e)
+      _parse_day(str, e)
+    when :eu
+      _parse_time(str, e) # || _parse_beat(str, e)
+      _parse_eu(str, e)     ||
+      _parse_iso(str, e)    ||
+      _parse_jis(str, e)    ||
+      _parse_vms(str, e)    ||
+      _parse_sla_eu(str, e) ||
+      _parse_dot_eu(str, e) ||
+      _parse_iso2(str, e)   ||
+      _parse_year(str, e)   ||
+      _parse_mon(str, e)    ||
+      _parse_mday(str, e)   ||
+      _parse_ddd(str, e)    ||
+      _parse_us(str, e)
+      _parse_day(str, e)
+    when :us
+      _parse_time(str, e) # || _parse_beat(str, e)
+      _parse_eu(str, e)     ||
+      _parse_us(str, e)     ||
+      _parse_iso(str, e)    ||
+      _parse_jis(str, e)    ||
+      _parse_vms(str, e)    ||
+      _parse_sla_us(str, e) ||
+      _parse_dot_us(str, e) ||
+      _parse_iso2(str, e)   ||
+      _parse_year(str, e)   ||
+      _parse_mon(str, e)    ||
+      _parse_mday(str, e)   ||
+      _parse_ddd(str, e)
+      _parse_day(str, e)
+    else
+      _parse_time(str, e) # || _parse_beat(str, e)
+      _parse_eu(str, e)     ||
+      _parse_us(str, e)     ||
+      _parse_iso(str, e)    ||
+      _parse_jis(str, e)    ||
+      _parse_vms(str, e)    ||
+      _parse_sla_us(str, e) ||
+      _parse_dot_jp(str, e) ||
+      _parse_iso2(str, e)   ||
+      _parse_year(str, e)   ||
+      _parse_mon(str, e)    ||
+      _parse_mday(str, e)   ||
+      _parse_ddd(str, e)
+      _parse_day(str, e)
+    end
 
     if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/in, ' ')
       if e.year
@@ -1069,6 +1176,114 @@ class Date
     e.offset ||= zone_to_diff(e.zone) if e.zone
 
     e.to_hash
+  end
+
+  def self._iso8601(str) # :nodoc:
+    if /\A\s*(([-+]?\d{2,}|-)-\d{2}-\d{2}|
+	      ([-+]?\d{2,})?-\d{3}|
+	      (\d{2}|\d{4})?-w\d{2}-\d|
+	      -w-\d)
+	(t
+	\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
+	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
+      _parse(str, true)
+    elsif /\A\s*(([-+]?(\d{2}|\d{4})|--)\d{2}\d{2}|
+	      ([-+]?(\d{2}|\d{4}))?\d{3}|-\d{3}|
+	      (\d{2}|\d{4})?w\d{2}\d)
+	(t?
+	\d{2}\d{2}(\d{2}([,.]\d+)?)?
+	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
+      _parse(str, true)
+    elsif /\A\s*(\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
+	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
+      _parse(str, true)
+    elsif /\A\s*(\d{2}\d{2}(\d{2}([,.]\d+)?)?
+	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
+      _parse(str, true)
+    end
+  end
+
+  def self._rfc3339(str) # :nodoc:
+    if /\A\s*-?\d{4}-\d{2}-\d{2} # allow minus, anyway
+	(t|\s)
+	\d{2}:\d{2}:\d{2}(\.\d+)?
+	(z|[-+]\d{2}:\d{2})\s*\z/inx =~ str
+      _parse(str, true)
+    end
+  end
+
+  def self._xmlschema(str) # :nodoc:
+    if /\A\s*-?\d{4}-\d{2}-\d{2}
+	(t
+	\d{2}:\d{2}:\d{2}(?:\.\d+)?)?
+	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+      if $1.nil? && $2
+	str = str.sub(/(z|[-+]\d{2}:\d{2})/in, 'T00:00:00\1')
+      end
+      _parse(str, true)
+    elsif /\A\s*\d{2}:\d{2}:\d{2}(\.\d+)?
+	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+      _parse(str, true)
+    end
+  end
+
+  def self._rfc2822(str) # :nodoc:
+    if /\A\s*(?:(?:#{Format::ABBR_DAYS.keys.join('|')})\s*,\s+)?
+	\d{1,2}\s+
+	(?:#{Format::ABBR_MONTHS.keys.join('|')})\s+
+	-?(\d{2,})\s+ # allow minus, anyway
+	\d{2}:\d{2}(:\d{2})?\s*
+	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inx =~ str
+      e = _parse(str, false)
+      if $1.size < 4
+	if e[:year] < 50
+	  e[:year] += 2000
+	elsif e[:year] < 1000
+	  e[:year] += 1900
+	end
+      end
+      e
+    end
+  end
+
+  class << self; alias_method :_rfc822, :_rfc2822 end
+
+  def self._httpdate(str) # :nodoc:
+    if /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s*,\s+
+	\d{2}\s+
+	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
+	-?\d{4}\s+ # allow minus, anyway
+	\d{2}:\d{2}:\d{2}\s+
+	gmt\s*\z/inx =~ str
+      _rfc2822(str)
+    elsif /\A\s*(#{Format::DAYS.keys.join('|')})\s*,\s+
+	\d{2}\s*-\s*
+	(#{Format::ABBR_MONTHS.keys.join('|')})\s*-\s*
+	\d{2}\s+
+	\d{2}:\d{2}:\d{2}\s+
+	gmt\s*\z/inx =~ str
+      _parse(str, true)
+    elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
+	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
+	\d{1,2}\s+
+	\d{2}:\d{2}:\d{2}\s+
+	\d{4}\s*\z/inx =~ str
+      _parse(str, true)
+    end
+  end
+
+  def self._jisx0301(str) # :nodoc:
+    if /\A\s*[mtsh]?\d{2}\.\d{2}\.\d{2}
+	(t
+	(\d{2}:\d{2}(:\d{2}([,.]\d*)?)?
+	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/inx =~ str
+      unless /\A\s*[a-z]/in =~ str
+	str = str.sub(/(\d{2})/n, 'h\1') # heisei
+      end
+      _parse(str, true)
+    else
+      _iso8601(str)
+    end
   end
 
   t = Module.new do
@@ -1143,6 +1358,8 @@ class DateTime < Date
   end
 
   def rfc3339(n=0) iso8601(n) end
+
+  def xmlschema(n=0) iso8601(n) end # :nodoc:
 
   def jisx0301(n=0)
     super() + iso8601_timediv(n)
