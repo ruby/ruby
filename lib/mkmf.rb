@@ -1497,6 +1497,7 @@ def init_mkmf(config = CONFIG)
   $LOCAL_LIBS = ""
 
   $cleanfiles = config_string('CLEANFILES') {|s| Shellwords.shellwords(s)} || []
+  $cleanfiles << "mkmf.log"
   $distcleanfiles = config_string('DISTCLEANFILES') {|s| Shellwords.shellwords(s)} || []
 
   $extout ||= nil
