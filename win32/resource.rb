@@ -4,7 +4,9 @@ require 'rbconfig'
 
 CONFIG = Config::MAKEFILE_CONFIG
 
-fversion = "#{CONFIG['MAJOR']},#{CONFIG['MINOR']},#{CONFIG['TEENY']},0"
+version = %w'MAJOR MINOR TEENY PATCHLEVEL'.map {|v| CONFIG[v] || '0'}
+fversion = version.join(',')
+rversion = version.join('.')
 
 $ruby_name ||= CONFIG["RUBY_INSTALL_NAME"]
 $rubyw_name ||= CONFIG["RUBYW_INSTALL_NAME"] || $ruby_name.sub(/ruby/, '\&w')
@@ -72,7 +74,7 @@ BEGIN
  BEGIN
   BLOCK "000004b0"
   BEGIN
-   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{RUBY_VERSION} [#{RUBY_PLATFORM}]\\0"
+   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{rversion} [#{RUBY_PLATFORM}]\\0"
    VALUE "FileVersion",      "#{fversion}\\0"
    VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
@@ -81,7 +83,7 @@ BEGIN
    VALUE "Platform",         "#{RUBY_PLATFORM}\\0"
    VALUE "ProductVersion",   "#{fversion}\\0"
    VALUE "Release Date",     "#{RUBY_RELEASE_DATE}\\0"
-   VALUE "Version",          "#{RUBY_VERSION}\\0"
+   VALUE "Version",          "#{rversion}\\0"
   END
  END
  BLOCK "VarFileInfo"
