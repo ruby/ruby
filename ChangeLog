@@ -1,3 +1,5 @@
+Sat Jul 21 17:48:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 Sat Jul 21 17:32:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): make OBJS depend on RUBY_EXTCONF_H
