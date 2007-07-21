@@ -1,4 +1,6 @@
-Sat Jul 21 15:32:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 21 15:39:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {win32,wince,bcc32}/setup.mak (-version-): no RUBY_EXTERN magic.
 
 	* win32/resource.rb: include patchlevel number.
 
