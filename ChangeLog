@@ -1,7 +1,14 @@
-Sat Jul 21 17:32:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 21 17:48:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: inverted rules order.
+
+	* thread_win32.ci (w32_create_thread): bcc does not have
+	  _beginthreadex().
 
 	* lib/mkmf.rb (create_makefile): make OBJS depend on RUBY_EXTCONF_H
 	  only if extconf.h is created.
+
+	* bcc32/Makefile.sub: headers have moved.
 
 	* bcc32/{Makefile.sub,configure.bat,setup.mak: configure_args
 	  support.

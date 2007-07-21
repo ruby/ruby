@@ -140,10 +140,24 @@ w32_resume_thread(HANDLE handle)
     }
 }
 
+#ifdef _MSC_VER
+#define HAVE__BEGINTHREADEX 1
+#else
+#undef HAVE__BEGINTHREADEX
+#endif
+
+#ifdef HAVE__BEGINTHREADEX
+#define start_thread (HANDLE)_beginthreadex
+typedef unsigned long (_stdcall *w32_thread_start_func)(void*);
+#else
+#define start_thread CreateThread
+typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
+#endif
+
 static HANDLE
-w32_create_thread(DWORD stack_size, void *func, void *val)
+w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
 {
-    return (HANDLE)_beginthreadex(0, stack_size, func, val, CREATE_SUSPENDED, 0);
+    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED, 0);
 }
 
 int
@@ -289,7 +303,7 @@ native_thread_destroy(rb_thread_t *th)
     w32_close_handle(intr);
 }
 
-static unsigned int _stdcall
+static unsigned long _stdcall
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
@@ -364,7 +378,7 @@ static void timer_thread_function(void);
 
 static HANDLE timer_thread_id = 0;
 
-static unsigned int _stdcall
+static unsigned long _stdcall
 timer_thread_func(void *dummy)
 {
     thread_debug("timer_thread\n");

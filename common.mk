@@ -514,7 +514,7 @@ sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}missing/vsnprintf.c
+  {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}st.h {$(VPATH)}defines.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
@@ -591,6 +591,10 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
+$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
+	$(RM) $(PROGRAM)
+	$(BASERUBY) -C $(srcdir) tool/insns2vm.rb $(INSNS2VMOPT)
+
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
 opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl
@@ -606,10 +610,6 @@ insns_info.inc: $(srcdir)/template/insns_info.inc.tmpl
 vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
-
-$(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
-	$(RM) $(PROGRAM)
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
 
 incs: $(INSNS)
 

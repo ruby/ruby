@@ -11,6 +11,8 @@ OS = bccwin32
 !error RT not defined.  Retry from configure pass.
 !endif
 
+arch = $(ARCH)-$(OS)
+
 ## variables may be overridden by $(compile_dir)/Makefile
 !ifndef srcdir
 srcdir = ..
@@ -40,7 +42,6 @@ iconinc=-I$(icondirs: = -I)
 !endif
 ###############
 
-VPATH = $(srcdir):$(srcdir)/missing
 .SUFFIXES: .y
 
 !ifndef CC
@@ -146,7 +147,7 @@ MISSING = acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj
 STACK = 0x2000000
 !endif
 
-XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
+XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing
 
 ARFLAGS = /a /p32
 LD = ilink32 -q -Gn
@@ -187,8 +188,15 @@ INSTALLED_LIST= .installed.list
 WINMAINOBJ    = winmain.$(OBJEXT)
 MINIOBJS      = dmydln.$(OBJEXT)
 
+arch_hdrdir = $(EXTOUT)/include/$(arch)
+hdrdir = $(srcdir)/include
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(srcdir)/win32
+
 .path.c = .;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
-.path.h = .;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
+.path.ci = $(srcdir)
+.path.inc = .;$(srcdir)
+.path.def = .;$(srcdir)
+.path.h = .;$(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
 .path.y = $(srcdir)
 .path. = $(srcdir)
 
@@ -221,6 +229,7 @@ PHONY: nul
 	@exit
 |
 
+RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time
 
 config: config.status
@@ -228,7 +237,9 @@ config: config.status
 config.status: $(CONFIG_H)
 
 $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
-	@$(srcdir:/=\)\win32\ifchange.bat config.h &&|
+	@if not exist $(arch_hdrdir:/=\) md $(arch_hdrdir:/=\)
+	@if not exist $(arch_hdrdir:/=\)\ruby md $(arch_hdrdir:/=\)\ruby
+	@$(srcdir:/=\)\win32\ifchange.bat $(RUBY_CONFIG_H:/=\) &&|
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1
@@ -311,7 +322,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 |
-	@exit > $@
+	@exit > $(@:/=\)
 
 config.status: $(MKFILES) $(srcdir)/bcc32/Makefile.sub $(srcdir)/common.mk
 	@echo Creating $@
@@ -463,6 +474,9 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(srcdir)/win32
+
+lex.c: {$(srcdir)}lex.c.blt
+	copy "$(?:/=\)" $@
 
 post-install-bin::
 	@$(NULLCMD)
