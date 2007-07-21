@@ -62,7 +62,7 @@ if exist usebormm.tds echo MEMLIB = usebormm.lib
 	@usebormm.bat >> $(MAKEFILE)
 	@del usebormm.*
 
-	@cpp32 -I$(srcdir) -DRUBY_EXTERN="//" -P- -o$(MAKEFILE) > nul &&|
+	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
