@@ -176,7 +176,7 @@ THREAD_MODEL  = win32
 PREP          = miniruby$(EXEEXT)
 
 OBJEXT        = obj
-OBJEXT        = asm
+ASMEXT        = asm
 
 INSTALLED_LIST= .installed.list
 
