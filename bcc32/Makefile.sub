@@ -4,8 +4,12 @@ SHELL = $(COMSPEC)
 MKFILES = Makefile
 
 #### Start of system configuration section. ####
+!ifndef OS
 OS = bccwin32
-RT = $(OS)
+!endif
+!if !defined(RT)
+!error RT not defined.  Retry from configure pass.
+!endif
 
 ## variables may be overridden by $(compile_dir)/Makefile
 !ifndef srcdir
@@ -137,7 +141,7 @@ STACK = 0x2000000
 
 XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
 
-ARFLAGS = /a
+ARFLAGS = /a /p32
 LD = ilink32 -q -Gn
 LDSHARED  = $(LD)
 XLDFLAGS  = -Tpe c0x32.obj
@@ -197,7 +201,13 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
-PHONY: Makefile
+$(MKFILES): $(srcdir)/bcc32/Makefile.sub $(srcdir)/bcc32/configure.bat $(srcdir)/bcc32/setup.mak
+	$(COMSPEC) /C $(srcdir:/=\)\bcc32\configure.bat $(configure_args)
+	@echo $(MKFILES) should be updated, re-run $(MAKE).
+	@$(MAKE) > nul -q -f &&|
+PHONY: nul
+	@exit
+|
 
 CONFIG_H = ./.config.h.time
 

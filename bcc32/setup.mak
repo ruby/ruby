@@ -30,7 +30,9 @@ i586-$(OS): -prologue- -i586- -epilogue-
 i686-$(OS): -prologue- -i686- -epilogue-
 alpha-$(OS): -prologue- -alpha- -epilogue-
 
--prologue-: nul
+-prologue-: -basic-vars- -version- -system-vars-
+
+-basic-vars-: nul
 	@echo Creating $(MAKEFILE)
 	@type > $(MAKEFILE) &&|
 \#\#\# Makefile for ruby $(OS) \#\#\#
@@ -40,36 +42,68 @@ $(BANG)endif
 $(BANG)ifndef prefix
 prefix = $(prefix:\=/)
 $(BANG)endif
-$(BANG)ifndef EXTSTATIC
-EXTSTATIC = $(EXTSTATIC)
-$(BANG)endif
-!if defined(RDOCTARGET)
-$(BANG)ifndef RDOCTARGET
-RDOCTARGET = $(RDOCTARGET)
-$(BANG)endif
-!endif
-!if defined(EXTOUT)
-$(BANG)ifndef EXTOUT
-EXTOUT = $(EXTOUT)
-$(BANG)endif
-!endif
 |
-	@type > usebormm.bat &&|
-@echo off
-ilink32 -Gn -x usebormm.lib > nul
-if exist usebormm.tds echo MEMLIB = usebormm.lib
-|
-	@usebormm.bat >> $(MAKEFILE)
-	@del usebormm.*
+!if exist(confargs.mk)
+	@type confargs.mk >> $(MAKEFILE)
+	@del confargs.mk
+!endif
 
+-system-vars-: -runtime- -bormm-
+
+-bormm-: nul
+	@-ilink32 -q -Gn -x usebormm.lib > nul
+	@-if exist usebormm.tds $(APPEND) MEMLIB = usebormm.lib
+	@if exist usebormm.* del usebormm.*
+
+-osname-: nul
+	@echo OS =  >>$(MAKEFILE)
+
+-runtime-: nul
+	type > conftest.c &&|
+\#include <stdio.h>
+int main(){printf("");return 0;}
+|
+	bcc32 conftest.c cw32i.lib > nul
+	tdump conftest.exe < nul > conftest.i
+	grep "^Imports from CC" conftest.i > conftest.c
+	cpp32 -P- -DFile=\# -DImports=RTNAME -Dfrom== conftest.c > nul
+	$(MAKE) > nul -DBANG=$(BANG) -f &&|
+-runtime-: nul
+$(BANG)include conftest.i
+RT = $$(RTNAME:.DLL=)
+OS = $$(RT:CC32=)
+-runtime-:
+	del conftest.*
+$(BANG)if "$$(OS)" == "50"
+	echo OS = bccwin32 >> $(MAKEFILE)
+$(BANG)else
+	echo OS = bccwin32_$$(OS) >> $(MAKEFILE)
+$(BANG)endif
+|
+	@echo RT = $$(OS) >> $(MAKEFILE)
+
+-version-: nul
 	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
+
+BORLANDC = __BORLANDC__
 |
-	@type $(MAKEFILE).i >> $(MAKEFILE)
+	@$(MAKE) > nul -DBANG=$(BANG) -f &&,
+-version-: nul
+$(BANG)include $(MAKEFILE)
+$(BANG)include $(MAKEFILE).i
+-version-:
 	@del $(MAKEFILE).i
+	@type >> $(MAKEFILE) &&|
+MAJOR = $$(MAJOR)
+MINOR = $$(MINOR)
+TEENY = $$(TEENY)
+BORLANDC = $$(BORLANDC)
+|
+,
 
 -generic-: nul
 !if defined(PROCESSOR_ARCHITECTURE) ||  defined(PROCESSOR_LEVEL)
@@ -84,7 +118,6 @@ $(BANG)ifndef PROCESSOR_LEVEL
 PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 $(BANG)endif
 !endif
-
 |
 !endif
 
@@ -117,8 +150,6 @@ $(BANG)endif
 -epilogue-: nul
 	@type >> $(MAKEFILE) &&|
 
-\# OS = $(OS)
-\# RT = $(RT)
 \# RUBY_INSTALL_NAME = ruby
 \# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 \# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
@@ -129,5 +160,4 @@ $(BANG)endif
 \# EXTLIBS = cw32.lib import32.lib user32.lib kernel32.lib
 $(BANG)include $$(srcdir)/bcc32/Makefile.sub
 |
-	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type "`$(MAKE)'" to make ruby for $(OS).

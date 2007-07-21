@@ -1,7 +1,15 @@
-Sat Jul 21 17:07:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 21 17:32:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): make OBJS depend on RUBY_EXTCONF_H
 	  only if extconf.h is created.
+
+	* bcc32/{Makefile.sub,configure.bat,setup.mak: configure_args
+	  support.
+
+	* bcc32/setup.mak: check runtime version.
+
+	* win32/win32.c (rb_w32_open_osfhandle): prototype has changed
+	  in bcc 5.82.
 
 	* {win32,wince,bcc32}/setup.mak (-version-): no RUBY_EXTERN magic.
 
