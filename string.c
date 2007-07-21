@@ -719,7 +719,7 @@ rb_str_resize(VALUE str, long len)
 	    MEMCPY(ptr, RSTRING_PTR(str), char, RSTRING_LEN(str));
 	    RSTRING(str)->as.heap.ptr = ptr;
 	    STR_SET_NOEMBED(str);
-	    }
+	}
 	else if (RSTRING_LEN(str) < len || RSTRING_LEN(str) - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
 	}
