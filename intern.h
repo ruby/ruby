@@ -222,6 +222,7 @@ VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
 VALUE rb_funcall_rescue __((VALUE, ID, int, ...));
+VALUE is_ruby_native_thread _((void));
 /* file.c */
 VALUE rb_file_s_expand_path _((int, VALUE *));
 VALUE rb_file_expand_path _((VALUE, VALUE));
