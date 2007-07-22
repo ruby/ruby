@@ -807,6 +807,9 @@ class Date
       e.year = $1.to_i if $1
       e.yday = $2.to_i
       true
+    elsif e._date && str.sub!(/('?[-+]?\d+)-('?-?\d+)/n, ' ')
+      s3e(e, nil, $1, $2)
+      true
     end
   end
 
@@ -820,6 +823,11 @@ class Date
       e.year = $2.to_i + era
       e.mon = $3.to_i
       e.mday = $4.to_i
+      true
+    elsif e._jis && str.sub!(/(\d+)\.(\d+)\.(\d+)/in, ' ')
+      e.year = $1.to_i + 1988
+      e.mon = $2.to_i
+      e.mday = $3.to_i
       true
     end
   end
@@ -861,6 +869,9 @@ class Date
     if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $1, $2, $3)
       true
+    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
+      s3e(e, nil, $1, $2)
+      true
     end
   end
 
@@ -868,12 +879,18 @@ class Date
     if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $3, $2, $1)
       true
+    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
+      s3e(e, nil, $2, $1)
+      true
     end
   end
 
   def self._parse_dot_us(str, e) # :nodoc:
     if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $3, $1, $2)
+      true
+    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
+      s3e(e, nil, $1, $2)
       true
     end
   end
@@ -925,15 +942,24 @@ class Date
 	if $3.nil? && $4
 	  e.sec  = $2[-2, 2].to_i
 	else
-	  e.mday = $2[ 0, 2].to_i
+	  if e._time
+	    e.hour = $2[ 0, 2].to_i
+	  else
+	    e.mday = $2[ 0, 2].to_i
+	  end
 	end
       when 4
 	if $3.nil? && $4
 	  e.sec  = $2[-2, 2].to_i
 	  e.min  = $2[-4, 2].to_i
 	else
-	  e.mon  = $2[ 0, 2].to_i
-	  e.mday = $2[ 2, 2].to_i
+	  if e._time
+	    e.hour = $2[ 0, 2].to_i
+	    e.min  = $2[ 2, 2].to_i
+	  else
+	    e.mon  = $2[ 0, 2].to_i
+	    e.mday = $2[ 2, 2].to_i
+	  end
 	end
       when 6
 	if $3.nil? && $4
@@ -941,9 +967,15 @@ class Date
 	  e.min  = $2[-4, 2].to_i
 	  e.hour = $2[-6, 2].to_i
 	else
-	  e.year = ($1 + $2[ 0, 2]).to_i
-	  e.mon  = $2[ 2, 2].to_i
-	  e.mday = $2[ 4, 2].to_i
+	  if e._time || e._ofx
+	    e.hour = $2[ 0, 2].to_i
+	    e.min  = $2[ 2, 2].to_i
+	    e.sec  = $2[ 4, 2].to_i
+	  else
+	    e.year = ($1 + $2[ 0, 2]).to_i
+	    e.mon  = $2[ 2, 2].to_i
+	    e.mday = $2[ 4, 2].to_i
+	  end
 	end
       when 8, 10, 12, 14
 	if $3.nil? && $4
@@ -1066,6 +1098,14 @@ class Date
 	    :mdy    => :us
 	  }[v]
 	  e._style = v
+	when :date
+	  e._date = v
+	when :time
+	  e._time = v
+	when :jis
+	  e._jis = v
+	when :ofx
+	  e._ofx = v
 	else
 	  raise ArgumentError, 'unknown hint'
 	end
@@ -1186,20 +1226,20 @@ class Date
 	(t
 	\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
 	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     elsif /\A\s*(([-+]?(\d{2}|\d{4})|--)\d{2}\d{2}|
 	      ([-+]?(\d{2}|\d{4}))?\d{3}|-\d{3}|
 	      (\d{2}|\d{4})?w\d{2}\d)
 	(t?
 	\d{2}\d{2}(\d{2}([,.]\d+)?)?
 	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     elsif /\A\s*(\d{2}:\d{2}(:\d{2}([,.]\d+)?)?
 	(z|[-+]\d{2}(:?\d{2})?)?)?\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     elsif /\A\s*(\d{2}\d{2}(\d{2}([,.]\d+)?)?
 	(z|[-+]\d{2}(\d{2})?)?)?\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     end
   end
 
@@ -1208,7 +1248,7 @@ class Date
 	(t|\s)
 	\d{2}:\d{2}:\d{2}(\.\d+)?
 	(z|[-+]\d{2}:\d{2})\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     end
   end
 
@@ -1220,10 +1260,10 @@ class Date
       if $1.nil? && $2
 	str = str.sub(/(z|[-+]\d{2}:\d{2})/in, 'T00:00:00\1')
       end
-      _parse(str, true)
+      _parse(str)
     elsif /\A\s*\d{2}:\d{2}:\d{2}(\.\d+)?
 	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     end
   end
 
@@ -1234,7 +1274,7 @@ class Date
 	-?(\d{2,})\s+ # allow minus, anyway
 	\d{2}:\d{2}(:\d{2})?\s*
 	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inx =~ str
-      e = _parse(str, false)
+      e = _parse(str, :comp=>false)
       if $1.size < 4
 	if e[:year] < 50
 	  e[:year] += 2000
@@ -1262,13 +1302,13 @@ class Date
 	\d{2}\s+
 	\d{2}:\d{2}:\d{2}\s+
 	gmt\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	\d{1,2}\s+
 	\d{2}:\d{2}:\d{2}\s+
 	\d{4}\s*\z/inx =~ str
-      _parse(str, true)
+      _parse(str)
     end
   end
 
@@ -1277,10 +1317,7 @@ class Date
 	(t
 	(\d{2}:\d{2}(:\d{2}([,.]\d*)?)?
 	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/inx =~ str
-      unless /\A\s*[a-z]/in =~ str
-	str = str.sub(/(\d{2})/n, 'h\1') # heisei
-      end
-      _parse(str, true)
+      _parse(str, :jis=>true)
     else
       _iso8601(str)
     end

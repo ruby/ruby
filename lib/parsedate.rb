@@ -43,8 +43,8 @@ module ParseDate
   #   ParseDate.parsedate "Mon Dec 25 00 06:53:24 UTC", true
   #   # => [2000, 12, 25, 6, 53, 24, "UTC", 1]
   #
-  def parsedate(str, comp=false)
-    Date._parse(str, comp).
+  def parsedate(str, hints={})
+    Date._parse(str, hints).
       values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
   end
 
