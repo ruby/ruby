@@ -1,3 +1,11 @@
+Sun Jul 22 16:06:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (is_ruby_native_thread): made an int function as
+	  well as version 1.8.
+
+	* include/ruby/ruby.h (is_ruby_native_thread): moved prototype
+	  from intern.h as well as version 1.8.
+
 Sun Jul 22 14:33:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_rename): deleted code to get rid of a bug of

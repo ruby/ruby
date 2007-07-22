@@ -868,6 +868,7 @@ static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 
 #define RUBY_VM 1 /* YARV */
 #define HAVE_NATIVETHREAD
+int is_ruby_native_thread(void);
 
 #if defined(__cplusplus)
 #if 0

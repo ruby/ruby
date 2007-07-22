@@ -2962,7 +2962,7 @@ Init_Thread(void)
     rb_thread_create_timer_thread();
 }
 
-VALUE
+int
 is_ruby_native_thread(void)
 {
     return Qtrue;
