@@ -1,3 +1,24 @@
+Sun Jul 22 14:33:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_rename): deleted code to get rid of a bug of
+	  old Cygwin.
+
+	* file.c (rb_file_truncate): added prototype of GetLastError()
+	  on cygwin.  [ruby-dev:31239]
+
+	* include/ruby/intern.h (is_ruby_native_thread): prototype.
+
+	* missing/strftime.c (strftime): fix printf format and actual
+	  arguments.
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): ditto.
+
+	* ext/tk/tcltklib.c (ip_finalize): ditto.
+
+	* ext/win32ole/win32ole.c (lcid_installed): ditto.
+
+	* ext/socket/getnameinfo.c: include stdio.h always.
+
 Sat Jul 21 21:39:12 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb (Date._parse): now can take some

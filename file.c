@@ -2214,18 +2214,12 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
     errno = 0;
 #endif
     if (rename(src, dst) < 0) {
-#if defined __CYGWIN__
-	extern unsigned long __attribute__((stdcall)) GetLastError(void);
-	if (errno == 0) {	/* This is a bug of old Cygwin */
-	    /* incorrect as cygwin errno, but the last resort */
-	    errno = GetLastError();
-	}
-#elif defined DOSISH && !defined _WIN32
-	if (errno == EEXIST
+#if defined DOSISH && !defined _WIN32
+	switch (errno) {
+	  case EEXIST:
 #if defined (__EMX__)
-	    || errno == EACCES
+	  case EACCES:
 #endif
-	    ) {
 	    if (chmod(dst, 0666) == 0 &&
 		unlink(dst) == 0 &&
 		rename(src, dst) == 0)
@@ -3088,6 +3082,7 @@ rb_file_truncate(VALUE obj, VALUE len)
 
 #ifdef __CYGWIN__
 #include <winerror.h>
+extern unsigned long __attribute__((stdcall)) GetLastError(void);
 #endif
 
 static VALUE

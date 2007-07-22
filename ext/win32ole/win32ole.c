@@ -2641,7 +2641,7 @@ static BOOL
 lcid_installed(LCID lcid)
 {
     g_lcid_installed = FALSE;
-    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%08x", lcid);
+    snprintf(g_lcid_to_check, sizeof(g_lcid_to_check), "%08lx", lcid);
     EnumSystemLocales(installed_lcid_proc, LCID_INSTALLED);
     return g_lcid_installed;
 }
