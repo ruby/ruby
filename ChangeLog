@@ -1,3 +1,8 @@
+Sun Jul 22 16:07:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (is_ruby_native_thread): removed since declared as an int
+	  function in ruby.h already.
+
 Sun Jul 22 14:33:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_rename): deleted code to get rid of a bug of
