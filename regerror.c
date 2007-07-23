@@ -2,7 +2,7 @@
   regerror.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -317,7 +317,7 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
   va_list args;
 
   va_init_list(args, fmt);
-  n = vsnprintf((char* )buf, bufsize, (const char* )fmt, args);
+  n = xvsnprintf((char* )buf, bufsize, (const char* )fmt, args);
   va_end(args);
 
   need = (pat_end - pat) * 4 + 4;

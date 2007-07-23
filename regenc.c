@@ -169,10 +169,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
   }
 }
 
-const UChar* OnigEncAsciiToLowerCaseTable = (const UChar* )0;
-
-#ifndef USE_EXTERNAL_LOWER_CASE_CONV_TABLE
-static const UChar BuiltInAsciiToLowerCaseTable[] = {
+const UChar OnigEncAsciiToLowerCaseTable[] = {
   '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
   '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
   '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -206,7 +203,6 @@ static const UChar BuiltInAsciiToLowerCaseTable[] = {
   '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
   '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
 };
-#endif /* not USE_EXTERNAL_LOWER_CASE_CONV_TABLE */
 
 #ifdef USE_UPPER_CASE_TABLE
 const UChar OnigEncAsciiToUpperCaseTable[256] = {
@@ -355,17 +351,8 @@ const UChar OnigEncISO_8859_1_ToUpperCaseTable[256] = {
 extern void
 onigenc_set_default_caseconv_table(const UChar* table)
 {
-  if (table == (const UChar* )0) {
-#ifndef USE_EXTERNAL_LOWER_CASE_CONV_TABLE
-    table = BuiltInAsciiToLowerCaseTable;
-#else
-    return ;
-#endif
-  }
-
-  if (table != OnigEncAsciiToLowerCaseTable) {
-    OnigEncAsciiToLowerCaseTable = table;
-  }
+  /* nothing */
+  /* obsoleted. */
 }
 
 extern UChar*
@@ -732,7 +719,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(enc, buf) != (p - buf))
-    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
 }
@@ -755,7 +742,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(enc, buf) != (p - buf))
-    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
 }

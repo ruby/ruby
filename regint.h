@@ -51,7 +51,7 @@
     (defined(__ppc__) && defined(__APPLE__)) || \
     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD86) || \
     defined(__mc68020__)
-#define PLATFORM_UNALIGNED_WORD_ACCESS
+/* #define PLATFORM_UNALIGNED_WORD_ACCESS */
 #endif
 
 /* config */
@@ -63,16 +63,13 @@
 #define USE_NEWLINE_AT_END_OF_STRING_HAS_EMPTY_LINE     /* /\n$/ =~ "\n" */
 #define USE_WARNING_REDUNDANT_NESTED_REPEAT_OPERATOR
 /* #define USE_RECOMPILE_API */
-/* treat \r\n as line terminator.
-   !!! NO SUPPORT !!!
-   use this configuration on your own responsibility */
-/* #define USE_CRNL_AS_LINE_TERMINATOR */
+/* #define USE_CRNL_AS_LINE_TERMINATOR */   /* moved to regenc.h. */
 
 /* internal config */
-#define USE_RECYCLE_NODE
+#define USE_PARSE_TREE_NODE_RECYCLE
 #define USE_OP_PUSH_OR_JUMP_EXACT
-#define USE_QUANTIFIER_PEEK_NEXT
-#define USE_ST_HASH_TABLE
+#define USE_QTFR_PEEK_NEXT
+#define USE_ST_LIBRARY
 #define USE_SHARED_CCLASS_TABLE
 
 #define INIT_MATCH_STACK_SIZE                     160
@@ -108,10 +105,6 @@
 #endif
 
 #define CHECK_INTERRUPT_IN_MATCH_AT
-
-#if defined(_WIN32) && !defined(__GNUC__) && !defined(vsnprintf)
-#define vsnprintf   _vsnprintf
-#endif
 
 #ifdef RUBY
 
@@ -165,11 +158,15 @@
 #define xmemset     memset
 #define xmemcpy     memcpy
 #define xmemmove    memmove
+
 #if defined(_WIN32) && !defined(__GNUC__)
 #define xalloca     _alloca
+#define xvsnprintf  _vsnprintf
 #else
 #define xalloca     alloca
+#define xvsnprintf  vsnprintf
 #endif
+
 
 #if defined(USE_RECOMPILE_API) && defined(USE_MULTI_THREAD_SYSTEM)
 #define ONIG_STATE_INC(reg) (reg)->state++
@@ -235,11 +232,26 @@
 #define IS_NULL(p)                    (((void*)(p)) == (void*)0)
 #define IS_NOT_NULL(p)                (((void*)(p)) != (void*)0)
 #define CHECK_NULL_RETURN(p)          if (IS_NULL(p)) return NULL
-#define CHECK_NULL_RETURN_VAL(p,val)  if (IS_NULL(p)) return (val)
+#define CHECK_NULL_RETURN_MEMERR(p)   if (IS_NULL(p)) return ONIGERR_MEMORY
 #define NULL_UCHARP                   ((UChar* )0)
 
-#ifndef PLATFORM_UNALIGNED_WORD_ACCESS
-#define WORD_ALIGNMENT_SIZE       SIZEOF_INT
+
+#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
+
+#define PLATFORM_GET_INC(val,p,type) do{\
+  val  = *(type* )p;\
+  (p) += sizeof(type);\
+} while(0)
+
+#else
+
+#define PLATFORM_GET_INC(val,p,type) do{\
+  xmemcpy(&val, (p), sizeof(type));\
+  (p) += sizeof(type);\
+} while(0)
+
+/* sizeof(OnigCodePoint) */
+#define WORD_ALIGNMENT_SIZE     SIZEOF_LONG
 
 #define GET_ALIGNMENT_PAD_SIZE(addr,pad_size) do {\
   (pad_size) = WORD_ALIGNMENT_SIZE \
@@ -251,86 +263,6 @@
   (addr) += (WORD_ALIGNMENT_SIZE - 1);\
   (addr) -= ((unsigned int )(addr) % WORD_ALIGNMENT_SIZE);\
 } while (0)
-
-
-#define B_SHIFT  8
-#define B_MASK   0xff
-
-#define SERIALIZE_2BYTE_INT(i,p) do {\
-  *(p)     = ((i) >> B_SHIFT) & B_MASK;\
-  *((p)+1) = (i) & B_MASK;\
-} while (0)
-
-#define SERIALIZE_4BYTE_INT(i,p) do {\
-  *(p)     = ((i) >> B_SHIFT*3) & B_MASK;\
-  *((p)+1) = ((i) >> B_SHIFT*2) & B_MASK;\
-  *((p)+2) = ((i) >> B_SHIFT  ) & B_MASK;\
-  *((p)+3) = (i) & B_MASK;\
-} while (0)
-
-#define SERIALIZE_8BYTE_INT(i,p) do {\
-  *(p)     = ((i) >> B_SHIFT*7) & B_MASK;\
-  *((p)+1) = ((i) >> B_SHIFT*6) & B_MASK;\
-  *((p)+2) = ((i) >> B_SHIFT*5) & B_MASK;\
-  *((p)+3) = ((i) >> B_SHIFT*4) & B_MASK;\
-  *((p)+4) = ((i) >> B_SHIFT*3) & B_MASK;\
-  *((p)+5) = ((i) >> B_SHIFT*2) & B_MASK;\
-  *((p)+6) = ((i) >> B_SHIFT  ) & B_MASK;\
-  *((p)+7) = (i) & B_MASK;\
-} while (0)
-
-#define GET_2BYTE_INT_INC(type,i,p) do {\
-  (i) = (type )(((unsigned int )(*(p)) << B_SHIFT) | (unsigned int )((p)[1]));\
-  (p) += 2;\
-} while (0)
-
-#define GET_4BYTE_INT_INC(type,i,p) do {\
-  (i) = (type )(((unsigned int )((p)[0]) << B_SHIFT*3) | \
-		((unsigned int )((p)[1]) << B_SHIFT*2) | \
-		((unsigned int )((p)[2]) << B_SHIFT  ) | \
-		((unsigned int )((p)[3])             )); \
-  (p) += 4;\
-} while (0)
-
-#define GET_8BYTE_INT_INC(type,i,p) do {\
-  (i) = (type )(((unsigned long )((p)[0]) << B_SHIFT*7) | \
-		((unsigned long )((p)[1]) << B_SHIFT*6) | \
-		((unsigned long )((p)[2]) << B_SHIFT*5) | \
-		((unsigned long )((p)[3]) << B_SHIFT*4) | \
-		((unsigned long )((p)[4]) << B_SHIFT*3) | \
-		((unsigned long )((p)[5]) << B_SHIFT*2) | \
-		((unsigned long )((p)[6]) << B_SHIFT  ) | \
-		((unsigned long )((p)[7])             )); \
-  (p) += 8;\
-} while (0)
-
-#if SIZEOF_SHORT == 2
-#define GET_SHORT_INC(i,p)     GET_2BYTE_INT_INC(short,i,p)
-#define SERIALIZE_SHORT(i,p)   SERIALIZE_2BYTE_INT(i,p)
-#elif SIZEOF_SHORT == 4
-#define GET_SHORT_INC(i,p)     GET_4BYTE_INT_INC(short,i,p)
-#define SERIALIZE_SHORT(i,p)   SERIALIZE_4BYTE_INT(i,p)
-#elif SIZEOF_SHORT == 8
-#define GET_SHORT_INC(i,p)     GET_8BYTE_INT_INC(short,i,p)
-#define SERIALIZE_SHORT(i,p)   SERIALIZE_8BYTE_INT(i,p)
-#endif
-
-#if SIZEOF_INT == 2
-#define GET_INT_INC(i,p)       GET_2BYTE_INT_INC(int,i,p)
-#define GET_UINT_INC(i,p)      GET_2BYTE_INT_INC(unsigned,i,p)
-#define SERIALIZE_INT(i,p)     SERIALIZE_2BYTE_INT(i,p)
-#define SERIALIZE_UINT(i,p)    SERIALIZE_2BYTE_INT(i,p)
-#elif SIZEOF_INT == 4
-#define GET_INT_INC(i,p)       GET_4BYTE_INT_INC(int,i,p)
-#define GET_UINT_INC(i,p)      GET_4BYTE_INT_INC(unsigned,i,p)
-#define SERIALIZE_INT(i,p)     SERIALIZE_4BYTE_INT(i,p)
-#define SERIALIZE_UINT(i,p)    SERIALIZE_4BYTE_INT(i,p)
-#elif SIZEOF_INT == 8
-#define GET_INT_INC(i,p)       GET_8BYTE_INT_INC(int,i,p)
-#define GET_UINT_INC(i,p)      GET_8BYTE_INT_INC(unsigned,i,p)
-#define SERIALIZE_INT(i,p)     SERIALIZE_8BYTE_INT(i,p)
-#define SERIALIZE_UINT(i,p)    SERIALIZE_8BYTE_INT(i,p)
-#endif
 
 #endif /* PLATFORM_UNALIGNED_WORD_ACCESS */
 
@@ -383,7 +315,6 @@ typedef unsigned int  BitStatusType;
 #define IS_EXTEND(option)         ((option) & ONIG_OPTION_EXTEND)
 #define IS_FIND_LONGEST(option)   ((option) & ONIG_OPTION_FIND_LONGEST)
 #define IS_FIND_NOT_EMPTY(option) ((option) & ONIG_OPTION_FIND_NOT_EMPTY)
-#define IS_POSIXLINE(option)      (IS_SINGLELINE(option) && IS_MULTILINE(option))
 #define IS_FIND_CONDITION(option) ((option) & \
           (ONIG_OPTION_FIND_LONGEST | ONIG_OPTION_FIND_NOT_EMPTY))
 #define IS_NOTBOL(option)         ((option) & ONIG_OPTION_NOTBOL)
@@ -597,9 +528,6 @@ enum OpCode {
   OP_MEMORY_END,
   OP_MEMORY_END_REC,      /* push marker to stack */
 
-  OP_SET_OPTION_PUSH,    /* set option and push recover option */
-  OP_SET_OPTION,         /* set option */
-
   OP_FAIL,               /* pop stack and move */
   OP_JUMP,
   OP_PUSH,
@@ -634,7 +562,11 @@ enum OpCode {
   OP_STATE_CHECK_PUSH_OR_JUMP, /* check ok -> push, else jump  */
   OP_STATE_CHECK,              /* check only */
   OP_STATE_CHECK_ANYCHAR_STAR,
-  OP_STATE_CHECK_ANYCHAR_ML_STAR
+  OP_STATE_CHECK_ANYCHAR_ML_STAR,
+
+  /* no need: IS_DYNAMIC_OPTION() == 0 */
+  OP_SET_OPTION_PUSH,    /* set option and push recover option */
+  OP_SET_OPTION          /* set option */
 };
 
 typedef int RelAddrType;
@@ -656,22 +588,6 @@ typedef void* PointerType;
 #define SIZE_CODE_POINT       sizeof(OnigCodePoint)
 #define SIZE_POINTER          sizeof(PointerType)
 
-
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
-
-#define PLATFORM_GET_INC(val,p,type) do{\
-  val  = *(type* )p;\
-  (p) += sizeof(type);\
-} while(0)
-
-#else
-
-#define PLATFORM_GET_INC(val,p,type) do{\
-  xmemcpy(&val, (p), sizeof(type));\
-  (p) += sizeof(type);\
-} while(0)
-
-#endif  /* PLATFORM_UNALIGNED_WORD_ACCESS */
 
 #define GET_RELADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, RelAddrType)
 #define GET_ABSADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, AbsAddrType)
@@ -767,21 +683,33 @@ typedef void* PointerType;
     ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS | ONIG_SYN_ALLOW_INVALID_INTERVAL | \
     ONIG_SYN_BACKSLASH_ESCAPE_IN_CC | ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC )
 
+
+#define NCCLASS_FLAGS(cc)           ((cc)->flags)
+#define NCCLASS_FLAG_SET(cc,flag)    (NCCLASS_FLAGS(cc) |= (flag))
+#define NCCLASS_FLAG_CLEAR(cc,flag)  (NCCLASS_FLAGS(cc) &= ~(flag))
+#define IS_NCCLASS_FLAG_ON(cc,flag) ((NCCLASS_FLAGS(cc) & (flag)) != 0)
+
 /* cclass node */
-#define CCLASS_FLAG_NOT            1
-#define CCLASS_FLAG_SHARE         (1<<1)
+#define FLAG_NCCLASS_NOT           (1<<0)
+#define FLAG_NCCLASS_SHARE         (1<<1)
 
-#define CCLASS_SET_NOT(cc)      (cc)->flags |=  CCLASS_FLAG_NOT
-#define CCLASS_SET_SHARE(cc)    (cc)->flags |=  CCLASS_FLAG_SHARE
-#define CCLASS_CLEAR_NOT(cc)    (cc)->flags &= ~CCLASS_FLAG_NOT
-
-#define IS_CCLASS_NOT(cc)     (((cc)->flags & CCLASS_FLAG_NOT)   != 0)
-#define IS_CCLASS_SHARE(cc)   (((cc)->flags & CCLASS_FLAG_SHARE) != 0)
+#define NCCLASS_SET_NOT(nd)     NCCLASS_FLAG_SET(nd, FLAG_NCCLASS_NOT)
+#define NCCLASS_SET_SHARE(nd)   NCCLASS_FLAG_SET(nd, FLAG_NCCLASS_SHARE)
+#define NCCLASS_CLEAR_NOT(nd)   NCCLASS_FLAG_CLEAR(nd, FLAG_NCCLASS_NOT)
+#define IS_NCCLASS_NOT(nd)      IS_NCCLASS_FLAG_ON(nd, FLAG_NCCLASS_NOT)
+#define IS_NCCLASS_SHARE(nd)    IS_NCCLASS_FLAG_ON(nd, FLAG_NCCLASS_SHARE)
 
 typedef struct {
-  int    flags;
+  int type;
+  /* struct _Node* next; */
+  /* unsigned int flags; */
+} NodeBase;
+
+typedef struct {
+  NodeBase base;
+  unsigned int flags;
   BitSet bs;
-  BBuf*  mbuf;     /* multi-byte info or NULL */
+  BBuf*  mbuf;   /* multi-byte info or NULL */
 } CClassNode;
 
 typedef long OnigStackIndex;
@@ -873,6 +801,7 @@ extern void onig_chain_reduce P_((regex_t* reg));
 extern void onig_chain_link_add P_((regex_t* to, regex_t* add));
 extern void onig_transfer P_((regex_t* to, regex_t* from));
 extern int  onig_is_code_in_cc P_((OnigEncoding enc, OnigCodePoint code, CClassNode* cc));
+extern int  onig_is_code_in_cc_len P_((int enclen, OnigCodePoint code, CClassNode* cc));
 
 /* strend hash */
 typedef void hash_table_type;

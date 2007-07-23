@@ -113,7 +113,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(ONIG_ENCODING_EUC_JP, buf) != (p - buf))
-    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif  
   return p - buf;
 }
@@ -234,7 +234,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype)
 
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
     if (ctype >= (unsigned int )PropertyListNum)
-      return ONIGENCERR_TYPE_BUG;
+      return ONIGENC_ERR_TYPE_BUG;
 
     return onig_is_in_code_range((UChar* )PropertyList[ctype], code);
   }
@@ -256,7 +256,7 @@ get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
 
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
     if (ctype >= PropertyListNum)
-      return ONIGENCERR_TYPE_BUG;
+      return ONIGENC_ERR_TYPE_BUG;
 
     *ranges = PropertyList[ctype];
     return 0;

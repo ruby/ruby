@@ -10756,7 +10756,7 @@ onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype)
   }
 
   if (ctype >= CODE_RANGES_NUM) {
-    return ONIGENCERR_TYPE_BUG;
+    return ONIGENC_ERR_TYPE_BUG;
   }
 
   if (CodeRangeTableInited == 0) init_code_range_array();
@@ -10769,7 +10769,7 @@ extern int
 onigenc_unicode_ctype_code_range(int ctype, const OnigCodePoint* ranges[])
 {
   if (ctype >= CODE_RANGES_NUM) {
-    return ONIGENCERR_TYPE_BUG;
+    return ONIGENC_ERR_TYPE_BUG;
   }
 
   if (CodeRangeTableInited == 0) init_code_range_array();

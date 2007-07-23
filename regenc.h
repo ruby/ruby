@@ -4,7 +4,7 @@
   regenc.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,10 +56,10 @@ typedef struct {
 #endif
 
 /* error codes */
-#define ONIGENCERR_MEMORY                                         -5
-#define ONIGENCERR_TYPE_BUG                                       -6
-#define ONIGENCERR_INVALID_WIDE_CHAR_VALUE                      -400
-#define ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
+#define ONIGENC_ERR_MEMORY                                      -5
+#define ONIGENC_ERR_TYPE_BUG                                    -6
+#define ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE                   -400
+#define ONIGENC_ERR_TOO_BIG_WIDE_CHAR_VALUE                   -401
 
 #define ONIG_IS_NULL(p)                    (((void*)(p)) == (void*)0)
 #define ONIG_IS_NOT_NULL(p)                (((void*)(p)) != (void*)0)
@@ -96,10 +96,9 @@ typedef struct {
 } PosixBracketEntryType;
 
 
+/* #define USE_CRNL_AS_LINE_TERMINATOR */
 #define USE_UNICODE_PROPERTIES
 /* #define USE_UNICODE_CASE_FOLD_TURKISH_AZERI */
-
-/* following must not use with USE_CRNL_AS_LINE_TERMINATOR */
 /* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTF#18 */
 
 
@@ -163,7 +162,7 @@ onigenc_step P_((OnigEncoding enc, const UChar* p, const UChar* end, int n));
 extern int  onig_is_in_code_range P_((const UChar* p, OnigCodePoint code));
 
 ONIG_EXTERN OnigEncoding  OnigEncDefaultCharEncoding;
-ONIG_EXTERN const UChar* OnigEncAsciiToLowerCaseTable;
+ONIG_EXTERN const UChar  OnigEncAsciiToLowerCaseTable[];
 ONIG_EXTERN const UChar  OnigEncAsciiToUpperCaseTable[];
 ONIG_EXTERN const unsigned short OnigEncAsciiCtypeTable[];
 

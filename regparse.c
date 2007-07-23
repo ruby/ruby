@@ -109,7 +109,7 @@ bbuf_clone(BBuf** rto, BBuf* from)
   BBuf *to;
 
   *rto = to = (BBuf* )xmalloc(sizeof(BBuf));
-  CHECK_NULL_RETURN_VAL(to, ONIGERR_MEMORY);
+  CHECK_NULL_RETURN_MEMERR(to);
   r = BBUF_INIT(to, from->alloc);
   if (r != 0) return r;
   to->used = from->used;
@@ -300,7 +300,7 @@ typedef struct {
   int*   back_refs;
 } NameEntry;
 
-#ifdef USE_ST_HASH_TABLE
+#ifdef USE_ST_LIBRARY
 
 #include "ruby/st.h"
 
@@ -309,52 +309,8 @@ typedef struct {
   unsigned char* end;
 } st_strend_key;
 
-static int strend_cmp(st_strend_key*, st_strend_key*);
-static int strend_hash(st_strend_key*);
-
-static const struct st_hash_type type_strend_hash = {
-  strend_cmp,
-  strend_hash,
-};
-
-extern hash_table_type*
-onig_st_init_strend_table_with_size(int size)
-{
-  return (hash_table_type* )onig_st_init_table_with_size(&type_strend_hash,
-							 size);
-}
-
-extern int
-onig_st_lookup_strend(hash_table_type* table, const UChar* str_key,
-		      const UChar* end_key, hash_data_type *value)
-{
-  st_strend_key key;
-
-  key.s   = (unsigned char* )str_key;
-  key.end = (unsigned char* )end_key;
-
-  return onig_st_lookup(table, (st_data_t )(&key), value);
-}
-
-extern int
-onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
-		      const UChar* end_key, hash_data_type value)
-{
-  st_strend_key* key;
-  int result;
-
-  key = (st_strend_key* )xmalloc(sizeof(st_strend_key));
-  key->s   = (unsigned char* )str_key;
-  key->end = (unsigned char* )end_key;
-  result = onig_st_insert(table, (st_data_t )key, value);
-  if (result) {
-    xfree(key);
-  }
-  return result;
-}
-
 static int
-strend_cmp(st_strend_key* x, st_strend_key* y)
+str_end_cmp(st_strend_key* x, st_strend_key* y)
 {
   unsigned char *p, *q;
   int c;
@@ -375,12 +331,11 @@ strend_cmp(st_strend_key* x, st_strend_key* y)
 }
 
 static int
-strend_hash(st_strend_key* x)
+str_end_hash(st_strend_key* x)
 {
-  int val;
-  unsigned char *p;
+  UChar *p;
+  int val = 0;
 
-  val = 0;
   p = x->s;
   while (p < x->end) {
     val = val * 997 + (int )*p++;
@@ -388,6 +343,48 @@ strend_hash(st_strend_key* x)
 
   return val + (val >> 5);
 }
+
+extern hash_table_type*
+onig_st_init_strend_table_with_size(int size)
+{
+  static struct st_hash_type hashType = {
+    str_end_cmp,
+    str_end_hash,
+  };
+
+  return (hash_table_type* )
+           onig_st_init_table_with_size(&hashType, size);
+}
+
+extern int
+onig_st_lookup_strend(hash_table_type* table, const UChar* str_key,
+		      const UChar* end_key, hash_data_type *value)
+{
+  st_strend_key key;
+
+  key.s   = (UChar* )str_key;
+  key.end = (UChar* )end_key;
+
+  return onig_st_lookup(table, (st_data_t )(&key), value);
+}
+
+extern int
+onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
+		      const UChar* end_key, hash_data_type value)
+{
+  st_strend_key* key;
+  int result;
+
+  key = (st_strend_key* )xmalloc(sizeof(st_strend_key));
+  key->s   = (UChar* )str_key;
+  key->end = (UChar* )end_key;
+  result = onig_st_insert(table, (st_data_t )key, value);
+  if (result) {
+    xfree(key);
+  }
+  return result;
+}
+
 
 typedef st_table  NameTable;
 typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
@@ -561,7 +558,7 @@ onig_number_of_names(regex_t* reg)
     return 0;
 }
 
-#else  /* USE_ST_HASH_TABLE */
+#else  /* USE_ST_LIBRARY */
 
 #define INIT_NAMES_ALLOC_NUM    8
 
@@ -697,7 +694,7 @@ onig_number_of_names(regex_t* reg)
     return 0;
 }
 
-#endif /* else USE_ST_HASH_TABLE */
+#endif /* else USE_ST_LIBRARY */
 
 static int
 name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
@@ -711,13 +708,13 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
 
   e = name_find(reg, name, name_end);
   if (IS_NULL(e)) {
-#ifdef USE_ST_HASH_TABLE
+#ifdef USE_ST_LIBRARY
     if (IS_NULL(t)) {
       t = onig_st_init_strend_table_with_size(5);
       reg->name_table = (void* )t;
     }
     e = (NameEntry* )xmalloc(sizeof(NameEntry));
-    CHECK_NULL_RETURN_VAL(e, ONIGERR_MEMORY);
+    CHECK_NULL_RETURN_MEMERR(e);
 
     e->name = strdup_with_null(reg->enc, name, name_end);
     if (IS_NULL(e->name)) return ONIGERR_MEMORY;
@@ -734,7 +731,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
     if (IS_NULL(t)) {
       alloc = INIT_NAMES_ALLOC_NUM;
       t = (NameTable* )xmalloc(sizeof(NameTable));
-      CHECK_NULL_RETURN_VAL(t, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(t);
       t->e     = NULL;
       t->alloc = 0;
       t->num   = 0;
@@ -753,7 +750,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
 
       alloc = t->alloc * 2;
       t->e = (NameEntry* )xrealloc(t->e, sizeof(NameEntry) * alloc);
-      CHECK_NULL_RETURN_VAL(t->e, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(t->e);
       t->alloc = alloc;
 
     clear:
@@ -787,7 +784,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
     if (e->back_num == 2) {
       alloc = INIT_NAME_BACKREFS_ALLOC_NUM;
       e->back_refs = (int* )xmalloc(sizeof(int) * alloc);
-      CHECK_NULL_RETURN_VAL(e->back_refs, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(e->back_refs);
       e->back_alloc = alloc;
       e->back_refs[0] = e->back_ref1;
       e->back_refs[1] = backref;
@@ -796,7 +793,7 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
       if (e->back_num > e->back_alloc) {
 	alloc = e->back_alloc * 2;
 	e->back_refs = (int* )xrealloc(e->back_refs, sizeof(int) * alloc);
-	CHECK_NULL_RETURN_VAL(e->back_refs, ONIGERR_MEMORY);
+	CHECK_NULL_RETURN_MEMERR(e->back_refs);
 	e->back_alloc = alloc;
       }
       e->back_refs[e->back_num - 1] = backref;
@@ -950,7 +947,7 @@ scan_env_add_mem_entry(ScanEnv* env)
 	alloc = env->mem_alloc * 2;
 	p = (Node** )xrealloc(env->mem_nodes_dynamic, sizeof(Node*) * alloc);
       }
-      CHECK_NULL_RETURN_VAL(p, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(p);
 
       for (i = env->num_mem + 1; i < alloc; i++)
 	p[i] = NULL_NODE;
@@ -975,7 +972,7 @@ scan_env_set_mem_node(ScanEnv* env, int num, Node* node)
 }
 
 
-#ifdef USE_RECYCLE_NODE
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
 typedef struct _FreeNode {
   struct _FreeNode* next;
 } FreeNode;
@@ -990,21 +987,20 @@ onig_node_free(Node* node)
   if (IS_NULL(node)) return ;
 
   switch (NTYPE(node)) {
-  case N_STRING:
-    if (NSTRING(node).capa != 0 &&
-	IS_NOT_NULL(NSTRING(node).s) && NSTRING(node).s != NSTRING(node).buf) {
-      xfree(NSTRING(node).s);
+  case NT_STR:
+    if (NSTR(node)->capa != 0 &&
+	IS_NOT_NULL(NSTR(node)->s) && NSTR(node)->s != NSTR(node)->buf) {
+      xfree(NSTR(node)->s);
     }
     break;
 
-  case N_LIST:
-  case N_ALT:
-    onig_node_free(NCONS(node).left);
-    /* onig_node_free(NCONS(node).right); */
+  case NT_LIST:
+  case NT_ALT:
+    onig_node_free(NCAR(node));
     {
-      Node* next_node = NCONS(node).right;
+      Node* next_node = NCDR(node);
 
-#ifdef USE_RECYCLE_NODE
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
       {
 	FreeNode* n = (FreeNode* )node;
 
@@ -1021,38 +1017,38 @@ onig_node_free(Node* node)
     }
     break;
 
-  case N_CCLASS:
+  case NT_CCLASS:
     {
-      CClassNode* cc = &(NCCLASS(node));
+      CClassNode* cc = NCCLASS(node);
 
-      if (IS_CCLASS_SHARE(cc)) return ;
+      if (IS_NCCLASS_SHARE(cc)) return ;
       if (cc->mbuf)
         bbuf_free(cc->mbuf);
     }
     break;
 
-  case N_QUANTIFIER:
-    if (NQUANTIFIER(node).target)
-      onig_node_free(NQUANTIFIER(node).target);
+  case NT_QTFR:
+    if (NQTFR(node)->target)
+      onig_node_free(NQTFR(node)->target);
     break;
 
-  case N_EFFECT:
-    if (NEFFECT(node).target)
-      onig_node_free(NEFFECT(node).target);
+  case NT_ENCLOSE:
+    if (NENCLOSE(node)->target)
+      onig_node_free(NENCLOSE(node)->target);
     break;
 
-  case N_BACKREF:
-    if (IS_NOT_NULL(NBACKREF(node).back_dynamic))
-      xfree(NBACKREF(node).back_dynamic);
+  case NT_BREF:
+    if (IS_NOT_NULL(NBREF(node)->back_dynamic))
+      xfree(NBREF(node)->back_dynamic);
     break;
 
-  case N_ANCHOR:
-    if (NANCHOR(node).target)
-      onig_node_free(NANCHOR(node).target);
+  case NT_ANCHOR:
+    if (NANCHOR(node)->target)
+      onig_node_free(NANCHOR(node)->target);
     break;
   }
 
-#ifdef USE_RECYCLE_NODE
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
   {
     FreeNode* n = (FreeNode* )node;
 
@@ -1066,7 +1062,7 @@ onig_node_free(Node* node)
 #endif
 }
 
-#ifdef USE_RECYCLE_NODE
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
 extern int
 onig_free_node_list(void)
 {
@@ -1088,7 +1084,7 @@ node_new(void)
 {
   Node* node;
 
-#ifdef USE_RECYCLE_NODE
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
   THREAD_ATOMIC_START;
   if (IS_NOT_NULL(FreeNodeList)) {
     node = (Node* )FreeNodeList;
@@ -1100,6 +1096,7 @@ node_new(void)
 #endif
 
   node = (Node* )xmalloc(sizeof(Node));
+  /* xmemset(node, 0, sizeof(Node)); */
   return node;
 }
 
@@ -1108,6 +1105,7 @@ static void
 initialize_cclass(CClassNode* cc)
 {
   BITSET_CLEAR(cc->bs);
+  /* cc->base.flags = 0; */
   cc->flags = 0;
   cc->mbuf  = NULL;
 }
@@ -1117,9 +1115,9 @@ node_new_cclass(void)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_CCLASS;
 
-  initialize_cclass(&(NCCLASS(node)));
+  SET_NTYPE(node, NT_CCLASS);
+  initialize_cclass(NCCLASS(node));
   return node;
 }
 
@@ -1131,13 +1129,11 @@ node_new_cclass_by_codepoint_range(int not, OnigCodePoint sb_out,
   CClassNode* cc;
   OnigCodePoint j;
 
-  Node* node = node_new();
+  Node* node = node_new_cclass();
   CHECK_NULL_RETURN(node);
-  node->type = N_CCLASS;
 
-  cc = &(NCCLASS(node));
-  cc->flags = 0;
-  if (not != 0) CCLASS_SET_NOT(cc);
+  cc = NCCLASS(node);
+  if (not != 0) NCCLASS_SET_NOT(cc);
 
   BITSET_CLEAR(cc->bs);
   if (sb_out > 0 && IS_NOT_NULL(ranges)) {
@@ -1164,7 +1160,7 @@ node_new_cclass_by_codepoint_range(int not, OnigCodePoint sb_out,
     if (n == 0) goto is_null;
 
     bbuf = (BBuf* )xmalloc(sizeof(BBuf));
-    CHECK_NULL_RETURN_VAL(bbuf, NULL);
+    CHECK_NULL_RETURN(bbuf);
     bbuf->alloc = n + 1;
     bbuf->used  = n + 1;
     bbuf->p     = (UChar* )((void* )ranges);
@@ -1180,9 +1176,10 @@ node_new_ctype(int type, int not)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_CTYPE;
-  NCTYPE(node).ctype = type;
-  NCTYPE(node).not   = not;
+
+  SET_NTYPE(node, NT_CTYPE);
+  NCTYPE(node)->ctype = type;
+  NCTYPE(node)->not   = not;
   return node;
 }
 
@@ -1191,7 +1188,8 @@ node_new_anychar(void)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_ANYCHAR;
+
+  SET_NTYPE(node, NT_CANY);
   return node;
 }
 
@@ -1200,9 +1198,10 @@ node_new_list(Node* left, Node* right)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_LIST;
-  NCONS(node).left  = left;
-  NCONS(node).right = right;
+
+  SET_NTYPE(node, NT_LIST);
+  NCAR(node)  = left;
+  NCDR(node) = right;
   return node;
 }
 
@@ -1221,10 +1220,10 @@ onig_node_list_add(Node* list, Node* x)
   if (IS_NULL(n)) return NULL_NODE;
 
   if (IS_NOT_NULL(list)) {
-    while (IS_NOT_NULL(NCONS(list).right))
-      list = NCONS(list).right;
+    while (IS_NOT_NULL(NCDR(list)))
+      list = NCDR(list);
 
-    NCONS(list).right = n;
+    NCDR(list) = n;
   }
 
   return n;
@@ -1235,9 +1234,10 @@ onig_node_new_alt(Node* left, Node* right)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_ALT;
-  NCONS(node).left  = left;
-  NCONS(node).right = right;
+
+  SET_NTYPE(node, NT_ALT);
+  NCAR(node)  = left;
+  NCDR(node) = right;
   return node;
 }
 
@@ -1246,10 +1246,11 @@ onig_node_new_anchor(int type)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_ANCHOR;
-  NANCHOR(node).type     = type;
-  NANCHOR(node).target   = NULL;
-  NANCHOR(node).char_len = -1;
+
+  SET_NTYPE(node, NT_ANCHOR);
+  NANCHOR(node)->type     = type;
+  NANCHOR(node)->target   = NULL;
+  NANCHOR(node)->char_len = -1;
   return node;
 }
 
@@ -1264,31 +1265,32 @@ node_new_backref(int back_num, int* backrefs, int by_name,
   Node* node = node_new();
 
   CHECK_NULL_RETURN(node);
-  node->type = N_BACKREF;
-  NBACKREF(node).state    = 0;
-  NBACKREF(node).back_num = back_num;
-  NBACKREF(node).back_dynamic = (int* )NULL;
+
+  SET_NTYPE(node, NT_BREF);
+  NBREF(node)->state    = 0;
+  NBREF(node)->back_num = back_num;
+  NBREF(node)->back_dynamic = (int* )NULL;
   if (by_name != 0)
-    NBACKREF(node).state |= NST_NAME_REF;
+    NBREF(node)->state |= NST_NAME_REF;
 
 #ifdef USE_BACKREF_AT_LEVEL
   if (exist_level != 0) {
-    NBACKREF(node).state |= NST_NEST_LEVEL;
-    NBACKREF(node).nest_level  = nest_level;
+    NBREF(node)->state |= NST_NEST_LEVEL;
+    NBREF(node)->nest_level  = nest_level;
   }
 #endif
 
   for (i = 0; i < back_num; i++) {
     if (backrefs[i] <= env->num_mem &&
 	IS_NULL(SCANENV_MEM_NODES(env)[backrefs[i]])) {
-      NBACKREF(node).state |= NST_RECURSION;   /* /...(\1).../ */
+      NBREF(node)->state |= NST_RECURSION;   /* /...(\1).../ */
       break;
     }
   }
 
   if (back_num <= NODE_BACKREFS_SIZE) {
     for (i = 0; i < back_num; i++)
-      NBACKREF(node).back_static[i] = backrefs[i];
+      NBREF(node)->back_static[i] = backrefs[i];
   }
   else {
     int* p = (int* )xmalloc(sizeof(int) * back_num);
@@ -1296,7 +1298,7 @@ node_new_backref(int back_num, int* backrefs, int by_name,
       onig_node_free(node);
       return NULL;
     }
-    NBACKREF(node).back_dynamic = p;
+    NBREF(node)->back_dynamic = p;
     for (i = 0; i < back_num; i++)
       p[i] = backrefs[i];
   }
@@ -1310,12 +1312,12 @@ node_new_call(UChar* name, UChar* name_end)
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
 
-  node->type = N_CALL;
-  NCALL(node).state    = 0;
-  NCALL(node).ref_num  = CALLNODE_REFNUM_UNDEF;
-  NCALL(node).target   = NULL_NODE;
-  NCALL(node).name     = name;
-  NCALL(node).name_end = name_end;
+  SET_NTYPE(node, NT_CALL);
+  NCALL(node)->state    = 0;
+  NCALL(node)->ref_num  = CALLNODE_REFNUM_UNDEF;
+  NCALL(node)->target   = NULL_NODE;
+  NCALL(node)->name     = name;
+  NCALL(node)->name_end = name_end;
   return node;
 }
 #endif
@@ -1325,58 +1327,60 @@ node_new_quantifier(int lower, int upper, int by_number)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_QUANTIFIER;
-  NQUANTIFIER(node).state  = 0;
-  NQUANTIFIER(node).target = NULL;
-  NQUANTIFIER(node).lower  = lower;
-  NQUANTIFIER(node).upper  = upper;
-  NQUANTIFIER(node).greedy = 1;
-  NQUANTIFIER(node).target_empty_info = NQ_TARGET_ISNOT_EMPTY;
-  NQUANTIFIER(node).head_exact        = NULL_NODE;
-  NQUANTIFIER(node).next_head_exact   = NULL_NODE;
-  NQUANTIFIER(node).is_refered        = 0;
+
+  SET_NTYPE(node, NT_QTFR);
+  NQTFR(node)->state  = 0;
+  NQTFR(node)->target = NULL;
+  NQTFR(node)->lower  = lower;
+  NQTFR(node)->upper  = upper;
+  NQTFR(node)->greedy = 1;
+  NQTFR(node)->target_empty_info = NQ_TARGET_ISNOT_EMPTY;
+  NQTFR(node)->head_exact        = NULL_NODE;
+  NQTFR(node)->next_head_exact   = NULL_NODE;
+  NQTFR(node)->is_refered        = 0;
   if (by_number != 0)
-    NQUANTIFIER(node).state |= NST_BY_NUMBER;
+    NQTFR(node)->state |= NST_BY_NUMBER;
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
-  NQUANTIFIER(node).comb_exp_check_num = 0;
+  NQTFR(node)->comb_exp_check_num = 0;
 #endif
 
   return node;
 }
 
 static Node*
-node_new_effect(int type)
+node_new_enclose(int type)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
-  node->type = N_EFFECT;
-  NEFFECT(node).type      = type;
-  NEFFECT(node).state     =  0;
-  NEFFECT(node).regnum    =  0;
-  NEFFECT(node).option    =  0;
-  NEFFECT(node).target    = NULL;
-  NEFFECT(node).call_addr = -1;
-  NEFFECT(node).opt_count =  0;
+
+  SET_NTYPE(node, NT_ENCLOSE);
+  NENCLOSE(node)->type      = type;
+  NENCLOSE(node)->state     =  0;
+  NENCLOSE(node)->regnum    =  0;
+  NENCLOSE(node)->option    =  0;
+  NENCLOSE(node)->target    = NULL;
+  NENCLOSE(node)->call_addr = -1;
+  NENCLOSE(node)->opt_count =  0;
   return node;
 }
 
 extern Node*
-onig_node_new_effect(int type)
+onig_node_new_enclose(int type)
 {
-  return node_new_effect(type);
+  return node_new_enclose(type);
 }
 
 static Node*
-node_new_effect_memory(OnigOptionType option, int is_named)
+node_new_enclose_memory(OnigOptionType option, int is_named)
 {
-  Node* node = node_new_effect(EFFECT_MEMORY);
+  Node* node = node_new_enclose(ENCLOSE_MEMORY);
   CHECK_NULL_RETURN(node);
   if (is_named != 0)
-    SET_EFFECT_STATUS(node, NST_NAMED_GROUP);
+    SET_ENCLOSE_STATUS(node, NST_NAMED_GROUP);
 
 #ifdef USE_SUBEXP_CALL
-  NEFFECT(node).option = option;
+  NENCLOSE(node)->option = option;
 #endif
   return node;
 }
@@ -1384,9 +1388,9 @@ node_new_effect_memory(OnigOptionType option, int is_named)
 static Node*
 node_new_option(OnigOptionType option)
 {
-  Node* node = node_new_effect(EFFECT_OPTION);
+  Node* node = node_new_enclose(ENCLOSE_OPTION);
   CHECK_NULL_RETURN(node);
-  NEFFECT(node).option = option;
+  NENCLOSE(node)->option = option;
   return node;
 }
 
@@ -1396,31 +1400,31 @@ onig_node_str_cat(Node* node, const UChar* s, const UChar* end)
   int addlen = end - s;
 
   if (addlen > 0) {
-    int len  = NSTRING(node).end - NSTRING(node).s;
+    int len  = NSTR(node)->end - NSTR(node)->s;
 
-    if (NSTRING(node).capa > 0 || (len + addlen > NODE_STR_BUF_SIZE - 1)) {
+    if (NSTR(node)->capa > 0 || (len + addlen > NODE_STR_BUF_SIZE - 1)) {
       UChar* p;
       int capa = len + addlen + NODE_STR_MARGIN;
 
-      if (capa <= NSTRING(node).capa) {
-	onig_strcpy(NSTRING(node).s + len, s, end);
+      if (capa <= NSTR(node)->capa) {
+	onig_strcpy(NSTR(node)->s + len, s, end);
       }
       else {
-	if (NSTRING(node).s == NSTRING(node).buf)
-	  p = strcat_capa_from_static(NSTRING(node).s, NSTRING(node).end,
+	if (NSTR(node)->s == NSTR(node)->buf)
+	  p = strcat_capa_from_static(NSTR(node)->s, NSTR(node)->end,
 				      s, end, capa);
 	else
-	  p = strcat_capa(NSTRING(node).s, NSTRING(node).end, s, end, capa);
+	  p = strcat_capa(NSTR(node)->s, NSTR(node)->end, s, end, capa);
 
-	CHECK_NULL_RETURN_VAL(p, ONIGERR_MEMORY);
-	NSTRING(node).s    = p;
-	NSTRING(node).capa = capa;
+	CHECK_NULL_RETURN_MEMERR(p);
+	NSTR(node)->s    = p;
+	NSTR(node)->capa = capa;
       }
     }
     else {
-      onig_strcpy(NSTRING(node).s + len, s, end);
+      onig_strcpy(NSTR(node)->s + len, s, end);
     }
-    NSTRING(node).end = NSTRING(node).s + len + addlen;
+    NSTR(node)->end = NSTR(node)->s + len + addlen;
   }
 
   return 0;
@@ -1445,26 +1449,25 @@ node_str_cat_char(Node* node, UChar c)
 extern void
 onig_node_conv_to_str_node(Node* node, int flag)
 {
-  node->type = N_STRING;
-
-  NSTRING(node).flag = flag;
-  NSTRING(node).capa = 0;
-  NSTRING(node).s    = NSTRING(node).buf;
-  NSTRING(node).end  = NSTRING(node).buf;
+  SET_NTYPE(node, NT_STR);
+  NSTR(node)->flag = flag;
+  NSTR(node)->capa = 0;
+  NSTR(node)->s    = NSTR(node)->buf;
+  NSTR(node)->end  = NSTR(node)->buf;
 }
 
 extern void
 onig_node_str_clear(Node* node)
 {
-  if (NSTRING(node).capa != 0 &&
-      IS_NOT_NULL(NSTRING(node).s) && NSTRING(node).s != NSTRING(node).buf) {
-    xfree(NSTRING(node).s);
+  if (NSTR(node)->capa != 0 &&
+      IS_NOT_NULL(NSTR(node)->s) && NSTR(node)->s != NSTR(node)->buf) {
+    xfree(NSTR(node)->s);
   }
 
-  NSTRING(node).capa = 0;
-  NSTRING(node).flag = 0;
-  NSTRING(node).s    = NSTRING(node).buf;
-  NSTRING(node).end  = NSTRING(node).buf;
+  NSTR(node)->capa = 0;
+  NSTR(node)->flag = 0;
+  NSTR(node)->s    = NSTR(node)->buf;
+  NSTR(node)->end  = NSTR(node)->buf;
 }
 
 static Node*
@@ -1473,11 +1476,11 @@ node_new_str(const UChar* s, const UChar* end)
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
 
-  node->type = N_STRING;
-  NSTRING(node).capa = 0;
-  NSTRING(node).flag = 0;
-  NSTRING(node).s    = NSTRING(node).buf;
-  NSTRING(node).end  = NSTRING(node).buf;
+  SET_NTYPE(node, NT_STR);
+  NSTR(node)->capa = 0;
+  NSTR(node)->flag = 0;
+  NSTR(node)->s    = NSTR(node)->buf;
+  NSTR(node)->end  = NSTR(node)->buf;
   if (onig_node_str_cat(node, s, end)) {
     onig_node_free(node);
     return NULL;
@@ -1659,7 +1662,7 @@ new_code_range(BBuf** pbuf)
   BBuf* bbuf;
 
   bbuf = *pbuf = (BBuf* )xmalloc(sizeof(BBuf));
-  CHECK_NULL_RETURN_VAL(*pbuf, ONIGERR_MEMORY);
+  CHECK_NULL_RETURN_MEMERR(*pbuf);
   r = BBUF_INIT(*pbuf, INIT_MULTI_BYTE_RANGE_SIZE);
   if (r) return r;
 
@@ -1958,7 +1961,7 @@ clear_not_flag_cclass(CClassNode* cc, OnigEncoding enc)
   BBuf *tbuf;
   int r;
 
-  if (IS_CCLASS_NOT(cc)) {
+  if (IS_NCCLASS_NOT(cc)) {
     bitset_invert(cc->bs);
 
     if (! ONIGENC_IS_SINGLEBYTE(enc)) {
@@ -1969,7 +1972,7 @@ clear_not_flag_cclass(CClassNode* cc, OnigEncoding enc)
       cc->mbuf = tbuf;
     }
 
-    CCLASS_CLEAR_NOT(cc);
+    NCCLASS_CLEAR_NOT(cc);
   }
 
   return 0;
@@ -1983,10 +1986,10 @@ and_cclass(CClassNode* dest, CClassNode* cc, OnigEncoding enc)
   BitSetRef bsr1, bsr2;
   BitSet bs1, bs2;
 
-  not1 = IS_CCLASS_NOT(dest);
+  not1 = IS_NCCLASS_NOT(dest);
   bsr1 = dest->bs;
   buf1 = dest->mbuf;
-  not2 = IS_CCLASS_NOT(cc);
+  not2 = IS_NCCLASS_NOT(cc);
   bsr2 = cc->bs;
   buf2 = cc->mbuf;
 
@@ -2041,10 +2044,10 @@ or_cclass(CClassNode* dest, CClassNode* cc, OnigEncoding enc)
   BitSetRef bsr1, bsr2;
   BitSet bs1, bs2;
 
-  not1 = IS_CCLASS_NOT(dest);
+  not1 = IS_NCCLASS_NOT(dest);
   bsr1 = dest->bs;
   buf1 = dest->mbuf;
-  not2 = IS_CCLASS_NOT(cc);
+  not2 = IS_NCCLASS_NOT(cc);
   bsr2 = cc->bs;
   buf2 = cc->mbuf;
 
@@ -2120,26 +2123,26 @@ static int
 is_invalid_quantifier_target(Node* node)
 {
   switch (NTYPE(node)) {
-  case N_ANCHOR:
+  case NT_ANCHOR:
     return 1;
     break;
 
-  case N_EFFECT:
-    if (NEFFECT(node).type == EFFECT_OPTION)
-      return is_invalid_quantifier_target(NEFFECT(node).target);
+  case NT_ENCLOSE:
+    /* allow enclosed elements */
+    /* return is_invalid_quantifier_target(NENCLOSE(node)->target); */
     break;
 
-  case N_LIST: /* ex. (?:\G\A)* */
+  case NT_LIST:
     do {
-      if (! is_invalid_quantifier_target(NCONS(node).left)) return 0;
-    } while (IS_NOT_NULL(node = NCONS(node).right));
+      if (! is_invalid_quantifier_target(NCAR(node))) return 0;
+    } while (IS_NOT_NULL(node = NCDR(node)));
     return 0;
     break;
 
-  case N_ALT:  /* ex. (?:abc|\A)* */
+  case NT_ALT:
     do {
-      if (is_invalid_quantifier_target(NCONS(node).left)) return 1;
-    } while (IS_NOT_NULL(node = NCONS(node).right));
+      if (is_invalid_quantifier_target(NCAR(node))) return 1;
+    } while (IS_NOT_NULL(node = NCDR(node)));
     break;
 
   default:
@@ -2150,7 +2153,7 @@ is_invalid_quantifier_target(Node* node)
 
 /* ?:0, *:1, +:2, ??:3, *?:4, +?:5 */
 static int
-popular_quantifier_num(QuantifierNode* q)
+popular_quantifier_num(QtfrNode* q)
 {
   if (q->greedy) {
     if (q->lower == 0) {
@@ -2197,16 +2200,17 @@ extern void
 onig_reduce_nested_quantifier(Node* pnode, Node* cnode)
 {
   int pnum, cnum;
-  QuantifierNode *p, *c;
+  QtfrNode *p, *c;
 
-  p = &(NQUANTIFIER(pnode));
-  c = &(NQUANTIFIER(cnode));
+  p = NQTFR(pnode);
+  c = NQTFR(cnode);
   pnum = popular_quantifier_num(p);
   cnum = popular_quantifier_num(c);
+  if (pnum < 0 || cnum < 0) return ;
 
   switch(ReduceTypeTable[cnum][pnum]) {
   case RQ_DEL:
-    *p = *c;
+    *pnode = *cnode;
     break;
   case RQ_A:
     p->target = c->target;
@@ -2705,7 +2709,7 @@ CC_ESC_WARN(ScanEnv* env, UChar *c)
 }
 
 static void
-CCEND_ESC_WARN(ScanEnv* env, UChar* c)
+CLOSE_BRACKET_WITHOUT_ESC_WARN(ScanEnv* env, UChar* c)
 {
   if (onig_warn == onig_null_warn) return ;
 
@@ -3568,7 +3572,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_LINE_ANCHOR)) break;
       tok->type = TK_ANCHOR;
       tok->u.subtype = (IS_SINGLELINE(env->option)
-			? ANCHOR_END_BUF : ANCHOR_END_LINE);
+			? ANCHOR_SEMI_END_BUF : ANCHOR_END_LINE);
       break;
 
     case '[':
@@ -3578,7 +3582,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 
     case ']':
       if (*src > env->pattern)   /* /].../ is allowed. */
-	CCEND_ESC_WARN(env, (UChar* )"]");
+	CLOSE_BRACKET_WITHOUT_ESC_WARN(env, (UChar* )"]");
       break;
 
     case '#':
@@ -3887,11 +3891,11 @@ parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
   if (ctype < 0) return ctype;
 
   *np = node_new_cclass();
-  CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
-  cc = &(NCCLASS(*np));
+  CHECK_NULL_RETURN_MEMERR(*np);
+  cc = NCCLASS(*np);
   r = add_ctype_to_cc(cc, ctype, 0, env);
   if (r != 0) return r;
-  if (tok->u.prop.not != 0) CCLASS_SET_NOT(cc);
+  if (tok->u.prop.not != 0) NCCLASS_SET_NOT(cc);
 
   return 0;
 }
@@ -4069,8 +4073,8 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
   }
 
   *np = node = node_new_cclass();
-  CHECK_NULL_RETURN_VAL(node, ONIGERR_MEMORY);
-  cc = &(NCCLASS(node));
+  CHECK_NULL_RETURN_MEMERR(node);
+  cc = NCCLASS(node);
 
   and_start = 0;
   state = CCS_START;
@@ -4258,7 +4262,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 
 	r = parse_char_class(&anode, tok, &p, end, env);
 	if (r != 0) goto cc_open_err;
-	acc = &(NCCLASS(anode));
+	acc = NCCLASS(anode);
 	r = or_cclass(cc, acc, env->enc);
 
 	onig_node_free(anode);
@@ -4323,10 +4327,10 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
   }
 
   if (neg != 0)
-    CCLASS_SET_NOT(cc);
+    NCCLASS_SET_NOT(cc);
   else
-    CCLASS_CLEAR_NOT(cc);
-  if (IS_CCLASS_NOT(cc) &&
+    NCCLASS_CLEAR_NOT(cc);
+  if (IS_NCCLASS_NOT(cc) &&
       IS_SYNTAX_BV(env->syntax, ONIG_SYN_NOT_NEWLINE_IN_NEGATIVE_CC)) {
     int is_empty;
 
@@ -4349,7 +4353,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
   return 0;
 
  err:
-  if (cc != &(NCCLASS(*np)))
+  if (cc != NCCLASS(*np))
     bbuf_free(cc->mbuf);
   onig_node_free(*np);
   return r;
@@ -4359,8 +4363,8 @@ static int parse_subexp(Node** top, OnigToken* tok, int term,
 			UChar** src, UChar* end, ScanEnv* env);
 
 static int
-parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
-	     ScanEnv* env)
+parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
+	      ScanEnv* env)
 {
   int r, num;
   int list_capture;
@@ -4399,7 +4403,7 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
       *np = onig_node_new_anchor(ANCHOR_PREC_READ_NOT);
       break;
     case '>':            /* (?>...) stop backtrack */
-      *np = node_new_effect(EFFECT_STOP_BACKTRACK);
+      *np = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
       break;
 
     case '\'':
@@ -4440,9 +4444,9 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 
 	  r = name_add(env->reg, name, name_end, num, env);
 	  if (r != 0) return r;
-	  *np = node_new_effect_memory(env->option, 1);
-	  CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
-	  NEFFECT(*np).regnum = num;
+	  *np = node_new_enclose_memory(env->option, 1);
+	  CHECK_NULL_RETURN_MEMERR(*np);
+	  NENCLOSE(*np)->regnum = num;
 	  if (list_capture != 0)
 	    BIT_STATUS_ON_AT_SIMPLE(env->capture_history, num);
 	  env->num_named++;
@@ -4470,8 +4474,8 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	  PUNFETCH;
 	}
 #endif
-	*np = node_new_effect_memory(env->option, 0);
-	CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+	*np = node_new_enclose_memory(env->option, 0);
+	CHECK_NULL_RETURN_MEMERR(*np);
 	num = scan_env_add_mem_entry(env);
 	if (num < 0) {
 	  onig_node_free(*np);
@@ -4481,7 +4485,7 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	  onig_node_free(*np);
 	  return ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY;
 	}
-	NEFFECT(*np).regnum = num;
+	NENCLOSE(*np)->regnum = num;
 	BIT_STATUS_ON_AT_SIMPLE(env->capture_history, num);
       }
       else {
@@ -4534,7 +4538,7 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 
 	  if (c == ')') {
 	    *np = node_new_option(option);
-	    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+	    CHECK_NULL_RETURN_MEMERR(*np);
 	    *src = p;
 	    return 2; /* option only */
 	  }
@@ -4548,8 +4552,8 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	    env->option = prev;
 	    if (r < 0) return r;
 	    *np = node_new_option(option);
-	    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
-	    NEFFECT(*np).target = target;
+	    CHECK_NULL_RETURN_MEMERR(*np);
+	    NENCLOSE(*np)->target = target;
 	    *src = p;
 	    return 0;
 	  }
@@ -4568,26 +4572,26 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
     if (ONIG_IS_OPTION_ON(env->option, ONIG_OPTION_DONT_CAPTURE_GROUP))
       goto group;
 
-    *np = node_new_effect_memory(env->option, 0);
-    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+    *np = node_new_enclose_memory(env->option, 0);
+    CHECK_NULL_RETURN_MEMERR(*np);
     num = scan_env_add_mem_entry(env);
     if (num < 0) return num;
-    NEFFECT(*np).regnum = num;
+    NENCLOSE(*np)->regnum = num;
   }
 
-  CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+  CHECK_NULL_RETURN_MEMERR(*np);
   r = fetch_token(tok, &p, end, env);
   if (r < 0) return r;
   r = parse_subexp(&target, tok, term, &p, end, env);
   if (r < 0) return r;
 
-  if (NTYPE(*np) == N_ANCHOR)
-    NANCHOR(*np).target = target;
+  if (NTYPE(*np) == NT_ANCHOR)
+    NANCHOR(*np)->target = target;
   else {
-    NEFFECT(*np).target = target;
-    if (NEFFECT(*np).type == EFFECT_MEMORY) {
+    NENCLOSE(*np)->target = target;
+    if (NENCLOSE(*np)->type == ENCLOSE_MEMORY) {
       /* Don't move this to previous of parse_subexp() */
-      r = scan_env_set_mem_node(env, NEFFECT(*np).regnum, *np);
+      r = scan_env_set_mem_node(env, NENCLOSE(*np)->regnum, *np);
       if (r != 0) return r;
     }
   }
@@ -4607,17 +4611,17 @@ static const char* ReduceQStr[] = {
 static int
 set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env)
 {
-  QuantifierNode* qn;
+  QtfrNode* qn;
 
-  qn = &(NQUANTIFIER(qnode));
+  qn = NQTFR(qnode);
   if (qn->lower == 1 && qn->upper == 1) {
     return 1;
   }
 
   switch (NTYPE(target)) {
-  case N_STRING:
+  case NT_STR:
     if (! group) {
-      StrNode* sn = &(NSTRING(target));
+      StrNode* sn = NSTR(target);
       if (str_node_can_be_split(sn, env->enc)) {
 	Node* n = str_node_split_last_char(sn, env->enc);
 	if (IS_NOT_NULL(n)) {
@@ -4628,10 +4632,10 @@ set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env)
     }
     break;
 
-  case N_QUANTIFIER:
+  case NT_QTFR:
     { /* check redundant double repeat. */
       /* verbose warn (?:.?)? etc... but not warn (.?)? etc... */
-      QuantifierNode* qnt = &(NQUANTIFIER(target));
+      QtfrNode* qnt   = NQTFR(target);
       int nestq_num   = popular_quantifier_num(qn);
       int targetq_num = popular_quantifier_num(qnt);
 
@@ -4718,16 +4722,16 @@ static int type_cclass_cmp(type_cclass_key* x, type_cclass_key* y)
 static int type_cclass_hash(type_cclass_key* key)
 {
   int i, val;
-  unsigned char *p;
+  UChar *p;
 
   val = 0;
 
-  p = (unsigned char* )&(key->enc);
+  p = (UChar* )&(key->enc);
   for (i = 0; i < sizeof(key->enc); i++) {
     val = val * 997 + (int )*p++;
   }
 
-  p = (unsigned char* )(&key->type);
+  p = (UChar* )(&key->type);
   for (i = 0; i < sizeof(key->type); i++) {
     val = val * 997 + (int )*p++;
   }
@@ -4748,7 +4752,7 @@ static int
 i_free_shared_class(type_cclass_key* key, Node* node, void* arg)
 {
   if (IS_NOT_NULL(node)) {
-    CClassNode* cc = &(NCCLASS(node));
+    CClassNode* cc = NCCLASS(node);
     if (IS_NOT_NULL(cc->mbuf)) xfree(cc->mbuf);
     xfree(node);
   }
@@ -4777,17 +4781,18 @@ typedef struct {
   CClassNode* cc;
   Node*       alt_root;
   Node**      ptail;
-} ICaseFoldArgType;
+} IApplyCaseFoldArg;
 
 static int
-i_case_fold(OnigCodePoint from, OnigCodePoint to[], int to_len, void* arg)
+i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
+		  int to_len, void* arg)
 {
-  ICaseFoldArgType* iarg;
+  IApplyCaseFoldArg* iarg;
   ScanEnv* env;
   CClassNode* cc;
   BitSetRef bs;
 
-  iarg = (ICaseFoldArgType* )arg;
+  iarg = (IApplyCaseFoldArg* )arg;
   env = iarg->env;
   cc  = iarg->cc;
   bs = cc->bs;
@@ -4795,16 +4800,18 @@ i_case_fold(OnigCodePoint from, OnigCodePoint to[], int to_len, void* arg)
   if (to_len == 1) {
     int in_cc;
     in_cc = onig_is_code_in_cc(env->enc, from, cc);
-    if ((in_cc != 0 && !IS_CCLASS_NOT(cc)) ||
-	(in_cc == 0 &&  IS_CCLASS_NOT(cc))) {
-      if (ONIGENC_MBC_MINLEN(env->enc) > 1 || from >= SINGLE_BYTE_SIZE) {
+    if ((in_cc != 0 && !IS_NCCLASS_NOT(cc)) ||
+	(in_cc == 0 &&  IS_NCCLASS_NOT(cc))) {
+      if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= SINGLE_BYTE_SIZE) {
+	if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
 	add_code_range(&(cc->mbuf), env, *to, *to);
       }
       else {
-	if (BITSET_AT(bs, from)) {
-	  /* /(?i:[^A-C])/.match("a") ==> fail. */
+	/* /(?i:[^A-C])/.match("a") ==> fail. */
+	if (IS_NCCLASS_NOT(cc))
+	  BITSET_CLEAR_BIT(bs, *to);
+	else
 	  BITSET_SET_BIT(bs, *to);
-	}
       }
     }
   }
@@ -4814,13 +4821,13 @@ i_case_fold(OnigCodePoint from, OnigCodePoint to[], int to_len, void* arg)
     Node *snode = NULL_NODE;
 
     if (onig_is_code_in_cc(env->enc, from, cc)) {
-      if (IS_CCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
+      if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
 
       for (i = 0; i < to_len; i++) {
 	len = ONIGENC_CODE_TO_MBC(env->enc, to[i], buf);
 	if (i == 0) {
 	  snode = onig_node_new_str(buf, buf + len);
-	  CHECK_NULL_RETURN_VAL(snode, ONIGERR_MEMORY);
+	  CHECK_NULL_RETURN_MEMERR(snode);
 
 	  /* char-class expanded multi-char only
 	     compare with string folded at match time. */
@@ -4836,8 +4843,8 @@ i_case_fold(OnigCodePoint from, OnigCodePoint to[], int to_len, void* arg)
       }
 
       *(iarg->ptail) = onig_node_new_alt(snode, NULL_NODE);
-      CHECK_NULL_RETURN_VAL(*(iarg->ptail), ONIGERR_MEMORY);
-      iarg->ptail = &(NCONS((*(iarg->ptail))).right);
+      CHECK_NULL_RETURN_MEMERR(*(iarg->ptail));
+      iarg->ptail = &(NCDR((*(iarg->ptail))));
     }
   }
 
@@ -4865,20 +4872,20 @@ parse_exp(Node** np, OnigToken* tok, int term,
   break;
 
   case TK_SUBEXP_OPEN:
-    r = parse_effect(np, tok, TK_SUBEXP_CLOSE, src, end, env);
+    r = parse_enclose(np, tok, TK_SUBEXP_CLOSE, src, end, env);
     if (r < 0) return r;
     if (r == 1) group = 1;
     else if (r == 2) { /* option only */
       Node* target;
       OnigOptionType prev = env->option;
 
-      env->option = NEFFECT(*np).option;
+      env->option = NENCLOSE(*np)->option;
       r = fetch_token(tok, src, end, env);
       if (r < 0) return r;
       r = parse_subexp(&target, tok, term, src, end, env);
       env->option = prev;
       if (r < 0) return r;
-      NEFFECT(*np).target = target;	
+      NENCLOSE(*np)->target = target;	
       return tok->type;
     }
     break;
@@ -4895,7 +4902,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
   tk_byte:
     {
       *np = node_new_str(tok->backp, *src);
-      CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(*np);
 
       while (1) {
 	r = fetch_token(tok, src, end, env);
@@ -4916,11 +4923,11 @@ parse_exp(Node** np, OnigToken* tok, int term,
   tk_raw_byte:
     {
       *np = node_new_str_raw_char((UChar )tok->u.c);
-      CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(*np);
       len = 1;
       while (1) {
 	if (len >= ONIGENC_MBC_MINLEN(env->enc)) {
-	  if (len == enc_len(env->enc, NSTRING(*np).s)) {
+	  if (len == enc_len(env->enc, NSTR(*np)->s)) {
 	    r = fetch_token(tok, src, end, env);
 	    NSTRING_CLEAR_RAW(*np);
 	    goto string_end;
@@ -4935,8 +4942,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	  int rem;
 	  if (len < ONIGENC_MBC_MINLEN(env->enc)) {
 	    rem = ONIGENC_MBC_MINLEN(env->enc) - len;
-	    (void )node_str_head_pad(&NSTRING(*np), rem, (UChar )0);
-	    if (len + rem == enc_len(env->enc, NSTRING(*np).s)) {
+	    (void )node_str_head_pad(NSTR(*np), rem, (UChar )0);
+	    if (len + rem == enc_len(env->enc, NSTR(*np)->s)) {
 	      NSTRING_CLEAR_RAW(*np);
 	      goto string_end;
 	    }
@@ -4963,7 +4970,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 #else
       *np = node_new_str(buf, buf + num);
 #endif
-      CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(*np);
     }
     break;
 
@@ -4980,7 +4987,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	nextp = qend = end;
       }
       *np = node_new_str(qstart, qend);
-      CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+      CHECK_NULL_RETURN_MEMERR(*np);
       *src = nextp;
     }
     break;
@@ -4990,7 +4997,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
       switch (tok->u.prop.ctype) {
       case ONIGENC_CTYPE_WORD:
 	*np = node_new_ctype(tok->u.prop.ctype, tok->u.prop.not);
-	CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+	CHECK_NULL_RETURN_MEMERR(*np);
 	break;
 
       case ONIGENC_CTYPE_SPACE:
@@ -5040,9 +5047,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
               return ONIGERR_MEMORY;
             }
 
-            cc = &(NCCLASS(*np));
-            CCLASS_SET_SHARE(cc);
+            cc = NCCLASS(*np);
+            NCCLASS_SET_SHARE(cc);
             new_key = (type_cclass_key* )xmalloc(sizeof(type_cclass_key));
+	    xmemcpy(new_key, &key, sizeof(type_cclass_key));
             onig_st_add_direct(OnigTypeCClassTable, (st_data_t )new_key,
                                (st_data_t )*np);
             
@@ -5051,10 +5059,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
           else {
 #endif
             *np = node_new_cclass();
-            CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
-            cc = &(NCCLASS(*np));
+            CHECK_NULL_RETURN_MEMERR(*np);
+            cc = NCCLASS(*np);
             add_ctype_to_cc(cc, tok->u.prop.ctype, 0, env);
-            if (tok->u.prop.not != 0) CCLASS_SET_NOT(cc);
+            if (tok->u.prop.not != 0) NCCLASS_SET_NOT(cc);
 #ifdef USE_SHARED_CCLASS_TABLE
           }
 #endif
@@ -5080,21 +5088,19 @@ parse_exp(Node** np, OnigToken* tok, int term,
       r = parse_char_class(np, tok, src, end, env);
       if (r != 0) return r;
 
-      cc = &(NCCLASS(*np));
-
+      cc = NCCLASS(*np);
       if (IS_IGNORECASE(env->option)) {
-	ICaseFoldArgType iarg;
+	IApplyCaseFoldArg iarg;
 
-	iarg.env = env;
-	iarg.cc  = cc;
+	iarg.env      = env;
+	iarg.cc       = cc;
 	iarg.alt_root = NULL_NODE;
 	iarg.ptail    = &(iarg.alt_root);
 
 	r = ONIGENC_APPLY_ALL_CASE_FOLD(env->enc, env->case_fold_flag,
-					i_case_fold, &iarg);
+					i_apply_case_fold, &iarg);
 	if (r != 0) {
-	  if (IS_NOT_NULL(iarg.alt_root))
-	    onig_node_free(iarg.alt_root);
+	  onig_node_free(iarg.alt_root);
 	  return r;
 	}
 	if (IS_NOT_NULL(iarg.alt_root)) {
@@ -5111,15 +5117,15 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   case TK_ANYCHAR:
     *np = node_new_anychar();
-    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+    CHECK_NULL_RETURN_MEMERR(*np);
     break;
 
   case TK_ANYCHAR_ANYTIME:
     *np = node_new_anychar();
-    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+    CHECK_NULL_RETURN_MEMERR(*np);
     qn = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    CHECK_NULL_RETURN_VAL(qn, ONIGERR_MEMORY);
-    NQUANTIFIER(qn).target = *np;
+    CHECK_NULL_RETURN_MEMERR(qn);
+    NQTFR(qn)->target = *np;
     *np = qn;
     break;
 
@@ -5133,13 +5139,13 @@ parse_exp(Node** np, OnigToken* tok, int term,
 			   tok->u.backref.level,
 #endif
 			   env);
-    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+    CHECK_NULL_RETURN_MEMERR(*np);
     break;
 
 #ifdef USE_SUBEXP_CALL
   case TK_CALL:
     *np = node_new_call(tok->u.call.name, tok->u.call.name_end);
-    CHECK_NULL_RETURN_VAL(*np, ONIGERR_MEMORY);
+    CHECK_NULL_RETURN_MEMERR(*np);
     env->num_call++;
     break;
 #endif
@@ -5179,17 +5185,17 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	return ONIGERR_TARGET_OF_REPEAT_OPERATOR_INVALID;
 
       qn = node_new_quantifier(tok->u.repeat.lower, tok->u.repeat.upper,
-			      (r == TK_INTERVAL ? 1 : 0));
-      CHECK_NULL_RETURN_VAL(qn, ONIGERR_MEMORY);
-      NQUANTIFIER(qn).greedy = tok->u.repeat.greedy;
+			       (r == TK_INTERVAL ? 1 : 0));
+      CHECK_NULL_RETURN_MEMERR(qn);
+      NQTFR(qn)->greedy = tok->u.repeat.greedy;
       r = set_quantifier(qn, *targetp, group, env);
       if (r < 0) return r;
       
       if (tok->u.repeat.possessive != 0) {
 	Node* en;
-	en = node_new_effect(EFFECT_STOP_BACKTRACK);
-	CHECK_NULL_RETURN_VAL(en, ONIGERR_MEMORY);
-	NEFFECT(en).target = qn;
+	en = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
+	CHECK_NULL_RETURN_MEMERR(en);
+	NENCLOSE(en)->target = qn;
 	qn = en;
       }
 
@@ -5200,10 +5206,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
 	Node *tmp;
 
 	*targetp = node_new_list(*targetp, NULL);
-	CHECK_NULL_RETURN_VAL(*targetp, ONIGERR_MEMORY);
-	tmp = NCONS(*targetp).right = node_new_list(qn, NULL);
-	CHECK_NULL_RETURN_VAL(tmp, ONIGERR_MEMORY);
-	targetp = &(NCONS(tmp).left);
+	CHECK_NULL_RETURN_MEMERR(*targetp);
+	tmp = NCDR(*targetp) = node_new_list(qn, NULL);
+	CHECK_NULL_RETURN_MEMERR(tmp);
+	targetp = &(NCAR(tmp));
       }
       goto re_entry;
     }
@@ -5228,19 +5234,19 @@ parse_branch(Node** top, OnigToken* tok, int term,
   }
   else {
     *top  = node_new_list(node, NULL);
-    headp = &(NCONS(*top).right);
+    headp = &(NCDR(*top));
     while (r != TK_EOT && r != term && r != TK_ALT) {
       r = parse_exp(&node, tok, term, src, end, env);
       if (r < 0) return r;
 
-      if (NTYPE(node) == N_LIST) {
+      if (NTYPE(node) == NT_LIST) {
 	*headp = node;
-	while (IS_NOT_NULL(NCONS(node).right)) node = NCONS(node).right;
-	headp = &(NCONS(node).right);
+	while (IS_NOT_NULL(NCDR(node))) node = NCDR(node);
+	headp = &(NCDR(node));
       }
       else {
 	*headp = node_new_list(node, NULL);
-	headp = &(NCONS(*headp).right);
+	headp = &(NCDR(*headp));
       }
     }
   }
@@ -5268,7 +5274,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
   }
   else if (r == TK_ALT) {
     *top  = onig_node_new_alt(node, NULL);
-    headp = &(NCONS(*top).right);
+    headp = &(NCDR(*top));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
       if (r < 0) return r;
@@ -5276,7 +5282,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
       if (r < 0) return r;
 
       *headp = onig_node_new_alt(node, NULL);
-      headp = &(NCONS(*headp).right);
+      headp = &(NCDR(*headp));
     }
 
     if (tok->type != term)
@@ -5307,8 +5313,8 @@ parse_regexp(Node** top, UChar** src, UChar* end, ScanEnv* env)
 }
 
 extern int
-onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end, regex_t* reg,
-		      ScanEnv* env)
+onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end,
+		     regex_t* reg, ScanEnv* env)
 {
   int r;
   UChar* p;

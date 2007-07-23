@@ -1,3 +1,8 @@
+Mon Jul 23 18:37:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/oniguruma.h: upgrade to Oniguruma 5.9.0.  fixes
+	  some memory violation.  [ruby-dev:31070]
+
 Sun Jul 22 20:09:49 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (Date._parse): now accepts some new

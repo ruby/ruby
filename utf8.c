@@ -2,7 +2,7 @@
   utf8.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,9 @@ utf8_is_mbc_newline(const UChar* p, const UChar* end)
     if (*p == 0x0a) return 1;
 
 #ifdef USE_UNICODE_ALL_LINE_TERMINATORS
+#ifndef USE_CRNL_AS_LINE_TERMINATOR
     if (*p == 0x0d) return 1;
+#endif
     if (p + 1 < end) {
       if (*(p+1) == 0x85 && *p == 0xc2) /* U+0085 */
 	return 1;
@@ -133,7 +135,7 @@ utf8_code_to_mbclen(OnigCodePoint code)
   else if (code == INVALID_CODE_FF) return 1;
 #endif
   else
-    return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
+    return ONIGENC_ERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
 
 #if 0
@@ -154,7 +156,7 @@ utf8_code_to_mbc_first(OnigCodePoint code)
     else if ((code & 0x80000000) == 0)
       return ((code>>30) & 0x01) | 0xfc;
     else {
-      return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
+      return ONIGENC_ERR_TOO_BIG_WIDE_CHAR_VALUE;
     }
   }
 }
@@ -209,7 +211,7 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
     }
 #endif
     else {
-      return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
+      return ONIGENC_ERR_TOO_BIG_WIDE_CHAR_VALUE;
     }
 
     *p++ = UTF8_TRAIL0(code);
