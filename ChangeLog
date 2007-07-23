@@ -1,3 +1,8 @@
+Tue Jul 24 01:05:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regint.h (USE_MATCH_RANGE_IS_COMPLETE_RANGE): undef to achieve old
+	  rindex behavior.  [ruby-dev:31265]
+
 Mon Jul 23 18:37:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/oniguruma.h: upgrade to Oniguruma 5.9.0.  fixes
