@@ -1158,6 +1158,7 @@ expr_value	: expr
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
+		        if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -1772,7 +1773,6 @@ arg		: lhs '=' arg
 		| var_lhs tOP_ASGN arg
 		    {
 		    /*%%%*/
-			value_expr($3);
 			if ($1) {
 			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
@@ -2206,6 +2206,7 @@ arg_value	: arg
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
+		        if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -2929,6 +2930,7 @@ primary_value	: primary
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
+		        if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -4299,8 +4301,9 @@ opt_f_block_arg	: ',' f_block_arg
 singleton	: var_ref
 		    {
 		    /*%%%*/
-			$$ = $1;
 			value_expr($1);
+			$$ = $1;
+		        if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -7228,7 +7231,6 @@ gettable_gen(struct parser_params *parser, ID id)
 static NODE*
 assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
-    value_expr(val);
     if (id == keyword_self) {
 	yyerror("Can't change the value of self");
     }
@@ -7447,6 +7449,9 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 {
     int cond = 0;
 
+    if (!node) {
+	rb_warning0("empty expression");
+    }
     while (node) {
 	switch (nd_type(node)) {
 	  case NODE_DEFN:
