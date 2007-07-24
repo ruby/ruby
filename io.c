@@ -3991,7 +3991,7 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
     if (argc == 1) {
 	ret = argv[0];
     }
-    else {
+    else if (argc > 1) {
 	ret = rb_ary_new4(argc, argv);
     }
     if (TYPE(rb_stdout) == T_FILE) {

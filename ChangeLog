@@ -1,3 +1,7 @@
+Tue Jul 24 10:37:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_f_p): return nil if no argument.  [ruby-dev:31285]
+
 Tue Jul 24 01:05:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regint.h (USE_MATCH_RANGE_IS_COMPLETE_RANGE): undef to achieve old
