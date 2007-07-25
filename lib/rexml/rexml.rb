@@ -24,6 +24,7 @@ module REXML
   DATE = "2007/206"
   VERSION = "3.1.7"
 	REVISION = "$Revision$".gsub(/\$Revision:|\$/,'').strip
+  REVISION = "$Revision$".gsub(/\$Revision:|\$/,'').strip
 
   Copyright = COPYRIGHT
   Version = VERSION
