@@ -98,38 +98,30 @@ module REXML
     # output::
     #   Where to write the string
     # indent::
-    #   An integer.  If -1, no indenting will be used; otherwise, the
+    #   An integer.  If -1, no indentation will be used; otherwise, the
     #   indentation will be this number of spaces, and children will be
     #   indented an additional amount.
     # transitive::
-    #   If transitive is true and indent is >= 0, then the output will be
-    #   pretty-printed in such a way that the added whitespace does not affect
-    #   the absolute *value* of the document -- that is, it leaves the value
-    #   and number of Text nodes in the document unchanged.
+    #   Ignored
     # ie_hack::
-    #   Internet Explorer is the worst piece of crap to have ever been
-    #   written, with the possible exception of Windows itself.  Since IE is
-    #   unable to parse proper XML, we have to provide a hack to generate XML
-    #   that IE's limited abilities can handle.  This hack inserts a space 
-    #   before the /> on empty tags.
-    #
+    #   Ignored
     def write( output, indent=0, transitive=false, ie_hack=false )
+      f = REXML::Formatters::Default.new
       indent( output, indent )
       output << START
       output << ' '
       output << @name
       output << " #@external_id" if @external_id
-      output << " #@long_name" if @long_name
-      output << " #@uri" if @uri
+      output << " #{@long_name.inspect}" if @long_name
+      output << " #{@uri.inspect}" if @uri
       unless @children.empty?
         next_indent = indent + 1
         output << ' ['
         child = nil    # speed
         @children.each { |child|
           output << "\n"
-          child.write( output, next_indent )
+          f.write( child, output )
         }
-        #output << '   '*next_indent
         output << "\n]"
       end
       output << STOP
@@ -219,8 +211,10 @@ module REXML
       @string+'>'
     end
 
+    # == DEPRECATED
+    # See REXML::Formatters
+    #
     def write( output, indent )
-      output << ('   '*indent) if indent > 0
       output << to_s
     end
   end
@@ -264,7 +258,6 @@ module REXML
     end
 
     def write( output, indent=-1 )
-      output << ('   '*indent) if indent > 0
       output << to_s
     end
     

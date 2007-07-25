@@ -31,9 +31,6 @@ module REXML
 	  # to be sources of valid XML documents.
 	  # @param context if supplied, contains the context of the document;
 	  # this should be a Hash.
-	  # NOTE that I'm not sure what the context is for; I cloned it out of
-	  # the Electric XML API (in which it also seems to do nothing), and it
-	  # is now legacy.  It may do something, someday... it may disappear.
 		def initialize( source = nil, context = {} )
 			super()
 			@context = context
@@ -142,14 +139,53 @@ module REXML
 			xml_decl().stand_alone?
 		end
 
-		# Write the XML tree out, optionally with indent.  This writes out the
-		# entire XML document, including XML declarations, doctype declarations,
-		# and processing instructions (if any are given).
+    # Write the XML tree out.  This writes the entire XML document, including
+    # declarations and processing instructions.
+    #
 		# A controversial point is whether Document should always write the XML
 		# declaration (<?xml version='1.0'?>) whether or not one is given by the
 		# user (or source document).  REXML does not write one if one was not
 		# specified, because it adds unneccessary bandwidth to applications such
 		# as XML-RPC.
+    #
+    # _Examples_
+    #   Document.new("<a><b/></a>").serialize
+    #
+    #   output_string = ""
+    #   tr = Transitive.new( output_string )
+    #   Document.new("<a><b/></a>").serialize( tr )
+    #
+    # formatter::
+    #   One of the rexml/formatters classes.  If none is given, then the Pretty
+    #   formatter will be used to dump the XML to the STDOUT.
+    def serialize( formatter = nil )
+      if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output) 
+        output = Output.new( output, xml_decl.encoding )
+      end
+
+      formatter = REXML::Pretty.new( $stdout ) if (formatter.nil?)
+
+			@children.each { |node|
+        puts "node = #{node.inspect}"
+				indent( output, indent ) if node.node_type == :element
+				if node.write( output, indent, transitive, ie_hack )
+          output << "\n" unless indent<0 or node == @children[-1]
+        end
+			}
+    end
+
+    # Write the XML tree out, optionally with indent.  This writes out the
+		# entire XML document, including XML declarations, doctype declarations,
+		# and processing instructions (if any are given).
+    #
+		# A controversial point is whether Document should always write the XML
+		# declaration (<?xml version='1.0'?>) whether or not one is given by the
+		# user (or source document).  REXML does not write one if one was not
+		# specified, because it adds unneccessary bandwidth to applications such
+		# as XML-RPC.
+    #
+    # See also the classes in the rexml/formatters package for the proper way
+    # to change the default formatting of XML output
 		#
 		#
 		# output::
@@ -160,7 +196,7 @@ module REXML
 		#   indentation will be twice this number of spaces, and children will be
 		#   indented an additional amount.  For a value of 3, every item will be 
     #   indented 3 more levels, or 6 more spaces (2 * 3). Defaults to -1
-		# transitive::
+		# trans::
 		#   If transitive is true and indent is >= 0, then the output will be
 		#   pretty-printed in such a way that the added whitespace does not affect
 		#   the absolute *value* of the document -- that is, it leaves the value
@@ -171,14 +207,20 @@ module REXML
 		#   unable to parse proper XML, we have to provide a hack to generate XML
 		#   that IE's limited abilities can handle.  This hack inserts a space 
 		#   before the /> on empty tags.  Defaults to false
-		def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
-			output = Output.new( output, xml_decl.encoding ) if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
-			@children.each { |node|
-				indent( output, indent ) if node.node_type == :element
-				if node.write( output, indent, transitive, ie_hack )
-          output << "\n" unless indent<0 or node == @children[-1]
+		def write( output=$stdout, indent=-1, trans=false, ie_hack=false )
+      if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
+        output = Output.new( output, xml_decl.encoding )
+      end
+      formatter = if indent > -1
+          if transitive
+            REXML::Formatters::Transitive.new( indent, ie_hack )
+          else
+            REXML::Formatters::Pretty.new( indent, ie_hack )
+          end
+        else
+          REXML::Formatters::Default.new( ie_hack )
         end
-			}
+      formatter.write( self, output )
 		end
 
 		

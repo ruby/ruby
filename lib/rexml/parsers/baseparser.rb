@@ -53,7 +53,7 @@ module REXML
       STANDALONE = /\bstandalone\s*=\s["'](.*?)['"]/um
 
       ENTITY_START = /^\s*<!ENTITY/
-      IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'].*?['"])?(\s+['"].*?["'])?/u
+      IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'](.*?)['"])?(\s+['"](.*?)["'])?/u
       ELEMENTDECL_START = /^\s*<!ELEMENT/um
       ELEMENTDECL_PATTERN = /^\s*(<!ELEMENT.*?)>/um
       SYSTEMENTITY = /^\s*(%.*?;)\s*$/um
@@ -217,10 +217,10 @@ module REXML
             close = md[2]
             identity =~ IDENTITY
             name = $1
-            raise REXML::ParseException("DOCTYPE is missing a name") if name.nil?
+            raise REXML::ParseException.new("DOCTYPE is missing a name") if name.nil?
             pub_sys = $2.nil? ? nil : $2.strip
-            long_name = $3.nil? ? nil : $3.strip
-            uri = $4.nil? ? nil : $4.strip
+            long_name = $4.nil? ? nil : $4.strip
+            uri = $6.nil? ? nil : $6.strip
             args = [ :start_doctype, name, pub_sys, long_name, uri ]
             if close == ">"
               @document_status = :after_doctype

@@ -3,9 +3,13 @@
 #
 module REXML
   module Encoding
-    @@__REXML_encoding_methods = %q~
+  	register("ISO-8859-15") do |o|
+  		alias encode to_iso_8859_15
+		alias decode from_iso_8859_15
+  	end
+
     # Convert from UTF-8
-    def to_iso_8859_15 content
+    def to_iso_8859_15(content)
       array_utf8 = content.unpack('U*')
       array_enc = []
       array_utf8.each do |num|
@@ -64,6 +68,5 @@ module REXML
       end
       array_enc.pack('U*')
     end
-    ~
   end
 end
