@@ -612,7 +612,7 @@ reloc_repl(int no, struct undef *undef, struct indr_data *data)
 static int
 load_1(int fd, long disp, const char *need_init)
 {
-    static char *libc = LIBC_NAME;
+    static const char *libc = LIBC_NAME;
     struct exec hdr;
     struct relocation_info *reloc = NULL;
     long block = 0;
@@ -1714,7 +1714,7 @@ dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking
 #endif
 #if defined(DOSISH)
 	if (exe_flag) {
-	    static const char *extension[] = {
+	    static const char *const extension[] = {
 #if defined(MSDOS)
 		".com", ".exe", ".bat",
 #if defined(DJGPP)
