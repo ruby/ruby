@@ -1,3 +1,8 @@
+Thu Jul 26 20:40:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eqq): call_super() in === does not work well
+	  since Enumerable#=== has different behavior.  [ruby-dev:31296]
+
 Thu Jul 26 13:57:45 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (load_1, dln_find_1): constified.

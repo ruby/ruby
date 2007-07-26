@@ -629,8 +629,6 @@ range_inspect(VALUE range)
 /*
  *  call-seq:
  *     rng === obj       =>  true or false
- *     rng.member?(val)  =>  true or false
- *     rng.include?(val) =>  true or false
  *  
  *  Returns <code>true</code> if <i>obj</i> is an element of
  *  <i>rng</i>, <code>false</code> otherwise. Conveniently,
@@ -646,6 +644,25 @@ range_inspect(VALUE range)
  *  <em>produces:</em>
  *     
  *     high
+ */
+
+static VALUE
+range_eqq(VALUE range, VALUE val)
+{
+    return rb_funcall(range, rb_intern("include?"), 1, val);
+}
+
+
+/*
+ *  call-seq:
+ *     rng.member?(val)  =>  true or false
+ *     rng.include?(val) =>  true or false
+ *  
+ *  Returns <code>true</code> if <i>obj</i> is an element of
+ *  <i>rng</i>, <code>false</code> otherwise.
+ *     
+ *     ("a".."z").include?("g")  # => true
+ *     ("a".."z").include?("A")  # => false
  */
 
 static VALUE
@@ -769,7 +786,7 @@ Init_Range(void)
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);
     rb_define_method(rb_cRange, "==", range_eq, 1);
-    rb_define_method(rb_cRange, "===", range_include, 1);
+    rb_define_method(rb_cRange, "===", range_eqq, 1);
     rb_define_method(rb_cRange, "eql?", range_eql, 1);
     rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);
