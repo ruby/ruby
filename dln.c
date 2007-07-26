@@ -1600,32 +1600,6 @@ dln_find_file(const char *fname, const char *path)
 #endif
 }
 
-#if defined(__CYGWIN32__)
-const char *
-conv_to_posix_path(char *win32, char *posix, int len)
-{
-    char *first = win32;
-    char *p = win32;
-    char *dst = posix;
-
-    posix[0] = '\0';
-    for (p = win32; *p; p++)
-	if (*p == ';') {
-	    *p = 0;
-	    cygwin32_conv_to_posix_path(first, posix);
-	    posix += strlen(posix);
-	    *posix++ = ':';
-	    first = p + 1;
-	    *p = ';';
-	}
-    if (len < strlen(first))
-	fprintf(stderr, "PATH length too long: %s\n", first);
-    else
-	cygwin32_conv_to_posix_path(first, posix);
-    return dst;
-}
-#endif
-
 static char fbuf[MAXPATHLEN];
 
 static char *
