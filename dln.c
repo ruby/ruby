@@ -636,7 +636,7 @@ load_1(fd, disp, need_init)
     long disp;
     const char *need_init;
 {
-    static char *libc = LIBC_NAME;
+    static const char *libc = LIBC_NAME;
     struct exec hdr;
     struct relocation_info *reloc = NULL;
     long block = 0;
@@ -1791,7 +1791,7 @@ dln_find_1(fname, path, exe_flag)
 #endif
 #if defined(DOSISH)
 	if (exe_flag) {
-	    static const char *extension[] = {
+	    static const char *const extension[] = {
 #if defined(MSDOS)
 		".com", ".exe", ".bat",
 #if defined(DJGPP)
