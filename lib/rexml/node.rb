@@ -1,4 +1,6 @@
 require "rexml/parseexception"
+require "rexml/formatters/pretty"
+require "rexml/formatters/default"
 
 module REXML
 	# Represents a node in the tree.  Nodes are never encountered except as

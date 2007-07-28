@@ -57,8 +57,11 @@ module REXML
           if compact
             if node.children.inject(true) {|s,c| s & c.kind_of?(Text)}
               string = ""
-              node.children.each { |child| write( child, string, 0 ) }
-              if string.length + @level < @width
+              old_level = @level
+              @level = 0
+              node.children.each { |child| write( child, string ) }
+              @level = old_level
+              if string.length < @width
                 output << string
                 skip = true
               end
