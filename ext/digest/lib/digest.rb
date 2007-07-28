@@ -12,9 +12,11 @@ module Digest
     begin
       require lib
     rescue LoadError => e
-      raise LoadError, "library not found for class Digest::#{name} -- #{lib}"
+      raise LoadError, "library not found for class Digest::#{name} -- #{lib}", caller(1)
     end
-
+    unless Digest.const_defined?(name)
+      raise NameError, "uninitialized constant Digest::#{name}", caller(1)
+    end
     Digest.const_get(name)
   end
 

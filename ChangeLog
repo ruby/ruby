@@ -1,3 +1,8 @@
+Sat Jul 28 09:35:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/digest/lib/digest.rb (Digest::self.const_missing): avoid
+	  infinite recursive const_missing call.  [ruby-talk:262193]
+
 Thu Jul 26 20:40:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_eqq): call_super() in === does not work well
