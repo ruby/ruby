@@ -94,6 +94,8 @@ module REXML
 					when :end_document
 						handle( :end_document )
 						break
+          when :start_doctype
+            handle( :doctype, *event[1..-1])
 					when :end_doctype
 						context = context[1]
 					when :start_element
@@ -167,7 +169,7 @@ module REXML
           when :entitydecl
             @entities[ event[1] ] = event[2] if event.size == 3
 						handle( *event )
-					when :processing_instruction, :comment, :doctype, :attlistdecl, 
+					when :processing_instruction, :comment, :attlistdecl, 
 						:elementdecl, :cdata, :notationdecl, :xmldecl
 						handle( *event )
 					end

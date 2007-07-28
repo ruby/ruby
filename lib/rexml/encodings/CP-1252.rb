@@ -3,9 +3,15 @@
 #
 module REXML
   module Encoding
-    @@__REXML_encoding_methods = %q~
+  	register( "CP-1252" ) do |o|
+  		class << o
+  			alias encode encode_cp1252
+			alias decode decode_cp1252
+  		end
+  	end
+
     # Convert from UTF-8
-    def encode content
+    def encode_cp1252(content)
       array_utf8 = content.unpack('U*')
       array_enc = []
       array_utf8.each do |num|
@@ -54,7 +60,7 @@ module REXML
     end
     
     # Convert to UTF-8
-    def decode(str)
+    def decode_cp1252(str)
       array_latin9 = str.unpack('C*')
       array_enc = []
       array_latin9.each do |num|
@@ -93,6 +99,5 @@ module REXML
       end
       array_enc.pack('U*')
     end
-    ~
   end
 end

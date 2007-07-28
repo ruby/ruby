@@ -25,7 +25,7 @@ module REXML
 					when ElementDecl.PATTERN_RE
 						match = $&
 						source = $'
-						contents << EleemntDecl.new( match )
+						contents << ElementDecl.new( match )
 					when AttlistDecl.PATTERN_RE
 						matchdata = $~
 						source = $'

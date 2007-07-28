@@ -58,8 +58,8 @@ module REXML
       # We have to recognize UTF-16, LSB UTF-16, and UTF-8
       return UTF_16 if /\A\xfe\xff/n =~ str
       return UNILE if /\A\xff\xfe/n =~ str
-      str =~ /^\s*<?xml\s*version\s*=\s*(['"]).*?\2\s*encoding\s*=\s*(["'])(.*?)\2/um
-      return $1.upcase if $1
+      str =~ /^\s*<\?xml\s+version\s*=\s*(['"]).*?\1\s+encoding\s*=\s*(["'])(.*?)\2/um
+      return $3.upcase if $3
       return UTF_8
     end
   end

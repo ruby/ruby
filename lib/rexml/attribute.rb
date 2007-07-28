@@ -18,16 +18,32 @@ module REXML
 		PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\2/um
 
 		# Constructor.
+    # FIXME: The parser doesn't catch illegal characters in attributes
+    #
+    # first:: 
+    #   Either: an Attribute, which this new attribute will become a
+    #   clone of; or a String, which is the name of this attribute
+    # second::
+    #   If +first+ is an Attribute, then this may be an Element, or nil.
+    #   If nil, then the Element parent of this attribute is the parent
+    #   of the +first+ Attribute.  If the first argument is a String, 
+    #   then this must also be a String, and is the content of the attribute.  
+    #   If this is the content, it must be fully normalized (contain no
+    #   illegal characters).
+    # parent::
+    #   Ignored unless +first+ is a String; otherwise, may be the Element 
+    #   parent of this attribute, or nil.
+    #
 		#
 		#  Attribute.new( attribute_to_clone )
-		#  Attribute.new( source )
+		#  Attribute.new( attribute_to_clone, parent_element )
 		#  Attribute.new( "attr", "attr_value" )
 		#  Attribute.new( "attr", "attr_value", parent_element )
 		def initialize( first, second=nil, parent=nil )
 			@normalized = @unnormalized = @element = nil
 			if first.kind_of? Attribute
 				self.name = first.expanded_name
-				@value = first.value
+				@unnormalized = first.value
 				if second.kind_of? Element
 					@element = second
 				else
@@ -36,7 +52,7 @@ module REXML
 			elsif first.kind_of? String
 				@element = parent if parent.kind_of? Element
 				self.name = first
-				@value = second.to_s
+				@normalized = second.to_s
 			else
 				raise "illegal argument #{first.class.name} to Attribute constructor"
 			end
@@ -72,7 +88,7 @@ module REXML
 		# Returns true if other is an Attribute and has the same name and value,
 		# false otherwise.
 		def ==( other )
-			other.kind_of?(Attribute) and other.name==name and other.value==@value
+			other.kind_of?(Attribute) and other.name==name and other.value==value
 		end
 
 		# Creates (and returns) a hash from both the name and value
@@ -87,7 +103,11 @@ module REXML
 		#  b = Attribute.new( "ns:x", "y" )
 		#  b.to_string     # -> "ns:x='y'"
 		def to_string
-			"#@expanded_name='#{to_s().gsub(/'/, '&apos;')}'"
+			if @element and @element.context and @element.context[:attribute_quote] == :quote
+				%Q^#@expanded_name="#{to_s().gsub(/"/, '&quote;')}"^
+			else
+				"#@expanded_name='#{to_s().gsub(/'/, '&apos;')}'"
+			end
 		end
 
 		# Returns the attribute value, with entities replaced
@@ -100,8 +120,9 @@ module REXML
 				doctype = doc.doctype if doc
 			end
 
+			@normalized = Text::normalize( @unnormalized, doctype )
 			@unnormalized = nil
-			@normalized = Text::normalize( @value, doctype )
+      @normalized
 		end
 
 		# Returns the UNNORMALIZED value of this attribute.  That is, entities
@@ -113,8 +134,9 @@ module REXML
 				doc = @element.document
 				doctype = doc.doctype if doc
 			end
+			@unnormalized = Text::unnormalize( @normalized, doctype )
 			@normalized = nil
-			@unnormalized = Text::unnormalize( @value, doctype )
+      @unnormalized
 		end
 
 		# Returns a copy of this attribute
