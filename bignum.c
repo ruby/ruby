@@ -2151,29 +2151,39 @@ rb_big_aref(x, y)
     VALUE x, y;
 {
     BDIGIT *xds;
-    int shift;
-    long s1, s2;
+    BDIGIT_DBL num;
+    unsigned long shift;
+    long i, s1, s2;
 
     if (TYPE(y) == T_BIGNUM) {
-	if (!RBIGNUM(y)->sign || RBIGNUM(x)->sign)
+	if (!RBIGNUM(y)->sign)
 	    return INT2FIX(0);
-	return INT2FIX(1);
+	if (RBIGNUM(bigtrunc(y))->len > SIZEOF_LONG/SIZEOF_BDIGITS) {
+	  out_of_range:
+	    return RBIGNUM(x)->sign ? INT2FIX(0) : INT2FIX(1);
+	}
+	shift = big2ulong(y, "long", Qfalse);
     }
-    shift = NUM2INT(y);
-    if (shift < 0) return INT2FIX(0);
+    else {
+	i = NUM2LONG(y);
+	if (i < 0) return INT2FIX(0);
+	shift = (VALUE)i;
+    }
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
 
+    if (s1 >= RBIGNUM(x)->len) goto out_of_range;
     if (!RBIGNUM(x)->sign) {
-	if (s1 >= RBIGNUM(x)->len) return INT2FIX(1);
-	x = rb_big_clone(x);
-	get2comp(x);
+	xds = BDIGITS(x);
+	i = 0; num = 1;
+	while (num += ~xds[i], ++i <= s1) {
+	    num = BIGDN(num);
+	}
     }
     else {
-	if (s1 >= RBIGNUM(x)->len) return INT2FIX(0);
+	num = BDIGITS(x)[s1];
     }
-    xds = BDIGITS(x);
-    if (xds[s1] & (1<<s2))
+    if (num & ((BDIGIT_DBL)1<<s2))
 	return INT2FIX(1);
     return INT2FIX(0);
 }
