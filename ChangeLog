@@ -1,7 +1,7 @@
 Mon Jul 30 11:16:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_aref): check for Bignum index range.
-	 [ruby-dev:31271]
+	  [ruby-dev:31271]
 
 Sat Jul 28 09:35:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
