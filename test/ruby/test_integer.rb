@@ -109,7 +109,8 @@ class TestInteger < Test::Unit::TestCase
     }
     VS.each {|a|
       VS.each {|b|
-        c = a[b]
+        c = nil
+        assert_nothing_raised("(#{a})[#{b}]") { c = a[b] }
         if b < 0
           assert_equal(0, c, "(#{a})[#{b}]")
         else
@@ -445,5 +446,6 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(ArgumentError) { Integer("4611686018427387904_") }
     assert_raise(ArgumentError) { Integer("4611686018427387904  :") }
     assert_equal(0x4000000000000000, Integer("46_11_686_0184273_87904"))
+    assert_raise(ArgumentError) { Integer("\0") }
   end
 end
