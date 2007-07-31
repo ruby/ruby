@@ -1,3 +1,8 @@
+Tue Jul 31 23:38:09 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb (_parse): now interprets slashed numerical
+	  dates as a big endian (except dd/mm/yyyy). [experimental]
+
 Mon Jul 30 11:16:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_aref): check for Bignum index range.

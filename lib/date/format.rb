@@ -1167,7 +1167,7 @@ class Date
       _parse_iso(str, e)    ||
       _parse_jis(str, e)    ||
       _parse_vms(str, e)    ||
-      _parse_sla_us(str, e) ||
+      _parse_sla_jp(str, e) ||
       _parse_dot_jp(str, e) ||
       _parse_iso2(str, e)   ||
       _parse_year(str, e)   ||
