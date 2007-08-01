@@ -616,65 +616,65 @@ module URI
     private :split_path
 
     def merge_path(base, rel)
+
       # RFC2396, Section 5.2, 5)
-      if rel[0] == ?/ #/
-        # RFC2396, Section 5.2, 5)
-        return rel
+      # RFC2396, Section 5.2, 6)
+      base_path = split_path(base)
+      rel_path  = split_path(rel)
 
-      else
-        # RFC2396, Section 5.2, 6)
-        base_path = split_path(base)
-        rel_path  = split_path(rel)
-
-        # RFC2396, Section 5.2, 6), a)
-	base_path << '' if base_path.last == '..'
-	while i = base_path.index('..')
-	  base_path.slice!(i - 1, 2)
-        end
-        if base_path.empty?
-          base_path = [''] # keep '/' for root directory
-        else
-	  base_path.pop
-        end
-
-        # RFC2396, Section 5.2, 6), c)
-        # RFC2396, Section 5.2, 6), d)
-        rel_path.push('') if rel_path.last == '.' || rel_path.last == '..'
-        rel_path.delete('.')
-
-        # RFC2396, Section 5.2, 6), e)
-        tmp = []
-        rel_path.each do |x|
-          if x == '..' &&
-              !(tmp.empty? || tmp.last == '..')
-            tmp.pop
-          else
-            tmp << x
-          end
-        end
-
-        add_trailer_slash = true
-        while x = tmp.shift
-          if x == '..' && base_path.size > 1
-            # RFC2396, Section 4
-            # a .. or . in an absolute path has no special meaning
-            base_path.pop
-          else
-            # if x == '..'
-            #   valid absolute (but abnormal) path "/../..."
-            # else
-            #   valid absolute path
-            # end
-            base_path << x
-            tmp.each {|t| base_path << t}
-            add_trailer_slash = false
-            break
-          end
-        end
-        base_path.push('') if add_trailer_slash
-
-        return base_path.join('/')
+      # RFC2396, Section 5.2, 6), a)
+      base_path << '' if base_path.last == '..'
+      while i = base_path.index('..')
+        base_path.slice!(i - 1, 2)
       end
+
+      if (first = rel_path.first) and first.empty?
+        base_path.clear
+        rel_path.shift
+      end
+
+      # RFC2396, Section 5.2, 6), c)
+      # RFC2396, Section 5.2, 6), d)
+      rel_path.push('') if rel_path.last == '.' || rel_path.last == '..'
+      rel_path.delete('.')
+
+      # RFC2396, Section 5.2, 6), e)
+      tmp = []
+      rel_path.each do |x|
+        if x == '..' &&
+            !(tmp.empty? || tmp.last == '..')
+          tmp.pop
+        else
+          tmp << x
+        end
+      end
+
+      add_trailer_slash = !tmp.empty?
+      if base_path.empty?
+        base_path = [''] # keep '/' for root directory
+      elsif add_trailer_slash
+        base_path.pop
+      end
+      while x = tmp.shift
+        if x == '..'
+          # RFC2396, Section 4
+          # a .. or . in an absolute path has no special meaning
+          base_path.pop if base_path.size > 1
+        else
+          # if x == '..'
+          #   valid absolute (but abnormal) path "/../..."
+          # else
+          #   valid absolute path
+          # end
+          base_path << x
+          tmp.each {|t| base_path << t}
+          add_trailer_slash = false
+          break
+        end
+      end
+      base_path.push('') if add_trailer_slash
+
+      return base_path.join('/')
     end
     private :merge_path
 

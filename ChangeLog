@@ -1,3 +1,8 @@
+Wed Aug  1 12:40:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* generic.rb (URI::Generic::merge_path): behave as RFC 3986.
+	  [ruby-talk:252052]
+
 Tue Jul 31 23:38:09 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (_parse): now interprets slashed numerical
