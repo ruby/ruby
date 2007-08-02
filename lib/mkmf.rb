@@ -130,7 +130,7 @@ elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h"
   $topdir ||= RbConfig::CONFIG["topdir"]
   $arch_hdrdir = "$(extout)/include/$(arch)"
 else
-  abort "can't find header files for ruby."
+  abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
 end
 
 OUTFLAG = CONFIG['OUTFLAG']
