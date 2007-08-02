@@ -595,11 +595,98 @@ rb_str2inum(VALUE str, int base)
 }
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+static inline int
+big2str_normal(VALUE x, long j, int base, int hbase, char *s, int trim)
+{
+    long i = RBIGNUM(x)->len;
+    BDIGIT *ds = BDIGITS(x);
+
+    while (i && j > 1) {
+       long k = i;
+       BDIGIT_DBL num = 0;
+
+       while (k--) {
+           num = BIGUP(num) + ds[k];
+           ds[k] = (BDIGIT)(num / hbase);
+           num %= hbase;
+       }
+       if (trim && ds[i-1] == 0) i--;
+       k = SIZEOF_BDIGITS;
+       while (k--) {
+           s[--j] = ruby_digitmap[num % base];
+           num /= base;
+           if (!trim && j < 1) break;
+           if (trim && i == 0 && num == 0) break;
+       }
+    }
+    return j;
+}
+
+#define KARATSUBA_DIGITS 128
+#define MAX_BIG2STR_TABLE_ENTRIES 64
+static VALUE big2str_table[37][MAX_BIG2STR_TABLE_ENTRIES];
+
+static VALUE bigsqr(VALUE x);
+static void bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp);
+
+static inline int
+big2str_karatsuba(VALUE x, int n, int base, int hbase, char *s, int trim)
+{
+    long i, j, k, bs_len, sign = RBIGNUM(x)->sign;
+    volatile VALUE t = big2str_table[base][0], t2;
+    VALUE *as, *bs, q, r;
+
+    j = RBIGNUM(t)->len;
+    for (i=0; j <= RBIGNUM(x)->len; i++) j *= 2;
+
+    as = ALLOCA_N(VALUE, i);
+
+    for (i=0,j=1; ; i++,j*=2) {
+       as[i] = t;
+       if(big2str_table[base][i + 1]) {
+           t2 = big2str_table[base][i + 1];
+       }
+       else {
+           t2 = bigsqr(t);
+           if(i + 1 < MAX_BIG2STR_TABLE_ENTRIES) {
+               big2str_table[base][i + 1] = t2;
+               rb_global_variable(&big2str_table[base][i + 1]);
+           }
+       }
+       if(RBIGNUM(x)->len < RBIGNUM(t2)->len) break;
+       t = t2;
+    }
+
+    bs_len = j * 2;
+    bs = ALLOCA_N(VALUE, bs_len);
+    bs[0] = x;
+    RBIGNUM(x)->sign = 1;
+    for (; j>0; i--, j/=2) {
+       for (k=0; k<bs_len; k+=j*2) {
+           bigdivmod(bs[k], as[i], &q, &r);
+           bs[k] = q;
+           bs[k + j] = r;
+       }
+    }
+    RBIGNUM(x)->sign = sign;
+
+    j = 0;
+    while(RBIGNUM(bs[j])->len == 1 && BDIGITS(bs[j])[0] == 0) j++;
+    for (i=bs_len-1; i>j; i--) {
+       k = big2str_normal(
+           bs[i], KARATSUBA_DIGITS, base, hbase,
+           s + n - KARATSUBA_DIGITS, Qfalse);
+       n -= KARATSUBA_DIGITS - k;
+    }
+    n = big2str_normal(bs[j], n, base, hbase, s, trim);
+
+    return n;
+}
+
 VALUE
 rb_big2str0(VALUE x, int base, int trim)
 {
     volatile VALUE t;
-    BDIGIT *ds;
     long i, j, hbase;
     VALUE ss;
     char *s;
@@ -646,28 +733,15 @@ rb_big2str0(VALUE x, int base, int trim)
 #endif
 
     t = rb_big_clone(x);
-    ds = BDIGITS(t);
     ss = rb_str_new(0, j+1);
     s = RSTRING_PTR(ss);
 
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
-    while (i && j > 1) {
-	long k = i;
-	BDIGIT_DBL num = 0;
-
-	while (k--) {
-	    num = BIGUP(num) + ds[k];
-	    ds[k] = (BDIGIT)(num / hbase);
-	    num %= hbase;
-	}
-	if (trim && ds[i-1] == 0) i--;
-	k = SIZEOF_BDIGITS;
-	while (k--) {
-	    s[--j] = ruby_digitmap[num % base];
-	    num /= base;
-	    if (!trim && j < 1) break;
-	    if (trim && i == 0 && num == 0) break;
-	}
+    if (RBIGNUM(x)->len > RBIGNUM(big2str_table[base][0])->len * 4) {
+       j = big2str_karatsuba(t, j, base, hbase, s, trim);
+    }
+    else {
+       j = big2str_normal(t, j, base, hbase, s, trim);
     }
     if (trim) {while (s[j] == '0') j++;}
     i = RSTRING_LEN(ss) - j;
@@ -681,6 +755,22 @@ rb_big2str0(VALUE x, int base, int trim)
     rb_str_set_len(ss, i);
 
     return ss;
+}
+
+static void
+init_big2str_table(void)
+{
+    int i, j;
+    VALUE v;
+
+    for (i=0; i<37; i++) {
+       v = rb_big_pow(rb_int2big(i), INT2FIX(KARATSUBA_DIGITS));
+       big2str_table[i][0] = v;
+       rb_global_variable(&big2str_table[i][0]);
+       for (j=1; j < MAX_BIG2STR_TABLE_ENTRIES; j++) {
+           big2str_table[i][j] = Qfalse;
+       }
+    }
 }
 
 VALUE
@@ -2225,4 +2315,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
+
+    init_big2str_table();
 }

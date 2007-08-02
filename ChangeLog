@@ -13,6 +13,13 @@ Thu Aug  2 23:42:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* re.c (rb_reg_compile): append regexp options to error message.
 	  [ruby-dev:31334]
 
+Thu Aug  2 22:05:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): faster Bugnum#to_s using Karatsuba
+	  algorithm.  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>
+	  in [ruby-dev:31312], slightly modified by Kenta Murata
+	  <muraken AT gmail.com> in [ruby-dev:31339].
+
 Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): should not check positional number as
