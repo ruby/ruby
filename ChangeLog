@@ -1,3 +1,8 @@
+Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): should not check positional number as
+	  width.  [ruby-core:11838]
+
 Wed Aug  1 12:40:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* generic.rb (URI::Generic::merge_path): behave as RFC 3986.

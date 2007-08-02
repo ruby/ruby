@@ -349,7 +349,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    CHECK_FOR_WIDTH(flags);
 	    n = 0;
 	    GETNUM(n, width);
 	    if (*p == '$') {
@@ -360,6 +359,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		p++;
 		goto retry;
 	    }
+	    CHECK_FOR_WIDTH(flags);
 	    width = n;
 	    flags |= FWIDTH;
 	    goto retry;
