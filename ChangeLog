@@ -1,6 +1,8 @@
-Fri Aug  3 06:17:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  3 06:40:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: more verbose message.  [ruby-Bugs-12766]
+
+	* lib/mkmf.rb (have_type): suppress a warning with -Wall.
 
 Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
