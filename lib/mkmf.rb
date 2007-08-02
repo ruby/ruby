@@ -114,13 +114,12 @@ end
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
 $extmk = File.expand_path($0)[0, extdir.size+1] == extdir+"/"
-if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
-  $hdrdir = $topdir = Config::CONFIG["archdir"]
-elsif File.exist?(($top_srcdir ||= topdir)  + "/ruby.h") and
+if not $extmk and File.exist?(($hdrdir = Config::CONFIG["archdir"]) + "/ruby.h")
+  $topdir = $hdrdir
+elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir))  + "/ruby.h") and
     File.exist?(($topdir ||= Config::CONFIG["topdir"]) + "/config.h")
-  $hdrdir = $top_srcdir
 else
-  abort "can't find header files for ruby."
+  abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
 end
 
 OUTFLAG = CONFIG['OUTFLAG']

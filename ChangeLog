@@ -1,3 +1,7 @@
+Fri Aug  3 06:17:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: more verbose message.  [ruby-Bugs-12766]
+
 Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): should not check positional number as
@@ -60,7 +64,6 @@ Sun Jul 22 14:33:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/win32ole/win32ole.c (ole_hresult2msg, folevariable_name,
 	  folevariable_ole_type, folevariable_ole_type_detail,
 	  folevariable_value, folemethod_visible): missing return value.
-	
 
 Sat Jul 21 17:48:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -119,7 +122,7 @@ Wed Jul 18 08:47:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jul 17 00:50:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* numeric.c (fix_pow): integer power calculation: 0**n => 0, 
+	* numeric.c (fix_pow): integer power calculation: 0**n => 0,
 	  1**n => 1, -1**n => 1 (n: even) / -1 (n: odd).
 
 	* test/ruby/test_fixnum.rb (TestFixnum::test_pow): update test
@@ -297,6 +300,7 @@ Sat Jun 23 00:37:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* hash.c: ditto.
 
 Mon Jun 18 08:47:54 2007  Technorama Ltd.  <oss-ruby@technorama.net>
+
 	* ext/openssl/{extconf.rb,ossl_ssl_session.c}:
 	  Fix ruby-Bugs-11513.
 
@@ -414,7 +418,7 @@ Tue May 29 11:01:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon May 28 02:54:05 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/rinda/tuplespace.rb (Rinda::TupleBag#delete): use rindex and 
+	* lib/rinda/tuplespace.rb (Rinda::TupleBag#delete): use rindex and
 	  delete_at instead of delete for little improvement.
 
 Sat May 26 00:05:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -525,10 +529,10 @@ Mon Apr 30 01:17:51 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Fri Apr 27 02:00:17 2007  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* signal.c: Fixed backwards compatibility for 'raise Interrupt'.
-	
+
 	* lib/yaml/tag.rb: Running rdoc over the 1.8.6 tree skips
 	Module. Patch from James Britt
-	
+
 Thu Apr 26 13:54:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el: new file.  C/C++ style for ruby source code.
@@ -838,7 +842,7 @@ Mon Mar 12 00:59:19 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 Sun Mar 11 18:57:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
-	* misc/README: Add a note about ruby-electric.el. 
+	* misc/README: Add a note about ruby-electric.el.
 
 	* misc/ruby-mode.el (ruby-non-block-do-re): Fix
 	  ruby-non-block-do-re. [ruby-core:03719]
@@ -887,10 +891,10 @@ Tue Mar  6 19:08:46 2007  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
 
 Tue Mar  6 18:58:37 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
-	
+
 	* lib/shell/process-controller.rb: fix thread synchronization
 	  problem for [ruby-dev:30477].
-	
+
 Tue Mar  6 18:44:26 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/lib/md5.rb (MD5::new, MD5::md5): Catch up with
@@ -898,7 +902,7 @@ Tue Mar  6 18:44:26 2007  Akinori MUSHA  <knu@iDaemons.org>
 	  moriq.com> in [ruby-dev:30500].
 
 	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
-	
+
 Tue Mar  6 18:24:19 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* time.c (time_to_s): Back out the format changes; discussed
@@ -1307,7 +1311,7 @@ Sat Feb 10 07:41:52 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Feb 10 00:13:11 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd, 
+	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd,
 	  __conv_keyonly_opts).
 
 Fri Feb  9 20:44:53 2007  Akinori MUSHA  <knu@iDaemons.org>
@@ -1387,7 +1391,7 @@ Wed Jan 24 18:05:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  regexp font-lock bug.  [ruby-talk:235758]
 
 Tue Jan 23 11:02:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
- 
+
  	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::read_line):
 
 Tue Jan 23 18:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1407,8 +1411,8 @@ Mon Jan 22 14:57:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Jan 13 23:54:48 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 
-	  olemethod_free, olevariable_free, oleparam_free, 
+	* ext/win32ole/win32ole.c (ole_free, ole_type_free,
+	  olemethod_free, olevariable_free, oleparam_free,
 	  ole_event_free): fix memory leak.  [ruby-core:09846]
 
 Fri Jan 12 11:13:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1438,7 +1442,7 @@ Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_upto): String#upto from empty string makes
 	  inifinite loop.  [ruby-core:09864]
 
-Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net> 
+Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment):
 	  Look for class and module comments above rb_define_class and
@@ -6756,6 +6760,7 @@ Mon Aug  1 01:17:40 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* test/drb/ut_drb.rb: ditto.
 
 Mon Aug  1 00:07:32 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
 	* lib/irb/context.rb: fix `irb --readline` option. [ruby-list:40955]
 
 Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -7240,6 +7245,7 @@ Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  destination object.  [ruby-talk:146894]
 
 Thu Jun 30 19:00:21 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
 	* lib/irb/ruby-lex.rb (RubyLex::identify_number): alternative implements
 	  for [ruby-dev:26410]. And support a numeric form of 0d99999.
 
@@ -16917,6 +16923,7 @@ Sat Nov  8 13:49:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* configure.in: improvement of pthread check
 
 Sat Nov  8 13:28:46 2003  Takaaki Tateishi  <ttate@ttsky.net>
+
 	* ext/dl/sym.c: Add DL.win32_last_error and DL.last_error.
 	  Thanks, Kaoru Shirai.
 
@@ -19754,6 +19761,7 @@ Tue Aug 12 02:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (THREAD_ALLOC): initialize IA64 members.
 
 Mon Aug 11 22:31:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
 	* lib/debug.rb(debug_command): inspection command should inspect
 	  resulting value even if it's nil.  [ruby-dev:21180] by OMAE, jun
 	  <jun66j5@ybb.ne.jp>.
