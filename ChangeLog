@@ -1,3 +1,7 @@
+Fri Aug  3 00:00:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2str_table): base cannot be 0 or 1.
+
 Thu Aug  2 23:42:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_compile_gen): set error if failed to compile regexp

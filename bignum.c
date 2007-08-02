@@ -595,6 +595,7 @@ rb_str2inum(VALUE str, int base)
 }
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
 static inline int
 big2str_normal(VALUE x, long j, int base, int hbase, char *s, int trim)
 {
@@ -624,7 +625,8 @@ big2str_normal(VALUE x, long j, int base, int hbase, char *s, int trim)
 
 #define KARATSUBA_DIGITS 128
 #define MAX_BIG2STR_TABLE_ENTRIES 64
-static VALUE big2str_table[37][MAX_BIG2STR_TABLE_ENTRIES];
+static VALUE big2str_table_0[37-2][MAX_BIG2STR_TABLE_ENTRIES];
+#define big2str_table (big2str_table_0-2)
 
 static VALUE bigsqr(VALUE x);
 static void bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp);
@@ -643,17 +645,17 @@ big2str_karatsuba(VALUE x, int n, int base, int hbase, char *s, int trim)
 
     for (i=0,j=1; ; i++,j*=2) {
        as[i] = t;
-       if(big2str_table[base][i + 1]) {
+       if (big2str_table[base][i + 1]) {
            t2 = big2str_table[base][i + 1];
        }
        else {
            t2 = bigsqr(t);
-           if(i + 1 < MAX_BIG2STR_TABLE_ENTRIES) {
+           if (i + 1 < MAX_BIG2STR_TABLE_ENTRIES) {
                big2str_table[base][i + 1] = t2;
                rb_global_variable(&big2str_table[base][i + 1]);
            }
        }
-       if(RBIGNUM(x)->len < RBIGNUM(t2)->len) break;
+       if (RBIGNUM(x)->len < RBIGNUM(t2)->len) break;
        t = t2;
     }
 
@@ -763,7 +765,7 @@ init_big2str_table(void)
     int i, j;
     VALUE v;
 
-    for (i=0; i<37; i++) {
+    for (i=2; i<37; i++) {
        v = rb_big_pow(rb_int2big(i), INT2FIX(KARATSUBA_DIGITS));
        big2str_table[i][0] = v;
        rb_global_variable(&big2str_table[i][0]);
