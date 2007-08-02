@@ -1,11 +1,17 @@
-Thu Aug  2 23:36:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  2 23:42:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_compile_gen): set error if failed to compile regexp
 	  literal.  [ruby-dev:31336]
 
+	* re.c (option_to_str, arg_kcode, opt_kcode): options conversion
+	  between int and string.
+
 	* re.c (rb_reg_compile): should not use regexp which could not get
 	  initialized.  [ruby-dev:31333]
 	  return error message to let the parser know it.
+
+	* re.c (rb_reg_compile): append regexp options to error message.
+	  [ruby-dev:31334]
 
 Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

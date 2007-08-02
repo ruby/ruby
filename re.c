@@ -196,6 +196,41 @@ char_to_option(int c)
     return val;
 }
 
+static char *
+option_to_str(char str[4], int options)
+{
+    char *p = str;
+    if (options & ONIG_OPTION_MULTILINE) *p++ = 'm';
+    if (options & ONIG_OPTION_IGNORECASE) *p++ = 'i';
+    if (options & ONIG_OPTION_EXTEND) *p++ = 'x';
+    *p = 0;
+    return str;
+}
+
+static const char *
+arg_kcode(int options)
+{
+    switch (options & ARG_KCODE_MASK) {
+      case ARG_KCODE_NONE: return "n";
+      case ARG_KCODE_EUC:  return "e";
+      case ARG_KCODE_SJIS: return "s";
+      case ARG_KCODE_UTF8: return "u";
+    }
+    return "";
+}
+
+static const char *
+opt_kcode(int flags)
+{
+    switch (flags) {
+      case KCODE_NONE: return "n";
+      case KCODE_EUC:  return "e";
+      case KCODE_SJIS: return "s";
+      case KCODE_UTF8: return "u";
+    }
+    return "";
+}
+
 extern int
 rb_char_to_option_kcode(int c, int *option, int *kcode)
 {
@@ -416,29 +451,13 @@ rb_reg_desc(const char *s, long len, VALUE re)
     rb_reg_expr_str(str, s, len);
     rb_str_buf_cat2(str, "/");
     if (re) {
+	char opts[4];
 	rb_reg_check(re);
-	if (RREGEXP(re)->ptr->options & ONIG_OPTION_MULTILINE)
-	    rb_str_buf_cat2(str, "m");
-	if (RREGEXP(re)->ptr->options & ONIG_OPTION_IGNORECASE)
-	    rb_str_buf_cat2(str, "i");
-	if (RREGEXP(re)->ptr->options & ONIG_OPTION_EXTEND)
-	    rb_str_buf_cat2(str, "x");
+	if (*option_to_str(opts, RREGEXP(re)->ptr->options))
+	    rb_str_buf_cat2(str, opts);
 
 	if (FL_TEST(re, KCODE_FIXED)) {
-	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
-	      case KCODE_NONE:
-		rb_str_buf_cat2(str, "n");
-		break;
-	      case KCODE_EUC:
-		rb_str_buf_cat2(str, "e");
-		break;
-	      case KCODE_SJIS:
-		rb_str_buf_cat2(str, "s");
-		break;
-	      case KCODE_UTF8:
-		rb_str_buf_cat2(str, "u");
-		break;
-	    }
+	    rb_str_buf_cat2(str, opt_kcode(RBASIC(re)->flags & KCODE_MASK));
 	}
     }
     OBJ_INFECT(str, re);
@@ -513,6 +532,7 @@ rb_reg_to_s(VALUE re)
     long len;
     const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
+    char optbuf[5];
 
     rb_reg_check(re);
 
@@ -577,15 +597,12 @@ rb_reg_to_s(VALUE re)
 	}
     }
 
-    if (options & ONIG_OPTION_MULTILINE) rb_str_buf_cat2(str, "m");
-    if (options & ONIG_OPTION_IGNORECASE) rb_str_buf_cat2(str, "i");
-    if (options & ONIG_OPTION_EXTEND) rb_str_buf_cat2(str, "x");
+    if (*option_to_str(optbuf, options)) rb_str_buf_cat2(str, optbuf);
 
     if ((options & embeddable) != embeddable) {
-	rb_str_buf_cat2(str, "-");
-	if (!(options & ONIG_OPTION_MULTILINE)) rb_str_buf_cat2(str, "m");
-	if (!(options & ONIG_OPTION_IGNORECASE)) rb_str_buf_cat2(str, "i");
-	if (!(options & ONIG_OPTION_EXTEND)) rb_str_buf_cat2(str, "x");
+	optbuf[0] = '-';
+	option_to_str(optbuf + 1, ~options);
+	rb_str_buf_cat2(str, optbuf);
     }
 
     rb_str_buf_cat2(str, ":");
@@ -1527,8 +1544,15 @@ rb_reg_compile(const char *s, long len, int options)
     char err[ONIG_MAX_ERROR_MESSAGE_LEN];
 
     if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	VALUE desc = rb_reg_desc(s, len, 0);
-	return rb_sprintf("%s: %s", err, RSTRING_PTR(desc));
+	char opts[6];
+	VALUE desc = rb_str_buf_new2(err);
+
+	rb_str_buf_cat2(desc, ": /");
+	rb_reg_expr_str(desc, s, len);
+	opts[0] = '/';
+	option_to_str(opts + 1, options);
+	strlcat(opts, arg_kcode(options), sizeof(opts));
+	return rb_str_buf_cat2(desc, opts);
     }
     FL_SET(re, REG_LITERAL);
     return re;
@@ -1997,6 +2021,12 @@ rb_reg_options(VALUE re)
     return options;
 }
 
+VALUE
+rb_check_regexp_type(VALUE re)
+{
+    return rb_check_convert_type(re, T_REGEXP, "Regexp", "to_regexp");
+}
+
 
 /*
  *  call-seq:
@@ -2022,7 +2052,7 @@ rb_reg_s_union(int argc, VALUE *argv)
     }
     else if (argc == 1) {
         VALUE v;
-        v = rb_check_convert_type(argv[0], T_REGEXP, "Regexp", "to_regexp");
+        v = rb_check_regexp_type(argv[0]);
         if (!NIL_P(v))
             return v;
         else {
@@ -2040,7 +2070,7 @@ rb_reg_s_union(int argc, VALUE *argv)
             volatile VALUE v;
             if (0 < i)
                 rb_str_buf_cat2(source, "|");
-            v = rb_check_convert_type(argv[i], T_REGEXP, "Regexp", "to_regexp");
+            v = rb_check_regexp_type(argv[i]);
             if (!NIL_P(v)) {
                 if (FL_TEST(v, KCODE_FIXED)) {
                     if (kcode == -1) {
@@ -2065,22 +2095,11 @@ rb_reg_s_union(int argc, VALUE *argv)
         }
         args[0] = source;
         args[1] = Qnil;
-        switch (kcode) {
-          case -1:
+        if (kcode == -1) {
             args[2] = Qnil;
-            break;
-          case KCODE_NONE:
-            args[2] = rb_str_new2("n");
-            break;
-          case KCODE_EUC:
-            args[2] = rb_str_new2("e");
-            break;
-          case KCODE_SJIS:
-            args[2] = rb_str_new2("s");
-            break;
-          case KCODE_UTF8:
-            args[2] = rb_str_new2("u");
-            break;
+	}
+	else {
+            args[2] = rb_str_new2(opt_kcode(kcode));
         }
         return rb_class_new_instance(3, args, rb_cRegexp);
     }
