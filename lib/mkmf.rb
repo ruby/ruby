@@ -754,6 +754,21 @@ SRC
   end
 end
 
+def try_type(type, headers = nil, opt = "", &b)
+  if try_compile(<<"SRC", opt, &b)
+#{COMMON_HEADERS}
+#{cpp_include(headers)}
+/*top*/
+typedef #{type} conftest_type;
+int conftestval[sizeof(conftest_type)?1:-1];
+SRC
+    $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
+    true
+  else
+    false
+  end
+end
+
 # Returns whether or not the static type +type+ is defined.  You may
 # optionally pass additional +headers+ to check against in addition to the
 # common header files.
@@ -769,18 +784,26 @@ end
 #
 def have_type(type, headers = nil, opt = "", &b)
   checking_for checking_message(type, headers, opt) do
-    headers = cpp_include(headers)
-    if try_compile(<<"SRC", opt, &b)
-#{COMMON_HEADERS}
-#{headers}
-/*top*/
-typedef #{type} conftest_type;
-int conftestval[sizeof(conftest_type)?1:-1];
-SRC
-      $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
-      true
-    else
-      false
+    try_type(type, headers, opt, &b)
+  end
+end
+
+# Returns where the static type +type+ is defined.
+#
+# You may also pass additional flags to +opt+ which are then passed along to
+# the compiler.
+#
+# See also +have_type+.
+#
+def find_type(type, opt, *headers, &b)
+  opt ||= ""
+  fmt = "not found"
+  def fmt.%(x)
+    x ? x.respond_to?(:join) ? x.join(",") : x : self
+  end
+  checking_for checking_message(type, nil, opt), fmt do
+    headers.find do |h|
+      try_type(type, h, opt, &b)
     end
   end
 end
@@ -1386,7 +1409,7 @@ site-install-rb: install-rb
       end
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
+	line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
 	if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
 	  (cont ||= []) << line
 	  next
