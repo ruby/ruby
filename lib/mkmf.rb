@@ -793,7 +793,7 @@ def have_type(type, headers = nil, opt = "", &b)
 #{headers}
 /*top*/
 typedef #{type} conftest_type;
-static conftest_type conftestval[sizeof(conftest_type)?1:-1];
+int conftestval[sizeof(conftest_type)?1:-1];
 SRC
       $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
       true
