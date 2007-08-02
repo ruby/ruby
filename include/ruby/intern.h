@@ -440,7 +440,6 @@ VALUE rb_reg_match_pre(VALUE);
 VALUE rb_reg_match_post(VALUE);
 VALUE rb_reg_match_last(VALUE);
 VALUE rb_reg_new(const char*, long, int);
-VALUE rb_reg_compile(const char*, long, int, const char*, int);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);

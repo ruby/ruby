@@ -419,6 +419,8 @@ extern int rb_dvar_defined(ID);
 extern int rb_local_defined(ID);
 extern int rb_parse_in_eval(void);
 
+static VALUE reg_compile_gen(struct parser_params*, const char *, long, int);
+#define reg_compile(ptr,len,options) reg_compile_gen(parser, ptr, len, options)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -3611,18 +3613,16 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			int options = $3;
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_LIT(rb_reg_compile("", 0, options & ~RE_OPTION_ONCE,
-							  ruby_sourcefile, ruby_sourceline));
+			    node = NEW_LIT(reg_compile("", 0, options));
 			}
 			else switch (nd_type(node)) {
 			  case NODE_STR:
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = rb_reg_compile(RSTRING_PTR(src),
-							      RSTRING_LEN(src),
-							      options & ~RE_OPTION_ONCE,
-							      ruby_sourcefile, ruby_sourceline);
+				node->nd_lit = reg_compile(RSTRING_PTR(src),
+							   RSTRING_LEN(src),
+							   options);
 			    }
 			    break;
 			  default:
@@ -8099,6 +8099,19 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 {
     return (vtable_included(lvtbl->args, id) ||
 	    vtable_included(lvtbl->vars, id));
+}
+
+static VALUE
+reg_compile_gen(struct parser_params* parser, const char *ptr, long len, int options)
+{
+    VALUE rb_reg_compile(const char *, long, int);
+    VALUE re = rb_reg_compile(ptr, len, (options) & ~RE_OPTION_ONCE);
+
+    if (TYPE(re) == T_STRING) {
+	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));
+	return Qnil;
+    }
+    return re;
 }
 
 void

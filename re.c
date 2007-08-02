@@ -1521,14 +1521,14 @@ rb_reg_new(const char *s, long len, int options)
 }
 
 VALUE
-rb_reg_compile(const char *s, long len, int options, const char *file, int line)
+rb_reg_compile(const char *s, long len, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     char err[ONIG_MAX_ERROR_MESSAGE_LEN];
 
     if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	VALUE desc = rb_reg_desc(s, len, re);
-	rb_compile_error(file, line, "%s: %s", err, RSTRING_PTR(desc));
+	VALUE desc = rb_reg_desc(s, len, 0);
+	return rb_sprintf("%s: %s", err, RSTRING_PTR(desc));
     }
     FL_SET(re, REG_LITERAL);
     return re;

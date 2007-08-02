@@ -1,3 +1,12 @@
+Thu Aug  2 23:36:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_compile_gen): set error if failed to compile regexp
+	  literal.  [ruby-dev:31336]
+
+	* re.c (rb_reg_compile): should not use regexp which could not get
+	  initialized.  [ruby-dev:31333]
+	  return error message to let the parser know it.
+
 Thu Aug  2 13:46:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): should not check positional number as
