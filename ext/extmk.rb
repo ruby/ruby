@@ -113,8 +113,6 @@ def extmake(target)
     top_srcdir = $top_srcdir
     topdir = $topdir
     hdrdir = $hdrdir
-    mk_srcdir = CONFIG["srcdir"]
-    mk_topdir = CONFIG["topdir"]
     prefix = "../" * (target.count("/")+1)
     $top_srcdir = relative_from(top_srcdir, prefix)
     $hdrdir = relative_from(hdrdir, prefix)
@@ -129,12 +127,30 @@ def extmake(target)
     makefile = "./Makefile"
     ok = File.exist?(makefile)
     unless $ignore
-      RbConfig::CONFIG["hdrdir"] = $hdrdir
-      RbConfig::CONFIG["srcdir"] = $srcdir
-      RbConfig::CONFIG["topdir"] = $topdir
-      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(top_srcdir)/include"
-      CONFIG["srcdir"] = "$(top_srcdir)/ext/#{$mdir}"
-      CONFIG["topdir"] = $topdir
+      rbconfig0 = RbConfig::CONFIG
+      mkconfig0 = CONFIG
+      rbconfig = {
+	"hdrdir" => $hdrdir,
+	"srcdir" => $srcdir,
+	"topdir" => $topdir,
+      }
+      mkconfig = {
+	"hdrdir" => ($hdrdir == top_srcdir) ? top_srcdir : "$(top_srcdir)/include",
+	"srcdir" => "$(top_srcdir)/ext/#{$mdir}",
+	"topdir" => $topdir,
+      }
+      rbconfig0.each_pair {|key, val| rbconfig[key] ||= val.dup}
+      mkconfig0.each_pair {|key, val| mkconfig[key] ||= val.dup}
+      RbConfig.module_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, rbconfig)
+	remove_const(:MAKEFILE_CONFIG)
+	const_set(:MAKEFILE_CONFIG, mkconfig)
+      }
+      Object.class_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, mkconfig)
+      }
       begin
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
@@ -183,8 +199,11 @@ def extmake(target)
       $ignore or $continue or return false
     end
     $compiled[target] = true
-    if $clean and $clean != true
-      File.unlink(makefile) rescue nil
+    if $clean
+      FileUtils.rm_f("mkmf.log")
+      if $clean != true
+	FileUtils.rm_f([makefile, $extconf_h || "extconf.h"])
+      end
     end
     if $static
       $extflags ||= ""
@@ -197,11 +216,18 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
-    RbConfig::CONFIG["srcdir"] = $top_srcdir
-    RbConfig::CONFIG["topdir"] = topdir
-    CONFIG["srcdir"] = mk_srcdir
-    CONFIG["topdir"] = mk_topdir
-    CONFIG.delete("hdrdir")
+    unless $ignore
+      RbConfig.module_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, rbconfig0)
+	remove_const(:MAKEFILE_CONFIG)
+	const_set(:MAKEFILE_CONFIG, mkconfig0)
+      }
+      Object.class_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, mkconfig0)
+      }
+    end
     $top_srcdir = top_srcdir
     $topdir = topdir
     $hdrdir = hdrdir
@@ -428,10 +454,11 @@ if $ignore
   if $clean
     Dir.rmdir('ext') rescue nil
     if $extout
-      FileUtils.rm_rf([extout+"/common", extout+"/include/ruby"])
+      FileUtils.rm_rf([extout+"/common", extout+"/include/ruby", extout+"/rdoc"])
       FileUtils.rm_rf(extout+"/"+CONFIG["arch"])
       if $clean != true
 	FileUtils.rm_rf(extout+"/include/"+CONFIG["arch"])
+	FileUtils.rm_f($mflags.defined?("INSTALLED_LIST")||ENV["INSTALLED_LIST"]||".installed.list")
 	Dir.rmdir(extout+"/include") rescue nil
 	Dir.rmdir(extout) rescue nil
       end

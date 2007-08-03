@@ -1,3 +1,13 @@
+Fri Aug  3 11:05:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): save all CONFIG values.
+
+	* ext/extmk.rb (extmake): remove mkmf.log at clean, and extconf.h at
+	  distclean, respectively.
+
+	* ext/extmk.rb: remove rdoc at clean, and installed list file at
+	  distclean, respectively.
+
 Fri Aug  3 07:09:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: more verbose message.  [ruby-Bugs-12766]
