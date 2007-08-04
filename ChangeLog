@@ -1,3 +1,8 @@
+Sun Aug  5 04:56:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open_v, pipe_open_s): separate array and string
+	  cases.  [ruby-dev:31344]
+
 Fri Aug  3 11:05:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): save all CONFIG values.

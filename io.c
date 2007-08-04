@@ -3050,12 +3050,12 @@ popen_exec(void *pp)
 #endif
 
 static VALUE
-pipe_open(int argc, VALUE *argv, const char *mode)
+pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
     rb_io_t *fptr;
-    VALUE port, prog;
+    VALUE port;
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
@@ -3063,33 +3063,10 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     int openmode = rb_io_mode_modenum(mode);
     char *exename = NULL;
 #endif
-    volatile int doexec;
-    char *cmd;
     FILE *fp = 0;
     int fd = -1;
 
-    prog = rb_check_argv(argc, argv);
-    if (!prog) {
-	if (argc == 1) argc = 0;
-	prog = argv[0];
-    }
-
-    cmd = StringValueCStr(prog);
-    doexec = (strcmp("-", cmd) != 0);
-
-#if !defined(HAVE_FORK)
-    if (!doexec) {
-	rb_raise(rb_eNotImpError,
-		 "fork() function is unimplemented on this machine");
-    }
-#endif
-
 #if defined(HAVE_FORK)
-    if (!doexec) {
-	fflush(stdin);		/* is it really needed? */
-        rb_io_flush(rb_stdout);
-        rb_io_flush(rb_stderr);
-    }
     arg.modef = modef;
     arg.pair[0] = arg.pair[1] = -1;
     switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
@@ -3110,13 +3087,16 @@ pipe_open(int argc, VALUE *argv, const char *mode)
       default:
         rb_sys_fail(cmd);
     }
-    if (doexec) {
+    if (cmd) {
 	arg.exec.argc = argc;
 	arg.exec.argv = argv;
 	arg.exec.prog = cmd;
 	pid = rb_fork(&status, popen_exec, &arg);
     }
     else {
+	fflush(stdin);		/* is it really needed? */
+	rb_io_flush(rb_stdout);
+	rb_io_flush(rb_stderr);
 	pid = rb_fork(&status, 0, 0);
 	if (pid == 0) {		/* child */
 	    popen_redirect(&arg);
@@ -3197,6 +3177,32 @@ pipe_open(int argc, VALUE *argv, const char *mode)
     return port;
 }
 
+static VALUE
+pipe_open_v(int argc, VALUE *argv, const char *mode)
+{
+    VALUE prog = rb_check_argv(argc, argv);
+    const char *cmd;
+
+    if (!RB_GC_GUARD(prog)) prog = argv[0];
+    cmd = RSTRING_PTR(prog);
+    return pipe_open(cmd, argc, argv, mode);
+}
+
+static VALUE
+pipe_open_s(VALUE prog, const char *mode)
+{
+    const char *cmd = (rb_check_argv(1, &prog), RSTRING_PTR(prog));
+
+    if (strcmp("-", cmd) == 0) {
+#if !defined(HAVE_FORK)
+	rb_raise(rb_eNotImpError,
+		 "fork() function is unimplemented on this machine");
+#endif
+	cmd = 0;
+    }
+    return pipe_open(cmd, 0, &prog, mode);
+}
+
 /*
  *  call-seq:
  *     IO.popen(cmd, mode="r")               => io
@@ -3267,15 +3273,15 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
-	VALUE *argv = ALLOCA_N(VALUE, RARRAY_LEN(tmp));
+	long len = RARRAY_LEN(tmp);
+	VALUE *args = ALLOCA_N(VALUE, len);
 
-	MEMCPY(argv, RARRAY_PTR(tmp), VALUE, RARRAY_LEN(tmp));
-	port = pipe_open(RARRAY_LEN(tmp), argv, mode);
-	pname = tmp;
+	MEMCPY(args, RARRAY_PTR(tmp), VALUE, len);
+	port = pipe_open_v(len, args, mode);
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open(1, &pname, mode);
+	port = pipe_open_s(pname, mode);
     }
     if (NIL_P(port)) {
 	/* child */
@@ -3500,7 +3506,7 @@ rb_io_open(const char *fname, const char *mode)
 {
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
-	return pipe_open(1, &cmd, mode);
+	return pipe_open_s(cmd, mode);
     }
     else {
 	return rb_file_open(fname, mode);
@@ -4624,7 +4630,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     rb_io_t *fptr;
 
     SafeStringValue(str);
-    port = pipe_open(1, &str, "r");
+    port = pipe_open_s(str, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
