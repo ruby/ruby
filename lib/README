@@ -6,7 +6,7 @@ benchmark.rb	a benchmark utility
 cgi-lib.rb	simple CGI support library (old style)
 cgi.rb		CGI support library
 cgi/session.rb	CGI session class
-complex.rb	complex number suppor
+complex.rb	complex number support
 csv.rb		CSV parser/generator
 date.rb		date object
 date/format.rb	date parsing and formatting
