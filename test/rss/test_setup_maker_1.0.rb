@@ -262,8 +262,8 @@ module RSS
       
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
-        item.trackback_abouts.each_with_index do |about, i|
-          assert_equal(@trackback_elems[:about][i], about.value)
+        item.trackback_abouts.each_with_index do |about, j|
+          assert_equal(@trackback_elems[:about][j], about.value)
         end
       end
     end
@@ -538,8 +538,8 @@ module RSS
       
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
-        item.trackback_abouts.each_with_index do |about, i|
-          assert_equal(@trackback_elems[:about][i], about.value)
+        item.trackback_abouts.each_with_index do |about, j|
+          assert_equal(@trackback_elems[:about][j], about.value)
         end
       end
 

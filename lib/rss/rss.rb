@@ -53,7 +53,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.7"
+  VERSION = "0.1.8"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -162,7 +162,6 @@ module RSS
   end
 
   module BaseModel
-
     include Utils
 
     def install_have_child_element(tag_name, uri, occurs, name=nil, type=nil)
@@ -190,7 +189,7 @@ EOC
       plural_name ||= "#{name}s"
       add_have_children_element(name, plural_name)
       add_plural_form(name, plural_name)
-      install_model(tag_name, uri, occurs, plural_name)
+      install_model(tag_name, uri, occurs, plural_name, true)
 
       def_children_accessor(name, plural_name)
       install_element(name, "s") do |n, elem_name|
@@ -205,20 +204,26 @@ EOC
       end
     end
 
-    def install_text_element(tag_name, uri, occurs, name=nil, type=nil, disp_name=nil)
+    def install_text_element(tag_name, uri, occurs, name=nil, type=nil,
+                             disp_name=nil)
       name ||= tag_name
       disp_name ||= name
       self::ELEMENTS << name
       add_need_initialize_variable(name)
       install_model(tag_name, uri, occurs, name)
 
-      def_corresponded_attr_writer name, type, disp_name
-      convert_attr_reader name
+      def_corresponded_attr_writer(name, type, disp_name)
+      def_corresponded_attr_reader(name, type || :convert)
       install_element(name) do |n, elem_name|
         <<-EOC
-        if @#{n}
+        if respond_to?(:#{n}_content)
+          content = #{n}_content
+        else
+          content = @#{n}
+        end
+        if content
           rv = "\#{indent}<#{elem_name}>"
-          value = html_escape(@#{n})
+          value = html_escape(content)
           if need_convert
             rv << convert(value)
           else
@@ -328,6 +333,46 @@ EOC
           convert(@#{attr})
         end
 EOC
+      end
+    end
+
+    def yes_clean_other_attr_reader(*attrs)
+      attrs.each do |attr|
+        attr = attr.id2name if attr.kind_of?(Integer)
+        module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          attr_reader(:#{attr})
+          def #{attr}?
+            YesCleanOther.parse(@#{attr})
+          end
+        EOC
+      end
+    end
+
+    def yes_other_attr_reader(*attrs)
+      attrs.each do |attr|
+        attr = attr.id2name if attr.kind_of?(Integer)
+        module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          attr_reader(:#{attr})
+          def #{attr}?
+            Utils::YesOther.parse(@#{attr})
+          end
+        EOC
+      end
+    end
+
+    def csv_attr_reader(*attrs)
+      attrs.each do |attr|
+        attr = attr.id2name if attr.kind_of?(Integer)
+        module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+          attr_reader(:#{attr})
+          def #{attr}_content
+            if @#{attr}.nil?
+              @#{attr}
+            else
+              @#{attr}.join(", ")
+            end
+          end
+        EOC
       end
     end
 
@@ -458,6 +503,34 @@ EOC
 EOC
     end
 
+    def yes_clean_other_writer(name, disp_name=name)
+      module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        def #{name}=(value)
+          value = (value ? "yes" : "no") if [true, false].include?(value)
+          @#{name} = value
+        end
+      EOC
+    end
+
+    def yes_other_writer(name, disp_name=name)
+      module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        def #{name}=(new_value)
+          if [true, false].include?(new_value)
+            new_value = new_value ? "yes" : "no"
+          end
+          @#{name} = new_value
+        end
+      EOC
+    end
+
+    def csv_writer(name, disp_name=name)
+      module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        def #{name}=(new_value)
+          @#{name} = Utils::CSV.parse(new_value)
+        end
+      EOC
+    end
+
     def def_children_accessor(accessor_name, plural_name)
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
       def #{plural_name}
@@ -511,6 +584,7 @@ EOC
     def setup_maker_element(target)
       self.class.need_initialize_variables.each do |var|
         value = __send__(var)
+        next if value.nil?
         if value.respond_to?("setup_maker") and
             !not_need_to_call_setup_maker_variables.include?(var)
           value.setup_maker(target)
@@ -540,9 +614,9 @@ EOC
   end
 
   class Element
-
     extend BaseModel
     include Utils
+    extend Utils::InheritedReader
     include SetupMaker
 
     INDENT = "  "
@@ -554,32 +628,34 @@ EOC
     TO_ELEMENT_METHODS = []
     NEED_INITIALIZE_VARIABLES = []
     PLURAL_FORMS = {}
-    
-    class << self
 
+    class << self
       def must_call_validators
-        MUST_CALL_VALIDATORS
+        inherited_hash_reader("MUST_CALL_VALIDATORS")
       end
       def models
-        MODELS
+        inherited_array_reader("MODELS")
       end
       def get_attributes
-        GET_ATTRIBUTES
+        inherited_array_reader("GET_ATTRIBUTES")
       end
       def have_children_elements
-        HAVE_CHILDREN_ELEMENTS
+        inherited_array_reader("HAVE_CHILDREN_ELEMENTS")
       end
       def to_element_methods
-        TO_ELEMENT_METHODS
+        inherited_array_reader("TO_ELEMENT_METHODS")
       end
       def need_initialize_variables
-        NEED_INITIALIZE_VARIABLES
+        inherited_array_reader("NEED_INITIALIZE_VARIABLES")
       end
       def plural_forms
-        PLURAL_FORMS
+        inherited_hash_reader("PLURAL_FORMS")
       end
 
-      
+      def inherited_base
+        ::RSS::Element
+      end
+
       def inherited(klass)
         klass.const_set("MUST_CALL_VALIDATORS", {})
         klass.const_set("MODELS", [])
@@ -589,123 +665,108 @@ EOC
         klass.const_set("NEED_INITIALIZE_VARIABLES", [])
         klass.const_set("PLURAL_FORMS", {})
 
-        klass.module_eval(<<-EOC)
-        public
-        
-        @tag_name = name.split(/::/).last
-        @tag_name[0,1] = @tag_name[0,1].downcase
-        @have_content = false
+        tag_name = klass.name.split(/::/).last
+        tag_name[0, 1] = tag_name[0, 1].downcase
+        klass.instance_variable_set("@tag_name", tag_name)
+        klass.instance_variable_set("@have_content", false)
+      end
 
-        def self.must_call_validators
-          super.merge(MUST_CALL_VALIDATORS)
-        end
-        def self.models
-          MODELS + super
-        end
-        def self.get_attributes
-          GET_ATTRIBUTES + super
-        end
-        def self.have_children_elements
-          HAVE_CHILDREN_ELEMENTS + super
-        end
-        def self.to_element_methods
-          TO_ELEMENT_METHODS + super
-        end
-        def self.need_initialize_variables
-          NEED_INITIALIZE_VARIABLES + super
-        end
-        def self.plural_forms
-          super.merge(PLURAL_FORMS)
-        end
+      def install_must_call_validator(prefix, uri)
+        self::MUST_CALL_VALIDATORS[uri] = prefix
+      end
 
-      
-        def self.install_must_call_validator(prefix, uri)
-          MUST_CALL_VALIDATORS[uri] = prefix
+      def install_model(tag, uri, occurs=nil, getter=nil, plural=false)
+        getter ||= tag
+        if m = self::MODELS.find {|t, u, o, g, p| t == tag and u == uri}
+          m[2] = occurs
+        else
+          self::MODELS << [tag, uri, occurs, getter, plural]
         end
-        
-        def self.install_model(tag, uri, occurs=nil, getter=nil)
-          getter ||= tag
-          if m = MODELS.find {|t, u, o, g| t == tag and u == uri}
-            m[2] = occurs
-          else
-            MODELS << [tag, uri, occurs, getter]
-          end
-        end
+      end
 
-        def self.install_get_attribute(name, uri, required=true,
-                                       type=nil, disp_name=nil,
-                                       element_name=nil)
-          disp_name ||= name
-          element_name ||= name
-          writer_type, reader_type = type
-          def_corresponded_attr_writer name, writer_type, disp_name
-          def_corresponded_attr_reader name, reader_type
-          if type == :boolean and /^is/ =~ name
-            alias_method "\#{$POSTMATCH}?", name
-          end
-          GET_ATTRIBUTES << [name, uri, required, element_name]
-          add_need_initialize_variable(disp_name)
+      def install_get_attribute(name, uri, required=true,
+                                type=nil, disp_name=nil,
+                                element_name=nil)
+        disp_name ||= name
+        element_name ||= name
+        writer_type, reader_type = type
+        def_corresponded_attr_writer name, writer_type, disp_name
+        def_corresponded_attr_reader name, reader_type
+        if type == :boolean and /^is/ =~ name
+          alias_method "#{$POSTMATCH}?", name
         end
+        self::GET_ATTRIBUTES << [name, uri, required, element_name]
+        add_need_initialize_variable(disp_name)
+      end
 
-        def self.def_corresponded_attr_writer(name, type=nil, disp_name=nil)
-          disp_name ||= name
-          case type
-          when :integer
-            integer_writer name, disp_name
-          when :positive_integer
-            positive_integer_writer name, disp_name
-          when :boolean
-            boolean_writer name, disp_name
-          when :w3cdtf, :rfc822, :rfc2822
-            date_writer name, type, disp_name
-          when :text_type
-            text_type_writer name, disp_name
-          when :content
-            content_writer name, disp_name
-          else
-            attr_writer name
-          end
+      def def_corresponded_attr_writer(name, type=nil, disp_name=nil)
+        disp_name ||= name
+        case type
+        when :integer
+          integer_writer name, disp_name
+        when :positive_integer
+          positive_integer_writer name, disp_name
+        when :boolean
+          boolean_writer name, disp_name
+        when :w3cdtf, :rfc822, :rfc2822
+          date_writer name, type, disp_name
+        when :text_type
+          text_type_writer name, disp_name
+        when :content
+          content_writer name, disp_name
+        when :yes_clean_other
+          yes_clean_other_writer name, disp_name
+        when :yes_other
+          yes_other_writer name, disp_name
+        when :csv
+          csv_writer name
+        else
+          attr_writer name
         end
+      end
 
-        def self.def_corresponded_attr_reader(name, type=nil)
-          case type
-          when :inherit
-            inherit_convert_attr_reader name
-          when :uri
-            uri_convert_attr_reader name
-          else
-            convert_attr_reader name
-          end
+      def def_corresponded_attr_reader(name, type=nil)
+        case type
+        when :inherit
+          inherit_convert_attr_reader name
+        when :uri
+          uri_convert_attr_reader name
+        when :yes_clean_other
+          yes_clean_other_attr_reader name
+        when :yes_other
+          yes_other_attr_reader name
+        when :csv
+          csv_attr_reader name
+        else
+          convert_attr_reader name
         end
+      end
 
-        def self.content_setup(type=nil, disp_name=nil)
-          writer_type, reader_type = type
-          def_corresponded_attr_writer :content, writer_type, disp_name
-          def_corresponded_attr_reader :content, reader_type
-          @have_content = true
-        end
+      def content_setup(type=nil, disp_name=nil)
+        writer_type, reader_type = type
+        def_corresponded_attr_writer :content, writer_type, disp_name
+        def_corresponded_attr_reader :content, reader_type
+        @have_content = true
+      end
 
-        def self.have_content?
-          @have_content
-        end
+      def have_content?
+        @have_content
+      end
 
-        def self.add_have_children_element(variable_name, plural_name)
-          HAVE_CHILDREN_ELEMENTS << [variable_name, plural_name]
-        end
-        
-        def self.add_to_element_method(method_name)
-          TO_ELEMENT_METHODS << method_name
-        end
+      def add_have_children_element(variable_name, plural_name)
+        self::HAVE_CHILDREN_ELEMENTS << [variable_name, plural_name]
+      end
 
-        def self.add_need_initialize_variable(variable_name)
-          NEED_INITIALIZE_VARIABLES << variable_name
-        end
-        
-        def self.add_plural_form(singular, plural)
-          PLURAL_FORMS[singular] = plural
-        end
-        
-        EOC
+      def add_to_element_method(method_name)
+        self::TO_ELEMENT_METHODS << method_name
+      end
+
+      def add_need_initialize_variable(variable_name)
+        self::NEED_INITIALIZE_VARIABLES << variable_name
+      end
+
+      def add_plural_form(singular, plural)
+        self::PLURAL_FORMS[singular] = plural
       end
 
       def required_prefix
@@ -719,7 +780,7 @@ EOC
       def need_parent?
         false
       end
-      
+
       def install_ns(prefix, uri)
         if self::NSPOOL.has_key?(prefix)
           raise OverlappedPrefixError.new(prefix)
@@ -821,6 +882,36 @@ EOC
       false
     end
 
+    def set_next_element(tag_name, next_element)
+      klass = next_element.class
+      prefix = ""
+      prefix << "#{klass.required_prefix}_" if klass.required_prefix
+      key = "#{prefix}#{tag_name.gsub(/-/, '_')}"
+      if self.class.plural_forms.has_key?(key)
+        ary = __send__("#{self.class.plural_forms[key]}")
+        ary << next_element
+      else
+        __send__("#{key}=", next_element)
+      end
+    end
+
+    protected
+    def have_required_elements?
+      self.class::MODELS.all? do |tag, uri, occurs, getter|
+        if occurs.nil? or occurs == "+"
+          child = __send__(getter)
+          if child.is_a?(Array)
+            children = child
+            children.any? {|c| c.have_required_elements?}
+          else
+            !child.to_s.empty?
+          end
+        else
+          true
+        end
+      end
+    end
+
     private
     def initialize_variables(attrs)
       normalized_attrs = {}
@@ -832,7 +923,7 @@ EOC
         if value
           __send__("#{variable_name}=", value)
         else
-          instance_eval("@#{variable_name} = nil")
+          instance_variable_set("@#{variable_name}", nil)
         end
       end
       initialize_have_children_elements
@@ -841,7 +932,7 @@ EOC
 
     def initialize_have_children_elements
       self.class.have_children_elements.each do |variable_name, plural_name|
-        instance_eval("@#{variable_name} = []")
+        instance_variable_set("@#{variable_name}", [])
       end
     end
 
@@ -911,19 +1002,6 @@ EOC
       ''
     end
 
-    def set_next_element(tag_name, next_element)
-      klass = next_element.class
-      prefix = ""
-      prefix << "#{klass.required_prefix}_" if klass.required_prefix
-      key = "#{prefix}#{tag_name}"
-      if self.class.plural_forms.has_key?(key)
-        ary = __send__("#{self.class.plural_forms[key]}")
-        ary << next_element
-      else
-        __send__("#{prefix}#{tag_name}=", next_element)
-      end
-    end
-
     def children
       rv = []
       self.class.models.each do |name, uri, occurs, getter|
@@ -939,10 +1017,10 @@ EOC
 
     def _tags
       rv = []
-      self.class.models.each do |name, uri, occurs, getter|
+      self.class.models.each do |name, uri, occurs, getter, plural|
         value = __send__(getter)
         next if value.nil?
-        if value.is_a?(Array)
+        if plural and value.is_a?(Array)
           rv.concat([[uri, name]] * value.size)
         else
           rv << [uri, name]
@@ -997,11 +1075,12 @@ EOC
         tags = tags.sort_by {|x| element_names.index(x) || tags_size}
       end
 
+      _tags = tags.dup if tags
       models.each_with_index do |model, i|
         name, model_uri, occurs, getter = model
 
         if DEBUG
-          p "before" 
+          p "before"
           p tags
           p model
         end
@@ -1095,7 +1174,7 @@ EOC
       if have_xml_content?
         __send__(self.class.xml_getter)
       else
-        @content
+        content
       end
     end
 
@@ -1103,25 +1182,9 @@ EOC
       if have_xml_content?
         __send__(self.class.xml_getter).to_s
       else
-        content = @content
-        content = Base64.encode64(content) if need_base64_encode?
-        h(content)
-      end
-    end
-
-    def have_required_elements?
-      self.class::MODELS.all? do |tag, uri, occurs, getter|
-        if occurs.nil? or occurs == "+"
-          child = __send__(getter)
-          if child.is_a?(Array)
-            children = child
-            children.any? {|child| child.__send!(:have_required_elements?)}
-          else
-            !child.to_s.empty?
-          end
-        else
-          true
-        end
+        _content = content
+        _content = Base64.encode64(_content) if need_base64_encode?
+        h(_content)
       end
     end
   end

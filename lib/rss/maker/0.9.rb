@@ -22,7 +22,6 @@ module RSS
       end
 
       class Channel < ChannelBase
-        
         def to_feed(rss)
           channel = Rss::Channel.new
           set = setup_values(channel)
@@ -63,8 +62,8 @@ module RSS
 
         def not_set_required_variables
           vars = super
-          vars << "description" unless description.have_required_values?
-          vars << "title" unless title.have_required_values?
+          vars << "description" unless description {|d| d.have_required_values?}
+          vars << "title" unless title {|t| t.have_required_values?}
           vars
         end
 
@@ -259,17 +258,13 @@ module RSS
           def to_feed(rss)
             item = Rss::Channel::Item.new
             set = setup_values(item)
-            if set or title.have_required_values?
+            if set or title {|t| t.have_required_values?}
               rss.items << item
               set_parent(item, rss.channel)
               setup_other_elements(rss, item)
             elsif variable_is_set?
               raise NotSetError.new("maker.items", not_set_required_variables)
             end
-          end
-
-          def have_required_values?
-            super and title.have_required_values?
           end
 
           private
@@ -279,7 +274,7 @@ module RSS
 
           def not_set_required_variables
             vars = super
-            vars << "title" unless title.have_required_values?
+            vars << "title" unless title {|t| t.have_required_values?}
             vars
           end
 

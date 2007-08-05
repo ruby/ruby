@@ -1,4 +1,4 @@
-# Copyright (c) 2003-2006 Kouhei Sutou.  You can redistribute it and/or
+# Copyright (c) 2003-2007 Kouhei Sutou.  You can redistribute it and/or
 # modify it under the same terms as Ruby.
 #
 # Author:: Kouhei Sutou <kou@cozmixng.org>
@@ -10,6 +10,7 @@ require 'rss/atom'
 require 'rss/content'
 require 'rss/dublincore'
 require 'rss/image'
+require 'rss/itunes'
 require 'rss/syndication'
 require 'rss/taxonomy'
 require 'rss/trackback'

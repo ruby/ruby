@@ -104,7 +104,9 @@ module RSS
         end
 
         generator.each do |key, value|
-          maker.channel.generator.__send__("#{key}=", value)
+          maker.channel.generator do |g|
+            g.__send__("#{key}=", value)
+          end
         end
 
         maker.channel.icon = icon

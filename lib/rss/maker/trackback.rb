@@ -8,41 +8,15 @@ module RSS
       def self.append_features(klass)
         super
 
-        name = "#{RSS::TRACKBACK_PREFIX}_ping"
-        klass.add_need_initialize_variable(name)
-        klass.add_other_element(name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_accessor :#{name}
-          def setup_#{name}(feed, current)
-            if #{name} and current.respond_to?(:#{name}=)
-              current.#{name} = #{name}
-            end
-          end
-        EOC
-
-        name = "#{RSS::TRACKBACK_PREFIX}_abouts"
-        klass.add_need_initialize_variable(name, "make_#{name}")
-        klass.add_other_element(name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_accessor :#{name}
-          def make_#{name}
-            self.class::TrackBackAbouts.new(self)
-          end
-
-          def setup_#{name}(feed, current)
-            @#{name}.to_feed(feed, current)
-          end
-        EOC
+        klass.def_other_element("#{RSS::TRACKBACK_PREFIX}_ping")
+        klass.def_classed_elements("#{RSS::TRACKBACK_PREFIX}_about", "value",
+                                   "TrackBackAbouts")
       end
 
-      class TrackBackAboutsBase
-        include Base
+      class TrackBackAboutsBase < Base
+        def_array_element("about", nil, "TrackBackAbout")
 
-        def_array_element("about", nil, "self.class::TrackBackAbout")
-
-        class TrackBackAboutBase
-          include Base
-
+        class TrackBackAboutBase < Base
           attr_accessor :value
           add_need_initialize_variable("value")
           

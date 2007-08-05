@@ -147,11 +147,11 @@ EOC
       def to_feed(feed, current)
         logo = current.class::Logo.new
         class << logo
-          alias uri= content=
+          alias_method(:uri=, :content=)
         end
         set = setup_values(logo)
         class << logo
-          undef uri=
+          remove_method(:uri=)
         end
         if set
           current.logo = logo

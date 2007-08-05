@@ -353,7 +353,7 @@ module RSS
       assert_nil(rss.image)
     end
     
-    def test_items
+    def test_items(with_convenience_way=true)
       title = "TITLE"
       link = "http://hoge.com/"
       description = "text hoge fuga"
@@ -407,7 +407,11 @@ module RSS
           end
         end
         maker.items.do_sort = Proc.new do |x, y|
-          y.title.content[-1] <=> x.title.content[-1]
+          if with_convenience_way
+            y.title[-1] <=> x.title[-1]
+          else
+            y.title {|t| t.content[-1]} <=> x.title {|t| t.content[-1]}
+          end
         end
       end
       assert_equal(item_size, rss.items.size)
@@ -420,6 +424,10 @@ module RSS
         assert_equal(pubDate, item.pubDate)
         assert_equal(pubDate, item.date)
       end
+    end
+
+    def test_items_with_new_api_since_018
+      test_items(false)
     end
 
     def test_guid

@@ -7,17 +7,8 @@ module RSS
       def self.append_features(klass)
         super
 
-        ::RSS::SyndicationModel::ELEMENTS.each do |element|
-          klass.add_need_initialize_variable(element)
-          klass.add_other_element(element)
-          klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
-            attr_accessor :#{element}
-            def setup_#{element}(rss, current)
-              if #{element} and current.respond_to?(:#{element}=)
-                current.#{element} = @#{element} if @#{element}
-              end
-            end
-          EOC
+        ::RSS::SyndicationModel::ELEMENTS.each do |name|
+          klass.def_other_element(name)
         end
       end
     end

@@ -15,7 +15,7 @@ module RSS
 
         private
         def required_variable_names
-          %w(title link description)
+          %w(link)
         end
         
         class SkipDays < RSS09::Channel::SkipDays
@@ -90,13 +90,7 @@ module RSS
       end
       
       class Items < RSS09::Items
-        
         class Item < RSS09::Items::Item
-
-          def have_required_values?
-            @title or @description
-          end
-
           private
           def required_variable_names
             %w(title description)

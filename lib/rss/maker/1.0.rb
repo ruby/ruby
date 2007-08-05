@@ -83,8 +83,8 @@ module RSS
 
         def not_set_required_variables
           vars = super
-          vars << "description" unless description.have_required_values?
-          vars << "title" unless title.have_required_values?
+          vars << "description" unless description {|d| d.have_required_values?}
+          vars << "title" unless title {|t| t.have_required_values?}
           vars
         end
 
@@ -256,7 +256,7 @@ module RSS
           def not_set_required_variables
             set_default_values do
               vars = super
-              vars << "title" unless title.have_required_values?
+              vars << "title" unless title {|t| t.have_required_values?}
               vars
             end
           end

@@ -1,3 +1,5 @@
+require 'erb'
+
 module RSS
   module Assertions
     def assert_parse(rss, assert_method, *args)
@@ -90,6 +92,7 @@ module RSS
           flunk("Not raise NotSetError")
         rescue ::RSS::NotSetError => e
           assert_equal(name, e.name)
+          assert_kind_of(Array, variables)
           assert_equal(variables.sort, e.variables.sort)
         end
       end
@@ -152,237 +155,6 @@ module RSS
       end
     end
 
-    
-    def assert_channel10(attrs, channel)
-      _wrap_assertion do
-        n_attrs = normalized_attrs(attrs)
-        
-        names = %w(about title link description)
-        assert_attributes(attrs, names, channel)
-
-        %w(image items textinput).each do |name|
-          value = n_attrs[name]
-          if value
-            target = channel.__send__(name)
-            __send__("assert_channel10_#{name}", value, target)
-          end
-        end
-      end
-    end
-
-    def assert_channel10_image(attrs, image)
-      _wrap_assertion do
-        assert_attributes(attrs, %w(resource), image)
-      end
-    end
-    
-    def assert_channel10_textinput(attrs, textinput)
-      _wrap_assertion do
-        assert_attributes(attrs, %w(resource), textinput)
-      end
-    end
-
-    def assert_channel10_items(attrs, items)
-      _wrap_assertion do
-        assert_equal(items.resources, items.Seq.lis.collect {|x| x.resource})
-        items.Seq.lis.each_with_index do |li, i|
-          assert_attributes(attrs[i], %w(resource), li)
-        end
-      end
-    end
-
-    def assert_image10(attrs, image)
-      _wrap_assertion do
-        names = %w(about title url link)
-        assert_attributes(attrs, names, image)
-      end
-    end
-
-    def assert_items10(attrs, items)
-      _wrap_assertion do
-        names = %w(about title link description)
-        items.each_with_index do |item, i|
-          assert_attributes(attrs[i], names, item)
-        end
-      end
-    end
-
-    def assert_textinput10(attrs, textinput)
-      _wrap_assertion do
-        names = %w(about title description name link)
-        assert_attributes(attrs, names, textinput)
-      end
-    end
-
-
-    def assert_channel09(attrs, channel)
-      _wrap_assertion do
-        n_attrs = normalized_attrs(attrs)
-
-        names = %w(title description link language rating
-                   copyright pubDate lastBuildDate docs
-                   managingEditor webMaster)
-        assert_attributes(attrs, names, channel)
-        
-        %w(skipHours skipDays).each do |name|
-          value = n_attrs[name]
-          if value
-            target = channel.__send__(name)
-            __send__("assert_channel09_#{name}", value, target)
-          end
-        end
-      end
-    end
-
-    def assert_channel09_skipDays(contents, skipDays)
-      _wrap_assertion do
-        days = skipDays.days
-        contents.each_with_index do |content, i|
-          assert_equal(content, days[i].content)
-        end
-      end
-    end
-    
-    def assert_channel09_skipHours(contents, skipHours)
-      _wrap_assertion do
-        hours = skipHours.hours
-        contents.each_with_index do |content, i|
-          assert_equal(content.to_i, hours[i].content)
-        end
-      end
-    end
-    
-    def assert_image09(attrs, image)
-      _wrap_assertion do
-        names = %w(url link title description)
-        names << ["width", :integer]
-        names << ["height", :integer]
-        assert_attributes(attrs, names, image)
-      end
-    end
-
-    def assert_items09(attrs, items)
-      _wrap_assertion do
-        names = %w(title link description)
-        items.each_with_index do |item, i|
-          assert_attributes(attrs[i], names, item)
-        end
-      end
-    end
-    
-    def assert_textinput09(attrs, textinput)
-      _wrap_assertion do
-        names = %w(title description name link)
-        assert_attributes(attrs, names, textinput)
-      end
-    end
-
-
-    def assert_channel20(attrs, channel)
-      _wrap_assertion do
-        n_attrs = normalized_attrs(attrs)
-        
-        names = %w(title link description language copyright
-                   managingEditor webMaster pubDate
-                   lastBuildDate generator docs rating)
-        names << ["ttl", :integer]
-        assert_attributes(attrs, names, channel)
-
-        %w(cloud categories skipHours skipDays).each do |name|
-          value = n_attrs[name]
-          if value
-            target = channel.__send__(name)
-            __send__("assert_channel20_#{name}", value, target)
-          end
-        end
-      end
-    end
-
-    def assert_channel20_skipDays(contents, skipDays)
-      assert_channel09_skipDays(contents, skipDays)
-    end
-    
-    def assert_channel20_skipHours(contents, skipHours)
-      assert_channel09_skipHours(contents, skipHours)
-    end
-    
-    def assert_channel20_cloud(attrs, cloud)
-      _wrap_assertion do
-        names = %w(domain path registerProcedure protocol)
-        names << ["port", :integer]
-        assert_attributes(attrs, names, cloud)
-      end
-    end
-    
-    def assert_channel20_categories(attrs, categories)
-      _wrap_assertion do
-        names = %w(domain content)
-        categories.each_with_index do |category, i|
-          assert_attributes(attrs[i], names, category)
-        end
-      end
-    end
-    
-    def assert_image20(attrs, image)
-      _wrap_assertion do
-        names = %w(url link title description)
-        names << ["width", :integer]
-        names << ["height", :integer]
-        assert_attributes(attrs, names, image)
-      end
-    end
-
-    def assert_items20(attrs, items)
-      _wrap_assertion do
-        names = %w(about title link description)
-        items.each_with_index do |item, i|
-          assert_attributes(attrs[i], names, item)
-
-          n_attrs = normalized_attrs(attrs[i])
-
-          %w(source enclosure categories guid).each do |name|
-            value = n_attrs[name]
-            if value
-              target = item.__send__(name)
-              __send__("assert_items20_#{name}", value, target)
-            end
-          end
-        end
-      end
-    end
-
-    def assert_items20_source(attrs, source)
-      _wrap_assertion do
-        assert_attributes(attrs, %w(url content), source)
-      end
-    end
-    
-    def assert_items20_enclosure(attrs, enclosure)
-      _wrap_assertion do
-        names = ["url", ["length", :integer], "type"]
-        assert_attributes(attrs, names, enclosure)
-      end
-    end
-    
-    def assert_items20_categories(attrs, categories)
-      _wrap_assertion do
-        assert_channel20_categories(attrs, categories)
-      end
-    end
-    
-    def assert_items20_guid(attrs, guid)
-      _wrap_assertion do
-        names = [["isPermaLink", :boolean], ["content"]]
-        assert_attributes(attrs, names, guid)
-      end
-    end
-
-    def assert_textinput20(attrs, textinput)
-      _wrap_assertion do
-        names = %w(title description name link)
-        assert_attributes(attrs, names, textinput)
-      end
-    end
 
     def assert_atom_person(tag_name, generator)
       _wrap_assertion do
@@ -1146,401 +918,6 @@ EOA
       end
     end
 
-
-    def assert_atom_person_to_s(target_class)
-      _wrap_assertion do
-        name = "A person"
-        uri = "http://example.com/person/"
-        email = "person@example.com"
-
-        target = target_class.new
-        assert_equal("", target.to_s)
-
-        target = target_class.new
-        person_name = target_class::Name.new
-        person_name.content = name
-        target.name = person_name
-        xml_target = REXML::Document.new(target.to_s).root
-        assert_equal(["name"], xml_target.elements.collect {|e| e.name})
-        assert_equal([name], xml_target.elements.collect {|e| e.text})
-
-        person_uri = target_class::Uri.new
-        person_uri.content = uri
-        target.uri = person_uri
-        xml_target = REXML::Document.new(target.to_s).root
-        assert_equal(["name", "uri"], xml_target.elements.collect {|e| e.name})
-        assert_equal([name, uri], xml_target.elements.collect {|e| e.text})
-
-        person_email = target_class::Email.new
-        person_email.content = email
-        target.email = person_email
-        xml_target = REXML::Document.new(target.to_s).root
-        assert_equal(["name", "uri", "email"],
-                     xml_target.elements.collect {|e| e.name})
-        assert_equal([name, uri, email],
-                     xml_target.elements.collect {|e| e.text})
-      end
-    end
-
-    def assert_atom_category_to_s(target_class)
-      _wrap_assertion do
-        term = "music"
-        scheme = "http://example.com/music"
-        label = "Music"
-
-        category = target_class.new
-        assert_equal("", category.to_s)
-
-        category = target_class.new
-        category.scheme = scheme
-        assert_equal("", category.to_s)
-
-        category = target_class.new
-        category.label = label
-        assert_equal("", category.to_s)
-
-        category = target_class.new
-        category.scheme = scheme
-        category.label = label
-        assert_equal("", category.to_s)
-
-        category = target_class.new
-        category.term = term
-        xml = REXML::Document.new(category.to_s).root
-        assert_rexml_element([], {"term" => term}, nil, xml)
-
-        category = target_class.new
-        category.term = term
-        category.scheme = scheme
-        xml = REXML::Document.new(category.to_s).root
-        assert_rexml_element([], {"term" => term, "scheme" => scheme}, nil, xml)
-
-        category = target_class.new
-        category.term = term
-        category.label = label
-        xml = REXML::Document.new(category.to_s).root
-        assert_rexml_element([], {"term" => term, "label" => label}, nil, xml)
-
-        category = target_class.new
-        category.term = term
-        category.scheme = scheme
-        category.label = label
-        xml = REXML::Document.new(category.to_s).root
-        attrs = {"term" => term, "scheme" => scheme, "label" => label}
-        assert_rexml_element([], attrs, nil, xml)
-      end
-    end
-
-    def assert_atom_generator_to_s(target_class)
-      _wrap_assertion do
-        content = "Feed generator"
-        uri = "http://example.com/generator"
-        version = "0.0.1"
-
-        generator = target_class.new
-        assert_equal("", generator.to_s)
-
-        generator = target_class.new
-        generator.uri = uri
-        assert_equal("", generator.to_s)
-
-        generator = target_class.new
-        generator.version = version
-        assert_equal("", generator.to_s)
-
-        generator = target_class.new
-        generator.uri = uri
-        generator.version = version
-        assert_equal("", generator.to_s)
-
-        generator = target_class.new
-        generator.content = content
-        xml = REXML::Document.new(generator.to_s).root
-        assert_rexml_element([], {}, content, xml)
-
-        generator = target_class.new
-        generator.content = content
-        generator.uri = uri
-        xml = REXML::Document.new(generator.to_s).root
-        assert_rexml_element([], {"uri" => uri}, content, xml)
-
-        generator = target_class.new
-        generator.content = content
-        generator.version = version
-        xml = REXML::Document.new(generator.to_s).root
-        assert_rexml_element([], {"version" => version}, content, xml)
-
-        generator = target_class.new
-        generator.content = content
-        generator.uri = uri
-        generator.version = version
-        xml = REXML::Document.new(generator.to_s).root
-        assert_rexml_element([], {"uri" => uri, "version" => version},
-                             content, xml)
-      end
-    end
-
-    def assert_atom_icon_to_s(target_class)
-      _wrap_assertion do
-        content = "http://example.com/icon.png"
-
-        icon = target_class.new
-        assert_equal("", icon.to_s)
-
-        icon = target_class.new
-        icon.content = content
-        xml = REXML::Document.new(icon.to_s).root
-        assert_rexml_element([], {}, content, xml)
-      end
-    end
-
-    def assert_atom_id_to_s(target_class)
-      _wrap_assertion do
-        content = "http://example.com/1"
-
-        id = target_class.new
-        assert_equal("", id.to_s)
-
-        id = target_class.new
-        id.content = content
-        xml = REXML::Document.new(id.to_s).root
-        assert_rexml_element([], {}, content, xml)
-      end
-    end
-
-    def assert_atom_link_to_s(target_class)
-      _wrap_assertion do
-        href = "http://example.com/atom.xml"
-        rel = "self"
-        type = "application/atom+xml"
-        hreflang = "ja"
-        title = "Atom Feed"
-        length = "801"
-
-        link = target_class.new
-        assert_equal("", link.to_s)
-
-        link = target_class.new
-        link.href = href
-        xml = REXML::Document.new(link.to_s).root
-        assert_rexml_element([], {"href" => href}, nil, xml)
-
-        optional_arguments = %w(rel type hreflang title length)
-        optional_arguments.each do |name|
-          rest = optional_arguments.reject {|x| x == name}
-
-          link = target_class.new
-          link.__send__("#{name}=", eval(name))
-          assert_equal("", link.to_s)
-
-          rest.each do |n|
-            link.__send__("#{n}=", eval(n))
-            assert_equal("", link.to_s)
-          end
-
-          link = target_class.new
-          link.href = href
-          link.__send__("#{name}=", eval(name))
-          attrs = [["href", href], [name, eval(name)]]
-          xml = REXML::Document.new(link.to_s).root
-          assert_rexml_element([], attrs, nil, xml)
-
-          rest.each do |n|
-            link.__send__("#{n}=", eval(n))
-            attrs << [n, eval(n)]
-            xml = REXML::Document.new(link.to_s).root
-            assert_rexml_element([], attrs, nil, xml)
-          end
-        end
-      end
-    end
-
-    def assert_atom_logo_to_s(target_class)
-      _wrap_assertion do
-        content = "http://example.com/logo.png"
-
-        logo = target_class.new
-        assert_equal("", logo.to_s)
-
-        logo = target_class.new
-        logo.content = content
-        xml = REXML::Document.new(logo.to_s).root
-        assert_rexml_element([], {}, content, xml)
-      end
-    end
-
-    def assert_atom_text_construct_to_s(target_class)
-      _wrap_assertion do
-        text_content = "plain text"
-        html_content = "<em>#{text_content}</em>"
-        xhtml_uri = "http://www.w3.org/1999/xhtml"
-        xhtml_em = RSS::XML::Element.new("em", nil, xhtml_uri, {}, text_content)
-        xhtml_content = RSS::XML::Element.new("div", nil, xhtml_uri,
-                                              {"xmlns" => xhtml_uri},
-                                              [xhtml_em])
-
-        text = target_class.new
-        assert_equal("", text.to_s)
-
-        text = target_class.new
-        text.type = "text"
-        assert_equal("", text.to_s)
-
-        text = target_class.new
-        text.content = text_content
-        xml = REXML::Document.new(text.to_s).root
-        assert_rexml_element([], {}, text_content, xml)
-
-        text = target_class.new
-        text.type = "text"
-        text.content = text_content
-        xml = REXML::Document.new(text.to_s).root
-        assert_rexml_element([], {"type" => "text"}, text_content, xml)
-
-        text = target_class.new
-        text.type = "html"
-        text.content = html_content
-        xml = REXML::Document.new(text.to_s).root
-        assert_rexml_element([], {"type" => "html"}, html_content, xml)
-
-        text = target_class.new
-        text.type = "xhtml"
-        text.content = xhtml_content
-        assert_equal("", text.to_s)
-
-        text = target_class.new
-        text.type = "xhtml"
-        text.__send__(target_class.xml_setter, xhtml_content)
-        xml = REXML::Document.new(text.to_s).root
-        assert_rexml_element([[xhtml_uri, "div"]], {"type" => "xhtml"},
-                             nil, xml)
-        assert_rexml_element([[xhtml_uri, "em"]], nil, nil, xml.elements[1])
-        assert_rexml_element([], {}, text_content, xml.elements[1].elements[1])
-
-        text = target_class.new
-        text.type = "xhtml"
-        text.__send__(target_class.xml_setter, xhtml_em)
-        xml = REXML::Document.new(text.to_s).root
-        assert_rexml_element([[xhtml_uri, "div"]], {"type" => "xhtml"},
-                             nil, xml)
-        assert_rexml_element([[xhtml_uri, "em"]], nil, nil, xml.elements[1])
-        assert_rexml_element([], {}, text_content, xml.elements[1].elements[1])
-      end
-    end
-
-    def assert_atom_date_construct_to_s(target_class)
-      _wrap_assertion do
-        date = target_class.new
-        assert_equal("", date.to_s)
-
-        [
-         "2003-12-13T18:30:02Z",
-         "2003-12-13T18:30:02.25Z",
-         "2003-12-13T18:30:02+01:00",
-         "2003-12-13T18:30:02.25+01:00",
-        ].each do |content|
-          date = target_class.new
-          date.content = content
-          xml = REXML::Document.new(date.to_s).root
-          assert_rexml_element([], {}, content, xml, :time)
-
-          date = target_class.new
-          date.content = Time.parse(content)
-          xml = REXML::Document.new(date.to_s).root
-          assert_rexml_element([], {}, content, xml, :time)
-        end
-      end
-    end
-
-    def assert_atom_content_to_s(target_class)
-      _wrap_assertion do
-        assert_atom_text_construct_to_s(target_class)
-        assert_atom_content_inline_other_xml_to_s(target_class)
-        assert_atom_content_inline_other_text_to_s(target_class)
-        assert_atom_content_inline_other_base64_to_s(target_class)
-        assert_atom_content_out_of_line_to_s(target_class)
-      end
-    end
-
-    def assert_atom_content_inline_other_xml_to_s(target_class)
-      _wrap_assertion do
-        content = target_class.new
-        content.type = "text/xml"
-        assert_equal("", content.to_s)
-
-        content = target_class.new
-        content.type = "text/xml"
-        content.xml = RSS::XML::Element.new("em")
-        xml = REXML::Document.new(content.to_s).root
-        assert_rexml_element([["", "em"]], {"type" => "text/xml"}, nil, xml)
-      end
-    end
-
-    def assert_atom_content_inline_other_text_to_s(target_class)
-      _wrap_assertion do
-        content = target_class.new
-        content.type = "text/plain"
-        assert_equal("", content.to_s)
-
-        content = target_class.new
-        content.type = "text/plain"
-        content.xml = RSS::XML::Element.new("em")
-        assert_equal("", content.to_s)
-
-        content = target_class.new
-        content.type = "text/plain"
-        content.content = "content"
-        xml = REXML::Document.new(content.to_s).root
-        assert_rexml_element([], {"type" => "text/plain"}, "content", xml)
-      end
-    end
-
-    def assert_atom_content_inline_other_base64_to_s(target_class)
-      _wrap_assertion do
-        require "zlib"
-
-        text = ""
-        char = "a"
-        100.times do |i|
-          text << char
-          char.succ!
-        end
-
-        type = "application/zip"
-        original_content = Zlib::Deflate.deflate(text)
-
-        content = target_class.new
-        content.type = type
-        content.content = original_content
-        xml = REXML::Document.new(content.to_s).root
-        assert_rexml_element([], {"type" => type},
-                             Base64.encode64(original_content), xml)
-      end
-    end
-
-    def assert_atom_content_out_of_line_to_s(target_class)
-      _wrap_assertion do
-        type = "application/zip"
-        src = "http://example.com/xxx.zip"
-
-        content = target_class.new
-        assert(!content.out_of_line?)
-        content.src = src
-        assert(content.out_of_line?)
-        xml = REXML::Document.new(content.to_s).root
-        assert_rexml_element([], {"src" => src}, nil, xml)
-
-        content = target_class.new
-        assert(!content.out_of_line?)
-        content.type = type
-        assert(!content.out_of_line?)
-        content.src = src
-        assert(content.out_of_line?)
-        xml = REXML::Document.new(content.to_s).root
-        assert_rexml_element([], {"type" => type, "src" => src}, nil, xml)
-      end
-    end
-
     def _assert_maker_atom_persons(feed_type, maker_readers, feed_readers)
       _wrap_assertion do
         persons = []
@@ -1565,7 +942,6 @@ EOA
             :email => person.email ? person.email.content : nil,
           }
         end
-        p [feed_readers, feed.source.authors] unless persons == actual_persons
         assert_equal(persons, actual_persons)
       end
     end
@@ -1765,7 +1141,7 @@ EOA
         assert_not_set_error(not_set_error_name, %w(content)) do
           _assert_maker_atom_text_construct(*args) do |maker|
             yield maker
-            target = chain_reader(maker, maker_readers)
+            target = chain_reader(maker, maker_readers) {|x| x}
             target.type = "text"
           end
         end
@@ -1773,7 +1149,7 @@ EOA
         assert_not_set_error(not_set_error_name, %w(content)) do
           _assert_maker_atom_text_construct(*args) do |maker|
             yield maker
-            target = chain_reader(maker, maker_readers)
+            target = chain_reader(maker, maker_readers) {|x| x}
             target.type = "html"
           end
         end
@@ -1781,7 +1157,7 @@ EOA
         assert_not_set_error(not_set_error_name, %w(xml_content)) do
           _assert_maker_atom_text_construct(*args) do |maker|
             yield maker
-            target = chain_reader(maker, maker_readers)
+            target = chain_reader(maker, maker_readers) {|x| x}
             target.type = "xhtml"
           end
         end
@@ -1789,7 +1165,7 @@ EOA
         assert_not_set_error(not_set_error_name, %w(xml_content)) do
           _assert_maker_atom_text_construct(*args) do |maker|
             yield maker
-            target = chain_reader(maker, maker_readers)
+            target = chain_reader(maker, maker_readers) {|x| x}
             target.type = "xhtml"
             target.content = "Content"
           end
@@ -1797,28 +1173,28 @@ EOA
 
         _assert_maker_atom_text_construct(*args) do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers)
+          target = chain_reader(maker, maker_readers) {|x| x}
           target.type = "text"
           target.content = "Content"
         end
 
         _assert_maker_atom_text_construct(*args) do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers)
+          target = chain_reader(maker, maker_readers) {|x| x}
           target.type = "html"
           target.content = "<em>Content</em>"
         end
 
         _assert_maker_atom_text_construct(*args) do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers)
+          target = chain_reader(maker, maker_readers) {|x| x}
           target.type = "xhtml"
           target.xml_content = "text only"
         end
 
         _assert_maker_atom_text_construct(*args) do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers)
+          target = chain_reader(maker, maker_readers) {|x| x}
           target.type = "xhtml"
           target.xml_content = RSS::XML::Element.new("unknown")
         end
@@ -1877,7 +1253,7 @@ EOA
         element = nil
         feed = RSS::Maker.make("atom:#{feed_type}") do |maker|
           yield maker
-          target = chain_reader(maker, maker_readers)
+          target = chain_reader(maker, maker_readers) {|x| x}
           element = maker_extractor.call(target)
         end
 
@@ -1942,7 +1318,7 @@ EOA
               __send__(assert_method_name, feed_type, maker_readers,
                        feed_readers, *additional_args) do |maker|
                 yield maker
-                target = chain_reader(maker, maker_readers)
+                target = chain_reader(maker, maker_readers) {|x| x}
                 setup_target.call(target, have)
               end
             end
@@ -1950,7 +1326,7 @@ EOA
             __send__(assert_method_name, feed_type, maker_readers, feed_readers,
                      *additional_args) do |maker|
               yield maker
-              target = chain_reader(maker, maker_readers)
+              target = chain_reader(maker, maker_readers) {|x| x}
               setup_target.call(target, have_required_variable_too)
             end
           end
@@ -2302,14 +1678,14 @@ EOA
           :src => target.src,
           :content => target.content,
           :xml => target.xml,
-          :inline_text => target.__send!(:inline_text?),
-          :inline_html => target.__send!(:inline_html?),
-          :inline_xhtml => target.__send!(:inline_xhtml?),
-          :inline_other => target.__send!(:inline_other?),
-          :inline_other_text => target.__send!(:inline_other_text?),
-          :inline_other_xml => target.__send!(:inline_other_xml?),
-          :inline_other_base64 => target.__send!(:inline_other_base64?),
-          :out_of_line => target.__send!(:out_of_line?),
+          :inline_text => target.inline_text?,
+          :inline_html => target.inline_html?,
+          :inline_xhtml => target.inline_xhtml?,
+          :inline_other => target.inline_other?,
+          :inline_other_text => target.inline_other_text?,
+          :inline_other_xml => target.inline_other_xml?,
+          :inline_other_base64 => target.inline_other_base64?,
+          :out_of_line => target.out_of_line?,
         }
         content[:src] = nil if content[:src] and content[:content]
         if content[:type] or content[:content]
@@ -2642,10 +2018,10 @@ EOA
       end
     end
 
-    def chain_reader(target, readers)
+    def chain_reader(target, readers, &block)
       readers.inject(target) do |result, reader|
         return nil if result.nil?
-        result.__send__(reader)
+        result.__send__(reader, &block)
       end
     end
 
@@ -2667,6 +2043,19 @@ EOA
         combination(rest, n - 1).collect do |sub_elements|
           [first, *sub_elements]
         end + combination(rest, n)
+      end
+    end
+
+    def tag(name, content=nil, attributes={})
+      attributes = attributes.collect do |key, value|
+        "#{ERB::Util.h(key)}=\"#{ERB::Util.h(value)}\""
+      end.join(" ")
+      begin_tag = "<#{name}"
+      begin_tag << " #{attributes}" unless attributes.empty?
+      if content
+        "#{begin_tag}>#{content}</#{name}>\n"
+      else
+        "#{begin_tag}/>\n"
       end
     end
   end

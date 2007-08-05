@@ -8,18 +8,8 @@ module RSS
       def self.append_features(klass)
         super
 
-        klass.add_need_initialize_variable("taxo_topics", "make_taxo_topics")
-        klass.add_other_element("taxo_topics")
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_reader :taxo_topics
-          def make_taxo_topics
-            self.class::TaxonomyTopics.new(@maker)
-          end
-
-          def setup_taxo_topics(feed, current)
-            @taxo_topics.to_feed(feed, current)
-          end
-EOC
+        klass.def_classed_element("#{RSS::TAXO_PREFIX}_topics",
+                                  "TaxonomyTopics")
       end
 
       def self.install_taxo_topics(klass)
@@ -39,9 +29,7 @@ EOC
 EOC
       end
 
-      class TaxonomyTopicsBase
-        include Base
-
+      class TaxonomyTopicsBase < Base
         attr_reader :resources
         def_array_element("resource")
         remove_method :new_resource
@@ -52,29 +40,10 @@ EOC
       def self.append_features(klass)
         super
 
-        klass.add_need_initialize_variable("taxo_topics", "make_taxo_topics")
-        klass.add_other_element("taxo_topics")
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_reader :taxo_topics
-          def make_taxo_topics
-            self.class::TaxonomyTopics.new(@maker)
-          end
-            
-          def setup_taxo_topics(feed, current)
-            @taxo_topics.to_feed(feed, current)
-          end
-
-          def taxo_topic
-            @taxo_topics[0] and @taxo_topics[0].value
-          end
-            
-          def taxo_topic=(new_value)
-            @taxo_topic[0] = self.class::TaxonomyTopic.new(self)
-            @taxo_topic[0].value = new_value
-          end
-EOC
+        class_name = "TaxonomyTopics"
+        klass.def_classed_elements("#{TAXO_PREFIX}_topic", "value", class_name)
       end
-    
+
       def self.install_taxo_topic(klass)
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class TaxonomyTopics < TaxonomyTopicsBase
@@ -96,13 +65,10 @@ EOC
 EOC
       end
 
-      class TaxonomyTopicsBase
-        include Base
-        
-        def_array_element("taxo_topic", nil, "self.class::TaxonomyTopic")
+      class TaxonomyTopicsBase < Base
+        def_array_element("taxo_topic", nil, "TaxonomyTopic")
 
-        class TaxonomyTopicBase
-          include Base
+        class TaxonomyTopicBase < Base
           include DublinCoreModel
           include TaxonomyTopicsModel
           

@@ -9,20 +9,7 @@ module RSS
         super
 
         name = "#{RSS::IMAGE_PREFIX}_item"
-        klass.add_need_initialize_variable(name, "make_#{name}")
-        klass.add_other_element(name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_reader :#{name}
-          def setup_#{name}(feed, current)
-            if @#{name}
-              @#{name}.to_feed(feed, current)
-            end
-          end
-
-          def make_#{name}
-            self.class::#{Utils.to_class_name(name)}.new(@maker)
-          end
-EOC
+        klass.def_classed_element(name)
       end
 
       def self.install_image_item(klass)
@@ -33,8 +20,7 @@ EOC
 EOC
       end
 
-      class ImageItemBase
-        include Base
+      class ImageItemBase < Base
         include Maker::DublinCoreModel
 
         attr_accessor :about, :resource, :image_width, :image_height
@@ -67,20 +53,7 @@ EOC
         super
 
         name = "#{RSS::IMAGE_PREFIX}_favicon"
-        klass.add_need_initialize_variable(name, "make_#{name}")
-        klass.add_other_element(name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
-          attr_reader :#{name}
-          def setup_#{name}(feed, current)
-            if @#{name}
-              @#{name}.to_feed(feed, current)
-            end
-          end
-
-          def make_#{name}
-            self.class::#{Utils.to_class_name(name)}.new(@maker)
-          end
-EOC
+        klass.def_classed_element(name)
       end
 
       def self.install_image_favicon(klass)
@@ -88,11 +61,10 @@ EOC
           class ImageFavicon < ImageFaviconBase
             DublinCoreModel.install_dublin_core(self)
           end
-EOC
+        EOC
       end
 
-      class ImageFaviconBase
-        include Base
+      class ImageFaviconBase < Base
         include Maker::DublinCoreModel
 
         attr_accessor :about, :image_size

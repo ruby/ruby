@@ -9,7 +9,7 @@ module RSS
       def self.indent_size; 1; end
       def self.tag_name; 'image'; end
     end
-    
+
     def setup
       @rss = make_RDF(<<-EOR)
 #{make_channel}
@@ -18,7 +18,7 @@ module RSS
 #{make_textinput}
 EOR
     end
-    
+
     def test_inherit
       rss = RSS::Parser.parse(@rss)
       orig_image = rss.image
@@ -36,6 +36,5 @@ EOR
       assert_equal("#{prefix} #{orig_image.url}", new_image.url)
       assert_equal("#{prefix} #{orig_image.link}", new_image.link)
     end
-    
   end
 end

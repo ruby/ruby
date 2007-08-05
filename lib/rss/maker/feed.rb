@@ -64,7 +64,7 @@ module RSS
                 @maker.items.all? {|item| item.author.to_s.empty?}
               vars << "author"
             end
-            vars << "title" unless title.have_required_values?
+            vars << "title" unless title {|t| t.have_required_values?}
             vars
           end
 
@@ -148,11 +148,11 @@ module RSS
           def to_feed(feed)
             logo = feed.class::Logo.new
             class << logo
-              alias url= content=
+              alias_method(:url=, :content=)
             end
             set = setup_values(logo)
             class << logo
-              undef url=
+              remove_method(:url=)
             end
             if set
               feed.logo = logo
@@ -194,7 +194,7 @@ module RSS
 
             def have_required_values?
               set_default_values do
-                super and title.have_required_values?
+                super and title {|t| t.have_required_values?}
               end
             end
 
@@ -209,7 +209,7 @@ module RSS
 
             def not_set_required_variables
               vars = super
-              vars << "title" unless title.have_required_values?
+              vars << "title" unless title {|t| t.have_required_values?}
               vars
             end
 
@@ -282,11 +282,11 @@ module RSS
                 def to_feed(feed, current)
                   icon = current.class::Icon.new
                   class << icon
-                    alias url= content=
+                    alias_method(:url=, :content=)
                   end
                   set = setup_values(icon)
                   class << icon
-                    undef url=
+                    remove_method(:url=)
                   end
                   if set
                     current.icon = icon

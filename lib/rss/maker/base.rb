@@ -4,85 +4,155 @@ require 'rss/rss'
 
 module RSS
   module Maker
-    module Base
-      def self.append_features(klass)
-        super
+    class Base
+      extend Utils::InheritedReader
 
-        klass.module_eval(<<-EOC, __FILE__, __LINE__)
+      OTHER_ELEMENTS = []
+      NEED_INITIALIZE_VARIABLES = []
 
-        OTHER_ELEMENTS = []
-        NEED_INITIALIZE_VARIABLES = []
+      class << self
+        def other_elements
+          inherited_array_reader("OTHER_ELEMENTS")
+        end
+        def need_initialize_variables
+          inherited_array_reader("NEED_INITIALIZE_VARIABLES")
+        end
 
-        def self.inherited(subclass)
+        def inherited_base
+          ::RSS::Maker::Base
+        end
+
+        def inherited(subclass)
           subclass.const_set("OTHER_ELEMENTS", [])
           subclass.const_set("NEED_INITIALIZE_VARIABLES", [])
-
-          subclass.module_eval(<<-EOEOC, __FILE__, __LINE__)
-            def self.other_elements
-              OTHER_ELEMENTS + super
-            end
-
-            def self.need_initialize_variables
-              NEED_INITIALIZE_VARIABLES + super
-            end
-          EOEOC
         end
 
-        def self.add_other_element(variable_name)
-          OTHER_ELEMENTS << variable_name
+        def add_other_element(variable_name)
+          self::OTHER_ELEMENTS << variable_name
         end
 
-        def self.other_elements
-          OTHER_ELEMENTS
+        def add_need_initialize_variable(variable_name, init_value="nil")
+          self::NEED_INITIALIZE_VARIABLES << [variable_name, init_value]
         end
 
-        def self.add_need_initialize_variable(variable_name, init_value="nil")
-          NEED_INITIALIZE_VARIABLES << [variable_name, init_value]
-        end
-
-        def self.need_initialize_variables
-          NEED_INITIALIZE_VARIABLES
-        end
-
-        def self.def_array_element(name, plural=nil, klass=nil)
+        def def_array_element(name, plural=nil, klass_name=nil)
           include Enumerable
           extend Forwardable
 
-          plural ||= "\#{name}s"
-          klass ||= "self.class::\#{Utils.to_class_name(name)}"
-
-          def_delegators("@\#{plural}", :<<, :[], :[]=, :first, :last)
-          def_delegators("@\#{plural}", :push, :pop, :shift, :unshift)
-          def_delegators("@\#{plural}", :each, :size, :empty?, :clear)
+          plural ||= "#{name}s"
+          klass_name ||= Utils.to_class_name(name)
+          def_delegators("@#{plural}", :<<, :[], :[]=, :first, :last)
+          def_delegators("@#{plural}", :push, :pop, :shift, :unshift)
+          def_delegators("@#{plural}", :each, :size, :empty?, :clear)
 
           add_need_initialize_variable(plural, "[]")
 
-          module_eval(<<-EOM, __FILE__, __LINE__ + 1)
-            def new_\#{name}
-              \#{name} = \#{klass}.new(@maker)
-              @\#{plural} << \#{name}
+          module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+            def new_#{name}
+              #{name} = self.class::#{klass_name}.new(@maker)
+              @#{plural} << #{name}
               if block_given?
-                yield \#{name}
+                yield #{name}
               else
-                \#{name}
+                #{name}
               end
             end
-            alias new_child new_\#{name}
+            alias new_child new_#{name}
 
             def to_feed(*args)
-              @\#{plural}.each do |\#{name}|
-                \#{name}.to_feed(*args)
+              @#{plural}.each do |#{name}|
+                #{name}.to_feed(*args)
               end
             end
 
             def replace(elements)
-              @\#{plural}.replace(elements.to_a)
+              @#{plural}.replace(elements.to_a)
             end
-EOM
+          EOC
         end
-        EOC
+
+        def def_classed_element_without_accessor(name, class_name=nil)
+          class_name ||= Utils.to_class_name(name)
+          add_other_element(name)
+          add_need_initialize_variable(name, "make_#{name}")
+          module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+            private
+            def setup_#{name}(feed, current)
+              @#{name}.to_feed(feed, current)
+            end
+
+            def make_#{name}
+              self.class::#{class_name}.new(@maker)
+            end
+          EOC
+        end
+
+        def def_classed_element(name, class_name=nil, attribute_name=nil)
+          def_classed_element_without_accessor(name, class_name)
+          if attribute_name
+            module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+              def #{name}
+                if block_given?
+                  yield(@#{name})
+                else
+                  @#{name}.#{attribute_name}
+                end
+              end
+
+              def #{name}=(new_value)
+                @#{name}.#{attribute_name} = new_value
+              end
+            EOC
+          else
+            attr_reader name
+          end
+        end
+
+        def def_classed_elements(name, attribute, plural_class_name=nil,
+                                 plural_name=nil, new_name=nil)
+          plural_name ||= "#{name}s"
+          new_name ||= name
+          def_classed_element(plural_name, plural_class_name)
+          local_variable_name = "_#{name}"
+          new_value_variable_name = "new_value"
+          additional_setup_code = nil
+          if block_given?
+            additional_setup_code = yield(local_variable_name,
+                                          new_value_variable_name)
+          end
+          module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+            def #{name}
+              #{local_variable_name} = #{plural_name}.first
+              #{local_variable_name} ? #{local_variable_name}.#{attribute} : nil
+            end
+
+            def #{name}=(#{new_value_variable_name})
+              #{local_variable_name} =
+                #{plural_name}.first || #{plural_name}.new_#{new_name}
+              #{additional_setup_code}
+              #{local_variable_name}.#{attribute} = #{new_value_variable_name}
+            end
+          EOC
+        end
+
+        def def_other_element(name)
+          attr_accessor name
+          def_other_element_without_accessor(name)
+        end
+
+        def def_other_element_without_accessor(name)
+          add_need_initialize_variable(name)
+          add_other_element(name)
+          module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+            def setup_#{name}(feed, current)
+              if !@#{name}.nil? and current.respond_to?(:#{name}=)
+                current.#{name} = @#{name}
+              end
+            end
+          EOC
+        end
       end
-      
+
       attr_reader :maker
       def initialize(maker)
         @maker = maker
@@ -183,12 +253,27 @@ EOM
             attr_accessor element
             add_need_initialize_variable(element)
           end
-EOC
+        EOC
       end
     end
 
     module AtomTextConstructBase
       module EnsureXMLContent
+        class << self
+          def included(base)
+            super
+            base.class_eval do
+              %w(type content xml_content).each do |element|
+                attr_reader element
+                attr_writer element if element != "xml_content"
+                add_need_initialize_variable(element)
+              end
+
+              alias_method(:xhtml, :xml_content)
+            end
+          end
+        end
+
         def ensure_xml_content(content)
           xhtml_uri = ::RSS::Atom::XHTML_URI
           unless content.is_a?(RSS::XML::Element) and
@@ -201,6 +286,14 @@ EOC
                                             children)
           end
           content
+        end
+
+        def xml_content=(content)
+          @xml_content = ensure_xml_content(content)
+        end
+
+        def xhtml=(content)
+          self.xml_content = content
         end
 
         private
@@ -221,21 +314,9 @@ EOC
       def self.append_features(klass)
         super
 
-        klass.class_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        klass.class_eval do
           include EnsureXMLContent
-
-          %w(type content xml_content).each do |element|
-            attr element, element != "xml_content"
-            add_need_initialize_variable(element)
-          end
-
-          def xml_content=(content)
-            @xml_content = ensure_xml_content(content)
-          end
-
-          alias_method(:xhtml, :xml_content)
-          alias_method(:xhtml=, :xml_content=)
-EOC
+        end
       end
     end
 
@@ -248,7 +329,7 @@ EOC
         }
         _date = date
         if _date and !dc_dates.any? {|dc_date| dc_date.value == _date}
-          dc_date = self.class::DublinCoreDates::Date.new(self)
+          dc_date = self.class::DublinCoreDates::DublinCoreDate.new(self)
           dc_date.value = _date.dup
           dc_dates.unshift(dc_date)
         end
@@ -260,9 +341,7 @@ EOC
       end
     end
 
-    class RSSBase
-      include Base
-
+    class RSSBase < Base
       class << self
         def make(&block)
           new.make(&block)
@@ -281,7 +360,7 @@ EOC
           def make_#{element}
             self.class::#{Utils.to_class_name(element)}.new(self)
           end
-EOC
+        EOC
       end
       
       attr_reader :feed_version
@@ -326,13 +405,10 @@ EOC
       end
     end
 
-    class XMLStyleSheets
-      include Base
-
+    class XMLStyleSheets < Base
       def_array_element("xml_stylesheet", nil, "XMLStyleSheet")
 
-      class XMLStyleSheet
-        include Base
+      class XMLStyleSheet < Base
 
         ::RSS::XMLStyleSheet::ATTRIBUTES.each do |attribute|
           attr_accessor attribute
@@ -362,26 +438,23 @@ EOC
       end
     end
     
-    class ChannelBase
-      include Base
+    class ChannelBase < Base
       include SetupDefaultDate
 
-      %w(cloud categories skipDays skipHours links authors
-         contributors generator copyright description
-         title).each do |element|
-        attr_reader element
-        add_other_element(element)
-        add_need_initialize_variable(element, "make_#{element}")
-        module_eval(<<-EOC, __FILE__, __LINE__)
-          private
-          def setup_#{element}(feed, current)
-            @#{element}.to_feed(feed, current)
-          end
+      %w(cloud categories skipDays skipHours).each do |name|
+        def_classed_element(name)
+      end
 
-          def make_#{element}
-            self.class::#{Utils.to_class_name(element)}.new(@maker)
-          end
-EOC
+      %w(generator copyright description title).each do |name|
+        def_classed_element(name, nil, "content")
+      end
+
+      [
+       ["link", "href", Proc.new {|target,| "#{target}.href = 'self'"}],
+       ["author", "name"],
+       ["contributor", "name"],
+      ].each do |name, attribute, additional_setup_maker|
+        def_classed_elements(name, attribute, &additional_setup_maker)
       end
 
       %w(id about language
@@ -407,58 +480,11 @@ EOC
         self.date = date
       end
 
-      def link
-        _link = links.first
-        _link ? _link.href : nil
-      end
-
-      def link=(href)
-        _link = links.first || links.new_link
-        _link.rel = "self"
-        _link.href = href
-      end
-
-      def author
-        _author = authors.first
-        _author ? _author.name : nil
-      end
-
-      def author=(name)
-        _author = authors.first || authors.new_author
-        _author.name = name
-      end
-
-      def contributor
-        _contributor = contributors.first
-        _contributor ? _contributor.name : nil
-      end
-
-      def contributor=(name)
-        _contributor = contributors.first || contributors.new_contributor
-        _contributor.name = name
-      end
-
-      def generator=(content)
-        @generator.content = content
-      end
-
-      def copyright=(content)
-        @copyright.content = content
-      end
-
       alias_method(:rights, :copyright)
       alias_method(:rights=, :copyright=)
 
-      def description=(content)
-        @description.content = content
-      end
-
       alias_method(:subtitle, :description)
       alias_method(:subtitle=, :description=)
-
-      def title=(content)
-        @title.content = content
-      end
 
       def icon
         image_favicon.about
@@ -476,14 +502,10 @@ EOC
         maker.image.url = url
       end
 
-      class SkipDaysBase
-        include Base
-
+      class SkipDaysBase < Base
         def_array_element("day")
 
-        class DayBase
-          include Base
-          
+        class DayBase < Base
           %w(content).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
@@ -491,14 +513,10 @@ EOC
         end
       end
       
-      class SkipHoursBase
-        include Base
-
+      class SkipHoursBase < Base
         def_array_element("hour")
 
-        class HourBase
-          include Base
-          
+        class HourBase < Base
           %w(content).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
@@ -506,23 +524,17 @@ EOC
         end
       end
       
-      class CloudBase
-        include Base
-        
+      class CloudBase < Base
         %w(domain port path registerProcedure protocol).each do |element|
           attr_accessor element
           add_need_initialize_variable(element)
         end
       end
 
-      class CategoriesBase
-        include Base
-
+      class CategoriesBase < Base
         def_array_element("category", "categories")
 
-        class CategoryBase
-          include Base
-
+        class CategoryBase < Base
           %w(domain content label).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
@@ -535,14 +547,10 @@ EOC
         end
       end
 
-      class LinksBase
-        include Base
-
+      class LinksBase < Base
         def_array_element("link")
 
-        class LinkBase
-          include Base
-
+        class LinkBase < Base
           %w(href rel type hreflang title length).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
@@ -550,56 +558,43 @@ EOC
         end
       end
 
-      class AuthorsBase
-        include Base
-
+      class AuthorsBase < Base
         def_array_element("author")
 
-        class AuthorBase
-          include Base
+        class AuthorBase < Base
           include AtomPersonConstructBase
         end
       end
 
-      class ContributorsBase
-        include Base
-
+      class ContributorsBase < Base
         def_array_element("contributor")
 
-        class ContributorBase
-          include Base
+        class ContributorBase < Base
           include AtomPersonConstructBase
         end
       end
 
-      class GeneratorBase
-        include Base
-
+      class GeneratorBase < Base
         %w(uri version content).each do |element|
           attr_accessor element
           add_need_initialize_variable(element)
         end
       end
 
-      class CopyrightBase
-        include Base
+      class CopyrightBase < Base
         include AtomTextConstructBase
       end
 
-      class DescriptionBase
-        include Base
+      class DescriptionBase < Base
         include AtomTextConstructBase
       end
 
-      class TitleBase
-        include Base
+      class TitleBase < Base
         include AtomTextConstructBase
       end
     end
     
-    class ImageBase
-      include Base
-
+    class ImageBase < Base
       %w(title url width height description).each do |element|
         attr_accessor element
         add_need_initialize_variable(element)
@@ -610,9 +605,7 @@ EOC
       end
     end
     
-    class ItemsBase
-      include Base
-
+    class ItemsBase < Base
       def_array_element("item")
 
       attr_accessor :do_sort, :max_size
@@ -646,26 +639,24 @@ EOC
         end
       end
 
-      class ItemBase
-        include Base
+      class ItemBase < Base
         include SetupDefaultDate
 
-        %w(guid enclosure source categories authors links
-           contributors rights description content title).each do |element|
-          attr_reader element
-          add_other_element(element)
-          add_need_initialize_variable(element, "make_#{element}")
-          module_eval(<<-EOC, __FILE__, __LINE__)
-          private
-          def setup_#{element}(feed, current)
-            @#{element}.to_feed(feed, current)
-          end
-
-          def make_#{element}
-            self.class::#{Utils.to_class_name(element)}.new(@maker)
-          end
-EOC
+        %w(guid enclosure source categories content).each do |name|
+          def_classed_element(name)
         end
+
+        %w(rights description title).each do |name|
+          def_classed_element(name, nil, "content")
+        end
+
+        [
+         ["author", "name"],
+         ["link", "href", Proc.new {|target,| "#{target}.href = 'alternate'"}],
+         ["contributor", "name"],
+        ].each do |name, attribute|
+          def_classed_elements(name, attribute)
+	end
 
         %w(date comments id published).each do |element|
           attr_accessor element
@@ -688,41 +679,8 @@ EOC
           self.date = date
         end
 
-        def author
-          _link = authors.first
-          _link ? _author.name : nil
-        end
-
-        def author=(name)
-          _author = authors.first || authors.new_author
-          _author.name = name
-        end
-
-        def link
-          _link = links.first
-          _link ? _link.href : nil
-        end
-
-        def link=(href)
-          _link = links.first || links.new_link
-          _link.rel = "alternate"
-          _link.href = href
-        end
-
-        def rights=(content)
-          @rights.content = content
-        end
-
-        def description=(content)
-          @description.content = content
-        end
-
         alias_method(:summary, :description)
         alias_method(:summary=, :description=)
-
-        def title=(content)
-          @title.content = content
-        end
 
         def <=>(other)
           _date = date || dc_date
@@ -738,42 +696,30 @@ EOC
           end
         end
 
-        class GuidBase
-          include Base
-
+        class GuidBase < Base
           %w(isPermaLink content).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
           end
         end
 
-        class EnclosureBase
-          include Base
-
+        class EnclosureBase < Base
           %w(url length type).each do |element|
             attr_accessor element
             add_need_initialize_variable(element)
           end
         end
 
-        class SourceBase
-          include Base
-
+        class SourceBase < Base
           %w(authors categories contributors generator icon
-             links logo rights subtitle title).each do |element|
-            attr_reader element
-            add_other_element(element)
-            add_need_initialize_variable(element, "make_#{element}")
-            module_eval(<<-EOC, __FILE__, __LINE__)
-            private
-            def setup_#{element}(feed, current)
-              @#{element}.to_feed(feed, current)
-            end
+             logo rights subtitle title).each do |name|
+            def_classed_element(name)
+          end
 
-            def make_#{element}
-              self.class::#{Utils.to_class_name(element)}.new(@maker)
-            end
-            EOC
+          [
+           ["link", "href"],
+          ].each do |name, attribute|
+            def_classed_elements(name, attribute)
           end
 
           %w(id content date).each do |element|
@@ -781,15 +727,8 @@ EOC
             add_need_initialize_variable(element)
           end
 
-          def url
-            link = links.first
-            link ? link.href : nil
-          end
-
-          def url=(value)
-            link = links.first || links.new_link
-            link.href = value
-          end
+          alias_method(:url, :link)
+          alias_method(:url=, :link=)
 
           def updated
             date
@@ -805,9 +744,7 @@ EOC
           ContributorsBase = ChannelBase::ContributorsBase
           GeneratorBase = ChannelBase::GeneratorBase
 
-          class IconBase
-            include Base
-
+          class IconBase < Base
             %w(url).each do |element|
               attr_accessor element
               add_need_initialize_variable(element)
@@ -816,27 +753,22 @@ EOC
 
           LinksBase = ChannelBase::LinksBase
 
-          class LogoBase
-            include Base
-
+          class LogoBase < Base
             %w(uri).each do |element|
               attr_accessor element
               add_need_initialize_variable(element)
             end
           end
 
-          class RightsBase
-            include Base
+          class RightsBase < Base
             include AtomTextConstructBase
           end
 
-          class SubtitleBase
-            include Base
+          class SubtitleBase < Base
             include AtomTextConstructBase
           end
 
-          class TitleBase
-            include Base
+          class TitleBase < Base
             include AtomTextConstructBase
           end
         end
@@ -846,22 +778,19 @@ EOC
         LinksBase = ChannelBase::LinksBase
         ContributorsBase = ChannelBase::ContributorsBase
 
-        class RightsBase
-          include Base
+        class RightsBase < Base
           include AtomTextConstructBase
         end
 
-        class DescriptionBase
-          include Base
+        class DescriptionBase < Base
           include AtomTextConstructBase
         end
 
-        class ContentBase
-          include Base
+        class ContentBase < Base
           include AtomTextConstructBase::EnsureXMLContent
 
-          %w(type src content xml_content).each do |element|
-            attr element, element != "xml_content"
+          %w(src).each do |element|
+            attr_accessor(element)
             add_need_initialize_variable(element)
           end
 
@@ -870,13 +799,9 @@ EOC
             @xml_content = content
           end
 
-          alias_method(:xhtml, :xml_content)
-          alias_method(:xhtml=, :xml_content=)
-
           alias_method(:xml, :xml_content)
           alias_method(:xml=, :xml_content=)
 
-          private
           def inline_text?
             [nil, "text", "html"].include?(@type)
           end
@@ -913,16 +838,13 @@ EOC
           end
         end
 
-        class TitleBase
-          include Base
+        class TitleBase < Base
           include AtomTextConstructBase
         end
       end
     end
 
-    class TextinputBase
-      include Base
-
+    class TextinputBase < Base
       %w(title description name link).each do |element|
         attr_accessor element
         add_need_initialize_variable(element)

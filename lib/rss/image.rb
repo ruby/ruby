@@ -142,8 +142,8 @@ module RSS
       end
 
       AVAILABLE_SIZES = %w(small medium large)
-      alias_method :_size=, :size=
-      private :_size=
+      alias_method :set_size, :size=
+      private :set_size
       def size=(new_value)
         if @do_validate and !new_value.nil?
           new_value = new_value.strip
@@ -152,7 +152,7 @@ module RSS
             raise NotAvailableValueError.new(full_name, new_value, attr_name)
           end
         end
-        __send!(:_size=, new_value)
+        set_size(new_value)
       end
       
       alias image_size= size=

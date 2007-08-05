@@ -75,12 +75,6 @@ module RSS
               end
             end
 
-            def have_required_values?
-              set_default_values do
-                super and title.have_required_values?
-              end
-            end
-
             private
             def required_variable_names
               %w(id updated)
@@ -100,7 +94,7 @@ module RSS
                 if authors.all? {|author| !author.have_required_values?}
                   vars << "author"
                 end
-                vars << "title" unless title.have_required_values?
+                vars << "title" unless title {|t| t.have_required_values?}
                 vars
               end
             end
@@ -126,9 +120,11 @@ module RSS
               self.id ||= link || @maker.channel.id
               links.replace(@maker.channel.links) if keep[:links].empty?
               unless keep[:rights].variable_is_set?
-                @rights = @maker.channel.rights
+                @maker.channel.rights {|r| @rights = r}
               end
-              @title = @maker.channel.title unless keep[:title].variable_is_set?
+              unless keep[:title].variable_is_set?
+                @maker.channel.title {|t| @title = t}
+              end
               self.updated ||= @maker.channel.updated
               super(&block)
             ensure

@@ -65,12 +65,12 @@ EOR
 
       @rss = Parser.parse(@rss_source)
     end
-  
+
     def test_parser
       assert_nothing_raised do
         Parser.parse(@rss_source)
       end
-      
+
       assert_too_much_tag("favicon", "channel") do
         Parser.parse(make_RDF(<<-EOR, @ns))
 #{make_channel(@channel_nodes * 2)}
@@ -88,7 +88,7 @@ EOR
 EOR
       end
     end
-  
+
     def test_favicon_accessor
       favicon = @rss.channel.image_favicon
       [
@@ -145,7 +145,7 @@ EOR
           image_item.__send__("#{name}=", attrs[full_name])
           assert_equal(attrs[full_name], image_item.__send__(name))
         end
-        
+
         [
           ["width", "image:width", "111"],
           ["image_width", "image:width", "44"],
@@ -188,7 +188,7 @@ EOR
         actual = REXML::Document.new(item.image_item.to_s(false, ""))
 
         assert_equal(expected[0].attributes, actual[0].attributes)
-        
+
         %w(image:height image:width dc:title).each do |name|
           actual_target = actual.elements["//#{name}"]
           expected_target = expected.elements["//#{name}"]

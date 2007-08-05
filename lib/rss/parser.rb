@@ -222,25 +222,22 @@ module RSS
         @@accessor_bases[uri][tag_name] = accessor_base.chomp("=")
       end
 
-      def def_get_text_element(uri, name, file, line)
-        register_uri(uri, name)
-        unless private_instance_methods(false).include?("start_#{name}".to_sym)
-          module_eval(<<-EOT, file, line)
-          def start_#{name}(name, prefix, attrs, ns)
+      def def_get_text_element(uri, element_name, file, line)
+        register_uri(uri, element_name)
+        method_name = "start_#{element_name}"
+        unless private_method_defined?(method_name)
+          define_method(method_name) do |name, prefix, attrs, ns|
             uri = _ns(ns, prefix)
-            if self.class.uri_registered?(uri, #{name.inspect})
+            if self.class.uri_registered?(uri, element_name)
               start_get_text_element(name, prefix, ns, uri)
             else
               start_else_element(name, prefix, attrs, ns)
             end
           end
-          EOT
-          __send!("private", "start_#{name}")
+          private(method_name)
         end
       end
-
     end
-
   end
 
   module ListenerMixin
@@ -368,10 +365,10 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
-      if current_class.const_defined?(class_name)
+      next_class = nil
+      begin
         next_class = current_class.const_get(class_name)
-        start_have_something_element(local, prefix, attrs, ns, next_class)
-      else
+      rescue NameError
         if !@do_validate or @ignore_unknown_element
           @proc_stack.push(nil)
         else
@@ -381,6 +378,9 @@ module RSS
           end
           raise NotExpectedTagError.new(local, _ns(ns, prefix), parent)
         end
+      end
+      if next_class
+        start_have_something_element(local, prefix, attrs, ns, next_class)
       end
     end
 
@@ -460,7 +460,7 @@ module RSS
 
       previous = @last_element
       next_element = klass.new(@do_validate, attributes)
-      previous.__send!(:set_next_element, tag_name, next_element)
+      previous.set_next_element(tag_name, next_element)
       @last_element = next_element
       @last_element.parent = previous if klass.need_parent?
       @xml_child_mode = @last_element.have_xml_content?

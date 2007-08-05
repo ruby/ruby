@@ -131,7 +131,7 @@ module RSS
 
       private
       def maker_target(target)
-        target.__send__(self.class.name.split(/::/).last.downcase)
+        target.__send__(self.class.name.split(/::/).last.downcase) {|x| x}
       end
 
       def setup_maker_attributes(target)
@@ -239,6 +239,11 @@ module RSS
 
       alias_method :items, :entries
 
+      def have_author?
+        authors.any? {|author| !author.to_s.empty?} or
+          entries.any? {|entry| entry.have_author?(false)}
+      end
+
       private
       def atom_validate(ignore_unknown_element, tags, uri)
         unless have_author?
@@ -249,11 +254,6 @@ module RSS
 
       def have_required_elements?
         super and have_author?
-      end
-
-      def have_author?
-        authors.any? {|author| !author.to_s.empty?} or
-          entries.any? {|entry| entry.__send!(:have_author?, false)}
       end
 
       def maker_target(maker)
@@ -315,9 +315,10 @@ module RSS
 
         private
         def setup_maker_attributes(target)
-          generator = target.generator
-          generator.uri = uri if uri
-          generator.version = version if version
+          target.generator do |generator|
+            generator.uri = uri if uri
+            generator.version = version if version
+          end
         end
       end
 
@@ -408,6 +409,12 @@ module RSS
                    tag, URI, occurs, tag, *args)
         end
 
+        def have_author?(check_parent=true)
+          authors.any? {|author| !author.to_s.empty?} or
+            (check_parent and @parent and @parent.have_author?) or
+            (source and source.have_author?)
+        end
+
         private
         def atom_validate(ignore_unknown_element, tags, uri)
           unless have_author?
@@ -418,12 +425,6 @@ module RSS
 
         def have_required_elements?
           super and have_author?
-        end
-
-        def have_author?(check_parent=true)
-          authors.any? {|author| !author.to_s.empty?} or
-            (check_parent and @parent and @parent.__send!(:have_author?)) or
-            (source and source.__send!(:have_author?))
         end
 
         def maker_target(items)
@@ -606,7 +607,6 @@ module RSS
                      tag, URI, occurs, tag, *args)
           end
 
-          private
           def have_author?
             !author.to_s.empty?
           end
@@ -674,6 +674,11 @@ module RSS
         super(maker)
       end
 
+      def have_author?
+        authors.any? {|author| !author.to_s.empty?} or
+          (source and source.have_author?)
+      end
+
       private
       def atom_validate(ignore_unknown_element, tags, uri)
         unless have_author?
@@ -684,11 +689,6 @@ module RSS
 
       def have_required_elements?
         super and have_author?
-      end
-
-      def have_author?
-        authors.any? {|author| !author.to_s.empty?} or
-          (source and source.__send!(:have_author?))
       end
 
       def maker_target(maker)

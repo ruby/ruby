@@ -1,3 +1,10 @@
+Sun Aug  5 11:51:39 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss, sample/rss, test/rss:
+	- 0.1.7 -> 0.1.8.
+	- supported <itunes:XXX>.
+	- reverted backward incompatibility API changes introduced 0.1.7.
+
 Sun Aug  5 04:56:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open_v, pipe_open_s): separate array and string

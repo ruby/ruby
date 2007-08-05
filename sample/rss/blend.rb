@@ -66,7 +66,7 @@ rss = RSS::Maker.make("1.0") do |maker|
   end
 
   maker.items.each do |item|
-    item.title.content ||= "UNKNOWN"
+    item.title ||= "UNKNOWN"
     item.link ||= "UNKNOWN"
   end
 

@@ -15,61 +15,40 @@ module RSS
           plural_klass_name = "DublinCore#{Utils.to_class_name(plural_name)}"
           full_plural_klass_name = "self.class::#{plural_klass_name}"
           full_klass_name = "#{full_plural_klass_name}::#{klass_name}"
-          klass.add_need_initialize_variable(full_plural_name,
-                                             "make_#{full_plural_name}")
-          klass.add_other_element(full_plural_name)
-          klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
-            attr_accessor :#{full_plural_name}
-            def make_#{full_plural_name}
-              #{full_plural_klass_name}.new(@maker)
-            end
-            
-            def setup_#{full_plural_name}(feed, current)
-              @#{full_plural_name}.to_feed(feed, current)
-            end
-
-            def #{full_name}
-              @#{full_plural_name}[0] and @#{full_plural_name}[0].value
-            end
-            
-            def #{full_name}=(new_value)
-              @#{full_plural_name}[0] = #{full_klass_name}.new(self)
-              @#{full_plural_name}[0].value = new_value
-            end
-
+          klass.def_classed_elements(full_name, "value", plural_klass_name,
+                                     full_plural_name, name)
+          klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
             def new_#{full_name}(value=nil)
-              #{full_name} = #{full_klass_name}.new(self)
-              #{full_name}.value = value
-              @#{full_plural_name} << #{full_name}
+              _#{full_name} = #{full_plural_name}.new_#{name}
+              _#{full_name}.value = value
               if block_given?
-                yield #{full_name}
+                yield _#{full_name}
               else
-                #{full_name}
+                _#{full_name}
               end
             end
-EOC
+          EOC
         end
 
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           # For backward compatibility
           alias #{DC_PREFIX}_rightses #{DC_PREFIX}_rights_list
-EOC
+        EOC
       end
 
       ::RSS::DublinCoreModel::ELEMENT_NAME_INFOS.each do |name, plural_name|
         plural_name ||= "#{name}s"
+        full_name ||= "#{DC_PREFIX}_#{name}"
+        full_plural_name ||= "#{DC_PREFIX}_#{plural_name}"
         klass_name = Utils.to_class_name(name)
         full_klass_name = "DublinCore#{klass_name}"
         plural_klass_name = "DublinCore#{Utils.to_class_name(plural_name)}"
-        module_eval(<<-EOC, __FILE__, __LINE__)
-        class #{plural_klass_name}Base
-          include Base
+        module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        class #{plural_klass_name}Base < Base
+          def_array_element(#{name.dump}, #{full_plural_name.dump},
+                            #{full_klass_name.dump})
 
-          def_array_element(#{name.dump}, #{plural_name.dump})
-
-          class #{klass_name}Base
-            include Base
-
+          class #{full_klass_name}Base < Base
             attr_accessor :value
             add_need_initialize_variable("value")
             alias_method(:content, :value)
@@ -80,12 +59,13 @@ EOC
             end
 
             def to_feed(feed, current)
-              if value and current.respond_to?(:dc_#{name})
+              if value and current.respond_to?(:#{full_name})
                 new_item = current.class::#{full_klass_name}.new(value)
-                current.dc_#{plural_name} << new_item
+                current.#{full_plural_name} << new_item
               end
             end
           end
+          #{klass_name}Base = #{full_klass_name}Base
         end
         EOC
       end
@@ -94,11 +74,13 @@ EOC
         ::RSS::DublinCoreModel::ELEMENT_NAME_INFOS.each do |name, plural_name|
           plural_name ||= "#{name}s"
           klass_name = Utils.to_class_name(name)
+          full_klass_name = "DublinCore#{klass_name}"
           plural_klass_name = "DublinCore#{Utils.to_class_name(plural_name)}"
           klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           class #{plural_klass_name} < #{plural_klass_name}Base
-            class #{klass_name} < #{klass_name}Base
+            class #{full_klass_name} < #{full_klass_name}Base
             end
+            #{klass_name} = #{full_klass_name}
           end
 EOC
         end

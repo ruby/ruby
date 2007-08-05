@@ -58,8 +58,9 @@ ARGV.each do |fname|
 
     rss = rss.to_rss("1.0") do |maker|
       maker.channel.about ||= maker.channel.link
-      maker.channel.description.content ||= "No description"
+      maker.channel.description ||= "No description"
       maker.items.each do |item|
+        item.title ||= "UNKNOWN"
         item.link ||= "UNKNOWN"
       end
     end

@@ -268,7 +268,16 @@ module RSS
                                        nil, nil,
                                        "maker.channel.description") do |maker|
         setup_dummy_channel_atom(maker)
-        maker.channel.description.content = nil
+        maker.channel.description = nil
+      end
+
+      assert_maker_atom_text_construct("feed",
+                                       ["channel", "subtitle"],
+                                       ["subtitle"],
+                                       nil, nil,
+                                       "maker.channel.description") do |maker|
+        setup_dummy_channel_atom(maker)
+        maker.channel.description {|d| d.content = nil}
       end
 
       assert_maker_atom_text_construct("feed",
