@@ -24,4 +24,8 @@ class TestRegexp < Test::Unit::TestCase
       Regexp.new(s, nil, "u")
     end
   end
+
+  def test_ruby_dev_31309
+    assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
+  end
 end
