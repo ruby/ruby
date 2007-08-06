@@ -560,7 +560,8 @@ iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}de
         {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
         {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}signal.h \
         {$(VPATH)}gc.h {$(VPATH)}vm_opts.h  {$(VPATH)}config.h {$(VPATH)}node.h \
-        {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns_info.inc
+        {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns_info.inc \
+        {$(VPATH)}node_name.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
 	{$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
 	{$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
@@ -611,7 +612,10 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-incs: $(INSNS)
+incs: $(INSNS) node_name.inc
+
+node_name.inc: {$(VPATH)}node.h
+	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $< > $@
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

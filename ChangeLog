@@ -1,9 +1,15 @@
-Mon Aug  6 13:00:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  6 13:09:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (INSNS): not chdir to srcdir.
 
+	* common.mk (node_name.inc): auto-generate node name list.
+
+	* iseq.c (ruby_node_name): ditto.
+
 	* lib/vm/instruction.rb (RubyVM::SourceCodeGenerator): --destdir
 	  option.
+
+	* tool/node_name.rb: ditto.
 
 Sun Aug  5 11:51:39 2007  Kouhei Sutou  <kou@cozmixng.org>
 
