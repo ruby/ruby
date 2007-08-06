@@ -1,3 +1,7 @@
+Mon Aug  6 17:36:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/encodings/{ISO-8859-15,CP-1252}.rb: fixed invalid syntax.
+
 Fri Aug  3 11:05:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): save all CONFIG values.
