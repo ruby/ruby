@@ -65,3 +65,135 @@ class TestRubyYield < Test::Unit::TestCase
   end
 
 end
+
+require 'sentgen'
+class TestRubyYieldGen < Test::Unit::TestCase
+  Syntax = {
+    :exp => [["0"],
+             ["nil"],
+             ["false"],
+             ["[]"],
+             ["[",:exps,"]"]],
+    :exps => [[:exp],
+              [:exp,",",:exps]],
+    :opt_block_param => [[],
+                         [:block_param_def]],
+    :block_param_def => [['|', '|'],
+                         ['|', :block_param, '|']],
+    :block_param => [[:f_arg, ",", :f_rest_arg, :opt_f_block_arg],
+                     [:f_arg, ","],
+                     [:f_arg, ',', :f_rest_arg, ",", :f_arg, :opt_f_block_arg],
+                     [:f_arg, :opt_f_block_arg],
+                     [:f_rest_arg, :opt_f_block_arg],
+                     [:f_rest_arg, ',', :f_arg, :opt_f_block_arg],
+                     [:f_block_arg]],
+    :f_arg => [[:f_arg_item],
+               [:f_arg, ',', :f_arg_item]],
+    :f_rest_arg => [['*', "var"],
+                    ['*']],
+    :opt_f_block_arg => [[',', :f_block_arg],
+                         []],
+    :f_block_arg => [['&', 'var']],
+    :f_arg_item => [[:f_norm_arg],
+                    ['(', :f_margs, ')']],
+    :f_margs => [[:f_marg_head],
+                 [:f_marg_head, ',', '*', :f_norm_arg],
+                 [:f_marg_head, ',', '*', :f_norm_arg, ',', :f_marg],
+                 [:f_marg_head, ',', '*'],
+                 [:f_marg_head, ',', '*',              ',', :f_marg],
+                 [                   '*', :f_norm_arg],
+                 [                   '*', :f_norm_arg, ',', :f_marg],
+                 [                   '*'],
+                 [                   '*',              ',', :f_marg]],
+    :f_marg_head => [[:f_marg],
+                     [:f_marg_head, ',', :f_marg]],
+    :f_marg => [[:f_norm_arg],
+                ['(', :f_margs, ')']],
+    :f_norm_arg => [['var']],
+
+    :command_args => [[:open_args]],
+    :open_args => [[' ',:call_args],
+                   ['(', ')'],
+                   ['(', :call_args2, ')']],
+    :call_args =>  [[:command],
+                    [           :args,               :opt_block_arg],
+                    [                       :assocs, :opt_block_arg],
+                    [           :args, ',', :assocs, :opt_block_arg],
+                    [                                    :block_arg]],
+    :call_args2 => [[:arg, ',', :args,               :opt_block_arg],
+                    [:arg, ',',                          :block_arg],
+                    [                       :assocs, :opt_block_arg],
+                    [:arg, ',',             :assocs, :opt_block_arg],
+                    [:arg, ',', :args, ',', :assocs, :opt_block_arg],
+                    [                                    :block_arg]],
+
+    :command_args_noblock => [[:open_args_noblock]],
+    :open_args_noblock => [[' ',:call_args_noblock],
+                   ['(', ')'],
+                   ['(', :call_args2_noblock, ')']],
+    :call_args_noblock =>  [[:command],
+                    [           :args],
+                    [                       :assocs],
+                    [           :args, ',', :assocs]],
+    :call_args2_noblock => [[:arg, ',', :args],
+                            [                       :assocs],
+                            [:arg, ',',             :assocs],
+                            [:arg, ',', :args, ',', :assocs]],
+
+    :command => [],
+    :args => [[:arg],
+              ["*",:arg],
+              [:args,",",:arg],
+              [:args,",","*",:arg]],
+    :arg => [[:exp]],
+    :assocs => [[:assoc],
+                [:assocs, ',', :assoc]],
+    :assoc => [[:arg, '=>', :arg],
+               ['label', ':', :arg]],
+    :opt_block_arg => [[',', :block_arg],
+                       []],
+    :block_arg => [['&', :arg]],
+    #:test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
+    :test => [['def m(&b) b.yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
+  }
+
+  def subst(obj, target, &b)
+    if obj.respond_to? :to_ary
+      a = []
+      obj.each {|e| a << subst(e, target, &b) }
+      a
+    elsif obj == target
+      yield obj
+    else
+      obj
+    end
+  end
+
+  def rename_var(obj)
+    vars = []
+    r = subst(obj, 'var') {
+      var = "v#{vars.length}"
+      vars << var
+      var
+    }
+    return r, vars
+  end
+
+  def check_nofork(t)
+    t, vars = rename_var(t)
+    t = subst(t, 'vars') { " [#{vars.join(",")}]" }
+    s = [t].join
+    #print "#{s}\t\t"
+    #STDOUT.flush
+    v = eval(s)
+    #puts "#{v.inspect[1...-1]}"
+    ##xxx: assertion for v here.
+  end
+
+  def test_yield
+    syntax = SentGen.expand_syntax(Syntax)
+    SentGen.each_tree(syntax, :test, 5) {|t|
+      check_nofork(t)
+    }
+  end
+end
