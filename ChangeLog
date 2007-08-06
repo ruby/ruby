@@ -1,3 +1,8 @@
+Mon Aug  6 18:33:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/vm/instruction.rb (make_header_analysys): add to separate
+	  header addition process.
+
 Mon Aug  6 17:36:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/encodings/{ISO-8859-15,CP-1252}.rb: fixed invalid syntax.

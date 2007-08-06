@@ -786,6 +786,14 @@ module RubyVM
       ret.join("\n") + "\n"
     end
   
+    def make_header_analysys insn
+      ret = "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));\n"
+      insn.opes.each_with_index{|op, i|
+        ret += "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});\n"
+      }
+      ret
+    end
+
     def make_header insn
       ret  = "\nINSN_ENTRY(#{insn.name}){\n"
       ret += "  /* prepare stack status */\n"                 if verbose?
@@ -814,10 +822,7 @@ module RubyVM
 
       ret += "  #define LABEL_IS_SC(lab) LABEL_##lab##_###{insn.sc.size == 0 ? 't' : 'f'}\n"
 
-      ret += "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));\n"
-      insn.opes.each_with_index{|op, i|
-        ret += "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});\n"
-      }
+      ret += make_header_analysys insn
       ret += "{\n"
     end
 
