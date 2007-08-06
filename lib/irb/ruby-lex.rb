@@ -1054,6 +1054,12 @@ class RubyLex
 	  break
 	elsif @ltype != "'" && @ltype != "]" && @ltype != ":" and ch == "#"
 	  subtype = true
+	elsif ch == '\\' and @ltype == "'" #'
+	  case ch = getc
+	  when "\\", "\n", "'"
+	  else
+	    ungetc
+	  end
 	elsif ch == '\\' #'
 	  read_escape
 	end

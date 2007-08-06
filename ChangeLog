@@ -1,3 +1,7 @@
+Tue Aug  7 00:05:38 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* irb/ruby-lex.rb: support for '\c'. [ruby-talk:263508]
+
 Mon Aug  6 20:29:22 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci, insns.def: move some statements to functions.
