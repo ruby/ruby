@@ -1,4 +1,4 @@
-Mon Aug  6 13:09:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  6 13:34:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (INSNS): not chdir to srcdir.
 
@@ -6,10 +6,13 @@ Mon Aug  6 13:09:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (ruby_node_name): ditto.
 
+	* iseq.c (iseq_s_compile_option_get, Init_ISeq): added a new
+	  method VM::InstructionSequence::compile_option.
+
 	* lib/vm/instruction.rb (RubyVM::SourceCodeGenerator): --destdir
 	  option.
 
-	* tool/node_name.rb: ditto.
+	* tool/node_name.rb: to auto-generate node name list.
 
 Sun Aug  5 11:51:39 2007  Kouhei Sutou  <kou@cozmixng.org>
 

@@ -487,7 +487,13 @@ iseq_s_compile_option_set(VALUE self, VALUE opt)
     rb_compile_option_t option;
     make_compile_option(&option, opt);
     COMPILE_OPTION_DEFAULT = option;
-    return make_compile_option_value(&option);
+    return opt;
+}
+
+static VALUE
+iseq_s_compile_option_get(VALUE self)
+{
+    return make_compile_option_value(&COMPILE_OPTION_DEFAULT);
 }
 
 static rb_iseq_t *
@@ -671,7 +677,7 @@ insn_operand_intern(rb_iseq_t *iseq,
  */
 VALUE
 ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
-		 rb_iseq_t *iseqdat, VALUE child)
+		      rb_iseq_t *iseqdat, VALUE child)
 {
     int insn = iseq[pos];
     int len = insn_len(insn);
@@ -757,6 +763,7 @@ ruby_iseq_disasm(VALUE self)
     int i;
     ID *tbl;
     char buff[0x200];
+    enum {header_minlen = 72};
 
     iseq = iseqdat->iseq;
     size = iseqdat->iseq_size;
@@ -764,8 +771,9 @@ ruby_iseq_disasm(VALUE self)
     rb_str_cat2(str, "== disasm: ");
 
     rb_str_concat(str, iseq_inspect(iseqdat->self));
-    for (i = RSTRING_LEN(str); i < 72; i++) {
-	rb_str_cat2(str, "=");
+    if ((i = RSTRING_LEN(str)) < header_minlen) {
+	rb_str_resize(str, header_minlen);
+	memset(RSTRING_PTR(str) + i, '=', header_minlen - i);
     }
     rb_str_cat2(str, "\n");
 
@@ -1225,6 +1233,8 @@ Init_ISeq(void)
     rb_define_singleton_method(rb_cISeq, "compile", iseq_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "new", iseq_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseq_s_compile_file, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_option",
+			       iseq_s_compile_option_get, 0);
     rb_define_singleton_method(rb_cISeq, "compile_option=",
 			       iseq_s_compile_option_set, 1);
 }
