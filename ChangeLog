@@ -1,3 +1,9 @@
+Mon Aug  6 20:29:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci, insns.def: move some statements to functions.
+
+	* vm.c, vm.h, vm_evalbody.ci: fix include/typedef places.
+
 Mon Aug  6 18:41:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/vm/instruction.rb (make_header_analysys): fix last commit.

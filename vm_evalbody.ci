@@ -26,8 +26,6 @@
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-typedef rb_iseq_t *ISEQ;
-
 #if !OPT_CALL_THREADED_CODE
 VALUE
 vm_eval(rb_thread_t *th, VALUE initial)

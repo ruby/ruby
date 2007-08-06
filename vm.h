@@ -18,6 +18,7 @@ typedef unsigned long rb_num_t;
 typedef unsigned long lindex_t;
 typedef unsigned long dindex_t;
 typedef rb_num_t GENTRY;
+typedef rb_iseq_t *ISEQ;
 
 extern VALUE rb_cEnv;
 extern VALUE ruby_vm_global_state_version;

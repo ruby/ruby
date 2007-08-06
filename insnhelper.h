@@ -14,6 +14,9 @@
 #define _INSNHELPER_H_INCLUDED_
 
 #include "ruby/ruby.h"
+#include "ruby/node.h"
+#include "eval_intern.h"
+#include "vm_core.h"
 #include "vm.h"
 
 /**********************************************************/

@@ -13,7 +13,6 @@
 #include "ruby/node.h"
 #include "ruby/st.h"
 #include "gc.h"
-#include "eval_intern.h"
 
 #include "insnhelper.h"
 #include "insnhelper.ci"
@@ -505,7 +504,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	klass = RCLASS(klass)->super;
 
 	if (klass == 0) {
-	    klass = vm_search_super_klass(cfp->method_klass, recv);
+	    klass = vm_search_normal_super_klass(cfp->method_klass, recv);
 	}
 
 	id = cfp->method_id;
