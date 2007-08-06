@@ -9,15 +9,22 @@ if defined?(WIN32OLE)
     def setup
       begin
         @sapi = WIN32OLE.new('SAPI.SpVoice')
+        @sv = @sapi.voice
+        puts @sv
       rescue WIN32OLERuntimeError
         @sapi = nil
       end
     end
     def test_sapi
       if @sapi
-        new_id = @sapi.getvoices.item(2).Id
-        @sapi.voice = @sapi.getvoices.item(2)
+        new_id = @sapi.getvoices.item(0).Id
+        @sapi.voice = @sapi.getvoices.item(0)
         assert_equal(new_id, @sapi.voice.Id)
+      end
+    end
+    def teardown
+      if @sapi
+        @sapi.voice = @sv
       end
     end
   end
