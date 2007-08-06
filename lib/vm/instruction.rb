@@ -97,6 +97,7 @@ module RubyVM
       @vpath = opts[:VPATH] || File
       @use_const = opts[:use_const]
       @verbose   = opts[:verbose]
+      @destdir   = opts[:destdir]
 
       (@vm_opts = load_vm_opts).each {|k, v|
         @vm_opts[k] = opts[k] if opts.key?(k)
@@ -110,6 +111,7 @@ module RubyVM
     end
 
     attr_reader :vpath
+    attr_reader :destdir
   
     %w[use_const verbose].each do |attr|
       attr_reader attr
@@ -252,11 +254,7 @@ module RubyVM
             insn_in = true
             body    = ''
 
-            if /\/\/(.+)/ =~ rets_str
-              sp_inc = $1
-            else
-              sp_inc = nil
-            end
+            sp_inc = rets_str[%r"//\s*(.+)", 1]
 
             raise unless /^\{$/ =~ f.gets.chomp
             line_no = f.line_no
@@ -638,6 +636,12 @@ module RubyVM
 
     def use_const?
       @insns.use_const?
+    end
+
+    def output_path(fn)
+      d = @insns.destdir
+      fn = File.join(d, fn) if d
+      fn
     end
   end
 
@@ -1269,7 +1273,7 @@ module RubyVM
       args = Files.keys if args.empty?
       args.each{|fn|
         s = Files[fn].new(@insns).generate
-        open(fn, 'w') {|f| f.puts(s)}
+        open(output_path(fn), 'w') {|f| f.puts(s)}
       }
     end
 
@@ -1309,6 +1313,10 @@ module RubyVM
       opt.on("-C", "--[no-]use-const",
         "use consts for default operands instead of macros") {|v|
         opts[:use_const] = v
+      }
+      opt.on("-d", "--destdir", "--output-directory=DIR",
+        "make output file underneath DIR") {|v|
+        opts[:destdir] = v
       }
       opt.on("-V", "--[no-]verbose") {|v|
         opts[:verbose] = v

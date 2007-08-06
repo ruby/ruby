@@ -1,3 +1,10 @@
+Mon Aug  6 13:00:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (INSNS): not chdir to srcdir.
+
+	* lib/vm/instruction.rb (RubyVM::SourceCodeGenerator): --destdir
+	  option.
+
 Sun Aug  5 11:51:39 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss, sample/rss, test/rss:
