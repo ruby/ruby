@@ -95,7 +95,7 @@ def exec_test(pathes)
   end
 end
 
-def assert_equal(expected, testsrc)
+def assert_equal(expected, testsrc, message = '')
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
   result = get_result_string(testsrc)
@@ -104,11 +104,11 @@ def assert_equal(expected, testsrc)
     $stderr.print '.'
   else
     $stderr.print 'F'
-    error pretty(testsrc, expected, result)
+    error pretty(testsrc, expected, result), message
   end
 rescue Exception => err
   $stderr.print 'E'
-  error err.message
+  error err.message, message
 end
 
 def pretty(src, ex, result)
@@ -147,8 +147,8 @@ def newtest
   cleanup_coredump
 end
 
-def error(msg)
-  @errbuf.push "\##{@count} #{@location}: #{msg}"
+def error(msg, additional_message)
+  @errbuf.push "\##{@count} #{@location}: #{msg}  #{additional_message}"
   @error += 1
 end
 

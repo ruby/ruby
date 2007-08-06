@@ -1,3 +1,8 @@
+Mon Aug  6 14:29:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb (assert_equal): add additional
+	  message parameter.
+
 Mon Aug  6 13:34:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (INSNS): not chdir to srcdir.
