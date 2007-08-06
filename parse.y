@@ -7447,8 +7447,6 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 static int
 value_expr_gen(struct parser_params *parser, NODE *node)
 {
-    int cond = 0;
-
     if (!node) {
 	rb_warning0("empty expression");
     }
@@ -7464,7 +7462,7 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    if (!cond) yyerror("void value expression");
+	    yyerror("void value expression");
 	    /* or "control never reach"? */
 	    return Qfalse;
 
@@ -7486,7 +7484,6 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 
 	  case NODE_AND:
 	  case NODE_OR:
-	    cond = 1;
 	    node = node->nd_2nd;
 	    break;
 

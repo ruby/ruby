@@ -1,3 +1,11 @@
+Mon Aug  6 16:41:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y (value_expr_gen): fix to cause "void value expression"
+	  when jump expression such as "next" are shown on value_expr().
+	  [ruby-dev:31119]
+
+	* bootstraptest/test_syntax.rb: fix to above change.
+
 Mon Aug  6 14:36:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: fix a f_marg rule. [ruby-dev:31160]
