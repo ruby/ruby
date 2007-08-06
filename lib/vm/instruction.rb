@@ -794,6 +794,14 @@ module RubyVM
       ret
     end
 
+    def make_header_analysys insn
+      ret = "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));\n"
+      insn.opes.each_with_index{|op, i|
+        ret += "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});\n"
+      }
+      ret
+    end
+
     def make_header insn
       ret  = "\nINSN_ENTRY(#{insn.name}){\n"
       ret += "  /* prepare stack status */\n"                 if verbose?

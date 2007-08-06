@@ -1,3 +1,7 @@
+Mon Aug  6 18:41:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/vm/instruction.rb (make_header_analysys): fix last commit.
+
 Mon Aug  6 18:33:22 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/vm/instruction.rb (make_header_analysys): add to separate
