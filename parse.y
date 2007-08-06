@@ -3000,7 +3000,7 @@ f_marg		: f_norm_arg
 		| tLPAREN f_margs rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST($2);
+			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/

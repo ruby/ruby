@@ -1,3 +1,7 @@
+Mon Aug  6 14:36:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: fix a f_marg rule. [ruby-dev:31160]
+
 Mon Aug  6 14:29:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb (assert_equal): add additional
