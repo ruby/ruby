@@ -1880,12 +1880,13 @@ end
 def valid_syntax?(code, fname)
   eval("BEGIN {return true}\n#{code}", nil, fname, 0)
 rescue Exception
-  puts $!.message
+  STDERR.puts $!.message
   false
 end
 
 for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
   unless valid_syntax? IO::read(script), script
+    STDERR.puts script
     $bad = true
   end
 end
