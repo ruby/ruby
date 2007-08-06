@@ -1958,65 +1958,6 @@ rb_ary_delete_if(VALUE ary)
 
 /*
  *  call-seq:
- *     array.zip(arg, ...)                   -> an_array
- *     array.zip(arg, ...) {| arr | block }  -> nil
- *  
- *  Converts any arguments to arrays, then merges elements of
- *  <i>self</i> with corresponding elements from each argument. This
- *  generates a sequence of <code>self.size</code> <em>n</em>-element
- *  arrays, where <em>n</em> is one more that the count of arguments.
- *  The size of returned array is truncated to the size of the
- *  shortest argument enumerable.  If a block given, it is invoked
- *  for each output array, otherwise an array of arrays is returned.
- *     
- *     a = [ 4, 5, 6 ]
- *     b = [ 7, 8, 9 ]
- *     
- *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1,2],[8])       #=> [[4,1,8]]
- */
-
-static VALUE
-rb_ary_zip(int argc, VALUE *argv, VALUE ary)
-{
-    int i, j;
-    long len;
-    VALUE result;
-
-    len = RARRAY_LEN(ary);
-    for (i=0; i<argc; i++) {
-	argv[i] = to_a(argv[i]);
-	if (len > RARRAY_LEN(argv[i]))
-	    len = RARRAY_LEN(argv[i]);
-    }
-    if (rb_block_given_p()) {
-	for (i=0; i<len; i++) {
-	    VALUE tmp = rb_ary_new2(argc+1);
-
-	    rb_ary_push(tmp, rb_ary_elt(ary, i));
-	    for (j=0; j<argc; j++) {
-		rb_ary_push(tmp, rb_ary_elt(argv[j], i));
-	    }
-	    rb_yield(tmp);
-	}
-	return Qnil;
-    }
-    result = rb_ary_new2(len);
-    for (i=0; i<len; i++) {
-	VALUE tmp = rb_ary_new2(argc+1);
-
-	rb_ary_push(tmp, rb_ary_elt(ary, i));
-	for (j=0; j<argc; j++) {
-	    rb_ary_push(tmp, rb_ary_elt(argv[j], i));
-	}
-	rb_ary_push(result, tmp);
-    }
-    return result;
-}
-
-/*
- *  call-seq:
  *     array.transpose -> an_array
  *  
  *  Assumes that <i>self</i> is an array of arrays and transposes the
@@ -3042,7 +2983,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
-    rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
     rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);

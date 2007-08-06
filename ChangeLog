@@ -1,3 +1,8 @@
+Tue Aug  7 01:42:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_zip): zip no longer converts arguments into
+	  arrays, uses enumerators. 
+
 Tue Aug  7 01:27:47 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* cont.c (rb_fiber_yield): change argument ordering.  export.

@@ -15,7 +15,7 @@
 #include "ruby/util.h"
 
 VALUE rb_mEnumerable;
-static ID id_each, id_eqq, id_cmp;
+static ID id_each, id_eqq, id_cmp, id_next;
 
 static VALUE
 grep_i(VALUE i, VALUE *arg)
@@ -1348,20 +1348,20 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-zip_i(VALUE val, VALUE *memo)
+zip_i(VALUE val, NODE *memo)
 {
-    VALUE result = memo[0];
-    VALUE args = memo[1];
-    int idx = memo[2]++;
-    VALUE tmp;
+    volatile VALUE result = memo->u1.value;
+    volatile VALUE args = memo->u2.value;
+    volatile VALUE tmp;
     int i;
 
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
     rb_ary_store(tmp, 0, val);
     for (i=0; i<RARRAY_LEN(args); i++) {
-	rb_ary_push(tmp, rb_ary_entry(RARRAY_PTR(args)[i], idx));
+	VALUE v = rb_funcall(RARRAY_PTR(args)[i], id_next, 0, 0);
+	rb_ary_push(tmp, v);
     }
-    if (rb_block_given_p()) {
+    if (NIL_P(result)) {
 	rb_yield(tmp);
     }
     else {
@@ -1370,26 +1370,31 @@ zip_i(VALUE val, VALUE *memo)
     return Qnil;
 }
 
+static VALUE
+zip_b(NODE *memo)
+{
+    return rb_block_call(memo->u3.value, id_each, 0, 0, zip_i, (VALUE)memo);
+}
+
 /*
  *  call-seq:
- *     enum.zip(arg, ...)                   => array
+ *     enum.zip(arg, ...)                   => enumerator
  *     enum.zip(arg, ...) {|arr| block }    => nil
  *  
- *  Converts any arguments to arrays, then merges elements of
- *  <i>enum</i> with corresponding elements from each argument. This
- *  generates a sequence of <code>enum#size</code> <em>n</em>-element
- *  arrays, where <em>n</em> is one more that the count of arguments. If
- *  the size of any argument is less than <code>enum#size</code>,
- *  <code>nil</code> values are supplied. If a block given, it is
- *  invoked for each output array, otherwise an array of arrays is
- *  returned.
+ *  Takes one element from <i>enum</i> and merges corresponding
+ *  elements from each <i>args</i>.  This generates a sequence of
+ *  <em>n</em>-element arrays, where <em>n</em> is one more that the
+ *  count of arguments.  The length of the sequence is truncated to
+ *  the size of the shortest argument (or <i>enum</i>).  If a block
+ *  given, it is invoked for each output array, otherwise an array of
+ *  arrays is returned.
  *     
  *     a = [ 4, 5, 6 ]
  *     b = [ 7, 8, 9 ]
  *     
- *     (1..3).zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     "cat\ndog".zip([1])   #=> [["cat\n", 1], ["dog", nil]]
- *     (1..3).zip            #=> [[1], [2], [3]]
+ *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+ *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
+ *     a.zip([1,2],[8])       #=> [[4,1,8]]
  *     
  */
 
@@ -1398,17 +1403,15 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 {
     int i;
     VALUE result;
-    VALUE memo[3];
+    NODE *memo;
 
     for (i=0; i<argc; i++) {
-	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_a");
+	argv[i] = rb_funcall(argv[i], rb_intern("to_enum"), 1, ID2SYM(id_each));
     }
     RETURN_ENUMERATOR(obj, argc, argv);
     result = rb_block_given_p() ? Qnil : rb_ary_new();
-    memo[0] = result;
-    memo[1] = rb_ary_new4(argc, argv);
-    memo[2] = 0;
-    rb_block_call(obj, id_each, 0, 0, zip_i, (VALUE)memo);
+    memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), obj);
+    rb_rescue2(zip_b, (VALUE)memo, 0, 0, rb_eIndexError, (VALUE)0);
 
     return result;
 }
@@ -1621,5 +1624,6 @@ Init_Enumerable(void)
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");
     id_cmp  = rb_intern("<=>");
+    id_next = rb_intern("next");
 }
 

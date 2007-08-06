@@ -39,6 +39,7 @@ struct enumerator {
     VALUE (*iter)(VALUE, struct enumerator *);
     VALUE fib;
     VALUE next;
+    VALUE dst;
 };
 
 static void
@@ -50,6 +51,7 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
     rb_gc_mark(ptr->next);
+    rb_gc_mark(ptr->dst);
 }
 
 static struct enumerator *
@@ -232,7 +234,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
-    ptr->next = Qundef;
+    ptr->next = ptr->dst = Qundef;
 
     return enum_obj;
 }
@@ -360,29 +362,27 @@ enumerator_to_splat(VALUE obj)
 }
 
 static VALUE
-next_ii(VALUE i, VALUE *args)
+next_ii(VALUE i, VALUE obj)
 {
-    struct enumerator *e = enumerator_ptr(args[0]);
+    struct enumerator *e = enumerator_ptr(obj);
     VALUE tmp = e->next;
 
     e->next = i;
     if (tmp != Qundef) {
 	e->next = i;
-	rb_fiber_yield(args[1], 1, &tmp);
+	e->dst = rb_fiber_yield(e->dst, 1, &tmp);
     }
     return Qnil;
 }
 
 static VALUE
-next_i(VALUE dummy, VALUE *args)
+next_i(VALUE curr, VALUE obj)
 {
-    VALUE tmp[2];	       /* store in local variable */
+    struct enumerator *e = enumerator_ptr(obj);
 
-
-    tmp[0] = args[0];		/* enumerator */
-    tmp[1] = args[1];		/* current fibder */
-    rb_block_call(args[0], rb_intern("each"), 0, 0, next_ii, (VALUE)tmp);
-    return enumerator_ptr(tmp[0])->next;
+    e->dst = curr;
+    rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
+    return e->next;
 }
 
 /*
@@ -403,21 +403,19 @@ static VALUE
 enumerator_next(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE args[2];
-    VALUE v;
+    VALUE curr, v;
 
-    args[0] = obj;
-    args[1] = rb_fiber_current();
-
+    curr = rb_fiber_current();
     if (!e->fib) {
-	e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, (VALUE)args);
+	e->dst = curr;
+	e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
     }
     else if (!rb_fiber_alive_p(e->fib)) {
 	e->fib = 0;
-	e->next = Qundef;
+	e->next = e->dst = Qundef;
 	rb_raise(rb_eIndexError, "Enumerator#each reached at end");
     }
-    v = rb_fiber_yield(e->fib, 0, 0);
+    v = rb_fiber_yield(e->fib, 1, &curr);
     return v;
 }
 
@@ -447,7 +445,7 @@ enumerator_rewind(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
 
     e->fib = 0;
-    e->next = Qundef;
+    e->next = e->dst = Qundef;
     return obj;
 }
 
