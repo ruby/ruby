@@ -212,14 +212,14 @@ cont_restore_1(rb_context_t *cont)
     }
     else {
 	/* continuation */
-	VALUE fval;
+	VALUE fib;
 
 	th->fiber = sth->fiber;
-	fval = th->fiber ? th->fiber : th->root_fiber;
+	fib = th->fiber ? th->fiber : th->root_fiber;
 
-	if (fval) {
+	if (fib) {
 	    rb_context_t *fcont;
-	    GetContPtr(fval, fcont);
+	    GetContPtr(fib, fcont);
 	    th->stack_size = fcont->saved_thread.stack_size;
 	    th->stack = fcont->saved_thread.stack;
 	}
@@ -511,8 +511,6 @@ rb_fiber_s_new(VALUE self)
     return contval;
 }
 
-static VALUE rb_fiber_yield(int argc, VALUE *args, VALUE fval);
-
 static void
 rb_fiber_terminate(rb_context_t *cont)
 {
@@ -521,12 +519,11 @@ rb_fiber_terminate(rb_context_t *cont)
 
     GetContPtr(cont->prev, prev_cont);
     cont->alive = Qfalse;
-
     if (prev_cont->alive == Qfalse) {
-	rb_fiber_yield(1, &value, GET_THREAD()->root_fiber);
+	rb_fiber_yield(GET_THREAD()->root_fiber, 1, &value);
     }
     else {
-	rb_fiber_yield(1, &value, cont->prev);
+	rb_fiber_yield(cont->prev, 1, &value);
     }
 }
 
@@ -562,9 +559,10 @@ rb_fiber_start(void)
     rb_bug("rb_fiber_start: unreachable");
 }
 
-static VALUE
-rb_fiber_current(rb_thread_t *th)
+VALUE
+rb_fiber_current()
 {
+    rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
 	/* save root */
 	th->root_fiber = th->fiber = cont_new(rb_cFiber)->self;
@@ -603,14 +601,14 @@ cont_store(rb_context_t *next_cont)
     }
 }
 
-static VALUE
-rb_fiber_yield(int argc, VALUE *argv, VALUE fval)
+VALUE
+rb_fiber_yield(VALUE fib, int argc, VALUE *argv)
 {
     VALUE value;
     rb_context_t *cont;
     rb_thread_t *th = GET_THREAD();
 
-    GetContPtr(fval, cont);
+    GetContPtr(fib, cont);
 
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
@@ -633,25 +631,25 @@ rb_fiber_yield(int argc, VALUE *argv, VALUE fval)
 }
 
 static VALUE
-rb_fiber_prev(VALUE fval)
+rb_fiber_prev(VALUE fib)
 {
     rb_context_t *cont;
-    GetContPtr(fval, cont);
+    GetContPtr(fib, cont);
     return cont->prev;
 }
 
-static VALUE
-rb_fiber_alive_p(VALUE fval)
+VALUE
+rb_fiber_alive_p(VALUE fib)
 {
     rb_context_t *cont;
-    GetContPtr(fval, cont);
+    GetContPtr(fib, cont);
     return cont->alive;
 }
 
 static VALUE
 rb_fiber_s_current(VALUE klass)
 {
-    return rb_fiber_current(GET_THREAD());
+    return rb_fiber_current();
 }
 
 static VALUE
@@ -661,9 +659,9 @@ rb_fiber_s_prev(VALUE klass)
 }
 
 static VALUE
-rb_fiber_s_yield(int argc, VALUE *argv, VALUE fval)
+rb_fiber_s_yield(int argc, VALUE *argv, VALUE fib)
 {
-    return rb_fiber_yield(argc, argv, rb_fiber_s_prev(Qnil));
+    return rb_fiber_yield(rb_fiber_s_prev(Qnil), argc, argv);
 }
 
 void

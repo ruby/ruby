@@ -37,6 +37,8 @@ struct enumerator {
     VALUE proc;
     VALUE args;
     VALUE (*iter)(VALUE, struct enumerator *);
+    VALUE fib;
+    VALUE next;
 };
 
 static void
@@ -46,6 +48,8 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->method);
     rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
+    rb_gc_mark(ptr->fib);
+    rb_gc_mark(ptr->next);
 }
 
 static struct enumerator *
@@ -227,6 +231,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 	ptr->iter = (VALUE (*)(VALUE, struct enumerator *))rb_yield;
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
+    ptr->fib = 0;
+    ptr->next = Qundef;
 
     return enum_obj;
 }
@@ -272,6 +278,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     ptr1->proc = ptr0->proc;
     ptr1->iter = ptr0->iter;
     ptr1->args = ptr0->args;
+    ptr1->fib  = ptr0->fib;
 
     return obj;
 }
@@ -347,9 +354,101 @@ enumerator_with_index(VALUE obj)
  */
 
 static VALUE
-enumerator_to_splat(VALUE range)
+enumerator_to_splat(VALUE obj)
 {
-    return rb_convert_type(range, T_ARRAY, "Array", "to_a");
+    return rb_convert_type(obj, T_ARRAY, "Array", "to_a");
+}
+
+static VALUE
+next_ii(VALUE i, VALUE *args)
+{
+    struct enumerator *e = enumerator_ptr(args[0]);
+    VALUE tmp = e->next;
+
+    e->next = i;
+    if (tmp != Qundef) {
+	e->next = i;
+	rb_fiber_yield(args[1], 1, &tmp);
+    }
+    return Qnil;
+}
+
+static VALUE
+next_i(VALUE dummy, VALUE *args)
+{
+    VALUE tmp[2];	       /* store in local variable */
+
+
+    tmp[0] = args[0];		/* enumerator */
+    tmp[1] = args[1];		/* current fibder */
+    rb_block_call(args[0], rb_intern("each"), 0, 0, next_ii, (VALUE)tmp);
+    return enumerator_ptr(tmp[0])->next;
+}
+
+/*
+ * call-seq:
+ *   e.next   => object
+ *
+ * Returns the next object in the enumerator, and move the internal
+ * position forward.  When the position reached at the end, internal
+ * position is rewinded then IndexError is raised.
+ *
+ * Note that enumeration sequence by next method does not affect other
+ * non-external enumeration methods, unless underlying iteration
+ * methods itself has side-effect, e.g. IO#each_line.
+ *
+ */
+
+static VALUE
+enumerator_next(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    VALUE args[2];
+    VALUE v;
+
+    args[0] = obj;
+    args[1] = rb_fiber_current();
+
+    if (!e->fib) {
+	e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, (VALUE)args);
+    }
+    else if (!rb_fiber_alive_p(e->fib)) {
+	e->fib = 0;
+	e->next = Qundef;
+	rb_raise(rb_eIndexError, "Enumerator#each reached at end");
+    }
+    v = rb_fiber_yield(e->fib, 0, 0);
+    return v;
+}
+
+/*
+ * call-seq:
+ *   e.next?   => bool
+ *
+ * Returns true if this enumerator object has not reached the end yet.
+ */
+
+static VALUE
+enumerator_next_p(VALUE obj)
+{
+    return rb_fiber_alive_p(enumerator_ptr(obj)->fib);
+}
+
+/*
+ * call-seq:
+ *   e.next?   => e
+ *
+ * Rewinds the enumeration sequence by the next method.
+ */
+
+static VALUE
+enumerator_rewind(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+
+    e->fib = 0;
+    e->next = Qundef;
+    return obj;
 }
 
 void
@@ -370,6 +469,9 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
     rb_define_method(rb_cEnumerator, "to_splat", enumerator_to_splat, 0);
+    rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
+    rb_define_method(rb_cEnumerator, "next?", enumerator_next_p, 0);
+    rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
 
     sym_each		= ID2SYM(rb_intern("each"));
     sym_each_with_index	= ID2SYM(rb_intern("each_with_index"));

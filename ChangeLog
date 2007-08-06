@@ -1,3 +1,20 @@
+Tue Aug  7 01:27:47 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* cont.c (rb_fiber_yield): change argument ordering.  export.
+
+	* cont.c (rb_fiber_current): export
+
+	* include/ruby/intern.h: export several functions from cont.c.
+
+	* enumerator.c (enumerator_next): new method to implement external
+	  iterator (generator) using fiber.
+
+	* enumerator.c (enumerator_next_p): new method to check whether
+	  any element is left in the generator sequence.
+
+	* enumerator.c (enumerator_rewind): a new method to rewind the
+	  generator sequence.
+
 Tue Aug  7 01:15:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_cycle): new method to cycle enumerable forever.
