@@ -1526,6 +1526,44 @@ enum_drop(int argc, VALUE *argv, VALUE obj)
     return args[0];
 }
 
+
+static VALUE
+cycle_i(VALUE i, VALUE ary)
+{
+    rb_ary_push(ary, i);
+    rb_yield(i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.cycle {|obj| block }
+ *  
+ *  Calls <i>block</i> for each element of enumerable repeatedly
+ *  forever.  Enumerable#cycle saves elements in an internal array.
+ *     
+ *     a = ["a", "b", "c"]
+ *     a.each {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     
+ */
+
+static VALUE
+enum_cycle(VALUE obj)
+{
+    VALUE ary;
+    long i;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
+    for (;;) {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    rb_yield(RARRAY_PTR(ary)[i]);
+	}
+    }
+    return Qnil;
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -1578,6 +1616,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, -1);
     rb_define_method(rb_mEnumerable, "drop", enum_drop, -1);
+    rb_define_method(rb_mEnumerable, "cycle", enum_cycle, 0);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");

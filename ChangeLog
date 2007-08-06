@@ -1,3 +1,7 @@
+Tue Aug  7 01:15:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_cycle): new method to cycle enumerable forever.
+
 Tue Aug  7 00:05:38 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* irb/ruby-lex.rb: support for '\c'. [ruby-talk:263508]

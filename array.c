@@ -2951,6 +2951,31 @@ rb_ary_choice(VALUE ary)
 }
 
 
+/*
+ *  call-seq:
+ *     ary.cycle {|obj| block }
+ *  
+ *  Calls <i>block</i> repeatedly forever.
+ *     
+ *     a = ["a", "b", "c"]
+ *     a.each {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     
+ */
+
+static VALUE
+rb_ary_cycle(VALUE ary)
+{
+    long i;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    for (;;) {
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    rb_yield(RARRAY_PTR(ary)[i]);
+	}
+    }
+    return Qnil;
+}
+
 /* Arrays are ordered, integer-indexed collections of any object. 
  * Array indexing starts at 0, as in C or Java.  A negative index is 
  * assumed to be relative to the end of the array---that is, an index of -1 
@@ -3048,6 +3073,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
+    rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
 
     id_cmp = rb_intern("<=>");
 }
