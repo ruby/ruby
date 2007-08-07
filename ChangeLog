@@ -1,3 +1,11 @@
+Tue Aug  7 14:56:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (MasterDevice, SlaveDevice, deviceNo): constified.
+
+	* ext/pty/pty.c (SlaveName): removed static buffer.
+
+	* ext/pty/expect_sample.rb: support for autologin.
+
 Tue Aug  7 13:58:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_special_consts): added RUBY_SPECIAL_SHIFT.
