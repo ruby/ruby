@@ -209,9 +209,9 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 
 #define IMMEDIATE_P(x) ((VALUE)(x) & IMMEDIATE_MASK)
 
-#define SYMBOL_P(x) (((VALUE)(x)&0xff)==SYMBOL_FLAG)
-#define ID2SYM(x) ((VALUE)(((long)(x))<<8|SYMBOL_FLAG))
-#define SYM2ID(x) RSHIFT((unsigned long)x,8)
+#define SYMBOL_P(x) (((VALUE)(x)&~(~(VALUE)0<<RUBY_SPECIAL_SHIFT))==SYMBOL_FLAG)
+#define ID2SYM(x) (((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
+#define SYM2ID(x) RSHIFT((unsigned long)x,RUBY_SPECIAL_SHIFT)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
 enum ruby_special_consts {
@@ -223,6 +223,7 @@ enum ruby_special_consts {
     RUBY_IMMEDIATE_MASK = 0x03,
     RUBY_FIXNUM_FLAG    = 0x01,
     RUBY_SYMBOL_FLAG    = 0x0e,
+    RUBY_SPECIAL_SHIFT  = 8,
 };
 
 #define Qfalse ((VALUE)RUBY_Qfalse)

@@ -1,8 +1,8 @@
 define rp
-  if (long)$arg0 & 1
+  if (VALUE)$arg0 & 1
     printf "FIXNUM: %d\n", $arg0 >> 1
   else
-  if ((long)$arg0 & 0xff) == 0x0e
+  if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == SYMBOL_FLAG
     printf "SYMBOL(%d)\n", $arg0 >> 8
   else
   if $arg0 == 0
@@ -17,7 +17,7 @@ define rp
   if $arg0 == 6
     echo undef\n
   else
-  if (long)$arg0 & 0x03
+  if (VALUE)$arg0 & 0x03
     echo immediate\n
   else
   set $flags = ((struct RBasic*)$arg0)->flags
@@ -50,11 +50,21 @@ define rp
     print (struct RFloat *)$arg0
   else
   if ($flags & 0x1f) == 0x07
-    printf "T_STRING: \"%s\" ", ($flags & RUBY_FL_USER1) ? ((struct RString*)$arg0)->as.heap.ptr : ((struct RString*)$arg0)->as.ary
+    printf "T_STRING: "
+    set print address off
+    output (char *)(($flags & RUBY_FL_USER1) ? \
+	    ((struct RString*)$arg0)->as.heap.ptr : \
+	    ((struct RString*)$arg0)->as.ary)
+    set print address on
+    printf " "
     print (struct RString *)$arg0
   else
   if ($flags & 0x1f) == 0x08
-    printf "T_REGEXP: \"%s\" ", (((struct RRegexp*)$arg0)->str)
+    printf "T_REGEXP: "
+    set print address off
+    output ((struct RRegexp*)$arg0)->str
+    set print address on
+    printf " "
     print (struct RRegexp *)$arg0
   else
   if ($flags & 0x1f) == 0x09
@@ -67,16 +77,25 @@ define rp
     print (struct RBasic *)$arg0
   else
   if ($flags & 0x1f) == 0x0b
-    printf "T_HASH: len=%d ", ((struct RHash *)$arg0)->tbl ? ((struct RHash *)$arg0)->tbl->num_entries : 0
+    printf "T_HASH: ",
+    if ((struct RHash *)$arg0)->tbl
+      printf "len=%d ", ((struct RHash *)$arg0)->tbl->num_entries
+    end
     print (struct RHash *)$arg0
   else
   if ($flags & 0x1f) == 0x0c
-    printf "T_STRUCT: len=%d ", (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : ((struct RStruct *)$arg0)->as.heap.len)
+    printf "T_STRUCT: len=%d ", \
+      (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+       ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
+       ((struct RStruct *)$arg0)->as.heap.len)
     print (struct RStruct *)$arg0
-    x/xw (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? ((struct RStruct *)$arg0)->as.ary : ((struct RStruct *)$arg0)->as.heap.len)
+    x/xw (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+          ((struct RStruct *)$arg0)->as.ary : \
+          ((struct RStruct *)$arg0)->as.heap.len)
   else
   if ($flags & 0x1f) == 0x0d
-    printf "T_BIGNUM: sign=%d len=%d ", ((struct RBignum*)$arg0)->sign, ((struct RBignum*)$arg0)->len
+    printf "T_BIGNUM: sign=%d len=%d ", \
+      ((struct RBignum*)$arg0)->sign, ((struct RBignum*)$arg0)->len
     print (struct RBignum *)$arg0
     x/xw ((struct RBignum*)$arg0)->digits
   else
@@ -108,7 +127,7 @@ define rp
   else
   if ($flags & 0x1f) == 0x1a
     printf "T_VALUES: "
-    print (struct RBasic *)$arg0
+    print (struct RValues *)$arg0
   else
   if ($flags & 0x1f) == 0x1b
     printf "T_BLOCK: "
