@@ -39,10 +39,10 @@
 
 #if !defined(HAVE_OPENPTY)
 #if defined(__hpux)
-static
-char	*MasterDevice = "/dev/ptym/pty%s",
-	*SlaveDevice =  "/dev/pty/tty%s",
-	*deviceNo[] = {
+static const
+char	MasterDevice[] = "/dev/ptym/pty%s",
+	SlaveDevice[] =  "/dev/pty/tty%s",
+	*const deviceNo[] = {
 		"p0","p1","p2","p3","p4","p5","p6","p7",
 		"p8","p9","pa","pb","pc","pd","pe","pf",
 		"q0","q1","q2","q3","q4","q5","q6","q7",
@@ -62,10 +62,10 @@ char	*MasterDevice = "/dev/ptym/pty%s",
 		0,
 	};
 #elif defined(_IBMESA)  /* AIX/ESA */
-static
-char	*MasterDevice = "/dev/ptyp%s",
-  	*SlaveDevice = "/dev/ttyp%s",
-	*deviceNo[] = {
+static const
+char	MasterDevice[] = "/dev/ptyp%s",
+  	SlaveDevice[] = "/dev/ttyp%s",
+	*const deviceNo[] = {
 "00","01","02","03","04","05","06","07","08","09","0a","0b","0c","0d","0e","0f",
 "10","11","12","13","14","15","16","17","18","19","1a","1b","1c","1d","1e","1f",
 "20","21","22","23","24","25","26","27","28","29","2a","2b","2c","2d","2e","2f",
@@ -84,10 +84,10 @@ char	*MasterDevice = "/dev/ptyp%s",
 "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff",
 		};
 #elif !defined(HAVE_PTSNAME)
-static
-char	*MasterDevice = "/dev/pty%s",
-	*SlaveDevice = "/dev/tty%s",
-	*deviceNo[] = {
+static const
+char	MasterDevice[] = "/dev/pty%s",
+	SlaveDevice[] = "/dev/tty%s",
+	*const deviceNo[] = {
 		"p0","p1","p2","p3","p4","p5","p6","p7",
 		"p8","p9","pa","pb","pc","pd","pe","pf",
 		"q0","q1","q2","q3","q4","q5","q6","q7",
@@ -100,8 +100,6 @@ char	*MasterDevice = "/dev/pty%s",
 	};
 #endif
 #endif /* !defined(HAVE_OPENPTY) */
-
-static char SlaveName[DEVICELEN];
 
 #ifndef HAVE_SETEUID
 # ifdef HAVE_SETREUID
@@ -155,17 +153,15 @@ pty_syswait(info)
 	cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
 	if (cpid == -1) return Qnil;
 
-#if defined(IF_STOPPED)
-	if (IF_STOPPED(status)) { /* suspend */
-	    raise_from_wait("stopped", info);
-	}
-#elif defined(WIFSTOPPED)
-	if (WIFSTOPPED(status)) { /* suspend */
-	    raise_from_wait("stopped", info);
-	}
+#if defined(WIFSTOPPED)
+#elif defined(IF_STOPPED)
+#define WIFSTOPPED(status) IF_STOPPED(status)
 #else
 ---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
 #endif /* WIFSTOPPED | IF_STOPPED */
+	if (WIFSTOPPED(status)) { /* suspend */
+	    raise_from_wait("stopped", info);
+	}
 	else if (kill(info->child_pid, 0) == 0) {
 	    raise_from_wait("changed", info);
 	}
@@ -176,7 +172,7 @@ pty_syswait(info)
     }
 }
 
-static void getDevice _((int*, int*));
+static void getDevice _((int*, int*, char [DEVICELEN]));
 
 struct exec_info {
     int argc;
@@ -194,10 +190,11 @@ pty_exec(v)
 }
 
 static void
-establishShell(argc, argv, info)
+establishShell(argc, argv, info, SlaveName)
     int argc;
     VALUE *argv;
     struct pty_info *info;
+    char SlaveName[DEVICELEN];
 {
     int 		i,master,slave;
     char		*p,*getenv();
@@ -223,7 +220,7 @@ establishShell(argc, argv, info)
 	argc = 1;
 	argv = &v;
     }
-    getDevice(&master,&slave);
+    getDevice(&master, &slave, SlaveName);
 
     info->thread = rb_thread_current();
     if((i = fork()) < 0) {
@@ -305,8 +302,9 @@ pty_finalize_syswait(info)
 }
 
 static int
-get_device_once(master, slave, fail)
+get_device_once(master, slave, SlaveName, fail)
     int *master, *slave, fail;
+    char SlaveName[DEVICELEN];
 {
 #if defined HAVE_OPENPTY
 /*
@@ -329,7 +327,7 @@ get_device_once(master, slave, fail)
     }
 
     *slave = open(name, O_RDWR);
-    strcpy(SlaveName, name);
+    strncpy(SlaveName, name, sizeof SlaveName);
 
     return 0;
 #else /* HAVE__GETPTY */
@@ -356,7 +354,7 @@ get_device_once(master, slave, fail)
 #endif
 				*master = i;
 				*slave = j;
-				strcpy(SlaveName, pn);
+				strncpy(SlaveName, pn, sizeof SlaveName);
 				return 0;
 #if defined I_PUSH && !defined linux
 			    }
@@ -375,10 +373,10 @@ get_device_once(master, slave, fail)
     char MasterName[DEVICELEN];
 
     for (p = deviceNo; *p != NULL; p++) {
-	sprintf(MasterName,MasterDevice,*p);
+	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
 	if ((i = open(MasterName,O_RDWR,0)) >= 0) {
 	    *master = i;
-	    sprintf(SlaveName,SlaveDevice,*p);
+	    snprintf(SlaveName, sizeof SlaveName, SlaveDevice, *p);
 	    if ((j = open(SlaveName,O_RDWR,0)) >= 0) {
 		*slave = j;
 		chown(SlaveName, getuid(), getgid());
@@ -395,12 +393,13 @@ get_device_once(master, slave, fail)
 }
 
 static void
-getDevice(master, slave)
+getDevice(master, slave, slavename)
     int *master, *slave;
+    char slavename[DEVICELEN];
 {
-    if (get_device_once(master, slave, 0)) {
+    if (get_device_once(master, slave, slavename, 0)) {
 	rb_gc();
-	get_device_once(master, slave, 1);
+	get_device_once(master, slave, slavename, 1);
     }
 }
 
@@ -417,11 +416,12 @@ pty_getpty(argc, argv, self)
     OpenFile *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
+    char SlaveName[DEVICELEN];
 
     MakeOpenFile(rport, rfptr);
     MakeOpenFile(wport, wfptr);
 
-    establishShell(argc, argv, &info);
+    establishShell(argc, argv, &info, SlaveName);
 
     rfptr->mode = rb_io_mode_flags("r");
     rfptr->f = fdopen(info.fd, "r");
