@@ -3061,7 +3061,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
     struct popen_arg arg;
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
-    char *exename = NULL;
+    const char *exename = NULL;
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -3135,9 +3135,8 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	    args[i] = RSTRING_PTR(argv[i]);
 	}
 	args[i] = NULL;
-	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
-	rb_w32_join_argv(cmd, args);
-	exename = RSTRING_PTR(prog);
+	exename = cmd;
+	cmd = rb_w32_join_argv(ALLOCA_N(char, rb_w32_argv_size(args)), args);
     }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd)) == -1) {
 	/* exec failed */
@@ -3149,7 +3148,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	    rb_thread_sleep(1);
 	    break;
 	  default:
-	    rb_sys_fail(RSTRING_PTR(prog));
+	    rb_sys_fail(cmd);
 	    break;
 	}
     }

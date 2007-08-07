@@ -1,3 +1,7 @@
+Tue Aug  7 12:31:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): fix for win32 platforms.
+
 Tue Aug  7 02:58:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big2str0): make Bignum#to_s even faster.  a patch
