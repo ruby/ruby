@@ -191,7 +191,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 {
     int 		master,slave;
     rb_pid_t		pid;
-    char		*p,*getenv();
+    char		*p, tmp, *getenv();
     struct passwd	*pwent;
     VALUE		v;
     struct exec_info	arg;
@@ -264,6 +264,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	}
 	close(master);
 #endif
+	write(slave, "", 1);
 	dup2(slave,0);
 	dup2(slave,1);
 	dup2(slave,2);
@@ -279,6 +280,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	_exit(1);
     }
 
+    read(master, &tmp, 1);
     close(slave);
 
     info->child_pid = pid;
@@ -342,6 +344,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int fail)
 #if defined I_PUSH && !defined linux
 			if(ioctl(j, I_PUSH, "ptem") != -1) {
 			    if(ioctl(j, I_PUSH, "ldterm") != -1) {
+				ioctl(j, I_PUSH, "ttcompat");
 #endif
 				*master = i;
 				*slave = j;
