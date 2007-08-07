@@ -615,7 +615,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 incs: $(INSNS) node_name.inc
 
 node_name.inc: {$(VPATH)}node.h
-	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $< > $@
+	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
