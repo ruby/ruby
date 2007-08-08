@@ -1,3 +1,8 @@
+Wed Aug  8 11:02:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (btest-miniruby, test-sample): split the test target
+	  so that -k option works.
+
 Tue Aug  7 14:58:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): handshaking before close slave

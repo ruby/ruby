@@ -314,12 +314,16 @@ realclean-ext::
 
 check: test test-all
 
-btest: $(MINIRUBY) PHONY
+btest: miniruby$(EXEEXT) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
-test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
+btest-miniruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" -q
+
+test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
+
+test: btest-miniruby test-sample
 
 test-all:
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)
