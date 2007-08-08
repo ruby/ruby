@@ -1,3 +1,19 @@
+Wed Aug  8 15:52:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_next_p): should check correctly even when
+	  e.next has not been called before.
+
+	* enumerator.c (enumerator_next): raise StopIteration (name taken
+	  from Python) instead of IndexError.
+
+	* enum.c (enum_zip): catch StopIteration exception.
+
+	* enumerator.c (enumerator_with_index): return Enumerator if no
+	  block is given.
+
+	* test/ruby/test_iterator.rb (TestIterator::test_enumerator): add
+	  test for enumerators.
+
 Wed Aug  8 11:48:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big2str0): should not use RTEST for non-VALUE.

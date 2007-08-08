@@ -23,6 +23,8 @@
 static VALUE rb_cEnumerator;
 static VALUE sym_each, sym_each_with_index, sym_each_slice, sym_each_cons;
 
+VALUE rb_eStopIteration;
+
 static VALUE
 proc_call(VALUE proc, VALUE args)
 {
@@ -234,7 +236,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
-    ptr->next = ptr->dst = Qundef;
+    ptr->next = ptr->dst = Qnil;
 
     return enum_obj;
 }
@@ -339,7 +341,7 @@ enumerator_with_index(VALUE obj)
     int argc = 0;
     VALUE *argv = 0;
 
-/*    RETURN_ENUMERATOR(obj, 0, 0); ?? */
+    RETURN_ENUMERATOR(obj, 0, 0);
     if (e->args) {
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
@@ -368,9 +370,9 @@ next_ii(VALUE i, VALUE obj)
     VALUE tmp = e->next;
 
     e->next = i;
-    if (tmp != Qundef) {
-	e->next = i;
-	e->dst = rb_fiber_yield(e->dst, 1, &tmp);
+    tmp = rb_fiber_yield(e->dst, 1, &tmp);
+    if (tmp != Qnil) {
+	e->dst = tmp;
     }
     return Qnil;
 }
@@ -385,13 +387,23 @@ next_i(VALUE curr, VALUE obj)
     return e->next;
 }
 
+static void
+next_init(VALUE obj, struct enumerator *e)
+{
+    VALUE curr = rb_fiber_current();
+
+    e->dst = curr;
+    e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
+    rb_fiber_yield(e->fib, 1, &curr);
+}
+
 /*
  * call-seq:
  *   e.next   => object
  *
  * Returns the next object in the enumerator, and move the internal
  * position forward.  When the position reached at the end, internal
- * position is rewinded then IndexError is raised.
+ * position is rewinded then StopIteration is raised.
  *
  * Note that enumeration sequence by next method does not affect other
  * non-external enumeration methods, unless underlying iteration
@@ -407,13 +419,12 @@ enumerator_next(VALUE obj)
 
     curr = rb_fiber_current();
     if (!e->fib) {
-	e->dst = curr;
-	e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
+	next_init(obj, e);
     }
-    else if (!rb_fiber_alive_p(e->fib)) {
+    if (!rb_fiber_alive_p(e->fib)) {
 	e->fib = 0;
-	e->next = e->dst = Qundef;
-	rb_raise(rb_eIndexError, "Enumerator#each reached at end");
+	e->next = e->dst = Qnil;
+	rb_raise(rb_eStopIteration, "Enumerator#each reached at end");
     }
     v = rb_fiber_yield(e->fib, 1, &curr);
     return v;
@@ -429,7 +440,12 @@ enumerator_next(VALUE obj)
 static VALUE
 enumerator_next_p(VALUE obj)
 {
-    return rb_fiber_alive_p(enumerator_ptr(obj)->fib);
+    struct enumerator *e = enumerator_ptr(obj);
+
+    if (!e->fib) {
+	next_init(obj, e);
+    }
+    return rb_fiber_alive_p(e->fib);
 }
 
 /*
@@ -445,7 +461,7 @@ enumerator_rewind(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
 
     e->fib = 0;
-    e->next = e->dst = Qundef;
+    e->next = e->dst = Qnil;
     return obj;
 }
 
@@ -470,6 +486,8 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "next?", enumerator_next_p, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
+
+    rb_eStopIteration   = rb_define_class("StopIteration", rb_eIndexError);
 
     sym_each		= ID2SYM(rb_intern("each"));
     sym_each_with_index	= ID2SYM(rb_intern("each_with_index"));

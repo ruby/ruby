@@ -1411,7 +1411,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     RETURN_ENUMERATOR(obj, argc, argv);
     result = rb_block_given_p() ? Qnil : rb_ary_new();
     memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), obj);
-    rb_rescue2(zip_b, (VALUE)memo, 0, 0, rb_eIndexError, (VALUE)0);
+    rb_rescue2(zip_b, (VALUE)memo, 0, 0, rb_eStopIteration, (VALUE)0);
 
     return result;
 }

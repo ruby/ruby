@@ -488,4 +488,23 @@ class TestIterator < Test::Unit::TestCase
   def test_block_given_within_iterator
     assert_equal(["b"], ["a", "b", "c"].grep(IterString.new("b")) {|s| s})
   end
+
+  def test_enumerator
+    [1,2,3].each.with_index {|x,i|
+      assert_equal(x, i+1)
+    }
+
+    e = [1,2,3].each
+    assert_equal(1, e.next)
+    assert_equal(true, e.next?)
+    assert_equal(2, e.next)
+    assert_equal(3, e.next)
+    assert_raises(StopIteration){e.next}
+    e.rewind
+    assert_equal(true, e.next?)
+    assert_equal(1, e.next)
+
+    assert_equal([[1, 8, 10], [2, 6, 11], [3, 4, 12]],
+                 (1..10).zip([8,6,4],(10..100)).to_a)
+  end
 end
