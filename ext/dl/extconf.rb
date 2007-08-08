@@ -25,8 +25,7 @@ else
   check = false
 end
 
-if( check )
-  have_func("rb_io_stdio_file", "ruby/ruby.h")
+if check
   $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
   create_makefile("dl")
 end

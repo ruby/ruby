@@ -420,11 +420,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	rb_io_t *fptr;
 	FILE *fp;
 	GetOpenFile(val, fptr);
-#if HAVE_RB_IO_STDIO_FILE
 	fp = rb_io_stdio_file(fptr);
-#else
-	fp = fptr->fd;
-#endif
 	return rb_dlptr_new(fp, 0, NULL);
     }
     else if( rb_obj_is_kind_of(val, rb_cString) == Qtrue ){

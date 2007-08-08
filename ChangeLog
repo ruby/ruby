@@ -1,7 +1,7 @@
-Wed Aug  8 18:58:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Aug  8 19:17:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fptr->f was renamed to fd.  a
-	  report from Yusuf Celik <ycelik AT oytek.com.tr>.
+	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): no longer check
+	  HAVE_RB_IO_STDIO_FILE. 
 
 Wed Aug  8 15:52:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
