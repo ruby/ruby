@@ -535,18 +535,14 @@ class TestAssignmentGen < Test::Unit::TestCase
                  [:mlhs," = ",:mrhs]],
   }
 
-  def rename_var(obj, nbox=[0])
-    if obj.respond_to? :to_ary
-      a = []
-      obj.each {|e| a << rename_var(e, nbox) }
-      a
-    elsif obj == 'var'
-      n = nbox[0]
-      nbox[0] += 1
-      "v#{n}"
-    else
-      obj
-    end
+  def rename_var(obj)
+    vars = []
+    r = SentGen.subst(obj, 'var') {
+      var = "v#{vars.length}"
+      vars << var
+      var
+    }
+    return r, vars
   end
 
   def expand_except_paren(obj, r=[])
@@ -649,10 +645,8 @@ class TestAssignmentGen < Test::Unit::TestCase
     emu_assign_single(lhs, rv)
   end
 
-  def do_assign(assign)
+  def do_assign(assign, vars)
     assign = assign.join('')
-    vars = []
-    vars = assign.scan(/v[0-9]+/)
     code = "#{assign}; [#{vars.join(",")}]"
     begin
       vals = eval(code)
@@ -667,9 +661,9 @@ class TestAssignmentGen < Test::Unit::TestCase
   def test_assignment
     syntax = SentGen.expand_syntax(Syntax)
     SentGen.each_tree(syntax, :xassign, 3) {|assign|
-      assign[0] = rename_var(assign[0])
+      assign[0], vars = rename_var(assign[0])
       sent = [assign].join('')
-      bruby = do_assign(assign).to_a.sort
+      bruby = do_assign(assign, vars).to_a.sort
       bemu = emu_assign(assign).to_a.sort
       assert_equal(bemu, bruby, sent)
     }

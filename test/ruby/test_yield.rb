@@ -157,21 +157,9 @@ class TestRubyYieldGen < Test::Unit::TestCase
     :test => [['def m(&b) b.yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
   }
 
-  def subst(obj, target, &b)
-    if obj.respond_to? :to_ary
-      a = []
-      obj.each {|e| a << subst(e, target, &b) }
-      a
-    elsif obj == target
-      yield obj
-    else
-      obj
-    end
-  end
-
   def rename_var(obj)
     vars = []
-    r = subst(obj, 'var') {
+    r = SentGen.subst(obj, 'var') {
       var = "v#{vars.length}"
       vars << var
       var
@@ -181,7 +169,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
 
   def check_nofork(t)
     t, vars = rename_var(t)
-    t = subst(t, 'vars') { " [#{vars.join(",")}]" }
+    t = SentGen.subst(t, 'vars') { " [#{vars.join(",")}]" }
     s = [t].join
     #print "#{s}\t\t"
     #STDOUT.flush
