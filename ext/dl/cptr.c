@@ -423,7 +423,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 #if HAVE_RB_IO_STDIO_FILE
 	fp = rb_io_stdio_file(fptr);
 #else
-	fp = fptr->f;
+	fp = fptr->fd;
 #endif
 	return rb_dlptr_new(fp, 0, NULL);
     }

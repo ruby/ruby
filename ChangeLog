@@ -1,3 +1,8 @@
+Wed Aug  8 18:58:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fptr->f was renamed to fd.  a
+	  report from Yusuf Celik <ycelik AT oytek.com.tr>.
+
 Wed Aug  8 15:52:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enumerator.c (enumerator_next_p): should check correctly even when
