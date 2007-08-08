@@ -1,3 +1,8 @@
+Thu Aug  9 02:02:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_cycle): typo fixed.  a patch from Kazuhiro
+	  NISHIYAMA <zn AT mbf.nifty.com>.  [ruby-dev:31362]
+
 Wed Aug  8 19:17:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): no longer check

@@ -1546,7 +1546,7 @@ cycle_i(VALUE i, VALUE ary)
  *  forever.  Enumerable#cycle saves elements in an internal array.
  *     
  *     a = ["a", "b", "c"]
- *     a.each {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
  *     
  */
 
