@@ -1,3 +1,7 @@
+Wed Aug  8 11:25:25 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): should preserve sign mark.
+
 Wed Aug  8 11:02:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (btest-miniruby, test-sample): split the test target

@@ -867,15 +867,15 @@ rb_big2str0(VALUE x, int base, int trim)
 #if SIZEOF_BDIGITS > 2
     hbase *= hbase;
 #endif
-    off = !RTEST(trim) && !RBIGNUM(x)->sign;
+    off = !RTEST(trim) || !RBIGNUM(x)->sign;
     xx = rb_big_clone(x);
     RBIGNUM(xx)->sign = 1;
     if (n1 <= KARATSUBA_DIGITS) {
-        len = big2str_orig(xx, base, ptr + off, 2*n1, hbase, RTEST(trim));
+        len = off + big2str_orig(xx, base, ptr + off, 2*n1, hbase, RTEST(trim));
     }
     else {
-        len = big2str_karatsuba(xx, base, ptr + off, n1,
-                                2*n1, hbase, RTEST(trim));
+        len = off + big2str_karatsuba(xx, base, ptr + off, n1,
+                                      2*n1, hbase, RTEST(trim));
     }
 
     ptr[len] = '\0';
