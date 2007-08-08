@@ -746,7 +746,7 @@ big2str_find_n1(VALUE x, int base)
         4.95419631038688, 5.0,              5.04439411935845,
         5.08746284125034, 5.12928301694497, 5.16992500144231
     };
-    long bits, n, i;
+    long bits;
 
     if (base < 2 && 36 < base)
         rb_bug("illegal radix %d", base);
@@ -867,15 +867,15 @@ rb_big2str0(VALUE x, int base, int trim)
 #if SIZEOF_BDIGITS > 2
     hbase *= hbase;
 #endif
-    off = !RTEST(trim) || !RBIGNUM(x)->sign;
+    off = !(trim && RBIGNUM(x)->sign); /* erase plus sign if trim */
     xx = rb_big_clone(x);
     RBIGNUM(xx)->sign = 1;
     if (n1 <= KARATSUBA_DIGITS) {
-        len = off + big2str_orig(xx, base, ptr + off, 2*n1, hbase, RTEST(trim));
+        len = off + big2str_orig(xx, base, ptr + off, 2*n1, hbase, trim);
     }
     else {
         len = off + big2str_karatsuba(xx, base, ptr + off, n1,
-                                      2*n1, hbase, RTEST(trim));
+                                      2*n1, hbase, trim);
     }
 
     ptr[len] = '\0';
@@ -1162,7 +1162,7 @@ rb_big_eq(VALUE x, VALUE y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-        {
+	{
 	    volatile double a, b;
 
 	    a = RFLOAT(y)->value;
@@ -1310,7 +1310,7 @@ bigadd(VALUE x, VALUE y, int sign)
 
     if (RBIGNUM(x)->len > RBIGNUM(y)->len) {
 	len = RBIGNUM(x)->len + 1;
-        z = x; x = y; y = z;
+	z = x; x = y; y = z;
     }
     else {
 	len = RBIGNUM(y)->len + 1;
