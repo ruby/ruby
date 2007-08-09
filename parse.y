@@ -637,7 +637,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
-%type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_head f_margs
+%type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> bv_decls opt_bv_decl bvar
@@ -3007,7 +3007,7 @@ f_marg		: f_norm_arg
 		    }
 		;
 
-f_marg_head	: f_marg
+f_marg_list	: f_marg
 		    {
 		    /*%%%*/
 			$$ = $1;
@@ -3015,7 +3015,7 @@ f_marg_head	: f_marg
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
 		    }
-		| f_marg_head ',' f_marg
+		| f_marg_list ',' f_marg
 		    {
 		    /*%%%*/
 			$$ = list_append($1, $3);
@@ -3025,7 +3025,7 @@ f_marg_head	: f_marg
 		    }
 		;
 
-f_margs		: f_marg_head
+f_margs		: f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
@@ -3033,7 +3033,7 @@ f_margs		: f_marg_head
 			$$ = $1;
 		    %*/
 		    }
-		| f_marg_head ',' tSTAR f_norm_arg
+		| f_marg_list ',' tSTAR f_norm_arg
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, assignable($4, 0));
@@ -3041,7 +3041,7 @@ f_margs		: f_marg_head
 			$$ = mlhs_add_star($1, $4);
 		    %*/
 		    }
-		| f_marg_head ',' tSTAR f_norm_arg ',' f_marg
+		| f_marg_list ',' tSTAR f_norm_arg ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG(assignable($4, 0), $6));
@@ -3049,7 +3049,7 @@ f_margs		: f_marg_head
 			$$ = mlhs_add_star($1, $4);
 		    %*/
 		    }
-		| f_marg_head ',' tSTAR
+		| f_marg_list ',' tSTAR
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, -1);
@@ -3057,7 +3057,7 @@ f_margs		: f_marg_head
 			$$ = mlhs_add_star($1, Qnil);
 		    %*/
 		    }
-		| f_marg_head ',' tSTAR ',' f_marg
+		| f_marg_list ',' tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG(-1, $5));
@@ -3073,7 +3073,7 @@ f_margs		: f_marg_head
 			$$ = mlhs_add_star(mlhs_new(), $2);
 		    %*/
 		    }
-		| tSTAR f_norm_arg ',' f_marg
+		| tSTAR f_norm_arg ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(assignable($2, 0), $4));
@@ -3092,7 +3092,7 @@ f_margs		: f_marg_head
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
 		    }
-		| tSTAR ',' f_marg
+		| tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1, $3));

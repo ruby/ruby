@@ -1,3 +1,10 @@
+Thu Aug  9 14:01:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_marg_list): renamed from f_marg_head.
+
+	* parse.y (f_margs): allow multiple mandatory arguments after a splat.
+	  [ruby-dev:31153]
+
 Thu Aug  9 02:02:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_cycle): typo fixed.  a patch from Kazuhiro
