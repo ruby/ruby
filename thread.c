@@ -277,6 +277,9 @@ thread_cleanup_func(void *th_ptr)
     native_thread_destroy(th);
 }
 
+extern void ruby_error_print(void);
+static VALUE rb_thread_raise(int, VALUE *, rb_thread_t *);
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
@@ -284,6 +287,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     VALUE args = th->first_args;
     rb_proc_t *proc;
     rb_thread_t *join_th;
+    VALUE errinfo = Qnil;
+
     th->machine_stack_start = stack_start;
 #ifdef __ia64
     th->machine_register_stack_start = register_stack_start;
@@ -313,6 +318,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    });
 	}
 	else {
+	    if (th->safe_level < 4 &&
+		(th->vm->thread_abort_on_exception ||
+		 th->abort_on_exception || RTEST(ruby_debug))) {
+		errinfo = th->errinfo;
+		if (NIL_P(errinfo)) errinfo = rb_errinfo();
+	    }
 	    th->value = Qnil;
 	}
 	TH_POP_TAG();
@@ -331,6 +342,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     }
     thread_cleanup_func(th);
     native_mutex_unlock(&th->vm->global_interpreter_lock);
+
+    if (!NIL_P(errinfo) && th != th->vm->main_thread) {
+	/* exit on main_thread */
+	rb_thread_raise(1, &errinfo, th->vm->main_thread);
+    }
+
     return 0;
 }
 

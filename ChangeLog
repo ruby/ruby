@@ -1,3 +1,8 @@
+Fri Aug 10 05:12:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): let abort_on_exception work.
+	  [ruby-core:11873]
+
 Fri Aug 10 04:47:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (internal_id_gen): internal ID must be bigger than
