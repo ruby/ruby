@@ -354,8 +354,10 @@ static NODE *new_evstr_gen(struct parser_params*,NODE*);
 static NODE *evstr2dstr_gen(struct parser_params*,NODE*);
 #define evstr2dstr(n) evstr2dstr_gen(parser,n)
 
-static NODE *call_op_gen(struct parser_params*,NODE*,ID,int,NODE*);
-#define call_op(recv,id,narg,arg1) call_op_gen(parser, recv,id,narg,arg1)
+static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*);
+#define call_bin_op(recv,id,arg1) call_bin_op_gen(parser, recv,id,arg1)
+static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID);
+#define call_uni_op(recv,id) call_uni_op_gen(parser, recv,id)
 
 static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,ID);
 #define new_args(f,o,r,p,b) new_args_gen(parser, f,o,r,p,b)
@@ -368,6 +370,8 @@ static NODE *ret_args_gen(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield_gen(struct parser_params*,NODE*);
 #define new_yield(node) new_yield_gen(parser, node)
+static NODE *new_not_gen(struct parser_params*,NODE*);
+#define new_not(node) new_not_gen(parser, node)
 
 static NODE *gettable_gen(struct parser_params*,ID);
 #define gettable(id) gettable_gen(parser,id)
@@ -964,6 +968,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| lhs '=' command_call
 		    {
 		    /*%%%*/
+			value_expr($3);
 			$$ = node_assign($1, $3);
 		    /*%
 			$$ = dispatch2(assign, $1, $3);
@@ -998,7 +1003,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			    }
 			    else {
 				$$ = $1;
-				$$->nd_value = call_op(gettable(vid),$2,1,$3);
+				$$->nd_value = NEW_CALL(gettable(vid), $2, NEW_LIST($3));
 			    }
 			}
 			else {
@@ -1093,6 +1098,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| lhs '=' mrhs
 		    {
 		    /*%%%*/
+			value_expr($3);
 			$$ = node_assign($1, $3);
 		    /*%
 			$$ = dispatch2(assign, $1, $3);
@@ -1139,7 +1145,7 @@ expr		: command_call
 		| keyword_not expr
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(cond($2));
+			$$ = new_not($2);
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), $2);
 		    %*/
@@ -1147,7 +1153,7 @@ expr		: command_call
 		| '!' command_call
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(cond($2));
+			$$ = new_not($2);
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
@@ -1759,6 +1765,7 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword_BEGIN | keyword_END
 arg		: lhs '=' arg
 		    {
 		    /*%%%*/
+			value_expr($3);
 			$$ = node_assign($1, $3);
 		    /*%
 			$$ = dispatch2(assign, $1, $3);
@@ -1775,6 +1782,7 @@ arg		: lhs '=' arg
 		| var_lhs tOP_ASGN arg
 		    {
 		    /*%%%*/
+			value_expr($3);
 			if ($1) {
 			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
@@ -1790,7 +1798,7 @@ arg		: lhs '=' arg
 			    }
 			    else {
 				$$ = $1;
-				$$->nd_value = call_op(gettable(vid),$2,1,$3);
+				$$->nd_value = NEW_CALL(gettable(vid), $2, NEW_LIST($3));
 			    }
 			}
 			else {
@@ -1942,7 +1950,7 @@ arg		: lhs '=' arg
 		| arg '+' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '+', 1, $3);
+			$$ = call_bin_op($1, '+', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('+'), $3);
 		    %*/
@@ -1950,7 +1958,7 @@ arg		: lhs '=' arg
 		| arg '-' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '-', 1, $3);
+			$$ = call_bin_op($1, '-', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('-'), $3);
 		    %*/
@@ -1958,7 +1966,7 @@ arg		: lhs '=' arg
 		| arg '*' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '*', 1, $3);
+			$$ = call_bin_op($1, '*', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('*'), $3);
 		    %*/
@@ -1966,7 +1974,7 @@ arg		: lhs '=' arg
 		| arg '/' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '/', 1, $3);
+			$$ = call_bin_op($1, '/', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('/'), $3);
 		    %*/
@@ -1974,7 +1982,7 @@ arg		: lhs '=' arg
 		| arg '%' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '%', 1, $3);
+			$$ = call_bin_op($1, '%', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('%'), $3);
 		    %*/
@@ -1982,7 +1990,7 @@ arg		: lhs '=' arg
 		| arg tPOW arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tPOW, 1, $3);
+			$$ = call_bin_op($1, tPOW, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("**"), $3);
 		    %*/
@@ -1990,7 +1998,7 @@ arg		: lhs '=' arg
 		| tUMINUS_NUM tINTEGER tPOW arg
 		    {
 		    /*%%%*/
-			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS, 0, 0);
+			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
 		    /*%
 			$$ = dispatch3(binary, $2, ripper_intern("**"), $4);
 			$$ = dispatch2(unary, ripper_intern("-@"), $$);
@@ -1999,7 +2007,7 @@ arg		: lhs '=' arg
 		| tUMINUS_NUM tFLOAT tPOW arg
 		    {
 		    /*%%%*/
-			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS, 0, 0);
+			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
 		    /*%
 			$$ = dispatch3(binary, $2, ripper_intern("**"), $4);
 			$$ = dispatch2(unary, ripper_intern("-@"), $$);
@@ -2012,7 +2020,7 @@ arg		: lhs '=' arg
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUPLUS, 0, 0);
+			    $$ = call_uni_op($2, tUPLUS);
 			}
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("+@"), $2);
@@ -2021,7 +2029,7 @@ arg		: lhs '=' arg
 		| tUMINUS arg
 		    {
 		    /*%%%*/
-			$$ = call_op($2, tUMINUS, 0, 0);
+			$$ = call_uni_op($2, tUMINUS);
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("-@"), $2);
 		    %*/
@@ -2029,7 +2037,7 @@ arg		: lhs '=' arg
 		| arg '|' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '|', 1, $3);
+			$$ = call_bin_op($1, '|', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('!'), $3);
 		    %*/
@@ -2037,7 +2045,7 @@ arg		: lhs '=' arg
 		| arg '^' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '^', 1, $3);
+			$$ = call_bin_op($1, '^', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('^'), $3);
 		    %*/
@@ -2045,7 +2053,7 @@ arg		: lhs '=' arg
 		| arg '&' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '&', 1, $3);
+			$$ = call_bin_op($1, '&', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('&'), $3);
 		    %*/
@@ -2053,7 +2061,7 @@ arg		: lhs '=' arg
 		| arg tCMP arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tCMP, 1, $3);
+			$$ = call_bin_op($1, tCMP, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("<=>"), $3);
 		    %*/
@@ -2061,7 +2069,7 @@ arg		: lhs '=' arg
 		| arg '>' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '>', 1, $3);
+			$$ = call_bin_op($1, '>', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('>'), $3);
 		    %*/
@@ -2069,7 +2077,7 @@ arg		: lhs '=' arg
 		| arg tGEQ arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tGEQ, 1, $3);
+			$$ = call_bin_op($1, tGEQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern(">="), $3);
 		    %*/
@@ -2077,7 +2085,7 @@ arg		: lhs '=' arg
 		| arg '<' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, '<', 1, $3);
+			$$ = call_bin_op($1, '<', $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM('<'), $3);
 		    %*/
@@ -2085,7 +2093,7 @@ arg		: lhs '=' arg
 		| arg tLEQ arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tLEQ, 1, $3);
+			$$ = call_bin_op($1, tLEQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("<="), $3);
 		    %*/
@@ -2093,7 +2101,7 @@ arg		: lhs '=' arg
 		| arg tEQ arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tEQ, 1, $3);
+			$$ = call_bin_op($1, tEQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("=="), $3);
 		    %*/
@@ -2101,7 +2109,7 @@ arg		: lhs '=' arg
 		| arg tEQQ arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tEQQ, 1, $3);
+			$$ = call_bin_op($1, tEQQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("==="), $3);
 		    %*/
@@ -2109,7 +2117,7 @@ arg		: lhs '=' arg
 		| arg tNEQ arg
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(call_op($1, tEQ, 1, $3));
+			$$ = NEW_NOT(call_bin_op($1, tEQ, $3));
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("!="), $3);
 		    %*/
@@ -2133,7 +2141,7 @@ arg		: lhs '=' arg
 		| '!' arg
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(cond($2));
+			$$ = new_not($2);
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
@@ -2141,7 +2149,7 @@ arg		: lhs '=' arg
 		| '~' arg
 		    {
 		    /*%%%*/
-			$$ = call_op($2, '~', 0, 0);
+			$$ = call_uni_op($2, '~');
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('~'), $2);
 		    %*/
@@ -2149,7 +2157,7 @@ arg		: lhs '=' arg
 		| arg tLSHFT arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tLSHFT, 1, $3);
+			$$ = call_bin_op($1, tLSHFT, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("<<"), $3);
 		    %*/
@@ -2157,7 +2165,7 @@ arg		: lhs '=' arg
 		| arg tRSHFT arg
 		    {
 		    /*%%%*/
-			$$ = call_op($1, tRSHFT, 1, $3);
+			$$ = call_bin_op($1, tRSHFT, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern(">>"), $3);
 		    %*/
@@ -2191,6 +2199,7 @@ arg		: lhs '=' arg
 		| arg '?' arg opt_nl ':' arg
 		    {
 		    /*%%%*/
+			value_expr($1);
 			$$ = NEW_IF(cond($1), $3, $6);
 			fixpos($$, $1);
 		    /*%
@@ -2738,13 +2747,13 @@ primary		: literal
 			    NODE *one = NEW_LIST(NEW_LIT(INT2FIX(1)));
 			    NODE *zero = NEW_LIST(NEW_LIT(INT2FIX(0)));
 			    m->nd_next = block_append(
-				NEW_IF(cond(
+				NEW_IF(
 				    NEW_NODE(NODE_AND,
 					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("length"), 0),
 						      rb_intern("=="), one),
 					     NEW_CALL(NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero),
 						      rb_intern("kind_of?"), NEW_LIST(NEW_LIT(rb_cArray))),
-					     0)),
+					     0),
 					NEW_DASGN_CURR(id,
 						       NEW_CALL(NEW_DVAR(id), rb_intern("[]"), zero)),
 					0),
@@ -7138,17 +7147,18 @@ new_evstr_gen(struct parser_params *parser, NODE *node)
 }
 
 static NODE *
-call_op_gen(struct parser_params *parser, NODE *recv, ID id, int narg, NODE *arg1)
+call_bin_op_gen(struct parser_params *parser, NODE *recv, ID id, NODE *arg1)
 {
+    value_expr(recv);
     value_expr(arg1);
-    if (narg == 1) {
-	value_expr(arg1);
-	arg1 = NEW_LIST(arg1);
-    }
-    else {
-	arg1 = 0;
-    }
-    return NEW_CALL(recv, id, arg1);
+    return NEW_CALL(recv, id, NEW_LIST(arg1));
+}
+
+static NODE *
+call_uni_op_gen(struct parser_params *parser, NODE *recv, ID id)
+{
+    value_expr(recv);
+    return NEW_CALL(recv, id, 0);
 }
 
 static NODE*
@@ -7326,8 +7336,6 @@ aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx)
 {
     if (recv && nd_type(recv) == NODE_SELF)
 	recv = (NODE *)1;
-    else
-	value_expr(recv);
     return NEW_ATTRASGN(recv, tASET, idx);
 }
 
@@ -7352,8 +7360,6 @@ attrset_gen(struct parser_params *parser, NODE *recv, ID id)
 {
     if (recv && nd_type(recv) == NODE_SELF)
 	recv = (NODE *)1;
-    else
-	value_expr(recv);
     return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
 }
 
@@ -7412,12 +7418,11 @@ arg_add_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     }
 }
 
-static NODE*
+static NODE *
 node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 {
     if (!lhs) return 0;
 
-    value_expr(rhs);
     switch (nd_type(lhs)) {
       case NODE_GASGN:
       case NODE_IASGN:
@@ -7735,7 +7740,7 @@ range_op(struct parser_params *parser, NODE *node)
     type = nd_type(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	warn_unless_e_option(node, "integer literal in conditional range");
-	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
+	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."))));
     }
     return node;
 }
@@ -7822,7 +7827,6 @@ static NODE*
 cond_gen(struct parser_params *parser, NODE *node)
 {
     if (node == 0) return 0;
-    value_expr(node);
     return cond0(parser, node);
 }
 
@@ -7895,6 +7899,13 @@ new_yield_gen(struct parser_params *parser, NODE *node)
         state = Qfalse;
     }
     return NEW_YIELD(node, state);
+}
+
+static NODE *
+new_not_gen(struct parser_params *parser, NODE *node)
+{
+    value_expr(node);
+    return NEW_NOT(cond(node));
 }
 
 static NODE*

@@ -1,3 +1,10 @@
+Thu Aug  9 16:04:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): check if rhs has value before assignment instead
+	  inside node_assign_gen().  [ruby-dev:31293]
+
+	* parse.y (call_bin_op_gen, call_uni_op_gen): split call_op_gen.
+
 Thu Aug  9 14:01:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_marg_list): renamed from f_marg_head.
