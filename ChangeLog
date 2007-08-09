@@ -1,3 +1,8 @@
+Fri Aug 10 04:47:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (internal_id_gen): internal ID must be bigger than
+	  tLAST_TOKEN.
+
 Thu Aug  9 16:04:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): check if rhs has value before assignment instead

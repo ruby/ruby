@@ -8307,6 +8307,7 @@ static ID
 internal_id_gen(struct parser_params *parser)
 {
     ID id = (ID)vtable_size(lvtbl->args) + (ID)vtable_size(lvtbl->vars);
+    id += ((tLAST_TOKEN - ID_INTERNAL) >> ID_SCOPE_SHIFT) + 1;
     return ID_INTERNAL | (id << ID_SCOPE_SHIFT);
 }
 
