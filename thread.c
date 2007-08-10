@@ -367,6 +367,8 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
     th->first_func = fn;
     th->first_func_arg = arg;
 
+    th->priority = GET_THREAD()->priority;
+
     native_mutex_initialize(&th->interrupt_lock);
     /* kick thread */
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);

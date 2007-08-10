@@ -1,7 +1,8 @@
-Fri Aug 10 09:47:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 10 23:54:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread_pthread.ci (native_thread_apply_priority): set actually
-	  applied prority.  [ruby-core:11876]
+	* thread.c (thread_create_core): inherit the priority of creating
+	  thread.  submitted at [ruby-core:11873] by David Flanagan <david AT
+	  davidflanagan.com>.  [ruby-core:11876]
 
 Fri Aug 10 05:12:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

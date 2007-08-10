@@ -285,7 +285,6 @@ native_thread_apply_priority(rb_thread_t *th)
     else if (max > priority) {
 	priority = min;
     }
-    th->priority = 0 - priority;
 
     sp.sched_priority = priority;
     pthread_setschedparam(th->thread_id, policy, &sp);
