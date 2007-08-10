@@ -656,7 +656,7 @@ class Date
   private_class_method :s3e
 
   def self._parse_day(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/in, ' ')
+    if str.sub!(/\b(#{Format::ABBR_DAYS.keys.join('|')})[^-\d\s]*/ino, ' ')
       e.wday = Format::ABBR_DAYS[$1.downcase]
       true
 =begin
@@ -752,7 +752,7 @@ class Date
 		   \s*
 		   ('?-?\d+(?:(?:st|nd|rd|th)\b)?)
 		 )?
-		/inx,
+		/inox,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$2.downcase], $1,
 	  $3 && $3[0,1].downcase == 'b')
@@ -771,7 +771,7 @@ class Date
 		   \s*
 		   ('?-?\d+)
 		 )?
-		/inx,
+		/inox,
 		' ') # '
       s3e(e, $4, Format::ABBR_MONTHS[$1.downcase], $2,
 	  $3 && $3[0,1].downcase == 'b')
@@ -834,11 +834,11 @@ class Date
 
   def self._parse_vms(str, e) # :nodoc:
     if str.sub!(/('?-?\d+)-(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)/inx, ' ')
+		-('?-?\d+)/inox, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$2.downcase], $1)
       true
     elsif str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})[^-]*
-		-('?-?\d+)(?:-('?-?\d+))?/inx, ' ')
+		-('?-?\d+)(?:-('?-?\d+))?/inox, ' ')
       s3e(e, $3, Format::ABBR_MONTHS[$1.downcase], $2)
       true
     end
@@ -903,7 +903,7 @@ class Date
   end
 
   def self._parse_mon(str, e) # :nodoc:
-    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/in, ' ')
+    if str.sub!(/\b(#{Format::ABBR_MONTHS.keys.join('|')})\S*/ino, ' ')
       e.mon = Format::ABBR_MONTHS[$1.downcase]
       true
     end
@@ -1273,7 +1273,7 @@ class Date
 	(?:#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	-?(\d{2,})\s+ # allow minus, anyway
 	\d{2}:\d{2}(:\d{2})?\s*
-	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inx =~ str
+	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inox =~ str
       e = _parse(str, :comp=>false)
       if $1.size < 4
 	if e[:year] < 50
@@ -1294,20 +1294,20 @@ class Date
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	-?\d{4}\s+ # allow minus, anyway
 	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/inx =~ str
+	gmt\s*\z/inox =~ str
       _rfc2822(str)
     elsif /\A\s*(#{Format::DAYS.keys.join('|')})\s*,\s+
 	\d{2}\s*-\s*
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s*-\s*
 	\d{2}\s+
 	\d{2}:\d{2}:\d{2}\s+
-	gmt\s*\z/inx =~ str
+	gmt\s*\z/inox =~ str
       _parse(str)
     elsif /\A\s*(#{Format::ABBR_DAYS.keys.join('|')})\s+
 	(#{Format::ABBR_MONTHS.keys.join('|')})\s+
 	\d{1,2}\s+
 	\d{2}:\d{2}:\d{2}\s+
-	\d{4}\s*\z/inx =~ str
+	\d{4}\s*\z/inox =~ str
       _parse(str)
     end
   end
