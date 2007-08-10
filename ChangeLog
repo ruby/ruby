@@ -1,3 +1,8 @@
+Sat Aug 11 00:01:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): not re-raise to main thread if it is
+	  joining the current thread.
+
 Fri Aug 10 23:54:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_create_core): inherit the priority of creating

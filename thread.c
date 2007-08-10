@@ -287,6 +287,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     VALUE args = th->first_args;
     rb_proc_t *proc;
     rb_thread_t *join_th;
+    rb_thread_t *main_th;
     VALUE errinfo = Qnil;
 
     th->machine_stack_start = stack_start;
@@ -332,9 +333,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	thread_debug("thread end: %p\n", th);
 	st_delete_wrap(th->vm->living_threads, th->self);
 
+	main_th = th->vm->main_thread;
+	if (th == main_th) errinfo = Qnil;
+
 	/* wake up joinning threads */
 	join_th = th->join_list_head;
 	while (join_th) {
+	    if (join_th == main_th) errinfo = Qnil;
 	    rb_thread_interrupt(join_th);
 	    join_th = join_th->join_list_next;
 	}
@@ -343,9 +348,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     thread_cleanup_func(th);
     native_mutex_unlock(&th->vm->global_interpreter_lock);
 
-    if (!NIL_P(errinfo) && th != th->vm->main_thread) {
+    if (!NIL_P(errinfo)) {
 	/* exit on main_thread */
-	rb_thread_raise(1, &errinfo, th->vm->main_thread);
+	rb_thread_raise(1, &errinfo, main_th);
     }
 
     return 0;
