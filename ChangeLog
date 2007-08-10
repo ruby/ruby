@@ -1,3 +1,8 @@
+Sat Aug 11 07:34:10 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb: reverted some wrongly erased "o" options
+	  (pointed out by nobu).
+
 Tue Aug  7 14:58:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): handshaking before close slave
