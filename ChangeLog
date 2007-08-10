@@ -1,3 +1,8 @@
+Fri Aug 10 09:47:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.ci (native_thread_apply_priority): set actually
+	  applied prority.  [ruby-core:11876]
+
 Fri Aug 10 05:12:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): let abort_on_exception work.
