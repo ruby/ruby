@@ -1,3 +1,11 @@
+Sun Arg 12 03:56:30 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: fix Rinda::TupleSpace keeper thread bug.
+	  the thread is started too early. [ruby-talk:264062] 
+
+	* test/rinda/test_rinda.rb: fix Rinda::TupleSpace keeper thread bug.
+	  the thread is started too early. [ruby-talk:264062] 
+
 Sat Aug 11 07:34:10 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: reverted some wrongly erased "o" options
