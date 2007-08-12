@@ -60,6 +60,10 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
     cfp->prof_time_chld = 0;
 #endif
 
+    if (VMDEBUG == 2) {
+	SDR();
+    }
+
     return cfp;
 }
 
@@ -84,6 +88,10 @@ vm_pop_frame(rb_thread_t *th)
     }
 #endif
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+
+    if (VMDEBUG == 2) {
+	SDR();
+    }
 }
 
 /* method dispatch */
