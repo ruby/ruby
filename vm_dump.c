@@ -358,6 +358,7 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 
+	printf("%3d ", VM_CFP_CNT(th, cfp));
 	ruby_iseq_disasm_insn(0, seq, pc, iseq, 0);
     }
 

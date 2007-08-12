@@ -568,7 +568,9 @@ find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 	    }
 	}
     }
-    rb_bug("find_prev_line_no: can't find - %lu", pos);
+
+    /* rb_bug("find_prev_line_no: can't find - %lu", pos); */
+
     return 0;
 }
 
@@ -663,6 +665,10 @@ insn_operand_intern(rb_iseq_t *iseq,
 
       case TS_CDHASH:
 	ret = rb_str_new2("<cdhash>");
+	break;
+
+      case TS_FUNCPTR:
+	ret = rb_str_new2("<funcptr>");
 	break;
 
       default:

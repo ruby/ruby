@@ -638,6 +638,22 @@ module RubyVM
       @insns.use_const?
     end
 
+    def build_string
+      @lines = []
+      yield
+      @lines.join("\n")
+    end
+
+    EMPTY_STRING = ''.freeze
+
+    def commit str = EMPTY_STRING
+      @lines << str
+    end
+
+    def comment str
+      @lines << str if verbose?
+    end
+
     def output_path(fn)
       d = @insns.destdir
       fn = File.join(d, fn) if d
@@ -667,19 +683,21 @@ module RubyVM
     private
 
     def make_header_prepare_stack insn
-      ret = []
+      comment "  /* prepare stack status */"
+
       push_ba = insn.pushsc
       raise "unsupport" if push_ba[0].size > 0 && push_ba[1].size > 0
 
       push_ba.each{|pushs|
         pushs.each{|r|
-          ret << "  PUSH(SCREG(#{r}));"
+          commit "  PUSH(SCREG(#{r}));"
         }
       }
-      ret.join("\n") + "\n"
     end
   
     def make_header_operands insn
+      comment "  /* declare and get from iseq */"
+
       vars = insn.opes
       n = 0
       ops = []
@@ -696,40 +714,39 @@ module RubyVM
 
       # reverse or not?
       # ops.join
-      ops.reverse.join("\n") + "\n"
+      commit ops.reverse
     end
   
     def make_header_default_operands insn
-      ret = []
       vars = insn.defopes
 
       vars.each{|e|
         next if e[1] == '*'
         if use_const?
-          ret << "  const #{e[0][0]} #{e[0][1]} = #{e[1]};"
+          commit "  const #{e[0][0]} #{e[0][1]} = #{e[1]};"
         else
-          ret << "  #define #{e[0][1]} #{e[1]}"
+          commit "  #define #{e[0][1]} #{e[1]}"
         end
       }
-      ret.join("\n") + "\n"
     end
 
     def make_footer_default_operands insn
+      comment " /* declare and initialize default opes */"
       if use_const?
-        "\n"
+        commit
       else
-        ret = []
         vars = insn.defopes
 
         vars.each{|e|
           next if e[1] == '*'
-          ret << "#undef #{e[0][1]}\n"
+          commit "#undef #{e[0][1]}"
         }
-        ret.join("\n") + "\n"
       end
     end
 
     def make_header_stack_pops insn
+      comment "  /* declare and pop from stack */"
+
       n = 0
       pops = []
       vars = insn.pops
@@ -748,119 +765,118 @@ module RubyVM
       @popn = n
 
       # reverse or not?
-      pops.reverse.join("\n") + "\n"
+      commit pops.reverse
     end
 
     def make_header_temporary_vars insn
-      ret = []
+      comment "  /* declare temporary vars */"
+
       insn.tvars.each{|var|
-        ret << "  #{var[0]} #{var[1]};"
+        commit "  #{var[0]} #{var[1]};"
       }
-      ret.join("\n") + "\n"
     end
 
     def make_header_stack_val insn
-      ret = []
+      comment "/* declare stack push val */"
+
       vars = insn.opes + insn.pops + insn.defopes.map{|e| e[0]}
 
       insn.rets.each{|var|
         if vars.all?{|e| e[1] != var[1]} && var[1] != '...'
-          ret << "  #{var[0]} #{var[1]};"
+          commit "  #{var[0]} #{var[1]};"
         end
       }
-      ret.join("\n") + "\n"
+    end
+
+    def make_header_analysys insn
+      commit "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));"
+      insn.opes.each_with_index{|op, i|
+        commit "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
+      }
+    end
+
+    def make_header_pc insn
+      commit  "  ADD_PC(1+#{@opn});"
+      commit  "  PREFETCH(GET_PC());"
+    end
+
+    def make_header_popn insn
+      comment "  /* management */"
+      commit  "  POPN(#{@popn});" if @popn > 0
+    end
+
+    def make_hader_debug insn
+      comment "  /* for debug */"
+      commit  "  DEBUG_ENTER_INSN(\"#{insn.name}\");"
+    end
+
+    def make_header_defines insn
+      commit  "  #define CURRENT_INSN_#{insn.name} 1"
+      commit  "  #define INSN_IS_SC()     #{insn.sc ? 0 : 1}"
+      commit  "  #define INSN_LABEL(lab)  LABEL_#{insn.name}_##lab"
+      commit  "  #define LABEL_IS_SC(lab) LABEL_##lab##_###{insn.sc.size == 0 ? 't' : 'f'}"
     end
 
     def make_footer_stack_val insn
-      ret = []
+      comment "  /* push stack val */"
+
       insn.rets.reverse_each{|v|
         if v[1] == '...'
           break
         end
         if v[2]
-          ret << "  SCREG(#{v[2]}) = #{v[1]};"
+          commit "  SCREG(#{v[2]}) = #{v[1]};"
         else
-          ret << "  PUSH(#{v[1]});"
+          commit "  PUSH(#{v[1]});"
         end
       }
-      ret.join("\n") + "\n"
-    end
-  
-    def make_header_analysys insn
-      ret = "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));\n"
-      insn.opes.each_with_index{|op, i|
-        ret += "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});\n"
-      }
-      ret
     end
 
-    def make_header_analysys insn
-      ret = "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));\n"
-      insn.opes.each_with_index{|op, i|
-        ret += "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});\n"
-      }
-      ret
+    def make_footer_undefs insn
+      commit "#undef CURRENT_INSN_#{insn.name}"
+      commit "#undef INSN_IS_SC"
+      commit "#undef INSN_LABEL"
+      commit "#undef LABEL_IS_SC"
     end
 
     def make_header insn
-      ret  = "\nINSN_ENTRY(#{insn.name}){\n"
-      ret += "  /* prepare stack status */\n"                 if verbose?
-      ret += make_header_prepare_stack insn
-      ret += "{\n"
-      ret += "  /* declare stack push val */\n"               if verbose?
-      ret += make_header_stack_val  insn
-      ret += "  /* declare and initialize default opes */\n"  if verbose?
-      ret += make_header_default_operands insn
-      ret += "  /* declare and get from iseq */\n"            if verbose?
-      ret += make_header_operands   insn
-      ret += "  /* declare and pop from stack */\n"           if verbose?
-      ret += make_header_stack_pops insn
-      ret += "  /* declare temporary vars */\n"               if verbose?
-      ret += make_header_temporary_vars insn
-
-      ret += "  /* for debug */\n"                            if verbose?
-      ret += "  DEBUG_ENTER_INSN(\"#{insn.name}\");\n"
-      ret += "  /* management */\n"                           if verbose?
-      ret += "  ADD_PC(1+#{@opn});\n"
-      ret += "  PREFETCH(GET_PC());\n"
-      ret += "  POPN(#{@popn});\n" if @popn > 0
-      ret += "  #define CURRENT_INSN_#{insn.name} 1\n"
-      ret += "  #define INSN_IS_SC()     #{insn.sc ? 0 : 1}\n"
-      ret += "  #define INSN_LABEL(lab)  LABEL_#{insn.name}_##lab\n"
-
-      ret += "  #define LABEL_IS_SC(lab) LABEL_##lab##_###{insn.sc.size == 0 ? 't' : 'f'}\n"
-
-      ret += make_header_analysys insn
-      ret += "{\n"
+      commit "INSN_ENTRY(#{insn.name}){"
+      make_header_prepare_stack insn
+      commit "{"
+      make_header_stack_val  insn
+      make_header_default_operands insn
+      make_header_operands   insn
+      make_header_stack_pops insn
+      make_header_temporary_vars insn
+      #
+      make_hader_debug insn
+      make_header_pc insn
+      make_header_popn insn
+      make_header_defines insn
+      make_header_analysys insn
+      commit  "{"
     end
 
     def make_footer insn
-      ret  = ''
-      ret  = "  /* push stack val */\n"                       if verbose?
-      ret += make_footer_stack_val insn
-      # debug info
-
-      # epilogue
-      ret += make_footer_default_operands insn
-      ret += "#undef CURRENT_INSN_#{insn.name}\n"
-      ret += "#undef INSN_IS_SC\n"
-      ret += "#undef INSN_LABEL\n"
-      ret += "#undef LABEL_IS_SC\n"
-      ret += "  END_INSN(#{insn.name});\n}}\n"
-      ret += "}\n"
+      make_footer_stack_val insn
+      make_footer_default_operands insn
+      make_footer_undefs insn
+      commit "  END_INSN(#{insn.name});}}}"
     end
 
     def make_insn_def insn
-      ret  = make_header insn
-      if line = insn.body.instance_variable_get(:@line_no)
-        file = insn.body.instance_variable_get(:@file)
-        ret << "#line #{line+1} \"#{file}\"" << "\n"
-        ret << insn.body
-        ret << '#line __CURRENT_LINE__ "__CURRENT_FILE__"' << "\n"
-      else
-        ret << insn.body
+      build_string do
+        make_header insn
+        if line = insn.body.instance_variable_get(:@line_no)
+          file = insn.body.instance_variable_get(:@file)
+          commit "#line #{line+1} \"#{file}\""
+          commit insn.body
+          commit '#line __CURRENT_LINE__ "__CURRENT_FILE__"'
+        else
+          insn.body
+        end
+        make_footer(insn)
       end
-      ret << make_footer(insn)
     end
   end
 
@@ -868,15 +884,19 @@ module RubyVM
   # vmtc.inc
   class VmTCIncGenerator < SourceCodeGenerator
     def generate
-      insns_table = ''
-      insns_end_table = ''
 
-      @insns.each{|insn|
-        insns_table << "  LABEL_PTR(#{insn.name}),\n"
-      }
-      @insns.each{|insn|
-        insns_end_table << "  ELABEL_PTR(#{insn.name}),\n"
-      }
+      insns_table = build_string do
+        @insns.each{|insn|
+          commit "  LABEL_PTR(#{insn.name}),"
+        }
+      end
+
+      insn_end_table = build_string do
+        @insns.each{|insn|
+          commit "  ELABEL_PTR(#{insn.name}),\n"
+        }
+      end
+    
       ERB.new(vpath.read('template/vmtc.inc.tmpl')).result(binding)
     end
   end
@@ -915,6 +935,8 @@ module RubyVM
         "TS_CDHASH"
       when /^ISEQ/
         "TS_ISEQ"
+      when /rb_insn_func_t/
+        "TS_FUNCPTR"
       else
         raise "unknown op type: #{op}"
       end
@@ -931,7 +953,8 @@ module RubyVM
       'TS_IC'        => 'C',
       'TS_CDHASH'    => 'H',
       'TS_ISEQ'      => 'S',
-      'TS_VARIABLE'  =>  '.',
+      'TS_VARIABLE'  => '.',
+      'TS_FUNCPTR'   => 'F',
     }
 
     # insns_info.inc
@@ -986,12 +1009,14 @@ module RubyVM
   # insns.inc
   class InsnsIncGenerator < SourceCodeGenerator
     def generate
-      insns = ''
       i=0
-      @insns.each{|insn|
-        insns << "  %-30s = %d,\n" % ["BIN(#{insn.name})", i]
-        i+=1
-      }
+      insns = build_string do
+        @insns.each{|insn|
+          commit "  %-30s = %d,\n" % ["BIN(#{insn.name})", i]
+          i+=1
+        }
+      end
+
       ERB.new(vpath.read('template/insns.inc.tmpl')).result(binding)
     end
   end
@@ -1000,13 +1025,14 @@ module RubyVM
   # minsns.inc
   class MInsnsIncGenerator < SourceCodeGenerator
     def generate
-      defs = ''
       i=0
-      @insns.each{|insn|
-        defs << "  rb_define_const(mYarvInsns, %-30s, INT2FIX(%d));\n" %
-          ["\"I#{insn.name}\"", i]
-        i+=1
-      }
+      defs = build_string do
+        @insns.each{|insn|
+          commit "  rb_define_const(mYarvInsns, %-30s, INT2FIX(%d));\n" %
+                 ["\"I#{insn.name}\"", i]
+          i+=1
+        }
+      end
       ERB.new(vpath.read('template/minsns.inc.tmpl')).result(binding)
     end
   end
@@ -1032,7 +1058,7 @@ module RubyVM
         val
       when /^ID/
         "INT2FIX(#{val})"
-      when /^ISEQ/
+      when /^ISEQ/, /^rb_insn_func_t/
         val
       when /GENTRY/
         raise
@@ -1057,39 +1083,42 @@ module RubyVM
         opt_insns_map[originsn] << insn
       }
 
-      opt_insns_map.each{|originsn, optinsns|
-        rule += "case BIN(#{originsn.name}):\n"
+      rule = build_string do
+        opt_insns_map.each{|originsn, optinsns|
+          commit "case BIN(#{originsn.name}):"
 
-        optinsns.sort_by{|opti|
-          opti.defopes.find_all{|e| e[1] == '*'}.size
-        }.each{|opti|
-          rule += "  if(\n"
-          i = 0
-          rule += '    ' + opti.defopes.map{|opinfo|
-            i += 1
-            next if opinfo[1] == '*'
-            "insnobj->operands[#{i-1}] == #{val_as_type(opinfo)}\n"
-          }.compact.join('&&  ')
-          rule += "  ){\n"
-          idx = 0
-          n = 0
-          opti.defopes.each{|opinfo|
-            if opinfo[1] == '*'
-              if idx != n
-                rule += "    insnobj->operands[#{idx}] = insnobj->operands[#{n}];\n"
+          optinsns.sort_by{|opti|
+            opti.defopes.find_all{|e| e[1] == '*'}.size
+          }.each{|opti|
+            commit "  if("
+            i = 0
+            commit "    " + opti.defopes.map{|opinfo|
+              i += 1
+              next if opinfo[1] == '*'
+              "insnobj->operands[#{i-1}] == #{val_as_type(opinfo)}"
+            }.compact.join('&&  ')
+            commit "  ){"
+            idx = 0
+            n = 0
+            opti.defopes.each{|opinfo|
+              if opinfo[1] == '*'
+                if idx != n
+                  commit "    insnobj->operands[#{idx}] = insnobj->operands[#{n}];"
+                end
+                idx += 1
+              else
+                # skip
               end
-              idx += 1
-            else
-              # skip
-            end
-            n += 1
+              n += 1
+            }
+            commit "    insnobj->insn_id = BIN(#{opti.name});"
+            commit "    insnobj->operand_size = #{idx};"
+            commit "    break;\n  }\n"
           }
-          rule += "    insnobj->insn_id = BIN(#{opti.name});\n"
-          rule += "    insnobj->operand_size = #{idx};\n"
-          rule += "    break;\n  }\n"
+          commit "  break;";
         }
-        rule += "  break;\n";
-      }
+      end
+
       ERB.new(vpath.read('template/optinsn.inc.tmpl')).result(binding)
     end
   end

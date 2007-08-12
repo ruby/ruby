@@ -1,3 +1,22 @@
+Mon Aug 13 04:02:29 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c (debug_print_pre): fix to show control frame count.
+
+	* insns.def (opt_call_c_function): fix operand type.
+
+	* lib/vm/instruction.rb: ditto.
+
+	* insnhelper.ci (vm_push_frame, vm_pop_frame): fix to show
+	  control stack status on if VMDEBUG == 2.
+
+	* vm.h: add a comment about VMDEBUG.
+
+	* iseq.c (find_prev_line_no): fix to skip bug report if
+	  line is not found.
+
+	* lib/vm/instruction.rb: fix to use build_string() on
+	  source code generators.
+
 Mon Aug 13 03:57:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* template/yasmdata.rb.tmpl: fix type and name.

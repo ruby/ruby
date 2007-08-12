@@ -1059,9 +1059,9 @@ defineclass
       default:
 	rb_bug("unknown defineclass type: %d", (int)define_type);
     }
-    
+
     COPY_CREF(klass_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC));
-    
+
     /* enter scope */
     vm_push_frame(th, klass_iseq,
 		  FRAME_MAGIC_CLASS, klass, (VALUE) GET_DFP() | 0x02,
@@ -2096,12 +2096,10 @@ opt_regexpmatch2
  */
 DEFINE_INSN
 opt_call_c_function
-(VALUE func)
+(rb_insn_func_t funcptr)
 ()
 ()
 {
-    rb_insn_func_t funcptr = (rb_insn_func_t) func;
-
     reg_cfp = (funcptr)(th, reg_cfp);
 
     if (reg_cfp == 0) {

@@ -31,7 +31,7 @@ extern VALUE ruby_vm_redefined_flag;
  * debug level:
  *  0: no debug output
  *  1: show instruction name
- *  2:
+ *  2: show stack frame when control stack frame is changed
  *  3: show stack status
  *  4: show register
  *  5:
