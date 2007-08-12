@@ -758,12 +758,17 @@ rb_thread_raise(int argc, VALUE *argv, rb_thread_t *th)
 {
     VALUE exc;
 
+  again:
     if (rb_thread_dead(th)) {
 	return Qnil;
     }
 
+    if (th->thrown_errinfo != 0 || th->raised_flag) {
+	rb_thread_schedule();
+	goto again;
+    }
+
     exc = rb_make_exception(argc, argv);
-    /* TODO: need synchronization if run threads in parallel */
     th->thrown_errinfo = exc;
     rb_thread_ready(th);
     return Qnil;

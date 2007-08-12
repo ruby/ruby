@@ -169,3 +169,17 @@ assert_equal %q{11}, %q{
     Thread.current[:a]
   }.value + Thread.current[:a]
 }
+assert_equal %q{1000}, %q{
+begin
+  1000.times do |i|
+    begin
+      Thread.start(Thread.current) {|u| u.raise }
+      raise
+    rescue
+    ensure
+    end
+  end
+rescue
+  1000
+end
+}, '[ruby-dev:31371]'

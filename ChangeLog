@@ -1,10 +1,16 @@
+Mon Aug 13 05:03:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_raise): check if target thread is
+	  thrown by another thread or not.  [ruby-dev:31371]
+
+	* bootstraptest/test_thread.rb: add a test for above.
+
 Mon Aug 13 04:35:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_peephole_optimize): fix peephole optimization
 	  bug. [ruby-dev:31360]
 
 	* bootstraptest/test_syntax.rb: add a test for above.
-
 
 Mon Aug 13 04:02:29 2007  Koichi Sasada  <ko1@atdot.net>
 
