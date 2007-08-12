@@ -1318,8 +1318,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    REMOVE_ELEM(&iobj->link);
 	}
 	else if (iobj != diobj && diobj->insn_id == BIN(jump)) {
-	    OPERAND_AT(iobj, 0) = OPERAND_AT(diobj, 0);
-	    goto again;
+	    if (OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+		OPERAND_AT(iobj, 0) = OPERAND_AT(diobj, 0);
+		goto again;
+	    }
 	}
 	else if (diobj->insn_id == BIN(leave)) {
 	    /*
