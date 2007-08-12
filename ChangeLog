@@ -1,3 +1,7 @@
+Mon Aug 13 03:57:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* template/yasmdata.rb.tmpl: fix type and name.
+
 Sat Aug 11 07:24:55 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: reverted some wrongly erased "o" options
