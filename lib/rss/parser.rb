@@ -365,10 +365,10 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
-      next_class = nil
-      begin
+      if current_class.const_defined?(class_name)
         next_class = current_class.const_get(class_name)
-      rescue NameError
+        start_have_something_element(local, prefix, attrs, ns, next_class)
+      else
         if !@do_validate or @ignore_unknown_element
           @proc_stack.push(nil)
         else
@@ -378,9 +378,6 @@ module RSS
           end
           raise NotExpectedTagError.new(local, _ns(ns, prefix), parent)
         end
-      end
-      if next_class
-        start_have_something_element(local, prefix, attrs, ns, next_class)
       end
     end
 
