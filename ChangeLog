@@ -1,3 +1,12 @@
+Mon Aug 13 17:23:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_clear_trace_func, rb_thread_stop_timer_thread):
+	  declarations for forward refernces.
+
+	* eval.c (rb_longjmp, eval): use local variable.
+
+	* eval.c (rb_longjmp): string object not to be optimized.
+
 Mon Aug 13 13:21:58 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: make ftp passive mode to avoid NAT problem.

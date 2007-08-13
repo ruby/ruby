@@ -105,6 +105,8 @@ ruby_init(void)
     ruby_running = 1;
 }
 
+extern void rb_clear_trace_func(void);
+
 void *
 ruby_options(int argc, char **argv)
 {
@@ -150,6 +152,8 @@ ruby_finalize(void)
     ruby_finalize_0();
     ruby_finalize_1();
 }
+
+void rb_thread_stop_timer_thread(void);
 
 int
 ruby_cleanup(int ex)
@@ -645,6 +649,7 @@ static void
 rb_longjmp(int tag, VALUE mesg)
 {
     VALUE at;
+    VALUE e;
     rb_thread_t *th = GET_THREAD();
     const char *file;
     int line = 0;
@@ -655,7 +660,7 @@ rb_longjmp(int tag, VALUE mesg)
     }
 
     if (NIL_P(mesg))
-      mesg = GET_THREAD()->errinfo;
+	mesg = th->errinfo;
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
@@ -670,24 +675,23 @@ rb_longjmp(int tag, VALUE mesg)
 	}
     }
     if (!NIL_P(mesg)) {
-	GET_THREAD()->errinfo = mesg;
+	th->errinfo = mesg;
     }
 
-    if (RTEST(ruby_debug) && !NIL_P(GET_THREAD()->errinfo)
-	&& !rb_obj_is_kind_of(GET_THREAD()->errinfo, rb_eSystemExit)) {
-	VALUE e = GET_THREAD()->errinfo;
+    if (RTEST(ruby_debug) && !NIL_P(e = th->errinfo) &&
+	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
 	int status;
 
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
-	    e = rb_obj_as_string(e);
+	    RB_GC_GUARD(e) = rb_obj_as_string(e);
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
-			rb_obj_classname(GET_THREAD()->errinfo),
+			rb_obj_classname(th->errinfo),
 			file, line, RSTRING_PTR(e));
 	}
 	POP_TAG();
-	if (status == TAG_FATAL && GET_THREAD()->errinfo == exception_error) {
-	    GET_THREAD()->errinfo = mesg;
+	if (status == TAG_FATAL && th->errinfo == exception_error) {
+	    th->errinfo = mesg;
 	}
 	else if (status) {
 	    thread_reset_raised(th);
@@ -1713,11 +1717,12 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 
     if (state) {
 	if (state == TAG_RAISE) {
+	    VALUE errinfo = th->errinfo;
 	    if (strcmp(file, "(eval)") == 0) {
 		VALUE mesg, errat;
 
-		errat = get_backtrace(GET_THREAD()->errinfo);
-		mesg = rb_attr_get(GET_THREAD()->errinfo, rb_intern("mesg"));
+		errat = get_backtrace(errinfo);
+		mesg = rb_attr_get(errinfo, rb_intern("mesg"));
 		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
 			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
@@ -1726,7 +1731,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 		    RARRAY_PTR(errat)[0] = RARRAY_PTR(backtrace(-2))[0];
 		}
 	    }
-	    rb_exc_raise(GET_THREAD()->errinfo);
+	    rb_exc_raise(errinfo);
 	}
 	JUMP_TAG(state);
     }
