@@ -743,6 +743,7 @@ module URI
 
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.open(self.host)
+      ftp.passive = true
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
       passwd = nil

@@ -1,3 +1,8 @@
+Mon Aug 13 13:21:58 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: make ftp passive mode to avoid NAT problem.
+	  [ruby-dev:31377]
+
 Mon Aug 13 05:03:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_raise): check if target thread is
