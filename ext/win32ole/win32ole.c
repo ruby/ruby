@@ -2014,7 +2014,7 @@ typelib_file_from_typelib(VALUE ole)
             if (ver == Qnil)
                 break;
             err = reg_open_vkey(hclsid, ver, &hversion);
-            if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
+			if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
                 continue;
             fver = atof(StringValuePtr(ver));
             typelib = reg_get_val(hversion, NULL);

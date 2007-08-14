@@ -1443,8 +1443,6 @@ Init_Proc(void)
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
     rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
-    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
-    rb_register_mark_object(exception_error);
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");

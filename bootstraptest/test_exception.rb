@@ -368,3 +368,26 @@ assert_equal %q{}, %q{
     end
   end.call
 }
+
+##
+assert_equal "ok", %q{
+  $foo = "ok"
+  class C
+    def inspect
+      bar {}
+      $foo = "ng"
+    end
+    
+    def bar
+      raise
+    ensure
+    end
+  end
+  
+  begin
+    C.new.foo
+  rescue NoMethodError => e
+    $foo
+  end
+}, "[ruby-dev:31407]"
+

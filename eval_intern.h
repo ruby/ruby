@@ -177,8 +177,6 @@ char *strrchr _((const char *, const char));
   ruby_cref()->nd_visi = (f); \
 }
 
-extern VALUE exception_error;
-
 void rb_thread_cleanup _((void));
 void rb_thread_wait_other_threads _((void));
 

@@ -1,3 +1,15 @@
+Tue Aug 14 19:53:15 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (Init_Proc), eval.c (Init_eval), eval_intern.h: move
+	  init place of exception_error.
+
+	* inits.c: ditto.
+
+	* eval.c (Init_eval): set exception_error#throwed_state as TAG_FATAL.
+	  [ruby-dev:31407]
+
+	* bootstraptest/test_exception.rb: add a test for above.
+
 Tue Aug 14 19:51:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: change test order (test -> btest).

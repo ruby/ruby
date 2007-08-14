@@ -29,8 +29,9 @@ static ID object_id, __send, __send_bang, respond_to;
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
-VALUE exception_error;
 VALUE sysstack_error;
+
+static VALUE exception_error;
 
 static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
 
@@ -2726,6 +2727,10 @@ Init_eval(void)
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
+
+    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
+    rb_ivar_set(exception_error, idThrowState, INT2FIX(TAG_FATAL));
+    rb_register_mark_object(exception_error);
 }
 
 
