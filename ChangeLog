@@ -36,6 +36,12 @@ Mon Aug 13 13:21:58 2007  Tanaka Akira  <akr@fsij.org>
 	* lib/open-uri.rb: make ftp passive mode to avoid NAT problem.
 	  [ruby-dev:31377]
 
+Mon Aug 13 08:19:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_close): always close via method.
+
+	* io.c (Init_IO): remove obsolete Kernel#getc.
+
 Mon Aug 13 05:03:53 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_raise): check if target thread is
@@ -72,6 +78,17 @@ Mon Aug 13 04:02:29 2007  Koichi Sasada  <ko1@atdot.net>
 Mon Aug 13 03:57:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* template/yasmdata.rb.tmpl: fix type and name.
+
+Sat Aug 11 23:27:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_each_line): should use #each_line, not #each.
+
+	* io.c (argf_each_line): simplified.
+
+	* io.c (argf_getline): should handle non T_FILE object in ARGV.
+
+	* io.c (argf_each_byte): each_byte should yield bytes not
+	  one-character strings.  [ruby-dev:31374]
 
 Sat Aug 11 07:24:55 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 

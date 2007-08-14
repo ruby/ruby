@@ -4310,7 +4310,7 @@ argf_forward(int argc, VALUE *argv)
 }
 
 #define ARGF_FORWARD(argc, argv) do {\
-  if (TYPE(current_file) != T_FILE)\
+  if (current_file == rb_stdout && TYPE(current_file) != T_FILE)\
      return argf_forward(argc, argv);\
 } while (0)
 #define NEXT_ARGF_FORWARD(argc, argv) do {\
@@ -4321,10 +4321,7 @@ argf_forward(int argc, VALUE *argv)
 static void
 argf_close(VALUE file)
 {
-    if (TYPE(file) == T_FILE)
-	rb_io_close(file);
-    else
-	rb_funcall3(file, rb_intern("close"), 0, 0);
+    rb_funcall3(file, rb_intern("close"), 0, 0);
 }
 
 static int
@@ -4452,16 +4449,21 @@ argf_getline(int argc, VALUE *argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (argc == 0 && rb_rs == rb_default_rs) {
-	line = rb_io_gets(current_file);
+    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
+	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
     }
     else {
-	line = rb_io_getline(argc, argv, current_file);
-    }
-    if (NIL_P(line) && next_p != -1) {
-	argf_close(current_file);
-	next_p = 1;
-	goto retry;
+	if (argc == 0 && rb_rs == rb_default_rs) {
+	    line = rb_io_gets(current_file);
+	}
+	else {
+	    line = rb_io_getline(argc, argv, current_file);
+	}
+	if (NIL_P(line) && next_p != -1) {
+	    argf_close(current_file);
+	    next_p = 1;
+	    goto retry;
+	}
     }
     if (!NIL_P(line)) {
 	gets_lineno++;
@@ -4508,13 +4510,7 @@ rb_f_gets(int argc, VALUE *argv)
 {
     VALUE line;
 
-    if (!next_argv()) return Qnil;
-    if (TYPE(current_file) != T_FILE) {
-	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
-    }
-    else {
-	line = argf_getline(argc, argv);
-    }
+    line = argf_getline(argc, argv);
     rb_lastline_set(line);
     return line;
 }
@@ -4532,7 +4528,7 @@ rb_gets(void)
     if (!next_argv()) return Qnil;
     line = rb_io_gets(current_file);
     if (NIL_P(line) && next_p != -1) {
-	argf_close(current_file);
+	rb_io_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -4571,19 +4567,6 @@ rb_f_readline(int argc, VALUE *argv)
 }
 
 /*
- * obsolete
- */
-static VALUE
-rb_f_getc(void)
-{
-    rb_warn("getc is obsolete; use STDIN.getc instead");
-    if (TYPE(rb_stdin) != T_FILE) {
-	return rb_funcall3(rb_stdin, rb_intern("getc"), 0, 0);
-    }
-    return rb_io_getc(rb_stdin);
-}
-
-/*
  *  call-seq:
  *     readlines(sep=$/)    => array
  *     readlines(limit)     => array
@@ -4598,7 +4581,6 @@ rb_f_readlines(int argc, VALUE *argv)
 {
     VALUE line, ary;
 
-    NEXT_ARGF_FORWARD(argc, argv);
     ary = rb_ary_new();
     while (!NIL_P(line = argf_getline(argc, argv))) {
 	rb_ary_push(ary, line);
@@ -5379,7 +5361,7 @@ argf_read(int argc, VALUE *argv)
     if (!next_argv()) {
 	return str;
     }
-    if (TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
 	tmp = argf_forward(argc, argv);
     }
     else {
@@ -5425,7 +5407,7 @@ argf_readpartial(int argc, VALUE *argv)
         rb_str_resize(str, 0);
         rb_eof_error();
     }
-    if (TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
         tmp = rb_rescue2(argf_forward, (VALUE)argv,
                          argf_readpartial_rescue, (VALUE)Qnil,
                          rb_eEOFError, (VALUE)0);
@@ -5455,7 +5437,7 @@ argf_getc(void)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
 	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
     else {
@@ -5489,18 +5471,12 @@ argf_each_line(int argc, VALUE *argv, VALUE self)
     VALUE str;
 
     RETURN_ENUMERATOR(self, argc, argv);
-    if (!next_argv()) return Qnil;
-    if (TYPE(current_file) != T_FILE) {
-	for (;;) {
-	    if (!next_argv()) return argf;
-	    rb_block_call(current_file, rb_intern("each"), 0, 0, rb_yield, 0);
-	    next_p = 1;
-	}
+    for (;;) {
+	if (!next_argv()) return Qnil;
+	rb_block_call(current_file, rb_intern("each_line"), 0, 0, rb_yield, 0);
+	next_p = 1;
     }
-    while (!NIL_P(str = argf_getline(argc, argv))) {
-	rb_yield(str);
-    }
-    return argf;
+    return self;
 }
 
 static VALUE
@@ -5509,10 +5485,11 @@ argf_each_byte(VALUE self)
     VALUE byte;
 
     RETURN_ENUMERATOR(self, 0, 0);
-    while (!NIL_P(byte = argf_getc())) {
-	rb_yield(byte);
+    for (;;) {
+	if (!next_argv()) return Qnil;
+	rb_block_call(current_file, rb_intern("each_byte"), 0, 0, rb_yield, 0);
+	next_p = 1;
     }
-    return argf;
 }
 
 static VALUE
@@ -5705,7 +5682,6 @@ Init_IO(void)
     rb_define_global_function("puts", rb_f_puts, -1);
     rb_define_global_function("gets", rb_f_gets, -1);
     rb_define_global_function("readline", rb_f_readline, -1);
-    rb_define_global_function("getc", rb_f_getc, 0);
     rb_define_global_function("select", rb_f_select, -1);
 
     rb_define_global_function("readlines", rb_f_readlines, -1);
