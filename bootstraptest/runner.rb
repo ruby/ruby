@@ -96,7 +96,6 @@ def exec_test(pathes)
 end
 
 def assert_check(testsrc, message = '')
-  newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
   result = get_result_string(testsrc)
   check_coredump
@@ -113,6 +112,7 @@ rescue Exception => err
 end
 
 def assert_equal(expected, testsrc, message = '')
+  newtest
   assert_check(testsrc, message) {|result|
     if expected == result
       nil
@@ -124,6 +124,7 @@ def assert_equal(expected, testsrc, message = '')
 end
 
 def assert_match(expected_pattern, testsrc, message = '')
+  newtest
   assert_check(testsrc, message) {|result|
     if expected_pattern =~ result
       nil

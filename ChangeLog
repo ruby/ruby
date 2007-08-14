@@ -1,3 +1,9 @@
+Wed Aug 15 01:05:55 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_check): don't call newtest.
+	  (assert_equal): call newtest.
+	  (assert_match): ditto.
+
 Tue Aug 14 21:43:39 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_check): new method.
