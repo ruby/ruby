@@ -1,3 +1,13 @@
+Tue Aug 14 21:43:39 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_check): new method.
+	  (assert_match): new method.
+	  (assert_equal): use assert_check.
+	  (pretty): give failure description as an argument.
+
+	* bootstraptest/test_exception.rb: use assert_match to describe the
+	  test for [ruby-dev:31407].  [ruby-dev:31412]
+
 Tue Aug 14 19:53:15 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (Init_Proc), eval.c (Init_eval), eval_intern.h: move

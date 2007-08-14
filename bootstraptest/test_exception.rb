@@ -370,12 +370,11 @@ assert_equal %q{}, %q{
 }
 
 ##
-assert_equal "ok", %q{
-  $foo = "ok"
+assert_match /undefined method `foo'/, %q{
+  STDERR.reopen(STDOUT)
   class C
     def inspect
       bar {}
-      $foo = "ng"
     end
     
     def bar
@@ -383,11 +382,6 @@ assert_equal "ok", %q{
     ensure
     end
   end
-  
-  begin
-    C.new.foo
-  rescue NoMethodError => e
-    $foo
-  end
+  C.new.foo
 }, "[ruby-dev:31407]"
 

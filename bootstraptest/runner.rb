@@ -95,25 +95,47 @@ def exec_test(pathes)
   end
 end
 
-def assert_equal(expected, testsrc, message = '')
+def assert_check(testsrc, message = '')
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
   result = get_result_string(testsrc)
   check_coredump
-  if expected == result
+  faildesc = yield(result)
+  if !faildesc
     $stderr.print '.'
   else
     $stderr.print 'F'
-    error pretty(testsrc, expected, result), message
+    error faildesc, message
   end
 rescue Exception => err
   $stderr.print 'E'
   error err.message, message
 end
 
-def pretty(src, ex, result)
-  (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) +
-      "  #=> #{result.inspect} (expected #{ex.inspect})"
+def assert_equal(expected, testsrc, message = '')
+  assert_check(testsrc, message) {|result|
+    if expected == result
+      nil
+    else
+      desc = "#{result.inspect} (expected #{expected.inspect})"
+      pretty(testsrc, desc, result)
+    end
+  }
+end
+
+def assert_match(expected_pattern, testsrc, message = '')
+  assert_check(testsrc, message) {|result|
+    if expected_pattern =~ result
+      nil
+    else
+      desc = "#{expected_pattern.inspect} expected to be =~\n#{result.inspect}"
+      pretty(testsrc, desc, result)
+    end
+  }
+end
+
+def pretty(src, desc, result)
+  (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 
 INDENT = 27
