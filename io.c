@@ -4308,7 +4308,7 @@ argf_forward(int argc, VALUE *argv)
 }
 
 #define ARGF_FORWARD(argc, argv) do {\
-  if (current_file == rb_stdout && TYPE(current_file) != T_FILE)\
+  if (current_file == rb_stdin && TYPE(current_file) != T_FILE)\
      return argf_forward(argc, argv);\
 } while (0)
 #define NEXT_ARGF_FORWARD(argc, argv) do {\
@@ -4447,7 +4447,7 @@ argf_getline(int argc, VALUE *argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdin && TYPE(current_file) != T_FILE) {
 	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
     }
     else {
@@ -5359,7 +5359,7 @@ argf_read(int argc, VALUE *argv)
     if (!next_argv()) {
 	return str;
     }
-    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdin && TYPE(current_file) != T_FILE) {
 	tmp = argf_forward(argc, argv);
     }
     else {
@@ -5405,7 +5405,7 @@ argf_readpartial(int argc, VALUE *argv)
         rb_str_resize(str, 0);
         rb_eof_error();
     }
-    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdin && TYPE(current_file) != T_FILE) {
         tmp = rb_rescue2(argf_forward, (VALUE)argv,
                          argf_readpartial_rescue, (VALUE)Qnil,
                          rb_eEOFError, (VALUE)0);
@@ -5435,7 +5435,7 @@ argf_getc(void)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (current_file == rb_stdout && TYPE(current_file) != T_FILE) {
+    if (current_file == rb_stdin && TYPE(current_file) != T_FILE) {
 	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
     else {

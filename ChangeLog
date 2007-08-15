@@ -1,3 +1,8 @@
+Wed Aug 15 16:44:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (ARGF_FORWARD): wrongly compares with current_file with
+	  rb_stdout.  should be rb_stdin.  [ruby-cvs:20177]
+
 Wed Aug 15 14:59:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize, argf_each_line, argf_each_byte): suppress
