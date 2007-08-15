@@ -3001,7 +3001,7 @@ for_var		: lhs
 f_marg		: f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = assignable($1, 0); //NEW_LIST(assignable($1, 0));
+			$$ = assignable($1, 0);
 		    /*%
 			$$ = dispatch1(mlhs_paren, $1);
 		    %*/
@@ -3009,7 +3009,7 @@ f_marg		: f_norm_arg
 		| tLPAREN f_margs rparen
 		    {
 		    /*%%%*/
-			$$ = $2; //NEW_LIST($2);
+			$$ = $2;
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/

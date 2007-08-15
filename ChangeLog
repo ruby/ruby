@@ -1,3 +1,7 @@
+Wed Aug 15 14:22:05 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: remove "//" type comment.
+
 Wed Aug 15 13:42:15 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: fix rules around f_margs.  "make test" passes all tests.
