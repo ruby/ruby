@@ -1,3 +1,8 @@
+Thu Aug 16 05:00:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_pow): 0**2 should not raise floating point
+	  exception.  [ruby-dev:31216]
+
 Thu Aug 16 04:56:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): enclose command line except for
