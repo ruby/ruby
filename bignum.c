@@ -331,6 +331,13 @@ rb_cstr_to_inum(str, base, badcheck)
     VALUE z;
     BDIGIT *zds;
 
+#define conv_digit(c) \
+    (!ISASCII(c) ? -1 : \
+     isdigit(c) ? ((c) - '0') : \
+     islower(c) ? ((c) - 'a' + 10) : \
+     isupper(c) ? ((c) - 'A' + 10) : \
+     -1)
+
     if (!str) {
 	if (badcheck) goto bad;
 	return INT2FIX(0);
@@ -423,7 +430,13 @@ rb_cstr_to_inum(str, base, badcheck)
     }
     if (*str == '0') {		/* squeeze preceeding 0s */
 	while (*++str == '0');
-	--str;
+	if (!*str) --str;
+    }
+    c = *str;
+    c = conv_digit(c);
+    if (c < 0 || c >= base) {
+	if (badcheck) goto bad;
+	return INT2FIX(0);
     }
     len *= strlen(str)*sizeof(char);
 
@@ -457,7 +470,7 @@ rb_cstr_to_inum(str, base, badcheck)
     z = bignew(len, sign);
     zds = BDIGITS(z);
     for (i=len;i--;) zds[i]=0;
-    while (c = *str++) {
+    while ((c = *str++) != 0) {
 	if (c == '_') {
 	    if (badcheck) {
 		if (nondigit) goto bad;
@@ -465,19 +478,7 @@ rb_cstr_to_inum(str, base, badcheck)
 	    }
 	    continue;
 	}
-	else if (!ISASCII(c)) {
-	    break;
-	}
-	else if (isdigit(c)) {
-	    c -= '0';
-	}
-	else if (islower(c)) {
-	    c -= 'a' - 10;
-	}
-	else if (isupper(c)) {
-	    c -= 'A' - 10;
-	}
-	else {
+	else if ((c = conv_digit(c)) < 0) {
 	    break;
 	}
 	if (c >= base) break;

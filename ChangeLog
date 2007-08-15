@@ -1,3 +1,8 @@
+Thu Aug 16 05:02:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): check leading non-digits.
+	  [ruby-core:11691]
+
 Thu Aug 16 05:00:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): 0**2 should not raise floating point
