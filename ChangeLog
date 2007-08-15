@@ -1,8 +1,3 @@
-Thu Aug 16 04:52:11 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
-
-	* random.c: documentation fix.  srand(0) initializes PRNG with '0',
-	  not with random_seed.
-
 Thu Aug 16 04:49:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/{Makefile.sub,setup.mak}: remove surplus slash from srcdir.
