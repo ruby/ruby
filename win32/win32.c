@@ -528,7 +528,7 @@ SafeFree(char **vec, int vecc)
    -e 'END{$cmds.sort.each{|n,f|puts "    \"\\#{f.to_s(8)}\" #{n.dump} + 1,"}}'
    98cmd ntcmd
  */
-static char *szInternalCmds[] = {
+static const char *const szInternalCmds[] = {
     "\2" "assoc" + 1,
     "\3" "break" + 1,
     "\3" "call" + 1,
@@ -587,16 +587,22 @@ internal_match(const void *key, const void *elem)
 }
 
 static int
-isInternalCmd(const char *cmd, const char *interp)
+is_command_com(const char *interp)
 {
-    int i, nt = 1;
-    char cmdname[9], *b = cmdname, c, **nm;
+    int i = strlen(interp) - 11;
 
-    i = strlen(interp) - 11;
     if ((i == 0 || i > 0 && isdirsep(interp[i-1])) &&
 	strcasecmp(interp+i, "command.com") == 0) {
-	nt = 0;
+	return 1;
     }
+    return 0;
+}
+
+static int
+is_internal_cmd(const char *cmd, int nt)
+{
+    char cmdname[9], *b = cmdname, c, **nm;
+
     do {
 	if (!(c = *cmd++)) return 0;
     } while (isspace(c));
@@ -964,6 +970,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     else {
 	int redir = -1;
 	int len = 0;
+	int nt;
 	while (ISSPACE(*cmd)) cmd++;
 	for (prog = cmd; *prog; prog = CharNext(prog)) {
 	    if (ISSPACE(*prog)) {
@@ -982,10 +989,12 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
-		 ((redir < 0 ? has_redirection(cmd) : redir) ||
-		  isInternalCmd(cmd, shell))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" /c "));
-	    sprintf(tmp, "%s /c %.*s", shell, len, cmd);
+		 (nt = !is_command_com(shell),
+		  (redir < 0 ? has_redirection(cmd) : redir) ||
+		  is_internal_cmd(cmd, nt))) {
+	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" /c ")
+				 + (nt ? 2 : 0));
+	    sprintf(tmp, nt ? "%s /c \"%.*s\"" : "%s /c %.*s", shell, len, cmd);
 	    cmd = tmp;
 	}
 	else {
