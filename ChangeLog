@@ -1,3 +1,7 @@
+Thu Aug 16 04:11:17 2007  Ryan Davis  <ryand@zenspider.com>
+
+	* lib/rexml/dtd/dtd.rb: Fixed typo in code. Fixes bug #10420
+
 Thu Aug 16 04:08:20 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (ResponseParser#next_token): fixed
