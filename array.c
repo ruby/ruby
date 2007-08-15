@@ -272,7 +272,6 @@ rb_ary_initialize(argc, argv, ary)
     long len;
     VALUE size, val;
 
-    rb_ary_modify(ary);
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
 	RARRAY(ary)->len = 0;
 	if (rb_block_given_p()) {
@@ -296,6 +295,7 @@ rb_ary_initialize(argc, argv, ary)
     if (len > 0 && len * (long)sizeof(VALUE) <= len) {
 	rb_raise(rb_eArgError, "array size too big");
     }
+    rb_ary_modify(ary);
     if (len > RARRAY(ary)->aux.capa) {
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
 	RARRAY(ary)->aux.capa = len;
