@@ -616,11 +616,11 @@ module Rinda
       return if @keeper && @keeper.alive?
       @keeper = Thread.new do
         while true
+          sleep(@period)
           synchronize do
             break unless need_keeper?
             keep_clean
           end
-          sleep(@period)
         end
       end
     end

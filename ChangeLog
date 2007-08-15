@@ -1,3 +1,8 @@
+Thu Aug 16 04:09:19 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleSpace#start_keeper): improve 
+	  keeper thread.
+
 Wed Aug 15 13:50:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_delete_key): delete the entry without calling block.
