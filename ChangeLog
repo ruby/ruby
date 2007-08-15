@@ -1,3 +1,8 @@
+Thu Aug 16 04:23:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser): handle more
+	  extensions.  [ruby-dev:30972]
+
 Thu Aug 16 04:14:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (ruby_setreuid, ruby_setregid): rename to get rid of name
