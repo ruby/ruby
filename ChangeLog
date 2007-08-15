@@ -1,3 +1,8 @@
+Thu Aug 16 06:25:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_succ): Time#succ should return a time object in the
+	  same timezone mode to the original.  [ruby-talk:260256]
+
 Thu Aug 16 06:24:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): integer power calculation: 0**n => 0, 

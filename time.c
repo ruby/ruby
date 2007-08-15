@@ -1397,9 +1397,14 @@ time_succ(time)
     VALUE time;
 {
     struct time_object *tobj;
+    int gmt;
 
     GetTimeval(time, tobj);
-    return rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
+    gmt = tobj->gmt;
+    time = rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
+    GetTimeval(time, tobj);
+    tobj->gmt = gmt;
+    return time;
 }
 
 /*
