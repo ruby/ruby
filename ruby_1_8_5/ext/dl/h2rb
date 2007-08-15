@@ -1,0 +1,500 @@
+#!/usr/bin/env ruby
+# -*- ruby -*-
+# $Id: h2rb,v 1.1 2002/04/02 10:56:13 ttate Exp $
+
+require 'mkmf'
+require 'ftools'
+
+$recursive = false
+$force     = false
+$conly     = true
+$inc_path  = []
+$infilename= nil
+$insert_require = true
+
+def valid_ruby_code?(code)
+  begin
+    eval("BEGIN {return true}; #{code}")
+  rescue SyntaxError
+    return false
+  end
+  return false
+end
+
+def print_usage
+  print <<EOF
+h2rb [-r] [-I <path>] [-d] [<filename>]
+EOF
+end
+
+while( ARGV[0] )
+  case( ARGV[0] )
+  when "-r"
+    ARGV.shift
+    $recursive = true
+  when "-R"
+    ARGV.shift
+    $recursive = false
+  when "-l"
+    ARGV.shift
+    $insert_require = true
+  when "-L"
+    ARGV.shift
+    $insert_require = false
+  when "-c"
+    ARGV.shift
+    $conly = true
+  when "-C"
+    ARGV.shift
+    $conly = false
+  when "-f"
+    ARGV.shift
+    $force = true
+  when "-F"
+    ARGV.shift
+    $force = false
+  when "-I"
+    ARGV.shift
+    $inc_path << ARGV.shift
+  when "-d"
+    ARGV.shift
+    $DEBUG = true
+  when "-h","--help"
+    print_usage()
+    exit 0
+  when /-.*/
+    $stderr.print("unknown option '#{ARGV[0]}'.\n")
+    print_usage()
+    exit 0
+  else
+    $infilename = ARGV.shift
+  end
+end
+
+$inc_dir = File.join(CONFIG["prefix"], "lib", "ruby",
+		     CONFIG["MAJOR"] + "." + CONFIG["MINOR"],
+		     "dl")
+
+class H2RBError < StandardError; end
+
+
+class H2RB
+  def initialize(inc_dir = nil, inc_path = nil, insert_require = nil)
+    @inc_path = inc_path || []
+    @inc_dir  = inc_dir  || '.'
+    @indent = 0
+    @parsed_files = []
+    @insert_require = insert_require || false
+  end
+
+  def find_path(file)
+    if( ! file )
+      return nil
+    end
+    if( File.exist?(file) )
+      if( file[0] == ?/ )
+	return file
+      else
+	return file
+      end
+    end
+    @inc_path.each{|path|
+    full = File.join(path, file)
+      if( File.exist?(full) )
+	return full
+      end
+    }
+    return nil
+  end
+
+  def strip_comment(line)
+    if( @commented )
+      if( e = line.index("*/") )
+	line[0..(e+1)] = ""
+	@commented = false
+      else
+	line = ""
+      end
+    else
+      if( s = line.index("/*") )
+	if( e = line.index("*/") )
+	  line[s..(e+1)] = ""
+	else
+	  line[s..-1] = ""
+	  @commented = true
+	end
+      elsif( s = line.index("//") )
+	line[s..(-1)] = ""
+      end
+    end
+      
+    line.gsub!(/\s+$/,"")
+    return line
+  end
+  
+  def up_indent
+    @indent += 1
+  end
+  
+  def down_indent
+    @indent -= 1
+    if( @indent < 0 )
+      raise
+    end
+  end
+  
+  def indent
+    "  " * @indent
+  end
+
+  def rescue_begin
+    line = "#{indent}begin"
+    up_indent
+    return line
+  end
+
+  def rescue_nameerror
+    down_indent
+    line = [
+      "#{indent}rescue NameError => e",
+      "#{indent}  raise e if( $DEBUG )",
+      "#{indent}end"].join($/)
+    return line
+  end
+
+  def parse_enum(line)
+    if( line =~ /enum\s+(\S+\s+)?\{(.+)\}/ )
+      enum_name  = $1
+      enum_block = $2
+      if( enum_name )
+	line = "#{indent}# -- enum #{enum_name}\n"
+      else
+	line = "#{indent}# -- enum\n"
+      end
+      enums = enum_block.split(/,/).collect{|e| e.strip}
+      i = 0
+      enums.each{|elem|
+	var,val = elem.split(/=/).collect{|e| e.strip}
+	if( val )
+	  i = val.to_i
+	end
+	line += "#{indent}#{var} = #{i.to_s}\n"
+	i += 1
+      }
+      line += "#{indent}# -- end of enum"
+      return line
+    else
+      return nil
+    end
+  end
+
+  def parse_define(line)
+    case line
+    when /^#\s*define\s+(\S+)\(\)/
+      line = nil
+    when /^#\s*define\s+(\S+)\((.+)\)\s+(.+)$/
+      if( @conly )
+	line = nil
+      else
+	defname = $1
+	defargs = $2
+	defval  = $3
+	if( !valid_ruby_code?(defval) )
+	  defval = "nil # #{defval}"
+	end
+	if( defname[0,1] =~ /^[A-Z]$/ )
+	  line = "#{indent}#{defname} = proc{|#{defargs}| #{defval}}"
+	else
+	  line = [
+	    "#{indent}def #{defname}(#{defargs})",
+	    "#{indent}  #{defval}",
+	    "#{indent}end"
+	  ].join("\n")
+	end
+      end
+    when /^#\s*define\s+(\S+)\((.+)\)$/
+      if( @conly )
+	line = nil
+      else
+	defname = $1
+	defargs = $2
+	defval  = nil
+	if( !valid_ruby_code?(defval) )
+	  defval = "nil # #{defval}"
+	end
+	if( defname[0,1] =~ /^[A-Z]$/ )
+	  line = "#{indent}#{defname} = proc{|#{defargs}| #{defval}}"
+	else
+	  line = [
+	    "#{indent}def #{defname}(#{defargs})",
+	    "#{indent}  #{defval}",
+	    "#{indent}end"
+	  ].join("\n")
+	end
+      end
+    when /^#\s*define\s+(\S+)\s+(.+)$/
+      defname = $1
+      defval  = $2
+      if( !valid_ruby_code?(defval) )
+	defval = "nil # #{defval}"
+      end
+      line = [rescue_begin, "#{indent}#{defname} = #{defval}", rescue_nameerror].join($/)
+    when /^#\s*define\s+(\S+)$/
+      defname = $1
+      line = "#{indent}#{defname} = nil"
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_undef(line)
+    case line
+    when /^#\s*undef\s+([A-Z]\S+)$/
+      defname = $1
+      line = "#{indent}remove_const(:#{defname})"
+    when /^#\s*undef\s+(\S+)$/
+      defname = $1
+      line = "#{indent}#{defname} = nil"
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_ifdef(line)
+    case line
+    when /^#\s*ifdef\s+(\S+)$/
+      defname = $1
+      line = [
+	rescue_begin,
+	"#{indent}if( defined?(#{defname}) && ! #{defname}.nil? )"].join($/)
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_ifndef(line)
+    case line
+    when /^#\s*ifndef\s+(\S+)$/
+      defname = $1
+      line = [
+	rescue_begin,
+	"#{indent}if( ! defined?(#{defname}) || #{defname}.nil? )"].join($/)
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_if(line)
+    case line
+    when /^#\s*if\s+(.+)$/
+      cond = $1
+      cond.gsub!(/defined(.+)/){ "defined?(#{$1}) && ! #{$1}.nil?" }
+      if( valid_ruby_code?(cond) )
+	line = "#{indent}if( #{cond} )"
+      else
+	line = "#{indent}if( false ) # #{cond}"
+      end
+      line = [rescue_begin, line].join($/)
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_elif(line)
+    case line
+    when /^#\s*elif\s+(.+)$/
+      cond = $1
+      cond.gsub!("defined","defined?")
+      line = "#{indent}elsif( #{cond} )"
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_else(line)
+    case line
+    when /^#\s*else\s*/
+      line = "#{indent}else"
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_endif(line)
+    case line
+    when /^#\s*endif\s*$/
+      line = ["#{indent}end", rescue_nameerror].join($/)
+    else
+      line = nil
+    end
+    return line
+  end
+  
+  def parse_include(line)
+    if( ! @insert_require )
+      return nil
+    end
+
+    file = nil
+    case line
+    when /^#\s*include "(.+)"$/
+      file = $1
+      line = "#{indent}require '#{file}'"
+    when /^#\s*include \<(.+)\>$/
+      file = $1
+      line = "#{indent}require '#{file}'"
+    else
+      line = nil
+    end
+    if( @recursive && file && (!@parsed_files.include?(file)) )
+      parse(file, @recursive, @force, @conly)
+    end
+    return line
+  end
+
+
+  def open_files(infilename)
+    if( ! infilename )
+      return [$stdin, $stdout]
+    end
+
+    old_infilename = infilename
+    infilename = find_path(infilename)
+    if( ! infilename )
+      $stderr.print("'#{old_infilename}' was not found.\n")
+      return [nil,nil]
+    end
+
+    if( infilename )
+      if( infilename[0,1] == '/' )
+	outfilename = File.join(@inc_dir, infilename[1..-1] + ".rb")
+      else
+	outfilename = infilename + ".rb"
+      end
+      File.mkpath(File.dirname(outfilename))
+    else
+      outfilename = nil
+    end
+    
+    if( infilename )
+      fin    = File.open(infilename,"r")
+    else
+      fin    = $stdin
+    end
+    if( outfilename )
+      if( File.exist?(outfilename) && (!@force) )
+	$stderr.print("'#{outfilename}' have already existed.\n")
+	return [fin, nil]
+      end
+      fout   = File.open(outfilename,"w")
+    else
+      fout   = $stdout
+    end
+
+    $stderr.print("#{infilename} -> #{outfilename}\n")
+    if( fout )
+      dir = File.dirname(outfilename)
+      if( dir[0,1] != "." && dir != "" )
+	fout.print("if( ! $LOAD_PATH.include?('#{dir}') )\n",
+		   "  $LOAD_PATH.push('#{dir}')\n",
+		   "end\n")
+      end
+    end
+    return [fin,fout]
+  end
+
+  def parse(infilename = nil, recursive = false, force = false, conly = false)
+    @commented = false
+    @recursive = recursive
+    @force     = force
+    @conly     = conly
+    @parsed_files << infilename
+
+    fin,fout = open_files(infilename)
+    if( !fin )
+      return
+    end
+
+    begin
+      line_number = 0
+      pre_line    = nil
+      fin.each_line{|line|
+	line_number += 1
+	line.chop!
+	if( $DEBUG )
+	  $stderr.print("#{line_number}:(#{@indent}):", line, "\n")
+	end
+	
+	if( pre_line )
+	  line = pre_line + line
+	  pre_line = nil
+	end
+
+	if( line[-1,1] == "\\" )
+	  pre_line = line[0..-2]
+	  next
+	end
+
+	if( eidx = line.index("enum ") )
+	  pre_line = line[eidx .. -1]
+	  if( i = line.index("{") && j = line.index("}") )
+	    line = line[0..j]
+	    pre_line = nil
+	  else
+	    next
+	  end
+	end
+
+	line = strip_comment(line)
+	case line
+	when /^enum\s/
+	  line = parse_enum(line)
+	when /^#\s*define\s/
+	  line = parse_define(line)
+	when /^#\s*undef\s/
+	  line = parse_undef(line)
+	when /^#\s*ifdef\s/
+	  line = parse_ifdef(line)
+	  up_indent
+	when /^#\s*ifndef\s/
+	  line = parse_ifndef(line)
+	  up_indent
+	when /^#\s*if\s/
+	  line = parse_if(line)
+	  up_indent
+	when /^#\s*elif\s/
+	  down_indent
+	  line = parse_elif(line)
+	  up_indent
+	when /^#\s*else/
+	  down_indent
+	  line = parse_else(line)
+	  up_indent
+	when /^#\s*endif/
+	  down_indent
+	  line = parse_endif(line)
+	when /^#\s*include\s/
+	  line = parse_include(line)
+	else
+	  line = nil
+	end
+	if( line && fout )
+	  fout.print(line, "     # #{line_number}",$/)
+	end
+      }
+    ensure
+      fin.close if fin
+      fout.close if fout
+    end
+  end
+end
+
+h2rb = H2RB.new($inc_dir, $inc_path, $insert_require)
+h2rb.parse($infilename, $recursive, $force, $conly)

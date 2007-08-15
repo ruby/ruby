@@ -1,0 +1,102 @@
+.\" enumerator.txt -  -*- Indented-Text -*-
+$Idaemons: /home/cvs/rb/enumerator/enumerator.txt,v 1.2 2001/07/15 10:19:24 knu Exp $
+$RoughId: enumerator.txt,v 1.5 2003/02/20 12:24:51 knu Exp $
+$Id: enumerator.txt,v 1.2 2003/10/17 14:09:43 knu Exp $
+
+** Enumerable::Enumerator(Class)
+
+A class which provides a method `each' to be used as an Enumerable
+object.
+
+Superclass: Object
+
+Mix-ins: Enumerable
+
+require 'enumerator'
+
+Class Methods:
+
+    new(obj, method = :each, *args)
+
+	Creates a new Enumerable::Enumerator object, which is to be
+	used as an Enumerable object using the given object's given
+	method with the given arguments.
+
+	e.g.:
+	    str = "xyz"
+
+	    enum = Enumerable::Enumerator.new(str, :each_byte)
+	    a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
+
+Methods:
+
+    each {...}
+
+	Iterates the given block using the object and the method
+	specified in the first place.
+
+
+Requiring this module also adds some methods to the Object class:
+
+    to_enum(method = :each, *args)
+    enum_for(method = :each, *args)
+
+	Returns Enumerable::Enumerator.new(self, method, *args).
+
+	e.g.:
+	    str = "xyz"
+
+	    enum = str.enum_for(:each_byte)
+	    a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
+
+	    # protects an array from being modified
+	    a = [1, 2, 3]
+	    some_method(a.to_enum)
+
+And the Enumerable module.
+
+    each_slice(n) {...}
+
+	Iterates the given block for each slice of <n> elements.
+
+	e.g.:
+	    (1..10).each_slice(3) {|a| p a}
+	    # outputs below
+	    [1, 2, 3]
+	    [4, 5, 6]
+	    [7, 8, 9]
+	    [10]
+
+    enum_slice(n)
+
+	Returns Enumerable::Enumerator.new(self, :each_slice, n).
+
+    each_cons(n) {...}
+
+	Iterates the given block for each array of consecutive <n>
+	elements.
+
+	e.g.:
+	    (1..10).each_cons(3) {|a| p a}
+	    # outputs below
+	    [1, 2, 3]
+	    [2, 3, 4]
+	    [3, 4, 5]
+	    [4, 5, 6]
+	    [5, 6, 7]
+	    [6, 7, 8]
+	    [7, 8, 9]
+	    [8, 9, 10]
+
+    enum_cons(n)
+
+	Returns Enumerable::Enumerator.new(self, :each_cons, n).
+
+    enum_with_index
+
+	Returns Enumerable::Enumerator.new(self, :each_with_index).
+
+-------------------------------------------------------
+Local variables:
+fill-column: 70
+end:
