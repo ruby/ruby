@@ -1,7 +1,3 @@
-Thu Aug 16 04:14:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* process.c (ruby_setreuid, ruby_setregid): rename to get rid of name
-	  clash.
 Thu Aug 16 04:11:17 2007  Ryan Davis  <ryand@zenspider.com>
 
 	* lib/rexml/dtd/dtd.rb: Fixed typo in code. Fixes bug #10420
