@@ -590,6 +590,23 @@ index_i(key, value, args)
     return ST_CONTINUE;
 }
 
+static VALUE
+rb_hash_delete_key(hash, key)
+    VALUE hash, key;
+{
+    st_data_t ktmp = (st_data_t)key, val;
+
+    if (RHASH(hash)->iter_lev > 0) {
+	if (st_delete_safe(RHASH(hash)->tbl, &ktmp, &val, Qundef)) {
+	    FL_SET(hash, HASH_DELETED);
+	    return (VALUE)val;
+	}
+    }
+    else if (st_delete(RHASH(hash)->tbl, &ktmp, &val))
+	return (VALUE)val;
+    return Qundef;
+}
+
 /*
  *  call-seq:
  *     hsh.index(value)    => key
@@ -669,14 +686,8 @@ rb_hash_delete(hash, key)
     VALUE val;
 
     rb_hash_modify(hash);
-    if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->tbl, (st_data_t*)&key, &val, Qundef)) {
-	    FL_SET(hash, HASH_DELETED);
-	    return val;
-	}
-    }
-    else if (st_delete(RHASH(hash)->tbl, (st_data_t*)&key, &val))
-	return val;
+    val = rb_hash_delete_key(hash, key);
+    if (val != Qundef) return val;
     if (rb_block_given_p()) {
 	return rb_yield(key);
     }
@@ -684,7 +695,6 @@ rb_hash_delete(hash, key)
 }
 
 struct shift_var {
-    int stop;
     VALUE key;
     VALUE val;
 };
@@ -695,11 +705,21 @@ shift_i(key, value, var)
     struct shift_var *var;
 {
     if (key == Qundef) return ST_CONTINUE;
-    if (var->stop) return ST_STOP;
-    var->stop = 1;
+    if (var->key != Qundef) return ST_STOP;
     var->key = key;
     var->val = value;
     return ST_DELETE;
+}
+
+static int
+shift_i_safe(key, value, var)
+    VALUE key, value;
+    struct shift_var *var;
+{
+    if (key == Qundef) return ST_CONTINUE;
+    var->key = key;
+    var->val = value;
+    return ST_STOP;
 }
 
 /*
@@ -722,10 +742,21 @@ rb_hash_shift(hash)
     struct shift_var var;
 
     rb_hash_modify(hash);
-    var.stop = 0;
-    rb_hash_foreach(hash, shift_i, (st_data_t)&var);
+    var.key = Qundef;
+    if (RHASH(hash)->iter_lev > 0) {
+	rb_hash_foreach(hash, shift_i_safe, (st_data_t)&var);
+	if (var.key != Qundef) {
+	    st_data_t key = var.key;
+	    if (st_delete_safe(RHASH(hash)->tbl, &key, 0, Qundef)) {
+		FL_SET(hash, HASH_DELETED);
+	    }
+	}
+    }
+    else {
+	rb_hash_foreach(hash, shift_i, (st_data_t)&var);
+    }
 
-    if (var.stop) {
+    if (var.key != Qundef) {
 	return rb_assoc_new(var.key, var.val);
     }
     else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
@@ -742,7 +773,7 @@ delete_if_i(key, value, hash)
 {
     if (key == Qundef) return ST_CONTINUE;
     if (RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_delete(hash, key);
+	rb_hash_delete_key(hash, key);
     }
     return ST_CONTINUE;
 }
