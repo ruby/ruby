@@ -1,3 +1,8 @@
+Thu Aug 16 04:05:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_extended): erroneous check condition when dump
+	  method is defined.  [ruby-core:10646]
+
 Sat Jun  9 10:40:00 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* stable version 1.8.5-p52 released.
