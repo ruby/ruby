@@ -1,3 +1,8 @@
+Thu Aug 16 08:29:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func_isinf): set yes also on OpenSolaris.
+	  [ruby-Bugs-12859]
+
 Thu Aug 16 08:28:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rexml/encodings/{ISO-8859-15,CP-1252}.rb: fixed invalid syntax.
