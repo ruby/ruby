@@ -1,3 +1,9 @@
+Wed Aug 15 18:57:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (os_live_obj): fix to skip T_VALUES.
+
+	* sample/test.rb: add an ObjectSpace test.
+
 Wed Aug 15 16:49:04 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* inits.c (rb_call_inits): change initializing order.

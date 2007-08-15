@@ -1698,6 +1698,7 @@ os_live_obj(void)
 		switch (TYPE(p)) {
 		  case T_ICLASS:
 		  case T_NODE:
+		  case T_VALUES:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;

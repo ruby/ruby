@@ -2215,6 +2215,11 @@ l = []
 GC.start
 test_ok true   # reach here or dumps core
 
+ObjectSpace.each_object{|o|
+  o.class.name
+}
+test_ok true   # reach here or dumps core
+
 if $failed > 0
   printf "not ok/test: %d failed %d\n", $ntest, $failed
 else
