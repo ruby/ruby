@@ -631,6 +631,12 @@ rb_fiber_yield(VALUE fib, int argc, VALUE *argv)
 }
 
 static VALUE
+rb_fiber_m_yield(int argc, VALUE *argv, VALUE fib)
+{
+    return rb_fiber_yield(fib, argc, argv);
+}
+
+static VALUE
 rb_fiber_prev(VALUE fib)
 {
     rb_context_t *cont;
@@ -676,7 +682,7 @@ Init_Cont(void)
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
-    rb_define_method(rb_cFiber, "yield", rb_fiber_yield, -1);
+    rb_define_method(rb_cFiber, "yield", rb_fiber_m_yield, -1);
     rb_define_method(rb_cFiber, "prev", rb_fiber_prev, 0);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 

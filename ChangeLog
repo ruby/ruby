@@ -1,3 +1,8 @@
+Thu Aug 16 02:47:39 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_m_yield): added.  use this function
+	  for Fiber#yield instead of rb_fiber_yield.
+
 Thu Aug 16 00:36:52 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): new method.  [ruby-dev:31416]
