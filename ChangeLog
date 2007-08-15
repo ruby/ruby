@@ -1,7 +1,3 @@
-Thu Aug 16 04:49:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* bcc32/{Makefile.sub,setup.mak}: remove surplus slash from srcdir.
-
 Thu Aug 16 04:40:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): sign bit extension should not be done
