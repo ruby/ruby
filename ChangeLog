@@ -1,3 +1,11 @@
+Thu Aug 16 06:32:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_lshift, rb_big_rshift): separated functions
+	  to get rid of infinite recursion.  fixed calculation in edge
+	  cases.  [ruby-dev:31244]
+
+	* numeric.c (rb_fix_lshift, rb_fix_rshift): ditto.
+
 Thu Aug 16 06:26:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_pow): refine overflow check.  [ruby-dev:31242]

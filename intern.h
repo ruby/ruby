@@ -113,6 +113,7 @@ VALUE rb_mod_ancestors _((VALUE));
 VALUE rb_class_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_class_public_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_class_protected_instance_methods _((int, VALUE*, VALUE));
+VALUE rb_big_rshift(VALUE, VALUE);
 VALUE rb_class_private_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_obj_singleton_methods _((int, VALUE*, VALUE));
 void rb_define_method_id _((VALUE, ID, VALUE (*)(ANYARGS), int));
