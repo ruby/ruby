@@ -1,3 +1,8 @@
+Thu Aug 16 04:40:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): sign bit extension should not be done
+	  if FPLUS flag is specified.  [ruby-list:39224]
+
 Thu Aug 16 04:39:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_initialize): should call rb_ary_modify() first.
@@ -12202,7 +12207,7 @@ Wed Feb 18 17:18:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 Wed Feb 18 10:40:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): do not prepend dots for negative
-	  numbers if FZERO is specified.  [ruby-dev:39218]
+	  numbers if FZERO is specified.  [ruby-list:39218]
 
 Tue Feb 17 23:40:34 2004  Guy Decoux  <ts@moulon.inra.fr>
 
