@@ -496,7 +496,7 @@ ole_hresult2msg(hr)
     DWORD dwCount;
 
     char strhr[100];
-    sprintf(strhr, "    HRESULT error code:0x%08x\n      ", hr);
+    sprintf(strhr, "    HRESULT error code:0x%08lx\n      ", hr);
     msg = rb_str_new2(strhr);
 
     dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -4032,7 +4032,8 @@ folevariable_name(self)
     return rb_ivar_get(self, rb_intern("name"));
 }
 
-static ole_variable_ole_type(pTypeInfo, var_index)
+static VALUE
+ole_variable_ole_type(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -4076,7 +4077,8 @@ folevariable_ole_type(self)
     return ole_variable_ole_type(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_ole_type_detail(pTypeInfo, var_index)
+static VALUE
+ole_variable_ole_type_detail(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -4112,7 +4114,8 @@ folevariable_ole_type_detail(self)
     return ole_variable_ole_type_detail(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_value(pTypeInfo, var_index)
+static VALUE
+ole_variable_value(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -4158,7 +4161,8 @@ folevariable_value(self)
     return ole_variable_value(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_visible(pTypeInfo, var_index)
+static VALUE
+ole_variable_visible(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -4630,7 +4634,8 @@ folemethod_visible(self)
     return ole_method_visible(pmethod->pTypeInfo, pmethod->index);
 }
 
-static ole_method_event(pTypeInfo, method_index, method_name)
+static VALUE
+ole_method_event(pTypeInfo, method_index, method_name)
     ITypeInfo *pTypeInfo;
     WORD method_index;
     VALUE method_name;

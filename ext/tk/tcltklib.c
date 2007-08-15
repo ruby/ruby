@@ -4414,13 +4414,13 @@ ip_finalize(ip)
     }
 
     if (Tcl_InterpDeleted(ip)) {
-        DUMP2("ip(%lx) is already deleted", ip);
+        DUMP2("ip(%p) is already deleted", ip);
         return;
     }
 
 #if TCL_NAMESPACE_DEBUG
     if (ip_null_namespace(ip)) {
-        DUMP2("ip(%lx) has null namespace", ip);
+        DUMP2("ip(%p) has null namespace", ip);
         return;
     }
 #endif

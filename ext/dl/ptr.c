@@ -466,8 +466,9 @@ rb_dlptr_inspect(VALUE self)
   char str[1024];
 
   Data_Get_Struct(self, struct ptr_data, data);
-  snprintf(str, 1023, "#<%s:0x%p ptr=0x%p size=%ld free=0x%p>",
-	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
+  snprintf(str, 1023, "#<%s:0x%lx ptr=0x%lx size=%ld free=0x%lx>",
+	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size,
+	   (long)data->free);
   return rb_str_new2(str);
 }
 

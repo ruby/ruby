@@ -1,3 +1,30 @@
+Thu Aug 16 07:40:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_rename): deleted code to get rid of a bug of
+	  old Cygwin.
+
+	* file.c (rb_file_truncate): added prototype of GetLastError()
+	  on cygwin.  [ruby-dev:31239]
+
+	* intern.h (is_ruby_native_thread): prototype.
+
+	* missing/strftime.c (strftime): fix printf format and actual
+	  arguments.
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): ditto.
+
+	* ext/tk/tcltklib.c (ip_finalize): ditto.
+
+	* ext/dl/ptr.c (rb_dlptr_inspect): ditto.  [ruby-dev:31268]
+
+	* ext/dl/sym.c (rb_dlsym_inspect): ditto.
+
+	* ext/socket/getnameinfo.c: include stdio.h always.
+
+	* ext/win32ole/win32ole.c (ole_hresult2msg, folevariable_name,
+	  folevariable_ole_type, folevariable_ole_type_detail,
+	  folevariable_value, folemethod_visible): missing return value.
+
 Thu Aug 16 07:32:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): make OBJS depend on RUBY_EXTCONF_H
