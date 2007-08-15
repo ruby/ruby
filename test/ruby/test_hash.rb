@@ -266,6 +266,17 @@ class TestHash < Test::Unit::TestCase
     h = base.dup
     assert_equal(h3, h.delete_if {|k,v| v })
     assert_equal(h3, h)
+
+    h = base.dup
+    n = 0
+    h.delete_if {|*a|
+      n += 1
+      assert_equal(2, a.size)
+      assert_equal(base[a[0]], a[1])
+      h.shift
+      true
+    }
+    assert_equal(base.size, n)
   end
 
   def test_dup

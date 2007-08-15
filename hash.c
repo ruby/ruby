@@ -594,6 +594,22 @@ rb_hash_index(VALUE hash, VALUE value)
     return rb_hash_key(hash, value);
 }
 
+static VALUE
+rb_hash_delete_key(VALUE hash, VALUE key)
+{
+    st_data_t ktmp = (st_data_t)key, val;
+
+    if (RHASH(hash)->iter_lev > 0) {
+	if (st_delete_safe(RHASH(hash)->tbl, &ktmp, &val, Qundef)) {
+	    FL_SET(hash, HASH_DELETED);
+	    return (VALUE)val;
+	}
+    }
+    else if (st_delete(RHASH(hash)->tbl, &ktmp, &val))
+	return (VALUE)val;
+    return Qundef;
+}
+
 /*
  *  call-seq:
  *     hsh.delete(key)                   => value
@@ -618,14 +634,8 @@ rb_hash_delete(VALUE hash, VALUE key)
     VALUE val;
 
     rb_hash_modify(hash);
-    if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->tbl, (st_data_t*)&key, &val, Qundef)) {
-	    FL_SET(hash, HASH_DELETED);
-	    return val;
-	}
-    }
-    else if (st_delete(RHASH(hash)->tbl, (st_data_t*)&key, &val))
-	return val;
+    val = rb_hash_delete_key(hash, key);
+    if (val != Qundef) return val;
     if (rb_block_given_p()) {
 	return rb_yield(key);
     }
@@ -633,7 +643,6 @@ rb_hash_delete(VALUE hash, VALUE key)
 }
 
 struct shift_var {
-    int stop;
     VALUE key;
     VALUE val;
 };
@@ -642,11 +651,19 @@ static int
 shift_i(VALUE key, VALUE value, struct shift_var *var)
 {
     if (key == Qundef) return ST_CONTINUE;
-    if (var->stop) return ST_STOP;
-    var->stop = 1;
+    if (var->key != Qundef) return ST_STOP;
     var->key = key;
     var->val = value;
     return ST_DELETE;
+}
+
+static int
+shift_i_safe(VALUE key, VALUE value, struct shift_var *var)
+{
+    if (key == Qundef) return ST_CONTINUE;
+    var->key = key;
+    var->val = value;
+    return ST_STOP;
 }
 
 /*
@@ -668,10 +685,14 @@ rb_hash_shift(VALUE hash)
     struct shift_var var;
 
     rb_hash_modify(hash);
-    var.stop = 0;
-    rb_hash_foreach(hash, shift_i, (st_data_t)&var);
+    var.key = Qundef;
+    rb_hash_foreach(hash, RHASH(hash)->iter_lev > 0 ? shift_i_safe : shift_i,
+		    (st_data_t)&var);
 
-    if (var.stop) {
+    if (var.key != Qundef) {
+	if (RHASH(hash)->iter_lev > 0) {
+	    rb_hash_delete_key(hash, var.key);
+	}
 	return rb_assoc_new(var.key, var.val);
     }
     else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
@@ -687,7 +708,7 @@ delete_if_i(VALUE key, VALUE value, VALUE hash)
 {
     if (key == Qundef) return ST_CONTINUE;
     if (RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_delete(hash, key);
+	rb_hash_delete_key(hash, key);
     }
     return ST_CONTINUE;
 }
@@ -1618,7 +1639,7 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
 static VALUE
 rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ary, lv;
+    VALUE ary;
 
     ary = rb_hash_to_a(hash);
     rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
