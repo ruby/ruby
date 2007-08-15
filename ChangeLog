@@ -1,3 +1,7 @@
+Thu Aug 16 04:34:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_exec_v, rb_proc_exec): preserve errno.
+
 Thu Aug 16 04:30:45 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_path2class): get rid of dangling pointer caused by
