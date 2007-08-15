@@ -1,3 +1,8 @@
+Thu Aug 16 07:51:37 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* defines.h: Pull the RUBY_MBCHAR_MAXSIZE definition from trunk,
+	  which is necessary for dir.c to compile on djgpp and emx.
+
 Thu Aug 16 07:42:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (is_ruby_native_thread): removed since declared as an int
