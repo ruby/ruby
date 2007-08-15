@@ -1,3 +1,15 @@
+Thu Aug 16 07:52:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (conv_to_posix_path): removed.
+
+	* ruby.c (rubylib_mangled_path, rubylib_mangled_path2): return
+	  VALUE instead of a pointer to static buffer.
+
+	* ruby.c (push_include_cygwin): fixed buffer overflow.
+	  [ruby-dev:31297]
+
+	* ruby.c (ruby_init_loadpath): not convert built-in paths.
+
 Thu Aug 16 07:51:37 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* defines.h: Pull the RUBY_MBCHAR_MAXSIZE definition from trunk,

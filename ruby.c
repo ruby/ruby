@@ -15,6 +15,9 @@
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #endif
+#if defined __CYGWIN__
+#include <sys/cygwin.h>
+#endif
 #ifdef _WIN32_WCE
 #include <winsock.h>
 #include "wince.h"
@@ -109,127 +112,141 @@ NULL
 
 extern VALUE rb_load_path;
 
-#define STATIC_FILE_LENGTH 255
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+#define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
+#endif
+
+#if defined DOSISH || defined __CYGWIN__
+static inline void
+translate_char(char *p, int from, int to)
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+	p = CharNext(p);
+    }
+}
+#endif
 
 #if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
-static char *
-rubylib_mangle(s, l)
-    char *s;
-    unsigned int l;
+static VALUE
+rubylib_mangled_path(const char *s, unsigned int l)
 {
     static char *newp, *oldp;
     static int newl, oldl, notfound;
-    static char newsub[STATIC_FILE_LENGTH+1];
+    char *ptr;
+    VALUE ret;
 
     if (!newp && !notfound) {
 	newp = getenv("RUBYLIB_PREFIX");
 	if (newp) {
-	    char *s;
-
-	    oldp = newp;
+	    oldp = newp = strdup(newp);
 	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
-		newp++; oldl++;		/* Skip digits. */
+		newp = CharNext(newp);	/* Skip digits. */
 	    }
+	    oldl = newp - oldp;
 	    while (*newp && (ISSPACE(*newp) || *newp == ';')) {
-		newp++;			/* Skip whitespace. */
+		newp = CharNext(newp);	/* Skip whitespace. */
 	    }
 	    newl = strlen(newp);
-	    if (newl == 0 || oldl == 0 || newl > STATIC_FILE_LENGTH) {
+	    if (newl == 0 || oldl == 0) {
 		rb_fatal("malformed RUBYLIB_PREFIX");
 	    }
-	    strcpy(newsub, newp);
-	    s = newsub;
-	    while (*s) {
-		if (*s == '\\') *s = '/';
-		s++;
-	    }
+	    translate_char(newp, '\\', '/');
 	}
 	else {
 	    notfound = 1;
 	}
     }
-    if (l == 0) {
-	l = strlen(s);
-    }
     if (!newp || l < oldl || strncasecmp(oldp, s, oldl) != 0) {
-	static char ret[STATIC_FILE_LENGTH+1];
-	strncpy(ret, s, l);
-	ret[l] = 0;
-	return ret;
+	return rb_str_new(s, l);
     }
-    if (l + newl - oldl > STATIC_FILE_LENGTH || newl > STATIC_FILE_LENGTH) {
-	rb_fatal("malformed RUBYLIB_PREFIX");
-    }
-    strcpy(newsub + newl, s + oldl);
-    newsub[l + newl - oldl] = 0;
-    return newsub;
+    ret = rb_str_new(0, l + newl - oldl);
+    ptr = RSTRING_PTR(ret);
+    memcpy(ptr, newp, newl);
+    memcpy(ptr + newl, s + oldl, l - oldl);
+    ptr[l + newl - oldl] = 0;
+    return ret;
 }
-#define rubylib_mangled_path(s, l) rb_str_new2(rubylib_mangle((s), (l)))
-#define rubylib_mangled_path2(s) rb_str_new2(rubylib_mangle((s), 0))
+
+static VALUE
+rubylib_mangled_path2(const char *s)
+{
+    return rubylib_mangled_path(s, strlen(s));
+}
 #else
-#define rubylib_mangled_path(s, l) rb_str_new((s), (l))
-#define rubylib_mangled_path2(s) rb_str_new2(s)
+#define rubylib_mangled_path rb_str_new
+#define rubylib_mangled_path2 rb_str_new2
+#endif
+
+static void push_include _((const char *path));
+
+static void
+push_include(path)
+    const char *path;
+{
+    const char sep = PATH_SEP_CHAR;
+    const char *p, *s;
+
+    p = path;
+    while (*p) {
+	while (*p == sep)
+	    p++;
+	if (!*p) break;
+	for (s = p; *s && *s != sep; s = CharNext(s));
+	rb_ary_push(rb_load_path, rubylib_mangled_path(p, s - p));
+	p = s;
+    }
+}
+
+#ifdef __CYGWIN__
+static void
+push_include_cygwin(const char *path)
+{
+    const char *p, *s;
+    char rubylib[FILENAME_MAX];
+    VALUE buf = 0;
+
+    p = path;
+    while (*p) {
+	unsigned int len;
+	while (*p == ';')
+	    p++;
+	if (!*p) break;
+	for (s = p; *s && *s != ';'; s = CharNext(s));
+	len = s - p;
+	if (*s) {
+	    if (!buf) {
+		buf = rb_str_new(p, len);
+		p = RSTRING_PTR(buf);
+	    }
+	    else {
+		rb_str_resize(buf, len);
+		p = strncpy(RSTRING_PTR(buf), p, len);
+	    }
+	}
+	if (cygwin_conv_to_posix_path(p, rubylib) == 0)
+	    p = rubylib;
+	push_include(p);
+	if (!*s) break;
+	p = s + 1;
+    }
+}
+
+#define push_include push_include_cygwin
 #endif
 
 void
 ruby_incpush(path)
     const char *path;
 {
-    const char sep = PATH_SEP_CHAR;
-
-    if (path == 0) return;
-#if defined(__CYGWIN__)
-    {
-	char rubylib[FILENAME_MAX];
-	conv_to_posix_path(path, rubylib, FILENAME_MAX);
-	path = rubylib;
-    }
-#endif
-    if (strchr(path, sep)) {
-	const char *p, *s;
-	VALUE ary = rb_ary_new();
-
-	p = path;
-	while (*p) {
-	    while (*p == sep) p++;
-	    if ((s = strchr(p, sep)) != 0) {
-		rb_ary_push(ary, rubylib_mangled_path(p, (int)(s-p)));
-		p = s + 1;
-	    }
-	    else {
-		rb_ary_push(ary, rubylib_mangled_path2(p));
-		break;
-	    }
-	}
-	rb_ary_concat(rb_load_path, ary);
-    }
-    else {
-	rb_ary_push(rb_load_path, rubylib_mangled_path2(path));
-    }
+    if (path == 0)
+	return;
+    push_include(path);
 }
 
 #if defined DOSISH || defined __CYGWIN__
 #define LOAD_RELATIVE 1
-#endif
-
-#if defined DOSISH || defined __CYGWIN__
-static inline void translate_char _((char *, int, int));
-
-static inline void
-translate_char(p, from, to)
-    char *p;
-    int from, to;
-{
-    while (*p) {
-	if ((unsigned char)*p == from)
-	    *p = to;
-#ifdef CharNext		/* defined as CharNext[AW] on Windows. */
-	p = CharNext(p);
-#else
-	p += mblen(p, MB_CUR_MAX);
-#endif
-    }
-}
 #endif
 
 void
@@ -260,13 +277,19 @@ ruby_init_loadpath()
 #endif
 
     libpath[FILENAME_MAX] = '\0';
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH
     translate_char(libpath, '\\', '/');
+#elif defined __CYGWIN__
+    {
+	char rubylib[FILENAME_MAX];
+	cygwin_conv_to_posix_path(libpath, rubylib);
+	strncpy(libpath, rubylib, sizeof(libpath));
+    }
 #endif
     p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
-	if (p-libpath > 3 && !strcasecmp(p-4, "/bin")) {
+	if (p - libpath > 3 && !strcasecmp(p - 4, "/bin")) {
 	    p -= 4;
 	    *p = 0;
 	}
@@ -282,30 +305,31 @@ ruby_init_loadpath()
 #else
 #define RUBY_RELATIVE(path) (path)
 #endif
+#define incpush(path) rb_ary_push(rb_load_path, rubylib_mangled_path2(path))
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
     }
 
 #ifdef RUBY_SEARCH_PATH
-    ruby_incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
+    incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
 #endif
 
-    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
+    incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
 #ifdef RUBY_SITE_THIN_ARCHLIB
-    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
+    incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
 #endif
-    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
-    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
+    incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
+    incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
 
-    ruby_incpush(RUBY_RELATIVE(RUBY_LIB));
+    incpush(RUBY_RELATIVE(RUBY_LIB));
 #ifdef RUBY_THIN_ARCHLIB
-    ruby_incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
+    incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
 #endif
-    ruby_incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
+    incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
 
     if (rb_safe_level() == 0) {
-	ruby_incpush(".");
+	incpush(".");
     }
 }
 
