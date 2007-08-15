@@ -2143,7 +2143,6 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
 		        lex_state = EXPR_END;
 			if (!($$ = $2)) {
-			    $$ = NEW_NIL();
 			    yyerror("empty symbol literal");
 			}
 			else {
