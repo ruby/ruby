@@ -104,10 +104,10 @@ def extmake(target)
     Dir.chdir target
     top_srcdir = $top_srcdir
     topdir = $topdir
-    mk_srcdir = CONFIG["srcdir"]
-    mk_topdir = CONFIG["topdir"]
+    hdrdir = $hdrdir
     prefix = "../" * (target.count("/")+1)
-    $hdrdir = $top_srcdir = relative_from(top_srcdir, prefix)
+    $top_srcdir = relative_from(top_srcdir, prefix)
+    $hdrdir = relative_from(hdrdir, prefix)
     $topdir = prefix + $topdir
     $target = target
     $mdir = target
@@ -117,12 +117,31 @@ def extmake(target)
     makefile = "./Makefile"
     ok = File.exist?(makefile)
     unless $ignore
-      Config::CONFIG["hdrdir"] = $hdrdir
-      Config::CONFIG["srcdir"] = $srcdir
-      Config::CONFIG["topdir"] = $topdir
-      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1]
-      CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
-      CONFIG["topdir"] = $topdir
+      rbconfig0 = Config::CONFIG
+      mkconfig0 = CONFIG
+      rbconfig = {
+	"hdrdir" => $hdrdir,
+	"srcdir" => $srcdir,
+	"topdir" => $topdir,
+      }
+      mkconfig = {
+	"top_srcdir" => ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1],
+	"hdrdir" => "$(top_srcdir)",
+	"srcdir" => "$(top_srcdir)/ext/#{$mdir}",
+	"topdir" => $topdir,
+      }
+      rbconfig0.each_pair {|key, val| rbconfig[key] ||= val.dup}
+      mkconfig0.each_pair {|key, val| mkconfig[key] ||= val.dup}
+      Config.module_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, rbconfig)
+	remove_const(:MAKEFILE_CONFIG)
+	const_set(:MAKEFILE_CONFIG, mkconfig)
+      }
+      Object.class_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, mkconfig)
+      }
       begin
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
@@ -171,7 +190,11 @@ def extmake(target)
       $ignore or $continue or return false
     end
     $compiled[target] = true
-    if $clean and $clean != true
+    if $clean
+      FileUtils.rm_f("mkmf.log")
+      if $clean != true
+	FileUtils.rm_f([makefile, $extconf_h || "extconf.h"])
+      end
       File.unlink(makefile) rescue nil
     end
     if $static
@@ -185,13 +208,21 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
-    Config::CONFIG["srcdir"] = $top_srcdir
-    Config::CONFIG["topdir"] = topdir
-    CONFIG["srcdir"] = mk_srcdir
-    CONFIG["topdir"] = mk_topdir
-    CONFIG.delete("hdrdir")
-    $hdrdir = $top_srcdir = top_srcdir
+    unless $ignore
+      Config.module_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, rbconfig0)
+	remove_const(:MAKEFILE_CONFIG)
+	const_set(:MAKEFILE_CONFIG, mkconfig0)
+      }
+      Object.class_eval {
+	remove_const(:CONFIG)
+	const_set(:CONFIG, mkconfig0)
+      }
+    end
+    $top_srcdir = top_srcdir
     $topdir = topdir
+    $hdrdir = hdrdir
     Dir.chdir dir
   end
   begin
@@ -275,6 +306,7 @@ def parse_args()
   $continue = $mflags.set?(?k)
   if $extout
     $extout = '$(topdir)/'+$extout
+    Config::CONFIG["extout"] = CONFIG["extout"] = $extout
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
     $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
@@ -313,7 +345,7 @@ elsif sep = config_string('BUILD_FILE_SEPARATOR')
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)' -I'$(hdrdir)/lib'"
+$ruby << " -I'$(topdir)' -I'$(top_srcdir)/lib'"
 $config_h = '$(topdir)/config.h'
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
@@ -398,12 +430,14 @@ dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
+hdrdir = $hdrdir
 $hdrdir = $top_srcdir = relative_from(srcdir, $topdir = "..")
 exts.each do |d|
   extmake(d) or abort
 end
-$hdrdir = $top_srcdir = srcdir
+$top_srcdir = srcdir
 $topdir = "."
+$hdrdir = hdrdir
 
 extinit = Struct.new(:c, :o) {
   def initialize(src)
