@@ -1,3 +1,7 @@
+Thu Aug 16 00:36:52 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir.mktmpdir): new method.  [ruby-dev:31416]
+
 Wed Aug 15 18:57:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (os_live_obj): fix to skip T_VALUES.
