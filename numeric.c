@@ -2202,7 +2202,6 @@ fix_pow(x, y)
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	a = FIX2LONG(x);
-	if (a == 0) return INT2FIX(0);
 	if (b > 0) {
 	    return rb_big_pow(rb_int2big(a), y);
 	}
