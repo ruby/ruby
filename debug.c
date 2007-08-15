@@ -33,7 +33,7 @@ ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj
 	VALUE str;
 	str = rb_inspect(obj);
 	fprintf(stderr, "DBG> %s: %s\n", header,
-	       obj == -1 ? "" : StringValueCStr(str));
+		obj == -1 ? "" : StringValueCStr(str));
 	fflush(stderr);
     }
     return obj;

@@ -1389,7 +1389,7 @@ mlhs_basic	: mlhs_head
 		| mlhs_head tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(-1,$4));
+			$$ = NEW_MASGN($1, NEW_POSTARG(-1, $4));
 		    /*%
 			$$ = mlhs_add_star($1, Qnil);
 		    %*/
@@ -1421,7 +1421,7 @@ mlhs_basic	: mlhs_head
 		| tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(-1,$3));
+			$$ = NEW_MASGN(0, NEW_POSTARG(-1, $3));
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
@@ -3001,7 +3001,7 @@ for_var		: lhs
 f_marg		: f_norm_arg
 		    {
 		    /*%%%*/
-			$$ = NEW_LIST(assignable($1, 0));
+			$$ = assignable($1, 0); //NEW_LIST(assignable($1, 0));
 		    /*%
 			$$ = dispatch1(mlhs_paren, $1);
 		    %*/
@@ -3009,7 +3009,7 @@ f_marg		: f_norm_arg
 		| tLPAREN f_margs rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(NEW_LIST($2), 0);
+			$$ = $2; //NEW_LIST($2);
 		    /*%
 			$$ = dispatch1(mlhs_paren, $2);
 		    %*/
@@ -3019,7 +3019,7 @@ f_marg		: f_norm_arg
 f_marg_list	: f_marg
 		    {
 		    /*%%%*/
-			$$ = $1;
+			$$ = NEW_LIST($1);
 		    /*%
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/

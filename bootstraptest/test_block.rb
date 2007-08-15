@@ -336,7 +336,6 @@ assert_equal %q{[1, nil]}, %q{
   }
 }
 
-# block parameter (shouldn't SEGV: [ruby-dev:31143])
 assert_equal '0', %q{
 def m()
 end
@@ -364,31 +363,28 @@ m {|(v0,*v1,v2),*,v3,&v4|}
 m {|(v0, *v1, v2)|}
 m {|(*,v)|}
 0
-}
+}, "block parameter (shouldn't SEGV: [ruby-dev:31143])"
 
-# [ruby-dev:31147]
 assert_equal 'nil', %q{
   def m
     yield
   end
   m{|&b| b}.inspect
-}
+}, '[ruby-dev:31147]'
 
-# [ruby-dev:31160]
 assert_equal 'nil', %q{
   def m()
     yield
   end
   m {|(v,(*))|}.inspect
-}
+}, '[ruby-dev:31160]'
 
-# [ruby-dev:31153]
 assert_equal 'nil', %q{
   def m()
     yield
   end
   m {|(*,a,b)|}.inspect
-}
+}, '[ruby-dev:31153]'
 
 assert_equal 'nil', %q{
   def m()
@@ -397,3 +393,20 @@ assert_equal 'nil', %q{
   m {|((*))|}.inspect
 }
 
+assert_equal %q{[1, 1, [1, nil], [1, nil], [1, nil], [1, nil], [1, 1], 1, [1, nil], [1, nil], [1, nil], [1, nil], [[1, 1], [1, 1]], [1, 1], [1, 1], [1, 1], [1, nil], [1, nil], [[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]], [1, 1], [1, 1], [[[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[[1, 1], [1, 1]], [[1, 1], [1, 1]]]], [[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[[1, 1], [1, 1]], [[1, 1], [1, 1]]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]]}, %q{
+def m(ary = [])
+  yield(ary)
+end
+
+$ans = []
+o = 1
+5.times{
+  v,(*) = o; $ans << o
+  m(o){|(v,(*))| $ans << v}
+  ((x, y)) = o; $ans << [x, y]
+  m(o){|((x, y))| $ans << [x, y]}
+  (((x, y))) = o; $ans << [x, y]
+  m(o){|(((x, y)))| $ans << [x, y]}
+  o = [o, o]
+}; $ans
+}

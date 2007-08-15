@@ -1,3 +1,9 @@
+Wed Aug 15 13:42:15 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: fix rules around f_margs.  "make test" passes all tests.
+
+	* bootstraptest/test_block.rb: add some tests for above.
+
 Wed Aug 15 13:50:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_delete_key): delete the entry without calling block.
@@ -9,7 +15,7 @@ Wed Aug 15 13:50:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Aug 15 13:39:25 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* process.c (proc_geteuid): fix strange cast.  [ruby-dev:31417]
+	* process.c (proc_geteuid): fix strange conversion.  [ruby-dev:31417]
 
 Wed Aug 15 01:05:55 2007  Tanaka Akira  <akr@fsij.org>
 
