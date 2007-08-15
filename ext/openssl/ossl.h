@@ -208,7 +208,6 @@ void ossl_debug(const char *, ...);
 #include "ossl_ocsp.h"
 #include "ossl_pkcs12.h"
 #include "ossl_pkcs7.h"
-#include "ossl_pkcs5.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"

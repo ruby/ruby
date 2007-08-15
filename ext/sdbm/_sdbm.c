@@ -71,7 +71,7 @@ static int   duppair proto((char *, datum));
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef DOSISH
+#ifdef MSDOS
 #include <io.h>
 #endif
 #include <sys/types.h>
