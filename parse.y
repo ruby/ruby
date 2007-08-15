@@ -4355,6 +4355,7 @@ yylex()
 	    else {
 		rb_compile_error("`@@%c' is not allowed as a class variable name", c);
 	    }
+	    return 0;
 	}
 	if (!is_identchar(c)) {
 	    pushback(c);
