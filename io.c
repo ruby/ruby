@@ -4157,7 +4157,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
     VALUE fnum, mode, orig;
     rb_io_t *fp, *ofp = NULL;
-    int fd, flags, fmode;
+    int fd, fmode, flags = O_RDONLY;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
@@ -4177,8 +4177,6 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	    flags = fcntl(fd, F_GETFL);
 	    if (flags == -1) rb_sys_fail(0);
-#else
-	    flags = O_RDONLY;
 #endif
 	}
 	MakeOpenFile(io, fp);
@@ -5468,8 +5466,6 @@ argf_readchar(void)
 static VALUE
 argf_each_line(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str;
-
     RETURN_ENUMERATOR(self, argc, argv);
     for (;;) {
 	if (!next_argv()) return Qnil;
@@ -5482,8 +5478,6 @@ argf_each_line(int argc, VALUE *argv, VALUE self)
 static VALUE
 argf_each_byte(VALUE self)
 {
-    VALUE byte;
-
     RETURN_ENUMERATOR(self, 0, 0);
     for (;;) {
 	if (!next_argv()) return Qnil;

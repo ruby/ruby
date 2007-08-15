@@ -1,3 +1,8 @@
+Wed Aug 15 14:59:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize, argf_each_line, argf_each_byte): suppress
+	  warnings.
+
 Wed Aug 15 14:22:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: remove "//" type comment.
