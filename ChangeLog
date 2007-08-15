@@ -1,3 +1,10 @@
+Thu Aug 16 08:43:50 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: fix Rinda::TupleSpace keeper thread bug.
+	  the thread is started too early. [ruby-talk:264062] 
+
+	* test/rinda/test_rinda.rb: ditto.
+
 Thu Aug 16 08:40:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): handshaking before close slave
