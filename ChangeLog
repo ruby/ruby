@@ -1,3 +1,9 @@
+Thu Aug 16 06:08:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): more checks for format argument.
+	  [ruby-core:11569], [ruby-core:11570], [ruby-core:11571],
+	  [ruby-core:11573]
+
 Thu Aug 16 05:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (bignorm): do not empty Bignum.  [ruby-dev:31229]
