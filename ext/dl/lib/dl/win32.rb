@@ -6,7 +6,7 @@ class Win32API
   DLL = {}
 
   def initialize(dllname, func, import, export = "0")
-    prototype = (export + import.to_s).tr("VPpNnLlIi", "0SSI")
+    prototype = (export + import.to_s).tr("VPpNnLlIi", "0SSI").sub(/^(.)0*$/, '\1')
     handle = DLL[dllname] ||= DL::Handle.new(dllname)
     @sym = handle.sym(func, prototype)
   end

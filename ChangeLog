@@ -1,3 +1,8 @@
+Thu Aug 16 04:24:28 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/dl/win32.rb: seems that dl doesn't accept void argument.
+	  fixed [ruby-bugs:PR#5489].
+
 Thu Aug 16 04:23:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser): handle more
