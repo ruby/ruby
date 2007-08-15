@@ -1,3 +1,12 @@
+Thu Aug 16 04:08:20 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (ResponseParser#next_token): fixed
+	  error message. (backported from HEAD)
+
+	* lib/net/imap.rb (ResponseParser#parse_error): fixed
+	  the condition not to refer @token.symbol unexpectedly.
+	  Thanks, Dick Monahan. (backported from HEAD)
+
 Thu Aug 16 04:05:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_extended): erroneous check condition when dump
