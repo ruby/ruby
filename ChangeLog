@@ -1,3 +1,7 @@
+Thu Aug 16 07:29:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {win32,wince,bcc32}/setup.mak (-version-): no RUBY_EXTERN magic.
+
 Thu Aug 16 06:43:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): should remove mkmf.log too.

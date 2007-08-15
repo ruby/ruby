@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	@del rtname.*
 
 -version-: nul
-	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" >>$(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
