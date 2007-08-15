@@ -1,3 +1,7 @@
+Thu Aug 16 06:29:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_readpartial): argf_forward needs argc and argv.
+
 Thu Aug 16 02:47:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_fiber_m_yield): added.  use this function

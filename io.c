@@ -5384,9 +5384,16 @@ argf_read(int argc, VALUE *argv)
     return str;
 }
 
+struct argf_call_arg {
+    int argc;
+    VALUE *argv;
+};
+
 static VALUE
-argf_readpartial_rescue(VALUE dummy)
+argf_forward_call(VALUE arg)
 {
+    struct argf_call_arg *p = (struct argf_call_arg *)arg;
+    argf_forward(p->argc, p->argv);
     return Qnil;
 }
 
@@ -5406,9 +5413,11 @@ argf_readpartial(int argc, VALUE *argv)
         rb_eof_error();
     }
     if (current_file == rb_stdin && TYPE(current_file) != T_FILE) {
-        tmp = rb_rescue2(argf_forward, (VALUE)argv,
-                         argf_readpartial_rescue, (VALUE)Qnil,
-                         rb_eEOFError, (VALUE)0);
+	struct argf_call_arg arg;
+	arg.argc = argc;
+	arg.argv = argv;
+	tmp = rb_rescue2(argf_forward_call, (VALUE)&arg,
+			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
         tmp = io_getpartial(argc, argv, current_file, 0);
