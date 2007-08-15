@@ -63,10 +63,10 @@ rb_call_inits()
     Init_Comparable();
     Init_Enumerable();
     Init_Precision();
+    Init_String();
     Init_Exception();
     Init_eval();
     Init_jump();
-    Init_String();
     Init_Numeric();
     Init_Bignum();
     Init_syserr();
