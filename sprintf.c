@@ -693,7 +693,7 @@ rb_f_sprintf(argc, argv)
 		else {
 		    char c;
 
-		    if (!sign && bignum && !RBIGNUM(val)->sign)
+		    if (bignum && !RBIGNUM(val)->sign)
 			c = sign_bits(base, p);
 		    else
 			c = '0';
