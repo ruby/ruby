@@ -1,3 +1,8 @@
+Thu Aug 16 06:11:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/base64.rb (Base64::b64encode): should not specify /o option
+	  for regular expression.  [ruby-dev:31221]
+
 Thu Aug 16 06:08:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): more checks for format argument.
