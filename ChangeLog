@@ -1,3 +1,7 @@
+Thu Aug 16 05:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (bignorm): do not empty Bignum.  [ruby-dev:31229]
+
 Thu Aug 16 05:12:05 2007  pegacorn  <subscriber.jp AT gmail.com>
 
 	* ext/openssl/ossl.h: include ossl_pkcs5.h.  [ruby-dev:31231]
