@@ -167,7 +167,7 @@ module RDoc
 
 
     extend ParserFactory
-    parse_files_matching(/\.(?:([CcHh])\1?|c([+xp])\2|y)\z/)
+    parse_files_matching(/\.(c|cc|cpp|CC)$/)
 
     @@known_bodies = {}
 
