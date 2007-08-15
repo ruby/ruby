@@ -1,3 +1,7 @@
+Wed Aug 15 13:39:25 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* process.c (proc_geteuid): fix strange cast.  [ruby-dev:31417]
+
 Wed Aug 15 01:05:55 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_check): don't call newtest.

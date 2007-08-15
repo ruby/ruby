@@ -3067,7 +3067,7 @@ static VALUE
 proc_geteuid(VALUE obj)
 {
     rb_uid_t euid = geteuid();
-    return NUM2UIDT(euid);
+    return UIDT2NUM(euid);
 }
 
 
