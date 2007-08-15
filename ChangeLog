@@ -1,3 +1,8 @@
+Thu Aug 16 07:32:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): make OBJS depend on RUBY_EXTCONF_H
+	  only if extconf.h is created.
+
 Thu Aug 16 07:29:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {win32,wince,bcc32}/setup.mak (-version-): no RUBY_EXTERN magic.
