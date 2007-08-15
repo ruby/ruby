@@ -1,0 +1,63 @@
+GNU Readline Libraryを利用するための拡張モジュールです。
+
+require "readline"
+include Readline
+
+line = readline("Prompt> ", true)
+
+のように使用してください。
+
+[Readline]
+
+<モジュール関数>
+
+readline(prompt, add_history=nil)
+
+  一行入力を読み込みます。
+  add_historyがtrueの場合、ヒストリに読み込んだ文字列を追加します。
+
+<クラスメソッド>
+
+completion_proc = proc
+
+  補完時の動作を決定するProcオブジェクトを指定します。
+  procは引数に入力文字列を取り、候補文字列の配列を返すように
+  してください。
+
+completion_proc
+
+  補完時の動作を決定するProcオブジェクトを返します。
+
+completion_case_fold = case_fold
+
+  補完時に大文字小文字を区別しない場合、trueを指定します。
+
+completion_case_fold
+
+  補完時に大文字小文字を区別しない場合、trueを返します。
+
+completion_append_character = char
+
+  補完時に付加される文字を文字列で指定します。先頭の一文字が
+  設定され、空文字列 ("") または nil を指定すると何も付加
+  されなくなります。
+
+completion_append_character
+
+  補完時に付加される文字を文字列で返します。デフォルトは
+  空白 (" ") です。
+
+vi_editing_mode
+
+  VIモードになります。
+
+emacs_editing_mode
+
+  Emacsモードになります。
+
+<クラス定数>
+
+HISTORY
+
+ヒストリに対する操作はこの定数を通して行ってください。
+配列と同じように扱えるようになっています。

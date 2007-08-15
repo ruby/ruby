@@ -1,0 +1,1 @@
+Win32API.o : Win32API.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h

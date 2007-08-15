@@ -1,0 +1,19 @@
+-*- rd -*-
+$Author: nobu $
+$Date: 2002/02/19 13:16:24 $
+
+=begin
+
+= StringIO
+Pseudo (({IO})) class from/to (({String})).
+
+This library is based on MoonWolf version written in Ruby.  Thanks a lot.
+
+= Differences to (({IO}))
+
+* not implemented: (({fcntl})), (({reopen})).
+* (({fileno})) returns nil.
+* (({pos=})) returns new position, not 0.
+* (({ungetc})) does nothing at start of the string. 
+
+=end
