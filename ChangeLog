@@ -52,6 +52,20 @@ Mon Aug 13 13:21:58 2007  Tanaka Akira  <akr@fsij.org>
 	* lib/open-uri.rb: make ftp passive mode to avoid NAT problem.
 	  [ruby-dev:31377]
 
+Mon Aug 13 09:18:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getc): should returns
+	  one-character string.
+
+	* ext/stringio/stringio.c: remove unnecessary prototypes.
+
+	* ext/stringio/stringio.c (strio_getbyte): new method.
+
+	* ext/stringio/stringio.c (strio_readbyte): new method.
+
+	* ext/stringio/stringio.c (strio_ungetc): should take a string as
+	  an input.
+
 Mon Aug 13 08:19:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_close): always close via method.

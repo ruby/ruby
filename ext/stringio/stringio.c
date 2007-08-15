@@ -28,14 +28,8 @@ struct StringIO {
     int count;
 };
 
-static struct StringIO* strio_alloc _((void));
 static void strio_mark _((struct StringIO *));
 static void strio_free _((struct StringIO *));
-static struct StringIO* check_strio _((VALUE));
-static struct StringIO* get_strio _((VALUE));
-static struct StringIO* readable _((struct StringIO *));
-static struct StringIO* writable _((struct StringIO *));
-static void check_modifiable _((struct StringIO *));
 
 #define IS_STRIO(obj) (RDATA(obj)->dmark == (RUBY_DATA_FUNC)strio_mark)
 #define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
@@ -125,72 +119,10 @@ check_modifiable(struct StringIO *ptr)
     }
 }
 
-static VALUE strio_s_allocate _((VALUE));
-static VALUE strio_s_open _((int, VALUE *, VALUE));
-static VALUE strio_initialize _((int, VALUE *, VALUE));
-static VALUE strio_finalize _((VALUE));
-static VALUE strio_self _((VALUE));
-static VALUE strio_false _((VALUE));
-static VALUE strio_nil _((VALUE));
-static VALUE strio_0 _((VALUE));
-static VALUE strio_first _((VALUE, VALUE));
-static VALUE strio_unimpl _((int, VALUE *, VALUE));
-static VALUE strio_get_string _((VALUE));
-static VALUE strio_set_string _((VALUE, VALUE));
-static VALUE strio_close _((VALUE));
-static VALUE strio_close_read _((VALUE));
-static VALUE strio_close_write _((VALUE));
-static VALUE strio_closed _((VALUE));
-static VALUE strio_closed_read _((VALUE));
-static VALUE strio_closed_write _((VALUE));
-static VALUE strio_eof _((VALUE));
-static VALUE strio_get_lineno _((VALUE));
-static VALUE strio_set_lineno _((VALUE, VALUE));
-static VALUE strio_get_pos _((VALUE));
-static VALUE strio_set_pos _((VALUE, VALUE));
-static VALUE strio_rewind _((VALUE));
-static VALUE strio_seek _((int, VALUE *, VALUE));
-static VALUE strio_get_sync _((VALUE));
-static VALUE strio_each_byte _((VALUE));
-static VALUE strio_getc _((VALUE));
-static VALUE strio_ungetc _((VALUE, VALUE));
-static VALUE strio_readchar _((VALUE));
-static VALUE strio_getline _((int, VALUE *, struct StringIO *));
-static VALUE strio_gets _((int, VALUE *, VALUE));
-static VALUE strio_readline _((int, VALUE *, VALUE));
-static VALUE strio_each _((int, VALUE *, VALUE));
-static VALUE strio_readlines _((int, VALUE *, VALUE));
-static VALUE strio_write _((VALUE, VALUE));
-static VALUE strio_putc _((VALUE, VALUE));
-static VALUE strio_read _((int, VALUE *, VALUE));
-static VALUE strio_size _((VALUE));
-static VALUE strio_truncate _((VALUE, VALUE));
-void Init_stringio _((void));
-
-/* Boyer-Moore search: copied from regex.c */
-static void bm_init_skip _((long *, const char *, long));
-static long bm_search _((const char *, long, const char *, long, const long *));
-
 static VALUE
-strio_s_allocate(klass)
-    VALUE klass;
+strio_s_allocate(VALUE klass)
 {
     return Data_Wrap_Struct(klass, strio_mark, strio_free, 0);
-}
-
-/*
- * call-seq: StringIO.open(string=""[, mode]) {|strio| ...}
- *
- * Equivalent to StringIO.new except that when it is called with a block, it
- * yields with the new instance and closes it, and returns the result which
- * returned from the block.
- */
-static VALUE
-strio_s_open(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE obj = rb_class_new_instance(argc, argv, klass);
-    if (!rb_block_given_p()) return obj;
-    return rb_ensure(rb_yield, obj, strio_finalize, obj);
 }
 
 /*
@@ -250,6 +182,21 @@ strio_finalize(VALUE self)
     ptr->string = Qnil;
     ptr->flags &= ~FMODE_READWRITE;
     return self;
+}
+
+/*
+ * call-seq: StringIO.open(string=""[, mode]) {|strio| ...}
+ *
+ * Equivalent to StringIO.new except that when it is called with a block, it
+ * yields with the new instance and closes it, and returns the result which
+ * returned from the block.
+ */
+static VALUE
+strio_s_open(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE obj = rb_class_new_instance(argc, argv, klass);
+    if (!rb_block_given_p()) return obj;
+    return rb_ensure(rb_yield, obj, strio_finalize, obj);
 }
 
 /*
@@ -665,6 +612,27 @@ strio_getc(VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     int c;
+    char ch;
+
+    if (ptr->pos >= RSTRING_LEN(ptr->string)) {
+	return Qnil;
+    }
+    c = RSTRING_PTR(ptr->string)[ptr->pos++];
+    ch = c & 0xff;
+    return rb_str_new(&ch, 1);
+}
+
+/*
+ * call-seq:
+ *   strio.getbyte   -> fixnum or nil
+ *
+ * See IO#getbyte.
+ */
+static VALUE
+strio_getbyte(VALUE self)
+{
+    struct StringIO *ptr = readable(StringIO(self));
+    int c;
     if (ptr->pos >= RSTRING_LEN(ptr->string)) {
 	return Qnil;
     }
@@ -691,7 +659,7 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 
 /*
  * call-seq:
- *   strio.ungetc(integer)   -> nil
+ *   strio.ungetc(string)   -> nil
  *
  * Pushes back one character (passed as a parameter) onto *strio*
  * such that a subsequent buffered read will return it.  Pushing back 
@@ -700,12 +668,23 @@ strio_extend(struct StringIO *ptr, long pos, long len)
  * In other case, there is no limitation for multiple pushbacks.
  */
 static VALUE
-strio_ungetc(VALUE self, VALUE ch)
+strio_ungetc(VALUE self, VALUE c)
 {
     struct StringIO *ptr = readable(StringIO(self));
-    int cc = NUM2INT(ch);
+    int cc;
     long len, pos = ptr->pos;
 
+    if (NIL_P(c)) return Qnil;
+    if (FIXNUM_P(c)) {
+	cc = FIX2INT(c);
+    }
+    else {
+	SafeStringValue(c);
+	if (RSTRING_LEN(c) > 1) {
+	    rb_warn("IO#ungetc pushes back only one byte");
+	}
+	cc = (unsigned char)RSTRING_PTR(c)[0];
+    }
     if (cc != EOF && pos > 0) {
 	if ((len = RSTRING_LEN(ptr->string)) < pos-- ||
 	    (unsigned char)RSTRING_PTR(ptr->string)[pos] !=
@@ -733,6 +712,21 @@ strio_readchar(VALUE self)
     return c;
 }
 
+/*
+ * call-seq:
+ *   strio.readbyte   -> fixnum
+ *
+ * See IO#readbyte.
+ */
+static VALUE
+strio_readbyte(VALUE self)
+{
+    VALUE c = strio_getbyte(self);
+    if (NIL_P(c)) rb_eof_error();
+    return c;
+}
+
+/* Boyer-Moore search: copied from regex.c */
 static void
 bm_init_skip(long *skip, const char *pat, long m)
 {
@@ -1216,6 +1210,8 @@ Init_stringio()
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
+    rb_define_method(StringIO, "getbyte", strio_getbyte, 0);
+    rb_define_method(StringIO, "readbyte", strio_readbyte, 0);
     rb_define_method(StringIO, "gets", strio_gets, -1);
     rb_define_method(StringIO, "readline", strio_readline, -1);
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
