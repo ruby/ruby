@@ -1,3 +1,12 @@
+Thu Aug 16 08:44:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_delete_key): delete the entry without calling block.
+
+	* hash.c (rb_hash_shift): should consider iter_lev too.
+
+	* hash.c (delete_if_i): use rb_hash_delete_key() so that the block
+	  isn't called twice.  [ruby-core:11556]
+
 Thu Aug 16 08:43:50 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb: fix Rinda::TupleSpace keeper thread bug.
