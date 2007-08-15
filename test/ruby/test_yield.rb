@@ -180,7 +180,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
 
   def test_yield
     syntax = SentGen.expand_syntax(Syntax)
-    SentGen.each_tree(syntax, :test, 5) {|t|
+    SentGen.each_tree(syntax, :test, 4) {|t|
       check_nofork(t)
     }
   end
