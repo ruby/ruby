@@ -241,21 +241,16 @@ rb_path2class(path)
     const char *pbeg, *p;
     ID id;
     VALUE c = rb_cObject;
-    VALUE str = 0;
 
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
     }
     pbeg = p = path;
     while (*p) {
+	VALUE str;
+
 	while (*p && *p != ':') p++;
-	if (str) {
-	    RSTRING(str)->len = 0;
-	    rb_str_cat(str, pbeg, p-pbeg);
-	}
-	else {
-	    str = rb_str_new(pbeg, p-pbeg);
-	}
+	str = rb_str_new(pbeg, p-pbeg);
 	id = rb_intern(RSTRING(str)->ptr);
 	if (p[0] == ':') {
 	    if (p[1] != ':') goto undefined_class;
