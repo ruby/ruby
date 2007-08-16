@@ -410,3 +410,10 @@ o = 1
   o = [o, o]
 }; $ans
 }
+
+assert_equal '0', %q{
+  def m()
+    yield [0]
+  end
+  m {|*,v| v}.inspect
+}, '[ruby-dev:31437]'
