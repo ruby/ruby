@@ -1730,8 +1730,8 @@ bdigbitsize(BDIGIT x)
     return size;
 }
 
-static VALUE big_lshift(VALUE, unsigned int);
-static VALUE big_rshift(VALUE, unsigned int);
+static VALUE big_lshift(VALUE, unsigned long);
+static VALUE big_rshift(VALUE, unsigned long);
 
 static VALUE big_shift(VALUE x, int n)
 {
@@ -2103,11 +2103,12 @@ check_shiftdown(VALUE y, VALUE x)
 VALUE
 rb_big_lshift(VALUE x, VALUE y)
 {
-    int shift, neg = 0;
+    long shift;
+    int neg = 0;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
-	    shift = FIX2INT(y);
+	    shift = FIX2LONG(y);
 	    if (shift < 0) {
 		neg = 1;
 		shift = -shift;
@@ -2131,10 +2132,10 @@ rb_big_lshift(VALUE x, VALUE y)
 }
 
 static VALUE
-big_lshift(VALUE x, unsigned int shift)
+big_lshift(VALUE x, unsigned long shift)
 {
     BDIGIT *xds, *zds;
-    int s1 = shift/BITSPERDIG;
+    long s1 = shift/BITSPERDIG;
     int s2 = shift%BITSPERDIG;
     VALUE z;
     BDIGIT_DBL num = 0;
@@ -2166,12 +2167,12 @@ big_lshift(VALUE x, unsigned int shift)
 VALUE
 rb_big_rshift(VALUE x, VALUE y)
 {
-    int shift;
+    long shift;
     int neg = 0;
 
     for (;;) {
 	if (FIXNUM_P(y)) {
-	    shift = FIX2INT(y);
+	    shift = FIX2LONG(y);
 	    if (shift < 0) {
 		neg = 1;
 		shift = -shift;
@@ -2197,11 +2198,11 @@ rb_big_rshift(VALUE x, VALUE y)
 }
 
 static VALUE
-big_rshift(VALUE x, unsigned int shift)
+big_rshift(VALUE x, unsigned long shift)
 {
     BDIGIT *xds, *zds;
     long s1 = shift/BITSPERDIG;
-    long s2 = shift%BITSPERDIG;
+    int s2 = shift%BITSPERDIG;
     VALUE z;
     BDIGIT_DBL num = 0;
     long i, j;
