@@ -1,3 +1,7 @@
+Fri Aug 17 01:24:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (ruby_iseq_disasm): fix to show arg_simple value.
+
 Fri Aug 17 01:21:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (throw): insert a RUBY_VM_CHECK_INTS(). [ruby-dev:31361]
