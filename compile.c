@@ -2961,11 +2961,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ip = iseq;
 	    while (ip) {
 		level = 0x8000;
-		if (ip->type == ISEQ_TYPE_BLOCK) {
-		    level |= 0x4000;
+		if (ip->compile_data->redo_label != 0) {
+		    /* while loop */
 		    break;
 		}
-		else if (ip->compile_data->redo_label != 0) {
+		else if (ip->type == ISEQ_TYPE_BLOCK) {
+		    level |= 0x4000;
 		    break;
 		}
 		ip = ip->parent_iseq;
