@@ -1151,6 +1151,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	list = list->next;
     }
 
+#if 0
+    /* this check need dead code elimination */
+    if (sp != 0) {
+	rb_bug("SP is not 0 on %s (%d)\n", RSTRING_PTR(iseq->name), sp);
+    }
+#endif
+
     iseq->iseq = (void *)generated_iseq;
     iseq->iseq_size = pos;
     iseq->insn_info_table = insn_info_table;
@@ -2927,13 +2934,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_NEXT:{
 	unsigned long level = 0;
+	int pop_after_throw = 0;
 
 	if (iseq->compile_data->redo_label != 0) {
-	    add_ensure_iseq(ret, iseq);
-	    ADD_INSNL(ret, nd_line(node), jump,
-		      iseq->compile_data->start_label);
+	    /* next in while loop */
+	    debugs("next in while\n");
+	    pop_after_throw = 1;
+	    goto next_by_throw;
 	}
 	else if (iseq->compile_data->end_label) {
+	    debugs("next in block\n");
+	    ADD_INSN (ret, nd_line(node), emptstack);
 	    COMPILE(ret, "next val", node->nd_stts);
 	    add_ensure_iseq(ret, iseq);
 	    ADD_INSNL(ret, nd_line(node), jump,
@@ -2943,7 +2954,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with next"));
 	}
 	else {
-	    rb_iseq_t *ip = iseq->parent_iseq;
+	    rb_iseq_t *ip;
+	  next_by_throw:
+	    ip = iseq;
 	    while (ip) {
 		level = 0x8000;
 		if (ip->type == ISEQ_TYPE_BLOCK) {
@@ -2957,9 +2970,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    if (ip != 0) {
 		COMPILE(ret, "next val", node->nd_stts);
-		add_ensure_iseq(ret, iseq);
 		ADD_INSN1(ret, nd_line(node), throw,
 			  INT2FIX(level | 0x03) /* TAG_NEXT */ );
+		if (pop_after_throw) {
+		    ADD_INSN(ret, nd_line(node), pop);
+		}
 	    }
 	    else {
 		COMPILE_ERROR((ERROR_ARGS "Illegal next"));
@@ -2968,18 +2983,27 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_REDO:{
+	int pop_after_throw = 0;
 	if (iseq->compile_data->redo_label) {
+	    debugs("redo in while");
+#if 1
+	    pop_after_throw = 1;
+	    goto redo_by_throw;
+#else
 	    add_ensure_iseq(ret, iseq);
 	    ADD_INSNL(ret, nd_line(node), jump,
 		      iseq->compile_data->redo_label);
 	    if (!poped) { /* for stack consistency */
 		ADD_INSN(ret, nd_line(node), putnil);
 	    }
+#endif
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with redo"));
 	}
 	else if (iseq->compile_data->start_label) {
+	    ADD_INSN (ret, nd_line(node), emptstack);
+	    add_ensure_iseq(ret, iseq);
 	    ADD_INSNL(ret, nd_line(node), jump,
 		      iseq->compile_data->start_label);
 	    if (!poped) { /* for stack consistency */
@@ -2987,24 +3011,30 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	}
 	else {
-	    rb_iseq_t *ip = iseq->parent_iseq;
-	    unsigned long level = 0x8000 | 0x4000;
+	    rb_iseq_t *ip;
+	    unsigned long level;
+	  redo_by_throw:
+	    level = 0x8000 | 0x4000;
+	    ip = iseq;
 	    while (ip) {
-		if (ip->type == ISEQ_TYPE_BLOCK) {
+		if (ip->compile_data->redo_label != 0) {
+		    break;
+		}
+		else if (ip->type == ISEQ_TYPE_BLOCK) {
 		    break;
 		}
 		else if (ip->type == ISEQ_TYPE_EVAL) {
 		    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with redo"));
 		}
-		else if (ip->compile_data->redo_label != 0) {
-		    break;
-		}
 		ip = ip->parent_iseq;
 	    }
 	    if (ip != 0) {
-		add_ensure_iseq(ret, iseq);
 		ADD_INSN1(ret, nd_line(node), throw,
 			  INT2FIX(level | 0x05) /* TAG_REDO */ );
+
+		if (pop_after_throw) {
+		    ADD_INSN(ret, nd_line(node), pop);
+		}
 	    }
 	    else {
 		COMPILE_ERROR((ERROR_ARGS "Illegal redo"));
@@ -3716,8 +3746,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSN(ret, nd_line(node), emptstack);
 		}
 
-		COMPILE(ret, "return nd_stts (return val)",
-			node->nd_stts);
+		COMPILE(ret, "return nd_stts (return val)", node->nd_stts);
 
 		if (is->type == ISEQ_TYPE_METHOD) {
 		    add_ensure_iseq(ret, iseq);

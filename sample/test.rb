@@ -1871,13 +1871,14 @@ File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
-if (dir = File.dirname(File.dirname($0))) == '.'
+if (dir = File.dirname(File.dirname(__FILE__))) == '.'
   dir = ""
 else
   dir << "/"
 end
 
 def valid_syntax?(code, fname)
+  p fname
   eval("BEGIN {return true}\n#{code}", nil, fname, 0)
 rescue Exception
   STDERR.puts $!.message
