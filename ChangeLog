@@ -1,3 +1,7 @@
+Thu Aug 16 21:14:06 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (BASERUBY): need AC_SUBST.  [ruby-dev:31438]
+
 Thu Aug 16 19:18:26 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/sentence.rb: Sentence class implemented
