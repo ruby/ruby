@@ -211,11 +211,6 @@ class TestRubyYieldGen < Test::Unit::TestCase
       params.pop
     end
 
-    if params.last && params.last[0] == '&'
-      result_binding[params.last[1]] = nil
-      params.pop
-    end
-
     star_index = nil
     params.each_with_index {|par, i|
       star_index = i if par[0] == '*'
@@ -268,12 +263,19 @@ class TestRubyYieldGen < Test::Unit::TestCase
 
     #p [:emu0, args, params]
 
+    result_binding = {}
+
+    if params.last && params.last[0] == '&'
+      result_binding[params.last[1]] = nil
+      params.pop
+    end
+
     # TRICK #1 : single array argument is expanded if there are two or more params.
     if args.length == 1 && Array === args[0] && 1 < params.length
       args = args[0]
     end
 
-    result_binding = emu_bind_params(args, params)
+    emu_bind_params(args, params, result_binding)
     #p result_binding
     result_binding
   end
