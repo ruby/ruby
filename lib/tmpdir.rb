@@ -58,7 +58,8 @@ class Dir
   #
   # If a block is given,
   # it is yielded with the path of the directory.
-  # The directory is removed before Dir.mktmpdir returns.
+  # The directory and its contents are removed
+  # using FileUtils.remove_entry_secure before Dir.mktmpdir returns.
   # The value of the block is returned.
   #
   #  Dir.mktmpdir {|dir|
