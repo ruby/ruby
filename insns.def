@@ -1213,6 +1213,7 @@ throw
 (VALUE throwobj)
 (VALUE val)
 {
+    RUBY_VM_CHECK_INTS();
     val = vm_throw(th, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
