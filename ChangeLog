@@ -358,13 +358,13 @@ Sat Jun 30 16:05:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Jun 30 00:17:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): return non-valid token for an invalid
-	  instance/class variable name.  a patch from from Yusuke ENDOH
+	  instance/class variable name.  a patch from Yusuke ENDOH
 	  <mame AT tsg.ne.jp>.  [ruby-dev:31095]
 
 Fri Jun 29 11:23:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (dsym): return non-null NODE even if yyerror().  based on a
-	  patch from from Yusuke ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:31085]
+	  patch from Yusuke ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:31085]
 
 Tue Jun 26 16:35:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
