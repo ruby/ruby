@@ -1,3 +1,8 @@
+Thu Aug 16 20:40:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigtrunc): RBIGNUM(x)->len may be zero.  out of bound
+	  access.  [ruby-dev:31404]
+
 Thu Aug 16 16:46:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (aix): enable shared by default.
