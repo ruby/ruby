@@ -1059,11 +1059,11 @@ if test "$with_dln_a_out" != yes; then
         aix*)           if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
 			else
-			    : ${LDSHARED='/usr/ccs/bin/ld'}
+			    : ${LDSHARED='$(CC)'}
 			fi
-			DLDFLAGS="${linker_flag}-G"' -eInit_$(TARGET)'
-			LDFLAGS="${LDFLAGS} ${linker_flag}-brtl"
-			XLDFLAGS="${linker_flag}-bE:ruby.imp"
+			LDSHARED="$LDSHARED ${linker_flag}-G"
+			DLDFLAGS='-eInit_$(TARGET)'
+			XLDFLAGS="${linker_flag}-bE:ruby.imp ${linker_flag}-brtl"
                         : ${ARCHFILE="ruby.imp"}
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
@@ -1359,7 +1359,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	;;
     aix*)
-	LIBRUBY_DLDFLAGS="${linker_flag}-G ${linker_flag}-bnoentry $XLDFLAGS"
+	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS"
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	;;
