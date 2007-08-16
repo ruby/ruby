@@ -1,3 +1,8 @@
+Thu Aug 16 16:48:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (BASERUBY): check if base ruby is runnable first.
+	  [ruby-core:11900]
+
 Thu Aug 16 16:46:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (aix): enable shared by default.

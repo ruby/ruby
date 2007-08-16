@@ -3,6 +3,24 @@ AC_INIT()
 
 AC_PREREQ(2.58)
 
+AC_ARG_WITH(baseruby,
+	[  --with-baseruby=RUBY use RUBY as baseruby; RUBY is the pathname of ruby],
+	[
+		case "$withval" in
+		*ruby*)
+			BASERUBY=$withval
+			;;
+		*)
+			AC_MSG_ERROR(need ruby)
+			;;
+		esac
+	],
+	[
+		BASERUBY="ruby"
+	])
+test "`$BASERUBY -e 'p 42' 2>/dev/null`" = 42 ||
+    AC_MSG_ERROR([executable host ruby is required.  use --with-baseruby option.])
+
 AC_DEFUN([RUBY_MINGW32],
 [case "$host_os" in
 cygwin*)
@@ -1648,23 +1666,6 @@ if test -z "$MANTYPE"; then
 	fi
 fi
 AC_SUBST(MANTYPE)
-
-AC_ARG_WITH(baseruby,
-	[  --with-baseruby=RUBY use RUBY as baseruby; RUBY is the pathname of ruby],
-	[
-		case "$withval" in
-		*ruby*)
-			BASERUBY=$withval
-			;;
-		*)
-			AC_MSG_ERROR(need ruby)
-			;;
-		esac
-	],
-	[
-		BASERUBY="ruby"
-	])
-AC_SUBST(BASERUBY)
 
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 $MAKEDIRS "${arch_hdrdir}"
