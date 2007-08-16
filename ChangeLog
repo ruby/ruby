@@ -1,3 +1,12 @@
+Thu Aug 16 16:46:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (aix): enable shared by default.
+
+	* configure.in (aix): for 64bit-mode AIX.  [ruby-dev:31401]
+	  + use CC for LDSHARED if non-gcc,
+	  + moved -G option from *LDFLAGS to LDSHARED,
+	  + set -brtl only in XLDFLAGS.
+
 Thu Aug 16 13:06:08 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (big_lshift): make shift offset long type.
@@ -97,11 +106,12 @@ Tue Aug 14 19:51:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 Tue Aug 14 00:04:27 2007  Kouhei Sutou  <kou@cozmixng.org>
 
-        * lib/rss/rss.rb: 0.1.8 -> 0.1.9.
-        * test/rss/test_version.rb: followed the above change.
+	* lib/rss/rss.rb: 0.1.8 -> 0.1.9.
+
+	* test/rss/test_version.rb: followed the above change.
 
 	* lib/rss/parser.rb: fixed a bug that handles unintended elements.
-        Thanks to Takuo Yonezawa. [ruby-list:43841]
+	  Thanks to Takuo Yonezawa. [ruby-list:43841]
 
 Mon Aug 13 17:23:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1020,7 +1030,7 @@ Fri Jul  6 19:55:10 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	* lib/irb.rb: typo. Thanks, Giles Bowkett.
 
 	* lib/irb/completion.rb: support Ruby1.9 changing return value
-     	  String to Symbol for Object#methods, etc. [ruby-dev:31148].
+	  String to Symbol for Object#methods, etc. [ruby-dev:31148].
 
 Fri Jul  6 18:20:50 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -1779,7 +1789,7 @@ Thu Jun 21 20:36:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jun 21 20:28:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_select): returns new hash, not assoc array.
-  	  [ruby-core:11504]
+	  [ruby-core:11504]
 
 	* hash.c (env_select): ditto.
 
@@ -3915,13 +3925,13 @@ Sat Feb 24 10:49:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y, node.h, compile.c: change node tree structure.  a purpose
 	  of this change is to unify argument structure of method and block.
-          this change prohibits duplicate block parameter name.
-          new argument infromation:
-            NODE_ARGS     [m: int, o: NODE_OPT_ARG, ->]
-            NODE_ARGS_AUX [r: ID, b: ID, ->]
-            NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
-          optarg information:
-            NODE_OPT_ARGS [idx, expr, ->]
+	  this change prohibits duplicate block parameter name.
+	  new argument infromation:
+	    NODE_ARGS	  [m: int, o: NODE_OPT_ARG, ->]
+	    NODE_ARGS_AUX [r: ID, b: ID, ->]
+	    NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
+	  optarg information:
+	    NODE_OPT_ARGS [idx, expr, ->]
 
 	* vm_macro.def: ditto.
 
@@ -4568,15 +4578,15 @@ Wed Feb  7 03:39:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
-          imported nkf 2007-01-28.
-          * Fixed: can't decode MIME encode JIS string.
-          * Fixed: Fullwitdh-halfwidth conversion.
-          * Support DoCoMo's and Softbank's EMOJI
-          * Support CP932, CP5022x, eucJP-ms UDC
-          * Support UTF-32 encoding
-          * Support beyond BMP
-          [ruby-dev:29700] [ruby-dev:29922] [ruby-dev:30144]
+	* ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
+	  imported nkf 2007-01-28.
+	  * Fixed: can't decode MIME encode JIS string.
+	  * Fixed: Fullwitdh-halfwidth conversion.
+	  * Support DoCoMo's and Softbank's EMOJI
+	  * Support CP932, CP5022x, eucJP-ms UDC
+	  * Support UTF-32 encoding
+	  * Support beyond BMP
+	  [ruby-dev:29700] [ruby-dev:29922] [ruby-dev:30144]
 
 Tue Feb  6 20:36:19 2007  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -4967,7 +4977,7 @@ Fri Jan 19 17:12:23 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole.c (Init_win32ole): add WIN32OLE_VARIANT::Empty,
 	  WIN32OLE_VARIANT::Null, WIN32OLE_VARIANT::Nothing.
 
-    * test/win32ole/test_win32ole_variant.rb: ditto.
+	* test/win32ole/test_win32ole_variant.rb: ditto.
 
 	* test/win32ole/test_nil2vtempty.rb(test_openSchema): ditto.
 
@@ -4992,9 +5002,9 @@ Wed Jan 17 17:31:28 2007  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.h, yarvcore.c: rename or remove some global variables
 	  removed: mYarvCore, mYarvInsns
 	  renamed: cYarvISeq -> rb_cISeq,
-                   cYarvProc -> rb_cProc, cYarvBinding -> rb_cBinding
+	           cYarvProc -> rb_cProc, cYarvBinding -> rb_cBinding
 	  ::YarvCore module is removed and ::YarvCore::VM class becomes ::VM.
-          And change/remove some functions which added with YARV.
+	  And change/remove some functions which added with YARV.
 
 	* compile.c: ditto.
 
@@ -5315,8 +5325,8 @@ Tue Jan  2 10:29:54 2007  Eric Hodel  <drbrain@segment7.net>
 Mon Jan 01 08:07:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/tk/tcltklib.c: fix to compile on YARV
-          ruby_errinfo -> rb_errinfo(),
-          ruby_safe_level -> rb_safe_level().
+	  ruby_errinfo -> rb_errinfo(),
+	  ruby_safe_level -> rb_safe_level().
 
 Mon Jan 01 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -6973,7 +6983,7 @@ Wed Sep 13 18:25:18 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Sep 13 16:43:36 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
- 	* string.c (rb_str_intern): prohibit interning tainted string.
+	* string.c (rb_str_intern): prohibit interning tainted string.
 
 Wed Sep 13 01:14:02 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -237,11 +237,13 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 
     for (i = 0; i <= local_size; i++) {
 	env->env[i] = envptr[-local_size + i];
-	// dp(env->env[i]);
+#if 0
+	dp(env->env[i]);
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
-	    // envptr[-local_size + i] = 0;
+	    envptr[-local_size + i] = 0;
 	}
+#endif
     }
 
     *envptr = envval;		/* GC mark */
