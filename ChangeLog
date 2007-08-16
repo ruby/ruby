@@ -1,3 +1,15 @@
+Thu Aug 16 19:18:26 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/sentence.rb: Sentence class implemented
+	  based on sentgen.rb
+
+	* test/ruby/sentgen.rb: removed.
+
+	* test/ruby/test_assignment.rb: use sentence.rb.
+
+	* test/ruby/test_yield.rb: block parameter passing emulator
+	  implemented.
+
 Thu Aug 16 16:48:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BASERUBY): check if base ruby is runnable first.

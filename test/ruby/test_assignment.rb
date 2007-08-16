@@ -490,7 +490,7 @@ class TestAssignment < Test::Unit::TestCase
   end
 end
 
-require 'sentgen'
+require 'sentence'
 class TestAssignmentGen < Test::Unit::TestCase
   Syntax = {
     :exp => [["0"],
@@ -537,7 +537,7 @@ class TestAssignmentGen < Test::Unit::TestCase
 
   def rename_var(obj)
     vars = []
-    r = SentGen.subst(obj, 'var') {
+    r = obj.subst('var') {
       var = "v#{vars.length}"
       vars << var
       var
@@ -646,7 +646,7 @@ class TestAssignmentGen < Test::Unit::TestCase
   end
 
   def do_assign(assign, vars)
-    assign = assign.join('')
+    assign = assign.to_s
     code = "#{assign}; [#{vars.join(",")}]"
     begin
       vals = eval(code)
@@ -659,12 +659,12 @@ class TestAssignmentGen < Test::Unit::TestCase
   end
 
   def test_assignment
-    syntax = SentGen.expand_syntax(Syntax)
-    SentGen.each_tree(syntax, :xassign, 3) {|assign|
-      assign[0], vars = rename_var(assign[0])
-      sent = [assign].join('')
+    syntax = Sentence::Gen.expand_syntax(Syntax)
+    Sentence.each(syntax, :xassign, 3) {|assign|
+      assign, vars = rename_var(assign)
+      sent = assign.to_s
       bruby = do_assign(assign, vars).to_a.sort
-      bemu = emu_assign(assign).to_a.sort
+      bemu = emu_assign(assign.to_a).to_a.sort
       assert_equal(bemu, bruby, sent)
     }
   end

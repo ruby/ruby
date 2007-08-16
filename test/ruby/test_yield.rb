@@ -66,7 +66,7 @@ class TestRubyYield < Test::Unit::TestCase
 
 end
 
-require 'sentgen'
+require 'sentence'
 class TestRubyYieldGen < Test::Unit::TestCase
   Syntax = {
     :exp => [["0"],
@@ -154,12 +154,12 @@ class TestRubyYieldGen < Test::Unit::TestCase
                        []],
     :block_arg => [['&', :arg]],
     #:test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
-    :test => [['def m(&b) b.yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
+    :test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
   }
 
   def rename_var(obj)
     vars = []
-    r = SentGen.subst(obj, 'var') {
+    r = obj.subst('var') {
       var = "v#{vars.length}"
       vars << var
       var
@@ -167,20 +167,134 @@ class TestRubyYieldGen < Test::Unit::TestCase
     return r, vars
   end
 
+  def split_by_comma(ary)
+    return [] if ary.empty?
+    result = [[]]
+    ary.each {|e|
+      if e == ','
+        result << []
+      else
+        result.last << e
+      end
+    }
+    result
+  end
+
+  def emu_return_args(*vs)
+    vs
+  end
+
+  def emu_eval_args(args)
+    if args.last == []
+      args = args[0...-1]
+    end
+    code = "emu_return_args #{args.map {|a| a.join('') }.join(",")}"
+    eval code
+  end
+
+  def emu_bind_single(arg, param, result_binding)
+    #p [:emu_bind_single, arg, param]
+    if param.length == 1 && String === param[0] && /\A[a-z0-9]+\z/ =~ param[0]
+      result_binding[param[0]] = arg
+    elsif param.length == 1 && Array === param[0] && param[0][0] == '(' && param[0][-1] == ')'
+      arg = [arg] unless Array === arg
+      emu_bind_params(arg, split_by_comma(param[0][1...-1]), result_binding)
+    else
+      raise "unexpected param: #{param.inspect}"
+    end
+    result_binding
+  end
+
+  def emu_bind_params(args, params, result_binding={})
+    #p [:emu_bind_params, args, params]
+    if params.last == [] # extra comma
+      params.pop
+    end
+
+    if params.last && params.last[0] == '&'
+      result_binding[params.last[1]] = nil
+      params.pop
+    end
+
+    star_index = nil
+    params.each_with_index {|par, i|
+      star_index = i if par[0] == '*'
+    }
+
+    # TRICK #2 : adjust mismatch on number of arguments
+    if star_index
+      pre_params = params[0...star_index]
+      rest_param = params[star_index]
+      post_params = params[(star_index+1)..-1]
+      pre_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
+      if post_params.length <= args.length
+        post_params.reverse_each {|par| emu_bind_single(args.pop, par, result_binding) }
+      else
+        post_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
+      end
+      if rest_param != ['*']
+        emu_bind_single(args, rest_param[1..-1], result_binding)
+      end
+    else
+      params.each_with_index {|par, i|
+        emu_bind_single(args[i], par, result_binding)
+      }
+    end
+
+    #p [args, params, result_binding]
+
+    result_binding
+  end
+
+  def emu(t)
+    #puts
+    #p t
+    command_args_noblock = t[1]
+    block_param_def = t[3]
+    command_args_noblock = command_args_noblock.expand {|a| !(a[0] == '[' && a[-1] == ']') }
+    block_param_def = block_param_def.expand {|a| !(a[0] == '(' && a[-1] == ')') }
+
+    if command_args_noblock.to_a[0] == ' '
+      args = command_args_noblock.to_a[1..-1]
+    elsif command_args_noblock.to_a[0] == '(' && command_args_noblock.to_a[-1] == ')'
+      args = command_args_noblock.to_a[1...-1]
+    else
+      raise "unexpected command_args_noblock: #{command_args_noblock.inspect}"
+    end
+    args = emu_eval_args(split_by_comma(args))
+
+    params = block_param_def.to_a[1...-1]
+    params = split_by_comma(params)
+
+    #p [:emu0, args, params]
+
+    # TRICK #1 : single array argument is expanded if there are two or more params.
+    if args.length == 1 && Array === args[0] && 1 < params.length
+      args = args[0]
+    end
+
+    result_binding = emu_bind_params(args, params)
+    #p result_binding
+    result_binding
+  end
+
   def check_nofork(t)
     t, vars = rename_var(t)
-    t = SentGen.subst(t, 'vars') { " [#{vars.join(",")}]" }
-    s = [t].join
+    t = t.subst('vars') { " [#{vars.join(",")}]" }
+    emu_binding = emu(t)
+    emu_values = vars.map {|var| emu_binding.fetch(var, "NOVAL") }
+    s = t.to_s
     #print "#{s}\t\t"
     #STDOUT.flush
-    v = eval(s)
-    #puts "#{v.inspect[1...-1]}"
-    ##xxx: assertion for v here.
+    eval_values = eval(s)
+    #success = emu_values == eval_values ? 'succ' : 'fail'
+    #puts "eval:#{vs_ev.inspect[1...-1].delete(' ')}\temu:#{vs_emu.inspect[1...-1].delete(' ')}\t#{success}"
+    assert_equal(emu_values, eval_values, s)
   end
 
   def test_yield
-    syntax = SentGen.expand_syntax(Syntax)
-    SentGen.each_tree(syntax, :test, 4) {|t|
+    syntax = Sentence::Gen.expand_syntax(Syntax)
+    Sentence.each(syntax, :test, 4) {|t|
       check_nofork(t)
     }
   end
