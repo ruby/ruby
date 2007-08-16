@@ -417,3 +417,10 @@ assert_equal '0', %q{
   end
   m {|*,v| v}.inspect
 }, '[ruby-dev:31437]'
+assert_equal '[0]', %q{
+  def m
+    yield [0]
+  end
+  m{|v, &b| v}.inspect
+}, '[ruby-dev:31440]'
+

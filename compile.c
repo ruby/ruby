@@ -881,7 +881,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    /* set arg_size: size of arguments */
 	    if (iseq->arg_block != -1) {
 		iseq->arg_size = iseq->arg_block + 1;
-	}
+	    }
 	    else if (iseq->arg_post_len) {
 		iseq->arg_size = iseq->arg_post_start + iseq->arg_post_len;
 	    }
@@ -891,7 +891,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    else if (iseq->arg_opts) {
 		iseq->arg_size = iseq->argc + iseq->arg_opts - 1;
 	    }
-	else {
+	    else {
 		iseq->arg_size = iseq->argc;
 	    }
 	}
@@ -901,9 +901,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	}
 
 	if (iseq->type == ISEQ_TYPE_BLOCK) {
-	    if (iseq->argc == 1 && iseq->arg_simple == 1 && last_comma == 0) {
-		/* {|a|} */
-		iseq->arg_simple = 2;
+	    if (iseq->arg_opts == 0 && iseq->arg_post_len == 0 && iseq->arg_rest == -1) {
+		if (iseq->argc == 1 && last_comma == 0) {
+		    /* {|a|} */
+		    iseq->arg_simple = 2;
+		}
 	    }
 	}
     }

@@ -1,3 +1,11 @@
+Fri Aug 17 01:25:23 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_set_arguments), insnhelper.ci
+	  (vm_callee_setup_arg, vm_yield_setup_args): fix 
+	  block parameter problems. [ruby-dev:31437], [ruby-dev:31440]
+
+	* bootstraptest/test_block.rb: add a test of [ruby-dev:31440].
+
 Fri Aug 17 01:24:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (ruby_iseq_disasm): fix to show arg_simple value.
