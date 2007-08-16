@@ -2,7 +2,7 @@ define rp
   if (VALUE)$arg0 & 1
     printf "FIXNUM: %d\n", $arg0 >> 1
   else
-  if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == SYMBOL_FLAG
+  if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
     printf "SYMBOL(%d)\n", $arg0 >> 8
   else
   if $arg0 == 0

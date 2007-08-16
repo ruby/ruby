@@ -522,6 +522,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FLOAT:
+		    if (FIXABLE((long)RFLOAT(val)->value)) {
+			val = LONG2FIX((long)RFLOAT(val)->value);
+			goto bin_retry;
+		    }
 		    val = rb_dbl2big(RFLOAT(val)->value);
 		    if (FIXNUM_P(val)) goto bin_retry;
 		    bignum = 1;

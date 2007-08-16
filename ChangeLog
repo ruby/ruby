@@ -18,6 +18,14 @@ Fri Aug 17 01:21:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (throw): insert a RUBY_VM_CHECK_INTS(). [ruby-dev:31361]
 
+Thu Aug 16 20:40:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigtrunc): RBIGNUM(x)->len may be zero.  out of bound
+	  access.  [ruby-dev:31404]
+
+	* sprintf.c (rb_str_format): small float should not call
+	  rb_dbl2big(). 
+
 Thu Aug 16 22:10:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix next/redo stack consistency.
