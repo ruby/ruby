@@ -43,4 +43,13 @@ class TestMethod < Test::Unit::TestCase
       um.bind(Base.new)
     end
   end
+
+  def test_callee
+    assert_equal(:test_callee, __method__)
+    assert_equal(:m, Class.new {def m; __method__; end}.new.m)
+    assert_equal(:m, Class.new {def m; tap{return __method__}; end}.new.m)
+    assert_equal(:m, Class.new {define_method(:m) {__method__}}.new.m)
+    assert_equal(:m, Class.new {define_method(:m) {tap{return __method__}}}.new.m)
+    assert_nil(eval("class TestCallee; __method__; end"))
+  end
 end

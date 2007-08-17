@@ -1612,12 +1612,19 @@ frame_func_id(rb_control_frame_t *cfp)
     if (!iseq) {
 	return cfp->method_id;
     }
-    else if (RUBY_VM_IFUNC_P(iseq)) {
-	return rb_intern("<ifunc>");
+    while (iseq) {
+	if (RUBY_VM_IFUNC_P(iseq)) {
+	    return rb_intern("<ifunc>");
+	}
+	if (iseq->defined_method_id) {
+	    return iseq->defined_method_id;
+	}
+	if (iseq->local_iseq == iseq) {
+	    break;
+	}
+	iseq = iseq->parent_iseq;
     }
-    else {
-	return rb_intern(RSTRING_PTR(iseq->name));
-    }
+    return 0;
 }
 
 ID
