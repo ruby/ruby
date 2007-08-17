@@ -476,9 +476,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 'B/instance',  CVarA.new.cv
 
     CVarA.cv = 'CVarA@@cv'
-    assert_raise(NameError) {   CVarB.cvB }
-    assert_raise(NameError) {   CVarB.cvB2 }
-    assert_raise(NameError) {   CVarB.new.cvB }
+    assert_equal('CVarA@@cv', CVarB.cvB)
+    assert_equal('CVarA@@cv', CVarB.cvB2)
+    assert_equal('CVarA@@cv', CVarB.new.cvB)
     CVarB.cvB = 'B/singleton'
     assert_equal 'B/singleton', CVarB.cvB
     assert_equal 'B/singleton', CVarB.cvB2
