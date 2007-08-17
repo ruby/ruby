@@ -1,3 +1,13 @@
+Fri Aug 17 21:20:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_call), eval_method.ci (rb_add_method, rb_alias),
+	  insnhelper.ci (vm_call_method): fix to save safelevel for
+	  method node.
+
+	* include/ruby/node.h: ditto.
+
+	* bootstraptest/test_method.rb: add a test for above.
+
 Fri Aug 17 16:02:50 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_terminate_all): fix to ignore

@@ -132,7 +132,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
      *   nd_cnt  : alias count           // (3)
      */
     if (node) {
-	body = NEW_FBODY(NEW_METHOD(node, klass, noex), 0);
+	body = NEW_FBODY(NEW_METHOD(node, klass, NOEX_WITH_SAFE(noex)), 0);
     }
     else {
 	body = 0;
@@ -580,7 +580,7 @@ rb_alias(VALUE klass, ID name, ID def)
 	      (st_data_t) NEW_FBODY(
 		  NEW_METHOD(orig_fbody->nd_body->nd_body,
 			     orig_fbody->nd_body->nd_clss,
-			     orig_fbody->nd_body->nd_noex), def));
+			     NOEX_WITH_SAFE(orig_fbody->nd_body->nd_noex)), def));
 
     rb_clear_cache_by_id(name);
 

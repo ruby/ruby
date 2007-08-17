@@ -1343,6 +1343,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
     int noex;
     ID id = mid;
     struct cache_entry *ent;
+    rb_thread_t *th = GET_THREAD();
 
     if (!klass) {
 	rb_raise(rb_eNotImpError,
@@ -1351,6 +1352,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
     }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
+
     if (ent->mid == mid && ent->klass == klass) {
 	if (!ent->method)
 	    return method_missing(recv, mid, argc, argv,
@@ -1372,23 +1374,31 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 	return method_missing(recv, mid, argc, argv,
 			      scope == 2 ? NOEX_VCALL : 0);
     }
+    
+
     if (mid != missing) {
 	/* receiver specified form for private method */
-	if (((noex & NOEX_MASK) & NOEX_PRIVATE) && scope == 0) {
-	    return method_missing(recv, mid, argc, argv, NOEX_PRIVATE);
-	}
-
-	/* self must be kind of a specified form for protected method */
-	if (((noex & NOEX_MASK) & NOEX_PROTECTED) && scope == 0) {
-	    VALUE defined_class = klass;
-
-	    if (TYPE(defined_class) == T_ICLASS) {
-		defined_class = RBASIC(defined_class)->klass;
+	if (UNLIKELY(noex)) {
+	    if (((noex & NOEX_MASK) & NOEX_PRIVATE) && scope == 0) {
+		return method_missing(recv, mid, argc, argv, NOEX_PRIVATE);
 	    }
 
-	    if (!rb_obj_is_kind_of(rb_frame_self(),
-				   rb_class_real(defined_class))) {
-		return method_missing(recv, mid, argc, argv, NOEX_PROTECTED);
+	    /* self must be kind of a specified form for protected method */
+	    if (((noex & NOEX_MASK) & NOEX_PROTECTED) && scope == 0) {
+		VALUE defined_class = klass;
+		
+		if (TYPE(defined_class) == T_ICLASS) {
+		    defined_class = RBASIC(defined_class)->klass;
+		}
+		
+		if (!rb_obj_is_kind_of(rb_frame_self(),
+				       rb_class_real(defined_class))) {
+		    return method_missing(recv, mid, argc, argv, NOEX_PROTECTED);
+		}
+	    }
+
+	    if (NOEX_SAFE(noex) > th->safe_level) {
+		rb_raise(rb_eSecurityError, "calling insecure method: %s", rb_id2name(mid));
 	    }
 	}
     }
@@ -1403,9 +1413,8 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 	//level++;
 	//printf("%s with %d args\n", rb_id2name(mid), argc);
 	*/
-	val =
-	    vm_call0(GET_THREAD(), klass, recv, mid, id, argc, argv, body,
-		     noex & NOEX_NOSUPER);
+	val = vm_call0(th, klass, recv, mid, id, argc, argv, body,
+		       noex & NOEX_NOSUPER);
 	/*
 	//level--;
 	//for(i=0; i<level; i++){printf("  ");}

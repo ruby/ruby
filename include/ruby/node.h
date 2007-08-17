@@ -484,6 +484,10 @@ enum ruby_node_flags {
 #define NOEX_SUPER     0x20
 #define NOEX_VCALL     0x40
 
+#define NOEX_SAFE(n) (((n) >> 8) & 0x0F)
+#define NOEX_WITH(n, s) ((s << 8) | n)
+#define NOEX_WITH_SAFE(n) NOEX_WITH(n, rb_safe_level())
+
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 
