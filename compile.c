@@ -3200,15 +3200,20 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
 
       case NODE_MASGN:{
-	compile_massign(iseq, ret,
-			node->nd_value,	/* rhsn  */
-			node->nd_args,	/* splat */
-			node->nd_head,	/* lhsn  */
-			0);
-	if (!poped) {
-	    ADD_INSN1(ret, nd_line(node), putobject, Qtrue);
-	}
-	break;
+	  if (poped) {
+	      compile_massign(iseq, ret,
+			      node->nd_value,	/* rhsn  */
+			      node->nd_args,	/* splat */
+			      node->nd_head,	/* lhsn  */
+			      0);
+	  }
+	  else {
+	      COMPILE(ret, "masgn/value", node->nd_value);
+	      ADD_INSN(ret, nd_line(node), dup);
+	      compile_massign(iseq, ret, 0,
+			      node->nd_args, node->nd_head, 0);
+	  }
+	  break;
       }
 
       case NODE_LASGN:{
