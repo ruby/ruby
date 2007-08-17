@@ -1,3 +1,10 @@
+Fri Aug 17 14:38:36 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (in_temporary_working_directory): use
+	  Dir.mktmpdir to create and remove temporary directory.
+	  (Dir.mktmpdir): define if not available.
+	  [ruby-dev:31431]
+
 Fri Aug 17 03:07:37 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix thorw insn option of next.

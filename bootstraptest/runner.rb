@@ -13,10 +13,38 @@ rescue LoadError
   retry
 end
 
+if !Dir.respond_to?(:mktmpdir)
+  # copied from lib/tmpdir.rb
+  def Dir.mktmpdir(prefix="d", tmpdir=nil)
+    tmpdir ||= Dir.tmpdir
+    t = Time.now.strftime("%Y%m%d")
+    n = nil
+    begin
+      path = "#{tmpdir}/#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
+      path << "-#{n}" if n
+      Dir.mkdir(path, 0700)
+    rescue Errno::EEXIST
+      n ||= 0
+      n += 1
+      retry
+    end
+
+    if block_given?
+      begin
+        yield path
+      ensure
+        FileUtils.remove_entry_secure path
+      end
+    else
+      path
+    end
+  end
+end
+
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
-  dir = File.join(Dir.tmpdir, 'bootstraptest.tmpwd')
+  dir = nil
   quiet = false
   tests = nil
   ARGV.delete_if {|arg|
@@ -176,11 +204,19 @@ def error(msg, additional_message)
 end
 
 def in_temporary_working_directory(dir)
-  FileUtils.rm_rf dir
-  Dir.mkdir dir
-  Dir.chdir(dir) {
-    yield
-  }
+  if dir
+    FileUtils.rm_rf dir
+    Dir.mkdir dir
+    Dir.chdir(dir) {
+      yield
+    }
+  else
+    Dir.mktmpdir("bootstraptest.tmpwd") {|d|
+      Dir.chdir(d) {
+        yield
+      }
+    }
+  end
 end
 
 def cleanup_coredump
