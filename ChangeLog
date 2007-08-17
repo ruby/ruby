@@ -1,3 +1,11 @@
+Fri Aug 17 16:02:50 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_terminate_all): fix to ignore
+	  exceptions.
+
+	* thread.c (thread_start_func_2): fix
+	  abort_on_exception process.  [ruby-dev:31394]
+
 Fri Aug 17 14:38:36 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (in_temporary_working_directory): use

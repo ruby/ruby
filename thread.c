@@ -259,7 +259,14 @@ rb_thread_terminate_all(void)
     st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
 
     while (!rb_thread_alone()) {
-	rb_thread_schedule();
+	PUSH_TAG();
+	if (EXEC_TAG() == 0) {
+	    rb_thread_schedule();
+	}
+	else {
+	    /* ignore exception */
+	}
+	POP_TAG();
     }
     system_working = 0;
 }
@@ -327,14 +334,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    }
 	    th->value = Qnil;
 	}
-	TH_POP_TAG();
 
 	th->status = THREAD_KILLED;
 	thread_debug("thread end: %p\n", th);
-	st_delete_wrap(th->vm->living_threads, th->self);
 
 	main_th = th->vm->main_thread;
-	if (th == main_th) errinfo = Qnil;
+	if (th != main_th) {
+	    if (TYPE(errinfo) == T_OBJECT) {
+		/* treat with normal error object */
+		rb_thread_raise(1, &errinfo, main_th);
+	    }
+	}
+	TH_POP_TAG();
+
+	st_delete_wrap(th->vm->living_threads, th->self);
 
 	/* wake up joinning threads */
 	join_th = th->join_list_head;
@@ -347,11 +360,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     }
     thread_cleanup_func(th);
     native_mutex_unlock(&th->vm->global_interpreter_lock);
-
-    if (!NIL_P(errinfo)) {
-	/* exit on main_thread */
-	rb_thread_raise(1, &errinfo, main_th);
-    }
 
     return 0;
 }
