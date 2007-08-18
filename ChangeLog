@@ -1,3 +1,8 @@
+Sat Aug 18 12:24:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb, test/ruby/test_system.rb(valid_syntax?): keep
+	  comment lines first.
+
 Thu Aug 16 20:40:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigtrunc): RBIGNUM(x)->len may be zero.  out of bound
