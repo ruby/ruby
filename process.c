@@ -860,22 +860,21 @@ proc_waitall(void)
 }
 
 static VALUE
-detach_process_watcher(int *pid_p)
+detach_process_watcher(void *arg)
 {
-    rb_pid_t cpid;
+    rb_pid_t cpid, pid = (rb_pid_t)arg;
     int status;
 
-    for (;;) {
-	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid != 0) return rb_last_status_get();
-	rb_thread_sleep(1);
+    while ((cpid = rb_waitpid(pid, &status, 0)) == 0) {
+	/* wait while alive */
     }
+    return rb_last_status_get();
 }
 
 VALUE
 rb_detach_process(rb_pid_t pid)
 {
-    return rb_thread_create(detach_process_watcher, (void*)&pid);
+    return rb_thread_create(detach_process_watcher, (void*)pid);
 }
 
 
@@ -891,8 +890,7 @@ rb_detach_process(rb_pid_t pid)
  *  separate Ruby thread whose sole job is to reap the status of the
  *  process _pid_ when it terminates. Use <code>detach</code>
  *  only when you do not intent to explicitly wait for the child to
- *  terminate.  <code>detach</code> only checks the status
- *  periodically (currently once each second).
+ *  terminate.
  *
  *  The waiting thread returns the exit status of the detached process
  *  when it terminates, so you can use <code>Thread#join</code> to
