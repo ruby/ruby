@@ -1,3 +1,10 @@
+Sat Aug 18 13:23:01 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c: $! should not be writable.
+
+	* eval.c (rb_rubylevel_errinfo): added.  rb_errinfo() returns
+	  rb_threa_t#errinfo.  rb_rubylevel_errinfo() returns $! value.
+
 Sat Aug 18 13:14:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_callee_setup_arg): fix to check arguments

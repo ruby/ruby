@@ -2465,8 +2465,8 @@ top_include(int argc, VALUE *argv, VALUE self)
 VALUE rb_f_trace_var();
 VALUE rb_f_untrace_var();
 
-static VALUE
-get_errinfo(void)
+static VALUE *
+errinfo_place(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
@@ -2475,16 +2475,28 @@ get_errinfo(void)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    if (cfp->iseq->type == ISEQ_TYPE_RESCUE) {
-		return cfp->dfp[-1];
+		return &cfp->dfp[-1];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
 		     TYPE(cfp->dfp[-1]) != T_NODE) {
-		return cfp->dfp[-1];
+		return &cfp->dfp[-1];
 	    }
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
-    return Qnil;
+    return 0;
+}
+
+static VALUE
+get_errinfo(void)
+{
+    VALUE *ptr = errinfo_place();
+    if (ptr) {
+	return *ptr;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 static VALUE
@@ -2493,12 +2505,7 @@ errinfo_getter(ID id)
     return get_errinfo();
 }
 
-VALUE
-rb_errinfo(void)
-{
-    return get_errinfo();
-}
-
+#if 0
 static void
 errinfo_setter(VALUE val, ID id, VALUE *var)
 {
@@ -2506,14 +2513,37 @@ errinfo_setter(VALUE val, ID id, VALUE *var)
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     else {
-	GET_THREAD()->errinfo = val;
+	VALUE *ptr = errinfo_place();
+	if (ptr) {
+	    *ptr = val;
+	}
+	else {
+	    rb_raise(rb_eRuntimeError, "errinfo_setter: not in rescue clause.");
+	}
     }
+}
+#endif
+
+VALUE
+rb_errinfo(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    return th->errinfo;
 }
 
 void
 rb_set_errinfo(VALUE err)
 {
-    errinfo_setter(err, 0, 0);
+    if (!NIL_P(err) && !rb_obj_is_kind_of(err, rb_eException)) {
+	rb_raise(rb_eTypeError, "assigning non-exception to $!");
+    }
+    GET_THREAD()->errinfo = err;
+}
+
+VALUE
+rb_rubylevel_errinfo(void)
+{
+    return get_errinfo();
 }
 
 static VALUE
@@ -2673,7 +2703,7 @@ Init_eval(void)
     __send_bang = rb_intern("__send!");
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
-    rb_define_virtual_variable("$!", errinfo_getter, errinfo_setter);
+    rb_define_virtual_variable("$!", errinfo_getter, 0);
 
     rb_define_global_function("eval", rb_f_eval, -1);
     rb_define_global_function("iterator?", rb_f_block_given_p, 0);
