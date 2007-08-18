@@ -103,7 +103,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     const int m = iseq->argc;
     const int orig_argc = argc;
 
-    if (iseq->arg_simple & 0x01) {
+    if (LIKELY(iseq->arg_simple & 0x01)) {
 	/* simple check */
 	if (argc != m) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
@@ -136,7 +136,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 	    for (i=0; i<iseq->arg_post_len; i++) {
 		dst[iseq->arg_post_start + iseq->arg_post_len - (i + 1)] = argv[argc - 1];
-		argc = argc - 1;
+		argc--;
 	    }
 	}
 
@@ -162,12 +162,18 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 	/* rest arguments */
 	if (iseq->arg_rest != -1) {
 	    dst[iseq->arg_rest] = rb_ary_new4(argc, argv);
+	    argc = 0;
 	}
 
 	/* block arguments */
 	if (block && iseq->arg_block != -1) {
 	    VALUE blockval = Qnil;
 	    rb_block_t * const blockptr = *block;
+
+	    if (argc != 0) {
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 orig_argc, m + iseq->arg_post_len);
+	    }
 
 	    if (blockptr) {
 		/* make Proc object */
