@@ -8115,7 +8115,8 @@ reg_compile_gen(struct parser_params* parser, const char *ptr, long len, int opt
     VALUE rb_reg_compile(const char *, long, int);
     VALUE re = rb_reg_compile(ptr, len, (options) & ~RE_OPTION_ONCE);
 
-    if (TYPE(re) == T_STRING) {
+    if (NIL_P(re)) {
+	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
 	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));
 	return Qnil;
     }

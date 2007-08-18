@@ -621,6 +621,20 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
     rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
 }
 
+static VALUE
+rb_reg_error_desc(const char *s, long len, int options, onig_errmsg_buffer err)
+{
+    char opts[6];
+    VALUE desc = rb_str_buf_new2(err);
+
+    rb_str_buf_cat2(desc, ": /");
+    rb_reg_expr_str(desc, s, len);
+    opts[0] = '/';
+    option_to_str(opts + 1, options);
+    strlcat(opts, arg_kcode(options), sizeof(opts));
+    rb_str_buf_cat2(desc, opts);
+    return rb_exc_new3(rb_eRegexpError, desc);
+}
 
 /*
  *  call-seq:
@@ -1528,10 +1542,10 @@ VALUE
 rb_reg_new(const char *s, long len, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
-    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+    onig_errmsg_buffer err;
 
     if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	rb_reg_raise(s, len, err, re);
+	rb_exc_raise(rb_reg_error_desc(s, len, options, err));
     }
 
     return re;
@@ -1541,18 +1555,11 @@ VALUE
 rb_reg_compile(const char *s, long len, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
-    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+    onig_errmsg_buffer err;
 
     if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	char opts[6];
-	VALUE desc = rb_str_buf_new2(err);
-
-	rb_str_buf_cat2(desc, ": /");
-	rb_reg_expr_str(desc, s, len);
-	opts[0] = '/';
-	option_to_str(opts + 1, options);
-	strlcat(opts, arg_kcode(options), sizeof(opts));
-	return rb_str_buf_cat2(desc, opts);
+	rb_set_errinfo(rb_reg_error_desc(s, len, options, err));
+	return Qnil;
     }
     FL_SET(re, REG_LITERAL);
     return re;
@@ -1870,7 +1877,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	len = RSTRING_LEN(argv[0]);
     }
     if (rb_reg_initialize(self, s, len, flags, err) != 0) {
-	rb_reg_raise(s, len, err, self);
+	rb_exc_raise(rb_reg_error_desc(s, len, flags, err));
     }
     return self;
 }
@@ -2112,6 +2119,7 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     onig_errmsg_buffer err;
     const char *s;
     long len;
+    int options;
 
     if (copy == re) return copy;
     rb_check_frozen(copy);
@@ -2122,8 +2130,9 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     rb_reg_check(re);
     s = RREGEXP(re)->str;
     len = RREGEXP(re)->len;
-    if (rb_reg_initialize(copy, s, len, rb_reg_options(re), err) != 0) {
-	rb_reg_raise(s, len, err, copy);
+    options = rb_reg_options(re);
+    if (rb_reg_initialize(copy, s, len, options, err) != 0) {
+	rb_exc_raise(rb_reg_error_desc(s, len, options, err));
     }
     return copy;
 }
