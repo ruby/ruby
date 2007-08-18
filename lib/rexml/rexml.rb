@@ -20,11 +20,10 @@
 # or can be accessed 
 # online[http://www.germane-software.com/software/rexml/docs/tutorial.html]
 module REXML
-	COPYRIGHT = "Copyright © 2001-2007 Sean Russell <ser@germane-software.com>"
+  COPYRIGHT = "Copyright © 2001-2007 Sean Russell <ser@germane-software.com>"
   DATE = "2007/209"
   VERSION = "3.1.7.1"
-  REVISION = "$Revision: 1270$".gsub(/\$Revision:|\$/,'').strip
-  REVISION = "$Revision$".gsub(/\$Revision:|\$/,'').strip
+  REVISION = %w"$Revision$"[1]
 
   Copyright = COPYRIGHT
   Version = VERSION
