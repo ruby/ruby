@@ -1,3 +1,7 @@
+Sat Aug 18 17:44:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (Init_tcltklib): use rb_set_end_proc().
+
 Sat Aug 18 15:59:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (detach_process_watcher): should not pass the pointer
