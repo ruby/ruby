@@ -432,4 +432,13 @@ assert_equal 'ok', %q{
     :ng
   end
 }, '[ruby-dev:31464]'
+assert_equal 'ok', %q{
+  begin
+    lambda{|&b|}.call(3)
+  rescue ArgumentError
+    :ok
+  else
+    :ng
+  end
+}, '[ruby-dev:31472]'
 
