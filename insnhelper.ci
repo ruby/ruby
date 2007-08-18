@@ -126,18 +126,14 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 	/* post arguments */
 	if (iseq->arg_post_len) {
-	    int i;
-
 	    if (!(orig_argc < iseq->arg_post_start)) {
 		VALUE *new_argv = ALLOCA_N(VALUE, argc);
 		MEMCPY(new_argv, argv, VALUE, argc);
 		argv = new_argv;
 	    }
 
-	    for (i=0; i<iseq->arg_post_len; i++) {
-		dst[iseq->arg_post_start + iseq->arg_post_len - (i + 1)] = argv[argc - 1];
-		argc--;
-	    }
+	    MEMCPY(&dst[iseq->arg_post_start], &argv[argc -= iseq->arg_post_len],
+		   VALUE, iseq->arg_post_len);
 	}
 
 	/* opt arguments */
@@ -589,13 +585,13 @@ vm_send_optimize(rb_control_frame_t *reg_cfp,
 	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
 	if (node->nd_cfnc == rb_f_funcall || node->nd_cfnc == rb_f_send) {
-	    int i;
-	    VALUE sym = TOPN(*num - 1);
+	    int i = *num - 1;
+	    VALUE sym = TOPN(i);
 	    *id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
 
 	    /* shift arguments */
-	    for (i=*num-1; i>0; i--) {
-		TOPN(i) = TOPN(i-1);
+	    if (i > 0) {
+		MEMCPY(&TOPN(i), &TOPN(i-1), VALUE, i);
 	    }
 
 	    *mn = rb_method_node(klass, *id);
@@ -697,9 +693,7 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 
 	    CHECK_STACK_OVERFLOW(th->cfp, argc);
 
-	    for (i=0; i<argc; i++) {
-		argv[i] = RARRAY_PTR(ary)[i];
-	    }
+	    MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
 	}
 
 	for (i=argc; i<m; i++) {
@@ -728,7 +722,7 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 		if (rsize < 0) rsize = 0;
 		if (psize > len) psize = len;
 
-		ary = rb_ary_new4(rsize, &argv[r]);
+		ary = rb_ary_new4(rsize - psize, &argv[r]);
 
 		if (0) {
 		    printf(" argc: %d\n", argc);
@@ -738,11 +732,9 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 		}
 
 		/* copy post argument */
-		for (i=0; i<psize; i++) {
-		    argv[start + psize - i - 1] = rb_ary_pop(ary);
-		}
+		MEMMOVE(&argv[start], &argv[r + rsize - psize], VALUE, psize);
 
-		for (; i<len; i++) {
+		for (i=psize; i<len; i++) {
 		    argv[start + i] = Qnil;
 		}
 		argv[r] = ary;
