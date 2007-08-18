@@ -26,6 +26,11 @@ with all sufficient information, see the ChangeLog file.
 
   * Remove redundant module namespace in Cipher, Digest, PKCS7, PKCS12.
     Compatibility classes are provided which will be removed in Ruby 1.9.
+
+* tmpdir
+
+  * New method:
+    Dir.mktmpdir
           
 == Changes with Ruby 1.8.5
 
