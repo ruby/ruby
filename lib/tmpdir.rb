@@ -54,7 +54,7 @@ class Dir
   # the prefix "d" is used.
   #
   # The directory is created under Dir.tmpdir or
-  # the optional second argument <i>tmpdir</i> if given.
+  # the optional second argument <i>tmpdir</i> if non-nil value is given.
   #
   # If a block is given,
   # it is yielded with the path of the directory.
