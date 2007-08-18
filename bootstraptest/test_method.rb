@@ -906,3 +906,13 @@ assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
   $ans
 }
 
+assert_equal 'ok', %q{
+  class C
+    def x=(n)
+    end
+    def m
+      self.x = :ok
+    end
+  end
+  C.new.m
+}

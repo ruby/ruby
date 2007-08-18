@@ -1,3 +1,10 @@
+Sat Aug 18 13:55:58 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): fix to allow self.x=
+	  if x= is private.
+
+	* bootstraptest/test_method.rb: add a test for above.
+
 Sat Aug 18 14:05:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_compile_gen): obtain error info from errinfo.

@@ -4359,6 +4359,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	argc = setup_args(iseq, args, node->nd_args, &flag);
 
 	if (node->nd_recv == (NODE *) 1) {
+	    flag |= VM_CALL_FCALL_BIT;
 	    ADD_INSN(recv, nd_line(node), putself);
 	}
 	else {
