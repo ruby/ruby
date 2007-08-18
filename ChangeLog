@@ -1,3 +1,7 @@
+Sat Aug 18 17:40:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (is_ruby_native_thread): check properly.  [ruby-dev:31166]
+
 Sat Aug 18 16:44:15 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_call_bmethod), 

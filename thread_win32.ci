@@ -20,10 +20,26 @@
 #define native_thread_yield() Sleep(0)
 #define remove_signal_thread_list(th)
 
+static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
+
+static rb_thread_t *
+ruby_thread_from_native(void)
+{
+    return TlsGetValue(ruby_native_thread_key);
+}
+
+static int
+ruby_thread_set_native(rb_thread_t *th)
+{
+    return TlsSetValue(ruby_native_thread_key, th);
+}
+
 static void
-Init_native_thread()
+Init_native_thread(void)
 {
     rb_thread_t *th = GET_THREAD();
+
+    ruby_native_thread_key = TlsAlloc();
     DuplicateHandle(GetCurrentProcess(),
 		    GetCurrentThread(),
 		    GetCurrentProcess(),

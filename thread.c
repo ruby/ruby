@@ -3002,5 +3002,8 @@ Init_Thread(void)
 int
 is_ruby_native_thread(void)
 {
-    return Qtrue;
+    rb_thread_t *rb_thread_check_ptr(rb_thread_t *ptr);
+    rb_thread_t *th = ruby_thread_from_native();
+
+    return th ? Qtrue : Qfalse;
 }
