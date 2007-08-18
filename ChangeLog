@@ -1,3 +1,11 @@
+Sat Aug 18 16:44:15 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_call_bmethod), 
+	  vm.c (vm_invoke_proc_core): fix to do not restore
+	  $SAFE when proc invoked by bmethod.
+
+	* vm_core.h: ditto.
+
 Sat Aug 18 16:44:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.ci (ruby_error_print): call error_print.

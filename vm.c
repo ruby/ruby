@@ -606,8 +606,8 @@ vm_yield(rb_thread_t *th, int argc, VALUE *argv)
 }
 
 VALUE
-vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
-	       VALUE self, int argc, VALUE *argv)
+vm_invoke_proc_core(rb_thread_t *th, rb_proc_t *proc,
+		    VALUE self, int argc, VALUE *argv, int restore_safe)
 {
     VALUE val = Qundef;
     int state;
@@ -623,7 +623,10 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     }
     TH_POP_TAG();
 
-    th->safe_level = stored_safe;
+    if (restore_safe) {
+	th->safe_level = stored_safe;
+    }
+
     lfp_set_special_cref(proc->block.lfp, (NODE*)stored_special_cref_stack);
 
     if (state) {
@@ -645,6 +648,13 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 	JUMP_TAG(state);
     }
     return val;
+}
+
+VALUE
+vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
+	       VALUE self, int argc, VALUE *argv)
+{
+    return vm_invoke_proc_core(th, proc, self, argc, argv, 1);
 }
 
 /* special variable */
