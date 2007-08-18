@@ -201,7 +201,7 @@ str_new3(VALUE klass, VALUE str)
 	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
 	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
 	RSTRING(str2)->as.heap.aux.shared = str;
-    FL_SET(str2, ELTS_SHARED);
+	FL_SET(str2, ELTS_SHARED);
     }
 
     return str2;

@@ -532,45 +532,45 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	node = mn->nd_body;
 	switch (nd_type(node)) {
 	  case RUBY_VM_METHOD_NODE:{
-	      vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
-	      return Qundef;
+	    vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+	    return Qundef;
 	  }
 	  case NODE_CFUNC:{
-	      val = vm_call_cfunc(th, cfp, num, id, recv, klass, node, blockptr);
-	      break;
+	    val = vm_call_cfunc(th, cfp, num, id, recv, klass, node, blockptr);
+	    break;
 	  }
 	  case NODE_ATTRSET:{
-	      val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
-	      cfp->sp -= 2;
-	      break;
+	    val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
+	    cfp->sp -= 2;
+	    break;
 	  }
 	  case NODE_IVAR:{
-	      val = rb_ivar_get(recv, node->nd_vid);
-	      cfp->sp -= 1;
-	      break;
+	    val = rb_ivar_get(recv, node->nd_vid);
+	    cfp->sp -= 1;
+	    break;
 	  }
 	  case NODE_BMETHOD:{
-	      VALUE *argv = cfp->sp - num;
-	      val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
-	      cfp->sp += - num - 1;
-	      break;
+	    VALUE *argv = cfp->sp - num;
+	    val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
+	    cfp->sp += - num - 1;
+	    break;
 	  }
 	  case NODE_ZSUPER:{
-	      klass = RCLASS(mn->nd_clss)->super;
-	      mn = rb_method_node(klass, id);
+	    klass = RCLASS(mn->nd_clss)->super;
+	    mn = rb_method_node(klass, id);
 
-	      if (mn != 0) {
-		  goto normal_method_dispatch;
-	      }
-	      else {
-		  goto start_method_dispatch;
-	      }
+	    if (mn != 0) {
+		goto normal_method_dispatch;
+	    }
+	    else {
+		goto start_method_dispatch;
+	    }
 	  }
 	  default:{
-	      printf("node: %s\n", ruby_node_name(nd_type(node)));
-	      rb_bug("eval_invoke_method: unreachable");
-	      /* unreachable */
-	      break;
+	    printf("node: %s\n", ruby_node_name(nd_type(node)));
+	    rb_bug("eval_invoke_method: unreachable");
+	    /* unreachable */
+	    break;
 	  }
 	}
     }
@@ -881,14 +881,14 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
       case 2:
 	return svar->basic.klass;
       default: {
-	  VALUE hash = svar->v3;
+	VALUE hash = svar->v3;
 
-	  if (hash == Qnil) {
-	      return Qnil;
-	  }
-	  else {
-	      return rb_hash_lookup(hash, key);
-	  }
+	if (hash == Qnil) {
+	    return Qnil;
+	}
+	else {
+	    return rb_hash_lookup(hash, key);
+	}
       }
     }
 }
@@ -909,12 +909,12 @@ lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
 	svar->basic.klass = val;
 	return;
       default: {
-	  VALUE hash = svar->v3;
+	VALUE hash = svar->v3;
 
-	  if (hash == Qnil) {
-	      svar->v3 = hash = rb_hash_new();
-	  }
-	  rb_hash_aset(hash, key, val);
+	if (hash == Qnil) {
+	    svar->v3 = hash = rb_hash_new();
+	}
+	rb_hash_aset(hash, key, val);
       }
     }
 }
