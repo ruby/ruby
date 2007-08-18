@@ -1,3 +1,9 @@
+Sat Aug 18 19:02:34 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_yield.rb (TestYieldGen): relax array size check
+	  in nested parameters.
+	  [ruby-dev:31485]
+
 Sat Aug 18 17:44:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (Init_tcltklib): use rb_set_end_proc().

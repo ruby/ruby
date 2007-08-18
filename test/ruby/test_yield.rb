@@ -193,13 +193,13 @@ class TestRubyYieldGen < Test::Unit::TestCase
     eval code
   end
 
-  def emu_bind_single(arg, param, islambda, result_binding)
+  def emu_bind_single(arg, param, result_binding)
     #p [:emu_bind_single, arg, param]
     if param.length == 1 && String === param[0] && /\A[a-z0-9]+\z/ =~ param[0]
       result_binding[param[0]] = arg
     elsif param.length == 1 && Array === param[0] && param[0][0] == '(' && param[0][-1] == ')'
       arg = [arg] unless Array === arg
-      emu_bind_params(arg, split_by_comma(param[0][1...-1]), islambda, result_binding)
+      emu_bind_params(arg, split_by_comma(param[0][1...-1]), false, result_binding)
     else
       raise "unexpected param: #{param.inspect}"
     end
@@ -234,18 +234,18 @@ class TestRubyYieldGen < Test::Unit::TestCase
       pre_params = params[0...star_index]
       rest_param = params[star_index]
       post_params = params[(star_index+1)..-1]
-      pre_params.each {|par| emu_bind_single(args.shift, par, islambda, result_binding) }
+      pre_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
       if post_params.length <= args.length
-        post_params.reverse_each {|par| emu_bind_single(args.pop, par, islambda, result_binding) }
+        post_params.reverse_each {|par| emu_bind_single(args.pop, par, result_binding) }
       else
-        post_params.each {|par| emu_bind_single(args.shift, par, islambda, result_binding) }
+        post_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
       end
       if rest_param != ['*']
-        emu_bind_single(args, rest_param[1..-1], islambda, result_binding)
+        emu_bind_single(args, rest_param[1..-1], result_binding)
       end
     else
       params.each_with_index {|par, i|
-        emu_bind_single(args[i], par, islambda, result_binding)
+        emu_bind_single(args[i], par, result_binding)
       }
     end
 
