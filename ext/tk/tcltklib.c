@@ -4358,12 +4358,11 @@ delete_slaves(ip)
 
 
 /* finalize operation */
-static VALUE
+static void
 lib_mark_at_exit(self)
     VALUE self;
 {
     at_exit = 1;
-    return Qnil;
 }
 
 static int
@@ -7978,8 +7977,6 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    rb_define_module_function(lib, "_mark_at_exit", lib_mark_at_exit, 0);
-
     rb_define_module_function(lib, "mainloop", lib_mainloop, -1);
     rb_define_module_function(lib, "mainloop_thread?", 
                               lib_evloop_thread_p, 0);
@@ -8116,7 +8113,7 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    rb_eval_string("at_exit{ TclTkLib._mark_at_exit }");
+    rb_set_end_proc(lib_mark_at_exit, 0);
 
     /* --------------------------------------------------------------- */
 

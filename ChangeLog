@@ -1,3 +1,7 @@
+Sat Aug 18 17:44:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (Init_tcltklib): use rb_set_end_proc().
+
 Sat Aug 18 17:40:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (is_ruby_native_thread): check properly.  [ruby-dev:31166]
