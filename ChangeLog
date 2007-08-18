@@ -1,3 +1,8 @@
+Sat Aug 18 15:52:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insnhelper.ci (vm_send_optimize): use MEMMOVE to shift values inside
+	  an array.
+
 Sat Aug 18 15:45:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insnhelper.ci (vm_yield_setup_args): rsize and psize should not be
