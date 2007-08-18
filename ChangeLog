@@ -1,3 +1,8 @@
+Sat Aug 18 15:45:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insnhelper.ci (vm_yield_setup_args): rsize and psize should not be
+	  negative.
+
 Sat Aug 18 14:35:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insnhelper.ci (vm_callee_setup_arg, vm_send_optimize,

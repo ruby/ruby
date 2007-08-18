@@ -715,11 +715,10 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 	    if (iseq->arg_post_len) {
 		int len = iseq->arg_post_len;
 		int start = iseq->arg_post_start;
-		int rsize = argc - m;
+		int rsize = argc > m ? argc - m : 0;
 		int psize = rsize;
 		VALUE ary;
 
-		if (rsize < 0) rsize = 0;
 		if (psize > len) psize = len;
 
 		ary = rb_ary_new4(rsize - psize, &argv[r]);
