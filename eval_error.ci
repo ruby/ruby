@@ -106,10 +106,12 @@ error_print(void)
     if (EXEC_TAG())
 	goto error;
     if (NIL_P(errat)) {
-	if (rb_sourcefile())
-	    warn_printf("%s:%d", rb_sourcefile(), rb_sourceline());
+	const char *file = rb_sourcefile();
+	int line = rb_sourceline();
+	if (file)
+	    warn_printf("%s:%d", file, line);
 	else
-	    warn_printf("%d", rb_sourceline());
+	    warn_printf("%d", line);
     }
     else if (RARRAY_LEN(errat) == 0) {
 	error_pos();
@@ -155,7 +157,7 @@ error_print(void)
 
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
-	    if (tail = memchr(einfo, '\n', elen)) {
+	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
@@ -195,6 +197,12 @@ error_print(void)
     }
   error:
     POP_TAG();
+}
+
+void
+ruby_error_print(void)
+{
+    error_print();
 }
 
 void

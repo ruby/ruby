@@ -12,6 +12,9 @@
 
 **********************************************************************/
 
+#ifdef linux
+#define _GNU_SOURCE 1
+#endif
 #include "ruby/ruby.h"
 #include "ruby/signal.h"
 #include "vm_core.h"
@@ -829,33 +832,32 @@ proc_waitall(void)
     if (pid_tbl) {
 	st_foreach(pid_tbl, waitall_each, result);
     }
+#else
+    rb_last_status_clear();
+#endif
 
     for (pid = -1;;) {
+#ifdef NO_WAITPID
 	pid = wait(&status);
+#else
+	pid = rb_waitpid(-1, &status, 0);
+#endif
 	if (pid == -1) {
 	    if (errno == ECHILD)
 		break;
+#ifdef NO_WAITPID
 	    if (errno == EINTR) {
 		rb_thread_schedule();
 		continue;
 	    }
-	    rb_sys_fail(0);
-	}
-	rb_last_status_set(status, pid);
-	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
-    }
-#else
-    rb_last_status_clear();
-    for (pid = -1;;) {
-	pid = rb_waitpid(-1, &status, 0);
-	if (pid == -1) {
-	    if (errno == ECHILD)
-		break;
-	    rb_sys_fail(0);
-	}
-	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
-    }
 #endif
+	    rb_sys_fail(0);
+	}
+#ifdef NO_WAITPID
+	rb_last_status_set(status, pid);
+#endif
+	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
+    }
     return result;
 }
 
@@ -1082,8 +1084,8 @@ rb_proc_exec(const char *str)
     ss = ALLOCA_N(char, s-str+1);
     memcpy(ss, str, s-str);
     ss[s-str] = '\0';
-    if (*a++ = strtok(ss, " \t")) {
-	while (t = strtok(NULL, " \t")) {
+    if ((*a++ = strtok(ss, " \t")) != 0) {
+	while ((t = strtok(NULL, " \t")) != 0) {
 	    *a++ = t;
 	}
 	*a = NULL;
@@ -1523,6 +1525,127 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 
     return Qnil;		/* not reached */
 }
+
+void
+rb_exit(int status)
+{
+    if (GET_THREAD()->tag) {
+	VALUE args[2];
+
+	args[0] = INT2NUM(status);
+	args[1] = rb_str_new2("exit");
+	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
+    }
+    ruby_finalize();
+    exit(status);
+}
+
+
+/*
+ *  call-seq:
+ *     exit(integer=0)
+ *     Kernel::exit(integer=0)
+ *     Process::exit(integer=0)
+ *  
+ *  Initiates the termination of the Ruby script by raising the
+ *  <code>SystemExit</code> exception. This exception may be caught. The
+ *  optional parameter is used to return a status code to the invoking
+ *  environment.
+ *     
+ *     begin
+ *       exit
+ *       puts "never get here"
+ *     rescue SystemExit
+ *       puts "rescued a SystemExit exception"
+ *     end
+ *     puts "after begin block"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     rescued a SystemExit exception
+ *     after begin block
+ *     
+ *  Just prior to termination, Ruby executes any <code>at_exit</code> functions
+ *  (see Kernel::at_exit) and runs any object finalizers (see
+ *  ObjectSpace::define_finalizer).
+ *     
+ *     at_exit { puts "at_exit function" }
+ *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
+ *     exit
+ *     
+ *  <em>produces:</em>
+ *     
+ *     at_exit function
+ *     in finalizer
+ */
+
+VALUE
+rb_f_exit(int argc, VALUE *argv)
+{
+    VALUE status;
+    int istatus;
+
+    rb_secure(4);
+    if (rb_scan_args(argc, argv, "01", &status) == 1) {
+	switch (status) {
+	  case Qtrue:
+	    istatus = EXIT_SUCCESS;
+	    break;
+	  case Qfalse:
+	    istatus = EXIT_FAILURE;
+	    break;
+	  default:
+	    istatus = NUM2INT(status);
+#if EXIT_SUCCESS != 0
+	    if (istatus == 0)
+		istatus = EXIT_SUCCESS;
+#endif
+	    break;
+	}
+    }
+    else {
+	istatus = EXIT_SUCCESS;
+    }
+    rb_exit(istatus);
+    return Qnil;		/* not reached */
+}
+
+
+/*
+ *  call-seq:
+ *     abort
+ *     Kernel::abort
+ *     Process::abort
+ *  
+ *  Terminate execution immediately, effectively by calling
+ *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
+ *  to STDERR prior to terminating.
+ */
+
+VALUE
+rb_f_abort(int argc, VALUE *argv)
+{
+    extern void ruby_error_print(void);
+
+    rb_secure(4);
+    if (argc == 0) {
+	if (!NIL_P(GET_THREAD()->errinfo)) {
+	    ruby_error_print();
+	}
+	rb_exit(EXIT_FAILURE);
+    }
+    else {
+	VALUE args[2];
+
+	rb_scan_args(argc, argv, "1", &args[1]);
+	StringValue(argv[0]);
+	rb_io_puts(argc, argv, rb_stderr);
+	args[0] = INT2NUM(EXIT_FAILURE);
+	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
+    }
+    return Qnil;		/* not reached */
+}
+
 
 #if defined(sun)
 #define signal(a,b) sigset(a,b)
@@ -3669,6 +3792,8 @@ Init_process(void)
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("spawn", rb_f_spawn, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);
+    rb_define_global_function("exit", rb_f_exit, -1);
+    rb_define_global_function("abort", rb_f_abort, -1);
 
     rb_mProcess = rb_define_module("Process");
 
@@ -3689,8 +3814,8 @@ Init_process(void)
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
-    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   /* in eval.c */
-    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1); /* in eval.c */
+    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
+    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);

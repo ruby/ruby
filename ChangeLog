@@ -1,3 +1,9 @@
+Sat Aug 18 16:44:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.ci (ruby_error_print): call error_print.
+
+	* eval_jump.ci, process.c (rb_exit, rb_f_exit, rb_f_abort): moved.
+
 Sat Aug 18 15:59:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (detach_process_watcher): should not pass the pointer
