@@ -220,11 +220,11 @@ class TestRubyYieldGen < Test::Unit::TestCase
     if islambda
       if star_index
         if args.length < params.length - 1
-          throw :argumenterror, ArgumentError
+          throw :emuerror, ArgumentError
         end
       else
         if args.length != params.length
-          throw :argumenterror, ArgumentError
+          throw :emuerror, ArgumentError
         end
       end
     end
@@ -254,7 +254,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
     result_binding
   end
 
-  def emu(t, islambda)
+  def emu_bind(t, islambda)
     #puts
     #p t
     command_args_noblock = t[1]
@@ -297,13 +297,17 @@ class TestRubyYieldGen < Test::Unit::TestCase
     result_binding
   end
 
+  def emu(t, vars, islambda)
+    catch(:emuerror) {
+      emu_binding = emu_bind(t, islambda)
+      vars.map {|var| emu_binding.fetch(var, "NOVAL") }
+    }
+  end
+
   def check_nofork(t, islambda=false)
     t, vars = rename_var(t)
     t = t.subst('vars') { " [#{vars.join(",")}]" }
-    emu_values = catch(:argumenterror) {
-      emu_binding = emu(t, islambda)
-      vars.map {|var| emu_binding.fetch(var, "NOVAL") }
-    }
+    emu_values = emu(t, vars, islambda)
     s = t.to_s
     #print "#{s}\t\t"
     #STDOUT.flush
