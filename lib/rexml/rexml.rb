@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 # REXML is an XML toolkit for Ruby[http://www.ruby-lang.org], in Ruby.
 #
 # REXML is a _pure_ Ruby, XML 1.0 conforming,
