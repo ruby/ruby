@@ -154,7 +154,8 @@ class TestRubyYieldGen < Test::Unit::TestCase
                        []],
     :block_arg => [['&', :arg]],
     #:test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
-    :test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
+    :test_proc => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']],
+    :test_lambda => [['def m() yield', :command_args_noblock, ' end; r = m(&lambda {', :block_param_def, 'vars', '}); undef m; r']]
   }
 
   def rename_var(obj)
@@ -192,20 +193,20 @@ class TestRubyYieldGen < Test::Unit::TestCase
     eval code
   end
 
-  def emu_bind_single(arg, param, result_binding)
+  def emu_bind_single(arg, param, islambda, result_binding)
     #p [:emu_bind_single, arg, param]
     if param.length == 1 && String === param[0] && /\A[a-z0-9]+\z/ =~ param[0]
       result_binding[param[0]] = arg
     elsif param.length == 1 && Array === param[0] && param[0][0] == '(' && param[0][-1] == ')'
       arg = [arg] unless Array === arg
-      emu_bind_params(arg, split_by_comma(param[0][1...-1]), result_binding)
+      emu_bind_params(arg, split_by_comma(param[0][1...-1]), islambda, result_binding)
     else
       raise "unexpected param: #{param.inspect}"
     end
     result_binding
   end
 
-  def emu_bind_params(args, params, result_binding={})
+  def emu_bind_params(args, params, islambda, result_binding={})
     #p [:emu_bind_params, args, params]
     if params.last == [] # extra comma
       params.pop
@@ -216,23 +217,35 @@ class TestRubyYieldGen < Test::Unit::TestCase
       star_index = i if par[0] == '*'
     }
 
+    if islambda
+      if star_index
+        if args.length < params.length - 1
+          throw :argumenterror, ArgumentError
+        end
+      else
+        if args.length != params.length
+          throw :argumenterror, ArgumentError
+        end
+      end
+    end
+
     # TRICK #2 : adjust mismatch on number of arguments
     if star_index
       pre_params = params[0...star_index]
       rest_param = params[star_index]
       post_params = params[(star_index+1)..-1]
-      pre_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
+      pre_params.each {|par| emu_bind_single(args.shift, par, islambda, result_binding) }
       if post_params.length <= args.length
-        post_params.reverse_each {|par| emu_bind_single(args.pop, par, result_binding) }
+        post_params.reverse_each {|par| emu_bind_single(args.pop, par, islambda, result_binding) }
       else
-        post_params.each {|par| emu_bind_single(args.shift, par, result_binding) }
+        post_params.each {|par| emu_bind_single(args.shift, par, islambda, result_binding) }
       end
       if rest_param != ['*']
-        emu_bind_single(args, rest_param[1..-1], result_binding)
+        emu_bind_single(args, rest_param[1..-1], islambda, result_binding)
       end
     else
       params.each_with_index {|par, i|
-        emu_bind_single(args[i], par, result_binding)
+        emu_bind_single(args[i], par, islambda, result_binding)
       }
     end
 
@@ -241,7 +254,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
     result_binding
   end
 
-  def emu(t)
+  def emu(t, islambda)
     #puts
     #p t
     command_args_noblock = t[1]
@@ -270,25 +283,35 @@ class TestRubyYieldGen < Test::Unit::TestCase
       params.pop
     end
 
-    # TRICK #1 : single array argument is expanded if there are two or more params.
-    if args.length == 1 && Array === args[0] && 1 < params.length
-      args = args[0]
+    if !islambda
+      # TRICK #1 : single array argument is expanded if there are two or more params.
+      # * block parameter is not counted.
+      # * extra comma after single param forces the expansion.
+      if args.length == 1 && Array === args[0] && 1 < params.length
+        args = args[0]
+      end
     end
 
-    emu_bind_params(args, params, result_binding)
+    emu_bind_params(args, params, islambda, result_binding)
     #p result_binding
     result_binding
   end
 
-  def check_nofork(t)
+  def check_nofork(t, islambda=false)
     t, vars = rename_var(t)
     t = t.subst('vars') { " [#{vars.join(",")}]" }
-    emu_binding = emu(t)
-    emu_values = vars.map {|var| emu_binding.fetch(var, "NOVAL") }
+    emu_values = catch(:argumenterror) {
+      emu_binding = emu(t, islambda)
+      vars.map {|var| emu_binding.fetch(var, "NOVAL") }
+    }
     s = t.to_s
     #print "#{s}\t\t"
     #STDOUT.flush
-    eval_values = eval(s)
+    begin
+      eval_values = eval(s)
+    rescue ArgumentError
+      eval_values = ArgumentError
+    end
     #success = emu_values == eval_values ? 'succ' : 'fail'
     #puts "eval:#{vs_ev.inspect[1...-1].delete(' ')}\temu:#{vs_emu.inspect[1...-1].delete(' ')}\t#{success}"
     assert_equal(emu_values, eval_values, s)
@@ -296,8 +319,16 @@ class TestRubyYieldGen < Test::Unit::TestCase
 
   def test_yield
     syntax = Sentence::Gen.expand_syntax(Syntax)
-    Sentence.each(syntax, :test, 4) {|t|
+    Sentence.each(syntax, :test_proc, 4) {|t|
       check_nofork(t)
     }
   end
+
+  def test_yield_lambda
+    syntax = Sentence::Gen.expand_syntax(Syntax)
+    Sentence.each(syntax, :test_lambda, 4) {|t|
+      check_nofork(t, true)
+    }
+  end
+
 end

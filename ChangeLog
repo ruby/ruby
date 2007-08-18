@@ -1,3 +1,8 @@
+Sat Aug 18 12:42:50 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_yield.rb (TestYieldGen): add test for yielding to
+	  lambda using lambda parameter passing emulator.
+
 Sat Aug 18 12:24:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/test.rb, test/ruby/test_system.rb(valid_syntax?): keep

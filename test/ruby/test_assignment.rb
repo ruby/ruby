@@ -636,7 +636,6 @@ class TestAssignmentGen < Test::Unit::TestCase
     lopen = lhs.any? {|e| e == '*' || e == ',' }
     ropen = rhs.any? {|e| e == '*' || e == ',' }
     lhs = extract_single_element(lhs) if !lopen
-    rhs = ["(",rhs,")"] if ropen
     begin
       rv = eval((ropen ? ["[",assign[2],"]"] : assign[2]).join(''))
     rescue Exception
