@@ -904,7 +904,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    if (iseq->arg_opts == 0 && iseq->arg_post_len == 0 && iseq->arg_rest == -1) {
 		if (iseq->argc == 1 && last_comma == 0) {
 		    /* {|a|} */
-		    iseq->arg_simple = 2;
+		    iseq->arg_simple |= 0x02;
 		}
 	    }
 	}

@@ -423,4 +423,13 @@ assert_equal '[0]', %q{
   end
   m{|v, &b| v}.inspect
 }, '[ruby-dev:31440]'
+assert_equal 'ok', %q{
+  begin
+    lambda{|a|}.call(1, 2)
+  rescue ArgumentError
+    :ok
+  else
+    :ng
+  end
+}, '[ruby-dev:31464]'
 

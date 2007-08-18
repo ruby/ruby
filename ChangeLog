@@ -1,3 +1,10 @@
+Sat Aug 18 11:44:59 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_set_arguments), insnhelper.ci
+	  (vm_callee_setup_arg, vm_yield_setup_args): 
+
+	* bootstraptest/test_block.rb: add tests for above.
+
 Sat Aug 18 01:12:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (frame_func_id): return proper method ID.

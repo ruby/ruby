@@ -103,7 +103,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     const int m = iseq->argc;
     const int orig_argc = argc;
 
-    if (iseq->arg_simple == 1) {
+    if (iseq->arg_simple & 0x01) {
 	/* simple check */
 	if (argc != m) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
@@ -683,7 +683,9 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 	 *  => {|a|} => a = [1, 2]
 	 *  => {|a, b|} => a, b = [1, 2]
 	 */
-	if (iseq->arg_simple != 2 && (m + iseq->arg_post_len) > 0 && argc == 1 && TYPE(argv[0]) == T_ARRAY) {
+	if (!(iseq->arg_simple & 0x02) &&
+	    (m + iseq->arg_post_len) > 0 &&
+	    argc == 1 && TYPE(argv[0]) == T_ARRAY) {
 	    VALUE ary = argv[0];
 	    th->mark_stack_len = argc = RARRAY_LEN(ary);
 
@@ -1316,7 +1318,8 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VAL
 	    th->state = GET_THROWOBJ_STATE(err);
 	}
 	else {
-	    th->state = FIX2INT(rb_ivar_get(err, idThrowState));
+	    th->state = TAG_RAISE;
+	    //th->state = FIX2INT(rb_ivar_get(err, idThrowState));
 	}
 	return err;
     }
