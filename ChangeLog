@@ -1,3 +1,8 @@
+Sat Aug 18 12:24:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb, test/ruby/test_system.rb(valid_syntax?): keep
+	  comment lines first.
+
 Sat Aug 18 11:44:59 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_set_arguments), insnhelper.ci
