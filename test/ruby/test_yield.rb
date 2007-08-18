@@ -322,14 +322,14 @@ class TestRubyYieldGen < Test::Unit::TestCase
   end
 
   def test_yield
-    syntax = Sentence::Gen.expand_syntax(Syntax)
+    syntax = Sentence.expand_syntax(Syntax)
     Sentence.each(syntax, :test_proc, 4) {|t|
       check_nofork(t)
     }
   end
 
   def test_yield_lambda
-    syntax = Sentence::Gen.expand_syntax(Syntax)
+    syntax = Sentence.expand_syntax(Syntax)
     Sentence.each(syntax, :test_lambda, 4) {|t|
       check_nofork(t, true)
     }

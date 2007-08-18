@@ -658,7 +658,7 @@ class TestAssignmentGen < Test::Unit::TestCase
   end
 
   def test_assignment
-    syntax = Sentence::Gen.expand_syntax(Syntax)
+    syntax = Sentence.expand_syntax(Syntax)
     Sentence.each(syntax, :xassign, 3) {|assign|
       assign, vars = rename_var(assign)
       sent = assign.to_s
