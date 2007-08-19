@@ -3119,6 +3119,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSNL(ret, nd_line(node), jump, label_miss);
 	    ADD_LABEL(ret, label_hit);
 	    COMPILE(ret, "resbody body", resq->nd_body);
+	    if (iseq->compile_data->option->tailcall_optimization) {
+		ADD_INSN(ret, nd_line(node), nop);
+	    }
 	    ADD_INSN(ret, nd_line(node), leave);
 	    ADD_LABEL(ret, label_miss);
 	    resq = resq->nd_head;

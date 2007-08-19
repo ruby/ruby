@@ -14,31 +14,34 @@
 #ifndef VM_OPTS_H_INCLUDED
 #define VM_OPTS_H_INCLUDED
 
+/* Compile options.
+ * You can change these options at runtime by VM::CompileOption.
+ * Following definitions are default values.
+ */
+
+#define OPT_TRACE_INSTRUCTION        0
+#define OPT_TAILCALL_OPTIMIZATION    0
+#define OPT_PEEPHOLE_OPTIMIZATION    1
+#define OPT_SPECIALISED_INSTRUCTION  1
+#define OPT_INLINE_CONST_CACHE       1
+
+
+/* Build Options.
+ * You can't change these options at runtime.
+ */
+
 /* C compiler depend */
 #define OPT_DIRECT_THREADED_CODE     1
 #define OPT_CALL_THREADED_CODE       0
 
-/* architecture independent */
-
 /* VM running option */
 #define OPT_CHECKED_RUN              1
-#define OPT_TRACE_INSTRUCTION        0 /* default value */
-
-/* at compile */
-#define OPT_INLINE_CONST_CACHE       1
-#define OPT_TAILCALL_OPTIMIZATION    0 /* default value */
-#define OPT_PEEPHOLE_OPTIMIZATION    1
-#define OPT_SPECIALISED_INSTRUCTION  1
-
-/* at runtime */
 #define OPT_INLINE_METHOD_CACHE      1
 #define OPT_BLOCKINLINING            0
 
 /* architecture independent, affects generated code */
 #define OPT_OPERANDS_UNIFICATION     0
 #define OPT_INSTRUCTIONS_UNIFICATION 0
-
-/* code generation parameter */
 #define OPT_UNIFY_ALL_COMBINATION    0
 #define OPT_STACK_CACHING            0
 

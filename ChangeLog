@@ -1,3 +1,10 @@
+Sun Aug 19 13:13:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each/NODE_RESBODY): fix to add
+	  additional nop to prevent tailcall optimization.
+
+	* vm_opts.h: clean up comments.
+
 Sun Aug 19 12:58:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_call_bmethod): fix to propagate information
