@@ -1,3 +1,8 @@
+Sun Aug 19 12:32:39 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_callee_setup_arg): fix to mark enough VM stack.
+	  [ruby-dev:31492]
+
 Sat Aug 18 19:02:34 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_yield.rb (TestYieldGen): relax array size check

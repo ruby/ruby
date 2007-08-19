@@ -114,6 +114,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     else {
 	VALUE * const dst = argv;
 	int opt_pc = 0;
+	th->mark_stack_len = iseq->arg_size;
 
 	/* mandatory */
 	if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
@@ -176,9 +177,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 		if (blockptr->proc == 0) {
 		    rb_proc_t *proc;
 
-		    th->mark_stack_len = orig_argc; /* for GC */
 		    blockval = vm_make_proc(th, th->cfp, blockptr);
-		    th->mark_stack_len = 0;
 
 		    GetProcPtr(blockval, proc);
 		    *block = &proc->block;
@@ -190,7 +189,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 	    dst[iseq->arg_block] = blockval; /* Proc or nil */
 	}
-
+	th->mark_stack_len = 0;
 	return opt_pc;
     }
 }
