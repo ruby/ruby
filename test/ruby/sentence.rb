@@ -33,7 +33,7 @@
 # The third argument, 2, limits derivation to restrict results finitely.
 #
 # Some arithmetic expressions including parenthesis can be generated as follows.
-# 
+#
 #  syntax = {
 #    :factor => [["n"],
 #                ["(", :exp, ")"]],
@@ -160,10 +160,10 @@ class Sentence
 
   # returns the number of top level elements.
   #
-  #  Sentence.new(%w[foo bar]).length   
+  #  Sentence.new(%w[foo bar]).length
   #  #=> 2
   #
-  #  Sentence(%w[2 * 7], "+", %w[3 * 5]).length                         
+  #  Sentence(%w[2 * 7], "+", %w[3 * 5]).length
   #  #=> 3
   #
   def length
@@ -310,7 +310,7 @@ class Sentence
   #  #<Sentence: "n">
   #  #<Sentence: ("n") "+" ("n")>
   #  #<Sentence: ("n") "*" ("n")>
-  #  
+  #
   #  Sentence.each({
   #    :exp => [["n"],
   #             [:exp, "+", :exp],
@@ -336,33 +336,47 @@ class Sentence
   end
 
   # Sentence.expand_syntax returns an expanded syntax:
-  # * no underivable rule
-  # * no rule which derives only to empty sequence indirectly
-  # * no rule which is derivable to empty and non-empty
-  # * no channel rule
+  # * No rule derives to empty sequence
+  # * Underivable rule simplified
+  # * No channel rule
+  # * Symbols which has zero or one choices are not appered in rhs.
   #
   # Note that the rules which can derive empty and non-empty
   # sequences are modified to derive only non-empty sequences.
   #
   #  Sentence.expand_syntax({
-  #    :underivable => [[:underivable]],
-  #    :just_empty1 => [[]],
-  #    :just_empty2 => [[:just_empty1, :just_empty1]],
+  #    :underivable1 => [],
+  #    :underivable2 => [[:underivable1]],
+  #    :underivable3 => [[:underivable3]],
+  #    :empty_only1 => [[]],
+  #    :empty_only2 => [[:just_empty1, :just_empty1]],
   #    :empty_or_not => [[], ["foo"]],
   #    :empty_or_not_2 => [[:empty_or_not, :empty_or_not]],
-  #    :data => [["a", "b"], ["c", "d"]],
-  #    :channel => [[:data]],
-  #    })
+  #    :empty_or_not_3 => [[:empty_or_not, :empty_or_not, :empty_or_not]],
+  #    :empty_or_not_4 => [[:empty_or_not_2, :empty_or_not_2]],
+  #    :channel1 => [[:channeled_data]],
+  #    :channeled_data => [["a", "b"], ["c", "d"]],
+  #    :single_choice => [["single", "choice"]],
+  #    :single_choice_2 => [[:single_choice, :single_choice]],
+  #  })
   #  #=>
-  #  {:channel=>[["a", "b"], ["c", "d"]],
-  #   :data=>[["a", "b"], ["c", "d"]],
-  #   :empty_or_not=>[["foo"]],
-  #   :empty_or_not_2=>[[], ["foo"], ["foo", "foo"]],
-  #   :just_empty1=>[],
-  #   :just_empty2=>[]}
+  #  {
+  #   :underivable1=>[], # underivable rules are simplified to [].
+  #   :underivable2=>[],
+  #   :underivable3=>[],
+  #   :empty_only1=>[], # derivation to empty sequence are removed.
+  #   :empty_only2=>[],
+  #   :empty_or_not=>[["foo"]], # empty sequences are removed too.
+  #   :empty_or_not_2=>[["foo"], ["foo", "foo"]],
+  #   :empty_or_not_3=>[["foo"], ["foo", "foo"], ["foo", "foo", "foo"]],
+  #   :empty_or_not_4=> [["foo"], ["foo", "foo"], [:empty_or_not_2, :empty_or_not_2]],
+  #   :channel1=>[["a", "b"], ["c", "d"]], # channel rules are removed.
+  #   :channeled_data=>[["a", "b"], ["c", "d"]],
+  #   :single_choice=>[["single", "choice"]], # single choice rules are expanded.
+  #   :single_choice_2=>[["single", "choice", "single", "choice"]],
+  #  }
   #
-  #
-  #  Sentence.expand_syntax({      
+  #  Sentence.expand_syntax({
   #    :factor => [["n"],
   #                ["(", :exp, ")"]],
   #    :term => [[:factor],
@@ -406,16 +420,16 @@ class Sentence
     end
 
     def self.expand_syntax(syntax)
-      syntax = remove_underivable_rules(syntax)
-      syntax = expand_justempty_rules(syntax)
-      syntax = remove_emptyable_rules(syntax)
+      syntax = simplify_underivable_rules(syntax)
+      syntax = simplify_emptyonly_rules(syntax)
+      syntax = make_rules_no_empseq(syntax)
       syntax = expand_channel_rules(syntax)
 
       syntax = expand_noalt_rules(syntax)
       syntax = reorder_rules(syntax)
     end
 
-    def self.remove_underivable_rules(syntax)
+    def self.simplify_underivable_rules(syntax)
       deribable_syms = {}
       changed = true
       while changed
@@ -433,24 +447,27 @@ class Sentence
       end
       result = {}
       syntax.each {|sym, rules|
-        next if !deribable_syms[sym]
-        rules2 = []
-        rules.each {|rhs|
-          rules2 << rhs if rhs.all? {|e| String === e || deribable_syms[e] }
-        }
-        result[sym] = rules2.uniq
+        if deribable_syms[sym]
+          rules2 = []
+          rules.each {|rhs|
+            rules2 << rhs if rhs.all? {|e| String === e || deribable_syms[e] }
+          }
+          result[sym] = rules2.uniq
+        else
+          result[sym] = []
+        end
       }
       result
     end
 
-    def self.expand_justempty_rules(syntax)
+    def self.simplify_emptyonly_rules(syntax)
       justempty_syms = {}
       changed = true
       while changed
         changed = false
         syntax.each {|sym, rules|
           next if justempty_syms[sym]
-          if rules.all? {|rhs| rhs.all? {|e| justempty_syms[e] } }
+          if !rules.empty? && rules.all? {|rhs| rhs.all? {|e| justempty_syms[e] } }
             justempty_syms[sym] = true
             changed = true
           end
@@ -473,21 +490,22 @@ class Sentence
           yield rhs
         end
       else
-        butfirst = rhs[1..-1]
-        if emptyable_syms[rhs[0]]
-          expand_emptyable_syms(butfirst, emptyable_syms) {|rhs2| 
-            yield [rhs[0]] + rhs2
+        rest = rhs.dup
+        first = rest.shift
+        if emptyable_syms[first]
+          expand_emptyable_syms(rest, emptyable_syms) {|rhs2|
+            yield [first] + rhs2
             yield rhs2
           }
         else
-          expand_emptyable_syms(butfirst, emptyable_syms) {|rhs2|
-            yield [rhs[0]] + rhs2
+          expand_emptyable_syms(rest, emptyable_syms) {|rhs2|
+            yield [first] + rhs2
           }
         end
       end
     end
 
-    def self.remove_emptyable_rules(syntax)
+    def self.make_rules_no_empseq(syntax)
       emptyable_syms = {}
       changed = true
       while changed
@@ -508,6 +526,7 @@ class Sentence
         rules2 = []
         rules.each {|rhs|
           expand_emptyable_syms(rhs, emptyable_syms) {|rhs2|
+            next if rhs2.empty?
             rules2 << rhs2
           }
         }
@@ -528,7 +547,7 @@ class Sentence
       }
       changed = true
       while changed
-        changed = false 
+        changed = false
         channel_rules.each {|sym, set|
           n1 = set.size
           set.keys.each {|s|
