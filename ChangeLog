@@ -1,3 +1,7 @@
+Sun Aug 19 12:36:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/sentence.rb: new method Sentence().
+
 Sun Aug 19 12:32:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_callee_setup_arg): fix to mark enough VM stack.

@@ -34,7 +34,7 @@
 #
 # Some arithmetic expressions including parenthesis can be generated as follows.
 # 
-#  synax = {
+#  syntax = {
 #    :factor => [["n"],
 #                ["(", :exp, ")"]],
 #    :term => [[:factor],
@@ -74,6 +74,18 @@
 #  ...
 #
 
+# Sentence() instantiates a sentence object.
+#
+#  Sentence("foo", "bar")
+#  #=> #<Sentence: "foo" "bar">
+#
+#  Sentence("foo", ["bar", "baz"])
+#  #=> #<Sentence: "foo" ("bar" "baz")>
+#
+def Sentence(*ary)
+  Sentence.new(ary)
+end
+
 # Sentence class represents a tree with string leaves.
 #
 class Sentence
@@ -96,10 +108,10 @@ class Sentence
   # returns a string which is concatenation of all strings.
   # No separator is used.
   #
-  #  Sentence.new(["2", "+", "3"]).to_s
+  #  Sentence("2", "+", "3").to_s
   #  "2+3"
   #
-  #  Sentence.new(["2", "+", ["3", "*", "5"]]).to_s
+  #  Sentence("2", "+", ["3", "*", "5"]).to_s
   #  "2+3*5"
   #
   def to_s
@@ -109,13 +121,13 @@ class Sentence
   # returns a string which is concatenation of all strings separated by _sep_.
   # If _sep_ is not given, single space is used.
   #
-  #  Sentence.new(["I", "have", ["a", "pen"]]).join
+  #  Sentence("I", "have", ["a", "pen"]).join
   #  "I have a pen"
   #
-  #  Sentence.new(["I", "have", ["a", "pen"]]).join("/")
+  #  Sentence("I", "have", ["a", "pen"]).join("/")
   #  "I/have/a/pen"
   #
-  #  Sentence.new(["a", [], "b"]).join("/")
+  #  Sentence("a", [], "b").join("/")
   #  "a/b"
   #
   def join(sep=' ')
@@ -127,7 +139,7 @@ class Sentence
   # Note that the result is not copied.
   # Don't modify the result.
   #
-  #  Sentence.new([["foo", "bar"], "baz"]).to_a
+  #  Sentence(["foo", "bar"], "baz").to_a
   #  #=> [["foo", "bar"], "baz"]
   #
   def to_a
@@ -136,7 +148,7 @@ class Sentence
 
   # returns <i>i</i>th element as a sentence or string.
   #
-  #  s = Sentence.new([["foo", "bar"], "baz"])
+  #  s = Sentence(["foo", "bar"], "baz")
   #  s    #=> #<Sentence: ("foo" "bar") "baz">
   #  s[0] #=> #<Sentence: "foo" "bar">
   #  s[1] #=> "baz"
@@ -151,7 +163,7 @@ class Sentence
   #  Sentence.new(%w[foo bar]).length   
   #  #=> 2
   #
-  #  Sentence.new([%w[2 * 7], "+", %w[3 * 5]]).length                         
+  #  Sentence(%w[2 * 7], "+", %w[3 * 5]).length                         
   #  #=> 3
   #
   def length
@@ -216,7 +228,7 @@ class Sentence
   # The block is invoked for each subsentence in preorder manner.
   # The first subsentence which the block returns true is returned.
   #
-  #  Sentence.new([%w[2 * 7], "+", %w[3 * 5]]).find_subtree {|s| s[1] == "*" }
+  #  Sentence(%w[2 * 7], "+", %w[3 * 5]).find_subtree {|s| s[1] == "*" }
   #  #=> #<Sentence: "2" "*" "7">
   #
   def find_subtree(&b)
@@ -247,7 +259,7 @@ class Sentence
   # The subsentences which the block returns true are
   # expanded into parent.
   #
-  #  s = Sentence.new([%w[2 * 7], "+", %w[3 * 5]])
+  #  s = Sentence(%w[2 * 7], "+", %w[3 * 5])
   #  #=> #<Sentence: ("2" "*" "7") "+" ("3" "*" "5")>
   #
   #  s.expand { true }
@@ -348,6 +360,32 @@ class Sentence
   #   :empty_or_not_2=>[[], ["foo"], ["foo", "foo"]],
   #   :just_empty1=>[],
   #   :just_empty2=>[]}
+  #
+  #
+  #  Sentence.expand_syntax({      
+  #    :factor => [["n"],
+  #                ["(", :exp, ")"]],
+  #    :term => [[:factor],
+  #              [:term, "*", :factor],
+  #              [:term, "/", :factor]],
+  #    :exp => [[:term],
+  #             [:exp, "+", :term],
+  #             [:exp, "-", :term]]
+  #  })
+  #  #=>
+  #  {:exp=> [["n"],
+  #           ["(", :exp, ")"],
+  #           [:exp, "+", :term],
+  #           [:exp, "-", :term],
+  #           [:term, "*", :factor],
+  #           [:term, "/", :factor]],
+  #   :factor=> [["n"],
+  #              ["(", :exp, ")"]],
+  #   :term=> [["n"],
+  #            ["(", :exp, ")"],
+  #            [:term, "*", :factor],
+  #            [:term, "/", :factor]]
+  #  }
   #
   def Sentence.expand_syntax(syntax)
     Sentence::Gen.expand_syntax(syntax)
