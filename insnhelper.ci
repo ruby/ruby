@@ -387,7 +387,7 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
     (cfp-2)->method_klass = klass;
 
     GetProcPtr(procval, proc);
-    val = vm_invoke_proc_core(th, proc, recv, argc, argv, 0);
+    val = vm_invoke_proc(th, proc, recv, argc, argv);
     return val;
 }
 

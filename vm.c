@@ -606,8 +606,8 @@ vm_yield(rb_thread_t *th, int argc, VALUE *argv)
 }
 
 VALUE
-vm_invoke_proc_core(rb_thread_t *th, rb_proc_t *proc,
-		    VALUE self, int argc, VALUE *argv, int restore_safe)
+vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
+	       VALUE self, int argc, VALUE *argv)
 {
     VALUE val = Qundef;
     int state;
@@ -623,7 +623,7 @@ vm_invoke_proc_core(rb_thread_t *th, rb_proc_t *proc,
     }
     TH_POP_TAG();
 
-    if (restore_safe) {
+    if (!proc->is_from_method) {
 	th->safe_level = stored_safe;
     }
 
@@ -648,13 +648,6 @@ vm_invoke_proc_core(rb_thread_t *th, rb_proc_t *proc,
 	JUMP_TAG(state);
     }
     return val;
-}
-
-VALUE
-vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
-	       VALUE self, int argc, VALUE *argv)
-{
-    return vm_invoke_proc_core(th, proc, self, argc, argv, 1);
 }
 
 /* special variable */

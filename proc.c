@@ -957,6 +957,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    proc->block.iseq->defined_method_id = id;
 	    proc->block.iseq->klass = mod;
 	    proc->is_lambda = Qtrue;
+	    proc->is_from_method = Qtrue;
 	}
 	node = NEW_BMETHOD(body);
     }
@@ -1351,7 +1352,8 @@ rb_proc_new(
 static VALUE
 method_proc(VALUE method)
 {
-    VALUE proc;
+    VALUE procval;
+    rb_proc_t *proc;
     /*
      * class Method
      *   def to_proc
@@ -1361,8 +1363,10 @@ method_proc(VALUE method)
      *   end
      * end
      */
-    proc = rb_iterate((VALUE (*)(VALUE))mlambda, 0, bmcall, method);
-    return proc;
+    procval = rb_iterate((VALUE (*)(VALUE))mlambda, 0, bmcall, method);
+    GetProcPtr(procval, proc);
+    proc->is_from_method = 1;
+    return procval;
 }
 
 static VALUE
