@@ -40,8 +40,12 @@
 # ifndef VALGRIND_MAKE_MEM_DEFINED
 #  define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE(p, n)
 # endif
+# ifndef VALGRIND_MAKE_MEM_UNDEFINED
+#  define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE(p, n)
+# endif
 #else
 # define VALGRIND_MAKE_MEM_DEFINED(p, n) /* empty */
+# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
 #endif
 
 int rb_io_fptr_finalize(struct rb_io_t*);
@@ -1099,6 +1103,7 @@ finalize_list(RVALUE *p)
 	RVALUE *tmp = p->as.free.next;
 	run_final((VALUE)p);
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
+            VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 	    p->as.free.flags = 0;
 	    p->as.free.next = freelist;
 	    freelist = p;
@@ -1168,6 +1173,7 @@ gc_sweep(void)
 		    final_list = p;
 		}
 		else {
+                    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 		    p->as.free.flags = 0;
 		    p->as.free.next = freelist;
 		    freelist = p;
@@ -1218,6 +1224,7 @@ gc_sweep(void)
 void
 rb_gc_force_recycle(VALUE p)
 {
+    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
     RANY(p)->as.free.flags = 0;
     RANY(p)->as.free.next = freelist;
     freelist = RANY(p);
@@ -2001,10 +2008,12 @@ rb_gc_call_finalizer_at_exit(void)
 		else if (RANY(p)->as.data.dfree) {
 		    (*RANY(p)->as.data.dfree)(DATA_PTR(p));
 		}
+                VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
 		if (rb_io_fptr_finalize(RANY(p)->as.file.fptr)) {
 		    p->as.free.flags = 0;
+                    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 		}
 	    }
 	    p++;
