@@ -3,6 +3,9 @@ Mon Aug 20 23:28:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (Init_String): remove Symbol.intern and Symbol#dump.
 	  [ruby-dev:31525]
 
+	* dir.c (dir_foreach): return Enumerator if no block given.
+	  [ruby-dev:31525]
+
 Mon Aug 20 23:17:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct rb_thread_struct): removed first_func_arg and

@@ -1729,6 +1729,7 @@ dir_foreach(VALUE io, VALUE dirname)
 {
     VALUE dir;
 
+    RETURN_ENUMERATOR(io, 1, &dirname);
     dir = dir_open_dir(dirname);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;
