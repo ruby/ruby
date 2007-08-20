@@ -5,7 +5,7 @@ class TestEnumerator < Test::Unit::TestCase
     i = 0
     obj.map{|e|
       [i+=1, e]
-    }
+    }.sort
   end
 
   def test_iterators

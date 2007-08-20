@@ -1,3 +1,8 @@
+Tue Aug 21 03:59:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test_enumerator.rb (enum_test): fix to return sorted
+	  array (for Hash test).
+
 Tue Aug 21 03:55:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* enumerator.c (next_i): fix to return with Fiber#yield at
