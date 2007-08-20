@@ -922,7 +922,7 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     long i = RARRAY_LEN(ary);
 
     if (rb_scan_args(argc, argv, "01", &val) == 0) {
-	    RETURN_ENUMERATOR(ary, 0, 0);
+	RETURN_ENUMERATOR(ary, 0, 0);
 	while (i--) {
 	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i])))
 		return LONG2NUM(i);

@@ -6,6 +6,9 @@ Mon Aug 20 23:28:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c (dir_foreach): return Enumerator if no block given.
 	  [ruby-dev:31525]
 
+	* io.c (rb_io_s_foreach): argument count check before making
+	  Enumerator.  [ruby-dev:31525]
+
 Mon Aug 20 23:17:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct rb_thread_struct): removed first_func_arg and

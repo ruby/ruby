@@ -5185,8 +5185,8 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     VALUE fname;
     struct foreach_arg arg;
 
-    RETURN_ENUMERATOR(self, argc, argv);
     rb_scan_args(argc, argv, "12", &fname, NULL, NULL);
+    RETURN_ENUMERATOR(self, argc, argv);
     FilePathValue(fname);
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
