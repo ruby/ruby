@@ -180,7 +180,7 @@ check_env_value(VALUE envval)
     if (check_env(env)) {
 	return envval;
     }
-    rb_bug("invalid env\n");
+    rb_bug("invalid env");
     return Qnil;		/* unreachable */
 }
 
@@ -209,8 +209,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
 		pcfp++;
 		if (pcfp->dfp == 0) {
 		    SDR();
-		    printf("[BUG] orz\n");
-		    exit(0);
+		    rb_bug("invalid dfp");
 		}
 	    }
 	    penvval = vm_make_env_each(th, pcfp, penvptr, endptr);
@@ -485,7 +484,7 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 	break;
       }
       default:
-	rb_bug("unsupported: vm_call0");
+	rb_bug("unsupported: vm_call0(%s)", ruby_node_name(nd_type(body)));
     }
     RUBY_VM_CHECK_INTS();
     return val;
@@ -501,7 +500,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     int nosuper = 0;
     rb_control_frame_t *cfp = th->cfp;
 
-    if (!th->cfp->iseq) {
+    if (!cfp->iseq) {
 	klass = cfp->method_klass;
 	klass = RCLASS(klass)->super;
 
@@ -1572,7 +1571,7 @@ rb_thread_mark(void *ptr)
 
 	/* mark ruby objects */
 	RUBY_MARK_UNLESS_NULL(th->first_proc);
-	RUBY_MARK_UNLESS_NULL(th->first_args);
+	if (th->first_proc) RUBY_MARK_UNLESS_NULL(th->first_args);
 
 	RUBY_MARK_UNLESS_NULL(th->thgroup);
 	RUBY_MARK_UNLESS_NULL(th->value);

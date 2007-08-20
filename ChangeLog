@@ -1,3 +1,8 @@
+Mon Aug 20 23:17:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (struct rb_thread_struct): removed first_func_arg and
+	  reuse first_args instead.
+
 Sun Aug 19 13:31:40 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c: use VALGRIND_MAKE_MEM_UNDEFINED to detect use of collected

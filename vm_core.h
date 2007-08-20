@@ -447,7 +447,6 @@ struct rb_thread_struct
     VALUE first_proc;
     VALUE first_args;
     VALUE (*first_func)(ANYARGS);
-    void *first_func_arg;
 
     /* for GC */
     VALUE *machine_stack_start;

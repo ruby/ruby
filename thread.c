@@ -321,7 +321,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 					       RARRAY_LEN(args), RARRAY_PTR(args));
 		}
 		else {
-		    th->value = (*th->first_func)(th->first_func_arg);
+		    th->value = (*th->first_func)((void *)th->first_args);
 		}
 	    });
 	}
@@ -365,7 +365,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 }
 
 static VALUE
-thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
+thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS))
 {
     rb_thread_t *th;
     VALUE thval;
@@ -378,7 +378,6 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
     th->first_args = args;
     th->first_proc = fn ? Qfalse : rb_block_proc();
     th->first_func = fn;
-    th->first_func_arg = arg;
 
     th->priority = GET_THREAD()->priority;
 
@@ -402,13 +401,13 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS), void *arg)
 static VALUE
 thread_s_new(VALUE klass, VALUE args)
 {
-    return thread_create_core(klass, args, 0, 0);
+    return thread_create_core(klass, args, 0);
 }
 
 VALUE
 rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 {
-    return thread_create_core(rb_cThread, 0, fn, arg);
+    return thread_create_core(rb_cThread, (VALUE)arg, fn);
 }
 
 
