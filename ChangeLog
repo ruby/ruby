@@ -1,3 +1,7 @@
+Tue Aug 21 04:08:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_enumerator.rb: fix last commit.
+
 Tue Aug 21 03:59:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test_enumerator.rb (enum_test): fix to return sorted

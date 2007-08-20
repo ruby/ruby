@@ -4,14 +4,14 @@ class TestEnumerator < Test::Unit::TestCase
   def enum_test obj
     i = 0
     obj.map{|e|
-      [i+=1, e]
+      e
     }.sort
   end
 
   def test_iterators
-    assert_equal [[1, 0], [2, 1], [3, 2]], enum_test(3.times)
-    assert_equal [[1, :x], [2, :y], [3, :z]], enum_test([:x, :y, :z].each)
-    assert_equal [[1, [:x, 1]], [2, [:y, 2]]], enum_test({:x=>1, :y=>2})
+    assert_equal [0, 1, 2], enum_test(3.times)
+    assert_equal [:x, :y, :z], enum_test([:x, :y, :z].each)
+    assert_equal [[:x, 1], [:y, 2]], enum_test({:x=>1, :y=>2})
   end
 
   ## Enumerator as Iterator
