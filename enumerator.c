@@ -13,6 +13,7 @@
 ************************************************/
 
 #include "ruby/ruby.h"
+#include "debug.h"
 
 /*
  * Document-class: Enumerable::Enumerator
@@ -42,6 +43,7 @@ struct enumerator {
     VALUE fib;
     VALUE next;
     VALUE dst;
+    VALUE has_next;
 };
 
 static void
@@ -237,6 +239,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
     ptr->next = ptr->dst = Qnil;
+    ptr->has_next = Qnil;
 
     return enum_obj;
 }
@@ -381,19 +384,20 @@ static VALUE
 next_i(VALUE curr, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-
     e->dst = curr;
+
     rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
-    return e->next;
+    e->has_next = Qfalse;
+    rb_fiber_yield(e->dst, 1, &e->next);
 }
 
 static void
 next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
-
     e->dst = curr;
     e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
+    e->has_next = Qtrue;
     rb_fiber_yield(e->fib, 1, &curr);
 }
 
@@ -416,16 +420,18 @@ enumerator_next(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE curr, v;
-
     curr = rb_fiber_current();
+
     if (!e->fib) {
 	next_init(obj, e);
     }
-    if (!rb_fiber_alive_p(e->fib)) {
+
+    if (!e->has_next) {
 	e->fib = 0;
 	e->next = e->dst = Qnil;
 	rb_raise(rb_eStopIteration, "Enumerator#each reached at end");
     }
+
     v = rb_fiber_yield(e->fib, 1, &curr);
     return v;
 }
@@ -441,11 +447,10 @@ static VALUE
 enumerator_next_p(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-
     if (!e->fib) {
 	next_init(obj, e);
     }
-    return rb_fiber_alive_p(e->fib);
+    return e->has_next;
 }
 
 /*

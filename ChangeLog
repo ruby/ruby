@@ -1,3 +1,13 @@
+Tue Aug 21 03:55:20 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* enumerator.c (next_i): fix to return with Fiber#yield at
+	  the end of each block.  [ruby-dev:31470]
+
+	* enumerator.c (enumerator_next_p): call init_next if not
+	  initialized.  [ruby-dev:31514]
+
+	* test/ruby/test_enumerator.rb: add tests for Enumerator.
+
 Mon Aug 20 23:28:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (Init_String): remove Symbol.intern and Symbol#dump.
