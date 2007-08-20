@@ -4622,23 +4622,6 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     Symbol.intern(str)   => new_sym
- *  
- *  Returns a new symbol corresponding to <i>str</i>.
- */
-
-static VALUE
-rb_sym_s_intern(VALUE s)
-{
-    if (SYMBOL_P(s)) {
-	return s;
-    }
-    StringValue(s);
-    return rb_intern2(RSTRING_PTR(s), RSTRING_LEN(s));
-}
-
-/*
- *  call-seq:
  *     sym == obj   => true or false
  *  
  *  Equality---If <i>sym</i> and <i>obj</i> are exactly the same
@@ -5013,7 +4996,6 @@ Init_String(void)
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
-    rb_define_singleton_method(rb_cSymbol, "intern", rb_sym_s_intern, 1);
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
@@ -5025,7 +5007,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);
-    rb_define_method(rb_cSymbol, "dump", rb_str_dump, 0);
 
     rb_define_method(rb_cSymbol, "<=>", sym_cmp, 1);
     rb_define_method(rb_cSymbol, "casecmp", sym_casecmp, 1);
