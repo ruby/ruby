@@ -5778,7 +5778,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     volatile int safe = -1;
 
     if (NOEX_SAFE(flags) > ruby_safe_level &&
-	!(flags&NOEX_TAINTED) && ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
+	ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
 	rb_raise(rb_eSecurityError, "calling insecure method: %s",
 		 rb_id2name(id));
     }
@@ -9009,7 +9009,7 @@ mnew(klass, obj, id, mklass)
     data->body = body;
     data->rklass = rklass;
     data->oid = oid;
-    data->safe_level = NOEX_WITH_SAFE(0);
+    data->safe_level = NOEX_WITH_SAFE(noex);
     OBJ_INFECT(method, klass);
 
     return method;

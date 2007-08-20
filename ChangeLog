@@ -1,3 +1,9 @@
+Mon Aug 20 17:25:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (mnew): should preserve noex as safe_level.
+
+	* eval.c (rb_call0): tighten security check condition..
+
 Sat Aug 18 21:32:20 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): new method.
