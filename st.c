@@ -322,7 +322,7 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
 static void
 rehash(register st_table *table)
 {
-    register st_table_entry *ptr, *next, **new_bins;
+    register st_table_entry *ptr, **new_bins;
     int i, new_num_bins;
     unsigned int hash_val;
 
@@ -333,7 +333,7 @@ rehash(register st_table *table)
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 
-    if (ptr = table->head) {
+    if ((ptr = table->head) != 0) {
 	do {
 	    hash_val = ptr->hash % new_num_bins;
 	    ptr->next = new_bins[hash_val];
