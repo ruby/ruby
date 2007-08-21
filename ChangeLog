@@ -1,3 +1,7 @@
+Tue Aug 21 21:09:48 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir.mktmpdir): make directory suffix specifiable.
+
 Tue Aug 21 13:57:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (st_foreach_func, rb_foreach_func): typedefed.
