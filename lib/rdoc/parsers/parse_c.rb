@@ -169,7 +169,7 @@ module RDoc
     attr_accessor :progress
 
     extend ParserFactory
-    parse_files_matching(/\.(c|cc|cpp|CC)$/)
+    parse_files_matching(/\.(?:([CcHh])\1?|c([+xp])\2|y)\z/)
 
     @@known_bodies = {}
 
