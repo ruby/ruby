@@ -1,3 +1,14 @@
+Wed Aug 22 03:51:07 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: add Fiber#resume and Fiber.yield.
+	  and Fiber::Core class to realize Coroutine.
+
+	* include/ruby/intern.h: declare rb_fiber_yield(), rb_fiber_resume(),
+
+	* enumerator.c: use above api.
+
+	* test/ruby/test_fiber.rb: fix and add tests for above changes.
+
 Tue Aug 21 21:09:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): make directory suffix specifiable.

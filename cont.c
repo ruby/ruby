@@ -18,7 +18,6 @@
 typedef struct rb_context_struct {
     VALUE self;
     VALUE value;
-    VALUE prev; /* for fiber */
     VALUE *vm_stack;
     VALUE *machine_stack;
     VALUE *machine_stack_src;
@@ -30,11 +29,14 @@ typedef struct rb_context_struct {
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
     int machine_stack_size;
+    /* for cont */
+    VALUE prev;
     int alive;
 } rb_context_t;
 
 VALUE rb_cCont;
 VALUE rb_cFiber;
+VALUE rb_cFiberCore;
 VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
@@ -52,7 +54,6 @@ cont_mark(void *ptr)
 	rb_context_t *cont = ptr;
 	rb_gc_mark(cont->value);
 	rb_gc_mark(cont->prev);
-
 	rb_thread_mark(&cont->saved_thread);
 
 	if (cont->vm_stack) {
@@ -511,20 +512,38 @@ rb_fiber_s_new(VALUE self)
     return contval;
 }
 
+static VALUE
+return_fiber(void)
+{
+    rb_context_t *cont;
+    VALUE curr = rb_fiber_current();
+    GetContPtr(curr, cont);
+
+    if (cont->prev == Qnil) {
+	rb_thread_t *th = GET_THREAD();
+
+	if (th->root_fiber != curr) {
+	    return th->root_fiber;
+	}
+	else {
+	    rb_raise(rb_eFiberError, "can't yield from root fiber");
+	}
+    }
+    else {
+	VALUE prev = cont->prev;
+	cont->prev = Qnil;
+	return prev;
+    }
+}
+
+VALUE rb_fiber_transfer(VALUE fib, int argc, VALUE *argv);
+
 static void
 rb_fiber_terminate(rb_context_t *cont)
 {
-    rb_context_t *prev_cont;
     VALUE value = cont->value;
-
-    GetContPtr(cont->prev, prev_cont);
     cont->alive = Qfalse;
-    if (prev_cont->alive == Qfalse) {
-	rb_fiber_yield(GET_THREAD()->root_fiber, 1, &value);
-    }
-    else {
-	rb_fiber_yield(cont->prev, 1, &value);
-    }
+    rb_fiber_transfer(return_fiber(), 1, &value);
 }
 
 void
@@ -551,7 +570,13 @@ rb_fiber_start(void)
     TH_POP_TAG();
 
     if (state) {
-	th->thrown_errinfo = vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	if (TAG_RAISE) {
+	    th->thrown_errinfo = th->errinfo;
+	}
+	else {
+	    th->thrown_errinfo =
+	      vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	}
 	th->interrupt_flag = 1;
     }
 
@@ -565,7 +590,9 @@ rb_fiber_current()
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
 	/* save root */
-	th->root_fiber = th->fiber = cont_new(rb_cFiber)->self;
+	rb_context_t *cont = cont_new(rb_cFiberCore);
+	cont->prev = Qnil;
+	th->root_fiber = th->fiber = cont->self;
     }
     return th->fiber;
 }
@@ -583,12 +610,10 @@ cont_store(rb_context_t *next_cont)
     else {
 	/* create current fiber */
 	cont = cont_new(rb_cFiber); /* no need to allocate vm stack */
+	cont->prev = Qnil;
 	th->root_fiber = th->fiber = cont->self;
     }
 
-    if (cont->alive) {
-	next_cont->prev = cont->self;
-    }
     cont_save_machine_stack(th, cont);
 
     if (ruby_setjmp(cont->jmpbuf)) {
@@ -601,8 +626,8 @@ cont_store(rb_context_t *next_cont)
     }
 }
 
-VALUE
-rb_fiber_yield(VALUE fib, int argc, VALUE *argv)
+static inline VALUE
+fiber_switch(VALUE fib, int argc, VALUE *argv, int is_resume)
 {
     VALUE value;
     rb_context_t *cont;
@@ -613,35 +638,53 @@ rb_fiber_yield(VALUE fib, int argc, VALUE *argv)
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
     }
-    if (cont->saved_thread.trap_tag != th->trap_tag) {
+    else if (cont->saved_thread.trap_tag != th->trap_tag) {
 	rb_raise(rb_eFiberError, "fiber called across trap");
     }
-    if (!cont->alive) {
+    else if (!cont->alive) {
 	rb_raise(rb_eFiberError, "dead fiber called");
     }
 
+    if (is_resume) {
+	cont->prev = rb_fiber_current();
+    }
     cont->value = make_passing_arg(argc, argv);
 
     if ((value = cont_store(cont)) == Qundef) {
 	cont_restore_0(cont, (VALUE *)&cont);
-	rb_bug("rb_fiber_yield: unreachable");
+	rb_bug("rb_fiber_resume: unreachable");
     }
-    
+
+    RUBY_VM_CHECK_INTS();
+
     return value;
 }
 
-static VALUE
-rb_fiber_m_yield(int argc, VALUE *argv, VALUE fib)
+VALUE
+rb_fiber_transfer(VALUE fib, int argc, VALUE *argv)
 {
-    return rb_fiber_yield(fib, argc, argv);
+    return fiber_switch(fib, argc, argv, 0);
 }
 
-static VALUE
-rb_fiber_prev(VALUE fib)
+VALUE
+rb_fiber_resume(VALUE fib, int argc, VALUE *argv)
 {
+    int i;
     rb_context_t *cont;
+    VALUE curr = rb_fiber_current();
     GetContPtr(fib, cont);
-    return cont->prev;
+
+    if (cont->prev != Qnil) {
+	rb_raise(rb_eFiberError, "double resume");
+    }
+
+    return fiber_switch(fib, argc, argv, 1);
+}
+
+VALUE
+rb_fiber_yield(int argc, VALUE *argv)
+{
+    rb_fiber_transfer(return_fiber(), argc, argv);
 }
 
 VALUE
@@ -653,21 +696,27 @@ rb_fiber_alive_p(VALUE fib)
 }
 
 static VALUE
+rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
+{
+    return rb_fiber_resume(fib, argc, argv);
+}
+
+static VALUE
+rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fib)
+{
+    return rb_fiber_transfer(fib, argc, argv);
+}
+
+static VALUE
+rb_fiber_s_yield(int argc, VALUE *argv, VALUE klass)
+{
+    return rb_fiber_yield(argc, argv);
+}
+
+static VALUE
 rb_fiber_s_current(VALUE klass)
 {
     return rb_fiber_current();
-}
-
-static VALUE
-rb_fiber_s_prev(VALUE klass)
-{
-    return rb_fiber_prev(rb_fiber_s_current(Qnil));
-}
-
-static VALUE
-rb_fiber_s_yield(int argc, VALUE *argv, VALUE fib)
-{
-    return rb_fiber_yield(rb_fiber_s_prev(Qnil), argc, argv);
 }
 
 void
@@ -682,15 +731,21 @@ Init_Cont(void)
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
-    rb_define_method(rb_cFiber, "yield", rb_fiber_m_yield, -1);
-    rb_define_method(rb_cFiber, "prev", rb_fiber_prev, 0);
+    rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
 
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
-    rb_define_singleton_method(rb_cFiber, "prev", rb_fiber_s_prev, 0);
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
 
+    rb_cFiberCore = rb_define_class_under(rb_cFiber, "Core", rb_cObject);
+    rb_undef_alloc_func(rb_cFiberCore);
+    rb_define_method(rb_cFiberCore, "transfer", rb_fiber_m_transfer, -1);
+    rb_define_method(rb_cFiberCore, "alive?", rb_fiber_alive_p, 0);
+
+    rb_define_singleton_method(rb_cFiberCore, "current", rb_fiber_s_current, 0);
+    rb_define_singleton_method(rb_cFiberCore, "new", rb_fiber_s_new, 0);
+    
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
 }
 

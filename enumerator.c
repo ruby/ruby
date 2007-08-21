@@ -373,7 +373,7 @@ next_ii(VALUE i, VALUE obj)
     VALUE tmp = e->next;
 
     e->next = i;
-    tmp = rb_fiber_yield(e->dst, 1, &tmp);
+    tmp = rb_fiber_yield(1, &tmp);
     if (tmp != Qnil) {
 	e->dst = tmp;
     }
@@ -388,7 +388,7 @@ next_i(VALUE curr, VALUE obj)
 
     rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
     e->has_next = Qfalse;
-    rb_fiber_yield(e->dst, 1, &e->next);
+    rb_fiber_yield(1, &e->next);
 }
 
 static void
@@ -398,7 +398,7 @@ next_init(VALUE obj, struct enumerator *e)
     e->dst = curr;
     e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
     e->has_next = Qtrue;
-    rb_fiber_yield(e->fib, 1, &curr);
+    rb_fiber_resume(e->fib, 1, &curr);
 }
 
 /*
@@ -432,7 +432,7 @@ enumerator_next(VALUE obj)
 	rb_raise(rb_eStopIteration, "Enumerator#each reached at end");
     }
 
-    v = rb_fiber_yield(e->fib, 1, &curr);
+    v = rb_fiber_resume(e->fib, 1, &curr);
     return v;
 }
 

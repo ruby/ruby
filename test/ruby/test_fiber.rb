@@ -6,25 +6,24 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(:ok2,
       Fiber.new{|e|
         assert_equal(:ok1, e)
-        assert_equal(f, Fiber.prev)
         Fiber.yield :ok2
-      }.yield(:ok1)
+      }.resume(:ok1)
     )
-    assert_equal([:a, :b], Fiber.new{|a, b| [a, b]}.yield(:a, :b))
+    assert_equal([:a, :b], Fiber.new{|a, b| [a, b]}.resume(:a, :b))
   end
 
   def test_term
-    assert_equal(:ok, Fiber.new{:ok}.yield)
+    assert_equal(:ok, Fiber.new{:ok}.resume)
     assert_equal([:a, :b, :c, :d, :e],
       Fiber.new{
         Fiber.new{
           Fiber.new{
             Fiber.new{
               [:a]
-            }.yield + [:b]
-          }.yield + [:c]
-        }.yield + [:d]
-      }.yield + [:e])
+            }.resume + [:b]
+          }.resume + [:c]
+        }.resume + [:d]
+      }.resume + [:e])
   end
 
   def test_many_fibers
@@ -35,7 +34,7 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(max,
       max.times{|i|
         Fiber.new{
-        }.yield
+        }.resume
       }
     )
   end
@@ -48,7 +47,7 @@ class TestFiber < Test::Unit::TestCase
         max.times{|i|
           Fiber.new{
             @cnt += 1
-          }.yield
+          }.resume
         }
       }
     }.each{|t|
@@ -63,50 +62,72 @@ class TestFiber < Test::Unit::TestCase
     }
     assert_raise(FiberError){
       f = Fiber.new{}
-      Thread.new{f.yield}.join # Fiber yielding across thread
+      Thread.new{f.resume}.join # Fiber yielding across thread
     }
     assert_raise(FiberError){
       f = Fiber.new{}
-      f.yield
-      f.yield
+      f.resume
+      f.resume
     }
     assert_raise(RuntimeError){
       f = Fiber.new{
         @c = callcc{|c| @c = c}
-      }.yield
+      }.resume
       @c.call # cross fiber callcc
     }
-  end
-
-  def test_loop
-    ary = []
-    f2 = nil
-    f1 = Fiber.new{
-      ary << f2.yield(:foo)
-      :bar
+    assert_raise(RuntimeError){
+      Fiber.new{
+        raise
+      }.resume
     }
-    f2 = Fiber.new{
-      ary << f1.yield(:baz)
-      :ok
+    assert_raise(FiberError){
+      Fiber.yield
     }
-    assert_equal(:ok, f1.yield)
-    assert_equal([:baz, :bar], ary)
+    assert_raise(FiberError){
+      fib = Fiber.new{
+        fib.resume
+      }
+      fib.resume
+    }
+    assert_raise(FiberError){
+      fib = Fiber.new{
+        Fiber.new{
+          fib.resume
+        }.resume
+      }
+      fib.resume
+    }
   end
 
   def test_return
     assert_raise(LocalJumpError){
       Fiber.new do
         return
-      end.yield
+      end.resume
     }
   end
 
   def test_throw
-    assert_raise(RuntimeError){
+    assert_raise(NameError){
       Fiber.new do
         throw :a
-      end.yield
+      end.resume
     }
+  end
+
+  def test_transfer
+    ary = []
+    f2 = nil
+    f1 = Fiber::Core.new{
+      ary << f2.transfer(:foo)
+      :ok
+    }
+    f2 = Fiber::Core.new{
+      ary << f1.transfer(:baz)
+      :ng
+    }
+    assert_equal(:ok, f1.transfer)
+    assert_equal([:baz], ary)
   end
 end
 
