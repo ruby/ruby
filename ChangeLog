@@ -1,3 +1,7 @@
+Tue Aug 21 15:00:23 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* st.c (st_clear): reset num_entries too.
+
 Tue Aug 21 13:57:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (st_foreach_func, rb_foreach_func): typedefed.

@@ -214,6 +214,7 @@ st_clear(st_table *table)
 	    ptr = next;
 	}
     }
+    table->num_entries = 0;
     table->head = 0;
 }
 
