@@ -99,9 +99,11 @@ static const struct st_hash_type objhash = {
     rb_any_hash,
 };
 
+typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
+
 struct foreach_safe_arg {
     st_table *tbl;
-    int (*func)();
+    st_foreach_func *func;
     st_data_t arg;
 };
 
@@ -124,16 +126,18 @@ st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
     struct foreach_safe_arg arg;
 
     arg.tbl = table;
-    arg.func = func;
+    arg.func = (st_foreach_func *)func;
     arg.arg = a;
     if (st_foreach(table, foreach_safe_i, (st_data_t)&arg)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
 
+typedef int rb_foreach_func(VALUE, VALUE, VALUE);
+
 struct hash_foreach_arg {
     VALUE hash;
-    int (*func)();
+    rb_foreach_func *func;
     VALUE arg;
 };
 
@@ -191,7 +195,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 
     RHASH(hash)->iter_lev++;
     arg.hash = hash;
-    arg.func = func;
+    arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
     rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
 }

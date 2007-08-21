@@ -1,4 +1,6 @@
-Tue Aug 21 13:46:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 21 13:57:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (st_foreach_func, rb_foreach_func): typedefed.
 
 	* hash.c (rb_hash_clear): use st_clear() unless iterating.
 
