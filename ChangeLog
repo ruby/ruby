@@ -1,3 +1,14 @@
+Wed Aug 22 05:51:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): replaced by the implementation by David
+	  M. Gay inspired by William D. Clinger's paper "How to Read Floating
+	  Point Numbers Accurately" [Proc. ACM SIGPLAN '90, pp. 92-101].
+	  a patch from Satoshi Nakagawa <snakagawa AT infoteria.co.jp>.
+	  [ruby-dev:31582]
+
+	* test/ruby/test_float.rb (TestFloat::test_float): add test for
+	  precision.
+
 Wed Aug 22 03:51:07 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: add Fiber#resume and Fiber.yield.

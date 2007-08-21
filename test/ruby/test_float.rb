@@ -11,6 +11,8 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(3, 2.6.round)
     assert_equal(-2, (-2.4).truncate)
     assert((13.4 % 1 - 0.4).abs < 0.0001)
+    assert_equal("36893488147419111424",
+                 sprintf("%20.0f", 36893488147419107329.0))
   end
 
   def nan_test(x,y)
