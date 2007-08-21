@@ -1,4 +1,6 @@
-Tue Aug 21 13:43:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 21 13:46:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_clear): use st_clear() unless iterating.
 
 	* st.c (struct st_table_entry): add new members, fore and back, to
 	  iterate in inserted order.
