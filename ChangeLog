@@ -1,3 +1,7 @@
+Tue Aug 21 13:57:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (st_foreach_func, rb_foreach_func): typedefed.
+
 Mon Aug 20 17:25:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (mnew): should preserve noex as safe_level.
