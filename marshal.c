@@ -373,8 +373,8 @@ w_extended(klass, arg, check)
 {
     char *path;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	if (check && RCLASS(klass)->m_tbl->num_entries ||
+    if (check && FL_TEST(klass, FL_SINGLETON)) {
+	if (RCLASS(klass)->m_tbl->num_entries ||
 	    (RCLASS(klass)->iv_tbl && RCLASS(klass)->iv_tbl->num_entries > 1)) {
 	    rb_raise(rb_eTypeError, "singleton can't be dumped");
 	}
@@ -652,13 +652,13 @@ w_object(obj, arg, limit)
 	    {
 		VALUE v;
 
-		w_class(TYPE_DATA, obj, arg, Qtrue);
 		if (!rb_respond_to(obj, s_dump_data)) {
 		    rb_raise(rb_eTypeError,
 			     "no marshal_dump is defined for class %s",
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
+		w_class(TYPE_DATA, obj, arg, Qtrue);
 		w_object(v, arg, limit);
 	    }
 	    break;

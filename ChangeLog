@@ -1,3 +1,8 @@
+Wed Aug 22 08:26:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_extended): erroneous check condition when dump
+	  method is defined.  [ruby-core:10646]
+
 Mon Jun 18 11:29:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h, ext/thread/thread.c: moved prototype of rb_thread_status()
