@@ -11268,7 +11268,7 @@ rb_thread_run(thread)
 
 
 static void
-kill_thread(th, flags)
+rb_kill_thread(th, flags)
     rb_thread_t th;
     int flags;
 {
@@ -11303,7 +11303,7 @@ rb_thread_kill(thread)
 {
     rb_thread_t th = rb_thread_check(thread);
 
-    kill_thread(th, 0);
+    rb_kill_thread(th, 0);
     return thread;
 }
 
@@ -11326,7 +11326,7 @@ rb_thread_kill_bang(thread)
     VALUE thread;
 {
     rb_thread_t th = rb_thread_check(thread);
-    kill_thread(th, THREAD_NO_ENSURE);
+    rb_kill_thread(th, THREAD_NO_ENSURE);
     return thread;
 }
 
