@@ -24,6 +24,7 @@ struct st_table_entry {
     st_data_t key;
     st_data_t record;
     st_table_entry *next;
+    st_table_entry *fore, *back;
 };
 
 #define ST_DEFAULT_MAX_DENSITY 5
@@ -163,6 +164,7 @@ st_init_table_with_size(const struct st_hash_type *type, int size)
     tbl->num_entries = 0;
     tbl->num_bins = size;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
+    tbl->head = 0;
 
     return tbl;
 }
@@ -198,19 +200,27 @@ st_init_strtable_with_size(int size)
 }
 
 void
-st_free_table(st_table *table)
+st_clear(st_table *table)
 {
     register st_table_entry *ptr, *next;
     int i;
 
     for(i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
+	table->bins[i] = 0;
 	while (ptr != 0) {
 	    next = ptr->next;
 	    free(ptr);
 	    ptr = next;
 	}
     }
+    table->head = 0;
+}
+
+void
+st_free_table(st_table *table)
+{
+    st_clear(table);
     free(table->bins);
     free(table);
 }
@@ -256,7 +266,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 do {\
-    st_table_entry *entry;\
+    st_table_entry *entry, *head;\
     if (table->num_entries/(table->num_bins) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
@@ -268,6 +278,14 @@ do {\
     entry->key = key;\
     entry->record = value;\
     entry->next = table->bins[bin_pos];\
+    if ((head = table->head) != 0) {\
+	entry->fore = head;\
+	(entry->back = head->back)->fore = entry;\
+	head->back = entry;\
+    }\
+    else {\
+	table->head = entry->fore = entry->back = entry;\
+    }\
     table->bins[bin_pos] = entry;\
     table->num_entries++;\
 } while (0)
@@ -305,33 +323,32 @@ static void
 rehash(register st_table *table)
 {
     register st_table_entry *ptr, *next, **new_bins;
-    int i, old_num_bins = table->num_bins, new_num_bins;
+    int i, new_num_bins;
     unsigned int hash_val;
 
-    new_num_bins = new_size(old_num_bins+1);
-    new_bins = (st_table_entry**)Calloc(new_num_bins, sizeof(st_table_entry*));
+    new_num_bins = new_size(table->num_bins+1);
+    new_bins = (st_table_entry**)
+	xrealloc(table->bins, new_num_bins * sizeof(st_table_entry*));
+    for (i = 0; i < new_num_bins; ++i) new_bins[i] = 0;
+    table->num_bins = new_num_bins;
+    table->bins = new_bins;
 
-    for(i = 0; i < old_num_bins; i++) {
-	ptr = table->bins[i];
-	while (ptr != 0) {
-	    next = ptr->next;
+    if (ptr = table->head) {
+	do {
 	    hash_val = ptr->hash % new_num_bins;
 	    ptr->next = new_bins[hash_val];
 	    new_bins[hash_val] = ptr;
-	    ptr = next;
-	}
+	} while ((ptr = ptr->fore) != table->head);
     }
-    free(table->bins);
-    table->num_bins = new_num_bins;
-    table->bins = new_bins;
 }
 
 st_table*
 st_copy(st_table *old_table)
 {
     st_table *new_table;
-    st_table_entry *ptr, *entry;
-    int i, num_bins = old_table->num_bins;
+    st_table_entry *ptr, *entry, *prev, **tail;
+    int num_bins = old_table->num_bins;
+    unsigned int hash_val;
 
     new_table = alloc(st_table);
     if (new_table == 0) {
@@ -347,61 +364,66 @@ st_copy(st_table *old_table)
 	return 0;
     }
 
-    for(i = 0; i < num_bins; i++) {
-	new_table->bins[i] = 0;
-	ptr = old_table->bins[i];
-	while (ptr != 0) {
+    if ((ptr = old_table->head) != 0) {
+	prev = 0;
+	tail = &new_table->head;
+	do {
 	    entry = alloc(st_table_entry);
 	    if (entry == 0) {
-		free(new_table->bins);
-		free(new_table);
+		st_free_table(new_table);
 		return 0;
 	    }
 	    *entry = *ptr;
-	    entry->next = new_table->bins[i];
-	    new_table->bins[i] = entry;
-	    ptr = ptr->next;
-	}
+	    hash_val = entry->hash % num_bins;
+	    entry->next = new_table->bins[hash_val];
+	    new_table->bins[hash_val] = entry;
+	    entry->back = prev;
+	    *tail = prev = entry;
+	    tail = &entry->fore;
+	} while ((ptr = ptr->fore) != old_table->head);
+	entry = new_table->head;
+	entry->back = prev;
+	*tail = entry;
     }
+
     return new_table;
 }
+
+#define REMOVE_ENTRY(table, ptr) do					\
+    {									\
+	if (ptr == ptr->fore) {						\
+	    table->head = 0;						\
+	}								\
+	else {								\
+	    st_table_entry *fore = ptr->fore, *back = ptr->back;	\
+	    fore->back = back;						\
+	    back->fore = fore;						\
+	    if (ptr == table->head) table->head = fore;			\
+	}								\
+	table->num_entries--;						\
+    } while (0)
 
 int
 st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 {
     unsigned int hash_val;
-    st_table_entry *tmp;
+    st_table_entry **prev;
     register st_table_entry *ptr;
 
     hash_val = do_hash_bin(*key, table);
-    ptr = table->bins[hash_val];
 
-    if (ptr == 0) {
-	if (value != 0) *value = 0;
-	return 0;
-    }
-
-    if (EQUAL(table, *key, ptr->key)) {
-	table->bins[hash_val] = ptr->next;
-	table->num_entries--;
-	if (value != 0) *value = ptr->record;
-	*key = ptr->key;
-	free(ptr);
-	return 1;
-    }
-
-    for(; ptr->next != 0; ptr = ptr->next) {
-	if (EQUAL(table, ptr->next->key, *key)) {
-	    tmp = ptr->next;
-	    ptr->next = ptr->next->next;
-	    table->num_entries--;
-	    if (value != 0) *value = tmp->record;
-	    *key = tmp->key;
-	    free(tmp);
+    for (prev = &table->bins[hash_val]; (ptr = *prev) != 0; prev = &ptr->next) {
+	if (EQUAL(table, *key, ptr->key)) {
+	    *prev = ptr->next;
+	    REMOVE_ENTRY(table, ptr);
+	    if (value != 0) *value = ptr->record;
+	    *key = ptr->key;
+	    free(ptr);
 	    return 1;
 	}
     }
 
+    if (value != 0) *value = 0;
     return 0;
 }
 
@@ -414,14 +436,9 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     hash_val = do_hash_bin(*key, table);
     ptr = table->bins[hash_val];
 
-    if (ptr == 0) {
-	if (value != 0) *value = 0;
-	return 0;
-    }
-
-    for(; ptr != 0; ptr = ptr->next) {
+    for (; ptr != 0; ptr = ptr->next) {
 	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
-	    table->num_entries--;
+	    REMOVE_ENTRY(table, ptr);
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
 	    ptr->key = ptr->record = never;
@@ -429,68 +446,122 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 	}
     }
 
+    if (value != 0) *value = 0;
     return 0;
-}
-
-static int
-delete_never(st_data_t key, st_data_t value, st_data_t never)
-{
-    if (value == never) return ST_DELETE;
-    return ST_CONTINUE;
 }
 
 void
 st_cleanup_safe(st_table *table, st_data_t never)
 {
-    int num_entries = table->num_entries;
+    st_table_entry *ptr, **last, *tmp;
+    int i;
 
-    st_foreach(table, delete_never, never);
-    table->num_entries = num_entries;
+    for (i = 0; i < table->num_bins; i++) {
+	ptr = *(last = &table->bins[i]);
+	while (ptr != 0) {
+	    if (ptr->key == never) {
+		tmp = ptr;
+		*last = ptr = ptr->next;
+		free(tmp);
+	    }
+	    else {
+		ptr = *(last = &ptr->next);
+	    }
+	}
+    }
 }
 
 int
 st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
-    st_table_entry *ptr, *last, *tmp;
+    st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
-    int i;
+    int i, end;
 
-    for(i = 0; i < table->num_bins; i++) {
-	last = 0;
-	for(ptr = table->bins[i]; ptr != 0;) {
+    if ((ptr = table->head) != 0) {
+	do {
+	    end = ptr->fore == table->head;
 	    retval = (*func)(ptr->key, ptr->record, arg);
 	    switch (retval) {
-	    case ST_CHECK:	/* check if hash is modified during iteration */
-	        tmp = 0;
-		if (i < table->num_bins) {
-		    for (tmp = table->bins[i]; tmp; tmp=tmp->next) {
-			if (tmp == ptr) break;
+	      case ST_CHECK:	/* check if hash is modified during iteration */
+		i = ptr->hash % table->num_bins;
+		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
+		    if (!tmp) {
+			/* call func with error notice */
+			retval = (*func)(0, 0, arg, 1);
+			return 1;
 		    }
 		}
-		if (!tmp) {
-		    /* call func with error notice */
-		    return 1;
+		/* fall through */
+	      case ST_CONTINUE:
+		ptr = ptr->fore;
+		break;
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+		last = &table->bins[ptr->hash % table->num_bins];
+		for (; (tmp = *last) != 0; last = &tmp->next) {
+		    if (ptr == tmp) {
+			tmp = ptr->fore;
+			*last = ptr->next;
+			REMOVE_ENTRY(table, ptr);
+			free(ptr);
+			if (ptr == tmp) return 0;
+			ptr = tmp;
+			break;
+		    }
+		}
+	    }
+	} while (!end && table->head);
+    }
+    return 0;
+}
+
+int
+st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
+{
+    st_table_entry *ptr, **last, *tmp;
+    enum st_retval retval;
+    int i, end;
+
+    if ((ptr = table->head) != 0) {
+	ptr = ptr->back;
+	do {
+	    end = ptr == table->head;
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
+	    switch (retval) {
+	      case ST_CHECK:	/* check if hash is modified during iteration */
+		i = ptr->hash % table->num_bins;
+		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
+		    if (!tmp) {
+			/* call func with error notice */
+			retval = (*func)(0, 0, arg, 1);
+			return 1;
+		    }
 		}
 		/* fall through */
-	    case ST_CONTINUE:
-		last = ptr;
-		ptr = ptr->next;
+	      case ST_CONTINUE:
+		ptr = ptr->back;
 		break;
-	    case ST_STOP:
-	        return 0;
-	    case ST_DELETE:
-		tmp = ptr;
-		if (last == 0) {
-		    table->bins[i] = ptr->next;
-		}
-		else {
-		    last->next = ptr->next;
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+		last = &table->bins[ptr->hash % table->num_bins];
+		for (; (tmp = *last) != 0; last = &tmp->next) {
+		    if (ptr == tmp) {
+			tmp = ptr->back;
+			*last = ptr->next;
+			REMOVE_ENTRY(table, ptr);
+			free(ptr);
+			ptr = tmp;
+			break;
+		    }
 		}
 		ptr = ptr->next;
 		free(tmp);
 		table->num_entries--;
 	    }
-	}
+	} while (!end && table->head);
     }
     return 0;
 }

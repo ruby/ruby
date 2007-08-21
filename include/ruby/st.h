@@ -34,6 +34,7 @@ struct st_table {
     int num_bins;
     int num_entries;
     struct st_table_entry **bins;
+    struct st_table_entry *head;
 };
 
 #define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
@@ -62,9 +63,11 @@ int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);
 int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
+int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);
+void st_clear(st_table *);
 st_table *st_copy(st_table *);
 int st_numcmp(long, long);
 int st_numhash(long);
