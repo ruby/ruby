@@ -101,6 +101,13 @@ static VALUE S_Tms;
 #define BROKEN_SETREGID 1
 #endif
 
+#ifdef BROKEN_SETREUID
+#define setreuid ruby_setreuid
+#endif
+#ifdef BROKEN_SETREGID
+#define setregid ruby_setregid
+#endif
+
 #if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
 #if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
 #define OBSOLETE_SETREUID 1
@@ -3670,8 +3677,8 @@ Init_process()
     rb_define_module_function(rb_mProcGID, "change_privilege", p_gid_change_privilege, 1);
     rb_define_module_function(rb_mProcUID, "grant_privilege", p_uid_grant_privilege, 1);
     rb_define_module_function(rb_mProcGID, "grant_privilege", p_gid_grant_privilege, 1);
-    rb_define_alias(rb_mProcUID, "eid=", "grant_privilege");
-    rb_define_alias(rb_mProcGID, "eid=", "grant_privilege");
+    rb_define_alias(rb_singleton_class(rb_mProcUID), "eid=", "grant_privilege");
+    rb_define_alias(rb_singleton_class(rb_mProcGID), "eid=", "grant_privilege");
     rb_define_module_function(rb_mProcUID, "re_exchange", p_uid_exchange, 0);
     rb_define_module_function(rb_mProcGID, "re_exchange", p_gid_exchange, 0);
     rb_define_module_function(rb_mProcUID, "re_exchangeable?", p_uid_exchangeable, 0);
