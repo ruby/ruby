@@ -1,3 +1,8 @@
+Wed Aug 22 08:49:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): prohibit loading extension libraries to
+	  miniruby.
+
 Wed Aug 22 08:34:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_kill_thread): renamed in order to get rid of conflict
