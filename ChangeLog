@@ -1,3 +1,8 @@
+Wed Aug 22 10:01:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): enclose command line except for
+	  command.com which can not handle quotes.  [ruby-talk:258939]
+
 Wed Aug 22 09:58:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (link_command, cc_command, cpp_command): do not expand
