@@ -205,7 +205,6 @@ end
 
 def in_temporary_working_directory(dir)
   if dir
-    FileUtils.rm_rf dir
     Dir.mkdir dir
     Dir.chdir(dir) {
       yield

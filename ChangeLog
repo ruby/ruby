@@ -1,3 +1,8 @@
+Wed Aug 22 13:02:26 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (in_temporary_working_directory):
+	  don't remove the directory specified by --dir.
+
 Wed Aug 22 05:51:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): replaced by the implementation by David
