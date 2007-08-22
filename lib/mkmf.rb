@@ -1400,6 +1400,7 @@ site-install-rb: install-rb
     unless suffixes.empty?
       mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
     end
+    mfile.print "$(OBJS): $(RUBY_EXTCONF_H)\n\n" if $extconf_h
     mfile.print depout
   else
     headers = %w[ruby.h defines.h]
