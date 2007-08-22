@@ -1,3 +1,12 @@
+Wed Aug 22 14:04:53 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knwonbug.rb: added.  This file will contain
+	  test cases which point out known bug.  If bug is fixed, tests
+	  should move to the suitable place.
+
+	* bootstraptest/test_massign.rb: move a test which show known bug
+	  to test_knownbug.rb.
+
 Wed Aug 22 13:02:26 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (in_temporary_working_directory):
@@ -19,7 +28,7 @@ Wed Aug 22 03:51:07 2007  Koichi Sasada  <ko1@atdot.net>
 	* cont.c: add Fiber#resume and Fiber.yield.
 	  and Fiber::Core class to realize Coroutine.
 
-	* include/ruby/intern.h: declare rb_fiber_yield(), rb_fiber_resume(),
+	* include/ruby/intern.h: declare rb_fiber_yield(), rb_fiber_resume().
 
 	* enumerator.c: use above api.
 
