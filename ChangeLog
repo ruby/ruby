@@ -1,3 +1,7 @@
+Wed Aug 22 10:29:45 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): refine overflow check.  [ruby-dev:31242]
+
 Wed Aug 22 10:26:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_succ): Time#succ should return a time object in the

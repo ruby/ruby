@@ -1646,8 +1646,10 @@ rb_big_pow(x, y)
 	yy = FIX2LONG(y);
 	if (yy > 0) {
 	    VALUE z = x;
+	    const long BIGLEN_LIMIT = 1024*1024 / SIZEOF_BDIGITS;
 
-	    if (RBIGNUM(x)->len * SIZEOF_BDIGITS * yy > 1024*1024) {
+	    if ((RBIGNUM(x)->len > BIGLEN_LIMIT) ||
+		(RBIGNUM(x)->len > BIGLEN_LIMIT / yy)) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
