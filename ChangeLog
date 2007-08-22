@@ -1,3 +1,7 @@
+Wed Aug 22 12:29:36 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/README: fixed a typo.
+
 Wed Aug 22 12:13:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): save all CONFIG values.
