@@ -1,3 +1,8 @@
+Thu Aug 23 00:06:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c: updated for ANSI C only.  applied a patch from
+	  <snakagawa AT infoteria.co.jp>.  [ruby-dev:31591]
+
 Thu Aug 23 00:04:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* missing/strtod.c: removed.  [ruby-dev:31588]
