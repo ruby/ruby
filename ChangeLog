@@ -1,3 +1,7 @@
+Wed Aug 22 11:00:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): should remove mkmf.log too.
+
 Wed Aug 22 10:57:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c (ossl_config_set_section): do not
