@@ -1565,15 +1565,14 @@ ruby_cleanup(ex)
     int ex;
 {
     int state;
-    VALUE err;
     volatile VALUE errs[2];
     int nerr;
 
-    errs[0] = ruby_errinfo;
-    ruby_safe_level = 0;
-    Init_stack((void*)&state);
-    ruby_finalize_0();
     errs[1] = ruby_errinfo;
+    ruby_safe_level = 0;
+    Init_stack((void *)&state);
+    ruby_finalize_0();
+    errs[0] = ruby_errinfo;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
@@ -1584,13 +1583,16 @@ ruby_cleanup(ex)
 	ex = state;
     }
     POP_ITER();
-    ruby_errinfo = errs[0];
+    ruby_errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_TAG();
 
-    for (nerr = sizeof(errs) / sizeof(errs[0]); nerr;) {
-	if (!(err = errs[--nerr])) continue;
+    for (nerr = 0; nerr < sizeof(errs) / sizeof(errs[0]); ++nerr) {
+	VALUE err = errs[nerr];
+
+	if (!RTEST(err)) continue;
+
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	    return sysexit_status(err);
 	}
@@ -1598,7 +1600,22 @@ ruby_cleanup(ex)
 	    VALUE sig = rb_iv_get(err, "signo");
 	    ruby_default_signal(NUM2INT(sig));
 	}
+	else if (ex == 0) {
+	    ex = 1;
+	}
     }
+
+#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
+    switch (ex) {
+#if EXIT_SUCCESS != 0
+      case 0: return EXIT_SUCCESS;
+#endif
+#if EXIT_FAILURE != 1
+      case 1: return EXIT_FAILURE;
+#endif
+    }
+#endif
+
     return ex;
 }
 
