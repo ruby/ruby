@@ -1,3 +1,13 @@
+Wed Aug 22 12:13:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): save all CONFIG values.
+
+	* ext/extmk.rb (extmake): remove mkmf.log at clean, and extconf.h at
+	  distclean, respectively.
+
+	* ext/extmk.rb: remove rdoc at clean, and installed list file at
+	  distclean, respectively.
+
 Wed Aug 22 11:49:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): should not check positional number as
