@@ -1,3 +1,8 @@
+Wed Aug 22 10:55:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (get_backtrace): check the result more.
+	  [ruby-dev:31261] [ruby-bugs-12398]
+
 Wed Aug 22 10:36:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_lshift, rb_big_rshift): separated functions
