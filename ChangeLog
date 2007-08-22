@@ -1,3 +1,8 @@
+Wed Aug 22 09:41:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_initialize): should call rb_ary_modify() first.
+	  [ruby-core:11562]
+
 Wed Aug 22 09:40:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): return non-valid token for an invalid
