@@ -1,3 +1,10 @@
+Sun Arg 12 03:56:30 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: fix Rinda::TupleSpace keeper thread bug.
+	  the thread is started too early. [ruby-talk:264062] 
+
+	* test/rinda/test_rinda.rb: ditto.
+
 Wed Aug 22 12:31:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_func_isinf): set yes also on OpenSolaris.

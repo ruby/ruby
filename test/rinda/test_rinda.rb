@@ -240,6 +240,20 @@ module TupleSpaceTestModule
     end
   end
 
+  def test_ruby_talk_264062
+    th = Thread.new { @ts.take([:empty], 1) }
+    sleep 2
+    assert_raises(Rinda::RequestExpiredError) do
+      th.value
+    end
+
+    th = Thread.new { @ts.read([:empty], 1) }
+    sleep 2
+    assert_raises(Rinda::RequestExpiredError) do
+      th.value
+    end
+  end
+
   def test_core_01
     5.times do |n|
       @ts.write([:req, 2])

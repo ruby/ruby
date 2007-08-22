@@ -404,7 +404,6 @@ module Rinda
 
     def write(tuple, sec=nil)
       entry = TupleEntry.new(tuple, sec)
-      start_keeper
       synchronize do
         if entry.expired?
           @read_waiter.find_all_template(entry).each do |template|
@@ -414,6 +413,7 @@ module Rinda
           notify_event('delete', entry.value)
         else
           @bag.push(entry)
+          start_keeper if entry.expires
           @read_waiter.find_all_template(entry).each do |template|
             template.read(tuple)
           end
@@ -439,7 +439,6 @@ module Rinda
     def move(port, tuple, sec=nil)
       template = WaitTemplateEntry.new(self, tuple, sec)
       yield(template) if block_given?
-      start_keeper
       synchronize do
         entry = @bag.find(template)
         if entry
@@ -452,6 +451,7 @@ module Rinda
 
         begin
           @take_waiter.push(template)
+          start_keeper if template.expires
           while true
             raise RequestCanceledError if template.canceled?
             raise RequestExpiredError if template.expired?
@@ -476,7 +476,6 @@ module Rinda
     def read(tuple, sec=nil)
       template = WaitTemplateEntry.new(self, tuple, sec)
       yield(template) if block_given?
-      start_keeper
       synchronize do
         entry = @bag.find(template)
         return entry.value if entry
@@ -484,6 +483,7 @@ module Rinda
 
         begin
           @read_waiter.push(template)
+          start_keeper if template.expires
           template.wait
           raise RequestCanceledError if template.canceled?
           raise RequestExpiredError if template.expired?
@@ -566,8 +566,11 @@ module Rinda
     def start_keeper
       return if @keeper && @keeper.alive?
       @keeper = Thread.new do
-        while need_keeper?
-          keep_clean
+        while true
+          synchronize do
+            break unless need_keeper?
+            keep_clean
+          end
           sleep(@period)
         end
       end
