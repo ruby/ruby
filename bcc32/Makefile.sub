@@ -135,7 +135,7 @@ MISSING = acosh.obj crypt.obj erf.obj win32.obj
 STACK = 0x2000000
 !endif
 
-XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)missing
+XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
 
 ARFLAGS = /a
 LD = ilink32 -q -Gn
@@ -154,7 +154,7 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
 MINIRUBY = .\miniruby$(EXEEXT) $(MINIRUBYOPT)
-RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)runruby.rb" --extout="$(EXTOUT)" --
+RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 ORGLIBPATH = $(LIB)
 
@@ -174,8 +174,8 @@ INSTALLED_LIST= .installed.list
 WINMAINOBJ    = winmain.$(OBJEXT)
 MINIOBJS      = dmydln.$(OBJEXT)
 
-.path.c = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
-.path.h = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
+.path.c = .;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
+.path.h = .;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
 .path.y = $(srcdir)
 .path. = $(srcdir)
 
@@ -183,14 +183,14 @@ MINIOBJS      = dmydln.$(OBJEXT)
 	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
 
 .rc.res:
-	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)
+	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:/=\)
 
 .y.c:
 	$(YACC) $(YFLAGS) $(<:\=/)
 	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $(@F)
 	@del y.tab.c
 
-all: $(srcdir)bcc32/Makefile.sub $(srcdir)common.mk
+all: $(srcdir)/bcc32/Makefile.sub $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -205,8 +205,8 @@ config: config.status
 
 config.status: $(CONFIG_H)
 
-$(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
-	@$(srcdir:/=\)win32\ifchange.bat config.h &&|
+$(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
+	@$(srcdir:/=\)\win32\ifchange.bat config.h &&|
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1
@@ -286,7 +286,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
 |
 	@exit > $@
 
-config.status: $(MKFILES) $(srcdir)bcc32/Makefile.sub $(srcdir)common.mk
+config.status: $(MKFILES) $(srcdir)/bcc32/Makefile.sub $(srcdir)/common.mk
 	@echo Creating $@
 	@type > $@ &&|
 # Generated automatically by Makefile.sub.
@@ -426,14 +426,14 @@ $(LIBRUBY_SO): $(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 $(LIBRUBY): $(LIBRUBY_SO)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
-		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ -base=$(RUBY_SO_NAME) $(LIBRUBY_A)
+		$(MINIRUBY) $(srcdir)/bcc32/mkexports.rb -output=$@ -base=$(RUBY_SO_NAME) $(LIBRUBY_A)
 
 $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
-		@$(MINIRUBY) $(srcdir)win32/resource.rb \
+		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
-			. $(icondirs) $(srcdir)win32
+			. $(icondirs) $(srcdir)/win32
 
 post-install-bin::
 	@$(NULLCMD)

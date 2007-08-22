@@ -1,13 +1,13 @@
 # -*- makefile -*-
 
 !if "$(srcdir)" != ""
-bcc32dir = $(srcdir)bcc32/
+bcc32dir = $(srcdir)/bcc32
 !elseif "$(bcc32dir)" == "bcc32/"
-srcdir = ./
+srcdir = .
 !elseif "$(bcc32dir:/bcc32/=)/bcc32/" == "$(bcc32dir)"
-srcdir = $(bcc32dir:/bcc32/=/)
+srcdir = $(bcc32dir:/bcc32/=)
 !else
-srcdir = $(bcc32dir)../
+srcdir = $(bcc32dir)/..
 !endif
 !ifndef prefix
 prefix = /usr
@@ -122,12 +122,12 @@ $(BANG)endif
 \# RUBY_INSTALL_NAME = ruby
 \# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 \# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
-\# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+\# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 \# STACK = 0x2000000
 \# LDFLAGS = -S:$$(STACK)
 \# RFLAGS = $$(iconinc)
 \# EXTLIBS = cw32.lib import32.lib user32.lib kernel32.lib
-$(BANG)include $$(srcdir)bcc32/Makefile.sub
+$(BANG)include $$(srcdir)/bcc32/Makefile.sub
 |
 	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type "`$(MAKE)'" to make ruby for $(OS).
