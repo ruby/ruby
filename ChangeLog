@@ -1,3 +1,11 @@
+Wed Aug 22 10:24:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_pow): integer power calculation: 0**n => 0, 
+	  1**n => 1, -1**n => 1 (n: even) / -1 (n: odd).
+
+	* test/ruby/test_fixnum.rb (TestFixnum::test_pow): update test
+	  suite.  pow(-3, 2^64) gives NaN when pow(3, 2^64) gives Inf.
+
 Wed Aug 22 10:23:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/base64.rb (Base64::b64encode): should not specify /o option
