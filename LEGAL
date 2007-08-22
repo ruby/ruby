@@ -66,6 +66,21 @@ parse.c:
     the same distribution terms that you use for the rest of that program.
 
 util.c (partly):
+
+    Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
+
+    Permission to use, copy, modify, and distribute this software for any
+    purpose without fee is hereby granted, provided that this entire notice
+    is included in all copies of any software which is or includes a copy
+    or modification of this software and in all copies of the supporting
+    documentation for such software.
+
+    THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+    WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR LUCENT MAKES ANY
+    REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
+    OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+
+util.c (partly):
 win32/win32.[ch]:
 
   You can apply the Artistic License to these files. (or GPL,
@@ -143,23 +158,6 @@ missing/strtol.c:
 ext/digest/sha1/sha1.[ch]:
 
   These files are all under public domain.
-
-missing/strtod.c:
-
-  This file will not be used on most platforms depending on how the
-  configure script results.  In any case you must not receive any fee
-  with the file itself.
-
-    Copyright (c) 1988-1993 The Regents of the University of California.
-    Copyright (c) 1994 Sun Microsystems, Inc.
-
-    Permission to use, copy, modify, and distribute this
-    software and its documentation for any purpose and without
-    fee is hereby granted, provided that the above copyright
-    notice appear in all copies.  The University of California
-    makes no representations about the suitability of this
-    software for any purpose.  It is provided "as is" without
-    express or implied warranty.
 
 missing/strtoul.c:
 
