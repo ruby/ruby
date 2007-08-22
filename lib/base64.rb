@@ -110,7 +110,7 @@ module Base64
   #    UnVieQ==
 
   def b64encode(bin, len = 60)
-    encode64(bin).scan(/.{1,#{len}}/o) do
+    encode64(bin).scan(/.{1,#{len}}/) do
       print $&, "\n"
     end
   end 
