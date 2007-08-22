@@ -17,6 +17,7 @@
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include "st.h"
 
@@ -399,6 +400,7 @@ int syck_scan_scalar( int, char *, long );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );
+void syck_parser_set_input_type( SyckParser *, enum syck_parser_input );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );

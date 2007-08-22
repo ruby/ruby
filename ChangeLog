@@ -1,3 +1,29 @@
+Wed Aug 22 10:13:45 2007  pegacorn  <subscriber.jp AT gmail.com>
+
+	* ext/digest/digest.c (rb_digest_instance_update,
+	  rb_digest_instance_finish, rb_digest_instance_reset,
+	  rb_digest_instance_block_length): %s in rb_raise() expects char*.
+	  [ruby-dev:31222]
+
+	* ext/openssl/ossl.h: include ossl_pkcs5.h.  [ruby-dev:31231]
+
+	* ext/openssl/ossl_pkcs5.h: new file for PKCS5.  [ruby-dev:31231]
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_to_s): use ossl_raise()
+	  instead of rb_raise().  [ruby-dev:31222]
+
+	* ext/sdbm/_sdbm.c: DOSISH platforms need io.h.  [ruby-dev:31232]
+
+	* ext/syck/syck.h: include stdlib.h for malloc() and free().
+	  [ruby-dev:31232]
+
+	* ext/syck/syck.h (syck_parser_set_input_type): prototype added.
+	  [ruby-dev:31231]
+
+	* win32/win32.c: include mbstring.h for _mbspbrk().  [ruby-dev:31232]
+
+	* win32.h (rb_w32_getcwd): prototype added.  [ruby-dev:31232]
+
 Wed Aug 22 10:11:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): check leading non-digits.

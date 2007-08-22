@@ -27,6 +27,7 @@
 #include <wincon.h>
 #ifdef __MINGW32__
 #include <mswsock.h>
+#include <mbstring.h>
 #endif
 #include "win32.h"
 #include "win32/dir.h"
