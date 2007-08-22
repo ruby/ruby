@@ -1,3 +1,8 @@
+Wed Aug 22 10:11:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): check leading non-digits.
+	  [ruby-core:11691]
+
 Wed Aug 22 10:07:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_neg): SIGNED_VALUE isn't in 1.8.
