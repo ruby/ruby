@@ -1,0 +1,46 @@
+LDSHARED_TEST = $(LDSHARED) $(LDFLAGS) test/test.o -o test/libtest.so $(LOCAL_LIBS)
+
+libtest.so: test/libtest.so
+
+test/libtest.so: test/test.o $(srcdir)/test/libtest.def
+	$(RUBY) -rftools -e 'ARGV.each do|d|File.mkpath(File.dirname(d))end' $@
+	$(LDSHARED_TEST:dl.def=test/libtest.def)
+
+test/test.o: $(srcdir)/test/test.c
+	@$(RUBY) -rftools -e 'File.mkpath(*ARGV)' test
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/test/test.c -o $@
+
+test:: dl.so libtest.so force
+	$(RUBY) -I. -I$(srcdir)/lib $(srcdir)/test/test.rb
+
+force:
+
+.PHONY: force test
+
+allclean: distclean
+	@rm -f $(CLEANFILES) $(DISTCLEANFILES)
+
+$(OBJS): ./dlconfig.h
+
+sym.o: dl.h call.func
+
+dl.o: dl.h callback.func cbtable.func
+
+ptr.o: dl.h
+
+handle.o: dl.h
+
+call.func: $(srcdir)/mkcall.rb ./dlconfig.rb
+	@echo "Generating call.func"
+	@$(RUBY) $(srcdir)/mkcall.rb > $@
+
+callback.func: $(srcdir)/mkcallback.rb ./dlconfig.rb
+	@echo "Generating callback.func"
+	@$(RUBY) $(srcdir)/mkcallback.rb > $@
+
+cbtable.func: $(srcdir)/mkcbtable.rb ./dlconfig.rb
+	@echo "Generating cbtable.func"
+	@$(RUBY) $(srcdir)/mkcbtable.rb > $@
+
+debug:
+	$(MAKE) CPPFLAGS="$(CPPFLAGS) -DDEBUG"

@@ -1,0 +1,36 @@
+#! /usr/local/bin/ruby
+
+load("parsearg.rb")
+
+def usage()
+  printf "Usage:\n"
+  printf "%s -d [-x x] [-y y] [--geometry geom] [--version] [string ...]\n", $0
+end
+
+$USAGE = 'usage'
+parseArgs(0, "d&(x|y)", "dfg", "x:", "y:", "geometry:800x600", "version")
+if ($OPT_d)
+  if $OPT_version
+    printf "version 1.0\n"
+  end
+  if ($OPT_x)
+    printf("x = %d\n", $OPT_x.to_i)
+  end
+  if ($OPT_y)
+    printf("y = %d\n", $OPT_y.to_i)
+  end
+  if ($OPT_geometry)
+    printf("geometry = %s\n", $OPT_geometry)
+  end
+  if $OPT_f
+    printf "f = TRUE\n"
+  end
+  if $OPT_g
+    printf "g = TRUE\n"
+  end
+end
+
+while (ARGV.length != 0)
+  print "other = ", ARGV[0], "\n"
+  ARGV.shift
+end

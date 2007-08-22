@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <env:Body>
+    <n2:mapResponse xmlns:n1="http://schemas.xmlsoap.org/soap/encoding/" xmlns:n2="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/" env:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+      <return xmlns:n3="http://xml.apache.org/xml-soap" xsi:type="n3:Map">
+	<item>
+	  <key xsi:type="xsd:string">a</key>
+	  <value xsi:type="n3:Map">
+	    <item>
+	      <key xsi:type="xsd:string">a1</key>
+	      <value xsi:type="n1:Array" n1:arrayType="xsd:anyType[1]">
+		<item xsi:type="xsd:string">a1</item>
+	      </value>
+	    </item>
+	    <item>
+	      <key xsi:type="xsd:string">a2</key>
+	      <value xsi:type="n1:Array" n1:arrayType="xsd:anyType[1]">
+		<item xsi:type="xsd:string">a2</item>
+	      </value>
+	    </item>
+	  </value>
+	</item>
+	<item>
+	  <key xsi:type="xsd:string">b</key>
+	  <value xsi:type="n3:Map">
+	    <item>
+	      <key xsi:type="xsd:string">b1</key>
+	      <value xsi:type="n1:Array" n1:arrayType="xsd:anyType[1]">
+		<item xsi:type="xsd:string">b1</item>
+	      </value>
+	    </item>
+	    <item>
+	      <key xsi:type="xsd:string">b2</key>
+	      <value xsi:type="n1:Array" n1:arrayType="xsd:anyType[1]">
+		<item xsi:type="xsd:string">b2</item>
+	      </value>
+	    </item>
+	  </value>
+	</item>
+      </return>
+    </n2:mapResponse>
+  </env:Body>
+</env:Envelope>

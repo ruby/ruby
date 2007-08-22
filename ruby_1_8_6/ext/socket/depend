@@ -1,0 +1,3 @@
+socket.o : socket.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/rubyio.h $(hdrdir)/rubysig.h sockport.h
+getnameinfo.o: getnameinfo.c $(topdir)/config.h addrinfo.h sockport.h
+getaddrinfo.o: getaddrinfo.c $(topdir)/config.h addrinfo.h sockport.h

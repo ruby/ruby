@@ -1,0 +1,2 @@
+include Makefile
+VPATH = $(srcdir) $(srcdir)/missing
