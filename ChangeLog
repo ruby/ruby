@@ -1,3 +1,8 @@
+Wed Aug 22 09:55:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_init_copy): disallow changing the size.
+	  [ruby-dev:31168]
+
 Wed Aug 22 09:54:28 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* random.c: documentation fix.  srand(0) initializes PRNG with '0',
