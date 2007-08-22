@@ -245,7 +245,10 @@ set_conf_section_i(VALUE i, VALUE *arg)
 static VALUE
 ossl_config_set_section(VALUE self, VALUE section, VALUE hash)
 {
-    VALUE arg[2] = { self, section };
+    VALUE arg[2];
+
+    arg[0] = self;
+    arg[1] = section;
     rb_iterate(rb_each, hash, set_conf_section_i, (VALUE)arg);
     return hash;
 }
