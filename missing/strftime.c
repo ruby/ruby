@@ -445,7 +445,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			} else {
 				tbuf[0] = '+';
 			}
-			sprintf(tbuf+1, "%02d%02d", off/60, off%60);
+			sprintf(tbuf+1, "%02u%02u", (unsigned)off/60, (unsigned)off%60);
 			break;
 #endif /* MAILHEADER_EXT */
 

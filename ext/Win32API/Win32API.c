@@ -108,7 +108,7 @@ Win32API_initialize(self, dllname, proc, import, export)
     }
 
     if (16 < RARRAY(a_import)->len) {
-	rb_raise(rb_eRuntimeError, "too many parameters: %d\n", RARRAY(a_import)->len);
+	rb_raise(rb_eRuntimeError, "too many parameters: %ld\n", RARRAY(a_import)->len);
     }
 
     rb_iv_set(self, "__import__", a_import);

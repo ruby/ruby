@@ -35,6 +35,7 @@
  */
 
 #include "config.h"
+#include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32
 #if defined(__BEOS__)
@@ -51,15 +52,11 @@
 #endif
 #include <netdb.h>
 #if defined(HAVE_RESOLV_H)
-#ifdef _SX
-#include <stdio.h>
-#endif
 #include <resolv.h>
 #endif
 #endif
 #ifdef _WIN32
 #include <winsock2.h>
-#include <stdio.h>
 #define snprintf _snprintf
 #endif
 
