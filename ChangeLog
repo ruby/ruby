@@ -1,3 +1,8 @@
+Wed Aug 22 11:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (is_ruby_native_thread): removed since declared as an int
+	  function in ruby.h already.
+
 Wed Aug 22 11:00:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): should remove mkmf.log too.
