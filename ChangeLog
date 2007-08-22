@@ -1,3 +1,8 @@
+Wed Aug 22 11:49:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): should not check positional number as
+	  width.  [ruby-core:11838]
+
 Wed Aug 22 11:47:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_aref): check for Bignum index range.
