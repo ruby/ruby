@@ -1,3 +1,9 @@
+Wed Aug 22 10:07:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_neg): SIGNED_VALUE isn't in 1.8.
+
+	* bignum.c (bigtrunc): do not empty Bignum.  [ruby-dev:31229]
+
 Wed Aug 22 10:02:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): 0**2 should not raise floating point

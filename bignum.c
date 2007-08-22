@@ -74,6 +74,7 @@ get2comp(x)
     BDIGIT *ds = BDIGITS(x);
     BDIGIT_DBL num;
 
+    if (!i) return;
     while (i--) ds[i] = ~ds[i];
     i = 0; num = 1;
     do {
@@ -102,7 +103,7 @@ bigtrunc(x)
     long len = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(x);
 
-    while (len-- && !ds[len]);
+    while (--len && !ds[len]);
     RBIGNUM(x)->len = ++len;
     return x;
 }
@@ -1086,6 +1087,7 @@ rb_big_neg(x)
     if (!RBIGNUM(x)->sign) get2comp(z);
     ds = BDIGITS(z);
     i = RBIGNUM(x)->len;
+    if (!i) return INT2FIX(~0);
     while (i--) ds[i] = ~ds[i];
     RBIGNUM(z)->sign = !RBIGNUM(z)->sign;
     if (RBIGNUM(x)->sign) get2comp(z);
