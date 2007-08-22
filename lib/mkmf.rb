@@ -266,8 +266,7 @@ ensure
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
-  Config::expand(TRY_LINK.dup,
-                 CONFIG.merge('hdrdir' => $hdrdir.quote,
+  conf = Config::CONFIG.merge('hdrdir' => $hdrdir.quote,
                               'src' => CONFTEST_C,
                               'INCFLAGS' => $INCFLAGS,
                               'CPPFLAGS' => $CPPFLAGS,
@@ -276,17 +275,20 @@ def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
                               'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                               'LIBPATH' => libpathflag(libpath),
                               'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                              'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS"))
+                              'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+  Config::expand(TRY_LINK.dup, conf)
 end
 
 def cc_command(opt="")
+  conf = Config::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote)
   Config::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
-		 CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
+		 conf)
 end
 
 def cpp_command(outfile, opt="")
+  conf = Config::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote)
   Config::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
-		 CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote))
+		 conf)
 end
 
 def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)

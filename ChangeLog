@@ -1,3 +1,8 @@
+Wed Aug 22 09:58:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (link_command, cc_command, cpp_command): do not expand
+	  ::CONFIG which is an alias of MAKEFILE_CONFIG.
+
 Wed Aug 22 09:55:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (rb_struct_init_copy): disallow changing the size.
