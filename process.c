@@ -117,6 +117,9 @@ static VALUE S_Tms;
 #endif
 #endif
 
+#define preserving_errno(stmts) \
+	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
+
 
 /*
  *  call-seq:
@@ -990,7 +993,7 @@ proc_exec_v(argv, prog)
     before_exec();
     rb_thread_cancel_timer();
     execv(prog, argv);
-    after_exec();
+    preserving_errno(after_exec());
     return -1;
 }
 
@@ -1059,7 +1062,7 @@ rb_proc_exec(str)
 #else
 	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-	    after_exec();
+	    preserving_errno(after_exec());
 #endif
 #endif
 	    return -1;

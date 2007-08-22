@@ -1,3 +1,7 @@
+Wed Aug 22 09:38:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_exec_v, rb_proc_exec): preserve errno.
+
 Wed Aug 22 09:00:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): return EXIT_FAILURE if any exceptions occured
