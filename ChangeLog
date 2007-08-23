@@ -1,3 +1,13 @@
+Thu Aug 23 20:02:25 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (reg_get_value): use RegQueryValueEx instead
+	  of RegQueryValueEx.
+
+	* ext/win32ole/win32ole.c (typelib_file_from_clsid): fix the bug
+	  that the function always returns Qnil.
+
+	* test/win32ole/test_win32ole_type.rb (test_initialize): add some test.
+
 Thu Aug 23 17:25:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (group_member): check if presents.

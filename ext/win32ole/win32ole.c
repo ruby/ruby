@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.2"
+#define WIN32OLE_VERSION "1.0.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1929,22 +1929,48 @@ reg_enum_key(HKEY hkey, DWORD i)
 static VALUE
 reg_get_val(HKEY hkey, const char *subkey)
 {
-    char buf[BUFSIZ];
-    LONG size_buf = sizeof(buf);
-    LONG err = RegQueryValue(hkey, subkey, buf, &size_buf);
+    char *pbuf;
+    DWORD dwtype = 0;
+    LONG size = 0;
+    VALUE val = Qnil;
+    LONG err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, NULL, &size); 
+
     if (err == ERROR_SUCCESS) {
-        return rb_str_new2(buf);
+        pbuf = ALLOC_N(char, size + 1);
+        err = RegQueryValueEx(hkey, subkey, NULL, &dwtype, pbuf, &size);
+        if (err == ERROR_SUCCESS) {
+            pbuf[size] = '\0';
+            val = rb_str_new2(pbuf);
+        }
+        free(pbuf);
     }
-    return Qnil;
+    return val;
+}
+
+static VALUE
+reg_get_val2(HKEY hkey, const char *subkey)
+{
+    HKEY hsubkey;
+    LONG err;
+    VALUE val = Qnil;
+    err = RegOpenKeyEx(hkey, subkey, 0, KEY_READ, &hsubkey);
+    if (err == ERROR_SUCCESS) {
+        val = reg_get_val(hsubkey, NULL);
+        RegCloseKey(hsubkey);
+    }
+    if (val == Qnil) {
+        val = reg_get_val(hkey, subkey);
+    }
+    return val;
 }
 
 static VALUE
 reg_get_typelib_file_path(HKEY hkey)
 {
     VALUE path = Qnil;
-    path = reg_get_val(hkey, "win32");
+    path = reg_get_val2(hkey, "win32");
     if (path == Qnil) {
-        path = reg_get_val(hkey, "win16");
+        path = reg_get_val2(hkey, "win16");
     }
     return path;
 }
@@ -1952,34 +1978,28 @@ reg_get_typelib_file_path(HKEY hkey)
 static VALUE
 typelib_file_from_clsid(VALUE ole)
 {
-    OLECHAR *pbuf;
-    CLSID clsid;
-    HRESULT hr;
     HKEY hroot, hclsid;
     LONG err;
     VALUE typelib;
-    VALUE vclsid;
+    char path[MAX_PATH + 1];
 
-    pbuf  = ole_mb2wc(StringValuePtr(ole), -1);
-    hr = CLSIDFromProgID(pbuf, &clsid);
-    SysFreeString(pbuf);
-    if (FAILED(hr)) {
-        return Qnil;
-    }
-    StringFromCLSID(&clsid, &pbuf);
-    vclsid = WC2VSTR(pbuf);
     err = reg_open_key(HKEY_CLASSES_ROOT, "CLSID", &hroot);
     if (err != ERROR_SUCCESS) {
         return Qnil;
     }
-    err = reg_open_key(hroot, StringValuePtr(vclsid), &hclsid);
+    err = reg_open_key(hroot, StringValuePtr(ole), &hclsid);
     if (err != ERROR_SUCCESS) {
         RegCloseKey(hroot);
         return Qnil;
     }
-    typelib = reg_get_val(hclsid, "InprocServer32");
+    typelib = reg_get_val2(hclsid, "InprocServer32");
     RegCloseKey(hroot);
     RegCloseKey(hclsid);
+    if (typelib != Qnil) {
+        ExpandEnvironmentStrings(StringValuePtr(typelib), path, sizeof(path));
+        path[MAX_PATH] = '\0';
+        typelib = rb_str_new2(path);
+    }
     return typelib;
 }
 
@@ -4428,9 +4448,9 @@ foletype_s_progids(VALUE self)
         err = reg_open_vkey(hclsids, clsid, &hclsid);
         if (err != ERROR_SUCCESS)
             continue;
-        if ((v = reg_get_val(hclsid, "ProgID")) != Qnil) 
+        if ((v = reg_get_val2(hclsid, "ProgID")) != Qnil) 
             rb_ary_push(progids, v);
-        if ((v = reg_get_val(hclsid, "VersionIndependentProgID")) != Qnil)
+        if ((v = reg_get_val2(hclsid, "VersionIndependentProgID")) != Qnil)
             rb_ary_push(progids, v);
         RegCloseKey(hclsid);
     }
@@ -4545,7 +4565,7 @@ foletypelib_s_typelibs(VALUE self)
             version = reg_enum_key(hguid, j);
             if (version == Qnil)
                 break;
-            if ( (name = reg_get_val(hguid, StringValuePtr(version))) != Qnil ) {
+            if ( (name = reg_get_val2(hguid, StringValuePtr(version))) != Qnil ) {
                 typelib = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("allocate"), 0);
                 oletypelib_set_member(typelib, name, guid, version);
                 rb_ary_push(typelibs, typelib);
