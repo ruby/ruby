@@ -1315,7 +1315,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VAL
 	}
 	else {
 	    th->state = TAG_RAISE;
-	    //th->state = FIX2INT(rb_ivar_get(err, idThrowState));
+	    /*th->state = FIX2INT(rb_ivar_get(err, idThrowState));*/
 	}
 	return err;
     }

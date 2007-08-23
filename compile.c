@@ -2000,7 +2000,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 
     if (!poped && 0) {
 	/* optimized one */
-	//compile_massign_opt(iseq, ret, rhsn, splatn, lhsn, llen);
+	/*compile_massign_opt(iseq, ret, rhsn, splatn, lhsn, llen);*/
     }
     else {
 	DECL_ANCHOR(lhsseq);

@@ -1,4 +1,7 @@
-Thu Aug 23 16:57:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 23 16:59:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign), insnhelper.ci (vm_throw): not use C99
+	  comment.
 
 	* cont.c (rb_cont_call, fiber_switch, rb_fiber_resume, rb_fiber_yield):
 	  suppress warnings.
