@@ -1,3 +1,9 @@
+Thu Aug 23 15:51:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_norm_arg): ripper has no shadowing check.
+
+	* parse.y (f_block_arg): dispatch blkarg_mark.
+
 Thu Aug 23 15:48:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (make_masgn_lhs, iseq_compile_each): fixed indent.

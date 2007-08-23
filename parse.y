@@ -4154,7 +4154,10 @@ f_norm_arg	: tCONSTANT
 		    }
 		| tIDENTIFIER
 		    {
+		    /*%%%*/
 			shadowing_lvar($1);
+		    /*%
+		    %*/
 			$$ = $1;
 		    }
 		;
@@ -4288,7 +4291,7 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 			arg_var($2);
 			$$ = $2;
 		    /*%
-			$$ = $2;
+			$$ = dispatch1(blockarg, $2);
 		    %*/
 		    }
 		;
