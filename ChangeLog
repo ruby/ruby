@@ -1,3 +1,11 @@
+Thu Aug 23 16:55:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cont.c (rb_cont_call, fiber_switch, rb_fiber_resume, rb_fiber_yield):
+	  suppress warnings.
+
+	* cont.c (rb_fiber_start): change on non-volatile variable between
+	  setjmp and longjmp may not has an effect.
+
 Thu Aug 23 16:04:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def, parse.y: fix massign order.  This change

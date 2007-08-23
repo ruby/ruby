@@ -465,7 +465,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
     cont->value = make_passing_arg(argc, argv);
 
-    cont_restore_0(cont, (VALUE *)&cont);
+    cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
 }
 
@@ -555,9 +555,9 @@ rb_fiber_start(void)
     VALUE args;
     int state;
 
+    GetContPtr(th->fiber, cont);
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	GetContPtr(th->fiber, cont);
 	GetProcPtr(cont->saved_thread.first_proc, proc);
 	args = cont->value;
 	cont->value = Qnil;
@@ -651,7 +651,7 @@ fiber_switch(VALUE fib, int argc, VALUE *argv, int is_resume)
     cont->value = make_passing_arg(argc, argv);
 
     if ((value = cont_store(cont)) == Qundef) {
-	cont_restore_0(cont, (VALUE *)&cont);
+	cont_restore_0(cont, &value);
 	rb_bug("rb_fiber_resume: unreachable");
     }
 
@@ -669,9 +669,7 @@ rb_fiber_transfer(VALUE fib, int argc, VALUE *argv)
 VALUE
 rb_fiber_resume(VALUE fib, int argc, VALUE *argv)
 {
-    int i;
     rb_context_t *cont;
-    VALUE curr = rb_fiber_current();
     GetContPtr(fib, cont);
 
     if (cont->prev != Qnil) {
@@ -684,7 +682,7 @@ rb_fiber_resume(VALUE fib, int argc, VALUE *argv)
 VALUE
 rb_fiber_yield(int argc, VALUE *argv)
 {
-    rb_fiber_transfer(return_fiber(), argc, argv);
+    return rb_fiber_transfer(return_fiber(), argc, argv);
 }
 
 VALUE
