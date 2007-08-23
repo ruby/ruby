@@ -594,7 +594,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit setrlimit sysconf\
+	      getpriority getrlimit setrlimit sysconf group_member\
 	      dlopen sigprocmask sigaction _setjmp vsnprintf snprintf\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh log2\
 	      setuid setgid daemon select_large_fdset setenv unsetenv)
@@ -1423,6 +1423,9 @@ if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
 fi
 case "$target_os" in
+    linux*)
+	XCFLAGS="$XCFLAGS -D_GNU_SOURCE=1"
+	;;
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"
 	;;

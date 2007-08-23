@@ -12,9 +12,6 @@
 
 **********************************************************************/
 
-#ifdef linux
-#define _GNU_SOURCE 1
-#endif
 #include "ruby/ruby.h"
 #include "ruby/signal.h"
 #include "vm_core.h"

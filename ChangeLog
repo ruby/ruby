@@ -1,3 +1,13 @@
+Thu Aug 23 17:25:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (group_member): check if presents.
+
+	* configure.in (XCFLAGS): add _GNU_SOURCE on linux.
+
+	* file.c (group_member): use system routine if available.
+
+	* process.c: moved _GNU_SOURCE macro to Makefile.
+
 Thu Aug 23 16:59:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_massign), insnhelper.ci (vm_throw): not use C99

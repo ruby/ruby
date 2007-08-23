@@ -785,6 +785,7 @@ rb_file_lstat(VALUE obj)
 #endif
 }
 
+#ifndef HAVE_GROUP_MEMBER
 static int
 group_member(GETGROUPS_T gid)
 {
@@ -813,6 +814,7 @@ group_member(GETGROUPS_T gid)
 #endif
     return Qfalse;
 }
+#endif
 
 #ifndef S_IXUGO
 #  define S_IXUGO		(S_IXUSR | S_IXGRP | S_IXOTH)
