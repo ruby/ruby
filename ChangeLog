@@ -1,3 +1,7 @@
+Thu Aug 23 20:31:31 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: optimize simple massign.
+
 Thu Aug 23 20:02:25 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (reg_get_value): use RegQueryValueEx instead

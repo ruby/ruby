@@ -190,7 +190,6 @@ iseq_compile(VALUE self, NODE *node)
 	  case ISEQ_TYPE_BLOCK:
 	  case ISEQ_TYPE_EVAL:
 	  case ISEQ_TYPE_TOP:
-	    dpn(node);
 	    rb_compile_error(ERROR_ARGS "compile/should not be reached: %s:%d",
 			     __FILE__, __LINE__);
 	    break;
@@ -1979,15 +1978,89 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	DECL_ANCHOR(anchor);
 	INIT_ANCHOR(anchor);
 	COMPILE_POPED(anchor, "masgn lhs", node);
-	/* dump_disasm_list(FIRST_ELEMENT(anchor)); */
 	REMOVE_ELEM(FIRST_ELEMENT(anchor));
-	/* dump_disasm_list(FIRST_ELEMENT(anchor)); */
 	ADD_SEQ(ret, anchor);
-	/* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
       }
     }
 
     return COMPILE_OK;
+}
+
+static void
+compile_massign_opt_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *lhsn)
+{
+    if (lhsn) {
+	compile_massign_opt_lhs(iseq, ret, lhsn->nd_next);
+	compile_massign_lhs(iseq, ret, lhsn->nd_head);
+    }
+}
+
+static int
+compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
+		    NODE *rhsn, NODE *orig_lhsn)
+{
+    int memsize = 64;
+    int memindex = 0;
+    VALUE *mem = ALLOCA_N(VALUE, memsize);
+    int llen = 0, rlen = 0;
+    int i;
+    NODE *lhsn = orig_lhsn;
+
+#define MEMORY(v) { \
+    int i; \
+    if (memindex == memsize) return 0; \
+    for (i=0; i<memindex; i++) { \
+	if (mem[i] == (v)) return 0; \
+    } \
+    mem[memindex++] = (v); \
+}
+
+    if (rhsn == 0 || nd_type(rhsn) != NODE_ARRAY) {
+	return 0;
+    }
+
+    while (lhsn) {
+	NODE *ln = lhsn->nd_head;
+	switch (nd_type(ln)) {
+	  case NODE_LASGN:
+	    MEMORY(ln->nd_vid);
+	    break;
+	  case NODE_DASGN:
+	  case NODE_DASGN_CURR:
+	  case NODE_IASGN:
+	  case NODE_IASGN2:
+	  case NODE_CVASGN:
+	    MEMORY(ln->nd_vid);
+	    break;
+	  case NODE_GASGN:
+	    MEMORY((VALUE)ln->nd_entry);
+	    break;
+	  default:
+	    return 0;
+	}
+	lhsn = lhsn->nd_next;
+	llen++;
+    }
+
+    while (rhsn) {
+	if (llen <= rlen) {
+	    COMPILE_POPED(ret, "masgn val (poped)", rhsn->nd_head);
+	}
+	else {
+	    COMPILE(ret, "masgn val", rhsn->nd_head);
+	}
+	rhsn = rhsn->nd_next;
+	rlen++;
+    }
+
+    if (llen > rlen) {
+	for (i=0; i<llen-rlen; i++) {
+	    ADD_INSN(ret, nd_line(orig_lhsn), putnil);
+	}
+    }
+
+    compile_massign_opt_lhs(iseq, ret, orig_lhsn);
+    return 1;
 }
 
 static int
@@ -1998,13 +2071,10 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
     NODE *lhsn = node->nd_head;
     int lhs_splat = (splatn && (VALUE)splatn != (VALUE)-1) ? 1 : 0;
 
-    if (!poped && 0) {
-	/* optimized one */
-	/*compile_massign_opt(iseq, ret, rhsn, splatn, lhsn, llen);*/
-    }
-    else {
-	DECL_ANCHOR(lhsseq);
+    if (!poped || splatn || !compile_massign_opt(iseq, ret, rhsn, lhsn)) {
 	int llen = 0;
+	DECL_ANCHOR(lhsseq);
+
 	INIT_ANCHOR(lhsseq);
 
 	while (lhsn) {
