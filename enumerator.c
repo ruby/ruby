@@ -22,7 +22,7 @@
  * object.
  */
 static VALUE rb_cEnumerator;
-static VALUE sym_each, sym_each_with_index, sym_each_slice, sym_each_cons;
+static VALUE sym_each, sym_each_with_index, sym_each_slice, sym_each_cons, sym_call;
 
 VALUE rb_eStopIteration;
 
@@ -35,11 +35,14 @@ proc_call(VALUE proc, VALUE args)
     return rb_proc_call(proc, args);
 }
 
+struct enumerator;
+typedef VALUE enum_iter(VALUE, struct enumerator *);
+
 struct enumerator {
     VALUE method;
     VALUE proc;
     VALUE args;
-    VALUE (*iter)(VALUE, struct enumerator *);
+    enum_iter *iter;
     VALUE fib;
     VALUE next;
     VALUE dst;
@@ -154,7 +157,7 @@ enum_each_slice(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_block_call(obj, rb_intern("each"), 0, 0, each_slice_i, (VALUE)args);
+    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_slice_i, (VALUE)args);
 
     ary = args[0];
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
@@ -210,7 +213,7 @@ enum_each_cons(VALUE obj, VALUE n)
     args[0] = rb_ary_new2(size);
     args[1] = (VALUE)size;
 
-    rb_block_call(obj, rb_intern("each"), 0, 0, each_cons_i, (VALUE)args);
+    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_cons_i, (VALUE)args);
 
     return Qnil;
 }
@@ -234,7 +237,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 	ptr->iter = enumerator_iter_i;
     }
     else {
-	ptr->iter = (VALUE (*)(VALUE, struct enumerator *))rb_yield;
+	ptr->iter = (enum_iter *)rb_yield;
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
@@ -317,7 +320,7 @@ enumerator_each(VALUE obj)
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->method, rb_intern("call"), argc, argv, e->iter, (VALUE)e);
+    return rb_block_call(e->method, SYM2ID(sym_call), argc, argv, e->iter, (VALUE)e);
 }
 
 static VALUE
@@ -349,7 +352,7 @@ enumerator_with_index(VALUE obj)
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->method, rb_intern("call"), argc, argv,
+    return rb_block_call(e->method, SYM2ID(sym_call), argc, argv,
 			 enumerator_with_index_i, (VALUE)&memo);
 }
 
@@ -388,7 +391,7 @@ next_i(VALUE curr, VALUE obj)
 
     rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
     e->has_next = Qfalse;
-    rb_fiber_yield(1, &e->next);
+    return rb_fiber_yield(1, &e->next);
 }
 
 static void
@@ -498,6 +501,7 @@ Init_Enumerator(void)
     sym_each_with_index	= ID2SYM(rb_intern("each_with_index"));
     sym_each_slice	= ID2SYM(rb_intern("each_slice"));
     sym_each_cons	= ID2SYM(rb_intern("each_cons"));
+    sym_call		= ID2SYM(rb_intern("call"));
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }

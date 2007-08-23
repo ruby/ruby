@@ -1,10 +1,16 @@
-Thu Aug 23 16:55:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 23 16:57:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (rb_cont_call, fiber_switch, rb_fiber_resume, rb_fiber_yield):
 	  suppress warnings.
 
 	* cont.c (rb_fiber_start): change on non-volatile variable between
 	  setjmp and longjmp may not has an effect.
+
+	* enumerator.c (sym_call): initialize first.
+
+	* enumerator.c (enum_iter): typedefed.
+
+	* enumerator.c (next_i): suppress a warning.
 
 Thu Aug 23 16:04:11 2007  Koichi Sasada  <ko1@atdot.net>
 
