@@ -978,7 +978,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 		    /*%%%*/
 			value_expr($3);
-			$1->nd_value = ($1->nd_head) ? NEW_TO_ARY($3) : NEW_ARRAY($3);
+			$1->nd_value = $3;
 			$$ = $1;
 		    /*%
 			$$ = dispatch2(massign, $1, $3);

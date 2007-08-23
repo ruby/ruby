@@ -1,3 +1,15 @@
+Thu Aug 23 16:04:11 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def, parse.y: fix massign order.  This change
+	  causes performance problem.  Try vm1_swap benchmark.
+	  [ruby-dev:31522]
+
+	* insns.def, insnhelper.ci: move process body of expandarray insn to
+	  vm_expandarray().
+
+	* bootstraptest/test_knownbug.rb, bootstraptest/test_massign.rb: 
+	  move a solved test.
+
 Thu Aug 23 15:51:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_norm_arg): ripper has no shadowing check.

@@ -4,7 +4,6 @@
 #
 
 # massign
-assert_equal '2', 'a, a = 1, 2; a', "[ruby-dev:31522]"
 assert_equal '[0,1,{2=>3}]', '[0,*[1],2=>3]', "[ruby-dev:31592]"
 
 

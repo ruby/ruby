@@ -1321,6 +1321,64 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VAL
     }
 }
 
+static inline void
+vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
+{
+    int is_splat = flag & 0x01;
+    int space_size = num + is_splat;
+    VALUE *base = cfp->sp, *ptr;
+    int len;
+
+    cfp->sp += space_size;
+
+    if (TYPE(ary) != T_ARRAY) {
+	ary = rb_ary_to_ary(ary);
+    }
+    ptr = RARRAY_PTR(ary);
+    len = RARRAY_LEN(ary);
+
+    if (flag & 0x02) {
+	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
+	int i = 0, j;
+
+	if (len < num) {
+	    for (i=0; i<num-len; i++) {
+		*base++ = Qnil;
+	    }
+	}
+	for (j=0; i<num; i++, j++) {
+	    VALUE v = ptr[len - j - 1];
+	    *base++ = v;
+	}
+	if (is_splat) {
+	    *base = rb_ary_new4(len - j, ptr);
+	}
+    }
+    else {
+	/* normal: ary[num..-1], ary[num-2], ary[num-3], ..., ary[0] # top */
+	int i;
+	VALUE *bptr = &base[space_size - 1];
+
+	for (i=0; i<num; i++) {
+	    if (len <= i) {
+		for (; i<num; i++) {
+		    *bptr-- = Qnil;
+		}
+		break;
+	    }
+	    *bptr-- = ptr[i];
+	}
+	if (is_splat) {
+	    if (num > len) {
+		*bptr = rb_ary_new();
+	    }
+	    else {
+		*bptr = rb_ary_new4(len - num, ptr + num);
+	    }
+	}
+    }
+}
+
 static void
 call_end_proc(VALUE data)
 {

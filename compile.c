@@ -1946,7 +1946,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE s
 }
 
 static int
-make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
+compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
@@ -1968,7 +1968,11 @@ make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	break;
       }
       case NODE_MASGN: {
-	COMPILE_POPED(ret, "nest masgn lhs", node);
+	DECL_ANCHOR(anchor);
+	INIT_ANCHOR(anchor);
+	COMPILE_POPED(anchor, "nest masgn lhs", node);
+	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	ADD_SEQ(ret, anchor);
 	break;
       }
       default: {
@@ -1987,123 +1991,60 @@ make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 }
 
 static int
-compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret,
-		NODE *rhsn, NODE *splatn, NODE *lhsn, int llen)
+compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 {
-    if (lhsn != 0) {
-	compile_massign(iseq, ret, rhsn, splatn, lhsn->nd_next, llen + 1);
-	make_masgn_lhs(iseq, ret, lhsn->nd_head);
+    NODE *rhsn = node->nd_value;
+    NODE *splatn = node->nd_args;
+    NODE *lhsn = node->nd_head;
+    int lhs_splat = (splatn && (VALUE)splatn != (VALUE)-1) ? 1 : 0;
+
+    if (!poped && 0) {
+	/* optimized one */
+	//compile_massign_opt(iseq, ret, rhsn, splatn, lhsn, llen);
     }
     else {
-	int lhs_splat = 0;
+	DECL_ANCHOR(lhsseq);
+	int llen = 0;
+	INIT_ANCHOR(lhsseq);
 
-	if (splatn && (VALUE)splatn != -1) {
-	    lhs_splat = 1;
+	while (lhsn) {
+	    compile_massign_lhs(iseq, lhsseq, lhsn->nd_head);
+	    llen += 1;
+	    lhsn = lhsn->nd_next;
 	}
 
-	if (rhsn) {
-	    switch (nd_type(rhsn)) {
-	      case NODE_ARRAY:{
-		int rlen = rhsn->nd_alen;
-		int max = rlen > llen ? rlen : llen;
-		int i, si = 0;
-		int rline = nd_line(rhsn);
+	COMPILE(ret, "normal masgn rhs", rhsn);
 
-		for (i = 0; i < max; i++) {
-		    if (i < rlen && i < llen) {
-			/* a, b = c, d */
-			COMPILE(ret, "masgn val1", rhsn->nd_head);
-			rline = nd_line(rhsn);
-			rhsn = rhsn->nd_next;
-		    }
-		    else if (i < rlen) {
-			if (lhs_splat) {
-			    while (rhsn) {
-				/* a, *b = x, y, z */
-				si++;
-				COMPILE(ret, "masgn rhs for lhs splat",
-					rhsn->nd_head);
-				rline = nd_line(rhsn);
-				rhsn = rhsn->nd_next;
-			    }
-			    break;
-			}
-			else {
-			    /* a, b = c, d, e */
-			    COMPILE_POPED(ret, "masgn rhs (popped)",
-					  rhsn->nd_head);
-			    rhsn = rhsn->nd_next;
-			}
-		    }
-		    else if (i < llen) {
-			/* a, b, c = c, d */
-			ADD_INSN(ret, rline, putnil);
-		    }
-		}
-
-		if (lhs_splat) {
-		    ADD_INSN1(ret, rline, newarray, INT2FIX(si));
-		}
-		break;
-	      }
-	      case NODE_TO_ARY:
-		COMPILE(ret, "rhs to ary", rhsn->nd_head);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen),
-			  INT2FIX(lhs_splat));
-		break;
-
-	      case NODE_SPLAT:
-		COMPILE(ret, "rhs to ary (splat)", rhsn);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
-		break;
-
-	      case NODE_ARGSCAT:
-		COMPILE(ret, "rhs to argscat", rhsn);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
-		break;
-
-	      default:
-		COMPILE(ret, "rhs to ary (splat/default)", rhsn);
-		ADD_INSN2(ret, nd_line(rhsn), expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
-	    }
+	if (!poped) {
+	    ADD_INSN(ret, nd_line(node), dup);
 	}
-	else {
-	    /* nested massign */
-	    ADD_INSN2(ret, 0, expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
-	}
+
+	ADD_INSN2(ret, nd_line(node), expandarray,
+		  INT2FIX(llen), INT2FIX(lhs_splat));
+	ADD_SEQ(ret, lhsseq);
 
 	if (lhs_splat) {
 	    if (nd_type(splatn) == NODE_POSTARG) {
-		NODE *n = splatn->nd_2nd;
-		int num = n->nd_alen;
+		/*a, b, *r, p1, p2 */
+		NODE *postn = splatn->nd_2nd;
+		NODE *restn = splatn->nd_1st;
+		int num = postn->nd_alen;
+		int flag = 0x02 | (((VALUE)restn == (VALUE)-1) ? 0x00 : 0x01);
 
-		ADD_INSN (ret, nd_line(n), dup);
-		ADD_INSN2(ret, nd_line(n), expandarray, INT2FIX(num), INT2FIX(2));
+		ADD_INSN2(ret, nd_line(splatn), expandarray,
+			  INT2FIX(num), INT2FIX(flag));
 
-		while (n) {
-		    DECL_ANCHOR(lhs);
-
-		    INIT_ANCHOR(lhs);
-		    COMPILE_POPED(lhs, "post", n->nd_head);
-
-		    if (nd_type(n->nd_head) != NODE_MASGN) {
-			REMOVE_ELEM(FIRST_ELEMENT(lhs));
-		    }
-
-		    ADD_SEQ(ret, lhs);
-		    n = n->nd_next;
+		if ((VALUE)restn != (VALUE)-1) {
+		    compile_massign_lhs(iseq, ret, restn);
 		}
-
-		if (splatn->nd_1st == (NODE*)(VALUE)-1) {
-		    /* v1, *, v2 = expr */
-		    ADD_INSN(ret, nd_line(splatn), pop);
-		}
-		else {
-		    make_masgn_lhs(iseq, ret, splatn->nd_1st);
+		while (postn) {
+		    compile_massign_lhs(iseq, ret, postn->nd_head);
+		    postn = postn->nd_next;
 		}
 	    }
 	    else {
-		make_masgn_lhs(iseq, ret, splatn);
+		/* a, b, *r */
+		compile_massign_lhs(iseq, ret, splatn);
 	    }
 	}
     }
@@ -3204,19 +3145,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
 
       case NODE_MASGN:{
-	  if (poped) {
-	      compile_massign(iseq, ret,
-			      node->nd_value,	/* rhsn  */
-			      node->nd_args,	/* splat */
-			      node->nd_head,	/* lhsn  */
-			      0);
-	  }
-	  else {
-	      COMPILE(ret, "masgn/value", node->nd_value);
-	      ADD_INSN(ret, nd_line(node), dup);
-	      compile_massign(iseq, ret, 0,
-			      node->nd_args, node->nd_head, 0);
-	  }
+	  compile_massign(iseq, ret, node, poped);
 	  break;
       }
 

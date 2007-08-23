@@ -446,57 +446,17 @@ duparray
      num以上の要素は切り捨てる。
      配列オブジェクトでなければ、num - 1 個の nil を積む。
      もし flag が真なら、残り要素の配列を積む
+     flag: 0x01 - 最後を配列に
+     flag: 0x02 - postarg 用
+     flag: 0x04 - reverse?
  */
 DEFINE_INSN
 expandarray
 (rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
-(...) // inc += flag == 2 ? num : ((num > 0) ? num - 1 + (flag ? 1 : 0) : num + 1 - (flag ? 1 : 0));
+(...) // inc += flag == 0x02 ? num : ((num > 0) ? num - 1 + (flag ? 1 : 0) : num + 1 - (flag ? 1 : 0));
 {
-    int i;
-
-    if (flag == 2) {
-	VALUE *ptr = RARRAY_PTR(ary);
-	int len = RARRAY_LEN(ary);
-	int start = len - num;
-
-	if (start < 0) {
-	    for (i=0; i<num-len; i++) {
-		PUSH(Qnil);
-	    }
-	    for (i=0; i<len; i++) {
-		PUSH(ptr[len-i-1]);
-	    }
-	    rb_ary_clear(ary);
-	}
-	else {
-	    for (i=0; i<num; i++) {
-		PUSH(ptr[len-i-1]);
-	    }
-	    RARRAY_LEN(ary) = len - num;
-	}
-    }
-    else {
-	int len;
-	if (TYPE(ary) != T_ARRAY) {
-	    ary = rb_ary_to_ary(ary);
-	}
-	len = RARRAY_LEN(ary);
-	for (i = 0; i < len && i < num; i++) {
-	    PUSH(RARRAY_PTR(ary)[i]);
-	}
-	for (; i < num; i++) {
-	    PUSH(Qnil);
-	}
-	if (flag) {
-	    if (len > num) {
-		PUSH(rb_ary_new4(len - num, &RARRAY_PTR(ary)[num]));
-	    }
-	    else {
-		PUSH(rb_ary_new());
-	    }
-	}
-    }
+    vm_expandarray(GET_CFP(), ary, num, flag);
 }
 
 /**
