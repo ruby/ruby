@@ -1,3 +1,7 @@
+Thu Aug 23 13:19:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_norm_arg): check also nested arguments.  [ruby-dev:31502]
+
 Thu Aug 23 00:06:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c: updated for ANSI C only.  applied a patch from
