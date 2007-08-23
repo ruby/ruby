@@ -13,6 +13,7 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 
+#define USE_INSN_STACK_INCREASE 1
 #include "vm_core.h"
 #include "compile.h"
 #include "insns.inc"
@@ -226,10 +227,10 @@ iseq_translate_threaded_code(rb_iseq_t *iseq)
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 
 #if OPT_DIRECT_THREADED_CODE
-    void **table = (void **)vm_eval(0);
+    const void *const *table = (const void **)vm_eval(0);
 #else
-    extern void **get_insns_address_table();
-    void **table = get_insns_address_table();
+    extern const void *const *get_insns_address_table();
+    const void *const *table = get_insns_address_table();
 #endif
     int i;
 
@@ -1949,36 +1950,36 @@ make_masgn_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
-	  INSN *iobj;
-	  VALUE dupidx;
+	INSN *iobj;
+	VALUE dupidx;
 
-	  COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
-	  POP_ELEMENT(ret);        /* pop pop insn */
-	  iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
+	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
+	POP_ELEMENT(ret);        /* pop pop insn */
+	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
 
-	  dupidx = iobj->operands[1];
-	  dupidx = INT2FIX(FIX2INT(dupidx) + 1);
-	  iobj->operands[1] = dupidx;
+	dupidx = iobj->operands[1];
+	dupidx = INT2FIX(FIX2INT(dupidx) + 1);
+	iobj->operands[1] = dupidx;
 
-	  ADD_INSN1(ret, nd_line(node), topn, dupidx);
-	  ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
-	  ADD_INSN(ret, nd_line(node), pop);	/* result */
-	  ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
-	  break;
+	ADD_INSN1(ret, nd_line(node), topn, dupidx);
+	ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
+	ADD_INSN(ret, nd_line(node), pop);	/* result */
+	ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
+	break;
       }
       case NODE_MASGN: {
-	  COMPILE_POPED(ret, "nest masgn lhs", node);
-	  break;
+	COMPILE_POPED(ret, "nest masgn lhs", node);
+	break;
       }
       default: {
-	  DECL_ANCHOR(anchor);
-	  INIT_ANCHOR(anchor);
-	  COMPILE_POPED(anchor, "masgn lhs", node);
-	  /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
-	  REMOVE_ELEM(FIRST_ELEMENT(anchor));
-	  /* dump_disasm_list(FIRST_ELEMENT(anchor)); */
-	  ADD_SEQ(ret, anchor);
-	  /* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
+	DECL_ANCHOR(anchor);
+	INIT_ANCHOR(anchor);
+	COMPILE_POPED(anchor, "masgn lhs", node);
+	/* dump_disasm_list(FIRST_ELEMENT(anchor)); */
+	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	/* dump_disasm_list(FIRST_ELEMENT(anchor)); */
+	ADD_SEQ(ret, anchor);
+	/* ADD_ELEM(ret, LAST_ELEMENT(anchor)); */
       }
     }
 
@@ -2855,41 +2856,41 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_ITER:
       case NODE_FOR:{
-	  VALUE prevblock = iseq->compile_data->current_block;
-	  LABEL *retry_label = NEW_LABEL(nd_line(node));
-	  LABEL *retry_end_l = NEW_LABEL(nd_line(node));
-	  ID mid = 0;
+	VALUE prevblock = iseq->compile_data->current_block;
+	LABEL *retry_label = NEW_LABEL(nd_line(node));
+	LABEL *retry_end_l = NEW_LABEL(nd_line(node));
+	ID mid = 0;
 
-	  ADD_LABEL(ret, retry_label);
-	  if (nd_type(node) == NODE_FOR) {
-	      COMPILE(ret, "iter caller (for)", node->nd_iter);
+	ADD_LABEL(ret, retry_label);
+	if (nd_type(node) == NODE_FOR) {
+	    COMPILE(ret, "iter caller (for)", node->nd_iter);
 
-	      iseq->compile_data->current_block =
+	    iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
 
-	      mid = idEach;
-	      ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
-			 iseq->compile_data->current_block, INT2FIX(0));
-	  }
-	  else {
-	      iseq->compile_data->current_block =
+	    mid = idEach;
+	    ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
+		       iseq->compile_data->current_block, INT2FIX(0));
+	}
+	else {
+	    iseq->compile_data->current_block =
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK);
-	      COMPILE(ret, "iter caller", node->nd_iter);
-	  }
-	  ADD_LABEL(ret, retry_end_l);
+	    COMPILE(ret, "iter caller", node->nd_iter);
+	}
+	ADD_LABEL(ret, retry_end_l);
 
-	  if (poped) {
-	      ADD_INSN(ret, nd_line(node), pop);
-	  }
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
+	}
 
-	  iseq->compile_data->current_block = prevblock;
+	iseq->compile_data->current_block = prevblock;
 
-	  ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, retry_label, retry_end_l, 0, retry_label);
-	  ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
+	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, retry_label, retry_end_l, 0, retry_label);
+	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
 
-	  break;
+	break;
       }
       case NODE_BREAK:{
 	unsigned long level = 0;

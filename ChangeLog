@@ -1,3 +1,15 @@
+Thu Aug 23 15:48:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (make_masgn_lhs, iseq_compile_each): fixed indent.
+
+	* compile.c (iseq_translate_threaded_code),
+	  vm_evalbody.ci (get_insns_address_table),
+	  template/vmtc.inc.tmpl (insns_address_table): constified.
+
+	* vm_evalbody.ci (vm_eval),
+	  template/insns_info.inc.tmpl (insn_stack_increase, insn_ret_num):
+	  suppress warnings.
+
 Thu Aug 23 13:19:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_norm_arg): check also nested arguments.  [ruby-dev:31502]

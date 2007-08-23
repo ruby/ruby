@@ -23,10 +23,13 @@ static int insn_len_info[] = {
 <%= operands_num_info %>
 };
 
+#ifdef USE_INSN_RET_NUM
 static int insn_stack_push_num_info[] = {
 <%= stack_num_info %>
 };
+#endif
 
+#ifdef USE_INSN_STACK_INCREASE
 static int
 insn_stack_increase(int depth, int insn, VALUE *opes)
 {
@@ -37,6 +40,7 @@ insn_stack_increase(int depth, int insn, VALUE *opes)
   }
   return 0;
 }
+#endif
 
 /* some utilities */
 
@@ -70,8 +74,10 @@ insn_op_type(int insn, int pos)
   }
 }
 
+#ifdef USE_INSN_RET_NUM
 static int
 insn_ret_num(int insn)
 {
   return insn_stack_push_num_info[insn];
 }
+#endif
