@@ -170,6 +170,21 @@ class Sentence
     @sent.length
   end
 
+  # iterates over children.
+  #
+  #  Sentence(%w[2 * 7], "+", %w[3 * 5]).each {|v| p v }
+  #  #=>
+  #  #<Sentence: "2" "*" "7">
+  #  "+"
+  #  #<Sentence: "3" "*" "5">
+  #
+  def each # :yield: element
+    @sent.each_index {|i|
+      yield self[i]
+    }
+  end
+  include Enumerable
+
   def inspect
     "#<#{self.class}: #{inner_inspect(@sent, '')}>"
   end
@@ -206,7 +221,7 @@ class Sentence
   #  Sentence.new(%w[2 + 3]).subst(/\A\d+\z/) {|s| ((s.to_i)*2).to_s }
   #  #=> #<Sentence: "4" "+" "6">
   #
-  def subst(target, &b)
+  def subst(target, &b) # :yield: string
     Sentence.new(subst_rec(@sent, target, &b))
   end
 
@@ -231,7 +246,7 @@ class Sentence
   #  Sentence(%w[2 * 7], "+", %w[3 * 5]).find_subtree {|s| s[1] == "*" }
   #  #=> #<Sentence: "2" "*" "7">
   #
-  def find_subtree(&b)
+  def find_subtree(&b) # :yield: sentence
     find_subtree_rec(@sent, &b)
   end
 
@@ -268,25 +283,23 @@ class Sentence
   #  s.expand {|s| s[0] == "3" }
   #  #=> #<Sentence: (("2" "*" "7") "+" "3" "*" "5")>
   #
-  def expand(&b)
+  def expand(&b) # :yield: sentence
     Sentence.new(expand_rec(@sent, &b))
   end
 
   # :stopdoc:
   def expand_rec(obj, r=[], &b)
     if obj.respond_to? :to_ary
-      s = Sentence.new(obj)
-      if b.call s
-        obj.each {|o|
+      obj.each {|o|
+        s = Sentence.new(o)
+        if b.call s
           expand_rec(o, r, &b)
-        }
-      else
-        a = []
-        obj.each {|o|
+        else
+          a = []
           expand_rec(o, a, &b)
-        }
-        r << a
-      end
+          r << a
+        end
+      }
     else
       r << obj
     end
@@ -482,16 +495,10 @@ class Sentence
 
     def self.expand_emptyable_syms(rhs, emptyable_syms)
       if rhs.empty?
-      elsif rhs.length == 1
-        if emptyable_syms[rhs[0]]
-          yield rhs
-          yield []
-        else
-          yield rhs
-        end
+        yield []
       else
-        rest = rhs.dup
-        first = rest.shift
+        first = rhs[0]
+        rest = rhs[1..-1]
         if emptyable_syms[first]
           expand_emptyable_syms(rest, emptyable_syms) {|rhs2|
             yield [first] + rhs2

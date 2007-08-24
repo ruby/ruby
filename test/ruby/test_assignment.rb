@@ -545,23 +545,12 @@ class TestAssignmentGen < Test::Unit::TestCase
     return r, vars
   end
 
-  def expand_except_paren(obj, r=[])
-    if obj.respond_to? :to_ary
-      if (obj[0] == '(' && obj[-1] == ')') || (obj[0] == '[' && obj[-1] == ']')
-        a = []
-        obj[1...-1].each {|o|
-          expand_except_paren(o, a)
-        }
-        r << a
-      else
-        obj.each {|o|
-          expand_except_paren(o, r)
-        }
-      end
-    else
-      r << obj
-    end
-    r
+  def expand_except_paren(obj)
+    return obj if obj.respond_to? :to_str
+    obj.expand {|s|
+      !(s[0] == '(' && s[-1] == ')') &&
+      !(s[0] == '[' && s[-1] == ']')
+    }
   end
 
   def extract_single_element(ary)
@@ -593,25 +582,34 @@ class TestAssignmentGen < Test::Unit::TestCase
         pre << e
       end
     }
+    pre.map! {|e| extract_single_element(e) }
+    if star
+      if star == ['*']
+        star = nil
+      else
+        star = extract_single_element(star[1..-1])
+      end
+    end
+    post.map! {|e| extract_single_element(e) } if post
 
     until pre.empty?
-      emu_assign_single(extract_single_element(pre.shift), rv.shift, h)
+      emu_assign_single(pre.shift, rv.shift, h)
     end
 
     if post
       if rv.length < post.length
         until post.empty?
-          emu_assign_single(extract_single_element(post.shift), rv.shift, h)
+          emu_assign_single(post.shift, rv.shift, h)
         end
       else
         until post.empty?
-          emu_assign_single(extract_single_element(post.pop), rv.pop, h)
+          emu_assign_single(post.pop, rv.pop, h)
         end
       end
     end
 
-    if star && 1 < star.length
-      emu_assign_single(extract_single_element(star[1..-1]), rv, h)
+    if star
+      emu_assign_single(star, rv, h)
     end
   end
 
@@ -622,8 +620,14 @@ class TestAssignmentGen < Test::Unit::TestCase
       else
         raise "unexpected lhs string: #{lhs.inspect}"
       end
-    elsif lhs.respond_to? :to_ary
-      emu_assign_ary(lhs, rv, h)
+    elsif Sentence === lhs
+      if lhs[0] == '(' && lhs[-1] == ')'
+        emu_assign_ary(lhs[1...-1], rv, h)
+      elsif lhs.length == 1 && String === lhs[0] && /\A[a-z0-9]+\z/ =~ lhs[0]
+        h[lhs[0]] = rv
+      else
+        raise "unexpected lhs sentence: #{lhs.inspect}"
+      end
     else
       raise "unexpected lhs: #{lhs.inspect}"
     end
@@ -633,9 +637,9 @@ class TestAssignmentGen < Test::Unit::TestCase
   def emu_assign(assign)
     lhs = expand_except_paren(assign[0])
     rhs = expand_except_paren(assign[2])
-    lopen = lhs.any? {|e| e == '*' || e == ',' }
-    ropen = rhs.any? {|e| e == '*' || e == ',' }
-    lhs = extract_single_element(lhs) if !lopen
+    lopen = Sentence === lhs && lhs[-1] != ')' && lhs.any? {|e| e == '*' || e == ',' }
+    ropen = Sentence === rhs && rhs[-1] != ']' && rhs.any? {|e| e == '*' || e == ',' }
+    lhs = Sentence.new(['(']+lhs.to_a+[')']) if lopen
     begin
       rv = eval((ropen ? ["[",assign[2],"]"] : assign[2]).join(''))
     rescue Exception
@@ -657,14 +661,18 @@ class TestAssignmentGen < Test::Unit::TestCase
     h
   end
 
+  def check(assign)
+    assign, vars = rename_var(assign)
+    sent = assign.to_s
+    bruby = do_assign(assign, vars).to_a.sort
+    bemu = emu_assign(assign).to_a.sort
+    assert_equal(bemu, bruby, sent)
+  end
+
   def test_assignment
     syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :xassign, 3) {|assign|
-      assign, vars = rename_var(assign)
-      sent = assign.to_s
-      bruby = do_assign(assign, vars).to_a.sort
-      bemu = emu_assign(assign.to_a).to_a.sort
-      assert_equal(bemu, bruby, sent)
+    Sentence.each(syntax, :xassign, 4) {|assign|
+      check(assign)
     }
   end
 end

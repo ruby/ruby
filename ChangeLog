@@ -1,3 +1,10 @@
+Sat Aug 25 03:49:14 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/sentence.rb (Sentence): include Enumerable.
+	  (Sentence#each): defined.
+
+	* test/ruby/test_assignment.rb: use Sentence#expand.
+
 Sat Aug 25 03:08:57 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* prelude.rb: fix Mutex#synchronize definition.
