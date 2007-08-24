@@ -2034,6 +2034,22 @@ rb_check_regexp_type(VALUE re)
     return rb_check_convert_type(re, T_REGEXP, "Regexp", "to_regexp");
 }
 
+/*
+ *  call-seq:
+ *     Regexp.try_convert(obj) -> re or nil
+ *
+ *  Try to convert <i>obj</i> into a Regexp, using to_regexp method.
+ *  Returns converted regexp or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     IO.try_convert(/re/)      # => /re/
+ *     IO.try_convert("re")      # => nil
+ */
+static VALUE
+rb_reg_s_try_convert(VALUE dummy, VALUE re)
+{
+    return rb_check_regexp_type(re);
+}
 
 /*
  *  call-seq:
@@ -2422,6 +2438,7 @@ Init_Regexp(void)
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union, -1);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
+    rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "initialize_copy", rb_reg_init_copy, 1);

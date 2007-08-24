@@ -1,3 +1,17 @@
+Sat Aug 25 02:08:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_s_try_convert): a new class method to convert
+	  object or nil if it's not target-type.  this mechanism is used
+	  to convert types in the C implemented methods.
+
+	* hash.c (rb_hash_s_try_convert): ditto.
+
+	* io.c (rb_io_s_try_convert): ditto.
+
+	* re.c (rb_reg_s_try_convert): ditto.
+
+	* string.c (rb_str_s_try_convert): ditto.
+
 Sat Aug 25 00:49:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_loop_generator.rb: added.

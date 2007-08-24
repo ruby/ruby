@@ -245,6 +245,23 @@ rb_check_array_type(VALUE ary)
 
 /*
  *  call-seq:
+ *     Array.try_convert(obj) -> array or nil
+ *
+ *  Try to convert <i>obj</i> into an array, using to_ary method.
+ *  Returns converted array or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     Array.try_convert([1])   # => [1]
+ *     Array.try_convert("1")   # => nil
+ */
+static VALUE
+rb_ary_s_try_convert(VALUE dummy, VALUE ary)
+{
+    return rb_check_array_type(ary);
+}
+
+/*
+ *  call-seq:
  *     Array.new(size=0, obj=nil)
  *     Array.new(array)
  *     Array.new(size) {|index| block }
@@ -2932,6 +2949,7 @@ Init_Array(void)
 
     rb_define_alloc_func(rb_cArray, ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
+    rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
 

@@ -336,6 +336,23 @@ to_hash(VALUE hash)
     return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
 }
 
+/*
+ *  call-seq:
+ *     Hash.try_convert(obj) -> hash or nil
+ *
+ *  Try to convert <i>obj</i> into a hash, using to_hash method.
+ *  Returns converted hash or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     Hash.try_convert({1=>2})   # => {1=>2}
+ *     Hash.try_convert("1=>2")   # => nil
+ */
+static VALUE
+rb_hash_s_try_convert(VALUE dummy, VALUE hash)
+{
+    return rb_check_convert_type(hash, T_HASH, "Hash", "to_hash");
+}
+
 static int
 rb_hash_rehash_i(VALUE key, VALUE value, st_table *tbl)
 {
@@ -2536,6 +2553,7 @@ Init_Hash(void)
 
     rb_define_alloc_func(rb_cHash, hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
+    rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
     rb_define_method(rb_cHash,"initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);

@@ -242,6 +242,23 @@ rb_io_check_io(VALUE io)
     return rb_check_convert_type(io, T_FILE, "IO", "to_io");
 }
 
+/*
+ *  call-seq:
+ *     IO.try_convert(obj) -> io or nil
+ *
+ *  Try to convert <i>obj</i> into an IO, using to_io method.
+ *  Returns converted IO or nil if <i>obj</i> cannot be converted
+ *  for any reason.
+ *
+ *     IO.try_convert(STDOUT)     # => STDOUT
+ *     IO.try_convert("STDOUT")   # => nil
+ */
+static VALUE
+rb_io_s_try_convert(VALUE dummy, VALUE io)
+{
+    return rb_io_check_io(io);
+}
+
 static void
 io_unread(rb_io_t *fptr)
 {
@@ -5708,6 +5725,7 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
+    rb_define_singleton_method(rb_cIO, "try_convert", rb_io_s_try_convert, 1);
 
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
 
