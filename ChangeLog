@@ -1,3 +1,9 @@
+Sat Aug 25 08:54:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* id.h, id.c: remove idFuncall.
+
+	* compile.c (iseq_specialized_instruction): ditto.
+
 Sat Aug 25 08:47:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/compile_prelude.rb: fix to include "vm_core.h".

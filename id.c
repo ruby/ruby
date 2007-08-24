@@ -61,8 +61,8 @@ Init_id(void)
     idAnswer = rb_intern("the_answer_to_life_the_universe_and_everything");
 
     idSend = rb_intern("send");
-    id__send__ = rb_intern("__send__");
+    idSendBang = rb_intern("send!");
     id__send = rb_intern("__send");
-    idFuncall = rb_intern("funcall");
     id__send_bang = rb_intern("__send!");
+    id__send__ = rb_intern("__send__");
 }
