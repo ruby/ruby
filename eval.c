@@ -1437,7 +1437,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 }
 
 static VALUE
-send_funcall(int argc, VALUE *argv, VALUE recv, int scope)
+send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 {
     VALUE vid;
 
@@ -1479,26 +1479,26 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 	scope = NOEX_NOSUPER | NOEX_PRIVATE;
     }
 
-    return send_funcall(argc, argv, recv, scope);
+    return send_internal(argc, argv, recv, scope);
 }
 
 /*
  *  call-seq:
- *     obj.funcall(symbol [, args...])        => obj
- *     obj.__send!(symbol [, args...])        => obj
+ *     obj.send!(symbol [, args...])        => obj
+ *     obj.__send!(symbol [, args...])      => obj
  *
  *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. Unlike send, which calls private methods only
- *  when it is invoked in function call style, funcall always aware of
+ *  arguments specified. Unlike send, which calls public methods only
+ *  when it is invoked in function call style, send! always aware of
  *  private methods.
  *
- *     1.funcall(:puts, "hello")  # prints "foo"
+ *     1.send!(:puts, "hello")  # prints "foo"
  */
 
 VALUE
-rb_f_funcall(int argc, VALUE *argv, VALUE recv)
+rb_f_send_bang(int argc, VALUE *argv, VALUE recv)
 {
-    return send_funcall(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
+    return send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
 }
 
 VALUE
@@ -2730,8 +2730,8 @@ Init_eval(void)
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send", rb_f_send, -1);
-    rb_define_method(rb_cBasicObject, "funcall", rb_f_funcall, -1);
-    rb_define_method(rb_cBasicObject, "__send!", rb_f_funcall, -1);
+    rb_define_method(rb_cBasicObject, "send!", rb_f_send_bang, -1);
+    rb_define_method(rb_cBasicObject, "__send!", rb_f_send_bang, -1);
 
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);

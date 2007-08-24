@@ -246,7 +246,7 @@ class Matrix
   # use to general users.
   #
   def initialize(init_method, *argv)
-    self.funcall(init_method, *argv)
+    self.send!(init_method, *argv)
   end
   
   def init_rows(rows, copy)
