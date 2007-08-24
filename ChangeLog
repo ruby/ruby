@@ -1,3 +1,7 @@
+Sat Aug 25 08:47:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/compile_prelude.rb: fix to include "vm_core.h".
+
 Sat Aug 25 03:49:14 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/sentence.rb (Sentence): include Enumerable.
