@@ -1,3 +1,7 @@
+Sat Aug 25 03:08:57 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* prelude.rb: fix Mutex#synchronize definition.
+
 Sat Aug 25 02:08:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_s_try_convert): a new class method to convert
