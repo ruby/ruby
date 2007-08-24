@@ -496,13 +496,15 @@ class TestIterator < Test::Unit::TestCase
 
     e = [1,2,3].each
     assert_equal(1, e.next)
-    assert_equal(true, e.next?)
     assert_equal(2, e.next)
     assert_equal(3, e.next)
     assert_raises(StopIteration){e.next}
     e.rewind
-    assert_equal(true, e.next?)
     assert_equal(1, e.next)
+    e.rewind
+    a = []
+    loop{a.push e.next}
+    assert_equal([1,2,3], a)
 
     assert_equal([[1, 8, 10], [2, 6, 11], [3, 4, 12]],
                  (1..10).zip([8,6,4],(10..100)).to_a)

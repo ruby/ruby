@@ -15,6 +15,16 @@ Fri Aug 24 17:06:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_f_send_bang): abandon the name funcall for private
 	  aware method call.
 
+Fri Aug 24 15:27:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_next): stop pre-fetching.
+
+	* enumerator.c (Init_Enumerator): remove next? method.
+
+Fri Aug 24 15:14:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_loop): now handles StopIteration exception.
+
 Thu Aug 23 20:31:31 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: optimize simple massign.

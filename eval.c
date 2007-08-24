@@ -951,6 +951,14 @@ rb_yield_splat(VALUE values)
     return v;
 }
 
+static VALUE
+loop_i()
+{
+    for (;;) {
+	rb_yield_0(0, 0);
+    }
+}
+
 /*
  *  call-seq:
  *     loop {|| block }
@@ -968,9 +976,7 @@ rb_yield_splat(VALUE values)
 static VALUE
 rb_f_loop(void)
 {
-    for (;;) {
-	rb_yield_0(0, 0);
-    }
+    rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
     return Qnil;		/* dummy */
 }
 

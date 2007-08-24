@@ -44,9 +44,8 @@ struct enumerator {
     VALUE args;
     enum_iter *iter;
     VALUE fib;
-    VALUE next;
     VALUE dst;
-    VALUE has_next;
+    VALUE no_next;
 };
 
 static void
@@ -57,7 +56,6 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
-    rb_gc_mark(ptr->next);
     rb_gc_mark(ptr->dst);
 }
 
@@ -241,8 +239,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
-    ptr->next = ptr->dst = Qnil;
-    ptr->has_next = Qnil;
+    ptr->dst = Qnil;
+    ptr->no_next = Qfalse;
 
     return enum_obj;
 }
@@ -373,13 +371,7 @@ static VALUE
 next_ii(VALUE i, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE tmp = e->next;
-
-    e->next = i;
-    tmp = rb_fiber_yield(1, &tmp);
-    if (tmp != Qnil) {
-	e->dst = tmp;
-    }
+    rb_fiber_yield(1, &i);
     return Qnil;
 }
 
@@ -387,11 +379,11 @@ static VALUE
 next_i(VALUE curr, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    e->dst = curr;
+    VALUE nil = Qnil;
 
     rb_block_call(obj, rb_intern("each"), 0, 0, next_ii, obj);
-    e->has_next = Qfalse;
-    return rb_fiber_yield(1, &e->next);
+    e->no_next = Qtrue;
+    return rb_fiber_yield(1, &nil);
 }
 
 static void
@@ -400,8 +392,6 @@ next_init(VALUE obj, struct enumerator *e)
     VALUE curr = rb_fiber_current();
     e->dst = curr;
     e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
-    e->has_next = Qtrue;
-    rb_fiber_resume(e->fib, 1, &curr);
 }
 
 /*
@@ -429,31 +419,14 @@ enumerator_next(VALUE obj)
 	next_init(obj, e);
     }
 
-    if (!e->has_next) {
+    v = rb_fiber_resume(e->fib, 1, &curr);
+    if (e->no_next) {
 	e->fib = 0;
-	e->next = e->dst = Qnil;
+	e->dst = Qnil;
+	e->no_next = Qfalse;
 	rb_raise(rb_eStopIteration, "Enumerator#each reached at end");
     }
-
-    v = rb_fiber_resume(e->fib, 1, &curr);
     return v;
-}
-
-/*
- * call-seq:
- *   e.next?   => bool
- *
- * Returns true if this enumerator object has not reached the end yet.
- */
-
-static VALUE
-enumerator_next_p(VALUE obj)
-{
-    struct enumerator *e = enumerator_ptr(obj);
-    if (!e->fib) {
-	next_init(obj, e);
-    }
-    return e->has_next;
 }
 
 /*
@@ -469,7 +442,8 @@ enumerator_rewind(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
 
     e->fib = 0;
-    e->next = e->dst = Qnil;
+    e->dst = Qnil;
+    e->no_next = Qfalse;
     return obj;
 }
 
@@ -492,7 +466,6 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
     rb_define_method(rb_cEnumerator, "to_splat", enumerator_to_splat, 0);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
-    rb_define_method(rb_cEnumerator, "next?", enumerator_next_p, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
 
     rb_eStopIteration   = rb_define_class("StopIteration", rb_eIndexError);
