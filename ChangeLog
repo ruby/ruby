@@ -1,3 +1,15 @@
+Fri Aug 24 18:42:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_dir.rb (TestDir::setup): ?c now makes a string.
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::initialize):
+	  initialize @workdir to stop warning.
+
+Fri Aug 24 18:30:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/drb/drb.rb (DRb::DRbServer::InvokeMethod::perform_without_block): 
+	  replace funcall by send!.  other files in the distribution as well.
+
 Fri Aug 24 17:06:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_send_bang): abandon the name funcall for private

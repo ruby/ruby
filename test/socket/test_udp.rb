@@ -9,7 +9,7 @@ class TestUDPSocket < Test::Unit::TestCase
   def test_connect # [ruby-dev:25045]
     s = UDPSocket.new
     host = Object.new
-    class << host; self end.funcall(:define_method, :to_str) {
+    class << host; self end.send!(:define_method, :to_str) {
       s.close
       "127.0.0.1"
     }
@@ -21,7 +21,7 @@ class TestUDPSocket < Test::Unit::TestCase
   def test_bind # [ruby-dev:25057]
     s = UDPSocket.new
     host = Object.new
-    class << host; self end.funcall(:define_method, :to_str) {
+    class << host; self end.send!(:define_method, :to_str) {
       s.close
       "127.0.0.1"
     }

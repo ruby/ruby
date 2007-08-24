@@ -10,10 +10,10 @@ class TestDir < Test::Unit::TestCase
   def setup
     Dir.mkdir(ROOT)
     for i in ?a..?z
-      if i % 2 == 0
-        FileUtils.touch(File.join(ROOT, i.chr))
+      if i.ord % 2 == 0
+        FileUtils.touch(File.join(ROOT, i))
       else
-        FileUtils.mkdir(File.join(ROOT, i.chr))
+        FileUtils.mkdir(File.join(ROOT, i))
       end
     end
   end
@@ -31,7 +31,7 @@ class TestDir < Test::Unit::TestCase
         break unless name = dir.read
         cache << [pos, name]
       end
-      for x,y in cache.sort_by {|x| x[0] % 3 } # shuffle
+      for x,y in cache.sort_by {|z| z[0] % 3 } # shuffle
         dir.seek(x)
         assert_equal(y, dir.read)
       end

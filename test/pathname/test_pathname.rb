@@ -12,7 +12,7 @@ class TestPathname < Test::Unit::TestCase
   if RUBY_VERSION < "1.9"
     FUNCALL = :__send__
   else
-    FUNCALL = :funcall
+    FUNCALL = :send!
   end
 
   def self.define_assertion(name, &block)

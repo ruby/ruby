@@ -19,7 +19,7 @@ class TestBasicSocket < Test::Unit::TestCase
       n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
       assert_equal([0].pack("i"), n)
       val = Object.new
-      class << val; self end.funcall(:define_method, :to_int) {
+      class << val; self end.send!(:define_method, :to_int) {
         s.close
         Socket::SO_TYPE
       }
@@ -34,7 +34,7 @@ class TestBasicSocket < Test::Unit::TestCase
     linger = [0, 0].pack("ii")
 
     val = Object.new
-    class << val; self end.funcall(:define_method, :to_str) {
+    class << val; self end.send!(:define_method, :to_str) {
       s.close
       linger
     }
@@ -47,7 +47,7 @@ class TestBasicSocket < Test::Unit::TestCase
     end
 
     val = Object.new
-    class << val; self end.funcall(:define_method, :to_int) {
+    class << val; self end.send!(:define_method, :to_int) {
       s.close
       Socket::SO_LINGER
     }
@@ -61,7 +61,7 @@ class TestBasicSocket < Test::Unit::TestCase
   def test_listen
     s = nil
     log = Object.new
-    class << log; self end.funcall(:define_method, :to_int) {
+    class << log; self end.send!(:define_method, :to_int) {
       s.close
       2
     }
