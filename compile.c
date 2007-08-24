@@ -2032,9 +2032,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	  case NODE_CVASGN:
 	    MEMORY(ln->nd_vid);
 	    break;
-	  case NODE_GASGN:
-	    MEMORY((VALUE)ln->nd_entry);
-	    break;
 	  default:
 	    return 0;
 	}

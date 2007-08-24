@@ -1,3 +1,10 @@
+Sat Aug 25 00:08:43 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (compile_massign_opt): fix to skip massign optimization
+	  with global variables.
+
+	* bootstraptest/test_massign.rb: add some tests for above.
+
 Fri Aug 24 18:42:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_dir.rb (TestDir::setup): ?c now makes a string.
