@@ -76,6 +76,7 @@ OBJS	      = array.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		id.$(OBJEXT) \
+		prelude.$(OBJEXT) \
 		$(MISSING)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
@@ -588,6 +589,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
         {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
         {$(VPATH)}thread_$(THREAD_MODEL).h
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
+prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h
 
 MATZRUBY = $(MATZRUBYDIR)ruby
 
@@ -620,6 +622,9 @@ incs: $(INSNS) node_name.inc
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
+
+prelude.c: {$(VPATH)}prelude.rb
+	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb prelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

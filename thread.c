@@ -2968,12 +2968,6 @@ Init_Thread(void)
     rb_define_method(rb_cMutex, "unlock", rb_mutex_unlock, 0);
     rb_define_method(rb_cMutex, "sleep", mutex_sleep, -1);
 
-    rb_iseq_eval(rb_iseq_compile(
-	rb_str_new2("class Mutex;"
-		    "  def synchronize; self.lock; yield; ensure; self.unlock; end;"
-		    "end;"),
-	rb_str_new2(__FILE__), INT2FIX(__LINE__)));
-
     recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
 

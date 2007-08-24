@@ -1,3 +1,17 @@
+Sat Aug 25 00:22:31 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* prelude.rb: added.  run this script on startup.
+
+	* tool/compile_prelude.rb: compile prelude.rb to C string.
+	  (prelude.rb -> prelude.c)
+
+	* common.mk: fix to build with prelude.c.
+
+	* inits.c (rb_call_inits): ditto.
+
+	* thread.c (Init_Thread): move definition of Mutex#synchronize
+	  to prelude.rb.
+
 Sat Aug 25 00:08:43 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (compile_massign_opt): fix to skip massign optimization
