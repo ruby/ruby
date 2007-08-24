@@ -1,3 +1,7 @@
+Sat Aug 25 00:49:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_loop_generator.rb: added.
+
 Sat Aug 25 00:22:31 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* prelude.rb: added.  run this script on startup.
