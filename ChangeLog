@@ -1,3 +1,9 @@
+Sat Aug 25 09:39:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_s_try_convert): more document description.
+
+	* re.c (rb_reg_s_try_convert): typo fixed.
+
 Sat Aug 25 08:54:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* id.h, id.c: remove idFuncall.

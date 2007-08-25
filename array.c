@@ -249,11 +249,20 @@ rb_check_array_type(VALUE ary)
  *
  *  Try to convert <i>obj</i> into an array, using to_ary method.
  *  Returns converted array or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  for any reason.  This method is to check if an argument is an
+ *  array.  
  *
  *     Array.try_convert([1])   # => [1]
  *     Array.try_convert("1")   # => nil
+ *     
+ *     if tmp = Array.try_convert(arg)
+ *       # the argument is an array
+ *     elsif tmp = String.try_convert(arg)
+ *       # the argument is a string
+ *     end
+ *
  */
+
 static VALUE
 rb_ary_s_try_convert(VALUE dummy, VALUE ary)
 {

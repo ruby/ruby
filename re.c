@@ -2042,8 +2042,8 @@ rb_check_regexp_type(VALUE re)
  *  Returns converted regexp or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     IO.try_convert(/re/)      # => /re/
- *     IO.try_convert("re")      # => nil
+ *     Regexp.try_convert(/re/)      # => /re/
+ *     Regexp.try_convert("re")      # => nil
  */
 static VALUE
 rb_reg_s_try_convert(VALUE dummy, VALUE re)
