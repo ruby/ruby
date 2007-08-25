@@ -1,3 +1,7 @@
+Sat Aug 25 23:22:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/encoding.h: remove unused rb_enc_ismbchar().
+
 Sat Aug 25 22:50:14 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_event_free, EVENTSINK_Destructor,
