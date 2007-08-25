@@ -1,3 +1,8 @@
+Sun Aug 26 06:51:46 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_wc2mb, reg_enum_key): allocate 
+	  buffer should be NULL terminated.
+
 Sun Aug 26 06:04:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_setup_method): reorder code for branch prediction.

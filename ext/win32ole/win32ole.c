@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.4"
+#define WIN32OLE_VERSION "1.0.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -768,8 +768,9 @@ ole_wc2mb(LPWSTR pw)
     LPSTR pm;
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
-        pm = ALLOC_N(char, size);    
+        pm = ALLOC_N(char, size + 1);    
         WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
+        pm[size] = '\0';
     }
     else {
         pm = ALLOC_N(char, 1);
@@ -1913,12 +1914,13 @@ reg_open_vkey(HKEY hkey, VALUE key, HKEY *phkey)
 static VALUE
 reg_enum_key(HKEY hkey, DWORD i)
 {
-    char buf[BUFSIZ];
+    char buf[BUFSIZ + 1];
     DWORD size_buf = sizeof(buf);
     FILETIME ft;
     LONG err = RegEnumKeyEx(hkey, i, buf, &size_buf,
                             NULL, NULL, NULL, &ft);
     if(err == ERROR_SUCCESS) {
+        buf[BUFSIZ] = '\0';
         return rb_str_new2(buf);
     }
     return Qnil;
