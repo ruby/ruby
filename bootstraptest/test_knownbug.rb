@@ -6,4 +6,11 @@
 # massign
 assert_equal '[0,1,{2=>3}]', '[0,*[1],2=>3]', "[ruby-dev:31592]"
 
-
+assert_equal 'ok', %q{
+  def m()
+    yield :ng
+  end
+  r = :ok
+  m {|(r)|}
+  r
+}, '[ruby-dev:31507]'
