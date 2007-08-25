@@ -1889,7 +1889,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
     /* error check */
     beg = p - RSTRING_PTR(str);	/* physical position */
     len = e - p;		/* physical length */
-    return rb_str_splice_0(str, beg, len, val);
+    rb_str_splice_0(str, beg, len, val);
 }
 
 void
@@ -2262,7 +2262,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     slen = RSTRING_LEN(str);
 
     rb_str_locktmp(dest);
-    while (beg >= 0) {
+    do {
 	n++;
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
@@ -2309,7 +2309,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	cp = RSTRING_PTR(str) + offset;
 	if (offset > RSTRING_LEN(str)) break;
 	beg = rb_reg_search(pat, str, offset, 0);
-    }
+    } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
 	len = bp - buf;
 	if (blen - len < RSTRING_LEN(str) - offset) {
