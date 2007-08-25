@@ -788,7 +788,7 @@ module RubyVM
       }
     end
 
-    def make_header_analysys insn
+    def make_header_analysis insn
       commit "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));"
       insn.opes.each_with_index{|op, i|
         commit "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
@@ -853,7 +853,7 @@ module RubyVM
       make_header_pc insn
       make_header_popn insn
       make_header_defines insn
-      make_header_analysys insn
+      make_header_analysis insn
       commit  "{"
     end
 
