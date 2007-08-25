@@ -18,6 +18,10 @@
 #include <ctype.h>
 #include <errno.h>
 
+#if defined(DOSISH) || defined(__CYGWIN__)
+#include <io.h>
+#endif
+
 #include <sys/types.h>
 #if !defined(_WIN32) && !defined(__DJGPP__)
 # if defined(__BEOS__)
@@ -1616,8 +1620,6 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 static inline int
 swallow(rb_io_t *fptr, int term)
 {
-    int c;
-
     do {
 	long cnt;
 	while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
@@ -1633,10 +1635,7 @@ swallow(rb_io_t *fptr, int term)
 	}
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	if (io_fillbuf(fptr) < 0) {
-	    break;
-	}
-    } while (c != EOF);
+    } while (io_fillbuf(fptr) == 0);
     return Qfalse;
 }
 
@@ -4435,7 +4434,10 @@ next_argv(void)
 		int fr = rb_sysopen(fn, O_RDONLY, 0);
 
 		if (ruby_inplace_mode) {
-		    struct stat st, st2;
+		    struct stat st;
+#ifndef NO_SAFE_RENAME
+		    struct stat st2;
+#endif
 		    VALUE str;
 		    int fw;
 
