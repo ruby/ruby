@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.3"
+#define WIN32OLE_VERSION "1.0.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -173,7 +173,6 @@ typedef struct tagIEVENTSINKOBJ {
     DWORD m_dwCookie;
     IConnectionPoint *pConnectionPoint;
     ITypeInfo *pTypeInfo;
-    int *ptr_freed;
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
 VALUE cWIN32OLE;
@@ -230,7 +229,6 @@ struct oleparamdata {
 };
 
 struct oleeventdata {
-    IEVENTSINKOBJ *pEvent;
     int freed;
 };
 
@@ -7139,7 +7137,6 @@ EVENTSINK_Constructor() {
     pEv->m_dwCookie = 0;
     pEv->pConnectionPoint = NULL;
     pEv->pTypeInfo = NULL;
-    pEv->ptr_freed = NULL;
     return pEv;
 }
 
@@ -7147,7 +7144,6 @@ void EVENTSINK_Destructor(
     PIEVENTSINKOBJ pEVObj
     ) {
     if(pEVObj != NULL) {
-        *(pEVObj->ptr_freed) = 1;
         free(pEVObj);
         pEVObj = NULL;
     }
@@ -7361,25 +7357,7 @@ ole_event_free(struct oleeventdata *poleev)
 {
     ITypeInfo *pti = NULL;
     IConnectionPoint *pcp = NULL;
-
-    if (poleev->freed == 1) {
-        /* 
-         * this return create memory leak.
-         * but poleev->pEvent->pConnectionPoint shoul'd not be freed
-         * until poleev->freed == 0.
-         */
-        return; 
-    }
-    if(poleev->pEvent) {
-        pti = poleev->pEvent->pTypeInfo;
-        if(pti) OLE_RELEASE(pti);
-        pcp = poleev->pEvent->pConnectionPoint;
-        if(pcp) {
-            pcp->lpVtbl->Unadvise(pcp, poleev->pEvent->m_dwCookie);
-            OLE_RELEASE(pcp);
-        }
-        free(poleev);
-    }
+    free(poleev);
 }
 
 static VALUE
@@ -7388,7 +7366,9 @@ fev_s_allocate(VALUE klass)
     VALUE obj;
     struct oleeventdata *poleev;
     obj = Data_Make_Struct(klass,struct oleeventdata,0,ole_event_free,poleev);
+/*
     poleev->pEvent = NULL;
+*/
     return obj;
 }
 
@@ -7471,14 +7451,12 @@ fev_initialize(int argc, VALUE *argv, VALUE self)
     }
 
     Data_Get_Struct(self, struct oleeventdata, poleev);
-    poleev->pEvent = pIEV;
-    poleev->pEvent->m_event_id
+    pIEV->m_event_id
         = NUM2INT(rb_funcall(ary_ole_event, rb_intern("length"), 0));
-    poleev->pEvent->pConnectionPoint = pConnectionPoint;
-    poleev->pEvent->pTypeInfo = pTypeInfo;
-    poleev->pEvent->m_dwCookie = dwCookie;
-    poleev->freed = 0;
-    poleev->pEvent->ptr_freed = &(poleev->freed);
+    pIEV->pConnectionPoint = pConnectionPoint;
+    pIEV->pTypeInfo = pTypeInfo;
+    pIEV->m_dwCookie = dwCookie;
+
     rb_ary_push(ary_ole_event, self);
 
     events = rb_ary_new();
