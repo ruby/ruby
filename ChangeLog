@@ -1,3 +1,10 @@
+Sun Aug 26 05:54:49 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_call_method): fix to relaxant safe level check
+	  ($SAFE > 2).  [ruby-core:11998]
+
+	* bootstraptest/test_method.rb: add tests for above.
+
 Sun Aug 26 05:52:08 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_fiber.rb: fix to require 'continuation'.

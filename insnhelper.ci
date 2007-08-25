@@ -472,8 +472,96 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
   start_method_dispatch:
 
-    /* method missing */
-    if (mn == 0) {
+    if ((mn != 0)) {
+	if ((mn->nd_noex == 0)) {
+	    /* dispatch method */
+	    NODE *node;
+
+	  normal_method_dispatch:
+
+	    node = mn->nd_body;
+
+	    switch (nd_type(node)) {
+	      case RUBY_VM_METHOD_NODE:{
+		  vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+		  return Qundef;
+	      }
+	      case NODE_CFUNC:{
+		  val = vm_call_cfunc(th, cfp, num, id, recv, klass, node, blockptr);
+		  break;
+	      }
+	      case NODE_ATTRSET:{
+		  val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
+		  cfp->sp -= 2;
+		  break;
+	      }
+	      case NODE_IVAR:{
+		  val = rb_ivar_get(recv, node->nd_vid);
+		  cfp->sp -= 1;
+		  break;
+	      }
+	      case NODE_BMETHOD:{
+		  VALUE *argv = cfp->sp - num;
+		  val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
+		  cfp->sp += - num - 1;
+		  break;
+	      }
+	      case NODE_ZSUPER:{
+		  klass = RCLASS(mn->nd_clss)->super;
+		  mn = rb_method_node(klass, id);
+
+		  if (mn != 0) {
+		      goto normal_method_dispatch;
+		  }
+		  else {
+		      goto start_method_dispatch;
+		  }
+	      }
+	      default:{
+		  printf("node: %s\n", ruby_node_name(nd_type(node)));
+		  rb_bug("eval_invoke_method: unreachable");
+		  /* unreachable */
+		  break;
+	      }
+	    }
+	}
+	else {
+	    int noex_safe;
+
+	    if (!(flag & VM_CALL_FCALL_BIT) &&
+		(mn->nd_noex & NOEX_MASK) & NOEX_PRIVATE) {
+		int stat = NOEX_PRIVATE;
+
+		if (flag & VM_CALL_VCALL_BIT) {
+		    stat |= NOEX_VCALL;
+		}
+		val = vm_method_missing(th, id, recv, num, blockptr, stat);
+	    }
+	    else if ((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) {
+		VALUE defined_class = mn->nd_clss;
+
+		if (TYPE(defined_class) == T_ICLASS) {
+		    defined_class = RBASIC(defined_class)->klass;
+		}
+
+		if (!rb_obj_is_kind_of(cfp->self, rb_class_real(defined_class))) {
+		    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
+		}
+		else {
+		    goto normal_method_dispatch;
+		}
+	    }
+	    else if ((noex_safe = NOEX_SAFE(mn->nd_noex)) > th->safe_level &&
+		     (noex_safe > 2)) {
+		rb_raise(rb_eSecurityError, "calling insecure method: %s", rb_id2name(id));
+	    }
+	    else {
+		goto normal_method_dispatch;
+	    }
+	}
+    }
+    else {
+	/* method missing */
 	if (id == idMethodMissing) {
 	    rb_bug("method missing");
 	}
@@ -486,87 +574,6 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		stat |= NOEX_SUPER;
 	    }
 	    val = vm_method_missing(th, id, recv, num, blockptr, stat);
-	}
-    }
-    else if (UNLIKELY(mn->nd_noex)) {
-	if (!(flag & VM_CALL_FCALL_BIT) &&
-	    (mn->nd_noex & NOEX_MASK) & NOEX_PRIVATE) {
-	    int stat = NOEX_PRIVATE;
-	    if (flag & VM_CALL_VCALL_BIT) {
-		stat |= NOEX_VCALL;
-	    }
-	    val = vm_method_missing(th, id, recv, num, blockptr, stat);
-	}
-	else if ((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) {
-	    VALUE defined_class = mn->nd_clss;
-
-	    if (TYPE(defined_class) == T_ICLASS) {
-		defined_class = RBASIC(defined_class)->klass;
-	    }
-
-	    if (!rb_obj_is_kind_of(cfp->self, rb_class_real(defined_class))) {
-		val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
-	    }
-	    else {
-		goto normal_method_dispatch;
-	    }
-	}
-	else if (NOEX_SAFE(mn->nd_noex) > th->safe_level) {
-	    rb_raise(rb_eSecurityError, "calling insecure method: %s", rb_id2name(id));
-	}
-	else {
-	    goto normal_method_dispatch;
-	}
-    }
-
-    /* dispatch method */
-    else {
-	NODE *node;
-      normal_method_dispatch:
-
-	node = mn->nd_body;
-	switch (nd_type(node)) {
-	  case RUBY_VM_METHOD_NODE:{
-	    vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
-	    return Qundef;
-	  }
-	  case NODE_CFUNC:{
-	    val = vm_call_cfunc(th, cfp, num, id, recv, klass, node, blockptr);
-	    break;
-	  }
-	  case NODE_ATTRSET:{
-	    val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
-	    cfp->sp -= 2;
-	    break;
-	  }
-	  case NODE_IVAR:{
-	    val = rb_ivar_get(recv, node->nd_vid);
-	    cfp->sp -= 1;
-	    break;
-	  }
-	  case NODE_BMETHOD:{
-	    VALUE *argv = cfp->sp - num;
-	    val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
-	    cfp->sp += - num - 1;
-	    break;
-	  }
-	  case NODE_ZSUPER:{
-	    klass = RCLASS(mn->nd_clss)->super;
-	    mn = rb_method_node(klass, id);
-
-	    if (mn != 0) {
-		goto normal_method_dispatch;
-	    }
-	    else {
-		goto start_method_dispatch;
-	    }
-	  }
-	  default:{
-	    printf("node: %s\n", ruby_node_name(nd_type(node)));
-	    rb_bug("eval_invoke_method: unreachable");
-	    /* unreachable */
-	    break;
-	  }
 	}
     }
 
