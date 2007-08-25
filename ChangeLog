@@ -1,6 +1,8 @@
-Sat Aug 25 15:20:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 25 16:06:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (swallow): removed condition using an unset variable.
+
+	* parse.y, re.c: re-applied revision 13092.
 
 Sat Aug 25 11:45:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

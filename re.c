@@ -624,10 +624,25 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
     rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
 }
 
-static void
-rb_reg_raise_str(VALUE str, const char *err, VALUE re)
+static VALUE
+rb_reg_error_desc(VALUE str, int options, const char *err)
 {
-    rb_reg_raise(RSTRING_PTR(str), RSTRING_LEN(str), err, re);
+    char opts[6];
+    VALUE desc = rb_str_buf_new2(err);
+
+    rb_str_buf_cat2(desc, ": /");
+    rb_reg_expr_str(desc, RSTRING_PTR(str), RSTRING_LEN(str));
+    opts[0] = '/';
+    option_to_str(opts + 1, options);
+    strlcat(opts, arg_kcode(options), sizeof(opts));
+    rb_str_buf_cat2(desc, opts);
+    return rb_exc_new3(rb_eRegexpError, desc);
+}
+
+static void
+rb_reg_raise_str(VALUE str, int options, const char *err)
+{
+    rb_exc_raise(rb_reg_error_desc(str, options, err));
 }
 
 
@@ -1552,7 +1567,7 @@ rb_reg_new(VALUE s, int options)
     onig_errmsg_buffer err;
 
     if (rb_reg_initialize_str(re, s, options, err) != 0) {
-	rb_reg_raise_str(s, err, re);
+	rb_reg_raise_str(s, options, err);
     }
 
     return re;
@@ -1566,15 +1581,8 @@ rb_reg_compile(VALUE str, int options)
 
     if (!str) str = rb_str_new(0,0);
     if (rb_reg_initialize_str(re, str, options, err) != 0) {
-	char opts[6];
-	VALUE desc = rb_str_buf_new2(err);
-
-	rb_str_buf_cat2(desc, ": /");
-	rb_reg_expr_str(desc, RSTRING_PTR(str), RSTRING_LEN(str));
-	opts[0] = '/';
-	option_to_str(opts + 1, options);
-	strlcat(opts, arg_kcode(options), sizeof(opts));
-	return rb_str_buf_cat2(desc, opts);
+	rb_set_errinfo(rb_reg_error_desc(str, options, err));
+	return Qnil;
     }
     FL_SET(re, REG_LITERAL);
     return re;
@@ -1889,7 +1897,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	str = argv[0];
     }
     if (rb_reg_initialize_str(self, str, flags, err) != 0) {
-	rb_reg_raise_str(str, err, self);
+	rb_reg_raise_str(str, flags, err);
     }
     return self;
 }
@@ -2148,7 +2156,6 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     onig_errmsg_buffer err;
     const char *s;
     long len;
-    int options;
 
     if (copy == re) return copy;
     rb_check_frozen(copy);
@@ -2160,7 +2167,7 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     s = RREGEXP(re)->str;
     len = RREGEXP(re)->len;
     if (rb_reg_initialize(copy, s, len, rb_enc_get(re), rb_reg_options(re), err) != 0) {
-	rb_reg_raise(s, len, err, copy);
+	rb_reg_raise(s, len, err, re);
     }
     return copy;
 }

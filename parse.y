@@ -430,8 +430,8 @@ extern int rb_dvar_defined(ID);
 extern int rb_local_defined(ID);
 extern int rb_parse_in_eval(void);
 
-static VALUE reg_compile_gen(struct parser_params*, const char *, long, int);
-#define reg_compile(ptr,len,options) reg_compile_gen(parser, ptr, len, options)
+static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
+#define reg_compile(str,options) reg_compile_gen(parser, str, options)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -3629,14 +3629,14 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			int options = $3;
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_LIT(rb_reg_compile(0, options & ~RE_OPTION_ONCE));
+			    node = NEW_LIT(reg_compile(0, options & ~RE_OPTION_ONCE));
 			}
 			else switch (nd_type(node)) {
 			  case NODE_STR:
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = rb_reg_compile(src, options&~RE_OPTION_ONCE);
+				node->nd_lit = reg_compile(src, options&~RE_OPTION_ONCE);
 			    }
 			    break;
 			  default:
@@ -5277,7 +5277,6 @@ static int
 parser_heredoc_identifier(struct parser_params *parser)
 {
     int c = nextc(), term, func = 0, len;
-    unsigned int uc;
 
     if (c == '-') {
 	c = nextc();
@@ -5662,7 +5661,6 @@ parser_yylex(struct parser_params *parser)
     register int c;
     int space_seen = 0;
     int cmd_state;
-    unsigned char uc;
     enum lex_state_e last_state;
 #ifdef RIPPER
     int fallthru = Qfalse;
@@ -8117,10 +8115,12 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 	    vtable_included(lvtbl->vars, id));
 }
 
+VALUE rb_reg_compile(VALUE str, int options);
+
 static VALUE
-reg_compile_gen(struct parser_params* parser, const char *ptr, long len, int options)
+reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
-    VALUE re = rb_reg_compile(STR_NEW(ptr, len), (options) & ~RE_OPTION_ONCE);
+    VALUE re = rb_reg_compile(str, (options) & ~RE_OPTION_ONCE);
 
     if (NIL_P(re)) {
 	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
