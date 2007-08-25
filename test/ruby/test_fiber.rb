@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'fiber'
+require 'continuation'
 
 class TestFiber < Test::Unit::TestCase
   def test_normal
