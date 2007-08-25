@@ -1,10 +1,12 @@
-Sat Aug 25 16:13:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 25 17:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (swallow): removed condition using an unset variable.
 
 	* parse.y, re.c: re-applied revision 13092.
 
 	* string.c (rb_str_splice): return from void funtion.
+
+	* include/ruby/encoding.h (rb_enc_str_new): prototype added.
 
 Sat Aug 25 11:45:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -32,6 +32,7 @@ rb_encoding* rb_enc_check(VALUE,VALUE);
 void rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE, VALUE);
 
+VALUE rb_enc_str_new(const char*, long len, rb_encoding*);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
 char* rb_enc_nth(const char*, const char*, int, rb_encoding*);
 
