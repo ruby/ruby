@@ -469,7 +469,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 /* fiber */
 /*********/
 
-#define FIBER_STACK_SIZE (4 * 1024)
+#define FIBER_VM_STACK_SIZE (4 * 1024)
 
 VALUE
 rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
@@ -489,7 +489,7 @@ rb_fiber_s_new(VALUE self)
     cont->vm_stack = 0;
 
     th->stack = 0;
-    th->stack_size = FIBER_STACK_SIZE;
+    th->stack_size = FIBER_VM_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
@@ -650,6 +650,7 @@ fiber_switch(VALUE fib, int argc, VALUE *argv, int is_resume)
     if (is_resume) {
 	cont->prev = rb_fiber_current();
     }
+
     cont->value = make_passing_arg(argc, argv);
 
     if ((value = cont_store(cont)) == Qundef) {

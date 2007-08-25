@@ -1,3 +1,7 @@
+Sat Aug 25 17:48:51 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: rename FIBER_STACK_SIZE to FIBER_VM_STACK_SIZE.
+
 Sat Aug 25 17:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (swallow): removed condition using an unset variable.
