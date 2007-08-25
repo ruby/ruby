@@ -1951,11 +1951,11 @@ opt_length
 {
     if (!SPECIAL_CONST_P(recv) &&
 	BASIC_OP_UNREDEFINED_P(BOP_LENGTH)) {
-	if (HEAP_CLASS_OF(recv) == rb_cArray) {
-	    val = LONG2NUM(RARRAY_LEN(recv));
+	if (HEAP_CLASS_OF(recv) == rb_cString) {
+	    val = rb_str_length(recv);
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cString) {
-	    val = LONG2NUM(RSTRING_LEN(recv));
+	else if (HEAP_CLASS_OF(recv) == rb_cArray) {
+	    val = LONG2NUM(RARRAY_LEN(recv));
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
 	    val = INT2FIX(RHASH(recv)->tbl->num_entries);

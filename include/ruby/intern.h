@@ -520,6 +520,7 @@ VALUE rb_str_associated(VALUE);
 void rb_str_setter(VALUE, ID, VALUE*);
 VALUE rb_str_intern(VALUE);
 VALUE rb_sym_to_s(VALUE);
+VALUE rb_str_length(VALUE);
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);

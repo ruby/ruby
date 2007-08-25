@@ -1,3 +1,9 @@
+Sat Aug 25 17:52:06 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c, include/ruby/intern.h: export rb_str_length().
+
+	* insns.def: use rb_str_lengt() in opt_length.
+
 Sat Aug 25 17:48:51 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: rename FIBER_STACK_SIZE to FIBER_VM_STACK_SIZE.

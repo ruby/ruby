@@ -421,7 +421,7 @@ str_strlen(VALUE str, rb_encoding *enc)
  *  Returns the character length of <i>str</i>.
  */
 
-static VALUE
+VALUE
 rb_str_length(VALUE str)
 {
     int len;
