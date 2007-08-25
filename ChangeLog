@@ -1,3 +1,13 @@
+Sat Aug 25 10:20:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (prelude.o): depends on vm_core.h now.
+
+	* common.mk (prelude.c): depends on tool/compile_prelude.rb too.
+
+	* common.mk (prereq): updates all auto-generated sources.
+
+	* tool/compile_prelude.rb: separated dynamic and static portions.
+
 Sat Aug 25 10:05:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* prelude.rb: add Thread.exclusive.  This class method
