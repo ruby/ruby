@@ -34,10 +34,9 @@ typedef struct rb_context_struct {
     int alive;
 } rb_context_t;
 
-VALUE rb_cCont;
-VALUE rb_cFiber;
-VALUE rb_cFiberCore;
-VALUE rb_eFiberError;
+static VALUE rb_cContinuation;
+static VALUE rb_cFiber;
+static VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
   Data_Get_Struct(obj, rb_context_t, ptr)
@@ -151,9 +150,6 @@ cont_new(VALUE klass)
     contval = Data_Make_Struct(klass, rb_context_t,
 			       cont_mark, cont_free, cont);
 
-    RUBY_GC_INFO("cont alloc: %p (klass: %s)\n", cont,
-		 klass == rb_cFiber ? "Fiber": "Continuation");
-
     cont->self = contval;
     cont->alive = Qtrue;
 
@@ -173,7 +169,7 @@ cont_capture(volatile int *stat)
     volatile VALUE contval;
 
     vm_stack_to_heap(th);
-    cont = cont_new(rb_cCont);
+    cont = cont_new(rb_cContinuation);
     contval = cont->self;
     sth = &cont->saved_thread;
 
@@ -475,6 +471,12 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
 #define FIBER_STACK_SIZE (4 * 1024)
 
+VALUE
+rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
+{
+    return rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, func, obj);
+}
+
 static VALUE
 rb_fiber_s_new(VALUE self)
 {
@@ -590,7 +592,7 @@ rb_fiber_current()
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
 	/* save root */
-	rb_context_t *cont = cont_new(rb_cFiberCore);
+	rb_context_t *cont = cont_new(rb_cFiber);
 	cont->prev = Qnil;
 	th->root_fiber = th->fiber = cont->self;
     }
@@ -720,30 +722,29 @@ rb_fiber_s_current(VALUE klass)
 void
 Init_Cont(void)
 {
-    rb_cCont = rb_define_class("Continuation", rb_cObject);
-    rb_undef_alloc_func(rb_cCont);
-    rb_undef_method(CLASS_OF(rb_cCont), "new");
-    rb_define_method(rb_cCont, "call", rb_cont_call, -1);
-    rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
-    rb_define_global_function("callcc", rb_callcc, 0);
-
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
-    rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
-    rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
-
-    rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
-    rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
-
-    rb_cFiberCore = rb_define_class_under(rb_cFiber, "Core", rb_cObject);
-    rb_undef_alloc_func(rb_cFiberCore);
-    rb_define_method(rb_cFiberCore, "transfer", rb_fiber_m_transfer, -1);
-    rb_define_method(rb_cFiberCore, "alive?", rb_fiber_alive_p, 0);
-
-    rb_define_singleton_method(rb_cFiberCore, "current", rb_fiber_s_current, 0);
-    rb_define_singleton_method(rb_cFiberCore, "new", rb_fiber_s_new, 0);
-    
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
 }
 
+void
+Init_Continuation_body(void)
+{
+    rb_cContinuation = rb_define_class("Continuation", rb_cObject);
+    rb_undef_alloc_func(rb_cContinuation);
+    rb_undef_method(CLASS_OF(rb_cContinuation), "new");
+    rb_define_method(rb_cContinuation, "call", rb_cont_call, -1);
+    rb_define_method(rb_cContinuation, "[]", rb_cont_call, -1);
+    rb_define_global_function("callcc", rb_callcc, 0);
+}
+
+void
+Init_Fiber_body(void)
+{
+    rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
+    rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
+    rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
+    rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
+    rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
+}

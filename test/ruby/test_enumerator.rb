@@ -24,14 +24,13 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration){e.next}
   end
 
-  def test_next?
+  def test_loop
     e = 3.times
-    assert_equal true, e.next?
-    3.times{|i|
-      assert_equal true, e.next?
-      assert_equal i, e.next
+    i = 0
+    loop{
+      assert_equal(i, e.next)
+      i += 1
     }
-    assert_equal false, e.next?
   end
 
   def test_nested_itaration

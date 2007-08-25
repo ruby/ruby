@@ -1,3 +1,21 @@
+Sat Aug 25 10:59:19 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: separate Continuation and Fiber from core.
+
+	* ext/continuation/*, ext/fiber/*: ditto.
+
+	* include/ruby/ruby.h: remove rb_cFiber.
+
+	* include/ruby/intern.h: add the rb_fiber_new() declaration.
+
+	* enumerator.c (next_init): fix to use rb_fiber_new().
+
+	* test/ruby/test_enumerator.rb: remove next? tests.
+
+	* test/ruby/test_continuation.rb: add a require 'continuation'.
+
+	* test/ruby/test_fiber.rb: add a require 'fiber'.
+
 Sat Aug 25 10:20:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (prelude.o): depends on vm_core.h now.

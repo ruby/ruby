@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'fiber'
 
 class TestFiber < Test::Unit::TestCase
   def test_normal
@@ -118,11 +119,11 @@ class TestFiber < Test::Unit::TestCase
   def test_transfer
     ary = []
     f2 = nil
-    f1 = Fiber::Core.new{
+    f1 = Fiber.new{
       ary << f2.transfer(:foo)
       :ok
     }
-    f2 = Fiber::Core.new{
+    f2 = Fiber.new{
       ary << f1.transfer(:baz)
       :ng
     }

@@ -1,4 +1,6 @@
 require 'test/unit'
+require 'continuation'
+require 'fiber'
 
 class TestContinuation < Test::Unit::TestCase
   def test_create

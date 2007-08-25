@@ -391,7 +391,7 @@ next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
     e->dst = curr;
-    e->fib = rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, next_i, obj);
+    e->fib = rb_fiber_new(next_i, obj);
 }
 
 /*
