@@ -1,3 +1,5 @@
+# -*- coding: euc-jp -*-
+#
 # unicodeout.rb --
 #
 # This demonstration script shows how you can produce output (in label

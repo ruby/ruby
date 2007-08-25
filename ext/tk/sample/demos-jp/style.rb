@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # text (display styles) widget demo (called by 'widget')
 #

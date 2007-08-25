@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -278,27 +278,38 @@ io_unread(rb_io_t *fptr)
     return;
 }
 
-static int
-io_ungetc(int c, rb_io_t *fptr)
+static void
+io_ungetc(VALUE str, rb_io_t *fptr)
 {
+    int len = RSTRING_LEN(str);
+
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
-        fptr->rbuf_capa = 8192;
+	if (len > 8192)
+	    fptr->rbuf_capa = len;
+	else
+	    fptr->rbuf_capa = 8192;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
-    if (c < 0 || fptr->rbuf_len == fptr->rbuf_capa) {
-        return -1;
-    }
     if (fptr->rbuf_off == 0) {
-        if (fptr->rbuf_len)
-            MEMMOVE(fptr->rbuf+1, fptr->rbuf, char, fptr->rbuf_len);
-        fptr->rbuf_off = 1;
+        if (fptr->rbuf_len) {
+            MEMMOVE(fptr->rbuf+len, fptr->rbuf, char, fptr->rbuf_len);
+	}
+        fptr->rbuf_off = len;
     }
-    fptr->rbuf_off--;
-    fptr->rbuf_len++;
-    fptr->rbuf[fptr->rbuf_off] = c;
-    return c;
+    else if (fptr->rbuf_off < len) {
+	int capa = fptr->rbuf_len + len;
+	char *buf = ALLOC_N(char, capa);
+
+        if (fptr->rbuf_len) {
+            MEMMOVE(buf+len, fptr->rbuf+fptr->rbuf_off, char, fptr->rbuf_len);
+	}
+	fptr->rbuf_off = len;
+    }
+    fptr->rbuf_off-=len;
+    fptr->rbuf_len+=len;
+    MEMMOVE(fptr->rbuf+fptr->rbuf_off, RSTRING_PTR(str), char, len);
 }
 
 static rb_io_t *
@@ -875,16 +886,10 @@ rb_io_rewind(VALUE io)
 }
 
 static int
-io_getc(rb_io_t *fptr)
+io_fillbuf(rb_io_t *fptr)
 {
     int r;
-    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
-        rb_io_t *ofp;
-        GetOpenFile(rb_stdout, ofp);
-        if (ofp->mode & FMODE_TTY) {
-            rb_io_flush(rb_stdout);
-        }
-    }
+
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
@@ -906,9 +911,7 @@ io_getc(rb_io_t *fptr)
         if (r == 0)
             return -1; /* EOF */
     }
-    fptr->rbuf_off++;
-    fptr->rbuf_len--;
-    return (unsigned char)fptr->rbuf[fptr->rbuf_off-1];
+    return 0;
 }
 
 /*
@@ -947,20 +950,16 @@ VALUE
 rb_io_eof(VALUE io)
 {
     rb_io_t *fptr;
-    int ch;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
-    ch = io_getc(fptr);
-
-    if (ch != EOF) {
-	io_ungetc(ch, fptr);
-	return Qfalse;
+    if (io_fillbuf(fptr) < 0) {
+	return Qtrue;
     }
-    return Qtrue;
+    return Qfalse;
 }
 
 /*
@@ -1167,13 +1166,9 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
 	}
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	c = io_getc(fptr);
-	if (c < 0) {
+	if (io_fillbuf(fptr) < 0) {
 	    break;
 	}
-	RSTRING_PTR(str)[offset++] = c;
-	if (offset > RSTRING_LEN(str)) break;
-	n--;
     }
     return len - n;
 }
@@ -1599,9 +1594,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 	}
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	c = io_getc(fptr);
-	limit--;
-	if (c < 0) {
+	if (io_fillbuf(fptr) < 0) {
 	    *lp = limit;
 	    return c;
 	}
@@ -1640,10 +1633,8 @@ swallow(rb_io_t *fptr, int term)
 	}
 	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	c = io_getc(fptr);
-	if (c != term) {
-	    io_ungetc(c, fptr);
-	    return Qtrue;
+	if (io_fillbuf(fptr) < 0) {
+	    break;
 	}
     } while (c != EOF);
     return Qfalse;
@@ -2020,20 +2011,24 @@ static VALUE
 rb_io_each_byte(VALUE io)
 {
     rb_io_t *fptr;
-    int c;
+    char *p, *e;
 
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
 
     for (;;) {
+	p = fptr->rbuf+fptr->rbuf_off;
+	e = p + fptr->rbuf_len;
+	while (p < e) {
+	    rb_yield(INT2FIX(*p & 0xff));
+	    p++;
+	}
 	rb_io_check_readable(fptr);
 	READ_CHECK(fptr);
-	c = io_getc(fptr);
-	if (c < 0) {
+	if (io_fillbuf(fptr) < 0) {
 	    break;
 	}
-	rb_yield(INT2FIX(c & 0xff));
-    }
+   }
     return io;
 }
 
@@ -2070,54 +2065,54 @@ rb_io_bytes(VALUE str)
     return rb_enumeratorize(str, ID2SYM(rb_intern("each_byte")), 0, 0);
 }
 
-VALUE
-rb_io_getc(VALUE io)
-{
-    rb_io_t *fptr;
-    int c;
-
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-
-    READ_CHECK(fptr);
-    c = io_getc(fptr);
-
-    if (c < 0) {
-	return Qnil;
-    }
-    return INT2FIX(c & 0xff);
-}
-
 /*
  *  call-seq:
- *     ios.getc   => string or nil
- *
+ *     ios.getc   => fixnum or nil
+ *  
  *  Reads a one-character string from <em>ios</em>. Returns
  *  <code>nil</code> if called at end of file.
- *
+ *     
  *     f = File.new("testfile")
  *     f.getc   #=> "8"
  *     f.getc   #=> "1"
  */
 
-VALUE
-rb_io_getc_m(VALUE io)
+static VALUE
+rb_io_getc(VALUE io)
 {
-    char ch;
+    rb_encoding *enc;
     rb_io_t *fptr;
-    int c;
+    int n, left;
+    VALUE str;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    enc = rb_enc_get(io);
 
     READ_CHECK(fptr);
-    c = io_getc(fptr);
-
-    if (c < 0) {
-	return Qnil;
+    if (io_fillbuf(fptr) < 0) {
+	rb_eof_error();
     }
-    ch = c & 0xff; 
-    return rb_str_new(&ch, 1);
+    n = rb_enc_mbclen(fptr->rbuf+fptr->rbuf_off, enc);
+    if (n < fptr->rbuf_len) {
+	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
+	fptr->rbuf_off += n;
+	fptr->rbuf_len -= n;
+    }
+    else {
+	str = rb_str_new(0, n);
+	left = fptr->rbuf_len;
+	MEMCPY(RSTRING_PTR(str), fptr->rbuf+fptr->rbuf_off, char, left);
+	if (io_fillbuf(fptr) < 0) {
+	    rb_eof_error();
+	}
+	MEMCPY(RSTRING_PTR(str)+left, fptr->rbuf, char, n-left);
+	fptr->rbuf_off += left;
+	fptr->rbuf_len -= left;
+    }
+    rb_enc_associate(str, enc);
+
+    return str;
 }
 
 int
@@ -2139,14 +2134,74 @@ rb_getc(FILE *f)
  *  call-seq:
  *     ios.readchar   => string
  *
- *  Reads a character as with <code>IO#getc</code>, but raises an
+ *  Reads a one-character string from <em>ios</em>. Raises an
  *  <code>EOFError</code> on end of file.
+ *
+ *     f = File.new("testfile")
+ *     f.readchar   #=> "8"
+ *     f.readchar   #=> "1"
  */
 
 static VALUE
 rb_io_readchar(VALUE io)
 {
-    VALUE c = rb_io_getc_m(io);
+    VALUE c = rb_io_getc(io);
+
+    if (NIL_P(c)) {
+	rb_eof_error();
+    }
+    return c;
+}
+
+/*
+ *  call-seq:
+ *     ios.getbyte   => fixnum or nil
+ *
+ *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
+ *  <code>nil</code> if called at end of file.
+ *
+ *     f = File.new("testfile")
+ *     f.getbyte   #=> 84
+ *     f.getbyte   #=> 104
+ */
+
+VALUE
+rb_io_getbyte(VALUE io)
+{
+    rb_io_t *fptr;
+    int c;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    READ_CHECK(fptr);
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
+        rb_io_t *ofp;
+        GetOpenFile(rb_stdout, ofp);
+        if (ofp->mode & FMODE_TTY) {
+            rb_io_flush(rb_stdout);
+        }
+    }
+    if (io_fillbuf(fptr) < 0) {
+	return Qnil;
+    }
+    fptr->rbuf_off++;
+    fptr->rbuf_len--;
+    c = (unsigned char)fptr->rbuf[fptr->rbuf_off-1];
+    return INT2FIX(c & 0xff);
+}
+
+/*
+ *  call-seq:
+ *     ios.readbyte   => fixnum
+ *
+ *  Reads a character as with <code>IO#getc</code>, but raises an
+ *  <code>EOFError</code> on end of file.
+ */
+
+static VALUE
+rb_io_readbyte(VALUE io)
+{
+    VALUE c = rb_io_getbyte(io);
 
     if (NIL_P(c)) {
 	rb_eof_error();
@@ -2173,25 +2228,24 @@ rb_io_readchar(VALUE io)
 VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
+    rb_encoding *enc;
     rb_io_t *fptr;
-    int cc;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(c)) return Qnil;
+    enc = rb_enc_get(io);
     if (FIXNUM_P(c)) {
-	cc = FIX2INT(c);
+	int cc = FIX2INT(c);
+	char buf[16];
+
+	rb_enc_mbcput(cc, buf, enc);
+	c = rb_str_new(buf, rb_enc_codelen(cc, enc));
     }
     else {
 	SafeStringValue(c);
-	if (RSTRING_LEN(c) > 1) {
-	    rb_warn("IO#ungetc pushes back only one byte");
-	}
-	cc = (unsigned char)RSTRING_PTR(c)[0];
     }
-    if (io_ungetc(cc, fptr) == EOF && cc != EOF) {
-	rb_raise(rb_eIOError, "ungetc failed");
-    }
+    io_ungetc(c, fptr);
     return Qnil;
 }
 
@@ -5465,7 +5519,29 @@ argf_getc(void)
 	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
     else {
-	ch = rb_io_getc_m(current_file);
+	ch = rb_io_getc(current_file);
+    }
+    if (NIL_P(ch) && next_p != -1) {
+	argf_close(current_file);
+	next_p = 1;
+	goto retry;
+    }
+
+    return ch;
+}
+
+static VALUE
+argf_getbyte(void)
+{
+    VALUE ch;
+
+  retry:
+    if (!next_argv()) return Qnil;
+    if (TYPE(current_file) != T_FILE) {
+	ch = rb_funcall3(current_file, rb_intern("getbyte"), 0, 0);
+    }
+    else {
+	ch = rb_io_getbyte(current_file);
     }
     if (NIL_P(ch) && next_p != -1) {
 	argf_close(current_file);
@@ -5479,10 +5555,32 @@ argf_getc(void)
 static VALUE
 argf_readchar(void)
 {
+    VALUE ch;
+
+  retry:
+    if (!next_argv()) return Qnil;
+    if (TYPE(current_file) != T_FILE) {
+	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
+    }
+    else {
+	ch = rb_io_getc(current_file);
+    }
+    if (NIL_P(ch) && next_p != -1) {
+	argf_close(current_file);
+	next_p = 1;
+	goto retry;
+    }
+
+    return ch;
+}
+
+static VALUE
+argf_readbyte(void)
+{
     VALUE c;
 
     NEXT_ARGF_FORWARD(0, 0);
-    c = argf_getc();
+    c = argf_getbyte();
     if (NIL_P(c)) {
 	rb_eof_error();
     }
@@ -5780,8 +5878,10 @@ Init_IO(void)
     rb_define_method(rb_cIO, "write", io_write, 1);
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
-    rb_define_method(rb_cIO, "getc",  rb_io_getc_m, 0);
+    rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);
+    rb_define_method(rb_cIO, "getbyte",  rb_io_getbyte, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
+    rb_define_method(rb_cIO, "readbyte",  rb_io_readbyte, 0);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
@@ -5851,7 +5951,9 @@ Init_IO(void)
     rb_define_singleton_method(argf, "gets", rb_f_gets, -1);
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
+    rb_define_singleton_method(argf, "getbyte", argf_getbyte, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
+    rb_define_singleton_method(argf, "readbyte", argf_readbyte, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
     rb_define_singleton_method(argf, "seek", argf_seek_m, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);

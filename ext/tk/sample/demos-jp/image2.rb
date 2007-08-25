@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # widget demo 'load image' (called by 'widget')
 #

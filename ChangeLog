@@ -1,3 +1,63 @@
+Sat Aug 25 11:45:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c: provide basic features for M17N.
+
+	* parse.y: encoding aware parsing.
+
+	* parse.y (pragma_encoding): encoding specification pragma.
+
+	* parse.y (rb_intern3): encoding specified symbols.
+
+	* string.c (rb_str_length): length based on characters.  
+	  for older behavior, bytesize method added.
+
+	* string.c (rb_str_index_m): index based on characters.  rindex as
+	  well.
+
+	* string.c (succ_char): encoding aware succeeding string.
+
+	* string.c (rb_str_reverse): reverse based on characters.
+
+	* string.c (rb_str_inspect): encoding aware string description.
+
+	* string.c (rb_str_upcase_bang): encoding aware case conversion.
+	  downcase, capitalize, swapcase as well.
+
+	* string.c (rb_str_tr_bang): tr based on characters.  delete,
+	  squeeze, tr_s, count as well.
+
+	* string.c (rb_str_split_m): split based on characters.
+
+	* string.c (rb_str_each_line): encoding aware each_line.
+
+	* string.c (rb_str_each_char): added.  iteration based on
+	  characters.
+
+	* string.c (rb_str_strip_bang): encoding aware whitespace
+	  stripping.  lstrip, rstrip as well.
+
+	* string.c (rb_str_justify): encoding aware justifying (ljust,
+	  rjust, center).
+
+	* string.c (str_encoding): get encoding attribute from a string. 
+
+	* re.c (rb_reg_initialize): encoding aware regular expression
+
+	* sprintf.c (rb_str_format): formatting (i.e. length count) based
+	  on characters.
+
+	* io.c (rb_io_getc): getc to return one-character string.
+	  for older behavior, getbyte method added.
+
+	* ext/stringio/stringio.c (strio_getc): ditto.
+
+	* io.c (rb_io_ungetc): allow pushing arbitrary string at the
+	  current reading point.
+
+	* ext/stringio/stringio.c (strio_ungetc): ditto.
+
+	* ext/strscan/strscan.c: encoding support.
+
 Sat Aug 25 10:59:19 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: separate Continuation and Fiber from core.

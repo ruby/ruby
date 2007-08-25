@@ -1,3 +1,5 @@
+# -*- coding: euc-jp -*-
+#
 # radio3.rb
 #
 # This demonstration script creates a toplevel window containing

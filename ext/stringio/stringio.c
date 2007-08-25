@@ -13,7 +13,7 @@
 **********************************************************************/
 
 #include "ruby.h"
-#include "rubyio.h"
+#include "ruby/io.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -82,6 +82,18 @@ get_strio(VALUE self)
 	rb_raise(rb_eIOError, "uninitialized stream");
     }
     return ptr;
+}
+
+static VALUE
+strio_substr(struct StringIO *ptr, int pos, int len)
+{
+    VALUE str = ptr->string;
+    rb_encoding *enc = rb_enc_get(str);
+    int rlen = RSTRING_LEN(str) - pos;
+
+    if (len > rlen) len = rlen;
+    if (len < 0) len = 0;
+    return rb_enc_str_new(RSTRING_PTR(str)+pos, len, enc);
 }
 
 #define StringIO(obj) get_strio(obj)
@@ -603,7 +615,7 @@ strio_each_byte(VALUE self)
 
 /*
  * call-seq:
- *   strio.getc   -> fixnum or nil
+ *   strio.getc   -> string or nil
  *
  * See IO#getc.
  */
@@ -611,15 +623,17 @@ static VALUE
 strio_getc(VALUE self)
 {
     struct StringIO *ptr = readable(StringIO(self));
-    int c;
-    char ch;
+    rb_encoding *enc = rb_enc_get(ptr->string);
+    int len;
+    char *p;
 
     if (ptr->pos >= RSTRING_LEN(ptr->string)) {
 	return Qnil;
     }
-    c = RSTRING_PTR(ptr->string)[ptr->pos++];
-    ch = c & 0xff;
-    return rb_str_new(&ch, 1);
+    p = RSTRING_PTR(ptr->string)+ptr->pos;
+    len = rb_enc_mbclen(p, enc);
+    ptr->pos += len;
+    return rb_enc_str_new(p, len, rb_enc_get(ptr->string));
 }
 
 /*
@@ -671,30 +685,34 @@ static VALUE
 strio_ungetc(VALUE self, VALUE c)
 {
     struct StringIO *ptr = readable(StringIO(self));
-    int cc;
-    long len, pos = ptr->pos;
+    long lpos, clen;
+    char *p, *pend;
+    rb_encoding *enc;
 
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
-	cc = FIX2INT(c);
+	int cc = FIX2INT(c);
+	char buf[16];
+
+	enc = rb_enc_get(ptr->string);
+	rb_enc_mbcput(cc, buf, enc);
+	c = rb_enc_str_new(buf, rb_enc_codelen(cc, enc), enc);
     }
     else {
 	SafeStringValue(c);
-	if (RSTRING_LEN(c) > 1) {
-	    rb_warn("IO#ungetc pushes back only one byte");
-	}
-	cc = (unsigned char)RSTRING_PTR(c)[0];
+	enc = rb_enc_check(ptr->string, c);
     }
-    if (cc != EOF && pos > 0) {
-	if ((len = RSTRING_LEN(ptr->string)) < pos-- ||
-	    (unsigned char)RSTRING_PTR(ptr->string)[pos] !=
-	    (unsigned char)cc) {
-	    strio_extend(ptr, pos, 1);
-	    RSTRING_PTR(ptr->string)[pos] = cc;
-	    OBJ_INFECT(ptr->string, self);
-	}
-	--ptr->pos;
+    /* get logical position */
+    lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos - 1;
+    for (;;) {
+	clen = rb_enc_mbclen(p, enc);
+	if (p+clen >= pend) break;
+	p += clen;
+	lpos++;
     }
+    rb_str_update(ptr->string, lpos, ptr->pos ? 1 : 0, c);
+    ptr->pos = p - RSTRING_PTR(ptr->string);
+
     return Qnil;
 }
 
@@ -800,7 +818,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	e = s + limit;
     }
     if (NIL_P(str)) {
-	str = rb_str_substr(ptr->string, ptr->pos, e - s);
+	str = strio_substr(ptr, ptr->pos, e - s);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
 	p = s;
@@ -816,13 +834,13 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 		break;
 	    }
 	}
-	str = rb_str_substr(ptr->string, s - RSTRING_PTR(ptr->string), e - s); 
+	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s); 
     }
     else if (n == 1) {
 	if ((p = memchr(s, RSTRING_PTR(str)[0], e - s)) != 0) {
 	    e = p + 1;
 	}
-	str = rb_str_substr(ptr->string, ptr->pos, e - s);
+	str = strio_substr(ptr, ptr->pos, e - s);
     }
     else {
 	if (n < e - s) {
@@ -843,7 +861,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 		}
 	    }
 	}
-	str = rb_str_substr(ptr->string, ptr->pos, e - s);
+	str = strio_substr(ptr, ptr->pos, e - s);
     }
     ptr->pos = e - RSTRING_PTR(ptr->string);
     ptr->lineno++;
@@ -944,7 +962,7 @@ strio_write(VALUE self, VALUE str)
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
     len = RSTRING_LEN(str);
-    if (!len) return INT2FIX(0);
+    if (len == 0) return INT2FIX(0);
     check_modifiable(ptr);
     olen = RSTRING_LEN(ptr->string);
     if (ptr->flags & FMODE_APPEND) {
@@ -955,7 +973,8 @@ strio_write(VALUE self, VALUE str)
     }
     else {
 	strio_extend(ptr, ptr->pos, len);
-	rb_str_update(ptr->string, ptr->pos, len, str);
+	memmove(RSTRING_PTR(ptr->string)+ptr->pos, RSTRING_PTR(str), len);
+	OBJ_INFECT(ptr->string, str);
     }
     OBJ_INFECT(ptr->string, self);
     ptr->pos += len;
@@ -1070,7 +1089,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     if (NIL_P(str)) {
-	str = rb_str_substr(ptr->string, ptr->pos, len);
+	str = strio_substr(ptr, ptr->pos, len);
     }
     else {
 	long rest = RSTRING_LEN(ptr->string) - ptr->pos;

@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # two image widgets demo (called by 'widget')
 #

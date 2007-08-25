@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 require "tkcanvas"
 
 if defined?($hscale_demo) && $hscale_deom

@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # 2-D plot widget demo (called by 'widget')
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# -*- coding: euc-jp -*-
 
 # 漢字コード設定 ( tk.rb のロード時の encoding 推定/設定に使われる )
 $KCODE = 'euc'

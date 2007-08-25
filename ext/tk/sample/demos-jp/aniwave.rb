@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # animated wave demo (called by 'widget')
 #

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -676,7 +676,7 @@ proc_options(int argc, char **argv)
 
 	  case 'F':
 	    if (*++s) {
-		rb_fs = rb_reg_new(s, strlen(s), 0);
+		rb_fs = rb_reg_new(rb_str_new2(s), 0);
 	    }
 	    break;
 
@@ -962,10 +962,14 @@ load_file(VALUE parser, const char *fname, int script)
 	    rb_raise(rb_eLoadError, "no Ruby script found in input");
 	}
 
-	c = rb_io_getc(f);
+	c = rb_io_getbyte(f);
 	if (c == INT2FIX('#')) {
-	    c = rb_io_getc(f);
-	    if (c == INT2FIX('!') && !NIL_P(line = rb_io_gets(f))) {
+	    c = rb_io_getbyte(f);
+	    if (c == INT2FIX('!')) {
+		line = rb_io_gets(f);
+		if (NIL_P(line))
+		    return 0;
+
 		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
 		    /* not ruby script, kick the program */
 		    char **argv;
@@ -1011,8 +1015,7 @@ load_file(VALUE parser, const char *fname, int script)
 		}
 
 		/* push back shebang for pragma may exist in next line */
-		rb_io_ungetc(f, INT2FIX('\n'));
-		rb_io_ungetc(f, INT2FIX('!'));
+		rb_io_ungetc(f, rb_str_new2("!\n"));
 	    }
 	    else if (!NIL_P(c)) {
 		rb_io_ungetc(f, c);

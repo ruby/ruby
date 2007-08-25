@@ -1,3 +1,5 @@
+# -*- coding: euc-jp -*-
+#
 # labelframe.rb
 #
 # This demonstration script creates a toplevel window containing

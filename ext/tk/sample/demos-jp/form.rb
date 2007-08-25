@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # form widget demo (called by 'widget')
 #

@@ -127,6 +127,7 @@
 #define onig_st_nothing_key_free            st_nothing_key_free
 #define onig_st_is_member                   st_is_member
 
+#define USE_UPPER_CASE_TABLE
 #else
 
 #define st_init_table                  onig_st_init_table

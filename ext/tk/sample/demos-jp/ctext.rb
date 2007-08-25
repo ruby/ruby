@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # Canvas Text widget demo (called by 'widget')
 #

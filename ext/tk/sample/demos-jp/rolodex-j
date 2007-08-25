@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# -*- coding: euc-jp -*-
 #
 # rolodex --
 # このスクリプトは Tom LaStrange の rolodex の一部です。

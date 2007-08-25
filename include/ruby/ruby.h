@@ -5,7 +5,7 @@
   $Author$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -455,6 +455,7 @@ struct RString {
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
      RSTRING(str)->as.ary : \
      RSTRING(str)->as.heap.ptr)
+#define RSTRING_END(str) (RSTRING_PTR(str)+RSTRING_LEN(str))
 
 struct RArray {
     struct RBasic basic;
@@ -598,6 +599,32 @@ enum ruby_value_flags {
 #define FL_USER6     RUBY_FL_USER6
     RUBY_FL_USER7     = (1<<(FL_USHIFT+7)),
 #define FL_USER7     RUBY_FL_USER7
+    RUBY_FL_USER8     = (1<<(FL_USHIFT+8)),
+#define FL_USER8     RUBY_FL_USER8
+    RUBY_FL_USER9     = (1<<(FL_USHIFT+9)),
+#define FL_USER9     RUBY_FL_USER9
+    RUBY_FL_USER10     = (1<<(FL_USHIFT+10)),
+#define FL_USER10     RUBY_FL_USER10
+    RUBY_FL_USER11     = (1<<(FL_USHIFT+11)),
+#define FL_USER11     RUBY_FL_USER11
+    RUBY_FL_USER12     = (1<<(FL_USHIFT+12)),
+#define FL_USER12     RUBY_FL_USER12
+    RUBY_FL_USER13     = (1<<(FL_USHIFT+13)),
+#define FL_USER13     RUBY_FL_USER13
+    RUBY_FL_USER14     = (1<<(FL_USHIFT+14)),
+#define FL_USER14     RUBY_FL_USER14
+    RUBY_FL_USER15     = (1<<(FL_USHIFT+15)),
+#define FL_USER15     RUBY_FL_USER15
+    RUBY_FL_USER16     = (1<<(FL_USHIFT+16)),
+#define FL_USER16     RUBY_FL_USER16
+    RUBY_FL_USER17     = (1<<(FL_USHIFT+17)),
+#define FL_USER17     RUBY_FL_USER17
+    RUBY_FL_USER18     = (1<<(FL_USHIFT+18)),
+#define FL_USER18     RUBY_FL_USER18
+    RUBY_FL_USER19     = (1<<(FL_USHIFT+19)),
+#define FL_USER19     RUBY_FL_USER19
+    RUBY_FL_USER20     = (1<<(FL_USHIFT+20)),
+#define FL_USER20     RUBY_FL_USER20
 };
 
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
@@ -667,6 +694,7 @@ void rb_gc_unregister_address(VALUE*);
 
 ID rb_intern(const char*);
 ID rb_intern2(const char*, long);
+ID rb_intern_str(VALUE str);
 const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);

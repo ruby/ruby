@@ -10,6 +10,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/re.h"
+#include "ruby/encoding.h"
 
 #define STRSCAN_VERSION "0.7.0"
 
@@ -189,6 +190,7 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &str, &need_dup);
     StringValue(str);
     p->str = str;
+    rb_enc_associate(self, rb_enc_get(str));
 
     return self;
 }
@@ -652,13 +654,14 @@ strscan_getch(VALUE self)
 {
     struct strscanner *p;
     long len;
+    rb_encoding *enc = rb_enc_get(self);
 
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
     if (EOS_P(p))
         return Qnil;
 
-    len = mbclen(*CURPTR(p));
+    len = rb_enc_mbclen(CURPTR(p), enc);
     if (p->curr + len > S_LEN(p)) {
         len = S_LEN(p) - p->curr;
     }

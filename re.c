@@ -5,12 +5,13 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-2006 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
 
 #include "ruby/ruby.h"
 #include "ruby/re.h"
+#include "ruby/encoding.h"
 #include "regint.h"
 #include <ctype.h>
 
@@ -289,23 +290,27 @@ kcode_to_arg_value(unsigned int kcode)
 static void
 set_re_kcode_by_option(struct RRegexp *re, int options)
 {
+    rb_encoding *enc = 0;
+
+    FL_UNSET(re, KCODE_MASK);
     switch (options & ARG_KCODE_MASK) {
       case ARG_KCODE_NONE:
-	FL_UNSET(re, KCODE_MASK);
+	enc = rb_enc_from_index(0);
+	FL_SET(re, KCODE_NONE);
 	FL_SET(re, KCODE_FIXED);
 	break;
       case ARG_KCODE_EUC:
-	FL_UNSET(re, KCODE_MASK);
+	enc = rb_enc_find("euc-jp");
 	FL_SET(re, KCODE_EUC);
 	FL_SET(re, KCODE_FIXED);
 	break;
       case ARG_KCODE_SJIS:
-	FL_UNSET(re, KCODE_MASK);
-	FL_SET(re, KCODE_SJIS);
+	enc = rb_enc_find("sjis");
 	FL_SET(re, KCODE_FIXED);
+	FL_SET(re, KCODE_SJIS);
 	break;
       case ARG_KCODE_UTF8:
-	FL_UNSET(re, KCODE_MASK);
+	enc = rb_enc_find("utf-8");
 	FL_SET(re, KCODE_UTF8);
 	FL_SET(re, KCODE_FIXED);
 	break;
@@ -314,6 +319,9 @@ set_re_kcode_by_option(struct RRegexp *re, int options)
       default:
 	FL_SET(re, reg_kcode);
 	break;
+    }
+    if (enc) {
+	rb_enc_associate((VALUE)re, enc);
     }
 }
 
@@ -371,15 +379,9 @@ kcode_reset_option(void)
 int
 rb_reg_mbclen2(unsigned int c, VALUE re)
 {
-    int len;
     unsigned char uc = (unsigned char)c;
 
-    if (!FL_TEST(re, KCODE_FIXED))
-	return mbclen(uc);
-    kcode_set_option(re);
-    len = mbclen(uc);
-    kcode_reset_option();
-    return len;
+    return rb_enc_mbclen(&uc, rb_enc_get(re));
 }
 
 static void
@@ -393,16 +395,17 @@ rb_reg_check(VALUE re)
 static void
 rb_reg_expr_str(VALUE str, const char *s, long len)
 {
+    rb_encoding *enc = rb_enc_get(str);
     const char *p, *pend;
     int need_escape = 0;
 
     p = s; pend = p + len;
     while (p<pend) {
-	if (*p == '/' || (!ISPRINT(*p) && !ismbchar(*p))) {
+	if (*p == '/' || (!rb_enc_isprint(*p, enc) && !ismbchar(p, enc))) {
 	    need_escape = 1;
 	    break;
 	}
-	p += mbclen(*p);
+	p += mbclen(p, enc);
     }
     if (!need_escape) {
 	rb_str_buf_cat(str, s, len);
@@ -411,7 +414,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	p = s;
 	while (p<pend) {
 	    if (*p == '\\') {
-		int n = mbclen(p[1]) + 1;
+		int n = mbclen(p+1, enc) + 1;
 		rb_str_buf_cat(str, p, n);
 		p += n;
 		continue;
@@ -421,15 +424,15 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else if (ismbchar(*p)) {
-	    	rb_str_buf_cat(str, p, mbclen(*p));
-		p += mbclen(*p);
+	    else if (ismbchar(p, enc)) {
+	    	rb_str_buf_cat(str, p, mbclen(p, enc));
+		p += mbclen(p, enc);
 		continue;
 	    }
-	    else if (ISPRINT(*p)) {
+	    else if (rb_enc_isprint(*p, enc)) {
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else if (!ISSPACE(*p)) {
+	    else if (!rb_enc_isspace(*p, enc)) {
 		char b[8];
 
 		sprintf(b, "\\%03o", *p & 0377);
@@ -621,20 +624,12 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
     rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING_PTR(desc));
 }
 
-static VALUE
-rb_reg_error_desc(const char *s, long len, int options, onig_errmsg_buffer err)
+static void
+rb_reg_raise_str(VALUE str, const char *err, VALUE re)
 {
-    char opts[6];
-    VALUE desc = rb_str_buf_new2(err);
-
-    rb_str_buf_cat2(desc, ": /");
-    rb_reg_expr_str(desc, s, len);
-    opts[0] = '/';
-    option_to_str(opts + 1, options);
-    strlcat(opts, arg_kcode(options), sizeof(opts));
-    rb_str_buf_cat2(desc, opts);
-    return rb_exc_new3(rb_eRegexpError, desc);
+    rb_reg_raise(RSTRING_PTR(str), RSTRING_LEN(str), err, re);
 }
+
 
 /*
  *  call-seq:
@@ -1489,7 +1484,7 @@ match_inspect(VALUE match)
 VALUE rb_cRegexp;
 
 static int
-rb_reg_initialize(VALUE obj, const char *s, long len,
+rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 		  int options, onig_errmsg_buffer err)
 {
     struct RRegexp *re = RREGEXP(obj);
@@ -1504,7 +1499,12 @@ rb_reg_initialize(VALUE obj, const char *s, long len,
     re->ptr = 0;
     re->str = 0;
 
-    set_re_kcode_by_option(re, options);
+    if (options & ARG_KCODE_MASK) {
+	set_re_kcode_by_option(re, options);
+    }
+    else {
+	rb_enc_associate((VALUE)re, enc);
+    }
 
     if (options & ARG_KCODE_MASK) {
 	kcode_set_option((VALUE)re);
@@ -1525,6 +1525,13 @@ rb_reg_initialize(VALUE obj, const char *s, long len,
     return 0;
 }
 
+static int
+rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
+{
+    return rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str),
+			     options, err);
+}
+
 static VALUE
 rb_reg_s_alloc(VALUE klass)
 {
@@ -1539,27 +1546,35 @@ rb_reg_s_alloc(VALUE klass)
 }
 
 VALUE
-rb_reg_new(const char *s, long len, int options)
+rb_reg_new(VALUE s, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err;
 
-    if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	rb_exc_raise(rb_reg_error_desc(s, len, options, err));
+    if (rb_reg_initialize_str(re, s, options, err) != 0) {
+	rb_reg_raise_str(s, err, re);
     }
 
     return re;
 }
 
 VALUE
-rb_reg_compile(const char *s, long len, int options)
+rb_reg_compile(VALUE str, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err;
 
-    if (rb_reg_initialize(re, s, len, options, err) != 0) {
-	rb_set_errinfo(rb_reg_error_desc(s, len, options, err));
-	return Qnil;
+    if (!str) str = rb_str_new(0,0);
+    if (rb_reg_initialize_str(re, str, options, err) != 0) {
+	char opts[6];
+	VALUE desc = rb_str_buf_new2(err);
+
+	rb_str_buf_cat2(desc, ": /");
+	rb_reg_expr_str(desc, RSTRING_PTR(str), RSTRING_LEN(str));
+	opts[0] = '/';
+	option_to_str(opts + 1, options);
+	strlcat(opts, arg_kcode(options), sizeof(opts));
+	return rb_str_buf_cat2(desc, opts);
     }
     FL_SET(re, REG_LITERAL);
     return re;
@@ -1581,8 +1596,7 @@ rb_reg_regcomp(VALUE str)
 
     case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
-    return reg_cache = rb_reg_new(RSTRING_PTR(save_str), RSTRING_LEN(save_str),
-				  ruby_ignorecase);
+    return reg_cache = rb_reg_new(save_str, ruby_ignorecase);
 }
 
 static int
@@ -1843,9 +1857,8 @@ static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
     onig_errmsg_buffer err;
-    const char *s;
-    long len;
     int flags = 0;
+    VALUE str;
 
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
@@ -1859,8 +1872,8 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	if (FL_TEST(argv[0], KCODE_FIXED)) {
             flags |= re_to_kcode_arg_value(argv[0]);
 	}
-	s = RREGEXP(argv[0])->str;
-	len = RREGEXP(argv[0])->len;
+	str = rb_enc_str_new(RREGEXP(argv[0])->str, RREGEXP(argv[0])->len,
+			     rb_enc_get(argv[0]));
     }
     else {
 	if (argc >= 2) {
@@ -1873,11 +1886,10 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    flags &= ~ARG_KCODE_MASK;
 	    flags |= char_to_arg_kcode((int )kcode[0]);
 	}
-	s = StringValuePtr(argv[0]);
-	len = RSTRING_LEN(argv[0]);
+	str = argv[0];
     }
-    if (rb_reg_initialize(self, s, len, flags, err) != 0) {
-	rb_exc_raise(rb_reg_error_desc(s, len, flags, err));
+    if (rb_reg_initialize_str(self, str, flags, err) != 0) {
+	rb_reg_raise_str(str, err, self);
     }
     return self;
 }
@@ -1885,6 +1897,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_reg_quote(VALUE str)
 {
+    rb_encoding *enc = rb_enc_get(str);
     char *s, *send, *t;
     VALUE tmp;
     int c;
@@ -1893,8 +1906,8 @@ rb_reg_quote(VALUE str)
     send = s + RSTRING_LEN(str);
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(*s)) {
-	    int n = mbclen(*s);
+	if (ismbchar(s, enc)) {
+	    int n = mbclen(s, enc);
 
 	    while (n-- && s < send)
 		s++;
@@ -1922,8 +1935,8 @@ rb_reg_quote(VALUE str)
 
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(*s)) {
-	    int n = mbclen(*s);
+	if (ismbchar(s, enc)) {
+	    int n = mbclen(s, enc);
 
 	    while (n-- && s < send)
 		*t++ = *s++;
@@ -2146,9 +2159,8 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     rb_reg_check(re);
     s = RREGEXP(re)->str;
     len = RREGEXP(re)->len;
-    options = rb_reg_options(re);
-    if (rb_reg_initialize(copy, s, len, options, err) != 0) {
-	rb_exc_raise(rb_reg_error_desc(s, len, options, err));
+    if (rb_reg_initialize(copy, s, len, rb_enc_get(re), rb_reg_options(re), err) != 0) {
+	rb_reg_raise(s, len, err, copy);
     }
     return copy;
 }
@@ -2160,20 +2172,20 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     char *p, *s, *e;
     unsigned char uc;
     int no;
+    rb_encoding *enc = rb_enc_check(str, src);
 
-
+    rb_enc_check(str, regexp);
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
-	char *ss = s;
+	char *ss = s++;
 
-	uc = (unsigned char)*s++;
-	if (ismbchar(uc)) {
-	    s += mbclen(uc) - 1;
+	if (ismbchar(ss, enc)) {
+	    s += mbclen(ss, enc) - 1;
 	    continue;
 	}
-	if (uc != '\\' || s == e) continue;
+	if (*ss != '\\' || s == e) continue;
 
 	if (!val) {
 	    val = rb_str_buf_new(ss-p);
@@ -2203,8 +2215,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
               name_end = name = s + 1;
               while (name_end < e) {
                 if (*name_end == '>') break;
-                uc = (unsigned char)*name_end;
-                name_end += mbclen(uc);
+                name_end += mbclen(name_end, enc);
               }
               if (name_end < e) {
                 no = name_to_backref_number(regs, regexp, name, name_end);

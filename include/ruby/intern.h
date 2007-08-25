@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -337,7 +337,7 @@ RUBY_EXTERN VALUE rb_default_rs;
 RUBY_EXTERN VALUE rb_output_rs;
 VALUE rb_io_write(VALUE, VALUE);
 VALUE rb_io_gets(VALUE);
-VALUE rb_io_getc(VALUE);
+VALUE rb_io_getbyte(VALUE);
 VALUE rb_io_ungetc(VALUE, VALUE);
 VALUE rb_io_close(VALUE);
 VALUE rb_io_flush(VALUE);
@@ -444,7 +444,7 @@ VALUE rb_reg_last_match(VALUE);
 VALUE rb_reg_match_pre(VALUE);
 VALUE rb_reg_match_post(VALUE);
 VALUE rb_reg_match_last(VALUE);
-VALUE rb_reg_new(const char*, long, int);
+VALUE rb_reg_new(VALUE, int);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);
@@ -498,6 +498,7 @@ VALUE rb_str_unlocktmp(VALUE);
 VALUE rb_str_dup_frozen(VALUE);
 VALUE rb_str_plus(VALUE, VALUE);
 VALUE rb_str_times(VALUE, VALUE);
+int rb_str_sublen(VALUE, int);
 VALUE rb_str_substr(VALUE, long, long);
 void rb_str_modify(VALUE);
 VALUE rb_str_freeze(VALUE);

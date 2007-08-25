@@ -7,7 +7,7 @@
  * Copyright (C) 2003 why the lucky stiff
  * 
  * All Base64 code from Ruby's pack.c.
- * Ruby is Copyright (C) 1993-2003 Yukihiro Matsumoto 
+ * Ruby is Copyright (C) 1993-2007 Yukihiro Matsumoto 
  */
 #include "ruby/ruby.h"
 

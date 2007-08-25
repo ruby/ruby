@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Apr 27 16:30:01 JST 1995
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -1105,7 +1105,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
-	    v = r_entry(rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str), options), arg);
+	    v = r_entry(rb_reg_new(str, options), arg);
 	}
 	break;
 

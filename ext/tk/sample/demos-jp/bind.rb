@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # text (tag bindings) widget demo (called by 'widget')
 #

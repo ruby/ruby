@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # widet demo 'puzzle' (called by 'widget')
 #

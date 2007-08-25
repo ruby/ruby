@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# -*- coding: euc-jp -*-
 #
 # ixset --
 # A nice interface to "xset" to change X server settings

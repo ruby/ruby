@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # text (embedded windows) widget demo 2 (called by 'widget')
 #

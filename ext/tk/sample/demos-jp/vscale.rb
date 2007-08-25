@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 require "tkcanvas"
 
 if defined?($vscale_demo) && $vscale_demo

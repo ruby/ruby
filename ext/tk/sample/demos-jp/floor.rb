@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # floorDisplay widget demo (called by 'widget')
 #

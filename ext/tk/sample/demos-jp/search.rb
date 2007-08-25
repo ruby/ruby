@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # Text Search widget demo (called by 'widget')
 #

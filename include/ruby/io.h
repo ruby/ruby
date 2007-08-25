@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Nov 12 16:47:09 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -22,6 +22,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <errno.h>
+#include "ruby/encoding.h"
 
 #if defined(HAVE_STDIO_EXT_H)
 #include <stdio_ext.h>
@@ -44,6 +45,7 @@ typedef struct rb_io_t {
     int rbuf_off;
     int rbuf_len;
     int rbuf_capa;
+    rb_encoding *enc;
 } rb_io_t;
 
 #define HAVE_RB_IO_T 1

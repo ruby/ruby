@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # canvas item types widget demo (called by 'widget')
 #

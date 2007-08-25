@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # Ruby/Tk Goldverg demo (called by 'widget')
 #

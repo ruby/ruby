@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -14,7 +14,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/re.h"
-#include <ctype.h>
+#include "ruby/encoding.h"
 #include <math.h>
 #include <stdarg.h>
 
@@ -115,7 +115,7 @@ sign_bits(int base, const char *p)
     ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
 
 #define GETNUM(n, val) \
-    for (; p < end && ISDIGIT(*p); p++) { \
+    for (; p < end && rb_enc_isdigit(*p, enc); p++) {	\
 	int next_n = 10 * n + (*p - '0'); \
         if (next_n / 10 != n) {\
 	    rb_raise(rb_eArgError, #val " too big"); \
@@ -254,6 +254,7 @@ rb_f_sprintf(int argc, const VALUE *argv)
 VALUE
 rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
+    rb_encoding *enc;
     const char *p, *end;
     char *buf;
     int blen, bsiz;
@@ -286,6 +287,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     --argv;
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
+    enc = rb_enc_get(fmt);
     fmt = rb_str_new4(fmt);
     p = RSTRING_PTR(fmt);
     end = p + RSTRING_LEN(fmt);
@@ -311,7 +313,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
       retry:
 	switch (*p) {
 	  default:
-	    if (ISPRINT(*p))
+	    if (rb_enc_isprint(*p, enc))
 		rb_raise(rb_eArgError, "malformed format string - %%%c", *p);
 	    else
 		rb_raise(rb_eArgError, "malformed format string");
@@ -409,24 +411,38 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		VALUE tmp;
-		char c;
+		int c, n;
 
 		tmp = rb_check_string_type(val);
 		if (!NIL_P(tmp)) {
-		    if (RSTRING_LEN(tmp) != 1) {
+		    if (rb_enc_strlen(RSTRING_PTR(tmp),RSTRING_END(tmp),enc) != 1) {
 			rb_raise(rb_eArgError, "%%c requires a character");
 		    }
-		    c = RSTRING_PTR(tmp)[0];
+		    c = rb_enc_codepoint(RSTRING_PTR(tmp), RSTRING_END(tmp), enc);
 		}
 		else {
-		    c = NUM2INT(val) & 0xff;
+		    c = NUM2INT(val);
+		}
+		n = rb_enc_codelen(c, enc);
+		if (n == 0) {
+		    rb_raise(rb_eArgError, "invalid character");
 		}
 		if (!(flags & FWIDTH)) {
-		    PUSH(&c, 1);
+		    CHECK(n);
+		    rb_enc_mbcput(c, &buf[blen], enc);
+		    blen += n;
+		}
+		else if ((flags & FMINUS)) {
+		    CHECK(n);
+		    rb_enc_mbcput(c, &buf[blen], enc);
+		    blen += n;
+		    FILL(' ', width-1);
 		}
 		else {
-		    FILL(' ', width);
-		    buf[blen - ((flags & FMINUS) ? width : 1)] = c;
+		    FILL(' ', width-1);
+		    CHECK(n);
+		    rb_enc_mbcput(c, &buf[blen], enc);
+		    blen += n;
 		}
 	    }
 	    break;
@@ -435,30 +451,42 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'p':
 	    {
 		VALUE arg = GETARG();
-		long len;
+		long len, slen;
 
 		if (*p == 'p') arg = rb_inspect(arg);
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
+		enc = rb_enc_check(fmt, str);
+		if (flags&(FPREC|FWIDTH)) {
+		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
+		    if (slen < 0) {
+			rb_raise(rb_eArgError, "invalid mbstring sequence");
+		    }
+		}
 		if (flags&FPREC) {
-		    if (prec < len) {
-			len = prec;
+		    if (prec < slen) {
+			char *p = rb_enc_nth(RSTRING_PTR(str), RSTRING_END(str),
+					     prec, enc);
+			slen = prec;
+			len = p - RSTRING_PTR(str);
 		    }
 		}
 		/* need to adjust multi-byte string pos */
 		if (flags&FWIDTH) {
-		    if (width > len) {
-			CHECK(width);
-			width -= len;
+		    if (width > slen) {
+			width -= slen;
 			if (!(flags&FMINUS)) {
+			    CHECK(width);
 			    while (width--) {
 				buf[blen++] = ' ';
 			    }
 			}
+			CHECK(len);
 			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			blen += len;
 			if (flags&FMINUS) {
+			    CHECK(width);
 			    while (width--) {
 				buf[blen++] = ' ';
 			    }
@@ -666,8 +694,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 		if (*p == 'X') {
 		    char *pp = s;
-		    while (*pp) {
-			*pp = toupper(*pp);
+		    int c;
+		    while (c = (int)*pp) {
+			*pp = rb_enc_toupper(c, enc);
 			pp++;
 		    }
 		}

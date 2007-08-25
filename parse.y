@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2004 Yukihiro Matsumoto
+  Copyright (C) 1993-2007 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -20,6 +20,8 @@
 #include "ruby/intern.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
+#include "regenc.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
@@ -255,7 +257,12 @@ struct parser_params {
     VALUE parsing_thread;
     int toplevel_p;
 #endif
+
+    rb_encoding *enc;
 };
+
+#define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
+#define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 
 #ifdef YYMALLOC
 void *rb_parser_malloc(struct parser_params *, size_t);
@@ -3555,7 +3562,7 @@ strings		: string
 		    /*%%%*/
 			NODE *node = $1;
 			if (!node) {
-			    node = NEW_STR(rb_str_new(0, 0));
+			    node = NEW_STR(STR_NEW(0, 0));
 			}
 			else {
 			    node = evstr2dstr(node);
@@ -3594,7 +3601,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    /*%%%*/
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_XSTR(rb_str_new(0, 0));
+			    node = NEW_XSTR(STR_NEW(0, 0));
 			}
 			else {
 			    switch (nd_type(node)) {
@@ -3605,7 +3612,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				nd_set_type(node, NODE_DXSTR);
 				break;
 			      default:
-				node = NEW_NODE(NODE_DXSTR, rb_str_new(0, 0), 1, NEW_LIST(node));
+				node = NEW_NODE(NODE_DXSTR, STR_NEW(0, 0), 1, NEW_LIST(node));
 				break;
 			    }
 			}
@@ -3622,20 +3629,18 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			int options = $3;
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_LIT(reg_compile("", 0, options));
+			    node = NEW_LIT(rb_reg_compile(0, options & ~RE_OPTION_ONCE));
 			}
 			else switch (nd_type(node)) {
 			  case NODE_STR:
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = reg_compile(RSTRING_PTR(src),
-							   RSTRING_LEN(src),
-							   options);
+				node->nd_lit = rb_reg_compile(src, options&~RE_OPTION_ONCE);
 			    }
 			    break;
 			  default:
-			    node = NEW_NODE(NODE_DSTR, rb_str_new(0, 0), 1, NEW_LIST(node));
+			    node = NEW_NODE(NODE_DSTR, STR_NEW(0, 0), 1, NEW_LIST(node));
 			  case NODE_DSTR:
 			    if (options & RE_OPTION_ONCE) {
 				nd_set_type(node, NODE_DREGX_ONCE);
@@ -3880,7 +3885,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				nd_set_type($$, NODE_LIT);
 				break;
 			      default:
-				$$ = NEW_NODE(NODE_DSYM, rb_str_new(0, 0), 1, NEW_LIST($$));
+				$$ = NEW_NODE(NODE_DSYM, STR_NEW(0, 0), 1, NEW_LIST($$));
 				break;
 			    }
 			}
@@ -4518,7 +4523,7 @@ ripper_dispatch_scan_event(struct parser_params *parser, int t)
 
     if (lex_p < parser->tokp) rb_raise(rb_eRuntimeError, "lex_p < tokp");
     if (lex_p == parser->tokp) return;
-    str = rb_str_new(parser->tokp, lex_p - parser->tokp);
+    str = STR_NEW(parser->tokp, lex_p - parser->tokp);
     yylval.val = ripper_dispatch1(parser, ripper_token2eventid(t), str);
     ripper_flush(parser);
 }
@@ -4552,7 +4557,11 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 /* As in Harbison and Steele.  */
 # define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
 #endif
-#define is_identchar(c) (SIGN_EXTEND_CHAR(c)!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
+
+#define parser_mbclen()  mbclen((lex_p-1),parser->enc)
+#define is_identchar(p, enc) (rb_enc_isalnum(*p, enc) || (*p) == '_' || ismbchar(p, enc))
+#define parser_ismbchar() ismbchar((lex_p-1), parser->enc)
+#define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),parser->enc))
 
 static int
 parser_yyerror(struct parser_params *parser, const char *msg)
@@ -4596,7 +4605,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	rb_compile_error_append("%s", buf);
     }
 #else
-    dispatch1(parse_error, rb_str_new2(msg));
+    dispatch1(parse_error, STR_NEW2(msg));
 #endif /* !RIPPER */
     return 0;
 }
@@ -4634,7 +4643,7 @@ yycompile(struct parser_params *parser, const char *f, int line)
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = ruby_suppress_tracing(debug_lines, (VALUE)f);
 	if (ruby_debug_lines && line > 1) {
-	    VALUE str = rb_str_new(0,0);
+	    VALUE str = STR_NEW(0,0);
 	    n = line - 1;
 	    do {
 		rb_ary_push(ruby_debug_lines, str);
@@ -4660,7 +4669,15 @@ yycompile(struct parser_params *parser, const char *f, int line)
 	tree = NEW_NIL();
     }
     if (ruby_eval_tree_begin) {
-	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body);
+	NODE *scope = ruby_eval_tree;
+
+        if (scope) {
+	    scope->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, scope->nd_body);
+	}
+	return scope;
+    }
+    else {
+	return ruby_eval_tree;
     }
     return tree;
 }
@@ -4682,7 +4699,7 @@ lex_get_str(struct parser_params *parser, VALUE s)
 	if (*end++ == '\n') break;
     }
     lex_gets_ptr = end - RSTRING_PTR(s);
-    return rb_str_new(beg, end - beg);
+    return STR_NEW(beg, end - beg);
 }
 
 static VALUE
@@ -5173,8 +5190,8 @@ parser_tokadd_string(struct parser_params *parser,
 		}
 	    }
 	}
-	else if (ismbchar(uc)) {
-	    int i, len = mbclen(uc)-1;
+	else if (parser_ismbchar()) {
+	    int i, len = parser_mbclen()-1;
 
 	    for (i = 0; i < len; i++) {
 		tokadd(c);
@@ -5252,7 +5269,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
 
     tokfix();
-    set_yylval_str(rb_str_new(tok(), toklen()));
+    set_yylval_str(STR_NEW(tok(), toklen()));
     return tSTRING_CONTENT;
 }
 
@@ -5278,8 +5295,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
-            uc = (unsigned int)c;
-	    len = mbclen(uc);
+	    len = parser_mbclen();
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
 	}
 	if (c == -1) {
@@ -5289,8 +5305,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	break;
 
       default:
-        uc = (unsigned int)c;
-	if (!is_identchar(uc)) {
+	if (!parser_is_identchar()) {
 	    pushback(c);
 	    if (func & STR_FUNC_INDENT) {
 		pushback('-');
@@ -5301,11 +5316,9 @@ parser_heredoc_identifier(struct parser_params *parser)
 	term = '"';
 	tokadd(func |= str_dquote);
 	do {
-            uc = (unsigned int)c;
-	    len = mbclen(uc);
+	    len = parser_mbclen();
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
-	} while ((c = nextc()) != -1 &&
-		 (uc = (unsigned char)c, is_identchar(uc)));
+	} while ((c = nextc()) != -1 && parser_is_identchar());
 	pushback(c);
 	break;
     }
@@ -5317,7 +5330,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     len = lex_p - lex_pbeg;
     lex_goto_eol(parser);
     lex_strterm = rb_node_newnode(NODE_HEREDOC,
-				  rb_str_new(tok(), toklen()),	/* nd_lit */
+				  STR_NEW(tok(), toklen()),	/* nd_lit */
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
     nd_set_line(lex_strterm, ruby_sourceline);
@@ -5410,7 +5423,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    if (str)
 		rb_str_cat(str, p, pend - p);
 	    else
-		str = rb_str_new(p, pend - p);
+		str = STR_NEW(p, pend - p);
 	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
 	    lex_goto_eol(parser);
 	    if (nextc() == -1) {
@@ -5436,13 +5449,13 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    pushback(c);
 	    if ((c = tokadd_string(func, '\n', 0, NULL)) == -1) goto error;
 	    if (c != '\n') {
-                set_yylval_str(rb_str_new(tok(), toklen()));
+                set_yylval_str(STR_NEW(tok(), toklen()));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
-	str = rb_str_new(tok(), toklen());
+	str = STR_NEW(tok(), toklen());
     }
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
@@ -5487,6 +5500,7 @@ pragma_encoding(struct parser_params *parser, const char *name, const char *val)
     if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
 	return;
     rb_set_kcode(val);
+    parser->enc = rb_enc_find(val);
 }
 
 struct pragma {
@@ -5540,7 +5554,7 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
 #define str_copy(_s, _p, _n) ((_s) \
 	? (rb_str_resize((_s), (_n)), \
 	   MEMCPY(RSTRING_PTR(_s), (_p), char, (_n)), (_s)) \
-	: ((_s) = rb_str_new((_p), (_n))))
+	: ((_s) = STR_NEW((_p), (_n))))
 
     if (len <= 7) return Qfalse;
     if (!(beg = pragma_marker(str, len))) return Qfalse;
@@ -5934,8 +5948,7 @@ parser_yylex(struct parser_params *parser)
 	    compile_error(PARSER_ARG "incomplete character syntax");
 	    return 0;
 	}
-        uc = (unsigned char)c;
-	if (ISSPACE(c)){
+	if (rb_enc_isspace(c, parser->enc)){
 	    if (!IS_ARG()){
 		int c2 = 0;
 		switch (c) {
@@ -5968,8 +5981,8 @@ parser_yylex(struct parser_params *parser)
 	    return '?';
 	}
 	newtok();
-	if (ismbchar(uc)) {
-	    int i, len = mbclen(uc)-1;
+	if (parser_ismbchar()) {
+	    int i, len = parser_mbclen()-1;
 
 	    tokadd(c);
 	    for (i = 0; i < len; i++) {
@@ -5977,7 +5990,8 @@ parser_yylex(struct parser_params *parser)
 		tokadd(c);
 	    }
 	}
-	else if ((ISALNUM(c) || c == '_') && lex_p < lex_pend && is_identchar(*lex_p)) {
+	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
+		 lex_p < lex_pend && is_identchar(lex_p, parser->enc)) {
 	    goto ternary;
 	}
 	else if (c == '\\') {
@@ -5988,7 +6002,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd(c);
 	}
 	tokfix();
-	set_yylval_str(rb_str_new(tok(), toklen()));
+	set_yylval_str(STR_NEW(tok(), toklen()));
 	lex_state = EXPR_ENDARG;
 	return tCHAR;
 
@@ -6544,8 +6558,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    else {
 		term = nextc();
-                uc = (unsigned char)c;
-		if (ISALNUM(term) || ismbchar(uc)) {
+		if (rb_enc_isalnum(term, parser->enc) || parser_ismbchar()) {
 		    yyerror("unknown type of %string");
 		    return 0;
 		}
@@ -6625,8 +6638,7 @@ parser_yylex(struct parser_params *parser)
 	switch (c) {
 	  case '_':		/* $_: last read line string */
 	    c = nextc();
-            uc = (unsigned char)c;
-	    if (is_identchar(uc)) {
+	    if (parser_is_identchar()) {
 		tokadd('$');
 		tokadd('_');
 		break;
@@ -6660,8 +6672,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd('$');
 	    tokadd(c);
 	    c = nextc();
-	    uc = (unsigned char)c;
-	    if (is_identchar(uc)) {
+	    if (parser_is_identchar()) {
 	    tokadd(c);
 	    }
 	    else {
@@ -6703,8 +6714,7 @@ parser_yylex(struct parser_params *parser)
 	    return tNTH_REF;
 
 	  default:
-            uc = (unsigned char)c;
-	    if (!is_identchar(uc)) {
+	    if (!parser_is_identchar()) {
 		pushback(c);
 		return '$';
 	    }
@@ -6730,8 +6740,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    return 0;
 	}
-        uc = (unsigned char)c;
-	if (!is_identchar(uc)) {
+	if (!parser_is_identchar()) {
 	    pushback(c);
 	    return '@';
 	}
@@ -6753,9 +6762,8 @@ parser_yylex(struct parser_params *parser)
 	break;
 
       default:
-	uc = (unsigned char)c;
-	if (!is_identchar(uc)) {
-	    compile_error(PARSER_ARG "Invalid char `\\%03o' in expression", c);
+	if (!parser_is_identchar()) {
+	    rb_compile_error(PARSER_ARG  "Invalid char `\\%03o' in expression", c);
 	    goto retry;
 	}
 
@@ -6763,21 +6771,18 @@ parser_yylex(struct parser_params *parser)
 	break;
     }
 
-    uc = (unsigned char)c;
     do {
+        int i, len;
 	tokadd(c);
-	if (ismbchar(uc)) {
-	    int i, len = mbclen(uc)-1;
 
-	    for (i = 0; i < len; i++) {
-		c = nextc();
-		tokadd(c);
-	    }
+	len = parser_mbclen()-1;
+        for (i = 0; i < len; i++) {
+	    c = nextc();
+	    tokadd(c);
 	}
 	c = nextc();
-        uc = (unsigned char)c;
-    } while (is_identchar(uc));
-    if ((c == '!' || c == '?') && is_identchar(tok()[0]) && !peek('=')) {
+    } while (parser_is_identchar());
+    if ((c == '!' || c == '?') && !peek('=')) {
 	tokadd(c);
     }
     else {
@@ -7214,7 +7219,7 @@ gettable_gen(struct parser_params *parser, ID id)
 	return NEW_FALSE();
     }
     else if (id == keyword__FILE__) {
-	return NEW_STR(rb_str_new2(ruby_sourcefile));
+	return NEW_STR(STR_NEW2(ruby_sourcefile));
     }
     else if (id == keyword__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));
@@ -8115,8 +8120,7 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 static VALUE
 reg_compile_gen(struct parser_params* parser, const char *ptr, long len, int options)
 {
-    VALUE rb_reg_compile(const char *, long, int);
-    VALUE re = rb_reg_compile(ptr, len, (options) & ~RE_OPTION_ONCE);
+    VALUE re = rb_reg_compile(STR_NEW(ptr, len), (options) & ~RE_OPTION_ONCE);
 
     if (NIL_P(re)) {
 	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
@@ -8316,7 +8320,7 @@ internal_id_gen(struct parser_params *parser)
 }
 
 static int
-is_special_global_name(const char *m)
+is_special_global_name(const char *m, rb_encoding *enc)
 {
     switch (*m) {
       case '~': case '*': case '$': case '?': case '!': case '@':
@@ -8328,11 +8332,11 @@ is_special_global_name(const char *m)
 	break;
       case '-':
 	++m;
-	if (is_identchar(*m)) m += mbclen(*m);
+	if (is_identchar(m, enc)) m += rb_enc_mbclen(m, enc);
 	break;
       default:
-	if (!ISDIGIT(*m)) return 0;
-	do ++m; while (ISDIGIT(*m));
+	if (!rb_enc_isdigit(*m, enc)) return 0;
+	do ++m; while (rb_enc_isdigit(*m, enc));
     }
     return !*m;
 }
@@ -8342,6 +8346,7 @@ rb_symname_p(const char *name)
 {
     const char *m = name;
     int localid = Qfalse;
+    rb_encoding *enc = rb_enc_from_index(0);
 
     if (!m) return Qfalse;
     switch (*m) {
@@ -8349,7 +8354,7 @@ rb_symname_p(const char *name)
 	return Qfalse;
 
       case '$':
-	if (is_special_global_name(++m)) return Qtrue;
+	if (is_special_global_name(++m, enc)) return Qtrue;
 	goto id;
 
       case '@':
@@ -8396,10 +8401,10 @@ rb_symname_p(const char *name)
 	break;
 
       default:
-	localid = !ISUPPER(*m);
+	localid = !rb_enc_isupper(*m, enc);
       id:
-	if (*m != '_' && !ISALPHA(*m) && !ismbchar(*m)) return Qfalse;
-	while (is_identchar(*m)) m += mbclen(*m);
+	if (*m != '_' && !rb_enc_isalpha(*m, enc) && !ismbchar(m, enc)) return Qfalse;
+	while (is_identchar(m, enc)) m += rb_enc_mbclen(m, enc);
 	if (localid) {
 	    switch (*m) {
 	      case '!': case '?': case '=': ++m;
@@ -8411,7 +8416,7 @@ rb_symname_p(const char *name)
 }
 
 ID
-rb_intern2(const char *name, long len)
+rb_intern3(const char *name, long len, rb_encoding *enc)
 {
     const char *m = name;
     VALUE str;
@@ -8429,13 +8434,13 @@ rb_intern2(const char *name, long len)
 
     last = len-1;
     id = 0;
-    switch (*name) {
+    switch (*m) {
       case '$':
 	id |= ID_GLOBAL;
-	if (is_special_global_name(++m)) goto new_id;
+	if (is_special_global_name(++m, enc)) goto new_id;
 	break;
       case '@':
-	if (name[1] == '@') {
+	if (m[1] == '@') {
 	    m++;
 	    id |= ID_CLASS;
 	}
@@ -8445,20 +8450,21 @@ rb_intern2(const char *name, long len)
 	m++;
 	break;
       default:
-	if (name[0] != '_' && ISASCII(name[0]) && !ISALNUM(name[0])) {
+	if (m[0] != '_' && rb_enc_isascii((unsigned char)m[0], enc)
+	    && !rb_enc_isalnum(m[0], enc)) {
 	    /* operators */
 	    int i;
 
 	    for (i=0; op_tbl[i].token; i++) {
-		if (*op_tbl[i].name == *name &&
-		    strcmp(op_tbl[i].name, name) == 0) {
+		if (*op_tbl[i].name == *m &&
+		    strcmp(op_tbl[i].name, m) == 0) {
 		    id = op_tbl[i].token;
 		    goto id_register;
 		}
 	    }
 	}
 
-	if (name[last] == '=') {
+	if (m[last] == '=') {
 	    /* attribute assignment */
 	    id = rb_intern2(name, last);
 	    if (id > tLAST_TOKEN && !is_attrset_id(id)) {
@@ -8467,7 +8473,7 @@ rb_intern2(const char *name, long len)
 	    }
 	    id = ID_ATTRSET;
 	}
-	else if (ISUPPER(name[0])) {
+	else if (rb_enc_isupper(m[0], enc)) {
 	    id = ID_CONST;
         }
 	else {
@@ -8475,9 +8481,9 @@ rb_intern2(const char *name, long len)
 	}
 	break;
     }
-    if (!ISDIGIT(*m)) {
-	while (m <= name + last && is_identchar(*m)) {
-	    m += mbclen(*m);
+    if (!rb_enc_isdigit(*m, enc)) {
+	while (m <= name + last && is_identchar(m, enc)) {
+	    m += rb_enc_mbclen(m, enc);
 	}
     }
     if (m - name < len) id = ID_JUNK;
@@ -8492,9 +8498,21 @@ rb_intern2(const char *name, long len)
 }
 
 ID
+rb_intern2(const char *name, long len)
+{
+    return rb_intern3(name, len, rb_enc_from_index(0));
+}
+
+ID
 rb_intern(const char *name)
 {
     return rb_intern2(name, strlen(name));
+}
+
+ID
+rb_intern_str(VALUE str)
+{
+    return rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
 }
 
 VALUE
@@ -8662,6 +8680,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
+    parser->enc = rb_enc_from_index(0);
 }
 
 extern void rb_mark_source_filename(char *);
@@ -9013,27 +9032,27 @@ ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
 static void
 ripper_warn0(struct parser_params *parser, const char *fmt)
 {
-    rb_funcall(parser->value, rb_intern("warn"), 1, rb_str_new2(fmt));
+    rb_funcall(parser->value, rb_intern("warn"), 1, STR_NEW2(fmt));
 }
 
 static void
 ripper_warnI(struct parser_params *parser, const char *fmt, int a)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
-               rb_str_new2(fmt), INT2NUM(a));
+               STR_NEW2(fmt), INT2NUM(a));
 }
 
 static void
 ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
-    	       rb_str_new2(fmt), rb_str_new2(str));
+    	       STR_NEW2(fmt), STR_NEW2(str));
 }
 
 static void
 ripper_warning0(struct parser_params *parser, const char *fmt)
 {
-    rb_funcall(parser->value, rb_intern("warning"), 1, rb_str_new2(fmt));
+    rb_funcall(parser->value, rb_intern("warning"), 1, STR_NEW2(fmt));
 }
 
 #if 0				/* unused in ripper right now */
@@ -9041,7 +9060,7 @@ static void
 ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
-    	       rb_str_new2(fmt), rb_str_new2(str));
+    	       STR_NEW2(fmt), STR_NEW2(str));
 }
 #endif
 
@@ -9094,7 +9113,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
     if (NIL_P(fname)) {
-        fname = rb_str_new2("(ripper)");
+        fname = STR_NEW2("(ripper)");
     }
     else {
         StringValue(fname);

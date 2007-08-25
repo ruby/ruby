@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # arrowhead widget demo (called by 'widget')
 #

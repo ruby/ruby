@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # a dialog box with a local grab (called by 'widget')
 #

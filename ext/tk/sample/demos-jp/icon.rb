@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # iconic button widget demo (called by 'widget')
 #

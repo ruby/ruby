@@ -406,7 +406,7 @@ toregexp
 (VALUE val)
 {
     volatile VALUE tmp = str; /* for GC */
-    val = rb_reg_new(RSTRING_PTR(str), RSTRING_LEN(str), flag);
+    val = rb_reg_new(str, flag);
 }
 
 /**
