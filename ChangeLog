@@ -1,3 +1,7 @@
+Sun Aug 26 06:04:13 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_setup_method): reorder code for branch prediction.
+
 Sun Aug 26 05:54:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_call_method): fix to relaxant safe level check

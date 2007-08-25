@@ -425,7 +425,22 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max + 0x10);
 
-    if (flag & VM_CALL_TAILCALL_BIT) {
+    if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
+	if (0) printf("local_size: %d, arg_size: %d\n",
+		      iseq->local_size, iseq->arg_size);
+
+	/* clear local variables */
+	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+	    *sp++ = Qnil;
+	}
+
+	vm_push_frame(th, iseq,
+		      FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
+
+	cfp->sp = rsp - 1 /* recv */;
+    }
+    else {
 	VALUE *p_rsp;
 	cfp = ++th->cfp; /* pop cf */
 	p_rsp = th->cfp->sp;
@@ -445,21 +460,6 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	vm_push_frame(th, iseq,
 		      FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
 		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
-    }
-    else {
-	if (0) printf("local_size: %d, arg_size: %d\n",
-		      iseq->local_size, iseq->arg_size);
-
-	/* clear local variables */
-	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
-	    *sp++ = Qnil;
-	}
-
-	vm_push_frame(th, iseq,
-		      FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
-		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
-
-	cfp->sp = rsp - 1 /* recv */;
     }
 }
 
