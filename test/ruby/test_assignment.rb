@@ -650,12 +650,21 @@ class TestAssignmentGen < Test::Unit::TestCase
 
   def do_assign(assign, vars)
     assign = assign.to_s
-    code = "#{assign}; [#{vars.join(",")}]"
+    code1 = "#{assign}; [#{vars.join(",")}]"
+    assign.gsub!(/\bv\d+\b/, "o.a")
+    code2 = "o=[];class << o; self end.send!(:define_method,:a=){|v|self << v};#{assign};o"
     begin
-      vals = eval(code)
+      vals1 = eval(code1)
     rescue Exception
       return {:ex=>$!.message}
     end
+    begin
+      vals2 = eval(code2)
+    rescue Exception
+      return {:ex=>$!.message}
+    end
+    assert_equal(vals1, vals2, code1)
+    vals = vals1
     h = {}
     [vars, vals].transpose.each {|k,v| h[k] = v }
     h
