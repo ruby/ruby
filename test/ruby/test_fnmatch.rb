@@ -4,9 +4,9 @@ class TestFnmatch < Test::Unit::TestCase
 
   def bracket_test(s, t) # `s' should start with neither '!' nor '^'
     0x21.upto(0x7E) do |i|
-      assert_equal(t.include?(i), File.fnmatch("[#{s}]", i.chr, File::FNM_DOTMATCH))
-      assert_equal(t.include?(i), !File.fnmatch("[^#{s}]", i.chr, File::FNM_DOTMATCH))
-      assert_equal(t.include?(i), !File.fnmatch("[!#{s}]", i.chr, File::FNM_DOTMATCH))
+      assert_equal(t.include?(i.chr), File.fnmatch("[#{s}]", i.chr, File::FNM_DOTMATCH))
+      assert_equal(t.include?(i.chr), !File.fnmatch("[^#{s}]", i.chr, File::FNM_DOTMATCH))
+      assert_equal(t.include?(i.chr), !File.fnmatch("[!#{s}]", i.chr, File::FNM_DOTMATCH))
     end
   end
   def test_fnmatch

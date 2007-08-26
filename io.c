@@ -2022,12 +2022,14 @@ rb_io_each_byte(VALUE io)
 	    rb_yield(INT2FIX(*p & 0xff));
 	    p++;
 	}
+	fptr->rbuf_off += fptr->rbuf_len;
+	fptr->rbuf_len = 0;
 	rb_io_check_readable(fptr);
 	READ_CHECK(fptr);
 	if (io_fillbuf(fptr) < 0) {
 	    break;
 	}
-   }
+    }
     return io;
 }
 
@@ -2090,7 +2092,7 @@ rb_io_getc(VALUE io)
 
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
-	rb_eof_error();
+	return Qnil;
     }
     n = rb_enc_mbclen(fptr->rbuf+fptr->rbuf_off, enc);
     if (n < fptr->rbuf_len) {
@@ -2103,7 +2105,7 @@ rb_io_getc(VALUE io)
 	left = fptr->rbuf_len;
 	MEMCPY(RSTRING_PTR(str), fptr->rbuf+fptr->rbuf_off, char, left);
 	if (io_fillbuf(fptr) < 0) {
-	    rb_eof_error();
+	    return Qnil;
 	}
 	MEMCPY(RSTRING_PTR(str)+left, fptr->rbuf, char, n-left);
 	fptr->rbuf_off += left;

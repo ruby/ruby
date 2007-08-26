@@ -1,3 +1,16 @@
+Mon Aug 27 00:41:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_each_byte): caused infinite loop.  [ruby-dev:31652]
+
+	* io.c (rb_io_getc): should return nil at EOF, not EOFError.
+
+	* lib/delegate.rb (SimpleDelegator::__setobj__): use raise
+	  argument to specify backtrace.
+
+	* test/ruby/test_fnmatch.rb (TestFnmatch::bracket_test):
+	  String#include? no longer works for Fixnum.  use #chr.
+	  [ruby-dev:31652]
+
 Sun Aug 26 12:27:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: fix to remove Fiber.new until fiber.so is not loaded.

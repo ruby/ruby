@@ -283,8 +283,7 @@ def DelegateClass(superclass)
 	  begin
 	    @delegate_dc_obj.__send(:#{method}, *args, &block)
 	  rescue
-	    $@[0,2] = nil
-	    raise
+	    raise $!, $@[2..-1]
 	  end
 	end
       EOS
