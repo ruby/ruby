@@ -471,16 +471,10 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
 #define FIBER_VM_STACK_SIZE (4 * 1024)
 
-VALUE
-rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
-{
-    return rb_block_call(rb_cFiber, rb_intern("new"), 0, 0, func, obj);
-}
-
 static VALUE
-rb_fiber_s_new(VALUE self)
+fiber_alloc(VALUE klass, VALUE proc)
 {
-    rb_context_t *cont = cont_new(self);
+    rb_context_t *cont = cont_new(klass);
     VALUE contval = cont->self;
     rb_thread_t *th = &cont->saved_thread;
 
@@ -507,11 +501,23 @@ rb_fiber_s_new(VALUE self)
     th->cfp->block_iseq = 0;
     th->tag = 0;
 
-    th->first_proc = rb_block_proc();
+    th->first_proc = proc;
 
     MEMCPY(&cont->jmpbuf, &th->root_jmpbuf, rb_jmpbuf_t, 1);
 
     return contval;
+}
+
+VALUE
+rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
+{
+    return fiber_alloc(rb_cFiber, rb_proc_new(func, obj));
+}
+
+static VALUE
+rb_fiber_s_new(VALUE self)
+{
+    return fiber_alloc(self, rb_block_proc());
 }
 
 static VALUE
@@ -725,7 +731,6 @@ Init_Cont(void)
 {
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
-    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
 }
 
@@ -743,6 +748,7 @@ Init_Continuation_body(void)
 void
 Init_Fiber_body(void)
 {
+    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);

@@ -46,7 +46,7 @@ class TestContinuation < Test::Unit::TestCase
       c = nil
       Fiber.new do
         callcc {|c2| c = c2 }
-      end.yield
+      end.resume
       c.call
     }
   end
