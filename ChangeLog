@@ -24,6 +24,10 @@ Sun Aug 26 05:52:08 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_fiber.rb: fix to require 'continuation'.
 
+Sat Aug 25 23:52:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_next): message changed.
+
 Sat Aug 25 23:22:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/encoding.h: remove unused rb_enc_ismbchar().

@@ -424,7 +424,7 @@ enumerator_next(VALUE obj)
 	e->fib = 0;
 	e->dst = Qnil;
 	e->no_next = Qfalse;
-	rb_raise(rb_eStopIteration, "Enumerator#each reached at end");
+	rb_raise(rb_eStopIteration, "iteration reached at end");
     }
     return v;
 }
