@@ -533,10 +533,10 @@ VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
 /* thread.c */
 typedef struct rb_thread_struct rb_thread_t;
-typedef void rb_unblock_function_t(rb_thread_t *);
+typedef void rb_unblock_function_t(rb_thread_t *, void *);
 typedef VALUE rb_blocking_function_t(rb_thread_t *th, void *);
-VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data,
-				rb_unblock_function_t *ubf);
+VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
+				rb_unblock_function_t *ubf, void *data2);
 #define RB_UBF_DFL ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);
 VALUE rb_mutex_locked_p(VALUE mutex);

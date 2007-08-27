@@ -1,3 +1,28 @@
+Tue Aug 28 00:51:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: fix Mutex to be interruptable lock.
+
+	* thread_win32.ci, thread_win32.h, thread_pthread.ci, thread_pthread.h:
+	  prepare native_cond_*() which are based on pthread_cond_*() spec.
+
+	* prelude.rb: fix Mutex#synchronize method.
+
+	* vm_core.h, include/ruby/intern.h: change unblock function interface
+	  (to pass some user data).
+
+	* file.c, process.c: ditto.
+
+	* benchmark/bm_vm2_mutex.rb: add a benchmark for mutex.
+
+	* benchmark/bm_vm3_thread_mutex.rb: add a benchmark for mutex
+	  with contension.
+
+	* benchmark/run.rb: fix to remove ENV['RUBYLIB'] for matzruby.
+
+	* test/ruby/test_thread.rb: add a test.
+
+	* common.mk: fix benchmark options.
+
 Mon Aug 27 23:14:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): wrong strip point.  [ruby-dev:31652]
@@ -29,6 +54,7 @@ Mon Aug 27 15:56:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_encoding): return the encoding of a Symbol.
 
+>>>>>>> .r13289
 Mon Aug 27 15:33:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (IEEE_BIG_ENDIAN): use configured value.  [ruby-dev:31623]

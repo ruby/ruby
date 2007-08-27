@@ -4,9 +4,11 @@
 class Mutex
   def synchronize
     self.lock
-    yield
-  ensure
-    self.unlock
+    begin
+      yield
+    ensure
+      self.unlock
+    end
   end
 end
 

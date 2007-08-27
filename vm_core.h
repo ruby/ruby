@@ -427,6 +427,7 @@ struct rb_thread_struct
 
     int interrupt_flag;
     rb_unblock_function_t *unblock_function;
+    void *unblock_function_arg;
     rb_thread_lock_t interrupt_lock;
 
     struct rb_vm_tag *tag;

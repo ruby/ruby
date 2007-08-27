@@ -606,8 +606,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     arg.st = st;
     arg.flags = flags;
   retry:
-    result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
-						 &arg, RB_UBF_DFL);
+    result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking, &arg,
+						 RB_UBF_DFL, 0);
     if (result < 0) {
 #if 0
 	if (errno == EINTR) {
