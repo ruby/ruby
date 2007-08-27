@@ -50,8 +50,10 @@ rb_encoding * rb_enc_find(const char *name);
 #define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
 
 /* ptr,encoding -> mbclen */
-#define rb_enc_mbclen(p,enc) ONIGENC_MBC_ENC_LEN(enc, (UChar*)p)
-#define rb_enc_codelen(c,enc) ONIGENC_CODE_TO_MBCLEN(enc,c)
+int rb_enc_mbclen(const char*, rb_encoding*);
+
+/* code,encoding -> codelen */
+int rb_enc_codelen(int, rb_encoding*);
 
 /* code,ptr,encoding -> write buf */
 #define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)buf)

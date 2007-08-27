@@ -1,3 +1,10 @@
+Mon Aug 27 22:39:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_enc_codelen): raises invalid sequence exception
+	  if ONIGENC_CODE_TO_MBCLEN() returns zero.  [ruby-dev:31661]
+
+	* encoding.c (rb_enc_mbclen): check invalid sequence.
+
 Mon Aug 27 20:27:59 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_type_progid): fix the bug.

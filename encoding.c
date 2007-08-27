@@ -217,6 +217,26 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 }
 
 int
+rb_enc_mbclen(const char *p, rb_encoding *enc)
+{
+    int n = ONIGENC_MBC_ENC_LEN(enc, (UChar*)p);
+    if (n == 0) {
+	rb_raise(rb_eArgError, "invalid mbstring sequence");
+    }
+    return n;
+}
+
+int
+rb_enc_codelen(int c, rb_encoding *enc)
+{
+    int n = ONIGENC_CODE_TO_MBCLEN(enc,c);
+    if (n == 0) {
+	rb_raise(rb_eArgError, "invalid mbstring sequence");
+    }
+    return n;
+}
+
+int
 rb_enc_toupper(int c, rb_encoding *enc)
 {
     return (ONIGENC_IS_ASCII_CODE(c)?ONIGENC_ASCII_CODE_TO_UPPER_CASE(c):(c));
