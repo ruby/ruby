@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.5"
+#define WIN32OLE_VERSION "1.0.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -5193,7 +5193,7 @@ ole_type_progid(ITypeInfo *pTypeInfo)
         return progid;
     hr = ProgIDFromCLSID(&pTypeAttr->guid, &pbuf);
     if (SUCCEEDED(hr)) 
-        progid = WC2VSTR(pbuf);
+        progid = ole_wc2vstr(pbuf, FALSE);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return progid;
 }
