@@ -2,6 +2,9 @@ Mon Aug 27 23:14:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): wrong strip point.  [ruby-dev:31652]
 
+	* string.c (rb_str_each_line): should swallow sequence of newlines
+	  if rs (optional argument) is an empty string.  [ruby-dev:31652]
+
 Mon Aug 27 22:39:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_codelen): raises invalid sequence exception

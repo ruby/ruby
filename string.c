@@ -3919,6 +3919,12 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	int c = rb_enc_codepoint(p, pend, enc);
 	int n = rb_enc_codelen(c, enc);
 
+	if (rslen == 0 && c == newline) {
+	    while (rb_enc_codepoint(p, pend, enc) == newline) {
+		p += n;
+	    }
+	    p -= n;
+	}
 	if (c == newline &&
 	    (rslen <= 1 || rb_memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
@@ -3989,7 +3995,7 @@ rb_str_each_byte(VALUE str)
  *  Returns an enumerator that gives each character in the string.
  *  If a block is given, it iterates over each character in the string.
  *     
- *     "foo".lines.to_a   #=> ["f","o","o"]
+ *     "foo".chars.to_a   #=> ["f","o","o"]
  */
 
 /*
