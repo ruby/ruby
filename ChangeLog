@@ -1,3 +1,7 @@
+Mon Aug 27 15:56:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_encoding): return the encoding of a Symbol.
+
 Mon Aug 27 15:33:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (IEEE_BIG_ENDIAN): use configured value.  [ruby-dev:31623]

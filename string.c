@@ -5171,6 +5171,12 @@ sym_swapcase(VALUE sym)
     return rb_str_intern(rb_str_swapcase(rb_id2str(SYM2ID(sym))));
 }
 
+static VALUE
+sym_encoding(VALUE sym)
+{
+    return str_encoding(rb_id2str(SYM2ID(sym)));
+}
+
 ID
 rb_to_id(VALUE name)
 {
@@ -5367,5 +5373,5 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, 0);
     rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
 
-    rb_define_method(rb_cSymbol, "encoding", str_encoding, 0);
+    rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
