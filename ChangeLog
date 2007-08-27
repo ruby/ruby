@@ -1,3 +1,8 @@
+Mon Aug 27 19:10:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_getlogin): update documentation to note
+	  security issue.  [ruby-Bugs-11821]
+
 Tue Aug 21 21:09:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): make directory suffix specifiable.

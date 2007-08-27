@@ -35,6 +35,8 @@ char *getenv();
 char *getlogin();
 
 /* Returns the short user name of the currently logged in user.
+ * Unfortunately, it is often rather easy to fool getlogin().
+ * Avoid getlogin() for security-related purposes.
  *
  * e.g.
  *   Etc.getlogin -> 'guest'
