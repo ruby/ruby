@@ -1,3 +1,8 @@
+Mon Aug 27 13:11:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (tr_trans): wrong condition for mbmaxlen==1 strings.
+	  [ruby-dev:31652]
+
 Mon Aug 27 00:41:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_each_byte): caused infinite loop.  [ruby-dev:31652]

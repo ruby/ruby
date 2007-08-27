@@ -3264,13 +3264,14 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	while (s < send) {
 	    VALUE v = rb_hash_aref(hash, INT2FIX(*s));
 	    if (!NIL_P(v)) {
-		if (cflag) {
-		    *s = last;
-		}
-		else {
+		if (!cflag) {
 		    c = FIX2INT(v);
 		    *s = c & 0xff;
+		    modify = 1;
 		}
+	    }
+	    else if (cflag) {
+		*s = last;
 		modify = 1;
 	    }
 	    s++;
