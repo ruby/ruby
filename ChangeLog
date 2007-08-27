@@ -1,3 +1,9 @@
+Mon Aug 27 15:33:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (IEEE_BIG_ENDIAN): use configured value.  [ruby-dev:31623]
+
+	* util.c (Llong): set to LONG_LONG if available.
+
 Mon Aug 27 13:11:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_trans): wrong condition for mbmaxlen==1 strings.
