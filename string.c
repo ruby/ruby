@@ -4260,9 +4260,9 @@ rb_str_rstrip_bang(VALUE str)
 
     rb_str_modify(str);
     enc = rb_enc_get(str);
-    s = t = RSTRING_PTR(str);
+    s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    e = RSTRING_END(str);
+    t = e = RSTRING_END(str);
     while (s < e) {
 	int cc = rb_enc_codepoint(s, e, enc);
 
