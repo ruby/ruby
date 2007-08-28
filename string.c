@@ -1834,6 +1834,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 static void
 rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
+    rb_str_modify(str);
     if (len < RSTRING_LEN(val)) {
 	/* expand string */
 	RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(val) - len + 1);

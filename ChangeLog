@@ -1,3 +1,7 @@
+Tue Aug 28 14:23:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_splice_0): should check to modify.  [ruby-dev:31665]
+
 Tue Aug 28 14:21:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_prepare): set parser encode too when BOM exists.
