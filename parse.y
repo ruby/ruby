@@ -5490,6 +5490,13 @@ lvar_defined_gen(struct parser_params *parser, ID id)
 }
 
 /* emacsen -*- hack */
+static void
+parser_set_encode(struct parser_params *parser, const char *name)
+{
+    rb_set_kcode(name);
+    parser->enc = rb_enc_find(name);
+}
+
 #ifndef RIPPER
 typedef void (*rb_pragma_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
@@ -5498,8 +5505,7 @@ pragma_encoding(struct parser_params *parser, const char *name, const char *val)
 {
     if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
 	return;
-    rb_set_kcode(val);
-    parser->enc = rb_enc_find(val);
+    parser_set_encode(parser, val);
 }
 
 struct pragma {
@@ -5641,7 +5647,7 @@ parser_prepare(struct parser_params *parser)
 	if (lex_pend - lex_p >= 2 &&
 	    (unsigned char)lex_p[0] == 0xbb &&
 	    (unsigned char)lex_p[1] == 0xbf) {
-	    rb_set_kcode("UTF-8");
+	    parser_set_encode(parser, "UTF-8");
 	    lex_p += 2;
 	    return;
 	}

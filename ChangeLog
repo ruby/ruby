@@ -1,3 +1,7 @@
+Tue Aug 28 14:21:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_prepare): set parser encode too when BOM exists.
+
 Tue Aug 28 00:51:22 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: fix Mutex to be interruptable lock.
