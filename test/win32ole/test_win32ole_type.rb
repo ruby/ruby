@@ -152,7 +152,7 @@ if defined?(WIN32OLE_TYPE)
       ole_types = @ole_type.implemented_ole_types
       assert_instance_of(Array, ole_types)
       assert(ole_types.size > 0)
-      assert_equal("IShellDispatch", ole_types[0].name)
+      assert_match(/^IShellDispatch5{0,1}$/, ole_types[0].name)
     end
 
     def test_inspect

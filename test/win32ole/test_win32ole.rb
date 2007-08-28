@@ -50,7 +50,7 @@ if defined?(WIN32OLE)
       assert_match(/^\(in OLE method `<dispatch id:1>': \)/, exc.message)
 
       exc = assert_raise(WIN32OLERuntimeError) {
-        @dict1.compareMode = 100
+        @dict1.compareMode = -1
       }
       assert_match(/^\(in setting property `compareMode': \)/, exc.message)
     end

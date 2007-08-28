@@ -1,3 +1,15 @@
+Tue Aug 28 19:16:00 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_type_progid): progid getted by
+	  ProgIDFromCLSID should be freed by CoTaskMemFree. Thanks, arton.
+
+	* test/win32ole/test_win32ole.rb (test_raise_message): set negative
+	  compareMode value to raise WIN32OLERuntimeError.
+
+	* test/win32ole/test_win32ole_type.rb (test_implemented_ole_types):
+	  support some environment which returns IShellDispatch5 instead 
+	  of IShellDispatch.
+
 Tue Aug 28 15:42:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_subseq): retrieve substring based on byte offset.
