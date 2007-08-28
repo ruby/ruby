@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.1"
+#define WIN32OLE_VERSION "0.7.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -477,8 +477,9 @@ ole_wc2mb(pw)
     LPSTR pm;
     size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
-        pm = ALLOC_N(char, size);    
+        pm = ALLOC_N(char, size + 1);    
         WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
+        pm[size] = '\0';
     }
     else {
         pm = ALLOC_N(char, 1);
@@ -1138,12 +1139,13 @@ reg_enum_key(hkey, i)
     HKEY hkey;
     DWORD i;
 {
-    char buf[BUFSIZ];
-    DWORD size_buf = sizeof(buf);
+    char buf[BUFSIZ + 1];
+    DWORD size_buf = sizeof(buf) - 1;
     FILETIME ft;
     LONG err = RegEnumKeyEx(hkey, i, buf, &size_buf,
                             NULL, NULL, NULL, &ft);
     if(err == ERROR_SUCCESS) {
+        buf[BUFSIZ] = '\0';
         return rb_str_new2(buf);
     }
     return Qnil;
@@ -1154,10 +1156,11 @@ reg_get_val(hkey, subkey)
     HKEY hkey;
     const char *subkey;
 {
-    char buf[BUFSIZ];
-    LONG size_buf = sizeof(buf);
+    char buf[BUFSIZ + 1];
+    LONG size_buf = sizeof(buf) - 1;
     LONG err = RegQueryValue(hkey, subkey, buf, &size_buf);
     if (err == ERROR_SUCCESS) {
+        buf[BUFSIZ] = '\0';
         return rb_str_new2(buf);
     }
     return Qnil;
@@ -3618,8 +3621,10 @@ ole_type_progid(pTypeInfo)
     if (FAILED(hr)) 
         return progid;
     hr = ProgIDFromCLSID(&pTypeAttr->guid, &pbuf);
-    if (SUCCEEDED(hr)) 
-        progid = WC2VSTR(pbuf);
+    if (SUCCEEDED(hr)) { 
+        progid = ole_wc2vstr(pbuf, FALSE);
+        CoTaskMemFree(pbuf);
+    }
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return progid;
 }

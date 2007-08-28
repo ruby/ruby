@@ -1,3 +1,9 @@
+Tue Aug 28 23:26:12 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_type_progid, reg_enum_key, 
+	  reg_get_val, ole_wc2mb): fix the bug. Thanks, arton. 
+	  [ruby-dev:31576]
+
 Mon Aug 27 19:10:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/etc/etc.c (etc_getlogin): update documentation to note
