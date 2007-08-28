@@ -400,10 +400,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
-static int
+static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
-    int len;
+    long len;
 
     if (!enc) enc = rb_enc_get(str);
     len = rb_enc_strlen(RSTRING_PTR(str), RSTRING_END(str), enc);
@@ -696,14 +696,14 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc)
     return pp - p;
 }
 
-static int
-str_sublen(VALUE str, int pos, rb_encoding *enc)
+static long
+str_sublen(VALUE str, long pos, rb_encoding *enc)
 {
     if (rb_enc_mbmaxlen(enc) == 1 || pos < 0) return pos;
     else {
 	char *p = RSTRING_PTR(str);
 	char *e = p + pos;
-	int i;
+	long i;
 
 	i = 0;
 	while (p < e) {
@@ -718,6 +718,17 @@ int
 rb_str_sublen(VALUE str, int len)
 {
     return str_sublen(str, len, rb_enc_get(str));
+}
+
+VALUE
+rb_str_subseq(VALUE str, long beg, long len)
+{
+    VALUE str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
+
+    rb_enc_copy(str2, str);
+    OBJ_INFECT(str2, str);
+
+    return str2;
 }
 
 VALUE
@@ -1439,12 +1450,13 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE vpos;
-    long pos;
+    rb_encoding *enc = rb_enc_get(str);
+    long pos, len = str_strlen(str, enc);
 
     if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
 	pos = NUM2LONG(vpos);
 	if (pos < 0) {
-	    pos += RSTRING_LEN(str);
+	    pos += len;
 	    if (pos < 0) {
 		if (TYPE(sub) == T_REGEXP) {
 		    rb_backref_set(Qnil);
@@ -1452,17 +1464,15 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 		return Qnil;
 	    }
 	}
-	if (pos > RSTRING_LEN(str)) pos = RSTRING_LEN(str);
+	if (pos > len) pos = len;
     }
     else {
-	pos = RSTRING_LEN(str);
+	pos = len;
     }
 
     switch (TYPE(sub)) {
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
-	pos++; 			/* xxx adjust for Oniguruma 5.x */
-	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos, rb_enc_get(str));
 	if (RREGEXP(sub)->len) {
 	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);
 	    pos = rb_reg_search(sub, str, pos, 1);
@@ -1483,6 +1493,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
       }
 	/* fall through */
       case T_STRING:
+	pos = str_sublen(str, pos, enc);
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
@@ -2076,6 +2087,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
     }
+    rb_str_modify(str);
     buf[i] = rb_str_new(0,0);
     result = rb_str_aref_m(argc, buf, str);
     if (!NIL_P(result)) {
@@ -3786,7 +3798,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    break;
 		}
 		else if (last_null == 1) {
-		    rb_ary_push(result, rb_str_substr(str, beg,
+		    rb_ary_push(result, rb_str_subseq(str, beg,
 						      rb_enc_mbclen(RSTRING_PTR(str)+beg,enc)));
 		    beg = start;
 		}
@@ -3797,7 +3809,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		}
 	    }
 	    else {
-		rb_ary_push(result, rb_str_substr(str, beg, end-beg));
+		rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
 		beg = start = END(0);
 	    }
 	    last_null = 0;
@@ -3807,7 +3819,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		if (BEG(idx) == END(idx))
 		    tmp = rb_str_new5(str, 0, 0);
 		else
-		    tmp = rb_str_substr(str, BEG(idx), END(idx)-BEG(idx));
+		    tmp = rb_str_subseq(str, BEG(idx), END(idx)-BEG(idx));
 		rb_ary_push(result, tmp);
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
@@ -3817,7 +3829,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	if (RSTRING_LEN(str) == beg)
 	    tmp = rb_str_new5(str, 0, 0);
 	else
-	    tmp = rb_str_substr(str, beg, RSTRING_LEN(str)-beg);
+	    tmp = rb_str_subseq(str, beg, RSTRING_LEN(str)-beg);
 	rb_ary_push(result, tmp);
     }
     if (NIL_P(limit) && lim == 0) {

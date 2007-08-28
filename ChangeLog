@@ -1,3 +1,10 @@
+Tue Aug 28 15:42:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_subseq): retrieve substring based on byte offset.
+
+	* string.c (rb_str_rindex_m): was confusing character offset and
+	  byte offset.
+
 Tue Aug 28 14:23:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_splice_0): should check to modify.  [ruby-dev:31665]

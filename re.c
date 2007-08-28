@@ -1114,7 +1114,7 @@ rb_reg_nth_match(int nth, VALUE match)
     if (start == -1) return Qnil;
     end = RMATCH(match)->END(nth);
     len = end - start;
-    str = rb_str_substr(RMATCH(match)->str, start, len);
+    str = rb_str_subseq(RMATCH(match)->str, start, len);
     OBJ_INFECT(str, match);
     return str;
 }
@@ -1144,7 +1144,7 @@ rb_reg_match_pre(VALUE match)
 
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    str = rb_str_substr(RMATCH(match)->str, 0, RMATCH(match)->BEG(0));
+    str = rb_str_subseq(RMATCH(match)->str, 0, RMATCH(match)->BEG(0));
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
@@ -1171,7 +1171,7 @@ rb_reg_match_post(VALUE match)
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
     str = RMATCH(match)->str;
     pos = RMATCH(match)->END(0);
-    str = rb_str_substr(str, pos, RSTRING_LEN(str) - pos);
+    str = rb_str_subseq(str, pos, RSTRING_LEN(str) - pos);
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
@@ -1228,7 +1228,7 @@ match_array(VALUE match, int start)
 	    rb_ary_push(ary, Qnil);
 	}
 	else {
-	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
+	    VALUE str = rb_str_subseq(target, regs->beg[i], regs->end[i]-regs->beg[i]);
 	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(ary, str);
 	}
@@ -1423,7 +1423,7 @@ match_select(int argc, VALUE *argv, VALUE match)
 	int taint = OBJ_TAINTED(match);
 
 	for (i=0; i<regs->num_regs; i++) {
-	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
+	    VALUE str = rb_str_subseq(target, regs->beg[i], regs->end[i]-regs->beg[i]);
 	    if (taint) OBJ_TAINT(str);
 	    if (RTEST(rb_yield(str))) {
 		rb_ary_push(result, str);

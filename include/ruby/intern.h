@@ -500,6 +500,7 @@ VALUE rb_str_plus(VALUE, VALUE);
 VALUE rb_str_times(VALUE, VALUE);
 int rb_str_sublen(VALUE, int);
 VALUE rb_str_substr(VALUE, long, long);
+VALUE rb_str_subseq(VALUE, long, long);
 void rb_str_modify(VALUE);
 VALUE rb_str_freeze(VALUE);
 void rb_str_set_len(VALUE, long);
