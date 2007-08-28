@@ -1338,4 +1338,12 @@ class TestString < Test::Unit::TestCase
     assert_equal(676, count)
   end
 
+  def test_splice!
+    l = S("1234\n234\n34\n4\n")
+    assert_equal(S("1234\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
+    assert_equal(S("234\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
+    assert_equal(S("34\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
+    assert_equal(S("4\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
+    assert_nil(l.slice!(/\A.*\n/), "[ruby-dev:31665]")
+  end
 end
