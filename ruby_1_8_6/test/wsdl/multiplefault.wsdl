@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<definitions name="MultipleFaultTest"
+    targetNamespace="urn:jp.gr.jin.rrr.example.ele"
+    xmlns:tns="urn:jp.gr.jin.rrr.example.ele"
+    xmlns:typens="urn:jp.gr.jin.rrr.example.datatypes"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+    <xsd:schema xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:jp.gr.jin.rrr.example.datatypes">
+      <xsd:complexType name="AuthenticationError">
+	<all>
+	  <element name="message" type="xsd:string" />
+	  <element name="backtrace" type="xoapenc:Array" />
+	</all>
+      </xsd:complexType>
+      <xsd:complexType name="AuthorizationError">
+	<all>
+	  <element name="message" type="xsd:string" />
+	  <element name="backtrace" type="xoapenc:Array" />
+	</all>
+      </xsd:complexType>
+    </xsd:schema>
+  </types> 
+
+  <message name="inputmsg"/>
+  <message name="outputmsg"/>
+  <message name="faultmsg1" >
+    <part name="exception" type="typens:AuthenticationError" />
+  </message>
+  <message name="faultmsg2" >
+    <part name="exception" type="typens:AuthorizationError" />
+  </message>
+
+  <portType name="MultipleFaultPortType">
+    <operation name="myoperation">
+      <input message="tns:inputmsg"/>
+      <output message="tns:outputmsg"/>
+      <fault message="tns:faultmsg1"/>
+      <fault message="tns:faultmsg2"/>
+    </operation>
+  </portType>
+
+  <binding name="MultipleFaultBinding" type="tns:MultipleFaultPortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="myoperation">
+      <soap:operation soapAction="urn:jp.gr.jin.rrr.example.ele"/>
+      <input>
+        <soap:body use="encoded" namespace="urn:jp.gr.jin.rrr.example.ele"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </input>
+      <output>
+        <soap:body use="encoded" namespace="urn:jp.gr.jin.rrr.example.ele"
+   	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="MultipleFaultService">
+    <port name="MultipleFaultPortType" binding="tns:MultipleFaultBinding">
+      <soap:address location="http://localhost:17171/"/>
+    </port>
+  </service>
+</definitions>

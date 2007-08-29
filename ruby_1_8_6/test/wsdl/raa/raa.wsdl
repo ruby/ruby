@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+<definitions
+    name="RAA"
+    targetNamespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns:tns="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns:txd="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:apachesoap="http://xml.apache.org/xml-soap">
+
+  <types>
+    <schema
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/">
+
+      <complexType name="Category">
+  	<all>
+    	  <element name="major" type="string"/>
+	  <element name="minor" type="string"/>
+  	</all>
+      </complexType>
+
+      <complexType name="Product">
+  	<all>
+    	  <element name="id" type="int"/>
+    	  <element name="name" type="string"/>
+    	  <element name="short_description" type="string"/>
+	  <element name="version" type="string"/>
+	  <element name="status" type="string"/>
+	  <element name="homepage" type="anyURI"/>
+	  <element name="download" type="anyURI"/>
+	  <element name="license" type="string"/>
+	  <element name="description" type="string"/>
+  	</all>
+      </complexType>
+
+      <complexType name="Owner">
+  	<all>
+    	  <element name="id" type="int"/>
+	  <element name="email" type="anyURI"/>
+	  <element name="name" type="string"/>
+  	</all>
+      </complexType>
+
+      <complexType name="Info">
+  	<all>
+    	  <element name="category" type="txd:Category"/>
+    	  <element name="product" type="txd:Product"/>
+	  <element name="owner" type="txd:Owner"/>
+	  <element name="created" type="xsd:dateTime"/>
+	  <element name="updated" type="xsd:dateTime"/>
+  	</all>
+      </complexType>
+
+      <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+      <complexType name="InfoArray">
+	<complexContent>
+  	  <restriction base="soapenc:Array">
+  	    <attribute ref="soapenc:arrayType" wsdl:arrayType="txd:Info[]"/>
+  	  </restriction>
+	</complexContent>
+      </complexType>
+
+      <complexType name="StringArray">
+	<complexContent>
+  	  <restriction base="soapenc:Array">
+  	    <attribute ref="soapenc:arrayType" wsdl:arrayType="xsd:string[]"/>
+  	  </restriction>
+	</complexContent>
+      </complexType>
+    </schema>
+
+    <!-- type definition for ApacheSOAP's Map -->
+    <schema
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://xml.apache.org/xml-soap">
+      <complexType name="Map">
+	<sequence>
+	  <element name="item" minOccurs="0" maxOccurs="unbounded">
+	    <complexType>
+	      <sequence>
+		<element name="key" type="anyType" />
+		<element name="value" type="anyType" />
+	      </sequence>
+	    </complexType>
+	  </element>
+	</sequence>
+      </complexType>
+    </schema>
+  </types>
+
+  <message name="getAllListingsRequest"/>
+  <message name="getAllListingsResponse">
+    <part name="return" type="txd:StringArray"/>
+  </message>
+
+  <message name="getProductTreeRequest"/>
+  <message name="getProductTreeResponse">
+    <part name="return" type="apachesoap:Map"/>
+  </message>
+
+  <message name="getInfoFromCategoryRequest">
+    <part name="category" type="txd:Category"/>
+  </message>
+  <message name="getInfoFromCategoryResponse">
+    <part name="return" type="txd:InfoArray"/>
+  </message>
+
+  <message name="getModifiedInfoSinceRequest">
+    <part name="timeInstant" type="xsd:dateTime"/>
+  </message>
+  <message name="getModifiedInfoSinceResponse">
+    <part name="return" type="txd:InfoArray"/>
+  </message>
+
+  <message name="getInfoFromNameRequest">
+    <part name="productName" type="xsd:string"/>
+  </message>
+  <message name="getInfoFromNameResponse">
+    <part name="return" type="txd:Info"/>
+  </message>
+
+  <message name="getInfoFromOwnerIdRequest">
+    <part name="ownerId" type="xsd:int"/>
+  </message>
+  <message name="getInfoFromOwnerIdResponse">
+    <part name="return" type="txd:InfoArray"/>
+  </message>
+
+  <portType name="RAABaseServicePortType">
+    <operation name="getAllListings"
+	parameterOrder="">
+      <input message="tns:getAllListingsRequest"/>
+      <output message="tns:getAllListingsResponse"/>
+    </operation>
+
+    <operation name="getProductTree"
+	parameterOrder="">
+      <input message="tns:getProductTreeRequest"/>
+      <output message="tns:getProductTreeResponse"/>
+    </operation>
+
+    <operation name="getInfoFromCategory"
+	parameterOrder="category">
+      <input message="tns:getInfoFromCategoryRequest"/>
+      <output message="tns:getInfoFromCategoryResponse"/>
+    </operation>
+
+    <operation name="getModifiedInfoSince"
+	parameterOrder="timeInstant">
+      <input message="tns:getModifiedInfoSinceRequest"/>
+      <output message="tns:getModifiedInfoSinceResponse"/>
+    </operation>
+
+    <operation name="getInfoFromName"
+	parameterOrder="productName">
+      <input message="tns:getInfoFromNameRequest"/>
+      <output message="tns:getInfoFromNameResponse"/>
+    </operation>
+
+    <operation name="getInfoFromOwnerId"
+	parameterOrder="ownerId">
+      <input message="tns:getInfoFromOwnerIdRequest"/>
+      <output message="tns:getInfoFromOwnerIdResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="RAABaseServicePortBinding" type="tns:RAABaseServicePortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+    <operation name="getAllListings">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+
+    <operation name="getProductTree">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+
+    <operation name="getInfoFromCategory">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+
+    <operation name="getModifiedInfoSince">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+
+    <operation name="getInfoFromName">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+
+    <operation name="getInfoFromOwnerId">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="RAAService">
+    <port name="RAABaseServicePort" binding="tns:RAABaseServicePortBinding">
+      <soap:address location="http://raa.ruby-lang.org/soap/1.0.2/"/>
+    </port>
+  </service>
+</definitions>
