@@ -379,7 +379,7 @@ kcode_reset_option(void)
 int
 rb_reg_mbclen2(unsigned int c, VALUE re)
 {
-    unsigned char uc = (unsigned char)c;
+    char uc = (unsigned char)c;
 
     return rb_enc_mbclen(&uc, rb_enc_get(re));
 }
