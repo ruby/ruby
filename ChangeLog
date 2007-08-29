@@ -1,3 +1,8 @@
+Wed Aug 29 13:05:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/defines.h (flush_register_windows): call "ta 0x03"
+	  even on Linux/Sparc.  [ruby-dev:31674]
+
 Tue Aug 28 23:26:12 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_type_progid, reg_enum_key, 
