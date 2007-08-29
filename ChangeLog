@@ -2,6 +2,12 @@ Wed Aug 29 18:36:06 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: add :ftp_active_mode option.
 
+Wed Aug 29 14:55:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): should not use mbclen2() which has broken API.
+
+	* re.c: remove rb_reg_mbclen2().
+
 Wed Aug 29 12:48:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (aref_args): args may not be a list.  [ruby-dev:31592]

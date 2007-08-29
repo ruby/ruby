@@ -2244,7 +2244,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     int iter = 0;
     char *buf, *bp, *sp, *cp;
     int tainted = 0;
-
+    rb_encoding *enc;
+    
     switch (argc) {
       case 1:
 	RETURN_ENUMERATOR(str, argc, argv);
@@ -2260,6 +2261,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat(argv[0], 1);
+    enc = rb_enc_get(pat);
     offset=0; n=0;
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) {
@@ -2314,7 +2316,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	     * in order to prevent infinite loops.
 	     */
 	    if (RSTRING_LEN(str) <= END(0)) break;
-	    len = mbclen2(RSTRING_PTR(str)[END(0)], pat);
+	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), enc);
 	    memcpy(bp, RSTRING_PTR(str)+END(0), len);
 	    bp += len;
 	    offset = END(0) + len;

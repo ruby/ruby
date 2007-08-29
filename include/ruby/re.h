@@ -45,9 +45,6 @@ VALUE rb_reg_quote(VALUE);
 
 RUBY_EXTERN int ruby_ignorecase;
 
-int rb_reg_mbclen2(unsigned int, VALUE);
-#define mbclen2(c,re) rb_reg_mbclen2((c),(re))
-
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

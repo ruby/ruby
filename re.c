@@ -376,14 +376,6 @@ kcode_reset_option(void)
     }
 }
 
-int
-rb_reg_mbclen2(unsigned int c, VALUE re)
-{
-    char uc = (unsigned char)c;
-
-    return rb_enc_mbclen(&uc, rb_enc_get(re));
-}
-
 static void
 rb_reg_check(VALUE re)
 {
