@@ -31,7 +31,8 @@ struct st_hash_type {
 
 struct st_table {
     const struct st_hash_type *type;
-    int num_bins;
+    unsigned int entries_packed : 1;
+    int num_bins : sizeof(int) * 8 - 1;
     int num_entries;
     struct st_table_entry **bins;
     struct st_table_entry *head;

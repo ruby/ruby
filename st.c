@@ -145,6 +145,8 @@ stat_col()
 }
 #endif
 
+#define MAX_PACKED_NUMHASH 5
+
 st_table*
 st_init_table_with_size(const struct st_hash_type *type, int size)
 {
@@ -162,6 +164,7 @@ st_init_table_with_size(const struct st_hash_type *type, int size)
     tbl = alloc(st_table);
     tbl->type = type;
     tbl->num_entries = 0;
+    tbl->entries_packed = type == &type_numhash && size/2 <= MAX_PACKED_NUMHASH;
     tbl->num_bins = size;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
     tbl->head = 0;
@@ -204,6 +207,11 @@ st_clear(st_table *table)
 {
     register st_table_entry *ptr, *next;
     int i;
+
+    if (table->entries_packed) {
+        table->num_entries = 0;
+        return;
+    }
 
     for(i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
@@ -253,6 +261,17 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
     unsigned int hash_val, bin_pos;
     register st_table_entry *ptr;
 
+    if (table->entries_packed) {
+        int i;
+        for (i = 0; i < table->num_entries; i++) {
+            if ((st_data_t)table->bins[i*2] == key) {
+                if (value !=0) *value = (st_data_t)table->bins[i*2+1];
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     hash_val = do_hash(key, table);
     FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
@@ -291,11 +310,46 @@ do {\
     table->num_entries++;\
 } while (0)
 
+static void
+unpack_entries(register st_table *table)
+{
+    int i;
+    struct st_table_entry *packed_bins[MAX_PACKED_NUMHASH*2];
+    int num_entries = table->num_entries;
+
+    memcpy(packed_bins, table->bins, sizeof(struct st_table_entry *) * num_entries*2);
+    table->entries_packed = 0;
+    table->num_entries = 0;
+    memset(table->bins, 0, sizeof(struct st_table_entry *) * table->num_bins);
+    for (i = 0; i < num_entries; i++) {
+        st_insert(table, (st_data_t)packed_bins[i*2], (st_data_t)packed_bins[i*2+1]);
+    }
+}
+
 int
 st_insert(register st_table *table, register st_data_t key, st_data_t value)
 {
     unsigned int hash_val, bin_pos;
     register st_table_entry *ptr;
+
+    if (table->entries_packed) {
+        int i;
+        for (i = 0; i < table->num_entries; i++) {
+            if ((st_data_t)table->bins[i*2] == key) {
+                table->bins[i*2+1] = (struct st_table_entry*)value;
+                return 1;
+            }
+        }
+        if ((table->num_entries+1) * 2 <= table->num_bins && table->num_entries+1 <= MAX_PACKED_NUMHASH) {
+            i = table->num_entries++;
+            table->bins[i*2] = (struct st_table_entry*)key;
+            table->bins[i*2+1] = (struct st_table_entry*)value;
+            return 0;
+        }
+        else {
+            unpack_entries(table);
+        }
+    }
 
     hash_val = do_hash(key, table);
     FIND_ENTRY(table, ptr, hash_val, bin_pos);
@@ -314,6 +368,19 @@ void
 st_add_direct(st_table *table, st_data_t key, st_data_t value)
 {
     unsigned int hash_val, bin_pos;
+
+    if (table->entries_packed) {
+        int i;
+        if ((table->num_entries+1) * 2 <= table->num_bins && table->num_entries+1 <= MAX_PACKED_NUMHASH) {
+            i = table->num_entries++;
+            table->bins[i*2] = (struct st_table_entry*)key;
+            table->bins[i*2+1] = (struct st_table_entry*)value;
+            return;
+        }
+        else {
+            unpack_entries(table);
+        }
+    }
 
     hash_val = do_hash(key, table);
     bin_pos = hash_val % table->num_bins;
@@ -365,6 +432,11 @@ st_copy(st_table *old_table)
 	return 0;
     }
 
+    if (old_table->entries_packed) {
+        memcpy(new_table->bins, old_table->bins, sizeof(struct st_table_entry *) * old_table->num_bins);
+        return new_table;
+    }
+
     if ((ptr = old_table->head) != 0) {
 	prev = 0;
 	tail = &new_table->head;
@@ -410,6 +482,21 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
     unsigned int hash_val;
     st_table_entry **prev;
     register st_table_entry *ptr;
+
+    if (table->entries_packed) {
+        int i;
+        for (i = 0; i < table->num_entries; i++) {
+            if ((st_data_t)table->bins[i*2] == *key) {
+                if (value != 0) *value = (st_data_t)table->bins[i*2+1];
+                table->num_entries--;
+                memmove(&table->bins[i*2], &table->bins[(i+1)*2],
+                        sizeof(struct st_table_entry*) * 2*(table->num_entries-i));
+                return 1;
+            }
+        }
+        if (value != 0) *value = 0;
+        return 0;
+    }
 
     hash_val = do_hash_bin(*key, table);
 
@@ -479,6 +566,40 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     enum st_retval retval;
     int i, end;
 
+    if (table->entries_packed) {
+        for (i = 0; i < table->num_entries; i++) {
+            int j;
+            st_data_t key, val;
+            key = (st_data_t)table->bins[i*2];
+            val = (st_data_t)table->bins[i*2+1];
+            retval = (*func)(key, val, arg);
+            switch (retval) {
+	      case ST_CHECK:	/* check if hash is modified during iteration */
+                for (j = 0; j < table->num_entries; j++) {
+                    if ((st_data_t)table->bins[j*2] == key)
+                        break;
+                }
+                if (j == table->num_entries) {
+                    /* call func with error notice */
+                    retval = (*func)(0, 0, arg, 1);
+                    return 1;
+                }
+		/* fall through */
+	      case ST_CONTINUE:
+		break;
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+                table->num_entries--;
+                memmove(&table->bins[i*2], &table->bins[(i+1)*2],
+                        sizeof(struct st_table_entry*) * 2*(table->num_entries-i));
+                i--;
+                break;
+            }
+        }
+        return 0;
+    }
+
     if ((ptr = table->head) != 0) {
 	do {
 	    end = ptr->fore == table->head;
@@ -524,6 +645,39 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
     int i, end;
+
+    if (table->entries_packed) {
+        for (i = table->num_entries-1; 0 <= i; i--) {
+            int j;
+            st_data_t key, val;
+            key = (st_data_t)table->bins[i*2];
+            val = (st_data_t)table->bins[i*2+1];
+            retval = (*func)(key, val, arg);
+            switch (retval) {
+	      case ST_CHECK:	/* check if hash is modified during iteration */
+                for (j = 0; j < table->num_entries; j++) {
+                    if ((st_data_t)table->bins[j*2] == key)
+                        break;
+                }
+                if (j == table->num_entries) {
+                    /* call func with error notice */
+                    retval = (*func)(0, 0, arg, 1);
+                    return 1;
+                }
+		/* fall through */
+	      case ST_CONTINUE:
+		break;
+	      case ST_STOP:
+		return 0;
+	      case ST_DELETE:
+                table->num_entries--;
+                memmove(&table->bins[i*2], &table->bins[(i+1)*2],
+                        sizeof(struct st_table_entry*) * 2*(table->num_entries-i));
+                break;
+            }
+        }
+        return 0;
+    }
 
     if ((ptr = table->head) != 0) {
 	ptr = ptr->back;

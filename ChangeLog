@@ -1,3 +1,20 @@
+Wed Aug 29 11:30:10 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/st.h (struct st_table): add entries_packed 1-bit
+	  bitfield.  decrease num_bins 1-bit.
+
+	* st.c: pack numhash which have 5 or less entries in bins.
+	  (st_init_table_with_size): setup entries_packed flag.
+	  (st_clear): support packed mode.
+	  (st_lookup): ditto.
+	  (st_insert): ditto.
+	  (st_add_direct): ditto.
+	  (st_copy): ditto.
+	  (st_delete): ditto.
+	  (st_foreach): ditto.
+	  (st_reverse_foreach): ditto.
+	  (unpack_entries): new function for converting to unpacked mode.
+	  
 Wed Aug 29 10:46:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/defines.h (flush_register_windows): call "ta 0x03"
