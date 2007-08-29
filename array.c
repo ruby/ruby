@@ -2525,7 +2525,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     ary3 = rb_ary_new();
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (st_lookup(RHASH(hash)->tbl, RARRAY_PTR(ary1)[i], 0)) continue;
+	if (st_lookup(RHASH_TBL(hash), RARRAY_PTR(ary1)[i], 0)) continue;
 	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
     return ary3;
@@ -2553,9 +2553,12 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 	    RARRAY_LEN(ary1) : RARRAY_LEN(ary2));
     hash = ary_make_hash(ary2, 0);
 
+    if (RHASH_EMPTY_P(hash))
+        return ary3;
+
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
+	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -2587,13 +2590,13 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	v = vv = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
+	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY_LEN(ary2); i++) {
 	v = vv = rb_ary_elt(ary2, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
+	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -2623,12 +2626,12 @@ rb_ary_uniq_bang(VALUE ary)
     ary_iter_check(ary);
     hash = ary_make_hash(ary, 0);
 
-    if (RARRAY_LEN(ary) == RHASH(hash)->tbl->num_entries) {
+    if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
 	return Qnil;
     }
     for (i=j=0; i<RARRAY_LEN(ary); i++) {
 	v = vv = rb_ary_elt(ary, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
+	if (st_delete(RHASH_TBL(hash), (st_data_t*)&vv, 0)) {
 	    rb_ary_store(ary, j++, v);
 	}
     }

@@ -1032,7 +1032,7 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_HASH:
-	mark_hash(obj->as.hash.tbl, lev);
+	mark_hash(obj->as.hash.ntbl, lev);
 	ptr = obj->as.hash.ifnone;
 	goto again;
 
@@ -1267,8 +1267,8 @@ obj_free(VALUE obj)
 	rb_ary_free(obj);
 	break;
       case T_HASH:
-	if (RANY(obj)->as.hash.tbl) {
-	    st_free_table(RANY(obj)->as.hash.tbl);
+	if (RANY(obj)->as.hash.ntbl) {
+	    st_free_table(RANY(obj)->as.hash.ntbl);
 	}
 	break;
       case T_REGEXP:

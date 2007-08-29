@@ -1,3 +1,35 @@
+Thu Aug 30 08:00:12 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h: declare rb_hash_tbl.
+
+	* include/ruby/ruby.h (RHash): delay st_table allocation.
+	  rename tbl field to ntbl to detect direct reference to the st_table
+	  as a compile error.
+	  (RHASH_TBL): abstract accessor defined.
+	  (RHASH_ITER_LEV): ditto.
+	  (RHASH_IFNONE): ditto.
+	  (RHASH_SIZE): ditto.
+	  (RHASH_EMPTY_P): ditto.
+
+	* hash.c: delay st_table allocation.
+
+	* gc.c: replace tbl by ntbl.
+
+	* array.c: replace direct field accessor by abstract field accessor
+	  such as RHASH(hash)->tbl to RHASH_TBL(hash).
+
+	* marshal.c: ditto.
+
+	* insns.def: ditto.
+
+	* ext/iconv/iconv.c: ditto.
+
+	* ext/json/ext/generator/generator.c: ditto.
+
+	* ext/json/ext/parser/parser.c: ditto.
+
+	* ext/syck/rubyext.c: ditto.
+
 Wed Aug 29 18:36:06 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: add :ftp_active_mode option.

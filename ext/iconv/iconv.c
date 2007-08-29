@@ -138,10 +138,10 @@ map_charset(VALUE *code)
 {
     VALUE val = *code;
 
-    if (RHASH(charset_map)->tbl && RHASH(charset_map)->tbl->num_entries) {
+    if (RHASH_SIZE(charset_map)) {
 	VALUE key = rb_funcall2(val, rb_intern("downcase"), 0, 0);
 	StringValuePtr(key);
-	if (st_lookup(RHASH(charset_map)->tbl, key, &val)) {
+	if (st_lookup(RHASH_TBL(charset_map), key, &val)) {
 	    *code = val;
 	}
     }

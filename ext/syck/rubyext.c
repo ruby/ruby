@@ -621,7 +621,7 @@ rb_syck_load_handler(SyckParser *p, SyckNode *n)
     if ( bonus->taint)      OBJ_TAINT( obj );
     if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, obj);
 
-    rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
+    rb_hash_aset(bonus->data, INT2FIX(RHASH_SIZE(bonus->data)), obj);
     return obj;
 }
 

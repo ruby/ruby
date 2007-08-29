@@ -578,7 +578,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    else {
 		w_byte(TYPE_HASH_DEF, arg);
 	    }
-	    w_long(RHASH(obj)->tbl->num_entries, arg);
+	    w_long(RHASH_SIZE(obj), arg);
 	    rb_hash_foreach(obj, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH(obj)->ifnone)) {
 		w_object(RHASH(obj)->ifnone, arg, limit);
@@ -899,7 +899,7 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry(VALUE v, struct load_arg *arg)
 {
-    rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
+    rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), v);
     if (arg->taint) OBJ_TAINT(v);
     if (arg->proc) {
 	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);

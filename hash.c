@@ -147,10 +147,10 @@ hash_foreach_iter(VALUE key, VALUE value, struct hash_foreach_arg *arg)
     int status;
     st_table *tbl;
 
-    tbl = RHASH(arg->hash)->tbl;
+    tbl = RHASH(arg->hash)->ntbl;
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->tbl != tbl) {
+    if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
     switch (status) {
@@ -172,7 +172,7 @@ hash_foreach_ensure(VALUE hash)
 
     if (RHASH(hash)->iter_lev == 0) {
 	if (FL_TEST(hash, HASH_DELETED)) {
-	    st_cleanup_safe(RHASH(hash)->tbl, Qundef);
+	    st_cleanup_safe(RHASH(hash)->ntbl, Qundef);
 	    FL_UNSET(hash, HASH_DELETED);
 	}
     }
@@ -182,7 +182,7 @@ hash_foreach_ensure(VALUE hash)
 static VALUE
 hash_foreach_call(struct hash_foreach_arg *arg)
 {
-    if (st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, (st_data_t)arg)) {
+    if (st_foreach(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg)) {
  	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
     return Qnil;
@@ -193,6 +193,8 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 {
     struct hash_foreach_arg arg;
 
+    if (!RHASH(hash)->ntbl)
+        return;
     RHASH(hash)->iter_lev++;
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
@@ -216,7 +218,7 @@ hash_alloc(VALUE klass)
 {
     VALUE hash = hash_alloc0(klass);
 
-    RHASH(hash)->tbl = st_init_table(&objhash);
+    RHASH(hash)->ntbl = 0;
 
     return hash;
 }
@@ -228,12 +230,27 @@ rb_hash_new(void)
 }
 
 static void
-rb_hash_modify(VALUE hash)
+rb_hash_modify_check(VALUE hash)
 {
-    if (!RHASH(hash)->tbl) rb_raise(rb_eTypeError, "uninitialized Hash");
     if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
     if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
+}
+
+struct st_table *
+rb_hash_tbl(VALUE hash)
+{
+    if (!RHASH(hash)->ntbl) {
+        RHASH(hash)->ntbl = st_init_table(&objhash);
+    }
+    return RHASH(hash)->ntbl;
+}
+
+static void
+rb_hash_modify(VALUE hash)
+{
+    rb_hash_modify_check(hash);
+    rb_hash_tbl(hash);
 }
 
 /*
@@ -313,7 +330,9 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
 	hash = hash_alloc0(klass);
-	RHASH(hash)->tbl = st_copy(RHASH(argv[0])->tbl);
+        if (RHASH(argv[0])->ntbl) {
+            RHASH(hash)->ntbl = st_copy(RHASH(argv[0])->ntbl);
+        }
 
 	return hash;
     }
@@ -388,11 +407,13 @@ rb_hash_rehash(VALUE hash)
     if (RHASH(hash)->iter_lev > 0) {
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
-    rb_hash_modify(hash);
-    tbl = st_init_table_with_size(RHASH(hash)->tbl->type, RHASH(hash)->tbl->num_entries);
+    rb_hash_modify_check(hash);
+    if (!RHASH(hash)->ntbl)
+        return hash;
+    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
     rb_hash_foreach(hash, rb_hash_rehash_i, (st_data_t)tbl);
-    st_free_table(RHASH(hash)->tbl);
-    RHASH(hash)->tbl = tbl;
+    st_free_table(RHASH(hash)->ntbl);
+    RHASH(hash)->ntbl = tbl;
 
     return hash;
 }
@@ -416,7 +437,7 @@ rb_hash_aref(VALUE hash, VALUE key)
 {
     VALUE val;
 
-    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+    if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return rb_funcall(hash, id_default, 1, key);
     }
     return val;
@@ -427,7 +448,7 @@ rb_hash_lookup(VALUE hash, VALUE key)
 {
     VALUE val;
 
-    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+    if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	return Qnil; /* without Hash#default */
     }
     return val;
@@ -475,7 +496,7 @@ rb_hash_fetch(int argc, VALUE *argv, VALUE hash)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+    if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
 	    rb_raise(rb_eKeyError, "key not found");
@@ -620,13 +641,15 @@ rb_hash_delete_key(VALUE hash, VALUE key)
 {
     st_data_t ktmp = (st_data_t)key, val;
 
+    if (!RHASH(hash)->ntbl)
+        return Qundef;
     if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->tbl, &ktmp, &val, Qundef)) {
+	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, Qundef)) {
 	    FL_SET(hash, HASH_DELETED);
 	    return (VALUE)val;
 	}
     }
-    else if (st_delete(RHASH(hash)->tbl, &ktmp, &val))
+    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val))
 	return (VALUE)val;
     return Qundef;
 }
@@ -765,9 +788,12 @@ rb_hash_delete_if(VALUE hash)
 VALUE
 rb_hash_reject_bang(VALUE hash)
 {
-    int n = RHASH(hash)->tbl->num_entries;
+    int n;
+    if (!RHASH(hash)->ntbl)
+        return Qnil;
+    n = RHASH(hash)->ntbl->num_entries;
     rb_hash_delete_if(hash);
-    if (n == RHASH(hash)->tbl->num_entries) return Qnil;
+    if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
     return hash;
 }
 
@@ -861,12 +887,14 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
 static VALUE
 rb_hash_clear(VALUE hash)
 {
-    rb_hash_modify(hash);
-    if (RHASH(hash)->tbl->num_entries > 0) {
+    rb_hash_modify_check(hash);
+    if (!RHASH(hash)->ntbl)
+        return hash;
+    if (RHASH(hash)->ntbl->num_entries > 0) {
 	if (RHASH(hash)->iter_lev > 0)
 	    rb_hash_foreach(hash, clear_i, 0);
 	else
-	    st_clear(RHASH(hash)->tbl);
+	    st_clear(RHASH(hash)->ntbl);
     }
 
     return hash;
@@ -894,11 +922,11 @@ VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
-    if (TYPE(key) != T_STRING || st_lookup(RHASH(hash)->tbl, key, 0)) {
-	st_insert(RHASH(hash)->tbl, key, val);
+    if (TYPE(key) != T_STRING || st_lookup(RHASH(hash)->ntbl, key, 0)) {
+	st_insert(RHASH(hash)->ntbl, key, val);
     }
     else {
-	st_add_direct(RHASH(hash)->tbl, rb_str_new4(key), val);
+	st_add_direct(RHASH(hash)->ntbl, rb_str_new4(key), val);
     }
     return val;
 }
@@ -959,7 +987,9 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 static VALUE
 rb_hash_size(VALUE hash)
 {
-    return INT2FIX(RHASH(hash)->tbl->num_entries);
+    if (!RHASH(hash)->ntbl)
+        return INT2FIX(0);
+    return INT2FIX(RHASH(hash)->ntbl->num_entries);
 }
 
 
@@ -976,9 +1006,7 @@ rb_hash_size(VALUE hash)
 static VALUE
 rb_hash_empty_p(VALUE hash)
 {
-    if (RHASH(hash)->tbl->num_entries == 0)
-	return Qtrue;
-    return Qfalse;
+    return RHASH_EMPTY_P(hash) ? Qtrue : Qfalse;
 }
 
 static int
@@ -1190,7 +1218,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 static VALUE
 rb_hash_inspect(VALUE hash)
 {
-    if (RHASH(hash)->tbl == 0 || RHASH(hash)->tbl->num_entries == 0)
+    if (RHASH_EMPTY_P(hash))
 	return rb_str_new2("{}");
     return rb_exec_recursive(inspect_hash, hash, 0);
 }
@@ -1288,7 +1316,9 @@ rb_hash_values(VALUE hash)
 static VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
-    if (st_lookup(RHASH(hash)->tbl, key, 0)) {
+    if (!RHASH(hash)->ntbl)
+        return Qfalse;
+    if (st_lookup(RHASH(hash)->ntbl, key, 0)) {
 	return Qtrue;
     }
     return Qfalse;
@@ -1380,15 +1410,17 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	}
 	return rb_equal(hash2, hash1);
     }
-    if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
+    if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;
+    if (!RHASH(hash1)->ntbl || !RHASH(hash2)->ntbl)
+        return Qtrue;
 #if 0
     if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
 	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
 	return Qfalse;
 #endif
 
-    data.tbl = RHASH(hash2)->tbl;
+    data.tbl = RHASH(hash2)->ntbl;
     data.result = Qtrue;
     rb_hash_foreach(hash1, eql ? eql_i : equal_i, (st_data_t)&data);
 
@@ -1451,7 +1483,9 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
     if (recur) {
 	return LONG2FIX(0);
     }
-    hval = RHASH(hash)->tbl->num_entries;
+    if (!RHASH(hash)->ntbl)
+        return LONG2FIX(0);
+    hval = RHASH(hash)->ntbl->num_entries;
     rb_hash_foreach(hash, hash_i, (st_data_t)&hval);
     return INT2FIX(hval);
 }
@@ -1695,7 +1729,7 @@ static VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
     rb_hash_modify(hash);
-    RHASH(hash)->tbl->type = &identhash;
+    RHASH(hash)->ntbl->type = &identhash;
     rb_hash_rehash(hash);
     return hash;
 }
@@ -1712,7 +1746,9 @@ rb_hash_compare_by_id(VALUE hash)
 static VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
-    if (RHASH(hash)->tbl->type == &identhash) {
+    if (!RHASH(hash)->ntbl)
+        return Qfalse;
+    if (RHASH(hash)->ntbl->type == &identhash) {
 	return Qtrue;
     }
     return Qfalse;

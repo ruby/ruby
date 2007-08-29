@@ -1312,7 +1312,7 @@ opt_case_dispatch
     }
     else {
 	VALUE val;
-	if (st_lookup(RHASH(hash)->tbl, key, &val)) {
+	if (st_lookup(RHASH_TBL(hash), key, &val)) {
 	    JUMP(FIX2INT(val));
 	}
 	else {
@@ -1958,7 +1958,7 @@ opt_length
 	    val = LONG2NUM(RARRAY_LEN(recv));
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
-	    val = INT2FIX(RHASH(recv)->tbl->num_entries);
+	    val = INT2FIX(RHASH_SIZE(recv));
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
