@@ -1,3 +1,7 @@
+Wed Aug 29 12:48:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (aref_args): args may not be a list.  [ruby-dev:31592]
+
 Wed Aug 29 11:30:10 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/st.h (struct st_table): add entries_packed 1-bit

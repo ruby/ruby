@@ -2239,7 +2239,7 @@ aref_args	: none
 		| args ',' assocs trailer
 		    {
 		    /*%%%*/
-			$$ = list_append($1, NEW_HASH($3));
+			$$ = arg_append($1, NEW_HASH($3));
 		    /*%
 			$$ = arg_add_assocs($1, $3);
 		    %*/
