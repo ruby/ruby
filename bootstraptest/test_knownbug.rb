@@ -12,3 +12,11 @@ assert_equal 'ok', %q{
   m {|(r)|}
   r
 }, '[ruby-dev:31507]'
+
+assert_equal 'ok', %q{
+  begin
+    catch {|t| throw t, :ok }
+  rescue ArgumentError
+    :ng
+  end
+}, '[ruby-dev:31609]'
