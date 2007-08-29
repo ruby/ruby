@@ -483,8 +483,8 @@ struct RHash {
     VALUE ifnone;
 };
 #define RHASH_TBL(h) rb_hash_tbl(h)
-#define RHASH_ITER_LEV(h) RHASH(h)->iter_lev
-#define RHASH_IFNONE(h) RHASH(h)->ifnone
+#define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
+#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
 #define RHASH_SIZE(h) (RHASH(h)->ntbl ? RHASH(h)->ntbl->num_entries : 0)
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 
