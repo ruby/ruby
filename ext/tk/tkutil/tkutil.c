@@ -226,7 +226,7 @@ tk_symbolkey2str(self, keys)
 
     if NIL_P(keys) return new_keys;
     keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
-    st_foreach(RHASH(keys)->tbl, to_strkey, new_keys);
+    st_foreach(RHASH_TBL(keys), to_strkey, new_keys);
     return new_keys;
 }
 
@@ -270,7 +270,7 @@ ary2list(ary, enc_flag, self)
     size = 0;
     for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
         if (TYPE(RARRAY_PTR(ary)[idx]) == T_HASH) {
-            size += 2 * RHASH(RARRAY_PTR(ary)[idx])->tbl->num_entries;
+            size += 2 * RHASH_SIZE(RARRAY_PTR(ary)[idx]);
         } else {
             size++;
         }
@@ -617,10 +617,10 @@ hash2kv(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
     volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    st_foreach(RHASH(hash)->tbl, push_kv, args);
+    st_foreach(RHASH_TBL(hash), push_kv, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -662,10 +662,10 @@ hash2kv_enc(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
     volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    st_foreach(RHASH(hash)->tbl, push_kv_enc, args);
+    st_foreach(RHASH_TBL(hash), push_kv_enc, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -892,7 +892,7 @@ tk_conv_args(argc, argv, self)
 
     for(size = 0, idx = 2; idx < argc; idx++) {
         if (TYPE(argv[idx]) == T_HASH) {
-            size += 2 * RHASH(argv[idx])->tbl->num_entries;
+            size += 2 * RHASH_SIZE(argv[idx]);
         } else {
             size++;
         }

@@ -28,7 +28,11 @@ Thu Aug 30 08:00:12 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ext/json/ext/parser/parser.c: ditto.
 
+	* ext/json/ext/parser/parser.rl: ditto.
+
 	* ext/syck/rubyext.c: ditto.
+
+	* ext/tk/tkutil/tkutil.c: ditto.
 
 Wed Aug 29 18:36:06 2007  Tanaka Akira  <akr@fsij.org>
 

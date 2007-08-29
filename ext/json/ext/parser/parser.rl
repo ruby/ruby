@@ -495,7 +495,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
             VALUE tmp = ID2SYM(i_max_nesting);
-            if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
                 if (RTEST(max_nesting)) {
                     Check_Type(max_nesting, T_FIXNUM);
@@ -505,7 +505,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 }
             }
             tmp = ID2SYM(i_allow_nan);
-            if (st_lookup(RHASH(opts)->tbl, tmp, 0)) {
+            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
                 VALUE allow_nan = rb_hash_aref(opts, tmp);
                 if (RTEST(allow_nan)) json->allow_nan = 1;
             }
