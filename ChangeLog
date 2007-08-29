@@ -1,3 +1,11 @@
+Thu Aug 30 08:24:18 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.h (RHASH_TBL): defined for compatibility to 1.9.
+	* (RHASH_ITER_LEV): ditto.
+	* (RHASH_IFNONE): ditto.
+	* (RHASH_SIZE): ditto.
+	* (RHASH_EMPTY_P): ditto.
+
 Wed Aug 29 13:05:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/defines.h (flush_register_windows): call "ta 0x03"
