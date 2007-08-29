@@ -231,10 +231,8 @@ flush_register_windows(void)
 #endif
 # if defined(__sparc_v9__) || defined(__sparcv9) || defined(__arch64__)
 	("flushw")
-# elif defined(linux) || defined(__linux__)
-	("ta  0x83")
-# else /* Solaris, OpenBSD, NetBSD, etc. */
-	("ta  0x03")
+# else
+	("ta 0x03")
 # endif /* trap always to flush register windows if we are on a Sparc system */
 	;
 }
