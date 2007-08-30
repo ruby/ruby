@@ -1,3 +1,8 @@
+Fri Aug 31 07:12:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (SQRT_LONG_MAX): use SIZEOF_LONG instead of SIZEOF_VALUE
+	  because SIZEOF_VALUE > SIZEOF_LONG on some platforms.
+
 Fri Aug 31 04:18:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_norm_arg, f_arg_item): not croak already erred names.

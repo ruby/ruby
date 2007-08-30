@@ -2046,7 +2046,7 @@ fix_minus(VALUE x, VALUE y)
  * result.
  */
 
-#define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_VALUE*CHAR_BIT-1)/2))
+#define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
 /*tests if N*N would overflow*/
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 
