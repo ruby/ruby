@@ -1,4 +1,6 @@
-Thu Aug 30 13:13:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 30 13:49:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: initialize $top_srcdir always.  [ruby-dev:31682]
 
 	* lib/mkmf.rb (try_const, have_const): check for a const is defined.
 	  [ruby-core:04422]

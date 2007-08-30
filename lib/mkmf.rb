@@ -124,6 +124,7 @@ extdir = File.expand_path("ext", topdir)
 $extmk = File.expand_path($0)[0, extdir.size+1] == extdir+"/"
 if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
   $topdir = $hdrdir
+  $top_srcdir = $hdrdir
   $arch_hdrdir = $hdrdir + "/$(arch)"
 elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h") and
     File.exist?("#{CONFIG["EXTOUT"]}/include/#{CONFIG["arch"]}/ruby/config.h")
