@@ -826,6 +826,44 @@ def find_type(type, opt, *headers, &b)
   end
 end
 
+def try_const(const, headers = nil, opt = "", &b)
+  const, type = *const
+  if try_compile(<<"SRC", opt, &b)
+#{COMMON_HEADERS}
+#{cpp_include(headers)}
+/*top*/
+typedef #{type || 'int'} conftest_type;
+conftest_type conftestval = #{type ? '' : '(int)'}#{const};
+SRC
+    $defs.push(format("-DHAVE_CONST_%s", const.strip.upcase.tr_s("^A-Z0-9_", "_")))
+    true
+  else
+    false
+  end
+end
+
+# Returns whether or not the constant +const+ is defined.  You may
+# optionally pass the +type+ of +const+ as <code>[const, type]</code>,
+# like as:
+#
+#   have_const(%w[PTHREAD_MUTEX_INITIALIZER pthread_mutex_t], "pthread.h")
+#
+# You may also pass additional +headers+ to check against in addition
+# to the common header files, and additional flags to +opt+ which are
+# then passed along to the compiler.
+#
+# If found, a macro is passed as a preprocessor constant to the compiler using
+# the type name, in uppercase, prepended with 'HAVE_CONST_'.
+#
+# For example, if have_const('foo') returned true, then the HAVE_CONST_FOO
+# preprocessor macro would be passed to the compiler.
+#
+def have_const(const, headers = nil, opt = "", &b)
+  checking_for checking_message([*const].compact.join(' '), headers, opt) do
+    try_const(const, headers, opt, &b)
+  end
+end
+
 # Returns the size of the given +type+.  You may optionally specify additional
 # +headers+ to search in for the +type+.
 #
