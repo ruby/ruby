@@ -4160,6 +4160,8 @@ f_norm_arg	: tCONSTANT
 		| tIDENTIFIER
 		    {
 		    /*%%%*/
+			if (!is_local_id($1))
+			    yyerror("formal argument must be local variable");
 			shadowing_lvar($1);
 		    /*%
 		    %*/
@@ -4170,8 +4172,6 @@ f_norm_arg	: tCONSTANT
 f_arg_item	: f_norm_arg
 		    {
 		    /*%%%*/
-			if (!is_local_id($1))
-			    yyerror("formal argument must be local variable");
 			arg_var($1);
 			$$ = NEW_ARGS_AUX($1, 1);
 		    /*%

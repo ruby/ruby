@@ -1,4 +1,7 @@
-Fri Aug 31 03:48:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 31 04:18:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_norm_arg, f_arg_item): not croak already erred names.
+	  [ruby-dev:31687]
 
 	* parse.y (assignable_gen): ignore already erred names.
 
