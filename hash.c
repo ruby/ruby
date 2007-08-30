@@ -203,7 +203,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 }
 
 static VALUE
-hash_alloc0(VALUE klass)
+hash_alloc(VALUE klass)
 {
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
@@ -211,16 +211,6 @@ hash_alloc0(VALUE klass)
     hash->ifnone = Qnil;
 
     return (VALUE)hash;
-}
-
-static VALUE
-hash_alloc(VALUE klass)
-{
-    VALUE hash = hash_alloc0(klass);
-
-    RHASH(hash)->ntbl = 0;
-
-    return hash;
 }
 
 VALUE
@@ -329,7 +319,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	hash = hash_alloc0(klass);
+	hash = hash_alloc(klass);
         if (RHASH(argv[0])->ntbl) {
             RHASH(hash)->ntbl = st_copy(RHASH(argv[0])->ntbl);
         }

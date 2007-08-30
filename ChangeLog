@@ -10,6 +10,8 @@ Thu Aug 30 08:00:12 2007  Tanaka Akira  <akr@fsij.org>
 	  (RHASH_IFNONE): ditto.
 	  (RHASH_SIZE): ditto.
 	  (RHASH_EMPTY_P): ditto.
+	  (hash_alloc0, hash_alloc): unified because hash_alloc doesn't
+	  allocate st_table now.
 
 	* hash.c: delay st_table allocation.
 
