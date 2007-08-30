@@ -478,10 +478,11 @@ struct RRegexp {
 
 struct RHash {
     struct RBasic basic;
-    struct st_table *ntbl;      /* maybe 0 */
+    struct st_table *ntbl;      /* possibly 0 */
     int iter_lev;
     VALUE ifnone;
 };
+/* RHASH_TBL allocates st_table if not available. */
 #define RHASH_TBL(h) rb_hash_tbl(h)
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
 #define RHASH_IFNONE(h) (RHASH(h)->ifnone)
@@ -548,7 +549,7 @@ struct RStruct {
 
 struct RBignum {
     struct RBasic basic;
-    char sign;
+    char sign; /* positive:0, negative:1 */
     long len;
     void *digits;
 };
