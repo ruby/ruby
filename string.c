@@ -3185,7 +3185,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     rb_encoding *enc;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    int c, last, modify = 0;
+    int c, last = 0, modify = 0;
     char *s, *send;
     VALUE hash;
 
@@ -3500,7 +3500,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 {
-    rb_encoding *enc;
+    rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
     int save, modify = 0;
@@ -3759,6 +3759,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	int skip = 1;
 	int c;
 
+	end = beg;
 	while (ptr < eptr) {
 	    c = rb_enc_codepoint(ptr, eptr, enc);
 	    if (skip) {
