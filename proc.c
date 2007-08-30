@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  proc.c - Proc, Bindng, Env
+  proc.c - Proc, Binding, Env
 
   $Author$
   $Date$
@@ -148,7 +148,6 @@ binding_alloc(VALUE klass)
     rb_binding_t *bind;
     obj = Data_Make_Struct(klass, rb_binding_t,
 			   binding_mark, binding_free, bind);
-    MEMZERO(bind, rb_binding_t, 1);
     return obj;
 }
 
@@ -972,6 +971,14 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     return body;
 }
 
+static VALUE
+rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE klass = rb_singleton_class(obj);
+
+    return rb_mod_define_method(argc, argv, klass);
+}
+
 
 /*
  * MISSING: documentation
@@ -1495,6 +1502,9 @@ Init_Proc(void)
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
     rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
+
+    /* Kernel */
+    rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);
 }
 
 /*

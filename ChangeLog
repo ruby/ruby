@@ -1,3 +1,7 @@
+Thu Aug 30 14:06:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_obj_define_method): reverted.  [ruby-talk:266637]
+
 Thu Aug 30 13:49:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: initialize $top_srcdir always.  [ruby-dev:31682]
