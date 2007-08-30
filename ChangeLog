@@ -1,3 +1,11 @@
+Thu Aug 30 13:10:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (group_member): check if presents.
+
+	* configure.in (XCFLAGS): add _GNU_SOURCE on linux.
+
+	* file.c (group_member): use system routine if available.
+
 Thu Aug 30 08:24:18 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.h (RHASH_TBL): defined for compatibility to 1.9.
