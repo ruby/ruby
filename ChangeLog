@@ -1,3 +1,10 @@
+Fri Aug 31 03:48:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assignable_gen): ignore already erred names.
+
+	* parse.y (shadowing_lvar_gen): always make new block local variable
+	  when shadowing outer local variable.  [ruby-dev:31507]
+
 Thu Aug 30 19:40:33 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regenc.h: check RUBY_EXTERN before including config.h and defines.h

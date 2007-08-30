@@ -1023,7 +1023,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
 		    {
 		    /*%%%*/
-			NODE *args = $3;
+			NODE *args;
 
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
@@ -6677,7 +6677,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd(c);
 	    c = nextc();
 	    if (parser_is_identchar()) {
-	    tokadd(c);
+		tokadd(c);
 	    }
 	    else {
 		pushback(c);
@@ -7253,6 +7253,7 @@ gettable_gen(struct parser_params *parser, ID id)
 static NODE*
 assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
+    if (!id) return 0;
     if (id == keyword_self) {
 	yyerror("Can't change the value of self");
     }
@@ -7321,6 +7322,7 @@ shadowing_lvar_gen(struct parser_params *parser, ID name)
 	 }
 	 else if (dvar_defined(name) || local_id(name)) {
 	     rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+	     vtable_add(lvtbl->vars, name);
 	 }
      }
      else {
