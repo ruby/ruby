@@ -1,3 +1,9 @@
+Thu Aug 30 19:40:33 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* regenc.h: check RUBY_EXTERN before including config.h and defines.h
+
+	* common.mk: update header dependency.
+
 Thu Aug 30 14:06:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_obj_define_method): reverted.  [ruby-talk:266637]

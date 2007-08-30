@@ -29,8 +29,10 @@
  * SUCH DAMAGE.
  */
 #ifndef REGINT_H
+#ifndef RUBY_EXTERN
 #include "ruby/config.h"
 #include "ruby/defines.h"
+#endif
 #ifdef ONIG_ESCAPE_UCHAR_COLLISION
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
