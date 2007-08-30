@@ -1,3 +1,8 @@
+Thu Aug 30 13:13:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_const, have_const): check for a const is defined.
+	  [ruby-core:04422]
+
 Thu Aug 30 13:10:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (group_member): check if presents.
