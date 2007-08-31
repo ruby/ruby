@@ -549,7 +549,7 @@ struct RStruct {
 
 struct RBignum {
     struct RBasic basic;
-    char sign; /* positive:0, negative:1 */
+    char sign; /* positive:1, negative:0 */
     long len;
     void *digits;
 };
