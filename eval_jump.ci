@@ -39,7 +39,7 @@ rb_f_throw(int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
     rb_trap_restore_mask();
-    th->errinfo = tag;
+    th->errinfo = (VALUE)rb_node_newnode(NODE_MEMO, tag, 0, TAG_THROW);
 
     JUMP_TAG(TAG_THROW);
 #ifndef __GNUC__
@@ -117,7 +117,7 @@ rb_f_catch(int argc, VALUE *argv)
     if ((state = EXEC_TAG()) == 0) {
 	val = rb_yield_0(1, &tag);
     }
-    else if (state == TAG_THROW && th->errinfo == tag) {
+    else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
 	val = th->tag->retval;
 	th->errinfo = Qnil;
 	state = 0;

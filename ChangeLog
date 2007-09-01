@@ -1,3 +1,8 @@
+Sat Sep  1 23:44:26 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_jump.ci (rb_f_throw): wrap tag and TAG_THROW in a NODE_MEMO
+	  node to make throw instruction to work well.
+
 Sat Sep  1 20:56:07 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (struct RBignum): embed digits in RBignum for
