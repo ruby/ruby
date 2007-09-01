@@ -815,13 +815,13 @@ strhash(register const char *string)
 }
 
 int
-st_numcmp(long x, long y)
+st_numcmp(st_data_t x, st_data_t y)
 {
     return x != y;
 }
 
 int
-st_numhash(long n)
+st_numhash(st_data_t n)
 {
-    return n;
+    return (int)n;
 }

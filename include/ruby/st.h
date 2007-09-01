@@ -17,31 +17,17 @@ typedef unsigned long st_data_t;
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG st_data_t;
 #else
-# error ---->> st.c requires sizeof(void*) == sizeof(long) to be compiled. <<---
--
+# error ---->> st.c requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 #define ST_DATA_T_DEFINED
 
-typedef struct st_table st_table;
-
-struct st_hash_type {
-    int (*compare)();
-    int (*hash)();
-};
-
-struct st_table {
-    const struct st_hash_type *type;
-    unsigned int entries_packed : 1;
-    int num_bins : sizeof(int) * 8 - 1;
-    int num_entries;
-    struct st_table_entry **bins;
-    struct st_table_entry *head;
-};
-
-#define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
-
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
-
+#ifndef CHAR_BIT
+# ifdef HAVE_LIMITS_H
+#  include <limits.h>
+# else
+#  define CHAR_BIT 8
+# endif
+#endif
 #ifndef _
 # define _(args) args
 #endif
@@ -52,6 +38,33 @@ enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 #   define ANYARGS
 # endif
 #endif
+
+typedef struct st_table st_table;
+
+typedef int st_compare_func(st_data_t, st_data_t);
+typedef int st_hash_func(st_data_t);
+
+struct st_hash_type {
+    int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
+    int (*hash)(ANYARGS /*st_data_t*/);               /* st_hash_func* */
+};
+
+typedef unsigned int st_index_t;
+#define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT - 1)
+
+struct st_table {
+    const struct st_hash_type *type;
+    unsigned int entries_packed : 1;
+    st_index_t num_bins : ST_INDEX_BITS;
+    unsigned int st_dummy_bit : 1;
+    st_index_t num_entries : ST_INDEX_BITS;
+    struct st_table_entry **bins;
+    struct st_table_entry *head;
+};
+
+#define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
+
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, int);
@@ -70,8 +83,8 @@ void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);
 void st_clear(st_table *);
 st_table *st_copy(st_table *);
-int st_numcmp(long, long);
-int st_numhash(long);
+int st_numcmp(st_data_t, st_data_t);
+int st_numhash(st_data_t);
 
 #if defined(__cplusplus)
 #if 0
