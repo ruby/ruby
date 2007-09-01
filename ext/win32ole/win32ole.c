@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.7"
+#define WIN32OLE_VERSION "1.0.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -170,8 +170,6 @@ typedef struct tagIEVENTSINKOBJ {
     DWORD m_cRef;
     IID m_iid;
     int m_event_id;
-    DWORD m_dwCookie;
-    IConnectionPoint *pConnectionPoint;
     ITypeInfo *pTypeInfo;
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
@@ -229,7 +227,8 @@ struct oleparamdata {
 };
 
 struct oleeventdata {
-    int freed;
+    DWORD dwCookie;
+    IConnectionPoint *pConnectionPoint;
 };
 
 struct oleparam {
@@ -488,6 +487,7 @@ static HRESULT find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo
 static HRESULT find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo);
 static void ole_event_free(struct oleeventdata *poleev);
 static VALUE fev_s_allocate(VALUE klass);
+static VALUE ev_advise(int argc, VALUE *argv, VALUE self);
 static VALUE fev_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE fev_s_msg_loop(VALUE klass);
 static void add_event_call_back(VALUE obj, VALUE event, VALUE data);
@@ -7138,8 +7138,6 @@ EVENTSINK_Constructor() {
     pEv->lpVtbl = &vtEventSink;
     pEv->m_cRef = 0;
     pEv->m_event_id = 0;
-    pEv->m_dwCookie = 0;
-    pEv->pConnectionPoint = NULL;
     pEv->pTypeInfo = NULL;
     return pEv;
 }
@@ -7148,6 +7146,7 @@ void EVENTSINK_Destructor(
     PIEVENTSINKOBJ pEVObj
     ) {
     if(pEVObj != NULL) {
+        OLE_RELEASE(pEVObj->pTypeInfo);
         free(pEVObj);
         pEVObj = NULL;
     }
@@ -7359,8 +7358,7 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
 static void
 ole_event_free(struct oleeventdata *poleev)
 {
-    ITypeInfo *pti = NULL;
-    IConnectionPoint *pcp = NULL;
+    OLE_FREE(poleev->pConnectionPoint);
     free(poleev);
 }
 
@@ -7370,25 +7368,15 @@ fev_s_allocate(VALUE klass)
     VALUE obj;
     struct oleeventdata *poleev;
     obj = Data_Make_Struct(klass,struct oleeventdata,0,ole_event_free,poleev);
-/*
-    poleev->pEvent = NULL;
-*/
+    poleev->dwCookie = 0;
+    poleev->pConnectionPoint = NULL;
     return obj;
 }
 
-/*
- *  call-seq:
- *     WIN32OLE_EVENT.new(ole, event) #=> WIN32OLE_EVENT object.
- *
- *  Returns OLE event object.
- *  The first argument specifies WIN32OLE object.
- *  The second argument specifies OLE event name.
- *     ie = WIN32OLE.new('InternetExplorer.Application')
- *     ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
- */     
 static VALUE
-fev_initialize(int argc, VALUE *argv, VALUE self)
+ev_advise(int argc, VALUE *argv, VALUE self)
 {
+
     VALUE ole, itf;
     struct oledata *pole;
     char *pitf;
@@ -7457,14 +7445,29 @@ fev_initialize(int argc, VALUE *argv, VALUE self)
     Data_Get_Struct(self, struct oleeventdata, poleev);
     pIEV->m_event_id
         = NUM2INT(rb_funcall(ary_ole_event, rb_intern("length"), 0));
-    pIEV->pConnectionPoint = pConnectionPoint;
     pIEV->pTypeInfo = pTypeInfo;
-    pIEV->m_dwCookie = dwCookie;
+    poleev->dwCookie = dwCookie;
+    poleev->pConnectionPoint = pConnectionPoint;
 
+    return self;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_EVENT.new(ole, event) #=> WIN32OLE_EVENT object.
+ *
+ *  Returns OLE event object.
+ *  The first argument specifies WIN32OLE object.
+ *  The second argument specifies OLE event name.
+ *     ie = WIN32OLE.new('InternetExplorer.Application')
+ *     ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
+ */     
+static VALUE
+fev_initialize(int argc, VALUE *argv, VALUE self)
+{
+    ev_advise(argc, argv, self);
     rb_ary_push(ary_ole_event, self);
-
-    events = rb_ary_new();
-    rb_ivar_set(self, id_events, events);
+    rb_ivar_set(self, id_events, rb_ary_new());
     return self;
 }
 

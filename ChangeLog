@@ -1,3 +1,13 @@
+Sat Sep  1 19:59:43 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_event_free): IConnectionPoint should be
+	  released.
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Destructor): ITypeInfo should be
+	  released.
+
+	* ext/win32ole/win32ole.c (fev_initialize): refactoring.
+
 Sat Sep  1 16:26:09 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/socket/test_tcp.rb (test_recvfrom): same as mswin32 on mswin64.
