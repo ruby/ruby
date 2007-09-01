@@ -1,12 +1,12 @@
-Sat Sep  1 11:14:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep  1 14:24:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_numcmp, st_numhash): use st_data_t instead of long, because
 	  the former may be larger than the latter.
 
 	* include/ruby/st.h (CHAR_BIT): get rid of magic number.
 
-	* include/ruby/st.h (struct st_table): num_entries never exceed
-	  num_bins.
+	* include/ruby/st.h (rb_index_t): use st_data_t for the platforms it
+	  is larger than int.
 
 Fri Aug 31 07:12:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 

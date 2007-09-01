@@ -49,15 +49,14 @@ struct st_hash_type {
     int (*hash)(ANYARGS /*st_data_t*/);               /* st_hash_func* */
 };
 
-typedef unsigned int st_index_t;
-#define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT - 1)
+typedef st_data_t st_index_t;
+#define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
 
 struct st_table {
     const struct st_hash_type *type;
     unsigned int entries_packed : 1;
-    st_index_t num_bins : ST_INDEX_BITS;
-    unsigned int st_dummy_bit : 1;
-    st_index_t num_entries : ST_INDEX_BITS;
+    st_index_t num_bins : ST_INDEX_BITS - 1;
+    st_index_t num_entries;
     struct st_table_entry **bins;
     struct st_table_entry *head;
 };
