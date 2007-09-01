@@ -68,10 +68,10 @@ Sat Sep  1 10:43:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_jump.ci (rb_f_throw): allow throwing non-symbol object.
 
-	* eval.c (rb_catch_obj): new function to wait throw with arbitrary
+	* eval_jump.ci (rb_catch_obj): new function to wait throw with arbitrary
 	  object. 
 
-	* eval.c (rb_throw_obj): new function to throw arbitrary object.
+	* eval_jump.ci (rb_throw_obj): new function to throw arbitrary object.
 
 	* variable.c (check_autoload_table): prevent multiple calls from
 	  RSTRING_PTR().
