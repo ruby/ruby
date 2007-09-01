@@ -1166,7 +1166,8 @@ check_autoload_table(VALUE av)
     Check_Type(av, T_DATA);
     if (RDATA(av)->dmark != (RUBY_DATA_FUNC)rb_mark_tbl ||
 	RDATA(av)->dfree != (RUBY_DATA_FUNC)st_free_table) {
-	rb_raise(rb_eTypeError, "wrong autoload table: %s", RSTRING_PTR(rb_inspect(av)));
+	VALUE desc = rb_inspect(av);
+	rb_raise(rb_eTypeError, "wrong autoload table: %s", RSTRING_PTR(desc));
     }
     return (struct st_table *)DATA_PTR(av);
 }

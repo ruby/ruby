@@ -230,3 +230,10 @@ assert_equal %q{1}, %q{
   
   m
 }
+assert_equal 'ok', %q{
+  begin
+    catch {|t| throw t, :ok }
+  rescue ArgumentError
+    :ng
+  end
+}, '[ruby-dev:31609]'

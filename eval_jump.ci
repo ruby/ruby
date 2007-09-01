@@ -27,8 +27,6 @@ rb_f_throw(int argc, VALUE *argv)
     struct rb_vm_tag *tt = th->tag;
 
     rb_scan_args(argc, argv, "11", &tag, &value);
-    tag = ID2SYM(rb_to_id(tag));
-
     while (tt) {
 	if (tt->tag == tag) {
 	    tt->retval = value;
@@ -37,8 +35,8 @@ rb_f_throw(int argc, VALUE *argv)
 	tt = tt->prev;
     }
     if (!tt) {
-	rb_name_error(SYM2ID(tag), "uncaught throw `%s'",
-		      rb_id2name(SYM2ID(tag)));
+	VALUE desc = rb_inspect(tag);
+	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
     rb_trap_restore_mask();
     th->errinfo = tag;
@@ -55,6 +53,16 @@ rb_throw(const char *tag, VALUE val)
     VALUE argv[2];
 
     argv[0] = ID2SYM(rb_intern(tag));
+    argv[1] = val;
+    rb_f_throw(2, argv);
+}
+
+void
+rb_throw_obj(VALUE tag, VALUE val)
+{
+    VALUE argv[2];
+
+    argv[0] = tag;
     argv[1] = val;
     rb_f_throw(2, argv);
 }
@@ -91,13 +99,17 @@ rb_throw(const char *tag, VALUE val)
  */
 
 static VALUE
-rb_f_catch(VALUE dmy, VALUE tag)
+rb_f_catch(int argc, VALUE *argv)
 {
+    VALUE tag;
     int state;
     VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
 
-    tag = ID2SYM(rb_to_id(tag));
+    rb_scan_args(argc, argv, "01", &tag);
+    if (argc == 0) {
+	tag = rb_obj_alloc(rb_cObject);
+    }
     PUSH_TAG();
 
     th->tag->tag = tag;
@@ -118,6 +130,12 @@ rb_f_catch(VALUE dmy, VALUE tag)
 }
 
 static VALUE
+catch_null_i(VALUE dmy)
+{
+    return rb_funcall(Qnil, rb_intern("catch"), 0, 0);
+}
+
+static VALUE
 catch_i(VALUE tag)
 {
     return rb_funcall(Qnil, rb_intern("catch"), 1, tag);
@@ -126,8 +144,16 @@ catch_i(VALUE tag)
 VALUE
 rb_catch(const char *tag, VALUE (*func)(), VALUE data)
 {
-    return rb_iterate((VALUE (*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)),
-		      func, data);
+    if (!tag) {
+	return rb_iterate(catch_null_i, 0, func, data);
+    }
+    return rb_iterate(catch_i, ID2SYM(rb_intern(tag)), func, data);
+}
+
+VALUE
+rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
+{
+    return rb_iterate((VALUE (*)_((VALUE)))catch_i, tag, func, data);
 }
 
 
@@ -276,7 +302,7 @@ rb_exec_end_proc(void)
 void
 Init_jump(void)
 {
-    rb_define_global_function("catch", rb_f_catch, 1);
+    rb_define_global_function("catch", rb_f_catch, -1);
     rb_define_global_function("throw", rb_f_throw, -1);
     rb_define_global_function("at_exit", rb_f_at_exit, 0);
 }

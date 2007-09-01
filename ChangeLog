@@ -46,6 +46,24 @@ Sat Sep  1 14:24:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* include/ruby/st.h (rb_index_t): use st_data_t for the platforms it
 	  is larger than int.
 
+Sat Sep  1 10:43:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_jump.ci (rb_f_catch): generate new tag object if no argument is
+	  given.  backported from MatzRuby.  [ruby-dev:31609]
+
+	* eval_jump.ci (rb_catch): call #catch without arguments if tag
+	  string is NULL.
+
+	* eval_jump.ci (rb_f_throw): allow throwing non-symbol object.
+
+	* eval.c (rb_catch_obj): new function to wait throw with arbitrary
+	  object. 
+
+	* eval.c (rb_throw_obj): new function to throw arbitrary object.
+
+	* variable.c (check_autoload_table): prevent multiple calls from
+	  RSTRING_PTR().
+
 Fri Aug 31 07:12:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (SQRT_LONG_MAX): use SIZEOF_LONG instead of SIZEOF_VALUE
