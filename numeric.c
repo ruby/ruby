@@ -2684,7 +2684,7 @@ fix_aref(VALUE fix, VALUE idx)
     if (TYPE(idx) == T_BIGNUM) {
 	idx = rb_big_norm(idx);
 	if (!FIXNUM_P(idx)) {
-	    if (!RBIGNUM(idx)->sign || val >= 0)
+	    if (!RBIGNUM_SIGN(idx) || val >= 0)
 		return INT2FIX(0);
 	    return INT2FIX(1);
 	}

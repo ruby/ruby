@@ -547,12 +547,38 @@ struct RStruct {
      RSTRUCT(st)->as.ary : \
      RSTRUCT(st)->as.heap.ptr)
 
+#define RBIGNUM_EMBED_LEN_MAX ((sizeof(VALUE)*3)/sizeof(BDIGIT))
 struct RBignum {
     struct RBasic basic;
-    char sign; /* positive:1, negative:0 */
-    long len;
-    void *digits;
+    union {
+        struct {
+            long len;
+            BDIGIT *digits;
+        } heap;
+        BDIGIT ary[RBIGNUM_EMBED_LEN_MAX];
+    } as;
 };
+#define RBIGNUM_SIGN_BIT FL_USER1
+/* sign: positive:1, negative:0 */
+#define RBIGNUM_SIGN(b) ((RBASIC(b)->flags & RBIGNUM_SIGN_BIT) != 0)
+#define RBIGNUM_SET_SIGN(b,sign) \
+  ((sign) ? (RBASIC(b)->flags |= RBIGNUM_SIGN_BIT) \
+          : (RBASIC(b)->flags &= ~RBIGNUM_SIGN_BIT))
+#define RBIGNUM_POSITIVE_P(b) RBIGNUM_SIGN(b)
+#define RBIGNUM_NEGATIVE_P(b) (!RBIGNUM_SIGN(b))
+
+#define RBIGNUM_EMBED_FLAG FL_USER2
+#define RBIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
+#define RBIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+3)
+#define RBIGNUM_LEN(b) \
+    ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
+     (long)((RBASIC(b)->flags >> RBIGNUM_EMBED_LEN_SHIFT) & \
+            (RBIGNUM_EMBED_LEN_MASK >> RBIGNUM_EMBED_LEN_SHIFT)) : \
+     RBIGNUM(b)->as.heap.len)
+#define RBIGNUM_DIGITS(b) \
+    ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
+     RBIGNUM(b)->as.ary : \
+     RBIGNUM(b)->as.heap.digits)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -631,6 +657,8 @@ enum ruby_value_flags {
 #define FL_USER19     RUBY_FL_USER19
     RUBY_FL_USER20     = (1<<(FL_USHIFT+20)),
 #define FL_USER20     RUBY_FL_USER20
+    RUBY_FL_DUMMY      = ~(VALUE)0 >> 1 /* make sizeof(enum ruby_value_flags)
+                                           equal to sizeof(VALUE). */
 };
 
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))

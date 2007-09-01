@@ -95,9 +95,17 @@ define rp
   else
   if ($flags & 0x1f) == 0x0d
     printf "T_BIGNUM: sign=%d len=%d ", \
-      ((struct RBignum*)$arg0)->sign, ((struct RBignum*)$arg0)->len
+      (($flags & RUBY_FL_USER1) != 0), \
+      (($flags & RUBY_FL_USER2) ? \
+       ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
+       ((struct RBignum*)$arg0)->as.heap.len)
+    if $flags & RUBY_FL_USER2
+      printf "(embed) "
+    end
     print (struct RBignum *)$arg0
-    x/xw ((struct RBignum*)$arg0)->digits
+    x/xw (($flags & RUBY_FL_USER2) ? \
+          ((struct RBignum*)$arg0)->as.ary : \
+          ((struct RBignum*)$arg0)->as.heap.digits)
   else
   if ($flags & 0x1f) == 0x0e
     printf "T_FILE: "

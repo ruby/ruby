@@ -1311,8 +1311,8 @@ obj_free(VALUE obj)
 	break;
 
       case T_BIGNUM:
-	if (RANY(obj)->as.bignum.digits) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.bignum.digits));
+	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
+	    RUBY_CRITICAL(free(RBIGNUM_DIGITS(obj)));
 	}
 	break;
       case T_NODE:

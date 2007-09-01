@@ -204,7 +204,7 @@ rand_init(VALUE vseed)
           len = sizeof(VALUE);
           break;
       case T_BIGNUM:
-          len = RBIGNUM(seed)->len * SIZEOF_BDIGITS;
+          len = RBIGNUM_LEN(seed) * SIZEOF_BDIGITS;
           if (len == 0)
               len = 4;
           break;
@@ -223,12 +223,12 @@ rand_init(VALUE vseed)
     }
     else {
         int i, j;
-        for (i = RBIGNUM(seed)->len-1; 0 <= i; i--) {
+        for (i = RBIGNUM_LEN(seed)-1; 0 <= i; i--) {
             j = i * SIZEOF_BDIGITS / 4;
 #if SIZEOF_BDIGITS < 4
             buf[j] <<= SIZEOF_BDIGITS * 8;
 #endif
-            buf[j] |= ((BDIGIT *)RBIGNUM(seed)->digits)[i];
+            buf[j] |= RBIGNUM_DIGITS(seed)[i];
         }
     }
     while (1 < len && buf[len-1] == 0) {
@@ -263,12 +263,12 @@ random_seed(void)
     OBJSETUP(big, rb_cBignum, T_BIGNUM);
 
     seed_len = 4 * sizeof(long);
-    big->sign = 1;
-    big->len = seed_len / SIZEOF_BDIGITS + 1;
-    digits = big->digits = ALLOC_N(BDIGIT, big->len);
-    seed = (unsigned long *)big->digits;
+    RBIGNUM_SET_SIGN(big, 1);
+    rb_big_resize((VALUE)big, seed_len / SIZEOF_BDIGITS + 1);
+    digits = RBIGNUM_DIGITS(big);
+    seed = (unsigned long *)RBIGNUM_DIGITS(big);
 
-    memset(digits, 0, big->len * SIZEOF_BDIGITS);
+    memset(digits, 0, RBIGNUM_LEN(big) * SIZEOF_BDIGITS);
 
 #ifdef S_ISCHR
     if ((fd = open("/dev/urandom", O_RDONLY
@@ -296,7 +296,7 @@ random_seed(void)
     seed[3] ^= (unsigned long)&seed;
 
     /* set leading-zero-guard if need. */
-    digits[big->len-1] = digits[big->len-2] <= 1 ? 1 : 0;
+    digits[RBIGNUM_LEN(big)-1] = digits[RBIGNUM_LEN(big)-2] <= 1 ? 1 : 0;
 
     return rb_big_norm((VALUE)big);
 }
@@ -370,20 +370,20 @@ limited_big_rand(struct RBignum *limit)
     struct RBignum *val;
     int i, len, boundary;
 
-    len = (limit->len * SIZEOF_BDIGITS + 3) / 4;
+    len = (RBIGNUM_LEN(limit) * SIZEOF_BDIGITS + 3) / 4;
     val = (struct RBignum *)rb_big_clone((VALUE)limit);
-    val->sign = 1;
+    RBIGNUM_SET_SIGN(val, 1);
 #if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) (((BDIGIT *)(big)->digits)[(i)*2] | \
-                           ((i)*2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)*2+1] << 16) \
+# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[(i)*2] | \
+                           ((i)*2+1 < RBIGNUM_DIGITS(big) ? (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) \
                                                  : 0))
-# define BIG_SET32(big,i,d) ((((BDIGIT *)(big)->digits)[(i)*2] = (d) & 0xffff), \
-                             ((i)*2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)*2+1] = (d) >> 16) \
+# define BIG_SET32(big,i,d) ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
+                             ((i)*2+1 < RBIGNUM_DIGITS(big) ? (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) \
                                                    : 0))
 #else
     /* SIZEOF_BDIGITS == 4 */
-# define BIG_GET32(big,i) (((BDIGIT *)(big)->digits)[i])
-# define BIG_SET32(big,i,d) (((BDIGIT *)(big)->digits)[i] = (d))
+# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[i])
+# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[i] = (d))
 #endif
   retry:
     mask = 0;
@@ -450,9 +450,9 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
       bignum:
         {
             struct RBignum *limit = (struct RBignum *)vmax;
-            if (!limit->sign) {
+            if (!RBIGNUM_SIGN(limit)) {
                 limit = (struct RBignum *)rb_big_clone(vmax);
-                limit->sign = 1;
+                RBIGNUM_SET_SIGN(limit, 1);
             }
             limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
             if (FIXNUM_P((VALUE)limit)) {

@@ -77,6 +77,7 @@ VALUE rb_get_values_at(VALUE, long, int, VALUE*, VALUE(*)(VALUE,long));
 VALUE rb_big_clone(VALUE);
 void rb_big_2comp(VALUE);
 VALUE rb_big_norm(VALUE);
+void rb_big_resize(VALUE big, long len);
 VALUE rb_uint2big(VALUE);
 VALUE rb_int2big(SIGNED_VALUE);
 VALUE rb_uint2inum(VALUE);

@@ -24,7 +24,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
     }
     if (FIXNUM_P(val)) return FIX2INT(val);
     if (TYPE(val) == T_BIGNUM) {
-	if (RBIGNUM(val)->sign) return 1;
+	if (RBIGNUM_SIGN(val)) return 1;
 	return -1;
     }
     if (RTEST(rb_funcall(val, '>', 1, INT2FIX(0)))) return 1;

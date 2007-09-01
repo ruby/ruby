@@ -1,3 +1,27 @@
+Sat Sep  1 20:56:07 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (struct RBignum): embed digits in RBignum for
+	  small bignums.
+
+	* bignum.c: RBignum embeded digits implemented.
+
+	* include/ruby/intern.h: declare rb_big_resize.
+
+	* gc.c: don't free embedded digits.
+
+	* numeric.c: replace direct bignum field accessor by abstract field
+	  accessor such as RBIGNUM(val)->sign to RBIGNUM_SIGN(val).
+
+	* sprintf.c: ditto.
+
+	* compar.c: ditto.
+
+	* marshal.c: ditto.
+
+	* random.c: ditto.
+
+	* .gdbinit: support embedded small bignums.
+
 Sat Sep  1 19:59:43 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_event_free): IConnectionPoint should be

@@ -514,9 +514,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
-		char sign = RBIGNUM(obj)->sign ? '+' : '-';
-		long len = RBIGNUM(obj)->len;
-		BDIGIT *d = RBIGNUM(obj)->digits;
+		char sign = RBIGNUM_SIGN(obj) ? '+' : '-';
+		long len = RBIGNUM_LEN(obj);
+		BDIGIT *d = RBIGNUM_DIGITS(obj);
 
 		w_byte(sign, arg);
 		w_long(SHORTLEN(len), arg); /* w_short? */
@@ -1060,21 +1060,21 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    NEWOBJ(big, struct RBignum);
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
-	    big->sign = (r_byte(arg) == '+');
+	    RBIGNUM_SET_SIGN(big, (r_byte(arg) == '+'));
 	    len = r_long(arg);
 	    data = r_bytes0(len * 2, arg);
 #if SIZEOF_BDIGITS == SIZEOF_SHORT
-	    big->len = len;
+            rb_big_resize((VALUE)big, len);
 #else
-	    big->len = (len + 1) * 2 / sizeof(BDIGIT);
+            rb_big_resize((VALUE)big, (len + 1) * 2 / sizeof(BDIGIT));
 #endif
-	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
+            digits = RBIGNUM_DIGITS(big);
 	    MEMCPY(digits, RSTRING_PTR(data), char, len * 2);
 #if SIZEOF_BDIGITS > SIZEOF_SHORT
 	    MEMZERO((char *)digits + len * 2, char,
-		    big->len * sizeof(BDIGIT) - len * 2);
+		    RBIGNUM_LEN(big) * sizeof(BDIGIT) - len * 2);
 #endif
-	    len = big->len;
+	    len = RBIGNUM_LEN(big);
 	    while (len > 0) {
 		unsigned char *p = (unsigned char *)digits;
 		BDIGIT num = 0;

@@ -658,11 +658,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    else {
                         volatile VALUE tmp1;
-			if (!RBIGNUM(val)->sign) {
+			if (!RBIGNUM_SIGN(val)) {
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
 			}
-			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM(val)->sign);
+			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
 			    if (base == 10) {
@@ -729,7 +729,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		else {
 		    char c;
 
-		    if (!sign && bignum && !RBIGNUM(val)->sign)
+		    if (!sign && bignum && !RBIGNUM_SIGN(val))
 			c = sign_bits(base, p);
 		    else
 			c = '0';
