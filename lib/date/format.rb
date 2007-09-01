@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.36 2007-07-21 00:21:04+09 tadf Exp $
+# $Id: format.rb,v 2.38 2007-09-01 00:03:46+09 tadf Exp $
 
 require 'rational'
 
@@ -551,8 +551,8 @@ class Date
 	  e._cent ||= if val >= 69 then 19 else 20 end
 	when 'Z', /\A:{0,3}z/
 	  return unless str.sub!(/\A((?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
-				    |[a-z.\s]+(?:standard|daylight)\s+time\b
-				    |[a-z]+(?:\s+dst)?\b
+				    |[[:alpha:].\s]+(?:standard|daylight)\s+time\b
+				    |[[:alpha:]]+(?:\s+dst)?\b
 				    )/ix, '')
 	  val = $1
 	  e.zone = val
@@ -621,6 +621,10 @@ class Date
   def self.s3e(e, y, m, d, bc=false)
     unless String === m
       m = m.to_s
+    end
+
+    if y && m && !d
+      y, m, d = d, y, m
     end
 
     if y == nil
@@ -718,9 +722,9 @@ class Date
 		   (
 		     (?:gmt|utc?)?[-+]\d+(?:[,.:]\d+(?::\d+)?)?
 		   |
-		     [a-z.\s]+(?:standard|daylight)\stime\b
+		     [[:alpha:].\s]+(?:standard|daylight)\stime\b
 		   |
-		     [a-z]+(?:\sdst)?\b
+		     [[:alpha:]]+(?:\sdst)?\b
 		   )
 		 )?
 		/inx,
@@ -831,9 +835,14 @@ class Date
       e.mon = $1.to_i
       e.mday = $2.to_i if $2
       true
-    elsif str.sub!(/\b(\d{2}|\d{4})?-(\d{3})\b/n, ' ')
-      e.year = $1.to_i if $1
+    elsif /[,.](\d{2}|\d{4})-\d{3}\b/n !~ str &&
+	str.sub!(/\b(\d{2}|\d{4})-(\d{3})\b/n, ' ')
+      e.year = $1.to_i
       e.yday = $2.to_i
+      true
+    elsif /\d-\d{3}\b/n !~ str &&
+	str.sub!(/\b-(\d{3})\b/n, ' ')
+      e.yday = $1.to_i
       true
     end
   end
@@ -865,7 +874,7 @@ class Date
   end
 
   def self._parse_sla(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:[^\d]\s*('?-?\d+))?|n, ' ') # '
+    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|n, ' ') # '
       s3e(e, $3, $1, $2)
       true
     end
@@ -879,7 +888,7 @@ class Date
   end
 
   def self._parse_year(str, e) # :nodoc:
-    if str.sub!(/'(\d+)\b/in, ' ')
+    if str.sub!(/'(\d+)\b/n, ' ')
       e.year = $1.to_i
       true
     end
@@ -1044,7 +1053,7 @@ class Date
 
     e._comp = comp
 
-    str.gsub!(/[^-+',.\/:0-9@a-z\[\]\x80-\xff]+/in, ' ')
+    str.gsub!(/[^-+',.\/:@[:alnum:]\[\]\x80-\xff]+/n, ' ')
 
     _parse_time(str, e) # || _parse_beat(str, e)
     _parse_day(str, e)
