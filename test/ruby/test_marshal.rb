@@ -36,4 +36,12 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal_cloned_class
     assert_instance_of(StrClone, Marshal.load(Marshal.dump(StrClone.new("abc"))))
   end
+
+  def test_inconsistent_struct
+    TestMarshal.const_set :S, Struct.new(:a)
+    s = Marshal.dump(S.new(1))
+    TestMarshal.instance_eval { remove_const :S }
+    TestMarshal.const_set :S, Class.new
+    assert_raise(TypeError, "[ruby-dev:31709]") { Marshal.load(s) }
+  end
 end
