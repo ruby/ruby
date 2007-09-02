@@ -54,9 +54,9 @@ typedef st_data_t st_index_t;
 
 struct st_table {
     const struct st_hash_type *type;
+    st_index_t num_bins;
     unsigned int entries_packed : 1;
-    st_index_t num_bins : ST_INDEX_BITS - 1;
-    st_index_t num_entries;
+    st_index_t num_entries : ST_INDEX_BITS - 1;
     struct st_table_entry **bins;
     struct st_table_entry *head;
 };

@@ -1,3 +1,8 @@
+Sun Sep  2 23:38:29 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/st.h (struct st_table): make num_entries bitfield
+	  instead of num_bins for speed.  num_entries has less access.
+
 Sun Sep  2 00:37:57 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (_parse): improved parsing of ordinal dates.
