@@ -1,3 +1,7 @@
+Mon Sep  3 15:37:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (vm.o): depends on st.h too.
+
 Sun Sep  2 23:38:29 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/st.h (struct st_table): make num_entries bitfield

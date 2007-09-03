@@ -572,7 +572,7 @@ iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}de
         {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns_info.inc \
         {$(VPATH)}node_name.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
-	{$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
+	{$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}st.h \
 	{$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
 	{$(VPATH)}insnhelper.h {$(VPATH)}insnhelper.ci {$(VPATH)}vm_evalbody.ci \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
