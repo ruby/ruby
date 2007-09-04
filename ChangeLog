@@ -1,3 +1,9 @@
+Tue Sep  4 20:43:44 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE_EVENT#unadvise.
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Mon Sep  3 15:37:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (vm.o): depends on st.h too.

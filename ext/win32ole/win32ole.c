@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.8"
+#define WIN32OLE_VERSION "1.0.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -229,6 +229,7 @@ struct oleparamdata {
 struct oleeventdata {
     DWORD dwCookie;
     IConnectionPoint *pConnectionPoint;
+    long event_id;
 };
 
 struct oleparam {
@@ -494,6 +495,11 @@ static void add_event_call_back(VALUE obj, VALUE event, VALUE data);
 static VALUE ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg);
 static VALUE fev_on_event(int argc, VALUE *argv, VALUE self);
 static VALUE fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self);
+static VALUE fev_unadvise(VALUE self);
+static VALUE evs_push(VALUE ev);
+static VALUE evs_delete(long i);
+static VALUE evs_entry(long i);
+static VALUE evs_length();
 static void  olevariant_free(struct olevariantdata *pvar);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
@@ -7071,8 +7077,7 @@ STDMETHODIMP EVENTSINK_Invoke(
 
     PIEVENTSINKOBJ pEV = (PIEVENTSINKOBJ)pEventSink;
     pTypeInfo = pEV->pTypeInfo;
-
-    obj = rb_ary_entry(ary_ole_event, pEV->m_event_id);
+    obj = evs_entry(pEV->m_event_id);
     if (!rb_obj_is_kind_of(obj, cWIN32OLE_EVENT)) {
         return NOERROR;
     }
@@ -7370,6 +7375,7 @@ fev_s_allocate(VALUE klass)
     obj = Data_Make_Struct(klass,struct oleeventdata,0,ole_event_free,poleev);
     poleev->dwCookie = 0;
     poleev->pConnectionPoint = NULL;
+    poleev->event_id = 0;
     return obj;
 }
 
@@ -7444,10 +7450,11 @@ ev_advise(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, struct oleeventdata, poleev);
     pIEV->m_event_id
-        = NUM2INT(rb_funcall(ary_ole_event, rb_intern("length"), 0));
+        = NUM2INT(evs_length());
     pIEV->pTypeInfo = pTypeInfo;
     poleev->dwCookie = dwCookie;
     poleev->pConnectionPoint = pConnectionPoint;
+    poleev->event_id = pIEV->m_event_id;
 
     return self;
 }
@@ -7466,7 +7473,7 @@ static VALUE
 fev_initialize(int argc, VALUE *argv, VALUE self)
 {
     ev_advise(argc, argv, self);
-    rb_ary_push(ary_ole_event, self);
+    evs_push(self);
     rb_ivar_set(self, id_events, rb_ary_new());
     return self;
 }
@@ -7504,7 +7511,12 @@ add_event_call_back(VALUE obj, VALUE event, VALUE data)
 static VALUE
 ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
 {
+    struct oleeventdata *poleev;
     VALUE event, args, data;
+    Data_Get_Struct(self, struct oleeventdata, poleev);
+    if (poleev->pConnectionPoint == NULL) {
+        rb_raise(eWIN32OLERuntimeError, "IConnectionPoint not found. You must call advise at first.");
+    }
     rb_scan_args(argc, argv, "01*", &event, &args);
     if(!NIL_P(event)) {
         Check_SafeStr(event);
@@ -7542,6 +7554,48 @@ static VALUE
 fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
 {
     return ev_on_event(argc, argv, self, Qtrue);
+}
+
+static VALUE 
+fev_unadvise(VALUE self)
+{
+    struct oleeventdata *poleev;
+    Data_Get_Struct(self, struct oleeventdata, poleev);
+    if (poleev->pConnectionPoint) {
+        poleev->pConnectionPoint->lpVtbl->Unadvise(poleev->pConnectionPoint, poleev->dwCookie);
+        OLE_RELEASE(poleev->pConnectionPoint);
+        poleev->pConnectionPoint = NULL;
+
+        rb_ivar_set(self, id_events, rb_ary_new());
+        evs_delete(poleev->event_id);
+        ole_msg_loop();
+    }
+    return Qnil;
+}
+
+static VALUE 
+evs_push(VALUE ev)
+{
+    return rb_ary_push(ary_ole_event, ev);
+}
+
+static VALUE
+evs_delete(long i)
+{
+    rb_ary_store(ary_ole_event, i, Qnil);
+    return Qnil;
+}
+
+static VALUE 
+evs_entry(long i)
+{
+    return rb_ary_entry(ary_ole_event, i);
+}
+
+static VALUE 
+evs_length()
+{
+    return rb_funcall(ary_ole_event, rb_intern("length"), 0);
 }
 
 static void 
@@ -8153,6 +8207,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event", fev_on_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event_with_outargs", fev_on_event_with_outargs, -1);
+    rb_define_method(cWIN32OLE_EVENT, "unadvise", fev_unadvise, 0);
 
     cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
