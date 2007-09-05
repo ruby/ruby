@@ -1,7 +1,11 @@
 Wed Sep  5 22:02:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* array.c (rb_ary_fill): need integer overflow check.
-	  [ruby-dev:31738]
+	* array.c (rb_ary_subseq): need integer overflow check.
+	  [ruby-dev:31736]
+
+	* array.c (rb_ary_splice): ditto.  [ruby-dev:31737]
+
+	* array.c (rb_ary_fill): ditto.  [ruby-dev:31738]
 
 	* string.c (rb_str_splice): integer overflow for length.
 	  [ruby-dev:31739]
