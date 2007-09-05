@@ -1,3 +1,8 @@
+Wed Sep  5 22:02:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): integer overflow for length.
+	  [ruby-dev:31739]
+
 Sun Sep  2 00:48:15 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (_parse): improved parsing of ordinal dates.
