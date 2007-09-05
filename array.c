@@ -683,10 +683,8 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     if (beg > RARRAY_LEN(ary)) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
 
-    if (beg + len > RARRAY_LEN(ary)) {
+    if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < beg + len) {
 	len = RARRAY_LEN(ary) - beg;
-	if (len < 0)
-	    len = 0;
     }
     klass = rb_obj_class(ary);
     if (len == 0) return ary_new(klass, 0);
@@ -994,7 +992,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    rb_raise(rb_eIndexError, "index %ld out of array", beg);
 	}
     }
-    if (beg + len > RARRAY_LEN(ary)) {
+    if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < beg + len) {
 	len = RARRAY_LEN(ary) - beg;
     }
 
@@ -2140,7 +2138,10 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     ary_iter_check(ary);
     end = beg + len;
-    if (end > RARRAY_LEN(ary)) {
+    if (end < 0) {
+	rb_raise(rb_eArgError, "argument too big");
+    }
+    if (RARRAY_LEN(ary) < end) {
 	if (end >= ARY_CAPA(ary)) {
 	    RESIZE_CAPA(ary, end);
 	}
