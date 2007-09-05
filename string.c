@@ -1893,7 +1893,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 	}
 	beg += slen;
     }
-    if (slen < beg + len) {
+    if (slen < len || slen < beg + len) {
 	len = slen - beg;
     }
     p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc);

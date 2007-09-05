@@ -1,3 +1,8 @@
+Wed Sep  5 22:02:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): integer overflow for length.
+	  [ruby-dev:31739]
+
 Tue Sep  4 20:43:44 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_EVENT#unadvise.
