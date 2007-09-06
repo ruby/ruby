@@ -707,7 +707,7 @@ str_sublen(VALUE str, long pos, rb_encoding *enc)
 
 	i = 0;
 	while (p < e) {
-	    p += rb_enc_mbclen(p, enc);
+	    p += rb_enc_mbclen(p, e, enc);
 	    i++;
 	}
 	return i;
@@ -2375,7 +2375,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	     * in order to prevent infinite loops.
 	     */
 	    if (RSTRING_LEN(str) <= END(0)) break;
-	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), enc);
+	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), RSTRING_END(str), enc);
 	    memcpy(bp, RSTRING_PTR(str)+END(0), len);
 	    bp += len;
 	    offset = END(0) + len;
@@ -2595,7 +2595,7 @@ rb_str_reverse(VALUE str)
 	}
 	else {
 	    while (s < e) {
-		int clen = rb_enc_mbclen(s, enc);
+		int clen = rb_enc_mbclen(s, e, enc);
 
 		if (clen == 0) {
 		    rb_raise(rb_eArgError, "invalid mbstring sequence");
@@ -3861,11 +3861,13 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		}
 		else if (last_null == 1) {
 		    rb_ary_push(result, rb_str_subseq(str, beg,
-						      rb_enc_mbclen(RSTRING_PTR(str)+beg,enc)));
+						      rb_enc_mbclen(RSTRING_PTR(str)+beg,
+								    RSTRING_END(str),
+								    enc)));
 		    beg = start;
 		}
 		else {
-		    start += rb_enc_mbclen(RSTRING_PTR(str)+start,enc);
+		    start += rb_enc_mbclen(RSTRING_PTR(str)+start,RSTRING_END(str),enc);
 		    last_null = 1;
 		    continue;
 		}
@@ -4455,7 +4457,8 @@ scan_once(VALUE str, VALUE pat, long *start)
 	     * Always consume at least one character of the input string
 	     */
 	    if (RSTRING_LEN(str) > END(0))
-		*start = END(0)+rb_enc_mbclen(RSTRING_PTR(str)+END(0),enc);
+		*start = END(0)+rb_enc_mbclen(RSTRING_PTR(str)+END(0),
+					      RSTRING_END(str), enc);
 	    else
 		*start = END(0)+1;
 	}

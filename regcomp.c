@@ -469,13 +469,13 @@ compile_length_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p);
+  prev_len = enc_len(enc, p, sn->end);
   p += prev_len;
   slen = 1;
   rlen = 0;
 
   for (; p < sn->end; ) {
-    len = enc_len(enc, p);
+    len = enc_len(enc, p, sn->end);
     if (len == prev_len) {
       slen++;
     }
@@ -518,12 +518,12 @@ compile_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p);
+  prev_len = enc_len(enc, p, end);
   p += prev_len;
   slen = 1;
 
   for (; p < end; ) {
-    len = enc_len(enc, p);
+    len = enc_len(enc, p, end);
     if (len == prev_len) {
       slen++;
     }
@@ -2312,7 +2312,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       StrNode* sn = NSTR(node);
       UChar *s = sn->s;
       while (s < sn->end) {
-	s += enc_len(reg->enc, s);
+	s += enc_len(reg->enc, s, sn->end);
 	(*len)++;
       }
     }
@@ -3389,7 +3389,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
       goto err;
     }
 
-    len = enc_len(reg->enc, p);
+    len = enc_len(reg->enc, p, end);
 
     if (n == 0) {
       if (IS_NULL(snode)) {
@@ -4212,7 +4212,7 @@ concat_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OnigEncoding enc)
   p = add->s;
   end = p + add->len;
   for (i = to->len; p < end; ) {
-    len = enc_len(enc, p);
+    len = enc_len(enc, p, end);
     if (i + len > OPT_EXACT_MAXLEN) break;
     for (j = 0; j < len && p < end; j++)
       to->s[i++] = *p++;
@@ -4234,7 +4234,7 @@ concat_opt_exact_info_str(OptExactInfo* to,
   UChar *p;
 
   for (i = to->len, p = s; p < end && i < OPT_EXACT_MAXLEN; ) {
-    len = enc_len(enc, p);
+    len = enc_len(enc, p, end);
     if (i + len > OPT_EXACT_MAXLEN) break;
     for (j = 0; j < len && p < end; j++)
       to->s[i++] = *p++;
@@ -4260,7 +4260,7 @@ alt_merge_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OptEnv* env)
 
   for (i = 0; i < to->len && i < add->len; ) {
     if (to->s[i] != add->s[i]) break;
-    len = enc_len(env->enc, to->s + i);
+    len = enc_len(env->enc, to->s + i, to->s + to->len);
 
     for (j = 1; j < len; j++) {
       if (to->s[i+j] != add->s[i+j]) break;

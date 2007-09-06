@@ -50,7 +50,7 @@ rb_encoding * rb_enc_find(const char *name);
 #define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
 
 /* ptr,encoding -> mbclen */
-int rb_enc_mbclen(const char*, rb_encoding*);
+int rb_enc_mbclen(const char*, const char *, rb_encoding*);
 
 /* code,encoding -> codelen */
 int rb_enc_codelen(int, rb_encoding*);

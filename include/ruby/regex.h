@@ -29,8 +29,8 @@ extern "C" {
 
 ONIG_EXTERN OnigEncoding    OnigEncDefaultCharEncoding;
 
-#define ismbchar(p, enc) (mbclen((p),(enc)) != 1)
-#define mbclen(p,enc)  rb_enc_mbclen((p), (enc))
+#define ismbchar(p, e, enc) (mbclen((p),(e),(enc)) != 1)
+#define mbclen(p,e,enc)  rb_enc_mbclen((p),(e),(enc))
 
 #endif /* ifndef ONIG_RUBY_M17N */
 

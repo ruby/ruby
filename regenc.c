@@ -55,7 +55,7 @@ onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const U
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
   if (p < s) {
-    p += enc_len(enc, p);
+      p += enc_len(enc, p, s);
   }
   return p;
 }
@@ -68,7 +68,7 @@ onigenc_get_right_adjust_char_head_with_prev(OnigEncoding enc,
 
   if (p < s) {
     if (prev) *prev = (const UChar* )p;
-    p += enc_len(enc, p);
+    p += enc_len(enc, p, s);
   }
   else {
     if (prev) *prev = (const UChar* )NULL; /* Sorry */
@@ -102,7 +102,7 @@ onigenc_step(OnigEncoding enc, const UChar* p, const UChar* end, int n)
 {
   UChar* q = (UChar* )p;
   while (n-- > 0) {
-    q += ONIGENC_MBC_ENC_LEN(enc, q);
+    q += ONIGENC_MBC_ENC_LEN(enc, q, end);
   }
   return (q <= end ? q : NULL);
 }
@@ -114,7 +114,7 @@ onigenc_strlen(OnigEncoding enc, const UChar* p, const UChar* end)
   UChar* q = (UChar* )p;
   
   while (q < end) {
-    q += ONIGENC_MBC_ENC_LEN(enc, q);
+    q += ONIGENC_MBC_ENC_LEN(enc, q, end);
     n++;
   }
   return n;
@@ -125,6 +125,7 @@ onigenc_strlen_null(OnigEncoding enc, const UChar* s)
 {
   int n = 0;
   UChar* p = (UChar* )s;
+  UChar* e = p + strlen(s);
   
   while (1) {
     if (*p == '\0') {
@@ -140,7 +141,7 @@ onigenc_strlen_null(OnigEncoding enc, const UChar* s)
       }
       if (len == 1) return n;
     }
-    p += ONIGENC_MBC_ENC_LEN(enc, p);
+    p += ONIGENC_MBC_ENC_LEN(enc, p, e);
     n++;
   }
 }
@@ -150,6 +151,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
 {
   UChar* start = (UChar* )s;
   UChar* p = (UChar* )s;
+  UChar* e = p + strlen(s);
 
   while (1) {
     if (*p == '\0') {
@@ -165,7 +167,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
       }
       if (len == 1) return (int )(p - start);
     }
-    p += ONIGENC_MBC_ENC_LEN(enc, p);
+    p += ONIGENC_MBC_ENC_LEN(enc, p, e);
   }
 }
 
@@ -638,7 +640,7 @@ onigenc_mbn_mbc_to_code(OnigEncoding enc, const UChar* p, const UChar* end)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enc_len(enc, p);
+  len = enc_len(enc, p, end);
   n = (OnigCodePoint )(*p++);
   if (len == 1) return n;
 
@@ -665,7 +667,7 @@ onigenc_mbn_mbc_case_fold(OnigEncoding enc, OnigCaseFoldType flag,
   else {
     int i;
 
-    len = enc_len(enc, p);
+    len = enc_len(enc, p, end);
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
     }
@@ -718,7 +720,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   *p++ = (UChar )(code & 0xff);
 
 #if 1
-  if (enc_len(enc, buf) != (p - buf))
+  if (enc_len(enc, buf, p) != (p - buf))
     return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
@@ -741,7 +743,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   *p++ = (UChar )(code & 0xff);
 
 #if 1
-  if (enc_len(enc, buf) != (p - buf))
+  if (enc_len(enc, buf, p) != (p - buf))
     return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
@@ -825,7 +827,7 @@ onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
     if (x) return x;
 
     sascii++;
-    p += enc_len(enc, p);
+    p += enc_len(enc, p, end);
   }
   return 0;
 }

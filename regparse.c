@@ -246,12 +246,12 @@ strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 #define PUNFETCH     p = pfetch_prev
 #define PINC       do { \
   pfetch_prev = p; \
-  p += ONIGENC_MBC_ENC_LEN(enc, p); \
+  p += ONIGENC_MBC_ENC_LEN(enc, p, end); \
 } while (0)
 #define PFETCH(c)  do { \
   c = ONIGENC_MBC_TO_CODE(enc, p, end); \
   pfetch_prev = p; \
-  p += ONIGENC_MBC_ENC_LEN(enc, p); \
+  p += ONIGENC_MBC_ENC_LEN(enc, p, end); \
 } while (0)
 
 #define PPEEK        (p < end ? ONIGENC_MBC_TO_CODE(enc, p, end) : PEND_VALUE)
@@ -1539,7 +1539,7 @@ static int
 str_node_can_be_split(StrNode* sn, OnigEncoding enc)
 {
   if (sn->end > sn->s) {
-    return ((enc_len(enc, sn->s) < sn->end - sn->s)  ?  1 : 0);
+    return ((enc_len(enc, sn->s, sn->end) < sn->end - sn->s)  ?  1 : 0);
   }
   return 0;
 }
@@ -2733,12 +2733,12 @@ find_str_position(OnigCodePoint s[], int n, UChar* from, UChar* to,
   
   while (p < to) {
     x = ONIGENC_MBC_TO_CODE(enc, p, to);
-    q = p + enc_len(enc, p);
+    q = p + enc_len(enc, p, to);
     if (x == s[0]) {
       for (i = 1; i < n && q < to; i++) {
 	x = ONIGENC_MBC_TO_CODE(enc, q, to);
 	if (x != s[i]) break;
-	q += enc_len(enc, q);
+	q += enc_len(enc, q, to);
       }
       if (i >= n) {
 	if (IS_NOT_NULL(next))
@@ -2764,19 +2764,19 @@ str_exist_check_with_esc(OnigCodePoint s[], int n, UChar* from, UChar* to,
   while (p < to) {
     if (in_esc) {
       in_esc = 0;
-      p += enc_len(enc, p);
+      p += enc_len(enc, p, to);
     }
     else {
       x = ONIGENC_MBC_TO_CODE(enc, p, to);
-      q = p + enc_len(enc, p);
+      q = p + enc_len(enc, p, to);
       if (x == s[0]) {
 	for (i = 1; i < n && q < to; i++) {
 	  x = ONIGENC_MBC_TO_CODE(enc, q, to);
 	  if (x != s[i]) break;
-	  q += enc_len(enc, q);
+	  q += enc_len(enc, q, to);
 	}
 	if (i >= n) return 1;
-	p += enc_len(enc, p);
+	p += enc_len(enc, p, to);
       }
       else {
 	x = ONIGENC_MBC_TO_CODE(enc, p, to);
@@ -2904,7 +2904,7 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
             return ONIGERR_TOO_LONG_WIDE_CHAR_VALUE;
         }
 
-	if (p > prev + enc_len(enc, prev) && !PEND && (PPEEK_IS('}'))) {
+	if (p > prev + enc_len(enc, prev, end) && !PEND && (PPEEK_IS('}'))) {
 	  PINC;
 	  tok->type   = TK_CODE_POINT;
 	  tok->base   = 16;
@@ -3244,7 +3244,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
             return ONIGERR_TOO_LONG_WIDE_CHAR_VALUE;
         }
 
-	if ((p > prev + enc_len(enc, prev)) && !PEND && PPEEK_IS('}')) {
+	if ((p > prev + enc_len(enc, prev, end)) && !PEND && PPEEK_IS('}')) {
 	  PINC;
 	  tok->type   = TK_CODE_POINT;
 	  tok->u.code = (OnigCodePoint )num;
@@ -3443,7 +3443,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	tok->u.code = (OnigCodePoint )num;
       }
       else { /* string */
-	p = tok->backp + enc_len(enc, tok->backp);
+	p = tok->backp + enc_len(enc, tok->backp, end);
       }
       break;
     }
@@ -4120,7 +4120,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 	  goto err;
 	}
 
-	len = enc_len(env->enc, buf);
+	len = enc_len(env->enc, buf, buf+i);
 	if (i < len) {
 	  r = ONIGERR_TOO_SHORT_MULTI_BYTE_STRING;
 	  goto err;
@@ -4927,7 +4927,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
       len = 1;
       while (1) {
 	if (len >= ONIGENC_MBC_MINLEN(env->enc)) {
-	  if (len == enc_len(env->enc, NSTR(*np)->s)) {
+	  if (len == enc_len(env->enc, NSTR(*np)->s, NSTR(*np)->end)) {
 	    r = fetch_token(tok, src, end, env);
 	    NSTRING_CLEAR_RAW(*np);
 	    goto string_end;

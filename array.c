@@ -2929,7 +2929,7 @@ rb_ary_choice(VALUE ary)
  *  Calls <i>block</i> repeatedly forever.
  *     
  *     a = ["a", "b", "c"]
- *     a.each {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
  *     
  */
 

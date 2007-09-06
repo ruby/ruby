@@ -144,7 +144,7 @@ typedef struct {
 typedef int (*OnigApplyAllCaseFoldFunc)(OnigCodePoint from, OnigCodePoint* to, int to_len, void* arg);
 
 typedef struct OnigEncodingTypeST {
-  int    (*mbc_enc_len)(const OnigUChar* p);
+  int    (*mbc_enc_len)(const OnigUChar* p,const OnigUChar* e);
   const char*   name;
   int           max_enc_len;
   int           min_enc_len;
@@ -255,11 +255,11 @@ ONIG_EXTERN OnigEncodingType OnigEncodingGB18030;
 #define ONIGENC_MAX_STD_CTYPE  ONIGENC_CTYPE_ASCII
 
 
-#define enc_len(enc,p)                ONIGENC_MBC_ENC_LEN(enc, p)
+#define enc_len(enc,p,e)                ONIGENC_MBC_ENC_LEN(enc, p, e)
 
 #define ONIGENC_IS_UNDEF(enc)          ((enc) == ONIG_ENCODING_UNDEF)
 #define ONIGENC_IS_SINGLEBYTE(enc)     (ONIGENC_MBC_MAXLEN(enc) == 1)
-#define ONIGENC_IS_MBC_HEAD(enc,p)     (ONIGENC_MBC_ENC_LEN(enc,p) != 1)
+#define ONIGENC_IS_MBC_HEAD(enc,p,e)   (ONIGENC_MBC_ENC_LEN(enc,p,e) != 1)
 #define ONIGENC_IS_MBC_ASCII(p)           (*(p)   < 128)
 #define ONIGENC_IS_CODE_ASCII(code)       ((code) < 128)
 #define ONIGENC_IS_MBC_WORD(enc,s,end) \
@@ -281,7 +281,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingGB18030;
 #define ONIGENC_STEP_BACK(enc,start,s,n) \
         onigenc_step_back((enc),(start),(s),(n))
 
-#define ONIGENC_MBC_ENC_LEN(enc,p)             (enc)->mbc_enc_len(p)
+#define ONIGENC_MBC_ENC_LEN(enc,p,e)           (enc)->mbc_enc_len(p,e)
 #define ONIGENC_MBC_MAXLEN(enc)               ((enc)->max_enc_len)
 #define ONIGENC_MBC_MAXLEN_DIST(enc)           ONIGENC_MBC_MAXLEN(enc)
 #define ONIGENC_MBC_MINLEN(enc)               ((enc)->min_enc_len)

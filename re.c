@@ -393,11 +393,11 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 
     p = s; pend = p + len;
     while (p<pend) {
-	if (*p == '/' || (!rb_enc_isprint(*p, enc) && !ismbchar(p, enc))) {
+	if (*p == '/' || (!rb_enc_isprint(*p, enc) && !ismbchar(p, pend, enc))) {
 	    need_escape = 1;
 	    break;
 	}
-	p += mbclen(p, enc);
+	p += mbclen(p, pend, enc);
     }
     if (!need_escape) {
 	rb_str_buf_cat(str, s, len);
@@ -406,7 +406,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	p = s;
 	while (p<pend) {
 	    if (*p == '\\') {
-		int n = mbclen(p+1, enc) + 1;
+		int n = mbclen(p+1, pend, enc) + 1;
 		rb_str_buf_cat(str, p, n);
 		p += n;
 		continue;
@@ -416,9 +416,9 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else if (ismbchar(p, enc)) {
-	    	rb_str_buf_cat(str, p, mbclen(p, enc));
-		p += mbclen(p, enc);
+	    else if (ismbchar(p, pend, enc)) {
+	    	rb_str_buf_cat(str, p, mbclen(p, pend, enc));
+		p += mbclen(p, pend, enc);
 		continue;
 	    }
 	    else if (rb_enc_isprint(*p, enc)) {
@@ -1906,8 +1906,8 @@ rb_reg_quote(VALUE str)
     send = s + RSTRING_LEN(str);
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(s, enc)) {
-	    int n = mbclen(s, enc);
+	if (ismbchar(s, send, enc)) {
+	    int n = mbclen(s, send, enc);
 
 	    while (n-- && s < send)
 		s++;
@@ -1935,8 +1935,8 @@ rb_reg_quote(VALUE str)
 
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(s, enc)) {
-	    int n = mbclen(s, enc);
+	if (ismbchar(s, send, enc)) {
+	    int n = mbclen(s, send, enc);
 
 	    while (n-- && s < send)
 		*t++ = *s++;
@@ -2180,8 +2180,8 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     while (s < e) {
 	char *ss = s++;
 
-	if (ismbchar(ss, enc)) {
-	    s += mbclen(ss, enc) - 1;
+	if (ismbchar(ss, e, enc)) {
+	    s += mbclen(ss, e, enc) - 1;
 	    continue;
 	}
 	if (*ss != '\\' || s == e) continue;
@@ -2214,7 +2214,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
               name_end = name = s + 1;
               while (name_end < e) {
                 if (*name_end == '>') break;
-                name_end += mbclen(name_end, enc);
+                name_end += mbclen(name_end, e, enc);
               }
               if (name_end < e) {
                 no = name_to_backref_number(regs, regexp, name, name_end);

@@ -4558,10 +4558,10 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 # define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
 #endif
 
-#define parser_mbclen()  mbclen((lex_p-1),parser->enc)
-#define is_identchar(p, enc) (rb_enc_isalnum(*p, enc) || (*p) == '_' || ismbchar(p, enc))
-#define parser_ismbchar() ismbchar((lex_p-1), parser->enc)
-#define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),parser->enc))
+#define parser_mbclen()  mbclen((lex_p-1),lex_pend,parser->enc)
+#define is_identchar(p,e,enc) (rb_enc_isalnum(*p,enc) || (*p) == '_' || ismbchar(p,e,enc))
+#define parser_ismbchar() ismbchar((lex_p-1), lex_pend, parser->enc)
+#define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,parser->enc))
 
 static int
 parser_yyerror(struct parser_params *parser, const char *msg)
@@ -5995,7 +5995,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
-		 lex_p < lex_pend && is_identchar(lex_p, parser->enc)) {
+		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
 	    goto ternary;
 	}
 	else if (c == '\\') {
@@ -8328,7 +8328,7 @@ internal_id_gen(struct parser_params *parser)
 }
 
 static int
-is_special_global_name(const char *m, rb_encoding *enc)
+is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 {
     switch (*m) {
       case '~': case '*': case '$': case '?': case '!': case '@':
@@ -8340,7 +8340,7 @@ is_special_global_name(const char *m, rb_encoding *enc)
 	break;
       case '-':
 	++m;
-	if (is_identchar(m, enc)) m += rb_enc_mbclen(m, enc);
+	if (is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	break;
       default:
 	if (!rb_enc_isdigit(*m, enc)) return 0;
@@ -8353,6 +8353,7 @@ int
 rb_symname_p(const char *name)
 {
     const char *m = name;
+    const char *e = m + strlen(m);
     int localid = Qfalse;
     rb_encoding *enc = rb_enc_from_index(0);
 
@@ -8362,7 +8363,7 @@ rb_symname_p(const char *name)
 	return Qfalse;
 
       case '$':
-	if (is_special_global_name(++m, enc)) return Qtrue;
+	if (is_special_global_name(++m, e, enc)) return Qtrue;
 	goto id;
 
       case '@':
@@ -8411,8 +8412,9 @@ rb_symname_p(const char *name)
       default:
 	localid = !rb_enc_isupper(*m, enc);
       id:
-	if (*m != '_' && !rb_enc_isalpha(*m, enc) && !ismbchar(m, enc)) return Qfalse;
-	while (is_identchar(m, enc)) m += rb_enc_mbclen(m, enc);
+	if (*m != '_' && !rb_enc_isalpha(*m, enc) && !ismbchar(m, e, enc))
+		  return Qfalse;
+	while (is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	if (localid) {
 	    switch (*m) {
 	      case '!': case '?': case '=': ++m;
@@ -8427,6 +8429,7 @@ ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
     const char *m = name;
+    const char *e = m + len;
     VALUE str;
     ID id;
     int last;
@@ -8445,7 +8448,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     switch (*m) {
       case '$':
 	id |= ID_GLOBAL;
-	if (is_special_global_name(++m, enc)) goto new_id;
+	if (is_special_global_name(++m, e, enc)) goto new_id;
 	break;
       case '@':
 	if (m[1] == '@') {
@@ -8490,8 +8493,8 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	break;
     }
     if (!rb_enc_isdigit(*m, enc)) {
-	while (m <= name + last && is_identchar(m, enc)) {
-	    m += rb_enc_mbclen(m, enc);
+	while (m <= name + last && is_identchar(m, e, enc)) {
+	    m += rb_enc_mbclen(m, e, enc);
 	}
     }
     if (m - name < len) id = ID_JUNK;

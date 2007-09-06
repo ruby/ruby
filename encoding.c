@@ -189,7 +189,7 @@ rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
     }
     else {
 	for (c=0; p<e && nth--; c++) {
-	    int n = rb_enc_mbclen(p, enc);
+	    int n = rb_enc_mbclen(p, e, enc);
 
 	    if (n == 0) return 0;
 	    p += n;
@@ -208,7 +208,7 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     }
 
     for (c=0; p<e; c++) {
-	int n = rb_enc_mbclen(p, enc);
+	int n = rb_enc_mbclen(p, e, enc);
 
 	if (n == 0) return -1;
 	p += n;
@@ -217,9 +217,9 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 }
 
 int
-rb_enc_mbclen(const char *p, rb_encoding *enc)
+rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
-    int n = ONIGENC_MBC_ENC_LEN(enc, (UChar*)p);
+    int n = ONIGENC_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
     if (n == 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
     }

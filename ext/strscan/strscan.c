@@ -661,7 +661,7 @@ strscan_getch(VALUE self)
     if (EOS_P(p))
         return Qnil;
 
-    len = rb_enc_mbclen(CURPTR(p), enc);
+    len = rb_enc_mbclen(CURPTR(p), S_PEND(p), enc);
     if (p->curr + len > S_LEN(p)) {
         len = S_LEN(p) - p->curr;
     }

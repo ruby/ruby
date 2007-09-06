@@ -71,7 +71,7 @@ static const char SJIS_CAN_BE_TRAIL_TABLE[256] = {
 #define SJIS_ISMB_TRAIL(byte)  SJIS_CAN_BE_TRAIL_TABLE[(byte)]
 
 static int
-mbc_enc_len(const UChar* p)
+mbc_enc_len(const UChar* p, const UChar* e)
 {
   return EncLen_SJIS[*p];
 }
@@ -98,7 +98,7 @@ mbc_to_code(const UChar* p, const UChar* end)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enc_len(ONIG_ENCODING_SJIS, p);
+  len = enc_len(ONIG_ENCODING_SJIS, p, end);
   c = *p++;
   n = c;
   if (len == 1) return n;
@@ -139,7 +139,7 @@ mbc_case_fold(OnigCaseFoldType flag,
   }
   else {
     int i;
-    int len = enc_len(ONIG_ENCODING_SJIS, p);
+    int len = enc_len(ONIG_ENCODING_SJIS, p, end);
 
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
@@ -192,7 +192,7 @@ left_adjust_char_head(const UChar* start, const UChar* s)
       }
     } 
   }
-  len = enc_len(ONIG_ENCODING_SJIS, p);
+  len = enc_len(ONIG_ENCODING_SJIS, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

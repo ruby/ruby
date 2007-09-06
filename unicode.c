@@ -10832,7 +10832,7 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
     if (len >= PROPERTY_NAME_MAX_SIZE)
       return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
 
-    p += enc_len(enc, p);
+    p += enc_len(enc, p, end);
   }
 
   buf[len] = 0;
@@ -10963,7 +10963,7 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
   if (CaseFoldInited == 0) init_case_fold_table();
 
   code = ONIGENC_MBC_TO_CODE(enc, p, end);
-  len = enc_len(enc, p);
+  len = enc_len(enc, p, end);
   *pp += len;
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
@@ -11155,7 +11155,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   n = 0;
 
   code = ONIGENC_MBC_TO_CODE(enc, p, end);
-  len = enc_len(enc, p);
+  len = enc_len(enc, p, end);
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
   if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) != 0) {
@@ -11304,7 +11304,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       else
 	codes[1] = code;
 
-      clen = enc_len(enc, p);
+      clen = enc_len(enc, p, end);
       len += clen;
       if (onig_st_lookup(Unfold2Table, (st_data_t )codes, (void* )&z2) != 0) {
 	for (i = 0; i < z2->n; i++) {
@@ -11325,7 +11325,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	else
 	  codes[2] = code;
 
-	clen = enc_len(enc, p);
+	clen = enc_len(enc, p, end);
 	len += clen;
 	if (onig_st_lookup(Unfold3Table, (st_data_t )codes,
 			   (void* )&z2) != 0) {

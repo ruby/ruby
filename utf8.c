@@ -60,7 +60,7 @@ static const int EncLen_UTF8[] = {
 };
 
 static int
-utf8_mbc_enc_len(const UChar* p)
+utf8_mbc_enc_len(const UChar* p, const UChar* e)
 {
   return EncLen_UTF8[*p];
 }
@@ -96,7 +96,7 @@ utf8_mbc_to_code(const UChar* p, const UChar* end)
   int c, len;
   OnigCodePoint n;
 
-  len = enc_len(ONIG_ENCODING_UTF8, p);
+  len = enc_len(ONIG_ENCODING_UTF8, p, end);
   c = *p++;
   if (len > 1) {
     len--;

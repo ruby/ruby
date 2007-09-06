@@ -209,7 +209,7 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
 	buf[len++] = (UChar )code;
       }
 
-      p += enc_len(enc, p);
+      p += enc_len(enc, p, end);
       if (len >= buf_size) break;
     }
 
@@ -330,15 +330,15 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
     while (p < pat_end) {
       if (*p == '\\') {
 	*s++ = *p++;
-	len = enc_len(enc, p);
+	len = enc_len(enc, p, pat_end);
 	while (len-- > 0) *s++ = *p++;
       }
       else if (*p == '/') {
 	*s++ = (unsigned char )'\\';
 	*s++ = *p++;
       }
-      else if (ONIGENC_IS_MBC_HEAD(enc, p)) {
-        len = enc_len(enc, p);
+      else if (ONIGENC_IS_MBC_HEAD(enc, p, pat_end)) {
+        len = enc_len(enc, p, pat_end);
         if (ONIGENC_MBC_MINLEN(enc) == 1) {
           while (len-- > 0) *s++ = *p++;
         }

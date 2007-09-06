@@ -1,3 +1,8 @@
+Thu Sep  6 21:31:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_cycle): typo in rdoc.  a patch from Yugui
+	  <yugui@yugui.sakura.ne.jp>.  [ruby-dev:31748]
+
 Thu Sep  6 12:42:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ, rb_str_chop_bang, rb_str_chop): m17n support.

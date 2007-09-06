@@ -51,7 +51,7 @@ static const int EncLen_EUCJP[] = {
 };
 
 static int
-mbc_enc_len(const UChar* p)
+mbc_enc_len(const UChar* p, const UChar* e)
 {
   return EncLen_EUCJP[*p];
 }
@@ -62,7 +62,7 @@ mbc_to_code(const UChar* p, const UChar* end)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enc_len(ONIG_ENCODING_EUC_JP, p);
+  len = enc_len(ONIG_ENCODING_EUC_JP, p, end);
   n = (OnigCodePoint )*p++;
   if (len == 1) return n;
 
@@ -113,7 +113,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf)
   *p++ = (UChar )(code & 0xff);
 
 #if 1
-  if (enc_len(ONIG_ENCODING_EUC_JP, buf) != (p - buf))
+  if (enc_len(ONIG_ENCODING_EUC_JP, buf, p) != (p - buf))
     return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
 #endif  
   return p - buf;
@@ -134,7 +134,7 @@ mbc_case_fold(OnigCaseFoldType flag,
   else {
     int i;
 
-    len = enc_len(ONIG_ENCODING_EUC_JP, p);
+    len = enc_len(ONIG_ENCODING_EUC_JP, p, end);
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
     }
@@ -156,7 +156,7 @@ left_adjust_char_head(const UChar* start, const UChar* s)
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = enc_len(ONIG_ENCODING_EUC_JP, p);
+  len = enc_len(ONIG_ENCODING_EUC_JP, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
