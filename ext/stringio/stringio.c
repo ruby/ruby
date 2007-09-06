@@ -631,7 +631,7 @@ strio_getc(VALUE self)
 	return Qnil;
     }
     p = RSTRING_PTR(ptr->string)+ptr->pos;
-    len = rb_enc_mbclen(p, enc);
+    len = rb_enc_mbclen(p, RSTRING_END(ptr->string), enc);
     ptr->pos += len;
     return rb_enc_str_new(p, len, rb_enc_get(ptr->string));
 }
@@ -705,7 +705,7 @@ strio_ungetc(VALUE self, VALUE c)
     /* get logical position */
     lpos = 0; p = RSTRING_PTR(ptr->string); pend = p + ptr->pos - 1;
     for (;;) {
-	clen = rb_enc_mbclen(p, enc);
+	clen = rb_enc_mbclen(p, pend, enc);
 	if (p+clen >= pend) break;
 	p += clen;
 	lpos++;

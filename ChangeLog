@@ -2,6 +2,10 @@ Fri Sep  7 00:28:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_getc): forgot to commit rb_enc_mbclen() fix.
 
+	* ext/stringio/stringio.c (strio_getc): rb_enc_mbclen() fix.
+
+	* ext/stringio/stringio.c (strio_ungetc): ditto.
+
 Thu Sep  6 22:57:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_::copy): prevent self copy of
