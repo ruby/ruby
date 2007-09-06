@@ -1,3 +1,8 @@
+Fri Sep  7 05:36:19 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb (MockClock): correct synchronous problems 
+	  of the MultiThreading. [ruby-dev:31692]
+
 Wed Sep  5 22:02:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_subseq): need integer overflow check.
