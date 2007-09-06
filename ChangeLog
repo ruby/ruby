@@ -1,3 +1,8 @@
+Thu Sep  6 12:42:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_succ, rb_str_chop_bang, rb_str_chop): m17n support.
+	  [ruby-dev:31734]
+
 Wed Sep  5 22:02:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_subseq): need integer overflow check.

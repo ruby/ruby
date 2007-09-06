@@ -62,7 +62,7 @@ int rb_enc_codelen(int, rb_encoding*);
 #define rb_enc_codepoint(p,e,enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)p,(UChar*)e) 
 
 /* ptr, ptr, encoding -> prev_char */
-#define rb_enc_prev_char(s,p,enc) onigenc_get_prev_char_head(enc,(UChar*)s,(UChar*)p)
+#define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)s,(UChar*)p)
 
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
 #define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)

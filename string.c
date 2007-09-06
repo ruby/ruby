@@ -1584,6 +1584,52 @@ succ_char(char *s)
     return 0;
 }
 
+/*
+  overwrite +s+ by succeeding letter of +c+ in +enc+ and returns
+  carried-out letter.  assuming each ranges are successive, and mbclen
+  never change in each ranges.
+ */
+static int
+enc_succ_char(unsigned int c, char *s, rb_encoding *enc)
+{
+    unsigned int cs;
+
+    /* numerics */
+    if (rb_enc_isdigit(c, enc)) {
+	cs = c++;
+	if (rb_enc_isdigit(c, enc)) {
+	    rb_enc_mbcput(c, s, enc);
+	    return 0;
+	}
+	do c = cs--; while (rb_enc_isdigit(cs, enc));
+	rb_enc_mbcput(c, s, enc);
+	return ++c;
+    }
+    /* small alphabets */
+    if (rb_enc_islower(c, enc)) {
+	cs = c++;
+	if (rb_enc_islower(c, enc)) {
+	    rb_enc_mbcput(c, s, enc);
+	    return 0;
+	}
+	do c = cs--; while (rb_enc_islower(cs, enc));
+	rb_enc_mbcput(c, s, enc);
+	return c;
+    }
+    /* capital alphabets */
+    if (rb_enc_isupper(c, enc)) {
+	cs = c++;
+	if (rb_enc_isupper(c, enc)) {
+	    rb_enc_mbcput(c, s, enc);
+	    return 0;
+	}
+	do c = cs--; while (rb_enc_isupper(cs, enc));
+	rb_enc_mbcput(c, s, enc);
+	return c;
+    }
+    return -1;
+}
+
 
 /*
  *  call-seq:
@@ -1617,38 +1663,51 @@ rb_str_succ(VALUE orig)
     VALUE str;
     char *sbeg, *s, *e;
     int c = -1;
-    long n = 0;
+    long n = 0, o = 0, l;
+    char carry[ONIGENC_CODE_TO_MBC_MAXLEN];
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
+    rb_enc_copy(str, orig);
     OBJ_INFECT(str, orig);
     if (RSTRING_LEN(str) == 0) return str;
 
     enc = rb_enc_get(orig);
-    sbeg = RSTRING_PTR(str); s = sbeg + RSTRING_LEN(str) - 1;
-    e = RSTRING_END(str);
+    sbeg = RSTRING_PTR(str);
+    s = e = sbeg + RSTRING_LEN(str);
 
-    while (sbeg <= s) {
+    while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
 	unsigned int cc = rb_enc_codepoint(s, e, enc);
 	if (rb_enc_isalnum(cc, enc)) {
-	    if ((c = succ_char(s)) == 0) break;
+	    if (isascii(cc)) {
+		if ((c = succ_char(s)) == 0) break;
+	    }
+	    else {
+		if ((c = enc_succ_char(cc, s, enc)) == 0) break;
+	    }
 	    n = s - sbeg;
 	}
-	s--;
     }
     if (c == -1) {		/* str contains no alnum */
-	sbeg = RSTRING_PTR(str); s = sbeg + RSTRING_LEN(str) - 1;
 	c = '\001';
-	while (sbeg <= s) {
-	    if ((*s += 1) != 0) break;
-	    s--;
+	s = e;
+	while ((s = rb_enc_prev_char(sbeg, e, enc)) != 0) {
+	    unsigned int cc = rb_enc_codepoint(s, e, enc) + 1;
+	    l = rb_enc_mbcput(cc, carry, enc);
+	    if (l > 0) {
+		if (l == (o = e - s)) goto overlay;
+		n = s - sbeg;
+		goto insert;
+	    }
 	}
     }
-    if (s < sbeg) {
-	RESIZE_CAPA(str, RSTRING_LEN(str) + 1);
+    if (!s && (l = rb_enc_mbcput(c, carry, enc)) > 0) {
+      insert:
+	RESIZE_CAPA(str, RSTRING_LEN(str) + l - o);
 	s = RSTRING_PTR(str) + n;
-	memmove(s+1, s, RSTRING_LEN(str) - n);
-	*s = c;
-	STR_SET_LEN(str, RSTRING_LEN(str) + 1);
+	memmove(s + l, s + o, RSTRING_LEN(str) - n - o);
+      overlay:
+	memmove(s, carry, l);
+	STR_SET_LEN(str, RSTRING_LEN(str) + l - o);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
     }
 
@@ -4040,6 +4099,24 @@ rb_str_each_char(VALUE str)
     return str;
 }
 
+static long
+chopped_length(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    const char *p, *p2, *beg, *end;
+
+    beg = RSTRING_PTR(str);
+    end = beg + RSTRING_LEN(str);
+    if (beg > end) return 0;
+    p = rb_enc_prev_char(beg, end, enc);
+    if (!p) return 0;
+    if (p > beg && rb_enc_codepoint(p, end, enc) == '\n') {
+	p2 = rb_enc_prev_char(beg, p, enc);
+	if (p2 && rb_enc_codepoint(p2, end, enc) == '\r') p = p2;
+    }
+    return p - beg;
+}
+
 /*
  *  call-seq:
  *     str.chop!   => str or nil
@@ -4053,15 +4130,11 @@ static VALUE
 rb_str_chop_bang(VALUE str)
 {
     if (RSTRING_LEN(str) > 0) {
+	long len;
 	rb_str_modify(str);
-	STR_DEC_LEN(str);
-	if (RSTRING_PTR(str)[RSTRING_LEN(str)] == '\n') {
-	    if (RSTRING_LEN(str) > 0 &&
-		RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\r') {
-		STR_DEC_LEN(str);
-	    }
-	}
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+	len = chopped_length(str);
+	STR_SET_LEN(str, len);
+	RSTRING_PTR(str)[len] = '\0';
 	return str;
     }
     return Qnil;
@@ -4088,9 +4161,10 @@ rb_str_chop_bang(VALUE str)
 static VALUE
 rb_str_chop(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_chop_bang(str);
-    return str;
+    VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
+    rb_enc_copy(str2, str);
+    OBJ_INFECT(str2, str);
+    return str2;
 }
 
 
