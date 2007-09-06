@@ -2094,7 +2094,7 @@ rb_io_getc(VALUE io)
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    n = rb_enc_mbclen(fptr->rbuf+fptr->rbuf_off, enc);
+    n = rb_enc_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_len, enc);
     if (n < fptr->rbuf_len) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
 	fptr->rbuf_off += n;
