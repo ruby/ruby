@@ -1,3 +1,12 @@
+Thu Sep  6 22:57:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_::copy): prevent self copy of
+	  directories.
+
+	* lib/fileutils.rb (FileUtils::fu_each_src_dest0): use try_convert.
+
+	* lib/fileutils.rb (FileUtils::fu_update_option): ditto.
+
 Thu Sep  6 21:36:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (OnigEncodingTypeST): add end parameter

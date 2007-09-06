@@ -1224,6 +1224,9 @@ module FileUtils
       when file?
         copy_file dest
       when directory?
+        if !File.exist?(dest) and /^#{Regexp.quote(path)}/ =~ File.dirname(dest)
+          raise ArgumentError, "cannot copy directory %s to itself %s" % [path, dest]
+        end
         begin
           Dir.mkdir dest
         rescue
@@ -1392,8 +1395,8 @@ module FileUtils
   private_module_function :fu_each_src_dest
 
   def fu_each_src_dest0(src, dest)   #:nodoc:
-    if src.is_a?(Array)
-      src.each do |s|
+    if tmp = Array.try_convert(src)
+      tmp.each do |s|
         s = File.path(s)
         yield s, File.join(dest, File.basename(s))
       end
@@ -1436,8 +1439,8 @@ module FileUtils
   private_module_function :fu_check_options
 
   def fu_update_option(args, new)   #:nodoc:
-    if args.last.is_a?(Hash)
-      args[-1] = args.last.dup.update(new)
+    if tmp = Hash.try_convert(args.last)
+      args[-1] = tmp.dup.update(new)
     else
       args.push new
     end
