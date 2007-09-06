@@ -1,3 +1,13 @@
+Thu Sep  6 21:36:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/oniguruma.h (OnigEncodingTypeST): add end parameter
+	  to mbc_enc_len.
+
+	* euc_jp.c (mbc_enc_len), sjis.c (mbc_enc_len),
+	  utf8.c (utf8_mbc_enc_len): ditto.
+
+	* encoding.c (rb_enc_mbclen): add end parameter.
+
 Thu Sep  6 21:31:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_cycle): typo in rdoc.  a patch from Yugui
