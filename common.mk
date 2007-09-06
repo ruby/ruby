@@ -657,7 +657,7 @@ parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
 benchmark: $(PROGRAM) PHONY
-	$(RUNRUBY) $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby=`./$(PROGRAM)  -I$(srcdir)/lib' --matzruby=$(MATZRUBY)
+	$(RUNRUBY) $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby='./$(PROGRAM)  -I$(srcdir)/lib' --matzruby=$(MATZRUBY)
 
 benchmark-each: $(PROGRAM) PHONY
 	$(RUNRUBY) $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby='./$(PROGRAM) -I$(srcdir)/lib' --matzruby=$(MATZRUBY)

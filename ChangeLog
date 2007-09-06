@@ -1,3 +1,7 @@
+Fri Sep  7 00:58:16 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: fix typo.
+
 Fri Sep  7 00:28:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_getc): forgot to commit rb_enc_mbclen() fix.
