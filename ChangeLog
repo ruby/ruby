@@ -1,3 +1,8 @@
+Sat Sep  8 02:56:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_fiber.rb (TestFiber::test_throw): uncaught throw
+	  now raise ArgumentError exception.
+
 Sat Sep  8 02:45:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_members): should raise TypeError instead

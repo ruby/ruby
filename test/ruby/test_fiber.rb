@@ -110,7 +110,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_throw
-    assert_raise(NameError){
+    assert_raise(ArgumentError){
       Fiber.new do
         throw :a
       end.resume
