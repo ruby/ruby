@@ -37,7 +37,7 @@ rb_struct_s_members(VALUE klass)
     VALUE members = rb_struct_iv_get(klass, "__members__");
 
     if (NIL_P(members)) {
-	rb_bug("non-initialized struct");
+	rb_raise(rb_eTypeError, "uninitialized struct");
     }
     return members;
 }
