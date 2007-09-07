@@ -606,7 +606,7 @@ rb_ary_subseq(ary, beg, len)
     if (beg > RARRAY(ary)->len) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
 
-    if (beg + len > RARRAY(ary)->len) {
+    if (RARRAY(ary)->len < len || RARRAY(ary)->len < beg + len) {
 	len = RARRAY(ary)->len - beg;
 	if (len < 0)
 	    len = 0;
@@ -961,7 +961,7 @@ rb_ary_splice(ary, beg, len, rpl)
 	    rb_raise(rb_eIndexError, "index %ld out of array", beg);
 	}
     }
-    if (beg + len > RARRAY(ary)->len) {
+    if (RARRAY(ary)->len < len || RARRAY(ary)->len < beg + len) {
 	len = RARRAY(ary)->len - beg;
     }
 
