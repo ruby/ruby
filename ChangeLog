@@ -1,3 +1,9 @@
+Fri Sep  7 14:27:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (mnew): should preserve noex as safe_level.
+
+	* eval.c (rb_call0): tighten security check condition..
+
 Fri Sep  7 14:19:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (group_member): check if presents.
