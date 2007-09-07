@@ -1,3 +1,8 @@
+Fri Sep  7 16:39:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): integer overflow for length.
+	  [ruby-dev:31739]
+
 Fri Sep  7 16:33:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/defines.h (flush_register_windows): call "ta 0x03"

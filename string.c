@@ -1647,7 +1647,7 @@ rb_str_splice(str, beg, len, val)
 	}
 	beg += RSTRING(str)->len;
     }
-    if (RSTRING(str)->len < beg + len) {
+    if (RSTRING(str)->len < len || RSTRING(str)->len < beg + len) {
 	len = RSTRING(str)->len - beg;
     }
 
