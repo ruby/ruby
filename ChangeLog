@@ -1,3 +1,9 @@
+Fri Sep  7 16:09:39 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_type_progid, reg_enum_key, 
+	  reg_get_val, ole_wc2mb): fix the bug. Thanks, arton. 
+	  [ruby-dev:31576]
+
 Fri Sep  7 15:50:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (mnew): should preserve noex as safe_level.
