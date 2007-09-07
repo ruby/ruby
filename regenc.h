@@ -117,7 +117,7 @@ ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((const UChar* p, const UChar* end
 
 /* methods for single byte encoding */
 ONIG_EXTERN int onigenc_ascii_mbc_case_fold P_((OnigCaseFoldType flag, const UChar** p, const UChar* end, UChar* lower));
-ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((const UChar* p));
+ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((const UChar* p, const UChar* e));
 ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((const UChar* p, const UChar* end));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc P_((OnigCodePoint code, UChar *buf));

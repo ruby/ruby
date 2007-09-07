@@ -1,3 +1,8 @@
+Sat Sep  8 01:46:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* regenc.c, regenc.h (onigenc_single_byte_mbc_enc_len): should take
+	  two arguments. [ruby-dev:31754]
+
 Fri Sep  7 00:58:16 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: fix typo.

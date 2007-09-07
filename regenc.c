@@ -592,7 +592,7 @@ onigenc_ascii_is_mbc_ambiguous(OnigCaseFoldType flag,
 #endif
 
 extern int
-onigenc_single_byte_mbc_enc_len(const UChar* p)
+onigenc_single_byte_mbc_enc_len(const UChar* p, const UChar* e)
 {
   return 1;
 }
