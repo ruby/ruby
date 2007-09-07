@@ -1,3 +1,8 @@
+Fri Sep  7 15:40:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb, test/ruby/test_system.rb(valid_syntax?): keep
+	  comment lines first.
+
 Wed Aug 22 12:40:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_delete_key): delete the entry without calling block.

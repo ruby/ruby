@@ -1697,7 +1697,10 @@ else
 end
 
 def valid_syntax?(code, fname)
-  eval("BEGIN {return true}\n#{code}", nil, fname, 0)
+  code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
+    "#$&#{"\n" if $1 && !$2}BEGIN{return true}\n"
+  }
+  eval(code, nil, fname, 0)
 rescue Exception
   puts $!.message
   false
