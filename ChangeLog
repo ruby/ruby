@@ -1,3 +1,9 @@
+Fri Sep  7 15:42:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (detach_process_watcher): should not pass the pointer
+	  to an auto variable to the thread to be created.  pointed and
+	  fix by KUBO Takehiro <kubo at jiubao.org>  [ruby-dev:30618]
+
 Fri Sep  7 15:40:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/test.rb, test/ruby/test_system.rb(valid_syntax?): keep
