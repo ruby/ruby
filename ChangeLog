@@ -1,5 +1,8 @@
 Fri Sep  7 14:32:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* array.c (rb_ary_fill): need integer overflow check.
+	  [ruby-dev:31738]
+
 	* string.c (rb_str_splice): integer overflow for length.
 	  [ruby-dev:31739]
 
