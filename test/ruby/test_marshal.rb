@@ -38,10 +38,18 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_inconsistent_struct
-    TestMarshal.const_set :S, Struct.new(:a)
-    s = Marshal.dump(S.new(1))
-    TestMarshal.instance_eval { remove_const :S }
-    TestMarshal.const_set :S, Class.new
+    TestMarshal.const_set :StructOrNot, Struct.new(:a)
+    s = Marshal.dump(StructOrNot.new(1))
+    TestMarshal.instance_eval { remove_const :StructOrNot }
+    TestMarshal.const_set :StructOrNot, Class.new
     assert_raise(TypeError, "[ruby-dev:31709]") { Marshal.load(s) }
+  end
+
+  def test_struct_invalid_members
+    TestMarshal.const_set :StructInvalidMembers, Struct.new(:a)
+    Marshal.load("\004\bIc&TestMarshal::StructInvalidMembers\006:\020__members__\"\bfoo")
+    assert_raise(TypeError, "[ruby-dev:31759]") {
+      TestMarshal::StructInvalidMembers.members
+    }
   end
 end
