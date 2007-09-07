@@ -1,3 +1,8 @@
+Fri Sep  7 17:06:16 2007  Vincent Isambart <vincent.isambart@gmail.com>
+
+	* eval.c (rb_thread_start_0): should unset time_thread_alive_p.
+	  [ruby-talk:257219], [ruby-core:11542], [ruby-dev:31253]
+
 Fri Sep  7 16:39:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_subseq): need integer overflow check.

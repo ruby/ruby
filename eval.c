@@ -11846,6 +11846,12 @@ rb_thread_stop_timer()
 }
 
 void
+rb_child_atfork()
+{
+    time_thread_alive_p = 0;
+}
+
+void
 rb_thread_cancel_timer()
 {
 #ifdef _THREAD_SAFE
@@ -11939,6 +11945,7 @@ rb_thread_start_0(fn, arg, th)
 #ifdef _THREAD_SAFE
 	pthread_create(&time_thread, 0, thread_timer, 0);
         time_thread_alive_p = 1;
+        pthread_atfork(0, 0, rb_child_atfork);
 #else
 	rb_thread_start_timer();
 #endif
