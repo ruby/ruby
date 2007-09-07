@@ -1,3 +1,11 @@
+Fri Sep  7 14:19:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (group_member): check if presents.
+
+	* configure.in (XCFLAGS): add _GNU_SOURCE on linux.
+
+	* file.c (group_member): use system routine if available.
+
 Fri Sep  7 14:14:19 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/defines.h (flush_register_windows): call "ta 0x03"

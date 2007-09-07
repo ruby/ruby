@@ -489,7 +489,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      setproctitle setrgid setegid setregid setresgid issetugid pause\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
 	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
-              dlopen sigprocmask\
+	      group_member dlopen sigprocmask\
 	      sigaction _setjmp setsid telldir seekdir fchmod mktime timegm\
 	      cosh sinh tanh setuid setgid setenv unsetenv)
 AC_ARG_ENABLE(setreuid,
@@ -1359,6 +1359,9 @@ fi
 AC_SUBST(RDOCTARGET)
 
 case "$target_os" in
+    linux*)
+	XCFLAGS="$XCFLAGS -D_GNU_SOURCE=1"
+	;;
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"
 	;;
