@@ -1,3 +1,9 @@
+Fri Sep  7 15:50:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (mnew): should preserve noex as safe_level.
+
+	* eval.c (rb_call0): tighten security check condition..
+
 Fri Sep  7 15:43:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c (Init_tcltklib): use rb_set_end_proc().
