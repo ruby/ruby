@@ -162,7 +162,7 @@ rubylib_mangled_path(const char *s, unsigned int l)
 	return rb_str_new(s, l);
     }
     ret = rb_str_new(0, l + newl - oldl);
-    ptr = RSTRING_PTR(ret);
+    ptr = RSTRING(ret)->ptr;
     memcpy(ptr, newp, newl);
     memcpy(ptr + newl, s + oldl, l - oldl);
     ptr[l + newl - oldl] = 0;
@@ -218,11 +218,11 @@ push_include_cygwin(const char *path)
 	if (*s) {
 	    if (!buf) {
 		buf = rb_str_new(p, len);
-		p = RSTRING_PTR(buf);
+		p = RSTRING(buf)->ptr;
 	    }
 	    else {
 		rb_str_resize(buf, len);
-		p = strncpy(RSTRING_PTR(buf), p, len);
+		p = strncpy(RSTRING(buf)->ptr, p, len);
 	    }
 	}
 	if (cygwin_conv_to_posix_path(p, rubylib) == 0)
