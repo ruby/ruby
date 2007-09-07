@@ -848,23 +848,22 @@ proc_waitall()
 }
 
 static VALUE
-detach_process_watcher(pid_p)
-    int *pid_p;
+detach_process_watcher(arg)
+    void *arg;
 {
-    int cpid, status;
+    int pid = (int)arg, status;
 
-    for (;;) {
-	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid != 0) return Qnil;
+    while (rb_waitpid(pid, &status, WNOHANG) == 0) {
 	rb_thread_sleep(1);
     }
+    return Qnil;
 }
 
 VALUE
 rb_detach_process(pid)
     int pid;
 {
-    return rb_thread_create(detach_process_watcher, (void*)&pid);
+    return rb_thread_create(detach_process_watcher, (void*)pid);
 }
 
 
