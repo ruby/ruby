@@ -1,3 +1,9 @@
+Fri Sep  7 14:12:37 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_type_progid, reg_enum_key, 
+	  reg_get_val, ole_wc2mb): fix the bug. Thanks, arton. 
+	  [ruby-dev:31576]
+
 Fri Sep  7 14:02:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (detach_process_watcher): should not pass the pointer
