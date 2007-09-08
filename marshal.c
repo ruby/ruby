@@ -1248,7 +1248,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_STRUCT:
 	{
 	    VALUE klass, mem;
-            volatile VALUE values;
+            VALUE values;
 	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
 	    long len;
 	    ID slot;
