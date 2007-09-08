@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.38 2007-09-01 00:03:46+09 tadf Exp $
+# $Id: format.rb,v 2.39 2007-09-08 08:30:25+09 tadf Exp $
 
 require 'rational'
 
@@ -215,8 +215,9 @@ class Date
 	  :emit_a, :emit_ad, :emit_au
 
   def strftime(fmt='%F')
-    fmt.gsub(/%([-_0^#]+)?(\d+)?[EO]?(:{1,3}z|.)/m) do |m|
+    fmt.gsub(/%([-_0^#]+)?(\d+)?([EO]?(?::{1,3}z|.))/m) do |m|
       f = {}
+      a = $&
       s, w, c = $1, $2, $3
       if s
 	s.scan(/./) do |k|
@@ -237,11 +238,11 @@ class Date
       when 'a'; emit_ad(ABBR_DAYNAMES[wday], 0, f)
       when 'B'; emit_ad(MONTHNAMES[mon], 0, f)
       when 'b'; emit_ad(ABBR_MONTHNAMES[mon], 0, f)
-      when 'C'; emit_sn((year / 100).floor, 2, f)
-      when 'c'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 0, f)
+      when 'C', 'EC'; emit_sn((year / 100).floor, 2, f)
+      when 'c', 'Ec'; emit_a(strftime('%a %b %e %H:%M:%S %Y'), 0, f)
       when 'D'; emit_a(strftime('%m/%d/%y'), 0, f)
-      when 'd'; emit_n(mday, 2, f)
-      when 'e'; emit_a(mday, 2, f)
+      when 'd', 'Od'; emit_n(mday, 2, f)
+      when 'e', 'Oe'; emit_a(mday, 2, f)
       when 'F'
 	if m == '%F'
 	  format('%.4d-%02d-%02d', year, mon, mday) # 4p
@@ -250,16 +251,16 @@ class Date
 	end
       when 'G'; emit_sn(cwyear, 4, f)
       when 'g'; emit_n(cwyear % 100, 2, f)
-      when 'H'; emit_n(hour, 2, f)
+      when 'H', 'OH'; emit_n(hour, 2, f)
       when 'h'; emit_ad(strftime('%b'), 0, f)
-      when 'I'; emit_n((hour % 12).nonzero? || 12, 2, f)
+      when 'I', 'OI'; emit_n((hour % 12).nonzero? || 12, 2, f)
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
 	emit_n((sec_fraction / (1.to_r/86400/(10**3))).round, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
-      when 'M'; emit_n(min, 2, f)
-      when 'm'; emit_n(mon, 2, f)
+      when 'M', 'OM'; emit_n(min, 2, f)
+      when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
 	emit_n((sec_fraction / (1.to_r/86400/(10**9))).round, 9, f)
       when 'n'; "\n"
@@ -271,7 +272,7 @@ class Date
 	emit_sn(s, 1, f)
       when 'R'; emit_a(strftime('%H:%M'), 0, f)
       when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
-      when 'S'; emit_n(sec, 2, f)
+      when 'S', 'OS'; emit_n(sec, 2, f)
       when 's'
 	d = ajd - self.class.jd_to_ajd(self.class::UNIXEPOCH, 0)
 	s = (d * 86400).to_i
@@ -283,16 +284,16 @@ class Date
 	  emit_a(strftime('%H:%M:%S'), 0, f)
 	end
       when 't'; "\t"
-      when 'U', 'W'
-	emit_n(if c == 'U' then wnum0 else wnum1 end, 2, f)
-      when 'u'; emit_n(cwday, 1, f)
-      when 'V'; emit_n(cweek, 2, f)
+      when 'U', 'W', 'OU', 'OW'
+	emit_n(if c[-1,1] == 'U' then wnum0 else wnum1 end, 2, f)
+      when 'u', 'Ou'; emit_n(cwday, 1, f)
+      when 'V', 'OV'; emit_n(cweek, 2, f)
       when 'v'; emit_a(strftime('%e-%b-%Y'), 0, f)
-      when 'w'; emit_n(wday, 1, f)
-      when 'X'; emit_a(strftime('%H:%M:%S'), 0, f)
-      when 'x'; emit_a(strftime('%m/%d/%y'), 0, f)
-      when 'Y'; emit_sn(year, 4, f)
-      when 'y'; emit_n(year % 100, 2, f)
+      when 'w', 'Ow'; emit_n(wday, 1, f)
+      when 'X', 'EX'; emit_a(strftime('%H:%M:%S'), 0, f)
+      when 'x', 'Ex'; emit_a(strftime('%m/%d/%y'), 0, f)
+      when 'Y', 'EY'; emit_sn(year, 4, f)
+      when 'y', 'Ey', 'Oy'; emit_n(year % 100, 2, f)
       when 'Z'; emit_au(strftime('%:z'), 0, f)
       when /\A(:{0,3})z/
 	t = $1.size
@@ -343,7 +344,7 @@ class Date
 	end
 	emit_a(strftime('%F'), 0, f)
       else
-	c
+	a
       end
     end
   end
@@ -399,7 +400,8 @@ class Date
   private_class_method :num_pattern?
 
   def self._strptime_i(str, fmt, e) # :nodoc:
-    fmt.scan(/%[EO]?(:{1,3}z|.)|(.)/m) do |s, c|
+    fmt.scan(/%([EO]?(?::{1,3}z|.))|(.)/m) do |s, c|
+      a = $&
       if s
 	case s
 	when 'A', 'a'
@@ -414,18 +416,18 @@ class Date
 	  val = Format::MONTHS[$1.downcase] || Format::ABBR_MONTHS[$1.downcase]
 	  return unless val
 	  e.mon = val
-	when 'C'
+	when 'C', 'EC'
 	  return unless str.sub!(if num_pattern?($')
 				 then /\A([-+]?\d{1,2})/
 				 else /\A([-+]?\d{1,})/
 				 end, '')
 	  val = $1.to_i
 	  e._cent = val
-	when 'c'
+	when 'c', 'Ec'
 	  return unless _strptime_i(str, '%a %b %e %H:%M:%S %Y', e)
 	when 'D'
 	  return unless _strptime_i(str, '%m/%d/%y', e)
-	when 'd', 'e'
+	when 'd', 'e', 'Od', 'Oe'
 	  return unless str.sub!(/\A( \d|\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (1..31) === val
@@ -445,12 +447,12 @@ class Date
 	  return unless (0..99) === val
 	  e.cwyear = val
 	  e._cent ||= if val >= 69 then 19 else 20 end
-	when 'H', 'k'
+	when 'H', 'k', 'OH'
 	  return unless str.sub!(/\A( \d|\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (0..24) === val
 	  e.hour = val
-	when 'I', 'l'
+	when 'I', 'l', 'OI'
 	  return unless str.sub!(/\A( \d|\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (1..12) === val
@@ -468,12 +470,12 @@ class Date
 #	  val = $1.to_i.to_r / (10**3)
 	  val = $1.to_i.to_r / (10**$1.size)
 	  e.sec_fraction = val
-	when 'M'
+	when 'M', 'OM'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (0..59) === val
 	  e.min = val
-	when 'm'
+	when 'm', 'Om'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (1..12) === val
@@ -499,7 +501,7 @@ class Date
 	  return unless _strptime_i(str, '%H:%M', e)
 	when 'r'
 	  return unless _strptime_i(str, '%I:%M:%S %p', e)
-	when 'S'
+	when 'S', 'OS'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (0..60) === val
@@ -510,17 +512,17 @@ class Date
 	  e.seconds = val
 	when 'T'
 	  return unless _strptime_i(str, '%H:%M:%S', e)
-	when 'U', 'W'
+	when 'U', 'W', 'OU', 'OW'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (0..53) === val
-	  e.__send__(if s == 'U' then :wnum0= else :wnum1= end, val)
-	when 'u'
+	  e.__send__(if s[-1,1] == 'U' then :wnum0= else :wnum1= end, val)
+	when 'u', 'Ou'
 	  return unless str.sub!(/\A(\d{1})/, '')
 	  val = $1.to_i
 	  return unless (1..7) === val
 	  e.cwday = val
-	when 'V'
+	when 'V', 'OV'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (1..53) === val
@@ -532,18 +534,18 @@ class Date
 	  val = $1.to_i
 	  return unless (0..6) === val
 	  e.wday = val
-	when 'X'
+	when 'X', 'EX'
 	  return unless _strptime_i(str, '%H:%M:%S', e)
-	when 'x'
+	when 'x', 'Ex'
 	  return unless _strptime_i(str, '%m/%d/%y', e)
-	when 'Y'
+	when 'Y', 'EY'
 	  return unless str.sub!(if num_pattern?($')
 				 then /\A([-+]?\d{1,4})/
 				 else /\A([-+]?\d{1,})/
 				 end, '')
 	  val = $1.to_i
 	  e.year = val
-	when 'y'
+	when 'y', 'Ey', 'Oy'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
 	  val = $1.to_i
 	  return unless (0..99) === val
@@ -580,14 +582,14 @@ class Date
 	  end
 	  return unless _strptime_i(str, '%F', e)
 	else
-	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(s)), '')
+	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(a)), '')
 	end
       else
 	case c
 	when /\A[\s\v]/
 	  str.sub!(/\A[\s\v]+/, '')
 	else
-	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(c)), '')
+	  return unless str.sub!(Regexp.new('\\A' + Regexp.quote(a)), '')
 	end
       end
     end
@@ -913,14 +915,14 @@ class Date
 		/([-+]?)(\d{2,14})
 		  (?:
 		    \s*
-		    T?
+		    t?
 		    \s*
 		    (\d{2,6})?(?:[,.](\d*))?
 		  )?
 		  (?:
 		    \s*
 		    (
-		      Z\b
+		      z\b
 		    |
 		      [-+]\d{1,4}\b
 		    |
