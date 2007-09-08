@@ -1,3 +1,24 @@
+Sat Sep  8 23:55:56 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval_method.ci (rb_get_alloc_func): new function to get allocation
+	  function.
+
+	* include/ruby/intern.h (rb_alloc_func_t): declared.
+	  (rb_define_alloc_func): declared.
+	  (rb_marshal_define_compat): declared.
+
+	* range.c: use T_STRUCT for Range.
+
+	* inits.c: move Init_marshal() prior to Init_Range() because
+	  Init_Range calls rb_marshal_define_compat which needs
+	  marshal's compat_allocator_tbl initialized.
+
+	* marshal.c: support marshal format compatibility layer designed for
+	  marshaling T_STRUCT Range using T_OBJECT format.
+	  (rb_marshal_define_compat): defined.
+	
+	[ruby-dev:31710]
+
 Sat Sep  8 10:05:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_members): check if __members__ is an
@@ -129,6 +150,8 @@ Sat Sep  1 20:56:07 2007  Tanaka Akira  <akr@fsij.org>
 
 	* .gdbinit: support embedded small bignums.
 
+	[ruby-dev:31689]
+
 Sat Sep  1 19:59:43 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_event_free): IConnectionPoint should be
@@ -241,9 +264,11 @@ Thu Aug 30 08:00:12 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ext/tk/tkutil/tkutil.c: ditto.
 
+	[ruby-dev:31678]
+
 Wed Aug 29 18:36:06 2007  Tanaka Akira  <akr@fsij.org>
 
-	* lib/open-uri.rb: add :ftp_active_mode option.
+	* lib/open-uri.rb: add :ftp_active_mode option.  [ruby-dev:31677]
 
 Wed Aug 29 14:55:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -271,6 +296,8 @@ Wed Aug 29 11:30:10 2007  Tanaka Akira  <akr@fsij.org>
 	  (st_foreach): ditto.
 	  (st_reverse_foreach): ditto.
 	  (unpack_entries): new function for converting to unpacked mode.
+
+	[ruby-list:43954]
 	  
 Wed Aug 29 10:46:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -761,6 +788,7 @@ Wed Aug 22 03:51:07 2007  Koichi Sasada  <ko1@atdot.net>
 Tue Aug 21 21:09:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.mktmpdir): make directory suffix specifiable.
+	  suggested by knu.  [ruby-dev:31568]
 
 Tue Aug 21 15:00:23 2007  Koichi Sasada  <ko1@atdot.net>
 

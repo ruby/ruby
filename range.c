@@ -15,8 +15,32 @@
 VALUE rb_cRange;
 static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 
-#define EXCL(r) RTEST(rb_ivar_get((r), id_excl))
-#define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v) ? Qtrue : Qfalse)
+#define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
+#define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
+#define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
+
+#define EXCL(r) RTEST(RANGE_EXCL(r))
+#define SET_EXCL(r,v) (RSTRUCT(r)->as.ary[2] = (v) ? Qtrue : Qfalse)
+
+#define FL_INITIALIZED FL_USER3
+
+static VALUE
+range_alloc(VALUE klass)
+{
+    long n;
+    NEWOBJ(r, struct RStruct);
+    OBJSETUP(r, klass, T_STRUCT);
+
+    n = 3;
+
+    RBASIC(r)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
+    RBASIC(r)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
+    rb_mem_clear(r->as.ary, n);
+
+    RBASIC(r)->flags &= ~FL_INITIALIZED;
+
+    return (VALUE)r;
+}
 
 static VALUE
 range_failed(void)
@@ -48,8 +72,8 @@ range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
     }
 
     SET_EXCL(range, exclude_end);
-    rb_ivar_set(range, id_beg, beg);
-    rb_ivar_set(range, id_end, end);
+    RSTRUCT(range)->as.ary[0] = beg;
+    RSTRUCT(range)->as.ary[1] = end;
 }
 
 VALUE
@@ -77,9 +101,10 @@ range_initialize(int argc, VALUE *argv, VALUE range)
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (rb_ivar_defined(range, id_beg)) {
+    if (RBASIC(range)->flags & FL_INITIALIZED) {
 	rb_name_error(rb_intern("initialize"), "`initialize' called twice");
     }
+    RBASIC(range)->flags |= FL_INITIALIZED;
     range_init(range, beg, end, RTEST(flags));
     return Qnil;
 }
@@ -121,9 +146,9 @@ range_eq(VALUE range, VALUE obj)
     if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
 	return Qfalse;
 
-    if (!rb_equal(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
+    if (!rb_equal(RANGE_BEG(range), RANGE_BEG(obj)))
 	return Qfalse;
-    if (!rb_equal(rb_ivar_get(range, id_end), rb_ivar_get(obj, id_end)))
+    if (!rb_equal(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
     if (EXCL(range) != EXCL(obj))
@@ -183,9 +208,9 @@ range_eql(VALUE range, VALUE obj)
     if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
 	return Qfalse;
 
-    if (!rb_eql(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
+    if (!rb_eql(RANGE_BEG(range), RANGE_BEG(obj)))
 	return Qfalse;
-    if (!rb_eql(rb_ivar_get(range, id_end), rb_ivar_get(obj, id_end)))
+    if (!rb_eql(RANGE_END(range), RANGE_END(obj)))
 	return Qfalse;
 
     if (EXCL(range) != EXCL(obj))
@@ -209,9 +234,9 @@ range_hash(VALUE range)
     long hash = EXCL(range);
     VALUE v;
 
-    v = rb_hash(rb_ivar_get(range, id_beg));
+    v = rb_hash(RANGE_BEG(range));
     hash ^= v << 1;
-    v = rb_hash(rb_ivar_get(range, id_end));
+    v = rb_hash(RANGE_END(range));
     hash ^= v << 9;
     hash ^= EXCL(range) << 24;
 
@@ -289,8 +314,8 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     RETURN_ENUMERATOR(range, argc, argv);
 
-    b = rb_ivar_get(range, id_beg);
-    e = rb_ivar_get(range, id_end);
+    b = RANGE_BEG(range);
+    e = RANGE_END(range);
     if (rb_scan_args(argc, argv, "01", &step) == 0) {
 	step = INT2FIX(1);
     }
@@ -382,8 +407,8 @@ range_each(VALUE range)
 
     RETURN_ENUMERATOR(range, 0, 0);
 
-    beg = rb_ivar_get(range, id_beg);
-    end = rb_ivar_get(range, id_end);
+    beg = RANGE_BEG(range);
+    end = RANGE_END(range);
 
     if (!rb_respond_to(beg, id_succ)) {
 	rb_raise(rb_eTypeError, "can't iterate from %s",
@@ -423,7 +448,7 @@ range_each(VALUE range)
 static VALUE
 range_first(VALUE range)
 {
-    return rb_ivar_get(range, id_beg);
+    return RANGE_BEG(range);
 }
 
 
@@ -442,7 +467,7 @@ range_first(VALUE range)
 static VALUE
 range_last(VALUE range)
 {
-    return rb_ivar_get(range, id_end);
+    return RANGE_END(range);
 }
 
 /*
@@ -464,8 +489,8 @@ range_min(VALUE range)
 	return rb_call_super(0, 0);
     }
     else {
-	VALUE b = rb_ivar_get(range, id_beg);
-	VALUE e = rb_ivar_get(range, id_end);
+	VALUE b = RANGE_BEG(range);
+	VALUE e = RANGE_END(range);
 	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
 
 	if (c > 0 || (c == 0 && EXCL(range)))
@@ -489,14 +514,14 @@ range_min(VALUE range)
 static VALUE
 range_max(VALUE range)
 {
-    VALUE e = rb_ivar_get(range, id_end);
+    VALUE e = RANGE_END(range);
     int ip = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cInteger);
 
     if (rb_block_given_p() || (EXCL(range) && !ip)) {
 	return rb_call_super(0, 0);
     }
     else {
-	VALUE b = rb_ivar_get(range, id_beg);
+	VALUE b = RANGE_BEG(range);
 	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
 
 	if (c > 0)
@@ -519,8 +544,8 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     long beg, end, excl;
 
     if (rb_obj_is_kind_of(range, rb_cRange)) {
-	b = rb_ivar_get(range, id_beg);
-	e = rb_ivar_get(range, id_end);
+	b = RANGE_BEG(range);
+	e = RANGE_END(range);
 	excl = EXCL(range);
     }
     else {
@@ -578,8 +603,8 @@ range_to_s(VALUE range)
 {
     VALUE str, str2;
 
-    str = rb_obj_as_string(rb_ivar_get(range, id_beg));
-    str2 = rb_obj_as_string(rb_ivar_get(range, id_end));
+    str = rb_obj_as_string(RANGE_BEG(range));
+    str2 = rb_obj_as_string(RANGE_END(range));
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
@@ -616,8 +641,8 @@ range_inspect(VALUE range)
 {
     VALUE str, str2;
 
-    str = rb_inspect(rb_ivar_get(range, id_beg));
-    str2 = rb_inspect(rb_ivar_get(range, id_end));
+    str = rb_inspect(RANGE_BEG(range));
+    str2 = rb_inspect(RANGE_END(range));
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
     rb_str_append(str, str2);
@@ -668,8 +693,8 @@ range_eqq(VALUE range, VALUE val)
 static VALUE
 range_include(VALUE range, VALUE val)
 {
-    VALUE beg = rb_ivar_get(range, id_beg);
-    VALUE end = rb_ivar_get(range, id_end);
+    VALUE beg = RANGE_BEG(range);
+    VALUE end = RANGE_END(range);
     int nv = FIXNUM_P(beg) || FIXNUM_P(end) ||
 	     rb_obj_is_kind_of(beg, rb_cNumeric) ||
 	     rb_obj_is_kind_of(end, rb_cNumeric);
@@ -711,8 +736,8 @@ range_cover(VALUE range, VALUE val)
 {
     VALUE beg, end;
 
-    beg = rb_ivar_get(range, id_beg);
-    end = rb_ivar_get(range, id_end);
+    beg = RANGE_BEG(range);
+    end = RANGE_END(range);
     if (r_le(beg, val)) {
 	if (EXCL(range)) {
 	    if (r_lt(val, end))
@@ -726,6 +751,33 @@ range_cover(VALUE range, VALUE val)
     return Qfalse;
 }
 
+static VALUE
+range_dumper(VALUE range)
+{
+    VALUE v;
+    NEWOBJ(m, struct RObject);
+    OBJSETUP(m, rb_cObject, T_OBJECT);
+
+    v = (VALUE)m;
+
+    rb_ivar_set(v, id_excl, EXCL(range) ? Qtrue : Qfalse);
+    rb_ivar_set(v, id_beg, RANGE_BEG(range));
+    rb_ivar_set(v, id_end, RANGE_END(range));
+    return v;
+}
+
+static VALUE
+range_loader(VALUE range, VALUE obj)
+{
+    if (TYPE(obj) != T_OBJECT || RBASIC(obj)->klass != rb_cObject) {
+        rb_raise(rb_eTypeError, "not a dumped range object");
+    }
+
+    RSTRUCT(range)->as.ary[0] = rb_ivar_get(obj, id_beg);
+    RSTRUCT(range)->as.ary[1] = rb_ivar_get(obj, id_end);
+    SET_EXCL(range, RTEST(rb_ivar_get(obj, id_excl)));
+    return range;
+}
 
 /*  A <code>Range</code> represents an interval---a set of values with a
  *  start and an end. Ranges may be constructed using the
@@ -782,8 +834,25 @@ range_cover(VALUE range, VALUE val)
 void
 Init_Range(void)
 {
+    VALUE members;
+
+    id_cmp = rb_intern("<=>");
+    id_succ = rb_intern("succ");
+    id_beg = rb_intern("begin");
+    id_end = rb_intern("end");
+    id_excl = rb_intern("excl");
+
     rb_cRange = rb_define_class("Range", rb_cObject);
+
+    /* compatibility for rb_struct_members, etc. */
+    members = rb_ary_new3(3, ID2SYM(id_beg), ID2SYM(id_end), ID2SYM(id_excl));
+    OBJ_FREEZE(members);
+    rb_iv_set(rb_cRange, "__size__", INT2FIX(3));
+    rb_iv_set(rb_cRange, "__members__", members);
+
+    rb_define_alloc_func(rb_cRange, range_alloc);
     rb_include_module(rb_cRange, rb_mEnumerable);
+    rb_marshal_define_compat(rb_cRange, rb_cObject, range_dumper, range_loader);
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);
     rb_define_method(rb_cRange, "==", range_eq, 1);
     rb_define_method(rb_cRange, "===", range_eqq, 1);
@@ -807,9 +876,4 @@ Init_Range(void)
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
 
-    id_cmp = rb_intern("<=>");
-    id_succ = rb_intern("succ");
-    id_beg = rb_intern("begin");
-    id_end = rb_intern("end");
-    id_excl = rb_intern("excl");
 }

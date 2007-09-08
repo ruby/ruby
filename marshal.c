@@ -82,12 +82,45 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc;
 static ID s_getc, s_read, s_write, s_binmode;
 
+typedef struct {
+    VALUE newclass;
+    VALUE oldclass;
+    VALUE (*dumper)(VALUE);
+    VALUE (*loader)(VALUE, VALUE);
+} marshal_compat_t;
+
+static st_table *compat_allocator_tbl;
+
+void
+rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE))
+{
+    marshal_compat_t *compat;
+    rb_alloc_func_t allocator = rb_get_alloc_func(newclass);
+
+    if (!allocator) {
+        rb_raise(rb_eTypeError, "no allocator");
+    }
+
+    compat = ALLOC(marshal_compat_t);
+    compat->newclass = Qnil;
+    compat->oldclass = Qnil;
+    rb_gc_register_address(&compat->newclass);
+    rb_gc_register_address(&compat->oldclass);
+    compat->newclass = newclass;
+    compat->oldclass = oldclass;
+    compat->dumper = dumper;
+    compat->loader = loader;
+
+    st_insert(compat_allocator_tbl, (st_data_t)allocator, (st_data_t)compat);
+}
+
 struct dump_arg {
     VALUE obj;
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
     int taint;
+    st_table *compat_tbl;
 };
 
 struct dump_call_arg {
@@ -363,8 +396,13 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
 {
     volatile VALUE p;
     char *path;
+    VALUE real_obj;
+    VALUE klass;
 
-    VALUE klass = CLASS_OF(obj);
+    if (st_lookup(arg->compat_tbl, (st_data_t)obj, (st_data_t*)&real_obj)) {
+        obj = real_obj;
+    }
+    klass = CLASS_OF(obj);
     w_extended(klass, arg, check);
     w_byte(type, arg);
     p = class2path(rb_class_real(klass));
@@ -459,6 +497,19 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
+
+        {
+            marshal_compat_t *compat;
+            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
+            if (st_lookup(compat_allocator_tbl,
+                          (st_data_t)allocator,
+                          (st_data_t*)&compat)) {
+                VALUE real_obj = obj;
+                obj = compat->dumper(real_obj);
+                st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+            }
+        }
+
 	if (rb_respond_to(obj, s_mdump)) {
 	    VALUE v;
 
@@ -720,6 +771,7 @@ marshal_dump(int argc, VALUE *argv)
     arg.symbols = st_init_numtable();
     arg.data    = st_init_numtable();
     arg.taint   = Qfalse;
+    arg.compat_tbl = st_init_numtable();
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -739,6 +791,7 @@ struct load_arg {
     VALUE data;
     VALUE proc;
     int taint;
+    st_table *compat_tbl;
 };
 
 static VALUE r_entry(VALUE v, struct load_arg *arg);
@@ -899,10 +952,37 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry(VALUE v, struct load_arg *arg)
 {
-    rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), v);
-    if (arg->taint) OBJ_TAINT(v);
+    VALUE real_obj = Qundef;
+    if (st_lookup(arg->compat_tbl, v, (st_data_t*)&real_obj)) {
+        rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), real_obj);
+    }
+    else {
+        rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), v);
+    }
+    if (arg->taint) {
+        OBJ_TAINT(v);
+        if (real_obj != Qundef)
+            OBJ_TAINT(real_obj);
+    }
     if (arg->proc) {
 	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
+    }
+    return v;
+}
+
+static VALUE
+r_leave(VALUE v, struct load_arg *arg)
+{
+    VALUE real_obj;
+    marshal_compat_t *compat;
+    if (st_lookup(arg->compat_tbl, v, &real_obj)) {
+        rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
+        st_data_t key = v;
+        if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)&compat)) {
+            compat->loader(real_obj, v);
+        }
+        st_delete(arg->compat_tbl, &key, 0);
+        return real_obj;
     }
     return v;
 }
@@ -942,6 +1022,26 @@ path2module(const char *path)
 	rb_raise(rb_eArgError, "%s does not refer module", path);
     }
     return v;
+}
+
+static VALUE
+obj_alloc_by_path(const char *path, struct load_arg *arg)
+{
+    VALUE klass;
+    marshal_compat_t *compat;
+    rb_alloc_func_t allocator;
+
+    klass = path2class(path);
+
+    allocator = rb_get_alloc_func(klass);
+    if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)&compat)) {
+        VALUE real_obj = rb_obj_alloc(klass);
+        VALUE obj = rb_obj_alloc(compat->oldclass);
+        st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+        return obj;
+    }
+
+    return rb_obj_alloc(klass);
 }
 
 static VALUE
@@ -1049,6 +1149,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = rb_float_new(d);
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1094,11 +1195,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = rb_big_norm((VALUE)big);
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
       case TYPE_STRING:
 	v = r_entry(r_string(arg), arg);
+        v = r_leave(v, arg);
 	break;
 
       case TYPE_REGEXP:
@@ -1106,6 +1209,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
 	    v = r_entry(rb_reg_new(str, options), arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1118,6 +1222,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    while (len--) {
 		rb_ary_push(v, r_object(arg));
 	    }
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1136,12 +1241,14 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    if (type == TYPE_HASH_DEF) {
 		RHASH(v)->ifnone = r_object(arg);
 	    }
+            v = r_leave(v, arg);
 	}
 	break;
 
       case TYPE_STRUCT:
 	{
-	    VALUE klass, mem, values;
+	    VALUE klass, mem;
+            volatile VALUE values;
 	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
 	    long len;
 	    ID slot;
@@ -1150,12 +1257,14 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    mem = rb_struct_s_members(klass);
 	    len = r_long(arg);
 
-	    values = rb_ary_new2(len);
-	    for (i=0; i<len; i++) {
-		rb_ary_push(values, Qnil);
-	    }
-	    v = rb_struct_alloc(klass, values);
+            if (RARRAY_LEN(mem) != len) {
+                rb_raise(rb_eTypeError, "struct %s not compatible (struct size differs)",
+                         rb_class2name(klass));
+            }
+
+            v = rb_obj_alloc(klass);
 	    v = r_entry(v, arg);
+	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
@@ -1165,8 +1274,10 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 			     rb_id2name(slot),
 			     rb_id2name(SYM2ID(RARRAY_PTR(mem)[i])));
 		}
-		rb_struct_aset(v, LONG2FIX(i), r_object(arg));
+                rb_ary_push(values, r_object(arg));
 	    }
+            rb_obj_call_init(v, RARRAY_LEN(values), RARRAY_PTR(values));
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1186,6 +1297,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
         break;
 
@@ -1208,19 +1320,19 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_entry(v, arg);
 	    data = r_object(arg);
 	    rb_funcall(v, s_mload, 1, data);
+            v = r_leave(v, arg);
 	}
         break;
 
       case TYPE_OBJECT:
 	{
-	    VALUE klass = path2class(r_unique(arg));
-
-	    v = rb_obj_alloc(klass);
+            v = obj_alloc_by_path(r_unique(arg), arg);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
 	    v = r_entry(v, arg);
 	    r_ivar(v, arg);
+	    v = r_leave(v, arg);
 	}
 	break;
 
@@ -1248,6 +1360,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
                         rb_class2name(klass));
            }
            rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
+           v = r_leave(v, arg);
        }
        break;
 
@@ -1257,6 +1370,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = rb_path2class(RSTRING_PTR(str));
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1266,6 +1380,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = path2class(RSTRING_PTR(str));
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1275,6 +1390,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = path2module(RSTRING_PTR(str));
 	    v = r_entry(v, arg);
+            v = r_leave(v, arg);
 	}
 	break;
 
@@ -1347,6 +1463,7 @@ marshal_load(int argc, VALUE *argv)
     }
     arg.src = port;
     arg.offset = 0;
+    arg.compat_tbl = st_init_numtable();
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
@@ -1426,6 +1543,8 @@ Init_marshal(void)
 
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
+
+    compat_allocator_tbl = st_init_numtable();
 }
 
 VALUE

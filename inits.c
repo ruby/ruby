@@ -76,6 +76,7 @@ rb_call_inits()
     Init_Struct();
     Init_Regexp();
     Init_pack();
+    Init_marshal();
     Init_Range();
     Init_IO();
     Init_Dir();
@@ -88,7 +89,6 @@ rb_call_inits()
     Init_Binding();
     Init_Math();
     Init_GC();
-    Init_marshal();
     Init_Enumerator();
     Init_VM();
     Init_ISeq();

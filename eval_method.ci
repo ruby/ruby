@@ -192,6 +192,19 @@ rb_undef_alloc_func(VALUE klass)
     rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
 }
 
+rb_alloc_func_t
+rb_get_alloc_func(VALUE klass)
+{
+    NODE *n;
+    Check_Type(klass, T_CLASS);
+    n = rb_method_node(CLASS_OF(klass), ID_ALLOCATOR);
+    if (!n) return 0;
+    if (nd_type(n) != NODE_METHOD) return 0;
+    n = n->nd_body;
+    if (nd_type(n) != NODE_CFUNC) return 0;
+    return n->nd_cfnc;
+}
+
 static NODE *
 search_method(VALUE klass, ID id, VALUE *klassp)
 {

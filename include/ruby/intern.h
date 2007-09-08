@@ -219,8 +219,10 @@ void rb_remove_method(VALUE, const char*);
 #define rb_disable_super(klass, name) ((void)0)
 #define rb_enable_super(klass, name) ((void)0)
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
-void rb_define_alloc_func(VALUE, VALUE (*)(VALUE));
+typedef VALUE (*rb_alloc_func_t)(VALUE);
+void rb_define_alloc_func(VALUE, rb_alloc_func_t);
 void rb_undef_alloc_func(VALUE);
+rb_alloc_func_t rb_get_alloc_func(VALUE);
 void rb_clear_cache(void);
 void rb_clear_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
@@ -356,6 +358,7 @@ void rb_write_error2(const char*, long);
 /* marshal.c */
 VALUE rb_marshal_dump(VALUE, VALUE);
 VALUE rb_marshal_load(VALUE);
+void rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE));
 /* numeric.c */
 void rb_num_zerodiv(void);
 VALUE rb_num_coerce_bin(VALUE, VALUE);
