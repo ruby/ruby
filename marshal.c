@@ -503,7 +503,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
             if (st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
-                          (st_data_t*)&compat)) {
+                          (st_data_t*)(void*)&compat)) {
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
@@ -978,7 +978,7 @@ r_leave(VALUE v, struct load_arg *arg)
     if (st_lookup(arg->compat_tbl, v, &real_obj)) {
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
         st_data_t key = v;
-        if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)&compat)) {
+        if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)(void*)&compat)) {
             compat->loader(real_obj, v);
         }
         st_delete(arg->compat_tbl, &key, 0);
@@ -1034,7 +1034,7 @@ obj_alloc_by_path(const char *path, struct load_arg *arg)
     klass = path2class(path);
 
     allocator = rb_get_alloc_func(klass);
-    if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)&compat)) {
+    if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)(void*)&compat)) {
         VALUE real_obj = rb_obj_alloc(klass);
         VALUE obj = rb_obj_alloc(compat->oldclass);
         st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
