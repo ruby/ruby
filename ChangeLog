@@ -1,3 +1,12 @@
+Sun Sep  9 01:17:05 2007  Tanaka Akira  <akr@fsij.org>
+
+	* marshal.c (r_object0): don't call user-defined initialize for
+	  T_STRUCT objects.
+
+	* include/ruby/intern.h (rb_struct_initialize): declared.
+
+	* struct.c (rb_struct_initialize): export.
+
 Sat Sep  8 23:55:56 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval_method.ci (rb_get_alloc_func): new function to get allocation

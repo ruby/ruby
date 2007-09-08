@@ -531,6 +531,7 @@ VALUE rb_str_length(VALUE);
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);
 VALUE rb_struct_alloc(VALUE, VALUE);
+VALUE rb_struct_initialize(VALUE, VALUE);
 VALUE rb_struct_aref(VALUE, VALUE);
 VALUE rb_struct_aset(VALUE, VALUE, VALUE);
 VALUE rb_struct_getmember(VALUE, ID);

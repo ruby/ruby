@@ -300,7 +300,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 /*
  */
 
-static VALUE
+VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
     VALUE klass = rb_obj_class(self);

@@ -1276,7 +1276,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		}
                 rb_ary_push(values, r_object(arg));
 	    }
-            rb_obj_call_init(v, RARRAY_LEN(values), RARRAY_PTR(values));
+            rb_struct_initialize(v, values);
             v = r_leave(v, arg);
 	}
 	break;
