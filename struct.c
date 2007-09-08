@@ -39,6 +39,9 @@ rb_struct_s_members(VALUE klass)
     if (NIL_P(members)) {
 	rb_raise(rb_eTypeError, "uninitialized struct");
     }
+    if (TYPE(members) != T_ARRAY) {
+	rb_raise(rb_eTypeError, "corrupted struct");
+    }
     return members;
 }
 
