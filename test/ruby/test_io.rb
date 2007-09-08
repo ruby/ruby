@@ -35,4 +35,22 @@ class TestIO < Test::Unit::TestCase
     assert_nil r.gets("")
     r.close
   end
+
+  def test_ungetc
+    r, w = IO.pipe
+    w.close
+    assert_raise(IOError, "[ruby-dev:31650]") { 20000.times { r.ungetc "a" } }
+  ensure
+    r.close
+  end
+
+  def test_each_byte
+    r, w = IO.pipe
+    w << "abc def"
+    w.close
+    r.each_byte {|byte| break if byte == 32 }
+    assert_equal("def", r.read, "[ruby-dev:31659]")
+  ensure
+    r.close
+  end
 end
