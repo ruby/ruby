@@ -1263,6 +1263,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
             }
 
             v = rb_obj_alloc(klass);
+	    if (TYPE(v) != T_STRUCT) {
+		rb_raise(rb_eArgError, "dump format error");
+	    }
 	    v = r_entry(v, arg);
 	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
