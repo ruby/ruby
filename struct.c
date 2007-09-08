@@ -41,7 +41,10 @@ rb_struct_s_members(klass)
     VALUE members = rb_struct_iv_get(klass, "__members__");
 
     if (NIL_P(members)) {
-	rb_bug("non-initialized struct");
+	rb_raise(rb_eTypeError, "uninitialized struct");
+    }
+    if (TYPE(members) != T_ARRAY) {
+	rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
 }

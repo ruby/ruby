@@ -1199,9 +1199,6 @@ r_object0(arg, proc, ivp, extmod)
 
 	    klass = path2class(r_unique(arg));
 	    mem = rb_struct_s_members(klass);
-	    if (mem == Qnil) {
-		rb_raise(rb_eTypeError, "uninitialized struct");
-	    }
 	    len = r_long(arg);
 
 	    values = rb_ary_new2(len);

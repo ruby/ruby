@@ -1,3 +1,10 @@
+Sat Sep  8 10:22:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_members): should raise TypeError instead
+	  of call rb_bug().  [ruby-dev:31709]
+
+	* marshal.c (r_object0): no nil check require any more.
+
 Sat Sep  8 09:38:19 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (str[fp]time): now check specifications more
