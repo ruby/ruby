@@ -1,12 +1,12 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2006
+# Author: Tadayoshi Funaba 1998-2007
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.30 2006-12-30 21:43:41+09 tadf Exp $
+# $Id: date.rb,v 2.31 2007-09-08 08:30:25+09 tadf Exp $
 #++
 #
 # == Overview
@@ -1400,6 +1400,11 @@ class Date
   # we reach +limit+ (inclusive), yielding the resultant
   # date at each step.
   def step(limit, step=1) # :yield: date
+=begin
+    if step.zero?
+      raise ArgumentError, "step can't be 0"
+    end
+=end
     unless block_given?
       return to_enum(:step, limit, step)
     end
