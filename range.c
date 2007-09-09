@@ -332,8 +332,11 @@ range_step(int argc, VALUE *argv, VALUE range)
 
 	if (!EXCL(range))
 	    end += 1;
-	for (i = FIX2LONG(b); i < end; i += unit) {
+	i = FIX2LONG(b);	
+	while (i < end) {
 	    rb_yield(LONG2NUM(i));
+	    if (i + unit < i) break;
+	    i += unit;
 	}
     }
     else {

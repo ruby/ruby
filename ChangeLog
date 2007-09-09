@@ -1,3 +1,7 @@
+Mon Sep 10 01:05:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): fixed integer overflow.  [ruby-dev:31763]
+
 Sun Sep  9 08:57:27 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb (_strptime): now also attaches an element
