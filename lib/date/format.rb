@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.39 2007-09-08 08:30:25+09 tadf Exp $
+# $Id: format.rb,v 2.40 2007-09-09 08:28:03+09 tadf Exp $
 
 require 'rational'
 
@@ -598,8 +598,9 @@ class Date
   private_class_method :_strptime_i
 
   def self._strptime(str, fmt='%F')
+    str = str.dup
     e = Format::Bag.new
-    return unless _strptime_i(str.dup, fmt, e)
+    return unless _strptime_i(str, fmt, e)
 
     if e._cent
       if e.cwyear
@@ -615,6 +616,10 @@ class Date
 	e.hour %= 12
 	e.hour += e._merid
       end
+    end
+
+    unless str.empty?
+      e.leftover = str
     end
 
     e.to_hash
