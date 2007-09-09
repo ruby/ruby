@@ -1,3 +1,8 @@
+Mon Sep 10 01:21:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): struct allocation first to check if a
+	  class is a struct.  compatibility check should come next.
+
 Mon Sep 10 01:05:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): fixed integer overflow.  [ruby-dev:31763]

@@ -1254,18 +1254,18 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    ID slot;
 
 	    klass = path2class(r_unique(arg));
-	    mem = rb_struct_s_members(klass);
 	    len = r_long(arg);
 
+            v = rb_obj_alloc(klass);
+	    if (TYPE(v) != T_STRUCT) {
+		rb_raise(rb_eTypeError, "class %s not a struct", rb_class2name(klass));
+	    }
+	    mem = rb_struct_s_members(klass);
             if (RARRAY_LEN(mem) != len) {
                 rb_raise(rb_eTypeError, "struct %s not compatible (struct size differs)",
                          rb_class2name(klass));
             }
 
-            v = rb_obj_alloc(klass);
-	    if (TYPE(v) != T_STRUCT) {
-		rb_raise(rb_eArgError, "dump format error");
-	    }
 	    v = r_entry(v, arg);
 	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
