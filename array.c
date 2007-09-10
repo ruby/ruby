@@ -2939,7 +2939,7 @@ rb_ary_cycle(VALUE ary)
     long i;
 
     RETURN_ENUMERATOR(ary, 0, 0);
-    for (;;) {
+    while (RARRAY_LEN(ary) > 0) {
 	for (i=0; i<RARRAY_LEN(ary); i++) {
 	    rb_yield(RARRAY_PTR(ary)[i]);
 	}

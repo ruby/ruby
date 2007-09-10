@@ -1,3 +1,8 @@
+Mon Sep 10 13:44:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_cycle): avoid infinite loop for empty array.
+	  based on a patch from David Flanagan.  [ruby-core:12085]
+
 Mon Sep 10 01:21:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object0): struct allocation first to check if a
