@@ -22,8 +22,6 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 #define SET_EXCL(r,v) (RSTRUCT(r)->as.ary[2] = (v) ? Qtrue : Qfalse)
 
-#define FL_INITIALIZED FL_USER3
-
 static VALUE
 range_alloc(VALUE klass)
 {
@@ -36,8 +34,6 @@ range_alloc(VALUE klass)
     RBASIC(r)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
     RBASIC(r)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
     rb_mem_clear(r->as.ary, n);
-
-    RBASIC(r)->flags &= ~FL_INITIALIZED;
 
     return (VALUE)r;
 }
@@ -101,10 +97,9 @@ range_initialize(int argc, VALUE *argv, VALUE range)
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (RBASIC(range)->flags & FL_INITIALIZED) {
+    if (RANGE_EXCL(range) != Qnil) {
 	rb_name_error(rb_intern("initialize"), "`initialize' called twice");
     }
-    RBASIC(range)->flags |= FL_INITIALIZED;
     range_init(range, beg, end, RTEST(flags));
     return Qnil;
 }

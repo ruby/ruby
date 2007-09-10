@@ -59,4 +59,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(0, (0..0).max)
     assert_equal(nil, (0...0).max)
   end
+
+  def test_initialize_twice
+    r = eval("1..2")
+    assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
+  end
 end

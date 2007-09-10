@@ -1,3 +1,7 @@
+Mon Sep 10 15:22:24 2007  Tanaka Akira  <akr@fsij.org>
+
+	* range.c: represent initialized state using EXCL instead of FL_USER3.
+
 Mon Sep 10 13:44:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_cycle): avoid infinite loop for empty array.
