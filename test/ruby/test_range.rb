@@ -64,4 +64,11 @@ class TestRange < Test::Unit::TestCase
     r = eval("1..2")
     assert_raise(NameError) { r.instance_eval { initialize 3, 4 } }
   end
+
+  def test_uninitialized_range
+    r = Range.allocate
+    s = Marshal.dump(r)
+    r = Marshal.load(s)
+    assert_nothing_raised { r.instance_eval { initialize 5, 6} }
+  end
 end

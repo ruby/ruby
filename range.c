@@ -758,7 +758,7 @@ range_dumper(VALUE range)
 
     v = (VALUE)m;
 
-    rb_ivar_set(v, id_excl, EXCL(range) ? Qtrue : Qfalse);
+    rb_ivar_set(v, id_excl, RANGE_EXCL(range));
     rb_ivar_set(v, id_beg, RANGE_BEG(range));
     rb_ivar_set(v, id_end, RANGE_END(range));
     return v;
@@ -773,7 +773,7 @@ range_loader(VALUE range, VALUE obj)
 
     RSTRUCT(range)->as.ary[0] = rb_ivar_get(obj, id_beg);
     RSTRUCT(range)->as.ary[1] = rb_ivar_get(obj, id_end);
-    SET_EXCL(range, RTEST(rb_ivar_get(obj, id_excl)));
+    RSTRUCT(range)->as.ary[2] = rb_ivar_get(obj, id_excl);
     return range;
 }
 

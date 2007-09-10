@@ -1,6 +1,9 @@
-Mon Sep 10 15:22:24 2007  Tanaka Akira  <akr@fsij.org>
+Mon Sep 10 15:48:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* range.c: represent initialized state using EXCL instead of FL_USER3.
+
+	* range.c (range_dumper): make uninitialized range dumpable.
+	  (range_loader): make uninitialized range loadable.
 
 Mon Sep 10 13:44:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
