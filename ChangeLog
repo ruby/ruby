@@ -1,3 +1,17 @@
+Tue Sep 11 17:25:59 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb: Add shellescape() and shelljoin().
+
+	* lib/shellwords.rb: Rename shellwords() to shellsplit() and make
+	  the former an alias to the latter.
+
+	* lib/shellwords.rb: Add escape(), split(), join() as class
+	  methods, which are aliases to their respective long names
+	  prefixed with `shell'.
+
+	* lib/shellwords.rb: Add String#shellescape(), String#shellsplit()
+	  and Array#shelljoin() for convenience.
+
 Mon Sep 10 15:48:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* range.c: represent initialized state using EXCL instead of FL_USER3.
