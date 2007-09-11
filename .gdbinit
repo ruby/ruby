@@ -78,8 +78,8 @@ define rp
   else
   if ($flags & 0x1f) == 0x0b
     printf "T_HASH: ",
-    if ((struct RHash *)$arg0)->tbl
-      printf "len=%d ", ((struct RHash *)$arg0)->tbl->num_entries
+    if ((struct RHash *)$arg0)->ntbl
+      printf "len=%d ", ((struct RHash *)$arg0)->ntbl->num_entries
     end
     print (struct RHash *)$arg0
   else
