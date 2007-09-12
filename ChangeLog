@@ -1,3 +1,8 @@
+Wed Sep 12 23:12:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): -W should be allowed in RUBYOPT
+	  environment variable.  [ruby-core:12118]
+
 Wed Sep 12 15:19:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_sysopen): should not use alloca for unknowen size
