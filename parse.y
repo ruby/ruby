@@ -8553,21 +8553,17 @@ rb_id2str(ID id)
 
     if (is_attrset_id(id)) {
 	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
+	VALUE str;
 
-      again:
-	name = rb_id2name(id2);
-	if (name) {
-	    char *buf = ALLOCA_N(char, strlen(name)+2);
-
-	    strcpy(buf, name);
-	    strcat(buf, "=");
-	    rb_intern(buf);
-	    return rb_id2str(id);
-	}
-	if (is_local_id(id2)) {
+	while (!(str = rb_id2str(id2))) {
+	    if (!is_local_id(id2)) return 0;
 	    id2 = (id & ~ID_SCOPE_MASK) | ID_CONST;
-	    goto again;
 	}
+	str = rb_str_dup(str);
+	rb_str_cat(buf, "=", 1);
+	rb_intern_str(str);
+	if (st_lookup(global_symbols.id_str, id, &data))
+	    return (VALUE)data;
     }
     return 0;
 }

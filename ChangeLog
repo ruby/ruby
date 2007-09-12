@@ -1,3 +1,12 @@
+Wed Sep 12 15:19:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_sysopen): should not use alloca for unknowen size
+	  input.  [ruby-dev:31775]
+
+	* parse.y (rb_id2str): ditto.
+
+	* marshal.c (w_float): use snprintf instead of sprintf.
+
 Tue Sep 11 17:28:00 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb (Tempfile::make_tmpname): Allow to specify a

@@ -309,7 +309,7 @@ load_mantissa(double d, const char *buf, int len)
 static void
 w_float(double d, struct dump_arg *arg)
 {
-    char buf[100];
+    char buf[FLOAT_DIG + (DECIMAL_MANT + 7) / 8 + 10];
 
     if (isinf(d)) {
 	if (d < 0) strcpy(buf, "-inf");
@@ -326,7 +326,7 @@ w_float(double d, struct dump_arg *arg)
 	int len;
 
 	/* xxx: should not use system's sprintf(3) */
-	sprintf(buf, "%.*g", FLOAT_DIG, d);
+	snprintf(buf, sizeof(buf), "%.*g", FLOAT_DIG, d);
 	len = strlen(buf);
 	w_bytes(buf, len + save_mantissa(d, buf + len), arg);
 	return;

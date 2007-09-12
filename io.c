@@ -3455,8 +3455,8 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
 
-    path = ALLOCA_N(char, strlen(RSTRING_PTR(fname))+1);
-    strcpy(path, RSTRING_PTR(fname));
+    RB_GC_GUARD(fname) = rb_str_new4(fname);
+    path = RSTRING_PTR(fname);
     fd = rb_sysopen(path, flags, fmode);
     return INT2NUM(fd);
 }
