@@ -1,3 +1,8 @@
+Wed Sep 12 23:12:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): -W should be allowed in RUBYOPT
+	  environment variable.  [ruby-core:12118]
+
 Mon Sep 10 01:05:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): fixed integer overflow.  [ruby-dev:31763]
