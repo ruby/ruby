@@ -1,3 +1,4 @@
+# -*- ruby-indent-level: 4 -*-
 require 'thread'
 require 'test/unit'
 
@@ -62,6 +63,19 @@ class TC_Thread < Test::Unit::TestCase
 	thread.raise Interrupt, "interrupt a dead condition variable"
 	assert_raises(Interrupt) { thread.value }
 	assert(locked)
+    end
+
+    def test_local_barrier
+        dir = File.dirname(__FILE__)
+        lbtest = File.join(dir, "lbtest.rb")
+        $:.unshift File.join(File.dirname(dir), 'ruby')
+        require 'envutil'
+        $:.shift
+        10.times {
+            result = `#{EnvUtil.rubybin} #{lbtest}`
+            assert(!$?.coredump?, '[ruby-dev:30653]')
+            assert_equal("exit.", result[/.*\Z/], '[ruby-dev:30653]')
+        }
     end
 end
 
