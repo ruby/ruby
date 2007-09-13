@@ -3843,8 +3843,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *lend = NEW_LABEL(nd_line(node));
 
 	    ADD_LABEL(ret, lstart);
-	    ADD_INSN2(ret, nd_line(node), getinlinecache,
-		      NEW_INLINE_CACHE_ENTRY(), lend);
+	    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
 	    ADD_INSN1(ret, nd_line(node), getconstant, ID2SYM(node->nd_vid));
 	    ADD_INSN1(ret, nd_line(node), setinlinecache, lstart);
 	    ADD_LABEL(ret, lend);
@@ -3998,8 +3997,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lend = NEW_LABEL(nd_line(node));
 
 	ADD_LABEL(ret, lstart);
-	ADD_INSN2(ret, nd_line(node), onceinlinecache,
-		  NEW_INLINE_CACHE_ENTRY(), lend);
+	ADD_INSN2(ret, nd_line(node), onceinlinecache, 0, lend);
 	ADD_INSN(ret, nd_line(node), pop);
 
 	compile_dstr(iseq, ret, node);
@@ -4162,8 +4160,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (LIST_SIZE_ZERO(pref)) {
 		if (iseq->compile_data->option->inline_const_cache) {
 		    ADD_LABEL(ret, lstart);
-		    ADD_INSN2(ret, nd_line(node), getinlinecache,
-			      NEW_INLINE_CACHE_ENTRY(), lend);
+		    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
 		}
 		else {
 		    ADD_INSN(ret, nd_line(node), putnil);
@@ -4201,8 +4198,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* add cache insn */
 	if (iseq->compile_data->option->inline_const_cache) {
 	    ADD_LABEL(ret, lstart);
-	    ADD_INSN2(ret, nd_line(node), getinlinecache,
-		      NEW_INLINE_CACHE_ENTRY(), lend);
+	    ADD_INSN2(ret, nd_line(node), getinlinecache, 0, lend);
 	    ADD_INSN(ret, nd_line(node), pop);
 	}
 
