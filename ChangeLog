@@ -1,3 +1,8 @@
+Fri Sep 14 00:34:25 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/extservm.rb (invoke_service): use Thread.exclusive instead of 
+	  Thread.critical
+
 Wed Sep 12 23:12:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): -W should be allowed in RUBYOPT

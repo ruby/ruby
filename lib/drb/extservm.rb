@@ -73,10 +73,11 @@ module DRb
     end
 
     def invoke_service(name)
-      Thread.critical = true
-      @waiting.push Thread.current
-      @queue.push name
-      Thread.stop
+      Thread.exclusive do
+        @waiting.push Thread.current
+        @queue.push name
+        Thread.stop
+      end
     end
 
     def invoke_service_command(name, command)
