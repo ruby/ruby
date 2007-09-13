@@ -4039,7 +4039,7 @@ Wed Apr 25 10:36:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c, eval_error.h, eval_jump.h, eval_load.c, proc.c, thread.c:
 	  ditto.
 
-	* thread.c (alloc_event_fook, rb_thread_remove_event_hook): should
+	* thread.c (alloc_event_hook, rb_thread_remove_event_hook): should
 	  return value.
 
 Tue Apr 24 09:33:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
