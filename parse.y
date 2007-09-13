@@ -8529,7 +8529,6 @@ rb_intern_str(VALUE str)
 VALUE
 rb_id2str(ID id)
 {
-    const char *name;
     st_data_t data;
 
     if (id < tLAST_TOKEN) {
@@ -8560,7 +8559,7 @@ rb_id2str(ID id)
 	    id2 = (id & ~ID_SCOPE_MASK) | ID_CONST;
 	}
 	str = rb_str_dup(str);
-	rb_str_cat(buf, "=", 1);
+	rb_str_cat(str, "=", 1);
 	rb_intern_str(str);
 	if (st_lookup(global_symbols.id_str, id, &data))
 	    return (VALUE)data;

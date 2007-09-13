@@ -1,3 +1,7 @@
+Thu Sep 13 13:47:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_id2str): fixed typo.
+
 Wed Sep 12 23:12:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): -W should be allowed in RUBYOPT
