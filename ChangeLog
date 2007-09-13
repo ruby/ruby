@@ -1,3 +1,8 @@
+Thu Sep 13 14:00:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (brace_block): should use compstmt.  patch submitted by
+	  Kirill A. Shutemov <k.shutemov AT gmail.com>  [ruby-core:12154].
+
 Thu Sep 13 13:47:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_id2str): fixed typo.

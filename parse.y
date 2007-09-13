@@ -3472,7 +3472,7 @@ brace_block	: '{'
 			nd_set_line($$, $<num>2);
 			dyna_pop();
 		    /*%
-			$$ = dispatch2(do_block, escape_Qundef($3), $5);
+			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
 		    }
 		;
