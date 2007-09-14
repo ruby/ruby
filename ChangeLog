@@ -1,3 +1,10 @@
+Fri Sep 14 17:28:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_io.rb: tests which cause SEGV should not be
+	  added.
+
+	* bootstraptest/test_knownbug.rb: add above test to known bug.
+
 Fri Sep 14 16:24:04 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_expandarray): assignment should be placed
