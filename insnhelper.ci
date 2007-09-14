@@ -1334,6 +1334,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
     int is_splat = flag & 0x01;
     int space_size = num + is_splat;
     VALUE *base = cfp->sp, *ptr;
+    volatile VALUE tmp_ary = ary;
     int len;
 
     cfp->sp += space_size;
