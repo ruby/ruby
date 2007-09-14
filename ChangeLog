@@ -1,3 +1,7 @@
+Fri Sep 14 16:17:30 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: add a stress test (-s).
+
 Fri Sep 14 16:14:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h, eval_intern.h: move some macros to eval_intern.h.

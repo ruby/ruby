@@ -59,6 +59,8 @@ def main
     when /\A--dir=(.*)/
       dir = $1
       true
+    when /\A(--stress|-s)/
+      $stress = true
     when /\A(-q|--q(uiet))\z/
       quiet = true
       true
@@ -70,6 +72,7 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
         --sets=NAME,NAME,...        Name of test sets.
         --dir=DIRECTORY             Working directory.
                                     default: /tmp/bootstraptest.tmpwd
+    -s, --stress                    stress test.
     -v, --verbose                   Output test name before exec.
     -q, --quiet                     Don\'t print header message.
     -h, --help                      Print this message and quit.
@@ -180,6 +183,7 @@ end
 def get_result_string(src)
   if @ruby
     File.open('bootstraptest.tmp.rb', 'w') {|f|
+      f.puts "GC.stress = true" if $stress
       f.puts "print(begin; #{src}; end)"
     }
     begin
