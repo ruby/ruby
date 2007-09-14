@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.0.9"
+#define WIN32OLE_VERSION "1.1.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -7562,13 +7562,11 @@ fev_unadvise(VALUE self)
     struct oleeventdata *poleev;
     Data_Get_Struct(self, struct oleeventdata, poleev);
     if (poleev->pConnectionPoint) {
+        ole_msg_loop();
+        evs_delete(poleev->event_id);
         poleev->pConnectionPoint->lpVtbl->Unadvise(poleev->pConnectionPoint, poleev->dwCookie);
         OLE_RELEASE(poleev->pConnectionPoint);
         poleev->pConnectionPoint = NULL;
-
-        rb_ivar_set(self, id_events, rb_ary_new());
-        evs_delete(poleev->event_id);
-        ole_msg_loop();
     }
     return Qnil;
 }
