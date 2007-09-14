@@ -1,3 +1,8 @@
+Fri Sep 14 16:24:04 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_expandarray): assignment should be placed
+	  after creating new array.
+
 Fri Sep 14 16:17:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb: add a stress test (-s).
