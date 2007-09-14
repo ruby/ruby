@@ -252,20 +252,6 @@ while (0)
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
   (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CFUNC)
 
-/*
- * Excception
- */
-
-#define NEW_THROW_OBJECT(val, pt, st) NEW_NODE(NODE_LIT, (val), (pt), (st))
-#define GET_THROWOBJ_VAL(obj)         ((VALUE)RNODE((obj))->u1.value)
-#define GET_THROWOBJ_CATCH_POINT(obj) ((VALUE*)RNODE((obj))->u2.value)
-#define GET_THROWOBJ_STATE(obj)       ((int)RNODE((obj))->u3.value)
-
-#define SET_THROWOBJ_CATCH_POINT(obj, val) \
-  (RNODE((obj))->u2.value = (val))
-#define SET_THROWOBJ_STATE(obj, val) \
-  (RNODE((obj))->u3.value = (val))
-
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     th->errinfo = (VALUE)(exc); \

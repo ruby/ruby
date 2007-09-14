@@ -1,3 +1,11 @@
+Fri Sep 14 16:14:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.h, eval_intern.h: move some macros to eval_intern.h.
+
+	* eval_jump.ci (rb_f_throw): fix to use NEW_THROW_OBJECT().
+
+	* eval.c (rb_f_loop): remove additional macro.
+
 Fri Sep 14 16:12:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_expandarray): should be volatile value for GC.

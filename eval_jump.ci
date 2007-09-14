@@ -39,7 +39,7 @@ rb_f_throw(int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
     rb_trap_restore_mask();
-    th->errinfo = (VALUE)rb_node_newnode(NODE_MEMO, tag, 0, TAG_THROW);
+    th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
     JUMP_TAG(TAG_THROW);
 #ifndef __GNUC__

@@ -162,9 +162,18 @@ char *strrchr _((const char *, const char));
 #define TAG_RAISE	0x6
 #define TAG_THROW	0x7
 #define TAG_FATAL	0x8
-#define TAG_CONTCALL	0x9
-#define TAG_THREAD	0xa
 #define TAG_MASK	0xf
+
+#define NEW_THROW_OBJECT(val, pt, st) \
+  ((VALUE)NEW_NODE(NODE_LIT, (val), (pt), (st)))
+#define SET_THROWOBJ_CATCH_POINT(obj, val) \
+  (RNODE((obj))->u2.value = (val))
+#define SET_THROWOBJ_STATE(obj, val) \
+  (RNODE((obj))->u3.value = (val))
+
+#define GET_THROWOBJ_VAL(obj)         ((VALUE)RNODE((obj))->u1.value)
+#define GET_THROWOBJ_CATCH_POINT(obj) ((VALUE*)RNODE((obj))->u2.value)
+#define GET_THROWOBJ_STATE(obj)       ((int)RNODE((obj))->u3.value)
 
 #define SCOPE_TEST(f) \
   (ruby_cref()->nd_visi & (f))

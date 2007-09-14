@@ -980,8 +980,6 @@ rb_f_loop(void)
     return Qnil;		/* dummy */
 }
 
-#define GET_THROWOBJ_CATCH_POINT(obj) ((VALUE*)RNODE((obj))->u2.value)
-
 VALUE
 rb_iterate(VALUE (*it_proc) (VALUE), VALUE data1,
 	   VALUE (*bl_proc) (ANYARGS), VALUE data2)
