@@ -79,9 +79,49 @@ rb_enc_find(const char *name)
     return ONIG_ENCODING_ASCII;
 }
 
+static int
+enc_capable(VALUE obj)
+{
+    if (IMMEDIATE_P(obj)) return Qfalse;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+      case T_REGEXP:
+      case T_FILE:
+	return Qtrue;
+      default:
+	return Qfalse;
+    }
+}
+
+static void
+enc_check_capable(VALUE x)
+{
+    if (!enc_capable(x)) {
+	const char *etype;
+
+	if (NIL_P(x)) {
+	    etype = "nil";
+	}
+	else if (FIXNUM_P(x)) {
+	    etype = "Fixnum";
+	}
+	else if (SYMBOL_P(x)) {
+	    etype = "Symbol";
+	}
+	else if (rb_special_const_p(x)) {
+	    etype = RSTRING_PTR(rb_obj_as_string(x));
+	}
+	else {
+	    etype = rb_obj_classname(x);
+	}
+	rb_raise(rb_eTypeError, "wrong argument type %s (not encode capable)", etype);
+    }
+}
+
 void
 rb_enc_associate_index(VALUE obj, int idx)
 {
+    enc_check_capable(obj);
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET(obj, idx);
 	return;
@@ -117,8 +157,10 @@ rb_enc_associate(VALUE obj, rb_encoding *enc)
 int
 rb_enc_get_index(VALUE obj)
 {
-    int i = ENCODING_GET(obj);
+    int i;
 
+    enc_check_capable(obj);
+    i = ENCODING_GET(obj);
     if (i == ENCODING_INLINE_MAX) {
 	VALUE iv;
 

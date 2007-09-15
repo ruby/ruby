@@ -1996,6 +1996,7 @@ rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
     }
     end = RMATCH(match)->END(nth);
     len = end - start;
+    StringValue(val);
     rb_enc_check(str, val);
     rb_str_splice_0(str, start, len, val);
 }

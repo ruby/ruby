@@ -1,3 +1,10 @@
+Sat Sep 15 17:04:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_associate_index, rb_enc_get_index): check if
+	  object is encoding capable.  [ruby-dev:31780]
+
+	* string.c (rb_str_subpat_set): check for if the argument is a String.
+
 Sat Sep 15 13:31:21 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss.rb, lib/rss/, test/rss/:
