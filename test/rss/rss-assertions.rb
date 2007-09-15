@@ -2018,6 +2018,18 @@ EOA
       end
     end
 
+    def assert_slash_elements(expected, target)
+      assert_equal(expected,
+                   {
+                     "section" => target.slash_section,
+                     "department" => target.slash_department,
+                     "comments" => target.slash_comments,
+                     "hit_parades" => target.slash_hit_parades,
+                   })
+      assert_equal(expected["hit_parades"].join(","),
+                   target.slash_hit_parade)
+    end
+
     def chain_reader(target, readers, &block)
       readers.inject(target) do |result, reader|
         return nil if result.nil?

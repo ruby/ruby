@@ -52,13 +52,7 @@ module RSS
       end
 
       def def_csv_accessor(klass, full_name)
-        klass.def_other_element_without_accessor(full_name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
-          attr_reader :#{full_name}
-          def #{full_name}=(value)
-            @#{full_name} = Utils::CSV.parse(value)
-          end
-        EOC
+        klass.def_csv_element(full_name)
       end
 
       def def_elements_class_accessor(klass, full_name, full_plural_name,

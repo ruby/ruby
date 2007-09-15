@@ -498,6 +498,14 @@ EOR
         Parser.parse(rss, true, false)
       end
     end
+
+    def test_unknown_duplicated_element
+      assert_parse(make_RDF(<<-EOR), :nothing_raised)
+        #{make_channel("<test:string/>")}
+        #{make_item}
+        #{make_image}
+      EOR
+    end
   end
 end
 

@@ -53,7 +53,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.9"
+  VERSION = "0.2.0"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -361,6 +361,12 @@ EOC
     end
 
     def csv_attr_reader(*attrs)
+      separator = nil
+      if attrs.last.is_a?(Hash)
+        options = attrs.pop
+        separator = options[:separator]
+      end
+      separator ||= ", "
       attrs.each do |attr|
         attr = attr.id2name if attr.kind_of?(Integer)
         module_eval(<<-EOC, __FILE__, __LINE__ + 1)
@@ -369,7 +375,7 @@ EOC
             if @#{attr}.nil?
               @#{attr}
             else
-              @#{attr}.join(", ")
+              @#{attr}.join(#{separator.dump})
             end
           end
         EOC
@@ -527,6 +533,14 @@ EOC
       module_eval(<<-EOC, __FILE__, __LINE__ + 1)
         def #{name}=(new_value)
           @#{name} = Utils::CSV.parse(new_value)
+        end
+      EOC
+    end
+
+    def csv_integer_writer(name, disp_name=name)
+      module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+        def #{name}=(new_value)
+          @#{name} = Utils::CSV.parse(new_value) {|v| Integer(v)}
         end
       EOC
     end
@@ -720,6 +734,8 @@ EOC
           yes_other_writer name, disp_name
         when :csv
           csv_writer name
+        when :csv_integer
+          csv_integer_writer name
         else
           attr_writer name
         end
@@ -737,6 +753,8 @@ EOC
           yes_other_attr_reader name
         when :csv
           csv_attr_reader name
+        when :csv_integer
+          csv_attr_reader name, :separator => ","
         else
           convert_attr_reader name
         end

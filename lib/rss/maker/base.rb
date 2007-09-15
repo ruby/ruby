@@ -151,6 +151,20 @@ module RSS
             end
           EOC
         end
+
+        def def_csv_element(name, type=nil)
+          def_other_element_without_accessor(name)
+          attr_reader(name)
+          converter = ""
+          if type == :integer
+            converter = "{|v| Integer(v)}"
+          end
+          module_eval(<<-EOC, __FILE__, __LINE__ + 1)
+            def #{name}=(value)
+              @#{name} = Utils::CSV.parse(value)#{converter}
+            end
+          EOC
+        end
       end
 
       attr_reader :maker

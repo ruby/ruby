@@ -1,3 +1,9 @@
+Sat Sep 15 13:31:21 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss.rb, lib/rss/, test/rss/:
+	  - 0.1.9 -> 0.2.0.
+	  - supported Slash module.
+
 Fri Sep 14 22:20:01 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fev_unadvise): no needs to reset

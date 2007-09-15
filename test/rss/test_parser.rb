@@ -1,4 +1,4 @@
-require 'fileutils'
+require "fileutils"
 
 require "rss-testcase"
 

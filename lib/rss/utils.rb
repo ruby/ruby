@@ -62,9 +62,11 @@ module RSS
 
     module CSV
       module_function
-      def parse(value)
+      def parse(value, &block)
         if value.is_a?(String)
-          value.strip.split(/\s*,\s*/)
+          value = value.strip.split(/\s*,\s*/)
+          value = value.collect(&block) if block_given?
+          value
         else
           value
         end

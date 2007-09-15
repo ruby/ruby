@@ -398,9 +398,9 @@ module RSS
   element_infos =
     ITunesChannelModel::ELEMENT_INFOS + ITunesItemModel::ELEMENT_INFOS
   element_infos.each do |name, type|
-    class_name = Utils.to_class_name(name)
     case type
     when :element, :elements, :attribute
+      class_name = Utils.to_class_name(name)
       BaseListener.install_class_name(ITUNES_URI, name, "ITunes#{class_name}")
     else
       accessor_base = "#{ITUNES_PREFIX}_#{name.gsub(/-/, '_')}"
