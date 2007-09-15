@@ -8686,7 +8686,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
-    parser->enc = rb_enc_from_index(0);
+    parser->enc = onigenc_get_default_encoding();
 }
 
 extern void rb_mark_source_filename(char *);

@@ -64,7 +64,7 @@ extern int ruby_yydebug;
 
 char *ruby_inplace_mode = 0;
 
-static NODE *load_file(VALUE, const char *, int);
+static NODE *load_file(VALUE *, const char *, int);
 static void forbid_setid(const char *);
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
@@ -880,16 +880,16 @@ proc_options(int argc, char **argv)
     process_sflag();
 
     ruby_init_loadpath();
-    parser = rb_parser_new();
     if (e_script) {
 	require_libraries();
+	parser = rb_parser_new();
 	tree = rb_parser_compile_string(parser, script, e_script, 1);
     }
     else {
 	if (script[0] == '-' && !script[1]) {
 	    forbid_setid("program input from stdin");
 	}
-	tree = load_file(parser, script, 1);
+	tree = load_file(&parser, script, 1);
     }
 
     process_sflag();
@@ -911,7 +911,7 @@ proc_options(int argc, char **argv)
 }
 
 static NODE *
-load_file(VALUE parser, const char *fname, int script)
+load_file(VALUE *parser, const char *fname, int script)
 {
     extern VALUE rb_stdin;
     VALUE f;
@@ -1027,8 +1027,9 @@ load_file(VALUE parser, const char *fname, int script)
 	}
 	require_libraries();	/* Why here? unnatural */
     }
-    tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
-    if (script && rb_parser_end_seen_p(parser)) {
+    *parser = rb_parser_new();
+    tree = (NODE *)rb_parser_compile_file(*parser, fname, f, line_start);
+    if (script && rb_parser_end_seen_p(*parser)) {
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
@@ -1040,7 +1041,9 @@ load_file(VALUE parser, const char *fname, int script)
 void *
 rb_load_file(const char *fname)
 {
-    return load_file(rb_parser_new(), fname, 0);
+    VALUE parser;
+
+    return load_file(&parser, fname, 0);
 }
 
 VALUE rb_progname;
