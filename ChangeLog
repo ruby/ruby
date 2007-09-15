@@ -1,3 +1,8 @@
+Sat Sep 15 23:36:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): common members in the parser and
+	  ripper must be placed at each same location.
+
 Sat Sep 15 18:25:15 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* string.c (rb_str_rstrip_bang): fixed too much rstrip. [ruby-dev:31786]

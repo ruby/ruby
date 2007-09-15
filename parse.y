@@ -236,6 +236,7 @@ struct parser_params {
     int line_count;
     int has_shebang;
     int parser_ruby_sourceline;	/* current line no. */
+    rb_encoding *enc;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -257,8 +258,6 @@ struct parser_params {
     VALUE parsing_thread;
     int toplevel_p;
 #endif
-
-    rb_encoding *enc;
 };
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
