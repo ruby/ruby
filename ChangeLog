@@ -1,3 +1,7 @@
+Sat Sep 15 18:25:15 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* string.c (rb_str_rstrip_bang): fixed too much rstrip. [ruby-dev:31786]
+
 Sat Sep 15 17:32:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_initialize): set default encoding.  [ruby-dev:31787]

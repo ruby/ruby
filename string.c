@@ -4374,6 +4374,7 @@ rb_str_rstrip_bang(VALUE str)
 	}
 	s += rb_enc_codelen(cc, enc);
     }
+    if (!space_seen) t = s;
     if (t < e) {
 	rb_str_modify(str);
 	STR_SET_LEN(str, t-RSTRING_PTR(str));
