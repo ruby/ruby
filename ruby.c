@@ -775,7 +775,7 @@ proc_options(argc, argv)
 		    }
 		}
 		if (!*s) break;
-		if (!strchr("IdvwrK", *s))
+		if (!strchr("IdvwWrK", *s))
 		    rb_raise(rb_eRuntimeError, "illegal switch in RUBYOPT: -%c", *s);
 		s = moreswitches(s);
 	    }
