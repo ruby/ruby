@@ -422,9 +422,8 @@ lock_mutex(Mutex *mutex)
 	mutex->owner = current;
     }
     else {
-	push_list(&mutex->waiting, current);
 	do {
-	    rb_thread_stop();
+	    wait_list(&mutex->waiting);
 	    rb_thread_critical = 1;
 	    if (!MUTEX_LOCKED_P(mutex)) {
 		mutex->owner = current;
