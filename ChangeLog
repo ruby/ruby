@@ -1,3 +1,8 @@
+Mon Sep 17 04:56:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/thread/test_thread.rb (test_local_barrier),
+	  test/thread/lbtest.rb: test for [ruby-dev:30653].
+
 Mon Sep 17 04:52:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): -W should be allowed in RUBYOPT
