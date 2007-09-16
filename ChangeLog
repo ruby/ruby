@@ -1,3 +1,7 @@
+Mon Sep 17 04:37:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): fixed integer overflow.  [ruby-dev:31763]
+
 Fri Sep  7 17:06:16 2007  Vincent Isambart <vincent.isambart@gmail.com>
 
 	* eval.c (rb_thread_start_0): should unset time_thread_alive_p.

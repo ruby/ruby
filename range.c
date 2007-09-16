@@ -319,8 +319,11 @@ range_step(argc, argv, range)
 
 	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	if (!EXCL(range)) end += 1;
-	for (i=FIX2LONG(b); i<end; i+=unit) {
+	i = FIX2LONG(b);	
+	while (i < end) {
 	    rb_yield(LONG2NUM(i));
+	    if (i + unit < i) break;
+	    i += unit;
 	}
     }
     else {
