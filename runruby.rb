@@ -32,11 +32,12 @@ unless File.exist?(ruby)
   abort "#{ruby} is not found.\nTry `make' first, then `make test', please.\n"
 end
 
-libs = [abs_archdir, File.expand_path("lib", srcdir)]
+libs = [abs_archdir]
 if extout
   abs_extout = File.expand_path(extout)
   libs << File.expand_path("common", abs_extout) << File.expand_path(RUBY_PLATFORM, abs_extout)
 end
+libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir
 ENV["RUBY"] = File.expand_path(ruby)
 ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)

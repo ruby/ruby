@@ -1,3 +1,7 @@
+Mon Sep 17 05:01:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: fix incomplete backport r12339.
+
 Mon Sep 17 04:56:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/thread/test_thread.rb (test_local_barrier),
