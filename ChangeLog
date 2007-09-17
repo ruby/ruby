@@ -1,3 +1,22 @@
+Mon Sep 17 21:00:51 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (ripper): rename event: arglist_* -> args_*.
+
+	* parse.y (ripper): rename event: restparam -> rest_param.
+
+	* parse.y (ripper): rename event: constpath_* -> const_path_*.
+
+	* parse.y (ripper): rename event: topconst_* -> top_const_*.
+
+	* parse.y (ripper): rename event: iter_block -> method_add_block.
+
+	* parse.y (ripper): support block local parameter declaration.
+
+	* parse.y (ripper): introduce new macro params_new.
+
+	* ext/ripper/lib/ripper/sexp.rb: should not dispose event
+	  arguments whose name ends with "_new" but arity != 0.
+
 Sat Sep 15 23:36:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): common members in the parser and

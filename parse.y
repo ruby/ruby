@@ -480,16 +480,16 @@ static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,V
 static VALUE ripper_intern(const char*);
 static VALUE ripper_id2sym(ID);
 
-#define arg_new() dispatch0(arglist_new)
-#define arg_add(l,a) dispatch2(arglist_add, l, a)
-#define arg_prepend(l,a) dispatch2(arglist_prepend, l, a)
-#define arg_add_star(l,a) dispatch2(arglist_add_star, l, a)
-#define arg_add_block(l,b) dispatch2(arglist_add_block, l, b)
-#define arg_add_optblock(l,b) ((b)==Qundef? l : dispatch2(arglist_add_block, l, b))
+#define arg_new() dispatch0(args_new)
+#define arg_add(l,a) dispatch2(args_add, l, a)
+#define arg_prepend(l,a) dispatch2(args_prepend, l, a)
+#define arg_add_star(l,a) dispatch2(args_add_star, l, a)
+#define arg_add_block(l,b) dispatch2(args_add_block, l, b)
+#define arg_add_optblock(l,b) ((b)==Qundef? l : dispatch2(args_add_block, l, b))
 #define bare_assoc(v) dispatch1(bare_assoc_hash, v)
 #define arg_add_assocs(l,b) arg_add(l, bare_assoc(b))
 
-#define args2mrhs(a) dispatch1(mrhs_new_from_arglist, a)
+#define args2mrhs(a) dispatch1(mrhs_new_from_args, a)
 #define mrhs_new() dispatch0(mrhs_new)
 #define mrhs_add(l,a) dispatch2(mrhs_add, l, a)
 #define mrhs_add_star(l,a) dispatch2(mrhs_add_star, l, a)
@@ -498,12 +498,17 @@ static VALUE ripper_id2sym(ID);
 #define mlhs_add(l,a) dispatch2(mlhs_add, l, a)
 #define mlhs_add_star(l,a) dispatch2(mlhs_add_star, l, a)
 
-#define blockvar_new(p) dispatch1(blockvar_new, p)
-#define blockvar_add_star(l,a) dispatch2(blockvar_add_star, l, a)
-#define blockvar_add_block(l,a) dispatch2(blockvar_add_block, l, a)
+#define params_new(pars, opts, rest, pars2, blk) \
+        dispatch5(params, pars, opts, rest, pars2, blk)
+
+#define blockvar_new(p,v) dispatch2(block_var, p, v)
+#define blockvar_add_star(l,a) dispatch2(block_var_add_star, l, a)
+#define blockvar_add_block(l,a) dispatch2(block_var_add_block, l, a)
 
 #define method_optarg(m,a) ((a)==Qundef ? m : dispatch2(method_add_arg,m,a))
 #define method_arg(m,a) dispatch2(method_add_arg,m,a)
+#define method_add_block(m,b) dispatch2(method_add_block, m, b)
+
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
 
 #define FIXME 0
@@ -775,7 +780,7 @@ bodystmt	: compstmt
 			}
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(bodystmt,
+			$$ = dispatch4(body_stmt,
 				       escape_Qundef($1),
 				       escape_Qundef($2),
 				       escape_Qundef($3),
@@ -1267,7 +1272,7 @@ command		: operation command_args       %prec tLOWEST
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch2(command, $1, $2);
-			$$ = dispatch2(iter_block, $$, $3);
+			$$ = method_add_block($$, $3);
 		    %*/
 		    }
 		| primary_value '.' operation2 command_args	%prec tLOWEST
@@ -1287,7 +1292,7 @@ command		: operation command_args       %prec tLOWEST
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
-			$$ = dispatch2(iter_block, $$, $5);
+			$$ = method_add_block($$, $5);
 		    %*/
 		   }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
@@ -1307,7 +1312,7 @@ command		: operation command_args       %prec tLOWEST
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);
-			$$ = dispatch2(iter_block, $$, $5);
+			$$ = method_add_block($$, $5);
 		    %*/
 		   }
 		| keyword_super command_args
@@ -1510,7 +1515,7 @@ mlhs_node	: variable
 		    /*%%%*/
 			$$ = attrset($1, $3);
 		    /*%
-			$$ = dispatch2(constpath_field, $1, $3);
+			$$ = dispatch2(const_path_field, $1, $3);
 		    %*/
 		    }
 		| primary_value '.' tCONSTANT
@@ -1530,7 +1535,7 @@ mlhs_node	: variable
 		    /*%
 			if (in_def || in_single)
 			    yyerror("dynamic constant assignment");
-			$$ = dispatch2(constpath_field, $1, $3);
+			$$ = dispatch2(const_path_field, $1, $3);
 		    %*/
 		    }
 		| tCOLON3 tCONSTANT
@@ -1540,7 +1545,7 @@ mlhs_node	: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
 		    /*%
-			$$ = dispatch1(topconst_field, $2);
+			$$ = dispatch1(top_const_field, $2);
 		    %*/
 		    }
 		| backref
@@ -1602,7 +1607,7 @@ lhs		: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
 		    /*%
-			$$ = dispatch2(constpath_field, $1, $3);
+			$$ = dispatch2(const_path_field, $1, $3);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
 			}
@@ -1615,7 +1620,7 @@ lhs		: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
 		    /*%
-			$$ = dispatch1(topconst_field, $2);
+			$$ = dispatch1(top_const_field, $2);
 			if (in_def || in_single) {
 			    $$ = dispatch1(assign_error, $$);
 			}
@@ -1648,7 +1653,7 @@ cpath		: tCOLON3 cname
 		    /*%%%*/
 			$$ = NEW_COLON3($2);
 		    /*%
-			$$ = dispatch1(topconst_ref, $2);
+			$$ = dispatch1(top_const_ref, $2);
 		    %*/
 		    }
 		| cname
@@ -1664,7 +1669,7 @@ cpath		: tCOLON3 cname
 		    /*%%%*/
 			$$ = NEW_COLON2($1, $3);
 		    /*%
-			$$ = dispatch2(constpath_ref, $1, $3);
+			$$ = dispatch2(const_path_ref, $1, $3);
 		    %*/
 		    }
 		;
@@ -1892,7 +1897,7 @@ arg		: lhs '=' arg
 			yyerror("constant re-assignment");
 			$$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch2(constpath_field, $1, $3);
+			$$ = dispatch2(const_path_field, $1, $3);
 			$$ = dispatch3(opassign, $$, $4, $5);
 			$$ = dispatch1(assign_error, $$);
 		    %*/
@@ -1903,7 +1908,7 @@ arg		: lhs '=' arg
 			yyerror("constant re-assignment");
 			$$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch1(topconst_field, $2);
+			$$ = dispatch1(top_const_field, $2);
 			$$ = dispatch3(opassign, $$, $3, $4);
 			$$ = dispatch1(assign_error, $$);
 		    %*/
@@ -2541,7 +2546,7 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_COLON2($1, $3);
 		    /*%
-			$$ = dispatch2(constpath_ref, $1, $3);
+			$$ = dispatch2(const_path_ref, $1, $3);
 		    %*/
 		    }
 		| tCOLON3 tCONSTANT
@@ -2549,7 +2554,7 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_COLON3($2);
 		    /*%
-			$$ = dispatch1(topconst_ref, $2);
+			$$ = dispatch1(top_const_ref, $2);
 		    %*/
 		    }
 		| tLBRACK aref_args ']'
@@ -2623,7 +2628,7 @@ primary		: literal
 			fixpos($2->nd_iter, $2);
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
-			$$ = dispatch2(iter_block, $$, $2);
+			$$ = method_add_block($$, $2);
 		    %*/
 		    }
 		| method_call
@@ -2635,7 +2640,7 @@ primary		: literal
 			$$ = $2;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch2(iter_block, $1, $2);
+			$$ = method_add_block($1, $2);
 		    %*/
 		    }
 		| tLAMBDA lambda
@@ -3122,7 +3127,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, 0, $4);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, $3, Qnil, escape_Qundef($4));
+			$$ = params_new($1, Qnil, $3, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_arg ','
@@ -3130,10 +3135,8 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, 1, 0, 0);
 		    /*%
-		      #if 0
-			TODO: check me (anonymous rest)
-		      #endif
-			$$ = dispatch5(params, $1, Qnil, Qnil, Qnil, 0);
+			$$ = params_new($1, Qnil, Qnil, Qnil, Qnil);
+                        dispatch1(excessed_comma, $$);
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_f_block_arg
@@ -3141,7 +3144,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, $5, $6);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, $3, $5, escape_Qundef($6));
+			$$ = params_new($1, Qnil, $3, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg opt_f_block_arg
@@ -3149,7 +3152,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, 0, 0, $2);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, Qnil, Qnil, escape_Qundef($2));
+			$$ = params_new($1, Qnil,Qnil, Qnil, escape_Qundef($2));
 		    %*/
 		    }
 		| f_rest_arg opt_f_block_arg
@@ -3157,7 +3160,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, 0, $2);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, $1, Qnil, escape_Qundef($2));
+			$$ = params_new(Qnil, Qnil, $1, Qnil, escape_Qundef($2));
 		    %*/
 		    }
 		| f_rest_arg ',' f_arg opt_f_block_arg
@@ -3165,7 +3168,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, $3, $4);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, $1, $3, escape_Qundef($4));
+			$$ = params_new(Qnil, Qnil, $1, $3, escape_Qundef($4));
 		    %*/
 		    }
 		| f_block_arg
@@ -3173,7 +3176,7 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, $1);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, Qnil, Qnil, $1);
+			$$ = params_new(Qnil, Qnil, Qnil, Qnil, $1);
 		    %*/
 		    }
 		;
@@ -3187,7 +3190,8 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-			$$ = blockvar_new(mlhs_new());
+			$$ = blockvar_new(params_new(Qnil,Qnil,Qnil,Qnil,Qnil),
+                                          escape_Qundef($2));
 		    %*/
 		    }
 		| tOROP
@@ -3195,7 +3199,8 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-			$$ = blockvar_new(mlhs_new());
+			$$ = blockvar_new(params_new(Qnil,Qnil,Qnil,Qnil,Qnil),
+                                          Qnil);
 		    %*/
 		    }
 		| '|' block_param opt_bv_decl '|'
@@ -3203,7 +3208,7 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = $2;
 		    /*%
-			$$ = blockvar_new(escape_Qundef($2));
+			$$ = blockvar_new(escape_Qundef($2), escape_Qundef($3));
 		    %*/
 		    }
 		;
@@ -3224,15 +3229,14 @@ bv_decls	: bvar
 		    /*%c%*/
 		    /*%c
 		    {
-			$$ = mlhs_new();
-			$$ = mlhs_add($$, $1);
+			$$ = rb_ary_new2($1);
 		    }
 		    %*/
 		| bv_decls ',' bvar
 		    /*%c%*/
 		    /*%c
 		    {
-			$$ = mlhs_add($$, $3);
+			rb_ary_push($$, $3);
 		    }
 		    %*/
 		;
@@ -3242,7 +3246,7 @@ bvar		:  f_norm_arg
 		    /*%%%*/
 			new_bv($1);
 		    /*%
-			$$ = dispatch0(new_blockvars);
+			$$ = $1;
 		    %*/
 		    }
 		;
@@ -3313,7 +3317,7 @@ do_block	: keyword_do_block
 			nd_set_line($$, $<num>2);
 			dyna_pop();
 		    /*%
-			$$ = dispatch2(do_block, escape_Qundef($3), $5);
+			$$ = dispatch2(do_block, escape_Qundef($3), $4);
 		    %*/
 		    }
 		;
@@ -3326,7 +3330,7 @@ block_call	: command do_block
 			$$ = $2;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch2(iter_block, $1, $2);
+			$$ = method_add_block($1, $2);
 		    %*/
 		    }
 		| block_call '.' operation2 opt_paren_args
@@ -3443,7 +3447,8 @@ brace_block	: '{'
 		    /*%%%*/
 			dyna_push();
 			$<num>$ = ruby_sourceline;
-		    /*% %*/
+		    /*%
+                    %*/
 		    }
 		  opt_block_param
 		  compstmt '}'
@@ -3461,7 +3466,8 @@ brace_block	: '{'
 		    /*%%%*/
 			dyna_push();
 			$<num>$ = ruby_sourceline;
-		    /*% %*/
+		    /*%
+                    %*/
 		    }
 		  opt_block_param
 		  compstmt keyword_end
@@ -4003,7 +4009,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, $5, 0, $6);
 		    /*%
-			$$ = dispatch5(params, $1, $3, $5, Qnil, escape_Qundef($6));
+			$$ = params_new($1, $3, $5, Qnil, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_f_block_arg
@@ -4011,7 +4017,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, $5, $7, $8);
 		    /*%
-			$$ = dispatch5(params, $1, $3, $5, $7, escape_Qundef($8));
+			$$ = params_new($1, $3, $5, $7, escape_Qundef($8));
 		    %*/
 		    }
 		| f_arg ',' f_optarg opt_f_block_arg
@@ -4019,7 +4025,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, 0, 0, $4);
 		    /*%
-			$$ = dispatch5(params, $1, $3, Qnil, Qnil, escape_Qundef($4));
+			$$ = params_new($1, $3, Qnil, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_arg ',' f_optarg ',' f_arg opt_f_block_arg
@@ -4027,7 +4033,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, $3, 0, $5, $6);
 		    /*%
-			$$ = dispatch5(params, $1, $3, Qnil, $5, escape_Qundef($6));
+			$$ = params_new($1, $3, Qnil, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg opt_f_block_arg
@@ -4035,7 +4041,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, 0, $4);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, $3, Qnil, escape_Qundef($4));
+			$$ = params_new($1, Qnil, $3, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_f_block_arg
@@ -4043,7 +4049,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, $3, $5, $6);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, $3, $5, escape_Qundef($6));
+			$$ = params_new($1, Qnil, $3, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_arg opt_f_block_arg
@@ -4051,7 +4057,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args($1, 0, 0, 0, $2);
 		    /*%
-			$$ = dispatch5(params, $1, Qnil, Qnil, Qnil, escape_Qundef($2));
+			$$ = params_new($1, Qnil, Qnil, Qnil,escape_Qundef($2));
 		    %*/
 		    }
 		| f_optarg ',' f_rest_arg opt_f_block_arg
@@ -4059,7 +4065,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, $3, 0, $4);
 		    /*%
-			$$ = dispatch5(params, Qnil, $1, $3, Qnil, escape_Qundef($4));
+			$$ = params_new(Qnil, $1, $3, Qnil, escape_Qundef($4));
 		    %*/
 		    }
 		| f_optarg ',' f_rest_arg ',' f_arg opt_f_block_arg
@@ -4067,7 +4073,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, $3, $5, $6);
 		    /*%
-			$$ = dispatch5(params, Qnil, $1, $3, $5, escape_Qundef($6));
+			$$ = params_new(Qnil, $1, $3, $5, escape_Qundef($6));
 		    %*/
 		    }
 		| f_optarg opt_f_block_arg
@@ -4075,7 +4081,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, 0, 0, $2);
 		    /*%
-			$$ = dispatch5(params, Qnil, $1, Qnil, Qnil, escape_Qundef($2));
+			$$ = params_new(Qnil, $1, Qnil, Qnil,escape_Qundef($2));
 		    %*/
 		    }
 		| f_optarg ',' f_arg opt_f_block_arg
@@ -4083,7 +4089,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, $1, 0, $3, $4);
 		    /*%
-			$$ = dispatch5(params, Qnil, $1, Qnil, $3, escape_Qundef($4));
+			$$ = params_new(Qnil, $1, Qnil, $3, escape_Qundef($4));
 		    %*/
 		    }
 		| f_rest_arg opt_f_block_arg
@@ -4091,7 +4097,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, 0, $2);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, $1, Qnil, escape_Qundef($2));
+			$$ = params_new(Qnil, Qnil, $1, Qnil,escape_Qundef($2));
 		    %*/
 		    }
 		| f_rest_arg ',' f_arg opt_f_block_arg
@@ -4099,7 +4105,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, $1, $3, $4);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, $1, $3, escape_Qundef($4));
+			$$ = params_new(Qnil, Qnil, $1, $3, escape_Qundef($4));
 		    %*/
 		    }
 		| f_block_arg
@@ -4107,7 +4113,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, $1);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, Qnil, Qnil, $1);
+			$$ = params_new(Qnil, Qnil, Qnil, Qnil, $1);
 		    %*/
 		    }
 		| /* none */
@@ -4115,7 +4121,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    /*%%%*/
 			$$ = new_args(0, 0, 0, 0, 0);
 		    /*%
-			$$ = dispatch5(params, Qnil, Qnil, Qnil, Qnil, Qnil);
+			$$ = params_new(Qnil, Qnil, Qnil, Qnil, Qnil);
 		    %*/
 		    }
 		;
@@ -4266,7 +4272,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			arg_var($2);
 			$$ = $2;
 		    /*%
-			$$ = dispatch1(restparam, $2);
+			$$ = dispatch1(rest_param, $2);
 		    %*/
 		    }
 		| restarg_mark
@@ -4275,7 +4281,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			$$ = internal_id();
 			arg_var($$);
 		    /*%
-			$$ = dispatch1(restparam, Qnil);
+			$$ = dispatch1(rest_param, Qnil);
 		    %*/
 		    }
 		;

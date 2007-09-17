@@ -43,15 +43,14 @@ class Ripper
   class SexpBuilderPP < ::Ripper   #:nodoc:
     private
 
-    PARSER_EVENTS.each do |event|
-      case event.to_s
-      when /_new\z/
+    PARSER_EVENT_TABLE.each do |event, arity|
+      if /_new\z/ =~ event.to_s and arity == 0
         module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def on_#{event}(*args)
+          def on_#{event}
             []
           end
         End
-      when /_add\z/
+      elsif /_add\z/ =~ event.to_s
         module_eval(<<-End, __FILE__, __LINE__ + 1)
           def on_#{event}(list, item)
             list.push item
