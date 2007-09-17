@@ -1524,6 +1524,7 @@ module Net   #:nodoc:
       @method = m
       @request_has_body = reqbody
       @response_has_body = resbody
+      raise ArgumentError, "no HTTP request path given" unless path
       raise ArgumentError, "HTTP request path is empty" if path.empty?
       @path = path
       initialize_http_header initheader

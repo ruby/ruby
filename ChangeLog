@@ -1,3 +1,8 @@
+Mon Sep 17 21:06:03 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTP::GenericRequest#initialize): check path is
+	  not nil. [ruby-dev:31149]
+
 Mon Sep 17 21:00:51 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (ripper): rename event: arglist_* -> args_*.
