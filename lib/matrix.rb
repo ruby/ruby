@@ -1374,7 +1374,7 @@ class Vector
   def coerce(other)
     case other
     when Numeric
-      return Scalar.new(other), self
+      return Matrix::Scalar.new(other), self
     else
       raise TypeError, "#{self.class} can't be coerced into #{other.class}"
     end
