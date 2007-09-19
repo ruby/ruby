@@ -1,3 +1,8 @@
+Wed Sep 19 11:13:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigtrunc): RBIGNUM(x)->len may be zero.  out of bound
+	  access.  [ruby-dev:31404]
+
 Mon Sep 17 05:24:13 2007  Sylvain Joyeux <sylvain.joyeux@m4x.org>
 
 	* ext/thread/thread.c (lock_mutex): should take care of threads

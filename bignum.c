@@ -103,6 +103,7 @@ bigtrunc(x)
     long len = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(x);
 
+    if (len == 0) return x;
     while (--len && !ds[len]);
     RBIGNUM(x)->len = ++len;
     return x;
