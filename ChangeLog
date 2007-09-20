@@ -1,3 +1,8 @@
+Fri Sep 21 01:46:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_alloc): defaults to null_str instead of NULL.
+	  [ruby-dev:31774]
+
 Thu Sep 20 17:24:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_detach_process): cast for the platforms where size of
