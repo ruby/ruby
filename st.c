@@ -724,9 +724,9 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 /*
  * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
  *
- * @(#) $Revision$
- * @(#) $Id$
- * @(#) $Source: /src/ruby/st.c,v $
+ * @(#) $Hash32: Revision: 1.1 $
+ * @(#) $Hash32: Id: hash_32a.c,v 1.1 2003/10/03 20:38:53 chongo Exp $
+ * @(#) $Hash32: Source: /usr/local/src/cmd/fnv/RCS/hash_32a.c,v $
  *
  ***
  *
