@@ -6826,7 +6826,6 @@ rb_load(fname, wrap)
     volatile VALUE self = ruby_top_self;
     NODE *volatile last_node;
     NODE *saved_cref = ruby_cref;
-    TMP_PROTECT;
 
     if (wrap && ruby_safe_level >= 4) {
 	StringValue(fname);
@@ -11234,10 +11233,19 @@ VALUE
 rb_thread_wakeup(thread)
     VALUE thread;
 {
+    if (!RTEST(rb_thread_wakeup_alive(thread)))
+	rb_raise(rb_eThreadError, "killed thread");
+    return thread;
+}
+
+VALUE
+rb_thread_wakeup_alive(thread)
+    VALUE thread;
+{
     rb_thread_t th = rb_thread_check(thread);
 
     if (th->status == THREAD_KILLED)
-	rb_raise(rb_eThreadError, "killed thread");
+	return Qnil;
     rb_thread_ready(th);
 
     return thread;
@@ -12173,7 +12181,7 @@ rb_thread_status(thread)
  *     thr.alive?              #=> false
  */
 
-static VALUE
+VALUE
 rb_thread_alive_p(thread)
     VALUE thread;
 {

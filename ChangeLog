@@ -1,3 +1,8 @@
+Fri Sep 21 03:05:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, intern.h, ext/thread/thread.c: should not free queue while
+	  any live threads are waiting.  [ruby-dev:30653]
+
 Fri Sep 21 01:46:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_alloc): defaults to null_str instead of NULL.
