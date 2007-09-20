@@ -882,6 +882,11 @@ rb_detach_process(pid)
  *  terminate.  <code>detach</code> only checks the status
  *  periodically (currently once each second).
  *
+ *  The waiting thread returns the exit status of the detached process
+ *  when it terminates, so you can use <code>Thread#join</code> to
+ *  know the result.  If specified _pid_ is not a valid child process
+ *  ID, the thread returns +nil+ immediately.
+ *
  *  In this first example, we don't reap the first child process, so
  *  it appears as a zombie in the process status display.
  *
@@ -1202,6 +1207,8 @@ proc_prepare_args(e, argc, argv, prog)
     VALUE *argv;
     VALUE prog;
 {
+    int i;
+
     MEMZERO(e, struct rb_exec_arg, 1);
     if (prog) {
 	SafeStringValue(prog);
