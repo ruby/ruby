@@ -1,3 +1,8 @@
+Fri Sep 21 04:58:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-label-indent): fix for function top
+	  level labels.
+
 Fri Sep 21 02:11:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_match_m): evaluate a block if match.  it would make
