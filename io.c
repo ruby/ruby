@@ -3110,6 +3110,7 @@ popen_exec(void *pp)
     struct popen_arg *p = (struct popen_arg*)pp;
     int fd;
 
+    rb_thread_atfork();
     popen_redirect(p);
     for (fd = 3; fd < NOFILE; fd++) {
 #ifdef FD_CLOEXEC

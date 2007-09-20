@@ -1,3 +1,8 @@
+Thu Sep 20 17:28:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (popen_exec), process.c (rb_spawn): stop other threads before
+	  exec.  [ruby-core:08262]
+
 Tue Sep 18 22:08:42 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/matrix.rb: fix a coerce bug of Vector. [ruby-core: 12190]

@@ -163,7 +163,7 @@ get_pid(void)
 static VALUE
 get_ppid(void)
 {
-  rb_secure(2);
+    rb_secure(2);
 #ifdef _WIN32
     return INT2FIX(0);
 #else
@@ -959,7 +959,6 @@ proc_exec_v(char **argv, const char *prog)
 {
     if (!prog)
 	prog = argv[0];
-    security(prog);
     prog = dln_find_exe(prog, 0);
     if (!prog) {
 	errno = ENOENT;
@@ -1202,6 +1201,7 @@ rb_check_argv(int argc, VALUE *argv)
 {
     VALUE tmp, prog;
     int i;
+    const char *name = 0;
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
@@ -1217,12 +1217,15 @@ rb_check_argv(int argc, VALUE *argv)
 	argv[0] = RARRAY_PTR(tmp)[1];
 	SafeStringValue(prog);
 	StringValueCStr(prog);
+	prog = rb_str_new4(prog);
+	name = RSTRING_PTR(prog);
     }
     for (i = 0; i < argc; i++) {
 	SafeStringValue(argv[i]);
+	argv[i] = rb_str_new4(argv[i]);
 	StringValueCStr(argv[i]);
     }
-    security(RSTRING_PTR(prog ? prog : argv[0]));
+    security(name ? name : RSTRING_PTR(argv[0]));
     return prog;
 }
 
@@ -1296,6 +1299,13 @@ rb_exec(const struct rb_exec_arg *e)
     });
 #endif
     return -1;
+}
+
+static int
+rb_exec_atfork(void* arg)
+{
+    rb_thread_atfork();
+    return rb_exec(arg);
 }
 
 #ifdef HAVE_FORK
@@ -1708,7 +1718,7 @@ rb_spawn(int argc, VALUE *argv)
 	earg.argc = argc;
 	earg.argv = argv;
 	earg.prog = prog ? RSTRING_PTR(prog) : 0;
-	status = rb_fork(&status, (int (*)(void*))rb_exec, &earg);
+	status = rb_fork(&status, rb_exec_atfork, &earg);
 	if (prog && argc) argv[0] = prog;
     }
 #elif defined HAVE_SPAWNV
