@@ -1398,7 +1398,10 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	if (!rb_respond_to(hash2, rb_intern("to_hash"))) {
 	    return Qfalse;
 	}
-	return rb_equal(hash2, hash1);
+	if (eql)
+	    return rb_eql(hash2, hash1);
+	else
+	    return rb_equal(hash2, hash1);
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;

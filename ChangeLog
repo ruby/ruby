@@ -1,3 +1,7 @@
+Fri Sep 21 02:02:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (hash_equal): should call rb_eql when argument eql is set.
+
 Thu Sep 20 17:28:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (popen_exec), process.c (rb_spawn): stop other threads before
