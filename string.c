@@ -1547,17 +1547,34 @@ static VALUE get_pat(VALUE, int);
  *     'hello'.match('(.)\1')[0]   #=> "ll"
  *     'hello'.match(/(.)\1/)[0]   #=> "ll"
  *     'hello'.match('xx')         #=> nil
+ *     
+ *  If a block is given, invoke the block with MatchData if match succeed, so
+ *  that you can write
+ *     
+ *     str.match(pat) {|m| ...}
+ *     
+ *  instead of
+ *      
+ *     if m = str.match(pat)
+ *       ...
+ *     end
+ *      
+ *  The retuen value is a value from block exection in this case.
  */
 
 static VALUE
 rb_str_match_m(int argc, VALUE *argv, VALUE str)
 {
-    VALUE re;
+    VALUE re, result;
     if (argc < 1)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     re = argv[0];
     argv[0] = str;
-    return rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
+    result = rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
+    if (!NIL_P(result) && rb_block_given_p()) {
+	return rb_yield(result);
+    }
+    return result;
 }
 
 static int

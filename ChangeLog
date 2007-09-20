@@ -1,3 +1,10 @@
+Fri Sep 21 02:11:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_match_m): evaluate a block if match.  it would make
+	  condition statement much shorter, if no else clause is needed.
+
+	* string.c (rb_str_match_m): ditto.
+
 Fri Sep 21 02:02:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (hash_equal): should call rb_eql when argument eql is set.

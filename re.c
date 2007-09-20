@@ -1797,6 +1797,19 @@ rb_reg_match2(VALUE re)
  *
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
  *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
+ *     
+ *  If a block is given, invoke the block with MatchData if match succeed, so
+ *  that you can write
+ *     
+ *     pat.match(str) {|m| ...}
+ *     
+ *  instead of
+ *      
+ *     if m = pat.match(str)
+ *       ...
+ *     end
+ *      
+ *  The retuen value is a value from block exection in this case.
  */
 
 static VALUE
@@ -1819,6 +1832,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
     }
     result = rb_backref_get();
     rb_match_busy(result);
+    if (!NIL_P(result) && rb_block_given_p()) {
+	return rb_yield(result);
+    }
     return result;
 }
 
