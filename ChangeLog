@@ -1,3 +1,11 @@
+Thu Sep 20 17:24:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_detach_process): cast for the platforms where size of
+	  pointer differs from size of int.
+
+	* process.c (rb_f_exec, rb_f_system): should not exceptions after
+	  fork.  [ruby-core:08262]
+
 Fri Sep 14 00:34:25 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extservm.rb (invoke_service): use Thread.exclusive instead of 

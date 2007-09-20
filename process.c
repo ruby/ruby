@@ -851,19 +851,19 @@ static VALUE
 detach_process_watcher(arg)
     void *arg;
 {
-    int pid = (int)arg, status;
+    int pid = (int)(VALUE)arg, status;
 
     while (rb_waitpid(pid, &status, WNOHANG) == 0) {
 	rb_thread_sleep(1);
     }
-    return Qnil;
+    return rb_last_status;
 }
 
 VALUE
 rb_detach_process(pid)
     int pid;
 {
-    return rb_thread_create(detach_process_watcher, (void*)pid);
+    return rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
 }
 
 
@@ -1069,8 +1069,8 @@ rb_proc_exec(str)
     a = argv = ALLOCA_N(char*, (s-str)/2+2);
     ss = ALLOCA_N(char, s-str+1);
     strcpy(ss, str);
-    if (*a++ = strtok(ss, " \t")) {
-	while (t = strtok(NULL, " \t")) {
+    if ((*a++ = strtok(ss, " \t")) != 0) {
+	while ((t = strtok(NULL, " \t")) != 0) {
 	    *a++ = t;
 	}
 	*a = NULL;
@@ -1189,6 +1189,52 @@ proc_spawn(sv)
 #endif
 #endif
 
+struct rb_exec_arg {
+    int argc;
+    VALUE *argv;
+    const char *prog;
+};
+
+static struct rb_exec_arg *
+proc_prepare_args(e, argc, argv, prog)
+    struct rb_exec_arg *e;
+    int argc;
+    VALUE *argv;
+    VALUE prog;
+{
+    MEMZERO(e, struct rb_exec_arg, 1);
+    if (prog) {
+	SafeStringValue(prog);
+	StringValueCStr(prog);
+    }
+    for (i = 0; i < argc; i++) {
+	SafeStringValue(argv[i]);
+	StringValueCStr(argv[i]);
+    }
+    security(RSTRING(prog ? prog : argv[0])->ptr);
+    e->prog = prog;
+    e->argc = argc;
+    e->argv = argv;
+    return e;
+}
+
+static VALUE
+proc_exec_args(earg)
+    VALUE earg;
+{
+    struct rb_exec_arg *e = (struct rb_exec_arg *)earg;
+    int argc = e->argc;
+    VALUE *argv = e->argv;
+    VALUE prog = e->prog;
+
+    if (argc == 1 && prog == 0) {
+	return (VALUE)rb_proc_exec(RSTRING(argv[0])->ptr);
+    }
+    else {
+	return (VALUE)proc_exec_n(argc, argv, prog);
+    }
+}
+
 /*
  *  call-seq:
  *     exec(command [, arg, ...])
@@ -1221,8 +1267,10 @@ rb_f_exec(argc, argv)
 {
     VALUE prog = 0;
     VALUE tmp;
+    struct rb_exec_arg earg;
 
     if (argc == 0) {
+	rb_last_status = Qnil;
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
@@ -1235,15 +1283,7 @@ rb_f_exec(argc, argv)
 	argv[0] = RARRAY(tmp)->ptr[1];
 	SafeStringValue(prog);
     }
-    if (argc == 1 && prog == 0) {
-	VALUE cmd = argv[0];
-
-	SafeStringValue(cmd);
-	rb_proc_exec(RSTRING(cmd)->ptr);
-    }
-    else {
-	proc_exec_n(argc, argv, prog);
-    }
+    proc_exec_args(proc_prepare_args(&earg, argc, argv, prog));
     rb_sys_fail(RSTRING(argv[0])->ptr);
     return Qnil;		/* dummy */
 }
@@ -1500,7 +1540,7 @@ rb_f_system(argc, argv)
 #else
     volatile VALUE prog = 0;
     int pid;
-    int i;
+    struct rb_exec_arg earg;
     RETSIGTYPE (*chfunc)(int);
 
     fflush(stdout);
@@ -1517,27 +1557,15 @@ rb_f_system(argc, argv)
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
     }
+    proc_prepare_args(&earg, argc, argv, prog);
 
-    if (prog) {
-	SafeStringValue(prog);
-	StringValueCStr(prog);
-    }
-    for (i = 0; i < argc; i++) {
-	SafeStringValue(argv[i]);
-	StringValueCStr(argv[i]);
-    }
-    security(RSTRING(prog ? prog : argv[0])->ptr);
     chfunc = signal(SIGCHLD, SIG_DFL);
   retry:
     pid = fork();
     if (pid == 0) {
 	/* child process */
-	if (argc == 1 && prog == 0) {
-	    rb_proc_exec(RSTRING(argv[0])->ptr);
-	}
-	else {
-	    proc_exec_n(argc, argv, prog);
-	}
+	rb_thread_atfork();
+	rb_protect(proc_exec_args, (VALUE)&earg, NULL);
 	_exit(127);
     }
     if (pid < 0) {
