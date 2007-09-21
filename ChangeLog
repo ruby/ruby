@@ -1,3 +1,13 @@
+Fri Sep 21 14:51:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_mark_rest): copy just used part.
+
+	* gc.c (gc_mark_children): mark u1 and u2 of NODE_ARGSCAT.
+
+	* gc.c (os_obj_of): hide T_VALUES too.  [ruby-dev:31804]
+
+	* gc.c (run_final): freeze temporary argument array.
+
 Fri Sep 21 04:58:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-label-indent): fix for function top

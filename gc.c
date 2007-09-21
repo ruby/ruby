@@ -712,10 +712,10 @@ gc_mark_rest(void)
     VALUE *p;
 
     p = (mark_stack_ptr - mark_stack) + tmp_arry;
-    MEMCPY(tmp_arry, mark_stack, VALUE, MARK_STACK_MAX);
+    MEMCPY(tmp_arry, mark_stack, VALUE, p - tmp_arry);
 
     init_mark_stack();
-    while(p != tmp_arry){
+    while (p != tmp_arry) {
 	p--;
 	gc_mark_children(*p, 0);
     }
@@ -924,6 +924,7 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_MODULE:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_ARGSCAT:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_FBODY:	/* 2 */
@@ -1736,6 +1737,7 @@ os_obj_of(VALUE of)
 		switch (TYPE(p)) {
 		  case T_ICLASS:
 		  case T_NODE:
+		  case T_VALUES:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -1921,8 +1923,9 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 }
 
 static VALUE
-run_single_final(VALUE *args)
+run_single_final(VALUE arg)
 {
+    VALUE *args = (VALUE *)arg;
     rb_eval_cmd(args[0], args[1], (int)args[2]);
     return Qnil;
 }
@@ -1937,19 +1940,23 @@ run_final(VALUE obj)
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
     args[1] = 0;
+    if (RARRAY_LEN(finalizers) > 0) {
+	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
+    }
     args[2] = (VALUE)rb_safe_level();
     for (i=0; i<RARRAY_LEN(finalizers); i++) {
 	args[0] = RARRAY_PTR(finalizers)[i];
-	if (!args[1]) args[1] = rb_ary_new3(1, objid);
-	rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
+	rb_protect(run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
+	if (!args[1] && RARRAY_LEN(table) > 0) {
+	    args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
+	}
 	for (i=0; i<RARRAY_LEN(table); i++) {
 	    VALUE final = RARRAY_PTR(table)[i];
 	    args[0] = RARRAY_PTR(final)[1];
-	    if (!args[1]) args[1] = rb_ary_new3(1, objid);
 	    args[2] = FIX2INT(RARRAY_PTR(final)[0]);
-	    rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
+	    rb_protect(run_single_final, (VALUE)args, &status);
 	}
     }
     rb_thread_critical = critical_save;
