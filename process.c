@@ -1197,7 +1197,7 @@ proc_spawn(sv)
 struct rb_exec_arg {
     int argc;
     VALUE *argv;
-    const char *prog;
+    VALUE prog;
 };
 
 static struct rb_exec_arg *
