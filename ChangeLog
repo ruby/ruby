@@ -1,3 +1,8 @@
+Sat Sep 22 06:02:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::List::summarize): use each_line if
+	  defined rather than each.  [ruby-Patches-14096]
+
 Sat Sep 22 05:19:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_init): separate from strio_initialize
