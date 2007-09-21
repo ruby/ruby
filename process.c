@@ -1200,7 +1200,7 @@ struct rb_exec_arg {
     VALUE prog;
 };
 
-static struct rb_exec_arg *
+static void
 proc_prepare_args(e, argc, argv, prog)
     struct rb_exec_arg *e;
     int argc;
@@ -1222,7 +1222,6 @@ proc_prepare_args(e, argc, argv, prog)
     e->prog = prog;
     e->argc = argc;
     e->argv = argv;
-    return e;
 }
 
 static VALUE
@@ -1290,7 +1289,8 @@ rb_f_exec(argc, argv)
 	argv[0] = RARRAY(tmp)->ptr[1];
 	SafeStringValue(prog);
     }
-    proc_exec_args(proc_prepare_args(&earg, argc, argv, prog));
+    proc_prepare_args(&earg, argc, argv, prog);
+    proc_exec_args((VALUE)&earg);
     rb_sys_fail(RSTRING(argv[0])->ptr);
     return Qnil;		/* dummy */
 }
