@@ -1,3 +1,8 @@
+Sat Sep 22 05:19:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_init): separate from strio_initialize
+	  to share with strio_reopen properly.  [ruby-Bugs-13919]
+
 Fri Sep 21 14:51:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_mark_rest): copy just used part.
