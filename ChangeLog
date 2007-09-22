@@ -1,3 +1,10 @@
+Sun Sep 23 08:58:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_method.ci (rb_attr): should not use alloca for unknowen size
+	  input.  [ruby-dev:31816]
+
+	* parse.y (rb_intern_str): prevent str from optimization.
+
 Sun Sep 23 05:42:35 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/rdoc/options.rb (Options::check_diagram): dot -V output
