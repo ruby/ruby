@@ -1,3 +1,8 @@
+Sun Sep 23 05:42:35 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/rdoc/options.rb (Options::check_diagram): dot -V output
+	  changed. [ ruby-Bugs-11978 ], Thanks Florian Frank.
+
 Mon Sep 17 04:47:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): -W should be allowed in RUBYOPT
