@@ -1,3 +1,8 @@
+Sun Sep 23 05:42:35 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/rdoc/options.rb (Options::check_diagram): dot -V output
+	  changed. [ ruby-Bugs-11978 ], Thanks Florian Frank.
+
 Sat Sep 22 06:02:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::List::summarize): use each_line if
