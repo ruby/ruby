@@ -136,6 +136,7 @@ check_modifiable(ptr)
 
 static VALUE strio_s_allocate _((VALUE));
 static VALUE strio_s_open _((int, VALUE *, VALUE));
+static void strio_init _((int, VALUE *, struct StringIO *));
 static VALUE strio_initialize _((int, VALUE *, VALUE));
 static VALUE strio_finalize _((VALUE));
 static VALUE strio_self _((VALUE));
@@ -217,13 +218,24 @@ strio_initialize(argc, argv, self)
     VALUE self;
 {
     struct StringIO *ptr = check_strio(self);
-    VALUE string, mode;
-    int trunc = Qfalse;
 
     if (!ptr) {
 	DATA_PTR(self) = ptr = strio_alloc();
     }
     rb_call_super(0, 0);
+    strio_init(argc, argv, ptr);
+    return self;
+}
+
+static void
+strio_init(argc, argv, ptr)
+    int argc;
+    VALUE *argv;
+    struct StringIO *ptr;
+{
+    VALUE string, mode;
+    int trunc = Qfalse;
+
     switch (rb_scan_args(argc, argv, "02", &string, &mode)) {
       case 2:
 	if (FIXNUM_P(mode)) {
@@ -255,7 +267,6 @@ strio_initialize(argc, argv, self)
 	break;
     }
     ptr->string = string;
-    return self;
 }
 
 static VALUE
@@ -570,7 +581,8 @@ strio_reopen(argc, argv, self)
     if (argc == 1 && TYPE(*argv) != T_STRING) {
 	return strio_copy(self, *argv);
     }
-    return strio_initialize(argc, argv, self);
+    strio_init(argc, argv, StringIO(self));
+    return self;
 }
 
 /*

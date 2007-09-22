@@ -1,3 +1,8 @@
+Sun Sep 23 06:08:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_init): separate from strio_initialize
+	  to share with strio_reopen properly.  [ruby-Bugs-13919]
+
 Sun Sep 23 05:42:35 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/rdoc/options.rb (Options::check_diagram): dot -V output
