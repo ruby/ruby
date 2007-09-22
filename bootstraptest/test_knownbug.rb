@@ -15,3 +15,12 @@ ensure
   r.close
 end
 }, 'rename test/ruby/test_io.rb#_test_ungetc if fixed'
+
+assert_equal 'ok', %q{
+  class C
+    undef display
+    remove_method :display
+  end
+  :ok
+}, '[ruby-dev:31816]'
+
