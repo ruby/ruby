@@ -19,10 +19,31 @@ end
 assert_equal 'ok', %q{
   class C
     undef display
-    remove_method :display
+    begin
+      remove_method :display
+    rescue NameError
+    end
   end
   :ok
 }, '[ruby-dev:31816]'
+
+assert_equal 'ok', %q{
+  class B
+    def m() :fail end
+  end
+  class C < B
+    undef m
+    begin
+      remove_method :m
+    rescue NameError
+    end
+  end
+  begin
+    C.new.m
+  rescue NameError
+    :ok
+  end
+}, '[ruby-dev:31817]'
 
 assert_equal 'ok', %q{
   Process.setrlimit(Process::RLIMIT_STACK, 1024*1024)
