@@ -8528,7 +8528,9 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    return rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    ID id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    RB_GC_GUARD(str);
+    return id;
 }
 
 VALUE
