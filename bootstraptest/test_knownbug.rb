@@ -17,17 +17,6 @@ end
 }, 'rename test/ruby/test_io.rb#_test_ungetc if fixed'
 
 assert_equal 'ok', %q{
-  class C
-    undef display
-    begin
-      remove_method :display
-    rescue NameError
-    end
-  end
-  :ok
-}, '[ruby-dev:31816]'
-
-assert_equal 'ok', %q{
   class B
     def m() :fail end
   end
@@ -43,7 +32,7 @@ assert_equal 'ok', %q{
   rescue NameError
     :ok
   end
-}, '[ruby-dev:31817]'
+}, '[ruby-dev:31816], [ruby-dev:31817]'
 
 assert_equal 'ok', %q{
   Process.setrlimit(Process::RLIMIT_STACK, 1024*1024)
