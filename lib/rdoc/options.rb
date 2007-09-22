@@ -550,12 +550,12 @@ class Options
     ver = nil
     IO.popen("dot -V 2>&1") do |io|
       ver = io.read
-      if ver =~ /dot\s+version(?:\s+gviz)?\s+(\d+)\.(\d+)/
+      if ver =~ /dot.+version(?:\s+gviz)?\s+(\d+)\.(\d+)/
         ok = ($1.to_i > 1) || ($1.to_i == 1 && $2.to_i >= 8)
       end
     end
     unless ok
-      if ver =~ /^dot version/
+      if ver =~ /^dot.+version/
         $stderr.puts "Warning: You may need dot V1.8.6 or later to use\n",
           "the --diagram option correctly. You have:\n\n   ",
           ver,
