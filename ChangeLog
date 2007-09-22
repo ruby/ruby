@@ -1,3 +1,8 @@
+Sun Sep 23 06:16:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_method.ci (remove_method): check for undefined method.
+	  [ruby-dev:31816]
+
 Sun Sep 23 05:42:35 2007  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/rdoc/options.rb (Options::check_diagram): dot -V output

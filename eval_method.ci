@@ -140,9 +140,11 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 
     {
 	/* check re-definition */
+	st_data_t data;
 	NODE *old_node;
 
-	if (st_lookup(RCLASS(klass)->m_tbl, mid, (st_data_t *)&old_node)) {
+	if (st_lookup(RCLASS(klass)->m_tbl, mid, &data)) {
+	    old_node = (NODE *)data;
 	    if (old_node) {
 		if (nd_type(old_node->nd_body->nd_body) == NODE_CFUNC) {
 		    rb_vm_check_redefinition_opt_method(old_node);
@@ -208,13 +210,13 @@ rb_get_alloc_func(VALUE klass)
 static NODE *
 search_method(VALUE klass, ID id, VALUE *klassp)
 {
-    NODE *body;
+    st_data_t body;
 
     if (!klass) {
 	return 0;
     }
 
-    while (!st_lookup(RCLASS(klass)->m_tbl, id, (st_data_t *) & body)) {
+    while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
 	klass = RCLASS(klass)->super;
 	if (!klass)
 	    return 0;
@@ -224,7 +226,7 @@ search_method(VALUE klass, ID id, VALUE *klassp)
 	*klassp = klass;
     }
 
-    return body;
+    return (NODE *)body;
 }
 
 /*
@@ -289,6 +291,7 @@ rb_method_node(VALUE klass, ID id)
 static void
 remove_method(VALUE klass, ID mid)
 {
+    st_data_t data;
     NODE *body;
 
     if (klass == rb_cObject) {
@@ -302,8 +305,8 @@ remove_method(VALUE klass, ID mid)
     if (mid == object_id || mid == __send || mid == __send_bang || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *) & body) ||
-	!body->nd_body) {
+    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &data) ||
+	!(body = (NODE *)data) || !body->nd_body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
@@ -556,6 +559,7 @@ rb_alias(VALUE klass, ID name, ID def)
 {
     NODE *orig_fbody, *node;
     VALUE singleton = 0;
+    st_data_t data;
 
     rb_frozen_class_p(klass);
     if (name == def)
@@ -578,7 +582,8 @@ rb_alias(VALUE klass, ID name, ID def)
 
     orig_fbody->nd_cnt++;
 
-    if (st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *) & node)) {
+    if (st_lookup(RCLASS(klass)->m_tbl, name, &data)) {
+	node = (NODE *)data;
 	if (node) {
 	    if (RTEST(ruby_verbose) && node->nd_cnt == 0 && node->nd_body) {
 		rb_warning("discarding old %s", rb_id2name(name));
