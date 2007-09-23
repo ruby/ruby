@@ -1692,37 +1692,6 @@ Init_heap(void)
 }
 
 static VALUE
-os_live_obj(void)
-{
-    int i;
-    int n = 0;
-
-    for (i = 0; i < heaps_used; i++) {
-	RVALUE *p, *pend;
-
-	p = heaps[i].slot; pend = p + heaps[i].limit;
-	for (;p < pend; p++) {
-	    if (p->as.basic.flags) {
-		switch (TYPE(p)) {
-		  case T_ICLASS:
-		  case T_NODE:
-		  case T_VALUES:
-		    continue;
-		  case T_CLASS:
-		    if (FL_TEST(p, FL_SINGLETON)) continue;
-		  default:
-		    if (!p->as.basic.klass) continue;
-		    rb_yield((VALUE)p);
-		    n++;
-		}
-	    }
-	}
-    }
-
-    return INT2FIX(n);
-}
-
-static VALUE
 os_obj_of(VALUE of)
 {
     int i;
@@ -1734,7 +1703,8 @@ os_obj_of(VALUE of)
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
-		switch (TYPE(p)) {
+		switch (BUILTIN_TYPE(p)) {
+		  case T_NONE:
 		  case T_ICLASS:
 		  case T_NODE:
 		  case T_VALUES:
@@ -1743,7 +1713,7 @@ os_obj_of(VALUE of)
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
 		    if (!p->as.basic.klass) continue;
-		    if (rb_obj_is_kind_of((VALUE)p, of)) {
+		    if (!of || rb_obj_is_kind_of((VALUE)p, of)) {
 			rb_yield((VALUE)p);
 			n++;
 		    }
@@ -1795,11 +1765,9 @@ os_each_obj(int argc, VALUE *argv)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &of) == 0) {
-	return os_live_obj();
+	of = 0;
     }
-    else {
-	return os_obj_of(of);
-    }
+    return os_obj_of(of);
 }
 
 static VALUE finalizers;

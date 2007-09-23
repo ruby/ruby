@@ -1,3 +1,8 @@
+Sun Sep 23 09:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (os_obj_of, os_each_obj): hide objects to be finalized.
+	  [ruby-dev:31810]
+
 Sun Sep 23 08:58:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_method.ci (rb_attr): should not use alloca for unknowen size
