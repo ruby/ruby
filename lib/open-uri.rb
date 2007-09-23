@@ -229,6 +229,7 @@ module OpenURI
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
+      http.enable_post_connection_check = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       store.set_default_paths
@@ -240,16 +241,6 @@ module OpenURI
 
     resp = nil
     http.start {
-      if target.class == URI::HTTPS
-        # xxx: information hiding violation
-        sock = http.instance_variable_get(:@socket)
-        if sock.respond_to?(:io)
-          sock = sock.io # 1.9
-        else
-          sock = sock.instance_variable_get(:@socket) # 1.8
-        end
-        sock.post_connection_check(target_host)
-      end
       req = Net::HTTP::Get.new(request_uri, header)
       if options.include? :http_basic_authentication
         user, pass = options[:http_basic_authentication]
