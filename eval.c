@@ -6825,7 +6825,6 @@ rb_load(fname, wrap)
     volatile VALUE self = ruby_top_self;
     NODE *volatile last_node;
     NODE *saved_cref = ruby_cref;
-    TMP_PROTECT;
 
     if (wrap && ruby_safe_level >= 4) {
 	StringValue(fname);
