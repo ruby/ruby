@@ -59,42 +59,19 @@ str_frozen_check(s)
     }
 }
 
-static VALUE str_alloc0 _((VALUE, int));
 static VALUE str_alloc _((VALUE));
-static VALUE str_alloc1 _((VALUE));
-
 static VALUE
-str_alloc0(klass, flags)
+str_alloc(klass)
     VALUE klass;
-    int flags;
 {
     NEWOBJ(str, struct RString);
-    OBJSETUP(str, klass, flags);
+    OBJSETUP(str, klass, T_STRING);
 
     str->ptr = 0;
     str->len = 0;
     str->aux.capa = 0;
 
     return (VALUE)str;
-}
-
-static const char null_str[] = "";
-#define null_str (char *)null_str
-
-static VALUE
-str_alloc(klass)
-    VALUE klass;
-{
-    VALUE str = str_alloc0(klass, T_STRING | ELTS_SHARED);
-    RSTRING(str)->ptr = null_str;
-    return str;
-}
-
-static VALUE
-str_alloc1(klass)
-    VALUE klass;
-{
-    return str_alloc0(klass, T_STRING);
 }
 
 static VALUE
@@ -109,7 +86,7 @@ str_new(klass, ptr, len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    str = str_alloc1(klass);
+    str = str_alloc(klass);
     RSTRING(str)->len = len;
     RSTRING(str)->aux.capa = len;
     RSTRING(str)->ptr = ALLOC_N(char,len+1);
@@ -168,6 +145,7 @@ str_new3(klass, str)
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
     RSTRING(str2)->aux.shared = str;
+    FL_SET(str2, ELTS_SHARED);
 
     return str2;
 }
@@ -186,7 +164,7 @@ static VALUE
 str_new4(klass, str)
     VALUE klass, str;
 {
-    VALUE str2 = str_alloc1(klass);
+    VALUE str2 = str_alloc(klass);
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
@@ -245,7 +223,7 @@ VALUE
 rb_str_buf_new(capa)
     long capa;
 {
-    VALUE str = str_alloc1(rb_cString);
+    VALUE str = str_alloc(rb_cString);
 
     if (capa < STR_BUF_MIN_SIZE) {
 	capa = STR_BUF_MIN_SIZE;
@@ -279,14 +257,13 @@ rb_str_to_str(str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
-static int str_independent _((VALUE));
-
 static void
 rb_str_shared_replace(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
-    if (str_independent(str)) xfree(RSTRING(str)->ptr);
+    rb_str_modify(str);
+    if (!FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
     if (NIL_P(str2)) {
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
@@ -560,6 +537,8 @@ rb_str_associated(str)
     }
     return Qfalse;
 }
+
+static char *null_str = "";
 
 VALUE
 rb_string_value(ptr)
@@ -2286,11 +2265,8 @@ rb_str_replace(str, str2)
 	FL_UNSET(str, STR_ASSOC);
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
-    else if (!RSTRING(str2)->len) {
-	FL_SET(str, ELTS_SHARED);
-	RSTRING(str)->ptr = null_str;
-    }
     else {
+	rb_str_modify(str);
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
 	if (FL_TEST(str2, STR_ASSOC)) {
