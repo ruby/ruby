@@ -88,7 +88,7 @@ module OpenSSL
             end
           }
         end
-        raise SSLError, "hostname not match"
+        raise SSLError, "hostname was not match with the server certificate"
       end
 
       def session

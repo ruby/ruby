@@ -1,3 +1,17 @@
+Mon Sep 24 06:49:15 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>  
+
+	* lib/net/http.rb: an SSL verification (the server hostname should
+	  be matched with its certificate's commonName) is added.
+	  this verification can be skipped by
+	  "Net::HTTP#enable_post_connection_check=(false)".
+	  suggested by Chris Clark <cclark at isecpartners.com>
+
+	* lib/net/open-uri.rb: use Net::HTTP#enable_post_connection_check to
+	  perform SSL post connection check.
+
+	* ext/openssl/lib/openssl/ssl.c
+	(OpenSSL::SSL::SSLSocket#post_connection_check): refine error message.  
+
 Sun Sep 23 09:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (os_obj_of, os_each_obj): hide objects to be finalized.

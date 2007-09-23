@@ -98,6 +98,7 @@ module OpenURI
     :read_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
+    :ssl_enable_post_connection_check => true,
     :ftp_active_mode => false,
   }
 
@@ -269,6 +270,10 @@ module OpenURI
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
+      http.enable_post_connection_check = 
+        options.has_key?(:ssl_enable_post_connection_check) ?
+        options[:ssl_enable_post_connection_check] :
+        Options[:ssl_enable_post_connection_check]
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
@@ -289,16 +294,6 @@ module OpenURI
 
     resp = nil
     http.start {
-      if target.class == URI::HTTPS
-        # xxx: information hiding violation
-        sock = http.instance_variable_get(:@socket)
-        if sock.respond_to?(:io)
-          sock = sock.io # 1.9
-        else
-          sock = sock.instance_variable_get(:@socket) # 1.8
-        end
-        sock.post_connection_check(target_host)
-      end
       req = Net::HTTP::Get.new(request_uri, header)
       if options.include? :http_basic_authentication
         user, pass = options[:http_basic_authentication]
