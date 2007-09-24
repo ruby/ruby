@@ -533,7 +533,7 @@ module Net   #:nodoc:
       false   # redefined in net/https
     end
 
-    # specify enabling SSL server sertificate and hostname checking.
+    # specify enabling SSL server certificate and hostname checking.
     attr_accessor :enable_post_connection_check
 
     # Opens TCP connection and HTTP session.
