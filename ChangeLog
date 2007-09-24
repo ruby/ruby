@@ -1,3 +1,7 @@
+Mon Sep 24 16:52:11 2007  Urabe Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/net/http.rb: fix typo.
+
 Sun Sep 23 21:57:25 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>  
 
 	* lib/net/http.rb: an SSL verification (the server hostname should
