@@ -1,3 +1,9 @@
+Mon Sep 24 17:56:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_initialize, strscan_getch): use the
+	  encoding of the target string instead of setting to StringScanner
+	  instance.  [ruby-dev:31831]
+
 Mon Sep 24 16:52:11 2007  Urabe Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/http.rb: fix typo.

@@ -190,7 +190,6 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &str, &need_dup);
     StringValue(str);
     p->str = str;
-    rb_enc_associate(self, rb_enc_get(str));
 
     return self;
 }
@@ -654,14 +653,13 @@ strscan_getch(VALUE self)
 {
     struct strscanner *p;
     long len;
-    rb_encoding *enc = rb_enc_get(self);
 
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
     if (EOS_P(p))
         return Qnil;
 
-    len = rb_enc_mbclen(CURPTR(p), S_PEND(p), enc);
+    len = rb_enc_mbclen(CURPTR(p), S_PEND(p), rb_enc_get(p->str));
     if (p->curr + len > S_LEN(p)) {
         len = S_LEN(p) - p->curr;
     }
