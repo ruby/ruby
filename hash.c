@@ -1350,8 +1350,9 @@ rb_hash_has_value(VALUE hash, VALUE val)
 }
 
 struct equal_data {
-    int result;
+    VALUE result;
     st_table *tbl;
+    int eql;
 };
 
 static int
@@ -1364,28 +1365,24 @@ eql_i(VALUE key, VALUE val1, struct equal_data *data)
 	data->result = Qfalse;
 	return ST_STOP;
     }
-    if (!rb_eql(val1, val2)) {
+    if (!(data->eql ? rb_eql(val1, val2) : rb_equal(val1, val2))) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
     return ST_CONTINUE;
 }
 
-static int
-equal_i(VALUE key, VALUE val1, struct equal_data *data)
+static VALUE
+recursive_eql(VALUE hash, VALUE dt, int recur)
 {
-    VALUE val2;
+    struct equal_data *data;
 
-    if (key == Qundef) return ST_CONTINUE;
-    if (!st_lookup(data->tbl, key, &val2)) {
-	data->result = Qfalse;
-	return ST_STOP;
-    }
-    if (!rb_equal(val1, val2)) {
-	data->result = Qfalse;
-	return ST_STOP;
-    }
-    return ST_CONTINUE;
+    if (recur) return Qfalse;
+    data = (struct equal_data*)dt;
+    data->result = Qtrue;
+    rb_hash_foreach(hash, eql_i, (st_data_t)data);
+
+    return data->result;
 }
 
 static VALUE
@@ -1414,10 +1411,8 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 #endif
 
     data.tbl = RHASH(hash2)->ntbl;
-    data.result = Qtrue;
-    rb_hash_foreach(hash1, eql ? eql_i : equal_i, (st_data_t)&data);
-
-    return data.result;
+    data.eql = eql;
+    return rb_exec_recursive(recursive_eql, hash1, (VALUE)&data);
 }
 
 /*

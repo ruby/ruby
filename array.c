@@ -2328,6 +2328,19 @@ rb_ary_rassoc(VALUE ary, VALUE value)
     return Qnil;
 }
 
+static VALUE
+recursive_equal(VALUE ary1, VALUE ary2, int recur)
+{
+    long i;
+
+    if (recur) return Qfalse;
+    for (i=0; i<RARRAY_LEN(ary1); i++) {
+	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
+	    return Qfalse;
+    }
+    return Qtrue;
+}
+
 /* 
  *  call-seq:
  *     array == other_array   ->   bool
@@ -2345,8 +2358,6 @@ rb_ary_rassoc(VALUE ary, VALUE value)
 static VALUE
 rb_ary_equal(VALUE ary1, VALUE ary2)
 {
-    long i;
-
     if (ary1 == ary2) return Qtrue;
     if (TYPE(ary2) != T_ARRAY) {
 	if (!rb_respond_to(ary2, rb_intern("to_ary"))) {
@@ -2355,11 +2366,7 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 	return rb_equal(ary2, ary1);
     }
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-	    return Qfalse;
-    }
-    return Qtrue;
+    return rb_exec_recursive(recursive_equal, ary1, ary2);
 }
 
 /*
