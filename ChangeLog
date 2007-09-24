@@ -2,6 +2,10 @@ Mon Sep 24 22:14:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/weakref.rb (WeakRef): remove debug print.  [ruby-dev:31799]
 
+	* hash.c (hash_i): avoid too frequent hash conflict where key and
+	  value are same.  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>.
+	  [ruby-dev:31802]
+
 Mon Sep 24 17:56:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_initialize, strscan_getch): use the
