@@ -1,3 +1,7 @@
+Mon Sep 24 22:14:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/weakref.rb (WeakRef): remove debug print.  [ruby-dev:31799]
+
 Mon Sep 24 17:56:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_initialize, strscan_getch): use the

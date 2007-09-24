@@ -21,7 +21,6 @@ class WeakRef < Delegator
   @@id_rev_map =  {}            # ref -> obj
   @@mutex = Mutex.new
   @@final = lambda {|id|
-    printf "final: %p\n", id
     @@mutex.synchronize {
       rids = @@id_map[id]
       if rids
@@ -41,7 +40,6 @@ class WeakRef < Delegator
 
   def initialize(orig)
     @__id = orig.object_id
-    printf "orig: %p\n", @__id
     ObjectSpace.define_finalizer orig, @@final
     ObjectSpace.define_finalizer self, @@final
     @@mutex.synchronize {
