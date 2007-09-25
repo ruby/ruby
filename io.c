@@ -296,20 +296,17 @@ io_ungetc(VALUE str, rb_io_t *fptr)
 	    fptr->rbuf_capa = 8192;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
-    if (fptr->rbuf_off == 0) {
-        if (fptr->rbuf_len) {
-            MEMMOVE(fptr->rbuf+len, fptr->rbuf, char, fptr->rbuf_len);
-	}
-        fptr->rbuf_off = len;
-    }
-    else if (fptr->rbuf_off < len) {
+    if (fptr->rbuf_off < len) {
 	int capa = fptr->rbuf_len + len;
 	char *buf = ALLOC_N(char, capa);
 
         if (fptr->rbuf_len) {
             MEMMOVE(buf+len, fptr->rbuf+fptr->rbuf_off, char, fptr->rbuf_len);
 	}
+	fptr->rbuf_capa = capa;
 	fptr->rbuf_off = len;
+	free(fptr->rbuf);
+        fptr->rbuf = buf;
     }
     fptr->rbuf_off-=len;
     fptr->rbuf_len+=len;

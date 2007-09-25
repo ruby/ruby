@@ -6,11 +6,15 @@
 assert_equal 'ok', %q{
 begin
   r, w = IO.pipe
+  w.write "foo"
   w.close
   # assert_raise(IOError, "[ruby-dev:31650]") { 20000.times { r.ungetc "a" } }
+  r.getc
   20000.times { r.ungetc "a" }
-rescue IOError
-  :ok
+  data = r.read
+  if data.size == 20002 && data[-5..-1] == "aaaoo"
+    :ok
+  end
 ensure
   r.close
 end

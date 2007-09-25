@@ -1,3 +1,8 @@
+Tue Sep 25 15:11:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_ungetc): reallocate internal buffer if pushing data
+	  excess capacity.  [ruby-dev:31650]
+
 Tue Sep 25 13:43:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_method.ci (remove_method): should not remove undef place
