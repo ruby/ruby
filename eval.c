@@ -130,6 +130,7 @@ ruby_options(int argc, char **argv)
 static void
 ruby_finalize_0(void)
 {
+    rb_clear_trace_func();
     PUSH_TAG();
     if (EXEC_TAG() == 0) {
 	rb_trap_exit();
@@ -143,7 +144,6 @@ ruby_finalize_1(void)
 {
     signal(SIGINT, SIG_DFL);
     GET_THREAD()->errinfo = Qnil;
-    rb_clear_trace_func();
     rb_gc_call_finalizer_at_exit();
 }
 
@@ -686,9 +686,16 @@ rb_longjmp(int tag, VALUE mesg)
 	PUSH_TAG();
 	if ((status = EXEC_TAG()) == 0) {
 	    RB_GC_GUARD(e) = rb_obj_as_string(e);
-	    warn_printf("Exception `%s' at %s:%d - %s\n",
-			rb_obj_classname(th->errinfo),
-			file, line, RSTRING_PTR(e));
+	    if (file) {
+		warn_printf("Exception `%s' at %s:%d - %s\n",
+			    rb_obj_classname(th->errinfo),
+			    file, line, RSTRING_PTR(e));
+	    }
+	    else {
+		warn_printf("Exception `%s' - %s\n",
+			    rb_obj_classname(th->errinfo),
+			    RSTRING_PTR(e));
+	    }
 	}
 	POP_TAG();
 	if (status == TAG_FATAL && th->errinfo == exception_error) {

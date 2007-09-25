@@ -1,3 +1,10 @@
+Tue Sep 25 09:51:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_longjmp): source file information may be NULL.
+	  [ruby-dev:31849]
+
+	* eval.c (ruby_finalize_0): clear trace_func before finalization.
+
 Mon Sep 24 22:36:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_equal): should handle recursive array.
