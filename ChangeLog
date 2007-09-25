@@ -1,3 +1,8 @@
+Tue Sep 25 13:43:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_method.ci (remove_method): should not remove undef place
+	  holder.  [ruby-dev:31816], [ruby-dev:31817]
+
 Tue Sep 25 09:51:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_longjmp): source file information may be NULL.

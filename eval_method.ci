@@ -305,8 +305,14 @@ remove_method(VALUE klass, ID mid)
     if (mid == object_id || mid == __send || mid == __send_bang || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &data) ||
-	!(body = (NODE *)data) || !body->nd_body) {
+    if (st_lookup(RCLASS(klass)->m_tbl, mid, &data)) {
+	body = (NODE *)data;
+	if (!body || !body->nd_body) body = 0;
+	else {
+	    st_delete(RCLASS(klass)->m_tbl, &mid, &data);
+	}
+    }
+    if (!body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
