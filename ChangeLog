@@ -1,3 +1,9 @@
+Wed Sep 26 05:12:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yyerror): limit error message length.  [ruby-dev:31848]
+
+	* regex.c (re_mbc_startpos): separated from re_adjust_startpos.
+
 Mon Sep 24 16:52:11 2007  Urabe Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/http.rb: fix typo.
