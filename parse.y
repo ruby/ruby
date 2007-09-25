@@ -4572,6 +4572,7 @@ static int
 parser_yyerror(struct parser_params *parser, const char *msg)
 {
 #ifndef RIPPER
+    const int max_line_margin = 30;
     const char *p, *pe;
     char *buf;
     int len, i;
@@ -4593,10 +4594,23 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     len = pe - p;
     if (len > 4) {
 	char *p2;
+	const char *pre = "", *post = "";
+
+	if (len > max_line_margin * 2 + 10) {
+	    if (lex_p - p > max_line_margin) {
+		p = rb_enc_prev_char(p, lex_p - max_line_margin, rb_enc_get(lex_lastline));
+		pre = "...";
+	    }
+	    if (pe - lex_p > max_line_margin) {
+		pe = rb_enc_prev_char(lex_p, lex_p + max_line_margin, rb_enc_get(lex_lastline));
+		post = "...";
+	    }
+	    len = pe - p;
+	}
 	buf = ALLOCA_N(char, len+2);
 	MEMCPY(buf, p, char, len);
 	buf[len] = '\0';
-	rb_compile_error_append("%s", buf);
+	rb_compile_error_append("%s%s%s", pre, buf, post);
 
 	i = lex_p - p;
 	p2 = buf; pe = buf + len;
@@ -4607,7 +4621,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	}
 	buf[i] = '^';
 	buf[i+1] = '\0';
-	rb_compile_error_append("%s", buf);
+	rb_compile_error_append("%s%s", pre, buf);
     }
 #else
     dispatch1(parse_error, STR_NEW2(msg));

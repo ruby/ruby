@@ -1,3 +1,8 @@
+Wed Sep 26 05:12:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yyerror): limit error message length.
+	  [ruby-dev:31848]
+
 Tue Sep 25 15:11:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_ungetc): reallocate internal buffer if pushing data
