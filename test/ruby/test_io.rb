@@ -37,7 +37,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   # This test cause SEGV.
-  def _test_ungetc
+  def test_ungetc
     r, w = IO.pipe
     w.close
     assert_raise(IOError, "[ruby-dev:31650]") { 20000.times { r.ungetc "a" } }

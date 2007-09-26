@@ -957,3 +957,29 @@ assert_equal 'ok', %q{
   end
 }, '[ruby-core:11998]'
 
+assert_equal 'ok', %q{
+  class B
+    def m() :fail end
+  end
+  class C < B
+    undef m
+    begin
+      remove_method :m
+    rescue NameError
+    end
+  end
+  begin
+    C.new.m
+  rescue NameError
+    :ok
+  end
+}, '[ruby-dev:31816], [ruby-dev:31817]'
+
+assert_equal 'ok', %q{
+  Process.setrlimit(Process::RLIMIT_STACK, 1024*1024)
+  class C
+    attr "a" * (2*1024*1024)
+  end
+  :ok
+}, '[ruby-dev:31818]'
+

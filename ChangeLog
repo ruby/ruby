@@ -1,3 +1,11 @@
+Wed Sep 26 20:00:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb: move fixed tests.
+
+	* bootstraptest/test_method.rb: ditto.
+
+	* test/ruby/test_io.rb: ditto.
+
 Wed Sep 26 19:36:26 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (eval): fix to check stack overflow.
