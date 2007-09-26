@@ -1114,7 +1114,11 @@ def configuration(srcdir)
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
-
+#{
+if $extmk
+  "top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/")
+end
+}
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}.quote}
 topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}

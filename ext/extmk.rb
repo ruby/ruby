@@ -135,7 +135,6 @@ def extmake(target)
 	"topdir" => $topdir,
       }
       mkconfig = {
-	"top_srcdir" => ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1],
 	"hdrdir" => "$(top_srcdir)",
 	"srcdir" => "$(top_srcdir)/ext/#{$mdir}",
 	"topdir" => $topdir,
