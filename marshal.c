@@ -89,7 +89,26 @@ typedef struct {
     VALUE (*loader)(VALUE, VALUE);
 } marshal_compat_t;
 
+#define make_compat_tbl_wrapper(tbl) Data_Wrap_Struct(rb_cData, rb_mark_tbl, 0, tbl)
+
 static st_table *compat_allocator_tbl;
+static VALUE compat_allocator_tbl_wrapper;
+
+static int
+mark_marshal_compat_i(st_data_t key, st_data_t value)
+{
+    marshal_compat_t *p = (marshal_compat_t *)value;
+    rb_gc_mark(p->newclass);
+    rb_gc_mark(p->oldclass);
+    return ST_CONTINUE;
+}
+
+static void
+mark_marshal_compat_t(void *tbl)
+{
+    if (!tbl) return;
+    st_foreach(tbl, mark_marshal_compat_i, 0);
+}
 
 void
 rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE))
@@ -104,8 +123,6 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     compat = ALLOC(marshal_compat_t);
     compat->newclass = Qnil;
     compat->oldclass = Qnil;
-    rb_gc_register_address(&compat->newclass);
-    rb_gc_register_address(&compat->oldclass);
     compat->newclass = newclass;
     compat->oldclass = oldclass;
     compat->dumper = dumper;
@@ -121,6 +138,7 @@ struct dump_arg {
     st_table *data;
     int taint;
     st_table *compat_tbl;
+    VALUE compat_tbl_wrapper;
 };
 
 struct dump_call_arg {
@@ -346,6 +364,9 @@ w_symbol(ID id, struct dump_arg *arg)
     }
     else {
 	sym = rb_id2name(id);
+	if (!sym) {
+	    rb_raise(rb_eTypeError, "can't dump anonymous ID %ld", id);
+	}
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(sym, strlen(sym), arg);
 	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
@@ -396,11 +417,11 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
 {
     volatile VALUE p;
     char *path;
-    VALUE real_obj;
+    st_data_t real_obj;
     VALUE klass;
 
-    if (st_lookup(arg->compat_tbl, (st_data_t)obj, (st_data_t*)&real_obj)) {
-        obj = real_obj;
+    if (st_lookup(arg->compat_tbl, (st_data_t)obj, &real_obj)) {
+        obj = (VALUE)real_obj;
     }
     klass = CLASS_OF(obj);
     w_extended(klass, arg, check);
@@ -464,7 +485,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	return;
     }
 
-    if (ivtbl = rb_generic_ivar_table(obj)) {
+    if ((ivtbl = rb_generic_ivar_table(obj)) != 0) {
 	w_byte(TYPE_IVAR, arg);
     }
     if (obj == Qnil) {
@@ -499,11 +520,12 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	st_add_direct(arg->data, obj, arg->data->num_entries);
 
         {
-            marshal_compat_t *compat;
+            st_data_t compat_data;
             rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
             if (st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
-                          (st_data_t*)(void*)&compat)) {
+                          &compat_data)) {
+                marshal_compat_t *compat = (marshal_compat_t*)compat_data;
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
@@ -699,6 +721,9 @@ dump_ensure(struct dump_arg *arg)
 {
     st_free_table(arg->symbols);
     st_free_table(arg->data);
+    st_free_table(arg->compat_tbl);
+    DATA_PTR(arg->compat_tbl_wrapper) = 0;
+    arg->compat_tbl_wrapper = 0;
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
@@ -772,6 +797,7 @@ marshal_dump(int argc, VALUE *argv)
     arg.data    = st_init_numtable();
     arg.taint   = Qfalse;
     arg.compat_tbl = st_init_numtable();
+    arg.compat_tbl_wrapper = make_compat_tbl_wrapper(arg.compat_tbl);
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -792,6 +818,7 @@ struct load_arg {
     VALUE proc;
     int taint;
     st_table *compat_tbl;
+    VALUE compat_tbl_wrapper;
 };
 
 static VALUE r_entry(VALUE v, struct load_arg *arg);
@@ -952,17 +979,17 @@ r_string(struct load_arg *arg)
 static VALUE
 r_entry(VALUE v, struct load_arg *arg)
 {
-    VALUE real_obj = Qundef;
-    if (st_lookup(arg->compat_tbl, v, (st_data_t*)&real_obj)) {
-        rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), real_obj);
+    st_data_t real_obj = (VALUE)Qundef;
+    if (st_lookup(arg->compat_tbl, v, &real_obj)) {
+        rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), (VALUE)real_obj);
     }
     else {
         rb_hash_aset(arg->data, INT2FIX(RHASH_SIZE(arg->data)), v);
     }
     if (arg->taint) {
         OBJ_TAINT(v);
-        if (real_obj != Qundef)
-            OBJ_TAINT(real_obj);
+        if ((VALUE)real_obj != Qundef)
+            OBJ_TAINT((VALUE)real_obj);
     }
     if (arg->proc) {
 	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
@@ -973,12 +1000,13 @@ r_entry(VALUE v, struct load_arg *arg)
 static VALUE
 r_leave(VALUE v, struct load_arg *arg)
 {
-    VALUE real_obj;
-    marshal_compat_t *compat;
-    if (st_lookup(arg->compat_tbl, v, &real_obj)) {
+    st_data_t data;
+    if (st_lookup(arg->compat_tbl, v, &data)) {
+        VALUE real_obj = (VALUE)data;
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
         st_data_t key = v;
-        if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)(void*)&compat)) {
+        if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
+            marshal_compat_t *compat = (marshal_compat_t*)data;
             compat->loader(real_obj, v);
         }
         st_delete(arg->compat_tbl, &key, 0);
@@ -1028,13 +1056,14 @@ static VALUE
 obj_alloc_by_path(const char *path, struct load_arg *arg)
 {
     VALUE klass;
-    marshal_compat_t *compat;
+    st_data_t data;
     rb_alloc_func_t allocator;
 
     klass = path2class(path);
 
     allocator = rb_get_alloc_func(klass);
-    if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, (st_data_t*)(void*)&compat)) {
+    if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
+        marshal_compat_t *compat = (marshal_compat_t*)data;
         VALUE real_obj = rb_obj_alloc(klass);
         VALUE obj = rb_obj_alloc(compat->oldclass);
         st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
@@ -1428,6 +1457,9 @@ static VALUE
 load_ensure(struct load_arg *arg)
 {
     st_free_table(arg->symbols);
+    st_free_table(arg->compat_tbl);
+    DATA_PTR(arg->compat_tbl_wrapper) = 0;
+    arg->compat_tbl_wrapper = 0;
     return 0;
 }
 
@@ -1467,6 +1499,7 @@ marshal_load(int argc, VALUE *argv)
     arg.src = port;
     arg.offset = 0;
     arg.compat_tbl = st_init_numtable();
+    arg.compat_tbl_wrapper = make_compat_tbl_wrapper(arg.compat_tbl);
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
@@ -1548,6 +1581,9 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 
     compat_allocator_tbl = st_init_numtable();
+    rb_gc_register_address(&compat_allocator_tbl_wrapper);
+    compat_allocator_tbl_wrapper =
+	Data_Wrap_Struct(rb_cData, mark_marshal_compat_t, 0, compat_allocator_tbl);
 }
 
 VALUE

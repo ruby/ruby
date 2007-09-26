@@ -1,3 +1,8 @@
+Thu Sep 27 04:12:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct dump_arg, struct load_arg): added wrappers to mark
+	  compat_tbl entries.  [ruby-dev:31870]
+
 Thu Sep 27 03:17:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_waitpid): no needs to poll.  [ruby-dev:31871]
