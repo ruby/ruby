@@ -1,3 +1,9 @@
+Wed Sep 26 15:01:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_method.ci (rb_get_alloc_func): cast to suppress a warning.
+
+	* eval_method.ci (remove_method): local variable to be initialized.
+
 Wed Sep 26 08:36:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (ext/extinit.o): use $(OUTFLAG) as well as other

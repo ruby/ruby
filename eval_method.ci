@@ -204,7 +204,7 @@ rb_get_alloc_func(VALUE klass)
     if (nd_type(n) != NODE_METHOD) return 0;
     n = n->nd_body;
     if (nd_type(n) != NODE_CFUNC) return 0;
-    return n->nd_cfnc;
+    return (rb_alloc_func_t)n->nd_cfnc;
 }
 
 static NODE *
@@ -292,7 +292,7 @@ static void
 remove_method(VALUE klass, ID mid)
 {
     st_data_t data;
-    NODE *body;
+    NODE *body = 0;
 
     if (klass == rb_cObject) {
 	rb_secure(4);
