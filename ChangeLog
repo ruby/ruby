@@ -1,3 +1,9 @@
+Wed Sep 26 19:36:26 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (eval): fix to check stack overflow.
+
+	* eval_intern.h, vm.h: move CHECK_STACK_OVERFLOW() macro.
+
 Wed Sep 26 19:27:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_throw): fix to move increment point.

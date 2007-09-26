@@ -214,12 +214,6 @@ default:                        \
   ((rb_control_frame_t *)(th->stack + th->stack_size) - (rb_control_frame_t *)(cfp))
 #define VM_SP_CNT(th, sp) ((sp) - (th)->stack)
 
-#define CHECK_STACK_OVERFLOW(cfp, margin) do \
-  if (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp)) { \
-      rb_exc_raise(sysstack_error); \
-  } \
-while (0)
-
 /*
   env{
     env[0] // special (block or prev env)

@@ -1735,6 +1735,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	}
 
 	/* kick */
+	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 	result = vm_eval_body(th);
     }
     POP_TAG();

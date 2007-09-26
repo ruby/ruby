@@ -186,6 +186,12 @@ char *strrchr _((const char *, const char));
   ruby_cref()->nd_visi = (f); \
 }
 
+#define CHECK_STACK_OVERFLOW(cfp, margin) do \
+  if (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp)) { \
+      rb_exc_raise(sysstack_error); \
+  } \
+while (0)
+
 void rb_thread_cleanup _((void));
 void rb_thread_wait_other_threads _((void));
 
