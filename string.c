@@ -5106,21 +5106,6 @@ str_encoding(VALUE str)
 }
 
 
-/*
- *  call-seq:
- *     str.associate_encoding(encoding)   => str
- *
- *  Changes the encoding to +encoding+ and returns self.
- */
-
-static VALUE
-rb_str_associate_encoding(VALUE str, VALUE encname)
-{
-    str_modifiable(str);
-    rb_enc_associate(str, rb_enc_find(StringValueCStr(encname)));
-    return str;
-}
-
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -5532,7 +5517,6 @@ Init_String(void)
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     rb_define_method(rb_cString, "encoding", str_encoding, 0);
-    rb_define_method(rb_cString, "associate_encoding", rb_str_associate_encoding, 1);
 
     id_to_s = rb_intern("to_s");
 
