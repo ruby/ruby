@@ -262,6 +262,8 @@ struct parser_params {
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
+#define STR_NEW3(p,n,m) rb_enc_str_new((p),(n), STR_ENC(m))
+#define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
 
 #ifdef YYMALLOC
 void *rb_parser_malloc(struct parser_params *, size_t);
@@ -3886,7 +3888,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				    yyerror("empty symbol literal");
 				    break;
 				}
-				$$->nd_lit = ID2SYM(rb_intern2(RSTRING_PTR(lit), RSTRING_LEN(lit)));
+				$$->nd_lit = ID2SYM(rb_intern_str(lit));
 				nd_set_type($$, NODE_LIT);
 				break;
 			      default:
@@ -4478,7 +4480,7 @@ none		: /* none */
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
 static int parser_regx_options(struct parser_params*);
-static int parser_tokadd_string(struct parser_params*,int,int,int,long*);
+static int parser_tokadd_string(struct parser_params*,int,int,int,long*,int*);
 static int parser_parse_string(struct parser_params*,NODE*);
 static int parser_here_document(struct parser_params*,NODE*);
 
@@ -4489,7 +4491,7 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define read_escape()             parser_read_escape(parser)
 # define tokadd_escape(t)          parser_tokadd_escape(parser, t)
 # define regx_options()            parser_regx_options(parser)
-# define tokadd_string(f,t,p,n)    parser_tokadd_string(parser,f,t,p,n)
+# define tokadd_string(f,t,p,n,m)  parser_tokadd_string(parser,f,t,p,n,m)
 # define parse_string(n)           parser_parse_string(parser,n)
 # define here_document(n)          parser_here_document(parser,n)
 # define heredoc_identifier()      parser_heredoc_identifier(parser)
@@ -5150,15 +5152,24 @@ dispose_string(VALUE str)
     rb_gc_force_recycle(str);
 }
 
+static void
+parser_tokadd_mbchar(struct parser_params *parser, int c)
+{
+    int len = parser_mbclen();
+    do {
+	tokadd(c);
+    } while (--len > 0 && (c = nextc()) != -1);
+}
+
+#define tokadd_mbchar(c) parser_tokadd_mbchar(parser, c)
+
 static int
 parser_tokadd_string(struct parser_params *parser,
-    int func, int term, int paren, long *nest)
+		     int func, int term, int paren, long *nest, int *mb)
 {
     int c;
-    unsigned char uc;
 
     while ((c = nextc()) != -1) {
-        uc = (unsigned char)c;
 	if (paren && c == paren) {
 	    ++*nest;
 	}
@@ -5210,12 +5221,9 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (parser_ismbchar()) {
-	    int i, len = parser_mbclen()-1;
-
-	    for (i = 0; i < len; i++) {
-		tokadd(c);
-		c = nextc();
-	    }
+	    tokadd_mbchar(c);
+	    if (mb) *mb = 1;
+	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 	    pushback(c);
@@ -5240,7 +5248,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int func = quote->nd_func;
     int term = nd_term(quote);
     int paren = nd_paren(quote);
-    int c, space = 0;
+    int c, space = 0, mb = 0;
 
     if (func == -1) return tSTRING_END;
     c = nextc();
@@ -5274,7 +5282,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	tokadd('#');
     }
     pushback(c);
-    if (tokadd_string(func, term, paren, &quote->nd_nest) == -1) {
+    if (tokadd_string(func, term, paren, &quote->nd_nest, &mb) == -1) {
 	if (func & STR_FUNC_REGEXP) {
 	    ruby_sourceline = nd_line(quote);
 	    compile_error(PARSER_ARG "unterminated regexp meets end of file");
@@ -5288,7 +5296,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
 
     tokfix();
-    set_yylval_str(STR_NEW(tok(), toklen()));
+    set_yylval_str(STR_NEW3(tok(), toklen(), mb));
     return tSTRING_CONTENT;
 }
 
@@ -5451,6 +5459,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
     }
     else {
+	int mb = 0;
 	newtok();
 	if (c == '#') {
 	    switch (c = nextc()) {
@@ -5465,15 +5474,15 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0, NULL)) == -1) goto error;
+	    if ((c = tokadd_string(func, '\n', 0, NULL, &mb)) == -1) goto error;
 	    if (c != '\n') {
-                set_yylval_str(STR_NEW(tok(), toklen()));
+                set_yylval_str(STR_NEW3(tok(), toklen(), mb));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
-	str = STR_NEW(tok(), toklen());
+	str = STR_NEW3(tok(), toklen(), mb);
     }
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
@@ -5687,6 +5696,7 @@ parser_yylex(struct parser_params *parser)
     int space_seen = 0;
     int cmd_state;
     enum lex_state_e last_state;
+    int mb;
 #ifdef RIPPER
     int fallthru = Qfalse;
 #endif
@@ -6005,13 +6015,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	newtok();
 	if (parser_ismbchar()) {
-	    int i, len = parser_mbclen()-1;
-
-	    tokadd(c);
-	    for (i = 0; i < len; i++) {
-		c = nextc();
-		tokadd(c);
-	    }
+	    tokadd_mbchar(c);
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
 		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
@@ -6696,7 +6700,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd(c);
 	    c = nextc();
 	    if (parser_is_identchar()) {
-		tokadd(c);
+		tokadd_mbchar(c);
 	    }
 	    else {
 		pushback(c);
@@ -6794,15 +6798,10 @@ parser_yylex(struct parser_params *parser)
 	break;
     }
 
+    mb = 0;
     do {
-        int i, len;
-	tokadd(c);
-
-	len = parser_mbclen()-1;
-        for (i = 0; i < len; i++) {
-	    c = nextc();
-	    tokadd(c);
-	}
+	if (!ISASCII(c)) mb = 1;
+	tokadd_mbchar(c);
 	c = nextc();
     } while (parser_is_identchar());
     if ((c == '!' || c == '?') && !peek('=')) {
@@ -6854,7 +6853,7 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if (lex_state != EXPR_DOT) {
+	    if (!mb && lex_state != EXPR_DOT) {
 		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
@@ -6896,7 +6895,7 @@ parser_yylex(struct parser_params *parser)
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
-		    set_yylval_id(rb_intern(tok()));
+		    set_yylval_id(rb_intern3(tok(), toklen(), STR_ENC(mb)));
 		    return tLABEL;
 		}
 	    }
@@ -6915,7 +6914,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
         {
-            ID ident = rb_intern(tok());
+            ID ident = rb_intern3(tok(), toklen(), STR_ENC(mb));
 
             set_yylval_id(ident);
             if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
@@ -8371,10 +8370,15 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 int
 rb_symname_p(const char *name)
 {
+    return rb_enc_symname_p(name, rb_enc_from_index(0));
+}
+
+int
+rb_enc_symname_p(const char *name, rb_encoding *enc)
+{
     const char *m = name;
     const char *e = m + strlen(m);
     int localid = Qfalse;
-    rb_encoding *enc = rb_enc_from_index(0);
 
     if (!m) return Qfalse;
     switch (*m) {
@@ -8458,8 +8462,10 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     fake_str.as.heap.len = len;
     fake_str.as.heap.ptr = (char *)name;
     fake_str.as.heap.aux.capa = len;
+    str = (VALUE)&fake_str;
+    rb_enc_associate(str, enc);
 
-    if (st_lookup(global_symbols.sym_id, (st_data_t)&fake_str, (st_data_t *)&id))
+    if (st_lookup(global_symbols.sym_id, str, (st_data_t *)&id))
 	return id;
 
     last = len-1;
@@ -8520,7 +8526,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:
-    str = rb_str_new(name, len);
+    str = rb_enc_str_new(name, len, enc);
     OBJ_FREEZE(str);
     st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
     st_add_direct(global_symbols.id_str, id, (st_data_t)str);

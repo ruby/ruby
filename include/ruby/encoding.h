@@ -27,6 +27,7 @@
 typedef OnigEncodingType rb_encoding;
 
 int rb_enc_to_index(rb_encoding*);
+int rb_enc_get_index(VALUE obj);
 rb_encoding* rb_enc_get(VALUE);
 rb_encoding* rb_enc_check(VALUE,VALUE);
 void rb_enc_associate(VALUE, rb_encoding*);
@@ -73,8 +74,11 @@ int rb_enc_codelen(int, rb_encoding*);
 #define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE(enc,c)
 #define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT(enc,c)
 
+#define rb_enc_asciicompat(enc) (rb_enc_mbminlen(enc)==1)
+
 int rb_enc_toupper(int c, rb_encoding *enc);
 int rb_enc_tolower(int c, rb_encoding *enc);
 ID rb_intern3(const char*, long, rb_encoding*);
+int rb_enc_symname_p(const char*, rb_encoding*);
 
 #endif /* RUBY_ENCODING_H */

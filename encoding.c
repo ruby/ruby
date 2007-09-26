@@ -194,19 +194,15 @@ rb_enc_check(VALUE str1, VALUE str2)
 
     if (idx1 == 0) {
 	enc = rb_enc_from_index(idx2);
-#if 0
-	if (m17n_asciicompat(enc)) {
+	if (rb_enc_asciicompat(enc)) {
 	    return enc;
 	}
-#endif
     }
     else if (idx2 == 0) {
 	enc = rb_enc_from_index(idx1);
-#if 0
-	if (m17n_asciicompat(enc)) {
+	if (rb_enc_asciicompat(enc)) {
 	    return enc;
 	}
-#endif
     }
     rb_raise(rb_eArgError, "character encodings differ");
 }

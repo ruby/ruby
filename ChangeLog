@@ -1,3 +1,30 @@
+Wed Sep 26 18:38:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_check): check for ASCII-compatibilities.
+
+	* parse.y (parser_tokadd_string, parser_parse_string,
+	  parser_here_document, parser_yylex): set encoding to US-ASCII.
+
+	* parse.y (rb_enc_symname_p): check if valid with encoding.
+
+	* parse.y (rb_intern3): let symbols have encoding.
+
+	* string.c (rb_str_hash): add encoding index.
+
+	* string.c (rb_str_comparable, rb_str_equal, rb_str_eql): check if
+	  compatible encoding.
+
+	* string.c (sym_inspect): made encoding aware.
+
+	* insns.def (opt_eq): compare with encoding.
+
+	* include/ruby/encoding.h (rb_enc_asciicompat): check if ASCII
+	  compatible.
+
+	* include/ruby/encoding.h (rb_enc_get_index): added prototype.
+
+	* include/ruby/intern.h (rb_str_comparable, rb_str_equal): ditto.
+
 Wed Sep 26 15:01:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_method.ci (rb_get_alloc_func): cast to suppress a warning.

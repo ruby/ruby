@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
 #include "gc.h"
 
 #include "insnhelper.h"

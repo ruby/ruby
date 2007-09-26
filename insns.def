@@ -1700,13 +1700,14 @@ opt_eq
 	    if (str1 == str2) {
 		val = Qtrue;
 	    }
-	    else if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
+	    else if (!ENCODING_GET(str1) && !ENCODING_GET(str2) &&
+		     RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
 		     rb_memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
 			       RSTRING_LEN(str1)) == 0) {
 		val = Qtrue;
 	    }
 	    else {
-		val = Qfalse;
+		val = rb_str_equal(str1, str2);
 	    }
 	}
 	else {

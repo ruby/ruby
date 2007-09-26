@@ -1129,7 +1129,8 @@ rb_memhash(const void *ptr, long len)
 int
 rb_str_hash(VALUE str)
 {
-    return rb_memhash(RSTRING_PTR(str), RSTRING_LEN(str));
+    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str),
+		rb_enc_get_index(str));
 }
 
 /*
@@ -1147,6 +1148,32 @@ rb_str_hash_m(VALUE str)
 }
 
 #define lesser(a,b) (((a)>(b))?(b):(a))
+
+static int
+is_ascii_string(VALUE str)
+{
+    long i;
+
+    for (i = 0; i < RSTRING_LEN(str); ++i) {
+	int c = (unsigned char)RSTRING_PTR(str)[i];
+	if (!ISASCII(c)) return Qfalse;
+    }
+    return Qtrue;
+}
+
+int
+rb_str_comparable(VALUE str1, VALUE str2)
+{
+    int idx1 = rb_enc_get_index(str1);
+    int idx2 = rb_enc_get_index(str2);
+
+    if (idx1 == idx2) return Qtrue;
+    if (!rb_enc_asciicompat(rb_enc_from_index(idx1))) return Qfalse;
+    if (!rb_enc_asciicompat(rb_enc_from_index(idx2))) return Qfalse;
+    if (!is_ascii_string(str1)) return Qfalse;
+    if (!is_ascii_string(str2)) return Qfalse;
+    return Qtrue;
+}
 
 int
 rb_str_cmp(VALUE str1, VALUE str2)
@@ -1176,7 +1203,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *  <code><=></code> <i>obj</i> returns zero.
  */
 
-static VALUE
+VALUE
 rb_str_equal(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
@@ -1186,7 +1213,7 @@ rb_str_equal(VALUE str1, VALUE str2)
 	}
 	return rb_equal(str2, str1);
     }
-    rb_enc_check(str1, str2); /* need weak check */
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
 	rb_str_cmp(str1, str2) == 0) {
 	return Qtrue;
@@ -1205,6 +1232,9 @@ static VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
     if (TYPE(str2) != T_STRING || RSTRING_LEN(str1) != RSTRING_LEN(str2))
+	return Qfalse;
+
+    if (rb_enc_get_index(str1) != rb_enc_get_index(str2))
 	return Qfalse;
 
     if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
@@ -5126,13 +5156,15 @@ sym_inspect(VALUE sym)
 {
     VALUE str, klass = Qundef;
     ID id = SYM2ID(sym);
+    rb_encoding *enc;
 
     sym = rb_id2str(id);
-    str = rb_str_new(0, RSTRING_LEN(sym)+1);
+    enc = rb_enc_get(sym);
+    str = rb_enc_str_new(0, RSTRING_LEN(sym)+1, enc);
     RSTRING_PTR(str)[0] = ':';
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
     if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
-	!rb_symname_p(RSTRING_PTR(sym))) {
+	!rb_enc_symname_p(RSTRING_PTR(sym), enc)) {
 	str = rb_str_dump(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
     }
