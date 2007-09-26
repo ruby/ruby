@@ -1,3 +1,8 @@
+Wed Sep 26 19:27:11 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_throw): fix to move increment point.
+	  [ruby-dev:31840]
+
 Wed Sep 26 19:23:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: Fiber as SemiCoroutine on default. [ruby-core:12146]

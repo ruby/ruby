@@ -1286,12 +1286,12 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VAL
 			    break;
 			}
 		    }
-		    cfp++;
 		    if (GET_LFP() == cfp->lfp &&
 			cfp->iseq->type == ISEQ_TYPE_METHOD) {
 			is_orphan = 0;
 			break;
 		    }
+		    cfp++;
 		}
 
 		if (is_orphan) {
