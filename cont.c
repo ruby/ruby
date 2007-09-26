@@ -732,6 +732,9 @@ Init_Cont(void)
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_undef_alloc_func(rb_cFiber);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
+    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
+    rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
+    rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
 }
 
 void
@@ -746,12 +749,9 @@ Init_Continuation_body(void)
 }
 
 void
-Init_Fiber_body(void)
+Init_Fiber_as_Coroutine(void)
 {
-    rb_define_singleton_method(rb_cFiber, "new", rb_fiber_s_new, 0);
-    rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "transfer", rb_fiber_m_transfer, -1);
     rb_define_method(rb_cFiber, "alive?", rb_fiber_alive_p, 0);
-    rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
 }

@@ -1,3 +1,9 @@
+Wed Sep 26 19:23:56 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: Fiber as SemiCoroutine on default. [ruby-core:12146]
+
+	* ext/fiber/fiber.c: enable Fiber#transfer.
+
 Wed Sep 26 18:38:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_check): check for ASCII-compatibilities.
