@@ -166,6 +166,39 @@ def assert_match(expected_pattern, testsrc, message = '')
   }
 end
 
+def assert_finish(timeout_seconds, testsrc, message = '')
+  newtest
+  $stderr.puts "\##{@count} #{@location}" if @verbose
+  faildesc = nil
+  filename = make_srcfile(testsrc)
+  io = IO.popen("#{@ruby} -W0 #{filename}")
+  pid = io.pid
+  waited = false
+  tlimit = Time.now + timeout_seconds
+  while Time.now < tlimit
+    if Process.waitpid pid, Process::WNOHANG
+      waited = true
+      break
+    end
+    sleep 0.1
+  end
+  if !waited
+    Process.kill(:KILL, pid)
+    Process.waitpid pid
+    faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
+  end
+  io.close
+  if !faildesc
+    $stderr.print '.'
+  else
+    $stderr.print 'F'
+    error faildesc, message
+  end
+rescue Exception => err
+  $stderr.print 'E'
+  error err.message, message
+end
+
 def pretty(src, desc, result)
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
@@ -180,14 +213,20 @@ def untabify(str)
   str.gsub(/^\t+/) {|tabs| ' ' * (8 * tabs.size) }
 end
 
+def make_srcfile(src)
+  filename = 'bootstraptest.tmp.rb'
+  File.open(filename, 'w') {|f|
+    f.puts "GC.stress = true" if $stress
+    f.puts "print(begin; #{src}; end)"
+  }
+  filename
+end
+
 def get_result_string(src)
   if @ruby
-    File.open('bootstraptest.tmp.rb', 'w') {|f|
-      f.puts "GC.stress = true" if $stress
-      f.puts "print(begin; #{src}; end)"
-    }
+    filename = make_srcfile(src)
     begin
-      `#{@ruby} -W0 bootstraptest.tmp.rb`
+      `#{@ruby} -W0 #{filename}`
     ensure
       raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end

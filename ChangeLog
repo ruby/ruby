@@ -1,3 +1,10 @@
+Thu Sep 27 07:39:13 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_finish): new method.
+
+	* bootstraptest/test_knownbug.rb: add test for [ruby-dev:31866] using
+	  assert_finish.
+
 Thu Sep 27 04:46:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_associate_index): deal with ASCII compatible
