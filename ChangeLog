@@ -1,3 +1,7 @@
+Wed Sep 26 20:11:46 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb: remove a fixed test.
+
 Wed Sep 26 20:00:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: move fixed tests.
