@@ -1,3 +1,21 @@
+Thu Sep 27 04:46:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_associate_index): deal with ASCII compatible
+	  flags.
+
+	* encoding.c (rb_enc_check): allow ASCII compatible strings.
+
+	* parse.y (rb_intern_str): use ASCII encoding for ASCII string.
+
+	* string.c (rb_enc_str_coderange): check for code-range.
+
+	* string.c (rb_str_modify): clear code-range flags.
+
+	* string.c (rb_str_hash, rb_str_eql): ASCII compatible strings are
+	  comparable.
+
+	* include/ruby/encoding.h: added code-range flags.
+
 Thu Sep 27 04:40:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_mark_set): new function to mark keys.

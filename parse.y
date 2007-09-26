@@ -8548,7 +8548,14 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    ID id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    int idx = 0;
+    ID id;
+
+    if (rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+	idx = rb_enc_get_index(str);
+    }
+    id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str),
+		    rb_enc_from_index(idx));
     RB_GC_GUARD(str);
     return id;
 }

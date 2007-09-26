@@ -92,7 +92,36 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
+#define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_SINGLE)
+
 VALUE rb_fs;
+
+int
+rb_enc_str_coderange(VALUE str)
+{
+    long i;
+    int cr = ENC_CODERANGE(str);
+
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+	cr = ENC_CODERANGE_SINGLE;
+	for (i = 0; i < RSTRING_LEN(str); ++i) {
+	    const char *p = &RSTRING_PTR(str)[i];
+	    int c = (unsigned char)*p;
+
+	    if (!ISASCII(c)) {
+		c = rb_enc_codepoint(p, RSTRING_END(str), rb_enc_get(str));
+		if (c == -1) {
+		    cr = ENC_CODERANGE_BROKEN;
+		}
+		else {
+		    cr = ENC_CODERANGE_MULTI;
+		}
+	    }
+	}
+	ENC_CODERANGE_SET(str, cr);
+    }
+    return cr;
+}
 
 static inline void
 str_mod_check(VALUE s, char *p, long len)
@@ -553,8 +582,8 @@ rb_str_format_m(VALUE str, VALUE arg)
     return rb_str_format(1, &arg, str);
 }
 
-static int
-str_independent(VALUE str)
+static void
+str_modifiable(VALUE str)
 {
     if (FL_TEST(str, STR_TMPLOCK)) {
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
@@ -562,6 +591,12 @@ str_independent(VALUE str)
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
+}
+
+static int
+str_independent(VALUE str)
+{
+    str_modifiable(str);
     if (!STR_SHARED_P(str)) return 1;
     if (STR_EMBED_P(str)) return 1;
     return 0;
@@ -589,6 +624,7 @@ rb_str_modify(VALUE str)
 {
     if (!str_independent(str))
 	str_make_independent(str);
+    ENC_CODERANGE_CLEAR(str);
 }
 
 void
@@ -1129,8 +1165,12 @@ rb_memhash(const void *ptr, long len)
 int
 rb_str_hash(VALUE str)
 {
+    int e = rb_enc_get_index(str);
+    if (e && is_ascii_string(str)) {
+	e = 0;
+    }
     return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str),
-		rb_enc_get_index(str));
+		e);
 }
 
 /*
@@ -1148,18 +1188,6 @@ rb_str_hash_m(VALUE str)
 }
 
 #define lesser(a,b) (((a)>(b))?(b):(a))
-
-static int
-is_ascii_string(VALUE str)
-{
-    long i;
-
-    for (i = 0; i < RSTRING_LEN(str); ++i) {
-	int c = (unsigned char)RSTRING_PTR(str)[i];
-	if (!ISASCII(c)) return Qfalse;
-    }
-    return Qtrue;
-}
 
 int
 rb_str_comparable(VALUE str1, VALUE str2)
@@ -1234,8 +1262,7 @@ rb_str_eql(VALUE str1, VALUE str2)
     if (TYPE(str2) != T_STRING || RSTRING_LEN(str1) != RSTRING_LEN(str2))
 	return Qfalse;
 
-    if (rb_enc_get_index(str1) != rb_enc_get_index(str2))
-	return Qfalse;
+    if (!rb_str_comparable(str1, str2)) return Qfalse;
 
     if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
 	       lesser(RSTRING_LEN(str1), RSTRING_LEN(str2))) == 0)
@@ -3529,7 +3556,7 @@ tr_setup_table(VALUE str, VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 static VALUE
 rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 {
-    rb_encoding *enc;
+    rb_encoding *enc = 0;
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
     int modify = 0;
@@ -3736,7 +3763,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 static VALUE
 rb_str_count(int argc, VALUE *argv, VALUE str)
 {
-    rb_encoding *enc;
+    rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send;
     int i;
@@ -5065,10 +5092,33 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 }
 
 
+/*
+ *  call-seq:
+ *     str.encoding   => str
+ *
+ *  Retruns the encoding name.
+ */
+
 static VALUE
 str_encoding(VALUE str)
 {
     return rb_str_new2(rb_enc_name(rb_enc_get(str)));
+}
+
+
+/*
+ *  call-seq:
+ *     str.associate_encoding(encoding)   => str
+ *
+ *  Changes the encoding to +encoding+ and returns self.
+ */
+
+static VALUE
+rb_str_associate_encoding(VALUE str, VALUE encname)
+{
+    str_modifiable(str);
+    rb_enc_associate(str, rb_enc_find(StringValueCStr(encname)));
+    return str;
 }
 
 /**********************************************************************
@@ -5482,6 +5532,7 @@ Init_String(void)
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     rb_define_method(rb_cString, "encoding", str_encoding, 0);
+    rb_define_method(rb_cString, "associate_encoding", rb_str_associate_encoding, 1);
 
     id_to_s = rb_intern("to_s");
 

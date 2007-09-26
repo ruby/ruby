@@ -24,6 +24,17 @@
 } while (0)
 #define ENCODING_GET(obj) ((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 
+#define ENC_CODERANGE_MASK	(FL_USER12|FL_USER13)
+#define ENC_CODERANGE_UNKNOWN	0
+#define ENC_CODERANGE_SINGLE	FL_USER12
+#define ENC_CODERANGE_MULTI	FL_USER13
+#define ENC_CODERANGE_BROKEN	(FL_USER12|FL_USER13)
+#define ENC_CODERANGE(obj) (RBASIC(obj)->flags & ENC_CODERANGE_MASK)
+#define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_SINGLE)
+#define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags &= ~ENC_CODERANGE_MASK | (cr))
+#define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
+
+
 typedef OnigEncodingType rb_encoding;
 
 int rb_enc_to_index(rb_encoding*);
@@ -80,5 +91,6 @@ int rb_enc_toupper(int c, rb_encoding *enc);
 int rb_enc_tolower(int c, rb_encoding *enc);
 ID rb_intern3(const char*, long, rb_encoding*);
 int rb_enc_symname_p(const char*, rb_encoding*);
+int rb_enc_str_coderange(VALUE);
 
 #endif /* RUBY_ENCODING_H */

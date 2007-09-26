@@ -122,6 +122,10 @@ void
 rb_enc_associate_index(VALUE obj, int idx)
 {
     enc_check_capable(obj);
+    if (!ENC_CODERANGE_ASCIIONLY(obj) ||
+	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
+	ENC_CODERANGE_CLEAR(obj);
+    }
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET(obj, idx);
 	return;
@@ -203,6 +207,14 @@ rb_enc_check(VALUE str1, VALUE str2)
 	if (rb_enc_asciicompat(enc)) {
 	    return enc;
 	}
+    }
+    if (BUILTIN_TYPE(str1) == T_STRING &&
+	BUILTIN_TYPE(str2) == T_STRING &&
+	rb_enc_asciicompat(rb_enc_from_index(idx1)) &&
+	rb_enc_asciicompat(rb_enc_from_index(idx2)) &&
+	rb_enc_str_coderange(str1) == ENC_CODERANGE_SINGLE &&
+	rb_enc_str_coderange(str2) == ENC_CODERANGE_SINGLE) {
+	return ONIG_ENCODING_ASCII;
     }
     rb_raise(rb_eArgError, "character encodings differ");
 }
