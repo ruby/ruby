@@ -1,3 +1,7 @@
+Thu Sep 27 03:17:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_waitpid): no needs to poll.  [ruby-dev:31871]
+
 Wed Sep 26 20:11:46 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: remove a fixed test.

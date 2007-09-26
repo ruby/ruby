@@ -605,7 +605,6 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     arg.pid = pid;
     arg.st = st;
     arg.flags = flags;
-  retry:
     result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking, &arg,
 						 RB_UBF_DFL, 0);
     if (result < 0) {
@@ -616,10 +615,6 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 	}
 #endif
 	return -1;
-    }
-    if (result == 0) {
-	rb_thread_polling();
-	goto retry;
     }
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, (st_data_t *)st)) {
@@ -861,7 +856,7 @@ proc_waitall(void)
 static VALUE
 detach_process_watcher(void *arg)
 {
-    rb_pid_t cpid, pid = (rb_pid_t)arg;
+    rb_pid_t cpid, pid = (rb_pid_t)(VALUE)arg;
     int status;
 
     while ((cpid = rb_waitpid(pid, &status, 0)) == 0) {
@@ -873,7 +868,7 @@ detach_process_watcher(void *arg)
 VALUE
 rb_detach_process(rb_pid_t pid)
 {
-    return rb_thread_create(detach_process_watcher, (void*)pid);
+    return rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
 }
 
 
