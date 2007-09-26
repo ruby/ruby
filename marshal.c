@@ -89,8 +89,6 @@ typedef struct {
     VALUE (*loader)(VALUE, VALUE);
 } marshal_compat_t;
 
-#define make_compat_tbl_wrapper(tbl) Data_Wrap_Struct(rb_cData, rb_mark_tbl, 0, tbl)
-
 static st_table *compat_allocator_tbl;
 static VALUE compat_allocator_tbl_wrapper;
 
@@ -138,7 +136,7 @@ struct dump_arg {
     st_table *data;
     int taint;
     st_table *compat_tbl;
-    VALUE compat_tbl_wrapper;
+    VALUE wrapper;
 };
 
 struct dump_call_arg {
@@ -146,6 +144,14 @@ struct dump_call_arg {
     struct dump_arg *arg;
     int limit;
 };
+
+static void
+mark_dump_arg(void *ptr)
+{
+    struct dump_arg *p = ptr;
+    rb_mark_set(p->data);
+    rb_mark_hash(p->compat_tbl);
+}
 
 static VALUE
 class2path(VALUE klass)
@@ -722,8 +728,8 @@ dump_ensure(struct dump_arg *arg)
     st_free_table(arg->symbols);
     st_free_table(arg->data);
     st_free_table(arg->compat_tbl);
-    DATA_PTR(arg->compat_tbl_wrapper) = 0;
-    arg->compat_tbl_wrapper = 0;
+    DATA_PTR(arg->wrapper) = 0;
+    arg->wrapper = 0;
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
@@ -797,7 +803,7 @@ marshal_dump(int argc, VALUE *argv)
     arg.data    = st_init_numtable();
     arg.taint   = Qfalse;
     arg.compat_tbl = st_init_numtable();
-    arg.compat_tbl_wrapper = make_compat_tbl_wrapper(arg.compat_tbl);
+    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -1499,7 +1505,7 @@ marshal_load(int argc, VALUE *argv)
     arg.src = port;
     arg.offset = 0;
     arg.compat_tbl = st_init_numtable();
-    arg.compat_tbl_wrapper = make_compat_tbl_wrapper(arg.compat_tbl);
+    arg.compat_tbl_wrapper = Data_Wrap_Struct(rb_cData, rb_mark_tbl, 0, arg.compat_tbl);
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
