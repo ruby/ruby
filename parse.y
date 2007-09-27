@@ -261,6 +261,7 @@ struct parser_params {
 };
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
+#define STR_NEW0() rb_enc_str_new(0,0,rb_enc_from_index(0))
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,m) rb_enc_str_new((p),(n), STR_ENC(m))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
@@ -3569,7 +3570,7 @@ strings		: string
 		    /*%%%*/
 			NODE *node = $1;
 			if (!node) {
-			    node = NEW_STR(STR_NEW(0, 0));
+			    node = NEW_STR(STR_NEW0());
 			}
 			else {
 			    node = evstr2dstr(node);
@@ -3608,7 +3609,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    /*%%%*/
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_XSTR(STR_NEW(0, 0));
+			    node = NEW_XSTR(STR_NEW0());
 			}
 			else {
 			    switch (nd_type(node)) {
@@ -3619,7 +3620,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				nd_set_type(node, NODE_DXSTR);
 				break;
 			      default:
-				node = NEW_NODE(NODE_DXSTR, STR_NEW(0, 0), 1, NEW_LIST(node));
+				node = NEW_NODE(NODE_DXSTR, STR_NEW0(), 1, NEW_LIST(node));
 				break;
 			    }
 			}
@@ -3647,7 +3648,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    }
 			    break;
 			  default:
-			    node = NEW_NODE(NODE_DSTR, STR_NEW(0, 0), 1, NEW_LIST(node));
+			    node = NEW_NODE(NODE_DSTR, STR_NEW0(), 1, NEW_LIST(node));
 			  case NODE_DSTR:
 			    if (options & RE_OPTION_ONCE) {
 				nd_set_type(node, NODE_DREGX_ONCE);
@@ -3892,7 +3893,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				nd_set_type($$, NODE_LIT);
 				break;
 			      default:
-				$$ = NEW_NODE(NODE_DSYM, STR_NEW(0, 0), 1, NEW_LIST($$));
+				$$ = NEW_NODE(NODE_DSYM, STR_NEW0(), 1, NEW_LIST($$));
 				break;
 			    }
 			}
@@ -4664,7 +4665,7 @@ yycompile(struct parser_params *parser, const char *f, int line)
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = ruby_suppress_tracing(debug_lines, (VALUE)f);
 	if (ruby_debug_lines && line > 1) {
-	    VALUE str = STR_NEW(0,0);
+	    VALUE str = STR_NEW0();
 	    n = line - 1;
 	    do {
 		rb_ary_push(ruby_debug_lines, str);

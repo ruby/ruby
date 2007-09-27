@@ -1,3 +1,8 @@
+Thu Sep 27 09:42:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (strings, xstring, regexp, dsym): empty strings have
+	  US-ASCII encoding.
+
 Thu Sep 27 07:39:13 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_finish): new method.
