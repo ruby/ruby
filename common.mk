@@ -595,8 +595,6 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 
-MATZRUBY = $(MATZRUBYDIR)ruby
-
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
 	  vmtc.inc vm.inc
 
@@ -637,16 +635,6 @@ docs:
 
 ##
 
-compare: miniruby$(EXEEXT) PHONY
-	@$(MATZRUBY) -v -I$(srcdir) $(srcdir)/test.rb
-	@$(MINIRUBY) -v -I$(srcdir) $(srcdir)/test.rb
-
-compare-test: miniruby$(EXEEXT) $(PROGRAM) PHONY
-	$(RUNRUBY) -I$(srcdir) $(srcdir)/yarvtest/runner.rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
-
-compare-test-each: miniruby$(EXEEXT) $(PROGRAM) PHONY
-	$(RUNRUBY) -I$(srcdir) $(srcdir)/yarvtest/test_$(ITEM).rb $(OPT) ruby=$(MINIRUBY) matzruby=$(MATZRUBY)
-
 run: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) -I$(srcdir)/lib $(srcdir)/test.rb $(RUNOPT)
 
@@ -656,14 +644,24 @@ runruby: $(PROGRAM) PHONY
 parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
+COMPARE_RUBY = $(BASERUBY)
+ITEM = 
+OPTS = 
+
 benchmark: $(PROGRAM) PHONY
-	$(RUNRUBY) $(srcdir)/benchmark/run.rb $(OPT) $(ITEMS) --ruby='./$(PROGRAM)  -I$(srcdir)/lib' --matzruby=$(MATZRUBY)
+	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
+	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
 benchmark-each: $(PROGRAM) PHONY
-	$(RUNRUBY) $(srcdir)/benchmark/run.rb bm_$(ITEM) $(OPT) --ruby='./$(PROGRAM) -I$(srcdir)/lib' --matzruby=$(MATZRUBY)
+	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
+	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
 tbench: $(PROGRAM) PHONY
-	$(RUNRUBY) $(srcdir)/benchmark/run.rb bmx $(OPT) --ruby=./$(PROGRAM) --matzruby=$(MATZRUBY) --opts=-I$(srcdir)/lib
+	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
+	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 aotc: $(PROGRAM) PHONY
 	./$(PROGRAM) -I$(srcdir)/lib $(srcdir)/bin/ruby2cext $(srcdir)/test.rb

@@ -1,3 +1,13 @@
+Thu Sep 27 15:44:51 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: added.
+
+	* common.mk: fix to use above driver.
+
+	* benchmark/prepare_so_count_words.rb: added.
+
+	* benchmark/bm_so_count_words.rb: fix benchmark process.
+
 Thu Sep 27 15:42:34 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/fiber/fiber.c: modify prototype declaration.
