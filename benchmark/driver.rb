@@ -38,7 +38,8 @@ class BenchmarkDriver
     @results = []
 
     if @verbose
-      puts Time.now
+      @start_time = Time.now
+      puts @start_time
       @execs.each_with_index{|(e, v), i|
         puts "target #{i}: #{v}"
       }
@@ -46,17 +47,23 @@ class BenchmarkDriver
   end
 
   def show_results
+    puts
     if @verbose
       puts '-----------------------------------------------------------'
       puts 'raw data:'
       pp @results
+
+      puts
+      puts "Elapesed time: #{Time.now - @start_time} (sec)"
     end
 
     puts '-----------------------------------------------------------'
     puts 'benchmark results:'
+
     if @verbose and @repeat > 1
       puts "minimum results in each #{@repeat} measurements."
     end
+
     puts "name\t#{@execs.map{|(e, v)| v}.join("\t")}"
     @results.each{|v, result|
       rets = []
@@ -104,6 +111,7 @@ class BenchmarkDriver
     load prepare_file if FileTest.exist?(prepare_file)
 
     if @verbose
+      puts
       puts '-----------------------------------------------------------'
       puts name
       puts File.read(file)
@@ -113,8 +121,16 @@ class BenchmarkDriver
     result = [name]
     result << @execs.map{|(e, v)|
       (0...@repeat).map{
-        print "#{v}\t" if @verbose
-        STDOUT.flush
+        if @verbose
+          print "#{v}\t"
+          STDOUT.flush
+        end
+
+        if !@verbose || !STDOUT.tty?
+          STDERR.print '.'
+          STDERR.flush
+        end
+
         m = measure e, file
         puts "#{m}" if @verbose
         m
@@ -125,8 +141,10 @@ class BenchmarkDriver
   end
 
   def measure executable, file
+
+    cmd = "#{executable} #{file}"
     m = Benchmark.measure{
-      `#{executable} #{file}`
+      `#{cmd}`
     }
 
     if $? != 0
