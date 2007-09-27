@@ -1,3 +1,8 @@
+Thu Sep 27 15:42:34 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/fiber/fiber.c: modify prototype declaration.
+	  [ruby-core:12247]
+
 Thu Sep 27 09:42:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (strings, xstring, regexp, dsym): empty strings have
