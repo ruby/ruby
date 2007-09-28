@@ -87,7 +87,7 @@ struct cmdline_options {
 static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
 static void forbid_setid(const char *);
 
-static int {
+static struct {
     int argc;
     char **argv;
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
