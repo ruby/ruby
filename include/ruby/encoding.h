@@ -39,8 +39,10 @@ typedef OnigEncodingType rb_encoding;
 
 int rb_enc_to_index(rb_encoding*);
 int rb_enc_get_index(VALUE obj);
+int rb_enc_find_index(const char *name);
 rb_encoding* rb_enc_get(VALUE);
 rb_encoding* rb_enc_check(VALUE,VALUE);
+void rb_enc_associate_index(VALUE, int);
 void rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE, VALUE);
 
@@ -76,6 +78,7 @@ int rb_enc_codelen(int, rb_encoding*);
 /* ptr, ptr, encoding -> prev_char */
 #define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)s,(UChar*)p)
 
+#define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE(enc,c,t)
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
 #define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)
 #define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER(enc,c)

@@ -71,6 +71,8 @@ st_table *st_init_numtable(void);
 st_table *st_init_numtable_with_size(int);
 st_table *st_init_strtable(void);
 st_table *st_init_strtable_with_size(int);
+st_table *st_init_strcasetable(void);
+st_table *st_init_strcasetable_with_size(int);
 int st_delete(st_table *, st_data_t *, st_data_t *);
 int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);

@@ -228,7 +228,7 @@ rb_tainted_str_new2(const char *ptr)
 }
 
 static VALUE
-str_new3(VALUE klass, VALUE str)
+str_new_shared(VALUE klass, VALUE str)
 {
     VALUE str2 = str_alloc(klass);
 
@@ -244,8 +244,16 @@ str_new3(VALUE klass, VALUE str)
 	RSTRING(str2)->as.heap.aux.shared = str;
 	FL_SET(str2, ELTS_SHARED);
     }
-    rb_enc_copy((VALUE)str2, str);
 
+    return str2;
+}
+
+static VALUE
+str_new3(VALUE klass, VALUE str)
+{
+    VALUE str2 = str_new_shared(klass, str);
+
+    rb_enc_copy(str2, str);
     return str2;
 }
 
@@ -5108,6 +5116,21 @@ str_encoding(VALUE str)
 }
 
 
+/*
+ *  call-seq:
+ *     str.force_encoding(encoding)   => str
+ *
+ *  Changes the encoding to +encoding+ and returns self.
+ */
+
+static VALUE
+rb_str_force_encoding(VALUE str, VALUE encname)
+{
+    str_modifiable(str);
+    rb_enc_associate(str, rb_enc_find(StringValueCStr(encname)));
+    return str;
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -5519,6 +5542,7 @@ Init_String(void)
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     rb_define_method(rb_cString, "encoding", str_encoding, 0);
+    rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
 
     id_to_s = rb_intern("to_s");
 

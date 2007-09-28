@@ -23,6 +23,7 @@ struct rb_encoding_entry {
 
 static struct rb_encoding_entry *enc_table;
 static int enc_table_size;
+static st_table *enc_table_alias;
 
 void
 rb_enc_register(const char *name, rb_encoding *encoding)
@@ -43,12 +44,25 @@ rb_enc_register(const char *name, rb_encoding *encoding)
 }
 
 void
+rb_enc_alias(const char *alias, const char *orig)
+{
+    if (!enc_table_alias) {
+	enc_table_alias = st_init_strcasetable();
+    }
+    st_insert(enc_table_alias, (st_data_t)alias, (st_data_t)orig);
+}
+
+void
 rb_enc_init(void)
 {
-    rb_enc_register("ascii", ONIG_ENCODING_ASCII);
-    rb_enc_register("sjis", ONIG_ENCODING_SJIS);
-    rb_enc_register("euc-jp", ONIG_ENCODING_EUC_JP);
-    rb_enc_register("utf-8", ONIG_ENCODING_UTF8);
+#define ENC_REGISTER(enc) rb_enc_register(rb_enc_name(enc), enc)
+    ENC_REGISTER(ONIG_ENCODING_ASCII);
+    ENC_REGISTER(ONIG_ENCODING_SJIS);
+    ENC_REGISTER(ONIG_ENCODING_EUC_JP);
+    ENC_REGISTER(ONIG_ENCODING_UTF8);
+#undef ENC_REGISTER
+    rb_enc_alias("binary", "ascii");
+    rb_enc_alias("sjis", "shift_jis");
 }
 
 rb_encoding *
@@ -63,20 +77,37 @@ rb_enc_from_index(int index)
     return enc_table[index].enc;
 }
 
-rb_encoding *
-rb_enc_find(const char *name)
+int
+rb_enc_find_index(const char *name)
 {
     int i;
+    st_data_t alias = 0;
 
+    if (!name) return -1;
     if (!enc_table) {
 	rb_enc_init();
     }
+  find:
     for (i=0; i<enc_table_size; i++) {
-	if (strcmp(name, enc_table[i].name) == 0) {
-	    return enc_table[i].enc;
+	if (strcasecmp(name, enc_table[i].name) == 0) {
+	    return i;
 	}
     }
-    return ONIG_ENCODING_ASCII;
+    if (!alias && enc_table_alias) {
+	if (st_lookup(enc_table_alias, (st_data_t)name, &alias)) {
+	    name = (const char *)alias;
+	    goto find;
+	}
+    }
+    return -1;
+}
+
+rb_encoding *
+rb_enc_find(const char *name)
+{
+    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(name));
+    if (!enc) enc = ONIG_ENCODING_ASCII;
+    return enc;
 }
 
 static int
@@ -163,7 +194,7 @@ rb_enc_get_index(VALUE obj)
 {
     int i;
 
-    enc_check_capable(obj);
+    if (!enc_capable(obj)) return -1;
     i = ENCODING_GET(obj);
     if (i == ENCODING_INLINE_MAX) {
 	VALUE iv;

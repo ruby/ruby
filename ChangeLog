@@ -1,3 +1,22 @@
+Sat Sep 29 04:27:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_alias): allow encodings multiple aliases.
+
+	* encoding.c (rb_enc_find_index): search the encoding which has the
+	  given name and return its index if found, or -1.
+
+	* st.c (type_strcasehash): case-insensitive string hash type.
+
+	* string.c (rb_str_force_encoding): force encoding of self.  this name
+	  comes from [ruby-dev:31894] by Martin Duerst.  [ruby-dev:31744]
+
+	* include/ruby/encoding.h (rb_enc_find_index, rb_enc_associate_index):
+	  prototyped.
+
+	* include/ruby/encoding.h (rb_enc_isctype): direct interface to ctype.
+
+	* include/ruby/st.h (st_init_strcasetable): prototyped.
+
 Sat Sep 29 03:53:26 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: Thread local storage should be fiber local.

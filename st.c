@@ -52,6 +52,12 @@ static const struct st_hash_type type_strhash = {
     strhash,
 };
 
+static int strcasehash(const char *);
+static const struct st_hash_type type_strcasehash = {
+    strcasecmp,
+    strcasehash,
+};
+
 static void rehash(st_table *);
 
 #ifdef RUBY
@@ -200,6 +206,18 @@ st_table*
 st_init_strtable_with_size(int size)
 {
     return st_init_table_with_size(&type_strhash, size);
+}
+
+st_table*
+st_init_strcasetable(void)
+{
+    return st_init_table(&type_strcasehash);
+}
+
+st_table*
+st_init_strcasetable_with_size(int size)
+{
+    return st_init_table_with_size(&type_strcasehash, size);
 }
 
 void
@@ -807,6 +825,25 @@ strhash(register const char *string)
     while (*string) {
 	/* xor the bottom with the current octet */
 	hval ^= (unsigned int)*string++;
+
+	/* multiply by the 32 bit FNV magic prime mod 2^32 */
+	hval *= FNV_32_PRIME;
+    }
+    return hval;
+}
+
+static int
+strcasehash(register const char *string)
+{
+    register unsigned int hval = FNV1_32A_INIT;
+
+    /*
+     * FNV-1a hash each octet in the buffer
+     */
+    while (*string) {
+	unsigned int c = (unsigned char)*string++;
+	if ((unsigned int)(c - 'A') > ('Z' - 'A')) c += 'a' - 'A';
+	hval ^= c;
 
 	/* multiply by the 32 bit FNV magic prime mod 2^32 */
 	hval *= FNV_32_PRIME;
