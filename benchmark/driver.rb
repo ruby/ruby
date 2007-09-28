@@ -77,6 +77,7 @@ class BenchmarkDriver
     if @verbose
       message '-----------------------------------------------------------'
       message 'raw data:'
+      message
       message PP.pp(@results, "", 79)
       message
       message "Elapesed time: #{Time.now - @start_time} (sec)"
@@ -158,6 +159,7 @@ class BenchmarkDriver
       output
       output '-----------------------------------------------------------'
       output name
+      output
       output File.read(file)
       output
     end
