@@ -1637,7 +1637,7 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
+rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit, rb_encoding *enc)
 {
     VALUE str = Qnil;
     int c, nolimit = 0;
@@ -1652,6 +1652,7 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
     }
 
     if (!NIL_P(str)) {
+	rb_enc_associate(str, enc);
 	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
@@ -1700,21 +1701,23 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
 static VALUE
 rb_io_getline_1(VALUE rs, long limit, VALUE io)
 {
+    rb_encoding *enc;
     VALUE str = Qnil;
     rb_io_t *fptr;
     int nolimit = 0;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    enc = rb_enc_get(io);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
     else if (limit == 0) {
-	return rb_str_new(0,0);
+	return rb_enc_str_new(0, 0, enc);
     }
     else if (rs == rb_default_rs) {
-	return rb_io_getline_fast(fptr, '\n', limit);
+	return rb_io_getline_fast(fptr, '\n', limit, enc);
     }
     else {
 	int c, newline;
@@ -1730,7 +1733,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    swallow(fptr, '\n');
 	}
 	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0], limit);
+	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0],
+				      limit, enc);
 	}
 	else {
 	    rsptr = RSTRING_PTR(rs);
@@ -1758,6 +1762,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     }
 
     if (!NIL_P(str)) {
+	rb_enc_associate(str, enc);
 	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
@@ -1785,7 +1790,7 @@ rb_io_gets(VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr, '\n', 0);
+    return rb_io_getline_fast(fptr, '\n', 0, rb_enc_get(io));
 }
 
 /*
