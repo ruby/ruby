@@ -1487,6 +1487,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	    mid == id__send__ ) {
 	    OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BIT);
 	}
+	if (mid == idSendBang || mid == id__send_bang) {
+	    OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BANG_BIT);
+	}
     }
     return COMPILE_OK;
 }

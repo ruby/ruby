@@ -1,3 +1,8 @@
+Fri Sep 28 23:15:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insnhelper.ci (vm_call_method): allow send! to call protected
+	  methods as well.  [ruby-core:12280]
+
 Fri Sep 28 22:33:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_fasta.rb: added.

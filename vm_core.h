@@ -539,6 +539,7 @@ typedef struct {
 #define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_SEND_BIT           (0x01 << 8)
+#define VM_CALL_SEND_BANG_BIT      (0x01 << 9)
 
 /* inline (method|const) cache */
 #define NEW_INLINE_CACHE_ENTRY() NEW_WHILE(Qundef, 0, 0)
