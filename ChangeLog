@@ -1,3 +1,12 @@
+Fri Sep 28 15:47:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: fix to output benchmark results
+	  to file "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}".
+
+	* benchmark/bm_io_file_create.rb: remove useless codes.
+
+	* benchmark/bm_vm2_eval.rb: added.
+
 Fri Sep 28 15:05:24 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h: export rb_ivar_foreach.
