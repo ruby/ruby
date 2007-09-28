@@ -431,8 +431,8 @@ struct RValues {
 };
 
 typedef struct {
-    struct st_table *iv_tbl;
     VALUE super;
+    struct st_table *iv_tbl;
 } rb_classext_t;
 
 struct RClass {
