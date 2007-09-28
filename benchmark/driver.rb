@@ -22,7 +22,7 @@ class BenchmarkDriver
       next if e.empty?
 
       v =  `#{e} -v`.chomp
-      v.sub!(' patchlevel 0', '')
+      v.sub!(/ patchlevel \d+/, '')
       [e, v]
     }.compact
 
@@ -89,19 +89,39 @@ class BenchmarkDriver
 
   end
 
-  def run
-    Dir.glob(File.join(@dir, 'bm*.rb')){|file|
+  def files
+    flag = {}
+    vm1 = vm2 = wl1 = wl2 = false
+    @files = Dir.glob(File.join(@dir, 'bm*.rb')).map{|file|
       next if @pattern && /#{@pattern}/ !~ File.basename(file)
+      case file
+      when /bm_(vm[12])_/, /bm_loop_(whileloop2?).rb/
+        flag[$1] = true
+      end
+      file
+    }.compact
 
-      if /bm_vm1_/ =~ file and !@loop_wl1
-        r = measure_file(File.join(File.dirname(file), 'bm_loop_whileloop.rb'))
+    if flag['vm1'] && !flag['whileloop']
+      @files << File.join(@dir, 'bm_loop_whileloop.rb')
+    elsif flag['vm2'] && !flag['whileloop2']
+      @files << File.join(@dir, 'bm_loop_whileloop2.rb')
+    end
+
+    @files.sort!
+    STDERR.puts "total: #{@files.size * @repeat} trial(s) (#{@repeat} trial(s) for #{@files.size} benchmark(s))"
+    @files
+  end
+
+  def run
+    files.each_with_index{|file, i|
+      @i = i
+      r = measure_file(file)
+
+      if /bm_loop_whileloop.rb/ =~ file
         @loop_wl1 = r[1].map{|e| e.min}
-      elsif /bm_vm1_/ =~ file and !@loop_wl2
-        r = measure_file(File.join(File.dirname(file), 'bm_loop_whileloop2.rb'))
+      elsif /bm_loop_whileloop2.rb/ =~ file
         @loop_wl2 = r[1].map{|e| e.min}
       end
-
-      measure_file(file)
     }
   end
 
@@ -161,20 +181,20 @@ if __FILE__ == $0
     :repeat => 1,
   }
   parser = OptionParser.new{|o|
-    o.on('-e', '--executables [EXECUTABLES]',
-         'Specify benchmark targets ("exec1; exec2; exec3, ...")'){|e|
+    o.on('-e', '--executables [EXECS]',
+         "Specify benchmark one or more targets. (exec1; exec2; exec3, ...)"){|e|
       opt[:execs] = e.split(/;/)
     }
-    o.on('-d', '--directory [DIRECTORY]'){|d|
+    o.on('-d', '--directory [DIRECTORY]', "Benchmark directory"){|d|
       opt[:dir] = d
     }
     o.on('-p', '--pattern [PATTERN]', "Benchmark name pattern"){|p|
       opt[:pattern] = p
     }
-    o.on('-n', '--repeat-num [NUM]', "Repeat count"){|n|
+    o.on('-r', '--repeat-count [NUM]', "Repeat count"){|n|
       opt[:repeat] = n.to_i
     }
-    o.on('-q', '--quiet'){|q|
+    o.on('-q', '--quiet', "Run without notify information except result table."){|q|
       opt[:quiet] = q
     }
     o.on('-v', '--verbose'){|v|
