@@ -50,8 +50,9 @@ alias set_up setup
   end
 
   def test_io1
-    File.open("#{Dir.tmpdir}/iotest.dat", "w") { |fh| fh.puts(@str) }
-    fh = File.open("#{Dir.tmpdir}/iotest.dat", "rb")
+    fn = "#{Dir.tmpdir}/iotest.dat.#{$$}"
+    File.open(fn, "w") { |fh| fh.puts(@str) }
+    fh = File.open(fn, "rb")
     res = fh.scanf("%s%d") { |name, year| "#{name} was born in #{year}." }
 
     assert_equal(
@@ -62,18 +63,19 @@ alias set_up setup
       "Brahms was born in 1833." ],res)
     fh.close
   ensure
-    File.delete("#{Dir.tmpdir}/iotest.dat")  
-    end
+    File.delete(fn)  
+  end
 
   def test_io2
-    File.open("#{Dir.tmpdir}/iotest.dat", "w").close
-    fh = File.open("#{Dir.tmpdir}/iotest.dat","rb")
+    fn = "#{Dir.tmpdir}/iotest.dat.#{$$}"
+    File.open(fn, "w").close
+    fh = File.open(fn,"rb")
     assert_equal(fh.scanf("") {}, [])
     fh.seek(0)
     assert_equal(fh.scanf("%d%f%s") {}, [])
     fh.close
   ensure
-    File.delete("#{Dir.tmpdir}/iotest.dat")  
+    File.delete(fn)  
   end
 
 end

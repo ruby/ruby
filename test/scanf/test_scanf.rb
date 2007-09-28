@@ -297,7 +297,7 @@ class TestIOScanf
   include Scanf
   extend ScanfTests
 
-  tmpfilename = "#{Dir.tmpdir}/iotest.dat"
+  tmpfilename = "#{Dir.tmpdir}/iotest.dat.#{$$}"
   
   i = 1
   self.tests.each do |test|
