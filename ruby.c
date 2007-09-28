@@ -62,24 +62,38 @@ static const union {
 char *getenv();
 #endif
 
+/* TODO: move to VM */
 VALUE ruby_debug = Qfalse;
 VALUE ruby_verbose = Qfalse;
-static int sflag = 0;
-static int xflag = 0;
 extern int ruby_yydebug;
 
 char *ruby_inplace_mode = 0;
 
-static NODE *load_file(VALUE, const char *, int);
+struct cmdline_options {
+    int sflag, xflag;
+    int do_loop, do_print;
+    int do_check, do_line;
+    int do_split, do_search;
+    int usage;
+    int version;
+    int copyright;
+    int verbose;
+    int yydebug;
+    char *script;
+    VALUE e_script;
+    int enc_index;
+};
+
+static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
 static void forbid_setid(const char *);
 
-static VALUE do_loop = Qfalse, do_print = Qfalse;
-static VALUE do_check = Qfalse, do_line = Qfalse;
-static VALUE do_split = Qfalse;
-static int enc_index = 0;
-
-static int origargc;
-static char **origargv;
+static int {
+    int argc;
+    char **argv;
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
+    int len;
+#endif
+} origarg;
 
 static void
 usage(const char *name)
@@ -377,7 +391,9 @@ struct req_list {
     char *name;
     struct req_list *next;
 };
-static struct req_list req_list_head, *req_list_last = &req_list_head;
+static struct {
+    struct req_list *last, head;
+} req_list = {&req_list.head,};
 
 static void
 add_modules(const char *mod)
@@ -388,8 +404,8 @@ add_modules(const char *mod)
     list->name = ALLOC_N(char, strlen(mod) + 1);
     strcpy(list->name, mod);
     list->next = 0;
-    req_list_last->next = list;
-    req_list_last = list;
+    req_list.last->next = list;
+    req_list.last = list;
 }
 
 extern void Init_ext(void);
@@ -397,11 +413,11 @@ extern void Init_ext(void);
 static void
 require_libraries(void)
 {
-    struct req_list *list = req_list_head.next;
+    struct req_list *list = req_list.head.next;
     struct req_list *tmp;
 
     Init_ext();		/* should be called here for some reason :-( */
-    req_list_last = 0;
+    req_list.last = 0;
     while (list) {
 	int state;
 
@@ -413,13 +429,13 @@ require_libraries(void)
 	free(list);
 	list = tmp;
     }
-    req_list_head.next = 0;
+    req_list.head.next = 0;
 }
 
 static void
-process_sflag(void)
+process_sflag(struct cmdline_options *opt)
 {
-    if (sflag) {
+    if (opt->sflag) {
 	long n;
 	VALUE *args;
 
@@ -459,8 +475,7 @@ process_sflag(void)
 			rb_str_cat(name_error[0], s, p - s);
 		    }
 		    name_error[1] = args[-1];
-		    rb_exc_raise(rb_class_new_instance
-				 (2, name_error, rb_eNameError));
+		    rb_exc_raise(rb_class_new_instance(2, name_error, rb_eNameError));
 		}
 	    }
 	    s[0] = '$';
@@ -477,15 +492,15 @@ process_sflag(void)
 	    rb_ary_shift(rb_argv);
 	}
     }
-    sflag = 0;
+    opt->sflag = 0;
 }
 
 NODE *rb_parser_append_print(VALUE, NODE *);
 NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
-static NODE *proc_options(int argc, char **argv);
+static int proc_options(int argc, char **argv, struct cmdline_options *opt);
 
 static char *
-moreswitches(const char *s)
+moreswitches(const char *s, struct cmdline_options *opt)
 {
     int argc;
     char *argv[3];
@@ -499,31 +514,20 @@ moreswitches(const char *s)
     argv[1][0] = '-';
     strncpy(argv[1] + 1, p, s - p);
     argv[1][s - p + 1] = '\0';
-    proc_options(argc, argv);
+    proc_options(argc, argv, opt);
     while (*s && ISSPACE(*s))
 	s++;
     return (char *)s;
 }
 
-static NODE *
-proc_options(int argc, char **argv)
+static int
+proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
-    char *argv0 = argv[0];
-    int do_search;
+    int argc0 = argc;
     const char *s;
-    char *script = 0;
-    NODE *tree;
-    VALUE parser;
-
-    int version = 0;
-    int copyright = 0;
-    int verbose = 0;
-    VALUE e_script = Qfalse;
 
     if (argc == 0)
 	return 0;
-
-    do_search = Qfalse;
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	if (argv[0][0] != '-' || !argv[0][1])
@@ -533,15 +537,15 @@ proc_options(int argc, char **argv)
       reswitch:
 	switch (*s) {
 	  case 'a':
-	    do_split = Qtrue;
+	    opt->do_split = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'p':
-	    do_print = Qtrue;
+	    opt->do_print = Qtrue;
 	    /* through */
 	  case 'n':
-	    do_loop = Qtrue;
+	    opt->do_loop = Qtrue;
 	    s++;
 	    goto reswitch;
 
@@ -557,12 +561,12 @@ proc_options(int argc, char **argv)
 	    goto reswitch;
 
 	  case 'v':
-	    if (argv0 == 0 || verbose) {
+	    if (opt->verbose) {
 		s++;
 		goto reswitch;
 	    }
 	    ruby_show_version();
-	    verbose = 1;
+	    opt->verbose = 1;
 	  case 'w':
 	    ruby_verbose = Qtrue;
 	    s++;
@@ -594,29 +598,29 @@ proc_options(int argc, char **argv)
 	    goto reswitch;
 
 	  case 'c':
-	    do_check = Qtrue;
+	    opt->do_check = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 's':
 	    forbid_setid("-s");
-	    sflag = 1;
+	    opt->sflag = 1;
 	    s++;
 	    goto reswitch;
 
 	  case 'h':
-	    usage(origargv[0]);
+	    usage(origarg.argv[0]);
 	    exit(0);
 
 	  case 'l':
-	    do_line = Qtrue;
+	    opt->do_line = Qtrue;
 	    rb_output_rs = rb_rs;
 	    s++;
 	    goto reswitch;
 
 	  case 'S':
 	    forbid_setid("-S");
-	    do_search = Qtrue;
+	    opt->do_search = Qtrue;
 	    s++;
 	    goto reswitch;
 
@@ -627,17 +631,15 @@ proc_options(int argc, char **argv)
 		argc--, argv++;
 	    }
 	    if (!s) {
-		fprintf(stderr, "%s: no code specified for -e\n",
-			origargv[0]);
-		exit(2);
+		rb_raise(rb_eRuntimeError, "no code specified for -e");
 	    }
-	    if (!e_script) {
-		e_script = rb_str_new(0, 0);
-		if (script == 0)
-		    script = "-e";
+	    if (!opt->e_script) {
+		opt->e_script = rb_str_new(0, 0);
+		if (opt->script == 0)
+		    opt->script = "-e";
 	    }
-	    rb_str_cat2(e_script, s);
-	    rb_str_cat2(e_script, "\n");
+	    rb_str_cat2(opt->e_script, s);
+	    rb_str_cat2(opt->e_script, "\n");
 	    break;
 
 	  case 'r':
@@ -659,7 +661,7 @@ proc_options(int argc, char **argv)
 	    break;
 
 	  case 'x':
-	    xflag = Qtrue;
+	    opt->xflag = Qtrue;
 	    s++;
 	    if (*s && chdir(s) < 0) {
 		rb_fatal("Can't chdir to %s", s);
@@ -691,7 +693,7 @@ proc_options(int argc, char **argv)
 	    if (*++s) {
 		rb_encoding *enc = 0;
 #if 0
-		if ((enc_index = rb_enc_find_index(s)) >= 0) break;
+		if ((opt->enc_index = rb_enc_find_index(s)) >= 0) break;
 #endif
 		switch (*s) {
 		  case 'E': case 'e':
@@ -709,7 +711,7 @@ proc_options(int argc, char **argv)
 		  default:
 		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
 		}
-		enc_index = rb_enc_to_index(enc);
+		opt->enc_index = rb_enc_to_index(enc);
 		s++;
 	    }
 	    goto reswitch;
@@ -766,28 +768,26 @@ proc_options(int argc, char **argv)
 	    }
 	    s++;
 	    if (strcmp("copyright", s) == 0)
-		copyright = 1;
+		opt->copyright = 1;
 	    else if (strcmp("debug", s) == 0) {
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }
 	    else if (strcmp("version", s) == 0)
-		version = 1;
+		opt->version = 1;
 	    else if (strcmp("verbose", s) == 0) {
-		verbose = 1;
+		opt->verbose = 1;
 		ruby_verbose = Qtrue;
 	    }
 	    else if (strcmp("yydebug", s) == 0)
 		ruby_yydebug = 1;
 	    else if (strcmp("help", s) == 0) {
-		usage(origargv[0]);
+		usage(origarg.argv[0]);
 		exit(0);
 	    }
 	    else {
-		fprintf(stderr,
-			"%s: invalid option --%s  (-h will show valid options)\n",
-			origargv[0], s);
-		exit(2);
+		rb_raise(rb_eRuntimeError,
+			 "invalid option --%s  (-h will show valid options)", s);
 	    }
 	    break;
 
@@ -800,15 +800,15 @@ proc_options(int argc, char **argv)
 		const char *format;
 		if (ISPRINT(*s)) {
 		    format =
-			"%s: invalid option -%c  (-h will show valid options)\n";
+			"invalid option -%c  (-h will show valid options)";
 		}
 		else {
 		    format =
-			"%s: invalid option -\\%03o  (-h will show valid options)\n";
+			"invalid option -\\%03o  (-h will show valid options)";
 		}
-		fprintf(stderr, format, origargv[0], (int)(unsigned char)*s);
+		rb_raise(rb_eRuntimeError, format, (int)(unsigned char)*s);
 	    }
-	    exit(2);
+	    goto switch_end;
 
 	  case 0:
 	    break;
@@ -816,8 +816,19 @@ proc_options(int argc, char **argv)
     }
 
   switch_end:
-    if (argv0 == 0)
-	return 0;
+    return argc0 - argc;
+}
+
+static NODE *
+process_options(int argc, char **argv, struct cmdline_options *opt)
+{
+    NODE *tree = 0;
+    VALUE parser;
+    const char *s;
+    int i = proc_options(argc, argv, opt);
+
+    argc -= i;
+    argv += i;
 
     if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	while (ISSPACE(*s))
@@ -851,16 +862,16 @@ proc_options(int argc, char **argv)
 		if (!strchr("IdvwWrK", *s))
 		    rb_raise(rb_eRuntimeError,
 			     "illegal switch in RUBYOPT: -%c", *s);
-		s = moreswitches(s);
+		s = moreswitches(s, opt);
 	    }
 	}
     }
 
-    if (version) {
+    if (opt->version) {
 	ruby_show_version();
 	exit(0);
     }
-    if (copyright) {
+    if (opt->copyright) {
 	ruby_show_copyright();
     }
 
@@ -869,77 +880,81 @@ proc_options(int argc, char **argv)
 	OBJ_TAINT(rb_load_path);
     }
 
-    if (!e_script) {
+    if (!opt->e_script) {
 	if (argc == 0) {	/* no more args */
-	    if (verbose)
-		exit(0);
-	    script = "-";
+	    if (opt->verbose)
+		return 0;
+	    opt->script = "-";
 	}
 	else {
-	    script = argv[0];
-	    if (script[0] == '\0') {
-		script = "-";
+	    opt->script = argv[0];
+	    if (opt->script[0] == '\0') {
+		opt->script = "-";
 	    }
-	    else if (do_search) {
+	    else if (opt->do_search) {
 		char *path = getenv("RUBYPATH");
 
-		script = 0;
+		opt->script = 0;
 		if (path) {
-		    script = dln_find_file(argv[0], path);
+		    opt->script = dln_find_file(argv[0], path);
 		}
-		if (!script) {
-		    script = dln_find_file(argv[0], getenv(PATH_ENV));
+		if (!opt->script) {
+		    opt->script = dln_find_file(argv[0], getenv(PATH_ENV));
 		}
-		if (!script)
-		    script = argv[0];
+		if (!opt->script)
+		    opt->script = argv[0];
 	    }
 #if defined DOSISH || defined __CYGWIN__
 	    /* assume that we can change argv[n] if never change its length. */
-	    translate_char(script, '\\', '/');
+	    translate_char(opt->script, '\\', '/');
 #endif
 	    argc--;
 	    argv++;
 	}
     }
 
-    ruby_script(script);
+    ruby_script(opt->script);
     ruby_set_argv(argc, argv);
-    process_sflag();
+    process_sflag(opt);
 
     ruby_init_loadpath();
     parser = rb_parser_new();
-    if (e_script) {
-	rb_enc_associate_index(e_script, enc_index);
+    if (opt->e_script) {
+	rb_enc_associate_index(opt->e_script, opt->enc_index);
 	require_libraries();
-	tree = rb_parser_compile_string(parser, script, e_script, 1);
+	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
-	if (script[0] == '-' && !script[1]) {
+	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
-	tree = load_file(parser, script, 1);
+	tree = load_file(parser, opt->script, 1, opt);
     }
 
-    process_sflag();
-    xflag = 0;
+    if (!tree) return 0;
+
+    process_sflag(opt);
+    opt->xflag = 0;
 
     if (rb_safe_level() >= 4) {
 	FL_UNSET(rb_argv, FL_TAINT);
 	FL_UNSET(rb_load_path, FL_TAINT);
     }
 
-    if (tree && do_print) {
-	tree = rb_parser_append_print(parser, tree);
-    }
-    if (tree && do_loop) {
-	tree = rb_parser_while_loop(parser, tree, do_line, do_split);
+    if (tree) {
+	if (opt->do_print) {
+	    tree = rb_parser_append_print(parser, tree);
+	}
+	if (opt->do_loop) {
+	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
+	}
     }
 
     return tree;
 }
 
 static NODE *
-load_file(VALUE parser, const char *fname, int script)
+load_file(VALUE parser, const char *fname, int script, struct cmdline_options *opt)
 {
     extern VALUE rb_stdin;
     VALUE f;
@@ -972,9 +987,9 @@ load_file(VALUE parser, const char *fname, int script)
 	VALUE line;
 	char *p;
 
-	if (xflag) {
+	if (opt->xflag) {
 	    forbid_setid("-x");
-	    xflag = Qfalse;
+	    opt->xflag = Qfalse;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
 		if (RSTRING_LEN(line) > 2
@@ -1015,12 +1030,12 @@ load_file(VALUE parser, const char *fname, int script)
 			p++;
 		    *p++ = '\0';
 		    if (p < pend) {
-			argv = ALLOCA_N(char *, origargc + 3);
+			argv = ALLOCA_N(char *, origarg.argc + 3);
 			argv[1] = p;
-			MEMCPY(argv + 2, origargv + 1, char *, origargc);
+			MEMCPY(argv + 2, origarg.argv + 1, char *, origarg.argc);
 		    }
 		    else {
-			argv = origargv;
+			argv = origarg.argv;
 		    }
 		    argv[0] = path;
 		    execv(path, argv);
@@ -1036,7 +1051,7 @@ load_file(VALUE parser, const char *fname, int script)
 		if ((p = strstr(p, " -")) != 0) {
 		    p++;	/* skip space before `-' */
 		    while (*p == '-') {
-			p = moreswitches(p + 1);
+			p = moreswitches(p + 1, opt);
 		    }
 		}
 
@@ -1053,7 +1068,7 @@ load_file(VALUE parser, const char *fname, int script)
 	}
 	require_libraries();	/* Why here? unnatural */
     }
-    rb_enc_associate_index(f, enc_index);
+    rb_enc_associate_index(f, opt->enc_index);
     parser = rb_parser_new();
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
@@ -1068,46 +1083,56 @@ load_file(VALUE parser, const char *fname, int script)
 void *
 rb_load_file(const char *fname)
 {
-    return load_file(rb_parser_new(), fname, 0);
+    struct cmdline_options opt;
+
+    MEMZERO(&opt, opt, 1);
+    return load_file(rb_parser_new(), fname, 0, &opt);
 }
 
 VALUE rb_progname;
 VALUE rb_argv;
 VALUE rb_argv0;
 
-#if defined(PSTAT_SETCMD) || defined(HAVE_SETPROCTITLE)
-#elif defined(_WIN32)
-#elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-#else
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
+#if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 #define USE_ENVSPACE_FOR_ARG0
 #endif
 
 #ifdef USE_ENVSPACE_FOR_ARG0
-static struct {
-    char *begin, *end;
-} envspace;
 extern char **environ;
+#endif
 
-static void
-set_arg0space()
+static int
+get_arglen(int argc, char **argv)
 {
-    char *s;
+    char *s = argv[0];
     int i;
 
-    if (!environ || (s = environ[0]) == NULL)
-	return;
-    envspace.begin = s;
     s += strlen(s);
-    for (i = 1; environ[i]; i++) {
-	if (environ[i] == s + 1) {
+    /* See if all the arguments are contiguous in memory */
+    for (i = 1; i < argc; i++) {
+	if (argv[i] == s + 1) {
 	    s++;
 	    s += strlen(s);	/* this one is ok too */
 	}
+	else {
+	    break;
+	}
     }
-    envspace.end = s;
+#if defined(USE_ENVSPACE_FOR_ARG0)
+    if (environ && (s == environ[0])) {
+	s += strlen(s);
+	for (i = 1; environ[i]; i++) {
+	    if (environ[i] == s + 1) {
+		s++;
+		s += strlen(s);	/* this one is ok too */
+	    }
+	}
+	ruby_setenv("", NULL); /* duplicate environ vars */
+    }
+#endif
+    return s - argv[0];
 }
-#else
-#define set_arg0space() ((void)0)
 #endif
 
 static void
@@ -1115,11 +1140,8 @@ set_arg0(VALUE val, ID id)
 {
     char *s;
     long i;
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    static int len;
-#endif
 
-    if (origargv == 0)
+    if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
     StringValue(val);
     s = RSTRING_PTR(val);
@@ -1138,47 +1160,25 @@ set_arg0(VALUE val, ID id)
 	un.pst_command = s;
 	pstat(PSTAT_SETCMD, un, i, 0, 0);
     }
-    rb_progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
     setproctitle("%.*s", (int)i, s);
-    rb_progname = rb_tainted_str_new(s, i);
 #else
-    if (len == 0) {
-	char *s = origargv[0];
-	int i;
 
-	s += strlen(s);
-	/* See if all the arguments are contiguous in memory */
-	for (i = 1; i < origargc; i++) {
-	    if (origargv[i] == s + 1) {
-		s++;
-		s += strlen(s);	/* this one is ok too */
-	    }
-	    else {
-		break;
-	    }
-	}
-#if defined(USE_ENVSPACE_FOR_ARG0)
-	if (s + 1 == envspace.begin) {
-	    s = envspace.end;
-	    ruby_setenv("", NULL); /* duplicate environ vars */
-	}
-#endif
-	len = s - origargv[0];
+    if (i >= origarg.len) {
+	i = origarg.len;
     }
 
-    if (i >= len) {
-	i = len;
-    }
-
-    memcpy(origargv[0], s, i);
-    s = origargv[0] + i;
+    memcpy(origarg.argv[0], s, i);
+    s = origarg.argv[0] + i;
     *s = '\0';
-    if (++i < len) memset(s + 1, ' ', len - i);
-    for (i = 1; i < origargc; i++)
-      origargv[i] = s;
-    rb_progname = rb_tainted_str_new2(origargv[0]);
+    if (i + 1 < origarg.len) memset(s + 1, ' ', origarg.len - i - 1);
+    {
+	int j;
+	for (j = 1; j < origarg.argc; j++)
+	    origarg.argv[i] = s;
+    }
 #endif
+    rb_progname = rb_tainted_str_new(s, i);
 }
 
 void
@@ -1247,8 +1247,6 @@ ruby_prog_init(void)
     rb_define_virtual_variable("$-W", opt_W_getter, 0);
     rb_define_variable("$DEBUG", &ruby_debug);
     rb_define_variable("$-d", &ruby_debug);
-    rb_define_readonly_variable("$-p", &do_print);
-    rb_define_readonly_variable("$-l", &do_line);
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
@@ -1256,7 +1254,6 @@ ruby_prog_init(void)
     rb_define_readonly_variable("$*", &rb_argv);
     rb_argv = rb_ary_new();
     rb_define_global_const("ARGV", rb_argv);
-    rb_define_readonly_variable("$-a", &do_split);
     rb_global_variable(&rb_argv0);
 
 #ifdef MSDOS
@@ -1275,8 +1272,8 @@ ruby_set_argv(int argc, char **argv)
     int i;
 
 #if defined(USE_DLN_A_OUT)
-    if (origargv)
-	dln_argv0 = origargv[0];
+    if (origarg.argv)
+	dln_argv0 = origarg.argv[0];
     else
 	dln_argv0 = argv[0];
 #endif
@@ -1289,25 +1286,44 @@ ruby_set_argv(int argc, char **argv)
     }
 }
 
+static VALUE
+false_value(void)
+{
+    return Qfalse;
+}
+
+static VALUE
+true_value(void)
+{
+    return Qtrue;
+}
+
+#define rb_define_readonly_boolean(name, val) \
+    rb_define_virtual_variable((name), (val) ? true_value : false_value, 0)
+
 void *
 ruby_process_options(int argc, char **argv)
 {
+    struct cmdline_options opt;
     NODE *tree;
 
-    origargc = argc;
-    origargv = argv;
+    origarg.argc = argc;
+    origarg.argv = argv;
 
+    MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
-    set_arg0space();
-    tree = proc_options(argc, argv);
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
+    origarg.len = get_arglen(origarg.argc, origarg.argv);
+#endif
+    tree = process_options(argc, argv, &opt);
 
-    if (do_check && tree) {
-	printf("Syntax OK\n");
-	exit(0);
-    }
+    rb_define_readonly_boolean("$-p", opt.do_print);
+    rb_define_readonly_boolean("$-l", opt.do_line);
+    rb_define_readonly_boolean("$-a", opt.do_split);
+
     return tree;
 }

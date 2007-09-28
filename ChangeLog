@@ -1,3 +1,7 @@
+Sat Sep 29 06:47:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (struct cmdline_options): static variables packed.
+
 Sat Sep 29 05:29:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_fdopen): create IO object from fd.
