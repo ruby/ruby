@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tmpdir'
 
 begin
   require 'gdbm'
@@ -27,14 +28,16 @@ if defined? GDBM
     SYSTEM = uname_s
 
     def setup
-      @path = "tmptest_gdbm_"
+      @tmpdir = Dir.tmpdir
+      @prefix = "tmptest_gdbm_#{$$}"
+      @path = "#{@tmpdir}/#{@prefix}_"
       assert_instance_of(GDBM, @gdbm = GDBM.new(@path))
 
       # prepare to make readonly GDBM file
-      GDBM.open("tmptest_gdbm_rdonly", 0400) {|gdbm|
+      GDBM.open("#{@tmpdir}/#{@prefix}_rdonly", 0400) {|gdbm|
         gdbm['foo'] = 'FOO'
       }
-      assert_instance_of(GDBM, @gdbm_rdonly = GDBM.new("tmptest_gdbm_rdonly", nil))
+      assert_instance_of(GDBM, @gdbm_rdonly = GDBM.new("#{@tmpdir}/#{@prefix}_rdonly", nil))
     end
     def teardown
       assert_nil(@gdbm.close)
@@ -42,8 +45,8 @@ if defined? GDBM
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
       end
-      File.delete *Dir.glob("tmptest_gdbm*").to_a
-      p Dir.glob("tmptest_gdbm*") if $DEBUG
+      File.delete *Dir.glob("#{@tmpdir}/#{@prefix}*").to_a
+      p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
     end
 
     def check_size(expect, gdbm=@gdbm)
@@ -70,7 +73,7 @@ if defined? GDBM
     def test_s_new_has_no_block
       # GDBM.new ignore the block
       foo = true
-      assert_instance_of(GDBM, gdbm = GDBM.new("tmptest_gdbm") { foo = false })
+      assert_instance_of(GDBM, gdbm = GDBM.new("#{@tmpdir}/#{@prefix}") { foo = false })
       assert_equal(foo, true)
       assert_nil(gdbm.close)
     end
@@ -79,54 +82,54 @@ if defined? GDBM
 
       save_mask = File.umask(0)
       begin
-        assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm"))
+        assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}"))
         gdbm.close
-        assert_equal(File.stat("tmptest_gdbm").mode & 0777, 0666)
-        assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm2", 0644))
+        assert_equal(File.stat("#{@tmpdir}/#{@prefix}").mode & 0777, 0666)
+        assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}2", 0644))
         gdbm.close
-        assert_equal(File.stat("tmptest_gdbm2").mode & 0777, 0644)
+        assert_equal(File.stat("#{@tmpdir}/#{@prefix}2").mode & 0777, 0644)
       ensure
         File.umask save_mask
       end
     end
     def test_s_open_no_create
       # this test is failed on libgdbm 1.8.0
-      assert_nil(gdbm = GDBM.open("tmptest_gdbm", nil))
+      assert_nil(gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       gdbm.close if gdbm
     end
     def test_s_open_3rd_arg
-      assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm", 0644,
+      assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                 GDBM::FAST))
       gdbm.close
 
       # gdbm 1.8.0 specific
       if defined? GDBM::SYNC
-        assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm", 0644,
+        assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                   GDBM::SYNC))
         gdbm.close
       end
       # gdbm 1.8.0 specific
       if defined? GDBM::NOLOCK
-        assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm", 0644,
+        assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                   GDBM::NOLOCK))
         gdbm.close
       end
     end
     def test_s_open_with_block
-      assert_equal(GDBM.open("tmptest_gdbm") { :foo }, :foo)
+      assert_equal(GDBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
     end
     def test_s_open_lock
       return unless have_fork?	# snip this test
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
+        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
         sleep 2
       }
       begin
         sleep 1
         assert_raise(Errno::EWOULDBLOCK) {
           begin
-            assert_instance_of(GDBM, gdbm2 = GDBM.open("tmptest_gdbm", 0644))
+            assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
           rescue Errno::EAGAIN, Errno::EACCES
             raise Errno::EWOULDBLOCK
           end
@@ -140,10 +143,10 @@ if defined? GDBM
     # Is it guaranteed on many OS?
     def test_s_open_lock_one_process
       # locking on one process
-      assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
+      assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
       assert_raise(Errno::EWOULDBLOCK) {
         begin
-          GDBM.open("tmptest_gdbm", 0644)
+          GDBM.open("#{@tmpdir}/#{@prefix}", 0644)
         rescue Errno::EAGAIN
           raise Errno::EWOULDBLOCK
         end
@@ -159,7 +162,7 @@ if defined? GDBM
       return unless have_fork?	# snip this test
 
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644,
+        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                   GDBM::NOLOCK))
         sleep 2
       }
@@ -167,17 +170,17 @@ if defined? GDBM
       begin
         gdbm2 = nil
         assert_nothing_raised(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
-          assert_instance_of(GDBM, gdbm2 = GDBM.open("tmptest_gdbm", 0644))
+          assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
         }
       ensure
         Process.wait pid
         gdbm2.close if gdbm2
       end
 
-      p Dir.glob("tmptest_gdbm*") if $DEBUG
+      p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
 
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
+        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
         sleep 2
       }
       begin
@@ -185,7 +188,7 @@ if defined? GDBM
         gdbm2 = nil
         assert_nothing_raised(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
           # this test is failed on Cygwin98 (???)
-          assert_instance_of(GDBM, gdbm2 = GDBM.open("tmptest_gdbm", 0644,
+          assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                      GDBM::NOLOCK))
         }
       ensure
@@ -195,15 +198,15 @@ if defined? GDBM
     end
 
     def test_s_open_error
-      assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm", 0))
+      assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0))
       assert_raise(Errno::EACCES) {
-        GDBM.open("tmptest_gdbm", 0)
+        GDBM.open("#{@tmpdir}/#{@prefix}", 0)
       }
       gdbm.close
     end
 
     def test_close
-      assert_instance_of(GDBM, gdbm = GDBM.open("tmptest_gdbm"))
+      assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}"))
       assert_nil(gdbm.close)
 
       # closed GDBM file
@@ -592,10 +595,10 @@ if defined? GDBM
     end
 
     def test_sync
-      assert_instance_of(GDBM, gdbm = GDBM.open('tmptest_gdbm', 0666, GDBM::FAST))
+      assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0666, GDBM::FAST))
       assert_equal(gdbm.sync, gdbm)
       gdbm.close
-      assert_instance_of(GDBM, gdbm = GDBM.open('tmptest_gdbm', 0666))
+      assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0666))
       assert_equal(gdbm.sync, gdbm)
       gdbm.close
     end
@@ -653,7 +656,7 @@ if defined? GDBM
     TMPROOT = "#{Dir.tmpdir}/ruby-gdbm.#{$$}"
 
     def setup
-      Dir.mkdir TMPROOT
+      Dir.mkdir TMPROOT, 0755
     end
 
     def teardown

@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tmpdir'
 
 begin
   require 'dbm'
@@ -27,17 +28,19 @@ if defined? DBM
     SYSTEM = uname_s
 
     def setup
-      @path = "tmptest_dbm_"
+      @tmpdir = Dir.tmpdir
+      @prefix = "tmptest_dbm_#{$$}"
+      @path = "#{@tmpdir}/#{@prefix}_"
       assert_instance_of(DBM, @dbm = DBM.new(@path))
 
       # prepare to make readonly DBM file
-      DBM.open("tmptest_dbm_rdonly") {|dbm|
+      DBM.open("#{@tmpdir}/#{@prefix}_rdonly") {|dbm|
         dbm['foo'] = 'FOO'
       }
       
-      File.chmod(0400, *Dir.glob("tmptest_dbm_rdonly.*"))
+      File.chmod(0400, *Dir.glob("#{@tmpdir}/#{@prefix}_rdonly.*"))
 
-      assert_instance_of(DBM, @dbm_rdonly = DBM.new("tmptest_dbm_rdonly", nil))
+      assert_instance_of(DBM, @dbm_rdonly = DBM.new("#{@tmpdir}/#{@prefix}_rdonly", nil))
     end
     def teardown
       assert_nil(@dbm.close)
@@ -45,8 +48,8 @@ if defined? DBM
       ObjectSpace.each_object(DBM) do |obj|
         obj.close unless obj.closed?
       end
-      File.delete *Dir.glob("tmptest_dbm*").to_a
-      p Dir.glob("tmptest_dbm*") if $DEBUG
+      File.delete *Dir.glob("#{@tmpdir}/#{@prefix}*").to_a
+      p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
     end
 
     def check_size(expect, dbm=@dbm)
@@ -73,21 +76,21 @@ if defined? DBM
     def test_s_new_has_no_block
       # DBM.new ignore the block
       foo = true
-      assert_instance_of(DBM, dbm = DBM.new("tmptest_dbm") { foo = false })
+      assert_instance_of(DBM, dbm = DBM.new("#{@tmpdir}/#{@prefix}") { foo = false })
       assert_equal(foo, true)
       assert_nil(dbm.close)
     end
     def test_s_open_no_create
-      assert_nil(dbm = DBM.open("tmptest_dbm", nil))
+      assert_nil(dbm = DBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       dbm.close if dbm
     end
     def test_s_open_with_block
-      assert_equal(DBM.open("tmptest_dbm") { :foo }, :foo)
+      assert_equal(DBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
     end
 
     def test_close
-      assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm"))
+      assert_instance_of(DBM, dbm = DBM.open("#{@tmpdir}/#{@prefix}"))
       assert_nil(dbm.close)
 
       # closed DBM file
@@ -498,7 +501,7 @@ if defined? DBM
     TMPROOT = "#{Dir.tmpdir}/ruby-dbm.#{$$}"
 
     def setup
-      Dir.mkdir TMPROOT
+      Dir.mkdir TMPROOT, 0755
     end
 
     def teardown

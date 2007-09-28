@@ -1,8 +1,11 @@
 require 'test/unit'
+require 'tmpdir'
 
 class TestWhileuntil < Test::Unit::TestCase
   def test_while
-    tmp = open("while_tmp", "w")
+    tmpfilename = "#{Dir.tmpdir}/ruby_while_tmp.#{$$}"
+
+    tmp = open(tmpfilename, "w")
     tmp.print "tvi925\n";
     tmp.print "tvi920\n";
     tmp.print "vt100\n";
@@ -10,7 +13,7 @@ class TestWhileuntil < Test::Unit::TestCase
     tmp.print "paper\n";
     tmp.close
 
-    tmp = open("while_tmp", "r")
+    tmp = open(tmpfilename, "r")
     assert_instance_of(File, tmp)
     
     while line = tmp.gets()
@@ -21,7 +24,7 @@ class TestWhileuntil < Test::Unit::TestCase
     assert_match(/vt100/, line)
     tmp.close
 
-    tmp = open("while_tmp", "r")
+    tmp = open(tmpfilename, "r")
     while line = tmp.gets()
       next if /vt100/ =~ line
       assert_no_match(/vt100/, line)
@@ -30,7 +33,7 @@ class TestWhileuntil < Test::Unit::TestCase
     assert_no_match(/vt100/, line)
     tmp.close
 
-    tmp = open("while_tmp", "r")
+    tmp = open(tmpfilename, "r")
     while line = tmp.gets()
       lastline = line
       line = line.gsub(/vt100/, 'VT100')
@@ -54,7 +57,7 @@ class TestWhileuntil < Test::Unit::TestCase
     end
     assert_equal(220, sum)
 
-    tmp = open("while_tmp", "r")
+    tmp = open(tmpfilename, "r")
     while line = tmp.gets()
       break if 3
       assert_no_match(/vt100/, line)
@@ -63,8 +66,8 @@ class TestWhileuntil < Test::Unit::TestCase
     end
     tmp.close
 
-    File.unlink "while_tmp" or `/bin/rm -f "while_tmp"`
-    assert(!File.exist?("while_tmp"))
+    File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
+    assert(!File.exist?(tmpfilename))
   end
 
   def test_until

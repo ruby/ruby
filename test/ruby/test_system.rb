@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'envutil'
+require 'tmpdir'
 
 class TestSystem < Test::Unit::TestCase
   def valid_syntax?(code, fname)
@@ -14,21 +15,23 @@ class TestSystem < Test::Unit::TestCase
     assert_equal("foobar\n", `echo foobar`)
     assert_equal('foobar', `#{ruby} -e 'print "foobar"'`)
 
-    tmp = open("script_tmp", "w")
+    tmpfilename = "#{Dir.tmpdir}/ruby_script_tmp.#{$$}"
+
+    tmp = open(tmpfilename, "w")
     tmp.print "print $zzz\n";
     tmp.close
 
-    assert_equal('true', `#{ruby} -s script_tmp -zzz`)
-    assert_equal('555', `#{ruby} -s script_tmp -zzz=555`)
+    assert_equal('true', `#{ruby} -s #{tmpfilename} -zzz`)
+    assert_equal('555', `#{ruby} -s #{tmpfilename} -zzz=555`)
 
-    tmp = open("script_tmp", "w")
+    tmp = open(tmpfilename, "w")
     tmp.print "#! /usr/local/bin/ruby -s\n";
     tmp.print "print $zzz\n";
     tmp.close
 
-    assert_equal('678', `#{ruby} script_tmp -zzz=678`)
+    assert_equal('678', `#{ruby} #{tmpfilename} -zzz=678`)
 
-    tmp = open("script_tmp", "w")
+    tmp = open(tmpfilename, "w")
     tmp.print "this is a leading junk\n";
     tmp.print "#! /usr/local/bin/ruby -s\n";
     tmp.print "print $zzz\n";
@@ -36,24 +39,24 @@ class TestSystem < Test::Unit::TestCase
     tmp.print "this is a trailing junk\n";
     tmp.close
 
-    assert_equal('', `#{ruby} -x script_tmp`)
-    assert_equal('555', `#{ruby} -x script_tmp -zzz=555`)
+    assert_equal('', `#{ruby} -x #{tmpfilename}`)
+    assert_equal('555', `#{ruby} -x #{tmpfilename} -zzz=555`)
 
-    tmp = open("script_tmp", "w")
+    tmp = open(tmpfilename, "w")
     for i in 1..5
       tmp.print i, "\n"
     end
     tmp.close
 
-    `#{ruby} -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
-    tmp = open("script_tmp", "r")
+    `#{ruby} -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' #{tmpfilename}`
+    tmp = open(tmpfilename, "r")
     while tmp.gets
       assert_equal(0, $_.to_i % 5)
     end
     tmp.close
 
-    File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
-    File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+    File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
+    File.unlink "#{tmpfilename}.bak" or `/bin/rm -f "#{tmpfilename}.bak"`
   end
 
   def test_syntax

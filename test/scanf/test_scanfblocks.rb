@@ -7,6 +7,7 @@
 
 require 'test/unit'
 require 'scanf'
+require 'tmpdir'
 
 class TestScanfBlock < Test::Unit::TestCase
 
@@ -49,8 +50,8 @@ alias set_up setup
   end
 
   def test_io1
-    File.open("iotest.dat", "w") { |fh| fh.puts(@str) }
-    fh = File.open("iotest.dat", "rb")
+    File.open("#{Dir.tmpdir}/iotest.dat", "w") { |fh| fh.puts(@str) }
+    fh = File.open("#{Dir.tmpdir}/iotest.dat", "rb")
     res = fh.scanf("%s%d") { |name, year| "#{name} was born in #{year}." }
 
     assert_equal(
@@ -61,18 +62,18 @@ alias set_up setup
       "Brahms was born in 1833." ],res)
     fh.close
   ensure
-    File.delete("iotest.dat")  
+    File.delete("#{Dir.tmpdir}/iotest.dat")  
     end
 
   def test_io2
-    File.open("iotest.dat", "w").close
-    fh = File.open("iotest.dat","rb")
+    File.open("#{Dir.tmpdir}/iotest.dat", "w").close
+    fh = File.open("#{Dir.tmpdir}/iotest.dat","rb")
     assert_equal(fh.scanf("") {}, [])
     fh.seek(0)
     assert_equal(fh.scanf("%d%f%s") {}, [])
     fh.close
   ensure
-    File.delete("iotest.dat")  
+    File.delete("#{Dir.tmpdir}/iotest.dat")  
   end
 
 end

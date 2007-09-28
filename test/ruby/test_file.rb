@@ -7,7 +7,7 @@ class TestFile < Test::Unit::TestCase
   # I don't know Ruby's spec about "unlink-before-close" exactly.
   # This test asserts current behaviour.
   def test_unlink_before_close
-    filename = File.basename(__FILE__) + ".#{$$}"
+    filename = Dir.tmpdir + '/' + File.basename(__FILE__) + ".#{$$}"
     w = File.open(filename, "w")
     w << "foo"
     w.close

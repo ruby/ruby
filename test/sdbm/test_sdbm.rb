@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tmpdir'
 
 begin
   require 'sdbm'
@@ -7,7 +8,9 @@ end
 
 class TestSDBM < Test::Unit::TestCase
   def setup
-    @path = "tmptest_sdbm_"
+    @tmpdir = Dir.tmpdir
+    @prefix = "tmptest_sdbm_#{$$}"
+    @path = "#{@tmpdir}/#{@prefix}_"
     assert_instance_of(SDBM, @sdbm = SDBM.new(@path))
   end
   def teardown
@@ -15,8 +18,8 @@ class TestSDBM < Test::Unit::TestCase
     ObjectSpace.each_object(SDBM) do |obj|
       obj.close unless obj.closed?
     end
-    File.delete *Dir.glob("tmptest_sdbm*").to_a
-    p Dir.glob("tmptest_sdbm*") if $DEBUG
+    File.delete *Dir.glob("#{@tmpdir}/#{@prefix}*").to_a
+    p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
   end
 
   def check_size(expect, sdbm=@sdbm)
@@ -47,26 +50,26 @@ class TestSDBM < Test::Unit::TestCase
   def test_s_new_has_no_block
     # SDBM.new ignore the block
     foo = true
-    assert_instance_of(SDBM, sdbm = SDBM.new("tmptest_sdbm") { foo = false })
+    assert_instance_of(SDBM, sdbm = SDBM.new("#{@tmpdir}/#{@prefix}") { foo = false })
     assert_equal(foo, true)
     assert_nil(sdbm.close)
   end
   def test_s_open_no_create
-    assert_nil(sdbm = SDBM.open("tmptest_sdbm", nil))
+    assert_nil(sdbm = SDBM.open("#{@tmpdir}/#{@prefix}", nil))
   ensure
     sdbm.close if sdbm
   end
   def test_s_open_with_block
-    assert_equal(SDBM.open("tmptest_sdbm") { :foo }, :foo)
+    assert_equal(SDBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
   end
 =begin
   # Is it guaranteed on many OS?
   def test_s_open_lock_one_process
     # locking on one process
-    assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644))
+    assert_instance_of(SDBM, sdbm  = SDBM.open("#{@tmpdir}/#{@prefix}", 0644))
     assert_raise(Errno::EWOULDBLOCK) {
       begin
-	SDBM.open("tmptest_sdbm", 0644)
+	SDBM.open("#{@tmpdir}/#{@prefix}", 0644)
       rescue Errno::EAGAIN
 	raise Errno::EWOULDBLOCK
       end
@@ -82,7 +85,7 @@ class TestSDBM < Test::Unit::TestCase
     return unless have_fork?	# snip this test
 
     pid = fork() {
-      assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644,
+      assert_instance_of(SDBM, sdbm  = SDBM.open("#{@tmpdir}/#{@prefix}", 0644,
 						SDBM::NOLOCK))
       sleep 2
     }
@@ -90,17 +93,17 @@ class TestSDBM < Test::Unit::TestCase
     begin
       sdbm2 = nil
       assert_no_exception(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
-	assert_instance_of(SDBM, sdbm2 = SDBM.open("tmptest_sdbm", 0644))
+	assert_instance_of(SDBM, sdbm2 = SDBM.open("#{@tmpdir}/#{@prefix}", 0644))
       }
     ensure
       Process.wait pid
       sdbm2.close if sdbm2
     end
 
-    p Dir.glob("tmptest_sdbm*") if $DEBUG
+    p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
 
     pid = fork() {
-      assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644))
+      assert_instance_of(SDBM, sdbm  = SDBM.open("#{@tmpdir}/#{@prefix}", 0644))
       sleep 2
     }
     begin
@@ -108,7 +111,7 @@ class TestSDBM < Test::Unit::TestCase
       sdbm2 = nil
       assert_no_exception(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
 	# this test is failed on Cygwin98 (???)
-	assert_instance_of(SDBM, sdbm2 = SDBM.open("tmptest_sdbm", 0644,
+	assert_instance_of(SDBM, sdbm2 = SDBM.open("#{@tmpdir}/#{@prefix}", 0644,
 						   SDBM::NOLOCK))
       }
     ensure
@@ -118,15 +121,15 @@ class TestSDBM < Test::Unit::TestCase
   end
 
   def test_s_open_error
-    assert_instance_of(SDBM, sdbm = SDBM.open("tmptest_sdbm", 0))
+    assert_instance_of(SDBM, sdbm = SDBM.open("#{@tmpdir}/#{@prefix}", 0))
     assert_raise(Errno::EACCES) {
-      SDBM.open("tmptest_sdbm", 0)
+      SDBM.open("#{@tmpdir}/#{@prefix}", 0)
     }
     sdbm.close
   end
 
   def test_close
-    assert_instance_of(SDBM, sdbm = SDBM.open("tmptest_sdbm"))
+    assert_instance_of(SDBM, sdbm = SDBM.open("#{@tmpdir}/#{@prefix}"))
     assert_nil(sdbm.close)
 
     # closed SDBM file
