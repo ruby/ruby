@@ -174,7 +174,10 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
-    defassert(:del_trailing_separator, "\225\\", "\225\\\\") # SJIS
+    require 'Win32API'
+    if Win32API.new('kernel32', 'GetACP', nil, 'L').call == 932
+      defassert(:del_trailing_separator, "\225\\", "\225\\\\") # SJIS
+    end
   end
 
   def plus(path1, path2) # -> path
