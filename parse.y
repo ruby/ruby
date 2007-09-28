@@ -4659,7 +4659,6 @@ static NODE*
 yycompile(struct parser_params *parser, const char *f, int line)
 {
     int n;
-    const char *kcode_save;
     NODE *tree;
 
     if (!compile_for_eval && rb_safe_level() == 0) {
@@ -4673,14 +4672,13 @@ yycompile(struct parser_params *parser, const char *f, int line)
 	}
     }
 
-    kcode_save = rb_get_kcode();
+    parser->enc = rb_enc_get(lex_input);
     ruby_sourcefile = rb_source_filename(f);
     ruby_sourceline = line - 1;
     parser_prepare(parser);
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     compile_for_eval = 0;
-    rb_set_kcode(kcode_save);
 
     lex_strterm = 0;
     if (parser->nerr) {
@@ -5522,7 +5520,6 @@ lvar_defined_gen(struct parser_params *parser, ID id)
 static void
 parser_set_encode(struct parser_params *parser, const char *name)
 {
-    rb_set_kcode(name);
     parser->enc = rb_enc_find(name);
 }
 

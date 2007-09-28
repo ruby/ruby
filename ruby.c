@@ -22,6 +22,7 @@
 #endif
 #include "ruby/ruby.h"
 #include "ruby/node.h"
+#include "ruby/encoding.h"
 #include "dln.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -33,6 +34,11 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#if defined(HAVE_FCNTL_H)
+#include <fcntl.h>
+#elif defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
 #endif
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
@@ -64,12 +70,13 @@ extern int ruby_yydebug;
 
 char *ruby_inplace_mode = 0;
 
-static NODE *load_file(VALUE *, const char *, int);
+static NODE *load_file(VALUE, const char *, int);
 static void forbid_setid(const char *);
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
 static VALUE do_check = Qfalse, do_line = Qfalse;
 static VALUE do_split = Qfalse;
+static int enc_index = 0;
 
 static int origargc;
 static char **origargv;
@@ -682,7 +689,27 @@ proc_options(int argc, char **argv)
 
 	  case 'K':
 	    if (*++s) {
-		rb_set_kcode(s);
+		rb_encoding *enc = 0;
+#if 0
+		if ((enc_index = rb_enc_find_index(s)) >= 0) break;
+#endif
+		switch (*s) {
+		  case 'E': case 'e':
+		    enc = ONIG_ENCODING_EUC_JP;
+		    break;
+		  case 'S': case 's':
+		    enc = ONIG_ENCODING_SJIS;
+		    break;
+		  case 'U': case 'u':
+		    enc = ONIG_ENCODING_UTF8;
+		    break;
+		  case 'N': case 'n': case 'A': case 'a':
+		    enc = ONIG_ENCODING_ASCII;
+		    break;
+		  default:
+		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
+		}
+		enc_index = rb_enc_to_index(enc);
 		s++;
 	    }
 	    goto reswitch;
@@ -880,16 +907,17 @@ proc_options(int argc, char **argv)
     process_sflag();
 
     ruby_init_loadpath();
+    parser = rb_parser_new();
     if (e_script) {
+	rb_enc_associate_index(e_script, enc_index);
 	require_libraries();
-	parser = rb_parser_new();
 	tree = rb_parser_compile_string(parser, script, e_script, 1);
     }
     else {
 	if (script[0] == '-' && !script[1]) {
 	    forbid_setid("program input from stdin");
 	}
-	tree = load_file(&parser, script, 1);
+	tree = load_file(parser, script, 1);
     }
 
     process_sflag();
@@ -911,7 +939,7 @@ proc_options(int argc, char **argv)
 }
 
 static NODE *
-load_file(VALUE *parser, const char *fname, int script)
+load_file(VALUE parser, const char *fname, int script)
 {
     extern VALUE rb_stdin;
     VALUE f;
@@ -924,21 +952,19 @@ load_file(VALUE *parser, const char *fname, int script)
 	f = rb_stdin;
     }
     else {
-	FILE *fp = fopen(fname, "r");
-
-	if (fp == NULL) {
-	    rb_load_fail(fname);
-	}
-	fclose(fp);
-
-	f = rb_file_open(fname, "r");
+	int fd, mode = O_RDONLY;
 #if defined DOSISH || defined __CYGWIN__
 	{
-	    char *ext = strrchr(fname, '.');
+	    const char *ext = strrchr(fname, '.');
 	    if (ext && strcasecmp(ext, ".exe") == 0)
-		rb_io_binmode(f);
+		mode |= O_BINARY;
 	}
 #endif
+	if ((fd = open(fname, mode)) < 0) {
+	    rb_load_fail(fname);
+	}
+
+	f = rb_io_fdopen(fd, mode, fname);
     }
 
     if (script) {
@@ -1027,9 +1053,10 @@ load_file(VALUE *parser, const char *fname, int script)
 	}
 	require_libraries();	/* Why here? unnatural */
     }
-    *parser = rb_parser_new();
-    tree = (NODE *)rb_parser_compile_file(*parser, fname, f, line_start);
-    if (script && rb_parser_end_seen_p(*parser)) {
+    rb_enc_associate_index(f, enc_index);
+    parser = rb_parser_new();
+    tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
+    if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
@@ -1041,9 +1068,7 @@ load_file(VALUE *parser, const char *fname, int script)
 void *
 rb_load_file(const char *fname)
 {
-    VALUE parser;
-
-    return load_file(&parser, fname, 0);
+    return load_file(rb_parser_new(), fname, 0);
 }
 
 VALUE rb_progname;

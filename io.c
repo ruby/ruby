@@ -4186,6 +4186,15 @@ prep_io(int fd, int mode, VALUE klass, const char *path)
     return io;
 }
 
+VALUE
+rb_io_fdopen(int fd, int mode, const char *path)
+{
+    VALUE klass = rb_cIO;
+
+    if (path && strcmp(path, "-")) klass = rb_cFile;
+    return prep_io(fd, rb_io_modenum_flags(mode), klass, path);
+}
+
 static VALUE
 prep_stdio(FILE *f, int mode, VALUE klass, const char *path)
 {
