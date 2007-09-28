@@ -451,7 +451,7 @@ sighandler(int sig)
 {
     rb_vm_t *vm = GET_VM(); /* fix me for Multi-VM */
     ATOMIC_INC(vm->signal_buff[sig]);
-    ATOMIC_INC(vm->bufferd_signal_size);
+    ATOMIC_INC(vm->buffered_signal_size);
 
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
@@ -501,7 +501,7 @@ rb_get_next_signal(rb_vm_t *vm)
 	    rb_disable_interrupt();
 	    {
 		ATOMIC_DEC(vm->signal_buff[i]);
-		ATOMIC_DEC(vm->bufferd_signal_size);
+		ATOMIC_DEC(vm->buffered_signal_size);
 	    }
 	    rb_enable_interrupt();
 	    sig = i;

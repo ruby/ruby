@@ -1884,10 +1884,10 @@ timer_thread_function(void)
     vm->running_thread->interrupt_flag = 1;
 
     /* check signal */
-    if (vm->bufferd_signal_size && vm->main_thread->exec_signal == 0) {
+    if (vm->buffered_signal_size && vm->main_thread->exec_signal == 0) {
 	vm->main_thread->exec_signal = rb_get_next_signal(vm);
-	thread_debug("bufferd_signal_size: %d, sig: %d\n",
-		     vm->bufferd_signal_size, vm->main_thread->exec_signal);
+	thread_debug("buffered_signal_size: %d, sig: %d\n",
+		     vm->buffered_signal_size, vm->main_thread->exec_signal);
 	rb_thread_interrupt(vm->main_thread);
     }
 

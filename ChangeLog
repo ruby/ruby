@@ -1,3 +1,7 @@
+Fri Sep 28 16:22:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_core.h (rb_vm_struct): fix typo: bufferd -> buffered.
+
 Fri Sep 28 15:47:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: fix to output benchmark results

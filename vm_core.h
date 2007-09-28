@@ -326,7 +326,7 @@ typedef struct rb_vm_struct {
     
     /* signal */
     rb_atomic_t signal_buff[RUBY_NSIG];
-    rb_atomic_t bufferd_signal_size;
+    rb_atomic_t buffered_signal_size;
 
     /* hook */
     rb_event_hook_t *event_hooks;
