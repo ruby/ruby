@@ -512,7 +512,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c {$(VPATH)}oniguruma.h \
   {$(VPATH)}ruby.h {$(VPATH)}defines.h {$(VPATH)}missing.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}dln.h {$(VPATH)}node.h {$(VPATH)}util.h
+  {$(VPATH)}dln.h {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}encoding.h
 signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}signal.h {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}node.h \
