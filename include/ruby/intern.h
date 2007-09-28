@@ -583,6 +583,7 @@ void rb_free_generic_ivar(VALUE);
 VALUE rb_ivar_get(VALUE, ID);
 VALUE rb_ivar_set(VALUE, ID, VALUE);
 VALUE rb_ivar_defined(VALUE, ID);
+void rb_ivar_foreach(VALUE, int (*)(ANYARGS), st_data_t);
 VALUE rb_iv_set(VALUE, const char*, VALUE);
 VALUE rb_iv_get(VALUE, const char*);
 VALUE rb_attr_get(VALUE, ID);

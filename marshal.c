@@ -404,17 +404,17 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
     char *path;
 
     if (check && FL_TEST(klass, FL_SINGLETON)) {
-	if (RCLASS(klass)->m_tbl->num_entries ||
-	    (RCLASS(klass)->iv_tbl && RCLASS(klass)->iv_tbl->num_entries > 1)) {
+	if (RCLASS_M_TBL(klass)->num_entries ||
+	    (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1)) {
 	    rb_raise(rb_eTypeError, "singleton can't be dumped");
 	}
-	klass = RCLASS(klass)->super;
+	klass = RCLASS_SUPER(klass);
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
 	path = rb_class2name(RBASIC(klass)->klass);
 	w_byte(TYPE_EXTENDED, arg);
 	w_unique(path, arg);
-	klass = RCLASS(klass)->super;
+	klass = RCLASS_SUPER(klass);
     }
 }
 
@@ -467,6 +467,25 @@ w_ivar(st_table *tbl, struct dump_call_arg *arg)
     }
     else {
 	w_long(0, arg->arg);
+    }
+}
+
+static void
+w_objivar(VALUE obj, struct dump_call_arg *arg)
+{
+    VALUE *ptr;
+    long i, len, num;
+
+    len = ROBJECT_LEN(obj);
+    ptr = ROBJECT_PTR(obj);
+    num = 0;
+    for (i = 0; i < len; i++)
+        if (ptr[i] != Qundef)
+            num += 1;
+
+    w_long(num, arg->arg);
+    if (num != 0) {
+        rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
     }
 }
 
@@ -682,7 +701,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_OBJECT:
 	    w_class(TYPE_OBJECT, obj, arg, Qtrue);
-	    w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
+	    w_objivar(obj, &c_arg);
 	    break;
 
 	  case T_DATA:

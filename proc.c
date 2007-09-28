@@ -620,13 +620,13 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mklass)
     body = body->nd_body;
 
     if (nd_type(body) == NODE_ZSUPER) {
-	klass = RCLASS(klass)->super;
+	klass = RCLASS_SUPER(klass);
 	goto again;
     }
 
     while (rklass != klass &&
 	   (FL_TEST(rklass, FL_SINGLETON) || TYPE(rklass) == T_ICLASS)) {
-	rklass = RCLASS(rklass)->super;
+	rklass = RCLASS_SUPER(rklass);
     }
     if (TYPE(klass) == T_ICLASS)
 	klass = RBASIC(klass)->klass;

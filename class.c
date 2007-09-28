@@ -18,16 +18,27 @@
 
 extern st_table *rb_class_tbl;
 
+static VALUE
+class_alloc(VALUE flags, VALUE klass)
+{
+    rb_classext_t *ext = ALLOC(rb_classext_t);
+    NEWOBJ(obj, struct RClass);
+    OBJSETUP(obj, klass, flags);
+    obj->ptr = ext;
+    RCLASS_IV_TBL(obj) = 0;
+    RCLASS_M_TBL(obj) = 0;
+    RCLASS_SUPER(obj) = 0;
+    RCLASS_IV_INDEX_TBL(obj) = 0;
+    return (VALUE)obj;
+}
+
 VALUE
 rb_class_boot(VALUE super)
 {
-    NEWOBJ(klass, struct RClass);
-    OBJSETUP(klass, rb_cClass, T_CLASS);
+    VALUE klass = class_alloc(T_CLASS, rb_cClass);
 
-    klass->super = super;
-    klass->iv_tbl = 0;
-    klass->m_tbl = 0;		/* safe GC */
-    klass->m_tbl = st_init_numtable();
+    RCLASS_SUPER(klass) = super;
+    RCLASS_M_TBL(klass) = st_init_numtable();
 
     OBJ_INFECT(klass, super);
     return (VALUE)klass;
@@ -87,21 +98,21 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
 	RBASIC(clone)->klass = rb_singleton_class_clone(orig);
     }
-    RCLASS(clone)->super = RCLASS(orig)->super;
-    if (RCLASS(orig)->iv_tbl) {
+    RCLASS_SUPER(clone) = RCLASS_SUPER(orig);
+    if (RCLASS_IV_TBL(orig)) {
 	ID id;
 
-	RCLASS(clone)->iv_tbl = st_copy(RCLASS(orig)->iv_tbl);
+	RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(orig));
 	id = rb_intern("__classpath__");
-	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
+	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
 	id = rb_intern("__classid__");
-	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
+	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
     }
-    if (RCLASS(orig)->m_tbl) {
+    if (RCLASS_M_TBL(orig)) {
 	struct clone_method_data data;
-	data.tbl = RCLASS(clone)->m_tbl = st_init_numtable();
+	data.tbl = RCLASS_M_TBL(clone) = st_init_numtable();
 	data.klass = clone;
-	st_foreach(RCLASS(orig)->m_tbl, clone_method,
+	st_foreach(RCLASS_M_TBL(orig), clone_method,
 	  (st_data_t)&data);
     }
 
@@ -112,7 +123,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 VALUE
 rb_class_init_copy(VALUE clone, VALUE orig)
 {
-    if (RCLASS(clone)->super != 0) {
+    if (RCLASS_SUPER(clone) != 0) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
     if (FL_TEST(orig, FL_SINGLETON)) {
@@ -131,8 +142,7 @@ rb_singleton_class_clone(VALUE obj)
     else {
 	struct clone_method_data data;
 	/* copy singleton(unnamed) class */
-	NEWOBJ(clone, struct RClass);
-	OBJSETUP(clone, 0, RBASIC(klass)->flags);
+        VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
 	    RBASIC(clone)->klass = (VALUE)clone;
@@ -141,16 +151,14 @@ rb_singleton_class_clone(VALUE obj)
 	    RBASIC(clone)->klass = rb_singleton_class_clone(klass);
 	}
 
-	clone->super = RCLASS(klass)->super;
-	clone->iv_tbl = 0;
-	clone->m_tbl = 0;
-	if (RCLASS(klass)->iv_tbl) {
-	    clone->iv_tbl = st_copy(RCLASS(klass)->iv_tbl);
+	RCLASS_SUPER(clone) = RCLASS_SUPER(klass);
+	if (RCLASS_IV_TBL(klass)) {
+	    RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(klass));
 	}
-	clone->m_tbl = st_init_numtable();
-	data.tbl = clone->m_tbl;
+	RCLASS_M_TBL(clone) = st_init_numtable();
+	data.tbl = RCLASS_M_TBL(clone);
 	data.klass = (VALUE)clone;
-	st_foreach(RCLASS(klass)->m_tbl, clone_method,
+	st_foreach(RCLASS_M_TBL(klass), clone_method,
 	  (st_data_t)&data);
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
 	FL_SET(clone, FL_SINGLETON);
@@ -162,10 +170,10 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	if (!RCLASS(klass)->iv_tbl) {
-	    RCLASS(klass)->iv_tbl = st_init_numtable();
+	if (!RCLASS_IV_TBL(klass)) {
+	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	st_insert(RCLASS(klass)->iv_tbl, rb_intern("__attached__"), obj);
+	st_insert(RCLASS_IV_TBL(klass), rb_intern("__attached__"), obj);
     }
 }
 
@@ -223,7 +231,7 @@ rb_define_class(const char *name, VALUE super)
 	if (TYPE(klass) != T_CLASS) {
 	    rb_raise(rb_eTypeError, "%s is not a class", name);
 	}
-	if (rb_class_real(RCLASS(klass)->super) != super) {
+	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
 	    rb_name_error(id, "%s is already defined", name);
 	}
 	return klass;
@@ -252,7 +260,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
 	if (TYPE(klass) != T_CLASS) {
 	    rb_raise(rb_eTypeError, "%s is not a class", name);
 	}
-	if (rb_class_real(RCLASS(klass)->super) != super) {
+	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
 	    rb_name_error(id, "%s is already defined", name);
 	}
 	return klass;
@@ -272,13 +280,9 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
 VALUE
 rb_module_new(void)
 {
-    NEWOBJ(mdl, struct RClass);
-    OBJSETUP(mdl, rb_cModule, T_MODULE);
+    VALUE mdl = class_alloc(T_MODULE, rb_cModule);
 
-    mdl->super = 0;
-    mdl->iv_tbl = 0;
-    mdl->m_tbl = 0;
-    mdl->m_tbl = st_init_numtable();
+    RCLASS_M_TBL(mdl) = st_init_numtable();
 
     return (VALUE)mdl;
 }
@@ -338,18 +342,17 @@ rb_define_module_under(VALUE outer, const char *name)
 static VALUE
 include_class_new(VALUE module, VALUE super)
 {
-    NEWOBJ(klass, struct RClass);
-    OBJSETUP(klass, rb_cClass, T_ICLASS);
+    VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
     if (BUILTIN_TYPE(module) == T_ICLASS) {
 	module = RBASIC(module)->klass;
     }
-    if (!RCLASS(module)->iv_tbl) {
-	RCLASS(module)->iv_tbl = st_init_numtable();
+    if (!RCLASS_IV_TBL(module)) {
+	RCLASS_IV_TBL(module) = st_init_numtable();
     }
-    klass->iv_tbl = RCLASS(module)->iv_tbl;
-    klass->m_tbl = RCLASS(module)->m_tbl;
-    klass->super = super;
+    RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
+    RCLASS_SUPER(klass) = super;
     if (TYPE(module) == T_ICLASS) {
 	RBASIC(klass)->klass = RBASIC(module)->klass;
     }
@@ -382,13 +385,13 @@ rb_include_module(VALUE klass, VALUE module)
     while (module) {
        int superclass_seen = Qfalse;
 
-	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
+	if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
 	    rb_raise(rb_eArgError, "cyclic include detected");
        /* ignore if the module included already in superclasses */
-       for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
+       for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
            switch (BUILTIN_TYPE(p)) {
              case T_ICLASS:
-               if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
+               if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
                    if (!superclass_seen) {
                        c = p;  /* move insertion point */
                    }
@@ -400,10 +403,10 @@ rb_include_module(VALUE klass, VALUE module)
                break;
            }
        }
-       c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+       c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
 	changed = 1;
       skip:
-	module = RCLASS(module)->super;
+	module = RCLASS_SUPER(module);
     }
     if (changed) rb_clear_cache();
 }
@@ -431,7 +434,7 @@ rb_mod_included_modules(VALUE mod)
     VALUE ary = rb_ary_new();
     VALUE p;
 
-    for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
+    for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
@@ -464,7 +467,7 @@ rb_mod_include_p(VALUE mod, VALUE mod2)
     VALUE p;
 
     Check_Type(mod2, T_MODULE);
-    for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
+    for (p = RCLASS_SUPER(mod); p; p = RCLASS_SUPER(p)) {
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    if (RBASIC(p)->klass == mod2) return Qtrue;
 	}
@@ -493,7 +496,7 @@ rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
 
-    for (p = mod; p; p = RCLASS(p)->super) {
+    for (p = mod; p; p = RCLASS_SUPER(p)) {
 	if (FL_TEST(p, FL_SINGLETON))
 	    continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
@@ -599,8 +602,8 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
     }
 
     list = st_init_numtable();
-    for (; mod; mod = RCLASS(mod)->super) {
-	st_foreach(RCLASS(mod)->m_tbl, method_entry, (st_data_t)list);
+    for (; mod; mod = RCLASS_SUPER(mod)) {
+	st_foreach(RCLASS_M_TBL(mod), method_entry, (st_data_t)list);
 	if (BUILTIN_TYPE(mod) == T_ICLASS) continue;
 	if (FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
@@ -756,13 +759,13 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
     klass = CLASS_OF(obj);
     list = st_init_numtable();
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
-	st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
-	klass = RCLASS(klass)->super;
+	st_foreach(RCLASS_M_TBL(klass), method_entry, (st_data_t)list);
+	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || TYPE(klass) == T_ICLASS)) {
-	    st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
-	    klass = RCLASS(klass)->super;
+	    st_foreach(RCLASS_M_TBL(klass), method_entry, (st_data_t)list);
+	    klass = RCLASS_SUPER(klass);
 	}
     }
     ary = rb_ary_new();

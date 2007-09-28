@@ -100,7 +100,7 @@ VALUE
 rb_class_real(VALUE cl)
 {
     while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
-	cl = RCLASS(cl)->super;
+	cl = RCLASS_SUPER(cl);
     }
     return cl;
 }
@@ -137,15 +137,34 @@ init_copy(VALUE dest, VALUE obj)
     rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
       case T_OBJECT:
+        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_PTR(dest)) {
+            xfree(ROBJECT_PTR(dest));
+            ROBJECT(dest)->as.heap.ptr = 0;
+            ROBJECT(dest)->as.heap.len = 0;
+        }
+        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+            MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
+            RBASIC(dest)->flags |= ROBJECT_EMBED;
+        }
+        else {
+            long len = ROBJECT(obj)->as.heap.len;
+            VALUE *ptr = ALLOC_N(VALUE, len);
+            MEMCPY(ptr, ROBJECT(obj)->as.heap.ptr, VALUE, len);
+            ROBJECT(dest)->as.heap.ptr = ptr;
+            ROBJECT(dest)->as.heap.len = len;
+            RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+        }
+        break;
       case T_CLASS:
       case T_MODULE:
-	if (ROBJECT(dest)->iv_tbl) {
-	    st_free_table(ROBJECT(dest)->iv_tbl);
-	    ROBJECT(dest)->iv_tbl = 0;
+	if (RCLASS_IV_TBL(dest)) {
+	    st_free_table(RCLASS_IV_TBL(dest));
+	    RCLASS_IV_TBL(dest) = 0;
 	}
-	if (ROBJECT(obj)->iv_tbl) {
-	    ROBJECT(dest)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
+	if (RCLASS_IV_TBL(obj)) {
+	    RCLASS_IV_TBL(dest) = st_copy(RCLASS_IV_TBL(obj));
 	}
+        break;
     }
     rb_funcall(dest, id_init_copy, 1, obj);
 }
@@ -296,7 +315,7 @@ inspect_obj(VALUE obj, VALUE str, int recur)
 	rb_str_cat2(str, " ...");
     }
     else {
-	st_foreach_safe(ROBJECT(obj)->iv_tbl, inspect_i, str);
+	rb_ivar_foreach(obj, inspect_i, str);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -321,15 +340,28 @@ inspect_obj(VALUE obj, VALUE str, int recur)
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (TYPE(obj) == T_OBJECT
-	&& ROBJECT(obj)->iv_tbl
-	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
-	VALUE str;
-	char *c;
 
-	c = rb_obj_classname(obj);
-	str = rb_sprintf("-<%s:%p", c, (void*)obj);
-	return rb_exec_recursive(inspect_obj, obj, str);
+    if (TYPE(obj) == T_OBJECT) {
+        int has_ivar = 0;
+        VALUE *ptr = ROBJECT_PTR(obj);
+        long len = ROBJECT_LEN(obj);
+        long i;
+
+        for (i = 0; i < len; i++) {
+            if (ptr[i] != Qundef) {
+                has_ivar = 1;
+                break;
+            }
+        }
+
+        if (has_ivar) {
+            VALUE str;
+            char *c;
+
+            c = rb_obj_classname(obj);
+            str = rb_sprintf("-<%s:%p", c, (void*)obj);
+            return rb_exec_recursive(inspect_obj, obj, str);
+        }
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
@@ -402,9 +434,9 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     }
 
     while (cl) {
-	if (cl == c || RCLASS(cl)->m_tbl == RCLASS(c)->m_tbl)
+	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
 	    return Qtrue;
-	cl = RCLASS(cl)->super;
+	cl = RCLASS_SUPER(cl);
     }
     return Qfalse;
 }
@@ -1104,15 +1136,15 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
     while (mod) {
-	if (RCLASS(mod)->m_tbl == RCLASS(arg)->m_tbl)
+	if (RCLASS_M_TBL(mod) == RCLASS_M_TBL(arg))
 	    return Qtrue;
-	mod = RCLASS(mod)->super;
+	mod = RCLASS_SUPER(mod);
     }
     /* not mod < arg; check if mod > arg */
     while (arg) {
-	if (RCLASS(arg)->m_tbl == RCLASS(start)->m_tbl)
+	if (RCLASS_M_TBL(arg) == RCLASS_M_TBL(start))
 	    return Qfalse;
-	arg = RCLASS(arg)->super;
+	arg = RCLASS_SUPER(arg);
     }
     return Qnil;
 }
@@ -1277,7 +1309,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE super;
 
-    if (RCLASS(klass)->super != 0) {
+    if (RCLASS_SUPER(klass) != 0) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
     if (rb_scan_args(argc, argv, "01", &super) == 0) {
@@ -1286,7 +1318,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
 	rb_check_inheritable(super);
     }
-    RCLASS(klass)->super = super;
+    RCLASS_SUPER(klass) = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize(klass);
@@ -1308,7 +1340,7 @@ rb_obj_alloc(VALUE klass)
 {
     VALUE obj;
 
-    if (RCLASS(klass)->super == 0 && klass != rb_cBasicObject) {
+    if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
     if (FL_TEST(klass, FL_SINGLETON)) {
@@ -1367,13 +1399,13 @@ rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_class_superclass(VALUE klass)
 {
-    VALUE super = RCLASS(klass)->super;
+    VALUE super = RCLASS_SUPER(klass);
 
     if (!super) {
 	rb_raise(rb_eTypeError, "uninitialized class");
     }
     while (TYPE(super) == T_ICLASS) {
-	super = RCLASS(super)->super;
+	super = RCLASS_SUPER(super);
     }
     if (!super) {
 	return Qnil;

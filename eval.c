@@ -2303,7 +2303,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (nd_type(fbody->nd_body->nd_body) != NODE_ZSUPER) {
 		break;		/* normal case: need not to follow 'super' link */
 	    }
-	    m = RCLASS(m)->super;
+	    m = RCLASS_SUPER(m);
 	    if (!m)
 		break;
 	}

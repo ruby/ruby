@@ -25,7 +25,7 @@ rb_struct_iv_get(VALUE c, const char *name)
     for (;;) {
 	if (rb_ivar_defined(c, id))
 	    return rb_ivar_get(c, id);
-	c = RCLASS(c)->super;
+	c = RCLASS_SUPER(c);
 	if (c == 0 || c == rb_cStruct)
 	    return Qnil;
     }

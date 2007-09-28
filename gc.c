@@ -1033,9 +1033,9 @@ gc_mark_children(VALUE ptr, int lev)
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	mark_tbl(obj->as.klass.m_tbl, lev);
-	mark_tbl(obj->as.klass.iv_tbl, lev);
-	ptr = obj->as.klass.super;
+	mark_tbl(RCLASS_M_TBL(obj), lev);
+	mark_tbl(RCLASS_IV_TBL(obj), lev);
+	ptr = RCLASS_SUPER(obj);
 	goto again;
 
       case T_ARRAY:
@@ -1070,7 +1070,13 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_OBJECT:
-	mark_tbl(obj->as.object.iv_tbl, lev);
+        {
+            long i, len = ROBJECT_LEN(obj);
+	    VALUE *ptr = ROBJECT_PTR(obj);
+            for (i  = 0; i < len; i++) {
+		gc_mark(*ptr++, lev);
+            }
+        }
 	break;
 
       case T_FILE:
@@ -1269,17 +1275,22 @@ obj_free(VALUE obj)
 
     switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_OBJECT:
-	if (RANY(obj)->as.object.iv_tbl) {
-	    st_free_table(RANY(obj)->as.object.iv_tbl);
+	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
+            RANY(obj)->as.object.as.heap.ptr) {
+	    RUBY_CRITICAL(free(RANY(obj)->as.object.as.heap.ptr));
 	}
 	break;
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache_by_class((VALUE)obj);
-	st_free_table(RANY(obj)->as.klass.m_tbl);
-	if (RANY(obj)->as.object.iv_tbl) {
-	    st_free_table(RANY(obj)->as.object.iv_tbl);
+	st_free_table(RCLASS_M_TBL(obj));
+	if (RCLASS_IV_TBL(obj)) {
+	    st_free_table(RCLASS_IV_TBL(obj));
 	}
+	if (RCLASS_IV_INDEX_TBL(obj)) {
+	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
+	}
+        RUBY_CRITICAL(free(RANY(obj)->as.klass.ptr));
 	break;
       case T_STRING:
 	rb_str_free(obj);

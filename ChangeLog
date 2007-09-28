@@ -1,3 +1,42 @@
+Fri Sep 28 15:05:24 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h: export rb_ivar_foreach.
+
+	* include/ruby/ruby.h: modify struct RObject and RClass for optimizing
+	  T_OBJECT space.  [ruby-dev:31853]
+	  (ROBJECT_LEN, ROBJECT_PTR)
+	  (RCLASS_IV_TBL, RCLASS_M_TBL, RCLASS_SUPER, RCLASS_IV_INDEX_TBL)
+	  (RMODULE_IV_TBL, RMODULE_M_TBL, RMODULE_SUPER): abstract accessor
+	  defined.
+
+	* variable.c: support the modified RObject and RClass.
+
+	* object.c: ditto.
+
+	* class.c: ditto.
+
+	* gc.c: ditto.
+
+	* marshal.c: ditto.
+
+	* eval_method.ci: use the abstract accessor.
+
+	* insns.def: ditto.
+
+	* proc.c: ditto.
+
+	* struct.c: ditto.
+
+	* eval.c: ditto.
+
+	* error.c: ditto.
+
+	* vm.c: ditto.
+
+	* insnhelper.ci: ditto.
+
+	* ext/digest/digest.c: ditto.
+
 Fri Sep 28 13:20:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getline_fast, rb_io_getline_1): set encoding to the

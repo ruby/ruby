@@ -503,7 +503,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 
     if (!cfp->iseq) {
 	klass = cfp->method_klass;
-	klass = RCLASS(klass)->super;
+	klass = RCLASS_SUPER(klass);
 
 	if (klass == 0) {
 	    klass = vm_search_normal_super_klass(cfp->method_klass, recv);
@@ -1001,7 +1001,7 @@ static void
 add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     NODE *node;
-    if (st_lookup(RCLASS(klass)->m_tbl, mid, (void *)&node) &&
+    if (st_lookup(RCLASS_M_TBL(klass), mid, (void *)&node) &&
 	nd_type(node->nd_body->nd_body) == NODE_CFUNC) {
 	st_insert(vm_opt_method_table, (st_data_t)node, (st_data_t)bop);
     }

@@ -426,7 +426,7 @@ get_digest_base_metadata(VALUE klass)
     VALUE obj;
     rb_digest_metadata_t *algo;
 
-    for (p = klass; p; p = RCLASS(p)->super) {
+    for (p = klass; p; p = RCLASS_SUPER(p)) {
         if (rb_ivar_defined(p, id_metadata)) {
             obj = rb_ivar_get(p, id_metadata);
             break;

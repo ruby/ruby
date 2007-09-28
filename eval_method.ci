@@ -143,7 +143,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	st_data_t data;
 	NODE *old_node;
 
-	if (st_lookup(RCLASS(klass)->m_tbl, mid, &data)) {
+	if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
 	    old_node = (NODE *)data;
 	    if (old_node) {
 		if (nd_type(old_node->nd_body->nd_body) == NODE_CFUNC) {
@@ -166,7 +166,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	}
     }
 
-    st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t) body);
+    st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) body);
 
     if (node && mid != ID_ALLOCATOR && ruby_running) {
 	if (FL_TEST(klass, FL_SINGLETON)) {
@@ -216,8 +216,8 @@ search_method(VALUE klass, ID id, VALUE *klassp)
 	return 0;
     }
 
-    while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
-	klass = RCLASS(klass)->super;
+    while (!st_lookup(RCLASS_M_TBL(klass), id, &body)) {
+	klass = RCLASS_SUPER(klass);
 	if (!klass)
 	    return 0;
     }
@@ -305,11 +305,11 @@ remove_method(VALUE klass, ID mid)
     if (mid == object_id || mid == __send || mid == __send_bang || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (st_lookup(RCLASS(klass)->m_tbl, mid, &data)) {
+    if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
 	body = (NODE *)data;
 	if (!body || !body->nd_body) body = 0;
 	else {
-	    st_delete(RCLASS(klass)->m_tbl, &mid, &data);
+	    st_delete(RCLASS_M_TBL(klass), &mid, &data);
 	}
     }
     if (!body) {
@@ -583,7 +583,7 @@ rb_alias(VALUE klass, ID name, ID def)
 
     orig_fbody->nd_cnt++;
 
-    if (st_lookup(RCLASS(klass)->m_tbl, name, &data)) {
+    if (st_lookup(RCLASS_M_TBL(klass), name, &data)) {
 	node = (NODE *)data;
 	if (node) {
 	    if (RTEST(ruby_verbose) && node->nd_cnt == 0 && node->nd_body) {
@@ -595,7 +595,7 @@ rb_alias(VALUE klass, ID name, ID def)
 	}
     }
 
-    st_insert(RCLASS(klass)->m_tbl, name,
+    st_insert(RCLASS_M_TBL(klass), name,
 	      (st_data_t) NEW_FBODY(
 		  NEW_METHOD(orig_fbody->nd_body->nd_body,
 			     orig_fbody->nd_body->nd_clss,

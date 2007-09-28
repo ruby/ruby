@@ -973,7 +973,7 @@ defineclass
 
 	    if (super != rb_cObject) {
 		VALUE tmp;
-		tmp = rb_class_real(RCLASS(klass)->super);
+		tmp = rb_class_real(RCLASS_SUPER(klass));
 
 		if (tmp != super) {
 		    rb_raise(rb_eTypeError, "superclass mismatch for class %s",

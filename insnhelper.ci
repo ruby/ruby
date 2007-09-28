@@ -507,7 +507,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		  break;
 	      }
 	      case NODE_ZSUPER:{
-		  klass = RCLASS(mn->nd_clss)->super;
+		  klass = RCLASS_SUPER(mn->nd_clss);
 		  mn = rb_method_node(klass, id);
 
 		  if (mn != 0) {
@@ -998,8 +998,8 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 		}
 	    }
 	  search_continue:
-	    if (RCLASS(klass)->iv_tbl &&
-		st_lookup(RCLASS(klass)->iv_tbl, id, &val)) {
+	    if (RCLASS_IV_TBL(klass) &&
+		st_lookup(RCLASS_IV_TBL(klass), id, &val)) {
 		if (val == Qundef) {
 		    rb_autoload_load(klass, id);
 		    goto search_continue;
@@ -1122,16 +1122,16 @@ static inline VALUE
 vm_search_normal_super_klass(VALUE klass, VALUE recv)
 {
     if (BUILTIN_TYPE(klass) == T_CLASS) {
-	klass = RCLASS(klass)->super;
+	klass = RCLASS_SUPER(klass);
     }
     else if (BUILTIN_TYPE(klass) == T_MODULE) {
 	VALUE k = CLASS_OF(recv);
 	while (k) {
 	    if (BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass) {
-		klass = RCLASS(k)->super;
+		klass = RCLASS_SUPER(k);
 		break;
 	    }
-	    k = RCLASS(k)->super;
+	    k = RCLASS_SUPER(k);
 	}
     }
     return klass;

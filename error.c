@@ -971,7 +971,7 @@ syserr_eqq(VALUE self, VALUE exc)
 	VALUE klass = CLASS_OF(exc);
 
 	while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	    klass = (VALUE)RCLASS(klass)->super;
+	    klass = (VALUE)RCLASS_SUPER(klass);
 	}
 	num = rb_const_get(klass, rb_intern("Errno"));
     }

@@ -402,10 +402,26 @@ struct RBasic {
     VALUE klass;
 };
 
+#define ROBJECT_EMBED_LEN_MAX 3
 struct RObject {
     struct RBasic basic;
-    struct st_table *iv_tbl;
+    union {
+	struct {
+	    long len;
+	    VALUE *ptr;
+	} heap;
+	VALUE ary[ROBJECT_EMBED_LEN_MAX];
+    } as;
 };
+#define ROBJECT_EMBED FL_USER1
+#define ROBJECT_LEN(o) \
+    ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
+     ROBJECT_EMBED_LEN_MAX : \
+     ROBJECT(o)->as.heap.len)
+#define ROBJECT_PTR(o) \
+    ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
+     ROBJECT(o)->as.ary : \
+     ROBJECT(o)->as.heap.ptr)
 
 struct RValues {
     struct RBasic basic;
@@ -414,12 +430,24 @@ struct RValues {
     VALUE v3;
 };
 
+typedef struct {
+    struct st_table *iv_tbl;
+    VALUE super;
+} rb_classext_t;
+
 struct RClass {
     struct RBasic basic;
-    struct st_table *iv_tbl;
+    rb_classext_t *ptr;
     struct st_table *m_tbl;
-    VALUE super;
+    struct st_table *iv_index_tbl;
 };
+#define RCLASS_IV_TBL(c) (RCLASS(c)->ptr->iv_tbl)
+#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_SUPER(c) (RCLASS(c)->ptr->super)
+#define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
+#define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
+#define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
+#define RMODULE_SUPER(m) RCLASS_SUPER(m)
 
 struct RFloat {
     struct RBasic basic;
