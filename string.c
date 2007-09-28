@@ -99,26 +99,32 @@ VALUE rb_fs;
 int
 rb_enc_str_coderange(VALUE str)
 {
-    long i;
     int cr = ENC_CODERANGE(str);
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
-	cr = ENC_CODERANGE_SINGLE;
-	for (i = 0; i < RSTRING_LEN(str); ++i) {
-	    const char *p = &RSTRING_PTR(str)[i];
-	    int c = (unsigned char)*p;
+	rb_encoding *enc = rb_enc_get(str);
 
-	    if (!ISASCII(c)) {
-		c = rb_enc_codepoint(p, RSTRING_END(str), rb_enc_get(str));
-		if (c == -1) {
-		    cr = ENC_CODERANGE_BROKEN;
-		}
-		else {
-		    cr = ENC_CODERANGE_MULTI;
-		}
-	    }
+	if (!rb_enc_asciicompat(enc)) {
+	    cr = ENC_CODERANGE_MULTI;
+	    ENC_CODERANGE_SET(str, cr);
+	    return cr;
 	}
-	ENC_CODERANGE_SET(str, cr);
+	else {
+	    const char *p = RSTRING_PTR(str);
+	    const char *e = p + RSTRING_LEN(str);
+
+	    cr = ENC_CODERANGE_SINGLE;
+	    while (p < e) {
+		int c = (unsigned char)*p;
+
+		if (c > 0x80) {
+		    cr = ENC_CODERANGE_MULTI;
+		    break;
+		}
+		p++;
+	    }
+	    ENC_CODERANGE_SET(str, cr);
+	}
     }
     return cr;
 }
@@ -1169,8 +1175,7 @@ rb_str_hash(VALUE str)
     if (e && is_ascii_string(str)) {
 	e = 0;
     }
-    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str),
-		e);
+    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), e);
 }
 
 /*
@@ -1196,8 +1201,6 @@ rb_str_comparable(VALUE str1, VALUE str2)
     int idx2 = rb_enc_get_index(str2);
 
     if (idx1 == idx2) return Qtrue;
-    if (!rb_enc_asciicompat(rb_enc_from_index(idx1))) return Qfalse;
-    if (!rb_enc_asciicompat(rb_enc_from_index(idx2))) return Qfalse;
     if (!is_ascii_string(str1)) return Qfalse;
     if (!is_ascii_string(str2)) return Qfalse;
     return Qtrue;
@@ -1263,7 +1266,6 @@ rb_str_eql(VALUE str1, VALUE str2)
 	return Qfalse;
 
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-
     if (memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
 	       lesser(RSTRING_LEN(str1), RSTRING_LEN(str2))) == 0)
 	return Qtrue;

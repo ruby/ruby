@@ -196,25 +196,27 @@ rb_enc_check(VALUE str1, VALUE str2)
 	return rb_enc_from_index(idx1);
     }
 
-    if (idx1 == 0) {
-	enc = rb_enc_from_index(idx2);
-	if (rb_enc_asciicompat(enc)) {
-	    return enc;
-	}
+    if (BUILTIN_TYPE(str1) != T_STRING) {
+	VALUE tmp = str1;
+	str1 = str2;
+	str2 = tmp;
     }
-    else if (idx2 == 0) {
-	enc = rb_enc_from_index(idx1);
-	if (rb_enc_asciicompat(enc)) {
-	    return enc;
+    if (BUILTIN_TYPE(str1) == T_STRING) {
+	int cr1, cr2;
+
+	cr1 = rb_enc_str_coderange(str1);
+	if (BUILTIN_TYPE(str2) == T_STRING) {
+	    cr2 = rb_enc_str_coderange(str2);
+	    if (cr1 != cr2) {
+		/* may need to handle ENC_CODERANGE_BROKEN */
+		if (cr1 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx2);
+		if (cr2 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx1);
+	    }
+	    if (cr1 == ENC_CODERANGE_SINGLE) return ONIG_ENCODING_ASCII;
 	}
-    }
-    if (BUILTIN_TYPE(str1) == T_STRING &&
-	BUILTIN_TYPE(str2) == T_STRING &&
-	rb_enc_asciicompat(rb_enc_from_index(idx1)) &&
-	rb_enc_asciicompat(rb_enc_from_index(idx2)) &&
-	rb_enc_str_coderange(str1) == ENC_CODERANGE_SINGLE &&
-	rb_enc_str_coderange(str2) == ENC_CODERANGE_SINGLE) {
-	return ONIG_ENCODING_ASCII;
+	if (cr1 == ENC_CODERANGE_SINGLE &&
+	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
+	    return enc;
     }
     rb_raise(rb_eArgError, "character encodings differ");
 }
