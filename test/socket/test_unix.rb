@@ -118,7 +118,6 @@ class TestUNIXSocket < Test::Unit::TestCase
 
   def test_nul
     assert_raise(ArgumentError) { Socket.sockaddr_un("a\0b") }
-    assert_raise(ArgumentError) { UNIXServer.new("a\0b") }
   end
 
   def test_dgram_pair
