@@ -131,5 +131,34 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(:ok, f1.transfer)
     assert_equal([:baz], ary)
   end
+
+  def test_tls
+    # 
+    def tvar(var, val)
+      old = Thread.current[var]
+      begin
+        Thread.current[var] = val
+        yield
+      ensure
+        Thread.current[var] = old
+      end
+    end
+
+    fb = Fiber.new {
+      assert_equal(nil, Thread.current[:v]); tvar(:v, :x) {
+      assert_equal(:x,  Thread.current[:v]);   Fiber.yield
+      assert_equal(:x,  Thread.current[:v]); }
+      assert_equal(nil, Thread.current[:v]); Fiber.yield
+      raise # unreachable
+    }
+
+    assert_equal(nil, Thread.current[:v]); tvar(:v,1) {
+    assert_equal(1,   Thread.current[:v]);   tvar(:v,3) {
+    assert_equal(3,   Thread.current[:v]);     fb.resume
+    assert_equal(3,   Thread.current[:v]);   }
+    assert_equal(1,   Thread.current[:v]); }
+    assert_equal(nil, Thread.current[:v]); fb.resume
+    assert_equal(nil, Thread.current[:v]);
+  end
 end
 

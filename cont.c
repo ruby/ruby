@@ -86,6 +86,9 @@ cont_free(void *ptr)
 	RUBY_FREE_UNLESS_NULL(cont->machine_register_stack);
 #endif
 	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
+	if (cont->saved_thread.local_storage) {
+	    st_free_table(cont->saved_thread.local_storage);
+	}
 	ruby_xfree(ptr);
     }
     RUBY_FREE_LEAVE("cont");
@@ -205,6 +208,7 @@ cont_restore_1(rb_context_t *cont)
 	/* fiber */
 	th->stack = sth->stack;
 	th->stack_size = sth->stack_size;
+	th->local_storage = sth->local_storage;
 	th->fiber = cont->self;
     }
     else {
@@ -500,6 +504,7 @@ fiber_alloc(VALUE klass, VALUE proc)
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
     th->tag = 0;
+    th->local_storage = st_init_numtable();
 
     th->first_proc = proc;
 

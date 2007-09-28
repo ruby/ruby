@@ -1,3 +1,10 @@
+Sat Sep 29 03:53:26 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: Thread local storage should be fiber local.
+
+	* bootstraptest/test_knownbug.rb, test/ruby/test_fiber.rb: 
+	  move a fixed test.
+
 Fri Sep 28 23:15:31 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* insnhelper.ci (vm_call_method): allow send! to call protected
