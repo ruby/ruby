@@ -13,7 +13,7 @@ assert_finish 1, %q{
   w.write "a"
 }, '[ruby-dev:31866]'
 
-assert_equal "[[nil, 1, 1, nil, nil], [nil, 2, 2, nil]]", %q{
+assert_equal "[[nil, 1, 3, 3, 1, nil, nil], [nil, 2, 2, nil]]", %q{
   def tvar(var, val)
     old = Thread.current[var]
     begin
@@ -26,24 +26,18 @@ assert_equal "[[nil, 1, 1, nil, nil], [nil, 2, 2, nil]]", %q{
   ary1 = []
   ary2 = []
   fb = Fiber.new {
-    ary2 << Thread.current[:v]
-    tvar(:v, 2) {
-      ary2 << Thread.current[:v]
-      Fiber.yield
-      ary2 << Thread.current[:v]
-    }
-    ary2 << Thread.current[:v]
-    Fiber.yield
+    ary2 << Thread.current[:v]; tvar(:v, 2) {
+    ary2 << Thread.current[:v];   Fiber.yield
+    ary2 << Thread.current[:v]; }
+    ary2 << Thread.current[:v]; Fiber.yield
     ary2 << Thread.current[:v]
   }
-  ary1 << Thread.current[:v]
-  tvar(:v,1) {
-    ary1 << Thread.current[:v]
-    fb.resume
-    ary1 << Thread.current[:v]
-  }
-  ary1 << Thread.current[:v]
-  fb.resume
-  ary1 << Thread.current[:v]
+  ary1 << Thread.current[:v]; tvar(:v,1) {
+  ary1 << Thread.current[:v];   tvar(:v,3) {
+  ary1 << Thread.current[:v];     fb.resume
+  ary1 << Thread.current[:v];   }
+  ary1 << Thread.current[:v]; }
+  ary1 << Thread.current[:v]; fb.resume
+  ary1 << Thread.current[:v];
   [ary1, ary2]
 }
