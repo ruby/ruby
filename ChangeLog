@@ -1,3 +1,17 @@
+Fri Sep 28 22:33:47 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_so_fasta.rb: added.
+
+	* benchmark/bm_so_k_nucleotide.rb: added.
+
+	* benchmark/bm_so_reverse_complement.rb: added.
+
+	* benchmark/make_fasta_output.rb: added.
+
+	* benchmark/prepare_so_k_nucleotide.rb: added.
+
+	* benchmark/prepare_so_reverse_complement.rb: added.
+
 Fri Sep 28 19:14:51 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: fix notations.
