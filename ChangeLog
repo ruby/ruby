@@ -1,3 +1,7 @@
+Sat Sep 29 08:57:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (strcasecmp): needed for type_strcasehash.
+
 Sat Sep 29 06:47:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (struct cmdline_options): static variables packed.

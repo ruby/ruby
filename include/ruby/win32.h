@@ -192,9 +192,9 @@ extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
 
-#define strcasecmp(s1, s2)	stricmp(s1, s2)
-#define strncasecmp(s1, s2, n)	strnicmp(s1, s2, n)
-#define fsync(h)		_commit(h)
+#define strcasecmp		stricmp
+#define strncasecmp		strnicmp
+#define fsync			_commit
 
 #ifdef __MINGW32__
 struct timezone {
