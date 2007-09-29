@@ -30,5 +30,5 @@ assert_equal 'ok', %q{
 }
 
 assert_normal_exit %q{
-  Marshal.load("\004\b\173\006\"\006k\"\006v", lambda {|v| })
+  Marshal.load(Marshal.dump({"k"=>"v"}), lambda {|v| })
 }
