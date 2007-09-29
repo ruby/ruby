@@ -1016,9 +1016,6 @@ r_entry(VALUE v, struct load_arg *arg)
         if ((VALUE)real_obj != Qundef)
             OBJ_TAINT((VALUE)real_obj);
     }
-    if (arg->proc) {
-	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
-    }
     return v;
 }
 
@@ -1035,7 +1032,10 @@ r_leave(VALUE v, struct load_arg *arg)
             compat->loader(real_obj, v);
         }
         st_delete(arg->compat_tbl, &key, 0);
-        return real_obj;
+        v = real_obj;
+    }
+    if (arg->proc) {
+	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
     }
     return v;
 }

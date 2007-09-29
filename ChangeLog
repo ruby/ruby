@@ -1,3 +1,8 @@
+Sat Sep 29 17:14:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_leave): move proc invocation from r_entry() to
+	  avoid potential crash.
+
 Sat Sep 29 12:28:08 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_normal_exit): new method.
