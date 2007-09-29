@@ -28,3 +28,7 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_normal_exit %q{
+  Marshal.load("\004\b\173\006\"\006k\"\006v", lambda {|v| })
+}

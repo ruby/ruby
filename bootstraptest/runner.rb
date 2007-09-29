@@ -166,6 +166,32 @@ def assert_match(expected_pattern, testsrc, message = '')
   }
 end
 
+def assert_normal_exit(testsrc, message = '')
+  newtest
+  $stderr.puts "\##{@count} #{@location}" if @verbose
+  faildesc = nil
+  filename = make_srcfile(testsrc)
+  system("#{@ruby} -W0 #{filename}")
+  if $?.signaled?
+    signo = $?.termsig
+    signame = Signal.list.invert[signo]
+    sigdesc = "signal #{signo}"
+    if signame
+      sigdesc = "SIG#{signame} (#{sigdesc})"
+    end
+    faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
+  end
+  if !faildesc
+    $stderr.print '.'
+  else
+    $stderr.print 'F'
+    error faildesc, message
+  end
+rescue Exception => err
+  $stderr.print 'E'
+  error err.message, message
+end
+
 def assert_finish(timeout_seconds, testsrc, message = '')
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose

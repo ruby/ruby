@@ -1,3 +1,9 @@
+Sat Sep 29 12:28:08 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_normal_exit): new method.
+
+	* bootstraptest/test_knownbug.rb: add test for Marshal.load.
+
 Sat Sep 29 10:12:20 2007  Tanaka Akira  <akr@fsij.org>
 
 	* variable.c (rb_ivar_set): fix class instance variable.
