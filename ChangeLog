@@ -1,3 +1,8 @@
+Sun Sep 30 04:30:55 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c: use SIZEOF_LONG instead of SIZEOF_ULONG which is not
+	  defined.
+
 Sun Sep 30 04:03:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (Init_Regexp): test DEFAULT_KCODE in C code because

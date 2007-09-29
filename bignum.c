@@ -657,7 +657,7 @@ static void bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp);
 static inline int
 ones(register unsigned long x)
 {
-#if SIZEOF_ULONG == 8
+#if SIZEOF_LONG == 8
 # define MASK_55 0x5555555555555555UL
 # define MASK_33 0x3333333333333333UL
 # define MASK_0f 0x0f0f0f0f0f0f0f0fUL
@@ -671,7 +671,7 @@ ones(register unsigned long x)
     x = ((x >> 4) + x) & MASK_0f;
     x += (x >> 8);
     x += (x >> 16);
-#if SIZEOF_ULONG == 8
+#if SIZEOF_LONG == 8
     x += (x >> 32);
 #endif
     return (int)(x & 0x7f);
@@ -688,7 +688,7 @@ next_pow2(register unsigned long x)
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-#if SIZEOF_ULONG == 8
+#if SIZEOF_LONG == 8
     x |= x >> 32;
 #endif
     return x + 1;
@@ -702,7 +702,7 @@ floor_log2(register unsigned long x)
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-#if SIZEOF_ULONG == 8
+#if SIZEOF_LONG == 8
     x |= x >> 32;
 #endif
     return (int)ones(x) - 1;
