@@ -2433,19 +2433,14 @@ Init_Regexp(void)
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
     onigenc_set_default_caseconv_table((UChar*)casetable);
-#if DEFAULT_KCODE == KCODE_EUC
-    onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
-#else
-#if DEFAULT_KCODE == KCODE_SJIS
-    onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
-#else
-#if DEFAULT_KCODE == KCODE_UTF8
-    onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
-#else
-    onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
-#endif
-#endif
-#endif
+    if (DEFAULT_KCODE == KCODE_EUC)
+        onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
+    else if (DEFAULT_KCODE == KCODE_SJIS)
+        onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
+    else if (DEFAULT_KCODE == KCODE_UTF8)
+        onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
+    else
+        onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
