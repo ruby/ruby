@@ -2954,6 +2954,143 @@ rb_ary_cycle(VALUE ary)
     return Qnil;
 }
 
+static long
+perm_len(long n, long k)
+{
+    long i, val = 1;
+
+    while (n > k) {
+	val *= n--;
+    }
+    return val;
+}
+
+/*
+ *  call-seq:
+ *     ary.permutation(n)
+ *  
+ *  Returns an array of all permutations of length <i>n</i> of
+ *  elements from <i>ary</i>].
+ *     
+ *     a = [1, 2, 3]
+ *     a.permutation(0).to_a  #=> []
+ *     a.permutation(1).to_a  #=> [[1],[2],[3]]
+ *     a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
+ *     a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+ *     a.permutation(4).to_a  #=> []
+ *     
+ */
+
+static VALUE
+rb_ary_permutation(VALUE ary, VALUE num)
+{
+    /* TBD */
+}
+
+static long
+combi_len(long n, long k)
+{
+    long i, val = 1;
+
+    if (k*2 > n) k = n-k;
+    if (k == 0) return 1;
+    if (k < 0) return 0;
+    val = 1;
+    for (i=1; i <= k; i++,n--) {
+	val *= n;
+	val /= i;
+    }
+    return val;
+}
+
+/*
+ *  call-seq:
+ *     ary.combination(n)
+ *  
+ *  Returns an enumerator of all combinations of length <i>n</i> of
+ *  elements from <i>ary</i>].
+ *     
+ *     a = [1, 2, 3, 4]
+ *     a.combination(0).to_a  #=> []
+ *     a.combination(1).to_a  #=> [[1],[2],[3],[4]]
+ *     a.combination(2).to_a  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+ *     a.combination(3).to_a  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
+ *     a.combination(4).to_a  #=> [[1,2,3,4]]
+ *     a.combination(5).to_a  #=> []
+ *     
+ */
+
+static VALUE
+rb_ary_combination(VALUE ary, VALUE num)
+{
+    long n, i, len;
+
+    RETURN_ENUMERATOR(ary, 1, &num);
+    n = NUM2LONG(num);
+    len = RARRAY_LEN(ary);
+    if (n < 1 || len < n) {
+	/* yield nothing */
+    }
+    else if (n == 0) {
+	for (i = 0; i < len; i++) {
+	    rb_yield(rb_ary_new2(0));
+	}
+    }
+    else if (n == 1) {
+	for (i = 0; i < len; i++) {
+	    rb_yield(rb_ary_new3(1, RARRAY_PTR(ary)[i]));
+	}
+    }
+    else {
+	volatile VALUE tmp = rb_str_new(0, n*sizeof(long));
+	long *stack = (long*)RSTRING_PTR(tmp);
+	long nlen = combi_len(len, n);
+	volatile VALUE cc = rb_ary_new2(n);
+	VALUE *chosen = RARRAY_PTR(cc);
+	long lev = 0;
+
+	MEMZERO(stack, long, n);
+	stack[0] = -1;
+	for (i = 0; i < nlen; i++) {
+	    chosen[lev] = RARRAY_PTR(ary)[stack[lev+1]];
+	    for (lev++; lev < n; lev++) {
+		chosen[lev] = RARRAY_PTR(ary)[stack[lev+1] = stack[lev]+1];
+	    }
+	    rb_yield(rb_ary_new4(n, chosen));
+	    do {
+		stack[lev--]++;
+	    } while (lev && (stack[lev+1]+n == len+lev+1));
+	}
+    }
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     ary.product(ary2)
+ *  
+ *  Returns an array of all combinations of elements from both arrays.
+ *     
+ *     [1,2,3].product([4,5])  #=> [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+ *     [1,2].product([1,2])    #=> [[1,1],[1,2],[2,1],[2,2]]
+ *     
+ */
+
+static VALUE
+rb_ary_product(VALUE ary, VALUE a2)
+{
+    VALUE result = rb_ary_new2(RARRAY_LEN(ary));
+    long i, j;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	for (j=0; j<RARRAY_LEN(a2); j++) {
+	    rb_ary_push(result, rb_ary_new3(2, rb_ary_entry(ary, i),
+					       rb_ary_entry(a2, j)));
+	}
+    }
+    return result;
+}
+
 /* Arrays are ordered, integer-indexed collections of any object. 
  * Array indexing starts at 0, as in C or Java.  A negative index is 
  * assumed to be relative to the end of the array---that is, an index of -1 
@@ -3052,6 +3189,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
+    /* rb_define_method(rb_cArray, "permutation", rb_ary_permutation, 1); */
+    rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
+    rb_define_method(rb_cArray, "product", rb_ary_product, 1);
 
     id_cmp = rb_intern("<=>");
 }

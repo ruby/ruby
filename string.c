@@ -2872,6 +2872,7 @@ rb_str_inspect(VALUE str)
     char *p, *pend;
     VALUE result = rb_str_buf_new2("");
 
+    rb_enc_associate(result, enc);
     str_cat_char(result, '"', enc);
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
@@ -2928,7 +2929,6 @@ rb_str_inspect(VALUE str)
     str_cat_char(result, '"', enc);
 
     OBJ_INFECT(result, str);
-    rb_enc_associate(result, enc);
     return result;
 }
 

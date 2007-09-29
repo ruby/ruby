@@ -1,3 +1,15 @@
+Sat Sep 29 17:31:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_combination): new method to give all combination
+	  of elements from an array.  [ruby-list:42671]
+
+	* array.c (rb_ary_product): a new method to get all combinations
+	  of elements from two arrays.  can be extended to combinations of
+	  n-arrays, e.g. a.product(b,c,d).  anyone volunteer?
+
+	* array.c (rb_ary_permutation): empty function body to calculate
+	  permutations of array elements.  need volunteer.
+
 Sat Sep 29 17:14:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_leave): move proc invocation from r_entry() to

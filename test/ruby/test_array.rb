@@ -1177,4 +1177,26 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1,2], @cls[1, 2] | @cls[1, 2])
   end
 
+# def test_permutation
+#    assert_equal(@cls[], @cls[1,2,3].permutation(0).to_a)
+#    assert_equal(@cls[[1],[2],[3]], @cls[1,2,3].permutation(1).to_a)
+#    assert_equal(@cls[[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]], @cls[1,2,3].permutation(2).to_a)
+#    assert_equal(@cls[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]], @cls[1,2,3].permutation(3).to_a)
+#    assert_equal(@cls[], @cls[1,2,3].permutation(4).to_a)
+#  end
+
+ def test_combination
+    assert_equal(@cls[], @cls[1,2,3,4].combination(0).to_a)
+    assert_equal(@cls[[1],[2],[3],[4]], @cls[1,2,3,4].combination(1).to_a)
+    assert_equal(@cls[[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]], @cls[1,2,3,4].combination(2).to_a)
+    assert_equal(@cls[[1,2,3],[1,2,4],[1,3,4],[2,3,4]], @cls[1,2,3,4].combination(3).to_a)
+    assert_equal(@cls[[1,2,3,4]], @cls[1,2,3,4].combination(4).to_a)
+    assert_equal(@cls[], @cls[1,2,3,4].combination(5).to_a)
+  end
+
+  def test_product
+    assert_equal(@cls[[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]],
+                 @cls[1,2,3].product([4,5]))
+    assert_equal(@cls[[1,1],[1,2],[2,1],[2,2]], @cls[1,2].product([1,2]))
+  end
 end
