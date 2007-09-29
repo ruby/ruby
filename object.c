@@ -99,7 +99,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 VALUE
 rb_class_real(VALUE cl)
 {
-    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
+    while ((RBASIC(cl)->flags & FL_SINGLETON) || BUILTIN_TYPE(cl) == T_ICLASS) {
 	cl = RCLASS_SUPER(cl);
     }
     return cl;

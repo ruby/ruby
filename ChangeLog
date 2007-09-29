@@ -1,3 +1,9 @@
+Sat Sep 29 09:12:02 2007  Tanaka Akira  <akr@fsij.org>
+
+	* object.c (rb_class_real): use BUILTIN_TYPE instead of TYPE.
+	  access flags directly intead of FL_TEST.
+	  they are enough because cl argument is a class.
+
 Sat Sep 29 08:57:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (strcasecmp): needed for type_strcasehash.
