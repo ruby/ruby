@@ -6,7 +6,7 @@ Sun Sep 30 04:30:55 2007  Tanaka Akira  <akr@fsij.org>
 Sun Sep 30 04:03:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (Init_Regexp): test DEFAULT_KCODE in C code because
-	  KCODE_EUC, etc are enum.
+	  KCODE_EUC, etc. are enum.
 
 Sun Sep 30 00:55:40 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -58,7 +58,7 @@ Sat Sep 29 10:12:20 2007  Tanaka Akira  <akr@fsij.org>
 Sat Sep 29 09:12:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* object.c (rb_class_real): use BUILTIN_TYPE instead of TYPE.
-	  access flags directly intead of FL_TEST.
+	  access flags directly instead of FL_TEST.
 	  they are enough because cl argument is a class.
 
 Sat Sep 29 08:57:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -431,7 +431,7 @@ Sun Sep 23 09:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Sep 23 08:58:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval_method.ci (rb_attr): should not use alloca for unknowen size
+	* eval_method.ci (rb_attr): should not use alloca for unknown size
 	  input.  [ruby-dev:31816]
 
 	* parse.y (rb_intern_str): prevent str from optimization.
@@ -598,7 +598,7 @@ Wed Sep 12 23:12:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Sep 12 15:19:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (rb_io_s_sysopen): should not use alloca for unknowen size
+	* io.c (rb_io_s_sysopen): should not use alloca for unknown size
 	  input.  [ruby-dev:31775]
 
 	* parse.y (rb_id2str): ditto.
@@ -800,7 +800,7 @@ Sat Sep  1 20:56:07 2007  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/ruby.h (struct RBignum): embed digits in RBignum for
 	  small bignums.
 
-	* bignum.c: RBignum embeded digits implemented.
+	* bignum.c: RBignum embedded digits implemented.
 
 	* include/ruby/intern.h: declare rb_big_resize.
 
@@ -1017,7 +1017,7 @@ Tue Aug 28 00:51:22 2007  Koichi Sasada  <ko1@atdot.net>
 	* benchmark/bm_vm2_mutex.rb: add a benchmark for mutex.
 
 	* benchmark/bm_vm3_thread_mutex.rb: add a benchmark for mutex
-	  with contension.
+	  with contention.
 
 	* benchmark/run.rb: fix to remove ENV['RUBYLIB'] for matzruby.
 
@@ -1124,7 +1124,7 @@ Sat Aug 25 17:52:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c, include/ruby/intern.h: export rb_str_length().
 
-	* insns.def: use rb_str_lengt() in opt_length.
+	* insns.def: use rb_str_length() in opt_length.
 
 Sat Aug 25 17:48:51 2007  Koichi Sasada  <ko1@atdot.net>
 
