@@ -1027,6 +1027,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
 	st_insert(RCLASS_IV_TBL(obj), id, val);
+        break;
       default:
 	generic_ivar_set(obj, id, val);
 	break;

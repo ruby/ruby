@@ -1,3 +1,9 @@
+Sat Sep 29 10:12:20 2007  Tanaka Akira  <akr@fsij.org>
+
+	* variable.c (rb_ivar_set): fix class instance variable.
+
+	* object.c (rb_class_real): cl argument may be 0.
+
 Sat Sep 29 09:12:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* object.c (rb_class_real): use BUILTIN_TYPE instead of TYPE.
