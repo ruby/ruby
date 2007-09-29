@@ -419,7 +419,7 @@ exit_handler(void)
 // Initialization stuff
 //
 void
-NtInitialize(int *argc, char ***argv)
+rb_w32_sysinit(int *argc, char ***argv)
 {
 
     WORD version;

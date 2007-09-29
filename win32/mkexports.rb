@@ -50,6 +50,7 @@ class Exports
         end
       end
     end
+    syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
     @syms = syms
   end
 

@@ -47,6 +47,10 @@
 # define MAXPATHLEN 1024
 #endif
 
+#if defined(__MACOS__) && defined(__MWERKS__)
+#include <console.h>
+#endif
+
 #include "ruby/util.h"
 
 /* for gdb */
@@ -1307,17 +1311,12 @@ ruby_process_options(int argc, char **argv)
     struct cmdline_options opt;
     NODE *tree;
 
-    origarg.argc = argc;
-    origarg.argv = argv;
 
     MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
-#endif
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    origarg.len = get_arglen(origarg.argc, origarg.argv);
 #endif
     tree = process_options(argc, argv, &opt);
 
@@ -1326,4 +1325,37 @@ ruby_process_options(int argc, char **argv)
     rb_define_readonly_boolean("$-a", opt.do_split);
 
     return tree;
+}
+
+void
+ruby_sysinit(int *argc, char ***argv)
+{
+#if defined(__APPLE__) && (defined(__MACH__) || defined(__DARWIN__))
+    int i, n = *argc, len = 0;
+    char **v1 = *argv, **v2, *p;
+
+    for (i = 0; i < n; ++i) {
+	len += strlen(v1[i]) + 1;
+    }
+    v2 = malloc((n + 1)* sizeof(char*) + len);
+    p = (char *)&v2[n + 1];
+    for (i = 0; i < n; ++i) {
+	int l = strlen(v1[i]);
+	memcpy(p, v1[i], l + 1);
+	v2[i] = p;
+	p += l + 1;
+    }
+    v2[n] = 0;
+    *argv = v2;
+#elif defined(__MACOS__) && defined(__MWERKS__)
+    *argc = ccommand(argv);
+#elif defined(_WIN32)
+    void rb_w32_sysinit(int *argc, char ***argv);
+    rb_w32_sysinit(argc, argv);
+#endif
+    origarg.argc = *argc;
+    origarg.argv = *argv;
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
+    origarg.len = get_arglen(origarg.argc, origarg.argv);
+#endif
 }

@@ -958,6 +958,15 @@ rb_special_const_p(VALUE obj)
 static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
+#if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
+/* to link startup code with ObjC support */
+#define RUBY_GLOBAL_SETUP static void objcdummyfunction(void) {objc_msgSend();}
+#else
+#define RUBY_GLOBAL_SETUP
+#endif
+
+void ruby_sysinit(int *, char ***);
+
 #define RUBY_VM 1 /* YARV */
 #define HAVE_NATIVETHREAD
 int is_ruby_native_thread(void);

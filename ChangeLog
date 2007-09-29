@@ -1,3 +1,17 @@
+Sat Sep 29 17:45:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* main.c (main): use platform-independent per-process initialization.
+	  [ruby-dev:31900]
+
+	* ruby.c (ruby_sysinit): new function for per-process initialization.
+
+	* include/ruby/ruby.h (RUBY_GLOBAL_SETUP): toplevel setup declaration.
+
+	* include/ruby/win32.h, win32/mkexports.rb: alias NtInitialize
+	  ruby_sysinit.
+
+	* win32/win32.c (rb_w32_sysinit): renamed from NtInitialize.
+
 Sat Sep 29 17:31:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_combination): new method to give all combination

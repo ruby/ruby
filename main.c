@@ -13,18 +13,7 @@
 #undef RUBY_EXPORT
 #include "ruby/ruby.h"
 
-#if defined(__MACOS__) && defined(__MWERKS__)
-#include <console.h>
-#endif
-
-/* to link startup code with ObjC support */
-#if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
-static void
-objcdummyfunction(void)
-{
-    objc_msgSend();
-}
-#endif
+RUBY_GLOBAL_SETUP
 
 int
 main(int argc, char **argv, char **envp)
@@ -33,13 +22,8 @@ main(int argc, char **argv, char **envp)
     extern void ruby_set_debug_option(const char *);
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
 #endif
-#ifdef _WIN32
-    NtInitialize(&argc, &argv);
-#endif
-#if defined(__MACOS__) && defined(__MWERKS__)
-    argc = ccommand(&argv);
-#endif
 
+    ruby_sysinit(&argc, &argv);
     {
 	RUBY_INIT_STACK;
 	ruby_init();
