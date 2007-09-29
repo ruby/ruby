@@ -1093,7 +1093,7 @@ obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
         return;
 
     data.obj = obj;
-    data.func = func;
+    data.func = (int (*)(ID key, VALUE val, st_data_t arg))func;
     data.arg = arg;
 
     st_foreach_safe(tbl, obj_ivar_i, (st_data_t)&data);
