@@ -32,3 +32,17 @@ assert_equal 'ok', %q{
 assert_normal_exit %q{
   Marshal.load(Marshal.dump({"k"=>"v"}), lambda {|v| })
 }
+
+assert_normal_exit %q{
+  eval("", TOPLEVEL_BINDING)
+  minobj = ObjectSpace.to_enum(:each_object).min {|a,b| a.object_id <=> b.object_id }
+  maxobj = ObjectSpace.to_enum(:each_object).max {|a,b| a.object_id <=> b.object_id }
+  minobj.object_id.upto(maxobj.object_id) {|id|
+    begin
+      o = ObjectSpace._id2ref(id)
+    rescue RangeError
+      next
+    end
+    o.inspect
+  }
+}, '[ruby-dev:31911]'
