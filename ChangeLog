@@ -1,3 +1,7 @@
+Sun Sep 30 11:52:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (pretty): don't show beginning empty line.
+
 Sun Sep 30 11:32:34 2007  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c: use #ifdef for test LONG_LONG_VALUE.

@@ -226,6 +226,7 @@ rescue Exception => err
 end
 
 def pretty(src, desc, result)
+  src = src.sub(/\A.*\n/, '')
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 
