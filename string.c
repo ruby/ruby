@@ -995,9 +995,12 @@ VALUE
 rb_str_append(VALUE str, VALUE str2)
 {
     rb_encoding *enc;
+    int cr, cr2;
 
     StringValue(str2);
     enc = rb_enc_check(str, str2);
+    cr = ENC_CODERANGE(str);
+    if ((cr2 = ENC_CODERANGE(str2)) > cr) cr = cr2;
     rb_str_modify(str);
     if (RSTRING_LEN(str2) > 0) {
 	if (STR_ASSOC_P(str)) {
@@ -1008,11 +1011,12 @@ rb_str_append(VALUE str, VALUE str2)
 	    RSTRING(str)->as.heap.len = len;
 	}
 	else {
-	    return rb_str_buf_append(str, str2);
+	    rb_str_buf_append(str, str2);
 	}
     }
     OBJ_INFECT(str, str2);
     rb_enc_associate(str, enc);
+    ENC_CODERANGE_SET(str, cr);
     return str;
 }
 

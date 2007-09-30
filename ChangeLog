@@ -1,3 +1,11 @@
+Sun Sep 30 17:12:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_append): always set encoding, and coderange
+	  cache bits.
+
+	* include/ruby/encoding.h (ENC_CODERANGE_SET): fixed a bug not to
+	  set chache bits.
+
 Sun Sep 30 11:52:11 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (pretty): don't show beginning empty line.

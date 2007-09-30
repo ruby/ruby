@@ -31,7 +31,8 @@
 #define ENC_CODERANGE_BROKEN	(FL_USER12|FL_USER13)
 #define ENC_CODERANGE(obj) (RBASIC(obj)->flags & ENC_CODERANGE_MASK)
 #define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_SINGLE)
-#define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags &= ~ENC_CODERANGE_MASK | (cr))
+#define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \
+				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
 #define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
 
 
