@@ -1523,7 +1523,7 @@ check_int(SIGNED_VALUE num)
     else {
 	return;
     }
-#if LONG_LONG_VALUE
+#ifdef LONG_LONG_VALUE
     rb_raise(rb_eRangeError, "integer %lld too %s to convert to `int'", num, s);
 #else
     rb_raise(rb_eRangeError, "integer %ld too %s to convert to `int'", num, s);
@@ -1534,7 +1534,7 @@ static void
 check_uint(VALUE num)
 {
     if (num > UINT_MAX) {
-#if LONG_LONG_VALUE
+#ifdef LONG_LONG_VALUE
 	rb_raise(rb_eRangeError, "integer %llu too big to convert to `unsigned int'", num);
 #else
 	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
