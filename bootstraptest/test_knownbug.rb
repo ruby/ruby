@@ -46,3 +46,8 @@ assert_normal_exit %q{
     o.inspect
   }
 }, '[ruby-dev:31911]'
+
+assert_normal_exit %q{
+  require 'continuation'
+  Fiber.new{ callcc{|c| @c = c } }.resume
+}, '[ruby-dev:31913]'
