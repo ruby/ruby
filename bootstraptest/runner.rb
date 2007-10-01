@@ -171,7 +171,7 @@ def assert_normal_exit(testsrc, message = '')
   $stderr.puts "\##{@count} #{@location}" if @verbose
   faildesc = nil
   filename = make_srcfile(testsrc)
-  system("#{@ruby} -W0 #{filename}")
+  `#{@ruby} -W0 #{filename}`
   if $?.signaled?
     signo = $?.termsig
     signame = Signal.list.invert[signo]
