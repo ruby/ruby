@@ -975,11 +975,10 @@ assert_equal 'ok', %q{
   end
 }, '[ruby-dev:31816], [ruby-dev:31817]'
 
-assert_equal 'ok', %q{
+assert_normal_exit %q{
   Process.setrlimit(Process::RLIMIT_STACK, 1024*1024)
   class C
     attr "a" * (2*1024*1024)
   end
-  :ok
 }, '[ruby-dev:31818]'
 
