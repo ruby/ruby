@@ -413,25 +413,24 @@ add_modules(const char *mod)
 }
 
 extern void Init_ext(void);
+extern VALUE rb_vm_top_self(void);
 
 static void
 require_libraries(void)
 {
     struct req_list *list = req_list.head.next;
     struct req_list *tmp;
+    ID require = rb_intern("require");
 
     Init_ext();		/* should be called here for some reason :-( */
     req_list.last = 0;
     while (list) {
-	int state;
-
-	rb_protect((VALUE (*)(VALUE))rb_require, (VALUE)list->name, &state);
-	if (state)
-	    rb_jump_tag(state);
+	VALUE feature = rb_str_new2(list->name);
 	tmp = list->next;
 	free(list->name);
 	free(list);
 	list = tmp;
+	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }
     req_list.head.next = 0;
 }

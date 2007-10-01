@@ -1,3 +1,8 @@
+Mon Oct  1 10:58:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (require_libraries): use require method instead of calling
+	  rb_require directly.  [ruby-dev:31322]
+
 Mon Oct  1 10:52:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_options), ruby.c (proc_options, process_options): not
