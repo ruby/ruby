@@ -13,22 +13,6 @@ assert_finish 1, %q{
   w.write "a"
 }, '[ruby-dev:31866]'
 
-assert_equal 'ok', %q{
-  class Module
-    def define_method2(name, &block)
-      define_method(name, &block)
-    end
-  end
-  class C
-    define_method2(:m) {|x, y| :fail }
-  end
-  begin
-    C.new.m([1,2])
-  rescue ArgumentError
-    :ok
-  end
-}
-
 assert_normal_exit %q{
   Marshal.load(Marshal.dump({"k"=>"v"}), lambda {|v| })
 }

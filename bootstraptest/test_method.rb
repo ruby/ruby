@@ -986,3 +986,18 @@ assert_normal_exit %q{
   end
 }, '[ruby-dev:31818]'
 
+assert_equal 'ok', %q{
+  class Module
+    def define_method2(name, &block)
+      define_method(name, &block)
+    end
+  end
+  class C
+    define_method2(:m) {|x, y| :fail }
+  end
+  begin
+    C.new.m([1,2])
+  rescue ArgumentError
+    :ok
+  end
+}

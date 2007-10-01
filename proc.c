@@ -90,10 +90,11 @@ proc_dup(VALUE self)
     GetProcPtr(procval, dst);
 
     dst->block = src->block;
+    dst->block.proc = procval;
     dst->envval = src->envval;
     dst->safe_level = dst->safe_level;
     dst->special_cref_stack = src->special_cref_stack;
-    
+
     return procval;
 }
 

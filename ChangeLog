@@ -1,3 +1,10 @@
+Tue Oct  2 07:01:05 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_dup): proc->block.proc should be self.
+
+	* bootstraptest/test_knownbug.rb, test_method.rb:
+	  move a fixed test.
+
 Mon Oct  1 23:44:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_combination): revisit #combination behavior.
