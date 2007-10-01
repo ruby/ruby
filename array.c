@@ -2954,37 +2954,95 @@ rb_ary_cycle(VALUE ary)
     return Qnil;
 }
 
-static long
-perm_len(long n, long k)
-{
-    long i, val = 1;
+/*
+ * Recursively compute permutations of r elements of the set [0..n-1].
+ * When we have a complete permutation of array indexes, copy the values
+ * at those indexes into a new array and yield that array. 
+ *
+ * n: the size of the set 
+ * r: the number of elements in each permutation
+ * p: the array (of size r) that we're filling in
+ * index: what index we're filling in now
+ * used: an array of booleans: whether a given index is already used
+ * values: the Ruby array that holds the actual values to permute
+ */
+static void
+permute0(long n, long r, long p[], long index, int used[], VALUE values) {
+    long i,j;
+    for(i = 0; i < n; i++) {
+	if (used[i] == 0) {
+	    p[index] = i;
+	    if (index < r-1) {             /* if not done yet */
+		used[i] = 1;               /* mark index used */
+		permute0(n,r,p,index+1,    /* recurse */
+			 used, values);  
+		used[i] = 0;               /* index unused */
+	    }
+	    else {
+		/* We have a complete permutation of array indexes */
+		/* Build a ruby array of the corresponding values */
+		/* And yield it to the associated block */
+		VALUE result = rb_ary_new2(r);
+		VALUE *result_array = RARRAY_PTR(result);
+		VALUE *values_array = RARRAY_PTR(values);
 
-    while (n > k) {
-	val *= n--;
+		for(j = 0; j < r; j++) result_array[j] = values_array[p[j]];
+		RARRAY(result)->len = r;
+		rb_yield(result);
+	    }
+	}
     }
-    return val;
 }
 
 /*
  *  call-seq:
- *     ary.permutation(n)
+ *     ary.permutation(n) { |p| block }       -> array
+ *     ary.permutation(n)                     -> enumerator
  *  
- *  Returns an array of all permutations of length <i>n</i> of
- *  elements from <i>ary</i>].
- *     
+ * When invoked with a block, yield all permutations of length <i>n</i>
+ * of the elements of <i>ary</i>, then return the array itself.
+ * The implementation makes no guarantees about the order in which 
+ * the permutations are yielded.
+ *
+ * When invoked without a block, return an enumerator object instead.
+ * 
+ * Examples:
  *     a = [1, 2, 3]
- *     a.permutation(0).to_a  #=> []
  *     a.permutation(1).to_a  #=> [[1],[2],[3]]
  *     a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
  *     a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *     a.permutation(4).to_a  #=> []
- *     
+ *     a.permutation(0).to_a  #=> [[]]: one permutation of length 0
+ *     a.permutation(4).to_a  #=> []  : no permutations of length 4
  */
 
 static VALUE
 rb_ary_permutation(VALUE ary, VALUE num)
 {
-    /* TBD */
+    RETURN_ENUMERATOR(ary, 1, &num);  /* Return enumerator if no block */
+    long r = NUM2LONG(num);           /* Permutation size from argument */
+    long n = RARRAY_LEN(ary);         /* Array length */
+    long i;
+
+    if (r < 0 || n < r) { 
+	/* no permutations: yield nothing */
+    }
+    else if (r == 0) { /* exactly one permutation: the zero-length array */
+	rb_yield(rb_ary_new2(0));
+    }
+    else if (r == 1) { /* this is a special, easy case */
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    rb_yield(rb_ary_new3(1, RARRAY_PTR(ary)[i]));
+	}
+    }
+    else {             /* this is the general case */
+	ary = rb_ary_dup(ary); /* private defensive copy of ary */
+	long p[n];
+	int used[n];
+	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
+
+	permute0(n,r,p,0,used,ary);  /* compute and yield permutations */
+    }
+    return ary;
 }
 
 static long
@@ -3005,18 +3063,24 @@ combi_len(long n, long k)
 
 /*
  *  call-seq:
- *     ary.combination(n)
+ *     ary.combination(n) { |c| block }    -> ary
+ *     ary.combination(n)                  -> enumerator
  *  
- *  Returns an enumerator of all combinations of length <i>n</i> of
- *  elements from <i>ary</i>].
+ * When invoked with a block, yields all combinations of length <i>n</i> 
+ * of elements from <i>ary</i> and then returns <i>ary</i> itself.
+ * The implementation makes no guarantees about the order in which 
+ * the combinations are yielded.
+ *
+ * When invoked without a block, returns an enumerator object instead.
  *     
+ * Examples:
  *     a = [1, 2, 3, 4]
- *     a.combination(0).to_a  #=> []
  *     a.combination(1).to_a  #=> [[1],[2],[3],[4]]
  *     a.combination(2).to_a  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
  *     a.combination(3).to_a  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
  *     a.combination(4).to_a  #=> [[1,2,3,4]]
- *     a.combination(5).to_a  #=> []
+ *     a.combination(0).to_a  #=> [[]]: one combination of length 0
+ *     a.combination(5).to_a  #=> []  : no combinations of length 5
  *     
  */
 
@@ -3028,10 +3092,10 @@ rb_ary_combination(VALUE ary, VALUE num)
     RETURN_ENUMERATOR(ary, 1, &num);
     n = NUM2LONG(num);
     len = RARRAY_LEN(ary);
-    if (len < n) {
+    if (n < 0 || len < n) {
 	/* yield nothing */
     }
-    else if (n <= 0) {
+    else if (n == 0) {
 	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
@@ -3187,7 +3251,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
-    /* rb_define_method(rb_cArray, "permutation", rb_ary_permutation, 1); */
+    rb_define_method(rb_cArray, "permutation", rb_ary_permutation, 1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
     rb_define_method(rb_cArray, "product", rb_ary_product, 1);
 

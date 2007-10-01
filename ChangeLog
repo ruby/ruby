@@ -1,14 +1,17 @@
+Tue Oct  2 08:25:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_permutation): implementation contributed from
+	  David Flanagan.  [ruby-core:12344]
+
+	* array.c (rb_ary_combination): RDoc update to clarify.  a patch
+	  from David Flanagan.  [ruby-core:12344]
+
 Tue Oct  2 07:01:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_dup): proc->block.proc should be self.
 
 	* bootstraptest/test_knownbug.rb, test_method.rb:
 	  move a fixed test.
-
-Mon Oct  1 23:44:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* array.c (rb_ary_combination): revisit #combination behavior.
-	  suggested by David Flanagan.
 
 Mon Oct  1 16:17:44 2007  Tanaka Akira  <akr@fsij.org>
 
