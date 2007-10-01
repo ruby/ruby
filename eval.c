@@ -121,7 +121,8 @@ ruby_options(int argc, char **argv)
     }
     else {
 	rb_clear_trace_func();
-	exit(error_handle(state));
+	state = error_handle(state);
+	tree = (void *)INT2FIX(state);
     }
     POP_TAG();
     return tree;
@@ -249,8 +250,13 @@ int
 ruby_run_node(void *n)
 {
     NODE *node = (NODE *)n;
-    if (!n) {
-	return EXIT_FAILURE;
+
+    switch ((VALUE)n) {
+      case Qtrue:  return EXIT_SUCCESS;
+      case Qfalse: return EXIT_FAILURE;
+    }
+    if (FIXNUM_P((VALUE)n)) {
+	return FIX2INT((VALUE)n);
     }
     Init_stack((void *)&n);
     return ruby_cleanup(ruby_exec_node(node, node->nd_file));
@@ -964,6 +970,7 @@ loop_i()
     for (;;) {
 	rb_yield_0(0, 0);
     }
+    return Qnil;
 }
 
 /*

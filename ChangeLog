@@ -1,3 +1,10 @@
+Mon Oct  1 10:52:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_options), ruby.c (proc_options, process_options): not
+	  call exit(2) directly.  [ruby-dev:31912]
+
+	* eval.c (ruby_run_node): deal with direct exit code.
+
 Sun Sep 30 17:12:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_append): always set encoding, and coderange

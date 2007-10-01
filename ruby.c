@@ -614,7 +614,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'h':
 	    usage(origarg.argv[0]);
-	    exit(0);
+	    rb_exit(EXIT_SUCCESS);
+	    break;
 
 	  case 'l':
 	    opt->do_line = Qtrue;
@@ -787,7 +788,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_yydebug = 1;
 	    else if (strcmp("help", s) == 0) {
 		usage(origarg.argv[0]);
-		exit(0);
+		rb_exit(EXIT_SUCCESS);
 	    }
 	    else {
 		rb_raise(rb_eRuntimeError,
@@ -873,7 +874,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     if (opt->version) {
 	ruby_show_version();
-	exit(0);
+	return (NODE *)Qtrue;
     }
     if (opt->copyright) {
 	ruby_show_copyright();
@@ -887,7 +888,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     if (!opt->e_script) {
 	if (argc == 0) {	/* no more args */
 	    if (opt->verbose)
-		return 0;
+		return (NODE *)Qtrue;
 	    opt->script = "-";
 	}
 	else {
@@ -1310,7 +1311,6 @@ ruby_process_options(int argc, char **argv)
 {
     struct cmdline_options opt;
     NODE *tree;
-
 
     MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
