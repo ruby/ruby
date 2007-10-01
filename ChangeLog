@@ -1,3 +1,8 @@
+Mon Oct  1 12:50:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): valid id should not refer T_VALUE nor T_ICLASS.
+	  [ruby-dev:31911]
+
 Wed Sep 26 23:54:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake), lib/mkmf.rb (configuration): top_srcdir
