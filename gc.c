@@ -2069,7 +2069,7 @@ id2ref(VALUE obj, VALUE objid)
 	return ID2SYM(symid);
     }
 
-    if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLOCK) {
+    if (!is_pointer_to_heap((void *)ptr) || BUILTIN_TYPE(ptr) >= T_VALUES) {
 	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {

@@ -1,3 +1,7 @@
+Mon Oct  1 15:17:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): T_VALUES is less than T_BLOCK.  [ruby-dev:31911]
+
 Mon Oct  1 10:58:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (require_libraries): use require method instead of calling
