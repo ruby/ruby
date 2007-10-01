@@ -1,3 +1,7 @@
+Mon Oct  1 15:57:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): skip ICLASS.
+
 Mon Oct  1 15:29:35 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_normal_exit): use `` instead of
