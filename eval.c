@@ -569,8 +569,13 @@ remove_method(klass, mid)
     if (mid == __id__ || mid == __send__ || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body) ||
-	!body->nd_body) {
+    if (st_lookup(RCLASS(klass)->m_tbl, mid, (st_data_t *)&body)) {
+	if (!body || !body->nd_body) body = 0;
+	else {
+	    st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body);
+	}
+    }
+    if (!body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }

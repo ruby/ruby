@@ -14,6 +14,11 @@ Wed Sep 26 05:12:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regex.c (re_mbc_startpos): separated from re_adjust_startpos.
 
+Tue Sep 25 13:47:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (remove_method): should not remove undef place holder.
+	  [ruby-dev:31817]
+
 Mon Sep 24 16:52:11 2007  Urabe Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/http.rb: fix typo.
