@@ -6,6 +6,9 @@ Tue Oct  2 08:25:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* array.c (rb_ary_combination): RDoc update to clarify.  a patch
 	  from David Flanagan.  [ruby-core:12344]
 
+	* array.c (rb_ary_permutation): small dirty hack by Matz to avoid
+	  arrays on stack.
+
 Tue Oct  2 07:01:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_dup): proc->block.proc should be self.

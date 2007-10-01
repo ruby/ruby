@@ -3036,8 +3036,11 @@ rb_ary_permutation(VALUE ary, VALUE num)
     }
     else {             /* this is the general case */
 	ary = rb_ary_dup(ary); /* private defensive copy of ary */
-	long p[n];
-	int used[n];
+	volatile VALUE t0 = rb_str_new(0, n*sizeof(long));
+	long *p = (long*)RSTRING_PTR(t0); /* array indexes of current permutation */
+	volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
+	int *used = (int*)RSTRING_PTR(t1); /* booleans: which indexes are already used */
+
 	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
 	permute0(n,r,p,0,used,ary);  /* compute and yield permutations */
