@@ -3028,13 +3028,11 @@ rb_ary_combination(VALUE ary, VALUE num)
     RETURN_ENUMERATOR(ary, 1, &num);
     n = NUM2LONG(num);
     len = RARRAY_LEN(ary);
-    if (n < 1 || len < n) {
+    if (len < n) {
 	/* yield nothing */
     }
-    else if (n == 0) {
-	for (i = 0; i < len; i++) {
-	    rb_yield(rb_ary_new2(0));
-	}
+    else if (n <= 0) {
+	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
 	for (i = 0; i < len; i++) {

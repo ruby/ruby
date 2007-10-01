@@ -1,3 +1,8 @@
+Mon Oct  1 23:44:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_combination): revisit #combination behavior.
+	  suggested by David Flanagan.
+
 Mon Oct  1 16:17:44 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/test_method.rb: use assert_normal_exit to test
