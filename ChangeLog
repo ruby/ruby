@@ -1,3 +1,8 @@
+Tue Oct  2 21:20:14 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (make_cmdvector): adjust escaped successive
+	  double-quote handling. (merge from trunk)
+
 Tue Oct  2 20:35:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (init_env): initialize HOME and USER environment
