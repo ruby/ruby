@@ -855,15 +855,15 @@ module REXML
     #   Source (see Element.initialize).  If not supplied or nil, a
     #   new, default Element will be constructed
     # Returns:: the added Element
-    #  a = Element.new 'a'
-    #  a.elements.add Element.new 'b'  #-> <a><b/></a>
-    #  a.elements.add 'c'              #-> <a><b/><c/></a>
+    #  a = Element.new('a')
+    #  a.elements.add(Element.new('b'))  #-> <a><b/></a>
+    #  a.elements.add('c')               #-> <a><b/><c/></a>
     def add element=nil
       rv = nil
       if element.nil?
-        Element.new "", self, @element.context
+        Element.new("", self, @element.context)
       elsif not element.kind_of?(Element)
-        Element.new element, self, @element.context
+        Element.new(element, self, @element.context)
       else
         @element << element
         element.context = @element.context
