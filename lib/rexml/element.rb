@@ -553,6 +553,7 @@ module REXML
     def attribute( name, namespace=nil )
       prefix = nil
       prefix = namespaces.index(namespace) if namespace
+      prefix = nil if prefix == 'xmlns'
       attributes.get_attribute( "#{prefix ? prefix + ':' : ''}#{name}" )
     end
 
