@@ -372,19 +372,16 @@ init_env(void)
 	    SetEnvironmentVariable("HOME", env);
 	}
     }
-    if (GetEnvironmentVariable("USER", env, sizeof env)) {
-	len = strlen(env);
-    }
-    if (GetEnvironmentVariable("USERNAME", env, sizeof env)) {
-	len = strlen(env);
-	SetEnvironmentVariable("USER", env);
-    }
-    else if (GetUserName(env, (len = sizeof env, &len))) {
-	SetEnvironmentVariable("USER", env);
-    }
-    else {
-	NTLoginName = "<Unknown>";
-	return;
+
+    if (!GetEnvironmentVariable("USER", env, sizeof env)) {
+	if (GetEnvironmentVariable("USERNAME", env, sizeof env) ||
+	    GetUserName(env, (len = sizeof env, &len))) {
+	    SetEnvironmentVariable("USER", env);
+	}
+	else {
+	    NTLoginName = "<Unknown>";
+	    return;
+	}
     }
     NTLoginName = strdup(env);
 }

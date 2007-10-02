@@ -1,3 +1,7 @@
+Tue Oct  2 20:16:55 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_env): refactoring. remove unused code.
+
 Tue Oct  2 12:30:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_product): generalized product, now takes
