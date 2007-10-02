@@ -139,14 +139,18 @@ module REXML
 			xml_decl().stand_alone?
 		end
 
-    # Write the XML tree out.  This writes the entire XML document, including
-    # declarations and processing instructions.
+    # Write the XML tree out, optionally with indent.  This writes out the
+    # entire XML document, including XML declarations, doctype declarations,
+    # and processing instructions (if any are given).
     #
-		# A controversial point is whether Document should always write the XML
-		# declaration (<?xml version='1.0'?>) whether or not one is given by the
-		# user (or source document).  REXML does not write one if one was not
-		# specified, because it adds unneccessary bandwidth to applications such
-		# as XML-RPC.
+    # A controversial point is whether Document should always write the XML
+    # declaration (<?xml version='1.0'?>) whether or not one is given by the
+    # user (or source document).  REXML does not write one if one was not
+    # specified, because it adds unneccessary bandwidth to applications such
+    # as XML-RPC.
+    #
+    # See also the classes in the rexml/formatters package for the proper way
+    # to change the default formatting of XML output
     #
     # _Examples_
     #   Document.new("<a><b/></a>").serialize
@@ -155,58 +159,25 @@ module REXML
     #   tr = Transitive.new( output_string )
     #   Document.new("<a><b/></a>").serialize( tr )
     #
-    # formatter::
-    #   One of the rexml/formatters classes.  If none is given, then the Pretty
-    #   formatter will be used to dump the XML to the STDOUT.
-    def serialize( formatter = nil )
-      if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output) 
-        output = Output.new( output, xml_decl.encoding )
-      end
-
-      formatter = REXML::Pretty.new( $stdout ) if (formatter.nil?)
-
-			@children.each { |node|
-        puts "node = #{node.inspect}"
-				indent( output, indent ) if node.node_type == :element
-				if node.write( output, indent, transitive, ie_hack )
-          output << "\n" unless indent<0 or node == @children[-1]
-        end
-			}
-    end
-
-    # Write the XML tree out, optionally with indent.  This writes out the
-		# entire XML document, including XML declarations, doctype declarations,
-		# and processing instructions (if any are given).
-    #
-		# A controversial point is whether Document should always write the XML
-		# declaration (<?xml version='1.0'?>) whether or not one is given by the
-		# user (or source document).  REXML does not write one if one was not
-		# specified, because it adds unneccessary bandwidth to applications such
-		# as XML-RPC.
-    #
-    # See also the classes in the rexml/formatters package for the proper way
-    # to change the default formatting of XML output
-		#
-		#
-		# output::
-		#	  output an object which supports '<< string'; this is where the
-		#   document will be written.
-		# indent::
-		#   An integer.  If -1, no indenting will be used; otherwise, the
-		#   indentation will be twice this number of spaces, and children will be
-		#   indented an additional amount.  For a value of 3, every item will be 
+    # output::
+    #	  output an object which supports '<< string'; this is where the
+    #   document will be written.
+    # indent::
+    #   An integer.  If -1, no indenting will be used; otherwise, the
+    #   indentation will be twice this number of spaces, and children will be
+    #   indented an additional amount.  For a value of 3, every item will be 
     #   indented 3 more levels, or 6 more spaces (2 * 3). Defaults to -1
-		# trans::
-		#   If transitive is true and indent is >= 0, then the output will be
-		#   pretty-printed in such a way that the added whitespace does not affect
-		#   the absolute *value* of the document -- that is, it leaves the value
-		#   and number of Text nodes in the document unchanged.
-		# ie_hack::
-		#   Internet Explorer is the worst piece of crap to have ever been
-		#   written, with the possible exception of Windows itself.  Since IE is
-		#   unable to parse proper XML, we have to provide a hack to generate XML
-		#   that IE's limited abilities can handle.  This hack inserts a space 
-		#   before the /> on empty tags.  Defaults to false
+    # trans::
+    #   If transitive is true and indent is >= 0, then the output will be
+    #   pretty-printed in such a way that the added whitespace does not affect
+    #   the absolute *value* of the document -- that is, it leaves the value
+    #   and number of Text nodes in the document unchanged.
+    # ie_hack::
+    #   Internet Explorer is the worst piece of crap to have ever been
+    #   written, with the possible exception of Windows itself.  Since IE is
+    #   unable to parse proper XML, we have to provide a hack to generate XML
+    #   that IE's limited abilities can handle.  This hack inserts a space 
+    #   before the /> on empty tags.  Defaults to false
 		def write( output=$stdout, indent=-1, trans=false, ie_hack=false )
       if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
         output = Output.new( output, xml_decl.encoding )

@@ -94,8 +94,8 @@ module REXML
 					when :end_document
 						handle( :end_document )
 						break
-                                        when :start_doctype
-                                                handle( :doctype, *event[1..-1])
+          when :start_doctype
+            handle( :doctype, *event[1..-1])
 					when :end_doctype
 						context = context[1]
 					when :start_element
