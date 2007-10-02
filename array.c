@@ -2967,7 +2967,8 @@ rb_ary_cycle(VALUE ary)
  * values: the Ruby array that holds the actual values to permute
  */
 static void
-permute0(long n, long r, long p[], long index, int used[], VALUE values) {
+permute0(long n, long r, long *p, long index, int *used, VALUE values)
+{
     long i,j;
     for(i = 0; i < n; i++) {
 	if (used[i] == 0) {
@@ -3132,29 +3133,72 @@ rb_ary_combination(VALUE ary, VALUE num)
 
 /*
  *  call-seq:
- *     ary.product(ary2)
+ *     ary.product(other_ary, ...)
  *  
- *  Returns an array of all combinations of elements from both arrays.
+ *  Returns an array of all combinations of elements from all arrays.
+ *  The length of the returned array is the product of the length
+ *  of ary and the argument arrays
  *     
- *     [1,2,3].product([4,5])  #=> [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
- *     [1,2].product([1,2])    #=> [[1,1],[1,2],[2,1],[2,2]]
- *     
+ *     [1,2,3].product([4,5])     # => [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
+ *     [1,2].product([1,2])       # => [[1,1],[1,2],[2,1],[2,2]]
+ *     [1,2].product([3,4],[5,6]) # => [[1,3,5],[1,3,6],[1,4,5],[1,4,6],
+ *                                #     [2,3,5],[2,3,6],[2,4,5],[2,4,6]]
+ *     [1,2].product()            # => [[1],[2]]
+ *     [1,2].product([])          # => []
  */
 
 static VALUE
-rb_ary_product(VALUE ary, VALUE a2)
+rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE result = rb_ary_new2(RARRAY_LEN(ary));
-    long i, j;
+    int n = argc+1;    /* How many arrays we're operating on */
+    VALUE arrays[n];   /* The arrays we're computing the product of */
+    int counters[n];   /* The current position in each one */
+    VALUE result;      /* The array we'll be returning */
+    long i,j;
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	for (j=0; j<RARRAY_LEN(a2); j++) {
-	    rb_ary_push(result, rb_ary_new3(2, rb_ary_entry(ary, i),
-					       rb_ary_entry(a2, j)));
+    /* initialize the arrays of arrays */
+    arrays[0] = ary;
+    for(i = 1; i < n; i++) arrays[i] = argv[i-1];
+    
+    /* initialize the counters for the arrays */
+    for(i = 0; i < n; i++) counters[i] = 0;
+
+    /* Compute the length of the result array; return [] if any is empty */
+    long resultlen = 1;
+    for(i = 0; i < n; i++) {
+	resultlen *= RARRAY_LEN(arrays[i]);
+	if (resultlen == 0) return rb_ary_new2(0);
+    }
+
+    /* Otherwise, allocate and fill in an array of results */
+    result = rb_ary_new2(resultlen);
+    for(i = 0; i < resultlen; i++) {
+	/* fill in one subarray */
+	VALUE subarray = rb_ary_new2(n);
+	for(j = 0; j < n; j++) {
+	    rb_ary_push(subarray, rb_ary_entry(arrays[j], counters[j]));
+	}
+
+	/* put it on the result array */
+	rb_ary_push(result, subarray);
+
+	/*
+	 * Increment the last counter.  If it overflows, reset to 0
+	 * and increment the one before it.
+	 */
+	int m = n-1;
+	counters[m]++;
+	while(m >= 0 && counters[m] == RARRAY_LEN(arrays[m])) {
+	    counters[m] = 0;
+	    m--;
+	    counters[m]++;
 	}
     }
+
     return result;
 }
+
+
 
 /* Arrays are ordered, integer-indexed collections of any object. 
  * Array indexing starts at 0, as in C or Java.  A negative index is 
@@ -3256,7 +3300,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, 1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
-    rb_define_method(rb_cArray, "product", rb_ary_product, 1);
+    rb_define_method(rb_cArray, "product", rb_ary_product, -1);
 
     id_cmp = rb_intern("<=>");
 }

@@ -1,3 +1,9 @@
+Tue Oct  2 12:30:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_product): generalized product, now takes
+	  arbitrary number of arrays.  a patch from David Flanagan
+	  <david AT davidflanagan.com>.  [ruby-core:12346]
+
 Tue Oct  2 08:25:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_permutation): implementation contributed from
