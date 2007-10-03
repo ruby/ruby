@@ -263,8 +263,10 @@ struct parser_params {
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,rb_enc_from_index(0))
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,m) rb_enc_str_new((p),(n), STR_ENC(m))
+#define STR_NEW3(p,n,m) parser_str_new((p),(n),STR_ENC(m),(m))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
+#define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_SINGLE)
+#define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
 
 #ifdef YYMALLOC
 void *rb_parser_malloc(struct parser_params *, size_t);
@@ -4664,7 +4666,7 @@ yycompile(struct parser_params *parser, const char *f, int line)
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = ruby_suppress_tracing(debug_lines, (VALUE)f);
 	if (ruby_debug_lines && line > 1) {
-	    VALUE str = STR_NEW0();
+	    VALUE str = rb_str_new(0, 0);
 	    n = line - 1;
 	    do {
 		rb_ary_push(ruby_debug_lines, str);
@@ -4807,6 +4809,14 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     return node;
 }
 #endif  /* !RIPPER */
+
+static VALUE
+parser_str_new(const char *p, long n, rb_encoding *enc, int coderange)
+{
+    VALUE str = rb_enc_str_new(p, n, enc);
+    ENC_CODERANGE_SET(str, coderange);
+    return str;
+}
 
 static inline int
 parser_nextc(struct parser_params *parser)
@@ -5204,12 +5214,20 @@ parser_tokadd_string(struct parser_params *parser,
 		    pushback(c);
 		    if (tokadd_escape(term) < 0)
 			return -1;
+		    if (mb) {
+			*mb = ENC_CODERANGE_UNKNOWN;
+			mb = 0;
+		    }
 		    continue;
 		}
 		else if (func & STR_FUNC_EXPAND) {
 		    pushback(c);
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
 		    c = read_escape();
+		    if (mb) {
+			*mb = ENC_CODERANGE_UNKNOWN;
+			mb = 0;
+		    }
 		}
 		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 		    /* ignore backslashed spaces in %w */
@@ -5221,7 +5239,7 @@ parser_tokadd_string(struct parser_params *parser,
 	}
 	else if (parser_ismbchar()) {
 	    tokadd_mbchar(c);
-	    if (mb) *mb = 1;
+	    if (mb) *mb = ENC_CODERANGE_MULTI;
 	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
@@ -5247,7 +5265,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int func = quote->nd_func;
     int term = nd_term(quote);
     int paren = nd_paren(quote);
-    int c, space = 0, mb = 0;
+    int c, space = 0, mb = ENC_CODERANGE_SINGLE;
 
     if (func == -1) return tSTRING_END;
     c = nextc();
@@ -5458,7 +5476,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
     }
     else {
-	int mb = 0;
+	int mb = ENC_CODERANGE_SINGLE, *mbp = &mb;
 	newtok();
 	if (c == '#') {
 	    switch (c = nextc()) {
@@ -5473,12 +5491,13 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0, NULL, &mb)) == -1) goto error;
+	    if ((c = tokadd_string(func, '\n', 0, NULL, mbp)) == -1) goto error;
 	    if (c != '\n') {
-                set_yylval_str(STR_NEW3(tok(), toklen(), mb));
+		set_yylval_str(STR_NEW3(tok(), toklen(), mb));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
+	    if (mbp && mb == ENC_CODERANGE_UNKNOWN) mbp = 0;
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
 	str = STR_NEW3(tok(), toklen(), mb);
@@ -5520,7 +5539,11 @@ lvar_defined_gen(struct parser_params *parser, ID id)
 static void
 parser_set_encode(struct parser_params *parser, const char *name)
 {
-    parser->enc = rb_enc_find(name);
+    int idx = rb_enc_find_index(name);
+    if (idx < 0) {
+	rb_raise(rb_eArgError, "unknown encoding name: %s", name);
+    }
+    parser->enc = rb_enc_from_index(idx);
 }
 
 #ifndef RIPPER
@@ -6706,10 +6729,6 @@ parser_yylex(struct parser_params *parser)
 	  gvar:
 	    tokfix();
             set_yylval_id(rb_intern(tok()));
-	    if (!is_global_id(yylval_id())) {
-	    	compile_error(PARSER_ARG "invalid global variable `%s'", rb_id2name(yylval.id));
-		return 0;
-	    }
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */
@@ -6893,7 +6912,7 @@ parser_yylex(struct parser_params *parser)
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
-		    set_yylval_id(rb_intern3(tok(), toklen(), STR_ENC(mb)));
+		    set_yylval_id(TOK_INTERN(!ENC_SINGLE(mb)));
 		    return tLABEL;
 		}
 	    }
@@ -6912,7 +6931,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
         {
-            ID ident = rb_intern3(tok(), toklen(), STR_ENC(mb));
+            ID ident = TOK_INTERN(!ENC_SINGLE(mb));
 
             set_yylval_id(ident);
             if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
@@ -8346,6 +8365,9 @@ internal_id_gen(struct parser_params *parser)
 static int
 is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 {
+    int mb = 0;
+
+    if (m >= e) return 0;
     switch (*m) {
       case '~': case '*': case '$': case '?': case '!': case '@':
       case '/': case '\\': case ';': case ',': case '.': case '=':
@@ -8356,13 +8378,19 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 	break;
       case '-':
 	++m;
-	if (is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
+	if (is_identchar(m, e, enc)) {
+	    if (!ISASCII(*m)) mb = 1;
+	    m += rb_enc_mbclen(m, e, enc);
+	}
 	break;
       default:
 	if (!rb_enc_isdigit(*m, enc)) return 0;
-	do ++m; while (rb_enc_isdigit(*m, enc));
+	do {
+	    if (!ISASCII(*m)) mb = 1;
+	    ++m;
+	} while (rb_enc_isdigit(*m, enc));
     }
-    return !*m;
+    return m == e ? mb + 1 : 0;
 }
 
 int
@@ -8454,6 +8482,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     VALUE str;
     ID id;
     int last;
+    int mb;
     struct RString fake_str;
     fake_str.basic.flags = T_STRING|RSTRING_NOEMBED|FL_FREEZE;
     fake_str.basic.klass = rb_cString;
@@ -8471,7 +8500,10 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     switch (*m) {
       case '$':
 	id |= ID_GLOBAL;
-	if (is_special_global_name(++m, e, enc)) goto new_id;
+	if ((mb = is_special_global_name(++m, e, enc)) != 0) {
+	    if (!--mb) enc = rb_enc_from_index(0);
+	    goto new_id;
+	}
 	break;
       case '@':
 	if (m[1] == '@') {
@@ -8500,8 +8532,9 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 
 	if (m[last] == '=') {
 	    /* attribute assignment */
-	    id = rb_intern2(name, last);
+	    id = rb_intern3(name, last, enc);
 	    if (id > tLAST_TOKEN && !is_attrset_id(id)) {
+		enc = rb_enc_get(rb_id2str(id));
 		id = rb_id_attrset(id);
 		goto id_register;
 	    }
@@ -8515,12 +8548,23 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	}
 	break;
     }
+    mb = 0;
     if (!rb_enc_isdigit(*m, enc)) {
 	while (m <= name + last && is_identchar(m, e, enc)) {
+	    if (!ISASCII(*m)) mb = 1;
 	    m += rb_enc_mbclen(m, e, enc);
 	}
     }
     if (m - name < len) id = ID_JUNK;
+    if (enc != rb_enc_from_index(0)) {
+	if (!mb) {
+	    for (; m <= name + len; ++m) {
+		if (!ISASCII(*m)) goto mbstr;
+	    }
+	}
+	enc = rb_enc_from_index(0);
+      mbstr:;
+    }
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:

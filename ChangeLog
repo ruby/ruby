@@ -1,3 +1,14 @@
+Wed Oct  3 16:58:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_str_new, parser_yylex, rb_intern3): set code-range
+	  bits.
+
+	* parse.y (parser_tokadd_string): check code-range.
+
+	* parse.y (parser_parse_string, parser_here_document): ditto.
+
+	* parse.y (parser_set_encode): check if valid encoding.
+
 Wed Oct  3 15:43:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_cvar_set): check whether class variable is
