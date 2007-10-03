@@ -1,3 +1,8 @@
+Wed Oct  3 23:37:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/nkf/nkf.c, bin/ri, bin/irb: fixed typos in doc and comments.
+	  a patch from Eugene Ossintsev  <eugoss AT gmail.com>.
+
 Wed Oct  3 17:56:22 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: enable specify label to executable.

@@ -7,7 +7,7 @@
 #
 #   Class | Class::method | Class#method | Class.method | method
 #
-# All names may be abbreviated to their minimum unbiguous form. If a name
+# All names may be abbreviated to their minimum unambiguous form. If a name
 # _is_ ambiguous, all valid options will be listed.
 #
 # The form '.' method matches either class or instance methods, while 
