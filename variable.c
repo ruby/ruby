@@ -1701,15 +1701,53 @@ rb_define_global_const(const char *name, VALUE val)
     rb_define_const(rb_cObject, name, val);
 }
 
+static VALUE
+original_module(c)
+    VALUE c;
+{
+    if (TYPE(c) == T_ICLASS)
+	return RBASIC(c)->klass;
+    return c;
+}
+
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    mod_av_set(klass, id, val, Qfalse);
+    VALUE tmp;
+    VALUE front = 0, target = 0;
+
+    tmp = klass;
+    while (tmp) {
+	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp),id,0)) {
+	    if (!front) front = tmp;
+	    target = tmp;
+	}
+	tmp = RCLASS_SUPER(tmp);
+    }
+    if (target) {
+	if (front && target != front) {
+	    ID did = id;
+
+	    if (RTEST(ruby_verbose)) {
+		rb_warning("class variable %s of %s is overtaken by %s",
+			   rb_id2name(id), rb_class2name(original_module(front)),
+			   rb_class2name(original_module(target)));
+	    }
+	    if (BUILTIN_TYPE(front) == T_CLASS) {
+		st_delete(RCLASS_IV_TBL(front),&did,0);
+	    }
+	}
+    }
+    else {
+	target = klass;
+    }
+
+    mod_av_set(target, id, val, Qfalse);
 }
 
 #define CVAR_LOOKUP(v,r) do {\
     if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),id,(v))) {\
-	return (r);\
+	r;\
     }\
     if (FL_TEST(klass, FL_SINGLETON) ) {\
 	VALUE obj = rb_iv_get(klass, "__attached__");\
@@ -1728,7 +1766,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     }\
     while (klass) {\
 	if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),id,(v))) {\
-	    return (r);\
+	    r;\
 	}\
 	klass = RCLASS_SUPER(klass);\
     }\
@@ -1737,20 +1775,34 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 VALUE
 rb_cvar_get(VALUE klass, ID id)
 {
-    VALUE value, tmp;
+    VALUE value, tmp, front = 0, target = 0;
 
     tmp = klass;
-    CVAR_LOOKUP(&value, value);
-    rb_name_error(id,"uninitialized class variable %s in %s",
-		  rb_id2name(id), rb_class2name(tmp));
-    return Qnil;		/* not reached */
+    CVAR_LOOKUP(&value, {if (!front) front = klass; target = klass;});
+    if (!target) {
+	rb_name_error(id,"uninitialized class variable %s in %s",
+		      rb_id2name(id), rb_class2name(tmp));
+    }
+    if (front && target != front) {
+	ID did = id;
+
+	if (RTEST(ruby_verbose)) {
+	    rb_warning("class variable %s of %s is overtaken by %s",
+		       rb_id2name(id), rb_class2name(original_module(front)),
+		       rb_class2name(original_module(target)));
+	}
+	if (BUILTIN_TYPE(front) == T_CLASS) {
+	    st_delete(RCLASS_IV_TBL(front),&did,0);
+	}
+    }
+    return value;
 }
 
 VALUE
 rb_cvar_defined(VALUE klass, ID id)
 {
     if (!klass) return Qfalse;
-    CVAR_LOOKUP(0,Qtrue);
+    CVAR_LOOKUP(0,return Qtrue);
     return Qfalse;
 }
 

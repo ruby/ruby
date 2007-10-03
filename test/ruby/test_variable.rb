@@ -25,7 +25,7 @@ class TestVariable < Test::Unit::TestCase
   end
 
   class Titans < Gods
-    @@rule = "Cronus"			# do not affect @@rule in Gods
+    @@rule = "Cronus"			# modifies @@rule in Gods
     include Olympians
     def ruler4
       @@rule
@@ -44,13 +44,13 @@ class TestVariable < Test::Unit::TestCase
     $_ = foobar
     assert_equal(foobar, $_)
 
-    assert_equal("Uranus", Gods.new.ruler0)
-    assert_equal("Uranus", Gods.ruler1)
-    assert_equal("Uranus", Gods.ruler2)
-    assert_equal("Uranus", Titans.ruler1)
-    assert_equal("Uranus", Titans.ruler2)
+    assert_equal("Cronus", Gods.new.ruler0)
+    assert_equal("Cronus", Gods.ruler1)
+    assert_equal("Cronus", Gods.ruler2)
+    assert_equal("Cronus", Titans.ruler1)
+    assert_equal("Cronus", Titans.ruler2)
     atlas = Titans.new
-    assert_equal("Uranus", atlas.ruler0)
+    assert_equal("Cronus", atlas.ruler0)
     assert_equal("Zeus", atlas.ruler3)
     assert_equal("Cronus", atlas.ruler4)
   end
