@@ -23,6 +23,7 @@
 #include "ruby/ruby.h"
 #include "ruby/node.h"
 #include "ruby/encoding.h"
+#include "eval_intern.h"
 #include "dln.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -74,6 +75,8 @@ extern int ruby_yydebug;
 char *ruby_inplace_mode = 0;
 
 struct cmdline_options {
+    int argc;
+    char **argv;
     int sflag, xflag;
     int do_loop, do_print;
     int do_check, do_line;
@@ -823,9 +826,12 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
     return argc0 - argc;
 }
 
-static NODE *
-process_options(int argc, char **argv, struct cmdline_options *opt)
+static VALUE
+process_options(VALUE arg)
 {
+    struct cmdline_options *opt = (struct cmdline_options *)arg;
+    int argc = opt->argc;
+    char **argv = opt->argv;
     NODE *tree = 0;
     VALUE parser;
     const char *s;
@@ -873,7 +879,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     if (opt->version) {
 	ruby_show_version();
-	return (NODE *)Qtrue;
+	return Qtrue;
     }
     if (opt->copyright) {
 	ruby_show_copyright();
@@ -887,7 +893,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     if (!opt->e_script) {
 	if (argc == 0) {	/* no more args */
 	    if (opt->verbose)
-		return (NODE *)Qtrue;
+		return Qtrue;
 	    opt->script = "-";
 	}
 	else {
@@ -935,7 +941,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	tree = load_file(parser, opt->script, 1, opt);
     }
 
-    if (!tree) return 0;
+    if (!tree) return Qfalse;
 
     process_sflag(opt);
     opt->xflag = 0;
@@ -954,7 +960,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
 
-    return tree;
+    return (VALUE)tree;
 }
 
 static NODE *
@@ -1314,10 +1320,11 @@ ruby_process_options(int argc, char **argv)
     MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
-#if defined(USE_DLN_A_OUT)
-    dln_argv0 = argv[0];
-#endif
-    tree = process_options(argc, argv, &opt);
+    opt.argc = argc;
+    opt.argv = argv;
+    tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
+				    process_options, (VALUE)&opt,
+				    0, rb_progname);
 
     rb_define_readonly_boolean("$-p", opt.do_print);
     rb_define_readonly_boolean("$-l", opt.do_line);
@@ -1356,5 +1363,8 @@ ruby_sysinit(int *argc, char ***argv)
     origarg.argv = *argv;
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
     origarg.len = get_arglen(origarg.argc, origarg.argv);
+#endif
+#if defined(USE_DLN_A_OUT)
+    dln_argv0 = origarg.argv[0];
 #endif
 }

@@ -89,16 +89,17 @@ static void
 error_print(void)
 {
     VALUE errat = Qnil;		/* OK */
+    VALUE errinfo = GET_THREAD()->errinfo;
     volatile VALUE eclass, e;
     char *einfo;
     long elen;
 
-    if (NIL_P(GET_THREAD()->errinfo))
+    if (NIL_P(errinfo))
 	return;
 
     PUSH_TAG();
     if (EXEC_TAG() == 0) {
-	errat = get_backtrace(GET_THREAD()->errinfo);
+	errat = get_backtrace(errinfo);
     }
     else {
 	errat = Qnil;
@@ -126,9 +127,9 @@ error_print(void)
 	}
     }
 
-    eclass = CLASS_OF(GET_THREAD()->errinfo);
+    eclass = CLASS_OF(errinfo);
     if (EXEC_TAG() == 0) {
-	e = rb_funcall(GET_THREAD()->errinfo, rb_intern("message"), 0, 0);
+	e = rb_funcall(errinfo, rb_intern("message"), 0, 0);
 	StringValue(e);
 	einfo = RSTRING_PTR(e);
 	elen = RSTRING_LEN(e);
