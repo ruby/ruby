@@ -45,8 +45,14 @@ class BenchmarkDriver
       e.strip!
       next if e.empty?
 
-      v =  `#{e} -v`.chomp
-      v.sub!(/ patchlevel \d+/, '')
+      if /(.+)::(.+)/ =~ e
+        # ex) ruby-a::/path/to/ruby-a
+        v = $1.strip
+        e = $2
+      else
+        v =  `#{e} -v`.chomp
+        v.sub!(/ patchlevel \d+/, '')
+      end
       [e, v]
     }.compact
 

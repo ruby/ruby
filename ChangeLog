@@ -1,3 +1,8 @@
+Wed Oct  3 17:56:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: enable specify label to executable.
+	  (-e "ruby1::/path/to/ruby1; ruby2::/path/to/ruby2; ...")
+
 Wed Oct  3 16:58:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_str_new, parser_yylex, rb_intern3): set code-range
