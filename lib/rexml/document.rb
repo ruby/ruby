@@ -66,7 +66,6 @@ module REXML
 		def add( child )
 			if child.kind_of? XMLDecl
 				@children.unshift child
-        child.parent = self
 			elsif child.kind_of? DocType
         # Find first Element or DocType node and insert the decl right 
         # before it.  If there is no such node, just insert the child at the
@@ -184,7 +183,7 @@ module REXML
         output = Output.new( output, xml_decl.encoding )
       end
       formatter = if indent > -1
-          if trans
+          if transitive
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )

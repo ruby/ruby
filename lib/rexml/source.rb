@@ -17,8 +17,8 @@ module REXML
       elsif arg.kind_of? Source
         arg
       else
-        raise "#{arg.class} is not a valid input stream.  It must walk \n"+
-          "like either a String, an IO, or a Source."
+        raise "#{source.class} is not a valid input stream.  It must walk \n"+
+        "like either a String, IO, or Source."
       end
     end
   end

@@ -1,6 +1,5 @@
 require 'rexml/parseexception'
 require 'rexml/source'
-require 'set'
 
 module REXML
   module Parsers
@@ -25,8 +24,7 @@ module REXML
     # Nat Price gave me some good ideas for the API.
     class BaseParser
       NCNAME_STR= '[\w:][\-\w\d.]*'
-      NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
-      UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
+      NAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
       NAMECHAR = '[\-\w\d\.:]'
       NAME = "([\\w:]#{NAMECHAR}*)"
@@ -37,7 +35,7 @@ module REXML
 
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
       DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
-      ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\4/um
+      ATTRIBUTE_PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\2/um
       COMMENT_START = /\A<!--/u
       COMMENT_PATTERN = /<!--(.*?)-->/um
       CDATA_START = /\A<!\[CDATA\[/u
@@ -47,7 +45,7 @@ module REXML
       XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>/um
       INSTRUCTION_START = /\A<\?/u
       INSTRUCTION_PATTERN = /<\?(.*?)(\s+.*?)?\?>/um
-      TAG_MATCH = /^<((?>#{NAME_STR}))\s*((?>\s+#{UNAME_STR}\s*=\s*(["']).*?\5)*)\s*(\/)?>/um
+      TAG_MATCH = /^<((?>#{NAME_STR}))\s*((?>\s+#{NAME_STR}\s*=\s*(["']).*?\3)*)\s*(\/)?>/um
       CLOSE_MATCH = /^\s*<\/(#{NAME_STR})\s*>/um
 
       VERSION = /\bversion\s*=\s*["'](.*?)['"]/um
@@ -135,7 +133,6 @@ module REXML
         @tags = []
         @stack = []
         @entities = []
-        @nsstack = []
       end
 
       def position
@@ -216,7 +213,6 @@ module REXML
             return [ :processing_instruction, *@source.match(INSTRUCTION_PATTERN, true)[1,2] ]
           when DOCTYPE_START
             md = @source.match( DOCTYPE_PATTERN, true )
-            @nsstack.unshift(curr_ns=Set.new)
             identity = md[1]
             close = md[2]
             identity =~ IDENTITY
@@ -292,9 +288,6 @@ module REXML
                 val = attdef[3]
                 val = attdef[4] if val == "#FIXED "
                 pairs[attdef[0]] = val
-                if attdef[0] =~ /^xmlns:(.*)/
-                  @nsstack[0] << $1
-                end
               end
             end
             return [ :attlistdecl, element, pairs, contents ]
@@ -319,7 +312,6 @@ module REXML
         begin
           if @source.buffer[0] == ?<
             if @source.buffer[1] == ?/
-              @nsstack.shift
               last_tag = @tags.pop
               #md = @source.match_to_consume( '>', CLOSE_MATCH)
               md = @source.match( CLOSE_MATCH, true )
@@ -353,47 +345,19 @@ module REXML
                 raise REXML::ParseException.new("missing attribute quote", @source) if @source.match(MISSING_ATTRIBUTE_QUOTES )
                 raise REXML::ParseException.new("malformed XML: missing tag start", @source) 
               end
-              attributes = {}
-              prefixes = Set.new
-              prefixes << md[2] if md[2]
-              @nsstack.unshift(curr_ns=Set.new)
-              if md[4].size > 0
-                attrs = md[4].scan( ATTRIBUTE_PATTERN )
+              attrs = []
+              if md[2].size > 0
+                attrs = md[2].scan( ATTRIBUTE_PATTERN )
                 raise REXML::ParseException.new( "error parsing attributes: [#{attrs.join ', '}], excess = \"#$'\"", @source) if $' and $'.strip.size > 0
-                attrs.each { |a,b,c,d,e| 
-                  if b == "xmlns"
-                    if c == "xml"
-                      if d != "http://www.w3.org/XML/1998/namespace"
-                        msg = "The 'xml' prefix must not be bound to any other namespace "+
-                        "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                        raise REXML::ParseException.new( msg, @source, self )
-                      end
-                    elsif c == "xmlns"
-                      msg = "The 'xmlns' prefix must not be declared "+
-                      "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
-                      raise REXML::ParseException.new( msg, @source, self)
-                    end
-                    curr_ns << c
-                  elsif b
-                    prefixes << b unless b == "xml"
-                  end
-                  attributes[a] = e 
-                }
               end
         
-              # Verify that all of the prefixes have been defined
-              for prefix in prefixes
-                unless @nsstack.find{|k| k.member?(prefix)}
-                  raise UndefinedNamespaceException.new(prefix,@source,self)
-                end
-              end
-
-              if md[6]
+              if md[4]
                 @closed = md[1]
-                @nsstack.shift
               else
                 @tags.push( md[1] )
               end
+              attributes = {}
+              attrs.each { |a,b,c| attributes[a] = c }
               return [ :start_element, md[1], attributes ]
             end
           else
@@ -407,8 +371,6 @@ module REXML
             # return PullEvent.new( :text, md[1], unnormalized )
             return [ :text, md[1] ]
           end
-        rescue REXML::UndefinedNamespaceException
-          raise
         rescue REXML::ParseException
           raise
         rescue Exception, NameError => error

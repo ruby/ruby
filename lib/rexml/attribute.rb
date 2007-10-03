@@ -50,7 +50,7 @@ module REXML
 					@element = first.element
 				end
 			elsif first.kind_of? String
-				@element = parent
+				@element = parent if parent.kind_of? Element
 				self.name = first
 				@normalized = second.to_s
 			else
