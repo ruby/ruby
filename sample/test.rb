@@ -2052,13 +2052,13 @@ class Titans < Gods
   end
 end
 
-test_ok(Gods.new.ruler0 == "Uranus")
-test_ok(Gods.ruler1 == "Uranus")
-test_ok(Gods.ruler2 == "Uranus")
-test_ok(Titans.ruler1 == "Uranus")
-test_ok(Titans.ruler2 == "Uranus")
+test_ok(Gods.new.ruler0 == "Cronus")
+test_ok(Gods.ruler1 == "Cronus")
+test_ok(Gods.ruler2 == "Cronus")
+test_ok(Titans.ruler1 == "Cronus")
+test_ok(Titans.ruler2 == "Cronus")
 atlas = Titans.new
-test_ok(atlas.ruler0 == "Uranus")
+test_ok(atlas.ruler0 == "Cronus")
 test_ok(atlas.ruler3 == "Zeus")
 test_ok(atlas.ruler4 == "Cronus")
 
