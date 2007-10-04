@@ -1,3 +1,11 @@
+Thu Oct  4 15:57:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_obj_encoding): returns encoding of the given object.
+
+	* re.c (Init_Regexp): new method Regexp#encoding.
+
+	* string.c (str_encoding): moved to encoding.c
+
 Thu Oct  4 15:49:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_permutation): remove C99 dependency.

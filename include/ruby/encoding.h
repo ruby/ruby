@@ -50,6 +50,7 @@ void rb_enc_copy(VALUE, VALUE);
 VALUE rb_enc_str_new(const char*, long len, rb_encoding*);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
 char* rb_enc_nth(const char*, const char*, int, rb_encoding*);
+VALUE rb_obj_encoding(VALUE);
 
 /* index -> rb_encoding */
 rb_encoding* rb_enc_from_index(int idx);

@@ -2476,6 +2476,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
     rb_define_method(rb_cRegexp, "options", rb_reg_options_m, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
+    rb_define_method(rb_cRegexp, "encoding", rb_obj_encoding, 0); /* in encoding.c */
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(ONIG_OPTION_EXTEND));

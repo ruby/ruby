@@ -259,6 +259,20 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 }
 
 
+/*
+ *  call-seq:
+ *     obj.encoding   => str
+ *
+ *  Retruns the encoding name.
+ */
+
+VALUE
+rb_obj_encoding(VALUE obj)
+{
+    return rb_str_new2(rb_enc_name(rb_enc_get(obj)));
+}
+
+
 char*
 rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
 {

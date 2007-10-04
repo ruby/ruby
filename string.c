@@ -5108,20 +5108,6 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
 
 /*
  *  call-seq:
- *     str.encoding   => str
- *
- *  Retruns the encoding name.
- */
-
-static VALUE
-str_encoding(VALUE str)
-{
-    return rb_str_new2(rb_enc_name(rb_enc_get(str)));
-}
-
-
-/*
- *  call-seq:
  *     str.force_encoding(encoding)   => str
  *
  *  Changes the encoding to +encoding+ and returns self.
@@ -5388,7 +5374,7 @@ sym_swapcase(VALUE sym)
 static VALUE
 sym_encoding(VALUE sym)
 {
-    return str_encoding(rb_id2str(SYM2ID(sym)));
+    return rb_obj_encoding(rb_id2str(SYM2ID(sym)));
 }
 
 ID
@@ -5545,7 +5531,7 @@ Init_String(void)
     rb_define_method(rb_cString, "partition", rb_str_partition, 1);
     rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
-    rb_define_method(rb_cString, "encoding", str_encoding, 0);
+    rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
 
     id_to_s = rb_intern("to_s");
