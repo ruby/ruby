@@ -4151,20 +4151,6 @@ stdout_setter(VALUE val, ID id, VALUE *variable)
     *variable = val;
 }
 
-static void
-defout_setter(VALUE val, ID id, VALUE *variable)
-{
-    stdout_setter(val, id, variable);
-    rb_warn("$defout is obsolete; use $stdout instead");
-}
-
-static void
-deferr_setter(VALUE val, ID id, VALUE *variable)
-{
-    stdout_setter(val, id, variable);
-    rb_warn("$deferr is obsolete; use $stderr instead");
-}
-
 static VALUE
 prep_io(int fd, int mode, VALUE klass, const char *path)
 {
@@ -5936,10 +5922,6 @@ Init_IO(void)
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
-
-    /* variables to be removed in 1.8.1 */
-    rb_define_hooked_variable("$defout", &rb_stdout, 0, defout_setter);
-    rb_define_hooked_variable("$deferr", &rb_stderr, 0, deferr_setter);
 
     /* constants to hold original stdin/stdout/stderr */
     rb_define_global_const("STDIN", rb_stdin);

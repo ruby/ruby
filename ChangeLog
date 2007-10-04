@@ -1,7 +1,9 @@
-Thu Oct  4 16:31:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Oct  4 16:52:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (kcode_setter): Perl-ish global variable `$=' no longer
 	  effective.
+
+	* io.c (Init_IO): remove obsolete variables: $defout, $deferr.
 
 Thu Oct  4 16:28:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
