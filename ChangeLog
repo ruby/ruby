@@ -1,3 +1,15 @@
+Fri Oct  5 03:25:51 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (<=>): Implement IPAddr#<=> and make IPAddr
+	  comparable.
+
+	* lib/ipaddr.rb (succ): Implement IPAddr#succ.  You can now create
+	  a range between two IPAddr's, which (Range) object is
+	  enumeratable.
+
+	* lib/ipaddr.rb (to_range): A new method to create a Range object
+	  for the (network) address.
+
 Fri Oct  5 03:14:45 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (coerce_other): Support type coercion and make &,
