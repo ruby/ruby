@@ -2317,13 +2317,14 @@ kcode_setter(VALUE val)
 static VALUE
 ignorecase_getter(void)
 {
+    rb_warn("variable $= is no longer effective");
     return Qfalse;
 }
 
 static void
 ignorecase_setter(VALUE val, ID id)
 {
-    rb_warn("modifying %s is deprecated", rb_id2name(id));
+    rb_warn("variable $= is no longer effective; ignored");
 }
 
 static VALUE

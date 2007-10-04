@@ -1293,9 +1293,7 @@ rb_str_eql(VALUE str1, VALUE str2)
  *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is greater than
  *  <i>str</i>. If the strings are of different lengths, and the strings are
  *  equal when compared up to the shortest length, then the longer string is
- *  considered greater than the shorter one. If the variable <code>$=</code> is
- *  <code>false</code>, the comparison is based on comparing the binary values
- *  of each character in the string. In older versions of Ruby, setting
+ *  considered greater than the shorter one. In older versions of Ruby, setting
  *  <code>$=</code> allowed case-insensitive comparisons; this is now deprecated
  *  in favor of using <code>String#casecmp</code>.
  *
