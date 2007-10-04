@@ -1,3 +1,10 @@
+Thu Oct  4 15:49:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_permutation): remove C99 dependency.
+	  [ruby-dev:31934]
+
+	* array.c (rb_ary_product): ditto.
+
 Wed Oct  3 23:37:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/nkf/nkf.c, bin/ri, bin/irb: fixed typos in doc and comments.

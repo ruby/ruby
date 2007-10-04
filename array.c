@@ -3019,10 +3019,11 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 static VALUE
 rb_ary_permutation(VALUE ary, VALUE num)
 {
+    long r, n, i;
+
     RETURN_ENUMERATOR(ary, 1, &num);  /* Return enumerator if no block */
-    long r = NUM2LONG(num);           /* Permutation size from argument */
-    long n = RARRAY_LEN(ary);         /* Array length */
-    long i;
+    r = NUM2LONG(num);                /* Permutation size from argument */
+    n = RARRAY_LEN(ary);              /* Array length */
 
     if (r < 0 || n < r) { 
 	/* no permutations: yield nothing */
@@ -3151,8 +3152,10 @@ static VALUE
 rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    VALUE arrays[n];   /* The arrays we're computing the product of */
-    int counters[n];   /* The current position in each one */
+    volatile VALUE t0 = rb_str_new(0, n*sizeof(VALUE));
+    volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
+    VALUE *arrays = (VALUE*)RSTRING_PTR(t0); /* The arrays we're computing the product of */
+    int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
     VALUE result;      /* The array we'll be returning */
     long i,j;
 
