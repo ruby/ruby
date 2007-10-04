@@ -442,7 +442,7 @@ VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
 unsigned long genrand_int32(void);
 double genrand_real(void);
 /* re.c */
-#define rb_memcmp(a,b,c) memcmp(a,b,c)
+int rb_memcmp(const void*,const void*,long);
 int rb_memcicmp(const void*,const void*,long);
 long rb_memsearch(const void*,long,const void*,long);
 VALUE rb_reg_nth_defined(int, VALUE);

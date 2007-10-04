@@ -1226,7 +1226,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
     rb_enc_check(str1, str2);	/* xxxx error-less encoding check? */
     len = lesser(RSTRING_LEN(str1), RSTRING_LEN(str2));
-    retval = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
+    retval = rb_memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
     if (retval == 0) {
 	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return 0;
 	if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return 1;
@@ -1485,7 +1485,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     t = RSTRING_PTR(sub);
     for (;;) {
 	s = str_nth(sbeg, e, pos, enc);
-	if (memcmp(s, t, slen) == 0) {
+	if (rb_memcmp(s, t, slen) == 0) {
 	    return pos;
 	}
 	if (pos == 0) break;
@@ -4090,7 +4090,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    p -= n;
 	}
 	if (c == newline &&
-	    (rslen <= 1 || memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
+	    (rslen <= 1 || rb_memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
 	    rb_yield(line);
@@ -4325,7 +4325,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
-	 memcmp(RSTRING_PTR(rs), p+len-rslen, rslen) == 0)) {
+	 rb_memcmp(RSTRING_PTR(rs), p+len-rslen, rslen) == 0)) {
 	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
@@ -5064,7 +5064,7 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 	if (NIL_P(tmp)) continue;
 	rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-	if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+	if (rb_memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
 	    return Qtrue;
     }
     return Qfalse;
@@ -5087,7 +5087,7 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 	if (NIL_P(tmp)) continue;
 	rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-	if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - RSTRING_LEN(tmp),
+	if (rb_memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - RSTRING_LEN(tmp),
 		      RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
 	    return Qtrue;
     }

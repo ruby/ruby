@@ -91,6 +91,12 @@ rb_memcicmp(const void *x, const void *y, long len)
     return 0;
 }
 
+int
+rb_memcmp(const void *p1, const void *p2, long len)
+{
+    return rb_memcicmp(p1, p2, len);
+}
+
 long
 rb_memsearch(const void *x0, long m, const void *y0, long n)
 {
@@ -897,11 +903,6 @@ rb_reg_prepare_re(VALUE re)
 	RBASIC(re)->flags |= reg_kcode;
     }
 
-     if (state) { 	 
-	 FL_UNSET(re, REG_CASESTATE); 	 
-	 RREGEXP(re)->ptr->options &= ~ONIG_OPTION_IGNORECASE; 	 
-	 need_recompile = 1; 	 
-     }
     if (need_recompile) {
 	onig_errmsg_buffer err;
 	int r;
