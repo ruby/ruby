@@ -1,3 +1,9 @@
+Thu Oct  4 18:23:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_memcmp): no longer useful without ruby_ignorecase.
+
+	* re.c (rb_reg_prepare_re): revert recompile condition.
+
 Thu Oct  4 17:33:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (kcode_setter): Perl-ish global variable `$=' no longer
