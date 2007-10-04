@@ -94,7 +94,7 @@ rb_memcicmp(const void *x, const void *y, long len)
 int
 rb_memcmp(const void *p1, const void *p2, long len)
 {
-    return rb_memcicmp(p1, p2, len);
+    return memcmp(p1, p2, len);
 }
 
 long
