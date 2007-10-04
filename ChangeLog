@@ -1,6 +1,8 @@
-Thu Oct  4 15:57:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct  4 16:15:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_obj_encoding): returns encoding of the given object.
+
+	* parse.y (reg_compile_gen): copy encoding from source string.
 
 	* re.c (Init_Regexp): new method Regexp#encoding.
 
