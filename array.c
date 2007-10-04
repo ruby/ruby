@@ -3037,11 +3037,11 @@ rb_ary_permutation(VALUE ary, VALUE num)
 	}
     }
     else {             /* this is the general case */
-	ary = rb_ary_dup(ary); /* private defensive copy of ary */
 	volatile VALUE t0 = rb_str_new(0, n*sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0); /* array indexes of current permutation */
 	volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
 	int *used = (int*)RSTRING_PTR(t1); /* booleans: which indexes are already used */
+	ary = rb_ary_dup(ary); /* private defensive copy of ary */
 
 	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
@@ -3158,6 +3158,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
     VALUE result;      /* The array we'll be returning */
     long i,j;
+    long resultlen = 1;
 
     /* initialize the arrays of arrays */
     arrays[0] = ary;
@@ -3167,7 +3168,6 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     for(i = 0; i < n; i++) counters[i] = 0;
 
     /* Compute the length of the result array; return [] if any is empty */
-    long resultlen = 1;
     for(i = 0; i < n; i++) {
 	resultlen *= RARRAY_LEN(arrays[i]);
 	if (resultlen == 0) return rb_ary_new2(0);
@@ -3176,6 +3176,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     /* Otherwise, allocate and fill in an array of results */
     result = rb_ary_new2(resultlen);
     for(i = 0; i < resultlen; i++) {
+	int m;
 	/* fill in one subarray */
 	VALUE subarray = rb_ary_new2(n);
 	for(j = 0; j < n; j++) {
@@ -3189,7 +3190,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	 * Increment the last counter.  If it overflows, reset to 0
 	 * and increment the one before it.
 	 */
-	int m = n-1;
+	m = n-1;
 	counters[m]++;
 	while(m >= 0 && counters[m] == RARRAY_LEN(arrays[m])) {
 	    counters[m] = 0;

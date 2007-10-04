@@ -1,3 +1,8 @@
+Thu Oct  4 20:17:19 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* array.c (rb_ary_permutation, rb_ary_product): support non C99
+	  compilers.
+
 Thu Oct  4 17:33:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (kcode_setter): Perl-ish global variable `$=' no longer
