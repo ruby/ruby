@@ -2311,7 +2311,8 @@ rb_set_kcode(const char *code)
 static void
 kcode_setter(VALUE val)
 {
-    rb_warning("$= no longer effective");
+    may_need_recompile = 1;
+    rb_set_kcode(StringValuePtr(val));
 }
 
 static VALUE

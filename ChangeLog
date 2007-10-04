@@ -1,4 +1,4 @@
-Thu Oct  4 17:08:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Oct  4 17:33:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (kcode_setter): Perl-ish global variable `$=' no longer
 	  effective.
@@ -14,6 +14,8 @@ Thu Oct  4 17:08:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* re.c (ignorecase_getter): now gives warning.
 
 	* string.c (rb_str_cmp_m): update RDoc document.
+
+	* re.c (kcode_setter): restore erroneously removed setter.
 
 Thu Oct  4 16:28:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
