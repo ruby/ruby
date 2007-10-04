@@ -98,7 +98,7 @@ Sun Sep 30 17:12:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  cache bits.
 
 	* include/ruby/encoding.h (ENC_CODERANGE_SET): fixed a bug not to
-	  set chache bits.
+	  set cache bits.
 
 Sun Sep 30 11:52:11 2007  Tanaka Akira  <akr@fsij.org>
 
@@ -1246,7 +1246,7 @@ Sat Aug 25 17:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y, re.c: re-applied revision 13092.
 
-	* string.c (rb_str_splice): return from void funtion.
+	* string.c (rb_str_splice): return from void function.
 
 	* include/ruby/encoding.h (rb_enc_str_new): prototype added.
 
@@ -1728,7 +1728,7 @@ Sat Aug 18 13:23:01 2007  Koichi Sasada  <ko1@atdot.net>
 	* eval.c: $! should not be writable.
 
 	* eval.c (rb_rubylevel_errinfo): added.  rb_errinfo() returns
-	  rb_threa_t#errinfo.  rb_rubylevel_errinfo() returns $! value.
+	  rb_thread_t#errinfo.  rb_rubylevel_errinfo() returns $! value.
 
 Sat Aug 18 13:14:40 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -1799,7 +1799,7 @@ Fri Aug 17 14:38:36 2007  Tanaka Akira  <akr@fsij.org>
 
 Fri Aug 17 03:07:37 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.c (iseq_compile_each): fix thorw insn option of next.
+	* compile.c (iseq_compile_each): fix throw insn option of next.
 
 Fri Aug 17 01:25:23 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -1973,7 +1973,7 @@ Tue Aug 14 00:04:27 2007  Kouhei Sutou  <kou@cozmixng.org>
 Mon Aug 13 17:23:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_clear_trace_func, rb_thread_stop_timer_thread):
-	  declarations for forward refernces.
+	  declarations for forward references.
 
 	* eval.c (rb_longjmp, eval): use local variable.
 
@@ -2305,7 +2305,7 @@ Thu Aug  2 23:42:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Aug  2 22:05:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* bignum.c (rb_big2str0): faster Bugnum#to_s using Karatsuba
+	* bignum.c (rb_big2str0): faster Bignum#to_s using Karatsuba
 	  algorithm.  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>
 	  in [ruby-dev:31312], slightly modified by Kenta Murata
 	  <muraken AT gmail.com> in [ruby-dev:31339].
@@ -2924,7 +2924,7 @@ Fri Jul  6 12:15:01 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/sentgen.rb: new file.
 
-	* test/ruby/test_assignment.rb: tests implemeneted using assignment
+	* test/ruby/test_assignment.rb: tests implemented using assignment
 	  generator and emulator.
 
 Fri Jul  6 03:06:58 2007  Koichi Sasada  <ko1@atdot.net>
@@ -3140,7 +3140,7 @@ Sun Jul  1 02:57:57 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h: rename insn_func_type to rb_insn_func_type.
 
-	* vm_evalbody.ci: ditt.
+	* vm_evalbody.ci: ditto.
 
 	* insns.def: add opt_call_native_compiled instruction
 	  instead of opt_call_native_compiled.
@@ -3270,7 +3270,7 @@ Thu Jun 28 01:24:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb: fix to show file name.
 
-	* bootstraptest/test_*.rb: add bootstarp tests.
+	* bootstraptest/test_*.rb: add bootstrap tests.
 
 Thu Jun 28 01:22:15 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -3369,7 +3369,7 @@ Tue Jun 26 15:04:06 2007  Koichi Sasada  <ko1@atdot.net>
 Tue Jun 26 04:03:50 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_yield_with_cfunc), proc.c: fix Method#to_proc
-	  to return lamba Proc ([ruby-dev:31021], [ruby-dev:31037]).
+	  to return lambda Proc ([ruby-dev:31021], [ruby-dev:31037]).
 
 Tue Jun 26 03:46:08 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -3476,7 +3476,7 @@ Mon Jun 25 02:14:30 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, iseq.c, vm_dump: ditto.
 
-	* gc.h, thread.c: move a prototype decalaration.
+	* gc.h, thread.c: move a prototype declaration.
 
 	* debug.c, debug.h: rename some functions.
 
@@ -3513,7 +3513,7 @@ Sun Jun 24 22:00:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_call_bmethod): renamed from th_invoke_bmethod().
 
-	* vm.c (vm_method_missing): renamed from eval_methdo_missing().
+	* vm.c (vm_method_missing): renamed from eval_method_missing().
 
 	* vm_evalbody.ci: remove tmp_* variables.
 
@@ -3714,7 +3714,7 @@ Mon Jun 18 16:57:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Jun 18 13:54:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (ruby_cleanup): return EXIT_FAILURE if any exceptions occured
+	* eval.c (ruby_cleanup): return EXIT_FAILURE if any exceptions occurred
 	  in at_exit blocks.  [ruby-core:11263]
 
 Mon Jun 18 02:49:16 2007  Koichi Sasada  <ko1@atdot.net>
