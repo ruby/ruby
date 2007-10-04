@@ -1,3 +1,13 @@
+Fri Oct  5 03:14:45 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (coerce_other): Support type coercion and make &,
+	  |, == and include? accept a string or an integer instead of an
+	  IPAddr object as the argument.
+
+	* lib/ipaddr.rb (initialize): Give better error messages.
+
+	* lib/ipaddr.rb: Improve documentation.
+
 Thu Oct  4 20:45:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (Init_process): win32 has our own WNOHANG definition, so
