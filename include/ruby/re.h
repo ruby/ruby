@@ -43,8 +43,6 @@ long rb_reg_adjust_startpos(VALUE, VALUE, long, long);
 void rb_match_busy(VALUE);
 VALUE rb_reg_quote(VALUE);
 
-RUBY_EXTERN int ruby_ignorecase;
-
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

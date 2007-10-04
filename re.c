@@ -94,9 +94,6 @@ rb_memcicmp(const void *x, const void *y, long len)
 int
 rb_memcmp(const void *p1, const void *p2, long len)
 {
-    if (!ruby_ignorecase) {
-	return memcmp(p1, p2, len);
-    }
     return rb_memcicmp(p1, p2, len);
 }
 
@@ -120,37 +117,19 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
     d = sizeof(hx) * CHAR_BIT - 1;
     if (d > m) d = m;
 
-    if (ruby_ignorecase) {
-	if (n == m) {
-	    return rb_memcicmp(x, s, m) == 0 ? 0 : -1;
-	}
-	/* Prepare hash value */
-	for (hy = hx = i = 0; i < d; ++i) {
-	    hx = KR_REHASH(0, casetable[x[i]], hx);
-	    hy = KR_REHASH(0, casetable[s[i]], hy);
-	}
-	/* Searching */
-	while (hx != hy || rb_memcicmp(x, s, m)) {
-	    if (s >= e) return -1;
-	    hy = KR_REHASH(casetable[*s], casetable[*(s+d)], hy);
-	    s++;
-	}
+    if (n == m) {
+	return memcmp(x, s, m) == 0 ? 0 : -1;
     }
-    else {
-	if (n == m) {
-	    return memcmp(x, s, m) == 0 ? 0 : -1;
-	}
-	/* Prepare hash value */
-	for (hy = hx = i = 0; i < d; ++i) {
-	    hx = KR_REHASH(0, x[i], hx);
-	    hy = KR_REHASH(0, s[i], hy);
-	}
-	/* Searching */
-	while (hx != hy || memcmp(x, s, m)) {
-	    if (s >= e) return -1;
-	    hy = KR_REHASH(*s, *(s+d), hy);
-	    s++;
-	}
+    /* Prepare hash value */
+    for (hy = hx = i = 0; i < d; ++i) {
+	hx = KR_REHASH(0, x[i], hx);
+	hy = KR_REHASH(0, s[i], hy);
+    }
+    /* Searching */
+    while (hx != hy || memcmp(x, s, m)) {
+	if (s >= e) return -1;
+	hy = KR_REHASH(*s, *(s+d), hy);
+	s++;
     }
     return s-y;
 }
@@ -906,7 +885,6 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
-int ruby_ignorecase;
 static int may_need_recompile;
 
 static void
@@ -918,17 +896,6 @@ rb_reg_prepare_re(VALUE re)
     rb_reg_check(re);
     state = FL_TEST(re, REG_CASESTATE);
     /* ignorecase status */
-    if (ruby_ignorecase && !state) {
-	FL_SET(re, REG_CASESTATE);
-	RREGEXP(re)->ptr->options |= ONIG_OPTION_IGNORECASE;
-	need_recompile = 1;
-    }
-    if (!ruby_ignorecase && state) {
-	FL_UNSET(re, REG_CASESTATE);
-	RREGEXP(re)->ptr->options &= ~ONIG_OPTION_IGNORECASE;
-	need_recompile = 1;
-    }
-
     if (!FL_TEST(re, KCODE_FIXED) &&
 	(RBASIC(re)->flags & KCODE_MASK) != reg_kcode) {
 	need_recompile = 1;
@@ -1516,10 +1483,6 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (options & ARG_KCODE_MASK) {
 	kcode_set_option((VALUE)re);
     }
-    if (ruby_ignorecase) {
-	options |= ONIG_OPTION_IGNORECASE;
-	FL_SET(re, REG_CASESTATE);
-    }
     re->ptr = make_regexp(s, len, options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
     re->str = ALLOC_N(char, len+1);
@@ -1580,7 +1543,6 @@ rb_reg_compile(VALUE str, int options)
     return re;
 }
 
-static int case_cache;
 static int kcode_cache;
 static VALUE reg_cache;
 
@@ -1589,14 +1551,12 @@ rb_reg_regcomp(VALUE str)
 {
     volatile VALUE save_str = str;
     if (reg_cache && RREGEXP(reg_cache)->len == RSTRING_LEN(str)
-	&& case_cache == ruby_ignorecase
 	&& kcode_cache == reg_kcode
 	&& memcmp(RREGEXP(reg_cache)->str, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
-    case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
-    return reg_cache = rb_reg_new(save_str, ruby_ignorecase);
+    return reg_cache = rb_reg_new(save_str, 0);
 }
 
 static int
@@ -2351,22 +2311,19 @@ rb_set_kcode(const char *code)
 static void
 kcode_setter(VALUE val)
 {
-    may_need_recompile = 1;
-    rb_set_kcode(StringValuePtr(val));
+    rb_warning("$= no longer effective");
 }
 
 static VALUE
 ignorecase_getter(void)
 {
-    return ruby_ignorecase?Qtrue:Qfalse;
+    return Qfalse;
 }
 
 static void
 ignorecase_setter(VALUE val, ID id)
 {
     rb_warn("modifying %s is deprecated", rb_id2name(id));
-    may_need_recompile = 1;
-    ruby_ignorecase = RTEST(val);
 }
 
 static VALUE
