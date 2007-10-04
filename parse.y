@@ -8170,7 +8170,7 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));
 	return Qnil;
     }
-    rb_enc_copy(re, str);
+    if (str) rb_enc_copy(re, str);
     return re;
 }
 
