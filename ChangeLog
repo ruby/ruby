@@ -1,4 +1,4 @@
-Thu Oct  4 16:54:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Oct  4 16:55:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (kcode_setter): Perl-ish global variable `$=' no longer
 	  effective.
@@ -6,6 +6,8 @@ Thu Oct  4 16:54:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (Init_IO): remove obsolete variables: $defout, $deferr.
 
 	* re.c (Init_Regexp): remove obsolete const alias: MatchingData.
+
+	* time.c (Init_Time): remove obsolete Time::times.
 
 Thu Oct  4 16:28:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

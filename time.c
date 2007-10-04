@@ -1917,20 +1917,6 @@ time_strftime(VALUE time, VALUE format)
 }
 
 /*
- *  call-seq:
- *     Time.times => struct_tms
- *  
- *  Deprecated in favor of <code>Process::times</code>
- */
-
-static VALUE
-time_s_times(VALUE obj)
-{
-    rb_warn("obsolete method Time::times; use Process::times");
-    return rb_proc_times(obj);
-}
-
-/*
  * undocumented
  */
 
@@ -2099,8 +2085,6 @@ Init_Time(void)
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
     rb_define_singleton_method(rb_cTime, "mktime", time_s_mktime, -1);
-
-    rb_define_singleton_method(rb_cTime, "times", time_s_times, 0);
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
