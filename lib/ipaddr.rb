@@ -496,12 +496,9 @@ class IPAddr
 
   def in_addr(addr)
     if addr =~ /^\d+\.\d+\.\d+\.\d+$/
-      n = 0
-      addr.split('.').each { |i|
-	n <<= 8
-	n += i.to_i
+      return addr.split('.').inject(0) { |i, s|
+        i << 8 | s.to_i
       }
-      return n
     end
     return nil
   end
@@ -525,25 +522,20 @@ class IPAddr
     if rest < 0
       return nil
     end
-    a = [l, Array.new(rest, '0'), r].flatten!
-    n = 0
-    a.each { |i|
-      n <<= 16
-      n += i.hex
+    return (l + Array.new(rest, '0') + r).inject(0) { |i, s|
+      i << 16 | s.hex
     }
-    return n
   end
 
   def addr_mask(addr)
     case @family
     when Socket::AF_INET
-      addr &= IN4MASK
+      return addr & IN4MASK
     when Socket::AF_INET6
-      addr &= IN6MASK
+      return addr & IN6MASK
     else
       raise "unsupported address family"
     end
-    return addr
   end
 
   def _reverse

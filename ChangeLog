@@ -1,3 +1,8 @@
+Fri Oct  5 04:02:39 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (in_addr, in6_addr, addr_mask): Make some minor
+	  code optimization.
+
 Fri Oct  5 03:25:51 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (<=>): Implement IPAddr#<=> and make IPAddr
