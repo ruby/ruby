@@ -1,3 +1,8 @@
+Thu Oct  4 20:45:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (Init_process): win32 has our own WNOHANG definition, so
+	  remove unnecessary #ifdef guard.
+
 Thu Oct  4 20:17:19 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* array.c (rb_ary_permutation, rb_ary_product): support non C99

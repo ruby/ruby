@@ -3799,7 +3799,6 @@ Init_process(void)
 
     rb_mProcess = rb_define_module("Process");
 
-#if !defined(_WIN32) && !defined(DJGPP)
 #ifdef WNOHANG
     rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
@@ -3809,7 +3808,6 @@ Init_process(void)
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(WUNTRACED));
 #else
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
-#endif
 #endif
 
     rb_define_singleton_method(rb_mProcess, "exec", rb_f_exec, -1);
