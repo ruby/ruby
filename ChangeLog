@@ -1,3 +1,8 @@
+Fri Oct  5 21:24:59 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_s_union_m): Regexp.union accepts single argument which
+	  is an array of patterns. 
+
 Fri Oct  5 16:42:27 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_not_match): new method.
