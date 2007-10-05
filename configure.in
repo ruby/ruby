@@ -893,20 +893,6 @@ AC_ARG_WITH(valgrind,
         [  --with-valgrind         enable valgrind memcheck support.],
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
-dnl default value for $KANJI
-DEFAULT_KCODE="KCODE_NONE"
-
-AC_ARG_WITH(default-kcode, 
-	[  --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 
-	[case $withval in
-	utf8) DEFAULT_KCODE="KCODE_UTF8";;
-	euc)  DEFAULT_KCODE="KCODE_EUC";;
-	sjis) DEFAULT_KCODE="KCODE_SJIS";;
-	none) DEFAULT_KCODE="KCODE_NONE";;
-        *)    AC_MSG_WARN($withval is not valid kcode; ignored);;
-	esac])
-AC_DEFINE_UNQUOTED(DEFAULT_KCODE, $DEFAULT_KCODE)
-
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out, 
 	[  --with-dln-a-out        use dln_a_out if possible], [

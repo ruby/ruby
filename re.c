@@ -152,7 +152,7 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 #define ARG_KCODE_UTF8       (ARG_KCODE_UNIT * 4)
 #define ARG_KCODE_MASK       (ARG_KCODE_UNIT * 7)
 
-static int reg_kcode = DEFAULT_KCODE;
+static int reg_kcode = KCODE_NONE;
 
 static int
 char_to_option(int c)
@@ -2406,14 +2406,7 @@ Init_Regexp(void)
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
     onigenc_set_default_caseconv_table((UChar*)casetable);
-    if (DEFAULT_KCODE == KCODE_EUC)
-        onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
-    else if (DEFAULT_KCODE == KCODE_SJIS)
-        onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
-    else if (DEFAULT_KCODE == KCODE_UTF8)
-        onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
-    else
-        onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
+    onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

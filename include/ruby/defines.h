@@ -106,15 +106,6 @@ void xfree(void*);
 #endif
 #endif
 
-/* define RUBY_USE_EUC/SJIS for default kanji-code */
-#ifndef DEFAULT_KCODE
-#if defined(DOSISH) || defined(__CYGWIN__) || defined(__MACOS__) || defined(OS2)
-#define DEFAULT_KCODE KCODE_SJIS
-#else
-#define DEFAULT_KCODE KCODE_EUC
-#endif
-#endif
-
 #ifdef __NeXT__
 /* NextStep, OpenStep, Rhapsody */
 #ifndef S_IRUSR
