@@ -1,3 +1,9 @@
+Fri Oct  5 16:15:52 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Turn on --enable-pthread by default for FreeBSD
+	  5.2.1-RELEASE and later, and remove pthread support for older
+	  versions which has never worked perfectly.
+
 Fri Oct  5 16:11:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* time.c (time_to_s): Fix documentation.  Time format changed.

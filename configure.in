@@ -392,17 +392,31 @@ dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 #include <errno.h>])
 
-dnl whether link libc_r or not
-AC_ARG_WITH(libc_r, 
-	[  --with-libc_r           link libc_r if possible (FreeBSD only)], [
-	case $withval in
-	yes) with_libc_r=yes;;
-	*)   with_libc_r=no;;
-	esac], [with_libc_r=no])
+case "$target_os" in
+freebsd*)
+  AC_CACHE_CHECK([whether pthread should be enabled by default],
+    rb_cv_enable_pthread_default,
+    [AC_TRY_CPP([
+#include <osreldate.h>
+#if __FreeBSD_version < 502102
+#error pthread should be disabled on this platform
+#endif
+      ],
+      rb_cv_enable_pthread_default=yes,
+      rb_cv_enable_pthread_default=no)])
+  enable_pthread_default=$rb_cv_enable_pthread_default
+  ;;
+mingw*)
+  enable_pthread_default=no
+  ;;
+*)
+  enable_pthread_default=yes
+  ;;
+esac
 
 AC_ARG_ENABLE(pthread,
        [  --enable-pthread        use pthread library.],
-       [enable_pthread=$enableval], [enable_pthread=yes])
+       [enable_pthread=$enableval], [enable_pthread=$enable_pthread_default])
 
 dnl Checks for libraries.
 case "$target_os" in
@@ -452,7 +466,6 @@ mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_lib_dl_dlopen=no
 		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=no
-		enable_pthread=no
 		ac_cv_func_fcntl=yes
 		;;
 os2-emx*)	LIBS="-lm $LIBS"
@@ -481,22 +494,6 @@ freebsd*)	LIBS="-lm $LIBS"
 		   rb_cv_lib_xpg4_needed=yes)])
 		if test "$rb_cv_lib_xpg4_needed" = yes; then
 			AC_CHECK_LIB(xpg4, setlocale)
-		fi
-		if test "$with_libc_r" = yes; then
-			AC_CACHE_CHECK([whether libc_r is supplementary to libc],
-			  rb_cv_supplementary_lib_c_r,
-			  [AC_TRY_CPP([
-#include <osreldate.h>
-#if 500016 <= __FreeBSD_version
-#error libc_r is supplementary to libc
-#endif
-			   ],
-			   rb_cv_supplementary_lib_c_r=no,
-			   rb_cv_supplementary_lib_c_r=yes,
-			   rb_cv_supplementary_lib_c_r=yes)])
-			if test "$rb_cv_supplementary_lib_c_r" = yes; then
-			   MAINLIBS="-lc_r $MAINLIBS"
-			fi
 		fi
 		;;
 dragonfly*)	LIBS="-lm $LIBS"
