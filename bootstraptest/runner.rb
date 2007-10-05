@@ -166,6 +166,18 @@ def assert_match(expected_pattern, testsrc, message = '')
   }
 end
 
+def assert_not_match(unexpected_pattern, testsrc, message = '')
+  newtest
+  assert_check(testsrc, message) {|result|
+    if unexpected_pattern !~ result
+      nil
+    else
+      desc = "#{unexpected_pattern.inspect} expected to be !~\n#{result.inspect}"
+      pretty(testsrc, desc, result)
+    end
+  }
+end
+
 def assert_normal_exit(testsrc, message = '')
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose

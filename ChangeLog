@@ -1,3 +1,7 @@
+Fri Oct  5 16:42:27 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (assert_not_match): new method.
+
 Fri Oct  5 16:15:52 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Turn on --enable-pthread by default for FreeBSD
