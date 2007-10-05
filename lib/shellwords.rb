@@ -1,31 +1,32 @@
 #
-# shellwords.rb: Split text into an array of tokens a la UNIX shell
+# shellwords.rb: Manipulates strings a la UNIX Bourne shell
 #
 
 #
-# This module is originally a port of shellwords.pl, but modified to
-# conform to POSIX / SUSv3 (IEEE Std 1003.1-2001).
+# This module manipulates strings according to the word parsing rules
+# of the UNIX Bourne shell.
 #
-# Examples:
+# The shellwords() function was originally a port of shellwords.pl,
+# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001).
 #
-#   require 'shellwords'
-#   words = Shellwords.shellwords(line)
-#
-# or
-#
-#   require 'shellwords'
-#   include Shellwords
-#   words = shellwords(line)
+# Authors:
+#   - Wakou Aoyama
+#   - Akinori MUSHA <knu@iDaemons.org>
 #
 module Shellwords
-
   #
-  # Split text into an array of tokens in the same way the UNIX Bourne
-  # shell does.
+  # Splits a string into an array of tokens in the same way the UNIX
+  # Bourne shell does.
   #
-  # See the +Shellwords+ module documentation for an example.
+  #   argv = Shellwords.split('here are "two words"')
+  #   argv #=> ["here", "are", "two words"]
   #
-  def shellwords(line)
+  # +String#shellsplit+ is a shorthand for this function.
+  #
+  #   argv = 'here are "two words"'.shellsplit
+  #   argv #=> ["here", "are", "two words"]
+  #
+  def shellsplit(line)
     line = String.new(line) rescue
       raise(ArgumentError, "Argument must be a string")
     line.lstrip!
@@ -56,5 +57,113 @@ module Shellwords
     words
   end
 
-  module_function :shellwords
+  alias shellwords shellsplit
+
+  module_function :shellsplit, :shellwords
+
+  class << self
+    alias split shellsplit
+  end
+
+  #
+  # Escapes a string so that it can be safely used in a Bourne shell
+  # command line.
+  #
+  # Note that a resulted string should be used unquoted and is not
+  # intended for use in double quotes nor in single quotes.
+  #
+  #   open("| grep #{Shellwords.escape(pattern)} file") { |pipe|
+  #     # ...
+  #   }
+  #
+  # +String#shellescape+ is a shorthand for this function.
+  #
+  #   open("| grep #{pattern.shellescape} file") { |pipe|
+  #     # ...
+  #   }
+  #
+  def shellescape(str)
+    # An empty argument will be skipped, so return empty quotes.
+    return "''" if str.empty?
+
+    str = str.dup
+
+    # Process as a single byte sequence because not all shell
+    # implementations are multibyte aware.
+    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/n, "\\\\\\1")
+
+    # A LF cannot be escaped with a backslash because a backslash + LF
+    # combo is regarded as line continuation and simply ignored.
+    str.gsub!(/\n/, "'\n'")
+
+    return str
+  end
+
+  module_function :shellescape
+
+  class << self
+    alias escape shellsplit
+  end
+
+  #
+  # Builds a command line string from an argument list +array+ joining
+  # all elements escaped for Bourne shell and separated by a space.
+  #
+  #   open('|' + Shellwords.join(['grep', pattern, *files])) { |pipe|
+  #     # ...
+  #   }
+  #
+  # +Array#shelljoin+ is a shorthand for this function.
+  #
+  #   open('|' + ['grep', pattern, *files].shelljoin) { |pipe|
+  #     # ...
+  #   }
+  #
+  def shelljoin(array)
+    array.map { |arg| shellescape(arg) }.join(' ')
+  end
+
+  module_function :shelljoin
+
+  class << self
+    alias join shelljoin
+  end
+end
+
+class String
+  #
+  # call-seq:
+  #   str.shellsplit => array
+  #
+  # Splits +str+ into an array of tokens in the same way the UNIX
+  # Bourne shell does.  See +Shellwords::shellsplit+ for details.
+  #
+  def shellsplit
+    Shellwords.split(self)
+  end
+
+  #
+  # call-seq:
+  #   str.shellescape => string
+  #
+  # Escapes +str+ so that it can be safely used in a Bourne shell
+  # command line.  See +Shellwords::shellescape+ for details.
+  #
+  def shellescape
+    Shellwords.escape(self)
+  end
+end
+
+class Array
+  #
+  # call-seq:
+  #   array.shelljoin => string
+  #
+  # Builds a command line string from an argument list +array+ joining
+  # all elements escaped for Bourne shell and separated by a space.
+  # See +Shellwords::shelljoin+ for details.
+  #
+  def shelljoin
+    Shellwords.join(self)
+  end
 end
