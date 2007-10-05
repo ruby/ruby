@@ -1186,11 +1186,14 @@ time_asctime(VALUE time)
  *     time.to_s    => string
  *  
  *  Returns a string representing <i>time</i>. Equivalent to calling
- *  <code>Time#strftime</code> with a format string of ``<code>%a</code>
- *  <code>%b</code> <code>%d</code> <code>%H:%M:%S</code>
- *  <code>%Z</code> <code>%Y</code>''.
+ *  <code>Time#strftime</code> with a format string of
+ *  ``<code>%Y-%m-%d</code> <code>%H:%M:%S</code> <code>%z</code>''
+ *  for a local time and
+ *  ``<code>%Y-%m-%d</code> <code>%H:%M:%S</code> <code>UTC</code>''
+ *  for a UTC time.
  *     
- *     Time.now.to_s   #=> "Wed Apr 09 08:56:04 CDT 2003"
+ *     Time.now.to_s       #=> "2007-10-05 16:09:51 +0900"
+ *     Time.now.utc.to_s   #=> "2007-10-05 07:09:51 UTC"
  */
 
 static VALUE
