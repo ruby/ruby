@@ -17,11 +17,6 @@ assert_normal_exit %q{
   Marshal.load(Marshal.dump({"k"=>"v"}), lambda {|v| })
 }
 
-assert_normal_exit %q{
-  require 'continuation'
-  Fiber.new{ callcc{|c| @c = c } }.resume
-}, '[ruby-dev:31913]'
-
 assert_not_match /method_missing/, %q{
   STDERR.reopen(STDOUT)
   variable_or_mehtod_not_exist

@@ -86,7 +86,8 @@ cont_free(void *ptr)
 	RUBY_FREE_UNLESS_NULL(cont->machine_register_stack);
 #endif
 	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
-	if (cont->saved_thread.local_storage) {
+	if (cont->vm_stack && cont->saved_thread.local_storage) {
+	    /* fiber */
 	    st_free_table(cont->saved_thread.local_storage);
 	}
 	ruby_xfree(ptr);
