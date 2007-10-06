@@ -2765,7 +2765,7 @@ rb_str_include(VALUE str, VALUE arg)
  *     str.to_i(base=10)   => integer
  *  
  *  Returns the result of interpreting leading characters in <i>str</i> as an
- *  integer base <i>base</i> (2, 8, 10, or 16). Extraneous characters past the
+ *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
  *  end of a valid number are ignored. If there is not a valid number at the
  *  start of <i>str</i>, <code>0</code> is returned. This method never raises an
  *  exception.

@@ -1,3 +1,8 @@
+Sat Oct  6 23:14:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_to_i): update RDoc since base can be any value
+	  between 2 and 36.  [ruby-talk:272879]
+
 Sat Oct  6 16:24:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_free): check Fiber or Continuation.
