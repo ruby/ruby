@@ -25,31 +25,45 @@ static struct rb_encoding_entry *enc_table;
 static int enc_table_size;
 static st_table *enc_table_alias;
 
-void
+int
 rb_enc_register(const char *name, rb_encoding *encoding)
 {
     struct rb_encoding_entry *ent;
+    int newsize;
 
     if (!enc_table) {
-	enc_table = malloc(sizeof(struct rb_encoding_entry));
-	enc_table_size = 1;
+	ent = malloc(sizeof(*enc_table));
+	newsize = 1;
     }
     else {
-	enc_table_size++;
-	enc_table = realloc(enc_table, sizeof(struct rb_encoding_entry)*enc_table_size);
+	newsize = enc_table_size + 1;
+	ent = realloc(enc_table, sizeof(*enc_table)*newsize);
     }
-    ent = &enc_table[enc_table_size-1];
+    if (!ent) return -1;
+    enc_table = ent;
+    enc_table_size = newsize;
+    ent = &enc_table[--newsize];
     ent->name = name;
     ent->enc = encoding;
+    return newsize;
 }
 
-void
+int
 rb_enc_alias(const char *alias, const char *orig)
 {
+    st_data_t data;
+    int idx;
+
     if (!enc_table_alias) {
 	enc_table_alias = st_init_strcasetable();
     }
+    while ((idx = rb_enc_find_index(orig)) < 0) {
+	if (!st_lookup(enc_table_alias, (st_data_t)orig, &data))
+	    return -1;
+	orig = (const char *)data;
+    }
     st_insert(enc_table_alias, (st_data_t)alias, (st_data_t)orig);
+    return idx;
 }
 
 void
@@ -57,11 +71,13 @@ rb_enc_init(void)
 {
 #define ENC_REGISTER(enc) rb_enc_register(rb_enc_name(enc), enc)
     ENC_REGISTER(ONIG_ENCODING_ASCII);
-    ENC_REGISTER(ONIG_ENCODING_SJIS);
     ENC_REGISTER(ONIG_ENCODING_EUC_JP);
+    ENC_REGISTER(ONIG_ENCODING_SJIS);
     ENC_REGISTER(ONIG_ENCODING_UTF8);
 #undef ENC_REGISTER
-    rb_enc_alias("binary", "ascii");
+    rb_enc_alias("ascii", "us-ascii");
+    rb_enc_alias("binary", "us-ascii");
+    rb_enc_alias("iso-8859-1", "us-ascii");
     rb_enc_alias("sjis", "shift_jis");
 }
 

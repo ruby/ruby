@@ -1,4 +1,15 @@
-Sat Oct  6 14:32:30 2007  U-nobu-PC\nobu  <nobu@ruby-lang.org>
+Sat Oct  6 14:56:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_register): returns new index or -1 if failed.
+
+	* encoding.c (rb_enc_alias): check if original name is registered.
+
+	* encoding.c (rb_enc_init): register in same order as kcode options in
+	  re.c.  added new aliases.
+
+	* string.c (rb_str_force_encoding): check if valid encoding name.
+
+Sat Oct  6 14:32:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (opt_eq): get rid of gcc bug.
 
