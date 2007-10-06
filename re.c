@@ -91,6 +91,8 @@ rb_memcicmp(const void *x, const void *y, long len)
     return 0;
 }
 
+#undef rb_memcmp
+
 int
 rb_memcmp(const void *p1, const void *p2, long len)
 {

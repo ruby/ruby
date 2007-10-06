@@ -1697,18 +1697,18 @@ opt_eq
 
 	    VALUE str1 = recv;
 	    VALUE str2 = obj;
-	    if (str1 == str2) {
-		val = Qtrue;
-	    }
-	    else if (!ENCODING_GET(str1) && !ENCODING_GET(str2) &&
-		     RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
-		     rb_memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
-			       RSTRING_LEN(str1)) == 0) {
-		val = Qtrue;
-	    }
-	    else {
+	    val = Qtrue;
+	    do {
+		if (str1 == str2) break;
+		if (!ENCODING_GET(str1) && !ENCODING_GET(str2)) {
+		    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
+			int cmp = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
+					 RSTRING_LEN(str1));
+			if (!cmp) break;
+		    }
+		}
 		val = rb_str_equal(str1, str2);
-	    }
+	    } while (0);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
