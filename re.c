@@ -2056,6 +2056,7 @@ rb_reg_s_try_convert(VALUE dummy, VALUE re)
  *     Regexp.union("penzance")             #=> /penzance/
  *     Regexp.union("a+b*c")                #=> /a\+b\*c/
  *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
+ *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
  *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
  */
 static VALUE
