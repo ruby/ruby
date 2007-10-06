@@ -1,3 +1,8 @@
+Sat Oct  6 23:14:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_to_i): update RDoc since base can be any value
+	  between 2 and 36.  [ruby-talk:272879]
+
 Fri Oct  5 15:44:50 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb: Add shellescape() and shelljoin().
