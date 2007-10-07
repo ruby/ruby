@@ -1,6 +1,6 @@
 Sun Oct  7 18:57:12 2007  Tanaka Akira  <akr@fsij.org>
 
-	* include/ruby/ruby.h: enum ruby_value_flags removed.
+	* include/ruby/ruby.h: enum ruby_value_flags removed.  [ruby-dev:31959]
 
 	* ruby.c: define RUBY_FL_* as const VALUE for gdb.
 
