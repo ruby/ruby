@@ -1694,21 +1694,7 @@ opt_eq
 	else if (HEAP_CLASS_OF(recv) == rb_cString &&
 		 HEAP_CLASS_OF(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-
-	    VALUE str1 = recv;
-	    VALUE str2 = obj;
-	    val = Qtrue;
-	    do {
-		if (str1 == str2) break;
-		if (!ENCODING_GET(str1) && !ENCODING_GET(str2)) {
-		    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
-			int cmp = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2),
-					 RSTRING_LEN(str1));
-			if (!cmp) break;
-		    }
-		}
-		val = rb_str_equal(str1, str2);
-	    } while (0);
+	    val = rb_str_equal(recv, obj);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
