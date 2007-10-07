@@ -624,18 +624,16 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RVALUES(obj) (R_CAST(RValues)(obj))
 
+#define FL_SINGLETON FL_USER0
 #define FL_MARK      ((VALUE)(1<<5))
-
-/* will be used in the future GC */
-#define FL_RESERVED  ((VALUE)(1<<6))
-
+#define FL_RESERVED  ((VALUE)(1<<6)) /* will be used in the future GC */
 #define FL_FINALIZE  ((VALUE)(1<<7))
 #define FL_TAINT     ((VALUE)(1<<8))
 #define FL_EXIVAR    ((VALUE)(1<<9))
 #define FL_FREEZE    ((VALUE)(1<<10))
-#define FL_SINGLETON ((VALUE)(1<<11))
 
 #define FL_USHIFT    11
+
 #define FL_USER0     ((VALUE)(1<<(FL_USHIFT+0)))
 #define FL_USER1     ((VALUE)(1<<(FL_USHIFT+1)))
 #define FL_USER2     ((VALUE)(1<<(FL_USHIFT+2)))
