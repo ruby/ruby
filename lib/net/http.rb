@@ -533,9 +533,6 @@ module Net   #:nodoc:
       false   # redefined in net/https
     end
 
-    # specify enabling SSL server certificate and hostname checking.
-    attr_accessor :enable_post_connection_check
-
     # Opens TCP connection and HTTP session.
     # 
     # When this method is called with block, gives a HTTP object
@@ -595,12 +592,7 @@ module Net   #:nodoc:
         end
         s.connect
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-          begin
-            s.post_connection_check(@address)
-          rescue OpenSSL::SSL::SSLError => ex
-            raise ex if @enable_post_connection_check
-            warn ex.message
-          end
+          s.post_connection_check(@address)
         end
       end
       on_connect

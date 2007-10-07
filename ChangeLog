@@ -1,3 +1,9 @@
+Sun Oct  7 17:50:14 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/http.rb: remove enable_post_connection_check flag.
+
+	* lib/open-uri.rb: ditto.
+
 Sun Oct 07 15:48:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (opt_eq): fix to use rb_str_equal().
