@@ -1,55 +1,55 @@
 define rp
-  if (VALUE)$arg0 & 1
+  if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
     printf "FIXNUM: %d\n", $arg0 >> 1
   else
   if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
-    printf "SYMBOL(%d)\n", $arg0 >> 8
+    printf "SYMBOL(%d)\n", $arg0 >> RUBY_SPECIAL_SHIFT
   else
-  if $arg0 == 0
+  if $arg0 == RUBY_Qfalse
     echo false\n
   else
-  if $arg0 == 2
+  if $arg0 == RUBY_Qtrue
     echo true\n
   else
-  if $arg0 == 4
+  if $arg0 == RUBY_Qnil
     echo nil\n
   else
-  if $arg0 == 6
+  if $arg0 == RUBY_Qundef
     echo undef\n
   else
-  if (VALUE)$arg0 & 0x03
+  if (VALUE)$arg0 & RUBY_IMMEDIATE_MASK
     echo immediate\n
   else
   set $flags = ((struct RBasic*)$arg0)->flags
-  if ($flags & 0x1f) == 0x00
+  if ($flags & RUBY_T_MASK) == RUBY_T_NONE
     printf "T_NONE: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x01
+  if ($flags & RUBY_T_MASK) == RUBY_T_NIL
     printf "T_NIL: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x02
+  if ($flags & RUBY_T_MASK) == RUBY_T_OBJECT
     printf "T_OBJECT: "
     print (struct RObject *)$arg0
   else
-  if ($flags & 0x1f) == 0x03
+  if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
     printf "T_CLASS: "
     print (struct RClass *)$arg0
   else
-  if ($flags & 0x1f) == 0x04
+  if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
     printf "T_ICLASS: "
     print (struct RClass *)$arg0
   else
-  if ($flags & 0x1f) == 0x05
+  if ($flags & RUBY_T_MASK) == RUBY_T_MODULE
     printf "T_MODULE: "
     print (struct RClass *)$arg0
   else
-  if ($flags & 0x1f) == 0x06
+  if ($flags & RUBY_T_MASK) == RUBY_T_FLOAT
     printf "T_FLOAT: %.16g ", (((struct RFloat*)$arg0)->value)
     print (struct RFloat *)$arg0
   else
-  if ($flags & 0x1f) == 0x07
+  if ($flags & RUBY_T_MASK) == RUBY_T_STRING
     printf "T_STRING: "
     set print address off
     output (char *)(($flags & RUBY_FL_USER1) ? \
@@ -59,7 +59,7 @@ define rp
     printf " "
     print (struct RString *)$arg0
   else
-  if ($flags & 0x1f) == 0x08
+  if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
     printf "T_REGEXP: "
     set print address off
     output ((struct RRegexp*)$arg0)->str
@@ -67,23 +67,23 @@ define rp
     printf " "
     print (struct RRegexp *)$arg0
   else
-  if ($flags & 0x1f) == 0x09
+  if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
     printf "T_ARRAY: len=%d ", ((struct RArray*)$arg0)->len
     print (struct RArray *)$arg0
     x/xw ((struct RArray*)$arg0)->ptr
   else
-  if ($flags & 0x1f) == 0x0a
+  if ($flags & RUBY_T_MASK) == RUBY_T_FIXNUM
     printf "T_FIXNUM: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x0b
+  if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "T_HASH: ",
     if ((struct RHash *)$arg0)->ntbl
       printf "len=%d ", ((struct RHash *)$arg0)->ntbl->num_entries
     end
     print (struct RHash *)$arg0
   else
-  if ($flags & 0x1f) == 0x0c
+  if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
     printf "T_STRUCT: len=%d ", \
       (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
        ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
@@ -93,7 +93,7 @@ define rp
           ((struct RStruct *)$arg0)->as.ary : \
           ((struct RStruct *)$arg0)->as.heap.len)
   else
-  if ($flags & 0x1f) == 0x0d
+  if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
     printf "T_BIGNUM: sign=%d len=%d ", \
       (($flags & RUBY_FL_USER1) != 0), \
       (($flags & RUBY_FL_USER2) ? \
@@ -107,45 +107,45 @@ define rp
           ((struct RBignum*)$arg0)->as.ary : \
           ((struct RBignum*)$arg0)->as.heap.digits)
   else
-  if ($flags & 0x1f) == 0x0e
+  if ($flags & RUBY_T_MASK) == RUBY_T_FILE
     printf "T_FILE: "
     print (struct RFile *)$arg0
     output *((struct RFile *)$arg0)->fptr
     printf "\n"
   else
-  if ($flags & 0x1f) == 0x10
+  if ($flags & RUBY_T_MASK) == RUBY_T_TRUE
     printf "T_TRUE: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x11
+  if ($flags & RUBY_T_MASK) == RUBY_T_FALSE
     printf "T_FALSE: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x12
+  if ($flags & RUBY_T_MASK) == RUBY_T_DATA
     printf "T_DATA: "
     print (struct RData *)$arg0
   else
-  if ($flags & 0x1f) == 0x13
+  if ($flags & RUBY_T_MASK) == RUBY_T_MATCH
     printf "T_MATCH: "
     print (struct RMatch *)$arg0
   else
-  if ($flags & 0x1f) == 0x14
+  if ($flags & RUBY_T_MASK) == RUBY_T_SYMBOL
     printf "T_SYMBOL: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x1a
+  if ($flags & RUBY_T_MASK) == RUBY_T_VALUES
     printf "T_VALUES: "
     print (struct RValues *)$arg0
   else
-  if ($flags & 0x1f) == 0x1b
+  if ($flags & RUBY_T_MASK) == RUBY_T_BLOCK
     printf "T_BLOCK: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x1c
+  if ($flags & RUBY_T_MASK) == RUBY_T_UNDEF
     printf "T_UNDEF: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & 0x1f) == 0x1f
+  if ($flags & RUBY_T_MASK) == RUBY_T_NODE
     printf "T_NODE("
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
     printf "): "
