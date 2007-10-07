@@ -624,70 +624,39 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RVALUES(obj) (R_CAST(RValues)(obj))
 
-enum ruby_value_flags {
-    RUBY_FL_MARK      = (1<<5),
-#define FL_MARK      RUBY_FL_MARK
-    RUBY_FL_RESERVED  = (1<<6)	/* will be used in the future GC */,
-#define FL_RESERVED  RUBY_FL_RESERVED
-    RUBY_FL_FINALIZE  = (1<<7),
-#define FL_FINALIZE  RUBY_FL_FINALIZE
-    RUBY_FL_TAINT     = (1<<8),
-#define FL_TAINT     RUBY_FL_TAINT
-    RUBY_FL_EXIVAR    = (1<<9),
-#define FL_EXIVAR    RUBY_FL_EXIVAR
-    RUBY_FL_FREEZE    = (1<<10),
-#define FL_FREEZE    RUBY_FL_FREEZE
-    RUBY_FL_SINGLETON = (1<<11),
-#define FL_SINGLETON RUBY_FL_SINGLETON
+#define FL_MARK      ((VALUE)(1<<5))
 
-    RUBY_FL_USHIFT    = 11,
-#define FL_USHIFT    RUBY_FL_USHIFT
+/* will be used in the future GC */
+#define FL_RESERVED  ((VALUE)(1<<6))
 
-    RUBY_FL_USER0     = (1<<(FL_USHIFT+0)),
-#define FL_USER0     RUBY_FL_USER0
-    RUBY_FL_USER1     = (1<<(FL_USHIFT+1)),
-#define FL_USER1     RUBY_FL_USER1
-    RUBY_FL_USER2     = (1<<(FL_USHIFT+2)),
-#define FL_USER2     RUBY_FL_USER2
-    RUBY_FL_USER3     = (1<<(FL_USHIFT+3)),
-#define FL_USER3     RUBY_FL_USER3
-    RUBY_FL_USER4     = (1<<(FL_USHIFT+4)),
-#define FL_USER4     RUBY_FL_USER4
-    RUBY_FL_USER5     = (1<<(FL_USHIFT+5)),
-#define FL_USER5     RUBY_FL_USER5
-    RUBY_FL_USER6     = (1<<(FL_USHIFT+6)),
-#define FL_USER6     RUBY_FL_USER6
-    RUBY_FL_USER7     = (1<<(FL_USHIFT+7)),
-#define FL_USER7     RUBY_FL_USER7
-    RUBY_FL_USER8     = (1<<(FL_USHIFT+8)),
-#define FL_USER8     RUBY_FL_USER8
-    RUBY_FL_USER9     = (1<<(FL_USHIFT+9)),
-#define FL_USER9     RUBY_FL_USER9
-    RUBY_FL_USER10     = (1<<(FL_USHIFT+10)),
-#define FL_USER10     RUBY_FL_USER10
-    RUBY_FL_USER11     = (1<<(FL_USHIFT+11)),
-#define FL_USER11     RUBY_FL_USER11
-    RUBY_FL_USER12     = (1<<(FL_USHIFT+12)),
-#define FL_USER12     RUBY_FL_USER12
-    RUBY_FL_USER13     = (1<<(FL_USHIFT+13)),
-#define FL_USER13     RUBY_FL_USER13
-    RUBY_FL_USER14     = (1<<(FL_USHIFT+14)),
-#define FL_USER14     RUBY_FL_USER14
-    RUBY_FL_USER15     = (1<<(FL_USHIFT+15)),
-#define FL_USER15     RUBY_FL_USER15
-    RUBY_FL_USER16     = (1<<(FL_USHIFT+16)),
-#define FL_USER16     RUBY_FL_USER16
-    RUBY_FL_USER17     = (1<<(FL_USHIFT+17)),
-#define FL_USER17     RUBY_FL_USER17
-    RUBY_FL_USER18     = (1<<(FL_USHIFT+18)),
-#define FL_USER18     RUBY_FL_USER18
-    RUBY_FL_USER19     = (1<<(FL_USHIFT+19)),
-#define FL_USER19     RUBY_FL_USER19
-    RUBY_FL_USER20     = (1<<(FL_USHIFT+20)),
-#define FL_USER20     RUBY_FL_USER20
-    RUBY_FL_DUMMY      = ~(VALUE)0 >> 1 /* make sizeof(enum ruby_value_flags)
-                                           equal to sizeof(VALUE). */
-};
+#define FL_FINALIZE  ((VALUE)(1<<7))
+#define FL_TAINT     ((VALUE)(1<<8))
+#define FL_EXIVAR    ((VALUE)(1<<9))
+#define FL_FREEZE    ((VALUE)(1<<10))
+#define FL_SINGLETON ((VALUE)(1<<11))
+
+#define FL_USHIFT    11
+#define FL_USER0     ((VALUE)(1<<(FL_USHIFT+0)))
+#define FL_USER1     ((VALUE)(1<<(FL_USHIFT+1)))
+#define FL_USER2     ((VALUE)(1<<(FL_USHIFT+2)))
+#define FL_USER3     ((VALUE)(1<<(FL_USHIFT+3)))
+#define FL_USER4     ((VALUE)(1<<(FL_USHIFT+4)))
+#define FL_USER5     ((VALUE)(1<<(FL_USHIFT+5)))
+#define FL_USER6     ((VALUE)(1<<(FL_USHIFT+6)))
+#define FL_USER7     ((VALUE)(1<<(FL_USHIFT+7)))
+#define FL_USER8     ((VALUE)(1<<(FL_USHIFT+8)))
+#define FL_USER9     ((VALUE)(1<<(FL_USHIFT+9)))
+#define FL_USER10    ((VALUE)(1<<(FL_USHIFT+10)))
+#define FL_USER11    ((VALUE)(1<<(FL_USHIFT+11)))
+#define FL_USER12    ((VALUE)(1<<(FL_USHIFT+12)))
+#define FL_USER13    ((VALUE)(1<<(FL_USHIFT+13)))
+#define FL_USER14    ((VALUE)(1<<(FL_USHIFT+14)))
+#define FL_USER15    ((VALUE)(1<<(FL_USHIFT+15)))
+#define FL_USER16    ((VALUE)(1<<(FL_USHIFT+16)))
+#define FL_USER17    ((VALUE)(1<<(FL_USHIFT+17)))
+#define FL_USER18    ((VALUE)(1<<(FL_USHIFT+18)))
+#define FL_USER19    ((VALUE)(1<<(FL_USHIFT+19)))
+#define FL_USER20    ((VALUE)(1<<(FL_USHIFT+20)))
 
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 

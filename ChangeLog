@@ -1,3 +1,9 @@
+Sun Oct  7 18:57:12 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h: enum ruby_value_flags removed.
+
+	* ruby.c: define RUBY_FL_* as const VALUE for gdb.
+
 Sun Oct  7 17:50:14 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/http.rb: remove enable_post_connection_check flag.
