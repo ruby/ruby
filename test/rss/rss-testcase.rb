@@ -332,7 +332,14 @@ EOA
 
       "<#{h elem_name} #{attrs_str}>\n#{contents_str}\n</#{h elem_name}>"
     end
-    
+
+    def xmlns_container(xmlns_decls, content)
+      attributes = xmlns_decls.collect do |prefix, uri|
+        "xmlns:#{h prefix}=\"#{h uri}\""
+      end.join(" ")
+      "<dummy #{attributes}>#{content}</dummy>"
+    end
+
     private
     def setup_rss10(rdf)
       assert_equal("", rdf.to_s)

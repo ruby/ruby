@@ -500,7 +500,8 @@ EOR
     end
 
     def test_unknown_duplicated_element
-      assert_parse(make_RDF(<<-EOR), :nothing_raised)
+      xmlns = {"test" => "http://localhost/test"}
+      assert_parse(make_RDF(<<-EOR, xmlns), :nothing_raised)
         #{make_channel("<test:string/>")}
         #{make_item}
         #{make_image}

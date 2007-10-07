@@ -1,3 +1,9 @@
+Sun Oct  7 22:37:47 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_taxonomy.rb, test/rss/test_parser_1.0.rb,
+	  test/rss/test_image.rb, test/rss/rss-testcase.rb: ensured
+	  declaring XML namespaces.
+
 Sun Oct  7 22:00:01 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/node.h: make node flags as VALUE type.
