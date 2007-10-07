@@ -271,26 +271,18 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-
 /* 0..4:T_TYPES, 5:FL_MARK, 6:reserved, 7:NODE_NEWLINE */
-enum ruby_node_flags {
-    NODE_NEWLINE       = (1<<7),
-#define NODE_NEWLINE NODE_NEWLINE
+#define NODE_NEWLINE (((VALUE)1)<<7)
 
-    NODE_TYPESHIFT     = 8,
-#define NODE_TYPESHIFT NODE_TYPESHIFT
-    NODE_TYPEMASK      = (0x7f<<NODE_TYPESHIFT),
-#define NODE_TYPEMASK  NODE_TYPEMASK
-    NODE_LSHIFT        = (NODE_TYPESHIFT+7),
-#define NODE_LSHIFT    NODE_LSHIFT
-    NODE_LMASK         = (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1),
-#define NODE_LMASK     NODE_LMASK
-};
+#define NODE_TYPESHIFT 8
+#define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
 #define nd_type(n) ((int) (((RNODE(n))->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
     RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|(((t)<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
+#define NODE_LSHIFT (NODE_TYPESHIFT+7)
+#define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
 #define nd_line(n) ((VALUE)(((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK))
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))

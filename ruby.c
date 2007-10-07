@@ -59,7 +59,6 @@ static const union {
     enum ruby_special_consts	special_consts;
     enum ruby_value_type	value_type;
     enum node_type		node_type;
-    enum ruby_node_flags	node_flags;
 } dummy_gdb_enums;
 
 const VALUE RUBY_FL_MARK      = FL_MARK;
@@ -91,6 +90,12 @@ const VALUE RUBY_FL_USER18    = FL_USER18;
 const VALUE RUBY_FL_USER19    = FL_USER19;
 const VALUE RUBY_FL_USER20    = FL_USER20;
 const int RUBY_FL_USHIFT = FL_USHIFT;
+
+const VALUE RUBY_NODE_NEWLINE = NODE_NEWLINE;
+const int RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT;
+const VALUE RUBY_NODE_TYPEMASK = NODE_TYPEMASK;
+const int RUBY_NODE_LSHIFT = NODE_LSHIFT;
+const VALUE RUBY_NODE_LMASK = NODE_LMASK;
 
 #ifndef HAVE_STDLIB_H
 char *getenv();

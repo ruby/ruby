@@ -1,3 +1,10 @@
+Sun Oct  7 22:00:01 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/node.h: make node flags as VALUE type.
+	  enum ruby_node_flags removed.
+
+	* ruby.c: define RUBY_NODE_* as const for gdb.
+
 Sun Oct  7 18:57:12 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h: enum ruby_value_flags removed.  [ruby-dev:31959]

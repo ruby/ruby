@@ -147,7 +147,7 @@ define rp
   else
   if ($flags & 0x1f) == 0x1f
     printf "T_NODE("
-    output (enum node_type)(($flags&NODE_TYPEMASK)>>NODE_TYPESHIFT)
+    output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
     printf "): "
     print *(NODE *)$arg0
   else
@@ -190,7 +190,7 @@ document rp
 end
 
 define nd_type
-  print (enum node_type)((((NODE*)$arg0)->flags&NODE_TYPEMASK)>>NODE_TYPESHIFT)
+  print (enum node_type)((((NODE*)$arg0)->flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
 end
 document nd_type
   Print a Ruby' node type.
@@ -204,7 +204,7 @@ document nd_file
 end
 
 define nd_line
-  print ((unsigned int)((((NODE*)$arg0)->flags>>NODE_LSHIFT)&NODE_LMASK))
+  print ((unsigned int)((((NODE*)$arg0)->flags>>RUBY_NODE_LSHIFT)&RUBY_NODE_LMASK))
 end
 document nd_line
   Print the source line number of a node.
