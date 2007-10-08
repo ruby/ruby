@@ -134,6 +134,9 @@ module Net
             @sock.verify_callback = @options['VerifyCallback']
             @sock.verify_depth    = @options['VerifyDepth']
             @sock.connect
+            if @options['VerifyMode'] != OpenSSL::SSL::VERIFY_NONE
+              @sock.post_connection_check(@options['Host'])
+            end
             @ssl = true
           end
           ''

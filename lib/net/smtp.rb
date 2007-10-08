@@ -578,6 +578,9 @@ module Net
       logging "TLS connection started"
       s.sync_close = true
       s.connect
+      if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+        s.post_connection_check(@address)
+      end
       s
     end
 

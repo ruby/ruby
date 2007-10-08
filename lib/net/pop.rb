@@ -533,6 +533,9 @@ module Net
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
         s.connect
+        if context.verify_mode != OpenSSL::SSL::VEIFY_NONE
+          s.post_connection_check(@address)
+        end
       end
       @socket = InternetMessageIO.new(s)
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"

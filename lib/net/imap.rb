@@ -330,19 +330,10 @@ module Net
     end
 
     # Sends a STARTTLS command to start TLS session.
-    def starttls(ctx = nil)
-      if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
-        raise RuntimeError, "already using SSL"
-      end
+    def starttls(certs = nil, verify = false)
       send_command("STARTTLS") do |resp|
         if resp.kind_of?(TaggedResponse) && resp.name == "OK"
-          if ctx
-            @sock = OpenSSL::SSL::SSLSocket.new(@sock, ctx)
-          else
-            @sock = OpenSSL::SSL::SSLSocket.new(@sock)
-          end
-          @sock.sync_close = true
-          @sock.connect
+          start_tls_session(certs, verify)
         end
       end
     end
@@ -906,21 +897,8 @@ module Net
       @parser = ResponseParser.new
       @sock = TCPSocket.open(host, port)
       if usessl
-        unless defined?(OpenSSL)
-          raise "SSL extension not installed"
-        end
+        start_tls_session(certs, verify)
         @usessl = true
-
-        # verify the server.
-        context = SSLContext::new()
-        context.ca_file = certs if certs && FileTest::file?(certs)
-        context.ca_path = certs if certs && FileTest::directory?(certs)
-        context.verify_mode = VERIFY_PEER if verify
-        if defined?(VerifyCallbackProc)
-          context.verify_callback = VerifyCallbackProc 
-        end
-        @sock = SSLSocket.new(@sock, context)
-        @sock.connect   # start ssl session.
       else
         @usessl = false
       end
@@ -1227,6 +1205,26 @@ module Net
           i
         end
       end
+    end
+
+    def start_tls_session(certs, verify)
+      unless defined?(OpenSSL)
+        raise "SSL extension not installed"
+      end
+      if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
+        raise RuntimeError, "already using SSL"
+      end
+      context = SSLContext::new()
+      context.ca_file = certs if certs && FileTest::file?(certs)
+      context.ca_path = certs if certs && FileTest::directory?(certs)
+      context.verify_mode = VERIFY_PEER if verify
+      if defined?(VerifyCallbackProc)
+        context.verify_callback = VerifyCallbackProc 
+      end
+      @sock = SSLSocket.new(@sock, context)
+      @sock.sync_close = true
+      @sock.connect
+      @sock.post_connection_check(@host) if verify
     end
 
     class RawData # :nodoc:
