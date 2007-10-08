@@ -229,7 +229,6 @@ module OpenURI
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
-      http.enable_post_connection_check = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       store.set_default_paths

@@ -900,6 +900,7 @@ module Net
         end
         @sock = SSLSocket.new(@sock, context)
         @sock.connect   # start ssl session.
+        @sock.post_connection_check(@host) if verify
       else
         @usessl = false
       end

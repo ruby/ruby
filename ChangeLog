@@ -1,3 +1,13 @@
+Mon Oct  8 20:06:23 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/http.rb, lib/open-uri.rb: remove
+	  Net::HTTP#enable_post_connection_check.  [ruby-dev:31960]
+
+	* lib/net/imap.rb: hostname should be verified against server's
+	  indentity as persented in the server's certificate. [ruby-dev:31960]
+
+	* ext/openssl/lib/net/telnets.rb, ext/openssl/lib/net/ftptls.rb: ditto.
+
 Sat Oct  6 23:14:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_to_i): update RDoc since base can be any value
