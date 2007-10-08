@@ -31,6 +31,12 @@ with all sufficient information, see the ChangeLog file.
 
   * New method:
     Dir.mktmpdir
+
+=== New methods and features
+
+* builtin classes
+
+  * Regexp.union accepts an array of patterns.
           
 == Changes with Ruby 1.8.5
 
