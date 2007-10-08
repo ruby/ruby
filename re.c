@@ -2042,23 +2042,6 @@ rb_reg_s_try_convert(VALUE dummy, VALUE re)
     return rb_check_regexp_type(re);
 }
 
-/*
- *  call-seq:
- *     Regexp.union([pattern]*)         => new_regexp
- *     Regexp.union(array_of_patterns)  => new_regexp
- *
- *  Return a <code>Regexp</code> object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
- *  can be Regexp objects, in which case their options will be preserved, or
- *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
- *
- *     Regexp.union                         #=> /(?!)/
- *     Regexp.union("penzance")             #=> /penzance/
- *     Regexp.union("a+b*c")                #=> /a\+b\*c/
- *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
- *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
- *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
- */
 static VALUE
 rb_reg_s_union(VALUE self, VALUE args0)
 {
@@ -2123,6 +2106,23 @@ rb_reg_s_union(VALUE self, VALUE args0)
     }
 }
 
+/*
+ *  call-seq:
+ *     Regexp.union(pat1, pat2, ...)            => new_regexp
+ *     Regexp.union(pats_ary)                   => new_regexp
+ *
+ *  Return a <code>Regexp</code> object that is the union of the given
+ *  <em>pattern</em>s, i.e., will match any of its parts. The <em>pattern</em>s
+ *  can be Regexp objects, in which case their options will be preserved, or
+ *  Strings. If no patterns are given, returns <code>/(?!)/</code>.
+ *
+ *     Regexp.union                         #=> /(?!)/
+ *     Regexp.union("penzance")             #=> /penzance/
+ *     Regexp.union("a+b*c")                #=> /a\+b\*c/
+ *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
+ *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
+ *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)
 {
