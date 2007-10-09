@@ -231,11 +231,13 @@ to_ary(VALUE ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
+#if 0
 static VALUE
 to_a(VALUE ary)
 {
     return rb_convert_type(ary, T_ARRAY, "Array", "to_a");
 }
+#endif
 
 VALUE
 rb_check_array_type(VALUE ary)
@@ -690,7 +692,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
     if (len == 0) return ary_new(klass, 0);
 
     shared = ary_make_shared(ary);
-	ptr = RARRAY_PTR(ary);
+    ptr = RARRAY_PTR(ary);
     ary2 = ary_alloc(klass);
     RARRAY(ary2)->ptr = ptr + beg;
     RARRAY(ary2)->len = len;
@@ -3041,6 +3043,9 @@ rb_ary_permutation(VALUE ary, VALUE num)
 	long *p = (long*)RSTRING_PTR(t0); /* array indexes of current permutation */
 	volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
 	int *used = (int*)RSTRING_PTR(t1); /* booleans: which indexes are already used */
+
+	RBASIC(t0)->klass = 0;
+	RBASIC(t1)->klass = 0;
 	ary = rb_ary_dup(ary); /* private defensive copy of ary */
 
 	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
@@ -3116,6 +3121,8 @@ rb_ary_combination(VALUE ary, VALUE num)
 	VALUE *chosen = RARRAY_PTR(cc);
 	long lev = 0;
 
+	RBASIC(tmp)->klass = 0;
+	RBASIC(cc)->klass = 0;
 	MEMZERO(stack, long, n);
 	stack[0] = -1;
 	for (i = 0; i < nlen; i++) {
@@ -3159,6 +3166,9 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     VALUE result;      /* The array we'll be returning */
     long i,j;
     long resultlen = 1;
+
+    RBASIC(t0)->klass = 0;
+    RBASIC(t1)->klass = 0;
 
     /* initialize the arrays of arrays */
     arrays[0] = ary;
