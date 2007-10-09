@@ -263,7 +263,7 @@ struct parser_params {
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,rb_enc_from_index(0))
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,m) parser_str_new((p),(n),STR_ENC(m),(m))
+#define STR_NEW3(p,n,m) parser_str_new((p),(n),STR_ENC(!ENC_SINGLE(m)),(m))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_SINGLE)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
