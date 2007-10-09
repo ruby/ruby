@@ -4491,8 +4491,8 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define pushback(c)               parser_pushback(parser, c)
 # define newtok()                  parser_newtok(parser)
 # define tokadd(c)                 parser_tokadd(parser, c)
-# define read_escape()             parser_read_escape(parser)
-# define tokadd_escape(t)          parser_tokadd_escape(parser, t)
+# define read_escape(m)            parser_read_escape(parser, m)
+# define tokadd_escape(t,m)        parser_tokadd_escape(parser, t, m)
 # define regx_options()            parser_regx_options(parser)
 # define tokadd_string(f,t,p,n,m)  parser_tokadd_string(parser,f,t,p,n,m)
 # define parse_string(n)           parser_parse_string(parser,n)
@@ -4920,7 +4920,7 @@ parser_tokadd(struct parser_params *parser, int c)
 }
 
 static int
-parser_read_escape(struct parser_params *parser)
+parser_read_escape(struct parser_params *parser, int *mb)
 {
     int c;
 
@@ -4958,6 +4958,7 @@ parser_read_escape(struct parser_params *parser)
 	    c = scan_oct(lex_p, 3, &numlen);
 	    lex_p += numlen;
 	}
+	if (mb && (c >= 0200)) *mb = ENC_CODERANGE_UNKNOWN;
 	return c;
 
       case 'x':	/* hex constant */
@@ -4971,6 +4972,7 @@ parser_read_escape(struct parser_params *parser)
 	    }
 	    lex_p += numlen;
 	}
+	if (mb && (c >= 0x80)) *mb = ENC_CODERANGE_UNKNOWN;
 	return c;
 
       case 'b':	/* backspace */
@@ -4986,10 +4988,12 @@ parser_read_escape(struct parser_params *parser)
 	    return '\0';
 	}
 	if ((c = nextc()) == '\\') {
-	    return read_escape() | 0x80;
+	    if (mb) *mb = ENC_CODERANGE_UNKNOWN;
+	    return read_escape(0) | 0x80;
 	}
 	else if (c == -1) goto eof;
 	else {
+	    if (mb) *mb = ENC_CODERANGE_UNKNOWN;
 	    return ((c & 0xff) | 0x80);
 	}
 
@@ -5001,7 +5005,7 @@ parser_read_escape(struct parser_params *parser)
 	}
       case 'c':
 	if ((c = nextc())== '\\') {
-	    c = read_escape();
+	    c = read_escape(mb);
 	}
 	else if (c == '?')
 	    return 0177;
@@ -5019,7 +5023,7 @@ parser_read_escape(struct parser_params *parser)
 }
 
 static int
-parser_tokadd_escape(struct parser_params *parser, int term)
+parser_tokadd_escape(struct parser_params *parser, int term, int *mb)
 {
     int c;
 
@@ -5030,35 +5034,37 @@ parser_tokadd_escape(struct parser_params *parser, int term)
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
 	{
-	    int i;
-
-	    tokadd('\\');
-	    tokadd(c);
-	    for (i=0; i<2; i++) {
-		c = nextc();
-		if (c == -1) goto eof;
-		if (c < '0' || '7' < c) {
-		    pushback(c);
-		    break;
-		}
-		tokadd(c);
-	    }
-	}
-	return 0;
-
-      case 'x':	/* hex constant */
-	{
 	    int numlen;
+	    int oct;
 
 	    tokadd('\\');
-	    tokadd(c);
-	    scan_hex(lex_p, 2, &numlen);
+	    pushback(c);
+	    oct = scan_oct(lex_p, 3, &numlen);
 	    if (numlen == 0) {
 		yyerror("Invalid escape character syntax");
 		return -1;
 	    }
 	    while (numlen--)
 		tokadd(nextc());
+	    if (mb && (oct >= 0200)) *mb = ENC_CODERANGE_UNKNOWN;
+	}
+	return 0;
+
+      case 'x':	/* hex constant */
+	{
+	    int numlen;
+	    int hex;
+
+	    tokadd('\\');
+	    tokadd(c);
+	    hex = scan_hex(lex_p, 2, &numlen);
+	    if (numlen == 0) {
+		yyerror("Invalid escape character syntax");
+		return -1;
+	    }
+	    while (numlen--)
+		tokadd(nextc());
+	    if (mb && (hex >= 0x80)) *mb = ENC_CODERANGE_UNKNOWN;
 	}
 	return 0;
 
@@ -5069,6 +5075,7 @@ parser_tokadd_escape(struct parser_params *parser, int term)
 	    return 0;
 	}
 	tokadd('\\'); tokadd('M'); tokadd('-');
+	if (mb) *mb = ENC_CODERANGE_UNKNOWN;
 	goto escaped;
 
       case 'C':
@@ -5084,7 +5091,7 @@ parser_tokadd_escape(struct parser_params *parser, int term)
 	tokadd('\\'); tokadd('c');
       escaped:
 	if ((c = nextc()) == '\\') {
-	    return tokadd_escape(term);
+	    return tokadd_escape(term, mb);
 	}
 	else if (c == -1) goto eof;
 	tokadd(c);
@@ -5212,22 +5219,14 @@ parser_tokadd_string(struct parser_params *parser,
 	      default:
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
-		    if (tokadd_escape(term) < 0)
+		    if (tokadd_escape(term, mb) < 0)
 			return -1;
-		    if (mb) {
-			*mb = ENC_CODERANGE_UNKNOWN;
-			mb = 0;
-		    }
 		    continue;
 		}
 		else if (func & STR_FUNC_EXPAND) {
 		    pushback(c);
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
-		    c = read_escape();
-		    if (mb) {
-			*mb = ENC_CODERANGE_UNKNOWN;
-			mb = 0;
-		    }
+		    c = read_escape(mb);
 		}
 		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 		    /* ignore backslashed spaces in %w */
@@ -6043,7 +6042,7 @@ parser_yylex(struct parser_params *parser)
 	    goto ternary;
 	}
 	else if (c == '\\') {
-	    c = read_escape();
+	    c = read_escape(0);
 	    tokadd(c);
 	}
 	else {

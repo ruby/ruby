@@ -1,3 +1,8 @@
+Tue Oct  9 16:00:32 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (parser_read_escape, parser_tokadd_escape): check code range.
+	  [ruby-dev:31980]
+
 Tue Oct  9 15:40:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (STR_NEW3): check for if single byte sequence.
