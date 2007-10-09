@@ -1,3 +1,9 @@
+Tue Oct  9 16:58:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c: remove to_a completely.
+
+	* array.c (tmpbuf): keep DRY to clear klass of temporary objects.
+
 Tue Oct  9 16:33:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_permutation, rb_ary_combination, rb_ary_product):

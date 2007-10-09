@@ -231,14 +231,6 @@ to_ary(VALUE ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
-#if 0
-static VALUE
-to_a(VALUE ary)
-{
-    return rb_convert_type(ary, T_ARRAY, "Array", "to_a");
-}
-#endif
-
 VALUE
 rb_check_array_type(VALUE ary)
 {
@@ -2956,6 +2948,15 @@ rb_ary_cycle(VALUE ary)
     return Qnil;
 }
 
+static VALUE
+tmpbuf(int n, int size)
+{
+    VALUE buf = rb_str_new(0, n*size);
+
+    RBASIC(buf)->klass = 0;
+    return buf;
+}
+
 /*
  * Recursively compute permutations of r elements of the set [0..n-1].
  * When we have a complete permutation of array indexes, copy the values
@@ -3039,13 +3040,11 @@ rb_ary_permutation(VALUE ary, VALUE num)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = rb_str_new(0, n*sizeof(long));
-	long *p = (long*)RSTRING_PTR(t0); /* array indexes of current permutation */
-	volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
-	int *used = (int*)RSTRING_PTR(t1); /* booleans: which indexes are already used */
+	volatile t0 = tmpbuf(n,sizeof(long));
+	long *p = (long*)RSTRING_PTR(t0);
+	volatile t1 = tmpbuf(n,sizeof(int));
+	int *used = (int*)RSTRING_PTR(t0);
 
-	RBASIC(t0)->klass = 0;
-	RBASIC(t1)->klass = 0;
 	ary = rb_ary_dup(ary); /* private defensive copy of ary */
 
 	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
@@ -3114,14 +3113,13 @@ rb_ary_combination(VALUE ary, VALUE num)
 	}
     }
     else {
-	volatile VALUE tmp = rb_str_new(0, n*sizeof(long));
-	long *stack = (long*)RSTRING_PTR(tmp);
+	volatile t0 = tmpbuf(n, sizeof(long));
+	long *stack = (long*)RSTRING_PTR(t0);
 	long nlen = combi_len(len, n);
 	volatile VALUE cc = rb_ary_new2(n);
 	VALUE *chosen = RARRAY_PTR(cc);
 	long lev = 0;
 
-	RBASIC(tmp)->klass = 0;
 	RBASIC(cc)->klass = 0;
 	MEMZERO(stack, long, n);
 	stack[0] = -1;
@@ -3159,8 +3157,8 @@ static VALUE
 rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    volatile VALUE t0 = rb_str_new(0, n*sizeof(VALUE));
-    volatile VALUE t1 = rb_str_new(0, n*sizeof(int));
+    volatile VALUE t0 = tmpbuf(n, sizeof(VALUE));
+    volatile VALUE t1 = tmpbuf(n, sizeof(int));
     VALUE *arrays = (VALUE*)RSTRING_PTR(t0); /* The arrays we're computing the product of */
     int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
     VALUE result;      /* The array we'll be returning */
