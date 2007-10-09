@@ -21,3 +21,15 @@ assert_not_match /method_missing/, %q{
   STDERR.reopen(STDOUT)
   variable_or_mehtod_not_exist
 }
+
+assert_normal_exit %q{
+  ary = (1..10).to_a
+  ary.permutation(2) {|x|
+    if x == [1,2]
+      ObjectSpace.each_object(String) {|s|
+        s.clear if s.length == 40 || s.length == 80
+      }
+    end
+  }
+}, '[ruby-dev:31982]'
+
