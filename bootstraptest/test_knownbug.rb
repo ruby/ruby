@@ -33,3 +33,12 @@ assert_normal_exit %q{
   }
 }, '[ruby-dev:31982]'
 
+assert_normal_exit %q{
+  ary = (1..100).to_a
+  ary.permutation(2) {|x|
+    if x == [1,2]
+      ObjectSpace.each_object(Array) {|o| o.clear if o == ary && o.object_id != ary.object_id }
+    end
+  }
+}, '[ruby-dev:31985]'
+
