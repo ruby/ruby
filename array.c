@@ -136,7 +136,7 @@ ary_new(VALUE klass, long len)
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
-	if (len == 0) len++;
+    if (len == 0) len++;
     RARRAY(ary)->ptr = ALLOC_N(VALUE, len);
     RARRAY(ary)->aux.capa = len;
 
@@ -554,10 +554,10 @@ rb_ary_shift(VALUE ary)
     top = RARRAY_PTR(ary)[0];
     if (!ARY_SHARED_P(ary)) {
 	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
-	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
+	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
 	    RARRAY(ary)->len--;
-	return top;
-    }
+	    return top;
+	}
 	RARRAY_PTR(ary)[0] = Qnil;
 	ary_make_shared(ary);
     }
@@ -2973,12 +2973,12 @@ static void
 permute0(long n, long r, long *p, long index, int *used, VALUE values)
 {
     long i,j;
-    for(i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
 	if (used[i] == 0) {
 	    p[index] = i;
 	    if (index < r-1) {             /* if not done yet */
 		used[i] = 1;               /* mark index used */
-		permute0(n,r,p,index+1,    /* recurse */
+		permute0(n, r, p, index+1, /* recurse */
 			 used, values);  
 		used[i] = 0;               /* index unused */
 	    }
@@ -2990,7 +2990,7 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 		VALUE *result_array = RARRAY_PTR(result);
 		VALUE *values_array = RARRAY_PTR(values);
 
-		for(j = 0; j < r; j++) result_array[j] = values_array[p[j]];
+		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
 		RARRAY(result)->len = r;
 		rb_yield(result);
 	    }
@@ -3040,16 +3040,16 @@ rb_ary_permutation(VALUE ary, VALUE num)
 	}
     }
     else {             /* this is the general case */
-	volatile t0 = tmpbuf(n,sizeof(long));
+	volatile VALUE t0 = tmpbuf(n,sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
-	volatile t1 = tmpbuf(n,sizeof(int));
-	int *used = (int*)RSTRING_PTR(t0);
+	volatile VALUE t1 = tmpbuf(n,sizeof(int));
+	int *used = (int*)RSTRING_PTR(t1);
 
 	ary = rb_ary_dup(ary); /* private defensive copy of ary */
 
-	for(i = 0; i < n; i++) used[i] = 0; /* initialize array */
+	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
-	permute0(n,r,p,0,used,ary);  /* compute and yield permutations */
+	permute0(n,r,p,0,used,ary); /* compute and yield permutations */
     }
     return ary;
 }
@@ -3113,7 +3113,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 	}
     }
     else {
-	volatile t0 = tmpbuf(n, sizeof(long));
+	volatile VALUE t0 = tmpbuf(n, sizeof(long));
 	long *stack = (long*)RSTRING_PTR(t0);
 	long nlen = combi_len(len, n);
 	volatile VALUE cc = rb_ary_new2(n);
@@ -3170,24 +3170,24 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 
     /* initialize the arrays of arrays */
     arrays[0] = ary;
-    for(i = 1; i < n; i++) arrays[i] = argv[i-1];
+    for (i = 1; i < n; i++) arrays[i] = argv[i-1];
     
     /* initialize the counters for the arrays */
-    for(i = 0; i < n; i++) counters[i] = 0;
+    for (i = 0; i < n; i++) counters[i] = 0;
 
     /* Compute the length of the result array; return [] if any is empty */
-    for(i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
 	resultlen *= RARRAY_LEN(arrays[i]);
 	if (resultlen == 0) return rb_ary_new2(0);
     }
 
     /* Otherwise, allocate and fill in an array of results */
     result = rb_ary_new2(resultlen);
-    for(i = 0; i < resultlen; i++) {
+    for (i = 0; i < resultlen; i++) {
 	int m;
 	/* fill in one subarray */
 	VALUE subarray = rb_ary_new2(n);
-	for(j = 0; j < n; j++) {
+	for (j = 0; j < n; j++) {
 	    rb_ary_push(subarray, rb_ary_entry(arrays[j], counters[j]));
 	}
 
@@ -3200,7 +3200,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	 */
 	m = n-1;
 	counters[m]++;
-	while(m >= 0 && counters[m] == RARRAY_LEN(arrays[m])) {
+	while (m >= 0 && counters[m] == RARRAY_LEN(arrays[m])) {
 	    counters[m] = 0;
 	    m--;
 	    counters[m]++;
