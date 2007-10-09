@@ -2988,7 +2988,7 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 		/* And yield it to the associated block */
 		VALUE result = rb_ary_new2(r);
 		VALUE *result_array = RARRAY_PTR(result);
-		VALUE *values_array = RARRAY_PTR(values);
+		const VALUE *values_array = RARRAY_PTR(values);
 
 		for (j = 0; j < r; j++) result_array[j] = values_array[p[j]];
 		RARRAY(result)->len = r;
@@ -3044,12 +3044,11 @@ rb_ary_permutation(VALUE ary, VALUE num)
 	long *p = (long*)RSTRING_PTR(t0);
 	volatile VALUE t1 = tmpbuf(n,sizeof(int));
 	int *used = (int*)RSTRING_PTR(t1);
-
-	ary = rb_ary_dup(ary); /* private defensive copy of ary */
+	VALUE ary0 = ary_make_shared(ary); /* private defensive copy of ary */
 
 	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
-	permute0(n,r,p,0,used,ary); /* compute and yield permutations */
+	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
     }
     return ary;
 }

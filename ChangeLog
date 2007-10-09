@@ -1,9 +1,12 @@
-Tue Oct  9 21:29:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct  9 21:35:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_permutation, rb_ary_combination): missing type
 	  names.
 
 	* array.c (rb_ary_permutation): used buffer should be t1.
+
+	* array.c (rb_ary_permutation): use frozen shared hidden array.
+	  [ruby-dev:31985]
 
 Tue Oct  9 16:58:10 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
