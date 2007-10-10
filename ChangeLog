@@ -1,3 +1,8 @@
+Wed Oct 10 23:32:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_quote): no longer takes optional second argument
+	  that has never been documented.
+
 Wed Oct 10 15:39:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_init): don't alias iso-8859-1 to ascii.

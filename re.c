@@ -1972,21 +1972,9 @@ rb_reg_quote(VALUE str)
  */
 
 static VALUE
-rb_reg_s_quote(int argc, VALUE *argv)
+rb_reg_s_quote(VALUE c, VALUE str)
 {
-    VALUE str, kcode;
-    int kcode_saved = reg_kcode;
-
-    rb_scan_args(argc, argv, "11", &str, &kcode);
-    if (!NIL_P(kcode)) {
-	rb_set_kcode(StringValuePtr(kcode));
-	curr_kcode = reg_kcode;
-	reg_kcode = kcode_saved;
-    }
-    str = reg_operand(str, Qtrue);
-    str = rb_reg_quote(str);
-    kcode_reset_option();
-    return str;
+    return rb_reg_quote(reg_operand(str, Qtrue));
 }
 
 int
@@ -2058,7 +2046,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
             return v;
         else {
             VALUE args[1];
-            args[0] = rb_reg_s_quote(RARRAY_LEN(args0), RARRAY_PTR(args0));
+            args[0] = rb_reg_s_quote(Qnil, RARRAY_PTR(args0)[0]);
             return rb_class_new_instance(1, args, rb_cRegexp);
         }
     }
@@ -2089,8 +2077,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
                 v = rb_reg_to_s(v);
             }
             else {
-                args[0] = rb_ary_entry(args0, i);
-                v = rb_reg_s_quote(1, args);
+                v = rb_reg_s_quote(Qnil, rb_ary_entry(args0, i));
             }
             rb_str_buf_append(source, v);
         }
@@ -2424,8 +2411,8 @@ Init_Regexp(void)
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
     rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
-    rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
-    rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
+    rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
+    rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
     rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
