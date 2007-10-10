@@ -1,3 +1,7 @@
+Wed Oct 10 14:31:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_enc_str_coderange): fixed checkfor non-ascii.
+
 Tue Oct  9 21:35:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_permutation, rb_ary_combination): missing type

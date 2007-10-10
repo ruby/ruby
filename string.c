@@ -117,7 +117,7 @@ rb_enc_str_coderange(VALUE str)
 	    while (p < e) {
 		int c = (unsigned char)*p;
 
-		if (c > 0x80) {
+		if (!isascii(c)) {
 		    cr = ENC_CODERANGE_MULTI;
 		    break;
 		}
