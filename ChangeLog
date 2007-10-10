@@ -1,6 +1,6 @@
 Wed Oct 10 23:34:45 2007  Tanaka Akira  <akr@fsij.org>
 
-	* lib/securerandom.rb: new file.
+	* lib/securerandom.rb: new file.  [ruby-dev:31928]
 
 	* lib/cgi/session.rb (create_new_id): use securerandom if available.
 
