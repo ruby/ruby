@@ -75,10 +75,10 @@ rb_enc_init(void)
     ENC_REGISTER(ONIG_ENCODING_SJIS);
     ENC_REGISTER(ONIG_ENCODING_UTF8);
 #undef ENC_REGISTER
-    rb_enc_alias("ascii", "us-ascii");
-    rb_enc_alias("binary", "us-ascii");
-    rb_enc_alias("iso-8859-1", "us-ascii");
-    rb_enc_alias("sjis", "shift_jis");
+    rb_enc_alias("ascii", rb_enc_name(ONIG_ENCODING_ASCII));
+    rb_enc_alias("binary", rb_enc_name(ONIG_ENCODING_ASCII));
+    rb_enc_alias("us-ascii", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
+    rb_enc_alias("sjis", rb_enc_name(ONIG_ENCODING_SJIS));
 }
 
 rb_encoding *

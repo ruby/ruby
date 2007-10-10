@@ -40,7 +40,7 @@ ascii_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 
 OnigEncodingType OnigEncodingASCII = {
   onigenc_single_byte_mbc_enc_len,
-  "US-ASCII",  /* name */
+  "ASCII-8BIT",/* name */
   1,           /* max byte length */
   1,           /* min byte length */
   onigenc_is_mbc_newline_0x0a,

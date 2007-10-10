@@ -1,3 +1,9 @@
+Wed Oct 10 15:39:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_init): don't alias iso-8859-1 to ascii.
+
+	* ascii.c (OnigEncodingASCII): change the name US-ASCII to ASCII-8BIT.
+
 Wed Oct 10 14:31:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_enc_str_coderange): fixed checkfor non-ascii.
