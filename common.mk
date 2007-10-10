@@ -18,8 +18,13 @@ MAINOBJ	      = main.$(OBJEXT)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
 
+ENCOBJS       = ascii.$(OBJEXT) \
+		euc_jp.$(OBJEXT) \
+		sjis.$(OBJEXT) \
+		unicode.$(OBJEXT) \
+		utf8.$(OBJEXT)
+
 OBJS	      = array.$(OBJEXT) \
-		ascii.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
@@ -29,7 +34,6 @@ OBJS	      = array.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
-		euc_jp.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		eval_load.$(OBJEXT) \
 		proc.$(OBJEXT) \
@@ -57,14 +61,11 @@ OBJS	      = array.$(OBJEXT) \
 		regsyntax.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		signal.$(OBJEXT) \
-		sjis.$(OBJEXT) \
 		sprintf.$(OBJEXT) \
 		st.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
-		unicode.$(OBJEXT) \
-		utf8.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -78,6 +79,7 @@ OBJS	      = array.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		id.$(OBJEXT) \
 		prelude.$(OBJEXT) \
+		$(ENCOBJS) \
 		$(MISSING)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
@@ -383,8 +385,6 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h {$(VPATH)}st.h
-ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
@@ -415,8 +415,6 @@ error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}st.h {$(VPATH)}vm_opts.h {$(VPATH)}signal.h \
   {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}node.h {$(VPATH)}debug.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
-euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_error.ci {$(VPATH)}eval_intern.h \
   {$(VPATH)}eval_method.ci {$(VPATH)}eval_safe.ci {$(VPATH)}eval_jump.ci \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
@@ -518,8 +516,6 @@ signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}signal.h {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}node.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
-sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
@@ -544,10 +540,6 @@ cont.$(OBJEXT):  {$(VPATH)}cont.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}signal.h {$(VPATH)}st.h {$(VPATH)}dln.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
-utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
 util.$(OBJEXT): {$(VPATH)}util.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h
@@ -595,6 +587,17 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 
+ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
 	  vmtc.inc vm.inc
 
@@ -625,7 +628,7 @@ incs: $(INSNS) node_name.inc
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+{$(VPATH)}prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 prereq: incs prelude.c

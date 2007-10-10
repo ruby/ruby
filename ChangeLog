@@ -1,3 +1,11 @@
+Thu Oct 11 06:35:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, */Makefile.sub (VPATH): add enc directory.
+
+	* common.mk (ENCOBJS): encoding objects.
+
+	* enc: directory for encodings.
+
 Thu Oct 11 00:04:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (OnigEncodingTypeST): add OnigEncoding

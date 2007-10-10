@@ -33,7 +33,7 @@ RDOCTARGET = @RDOCTARGET@
 EXTOUT = @EXTOUT@
 RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
 arch_hdrdir = $(EXTOUT)/include/$(arch)
-VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/enc:$(srcdir)/missing
 
 empty =
 OUTFLAG = @OUTFLAG@$(empty)

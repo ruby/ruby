@@ -28,7 +28,6 @@ iconinc=-I$(icondirs: = -I)
 !endif
 ###############
 
-VPATH = $(srcdir);$(srcdir)/missing;$(srcdir)/wince
 .SUFFIXES: .y .def .lib
 
 !if !defined(CC)
@@ -184,6 +183,10 @@ ASMEXT = asm
 INSTALLED_LIST= .installed.list
 
 WINMAINOBJ    = wincemain.$(OBJEXT)
+
+arch_hdrdir = $(EXTOUT)/include/$(arch)
+hdrdir = $(srcdir)/include
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(srcdir)/wince
 
 all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
 ruby: $(PROGRAM)
@@ -490,6 +493,8 @@ class File
 end
 <<KEEP
 
+{$(srcdir)/enc}.c.obj:
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:

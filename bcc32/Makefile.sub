@@ -190,9 +190,9 @@ MINIOBJS      = dmydln.$(OBJEXT)
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include
-VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(srcdir)/win32
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(srcdir)/win32
 
-.path.c = .;$(srcdir);$(srcdir)/win32;$(srcdir)/missing
+.path.c = .;$(srcdir);$(srcdir)/enc;$(srcdir)/win32;$(srcdir)/missing
 .path.ci = $(srcdir)
 .path.inc = .;$(srcdir)
 .path.def = .;$(srcdir)

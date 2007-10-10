@@ -202,7 +202,7 @@ MINIOBJS      = dmydln.$(OBJEXT)
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include
-VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(srcdir)/win32
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(srcdir)/win32
 
 all: $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
 
@@ -547,6 +547,8 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(srcdir)/win32
 
+{$(srcdir)/enc}.c.obj:
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:
