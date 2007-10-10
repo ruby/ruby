@@ -71,13 +71,13 @@ static const char SJIS_CAN_BE_TRAIL_TABLE[256] = {
 #define SJIS_ISMB_TRAIL(byte)  SJIS_CAN_BE_TRAIL_TABLE[(byte)]
 
 static int
-mbc_enc_len(const UChar* p, const UChar* e)
+mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
   return EncLen_SJIS[*p];
 }
 
 static int
-code_to_mbclen(OnigCodePoint code)
+code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if (code < 256) {
     if (EncLen_SJIS[(int )code] == 1)
@@ -93,7 +93,7 @@ code_to_mbclen(OnigCodePoint code)
 }
 
 static OnigCodePoint
-mbc_to_code(const UChar* p, const UChar* end)
+mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -112,7 +112,7 @@ mbc_to_code(const UChar* p, const UChar* end)
 }
 
 static int
-code_to_mbc(OnigCodePoint code, UChar *buf)
+code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
   UChar *p = buf;
 
@@ -128,7 +128,8 @@ code_to_mbc(OnigCodePoint code, UChar *buf)
 
 static int
 mbc_case_fold(OnigCaseFoldType flag,
-	      const UChar** pp, const UChar* end, UChar* lower)
+	      const UChar** pp, const UChar* end, UChar* lower,
+	      OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -176,7 +177,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype)
 #endif
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s)
+left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
   const UChar *p;
   int len;
@@ -199,7 +200,7 @@ left_adjust_char_head(const UChar* start, const UChar* s)
 }
 
 static int
-is_allowed_reverse_match(const UChar* s, const UChar* end)
+is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar c = *s;
   return (SJIS_ISMB_TRAIL(c) ? FALSE : TRUE);
@@ -253,14 +254,14 @@ property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 }
 
 static int
-is_code_ctype(OnigCodePoint code, unsigned int ctype)
+is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
     if (code < 128)
       return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
     else {
       if (CTYPE_IS_WORD_GRAPH_PRINT(ctype)) {
-	return (code_to_mbclen(code) > 1 ? TRUE : FALSE);
+	return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
       }
     }
   }
@@ -279,7 +280,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype)
 
 static int
 get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
-		     const OnigCodePoint* ranges[])
+		     const OnigCodePoint* ranges[], OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
     return ONIG_NO_SUPPORT_CONFIG;
@@ -314,5 +315,6 @@ OnigEncodingType OnigEncodingSJIS = {
   is_code_ctype,
   get_ctype_code_range,
   left_adjust_char_head,
-  is_allowed_reverse_match
+  is_allowed_reverse_match,
+  0
 };

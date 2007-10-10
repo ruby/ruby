@@ -144,22 +144,23 @@ typedef struct {
 typedef int (*OnigApplyAllCaseFoldFunc)(OnigCodePoint from, OnigCodePoint* to, int to_len, void* arg);
 
 typedef struct OnigEncodingTypeST {
-  int    (*mbc_enc_len)(const OnigUChar* p,const OnigUChar* e);
+  int    (*mbc_enc_len)(const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc);
   const char*   name;
   int           max_enc_len;
   int           min_enc_len;
-  int    (*is_mbc_newline)(const OnigUChar* p, const OnigUChar* end);
-  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end);
-  int    (*code_to_mbclen)(OnigCodePoint code);
-  int    (*code_to_mbc)(OnigCodePoint code, OnigUChar *buf);
-  int    (*mbc_case_fold)(OnigCaseFoldType flag, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to);
-  int    (*apply_all_case_fold)(OnigCaseFoldType flag, OnigApplyAllCaseFoldFunc f, void* arg);
-  int    (*get_case_fold_codes_by_str)(OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem acs[]);
+  int    (*is_mbc_newline)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
+  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
+  int    (*code_to_mbclen)(OnigCodePoint code, struct OnigEncodingTypeST* enc);
+  int    (*code_to_mbc)(OnigCodePoint code, OnigUChar *buf, struct OnigEncodingTypeST* enc);
+  int    (*mbc_case_fold)(OnigCaseFoldType flag, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, struct OnigEncodingTypeST* enc);
+  int    (*apply_all_case_fold)(OnigCaseFoldType flag, OnigApplyAllCaseFoldFunc f, void* arg, struct OnigEncodingTypeST* enc);
+  int    (*get_case_fold_codes_by_str)(OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem acs[], struct OnigEncodingTypeST* enc);
   int    (*property_name_to_ctype)(struct OnigEncodingTypeST* enc, OnigUChar* p, OnigUChar* end);
-  int    (*is_code_ctype)(OnigCodePoint code, unsigned int ctype);
-  int    (*get_ctype_code_range)(int ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[]);
-  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p);
-  int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end);
+  int    (*is_code_ctype)(OnigCodePoint code, unsigned int ctype, struct OnigEncodingTypeST* enc);
+  int    (*get_ctype_code_range)(int ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], struct OnigEncodingTypeST* enc);
+  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, struct OnigEncodingTypeST* enc);
+  int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
+  void *auxiliary_data;
 } OnigEncodingType;
 
 typedef OnigEncodingType* OnigEncoding;
@@ -269,30 +270,30 @@ ONIG_EXTERN OnigEncodingType OnigEncodingGB18030;
 #define ONIGENC_NAME(enc)                      ((enc)->name)
 
 #define ONIGENC_MBC_CASE_FOLD(enc,flag,pp,end,buf) \
-  (enc)->mbc_case_fold(flag,(const OnigUChar** )pp,end,buf)
+  (enc)->mbc_case_fold(flag,(const OnigUChar** )pp,end,buf,enc)
 #define ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc,s,end) \
-        (enc)->is_allowed_reverse_match(s,end)
+        (enc)->is_allowed_reverse_match(s,end,enc)
 #define ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,start,s) \
-        (enc)->left_adjust_char_head(start, s)
+        (enc)->left_adjust_char_head(start, s, enc)
 #define ONIGENC_APPLY_ALL_CASE_FOLD(enc,case_fold_flag,f,arg) \
-        (enc)->apply_all_case_fold(case_fold_flag,f,arg)
+        (enc)->apply_all_case_fold(case_fold_flag,f,arg,enc)
 #define ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc,case_fold_flag,p,end,acs) \
-       (enc)->get_case_fold_codes_by_str(case_fold_flag,p,end,acs)
+       (enc)->get_case_fold_codes_by_str(case_fold_flag,p,end,acs,enc)
 #define ONIGENC_STEP_BACK(enc,start,s,n) \
         onigenc_step_back((enc),(start),(s),(n))
 
-#define ONIGENC_MBC_ENC_LEN(enc,p,e)           (enc)->mbc_enc_len(p,e)
+#define ONIGENC_MBC_ENC_LEN(enc,p,e)           (enc)->mbc_enc_len(p,e,enc)
 #define ONIGENC_MBC_MAXLEN(enc)               ((enc)->max_enc_len)
 #define ONIGENC_MBC_MAXLEN_DIST(enc)           ONIGENC_MBC_MAXLEN(enc)
 #define ONIGENC_MBC_MINLEN(enc)               ((enc)->min_enc_len)
-#define ONIGENC_IS_MBC_NEWLINE(enc,p,end)      (enc)->is_mbc_newline((p),(end))
-#define ONIGENC_MBC_TO_CODE(enc,p,end)         (enc)->mbc_to_code((p),(end))
-#define ONIGENC_CODE_TO_MBCLEN(enc,code)       (enc)->code_to_mbclen(code)
-#define ONIGENC_CODE_TO_MBC(enc,code,buf)      (enc)->code_to_mbc(code,buf)
+#define ONIGENC_IS_MBC_NEWLINE(enc,p,end)      (enc)->is_mbc_newline((p),(end),enc)
+#define ONIGENC_MBC_TO_CODE(enc,p,end)         (enc)->mbc_to_code((p),(end),enc)
+#define ONIGENC_CODE_TO_MBCLEN(enc,code)       (enc)->code_to_mbclen(code,enc)
+#define ONIGENC_CODE_TO_MBC(enc,code,buf)      (enc)->code_to_mbc(code,buf,enc)
 #define ONIGENC_PROPERTY_NAME_TO_CTYPE(enc,p,end) \
   (enc)->property_name_to_ctype(enc,p,end)
 
-#define ONIGENC_IS_CODE_CTYPE(enc,code,ctype)  (enc)->is_code_ctype(code,ctype)
+#define ONIGENC_IS_CODE_CTYPE(enc,code,ctype)  (enc)->is_code_ctype(code,ctype,enc)
 
 #define ONIGENC_IS_CODE_NEWLINE(enc,code) \
         ONIGENC_IS_CODE_CTYPE(enc,code,ONIGENC_CTYPE_NEWLINE)
@@ -324,7 +325,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingGB18030;
         ONIGENC_IS_CODE_CTYPE(enc,code,ONIGENC_CTYPE_WORD)
 
 #define ONIGENC_GET_CTYPE_CODE_RANGE(enc,ctype,sbout,ranges) \
-        (enc)->get_ctype_code_range(ctype,sbout,ranges)
+        (enc)->get_ctype_code_range(ctype,sbout,ranges,enc)
 
 ONIG_EXTERN
 OnigUChar* onigenc_step_back P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, int n));

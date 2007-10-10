@@ -60,13 +60,13 @@ static const int EncLen_UTF8[] = {
 };
 
 static int
-utf8_mbc_enc_len(const UChar* p, const UChar* e)
+utf8_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
   return EncLen_UTF8[*p];
 }
 
 static int
-utf8_is_mbc_newline(const UChar* p, const UChar* end)
+utf8_is_mbc_newline(const UChar* p, const UChar* end, OnigEncoding enc)
 {
   if (p < end) {
     if (*p == 0x0a) return 1;
@@ -91,7 +91,7 @@ utf8_is_mbc_newline(const UChar* p, const UChar* end)
 }
 
 static OnigCodePoint
-utf8_mbc_to_code(const UChar* p, const UChar* end)
+utf8_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
   int c, len;
   OnigCodePoint n;
@@ -118,7 +118,7 @@ utf8_mbc_to_code(const UChar* p, const UChar* end)
 }
 
 static int
-utf8_code_to_mbclen(OnigCodePoint code)
+utf8_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if      ((code & 0xffffff80) == 0) return 1;
   else if ((code & 0xfffff800) == 0) {
@@ -163,7 +163,7 @@ utf8_code_to_mbc_first(OnigCodePoint code)
 #endif
 
 static int
-utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
+utf8_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
 #define UTF8_TRAILS(code, shift) (UChar )((((code) >> (shift)) & 0x3f) | 0x80)
 #define UTF8_TRAIL0(code)        (UChar )(((code) & 0x3f) | 0x80)
@@ -221,7 +221,7 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
 
 static int
 utf8_mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
-		   const UChar* end, UChar* fold)
+		   const UChar* end, UChar* fold, OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -286,7 +286,7 @@ utf8_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
 
 static int
 utf8_get_ctype_code_range(int ctype, OnigCodePoint *sb_out,
-			  const OnigCodePoint* ranges[])
+			  const OnigCodePoint* ranges[], OnigEncoding enc)
 {
   *sb_out = 0x80;
   return onigenc_unicode_ctype_code_range(ctype, ranges);
@@ -294,7 +294,7 @@ utf8_get_ctype_code_range(int ctype, OnigCodePoint *sb_out,
 
 
 static UChar*
-utf8_left_adjust_char_head(const UChar* start, const UChar* s)
+utf8_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
   const UChar *p;
 
@@ -307,7 +307,8 @@ utf8_left_adjust_char_head(const UChar* start, const UChar* s)
 
 static int
 utf8_get_case_fold_codes_by_str(OnigCaseFoldType flag,
-    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[])
+    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[],
+    OnigEncoding enc)
 {
   return onigenc_unicode_get_case_fold_codes_by_str(ONIG_ENCODING_UTF8,
 						    flag, p, end, items);
