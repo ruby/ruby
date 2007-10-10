@@ -1,3 +1,9 @@
+Wed Oct 10 23:34:45 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: new file.
+
+	* lib/cgi/session.rb (create_new_id): use securerandom if available.
+
 Tue Oct  9 01:01:55 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_s_union_m): Regexp.union accepts single

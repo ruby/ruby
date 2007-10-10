@@ -9,6 +9,10 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes with Ruby 1.8.6
 
+=== New library
+
+* securerandom
+
 === Library updates (outstanding ones only)
 
 * openssl
