@@ -1,3 +1,8 @@
+Thu Oct 11 14:32:46 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32}/Makefile.sub (COMMON_MACROS): workaround for old SDK's
+	  bug. [ruby-core:12584]
+
 Wed Oct 10 23:34:45 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: new file.  [ruby-dev:31928]
