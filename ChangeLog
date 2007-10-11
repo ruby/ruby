@@ -1,3 +1,8 @@
+Thu Oct 11 14:29:31 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (COMMON_MACROS): workaround for old SDK's bug.
+	  [ruby-core:12584]
+
 Thu Oct 11 06:35:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, */Makefile.sub (VPATH): add enc directory.
