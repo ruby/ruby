@@ -136,7 +136,6 @@ VALUE rb_class_instance_methods(int, VALUE*, VALUE);
 VALUE rb_class_public_instance_methods(int, VALUE*, VALUE);
 VALUE rb_class_protected_instance_methods(int, VALUE*, VALUE);
 VALUE rb_class_private_instance_methods(int, VALUE*, VALUE);
-VALUE rb_class_local_methods(VALUE);
 VALUE rb_obj_singleton_methods(int, VALUE*, VALUE);
 void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int);
 void rb_frozen_class_p(VALUE);

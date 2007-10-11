@@ -521,7 +521,6 @@ ins_methods_push(ID name, long type, VALUE ary, long visi)
       case NOEX_PRIVATE:
       case NOEX_PROTECTED:
       case NOEX_PUBLIC:
-      case NOEX_LOCAL:
 	visi = (type == visi);
 	break;
       default:
@@ -556,12 +555,6 @@ static int
 ins_methods_pub_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, NOEX_PUBLIC);
-}
-
-static int
-ins_methods_local_i(ID name, long type, VALUE ary)
-{
-    return ins_methods_push(name, type, ary, NOEX_LOCAL);
 }
 
 static int
@@ -699,19 +692,6 @@ VALUE
 rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
-}
-
-/*
- *  call-seq:
- *     mod.local_methods   => array
- *  
- *  Returns a list of the local methods defined in <i>mod</i>.
- */
-
-VALUE
-rb_class_local_methods(VALUE mod)
-{
-    return class_instance_method_list(0, 0, mod, ins_methods_local_i);
 }
 
 /*

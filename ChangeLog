@@ -1,3 +1,11 @@
+Thu Oct 11 21:10:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/node.h (NOEX_LOCAL): remove unused local visibility.
+
+	* class.c (ins_methods_push): ditto.
+
+	* class.c (rb_class_local_methods): method removed.
+
 Thu Oct 11 14:29:31 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* */Makefile.sub (COMMON_MACROS): workaround for old SDK's bug.

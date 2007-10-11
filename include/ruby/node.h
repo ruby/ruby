@@ -467,8 +467,7 @@ typedef struct RNode {
 #define NOEX_NOSUPER   0x01
 #define NOEX_PRIVATE   0x02
 #define NOEX_PROTECTED 0x04
-#define NOEX_LOCAL     0x08
-#define NOEX_MASK      0x0E /* 1110 */
+#define NOEX_MASK      0x06 /* 1110 */
 
 #define NOEX_UNDEF     NOEX_NOSUPER
 
