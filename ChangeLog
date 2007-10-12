@@ -1,3 +1,9 @@
+Sat Oct 13 00:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: encoding specifier should work if the line matches
+	  /coding[:=] ?/, a la Python PEP-263, so that VIM comments like
+	  "# vim: set fileencoding=<encoding name>" should be recognized.
+
 Fri Oct 12 15:04:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* trunk/parse.y (magic_comments): add "encoding" as same as "coding".

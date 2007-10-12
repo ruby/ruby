@@ -5708,13 +5708,7 @@ set_file_encoding(struct parser_params *parser, const char *str, const char *sen
 	    if (ISSPACE(*str)) break;
 	    continue;
 	}
-#define BOW_P(p) ((p) == beg || !(ISALNUM((p)[-1]) || (p)[-1] == '_'))
-	if (strncasecmp(str-6, "coding", 6)) continue;
-	if (BOW_P(str-6)) break;
-	if (str - beg < 8) continue;
-	if (strncasecmp(str-8, "en", 2)) continue;
-	if (BOW_P(str-8)) break;
-#undef BOW_P
+	if (strncasecmp(str-6, "coding", 6) == 0) break;
     }
     for (;;) {
 	do {
