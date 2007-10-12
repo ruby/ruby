@@ -14,6 +14,11 @@ Fri Oct 12 12:44:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* array.c (rb_ary_product): accessing out of memory bounds.
 	  condition fixed.
 
+Fri Oct 12 11:22:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_values_at): make #select to be alias to #values_at
+	  to adapt RDoc description.  [ruby-core:12588]  
+
 Thu Oct 11 21:10:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/node.h (NOEX_LOCAL): remove unused local visibility.
