@@ -5546,28 +5546,29 @@ parser_set_encode(struct parser_params *parser, const char *name)
 }
 
 #ifndef RIPPER
-typedef void (*rb_pragma_setter_t)(struct parser_params *parser, const char *name, const char *val);
+typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
 static void
-pragma_encoding(struct parser_params *parser, const char *name, const char *val)
+magic_comment_encoding(struct parser_params *parser, const char *name, const char *val)
 {
     if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
 	return;
     parser_set_encode(parser, val);
 }
 
-struct pragma {
+struct magic_comment {
     const char *name;
-    rb_pragma_setter_t func;
+    rb_magic_comment_setter_t func;
 };
 
-static const struct pragma pragmas[] = {
-    {"coding", pragma_encoding},
+static const struct magic_comment magic_comments[] = {
+    {"coding", magic_comment_encoding},
+    {"encoding", magic_comment_encoding},
 };
 #endif
 
 static const char *
-pragma_marker(const char *str, int len)
+magic_comment_marker(const char *str, int len)
 {
     int i = 2;
 
@@ -5600,7 +5601,7 @@ pragma_marker(const char *str, int len)
 }
 
 static int
-parser_pragma(struct parser_params *parser, const char *str, int len)
+parser_magic_comment(struct parser_params *parser, const char *str, int len)
 {
     VALUE name = 0, val = 0;
     const char *beg, *end, *vbeg, *vend;
@@ -5610,15 +5611,15 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
 	: ((_s) = STR_NEW((_p), (_n))))
 
     if (len <= 7) return Qfalse;
-    if (!(beg = pragma_marker(str, len))) return Qfalse;
-    if (!(end = pragma_marker(beg, str + len - beg))) return Qfalse;
+    if (!(beg = magic_comment_marker(str, len))) return Qfalse;
+    if (!(end = magic_comment_marker(beg, str + len - beg))) return Qfalse;
     str = beg;
     len = end - beg - 3;
 
     /* %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*" */
     while (len > 0) {
 #ifndef RIPPER
-	const struct pragma *p = pragmas;
+	const struct magic_comment *p = magic_comments;
 #endif
 	int n = 0;
 
@@ -5666,21 +5667,69 @@ parser_pragma(struct parser_params *parser, const char *str, int len)
 
 	n = end - beg;
 	str_copy(name, beg, n);
-	rb_funcall(name, rb_intern("downcase!"), 0);
 #ifndef RIPPER
 	do {
-	    if (strncmp(p->name, RSTRING_PTR(name), n) == 0) {
+	    if (strncasecmp(p->name, RSTRING_PTR(name), n) == 0) {
 		str_copy(val, vbeg, vend - vbeg);
 		(*p->func)(parser, RSTRING_PTR(name), RSTRING_PTR(val));
 		break;
 	    }
-	} while (++p < pragmas + sizeof(pragmas) / sizeof(*p));
+	} while (++p < magic_comments + sizeof(magic_comments) / sizeof(*p));
 #else
-	dispatch2(pragma, name, val);
+	dispatch2(magic_comment, name, val);
 #endif
     }
 
     return Qtrue;
+}
+
+static void
+set_file_encoding(struct parser_params *parser, const char *str, const char *send)
+{
+    int sep = 0;
+    const char *beg = str;
+    VALUE s;
+
+    for (;;) {
+	if (send - str <= 6) return;
+	switch (str[6]) {
+	  case 'c': str += 6; continue;
+	  case 'o': str += 5; continue;
+	  case 'd': str += 4; continue;
+	  case 'i': str += 3; continue;
+	  case 'n': str += 2; continue;
+	  case 'g': str += 1; continue;
+	  case '=': case ':':
+	    sep = 1;
+	    str += 6;
+	    break;
+	  default:
+	    str += 6;
+	    if (ISSPACE(*str)) break;
+	    continue;
+	}
+#define BOW_P(p) ((p) == beg || !(ISALNUM((p)[-1]) || (p)[-1] == '_'))
+	if (strncasecmp(str-6, "coding", 6)) continue;
+	if (BOW_P(str-6)) break;
+	if (str - beg < 8) continue;
+	if (strncasecmp(str-8, "en", 2)) continue;
+	if (BOW_P(str-8)) break;
+#undef BOW_P
+    }
+    for (;;) {
+	do {
+	    if (++str >= send) return;
+	} while (ISSPACE(*str));
+	if (sep) break;
+	if (*str != '=' && *str != ':') return;
+	sep = 1;
+	str++;
+    }
+    beg = str;
+    while ((*str == '-' || *str == '_' || ISALNUM(*str)) && ++str < send);
+    s = rb_str_new(beg, str - beg);
+    parser_set_encode(parser, RSTRING_PTR(s));
+    rb_str_resize(s, 0);
 }
 
 static void
@@ -5773,8 +5822,12 @@ parser_yylex(struct parser_params *parser)
 
       case '#':		/* it's a comment */
 	if (!parser->has_shebang || parser->line_count != 1) {
-	    /* no pragma in shebang line */
-	    parser_pragma(parser, lex_p, lex_pend - lex_p);
+	    /* no magic_comment in shebang line */
+	    if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
+		if (parser->line_count == (parser->has_shebang ? 2 : 1)) {
+		    set_file_encoding(parser, lex_p, lex_pend);
+		}
+	    }
 	}
 	lex_p = lex_pend;
 #ifdef RIPPER
@@ -8762,7 +8815,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
-    parser->enc = onigenc_get_default_encoding();
+    parser->enc = rb_enc_from_index(0);
 }
 
 extern void rb_mark_source_filename(char *);
