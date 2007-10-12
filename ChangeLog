@@ -1,3 +1,8 @@
+Sat Oct 13 00:17:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/document.rb (REXML::Document::write): leaky
+	  modification trans -> transitive.  [ruby-dev:32040]
+
 Sat Oct 13 00:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: encoding specifier should work if the line matches
