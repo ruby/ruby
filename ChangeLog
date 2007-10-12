@@ -6,6 +6,14 @@ Fri Oct 12 15:04:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* trunk/parse.y (parser_yylex): ditto.
 
+Fri Oct 12 12:44:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_combination): fixed memory corruption due to too
+	  small memory allocation
+
+	* array.c (rb_ary_product): accessing out of memory bounds.
+	  condition fixed.
+
 Thu Oct 11 21:10:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/node.h (NOEX_LOCAL): remove unused local visibility.

@@ -3112,7 +3112,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 	}
     }
     else {
-	volatile VALUE t0 = tmpbuf(n, sizeof(long));
+	volatile VALUE t0 = tmpbuf(n+1, sizeof(long));
 	long *stack = (long*)RSTRING_PTR(t0);
 	long nlen = combi_len(len, n);
 	volatile VALUE cc = rb_ary_new2(n);
@@ -3199,7 +3199,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 	 */
 	m = n-1;
 	counters[m]++;
-	while (m >= 0 && counters[m] == RARRAY_LEN(arrays[m])) {
+	while (m > 0 && counters[m] == RARRAY_LEN(arrays[m])) {
 	    counters[m] = 0;
 	    m--;
 	    counters[m]++;
