@@ -1,3 +1,8 @@
+Sat Oct 13 00:35:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/source.rb (REXML::SourceFactory::SourceFactory): typo
+	  fixed.  [ruby-list:44099]
+
 Fri Oct 12 11:22:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (match_values_at): make #select to be alias to #values_at
