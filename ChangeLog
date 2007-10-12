@@ -1,3 +1,8 @@
+Fri Oct 12 11:22:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_values_at): make #select to be alias to #values_at
+	  to adapt RDoc description.  [ruby-core:12588]  
+
 Thu Oct 11 14:32:46 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32}/Makefile.sub (COMMON_MACROS): workaround for old SDK's

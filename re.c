@@ -1217,14 +1217,15 @@ match_entry(match, n)
 
 /*
  *  call-seq:
- *     mtch.select([index]*)   => array
+ *     mtch.values_at([index]*)   => array
+ *     mtch.select([index]*)      => array
  *  
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
  *     
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
- *     m.select(0, 2, -2)   #=> ["HX1138", "X", "113"]
+ *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
  */
 
 static VALUE
@@ -1236,45 +1237,6 @@ match_values_at(argc, argv, match)
     return rb_values_at(match, RMATCH(match)->regs->num_regs, argc, argv, match_entry);
 }
 
-
-/*
- *  call-seq:
- *     mtch.select([index]*)   => array
- *  
- *  Uses each <i>index</i> to access the matching values, returning an
- *  array of the corresponding matches.
- *     
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
- *     m.select(0, 2, -2)   #=> ["HX1138", "X", "113"]
- */
-
-static VALUE
-match_select(argc, argv, match)
-    int argc;
-    VALUE *argv;
-    VALUE match;
-{
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
-    else {
-	struct re_registers *regs = RMATCH(match)->regs;
-	VALUE target = RMATCH(match)->str;
-	VALUE result = rb_ary_new();
-	int i;
-	int taint = OBJ_TAINTED(match);
-
-	for (i=0; i<regs->num_regs; i++) {
-	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
-	    if (taint) OBJ_TAINT(str);
-	    if (RTEST(rb_yield(str))) {
-		rb_ary_push(result, str);
-	    }
-	}
-	return result;
-    }
-}
 
 
 /*
@@ -2313,8 +2275,8 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
-    rb_define_method(rb_cMatch, "select", match_select, -1);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
+    rb_define_method(rb_cMatch, "select", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
