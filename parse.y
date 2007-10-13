@@ -5693,12 +5693,12 @@ set_file_encoding(struct parser_params *parser, const char *str, const char *sen
     for (;;) {
 	if (send - str <= 6) return;
 	switch (str[6]) {
-	  case 'c': str += 6; continue;
-	  case 'o': str += 5; continue;
-	  case 'd': str += 4; continue;
-	  case 'i': str += 3; continue;
-	  case 'n': str += 2; continue;
-	  case 'g': str += 1; continue;
+	  case 'C': case 'c': str += 6; continue;
+	  case 'O': case 'o': str += 5; continue;
+	  case 'D': case 'd': str += 4; continue;
+	  case 'I': case 'i': str += 3; continue;
+	  case 'N': case 'n': str += 2; continue;
+	  case 'G': case 'g': str += 1; continue;
 	  case '=': case ':':
 	    sep = 1;
 	    str += 6;
