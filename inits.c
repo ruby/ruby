@@ -52,6 +52,7 @@ void Init_Thread(void);
 void Init_Cont(void);
 void Init_top_self(void);
 void Init_prelude(void);
+void Init_Encoding(void);
 
 void
 rb_call_inits()
@@ -61,6 +62,7 @@ rb_call_inits()
     Init_var_tables();
     Init_Object();
     Init_top_self();
+    Init_Encoding();
     Init_Comparable();
     Init_Enumerable();
     Init_Precision();

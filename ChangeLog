@@ -1,4 +1,4 @@
-Sun Oct 14 01:32:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Oct 14 02:20:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_cEncoding): new Encoding class.
 
@@ -7,6 +7,8 @@ Sun Oct 14 01:32:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* encoding.c (rb_obj_encoding): return Encoding object now.
 
 	* gc.c (garbage_collect): mark Encoding objects.
+
+	* inits.c (rb_call_inits): call Init_Encoding.
 
 	* string.c (rb_str_force_encoding): accept Encoding object as well as
 	  encoding name.
