@@ -75,7 +75,7 @@ class Exports
   end
 
   def symbols()
-    @syms.sort.collect {|k, v| v ? "#{k}=#{v}" : k}
+    @syms.sort.collect {|k, v| v ? v == true ? "#{k} DATA" : "#{k}=#{v}" : k}
   end
 end
 
@@ -90,7 +90,8 @@ class Exports::Mswin < Exports
           case filetype
           when /OBJECT/, /LIBRARY/
             next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
-            next unless l.sub!(/.*\sExternal\s+\|\s+/, '')
+            next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
+            is_data = !$1
             if noprefix or l.sub!(/^_/, '')
               next if /@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
               l.sub!(/^/, '_') if /@\d+$/ =~ l
@@ -102,7 +103,7 @@ class Exports::Mswin < Exports
           else
             next
           end
-          yield l.strip
+          yield l.strip, is_data
         end
       end
     end

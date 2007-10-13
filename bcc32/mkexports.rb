@@ -15,7 +15,7 @@ class Exports::Bcc < Exports
     opt = /\.(?:so|dll)\z/i =~ obj ? "-ee" : "-oiPUBDEF -oiPUBD32"
     IO.foreach("|tdump -q #{opt} #{obj.tr('/', '\\')} < nul") do |l|
       next unless /(?:PUBDEF|PUBD32|EXPORT)/ =~ l
-        yield $1 if /'(.*?)'/ =~ l
+        yield $1, !$2 /'(.*?)'\s+Segment:\s+_(TEXT)?/ =~ l
       end
     end
     yield "_strcasecmp", "_stricmp"
