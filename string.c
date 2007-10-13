@@ -5112,19 +5112,10 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
  */
 
 static VALUE
-rb_str_force_encoding(VALUE str, VALUE encname)
+rb_str_force_encoding(VALUE str, VALUE enc)
 {
-    const char *name;
-    int idx;
-
-    if (NIL_P(encname)) {
-	idx = 0;
-    }
-    else if ((idx = rb_enc_find_index(name = StringValueCStr(encname))) < 0) {
-	rb_raise(rb_eArgError, "invalid encoding name - %s", name);
-    }
     str_modifiable(str);
-    rb_enc_associate_index(str, idx);
+    rb_enc_associate(str, rb_to_encoding(enc));
     return str;
 }
 

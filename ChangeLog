@@ -1,3 +1,19 @@
+Sun Oct 14 01:32:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_cEncoding): new Encoding class.
+
+	* encoding.c (rb_to_encoding, rb_to_encoding_index): helper functions.
+
+	* encoding.c (rb_obj_encoding): return Encoding object now.
+
+	* gc.c (garbage_collect): mark Encoding objects.
+
+	* string.c (rb_str_force_encoding): accept Encoding object as well as
+	  encoding name.
+
+	* include/ruby/encoding.h (rb_to_encoding_index, rb_to_encoding):
+	  prototypes.
+
 Sun Oct 14 01:03:30 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI.open_http): fix :ssl_ca_cert option.

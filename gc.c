@@ -1456,6 +1456,8 @@ mark_current_machine_context(rb_thread_t *th)
 #endif
 }
 
+void rb_gc_mark_encodings(void);
+
 static int
 garbage_collect(void)
 {
@@ -1490,6 +1492,7 @@ garbage_collect(void)
 
     rb_gc_mark_threads();
     rb_gc_mark_symbols();
+    rb_gc_mark_encodings();
 
     /* mark protected global variables */
     for (list = global_List; list; list = list->next) {

@@ -15,6 +15,7 @@
 #include "regenc.h"
 
 static ID id_encoding;
+static VALUE rb_cEncoding;
 
 struct rb_encoding_entry {
     const char *name;
@@ -24,6 +25,92 @@ struct rb_encoding_entry {
 static struct rb_encoding_entry *enc_table;
 static int enc_table_size;
 static st_table *enc_table_alias;
+
+#define ENC_UNINITIALIZED (&rb_cEncoding)
+#define enc_initialized_p(enc) ((enc)->auxiliary_data != &rb_cEncoding)
+#define ENC_FROM_ENCODING(enc) ((VALUE)(enc)->auxiliary_data)
+
+static void
+enc_mark(void *ptr)
+{
+}
+
+static VALUE
+enc_new(rb_encoding *encoding)
+{
+    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, -1, encoding);
+    encoding->auxiliary_data = (void *)enc;
+    return enc;
+}
+
+static VALUE
+enc_from_encoding(rb_encoding *enc)
+{
+    return enc_initialized_p(enc) ? ENC_FROM_ENCODING(enc) : enc_new(enc);
+}
+
+static rb_encoding *
+enc_check_encoding(VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
+	RDATA(obj)->dmark != enc_mark) {
+	return 0;
+    }
+    return RDATA(obj)->data;
+}
+
+static rb_encoding *
+enc_get_encoding(VALUE obj)
+{
+    rb_encoding *enc = enc_check_encoding(obj);
+    if (!enc) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding)",
+		 rb_obj_classname(obj));
+    }
+    return enc;
+}
+
+int
+rb_to_encoding_index(VALUE enc)
+{
+    rb_encoding *encoding;
+
+    if (NIL_P(enc)) return 0;
+    encoding = enc_check_encoding(enc);
+    if (encoding) {
+	return rb_enc_to_index(encoding);
+    }
+    else {
+	return rb_enc_find_index(StringValueCStr(enc));
+    }
+}
+
+rb_encoding *
+rb_to_encoding(VALUE enc)
+{
+    rb_encoding *encoding;
+    int idx;
+
+    if (NIL_P(enc)) return rb_enc_from_index(0);
+    encoding = enc_check_encoding(enc);
+    if (encoding) return encoding;
+    if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {
+	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
+    }
+    return rb_enc_from_index(idx);
+}
+
+void
+rb_gc_mark_encodings(void)
+{
+    int i;
+    for (i = 0; i < enc_table_size; ++i) {
+	rb_encoding *enc = enc_table[i].enc;
+	if (enc && enc_initialized_p(enc)) {
+	    rb_gc_mark(ENC_FROM_ENCODING(enc));
+	}
+    }
+}
 
 int
 rb_enc_register(const char *name, rb_encoding *encoding)
@@ -44,7 +131,15 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     enc_table_size = newsize;
     ent = &enc_table[--newsize];
     ent->name = name;
-    ent->enc = encoding;
+    *(ent->enc = malloc(sizeof(rb_encoding))) = *encoding;
+    encoding = ent->enc;
+    encoding->name = name;
+    if (rb_cEncoding) {
+	enc_new(encoding);
+    }
+    else {
+	encoding->auxiliary_data = ENC_UNINITIALIZED;
+    }
     return newsize;
 }
 
@@ -121,9 +216,9 @@ rb_enc_find_index(const char *name)
 rb_encoding *
 rb_enc_find(const char *name)
 {
-    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(name));
-    if (!enc) enc = ONIG_ENCODING_ASCII;
-    return enc;
+    int idx = rb_enc_find_index(name);
+    if (idx < 0) idx = 0;
+    return rb_enc_from_index(idx);
 }
 
 static int
@@ -259,7 +354,7 @@ rb_enc_check(VALUE str1, VALUE str2)
 		if (cr1 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx2);
 		if (cr2 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx1);
 	    }
-	    if (cr1 == ENC_CODERANGE_SINGLE) return ONIG_ENCODING_ASCII;
+	    if (cr1 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(0);
 	}
 	if (cr1 == ENC_CODERANGE_SINGLE &&
 	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
@@ -285,7 +380,11 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 VALUE
 rb_obj_encoding(VALUE obj)
 {
-    return rb_str_new2(rb_enc_name(rb_enc_get(obj)));
+    rb_encoding *enc = rb_enc_get(obj);
+    if (!enc) {
+	rb_raise(rb_eTypeError, "unknown encoding");
+    }
+    return enc_from_encoding(enc);
 }
 
 
@@ -359,4 +458,52 @@ int
 rb_enc_tolower(int c, rb_encoding *enc)
 {
     return (ONIGENC_IS_ASCII_CODE(c)?ONIGENC_ASCII_CODE_TO_LOWER_CASE(c):(c));
+}
+
+static VALUE
+enc_inspect(VALUE self)
+{
+    return rb_sprintf("<%s:%s>", rb_obj_classname(self),
+		      rb_enc_name(enc_get_encoding(self)));
+}
+
+static VALUE
+enc_name(VALUE self)
+{
+    return rb_str_new2(rb_enc_name(enc_get_encoding(self)));
+}
+
+static VALUE
+enc_list(VALUE klass)
+{
+    VALUE ary = rb_ary_new2(enc_table_size);
+    int i;
+    rb_cEncoding = rb_define_class("Encoding", rb_cObject);
+    for (i = 0; i < enc_table_size; ++i) {
+	rb_encoding *enc = enc_table[i].enc;
+	if (enc) {
+	    rb_ary_push(ary, enc_from_encoding(enc));
+	}
+    }
+    return ary;
+}
+
+static VALUE
+enc_find(VALUE klass, VALUE enc)
+{
+    int idx = rb_enc_find_index(StringValueCStr(enc));
+    if (idx < 0) {
+	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
+    }
+    return enc_from_encoding(rb_enc_from_index(idx));
+}
+
+void
+Init_Encoding(void)
+{
+    rb_cEncoding = rb_define_class("Encoding", rb_cObject);
+    rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
+    rb_define_method(rb_cEncoding, "name", enc_name, 0);
+    rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
+    rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
 }
