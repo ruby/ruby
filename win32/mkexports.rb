@@ -92,9 +92,9 @@ class Exports::Mswin < Exports
             next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
             next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
             is_data = !$1
-            if noprefix or l.sub!(/^_/, '')
-              next if /@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
-              l.sub!(/^/, '_') if /@\d+$/ =~ l
+            if noprefix or /^[@_]/ =~ l
+              next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
+              l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
             elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
               next
             end

@@ -1,3 +1,8 @@
+Sun Oct 14 03:55:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/mkexports.rb: deal with __fastcall name decorations.
+	  [ruby-list:44111]
+
 Sun Oct 14 02:20:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_cEncoding): new Encoding class.
