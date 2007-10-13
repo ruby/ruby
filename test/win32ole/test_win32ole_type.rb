@@ -158,6 +158,20 @@ if defined?(WIN32OLE_TYPE)
     def test_inspect
       assert_equal("#<WIN32OLE_TYPE:Shell>", @ole_type.inspect)
     end
+    # WIN32OLE_TYPE.typelibs will be obsoleted.
+    def test_s_typelibs
+      tlibs = WIN32OLE_TYPE.typelibs.sort
+      tlibs2 = WIN32OLE_TYPELIB.typelibs.collect{|t|t.name}.sort
+      assert_equal(tlibs2, tlibs)
+    end
 
+    # WIN32OLE_TYPE.ole_classes will be obsoleted.
+    def test_s_ole_classes
+      ots1 = WIN32OLE_TYPE.ole_classes("Microsoft Shell Controls And Automation")
+      ots2 = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation").ole_types
+      otns1 = ots1.collect{|t| t.name}.sort
+      otns2 = ots2.collect{|t| t.name}.sort
+      assert_equal(otns2, otns1)
+    end
   end
 end

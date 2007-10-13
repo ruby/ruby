@@ -29,7 +29,7 @@ if defined?(WIN32OLE)
       @shortcut = nil
 
       #
-      # Search the 'Create Shortcut (&S)' string.
+      # Search the 'Create Shortcut (&S)' string in Japanese.
       # Yes, I know the string in the Windows 2000 Japanese Edition.
       # But I do not know about the string in any other Windows.
       # 
@@ -38,7 +38,8 @@ if defined?(WIN32OLE)
       @shortcut = verbs.collect{|verb| 
         verb.name
       }.find {|name|
-        /.*\(\&S\)$/ =~ name
+        name.unpack("C*") == [131, 86, 131, 135, 129, 91, 131, 103, 131, 74, 131, 98, 131, 103, 130, 204, 141, 236, 144, 172, 40, 38, 83, 41]
+        # /.*\(\&S\)$/ =~ name
       }
     end
 

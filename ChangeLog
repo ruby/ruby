@@ -1,3 +1,19 @@
+Sat Oct 13 21:23:21 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (foletype_s_ole_classes, 
+	  foletype_s_typelibs): refactoring.
+	
+	* test/win32ole/test_win32ole_type.rb: add some test. 
+
+	* ext/win32ole/win32ole.c (Init_win32ole): change method name
+	  WIN32OLE_TYPELIB.ole_types from WIN32OLE_TYPELIB.ole_classes.
+
+	* test/win32ole/test_win32ole_typelib.rb: ditto.
+
+	* test/win32ole/test_folderitem2_invokeverb.rb: check create
+	  shortcut string more strictly (This test is invoked in Japanese
+	  Windows environment).
+
 Sat Oct 13 09:11:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (set_file_encoding): case-insensitive search, a patch from

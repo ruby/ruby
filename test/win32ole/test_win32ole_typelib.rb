@@ -88,12 +88,12 @@ if defined?(WIN32OLE_TYPELIB)
       assert_equal("Microsoft Shell Controls And Automation", tlib.to_s)
     end
 
-    def test_ole_classes
+    def test_ole_types
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
-      ole_classes = tlib.ole_classes
-      assert_instance_of(Array, ole_classes)
-      assert(ole_classes.size > 0)
-      assert_instance_of(WIN32OLE_TYPE, ole_classes[0])
+      ole_types = tlib.ole_types
+      assert_instance_of(Array, ole_types)
+      assert(ole_types.size > 0)
+      assert_instance_of(WIN32OLE_TYPE, ole_types[0])
     end
 
     def test_inspect

@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.0"
+#define WIN32OLE_VERSION "1.1.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -306,7 +306,7 @@ static VALUE ole_create_dcom(int argc, VALUE *argv, VALUE self);
 static VALUE ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self);
 static VALUE fole_s_connect(int argc, VALUE *argv, VALUE self);
 static VALUE fole_s_const_load(int argc, VALUE *argv, VALUE self);
-static VALUE ole_classes_from_typelib(ITypeLib *pTypeLib, VALUE classes);
+static VALUE ole_types_from_typelib(ITypeLib *pTypeLib, VALUE classes);
 static ULONG reference_count(struct oledata * pole);
 static VALUE fole_s_reference_count(VALUE self, VALUE obj);
 static VALUE fole_s_free(VALUE self, VALUE obj);
@@ -384,7 +384,7 @@ static VALUE foletypelib_path(VALUE self);
 static void  oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib);
 static VALUE foletypelib_visible(VALUE self);
 static VALUE foletypelib_library_name(VALUE self);
-static VALUE foletypelib_ole_classes(VALUE self);
+static VALUE foletypelib_ole_types(VALUE self);
 static VALUE foletypelib_inspect(VALUE self);
 static VALUE foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass);
 static VALUE foletype_name(VALUE self);
@@ -2425,7 +2425,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ole_classes_from_typelib(ITypeLib *pTypeLib, VALUE classes)
+ole_types_from_typelib(ITypeLib *pTypeLib, VALUE classes)
 {
     
     long count;
@@ -4343,34 +4343,15 @@ fole_activex_initialize(VALUE self)
 static VALUE
 foletype_s_ole_classes(VALUE self, VALUE typelib)
 {
-    VALUE file, classes;
-    OLECHAR * pbuf;
-    ITypeLib *pTypeLib;
-    HRESULT hr;
+    VALUE obj;
 
     /*
     rb_warn("%s is obsolete; use %s instead.",
             "WIN32OLE_TYPE.ole_classes",
-            "WIN32OLE_TYPELIB.new(typelib).ole_classes");
+            "WIN32OLE_TYPELIB.new(typelib).ole_types");
     */
-    rb_secure(4);
-    classes = rb_ary_new();
-    if(TYPE(typelib) == T_STRING) {
-        file = typelib_file(typelib);
-        if (file == Qnil) {
-            file = typelib;
-        }
-        pbuf = ole_mb2wc(StringValuePtr(file), -1);
-        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
-        if (FAILED(hr))
-          ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
-        SysFreeString(pbuf);
-        ole_classes_from_typelib(pTypeLib, classes);
-        OLE_RELEASE(pTypeLib);
-    } else {
-        rb_raise(rb_eTypeError, "1st argument should be TypeLib string");
-    }
-    return classes;
+    obj = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("new"), 1, typelib);
+    return rb_funcall(obj, rb_intern("ole_types"), 0);
 }
 
 /*
@@ -4384,47 +4365,12 @@ foletype_s_ole_classes(VALUE self, VALUE typelib)
 static VALUE
 foletype_s_typelibs(VALUE self)
 {
-    HKEY htypelib, hclsid;
-    double fversion;
-    DWORD i, j;
-    LONG err;
-    VALUE clsid;
-    VALUE ver;
-    VALUE v = Qnil;
-    VALUE typelibs = rb_ary_new();
-
     /*
     rb_warn("%s is obsolete. use %s instead.",
             "WIN32OLE_TYPE.typelibs",
             "WIN32OLE_TYPELIB.typelibs.collect{t|t.name}");
     */
-    err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
-    if(err != ERROR_SUCCESS) {
-        return typelibs;
-    }
-    for(i = 0; ; i++) {
-        clsid = reg_enum_key(htypelib, i);
-        if (clsid == Qnil)
-            break;
-        err = reg_open_vkey(htypelib, clsid, &hclsid);
-        if (err != ERROR_SUCCESS)
-            continue;
-        fversion = 0;
-        for(j = 0; ; j++) {
-            ver = reg_enum_key(hclsid, j);
-            if (ver == Qnil)
-                break;
-            if (fversion > atof(StringValuePtr(ver)))
-                continue;
-            fversion = atof(StringValuePtr(ver));
-            if ( (v = reg_get_val(hclsid, StringValuePtr(ver))) != Qnil ) {
-                rb_ary_push(typelibs, v);
-            }
-        }
-        RegCloseKey(hclsid);
-    }
-    RegCloseKey(htypelib);
-    return typelibs;
+    return rb_eval_string("WIN32OLE_TYPELIB.typelibs.collect{|t|t.name}");
 }
 
 /*
@@ -5007,20 +4953,20 @@ foletypelib_library_name(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#ole_classes -> The array of WIN32OLE_TYPE object included the type library.
+ *     WIN32OLE_TYPELIB#ole_types -> The array of WIN32OLE_TYPE object included the type library.
  *
  *  Returns the type library file path.
  *
  *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
- *     classes = tlib.ole_classes.collect{|k| k.name} # -> ['AddIn', 'AddIns' ...] 
+ *     classes = tlib.ole_types.collect{|k| k.name} # -> ['AddIn', 'AddIns' ...] 
  */
 static VALUE
-foletypelib_ole_classes(VALUE self)
+foletypelib_ole_types(VALUE self)
 {
     ITypeLib *pTypeLib = NULL;
     VALUE classes = rb_ary_new();
     oletypelib2itypelib(self, &pTypeLib);
-    ole_classes_from_typelib(pTypeLib, classes);
+    ole_types_from_typelib(pTypeLib, classes);
     OLE_RELEASE(pTypeLib);
     return classes;
 }
@@ -8122,7 +8068,8 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPELIB, "major_version", foletypelib_major_version, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "minor_version", foletypelib_minor_version, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "path", foletypelib_path, 0);
-    rb_define_method(cWIN32OLE_TYPELIB, "ole_classes", foletypelib_ole_classes, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "ole_types", foletypelib_ole_types, 0);
+    rb_define_alias(cWIN32OLE_TYPELIB, "ole_classes", "ole_types");
     rb_define_method(cWIN32OLE_TYPELIB, "visible?", foletypelib_visible, 0);
     rb_define_method(cWIN32OLE_TYPELIB, "library_name", foletypelib_library_name, 0);
     rb_define_alias(cWIN32OLE_TYPELIB, "to_s", "name");
