@@ -280,7 +280,6 @@ module OpenURI
       else
         store.set_default_paths
       end
-      store.set_default_paths
       http.cert_store = store
     end
     if options.include? :read_timeout

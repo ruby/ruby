@@ -1,3 +1,7 @@
+Sun Oct 14 01:03:30 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.open_http): fix :ssl_ca_cert option.
+
 Sat Oct 13 21:23:21 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (foletype_s_ole_classes, 
