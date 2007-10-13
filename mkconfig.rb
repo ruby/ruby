@@ -68,7 +68,7 @@ File.foreach "config.status" do |line|
   end
 
   if name
-    next if /^(?:ac_.*|DEFS|configure_input|(?:top_)?srcdir|\w+OBJS)$/ =~ name
+    next if /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/ =~ name
     next if /^\$\(ac_\w+\)$/ =~ val
     next if /^\$\{ac_\w+\}$/ =~ val
     next if /^\$ac_\w+$/ =~ val
