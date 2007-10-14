@@ -247,15 +247,7 @@ class PP < PrettyPrint
 
     def pp_hash(obj)
       group(1, '{', '}') {
-        keys = obj.keys
-        if 0 < keys.length
-          key_class = keys[0].class
-          if key_class < Comparable && keys.all? {|k| k.class == key_class }
-            keys.sort!
-          end
-        end
-        seplist(keys, nil, :each) {|k|
-          v = obj[k]
+        seplist(obj, nil, :each_pair) {|k, v|
           group {
             pp k
             text '=>'
@@ -359,7 +351,11 @@ end
 
 class << ENV
   def pretty_print(q)
-    q.pp_hash self
+    h = {}
+    ENV.keys.sort.each {|k|
+      h[k] = ENV[k]
+    }
+    q.pp_hash h
   end
 end
 

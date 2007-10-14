@@ -1,3 +1,9 @@
+Sun Oct 14 11:09:09 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (PP::PPMethods#pp_hash): don't sort keys because hash is
+	  ordered.
+	  (ENV.pretty_print): call pp_hash with sorted hash.
+
 Sun Oct 14 04:08:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (AC_SYS_LARGEFILE): keep results also in command
@@ -166,7 +172,7 @@ Tue Oct  9 15:40:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Oct  8 20:06:29 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/imap.rb, lib/net/smtp.rb, lib/net/pop.rb: hostname should
-	  be verified against server's indentity as persented in the server's
+	  be verified against server's identity as presented in the server's
 	  certificate. [ruby-dev:31960]
 
 	* ext/openssl/lib/net/telnets.rb, ext/openssl/lib/net/ftptls.rb: ditto.
@@ -261,7 +267,7 @@ Fri Oct  5 03:25:51 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb (succ): Implement IPAddr#succ.  You can now create
 	  a range between two IPAddr's, which (Range) object is
-	  enumeratable.
+	  enumerable.
 
 	* lib/ipaddr.rb (to_range): A new method to create a Range object
 	  for the (network) address.
