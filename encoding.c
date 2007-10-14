@@ -2,8 +2,8 @@
 
   encoding.c -
 
-  $Author: matz $
-  $Date: 2007-05-24 17:22:33 +0900 (Thu, 24 May 2007) $
+  $Author$
+  $Date$
   created at: Thu May 24 17:23:27 JST 2007
 
   Copyright (C) 2007 Yukihiro Matsumoto
@@ -372,9 +372,9 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj.encoding   => str
+ *     obj.encoding   => encoding
  *
- *  Retruns the encoding name.
+ *  Returns the Encoding object that represents the encoding of obj.
  */
 
 VALUE
@@ -498,12 +498,31 @@ enc_find(VALUE klass, VALUE enc)
     return enc_from_encoding(rb_enc_from_index(idx));
 }
 
+/* :nodoc: */
+static VALUE
+enc_dump(int argc, VALUE *argv, VALUE self)
+{
+    rb_scan_args(argc, argv, "01", 0);
+    return enc_name(self);
+}
+
+/* :nodoc: */
+static VALUE
+enc_load(VALUE klass, VALUE str)
+{
+    return enc_find(klass, str);
+}
+
 void
 Init_Encoding(void)
 {
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
+    rb_undef_alloc_func(rb_cEncoding);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
+
+    rb_define_method(rb_cEncoding, "_dump", enc_dump, -1);
+    rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 }

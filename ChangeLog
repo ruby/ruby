@@ -1,3 +1,17 @@
+Sun Oct 14 17:31:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_obj_encoding): rdoc update.  a patch from David
+	  Flanagan <david AT davidflanagan.com>.  [ruby-core:12664]
+
+	* encoding.c (enc_dump, enc_load): marshaling feature.  a patch from
+	  David Flanagan.  [ruby-core:12665]
+
+	* encoding.c (Init_Encoding): undefine allocator of Encoding.
+	  [ruby-core:12665], [ruby-core:12666]
+
+	* test/ruby/test_encoding.rb: tests for Encoding from David Flanagan
+	  [ruby-core:12665]
+
 Sun Oct 14 11:09:09 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (PP::PPMethods#pp_hash): don't sort keys because hash is
