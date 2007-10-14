@@ -1,3 +1,8 @@
+Mon Oct 15 01:15:09 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (s_accept_nonblock): make accepted fd
+	  nonblocking.  [ruby-talk:274079]
+
 Sun Oct 14 17:31:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_obj_encoding): rdoc update.  a patch from David
