@@ -31,6 +31,18 @@ with all sufficient information, see the ChangeLog file.
   * Remove redundant module namespace in Cipher, Digest, PKCS7, PKCS12.
     Compatibility classes are provided which will be removed in Ruby 1.9.
 
+* shellwords
+
+  * Add methods for escaping shell-unsafe characters:
+    Shellwords.join
+    Shellwords.escape
+    Array#shelljoin
+    String#shellescape
+
+  * Add shorthand methods:
+    Shellwords.split (alias shellwords)
+    String#shellsplit
+
 * tmpdir
 
   * New method:
@@ -42,6 +54,23 @@ with all sufficient information, see the ChangeLog file.
 
   * Regexp.union accepts an array of patterns.
           
+* tempfile
+
+  * Tempfile.open and Tempfile.new now accept a suffix for the
+    temporary file to be created.  To specify a suffix, pass an array
+    of [basename, suffix] as the first argument.
+
+      Tempfile.open(['image', 'jpg']) { |tempfile| ... }
+
+=== Compatibility issues (excluding feature bug fixes)
+
+* tempfile
+
+  * The file name format has changed.  No dots are included by default
+    in temporary file names any more.  See above for how to specify a
+    suffix.
+
+
 == Changes with Ruby 1.8.5
 
 === New platforms/build tools support
@@ -76,10 +105,6 @@ with all sufficient information, see the ChangeLog file.
   * Updated based on nkf as of 2007-01-28.
 
 * tk
-
-  * Tk::X_Scrollable (Y_Scrollable) is renamed to Tk::XScrollable
-    (YScrollable). Tk::X_Scrollable (Y_Scrollable) is still available,
-    but it is an alias name.
 
   * Updated Tile extension support based on Tile 0.7.8.
 
@@ -157,3 +182,9 @@ with all sufficient information, see the ChangeLog file.
 
   * A minor implementation change breaks Rake <=0.7.1.
     Updating Rake to 0.7.2 or higher fixes the problem.
+
+* tk
+
+  * Tk::X_Scrollable (Y_Scrollable) is renamed to Tk::XScrollable
+    (YScrollable). Tk::X_Scrollable (Y_Scrollable) is still available,
+    but it is an alias name.
