@@ -1,3 +1,8 @@
+Tue Oct 16 01:25:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (Init_Encoding): define #to_s to show encoding name
+	  in to_s representation as well as #inspect.
+
 Mon Oct 15 13:24:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): should be number but not rounding factor.
