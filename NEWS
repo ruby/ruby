@@ -19,14 +19,37 @@ with all sufficient information, see the ChangeLog file.
 
   * Regexp.union accepts an array of patterns.
 
+* ipaddr
+
+  * New methods
+    * IPAddr#<=>
+    * IPAddr#succ
+
+      IPAddr objects are now comparable and enumerable having these
+      methods.  This also means that it is possible to have a Range
+      object between two IPAddr objects.
+
+    * IPAddr#to_range
+
+      A new method to create a Range object for the (network) address.
+
+  * Type coercion support
+    * IPAddr#&
+    * IPAddr#|
+    * IPAddr#==
+    * IPAddr#include?
+
+      These methods now accept a string or an integer instead of an
+      IPAddr object as the argument.
+
 * openssl
 
-  * New classes:
-    OpenSSL::PKey::EC
-    OpenSSL::PKey::EC::Group
-    OpenSSL::PKey::EC::Point
-    OpenSSL::PKey::PKCS5
-    OpenSSL::SSL::Session
+  * New classes
+    * OpenSSL::PKey::EC
+    * OpenSSL::PKey::EC::Group
+    * OpenSSL::PKey::EC::Point
+    * OpenSSL::PKey::PKCS5
+    * OpenSSL::SSL::Session
 
   * Documentation!
 
@@ -38,14 +61,14 @@ with all sufficient information, see the ChangeLog file.
 * shellwords
 
   * Add methods for escaping shell-unsafe characters:
-    Shellwords.join
-    Shellwords.escape
-    Array#shelljoin
-    String#shellescape
+    * Shellwords.join
+    * Shellwords.escape
+    * Array#shelljoin
+    * String#shellescape
 
   * Add shorthand methods:
-    Shellwords.split (alias shellwords)
-    String#shellsplit
+    * Shellwords.split (alias shellwords)
+    * String#shellsplit
 
 * tempfile
 
@@ -66,7 +89,7 @@ with all sufficient information, see the ChangeLog file.
 * tmpdir
 
   * New method:
-    Dir.mktmpdir
+    * Dir.mktmpdir
 
 
 == Changes since the 1.8.5 release
