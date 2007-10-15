@@ -1,3 +1,8 @@
+Mon Oct 15 09:58:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_bytes0): check if source has enough data.
+	  [ruby-dev:32054]
+
 Mon Oct 15 01:15:09 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (s_accept_nonblock): make accepted fd
