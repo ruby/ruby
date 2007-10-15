@@ -1257,7 +1257,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 
     if (ndigits > 0) return rb_float_new(number);
 
-    if (!FIXABLE(f)) {
+    if (!FIXABLE(number)) {
 	return rb_dbl2big(number);
     }
     val = number;

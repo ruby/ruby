@@ -1,3 +1,8 @@
+Mon Oct 15 13:24:08 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): should be number but not rounding factor.
+	  [ruby-dev:32060]
+
 Mon Oct 15 11:45:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_bytes0): refined length check.  [ruby-dev:32059]
