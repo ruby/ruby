@@ -1,3 +1,8 @@
+Tue Oct 16 01:31:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_inject): RDoc update.  a patch from David Flanagan
+	  <david AT davidflanagan.com> in [ruby-core:12679]
+
 Tue Oct 16 01:25:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (Init_Encoding): define #to_s to show encoding name

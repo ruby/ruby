@@ -362,67 +362,50 @@ inject_op_i(VALUE i, VALUE p)
 }
 
 /*
- *  Document-method: inject
  *  call-seq:
- *     enum.inject(sym)          => obj
  *     enum.inject(sym, initial) => obj
+ *     enum.inject(sym)          => obj
  *     enum.inject(initial) {| memo, obj | block }  => obj
  *     enum.inject          {| memo, obj | block }  => obj
+ *
+ *     enum.reduce(sym, initial) => obj
+ *     enum.reduce(sym)          => obj
+ *     enum.reduce(initial) {| memo, obj | block }  => obj
+ *     enum.reduce          {| memo, obj | block }  => obj
  *  
- *  Combines the elements of <i>enum</i> by applying the block to an
- *  accumulator value (<i>memo</i>) and each element in turn. At each
- *  step, <i>memo</i> is set to the value returned by the block. The
- *  first form lets you supply an initial value for <i>memo</i>. The
- *  second form uses the first element of the collection as a the
- *  initial value (and skips that element while iterating).
- *  See also <code>Enumerable#reduce</code>.
- *     
+ *  Combines all elements of <i>enum</i> by applying a binary
+ *  operation, specified by a block or a symbol that names a
+ *  method or operator.
+ *
+ *  If you specify a block, then for each element in <i>enum<i>
+ *  the block is passed an accumulator value (<i>memo</i>) and the element.
+ *  If you specify a symbol instead, then each element in the collection
+ *  will be passed to the named method of <i>memo</i>.
+ *  In either case, the result becomes the new value for <i>memo</i>. 
+ *  At the end of the iteration, the final value of <i>memo</i> is the
+ *  return value fo the method.
+ *
+ *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
+ *  then uses the first element of collection is used as the initial value
+ *  of <i>memo</i>.
+ *
+ *  Examples:   
+ *
  *     # Sum some numbers
- *     (5..10).inject {|sum, n| sum + n }              #=> 45
+ *     (5..10).reduce(:+)                            #=> 45
+ *     # Same using a block and inject
+ *     (5..10).inject {|sum, n| sum + n }            #=> 45
  *     # Multiply some numbers
- *     (5..10).inject(1) {|product, n| product * n }   #=> 151200
- *     
+ *     (5..10).reduce(:*, 1)                         #=> 151200
+ *     # Same using a block
+ *     (5..10).inject(1) {|product, n| product * n } #=> 151200
  *     # find the longest word
  *     longest = %w{ cat sheep bear }.inject do |memo,word|
  *        memo.length > word.length ? memo : word
  *     end
- *     longest                                         #=> "sheep"
- *     
- *     # find the length of the longest word
- *     longest = %w{ cat sheep bear }.inject(0) do |memo,word|
- *        memo >= word.length ? memo : word.length
- *     end
- *     longest                                         #=> 5
+ *     longest                                       #=> "sheep"
  *     
  */
-
-/*
- *  Document-method: reduce
- *  call-seq:
- *     enum.reduce(sym)          => obj
- *     enum.reduce(sym, initial) => obj
- *     enum.reduce          {| memo, obj | block }  => obj
- *     enum.reduce(initial) {| memo, obj | block }  => obj
- *  
- *  Combines all elements of <i>enum</i> by applying a binary
- *  operation, specified by the block or metho-name symbol, for
- *  example, ary.reduce(:+) adds up all the elements.  If no block is
- *  specified, the first argument is a method (or operator) name that
- *  takes two arguments.  The second optional argument is the initial
- *  value.  If a block is specified, the first optional value is the
- *  initial value.
- *     
- *     # Sum some numbers
- *     (5..10).reduce(:+)                            #=> 45
- *     # Same using a block
- *     (5..10).reduce {|sum, n| sum + n }            #=> 45
- *     # Multiply some numbers
- *     (5..10).reduce(:*, 1)                         #=> 151200
- *     # Same using a block
- *     (5..10).reduce(1) {|product, n| product * n } #=> 151200
- *     
- */
-
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
 {
@@ -855,7 +838,7 @@ one_iter_i(VALUE i, VALUE *memo)
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block returns <code>true</code>
  *  exactly once. If the block is not given, <code>one?</code> will return
- *  <code>true</code> only if exactly one of the collection members are
+ *  <code>true</code> only if exactly one of the collection members is
  *  true.
  *     
  *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
@@ -897,15 +880,15 @@ none_iter_i(VALUE i, VALUE *memo)
  *  
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block never returns <code>true</code>
- *  for all elements. If the block is not given, <code>one?</code> will return
- *  <code>true</code> only if any of the collection members is true.
+ *  for all elements. If the block is not given, <code>none?</code> will return
+ *  <code>true</code> only if none of the collection members is true.
  *     
- *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
- *     %w{ant bear cat}.one? {|word| word.length >= 4}   #=> false
- *     [ nil, true, 99 ].one?                            #=> true
- *     
+ *     %w{ant bear cat}.none? {|word| word.length == 5}  #=> true
+ *     %w{ant bear cat}.none? {|word| word.length >= 4}  #=> false
+ *     [].none?                                          #=> true
+ *     [nil].none?                                       #=> true
+ *     [nil,false].none?                                 #=> true
  */
-
 static VALUE
 enum_none(VALUE obj)
 {
