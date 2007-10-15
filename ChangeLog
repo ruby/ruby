@@ -1,3 +1,7 @@
+Mon Oct 15 11:45:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_bytes0): refined length check.  [ruby-dev:32059]
+
 Mon Oct 15 09:58:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_bytes0): check if source has enough data.
