@@ -57,10 +57,10 @@ module Buffering
     if size == 0
       if buf
         buf.clear
-        return buf
       else
-        return ""
+        buf = ""
       end
+      return @eof ? nil : buf
     end
     until @eof
       break if size && size <= @rbuffer.size
@@ -78,10 +78,10 @@ module Buffering
     if maxlen == 0
       if buf
         buf.clear
-        return buf
       else
-        return ""
+        buf = ""
       end
+      return @eof ? nil : buf
     end
     if @rbuffer.empty?
       begin

@@ -1,3 +1,9 @@
+Mon Oct 15 17:28:20 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (read, readpartial): revert
+	  r12496. handling EOF is a little differnt in ruby 1.8 and ruby 1.9.
+	  [ruby-dev:31979]
+
 Mon Oct 15 11:45:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_bytes0): refined length check.  [ruby-dev:32059]
