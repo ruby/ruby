@@ -873,7 +873,7 @@ r_bytes0(len, arg)
 
     if (len == 0) return rb_str_new(0, 0);
     if (TYPE(arg->src) == T_STRING) {
-	if (RSTRING(arg->src)->len > arg->offset + len) {
+	if (RSTRING(arg->src)->len >= arg->offset + len) {
 	    str = rb_str_new(RSTRING(arg->src)->ptr+arg->offset, len);
 	    arg->offset += len;
 	}
