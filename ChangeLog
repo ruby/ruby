@@ -1,3 +1,33 @@
+Mon Oct 15 22:08:55 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* NEWS: Merge some of the sub-sections, as the differences were
+	  unclear.
+
+Mon Oct 15 21:57:07 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* NEWS: Mention ipaddr enhancements.
+
+	* lib/ipaddr.rb (in_addr, in6_addr, addr_mask): Make some minor
+	  code optimization.
+
+	* lib/ipaddr.rb (<=>): Implement IPAddr#<=> and make IPAddr
+	  comparable.
+
+	* lib/ipaddr.rb (succ): Implement IPAddr#succ.  You can now create
+	  a range between two IPAddr's, which (Range) object is
+	  enumerable.
+
+	* lib/ipaddr.rb (to_range): A new method to create a Range object
+	  for the (network) address.
+
+	* lib/ipaddr.rb (coerce_other): Support type coercion and make &,
+	  |, == and include? accept a string or an integer instead of an
+	  IPAddr object as the argument.
+
+	* lib/ipaddr.rb (initialize): Give better error messages.
+
+	* lib/ipaddr.rb: Improve documentation.
+
 Mon Oct 15 21:24:25 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* NEWS: Mention shellwords and tempfile enhancements.

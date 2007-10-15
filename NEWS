@@ -9,11 +9,15 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes with Ruby 1.8.6
 
-=== New library
-
-* securerandom
-
 === Library updates (outstanding ones only)
+
+* new library
+
+  * securerandom
+
+* builtin classes
+
+  * Regexp.union accepts an array of patterns.
 
 * openssl
 
@@ -43,17 +47,6 @@ with all sufficient information, see the ChangeLog file.
     Shellwords.split (alias shellwords)
     String#shellsplit
 
-* tmpdir
-
-  * New method:
-    Dir.mktmpdir
-
-=== New methods and features
-
-* builtin classes
-
-  * Regexp.union accepts an array of patterns.
-          
 * tempfile
 
   * Tempfile.open and Tempfile.new now accept a suffix for the
@@ -70,6 +63,11 @@ with all sufficient information, see the ChangeLog file.
     in temporary file names any more.  See above for how to specify a
     suffix.
 
+* tmpdir
+
+  * New method:
+    Dir.mktmpdir
+
 
 == Changes with Ruby 1.8.5
 
@@ -82,6 +80,14 @@ with all sufficient information, see the ChangeLog file.
 * autoconf 2.6x
 
 === Library updates (outstanding ones only)
+
+* builtin classes
+
+  * New method: Kernel#instance_variable_defined?
+
+  * New method: Module#class_variable_defined?
+
+  * New feature: Dir::glob() can now take an array of glob patterns.
 
 * date
 
@@ -98,34 +104,6 @@ with all sufficient information, see the ChangeLog file.
       # autoloads digest/md5
       md = Digest::MD5.digest("string")
 
-  * See below for new features and compatibility issues.
-
-* nkf
-
-  * Updated based on nkf as of 2007-01-28.
-
-* tk
-
-  * Updated Tile extension support based on Tile 0.7.8.
-
-  * Support --without-X11 configure option for non-X11 versions of
-    Tcl/Tk (e.g. Tcl/Tk Aqua).
-
-  * New sample script: irbtkw.rbw -- IRB on Ruby/Tk. It has no trouble
-    about STDIN blocking on Windows.
-
-=== New methods and features
-
-* builtin classes
-
-  * New method: Kernel#instance_variable_defined?
-
-  * New method: Module#class_variable_defined?
-
-  * New feature: Dir::glob() can now take an array of glob patterns.
-
-* digest
-
   * New digest class methods: file
 
   * New digest instance methods: clone, reset, new, inspect,
@@ -139,11 +117,25 @@ with all sufficient information, see the ChangeLog file.
 
   * New option for FileUtils.cp_r(): :remove_destination
 
+* nkf
+
+  * Updated based on nkf as of 2007-01-28.
+
 * thread
 
   * Replaced with much faster mutex implementation in C.  The former
     implementation, which is slow but considered to be stable, is
     available with a configure option `--disable-fastthread'.
+
+* tk
+
+  * Updated Tile extension support based on Tile 0.7.8.
+
+  * Support --without-X11 configure option for non-X11 versions of
+    Tcl/Tk (e.g. Tcl/Tk Aqua).
+
+  * New sample script: irbtkw.rbw -- IRB on Ruby/Tk. It has no trouble
+    about STDIN blocking on Windows.
 
 * webrick
 
