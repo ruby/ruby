@@ -2,6 +2,7 @@
 # ipaddr.rb - A class to manipulate an IP address
 #
 # Copyright (c) 2002 Hajimu UMEMOTO <ume@mahoroba.org>.
+# Copyright (c) 2007 Akinori MUSHA <knu@iDaemons.org>.
 # All rights reserved.
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
@@ -107,12 +108,12 @@ class IPAddr
 
   # Returns a new ipaddr built by bitwise AND.
   def &(other)
-    return self.clone.set(@addr & other.to_i)
+    return self.clone.set(@addr & coerce_other(other).to_i)
   end
 
   # Returns a new ipaddr built by bitwise OR.
   def |(other)
-    return self.clone.set(@addr | other.to_i)
+    return self.clone.set(@addr | coerce_other(other).to_i)
   end
 
   # Returns a new ipaddr built by bitwise right-shift.
@@ -130,12 +131,10 @@ class IPAddr
     return self.clone.set(addr_mask(~@addr))
   end
 
-  # Returns true if two ipaddr are equal.
+  # Returns true if two ipaddrs are equal.
   def ==(other)
-    if other.kind_of?(IPAddr) && @family != other.family
-      return false
-    end
-    return (@addr == other.to_i)
+    other = coerce_other(other)
+    return @family == other.family && @addr == other.to_i
   end
 
   # Returns a new ipaddr built by masking IP address with the given
@@ -149,10 +148,12 @@ class IPAddr
   # e.g.:
   #   require 'ipaddr'
   #   net1 = IPAddr.new("192.168.2.0/24")
-  #   p net1.include?(IPAddr.new("192.168.2.0"))	#=> true
-  #   p net1.include?(IPAddr.new("192.168.2.255"))	#=> true
-  #   p net1.include?(IPAddr.new("192.168.3.0"))	#=> false
+  #   net2 = IPAddr.new("192.168.2.100")
+  #   net3 = IPAddr.new("192.168.3.0")
+  #   p net1.include?(net2)	#=> true
+  #   p net1.include?(net3)	#=> false
   def include?(other)
+    other = coerce_other(other)
     if ipv4_mapped?
       if (@mask_addr >> 32) != 0xffffffffffffffffffffffff
 	return false
@@ -165,17 +166,12 @@ class IPAddr
       addr = @addr
       family = @family
     end
-    if other.kind_of?(IPAddr)
-      if other.ipv4_mapped?
-	other_addr = (other.to_i & IN4MASK)
-	other_family = Socket::AF_INET
-      else
-	other_addr = other.to_i
-	other_family = other.family
-      end
-    else # Not IPAddr - assume integer in same family as us
-      other_addr   = other.to_i
-      other_family = family
+    if other.ipv4_mapped?
+      other_addr = (other.to_i & IN4MASK)
+      other_family = Socket::AF_INET
+    else
+      other_addr = other.to_i
+      other_family = other.family
     end
 
     if family != other_family
@@ -316,6 +312,37 @@ class IPAddr
     return _reverse + ".ip6.int"
   end
 
+  # Returns the successor to the ipaddr.
+  def succ
+    return self.clone.set(@addr + 1, @family)
+  end
+
+  # Compares the ipaddr with another.
+  def <=>(other)
+    other = coerce_other(other)
+
+    return nil if other.family != @family
+
+    return @addr <=> other.to_i
+  end
+  include Comparable
+
+  # Creates a Range object for the network address.
+  def to_range
+    begin_addr = (@addr & @mask_addr)
+
+    case @family
+    when Socket::AF_INET
+      end_addr = (@addr | (IN4MASK ^ @mask_addr))
+    when Socket::AF_INET6
+      end_addr = (@addr | (IN6MASK ^ @mask_addr))
+    else
+      raise "unsupported address family"
+    end
+
+    return clone.set(begin_addr, @family)..clone.set(end_addr, @family)
+  end
+
   # Returns a string containing a human-readable representation of the
   # ipaddr. ("#<IPAddr: family:address/mask>")
   def inspect
@@ -391,22 +418,36 @@ class IPAddr
 
   private
 
-  # Creates a new ipaddr containing the given human readable form of
-  # an IP address.  It also accepts `address/prefixlen' and
-  # `address/mask'.  When prefixlen or mask is specified, it returns a
-  # masked ipaddr.  IPv6 address may beenclosed with `[' and `]'.
+  # Creates a new ipaddr object either from a human readable IP
+  # address representation in string, or from a packed in_addr value
+  # followed by an address family.
+  # 
+  # In the former case, the following are the valid formats that will
+  # be recognized: "address", "address/prefixlen" and "address/mask",
+  # where IPv6 address may be enclosed in square brackets (`[' and
+  # `]').  If a prefixlen or a mask is specified, it returns a masked
+  # IP address.  Although the address family is determined
+  # automatically from a specified string, you can specify one
+  # explicitly by the optional second argument.
+  # 
+  # Otherwise an IP addess is generated from a packed in_addr value
+  # and an address family.
   #
-  # Although an address family is determined automatically from a
-  # specified address, you can specify an address family explicitly by
-  # the optional second argument.
+  # The IPAddr class defines many methods and operators, and some of
+  # those, such as &, |, include? and ==, accept a string, or a packed
+  # in_addr value instead of an IPAddr object.
   def initialize(addr = '::', family = Socket::AF_UNSPEC)
     if !addr.kind_of?(String)
-      if family != Socket::AF_INET6 && family != Socket::AF_INET
-	raise ArgumentError, "unsupported address family"
+      case family
+      when Socket::AF_INET, Socket::AF_INET6
+        set(addr.to_i, family)
+        @mask_addr = (family == Socket::AF_INET) ? IN4MASK : IN6MASK
+        return
+      when Socket::AF_UNSPEC
+	raise ArgumentError, "address family must be specified"
+      else
+	raise ArgumentError, "unsupported address family: #{family}"
       end
-      set(addr, family)
-      @mask_addr = (family == Socket::AF_INET) ? IN4MASK : IN6MASK
-      return
     end
     prefix, prefixlen = addr.split('/')
     if prefix =~ /^\[(.*)\]$/i
@@ -433,7 +474,7 @@ class IPAddr
       @family = Socket::AF_INET6
     end
     if family != Socket::AF_UNSPEC && @family != family
-      raise ArgumentError, "address family unmatch"
+      raise ArgumentError, "address family mismatch"
     end
     if prefixlen
       mask!(prefixlen)
@@ -442,14 +483,22 @@ class IPAddr
     end
   end
 
+  def coerce_other(other)
+    case other
+    when IPAddr
+      other
+    when String
+      self.class.new(other)
+    else
+      self.class.new(other, @family)
+    end
+  end
+
   def in_addr(addr)
     if addr =~ /^\d+\.\d+\.\d+\.\d+$/
-      n = 0
-      addr.split('.').each { |i|
-	n <<= 8
-	n += i.to_i
+      return addr.split('.').inject(0) { |i, s|
+        i << 8 | s.to_i
       }
-      return n
     end
     return nil
   end
@@ -473,25 +522,20 @@ class IPAddr
     if rest < 0
       return nil
     end
-    a = [l, Array.new(rest, '0'), r].flatten!
-    n = 0
-    a.each { |i|
-      n <<= 16
-      n += i.hex
+    return (l + Array.new(rest, '0') + r).inject(0) { |i, s|
+      i << 16 | s.hex
     }
-    return n
   end
 
   def addr_mask(addr)
     case @family
     when Socket::AF_INET
-      addr &= IN4MASK
+      return addr & IN4MASK
     when Socket::AF_INET6
-      addr &= IN6MASK
+      return addr & IN6MASK
     else
       raise "unsupported address family"
     end
-    return addr
   end
 
   def _reverse
