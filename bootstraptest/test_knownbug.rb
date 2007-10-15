@@ -42,18 +42,3 @@ assert_normal_exit %q{
   }
 }, '[ruby-dev:31985]'
 
-assert_normal_exit %q{
-class C
-  def initialize(str)
-    @str = str
-  end
-  def _dump(limit)
-    @str
-  end
-  def C._load(s)
-    C.new(s)
-  end
-end
-Marshal.load("\004\bu:\006C\003\377\377\377a")
-}, '[ruby-dev:32054]'
-
