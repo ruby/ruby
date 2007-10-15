@@ -929,7 +929,7 @@ r_bytes0(long len, struct load_arg *arg)
 
     if (len == 0) return rb_str_new(0, 0);
     if (TYPE(arg->src) == T_STRING) {
-	if (RSTRING_LEN(arg->src) >= arg->offset + len) {
+	if (RSTRING_LEN(arg->src) - arg->offset >= len) {
 	    str = rb_str_new(RSTRING_PTR(arg->src)+arg->offset, len);
 	    arg->offset += len;
 	}

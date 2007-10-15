@@ -1,3 +1,7 @@
+Mon Oct 15 11:45:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_bytes0): refined length check.  [ruby-dev:32059]
+
 Mon Oct 15 10:24:19 2007  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (pst_to_s): returns a string such as "pid 10220 exit 1"
