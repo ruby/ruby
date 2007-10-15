@@ -1,3 +1,11 @@
+Mon Oct 15 10:24:19 2007  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (pst_to_s): returns a string such as "pid 10220 exit 1"
+	  instead of "256".  [ruby-dev:32053]
+	  (pst_inspect): change format
+	  "#<Process::Status: pid=10220,exited(1)>" to
+	  "#<Process::Status: pid 10220 exit 1>".
+
 Mon Oct 15 09:58:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_bytes0): check if source has enough data.

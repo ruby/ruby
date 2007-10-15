@@ -248,20 +248,6 @@ pst_to_i(VALUE st)
 
 /*
  *  call-seq:
- *     stat.to_s   => string
- *
- *  Equivalent to _stat_<code>.to_i.to_s</code>.
- */
-
-static VALUE
-pst_to_s(VALUE st)
-{
-    return rb_fix2str(pst_to_i(st), 10);
-}
-
-
-/*
- *  call-seq:
  *     stat.pid   => fixnum
  *
  *  Returns the process ID that this status object represents.
@@ -277,6 +263,68 @@ pst_pid(VALUE st)
     return rb_iv_get(st, "pid");
 }
 
+static void
+pst_message(VALUE str, rb_pid_t pid, int status)
+{
+    char buf[256];
+    snprintf(buf, sizeof(buf), "pid %ld", (long)pid);
+    rb_str_cat2(str, buf);
+    if (WIFSTOPPED(status)) {
+	int stopsig = WSTOPSIG(status);
+	const char *signame = ruby_signal_name(stopsig);
+	if (signame) {
+	    snprintf(buf, sizeof(buf), " stopped SIG%s (signal %d)", signame, stopsig);
+	}
+	else {
+	    snprintf(buf, sizeof(buf), " stopped signal %d", stopsig);
+	}
+	rb_str_cat2(str, buf);
+    }
+    if (WIFSIGNALED(status)) {
+	int termsig = WTERMSIG(status);
+	const char *signame = ruby_signal_name(termsig);
+	if (signame) {
+	    snprintf(buf, sizeof(buf), " SIG%s (signal %d)", signame, termsig);
+	}
+	else {
+	    snprintf(buf, sizeof(buf), " signal %d", termsig);
+	}
+	rb_str_cat2(str, buf);
+    }
+    if (WIFEXITED(status)) {
+	snprintf(buf, sizeof(buf), " exit %d", WEXITSTATUS(status));
+	rb_str_cat2(str, buf);
+    }
+#ifdef WCOREDUMP
+    if (WCOREDUMP(status)) {
+	rb_str_cat2(str, " (core dumped)");
+    }
+#endif
+}
+
+
+/*
+ *  call-seq:
+ *     stat.to_s   => string
+ *
+ *  Show pid and exit status as a string.
+ */
+
+static VALUE
+pst_to_s(VALUE st)
+{
+    rb_pid_t pid;
+    int status;
+    VALUE str;
+
+    pid = NUM2LONG(pst_pid(st));
+    status = NUM2INT(pst_to_i(st));
+
+    str = rb_str_buf_new(0);
+    pst_message(str, pid, status);
+    return str;
+}
+
 
 /*
  *  call-seq:
@@ -288,46 +336,15 @@ pst_pid(VALUE st)
 static VALUE
 pst_inspect(VALUE st)
 {
-    VALUE pid;
+    rb_pid_t pid;
     int status;
     VALUE str;
-    char buf[256];
 
-    pid = pst_pid(st);
-    status = NUM2INT(st);
+    pid = NUM2LONG(pst_pid(st));
+    status = NUM2INT(pst_to_i(st));
 
-    str = rb_sprintf("#<%s: pid=%ld", rb_class2name(CLASS_OF(st)), NUM2LONG(pid));
-    if (WIFSTOPPED(status)) {
-	int stopsig = WSTOPSIG(status);
-	const char *signame = ruby_signal_name(stopsig);
-	if (signame) {
-	    snprintf(buf, sizeof(buf), ",stopped(SIG%s=%d)", signame, stopsig);
-	}
-	else {
-	    snprintf(buf, sizeof(buf), ",stopped(%d)", stopsig);
-	}
-	rb_str_cat2(str, buf);
-    }
-    if (WIFSIGNALED(status)) {
-	int termsig = WTERMSIG(status);
-	const char *signame = ruby_signal_name(termsig);
-	if (signame) {
-	    snprintf(buf, sizeof(buf), ",signaled(SIG%s=%d)", signame, termsig);
-	}
-	else {
-	    snprintf(buf, sizeof(buf), ",signaled(%d)", termsig);
-	}
-	rb_str_cat2(str, buf);
-    }
-    if (WIFEXITED(status)) {
-	snprintf(buf, sizeof(buf), ",exited(%d)", WEXITSTATUS(status));
-	rb_str_cat2(str, buf);
-    }
-#ifdef WCOREDUMP
-    if (WCOREDUMP(status)) {
-	rb_str_cat2(str, ",coredumped");
-    }
-#endif
+    str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));
+    pst_message(str, pid, status);
     rb_str_cat2(str, ">");
     return str;
 }
