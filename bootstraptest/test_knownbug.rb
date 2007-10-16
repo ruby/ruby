@@ -42,3 +42,6 @@ assert_normal_exit %q{
   }
 }, '[ruby-dev:31985]'
 
+assert_normal_exit %q{
+  Regexp.union("a", "a")
+}
