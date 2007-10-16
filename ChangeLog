@@ -1,3 +1,7 @@
+Tue Oct 16 13:49:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (enc_to_s): rename function.
+
 Tue Oct 16 13:25:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_new4): should copy encoding.  a patch from NARUSE,
