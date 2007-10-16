@@ -4751,7 +4751,7 @@ rb_str_ord(VALUE s)
 {
     int c;
 
-    c = RSTRING_PTR(s)[0] & 0xff;
+    c = rb_enc_codepoint(RSTRING_PTR(s), RSTRING_END(s), rb_enc_get(s));
     return INT2NUM(c);
 }
 /*

@@ -1,3 +1,7 @@
+Wed Oct 17 02:50:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_ord): use encoding.
+
 Wed Oct 17 01:57:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_initialize_m): allow binary encoding option.
