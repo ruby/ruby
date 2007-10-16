@@ -1,3 +1,8 @@
+Wed Oct 17 03:06:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/utf8.c (utf8_code_to_mbclen): 0xfe and 0xff are valid Unicode to
+	  be encoded to 2bytes in UTF-8.  [ruby-core:12700]
+
 Wed Oct 17 02:50:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_ord): use encoding.

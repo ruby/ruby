@@ -121,11 +121,7 @@ static int
 utf8_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if      ((code & 0xffffff80) == 0) return 1;
-  else if ((code & 0xfffff800) == 0) {
-    if (code <= 0xff && code >= 0xfe)
-      return 1;
-    return 2;
-  }
+  else if ((code & 0xfffff800) == 0) return 2;
   else if ((code & 0xffff0000) == 0) return 3;
   else if ((code & 0xffe00000) == 0) return 4;
   else if ((code & 0xfc000000) == 0) return 5;
