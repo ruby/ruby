@@ -1,3 +1,7 @@
+Tue Oct 16 18:28:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* debug.c: use enum for constants for gdb if possible.
+
 Tue Oct 16 18:20:10 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c, debug.c: move debug enum and constants to debug.c.
