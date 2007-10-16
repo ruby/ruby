@@ -54,52 +54,6 @@
 
 #include "ruby/util.h"
 
-/* for gdb */
-static const union {
-    enum ruby_special_consts	special_consts;
-    enum ruby_value_type	value_type;
-    enum node_type		node_type;
-    enum {
-        RUBY_ENCODING_SHIFT = ENCODING_SHIFT
-    } various;
-} dummy_gdb_enums;
-
-const VALUE RUBY_FL_MARK      = FL_MARK;
-const VALUE RUBY_FL_RESERVED  = FL_RESERVED;
-const VALUE RUBY_FL_FINALIZE  = FL_FINALIZE;
-const VALUE RUBY_FL_TAINT     = FL_TAINT;
-const VALUE RUBY_FL_EXIVAR    = FL_EXIVAR;
-const VALUE RUBY_FL_FREEZE    = FL_FREEZE;
-const VALUE RUBY_FL_SINGLETON = FL_SINGLETON;
-const VALUE RUBY_FL_USER0     = FL_USER0;
-const VALUE RUBY_FL_USER1     = FL_USER1;
-const VALUE RUBY_FL_USER2     = FL_USER2;
-const VALUE RUBY_FL_USER3     = FL_USER3;
-const VALUE RUBY_FL_USER4     = FL_USER4;
-const VALUE RUBY_FL_USER5     = FL_USER5;
-const VALUE RUBY_FL_USER6     = FL_USER6;
-const VALUE RUBY_FL_USER7     = FL_USER7;
-const VALUE RUBY_FL_USER8     = FL_USER8;
-const VALUE RUBY_FL_USER9     = FL_USER9;
-const VALUE RUBY_FL_USER10    = FL_USER10;
-const VALUE RUBY_FL_USER11    = FL_USER11;
-const VALUE RUBY_FL_USER12    = FL_USER12;
-const VALUE RUBY_FL_USER13    = FL_USER13;
-const VALUE RUBY_FL_USER14    = FL_USER14;
-const VALUE RUBY_FL_USER15    = FL_USER15;
-const VALUE RUBY_FL_USER16    = FL_USER16;
-const VALUE RUBY_FL_USER17    = FL_USER17;
-const VALUE RUBY_FL_USER18    = FL_USER18;
-const VALUE RUBY_FL_USER19    = FL_USER19;
-const VALUE RUBY_FL_USER20    = FL_USER20;
-const int RUBY_FL_USHIFT = FL_USHIFT;
-
-const VALUE RUBY_NODE_NEWLINE = NODE_NEWLINE;
-const int RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT;
-const VALUE RUBY_NODE_TYPEMASK = NODE_TYPEMASK;
-const int RUBY_NODE_LSHIFT = NODE_LSHIFT;
-const VALUE RUBY_NODE_LMASK = NODE_LMASK;
-
 #ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
