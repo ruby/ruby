@@ -1573,7 +1573,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     int flags = 0;
     VALUE str;
 
-    if (argc == 0 || argc > 2) {
+    if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
     if (TYPE(argv[0]) == T_REGEXP) {
@@ -1600,7 +1600,17 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
 	}
+	if (argc == 3 && !NIL_P(argv[2])) {
+	    char *kcode = StringValuePtr(argv[2]);
+	    if (kcode[0] == 'n' || kcode[1] == 'N') {
+		flags |= ARG_KCODE_NONE;
+	    }
+	    else {
+		rb_warning("encoding option is obsolete - %s", kcode);
+	    }
+	}
 	str = argv[0];
+	StringValueCStr(str);
 	if (rb_reg_initialize_str(self, str, flags, err)) {
 	    rb_reg_raise_str(str, flags, err);
 	}
