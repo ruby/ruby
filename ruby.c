@@ -59,6 +59,9 @@ static const union {
     enum ruby_special_consts	special_consts;
     enum ruby_value_type	value_type;
     enum node_type		node_type;
+    enum {
+        RUBY_ENCODING_SHIFT = ENCODING_SHIFT
+    } various;
 } dummy_gdb_enums;
 
 const VALUE RUBY_FL_MARK      = FL_MARK;

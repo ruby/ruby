@@ -56,7 +56,20 @@ define rp
 	    ((struct RString*)$arg0)->as.heap.ptr : \
 	    ((struct RString*)$arg0)->as.ary)
     set print address on
-    printf " "
+    printf " encoding:%d ", ($flags & (RUBY_FL_USER8|RUBY_FL_USER9|RUBY_FL_USER10|RUBY_FL_USER11)) >> RUBY_ENCODING_SHIFT
+    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == 0
+      printf "coderange:unknown "
+    else
+    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER12
+      printf "coderange:single "
+    else
+    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER13
+      printf "coderange:single "
+    else
+      printf "coderange:broken "
+    end
+    end
+    end
     print (struct RString *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_REGEXP
