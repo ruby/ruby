@@ -1776,15 +1776,17 @@ rb_reg_s_union(VALUE self, VALUE args0)
 
 	for (i = 0; i < argc; i++) {
 	    volatile VALUE v;
+	    VALUE e = rb_ary_entry(args0, i);
 	    if (0 < i)
 		rb_str_buf_cat2(source, "|");
-	    v = rb_check_regexp_type(rb_ary_entry(args0, i));
-	    rb_enc_check(tmp, v);
+	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
+		rb_enc_check(tmp, v);
 		v = rb_reg_to_s(v);
 	    }
 	    else {
-		v = rb_reg_s_quote(Qnil, rb_ary_entry(args0, i));
+		rb_enc_check(tmp, e);
+		v = rb_reg_s_quote(Qnil, e);
 	    }
 	    rb_str_buf_append(source, v);
 	}
