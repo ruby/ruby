@@ -15,11 +15,6 @@
 #include "regint.h"
 #include <ctype.h>
 
-#define MBCTYPE_ASCII         0
-#define MBCTYPE_EUC           1
-#define MBCTYPE_SJIS          2
-#define MBCTYPE_UTF8          3
-
 VALUE rb_eRegexpError;
 
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
@@ -139,22 +134,13 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 #define REG_LITERAL FL_USER5
 #define REG_CASESTATE  FL_USER0
 
-#define KCODE_NONE  0
-#define KCODE_EUC   FL_USER1
-#define KCODE_SJIS  FL_USER2
-#define KCODE_UTF8  FL_USER3
 #define KCODE_FIXED FL_USER4
-#define KCODE_MASK (KCODE_EUC|KCODE_SJIS|KCODE_UTF8)
 
 #define ARG_REG_OPTION_MASK   0x0f
-#define ARG_KCODE_UNIT        16
-#define ARG_KCODE_NONE       (ARG_KCODE_UNIT * 1)
-#define ARG_KCODE_EUC        (ARG_KCODE_UNIT * 2)
-#define ARG_KCODE_SJIS       (ARG_KCODE_UNIT * 3)
-#define ARG_KCODE_UTF8       (ARG_KCODE_UNIT * 4)
-#define ARG_KCODE_MASK       (ARG_KCODE_UNIT * 7)
-
-static int reg_kcode = KCODE_NONE;
+#define ARG_KCODE_NONE	      0x10
+#define ARG_KCODE_EUC 	      1
+#define ARG_KCODE_SJIS	      2
+#define ARG_KCODE_UTF8	      3
 
 static int
 char_to_option(int c)
@@ -170,6 +156,9 @@ char_to_option(int c)
 	break;
       case 'm':
 	val = ONIG_OPTION_MULTILINE;
+	break;
+      case 'n':
+	val = ARG_KCODE_NONE;
 	break;
       default:
 	val = 0;
@@ -189,171 +178,24 @@ option_to_str(char str[4], int options)
     return str;
 }
 
-static const char *
-arg_kcode(int options)
-{
-    switch (options & ARG_KCODE_MASK) {
-      case ARG_KCODE_NONE: return "n";
-      case ARG_KCODE_EUC:  return "e";
-      case ARG_KCODE_SJIS: return "s";
-      case ARG_KCODE_UTF8: return "u";
-    }
-    return "";
-}
-
-static const char *
-opt_kcode(int flags)
-{
-    switch (flags) {
-      case KCODE_NONE: return "n";
-      case KCODE_EUC:  return "e";
-      case KCODE_SJIS: return "s";
-      case KCODE_UTF8: return "u";
-    }
-    return "";
-}
-
 extern int
 rb_char_to_option_kcode(int c, int *option, int *kcode)
 {
     *option = 0;
 
     switch (c) {
-      case 'n':
-	*kcode = ARG_KCODE_NONE;
-	break;
       case 'e':
 	*kcode = ARG_KCODE_EUC;
-	break;
+	return 1;
       case 's':
 	*kcode = ARG_KCODE_SJIS;
-	break;
+	return 1;
       case 'u':
 	*kcode = ARG_KCODE_UTF8;
-	break;
+	return 1;
       default:
 	*kcode  = 0;
-	*option = char_to_option(c);
-	break;
-    }
-
-    return ((*kcode == 0 && *option == 0) ? 0 : 1);
-}
-
-static int
-char_to_arg_kcode(int c)
-{
-    int kcode, option;
-
-    if (ISUPPER(c))  c = tolower(c);
-
-    (void )rb_char_to_option_kcode(c, &option, &kcode);
-    return kcode;
-}
-
-static int
-kcode_to_arg_value(unsigned int kcode)
-{
-    switch (kcode & KCODE_MASK) {
-      case KCODE_NONE:
-	return ARG_KCODE_NONE;
-      case KCODE_EUC:
-	return ARG_KCODE_EUC;
-      case KCODE_SJIS:
-	return ARG_KCODE_SJIS;
-      case KCODE_UTF8:
-	return ARG_KCODE_UTF8;
-      default:
-	return 0;
-    }
-}
-
-static void
-set_re_kcode_by_option(struct RRegexp *re, int options)
-{
-    rb_encoding *enc = 0;
-
-    FL_UNSET(re, KCODE_MASK);
-    switch (options & ARG_KCODE_MASK) {
-      case ARG_KCODE_NONE:
-	enc = rb_enc_from_index(0);
-	FL_SET(re, KCODE_NONE);
-	FL_SET(re, KCODE_FIXED);
-	break;
-      case ARG_KCODE_EUC:
-	enc = rb_enc_find("euc-jp");
-	FL_SET(re, KCODE_EUC);
-	FL_SET(re, KCODE_FIXED);
-	break;
-      case ARG_KCODE_SJIS:
-	enc = rb_enc_find("sjis");
-	FL_SET(re, KCODE_FIXED);
-	FL_SET(re, KCODE_SJIS);
-	break;
-      case ARG_KCODE_UTF8:
-	enc = rb_enc_find("utf-8");
-	FL_SET(re, KCODE_UTF8);
-	FL_SET(re, KCODE_FIXED);
-	break;
-
-      case 0:
-      default:
-	FL_SET(re, reg_kcode);
-	break;
-    }
-    if (enc) {
-	rb_enc_associate((VALUE)re, enc);
-    }
-}
-
-static int
-re_to_kcode_arg_value(VALUE re)
-{
-    return kcode_to_arg_value(RBASIC(re)->flags);
-}
-
-static int curr_kcode;
-
-static void
-kcode_set_option(VALUE re)
-{
-    if (!FL_TEST(re, KCODE_FIXED)) return;
-
-    curr_kcode = RBASIC(re)->flags & KCODE_MASK;
-    if (reg_kcode == curr_kcode) return;
-    switch (curr_kcode) {
-      case KCODE_NONE:
-	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
-	break;
-      case KCODE_EUC:
-	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
-	break;
-      case KCODE_SJIS:
-	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
-	break;
-      case KCODE_UTF8:
-	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
-	break;
-    }
-}
-
-static void
-kcode_reset_option(void)
-{
-    if (reg_kcode == curr_kcode) return;
-    switch (reg_kcode) {
-      case KCODE_NONE:
-	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
-	break;
-      case KCODE_EUC:
-	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
-	break;
-      case KCODE_SJIS:
-	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
-	break;
-      case KCODE_UTF8:
-	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
-	break;
+	return (*option = char_to_option(c));
     }
 }
 
@@ -431,10 +273,6 @@ rb_reg_desc(const char *s, long len, VALUE re)
 	rb_reg_check(re);
 	if (*option_to_str(opts, RREGEXP(re)->ptr->options))
 	    rb_str_buf_cat2(str, opts);
-
-	if (FL_TEST(re, KCODE_FIXED)) {
-	    rb_str_buf_cat2(str, opt_kcode(RBASIC(re)->flags & KCODE_MASK));
-	}
     }
     OBJ_INFECT(str, re);
     return str;
@@ -512,6 +350,7 @@ rb_reg_to_s(VALUE re)
 
     rb_reg_check(re);
 
+    rb_enc_copy(str, re);
     options = RREGEXP(re)->ptr->options;
     ptr = (UChar*)RREGEXP(re)->str;
     len = RREGEXP(re)->len;
@@ -553,17 +392,15 @@ rb_reg_to_s(VALUE re)
 	if (*ptr == ':' && ptr[len-1] == ')') {
 	    int r;
 	    Regexp *rp;
-	    kcode_set_option(re);
             r = onig_alloc_init(&rp, ONIG_OPTION_DEFAULT,
                                 ONIGENC_CASE_FOLD_DEFAULT,
-                                onigenc_get_default_encoding(),
+                                rb_enc_get(re),
                                 OnigDefaultSyntax);
 	    if (r == 0) {
 		 ++ptr;
  		 len -= 2;
 		 err = (onig_compile(rp, ptr, ptr + len, NULL) != 0);
 	    }
-	    kcode_reset_option();
 	    onig_free(rp);
 	}
 	if (err) {
@@ -584,6 +421,7 @@ rb_reg_to_s(VALUE re)
     rb_str_buf_cat2(str, ":");
     rb_reg_expr_str(str, (char*)ptr, len);
     rb_str_buf_cat2(str, ")");
+    rb_enc_copy(str, re);
 
     OBJ_INFECT(str, re);
     return str;
@@ -603,11 +441,11 @@ rb_reg_error_desc(VALUE str, int options, const char *err)
     char opts[6];
     VALUE desc = rb_str_buf_new2(err);
 
+    rb_enc_copy(desc, str);
     rb_str_buf_cat2(desc, ": /");
     rb_reg_expr_str(desc, RSTRING_PTR(str), RSTRING_LEN(str));
     opts[0] = '/';
     option_to_str(opts + 1, options);
-    strlcat(opts, arg_kcode(options), sizeof(opts));
     rb_str_buf_cat2(desc, opts);
     return rb_exc_new3(rb_eRegexpError, desc);
 }
@@ -666,39 +504,8 @@ rb_reg_options_m(VALUE re)
 }
 
 
-/*
- *  call-seq:
- *     rxp.kcode   => str
- *
- *  Returns the character set code for the regexp.
- */
-
-static VALUE
-rb_reg_kcode_m(VALUE re)
-{
-    const char *kcode;
-
-    if (FL_TEST(re, KCODE_FIXED)) {
-	switch (RBASIC(re)->flags & KCODE_MASK) {
-	  case KCODE_NONE:
-	    kcode = "none"; break;
-	  case KCODE_EUC:
-	    kcode = "euc"; break;
-	  case KCODE_SJIS:
-	    kcode = "sjis"; break;
-	  case KCODE_UTF8:
-	    kcode = "utf8"; break;
-	  default:
-	    rb_bug("unknown kcode - should not happen");
-	    break;
-	}
-	return rb_str_new2(kcode);
-    }
-    return Qnil;
-}
-
 static Regexp*
-make_regexp(const char *s, long len, int flags, onig_errmsg_buffer err)
+make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err)
 {
     Regexp *rp;
     int r;
@@ -711,10 +518,8 @@ make_regexp(const char *s, long len, int flags, onig_errmsg_buffer err)
        from that.
     */
 
-    r = onig_alloc_init(&rp, flags,
-                        ONIGENC_CASE_FOLD_DEFAULT,
-                        onigenc_get_default_encoding(),
-                        OnigDefaultSyntax);
+    r = onig_alloc_init(&rp, flags, ONIGENC_CASE_FOLD_DEFAULT,
+                        enc, OnigDefaultSyntax);
     if (r) {
 	onig_error_code_to_str((UChar*)err, r);
 	return 0;
@@ -887,22 +692,20 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
-static int may_need_recompile;
-
 static void
-rb_reg_prepare_re(VALUE re)
+rb_reg_prepare_re(VALUE re, VALUE str)
 {
     int need_recompile = 0;
     int state;
+    rb_encoding *enc;
 
     rb_reg_check(re);
     state = FL_TEST(re, REG_CASESTATE);
     /* ignorecase status */
-    if (!FL_TEST(re, KCODE_FIXED) &&
-	(RBASIC(re)->flags & KCODE_MASK) != reg_kcode) {
+    if (ENCODING_GET(re) == 0 && !FL_TEST(re, KCODE_FIXED) &&
+	(enc = rb_enc_get(str)) != 0 &&
+	RREGEXP(re)->ptr->enc != enc) {
 	need_recompile = 1;
-	RBASIC(re)->flags &= ~KCODE_MASK;
-	RBASIC(re)->flags |= reg_kcode;
     }
 
     if (need_recompile) {
@@ -912,15 +715,13 @@ rb_reg_prepare_re(VALUE re)
 	regex_t *reg, *reg2;
 	UChar *pattern;
 
-	if (FL_TEST(re, KCODE_FIXED))
-	    kcode_set_option(re);
 	rb_reg_check(re);
 	reg = RREGEXP(re)->ptr;
 	pattern = ((UChar*)RREGEXP(re)->str);
 
 	r = onig_new(&reg2, (UChar* )pattern,
 		     (UChar* )(pattern + RREGEXP(re)->len),
-		     reg->options, onigenc_get_default_encoding(),
+		     reg->options, enc,
 		     OnigDefaultSyntax, &einfo);
 	if (r) {
 	    onig_error_code_to_str((UChar*)err, r, &einfo);
@@ -940,12 +741,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, long reverse)
     UChar *p, *string;
 
     rb_reg_check(re);
-    if (may_need_recompile) rb_reg_prepare_re(re);
-
-    if (FL_TEST(re, KCODE_FIXED))
-	kcode_set_option(re);
-    else if (reg_kcode != curr_kcode)
-	kcode_reset_option();
+    rb_reg_prepare_re(re, str);
 
     if (reverse) {
 	range = -pos;
@@ -985,12 +781,7 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
     }
 
     rb_reg_check(re);
-    if (may_need_recompile) rb_reg_prepare_re(re);
-
-    if (FL_TEST(re, KCODE_FIXED))
-	kcode_set_option(re);
-    else if (reg_kcode != curr_kcode)
-	kcode_reset_option();
+    rb_reg_prepare_re(re, str);
 
     if (reverse) {
 	range = -pos;
@@ -1005,9 +796,6 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
 			 ((UChar*)(RSTRING_PTR(str)) + pos),
 			 ((UChar*)(RSTRING_PTR(str)) + pos + range),
 			 &regs, ONIG_OPTION_NONE);
-
-    if (FL_TEST(re, KCODE_FIXED))
-	kcode_reset_option();
 
     if (result < 0) {
 	if (result == ONIG_MISMATCH) {
@@ -1438,25 +1226,20 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     re->ptr = 0;
     re->str = 0;
 
-    if (options & ARG_KCODE_MASK) {
-	set_re_kcode_by_option(re, options);
+    if (options & ARG_KCODE_NONE) {
+	rb_enc_associate_index((VALUE)re, 0);
+	enc = rb_enc_from_index(0);
+	re->basic.flags |= KCODE_FIXED;
     }
     else {
 	rb_enc_associate((VALUE)re, enc);
     }
-
-    if (options & ARG_KCODE_MASK) {
-	kcode_set_option((VALUE)re);
-    }
-    re->ptr = make_regexp(s, len, options & ARG_REG_OPTION_MASK, err);
+    re->ptr = make_regexp(s, len, enc, options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
-    if (options & ARG_KCODE_MASK) {
-	kcode_reset_option();
-    }
     return 0;
 }
 
@@ -1508,7 +1291,6 @@ rb_reg_compile(VALUE str, int options)
     return re;
 }
 
-static int kcode_cache;
 static VALUE reg_cache;
 
 VALUE
@@ -1516,21 +1298,11 @@ rb_reg_regcomp(VALUE str)
 {
     volatile VALUE save_str = str;
     if (reg_cache && RREGEXP(reg_cache)->len == RSTRING_LEN(str)
-	&& kcode_cache == reg_kcode
+	&& ENCODING_GET(reg_cache) == ENCODING_GET(str)
 	&& memcmp(RREGEXP(reg_cache)->str, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
-    kcode_cache = reg_kcode;
     return reg_cache = rb_reg_new(save_str, 0);
-}
-
-static int
-rb_reg_cur_kcode(VALUE re)
-{
-    if (FL_TEST(re, KCODE_FIXED)) {
-	return RBASIC(re)->flags & KCODE_MASK;
-    }
-    return 0;
 }
 
 /*
@@ -1579,10 +1351,10 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (re1 == re2) return Qtrue;
     if (TYPE(re2) != T_REGEXP) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
+    if (RREGEXP(re1)->ptr->options != RREGEXP(re2)->ptr->options) return Qfalse;
     if (RREGEXP(re1)->len != RREGEXP(re2)->len) return Qfalse;
-    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, RREGEXP(re1)->len) == 0 &&
-	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
-	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
+    if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
+    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, RREGEXP(re1)->len) == 0) {
 	return Qtrue;
     }
     return Qfalse;
@@ -1772,9 +1544,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.new(string [, options [, lang]])       => regexp
+ *     Regexp.new(string [, options])                => regexp
  *     Regexp.new(regexp)                            => regexp
- *     Regexp.compile(string [, options [, lang]])   => regexp
+ *     Regexp.compile(string [, options])            => regexp
  *     Regexp.compile(regexp)                        => regexp
  *
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
@@ -1791,7 +1563,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
  *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
- *     r4 = Regexp.new(r2)                        #=> /cat/i
+ *     r4 = Regexp.new(r2)                        #=>n /cat/i
  */
 
 static VALUE
@@ -1801,36 +1573,37 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     int flags = 0;
     VALUE str;
 
-    if (argc == 0 || argc > 3) {
+    if (argc == 0 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
     if (TYPE(argv[0]) == T_REGEXP) {
+	VALUE re = argv[0];
+	const char *ptr;
+	long len;
+	rb_encoding *enc;
+
 	if (argc > 1) {
-	    rb_warn("flags%s ignored", (argc == 3) ? " and encoding": "");
+	    rb_warn("flags ignored");
 	}
-	rb_reg_check(argv[0]);
+	rb_reg_check(re);
 	flags = RREGEXP(argv[0])->ptr->options & ARG_REG_OPTION_MASK;
-	if (FL_TEST(argv[0], KCODE_FIXED)) {
-            flags |= re_to_kcode_arg_value(argv[0]);
+	ptr = RREGEXP(re)->str;
+	len = RREGEXP(re)->len;
+	enc = rb_enc_get(re);
+	if (rb_reg_initialize(self, ptr, len, enc, flags, err)) {
+	    str = rb_enc_str_new(ptr, len, enc);
+	    rb_reg_raise_str(str, flags, err);
 	}
-	str = rb_enc_str_new(RREGEXP(argv[0])->str, RREGEXP(argv[0])->len,
-			     rb_enc_get(argv[0]));
     }
     else {
 	if (argc >= 2) {
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
 	}
-	if (argc == 3 && !NIL_P(argv[2])) {
-	    char *kcode = StringValuePtr(argv[2]);
-
-	    flags &= ~ARG_KCODE_MASK;
-	    flags |= char_to_arg_kcode((int )kcode[0]);
-	}
 	str = argv[0];
-    }
-    if (rb_reg_initialize_str(self, str, flags, err) != 0) {
-	rb_reg_raise_str(str, flags, err);
+	if (rb_reg_initialize_str(self, str, flags, err)) {
+	    rb_reg_raise_str(str, flags, err);
+	}
     }
     return self;
 }
@@ -1869,6 +1642,7 @@ rb_reg_quote(VALUE str)
 
   meta_found:
     tmp = rb_str_new(0, RSTRING_LEN(str)*2);
+    rb_enc_copy(tmp, str);
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
     memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
@@ -1941,22 +1715,6 @@ rb_reg_s_quote(VALUE c, VALUE str)
 }
 
 int
-rb_kcode(void)
-{
-    switch (reg_kcode) {
-      case KCODE_EUC:
-	return MBCTYPE_EUC;
-      case KCODE_SJIS:
-	return MBCTYPE_SJIS;
-      case KCODE_UTF8:
-	return MBCTYPE_UTF8;
-      case KCODE_NONE:
-	return MBCTYPE_ASCII;
-    }
-    rb_bug("wrong reg_kcode value (0x%x)", reg_kcode);
-}
-
-int
 rb_reg_options(VALUE re)
 {
     int options;
@@ -1964,9 +1722,6 @@ rb_reg_options(VALUE re)
     rb_reg_check(re);
     options = RREGEXP(re)->ptr->options &
 	(ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND);
-    if (FL_TEST(re, KCODE_FIXED)) {
-	options |= re_to_kcode_arg_value(re);
-    }
     return options;
 }
 
@@ -2015,48 +1770,25 @@ rb_reg_s_union(VALUE self, VALUE args0)
         }
     }
     else {
-        int i, kcode = -1;
-        VALUE kcode_re = Qnil;
-        VALUE source = rb_str_buf_new(0);
-        VALUE args[3];
+	int i;
+	VALUE source = rb_str_buf_new(0);
 	VALUE tmp = rb_ary_entry(args0, 0);
 
-        for (i = 0; i < argc; i++) {
-            volatile VALUE v;
-            if (0 < i)
-                rb_str_buf_cat2(source, "|");
-            v = rb_check_regexp_type(rb_ary_entry(args0, i));
+	for (i = 0; i < argc; i++) {
+	    volatile VALUE v;
+	    if (0 < i)
+		rb_str_buf_cat2(source, "|");
+	    v = rb_check_regexp_type(rb_ary_entry(args0, i));
 	    rb_enc_check(tmp, v);
-            if (!NIL_P(v)) {
-                if (FL_TEST(v, KCODE_FIXED)) {
-                    if (kcode == -1) {
-                        kcode_re = v;
-                        kcode = RBASIC(v)->flags & KCODE_MASK;
-                    }
-                    else if ((RBASIC(v)->flags & KCODE_MASK) != kcode) {
-                        volatile VALUE str1, str2;
-                        str1 = rb_inspect(kcode_re);
-                        str2 = rb_inspect(v);
-                        rb_raise(rb_eArgError, "mixed kcode: %s and %s",
-                            RSTRING_PTR(str1), RSTRING_PTR(str2));
-                    }
-                }
-                v = rb_reg_to_s(v);
-            }
-            else {
-                v = rb_reg_s_quote(Qnil, rb_ary_entry(args0, i));
-            }
-            rb_str_buf_append(source, v);
-        }
-        args[0] = source;
-        args[1] = Qnil;
-        if (kcode == -1) {
-            args[2] = Qnil;
+	    if (!NIL_P(v)) {
+		v = rb_reg_to_s(v);
+	    }
+	    else {
+		v = rb_reg_s_quote(Qnil, rb_ary_entry(args0, i));
+	    }
+	    rb_str_buf_append(source, v);
 	}
-	else {
-            args[2] = rb_str_new2(opt_kcode(kcode));
-        }
-        return rb_class_new_instance(3, args, rb_cRegexp);
+        return rb_class_new_instance(1, &source, rb_cRegexp);
     }
 }
 
@@ -2225,65 +1957,17 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     return val;
 }
 
-const char*
-rb_get_kcode(void)
-{
-    switch (reg_kcode) {
-      case KCODE_SJIS:
-	return "SJIS";
-      case KCODE_EUC:
-	return "EUC";
-      case KCODE_UTF8:
-	return "UTF8";
-      default:
-	return "NONE";
-    }
-}
-
 static VALUE
 kcode_getter(void)
 {
-    return rb_str_new2(rb_get_kcode());
-}
-
-void
-rb_set_kcode(const char *code)
-{
-    if (code == 0) goto set_no_conversion;
-
-    switch (code[0]) {
-      case 'E':
-      case 'e':
-	reg_kcode = KCODE_EUC;
-	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
-	break;
-      case 'S':
-      case 's':
-	reg_kcode = KCODE_SJIS;
-	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
-	break;
-      case 'U':
-      case 'u':
-	reg_kcode = KCODE_UTF8;
-	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
-	break;
-      default:
-      case 'N':
-      case 'n':
-      case 'A':
-      case 'a':
-      set_no_conversion:
-	reg_kcode = KCODE_NONE;
-	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
-	break;
-    }
+    rb_warn("variable $KCODE is no longer effective");
+    return Qnil;
 }
 
 static void
-kcode_setter(VALUE val)
+kcode_setter(VALUE val, ID id)
 {
-    may_need_recompile = 1;
-    rb_set_kcode(StringValuePtr(val));
+    rb_warn("variable $KCODE is no longer effective; ignored");
 }
 
 static VALUE
@@ -2398,7 +2082,6 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
     rb_define_method(rb_cRegexp, "options", rb_reg_options_m, 0);
-    rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
     rb_define_method(rb_cRegexp, "encoding", rb_obj_encoding, 0); /* in encoding.c */
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));

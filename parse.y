@@ -5115,7 +5115,6 @@ parser_regx_options(struct parser_params *parser)
 {
     extern int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
-    int kcode   = 0;
     int options = 0;
     int c, opt, kc;
 
@@ -5126,7 +5125,11 @@ parser_regx_options(struct parser_params *parser)
         }
         else if (rb_char_to_option_kcode(c, &opt, &kc)) {
             options |= opt;
-            if (kc != 0) kcode = kc;
+            if (kc != 0 && rb_enc_from_index(kc) != parser->enc) {
+		compile_error(PARSER_ARG
+			      "regexp encoding option '%c' mismatch to %s",
+			      c, rb_enc_name(parser->enc));
+	    }
         }
         else {
 	    tokadd(c);
@@ -5138,7 +5141,7 @@ parser_regx_options(struct parser_params *parser)
 	compile_error(PARSER_ARG "unknown regexp option%s - %s",
 		      toklen() > 1 ? "s" : "", tok());
     }
-    return options | kcode;
+    return options;
 }
 
 #define STR_FUNC_ESCAPE 0x01

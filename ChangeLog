@@ -1,3 +1,31 @@
+Tue Oct 16 14:48:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_regx_options): check if regexp encoding option
+	  matches to current encoding.
+
+	* re.c (char_to_option, rb_char_to_option_kcode): 'n' is not kcode
+	  option now.
+
+	* re.c (rb_reg_to_s, rb_reg_error_desc): copy encoding rather than
+	  append as an option.
+
+	* re.c (make_regexp, rb_reg_prepare_re): use encoding of Regexp and
+	  String instead of kcode.
+
+	* re.c (rb_reg_initialize): set fixed option if none is set.
+
+	* re.c (rb_reg_regcomp): ditto.
+
+	* re.c (rb_reg_equal): check if encodings are equal.
+
+	* re.c (rb_reg_initialize_m): encoding option is obsolete.
+
+	* re.c (rb_kcode, rb_get_kcode, rb_set_kcode): removed.
+
+	* re.c (Init_Regexp): removed Regexp#kcode method.
+
+	* ruby.c (proc_options): allow long encoding name.
+
 Tue Oct 16 14:03:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_s_union): encoding of all regexp objects should

@@ -733,9 +733,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	  case 'K':
 	    if (*++s) {
 		rb_encoding *enc = 0;
-#if 0
 		if ((opt->enc_index = rb_enc_find_index(s)) >= 0) break;
-#endif
 		switch (*s) {
 		  case 'E': case 'e':
 		    enc = ONIG_ENCODING_EUC_JP;
@@ -749,10 +747,11 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		  case 'N': case 'n': case 'A': case 'a':
 		    enc = ONIG_ENCODING_ASCII;
 		    break;
-		  default:
+		}
+		if (!enc) {
 		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
 		}
-		opt->enc_index = rb_enc_to_index(enc);
+		opt->enc_index = rb_enc_find_index(rb_enc_name(enc));
 		s++;
 	    }
 	    goto reswitch;
