@@ -1,3 +1,8 @@
+Tue Oct 16 14:03:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_union): encoding of all regexp objects should
+	  match.  [ruby-dev:32076]
+
 Tue Oct 16 13:49:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (enc_to_s): rename function.

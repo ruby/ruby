@@ -1997,6 +1997,7 @@ static VALUE
 rb_reg_s_union(VALUE self, VALUE args0)
 {
     long argc = RARRAY_LEN(args0);
+
     if (argc == 0) {
         VALUE args[1];
         args[0] = rb_str_new2("(?!)");
@@ -2018,11 +2019,14 @@ rb_reg_s_union(VALUE self, VALUE args0)
         VALUE kcode_re = Qnil;
         VALUE source = rb_str_buf_new(0);
         VALUE args[3];
+	VALUE tmp = rb_ary_entry(args0, 0);
+
         for (i = 0; i < argc; i++) {
             volatile VALUE v;
             if (0 < i)
                 rb_str_buf_cat2(source, "|");
             v = rb_check_regexp_type(rb_ary_entry(args0, i));
+	    rb_enc_check(tmp, v);
             if (!NIL_P(v)) {
                 if (FL_TEST(v, KCODE_FIXED)) {
                     if (kcode == -1) {
