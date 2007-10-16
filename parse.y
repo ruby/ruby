@@ -8895,6 +8895,21 @@ rb_parser_end_seen_p(VALUE vparser)
     return ruby__end__seen ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    ripper#encoding   -> encoding
+ *
+ *  Return encoding of the source.
+ */
+VALUE
+rb_parser_encoding(VALUE vparser)
+{
+    struct parser_params *parser;
+
+    Data_Get_Struct(vparser, struct parser_params, parser);
+    return rb_enc_from_encoding(parser->enc);
+}
+
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
 #define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser->heap, 0)
@@ -9415,6 +9430,7 @@ Init_ripper(void)
     rb_define_method(Ripper, "column", ripper_column, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
     rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
+    rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
 #ifdef RIPPER_DEBUG
     rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
     rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);

@@ -1,3 +1,19 @@
+Wed Oct 17 05:07:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_primary_encoding): added Encoding.primary_encoding.
+
+	* parse.y (rb_parser_encoding): added.
+
+	* ruby.c (proc_options): added -E and --encoding options.
+
+	* ruby.c (process_options): set primary encoding from command line
+	  option if set, or source encoding.
+
+	* include/ruby/encoding.h (rb_enc_from_encoding,
+	  rb_get_primary_encoding, rb_set_primary_encoding): prototypes.
+
+	* include/ruby/node.h (rb_parser_encoding): prototype.
+
 Wed Oct 17 03:37:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_desc): set encoding.

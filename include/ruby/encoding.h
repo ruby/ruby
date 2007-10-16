@@ -99,5 +99,8 @@ int rb_enc_tolower(int c, rb_encoding *enc);
 ID rb_intern3(const char*, long, rb_encoding*);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_str_coderange(VALUE);
+VALUE rb_enc_from_encoding(rb_encoding *enc);
+VALUE rb_get_primary_encoding(void);
+void rb_set_primary_encoding(VALUE encoding);
 
 #endif /* RUBY_ENCODING_H */

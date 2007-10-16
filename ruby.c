@@ -687,10 +687,15 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    }
 	    break;
 
+	  case 'E':
+	    if (!*++s) {
+		rb_raise(rb_eRuntimeError, "missing argument for -E");
+	    }
+	    goto encoding;
+
 	  case 'K':
 	    if (*++s) {
 		rb_encoding *enc = 0;
-		if ((opt->enc_index = rb_enc_find_index(s)) >= 0) break;
 		switch (*s) {
 		  case 'E': case 'e':
 		    enc = ONIG_ENCODING_EUC_JP;
@@ -705,10 +710,9 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    enc = ONIG_ENCODING_ASCII;
 		    break;
 		}
-		if (!enc) {
-		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
+		if (enc) {
+		    opt->enc_index = rb_enc_find_index(rb_enc_name(enc));
 		}
-		opt->enc_index = rb_enc_find_index(rb_enc_name(enc));
 		s++;
 	    }
 	    goto reswitch;
@@ -770,6 +774,20 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }
+	    else if (strcmp("encoding", s) == 0) {
+		if (!--argc || !(s = *++argv)) {
+		  noencoding:
+		    rb_raise(rb_eRuntimeError, "missing argument for --encoding");
+		}
+	      encoding:
+		if ((opt->enc_index = rb_enc_find_index(s)) < 0) {
+		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
+		}
+	    }
+	    else if (strncmp("encoding=", s, 9) == 0) {
+		if (*(s += 9)) goto noencoding;
+		goto encoding;
+	    }
 	    else if (strcmp("version", s) == 0)
 		opt->version = 1;
 	    else if (strcmp("verbose", s) == 0) {
@@ -824,6 +842,7 @@ process_options(VALUE arg)
     char **argv = opt->argv;
     NODE *tree = 0;
     VALUE parser;
+    VALUE encoding;
     const char *s;
     int i = proc_options(argc, argv, opt);
 
@@ -920,7 +939,8 @@ process_options(VALUE arg)
     ruby_init_loadpath();
     parser = rb_parser_new();
     if (opt->e_script) {
-	rb_enc_associate_index(opt->e_script, opt->enc_index);
+	if (opt->enc_index >= 0)
+	    rb_enc_associate_index(opt->e_script, opt->enc_index);
 	require_libraries();
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
@@ -949,6 +969,14 @@ process_options(VALUE arg)
 	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	}
     }
+
+    if (opt->enc_index >= 0) {
+	encoding = rb_enc_from_encoding(rb_enc_from_index(opt->enc_index));
+    }
+    else {
+	encoding = rb_parser_encoding(parser);
+    }
+    rb_set_primary_encoding(encoding);
 
     return (VALUE)tree;
 }
@@ -1068,7 +1096,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	}
 	require_libraries();	/* Why here? unnatural */
     }
-    rb_enc_associate_index(f, opt->enc_index);
+    if (opt->enc_index >= 0) rb_enc_associate_index(f, opt->enc_index);
     parser = rb_parser_new();
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
@@ -1312,6 +1340,7 @@ ruby_process_options(int argc, char **argv)
     rb_argv0 = rb_progname;
     opt.argc = argc;
     opt.argv = argv;
+    opt.enc_index = -1;
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&opt,
 				    0, rb_progname);

@@ -481,6 +481,7 @@ typedef struct RNode {
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
+VALUE rb_parser_encoding(VALUE);
 
 NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
 NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
