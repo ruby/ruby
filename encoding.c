@@ -13,6 +13,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "regenc.h"
+#include <ctype.h>
 
 static ID id_encoding;
 static VALUE rb_cEncoding;
@@ -152,12 +153,12 @@ rb_enc_alias(const char *alias, const char *orig)
     if (!enc_table_alias) {
 	enc_table_alias = st_init_strcasetable();
     }
-    while ((idx = rb_enc_find_index(orig)) < 0) {
+    if ((idx = rb_enc_find_index(orig)) < 0) {
 	if (!st_lookup(enc_table_alias, (st_data_t)orig, &data))
 	    return -1;
-	orig = (const char *)data;
+	idx = (int)data;
     }
-    st_insert(enc_table_alias, (st_data_t)alias, (st_data_t)orig);
+    st_insert(enc_table_alias, (st_data_t)alias, (st_data_t)idx);
     return idx;
 }
 
@@ -170,10 +171,10 @@ rb_enc_init(void)
     ENC_REGISTER(ONIG_ENCODING_SJIS);
     ENC_REGISTER(ONIG_ENCODING_UTF8);
 #undef ENC_REGISTER
-    rb_enc_alias("ascii", rb_enc_name(ONIG_ENCODING_ASCII));
-    rb_enc_alias("binary", rb_enc_name(ONIG_ENCODING_ASCII));
-    rb_enc_alias("us-ascii", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
-    rb_enc_alias("sjis", rb_enc_name(ONIG_ENCODING_SJIS));
+    rb_enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
+    rb_enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
+    rb_enc_alias("US-ASCII", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
+    rb_enc_alias("SJIS", rb_enc_name(ONIG_ENCODING_SJIS));
 }
 
 rb_encoding *
@@ -198,7 +199,6 @@ rb_enc_find_index(const char *name)
     if (!enc_table) {
 	rb_enc_init();
     }
-  find:
     for (i=0; i<enc_table_size; i++) {
 	if (strcasecmp(name, enc_table[i].name) == 0) {
 	    return i;
@@ -206,8 +206,7 @@ rb_enc_find_index(const char *name)
     }
     if (!alias && enc_table_alias) {
 	if (st_lookup(enc_table_alias, (st_data_t)name, &alias)) {
-	    name = (const char *)alias;
-	    goto find;
+	    return (int)alias;
 	}
     }
     return -1;
@@ -490,7 +489,9 @@ enc_list(VALUE klass)
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
-    int idx = rb_enc_find_index(StringValueCStr(enc));
+    int idx;
+    if (SYMBOL_P(enc)) enc = rb_id2str(SYM2ID(enc));
+    idx = rb_enc_find_index(StringValueCStr(enc));
     if (idx < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }
@@ -540,9 +541,59 @@ set_primary_encoding(VALUE klass, VALUE enc)
     return rb_primary_encoding;
 }
 
+static void
+set_encoding_const(const char *name, rb_encoding *enc)
+{
+    VALUE encoding = rb_enc_from_encoding(enc);
+    char *s = (char *)name;
+    int haslower = 0, valid = 0;
+
+    if (ISUPPER(*s)) {
+	while (*++s && (ISALNUM(*s) || *s == '_')) {
+	    if (ISLOWER(*s)) haslower = 1;
+	}
+    }
+    if (!*s) {
+	valid = 1;
+	rb_define_const(rb_cEncoding, name, encoding);
+    }
+    if (!valid || haslower) {
+	int len = strlen(name) + 1;
+	if (!haslower) {
+	    while (!ISLOWER(*s) && *++s);
+	    if (*s) haslower = 1;
+	}
+	MEMCPY(s = ALLOCA_N(char, len), name, char, len);
+	name = s;
+	if (!valid) {
+	    if (ISLOWER(*s)) *s = ONIGENC_ASCII_CODE_TO_UPPER_CASE((int)*s);
+	    for (; *s; ++s) {
+		if (!ISALNUM(*s)) *s = '_';
+	    }
+	    rb_define_const(rb_cEncoding, name, encoding);
+	}
+	if (haslower) {
+	    for (s = (char *)name; *s; ++s) {
+		if (ISLOWER(*s)) *s = ONIGENC_ASCII_CODE_TO_UPPER_CASE((int)*s);
+	    }
+	    rb_define_const(rb_cEncoding, name, encoding);
+	}
+    }
+}
+
+static int
+set_encoding_alias(st_data_t name, st_data_t orig, st_data_t arg)
+{
+    rb_encoding *enc = rb_enc_from_index((int)orig);
+    set_encoding_const((const char *)name, enc);
+    return ST_CONTINUE;
+}
+
 void
 Init_Encoding(void)
 {
+    int i;
+
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
     rb_define_method(rb_cEncoding, "to_s", enc_to_s, 0);
@@ -557,4 +608,10 @@ Init_Encoding(void)
     rb_primary_encoding = rb_enc_from_encoding(rb_enc_from_index(0));
     rb_define_singleton_method(rb_cEncoding, "primary_encoding", get_primary_encoding, 0);
     rb_define_singleton_method(rb_cEncoding, "primary_encoding=", set_primary_encoding, 1);
+
+    for (i = 0; i < enc_table_size; ++i) {
+	rb_encoding *enc = enc_table[i].enc;
+	if (enc) set_encoding_const(rb_enc_name(enc), enc);
+    }
+    st_foreach(enc_table_alias, set_encoding_alias, 0);
 }

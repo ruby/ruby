@@ -842,7 +842,7 @@ strcasehash(register const char *string)
      */
     while (*string) {
 	unsigned int c = (unsigned char)*string++;
-	if ((unsigned int)(c - 'A') > ('Z' - 'A')) c += 'a' - 'A';
+	if ((unsigned int)(c - 'A') <= ('Z' - 'A')) c += 'a' - 'A';
 	hval ^= c;
 
 	/* multiply by the 32 bit FNV magic prime mod 2^32 */

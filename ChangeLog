@@ -1,3 +1,17 @@
+Wed Oct 17 06:18:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_alias, rb_enc_find_index): changed
+	  enc_table_alias to a name-to-index hash.
+
+	* encoding.c (rb_enc_init): use upper case names for aliases to use as
+	  constant names.
+
+	* encoding.c (enc_find): allow symbols.
+
+	* encoding.c (Init_Encoding): define encoding constants.
+
+	* st.c (strcasehash): fix wrong code range condition.
+
 Wed Oct 17 05:07:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_primary_encoding): added Encoding.primary_encoding.
