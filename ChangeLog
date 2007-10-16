@@ -1,4 +1,8 @@
-Wed Oct 17 03:06:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 17 03:37:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_desc): set encoding.
+
+	* re.c (rb_reg_s_union): check encodings.
 
 	* enc/utf8.c (utf8_code_to_mbclen): 0xfe and 0xff are valid Unicode to
 	  be encoded to 2bytes in UTF-8.  [ruby-core:12700]

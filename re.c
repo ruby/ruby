@@ -266,6 +266,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
 {
     VALUE str = rb_str_buf_new2("/");
 
+    rb_enc_copy(str, re);
     rb_reg_expr_str(str, s, len);
     rb_str_buf_cat2(str, "/");
     if (re) {
@@ -1798,7 +1799,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
 		rb_enc_check(tmp, e);
 		v = rb_reg_s_quote(Qnil, e);
 	    }
-	    rb_str_buf_append(source, v);
+	    rb_str_append(source, v);
 	}
         return rb_class_new_instance(1, &source, rb_cRegexp);
     }
