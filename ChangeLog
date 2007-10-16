@@ -1,3 +1,8 @@
+Tue Oct 16 13:25:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_new4): should copy encoding.  a patch from NARUSE,
+	  Yui <naruse AT airemix.com>.  [ruby-dev:32076]
+
 Tue Oct 16 01:31:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_inject): RDoc update.  a patch from David Flanagan

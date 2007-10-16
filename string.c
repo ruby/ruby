@@ -307,6 +307,7 @@ rb_str_new4(VALUE orig)
     }
     else if (STR_ASSOC_P(orig) || STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
+	rb_enc_copy(str, orig);
     }
     else {
 	str = str_new4(klass, orig);
