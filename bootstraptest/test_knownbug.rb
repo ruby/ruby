@@ -45,3 +45,15 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   Regexp.union("a", "a")
 }
+
+assert_equal 'ok', %q{
+  begin
+    Regexp.union(
+      "a",
+      Regexp.new("\x80".force_encoding("euc-jp")),
+      Regexp.new("\x80".force_encoding("utf-8")))
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
