@@ -478,7 +478,6 @@ enc_list(VALUE klass)
 {
     VALUE ary = rb_ary_new2(enc_table_size);
     int i;
-    rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;
 	if (enc) {
