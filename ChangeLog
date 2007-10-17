@@ -1,3 +1,7 @@
+Wed Oct 17 13:54:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_union): the last check was not complete.
+
 Wed Oct 17 11:30:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_from_encoding, rb_enc_register): associate index

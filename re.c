@@ -1783,7 +1783,8 @@ rb_reg_s_union(VALUE self, VALUE args0)
     else {
 	int i;
 	VALUE source = rb_str_buf_new(0);
-	VALUE enc0 = rb_obj_encoding(rb_ary_entry(args0, 0));
+	int mbs = Qfalse;
+	rb_encoding *enc = 0;
 
 	for (i = 0; i < argc; i++) {
 	    volatile VALUE v;
@@ -1792,12 +1793,17 @@ rb_reg_s_union(VALUE self, VALUE args0)
 		rb_str_buf_cat2(source, "|");
 	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
-		rb_enc_check(enc0, v);
 		v = rb_reg_to_s(v);
 	    }
 	    else {
 		v = rb_reg_s_quote(Qnil, e);
-		rb_enc_check(enc0, rb_obj_encoding(v));
+	    }
+	    if (mbs || rb_enc_str_coderange(v) != ENC_CODERANGE_SINGLE) {
+		if (!enc) enc = rb_enc_get(v);
+		else if (mbs && enc != rb_enc_get(v)) {
+		    rb_raise(rb_eArgError, "regexp encodings differ");
+		}
+		mbs = Qtrue;
 	    }
 	    rb_str_append(source, v);
 	}
