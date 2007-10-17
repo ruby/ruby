@@ -785,7 +785,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		}
 	    }
 	    else if (strncmp("encoding=", s, 9) == 0) {
-		if (*(s += 9)) goto noencoding;
+		if (!*(s += 9)) goto noencoding;
 		goto encoding;
 	    }
 	    else if (strcmp("version", s) == 0)
