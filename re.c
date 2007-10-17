@@ -1783,7 +1783,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
     else {
 	int i;
 	VALUE source = rb_str_buf_new(0);
-	VALUE tmp = rb_ary_entry(args0, 0);
+	VALUE enc0 = rb_obj_encoding(rb_ary_entry(args0, 0));
 
 	for (i = 0; i < argc; i++) {
 	    volatile VALUE v;
@@ -1792,12 +1792,12 @@ rb_reg_s_union(VALUE self, VALUE args0)
 		rb_str_buf_cat2(source, "|");
 	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
-		rb_enc_check(tmp, v);
+		rb_enc_check(enc0, v);
 		v = rb_reg_to_s(v);
 	    }
 	    else {
-		rb_enc_check(tmp, e);
 		v = rb_reg_s_quote(Qnil, e);
+		rb_enc_check(enc0, rb_obj_encoding(v));
 	    }
 	    rb_str_append(source, v);
 	}

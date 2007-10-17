@@ -45,9 +45,14 @@ enc_new(rb_encoding *encoding)
 }
 
 VALUE
-rb_enc_from_encoding(rb_encoding *enc)
+rb_enc_from_encoding(rb_encoding *encoding)
 {
-    return enc_initialized_p(enc) ? ENC_FROM_ENCODING(enc) : enc_new(enc);
+    VALUE enc;
+    if (enc_initialized_p(encoding))
+	return ENC_FROM_ENCODING(encoding);
+    enc = enc_new(encoding);
+    rb_enc_associate(enc, encoding);
+    return enc;
 }
 
 static rb_encoding *
@@ -136,7 +141,8 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     encoding = ent->enc;
     encoding->name = name;
     if (rb_cEncoding) {
-	enc_new(encoding);
+	VALUE enc = enc_new(encoding);
+	rb_enc_associate_index(enc, newsize);
     }
     else {
 	encoding->auxiliary_data = ENC_UNINITIALIZED;
@@ -229,6 +235,8 @@ enc_capable(VALUE obj)
       case T_REGEXP:
       case T_FILE:
 	return Qtrue;
+      case T_DATA:
+	if (RDATA(obj)->dmark == enc_mark) return Qtrue;
       default:
 	return Qfalse;
     }
