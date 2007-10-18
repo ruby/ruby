@@ -668,7 +668,7 @@ rb_ary_entry(VALUE ary, long offset)
     return rb_ary_elt(ary, offset);
 }
 
-static VALUE
+VALUE
 rb_ary_subseq(VALUE ary, long beg, long len)
 {
     VALUE klass, ary2, shared;
@@ -820,7 +820,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *     a.last(2)  #=> ["y", "z"]
  */
 
-static VALUE
+VALUE
 rb_ary_last(int argc, VALUE *argv, VALUE ary)
 {
     if (argc == 0) {

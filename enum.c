@@ -555,7 +555,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
     
     rb_scan_args(argc, argv, "01", &n);
 
-    if (NIL_P(n)) {
+    if (argc == 0) {
 	ary[0] = ary[1] = Qnil;
     }
     else {

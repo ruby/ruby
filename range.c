@@ -437,14 +437,13 @@ range_each(VALUE range)
 
 /*
  *  call-seq:
- *     rng.first    => obj
  *     rng.begin    => obj
  *  
  *  Returns the first object in <i>rng</i>.
  */
 
 static VALUE
-range_first(VALUE range)
+range_begin(VALUE range)
 {
     return RANGE_BEG(range);
 }
@@ -453,7 +452,6 @@ range_first(VALUE range)
 /*
  *  call-seq:
  *     rng.end    => obj
- *     rng.last   => obj
  *  
  *  Returns the object that defines the end of <i>rng</i>.
  *     
@@ -463,10 +461,70 @@ range_first(VALUE range)
 
 
 static VALUE
-range_last(VALUE range)
+range_end(VALUE range)
 {
     return RANGE_END(range);
 }
+
+
+static VALUE
+first_i(VALUE i, VALUE *ary)
+{
+    long n = NUM2LONG(ary[0]);
+
+    if (n <= 0) {
+	rb_iter_break();
+    }
+    rb_ary_push(ary[1], i);
+    n--;
+    ary[0] = INT2NUM(n);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     rng.first    => obj
+ *     rng.first(n) => an_array
+ *  
+ *  Returns the first object in <i>rng</i>, or the first +n+ elements.
+ */
+
+static VALUE
+range_first(int argc, VALUE *argv, VALUE range)
+{
+    VALUE n, ary[2];
+
+    if (argc == 0) return RANGE_BEG(range);
+
+    rb_scan_args(argc, argv, "1", &n);
+    ary[0] = n;
+    ary[1] = rb_ary_new2(NUM2LONG(n));
+    rb_block_call(range, rb_intern("each"), 0, 0, first_i, (VALUE)ary);
+
+    return ary[1];
+}
+
+
+/*
+ *  call-seq:
+ *     rng.last    => obj
+ *     rng.last(n) => an_array
+ *  
+ *  Returns the last object in <i>rng</i>, or the last +n+ elements.
+ */
+
+static VALUE
+range_last(int argc, VALUE *argv, VALUE range)
+{
+    VALUE n, a;
+    long i, nelem, len;
+
+    if (argc == 0) return RANGE_END(range);
+
+    rb_scan_args(argc, argv, "1", &n);
+    return rb_ary_last(argc, argv, rb_Array(range)); 
+}
+
 
 /*
  *  call-seq:
@@ -858,10 +916,10 @@ Init_Range(void)
     rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
-    rb_define_method(rb_cRange, "first", range_first, 0);
-    rb_define_method(rb_cRange, "last", range_last, 0);
-    rb_define_method(rb_cRange, "begin", range_first, 0);
+    rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_last, 0);
+    rb_define_method(rb_cRange, "first", range_first, -1);
+    rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, 0);
     rb_define_method(rb_cRange, "max", range_max, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);

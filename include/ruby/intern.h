@@ -47,6 +47,7 @@ VALUE rb_ary_new4(long, const VALUE *);
 void rb_ary_free(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_aref(int, VALUE*, VALUE);
+VALUE rb_ary_subseq(VALUE, long, long);
 void rb_ary_store(VALUE, long, VALUE);
 VALUE rb_ary_dup(VALUE);
 VALUE rb_ary_to_ary(VALUE);

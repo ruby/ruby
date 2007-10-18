@@ -1,3 +1,13 @@
+Thu Oct 18 09:33:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_first): takes first n element if argument is
+	  given.  [ruby-core:12697]
+
+	* range.c (range_last): returns last n elements if argument is
+	  given.
+
+	* array.c (rb_ary_subseq, rb_ary_last): export.
+
 Wed Oct 17 17:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): fixed reversed condition.  [ruby-core:12722]
