@@ -178,14 +178,14 @@ find_index_i(VALUE i, VALUE *memo)
 
 /*
  *  call-seq:
- *     enum.find_index(ifnone = nil)   {| obj | block }  => int
+ *     enum.find_index()   {| obj | block }  => int
  *  
  *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
  *  index for the first for which <em>block</em> is not <code>false</code>.
  *  If no object matches, returns <code>nil</code>
  *     
  *     (1..10).find_index  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 34
  *     
  */
 
@@ -1420,11 +1420,12 @@ take_iter_i(VALUE i, VALUE *arg)
  *     enum.take(n)               => array
  *     enum.take {|arr| block }   => array
  *  
- *  Without a block, returns first n elements from <i>enum</i>
- *  With a block, takes elements during block evaluation gives
- *  true.
+ *  Without a block, returns first n elements from <i>enum</i>.
+ *  With a block, passes elements to the block until the block
+ *  returns nil or false, then stops iterating and returns an
+ *  array of all prior elements.
  *     
- *     a = [1, 2, 3, 4, 5]
+ *     a = [1, 2, 3, 4, 5, 0]
  *     
  *     a.take(3)             # => [1, 2, 3]
  *     a.take {|i| i < 3 }   # => [1, 2]
@@ -1481,13 +1482,14 @@ drop_iter_i(VALUE i, VALUE *arg)
  *     enum.drop {|arr| block }   => array
  *  
  *  Without a block, drops first n elements from <i>enum</i>, and returns
- *  rest elements in an array.  With a block, drops elements during block
- *  evaluation gives true.
+ *  rest elements in an array.  With a block, drops elements up to, but
+ *  not including, the first element for which the block returns nil or false
+ *  and returns an array containing the remaining elements.
  *     
- *     a = [1, 2, 3, 4, 5]
+ *     a = [1, 2, 3, 4, 5, 0]
  *     
- *     a.drop(3)             # => [4, 5]
- *     a.drop {|i| i < 3 }   # => [3, 4, 5]
+ *     a.drop(3)             # => [4, 5, 0]
+ *     a.drop {|i| i < 3 }   # => [3, 4, 5, 0]
  *     
  */
 
@@ -1525,8 +1527,10 @@ cycle_i(VALUE i, VALUE ary)
  *  call-seq:
  *     enum.cycle {|obj| block }
  *  
- *  Calls <i>block</i> for each element of enumerable repeatedly
- *  forever.  Enumerable#cycle saves elements in an internal array.
+ *  Calls <i>block</i> for each element of <i>enum</i> repeatedly
+ *  forever. Returns nil if and only if the collection is empty.
+ *  Enumerable#cycle saves elements in an internal array so changes
+ *  to <i>enum</i> after the first pass have no effect.
  *     
  *     a = ["a", "b", "c"]
  *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
@@ -1542,7 +1546,7 @@ enum_cycle(VALUE obj)
     RETURN_ENUMERATOR(obj, 0, 0);
     ary = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
-    for (;;) {
+    while (RARRAY_LEN(ary) > 0) {
 	for (i=0; i<RARRAY_LEN(ary); i++) {
 	    rb_yield(RARRAY_PTR(ary)[i]);
 	}

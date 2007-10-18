@@ -1,3 +1,13 @@
+Thu Oct 18 17:08:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_find_index): update RDoc.  a patch from David Flanagan
+	  <david AT davidflanagan.com> in [ruby-core:12710].
+
+	* enum.c (enum_take, enum_drop): ditto.
+
+	* enum.c (enum_cycle): should not cause infinite loop for empty
+	  arrays.  [ruby-core:12710]
+
 Thu Oct 18 16:39:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/source.rb (REXML::SourceFactory::SourceFactory): more
@@ -143,7 +153,7 @@ Tue Oct 16 13:25:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Oct 16 01:31:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_inject): RDoc update.  a patch from David Flanagan
-	  <david AT davidflanagan.com> in [ruby-core:12679]
+	  <david AT davidflanagan.com> in [ruby-core:12710].
 
 Tue Oct 16 01:25:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
