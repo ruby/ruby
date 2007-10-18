@@ -329,6 +329,12 @@ struct RClass {
     struct st_table *m_tbl;
     VALUE super;
 };
+#define RCLASS_IV_TBL(c) (RCLASS(c)->iv_tbl)
+#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_SUPER(c) (RCLASS(c)->super)
+#define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
+#define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
+#define RMODULE_SUPER(m) RCLASS_SUPER(m)
 
 struct RFloat {
     struct RBasic basic;

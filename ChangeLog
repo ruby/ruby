@@ -1,3 +1,12 @@
+Thu Oct 18 10:57:06 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.h (RCLASS_IV_TBL): defined.
+	  (RCLASS_M_TBL): ditto.
+	  (RCLASS_SUPER): ditto.
+	  (RMODULE_IV_TBL): ditto.
+	  (RMODULE_M_TBL): ditto.
+	  (RMODULE_SUPER): ditto.
+
 Mon Oct 15 22:08:55 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* NEWS: Merge some of the sub-sections, as the differences were
