@@ -917,7 +917,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
-    rb_define_method(rb_cRange, "end", range_last, 0);
+    rb_define_method(rb_cRange, "end", range_end, 0);
     rb_define_method(rb_cRange, "first", range_first, -1);
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, 0);

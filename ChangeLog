@@ -8,6 +8,8 @@ Thu Oct 18 17:08:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* enum.c (enum_cycle): should not cause infinite loop for empty
 	  arrays.  [ruby-core:12710]
 
+	* range.c (Init_Range): typo fixed.
+
 Thu Oct 18 16:39:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/source.rb (REXML::SourceFactory::SourceFactory): more
