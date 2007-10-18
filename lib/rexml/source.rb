@@ -7,13 +7,14 @@ module REXML
     # @param arg Either a String, or an IO
     # @return a Source, or nil if a bad argument was given
     def SourceFactory::create_from(arg)
-      if arg.kind_of? String
-        Source.new(arg)
-      elsif arg.respond_to? :read and
-            arg.respond_to? :readline and
-            arg.respond_to? :nil? and
-            arg.respond_to? :eof?
+      if arg.respond_to? :read and
+          arg.respond_to? :readline and
+          arg.respond_to? :nil? and
+          arg.respond_to? :eof?
         IOSource.new(arg)
+      elsif arg.respond_to? :to_str
+        require 'stringio'
+        IOSource.new(StringIO.new(arg))
       elsif arg.kind_of? Source
         arg
       else

@@ -1,3 +1,9 @@
+Thu Oct 18 16:39:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/source.rb (REXML::SourceFactory::SourceFactory): more
+	  duck typed.  better performance on JRuby.
+	  http://headius.blogspot.com/2007/10/another-performance-discovery-rexml.html
+
 Thu Oct 18 09:33:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_first): takes first n element if argument is
