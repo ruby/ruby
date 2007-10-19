@@ -136,8 +136,11 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 
 #define KCODE_FIXED FL_USER4
 
-#define ARG_REG_OPTION_MASK   0x0f
-#define ARG_KCODE_NONE	      0x10
+#define ARG_REG_OPTION_MASK \
+    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
+#define ARG_ENCODING_FIXED    16
+
+#define ARG_KCODE_NONE	      0
 #define ARG_KCODE_EUC 	      1
 #define ARG_KCODE_SJIS	      2
 #define ARG_KCODE_UTF8	      3
@@ -156,9 +159,6 @@ char_to_option(int c)
 	break;
       case 'm':
 	val = ONIG_OPTION_MULTILINE;
-	break;
-      case 'n':
-	val = ARG_KCODE_NONE;
 	break;
       default:
 	val = 0;
@@ -184,19 +184,24 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
     *option = 0;
 
     switch (c) {
+      case 'n':
+	*kcode = ARG_KCODE_NONE;
+	break;
       case 'e':
 	*kcode = ARG_KCODE_EUC;
-	return 1;
+	break;
       case 's':
 	*kcode = ARG_KCODE_SJIS;
-	return 1;
+	break;
       case 'u':
 	*kcode = ARG_KCODE_UTF8;
-	return 1;
+	break;
       default:
-	*kcode  = 0;
+	*kcode = -1;
 	return (*option = char_to_option(c));
     }
+    *option = ARG_ENCODING_FIXED;
+    return 1;
 }
 
 static void
@@ -1227,13 +1232,9 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     re->ptr = 0;
     re->str = 0;
 
-    if (options & ARG_KCODE_NONE) {
-	rb_enc_associate_index((VALUE)re, 0);
-	enc = rb_enc_from_index(0);
+    rb_enc_associate((VALUE)re, enc);
+    if (options & ARG_ENCODING_FIXED) {
 	re->basic.flags |= KCODE_FIXED;
-    }
-    else {
-	rb_enc_associate((VALUE)re, enc);
     }
     re->ptr = make_regexp(s, len, enc, options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
@@ -1247,6 +1248,9 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 static int
 rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
 {
+    if (rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+	options |= ARG_ENCODING_FIXED;
+    }
     return rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str),
 			     options, err);
 }
@@ -1573,21 +1577,21 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     onig_errmsg_buffer err;
     int flags = 0;
     VALUE str;
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
 
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
     if (TYPE(argv[0]) == T_REGEXP) {
 	VALUE re = argv[0];
-	const char *ptr;
-	long len;
-	rb_encoding *enc;
 
 	if (argc > 1) {
 	    rb_warn("flags ignored");
 	}
 	rb_reg_check(re);
-	flags = RREGEXP(argv[0])->ptr->options & ARG_REG_OPTION_MASK;
+	flags = rb_reg_options(re);
 	ptr = RREGEXP(re)->str;
 	len = RREGEXP(re)->len;
 	enc = rb_enc_get(re);
@@ -1601,18 +1605,22 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
 	}
+	enc = 0;
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
 	    if (kcode[0] == 'n' || kcode[1] == 'N') {
-		flags |= ARG_KCODE_NONE;
+		enc = rb_enc_from_index(0);
+		flags |= ARG_ENCODING_FIXED;
 	    }
 	    else {
 		rb_warning("encoding option is obsolete - %s", kcode);
 	    }
 	}
 	str = argv[0];
-	StringValueCStr(str);
-	if (rb_reg_initialize_str(self, str, flags, err)) {
+	ptr = StringValueCStr(str);
+	if (enc
+	    ? rb_reg_initialize(self, ptr, RSTRING_LEN(str), enc, flags, err)
+	    : rb_reg_initialize_str(self, str, flags, err)) {
 	    rb_reg_raise_str(str, flags, err);
 	}
     }
@@ -1731,8 +1739,8 @@ rb_reg_options(VALUE re)
     int options;
 
     rb_reg_check(re);
-    options = RREGEXP(re)->ptr->options &
-	(ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND);
+    options = RREGEXP(re)->ptr->options & ARG_REG_OPTION_MASK;
+    if (RBASIC(re)->flags & KCODE_FIXED) options |= ARG_ENCODING_FIXED;
     return options;
 }
 

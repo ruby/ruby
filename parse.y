@@ -261,7 +261,7 @@ struct parser_params {
 };
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
-#define STR_NEW0() rb_enc_str_new(0,0,rb_enc_from_index(0))
+#define STR_NEW0() rb_str_new(0,0)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,m) parser_str_new((p),(n),STR_ENC(!ENC_SINGLE(m)),(m))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
@@ -443,6 +443,10 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #define lvar_defined(id) lvar_defined_gen(parser, id)
 
 #define RE_OPTION_ONCE (1<<16)
+#define RE_OPTION_ENCODING_SHIFT 8
+#define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
+#define RE_OPTION_ENCODING_IDX(o) (((o)>>RE_OPTION_ENCODING_SHIFT)&0xff)
+#define RE_OPTION_MASK  0xff
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
@@ -3639,14 +3643,14 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			int options = $3;
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_LIT(reg_compile(0, options & ~RE_OPTION_ONCE));
+			    node = NEW_LIT(reg_compile(STR_NEW0(), options));
 			}
 			else switch (nd_type(node)) {
 			  case NODE_STR:
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = reg_compile(src, options&~RE_OPTION_ONCE);
+				node->nd_lit = reg_compile(src, options);
 			    }
 			    break;
 			  default:
@@ -3658,7 +3662,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    else {
 				nd_set_type(node, NODE_DREGX);
 			    }
-			    node->nd_cflag = options & ~RE_OPTION_ONCE;
+			    node->nd_cflag = options & RE_OPTION_MASK;
 			    break;
 			}
 			$$ = node;
@@ -5110,11 +5114,12 @@ parser_tokadd_escape(struct parser_params *parser, int term, int *mb)
     return 0;
 }
 
+extern int rb_char_to_option_kcode(int c, int *option, int *kcode);
+
 static int
 parser_regx_options(struct parser_params *parser)
 {
-    extern int rb_char_to_option_kcode(int c, int *option, int *kcode);
-
+    int kcode = 0;
     int options = 0;
     int c, opt, kc;
 
@@ -5125,11 +5130,7 @@ parser_regx_options(struct parser_params *parser)
         }
         else if (rb_char_to_option_kcode(c, &opt, &kc)) {
             options |= opt;
-            if (kc != 0 && rb_enc_from_index(kc) != parser->enc) {
-		compile_error(PARSER_ARG
-			      "regexp encoding option '%c' mismatch to %s",
-			      c, rb_enc_name(parser->enc));
-	    }
+	    if (kc >= 0) kcode = c;
         }
         else {
 	    tokadd(c);
@@ -5141,7 +5142,7 @@ parser_regx_options(struct parser_params *parser)
 	compile_error(PARSER_ARG "unknown regexp option%s - %s",
 		      toklen() > 1 ? "s" : "", tok());
     }
-    return options;
+    return options | RE_OPTION_ENCODING(kcode);
 }
 
 #define STR_FUNC_ESCAPE 0x01
@@ -8212,8 +8213,21 @@ VALUE rb_reg_compile(VALUE str, int options);
 static VALUE
 reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
-    VALUE re = rb_reg_compile(str, (options) & ~RE_OPTION_ONCE);
+    VALUE re;
+    int c = RE_OPTION_ENCODING_IDX(options);
 
+    if (c) {
+	int opt, idx;
+	rb_char_to_option_kcode(c, &opt, &idx);
+	if (idx != ENCODING_GET(str) && ENCODING_GET(str) &&
+	    rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+	    compile_error(PARSER_ARG
+			  "regexp encoding option '%c' differs from source encoding '%s'",
+			  c, rb_enc_name(rb_enc_get(str)));
+	}
+	ENCODING_SET(str, idx);
+    }
+    re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
 	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
 	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));

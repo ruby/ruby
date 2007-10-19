@@ -1,3 +1,15 @@
+Fri Oct 19 16:41:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_regx_options, reg_compile_gen): relaxened encoding
+	  matching rule.
+
+	* re.c (rb_reg_initialize): always set encoding of Regexp.
+
+	* re.c (rb_reg_initialize_str): fix enconding for non 7bit-clean
+	  strings.
+
+	* re.c (rb_reg_initialize_m): use ascii encoding for 'n' option.
+
 Fri Oct 19 11:09:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): set primary encoding from the parser
