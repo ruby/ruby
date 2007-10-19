@@ -1,3 +1,10 @@
+Fri Oct 19 11:09:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): set primary encoding from the parser
+	  always.  [ruby-core:12758]
+
+	* ruby.c (load_file): should not discard the parser parameter.
+
 Fri Oct 19 10:55:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_last): removed unused variables.

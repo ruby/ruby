@@ -842,7 +842,6 @@ process_options(VALUE arg)
     char **argv = opt->argv;
     NODE *tree = 0;
     VALUE parser;
-    VALUE encoding;
     const char *s;
     int i = proc_options(argc, argv, opt);
 
@@ -970,13 +969,7 @@ process_options(VALUE arg)
 	}
     }
 
-    if (opt->enc_index >= 0) {
-	encoding = rb_enc_from_encoding(rb_enc_from_index(opt->enc_index));
-    }
-    else {
-	encoding = rb_parser_encoding(parser);
-    }
-    rb_set_primary_encoding(encoding);
+    rb_set_primary_encoding(rb_parser_encoding(parser));
 
     return (VALUE)tree;
 }
@@ -1097,7 +1090,6 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	require_libraries();	/* Why here? unnatural */
     }
     if (opt->enc_index >= 0) rb_enc_associate_index(f, opt->enc_index);
-    parser = rb_parser_new();
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
