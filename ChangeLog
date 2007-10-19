@@ -1,3 +1,7 @@
+Fri Oct 19 10:55:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_last): removed unused variables.
+
 Thu Oct 18 17:08:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_find_index): update RDoc.  a patch from David Flanagan
