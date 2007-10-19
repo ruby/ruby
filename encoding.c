@@ -267,6 +267,15 @@ enc_check_capable(VALUE x)
     }
 }
 
+ID
+rb_id_encoding(void)
+{
+    if (!id_encoding) {
+	id_encoding = rb_intern("encoding");
+    }
+    return id_encoding;
+}
+
 void
 rb_enc_associate_index(VALUE obj, int idx)
 {
@@ -280,10 +289,7 @@ rb_enc_associate_index(VALUE obj, int idx)
 	return;
     }
     ENCODING_SET(obj, ENCODING_INLINE_MAX);
-    if (!id_encoding) {
-	id_encoding = rb_intern("encoding");
-    }
-    rb_ivar_set(obj, id_encoding, INT2NUM(idx));
+    rb_ivar_set(obj, rb_id_encoding(), INT2NUM(idx));
     return;
 }
 
@@ -317,10 +323,7 @@ rb_enc_get_index(VALUE obj)
     if (i == ENCODING_INLINE_MAX) {
 	VALUE iv;
 
-	if (!id_encoding) {
-	    id_encoding = rb_intern("encoding");
-	}
-	iv = rb_ivar_get(obj, id_encoding);
+	iv = rb_ivar_get(obj, rb_id_encoding());
 	i = NUM2INT(iv);
     }
     return i;

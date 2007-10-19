@@ -14,6 +14,7 @@
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H
@@ -82,6 +83,8 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc;
 static ID s_getc, s_read, s_write, s_binmode;
 
+ID rb_id_encoding(void);
+
 typedef struct {
     VALUE newclass;
     VALUE oldclass;
@@ -137,6 +140,7 @@ struct dump_arg {
     int taint;
     st_table *compat_tbl;
     VALUE wrapper;
+    st_table *encodings;
 };
 
 struct dump_call_arg {
@@ -453,20 +457,44 @@ w_uclass(VALUE obj, VALUE base_klass, struct dump_arg *arg)
 static int
 w_obj_each(ID id, VALUE value, struct dump_call_arg *arg)
 {
+    if (id == rb_id_encoding()) return ST_CONTINUE;
     w_symbol(id, arg->arg);
     w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
 
 static void
-w_ivar(st_table *tbl, struct dump_call_arg *arg)
+w_encoding(VALUE obj, long num, struct dump_call_arg *arg)
 {
-    if (tbl) {
-	w_long(tbl->num_entries, arg->arg);
-	st_foreach_safe(tbl, w_obj_each, (st_data_t)arg);
+    int encidx = rb_enc_get_index(obj);
+    rb_encoding *enc = 0;
+    st_data_t name;
+
+    if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
+	w_long(num, arg->arg);
+	return;
     }
-    else {
-	w_long(0, arg->arg);
+    w_long(num + 1, arg->arg);
+    w_symbol(rb_id_encoding(), arg->arg);
+    do {
+	if (!arg->arg->encodings)
+	    arg->arg->encodings = st_init_strcasetable();
+	else if (st_lookup(arg->arg->encodings, (st_data_t)rb_enc_name(enc), &name))
+	    break;
+	name = (st_data_t)rb_str_new2(rb_enc_name(enc));
+	st_insert(arg->arg->encodings, (st_data_t)rb_enc_name(enc), name);
+    } while (0);
+    w_object(name, arg->arg, arg->limit);
+}
+
+static void
+w_ivar(VALUE obj, st_table *tbl, struct dump_call_arg *arg)
+{
+    long num = tbl ? tbl->num_entries : 0;
+
+    w_encoding(obj, num, arg);
+    if (tbl) {
+	st_foreach_safe(tbl, w_obj_each, (st_data_t)arg);
     }
 }
 
@@ -483,7 +511,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
         if (ptr[i] != Qundef)
             num += 1;
 
-    w_long(num, arg->arg);
+    w_encoding(obj, num, arg);
     if (num != 0) {
         rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
     }
@@ -495,6 +523,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
     st_data_t num;
+    int hasiv = 0;
+#define has_ivars(obj, ivtbl) ((ivtbl = rb_generic_ivar_table(obj)) != 0 || \
+			       (!IMMEDIATE_P(obj) && ENCODING_GET(obj)))
 
     if (limit == 0) {
 	rb_raise(rb_eArgError, "exceed depth limit");
@@ -510,7 +541,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	return;
     }
 
-    if ((ivtbl = rb_generic_ivar_table(obj)) != 0) {
+    if ((hasiv = has_ivars(obj, ivtbl)) != 0) {
 	w_byte(TYPE_IVAR, arg);
     }
     if (obj == Qnil) {
@@ -563,7 +594,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
 	    w_object(v, arg, limit);
-	    if (ivtbl) w_ivar(0, &c_arg);
+	    if (hasiv) w_ivar(obj, 0, &c_arg);
 	    return;
 	}
 	if (rb_respond_to(obj, s_dump)) {
@@ -573,13 +604,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
-	    if (!ivtbl && (ivtbl = rb_generic_ivar_table(v))) {
+	    if (!hasiv && (hasiv = has_ivars(v, ivtbl)) != 0) {
 		w_byte(TYPE_IVAR, arg);
 	    }
 	    w_class(TYPE_USERDEF, obj, arg, Qfalse);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
-	    if (ivtbl) {
-		w_ivar(ivtbl, &c_arg);
+	    if (hasiv) {
+		w_ivar(obj, ivtbl, &c_arg);
 	    }
 	    return;
 	}
@@ -725,8 +756,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    break;
 	}
     }
-    if (ivtbl) {
-	w_ivar(ivtbl, &c_arg);
+    if (hasiv) {
+	w_ivar(obj, ivtbl, &c_arg);
     }
 }
 
@@ -823,6 +854,7 @@ marshal_dump(int argc, VALUE *argv)
     arg.taint   = Qfalse;
     arg.compat_tbl = st_init_numtable();
     arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
+    arg.encodings = 0;
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -1050,6 +1082,10 @@ r_ivar(VALUE obj, struct load_arg *arg)
 	while (len--) {
 	    ID id = r_symbol(arg);
 	    VALUE val = r_object(arg);
+	    if (id == rb_id_encoding()) {
+		int idx = rb_enc_find_index(StringValueCStr(val));
+		if (idx > 0) rb_enc_associate_index(obj, idx);
+	    }
 	    rb_ivar_set(obj, id, val);
 	}
     }

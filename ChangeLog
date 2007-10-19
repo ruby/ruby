@@ -1,3 +1,11 @@
+Fri Oct 19 20:08:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_id_encoding): returns ID "encoding".
+
+	* marshal.c (w_encoding): dump encoding name.
+
+	* marshal.c (r_ivar): load encoding.
+
 Fri Oct 19 16:41:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_regx_options, reg_compile_gen): relaxened encoding
