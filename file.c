@@ -118,14 +118,14 @@ rb_get_path(VALUE obj)
     if (obj != tmp) {
 	rb_check_safe_obj(tmp);
     }
-    return tmp;
+    return rb_str_new4(tmp);
 }
 
 static long
 apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 {
     long i;
-    VALUE path;
+    volatile VALUE path;
 
     rb_secure(4);
     for (i=0; i<RARRAY_LEN(vargs); i++) {
@@ -1823,7 +1823,8 @@ rb_file_s_lchmod(int argc, VALUE *argv)
 #endif
 
 struct chown_args {
-    int owner, group;
+    rb_uid_t owner;
+    rb_gid_t group;
 };
 
 static void
@@ -1862,13 +1863,13 @@ rb_file_s_chown(int argc, VALUE *argv)
 	arg.owner = -1;
     }
     else {
-	arg.owner = NUM2INT(o);
+	arg.owner = NUM2UIDT(o);
     }
     if (NIL_P(g)) {
 	arg.group = -1;
     }
     else {
-	arg.group = NUM2INT(g);
+	arg.group = NUM2GIDT(g);
     }
 
     n = apply2files(chown_internal, rest, &arg);
@@ -1946,13 +1947,13 @@ rb_file_s_lchown(int argc, VALUE *argv)
 	arg.owner = -1;
     }
     else {
-	arg.owner = NUM2INT(o);
+	arg.owner = NUM2UIDT(o);
     }
     if (NIL_P(g)) {
 	arg.group = -1;
     }
     else {
-	arg.group = NUM2INT(g);
+	arg.group = NUM2GIDT(g);
     }
 
     n = apply2files(lchown_internal, rest, &arg);
