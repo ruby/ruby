@@ -1,11 +1,8 @@
-require "rss/1.0"
+require "rss/rss"
 
 module RSS
-
   DC_PREFIX = 'dc'
   DC_URI = "http://purl.org/dc/elements/1.1/"
-  
-  RDF.install_ns(DC_PREFIX, DC_URI)
 
   module BaseDublinCoreModel
     def append_features(klass)
@@ -36,8 +33,20 @@ module RSS
         EOC
       end
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(0))
-        alias date #{DC_PREFIX}_date
-        alias date= #{DC_PREFIX}_date=
+        if method_defined?(:date)
+          alias date_without_#{DC_PREFIX}_date= date=
+
+          def date=(value)
+            self.date_without_#{DC_PREFIX}_date = value
+            self.#{DC_PREFIX}_date = value
+          end
+        else
+          alias date #{DC_PREFIX}_date
+          alias date= #{DC_PREFIX}_date=
+        end
+
+        # For backward compatibility
+        alias #{DC_PREFIX}_rightses #{DC_PREFIX}_rights_list
       EOC
     end
   end
@@ -61,7 +70,7 @@ module RSS
       "language" => nil,
       "relation" => nil,
       "coverage" => nil,
-      "rights" => "rightses" # FIXME
+      "rights" => "rights_list"
     }
 
     DATE_ELEMENTS = {
@@ -122,13 +131,14 @@ module RSS
     end
 
     DATE_ELEMENTS.each do |name, type|
+      tag_name = "#{DC_PREFIX}:#{name}"
       module_eval(<<-EOC, *get_file_and_line_from_caller(0))
         class DublinCore#{Utils.to_class_name(name)} < Element
           remove_method(:content=)
           remove_method(:value=)
 
-          date_writer("content", #{type.dump}, #{name.dump})
-          
+          date_writer("content", #{type.dump}, #{tag_name.dump})
+
           alias_method(:value=, :content=)
         end
       EOC
@@ -138,13 +148,6 @@ module RSS
   # For backward compatibility
   DublincoreModel = DublinCoreModel
 
-  class RDF
-    class Channel; include DublinCoreModel; end
-    class Image; include DublinCoreModel; end
-    class Item; include DublinCoreModel; end
-    class Textinput; include DublinCoreModel; end
-  end
-
   DublinCoreModel::ELEMENTS.each do |name|
     class_name = Utils.to_class_name(name)
     BaseListener.install_class_name(DC_URI, name, "DublinCore#{class_name}")
@@ -152,3 +155,7 @@ module RSS
 
   DublinCoreModel::ELEMENTS.collect! {|name| "#{DC_PREFIX}_#{name}"}
 end
+
+require 'rss/dublincore/1.0'
+require 'rss/dublincore/2.0'
+require 'rss/dublincore/atom'

@@ -56,9 +56,18 @@ ARGV.each do |fname|
     rescue RSS::UnknownConversionMethodError
       error($!) if verbose
     end
-    rss.channel.title ||= "Unknown"
+
+    rss = rss.to_rss("1.0") do |maker|
+      maker.channel.about ||= maker.channel.link
+      maker.channel.description ||= "No description"
+      maker.items.each do |item|
+        item.title ||= "No title"
+        item.link ||= "UNKNOWN"
+      end
+    end
+    next if rss.nil?
+
     rss.items.each do |item|
-      item.title ||= "Unknown"
       channels[rss.channel.title] ||= []
       channels[rss.channel.title] << item if item.description
     end

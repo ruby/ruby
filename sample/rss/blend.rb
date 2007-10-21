@@ -64,6 +64,12 @@ rss = RSS::Maker.make("1.0") do |maker|
       item.setup_maker(maker.items)
     end
   end
+
+  maker.items.each do |item|
+    item.title ||= "UNKNOWN"
+    item.link ||= "UNKNOWN"
+  end
+
   maker.items.do_sort = true
   maker.items.max_size = 15
 end

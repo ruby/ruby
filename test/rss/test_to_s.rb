@@ -12,7 +12,6 @@ require "rss/trackback"
 
 module RSS
   class TestToS < TestCase
-    
     def setup
       @image_url = "http://example.com/foo.png"
       @textinput_link = "http://example.com/search.cgi"
@@ -435,6 +434,237 @@ module RSS
         new_about.value = about
       end
     end
+
+
+    def assert_channel10(attrs, channel)
+      _wrap_assertion do
+        n_attrs = normalized_attrs(attrs)
+        
+        names = %w(about title link description)
+        assert_attributes(attrs, names, channel)
+
+        %w(image items textinput).each do |name|
+          value = n_attrs[name]
+          if value
+            target = channel.__send__(name)
+            __send__("assert_channel10_#{name}", value, target)
+          end
+        end
+      end
+    end
+
+    def assert_channel10_image(attrs, image)
+      _wrap_assertion do
+        assert_attributes(attrs, %w(resource), image)
+      end
+    end
     
+    def assert_channel10_textinput(attrs, textinput)
+      _wrap_assertion do
+        assert_attributes(attrs, %w(resource), textinput)
+      end
+    end
+
+    def assert_channel10_items(attrs, items)
+      _wrap_assertion do
+        assert_equal(items.resources, items.Seq.lis.collect {|x| x.resource})
+        items.Seq.lis.each_with_index do |li, i|
+          assert_attributes(attrs[i], %w(resource), li)
+        end
+      end
+    end
+
+    def assert_image10(attrs, image)
+      _wrap_assertion do
+        names = %w(about title url link)
+        assert_attributes(attrs, names, image)
+      end
+    end
+
+    def assert_items10(attrs, items)
+      _wrap_assertion do
+        names = %w(about title link description)
+        items.each_with_index do |item, i|
+          assert_attributes(attrs[i], names, item)
+        end
+      end
+    end
+
+    def assert_textinput10(attrs, textinput)
+      _wrap_assertion do
+        names = %w(about title description name link)
+        assert_attributes(attrs, names, textinput)
+      end
+    end
+
+
+    def assert_channel09(attrs, channel)
+      _wrap_assertion do
+        n_attrs = normalized_attrs(attrs)
+
+        names = %w(title description link language rating
+                   copyright pubDate lastBuildDate docs
+                   managingEditor webMaster)
+        assert_attributes(attrs, names, channel)
+        
+        %w(skipHours skipDays).each do |name|
+          value = n_attrs[name]
+          if value
+            target = channel.__send__(name)
+            __send__("assert_channel09_#{name}", value, target)
+          end
+        end
+      end
+    end
+
+    def assert_channel09_skipDays(contents, skipDays)
+      _wrap_assertion do
+        days = skipDays.days
+        contents.each_with_index do |content, i|
+          assert_equal(content, days[i].content)
+        end
+      end
+    end
+    
+    def assert_channel09_skipHours(contents, skipHours)
+      _wrap_assertion do
+        hours = skipHours.hours
+        contents.each_with_index do |content, i|
+          assert_equal(content.to_i, hours[i].content)
+        end
+      end
+    end
+    
+    def assert_image09(attrs, image)
+      _wrap_assertion do
+        names = %w(url link title description)
+        names << ["width", :integer]
+        names << ["height", :integer]
+        assert_attributes(attrs, names, image)
+      end
+    end
+
+    def assert_items09(attrs, items)
+      _wrap_assertion do
+        names = %w(title link description)
+        items.each_with_index do |item, i|
+          assert_attributes(attrs[i], names, item)
+        end
+      end
+    end
+    
+    def assert_textinput09(attrs, textinput)
+      _wrap_assertion do
+        names = %w(title description name link)
+        assert_attributes(attrs, names, textinput)
+      end
+    end
+
+
+    def assert_channel20(attrs, channel)
+      _wrap_assertion do
+        n_attrs = normalized_attrs(attrs)
+        
+        names = %w(title link description language copyright
+                   managingEditor webMaster pubDate
+                   lastBuildDate generator docs rating)
+        names << ["ttl", :integer]
+        assert_attributes(attrs, names, channel)
+
+        %w(cloud categories skipHours skipDays).each do |name|
+          value = n_attrs[name]
+          if value
+            target = channel.__send__(name)
+            __send__("assert_channel20_#{name}", value, target)
+          end
+        end
+      end
+    end
+
+    def assert_channel20_skipDays(contents, skipDays)
+      assert_channel09_skipDays(contents, skipDays)
+    end
+    
+    def assert_channel20_skipHours(contents, skipHours)
+      assert_channel09_skipHours(contents, skipHours)
+    end
+    
+    def assert_channel20_cloud(attrs, cloud)
+      _wrap_assertion do
+        names = %w(domain path registerProcedure protocol)
+        names << ["port", :integer]
+        assert_attributes(attrs, names, cloud)
+      end
+    end
+    
+    def assert_channel20_categories(attrs, categories)
+      _wrap_assertion do
+        names = %w(domain content)
+        categories.each_with_index do |category, i|
+          assert_attributes(attrs[i], names, category)
+        end
+      end
+    end
+    
+    def assert_image20(attrs, image)
+      _wrap_assertion do
+        names = %w(url link title description)
+        names << ["width", :integer]
+        names << ["height", :integer]
+        assert_attributes(attrs, names, image)
+      end
+    end
+
+    def assert_items20(attrs, items)
+      _wrap_assertion do
+        names = %w(about title link description)
+        items.each_with_index do |item, i|
+          assert_attributes(attrs[i], names, item)
+
+          n_attrs = normalized_attrs(attrs[i])
+
+          %w(source enclosure categories guid).each do |name|
+            value = n_attrs[name]
+            if value
+              target = item.__send__(name)
+              __send__("assert_items20_#{name}", value, target)
+            end
+          end
+        end
+      end
+    end
+
+    def assert_items20_source(attrs, source)
+      _wrap_assertion do
+        assert_attributes(attrs, %w(url content), source)
+      end
+    end
+    
+    def assert_items20_enclosure(attrs, enclosure)
+      _wrap_assertion do
+        names = ["url", ["length", :integer], "type"]
+        assert_attributes(attrs, names, enclosure)
+      end
+    end
+    
+    def assert_items20_categories(attrs, categories)
+      _wrap_assertion do
+        assert_channel20_categories(attrs, categories)
+      end
+    end
+    
+    def assert_items20_guid(attrs, guid)
+      _wrap_assertion do
+        names = [["isPermaLink", :boolean], ["content"]]
+        assert_attributes(attrs, names, guid)
+      end
+    end
+
+    def assert_textinput20(attrs, textinput)
+      _wrap_assertion do
+        names = %w(title description name link)
+        assert_attributes(attrs, names, textinput)
+      end
+    end
   end
 end

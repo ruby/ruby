@@ -1,14 +1,4 @@
-begin
-  require "fileutils"
-rescue LoadError
-  module FileUtils
-    module_function
-    def rm_f(target)
-      File.unlink(target)
-    rescue Errno::ENOENT
-    end
-  end
-end
+require "fileutils"
 
 require "rss-testcase"
 
@@ -28,7 +18,7 @@ EOR
       @rss_file = "rss10.rdf"
       File.open(@rss_file, "w") {|f| f.print(@rss10)}
     end
-    
+
     def teardown
       Parser.default_parser = @_default_parser
       FileUtils.rm_f(@rss_file)

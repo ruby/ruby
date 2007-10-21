@@ -24,6 +24,7 @@ module RSS
         end
 
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
 
       xss = rss.xml_stylesheets.first
@@ -38,11 +39,12 @@ module RSS
       href = 'http://example.com/index.xsl'
       type = 'text/xsl'
       rss = RSS::Maker.make("1.0") do |maker|
-        maker.xml_stylesheets.new_xml_stylesheet do |xss|
-          xss.href = href
+        maker.xml_stylesheets.new_xml_stylesheet do |_xss|
+          _xss.href = href
         end
 
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
 
       xss = rss.xml_stylesheets.first
@@ -61,6 +63,7 @@ module RSS
         end
 
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       assert(rss.xml_stylesheets.empty?)
 
@@ -71,6 +74,7 @@ module RSS
         end
 
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       assert(rss.xml_stylesheets.empty?)
     end

@@ -353,7 +353,7 @@ module RSS
       assert_nil(rss.image)
     end
     
-    def test_items
+    def test_items(with_convenience_way=true)
       title = "TITLE"
       link = "http://hoge.com/"
       description = "text hoge fuga"
@@ -407,7 +407,11 @@ module RSS
           end
         end
         maker.items.do_sort = Proc.new do |x, y|
-          y.title[-1] <=> x.title[-1]
+          if with_convenience_way
+            y.title[-1] <=> x.title[-1]
+          else
+            y.title {|t| t.content[-1]} <=> x.title {|t| t.content[-1]}
+          end
         end
       end
       assert_equal(item_size, rss.items.size)
@@ -420,6 +424,10 @@ module RSS
         assert_equal(pubDate, item.pubDate)
         assert_equal(pubDate, item.date)
       end
+    end
+
+    def test_items_with_new_api_since_018
+      test_items(false)
     end
 
     def test_guid
@@ -606,15 +614,16 @@ module RSS
       assert_equal(name, textInput.name)
       assert_equal(link, textInput.link)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        # setup_dummy_channel(maker)
+      assert_not_set_error("maker.channel", %w(link description title)) do
+        RSS::Maker.make("2.0") do |maker|
+          # setup_dummy_channel(maker)
 
-        maker.textinput.title = title
-        maker.textinput.description = description
-        maker.textinput.name = name
-        maker.textinput.link = link
+          maker.textinput.title = title
+          maker.textinput.description = description
+          maker.textinput.name = name
+          maker.textinput.link = link
+        end
       end
-      assert_nil(rss)
     end
     
     def test_not_valid_textInput

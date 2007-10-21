@@ -11,7 +11,7 @@ module RSS
 
     def setup
       @prefix = "image"
-      @uri = "http://web.resource.org/rss/1.0/modules/image/"
+      @uri = "http://purl.org/rss/1.0/modules/image/"
 
       @favicon_attrs = {
         "rdf:about" => "http://www.kuro5hin.org/favicon.ico",
@@ -65,20 +65,30 @@ EOR
 
       @rss = Parser.parse(@rss_source)
     end
-  
+
     def test_parser
       assert_nothing_raised do
         Parser.parse(@rss_source)
       end
-      
+
       assert_too_much_tag("favicon", "channel") do
         Parser.parse(make_RDF(<<-EOR, @ns))
 #{make_channel(@channel_nodes * 2)}
 #{make_item}
 EOR
       end
+
+      attrs = {"rdf:about" => "http://www.example.org/item.png"}
+      contents = [["#{@prefix}:width", "80"]] * 5
+      image_item = make_element("#{@prefix}:item", attrs, contents)
+      assert_too_much_tag("width", "item") do
+        Parser.parse(make_RDF(<<-EOR, @ns))
+#{make_channel}
+#{make_item(image_item)}
+EOR
+      end
     end
-  
+
     def test_favicon_accessor
       favicon = @rss.channel.image_favicon
       [
@@ -135,7 +145,7 @@ EOR
           image_item.__send__("#{name}=", attrs[full_name])
           assert_equal(attrs[full_name], image_item.__send__(name))
         end
-        
+
         [
           ["width", "image:width", "111"],
           ["image_width", "image:width", "44"],
@@ -163,22 +173,26 @@ EOR
 
     def test_favicon_to_s
       favicon = @rss.channel.image_favicon
-      expected = REXML::Document.new(make_element("#{@prefix}:favicon",
-                                                  @favicon_attrs,
-                                                  @favicon_contents))
-      actual = REXML::Document.new(favicon.to_s(false, ""))
+      expected_xml = image_xmlns_container(make_element("#{@prefix}:favicon",
+                                                        @favicon_attrs,
+                                                        @favicon_contents))
+      expected = REXML::Document.new(expected_xml)
+      actual_xml = image_xmlns_container(favicon.to_s(false, ""))
+      actual = REXML::Document.new(actual_xml)
       assert_equal(expected.to_s, actual.to_s)
     end
 
     def test_item_to_s
       @rss.items.each_with_index do |item, i|
         attrs, contents = @items[i]
-        expected_s = make_element("#{@prefix}:item", attrs, contents)
-        expected = REXML::Document.new(expected_s)
-        actual = REXML::Document.new(item.image_item.to_s(false, ""))
+        expected_xml = make_element("#{@prefix}:item", attrs, contents)
+        expected_xml = image_xmlns_container(expected_xml)
+        expected = REXML::Document.new(expected_xml)
+        actual_xml = image_xmlns_container(item.image_item.to_s(false, ""))
+        actual = REXML::Document.new(actual_xml)
 
         assert_equal(expected[0].attributes, actual[0].attributes)
-        
+
         %w(image:height image:width dc:title).each do |name|
           actual_target = actual.elements["//#{name}"]
           expected_target = expected.elements["//#{name}"]
@@ -187,5 +201,14 @@ EOR
       end
     end
 
+    private
+    def image_xmlns_container(content)
+      xmlns_container({
+                        @prefix => @uri,
+                        "dc" => "http://purl.org/dc/elements/1.1/",
+                        "rdf" => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                      },
+                      content)
+    end
   end
 end

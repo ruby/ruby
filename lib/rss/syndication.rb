@@ -29,16 +29,19 @@ module RSS
 
         %w(updateBase).each do |name|
           install_date_element(name, SY_URI, "?",
-                               "#{SY_PREFIX}_#{name}", 'w3cdtf', name)
+                               "#{SY_PREFIX}_#{name}", 'w3cdtf',
+                               "#{SY_PREFIX}:#{name}")
         end
+      end
 
+      klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
         alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
         def sy_updatePeriod=(new_value)
           new_value = new_value.strip
           validate_sy_updatePeriod(new_value) if @do_validate
           self._sy_updatePeriod = new_value
         end
-      end
+      EOC
     end
 
     private
@@ -58,7 +61,7 @@ module RSS
   SyndicationModel::ELEMENTS.uniq!
   SyndicationModel::ELEMENTS.each do |full_name|
     name = full_name[prefix_size..-1]
-    BaseListener.install_get_text_element(SY_URI, name, "#{full_name}=")
+    BaseListener.install_get_text_element(SY_URI, name, full_name)
   end
 
 end

@@ -1,3 +1,14 @@
+Sun Oct 21 21:16:43 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss.rb, lib/rss/, test/rss/, sample/rss/: merged from trunk.
+	- 0.1.6 -> 2.0.0.
+	- fixed image module URI. Thanks to Dmitry Borodaenko.
+	- supported Atom.
+	- supported ITunes module.
+	- supported Slash module.
+
+	* NEWS: added an entry for RSS Parser.
+
 Thu Oct 18 10:57:06 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.h (RCLASS_IV_TBL): defined.

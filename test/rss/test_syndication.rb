@@ -93,7 +93,7 @@ EOR
       
       %w(-2 0.3 -0.4).each do |x|
         @parents.each do |parent|
-          assert_not_available_value("updateBase", x) do
+          assert_not_available_value("sy:updateBase", x) do
             @rss.__send__(parent).sy_updateBase = x
           end
         end
@@ -120,8 +120,6 @@ EOR
           end
         end
       end
-      
     end
-  
   end
 end

@@ -24,6 +24,7 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         set_elements(maker.channel)
+        setup_dummy_item(maker)
       end
       assert_syndication(@elements, rss.channel)
     end

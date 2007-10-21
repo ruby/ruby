@@ -29,16 +29,16 @@ ARGV.each do |fname|
   read = false
   begin
     rss = RSS::Parser.parse(source)
-    puts "Re-read valid RSS: #{fname}"
+    puts "Re-read valid feed: #{fname}"
     RSS::Parser.parse(rss.to_s)
     read = true
   rescue RSS::InvalidRSSError
     error($!) if verbose
-    ## do non validate parse for invalid RSS 1.0
+    ## do non validate parse for invalid feed
     begin
       rss = RSS::Parser.parse(source, false)
     rescue RSS::Error
-      ## invalid RSS.
+      ## invalid feed
       error($!) if verbose
     end
   rescue RSS::Error
@@ -46,9 +46,9 @@ ARGV.each do |fname|
   end
   
   if rss.nil?
-    puts "Invalid RSS: #{fname}"
+    puts "Invalid feed: #{fname}"
   elsif !read
-    puts "Re-read invalid RSS: #{fname}"
+    puts "Re-read invalid feed: #{fname}"
     begin
       RSS::Parser.parse(rss.to_s)
     rescue RSS::Error

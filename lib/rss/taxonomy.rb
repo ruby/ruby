@@ -12,7 +12,7 @@ module RSS
 
   %w(link).each do |name|
     full_name = "#{TAXO_PREFIX}_#{name}"
-    BaseListener.install_get_text_element(TAXO_URI, name, "#{full_name}=")
+    BaseListener.install_get_text_element(TAXO_URI, name, full_name)
     TAXO_ELEMENTS << "#{TAXO_PREFIX}_#{name}"
   end
 

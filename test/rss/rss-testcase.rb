@@ -3,6 +3,8 @@ require "erb"
 require "test/unit"
 require 'rss-assertions'
 
+require "rss"
+
 module RSS
   class TestCase < Test::Unit::TestCase
     include ERB::Util
@@ -22,7 +24,7 @@ module RSS
     NAME_VALUE = "hogehoge"
     LANGUAGE_VALUE = "ja"
     DESCRIPTION_VALUE = "
-    XML.com features a rich mix of information and services 
+    XML.com features a rich mix of information and services
     for the XML community.
     "
     RESOURCES = [
@@ -41,6 +43,45 @@ module RSS
     ENCLOSURE_TYPE = "audio/mpeg"
     
     CATEGORY_DOMAIN = "http://www.superopendirectory.com/"
+
+    FEED_TITLE = "dive into mark"
+    FEED_UPDATED = "2003-12-13T18:30:02Z"
+    FEED_AUTHOR_NAME = "John Doe"
+    FEED_ID = "urn:uuid:60a76c80-d399-11d9-b93C-0003939e0af6"
+
+    ENTRY_TITLE = "Atom-Powered Robots Run Amok"
+    ENTRY_LINK = "http://example.org/2003/12/13/atom03"
+    ENTRY_ID = "urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a"
+    ENTRY_UPDATED = "2003-12-13T18:30:02Z"
+    ENTRY_SUMMARY = "Some text."
+
+    t = Time.iso8601("2000-01-01T12:00:05+00:00")
+    class << t
+      alias_method(:to_s, :iso8601)
+    end
+
+    DC_ELEMENTS = {
+      :title => "hoge",
+      :description =>
+        " XML is placing increasingly heavy loads on
+          the existing technical infrastructure of the Internet.",
+      :creator => "Rael Dornfest (mailto:rael@oreilly.com)",
+      :subject => "XML",
+      :publisher => "The O'Reilly Network",
+      :contributor => "hogehoge",
+      :type => "fugafuga",
+      :format => "hohoho",
+      :identifier => "fufufu",
+      :source => "barbar",
+      :language => "ja",
+      :relation => "cococo",
+      :rights => "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
+      :date => t,
+    }
+
+    DC_NODES = DC_ELEMENTS.collect do |name, value|
+      "<#{DC_PREFIX}:#{name}>#{value}</#{DC_PREFIX}:#{name}>"
+    end.join("\n")
 
     def default_test
       # This class isn't tested
@@ -205,6 +246,82 @@ EOC
 EOR
     end
 
+    def make_feed_without_entry(content=nil, xmlns=[])
+      <<-EOA
+<feed xmlns="#{Atom::URI}"
+#{xmlns.collect {|pre, uri| "xmlns:#{pre}='#{uri}'"}.join(' ')}>
+  <id>#{FEED_ID}</id>
+  <title>#{FEED_TITLE}</title>
+  <updated>#{FEED_UPDATED}</updated>
+  <author>
+    <name>#{FEED_AUTHOR_NAME}</name>
+  </author>
+#{block_given? ? yield : content}
+</feed>
+EOA
+    end
+
+    def make_entry(content=nil)
+      <<-EOA
+  <entry>
+    <title>#{ENTRY_TITLE}</title>
+    <id>#{ENTRY_ID}</id>
+    <updated>#{ENTRY_UPDATED}</updated>
+#{block_given? ? yield : content}
+  </entry>
+EOA
+    end
+
+    def make_feed_with_open_entry(content=nil, xmlns=[], &block)
+      make_feed_without_entry(<<-EOA, xmlns)
+#{make_entry(content, &block)}
+EOA
+    end
+
+    def make_feed_with_open_entry_source(content=nil, xmlns=[])
+      make_feed_with_open_entry(<<-EOA, xmlns)
+  <source>
+#{block_given? ? yield : content}
+  </source>
+EOA
+    end
+
+    def make_feed(content=nil, xmlns=[])
+      make_feed_without_entry(<<-EOA, xmlns)
+  <entry>
+    <title>#{ENTRY_TITLE}</title>
+    <link href="#{ENTRY_LINK}"/>
+    <id>#{ENTRY_ID}</id>
+    <updated>#{ENTRY_UPDATED}</updated>
+    <summary>#{ENTRY_SUMMARY}</summary>
+  </entry>
+#{block_given? ? yield : content}
+EOA
+    end
+
+    def make_entry_document(content=nil, xmlns=[])
+      <<-EOA
+<entry xmlns="#{Atom::URI}"
+#{xmlns.collect {|pre, uri| "xmlns:#{pre}='#{uri}'"}.join(' ')}>
+  <id>#{ENTRY_ID}</id>
+  <title>#{ENTRY_TITLE}</title>
+  <updated>#{ENTRY_UPDATED}</updated>
+  <author>
+    <name>#{FEED_AUTHOR_NAME}</name>
+  </author>
+#{block_given? ? yield : content}
+</entry>
+EOA
+    end
+
+    def make_entry_document_with_open_source(content=nil, xmlns=[])
+      make_entry_document(<<-EOA, xmlns)
+  <source>
+#{block_given? ? yield : content}
+  </source>
+EOA
+    end
+
     def make_element(elem_name, attrs, contents)
       attrs_str = attrs.collect do |name, value|
         "#{h name}='#{h value}'"
@@ -215,12 +332,61 @@ EOR
 
       "<#{h elem_name} #{attrs_str}>\n#{contents_str}\n</#{h elem_name}>"
     end
-    
+
+    def xmlns_container(xmlns_decls, content)
+      attributes = xmlns_decls.collect do |prefix, uri|
+        "xmlns:#{h prefix}=\"#{h uri}\""
+      end.join(" ")
+      "<dummy #{attributes}>#{content}</dummy>"
+    end
+
     private
+    def setup_rss10(rdf)
+      assert_equal("", rdf.to_s)
+
+      channel = RDF::Channel.new
+      assert_equal("", channel.to_s)
+      channel.about = "http://example.com/index.rdf"
+      channel.title = "title"
+      channel.link = "http://example.com/"
+      channel.description = "description"
+      assert_equal("", channel.to_s)
+
+      item_title = "item title"
+      item_link = "http://example.com/item"
+      channel.items = RDF::Channel::Items.new
+      channel.items.Seq.lis << RDF::Channel::Items::Seq::Li.new(item_link)
+      assert_not_equal("", channel.to_s)
+
+      rdf.channel = channel
+      assert_equal("", rdf.to_s)
+
+      item = RDF::Item.new
+      item.title = item_title
+      item.link = item_link
+      item.about = item_link
+      rdf.items << item
+      assert_not_equal("", rdf.to_s)
+    end
+    
+    def setup_rss20(rss)
+      assert_equal("", rss.to_s)
+
+      channel = Rss::Channel.new
+      assert_equal("", channel.to_s)
+      channel.title = "title"
+      channel.link = "http://example.com/"
+      channel.description = "description"
+      assert_not_equal("", channel.to_s)
+
+      rss.channel = channel
+      assert_not_equal("", rss.to_s)
+    end
+    
     def setup_dummy_channel(maker)
       about = "http://hoge.com"
       title = "fugafuga"
-      link = "http://hoge.com"
+      link = "http://hoge.com/feed.xml"
       description = "fugafugafugafuga"
       language = "ja"
 
@@ -229,6 +395,17 @@ EOR
       maker.channel.link = link
       maker.channel.description = description
       maker.channel.language = language
+    end
+
+    def setup_dummy_channel_atom(maker)
+      updated = Time.now
+      author = "Foo"
+
+      setup_dummy_channel(maker)
+      maker.channel.links.first.rel = "self"
+      maker.channel.links.first.type = "application/atom+xml"
+      maker.channel.updated = updated
+      maker.channel.author = author
     end
 
     def setup_dummy_image(maker)
@@ -262,7 +439,15 @@ EOR
       item.title = title
       item.link = link
     end
-    
+
+    def setup_dummy_item_atom(maker)
+      setup_dummy_item(maker)
+
+      item = maker.items.first
+      item.id = "http://example.net/xxx"
+      item.updated = Time.now
+    end
+
     def setup_taxo_topic(target, topics)
       topics.each do |topic|
         taxo_topic = target.taxo_topics.new_taxo_topic

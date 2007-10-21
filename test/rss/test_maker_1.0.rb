@@ -8,12 +8,15 @@ module RSS
     def test_rdf
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       assert_equal("1.0", rss.rss_version)
       
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.encoding = "EUC-JP"
+
+        setup_dummy_item(maker)
       end
       assert_equal("1.0", rss.rss_version)
       assert_equal("EUC-JP", rss.encoding)
@@ -21,6 +24,8 @@ module RSS
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         maker.standalone = "yes"
+
+        setup_dummy_item(maker)
       end
       assert_equal("1.0", rss.rss_version)
       assert_equal("yes", rss.standalone)
@@ -29,6 +34,8 @@ module RSS
         setup_dummy_channel(maker)
         maker.encoding = "EUC-JP"
         maker.standalone = "yes"
+
+        setup_dummy_item(maker)
       end
       assert_equal("1.0", rss.rss_version)
       assert_equal("EUC-JP", rss.encoding)
@@ -49,13 +56,15 @@ module RSS
         maker.channel.title = title
         maker.channel.link = link
         maker.channel.description = description
+
+        setup_dummy_item(maker)
       end
       channel = rss.channel
       assert_equal(about, channel.about)
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
-      assert(channel.items.Seq.lis.empty?)
+      assert_equal(1, channel.items.Seq.lis.size)
       assert_nil(channel.image)
       assert_nil(channel.textinput)
 
@@ -68,13 +77,15 @@ module RSS
         setup_dummy_image(maker)
 
         setup_dummy_textinput(maker)
+
+        setup_dummy_item(maker)
       end
       channel = rss.channel
       assert_equal(about, channel.about)
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
-      assert(channel.items.Seq.lis.empty?)
+      assert_equal(1, channel.items.Seq.lis.size)
       assert_equal(rss.image.about, channel.image.resource)
       assert_equal(rss.textinput.about, channel.textinput.resource)
     end
@@ -134,6 +145,8 @@ module RSS
         
         maker.image.title = title
         maker.image.url = url
+
+        setup_dummy_item(maker)
       end
       image = rss.image
       assert_equal(url, image.about)
@@ -164,6 +177,8 @@ module RSS
         
         # maker.image.url = url
         maker.image.title = title
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.image)
       assert_nil(rss.image)
@@ -174,6 +189,8 @@ module RSS
         
         maker.image.url = url
         # maker.image.title = title
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.image)
       assert_nil(rss.image)
@@ -186,19 +203,22 @@ module RSS
           
           maker.image.url = url
           maker.image.title = title
+
+          setup_dummy_item(maker)
         end
       end
     end
-    
-    def test_items
+
+    def test_items(with_convenience_way=true)
       title = "TITLE"
       link = "http://hoge.com/"
       description = "text hoge fuga"
 
-      rss = RSS::Maker.make("1.0") do |maker|
-        setup_dummy_channel(maker)
+      assert_not_set_error("maker", %w(items)) do
+        RSS::Maker.make("1.0") do |maker|
+          setup_dummy_channel(maker)
+        end
       end
-      assert(rss.items.empty?)
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
@@ -222,42 +242,46 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          maker.items.new_item do |item|
-            item.title = "#{title}#{i}"
-            item.link = "#{link}#{i}"
-            item.description = "#{description}#{i}"
+          maker.items.new_item do |_item|
+            _item.title = "#{title}#{i}"
+            _item.link = "#{link}#{i}"
+            _item.description = "#{description}#{i}"
           end
         end
         maker.items.do_sort = true
       end
       assert_equal(item_size, rss.items.size)
-      rss.items.each_with_index do |item, i|
-        assert_equal("#{link}#{i}", item.about)
-        assert_equal("#{title}#{i}", item.title)
-        assert_equal("#{link}#{i}", item.link)
-        assert_equal("#{description}#{i}", item.description)
+      rss.items.each_with_index do |_item, i|
+        assert_equal("#{link}#{i}", _item.about)
+        assert_equal("#{title}#{i}", _item.title)
+        assert_equal("#{link}#{i}", _item.link)
+        assert_equal("#{description}#{i}", _item.description)
       end
 
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          maker.items.new_item do |item|
-            item.title = "#{title}#{i}"
-            item.link = "#{link}#{i}"
-            item.description = "#{description}#{i}"
+          maker.items.new_item do |_item|
+            _item.title = "#{title}#{i}"
+            _item.link = "#{link}#{i}"
+            _item.description = "#{description}#{i}"
           end
         end
         maker.items.do_sort = Proc.new do |x, y|
-          y.title[-1] <=> x.title[-1]
+          if with_convenience_way
+            y.title[-1] <=> x.title[-1]
+          else
+            y.title {|t| t.content[-1]} <=> x.title {|t| t.content[-1]}
+          end
         end
       end
       assert_equal(item_size, rss.items.size)
-      rss.items.reverse.each_with_index do |item, i|
-        assert_equal("#{link}#{i}", item.about)
-        assert_equal("#{title}#{i}", item.title)
-        assert_equal("#{link}#{i}", item.link)
-        assert_equal("#{description}#{i}", item.description)
+      rss.items.reverse.each_with_index do |_item, i|
+        assert_equal("#{link}#{i}", _item.about)
+        assert_equal("#{title}#{i}", _item.title)
+        assert_equal("#{link}#{i}", _item.link)
+        assert_equal("#{description}#{i}", _item.description)
       end
 
       max_size = item_size / 2
@@ -265,84 +289,102 @@ module RSS
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          maker.items.new_item do |item|
-            item.title = "#{title}#{i}"
-            item.link = "#{link}#{i}"
-            item.description = "#{description}#{i}"
+          maker.items.new_item do |_item|
+            _item.title = "#{title}#{i}"
+            _item.link = "#{link}#{i}"
+            _item.description = "#{description}#{i}"
           end
         end
         maker.items.max_size = max_size
       end
       assert_equal(max_size, rss.items.size)
-      rss.items.each_with_index do |item, i|
-        assert_equal("#{link}#{i}", item.about)
-        assert_equal("#{title}#{i}", item.title)
-        assert_equal("#{link}#{i}", item.link)
-        assert_equal("#{description}#{i}", item.description)
+      rss.items.each_with_index do |_item, i|
+        assert_equal("#{link}#{i}", _item.about)
+        assert_equal("#{title}#{i}", _item.title)
+        assert_equal("#{link}#{i}", _item.link)
+        assert_equal("#{description}#{i}", _item.description)
       end
 
       max_size = 0
-      rss = RSS::Maker.make("1.0") do |maker|
-        setup_dummy_channel(maker)
-        
-        item_size.times do |i|
-          maker.items.new_item do |item|
-            item.title = "#{title}#{i}"
-            item.link = "#{link}#{i}"
-            item.description = "#{description}#{i}"
+      assert_not_set_error("maker", %w(items)) do
+        RSS::Maker.make("1.0") do |maker|
+          setup_dummy_channel(maker)
+
+          item_size.times do |i|
+            maker.items.new_item do |_item|
+              _item.title = "#{title}#{i}"
+              _item.link = "#{link}#{i}"
+              _item.description = "#{description}#{i}"
+            end
           end
+          maker.items.max_size = max_size
         end
-        maker.items.max_size = max_size
       end
-      assert_equal(max_size, rss.items.size)
 
       max_size = -2
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         
         item_size.times do |i|
-          maker.items.new_item do |item|
-            item.title = "#{title}#{i}"
-            item.link = "#{link}#{i}"
-            item.description = "#{description}#{i}"
+          maker.items.new_item do |_item|
+            _item.title = "#{title}#{i}"
+            _item.link = "#{link}#{i}"
+            _item.description = "#{description}#{i}"
           end
         end
         maker.items.max_size = max_size
       end
       assert_equal(item_size + max_size + 1, rss.items.size)
-      rss.items.each_with_index do |item, i|
-        assert_equal("#{link}#{i}", item.about)
-        assert_equal("#{title}#{i}", item.title)
-        assert_equal("#{link}#{i}", item.link)
-        assert_equal("#{description}#{i}", item.description)
+      rss.items.each_with_index do |_item, i|
+        assert_equal("#{link}#{i}", _item.about)
+        assert_equal("#{title}#{i}", _item.title)
+        assert_equal("#{link}#{i}", _item.link)
+        assert_equal("#{description}#{i}", _item.description)
       end
+    end
+
+    def test_items_with_new_api_since_018
+      test_items(false)
     end
 
     def test_not_valid_items
       title = "TITLE"
       link = "http://hoge.com/"
 
-      rss = RSS::Maker.make("1.0") do |maker|
-        setup_dummy_channel(maker)
-        
-        maker.items.new_item do |item|
-          # item.title = title
-          item.link = link
-        end
-      end
-      assert(rss.items.empty?)
+      assert_not_set_error("maker.item", %w(title)) do
+        RSS::Maker.make("1.0") do |maker|
+          setup_dummy_channel(maker)
 
-      rss = RSS::Maker.make("1.0") do |maker|
-        setup_dummy_channel(maker)
-        
-        maker.items.new_item do |item|
-          item.title = title
-          # item.link = link
+          maker.items.new_item do |item|
+            # item.title = title
+            item.link = link
+          end
         end
       end
-      assert(rss.items.empty?)
+
+      assert_not_set_error("maker.item", %w(link)) do
+        RSS::Maker.make("1.0") do |maker|
+          setup_dummy_channel(maker)
+
+          maker.items.new_item do |item|
+            item.title = title
+            # item.link = link
+          end
+        end
+      end
+
+      assert_not_set_error("maker.item", %w(title link)) do
+        RSS::Maker.make("1.0") do |maker|
+          setup_dummy_channel(maker)
+
+          maker.items.new_item do |item|
+            # item.title = title
+            # item.link = link
+          end
+        end
+      end
     end
-    
+
     def test_textinput
       title = "fugafuga"
       description = "text hoge fuga"
@@ -356,6 +398,8 @@ module RSS
         maker.textinput.title = title
         maker.textinput.description = description
         maker.textinput.name = name
+
+        setup_dummy_item(maker)
       end
       textinput = rss.textinput
       assert_equal(link, textinput.about)
@@ -365,15 +409,16 @@ module RSS
       assert_equal(description, textinput.description)
       assert_equal(link, textinput.link)
 
-      rss = RSS::Maker.make("1.0") do |maker|
-        # setup_dummy_channel(maker)
+      assert_not_set_error("maker.channel", %w(about link description title)) do
+        RSS::Maker.make("1.0") do |maker|
+          # setup_dummy_channel(maker)
 
-        maker.textinput.link = link
-        maker.textinput.title = title
-        maker.textinput.description = description
-        maker.textinput.name = name
+          maker.textinput.link = link
+          maker.textinput.title = title
+          maker.textinput.description = description
+          maker.textinput.name = name
+        end
       end
-      assert_nil(rss)
     end
     
     def test_not_valid_textinput
@@ -389,6 +434,8 @@ module RSS
         maker.textinput.title = title
         maker.textinput.description = description
         maker.textinput.name = name
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.textinput)
       assert_nil(rss.textinput)
@@ -400,6 +447,8 @@ module RSS
         # maker.textinput.title = title
         maker.textinput.description = description
         maker.textinput.name = name
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.textinput)
       assert_nil(rss.textinput)
@@ -411,6 +460,8 @@ module RSS
         maker.textinput.title = title
         # maker.textinput.description = description
         maker.textinput.name = name
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.textinput)
       assert_nil(rss.textinput)
@@ -422,6 +473,8 @@ module RSS
         maker.textinput.title = title
         maker.textinput.description = description
         # maker.textinput.name = name
+
+        setup_dummy_item(maker)
       end
       assert_nil(rss.channel.textinput)
       assert_nil(rss.textinput)

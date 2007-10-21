@@ -105,7 +105,7 @@ module RSS
   end
 
   RSS09::ELEMENTS.each do |name|
-    BaseListener.install_get_text_element("", name, "#{name}=")
+    BaseListener.install_get_text_element("", name, name)
   end
 
 end

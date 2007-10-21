@@ -87,10 +87,15 @@ module RSS
         @sy_elems.each do |var, value|
           maker.channel.__send__("sy_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
 
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       channel = new_rss.channel
       
@@ -98,7 +103,7 @@ module RSS
       assert_equal(title, channel.title)
       assert_equal(link, channel.link)
       assert_equal(description, channel.description)
-      assert_equal(true, channel.items.Seq.lis.empty?)
+      assert_equal(1, channel.items.Seq.lis.size)
       assert_nil(channel.image)
       assert_nil(channel.textinput)
 
@@ -128,11 +133,16 @@ module RSS
         @dc_elems.each do |var, value|
           maker.image.__send__("dc_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.image.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       
       image = new_rss.image
@@ -164,11 +174,16 @@ module RSS
         @dc_elems.each do |var, value|
           maker.textinput.__send__("dc_#{var}=", value)
         end
+
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
         rss.channel.setup_maker(maker)
         rss.textinput.setup_maker(maker)
+        rss.items.each do |item|
+          item.setup_maker(maker)
+        end
       end
       
       textinput = new_rss.textinput
@@ -247,8 +262,8 @@ module RSS
       
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
-        item.trackback_abouts.each_with_index do |about, i|
-          assert_equal(@trackback_elems[:about][i], about.value)
+        item.trackback_abouts.each_with_index do |about, j|
+          assert_equal(@trackback_elems[:about][j], about.value)
         end
       end
     end
@@ -333,6 +348,7 @@ module RSS
         end
 
         setup_dummy_channel(maker)
+        setup_dummy_item(maker)
       end
       
       new_rss = RSS::Maker.make("1.0") do |maker|
@@ -522,8 +538,8 @@ module RSS
       
         assert_equal(@trackback_elems[:ping], item.trackback_ping)
         assert_equal(@trackback_elems[:about].size, item.trackback_abouts.size)
-        item.trackback_abouts.each_with_index do |about, i|
-          assert_equal(@trackback_elems[:about][i], about.value)
+        item.trackback_abouts.each_with_index do |about, j|
+          assert_equal(@trackback_elems[:about][j], about.value)
         end
       end
 

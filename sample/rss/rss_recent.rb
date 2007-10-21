@@ -55,15 +55,19 @@ ARGV.each do |fname|
     rescue RSS::UnknownConversionMethodError
       error($!) if verbose
     end
+
+    rss = rss.to_rss("1.0") do |maker|
+      maker.channel.about ||= maker.channel.link
+      maker.channel.description ||= "No description"
+      maker.items.each do |item|
+        item.title ||= "UNKNOWN"
+        item.link ||= "UNKNOWN"
+      end
+    end
+    next if rss.nil?
+
     rss.items.each do |item|
-      if item.respond_to?(:pubDate) and item.pubDate
-        class << item
-          alias_method(:dc_date, :pubDate)
-        end
-      end
-      if item.respond_to?(:dc_date) and item.dc_date
-        items << [rss.channel, item]
-      end
+      items << [rss.channel, item] if item.dc_date
     end
   end
 end

@@ -2,6 +2,7 @@ require "forwardable"
 require "open-uri"
 
 require "rss/rss"
+require "rss/xml"
 
 module RSS
 
@@ -118,7 +119,7 @@ module RSS
       return rss if rss.is_a?(::URI::Generic)
 
       begin
-        URI(rss)
+        ::URI.parse(rss)
       rescue ::URI::Error
         rss
       end
@@ -173,24 +174,28 @@ module RSS
 
     class << self
 
-      @@setters = {}
+      @@accessor_bases = {}
       @@registered_uris = {}
       @@class_names = {}
 
       # return the setter for the uri, tag_name pair, or nil.
       def setter(uri, tag_name)
-        begin
-          @@setters[uri][tag_name]
-        rescue NameError
+        _getter = getter(uri, tag_name)
+        if _getter
+          "#{_getter}="
+        else
           nil
         end
       end
 
+      def getter(uri, tag_name)
+        (@@accessor_bases[uri] || {})[tag_name]
+      end
 
       # return the tag_names for setters associated with uri
       def available_tags(uri)
         begin
-          @@setters[uri].keys
+          @@accessor_bases[uri].keys
         rescue NameError
           []
         end
@@ -223,8 +228,8 @@ module RSS
         end
       end
 
-      def install_get_text_element(uri, name, setter)
-        install_setter(uri, name, setter)
+      def install_get_text_element(uri, name, accessor_base)
+        install_accessor_base(uri, name, accessor_base)
         def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
       end
       
@@ -233,35 +238,31 @@ module RSS
       end
     
       private
-      # set the setter for the uri, tag_name pair
-      def install_setter(uri, tag_name, setter)
-        @@setters[uri] ||= {}
-        @@setters[uri][tag_name] = setter
+      # set the accessor for the uri, tag_name pair
+      def install_accessor_base(uri, tag_name, accessor_base)
+        @@accessor_bases[uri] ||= {}
+        @@accessor_bases[uri][tag_name] = accessor_base.chomp("=")
       end
 
-      def def_get_text_element(uri, name, file, line)
-        register_uri(uri, name)
-        unless private_instance_methods(false).include?("start_#{name}")
-          module_eval(<<-EOT, file, line)
-          def start_#{name}(name, prefix, attrs, ns)
+      def def_get_text_element(uri, element_name, file, line)
+        register_uri(uri, element_name)
+        method_name = "start_#{element_name}"
+        unless private_method_defined?(method_name)
+          define_method(method_name) do |name, prefix, attrs, ns|
             uri = _ns(ns, prefix)
-            if self.class.uri_registered?(uri, #{name.inspect})
+            if self.class.uri_registered?(uri, element_name)
               start_get_text_element(name, prefix, ns, uri)
             else
               start_else_element(name, prefix, attrs, ns)
             end
           end
-          EOT
-          __send__("private", "start_#{name}")
+          private(method_name)
         end
       end
-
     end
-
   end
 
   module ListenerMixin
-
     attr_reader :rss
 
     attr_accessor :ignore_unknown_element
@@ -271,13 +272,16 @@ module RSS
       @rss = nil
       @ignore_unknown_element = true
       @do_validate = true
-      @ns_stack = [{}]
+      @ns_stack = [{"xml" => :xml}]
       @tag_stack = [[]]
       @text_stack = ['']
       @proc_stack = []
       @last_element = nil
       @version = @encoding = @standalone = nil
       @xml_stylesheets = []
+      @xml_child_mode = false
+      @xml_element = nil
+      @last_xml_element = nil
     end
     
     # set instance vars for version, encoding, standalone
@@ -289,7 +293,7 @@ module RSS
       if name == "xml-stylesheet"
         params = parse_pi_content(content)
         if params.has_key?("href")
-          @xml_stylesheets << XMLStyleSheet.new(*params)
+          @xml_stylesheets << XMLStyleSheet.new(params)
         end
       end
     end
@@ -311,10 +315,39 @@ module RSS
       prefix, local = split_name(name)
       @tag_stack.last.push([_ns(ns, prefix), local])
       @tag_stack.push([])
-      if respond_to?("start_#{local}", true)
-        __send__("start_#{local}", local, prefix, attrs, ns.dup)
+      if @xml_child_mode
+        previous = @last_xml_element
+        element_attrs = attributes.dup
+        unless previous
+          ns.each do |ns_prefix, value|
+            next if ns_prefix == "xml"
+            key = ns_prefix.empty? ? "xmlns" : "xmlns:#{ns_prefix}"
+            element_attrs[key] ||= value
+          end
+        end
+        next_element = XML::Element.new(local,
+                                        prefix.empty? ? nil : prefix,
+                                        _ns(ns, prefix),
+                                        element_attrs)
+        previous << next_element if previous
+        @last_xml_element = next_element
+        pr = Proc.new do |text, tags|
+          if previous
+            @last_xml_element = previous
+          else
+            @xml_element = @last_xml_element
+            @last_xml_element = nil
+          end
+        end
+        @proc_stack.push(pr)
       else
-        start_else_element(local, prefix, attrs, ns.dup)
+        if @rss.nil? and respond_to?("initial_start_#{local}", true)
+          __send__("initial_start_#{local}", local, prefix, attrs, ns.dup)
+        elsif respond_to?("start_#{local}", true)
+          __send__("start_#{local}", local, prefix, attrs, ns.dup)
+        else
+          start_else_element(local, prefix, attrs, ns.dup)
+        end
       end
     end
 
@@ -331,7 +364,11 @@ module RSS
     end
 
     def text(data)
-      @text_stack.last << data
+      if @xml_child_mode
+        @last_xml_element << data if @last_xml_element
+      else
+        @text_stack.last << data
+      end
     end
 
     private
@@ -354,7 +391,8 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
-      if current_class.constants.include?(class_name)
+      if current_class.const_defined?(class_name) or
+          current_class.constants.include?(class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
@@ -377,19 +415,26 @@ module RSS
     end
 
     def check_ns(tag_name, prefix, ns, require_uri)
-      if @do_validate
-        if _ns(ns, prefix) == require_uri
-          #ns.delete(prefix)
-        else
+      unless _ns(ns, prefix) == require_uri
+        if @do_validate
           raise NSError.new(tag_name, prefix, require_uri)
+        else
+          # Force bind required URI with prefix
+          @ns_stack.last[prefix] = require_uri
         end
       end
     end
 
     def start_get_text_element(tag_name, prefix, ns, required_uri)
-      @proc_stack.push Proc.new {|text, tags|
+      pr = Proc.new do |text, tags|
         setter = self.class.setter(required_uri, tag_name)
         if @last_element.respond_to?(setter)
+          if @do_validate
+            getter = self.class.getter(required_uri, tag_name)
+            if @last_element.__send__(getter)
+              raise TooMuchTagError.new(tag_name, @last_element.tag_name)
+            end
+          end
           @last_element.__send__(setter, text.to_s)
         else
           if @do_validate and !@ignore_unknown_element
@@ -397,7 +442,8 @@ module RSS
                                           @last_element.tag_name)
           end
         end
-      }
+      end
+      @proc_stack.push(pr)
     end
 
     def start_have_something_element(tag_name, prefix, attrs, ns, klass)
@@ -438,16 +484,32 @@ module RSS
 
       previous = @last_element
       next_element = klass.new(@do_validate, attributes)
-      previous.instance_eval {set_next_element(tag_name, next_element)}
+      previous.set_next_element(tag_name, next_element)
       @last_element = next_element
-      @proc_stack.push Proc.new { |text, tags|
+      @last_element.parent = previous if klass.need_parent?
+      @xml_child_mode = @last_element.have_xml_content?
+      pr = Proc.new do |text, tags|
         p(@last_element.class) if DEBUG
-        @last_element.content = text if klass.have_content?
+        if @xml_child_mode
+          @last_element.content = @xml_element.to_s
+          xml_setter = @last_element.class.xml_setter
+          @last_element.__send__(xml_setter, @xml_element)
+          @xml_element = nil
+          @xml_child_mode = false
+        else
+          if klass.have_content?
+            if @last_element.need_base64_encode?
+              text = Base64.decode64(text.lstrip)
+            end
+            @last_element.content = text
+          end
+        end
         if @do_validate
           @last_element.validate_for_stream(tags, @ignore_unknown_element)
         end
         @last_element = previous
-      }
+      end
+      @proc_stack.push(pr)
     end
 
   end

@@ -4,7 +4,7 @@ require 'rss/dublincore'
 module RSS
 
   IMAGE_PREFIX = 'image'
-  IMAGE_URI = 'http://web.resource.org/rss/1.0/modules/image/'
+  IMAGE_URI = 'http://purl.org/rss/1.0/modules/image/'
 
   RDF.install_ns(IMAGE_PREFIX, IMAGE_URI)
 
@@ -69,7 +69,7 @@ module RSS
         disp_name = "#{IMAGE_PREFIX}:#{tag}"
         install_text_element(tag, IMAGE_URI, "?",
                              full_name, :integer, disp_name)
-        BaseListener.install_get_text_element(IMAGE_URI, tag, "#{full_name}=")
+        BaseListener.install_get_text_element(IMAGE_URI, tag, full_name)
       end
 
       alias width= image_width=
@@ -142,8 +142,8 @@ module RSS
       end
 
       AVAILABLE_SIZES = %w(small medium large)
-      alias_method :_size=, :size=
-      private :_size=
+      alias_method :set_size, :size=
+      private :set_size
       def size=(new_value)
         if @do_validate and !new_value.nil?
           new_value = new_value.strip
@@ -152,7 +152,7 @@ module RSS
             raise NotAvailableValueError.new(full_name, new_value, attr_name)
           end
         end
-        __send__(:_size=, new_value)
+        set_size(new_value)
       end
       
       alias image_size= size=

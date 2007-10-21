@@ -2,8 +2,6 @@ require "rexml/document"
 
 require "rss-testcase"
 
-require "rss/2.0"
-
 module RSS
   class TestRSS20Core < TestCase
 
@@ -17,6 +15,7 @@ module RSS
       standalone = false
       
       rss = Rss.new(@rss_version, version, encoding, standalone)
+      setup_rss20(rss)
       
       doc = REXML::Document.new(rss.to_s(false))
       
@@ -48,7 +47,9 @@ module RSS
           {:href => "a.css", :type => "text/css"},
         ],
       ].each do |attrs_ary|
-        assert_xml_stylesheet_pis(attrs_ary, Rss.new(@rss_version))
+        rss = Rss.new(@rss_version)
+        setup_rss20(rss)
+        assert_xml_stylesheet_pis(attrs_ary, rss)
       end
     end
 
@@ -253,6 +254,10 @@ module RSS
       pubDate = Time.parse("Sat, 07 Sep 2002 00:00:01 GMT")
 
       channel = Rss::Channel.new
+      channel.title = "title"
+      channel.link = "http://example.com/"
+      channel.description = "description"
+
       item = Rss::Channel::Item.new
       channel.items << item
       
@@ -378,13 +383,28 @@ module RSS
       rss = RSS::Parser.parse(make_sample_rss20)
       assert_equal(rss.to_s, rss.to_xml)
       assert_equal(rss.to_s, rss.to_xml("2.0"))
-      rss09 = RSS::Parser.parse(rss.to_xml("0.91"))
+      rss09_xml = rss.to_xml("0.91") do |maker|
+        setup_dummy_image(maker)
+      end
+      rss09 = RSS::Parser.parse(rss09_xml)
       assert_equal("0.91", rss09.rss_version)
       rss10 = rss.to_xml("1.0") do |maker|
         maker.channel.about = "http://www.example.com/index.rdf"
       end
       rss10 = RSS::Parser.parse(rss10)
       assert_equal("1.0", rss10.rss_version)
+
+      atom_xml = rss.to_xml("atom1.0") do |maker|
+        maker.channel.id = "http://www.example.com/atom.xml"
+        maker.channel.author = "Alice"
+        maker.channel.updated = Time.now
+        maker.items.each do |item|
+          item.author = "Bob"
+          item.updated = Time.now
+        end
+      end
+      atom = RSS::Parser.parse(atom_xml)
+      assert_equal(["atom", "1.0", "feed"], atom.feed_info)
     end
   end
 end

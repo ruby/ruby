@@ -32,7 +32,7 @@ module RSS
   ContentModel::ELEMENTS.uniq!
   ContentModel::ELEMENTS.each do |full_name|
     name = full_name[prefix_size..-1]
-    BaseListener.install_get_text_element(CONTENT_URI, name, "#{full_name}=")
+    BaseListener.install_get_text_element(CONTENT_URI, name, full_name)
   end
 
 end

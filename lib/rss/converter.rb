@@ -80,8 +80,12 @@ module RSS
         end
       rescue LoadError
         require 'nkf'
-        def_convert(1) do |value|
-          "NKF.nkf(#{nkf_arg.dump}, #{value})"
+        if NKF.const_defined?(:UTF8)
+          def_convert(1) do |value|
+            "NKF.nkf(#{nkf_arg.dump}, #{value})"
+          end
+        else
+          def_iconv_convert(to_enc, from_enc, 1)
         end
       end
     end

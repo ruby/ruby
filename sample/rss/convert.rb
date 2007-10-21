@@ -23,7 +23,7 @@ ARGV.each do |fname|
   when '-v'
     verbose = true
     next
-  when /^-t(0\.91|1\.0|2\.0)$/
+  when /^-t(0\.91|1\.0|2\.0|atom)$/
     to_version = $1
     next
   end
