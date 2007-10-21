@@ -100,6 +100,8 @@ ID rb_intern3(const char*, long, rb_encoding*);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_str_coderange(VALUE);
 VALUE rb_enc_from_encoding(rb_encoding *enc);
+rb_encoding *rb_enc_primary(void);
+rb_encoding *rb_enc_default(void);
 VALUE rb_get_primary_encoding(void);
 void rb_set_primary_encoding(VALUE encoding);
 

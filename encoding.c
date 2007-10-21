@@ -48,6 +48,7 @@ VALUE
 rb_enc_from_encoding(rb_encoding *encoding)
 {
     VALUE enc;
+    if (!encoding) return 0;
     if (enc_initialized_p(encoding))
 	return ENC_FROM_ENCODING(encoding);
     enc = enc_new(encoding);
@@ -524,12 +525,27 @@ enc_load(VALUE klass, VALUE str)
     return enc_find(klass, str);
 }
 
-static VALUE rb_primary_encoding;
+static int primary_encoding_index;
+
+rb_encoding *
+rb_enc_default(void)
+{
+    if (!enc_table) {
+	rb_enc_init();
+    }
+    return enc_table[0].enc;
+}
+
+rb_encoding *
+rb_enc_primary(void)
+{
+    return rb_enc_from_index(primary_encoding_index);
+}
 
 VALUE
 rb_get_primary_encoding(void)
 {
-    return rb_primary_encoding;
+    return rb_enc_from_encoding(rb_enc_primary());
 }
 
 static VALUE
@@ -542,14 +558,7 @@ void
 rb_set_primary_encoding(VALUE encoding)
 {
     rb_to_encoding(encoding);
-    rb_primary_encoding = encoding;
-}
-
-static VALUE
-set_primary_encoding(VALUE klass, VALUE enc)
-{
-    rb_set_primary_encoding(enc);
-    return rb_primary_encoding;
+    primary_encoding_index = ENCODING_GET(encoding);
 }
 
 static void
@@ -616,9 +625,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "_dump", enc_dump, -1);
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
-    rb_primary_encoding = rb_enc_from_encoding(rb_enc_from_index(0));
     rb_define_singleton_method(rb_cEncoding, "primary_encoding", get_primary_encoding, 0);
-    rb_define_singleton_method(rb_cEncoding, "primary_encoding=", set_primary_encoding, 1);
 
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;
