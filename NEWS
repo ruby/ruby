@@ -78,6 +78,18 @@ with all sufficient information, see the ChangeLog file.
 
       Tempfile.open(['image', 'jpg']) { |tempfile| ... }
 
+* rss
+
+  * 0.1.6 -> 0.2.0
+
+  * Fix image module URI
+
+  * Atom support
+
+  * ITunes module support
+
+  * Slash module support
+
 === Compatibility issues (excluding feature bug fixes)
 
 * tempfile
