@@ -88,7 +88,7 @@ rb_to_encoding_index(VALUE enc)
     if (NIL_P(enc)) return 0;
     idx = enc_check_encoding(enc);
     if (idx >= 0) {
-	return index;
+	return idx;
     }
     else {
 	return rb_enc_find_index(StringValueCStr(enc));
@@ -98,12 +98,11 @@ rb_to_encoding_index(VALUE enc)
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
-    rb_encoding *encoding;
     int idx;
 
     if (NIL_P(enc)) return rb_enc_from_index(0);
     idx = enc_check_encoding(enc);
-    if (idx >= 0) return RDATA(obj)->data;
+    if (idx >= 0) return RDATA(enc)->data;
     if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }
