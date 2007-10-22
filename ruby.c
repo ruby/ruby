@@ -689,7 +689,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'E':
 	    if (!*++s) {
-		rb_raise(rb_eRuntimeError, "missing argument for -E");
+		s = argv[1];
+		argc--, argv++;
 	    }
 	    goto encoding;
 

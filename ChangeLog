@@ -9,6 +9,10 @@ Mon Oct 22 11:03:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_enc_compatible): prototype.
 
+Mon Oct 22 19:24:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): allow space after -E (encoding) option.
+
 Sun Oct 21 18:29:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_default, rb_enc_primary): return pointers to
