@@ -16,6 +16,11 @@ Sun Oct 21 18:29:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (set_primary_encoding): removed primary_encoding setter.
 
+Sat Oct 20 13:17:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_cycle): hide temporary array from ObjectSpace.
+	  [ruby-core:12762]
+
 Sat Oct 20 11:49:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path): returns frozen string.

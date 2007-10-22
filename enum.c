@@ -1541,17 +1541,20 @@ static VALUE
 enum_cycle(VALUE obj)
 {
     VALUE ary;
-    long i;
+    long i, len;
 
     RETURN_ENUMERATOR(obj, 0, 0);
     ary = rb_ary_new();
+    RBASIC(ary)->klass = 0;
     rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
-    while (RARRAY_LEN(ary) > 0) {
-	for (i=0; i<RARRAY_LEN(ary); i++) {
+    len = RARRAY_LEN(ary);
+    if (len == 0) return Qnil;
+    for (;;) {
+	for (i=0; i<len; i++) {
 	    rb_yield(RARRAY_PTR(ary)[i]);
 	}
     }
-    return Qnil;
+    return Qnil;		/* not reached */
 }
 
 /*
