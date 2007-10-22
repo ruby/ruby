@@ -56,36 +56,39 @@ rb_enc_from_encoding(rb_encoding *encoding)
     return enc;
 }
 
-static rb_encoding *
+static int
 enc_check_encoding(VALUE obj)
 {
+    int index;
     if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
 	RDATA(obj)->dmark != enc_mark) {
-	return 0;
+	return -1;
     }
-    return RDATA(obj)->data;
+    index = rb_enc_get_index(obj);
+    if (rb_enc_from_index(index) != RDATA(obj)->data)
+	return -1;
+    return index;
 }
 
 static rb_encoding *
 enc_get_encoding(VALUE obj)
 {
-    rb_encoding *enc = enc_check_encoding(obj);
-    if (!enc) {
+    if (enc_check_encoding(obj) < 0) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding)",
 		 rb_obj_classname(obj));
     }
-    return enc;
+    return RDATA(obj)->data;
 }
 
 int
 rb_to_encoding_index(VALUE enc)
 {
-    rb_encoding *encoding;
+    int idx;
 
     if (NIL_P(enc)) return 0;
-    encoding = enc_check_encoding(enc);
-    if (encoding) {
-	return rb_enc_to_index(encoding);
+    idx = enc_check_encoding(enc);
+    if (idx >= 0) {
+	return index;
     }
     else {
 	return rb_enc_find_index(StringValueCStr(enc));
@@ -99,8 +102,8 @@ rb_to_encoding(VALUE enc)
     int idx;
 
     if (NIL_P(enc)) return rb_enc_from_index(0);
-    encoding = enc_check_encoding(enc);
-    if (encoding) return encoding;
+    idx = enc_check_encoding(enc);
+    if (idx >= 0) return RDATA(obj)->data;
     if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }

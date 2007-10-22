@@ -1,4 +1,6 @@
-Mon Oct 22 10:57:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 22 11:03:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_check_encoding): returns index now.
 
 	* encoding.c (rb_enc_compatible): check if two objects have compatible
 	  encodings.
