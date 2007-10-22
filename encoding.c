@@ -339,6 +339,15 @@ rb_enc_get(VALUE obj)
 rb_encoding*
 rb_enc_check(VALUE str1, VALUE str2)
 {
+    rb_encoding *enc = rb_enc_compatible(str1, str2);
+    if (!enc)
+	rb_raise(rb_eArgError, "character encodings differ");
+    return enc;
+}
+
+rb_encoding*
+rb_enc_compatible(VALUE str1, VALUE str2)
+{
     int idx1, idx2;
     rb_encoding *enc;
 
@@ -371,7 +380,7 @@ rb_enc_check(VALUE str1, VALUE str2)
 	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
 	    return enc;
     }
-    rb_raise(rb_eArgError, "character encodings differ");
+    return 0;
 }
 
 void
@@ -510,6 +519,16 @@ enc_find(VALUE klass, VALUE enc)
     return rb_enc_from_encoding(rb_enc_from_index(idx));
 }
 
+static VALUE
+enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
+{
+    rb_encoding *enc = rb_enc_compatible(str1, str2);
+    VALUE encoding = Qnil;
+    if (!enc || !(encoding = rb_enc_from_encoding(enc)))
+	encoding = Qnil;
+    return encoding;
+}
+
 /* :nodoc: */
 static VALUE
 enc_dump(int argc, VALUE *argv, VALUE self)
@@ -621,6 +640,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
+    rb_define_singleton_method(rb_cEncoding, "compatible?", enc_compatible_p, 2);
 
     rb_define_method(rb_cEncoding, "_dump", enc_dump, -1);
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);

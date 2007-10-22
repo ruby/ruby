@@ -44,6 +44,7 @@ int rb_enc_find_index(const char *name);
 int rb_to_encoding_index(VALUE);
 rb_encoding* rb_to_encoding(VALUE);
 rb_encoding* rb_enc_get(VALUE);
+rb_encoding* rb_enc_compatible(VALUE,VALUE);
 rb_encoding* rb_enc_check(VALUE,VALUE);
 void rb_enc_associate_index(VALUE, int);
 void rb_enc_associate(VALUE, rb_encoding*);
