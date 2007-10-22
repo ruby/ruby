@@ -57,3 +57,7 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_equal 'ok', %q{
+  0**-1 == 0 ? :ng : :ok
+}
