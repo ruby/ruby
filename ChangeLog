@@ -3,6 +3,10 @@ Tue Oct 23 10:42:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ruby.c (process_options): encoding set by command line option takes
 	  priority over the encoding in the source, as the primary encoding.
 
+Mon Oct 22 19:24:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): allow space after -E (encoding) option.
+
 Mon Oct 22 11:03:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_check_encoding): returns index now.
@@ -13,10 +17,6 @@ Mon Oct 22 11:03:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* encoding.c (enc_compatible_p): added Encoding.compatible?.
 
 	* include/ruby/encoding.h (rb_enc_compatible): prototype.
-
-Mon Oct 22 19:24:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* ruby.c (proc_options): allow space after -E (encoding) option.
 
 Sun Oct 21 18:29:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
