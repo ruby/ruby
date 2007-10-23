@@ -1,3 +1,8 @@
+Tue Oct 23 13:44:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (call_args2): nd_head of NODE_BLOCK_PASS should be a list.
+	  [ruby-core:12850]
+
 Tue Oct 23 10:42:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): encoding set by command line option takes

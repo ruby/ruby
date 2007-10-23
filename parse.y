@@ -2341,7 +2341,7 @@ call_args2	: arg_value ',' args opt_block_arg
 		| arg_value ',' block_arg
 		    {
 		    /*%%%*/
-			$$ = arg_blk_pass($1, $3);
+			$$ = arg_blk_pass(NEW_LIST($1), $3);
 		    /*%
 			$$ = arg_add_block(arg_add(arg_new(), $1), $3);
 		    %*/
