@@ -1548,7 +1548,7 @@ tcp_accept(VALUE sock)
  * 	serv = TCPServer.new(2202)
  * 	begin
  * 	  sock = serv.accept_nonblock
- * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([serv])
  * 	  retry
  * 	end
@@ -2112,7 +2112,7 @@ unix_accept(VALUE sock)
  * 	serv = UNIXServer.new("/tmp/sock")
  * 	begin
  * 	  sock = serv.accept_nonblock
- * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([serv])
  * 	  retry
  * 	end
@@ -2841,7 +2841,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * 	client, client_sockaddr = socket.accept
  * 	begin
  * 	  pair = client.recvfrom_nonblock(20)
- * 	rescue Errno::EAGAIN
+ * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK
  * 	  IO.select([client])
  * 	  retry
  * 	end
@@ -2909,7 +2909,7 @@ sock_accept(VALUE sock)
  * 	socket.listen(5)
  * 	begin
  * 	  client_socket, client_sockaddr = socket.accept_nonblock
- * 	rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+ * 	rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
  * 	  IO.select([socket])
  * 	  retry
  * 	end
