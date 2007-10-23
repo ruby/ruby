@@ -843,6 +843,7 @@ process_options(VALUE arg)
     char **argv = opt->argv;
     NODE *tree = 0;
     VALUE parser;
+    VALUE encoding;
     const char *s;
     int i = proc_options(argc, argv, opt);
 
@@ -970,7 +971,13 @@ process_options(VALUE arg)
 	}
     }
 
-    rb_set_primary_encoding(rb_parser_encoding(parser));
+    if (opt->enc_index >= 0) {
+	encoding = rb_enc_from_encoding(rb_enc_from_index(opt->enc_index));
+    }
+    else {
+	encoding = rb_parser_encoding(parser);
+    }
+    rb_set_primary_encoding(encoding);
 
     return (VALUE)tree;
 }

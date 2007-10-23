@@ -1,3 +1,8 @@
+Tue Oct 23 10:42:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): encoding set by command line option takes
+	  priority over the encoding in the source, as the primary encoding.
+
 Mon Oct 22 11:03:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_check_encoding): returns index now.
