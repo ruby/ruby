@@ -4494,6 +4494,7 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define nextc()                   parser_nextc(parser)
 # define pushback(c)               parser_pushback(parser, c)
 # define newtok()                  parser_newtok(parser)
+# define tokspace(n)               parser_tokspace(parser, n)
 # define tokadd(c)                 parser_tokadd(parser, c)
 # define read_escape(m)            parser_read_escape(parser, m)
 # define tokadd_escape(t,m)        parser_tokadd_escape(parser, t, m)
@@ -4911,6 +4912,18 @@ parser_newtok(struct parser_params *parser)
 	REALLOC_N(tokenbuf, char, 60);
     }
     return tokenbuf;
+}
+
+static char *
+parser_tokspace(struct parser_params *parser, int n)
+{
+    int idx = tokidx + n;
+
+    if (idx >= toksiz) {
+	do {toksiz *= 2;} while (toksiz < idx);
+	REALLOC_N(tokenbuf, char, toksiz);
+    }
+    return &tokenbuf[tokidx];
 }
 
 static void
@@ -6086,21 +6099,24 @@ parser_yylex(struct parser_params *parser)
 	}
 	newtok();
 	if (parser_ismbchar()) {
+	    mb = ENC_CODERANGE_MULTI;
 	    tokadd_mbchar(c);
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
 		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
 	    goto ternary;
 	}
-	else if (c == '\\') {
-	    c = read_escape(0);
-	    tokadd(c);
+	else if (c == '\\' && (c = read_escape(0)) >= 0x80) {
+	    rb_encoding *enc = parser->enc;
+	    mb = ENC_CODERANGE_UNKNOWN;
+	    rb_enc_mbcput(c, tokspace(rb_enc_codelen(c, enc)), enc);
 	}
 	else {
+	    mb = ENC_CODERANGE_SINGLE;
 	    tokadd(c);
 	}
 	tokfix();
-	set_yylval_str(STR_NEW(tok(), toklen()));
+	set_yylval_str(STR_NEW3(tok(), toklen(), mb));
 	lex_state = EXPR_ENDARG;
 	return tCHAR;
 
@@ -6865,9 +6881,9 @@ parser_yylex(struct parser_params *parser)
 	break;
     }
 
-    mb = 0;
+    mb = ENC_CODERANGE_SINGLE;
     do {
-	if (!ISASCII(c)) mb = 1;
+	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
 	tokadd_mbchar(c);
 	c = nextc();
     } while (parser_is_identchar());
@@ -6920,7 +6936,7 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if (!mb && lex_state != EXPR_DOT) {
+	    if (mb == ENC_CODERANGE_SINGLE && lex_state != EXPR_DOT) {
 		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
