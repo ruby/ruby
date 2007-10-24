@@ -28,7 +28,7 @@ if defined? GDBM
     SYSTEM = uname_s
 
     def setup
-      @tmpdir = Dir.tmpdir
+      @tmpdir = Dir.mktmpdir("tmptest_gdbm")
       @prefix = "tmptest_gdbm_#{$$}"
       @path = "#{@tmpdir}/#{@prefix}_"
       assert_instance_of(GDBM, @gdbm = GDBM.new(@path))
@@ -45,8 +45,7 @@ if defined? GDBM
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
       end
-      File.delete *Dir.glob("#{@tmpdir}/#{@prefix}*").to_a
-      p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
+      FileUtils.remove_entry_secure @tmpdir
     end
 
     def check_size(expect, gdbm=@gdbm)

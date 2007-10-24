@@ -8,7 +8,7 @@ end
 
 class TestSDBM < Test::Unit::TestCase
   def setup
-    @tmpdir = Dir.tmpdir
+    @tmpdir = Dir.mktmpdir("tmptest_sdbm")
     @prefix = "tmptest_sdbm_#{$$}"
     @path = "#{@tmpdir}/#{@prefix}_"
     assert_instance_of(SDBM, @sdbm = SDBM.new(@path))
@@ -18,8 +18,7 @@ class TestSDBM < Test::Unit::TestCase
     ObjectSpace.each_object(SDBM) do |obj|
       obj.close unless obj.closed?
     end
-    File.delete *Dir.glob("#{@tmpdir}/#{@prefix}*").to_a
-    p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
+    FileUtils.remove_entry_secure @tmpdir
   end
 
   def check_size(expect, sdbm=@sdbm)
