@@ -57,7 +57,7 @@ class Dir
   #
   #  Dir.mktmpdir {|dir| dir is ".../d..." }
   #  Dir.mktmpdir("foo") {|dir| dir is ".../foo..." }
-  #  Dir.mktmpdir(["foo", "bar"]) {|dir| path is ".../foo...bar" }
+  #  Dir.mktmpdir(["foo", "bar"]) {|dir| dir is ".../foo...bar" }
   #
   # The directory is created under Dir.tmpdir or
   # the optional second argument <i>tmpdir</i> if non-nil value is given.
