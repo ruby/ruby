@@ -549,9 +549,9 @@ module XMLRPC
       ct = parse_content_type(resp["Content-Type"]).first
       if ct != "text/xml"
         if ct == "text/html"
-          raise "Wrong content-type: \n#{data}"
+          raise "Wrong content-type (received '#{ct}' but expected 'text/xml'): \n#{data}"
         else
-          raise "Wrong content-type"
+          raise "Wrong content-type (received '#{ct}' but expected 'text/xml')"
         end
       end
 
