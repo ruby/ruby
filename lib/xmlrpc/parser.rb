@@ -92,7 +92,7 @@ module XMLRPC
         if $7
           ofs = $8.to_i*3600 + $9.to_i*60
           ofs = -ofs if $7=='+'
-          utc = Time.utc(a.reverse) + ofs
+          utc = Time.utc(*a) + ofs
           a = [ utc.year, utc.month, utc.day, utc.hour, utc.min, utc.sec ]
         end
         XMLRPC::DateTime.new(*a)
@@ -106,7 +106,7 @@ module XMLRPC
         if $7
           ofs = $8.to_i*3600 + $9.to_i*60
           ofs = -ofs if $7=='+'
-          utc = Time.utc(a.reverse) + ofs
+          utc = Time.utc(*a) + ofs
           a = [ utc.year, utc.month, utc.day, utc.hour, utc.min, utc.sec ]
         end
         XMLRPC::DateTime.new(*a)

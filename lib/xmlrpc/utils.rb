@@ -157,7 +157,7 @@ module XMLRPC
   module ParseContentType
     def parse_content_type(str)
       a, *b = str.split(";")
-      return a.strip, *b
+      return a.strip.downcase, *b
     end
   end
 

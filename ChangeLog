@@ -1,3 +1,20 @@
+Wed Oct 25 08:03:53 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 13767, 13768, 13769, and 13770 from trunk.
+
+	* lib/xmlrpc/parser.rb (XMLRPC::Convert::dateTime): Fixing a bug that
+	  caused time zone conversion to fail for some ISO 8601 date formats.
+	  [ruby-Bugs-12677]
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): Explicitly start
+	  the HTTP connection to support keepalive requests. [ruby-Bugs-9353]
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): Improving the error
+	  message for Content-Type check failures. [ruby-core:12163]
+
+	* lib/xmlrpc/utils.rb (XMLRPC::ParseContentType#parse_content_type):
+	  Making Content-Type checks case insensitive. [ruby-Bugs-3367]
+
 Sun Oct 21 21:16:43 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss.rb, lib/rss/, test/rss/, sample/rss/: merged from trunk.
