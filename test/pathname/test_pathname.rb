@@ -287,7 +287,7 @@ class TestPathname < Test::Unit::TestCase
       return
     rescue TypeError
     end
-    Dir.mktmpdir {|dir|
+    Dir.mktmpdir('rubytest-pathname') {|dir|
       File.symlink("not-exist-target", "#{dir}/not-exist")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
       File.symlink("loop", "#{dir}/loop")

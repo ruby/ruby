@@ -7,7 +7,7 @@ class TestFile < Test::Unit::TestCase
   # I don't know Ruby's spec about "unlink-before-close" exactly.
   # This test asserts current behaviour.
   def test_unlink_before_close
-    Dir.mktmpdir {|tmpdir|
+    Dir.mktmpdir('rubytest-file') {|tmpdir|
       filename = tmpdir + '/' + File.basename(__FILE__) + ".#{$$}"
       w = File.open(filename, "w")
       w << "foo"

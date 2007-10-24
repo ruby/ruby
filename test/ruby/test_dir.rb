@@ -6,7 +6,7 @@ require 'fileutils'
 class TestDir < Test::Unit::TestCase
 
   def setup
-    @root = Dir.mktmpdir
+    @root = Dir.mktmpdir('__test_dir__')
     for i in ?a..?z
       if i.ord % 2 == 0
         FileUtils.touch(File.join(@root, i))
