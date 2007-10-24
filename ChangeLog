@@ -1,3 +1,9 @@
+Wed Oct 25 06:23:14 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/xmlrpc/parser.rb (XMLRPC::Convert::dateTime): Fixing a bug that
+	  caused time zone conversion to fail for some ISO 8601 date formats.
+	  [ruby-Bugs-12677]
+
 Wed Oct 25 04:59:28 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): Explicitly start
