@@ -5,25 +5,23 @@ require 'fileutils'
 
 class TestDir < Test::Unit::TestCase
 
-  ROOT = File.join(Dir.tmpdir, "__test_dir__#{$$}")
-
   def setup
-    Dir.mkdir(ROOT)
+    @root = Dir.mktmpdir
     for i in ?a..?z
       if i.ord % 2 == 0
-        FileUtils.touch(File.join(ROOT, i))
+        FileUtils.touch(File.join(@root, i))
       else
-        FileUtils.mkdir(File.join(ROOT, i))
+        FileUtils.mkdir(File.join(@root, i))
       end
     end
   end
 
   def teardown
-    FileUtils.rm_rf ROOT if File.directory?(ROOT)
+    FileUtils.remove_entry_secure @root if File.directory?(@root)
   end
 
   def test_seek
-    dir = Dir.open(ROOT)
+    dir = Dir.open(@root)
     begin
       cache = []
       loop do

@@ -287,16 +287,12 @@ class TestPathname < Test::Unit::TestCase
       return
     rescue TypeError
     end
-    dir = "#{Dir.tmpdir}/tst-pathname-#$$"
-    Dir.mkdir(dir)
-    begin
+    Dir.mktmpdir {|dir|
       File.symlink("not-exist-target", "#{dir}/not-exist")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
       File.symlink("loop", "#{dir}/loop")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
-    ensure
-      FileUtils.rmtree(dir)
-    end
+    }
   end
 
   def descend(path)

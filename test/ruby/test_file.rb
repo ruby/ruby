@@ -7,21 +7,23 @@ class TestFile < Test::Unit::TestCase
   # I don't know Ruby's spec about "unlink-before-close" exactly.
   # This test asserts current behaviour.
   def test_unlink_before_close
-    filename = Dir.tmpdir + '/' + File.basename(__FILE__) + ".#{$$}"
-    w = File.open(filename, "w")
-    w << "foo"
-    w.close
-    r = File.open(filename, "r")
-    begin
-      if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
-        assert_raise(Errno::EACCES) {File.unlink(filename)}
-      else
-	assert_nothing_raised {File.unlink(filename)}
+    Dir.mktmpdir {|tmpdir|
+      filename = tmpdir + '/' + File.basename(__FILE__) + ".#{$$}"
+      w = File.open(filename, "w")
+      w << "foo"
+      w.close
+      r = File.open(filename, "r")
+      begin
+        if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+          assert_raise(Errno::EACCES) {File.unlink(filename)}
+        else
+          assert_nothing_raised {File.unlink(filename)}
+        end
+      ensure
+        r.close
+        File.unlink(filename) if File.exist?(filename)
       end
-    ensure
-      r.close
-      File.unlink(filename) if File.exist?(filename)
-    end
+    }
   end
 
   include TestEOF
