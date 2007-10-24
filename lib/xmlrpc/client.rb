@@ -530,6 +530,9 @@ module XMLRPC
         }
       else
         # reuse the HTTP object for each call => connection alive is possible
+        # we must start connection explicitely first time so that http.request
+        # does not assume that we don't want keepalive
+        @http.start if not @http.started?
         
         # post request
         resp = @http.post2(@path, request, header) 
