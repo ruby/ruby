@@ -1,3 +1,8 @@
+Wed Oct 25 03:45:08 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/xmlrpc/utils.rb (XMLRPC::ParseContentType#parse_content_type):
+	  Making Content-Type checks case insensitive. [ruby-Bugs-3367]
+
 Wed Oct 24 17:09:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokspace): make space in token buffer.
