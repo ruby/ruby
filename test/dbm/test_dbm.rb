@@ -497,43 +497,41 @@ if defined? DBM
   end
 
   class TestDBM2 < Test::Unit::TestCase
-    TMPROOT = "#{Dir.tmpdir}/ruby-dbm.#{$$}"
-
     def setup
-      Dir.mkdir TMPROOT, 0755
+      @tmproot = Dir.mktmpdir('ruby-dbm')
     end
 
     def teardown
-      FileUtils.rm_rf TMPROOT if File.directory?(TMPROOT)
+      FileUtils.remove_entry_secure @tmproot if File.directory?(@tmproot)
     end
 
     def test_reader_open_notexist
       assert_raise(Errno::ENOENT) {
-        DBM.open("#{TMPROOT}/a", 0666, DBM::READER)
+        DBM.open("#{@tmproot}/a", 0666, DBM::READER)
       }
     end
 
     def test_writer_open_notexist
       assert_raise(Errno::ENOENT) {
-        DBM.open("#{TMPROOT}/a", 0666, DBM::WRITER)
+        DBM.open("#{@tmproot}/a", 0666, DBM::WRITER)
       }
     end
 
     def test_wrcreat_open_notexist
-      v = DBM.open("#{TMPROOT}/a", 0666, DBM::WRCREAT)
+      v = DBM.open("#{@tmproot}/a", 0666, DBM::WRCREAT)
       assert_instance_of(DBM, v)
       v.close
     end
 
     def test_newdb_open_notexist
-      v = DBM.open("#{TMPROOT}/a", 0666, DBM::NEWDB)
+      v = DBM.open("#{@tmproot}/a", 0666, DBM::NEWDB)
       assert_instance_of(DBM, v)
       v.close
     end
 
     def test_reader_open
-      DBM.open("#{TMPROOT}/a") {} # create a db.
-      v = DBM.open("#{TMPROOT}/a", nil, DBM::READER) {|d|
+      DBM.open("#{@tmproot}/a") {} # create a db.
+      v = DBM.open("#{@tmproot}/a", nil, DBM::READER) {|d|
         # Errno::EPERM is raised on Solaris which use ndbm.
         # DBMError is raised on Debian which use gdbm. 
         assert_raises(Errno::EPERM, DBMError) { d["k"] = "v" }
@@ -543,10 +541,10 @@ if defined? DBM
     end
 
     def test_newdb_open
-      DBM.open("#{TMPROOT}/a") {|dbm|
+      DBM.open("#{@tmproot}/a") {|dbm|
         dbm["k"] = "v"
       }
-      v = DBM.open("#{TMPROOT}/a", nil, DBM::NEWDB) {|d|
+      v = DBM.open("#{@tmproot}/a", nil, DBM::NEWDB) {|d|
         assert_equal(0, d.length)
         assert_nil(d["k"])
         true
@@ -555,7 +553,7 @@ if defined? DBM
     end
 
     def test_freeze
-      DBM.open("#{TMPROOT}/a") {|d|
+      DBM.open("#{@tmproot}/a") {|d|
         d.freeze
         assert_raises(RuntimeError) { d["k"] = "v" }
       }

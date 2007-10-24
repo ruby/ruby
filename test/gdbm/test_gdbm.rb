@@ -652,43 +652,41 @@ if defined? GDBM
   end
 
   class TestGDBM2 < Test::Unit::TestCase
-    TMPROOT = "#{Dir.tmpdir}/ruby-gdbm.#{$$}"
-
     def setup
-      Dir.mkdir TMPROOT, 0755
+      @tmproot = Dir.mktmpdir('ruby-gdbm')
     end
 
     def teardown
-      FileUtils.rm_rf TMPROOT if File.directory?(TMPROOT)
+      FileUtils.remove_entry_secure @tmproot if File.directory?(@tmproot)
     end
 
     def test_reader_open_notexist
       assert_raise(Errno::ENOENT) {
-        GDBM.open("#{TMPROOT}/a", 0666, GDBM::READER)
+        GDBM.open("#{@tmproot}/a", 0666, GDBM::READER)
       }
     end
 
     def test_writer_open_notexist
       assert_raise(Errno::ENOENT) {
-        GDBM.open("#{TMPROOT}/a", 0666, GDBM::WRITER)
+        GDBM.open("#{@tmproot}/a", 0666, GDBM::WRITER)
       }
     end
 
     def test_wrcreat_open_notexist
-      v = GDBM.open("#{TMPROOT}/a", 0666, GDBM::WRCREAT)
+      v = GDBM.open("#{@tmproot}/a", 0666, GDBM::WRCREAT)
       assert_instance_of(GDBM, v)
       v.close
     end
 
     def test_newdb_open_notexist
-      v = GDBM.open("#{TMPROOT}/a", 0666, GDBM::NEWDB)
+      v = GDBM.open("#{@tmproot}/a", 0666, GDBM::NEWDB)
       assert_instance_of(GDBM, v)
       v.close
     end
 
     def test_reader_open
-      GDBM.open("#{TMPROOT}/a.dbm") {} # create a db.
-      v = GDBM.open("#{TMPROOT}/a.dbm", nil, GDBM::READER) {|d|
+      GDBM.open("#{@tmproot}/a.dbm") {} # create a db.
+      v = GDBM.open("#{@tmproot}/a.dbm", nil, GDBM::READER) {|d|
         assert_raises(GDBMError) { d["k"] = "v" }
         true
       }
@@ -696,10 +694,10 @@ if defined? GDBM
     end
 
     def test_newdb_open
-      GDBM.open("#{TMPROOT}/a.dbm") {|dbm|
+      GDBM.open("#{@tmproot}/a.dbm") {|dbm|
         dbm["k"] = "v"
       } 
-      v = GDBM.open("#{TMPROOT}/a.dbm", nil, GDBM::NEWDB) {|d|
+      v = GDBM.open("#{@tmproot}/a.dbm", nil, GDBM::NEWDB) {|d|
         assert_equal(0, d.length)
         assert_nil(d["k"])
         true
@@ -708,7 +706,7 @@ if defined? GDBM
     end
 
     def test_freeze
-      GDBM.open("#{TMPROOT}/a.dbm") {|d|
+      GDBM.open("#{@tmproot}/a.dbm") {|d|
         d.freeze
         assert_raises(RuntimeError) { d["k"] = "v" }
       }
