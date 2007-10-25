@@ -1,3 +1,8 @@
+Wed Oct 25 06:34:11 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/net/telnet.rb (Net::Telnet#login): Making the password prompt
+	  pattern case insensitive. [ruby-Bugs-10746]
+
 Fri Oct 26 04:21:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/pop.rb (Net::POP3::do_start): type fixed.  a patch from
