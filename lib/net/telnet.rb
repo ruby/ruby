@@ -705,7 +705,7 @@ module Net
     # data is also yielded to the block as it is received.
     def login(options, password = nil) # :yield: recvdata
       login_prompt = /[Ll]ogin[: ]*\z/n
-      password_prompt = /[Pp]assword[: ]*\z/n
+      password_prompt = /[Pp]ass(?:word|phrase)[: ]*\z/n
       if options.kind_of?(Hash)
         username = options["Name"]
         password = options["Password"]

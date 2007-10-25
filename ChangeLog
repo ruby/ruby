@@ -1,3 +1,10 @@
+Wed Oct 25 07:18:09 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 13781 from trunk.
+
+	* lib/net/telnet.rb (Net::Telnet#login): Allowing "passphrase" in
+	  addition to "password" for Telnet login prompts. [ruby-Bugs-10746]
+
 Wed Oct 25 06:46:21 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 13779 from trunk.
