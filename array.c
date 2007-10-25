@@ -2283,9 +2283,8 @@ rb_ary_assoc(VALUE ary, VALUE key)
     VALUE v;
 
     for (i = 0; i < RARRAY_LEN(ary); ++i) {
-	v = RARRAY_PTR(ary)[i];
-	if (TYPE(v) == T_ARRAY &&
-	    RARRAY_LEN(v) > 0 &&
+	v = rb_check_array_type(RARRAY_PTR(ary)[i]);
+	if (!NIL_P(v) && RARRAY_LEN(v) > 0 &&
 	    rb_equal(RARRAY_PTR(v)[0], key))
 	    return v;
     }
