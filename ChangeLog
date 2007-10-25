@@ -1,3 +1,8 @@
+Fri Oct 26 04:21:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/pop.rb (Net::POP3::do_start): type fixed.  a patch from
+	  Dan Zwell <dzwell AT zwell.net> in [ruby-core:12941].
+
 Fri Oct 26 01:48:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_assoc): check and convert inner arrays (assocs)
