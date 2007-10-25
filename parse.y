@@ -5863,6 +5863,25 @@ parser_yylex(struct parser_params *parser)
 	  default:
 	    break;
 	}
+	while ((c = nextc())) {
+	    switch (c) {
+	      case ' ': case '\t': case '\f': case '\r':
+	      case '\13': /* '\v' */
+		space_seen++;
+		break;
+	      case '.': {
+		  if ((c = nextc()) != '.') {
+		      pushback(c);
+		      pushback('.');
+		      goto retry;
+		  }
+	      }
+	      default:
+		pushback(c);
+		goto normal_newline;
+	    }
+	}
+      normal_newline:
 	command_start = Qtrue;
 	lex_state = EXPR_BEG;
 	return '\n';

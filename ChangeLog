@@ -9,6 +9,14 @@ Fri Oct 26 01:48:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* hash.c (rb_hash_s_create): Hash#[] now takes assocs as source of
 	  hash conversion.
 
+Thu Oct 25 16:46:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): dot at the head of the line denote line
+	  continuation from previous one to support fluent interface.
+	  [experimental]
+
+	* misc/ruby-mode.el (ruby-calculate-indent): support fluent dot.
+
 Thu Oct 25 14:19:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_tell, rb_io_seek): check errno too.  [ruby-dev:32093]
