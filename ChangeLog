@@ -1,4 +1,9 @@
+Thu Oct 25 14:19:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_tell, rb_io_seek): check errno too.  [ruby-dev:32093]
+
 Thu Oct 25 13:59:53 2007 David Flanagan <davidflanagan@ruby-lang.org>
+
 	* parse.y (parser_tokspace): increment tokidx
 	  fixes test failure at [test/ruby/test_stringchar.rb:72]
 	
