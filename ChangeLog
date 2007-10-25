@@ -1,3 +1,8 @@
+Wed Oct 25 07:12:03 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/net/telnet.rb (Net::Telnet#login): Allowing "passphrase" in
+	  addition to "password" for Telnet login prompts. [ruby-Bugs-10746]
+
 Wed Oct 25 06:34:11 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet#login): Making the password prompt
