@@ -4917,13 +4917,13 @@ parser_newtok(struct parser_params *parser)
 static char *
 parser_tokspace(struct parser_params *parser, int n)
 {
-    int idx = tokidx + n;
+    tokidx += n;
 
-    if (idx >= toksiz) {
-	do {toksiz *= 2;} while (toksiz < idx);
+    if (tokidx >= toksiz) {
+	do {toksiz *= 2;} while (toksiz < tokidx);
 	REALLOC_N(tokenbuf, char, toksiz);
     }
-    return &tokenbuf[tokidx];
+    return &tokenbuf[tokidx-n];
 }
 
 static void
