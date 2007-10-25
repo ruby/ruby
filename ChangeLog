@@ -3,6 +3,12 @@ Fri Oct 26 01:48:28 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* array.c (rb_ary_assoc): check and convert inner arrays (assocs)
 	  using #to_ary.
 
+	* hash.c (rb_hash_s_create): check and convert argument hash
+	  using #to_hash.
+
+	* hash.c (rb_hash_s_create): Hash#[] now takes assocs as source of
+	  hash conversion.
+
 Thu Oct 25 14:19:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_tell, rb_io_seek): check errno too.  [ruby-dev:32093]

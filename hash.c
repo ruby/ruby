@@ -21,6 +21,8 @@
 #include <crt_externs.h>
 #endif
 
+static VALUE rb_hash_s_try_convert(VALUE, VALUE);
+
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
 
@@ -315,18 +317,34 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 static VALUE
 rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE hash;
+    VALUE hash, tmp;
     int i;
 
-    if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	hash = hash_alloc(klass);
-        if (RHASH(argv[0])->ntbl) {
-            RHASH(hash)->ntbl = st_copy(RHASH(argv[0])->ntbl);
-        }
+    if (argc == 1) {
+	tmp = rb_hash_s_try_convert(Qnil, argv[0]);
+	if (!NIL_P(tmp)) {
+	    hash = hash_alloc(klass);
+	    if (RHASH(argv[0])->ntbl) {
+		RHASH(hash)->ntbl = st_copy(RHASH(argv[0])->ntbl);
+	    }
+	    return hash;
+	}
 
-	return hash;
+	tmp = rb_check_array_type(argv[0]);
+	if (!NIL_P(tmp)) {
+	    long i;
+
+	    hash = hash_alloc(klass);
+	    for (i = 0; i < RARRAY_LEN(tmp); ++i) {
+		VALUE v = rb_check_array_type(RARRAY_PTR(tmp)[i]);
+		
+		if (NIL_P(v)) continue;
+		if (RARRAY_LEN(v) < 1 || 2 < RARRAY_LEN(v)) continue;
+		rb_hash_aset(hash, RARRAY_PTR(v)[0], RARRAY_PTR(v)[1]);
+	    }
+	    return hash;
+	}
     }
-
     if (argc % 2 != 0) {
 	rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
