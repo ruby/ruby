@@ -1,3 +1,8 @@
+Thu Oct 25 09:49:49 2007  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri.rb, lib/uri/ldaps.rb: added LDAPS
+	  cheme. [ruby-dev:31896]
+
 Wed Oct 25 06:23:14 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/xmlrpc/parser.rb (XMLRPC::Convert::dateTime): Fixing a bug that
