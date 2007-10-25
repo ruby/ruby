@@ -1,3 +1,7 @@
+Thu Oct 25 14:19:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_tell, rb_io_seek): check errno too.  [ruby-dev:32093]
+
 Wed Oct 25 08:03:53 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 13767, 13768, 13769, and 13770 from trunk.
