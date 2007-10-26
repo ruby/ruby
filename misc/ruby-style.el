@@ -20,18 +20,22 @@
 
 (defun ruby-style-case-indent (x)
   (save-excursion
-    (goto-char (cdr x))
-    (if (looking-at "\\<case\\|default\\>") '*)))
+    (unless (progn (backward-up-list) (back-to-indentation)
+		   (> (point) (cdr x)))
+      (goto-char (cdr x))
+      (if (looking-at "\\<case\\|default\\>") '*))))
 
 (defun ruby-style-label-indent (x)
   (save-excursion
-    (goto-char (cdr x))
-    (condition-case ()
-	(progn
-	  (backward-up-list)
-	  (backward-sexp 2)
-	  (if (looking-at "\\<switch\\>") '/))
-      (error))))
+    (unless (progn (backward-up-list) (back-to-indentation)
+		   (> (point) (cdr x)))
+      (goto-char (cdr x))
+      (condition-case ()
+	  (progn
+	    (backward-up-list)
+	    (backward-sexp 2)
+	    (if (looking-at "\\<switch\\>") '/))
+	(error)))))
 
 (require 'cc-styles)
 (c-add-style

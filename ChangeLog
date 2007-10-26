@@ -1,3 +1,8 @@
+Fri Oct 26 15:00:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-{case,label}-indent): adjust for
+	  labels inside switch block.
+
 Fri Oct 26 05:48:57 UTC 2007  David Flanagan <davidflanagan@ruby-lang.org>
 	* array.c: raise IndexError for negative length in rb_ary_fill
 	

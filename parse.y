@@ -5870,11 +5870,11 @@ parser_yylex(struct parser_params *parser)
 		space_seen++;
 		break;
 	      case '.': {
-		  if ((c = nextc()) != '.') {
-		      pushback(c);
-		      pushback('.');
-		      goto retry;
-		  }
+		if ((c = nextc()) != '.') {
+		    pushback(c);
+		    pushback('.');
+		    goto retry;
+		}
 	      }
 	      default:
 		pushback(c);
@@ -5903,7 +5903,7 @@ parser_yylex(struct parser_params *parser)
 		return tOP_ASGN;
 	    }
 	    pushback(c);
-	    if (IS_ARG() && space_seen && !ISSPACE(c)){
+	    if (IS_ARG() && space_seen && !ISSPACE(c)) {
 		rb_warning0("`*' interpreted as argument prefix");
 		c = tSTAR;
 	    }
@@ -6084,8 +6084,8 @@ parser_yylex(struct parser_params *parser)
 	    compile_error(PARSER_ARG "incomplete character syntax");
 	    return 0;
 	}
-	if (rb_enc_isspace(c, parser->enc)){
-	    if (!IS_ARG()){
+	if (rb_enc_isspace(c, parser->enc)) {
+	    if (!IS_ARG()) {
 		int c2 = 0;
 		switch (c) {
 		  case ' ':
@@ -6156,7 +6156,7 @@ parser_yylex(struct parser_params *parser)
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (IS_ARG() && space_seen && !ISSPACE(c)){
+	if (IS_ARG() && space_seen && !ISSPACE(c)) {
 	    rb_warning0("`&' interpreted as argument prefix");
 	    c = tAMPER;
 	}
