@@ -454,7 +454,7 @@ marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
 math.$(OBJEXT): {$(VPATH)}math.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}encoding.h \
   {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}object.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \

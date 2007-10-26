@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -1802,25 +1803,44 @@ int_pred(VALUE num)
 
 /*
  *  call-seq:
- *     int.chr    => string
+ *     int.chr([encoding])    => string
  *
- *  Returns a string containing the ASCII character represented by the
- *  receiver's value.
+ *  Returns a string containing the character represented by the
+ *  receiver's value according to +encoding+.
  *
  *     65.chr    #=> "A"
  *     230.chr   #=> "\346"
+ *     255.chr(Encoding::UTF_8)   #=> "\303\277"
  */
 
 static VALUE
-int_chr(VALUE num)
+int_chr(int argc, VALUE *argv, VALUE num)
 {
     char c;
+    int n;
     long i = NUM2LONG(num);
+    rb_encoding *enc;
+    VALUE str;
 
-    if (i < 0 || 0xff < i)
-	rb_raise(rb_eRangeError, "%ld out of char range", i);
-    c = i;
-    return rb_str_new(&c, 1);
+    switch (argc) {
+      case 0:
+	if (i < 0 || 0xff < i) {
+	  out_of_range:
+	    rb_raise(rb_eRangeError, "%ld out of char range", i);
+	}
+	c = i;
+	return rb_str_new(&c, 1);
+      case 1:
+	break;
+      default:
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0 or 1)", argc);
+	break;
+    }
+    enc = rb_to_encoding(argv[0]);
+    if (i < 0 || (n = rb_enc_codelen(i, enc)) <= 0) goto out_of_range;
+    str = rb_enc_str_new(0, n, enc);
+    rb_enc_mbcput(i, RSTRING_PTR(str), enc);
+    return str;
 }
 
 /********************************************************************
@@ -3081,7 +3101,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
-    rb_define_method(rb_cInteger, "chr", int_chr, 0);
+    rb_define_method(rb_cInteger, "chr", int_chr, -1);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "floor", int_to_i, 0);

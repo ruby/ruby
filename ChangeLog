@@ -1,3 +1,8 @@
+Fri Oct 26 17:38:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_chr): take an optional encoding parameter.
+	  [ruby-core:12816]
+
 Fri Oct 26 17:14:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_pow): returns 1.0 for 0**0.0.
