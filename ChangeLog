@@ -1,4 +1,6 @@
-Fri Oct 26 17:01:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 26 17:14:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_pow): returns 1.0 for 0**0.0.
 
 	* numeric.c (fix_pow): returns infinity for 0**-1.  [ruby-dev:32084]
 

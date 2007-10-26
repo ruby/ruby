@@ -2361,6 +2361,7 @@ fix_pow(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
       case T_FLOAT:
+	if (RFLOAT(y)->value == 0.0) return rb_float_new(1.0);
 	if (a == 0) {
 	    return rb_float_new(RFLOAT(y)->value < 0 ? (1.0 / zero) : 0.0);
 	}
