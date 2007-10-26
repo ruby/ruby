@@ -1,3 +1,7 @@
+Fri Oct 26 17:01:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_pow): returns infinity for 0**-1.  [ruby-dev:32084]
+
 Fri Oct 26 15:00:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-{case,label}-indent): adjust for
