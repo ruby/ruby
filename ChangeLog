@@ -1,3 +1,6 @@
+Fri Oct 26 05:48:57 UTC 2007  David Flanagan <davidflanagan@ruby-lang.org>
+	* array.c: raise IndexError for negative length in rb_ary_fill
+	
 Wed Oct 25 07:12:03 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet#login): Allowing "passphrase" in

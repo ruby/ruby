@@ -2127,6 +2127,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	    if (beg < 0) beg = 0;
 	}
 	len = NIL_P(arg2) ? RARRAY_LEN(ary) - beg : NUM2LONG(arg2);
+	if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
 	break;
     }
     rb_ary_modify(ary);
