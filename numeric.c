@@ -2247,12 +2247,10 @@ fix_pow(x, y)
     long a = FIX2LONG(x);
 
     if (FIXNUM_P(y)) {
-	long b;
+	long b = FIX2LONG(y);
 
-	b = FIX2LONG(y);
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
-	a = FIX2LONG(x);
 	if (a == 0) {
 	    if (b > 0) return INT2FIX(0);
 	    return rb_float_new(1.0 / zero);
@@ -2280,6 +2278,7 @@ fix_pow(x, y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
       case T_FLOAT:
+	if (RFLOAT(y)->value == 0.0) return rb_float_new(1.0);
 	if (a == 0) {
 	    return rb_float_new(RFLOAT(y)->value < 0 ? (1.0 / zero) : 0.0);
 	}
