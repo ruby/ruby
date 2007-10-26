@@ -1,3 +1,7 @@
+Fri Oct 26 17:01:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_pow): returns infinity for 0**-1.  [ruby-dev:32084]
+
 Wed Oct 25 07:18:09 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 13781 from trunk.

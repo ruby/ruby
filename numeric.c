@@ -2243,6 +2243,7 @@ static VALUE
 fix_pow(x, y)
     VALUE x, y;
 {
+    static const double zero = 0.0;
     long a = FIX2LONG(x);
 
     if (FIXNUM_P(y)) {
@@ -2252,7 +2253,10 @@ fix_pow(x, y)
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	a = FIX2LONG(x);
-	if (a == 0) return INT2FIX(0);
+	if (a == 0) {
+	    if (b > 0) return INT2FIX(0);
+	    return rb_float_new(1.0 / zero);
+	}
 	if (a == 1) return INT2FIX(1);
 	if (a == -1) {
 	    if (b % 2 == 0)
@@ -2276,7 +2280,9 @@ fix_pow(x, y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
       case T_FLOAT:
-	if (a == 0) return rb_float_new(0.0);
+	if (a == 0) {
+	    return rb_float_new(RFLOAT(y)->value < 0 ? (1.0 / zero) : 0.0);
+	}
 	if (a == 1) return rb_float_new(1.0);
 	return rb_float_new(pow((double)a, RFLOAT(y)->value));
       default:
