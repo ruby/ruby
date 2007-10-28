@@ -1,3 +1,8 @@
+Sun Oct 28 21:50:02 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: :redirect option implemented to disable redirects.
+	  (OpenURI::HTTPRedirect): new exception class for redirection.
+
 Fri Oct 26 17:38:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (int_chr): take an optional encoding parameter.
