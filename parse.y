@@ -669,7 +669,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg
+%type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -3250,13 +3250,17 @@ bv_decls	: bvar
 		    %*/
 		;
 
-bvar		:  f_norm_arg
+bvar		: tIDENTIFIER
 		    {
 		    /*%%%*/
 			new_bv($1);
 		    /*%
 			$$ = $1;
 		    %*/
+		    }
+		| f_bad_arg
+		    {
+			$$ = 0;
 		    }
 		;
 
@@ -4135,7 +4139,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    }
 		;
 
-f_norm_arg	: tCONSTANT
+f_bad_arg	: tCONSTANT
 		    {
 		    /*%%%*/
 			yyerror("formal argument cannot be a constant");
@@ -4171,6 +4175,9 @@ f_norm_arg	: tCONSTANT
 			$$ = dispatch1(param_error, $1);
 		    %*/
 		    }
+		;
+
+f_norm_arg	: f_bad_arg
 		| tIDENTIFIER
 		    {
 		    /*%%%*/

@@ -1,3 +1,8 @@
+Mon Oct 29 18:42:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (bvar): block-local variable can shadow outer variable.
+	  [ruby-core:13036]
+
 Mon Oct 29 17:58:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_substr): perfomance improvement.  [ruby-dev:31806]
