@@ -15,7 +15,7 @@
 #include "regenc.h"
 #include <ctype.h>
 
-static ID id_encoding;
+static ID id_encoding, id_based_encoding;
 static VALUE rb_cEncoding;
 
 struct rb_encoding_entry {
@@ -24,6 +24,7 @@ struct rb_encoding_entry {
 };
 
 static struct rb_encoding_entry *enc_table;
+static int enc_table_count;
 static int enc_table_size;
 static st_table *enc_table_alias;
 
@@ -121,36 +122,63 @@ rb_gc_mark_encodings(void)
     }
 }
 
-int
-rb_enc_register(const char *name, rb_encoding *encoding)
+static int
+enc_table_expand(int newsize)
 {
     struct rb_encoding_entry *ent;
-    int newsize;
 
-    if (!enc_table) {
-	ent = malloc(sizeof(*enc_table));
-	newsize = 1;
-    }
-    else {
-	newsize = enc_table_size + 1;
-	ent = realloc(enc_table, sizeof(*enc_table)*newsize);
-    }
+    if (enc_table_size >= newsize) return newsize;
+    ent = realloc(enc_table, sizeof(*enc_table) * newsize);
     if (!ent) return -1;
+    memset(ent + enc_table_size, 0, sizeof(*ent)*(newsize - enc_table_size));
     enc_table = ent;
     enc_table_size = newsize;
-    ent = &enc_table[--newsize];
+    return newsize;
+}
+
+static int
+enc_register_at(int index, const char *name, rb_encoding *encoding)
+{
+    struct rb_encoding_entry *ent = &enc_table[index];
+
     ent->name = name;
     *(ent->enc = malloc(sizeof(rb_encoding))) = *encoding;
     encoding = ent->enc;
     encoding->name = name;
     if (rb_cEncoding) {
 	VALUE enc = enc_new(encoding);
-	rb_enc_associate_index(enc, newsize);
+	rb_enc_associate_index(enc, index);
     }
     else {
 	encoding->auxiliary_data = ENC_UNINITIALIZED;
     }
-    return newsize;
+    return index;
+}
+
+int
+rb_enc_register(const char *name, rb_encoding *encoding)
+{
+    int index = enc_table_count;
+
+    if (index >= ENCODING_INLINE_MAX) index = enc_table_size;
+    if ((index = enc_table_expand(index + 1)) < 0) return -1;
+    enc_table_count = index;
+    return enc_register_at(index - 1, name, encoding);
+}
+
+int
+rb_enc_replicate(const char *name, rb_encoding *encoding)
+{
+    VALUE enc, origenc;
+    int index = enc_table_size;
+
+    if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
+    if (enc_table_expand(index + 1) < 0) return -1;
+    enc_register_at(index, name, encoding);
+    enc = rb_enc_from_encoding(enc_table[index].enc);
+    origenc = rb_enc_from_encoding(encoding);
+    rb_ivar_set(enc, id_based_encoding, origenc);
+    return index;
 }
 
 int
@@ -209,6 +237,10 @@ rb_enc_find_index(const char *name)
 	rb_enc_init();
     }
     for (i=0; i<enc_table_size; i++) {
+	if (!enc_table[i].name) {
+	    if (i < ENCODING_INLINE_MAX - 1) i = ENCODING_INLINE_MAX - 1;
+	    continue;
+	}
 	if (strcasecmp(name, enc_table[i].name) == 0) {
 	    return i;
 	}
@@ -501,6 +533,12 @@ enc_name(VALUE self)
 }
 
 static VALUE
+enc_based_encoding(VALUE self)
+{
+    return rb_attr_get(self, id_based_encoding);
+}
+
+static VALUE
 enc_list(VALUE klass)
 {
     VALUE ary = rb_ary_new2(enc_table_size);
@@ -640,11 +678,14 @@ Init_Encoding(void)
 {
     int i;
 
+    id_based_encoding = rb_intern("#based_encoding");
+
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
     rb_define_method(rb_cEncoding, "to_s", enc_to_s, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_to_s, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
+    rb_define_method(rb_cEncoding, "based_encoding", enc_based_encoding, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
     rb_define_singleton_method(rb_cEncoding, "compatible?", enc_compatible_p, 2);
@@ -653,6 +694,12 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
     rb_define_singleton_method(rb_cEncoding, "primary_encoding", get_primary_encoding, 0);
+
+    /* should be imported from Oniguruma */
+    rb_enc_replicate("ISO-8859-1", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
+
+    /* dummy for unsupported, statefull encoding */
+    rb_enc_replicate("ISO-2022-JP", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
 
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;

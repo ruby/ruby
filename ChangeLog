@@ -1,3 +1,10 @@
+Mon Oct 29 17:20:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_replicate): new function to replicate encoding.
+
+	* encoding.c (enc_based_encoding): Encoding#base_encoding returns
+	  based encoding of replica.
+
 Mon Oct 29 17:18:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): ASCII encoding is compatible with
