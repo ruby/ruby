@@ -360,6 +360,11 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 	return rb_enc_from_index(idx1);
     }
 
+    if (idx1 == 0 && rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
+	return enc;
+    if (idx2 == 0 && rb_enc_asciicompat(enc = rb_enc_from_index(idx1)))
+	return enc;
+
     if (BUILTIN_TYPE(str1) != T_STRING) {
 	VALUE tmp = str1;
 	str1 = str2;

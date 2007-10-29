@@ -1,3 +1,8 @@
+Mon Oct 29 17:18:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): ASCII encoding is compatible with
+	  ASCII-compatible encoding, even for non-string objects.
+
 Sun Oct 28 21:50:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: :redirect option implemented to disable redirects.
