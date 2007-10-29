@@ -1,3 +1,7 @@
+Mon Oct 29 17:58:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_substr): perfomance improvement.  [ruby-dev:31806]
+
 Mon Oct 29 17:20:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_replicate): new function to replicate encoding.

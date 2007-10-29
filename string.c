@@ -787,27 +787,50 @@ rb_str_substr(VALUE str, long beg, long len)
 {
     rb_encoding *enc = rb_enc_get(str);
     VALUE str2;
-    int slen = str_strlen(str, enc);
+    char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
 
     if (len < 0) return Qnil;
-    if (beg > slen) return Qnil;
-    if (beg < 0) {
-	beg += slen;
-	if (beg < 0) return Qnil;
-    }
-    if (beg + len > slen) {
-	len = slen - beg;
-    }
-    if (len < 0) {
+    if (!RSTRING_LEN(str)) {
 	len = 0;
     }
+    if (beg < 0) {
+	if (len > -beg) len = -beg;
+	if (-beg * rb_enc_mbmaxlen(enc) < RSTRING_LEN(str) / 8) {
+	    beg = -beg;
+	    while (len++ < beg && (e = rb_enc_prev_char(s, e, enc)) != 0);
+	    p = e;
+	    if (!p) return Qnil;
+	    while (beg-- > 0 && (p = rb_enc_prev_char(s, p, enc)) != 0);
+	    if (!p) return Qnil;
+	    len = e - p;
+	    goto sub;
+	}
+	else {
+	    beg += str_strlen(str, enc);
+	    if (beg < 0) return Qnil;
+	}
+    }
+    else if (beg > 0 && beg > str_strlen(str, enc)) {
+	return Qnil;
+    }
     if (len == 0) {
-	str2 = rb_str_new5(str,0,0);
+	p = 0;
+    }
+    else if ((p = str_nth(s, e, beg, enc)) == e) {
+	len = 0;
+    }
+    else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
+	long rest = (e - p) / rb_enc_mbmaxlen(enc);
+	if (len > rest)
+	    len = rest;
+	else
+	    len *= rb_enc_mbmaxlen(enc);
     }
     else {
-	char *p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc);
-	str2 = rb_str_new5(str, p, str_offset(p, RSTRING_END(str), len, enc));
+	len = str_offset(p, e, len, enc);
     }
+  sub:
+    str2 = rb_str_new5(str, p, len);
     rb_enc_copy(str2, str);
     OBJ_INFECT(str2, str);
 
