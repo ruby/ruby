@@ -22,7 +22,7 @@
  * object.
  */
 static VALUE rb_cEnumerator;
-static VALUE sym_each, sym_each_with_index, sym_each_slice, sym_each_cons, sym_call;
+static VALUE sym_each, sym_call;
 
 VALUE rb_eStopIteration;
 
@@ -471,9 +471,6 @@ Init_Enumerator(void)
     rb_eStopIteration   = rb_define_class("StopIteration", rb_eIndexError);
 
     sym_each		= ID2SYM(rb_intern("each"));
-    sym_each_with_index	= ID2SYM(rb_intern("each_with_index"));
-    sym_each_slice	= ID2SYM(rb_intern("each_slice"));
-    sym_each_cons	= ID2SYM(rb_intern("each_cons"));
     sym_call		= ID2SYM(rb_intern("call"));
 
     rb_provide("enumerator.so");	/* for backward compatibility */

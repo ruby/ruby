@@ -1,3 +1,11 @@
+Tue Oct 30 10:03:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_butfirst): add a new method to iterates over
+	  elements but first n.  RDoc need to be updated.
+
+	* enumerator.c (Init_Enumerator): remove unnecessary symbol
+	  initialization.
+
 Mon Oct 29 18:42:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (bvar): block-local variable can shadow outer variable.

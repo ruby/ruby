@@ -1331,6 +1331,43 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
+butfirst_i(VALUE val, long *n)
+{
+    
+    if (*n > 0) {
+	(*n)--;
+	return Qnil;
+    }
+    else {
+	return rb_yield(val);
+    }
+}
+
+/*
+ *  call-seq:
+ *    e.butfirst {|x| ... }
+ *    e.butfirst(n) {|x| ... }
+ *
+ *  Iterates the given block for each elements except for first n elements.
+ *  <i>n</i> defaults to 1.
+ *
+ */
+static VALUE
+enum_butfirst(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE tmp;
+    long n;
+
+    rb_scan_args(argc, argv, "01", &tmp);
+    RETURN_ENUMERATOR(obj, argc, argv);
+    if (argc == 0) n = 1;
+    else n = NUM2LONG(tmp);
+
+    rb_block_call(obj, id_each, 0, 0, butfirst_i, (VALUE)&n);
+    return obj;
+}
+
+static VALUE
 zip_i(VALUE val, NODE *memo)
 {
     volatile VALUE result = memo->u1.value;
@@ -1606,6 +1643,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, -1);
+    rb_define_method(rb_mEnumerable, "butfirst", enum_butfirst, -1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, -1);
     rb_define_method(rb_mEnumerable, "drop", enum_drop, -1);
