@@ -567,6 +567,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
     return ary[1];
 }
 
+
 /*
  *  call-seq:
  *     enum.sort                     => array
@@ -1330,42 +1331,6 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-static VALUE
-butfirst_i(VALUE val, long *n)
-{
-    
-    if (*n > 0) {
-	(*n)--;
-	return Qnil;
-    }
-    else {
-	return rb_yield(val);
-    }
-}
-
-/*
- *  call-seq:
- *    e.butfirst {|x| ... }
- *    e.butfirst(n) {|x| ... }
- *
- *  Iterates the given block for each elements except for first n elements.
- *  <i>n</i> defaults to 1.
- *
- */
-static VALUE
-enum_butfirst(int argc, VALUE *argv, VALUE obj)
-{
-    VALUE tmp;
-    long n;
-
-    rb_scan_args(argc, argv, "01", &tmp);
-    RETURN_ENUMERATOR(obj, argc, argv);
-    if (argc == 0) n = 1;
-    else n = NUM2LONG(tmp);
-
-    rb_block_call(obj, id_each, 0, 0, butfirst_i, (VALUE)&n);
-    return obj;
-}
 
 static VALUE
 zip_i(VALUE val, NODE *memo)
@@ -1444,49 +1409,57 @@ take_i(VALUE i, VALUE *arg)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     enum.take(n)               => array
+ *  
+ *  Returns first n elements from <i>enum</i>.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.take(3)             # => [1, 2, 3]
+ *     
+ */
+
 static VALUE
-take_iter_i(VALUE i, VALUE *arg)
+enum_take(VALUE obj, VALUE n)
+{
+    VALUE args[2];
+
+    args[1] = NUM2LONG(n);
+    args[0] = rb_ary_new2(args[1]);
+    rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
+    return args[0];
+}
+
+
+static VALUE
+take_while_i(VALUE i, VALUE *ary)
 {
     if (!rb_yield(i)) rb_iter_break();
-    rb_ary_push(arg[0], i);
+    rb_ary_push(*ary, i);
     return Qnil;
 }
 
 /*
  *  call-seq:
- *     enum.take(n)               => array
- *     enum.take {|arr| block }   => array
+ *     enum.take_while {|arr| block }   => array
  *  
- *  Without a block, returns first n elements from <i>enum</i>.
- *  With a block, passes elements to the block until the block
- *  returns nil or false, then stops iterating and returns an
- *  array of all prior elements.
+ *  Passes elements to the block until the block returns nil or false,
+ *  then stops iterating and returns an array of all prior elements.
  *     
  *     a = [1, 2, 3, 4, 5, 0]
- *     
- *     a.take(3)             # => [1, 2, 3]
  *     a.take {|i| i < 3 }   # => [1, 2]
  *     
  */
 
 static VALUE
-enum_take(int argc, VALUE *argv, VALUE obj)
+enum_take_while(VALUE obj)
 {
-    VALUE args[2];
+    VALUE ary;
 
-    if (!rb_block_given_p()) {
-	VALUE vlen;
-
-	rb_scan_args(argc, argv, "1", &vlen);
-	args[1] = NUM2LONG(vlen);
-	args[0] = rb_ary_new2(args[1]);
-	rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
-	return args[0];
-    }
-    rb_scan_args(argc, argv, "0");
-    args[0] = rb_ary_new();
-    rb_block_call(obj, id_each, 0, 0, take_iter_i, (VALUE)args);
-    return args[0];
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, take_while_i, (VALUE)&ary);
+    return ary;
 }
 
 static VALUE
@@ -1501,53 +1474,63 @@ drop_i(VALUE i, VALUE *arg)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     enum.drop(n)               => array
+ *  
+ *  Drops first n elements from <i>enum</i>, and returns rest elements
+ *  in an array.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.drop(3)             # => [4, 5, 0]
+ *     
+ */
+
 static VALUE
-drop_iter_i(VALUE i, VALUE *arg)
+enum_drop(VALUE obj, VALUE n)
 {
-    if (!arg[1] && !rb_yield(i)) {
-	arg[1] = Qtrue;
+    VALUE args[2];
+
+    args[0] = rb_ary_new2(args[1]);
+    args[1] = NUM2ULONG(n);
+    rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
+    return args[0];
+}
+
+
+static VALUE
+drop_while_i(VALUE i, VALUE *args)
+{
+    if (!args[1] && !rb_yield(i)) {
+	args[1] = Qtrue;
     }
-    if (arg[1]) {
-	rb_ary_push(arg[0], i);
+    if (args[1]) {
+	rb_ary_push(args[0], i);
     }
     return Qnil;
 }
 
 /*
  *  call-seq:
- *     enum.drop(n)               => array
- *     enum.drop {|arr| block }   => array
+ *     enum.drop_while {|arr| block }   => array
  *  
- *  Without a block, drops first n elements from <i>enum</i>, and returns
- *  rest elements in an array.  With a block, drops elements up to, but
- *  not including, the first element for which the block returns nil or false
- *  and returns an array containing the remaining elements.
+ *  Drops elements up to, but not including, the first element for
+ *  which the block returns nil or false and returns an array
+ *  containing the remaining elements.
  *     
  *     a = [1, 2, 3, 4, 5, 0]
- *     
- *     a.drop(3)             # => [4, 5, 0]
  *     a.drop {|i| i < 3 }   # => [3, 4, 5, 0]
  *     
  */
 
 static VALUE
-enum_drop(int argc, VALUE *argv, VALUE obj)
+enum_drop_while(VALUE obj)
 {
     VALUE args[2];
 
-    if (!rb_block_given_p()) {
-	VALUE vlen;
-
-	rb_scan_args(argc, argv, "1", &vlen);
-	args[1] = NUM2LONG(vlen);
-	args[0] = rb_ary_new2(args[1]);
-	rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
-	return args[0];
-    }
-    rb_scan_args(argc, argv, "0");
     args[0] = rb_ary_new();
     args[1] = Qfalse;
-    rb_block_call(obj, id_each, 0, 0, drop_iter_i, (VALUE)args);
+    rb_block_call(obj, id_each, 0, 0, drop_while_i, (VALUE)args);
     return args[0];
 }
 
@@ -1643,10 +1626,11 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, -1);
-    rb_define_method(rb_mEnumerable, "butfirst", enum_butfirst, -1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
-    rb_define_method(rb_mEnumerable, "take", enum_take, -1);
-    rb_define_method(rb_mEnumerable, "drop", enum_drop, -1);
+    rb_define_method(rb_mEnumerable, "take", enum_take, 1);
+    rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);
+    rb_define_method(rb_mEnumerable, "drop", enum_drop, 1);
+    rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, 0);
 
     id_eqq  = rb_intern("===");

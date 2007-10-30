@@ -1,3 +1,11 @@
+Wed Oct 31 03:13:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_take_while): separate with-block form.
+
+	* enum.c (drop_while_i): ditto.
+
+	* enum.c (enum_butfirst): abandon butfirst method.  reverted.
+
 Tue Oct 30 10:03:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_butfirst): add a new method to iterates over
