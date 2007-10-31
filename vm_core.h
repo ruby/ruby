@@ -633,7 +633,7 @@ RUBY_EXTERN VALUE sysstack_error;
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-extern rb_thread_t *ruby_current_thread;
+RUBY_EXTERN rb_thread_t *ruby_current_thread;
 extern rb_vm_t *ruby_current_vm;
 
 #define GET_VM() ruby_current_vm

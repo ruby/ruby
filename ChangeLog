@@ -1,3 +1,7 @@
+Thu Nov  1 01:51:01 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* vm_core.h (ruby_current_thread): RUBY_EXTERN'ed for probeprofiler.
+
 Thu Nov  1 00:46:30 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat, setup.mak: now can recognize OS even if
