@@ -628,10 +628,10 @@ incs: $(INSNS) node_name.inc
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-{$(VPATH)}prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prereq: incs prelude.c
+prereq: incs {$(VPATH)}prelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
