@@ -1491,8 +1491,8 @@ enum_drop(VALUE obj, VALUE n)
 {
     VALUE args[2];
 
-    args[0] = rb_ary_new2(args[1]);
     args[1] = NUM2ULONG(n);
+    args[0] = rb_ary_new2(args[1]);
     rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
     return args[0];
 }
