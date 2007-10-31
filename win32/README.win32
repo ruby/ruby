@@ -6,6 +6,9 @@
 
 (1) Visual C++ 5.0 or later.
 
+    Note: if you want to build x64 or ia64 version, use native compiler for
+          x64/ia64.
+
 (2) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
     to run required commands properly from the command line.
 
@@ -24,7 +27,7 @@
 
 (1) Execute win32\configure.bat on your build directory.
     You can specify the target platform as an argument.
-    For example, run `((%configure i686-mswin32%))'
+    For example, run `((%configure --target=i686-mswin32%))'
     You can also specify the install directory.
     For example, run `((%configure --prefix=<install_directory>%))'
     Default of the install directory is /usr .

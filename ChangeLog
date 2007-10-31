@@ -1,3 +1,10 @@
+Thu Nov  1 00:46:30 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/configure.bat, setup.mak: now can recognize OS even if
+	  the ``--target'' option of configure is omitted.
+
+	* win32/README.win32: update the descriptions about compiler.
+
 Wed Oct 31 03:13:41 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_take_while): separate with-block form.

@@ -12,9 +12,6 @@ srcdir = $(WIN32DIR)/..
 !ifndef prefix
 prefix = /usr
 !endif
-!if "$(OS)" != "mswin64"
-OS = mswin32
-!endif
 BANG = !
 APPEND = echo>>$(MAKEFILE)
 !ifdef MAKEFILE
@@ -28,21 +25,23 @@ CC = cl -nologo
 CPP = $(CC) -EP
 
 all: -prologue- -generic- -epilogue-
-i386-mswin32: -prologue- -i386- -epilogue-
-i486-mswin32: -prologue- -i486- -epilogue-
-i586-mswin32: -prologue- -i586- -epilogue-
-i686-mswin32: -prologue- -i686- -epilogue-
-alpha-mswin32: -prologue- -alpha- -epilogue-
+i386-mswin32: -prologue32- -i386- -epilogue-
+i486-mswin32: -prologue32- -i486- -epilogue-
+i586-mswin32: -prologue32- -i586- -epilogue-
+i686-mswin32: -prologue32- -i686- -epilogue-
+alpha-mswin32: -prologue32- -alpha- -epilogue-
 x64-mswin64: -prologue64- -x64- -epilogue-
 ia64-mswin64: -prologue64- -ia64- -epilogue-
 
 -prologue-: -basic-vars- -system-vars- -version- -program-name-
 
+-prologue32-: -basic-vars- -system-vars32- -version- -program-name-
+
 -prologue64-: -basic-vars- -system-vars64- -version- -program-name-
 
 -basic-vars-: nul
 	@type << > $(MAKEFILE)
-### Makefile for ruby $(OS) ###
+### Makefile for ruby $(TARGET_OS) ###
 MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
@@ -58,15 +57,17 @@ BASERUBY = $(BASERUBY)
 !endif
 <<
 
--system-vars-: -osname- -runtime-
+-system-vars-: -runtime-
+
+-system-vars32-: -osname32- -runtime-
 
 -system-vars64-: -osname64- -runtime-
 
--osname-: nul
-	@echo OS = mswin32 >>$(MAKEFILE)
+-osname32-: nul
+	@echo TARGET_OS = mswin32 >>$(MAKEFILE)
 
 -osname64-: nul
-	@echo OS = mswin64 >>$(MAKEFILE)
+	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
 
 -runtime-: nul
 	@$(CC) -MD <<rtname.c user32.lib > nul
@@ -111,7 +112,19 @@ runtime_name()
 	    ver = p;
 	}
     }
-    if (ver) printf("OS = $$(OS)_%s\n", ver);
+    printf("!ifndef TARGET_OS\n");
+#ifdef _WIN64
+    printf("TARGET_OS = mswin64\n");
+#else
+    printf("TARGET_OS = mswin32\n");
+#endif
+    printf("!endif\n");
+    if (ver) {
+	printf("OS = $$(TARGET_OS)_%s\n", ver);
+    }
+    else {
+	printf("OS = $$(TARGET_OS)\n");
+    }
     printf("RT = %s\n", base);
     return 1;
 }
@@ -151,9 +164,16 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 !if defined($(ARCH)) || defined($(CPU))
 	@type << >>$(MAKEFILE)
 !if defined($(ARCH))
+!if "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
+$(ARCH) = x64
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "IA64"
+$(ARCH) = ia64
+!else
 $(ARCH) = $(PROCESSOR_ARCHITECTURE)
 !endif
+!endif
 !if defined($(CPU))
+!if "$(PROCESSOR_ARCHITECTURE)" == "x86"
 $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 
@@ -185,7 +205,6 @@ $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 	@type << >>$(MAKEFILE)
 
-# OS = $(OS)
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 # CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
@@ -199,4 +218,4 @@ $(CPU) = $(PROCESSOR_LEVEL)
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
-	@echo type `$(MAKE)' to make ruby for $(OS).
+	@echo type `$(MAKE)' to make ruby.
