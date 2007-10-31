@@ -173,7 +173,6 @@ $(ARCH) = $(PROCESSOR_ARCHITECTURE)
 !endif
 !endif
 !if defined($(CPU))
-!if "$(PROCESSOR_ARCHITECTURE)" == "x86"
 $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 
