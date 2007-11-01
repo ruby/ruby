@@ -858,6 +858,7 @@ module DRb
     def self.open_server(uri, config)
       uri = 'druby://:0' unless uri
       host, port, opt = parse_uri(uri)
+      config = {:tcp_original_host => host}.update(config)
       if host.size == 0
         host = getservername
         soc = open_server_inaddr_any(host, port)
@@ -865,6 +866,7 @@ module DRb
 	soc = TCPServer.open(host, port)
       end
       port = soc.addr[1] if port == 0
+      config[:tcp_port] = port
       uri = "druby://#{host}:#{port}"
       self.new(uri, soc, config)
     end
@@ -945,7 +947,12 @@ module DRb
 	break if (@acl ? @acl.allow_socket?(s) : true) 
 	s.close
       end
-      self.class.new(nil, s, @config)
+      if @config[:tcp_original_host].to_s.size == 0
+        uri = "druby://#{s.addr[3]}:#{@config[:tcp_port]}"
+      else
+        uri = @uri
+      end
+      self.class.new(uri, s, @config)
     end
 
     # Check to see if this connection is alive.
@@ -1666,6 +1673,12 @@ module DRb
   #
   # This is the URI of the current server.  See #current_server.
   def uri
+    drb = Thread.current['DRb']
+    client = (drb && drb['client'])
+    if client
+      uri = client.uri
+      return uri if uri
+    end
     current_server.uri
   end
   module_function :uri
