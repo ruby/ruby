@@ -1,3 +1,6 @@
+Thu Nov  1 14:51:39 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+	* enum.c (take_while_i, drop_while_i) add RTEST to handle nil return
+	
 Thu Nov  1 02:12:50 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (prereq): update the path of prelude.c.

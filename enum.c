@@ -1435,7 +1435,7 @@ enum_take(VALUE obj, VALUE n)
 static VALUE
 take_while_i(VALUE i, VALUE *ary)
 {
-    if (!rb_yield(i)) rb_iter_break();
+    if (!RTEST(rb_yield(i))) rb_iter_break();
     rb_ary_push(*ary, i);
     return Qnil;
 }
@@ -1501,7 +1501,7 @@ enum_drop(VALUE obj, VALUE n)
 static VALUE
 drop_while_i(VALUE i, VALUE *args)
 {
-    if (!args[1] && !rb_yield(i)) {
+    if (!args[1] && !RTEST(rb_yield(i))) {
 	args[1] = Qtrue;
     }
     if (args[1]) {
