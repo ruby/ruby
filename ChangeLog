@@ -1,3 +1,7 @@
+Fri Nov  2 20:47:04 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.0 -> 0.2.1.
+
 Thu Nov  1 21:56:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (Init_Exception): make NameError to be subclass of
