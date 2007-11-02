@@ -2420,10 +2420,9 @@ rb_ary_assoc(ary, key)
     VALUE v;
 
     for (i = 0; i < RARRAY(ary)->len; ++i) {
-	v = RARRAY(ary)->ptr[i];
-	if (TYPE(v) == T_ARRAY &&
-	    RARRAY(v)->len > 0 &&
-	    rb_equal(RARRAY(v)->ptr[0], key))
+	v = rb_check_array_type(RARRAY_PTR(ary)[i]);
+	if (!NIL_P(v) && RARRAY(v)->len > 0 &&
+	    rb_equal(RARRAY_PTR(v)[0], key))
 	    return v;
     }
     return Qnil;

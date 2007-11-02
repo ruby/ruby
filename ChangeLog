@@ -1,3 +1,14 @@
+Fri Nov  2 00:13:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_assoc): check and convert inner arrays (assocs)
+	  using #to_ary.
+
+	* hash.c (rb_hash_s_create): check and convert argument hash
+	  using #to_hash.
+
+	* hash.c (rb_hash_s_create): Hash#[] now takes assocs as source of
+	  hash conversion.
+
 Thu Nov  1 23:47:43 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRbTCPSocket): Improving with multiple network
