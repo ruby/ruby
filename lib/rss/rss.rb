@@ -208,7 +208,7 @@ EOC
                              disp_name=nil)
       name ||= tag_name
       disp_name ||= name
-      self::ELEMENTS << name
+      self::ELEMENTS << name unless self::ELEMENTS.include?(name)
       add_need_initialize_variable(name)
       install_model(tag_name, uri, occurs, name)
 

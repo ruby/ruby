@@ -1,3 +1,11 @@
+Fri Nov  2 20:55:49 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/content.rb, lib/rss/content/, lib/rss/maker/content.rb,
+	  test/rss/test_content.rb, test/rss/test_maker_content.rb,
+	  test/rss/rss-testcase.rb (RSS::TestCase): supported
+	  content:encoded with RSS 2.0.
+	  Suggested by Sam Lown. Thanks.
+
 Fri Nov  2 20:47:04 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.0 -> 0.2.1.

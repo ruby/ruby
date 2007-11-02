@@ -326,11 +326,18 @@ EOA
       attrs_str = attrs.collect do |name, value|
         "#{h name}='#{h value}'"
       end.join(" ")
-      contents_str = contents.collect do |name, value|
-        "#{Element::INDENT}<#{h name}>#{h value}</#{h name}>"
-      end.join("\n")
+      attrs_str = " #{attrs_str}" unless attrs_str.empty?
 
-      "<#{h elem_name} #{attrs_str}>\n#{contents_str}\n</#{h elem_name}>"
+      if contents.is_a?(String)
+        contents_str = h(contents)
+      else
+        contents_str = contents.collect do |name, value|
+          "#{Element::INDENT}<#{h name}>#{h value}</#{h name}>"
+        end.join("\n")
+        contents_str = "\n#{contents_str}\n"
+      end
+
+      "<#{h elem_name}#{attrs_str}>#{contents_str}</#{h elem_name}>"
     end
 
     def xmlns_container(xmlns_decls, content)
