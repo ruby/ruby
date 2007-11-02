@@ -58,7 +58,7 @@ module RSS
       end
 
       def setup_maker_element(target)
-        target.__send__(setup_maker_element_writer, content)
+        target.__send(setup_maker_element_writer, content)
         super
       end
     end
@@ -131,7 +131,7 @@ module RSS
 
       private
       def maker_target(target)
-        target.__send__(self.class.name.split(/::/).last.downcase) {|x| x}
+        target.__send(self.class.name.split(/::/).last.downcase) {|x| x}
       end
 
       def setup_maker_attributes(target)
@@ -156,7 +156,7 @@ module RSS
       end
 
       def maker_target(target)
-        target.__send__("new_#{self.class.name.split(/::/).last.downcase}")
+        target.__send("new_#{self.class.name.split(/::/).last.downcase}")
       end
 
       class Name < RSS::Element
@@ -227,7 +227,7 @@ module RSS
        ["entry", "*", :children, "entries"],
       ].each do |tag, occurs, type, *args|
         type ||= :child
-        __send__("install_have_#{type}_element",
+        __send("install_have_#{type}_element",
                  tag, URI, occurs, tag, *args)
       end
 
@@ -405,7 +405,7 @@ module RSS
          ["updated", nil, :child, :content],
         ].each do |tag, occurs, type, *args|
           type ||= :attribute
-          __send__("install_have_#{type}_element",
+          __send("install_have_#{type}_element",
                    tag, URI, occurs, tag, *args)
         end
 
@@ -603,7 +603,7 @@ module RSS
            ["updated", "?", nil, :content],
           ].each do |tag, occurs, type, *args|
             type ||= :attribute
-            __send__("install_have_#{type}_element",
+            __send("install_have_#{type}_element",
                      tag, URI, occurs, tag, *args)
           end
 
@@ -655,7 +655,7 @@ module RSS
        ["updated", nil, nil, :content],
       ].each do |tag, occurs, type, *args|
         type ||= :attribute
-        __send__("install_have_#{type}_element",
+        __send("install_have_#{type}_element",
                  tag, URI, occurs, tag, *args)
       end
 

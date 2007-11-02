@@ -1038,7 +1038,7 @@ Init_Exception(void)
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
-    rb_eNameError     = rb_define_class("NameError", rb_eScriptError);
+    rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
@@ -1053,7 +1053,7 @@ Init_Exception(void)
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
-    rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
+    rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
 
     syserr_tbl = st_init_numtable();

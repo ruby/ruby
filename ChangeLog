@@ -1,3 +1,11 @@
+Thu Nov  1 21:56:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (Init_Exception): make NameError to be subclass of
+	  StandardError again.
+
+	* error.c (Init_Exception): make SecurityError to be subclass of
+	  Exception, since it's too important to be handled implicitly.
+
 Thu Nov  1 14:51:39 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	* enum.c (take_while_i, drop_while_i) add RTEST to handle nil return
 	
