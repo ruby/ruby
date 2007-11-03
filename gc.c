@@ -2155,7 +2155,8 @@ rb_obj_id(VALUE obj)
  *
  *  Counts objects for each type.
  *
- *  It returns a hash as: {:FREE=>3012, :T_OBJECT=>6, :T_CLASS=>404, ...}
+ *  It returns a hash as:
+ *  {:TOTAL=>10000, :FREE=>3011, :T_OBJECT=>6, :T_CLASS=>404, ...}
  *
  *  If the optional argument, result_hash, is given,
  *  it is overwritten and returned.
@@ -2173,6 +2174,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 {
     long counts[T_MASK+1];
     long freed = 0;
+    long total = 0;
     int i;
     VALUE hash;
 
@@ -2197,10 +2199,12 @@ count_objects(int argc, VALUE *argv, VALUE os)
                 freed++;
             }
         }
+        total += heaps[i].limit;
     }
 
     if (hash == Qnil)
         hash = rb_hash_new();
+    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), LONG2NUM(total));
     rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), LONG2NUM(freed));
     for (i = 0; i <= T_MASK; i++) {
         VALUE type;

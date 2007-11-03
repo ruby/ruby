@@ -1,3 +1,7 @@
+Sun Nov  4 08:11:19 2007  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (count_objects): count TOTAL.
+
 Sun Nov  4 03:58:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_setup_table): use C array for characters that fit
