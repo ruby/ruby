@@ -3251,8 +3251,8 @@ rb_str_capitalize(VALUE str)
 
 
 /*
- *  call-seq:
- *     str.swapcase!   => str or nil
+ *  call-seq: 
+*     str.swapcase!   => str or nil
  *  
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
@@ -3352,12 +3352,13 @@ static VALUE rb_str_delete_bang(int,VALUE*,VALUE);
 static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 {
+    SIGNED_VALUE trans[256];
     rb_encoding *enc;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    int c, last = 0, modify = 0;
+    int c, last = 0, modify = 0, i;
     char *s, *send;
-    VALUE hash;
+    VALUE hash = 0;
 
     StringValue(src);
     StringValue(repl);
@@ -3379,23 +3380,45 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     trsrc.gen = trrepl.gen = 0;
     trsrc.now = trrepl.now = 0;
     trsrc.max = trrepl.max = 0;
-    hash = rb_hash_new();
 
     if (cflag) {
+	for (i=0; i<256; i++) {
+	    trans[i] = 1;
+	}
 	while ((c = trnext(&trsrc, enc)) >= 0) {
-	    rb_hash_aset(hash, INT2NUM(c), Qtrue);
+	    if (c < 256) {
+		trans[c] = -1;
+	    }
+	    else {
+		if (!hash) hash = rb_hash_new();
+		rb_hash_aset(hash, INT2NUM(c), Qtrue);
+	    }
 	}
 	while ((c = trnext(&trrepl, enc)) >= 0)
 	    /* retrieve last replacer */;
 	last = trrepl.now;
+	for (i=0; i<256; i++) {
+	    if (trans[i] >= 0) {
+		trans[i] = last;
+	    }
+	}
     }
     else {
 	int r;
 
+	for (i=0; i<256; i++) {
+	    trans[i] = -1;
+	}
 	while ((c = trnext(&trsrc, enc)) >= 0) {
 	    r = trnext(&trrepl, enc);
 	    if (r == -1) r = trrepl.now;
-	    rb_hash_aset(hash, INT2NUM(c), INT2NUM(r));
+	    if (c < 256) {
+		trans[c] = INT2NUM(r);
+	    }
+	    else {
+		if (!hash) hash = rb_hash_new();
+		rb_hash_aset(hash, INT2NUM(c), INT2NUM(r));
+	    }
 	}
     }
 
@@ -3413,7 +3436,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    tlen = clen = rb_enc_codelen(c, enc);
 
 	    s += clen;
-	    v = rb_hash_aref(hash, INT2NUM(c));
+	    if (c < 256) {
+		v = trans[c] >= 0 ? trans[c] : Qnil;
+	    }
+	    else {
+		v = rb_hash_aref(hash, INT2NUM(c));
+	    }
 	    if (!NIL_P(v)) {
 		if (!cflag) {
 		    c = NUM2INT(v);
@@ -3447,11 +3475,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     else if (rb_enc_mbmaxlen(enc) == 1) {
 	while (s < send) {
-	    VALUE v = rb_hash_aref(hash, INT2FIX(*s));
-	    if (!NIL_P(v)) {
+	    c = *s;
+	    if (trans[c] >= 0) {
 		if (!cflag) {
-		    c = FIX2INT(v);
-		    *s = c & 0xff;
+		    c = FIX2INT(trans[c]);
+		    *s = c;
 		    modify = 1;
 		}
 	    }
@@ -3473,7 +3501,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    c = rb_enc_codepoint(s, send, enc);
 	    tlen = clen = rb_enc_codelen(c, enc);
 
-	    v = rb_hash_aref(hash, INT2NUM(c));
+	    if (c < 256) {
+		v = trans[c] >= 0 ? trans[c] : Qnil;
+	    }
+	    else {
+		v = rb_hash_aref(hash, INT2NUM(c));
+	    }
 	    if (!NIL_P(v)) {
 		if (!cflag) {
 		    c = NUM2INT(v);
@@ -3552,34 +3585,74 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
 }
 
 static void
-tr_setup_table(VALUE str, VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
+tr_setup_table(VALUE str, char stable[256],
+	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
+    char buf[256];
     struct tr tr;
     int c;
-    VALUE table, ptable;
+    VALUE table = 0, ptable;
+    int i, cflag = 0;
 
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
     tr.gen = tr.now = tr.max = 0;
-    table = rb_hash_new();
+    
     if (RSTRING_LEN(str) > 1 && RSTRING_PTR(str)[0] == '^') {
+	cflag = 1;
 	tr.p++;
-	ptable = *ctablep;
-	*ctablep = table;
     }
-    else {
-	ptable = *tablep;
-	*tablep = table;
+    for (i=0; i<256; i++) {
+	stable[i] = 1;
+    }
+    for (i=0; i<256; i++) {
+	buf[i] = cflag;
     }
 
     while ((c = trnext(&tr, enc)) >= 0) {
-	VALUE key = INT2NUM(c);
-
-	if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
-	    rb_hash_aset(table, key, Qtrue);
+	if (c < 256) {
+	    buf[c & 0xff] = !cflag;
 	}
+	else {
+	    VALUE key = INT2NUM(c);
+
+	    if (!table) {
+		table = rb_hash_new();
+		if (cflag) {
+		    ptable = *ctablep;
+		    *ctablep = table;
+		}
+		else {
+		    ptable = *tablep;
+		    *tablep = table;
+		}
+	    }
+	    if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
+		rb_hash_aset(table, key, Qtrue);
+	    }
+	}
+    }
+    for (i=0; i<256; i++) {
+	stable[i] = stable[i] && buf[i];
     }
 }
 
+
+static int
+tr_find(int c, char table[256], VALUE del, VALUE nodel)
+{
+    if (c < 256) {
+	return table[c] ? Qtrue : Qfalse;
+    }
+    else {
+	VALUE v = INT2NUM(c);
+
+	if ((del && !NIL_P(rb_hash_aref(del, v))) &&
+	    (!nodel || NIL_P(rb_hash_aref(nodel, v)))) {
+	    return Qtrue;
+	}
+	return Qfalse;
+    }
+}
 
 /*
  *  call-seq:
@@ -3592,6 +3665,7 @@ tr_setup_table(VALUE str, VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 static VALUE
 rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 {
+    char squeez[256];
     rb_encoding *enc = 0;
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
@@ -3606,7 +3680,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 
 	StringValue(s);
 	enc = rb_enc_check(str, s);
-	tr_setup_table(s, &del, &nodel, enc);
+	tr_setup_table(s, squeez, &del, &nodel, enc);
     }
 
     rb_str_modify(str);
@@ -3616,10 +3690,8 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     while (s < send) {
 	int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
-	VALUE v = INT2NUM(c);
 
-	if ((del && !NIL_P(rb_hash_aref(del, v))) &&
-	    (!nodel || NIL_P(rb_hash_aref(nodel, v)))) {
+	if (tr_find(c, squeez, del, nodel)) {
 	    modify = 1;
 	}
 	else {
@@ -3670,6 +3742,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 {
+    char squeez[256];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
@@ -3685,7 +3758,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 
 	    StringValue(s);
 	    enc = rb_enc_check(str, s);
-	    tr_setup_table(s, &del, &nodel, enc);
+	    tr_setup_table(s, squeez, &del, &nodel, enc);
 	}
     }
 
@@ -3697,11 +3770,8 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     while (s < send) {
 	int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
-	VALUE v = INT2NUM(c);
 
-	if (c != save ||
-	    ((del && NIL_P(rb_hash_aref(del, v))) &&
-	     (!nodel || NIL_P(rb_hash_aref(nodel, v))))) {
+	if (c != save || !tr_find(c, squeez, del, nodel)) {
 	    if (t != s) rb_enc_mbcput(c, t, enc);
 	    save = c;
 	    t += clen;
@@ -3799,6 +3869,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 static VALUE
 rb_str_count(int argc, VALUE *argv, VALUE str)
 {
+    char table[256];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send;
@@ -3812,7 +3883,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 
 	StringValue(s);
 	enc = rb_enc_check(str, s);
-	tr_setup_table(s, &del, &nodel, enc);
+	tr_setup_table(s, table, &del, &nodel, enc);
     }
 
     s = RSTRING_PTR(str);
@@ -3822,10 +3893,8 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     while (s < send) {
 	int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
-	VALUE v = INT2NUM(c);
 
-	if ((del && !NIL_P(rb_hash_aref(del, v))) &&
-	    (!nodel || NIL_P(rb_hash_aref(nodel, v)))) {
+	if (tr_find(c, table, del, nodel)) {
 	    i++;
 	}
 	s += clen;

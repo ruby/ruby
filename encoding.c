@@ -261,7 +261,7 @@ rb_enc_find(const char *name)
     return rb_enc_from_index(idx);
 }
 
-static int
+static inline int
 enc_capable(VALUE obj)
 {
     if (IMMEDIATE_P(obj)) return Qfalse;
