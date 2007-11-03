@@ -2150,6 +2150,95 @@ rb_obj_id(VALUE obj)
 }
 
 /*
+ *  call-seq:
+ *     ObjectSpace.count_objects([result_hash]) -> hash
+ *
+ *  Counts objects for each type.
+ *
+ *  It returns a hash as: {:FREE=>3012, :T_OBJECT=>6, :T_CLASS=>404, ...}
+ *
+ *  If the optional argument, result_hash, is given,
+ *  it is overwritten and returned.
+ *  This is intended to avoid probe effect.
+ *
+ *  The contents of the returned hash is implementation defined.
+ *  It may be changed in future.
+ *
+ *  This method is not expected to work except C Ruby.
+ *
+ */
+
+static VALUE
+count_objects(int argc, VALUE *argv, VALUE os)
+{
+    long counts[T_MASK+1];
+    long freed = 0;
+    int i;
+    VALUE hash;
+
+    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
+        if (TYPE(hash) != T_HASH)
+            rb_raise(rb_eTypeError, "non-hash given");
+    }
+
+    for (i = 0; i <= T_MASK; i++) {
+        counts[i] = 0;
+    }
+
+    for (i = 0; i < heaps_used; i++) {
+        RVALUE *p, *pend;
+
+        p = heaps[i].slot; pend = p + heaps[i].limit;
+        for (;p < pend; p++) {
+            if (p->as.basic.flags) {
+                counts[BUILTIN_TYPE(p)]++;
+            }
+            else {
+                freed++;
+            }
+        }
+    }
+
+    if (hash == Qnil)
+        hash = rb_hash_new();
+    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), LONG2NUM(freed));
+    for (i = 0; i <= T_MASK; i++) {
+        VALUE type;
+        switch (i) {
+          case T_NONE:          type = ID2SYM(rb_intern("T_NONE")); break;
+          case T_NIL:           type = ID2SYM(rb_intern("T_NIL")); break;
+          case T_OBJECT:        type = ID2SYM(rb_intern("T_OBJECT")); break;
+          case T_CLASS:         type = ID2SYM(rb_intern("T_CLASS")); break;
+          case T_ICLASS:        type = ID2SYM(rb_intern("T_ICLASS")); break;
+          case T_MODULE:        type = ID2SYM(rb_intern("T_MODULE")); break;
+          case T_FLOAT:         type = ID2SYM(rb_intern("T_FLOAT")); break;
+          case T_STRING:        type = ID2SYM(rb_intern("T_STRING")); break;
+          case T_REGEXP:        type = ID2SYM(rb_intern("T_REGEXP")); break;
+          case T_ARRAY:         type = ID2SYM(rb_intern("T_ARRAY")); break;
+          case T_FIXNUM:        type = ID2SYM(rb_intern("T_FIXNUM")); break;
+          case T_HASH:          type = ID2SYM(rb_intern("T_HASH")); break;
+          case T_STRUCT:        type = ID2SYM(rb_intern("T_STRUCT")); break;
+          case T_BIGNUM:        type = ID2SYM(rb_intern("T_BIGNUM")); break;
+          case T_FILE:          type = ID2SYM(rb_intern("T_FILE")); break;
+          case T_TRUE:          type = ID2SYM(rb_intern("T_TRUE")); break;
+          case T_FALSE:         type = ID2SYM(rb_intern("T_FALSE")); break;
+          case T_DATA:          type = ID2SYM(rb_intern("T_DATA")); break;
+          case T_MATCH:         type = ID2SYM(rb_intern("T_MATCH")); break;
+          case T_SYMBOL:        type = ID2SYM(rb_intern("T_SYMBOL")); break;
+          case T_VALUES:        type = ID2SYM(rb_intern("T_VALUES")); break;
+          case T_BLOCK:         type = ID2SYM(rb_intern("T_BLOCK")); break;
+          case T_UNDEF:         type = ID2SYM(rb_intern("T_UNDEF")); break;
+          case T_NODE:          type = ID2SYM(rb_intern("T_NODE")); break;
+          default:              type = INT2NUM(i); break;
+        }
+        if (counts[i])
+            rb_hash_aset(hash, type, LONG2NUM(counts[i]));
+    }
+
+    return hash;
+}
+
+/*
  *  The <code>GC</code> module provides an interface to Ruby's mark and
  *  sweep garbage collection mechanism. Some of the underlying methods
  *  are also available via the <code>ObjectSpace</code> module.
@@ -2194,4 +2283,6 @@ Init_GC(void)
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
+
+    rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);
 }
