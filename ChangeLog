@@ -1,3 +1,10 @@
+Sat Nov  3 22:49:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_each_pair): make Hash#each to be alias to
+	  Hash#each_pair for compatibility and clarity.
+
+	* hash.c (env_each_pair): ditto.
+
 Sat Nov  3 22:41:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: --with-vendor-hdrdir implemented.

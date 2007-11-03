@@ -1084,19 +1084,20 @@ static int
 each_pair_i(VALUE key, VALUE value)
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield_values(2, key, value);
+    rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
 /*
  *  call-seq:
- *     hsh.each_pair {| key_value_array | block } -> hsh
+ *     hsh.each {| key, value | block } -> hsh
+ *     hsh.each_pair {| key, value | block } -> hsh
  *
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the
- *  key and value to the block as a two-element array.
+ *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key-value
+ *  pair as parameters.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.each_pair {|(key, value)| puts "#{key} is #{value}" }
+ *     h.each {|key, value| puts "#{key} is #{value}" }
  *
  *  <em>produces:</em>
  *
@@ -1110,40 +1111,6 @@ rb_hash_each_pair(VALUE hash)
 {
     RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_pair_i, 0);
-    return hash;
-}
-
-static int
-each_i(VALUE key, VALUE value)
-{
-    if (key == Qundef) return ST_CONTINUE;
-    rb_yield(rb_assoc_new(key, value));
-    return ST_CONTINUE;
-}
-
-/*
- *  call-seq:
- *     hsh.each {| key, value | block } -> hsh
- *
- *  Calls <i>block</i> once for each key in <i>hsh</i>, passing the key-value
- *  pair as parameters.  Also see <code>Hash#each_pair</code>, which
- *  passes the key and value to the block as a two-element array.
- *
- *     h = { "a" => 100, "b" => 200 }
- *     h.each {|key, value| puts "#{key} is #{value}" }
- *
- *  <em>produces:</em>
- *
- *     a is 100
- *     b is 200
- *
- */
-
-static VALUE
-rb_hash_each(VALUE hash)
-{
-    RETURN_ENUMERATOR(hash, 0, 0);
-    rb_hash_foreach(hash, each_i, 0);
     return hash;
 }
 
@@ -2134,11 +2101,13 @@ env_each_value(VALUE ehash)
 }
 
 static VALUE
-env_each_i(VALUE ehash, int values)
+env_each_pair(VALUE ehash)
 {
     char **env;
     VALUE ary;
     long i;
+
+    RETURN_ENUMERATOR(ehash, 0, 0);
 
     rb_secure(4);
     ary = rb_ary_new();
@@ -2154,28 +2123,9 @@ env_each_i(VALUE ehash, int values)
     FREE_ENVIRON(environ);
 
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	if (values) {
-	    rb_yield_values(2, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
-	}
-	else {
-	    rb_yield(rb_assoc_new(RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]));
-	}
+	rb_yield(rb_assoc_new(RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]));
     }
     return ehash;
-}
-
-static VALUE
-env_each(VALUE ehash)
-{
-    RETURN_ENUMERATOR(ehash, 0, 0);
-    return env_each_i(ehash, Qtrue);
-}
-
-static VALUE
-env_each_pair(VALUE ehash)
-{
-    RETURN_ENUMERATOR(ehash, 0, 0);
-    return env_each_i(ehash, Qfalse);
 }
 
 static VALUE
@@ -2622,10 +2572,10 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"length", rb_hash_size, 0);
     rb_define_method(rb_cHash,"empty?", rb_hash_empty_p, 0);
 
-    rb_define_method(rb_cHash,"each", rb_hash_each, 0);
     rb_define_method(rb_cHash,"each_value", rb_hash_each_value, 0);
     rb_define_method(rb_cHash,"each_key", rb_hash_each_key, 0);
     rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
+    rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
 
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);
@@ -2666,7 +2616,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"fetch", env_fetch, -1);
     rb_define_singleton_method(envtbl,"[]=", env_aset, 2);
     rb_define_singleton_method(envtbl,"store", env_aset, 2);
-    rb_define_singleton_method(envtbl,"each", env_each, 0);
+    rb_define_singleton_method(envtbl,"each", env_each_pair, 0);
     rb_define_singleton_method(envtbl,"each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
