@@ -1657,8 +1657,14 @@ AC_ARG_WITH(sitehdrdir,
 	    [sitehdrdir=$withval],
 	    [sitehdrdir='${rubyhdrdir}/site_ruby'])
 
+AC_ARG_WITH(vendorhdrdir,
+	    [  --with-vendor-hdrdir=DIR core headers in DIR [INCLUDEDIR]],
+	    [vendorhdrdir=$withval],
+	    [vendorhdrdir='${rubyhdrdir}/vendor_ruby'])
+
 AC_SUBST(rubyhdrdir)dnl
 AC_SUBST(sitehdrdir)dnl
+AC_SUBST(vendorhdrdir)dnl
 
 AC_ARG_WITH(mantype,
 		[  --with-mantype=TYPE specify man page type; TYPE is one of man and doc],
