@@ -1,8 +1,12 @@
-Sat Nov  3 22:29:35 2007  Tanaka Akira  <akr@fsij.org>
+Sat Nov  3 22:41:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: --with-vendor-hdrdir implemented.
 
 	* lib/mkmf.rb: check --vendor argument.
+
+	* README.EXT: explain --vendor option for extconf.rb
+
+	* README.EXT.ja: ditto.
 
 Sat Nov  3 20:30:48 2007  Tanaka Akira  <akr@fsij.org>
 
