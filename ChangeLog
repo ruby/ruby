@@ -1,6 +1,7 @@
 Sun Nov  4 00:06:40 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (count_objects): ObjectSpace.count_objects implemented.
+	  [ruby-core:12301]
 
 Sat Nov  3 22:49:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
