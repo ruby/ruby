@@ -1,3 +1,13 @@
+Sat Nov  3 20:30:48 2007  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: --with-vendordir implemented.
+
+	* mkconfig.rb: add config to vendorlibdir and vendorarchdir.
+
+	* instruby.rb: make vendor library directories.
+
+	* ruby.c: insert vendor library directories into load path.
+
 Fri Nov  2 20:55:49 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/content.rb, lib/rss/content/, lib/rss/maker/content.rb,
