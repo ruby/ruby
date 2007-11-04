@@ -1245,7 +1245,6 @@ arg_value	: arg
 aref_args	: none
 		| command opt_nl
 		    {
-		        rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    }
 		| args trailer
@@ -1278,12 +1277,10 @@ paren_args	: '(' none ')'
 		    }
 		| '(' block_call opt_nl ')'
 		    {
-		        rb_warn("parenthesize argument for future version");
 			$$ = NEW_LIST($2);
 		    }
 		| '(' args ',' block_call opt_nl ')'
 		    {
-		        rb_warn("parenthesize argument for future version");
 			$$ = list_append($2, $4);
 		    }
 		;
@@ -1294,7 +1291,6 @@ opt_paren_args	: none
 
 call_args	: command
 		    {
-		        rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    }
 		| args opt_block_arg
