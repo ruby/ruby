@@ -9,12 +9,6 @@ require 'enumerator'
 
 class TestPathname < Test::Unit::TestCase
 
-  if RUBY_VERSION < "1.9"
-    FUNCALL = :__send__
-  else
-    FUNCALL = :send!
-  end
-
   def self.define_assertion(name, &block)
     @defassert_num ||= {}
     @defassert_num[name] ||= 0
@@ -123,7 +117,7 @@ class TestPathname < Test::Unit::TestCase
 
   # has_trailing_separator?(path) -> bool
   def has_trailing_separator?(path)
-    Pathname.allocate.send(FUNCALL, :has_trailing_separator?, path)
+    Pathname.allocate.__send__(:has_trailing_separator?, path)
   end
 
   defassert(:has_trailing_separator?, false, "/")
@@ -132,11 +126,11 @@ class TestPathname < Test::Unit::TestCase
   defassert(:has_trailing_separator?, true, "a/")
 
   def add_trailing_separator(path)
-    Pathname.allocate.send(FUNCALL, :add_trailing_separator, path)
+    Pathname.allocate.__send__(:add_trailing_separator, path)
   end
 
   def del_trailing_separator(path)
-    Pathname.allocate.send(FUNCALL, :del_trailing_separator, path)
+    Pathname.allocate.send(__send__, :del_trailing_separator, path)
   end
 
   defassert(:del_trailing_separator, "/", "/")

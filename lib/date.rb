@@ -877,14 +877,14 @@ class Date
       when :civil
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send!(e)
+	  elem[e] = d.__send__(e)
 	end
 	elem[:mon]  ||= 1
 	elem[:mday] ||= 1
       when :commercial
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send!(e)
+	  elem[e] = d.__send__(e)
 	end
 	elem[:cweek] ||= 1
 	elem[:cwday] ||= 1
@@ -893,14 +893,14 @@ class Date
       when :wnum0
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send!(e)
+	  elem[e] = d.__send__(e)
 	end
 	elem[:wnum0] ||= 0
 	elem[:wday]  ||= 0
       when :wnum1
 	g[1].each do |e|
 	  break if elem[e]
-	  elem[e] = d.__send!(e)
+	  elem[e] = d.__send__(e)
 	end
 	elem[:wnum1] ||= 0
 	elem[:wday]  ||= 0
@@ -1727,16 +1727,16 @@ class Time
   def to_time() getlocal end
 
   def to_date
-    jd = Date.__send!(:civil_to_jd, year, mon, mday, Date::ITALY)
-    Date.new!(Date.__send!(:jd_to_ajd, jd, 0, 0), 0, Date::ITALY)
+    jd = Date.__send__(:civil_to_jd, year, mon, mday, Date::ITALY)
+    Date.new!(Date.__send__(:jd_to_ajd, jd, 0, 0), 0, Date::ITALY)
   end
 
   def to_datetime
-    jd = DateTime.__send!(:civil_to_jd, year, mon, mday, DateTime::ITALY)
-    fr = DateTime.__send!(:time_to_day_fraction, hour, min, [sec, 59].min) +
+    jd = DateTime.__send__(:civil_to_jd, year, mon, mday, DateTime::ITALY)
+    fr = DateTime.__send__(:time_to_day_fraction, hour, min, [sec, 59].min) +
 	 usec.to_r/86400_000_000
     of = utc_offset.to_r/86400
-    DateTime.new!(DateTime.__send!(:jd_to_ajd, jd, fr, of),
+    DateTime.new!(DateTime.__send__(:jd_to_ajd, jd, fr, of),
 		  of, DateTime::ITALY)
   end
 

@@ -17,6 +17,15 @@ Mon Nov  5 01:02:56 2007  Minero Aoki  <aamine@loveruby.net>
 	  User-Agent to fix 500 error on some corrupted HTTP servers.
 	  [ruby-core:13135]
 
+Mon Nov  5 00:32:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_send): allow send/__send__ to call methods of all
+	  visibility again.  we no longer provide __send, __send!.
+
+	* eval.c (rb_invoke_method): new method to honor private
+	  visibility.  if it's invoked in a function call style, it calls
+	  private methods as well (previous 1.9 send behavior).
+
 Mon Nov  5 00:24:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: vendor_ruby support.

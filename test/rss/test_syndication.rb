@@ -107,7 +107,7 @@ EOR
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
           assert_equal(excepted,
-                       @rss.__send__(parent).__send!("sy_#{name}_element"))
+                       @rss.__send__(parent).__send__("sy_#{name}_element"))
         end
       end
       

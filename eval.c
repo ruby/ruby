@@ -25,7 +25,7 @@ static VALUE rb_frame_self(void);
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
-static ID object_id, __send, __send_bang, respond_to;
+static ID object_id, __send__, respond_to;
 
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
@@ -1471,7 +1471,7 @@ send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 /*
  *  call-seq:
  *     obj.send(symbol [, args...])        => obj
- *     obj.__send__(symbol [, args...])    => obj
+ *     obj.__send__(symbol [, args...])      => obj
  *
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. You can use <code>__send__</code> if the name
@@ -1489,6 +1489,24 @@ send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 VALUE
 rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
+    return send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
+}
+
+
+/*
+ *  call-seq:
+ *     obj.invoke_method(symbol [, args...])  => obj
+ *
+ *  Invokes the method identified by _symbol_, passing it any
+ *  1arguments specified. Unlike send, invoke_method calls public
+ *  methods only, unless it's invoked in a function call style.
+ *
+ *     1.invoke_method(:puts, "hello")  # causes NoMethodError
+ */
+
+VALUE
+rb_invoke_method(int argc, VALUE *argv, VALUE recv)
+{
     int scope = NOEX_PUBLIC;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
@@ -1498,25 +1516,6 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     }
 
     return send_internal(argc, argv, recv, scope);
-}
-
-/*
- *  call-seq:
- *     obj.send!(symbol [, args...])        => obj
- *     obj.__send!(symbol [, args...])      => obj
- *
- *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. Unlike send, which calls public methods only
- *  when it is invoked in function call style, send! always aware of
- *  private methods.
- *
- *     1.send!(:puts, "hello")  # prints "foo"
- */
-
-VALUE
-rb_f_send_bang(int argc, VALUE *argv, VALUE recv)
-{
-    return send_internal(argc, argv, recv, NOEX_NOSUPER | NOEX_PRIVATE);
 }
 
 VALUE
@@ -2718,8 +2717,7 @@ Init_eval(void)
     singleton_undefined = rb_intern("singleton_method_undefined");
 
     object_id = rb_intern("object_id");
-    __send = rb_intern("__send");
-    __send_bang = rb_intern("__send!");
+    __send__ = rb_intern("__send__");
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
@@ -2748,9 +2746,7 @@ Init_eval(void)
 
     rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
-    rb_define_method(rb_cBasicObject, "__send", rb_f_send, -1);
-    rb_define_method(rb_cBasicObject, "send!", rb_f_send_bang, -1);
-    rb_define_method(rb_cBasicObject, "__send!", rb_f_send_bang, -1);
+    rb_define_method(rb_mKernel, "invoke_method", rb_invoke_method, -1);
 
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);

@@ -245,7 +245,7 @@ EOR
         excepted = "<#{DC_PREFIX}:#{name}>#{value}</#{DC_PREFIX}:#{name}>"
         parents.each do |parent_readers|
           parent = chain_reader(feed, parent_readers)
-          assert_equal(excepted, parent.__send!("dc_#{name}_elements"))
+          assert_equal(excepted, parent.__send__("dc_#{name}_elements"))
         end
 
         plural_suffix = dc_plural_suffix(name, check_backward_compatibility)
@@ -257,7 +257,7 @@ EOR
           klass_name = "DublinCore#{Utils.to_class_name(name.to_s)}"
           klass = DublinCoreModel.const_get(klass_name)
           elems << klass.new(parent.__send__("dc_#{name}"))
-          assert_equal(excepted, parent.__send!("dc_#{name}_elements"))
+          assert_equal(excepted, parent.__send__("dc_#{name}_elements"))
         end
       end
 

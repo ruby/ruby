@@ -158,7 +158,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 	    }
 	}
 
-	if (mid == object_id || mid == __send || mid == __send_bang) {
+	if (mid == object_id || mid == __send__) {
 	    if (node && nd_type(node) == RUBY_VM_METHOD_NODE) {
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(mid));
@@ -302,7 +302,7 @@ remove_method(VALUE klass, ID mid)
     }
     if (OBJ_FROZEN(klass))
 	rb_error_frozen("class/module");
-    if (mid == object_id || mid == __send || mid == __send_bang || mid == init) {
+    if (mid == object_id || mid == __send__ || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
     if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
@@ -466,7 +466,7 @@ rb_undef(VALUE klass, ID id)
 		 rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == object_id || id == __send || id == __send_bang || id == init) {
+    if (id == object_id || id == __send__ || id == init) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin);

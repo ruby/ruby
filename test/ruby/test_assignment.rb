@@ -652,7 +652,7 @@ class TestAssignmentGen < Test::Unit::TestCase
     assign = assign.to_s
     code1 = "#{assign}; [#{vars.join(",")}]"
     assign.gsub!(/\bv\d+\b/, "o.a")
-    code2 = "o=[];class << o; self end.send!(:define_method,:a=){|v|self << v};#{assign};o"
+    code2 = "o=[];class << o; self end.send(:define_method,:a=){|v|self << v};#{assign};o"
     begin
       vals1 = eval(code1)
     rescue Exception

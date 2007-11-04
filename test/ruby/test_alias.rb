@@ -56,7 +56,7 @@ class TestAlias < Test::Unit::TestCase
     d = lambda {
       $SAFE = 4
       dclass = Class.new(C)
-      dclass.send!(:alias_method, :mm, :m)
+      dclass.send(:alias_method, :mm, :m)
       dclass.new
     }.call
     assert_raise(SecurityError) { d.mm }

@@ -16,12 +16,12 @@ class TestEval < YarvTestBase
 
   def test_eval_with_send
     ae %q{
-      __send! :eval, %{
+      __send__ :eval, %{
         :ok
       }
     }
     ae %q{
-      1.__send! :instance_eval, %{
+      1.__send__ :instance_eval, %{
         :ok
       }
     }

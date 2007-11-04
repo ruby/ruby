@@ -314,9 +314,9 @@ assert_equal '1',       %q( class C; def m(x,a=7) a end end;
 assert_equal '[1, 2]',  %q( class C; def m(*a) a end end;
                             C.new.send(:m,1,2).inspect )
 assert_equal '1',       %q( class C; def m() 7 end; private :m end
-                            begin C.new.send(:m); rescue NoMethodError; 1 end )
+                            begin C.new.invoke_method(:m); rescue NoMethodError; 1 end )
 assert_equal '1',       %q( class C; def m() 1 end; private :m end
-                            C.new.send!(:m) )
+                            C.new.send(:m) )
 
 # with block
 assert_equal '[[:ok1, :foo], [:ok2, :foo, :bar]]',
@@ -867,8 +867,6 @@ assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
     end
   end
 
-  alias send! send unless defined? send!
-
   c1 = c2 = nil
 
   lambda{
@@ -899,8 +897,8 @@ assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
   test{o2.mm}
   test{o1.send :m}
   test{o2.send :mm}
-  test{o1.send! :m}
-  test{o2.send! :mm}
+  test{o1.invoke_method :m}
+  test{o2.invoke_method :mm}
   test{o1.method(:m).call}
   test{o2.method(:mm).call}
   $ans

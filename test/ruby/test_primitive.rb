@@ -50,7 +50,7 @@ class TestRubyPrimitive < Test::Unit::TestCase
     assert_equal 3, A::B::C::Const
     assert_equal 3, A::B::C.new.const
     assert_equal 1, ::TestRubyPrimitive::A::Const
-    A::B::C.send!(:remove_const, :Const)
+    A::B::C.send(:remove_const, :Const)
     assert_equal 2, A::B::C.new.const
     assert_raise(TypeError) {
       C::CONST

@@ -140,7 +140,7 @@ EOR
     def test_to_s
       @topics_parents.each do |parent|
         meth = "taxo_topics_element"
-        assert_equal(@topics_node, @rss.__send__(parent).__send!(meth))
+        assert_equal(@topics_node, @rss.__send__(parent).__send__(meth))
       end
 
       @topic_nodes.each_with_index do |node, i|

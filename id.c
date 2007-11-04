@@ -62,7 +62,5 @@ Init_id(void)
 
     idSend = rb_intern("send");
     idSendBang = rb_intern("send!");
-    id__send = rb_intern("__send");
-    id__send_bang = rb_intern("__send!");
     id__send__ = rb_intern("__send__");
 }

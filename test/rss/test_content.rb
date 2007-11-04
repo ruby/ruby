@@ -85,7 +85,7 @@ EOR
         excepted = make_element("#{@prefix}:#{name}", {}, value)
         meth = "#{RSS::CONTENT_PREFIX}_#{name}_element"
         [@rss10, @rss20].each do |rss|
-          assert_equal(excepted, rss.items.last.__send!(meth))
+          assert_equal(excepted, rss.items.last.__send__(meth))
         end
       end
 

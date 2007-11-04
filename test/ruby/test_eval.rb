@@ -124,7 +124,7 @@ class TestEval < Test::Unit::TestCase
       obj.class.class_variable_set :@@cvar, 13
           # Use same value with env. See also test_instance_variable_cvar.
       obj.class.const_set :Const, 15 unless obj.class.const_defined?(:Const)
-      send! mid, obj
+      send mid, obj
     end
   end
 
@@ -364,7 +364,7 @@ class TestEval < Test::Unit::TestCase
     assert_nothing_raised {
       def temporally_method_for_test_eval_and_define_method(&block)
         lambda {
-          class << Object.new; self end.send!(:define_method, :zzz, &block)
+          class << Object.new; self end.send(:define_method, :zzz, &block)
         }
       end
       v = eval("temporally_method_for_test_eval_and_define_method {}")

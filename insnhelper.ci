@@ -588,10 +588,9 @@ vm_send_optimize(rb_control_frame_t *reg_cfp,
 {
     if (*mn && nd_type((*mn)->nd_body) == NODE_CFUNC) {
 	NODE *node = (*mn)->nd_body;
-	extern VALUE rb_f_send_bang(int argc, VALUE *argv, VALUE recv);
 	extern VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 
-	if (node->nd_cfnc == rb_f_send_bang || node->nd_cfnc == rb_f_send) {
+	if (node->nd_cfnc == rb_f_send) {
 	    int i = *num - 1;
 	    VALUE sym = TOPN(i);
 	    *id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
@@ -604,9 +603,6 @@ vm_send_optimize(rb_control_frame_t *reg_cfp,
 	    *mn = rb_method_node(klass, *id);
 	    *num -= 1;
 	    DEC_SP(1);
-	}
-
-	if (node->nd_cfnc == rb_f_send_bang) {
 	    *flag |= VM_CALL_FCALL_BIT;
 	}
     }

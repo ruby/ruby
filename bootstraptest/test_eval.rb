@@ -89,12 +89,12 @@ assert_equal %q{1}, %q{
   eval('a')
 }
 assert_equal %q{ok}, %q{
-  __send! :eval, %{
+  __send__ :eval, %{
     :ok
   }
 }
 assert_equal %q{ok}, %q{
-  1.__send! :instance_eval, %{
+  1.__send__ :instance_eval, %{
     :ok
   }
 }

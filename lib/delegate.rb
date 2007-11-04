@@ -115,7 +115,7 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  preserved = [:__id__, :object_id, :__send__, :__send, :__send!, :respond_to?, :send, :send!]
+  preserved = [:__id__, :object_id, :__send__, :invoke_method, :respond_to?, :send]
   instance_methods.each do |m|
     next if preserved.include?(m)
     undef_method m
@@ -137,7 +137,7 @@ class Delegator
         unless target.respond_to?(m)
           super(m, *args, &block)
         else
-          target.__send(m, *args, &block)
+          target.__send__(m, *args, &block)
         end
       rescue Exception
         $@.delete_if{|s| /^#{__FILE__}:\d+:in `method_missing'$/ =~ s} #`
@@ -262,7 +262,7 @@ def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.public_instance_methods(true)
   methods -= [
-    :__id__, :object_id, :__send__, :__send, :__send!, :respond_to?, :send, :send!,
+    :__id__, :object_id, :__send__, :invoke_method, :respond_to?, :send,
     :==, :equal?, :initialize, :method_missing, :__getobj__, :__setobj__,
     :clone, :dup, :marshal_dump, :marshal_load,
   ]
@@ -281,7 +281,7 @@ def DelegateClass(superclass)
       klass.module_eval <<-EOS, __FILE__, __LINE__+1
         def #{method}(*args, &block)
 	  begin
-	    @delegate_dc_obj.__send(:#{method}, *args, &block)
+	    @delegate_dc_obj.__send__(:#{method}, *args, &block)
 	  rescue
 	    raise $!, $@[2..-1]
 	  end
