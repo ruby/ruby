@@ -1,3 +1,9 @@
+Mon Nov  5 00:24:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub: vendor_ruby support.
+
+	* configure.in (RUBY_LIB): duplicated.
+
 Mon Nov  5 00:01:33 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_quote): quote \v as well.
