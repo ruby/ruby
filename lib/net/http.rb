@@ -1533,6 +1533,7 @@ module Net   #:nodoc:
       @path = path
       initialize_http_header initheader
       self['Accept'] ||= '*/*'
+      self['User-Agent'] ||= 'Ruby'
       @body = nil
       @body_stream = nil
     end

@@ -1,3 +1,9 @@
+Mon Nov  5 01:02:56 2007  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTPHeader#initialize): provide default
+	  User-Agent to fix 500 error on some corrupted HTTP servers.
+	  [ruby-core:13135]
+
 Mon Nov  5 00:24:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: vendor_ruby support.
