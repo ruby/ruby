@@ -17,8 +17,8 @@ module REXML
       elsif arg.kind_of? Source
         arg
       else
-        raise "#{source.class} is not a valid input stream.  It must walk \n"+
-        "like either a String, IO, or Source."
+        raise "#{arg.class} is not a valid input stream.  It must walk \n"+
+          "like either a String, an IO, or a Source."
       end
     end
   end
@@ -134,6 +134,7 @@ module REXML
     def initialize(arg, block_size=500, encoding=nil)
       @er_source = @source = arg
       @to_utf = false
+
       # Determining the encoding is a deceptively difficult issue to resolve.
       # First, we check the first two bytes for UTF-16.  Then we
       # assume that the encoding is at least ASCII enough for the '>', and
@@ -145,13 +146,16 @@ module REXML
       str = @source.read( 2 )
       if encoding
         self.encoding = encoding
-      elsif /\A(?:\xfe\xff|\xff\xfe)/n =~ str
-        self.encoding = check_encoding( str )
-      elsif (0xef == str[0] && 0xbb == str[1])
+      elsif 0xfe == str[0] && 0xff == str[1]
+        @line_break = "\000>"
+      elsif 0xff == str[0] && 0xfe == str[1]
+        @line_break = ">\000"
+      elsif 0xef == str[0] && 0xbb == str[1]
         str += @source.read(1)
         str = '' if (0xbf == str[2])
+        @line_break = ">"
       else
-        @line_break = '>'
+        @line_break = ">"
       end
       super str+@source.readline( @line_break )
     end
