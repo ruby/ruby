@@ -1,4 +1,5 @@
 require 'rexml/parseexception'
+require 'rexml/undefinednamespaceexception'
 require 'rexml/source'
 require 'set'
 
@@ -191,6 +192,7 @@ module REXML
         end
         return [ :end_document ] if empty?
         return @stack.shift if @stack.size > 0
+        #STDERR.puts @source.encoding
         @source.read if @source.buffer.size<2
         #STDERR.puts "BUFFER = #{@source.buffer.inspect}"
         if @document_status == nil

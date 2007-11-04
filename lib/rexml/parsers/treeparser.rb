@@ -1,4 +1,5 @@
 require 'rexml/validation/validationexception'
+require 'rexml/undefinednamespaceexception'
 
 module REXML
   module Parsers
