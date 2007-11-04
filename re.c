@@ -1653,7 +1653,7 @@ rb_reg_quote(VALUE str)
 	  case '*': case '.': case '\\':
 	  case '?': case '+': case '^': case '$':
 	  case ' ': case '#':
-	  case '\t': case '\f': case '\n': case '\r':
+	  case '\t': case '\f': case '\v': case '\n': case '\r':
 	    goto meta_found;
 	}
     }
@@ -1704,6 +1704,10 @@ rb_reg_quote(VALUE str)
 	  case '\f':
 	    *t++ = '\\';
 	    *t++ = 'f';
+	    continue;
+	  case '\v':
+	    *t++ = '\\';
+	    *t++ = 'v';
 	    continue;
 	}
 	*t++ = c;
