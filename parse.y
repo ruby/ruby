@@ -2287,7 +2287,6 @@ opt_call_args	: none
 
 call_args	: command
 		    {
-			rb_warn0("parenthesize argument(s) for future version");
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%

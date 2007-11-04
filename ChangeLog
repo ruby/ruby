@@ -1,3 +1,10 @@
+Mon Nov  5 01:20:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (call_args): remove "parenthesize argument(s) for future
+	  version" warning.  when I added this warning, I had a plan to
+	  reimplement the parser that is simpler than the current one.
+	  since we abandoned the plan, warning no longer required.
+
 Mon Nov  5 01:02:56 2007  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTPHeader#initialize): provide default
