@@ -61,3 +61,7 @@ assert_equal 'ok', %q{
 assert_equal 'ok', %q{
   0**-1 == 0 ? :ng : :ok
 }
+
+assert_equal '(?-mix:\000)', %q{
+  Regexp.new("\0")
+}
