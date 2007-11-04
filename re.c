@@ -1617,7 +1617,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	    }
 	}
 	str = argv[0];
-	ptr = StringValueCStr(str);
+	ptr = StringValuePtr(str);
 	if (enc
 	    ? rb_reg_initialize(self, ptr, RSTRING_LEN(str), enc, flags, err)
 	    : rb_reg_initialize_str(self, str, flags, err)) {

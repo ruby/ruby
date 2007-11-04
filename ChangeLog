@@ -1,3 +1,8 @@
+Sun Nov  4 23:51:59 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_initialize_m): use StringValuePtr instead of
+	  StringValueCStr because \0 exists when Regexp.new("\0").
+
 Sun Nov  4 08:11:19 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (count_objects): count TOTAL.
