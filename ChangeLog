@@ -1,3 +1,7 @@
+Mon Nov  5 08:01:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_eval): move #send to Kernel module from BasicObject.
+
 Mon Nov  5 05:17:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Switch::summarize): fix for long form

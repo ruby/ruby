@@ -2744,8 +2744,8 @@ Init_eval(void)
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
 
-    rb_define_method(rb_cBasicObject, "send", rb_f_send, -1);
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
+    rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "invoke_method", rb_invoke_method, -1);
 
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
