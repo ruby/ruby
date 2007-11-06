@@ -1193,6 +1193,7 @@ rb_ary_each_index(VALUE ary)
 {
     RETURN_ENUMERATOR(ary, 0, 0);
     ITERATE(each_index_i, ary);
+    return ary;
 }
 
 static VALUE

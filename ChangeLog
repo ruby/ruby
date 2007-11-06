@@ -4,6 +4,10 @@ Wed Nov  7 03:32:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  nkf conversion.  a patch from <moonwolf AT moonwolf.com>.
 	  [ruby-dev:32183]
 
+Wed Nov  7 02:59:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_each_index): should return meaningful value.
+
 Tue Nov  6 16:37:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_load.c (loaded_feature_path): need to expand relative paths.
