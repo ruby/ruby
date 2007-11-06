@@ -1,3 +1,7 @@
+Tue Nov  7 05:17:24 2007  David Flanagan <davidflanagan@ruby-lang.org>
+
+	* eval.c: fix typo in invoke_method documentation
+
 Wed Nov  7 03:52:26 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_product): core dumped with non array arguments.

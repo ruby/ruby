@@ -1498,7 +1498,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
  *     obj.invoke_method(symbol [, args...])  => obj
  *
  *  Invokes the method identified by _symbol_, passing it any
- *  1arguments specified. Unlike send, invoke_method calls public
+ *  arguments specified. Unlike send, invoke_method calls public
  *  methods only, unless it's invoked in a function call style.
  *
  *     1.invoke_method(:puts, "hello")  # causes NoMethodError
