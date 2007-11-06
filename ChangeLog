@@ -1,3 +1,8 @@
+Wed Nov  7 03:52:26 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_product): core dumped with non array arguments.
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:32180]
+
 Wed Nov  7 03:32:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb (REXML::Encoding): place -x for

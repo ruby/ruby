@@ -3170,7 +3170,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 
     /* initialize the arrays of arrays */
     arrays[0] = ary;
-    for (i = 1; i < n; i++) arrays[i] = argv[i-1];
+    for (i = 1; i < n; i++) arrays[i] = to_ary(argv[i-1]);
     
     /* initialize the counters for the arrays */
     for (i = 0; i < n; i++) counters[i] = 0;
