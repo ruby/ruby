@@ -1,3 +1,14 @@
+Tue Nov  6 15:52:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_load.c (rb_feature_p): check if the feature is loading with
+	  load path.  [ruby-dev:31932]
+
+	* eval_load.c (load_lock): check the result of barrier waiting.
+
+	* thread.c (rb_barrier_wait): check if owned by the current thread.
+
+	* thread.c (rb_barrier_release): ditto.
+
 Mon Nov  5 08:01:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_eval): move #send to Kernel module from BasicObject.

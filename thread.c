@@ -2435,7 +2435,7 @@ thlist_free(void *ptr)
 }
 
 static int
-thlist_signal(rb_thread_list_t **list, unsigned int maxth)
+thlist_signal(rb_thread_list_t **list, unsigned int maxth, rb_thread_t **woken_thread)
 {
     int woken = 0;
     rb_thread_list_t *q;
@@ -2447,6 +2447,7 @@ thlist_signal(rb_thread_list_t **list, unsigned int maxth)
 	ruby_xfree(q);
 	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
+	    if (!woken && woken_thread) *woken_thread = th;
 	    if (++woken >= maxth && maxth) break;
 	}
     }
@@ -2507,7 +2508,8 @@ rb_barrier_wait(VALUE self)
     Data_Get_Struct(self, rb_barrier_t, barrier);
     if (!barrier->owner || barrier->owner->status == THREAD_KILLED) {
 	barrier->owner = 0;
-	thlist_signal(&barrier->waiting, 0);
+	if (thlist_signal(&barrier->waiting, 1, &barrier->owner)) return Qfalse;
+	return Qtrue;
     }
     else {
 	*barrier->tail = q = ALLOC(rb_thread_list_t);
@@ -2515,8 +2517,8 @@ rb_barrier_wait(VALUE self)
 	q->next = 0;
 	barrier->tail = &q->next;
 	rb_thread_sleep_forever();
+	return barrier->owner == GET_THREAD() ? Qtrue : Qfalse;
     }
-    return self;
 }
 
 VALUE
@@ -2526,8 +2528,10 @@ rb_barrier_release(VALUE self)
     unsigned int n;
 
     Data_Get_Struct(self, rb_barrier_t, barrier);
-    barrier->owner = 0;
-    n = thlist_signal(&barrier->waiting, 0);
+    if (barrier->owner != GET_THREAD()) {
+	rb_raise(rb_eThreadError, "not owned");
+    }
+    n = thlist_signal(&barrier->waiting, 0, &barrier->owner);
     return n ? UINT2NUM(n) : Qfalse;
 }
 
