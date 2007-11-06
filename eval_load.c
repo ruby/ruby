@@ -23,6 +23,18 @@ static const char *const loadable_ext[] = {
 };
 
 VALUE rb_load_path;		/* to be moved to VM */
+static VALUE
+get_load_path(void)
+{
+    VALUE load_path = rb_load_path;
+    VALUE ary = rb_ary_new2(RARRAY_LEN(load_path));
+    long i;
+
+    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+	rb_ary_push(ary, rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil));
+    }
+    return ary;
+}
 
 static VALUE
 get_loaded_features(void)
@@ -37,12 +49,13 @@ get_loading_table(void)
 }
 
 static VALUE
-loaded_feature_path(const char *name, long vlen, const char *feature, long len)
+loaded_feature_path(const char *name, long vlen, const char *feature, long len,
+		    VALUE load_path)
 {
     long i;
 
-    for (i = 0; i < RARRAY_LEN(rb_load_path); ++i) {
-	VALUE p = RARRAY_PTR(rb_load_path)[i];
+    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+	VALUE p = RARRAY_PTR(load_path)[i];
 	const char *s = StringValuePtr(p);
 	long n = RSTRING_LEN(p);
 
@@ -58,6 +71,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len)
 struct loaded_feature_searching {
     const char *name;
     long len;
+    VALUE load_path;
     const char *result;
 };
 
@@ -66,7 +80,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 {
     const char *s = (const char *)v;
     struct loaded_feature_searching *fp = (struct loaded_feature_searching *)f;
-    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len);
+    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len, fp->load_path);
     if (!p) return ST_CONTINUE;
     fp->result = s;
     return ST_STOP;
@@ -75,7 +89,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 {
-    VALUE v, features, p;
+    VALUE v, features, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
     st_table *loading_tbl;
@@ -94,7 +108,9 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
 	if (strncmp(f, feature, len) != 0) {
-	    if (expanded || !(p = loaded_feature_path(f, n, feature, len)))
+	    if (expanded) continue;
+	    if (!load_path) load_path = get_load_path();
+	    if (!(p = loaded_feature_path(f, n, feature, len, load_path)))
 		continue;
 	    f += RSTRING_LEN(p) + 1;
 	}
@@ -116,6 +132,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	    struct loaded_feature_searching fs;
 	    fs.name = feature;
 	    fs.len = len;
+	    fs.load_path = load_path ? load_path : get_load_path();
 	    fs.result = 0;
 	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
 	    if (fs.result) goto loading;

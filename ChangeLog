@@ -1,4 +1,6 @@
-Tue Nov  6 15:52:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Nov  6 16:37:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_load.c (loaded_feature_path): need to expand relative paths.
 
 	* eval_load.c (rb_feature_p): check if the feature is loading with
 	  load path.  [ruby-dev:31932]
