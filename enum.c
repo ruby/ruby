@@ -1293,15 +1293,9 @@ enum_member(VALUE obj, VALUE val)
 static VALUE
 each_with_index_i(VALUE val, VALUE memo)
 {
-    long n;
-    VALUE idx = RARRAY_PTR(memo)[1];
+    long n = (*(VALUE *)memo)++;
 
-    RARRAY_PTR(memo)[0] = val;
-    rb_yield(memo);
-    n = NUM2LONG(idx);
-    n++;
-    RARRAY_PTR(memo)[1] = INT2NUM(n);
-    return Qnil;
+    return rb_yield(rb_ary_new3(2, val, INT2NUM(n)));
 }
 
 /*
@@ -1322,12 +1316,12 @@ each_with_index_i(VALUE val, VALUE memo)
 static VALUE
 enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE memo;
+    long memo;
 
     RETURN_ENUMERATOR(obj, argc, argv);
 
-    memo = rb_ary_new3(2, Qnil, INT2FIX(0));
-    rb_block_call(obj, id_each, argc, argv, each_with_index_i, memo);
+    memo = 0;
+    rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)&memo);
     return obj;
 }
 
@@ -1533,7 +1527,6 @@ enum_drop_while(VALUE obj)
     rb_block_call(obj, id_each, 0, 0, drop_while_i, (VALUE)args);
     return args[0];
 }
-
 
 static VALUE
 cycle_i(VALUE i, VALUE ary)

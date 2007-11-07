@@ -1,3 +1,8 @@
+Wed Nov  7 15:07:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_each_with_index): make different arrays at each
+	  iteration.  [ruby-dev:32181]
+
 Tue Nov  7 05:17:24 2007  David Flanagan <davidflanagan@ruby-lang.org>
 
 	* eval.c: fix typo in invoke_method documentation
