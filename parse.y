@@ -237,6 +237,7 @@ struct parser_params {
     int has_shebang;
     int parser_ruby_sourceline;	/* current line no. */
     rb_encoding *enc;
+    rb_encoding *utf8;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -260,10 +261,12 @@ struct parser_params {
 #endif
 };
 
+#define UTF8_ENC() (parser->utf8 ? parser->utf8 : \
+		    (parser->utf8 = rb_enc_find("utf-8")))
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_str_new(0,0)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,m) parser_str_new((p),(n),STR_ENC(!ENC_SINGLE(m)),(m))
+#define STR_NEW3(p,n,e,has8,hasmb) parser_str_new2((p),(n),(e),(has8),(hasmb))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_SINGLE)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
@@ -4493,20 +4496,25 @@ none		: /* none */
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
 static int parser_regx_options(struct parser_params*);
-static int parser_tokadd_string(struct parser_params*,int,int,int,long*,int*);
+static int parser_tokadd_string(struct parser_params*,int,int,int,long*,int*,int*,rb_encoding**);
+static void parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc);
 static int parser_parse_string(struct parser_params*,NODE*);
 static int parser_here_document(struct parser_params*,NODE*);
+
 
 # define nextc()                   parser_nextc(parser)
 # define pushback(c)               parser_pushback(parser, c)
 # define newtok()                  parser_newtok(parser)
 # define tokspace(n)               parser_tokspace(parser, n)
 # define tokadd(c)                 parser_tokadd(parser, c)
-# define read_escape(m)            parser_read_escape(parser, m)
-# define tokadd_escape(t,m)        parser_tokadd_escape(parser, t, m)
+# define tok_hex(numlen)           parser_tok_hex(parser, numlen)
+# define tok_utf8(numlen,e)        parser_tok_utf8(parser, numlen, e)
+# define read_escape(flags,has8,hasmb,e)    parser_read_escape(parser, flags, has8, hasmb, e)
+# define tokadd_escape(t,has8,hasmb,e)      parser_tokadd_escape(parser, t, has8,hasmb, e)
 # define regx_options()            parser_regx_options(parser)
-# define tokadd_string(f,t,p,n,m)  parser_tokadd_string(parser,f,t,p,n,m)
+# define tokadd_string(f,t,p,n,has8bit,hasmb,e) parser_tokadd_string(parser,f,t,p,n,has8bit,hasmb,e)
 # define parse_string(n)           parser_parse_string(parser,n)
+# define tokaddmbc(c, enc)         parser_tokaddmbc(parser, c, enc)
 # define here_document(n)          parser_here_document(parser,n)
 # define heredoc_identifier()      parser_heredoc_identifier(parser)
 # define heredoc_restore(n)        parser_heredoc_restore(parser,n)
@@ -4829,6 +4837,15 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int coderange)
     return str;
 }
 
+static VALUE
+parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
+{
+    int coderange = ENC_CODERANGE_SINGLE;
+    if (hasmb) coderange = ENC_CODERANGE_MULTI;
+    else if (has8bit) coderange = ENC_CODERANGE_UNKNOWN;
+    return parser_str_new(p, n, enc, coderange);
+}
+
 static inline int
 parser_nextc(struct parser_params *parser)
 {
@@ -4943,9 +4960,144 @@ parser_tokadd(struct parser_params *parser, int c)
 }
 
 static int
-parser_read_escape(struct parser_params *parser, int *mb)
+parser_tok_hex(struct parser_params *parser, int *numlen)
 {
     int c;
+
+    c = scan_hex(lex_p, 2, numlen);
+    if (!*numlen) {
+	yyerror("invalid hex escape");
+	return 0;
+    }
+    lex_p += *numlen;
+    return c;
+}
+
+#if 0
+static int
+parser_tok_utf8(struct parser_params *parser, int *numlen, rb_encoding **encp)
+{
+    int codepoint;
+
+    if (peek('{')) {  /* handle \u{...} form */
+	nextc();
+	codepoint = scan_hex(lex_p, 6, numlen);
+	if (*numlen == 0)  {
+	    yyerror("invalid Unicode escape");
+	    return 0;
+	}
+	if (codepoint > 0x10ffff) {
+	    yyerror("illegal Unicode codepoint (too large)");
+	    return 0;
+	}
+	lex_p += *numlen;
+	if (!peek('}')) {
+	    yyerror("unterminated Unicode escape");
+	    return 0;
+	}
+	nextc();
+    }
+    else {			/* handle \uxxxx form */
+	codepoint = scan_hex(lex_p, 4, numlen);
+	if (*numlen < 4) {
+	    yyerror("invalid Unicode escape");
+	    return 0;
+	}
+	lex_p += 4;
+    }
+    if (codepoint >= 0x80) {
+	*encp = UTF8_ENC();
+    }
+
+    return codepoint;
+}
+#endif
+
+
+
+static int
+parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
+		   rb_encoding **encp, int string_literal, int symbol_literal)
+{
+    /*
+     * If string_literal is true, then we allow multiple codepoints
+     * in \u{}, and add the codepoints to the current token.
+     * Otherwise we're parsing a character literal and return a single
+     * codepoint without adding it 
+     */
+
+    int codepoint;
+    int numlen;
+
+    if (peek('{')) {  /* handle \u{...} form */
+	do {
+	    nextc();
+	    codepoint = scan_hex(lex_p, 6, &numlen);
+	    if (numlen == 0)  {
+		yyerror("invalid Unicode escape");
+		return 0;
+	    }
+	    if (codepoint > 0x10ffff) {
+		yyerror("illegal Unicode codepoint (too large)");
+		return 0;
+	    }
+	    lex_p += numlen;
+	    if (codepoint >= 0x80) {
+		*hasmb = 1;
+		*encp = UTF8_ENC();
+		if (string_literal) tokaddmbc(codepoint, *encp);
+	    }
+	    else if (string_literal) {
+		if (codepoint == 0 && symbol_literal) {
+		    yyerror("symbol cannot contain '\\u{0}'");
+		    return 0;
+		}
+
+		tokadd(codepoint);
+	    }
+	} while(string_literal && (peek(' ') || peek('\t')));
+
+	if (!peek('}')) {
+	    yyerror("unterminated Unicode escape");
+	    return 0;
+	}
+
+	nextc();
+    }
+    else {			/* handle \uxxxx form */
+	codepoint = scan_hex(lex_p, 4, &numlen);
+	if (numlen < 4) {
+	    yyerror("invalid Unicode escape");
+	    return 0;
+	}
+	lex_p += 4;
+	if (codepoint >= 0x80) {
+	    *hasmb = 1;
+	    *encp = UTF8_ENC();
+	    if (string_literal) tokaddmbc(codepoint, *encp);
+	}
+	else if (string_literal) {
+	    if (codepoint == 0 && symbol_literal) {
+		yyerror("symbol cannot contain '\\u0000'");
+		return 0;
+	    }
+
+	    tokadd(codepoint);
+	}
+    }
+
+    return codepoint;
+}
+
+#define ESCAPE_CONTROL 1
+#define ESCAPE_META    2
+
+static int
+parser_read_escape(struct parser_params *parser, int flags,
+		   int *has8bit, int *hasmb, rb_encoding **encp)
+{
+    int c;
+    int numlen;
 
     switch (c = nextc()) {
       case '\\':	/* Backslash */
@@ -4974,6 +5126,7 @@ parser_read_escape(struct parser_params *parser, int *mb)
 
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
 	    int numlen;
 
@@ -4981,21 +5134,19 @@ parser_read_escape(struct parser_params *parser, int *mb)
 	    c = scan_oct(lex_p, 3, &numlen);
 	    lex_p += numlen;
 	}
-	if (mb && (c >= 0200)) *mb = ENC_CODERANGE_UNKNOWN;
+	if (c >= 0200) *has8bit = 1;
 	return c;
 
       case 'x':	/* hex constant */
-	{
-	    int numlen;
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
+	c = tok_hex(&numlen);
+	if (numlen == 0) return 0;
+	if (c >= 0x80) *has8bit = 1;
+	return c;
 
-	    c = scan_hex(lex_p, 2, &numlen);
-	    if (numlen == 0) {
-		yyerror("Invalid escape character syntax");
-		return 0;
-	    }
-	    lex_p += numlen;
-	}
-	if (mb && (c >= 0x80)) *mb = ENC_CODERANGE_UNKNOWN;
+      case 'u':	/* unicode constant: here only for char literal */
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
+	c = parser_tokadd_utf8(parser, hasmb, encp, 0, 0);
 	return c;
 
       case 'b':	/* backspace */
@@ -5005,30 +5156,32 @@ parser_read_escape(struct parser_params *parser, int *mb)
 	return ' ';
 
       case 'M':
+	if (flags & ESCAPE_META) goto eof;
 	if ((c = nextc()) != '-') {
-	    yyerror("Invalid escape character syntax");
 	    pushback(c);
-	    return '\0';
+	    goto eof;
 	}
 	if ((c = nextc()) == '\\') {
-	    if (mb) *mb = ENC_CODERANGE_UNKNOWN;
-	    return read_escape(0) | 0x80;
+	    *has8bit = 1;
+	    int tmp;
+	    return read_escape(flags|ESCAPE_META, &tmp, &tmp, encp) | 0x80;
 	}
 	else if (c == -1) goto eof;
 	else {
-	    if (mb) *mb = ENC_CODERANGE_UNKNOWN;
+            *has8bit = 1;
 	    return ((c & 0xff) | 0x80);
 	}
 
       case 'C':
 	if ((c = nextc()) != '-') {
-	    yyerror("Invalid escape character syntax");
 	    pushback(c);
-	    return '\0';
+	    goto eof;
 	}
       case 'c':
+	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc())== '\\') {
-	    c = read_escape(mb);
+	    int tmp;
+	    c = read_escape(flags|ESCAPE_CONTROL, &tmp, &tmp, encp);
 	}
 	else if (c == '?')
 	    return 0177;
@@ -5045,76 +5198,98 @@ parser_read_escape(struct parser_params *parser, int *mb)
     }
 }
 
+#define tokcopy(n) memcpy(tokspace(n), lex_p - (n), (n))
+
+static void
+parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc)
+{
+    int len = rb_enc_codelen(c, enc);
+    rb_enc_mbcput(c, tokspace(len), enc);
+}
+
 static int
-parser_tokadd_escape(struct parser_params *parser, int term, int *mb)
+parser_tokadd_escape(struct parser_params *parser, int term,
+		     int *has8bit, int *hasmb, rb_encoding **encp)
 {
     int c;
+    int flags = 0;
 
+  first:
     switch (c = nextc()) {
       case '\n':
 	return 0;		/* just ignore */
 
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
 	    int numlen;
 	    int oct;
 
-	    tokadd('\\');
-	    pushback(c);
-	    oct = scan_oct(lex_p, 3, &numlen);
-	    if (numlen == 0) {
-		yyerror("Invalid escape character syntax");
-		return -1;
-	    }
-	    while (numlen--)
-		tokadd(nextc());
-	    if (mb && (oct >= 0200)) *mb = ENC_CODERANGE_UNKNOWN;
+	    oct = scan_oct(--lex_p, 3, &numlen);
+	    if (numlen == 0) goto eof;
+	    lex_p += numlen;
+	    tokcopy(numlen + 1);
+	    if (oct >= 0200) *has8bit = 1;
 	}
 	return 0;
 
       case 'x':	/* hex constant */
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	{
 	    int numlen;
 	    int hex;
 
-	    tokadd('\\');
-	    tokadd(c);
-	    hex = scan_hex(lex_p, 2, &numlen);
-	    if (numlen == 0) {
-		yyerror("Invalid escape character syntax");
-		return -1;
-	    }
-	    while (numlen--)
-		tokadd(nextc());
-	    if (mb && (hex >= 0x80)) *mb = ENC_CODERANGE_UNKNOWN;
+	    hex = tok_hex(&numlen);
+	    if (numlen == 0) goto eof;
+	    lex_p += numlen;
+	    tokcopy(numlen + 2);
+	    if (hex >= 0x80) *has8bit = ENC_CODERANGE_UNKNOWN;
 	}
 	return 0;
 
-      case 'M':
-	if ((c = nextc()) != '-') {
-	    yyerror("Invalid escape character syntax");
-	    pushback(c);
-	    return 0;
+#if 0
+      case 'u':	/* Unicode constant */
+	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
+	{
+	    int numlen;
+	    int uc;
+
+	    uc = tok_utf8(&numlen, encp);
+	    if (numlen == 0) goto eof;
+	    tokaddmbc(uc, *encp);
+	    if (uc >= 0x80) *hasmb = 1;
 	}
-	tokadd('\\'); tokadd('M'); tokadd('-');
-	if (mb) *mb = ENC_CODERANGE_UNKNOWN;
+	return 0;
+#endif
+
+      case 'M':
+	if (flags & ESCAPE_META) goto eof;
+	if ((c = nextc()) != '-') {
+	    pushback(c);
+	    goto eof;
+	}
+	tokcopy(3);
+	*has8bit = 1;
+	flags |= ESCAPE_META;
 	goto escaped;
 
       case 'C':
+	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc()) != '-') {
-	    yyerror("Invalid escape character syntax");
 	    pushback(c);
-	    return 0;
+	    goto eof;
 	}
-	tokadd('\\'); tokadd('C'); tokadd('-');
+	tokcopy(3);
 	goto escaped;
 
       case 'c':
-	tokadd('\\'); tokadd('c');
+	if (flags & ESCAPE_CONTROL) goto eof;
+	tokcopy(2);
+	flags |= ESCAPE_CONTROL;
       escaped:
 	if ((c = nextc()) == '\\') {
-	    return tokadd_escape(term, mb);
+	    goto first;
 	}
 	else if (c == -1) goto eof;
 	tokadd(c);
@@ -5195,18 +5370,40 @@ static void
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_mbclen();
-    do {
-	tokadd(c);
-    } while (--len > 0 && (c = nextc()) != -1);
+    tokadd(c);
+    lex_p += --len;
+    if (len > 0) tokcopy(len);
 }
 
 #define tokadd_mbchar(c) parser_tokadd_mbchar(parser, c)
 
 static int
 parser_tokadd_string(struct parser_params *parser,
-		     int func, int term, int paren, long *nest, int *mb)
+		     int func, int term, int paren, long *nest,
+		     int *has8bit, int *hasmb, rb_encoding **encp)
 {
     int c;
+    int has_mb = 0;
+    rb_encoding *enc = *encp;
+    char *errbuf = 0;
+    static const char mixed_msg[] = "%s mixed within %s source";
+
+#define mixed_error(enc1, enc2) if (!errbuf) {	\
+	int len = sizeof(mixed_msg) - 4;	\
+	len += strlen(rb_enc_name(enc1));	\
+	len += strlen(rb_enc_name(enc2));	\
+	errbuf = ALLOCA_N(char, len);		\
+	snprintf(errbuf, len, mixed_msg,	\
+		 rb_enc_name(enc1),		\
+		 rb_enc_name(enc2));		\
+	yyerror(errbuf);			\
+    }
+#define mixed_escape(beg, enc1, enc2) do {	\
+	const char *pos = lex_p;		\
+	lex_p = beg;				\
+	mixed_error(enc1, enc2);		\
+	lex_p = pos;				\
+    } while (0)
 
     while ((c = nextc()) != -1) {
 	if (paren && c == paren) {
@@ -5227,6 +5424,7 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (c == '\\') {
+	    const char *beg = lex_p - 1;
 	    c = nextc();
 	    switch (c) {
 	      case '\n':
@@ -5239,17 +5437,43 @@ parser_tokadd_string(struct parser_params *parser,
 		if (func & STR_FUNC_ESCAPE) tokadd(c);
 		break;
 
+	      case 'u':
+		if ((func & STR_FUNC_EXPAND) == 0) {
+		    tokadd('\\');
+		    break;
+		}
+		parser_tokadd_utf8(parser, hasmb, &enc, 1,
+				   func & STR_FUNC_SYMBOL);
+		if (has_mb && enc != *encp) {
+		    mixed_escape(beg, enc, *encp);
+		}
+		continue;
+
 	      default:
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
-		    if (tokadd_escape(term, mb) < 0)
+		    if ((c = tokadd_escape(term, has8bit, hasmb, &enc)) < 0)
 			return -1;
+		    if (has_mb && enc != *encp) {
+			mixed_escape(beg, enc, *encp);
+		    }
 		    continue;
 		}
 		else if (func & STR_FUNC_EXPAND) {
+		    int tmb = 0;
 		    pushback(c);
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
-		    c = read_escape(mb);
+		    c = read_escape(0, has8bit, &tmb, &enc);
+		    if (tmb) {
+			*hasmb = tmb;
+			if (has_mb && enc != *encp) {
+			    mixed_escape(beg, enc, *encp);
+			}
+			else {
+			    tokaddmbc(c, enc);
+			}
+			continue;
+		    }
 		}
 		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 		    /* ignore backslashed spaces in %w */
@@ -5260,8 +5484,13 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (parser_ismbchar()) {
+	    has_mb = 1;
+	    if (enc != *encp) {
+		mixed_error(enc, *encp);
+		continue;
+	    }
 	    tokadd_mbchar(c);
-	    if (mb) *mb = ENC_CODERANGE_MULTI;
+            if (hasmb) *hasmb = 1;
 	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
@@ -5275,6 +5504,7 @@ parser_tokadd_string(struct parser_params *parser,
 	}
 	tokadd(c);
     }
+    *encp = enc;
     return c;
 }
 
@@ -5287,7 +5517,8 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int func = quote->nd_func;
     int term = nd_term(quote);
     int paren = nd_paren(quote);
-    int c, space = 0, mb = ENC_CODERANGE_SINGLE;
+    int c, space = 0, has8bit=0, hasmb=0;
+    rb_encoding *enc = parser->enc;
 
     if (func == -1) return tSTRING_END;
     c = nextc();
@@ -5321,21 +5552,21 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	tokadd('#');
     }
     pushback(c);
-    if (tokadd_string(func, term, paren, &quote->nd_nest, &mb) == -1) {
+    if (tokadd_string(func, term, paren, &quote->nd_nest,
+		      &has8bit, &hasmb, &enc) == -1) {
+	ruby_sourceline = nd_line(quote);
 	if (func & STR_FUNC_REGEXP) {
-	    ruby_sourceline = nd_line(quote);
 	    compile_error(PARSER_ARG "unterminated regexp meets end of file");
 	    return tREGEXP_END;
 	}
 	else {
-	    ruby_sourceline = nd_line(quote);
 	    compile_error(PARSER_ARG "unterminated string meets end of file");
 	    return tSTRING_END;
 	}
     }
 
     tokfix();
-    set_yylval_str(STR_NEW3(tok(), toklen(), mb));
+    set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit, hasmb));
     return tSTRING_CONTENT;
 }
 
@@ -5498,7 +5729,9 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
     }
     else {
-	int mb = ENC_CODERANGE_SINGLE, *mbp = &mb;
+	/*	int mb = ENC_CODERANGE_SINGLE, *mbp = &mb;*/
+        int has8bit=0, hasmb=0;
+	rb_encoding *enc = parser->enc;
 	newtok();
 	if (c == '#') {
 	    switch (c = nextc()) {
@@ -5513,16 +5746,17 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0, NULL, mbp)) == -1) goto error;
+	    if ((c = tokadd_string(func, '\n', 0, NULL,
+				   &has8bit, &hasmb, &enc)) == -1) goto error;
 	    if (c != '\n') {
-		set_yylval_str(STR_NEW3(tok(), toklen(), mb));
+		set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit,hasmb));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
-	    if (mbp && mb == ENC_CODERANGE_UNKNOWN) mbp = 0;
+	    /*	    if (mbp && mb == ENC_CODERANGE_UNKNOWN) mbp = 0;*/
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
-	str = STR_NEW3(tok(), toklen(), mb);
+	str = STR_NEW3(tok(), toklen(), enc, has8bit,hasmb);
     }
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
@@ -5782,6 +6016,8 @@ parser_yylex(struct parser_params *parser)
     int space_seen = 0;
     int cmd_state;
     enum lex_state_e last_state;
+    rb_encoding *enc;
+    int has8bit = 0, hasmb = 0;
     int mb;
 #ifdef RIPPER
     int fallthru = Qfalse;
@@ -6123,25 +6359,28 @@ parser_yylex(struct parser_params *parser)
 	    return '?';
 	}
 	newtok();
+	enc = parser->enc;
 	if (parser_ismbchar()) {
-	    mb = ENC_CODERANGE_MULTI;
+	    hasmb = 1;
 	    tokadd_mbchar(c);
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
 		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
 	    goto ternary;
 	}
-	else if (c == '\\' && (c = read_escape(0)) >= 0x80) {
-	    rb_encoding *enc = parser->enc;
-	    mb = ENC_CODERANGE_UNKNOWN;
-	    rb_enc_mbcput(c, tokspace(rb_enc_codelen(c, enc)), enc);
+	else if (c == '\\' && (c = read_escape(0, &has8bit, &hasmb, &enc)) >= 0x80) {
+	    if (hasmb) {
+		tokaddmbc(c, enc);
+	    }
+	    else {
+		tokadd(c);
+	    }
 	}
 	else {
-	    mb = ENC_CODERANGE_SINGLE;
 	    tokadd(c);
 	}
 	tokfix();
-	set_yylval_str(STR_NEW3(tok(), toklen(), mb));
+	set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit, hasmb));
 	lex_state = EXPR_ENDARG;
 	return tCHAR;
 
@@ -7211,6 +7450,17 @@ list_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     return head;
 }
 
+static void
+literal_concat0(struct parser_params *parser, VALUE head, VALUE tail)
+{
+    if (!rb_enc_compatible(head, tail)) {
+	compile_error(PARSER_ARG "string literal encodings differ (%s / %s)",
+		      rb_enc_name(rb_enc_get(head)),
+		      rb_enc_name(rb_enc_get(tail)));
+    }
+    rb_str_buf_append(head, tail);
+}
+
 /* concat two string literals */
 static NODE *
 literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
@@ -7228,7 +7478,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     switch (nd_type(tail)) {
       case NODE_STR:
 	if (htype == NODE_STR) {
-	    rb_str_concat(head->nd_lit, tail->nd_lit);
+	    literal_concat0(parser, head->nd_lit, tail->nd_lit);
 	    rb_gc_force_recycle((VALUE)tail);
 	}
 	else {
@@ -7238,7 +7488,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
       case NODE_DSTR:
 	if (htype == NODE_STR) {
-	    rb_str_concat(head->nd_lit, tail->nd_lit);
+	    literal_concat0(parser, head->nd_lit, tail->nd_lit);
 	    tail->nd_lit = head->nd_lit;
 	    rb_gc_force_recycle((VALUE)head);
 	    head = tail;
