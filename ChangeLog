@@ -1,3 +1,8 @@
+Thu Nov  8 07:14:37 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+        * parse.y (rb_intern3): commented out broken code that prevented
+	  correct interning of multi-byte symbols.  Without this patch
+	  :x==:x is false when x is a multi-byte character. 
+	
 Thu Nov  8 07:04:31 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	* string.c (tr_setup_table, tr_trans): fix test failures
 	  in test/ruby/test_string.rb
