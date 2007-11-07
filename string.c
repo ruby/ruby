@@ -3450,10 +3450,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    tlen = rb_enc_codelen(c, enc);
 		    modify = 1;
 		}
-	    }
-	    else if (cflag) {
-		save = c = last;
-		modify = 1;
+		else {
+		    save = c = last;
+		    modify = 1;
+		}
 	    }
 	    else {
 		save = -1;
@@ -3482,10 +3482,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    *s = c;
 		    modify = 1;
 		}
-	    }
-	    else if (cflag) {
-		*s = last;
-		modify = 1;
+		else {
+		    *s = last;
+		    modify = 1;
+		}
 	    }
 	    s++;
 	}
@@ -3513,10 +3513,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		    tlen = rb_enc_codelen(c, enc);
 		    modify = 1;
 		}
-	    }
-	    else if (cflag) {
-		c = last;
-		modify = 1;
+		else {
+		    c = last;
+		    modify = 1;
+		}
 	    }
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
@@ -3585,7 +3585,7 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
 }
 
 static void
-tr_setup_table(VALUE str, char stable[256],
+tr_setup_table(VALUE str, char stable[256], int first, 
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     char buf[256];
@@ -3601,8 +3601,10 @@ tr_setup_table(VALUE str, char stable[256],
 	cflag = 1;
 	tr.p++;
     }
-    for (i=0; i<256; i++) {
-	stable[i] = 1;
+    if (first) {
+	for (i=0; i<256; i++) {
+	    stable[i] = 1;
+	}
     }
     for (i=0; i<256; i++) {
 	buf[i] = cflag;
@@ -3680,7 +3682,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 
 	StringValue(s);
 	enc = rb_enc_check(str, s);
-	tr_setup_table(s, squeez, &del, &nodel, enc);
+	tr_setup_table(s, squeez, i==0, &del, &nodel, enc);
     }
 
     rb_str_modify(str);
@@ -3758,7 +3760,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 
 	    StringValue(s);
 	    enc = rb_enc_check(str, s);
-	    tr_setup_table(s, squeez, &del, &nodel, enc);
+	    tr_setup_table(s, squeez, i==0, &del, &nodel, enc);
 	}
     }
 
@@ -3883,7 +3885,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 
 	StringValue(s);
 	enc = rb_enc_check(str, s);
-	tr_setup_table(s, table, &del, &nodel, enc);
+	tr_setup_table(s, table,i==0, &del, &nodel, enc);
     }
 
     s = RSTRING_PTR(str);

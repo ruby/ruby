@@ -1,9 +1,13 @@
+Thu Nov  8 07:04:31 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+	* string.c (tr_setup_table, tr_trans): fix test failures
+	  in test/ruby/test_string.rb
+	
 Wed Nov  7 15:07:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_each_with_index): make different arrays at each
 	  iteration.  [ruby-dev:32181]
 
-Tue Nov  7 05:17:24 2007  David Flanagan <davidflanagan@ruby-lang.org>
+Wed Nov  7 05:17:24 2007  David Flanagan <davidflanagan@ruby-lang.org>
 
 	* eval.c: fix typo in invoke_method documentation
 
