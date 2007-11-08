@@ -4973,48 +4973,6 @@ parser_tok_hex(struct parser_params *parser, int *numlen)
     return c;
 }
 
-#if 0
-static int
-parser_tok_utf8(struct parser_params *parser, int *numlen, rb_encoding **encp)
-{
-    int codepoint;
-
-    if (peek('{')) {  /* handle \u{...} form */
-	nextc();
-	codepoint = scan_hex(lex_p, 6, numlen);
-	if (*numlen == 0)  {
-	    yyerror("invalid Unicode escape");
-	    return 0;
-	}
-	if (codepoint > 0x10ffff) {
-	    yyerror("illegal Unicode codepoint (too large)");
-	    return 0;
-	}
-	lex_p += *numlen;
-	if (!peek('}')) {
-	    yyerror("unterminated Unicode escape");
-	    return 0;
-	}
-	nextc();
-    }
-    else {			/* handle \uxxxx form */
-	codepoint = scan_hex(lex_p, 4, numlen);
-	if (*numlen < 4) {
-	    yyerror("invalid Unicode escape");
-	    return 0;
-	}
-	lex_p += 4;
-    }
-    if (codepoint >= 0x80) {
-	*encp = UTF8_ENC();
-    }
-
-    return codepoint;
-}
-#endif
-
-
-
 static int
 parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 		   rb_encoding **encp, int string_literal, int symbol_literal)
@@ -5242,26 +5200,10 @@ parser_tokadd_escape(struct parser_params *parser, int term,
 
 	    hex = tok_hex(&numlen);
 	    if (numlen == 0) goto eof;
-	    lex_p += numlen;
 	    tokcopy(numlen + 2);
 	    if (hex >= 0x80) *has8bit = ENC_CODERANGE_UNKNOWN;
 	}
 	return 0;
-
-#if 0
-      case 'u':	/* Unicode constant */
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
-	{
-	    int numlen;
-	    int uc;
-
-	    uc = tok_utf8(&numlen, encp);
-	    if (numlen == 0) goto eof;
-	    tokaddmbc(uc, *encp);
-	    if (uc >= 0x80) *hasmb = 1;
-	}
-	return 0;
-#endif
 
       case 'M':
 	if (flags & ESCAPE_META) goto eof;
