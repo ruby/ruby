@@ -5162,8 +5162,8 @@ parser_read_escape(struct parser_params *parser, int flags,
 	    goto eof;
 	}
 	if ((c = nextc()) == '\\') {
-	    *has8bit = 1;
 	    int tmp;
+	    *has8bit = 1;
 	    return read_escape(flags|ESCAPE_META, &tmp, &tmp, encp) | 0x80;
 	}
 	else if (c == -1) goto eof;

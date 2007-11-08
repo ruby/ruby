@@ -1,11 +1,17 @@
+Thu Nov  8 12:12:10 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (parser_read_escape): remove C99/gcc-ism.
+
 Thu Nov  8 07:54:22 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
-        * parse.y: patch, based on Nobu's, work to support \u escapes
+
+	* parse.y: patch, based on Nobu's, work to support \u escapes
 	           also modifications for better coderange detection
 	* test/ruby/test_unicode_escapes.rb: test cases
 	* test/ruby/test_mixed_unicode_escapes.rb: mixed encoding test cases
 	
 Thu Nov  8 07:14:37 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
-        * parse.y (rb_intern3): commented out broken code that prevented
+
+	* parse.y (rb_intern3): commented out broken code that prevented
 	  correct interning of multi-byte symbols.  Without this patch
 	  :x==:x is false when x is a multi-byte character. 
 	
