@@ -1,3 +1,7 @@
+Fri Nov  9 07:26:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c: update MT URL.[ruby-core:13305].
+
 Wed Nov  7 03:32:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb (REXML::Encoding): place -x for
