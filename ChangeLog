@@ -1,10 +1,13 @@
+Fri Nov  9 07:26:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c: update MT URL.[ruby-core:13305].
+
 Thu Nov  8 17:09:55 2007  David Flanagan  <davidflanagan@ruby-lang.org>
 	* object.c: improve docs for Object.tap
 	* ChangeLog: fix bogus dates on my previous entries
 
 Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
-	
-Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
+
 	* parse.y: fix segfault with \x escapes in regexps
                    delete unused #if 0 code regions from previous patch
 	

@@ -12,7 +12,7 @@
 
 /* 
 This is based on trimmed version of MT19937.  To get the original version,
-contact <http://www.math.keio.ac.jp/~matumoto/emt.html>.
+contact <http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html>.
 
 The original copyright notice follows.
 
