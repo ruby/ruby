@@ -1,4 +1,10 @@
-Thu Nov  8 15:13:56 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+Thu Nov  8 17:09:55 2007  David Flanagan  <davidflanagan@ruby-lang.org>
+	* object.c: improve docs for Object.tap
+	* ChangeLog: fix bogus dates on my previous entries
+
+Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
+	
+Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	* parse.y: fix segfault with \x escapes in regexps
                    delete unused #if 0 code regions from previous patch
 	
@@ -6,20 +12,20 @@ Thu Nov  8 12:12:10 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (parser_read_escape): remove C99/gcc-ism.
 
-Thu Nov  8 07:54:22 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+Thu Nov  8 07:54:22 2007 David Flanagan <davidflanagan@ruby-lang.org>
 
 	* parse.y: patch, based on Nobu's, work to support \u escapes
 	           also modifications for better coderange detection
 	* test/ruby/test_unicode_escapes.rb: test cases
 	* test/ruby/test_mixed_unicode_escapes.rb: mixed encoding test cases
 	
-Thu Nov  8 07:14:37 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+Thu Nov  8 07:14:37 2007 David Flanagan <davidflanagan@ruby-lang.org>
 
 	* parse.y (rb_intern3): commented out broken code that prevented
 	  correct interning of multi-byte symbols.  Without this patch
 	  :x==:x is false when x is a multi-byte character. 
 	
-Thu Nov  8 07:04:31 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+Thu Nov  8 07:04:31 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	* string.c (tr_setup_table, tr_trans): fix test failures
 	  in test/ruby/test_string.rb
 	
@@ -176,7 +182,7 @@ Thu Nov  1 21:56:45 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* error.c (Init_Exception): make SecurityError to be subclass of
 	  Exception, since it's too important to be handled implicitly.
 
-Thu Nov  1 14:51:39 UTC 2007 David Flanagan <davidflanagan@ruby-lang.org>
+Thu Nov  1 14:51:39 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	* enum.c (take_while_i, drop_while_i) add RTEST to handle nil return
 	
 Thu Nov  1 02:12:50 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -259,7 +265,7 @@ Fri Oct 26 15:00:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* misc/ruby-style.el (ruby-style-{case,label}-indent): adjust for
 	  labels inside switch block.
 
-Fri Oct 26 05:48:57 UTC 2007  David Flanagan <davidflanagan@ruby-lang.org>
+Fri Oct 26 05:48:57 2007  David Flanagan <davidflanagan@ruby-lang.org>
 	* array.c: raise IndexError for negative length in rb_ary_fill
 	
 Wed Oct 25 07:12:03 2007  James Edward Gray II  <jeg2@ruby-lang.org>
