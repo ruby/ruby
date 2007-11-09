@@ -1,3 +1,11 @@
+Fri Nov  9 13:45:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_iterator.rb (TestIterator::IterTest::each):
+	  #each_pair is now alias to #each.  [ruby-dev:32192]
+
+	* test/ruby/test_iterator.rb (TestIterator::test_assoc_yield):
+	  ditto 
+
 Fri Nov  9 12:56:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_load.c (loaded_feature_path): check with type of given feature.

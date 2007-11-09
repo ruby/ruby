@@ -361,10 +361,7 @@ class TestIterator < Test::Unit::TestCase
     def each
       yield [:key, :value]
     end
-
-    def each_pair
-      yield :key, :value
-    end
+    alias each_pair each
   end
 
   def test_assoc_yield
@@ -373,9 +370,9 @@ class TestIterator < Test::Unit::TestCase
        h.each{|a,| assert_equal(:key, a)}
        h.each{|*a| assert_equal([[:key, :value]], a)}
        h.each{|k,v| assert_equal([:key, :value], [k,v])}
-       h.each_pair{|a| assert_equal(:key, a)}
+       h.each_pair{|a| assert_equal([:key, :value], a)}
        h.each_pair{|a,| assert_equal(:key, a)}
-       h.each_pair{|*a| assert_equal([:key, :value], a)}
+       h.each_pair{|*a| assert_equal([[:key, :value]], a)}
        h.each_pair{|k,v| assert_equal([:key, :value], [k,v])}
     }
   end
