@@ -525,7 +525,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     st_data_t num;
     int hasiv = 0;
 #define has_ivars(obj, ivtbl) ((ivtbl = rb_generic_ivar_table(obj)) != 0 || \
-			       (!IMMEDIATE_P(obj) && ENCODING_GET(obj)))
+			       (!SPECIAL_CONST_P(obj) && ENCODING_GET(obj)))
 
     if (limit == 0) {
 	rb_raise(rb_eArgError, "exceed depth limit");
