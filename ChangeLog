@@ -1,3 +1,9 @@
+Fri Nov  9 22:04:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.h (FRAME_MAGIC_MASK_BITS): bits of FRAME_MAGIC_MASK.
+
+	* insnhelper.ci (vm_call_cfunc, vm_cfunc_flags): use shift operations.
+
 Fri Nov  9 21:46:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (eval): should be volatile value for GC.

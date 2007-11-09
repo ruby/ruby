@@ -236,7 +236,8 @@ default:                        \
 #define FRAME_MAGIC_IFUNC  0x81
 #define FRAME_MAGIC_EVAL   0x91
 #define FRAME_MAGIC_LAMBDA 0xa1
-#define FRAME_MAGIC_MASK   0xff
+#define FRAME_MAGIC_MASK_BITS   8
+#define FRAME_MAGIC_MASK   (~(~0<<FRAME_MAGIC_MASK_BITS))
 
 #define VM_FRAME_FLAG(type) ((VALUE)((type) & FRAME_MAGIC_MASK))
 

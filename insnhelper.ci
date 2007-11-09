@@ -355,7 +355,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
     {
 	rb_control_frame_t *cfp =
-	    vm_push_frame(th, 0, FRAME_MAGIC_CFUNC | flag * (FRAME_MAGIC_MASK + 1),
+	    vm_push_frame(th, 0, FRAME_MAGIC_CFUNC | (flag << FRAME_MAGIC_MASK_BITS),
 			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
 
 	cfp->method_id = id;
@@ -379,7 +379,7 @@ static int
 vm_cfunc_flags(rb_control_frame_t *cfp)
 {
     if (RUBYVM_CFUNC_FRAME_P(cfp))
-	return cfp->flag / (FRAME_MAGIC_MASK + 1);
+	return cfp->flag >> FRAME_MAGIC_MASK_BITS;
     return 0;
 }
 
