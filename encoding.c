@@ -48,7 +48,6 @@ enc_new(rb_encoding *encoding)
 VALUE
 rb_enc_from_encoding(rb_encoding *encoding)
 {
-    VALUE enc;
     if (!encoding) return 0;
     if (enc_initialized_p(encoding))
 	return ENC_FROM_ENCODING(encoding);
@@ -63,7 +62,7 @@ enc_check_encoding(VALUE obj)
 	RDATA(obj)->dmark != enc_mark) {
 	return -1;
     }
-    index = rb_enc_get_index(obj);
+    index = rb_enc_to_index(RDATA(obj)->data);
     if (rb_enc_from_index(index) != RDATA(obj)->data)
 	return -1;
     return index;
@@ -619,8 +618,7 @@ get_primary_encoding(VALUE klass)
 void
 rb_set_primary_encoding(VALUE encoding)
 {
-    rb_to_encoding(encoding);
-    primary_encoding_index = ENCODING_GET(encoding);
+    primary_encoding_index = rb_enc_to_index(rb_to_encoding(encoding));
 }
 
 static void
