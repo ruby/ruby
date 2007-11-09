@@ -2022,11 +2022,11 @@ rb_io_each_byte(VALUE io)
 	p = fptr->rbuf+fptr->rbuf_off;
 	e = p + fptr->rbuf_len;
 	while (p < e) {
+	    fptr->rbuf_off++;
+	    fptr->rbuf_len--;
 	    rb_yield(INT2FIX(*p & 0xff));
 	    p++;
 	}
-	fptr->rbuf_off += fptr->rbuf_len;
-	fptr->rbuf_len = 0;
 	rb_io_check_readable(fptr);
 	READ_CHECK(fptr);
 	if (io_fillbuf(fptr) < 0) {
