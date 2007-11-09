@@ -1,3 +1,7 @@
+Fri Nov  9 10:05:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.c (set_arg0): fix breaking environ bugs.
+
 Fri Nov  9 07:26:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c: update MT URL.[ruby-core:13305].

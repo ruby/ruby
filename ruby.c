@@ -1173,7 +1173,7 @@ get_arglen(int argc, char **argv)
 static void
 set_arg0(VALUE val, ID id)
 {
-    char *s;
+    char *s, *t;
     long i;
 
     if (origarg.argv == 0)
@@ -1204,13 +1204,16 @@ set_arg0(VALUE val, ID id)
     }
 
     memcpy(origarg.argv[0], s, i);
-    s = origarg.argv[0] + i;
-    *s = '\0';
-    if (i + 1 < origarg.len) memset(s + 1, ' ', origarg.len - i - 1);
+    t = origarg.argv[0] + i;
+    *t = '\0';
+
+    if (i + 1 < origarg.len) memset(t + 1, ' ', origarg.len - i - 1);
+
     {
 	int j;
-	for (j = 1; j < origarg.argc; j++)
-	    origarg.argv[i] = s;
+	for (j = 1; j < origarg.argc; j++) {
+	    origarg.argv[j] = t;
+	}
     }
 #endif
     rb_progname = rb_tainted_str_new(s, i);
