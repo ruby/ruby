@@ -1,3 +1,10 @@
+Fri Nov  9 17:48:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (locale_encoding): guestimate encoding from environment
+	  variables.  [ruby-core:13315]
+
+	* ruby.c (process_options): set primary encoding from environment.
+
 Fri Nov  9 16:51:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_each_byte): should update rbuf_off and rbuf_len for

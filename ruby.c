@@ -132,6 +132,37 @@ usage(const char *name)
 	printf("  %s\n", *p++);
 }
 
+static rb_encoding *
+locale_encoding(void)
+{
+    static const char *const langs[] = {"LC_ALL", "LC_CTYPE", "LANG",};
+    const char *lang, *at;
+    int i, len, idx = 0;
+    char buf[32];
+    rb_encoding *enc;
+
+    for (i = 0; i < sizeof(langs) / sizeof(langs[0]); ++i) {
+	if (!(lang = getenv(langs[i]))) continue;
+	if (!(lang = strchr(lang, '.'))) continue;
+	at = strchr(++lang, '@');
+	if ((len = (at ? at - lang : strlen(lang))) >= sizeof(buf) - 1) continue;
+	MEMCPY(buf, lang, char, len);
+	buf[len] = 0;
+	idx = rb_enc_find_index(buf);
+	if (idx < 0 && len > 3 &&
+	    (strncasecmp(buf, "euc", 3) == 0 ||
+	     strncasecmp(buf, "utf", 3) == 0) &&
+	    buf[3]) {
+	    MEMMOVE(buf + 4, buf + 3, char, len - 2);
+	    buf[3] = '-';
+	    idx = rb_enc_find_index(buf);
+	}
+	enc = rb_enc_from_index(idx);
+	if (enc) return enc;
+    }
+    return rb_enc_default();
+}
+
 extern VALUE rb_load_path;
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
@@ -850,7 +881,7 @@ process_options(VALUE arg)
     char **argv = opt->argv;
     NODE *tree = 0;
     VALUE parser;
-    VALUE encoding;
+    rb_encoding *enc;
     const char *s;
     int i = proc_options(argc, argv, opt);
 
@@ -979,12 +1010,12 @@ process_options(VALUE arg)
     }
 
     if (opt->enc_index >= 0) {
-	encoding = rb_enc_from_encoding(rb_enc_from_index(opt->enc_index));
+	enc = rb_enc_from_index(opt->enc_index);
     }
     else {
-	encoding = rb_parser_encoding(parser);
+	enc = locale_encoding();
     }
-    rb_set_primary_encoding(encoding);
+    rb_set_primary_encoding(rb_enc_from_encoding(enc));
 
     return (VALUE)tree;
 }
