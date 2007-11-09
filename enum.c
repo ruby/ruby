@@ -1295,7 +1295,7 @@ each_with_index_i(VALUE val, VALUE memo)
 {
     long n = (*(VALUE *)memo)++;
 
-    return rb_yield(rb_ary_new3(2, val, INT2NUM(n)));
+    return rb_yield_values(2, val, INT2NUM(n));
 }
 
 /*

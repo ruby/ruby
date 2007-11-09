@@ -1,3 +1,9 @@
+Fri Nov  9 13:57:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (each_with_index_i): use rb_yield_values() for
+	  compatibility with Enumerator#with_index().  a patch from Yusuke
+	  ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:32195]
+
 Fri Nov  9 13:45:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_iterator.rb (TestIterator::IterTest::each):
