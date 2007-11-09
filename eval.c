@@ -1355,7 +1355,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 }
 
 static VALUE
-rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
+rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope, VALUE self)
 {
     NODE *body, *method;
     int noex;
@@ -1409,8 +1409,7 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 		    defined_class = RBASIC(defined_class)->klass;
 		}
 		
-		if (!rb_obj_is_kind_of(rb_frame_self(),
-				       rb_class_real(defined_class))) {
+		if (!rb_obj_is_kind_of(self, rb_class_real(defined_class))) {
 		    return method_missing(recv, mid, argc, argv, NOEX_PROTECTED);
 		}
 	    }
@@ -1442,6 +1441,12 @@ rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
     }
 }
 
+static VALUE
+rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
+{
+    return rb_call0(klass, recv, mid, argc, argv, scope, rb_frame_self());
+}
+
 VALUE
 rb_apply(VALUE recv, ID mid, VALUE args)
 {
@@ -1458,6 +1463,7 @@ static VALUE
 send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 {
     VALUE vid;
+    VALUE self = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_THREAD()->cfp)->self;
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "no method name given");
@@ -1465,7 +1471,7 @@ send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 
     vid = *argv++; argc--;
     PASS_PASSED_BLOCK();
-    return rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, scope);
+    return rb_call0(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, scope, self);
 }
 
 /*

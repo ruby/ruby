@@ -1,3 +1,10 @@
+Fri Nov  9 10:43:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (send_internal): use self in the previous frame to check for
+	  protected methods.  [ruby-core:13254]
+
+	* insnhelper.ci (vm_call_method): send! method has gone.
+
 Fri Nov  9 10:38:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* marshal.c (w_object): should be SPECIAL_CONST_P() instead of

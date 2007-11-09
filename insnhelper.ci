@@ -547,7 +547,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		val = vm_method_missing(th, id, recv, num, blockptr, stat);
 	    }
 	    else if (((mn->nd_noex & NOEX_MASK) & NOEX_PROTECTED) &&
-		     !(flag & VM_CALL_SEND_BANG_BIT)) {
+		     !(flag & VM_CALL_SEND_BIT)) {
 		VALUE defined_class = mn->nd_clss;
 
 		if (TYPE(defined_class) == T_ICLASS) {
