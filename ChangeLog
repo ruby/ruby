@@ -3,6 +3,9 @@ Fri Nov  9 16:51:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (rb_io_each_byte): should update rbuf_off and rbuf_len for
 	  each iteration.  [ruby-dev:31659][ruby-dev:32192]
 
+	* variable.c (rb_cvar_set): cvar assignment obey same rule to cvar
+	  reference.  [ruby-dev:32192]
+
 Fri Nov  9 15:52:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_check_encoding, rb_set_primary_encoding): ENCODING

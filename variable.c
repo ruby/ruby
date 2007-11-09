@@ -1710,41 +1710,6 @@ original_module(c)
     return c;
 }
 
-void
-rb_cvar_set(VALUE klass, ID id, VALUE val)
-{
-    VALUE tmp;
-    VALUE front = 0, target = 0;
-
-    tmp = klass;
-    while (tmp) {
-	if (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp),id,0)) {
-	    if (!front) front = tmp;
-	    target = tmp;
-	}
-	tmp = RCLASS_SUPER(tmp);
-    }
-    if (target) {
-	if (front && target != front) {
-	    ID did = id;
-
-	    if (RTEST(ruby_verbose)) {
-		rb_warning("class variable %s of %s is overtaken by %s",
-			   rb_id2name(id), rb_class2name(original_module(front)),
-			   rb_class2name(original_module(target)));
-	    }
-	    if (BUILTIN_TYPE(front) == T_CLASS) {
-		st_delete(RCLASS_IV_TBL(front),&did,0);
-	    }
-	}
-    }
-    else {
-	target = klass;
-    }
-
-    mod_av_set(target, id, val, Qfalse);
-}
-
 #define CVAR_LOOKUP(v,r) do {\
     if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),id,(v))) {\
 	r;\
@@ -1771,6 +1736,33 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	klass = RCLASS_SUPER(klass);\
     }\
 } while(0)
+
+void
+rb_cvar_set(VALUE klass, ID id, VALUE val)
+{
+    VALUE tmp, front = 0, target = 0;
+
+    tmp = klass;
+    CVAR_LOOKUP(0, {if (!front) front = klass; target = klass;});
+    if (target) {
+	if (front && target != front) {
+	    ID did = id;
+
+	    if (RTEST(ruby_verbose)) {
+		rb_warning("class variable %s of %s is overtaken by %s",
+			   rb_id2name(id), rb_class2name(original_module(front)),
+			   rb_class2name(original_module(target)));
+	    }
+	    if (BUILTIN_TYPE(front) == T_CLASS) {
+		st_delete(RCLASS_IV_TBL(front),&did,0);
+	    }
+	}
+    }
+    else {
+	target = tmp;
+    }
+    mod_av_set(target, id, val, Qfalse);
+}
 
 VALUE
 rb_cvar_get(VALUE klass, ID id)
