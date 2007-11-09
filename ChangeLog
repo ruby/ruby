@@ -1,3 +1,7 @@
+Fri Nov  9 12:56:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_load.c (loaded_feature_path): check with type of given feature.
+
 Fri Nov  9 10:43:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (send_internal): use self in the previous frame to check for

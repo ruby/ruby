@@ -6,6 +6,7 @@
 
 VALUE ruby_dln_librefs;
 
+#define IS_RBEXT(e) (strcmp(e, ".rb") == 0)
 #define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
 #ifdef DLEXT2
 #define IS_DLEXT(e) (strcmp(e, DLEXT) == 0 || strcmp(e, DLEXT2) == 0)
@@ -50,7 +51,7 @@ get_loading_table(void)
 
 static VALUE
 loaded_feature_path(const char *name, long vlen, const char *feature, long len,
-		    VALUE load_path)
+		    int type, VALUE load_path)
 {
     long i;
 
@@ -63,7 +64,16 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
 	if (strncmp(name + n + 1, feature, len)) continue;
 	if (name[n+len+1] && name[n+len+1] != '.') continue;
-	return p;
+	switch (type) {
+	  case 's':
+	    if (IS_DLEXT(&name[n+len+1])) return p;
+	    break;
+	  case 'r':
+	    if (IS_RBEXT(&name[n+len+1])) return p;
+	    break;
+	  default:
+	    return p;
+	}
     }
     return 0;
 }
@@ -71,6 +81,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 struct loaded_feature_searching {
     const char *name;
     long len;
+    int type;
     VALUE load_path;
     const char *result;
 };
@@ -80,7 +91,8 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 {
     const char *s = (const char *)v;
     struct loaded_feature_searching *fp = (struct loaded_feature_searching *)f;
-    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len, fp->load_path);
+    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len,
+				  fp->type, fp->load_path);
     if (!p) return ST_CONTINUE;
     fp->result = s;
     return ST_STOP;
@@ -93,14 +105,17 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
     const char *f, *e;
     long i, len, elen, n;
     st_table *loading_tbl;
+    int type;
 
     if (ext) {
 	len = ext - feature;
 	elen = strlen(ext);
+	type = rb ? 'r' : 's';
     }
     else {
 	len = strlen(feature);
 	elen = 0;
+	type = 0;
     }
     features = get_loaded_features();
     for (i = 0; i < RARRAY_LEN(features); ++i) {
@@ -110,7 +125,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	if (strncmp(f, feature, len) != 0) {
 	    if (expanded) continue;
 	    if (!load_path) load_path = get_load_path();
-	    if (!(p = loaded_feature_path(f, n, feature, len, load_path)))
+	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
 		continue;
 	    f += RSTRING_LEN(p) + 1;
 	}
@@ -122,7 +137,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
 	    return 's';
 	}
-	if ((rb || !ext) && (strcmp(e, ".rb") == 0)) {
+	if ((rb || !ext) && (IS_RBEXT(e))) {
 	    return 'r';
 	}
     }
@@ -132,6 +147,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	    struct loaded_feature_searching fs;
 	    fs.name = feature;
 	    fs.len = len;
+	    fs.type = type;
 	    fs.load_path = load_path ? load_path : get_load_path();
 	    fs.result = 0;
 	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
@@ -140,7 +156,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	if (st_lookup(loading_tbl, (st_data_t)feature, 0)) {
 	  loading:
 	    if (!ext) return 'u';
-	    return strcmp(ext, ".rb") ? 's' : 'r';
+	    return !IS_RBEXT(ext) ? 's' : 'r';
 	}
 	else {
 	    char *buf;
@@ -165,7 +181,7 @@ rb_provided(const char *feature)
     const char *ext = strrchr(feature, '.');
 
     if (ext && !strchr(ext, '/')) {
-	if (strcmp(".rb", ext) == 0) {
+	if (IS_RBEXT(ext)) {
 	    if (rb_feature_p(feature, ext, Qtrue, Qfalse)) return Qtrue;
 	    return Qfalse;
 	}
@@ -381,7 +397,7 @@ search_required(VALUE fname, volatile VALUE *path)
     *path = 0;
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
-	if (strcmp(".rb", ext) == 0) {
+	if (IS_RBEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, Qtrue, Qfalse))
 		return 'r';
 	    if ((tmp = rb_find_file(fname)) != 0) {
