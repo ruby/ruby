@@ -52,9 +52,7 @@ rb_enc_from_encoding(rb_encoding *encoding)
     if (!encoding) return 0;
     if (enc_initialized_p(encoding))
 	return ENC_FROM_ENCODING(encoding);
-    enc = enc_new(encoding);
-    rb_enc_associate(enc, encoding);
-    return enc;
+    return enc_new(encoding);
 }
 
 static int
@@ -146,8 +144,8 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     encoding = ent->enc;
     encoding->name = name;
     if (rb_cEncoding) {
-	VALUE enc = enc_new(encoding);
-	rb_enc_associate_index(enc, index);
+	/* initialize encoding data */
+	enc_new(encoding);
     }
     else {
 	encoding->auxiliary_data = ENC_UNINITIALIZED;
@@ -523,13 +521,13 @@ static VALUE
 enc_to_s(VALUE self)
 {
     return rb_sprintf("<%s:%s>", rb_obj_classname(self),
-		      rb_enc_name(enc_get_encoding(self)));
+		      rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
 static VALUE
 enc_name(VALUE self)
 {
-    return rb_str_new2(rb_enc_name(enc_get_encoding(self)));
+    return rb_str_new2(rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
 static VALUE

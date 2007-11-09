@@ -1086,7 +1086,9 @@ r_ivar(VALUE obj, struct load_arg *arg)
 		int idx = rb_enc_find_index(StringValueCStr(val));
 		if (idx > 0) rb_enc_associate_index(obj, idx);
 	    }
-	    rb_ivar_set(obj, id, val);
+	    else {
+		rb_ivar_set(obj, id, val);
+	    }
 	}
     }
 }

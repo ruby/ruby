@@ -483,16 +483,16 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 'B/singleton', CVarB.cvB
     assert_equal 'B/singleton', CVarB.cvB2
     assert_equal 'B/singleton', CVarB.new.cvB
-    assert_equal 'CVarA@@cv',   CVarA.cv
-    assert_equal 'CVarA@@cv',   CVarA.cv2
-    assert_equal 'CVarA@@cv',   CVarA.new.cv
+    assert_equal 'B/singleton', CVarA.cv
+    assert_equal 'B/singleton', CVarA.cv2
+    assert_equal 'B/singleton', CVarA.new.cv
     CVarB.new.cvB = 'B/instance'
     assert_equal 'B/instance',  CVarB.cvB
     assert_equal 'B/instance',  CVarB.cvB2
     assert_equal 'B/instance',  CVarB.new.cvB
-    assert_equal 'CVarA@@cv',   CVarA.cv
-    assert_equal 'CVarA@@cv',   CVarA.cv2
-    assert_equal 'CVarA@@cv',   CVarA.new.cv
+    assert_equal 'B/instance',  CVarA.cv
+    assert_equal 'B/instance',  CVarA.cv2
+    assert_equal 'B/instance',  CVarA.new.cv
 
     CVarA.cv = 'CVarA@@cv'
     CVarB.cvB = 'CVarB@@cv'

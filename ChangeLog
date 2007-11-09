@@ -2,6 +2,22 @@ Fri Nov  9 12:56:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_load.c (loaded_feature_path): check with type of given feature.
 
+Fri Nov  9 12:43:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_basicinstructions.rb: updated for new class
+	  behavior.  [ruby-dev:32192]
+
+	* encoding.c (enc_name): Encoding should not rely on ENCODING in
+	  the FL_USERS flags.
+
+	* encoding.c (rb_enc_from_encoding): do not call rb_enc_associate
+	  for encoding itself.
+
+	* encoding.c (enc_register_at): ditto.
+
+	* marshal.c (r_ivar): do not set real instance variable for
+	  encoding data associated.
+
 Fri Nov  9 10:43:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (send_internal): use self in the previous frame to check for
