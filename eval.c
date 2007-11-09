@@ -1700,7 +1700,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
-	VALUE iseqval;
+	volatile VALUE iseqval;
 
 	if (scope != Qnil) {
 	    if (CLASS_OF(scope) == rb_cBinding) {
