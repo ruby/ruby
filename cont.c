@@ -15,6 +15,12 @@
 #include "gc.h"
 #include "eval_intern.h"
 
+enum context_type {
+    CONTINUATION_CONTEXT = 0,
+    FIBER_CONTEXT = 1,
+    ROOT_FIBER_CONTEXT = 2,
+};
+
 typedef struct rb_context_struct {
     VALUE self;
     VALUE value;
@@ -29,9 +35,9 @@ typedef struct rb_context_struct {
     rb_thread_t saved_thread;
     rb_jmpbuf_t jmpbuf;
     int machine_stack_size;
-    /* for cont */
     VALUE prev;
     int alive;
+    enum context_type type;
 } rb_context_t;
 
 static VALUE rb_cContinuation;
@@ -86,10 +92,11 @@ cont_free(void *ptr)
 	RUBY_FREE_UNLESS_NULL(cont->machine_register_stack);
 #endif
 	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
-	if (cont->vm_stack && cont->saved_thread.local_storage) {
-	    /* fiber */
+
+	if (cont->type == FIBER_CONTEXT) {
 	    st_free_table(cont->saved_thread.local_storage);
 	}
+
 	ruby_xfree(ptr);
     }
     RUBY_FREE_LEAVE("cont");
@@ -205,14 +212,7 @@ cont_restore_1(rb_context_t *cont)
     rb_thread_t *th = GET_THREAD(), *sth = &cont->saved_thread;
 
     /* restore thread context */
-    if (sth->stack) {
-	/* fiber */
-	th->stack = sth->stack;
-	th->stack_size = sth->stack_size;
-	th->local_storage = sth->local_storage;
-	th->fiber = cont->self;
-    }
-    else {
+    if (cont->type == CONTINUATION_CONTEXT) {
 	/* continuation */
 	VALUE fib;
 
@@ -226,6 +226,13 @@ cont_restore_1(rb_context_t *cont)
 	    th->stack = fcont->saved_thread.stack;
 	}
 	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+    }
+    else {
+	/* fiber */
+	th->stack = sth->stack;
+	th->stack_size = sth->stack_size;
+	th->local_storage = sth->local_storage;
+	th->fiber = cont->self;
     }
 
     th->cfp = sth->cfp;
@@ -476,15 +483,25 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
 #define FIBER_VM_STACK_SIZE (4 * 1024)
 
-static VALUE
-fiber_alloc(VALUE klass, VALUE proc)
+static rb_context_t *
+fiber_alloc(VALUE klass)
 {
     rb_context_t *cont = cont_new(klass);
+
+    cont->type = FIBER_CONTEXT;
+    cont->prev = Qnil;
+
+    return cont;
+}
+
+static VALUE
+fiber_new(VALUE klass, VALUE proc)
+{
+    rb_context_t *cont = fiber_alloc(klass);
     VALUE contval = cont->self;
     rb_thread_t *th = &cont->saved_thread;
 
     /* initialize */
-    cont->prev = Qnil;
     cont->vm_stack = 0;
 
     th->stack = 0;
@@ -517,13 +534,13 @@ fiber_alloc(VALUE klass, VALUE proc)
 VALUE
 rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
 {
-    return fiber_alloc(rb_cFiber, rb_proc_new(func, obj));
+    return fiber_new(rb_cFiber, rb_proc_new(func, obj));
 }
 
 static VALUE
 rb_fiber_s_new(VALUE self)
 {
-    return fiber_alloc(self, rb_block_proc());
+    return fiber_new(self, rb_block_proc());
 }
 
 static VALUE
@@ -604,15 +621,15 @@ rb_fiber_current()
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
 	/* save root */
-	rb_context_t *cont = cont_new(rb_cFiber);
-	cont->prev = Qnil;
+	rb_context_t *cont = fiber_alloc(rb_cFiber);
+	cont->type = ROOT_FIBER_CONTEXT;
 	th->root_fiber = th->fiber = cont->self;
     }
     return th->fiber;
 }
 
 static VALUE
-cont_store(rb_context_t *next_cont)
+fiber_store(rb_context_t *next_cont)
 {
     rb_thread_t *th = GET_THREAD();
     rb_context_t *cont;
@@ -623,8 +640,8 @@ cont_store(rb_context_t *next_cont)
     }
     else {
 	/* create current fiber */
-	cont = cont_new(rb_cFiber); /* no need to allocate vm stack */
-	cont->prev = Qnil;
+	cont = fiber_alloc(rb_cFiber); /* no need to allocate vm stack */
+	cont->type = ROOT_FIBER_CONTEXT;
 	th->root_fiber = th->fiber = cont->self;
     }
 
@@ -665,7 +682,7 @@ fiber_switch(VALUE fib, int argc, VALUE *argv, int is_resume)
 
     cont->value = make_passing_arg(argc, argv);
 
-    if ((value = cont_store(cont)) == Qundef) {
+    if ((value = fiber_store(cont)) == Qundef) {
 	cont_restore_0(cont, &value);
 	rb_bug("rb_fiber_resume: unreachable");
     }

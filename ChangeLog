@@ -1,3 +1,7 @@
+Fri Nov  9 10:10:21 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c: add rb_context_t#type.
+
 Fri Nov  9 10:05:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.c (set_arg0): fix breaking environ bugs.
