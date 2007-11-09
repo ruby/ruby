@@ -1,3 +1,8 @@
+Fri Nov  9 15:20:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_squeeze_bang): initialize squeezing table if no
+	  arguments given.
+
 Fri Nov  9 13:57:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (each_with_index_i): use rb_yield_values() for

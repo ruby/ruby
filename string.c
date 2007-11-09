@@ -3591,7 +3591,7 @@ tr_setup_table(VALUE str, char stable[256], int first,
     char buf[256];
     struct tr tr;
     int c;
-    VALUE table = 0, ptable;
+    VALUE table = 0, ptable = 0;
     int i, cflag = 0;
 
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
@@ -3752,6 +3752,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     int i;
 
     if (argc == 0) {
+	memset(squeez, 1, sizeof(squeez));
 	enc = rb_enc_get(str);
     }
     else {
