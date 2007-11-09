@@ -1436,6 +1436,14 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockp
     return val;
 }
 
+int
+rb_vm_cfunc_funcall_p(rb_control_frame_t *cfp)
+{
+    if (vm_cfunc_flags(cfp) & (VM_CALL_FCALL_BIT | VM_CALL_VCALL_BIT))
+	return Qtrue;
+    return Qfalse;
+}
+
 /* vm */
 
 static void

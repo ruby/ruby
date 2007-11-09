@@ -1507,11 +1507,11 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 VALUE
 rb_invoke_method(int argc, VALUE *argv, VALUE recv)
 {
+    int rb_vm_cfunc_funcall_p(rb_control_frame_t *);
     int scope = NOEX_PUBLIC;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 
-    if (SPECIAL_CONST_P(cfp->sp[0])) {
+    if (rb_vm_cfunc_funcall_p(th->cfp)) {
 	scope = NOEX_NOSUPER | NOEX_PRIVATE;
     }
 

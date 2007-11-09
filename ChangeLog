@@ -1,3 +1,14 @@
+Fri Nov  9 10:29:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_invoke_method): check if invoked in function style.
+	  [ruby-core:13245]
+
+	* insnhelper.ci (vm_call_cfunc, vm_cfunc_flags): stores and returns VM
+	  calling flags.
+
+	* vm.c (rb_vm_cfunc_funcall_p): returns if the current method is
+	  invoked in function style.
+
 Fri Nov  9 10:10:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c: add rb_context_t#type.
@@ -11,7 +22,9 @@ Fri Nov  9 07:26:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* random.c: update MT URL.[ruby-core:13305].
 
 Thu Nov  8 17:09:55 2007  David Flanagan  <davidflanagan@ruby-lang.org>
+
 	* object.c: improve docs for Object.tap
+
 	* ChangeLog: fix bogus dates on my previous entries
 
 Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
@@ -27,7 +40,9 @@ Thu Nov  8 07:54:22 2007 David Flanagan <davidflanagan@ruby-lang.org>
 
 	* parse.y: patch, based on Nobu's, work to support \u escapes
 	           also modifications for better coderange detection
+
 	* test/ruby/test_unicode_escapes.rb: test cases
+
 	* test/ruby/test_mixed_unicode_escapes.rb: mixed encoding test cases
 	
 Thu Nov  8 07:14:37 2007 David Flanagan <davidflanagan@ruby-lang.org>
@@ -37,6 +52,7 @@ Thu Nov  8 07:14:37 2007 David Flanagan <davidflanagan@ruby-lang.org>
 	  :x==:x is false when x is a multi-byte character. 
 	
 Thu Nov  8 07:04:31 2007 David Flanagan <davidflanagan@ruby-lang.org>
+
 	* string.c (tr_setup_table, tr_trans): fix test failures
 	  in test/ruby/test_string.rb
 	
