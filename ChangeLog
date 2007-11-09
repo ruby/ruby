@@ -1,3 +1,9 @@
+Fri Nov  9 23:33:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_nextc): added single line read forward buffer.
+
+	* parse.y (parser_yylex): adjust line number for fluent interface.
+
 Fri Nov  9 22:04:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.h (FRAME_MAGIC_MASK_BITS): bits of FRAME_MAGIC_MASK.

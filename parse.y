@@ -224,6 +224,7 @@ struct parser_params {
     int parser_toksiz;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
+    VALUE parser_lex_nextline;
     const char *parser_lex_pbeg;
     const char *parser_lex_p;
     const char *parser_lex_pend;
@@ -304,6 +305,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define toksiz			(parser->parser_toksiz)
 #define lex_input		(parser->parser_lex_input)
 #define lex_lastline		(parser->parser_lex_lastline)
+#define lex_nextline		(parser->parser_lex_nextline)
 #define lex_pbeg		(parser->parser_lex_pbeg)
 #define lex_p			(parser->parser_lex_p)
 #define lex_pend		(parser->parser_lex_pend)
@@ -4852,15 +4854,19 @@ parser_nextc(struct parser_params *parser)
     int c;
 
     if (lex_p == lex_pend) {
-        if (parser->eofp)
-            return -1;
-	if (lex_input) {
-	    VALUE v = lex_getline(parser);
+	VALUE v = lex_nextline;
+	lex_nextline = 0;
+	if (!v) {
+	    if (parser->eofp)
+		return -1;
 
-	    if (NIL_P(v)) {
-                parser->eofp = Qtrue;
-                return -1;
-            }
+	    if (!lex_input || NIL_P(v = lex_getline(parser))) {
+		parser->eofp = Qtrue;
+		lex_lastline = 0;
+		return -1;
+	    }
+	}
+	{	
 #ifdef RIPPER
 	    if (parser->tokp < lex_pend) {
 		if (NIL_P(parser->delayed)) {
@@ -4888,10 +4894,6 @@ parser_nextc(struct parser_params *parser)
 	    ripper_flush(parser);
 #endif
 	    lex_lastline = v;
-	}
-	else {
-	    lex_lastline = 0;
-	    return -1;
 	}
     }
     c = (unsigned char)*lex_p++;
@@ -5013,7 +5015,7 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 
 		tokadd(codepoint);
 	    }
-	} while(string_literal && (peek(' ') || peek('\t')));
+	} while (string_literal && (peek(' ') || peek('\t')));
 
 	if (!peek('}')) {
 	    yyerror("unterminated Unicode escape");
@@ -6061,7 +6063,9 @@ parser_yylex(struct parser_params *parser)
 		}
 	      }
 	      default:
-		pushback(c);
+		lex_nextline = lex_lastline;
+		lex_p = lex_pend;
+		--ruby_sourceline;
 		goto normal_newline;
 	    }
 	}
@@ -9088,6 +9092,7 @@ parser_mark(void *ptr)
     rb_gc_mark((VALUE)p->parser_lex_strterm);
     rb_gc_mark(p->parser_lex_input);
     rb_gc_mark(p->parser_lex_lastline);
+    rb_gc_mark(p->parser_lex_nextline);
 #ifndef RIPPER
     rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
     rb_gc_mark((VALUE)p->parser_eval_tree) ;
