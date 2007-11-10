@@ -3,7 +3,9 @@ Sat Nov 10 18:10:07 2007  Tanaka Akira  <akr@fsij.org>
 	* gem_prelude.rb: new file for gem libraries.  currently empty.
 
 	* common.mk: generate ext_prelude.c by prelude.rb and gem_prelude.rb.
-	  ruby (not miniruby) is linked with ext_prelude.o instead of prelude.o. 
+	  ruby (not miniruby) is linked with ext_prelude.o instead of
+	  prelude.o. 
+
 	* inits.c (rb_call_inits): don't call Init_prelude.
 
 	* ruby.c: support --disable-gems option.
