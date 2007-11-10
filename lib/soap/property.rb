@@ -320,7 +320,7 @@ end
 
 
 # for ruby/1.6.
-unless Enumerable.instance_methods.include?('inject')
+if RUBY_VERSION < "1.8" then
   module Enumerable
     def inject(init)
       result = init

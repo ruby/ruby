@@ -1,3 +1,7 @@
+Sat Nov 10 16:34:21 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/soap/property.rb: Don't override Enumerable#inject for 1.9.
+
 Sat Nov 10 14:43:30 2007  David Flanagan  <davidflanagan@ruby-lang.org>
 
 	* parse.y: use ASCII encoding for string literals that are
