@@ -1,3 +1,7 @@
+Sun Nov 11 05:34:13 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* bin/gem: Add forgotten gem command.
+
 Sat Nov 10 23:50:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (tr_trans): cast to unsigned char after dereference
