@@ -15,7 +15,7 @@ RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
-EXTOBJS	      = 
+EXTOBJS	      = ext_prelude.$(OBJEXT)
 DLDOBJS	      = $(DMYEXT)
 
 ENCOBJS       = ascii.$(OBJEXT) \
@@ -78,7 +78,6 @@ OBJS	      = array.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		id.$(OBJEXT) \
-		prelude.$(OBJEXT) \
 		$(ENCOBJS) \
 		$(MISSING)
 
@@ -586,6 +585,7 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
         {$(VPATH)}thread_$(THREAD_MODEL).h
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
+ext_prelude.$(OBJEXT): {$(VPATH)}ext_prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
@@ -630,6 +630,9 @@ node_name.inc: {$(VPATH)}node.h
 
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
+
+ext_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
+	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
 prereq: incs {$(VPATH)}prelude.c
 

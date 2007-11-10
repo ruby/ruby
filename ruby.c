@@ -75,6 +75,7 @@ struct cmdline_options {
     int usage;
     int version;
     int copyright;
+    int disable_gems;
     int verbose;
     int yydebug;
     char *script;
@@ -121,6 +122,7 @@ usage(const char *name)
 	"-w              turn warnings on for your script",
 	"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
+	"--disable_gems  disable gem libraries",
 	"--copyright     print the copyright",
 	"--version       print the version",
 	NULL
@@ -813,6 +815,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }
+            else if (strcmp("disable-gems", s) == 0)
+		opt->disable_gems = 1;
 	    else if (strcmp("encoding", s) == 0) {
 		if (!--argc || !(s = *++argv)) {
 		  noencoding:
@@ -871,6 +875,17 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
   switch_end:
     return argc0 - argc;
+}
+
+void Init_prelude(void);
+
+static void
+ruby_init_gems(struct cmdline_options *opt)
+{
+    VALUE gem;
+    gem = rb_define_module("Gem");
+    rb_const_set(gem, rb_intern("Enable"), opt->disable_gems ? Qfalse : Qtrue);
+    Init_prelude();
 }
 
 static VALUE
@@ -976,6 +991,7 @@ process_options(VALUE arg)
     process_sflag(opt);
 
     ruby_init_loadpath();
+    ruby_init_gems(opt);
     parser = rb_parser_new();
     if (opt->e_script) {
 	if (opt->enc_index >= 0)

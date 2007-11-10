@@ -51,7 +51,6 @@ void Init_VM(void);
 void Init_Thread(void);
 void Init_Cont(void);
 void Init_top_self(void);
-void Init_prelude(void);
 void Init_Encoding(void);
 
 void
@@ -97,5 +96,4 @@ rb_call_inits()
     Init_Thread();
     Init_Cont();
     Init_version();
-    Init_prelude();
 }
