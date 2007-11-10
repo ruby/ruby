@@ -2890,10 +2890,20 @@ call_trace_proc(VALUE args)
     VALUE eventname = rb_str_new2(get_event_name(p->event));
     VALUE filename = rb_str_new2(rb_sourcefile());
     int line = rb_sourceline();
+    VALUE mid;
 
+    if (p->id == ID_ALLOCATOR) {
+	mid = ID2SYM(rb_intern("allocate"));
+    }
+    else if (p->id) {
+	mid = ID2SYM(p->id);
+    }
+    else {
+	mid = Qnil;
+    }
     return rb_proc_call(p->proc, rb_ary_new3(6,
 					     eventname, filename, INT2FIX(line),
-					     p->id ? ID2SYM(p->id) : Qnil,
+					     mid,
 					     p->self ? rb_binding_new() : Qnil,
 					     p->klass ? p->klass : Qnil));
 }

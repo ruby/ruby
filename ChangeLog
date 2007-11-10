@@ -1,3 +1,8 @@
+Sat Nov 10 17:27:55 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* thread.c (call_trace_proc): don't call ID2SYM() for ID_ALLOCATOR
+	  to avoid SEGV.
+
 Sat Nov 10 16:37:07 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems: Import RubyGems revision 1493.
