@@ -1,3 +1,8 @@
+Sat Nov 10 14:43:30 2007  David Flanagan  <davidflanagan@ruby-lang.org>
+
+	* parse.y: use ASCII encoding for string literals that are
+		7-bit clean, fixing regression from my previous patch
+
 Sat Nov 10 13:18:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32}/Makefile.sub: vendor_ruby support.

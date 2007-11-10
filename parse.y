@@ -4842,9 +4842,23 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int coderange)
 static VALUE
 parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
 {
+    /*
+     * Set coderange bit flags based on the presence of 8-bit and 
+     * multi-byte characters in the string
+     */
     int coderange = ENC_CODERANGE_SINGLE;
     if (hasmb) coderange = ENC_CODERANGE_MULTI;
     else if (has8bit) coderange = ENC_CODERANGE_UNKNOWN;
+
+    /*
+     * If it is all single byte characters with the 8th bit clear,
+     * and if the specified encoding is ASCII-compatible, then this
+     * string is in the ASCII subset, and we just use the ASCII encoding
+     * instead.
+     */
+    if ((coderange == ENC_CODERANGE_SINGLE) && rb_enc_asciicompat(enc))
+	enc = rb_enc_default();
+
     return parser_str_new(p, n, enc, coderange);
 }
 
