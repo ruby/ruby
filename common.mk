@@ -16,7 +16,6 @@ RDOCOUT       = $(EXTOUT)/rdoc
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
 EXTOBJS	      = 
-EXPLOBJS      = ext_prelude.$(OBJEXT)
 DLDOBJS	      = $(DMYEXT)
 
 ENCOBJS       = ascii.$(OBJEXT) \
@@ -102,13 +101,15 @@ all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(LIBMINIRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXPLOBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) ext_prelude.$(OBJEXT) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(EXPLOBJS) $(DMYEXT) $(ARCHFILE)
+$(LIBMINIRUBY_A): $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE)
 
-$(LIBRUBY_SO):	$(OBJS) $(EXPLOBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE)
+$(LIBRUBY_A):	$(OBJS) ext_prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE)
+
+$(LIBRUBY_SO):	$(OBJS) ext_prelude.$(OBJEXT) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE)
 
 $(LIBRUBY_EXTS):
 	@exit > $@
@@ -117,8 +118,8 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(OBJS) $(EXPLOBJS)
-	@$(NM) -Pgp $(OBJS) $(EXPLOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+ruby.imp: $(OBJS) prelude.$(OBJEXT)
+	@$(NM) -Pgp $(OBJS) prelude.$(OBJEXT) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
@@ -296,7 +297,7 @@ clear-installed-list:
 
 clean: clean-ext clean-local
 clean-local::
-	@$(RM) $(OBJS) $(EXPLOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	@$(RM) $(OBJS) prelude.$(OBJEXT) ext_prelude.$(OBJEXT) $(MAINOBJ) $(WINMAINOBJ) $(LIBMINIRUBY_A) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc
 clean-ext:

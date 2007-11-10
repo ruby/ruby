@@ -1,8 +1,7 @@
-Sat Nov 10 19:21:24 2007  Tanaka Akira  <akr@fsij.org>
+Sat Nov 10 19:46:54 2007  Tanaka Akira  <akr@fsij.org>
 
-	* common.mk (EXPLOBJS): create new variable for ext_prelude.o.
-
-	* Makefile.in(h: use EXPLOBJS.
+	* common.mk, Makefile.in: generate libminiruby-static.a 
+	  which contains prelude.o for miniruby.
 
 Sat Nov 10 18:10:07 2007  Tanaka Akira  <akr@fsij.org>
 

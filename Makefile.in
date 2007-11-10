@@ -66,6 +66,7 @@ MAJOR=	@MAJOR@
 MINOR=	@MINOR@
 TEENY=	@TEENY@
 
+LIBMINIRUBY_A = @LIBMINIRUBY_A@
 LIBRUBY_A     = @LIBRUBY_A@
 LIBRUBY_SO    = @LIBRUBY_SO@
 LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
@@ -105,7 +106,7 @@ all:
 
 miniruby$(EXEEXT):
 		@$(RM) $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(LIBMINIRUBY_A) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@
@@ -114,14 +115,19 @@ $(PROGRAM):
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
+$(LIBMINIRUBY_A):
+		@$(RM) $@
+		$(AR) $(ARFLAGS) $@ $(OBJS) prelude.$(OBJEXT) $(DMYEXT)
+		@-$(RANLIB) $@ 2> /dev/null || true
+
 $(LIBRUBY_A):
 		@$(RM) $@
-		$(AR) $(ARFLAGS) $@ $(OBJS) $(EXPLOBJS) $(DMYEXT)
+		$(AR) $(ARFLAGS) $@ $(OBJS) ext_prelude.$(OBJEXT) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
-		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(EXPLOBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) ext_prelude.$(OBJEXT) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
