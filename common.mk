@@ -15,7 +15,8 @@ RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
-EXTOBJS	      = ext_prelude.$(OBJEXT)
+EXTOBJS	      = 
+EXPLOBJS      = ext_prelude.$(OBJEXT)
 DLDOBJS	      = $(DMYEXT)
 
 ENCOBJS       = ascii.$(OBJEXT) \
@@ -103,11 +104,11 @@ prog: $(PROGRAM) $(WPROGRAM)
 
 miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXPLOBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(DMYEXT) $(ARCHFILE)
+$(LIBRUBY_A):	$(OBJS) $(EXPLOBJS) $(DMYEXT) $(ARCHFILE)
 
-$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE)
+$(LIBRUBY_SO):	$(OBJS) $(EXPLOBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE)
 
 $(LIBRUBY_EXTS):
 	@exit > $@
@@ -116,8 +117,8 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	@$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
-ruby.imp: $(OBJS)
-	@$(NM) -Pgp $(OBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+ruby.imp: $(OBJS) $(EXPLOBJS)
+	@$(NM) -Pgp $(OBJS) $(EXPLOBJS) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
@@ -295,7 +296,7 @@ clear-installed-list:
 
 clean: clean-ext clean-local
 clean-local::
-	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	@$(RM) $(OBJS) $(EXPLOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc
 clean-ext:

@@ -116,12 +116,12 @@ $(PROGRAM):
 # supported.
 $(LIBRUBY_A):
 		@$(RM) $@
-		$(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
+		$(AR) $(ARFLAGS) $@ $(OBJS) $(EXPLOBJS) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
-		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(EXPLOBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
