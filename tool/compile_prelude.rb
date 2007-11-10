@@ -1,3 +1,9 @@
+# This file is interpreted by $(BASERUBY) and miniruby.
+# $(BASERUBY) is used for prelude.c.
+# miniruby is used for ext_prelude.c.
+# Since $(BASERUBY) may be older than Ruby 1.9,
+# Ruby 1.9 feature should not be used.
+
 preludes = ARGV.dup
 outfile = preludes.pop
 
