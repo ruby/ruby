@@ -1,4 +1,5 @@
-*preludes, outfile = *ARGV
+preludes = ARGV.dup
+outfile = preludes.pop
 
 C_ESC = {
   "\\" => "\\\\",
