@@ -1,3 +1,9 @@
+Sat Nov 10 23:50:31 2007  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (tr_trans): cast to unsigned char after dereference
+	  a pointer to a char to avoid SEGV with "\377".tr("a", "b").
+	  on FreeBSD/amd64.
+
 Sat Nov 10 23:08:53 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in, common.mk, Makefile.in: don't generate

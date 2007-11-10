@@ -3475,7 +3475,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     else if (rb_enc_mbmaxlen(enc) == 1) {
 	while (s < send) {
-	    c = *s;
+	    c = (unsigned char)*s;
 	    if (trans[c] >= 0) {
 		if (!cflag) {
 		    c = FIX2INT(trans[c]);
