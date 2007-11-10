@@ -101,11 +101,9 @@ all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(LIBMINIRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) ext_prelude.$(OBJEXT) $(EXTOBJS) $(SETUP) $(PREP)
-
-$(LIBMINIRUBY_A): $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE)
 
 $(LIBRUBY_A):	$(OBJS) ext_prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE)
 
@@ -297,7 +295,7 @@ clear-installed-list:
 
 clean: clean-ext clean-local
 clean-local::
-	@$(RM) $(OBJS) prelude.$(OBJEXT) ext_prelude.$(OBJEXT) $(MAINOBJ) $(WINMAINOBJ) $(LIBMINIRUBY_A) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	@$(RM) $(OBJS) prelude.$(OBJEXT) ext_prelude.$(OBJEXT) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc
 clean-ext:

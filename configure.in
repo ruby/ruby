@@ -1287,7 +1287,6 @@ AC_SUBST(RUNRUBY)
 AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
 
 FIRSTMAKEFILE=""
-LIBMINIRUBY_A='libmini$(RUBY_SO_NAME)-static.a'
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
@@ -1438,7 +1437,6 @@ case "$target_os" in
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2 -Zmts"
-	LIBMINIRUBY_A=`echo $LIBMINIRUBY_A | sed 's/^lib//'`
 	LIBRUBY_A=`echo $LIBRUBY_A | sed 's/^lib//'`
 	LIBRUBY_SO=`echo $LIBRUBY_SO | sed 's/^lib//'`
 	LIBRUBY_ALIASES=`for i in $LIBRUBY_ALIASES; do echo "$i"; done | sed 's/^lib//'`
@@ -1526,7 +1524,6 @@ AC_SUBST(RUBY_INSTALL_NAME)
 AC_SUBST(rubyw_install_name)
 AC_SUBST(RUBYW_INSTALL_NAME)
 AC_SUBST(RUBY_SO_NAME)
-AC_SUBST(LIBMINIRUBY_A)
 AC_SUBST(LIBRUBY_A)
 AC_SUBST(LIBRUBY_SO)
 AC_SUBST(LIBRUBY_ALIASES)
