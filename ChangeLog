@@ -1,6 +1,6 @@
-Sun Nov 11 18:15:11 2007  Tanaka Akira  <akr@fsij.org>
+Sun Nov 11 18:31:48 2007  Tanaka Akira  <akr@fsij.org>
 
-	* Makefile.in (lex.c): touch lex.c if gperf failed.
+	* Makefile.in (lex.c): touch lex.c if gperf failed but lex.c exists.
 	  Although this may cause non-updated lex.c,
 	  svn co may generate keywords newer than lex.c especially on
 	  a file system which can record fractional mtime such as XFS.
