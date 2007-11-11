@@ -24,12 +24,14 @@ ENCOBJS       = ascii.$(OBJEXT) \
 		unicode.$(OBJEXT) \
 		utf8.$(OBJEXT)
 
-OBJS	      = array.$(OBJEXT) \
+OBJS          = dln.$(OBJEXT) \
+		$(COMMONOBJS)
+
+COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		dir.$(OBJEXT) \
-		dln.$(OBJEXT) \
 		encoding.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
@@ -101,7 +103,7 @@ all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(MAINOBJ) $(MINIOBJS) $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) ext_prelude.$(OBJEXT) $(EXTOBJS) $(SETUP) $(PREP)
 
