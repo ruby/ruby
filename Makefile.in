@@ -105,7 +105,7 @@ all:
 
 miniruby$(EXEEXT):
 		@$(RM) $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) prelude.$(OBJEXT) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(MINIOBJS) $(OBJS) prelude.$(OBJEXT) $(DMYEXT) $(ARCHFILE) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@
