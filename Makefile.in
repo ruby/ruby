@@ -169,12 +169,12 @@ $(srcdir)/configure: $(srcdir)/configure.in
 # * XFS has a mtime with fractional part
 lex.c: keywords
 	if test -f $@ && test -z "`find $? -newer $@ -print`"; then \
-	  touch $@; \
+	  ( touch $@ && echo $@ touched. ) \
 	elif test -f $(srcdir)/lex.c && test -z "`find $? -newer $(srcdir)/lex.c -print`"; then \
-	  cp $(srcdir)/lex.c $@; \
+	  ( cp $(srcdir)/lex.c $@ && echo $@ copied. ) \
 	else \
 	  ( gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && cp $@.tmp $@ ) || \
-	  ( test -f $@ && touch $@ ) \
+	  ( test -f $@ && touch $@ && echo $@ touched after gperf fail. ) \
 	fi
 
 .y.c:
