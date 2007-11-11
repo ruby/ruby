@@ -1378,21 +1378,28 @@ int
 rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp)
 {
     rb_control_frame_t *cfp = th->cfp;
-
-    if (cfp->iseq) {
-	if (cfp->pc != 0) {
-	    rb_iseq_t *iseq = cfp->iseq->local_iseq;
-	    if (idp) *idp = rb_intern(RSTRING_PTR(iseq->name));
-	    if (klassp) *klassp = iseq->klass;
-	    return 1;
-	}
-    }
-    else {
+    rb_iseq_t *iseq = cfp->iseq;
+    if (!iseq) {
 	if (idp) *idp = cfp->method_id;
 	if (klassp) *klassp = cfp->method_klass;
 	return 1;
     }
-    *idp = *klassp = 0;
+    while (iseq) {
+	if (RUBY_VM_IFUNC_P(iseq)) {
+	    if (idp) *idp = rb_intern("<ifunc>");
+	    if (klassp) *klassp = 0;
+	    return 1;
+	}
+	if (iseq->defined_method_id) {
+	    if (idp) *idp = iseq->defined_method_id;
+	    if (klassp) *klassp = iseq->klass;
+	    return 1;
+	}
+	if (iseq->local_iseq == iseq) {
+	    break;
+	}
+	iseq = iseq->parent_iseq;
+    }
     return 0;
 }
 

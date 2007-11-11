@@ -2890,22 +2890,32 @@ call_trace_proc(VALUE args)
     VALUE eventname = rb_str_new2(get_event_name(p->event));
     VALUE filename = rb_str_new2(rb_sourcefile());
     int line = rb_sourceline();
-    VALUE mid;
+    ID id = 0;
+    VALUE klass = 0;
 
-    if (p->id == ID_ALLOCATOR) {
-	mid = ID2SYM(rb_intern("allocate"));
-    }
-    else if (p->id) {
-	mid = ID2SYM(p->id);
+    if (p->event == RUBY_EVENT_C_CALL ||
+	p->event == RUBY_EVENT_C_RETURN) {
+	id = p->id;
+	klass = p->klass;
     }
     else {
-	mid = Qnil;
+	rb_thread_method_id_and_klass(GET_THREAD(), &id, &klass);
+    }
+    if (id == ID_ALLOCATOR)
+	return;
+    if (klass) {
+	if (TYPE(klass) == T_ICLASS) {
+	    klass = RBASIC(klass)->klass;
+	}
+	else if (FL_TEST(klass, FL_SINGLETON)) {
+	    klass = rb_iv_get(klass, "__attached__");
+	}
     }
     return rb_proc_call(p->proc, rb_ary_new3(6,
 					     eventname, filename, INT2FIX(line),
-					     mid,
+					     id ? ID2SYM(id) : Qnil,
 					     p->self ? rb_binding_new() : Qnil,
-					     p->klass ? p->klass : Qnil));
+					     klass ? klass : Qnil));
 }
 
 static void

@@ -1,3 +1,12 @@
+Sun Nov 11 17:32:46 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* insnhelper.ci (vm_call_method): pass mn->nd_clss to
+	  vm_call_cfunc() instead of klass.
+
+	* vm.c (rb_thread_method_id_and_klass): traverse parent_iseq.
+	
+	* thread.c (call_trace_proc): use rb_thread_method_id_and_klass().
+
 Sun Nov 11 16:54:25 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lex.c: renamed from lex.c.blt.

@@ -35,7 +35,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     eval("class Foo; end")
     set_trace_func nil
 
-    assert_equal(["c-return", 18, :set_trace_func, TestSetTraceFunc],
+    assert_equal(["c-return", 18, :set_trace_func, Kernel],
                  events.shift)     # TODO
     assert_equal(["line", 19, :test_event, TestSetTraceFunc],
                  events.shift)     # a = 1

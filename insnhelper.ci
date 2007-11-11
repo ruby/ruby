@@ -496,7 +496,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		  return Qundef;
 	      }
 	      case NODE_CFUNC:{
-		  val = vm_call_cfunc(th, cfp, num, id, recv, klass, flag, node, blockptr);
+		  val = vm_call_cfunc(th, cfp, num, id, recv, mn->nd_clss, flag, node, blockptr);
 		  break;
 	      }
 	      case NODE_ATTRSET:{
