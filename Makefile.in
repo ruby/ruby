@@ -174,7 +174,11 @@ lex.c: keywords
 	  ( cp $(srcdir)/lex.c $@ && echo $@ copied. ) \
 	else \
 	  ( gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && cp $@.tmp $@ ) || \
-	  ( test -f $@ && touch $@ && echo $@ touched after gperf fail. ) \
+	  if test -f $@; then \
+	    ( touch $@ && echo $@ touched after gperf fail. ) \
+	  else \
+	    ( cp $(srcdir)/lex.c $@ && echo $@ copied after gperf fail. ) \
+	  fi \
 	fi
 
 .y.c:
