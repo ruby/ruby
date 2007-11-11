@@ -161,13 +161,18 @@ config.status:	$(srcdir)/configure
 $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
+# Things which should be considered:
+# * with gperf v.s. without gperf
+# * ./configure v.s. ../ruby/configure
+# * GNU make v.s. HP-UX make	# HP-UX make invokes the action if lex.c and keywords has same mtime.
 lex.c: keywords
-	( \
-	  gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && \
-	  cp $@.tmp $@ && \
-	  mv $@.tmp "$(srcdir)/$@.blt" \
-	) || \
-	cp "$(srcdir)/$@.blt" $@
+	if test -f $@ && test -z "`find $? -newer $@ -print`"; then \
+	  touch $@; \
+	elif test -f $(srcdir)/lex.c && test -z "`find $? -newer $(srcdir)/lex.c -print`"; then \
+	  cp $(srcdir)/lex.c $@; \
+	else \
+	  gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && cp $@.tmp $@; \
+	fi
 
 .y.c:
 	$(YACC) $(YFLAGS) -o $@ $<

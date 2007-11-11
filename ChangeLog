@@ -1,3 +1,9 @@
+Sun Nov 11 16:54:25 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lex.c: renamed from lex.c.blt.
+
+	* Makefile.in (lex.c): use find command to check mtime.
+
 Sun Nov 11 05:34:13 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* bin/gem: Add forgotten gem command.
