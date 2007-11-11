@@ -1,3 +1,7 @@
+Sun Nov 11 20:32:45 2007  Tanaka Akira  <akr@fsij.org>
+
+	* {win32,wince,bcc32}/Makefile.sub: delete lex.c rule.
+
 Sun Nov 11 19:40:52 2007  Tanaka Akira  <akr@fsij.org>
 
 	* Makefile.in (lex.c): simplified.

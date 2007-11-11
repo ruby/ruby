@@ -482,9 +482,6 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(srcdir)/win32
 
-lex.c: {$(srcdir)}lex.c.blt
-	copy "$(?:/=\)" $@
-
 post-install-bin::
 	@$(NULLCMD)
 post-install-lib::
