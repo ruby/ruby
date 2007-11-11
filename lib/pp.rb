@@ -210,7 +210,7 @@ class PP < PrettyPrint
     # 
     #   q.seplist([1,2,3]) {|v| xxx v }
     # 
-    #   q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
+    #   q.seplist([1,2,3], lambda { q.comma_breakable }, :each) {|v| xxx v }
     # 
     #   xxx 1
     #   q.comma_breakable
