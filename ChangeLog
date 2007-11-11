@@ -1,3 +1,10 @@
+Sun Nov 11 18:15:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (lex.c): touch lex.c if gperf failed.
+	  Although this may cause non-updated lex.c,
+	  svn co may generate keywords newer than lex.c especially on
+	  a file system which can record fractional mtime such as XFS.
+
 Sun Nov 11 17:32:46 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insnhelper.ci (vm_call_method): pass mn->nd_clss to

@@ -165,13 +165,16 @@ $(srcdir)/configure: $(srcdir)/configure.in
 # * with gperf v.s. without gperf
 # * ./configure v.s. ../ruby/configure
 # * GNU make v.s. HP-UX make	# HP-UX make invokes the action if lex.c and keywords has same mtime.
+# * svn checkout generate a file with mtime as current time
+# * XFS has a mtime with fractional part
 lex.c: keywords
 	if test -f $@ && test -z "`find $? -newer $@ -print`"; then \
 	  touch $@; \
 	elif test -f $(srcdir)/lex.c && test -z "`find $? -newer $(srcdir)/lex.c -print`"; then \
 	  cp $(srcdir)/lex.c $@; \
 	else \
-	  gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && cp $@.tmp $@; \
+	  ( gperf --output-file=$@.tmp -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? && cp $@.tmp $@ ) || \
+	  touch $@; \
 	fi
 
 .y.c:
