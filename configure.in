@@ -1410,6 +1410,7 @@ AC_SUBST(RDOCTARGET)
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
 fi
+DLNOBJS=dln.o
 case "$target_os" in
     linux*)
 	XCFLAGS="$XCFLAGS -D_GNU_SOURCE=1"
@@ -1433,6 +1434,7 @@ case "$target_os" in
 	;;
     darwin*)
     	CFLAGS="$CFLAGS -pipe -fno-common"
+        DLNOBJS=dmydln.o
 	MINIOBJS=dmydln.o
 	;;
     os2-emx)
@@ -1496,6 +1498,7 @@ case "$target_os" in
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
+        DLNOBJS=dmydln.o
 	MINIOBJS=dmydln.o
 	;;
     hpux*)
@@ -1505,6 +1508,7 @@ case "$target_os" in
 	    YACC="$YACC -Nl40000 -Nm40000"
 	    ;;
 	esac
+        DLNOBJS=dmydln.o
 	MINIOBJS=dmydln.o
 	;;
     *)
@@ -1539,6 +1543,7 @@ AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
 AC_SUBST(EXPORT_PREFIX)
+AC_SUBST(DLNOBJS)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 
