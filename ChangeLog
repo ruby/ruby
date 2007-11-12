@@ -1,3 +1,7 @@
+Mon Nov 12 12:38:31 2007  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (lex.c): don't remove lex.c at first.
+
 Fri Nov  9 07:26:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c: update MT URL.[ruby-core:13305].

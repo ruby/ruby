@@ -155,9 +155,12 @@ $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
 lex.c: keywords
-	@-$(RM) $@
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@ || \
-	cp "$(srcdir)/$@" .
+	( gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && mv $@.tmp $@ ) || \
+	if test -f $@; then \
+	  touch $@ && echo $@ touched.; \
+	else \
+	  cp $(srcdir)/lex.c $@ && echo $@ copied.; \
+	fi
 
 .y.c:
 	$(YACC) $<
