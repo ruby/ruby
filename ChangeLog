@@ -1,3 +1,10 @@
+Mon Nov 12 13:57:39 2007  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (MINIDLNOBJS): removed.
+	  (MINIOBJS): set to dln.o if dmydln.o is not used.
+
+	* Makefile.in (miniruby): use MINIOBJS instead of MINIDLNOBJS.
+
 Mon Nov 12 13:53:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): handle stringified

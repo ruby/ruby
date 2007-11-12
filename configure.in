@@ -1410,7 +1410,7 @@ AC_SUBST(RDOCTARGET)
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
 fi
-MINIDLNOBJS=dln.o
+MINIDLNOBJ=dln.o
 case "$target_os" in
     linux*)
 	XCFLAGS="$XCFLAGS -D_GNU_SOURCE=1"
@@ -1434,8 +1434,7 @@ case "$target_os" in
 	;;
     darwin*)
     	CFLAGS="$CFLAGS -pipe -fno-common"
-        MINIDLNOBJS=dmydln.o
-	MINIOBJS=dmydln.o
+        MINIDLNOBJ=dmydln.o
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2 -Zmts"
@@ -1498,8 +1497,7 @@ case "$target_os" in
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
-        MINIDLNOBJS=dmydln.o
-	MINIOBJS=dmydln.o
+        MINIDLNOBJ=dmydln.o
 	;;
     hpux*)
 	case "$YACC" in
@@ -1508,12 +1506,12 @@ case "$target_os" in
 	    YACC="$YACC -Nl40000 -Nm40000"
 	    ;;
 	esac
-        MINIDLNOBJS=dmydln.o
-	MINIOBJS=dmydln.o
+        MINIDLNOBJ=dmydln.o
 	;;
     *)
 	;;
 esac
+MINIOBJS="$MINIDLNOBJ"
 
 case "$build_os" in
   *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
@@ -1543,7 +1541,6 @@ AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
 AC_SUBST(EXPORT_PREFIX)
-AC_SUBST(MINIDLNOBJS)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 
