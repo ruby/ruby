@@ -2902,7 +2902,7 @@ call_trace_proc(VALUE args)
 	rb_thread_method_id_and_klass(GET_THREAD(), &id, &klass);
     }
     if (id == ID_ALLOCATOR)
-	return;
+	return Qnil;
     if (klass) {
 	if (TYPE(klass) == T_ICLASS) {
 	    klass = RBASIC(klass)->klass;
