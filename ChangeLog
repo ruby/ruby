@@ -1,3 +1,8 @@
+Mon Nov 12 13:53:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): handle stringified
+	  symbols properly using ruby-forward-string.
+
 Mon Nov 12 12:17:59 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (MINIDLNOBJS): defined.
