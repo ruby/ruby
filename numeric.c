@@ -736,7 +736,7 @@ flo_divmod(x, y)
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
     if (FIXABLE(div)) {
-        val = div;
+        val = round(div);
         a = LONG2FIX(val);
     }
     else {
