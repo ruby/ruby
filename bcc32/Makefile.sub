@@ -450,7 +450,7 @@ s,@top_srcdir@,$(srcdir),;t t
 
 miniruby$(EXEEXT):
 		@echo $(LIBS)
-		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(MINIOBJS),$@,nul,$(LIBRUBY_A) $(LIBS)
+		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT),$@,nul,$(LIBS)
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBYARG) $(LIBS),,$(RUBY_INSTALL_NAME).res
