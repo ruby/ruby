@@ -1,3 +1,8 @@
+Tue Nov 13 02:57:04 2007  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* numeric.c (flo_divmod): round to the nearest integer.
+	  [ ruby-Bugs-14540 ]
+
 Tue Nov 13 00:36:16 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_settracefunc.rb: fixed tests for set_trace_func.
