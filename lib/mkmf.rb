@@ -1221,6 +1221,37 @@ end
 # load the file within a Ruby program later, that directory structure will
 # have to be followed, e.g. "require 'test/foo'".
 #
+# The +srcprefix+ should be used when your source files are not in the same
+# directory as your build script. This will not only eliminate the need for
+# you to manually copy the source files into the same directory as your build
+# script, but it also sets the proper +target_prefix+ in the generated
+# Makefile.
+#
+# Setting the +target_prefix+ will, in turn, install the generated binary in
+# a directory under your Config::CONFIG['sitearchdir'] that mimics your local
+# filesystem when you run 'make install'.
+#
+# For example, given the following file tree:
+#
+#    ext/
+#       extconf.rb
+#       test/
+#          foo.c
+#
+# And given the following code:
+#
+#    create_makefile('test/foo', 'test')
+#
+# That will set the +target_prefix+ in the generated Makefile to 'test'. That,
+# in turn, will create the following file tree when installed via the
+# 'make install' command:
+#
+#    /path/to/ruby/sitearchdir/test/foo.so
+#
+# It is recommended that you use this approach to generate your makefiles,
+# instead of copying files around manually, because some third party
+# libraries may depend on the +target_prefix+ being set properly.
+#
 def create_makefile(target, srcprefix = nil)
   $target = target
   libpath = $DEFLIBPATH|$LIBPATH
