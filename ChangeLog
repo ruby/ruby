@@ -1,3 +1,7 @@
+Tue Nov 13 00:36:16 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_settracefunc.rb: fixed tests for set_trace_func.
+
 Mon Nov 12 19:47:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (call_trace_proc): should return value.
