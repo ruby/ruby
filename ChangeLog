@@ -1,3 +1,7 @@
+Mon Nov 12 16:48:09 2007  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in, common.mk: add ext_prelude.o to OBJS.
+
 Mon Nov 12 13:57:39 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (MINIDLNOBJS): removed.
