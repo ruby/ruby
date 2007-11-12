@@ -1,8 +1,8 @@
-Mon Nov 12 10:29:16 2007  Tanaka Akira  <akr@fsij.org>
+Mon Nov 12 12:17:59 2007  Tanaka Akira  <akr@fsij.org>
 
-	* configure.in (DLNOBJS): defined.
+	* configure.in (MINIDLNOBJS): defined.
 
-	* Makefile.in (miniruby): use DLNOBJS and COMMONOBJS instead of
+	* Makefile.in (miniruby): use MINIDLNOBJS and COMMONOBJS instead of
 	  MINIOBJS and OBJS to avoid linking both dmydln.o and dln.o.
 
 Sun Nov 11 20:32:45 2007  Tanaka Akira  <akr@fsij.org>
