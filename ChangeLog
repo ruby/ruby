@@ -1,3 +1,7 @@
+Mon Nov 12 17:13:23 2007  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in, common.mk: add prelude.o to MINIOBJS.
+
 Mon Nov 12 16:52:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): rdoc about srcprefix.  a patch from
