@@ -1,3 +1,10 @@
+Wed Nov 14 02:50:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.c): dependency also needs vpath.
+
+	* common.mk (node_name.inc, prelude.c): VPATH in nmake does not
+	  work for targets of explicit rules.
+
 Wed Nov 14 02:11:38 2007  Tanaka Akira  <akr@fsij.org>
 
 	* missing/isinf.c (isinf): don't define if the macro is defined.

@@ -349,9 +349,9 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 PHONY:
 
-{$(VPATH)}parse.c: parse.y
+{$(VPATH)}parse.c: {$(VPATH)}parse.y
 
-{$(VPATH)}.y.c:
+{$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) -o y.tab.c $<
 	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
 	@$(RM) y.tab.c
@@ -633,10 +633,10 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 incs: $(INSNS) node_name.inc
 
-{$(VPATH)}node_name.inc: {$(VPATH)}node.h
+node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-{$(VPATH)}prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 ext_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
