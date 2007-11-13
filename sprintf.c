@@ -550,11 +550,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FLOAT:
-		    if (FIXABLE((long)RFLOAT(val)->value)) {
-			val = LONG2FIX((long)RFLOAT(val)->value);
+		    if (FIXABLE((long)RFLOAT_VALUE(val))) {
+			val = LONG2FIX((long)RFLOAT_VALUE(val));
 			goto bin_retry;
 		    }
-		    val = rb_dbl2big(RFLOAT(val)->value);
+		    val = rb_dbl2big(RFLOAT_VALUE(val));
 		    if (FIXNUM_P(val)) goto bin_retry;
 		    bignum = 1;
 		    break;
@@ -756,7 +756,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		int i, need = 6;
 		char fbuf[32];
 
-		fval = RFLOAT(rb_Float(val))->value;
+		fval = RFLOAT_VALUE(rb_Float(val));
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
 

@@ -3780,10 +3780,10 @@ rb_proc_times(VALUE obj)
 
     times(&buf);
     return rb_struct_new(S_Tms,
-			 utime = rb_float_new(buf.tms_utime / hertz),
-			 stime = rb_float_new(buf.tms_stime / hertz),
-			 cutime = rb_float_new(buf.tms_cutime / hertz),
-			 sctime = rb_float_new(buf.tms_cstime / hertz));
+			 utime = DOUBLE2NUM(buf.tms_utime / hertz),
+			 stime = DOUBLE2NUM(buf.tms_stime / hertz),
+			 cutime = DOUBLE2NUM(buf.tms_cutime / hertz),
+			 sctime = DOUBLE2NUM(buf.tms_cstime / hertz));
 #else
     rb_notimplement();
 #endif

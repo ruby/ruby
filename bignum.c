@@ -1147,7 +1147,7 @@ rb_big2dbl(VALUE x)
 static VALUE
 rb_big_to_f(VALUE x)
 {
-    return rb_float_new(rb_big2dbl(x));
+    return DOUBLE2NUM(rb_big2dbl(x));
 }
 
 /*
@@ -1174,7 +1174,7 @@ rb_big_cmp(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT(y)->value);
+	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT_VALUE(y));
 
       default:
 	return rb_num_coerce_cmp(x, y);
@@ -1218,7 +1218,7 @@ rb_big_eq(VALUE x, VALUE y)
 	{
 	    volatile double a, b;
 
-	    a = RFLOAT(y)->value;
+	    a = RFLOAT_VALUE(y);
 	    if (isnan(a)) return Qfalse;
 	    b = rb_big2dbl(x);
 	    return (a == b)?Qtrue:Qfalse;
@@ -1409,7 +1409,7 @@ rb_big_plus(VALUE x, VALUE y)
 	return bignorm(bigadd(x, y, 1));
 
       case T_FLOAT:
-	return rb_float_new(rb_big2dbl(x) + RFLOAT(y)->value);
+	return DOUBLE2NUM(rb_big2dbl(x) + RFLOAT_VALUE(y));
 
       default:
 	return rb_num_coerce_bin(x, y);
@@ -1434,7 +1434,7 @@ rb_big_minus(VALUE x, VALUE y)
 	return bignorm(bigadd(x, y, 0));
 
       case T_FLOAT:
-	return rb_float_new(rb_big2dbl(x) - RFLOAT(y)->value);
+	return DOUBLE2NUM(rb_big2dbl(x) - RFLOAT_VALUE(y));
 
       default:
 	return rb_num_coerce_bin(x, y);
@@ -1458,7 +1458,7 @@ rb_big_mul0(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	return rb_float_new(rb_big2dbl(x) * RFLOAT(y)->value);
+	return DOUBLE2NUM(rb_big2dbl(x) * RFLOAT_VALUE(y));
 
       default:
 	return rb_num_coerce_bin(x, y);
@@ -1664,7 +1664,7 @@ rb_big_div(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	return rb_float_new(rb_big2dbl(x) / RFLOAT(y)->value);
+	return DOUBLE2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
 
       default:
 	return rb_num_coerce_bin(x, y);
@@ -1834,10 +1834,10 @@ rb_big_quo(VALUE x, VALUE y)
 	    if (ey) y = big_shift(y, ey);
 	  bignum:
 	    bigdivrem(x, y, &z, 0);
-	    return rb_float_new(ldexp(big2dbl(z), ex - ey));
+	    return DOUBLE2NUM(ldexp(big2dbl(z), ex - ey));
 	  }
 	  case T_FLOAT:
-	    y = dbl2big(ldexp(frexp(RFLOAT(y)->value, &ey), DBL_MANT_DIG));
+	    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &ey), DBL_MANT_DIG));
 	    ey -= DBL_MANT_DIG;
 	    goto bignum;
 	}
@@ -1852,13 +1852,13 @@ rb_big_quo(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	dy = RFLOAT(y)->value;
+	dy = RFLOAT_VALUE(y);
 	break;
 
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    return rb_float_new(dx / dy);
+    return DOUBLE2NUM(dx / dy);
 }
 
 static VALUE
@@ -1930,7 +1930,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (y == INT2FIX(0)) return INT2FIX(1);
     switch (TYPE(y)) {
       case T_FLOAT:
-	d = RFLOAT(y)->value;
+	d = RFLOAT_VALUE(y);
 	break;
 
       case T_BIGNUM:
@@ -1965,7 +1965,7 @@ rb_big_pow(VALUE x, VALUE y)
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    return rb_float_new(pow(rb_big2dbl(x), d));
+    return DOUBLE2NUM(pow(rb_big2dbl(x), d));
 }
 
 /*

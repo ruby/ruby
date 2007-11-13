@@ -1391,7 +1391,7 @@ opt_plus
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
-	    val = rb_float_new(RFLOAT(recv)->value + RFLOAT(obj)->value);
+	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
 	}
 #endif
 
@@ -1492,7 +1492,7 @@ opt_mult
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_MULT)) {
-	    val = rb_float_new(RFLOAT(recv)->value * RFLOAT(obj)->value);
+	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
 	}
 #endif
 	else {
@@ -1556,7 +1556,7 @@ opt_div
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_DIV)) {
-	    val = rb_float_new(RFLOAT(recv)->value / RFLOAT(obj)->value);
+	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
 	}
 #endif
 	else {
@@ -1620,8 +1620,8 @@ opt_mod
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
 		 BASIC_OP_UNREDEFINED_P(BOP_MOD)) {
-	    double x = RFLOAT(recv)->value;
-	    double y = RFLOAT(obj)->value;
+	    double x = RFLOAT_VALUE(recv);
+	    double y = RFLOAT_VALUE(obj);
 	    double div, mod;
 
 	    {
@@ -1636,7 +1636,7 @@ opt_mod
 		mod += y;
 		div -= 1.0;
 	    }
-	    val = rb_float_new(mod);
+	    val = DOUBLE2NUM(mod);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1678,8 +1678,8 @@ opt_eq
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
 		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	    double a = RFLOAT(recv)->value;
-	    double b = RFLOAT(obj)->value;
+	    double a = RFLOAT_VALUE(recv);
+	    double b = RFLOAT_VALUE(obj);
 
 	    if (isnan(a) || isnan(b)) {
 		val = Qfalse;

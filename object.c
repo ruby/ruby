@@ -755,7 +755,7 @@ nil_to_i(VALUE obj)
 static VALUE
 nil_to_f(VALUE obj)
 {
-    return rb_float_new(0.0);
+    return DOUBLE2NUM(0.0);
 }
 
 /*
@@ -1950,11 +1950,11 @@ rb_Integer(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
-	    && RFLOAT(val)->value >= (double)FIXNUM_MIN) {
+	if (RFLOAT_VALUE(val) <= (double)FIXNUM_MAX
+	    && RFLOAT_VALUE(val) >= (double)FIXNUM_MIN) {
 	    break;
 	}
-	return rb_dbl2big(RFLOAT(val)->value);
+	return rb_dbl2big(RFLOAT_VALUE(val));
 
       case T_FIXNUM:
       case T_BIGNUM:
@@ -2094,16 +2094,16 @@ rb_Float(VALUE val)
 {
     switch (TYPE(val)) {
       case T_FIXNUM:
-	return rb_float_new((double)FIX2LONG(val));
+	return DOUBLE2NUM((double)FIX2LONG(val));
 
       case T_FLOAT:
 	return val;
 
       case T_BIGNUM:
-	return rb_float_new(rb_big2dbl(val));
+	return DOUBLE2NUM(rb_big2dbl(val));
 
       case T_STRING:
-	return rb_float_new(rb_str_to_dbl(val, Qtrue));
+	return DOUBLE2NUM(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
 	rb_raise(rb_eTypeError, "can't convert nil into Float");
@@ -2112,7 +2112,7 @@ rb_Float(VALUE val)
       default:
       {
 	  VALUE f = rb_convert_type(val, T_FLOAT, "Float", "to_f");
-	  if (isnan(RFLOAT(f)->value)) {
+	  if (isnan(RFLOAT_VALUE(f))) {
 	      rb_raise(rb_eArgError, "invalid value for Float()");
 	  }
 	  return f;
@@ -2143,7 +2143,7 @@ rb_num2dbl(VALUE val)
 {
     switch (TYPE(val)) {
       case T_FLOAT:
-	return RFLOAT(val)->value;
+	return RFLOAT_VALUE(val);
 
       case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion to float from string");
@@ -2157,7 +2157,7 @@ rb_num2dbl(VALUE val)
 	break;
     }
 
-    return RFLOAT(rb_Float(val))->value;
+    return RFLOAT_VALUE(rb_Float(val));
 }
 
 char*

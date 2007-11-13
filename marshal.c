@@ -637,7 +637,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	  case T_FLOAT:
 	    w_byte(TYPE_FLOAT, arg);
-	    w_float(RFLOAT(obj)->value, arg);
+	    w_float(RFLOAT_VALUE(obj), arg);
 	    break;
 
 	  case T_BIGNUM:
@@ -1239,7 +1239,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		d = strtod(ptr, &e);
 		d = load_mantissa(d, e, RSTRING_LEN(str) - (e - ptr));
 	    }
-	    v = rb_float_new(d);
+	    v = DOUBLE2NUM(d);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}

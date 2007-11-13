@@ -465,7 +465,7 @@ rb_float_new(double d)
     NEWOBJ(flt, struct RFloat);
     OBJSETUP(flt, rb_cFloat, T_FLOAT);
 
-    flt->value = d;
+    flt->double_value = d;
     return (VALUE)flt;
 }
 
@@ -483,7 +483,7 @@ static VALUE
 flo_to_s(VALUE flt)
 {
     char buf[32];
-    double value = RFLOAT(flt)->value;
+    double value = RFLOAT_VALUE(flt);
     char *p, *e;
 
     if (isinf(value))
@@ -528,7 +528,7 @@ flo_coerce(VALUE x, VALUE y)
 static VALUE
 flo_uminus(VALUE flt)
 {
-    return rb_float_new(-RFLOAT(flt)->value);
+    return DOUBLE2NUM(-RFLOAT_VALUE(flt));
 }
 
 /*
@@ -544,11 +544,11 @@ flo_plus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return rb_float_new(RFLOAT(x)->value + (double)FIX2LONG(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) + (double)FIX2LONG(y));
       case T_BIGNUM:
-	return rb_float_new(RFLOAT(x)->value + rb_big2dbl(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) + rb_big2dbl(y));
       case T_FLOAT:
-	return rb_float_new(RFLOAT(x)->value + RFLOAT(y)->value);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) + RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -567,11 +567,11 @@ flo_minus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return rb_float_new(RFLOAT(x)->value - (double)FIX2LONG(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) - (double)FIX2LONG(y));
       case T_BIGNUM:
-	return rb_float_new(RFLOAT(x)->value - rb_big2dbl(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) - rb_big2dbl(y));
       case T_FLOAT:
-	return rb_float_new(RFLOAT(x)->value - RFLOAT(y)->value);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) - RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -590,11 +590,11 @@ flo_mul(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return rb_float_new(RFLOAT(x)->value * (double)FIX2LONG(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) * (double)FIX2LONG(y));
       case T_BIGNUM:
-	return rb_float_new(RFLOAT(x)->value * rb_big2dbl(y));
+	return DOUBLE2NUM(RFLOAT_VALUE(x) * rb_big2dbl(y));
       case T_FLOAT:
-	return rb_float_new(RFLOAT(x)->value * RFLOAT(y)->value);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) * RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -617,12 +617,12 @@ flo_div(VALUE x, VALUE y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	f_y = FIX2LONG(y);
-	return rb_float_new(RFLOAT(x)->value / (double)f_y);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) / (double)f_y);
       case T_BIGNUM:
 	d = rb_big2dbl(y);
-	return rb_float_new(RFLOAT(x)->value / d);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) / d);
       case T_FLOAT:
-	return rb_float_new(RFLOAT(x)->value / RFLOAT(y)->value);
+	return DOUBLE2NUM(RFLOAT_VALUE(x) / RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -681,13 +681,13 @@ flo_mod(VALUE x, VALUE y)
 	fy = rb_big2dbl(y);
 	break;
       case T_FLOAT:
-	fy = RFLOAT(y)->value;
+	fy = RFLOAT_VALUE(y);
 	break;
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    flodivmod(RFLOAT(x)->value, fy, 0, &mod);
-    return rb_float_new(mod);
+    flodivmod(RFLOAT_VALUE(x), fy, 0, &mod);
+    return DOUBLE2NUM(mod);
 }
 
 /*
@@ -711,12 +711,12 @@ flo_divmod(VALUE x, VALUE y)
 	fy = rb_big2dbl(y);
 	break;
       case T_FLOAT:
-	fy = RFLOAT(y)->value;
+	fy = RFLOAT_VALUE(y);
 	break;
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    flodivmod(RFLOAT(x)->value, fy, &div, &mod);
+    flodivmod(RFLOAT_VALUE(x), fy, &div, &mod);
     if (FIXABLE(div)) {
 #ifdef HVAE_ROUND
 	val = round(div);
@@ -731,7 +731,7 @@ flo_divmod(VALUE x, VALUE y)
     else {
 	a = rb_dbl2big(div);
     }
-    b = rb_float_new(mod);
+    b = DOUBLE2NUM(mod);
     return rb_assoc_new(a, b);
 }
 
@@ -748,11 +748,11 @@ flo_pow(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return rb_float_new(pow(RFLOAT(x)->value, (double)FIX2LONG(y)));
+	return DOUBLE2NUM(pow(RFLOAT_VALUE(x), (double)FIX2LONG(y)));
       case T_BIGNUM:
-	return rb_float_new(pow(RFLOAT(x)->value, rb_big2dbl(y)));
+	return DOUBLE2NUM(pow(RFLOAT_VALUE(x), rb_big2dbl(y)));
       case T_FLOAT:
-	return rb_float_new(pow(RFLOAT(x)->value, RFLOAT(y)->value));
+	return DOUBLE2NUM(pow(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -825,13 +825,13 @@ flo_eq(VALUE x, VALUE y)
 	b = rb_big2dbl(y);
 	break;
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	if (isnan(b)) return Qfalse;
 	break;
       default:
 	return num_equal(x, y);
     }
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     if (isnan(a)) return Qfalse;
     return (a == b)?Qtrue:Qfalse;
 }
@@ -849,7 +849,7 @@ flo_hash(VALUE num)
     double d;
     int hash;
 
-    d = RFLOAT(num)->value;
+    d = RFLOAT_VALUE(num);
     hash = rb_memhash(&d, sizeof(d));
     return INT2FIX(hash);
 }
@@ -878,7 +878,7 @@ flo_cmp(VALUE x, VALUE y)
 {
     double a, b;
 
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -889,7 +889,7 @@ flo_cmp(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	break;
 
       default:
@@ -910,7 +910,7 @@ flo_gt(VALUE x, VALUE y)
 {
     double a, b;
 
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -921,7 +921,7 @@ flo_gt(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	if (isnan(b)) return Qfalse;
 	break;
 
@@ -945,7 +945,7 @@ flo_ge(VALUE x, VALUE y)
 {
     double a, b;
 
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -956,7 +956,7 @@ flo_ge(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	if (isnan(b)) return Qfalse;
 	break;
 
@@ -979,7 +979,7 @@ flo_lt(VALUE x, VALUE y)
 {
     double a, b;
 
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -990,7 +990,7 @@ flo_lt(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	if (isnan(b)) return Qfalse;
 	break;
 
@@ -1014,7 +1014,7 @@ flo_le(VALUE x, VALUE y)
 {
     double a, b;
 
-    a = RFLOAT(x)->value;
+    a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2LONG(y);
@@ -1025,7 +1025,7 @@ flo_le(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	b = RFLOAT(y)->value;
+	b = RFLOAT_VALUE(y);
 	if (isnan(b)) return Qfalse;
 	break;
 
@@ -1051,8 +1051,8 @@ static VALUE
 flo_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) == T_FLOAT) {
-	double a = RFLOAT(x)->value;
-	double b = RFLOAT(y)->value;
+	double a = RFLOAT_VALUE(x);
+	double b = RFLOAT_VALUE(y);
 
 	if (isnan(a) || isnan(b)) return Qfalse;
 	if (a == b) return Qtrue;
@@ -1087,8 +1087,8 @@ flo_to_f(VALUE num)
 static VALUE
 flo_abs(VALUE flt)
 {
-    double val = fabs(RFLOAT(flt)->value);
-    return rb_float_new(val);
+    double val = fabs(RFLOAT_VALUE(flt));
+    return DOUBLE2NUM(val);
 }
 
 /*
@@ -1102,7 +1102,7 @@ flo_abs(VALUE flt)
 static VALUE
 flo_zero_p(VALUE num)
 {
-    if (RFLOAT(num)->value == 0.0) {
+    if (RFLOAT_VALUE(num) == 0.0) {
 	return Qtrue;
     }
     return Qfalse;
@@ -1124,7 +1124,7 @@ flo_zero_p(VALUE num)
 static VALUE
 flo_is_nan_p(VALUE num)
 {
-    double value = RFLOAT(num)->value;
+    double value = RFLOAT_VALUE(num);
 
     return isnan(value) ? Qtrue : Qfalse;
 }
@@ -1144,7 +1144,7 @@ flo_is_nan_p(VALUE num)
 static VALUE
 flo_is_infinite_p(VALUE num)
 {
-    double value = RFLOAT(num)->value;
+    double value = RFLOAT_VALUE(num);
 
     if (isinf(value)) {
 	return INT2FIX( value < 0 ? -1 : 1 );
@@ -1166,7 +1166,7 @@ flo_is_infinite_p(VALUE num)
 static VALUE
 flo_is_finite_p(VALUE num)
 {
-    double value = RFLOAT(num)->value;
+    double value = RFLOAT_VALUE(num);
 
 #if HAVE_FINITE
     if (!finite(value))
@@ -1194,7 +1194,7 @@ flo_is_finite_p(VALUE num)
 static VALUE
 flo_floor(VALUE num)
 {
-    double f = floor(RFLOAT(num)->value);
+    double f = floor(RFLOAT_VALUE(num));
     long val;
 
     if (!FIXABLE(f)) {
@@ -1220,7 +1220,7 @@ flo_floor(VALUE num)
 static VALUE
 flo_ceil(VALUE num)
 {
-    double f = ceil(RFLOAT(num)->value);
+    double f = ceil(RFLOAT_VALUE(num));
     long val;
 
     if (!FIXABLE(f)) {
@@ -1253,7 +1253,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     if (rb_scan_args(argc, argv, "01", &nd) == 1) {
 	ndigits = NUM2INT(nd);
     }
-    number  = RFLOAT(num)->value;
+    number  = RFLOAT_VALUE(num);
     f = 1.0;
     i = abs(ndigits);
     while  (--i >= 0)
@@ -1266,7 +1266,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     if (ndigits < 0) number *= f;
     else number /= f;
 
-    if (ndigits > 0) return rb_float_new(number);
+    if (ndigits > 0) return DOUBLE2NUM(number);
 
     if (!FIXABLE(number)) {
 	return rb_dbl2big(number);
@@ -1287,7 +1287,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 static VALUE
 flo_truncate(VALUE num)
 {
-    double f = RFLOAT(num)->value;
+    double f = RFLOAT_VALUE(num);
     long val;
 
     if (f > 0.0) f = floor(f);
@@ -1455,7 +1455,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 	if (err>0.5) err=0.5;
 	n = floor(n + err) + 1;
 	for (i=0; i<n; i++) {
-	    rb_yield(rb_float_new(i*unit+beg));
+	    rb_yield(DOUBLE2NUM(i*unit+beg));
 	}
     }
     else {
@@ -1488,15 +1488,15 @@ rb_num2long(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)LONG_MAX
-	    && RFLOAT(val)->value >= (double)LONG_MIN) {
-	    return (SIGNED_VALUE)(RFLOAT(val)->value);
+	if (RFLOAT_VALUE(val) <= (double)LONG_MAX
+	    && RFLOAT_VALUE(val) >= (double)LONG_MIN) {
+	    return (SIGNED_VALUE)(RFLOAT_VALUE(val));
 	}
 	else {
 	    char buf[24];
 	    char *s;
 
-	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
+	    sprintf(buf, "%-.10g", RFLOAT_VALUE(val));
 	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
@@ -1636,15 +1636,15 @@ rb_num2ll(VALUE val)
 
     switch (TYPE(val)) {
       case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)LLONG_MAX
-	    && RFLOAT(val)->value >= (double)LLONG_MIN) {
-	    return (LONG_LONG)(RFLOAT(val)->value);
+	if (RFLOAT_VALUE(val) <= (double)LLONG_MAX
+	    && RFLOAT_VALUE(val) >= (double)LLONG_MIN) {
+	    return (LONG_LONG)(RFLOAT_VALUE(val));
 	}
 	else {
 	    char buf[24];
 	    char *s;
 
-	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
+	    sprintf(buf, "%-.10g", RFLOAT_VALUE(val));
 	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
 	}
@@ -2027,7 +2027,7 @@ fix_plus(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_plus(y, x);
       case T_FLOAT:
-	return rb_float_new((double)FIX2LONG(x) + RFLOAT(y)->value);
+	return DOUBLE2NUM((double)FIX2LONG(x) + RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -2061,7 +2061,7 @@ fix_minus(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_minus(x, y);
       case T_FLOAT:
-	return rb_float_new((double)FIX2LONG(x) - RFLOAT(y)->value);
+	return DOUBLE2NUM((double)FIX2LONG(x) - RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -2120,7 +2120,7 @@ fix_mul(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_mul(y, x);
       case T_FLOAT:
-	return rb_float_new((double)FIX2LONG(x) * RFLOAT(y)->value);
+	return DOUBLE2NUM((double)FIX2LONG(x) * RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -2170,13 +2170,13 @@ static VALUE
 fix_quo(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	return rb_float_new((double)FIX2LONG(x) / (double)FIX2LONG(y));
+	return DOUBLE2NUM((double)FIX2LONG(x) / (double)FIX2LONG(y));
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
-	return rb_float_new((double)FIX2LONG(y) / rb_big2dbl(y));
+	return DOUBLE2NUM((double)FIX2LONG(y) / rb_big2dbl(y));
       case T_FLOAT:
-	return rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value);
+	return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -2197,10 +2197,10 @@ fix_divide(VALUE x, VALUE y, int flo)
 	return rb_big_div(x, y);
       case T_FLOAT:
 	if (flo) {
-	    return rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value);
+	    return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
 	}
 	else {
-	    long div = (double)FIX2LONG(x) / RFLOAT(y)->value;
+	    long div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
 	    return LONG2NUM(div);
 	}
       default:
@@ -2262,8 +2262,8 @@ fix_mod(VALUE x, VALUE y)
 	{
 	    double mod;
 
-	    flodivmod((double)FIX2LONG(x), RFLOAT(y)->value, 0, &mod);
-	    return rb_float_new(mod);
+	    flodivmod((double)FIX2LONG(x), RFLOAT_VALUE(y), 0, &mod);
+	    return DOUBLE2NUM(mod);
 	}
       default:
 	return rb_num_coerce_bin(x, y);
@@ -2295,9 +2295,9 @@ fix_divmod(VALUE x, VALUE y)
 	    double div, mod;
 	    volatile VALUE a, b;
 
-	    flodivmod((double)FIX2LONG(x), RFLOAT(y)->value, &div, &mod);
-	    a = rb_float_new(div);
-	    b = rb_float_new(mod);
+	    flodivmod((double)FIX2LONG(x), RFLOAT_VALUE(y), &div, &mod);
+	    a = DOUBLE2NUM(div);
+	    b = DOUBLE2NUM(mod);
 	    return rb_assoc_new(a, b);
 	}
       default:
@@ -2366,7 +2366,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b == 1) return x;
 	if (a == 0) {
 	    if (b > 0) return INT2FIX(0);
-	    return rb_float_new(1.0 / zero);
+	    return DOUBLE2NUM(1.0 / zero);
 	}
 	if (a == 1) return INT2FIX(1);
 	if (a == -1) {
@@ -2378,7 +2378,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b > 0) {
 	    return int_pow(a, b);
 	}
-	return rb_float_new(pow((double)a, (double)b));
+	return DOUBLE2NUM(pow((double)a, (double)b));
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
@@ -2391,12 +2391,12 @@ fix_pow(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
       case T_FLOAT:
-	if (RFLOAT(y)->value == 0.0) return rb_float_new(1.0);
+	if (RFLOAT_VALUE(y) == 0.0) return DOUBLE2NUM(1.0);
 	if (a == 0) {
-	    return rb_float_new(RFLOAT(y)->value < 0 ? (1.0 / zero) : 0.0);
+	    return DOUBLE2NUM(RFLOAT_VALUE(y) < 0 ? (1.0 / zero) : 0.0);
 	}
-	if (a == 1) return rb_float_new(1.0);
-	return rb_float_new(pow((double)a, RFLOAT(y)->value));
+	if (a == 1) return DOUBLE2NUM(1.0);
+	return DOUBLE2NUM(pow((double)a, RFLOAT_VALUE(y)));
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -2422,7 +2422,7 @@ fix_equal(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_eq(y, x);
       case T_FLOAT:
-	return (double)FIX2LONG(x) == RFLOAT(y)->value ? Qtrue : Qfalse;
+	return (double)FIX2LONG(x) == RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
 	return num_equal(x, y);
     }
@@ -2449,7 +2449,7 @@ fix_cmp(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_cmp(rb_int2big(FIX2LONG(x)), y);
       case T_FLOAT:
-	return rb_dbl_cmp((double)FIX2LONG(x), RFLOAT(y)->value);
+	return rb_dbl_cmp((double)FIX2LONG(x), RFLOAT_VALUE(y));
       default:
 	return rb_num_coerce_cmp(x, y);
     }
@@ -2474,7 +2474,7 @@ fix_gt(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) > 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) > RFLOAT(y)->value ? Qtrue : Qfalse;
+	return (double)FIX2LONG(x) > RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y);
     }
@@ -2499,7 +2499,7 @@ fix_ge(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) >= 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) >= RFLOAT(y)->value ? Qtrue : Qfalse;
+	return (double)FIX2LONG(x) >= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y);
     }
@@ -2524,7 +2524,7 @@ fix_lt(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) < 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) < RFLOAT(y)->value ? Qtrue : Qfalse;
+	return (double)FIX2LONG(x) < RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y);
     }
@@ -2549,7 +2549,7 @@ fix_le(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) <= 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) <= RFLOAT(y)->value ? Qtrue : Qfalse;
+	return (double)FIX2LONG(x) <= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y);
     }
@@ -2753,7 +2753,7 @@ fix_to_f(VALUE num)
 
     val = (double)FIX2LONG(num);
 
-    return rb_float_new(val);
+    return DOUBLE2NUM(val);
 }
 
 /*
@@ -3183,9 +3183,9 @@ Init_Numeric(void)
     rb_define_const(rb_cFloat, "MAX_EXP", INT2FIX(DBL_MAX_EXP));
     rb_define_const(rb_cFloat, "MIN_10_EXP", INT2FIX(DBL_MIN_10_EXP));
     rb_define_const(rb_cFloat, "MAX_10_EXP", INT2FIX(DBL_MAX_10_EXP));
-    rb_define_const(rb_cFloat, "MIN", rb_float_new(DBL_MIN));
-    rb_define_const(rb_cFloat, "MAX", rb_float_new(DBL_MAX));
-    rb_define_const(rb_cFloat, "EPSILON", rb_float_new(DBL_EPSILON));
+    rb_define_const(rb_cFloat, "MIN", DOUBLE2NUM(DBL_MIN));
+    rb_define_const(rb_cFloat, "MAX", DOUBLE2NUM(DBL_MAX));
+    rb_define_const(rb_cFloat, "EPSILON", DOUBLE2NUM(DBL_EPSILON));
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);

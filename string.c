@@ -2839,7 +2839,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_to_f(VALUE str)
 {
-    return rb_float_new(rb_str_to_dbl(str, Qfalse));
+    return DOUBLE2NUM(rb_str_to_dbl(str, Qfalse));
 }
 
 

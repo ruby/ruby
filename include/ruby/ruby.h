@@ -451,8 +451,10 @@ struct RClass {
 
 struct RFloat {
     struct RBasic basic;
-    double value;
+    double double_value;
 };
+#define RFLOAT_VALUE(v) (RFLOAT(v)->double_value)
+#define DOUBLE2NUM(dbl)  rb_float_new(dbl)
 
 #define ELTS_SHARED FL_USER2
 

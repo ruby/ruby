@@ -1,3 +1,17 @@
+Wed Nov 14 00:33:49 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: introduce 2 macros:
+	  RFLOAT_VALUE(v), DOUBLE2NUM(dbl).
+	  Rename RFloat#value -> RFloat#double_value.
+	  Do not touch RFloat#double_value directly.
+
+	* bignum.c, insns.def, marshal.c, math.c, numeric.c, object.c,
+	  pack.c, parse.y, process.c, random.c, sprintf.c, string.c,
+	  time.c: apply above changes.
+
+	* ext/dl/mkcallback.rb, ext/json/ext/generator/generator.c: 
+	  ditto.
+
 Wed Nov 14 00:15:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/ytab.sed: get rid of GNU sed feature.  a patch from Laurent

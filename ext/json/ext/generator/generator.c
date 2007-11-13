@@ -275,7 +275,7 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
 {
     JSON_Generator_State *state = NULL;
     VALUE Vstate, rest, tmp;
-    double value = RFLOAT(self)->value;
+    double value = RFLOAT_VALUE(self);
     rb_scan_args(argc, argv, "01*", &Vstate, &rest);
     if (!NIL_P(Vstate)) Data_Get_Struct(Vstate, JSON_Generator_State, state);
     if (isinf(value)) {

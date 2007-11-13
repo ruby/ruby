@@ -437,14 +437,14 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &vmax);
     switch (TYPE(vmax)) {
       case T_FLOAT:
-	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN) {
-	    max = (long)RFLOAT(vmax)->value;
+	if (RFLOAT_VALUE(vmax) <= LONG_MAX && RFLOAT_VALUE(vmax) >= LONG_MIN) {
+	    max = (long)RFLOAT_VALUE(vmax);
 	    break;
 	}
-        if (RFLOAT(vmax)->value < 0)
-            vmax = rb_dbl2big(-RFLOAT(vmax)->value);
+        if (RFLOAT_VALUE(vmax) < 0)
+            vmax = rb_dbl2big(-RFLOAT_VALUE(vmax));
         else
-            vmax = rb_dbl2big(RFLOAT(vmax)->value);
+            vmax = rb_dbl2big(RFLOAT_VALUE(vmax));
 	/* fall through */
       case T_BIGNUM:
       bignum:
@@ -457,7 +457,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
             limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
             if (FIXNUM_P((VALUE)limit)) {
                 if (FIX2LONG((VALUE)limit) == -1)
-                    return rb_float_new(genrand_real());
+                    return DOUBLE2NUM(genrand_real());
                 return LONG2NUM(limited_rand(FIX2LONG((VALUE)limit)));
             }
             return limited_big_rand(limit);
@@ -474,7 +474,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     }
 
     if (max == 0) {
-	return rb_float_new(genrand_real());
+	return DOUBLE2NUM(genrand_real());
     }
     if (max < 0) max = -max;
     val = limited_rand(max-1);

@@ -70,12 +70,12 @@ DLTYPE = {
   FLOAT => {
     :name => 'float',
     :type => 'float',
-    :conv => 'RFLOAT(%s)->value',
+    :conv => 'RFLOAT_VALUE(%s)',
   },
   DOUBLE => {
     :name => 'double',
     :type => 'double',
-    :conv => 'RFLOAT(%s)->value',
+    :conv => 'RFLOAT_VALUE(%s)',
   },
   VOIDP => {
     :name => 'ptr',

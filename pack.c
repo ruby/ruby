@@ -768,7 +768,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		float f;
 
 		from = NEXTFROM;
-		f = RFLOAT(rb_Float(from))->value;
+		f = RFLOAT_VALUE(rb_Float(from));
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
@@ -779,7 +779,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		f = RFLOAT(rb_Float(from))->value;
+		f = RFLOAT_VALUE(rb_Float(from));
 		f = HTOVF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -791,7 +791,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		DOUBLE_CONVWITH(dtmp);
 
 		from = NEXTFROM;
-		d = RFLOAT(rb_Float(from))->value;
+		d = RFLOAT_VALUE(rb_Float(from));
 		d = HTOVD(d,dtmp);
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
@@ -803,7 +803,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		double d;
 
 		from = NEXTFROM;
-		d = RFLOAT(rb_Float(from))->value;
+		d = RFLOAT_VALUE(rb_Float(from));
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
@@ -814,7 +814,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		f = RFLOAT(rb_Float(from))->value;
+		f = RFLOAT_VALUE(rb_Float(from));
 		f = HTONF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -826,7 +826,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		DOUBLE_CONVWITH(dtmp);
 
 		from = NEXTFROM;
-		d = RFLOAT(rb_Float(from))->value;
+		d = RFLOAT_VALUE(rb_Float(from));
 		d = HTOND(d,dtmp);
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
@@ -1634,7 +1634,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
-		UNPACK_PUSH(rb_float_new((double)tmp));
+		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1648,7 +1648,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = VTOHF(tmp,ftmp);
-		UNPACK_PUSH(rb_float_new((double)tmp));
+		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1662,7 +1662,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = VTOHD(tmp,dtmp);
-		UNPACK_PUSH(rb_float_new(tmp));
+		UNPACK_PUSH(DOUBLE2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1674,7 +1674,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
-		UNPACK_PUSH(rb_float_new(tmp));
+		UNPACK_PUSH(DOUBLE2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1688,7 +1688,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = NTOHF(tmp,ftmp);
-		UNPACK_PUSH(rb_float_new((double)tmp));
+		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1702,7 +1702,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = NTOHD(tmp,dtmp);
-		UNPACK_PUSH(rb_float_new(tmp));
+		UNPACK_PUSH(DOUBLE2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;

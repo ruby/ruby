@@ -173,15 +173,15 @@ time_timeval(VALUE time, int interval)
 	break;
 
       case T_FLOAT:
-	if (interval && RFLOAT(time)->value < 0.0)
+	if (interval && RFLOAT_VALUE(time) < 0.0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	else {
 	    double f, d;
 
-	    d = modf(RFLOAT(time)->value, &f);
+	    d = modf(RFLOAT_VALUE(time), &f);
 	    t.tv_sec = (time_t)f;
 	    if (f != t.tv_sec) {
-		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
+		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(time));
 	    }
 	    t.tv_usec = (time_t)(d*1e6+0.5);
 	}
@@ -868,7 +868,7 @@ time_to_f(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1e6);
+    return DOUBLE2NUM((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1e6);
 }
 
 /*
@@ -1324,7 +1324,7 @@ time_minus(VALUE time1, VALUE time2)
 	f += ((double)tobj->tv.tv_usec - (double)tobj2->tv.tv_usec)*1e-6;
 	/* XXX: should check float overflow on 64bit time_t platforms */
 
-	return rb_float_new(f);
+	return DOUBLE2NUM(f);
     }
     return time_add(tobj, time2, -1);
 }

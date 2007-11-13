@@ -6694,7 +6694,7 @@ parser_yylex(struct parser_params *parser)
 		    rb_warnS("Float %s out of range", tok());
 		    errno = 0;
 		}
-                set_yylval_literal(rb_float_new(d));
+                set_yylval_literal(DOUBLE2NUM(d));
 		return tFLOAT;
 	    }
             set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));
@@ -8269,7 +8269,7 @@ negate_lit(NODE *node)
 	node->nd_lit = rb_funcall(node->nd_lit,tUMINUS,0,0);
 	break;
       case T_FLOAT:
-	RFLOAT(node->nd_lit)->value = -RFLOAT(node->nd_lit)->value;
+	RFLOAT(node->nd_lit)->double_value = -RFLOAT_VALUE(node->nd_lit);
 	break;
       default:
 	break;
