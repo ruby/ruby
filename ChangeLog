@@ -1,6 +1,6 @@
 Wed Nov 14 02:11:38 2007  Tanaka Akira  <akr@fsij.org>
 
-	* missing/isinf.c (isinf): don't define is the macro is defined.
+	* missing/isinf.c (isinf): don't define if the macro is defined.
 
 	* configure.in: no need to set ac_cv_func_isinf=yes on non-gcc
 	  solaris.
@@ -52,7 +52,7 @@ Tue Nov 13 21:41:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 13 16:33:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* numeric.c (flodivmod): work around for inifinity.
+	* numeric.c (flodivmod): work around for infinity.
 
 	* numeric.c (flo_divmod): work around for platforms have no round().
 	  [ruby-dev:32247]
@@ -250,7 +250,7 @@ Fri Nov  9 21:46:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 Fri Nov  9 17:48:22 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ruby.c (locale_encoding): guestimate encoding from environment
+	* ruby.c (locale_encoding): guesstimate encoding from environment
 	  variables.  [ruby-core:13315]
 
 	* ruby.c (process_options): set primary encoding from environment.
@@ -578,7 +578,7 @@ Mon Oct 29 18:42:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Oct 29 17:58:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_str_substr): perfomance improvement.  [ruby-dev:31806]
+	* string.c (rb_str_substr): performance improvement.  [ruby-dev:31806]
 
 Mon Oct 29 17:20:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -662,7 +662,7 @@ Thu Oct 25 13:59:53 2007 David Flanagan <davidflanagan@ruby-lang.org>
 Thu Oct 25 09:49:49 2007  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri.rb, lib/uri/ldaps.rb: added LDAPS
-	  cheme. [ruby-dev:31896]
+	  scheme. [ruby-dev:31896]
 
 Wed Oct 25 06:23:14 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
@@ -749,7 +749,7 @@ Fri Oct 19 16:41:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): always set encoding of Regexp.
 
-	* re.c (rb_reg_initialize_str): fix enconding for non 7bit-clean
+	* re.c (rb_reg_initialize_str): fix encoding for non 7bit-clean
 	  strings.
 
 	* re.c (rb_reg_initialize_m): use ascii encoding for 'n' option.
