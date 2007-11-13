@@ -63,6 +63,24 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+#ifndef HAVE_ROUND
+double
+round(double x)
+{
+    double f;
+
+    if (x > 0.0) {
+	f = floor(x);
+	x = f + (x - f >= 0.5);
+    }
+    else if (x < 0.0) {
+	f = ceil(x);
+	x = f - (f - x >= 0.5);
+    }
+    return x;
+}
+#endif
+
 static ID id_coerce, id_to_i, id_eq;
 
 VALUE rb_cNumeric;
@@ -718,11 +736,7 @@ flo_divmod(VALUE x, VALUE y)
     }
     flodivmod(RFLOAT_VALUE(x), fy, &div, &mod);
     if (FIXABLE(div)) {
-#ifdef HVAE_ROUND
 	val = round(div);
-#else
-	val = (div < 0) ? ceil(x - 0.5) : floor(x + 0.5);
-#endif
 	a = LONG2FIX(val);
     }
     else if (isnan(div) || isinf(div)) {
@@ -1261,8 +1275,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 
     if (ndigits < 0) number /= f;
     else number *= f;
-    if (number > 0.0) number = floor(number+0.5);
-    if (number < 0.0) number = ceil(number-0.5);
+    number = round(number);
     if (ndigits < 0) number *= f;
     else number /= f;
 

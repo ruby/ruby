@@ -1,3 +1,10 @@
+Wed Nov 14 01:34:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (round): fallback definition.
+
+	* numeric.c (flo_divmod, flo_round): use round() always.
+	  [ruby-dev:32269]
+
 Wed Nov 14 00:33:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: introduce 2 macros:
