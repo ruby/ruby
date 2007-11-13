@@ -351,6 +351,11 @@ PHONY:
 
 {$(VPATH)}parse.c: parse.y
 
+{$(VPATH)}.y.c:
+	$(YACC) $(YFLAGS) -o y.tab.c $<
+	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
+	@$(RM) y.tab.c
+
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c
 crypt.$(OBJEXT): {$(VPATH)}crypt.c
@@ -628,10 +633,10 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 incs: $(INSNS) node_name.inc
 
-node_name.inc: {$(VPATH)}node.h
+{$(VPATH)}node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+{$(VPATH)}prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 ext_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)

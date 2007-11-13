@@ -8,7 +8,9 @@ src: ripper.c eventids1.c eventids2table.c
 ripper.o: ripper.c lex.c eventids1.c eventids2.c eventids2table.c
 
 .y.c:
-	$(BISON) -t -v -o$@ $<
+	$(BISON) -t -v -oy.tab.c $<
+	sed -f $(top_srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
+	@$(RM) y.tab.c
 
 all: check
 static: check

@@ -530,11 +530,6 @@ end
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
-{$(srcdir)}.y.c:
-	$(YACC) $(YFLAGS) $(<:\=/)
-	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
-	@del y.tab.c
-
 !include $(srcdir)/common.mk
 
 $(OBJS): {$(srcdir)}win32/win32.h

@@ -1,3 +1,22 @@
+Tue Nov 13 21:41:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.c), ext/ripper/depend (ripper.c): process after
+	  bison with sed.  [ruby-dev:32204]
+
+	* ruby.c (proc_options): use yydebug in cmdline_options.
+
+	* ruby.c (process_options): set yydebug flag of parser.
+
+	* parse.y (yydebug): moved into struct parser_params.
+
+	* parse.y (rb_parser_get_yydebug, rb_parser_set_yydebug): parser
+	  generic methods.
+
+	* */Makefile.sub (parse.c): moved to common.mk.
+
+	* tool/ytab.sed: comment out yydebug definition, and substitute
+	  yyerror with parser_yyerror.
+
 Tue Nov 13 16:33:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flodivmod): work around for inifinity.

@@ -240,6 +240,8 @@ struct parser_params {
     rb_encoding *enc;
     rb_encoding *utf8;
 
+    int parser_yydebug;
+
 #ifndef RIPPER
     /* Ruby core only */
     char *parser_ruby_sourcefile; /* current source file */
@@ -282,9 +284,7 @@ void rb_parser_free(struct parser_params *, void *);
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, msg)
 
-#define YYPARSE_PARAM parser_v
-#define YYLEX_PARAM parser_v
-#define parser ((struct parser_params*)parser_v)
+#define YYLEX_PARAM parser
 
 #define ruby_eval_tree		(parser->parser_eval_tree)
 #define ruby_eval_tree_begin	(parser->parser_eval_tree_begin)
@@ -317,6 +317,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
+#define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
 #else
 #define ruby_debug_lines	(parser->debug_lines)
@@ -326,7 +327,6 @@ static int yylex(void*, void*);
 
 #ifndef RIPPER
 #define yyparse ruby_yyparse
-#define yydebug ruby_yydebug
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
 #define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, type, a1, a2, a3)
@@ -489,7 +489,6 @@ static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,V
 #define dispatch5(n,a,b,c,d,e)  ripper_dispatch5(parser, TOKEN_PASTE(ripper_id_, n), a, b, c, d, e)
 
 #define yyparse ripper_yyparse
-#define yydebug ripper_yydebug
 
 static VALUE ripper_intern(const char*);
 static VALUE ripper_id2sym(ID);
@@ -587,6 +586,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %}
 
 %pure_parser
+%parse-param {struct parser_params *parser}
 
 %union {
     VALUE val;
@@ -9141,6 +9141,9 @@ parser_free(void *ptr)
     xfree(p);
 }
 
+VALUE rb_parser_get_yydebug(VALUE);
+VALUE rb_parser_set_yydebug(VALUE, VALUE);
+
 #ifndef RIPPER
 static struct parser_params *
 parser_new(void)
@@ -9190,6 +9193,37 @@ rb_parser_encoding(VALUE vparser)
 
     Data_Get_Struct(vparser, struct parser_params, parser);
     return rb_enc_from_encoding(parser->enc);
+}
+
+/*
+ *  call-seq:
+ *    ripper.yydebug   -> true or false
+ *
+ *  Get yydebug.
+ */
+VALUE
+rb_parser_get_yydebug(VALUE self)
+{
+    struct parser_params *parser;
+
+    Data_Get_Struct(self, struct parser_params, parser);
+    return yydebug ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *    ripper.yydebug = flag
+ *
+ *  Set yydebug.
+ */
+VALUE
+rb_parser_set_yydebug(VALUE self, VALUE flag)
+{
+    struct parser_params *parser;
+
+    Data_Get_Struct(self, struct parser_params, parser);
+    yydebug = RTEST(flag);
+    return flag;
 }
 
 #ifdef YYMALLOC
@@ -9554,31 +9588,6 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
-/*
- *  call-seq:
- *    Ripper.yydebug   -> true or false
- *
- *  Get yydebug.
- */
-static VALUE
-ripper_s_get_yydebug(VALUE self)
-{
-    return ripper_yydebug ? Qtrue : Qfalse;
-}
-
-/*
- *  call-seq:
- *    Ripper.yydebug = flag
- *
- *  Set yydebug.
- */
-static VALUE
-ripper_s_set_yydebug(VALUE self, VALUE flag)
-{
-    ripper_yydebug = RTEST(flag);
-    return flag;
-}
-
 extern VALUE rb_thread_pass(void);
 
 struct ripper_args {
@@ -9704,8 +9713,6 @@ Init_ripper(void)
 
     Ripper = rb_define_class("Ripper", rb_cObject);
     rb_define_const(Ripper, "Version", rb_str_new2(RIPPER_VERSION));
-    rb_define_singleton_method(Ripper, "yydebug", ripper_s_get_yydebug, 0);
-    rb_define_singleton_method(Ripper, "yydebug=", ripper_s_set_yydebug, 1);
     rb_define_alloc_func(Ripper, ripper_s_allocate);
     rb_define_method(Ripper, "initialize", ripper_initialize, -1);
     rb_define_method(Ripper, "parse", ripper_parse, 0);
@@ -9713,6 +9720,8 @@ Init_ripper(void)
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
     rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
     rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
+    rb_define_method(Ripper, "yydebug", rb_parser_get_yydebug, 0);
+    rb_define_method(Ripper, "yydebug=", rb_parser_set_yydebug, 1);
 #ifdef RIPPER_DEBUG
     rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
     rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);

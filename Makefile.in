@@ -177,9 +177,6 @@ lex.c: keywords
 	  cp $@ $(srcdir)/lex.c.blt; \
 	fi
 
-.y.c:
-	$(YACC) $(YFLAGS) -o $@ $<
-
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c $<
 

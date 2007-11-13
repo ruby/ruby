@@ -61,7 +61,8 @@ char *getenv();
 /* TODO: move to VM */
 VALUE ruby_debug = Qfalse;
 VALUE ruby_verbose = Qfalse;
-extern int ruby_yydebug;
+VALUE rb_parser_get_yydebug(VALUE);
+VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
 char *ruby_inplace_mode = 0;
 
@@ -593,7 +594,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    goto reswitch;
 
 	  case 'y':
-	    ruby_yydebug = 1;
+	    opt->yydebug = 1;
 	    s++;
 	    goto reswitch;
 
@@ -838,7 +839,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_verbose = Qtrue;
 	    }
 	    else if (strcmp("yydebug", s) == 0)
-		ruby_yydebug = 1;
+		opt->yydebug = 1;
 	    else if (strcmp("help", s) == 0) {
 		usage(origarg.argv[0]);
 		rb_exit(EXIT_SUCCESS);
@@ -993,6 +994,7 @@ process_options(VALUE arg)
     ruby_init_loadpath();
     ruby_init_gems(opt);
     parser = rb_parser_new();
+    if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->e_script) {
 	if (opt->enc_index >= 0)
 	    rb_enc_associate_index(opt->e_script, opt->enc_index);

@@ -209,11 +209,6 @@ VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/mis
 .rc.res:
 	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:/=\)
 
-.y.c:
-	$(YACC) $(YFLAGS) $(<:\=/)
-	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $(@F)
-	@del y.tab.c
-
 all: $(srcdir)/bcc32/Makefile.sub $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
