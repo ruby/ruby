@@ -8,7 +8,6 @@ require 'tmpdir'
 require 'enumerator'
 
 class TestPathname < Test::Unit::TestCase
-
   def self.define_assertion(name, &block)
     @defassert_num ||= {}
     @defassert_num[name] ||= 0
@@ -130,7 +129,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def del_trailing_separator(path)
-    Pathname.allocate.send(__send__, :del_trailing_separator, path)
+    Pathname.allocate.__send__(:del_trailing_separator, path)
   end
 
   defassert(:del_trailing_separator, "/", "/")
