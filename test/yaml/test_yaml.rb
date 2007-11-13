@@ -1082,27 +1082,27 @@ EOY
 				book_struct.new( "This should be the ISBN", "but I have another struct here", 2002, "None" ) 
 			  ) ], <<EOY
 - !ruby/struct:BookStruct
-  author: Yukihiro Matsumoto
-  title: Ruby in a Nutshell
-  year: 2002
-  isbn: 0-596-00214-9
+  :author: Yukihiro Matsumoto
+  :title: Ruby in a Nutshell
+  :year: 2002
+  :isbn: 0-596-00214-9
 - !ruby/struct:BookStruct
-  author:
+  :author:
     - Dave Thomas
     - Andy Hunt
-  title: The Pickaxe
-  year: 2002
-  isbn: !ruby/struct:BookStruct
-    author: This should be the ISBN
-    title: but I have another struct here
-    year: 2002
-    isbn: None
+  :title: The Pickaxe
+  :year: 2002
+  :isbn: !ruby/struct:BookStruct
+    :author: This should be the ISBN
+    :title: but I have another struct here
+    :year: 2002
+    :isbn: None
 EOY
 		)
 
         assert_to_yaml( YAML_Tests::StructTest.new( 123 ), <<EOY )
 --- !ruby/struct:YAML_Tests::StructTest
-c: 123
+:c: 123
 EOY
 
 	end

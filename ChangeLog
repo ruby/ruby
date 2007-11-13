@@ -1,3 +1,8 @@
+Tue Nov 13 14:44:32 2007  why the lucky stiff  <why@ruby-lang.org>
+
+	* test/yaml/test_yaml.rb: fixed the failing YAML Struct test
+	  at ko1's request.
+
 Tue Nov 13 02:57:04 2007  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 	* numeric.c (flo_divmod): round to the nearest integer.
