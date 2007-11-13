@@ -1,3 +1,7 @@
+Wed Nov 14 01:52:59 2007  Tanaka Akira  <akr@fsij.org>
+
+	* missing/isinf.c (isinf): don't define is the macro is defined.
+
 Wed Nov 14 01:34:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (round): fallback definition.
