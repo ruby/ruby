@@ -1807,6 +1807,26 @@ int_chr(num)
     return rb_str_new(&c, 1);
 }
 
+/*
+ *  call-seq:
+ *     int.ord    => int
+ *
+ *  Returns the int itself.
+ *
+ *     ?a.ord    #=> 97
+ *
+ *  This method is intended for compatibility to
+ *  character constant in Ruby 1.9.
+ *  For example, ?a.ord returns 97 both in 1.8 and 1.9.
+ */
+
+static VALUE
+int_ord(num)
+    VALUE num;
+{
+    return num;
+}
+
 /********************************************************************
  *
  * Document-class: Fixnum
@@ -2924,6 +2944,7 @@ Init_Numeric()
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
+    rb_define_method(rb_cInteger, "ord", int_ord, 0);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "floor", int_to_i, 0);

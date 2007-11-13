@@ -1,3 +1,7 @@
+Tue Nov 13 13:58:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (numeric.c): Integer#ord implemented.  [ruby-dev:32206]
+
 Tue Nov 13 02:57:04 2007  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 	* numeric.c (flo_divmod): round to the nearest integer.
