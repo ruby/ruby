@@ -8,13 +8,6 @@ require 'tmpdir'
 require 'enumerator'
 
 class TestPathname < Test::Unit::TestCase
-
-  if RUBY_VERSION < "1.9"
-    FUNCALL = :__send__
-  else
-    FUNCALL = :funcall
-  end
-
   def self.define_assertion(name, &block)
     @defassert_num ||= {}
     @defassert_num[name] ||= 0
@@ -123,7 +116,7 @@ class TestPathname < Test::Unit::TestCase
 
   # has_trailing_separator?(path) -> bool
   def has_trailing_separator?(path)
-    Pathname.allocate.send(FUNCALL, :has_trailing_separator?, path)
+    Pathname.allocate.__send__(:has_trailing_separator?, path)
   end
 
   defassert(:has_trailing_separator?, false, "/")
@@ -132,11 +125,11 @@ class TestPathname < Test::Unit::TestCase
   defassert(:has_trailing_separator?, true, "a/")
 
   def add_trailing_separator(path)
-    Pathname.allocate.send(FUNCALL, :add_trailing_separator, path)
+    Pathname.allocate.__send__(:add_trailing_separator, path)
   end
 
   def del_trailing_separator(path)
-    Pathname.allocate.send(FUNCALL, :del_trailing_separator, path)
+    Pathname.allocate.__send__(:del_trailing_separator, path)
   end
 
   defassert(:del_trailing_separator, "/", "/")
@@ -174,7 +167,10 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
-    defassert(:del_trailing_separator, "\225\\", "\225\\\\") # SJIS
+    require 'Win32API'
+    if Win32API.new('kernel32', 'GetACP', nil, 'L').call == 932
+      defassert(:del_trailing_separator, "\225\\", "\225\\\\") # SJIS
+    end
   end
 
   def plus(path1, path2) # -> path
@@ -284,16 +280,12 @@ class TestPathname < Test::Unit::TestCase
       return
     rescue TypeError
     end
-    dir = "#{Dir.tmpdir}/tst-pathname-#$$"
-    Dir.mkdir(dir)
-    begin
+    Dir.mktmpdir('rubytest-pathname') {|dir|
       File.symlink("not-exist-target", "#{dir}/not-exist")
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
       File.symlink("loop", "#{dir}/loop")
       assert_raise(Errno::ELOOP) { realpath("#{dir}/loop") }
-    ensure
-      FileUtils.rmtree(dir)
-    end
+    }
   end
 
   def descend(path)
