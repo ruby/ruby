@@ -5,6 +5,6 @@ i\
 a\
 #endif
 }
-s/\<\(yyerror[ 	]*([ 	]*parser,\)/parser_\1/
+s/^[ 	]*\(yyerror[ 	]*([ 	]*parser,\)/parser_\1/
 s!^ *extern char \*getenv();!/* & */!
 s/^\(#.*\)".*\.tab\.c"/\1"parse.c"/

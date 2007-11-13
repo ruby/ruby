@@ -1,3 +1,8 @@
+Wed Nov 14 00:15:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/ytab.sed: get rid of GNU sed feature.  a patch from Laurent
+	  Sansonetti <laurent.sansonetti AT gmail.com> in [ruby-core:13470].
+
 Tue Nov 13 21:41:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (parse.c), ext/ripper/depend (ripper.c): process after
