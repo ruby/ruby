@@ -1,3 +1,10 @@
+Tue Nov 13 16:33:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flodivmod): work around for inifinity.
+
+	* numeric.c (flo_divmod): work around for platforms have no round().
+	  [ruby-dev:32247]
+
 Tue Nov 13 13:58:51 2007  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (numeric.c): Integer#ord implemented.  [ruby-dev:32206]

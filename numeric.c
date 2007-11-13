@@ -663,7 +663,10 @@ flodivmod(x, y, divp, modp)
 	mod = x - z * y;
     }
 #endif
-    div = (x - mod) / y;
+    if (isinf(x) && !isinf(y) && !isnan(y))
+	div = x;
+    else
+	div = (x - mod) / y;
     if (y*mod < 0) {
 	mod += y;
 	div -= 1.0;
@@ -736,11 +739,18 @@ flo_divmod(x, y)
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
     if (FIXABLE(div)) {
+#ifdef HVAE_ROUND
         val = round(div);
-        a = LONG2FIX(val);
+#else
+	val = (div < 0) ? ceil(x - 0.5) : floor(x + 0.5);
+#endif
+	a = LONG2FIX(val);
+    }
+    else if (isnan(div) || isinf(div)) {
+	a = rb_float_new(div);
     }
     else {
-        a = rb_dbl2big(div);
+	a = rb_dbl2big(div);
     }
     b = rb_float_new(mod);
     return rb_assoc_new(a, b);
