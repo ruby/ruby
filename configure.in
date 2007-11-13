@@ -507,11 +507,6 @@ bow)		ac_cv_func_setitimer=no
 		;;
 superux*)     ac_cv_func_setitimer=no
               ;;
-solaris*2.1*) if test -z "$GCC"; then
-	           ac_cv_func_isinf=yes
-              fi
-              LIBS="-lm $LIBS"
-              ;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)

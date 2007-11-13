@@ -1,6 +1,9 @@
-Wed Nov 14 01:52:59 2007  Tanaka Akira  <akr@fsij.org>
+Wed Nov 14 02:11:38 2007  Tanaka Akira  <akr@fsij.org>
 
 	* missing/isinf.c (isinf): don't define is the macro is defined.
+
+	* configure.in: no need to set ac_cv_func_isinf=yes on non-gcc
+	  solaris.
 
 Wed Nov 14 01:34:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
