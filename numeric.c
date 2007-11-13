@@ -63,6 +63,25 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+#ifndef HAVE_ROUND
+double
+round(x)
+    double x;
+{
+    double f;
+
+    if (x > 0.0) {
+	f = floor(x);
+	x = f + (x - f >= 0.5);
+    }
+    else if (x < 0.0) {
+	f = ceil(x);
+	x = f - (f - x >= 0.5);
+    }
+    return x;
+}
+#endif
+
 static ID id_coerce, id_to_i, id_eq;
 
 VALUE rb_cNumeric;
@@ -739,11 +758,7 @@ flo_divmod(x, y)
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
     if (FIXABLE(div)) {
-#ifdef HVAE_ROUND
         val = round(div);
-#else
-	val = (div < 0) ? ceil(x - 0.5) : floor(x + 0.5);
-#endif
 	a = LONG2FIX(val);
     }
     else if (isnan(div) || isinf(div)) {
@@ -1302,8 +1317,7 @@ flo_round(num)
     double f = RFLOAT(num)->value;
     long val;
 
-    if (f > 0.0) f = floor(f+0.5);
-    if (f < 0.0) f = ceil(f-0.5);
+    f = round(f);
 
     if (!FIXABLE(f)) {
 	return rb_dbl2big(f);
@@ -1541,7 +1555,7 @@ rb_num2long(val)
 	    char *s;
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
-	    if (s = strchr(buf, ' ')) *s = '\0';
+	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
 
@@ -1692,7 +1706,7 @@ rb_num2ll(val)
 	    char *s;
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
-	    if (s = strchr(buf, ' ')) *s = '\0';
+	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
 	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
 	}
 
