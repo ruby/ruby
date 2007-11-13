@@ -6,7 +6,7 @@
   $Date$
   created at: 04/01/01 15:50:34 JST
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
 

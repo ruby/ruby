@@ -6,7 +6,7 @@
   $Date$
   created at: 04/01/01 03:42:15 JST
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
 
@@ -252,7 +252,6 @@ iseq_translate_threaded_code(rb_iseq_t *iseq)
 /* definition of data structure for compiler */
 /*********************************************/
 
-
 static void *
 compile_data_alloc(rb_iseq_t *iseq, size_t size)
 {
@@ -336,8 +335,7 @@ ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem)
     verify_list("add", anchor);
 }
 
-/*******************************************/
-#if 0
+#if 0 /* unused */
 /*
  * elem1, elemX => elem1, elem2, elemX
  */
@@ -368,8 +366,6 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 #endif
-
-/*******************************************/
 
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
@@ -402,13 +398,13 @@ FIRST_ELEMENT(LINK_ANCHOR *anchor)
     return anchor->anchor.next;
 }
 
-/*
+#if 0 /* unused */
 static LINK_ELEMENT *
 LAST_ELEMENT(LINK_ANCHOR *anchor)
 {
   return anchor->last;
 }
- */
+#endif
 
 static LINK_ELEMENT *
 POP_ELEMENT(LINK_ANCHOR *anchor)
@@ -501,7 +497,7 @@ INSERT_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
     verify_list("append", anc1);
 }
 
-#if 0
+#if 0 /* unused */
 /*
  * anc1: e1, e2, e3
  * anc2: e4, e5

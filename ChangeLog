@@ -1,3 +1,11 @@
+Wed Nov 14 07:09:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* blockinlining.c, compile.c, compile.h, debug.c, debug.h,
+	  id.c, insnhelper.h, insns.def, thread.c, thread_pthread.ci,
+	  thread_pthread.h, thread_win32.ci, thread_win32.h, vm.h,
+	  vm_dump.c, vm_evalbody.ci, vm_opts.h: fix comments and
+	  copyright year.
+
 Wed Nov 14 07:07:51 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/makedocs.rb, template/insnstbl.html: removed.

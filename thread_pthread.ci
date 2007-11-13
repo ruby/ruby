@@ -6,7 +6,7 @@
   $Author$
   $Date$
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 
 **********************************************************************/
 

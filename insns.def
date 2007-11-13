@@ -5,7 +5,7 @@
   $Date: $
   created at: 04/01/01 01:17:55 JST
 
-  Copyright (C) 2004-2006 Koichi Sasada
+  Copyright (C) 2004-2007 Koichi Sasada
 */
 
 /** ##skip
@@ -47,7 +47,7 @@ nop
 
 /**
   @c variable
-  @e get local variable(which is pointed by idx).
+  @e get local variable value (which is pointed by idx).
   @j idx で指定されたローカル変数をスタックに置く。
  */
 DEFINE_INSN
@@ -61,8 +61,8 @@ getlocal
 
 /**
   @c variable
-  @e get local variable (which is pointed by idx) as val.
-  @j idx で指定されたローカル変数を val にする。
+  @e set local variable value (which is pointed by idx) as val.
+  @j idx で指定されたローカル変数を val に設定する。
  */
 DEFINE_INSN
 setlocal
@@ -75,8 +75,8 @@ setlocal
 
 /**
   @c variable
-  @e get special local variable ($~, $_, ..)
-  @j 特殊なローカル変数の値を得る
+  @e get special local variable ($~, $_, ..) value.
+  @j 特殊なローカル変数（$~, $_, ...）の値を得る。
  */
 DEFINE_INSN
 getspecial
@@ -89,8 +89,8 @@ getspecial
 
 /**
   @c variable
-  @e set special local variables
-  @j 特別なローカル変数を設定する
+  @e set special local variable ($~, $_, ...) value as obj.
+  @j 特別なローカル変数（$~, $_, ...）の値をを設定する。
  */
 DEFINE_INSN
 setspecial
@@ -147,8 +147,7 @@ setdynamic
   @c variable
   @e get instance variable id of obj.
      if is_local is not 0, search as class local variable.
-  @j obj のインスタンス変数 id を得る。
-     もし is_local が !0 ならクラスローカル変数を得る
+  @j self のインスタンス変数 id の値を得る。
  */
 DEFINE_INSN
 getinstancevariable
@@ -163,8 +162,7 @@ getinstancevariable
   @c variable
   @e set instance variable id of obj as val.
      if is_local is not 0, search as class local variable.
-  @j obj のインスタンス変数を val にする。
-     もし is_local が !0 ならクラスローカル変数を得る
+  @j self のインスタンス変数 id を val にする。
  */
 DEFINE_INSN
 setinstancevariable
@@ -178,7 +176,7 @@ setinstancevariable
 /**
   @c variable
   @e get class variable id of klass as val.
-  @j klass のクラス変数 id を得る。
+  @j 現在のスコープのクラス変数 id の値を得る。
  */
 DEFINE_INSN
 getclassvariable
@@ -211,9 +209,9 @@ setclassvariable
    are searched in current scope. if klass is Qfalse, constant as
    top level constant. otherwise, get constant under klass
    class or module.
-  @j
-   定数を得る。klass が Qnil なら、そのスコープで得られ
-   る定数を得る。Qfalse なら、トップレベルスコープを得る。
+  @j 定数 id の値を得る。
+   klass が Qnil なら、そのスコープで得られる定数の値を得る。
+   Qfalse なら、トップレベルスコープを得る。
    それ以外なら、klass クラスの下の定数を得る。
  */
 DEFINE_INSN
@@ -233,11 +231,10 @@ getconstant
    top level constant. otherwise, set constant under klass
    class or module.
 
-  @j
-   定数 id を val にする。klass が Qfalse なら、そのスコープ
-   で得られる定数を設定 id を設定する。Qnil なら、トップレベ
-   ルスコープを設定、それ以外なら、klass クラスの下の定数を
-   設定する。
+  @j 定数 id の値を val にする。
+   klass が Qfalse なら、そのスコープで得られる定数 id の値を設定する。
+   Qnil なら、トップレベルスコープの値を設定する。
+   それ以外なら、klass クラスの下の定数を設定する。
  */
 DEFINE_INSN
 setconstant
@@ -270,7 +267,7 @@ setconstant
 /**
   @c variable
   @e get global variable id.
-  @j グローバル変数 id を得る。
+  @j グローバル変数 id の値を得る。
  */
 DEFINE_INSN
 getglobal
@@ -284,7 +281,7 @@ getglobal
 /**
   @c variable
   @e set global variable id as val.
-  @j グローバル変数 id を得る。
+  @j グローバル変数 id の値を設定する。
  */
 DEFINE_INSN
 setglobal
@@ -302,8 +299,8 @@ setglobal
 
 /**
   @c put
-  @e put nil
-  @j put nil
+  @e put nil to stack.
+  @j スタックに nil をプッシュする。
  */
 DEFINE_INSN
 putnil
@@ -317,7 +314,7 @@ putnil
 /**
   @c put
   @e put self.
-  @j self を置く。
+  @j スタックに self をプッシュする。
  */
 DEFINE_INSN
 putself
@@ -332,7 +329,8 @@ putself
   @c put
   @e put some object.
      i.e. Fixnum, true, false, nil, and so on.
-  @j オブジェクトを置く。i.e. Fixnum, true, false, nil, and so on.
+  @j オブジェクト val をスタックにプッシュする。
+     i.e. Fixnum, true, false, nil, and so on.
  */
 DEFINE_INSN
 putobject
@@ -346,9 +344,8 @@ putobject
 /**
   @c put
   @e put string val. string will be copied.
-  @j 文字列を置く。文字列はコピーしとく。
+  @j 文字列ををコピーしてスタックにプッシュする。
  */
-
 DEFINE_INSN
 putstring
 (VALUE str)
@@ -361,7 +358,7 @@ putstring
 /**
   @c put
   @e put concatenate strings
-  @j 文字列を連結して置く。
+  @j スタックトップの文字列を n 個連結し，結果をスタックにプッシュする。
  */
 DEFINE_INSN
 concatstrings
@@ -383,7 +380,7 @@ concatstrings
 /**
   @c put
   @e to_str
-  @j to_str
+  @j to_str の結果をスタックにプッシュする。
  */
 DEFINE_INSN
 tostring
@@ -397,22 +394,23 @@ tostring
 /**
   @c put
   @e to Regexp
-  @j to Regexp
+  @j 文字列 str を正規表現にコンパイルしてスタックにプッシュする。
+     コンパイル時，opt を正規表現のオプションとする。
  */
 DEFINE_INSN
 toregexp
-(rb_num_t flag)
+(rb_num_t opt)
 (VALUE str)
 (VALUE val)
 {
     volatile VALUE tmp = str; /* for GC */
-    val = rb_reg_new(str, flag);
+    val = rb_reg_new(str, opt);
 }
 
 /**
   @c put
   @e put new array.
-  @j 新しい配列をスタック上の num 個の値で初期化して置く。
+  @j 新しい配列をスタック上の num 個の値で初期化して生成しプッシュする。
  */
 DEFINE_INSN
 newarray
@@ -427,7 +425,7 @@ newarray
 /**
   @c put
   @e dup array
-  @j 配列を dup してスタックに置く
+  @j 配列 ary を dup してスタックにプッシュする。
  */
 DEFINE_INSN
 duparray
@@ -462,7 +460,7 @@ expandarray
 /**
   @c put
   @e concat two arrays
-  @j 二つの配列をとってきてくっつける
+  @j 二つの配列 ary1, ary2 を連結しスタックへプッシュする。
  */
 DEFINE_INSN
 concatarray
@@ -491,7 +489,7 @@ concatarray
 /**
   @c put
   @e splat array
-  @j splat array
+  @j 配列 ary に対して to_splat を呼び出す。
  */
 DEFINE_INSN
 splatarray
@@ -509,7 +507,7 @@ splatarray
 /**
   @c put
   @e check value is included in ary
-  @j 配列に要素が入っているかどうかチェック。case/when で使う
+  @j 配列 ary に要素 obj が入っているかどうかチェック。case/when で利用する。
  */
 DEFINE_INSN
 checkincludearray
@@ -549,7 +547,8 @@ checkincludearray
 /**
   @c put
   @e put new Hash.
-  @j Hash.new
+  @j 新しいハッシュをスタックトップの n 個を初期値として生成する。
+     n はキーと値のペアなので 2 の倍数でなければならない。
  */
 DEFINE_INSN
 newhash
@@ -572,7 +571,7 @@ newhash
 /**
   @c put
   @e put new Range object.(Range.new(low, high, flag))
-  @j Range.new(low, high, flag) のようなオブジェクトを置く。
+  @j Range.new(low, high, flag) のようなオブジェクトを生成しスタックにプッシュする。
  */
 DEFINE_INSN
 newrange
@@ -586,7 +585,7 @@ newrange
 /**
   @c put
   @e put !val.
-  @j !val であるオブジェクトを置く。
+  @j !val の結果をスタックにプッシュする。
  */
 DEFINE_INSN
 putnot
@@ -625,7 +624,7 @@ pop
 /**
   @c stack
   @e duplicate stack top.
-  @j スタックトップをコピーしてスタックにおく
+  @j スタックトップをコピーしてスタックにプッシュする。
  */
 DEFINE_INSN
 dup
@@ -639,7 +638,7 @@ dup
 /**
   @c stack
   @e duplicate stack top n elements
-  @j スタックトップから n 個をコピーしてスタックにおく
+  @j スタックトップの n 個をコピーしてスタックにプッシュする。
  */
 DEFINE_INSN
 dupn
@@ -659,7 +658,7 @@ dupn
 /**
   @c stack
   @e swap top 2 vals
-  @j スタックトップの2つを交換する。
+  @j スタックトップの 2 つの値を交換する。
  */
 DEFINE_INSN
 swap
@@ -672,8 +671,8 @@ swap
 
 /**
   @c stack
-  @e
-  @j
+  @e for stack caching.
+  @j スタックキャッシングの状態を調整するために必要な命令。
  */
 DEFINE_INSN
 reput
@@ -687,7 +686,7 @@ reput
 /**
   @c stack
   @e get nth stack value from stack top
-  @j スタックトップから n 個目をスタックトップにコピー
+  @j スタックトップから n 個目をスタックにプッシュする。
  */
 DEFINE_INSN
 topn
@@ -715,7 +714,7 @@ setn
 /**
   @c stack
   @e empt current stack
-  @j current stack を空にする
+  @j current stack を空にする。
  */
 DEFINE_INSN
 emptstack
@@ -734,7 +733,7 @@ emptstack
 /**
   @c setting
   @e define (singleton) method id as body
-  @j （特異）メソッド m を body として定義する。
+  @j （特異）メソッド id を body として定義する。
  */
 DEFINE_INSN
 definemethod
@@ -749,7 +748,7 @@ definemethod
 /**
   @c setting
   @e make alias (if v_p is Qtrue, make valias)
-  @j alias を作る。もし v_p が Qtrue なら、valias (global variable) を作る
+  @j alias を作る。もし v_p が Qtrue なら、valias (global variable) を作る。
  */
 DEFINE_INSN
 alias
@@ -771,7 +770,7 @@ alias
 /**
   @c setting
   @e undef
-  @j undef
+  @j undef を行う。
  */
 DEFINE_INSN
 undef
@@ -787,7 +786,7 @@ undef
 /**
   @c setting
   @e defined?
-  @j defined?
+  @j defined? を行う。
  */
 DEFINE_INSN
 defined
@@ -896,7 +895,7 @@ defined
 /**
   @c setting
   @e END{}
-  @j END{}
+  @j END{} に対応するためにブロックを登録する。
  */
 DEFINE_INSN
 postexe
@@ -918,7 +917,7 @@ postexe
 /**
   @c setting
   @e trace
-  @j trace
+  @j trace 用の命令。
  */
 DEFINE_INSN
 trace
@@ -939,9 +938,9 @@ trace
   @e
    enter class definition scope. if super is Qfalse, and clsas
    "klass" is defined, it's redefine. otherwise, define "klass" class.
-  @j
-   クラス定義スコープへ移行する。もし super が Qfalse で klassクラスが
-   定義されていれば、再定義である。そうでなければ、klass クラスを定義する。
+  @j クラス定義スコープへ移行する。
+   もし super が Qfalse で klassクラスが定義されていれば再定義である。
+   そうでなければ、klass クラスを定義する。
  */
 DEFINE_INSN
 defineclass
@@ -1041,11 +1040,13 @@ defineclass
 /**
   @c method/iterator
   @e obj.send(id, args..) # args.size => num
-  @j obj.send(id, args..) # args.size => num
-  flag & VM_CALL_ARGS_SPLAT_BIT    != 0 -> splat last arg
-  flag & VM_CALL_ARGS_BLOCKARG_BIT != 0 -> Proc as Block
-  flag & VM_CALL_FCALL_BIT         != 0 -> FCALL ( func() )
-  flag & VM_CALL_VCALL_BIT         != 0 -> VCALL ( func   )
+  @j メソッド呼び出しを行う。
+  obj.send(id, args..) # args.size => num
+    flag & VM_CALL_ARGS_SPLAT_BIT    != 0 -> splat last arg
+    flag & VM_CALL_ARGS_BLOCKARG_BIT != 0 -> Proc as Block
+    flag & VM_CALL_FCALL_BIT         != 0 -> FCALL ( func() )
+    flag & VM_CALL_VCALL_BIT         != 0 -> VCALL ( func   )
+    ...
  */
 DEFINE_INSN
 send
@@ -1056,7 +1057,8 @@ send
     NODE *mn;
     VALUE recv, klass;
     rb_block_t *blockptr = 0;
-    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, (rb_iseq_t *)blockiseq, &blockptr);
+    rb_num_t num = caller_setup_args(th, GET_CFP(), op_flag, op_argc,
+				     (rb_iseq_t *)blockiseq, &blockptr);
     rb_num_t flag = op_flag;
     ID id = op_id;
 
@@ -1076,7 +1078,9 @@ send
 /**
   @c method/iterator
   @e super(args) # args.size => num
-  @j super(args) # args.size => num
+  @j super を実行する。
+     super(args) # args.size => num
+     flag 等オペランドの意味は send と同じ。
  */
 DEFINE_INSN
 invokesuper
@@ -1101,7 +1105,8 @@ invokesuper
 /**
   @c method/iterator
   @e yield(args) # args.size => num, flag shows expand argument or not
-  @j yield(args) # args.size => num
+  @j yield を実行する。
+     yield(args) # args.size => num
  */
 DEFINE_INSN
 invokeblock
@@ -1142,7 +1147,7 @@ leave
 /**
   @c method/iterator
   @e return from this vm loop
-  @j VM loop から抜ける
+  @j VM loop から抜ける。
  */
 DEFINE_INSN
 finish
@@ -1165,7 +1170,7 @@ finish
 /**
   @c exception
   @e longjump
-  @j longjump
+  @j 大域ジャンプを行う。
  */
 DEFINE_INSN
 throw
@@ -1240,7 +1245,7 @@ branchunless
 /**
   @c optimize
   @e inline cache
-  @j inline cache
+  @j インラインキャッシュが有効なら、値をスタックにプッシュして dst へジャンプする。
  */
 DEFINE_INSN
 getinlinecache
@@ -1261,7 +1266,7 @@ getinlinecache
 /**
   @c optimize
   @e inline cache (once)
-  @j inline cache (once)
+  @j once を実現する。
  */
 DEFINE_INSN
 onceinlinecache
@@ -1282,7 +1287,7 @@ onceinlinecache
 /**
   @c optimize
   @e set inline cache
-  @j set inline cahce
+  @j インラインキャッシュの値を設定する。
  */
 DEFINE_INSN
 setinlinecache
@@ -1299,7 +1304,7 @@ setinlinecache
 /**
   @c optimize
   @e case dispatcher
-  @j case dispatcher
+  @j case 文で、可能なら表引きでジャンプする。
  */
 DEFINE_INSN
 opt_case_dispatch
@@ -1308,7 +1313,7 @@ opt_case_dispatch
 () // inc += -1;
 {
     if (0) {
-	/* if some === method is overrided */
+	/* TODO: if some === method is overrided */
     }
     else {
 	VALUE val;
@@ -1324,7 +1329,7 @@ opt_case_dispatch
 /**
   @c optimize
   @e check environment
-  @j check environment
+  @j 将来の拡張用。
  */
 DEFINE_INSN
 opt_checkenv
@@ -1342,7 +1347,6 @@ opt_checkenv
 
 
 /** simple functions */
-
 
 /**
   @c optimize
@@ -1830,7 +1834,7 @@ opt_ge
 /**
   @c optimize
   @e <<
-  @j <<
+  @j 最適化された X<<Y。
  */
 DEFINE_INSN
 opt_ltlt
@@ -1864,7 +1868,7 @@ opt_ltlt
 /**
   @c optimize
   @e []
-  @j []
+  @j 最適化された recv[obj]。
  */
 DEFINE_INSN
 opt_aref
@@ -1894,7 +1898,7 @@ opt_aref
 /**
   @c optimize
   @e recv[obj] = set
-  @j recv[obj] = set
+  @j 最適化された recv[obj] = set。
  */
 DEFINE_INSN
 opt_aset
@@ -1928,7 +1932,7 @@ opt_aset
 /**
   @c optimize
   @e optimized length
-  @j optimized length
+  @j 最適化された recv.length()。
  */
 DEFINE_INSN
 opt_length
@@ -1961,7 +1965,7 @@ opt_length
 /**
   @c optimize
   @e optimized succ
-  @j optimized succ
+  @j 最適化された recv.succ()。
  */
 DEFINE_INSN
 opt_succ
@@ -2007,7 +2011,7 @@ opt_succ
 /**
   @c optimize
   @e optimized regexp match
-  @j 最適化された正規表現マッチ
+  @j 最適化された正規表現マッチ。
  */
 DEFINE_INSN
 opt_regexpmatch1
@@ -2040,7 +2044,7 @@ opt_regexpmatch2
 /**
   @c optimize
   @e call native compiled method
-  @j ネイティブコンパイルしたメソッドを kick
+  @j ネイティブコンパイルしたメソッドを起動。
  */
 DEFINE_INSN
 opt_call_c_function
@@ -2077,7 +2081,7 @@ bitblt
 /**
   @c joke
   @e The Answer to Life, the Universe, and Everything
-  @j 人生、宇宙、すべての答え
+  @j 人生、宇宙、すべての答え。
  */
 DEFINE_INSN
 answer
