@@ -1482,13 +1482,15 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	    }
 	}
 
-	if (mid == idSend || mid == id__send ||
-	    mid == idSendBang ||
-	    mid == id__send__ ) {
-	    OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BIT);
-	}
-	if (mid == idSendBang) {
-	    OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BANG_BIT);
+	if (argc > 0) {
+	    if (mid == idSend || mid == id__send ||
+		mid == idSendBang ||
+		mid == id__send__ ) {
+		OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BIT);
+	    }
+	    if (mid == idSendBang) {
+		OPERAND_AT(iobj, 3) |= INT2FIX(VM_CALL_SEND_BANG_BIT);
+	    }
 	}
     }
     return COMPILE_OK;

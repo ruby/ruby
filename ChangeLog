@@ -1,3 +1,7 @@
+Tue Nov 13 15:21:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_specialized_instruction): check argc.
+
 Tue Nov 13 14:44:32 2007  why the lucky stiff  <why@ruby-lang.org>
 
 	* test/yaml/test_yaml.rb: fixed the failing YAML Struct test
