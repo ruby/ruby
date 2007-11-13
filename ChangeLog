@@ -1,6 +1,6 @@
 Wed Nov 14 01:52:59 2007  Tanaka Akira  <akr@fsij.org>
 
-	* missing/isinf.c (isinf): don't define is the macro is defined.
+	* missing/isinf.c (isinf): don't define if the macro is defined.
 
 Wed Nov 14 01:34:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -17,7 +17,7 @@ Tue Nov 13 22:02:23 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Tue Nov 13 16:33:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* numeric.c (flodivmod): work around for inifinity.
+	* numeric.c (flodivmod): work around for infinity.
 
 	* numeric.c (flo_divmod): work around for platforms have no round().
 	  [ruby-dev:32247]
