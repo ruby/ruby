@@ -578,7 +578,7 @@ module DRb
       end
       raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
-      Thread.exclusive do
+      DRb.mutex.synchronize do
         begin
           save = Thread.current[:drb_untaint]
           Thread.current[:drb_untaint] = []
@@ -1751,10 +1751,16 @@ module DRb
   end
   module_function :install_acl
 
+  @mutex = Mutex.new
+  def mutex
+    @mutex
+  end
+  module_function :mutex
+
   @server = {}
   def regist_server(server)
     @server[server.uri] = server
-    Thread.exclusive do
+    mutex.synchronize do
       @primary_server = server unless @primary_server
     end
   end

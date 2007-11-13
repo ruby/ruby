@@ -1,3 +1,9 @@
+Tue Nov 13 22:02:23 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: remove Thread.exclusive.
+
+	* lib/drb/extservm.rb: ditto.
+
 Tue Nov 13 16:33:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flodivmod): work around for inifinity.
