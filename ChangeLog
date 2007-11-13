@@ -1,3 +1,7 @@
+Wed Nov 14 07:07:51 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/makedocs.rb, template/insnstbl.html: removed.
+
 Wed Nov 14 02:50:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (parse.c): dependency also needs vpath.
