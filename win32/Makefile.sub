@@ -575,6 +575,9 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 .rc.res:
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 
+lex.c: {$(srcdir)}lex.c.blt
+	copy $(?:/=\) $@
+
 {$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) $(<:\=/)
 	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
