@@ -81,7 +81,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(MISSING)
 
 OBJS          = dln.$(OBJEXT) \
-		ext_prelude.$(OBJEXT) \
+		prelude.$(OBJEXT) \
 		$(COMMONOBJS)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
@@ -592,8 +592,8 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
         {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
         {$(VPATH)}thread_$(THREAD_MODEL).h
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
+miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
-ext_prelude.$(OBJEXT): {$(VPATH)}ext_prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
@@ -636,13 +636,13 @@ incs: $(INSNS) node_name.inc
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-ext_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
-prereq: incs {$(VPATH)}prelude.c
+prereq: incs {$(VPATH)}miniprelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

@@ -1,3 +1,12 @@
+Wed Nov 14 14:04:42 2007  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk, Makefile.in: rename prelude.c to miniprelude.c.
+	  rename ext_prelude.c to prelude.c
+
+	* win32/Makefile.sub: ditto.
+
+	* bcc32/Makefile.sub: ditto.
+
 Wed Nov 14 07:09:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c, compile.c, compile.h, debug.c, debug.h,
