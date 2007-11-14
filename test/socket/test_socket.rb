@@ -38,7 +38,8 @@ class TestBasicSocket < Test::Unit::TestCase
       s.close
       linger
     }
-    inet_stream do |s|
+    inet_stream do |sock|
+      s = sock
       assert_equal(0, s.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, linger))
 
       assert_raise(IOError) {
@@ -51,7 +52,8 @@ class TestBasicSocket < Test::Unit::TestCase
       s.close
       Socket::SO_LINGER
     }
-    inet_stream do |s|
+    inet_stream do |sock|
+      s = sock
       assert_raise(IOError) {
         s.setsockopt(Socket::SOL_SOCKET, val, linger)
       }
@@ -65,7 +67,8 @@ class TestBasicSocket < Test::Unit::TestCase
       s.close
       2
     }
-    inet_stream do |s|
+    inet_stream do |sock|
+      s = sock
       assert_raise(IOError) {
         s.listen(log)
       }

@@ -1,3 +1,11 @@
+Wed Nov 14 15:39:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/socket/test_socket.rb: update not to use 1.8 assignment to
+	  external local variable in the block parameters.  [ruby-dev:32251]
+
+	* test/strscan/test_stringscanner.rb: avoid $KCODE, and use
+	  String#force_encoding().  [ruby-dev:32251]
+
 Wed Nov 14 14:04:42 2007  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk, Makefile.in: rename prelude.c to miniprelude.c.

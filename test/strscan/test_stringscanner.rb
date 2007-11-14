@@ -288,15 +288,9 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s.getch.tainted?
     assert_nil s.getch
 
-    kc_backup = $KCODE
-    begin
-      $KCODE = 'EUC'
-      s = StringScanner.new("\244\242")
-      assert_equal "\244\242", s.getch
-      assert_nil s.getch
-    ensure
-      $KCODE = kc_backup
-    end
+    s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+    assert_equal "\244\242", s.getch
+    assert_nil s.getch
 
     s = StringScanner.new('test')
     s.scan(/te/)
@@ -322,16 +316,10 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s.get_byte.tainted?
     assert_nil s.get_byte
 
-    kc_backup = $KCODE
-    begin
-      $KCODE = 'EUC'
-      s = StringScanner.new("\244\242")
-      assert_equal "\244", s.get_byte
-      assert_equal "\242", s.get_byte
-      assert_nil s.get_byte
-    ensure
-      $KCODE = kc_backup
-    end
+    s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+    assert_equal "\244", s.get_byte
+    assert_equal "\242", s.get_byte
+    assert_nil s.get_byte
 
     s = StringScanner.new('test')
     s.scan(/te/)
@@ -424,16 +412,9 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil           s[0]
 
 
-    kc_backup = $KCODE
-    begin
-      $KCODE = 'EUC'
-      s = StringScanner.new("\244\242")
-      s.getch
-      assert_equal "\244\242", s[0]
-    ensure
-      $KCODE = kc_backup
-    end
-
+    s = StringScanner.new("\244\242".force_encoding("euc-jp"))
+    s.getch
+    assert_equal "\244\242", s[0]
 
     str = 'test'
     str.taint
