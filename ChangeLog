@@ -1,3 +1,9 @@
+Wed Nov 14 16:16:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/net/http/test_https_proxy.rb
+	  (HTTPSProxyTest::test_https_proxy_authentication): initialize
+	  local variable 't' first.  [ruby-dev:32253]
+
 Wed Nov 14 15:39:24 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/socket/test_socket.rb: update not to use 1.8 assignment to
