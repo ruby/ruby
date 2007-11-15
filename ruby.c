@@ -123,7 +123,7 @@ usage(const char *name)
 	"-w              turn warnings on for your script",
 	"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-	"--disable_gems  disable gem libraries",
+	"--disable-gems  disable gem libraries",
 	"--copyright     print the copyright",
 	"--version       print the version",
 	NULL

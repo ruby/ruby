@@ -1,3 +1,8 @@
+Thu Nov 15 11:25:20 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (usage): fix typo on --disable-gems option.
+	  pointed by Richard Kilmer.
+
 Wed Nov 14 16:16:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/net/http/test_https_proxy.rb
