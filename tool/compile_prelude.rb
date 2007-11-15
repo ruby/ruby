@@ -36,7 +36,7 @@ lines_list = preludes.map {|filename|
       end
       if RbConfig::MAKEFILE_CONFIG.has_key? $1
         val = RbConfig.expand("$(#$1)", mkconf)
-        need_ruby_prefix = true if /\A\#{ruby_prefix}/ =~ val
+        need_ruby_prefix = true if /\A\#{ruby_prefix\}/ =~ val
         c_esc(val)
       else
         $&

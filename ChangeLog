@@ -1,3 +1,7 @@
+Thu Nov 15 12:14:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* tool/compile_prelude.rb (c_esc): need to escape closing brace.
+
 Thu Nov 15 11:52:16 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: adjust RbConfig::CONFIG paths relative
