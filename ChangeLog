@@ -1,3 +1,7 @@
+Thu Nov 15 12:31:13 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: use constant for prefix.
+
 Thu Nov 15 12:24:39 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: use simple template system for source
