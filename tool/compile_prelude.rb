@@ -33,8 +33,8 @@ lines_list = preludes.map {|filename|
       unless mkconf
         require 'rbconfig'
         mkconf = RbConfig::MAKEFILE_CONFIG.merge('prefix'=>'#{TMP_RUBY_PREFIX}')
-        exlen = $:.grep(%r{\A/}).last.length - RbConfig::CONFIG["prefix"].length
-        setup_ruby_prefix = "TMP_RUBY_PREFIX = $:.grep(%r{\\A/}).last[0..#{-exlen-1}]\n"
+        exlen = $:.reverse.find{|e|e!="."}.length - RbConfig::CONFIG["prefix"].length
+        setup_ruby_prefix = "TMP_RUBY_PREFIX = $:.reverse.find{|e|e!=\".\"}[0..#{-exlen-1}]\n"
         teardown_ruby_prefix = 'Object.class_eval { remove_const "TMP_RUBY_PREFIX" }'
       end
       if RbConfig::MAKEFILE_CONFIG.has_key? key

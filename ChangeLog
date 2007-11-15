@@ -1,7 +1,13 @@
+Thu Nov 15 17:28:21 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: absolute path may not start with a slash.
+	  pointed by usa.
+
 Thu Nov 15 17:07:54 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: fix first substitution.
 	  use constant for prefix.
+	  pointed by Richard Kilmer.
 
 Thu Nov 15 14:29:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
