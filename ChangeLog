@@ -1,3 +1,9 @@
+Thu Nov 15 12:19:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::FileStore::restore): use
+	  lockfile for exclusive locks.  a patch from <tommy AT tmtm.org>.
+	  [ruby-dev:32296]
+
 Thu Nov 15 12:14:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* tool/compile_prelude.rb (c_esc): need to escape closing brace.
