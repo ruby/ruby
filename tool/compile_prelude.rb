@@ -29,6 +29,7 @@ lines_list = preludes.map {|filename|
   need_ruby_prefix = false
   File.readlines(filename).each {|line|
     line.gsub!(/RbConfig::CONFIG\["(\w+)"\]/) {
+      key = $1
       unless mkconf
         require 'rbconfig'
         mkconf = RbConfig::MAKEFILE_CONFIG.merge('prefix'=>'#{TMP_RUBY_PREFIX}')
@@ -36,12 +37,12 @@ lines_list = preludes.map {|filename|
         setup_ruby_prefix = "TMP_RUBY_PREFIX = $:.grep(%r{\\A/}).last[0..#{-exlen-1}]\n"
         teardown_ruby_prefix = 'Object.class_eval { remove_const "TMP_RUBY_PREFIX" }'
       end
-      if RbConfig::MAKEFILE_CONFIG.has_key? $1
-        val = RbConfig.expand("$(#$1)", mkconf)
+      if RbConfig::MAKEFILE_CONFIG.has_key? key
+        val = RbConfig.expand("$(#{key})", mkconf)
         need_ruby_prefix = true if /\A\#{TMP_RUBY_PREFIX\}/ =~ val
         c_esc(val)
       else
-        $&
+        "nil"
       end
     }
     lines << c_esc(line)

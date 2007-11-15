@@ -1,3 +1,8 @@
+Thu Nov 15 17:07:54 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: fix first substitution.
+	  use constant for prefix.
+
 Thu Nov 15 14:29:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (prereq): added auto generated sources.  [ruby-dev:32280]
