@@ -1,3 +1,7 @@
+Fri Nov 16 03:01:00 2007  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/types.rb: Likewise, pass self to YAML::quick_emit.
+
 Fri Nov 16 02:51:59 2007  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb (quick_emit): use combination of object_id and hash to
