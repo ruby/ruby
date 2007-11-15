@@ -1,3 +1,8 @@
+Thu Nov 15 11:52:16 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: adjust RbConfig::CONFIG paths relative
+	  to the installation path.
+
 Thu Nov 15 11:25:20 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (usage): fix typo on --disable-gems option.
