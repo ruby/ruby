@@ -1,3 +1,9 @@
+Fri Nov 16 03:36:01 2007  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c: Node#value defined twice.
+
+	* lib/yaml/: several method redefinitions causing warnings.
+
 Fri Nov 16 03:01:00 2007  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/types.rb: Likewise, pass self to YAML::quick_emit.

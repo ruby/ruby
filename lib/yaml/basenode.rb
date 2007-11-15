@@ -184,7 +184,7 @@ module YAML
         #
         def []( *key )
             if Hash === @value
-                v = @value.detect { |k,v| k.transform == key.first }
+                v = @value.detect { |k,| k.transform == key.first }
                 v[1] if v
             elsif Array === @value
                 @value.[]( *key )
