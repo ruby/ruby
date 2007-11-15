@@ -1,3 +1,7 @@
+Thu Nov 15 14:29:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (prereq): added auto generated sources.  [ruby-dev:32280]
+
 Thu Nov 15 12:31:13 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: use constant for prefix.

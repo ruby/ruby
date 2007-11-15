@@ -642,10 +642,13 @@ miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
-prereq: incs {$(VPATH)}miniprelude.c
+prereq: incs {$(VPATH)}parse.c $(srcdir)/ext/ripper/ripper.c {$(VPATH)}miniprelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
+
+$(srcdir)/ext/ripper/ripper.c:
+	cd ext/ripper && exec $(MAKE) -f depend top_srcdir=../.. srcdir=.
 
 ##
 
