@@ -1,3 +1,8 @@
+Thu Nov 15 12:24:39 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: use simple template system for source
+	  code generation.
+
 Thu Nov 15 12:19:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::FileStore::restore): use

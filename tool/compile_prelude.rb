@@ -51,51 +51,57 @@ lines_list = preludes.map {|filename|
   [setup_lines, lines]
 }
 
-open(outfile, 'w'){|f|
-  f.puts <<'EOS__'
+def serb(str, var)
+  result = ''
+  str.each_line {|line|
+    if /\A!/ =~ line
+      result << $'
+    else
+      line.split(/(<%.*?%>)/).each {|x|
+        if /\A<%(.*)%>\z/ =~ x
+          result << "#{var} << (#{$1}).to_s\n"
+        else
+          result << "#{var} << #{x.dump}\n"
+        end
+      }
+    end
+  }
+  result
+end
 
+tmp = ''
+eval(serb(<<'EOS', 'tmp'))
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
-EOS__
-
-  preludes.zip(lines_list).each_with_index {|(prelude, (setup_lines, lines)), i|
-    f.puts <<EOS__
-static const char prelude_name#{i}[] = "#{File.basename(prelude)}";
-static const char prelude_code#{i}[] =
-#{(setup_lines+lines).join("\n")}
+! preludes.zip(lines_list).each_with_index {|(prelude, (setup_lines, lines)), i|
+static const char prelude_name<%i%>[] = <%c_esc(File.basename(prelude))%>;
+static const char prelude_code<%i%>[] =
+!   (setup_lines+lines).each {|line|
+<%line%>
+!   }
 ;
-EOS__
-  }
-  f.puts <<'EOS__'
+! }
 
 void
 Init_prelude(void)
 {
-EOS__
-  lines_list.each_with_index {|(setup_lines, lines), i|
-    f.puts <<EOS__
+! lines_list.each_with_index {|(setup_lines, lines), i|
   rb_iseq_eval(rb_iseq_compile(
-    rb_str_new(prelude_code#{i}, sizeof(prelude_code#{i}) - 1),
-    rb_str_new(prelude_name#{i}, sizeof(prelude_name#{i}) - 1),
-    INT2FIX(#{1-setup_lines.length})));
+    rb_str_new(prelude_code<%i%>, sizeof(prelude_code<%i%>) - 1),
+    rb_str_new(prelude_name<%i%>, sizeof(prelude_name<%i%>) - 1),
+    INT2FIX(<%1-setup_lines.length%>)));
 
-EOS__
-  }
-    f.puts <<EOS__
+! }
 #if 0
-EOS__
-  preludes.length.times {|i|
-    f.puts <<EOS__
-    puts(prelude_code#{i});
-EOS__
-  }
-    f.puts <<EOS__
+! preludes.length.times {|i|
+    puts(prelude_code<%i%>);
+! }
 #endif
-EOS__
-
-  f.puts <<'EOS__'
 }
-EOS__
+EOS
+
+open(outfile, 'w'){|f|
+  f << tmp
 }
 
