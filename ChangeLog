@@ -1,3 +1,8 @@
+Thu Nov 15 18:04:06 2007  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb: fix TMP_RUBY_PREFIX for relative load path
+	  environment.
+
 Thu Nov 15 17:28:21 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: absolute path may not start with a slash.
