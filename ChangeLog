@@ -1,3 +1,11 @@
+Fri Nov 16 17:03:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (Document-class): moved the simplest example to
+	  the top.
+
+	* ext/iconv/iconv.c (iconv_s_iconv): Document-method: needs class
+	  prefix for class method.  [ruby-core:13542]
+
 Fri Nov 16 11:16:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (String#is_binary_data?): use Integer#fdiv.
