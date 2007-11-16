@@ -940,6 +940,36 @@ void ruby_sysinit(int *, char ***);
 #define HAVE_NATIVETHREAD
 int is_ruby_native_thread(void);
 
+#define RUBY_EVENT_NONE     0x00
+#define RUBY_EVENT_LINE     0x01
+#define RUBY_EVENT_CLASS    0x02
+#define RUBY_EVENT_END      0x04
+#define RUBY_EVENT_CALL     0x08
+#define RUBY_EVENT_RETURN   0x10
+#define RUBY_EVENT_C_CALL   0x20
+#define RUBY_EVENT_C_RETURN 0x40
+#define RUBY_EVENT_RAISE    0x80
+#define RUBY_EVENT_ALL      0xff
+#define RUBY_EVENT_VM      0x100
+#define RUBY_EVENT_SWITCH  0x200
+
+typedef unsigned int rb_event_flag_t;
+typedef void (*rb_event_hook_func_t)(rb_event_flag_t, VALUE data, VALUE, ID, VALUE klass);
+
+typedef struct rb_event_hook_struct {
+    rb_event_flag_t flag;
+    rb_event_hook_func_t func;
+    VALUE data;
+    struct rb_event_hook_struct *next;
+} rb_event_hook_t;
+
+void rb_thread_add_event_hook(rb_thread_t *th, rb_event_hook_func_t func,
+			      rb_event_flag_t events, VALUE data);
+void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
+		       VALUE data);
+int rb_thread_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func);
+int rb_remove_event_hook(rb_event_hook_func_t func);
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

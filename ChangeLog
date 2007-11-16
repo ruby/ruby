@@ -1,3 +1,9 @@
+Fri Nov 16 16:26:57 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* include/ruby/ruby.h: added some declarations for event hooks.
+
+	* lib/profile.rb: set VM::InstructionSequence.compile_option.
+
 Fri Nov 16 11:16:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (String#is_binary_data?): use Integer#fdiv.

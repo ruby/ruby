@@ -1,5 +1,9 @@
 require 'profiler'
 
+VM::InstructionSequence.compile_option = {
+  :trace_instruction => true,
+  :specialized_instruction => false
+}
 END {
   Profiler__::print_profile(STDERR)
 }
