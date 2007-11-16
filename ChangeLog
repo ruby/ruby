@@ -1,3 +1,7 @@
+Fri Nov 16 11:16:41 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb (String#is_binary_data?): use Integer#fdiv.
+
 Fri Nov 16 03:36:01 2007  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: Node#value defined twice.
