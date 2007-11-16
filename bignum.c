@@ -2432,6 +2432,38 @@ rb_big_size(VALUE big)
 }
 
 /*
+ *  call-seq:
+ *     big.odd? -> true or false
+ *
+ *  Returns <code>true</code> if <i>big</i> is an odd number.
+ */
+
+static VALUE
+rb_big_odd_p(VALUE num)
+{
+    if (BDIGITS(num)[0] & 1) {
+       return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     big.even? -> true or false
+ *
+ *  Returns <code>true</code> if <i>big</i> is an even number.
+ */
+
+static VALUE
+rb_big_even_p(VALUE num)
+{
+    if (BDIGITS(num)[0] & 1) {
+       return Qfalse;
+    }
+    return Qtrue;
+}
+
+/*
  *  Bignum objects hold integers outside the range of
  *  Fixnum. Bignum objects are created
  *  automatically when integer calculations would otherwise overflow a
@@ -2484,6 +2516,8 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
+    rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
+    rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
 
     power_cache_init();
 }

@@ -1,3 +1,10 @@
+Fri Nov 16 23:31:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_odd_p): new method added.  a patch from Tadashi
+	  Saito <shiba AT mail2.accsnet.ne.jp>.  [ruby-dev:32305]
+
+	* bignum.c (rb_big_even_p): ditto.
+
 Fri Nov 16 17:41:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Document-class): moved the simplest example to
