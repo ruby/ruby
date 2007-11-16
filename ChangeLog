@@ -1,10 +1,13 @@
-Fri Nov 16 17:03:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 16 17:41:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Document-class): moved the simplest example to
 	  the top.
 
 	* ext/iconv/iconv.c (iconv_s_iconv): Document-method: needs class
 	  prefix for class method.  [ruby-core:13542]
+
+	* ext/iconv/iconv.c (iconv_iconv): also instance method needs to be
+	  qualified.
 
 Fri Nov 16 16:26:57 2007  Shugo Maeda  <shugo@ruby-lang.org>
 

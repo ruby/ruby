@@ -757,7 +757,7 @@ iconv_finish(VALUE self)
 }
 
 /*
- * Document-method: iconv
+ * Document-method: Iconv#iconv
  * call-seq: iconv(str, start=0, length=-1)
  *
  * Converts string and returns the result.
