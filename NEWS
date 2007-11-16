@@ -17,6 +17,8 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Integer#ord implemented.
+
   * Regexp.union accepts an array of patterns.
 
 * ipaddr
