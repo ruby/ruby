@@ -5,9 +5,11 @@ class TestInteger < Test::Unit::TestCase
     -0x1000000000000000000000000000000000000000000000002,
     -0x1000000000000000000000000000000000000000000000001,
     -0x1000000000000000000000000000000000000000000000000,
+    -0xffffffffffffffffffffffffffffffffffffffffffffffff,
     -0x1000000000000000000000002,
     -0x1000000000000000000000001,
     -0x1000000000000000000000000,
+    -0xffffffffffffffffffffffff,
     -0x10000000000000002,
     -0x10000000000000001,
     -0x10000000000000000,
@@ -113,6 +115,28 @@ class TestInteger < Test::Unit::TestCase
     self.class.bdsize(x)
   end
 
+  min = -1
+  min *= 2 while min.class == Fixnum
+  FIXNUM_MIN = min/2
+  max = 1
+  max *= 2 while (max-1).class == Fixnum
+  FIXNUM_MAX = max/2-1
+
+  def test_fixnum_range
+    assert_instance_of(Bignum, FIXNUM_MIN-1)
+    assert_instance_of(Fixnum, FIXNUM_MIN)
+    assert_instance_of(Fixnum, FIXNUM_MAX)
+    assert_instance_of(Bignum, FIXNUM_MAX+1)
+  end
+
+  def check_class(n)
+    if FIXNUM_MIN <= n && n <= FIXNUM_MAX
+      assert_instance_of(Fixnum, n)
+    else
+      assert_instance_of(Bignum, n)
+    end
+  end
+
   def test_aref
     VS.each {|a|
       100.times {|i|
@@ -123,6 +147,7 @@ class TestInteger < Test::Unit::TestCase
       VS.each {|b|
         c = nil
         assert_nothing_raised("(#{a})[#{b}]") { c = a[b] }
+        check_class(c)
         if b < 0
           assert_equal(0, c, "(#{a})[#{b}]")
         else
@@ -143,6 +168,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a + b
+        check_class(c)
         assert_equal(b + a, c, "#{a} + #{b}")
         assert_equal(a, c - b, "(#{a} + #{b}) - #{b}")
         assert_equal(a-~b-1, c, "#{a} + #{b}") # Hacker's Delight
@@ -157,6 +183,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a - b
+        check_class(c)
         assert_equal(a, c + b, "(#{a} - #{b}) + #{b}")
         assert_equal(-b, c - a, "(#{a} - #{b}) - #{a}")
         assert_equal(a+~b+1, c, "#{a} - #{b}") # Hacker's Delight
@@ -171,6 +198,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a * b
+        check_class(c)
         assert_equal(b * a, c, "#{a} * #{b}")
         assert_equal(b, c / a, "(#{a} * #{b}) / #{a}") if a != 0
         assert_equal(a.abs * b.abs, (a * b).abs, "(#{a} * #{b}).abs")
@@ -185,6 +213,8 @@ class TestInteger < Test::Unit::TestCase
       VS.each {|b|
         next if b == 0
         q, r = a.divmod(b)
+        check_class(q)
+        check_class(r)
         assert_equal(a, b*q+r)
         assert(r.abs < b.abs)
         assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
@@ -201,6 +231,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a ** b
+        check_class(c)
         d = 1
         b.times { d *= a }
         assert_equal(d, c, "(#{a}) ** #{b}")
@@ -216,6 +247,7 @@ class TestInteger < Test::Unit::TestCase
   def test_not
     VS.each {|a|
       b = ~a
+      check_class(b)
       assert_equal(-1 ^ a, b, "~#{a}")
       assert_equal(-a-1, b, "~#{a}") # Hacker's Delight
       assert_equal(0, a & b, "#{a} & ~#{a}")
@@ -227,6 +259,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a | b
+        check_class(c)
         assert_equal(b | a, c, "#{a} | #{b}")
         assert_equal(a + b - (a&b), c, "#{a} | #{b}")
         assert_equal((a & ~b) + b, c, "#{a} | #{b}") # Hacker's Delight
@@ -239,6 +272,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a & b
+        check_class(c)
         assert_equal(b & a, c, "#{a} & #{b}")
         assert_equal(a + b - (a|b), c, "#{a} & #{b}")
         assert_equal((~a | b) - ~a, c, "#{a} & #{b}") # Hacker's Delight
@@ -251,6 +285,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a ^ b
+        check_class(c)
         assert_equal(b ^ a, c, "#{a} ^ #{b}")
         assert_equal((a|b)-(a&b), c, "#{a} ^ #{b}") # Hacker's Delight
         assert_equal(b, c ^ a, "(#{a} ^ #{b}) ^ #{a}")
@@ -263,6 +298,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a << b
+        check_class(c)
         if 0 <= b
           assert_equal(a, c >> b, "(#{a} << #{b}) >> #{b}")
           assert_equal(a * 2**b, c, "#{a} << #{b}")
@@ -284,6 +320,7 @@ class TestInteger < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a >> b
+        check_class(c)
         if b <= 0
           assert_equal(a, c << b, "(#{a} >> #{b}) << #{b}")
           assert_equal(a * 2**(-b), c, "#{a} >> #{b}")
@@ -304,6 +341,7 @@ class TestInteger < Test::Unit::TestCase
   def test_succ
     VS.each {|a|
       b = a.succ
+      check_class(b)
       assert_equal(a+1, b, "(#{a}).succ")
       assert_equal(a, b.pred, "(#{a}).succ.pred")
       assert_equal(a, b-1, "(#{a}).succ - 1")
@@ -313,6 +351,7 @@ class TestInteger < Test::Unit::TestCase
   def test_pred
     VS.each {|a|
       b = a.pred
+      check_class(b)
       assert_equal(a-1, b, "(#{a}).pred")
       assert_equal(a, b.succ, "(#{a}).pred.succ")
       assert_equal(a, b + 1, "(#{a}).pred + 1")
@@ -322,6 +361,7 @@ class TestInteger < Test::Unit::TestCase
   def test_unary_plus
     VS.each {|a|
       b = +a
+      check_class(b)
       assert_equal(a, b, "+(#{a})")
     }
   end
@@ -329,6 +369,7 @@ class TestInteger < Test::Unit::TestCase
   def test_unary_minus
     VS.each {|a|
       b = -a
+      check_class(b)
       assert_equal(0-a, b, "-(#{a})")
       assert_equal(~a+1, b, "-(#{a})")
       assert_equal(0, a+b, "#{a}+(-(#{a}))")
@@ -360,6 +401,7 @@ class TestInteger < Test::Unit::TestCase
   def test_abs
     VS.each {|a|
       b = a.abs
+      check_class(b)
       if a < 0
         assert_equal(-a, b, "(#{a}).abs")
       else
@@ -370,25 +412,33 @@ class TestInteger < Test::Unit::TestCase
 
   def test_ceil
     VS.each {|a|
-      assert_equal(a, a.ceil, "(#{a}).ceil")
+      b = a.ceil
+      check_class(b)
+      assert_equal(a, b, "(#{a}).ceil")
     }
   end
 
   def test_floor
     VS.each {|a|
-      assert_equal(a, a.floor, "(#{a}).floor")
+      b = a.floor
+      check_class(b)
+      assert_equal(a, b, "(#{a}).floor")
     }
   end
 
   def test_round
     VS.each {|a|
-      assert_equal(a, a.round, "(#{a}).round")
+      b = a.round
+      check_class(b)
+      assert_equal(a, b, "(#{a}).round")
     }
   end
 
   def test_truncate
     VS.each {|a|
-      assert_equal(a, a.truncate, "(#{a}).truncate")
+      b = a.truncate
+      check_class(b)
+      assert_equal(a, b, "(#{a}).truncate")
     }
   end
 
@@ -397,6 +447,7 @@ class TestInteger < Test::Unit::TestCase
       VS.each {|b|
         next if b == 0
         r = a.remainder(b)
+        check_class(r)
         if a < 0
           assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
           assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
@@ -420,6 +471,7 @@ class TestInteger < Test::Unit::TestCase
       else
         assert_equal(false, z, "(#{a}).zero?")
         assert_equal(a, n, "(#{a}).nonzero?")
+        check_class(n)
       end
       assert(z ^ n, "(#{a}).zero? ^ (#{a}).nonzero?")
     }
