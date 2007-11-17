@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.1"
+#define WIN32OLE_VERSION "1.1.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3021,7 +3021,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
     if (FAILED(hr)) {
         /* retry to call args by value */
-        if(op.dp.cArgs > cNamedArgs) {
+        if(op.dp.cArgs >= cNamedArgs) {
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
                 param = rb_ary_entry(paramS, i-cNamedArgs);
