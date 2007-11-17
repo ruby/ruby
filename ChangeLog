@@ -1,3 +1,7 @@
+Sun Nov 18 05:19:46 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/mkmf.rb (have_struct_member): define HAVE_type_member.
+
 Sat Nov 17 23:51:29 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): bug fix. [ruby-talk:279100]

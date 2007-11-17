@@ -766,10 +766,12 @@ end
 # (in addition to the common header files).
 #
 # If found, a macro is passed as a preprocessor constant to the compiler using
-# the member name, in uppercase, prepended with 'HAVE_ST_'.
+# the type name and the member name, in uppercase, prepended with 'HAVE_'.
 #
-# For example, if have_struct_member('foo', 'bar') returned true, then the
-# HAVE_ST_BAR preprocessor macro would be passed to the compiler.
+# For example, if have_struct_member('struct foo', 'bar') returned true, then the
+# HAVE_STRUCT_FOO_BAR preprocessor macro would be passed to the compiler.
+#
+# HAVE_ST_BAR is also defined for backward compatibility.
 # 
 def have_struct_member(type, member, headers = nil, &b)
   checking_for checking_message("#{type}.#{member}", headers) do
@@ -780,7 +782,8 @@ def have_struct_member(type, member, headers = nil, &b)
 int main() { return 0; }
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
-      $defs.push(format("-DHAVE_ST_%s", member.upcase))
+      $defs.push(format("-DHAVE_%s_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_"), member.upcase))
+      $defs.push(format("-DHAVE_ST_%s", member.upcase)) # backward compatibility
       true
     else
       false
