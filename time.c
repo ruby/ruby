@@ -1320,9 +1320,11 @@ time_minus(VALUE time1, VALUE time2)
 	double f;
 
 	GetTimeval(time2, tobj2);
-	f = (double)tobj->tv.tv_sec - (double)tobj2->tv.tv_sec;
+        if (tobj->tv.tv_sec < tobj2->tv.tv_sec)
+            f = -(double)(unsigned_time_t)(tobj2->tv.tv_sec - tobj->tv.tv_sec);
+        else
+            f = (double)(unsigned_time_t)(tobj->tv.tv_sec - tobj2->tv.tv_sec);
 	f += ((double)tobj->tv.tv_usec - (double)tobj2->tv.tv_usec)*1e-6;
-	/* XXX: should check float overflow on 64bit time_t platforms */
 
 	return DOUBLE2NUM(f);
     }

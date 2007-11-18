@@ -1,3 +1,7 @@
+Sun Nov 18 18:27:47 2007  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_minus): fix Time.at(2**60+1) - Time.at(2**60).
+
 Sun Nov 18 17:28:49 2007  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_arg): show actual year in 2-3 digits year warning.

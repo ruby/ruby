@@ -71,4 +71,14 @@ class TestTime < Test::Unit::TestCase
       assert_equal(Time.at(0x7fffffff), Time.at(-0x80000000) - (-0xffffffff))
     end
   end
+
+  def test_big_minus
+    begin
+      bigtime0 = Time.at(2**60)
+      bigtime1 = Time.at(2**60+1)
+    rescue RangeError
+      return
+    end
+    assert_equal(1.0, bigtime1 - bigtime0)
+  end
 end
