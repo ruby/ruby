@@ -326,14 +326,13 @@ end
       assert_same_file fname, 'tmp/mvdest'
     end
 
-    # [ruby-talk:124368]
     mkdir 'tmp/tmpdir'
     mkdir_p 'tmp/dest2/tmpdir'
     assert_raises(Errno::EEXIST) {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
     mkdir 'tmp/dest2/tmpdir/junk'
-    assert_raises(Errno::EEXIST) {
+    assert_raises(Errno::EEXIST, "[ruby-talk:124368]") {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
 

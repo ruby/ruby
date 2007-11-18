@@ -54,15 +54,14 @@ EOW
   end
 
   def test_raise_in_at_exit
-    # [ruby-core:09675]
     ruby = EnvUtil.rubybin
     out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
                      '-e', 'at_exit{raise %[SomethingBad]}',
                      '-e', 'raise %[SomethingElse]']) {|f|
       f.read
     }
-    assert_match /SomethingBad/, out
-    assert_match /SomethingElse/, out
+    assert_match /SomethingBad/, out, "[ruby-core:9675]"
+    assert_match /SomethingElse/, out, "[ruby-core:9675]"
   end
 
   def test_should_propagate_exit_code

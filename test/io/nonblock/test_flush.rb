@@ -6,7 +6,7 @@ end
 
 Thread.abort_on_exception = true
 class TestIONonblock < Test::Unit::TestCase
-  def test_flush                # [ruby-dev:24985]
+  def test_flush
     flunk "IO#close can't interrupt IO blocking on YARV"
     r,w = IO.pipe
     w.nonblock = true
@@ -24,7 +24,7 @@ class TestIONonblock < Test::Unit::TestCase
         result << s
       end
     }
-    assert_raise(IOError) {w.flush}
+    assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
     assert_nothing_raised {t.join}
     assert_equal(4097, result.size)
   end

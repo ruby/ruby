@@ -85,13 +85,13 @@ class TestBignum < Test::Unit::TestCase
     shift_test(-0xfffffffffffffffff)
   end
 
-  def test_to_s  # [ruby-core:10686]
-    assert_equal("fvvvvvvvvvvvv" ,18446744073709551615.to_s(32))
-    assert_equal("g000000000000" ,18446744073709551616.to_s(32))
-    assert_equal("3w5e11264sgsf" ,18446744073709551615.to_s(36))
-    assert_equal("3w5e11264sgsg" ,18446744073709551616.to_s(36))
-    assert_equal("nd075ib45k86f" ,18446744073709551615.to_s(31))
-    assert_equal("nd075ib45k86g" ,18446744073709551616.to_s(31))
+  def test_to_s
+    assert_equal("fvvvvvvvvvvvv" ,18446744073709551615.to_s(32), "[ruby-core:10686]")
+    assert_equal("g000000000000" ,18446744073709551616.to_s(32), "[ruby-core:10686]")
+    assert_equal("3w5e11264sgsf" ,18446744073709551615.to_s(36), "[ruby-core:10686]")
+    assert_equal("3w5e11264sgsg" ,18446744073709551616.to_s(36), "[ruby-core:10686]")
+    assert_equal("nd075ib45k86f" ,18446744073709551615.to_s(31), "[ruby-core:10686]")
+    assert_equal("nd075ib45k86g" ,18446744073709551616.to_s(31), "[ruby-core:10686]")
     assert_equal("1777777777777777777777" ,18446744073709551615.to_s(8))
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
   end

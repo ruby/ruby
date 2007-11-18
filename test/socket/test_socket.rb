@@ -29,7 +29,7 @@ class TestBasicSocket < Test::Unit::TestCase
     end
   end
 
-  def test_setsockopt # [ruby-dev:25039]
+  def test_setsockopt
     s = nil
     linger = [0, 0].pack("ii")
 
@@ -42,7 +42,7 @@ class TestBasicSocket < Test::Unit::TestCase
       s = sock
       assert_equal(0, s.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, linger))
 
-      assert_raise(IOError) {
+      assert_raise(IOError, "[ruby-dev:25039]") {
         s.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, val)
       }
     end

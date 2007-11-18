@@ -63,11 +63,11 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
-  def test_huge_difference # [ruby-dev:22619]
+  def test_huge_difference
     if negative_time_t?
-      assert_equal(Time.at(-0x80000000), Time.at(0x7fffffff) - 0xffffffff)
+      assert_equal(Time.at(-0x80000000), Time.at(0x7fffffff) - 0xffffffff, "[ruby-dev:22619]")
       assert_equal(Time.at(-0x80000000), Time.at(0x7fffffff) + (-0xffffffff))
-      assert_equal(Time.at(0x7fffffff), Time.at(-0x80000000) + 0xffffffff)
+      assert_equal(Time.at(0x7fffffff), Time.at(-0x80000000) + 0xffffffff, "[ruby-dev:22619]")
       assert_equal(Time.at(0x7fffffff), Time.at(-0x80000000) - (-0xffffffff))
     end
   end

@@ -44,13 +44,13 @@ class TestPath < Test::Unit::TestCase
     assert_equal("//sub", File.expand_path("sub", "//"))
   end
 
-  def test_dirname # [ruby-dev:27738]
+  def test_dirname
     if /(bcc|ms)win\d|mingw|cygwin|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_DRIVE_LETTER
       assert_equal('C:.', File.dirname('C:'))
       assert_equal('C:.', File.dirname('C:a'))
       assert_equal('C:.', File.dirname('C:a/'))
-      assert_equal('C:a', File.dirname('C:a/b'))
+      assert_equal('C:a', File.dirname('C:a/b'), "[ruby-dev:27738]")
 
       assert_equal('C:/', File.dirname('C:/'))
       assert_equal('C:/', File.dirname('C:/a'))
@@ -62,7 +62,7 @@ class TestPath < Test::Unit::TestCase
       assert_equal('C:/', File.dirname('C://a/'))
       assert_equal('C:/a', File.dirname('C://a/b'))
 
-      assert_equal('C:/', File.dirname('C:///'))
+      assert_equal('C:/', File.dirname('C:///'), "[ruby-dev:27738]")
       assert_equal('C:/', File.dirname('C:///a'))
       assert_equal('C:/', File.dirname('C:///a/'))
       assert_equal('C:/a', File.dirname('C:///a/b'))
@@ -134,7 +134,7 @@ class TestPath < Test::Unit::TestCase
     end
   end
 
-  def test_basename # [ruby-dev:27766]
+  def test_basename
     if /(bcc|ms)win\d|mingw|cygwin|djgpp|human|emx/ =~ RUBY_PLATFORM
       # DOSISH_DRIVE_LETTER
       assert_equal('', File.basename('C:'))
@@ -194,7 +194,7 @@ class TestPath < Test::Unit::TestCase
       assert_equal('/', File.basename('//'))
       assert_equal('/', File.basename('//a'))
       assert_equal('/', File.basename('//a/'))
-      assert_equal('/', File.basename('//a/b'))
+      assert_equal('/', File.basename('//a/b'), "[ruby-dev:27776]")
       assert_equal('/', File.basename('//a/b/'))
       assert_equal('c', File.basename('//a/b/c'))
 

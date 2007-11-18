@@ -156,12 +156,11 @@ class TestInteger < Test::Unit::TestCase
       }
     }
 
-    # [ruby-dev:31271]
-    # assert_equal(1, (1 << 0x40000000)[0x40000000])
-    # assert_equal(0, (-1 << 0x40000001)[0x40000000])
+    # assert_equal(1, (1 << 0x40000000)[0x40000000], "[ruby-dev:31271]")
+    # assert_equal(0, (-1 << 0x40000001)[0x40000000], "[ruby-dev:31271]")
     big_zero = 0x40000000.coerce(0)[0]
-    assert_equal(0, (-0x40000002)[big_zero])
-    assert_equal(1, 0x400000001[big_zero])
+    assert_equal(0, (-0x40000002)[big_zero], "[ruby-dev:31271]")
+    assert_equal(1, 0x400000001[big_zero], "[ruby-dev:31271]")
   end
 
   def test_plus

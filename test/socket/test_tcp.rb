@@ -6,7 +6,7 @@ end
 
 
 class TestTCPSocket < Test::Unit::TestCase
-  def test_recvfrom # [ruby-dev:24705]
+  def test_recvfrom
 assert false, "TODO: doesn't work on mswin32/64" if /mswin/ =~ RUBY_PLATFORM
     c = s = nil
     svr = TCPServer.new("localhost", 0)
@@ -20,7 +20,7 @@ assert false, "TODO: doesn't work on mswin32/64" if /mswin/ =~ RUBY_PLATFORM
     }
     addr = svr.addr
     sock = TCPSocket.open(addr[2], addr[1])
-    assert_raise(RuntimeError, SocketError) {
+    assert_raise(RuntimeError, SocketError, "[ruby-dev:24705]") {
       sock.recvfrom(0x10000)
     }
   ensure

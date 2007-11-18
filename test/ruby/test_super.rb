@@ -126,9 +126,9 @@ class TestSuper < Test::Unit::TestCase
     end
   end
 
-  def test_define_method # [ruby-core:03856]
+  def test_define_method
     a = A.new
     a.uu(12)
-    assert_equal("A#tt", a.tt(12))
+    assert_equal("A#tt", a.tt(12), "[ruby-core:3856]")
   end
 end

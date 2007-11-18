@@ -10,9 +10,8 @@ class TestFnmatch < Test::Unit::TestCase
     end
   end
   def test_fnmatch
-    # from [ruby-dev:22815] and [ruby-dev:22819]
-    assert(File.fnmatch('\[1\]' , '[1]'))
-    assert(File.fnmatch('*?', 'a'))
+    assert(File.fnmatch('\[1\]' , '[1]'), "[ruby-dev:22819]")
+    assert(File.fnmatch('*?', 'a'), "[ruby-dev:22815]")
     assert(File.fnmatch('*/', 'a/'))
     assert(File.fnmatch('\[1\]' , '[1]', File::FNM_PATHNAME))
     assert(File.fnmatch('*?', 'a', File::FNM_PATHNAME))

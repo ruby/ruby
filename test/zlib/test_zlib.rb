@@ -14,7 +14,7 @@ if defined? Zlib
       assert_equal("", Zlib::GzipReader.new(StringIO.new(D0)).read(0))
     end
 
-    def test_ungetc # [ruby-dev:24060]
+    def test_ungetc
       s = ""
       w = Zlib::GzipWriter.new(StringIO.new(s))
       w << (1...1000).to_a.inspect
@@ -22,14 +22,14 @@ if defined? Zlib
       r = Zlib::GzipReader.new(StringIO.new(s))
       r.read(100)
       r.ungetc ?a
-      assert_nothing_raised {
+      assert_nothing_raised("[ruby-dev:24060]") {
         r.read(100)
         r.read
         r.close
       }
     end
 
-    def test_ungetc_paragraph # [ruby-dev:24065]
+    def test_ungetc_paragraph
       s = ""
       w = Zlib::GzipWriter.new(StringIO.new(s))
       w << "abc"
@@ -37,7 +37,7 @@ if defined? Zlib
       r = Zlib::GzipReader.new(StringIO.new(s))
       r.ungetc ?\n
       assert_equal("abc", r.gets(""))
-      assert_nothing_raised {
+      assert_nothing_raised("[ruby-dev:24065]") {
         r.read
         r.close
       }
@@ -46,12 +46,10 @@ if defined? Zlib
 
   class TestZlibGzipWriter < Test::Unit::TestCase
     def test_invalid_new
-      # [ruby-dev:23228]
-      assert_raise(NoMethodError) { Zlib::GzipWriter.new(nil).close }
-      # [ruby-dev:23344]
-      assert_raise(NoMethodError) { Zlib::GzipWriter.new(true).close }
-      assert_raise(NoMethodError) { Zlib::GzipWriter.new(0).close }
-      assert_raise(NoMethodError) { Zlib::GzipWriter.new(:hoge).close }
+      assert_raise(NoMethodError, "[ruby-dev:23228]") { Zlib::GzipWriter.new(nil).close }
+      assert_raise(NoMethodError, "[ruby-dev:23344]") { Zlib::GzipWriter.new(true).close }
+      assert_raise(NoMethodError, "[ruby-dev:23344]") { Zlib::GzipWriter.new(0).close }
+      assert_raise(NoMethodError, "[ruby-dev:23344]") { Zlib::GzipWriter.new(:hoge).close }
     end
   end
 end

@@ -19,18 +19,18 @@ class TestIO < Test::Unit::TestCase
     assert_nil r.gets("")
     r.close
 
-    # "\377" [ruby-dev:24460]
+    # "\377"
     r, w = IO.pipe
     w.print "\377xyz"
     w.close
     assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
     r.close
 
-    # "" [ruby-core:03771]
+    # ""
     r, w = IO.pipe
     w.print "a\n\nb\n\n"
     w.close
-    assert_equal "a\n\n", r.gets("")
+    assert_equal "a\n\n", r.gets(""), "[ruby-core:03771]"
     assert_equal "b\n\n", r.gets("")
     assert_nil r.gets("")
     r.close

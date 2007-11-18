@@ -37,16 +37,16 @@ class TestFile < Test::Unit::TestCase
 
   include TestEOF::Seek
 
-  def test_truncate_wbuf # [ruby-dev:24191]
+  def test_truncate_wbuf
     f = Tempfile.new("test-truncate")
     f.print "abc"
     f.truncate(0)
     f.print "def"
     f.close
-    assert_equal("\0\0\0def", File.read(f.path))
+    assert_equal("\0\0\0def", File.read(f.path), "[ruby-dev:24191]")
   end
 
-  def test_truncate_rbuf # [ruby-dev:24197]
+  def test_truncate_rbuf
     f = Tempfile.new("test-truncate")
     f.puts "abc"
     f.puts "def"
@@ -54,7 +54,7 @@ class TestFile < Test::Unit::TestCase
     f.open
     assert_equal("abc\n", f.gets)
     f.truncate(3)
-    assert_equal(nil, f.gets)
+    assert_equal(nil, f.gets, "[ruby-dev:24197]")
   end
 
   def test_truncate_beyond_eof
@@ -110,8 +110,7 @@ class TestFile < Test::Unit::TestCase
     assert_nothing_raised {
       File.open(__FILE__) {|f| f.chown -1, -1 }
     }
-    # [ruby-dev:27140]
-    assert_nothing_raised {
+    assert_nothing_raised("[ruby-dev:27140]") {
       File.open(__FILE__) {|f| f.chown nil, nil }
     }
   end
