@@ -1,3 +1,7 @@
+Sun Nov 18 09:09:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (String#tr_cpp): make preprocessor identifiers.
+
 Sun Nov 18 05:19:46 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/mkmf.rb (have_struct_member): define HAVE_type_member.

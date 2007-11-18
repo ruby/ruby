@@ -158,6 +158,9 @@ class String
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
   end
+  def tr_cpp
+    strip.upcase.tr_s("^A-Z0-9_", "_")
+  end
 end
 class Array
   def quote
@@ -688,7 +691,7 @@ end
 def have_func(func, headers = nil, &b)
   checking_for checking_message("#{func}()", headers) do
     if try_func(func, $libs, headers, &b)
-      $defs.push(format("-DHAVE_%s", func.upcase))
+      $defs.push(format("-DHAVE_%s", func.tr_cpp))
       true
     else
       false
@@ -707,7 +710,7 @@ end
 def have_var(var, headers = nil, &b)
   checking_for checking_message(var, headers) do
     if try_var(var, headers, &b)
-      $defs.push(format("-DHAVE_%s", var.upcase))
+      $defs.push(format("-DHAVE_%s", var.tr_cpp))
       true
     else
       false
@@ -782,8 +785,8 @@ def have_struct_member(type, member, headers = nil, &b)
 int main() { return 0; }
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
-      $defs.push(format("-DHAVE_%s_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_"), member.upcase))
-      $defs.push(format("-DHAVE_ST_%s", member.upcase)) # backward compatibility
+      $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
+      $defs.push(format("-DHAVE_ST_%s", member.tr_cpp)) # backward compatibility
       true
     else
       false
@@ -799,7 +802,7 @@ def try_type(type, headers = nil, opt = "", &b)
 typedef #{type} conftest_type;
 int conftestval[sizeof(conftest_type)?1:-1];
 SRC
-    $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
+    $defs.push(format("-DHAVE_TYPE_%s", type.tr_cpp))
     true
   else
     false
@@ -854,7 +857,7 @@ def try_const(const, headers = nil, opt = "", &b)
 typedef #{type || 'int'} conftest_type;
 conftest_type conftestval = #{type ? '' : '(int)'}#{const};
 SRC
-    $defs.push(format("-DHAVE_CONST_%s", const.strip.upcase.tr_s("^A-Z0-9_", "_")))
+    $defs.push(format("-DHAVE_CONST_%s", const.tr_cpp))
     true
   else
     false
@@ -901,7 +904,7 @@ def check_sizeof(type, headers = nil, &b)
   end
   checking_for checking_message("size of #{type}", headers), fmt do
     if size = try_constant(expr, headers, &b)
-      $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
+      $defs.push(format("-DSIZEOF_%s=%d", type.tr_cpp, size))
       size
     end
   end
