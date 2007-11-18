@@ -603,6 +603,8 @@ rb_alias(VALUE klass, ID name, ID def)
 
     rb_clear_cache_by_id(name);
 
+    if (!ruby_running) return;
+
     if (singleton) {
 	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
     }
