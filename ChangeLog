@@ -1,3 +1,7 @@
+Mon Nov 19 02:31:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_method.ci (rb_add_method): no redefinition warning for undef.
+
 Mon Nov 19 01:53:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_read_escape): disallow control and meta modifiers
