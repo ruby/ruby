@@ -1,3 +1,8 @@
+Sun Nov 18 17:28:49 2007  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_arg): show actual year in 2-3 digits year warning.
+	  (time_mdump): show actual year in "year too big to marshal" error.
+
 Sun Nov 18 14:03:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_method.ci (rb_alias): do not call hook functions until

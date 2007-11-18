@@ -306,11 +306,11 @@ time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
     year = obj2long(v[0]);
 
     if (0 <= year && year < 39) {
+        rb_warning("2 digits year is used: %ld", year);
 	year += 100;
-	rb_warning("2 digits year is used");
     }
     else if (69 <= year && year < 139) {
-	rb_warning("2 or 3 digits year is used");
+        rb_warning("2 or 3 digits year is used: %ld", year);
     }
     else {
 	year -= 1900;
@@ -1939,7 +1939,7 @@ time_mdump(VALUE time)
     tm = gmtime(&t);
 
     if ((tm->tm_year & 0xffff) != tm->tm_year)
-	rb_raise(rb_eArgError, "year too big to marshal");
+        rb_raise(rb_eArgError, "year too big to marshal: %ld", (long)tm->tm_year);
 
     p = 0x1UL        << 31 | /*  1 */
 	tobj->gmt    << 30 | /*  1 */
