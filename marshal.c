@@ -153,6 +153,8 @@ static void
 mark_dump_arg(void *ptr)
 {
     struct dump_arg *p = ptr;
+    if (!ptr)
+        return;
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
 }
