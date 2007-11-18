@@ -5140,7 +5140,7 @@ parser_read_escape(struct parser_params *parser, int flags,
 	    *has8bit = 1;
 	    return read_escape(flags|ESCAPE_META, &tmp, &tmp, encp) | 0x80;
 	}
-	else if (c == -1) goto eof;
+	else if (c == -1 || !ISASCII(c)) goto eof;
 	else {
             *has8bit = 1;
 	    return ((c & 0xff) | 0x80);
@@ -5159,7 +5159,7 @@ parser_read_escape(struct parser_params *parser, int flags,
 	}
 	else if (c == '?')
 	    return 0177;
-	else if (c == -1) goto eof;
+	else if (c == -1 || !ISASCII(c)) goto eof;
 	return c & 0x9f;
 
       eof:

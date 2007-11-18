@@ -1,3 +1,8 @@
+Mon Nov 19 01:53:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_read_escape): disallow control and meta modifiers
+	  for non-ASCII characters.  [ruby-core:13685]
+
 Sun Nov 18 20:47:41 2007  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (mark_dump_arg): it may be called after dump_ensure.
