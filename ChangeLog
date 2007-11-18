@@ -1,3 +1,8 @@
+Mon Nov 19 02:44:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): alias and undef accept dsyms as well
+	  as literals.  [ruby-dev:32308]
+
 Mon Nov 19 02:31:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_method.ci (rb_add_method): no redefinition warning for undef.

@@ -4067,10 +4067,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_ALIAS:{
 	VALUE s1, s2;
+	enum node_type t;
 
-	if (nd_type(node->u1.node) != NODE_LIT ||
-	    nd_type(node->u2.node) != NODE_LIT) {
-	    rb_bug("alias args must be NODE_LIT");
+	if (((t = nd_type(node->u1.node)) != NODE_LIT && t != NODE_DSYM) ||
+	    ((t = nd_type(node->u2.node)) != NODE_LIT && t != NODE_DSYM)) {
+	    rb_compile_bug(ERROR_ARGS "alias args must be NODE_LIT or NODE_DSYM");
 	}
 	s1 = node->u1.node->nd_lit;
 	s2 = node->u2.node->nd_lit;
@@ -4091,8 +4092,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_UNDEF:{
-	if (nd_type(node->u2.node) != NODE_LIT) {
-	    rb_bug("undef args must be NODE_LIT");
+	enum node_type t = nd_type(node->u2.node);
+	if (t != NODE_LIT && t != NODE_DSYM) {
+	    rb_compile_bug(ERROR_ARGS "undef args must be NODE_LIT");
 	}
 	ADD_INSN1(ret, nd_line(node), undef,
 		  ID2SYM(rb_to_id(node->u2.node->nd_lit)));
