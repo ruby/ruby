@@ -560,7 +560,8 @@ VALUE rb_barrier_new(void);
 VALUE rb_barrier_wait(VALUE self);
 VALUE rb_barrier_release(VALUE self);
 /* time.c */
-VALUE rb_time_new(time_t, time_t);
+VALUE rb_time_new(time_t, long);
+VALUE rb_time_nano_new(time_t, long);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);

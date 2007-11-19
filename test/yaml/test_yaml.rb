@@ -54,7 +54,7 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 			hour = zone[0,3].to_i * 3600
 			min = zone[3,2].to_i * 60
 			ofs = (hour + min)
-			val = Time.at( val.to_f - ofs )
+			val = Time.at( val.tv_sec - ofs, val.tv_nsec / 1000.0 )
 		end
 		return val
 	end

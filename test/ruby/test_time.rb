@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'rational'
 
 class TestTime < Test::Unit::TestCase
   def test_time_add()
@@ -81,4 +82,67 @@ class TestTime < Test::Unit::TestCase
     end
     assert_equal(1.0, bigtime1 - bigtime0)
   end
+
+  def test_at
+    assert_equal(100000, Time.at(0.1).usec)
+    assert_equal(10000, Time.at(0.01).usec)
+    assert_equal(1000, Time.at(0.001).usec)
+    assert_equal(100, Time.at(0.0001).usec)
+    assert_equal(10, Time.at(0.00001).usec)
+    assert_equal(1, Time.at(0.000001).usec)
+    assert_equal(100000000, Time.at(0.1).nsec)
+    assert_equal(10000000, Time.at(0.01).nsec)
+    assert_equal(1000000, Time.at(0.001).nsec)
+    assert_equal(100000, Time.at(0.0001).nsec)
+    assert_equal(10000, Time.at(0.00001).nsec)
+    assert_equal(1000, Time.at(0.000001).nsec)
+    assert_equal(100, Time.at(0.0000001).nsec)
+    assert_equal(10, Time.at(0.00000001).nsec)
+    assert_equal(1, Time.at(0.000000001).nsec)
+  end
+
+  def test_at2
+    assert_equal(100, Time.at(0, 0.1).nsec)
+    assert_equal(10, Time.at(0, 0.01).nsec)
+    assert_equal(1, Time.at(0, 0.001).nsec)
+  end
+
+  def test_at_rational
+    assert_equal(1, Time.at(Rational(1,1) / 1000000000).nsec)
+    assert_equal(1, Time.at(1167609600 + Rational(1,1) / 1000000000).nsec)
+  end
+
+  def test_utc_subsecond
+    assert_equal(100000, Time.utc(2007,1,1,0,0,1.1).usec)
+    assert_equal(100000, Time.utc(2007,1,1,0,0,Rational(11,10)).usec)
+  end
+
+  def test_eq_nsec
+    assert_equal(Time.at(0, 0.123), Time.at(0, 0.123))
+    assert_not_equal(Time.at(0, 0.123), Time.at(0, 0.124))
+  end
+
+  def assert_marshal_roundtrip(t)
+    iv_names = t.instance_variables
+    iv_vals1 = iv_names.map {|n| t.instance_variable_get n }
+    m = Marshal.dump(t)
+    t2 = Marshal.load(m)
+    iv_vals2 = iv_names.map {|n| t2.instance_variable_get n }
+    assert_equal(t, t2)
+    assert_equal(iv_vals1, iv_vals2)
+    t2
+  end
+
+  def test_marshal_nsec
+    assert_marshal_roundtrip(Time.at(0, 0.123))
+    assert_marshal_roundtrip(Time.at(0, 0.120))
+  end
+
+  def test_marshal_ivar
+    t = Time.at(123456789, 987654.321)
+    t.instance_eval { @var = 135 }
+    assert_marshal_roundtrip(t)
+    assert_marshal_roundtrip(Marshal.load(Marshal.dump(t)))
+  end
+
 end

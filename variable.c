@@ -907,9 +907,19 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
     st_data_t data;
 
     if (!generic_iv_tbl) return;
-    if (!FL_TEST(obj, FL_EXIVAR)) return;
+    if (!FL_TEST(obj, FL_EXIVAR)) {
+clear:
+        if (FL_TEST(clone, FL_EXIVAR)) {
+            rb_free_generic_ivar(clone);
+            FL_UNSET(clone, FL_EXIVAR);
+        }
+        return;
+    }
     if (st_lookup(generic_iv_tbl, obj, &data)) {
 	st_table *tbl = (st_table *)data;
+
+        if (tbl->num_entries == 0)
+            goto clear;
 
 	if (st_lookup(generic_iv_tbl, clone, &data)) {
 	    st_free_table((st_table *)data);

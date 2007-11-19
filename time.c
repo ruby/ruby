@@ -23,8 +23,10 @@
 VALUE rb_cTime;
 static VALUE time_utc_offset _((VALUE));
 
+static ID id_divmod, id_mul, id_submicro;
+
 struct time_object {
-    struct timeval tv;
+    struct timespec ts;
     struct tm tm;
     int gmt;
     int tm_got;
@@ -47,8 +49,8 @@ time_s_alloc(VALUE klass)
 
     obj = Data_Make_Struct(klass, struct time_object, 0, time_free, tobj);
     tobj->tm_got=0;
-    tobj->tv.tv_sec = 0;
-    tobj->tv.tv_usec = 0;
+    tobj->ts.tv_sec = 0;
+    tobj->ts.tv_nsec = 0;
 
     return obj;
 }
@@ -93,11 +95,22 @@ time_init(VALUE time)
     time_modify(time);
     GetTimeval(time, tobj);
     tobj->tm_got=0;
-    tobj->tv.tv_sec = 0;
-    tobj->tv.tv_usec = 0;
-    if (gettimeofday(&tobj->tv, 0) < 0) {
-	rb_sys_fail("gettimeofday");
+    tobj->ts.tv_sec = 0;
+    tobj->ts.tv_nsec = 0;
+#ifdef HAVE_CLOCK_GETTIME
+    if (clock_gettime(CLOCK_REALTIME, &tobj->ts) == -1) {
+	rb_sys_fail("clock_gettime");
     }
+#else
+    {
+        struct timeval tv; 
+        if (gettimeofday(&tv, 0) < 0) {
+            rb_sys_fail("gettimeofday");
+        }
+        tobj->ts.tv_sec = tv.tv_sec;
+        tobj->ts.tv_nsec = tv.tv_usec * 1000;
+    }
+#endif
 
     return time;
 }
@@ -106,106 +119,137 @@ time_init(VALUE time)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 
 static void
-time_overflow_p(time_t *secp, time_t *usecp)
+time_overflow_p(time_t *secp, long *nsecp)
 {
-    time_t tmp, sec = *secp, usec = *usecp;
+    time_t tmp, sec = *secp;
+    long nsec = *nsecp;
 
-    if (usec >= 1000000) {	/* usec positive overflow */
-	tmp = sec + usec / 1000000;
-	usec %= 1000000;
+    if (nsec >= 1000000000) {	/* nsec positive overflow */
+	tmp = sec + nsec / 1000000000;
+	nsec %= 1000000000;
 	if (sec > 0 && tmp < 0) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
 	sec = tmp;
     }
-    if (usec < 0) {		/* usec negative overflow */
-	tmp = sec + NDIV(usec,1000000); /* negative div */
-	usec = NMOD(usec,1000000);      /* negative mod */
+    if (nsec < 0) {		/* nsec negative overflow */
+	tmp = sec + NDIV(nsec,1000000000); /* negative div */
+	nsec = NMOD(nsec,1000000000);      /* negative mod */
 	if (sec < 0 && tmp > 0) {
 	    rb_raise(rb_eRangeError, "out of Time range");
 	}
 	sec = tmp;
     }
 #ifndef NEGATIVE_TIME_T
-    if (sec < 0 || (sec == 0 && usec < 0))
+    if (sec < 0)
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
     *secp = sec;
-    *usecp = usec;
+    *nsecp = nsec;
 }
 
 static VALUE
-time_new_internal(VALUE klass, time_t sec, time_t usec)
+time_new_internal(VALUE klass, time_t sec, long nsec)
 {
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    time_overflow_p(&sec, &usec);
-    tobj->tv.tv_sec = sec;
-    tobj->tv.tv_usec = usec;
+    time_overflow_p(&sec, &nsec);
+    tobj->ts.tv_sec = sec;
+    tobj->ts.tv_nsec = nsec;
 
     return time;
 }
 
 VALUE
-rb_time_new(time_t sec, time_t usec)
+rb_time_new(time_t sec, long usec)
 {
-    return time_new_internal(rb_cTime, sec, usec);
+    return time_new_internal(rb_cTime, sec, usec * 1000);
 }
 
-static struct timeval
-time_timeval(VALUE time, int interval)
+VALUE
+rb_time_nano_new(time_t sec, long nsec)
 {
-    struct timeval t;
+    return time_new_internal(rb_cTime, sec, nsec);
+}
+
+static struct timespec
+time_timespec(VALUE num, int interval)
+{
+    struct timespec t;
     const char *tstr = interval ? "time interval" : "time";
+    VALUE i, f, ary;
 
 #ifndef NEGATIVE_TIME_T
     interval = 1;
 #endif
 
-    switch (TYPE(time)) {
+    switch (TYPE(num)) {
       case T_FIXNUM:
-	t.tv_sec = FIX2LONG(time);
+	t.tv_sec = FIX2LONG(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
-	t.tv_usec = 0;
+	t.tv_nsec = 0;
 	break;
 
       case T_FLOAT:
-	if (interval && RFLOAT_VALUE(time) < 0.0)
+	if (interval && RFLOAT_VALUE(num) < 0.0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	else {
 	    double f, d;
 
-	    d = modf(RFLOAT_VALUE(time), &f);
+	    d = modf(RFLOAT_VALUE(num), &f);
 	    t.tv_sec = (time_t)f;
 	    if (f != t.tv_sec) {
-		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(time));
+		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
 	    }
-	    t.tv_usec = (time_t)(d*1e6+0.5);
+	    t.tv_nsec = (long)(d*1e9+0.5);
 	}
 	break;
 
       case T_BIGNUM:
-	t.tv_sec = NUM2LONG(time);
+	t.tv_sec = NUM2LONG(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
-	t.tv_usec = 0;
+	t.tv_nsec = 0;
 	break;
 
       default:
-	rb_raise(rb_eTypeError, "can't convert %s into %s",
-		 rb_obj_classname(time), tstr);
+        ary = rb_check_array_type(rb_funcall(num, id_divmod, 1, INT2FIX(1)));
+        if (NIL_P(ary)) {
+            rb_raise(rb_eTypeError, "can't convert %s into %s",
+                     rb_obj_classname(num), tstr);
+        }
+        i = rb_ary_entry(ary, 0);
+        f = rb_ary_entry(ary, 1);
+        t.tv_sec = NUM2LONG(i);
+	if (interval && t.tv_sec < 0)
+	    rb_raise(rb_eArgError, "%s must be positive", tstr);
+        f = rb_funcall(f, id_mul, 1, INT2FIX(1000000000));
+        t.tv_nsec = NUM2LONG(f);
 	break;
     }
     return t;
 }
 
-struct timeval
-rb_time_interval(VALUE time)
+static struct timeval
+time_timeval(VALUE num, int interval)
 {
-    return time_timeval(time, Qtrue);
+    struct timespec ts;
+    struct timeval tv;
+
+    ts = time_timespec(num, interval);
+    tv.tv_sec = ts.tv_sec;
+    tv.tv_usec = ts.tv_nsec / 1000;
+
+    return tv;
+}
+
+struct timeval
+rb_time_interval(VALUE num)
+{
+    return time_timeval(num, Qtrue);
 }
 
 struct timeval
@@ -216,10 +260,25 @@ rb_time_timeval(VALUE time)
 
     if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
 	GetTimeval(time, tobj);
-	t = tobj->tv;
+        t.tv_sec = tobj->ts.tv_sec;
+        t.tv_usec = tobj->ts.tv_nsec / 1000;
 	return t;
     }
     return time_timeval(time, Qfalse);
+}
+
+struct timespec
+rb_time_timespec(VALUE time)
+{
+    struct time_object *tobj;
+    struct timespec t;
+
+    if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
+	GetTimeval(time, tobj);
+        t = tobj->ts;
+	return t;
+    }
+    return time_timespec(time, Qfalse);
 }
 
 /*
@@ -229,7 +288,7 @@ rb_time_timeval(VALUE time)
  *  
  *  Creates a new time object with the value given by <i>aTime</i>, or
  *  the given number of <i>seconds</i> (and optional
- *  <i>microseconds</i>) from epoch. A non-portable feature allows the
+ *  <i>microseconds</i>) from the Epoch. A non-portable feature allows the
  *  offset to be negative on some systems.
  *     
  *     Time.at(0)            #=> Wed Dec 31 18:00:00 CST 1969
@@ -240,17 +299,17 @@ rb_time_timeval(VALUE time)
 static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
-    struct timeval tv;
+    struct timespec ts;
     VALUE time, t;
 
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
-	tv.tv_sec = NUM2LONG(time);
-	tv.tv_usec = NUM2LONG(t);
+	ts.tv_sec = NUM2LONG(time);
+	ts.tv_nsec = NUM2LONG(rb_funcall(t, id_mul, 1, INT2FIX(1000)));
     }
     else {
-	tv = rb_time_timeval(time);
+	ts = rb_time_timespec(time);
     }
-    t = time_new_internal(klass, tv.tv_sec, tv.tv_usec);
+    t = time_new_internal(klass, ts.tv_sec, ts.tv_nsec);
     if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
 	struct time_object *tobj, *tobj2;
 
@@ -276,15 +335,42 @@ obj2long(VALUE obj)
     return NUM2LONG(obj);
 }
 
+static long
+obj2nsec(VALUE obj, long *nsec)
+{
+    struct timespec ts;
+
+    if (TYPE(obj) == T_STRING) {
+	obj = rb_str_to_inum(obj, 10, Qfalse);
+        *nsec = 0;
+        return NUM2LONG(obj) * 1000;
+    }
+
+    ts = time_timespec(obj, 1);
+    *nsec = ts.tv_nsec;
+    return ts.tv_sec;
+}
+
+static long
+obj2long1000(VALUE obj)
+{
+    if (TYPE(obj) == T_STRING) {
+	obj = rb_str_to_inum(obj, 10, Qfalse);
+        return NUM2LONG(obj) * 1000;
+    }
+
+    return NUM2LONG(rb_funcall(obj, id_mul, 1, INT2FIX(1000)));
+}
+
 static void
-time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
+time_arg(int argc, VALUE *argv, struct tm *tm, long *nsec)
 {
     VALUE v[8];
     int i;
     long year;
 
     MEMZERO(tm, struct tm, 1);
-    *usec = 0;
+    *nsec = 0;
     if (argc == 10) {
 	v[0] = argv[5];
 	v[1] = argv[4];
@@ -352,12 +438,13 @@ time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
     }
     tm->tm_hour = NIL_P(v[3])?0:obj2long(v[3]);
     tm->tm_min  = NIL_P(v[4])?0:obj2long(v[4]);
-    tm->tm_sec  = NIL_P(v[5])?0:obj2long(v[5]);
-    if (!NIL_P(v[6])) {
+    if (!NIL_P(v[6]) && argc == 7) {
+        tm->tm_sec  = NIL_P(v[5])?0:obj2long(v[5]);
+        *nsec = obj2long1000(v[6]);
+    }
+    else {
 	/* when argc == 8, v[6] is timezone, but ignored */
-	if (argc == 7) {
-	    *usec = obj2long(v[6]);
-	}
+        tm->tm_sec  = NIL_P(v[5])?0:obj2nsec(v[5], nsec);
     }
 
     /* value validation */
@@ -774,10 +861,10 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
 {
     struct tm tm;
     VALUE time;
-    time_t usec;
+    long nsec;
 
-    time_arg(argc, argv, &tm, &usec);
-    time = time_new_internal(klass, make_time_t(&tm, utc_p), usec);
+    time_arg(argc, argv, &tm, &nsec);
+    time = time_new_internal(klass, make_time_t(&tm, utc_p), nsec);
     if (utc_p) return time_gmtime(time);
     return time_localtime(time);
 }
@@ -834,7 +921,7 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *     time.tv_sec => int
  *  
  *  Returns the value of <i>time</i> as an integer number of seconds
- *  since epoch.
+ *  since the Epoch.
  *     
  *     t = Time.now
  *     "%10.5f" % t.to_f   #=> "1049896564.17839"
@@ -847,7 +934,7 @@ time_to_i(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return LONG2NUM(tobj->tv.tv_sec);
+    return LONG2NUM(tobj->ts.tv_sec);
 }
 
 /*
@@ -855,11 +942,14 @@ time_to_i(VALUE time)
  *     time.to_f => float
  *  
  *  Returns the value of <i>time</i> as a floating point number of
- *  seconds since epoch.
+ *  seconds since the Epoch.
  *     
  *     t = Time.now
  *     "%10.5f" % t.to_f   #=> "1049896564.13654"
  *     t.to_i              #=> 1049896564
+ *
+ *  Note that IEEE 754 double is not accurate enough to represent
+ *  nanoseconds from the Epoch.
  */
 
 static VALUE
@@ -868,7 +958,7 @@ time_to_f(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return DOUBLE2NUM((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1e6);
+    return DOUBLE2NUM((double)tobj->ts.tv_sec+(double)tobj->ts.tv_nsec/1e9);
 }
 
 /*
@@ -889,7 +979,33 @@ time_usec(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return LONG2NUM(tobj->tv.tv_usec);
+    return LONG2NUM(tobj->ts.tv_nsec/1000);
+}
+
+/*
+ *  call-seq:
+ *     time.nsec    => int
+ *     time.tv_nsec => int
+ *  
+ *  Returns just the number of nanoseconds for <i>time</i>.
+ *     
+ *     t = Time.now        #=> 2007-11-17 15:18:03 +0900
+ *     "%10.9f" % t.to_f   #=> "1195280283.536151409"
+ *     t.nsec              #=> 536151406
+ *
+ *  The lowest digit of to_f and nsec is different because
+ *  IEEE 754 double is not accurate enough to represent
+ *  nanoseconds from the Epoch.
+ *  The correct value is returned by nsec.
+ */
+
+static VALUE
+time_nsec(VALUE time)
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    return LONG2NUM(tobj->ts.tv_nsec);
 }
 
 /*
@@ -899,7 +1015,7 @@ time_usec(VALUE time)
  *  
  *  Comparison---Compares <i>time</i> with <i>other_time</i> or with
  *  <i>numeric</i>, which is the number of seconds (possibly
- *  fractional) since epoch.
+ *  fractional) since the Epoch.
  *     
  *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
  *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
@@ -916,12 +1032,12 @@ time_cmp(VALUE time1, VALUE time2)
     GetTimeval(time1, tobj1);
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	GetTimeval(time2, tobj2);
-	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
-	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
-	    if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
+	if (tobj1->ts.tv_sec == tobj2->ts.tv_sec) {
+	    if (tobj1->ts.tv_nsec == tobj2->ts.tv_nsec) return INT2FIX(0);
+	    if (tobj1->ts.tv_nsec > tobj2->ts.tv_nsec) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}
-	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
+	if (tobj1->ts.tv_sec > tobj2->ts.tv_sec) return INT2FIX(1);
 	return INT2FIX(-1);
     }
 
@@ -945,8 +1061,8 @@ time_eql(VALUE time1, VALUE time2)
     GetTimeval(time1, tobj1);
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	GetTimeval(time2, tobj2);
-	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
-	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return Qtrue;
+	if (tobj1->ts.tv_sec == tobj2->ts.tv_sec) {
+	    if (tobj1->ts.tv_nsec == tobj2->ts.tv_nsec) return Qtrue;
 	}
     }
     return Qfalse;
@@ -995,7 +1111,7 @@ time_hash(VALUE time)
     long hash;
 
     GetTimeval(time, tobj);
-    hash = tobj->tv.tv_sec ^ tobj->tv.tv_usec;
+    hash = tobj->ts.tv_sec ^ tobj->ts.tv_nsec;
     return LONG2FIX(hash);
 }
 
@@ -1053,7 +1169,7 @@ time_localtime(VALUE time)
     else {
 	time_modify(time);
     }
-    t = tobj->tv.tv_sec;
+    t = tobj->ts.tv_sec;
     tm_tmp = localtime(&t);
     if (!tm_tmp)
 	rb_raise(rb_eArgError, "localtime error");
@@ -1096,7 +1212,7 @@ time_gmtime(VALUE time)
     else {
 	time_modify(time);
     }
-    t = tobj->tv.tv_sec;
+    t = tobj->ts.tv_sec;
     tm_tmp = gmtime(&t);
     if (!tm_tmp)
 	rb_raise(rb_eArgError, "gmtime error");
@@ -1211,8 +1327,7 @@ time_to_s(VALUE time)
 	len = strftime(buf, 128, "%Y-%m-%d %H:%M:%S UTC", &tobj->tm);
     }
     else {
-	time_t off;
-	char buf2[32];
+	long off;
 	char sign = '+';
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
 	off = tobj->tm.tm_gmtoff;
@@ -1224,9 +1339,9 @@ time_to_s(VALUE time)
 	    sign = '-';
 	    off = -off;
 	}
-	sprintf(buf2, "%%Y-%%m-%%d %%H:%%M:%%S %c%02d%02d",
-		sign, (int)(off/3600), (int)(off%3600/60));
-	len = strftime(buf, 128, buf2, &tobj->tm);
+	len = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S ", &tobj->tm);
+        len += snprintf(buf+len, sizeof(buf)-len, "%c%02d%02d", sign,
+                        (int)(off/3600), (int)(off%3600/60));
     }
     return rb_str_new(buf, len);
 }
@@ -1237,7 +1352,8 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
     double v = NUM2DBL(offset);
     double f, d;
     unsigned_time_t sec_off;
-    time_t usec_off, sec, usec;
+    time_t sec;
+    long nsec_off, nsec;
     VALUE result;
 
     if (v < 0) {
@@ -1249,21 +1365,21 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
     if (f != (double)sec_off)
 	rb_raise(rb_eRangeError, "time %s %f out of Time range",
 		 sign < 0 ? "-" : "+", v);
-    usec_off = (time_t)(d*1e6+0.5);
+    nsec_off = (long)(d*1e9+0.5);
 
     if (sign < 0) {
-	sec = tobj->tv.tv_sec - sec_off;
-	usec = tobj->tv.tv_usec - usec_off;
-	if (sec > tobj->tv.tv_sec)
+	sec = tobj->ts.tv_sec - sec_off;
+	nsec = tobj->ts.tv_nsec - nsec_off;
+	if (sec > tobj->ts.tv_sec)
 	    rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
     else {
-	sec = tobj->tv.tv_sec + sec_off;
-	usec = tobj->tv.tv_usec + usec_off;
-	if (sec < tobj->tv.tv_sec)
+	sec = tobj->ts.tv_sec + sec_off;
+	nsec = tobj->ts.tv_nsec + nsec_off;
+	if (sec < tobj->ts.tv_sec)
 	    rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
-    result = rb_time_new(sec, usec);
+    result = rb_time_nano_new(sec, nsec);
     if (tobj->gmt) {
 	GetTimeval(result, tobj);
 	tobj->gmt = 1;
@@ -1320,11 +1436,11 @@ time_minus(VALUE time1, VALUE time2)
 	double f;
 
 	GetTimeval(time2, tobj2);
-        if (tobj->tv.tv_sec < tobj2->tv.tv_sec)
-            f = -(double)(unsigned_time_t)(tobj2->tv.tv_sec - tobj->tv.tv_sec);
+        if (tobj->ts.tv_sec < tobj2->ts.tv_sec)
+            f = -(double)(unsigned_time_t)(tobj2->ts.tv_sec - tobj->ts.tv_sec);
         else
-            f = (double)(unsigned_time_t)(tobj->tv.tv_sec - tobj2->tv.tv_sec);
-	f += ((double)tobj->tv.tv_usec - (double)tobj2->tv.tv_usec)*1e-6;
+            f = (double)(unsigned_time_t)(tobj->ts.tv_sec - tobj2->ts.tv_sec);
+	f += ((double)tobj->ts.tv_nsec - (double)tobj2->ts.tv_nsec)*1e-9;
 
 	return DOUBLE2NUM(f);
     }
@@ -1346,7 +1462,7 @@ time_succ(VALUE time)
 
     GetTimeval(time, tobj);
     gmt = tobj->gmt;
-    time = rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
+    time = rb_time_nano_new(tobj->ts.tv_sec + 1, tobj->ts.tv_nsec);
     GetTimeval(time, tobj);
     tobj->gmt = gmt;
     return time;
@@ -1747,7 +1863,7 @@ time_utc_offset(VALUE time)
 	time_t t;
 	long off;
 	l = &tobj->tm;
-	t = tobj->tv.tv_sec;
+	t = tobj->ts.tv_sec;
 	u = gmtime(&t);
 	if (!u)
 	    rb_raise(rb_eArgError, "gmtime error");
@@ -1933,11 +2049,13 @@ time_mdump(VALUE time)
     unsigned long p, s;
     char buf[8];
     time_t t;
+    int nsec;
     int i;
+    VALUE str;
 
     GetTimeval(time, tobj);
 
-    t = tobj->tv.tv_sec;
+    t = tobj->ts.tv_sec;
     tm = gmtime(&t);
 
     if ((tm->tm_year & 0xffff) != tm->tm_year)
@@ -1951,7 +2069,8 @@ time_mdump(VALUE time)
 	tm->tm_hour;         /*  5 */
     s = tm->tm_min   << 26 | /*  6 */
 	tm->tm_sec   << 20 | /*  6 */
-	tobj->tv.tv_usec;    /* 20 */
+	tobj->ts.tv_nsec / 1000;    /* 20 */
+    nsec = tobj->ts.tv_nsec % 1000;
 
     for (i=0; i<4; i++) {
 	buf[i] = p & 0xff;
@@ -1962,7 +2081,28 @@ time_mdump(VALUE time)
 	s = RSHIFT(s, 8);
     }
 
-    return rb_str_new(buf, 8);
+    str = rb_str_new(buf, 8);
+    rb_copy_generic_ivar(str, time);
+    if (nsec) {
+        /*
+         * submicro is formatted in fixed-point packed BCD (without sign).
+         * It represent digits under microsecond.
+         * For nanosecond resolution, 3 digits (2 bytes) are used.
+         * However it can be longer.
+         * Extra digits are ignored for loading.
+         */
+        unsigned char buf[2];
+        int len = sizeof(buf);
+        buf[1] = (nsec % 10) << 4;
+        nsec /= 10;
+        buf[0] = nsec % 10;
+        nsec /= 10;
+        buf[0] |= (nsec % 10) << 4;
+        if (buf[1] == 0)
+            len = 1;
+        rb_ivar_set(str, id_submicro, rb_str_new((char *)buf, len));
+    }
+    return str;
 }
 
 /*
@@ -1979,7 +2119,6 @@ time_dump(int argc, VALUE *argv, VALUE time)
 
     rb_scan_args(argc, argv, "01", 0);
     str = time_mdump(time); 
-    rb_copy_generic_ivar(str, time);
 
     return str;
 }
@@ -1993,12 +2132,22 @@ time_mload(VALUE time, VALUE str)
 {
     struct time_object *tobj;
     unsigned long p, s;
-    time_t sec, usec;
+    time_t sec;
+    long usec;
     unsigned char *buf;
     struct tm tm;
     int i, gmt;
+    long nsec;
+    VALUE submicro;
 
     time_modify(time);
+
+    submicro = rb_attr_get(str, id_submicro);
+    if (submicro != Qnil) {
+        st_delete(rb_generic_ivar_table(str), (st_data_t*)&id_submicro, 0);
+    }
+    rb_copy_generic_ivar(time, str);
+
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
     if (RSTRING_LEN(str) != 8) {
@@ -2017,8 +2166,12 @@ time_mload(VALUE time, VALUE str)
         gmt = 0;
 	sec = p;
 	usec = s;
+        nsec = usec * 1000;
     }
     else {
+        unsigned char *ptr;
+        long len;
+
 	p &= ~(1UL<<31);
 	gmt        = (p >> 30) & 0x1;
 	tm.tm_year = (p >> 14) & 0xffff;
@@ -2030,15 +2183,29 @@ time_mload(VALUE time, VALUE str)
 	tm.tm_isdst = 0;
 
 	sec = make_time_t(&tm, Qtrue);
-	usec = (time_t)(s & 0xfffff);
+	usec = (long)(s & 0xfffff);
+        nsec = usec * 1000;
+
+        if (submicro != Qnil) {
+            ptr = (unsigned char*)StringValuePtr(submicro);
+            len = RSTRING_LEN(submicro);
+            if (0 < len) {
+                nsec += (ptr[0] >> 4) * 100;
+                nsec += (ptr[0] & 0xf) * 10;
+            }
+            if (1 < len) {
+                nsec += (ptr[1] >> 4);
+            }
+        }
     }
-    time_overflow_p(&sec, &usec);
+    time_overflow_p(&sec, &nsec);
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
     tobj->gmt = gmt;
-    tobj->tv.tv_sec = sec;
-    tobj->tv.tv_usec = usec;
+    tobj->ts.tv_sec = sec;
+    tobj->ts.tv_nsec = nsec;
+
     return time;
 }
 
@@ -2054,7 +2221,6 @@ time_load(VALUE klass, VALUE str)
 {
     VALUE time = time_s_alloc(klass);
 
-    rb_copy_generic_ivar(time, str);
     time_mload(time, str);
     return time;
 }
@@ -2062,7 +2228,7 @@ time_load(VALUE klass, VALUE str)
 /*
  *  <code>Time</code> is an abstraction of dates and times. Time is
  *  stored internally as the number of seconds and microseconds since
- *  the <em>epoch</em>, January 1, 1970 00:00 UTC. On some operating
+ *  the <em>Epoch</em>, January 1, 1970 00:00 UTC. On some operating
  *  systems, this offset is allowed to be negative. Also see the
  *  library modules <code>Date</code> and <code>ParseDate</code>. The
  *  <code>Time</code> class treats GMT (Greenwich Mean Time) and UTC
@@ -2080,6 +2246,10 @@ time_load(VALUE klass, VALUE str)
 void
 Init_Time(void)
 {
+    id_divmod = rb_intern("divmod");
+    id_mul = rb_intern("*");
+    id_submicro = rb_intern("submicro");
+
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
 
@@ -2147,6 +2317,8 @@ Init_Time(void)
     rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);
     rb_define_method(rb_cTime, "usec", time_usec, 0);
+    rb_define_method(rb_cTime, "tv_nsec", time_nsec, 0);
+    rb_define_method(rb_cTime, "nsec", time_nsec, 0);
 
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
 

@@ -25,11 +25,18 @@ extern "C" {
 #  define time_t long
 struct timeval {
     time_t tv_sec;	/* seconds */
-    time_t tv_usec;	/* microseconds */
+    long tv_usec;	/* microseconds */
 };
 #endif
 #if defined(HAVE_SYS_TYPES_H)
 #  include <sys/types.h>
+#endif
+
+#if !defined(HAVE_STRUCT_TIMESPEC)
+struct timespec {
+    time_t tv_sec;	/* seconds */
+    long tv_nsec;	/* nanoseconds */
+};
 #endif
 
 #ifndef HAVE_ACOSH

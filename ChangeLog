@@ -1,3 +1,50 @@
+Mon Nov 19 17:51:27 2007  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: check struct timespec, clock_gettime, utimensat,
+	  struct stat.st_atim,
+	  struct stat.st_atimespec,
+	  struct stat.st_atimensec,
+	  struct stat.st_mtim,
+	  struct stat.st_mtimespec,
+	  struct stat.st_mtimensec,
+	  struct stat.st_ctim,
+	  struct stat.st_ctimespec,
+	  struct stat.st_ctimensec.
+
+	* include/ruby/missing.h: provide struct timespec if not available.
+
+	* time.c: support nanosecond-resolution using struct timespec.
+
+	* include/ruby/intern.h: provide rb_time_nano_new.
+
+	* file.c (utime_internal): use utimensat if available.
+	  (rb_file_s_utime): refactored.
+	  (rb_f_test): use stat_atime, stat_mtime, stat_ctime.
+	  (rb_stat_cmp): check tv_nsec.
+	  (stat_atimespec): new function.
+	  (stat_atime): ditto.
+	  (stat_mtimespec): ditto.
+	  (stat_mtime): ditto.
+	  (stat_ctimespec): ditto.
+	  (stat_ctime): ditto.
+	  (rb_stat_atime): use stat_atime.
+	  (rb_file_s_atime): ditto.
+	  (rb_file_atime): ditto.
+	  (rb_stat_mtime): use stat_mtime.
+	  (rb_file_s_mtime): ditto.
+	  (rb_file_mtime): ditto.
+	  (rb_file_ctime): use stat_ctime.
+	  (rb_file_s_ctime): ditto.
+	  (rb_stat_ctime): ditto.
+
+	* variable.c (rb_copy_generic_ivar): clear clone's instance variables
+	  if obj has no instance variable.
+
+	* marshal.c (w_object): dump instance variables of generated string
+	  for TYPE_USERDEF, even if original object has instance variables.
+
+	* lib/time.rb (Time#xmlschema): use nsec instead of usec.
+
 Mon Nov 19 17:48:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_class_superclass): should not raise exception for

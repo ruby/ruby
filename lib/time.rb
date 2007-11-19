@@ -461,10 +461,10 @@ class Time
       year, mon, day, hour, min, sec) +
     if fraction_digits == 0
       ''
-    elsif fraction_digits <= 6
-      '.' + sprintf('%06d', usec)[0, fraction_digits]
+    elsif fraction_digits <= 9
+      '.' + sprintf('%09d', nsec)[0, fraction_digits]
     else
-      '.' + sprintf('%06d', usec) + '0' * (fraction_digits - 6)
+      '.' + sprintf('%09d', nsec) + '0' * (fraction_digits - 9)
     end +
     if utc?
       'Z'

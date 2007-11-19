@@ -601,17 +601,22 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	}
 	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
+            st_table *ivtbl2 = 0;
+            int hasiv2;
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
-	    if (!hasiv && (hasiv = has_ivars(v, ivtbl)) != 0) {
+	    if ((hasiv2 = has_ivars(v, ivtbl2)) != 0 && !hasiv) {
 		w_byte(TYPE_IVAR, arg);
 	    }
 	    w_class(TYPE_USERDEF, obj, arg, Qfalse);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
-	    if (hasiv) {
+            if (hasiv2) {
+		w_ivar(obj, ivtbl2, &c_arg);
+            }
+            else if (hasiv) {
 		w_ivar(obj, ivtbl, &c_arg);
 	    }
 	    return;

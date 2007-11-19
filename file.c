@@ -43,8 +43,6 @@ int flock(int, int);
 
 #include <time.h>
 
-VALUE rb_time_new(time_t, time_t);
-
 #ifdef HAVE_UTIME_H
 #include <utime.h>
 #elif defined HAVE_SYS_UTIME_H
@@ -186,6 +184,8 @@ get_stat(VALUE self)
     return st;
 }
 
+static struct timespec stat_mtimespec(struct stat *st);
+
 /*
  *  call-seq:
  *     stat <=> other_stat    => -1, 0, 1
@@ -203,14 +203,15 @@ static VALUE
 rb_stat_cmp(VALUE self, VALUE other)
 {
     if (rb_obj_is_kind_of(other, rb_obj_class(self))) {
-	time_t t1 = get_stat(self)->st_mtime;
-	time_t t2 = get_stat(other)->st_mtime;
-	if (t1 == t2)
-	    return INT2FIX(0);
-	else if (t1 < t2)
-	    return INT2FIX(-1);
-	else
-	    return INT2FIX(1);
+        struct timespec ts1 = stat_mtimespec(get_stat(self));
+        struct timespec ts2 = stat_mtimespec(get_stat(other));
+        if (ts1.tv_sec == ts2.tv_sec) {
+            if (ts1.tv_nsec == ts2.tv_nsec) return INT2FIX(0);
+            if (ts1.tv_nsec < ts2.tv_nsec) return INT2FIX(-1);
+            return INT2FIX(1);
+        }
+        if (ts1.tv_sec < ts2.tv_sec) return INT2FIX(-1);
+        return INT2FIX(1);
     }
     return Qnil;
 }
@@ -494,6 +495,77 @@ rb_stat_blocks(VALUE self)
 #endif
 }
 
+static struct timespec
+stat_atimespec(struct stat *st)
+{
+    struct timespec ts;
+    ts.tv_sec = st->st_atime;
+#if defined(HAVE_STRUCT_STAT_ST_ATIM)
+    ts.tv_nsec = st->st_atim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMESPEC)
+    ts.tv_nsec = st->st_atimespec.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_ATIMENSEC)
+    ts.tv_nsec = st->st_atimensec;
+#else
+    ts.tv_nsec = 0;
+#endif
+    return ts;
+}
+
+static VALUE
+stat_atime(struct stat *st)
+{
+    struct timespec ts = stat_atimespec(st);
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
+
+static struct timespec
+stat_mtimespec(struct stat *st)
+{
+    struct timespec ts;
+    ts.tv_sec = st->st_mtime;
+#if defined(HAVE_STRUCT_STAT_ST_MTIM)
+    ts.tv_nsec = st->st_mtim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC)
+    ts.tv_nsec = st->st_mtimespec.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
+    ts.tv_nsec = st->st_mtimensec;
+#else
+    ts.tv_nsec = 0;
+#endif
+    return ts;
+}
+
+static VALUE
+stat_mtime(struct stat *st)
+{
+    struct timespec ts = stat_mtimespec(st);
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
+
+static struct timespec
+stat_ctimespec(struct stat *st)
+{
+    struct timespec ts;
+    ts.tv_sec = st->st_ctime;
+#if defined(HAVE_STRUCT_STAT_ST_CTIM)
+    ts.tv_nsec = st->st_ctim.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_CTIMESPEC)
+    ts.tv_nsec = st->st_ctimespec.tv_nsec;
+#elif defined(HAVE_STRUCT_STAT_ST_CTIMENSEC)
+    ts.tv_nsec = st->st_ctimensec;
+#else
+    ts.tv_nsec = 0;
+#endif
+    return ts;
+}
+
+static VALUE
+stat_ctime(struct stat *st)
+{
+    struct timespec ts = stat_ctimespec(st);
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
 
 /*
  *  call-seq:
@@ -509,7 +581,7 @@ rb_stat_blocks(VALUE self)
 static VALUE
 rb_stat_atime(VALUE self)
 {
-    return rb_time_new(get_stat(self)->st_atime, 0);
+    return stat_atime(get_stat(self));
 }
 
 /*
@@ -525,7 +597,7 @@ rb_stat_atime(VALUE self)
 static VALUE
 rb_stat_mtime(VALUE self)
 {
-    return rb_time_new(get_stat(self)->st_mtime, 0);
+    return stat_mtime(get_stat(self));
 }
 
 /*
@@ -543,7 +615,7 @@ rb_stat_mtime(VALUE self)
 static VALUE
 rb_stat_ctime(VALUE self)
 {
-    return rb_time_new(get_stat(self)->st_ctime, 0);
+    return stat_ctime(get_stat(self));
 }
 
 /*
@@ -1594,7 +1666,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(StringValueCStr(fname));
-    return rb_time_new(st.st_atime, 0);
+    return stat_atime(&st);
 }
 
 /*
@@ -1618,7 +1690,7 @@ rb_file_atime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return rb_time_new(st.st_atime, 0);
+    return stat_atime(&st);
 }
 
 /*
@@ -1638,7 +1710,7 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING_PTR(fname));
-    return rb_time_new(st.st_mtime, 0);
+    return stat_mtime(&st);
 }
 
 /*
@@ -1661,7 +1733,7 @@ rb_file_mtime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return rb_time_new(st.st_mtime, 0);
+    return stat_mtime(&st);
 }
 
 /*
@@ -1683,7 +1755,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING_PTR(fname));
-    return rb_time_new(st.st_ctime, 0);
+    return stat_ctime(&st);
 }
 
 /*
@@ -1707,7 +1779,7 @@ rb_file_ctime(VALUE obj)
     if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return rb_time_new(st.st_ctime, 0);
+    return stat_ctime(&st);
 }
 
 static void
@@ -1967,44 +2039,34 @@ rb_file_s_lchown(int argc, VALUE *argv)
 }
 #endif
 
-struct timeval rb_time_timeval(VALUE time);
+struct timespec rb_time_timespec(VALUE time);
 
-#if defined(HAVE_UTIMES) && !defined(__CHECKER__)
+#if defined(HAVE_UTIMENSAT)
 
 static void
 utime_internal(const char *path, void *arg)
 {
-    struct timeval *tvp = arg;
-    if (utimes(path, tvp) < 0)
+    struct timespec *tsp = arg;
+    if (utimensat(AT_FDCWD, path, tsp, 0) < 0)
 	rb_sys_fail(path);
 }
 
-/*
- * call-seq:
- *  File.utime(atime, mtime, file_name,...)   =>  integer
- *
- * Sets the access and modification times of each
- * named file to the first two arguments. Returns
- * the number of file names in the argument list.
- */
+#elif defined(HAVE_UTIMES)
 
-static VALUE
-rb_file_s_utime(int argc, VALUE *argv)
+static void
+utime_internal(const char *path, void *arg)
 {
-    VALUE atime, mtime, rest;
-    struct timeval tvs[2], *tvp = NULL;
-    long n;
-
-    rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
-
-    if (!NIL_P(atime) || !NIL_P(mtime)) {
-	tvp = tvs;
-	tvp[0] = rb_time_timeval(atime);
-	tvp[1] = rb_time_timeval(mtime);
+    struct timespec *tsp = arg;
+    struct timeval tvbuf[2], *tvp = arg;
+    if (tsp) {
+        tvbuf[0].tv_sec = tsp[0].tv_sec;
+        tvbuf[0].tv_usec = tsp[0].tv_nsec / 1000;
+        tvbuf[1].tv_sec = tsp[1].tv_sec;
+        tvbuf[1].tv_usec = tsp[1].tv_nsec / 1000;
+        tvp = tvbuf;
     }
-
-    n = apply2files(utime_internal, rest, tvp);
-    return LONG2FIX(n);
+    if (utimes(path, tvp) < 0)
+	rb_sys_fail(path);
 }
 
 #else
@@ -2019,34 +2081,47 @@ struct utimbuf {
 static void
 utime_internal(const char *path, void *arg)
 {
-    struct utimbuf *utp = arg;
+    struct timespec *tsp = arg;
+    struct utimbuf utbuf, *utp = NULL;
+    if (tsp) {
+        utbuf.actime = tsp[0].tv_sec;
+        utbuf.modtime = tsp[1].tv_sec;
+        utp = &utbuf;
+    }
     if (utime(path, utp) < 0)
 	rb_sys_fail(path);
 }
+
+#endif
+
+/*
+ * call-seq:
+ *  File.utime(atime, mtime, file_name,...)   =>  integer
+ *
+ * Sets the access and modification times of each
+ * named file to the first two arguments. Returns
+ * the number of file names in the argument list.
+ */
 
 static VALUE
 rb_file_s_utime(int argc, VALUE *argv)
 {
     VALUE atime, mtime, rest;
+    struct timespec tss[2], *tsp = NULL;
     long n;
-    struct timeval tv;
-    struct utimbuf utbuf, *utp = NULL;
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
     if (!NIL_P(atime) || !NIL_P(mtime)) {
-	utp = &utbuf;
-	tv = rb_time_timeval(atime);
-	utp->actime = tv.tv_sec;
-	tv = rb_time_timeval(mtime);
-	utp->modtime = tv.tv_sec;
+	tsp = tss;
+	tsp[0] = rb_time_timespec(atime);
+	tsp[1] = rb_time_timespec(mtime);
     }
 
-    n = apply2files(utime_internal, rest, utp);
+    n = apply2files(utime_internal, rest, tsp);
     return LONG2FIX(n);
 }
 
-#endif
 
 NORETURN(static void sys_fail2(VALUE,VALUE));
 static void
@@ -3346,11 +3421,11 @@ rb_f_test(int argc, VALUE *argv)
 
 	switch (cmd) {
 	  case 'A':
-	    return rb_time_new(st.st_atime, 0);
+	    return stat_atime(&st);
 	  case 'M':
-	    return rb_time_new(st.st_mtime, 0);
+	    return stat_mtime(&st);
 	  case 'C':
-	    return rb_time_new(st.st_ctime, 0);
+	    return stat_ctime(&st);
 	}
     }
 
