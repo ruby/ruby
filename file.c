@@ -2041,23 +2041,31 @@ rb_file_s_lchown(int argc, VALUE *argv)
 
 struct timespec rb_time_timespec(VALUE time);
 
-#if defined(HAVE_UTIMENSAT)
-
-static void
-utime_internal(const char *path, void *arg)
-{
-    struct timespec *tsp = arg;
-    if (utimensat(AT_FDCWD, path, tsp, 0) < 0)
-	rb_sys_fail(path);
-}
-
-#elif defined(HAVE_UTIMES)
+#if defined(HAVE_UTIMES)
 
 static void
 utime_internal(const char *path, void *arg)
 {
     struct timespec *tsp = arg;
     struct timeval tvbuf[2], *tvp = arg;
+
+#ifdef HAVE_UTIMENSAT
+    static int try_utimensat = 1;
+
+    if (try_utimensat) {
+        struct timespec *tsp = arg;
+        if (utimensat(AT_FDCWD, path, tsp, 0) < 0) {
+            if (errno == ENOSYS) {
+                try_utimensat = 0;
+                goto no_utimensat;
+            }
+            rb_sys_fail(path);
+        }
+        return;
+    }
+no_utimensat:
+#endif
+
     if (tsp) {
         tvbuf[0].tv_sec = tsp[0].tv_sec;
         tvbuf[0].tv_usec = tsp[0].tv_nsec / 1000;
