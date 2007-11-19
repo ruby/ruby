@@ -23,7 +23,7 @@ class Ripper
   #   require 'ripper'
   #   require 'pp'
   #
-  #   p Ripper.scan("def m(a) nil end")
+  #   p Ripper.lex("def m(a) nil end")
   #     #=> [[[1,  0], :on_kw,     "def"],
   #          [[1,  3], :on_sp,     " "  ],
   #          [[1,  4], :on_ident,  "m"  ],

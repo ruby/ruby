@@ -4197,16 +4197,16 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     if (!rb_load_path) return 0;
 
     Check_Type(rb_load_path, T_ARRAY);
-    for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
-	VALUE str = RARRAY_PTR(rb_load_path)[i];
+    for (j=0; ext[j]; j++) {
+	fname = rb_str_dup(*filep);
+	rb_str_cat2(fname, ext[j]);
+	OBJ_FREEZE(fname);
+	for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
+	    VALUE str = RARRAY_PTR(rb_load_path)[i];
 
-	FilePathValue(str);
-	if (RSTRING_LEN(str) == 0) continue;
-	path = RSTRING_PTR(str);
-	for (j=0; ext[j]; j++) {
-	    fname = rb_str_dup(*filep);
-	    rb_str_cat2(fname, ext[j]);
-	    OBJ_FREEZE(fname);
+	    FilePathValue(str);
+	    if (RSTRING_LEN(str) == 0) continue;
+	    path = RSTRING_PTR(str);
 	    found = dln_find_file(StringValueCStr(fname), path);
 	    if (found && file_load_ok(found)) {
 		*filep = rb_str_new2(found);

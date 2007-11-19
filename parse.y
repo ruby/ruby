@@ -565,15 +565,6 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define PARSER_ARG ruby_sourcefile, ruby_sourceline,
 #endif
 
-#ifdef RIPPER
-#define NEED_ASSOC(cons, car, cdr) do {			      \
-	if ((cons) == (car) || (cons) == (cdr) ||	      \
-	    TYPE(cons) != T_ARRAY || RARRAY_LEN(cons) != 2) { \
-	    (cons) = rb_assoc_new((car), (cdr));	      \
-	}						      \
-    } while (0)
-#endif
-
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
    for instance).  This is too low for Ruby to parse some files, such as
    date/format.rb, therefore bump the value up to at least Bison's default. */
@@ -4413,7 +4404,6 @@ assoc		: arg_value tASSOC arg_value
 			$$ = list_append(NEW_LIST($1), $3);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $3);
-			NEED_ASSOC($$, $1, $3);
 		    %*/
 		    }
 		| tLABEL arg_value
@@ -4422,7 +4412,6 @@ assoc		: arg_value tASSOC arg_value
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $2);
-			NEED_ASSOC($$, $1, $2);
 		    %*/
 		    }
 		;
@@ -6003,21 +5992,6 @@ parser_yylex(struct parser_params *parser)
     cmd_state = command_start;
     command_start = Qfalse;
   retry:
-#ifdef RIPPER
-    while ((c = nextc())) {
-        switch (c) {
-          case ' ': case '\t': case '\f': case '\r':
-          case '\13': /* '\v' */
-            space_seen++;
-            break;
-          default:
-            goto outofloop;
-        }
-    }
-  outofloop:
-    pushback(c);
-    ripper_dispatch_scan_event(parser, tSP);
-#endif
     switch (c = nextc()) {
       case '\0':		/* NUL */
       case '\004':		/* ^D */
@@ -6029,6 +6003,20 @@ parser_yylex(struct parser_params *parser)
       case ' ': case '\t': case '\f': case '\r':
       case '\13': /* '\v' */
 	space_seen++;
+#ifdef RIPPER
+	while ((c = nextc())) {
+	    switch (c) {
+	      case ' ': case '\t': case '\f': case '\r':
+	      case '\13': /* '\v' */
+		break;
+	      default:
+		goto outofloop;
+	    }
+	}
+      outofloop:
+	pushback(c);
+	ripper_dispatch_scan_event(parser, tSP);
+#endif
 	goto retry;
 
       case '#':		/* it's a comment */
@@ -6070,16 +6058,22 @@ parser_yylex(struct parser_params *parser)
 		space_seen++;
 		break;
 	      case '.': {
-		if ((c = nextc()) != '.') {
-		    pushback(c);
-		    pushback('.');
+		  if ((c = nextc()) != '.') {
+		      pushback(c);
+		      pushback('.');
 		    goto retry;
-		}
+		  }
 	      }
 	      default:
+		--ruby_sourceline;
+	      case -1:		/* EOF no decrement*/
 		lex_nextline = lex_lastline;
 		lex_p = lex_pend;
-		--ruby_sourceline;
+#ifdef RIPPER
+		if (c != -1) {
+		    parser->tokp = lex_p;
+		}
+#endif
 		goto normal_newline;
 	    }
 	}

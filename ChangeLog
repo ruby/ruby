@@ -48,6 +48,19 @@ Sat Nov 17 23:51:29 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): bug fix. [ruby-talk:279100]
 
+Sat Nov 17 23:21:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): should clear parser->tokp as well.
+	  [ruby-dev:32250]
+
+	* parse.y: remove NEED_ASSOC that break test_parser_events.
+
+	* parse.y (parser_yylex): should not decrement line numbers at the
+	  end of file.
+
+	* file.c (rb_find_file_ext): search .rb files first through in the
+	  loadpath.
+
 Fri Nov 16 23:31:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_odd_p): new method added.  a patch from Tadashi

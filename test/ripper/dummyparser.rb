@@ -30,7 +30,7 @@ class NodeList
   end
 
   def prepend(items)
-    @list[0,0] = items
+    @list.unshift items
   end
 
   def to_s
@@ -98,29 +98,41 @@ class DummyParser < Ripper
     args
   end
 
-  def on_arglist_new
+  def on_args_new
     NodeList.new
   end
 
-  def on_arglist_add(list, arg)
+  def on_args_add(list, arg)
     list.push(arg)
   end
 
-  def on_arglist_add_block(list, blk)
-    list.push('&' + blk.to_s)
+  def on_args_add_block(list, blk)
+    if blk
+      list.push('&' + blk.to_s)
+    else
+      list
+    end
   end
 
-  def on_arglist_add_star(list, arg)
+  def on_args_add_star(list, arg)
     list.push('*' + arg.to_s)
   end
 
-  def on_arglist_prepend(list, args)
+  def on_args_prepend(list, args)
     list.prepend args
     list
   end
 
   def on_method_add_arg(m, arg)
+    if arg == nil
+      arg = on_args_new
+    end
     m.children.push arg
+    m
+  end
+
+  def on_method_add_block(m, b)
+    on_args_add_block(m.children, b)
     m
   end
 
@@ -390,7 +402,7 @@ class DummyParser < Ripper
     Node.new('sclass', a, b)
   end
 
-  def on_space(a)
+  def on_sp(a)
     Node.new('space', a)
   end
 
@@ -514,4 +526,46 @@ class DummyParser < Ripper
     Node.new('zsuper')
   end
 
+  def on_backref(a)
+    a
+  end
+  def on_comma(a)
+    a
+  end
+  def on_gvar(a)
+    a
+  end
+  def on_ident(a)
+    a
+  end
+  def on_int(a)
+    a
+  end
+  def on_kw(a)
+    a
+  end
+  def on_lbrace(a)
+    a
+  end
+  def on_rbrace(a)
+    a
+  end
+  def on_lbracket(a)
+    a
+  end
+  def on_rbracket(a)
+    a
+  end
+  def on_lparen(a)
+    a
+  end
+  def on_rparen(a)
+    a
+  end
+  def on_op(a)
+    a
+  end
+  def on_semicolon(a)
+    a
+  end
 end
