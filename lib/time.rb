@@ -150,7 +150,7 @@ class Time
 
     def make_time(year, mon, day, hour, min, sec, sec_fraction, zone, now)
       usec = nil
-      usec = (sec_fraction * 1000000).to_i if sec_fraction
+      usec = sec_fraction * 1000000 if sec_fraction
       if now
         begin
           break if year; year = now.year
@@ -811,6 +811,11 @@ if __FILE__ == $0
 
     def test_strptime
       assert_equal(Time.utc(2005, 8, 28, 06, 54, 20), Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z"))
+    end
+
+    def test_nsec
+      assert_equal(123456789, Time.xmlschema("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
+      assert_equal(123456789, Time.parse("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
     end
   end
 end
