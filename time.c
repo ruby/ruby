@@ -79,11 +79,11 @@ time_modify(VALUE time)
  *  resolution available on your system clock, and so may include
  *  fractional seconds.
  *     
- *     a = Time.new      #=> Wed Apr 09 08:56:03 CDT 2003
- *     b = Time.new      #=> Wed Apr 09 08:56:03 CDT 2003
+ *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
+ *     b = Time.new      #=> 2007-11-19 07:50:02 -0600
  *     a == b            #=> false
- *     "%.6f" % a.to_f   #=> "1049896563.230740"
- *     "%.6f" % b.to_f   #=> "1049896563.231466"
+ *     "%.6f" % a.to_f   #=> "1195480202.282373"
+ *     "%.6f" % b.to_f   #=> "1195480202.283415"
  *     
  */
 
@@ -283,17 +283,23 @@ rb_time_timespec(VALUE time)
 
 /*
  *  call-seq:
- *     Time.at( aTime ) => time
- *     Time.at( seconds [, microseconds] ) => time
+ *     Time.at(time) => time
+ *     Time.at(seconds_with_frac) => time
+ *     Time.at(seconds, microseconds_with_frac) => time
  *  
- *  Creates a new time object with the value given by <i>aTime</i>, or
- *  the given number of <i>seconds</i> (and optional
- *  <i>microseconds</i>) from the Epoch. A non-portable feature allows the
- *  offset to be negative on some systems.
+ *  Creates a new time object with the value given by <i>time</i>,
+ *  the given number of <i>seconds_with_frac</i>, or
+ *  <i>seconds</i> and <i>microseconds_with_frac</i> from the Epoch.
+ *  <i>seconds_with_frac</i> and <i>microseconds_with_frac</i>
+ *  can be Integer, Float, Rational, or other Numeric.
+ *  non-portable feature allows the offset to be negative on some systems.
  *     
- *     Time.at(0)            #=> Wed Dec 31 18:00:00 CST 1969
- *     Time.at(946702800)    #=> Fri Dec 31 23:00:00 CST 1999
- *     Time.at(-284061600)   #=> Sat Dec 31 00:00:00 CST 1960
+ *     Time.at(0)            #=> 1969-12-31 18:00:00 -0600
+ *     Time.at(Time.at(0))   #=> 1969-12-31 18:00:00 -0600
+ *     Time.at(946702800)    #=> 1999-12-31 23:00:00 -0600
+ *     Time.at(-284061600)   #=> 1960-12-31 00:00:00 -0600
+ *     Time.at(946684800.2).usec #=> 200000
+ *     Time.at(946684800, 123456.789).nsec #=> 123456789
  */
 
 static VALUE
@@ -871,12 +877,22 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
 
 /*
  *  call-seq:
- *     Time.utc( year [, month, day, hour, min, sec, usec] ) => time
- *     Time.utc( sec, min, hour, day, month, year, wday, yday, isdst, tz
- *     ) => time
- *     Time.gm( year [, month, day, hour, min, sec, usec] ) => time
- *     Time.gm( sec, min, hour, day, month, year, wday, yday, isdst, tz
- *     ) => time
+ *    Time.utc(year) => time
+ *    Time.utc(year, month) => time
+ *    Time.utc(year, month, day) => time
+ *    Time.utc(year, month, day, hour) => time
+ *    Time.utc(year, month, day, hour, min) => time
+ *    Time.utc(year, month, day, hour, min, sec_with_frac) => time
+ *    Time.utc(year, month, day, hour, min, sec, usec_with_frac) => time
+ *    Time.utc(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
+ *    Time.gm(year) => time
+ *    Time.gm(year, month) => time
+ *    Time.gm(year, month, day) => time
+ *    Time.gm(year, month, day, hour) => time
+ *    Time.gm(year, month, day, hour, min) => time
+ *    Time.gm(year, month, day, hour, min, sec_with_frac) => time
+ *    Time.gm(year, month, day, hour, min, sec, usec_with_frac) => time
+ *    Time.gm(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
  *     
  *  Creates a time based on given values, interpreted as UTC (GMT). The
  *  year must be specified. Other values default to the minimum value
@@ -886,9 +902,10 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
  *  an <code>ArgumentError</code> if any values are out of range. Will
  *  also accept ten arguments in the order output by
  *  <code>Time#to_a</code>.
+ *  <i>sec_with_frac</i> and <i>usec_with_frac</i> can have a fractional part.
  *
- *     Time.utc(2000,"jan",1,20,15,1)  #=> Sat Jan 01 20:15:01 UTC 2000
- *     Time.gm(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     Time.utc(2000,"jan",1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
+ *     Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
  */
 static VALUE
 time_s_mkutc(int argc, VALUE *argv, VALUE klass)
@@ -898,15 +915,27 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     Time.local( year [, month, day, hour, min, sec, usec] ) => time
- *     Time.local( sec, min, hour, day, month, year, wday, yday, isdst,
- *     tz ) => time
- *     Time.mktime( year, month, day, hour, min, sec, usec )   => time
+ *   Time.local(year) => time
+ *   Time.local(year, month) => time
+ *   Time.local(year, month, day) => time
+ *   Time.local(year, month, day, hour) => time
+ *   Time.local(year, month, day, hour, min) => time
+ *   Time.local(year, month, day, hour, min, sec_with_frac) => time
+ *   Time.local(year, month, day, hour, min, sec, usec_with_frac) => time
+ *   Time.local(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
+ *   Time.mktime(year) => time
+ *   Time.mktime(year, month) => time
+ *   Time.mktime(year, month, day) => time
+ *   Time.mktime(year, month, day, hour) => time
+ *   Time.mktime(year, month, day, hour, min) => time
+ *   Time.mktime(year, month, day, hour, min, sec_with_frac) => time
+ *   Time.mktime(year, month, day, hour, min, sec, usec_with_frac) => time
+ *   Time.mktime(sec, min, hour, day, month, year, wday, yday, isdst, tz) => time
  *  
  *  Same as <code>Time::gm</code>, but interprets the values in the
  *  local time zone.
  *     
- *     Time.local(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 CST 2000
+ *     Time.local(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
  */
 
 static VALUE
@@ -968,9 +997,9 @@ time_to_f(VALUE time)
  *  
  *  Returns just the number of microseconds for <i>time</i>.
  *     
- *     t = Time.now        #=> Wed Apr 09 08:56:04 CDT 2003
- *     "%10.6f" % t.to_f   #=> "1049896564.259970"
- *     t.usec              #=> 259970
+ *     t = Time.now        #=> 2007-11-19 08:03:26 -0600
+ *     "%10.6f" % t.to_f   #=> "1195481006.775195"
+ *     t.usec              #=> 775195
  */
 
 static VALUE
@@ -996,7 +1025,7 @@ time_usec(VALUE time)
  *  The lowest digit of to_f and nsec is different because
  *  IEEE 754 double is not accurate enough to represent
  *  nanoseconds from the Epoch.
- *  The correct value is returned by nsec.
+ *  The accurate value is returned by nsec.
  */
 
 static VALUE
@@ -1017,8 +1046,15 @@ time_nsec(VALUE time)
  *  <i>numeric</i>, which is the number of seconds (possibly
  *  fractional) since the Epoch.
  *     
- *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
- *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+ *     t = Time.now       #=> 2007-11-19 08:12:12 -0600
+ *     t2 = t + 2592000   #=> 2007-12-19 08:12:12 -0600
+ *     t <=> t2           #=> -1
+ *     t2 <=> t           #=> 1
+ *     
+ *     t = Time.now       #=> 2007-11-19 08:13:38 -0600
+ *     t2 = t + 0.1       #=> 2007-11-19 08:13:38 -0600
+ *     t.nsec             #=> 98222999
+ *     t2.nsec            #=> 198222999
  *     t <=> t2           #=> -1
  *     t2 <=> t           #=> 1
  *     t <=> t            #=> 0
@@ -1076,14 +1112,14 @@ time_eql(VALUE time1, VALUE time2)
  *  Returns <code>true</code> if <i>time</i> represents a time in UTC
  *  (GMT).
  *     
- *     t = Time.now                        #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t = Time.now                        #=> 2007-11-19 08:15:23 -0600
  *     t.utc?                              #=> false
- *     t = Time.gm(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t = Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
  *     t.utc?                              #=> true
  *
- *     t = Time.now                        #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t = Time.now                        #=> 2007-11-19 08:16:03 -0600
  *     t.gmt?                              #=> false
- *     t = Time.gm(2000,1,1,20,15,1)       #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t = Time.gm(2000,1,1,20,15,1)       #=> 2000-01-01 20:15:01 UTC
  *     t.gmt?                              #=> true
  */
 
@@ -1148,10 +1184,10 @@ time_dup(VALUE time)
  *  Converts <i>time</i> to local time (using the local time zone in
  *  effect for this process) modifying the receiver.
  *     
- *     t = Time.gm(2000, "jan", 1, 20, 15, 1)
- *     t.gmt?        #=> true
- *     t.localtime   #=> Sat Jan 01 14:15:01 CST 2000
- *     t.gmt?        #=> false
+ *     t = Time.gm(2000, "jan", 1, 20, 15, 1)  #=> 2000-01-01 20:15:01 UTC
+ *     t.gmt?                                  #=> true
+ *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
+ *     t.gmt?                                  #=> false
  */
 
 static VALUE
@@ -1186,14 +1222,14 @@ time_localtime(VALUE time)
  *  
  *  Converts <i>time</i> to UTC (GMT), modifying the receiver.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t = Time.now   #=> 2007-11-19 08:18:31 -0600
  *     t.gmt?         #=> false
- *     t.gmtime       #=> Wed Apr 09 13:56:03 UTC 2003
+ *     t.gmtime       #=> 2007-11-19 14:18:31 UTC
  *     t.gmt?         #=> true
  *
- *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t = Time.now   #=> 2007-11-19 08:18:51 -0600
  *     t.utc?         #=> false
- *     t.utc          #=> Wed Apr 09 13:56:04 UTC 2003
+ *     t.utc          #=> 2007-11-19 14:18:51 UTC
  *     t.utc?         #=> true
  */
 
@@ -1229,9 +1265,9 @@ time_gmtime(VALUE time)
  *  Returns a new <code>new_time</code> object representing <i>time</i> in
  *  local time (using the local time zone in effect for this process).
  *     
- *     t = Time.gm(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t = Time.gm(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
  *     t.gmt?                          #=> true
- *     l = t.getlocal                  #=> Sat Jan 01 14:15:01 CST 2000
+ *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
  *     l.gmt?                          #=> false
  *     t == l                          #=> true
  */
@@ -1250,9 +1286,9 @@ time_getlocaltime(VALUE time)
  *  Returns a new <code>new_time</code> object representing <i>time</i> in
  *  UTC.
  *     
- *     t = Time.local(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 CST 2000
+ *     t = Time.local(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
  *     t.gmt?                             #=> false
- *     y = t.getgm                        #=> Sun Jan 02 02:15:01 UTC 2000
+ *     y = t.getgm                        #=> 2000-01-02 02:15:01 UTC
  *     y.gmt?                             #=> true
  *     t == y                             #=> true
  */
@@ -1394,8 +1430,8 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
  *  Addition---Adds some number of seconds (possibly fractional) to
  *  <i>time</i> and returns that value as a new time.
  *     
- *     t = Time.now         #=> Wed Apr 09 08:56:03 CDT 2003
- *     t + (60 * 60 * 24)   #=> Thu Apr 10 08:56:03 CDT 2003
+ *     t = Time.now         #=> 2007-11-19 08:22:21 -0600
+ *     t + (60 * 60 * 24)   #=> 2007-11-20 08:22:21 -0600
  */
 
 static VALUE
@@ -1419,10 +1455,10 @@ time_plus(VALUE time1, VALUE time2)
  *  between two times, or subtracts the given number of seconds in
  *  <i>numeric</i> from <i>time</i>.
  *     
- *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
- *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+ *     t = Time.now       #=> 2007-11-19 08:23:10 -0600
+ *     t2 = t + 2592000   #=> 2007-12-19 08:23:10 -0600
  *     t2 - t             #=> 2592000.0
- *     t2 - 2592000       #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t2 - 2592000       #=> 2007-11-19 08:23:10 -0600
  */
 
 static VALUE
@@ -1452,6 +1488,9 @@ time_minus(VALUE time1, VALUE time2)
  *   time.succ   => new_time
  *
  * Return a new time object, one second later than <code>time</code>.
+ *
+ *     t = Time.now       #=> 2007-11-19 08:23:57 -0600
+ *     t.succ             #=> 2007-11-19 08:23:58 -0600
  */
 
 static VALUE
@@ -1468,6 +1507,12 @@ time_succ(VALUE time)
     return time;
 }
 
+VALUE
+rb_time_succ(VALUE time)
+{
+  return time_succ(time);
+}
+
 /*
  *  call-seq:
  *     time.sec => fixnum
@@ -1477,8 +1522,8 @@ time_succ(VALUE time)
  *  every now and then to correct for the fact that years are not really
  *  a convenient number of hours long.]</em> for <i>time</i>.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
- *     t.sec          #=> 4
+ *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
+ *     t.sec          #=> 2
  */
 
 static VALUE
@@ -1493,20 +1538,14 @@ time_sec(VALUE time)
     return INT2FIX(tobj->tm.tm_sec);
 }
 
-VALUE
-rb_time_succ(VALUE time)
-{
-  return time_succ(time);
-}
-
 /*
  *  call-seq:
  *     time.min => fixnum
  *  
  *  Returns the minute of the hour (0..59) for <i>time</i>.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
- *     t.min          #=> 56
+ *     t = Time.now   #=> 2007-11-19 08:25:51 -0600
+ *     t.min          #=> 25
  */
 
 static VALUE
@@ -1527,7 +1566,7 @@ time_min(VALUE time)
  *  
  *  Returns the hour of the day (0..23) for <i>time</i>.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t = Time.now   #=> 2007-11-19 08:26:20 -0600
  *     t.hour         #=> 8
  */
 
@@ -1550,9 +1589,9 @@ time_hour(VALUE time)
  *  
  *  Returns the day of the month (1..n) for <i>time</i>.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
- *     t.day          #=> 9
- *     t.mday         #=> 9
+ *     t = Time.now   #=> 2007-11-19 08:27:03 -0600
+ *     t.day          #=> 19
+ *     t.mday         #=> 19
  */
 
 static VALUE
@@ -1574,9 +1613,9 @@ time_mday(VALUE time)
  *  
  *  Returns the month of the year (1..12) for <i>time</i>.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
- *     t.mon          #=> 4
- *     t.month        #=> 4
+ *     t = Time.now   #=> 2007-11-19 08:27:30 -0600
+ *     t.mon          #=> 11
+ *     t.month        #=> 11
  */
 
 static VALUE
@@ -1597,8 +1636,8 @@ time_mon(VALUE time)
  *  
  *  Returns the year for <i>time</i> (including the century).
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
- *     t.year         #=> 2003
+ *     t = Time.now   #=> 2007-11-19 08:27:51 -0600
+ *     t.year         #=> 2007
  */
 
 static VALUE
@@ -1620,8 +1659,8 @@ time_year(VALUE time)
  *  Returns an integer representing the day of the week, 0..6, with
  *  Sunday == 0.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
- *     t.wday         #=> 3
+ *     t = Time.now   #=> 2007-11-19 08:29:34 -0600
+ *     t.wday         #=> 1
  */
 
 static VALUE
@@ -1651,8 +1690,8 @@ time_wday(VALUE time)
  *  
  *  Returns <code>true</code> if <i>time</i> represents Sunday.
  *     
- *     t = Time.now   #=> Sun Oct 23 00:14:54 UTC 2005
- *     t.sunday?      #=> true
+ *     t = Time.now   #=> 2007-11-19 08:30:13 -0600
+ *     t.sunday?      #=> false
  */
 
 static VALUE
@@ -1666,6 +1705,9 @@ time_sunday(VALUE time)
  *     time.monday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Monday.
+ *
+ *     t = Time.now   #=> 2007-11-19 08:31:01 -0600
+ *     t.monday?      #=> true
  */
 
 static VALUE
@@ -1745,8 +1787,8 @@ time_saturday(VALUE time)
  *  
  *  Returns an integer representing the day of the year, 1..366.
  *     
- *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
- *     t.yday         #=> 99
+ *     t = Time.now   #=> 2007-11-19 08:32:31 -0600
+ *     t.yday         #=> 323
  */
 
 static VALUE
@@ -1836,9 +1878,9 @@ time_zone(VALUE time)
  *  Returns the offset in seconds between the timezone of <i>time</i>
  *  and UTC.
  *     
- *     t = Time.gm(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t = Time.gm(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
  *     t.gmt_offset                    #=> 0
- *     l = t.getlocal                  #=> Sat Jan 01 14:15:01 CST 2000
+ *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
  *     l.gmt_offset                    #=> -21600
  */
 
@@ -1894,8 +1936,8 @@ time_utc_offset(VALUE time)
  *  to <code>Time::utc</code> or <code>Time::local</code> to create a
  *  new <code>Time</code>.
  *     
- *     now = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
- *     t = now.to_a     #=> [4, 56, 8, 9, 4, 2003, 3, 99, true, "CDT"]
+ *     t = Time.now     #=> 2007-11-19 08:36:01 -0600
+ *     now = t.to_a     #=> [1, 36, 8, 19, 11, 2007, 1, 323, false, "CST"]
  */
 
 static VALUE
@@ -1986,9 +2028,9 @@ rb_strftime(char **buf, const char *format, struct tm *time)
  *    %Z - Time zone name
  *    %% - Literal ``%'' character
  *     
- *     t = Time.now
- *     t.strftime("Printed on %m/%d/%Y")   #=> "Printed on 04/09/2003"
- *     t.strftime("at %I:%M%p")            #=> "at 08:56AM"
+ *     t = Time.now                        #=> 2007-11-19 08:37:48 -0600
+ *     t.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
+ *     t.strftime("at %I:%M%p")            #=> "at 08:37AM"
  */
 
 static VALUE
@@ -2227,7 +2269,7 @@ time_load(VALUE klass, VALUE str)
 
 /*
  *  <code>Time</code> is an abstraction of dates and times. Time is
- *  stored internally as the number of seconds and microseconds since
+ *  stored internally as the number of seconds and nanoseconds since
  *  the <em>Epoch</em>, January 1, 1970 00:00 UTC. On some operating
  *  systems, this offset is allowed to be negative. Also see the
  *  library modules <code>Date</code> and <code>ParseDate</code>. The
@@ -2235,10 +2277,10 @@ time_load(VALUE klass, VALUE str)
  *  (Coordinated Universal Time)<em>[Yes, UTC really does stand for
  *  Coordinated Universal Time. There was a committee involved.]</em>
  *  as equivalent.  GMT is the older way of referring to these
- *  baseline times but persists in the names of calls on Posix
+ *  baseline times but persists in the names of calls on POSIX
  *  systems.
  *     
- *  All times are stored with some number of microseconds. Be aware of
+ *  All times are stored with some number of nanoseconds. Be aware of
  *  this fact when comparing times with each other---times that are
  *  apparently equal when displayed may be different when compared.
  */
