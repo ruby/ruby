@@ -3001,11 +3001,14 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
 
 /*
  *  call-seq:
+ *     ary.permutation { |p| block }          -> array
+ *     ary.permutation                        -> enumerator
  *     ary.permutation(n) { |p| block }       -> array
  *     ary.permutation(n)                     -> enumerator
  *  
  * When invoked with a block, yield all permutations of length <i>n</i>
  * of the elements of <i>ary</i>, then return the array itself.
+ * If <i>n</i> is not specified, yield all permutations of all elements.
  * The implementation makes no guarantees about the order in which 
  * the permutations are yielded.
  *
@@ -3013,6 +3016,7 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
  * 
  * Examples:
  *     a = [1, 2, 3]
+ *     a.permutation.to_a     #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
  *     a.permutation(1).to_a  #=> [[1],[2],[3]]
  *     a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
  *     a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
@@ -3021,13 +3025,15 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
  */
 
 static VALUE
-rb_ary_permutation(VALUE ary, VALUE num)
+rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 {
+    VALUE num;
     long r, n, i;
 
-    RETURN_ENUMERATOR(ary, 1, &num);  /* Return enumerator if no block */
-    r = NUM2LONG(num);                /* Permutation size from argument */
-    n = RARRAY_LEN(ary);              /* Array length */
+    RETURN_ENUMERATOR(ary, argc, argv);   /* Return enumerator if no block */
+    n = RARRAY_LEN(ary);                  /* Array length */
+    rb_scan_args(argc, argv, "01", &num);
+    r = NIL_P(num) ? n : NUM2LONG(num);   /* Permutation size from argument */
 
     if (r < 0 || n < r) { 
 	/* no permutations: yield nothing */
@@ -3310,7 +3316,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
-    rb_define_method(rb_cArray, "permutation", rb_ary_permutation, 1);
+    rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
     rb_define_method(rb_cArray, "product", rb_ary_product, -1);
 
