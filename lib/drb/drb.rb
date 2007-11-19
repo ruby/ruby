@@ -6,9 +6,9 @@
 # Copyright (c) 1999-2003 Masatoshi SEKI.  You can redistribute it and/or
 # modify it under the same terms as Ruby.
 #
-# Author: Masatoshi SEKI
+# Author:: Masatoshi SEKI
 #
-# Documentation: William Webber (william@williamwebber.com)
+# Documentation:: William Webber (william@williamwebber.com)
 #
 # == Overview
 #
@@ -578,8 +578,7 @@ module DRb
       end
       raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
-      # TODO: YARV doesn't have Thread.exclusive
-      #Thread.exclusive do
+      DRb.mutex.synchronize do
         begin
           save = Thread.current[:drb_untaint]
           Thread.current[:drb_untaint] = []
@@ -592,7 +591,7 @@ module DRb
           end
           Thread.current[:drb_untaint] = save
         end
-      #end
+      end
     end
 
     def send_request(stream, ref, msg_id, arg, b) # :nodoc:
@@ -833,7 +832,7 @@ module DRb
       begin
         Socket::gethostbyname(host)[0]
       rescue
-        host
+        'localhost'
       end
     end
 
@@ -859,6 +858,7 @@ module DRb
     def self.open_server(uri, config)
       uri = 'druby://:0' unless uri
       host, port, opt = parse_uri(uri)
+      config = {:tcp_original_host => host}.update(config)
       if host.size == 0
         host = getservername
         soc = open_server_inaddr_any(host, port)
@@ -866,6 +866,7 @@ module DRb
 	soc = TCPServer.open(host, port)
       end
       port = soc.addr[1] if port == 0
+      config[:tcp_port] = port
       uri = "druby://#{host}:#{port}"
       self.new(uri, soc, config)
     end
@@ -946,7 +947,12 @@ module DRb
 	break if (@acl ? @acl.allow_socket?(s) : true) 
 	s.close
       end
-      self.class.new(nil, s, @config)
+      if @config[:tcp_original_host].to_s.size == 0
+        uri = "druby://#{s.addr[3]}:#{@config[:tcp_port]}"
+      else
+        uri = @uri
+      end
+      self.class.new(uri, s, @config)
     end
 
     # Check to see if this connection is alive.
@@ -973,7 +979,7 @@ module DRb
     def initialize(option)
       @option = option.to_s
     end
-    attr_reader :option
+    attr :option
     def to_s; @option; end
     
     def ==(other)
@@ -1497,7 +1503,7 @@ module DRb
         if $SAFE < @safe_level
           info = Thread.current['DRb']
           if @block
-            @result = Thread.new { 
+            @result = Thread.new {
               Thread.current['DRb'] = info
               $SAFE = @safe_level
               perform_with_block
@@ -1517,7 +1523,7 @@ module DRb
           end
         end
 	@succ = true
-	if @msg_id == :to_ary
+	if @msg_id == :to_ary && @result.class == Array
 	  @result = DRbArray.new(@result) 
 	end
 	return @succ, @result
@@ -1553,7 +1559,7 @@ module DRb
 	  end
 	  ary.collect(&@obj)[0]
 	else
-	  @obj.send(@msg_id, *@argv)
+	  @obj.__send__(@msg_id, *@argv)
 	end
       end
 
@@ -1667,6 +1673,12 @@ module DRb
   #
   # This is the URI of the current server.  See #current_server.
   def uri
+    drb = Thread.current['DRb']
+    client = (drb && drb['client'])
+    if client
+      uri = client.uri
+      return uri if uri
+    end
     current_server.uri
   end
   module_function :uri
@@ -1739,13 +1751,18 @@ module DRb
   end
   module_function :install_acl
 
+  @mutex = Mutex.new
+  def mutex
+    @mutex
+  end
+  module_function :mutex
+
   @server = {}
   def regist_server(server)
     @server[server.uri] = server
-    # TODO: YARV doesn't have Thread.exclusive
-    #Thread.exclusive do
+    mutex.synchronize do
       @primary_server = server unless @primary_server
-    #end
+    end
   end
   module_function :regist_server
 

@@ -6,17 +6,16 @@ module DRb
 
     def notify_observers(*arg)
       if defined? @observer_state and @observer_state
-        if defined? @observer_peers
-          @observer_peers.delete_if do |k, v|
-            begin
-              k.send(v, *arg)
-              false
-            rescue
-              true
-            end
-          end
-        end
-        @observer_state = false
+	if defined? @observer_peers
+	  for i in @observer_peers.dup
+	    begin
+	      i.update(*arg)
+	    rescue
+	      delete_observer(i)
+	    end
+	  end
+	end
+	@observer_state = false
       end
     end
   end

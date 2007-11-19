@@ -1,6 +1,3 @@
-
-__END__
-
 require 'drbtest'
 
 begin

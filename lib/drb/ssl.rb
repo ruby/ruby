@@ -180,7 +180,6 @@ module DRb
       ssl = @config.accept(soc)
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
-        soc.close
 	warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if @config[:verbose]
 	retry
       end

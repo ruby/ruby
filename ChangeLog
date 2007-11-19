@@ -1,3 +1,27 @@
+Tue Nov 20 03:24:42 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/extservm.rb: merged from ruby_1_8 branch.
+
+	* lib/drb/acl.rb: ditto.
+
+	* lib/drb/ssl.rb: ditto.
+
+	* lib/drb/unix.rb: ditto.
+
+	* lib/drb/drb.rb: ditto.
+
+	* lib/drb/observer.rb: ditto.
+
+	* lib/drb/invokemethod.rb: ditto.
+
+	* test/drb/test_drbssl.rb: ditto.
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/drb/test_drbunix.rb: ditto.
+
 Tue Nov 20 00:52:46 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/fileutils/fileasserts.rb (assert_equal_time): show nsec if

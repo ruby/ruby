@@ -5,10 +5,12 @@
 
 require 'drb/drb'
 require 'thread'
+require 'monitor'
 
 module DRb
   class ExtServManager
     include DRbUndumped
+    include MonitorMixin
 
     @@command = {}
 
@@ -21,6 +23,8 @@ module DRb
     end
       
     def initialize
+      super()
+      @cond = new_cond
       @servers = {}
       @waiting = []
       @queue = Queue.new
@@ -30,39 +34,28 @@ module DRb
     attr_accessor :uri
 
     def service(name)
-      while true
-	server = nil
-        # TODO: YARV doesn't have Thread.exclusive
-	#Thread.exclusive do
-	  server = @servers[name] if @servers[name]
-	#end
-	return server if server && server.alive?
-	invoke_service(name)
+      synchronize do
+        while true
+          server = @servers[name]
+          return server if server && server.alive?
+          invoke_service(name)
+          @cond.wait
+        end
       end
     end
 
     def regist(name, ro)
-      ary = nil
-      # TODO: YARV doesn't have Thread.exclusive
-      #Thread.exclusive do
-	@servers[name] = ro
-	ary = @waiting
-	@waiting = []
-      #end
-      ary.each do |th|
-	begin
-	  th.run
-	rescue ThreadError
-	end
+      synchronize do
+        @servers[name] = ro
+        @cond.signal
       end
       self
     end
     
     def unregist(name)
-      # TODO: YARV doesn't have Thread.exclusive
-      #Thread.exclusive do
+      synchronize do
 	@servers.delete(name)
-      #end
+      end
     end
 
     private
@@ -76,22 +69,21 @@ module DRb
     end
 
     def invoke_service(name)
-      Thread.critical = true
-      @waiting.push Thread.current
-      @queue.push name
-      Thread.stop
+      @queue.push(name)
     end
 
     def invoke_service_command(name, command)
       raise "invalid command. name: #{name}" unless command
-      # TODO: YARV doesn't have Thread.exclusive
-      #Thread.exclusive do
+      synchronize do
 	return if @servers.include?(name)
 	@servers[name] = false
-      #end
+      end
       uri = @uri || DRb.uri
-      Process.detach(Process.spawn("#{command} #{uri} #{name}"))
-      true
+      if RUBY_PLATFORM =~ /mswin32/ && /NT/ =~ ENV["OS"]
+        system(%Q'cmd /c start "ruby" /b #{command} #{uri} #{name}')
+      else
+	system("#{command} #{uri} #{name} &")
+      end
     end
   end
 end
