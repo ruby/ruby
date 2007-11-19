@@ -18,6 +18,7 @@ Mon Nov 19 17:51:27 2007  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/missing.h: provide struct timespec if not available.
 
 	* time.c: support nanosecond-resolution using struct timespec.
+	  (time_nsec): new method: Time#nsec and Time#tv_nsec.
 
 	* include/ruby/intern.h: provide rb_time_nano_new.
 
