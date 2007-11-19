@@ -1,3 +1,8 @@
+Mon Nov 19 17:48:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_class_superclass): should not raise exception for
+	  BasicObject.  [ruby-Bugs-15668]
+
 Mon Nov 19 16:04:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_permutation): gives all permutations of elements
