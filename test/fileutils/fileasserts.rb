@@ -70,9 +70,9 @@ module Test
 	    expected_str << " (nsec=#{expected.nsec})"
 	    actual_str << " (nsec=#{actual.nsec})"
 	  end
-	  full_message = build_message(message, <<EOT, expected_str, actual_str)
-<?> expected but was
-<?>.
+	  full_message = build_message(message, <<EOT)
+<#{expected_str}> expected but was
+<#{actual_str}>.
 EOT
 	  assert_block(full_message) { expected == actual }
         }
