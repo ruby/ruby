@@ -17,7 +17,7 @@ module Test
         b = File.stat(to)
         assert_equal a.mode, b.mode, "mode #{a.mode} != #{b.mode}"
         #assert_equal a.atime, b.atime
-        assert_equal a.mtime, b.mtime, "mtime #{a.mtime} != #{b.mtime}"
+        assert_equal_time a.mtime, b.mtime, "mtime #{a.mtime} != #{b.mtime}"
         assert_equal a.uid, b.uid, "uid #{a.uid} != #{b.uid}"
         assert_equal a.gid, b.gid, "gid #{a.gid} != #{b.gid}"
       end
@@ -59,6 +59,22 @@ module Test
           assert_block("is a symlink: #{path}") {
             not File.symlink?(path)
           }
+        }
+      end
+
+      def assert_equal_time(expected, actual, message=nil)
+        _wrap_assertion {
+	  expected_str = expected.to_s
+	  actual_str = actual.to_s
+	  if expected_str == actual_str
+	    expected_str << " (nsec=#{expected.nsec})"
+	    actual_str << " (nsec=#{actual.nsec})"
+	  end
+	  full_message = build_message(message, <<EOT, expected_str, actual_str)
+<?> expected but was
+<?>.
+EOT
+	  assert_block(full_message) { expected == actual }
         }
       end
 

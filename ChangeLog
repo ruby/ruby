@@ -1,3 +1,12 @@
+Tue Nov 20 00:52:46 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/fileutils/fileasserts.rb (assert_equal_time): show nsec if
+	  assertion fails but time.to_s equals.
+	  (assert_same_entry): use assert_equal_time.
+
+	* test/fileutils/test_fileutils.rb (test_install): use
+	  assert_equal_time.
+
 Mon Nov 19 18:46:49 2007  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (utime_internal): fallback utimensat to utimes.

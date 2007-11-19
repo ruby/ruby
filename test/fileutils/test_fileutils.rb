@@ -789,7 +789,7 @@ end
     install 'tmp/aaa', 'tmp/bbb'
     assert_equal "aaa\n", File.read('tmp/bbb')
     assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) if have_file_perm?
-    assert_equal t, File.mtime('tmp/bbb')
+    assert_equal_time t, File.mtime('tmp/bbb')
 
     File.unlink 'tmp/aaa'
     File.unlink 'tmp/bbb'
