@@ -442,7 +442,7 @@ file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
 gc.$(OBJEXT): {$(VPATH)}gc.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}signal.h {$(VPATH)}st.h {$(VPATH)}node.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
+  {$(VPATH)}re.h {$(VPATH)}io.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 hash.$(OBJEXT): {$(VPATH)}hash.c {$(VPATH)}ruby.h {$(VPATH)}config.h \

@@ -1,3 +1,15 @@
+Tue Nov 20 12:12:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): add tied_io_for_writing member.
+	  
+	* io.c: use tied_io_for_writing for duplex popen.
+
+	* gc.c: mark tied_io_for_writing.
+
+	* common.mk: gc.o depends io.h.
+
+	  [ruby-dev:32205]
+
 Tue Nov 20 11:59:33 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/drb/test_drb.rb: rename TestRubyYield to TestDRbRubyYield to

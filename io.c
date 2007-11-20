@@ -158,6 +158,8 @@ static VALUE lineno = INT2FIX(0);
 #define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
 #endif
 
+#define GetWriteIO(io) rb_io_get_write_io(io)
+
 #define READ_DATA_PENDING(fptr) ((fptr)->rbuf_len)
 #define READ_DATA_PENDING_COUNT(fptr) ((fptr)->rbuf_len)
 #define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf+(fptr)->rbuf_off)
@@ -244,6 +246,17 @@ static VALUE
 rb_io_check_io(VALUE io)
 {
     return rb_check_convert_type(io, T_FILE, "IO", "to_io");
+}
+
+VALUE
+rb_io_get_write_io(VALUE io)
+{
+    VALUE write_io;
+    write_io = RFILE(io)->fptr->tied_io_for_writing;
+    if (write_io) {
+        return write_io;
+    }
+    return io;
 }
 
 /*
@@ -676,6 +689,7 @@ io_write(VALUE io, VALUE str)
     VALUE tmp;
 
     rb_secure(4);
+    io = GetWriteIO(io);
     str = rb_obj_as_string(str);
     tmp = rb_io_check_io(io);
     if (NIL_P(tmp)) {
@@ -748,6 +762,7 @@ rb_io_flush(VALUE io)
         return rb_funcall(io, id_flush, 0);
     }
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
 
     if (fptr->mode & FMODE_WRITABLE) {
@@ -982,6 +997,7 @@ rb_io_sync(VALUE io)
 {
     rb_io_t *fptr;
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     return (fptr->mode & FMODE_SYNC) ? Qtrue : Qfalse;
 }
@@ -1006,6 +1022,7 @@ rb_io_set_sync(VALUE io, VALUE mode)
 {
     rb_io_t *fptr;
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     if (RTEST(mode)) {
 	fptr->mode |= FMODE_SYNC;
@@ -1034,6 +1051,7 @@ rb_io_fsync(VALUE io)
 #ifdef HAVE_FSYNC
     rb_io_t *fptr;
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
 
     io_fflush(fptr);
@@ -1464,6 +1482,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
@@ -2348,6 +2367,16 @@ rb_io_close(VALUE io)
 {
     rb_io_t *fptr;
     int fd;
+    VALUE write_io;
+    rb_io_t *write_fptr;
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        write_fptr = RFILE(write_io)->fptr;
+        if (write_fptr && 0 <= write_fptr->fd) {
+            rb_io_fptr_cleanup(write_fptr, Qtrue);
+        }
+    }
 
     fptr = RFILE(io)->fptr;
     if (!fptr) return Qnil;
@@ -2425,6 +2454,16 @@ static VALUE
 rb_io_closed(VALUE io)
 {
     rb_io_t *fptr;
+    VALUE write_io;
+    rb_io_t *write_fptr;
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        write_fptr = RFILE(write_io)->fptr;
+        if (write_fptr && 0 <= write_fptr->fd) {
+            return Qfalse;
+        }
+    }
 
     fptr = RFILE(io)->fptr;
     rb_io_check_initialized(fptr);
@@ -2453,6 +2492,7 @@ static VALUE
 rb_io_close_read(VALUE io)
 {
     rb_io_t *fptr;
+    VALUE write_io;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
@@ -2469,6 +2509,13 @@ rb_io_close_read(VALUE io)
             return rb_io_close(io);
         return Qnil;
     }
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        fptr_finalize(fptr, Qfalse);
+        return Qnil;
+    }
+
     if (fptr->mode & FMODE_WRITABLE) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
@@ -2502,6 +2549,7 @@ rb_io_close_write(VALUE io)
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     if (is_socket(fptr->fd, fptr->path)) {
 #ifndef SHUT_WR
@@ -2582,6 +2630,7 @@ rb_io_syswrite(VALUE io, VALUE str)
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
 
+    io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
@@ -2666,15 +2715,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     return str;
 }
 
-/*
- *  call-seq:
- *     ios.binmode    => ios
- *
- *  Puts <em>ios</em> into binary mode. This is useful only in
- *  MS-DOS/Windows environments. Once a stream is in binary mode, it
- *  cannot be reset to nonbinary mode.
- */
-
 VALUE
 rb_io_binmode(VALUE io)
 {
@@ -2689,6 +2729,30 @@ rb_io_binmode(VALUE io)
 	rb_sys_fail(fptr->path);
 
     fptr->mode |= FMODE_BINMODE;
+#endif
+    return io;
+}
+
+/*
+ *  call-seq:
+ *     ios.binmode    => ios
+ *
+ *  Puts <em>ios</em> into binary mode. This is useful only in
+ *  MS-DOS/Windows environments. Once a stream is in binary mode, it
+ *  cannot be reset to nonbinary mode.
+ */
+
+static VALUE
+rb_io_binmode_m(VALUE io)
+{
+#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
+    VALUE write_io;
+
+    rb_io_binmode(io);
+
+    write_io = GetWriteIO(io);
+    if (write_io != io)
+        rb_io_binmode(write_io);
 #endif
     return io;
 }
@@ -3078,17 +3142,23 @@ struct popen_arg {
     struct rb_exec_arg exec;
     int modef;
     int pair[2];
+    int write_pair[2];
 };
 
 static void
 popen_redirect(struct popen_arg *p)
 {
     if ((p->modef & FMODE_READABLE) && (p->modef & FMODE_WRITABLE)) {
+        close(p->write_pair[1]);
+        if (p->write_pair[0] != 0) {
+            dup2(p->write_pair[0], 0);
+            close(p->write_pair[0]);
+        }
         close(p->pair[0]);
-        dup2(p->pair[1], 0);
-        dup2(p->pair[1], 1);
-        if (2 <= p->pair[1])
+        if (p->pair[1] != 1) {
+            dup2(p->pair[1], 1);
             close(p->pair[1]);
+        }
     }
     else if (p->modef & FMODE_READABLE) {
         close(p->pair[0]);
@@ -3132,6 +3202,8 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
     int pid = 0;
     rb_io_t *fptr;
     VALUE port;
+    rb_io_t *write_fptr;
+    VALUE write_port;
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
@@ -3141,17 +3213,24 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 #endif
     FILE *fp = 0;
     int fd = -1;
+    int write_fd = -1;
 
 #if defined(HAVE_FORK)
     arg.modef = modef;
     arg.pair[0] = arg.pair[1] = -1;
+    arg.write_pair[0] = arg.write_pair[1] = -1;
     switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
-#if defined(HAVE_SOCKETPAIR)
       case FMODE_READABLE|FMODE_WRITABLE:
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, arg.pair) < 0)
+        if (pipe(arg.write_pair) < 0)
             rb_sys_fail(cmd);
+        if (pipe(arg.pair) < 0) {
+            int e = errno;
+            close(arg.write_pair[0]);
+            close(arg.write_pair[1]);
+            errno = e;
+            rb_sys_fail(cmd);
+        }
 	break;
-#endif
       case FMODE_READABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
@@ -3187,12 +3266,18 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	int e = errno;
 	close(arg.pair[0]);
 	close(arg.pair[1]);
+        if ((modef & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
+            close(arg.write_pair[0]);
+            close(arg.write_pair[1]);
+        }
 	errno = e;
 	rb_sys_fail(cmd);
     }
     if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
         close(arg.pair[1]);
         fd = arg.pair[0];
+        close(arg.write_pair[0]);
+        write_fd = arg.write_pair[1];
     }
     else if (modef & FMODE_READABLE) {
         close(arg.pair[1]);
@@ -3244,6 +3329,16 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
     fptr->stdio_file = fp;
     fptr->mode = modef | FMODE_SYNC|FMODE_DUPLEX;
     fptr->pid = pid;
+
+    if (0 <= write_fd) {
+        write_port = io_alloc(rb_cIO);
+        MakeOpenFile(write_port, write_fptr);
+        write_fptr->fd = write_fd;
+        write_fptr->mode = (modef & ~FMODE_READABLE)| FMODE_SYNC|FMODE_DUPLEX;
+        fptr->mode &= ~FMODE_WRITABLE;
+        fptr->tied_io_for_writing = write_port;
+        rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
+    }
 
 #if defined (__CYGWIN__) || !defined(HAVE_FORK)
     fptr->finalize = pipe_finalize;
@@ -3770,6 +3865,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
 {
     rb_io_t *fptr, *orig;
     int fd;
+    VALUE write_io;
 
     io = rb_io_get_io(io);
     if (dest == io) return dest;
@@ -3790,6 +3886,13 @@ rb_io_init_copy(VALUE dest, VALUE io)
     io_seek(fptr, io_tell(orig), SEEK_SET);
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode(dest);
+    }
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        write_io = rb_obj_dup(write_io);
+        fptr->tied_io_for_writing = write_io;
+        rb_ivar_set(dest, rb_intern("@tied_io_for_writing"), write_io);
     }
 
     return dest;
@@ -4732,7 +4835,8 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     if (!NIL_P(write)) {
 	Check_Type(write, T_ARRAY);
 	for (i=0; i<RARRAY_LEN(write); i++) {
-	    GetOpenFile(rb_io_get_io(RARRAY_PTR(write)[i]), fptr);
+            VALUE write_io = GetWriteIO(rb_io_get_io(RARRAY_PTR(write)[i]));
+	    GetOpenFile(write_io, fptr);
 	    rb_fd_set(fptr->fd, &fds[1]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
@@ -4744,9 +4848,16 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     if (!NIL_P(except)) {
 	Check_Type(except, T_ARRAY);
 	for (i=0; i<RARRAY_LEN(except); i++) {
-	    GetOpenFile(rb_io_get_io(RARRAY_PTR(except)[i]), fptr);
+            VALUE io = rb_io_get_io(RARRAY_PTR(except)[i]);
+            VALUE write_io = GetWriteIO(io);
+	    GetOpenFile(io, fptr);
 	    rb_fd_set(fptr->fd, &fds[2]);
 	    if (max < fptr->fd) max = fptr->fd;
+            if (io != write_io) {
+                GetOpenFile(write_io, fptr);
+                rb_fd_set(fptr->fd, &fds[2]);
+                if (max < fptr->fd) max = fptr->fd;
+            }
 	}
 	ep = rb_fd_ptr(&fds[2]);
     }
@@ -4771,10 +4882,11 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (rp) {
 	    list = RARRAY_PTR(res)[0];
 	    for (i=0; i< RARRAY_LEN(read); i++) {
-		GetOpenFile(rb_io_get_io(RARRAY_PTR(read)[i]), fptr);
+                VALUE io = rb_io_get_io(rb_ary_entry(read, i));
+		GetOpenFile(io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[0]) ||
 		    rb_fd_isset(fptr->fd, &fds[3])) {
-		    rb_ary_push(list, rb_ary_entry(read, i));
+		    rb_ary_push(list, io);
 		}
 	    }
 	}
@@ -4782,9 +4894,11 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (wp) {
 	    list = RARRAY_PTR(res)[1];
 	    for (i=0; i< RARRAY_LEN(write); i++) {
-		GetOpenFile(rb_io_get_io(RARRAY_PTR(write)[i]), fptr);
+                VALUE io = rb_io_get_io(rb_ary_entry(write, i));
+                VALUE write_io = GetWriteIO(io);
+		GetOpenFile(write_io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[1])) {
-		    rb_ary_push(list, rb_ary_entry(write, i));
+		    rb_ary_push(list, io);
 		}
 	    }
 	}
@@ -4792,10 +4906,18 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (ep) {
 	    list = RARRAY_PTR(res)[2];
 	    for (i=0; i< RARRAY_LEN(except); i++) {
-		GetOpenFile(rb_io_get_io(RARRAY_PTR(except)[i]), fptr);
+                VALUE io = rb_io_get_io(rb_ary_entry(write, i));
+                VALUE write_io = GetWriteIO(io);
+		GetOpenFile(io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[2])) {
-		    rb_ary_push(list, rb_ary_entry(except, i));
+		    rb_ary_push(list, io);
 		}
+                else if (io != write_io) {
+                    GetOpenFile(write_io, fptr);
+                    if (rb_fd_isset(fptr->fd, &fds[2])) {
+                        rb_ary_push(list, io);
+                    }
+                }
 	    }
 	}
     }
@@ -5906,7 +6028,7 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "isatty", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "tty?", rb_io_isatty, 0);
-    rb_define_method(rb_cIO, "binmode",  rb_io_binmode, 0);
+    rb_define_method(rb_cIO, "binmode",  rb_io_binmode_m, 0);
     rb_define_method(rb_cIO, "sysseek", rb_io_sysseek, -1);
 
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);

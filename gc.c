@@ -17,6 +17,7 @@
 #include "ruby/st.h"
 #include "ruby/node.h"
 #include "ruby/re.h"
+#include "ruby/io.h"
 #include "vm_core.h"
 #include "gc.h"
 #include <stdio.h>
@@ -1080,6 +1081,9 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_FILE:
+	gc_mark(obj->as.file.fptr->tied_io_for_writing, lev);
+        break;
+
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
