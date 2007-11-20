@@ -113,7 +113,7 @@ class TestDRbYield < Test::Unit::TestCase
   end
 end
 
-class TestRubyYield < TestDRbYield
+class TestDRbRubyYield < TestDRbYield
   def echo_yield(*arg)
     yield(*arg)
   end
@@ -145,7 +145,7 @@ class TestRubyYield < TestDRbYield
   end
 end
 
-class TestRuby18Yield < TestRubyYield
+class TestDRbRuby18Yield < TestDRbRubyYield
   class YieldTest18
     def echo_yield(*arg, &proc)
       proc.call(*arg)

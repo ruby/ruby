@@ -1,3 +1,9 @@
+Tue Nov 20 11:59:33 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/drb/test_drb.rb: rename TestRubyYield to TestDRbRubyYield to
+	  avoid name crash with test/ruby/test_yield.rb.
+	  TestRuby18Yield is renamed to TestDRbRuby18Yield too.
+
 Tue Nov 20 03:24:42 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extservm.rb: merged from ruby_1_8 branch.
