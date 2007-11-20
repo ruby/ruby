@@ -49,16 +49,23 @@ class TestGemIndexer < RubyGemTestCase
 
     assert File.directory?(quickdir)
     assert File.directory?(marshal_quickdir)
-    assert File.exist?(File.join(quickdir, "index"))
-    assert File.exist?(File.join(quickdir, "index.rz"))
-    assert File.exist?(File.join(quickdir, "#{@a0_0_1.full_name}.gemspec.rz"))
-    assert File.exist?(File.join(marshal_quickdir, "#{@a0_0_1.full_name}.gemspec.rz"))
-    assert File.exist?(File.join(quickdir, "#{@a0_0_2.full_name}.gemspec.rz"))
-    assert File.exist?(File.join(marshal_quickdir, "#{@a0_0_2.full_name}.gemspec.rz"))
-    assert File.exist?(File.join(quickdir, "#{@b0_0_2.full_name}.gemspec.rz"))
-    assert File.exist?(File.join(quickdir, "#{@c1_2.full_name}.gemspec.rz"))
-    assert !File.exist?(File.join(quickdir, "#{@c1_2.full_name}.gemspec"))
-    assert !File.exist?(File.join(marshal_quickdir, "#{@c1_2.full_name}.gemspec"))
+
+    assert_indexed quickdir, "index"
+    assert_indexed quickdir, "index.rz"
+
+    assert_indexed quickdir, "#{@a0_0_1.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a0_0_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@b0_0_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
+
+    assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
+    deny_indexed quickdir, "#{@pl1.full_name}.gemspec.rz"
+
+    assert_indexed marshal_quickdir, "#{@a0_0_1.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a0_0_2.full_name}.gemspec.rz"
+
+    deny_indexed quickdir, "#{@c1_2.full_name}.gemspec"
+    deny_indexed marshal_quickdir, "#{@c1_2.full_name}.gemspec"
   end
 
   def test_generate_index_ui
@@ -67,8 +74,8 @@ class TestGemIndexer < RubyGemTestCase
     end
 
     expected = <<-EOF
-Generating index for 4 gems in #{@tempdir}
-....
+Generating index for 5 gems in #{@tempdir}
+.....
 Loaded all gems
 Generating master indexes (this may take a while)
     EOF
@@ -92,11 +99,20 @@ Generating master indexes (this may take a while)
 
     dump_index.each do |_,gem|
       gem.send :remove_instance_variable, :@loaded
-      gem.send :remove_instance_variable, :@original_platform
     end
 
     assert_equal yaml_index, dump_index,
                  "expected YAML and Marshal to produce identical results"
+  end
+
+  def assert_indexed(dir, name)
+    file = File.join dir, name
+    assert File.exist?(file), "#{file} does not exist"
+  end
+
+  def deny_indexed(dir, name)
+    file = File.join dir, name
+    assert !File.exist?(file), "#{file} exists"
   end
 
 end if ''.respond_to? :to_xs

@@ -49,7 +49,7 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
 
     expected = %r|configure failed:
 
-sh \./configure --prefix=#{@dest_path}
+sh \./configure --prefix=#{Regexp.escape @dest_path}
 .*?: \./configure: No such file or directory
 |
 

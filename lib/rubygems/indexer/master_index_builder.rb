@@ -10,7 +10,16 @@ class Gem::Indexer::MasterIndexBuilder < Gem::Indexer::AbstractIndexBuilder
 
   def end_index
     super
-    @file.puts @index.to_yaml
+    @file.puts "--- !ruby/object:#{@index.class}"
+    @file.puts "gems:"
+
+    gems = @index.sort_by { |name, gemspec| gemspec.sort_obj }
+    gems.each do |name, gemspec|
+      yaml = gemspec.to_yaml.gsub(/^/, '    ')
+      yaml = yaml.sub(/\A    ---/, '') # there's a needed extra ' ' here
+      @file.print "  #{gemspec.original_name}:"
+      @file.puts yaml
+    end
   end
 
   def cleanup

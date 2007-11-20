@@ -60,16 +60,8 @@ class Gem::Indexer
             begin
               spec = Gem::Format.from_file_by_path(gemfile).spec
 
-              original_name = if spec.platform == Gem::Platform::RUBY or
-                                 spec.platform.nil? then
-                                spec.full_name
-                              else
-                                "#{spec.name}-#{spec.version}-#{spec.original_platform}"
-                              end
-
-              unless gemfile =~ /\/#{Regexp.escape spec.full_name}.*\.gem\z/i or
-                     gemfile =~ /\/#{Regexp.escape original_name}.*\.gem\z/i then
-                alert_warning "Skipping misnamed gem: #{gemfile} => #{spec.full_name} (#{original_name})"
+              unless gemfile =~ /\/#{Regexp.escape spec.original_name}.*\.gem\z/i then
+                alert_warning "Skipping misnamed gem: #{gemfile} => #{spec.full_name} (#{spec.original_name})"
                 next
               end
 
@@ -80,7 +72,7 @@ class Gem::Indexer
               @quick_index.add spec
               @marshal_index.add spec
 
-              progress.updated spec.full_name
+              progress.updated spec.original_name
 
             rescue SignalException => e
               alert_error "Recieved signal, exiting"

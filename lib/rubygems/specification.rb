@@ -243,14 +243,15 @@ module Gem
         @summary,
         @required_ruby_version,
         @required_rubygems_version,
-        @new_platform,
+        @original_platform,
         @dependencies,
         @rubyforge_project,
         @email,
         @authors,
         @description,
         @homepage,
-        @has_rdoc
+        @has_rdoc,
+        @new_platform,
       ]
     end
 
@@ -277,9 +278,7 @@ module Gem
       spec.instance_variable_set :@summary,                   array[5]
       spec.instance_variable_set :@required_ruby_version,     array[6]
       spec.instance_variable_set :@required_rubygems_version, array[7]
-      spec.instance_variable_set :@new_platform,              array[8]
       spec.instance_variable_set :@original_platform,         array[8]
-      spec.instance_variable_set :@platform,                  array[8].to_s
       spec.instance_variable_set :@dependencies,              array[9]
       spec.instance_variable_set :@rubyforge_project,         array[10]
       spec.instance_variable_set :@email,                     array[11]
@@ -287,6 +286,8 @@ module Gem
       spec.instance_variable_set :@description,               array[13]
       spec.instance_variable_set :@homepage,                  array[14]
       spec.instance_variable_set :@has_rdoc,                  array[15]
+      spec.instance_variable_set :@new_platform,              array[16]
+      spec.instance_variable_set :@platform,                  array[16].to_s
       spec.instance_variable_set :@loaded,                    false
 
       spec
@@ -377,7 +378,10 @@ module Gem
     end
 
     overwrite_accessor :platform= do |platform|
-      @original_platform = platform if @original_platform.nil?
+      if @original_platform.nil? or
+         @original_platform == Gem::Platform::RUBY then
+        @original_platform = platform
+      end
 
       case platform
       when Gem::Platform::CURRENT then
@@ -657,6 +661,17 @@ module Gem
       end
     end
 
+    # Returns the full name (name-version) of this gemspec using the original
+    # platform.
+    #
+    def original_name # :nodoc:
+      if platform == Gem::Platform::RUBY or platform.nil? then
+        "#{@name}-#{@version}"
+      else
+        "#{@name}-#{@version}-#{@original_platform}"
+      end
+    end
+
     # The full path to the gem (install path + full name).
     #
     # return:: [String] the full gem path
@@ -664,8 +679,7 @@ module Gem
     def full_gem_path
       path = File.join installation_path, 'gems', full_name
       return path if File.directory? path
-      File.join installation_path, 'gems',
-                "#{name}-#{version}-#{@original_platform}"
+      File.join installation_path, 'gems', original_name
     end
     
     # The default (generated) file name of the gem.
@@ -724,18 +738,34 @@ module Gem
         hash_code + n
       }
     end
-    
+
     # Export methods (YAML and Ruby code) ----------------------------
-    
-    # Returns an array of attribute names to be used when generating a
-    # YAML representation of this object.  If an attribute still has
-    # its default value, it is omitted.
-    def to_yaml_properties
+
+    def to_yaml(opts = {}) # :nodoc:
       mark_version
-      @@attributes.map { |name, default| "@#{name}" }
+
+      attributes = @@attributes.map { |name,| name.to_s }.sort
+      attributes = attributes - %w[name version platform]
+
+      yaml = YAML.quick_emit object_id, opts do |out|
+        out.map taguri, to_yaml_style do |map|
+          map.add 'name', @name
+          map.add 'version', @version
+          platform = if String === @original_platform then
+                       @original_platform
+                     else
+                       @original_platform.to_s
+                     end
+          map.add 'platform', platform
+
+          attributes.each do |name|
+            map.add name, instance_variable_get("@#{name}")
+          end
+        end
+      end
     end
 
-    def yaml_initialize(tag, vals)
+    def yaml_initialize(tag, vals) # :nodoc:
       vals.each do |ivar, val|
         instance_variable_set "@#{ivar}", val
       end
@@ -754,6 +784,9 @@ module Gem
 
       result << "  s.name = #{ruby_code name}"
       result << "  s.version = #{ruby_code version}"
+      unless platform.nil? or platform == Gem::Platform::RUBY then
+        result << "  s.platform = #{ruby_code original_platform}"
+      end
       result << ""
       result << "  s.specification_version = #{specification_version} if s.respond_to? :specification_version="
       result << ""
@@ -762,6 +795,7 @@ module Gem
       handled = [
         :dependencies,
         :name,
+        :platform,
         :required_rubygems_version,
         :specification_version,
         :version,

@@ -196,6 +196,17 @@ end
     assert_equal "1.3.5", spec.version.to_s
   end
 
+  def test__dump
+    @a0_0_2.platform = Gem::Platform.local
+    @a0_0_2.instance_variable_set :@original_platform, 'old_platform'
+
+    data = Marshal.dump @a0_0_2
+
+    same_spec = Marshal.load data
+
+    assert_equal 'old_platform', same_spec.original_platform
+  end
+
   def test_author
     assert_equal 'A User', @a0_0_1.author
   end
@@ -445,6 +456,14 @@ end
     assert_equal 'a', @a0_0_1.name
   end
 
+  def test_original_name
+    assert_equal 'a-0.0.1', @a0_0_1.full_name
+
+    @a0_0_1.platform = 'i386-linux'
+    @a0_0_1.instance_variable_set :@original_platform, 'i386-linux'
+    assert_equal 'a-0.0.1-i386-linux', @a0_0_1.original_name
+  end
+
   def test_platform
     assert_equal Gem::Platform::RUBY, @a0_0_1.platform
   end
@@ -573,6 +592,7 @@ end
     expected = "Gem::Specification.new do |s|
   s.name = %q{a}
   s.version = \"0.0.1\"
+  s.platform = Gem::Platform.new([\"ppc\", \"darwin\", nil])
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
@@ -587,10 +607,9 @@ end
   s.files = [\"lib/code.rb\", \"test/suite.rb\", \"bin/exec\", \"ext/a/extconf.rb\"]
   s.has_rdoc = %q{true}
   s.homepage = %q{http://example.com}
-  s.platform = Gem::Platform.new([\"ppc\", \"darwin\", nil])
   s.require_paths = [\"lib\"]
   s.requirements = [\"A working computer\"]
-  s.rubygems_version = %q{0.9.4.6}
+  s.rubygems_version = %q{#{Gem::RubyGemsVersion}}
   s.summary = %q{this is a summary}
   s.test_files = [\"test/suite.rb\"]
 
@@ -615,6 +634,17 @@ end
     assert_equal gemspec1, gemspec2
   end
 
+  def test_to_ruby_platform
+    @a0_0_2.platform = Gem::Platform.local
+    @a0_0_2.instance_variable_set :@original_platform, 'old_platform'
+
+    ruby_code = @a0_0_2.to_ruby
+
+    same_spec = eval ruby_code
+
+    assert_equal 'old_platform', same_spec.original_platform
+  end
+
   def test_to_yaml
     yaml_str = @a0_0_1.to_yaml
     same_spec = YAML.load(yaml_str)
@@ -635,6 +665,7 @@ end
 
   def test_to_yaml_legacy_platform
     @a0_0_1.platform = 'powerpc-darwin7.9.0'
+    @a0_0_1.instance_variable_set :@original_platform, 'powerpc-darwin7.9.0'
 
     yaml_str = @a0_0_1.to_yaml
 

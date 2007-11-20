@@ -39,7 +39,7 @@ class FakeFetcher
     @paths << path
     raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
     data = @data[path]
-    raise OpenURI::HTTPError.new("no data for #{path}", nil) if data.nil?
+    raise Gem::RemoteFetcher::FetchError, "no data for #{path}" if data.nil?
     data.respond_to?(:call) ? data.call : data
   end
 
@@ -48,7 +48,7 @@ class FakeFetcher
     @paths << path
     raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
     data = @data[path]
-    raise OpenURI::HTTPError.new("no data for #{path}", nil) if data.nil?
+    raise Gem::RemoteFetcher::FetchError, "no data for #{path}" if data.nil?
     data.respond_to?(:call) ? data.call : data.length
   end
 
@@ -189,7 +189,8 @@ class RubyGemTestCase < Test::Unit::TestCase
         Gem::Builder.new(spec).build
       end
 
-      FileUtils.mv "#{spec.full_name}.gem", File.join(@gemhome, 'cache')
+      FileUtils.mv "#{spec.full_name}.gem",
+                   File.join(@gemhome, 'cache', "#{spec.original_name}.gem")
     end
   end
 
@@ -203,13 +204,22 @@ class RubyGemTestCase < Test::Unit::TestCase
     @a0_0_2 = quick_gem('a', '0.0.2', &spec)
     @b0_0_2 = quick_gem('b', '0.0.2', &spec)
     @c1_2   = quick_gem('c', '1.2',   &spec)
+    @pl1     = quick_gem 'pl', '1' do |s| # l for legacy
+      s.files = %w[lib/code.rb]
+      s.require_paths = %w[lib]
+      s.platform = Gem::Platform.new 'i386-linux'
+      s.instance_variable_set :@original_platform, 'i386-linux'
+    end
 
-    write_file File.join(*%w[gems a-0.0.1 lib code.rb]) do end
-    write_file File.join(*%w[gems a-0.0.2 lib code.rb]) do end
-    write_file File.join(*%w[gems b-0.0.2 lib code.rb]) do end
-    write_file File.join(*%w[gems c-1.2 lib code.rb]) do end
+    write_file File.join(*%W[gems #{@a0_0_1.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@a0_0_2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@b0_0_2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb]) do end
 
-    [@a0_0_1, @a0_0_2, @b0_0_2, @c1_2].each { |spec| util_build_gem spec }
+    [@a0_0_1, @a0_0_2, @b0_0_2, @c1_2, @pl1].each { |spec| util_build_gem spec }
+
+    FileUtils.rm_r File.join(@gemhome, 'gems', @pl1.original_name)
 
     Gem.source_index = nil
   end

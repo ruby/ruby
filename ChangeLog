@@ -1,3 +1,7 @@
+Tue Nov 20 14:55:37 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*: Update to RubyGems 0.9.5.
+
 Tue Nov 20 13:00:44 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h win32/win32.c (rb_w32_pipe_exec): use dual fd

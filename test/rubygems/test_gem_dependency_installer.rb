@@ -92,13 +92,13 @@ class TestGemDependencyInstaller < RubyGemTestCase
   end
 
   def test_install_dependency_old
-    @e1, @e1_gem = util_gem 'e', '1'
-    @f1, @f1_gem = util_gem 'f', '1' do |s| s.add_dependency 'e' end
-    @f2, @f2_gem = util_gem 'f', '2'
+    e1, e1_gem = util_gem 'e', '1'
+    f1, f1_gem = util_gem 'f', '1' do |s| s.add_dependency 'e' end
+    f2, f2_gem = util_gem 'f', '2'
 
-    FileUtils.mv @e1_gem, @tempdir
-    FileUtils.mv @f1_gem, @tempdir
-    FileUtils.mv @f2_gem, @tempdir
+    FileUtils.mv e1_gem, @tempdir
+    FileUtils.mv f1_gem, @tempdir
+    FileUtils.mv f2_gem, @tempdir
     inst = nil
 
     Dir.chdir @tempdir do
@@ -333,7 +333,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[d-2], inst.installed_gems.map { |s| s.full_name }
   end
 
-  def test_download_gem
+  def test_download
     a1_data = nil
     File.open @a1_gem, 'rb' do |fp|
       a1_data = fp.read
@@ -349,7 +349,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert File.exist?(a1_cache_gem)
   end
 
-  def test_download_gem_cached
+  def test_download_cached
     FileUtils.mv @a1_gem, @cache_dir
 
     inst = Gem::DependencyInstaller.new 'a'
@@ -358,7 +358,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
                  inst.download(@a1, 'http://gems.example.com')
   end
 
-  def test_download_gem_local
+  def test_download_local
     FileUtils.mv @a1_gem, @tempdir
     local_path = File.join @tempdir, "#{@a1.full_name}.gem"
     inst = nil
@@ -371,7 +371,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
                  inst.download(@a1, local_path)
   end
 
-  def test_download_gem_install_dir
+  def test_download_install_dir
     a1_data = nil
     File.open @a1_gem, 'rb' do |fp|
       a1_data = fp.read
@@ -390,7 +390,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
   end
 
   unless win_platform? then # File.chmod doesn't work
-    def test_download_gem_local_read_only
+    def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, "#{@a1.full_name}.gem"
       inst = nil
@@ -407,7 +407,30 @@ class TestGemDependencyInstaller < RubyGemTestCase
     end
   end
 
-  def test_download_gem_unsupported
+  def test_download_platform_legacy
+    original_platform = 'old-platform'
+
+    e1, e1_gem = util_gem 'e', '1' do |s|
+      s.platform = Gem::Platform::CURRENT
+      s.instance_variable_set :@original_platform, original_platform
+    end
+
+    e1_data = nil
+    File.open e1_gem, 'rb' do |fp|
+      e1_data = fp.read
+    end
+
+    @fetcher.data["http://gems.example.com/gems/e-1-#{original_platform}.gem"] = e1_data
+
+    inst = Gem::DependencyInstaller.new 'a'
+
+    e1_cache_gem = File.join(@gemhome, 'cache', "#{e1.full_name}.gem")
+    assert_equal e1_cache_gem, inst.download(e1, 'http://gems.example.com')
+
+    assert File.exist?(e1_cache_gem)
+  end
+
+  def test_download_unsupported
     inst = Gem::DependencyInstaller.new 'a'
 
     e = assert_raise Gem::InstallError do
@@ -503,8 +526,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     util_build_gem spec
 
-    cache_file = File.join @tempdir, 'gems', "#{spec.full_name}.gem"
-    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.full_name}.gem"),
+    cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
+    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.original_name}.gem"),
                  cache_file
     FileUtils.rm File.join(@gemhome, 'specifications',
                            "#{spec.full_name}.gemspec")

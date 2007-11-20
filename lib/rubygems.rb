@@ -138,7 +138,14 @@ module Gem
   ##
   # An Array of Regexps that match windows ruby platforms.
 
-  WIN_PATTERNS = [/mswin/i, /mingw/i, /bccwin/i, /wince/i]
+  WIN_PATTERNS = [
+    /bccwin/i,
+    /cygwin/i,
+    /djgpp/i,
+    /mingw/i,
+    /mswin/i,
+    /wince/i,
+  ]
 
   ##
   # Is this a windows platform?
@@ -212,8 +219,7 @@ module Gem
         install_dir.to_s == Gem.default_dir
 
       if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
-        File.join(File.dirname(Config::CONFIG["sitedir"]),
-                  File.basename(Config::CONFIG["bindir"]))
+        '/usr/bin'
       else # generic install
         Config::CONFIG['bindir']
       end
@@ -225,7 +231,11 @@ module Gem
     #
     def path
       @gem_path ||= nil
-      set_paths(ENV['GEM_PATH']) unless @gem_path
+      unless @gem_path
+        paths = [ENV['GEM_PATH']]
+        paths << APPLE_GEM_HOME if defined? APPLE_GEM_HOME
+        set_paths(paths.compact.join(File::PATH_SEPARATOR))
+      end
       @gem_path
     end
 
@@ -519,7 +529,7 @@ module Gem
     # not specified in the environment.
     def default_dir
       if defined? RUBY_FRAMEWORK_VERSION
-        return File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems")
+        return File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems", Config::CONFIG['ruby_version'])
       else
         File.join(Config::CONFIG['libdir'], 'ruby', 'gems', Config::CONFIG['ruby_version'])
       end

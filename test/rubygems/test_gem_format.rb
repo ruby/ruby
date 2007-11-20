@@ -17,6 +17,24 @@ class TestGemFormat < RubyGemTestCase
     @simple_gem = SIMPLE_GEM
   end
 
+  def test_from_file_by_path
+    util_make_gems
+
+    gems = Dir[File.join(@gemhome, 'cache', '*.gem')]
+
+    names = [@a0_0_1, @a0_0_2, @b0_0_2, @c1_2, @pl1].map do |spec|
+      spec.original_name
+    end
+
+    gems_n_names = gems.sort.zip names
+
+    gems_n_names.each do |gemfile, name|
+      spec = Gem::Format.from_file_by_path(gemfile).spec
+
+      assert_equal name, spec.original_name
+    end
+  end
+
   def test_from_file_by_path_nonexistent
     assert_raise Gem::Exception do
       Gem::Format.from_file_by_path '/nonexistent'

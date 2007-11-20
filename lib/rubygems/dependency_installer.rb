@@ -124,12 +124,25 @@ class Gem::DependencyInstaller
     case scheme
     when 'http' then
       unless File.exist? local_gem_path then
-        say "Downloading gem #{gem_file_name}" if
-          Gem.configuration.really_verbose
+        begin
+          say "Downloading gem #{gem_file_name}" if
+            Gem.configuration.really_verbose
 
-        remote_gem_path = source_uri + "gems/#{gem_file_name}"
+          remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
-        gem = Gem::RemoteFetcher.fetcher.fetch_path remote_gem_path
+          gem = Gem::RemoteFetcher.fetcher.fetch_path remote_gem_path
+        rescue Gem::RemoteFetcher::FetchError
+          raise if spec.original_platform == spec.platform
+
+          alternate_name = "#{spec.name}-#{spec.version}-#{spec.original_platform}.gem"
+
+          say "Failed, downloading gem #{alternate_name}" if
+            Gem.configuration.really_verbose
+
+          remote_gem_path = source_uri + "gems/#{alternate_name}"
+
+          gem = Gem::RemoteFetcher.fetcher.fetch_path remote_gem_path
+        end
 
         File.open local_gem_path, 'wb' do |fp|
           fp.write gem

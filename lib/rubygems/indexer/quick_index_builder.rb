@@ -22,13 +22,13 @@ class Gem::Indexer::QuickIndexBuilder < Gem::Indexer::AbstractIndexBuilder
   end
 
   def add(spec)
-    @file.puts spec.full_name
+    @file.puts spec.original_name
     add_yaml(spec)
     add_marshal(spec)
   end
 
   def add_yaml(spec)
-    fn = File.join @directory, "#{spec.full_name}.gemspec.rz"
+    fn = File.join @directory, "#{spec.original_name}.gemspec.rz"
     zipped = zip spec.to_yaml
     File.open fn, "wb" do |gsfile| gsfile.write zipped end
   end
@@ -38,7 +38,7 @@ class Gem::Indexer::QuickIndexBuilder < Gem::Indexer::AbstractIndexBuilder
     FileUtils.mkdir_p File.join(@directory, "Marshal.#{Gem.marshal_version}")
 
     fn = File.join @directory, "Marshal.#{Gem.marshal_version}",
-                   "#{spec.full_name}.gemspec.rz"
+                   "#{spec.original_name}.gemspec.rz"
 
     zipped = zip Marshal.dump(spec)
     File.open fn, "wb" do |gsfile| gsfile.write zipped end
