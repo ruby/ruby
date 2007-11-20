@@ -5944,6 +5944,7 @@ parser_prepare(struct parser_params *parser)
 	    (unsigned char)lex_p[1] == 0xbf) {
 	    parser_set_encode(parser, "UTF-8");
 	    lex_p += 2;
+	    lex_pbeg = lex_p;
 	    return;
 	}
 	break;

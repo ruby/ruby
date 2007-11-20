@@ -1,3 +1,8 @@
+Tue Nov 20 15:08:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_prepare): set begging after BOM if exists.
+	  [ruby-core:13718]
+
 Tue Nov 20 14:55:37 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*: Update to RubyGems 0.9.5.
