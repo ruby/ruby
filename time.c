@@ -1659,8 +1659,15 @@ time_year(VALUE time)
  *  Returns an integer representing the day of the week, 0..6, with
  *  Sunday == 0.
  *     
- *     t = Time.now   #=> 2007-11-19 08:29:34 -0600
- *     t.wday         #=> 1
+ *     t = Time.now   #=> 2007-11-20 02:35:35 -0600
+ *     t.wday         #=> 2
+ *     t.sunday?      #=> false
+ *     t.monday?      #=> false
+ *     t.tuesday?     #=> true
+ *     t.wednesday?   #=> false
+ *     t.thursday?    #=> false
+ *     t.friday?      #=> false
+ *     t.saturday?    #=> false
  */
 
 static VALUE
@@ -1690,8 +1697,8 @@ time_wday(VALUE time)
  *  
  *  Returns <code>true</code> if <i>time</i> represents Sunday.
  *     
- *     t = Time.now   #=> 2007-11-19 08:30:13 -0600
- *     t.sunday?      #=> false
+ *     t = Time.local(1990, 4, 1)       #=> 1990-04-01 00:00:00 -0600
+ *     t.sunday?                        #=> true
  */
 
 static VALUE
@@ -1706,8 +1713,8 @@ time_sunday(VALUE time)
  *  
  *  Returns <code>true</code> if <i>time</i> represents Monday.
  *
- *     t = Time.now   #=> 2007-11-19 08:31:01 -0600
- *     t.monday?      #=> true
+ *     t = Time.local(2003, 8, 4)       #=> 2003-08-04 00:00:00 -0500
+ *     p t.monday?                      #=> true
  */
 
 static VALUE
@@ -1721,6 +1728,9 @@ time_monday(VALUE time)
  *     time.tuesday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Tuesday.
+ *
+ *     t = Time.local(1991, 2, 19)      #=> 1991-02-19 00:00:00 -0600
+ *     p t.tuesday?                     #=> true
  */
 
 static VALUE
@@ -1734,6 +1744,9 @@ time_tuesday(VALUE time)
  *     time.wednesday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Wednesday.
+ *
+ *     t = Time.local(1993, 2, 24)      #=> 1993-02-24 00:00:00 -0600
+ *     p t.wednesday?                   #=> true
  */
 
 static VALUE
@@ -1747,6 +1760,9 @@ time_wednesday(VALUE time)
  *     time.thursday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Thursday.
+ *
+ *     t = Time.local(1995, 12, 21)     #=> 1995-12-21 00:00:00 -0600
+ *     p t.thursday?                    #=> true
  */
 
 static VALUE
@@ -1760,6 +1776,9 @@ time_thursday(VALUE time)
  *     time.friday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Friday.
+ *
+ *     t = Time.local(1987, 12, 18)     #=> 1987-12-18 00:00:00 -0600
+ *     t.friday?                        #=> true
  */
 
 static VALUE
@@ -1773,6 +1792,9 @@ time_friday(VALUE time)
  *     time.saturday? => true or false
  *  
  *  Returns <code>true</code> if <i>time</i> represents Saturday.
+ *
+ *     t = Time.local(2006, 6, 10)      #=> 2006-06-10 00:00:00 -0500
+ *     t.saturday?                      #=> true
  */
 
 static VALUE
@@ -1811,10 +1833,21 @@ time_yday(VALUE time)
  *  Returns <code>true</code> if <i>time</i> occurs during Daylight
  *  Saving Time in its time zone.
  *     
- *     Time.local(2000, 7, 1).isdst   #=> true
+ *   CST6CDT:
+ *     Time.local(2000, 1, 1).zone    #=> "CST"
  *     Time.local(2000, 1, 1).isdst   #=> false
- *     Time.local(2000, 7, 1).dst?    #=> true
  *     Time.local(2000, 1, 1).dst?    #=> false
+ *     Time.local(2000, 7, 1).zone    #=> "CDT"
+ *     Time.local(2000, 7, 1).isdst   #=> true
+ *     Time.local(2000, 7, 1).dst?    #=> true
+ *
+ *   Asia/Tokyo:
+ *     Time.local(2000, 1, 1).zone    #=> "JST"
+ *     Time.local(2000, 1, 1).isdst   #=> false
+ *     Time.local(2000, 1, 1).dst?    #=> false
+ *     Time.local(2000, 7, 1).zone    #=> "JST"
+ *     Time.local(2000, 7, 1).isdst   #=> false
+ *     Time.local(2000, 7, 1).dst?    #=> false
  */
 
 static VALUE
