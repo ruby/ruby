@@ -1758,10 +1758,11 @@ rb_spawn(int argc, VALUE *argv)
  *  call-seq:
  *     system(cmd [, arg, ...])    => true or false
  *
- *  Executes _cmd_ in a subshell, returning +true+ if the command ran
- *  successfully, +false+ otherwise. An error status is available in
+ *  Executes _cmd_ in a subshell, returning +true+ if the command
+ *  gives zero exit status, +false+ for non zero exit status. Returns
+ *  +nil+ if command execution fails.  An error status is available in
  *  <code>$?</code>. The arguments are processed in the same way as
- *  for <code>Kernel::exec</code>, and raises same exceptions as it.
+ *  for <code>Kernel::exec</code>.
  *
  *     system("echo *")
  *     system("echo", "*")
@@ -1795,7 +1796,7 @@ rb_f_system(int argc, VALUE *argv)
     signal(SIGCHLD, chfunc);
 #endif
     if (status < 0) {
-	rb_sys_fail(RSTRING_PTR(argv[0]));
+	return Qnil;
     }
     status = NUM2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
