@@ -1,4 +1,7 @@
-Tue Nov 20 15:08:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Nov 20 15:09:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_read_escape): has8bit flag may be set with control
+	  escape.  [ruby-core:13722]
 
 	* parse.y (parser_prepare): set begging after BOM if exists.
 	  [ruby-core:13718]

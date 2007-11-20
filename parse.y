@@ -5144,7 +5144,7 @@ parser_read_escape(struct parser_params *parser, int flags,
 	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc())== '\\') {
 	    int tmp;
-	    c = read_escape(flags|ESCAPE_CONTROL, &tmp, &tmp, encp);
+	    c = read_escape(flags|ESCAPE_CONTROL, has8bit, &tmp, encp);
 	}
 	else if (c == '?')
 	    return 0177;
