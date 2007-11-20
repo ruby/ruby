@@ -1,3 +1,7 @@
+Tue Nov 20 16:24:31 2007  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (gc_mark_children): obj->as.file.fptr may be 0 for T_FILE.
+
 Tue Nov 20 15:09:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_read_escape): has8bit flag may be set with control

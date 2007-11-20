@@ -1081,7 +1081,8 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_FILE:
-	gc_mark(obj->as.file.fptr->tied_io_for_writing, lev);
+        if (obj->as.file.fptr)
+            gc_mark(obj->as.file.fptr->tied_io_for_writing, lev);
         break;
 
       case T_REGEXP:
