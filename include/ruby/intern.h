@@ -543,9 +543,8 @@ VALUE rb_struct_iv_get(VALUE, const char*);
 VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
 /* thread.c */
-typedef struct rb_thread_struct rb_thread_t;
-typedef void rb_unblock_function_t(rb_thread_t *, void *);
-typedef VALUE rb_blocking_function_t(rb_thread_t *th, void *);
+typedef void rb_unblock_function_t(void *);
+typedef VALUE rb_blocking_function_t(void *);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
 				rb_unblock_function_t *ubf, void *data2);
 #define RB_UBF_DFL ((rb_unblock_function_t *)-1)

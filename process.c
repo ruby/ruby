@@ -593,7 +593,7 @@ struct waitpid_arg {
 #endif
 
 static VALUE
-rb_waitpid_blocking(rb_thread_t *th, void *data)
+rb_waitpid_blocking(void *data)
 {
     rb_pid_t result;
 #ifndef NO_WAITPID

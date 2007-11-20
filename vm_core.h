@@ -360,6 +360,8 @@ struct rb_vm_trap_tag {
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 0
 
+typedef struct rb_thread_struct rb_thread_t;
+
 struct rb_thread_struct
 {
     VALUE self;
@@ -604,6 +606,8 @@ VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	       int argc, const VALUE *argv, NODE *body, int nosuper);
 
 int vm_get_sourceline(rb_control_frame_t *);
+
+NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
 RUBY_EXTERN VALUE sysstack_error;
 

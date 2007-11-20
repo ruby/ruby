@@ -3015,16 +3015,36 @@ rb_io_modenum_mode(int flags)
     return NULL;		/* not reached */
 }
 
+struct sysopen_struct {
+    char *fname;
+    int flag;
+    unsigned int mode;
+};
+
+static VALUE
+sysopen_func(void *ptr)
+{
+    struct sysopen_struct *data = ptr;
+    return (VALUE)open(data->fname, data->flag, data->mode);
+}
+
+static int
+rb_sysopen_internal(char *fname, int flags, unsigned int mode)
+{
+    struct sysopen_struct data = {fname, flags, mode};
+    return (int)rb_thread_blocking_region(sysopen_func, &data, RB_UBF_DFL, 0);
+}
+
 static int
 rb_sysopen(char *fname, int flags, unsigned int mode)
 {
     int fd;
 
-    fd = open(fname, flags, mode);
+    fd = rb_sysopen_internal(fname, flags, mode);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    fd = open(fname, flags, mode);
+	    fd = rb_sysopen_internal(fname, flags, mode);
 	}
 	if (fd < 0) {
 	    rb_sys_fail(fname);

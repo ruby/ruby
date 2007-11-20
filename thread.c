@@ -220,7 +220,7 @@ rb_thread_interrupt(rb_thread_t *th)
     native_mutex_lock(&th->interrupt_lock);
     th->interrupt_flag = 1;
     if (th->unblock_function) {
-	(th->unblock_function)(th, th->unblock_function_arg);
+	(th->unblock_function)(th->unblock_function_arg);
     }
     else {
 	/* none */
@@ -671,10 +671,11 @@ rb_thread_blocking_region(
 
     if (ubf == RB_UBF_DFL) {
 	ubf = ubf_select;
+	data2 = th;
     }
 
     BLOCKING_REGION({
-	val = func(th, data1);
+	val = func(data1);
     }, ubf, data2);
 
     return val;
@@ -1757,7 +1758,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     BLOCKING_REGION({
 	result = select(n, read, write, except, timeout);
 	if (result < 0) lerrno = errno;
-    }, ubf_select, 0);
+    }, ubf_select, GET_THREAD());
 #endif
 
     errno = lerrno;
@@ -2253,38 +2254,37 @@ rb_mutex_trylock(VALUE self)
 }
 
 static VALUE
-lock_func(rb_thread_t *th, void *ptr)
+lock_func(rb_thread_t *th, mutex_t *mutex)
 {
     int locked = 0;
-    mutex_t *mutex = (mutex_t *)ptr;
 
     while (locked == 0) {
 	native_mutex_lock(&mutex->lock);
-
-	if (mutex->th == 0) {
-	    mutex->th = th;
-	    locked = 1;
-	}
-	else {
-	    mutex->cond_waiting++;
-	    native_cond_wait(&mutex->cond, &mutex->lock);
-
-	    if (th->interrupt_flag) {
-		locked = 1;
-	    }
-	    else if (mutex->th == 0) {
+	{
+	    if (mutex->th == 0) {
 		mutex->th = th;
 		locked = 1;
 	    }
-	}
+	    else {
+		mutex->cond_waiting++;
+		native_cond_wait(&mutex->cond, &mutex->lock);
 
+		if (th->interrupt_flag) {
+		    locked = 1;
+		}
+		else if (mutex->th == 0) {
+		    mutex->th = th;
+		    locked = 1;
+		}
+	    }
+	}
 	native_mutex_unlock(&mutex->lock);
     }
     return Qnil;
 }
 
 static void
-lock_interrupt(rb_thread_t *th, void *ptr)
+lock_interrupt(void *ptr)
 {
     mutex_t *mutex = (mutex_t *)ptr;
     native_mutex_lock(&mutex->lock);
@@ -2311,11 +2311,13 @@ rb_mutex_lock(VALUE self)
 	GetMutexPtr(self, mutex);
 
 	while (mutex->th != th) {
-	    rb_thread_blocking_region(lock_func, mutex, lock_interrupt, mutex);
+	    BLOCKING_REGION({
+		lock_func(th, mutex);
+	    }, lock_interrupt, mutex);
+
 	    RUBY_VM_CHECK_INTS();
 	}
     }
-
     return self;
 }
 

@@ -1,3 +1,19 @@
+Tue Nov 20 19:36:21 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.h, vm_core.h: decl of rb_gc_save_machine_context()
+	  should be at vm_core.h.
+
+	* include/ruby/ruby.h, intern.h: remove type rb_thread_t.
+
+	* include/ruby/intern.h: change rb_unblock_function_t,
+	  rb_unblock_function_t.
+
+	* file.c, process.c: apply above changes.
+
+	* thread.c, thread_pthread.ci, thread_win32.ci: ditto.
+
+	* io.c: support blocking open (2). [ruby-core:13614]
+
 Tue Nov 20 17:10:11 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_close_on_exec_p): new method IO#close_on_exec?.

@@ -3172,7 +3172,7 @@ extern unsigned long __attribute__((stdcall)) GetLastError(void);
 #endif
 
 static VALUE
-rb_thread_flock(rb_thread_t *th, void *data)
+rb_thread_flock(void *data)
 {
 #ifdef __CYGWIN__
     int old_errno = errno;

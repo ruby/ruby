@@ -10,8 +10,6 @@ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 #define USE_CONSERVATIVE_STACK_END
 #endif
 
-NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
-
 /* for GC debug */
 
 #ifndef RUBY_MARK_FREE_DEBUG

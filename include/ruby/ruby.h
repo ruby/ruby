@@ -963,11 +963,8 @@ typedef struct rb_event_hook_struct {
     struct rb_event_hook_struct *next;
 } rb_event_hook_t;
 
-void rb_thread_add_event_hook(rb_thread_t *th, rb_event_hook_func_t func,
-			      rb_event_flag_t events, VALUE data);
 void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
 		       VALUE data);
-int rb_thread_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func);
 int rb_remove_event_hook(rb_event_hook_func_t func);
 
 #if defined(__cplusplus)

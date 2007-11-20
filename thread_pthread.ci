@@ -346,8 +346,9 @@ native_thread_apply_priority(rb_thread_t *th)
 }
 
 static void
-ubf_pthread_cond_signal(rb_thread_t *th, void *ptr)
+ubf_pthread_cond_signal(void *ptr)
 {
+    rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_pthread_cond_signal (%p)\n", th);
     pthread_cond_signal(&th->native_thread_data.sleep_cond);
 }
@@ -363,8 +364,9 @@ ubf_select_each(rb_thread_t *th)
 }
 
 static void
-ubf_select(rb_thread_t *th, void *ptr)
+ubf_select(void *ptr)
 {
+    rb_thread_t *th = (rb_thread_t *)ptr;
     add_signal_thread_list(th);
     ubf_select_each(th);
 }
@@ -403,6 +405,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	}
 	else {
 	    th->unblock_function = ubf_pthread_cond_signal;
+	    th->unblock_function_arg = th;
+
 	    if (tv == 0) {
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		pthread_cond_wait(&th->native_thread_data.sleep_cond,
@@ -418,6 +422,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
 	    th->unblock_function = 0;
+	    th->unblock_function_arg = 0;
 	}
 	pthread_mutex_unlock(&th->interrupt_lock);
 
