@@ -1,3 +1,7 @@
+Wed Nov 21 01:04:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (nil_plus): remove unused function.  [ruby-core:13737]
+
 Sun Nov 18 14:03:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_alias): do not call hook functions until initialization
