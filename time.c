@@ -2244,9 +2244,6 @@ time_mload(VALUE time, VALUE str)
         nsec = usec * 1000;
     }
     else {
-        unsigned char *ptr;
-        long len;
-
 	p &= ~(1UL<<31);
 	gmt        = (p >> 30) & 0x1;
 	tm.tm_year = (p >> 14) & 0xffff;
@@ -2262,15 +2259,22 @@ time_mload(VALUE time, VALUE str)
         nsec = usec * 1000;
 
         if (submicro != Qnil) {
+            unsigned char *ptr;
+            long len;
+            int digit;
             ptr = (unsigned char*)StringValuePtr(submicro);
             len = RSTRING_LEN(submicro);
             if (0 < len) {
-                nsec += (ptr[0] >> 4) * 100;
-                nsec += (ptr[0] & 0xf) * 10;
+                if (10 <= (digit = ptr[0] >> 4)) goto end_submicro;
+                nsec += digit * 100;
+                if (10 <= (digit = ptr[0] & 0xf)) goto end_submicro;
+                nsec += digit * 10;
             }
             if (1 < len) {
-                nsec += (ptr[1] >> 4);
+                if (10 <= (digit = ptr[1] >> 4)) goto end_submicro;
+                nsec += digit;
             }
+end_submicro: ;
         }
     }
     time_overflow_p(&sec, &nsec);

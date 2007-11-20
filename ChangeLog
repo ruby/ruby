@@ -1,3 +1,7 @@
+Tue Nov 20 21:46:46 2007  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_mload): ignore invalid digits in submicro.
+
 Tue Nov 20 20:33:32 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: rename RFloat#double_value -> float_value.
