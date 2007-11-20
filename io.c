@@ -2295,6 +2295,99 @@ rb_io_isatty(VALUE io)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     ios.close_on_exec?   => true or false
+ *
+ *  Returns <code>true</code> if <em>ios</em> will be closed on exec.
+ *
+ *     f = open("/dev/null")
+ *     f.close_on_exec?                 #=> false
+ *     f.close_on_exec = true
+ *     f.close_on_exec?                 #=> true
+ *     f.close_on_exec = false
+ *     f.close_on_exec?                 #=> false
+ */
+
+static VALUE
+rb_io_close_on_exec_p(VALUE io)
+{
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
+    rb_io_t *fptr;
+    VALUE write_io;
+    int fd, ret;
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        GetOpenFile(write_io, fptr);
+        if (fptr && 0 <= (fd = fptr->fd)) {
+            if ((ret = fcntl(fd, F_GETFD)) == -1) rb_sys_fail(fptr->path);
+            if (!(ret & FD_CLOEXEC)) return Qfalse;
+        }
+    }
+
+    GetOpenFile(io, fptr);
+    if (fptr && 0 <= (fd = fptr->fd)) {
+        if ((ret = fcntl(fd, F_GETFD)) == -1) rb_sys_fail(fptr->path);
+        if (!(ret & FD_CLOEXEC)) return Qfalse;
+    }
+    return Qtrue;
+#else
+    rb_notimplement();
+    return Qnil;		/* not reached */
+#endif
+}
+
+/*
+ *  call-seq:
+ *     ios.close_on_exec = bool    => true or false
+ *
+ *  Sets a close-on-exec flag.
+ *
+ *     f = open("/dev/null")
+ *     f.close_on_exec = true
+ *     system("cat", "/proc/self/fd/#{f.fileno}") # cat: /proc/self/fd/3: No such file or directory
+ *     f.closed?                #=> false
+ */
+
+static VALUE
+rb_io_set_close_on_exec(VALUE io, VALUE arg)
+{
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
+    int flag = RTEST(arg) ? FD_CLOEXEC : 0;
+    rb_io_t *fptr;
+    VALUE write_io;
+    int fd, ret;
+
+    write_io = GetWriteIO(io);
+    if (io != write_io) {
+        GetOpenFile(write_io, fptr);
+        if (fptr && 0 <= (fd = fptr->fd)) {
+            if ((ret = fcntl(fptr->fd, F_GETFD)) == -1) rb_sys_fail(fptr->path);
+            if ((ret & FD_CLOEXEC) != flag) {
+                ret = (ret & ~FD_CLOEXEC) | flag;
+                ret = fcntl(fd, F_SETFD, ret);
+                if (ret == -1) rb_sys_fail(fptr->path);
+            }
+        }
+
+    }
+
+    GetOpenFile(io, fptr);
+    if (fptr && 0 <= (fd = fptr->fd)) {
+        if ((ret = fcntl(fd, F_GETFD)) == -1) rb_sys_fail(fptr->path);
+        if ((ret & FD_CLOEXEC) != flag) {
+            ret = (ret & ~FD_CLOEXEC) | flag;
+            ret = fcntl(fd, F_SETFD, ret);
+            if (ret == -1) rb_sys_fail(fptr->path);
+        }
+    }
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
 #define FMODE_PREP (1<<16)
 #define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
 #define PREP_STDIO_NAME(f) ((f)->path)
@@ -6020,6 +6113,9 @@ Init_IO(void)
     rb_define_method(rb_cIO, "pos=", rb_io_set_pos, 1);
     rb_define_method(rb_cIO, "eof", rb_io_eof, 0);
     rb_define_method(rb_cIO, "eof?", rb_io_eof, 0);
+
+    rb_define_method(rb_cIO, "close_on_exec?", rb_io_close_on_exec_p, 0);
+    rb_define_method(rb_cIO, "close_on_exec=", rb_io_set_close_on_exec, 1);
 
     rb_define_method(rb_cIO, "close", rb_io_close_m, 0);
     rb_define_method(rb_cIO, "closed?", rb_io_closed, 0);

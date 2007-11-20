@@ -1,3 +1,8 @@
+Tue Nov 20 17:10:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_close_on_exec_p): new method IO#close_on_exec?.
+	  (rb_io_set_close_on_exec): new method IO#close_on_exec=.
+
 Tue Nov 20 16:24:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (gc_mark_children): obj->as.file.fptr may be 0 for T_FILE.
