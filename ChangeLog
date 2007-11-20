@@ -1,3 +1,12 @@
+Tue Nov 20 13:00:44 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h win32/win32.c (rb_w32_pipe_exec): use dual fd
+	  instead of socketpair when mode is RDWR.
+
+	* io.c (pipe_open): pass &write_fd to rb_w32_pipe_exec().
+
+	* io.c (popen_redirect): define only when HAVE_FORK.
+
 Tue Nov 20 12:12:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): add tied_io_for_writing member.

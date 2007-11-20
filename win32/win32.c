@@ -706,39 +706,32 @@ rb_w32_join_argv(char *cmd, char *const *argv)
 static int socketpair_internal(int af, int type, int protocol, SOCKET *sv);
 
 rb_pid_t
-rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
+rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe, int *write_pipe)
 {
     struct ChildRecord* child;
-    HANDLE hOrg, hIn, hOut;
-    HANDLE hDupFile;
+    HANDLE hIn, hOut;
+    HANDLE hDupIn, hDupOut;
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
     BOOL reading, writing;
     SOCKET pair[2];
     int fd;
-    int pipemode;
+    int binmode;
     int ret;
 
     /* Figure out what we're doing... */
     if (mode & O_RDWR) {
-	if (IsWin95()) {
-	    errno = EINVAL;
-	    return -1;
-	}
 	reading = writing = TRUE;
-	pipemode = _O_RDWR;
     }
     else if (mode & O_WRONLY) {
 	reading = FALSE;
 	writing = TRUE;
-	pipemode = _O_WRONLY;
     }
     else {
 	reading = TRUE;
 	writing = FALSE;
-	pipemode = _O_RDONLY;
     }
-    pipemode |= (mode & O_BINARY) ? O_BINARY : O_TEXT;
+    binmode |= (mode & O_BINARY) ? O_BINARY : O_TEXT;
 
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
@@ -748,68 +741,72 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
     RUBY_CRITICAL(do {
 	/* create pipe */
 	hCurProc = GetCurrentProcess();
-	if (reading && writing) {
-	    if (socketpair_internal(AF_INET, SOCK_STREAM, 0, pair) < 0) {
-		break;
-	    }
-	    if (!DuplicateHandle(hCurProc, (HANDLE)pair[1], hCurProc,
-				 &hDupFile, 0, FALSE,
-				 DUPLICATE_SAME_ACCESS)) {
-		errno = map_errno(GetLastError());
-		closesocket(pair[0]);
-		closesocket(pair[1]);
-		CloseHandle(hCurProc);
-		break;
-	    }
-	    closesocket(pair[1]);
-	    hOrg = hIn = hOut = (HANDLE)pair[0];
-	}
-	else if (reading) {
-	    if (!CreatePipe(&hIn, &hOut, &sa, 2048L)) {
+	hIn = hOut = hDupIn = hDupOut = NULL;
+	if (reading) {
+	    HANDLE hTmpIn;
+	    if (!CreatePipe(&hTmpIn, &hOut, &sa, 2048L)) {
 		errno = map_errno(GetLastError());
 		break;
 	    }
-	    if (!DuplicateHandle(hCurProc, hIn, hCurProc, &hDupFile, 0,
+	    if (!DuplicateHandle(hCurProc, hTmpIn, hCurProc, &hDupIn, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
 		errno = map_errno(GetLastError());
-		CloseHandle(hIn);
+		CloseHandle(hTmpIn);
 		CloseHandle(hOut);
 		break;
 	    }
-	    CloseHandle(hIn);
-	    hIn = NULL;
-	    hOrg = hOut;
+	    CloseHandle(hTmpIn);
+	    hTmpIn = NULL;
 	}
-	else {	/* writing */
-	    if (!CreatePipe(&hIn, &hOut, &sa, 2048L)) {
+	if (writing) {
+	    HANDLE hTmpOut;
+	    if (!CreatePipe(&hIn, &hTmpOut, &sa, 2048L)) {
 		errno = map_errno(GetLastError());
 		break;
 	    }
-	    if (!DuplicateHandle(hCurProc, hOut, hCurProc, &hDupFile, 0,
+	    if (!DuplicateHandle(hCurProc, hTmpOut, hCurProc, &hDupOut, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
 		errno = map_errno(GetLastError());
 		CloseHandle(hIn);
-		CloseHandle(hOut);
+		CloseHandle(hTmpOut);
 		break;
 	    }
-	    CloseHandle(hOut);
-	    hOut = NULL;
-	    hOrg = hIn;
+	    CloseHandle(hTmpOut);
+	    hTmpOut = NULL;
 	}
 
 	/* create child process */
 	child = CreateChild(cmd, prog, &sa, hIn, hOut, NULL);
 	if (!child) {
-	    CloseHandle(hOrg);
-	    CloseHandle(hDupFile);
+	    if (hIn)
+		CloseHandle(hIn);
+	    if (hOut)
+		CloseHandle(hOut);
+	    if (hDupIn)
+		CloseHandle(hDupIn);
+	    if (hDupOut)
+		CloseHandle(hDupOut);
 	    break;
 	}
 
 	/* associate handle to file descritor */
-	*pipe = rb_w32_open_osfhandle((intptr_t)hDupFile, pipemode);
-	CloseHandle(hOrg);
+	if (reading) {
+	    *pipe = rb_w32_open_osfhandle((intptr_t)hDupIn, _O_RDONLY | binmode);
+	    if (writing)
+		*write_pipe = rb_w32_open_osfhandle((intptr_t)hDupOut, _O_WRONLY | binmode);
+	}
+	else {
+	    *pipe = rb_w32_open_osfhandle((intptr_t)hDupOut, _O_WRONLY | binmode);
+	}
+	if (hIn)
+	    CloseHandle(hIn);
+	if (hOut)
+	    CloseHandle(hOut);
 	if (*pipe == -1) {
-	    CloseHandle(hDupFile);
+	    if (hDupIn)
+		CloseHandle(hDupIn);
+	    if (hDupOut)
+		CloseHandle(hDupOut);
 	    CloseChildHandle(child);
 	    break;
 	}

@@ -206,7 +206,7 @@ struct timezone {
 #endif
 #define NtInitialize ruby_sysinit
 extern int    rb_w32_cmdvector(const char *, char ***);
-extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *);
+extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_is_socket(int);
 extern int    WSAAPI rb_w32_accept(int, struct sockaddr *, int *);

@@ -3138,6 +3138,7 @@ rb_io_unbuffered(rb_io_t *fptr)
     rb_io_synchronized(fptr);
 }
 
+#ifdef HAVE_FORK
 struct popen_arg {
     struct rb_exec_arg exec;
     int modef;
@@ -3176,7 +3177,6 @@ popen_redirect(struct popen_arg *p)
     }
 }
 
-#ifdef HAVE_FORK
 static int
 popen_exec(void *pp)
 {
@@ -3299,7 +3299,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	exename = cmd;
 	cmd = rb_w32_join_argv(ALLOCA_N(char, rb_w32_argv_size(args)), args);
     }
-    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd)) == -1) {
+    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd, &write_fd)) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
