@@ -483,7 +483,7 @@ rb_float_new(double d)
     NEWOBJ(flt, struct RFloat);
     OBJSETUP(flt, rb_cFloat, T_FLOAT);
 
-    flt->double_value = d;
+    flt->float_value = d;
     return (VALUE)flt;
 }
 

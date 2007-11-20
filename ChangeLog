@@ -1,3 +1,9 @@
+Tue Nov 20 20:33:32 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: rename RFloat#double_value -> float_value.
+
+	* numeric.c, parse.y: ditto.
+
 Tue Nov 20 19:36:21 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.h, vm_core.h: decl of rb_gc_save_machine_context()
