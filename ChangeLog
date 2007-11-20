@@ -1,3 +1,7 @@
+Wed Nov 21 01:04:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (nil_plus): remove unused function.  [ruby-core:13737]
+
 Tue Nov 20 21:46:46 2007  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_mload): ignore invalid digits in submicro.

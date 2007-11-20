@@ -811,27 +811,6 @@ nil_inspect(VALUE obj)
     return rb_str_new2("nil");
 }
 
-#ifdef NIL_PLUS
-static VALUE
-nil_plus(VALUE x, VALUE y)
-{
-    switch (TYPE(y)) {
-      case T_NIL:
-      case T_FIXNUM:
-      case T_FLOAT:
-      case T_BIGNUM:
-      case T_STRING:
-      case T_ARRAY:
-	return y;
-      default:
-	rb_raise(rb_eTypeError, "tried to add %s(%s) to nil",
-		 RSTRING_PTR(rb_inspect(y)),
-		 rb_obj_classname(y));
-    }
-    /* not reached */
-}
-#endif
-
 /***********************************************************************
  *  Document-class: TrueClass
  *
