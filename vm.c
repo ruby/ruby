@@ -1521,6 +1521,51 @@ vm_init2(rb_vm_t *vm)
 
 /* Thread */
 
+#define USE_THREAD_DATA_RECYCLE 1
+
+#if USE_THREAD_DATA_RECYCLE
+#define RECYCLE_MAX 64
+VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
+int thread_recycle_stack_count = 0;
+
+static VALUE *
+thread_recycle_stack(int size)
+{
+    if (thread_recycle_stack_count) {
+	return thread_recycle_stack_slot[--thread_recycle_stack_count];
+    }
+    else {
+	return ALLOC_N(VALUE, size);
+    }
+}
+
+#else
+#define thread_recycle_stack(size) ALLOC_N(VALUE, (size))
+#endif
+
+void
+rb_thread_recycle_stack_release(VALUE *stack)
+{
+#if USE_THREAD_DATA_RECYCLE
+    if (thread_recycle_stack_count < RECYCLE_MAX) {
+	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
+    }
+    else {
+	ruby_xfree(stack);
+    }
+#else
+	ruby_xfree(stack);
+#endif
+}
+
+static rb_thread_t *
+thread_recycle_struct(void)
+{
+    void *p = ALLOC_N(rb_thread_t, 1);
+    memset(p, 0, sizeof(rb_thread_t));
+    return p;
+}
+
 static void
 thread_free(void *ptr)
 {
@@ -1529,7 +1574,7 @@ thread_free(void *ptr)
 
     if (ptr) {
 	th = ptr;
-
+	
 	if (!th->root_fiber) {
 	    RUBY_FREE_UNLESS_NULL(th->stack);
 	}
@@ -1619,6 +1664,8 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
+    //rb_thread_t *th = thread_recycle_struct();
+    //obj = Data_Wrap_Struct(klass, rb_thread_mark, thread_free, th);
     rb_thread_t *th;
     obj = Data_Make_Struct(klass, rb_thread_t,
 			   rb_thread_mark, thread_free, th);
@@ -1628,11 +1675,9 @@ thread_alloc(VALUE klass)
 static void
 th_init2(rb_thread_t *th)
 {
-    MEMZERO(th, rb_thread_t, 1);
-
     /* allocate thread stack */
     th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
-    th->stack = ALLOC_N(VALUE, th->stack_size);
+    th->stack = thread_recycle_stack(th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;
@@ -1815,6 +1860,7 @@ Init_BareVM(void)
     /* VM bootstrap: phase 1 */
     rb_vm_t *vm = ALLOC(rb_vm_t);
     rb_thread_t *th = ALLOC(rb_thread_t);
+    MEMZERO(th, rb_thread_t, 1);
 
     vm_init2(vm);
     ruby_current_vm = vm;

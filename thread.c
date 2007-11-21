@@ -288,6 +288,7 @@ thread_cleanup_func(void *th_ptr)
 
 extern void ruby_error_print(void);
 static VALUE rb_thread_raise(int, VALUE *, rb_thread_t *);
+void rb_thread_recycle_stack_release(VALUE *);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
@@ -359,6 +360,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    join_th = join_th->join_list_next;
 	}
 	st_delete_wrap(th->vm->living_threads, th->self);
+
+	if (!th->root_fiber) {
+	    rb_thread_recycle_stack_release(th->stack);
+	    th->stack = 0;
+	}
     }
     thread_cleanup_func(th);
     native_mutex_unlock(&th->vm->global_interpreter_lock);
@@ -428,7 +434,6 @@ thread_join(rb_thread_t *target_th, double delay)
 	th->join_list_next = target_th->join_list_head;
 	target_th->join_list_head = th;
     }
-
     while (target_th->status != THREAD_KILLED) {
 	if (delay == DELAY_INFTY) {
 	    sleep_forever(th);

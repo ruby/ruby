@@ -1,3 +1,11 @@
+Wed Nov 21 18:03:49 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: fix to recycle thread data (VM stack).
+
+	* thread.c: ditto.
+
+	* benchmark/bm_vm3_thread_create_join.rb: add loop count.
+
 Wed Nov 21 18:02:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: add path to trunk/lib if driver runner is
