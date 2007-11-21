@@ -1,3 +1,8 @@
+Wed Nov 21 18:02:10 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: add path to trunk/lib if driver runner is
+	  in build directory.
+
 Wed Nov 21 16:39:21 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/fileutils/fileasserts.rb (assert_equal_timestamp): new assert

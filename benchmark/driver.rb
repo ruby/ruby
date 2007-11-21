@@ -2,7 +2,22 @@
 # Ruby Benchmark driver
 #
 
-require 'optparse'
+first = true
+
+p RUBY_VERSION
+
+begin
+  require 'optparse'
+rescue LoadError
+  if first
+    first = false
+    $:.unshift File.join(File.dirname(__FILE__), '../lib')
+    retry
+  else
+    raise
+  end
+end
+
 require 'benchmark'
 require 'pp'
 
