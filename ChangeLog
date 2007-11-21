@@ -1,3 +1,9 @@
+Wed Nov 21 16:39:21 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/fileutils/fileasserts.rb (assert_equal_timestamp): new assert
+	  to test tv_sec only for filestamp resolution portability.
+	  (assert_same_entry): use assert_same_entry for mtime comparison.
+
 Wed Nov 21 14:55:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_permutation): add gc guard codes.
