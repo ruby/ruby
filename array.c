@@ -3047,15 +3047,17 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {             /* this is the general case */
-	volatile VALUE t0 = tmpbuf(n,sizeof(long));
+	VALUE t0 = tmpbuf(n,sizeof(long));
 	long *p = (long*)RSTRING_PTR(t0);
-	volatile VALUE t1 = tmpbuf(n,sizeof(int));
+	VALUE t1 = tmpbuf(n,sizeof(int));
 	int *used = (int*)RSTRING_PTR(t1);
 	VALUE ary0 = ary_make_shared(ary); /* private defensive copy of ary */
 
 	for (i = 0; i < n; i++) used[i] = 0; /* initialize array */
 
 	permute0(n, r, p, 0, used, ary0); /* compute and yield permutations */
+	RB_GC_GUARD(t0);
+	RB_GC_GUARD(t1);
     }
     return ary;
 }

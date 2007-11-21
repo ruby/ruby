@@ -1,3 +1,7 @@
+Wed Nov 21 14:55:13 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c (rb_ary_permutation): add gc guard codes.
+
 Wed Nov 21 03:12:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_system): returns nil on execution failure.
