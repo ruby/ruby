@@ -321,7 +321,7 @@ typedef struct {
     rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
     VALUE proc;			/* cfp[9] / block[4] */
     ID method_id;               /* cfp[10] saved in special case */
-    VALUE method_klass;         /* cfp[11] saved in special case */
+    VALUE method_class;         /* cfp[11] saved in special case */
     VALUE prof_time_self;       /* cfp[12] */
     VALUE prof_time_chld;       /* cfp[13] */
 } rb_control_frame_t;
@@ -522,7 +522,7 @@ typedef struct {
 
 /* inline (method|const) cache */
 #define NEW_INLINE_CACHE_ENTRY() NEW_WHILE(Qundef, 0, 0)
-#define ic_klass  u1.value
+#define ic_class  u1.value
 #define ic_method u2.node
 #define ic_value  u2.value
 #define ic_vmstat u3.cnt
@@ -593,7 +593,7 @@ void rb_vm_bugreport(void);
 VALUE rb_iseq_eval(VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
-int rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp);
+int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 
 VALUE vm_eval_body(rb_thread_t *th);
 VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, int argc, VALUE *argv);

@@ -19,7 +19,7 @@ static ID prc_pr, prc_if;
 
 /*
  *  call-seq:
- *   num.prec(klass)   => a_klass
+ *   num.prec(klass)   => a_class
  *
  *  Converts _self_ into an instance of _klass_. By default,
  *  +prec+ invokes 

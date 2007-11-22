@@ -359,7 +359,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
 			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
 
 	cfp->method_id = id;
-	cfp->method_klass = klass;
+	cfp->method_class = klass;
 
 	reg_cfp->sp -= num + 1;
 
@@ -393,7 +393,7 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
 
     /* control block frame */
     (cfp-2)->method_id = id;
-    (cfp-2)->method_klass = klass;
+    (cfp-2)->method_class = klass;
 
     GetProcPtr(procval, proc);
     val = vm_invoke_proc(th, proc, recv, argc, argv);
@@ -1107,13 +1107,13 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 
 #if OPT_INLINE_METHOD_CACHE
     {
-	if (LIKELY(klass == ic->ic_klass) &&
+	if (LIKELY(klass == ic->ic_class) &&
 	    LIKELY(GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
 	    mn = ic->ic_method;
 	}
 	else {
 	    mn = rb_method_node(klass, id);
-	    ic->ic_klass = klass;
+	    ic->ic_class = klass;
 	    ic->ic_method = mn;
 	    ic->ic_vmstat = GET_VM_STATE_VERSION();
 	}
@@ -1125,7 +1125,7 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 }
 
 static inline VALUE
-vm_search_normal_super_klass(VALUE klass, VALUE recv)
+vm_search_normal_superclass(VALUE klass, VALUE recv)
 {
     if (BUILTIN_TYPE(klass) == T_CLASS) {
 	klass = RCLASS_SUPER(klass);
@@ -1144,7 +1144,7 @@ vm_search_normal_super_klass(VALUE klass, VALUE recv)
 }
 
 static void
-vm_search_super_klass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VALUE sigval, ID *idp, VALUE *klassp)
+vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VALUE sigval, ID *idp, VALUE *klassp)
 {
     ID id;
     VALUE klass;
@@ -1174,7 +1174,7 @@ vm_search_super_klass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VA
 	}
 
 	id = lcfp->method_id;
-	klass = vm_search_normal_super_klass(lcfp->method_klass, recv);
+	klass = vm_search_normal_superclass(lcfp->method_class, recv);
 
 	if (sigval == Qfalse) {
 	    /* zsuper */
@@ -1182,7 +1182,7 @@ vm_search_super_klass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VA
 	}
     }
     else {
-	klass = vm_search_normal_super_klass(ip->klass, recv);
+	klass = vm_search_normal_superclass(ip->klass, recv);
     }
 
     *idp = id;

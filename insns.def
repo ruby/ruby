@@ -861,7 +861,7 @@ defined
 	      ip = ip->parent_iseq;
 	  }
 	  if (ip) {
-	      VALUE klass = vm_search_normal_super_klass(ip->klass, GET_SELF());
+	      VALUE klass = vm_search_normal_superclass(ip->klass, GET_SELF());
 	      if (rb_method_boundp(klass, ip->defined_method_id, 0)) {
 		  expr_type = "super";
 	      }
@@ -944,7 +944,7 @@ trace
  */
 DEFINE_INSN
 defineclass
-(ID id, ISEQ klass_iseq, rb_num_t define_type)
+(ID id, ISEQ class_iseq, rb_num_t define_type)
 (VALUE cbase, VALUE super)
 (VALUE val)
 {
@@ -1019,13 +1019,13 @@ defineclass
 	rb_bug("unknown defineclass type: %d", (int)define_type);
     }
 
-    COPY_CREF(klass_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC));
+    COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC));
 
     /* enter scope */
-    vm_push_frame(th, klass_iseq,
+    vm_push_frame(th, class_iseq,
 		  FRAME_MAGIC_CLASS, klass, (VALUE) GET_DFP() | 0x02,
-		  klass_iseq->iseq_encoded, GET_SP(), 0,
-		  klass_iseq->local_size);
+		  class_iseq->iseq_encoded, GET_SP(), 0,
+		  class_iseq->local_size);
     RESTORE_REGS();
 
     INC_VM_STATE_VERSION();
@@ -1096,7 +1096,7 @@ invokesuper
     const VALUE flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 
     recv = GET_SELF();
-    vm_search_super_klass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
+    vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
     mn = rb_method_node(klass, id);
 
     CALL_METHOD(num, blockptr, flag, id, mn, recv, klass);

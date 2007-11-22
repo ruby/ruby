@@ -2906,7 +2906,7 @@ call_trace_proc(VALUE args)
 	klass = p->klass;
     }
     else {
-	rb_thread_method_id_and_klass(GET_THREAD(), &id, &klass);
+	rb_thread_method_id_and_class(GET_THREAD(), &id, &klass);
     }
     if (id == ID_ALLOCATOR)
 	return Qnil;

@@ -448,7 +448,7 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
 			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
 	    cfp->method_id = id;
-	    cfp->method_klass = klass;
+	    cfp->method_class = klass;
 
 	    val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
 
@@ -502,11 +502,11 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     rb_control_frame_t *cfp = th->cfp;
 
     if (!cfp->iseq) {
-	klass = cfp->method_klass;
+	klass = cfp->method_class;
 	klass = RCLASS_SUPER(klass);
 
 	if (klass == 0) {
-	    klass = vm_search_normal_super_klass(cfp->method_klass, recv);
+	    klass = vm_search_normal_superclass(cfp->method_class, recv);
 	}
 
 	id = cfp->method_id;
@@ -1375,13 +1375,13 @@ rb_iseq_eval(VALUE iseqval)
 }
 
 int
-rb_thread_method_id_and_klass(rb_thread_t *th, ID *idp, VALUE *klassp)
+rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp)
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq) {
 	if (idp) *idp = cfp->method_id;
-	if (klassp) *klassp = cfp->method_klass;
+	if (klassp) *klassp = cfp->method_class;
 	return 1;
     }
     while (iseq) {
@@ -1420,7 +1420,7 @@ rb_thread_current_status(rb_thread_t *th)
     }
     else if (cfp->method_id) {
 	str = rb_sprintf("`%s#%s' (cfunc)",
-			 RSTRING_PTR(rb_class_name(cfp->method_klass)),
+			 RSTRING_PTR(rb_class_name(cfp->method_class)),
 			 rb_id2name(cfp->method_id));
     }
 

@@ -14,7 +14,8 @@
 #include "gc.h"
 
 struct METHOD {
-    VALUE klass, rklass;
+    VALUE oclass;		/* class that holds the method */
+    VALUE rclass;		/* class of the recevier */
     VALUE recv;
     ID id, oid;
     NODE *body;
@@ -349,7 +350,7 @@ proc_lambda(void)
 }
 
 VALUE
-proc_invoke(VALUE self, VALUE args, VALUE alt_self, VALUE alt_klass)
+proc_invoke(VALUE self, VALUE args, VALUE alt_self, VALUE alt_class)
 {
     rb_proc_t *proc;
     GetProcPtr(self, proc);
@@ -595,8 +596,8 @@ proc_to_proc(VALUE self)
 void
 bm_mark(struct METHOD *data)
 {
-    rb_gc_mark(data->rklass);
-    rb_gc_mark(data->klass);
+    rb_gc_mark(data->rclass);
+    rb_gc_mark(data->oclass);
     rb_gc_mark(data->recv);
     rb_gc_mark((VALUE)data->body);
 }
@@ -604,17 +605,17 @@ bm_mark(struct METHOD *data)
 NODE *rb_get_method_body(VALUE klass, ID id, ID *idp);
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mklass)
+mnew(VALUE klass, VALUE obj, ID id, VALUE mclass)
 {
     VALUE method;
     NODE *body;
     struct METHOD *data;
-    VALUE rklass = klass;
+    VALUE rclass = klass;
     ID oid = id;
 
   again:
     if ((body = rb_get_method_body(klass, id, 0)) == 0) {
-	print_undef(rklass, oid);
+	print_undef(rclass, oid);
     }
 
     klass = body->nd_clss;
@@ -625,19 +626,19 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mklass)
 	goto again;
     }
 
-    while (rklass != klass &&
-	   (FL_TEST(rklass, FL_SINGLETON) || TYPE(rklass) == T_ICLASS)) {
-	rklass = RCLASS_SUPER(rklass);
+    while (rclass != klass &&
+	   (FL_TEST(rclass, FL_SINGLETON) || TYPE(rclass) == T_ICLASS)) {
+	rclass = RCLASS_SUPER(rclass);
     }
     if (TYPE(klass) == T_ICLASS)
 	klass = RBASIC(klass)->klass;
-    method = Data_Make_Struct(mklass, struct METHOD, bm_mark, -1, data);
-    data->klass = klass;
+    method = Data_Make_Struct(mclass, struct METHOD, bm_mark, -1, data);
+    data->oclass = klass;
     data->recv = obj;
 
     data->id = id;
     data->body = body;
-    data->rklass = rklass;
+    data->rclass = rclass;
     data->oid = oid;
     OBJ_INFECT(method, klass);
 
@@ -692,7 +693,7 @@ method_eq(VALUE method, VALUE other)
     Data_Get_Struct(method, struct METHOD, m1);
     Data_Get_Struct(other, struct METHOD, m2);
 
-    if (m1->klass != m2->klass || m1->rklass != m2->rklass ||
+    if (m1->oclass != m2->oclass || m1->rclass != m2->rclass ||
 	m1->recv != m2->recv || m1->body != m2->body)
 	return Qfalse;
 
@@ -713,8 +714,8 @@ method_hash(VALUE method)
     long hash;
 
     Data_Get_Struct(method, struct METHOD, m);
-    hash = (long)m->klass;
-    hash ^= (long)m->rklass;
+    hash = (long)m->oclass;
+    hash ^= (long)m->rclass;
     hash ^= (long)m->recv;
     hash ^= (long)m->body;
 
@@ -740,11 +741,11 @@ method_unbind(VALUE obj)
     method =
 	Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, free,
 			 data);
-    data->klass = orig->klass;
+    data->oclass = orig->oclass;
     data->recv = Qundef;
     data->id = orig->id;
     data->body = orig->body;
-    data->rklass = orig->rklass;
+    data->rclass = orig->rclass;
     data->oid = orig->oid;
     OBJ_INFECT(method, obj);
 
@@ -796,7 +797,7 @@ method_owner(VALUE obj)
     struct METHOD *data;
 
     Data_Get_Struct(obj, struct METHOD, data);
-    return data->klass;
+    return data->oclass;
 }
 
 /*
@@ -935,16 +936,16 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC) bm_mark) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
-	VALUE rklass = method->rklass;
-	if (rklass != mod) {
-	    if (FL_TEST(rklass, FL_SINGLETON)) {
+	VALUE rclass = method->rclass;
+	if (rclass != mod) {
+	    if (FL_TEST(rclass, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError,
 			 "can't bind singleton method to a different class");
 	    }
-	    if (!RTEST(rb_class_inherited_p(mod, rklass))) {
+	    if (!RTEST(rb_class_inherited_p(mod, rclass))) {
 		rb_raise(rb_eTypeError,
 			 "bind argument must be a subclass of %s",
-			 rb_class2name(rklass));
+			 rb_class2name(rclass));
 	    }
 	}
 	node = method->body;
@@ -1035,7 +1036,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     if ((state = EXEC_TAG()) == 0) {
 	PASS_PASSED_BLOCK();
 	result = vm_call0(GET_THREAD(),
-			  data->klass, data->recv, data->id, data->oid,
+			  data->oclass, data->recv, data->id, data->oid,
 			  argc, argv, data->body, 0);
     }
     POP_TAG();
@@ -1143,21 +1144,21 @@ umethod_bind(VALUE method, VALUE recv)
     struct METHOD *data, *bound;
 
     Data_Get_Struct(method, struct METHOD, data);
-    if (data->rklass != CLASS_OF(recv)) {
-	if (FL_TEST(data->rklass, FL_SINGLETON)) {
+    if (data->rclass != CLASS_OF(recv)) {
+	if (FL_TEST(data->rclass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError,
 		     "singleton method called for a different object");
 	}
-	if (!rb_obj_is_kind_of(recv, data->rklass)) {
+	if (!rb_obj_is_kind_of(recv, data->rclass)) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->rklass));
+		     rb_class2name(data->rclass));
 	}
     }
 
     method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, free, bound);
     *bound = *data;
     bound->recv = recv;
-    bound->rklass = CLASS_OF(recv);
+    bound->rclass = CLASS_OF(recv);
 
     return method;
 }
@@ -1280,11 +1281,11 @@ method_inspect(VALUE method)
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
 
-    if (FL_TEST(data->klass, FL_SINGLETON)) {
-	VALUE v = rb_iv_get(data->klass, "__attached__");
+    if (FL_TEST(data->oclass, FL_SINGLETON)) {
+	VALUE v = rb_iv_get(data->oclass, "__attached__");
 
 	if (data->recv == Qundef) {
-	    rb_str_buf_append(str, rb_inspect(data->klass));
+	    rb_str_buf_append(str, rb_inspect(data->oclass));
 	}
 	else if (data->recv == v) {
 	    rb_str_buf_append(str, rb_inspect(v));
@@ -1299,10 +1300,10 @@ method_inspect(VALUE method)
 	}
     }
     else {
-	rb_str_buf_cat2(str, rb_class2name(data->rklass));
-	if (data->rklass != data->klass) {
+	rb_str_buf_cat2(str, rb_class2name(data->rclass));
+	if (data->rclass != data->oclass) {
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_cat2(str, rb_class2name(data->klass));
+	    rb_str_buf_cat2(str, rb_class2name(data->oclass));
 	    rb_str_buf_cat2(str, ")");
 	}
     }

@@ -444,13 +444,13 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
 }
 
 static void
-w_uclass(VALUE obj, VALUE base_klass, struct dump_arg *arg)
+w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
 {
     VALUE klass = CLASS_OF(obj);
 
     w_extended(klass, arg, Qtrue);
     klass = rb_class_real(klass);
-    if (klass != base_klass) {
+    if (klass != super) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(RSTRING_PTR(class2path(klass)), arg);
     }
