@@ -81,8 +81,7 @@ assert_equal 'ok', %q{
   end
   vs1 = []
   C.new.each {|*v| vs1 << v }
-  e = C.new.to_enum
   vs2 = []               
-  e.each {|*v| vs2 << v }
+  C.new.to_enum.each {|*v| vs2 << v }
   vs1 == vs2 ? :ok : :ng
 }, '[ruby-dev:32329]'
