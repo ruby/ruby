@@ -65,3 +65,24 @@ assert_equal 'ok', %q{
 assert_equal '(?-mix:\000)', %q{
   Regexp.new("\0")
 }
+
+assert_normal_exit %q{
+  STDERR.reopen(STDOUT)
+  require 'yaml'
+  YAML.load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
+}, '[ruby-core:13735]'
+
+assert_equal 'ok', %q{
+  class C
+    def each
+      yield [1,2]
+      yield 1,2
+    end
+  end
+  vs1 = []
+  C.new.each {|*v| vs1 << v }
+  e = C.new.to_enum
+  vs2 = []               
+  e.each {|*v| vs2 << v }
+  vs1 == vs2 ? :ok : :ng
+}, '[ruby-dev:32329]'
