@@ -10,6 +10,8 @@ class TestDefined < Test::Unit::TestCase
       yield(defined?(self.foo))
       yield(defined?(f.foo))
     end
+    def baz(f)
+    end
   end
 
   def defined_test
@@ -34,10 +36,17 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?(1 == 2))		# operator expression
 
     f = Foo.new
-    assert_nil(defined?(f.foo))
+    assert_nil(defined?(f.foo))         # protected method
     f.bar(f) { |v| assert(v) }
+    assert_nil(defined?(f.quux))        # undefined method
+    assert_nil(defined?(f.baz(x)))      # undefined argument
+    x = 0
+    assert(defined?(f.baz(x)))
+    assert_nil(defined?(f.quux(x)))
+    assert(defined?(print(x)))
+    assert_nil(defined?(quux(x)))
 
     assert(defined_test)		# not iterator
-    assert(!defined_test{})	# called as iterator
+    assert(!defined_test{})	        # called as iterator
   end
 end

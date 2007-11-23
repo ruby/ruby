@@ -2295,13 +2295,11 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	if (node->nd_args) {
 	    lfalse = NEW_LABEL(nd_line(node));
 	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
+	    ADD_INSNL(ret, nd_line(node), branchunless, lfalse);
 	}
 	if (!self) {
 	    LABEL *lcont = NEW_LABEL(nd_line(node));
 
-	    if (lfalse) {
-		ADD_INSNL(ret, nd_line(node), branchunless, lfalse);
-	    }
 	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchif, lcont);
 	    if (lfalse) {
@@ -2319,9 +2317,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	    ADD_INSN(ret, nd_line(node), putself);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_FUNC),
 		      ID2SYM(node->nd_mid), needstr);
+	    ADD_INSNL(ret, nd_line(node), jump, lfinish);
 	    if (lfalse) {
-		ADD_INSNL(ret, nd_line(node), branchif, lfinish);
-
 		ADD_LABEL(ret, lfalse);
 		ADD_INSN(ret, nd_line(node), putnil);
 		ADD_INSNL(ret, nd_line(node), jump, lfinish);
