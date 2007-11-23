@@ -1046,7 +1046,7 @@ vm_init_redefined_flag(void)
 /*                  finish
   VMe (h1)          finish
     VM              finish F1 F2
-      func          finish F1 F2 C1
+      cfunc         finish F1 F2 C1
         rb_funcall  finish F1 F2 C1
           VMe       finish F1 F2 C1
             VM      finish F1 F2 C1 F3
