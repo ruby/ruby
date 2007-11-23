@@ -1,3 +1,7 @@
+Fri Nov 23 17:34:24 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* io.c: add rb_read_internal() as blocking function.
+
 Fri Nov 23 17:33:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: fix comment.

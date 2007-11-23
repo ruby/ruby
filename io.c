@@ -902,6 +902,27 @@ rb_io_rewind(VALUE io)
     return INT2FIX(0);
 }
 
+struct read_struct {
+    int fd;
+    void *buf;
+    size_t capa;
+};
+
+static VALUE
+read_func(void *ptr)
+{
+    struct read_struct *rs = (struct read_struct*)ptr;
+    return read(rs->fd, rs->buf, rs->capa);
+}
+
+
+static int
+rb_read_internal(int fd, void *buf, size_t count)
+{
+    struct read_struct rs = {fd, buf, count};
+    return rb_thread_blocking_region(read_func, &rs, RB_UBF_DFL, 0);
+}
+
 static int
 io_fillbuf(rb_io_t *fptr)
 {
@@ -915,9 +936,9 @@ io_fillbuf(rb_io_t *fptr)
     }
     if (fptr->rbuf_len == 0) {
       retry:
-        TRAP_BEG;
-        r = read(fptr->fd, fptr->rbuf, fptr->rbuf_capa);
-        TRAP_END; /* xxx: signal handler may modify rbuf */
+	{
+	    r = rb_read_internal(fptr->fd, fptr->rbuf, fptr->rbuf_capa);
+	}
         if (r < 0) {
             if (rb_io_wait_readable(fptr->fd))
                 goto retry;
@@ -1329,13 +1350,11 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
 	if (RSTRING_LEN(str) != len) goto modified;
         if (nonblock) {
             rb_io_set_nonblock(fptr);
-            n = read(fptr->fd, RSTRING_PTR(str), len);
+	    n = rb_read_internal(fptr->fd, RSTRING_PTR(str), len);
         }
         else {
-            TRAP_BEG;
-            n = read(fptr->fd, RSTRING_PTR(str), len);
-            TRAP_END;
-        }
+            n = rb_read_internal(fptr->fd, RSTRING_PTR(str), len);
+	}
         if (n < 0) {
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
@@ -2791,9 +2810,8 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (RSTRING_LEN(str) != ilen) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
-    TRAP_BEG;
-    n = read(fptr->fd, RSTRING_PTR(str), ilen);
-    TRAP_END;
+
+    n = rb_read_internal(fptr->fd, RSTRING_PTR(str), ilen);
 
     if (n == -1) {
 	rb_sys_fail(fptr->path);
