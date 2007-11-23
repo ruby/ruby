@@ -608,6 +608,15 @@ match_size(VALUE match)
     return INT2FIX(RMATCH(match)->regs->num_regs);
 }
 
+static VALUE
+match_sublen(VALUE str, int offset)
+{
+    int i;
+
+    i = rb_str_sublen(str, offset);
+    return INT2FIX(i);
+}
+
 
 /*
  *  call-seq:
@@ -632,8 +641,8 @@ match_offset(VALUE match, VALUE n)
     if (RMATCH(match)->regs->beg[i] < 0)
 	return rb_assoc_new(Qnil, Qnil);
 
-    return rb_assoc_new(INT2FIX(RMATCH(match)->regs->beg[i]),
-			INT2FIX(RMATCH(match)->regs->end[i]));
+    return rb_assoc_new(match_sublen(RMATCH(match)->str, RMATCH(match)->regs->beg[i]),
+			match_sublen(RMATCH(match)->str, RMATCH(match)->regs->end[i]));
 }
 
 
@@ -660,7 +669,7 @@ match_begin(VALUE match, VALUE n)
     if (RMATCH(match)->regs->beg[i] < 0)
 	return Qnil;
 
-    return INT2FIX(RMATCH(match)->regs->beg[i]);
+    return match_sublen(RMATCH(match)->str, RMATCH(match)->regs->beg[i]);
 }
 
 
@@ -687,7 +696,7 @@ match_end(VALUE match, VALUE n)
     if (RMATCH(match)->regs->beg[i] < 0)
 	return Qnil;
 
-    return INT2FIX(RMATCH(match)->regs->end[i]);
+    return match_sublen(RMATCH(match)->str, RMATCH(match)->regs->end[i]);
 }
 
 #define MATCH_BUSY FL_USER2
@@ -739,10 +748,10 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     }
 }
 
-long
-rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, long reverse)
+int
+rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
 {
-    long range;
+    int range;
     OnigEncoding enc;
     UChar *p, *string;
 
@@ -773,13 +782,13 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, long reverse)
     return pos;
 }
 
-long
-rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
+int
+rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 {
-    long result;
+    int result;
     VALUE match;
     static struct re_registers regs;
-    long range;
+    int range;
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
@@ -833,7 +842,8 @@ rb_reg_search(VALUE re, VALUE str, long pos, long reverse)
 
     OBJ_INFECT(match, re);
     OBJ_INFECT(match, str);
-    return result;
+
+    return rb_str_sublen(RMATCH(match)->str, result);
 }
 
 VALUE
