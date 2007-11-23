@@ -28,4 +28,13 @@ class TestRegexp < Test::Unit::TestCase
   def test_ruby_dev_31309
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
   end
+
+  def test_assert_normal_exit
+    # moved from knownbug.  It caused core.
+    Regexp.union("a", "a")
+  end
+
+  def test_to_s
+    assert_equal '(?-mix:\000)', Regexp.new("\0").to_s
+  end
 end

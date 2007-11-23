@@ -241,6 +241,8 @@ class TestInteger < Test::Unit::TestCase
         end
       }
     }
+
+    assert_equal(0**-1 == 0, false)
   end
 
   def test_not
