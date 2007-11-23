@@ -5206,7 +5206,7 @@ parser_tokadd_escape(struct parser_params *parser, int term,
 	    hex = tok_hex(&numlen);
 	    if (numlen == 0) goto eof;
 	    tokcopy(numlen + 2);
-	    if (hex >= 0x80) *has8bit = ENC_CODERANGE_UNKNOWN;
+	    if (hex >= 0x80) *has8bit = 1;
 	}
 	return 0;
 

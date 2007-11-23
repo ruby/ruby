@@ -132,7 +132,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 }
 
 #define REG_LITERAL FL_USER5
-#define REG_CASESTATE  FL_USER0
 
 #define KCODE_FIXED FL_USER4
 
@@ -711,15 +710,18 @@ static void
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
     int need_recompile = 0;
-    int state;
     rb_encoding *enc;
 
     rb_reg_check(re);
-    state = FL_TEST(re, REG_CASESTATE);
     /* ignorecase status */
-    if (ENCODING_GET(re) == 0 && !FL_TEST(re, KCODE_FIXED) &&
-	(enc = rb_enc_get(str)) != 0 &&
-	RREGEXP(re)->ptr->enc != enc) {
+    if (ENCODING_GET(re) != 0 || FL_TEST(re, KCODE_FIXED)) {
+        if (ENCODING_GET(re) != rb_enc_get_index(str) &&
+            rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+            rb_raise(rb_eArgError, "character encodings differ");
+        }
+    }
+    else if ((enc = rb_enc_get(str)) != 0 &&
+	     RREGEXP(re)->ptr->enc != enc) {
 	need_recompile = 1;
     }
 
@@ -755,7 +757,6 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
     OnigEncoding enc;
     UChar *p, *string;
 
-    rb_reg_check(re);
     rb_reg_prepare_re(re, str);
 
     if (reverse) {
@@ -795,7 +796,6 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	return -1;
     }
 
-    rb_reg_check(re);
     rb_reg_prepare_re(re, str);
 
     if (reverse) {
@@ -1231,6 +1231,8 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 		  int options, onig_errmsg_buffer err)
 {
     struct RRegexp *re = RREGEXP(obj);
+    int raw8bit;
+    long i;
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
@@ -1242,8 +1244,16 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     re->ptr = 0;
     re->str = 0;
 
+    raw8bit = 0;
+    for (i = 0; i < len; i++) {
+        if (s[i] & 0x80) {
+            raw8bit = 1;
+            break;
+        }
+    }
+
     rb_enc_associate((VALUE)re, enc);
-    if (options & ARG_ENCODING_FIXED) {
+    if (options & ARG_ENCODING_FIXED || raw8bit) {
 	re->basic.flags |= KCODE_FIXED;
     }
     re->ptr = make_regexp(s, len, enc, options & ARG_REG_OPTION_MASK, err);

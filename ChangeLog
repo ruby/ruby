@@ -1,3 +1,13 @@
+Fri Nov 23 15:27:43 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (REG_CASESTATE): unused macro removed.
+	  (rb_reg_prepare_re): check encoding difference.
+	  (rb_reg_initialize): check 8bit byte.
+
+	* parse.y (parser_tokadd_escape): fix has8bit.
+
+	  [ruby-dev:32113]
+
 Fri Nov 23 13:34:08 2007  Tanaka Akira  <akr@fsij.org>
 
 	* struct.c (rb_struct_define_without_accessor): new function.
