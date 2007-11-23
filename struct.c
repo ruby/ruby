@@ -218,7 +218,13 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 }
 
 VALUE
-rb_struct_define_without_accessor(char *class_name, VALUE super, ...)
+rb_struct_alloc_noinit(VALUE klass)
+{
+    return struct_alloc(klass);
+}
+
+VALUE
+rb_struct_define_without_accessor(char *class_name, VALUE super, rb_alloc_func_t alloc, ...)
 {
     VALUE klass;
     va_list ar;
@@ -247,7 +253,10 @@ rb_struct_define_without_accessor(char *class_name, VALUE super, ...)
     rb_iv_set(klass, "__size__", LONG2NUM(RARRAY_LEN(members)));
     rb_iv_set(klass, "__members__", members);
 
-    rb_define_alloc_func(klass, struct_alloc);
+    if (alloc)
+        rb_define_alloc_func(klass, alloc);
+    else
+        rb_define_alloc_func(klass, struct_alloc);
 
     return klass;
 }

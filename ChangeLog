@@ -1,3 +1,10 @@
+Fri Nov 23 15:59:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* struct.c (rb_struct_alloc_noinit): new function.
+	  (rb_struct_define_without_accessor): add allocator to the arguments.
+
+	* range.c (range_alloc): re-introduced using rb_struct_alloc_noinit.
+
 Fri Nov 23 15:27:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (REG_CASESTATE): unused macro removed.

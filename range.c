@@ -816,6 +816,14 @@ range_loader(VALUE range, VALUE obj)
     return range;
 }
 
+static VALUE
+range_alloc(VALUE klass)
+{
+  /* rb_struct_alloc_noinit itself should not be used because
+   * rb_marshal_define_compat uses equality of allocaiton function */
+    return rb_struct_alloc_noinit(klass);
+}
+
 /*  A <code>Range</code> represents an interval---a set of values with a
  *  start and an end. Ranges may be constructed using the
  *  <em>s</em><code>..</code><em>e</em> and
@@ -879,7 +887,8 @@ Init_Range(void)
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
 
-    rb_cRange = rb_struct_define_without_accessor("Range", rb_cObject,
+    rb_cRange = rb_struct_define_without_accessor(
+        "Range", rb_cObject, range_alloc,
         "begin", "end", "excl", NULL);
 
     rb_include_module(rb_cRange, rb_mEnumerable);
