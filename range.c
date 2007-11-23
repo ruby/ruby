@@ -23,22 +23,6 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 #define SET_EXCL(r,v) (RSTRUCT(r)->as.ary[2] = (v) ? Qtrue : Qfalse)
 
 static VALUE
-range_alloc(VALUE klass)
-{
-    long n;
-    NEWOBJ(r, struct RStruct);
-    OBJSETUP(r, klass, T_STRUCT);
-
-    n = 3;
-
-    RBASIC(r)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
-    RBASIC(r)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
-    rb_mem_clear(r->as.ary, n);
-
-    return (VALUE)r;
-}
-
-static VALUE
 range_failed(void)
 {
     rb_raise(rb_eArgError, "bad value for range");
@@ -895,15 +879,9 @@ Init_Range(void)
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
 
-    rb_cRange = rb_define_class("Range", rb_cObject);
+    rb_cRange = rb_struct_define_without_accessor("Range", rb_cObject,
+        "begin", "end", "excl", NULL);
 
-    /* compatibility for rb_struct_members, etc. */
-    members = rb_ary_new3(3, ID2SYM(id_beg), ID2SYM(id_end), ID2SYM(id_excl));
-    OBJ_FREEZE(members);
-    rb_iv_set(rb_cRange, "__size__", INT2FIX(3));
-    rb_iv_set(rb_cRange, "__members__", members);
-
-    rb_define_alloc_func(rb_cRange, range_alloc);
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_marshal_define_compat(rb_cRange, rb_cObject, range_dumper, range_loader);
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);

@@ -218,6 +218,41 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 }
 
 VALUE
+rb_struct_define_without_accessor(char *class_name, VALUE super, ...)
+{
+    VALUE klass;
+    va_list ar;
+    VALUE members;
+    long i;
+    char *name;
+
+    members = rb_ary_new2(0);
+    va_start(ar, super);
+    i = 0;
+    while ((name = va_arg(ar, char*)) != NULL) {
+        rb_ary_push(members, ID2SYM(rb_intern(name)));
+    }
+    va_end(ar);
+    OBJ_FREEZE(members);
+
+    if (class_name) {
+        klass = rb_define_class(class_name, super);
+    }
+    else {
+	klass = rb_class_new(super);
+	rb_make_metaclass(klass, RBASIC(super)->klass);
+	rb_class_inherited(super, klass);
+    }
+
+    rb_iv_set(klass, "__size__", LONG2NUM(RARRAY_LEN(members)));
+    rb_iv_set(klass, "__members__", members);
+
+    rb_define_alloc_func(klass, struct_alloc);
+
+    return klass;
+}
+
+VALUE
 rb_struct_define(const char *name, ...)
 {
     va_list ar;

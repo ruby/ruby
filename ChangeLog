@@ -1,3 +1,10 @@
+Fri Nov 23 13:34:08 2007  Tanaka Akira  <akr@fsij.org>
+
+	* struct.c (rb_struct_define_without_accessor): new function.
+
+	* range.c (range_alloc): removed.
+	  (Init_Range): use rb_struct_define_without_accessor.
+
 Fri Nov 23 11:01:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (match_begin): should return offset by character.
