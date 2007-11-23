@@ -233,7 +233,7 @@ rb_struct_define_without_accessor(char *class_name, VALUE super, rb_alloc_func_t
     char *name;
 
     members = rb_ary_new2(0);
-    va_start(ar, super);
+    va_start(ar, alloc);
     i = 0;
     while ((name = va_arg(ar, char*)) != NULL) {
         rb_ary_push(members, ID2SYM(rb_intern(name)));
