@@ -490,6 +490,85 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
+  def test_to_s
+    2.upto(36) {|radix|
+      VS.each {|a|
+        s = a.to_s(radix)
+        b = s.to_i(radix)
+        assert_equal(a, b)
+      }
+    }
+  end
+
+  def test_printf_x
+    VS.reverse_each {|a|
+      s = sprintf("%x", a)
+      if /\A\.\./ =~ s
+        b = -($'.tr('0123456789abcdef', 'fedcba9876543210').to_i(16) + 1)
+      else
+        b = s.to_i(16)
+      end
+      assert_equal(a, b, "sprintf('%x', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_printf_x_sign
+    VS.reverse_each {|a|
+      s = sprintf("%+x", a)
+      b = s.to_i(16)
+      assert_equal(a, b, "sprintf('%+x', #{a}) = #{s.inspect}")
+      s = sprintf("% x", a)
+      b = s.to_i(16)
+      assert_equal(a, b, "sprintf('% x', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_printf_o
+    VS.reverse_each {|a|
+      s = sprintf("%o", a)
+      if /\A\.\./ =~ s
+        b = -($'.tr('01234567', '76543210').to_i(8) + 1)
+      else
+        b = s.to_i(8)
+      end
+      assert_equal(a, b, "sprintf('%o', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_printf_o_sign
+    VS.reverse_each {|a|
+      s = sprintf("%+o", a)
+      b = s.to_i(8)
+      assert_equal(a, b, "sprintf('%+o', #{a}) = #{s.inspect}")
+      s = sprintf("% o", a)
+      b = s.to_i(8)
+      assert_equal(a, b, "sprintf('% o', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_printf_b
+    VS.reverse_each {|a|
+      s = sprintf("%b", a)
+      if /\A\.\./ =~ s
+        b = -($'.tr('01', '10').to_i(2) + 1)
+      else
+        b = s.to_i(2)
+      end
+      assert_equal(a, b, "sprintf('%b', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_printf_b_sign
+    VS.reverse_each {|a|
+      s = sprintf("%+b", a)
+      b = s.to_i(2)
+      assert_equal(a, b, "sprintf('%+b', #{a}) = #{s.inspect}")
+      s = sprintf("% b", a)
+      b = s.to_i(2)
+      assert_equal(a, b, "sprintf('% b', #{a}) = #{s.inspect}")
+    }
+  end
+
   def test_Integer
     assert_raise(ArgumentError) {Integer("0x-1")}
     assert_raise(ArgumentError) {Integer("-0x-1")}
