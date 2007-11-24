@@ -40,3 +40,6 @@ assert_equal 'ok', %q{
   vs1 == vs2 ? :ok : :ng
 }, '[ruby-dev:32329]'
 
+assert_equal '..f00000000', %q{
+  sprintf("%x", -2**32)
+}, '[ruby-dev:32351]'
