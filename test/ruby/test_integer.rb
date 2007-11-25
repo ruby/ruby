@@ -495,7 +495,7 @@ class TestInteger < Test::Unit::TestCase
       VS.each {|a|
         s = a.to_s(radix)
         b = s.to_i(radix)
-        assert_equal(a, b)
+        assert_equal(a, b, "(#{a}).to_s(#{radix}).to_i(#{radix})")
       }
     }
   end
