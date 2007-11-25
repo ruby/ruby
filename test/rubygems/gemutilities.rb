@@ -8,7 +8,7 @@
 at_exit { $SAFE = 1 }
 
 require 'fileutils'
-require 'test/unit/testcase'
+require 'test/unit'
 require 'tmpdir'
 require 'uri'
 require 'rubygems/gem_open_uri'
@@ -19,6 +19,10 @@ require File.join(File.expand_path(File.dirname(__FILE__)), 'mockgemui')
 module Gem
   def self.source_index=(si)
     @@source_index = si
+  end
+
+  def self.win_platform=(val)
+    @@win_platform = val
   end
 end
 
@@ -58,7 +62,8 @@ class RubyGemTestCase < Test::Unit::TestCase
 
   include Gem::DefaultUserInteraction
 
-  undef_method :default_test
+  undef_method :default_test if instance_methods.include? 'default_test' or
+                                instance_methods.include? :default_test
 
   def setup
     super
@@ -84,7 +89,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     @gem_repo = "http://gems.example.com"
     Gem.sources.replace [@gem_repo]
 
-    @orig_arch = Config::CONFIG['arch']
+    @orig_arch = Gem::ConfigMap[:arch]
 
     if win_platform?
       util_set_arch 'i386-mswin32'
@@ -96,7 +101,7 @@ class RubyGemTestCase < Test::Unit::TestCase
   end
 
   def teardown
-    Config::CONFIG['arch'] = @orig_arch
+    Gem::ConfigMap[:arch] = @orig_arch
 
     if defined? Gem::RemoteFetcher then
       Gem::RemoteFetcher.instance_variable_set :@fetcher, nil
@@ -228,7 +233,7 @@ class RubyGemTestCase < Test::Unit::TestCase
   # Set the platform to +cpu+ and +os+
 
   def util_set_arch(arch)
-    Config::CONFIG['arch'] = arch
+    Gem::ConfigMap[:arch] = arch
     platform = Gem::Platform.new arch
 
     Gem.instance_variable_set :@platforms, nil

@@ -13,7 +13,7 @@ class Gem::Platform
   attr_accessor :version
 
   def self.local
-    arch = Config::CONFIG['arch']
+    arch = Gem::ConfigMap[:arch]
     arch = "#{arch}_60" if arch =~ /mswin32$/
     @local ||= new(arch)
   end
@@ -27,6 +27,8 @@ class Gem::Platform
 
   def self.new(arch) # :nodoc:
     case arch
+    when Gem::Platform::CURRENT then
+      Gem::Platform.local
     when Gem::Platform::RUBY, nil, '' then
       Gem::Platform::RUBY
     else
@@ -71,7 +73,10 @@ class Gem::Platform
                       when /^java([\d.]*)/ then        [ 'java',      $1  ]
                       when /linux/ then                [ 'linux',     $1  ]
                       when /mingw32/ then              [ 'mingw32',   nil ]
-                      when /(mswin\d+)(\_(\d+))?/ then [ $1,          $3  ]
+                      when /(mswin\d+)(\_(\d+))?/ then
+                        os, version = $1, $3
+                        @cpu = 'x86' if @cpu.nil? and os =~ /32$/
+                        [os, version]
                       when /netbsdelf/ then            [ 'netbsdelf', nil ]
                       when /openbsd(\d+\.\d+)/ then    [ 'openbsd',   $1  ]
                       when /solaris(\d+\.\d+)/ then    [ 'solaris',   $1  ]

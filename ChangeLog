@@ -1,3 +1,9 @@
+Sun Nov 25 12:12:03 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb: Import fast-loading gem_prelude.rb from RubyGems.
+
+	* lib/rubygems*: Import RubyGems r1516.
+
 Fri Nov 23 17:34:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* io.c: add rb_read_internal() as blocking function.

@@ -5,7 +5,6 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rbconfig'
 require 'rubygems/rubygems_version'
 require 'thread'
 
@@ -82,11 +81,25 @@ end
 #
 module Gem
 
+  ConfigMap = {} unless defined?(ConfigMap)
+  require 'rbconfig'
+  ConfigMap.merge!(
+      :sitedir => RbConfig::CONFIG["sitedir"],
+      :ruby_version => RbConfig::CONFIG["ruby_version"],
+      :libdir => RbConfig::CONFIG["libdir"],
+      :sitelibdir => RbConfig::CONFIG["sitelibdir"],
+      :arch => RbConfig::CONFIG["arch"],
+      :bindir => RbConfig::CONFIG["bindir"],
+      :EXEEXT => RbConfig::CONFIG["EXEEXT"],
+      :RUBY_SO_NAME => RbConfig::CONFIG["RUBY_SO_NAME"],
+      :ruby_install_name => RbConfig::CONFIG["ruby_install_name"]
+  )
+
   MUTEX = Mutex.new
 
   RubyGemsPackageVersion = RubyGemsVersion
 
-  DIRECTORIES = %w[cache doc gems specifications]
+  DIRECTORIES = %w[cache doc gems specifications] unless defined?(DIRECTORIES)
 
   @@source_index = nil
   @@win_platform = nil
@@ -120,7 +133,7 @@ module Gem
 
   def self.prefix
     prefix = File.dirname File.expand_path(__FILE__)
-    if prefix == Config::CONFIG['sitelibdir'] then
+    if prefix == ConfigMap[:sitelibdir] then
       nil
     else
       File.dirname prefix
@@ -221,7 +234,7 @@ module Gem
       if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
         '/usr/bin'
       else # generic install
-        Config::CONFIG['bindir']
+        ConfigMap[:bindir]
       end
     end
 
@@ -280,9 +293,9 @@ module Gem
     # Return the Ruby command to use to execute the Ruby interpreter.
     def ruby
       if @ruby.nil? then
-        @ruby = File.join(Config::CONFIG['bindir'],
-                          Config::CONFIG['ruby_install_name'])
-        @ruby << Config::CONFIG['EXEEXT']
+        @ruby = File.join(ConfigMap[:bindir],
+                          ConfigMap[:ruby_install_name])
+        @ruby << ConfigMap[:EXEEXT]
       end
 
       @ruby
@@ -342,7 +355,7 @@ module Gem
         File.join spec.full_gem_path, path
       end
 
-      sitelibdir = Config::CONFIG['sitelibdir']
+      sitelibdir = ConfigMap[:sitelibdir]
 
       # gem directories must come after -I and ENV['RUBYLIB']
       $:.insert($:.index(sitelibdir), *require_paths)
@@ -529,9 +542,9 @@ module Gem
     # not specified in the environment.
     def default_dir
       if defined? RUBY_FRAMEWORK_VERSION
-        return File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems", Config::CONFIG['ruby_version'])
+        return File.join(File.dirname(ConfigMap[:sitedir]), "Gems", ConfigMap[:ruby_version])
       else
-        File.join(Config::CONFIG['libdir'], 'ruby', 'gems', Config::CONFIG['ruby_version'])
+        File.join(ConfigMap[:libdir], 'ruby', 'gems', ConfigMap[:ruby_version])
       end
     end
 
@@ -549,7 +562,7 @@ module Config # :nodoc:
     # Return the path to the data directory associated with the named
     # package.  If the package is loaded as a gem, return the gem
     # specific data directory.  Otherwise return a path to the share
-    # area as define by "#{Config::CONFIG['datadir']}/#{package_name}".
+    # area as define by "#{ConfigMap[:datadir]}/#{package_name}".
     def datadir(package_name)
       Gem.datadir(package_name) || Config.gem_original_datadir(package_name)
     end

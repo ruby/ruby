@@ -10,6 +10,7 @@ require 'rbconfig'
 
 require 'rubygems/format'
 require 'rubygems/ext'
+require 'rubygems/require_paths_builder'
 
 ##
 # The installer class processes RubyGem .gem files and installs the
@@ -27,6 +28,8 @@ class Gem::Installer
   class ExtensionBuildError < Gem::InstallError; end
 
   include Gem::UserInteraction
+  
+  include Gem::RequirePathsBuilder
 
   ##
   # Constructs an Installer instance that will install the gem located at
@@ -111,6 +114,8 @@ class Gem::Installer
     generate_bin
     build_extensions
     write_spec
+    
+    write_require_paths_file_if_needed
 
     # HACK remove?  Isn't this done in multiple places?
     cached_gem = File.join @gem_home, "cache", @gem.split(/\//).pop
@@ -235,8 +240,8 @@ class Gem::Installer
   # the symlink if the gem being installed has a newer version.
   #
   def generate_bin_symlink(filename, bindir)
-    if Config::CONFIG["arch"] =~ /dos|win32/i then
-      alert_warning "Unable to use symlinks on win32, installing wrapper"
+    if Gem.win_platform? then
+      alert_warning "Unable to use symlinks on Windows, installing wrapper"
       generate_bin_script filename, bindir
       return
     end
