@@ -569,6 +569,50 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
+  def test_printf_diu
+    VS.reverse_each {|a|
+      s = sprintf("%d", a)
+      b = s.to_i
+      assert_equal(a, b, "sprintf('%d', #{a}) = #{s.inspect}")
+      s = sprintf("%i", a)
+      b = s.to_i
+      assert_equal(a, b, "sprintf('%i', #{a}) = #{s.inspect}")
+      s = sprintf("%u", a)
+      b = s.to_i
+      assert_equal(a, b, "sprintf('%u', #{a}) = #{s.inspect}")
+    }
+  end
+
+  def test_marshal
+    VS.reverse_each {|a|
+      s = Marshal.dump(a)
+      b = Marshal.load(s)
+      assert_equal(a, b, "Marshal.load(Marshal.dump(#{a}))")
+    }
+  end
+
+  def test_pack
+    %w[c C s S s! S! i I l L l! L! q Q].each {|template|
+      size = [0].pack(template).size
+      mask = (1 << (size * 8)) - 1
+      if /[A-Z]/ =~ template
+        min = 0
+        max = (1 << (size * 8))-1
+      else
+        min = -(1 << (size * 8 - 1))
+        max = (1 << (size * 8 - 1)) - 1
+      end
+      VS.reverse_each {|a|
+        s = [a].pack(template)
+        b = s.unpack(template)[0]
+        assert_equal(a & mask, b & mask, "[#{a}].pack(#{template.dump}).unpack(#{template.dump}) & #{mask}")
+        if min <= a && a <= max
+          assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+        end
+      }
+    }
+  end
+
   def test_Integer
     assert_raise(ArgumentError) {Integer("0x-1")}
     assert_raise(ArgumentError) {Integer("-0x-1")}
