@@ -46,30 +46,71 @@ class TestM17N < Test::Unit::TestCase
     #assert_raise(SyntaxError) { eval('/\xc0\x20/u') }
   end
 
+  def assert_regexp_generic_encoding(r)
+    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
+      # "\xc0\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
+      assert_nothing_raised { r =~ "\xc0\xa1".force_encoding(ename) }
+    }
+  end
+
+  def assert_regexp_fixed_encoding(r)
+    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
+      enc = Encoding.find(ename)
+      if enc == r.encoding
+        assert_nothing_raised { r =~ "\xc0\xa1".force_encoding(enc) }
+      else
+        assert_raise(ArgumentError) { r =~ "\xc0\xa1".force_encoding(enc) }
+      end
+    }
+  end
+
+  def assert_regexp_generic_ascii(r)
+    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_generic_encoding(r)
+  end
+
+  def assert_regexp_fixed_ascii8bit(r)
+    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_eucjp(r)
+    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_sjis(r)
+    assert_encoding("Shift_JIS", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_utf8(r)
+    assert_encoding("UTF-8", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
   def test_regexp_generic
     r = /a/
-    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_generic_ascii(r)
     assert_equal(0, r =~ a("a"))
     assert_equal(0, r =~ e("a"))
     assert_equal(0, r =~ s("a"))
     assert_equal(0, r =~ u("a"))
-
-    # "\xc0\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
     assert_equal(nil, r =~ a("\xc0\xa1"))
     assert_equal(nil, r =~ e("\xc0\xa1"))
     assert_equal(nil, r =~ s("\xc0\xa1"))
     assert_equal(nil, r =~ u("\xc0\xa1"))
 
-    r = eval(a(%{/\xc0\xa1/}))
-    assert_encoding("ASCII-8BIT", r.encoding)
-    assert_equal(nil, r =~ a("a"))
-    assert_equal(nil, r =~ e("a"))
-    assert_equal(nil, r =~ s("a"))
-    assert_equal(nil, r =~ u("a"))
-    assert_equal(0, r =~ a("\xc0\xa1"))
-    assert_raise(ArgumentError) { r =~ e("\xc0\xa1") }
-    assert_raise(ArgumentError) { r =~ s("\xc0\xa1") }
-    assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
+    r = Regexp.new("a".force_encoding("ASCII-8BIT"))
+    assert_regexp_generic_ascii(r)
+    assert_equal(0, r =~ a("a"))
+    assert_equal(0, r =~ e("a"))
+    assert_equal(0, r =~ s("a"))
+    assert_equal(0, r =~ u("a"))
+    assert_equal(nil, r =~ a("\xc0\xa1"))
+    assert_equal(nil, r =~ e("\xc0\xa1"))
+    assert_equal(nil, r =~ s("\xc0\xa1"))
+    assert_equal(nil, r =~ u("\xc0\xa1"))
 
     # xxx: /\xc0\xa1/ should be restricted only for ASCII-8BIT?
     # r = /\xc0\xa1/
@@ -86,7 +127,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_regexp_ascii
     r = /a/n
-    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_fixed_ascii8bit(r)
     assert_equal(0, r =~ a("a"))
     assert_equal(0, r =~ e("a"))
     assert_equal(0, r =~ s("a"))
@@ -97,7 +138,18 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = /\xc0\xa1/n
-    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_fixed_ascii8bit(r)
+    assert_equal(nil, r =~ a("a"))
+    assert_equal(nil, r =~ e("a"))
+    assert_equal(nil, r =~ s("a"))
+    assert_equal(nil, r =~ u("a"))
+    assert_equal(0, r =~ a("\xc0\xa1"))
+    assert_raise(ArgumentError) { r =~ e("\xc0\xa1") }
+    assert_raise(ArgumentError) { r =~ s("\xc0\xa1") }
+    assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
+
+    r = eval(a(%{/\xc0\xa1/}))
+    assert_regexp_fixed_ascii8bit(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -108,7 +160,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = eval(%{/\xc0\xa1/n}.force_encoding("ASCII-8BIT"))
-    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_fixed_ascii8bit(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -119,7 +171,9 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = eval(%q{/\xc0\xa1/}.force_encoding("ASCII-8BIT"))
+    # assert_regexp_fixed_ascii8bit(r)
     assert_encoding("ASCII-8BIT", r.encoding)
+    # assert_regexp_fixed_encoding(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -128,12 +182,22 @@ class TestM17N < Test::Unit::TestCase
     # assert_raise(ArgumentError) { r =~ e("\xc0\xa1") }
     # assert_raise(ArgumentError) { r =~ s("\xc0\xa1") }
     # assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
-
   end
 
   def test_regexp_euc
     r = /a/e
-    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_eucjp(r)
+    assert_equal(0, r =~ a("a"))
+    assert_equal(0, r =~ e("a"))
+    assert_equal(0, r =~ s("a"))
+    assert_equal(0, r =~ u("a"))
+    assert_raise(ArgumentError) { r =~ a("\xc0\xa1") }
+    assert_equal(nil, r =~ e("\xc0\xa1"))
+    assert_raise(ArgumentError) { r =~ s("\xc0\xa1") }
+    assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
+
+    r = Regexp.new("a".force_encoding("EUC-JP"))
+    assert_regexp_fixed_eucjp(r)
     assert_equal(0, r =~ a("a"))
     assert_equal(0, r =~ e("a"))
     assert_equal(0, r =~ s("a"))
@@ -144,7 +208,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = /\xc0\xa1/e
-    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_eucjp(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -155,7 +219,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = eval(%{/\xc0\xa1/}.force_encoding("EUC-JP"))
-    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_eucjp(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -166,7 +230,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
 
     r = eval(%q{/\xc0\xa1/}.force_encoding("EUC-JP"))
-    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_eucjp(r)
     assert_equal(nil, r =~ a("a"))
     assert_equal(nil, r =~ e("a"))
     assert_equal(nil, r =~ s("a"))
@@ -175,6 +239,7 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(0, r =~ e("\xc0\xa1"))
     assert_raise(ArgumentError) { r =~ s("\xc0\xa1") }
     assert_raise(ArgumentError) { r =~ u("\xc0\xa1") }
+
   end
 
   def test_begin_end_offset
@@ -197,5 +262,108 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("", $')
     assert_equal([1,2], $~.offset(0))
   end
+
+  def test_quote
+    assert_regexp_generic_ascii(/#{Regexp.quote(a("a"))}#{Regexp.quote(e("e"))}/)
+
+    # Regexp.quote returns ASCII-8BIT string for ASCII only string
+    # to make generic regexp if possible.
+    assert_encoding("ASCII-8BIT", Regexp.quote(a("")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(e("")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(s("")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(u("")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(a("a")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(e("a")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(s("a")).encoding)
+    assert_encoding("ASCII-8BIT", Regexp.quote(u("a")).encoding)
+
+    assert_encoding("ASCII-8BIT", Regexp.quote(a("\xc0\xa1")).encoding)
+    assert_encoding("EUC-JP",     Regexp.quote(e("\xc0\xa1")).encoding)
+    assert_encoding("Shift_JIS",  Regexp.quote(s("\xc0\xa1")).encoding)
+    assert_encoding("UTF-8",      Regexp.quote(u("\xc0\xa1")).encoding)
+  end
+
+  def test_union_0
+    r = Regexp.union
+    assert_regexp_generic_ascii(r)
+    assert(r !~ a(""))
+    assert(r !~ e(""))
+    assert(r !~ s(""))
+    assert(r !~ u(""))
+  end
+
+  def test_union_1_asciionly_string
+    assert_regexp_generic_ascii(Regexp.union(a("")))
+    assert_regexp_generic_ascii(Regexp.union(e("")))
+    assert_regexp_generic_ascii(Regexp.union(s("")))
+    assert_regexp_generic_ascii(Regexp.union(u("")))
+    assert_regexp_generic_ascii(Regexp.union(a("a")))
+    assert_regexp_generic_ascii(Regexp.union(e("a")))
+    assert_regexp_generic_ascii(Regexp.union(s("a")))
+    assert_regexp_generic_ascii(Regexp.union(u("a")))
+    assert_regexp_generic_ascii(Regexp.union(a("\t")))
+    assert_regexp_generic_ascii(Regexp.union(e("\t")))
+    assert_regexp_generic_ascii(Regexp.union(s("\t")))
+    assert_regexp_generic_ascii(Regexp.union(u("\t")))
+  end
+
+  def test_union_1_nonascii_string
+    assert_regexp_fixed_ascii8bit(Regexp.union(a("\xc0\xa1")))
+    assert_regexp_fixed_eucjp(Regexp.union(e("\xc0\xa1")))
+    assert_regexp_fixed_sjis(Regexp.union(s("\xc0\xa1")))
+    assert_regexp_fixed_utf8(Regexp.union(u("\xc0\xa1")))
+  end
+
+  def test_union_1_regexp
+    assert_regexp_generic_ascii(Regexp.union(//))
+    assert_regexp_fixed_ascii8bit(Regexp.union(//n))
+    assert_regexp_fixed_eucjp(Regexp.union(//e))
+    assert_regexp_fixed_sjis(Regexp.union(//s))
+    assert_regexp_fixed_utf8(Regexp.union(//u))
+  end
+
+  def test_union_2_asciionly_strings
+    ary = [a(""), e(""), s(""), u("")]
+    ary.each {|s1|
+      ary.each {|s2|
+        assert_regexp_generic_ascii(Regexp.union(s1, s2))
+      }
+    }
+  end
+
+  def test_union_2_strings
+    ary = [
+      a(""), e(""), s(""), u(""),
+      a("\xc0\xa1"), e("\xc0\xa1"), s("\xc0\xa1"), u("\xc0\xa1")
+    ]
+    ary.each {|s1|
+      ary.each {|s2|
+        if s1.empty?
+          if s2.empty?
+            assert_regexp_generic_ascii(Regexp.union(s1, s2))
+          else
+            r = Regexp.union(s1, s2)
+            assert_regexp_fixed_encoding(r)
+            assert_equal(s2.encoding, r.encoding)
+          end
+        else
+          if s2.empty?
+            r = Regexp.union(s1, s2)
+            assert_regexp_fixed_encoding(r)
+            assert_equal(s1.encoding, r.encoding)
+          else
+            if s1.encoding == s2.encoding
+              r = Regexp.union(s1, s2)
+              assert_regexp_fixed_encoding(r)
+              assert_equal(s1.encoding, r.encoding)
+            else
+              assert_raise(ArgumentError) { Regexp.union(s1, s2) }
+            end
+          end
+        end
+      }
+    }
+  end
+
 
 end

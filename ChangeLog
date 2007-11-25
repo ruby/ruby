@@ -1,3 +1,15 @@
+Sun Nov 25 22:21:35 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_enc_str_asciionly_p): declared.
+	  (rb_enc_str_asciicompat_p): defined.
+
+	* re.c (rb_reg_initialize_str): use rb_enc_str_asciionly_p.
+	  (rb_reg_quote): return ascii-8bit string if the argument is
+	  ascii-only to generate encoding generic regexp if possible.
+	  (rb_reg_s_union): fix encoding handling.  [ruby-dev:32094]
+
+	* string.c (rb_enc_str_asciionly_p): defined.
+
 Sun Nov 25 12:12:03 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb: Import fast-loading gem_prelude.rb from RubyGems.

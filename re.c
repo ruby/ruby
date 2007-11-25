@@ -1268,7 +1268,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 static int
 rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
 {
-    if (rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+    if (!rb_enc_str_asciionly_p(str)) {
 	options |= ARG_ENCODING_FIXED;
     }
     return rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str),
@@ -1654,6 +1654,7 @@ rb_reg_quote(VALUE str)
     char *s, *send, *t;
     VALUE tmp;
     int c;
+    int ascii_only = rb_enc_str_asciionly_p(str);
 
     s = RSTRING_PTR(str);
     send = s + RSTRING_LEN(str);
@@ -1677,11 +1678,17 @@ rb_reg_quote(VALUE str)
 	    goto meta_found;
 	}
     }
+    if (ascii_only && rb_enc_get_index(str) != 0) {
+        str = rb_str_new3(str);
+        rb_enc_associate(str, rb_enc_from_index(0));
+    }
     return str;
 
   meta_found:
     tmp = rb_str_new(0, RSTRING_LEN(str)*2);
-    rb_enc_copy(tmp, str);
+    if (!ascii_only) {
+        rb_enc_copy(tmp, str);
+    }
     t = RSTRING_PTR(tmp);
     /* copy upto metacharacter */
     memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
@@ -1802,43 +1809,115 @@ rb_reg_s_union(VALUE self, VALUE args0)
         return rb_class_new_instance(1, args, rb_cRegexp);
     }
     else if (argc == 1) {
-        VALUE v;
-        v = rb_check_regexp_type(rb_ary_entry(args0, 0));
-        if (!NIL_P(v))
-            return v;
+        VALUE arg = rb_ary_entry(args0, 0);
+        VALUE re = rb_check_regexp_type(arg);
+        if (!NIL_P(re))
+            return re;
         else {
-            VALUE args[1];
-            args[0] = rb_reg_s_quote(Qnil, RARRAY_PTR(args0)[0]);
-            return rb_class_new_instance(1, args, rb_cRegexp);
+            VALUE quoted;
+            quoted = rb_reg_s_quote(Qnil, arg);
+            return rb_reg_new(quoted, 0);
         }
     }
     else {
 	int i;
 	VALUE source = rb_str_buf_new(0);
-	int mbs = Qfalse;
-	rb_encoding *enc = 0;
+	rb_encoding *enc;
+
+        int has_asciionly_string = 0;
+        rb_encoding *has_ascii_compat_string = 0;
+        rb_encoding *has_ascii_incompat_string = 0;
+
+        int has_generic_regexp = 0;
+        rb_encoding *has_ascii_compat_fixed_regexp = 0;
+        rb_encoding *has_ascii_incompat_regexp = 0;
 
 	for (i = 0; i < argc; i++) {
 	    volatile VALUE v;
 	    VALUE e = rb_ary_entry(args0, i);
+
 	    if (0 < i)
-		rb_str_buf_cat2(source, "|");
+		rb_str_buf_cat2(source, "|"); /* xxx: UTF-16 */
+
 	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
+                rb_encoding *enc0 = rb_enc_get(v);
+                if (!rb_enc_asciicompat(enc0)) {
+                    if (!has_ascii_incompat_regexp) {
+                        has_ascii_incompat_regexp = enc0;
+                    }
+                    else {
+                        if (has_ascii_incompat_regexp != enc0)
+                            rb_raise(rb_eArgError, "regexp encodings differ");
+                    }
+                }
+                else if (ENCODING_GET(v) != 0 || FL_TEST(v, KCODE_FIXED)) {
+                    if (!has_ascii_compat_fixed_regexp) {
+                        has_ascii_compat_fixed_regexp = enc0;
+                    }
+                    else {
+                        if (has_ascii_compat_fixed_regexp != enc0)
+                            rb_raise(rb_eArgError, "regexp encodings differ");
+                    }
+                }
+                else {
+                    has_generic_regexp = 1;
+                }
 		v = rb_reg_to_s(v);
 	    }
 	    else {
+                StringValue(e);
+                if (!rb_enc_str_asciicompat_p(e)) {
+                    rb_encoding *enc0 = rb_enc_get(e);
+                    if (!has_ascii_incompat_string) {
+                        has_ascii_incompat_string = enc0;
+                    }
+                    else {
+                        if (has_ascii_incompat_string != enc0)
+                            rb_raise(rb_eArgError, "regexp encodings differ");
+                    }
+                }
+                else if (rb_enc_str_asciionly_p(e)) {
+                    has_asciionly_string = 1;
+                }
+                else {
+                    rb_encoding *enc0 = rb_enc_get(e);
+                    if (!has_ascii_compat_string) {
+                        has_ascii_compat_string = enc0;
+                    }
+                    else {
+                        if (has_ascii_compat_string != enc0)
+                            rb_raise(rb_eArgError, "regexp encodings differ");
+                    }
+                }
 		v = rb_reg_s_quote(Qnil, e);
-	    }
-	    if (mbs || rb_enc_str_coderange(v) != ENC_CODERANGE_SINGLE) {
-		if (!enc) enc = rb_enc_get(v);
-		else if (mbs && enc != rb_enc_get(v)) {
-		    rb_raise(rb_eArgError, "regexp encodings differ");
-		}
-		mbs = Qtrue;
 	    }
 	    rb_str_append(source, v);
 	}
+        if (has_ascii_incompat_string || has_ascii_incompat_regexp) {
+            if (has_asciionly_string || has_ascii_compat_string ||
+                has_generic_regexp || has_ascii_compat_fixed_regexp)
+                rb_raise(rb_eArgError, "regexp encodings differ");
+            if (has_ascii_incompat_string && has_ascii_incompat_regexp &&
+                has_ascii_incompat_string != has_ascii_incompat_regexp)
+                rb_raise(rb_eArgError, "regexp encodings differ");
+            enc = has_ascii_incompat_string;
+            if (enc == 0)
+                enc = has_ascii_incompat_regexp;
+        }
+        else if (has_ascii_compat_string || has_ascii_compat_fixed_regexp) {
+            if (has_ascii_compat_string && has_ascii_compat_fixed_regexp &&
+                has_ascii_compat_string != has_ascii_compat_fixed_regexp)
+                rb_raise(rb_eArgError, "regexp encodings differ");
+            enc = has_ascii_compat_string;
+            if (enc == 0)
+                enc = has_ascii_compat_fixed_regexp;
+        }
+        else {
+            enc = rb_enc_from_index(0);
+        }
+
+        rb_enc_associate(source, enc);
         return rb_class_new_instance(1, &source, rb_cRegexp);
     }
 }

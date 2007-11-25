@@ -100,6 +100,8 @@ int rb_enc_tolower(int c, rb_encoding *enc);
 ID rb_intern3(const char*, long, rb_encoding*);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_str_coderange(VALUE);
+int rb_enc_str_asciionly_p(VALUE);
+#define rb_enc_str_asciicompat_p(str) rb_enc_asciicompat(rb_enc_get(str))
 VALUE rb_enc_from_encoding(rb_encoding *enc);
 rb_encoding *rb_enc_primary(void);
 rb_encoding *rb_enc_default(void);
