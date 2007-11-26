@@ -1,3 +1,7 @@
+Mon Nov 26 17:32:16 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (Init_Regexp): new method Regexp#fixed_encoding?
+
 Mon Nov 26 13:28:14 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/complex.rb: be able to create Complex(0, -0.0). [ruby-list:44268]
