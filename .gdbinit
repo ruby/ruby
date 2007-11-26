@@ -64,7 +64,7 @@ define rp
       printf "coderange:single "
     else
     if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER13
-      printf "coderange:single "
+      printf "coderange:multi "
     else
       printf "coderange:broken "
     end
