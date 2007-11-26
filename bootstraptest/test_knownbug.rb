@@ -43,3 +43,7 @@ assert_equal 'ok', %q{
 assert_equal '..f00000000', %q{
   sprintf("%x", -2**32)
 }, '[ruby-dev:32351]'
+
+assert_equal "..101111111111111111111111111111111", %q{
+  sprintf("%b", -2147483649)
+}, '[ruby-dev:32365]'

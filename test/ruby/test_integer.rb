@@ -592,10 +592,10 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_pack
-    %w[c C s S s! S! i I l L l! L! q Q].each {|template|
+    %w[c C s S s! S! i I i! I! l L l! L! q Q n N v V].each {|template|
       size = [0].pack(template).size
       mask = (1 << (size * 8)) - 1
-      if /[A-Z]/ =~ template
+      if /[A-Znv]/ =~ template
         min = 0
         max = (1 << (size * 8))-1
       else
@@ -610,6 +610,26 @@ class TestInteger < Test::Unit::TestCase
           assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
         end
       }
+    }
+  end
+
+  def test_pack_ber
+    template = "w"
+    VS.reverse_each {|a|
+      next if a < 0
+      s = [a].pack(template)
+      b = s.unpack(template)[0]
+      assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+    }
+  end
+
+  def test_pack_utf8
+    template = "U"
+    VS.reverse_each {|a|
+      next if a < 0 || 0x7fffffff < a
+      s = [a].pack(template)
+      b = s.unpack(template)[0]
+      assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
     }
   end
 
