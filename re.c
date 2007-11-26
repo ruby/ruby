@@ -706,6 +706,15 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+static VALUE
+rb_reg_fixed_encoding_p(VALUE re)
+{
+    if (ENCODING_GET(re) != 0 || FL_TEST(re, KCODE_FIXED))
+        return Qtrue;
+    else
+        return Qfalse;
+}
+
 static void
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
@@ -714,7 +723,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
     rb_reg_check(re);
     /* ignorecase status */
-    if (ENCODING_GET(re) != 0 || FL_TEST(re, KCODE_FIXED)) {
+    if (rb_reg_fixed_encoding_p(re)) {
         if (ENCODING_GET(re) != rb_enc_get_index(str) &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
             rb_raise(rb_eArgError, "character encodings differ");
@@ -1822,15 +1831,11 @@ rb_reg_s_union(VALUE self, VALUE args0)
     else {
 	int i;
 	VALUE source = rb_str_buf_new(0);
-	rb_encoding *enc;
+	rb_encoding *result_enc;
 
-        int has_asciionly_string = 0;
-        rb_encoding *has_ascii_compat_string = 0;
-        rb_encoding *has_ascii_incompat_string = 0;
-
-        int has_generic_regexp = 0;
-        rb_encoding *has_ascii_compat_fixed_regexp = 0;
-        rb_encoding *has_ascii_incompat_regexp = 0;
+        int has_asciionly = 0;
+        rb_encoding *has_ascii_compat_fixed = 0;
+        rb_encoding *has_ascii_incompat = 0;
 
 	for (i = 0; i < argc; i++) {
 	    volatile VALUE v;
@@ -1841,83 +1846,63 @@ rb_reg_s_union(VALUE self, VALUE args0)
 
 	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
-                rb_encoding *enc0 = rb_enc_get(v);
-                if (!rb_enc_asciicompat(enc0)) {
-                    if (!has_ascii_incompat_regexp) {
-                        has_ascii_incompat_regexp = enc0;
-                    }
-                    else {
-                        if (has_ascii_incompat_regexp != enc0)
-                            rb_raise(rb_eArgError, "regexp encodings differ");
-                    }
+                rb_encoding *enc = rb_enc_get(v);
+                if (!rb_enc_asciicompat(enc)) {
+                    if (!has_ascii_incompat)
+                        has_ascii_incompat = enc;
+                    else if (has_ascii_incompat != enc)
+                        rb_raise(rb_eArgError, "regexp encodings differ");
                 }
-                else if (ENCODING_GET(v) != 0 || FL_TEST(v, KCODE_FIXED)) {
-                    if (!has_ascii_compat_fixed_regexp) {
-                        has_ascii_compat_fixed_regexp = enc0;
-                    }
-                    else {
-                        if (has_ascii_compat_fixed_regexp != enc0)
-                            rb_raise(rb_eArgError, "regexp encodings differ");
-                    }
+                else if (rb_reg_fixed_encoding_p(v)) {
+                    if (!has_ascii_compat_fixed)
+                        has_ascii_compat_fixed = enc;
+                    else if (has_ascii_compat_fixed != enc)
+                        rb_raise(rb_eArgError, "regexp encodings differ");
                 }
                 else {
-                    has_generic_regexp = 1;
+                    has_asciionly = 1;
                 }
 		v = rb_reg_to_s(v);
 	    }
 	    else {
+                rb_encoding *enc = rb_enc_get(e);
                 StringValue(e);
+                enc = rb_enc_get(e);
                 if (!rb_enc_str_asciicompat_p(e)) {
-                    rb_encoding *enc0 = rb_enc_get(e);
-                    if (!has_ascii_incompat_string) {
-                        has_ascii_incompat_string = enc0;
-                    }
-                    else {
-                        if (has_ascii_incompat_string != enc0)
-                            rb_raise(rb_eArgError, "regexp encodings differ");
-                    }
+                    if (!has_ascii_incompat)
+                        has_ascii_incompat = enc;
+                    else if (has_ascii_incompat != enc)
+                        rb_raise(rb_eArgError, "regexp encodings differ");
                 }
                 else if (rb_enc_str_asciionly_p(e)) {
-                    has_asciionly_string = 1;
+                    has_asciionly = 1;
                 }
                 else {
-                    rb_encoding *enc0 = rb_enc_get(e);
-                    if (!has_ascii_compat_string) {
-                        has_ascii_compat_string = enc0;
-                    }
-                    else {
-                        if (has_ascii_compat_string != enc0)
-                            rb_raise(rb_eArgError, "regexp encodings differ");
-                    }
+                    if (!has_ascii_compat_fixed)
+                        has_ascii_compat_fixed = enc;
+                    else if (has_ascii_compat_fixed != enc)
+                        rb_raise(rb_eArgError, "regexp encodings differ");
                 }
 		v = rb_reg_s_quote(Qnil, e);
 	    }
+            if (has_ascii_incompat && (has_asciionly || has_ascii_compat_fixed)) {
+                rb_raise(rb_eArgError, "regexp encodings differ");
+            }
+
 	    rb_str_append(source, v);
 	}
-        if (has_ascii_incompat_string || has_ascii_incompat_regexp) {
-            if (has_asciionly_string || has_ascii_compat_string ||
-                has_generic_regexp || has_ascii_compat_fixed_regexp)
-                rb_raise(rb_eArgError, "regexp encodings differ");
-            if (has_ascii_incompat_string && has_ascii_incompat_regexp &&
-                has_ascii_incompat_string != has_ascii_incompat_regexp)
-                rb_raise(rb_eArgError, "regexp encodings differ");
-            enc = has_ascii_incompat_string;
-            if (enc == 0)
-                enc = has_ascii_incompat_regexp;
+
+        if (has_ascii_incompat) {
+            result_enc = has_ascii_incompat;
         }
-        else if (has_ascii_compat_string || has_ascii_compat_fixed_regexp) {
-            if (has_ascii_compat_string && has_ascii_compat_fixed_regexp &&
-                has_ascii_compat_string != has_ascii_compat_fixed_regexp)
-                rb_raise(rb_eArgError, "regexp encodings differ");
-            enc = has_ascii_compat_string;
-            if (enc == 0)
-                enc = has_ascii_compat_fixed_regexp;
+        else if (has_ascii_compat_fixed) {
+            result_enc = has_ascii_compat_fixed;
         }
         else {
-            enc = rb_enc_from_index(0);
+            result_enc = rb_enc_from_index(0);
         }
 
-        rb_enc_associate(source, enc);
+        rb_enc_associate(source, result_enc);
         return rb_class_new_instance(1, &source, rb_cRegexp);
     }
 }

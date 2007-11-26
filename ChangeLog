@@ -1,3 +1,9 @@
+Mon Nov 26 11:24:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_fixed_encoding_p): extracted from rb_reg_prepare_re and
+	  rb_reg_s_union.
+	  (rb_reg_s_union): refactored.
+
 Mon Nov 26 10:44:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_read_internal, rb_sysopen_internal): remove C99 dependency.
