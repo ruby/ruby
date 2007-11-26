@@ -1,3 +1,7 @@
+Mon Nov 26 13:28:14 2007  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/complex.rb: be able to create Complex(0, -0.0). [ruby-list:44268]
+
 Mon Nov 26 11:24:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_fixed_encoding_p): extracted from rb_reg_prepare_re and

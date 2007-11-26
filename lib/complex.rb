@@ -90,6 +90,9 @@ end
 def Complex(a, b = 0)
   if b == 0 and (a.kind_of?(Complex) or defined? Complex::Unify)
     a
+  elsif a.scalar? and b.scalar?
+    # Don't delete for -0.0
+    Complex.new(a, b)
   else
     Complex.new( a.real-b.imag, a.imag+b.real )
   end
