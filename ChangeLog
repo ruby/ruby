@@ -16,6 +16,11 @@ Sun Nov 25 12:12:03 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*: Import RubyGems r1516.
 
+Sat Nov 24 23:25:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_eval.rb (TestEval::test_instance_eval_cvar):
+	  updated not to modify class variable of Object class.
+
 Fri Nov 23 17:34:24 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* io.c: add rb_read_internal() as blocking function.

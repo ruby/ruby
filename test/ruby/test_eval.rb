@@ -118,12 +118,9 @@ class TestEval < Test::Unit::TestCase
   end
 
   def forall_TYPE(mid)
-    objects = [Object.new, [], nil, true, false, 77, ] #:sym] # TODO: check
+    objects = [Object.new, [], nil, true, false, 77, :sym] # TODO: check
     objects.each do |obj|
       obj.instance_variable_set :@ivar, 12
-      obj.class.class_variable_set :@@cvar, 13
-          # Use same value with env. See also test_instance_variable_cvar.
-      obj.class.const_set :Const, 15 unless obj.class.const_defined?(:Const)
       send mid, obj
     end
   end
@@ -142,11 +139,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal 11,    o.instance_eval("11")
     assert_equal 12,    o.instance_eval("@ivar")
-    begin
-      assert_equal 13,    o.instance_eval("@@cvar")
-    rescue => err
-      assert false, "cannot get cvar from #{o.class}"
-    end
+    assert_equal 13,    o.instance_eval("@@cvar")
     assert_equal 14,    o.instance_eval("$gvar__eval")
     assert_equal 15,    o.instance_eval("Const")
     assert_equal 16,    o.instance_eval("7 + 9")
@@ -194,16 +187,13 @@ class TestEval < Test::Unit::TestCase
 
   def test_instance_eval_cvar
     env = @@cvar
-    cls = "class"
-    [Object.new, [], 7, ].each do |obj| # TODO: check :sym
-      obj.class.class_variable_set :@@cvar, cls
+    [Object.new, [], 7, :sym].each do |obj| # TODO: check :sym
       assert_equal env, obj.instance_eval("@@cvar")
       assert_equal env, obj.instance_eval { @@cvar }
     end
     [true, false, nil].each do |obj|
-      obj.class.class_variable_set :@@cvar, cls
-      assert_equal cls, obj.instance_eval("@@cvar")
-      assert_equal cls, obj.instance_eval { @@cvar }
+      assert_equal env, obj.instance_eval("@@cvar")
+      assert_equal env, obj.instance_eval { @@cvar }
     end
   end
 

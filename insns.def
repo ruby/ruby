@@ -184,8 +184,7 @@ getclassvariable
 ()
 (VALUE val)
 {
-    VALUE klass = vm_get_cvar_base(th, GET_ISEQ());
-    val = rb_cvar_get(klass, id);
+    val = rb_cvar_get(vm_get_cvar_base(th, GET_ISEQ()), id);
 }
 
 /**
