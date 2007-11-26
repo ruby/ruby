@@ -662,7 +662,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
 			}
-			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
+			tmp1 = tmp = rb_big2str0(val, base, Qtrue);
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
 			    if (base == 10) {
