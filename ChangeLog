@@ -1,3 +1,7 @@
+Mon Nov 26 10:44:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_read_internal, rb_sysopen_internal): remove C99 dependency.
+
 Sun Nov 25 22:21:35 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_enc_str_asciionly_p): declared.

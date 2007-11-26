@@ -919,7 +919,10 @@ read_func(void *ptr)
 static int
 rb_read_internal(int fd, void *buf, size_t count)
 {
-    struct read_struct rs = {fd, buf, count};
+    struct read_struct rs;
+    rs.fd = fd;
+    rs.buf = buf;
+    rs.capa = count;
     return rb_thread_blocking_region(read_func, &rs, RB_UBF_DFL, 0);
 }
 
@@ -3049,7 +3052,10 @@ sysopen_func(void *ptr)
 static int
 rb_sysopen_internal(char *fname, int flags, unsigned int mode)
 {
-    struct sysopen_struct data = {fname, flags, mode};
+    struct sysopen_struct data;
+    data.fname = fname;
+    data.flag = flags;
+    data.mode = mode;
     return (int)rb_thread_blocking_region(sysopen_func, &data, RB_UBF_DFL, 0);
 }
 
