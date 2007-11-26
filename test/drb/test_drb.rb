@@ -207,7 +207,7 @@ class TestDRbSafe1 < TestDRbAry
   end
 end
 
-class TestDRbEval < Test::Unit::TestCase
+class TestDRbEval # < Test::Unit::TestCase
   def setup
     super
     @ext = DRbService.ext_service('ut_eval.rb')

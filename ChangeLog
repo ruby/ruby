@@ -1,3 +1,10 @@
+Mon Nov 26 23:18:46 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/extserv.rb (initialize, stop_service): synchronize with
+	  ExtServManager.
+
+	* test/drb/test_drb.rb (TestDRbEval): ignored.
+
 Mon Nov 26 18:38:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): always trim preceding zeros.
