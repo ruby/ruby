@@ -716,14 +716,12 @@ rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
     char buf[4];
-    const char *s = "&`'+123456789";
+    const char *s = "123456789";
 
     st_foreach_safe(rb_global_tbl, gvar_i, ary);
-    if (!NIL_P(rb_backref_get())) {
-	while (*s) {
-	    sprintf(buf, "$%c", *s++);
-	    rb_ary_push(ary, rb_str_new2(buf));
-	}
+    while (*s) {
+	sprintf(buf, "$%c", *s++);
+	rb_ary_push(ary, ID2SYM(rb_intern(buf)));
     }
     return ary;
 }

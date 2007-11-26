@@ -50,6 +50,11 @@ Fri Nov 23 15:27:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	  [ruby-dev:32113]
 
+Fri Nov 23 15:16:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_f_global_variables): variable names should not
+	  duplicate.  [ruby-dev:32344]
+
 Fri Nov 23 13:34:08 2007  Tanaka Akira  <akr@fsij.org>
 
 	* struct.c (rb_struct_define_without_accessor): new function.
