@@ -73,8 +73,10 @@ EOW
 
   def test_should_propagate_signaled
     ruby = EnvUtil.rubybin
-    out = IO.popen([ruby, '-e', 'STDERR.reopen(STDOUT)',
-                     '-e', 'at_exit{Process.kill(:INT, $$)}']) {|f|
+    out = IO.popen(
+      [ruby,
+       '-e', 'STDERR.reopen(STDOUT)',
+       '-e', 'at_exit{Process.kill(:INT, $$); loop{}}']) {|f|
       f.read
     }
     assert_match /Interrupt$/, out
