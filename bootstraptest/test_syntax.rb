@@ -248,7 +248,7 @@ assert_equal %q{["method", "method", "method", "method", nil, nil, "method", "me
   end
   C.new.test + [defined?(C.new.m3)]
 }
-assert_equal %q{[nil, nil, nil, nil, "$1", "$2", nil, nil]}, %q{
+assert_equal %q{[nil, nil, nil, nil, "global-variable", "global-variable", nil, nil]}, %q{
   $ans = [defined?($1), defined?($2), defined?($3), defined?($4)]
   /(a)(b)/ =~ 'ab'
   $ans + [defined?($1), defined?($2), defined?($3), defined?($4)]

@@ -48,5 +48,34 @@ class TestDefined < Test::Unit::TestCase
 
     assert(defined_test)		# not iterator
     assert(!defined_test{})	        # called as iterator
+
+    /a/ =~ ''
+    assert_equal nil, defined?($&)
+    assert_equal nil, defined?($`)
+    assert_equal nil, defined?($')
+    assert_equal nil, defined?($+)
+    assert_equal nil, defined?($1)
+    assert_equal nil, defined?($2)
+    /a/ =~ 'a'
+    assert_equal 'global-variable', defined?($&)
+    assert_equal 'global-variable', defined?($`)
+    assert_equal 'global-variable', defined?($')
+    assert_equal nil, defined?($+)
+    assert_equal nil, defined?($1)
+    assert_equal nil, defined?($2)
+    /(a)/ =~ 'a'
+    assert_equal 'global-variable', defined?($&)
+    assert_equal 'global-variable', defined?($`)
+    assert_equal 'global-variable', defined?($')
+    assert_equal 'global-variable', defined?($+)
+    assert_equal 'global-variable', defined?($1)
+    assert_equal nil, defined?($2)
+    /(a)b/ =~ 'ab'
+    assert_equal 'global-variable', defined?($&)
+    assert_equal 'global-variable', defined?($`)
+    assert_equal 'global-variable', defined?($')
+    assert_equal 'global-variable', defined?($+)
+    assert_equal 'global-variable', defined?($1)
+    assert_equal nil, defined?($2)
   end
 end

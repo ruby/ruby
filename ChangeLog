@@ -1,3 +1,13 @@
+Tue Nov 27 12:47:23 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def: change return value of "defined?"
+	  for $&, $1, ... .  If such variables are defined,
+	  return "global-variable".
+
+	* test/ruby/test_defined.rb: add tests.
+
+	* bootstraptest/test_syntax.rb: fix a test.
+
 Tue Nov 27 11:54:46 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: fix typo.

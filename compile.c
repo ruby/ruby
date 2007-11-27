@@ -2333,10 +2333,12 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		  needstr);
 	return 1;
 
+      case NODE_BACK_REF:
       case NODE_NTH_REF:
 	ADD_INSN(ret, nd_line(node), putnil);
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_REF),
-		  INT2FIX(node->nd_nth), needstr);
+		  INT2FIX(node->nd_nth << 1 | type == NODE_BACK_REF),
+		  needstr);
 	return 1;
 
       case NODE_ZSUPER:

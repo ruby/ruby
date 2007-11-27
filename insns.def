@@ -795,8 +795,6 @@ defined
 {
     VALUE klass;
     char *expr_type = 0;
-    char buf[0x10];
-    
     val = Qnil;
 
     switch (type) {
@@ -868,12 +866,9 @@ defined
 	  break;
       }
       case DEFINED_REF:{
-	  int nth = FIX2INT(obj);
-	  VALUE backref = lfp_svar_get(th, GET_LFP(), 1);
-	  
-	  if (rb_reg_nth_match(nth, backref) != Qnil) {
-	      snprintf(buf, 0x10, "$%d", nth);
-	      expr_type = buf;
+	  val = vm_getspecial(th, GET_LFP(), Qfalse, FIX2INT(obj));
+	  if (val != Qnil) {
+	      expr_type = "global-variable";
 	  }
 	  break;
       }
