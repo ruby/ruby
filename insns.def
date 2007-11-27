@@ -751,18 +751,18 @@ definemethod
  */
 DEFINE_INSN
 alias
-(VALUE v_p, ID id1, ID id2)
-()
+(VALUE v_p)
+(VALUE sym1, VALUE sym2)
 ()
 {
     VALUE klass;
 
     if (v_p == Qtrue) {
-	rb_alias_variable(id1, id2);
+	rb_alias_variable(ID2SYM(sym1), SYM2ID(sym2));
     }
     else {
 	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
-	rb_alias(klass, id1, id2);
+	rb_alias(klass, SYM2ID(sym1), SYM2ID(sym2));
     }
 }
 
@@ -773,12 +773,12 @@ alias
  */
 DEFINE_INSN
 undef
-(ID id)
 ()
+(VALUE sym)
 ()
 {
     VALUE klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
-    rb_undef(klass, id);
+    rb_undef(klass, SYM2ID(sym));
     INC_VM_STATE_VERSION();
 }
 

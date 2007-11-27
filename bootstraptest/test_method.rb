@@ -230,6 +230,28 @@ assert_equal '1',       %q( class A; def a() end end   # [yarv-dev:999]
                             end
                             begin B.new.b; rescue NoMethodError; 1 end )
 
+assert_equal '3',  %q{
+  def m1
+    1
+  end
+  alias m2 m1
+  alias :"#{'m3'}" m1
+  m1 + m2 + m3
+}, '[ruby-dev:32308]'
+assert_equal '1', %q{
+  def foobar
+  end
+  undef :"foo#{:bar}"
+  1
+}, '[ruby-dev:32308]'
+assert_equal '1', %q{
+  def foobar
+    1
+  end
+  alias :"bar#{:baz}" :"foo#{:bar}"
+  barbaz
+}, '[ruby-dev:32308]'
+
 # private
 assert_equal '1',       %q( class C
                               def m() mm() end

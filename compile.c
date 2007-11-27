@@ -4063,42 +4063,37 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ALIAS:{
-	VALUE s1, s2;
-	enum node_type t;
+	  VALUE s1, s2;
+	  enum node_type t;
 
-	if (((t = nd_type(node->u1.node)) != NODE_LIT && t != NODE_DSYM) ||
-	    ((t = nd_type(node->u2.node)) != NODE_LIT && t != NODE_DSYM)) {
-	    rb_compile_bug(ERROR_ARGS "alias args must be NODE_LIT or NODE_DSYM");
-	}
-	s1 = node->u1.node->nd_lit;
-	s2 = node->u2.node->nd_lit;
+	  COMPILE(ret, "alias arg1", node->u1.node);
+	  COMPILE(ret, "alias arg2", node->u2.node);
 
-	ADD_INSN3(ret, nd_line(node), alias, Qfalse, ID2SYM(rb_to_id(s1)),
-		  ID2SYM(rb_to_id(s2)));
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
-	}
-	break;
+	  ADD_INSN1(ret, nd_line(node), alias, Qfalse);
+
+	  if (!poped) {
+	      ADD_INSN(ret, nd_line(node), putnil);
+	  }
+	  break;
       }
       case NODE_VALIAS:{
-	ADD_INSN3(ret, nd_line(node), alias, Qtrue, ID2SYM(node->u1.id),
-		  ID2SYM(node->u2.id));
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
-	}
-	break;
+	  ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u1.id));
+	  ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u2.id));
+	  ADD_INSN1(ret, nd_line(node), alias, Qtrue);
+
+	  if (!poped) {
+	      ADD_INSN(ret, nd_line(node), putnil);
+	  }
+	  break;
       }
       case NODE_UNDEF:{
-	enum node_type t = nd_type(node->u2.node);
-	if (t != NODE_LIT && t != NODE_DSYM) {
-	    rb_compile_bug(ERROR_ARGS "undef args must be NODE_LIT");
-	}
-	ADD_INSN1(ret, nd_line(node), undef,
-		  ID2SYM(rb_to_id(node->u2.node->nd_lit)));
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
-	}
-	break;
+	  COMPILE(ret, "undef arg", node->u2.node);
+	  ADD_INSN(ret, nd_line(node), undef);
+
+	  if (!poped) {
+	      ADD_INSN(ret, nd_line(node), putnil);
+	  }
+	  break;
       }
       case NODE_CLASS:{
 	VALUE iseqval =

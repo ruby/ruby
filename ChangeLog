@@ -1,3 +1,10 @@
+Tue Nov 27 09:57:42 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def, compile.c: fix to allow dsym for alias/undef.
+	  [ruby-dev:32355]
+
+	* bootstraptest/test_method.rb: add tests for above.
+
 Mon Nov 26 23:18:46 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extserv.rb (initialize, stop_service): synchronize with
