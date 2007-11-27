@@ -1327,6 +1327,8 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 	    args[n++] = rb_ary_new4(argc - 1, argv + 1);
 	}
 	exc = rb_class_new_instance(n, args, exc);
+
+	th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	rb_exc_raise(exc);
     }
 

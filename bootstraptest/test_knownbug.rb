@@ -3,23 +3,6 @@
 # So all tests will cause failure.
 #
 
-assert_not_match /method_missing/, %q{
-  STDERR.reopen(STDOUT)
-  variable_or_mehtod_not_exist
-}
-
-assert_equal 'ok', %q{
-  begin
-    Regexp.union(
-      "a",
-      Regexp.new("\x80".force_encoding("euc-jp")),
-      Regexp.new("\x80".force_encoding("utf-8")))
-    :ng
-  rescue ArgumentError
-    :ok
-  end
-}
-
 assert_normal_exit %q{
   STDERR.reopen(STDOUT)
   require 'yaml'

@@ -37,4 +37,16 @@ class TestRegexp < Test::Unit::TestCase
   def test_to_s
     assert_equal '(?-mix:\000)', Regexp.new("\0").to_s
   end
+
+  def test_union
+    assert_equal :ok, begin
+      Regexp.union(
+        "a",
+        Regexp.new("\x80".force_encoding("euc-jp")),
+        Regexp.new("\x80".force_encoding("utf-8")))
+      :ng
+    rescue ArgumentError
+      :ok
+    end
+  end
 end

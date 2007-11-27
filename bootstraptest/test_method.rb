@@ -1021,3 +1021,8 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_not_match /method_missing/, %q{
+  STDERR.reopen(STDOUT)
+  variable_or_mehtod_not_exist
+}
