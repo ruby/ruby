@@ -19,6 +19,8 @@
 #include <stdarg.h>
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
+#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
+#define EXTENDSIGN(n, l) (((~0 << (n)) >> (((n)*(l)) % BITSPERDIG)) & ~(~0 << (n)))
 
 static void fmt_setup(char*,int,int,int,int);
 
@@ -35,7 +37,7 @@ remove_sign_bits(char *str, int base)
 	}
     }
     else if (base == 8) {
-	if (*t == '3') t++;
+	*t |= EXTENDSIGN(3, strlen(t));
 	while (*t == '7') {
 	    t++;
 	}
@@ -662,7 +664,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
 			}
-			tmp1 = tmp = rb_big2str0(val, base, Qtrue);
+			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
 			    if (base == 10) {
@@ -695,7 +697,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (*p == 'X') {
 		    char *pp = s;
 		    int c;
-		    while (c = (int)*pp) {
+		    while ((c = (int)(unsigned char)*pp) != 0) {
 			*pp = rb_enc_toupper(c, enc);
 			pp++;
 		    }

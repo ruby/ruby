@@ -1,3 +1,12 @@
+Wed Nov 28 02:42:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2str_find_n1): removed extraneous element.
+	  [ruby-dev:32351], [ruby-dev:32365]
+
+	* bignum.c (big2str_find_n1): returns necessary digits now.
+
+	* sprintf.c (remove_sign_bits): extends sign bit first.
+
 Tue Nov 27 15:53:43 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): "when *[],1" dumps core.
@@ -60,11 +69,6 @@ Mon Nov 26 23:18:46 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	  ExtServManager.
 
 	* test/drb/test_drb.rb (TestDRbEval): ignored.
-
-Mon Nov 26 18:38:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* sprintf.c (rb_str_format): always trim preceding zeros.
-	  [ruby-dev:32351]
 
 Mon Nov 26 17:32:16 2007  Tanaka Akira  <akr@fsij.org>
 

@@ -786,18 +786,18 @@ static long
 big2str_find_n1(VALUE x, int base)
 {
     static const double log_2[] = {
-        1.0,              1.58496250072116, 2.0,
-        2.32192809488736, 2.584962500721,   2.58496250072116,
-        2.8073549220576,  3.0,              3.16992500144231,
-        3.32192809488736, 3.4594316186373,  3.58496250072116,
-        3.70043971814109, 3.8073549220576,  3.90689059560852,
-        4.0,              4.08746284125034, 4.16992500144231,
-        4.24792751344359, 4.32192809488736, 4.39231742277876,
-        4.4594316186373,  4.52356195605701, 4.58496250072116,
-        4.64385618977472, 4.70043971814109, 4.75488750216347,
-        4.8073549220576,  4.85798099512757, 4.90689059560852,
-        4.95419631038688, 5.0,              5.04439411935845,
-        5.08746284125034, 5.12928301694497, 5.16992500144231
+	1.0,              1.58496250072116, 2.0,
+	2.32192809488736, 2.58496250072116, 2.8073549220576,
+	3.0,              3.16992500144231, 3.32192809488736,
+	3.4594316186373,  3.58496250072116, 3.70043971814109,
+	3.8073549220576,  3.90689059560852, 4.0,
+	4.08746284125034, 4.16992500144231, 4.24792751344359,
+	4.32192809488736, 4.39231742277876, 4.4594316186373,
+	4.52356195605701, 4.58496250072116, 4.64385618977472,
+	4.70043971814109, 4.75488750216347, 4.8073549220576,
+	4.85798099512757, 4.90689059560852, 4.95419631038688,
+	5.0,              5.04439411935845, 5.08746284125034,
+	5.12928301694497, 5.16992500144231
     };
     long bits;
 
@@ -814,7 +814,7 @@ big2str_find_n1(VALUE x, int base)
         bits = BITSPERDIG*RBIGNUM_LEN(x);
     }
 
-    return (long)ceil(bits/(2*log_2[base - 2]));
+    return (long)ceil(bits/log_2[base - 2]);
 }
 
 static long
@@ -898,7 +898,7 @@ rb_big2str0(VALUE x, int base, int trim)
 {
     int off;
     VALUE ss, xx;
-    long n1, len, hbase;
+    long n1, n2, len, hbase;
     char* ptr;
 
     if (FIXNUM_P(x)) {
@@ -911,8 +911,9 @@ rb_big2str0(VALUE x, int base, int trim)
     if (base < 2 && 36 < base)
         rb_raise(rb_eArgError, "illegal radix %d", base);
 
-    n1 = big2str_find_n1(x, base);
-    ss = rb_str_new(0, 2*n1 + 1); /* plus one for sign */
+    n2 = big2str_find_n1(x, base);
+    n1 = (n2 + 1) / 2;
+    ss = rb_str_new(0, n2 + 1); /* plus one for sign */
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
@@ -924,11 +925,11 @@ rb_big2str0(VALUE x, int base, int trim)
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (n1 <= KARATSUBA_DIGITS) {
-        len = off + big2str_orig(xx, base, ptr + off, 2*n1, hbase, trim);
+        len = off + big2str_orig(xx, base, ptr + off, n2, hbase, trim);
     }
     else {
         len = off + big2str_karatsuba(xx, base, ptr + off, n1,
-                                      2*n1, hbase, trim);
+                                      n2, hbase, trim);
     }
 
     ptr[len] = '\0';
@@ -2442,7 +2443,7 @@ static VALUE
 rb_big_odd_p(VALUE num)
 {
     if (BDIGITS(num)[0] & 1) {
-       return Qtrue;
+	return Qtrue;
     }
     return Qfalse;
 }
@@ -2458,7 +2459,7 @@ static VALUE
 rb_big_even_p(VALUE num)
 {
     if (BDIGITS(num)[0] & 1) {
-       return Qfalse;
+	return Qfalse;
     }
     return Qtrue;
 }
