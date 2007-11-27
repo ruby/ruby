@@ -1,3 +1,7 @@
+Tue Nov 27 11:54:46 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: fix typo.
+
 Tue Nov 27 11:23:20 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test_beginendblock.rb: add loop to wait signal.

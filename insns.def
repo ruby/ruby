@@ -758,7 +758,7 @@ alias
     VALUE klass;
 
     if (v_p == Qtrue) {
-	rb_alias_variable(ID2SYM(sym1), SYM2ID(sym2));
+	rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
     }
     else {
 	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
