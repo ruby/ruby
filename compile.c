@@ -2673,11 +2673,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		if (nd_type(vals) == NODE_ARRAY) {
 		    special_literals = when_vals(iseq, cond_seq, vals, l1, special_literals);
 		}
-		else if (nd_type(vals) == NODE_SPLAT || nd_type(vals) == NODE_ARGSCAT) {
+		else if (nd_type(vals) == NODE_SPLAT ||
+			 nd_type(vals) == NODE_ARGSCAT ||
+			 nd_type(vals) == NODE_ARGSPUSH) {
 		    NODE *val = vals->nd_head;
 		    special_literals = 0;
 
-		    if (nd_type(vals) == NODE_ARGSCAT) {
+		    if (nd_type(vals) == NODE_ARGSCAT ||
+			nd_type(vals) == NODE_ARGSPUSH) {
 			when_vals(iseq, cond_seq, vals->nd_head, l1, 0);
 			val = vals->nd_body;
 		    }
@@ -2687,12 +2690,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
 		}
 		else {
-		    rb_bug("NODE_CASAE: unknown node (%s)",
+		    rb_bug("NODE_CASE: unknown node (%s)",
 			   ruby_node_name(nd_type(vals)));
 		}
 	    }
 	    else {
-		rb_bug("NODE_CASAE: must be NODE_ARRAY, but 0");
+		rb_bug("NODE_CASE: must be NODE_ARRAY, but 0");
 	    }
 
 	    node = node->nd_next;
@@ -2755,10 +2758,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    vals = vals->nd_next;
 		}
 	    }
-	    else if (nd_type(vals) == NODE_SPLAT || nd_type(vals) == NODE_ARGSCAT) {
+	    else if (nd_type(vals) == NODE_SPLAT ||
+		     nd_type(vals) == NODE_ARGSCAT ||
+		     nd_type(vals) == NODE_ARGSPUSH) {
+
 		NODE *val = vals->nd_head;
 
-		if (nd_type(vals) == NODE_ARGSCAT) {
+		if (nd_type(vals) == NODE_ARGSCAT || nd_type(vals) == NODE_ARGSPUSH) {
 		    NODE *vs = vals->nd_head;
 		    val = vals->nd_body;
 

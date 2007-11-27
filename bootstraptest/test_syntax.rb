@@ -612,3 +612,15 @@ assert_equal '1', %q{
   a = [0]
   a[*a]+=1
 }
+assert_equal '2', %q{
+  ary = [0]
+  case 1
+  when *ary, 1
+    1
+  end +
+  case
+  when *ary
+    1
+  end
+}
+
