@@ -1,3 +1,11 @@
+Tue Nov 27 11:14:57 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h, encoding.c, re.c, string.c, parse.y: 
+	  rename ENC_CODERANGE_SINGLE to ENC_CODERANGE_7BIT.
+	  rename ENC_CODERANGE_MULTI to ENC_CODERANGE_8BIT.
+	  Because single byte 8bit character, such as Shift_JIS 1byte katakana,
+	  is represented by ENC_CODERANGE_MULTI even if it is not multi byte.
+
 Tue Nov 27 10:45:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (rb_method_missing): fix stack trace.

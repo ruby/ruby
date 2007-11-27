@@ -92,7 +92,7 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
-#define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_SINGLE)
+#define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 
 VALUE rb_fs;
 
@@ -105,7 +105,7 @@ rb_enc_str_coderange(VALUE str)
 	rb_encoding *enc = rb_enc_get(str);
 
 	if (!rb_enc_asciicompat(enc)) {
-	    cr = ENC_CODERANGE_MULTI;
+	    cr = ENC_CODERANGE_8BIT;
 	    ENC_CODERANGE_SET(str, cr);
 	    return cr;
 	}
@@ -113,12 +113,12 @@ rb_enc_str_coderange(VALUE str)
 	    const char *p = RSTRING_PTR(str);
 	    const char *e = p + RSTRING_LEN(str);
 
-	    cr = ENC_CODERANGE_SINGLE;
+	    cr = ENC_CODERANGE_7BIT;
 	    while (p < e) {
 		int c = (unsigned char)*p;
 
 		if (!isascii(c)) {
-		    cr = ENC_CODERANGE_MULTI;
+		    cr = ENC_CODERANGE_8BIT;
 		    break;
 		}
 		p++;
@@ -134,7 +134,7 @@ int rb_enc_str_asciionly_p(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
 
     if (rb_enc_asciicompat(enc) &&
-        rb_enc_str_coderange(str) == ENC_CODERANGE_SINGLE) {
+        rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
         char *ptr = RSTRING_PTR(str);
         long len = RSTRING_LEN(str);
         long i;

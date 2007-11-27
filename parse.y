@@ -271,7 +271,7 @@ struct parser_params {
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,e,has8,hasmb) parser_str_new2((p),(n),(e),(has8),(hasmb))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
-#define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_SINGLE)
+#define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
 
 #ifdef YYMALLOC
@@ -4835,8 +4835,8 @@ parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
      * Set coderange bit flags based on the presence of 8-bit and 
      * multi-byte characters in the string
      */
-    int coderange = ENC_CODERANGE_SINGLE;
-    if (hasmb) coderange = ENC_CODERANGE_MULTI;
+    int coderange = ENC_CODERANGE_7BIT;
+    if (hasmb) coderange = ENC_CODERANGE_8BIT;
     else if (has8bit) coderange = ENC_CODERANGE_UNKNOWN;
 
     /*
@@ -4845,7 +4845,7 @@ parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
      * string is in the ASCII subset, and we just use the ASCII encoding
      * instead.
      */
-    if ((coderange == ENC_CODERANGE_SINGLE) && rb_enc_asciicompat(enc))
+    if ((coderange == ENC_CODERANGE_7BIT) && rb_enc_asciicompat(enc))
 	enc = rb_enc_default();
 
     return parser_str_new(p, n, enc, coderange);
@@ -5676,7 +5676,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
     }
     else {
-	/*	int mb = ENC_CODERANGE_SINGLE, *mbp = &mb;*/
+	/*	int mb = ENC_CODERANGE_7BIT, *mbp = &mb;*/
         int has8bit=0, hasmb=0;
 	rb_encoding *enc = parser->enc;
 	newtok();
@@ -7100,7 +7100,7 @@ parser_yylex(struct parser_params *parser)
 	break;
     }
 
-    mb = ENC_CODERANGE_SINGLE;
+    mb = ENC_CODERANGE_7BIT;
     do {
 	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
 	tokadd_mbchar(c);
@@ -7155,7 +7155,7 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if (mb == ENC_CODERANGE_SINGLE && lex_state != EXPR_DOT) {
+	    if (mb == ENC_CODERANGE_7BIT && lex_state != EXPR_DOT) {
 		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
@@ -8466,7 +8466,7 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	int opt, idx;
 	rb_char_to_option_kcode(c, &opt, &idx);
 	if (idx != ENCODING_GET(str) && ENCODING_GET(str) &&
-	    rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+	    rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
 	    compile_error(PARSER_ARG
 			  "regexp encoding option '%c' differs from source encoding '%s'",
 			  c, rb_enc_name(rb_enc_get(str)));
@@ -8919,7 +8919,7 @@ rb_intern_str(VALUE str)
     int idx = 0;
     ID id;
 
-    if (rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+    if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
 	idx = rb_enc_get_index(str);
     }
     id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str),

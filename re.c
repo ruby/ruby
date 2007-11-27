@@ -725,7 +725,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     /* ignorecase status */
     if (rb_reg_fixed_encoding_p(re)) {
         if (ENCODING_GET(re) != rb_enc_get_index(str) &&
-            rb_enc_str_coderange(str) != ENC_CODERANGE_SINGLE) {
+            rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_raise(rb_eArgError, "character encodings differ");
         }
     }

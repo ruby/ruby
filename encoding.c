@@ -407,12 +407,12 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 	    cr2 = rb_enc_str_coderange(str2);
 	    if (cr1 != cr2) {
 		/* may need to handle ENC_CODERANGE_BROKEN */
-		if (cr1 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx2);
-		if (cr2 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(idx1);
+		if (cr1 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx2);
+		if (cr2 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx1);
 	    }
-	    if (cr1 == ENC_CODERANGE_SINGLE) return rb_enc_from_index(0);
+	    if (cr1 == ENC_CODERANGE_7BIT) return rb_enc_from_index(0);
 	}
-	if (cr1 == ENC_CODERANGE_SINGLE &&
+	if (cr1 == ENC_CODERANGE_7BIT &&
 	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
 	    return enc;
     }
