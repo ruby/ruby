@@ -1,3 +1,10 @@
+Tue Nov 27 15:40:05 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): "a[*b] += 1" dumps core.
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>.  [ruby-dev:32354]
+
+	* bootstraptest/test_syntax.rb: add a test for above.
+
 Tue Nov 27 12:47:23 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def: change return value of "defined?"

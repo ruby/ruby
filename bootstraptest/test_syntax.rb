@@ -608,3 +608,7 @@ assert_equal '3', %q{
          p(1, (redo; 2))
        end)
 }
+assert_equal '1', %q{
+  a = [0]
+  a[*a]+=1
+}
