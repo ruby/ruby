@@ -163,7 +163,8 @@ class TestRubyYieldGen < Test::Unit::TestCase
     :block_arg => [['&', :arg]],
     #:test => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']]
     :test_proc => [['def m() yield', :command_args_noblock, ' end; r = m {', :block_param_def, 'vars', '}; undef m; r']],
-    :test_lambda => [['def m() yield', :command_args_noblock, ' end; r = m(&lambda {', :block_param_def, 'vars', '}); undef m; r']]
+    :test_lambda => [['def m() yield', :command_args_noblock, ' end; r = m(&lambda {', :block_param_def, 'vars', '}); undef m; r']],
+    :test_enum => [['o = Object.new; def o.each() yield', :command_args_noblock, ' end; r1 = r2 = nil; o.each {|*x| r1 = x }; o.to_enum.each {|*x| r2 = x }; [r1, r2]']]
   }
 
   def rename_var(obj)
@@ -340,6 +341,14 @@ class TestRubyYieldGen < Test::Unit::TestCase
     syntax = Sentence.expand_syntax(Syntax)
     Sentence.each(syntax, :test_lambda, 4) {|t|
       check_nofork(t, true)
+    }
+  end
+
+  def test_yield_enum
+    syntax = Sentence.expand_syntax(Syntax)
+    Sentence.each(syntax, :test_enum, 4) {|t|
+      r1, r2 = eval(t.to_s)
+      assert_equal(r1, r2, "#{t}")
     }
   end
 
