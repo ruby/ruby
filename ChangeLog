@@ -1,3 +1,9 @@
+Wed Nov 28 09:51:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): do not clobber space for sign.
+
+	* sprintf.c (remove_sign_bits): extends sign bit first.
+
 Wed Nov 21 01:04:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (nil_plus): remove unused function.  [ruby-core:13737]
