@@ -79,7 +79,7 @@ def extract_makefile(makefile, keep = true)
   $static ||= m[/^EXTSTATIC[ \t]*=[ \t]*(\S+)/, 1] || false
   /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
-  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
+  $DLDFLAGS += " " + (m[/^dldflags[ \t]*=[ \t]*(.*)/, 1] || "")
   if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
     s.sub!(/^#{Regexp.quote($LIBRUBYARG)} */, "")
     s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
