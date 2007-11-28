@@ -1,3 +1,13 @@
+Wed Nov 28 14:43:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): use dldflags instead of DLDFLAGS to
+	  get rid of mixing $LDFLAGS and $ARCH_FLAG.
+
+	* lib/mkmf.rb (configuration): ditto.
+
+	* lib/mkmf.rb (create_makefile): support for extensions which has no
+	  shared object.
+
 Wed Nov 28 02:42:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2str_find_n1): removed extraneous element.

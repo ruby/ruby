@@ -1208,7 +1208,10 @@ INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
-DLDFLAGS = #$LDFLAGS #$DLDFLAGS #$ARCH_FLAG
+ldflags  = #{$LDFLAGS}
+dldflags = #{$DLDFLAGS}
+archflag = #{$ARCH_FLAG}
+DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 LDSHARED = #{CONFIG['LDSHARED']}
 LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
 AR = #{CONFIG['AR']}
@@ -1405,11 +1408,11 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
   sodir = (dir = "$(RUBYARCHDIR)").dup
-  mfile.print("install-so: #{dir}\n")
+  mfile.print("install-so: ")
   if target
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
-    mfile.print "install-so: #{dest}\n"
+    mfile.puts dir, "install-so: #{dest}"
     unless $extout
       mfile.print "#{dest}: #{f}\n"
       if (sep = config_string('BUILD_FILE_SEPARATOR'))
@@ -1426,6 +1429,8 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
       end
     end
+  else
+    mfile.puts "Makefile"
   end
   mfile.print("install-rb: pre-install-rb install-rb-default\n")
   mfile.print("install-rb-default: pre-install-rb-default\n")
