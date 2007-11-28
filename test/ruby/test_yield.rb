@@ -64,6 +64,14 @@ class TestRubyYield < Test::Unit::TestCase
     }
   end
 
+  def test_with_enum
+    obj = Object
+    def obj.each
+      yield(*[])
+    end
+    obj.each{|*v| assert_equal([], [], '[ruby-dev:32392]')}
+    obj.to_enum.each{|*v| assert_equal([], [], '[ruby-dev:32392]')}
+  end
 end
 
 require 'sentence'

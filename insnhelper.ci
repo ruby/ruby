@@ -798,13 +798,12 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     }
     iseq = block->iseq;
 
+    argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0);
+
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;
 
-	argc = caller_setup_args(th, GET_CFP(), flag, argc, 0, 0);
-
 	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
-
 	DEC_SP(argc);
 	opt_pc = vm_yield_setup_args(th, iseq, argc, GET_SP(), 0,
 				     block_proc_is_lambda(block->proc));
@@ -820,8 +819,8 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 	return Qundef;
     }
     else {
-	val = vm_yield_with_cfunc(th, block, block->self, num, STACK_ADDR_FROM_TOP(num));
-	POPN(num); /* TODO: should put before C/yield? */
+	val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc));
+	POPN(argc); /* TODO: should put before C/yield? */
 	return val;
     }
 }

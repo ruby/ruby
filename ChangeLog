@@ -1,3 +1,10 @@
+Wed Nov 28 16:29:35 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_invoke_block): should splat args.
+	  [ruby-dev:32392]
+
+	* test/ruby/test_yield.rb: add tests for above.
+
 Wed Nov 28 14:43:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): use dldflags instead of DLDFLAGS to
