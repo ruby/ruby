@@ -210,17 +210,20 @@ class TestInteger < Test::Unit::TestCase
   def test_divmod
     VS.each {|a|
       VS.each {|b|
-        next if b == 0
-        q, r = a.divmod(b)
-        check_class(q)
-        check_class(r)
-        assert_equal(a, b*q+r)
-        assert(r.abs < b.abs)
-        assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
-        assert_equal(q, a/b)
-        assert_equal(q, a.div(b))
-        assert_equal(r, a%b)
-        assert_equal(r, a.modulo(b))
+        if b == 0
+          assert_raise(ZeroDivisionError) { a.divmod(b) }
+        else
+          q, r = a.divmod(b)
+          check_class(q)
+          check_class(r)
+          assert_equal(a, b*q+r)
+          assert(r.abs < b.abs)
+          assert(0 < b ? (0 <= r && r < b) : (b < r && r <= 0))
+          assert_equal(q, a/b)
+          assert_equal(q, a.div(b))
+          assert_equal(r, a%b)
+          assert_equal(r, a.modulo(b))
+        end
       }
     }
   end
@@ -446,17 +449,20 @@ class TestInteger < Test::Unit::TestCase
   def test_remainder
     VS.each {|a|
       VS.each {|b|
-        next if b == 0
-        r = a.remainder(b)
-        check_class(r)
-        if a < 0
-          assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
-          assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
-        elsif 0 < a
-          assert_operator(0, :<=, r, "#{a}.remainder(#{b})")
-          assert_operator(b.abs, :>, r, "#{a}.remainder(#{b})")
+        if b == 0
+          assert_raise(ZeroDivisionError) { a.divmod(b) }
         else
-          assert_equal(0, r, "#{a}.remainder(#{b})")
+          r = a.remainder(b)
+          check_class(r)
+          if a < 0
+            assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
+            assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
+          elsif 0 < a
+            assert_operator(0, :<=, r, "#{a}.remainder(#{b})")
+            assert_operator(b.abs, :>, r, "#{a}.remainder(#{b})")
+          else
+            assert_equal(0, r, "#{a}.remainder(#{b})")
+          end
         end
       }
     }
@@ -616,20 +622,26 @@ class TestInteger < Test::Unit::TestCase
   def test_pack_ber
     template = "w"
     VS.reverse_each {|a|
-      next if a < 0
-      s = [a].pack(template)
-      b = s.unpack(template)[0]
-      assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+      if a < 0
+        assert_raise(ArgumentError) { [a].pack(template) }
+      else
+        s = [a].pack(template)
+        b = s.unpack(template)[0]
+        assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+      end
     }
   end
 
   def test_pack_utf8
     template = "U"
     VS.reverse_each {|a|
-      next if a < 0 || 0x7fffffff < a
-      s = [a].pack(template)
-      b = s.unpack(template)[0]
-      assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+      if a < 0 || 0x7fffffff < a
+        assert_raise(RangeError) { [a].pack(template) }
+      else
+        s = [a].pack(template)
+        b = s.unpack(template)[0]
+        assert_equal(a, b, "[#{a}].pack(#{template.dump}).unpack(#{template.dump})")
+      end
     }
   end
 
