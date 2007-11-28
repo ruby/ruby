@@ -5,7 +5,6 @@ require 'json'
 
 class TC_JSONFixtures < Test::Unit::TestCase
   def setup
-    $KCODE = 'UTF8'
     fixtures = File.join(File.dirname(__FILE__), 'fixtures/*.json')
     passed, failed = Dir[fixtures].partition { |f| f['pass'] }
     @passed = passed.inject([]) { |a, f| a << [ f, File.read(f) ] }.sort

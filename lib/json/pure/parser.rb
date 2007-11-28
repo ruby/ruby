@@ -58,6 +58,9 @@ module JSON
       # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
       #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
       #   to false.
+      # * *create_additions*: If set to false, the Parser doesn't create
+      #   additions even if a matchin class and create_id was found. This option
+      #   defaults to true.
       def initialize(source, opts = {})
         super
         if !opts.key?(:max_nesting) # defaults to 19
@@ -68,7 +71,9 @@ module JSON
           @max_nesting = 0
         end
         @allow_nan = !!opts[:allow_nan]
-        @create_id = JSON.create_id
+        ca = true
+        ca = opts[:create_additions] if opts.key?(:create_additions)
+        @create_id = ca ? JSON.create_id : nil
       end
 
       alias source string
@@ -235,11 +240,10 @@ module JSON
             if delim
               raise ParserError, "expected next name, value pair in object at '#{peek(20)}'!"
             end
-            if klassname = result[@create_id]
+            if @create_id and klassname = result[@create_id]
               klass = JSON.deep_const_get klassname
               break unless klass and klass.json_creatable?
               result = klass.json_create(result)
-              result
             end
             break
           when skip(IGNORE)

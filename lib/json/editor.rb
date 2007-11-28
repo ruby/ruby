@@ -457,16 +457,16 @@ module JSON
       def create
         add_item("Change node", ?n, &method(:change_node))
         add_separator
-        add_item("Cut node", ?x, &method(:cut_node))
-        add_item("Copy node", ?c, &method(:copy_node))
-        add_item("Paste node (appending)", ?v, &method(:paste_node_appending))
-        add_item("Paste node (inserting before)", ?V,
+        add_item("Cut node", ?X, &method(:cut_node))
+        add_item("Copy node", ?C, &method(:copy_node))
+        add_item("Paste node (appending)", ?A, &method(:paste_node_appending))
+        add_item("Paste node (inserting before)", ?I,
           &method(:paste_node_inserting_before))
         add_separator
         add_item("Append new node", ?a, &method(:append_new_node))
         add_item("Insert new node before", ?i, &method(:insert_new_node))
         add_separator 
-        add_item("Collapse/Expand node (recursively)", ?C,
+        add_item("Collapse/Expand node (recursively)", ?e,
           &method(:collapse_expand))
 
         menu.show_all
@@ -544,17 +544,32 @@ module JSON
     class EditMenu
       include MenuExtension
 
+      # Copy data from model into primary clipboard.
+      def copy(item)
+        data = Editor.model2data(model.iter_first)
+        json = JSON.pretty_generate(data, :max_nesting => false)
+        c = Gtk::Clipboard.get(Gdk::Selection::PRIMARY)
+        c.text = json
+      end
+
+      # Copy json text from primary clipboard into model.
+      def paste(item)
+        c = Gtk::Clipboard.get(Gdk::Selection::PRIMARY)
+        if json = c.wait_for_text
+          window.ask_save if @changed
+          begin
+            window.edit json
+          rescue JSON::ParserError
+            window.clear
+          end
+        end
+      end
+
       # Find a string in all nodes' contents and select the found node in the
       # treeview.
       def find(item)
-        search = ask_for_find_term or return
-        begin
-          @search = Regexp.new(search)
-        rescue => e
-          Editor.error_dialog(self, "Evaluation of regex /#{search}/ failed: #{e}!")
-          return
-        end
-        iter = model.get_iter('0')
+        @search = ask_for_find_term(@search) or return
+        iter = model.get_iter('0') or return
         iter.recursive_each do |i|
           if @iter
             if @iter != i
@@ -630,6 +645,9 @@ module JSON
       def create
         title = MenuItem.new('Edit')
         title.submenu = menu
+        add_item('Copy', ?c, &method(:copy))
+        add_item('Paste', ?v, &method(:paste))
+        add_separator
         add_item('Find', ?f, &method(:find))
         add_item('Find Again', ?g, &method(:find_again))
         add_separator
@@ -812,12 +830,13 @@ module JSON
           [ Stock::OK, Dialog::RESPONSE_ACCEPT ],
           [ Stock::CANCEL, Dialog::RESPONSE_REJECT ]
         )
+        dialog.width_request = 640
 
         hbox = HBox.new(false, 5)
-        hbox.pack_start(Label.new("Key:"))
+        hbox.pack_start(Label.new("Key:"), false)
         hbox.pack_start(key_input = Entry.new)
         key_input.text = @key || ''
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
         key_input.signal_connect(:activate) do
           if parent.any? { |c| c.content == key_input.text }
             toplevel.display_status('Key already exists in Hash!')
@@ -828,11 +847,11 @@ module JSON
         end
 
         hbox = HBox.new(false, 5)
-        hbox.add(Label.new("Type:"))
+        hbox.pack_start(Label.new("Type:"), false)
         hbox.pack_start(type_input = ComboBox.new(true))
         ALL_TYPES.each { |t| type_input.append_text(t) }
         type_input.active = @type || 0
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         type_input.signal_connect(:changed) do
           value_input.editable = false
@@ -852,10 +871,11 @@ module JSON
         end
 
         hbox = HBox.new(false, 5)
-        hbox.add(Label.new("Value:"))
+        hbox.pack_start(Label.new("Value:"), false)
         hbox.pack_start(value_input = Entry.new)
+        value_input.width_chars = 60
         value_input.text = @value || ''
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         dialog.signal_connect(:'key-press-event', &DEFAULT_DIALOG_KEY_PRESS_HANDLER)
         dialog.show_all
@@ -884,7 +904,7 @@ module JSON
           [ Stock::CANCEL, Dialog::RESPONSE_REJECT ]
         )
         hbox = HBox.new(false, 5)
-        hbox.add(Label.new("Type:"))
+        hbox.pack_start(Label.new("Type:"), false)
         hbox.pack_start(type_input = ComboBox.new(true))
         default_active = 0
         types = parent ? ALL_TYPES : CONTAINER_TYPES
@@ -895,18 +915,19 @@ module JSON
           end
         end
         type_input.active = default_active
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
         type_input.signal_connect(:changed) do
           configure_value(value_input, types[type_input.active])
         end
 
         hbox = HBox.new(false, 5)
-        hbox.add(Label.new("Value:"))
+        hbox.pack_start(Label.new("Value:"), false)
         hbox.pack_start(value_input = Entry.new)
+        value_input.width_chars = 60
         value_input.text = value_text if value_text
         configure_value(value_input, types[type_input.active])
 
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         dialog.signal_connect(:'key-press-event', &DEFAULT_DIALOG_KEY_PRESS_HANDLER)
         dialog.show_all
@@ -940,13 +961,14 @@ module JSON
         )
         hbox = HBox.new(false, 5)
 
-        hbox.add(Label.new("Order:"))
+        hbox.pack_start(Label.new("Order:"), false)
         hbox.pack_start(order_input = Entry.new)
         order_input.text = @order || 'x'
+        order_input.width_chars = 60
 
-        hbox.pack_start(reverse_checkbox = CheckButton.new('Reverse'))
+        hbox.pack_start(reverse_checkbox = CheckButton.new('Reverse'), false)
 
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         dialog.signal_connect(:'key-press-event', &DEFAULT_DIALOG_KEY_PRESS_HANDLER)
         dialog.show_all
@@ -963,7 +985,7 @@ module JSON
 
       # Ask for a find term to search for in the tree. Returns the term as a
       # string.
-      def ask_for_find_term
+      def ask_for_find_term(search = nil)
         dialog = Dialog.new(
           "Find a node matching regex in tree.",
           nil, nil,
@@ -972,18 +994,28 @@ module JSON
         )
         hbox = HBox.new(false, 5)
 
-        hbox.add(Label.new("Regex:"))
+        hbox.pack_start(Label.new("Regex:"), false)
         hbox.pack_start(regex_input = Entry.new)
-        regex_input.text = @regex || ''
+        hbox.pack_start(icase_checkbox = CheckButton.new('Icase'), false)
+        regex_input.width_chars = 60
+        if search
+          regex_input.text = search.source
+          icase_checkbox.active = search.casefold?
+        end
 
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         dialog.signal_connect(:'key-press-event', &DEFAULT_DIALOG_KEY_PRESS_HANDLER)
         dialog.show_all
         self.focus = dialog
         dialog.run do |response| 
           if response == Dialog::RESPONSE_ACCEPT
-            return @regex = regex_input.text
+            begin
+              return Regexp.new(regex_input.text, icase_checkbox.active? ? Regexp::IGNORECASE : 0)
+            rescue => e
+              Editor.error_dialog(self, "Evaluation of regex /#{regex_input.text}/ failed: #{e}!")
+              return
+            end
           end
         end
         return
@@ -1039,6 +1071,18 @@ module JSON
         if @filename
           data = read_data(@filename)
           view_new_model Editor.data2model(data)
+        end
+
+        signal_connect(:button_release_event) do |_,event|
+          if event.button == 2
+            c = Gtk::Clipboard.get(Gdk::Selection::PRIMARY)
+            if url = c.wait_for_text
+              location_open url
+            end
+            false
+          else
+            true
+          end
         end
       end
 
@@ -1132,6 +1176,7 @@ module JSON
       def location_open(uri = nil)
         uri = ask_for_location unless uri
         uri or return
+        ask_save if @changed
         data = load_location(uri) or return
         view_new_model Editor.data2model(data)
       end
@@ -1141,6 +1186,15 @@ module JSON
       def file_open(filename = nil)
         filename = select_file('Open as a JSON file') unless filename
         data = load_file(filename) or return
+        view_new_model Editor.data2model(data)
+      end
+
+      # Edit the string _json_ in the editor.
+      def edit(json)
+        if json.respond_to? :read
+          json = json.read
+        end
+        data = parse_json json
         view_new_model Editor.data2model(data)
       end
 
@@ -1164,10 +1218,11 @@ module JSON
         if path
           data = Editor.model2data(@treeview.model.iter_first)
           File.open(path + '.tmp', 'wb') do |output|
+            data or break
             if @options_menu.pretty_item.active?
-              output.puts JSON.pretty_generate(data)
+              output.puts JSON.pretty_generate(data, :max_nesting => false)
             else
-              output.write JSON.unparse(data)
+              output.write JSON.generate(data, :max_nesting => false)
             end
           end
           File.rename path + '.tmp', path
@@ -1205,17 +1260,22 @@ module JSON
         data
       end
 
+      def parse_json(json)
+        check_pretty_printed(json)
+        if @encoding && !/^utf8$/i.match(@encoding)
+          iconverter = Iconv.new('utf8', @encoding)
+          json = iconverter.iconv(json)
+        end
+        JSON::parse(json, :max_nesting => false, :create_additions => false)
+      end
+      private :parse_json
+
       # Read a JSON document from the file named _filename_, parse it into a
       # ruby data structure, and return the data.
       def read_data(filename)
         open(filename) do |f|
           json = f.read
-          check_pretty_printed(json)
-          if @encoding && !/^utf8$/i.match(@encoding)
-            iconverter = Iconv.new('utf8', @encoding)
-            json = iconverter.iconv(json)
-          end
-          return JSON::parse(json, :max_nesting => false)
+          return parse_json(json)
         end
       rescue => e
         Editor.error_dialog(self, "Failed to parse JSON file: #{e}!")
@@ -1226,11 +1286,15 @@ module JSON
       # selected filename or nil, if no file was selected.
       def select_file(message)
         filename = nil
-        fs = FileSelection.new(message).set_modal(true).
-          set_filename(Dir.pwd + "/").set_transient_for(self)
+        fs = FileSelection.new(message)
+        fs.set_modal(true)
+        @default_dir = File.join(Dir.pwd, '') unless @default_dir
+        fs.set_filename(@default_dir)
+        fs.set_transient_for(self)
         fs.signal_connect(:destroy) { Gtk.main_quit }
         fs.ok_button.signal_connect(:clicked) do
           filename = fs.filename
+          @default_dir = File.join(File.dirname(filename), '')
           fs.destroy
           Gtk.main_quit
         end
@@ -1253,12 +1317,12 @@ module JSON
         )
         hbox = HBox.new(false, 5)
 
-        hbox.add(Label.new("Location:"))
+        hbox.pack_start(Label.new("Location:"), false)
         hbox.pack_start(location_input = Entry.new)
         location_input.width_chars = 60
         location_input.text = @location || ''
 
-        dialog.vbox.add(hbox)
+        dialog.vbox.pack_start(hbox, false)
 
         dialog.signal_connect(:'key-press-event', &DEFAULT_DIALOG_KEY_PRESS_HANDLER)
         dialog.show_all
@@ -1276,14 +1340,20 @@ module JSON
     class << self
       # Starts a JSON Editor. If a block was given, it yields
       # to the JSON::Editor::MainWindow instance.
-      def start(encoding = nil) # :yield: window
-        encoding ||= 'utf8'
+      def start(encoding = 'utf8') # :yield: window
         Gtk.init
         @window = Editor::MainWindow.new(encoding)
         @window.icon_list = [ Editor.fetch_icon('json') ]
         yield @window if block_given?
         @window.show_all
         Gtk.main
+      end
+
+      # Edit the string _json_ with encoding _encoding_ in the editor.
+      def edit(json, encoding = 'utf8')
+        start(encoding) do |window|
+          window.edit json
+        end
       end
 
       attr_reader :window

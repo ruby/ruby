@@ -1,3 +1,10 @@
+Wed Nov 28 18:08:00 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json, lib/json, test/json: Update to JSON 1.1.2.
+	  (RubyForge#15447)
+
+	* math.c: fix typo.
+
 Wed Nov 28 16:29:35 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_invoke_block): should splat args.

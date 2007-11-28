@@ -1,9 +1,9 @@
 /* vim: set cin et sw=4 ts=4: */
 
-#include "ruby/ruby.h"
+#include <string.h>
+#include "ruby.h"
 #include "ruby/st.h"
 #include "unicode.h"
-#include <string.h>
 #include <math.h>
 
 #define check_max_nesting(state, depth) do {                                   \
@@ -69,6 +69,7 @@ static int hash_to_json_state_i(VALUE key, VALUE value, VALUE Vstate)
         rb_str_buf_append(buf, rb_str_times(state->indent, Vdepth));
     }
     json = rb_funcall(rb_funcall(key, i_to_s, 0), i_to_json, 2, Vstate, Vdepth);
+    Check_Type(json, T_STRING);
     rb_str_buf_append(buf, json);
     OBJ_INFECT(buf, json);
     if (RSTRING_LEN(state->space_before)) {
@@ -77,6 +78,7 @@ static int hash_to_json_state_i(VALUE key, VALUE value, VALUE Vstate)
     rb_str_buf_cat2(buf, ":");
     if (RSTRING_LEN(state->space)) rb_str_buf_append(buf, state->space);
     json = rb_funcall(value, i_to_json, 2, Vstate, Vdepth);
+    Check_Type(json, T_STRING);
     state->flag = 1;
     rb_str_buf_append(buf, json);
     OBJ_INFECT(buf, json);
@@ -113,10 +115,12 @@ static int hash_to_json_i(VALUE key, VALUE value, VALUE buf)
     if (key == Qundef) return ST_CONTINUE;
     if (RSTRING_LEN(buf) > 1) rb_str_buf_cat2(buf, ",");
     tmp = rb_funcall(rb_funcall(key, i_to_s, 0), i_to_json, 0);
+    Check_Type(tmp, T_STRING);
     rb_str_buf_append(buf, tmp);
     OBJ_INFECT(buf, tmp);
     rb_str_buf_cat2(buf, ":");
     tmp = rb_funcall(value, i_to_json, 0);
+    Check_Type(tmp, T_STRING);
     rb_str_buf_append(buf, tmp);
     OBJ_INFECT(buf, tmp);
 
@@ -192,7 +196,9 @@ inline static VALUE mArray_json_transfrom(VALUE self, VALUE Vstate, VALUE Vdepth
             OBJ_INFECT(result, element);
             if (i > 0) rb_str_buf_append(result, delim);
             rb_str_buf_append(result, shift);
-            rb_str_buf_append(result, rb_funcall(element, i_to_json, 2, Vstate, LONG2FIX(depth + 1)));
+            element = rb_funcall(element, i_to_json, 2, Vstate, LONG2FIX(depth + 1));
+            Check_Type(element, T_STRING);
+            rb_str_buf_append(result, element);
         }
         if (RSTRING_LEN(state->array_nl)) {
             rb_str_buf_append(result, state->array_nl);
@@ -213,7 +219,9 @@ inline static VALUE mArray_json_transfrom(VALUE self, VALUE Vstate, VALUE Vdepth
             OBJ_INFECT(result, element);
             if (i > 0) rb_str_buf_append(result, delim);
             rb_str_buf_append(result, shift);
-            rb_str_buf_append(result, rb_funcall(element, i_to_json, 2, Vstate, LONG2FIX(depth + 1)));
+            element = rb_funcall(element, i_to_json, 2, Vstate, LONG2FIX(depth + 1));
+            Check_Type(element, T_STRING);
+            rb_str_buf_append(result, element);
         }
         rb_str_buf_append(result, state->array_nl);
         if (RSTRING_LEN(state->array_nl)) {
@@ -246,7 +254,9 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
             VALUE element = RARRAY_PTR(self)[i];
             OBJ_INFECT(result, element);
             if (i > 0) rb_str_buf_cat2(result, ",");
-            rb_str_buf_append(result, rb_funcall(element, i_to_json, 0));
+            element = rb_funcall(element, i_to_json, 0);
+            Check_Type(element, T_STRING);
+            rb_str_buf_append(result, element);
         }
         rb_str_buf_cat2(result, "]");
     } else {
@@ -787,6 +797,9 @@ static VALUE cState_forget(VALUE self, VALUE object)
     return rb_hash_delete(state->seen, rb_obj_id(object));
 }
 
+/*
+ *
+ */
 void Init_generator()
 {
     mJSON = rb_define_module("JSON");

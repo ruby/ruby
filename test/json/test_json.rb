@@ -7,7 +7,6 @@ class TC_JSON < Test::Unit::TestCase
   include JSON
 
   def setup
-    $KCODE = 'UTF8'
     @ary = [1, "foo", 3.14, 4711.0, 2.718, nil, [1,-2,3], false, true].map do
       |x| [x]
     end

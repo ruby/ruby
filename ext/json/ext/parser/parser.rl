@@ -1,6 +1,6 @@
-/* -*-c-*- vim: set cin et sw=4 ts=4: */
+/* vim: set cin et sw=4 ts=4: */
 
-#include "ruby/ruby.h"
+#include "ruby.h"
 #include "ruby/re.h"
 #include "ruby/st.h"
 #include "unicode.h"
@@ -10,8 +10,8 @@
 static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
-static ID i_json_creatable_p, i_json_create, i_create_id, i_chr, i_max_nesting,
-          i_allow_nan; 
+static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
+          i_chr, i_max_nesting, i_allow_nan; 
 
 #define MinusInfinity "-Infinity"
 
@@ -113,11 +113,13 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     %% write exec;
 
     if (cs >= JSON_object_first_final) {
-        VALUE klassname = rb_hash_aref(*result, json->create_id);
-        if (!NIL_P(klassname)) {
-            VALUE klass = rb_path2class(StringValueCStr(klassname));
-            if RTEST(rb_funcall(klass, i_json_creatable_p, 0)) {
-                *result = rb_funcall(klass, i_json_create, 1, *result);
+        if (RTEST(json->create_id)) {
+            VALUE klassname = rb_hash_aref(*result, json->create_id);
+            if (!NIL_P(klassname)) {
+                VALUE klass = rb_path2class(StringValueCStr(klassname));
+                if RTEST(rb_funcall(klass, i_json_creatable_p, 0)) {
+                    *result = rb_funcall(klass, i_json_create, 1, *result);
+                }
             }
         }
         return p + 1;
@@ -473,6 +475,9 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
  * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
  *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
  *   false.
+ * * *create_additions*: If set to false, the Parser doesn't create
+ *   additions even if a matchin class and create_id was found. This option
+ *   defaults to true.
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -487,8 +492,6 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (len < 2) {
         rb_raise(eParserError, "A JSON text must at least contain two octets!");
     }
-    json->max_nesting = 19;
-    json->allow_nan = 0;
     if (!NIL_P(opts)) {
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
@@ -503,13 +506,32 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
                 } else {
                     json->max_nesting = 0;
                 }
+            } else {
+                json->max_nesting = 19;
             }
             tmp = ID2SYM(i_allow_nan);
             if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
                 VALUE allow_nan = rb_hash_aref(opts, tmp);
-                if (RTEST(allow_nan)) json->allow_nan = 1;
+                json->allow_nan = RTEST(allow_nan) ? 1 : 0;
+            } else {
+                json->allow_nan = 0;
+            }
+            tmp = ID2SYM(i_create_additions);
+            if (st_lookup(RHASH_TBL(opts), tmp, 0)) {
+                VALUE create_additions = rb_hash_aref(opts, tmp);
+                if (RTEST(create_additions)) {
+                    json->create_id = rb_funcall(mJSON, i_create_id, 0);
+                } else {
+                    json->create_id = Qnil;
+                }
+            } else {
+                json->create_id = rb_funcall(mJSON, i_create_id, 0);
             }
         }
+    } else {
+        json->max_nesting = 19;
+        json->allow_nan = 0;
+        json->create_id = rb_funcall(mJSON, i_create_id, 0);
     }
     json->current_nesting = 0;
     /*
@@ -527,7 +549,6 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     json->len = len;
     json->source = ptr;
     json->Vsource = source;
-    json->create_id = rb_funcall(mJSON, i_create_id, 0);
     return self;
 }
 
@@ -556,7 +577,7 @@ static VALUE cParser_parse(VALUE self)
     }
 }
 
-static JSON_Parser *JSON_allocate()
+inline static JSON_Parser *JSON_allocate()
 {
     JSON_Parser *json = ALLOC(JSON_Parser);
     MEMZERO(json, JSON_Parser, 1);
@@ -611,6 +632,7 @@ void Init_parser()
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
     i_create_id = rb_intern("create_id");
+    i_create_additions = rb_intern("create_additions");
     i_chr = rb_intern("chr");
     i_max_nesting = rb_intern("max_nesting");
     i_allow_nan = rb_intern("allow_nan");

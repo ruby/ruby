@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'test/unit'
-require 'json'
+require 'json/add/core'
+require 'date'
 
 class TC_JSONAddition < Test::Unit::TestCase
   include JSON
@@ -23,7 +24,7 @@ class TC_JSONAddition < Test::Unit::TestCase
 
     def to_json(*args)
       {
-        'json_class'  => self.class,
+        'json_class'  => self.class.name,
         'args'        => [ @a ],
       }.to_json(*args)
     end
@@ -32,12 +33,16 @@ class TC_JSONAddition < Test::Unit::TestCase
   class B
     def to_json(*args)
       {
-        'json_class'  => self.class,
+        'json_class'  => self.class.name,
       }.to_json(*args)
     end
   end
 
   class C
+    def self.json_creatable?
+      false
+    end
+
     def to_json(*args)
       {
         'json_class'  => 'TC_JSONAddition::Nix',
@@ -46,7 +51,6 @@ class TC_JSONAddition < Test::Unit::TestCase
   end
 
   def setup
-    $KCODE = 'UTF8'
   end
 
   def test_extended_json
@@ -56,6 +60,21 @@ class TC_JSONAddition < Test::Unit::TestCase
     a_again = JSON.parse(json)
     assert_kind_of a.class, a_again
     assert_equal a, a_again
+  end
+
+  def test_extended_json_disabled
+    a = A.new(666)
+    assert A.json_creatable?
+    json = generate(a)
+    a_again = JSON.parse(json, :create_additions => true)
+    assert_kind_of a.class, a_again
+    assert_equal a, a_again
+    a_hash = JSON.parse(json, :create_additions => false)
+    assert_kind_of Hash, a_hash
+    assert_equal(
+      {"args"=>[666], "json_class"=>"TC_JSONAddition::A"}.sort_by { |k,| k },
+      a_hash.sort_by { |k,| k }
+    )
   end
 
   def test_extended_json_fail
@@ -90,5 +109,35 @@ EOT
     assert_equal json_raw, json
     raw_again = JSON.parse(json)
     assert_equal raw, raw_again
+  end
+
+  def test_core
+    t = Time.now
+    assert_equal t, JSON(JSON(t))
+    d = Date.today
+    assert_equal d, JSON(JSON(d))
+    d = DateTime.civil(2007, 6, 14, 14, 57, 10, Rational(1, 12), 2299161)
+    assert_equal d, JSON(JSON(d))
+    assert_equal 1..10, JSON(JSON(1..10))
+    assert_equal 1...10, JSON(JSON(1...10))
+    assert_equal "a".."c", JSON(JSON("a".."c"))
+    assert_equal "a"..."c", JSON(JSON("a"..."c"))
+    struct = Struct.new 'MyStruct', :foo, :bar
+    s = struct.new 4711, 'foot'
+    assert_equal s, JSON(JSON(s))
+    struct = Struct.new :foo, :bar
+    s = struct.new 4711, 'foot'
+    assert_raises(JSONError) { JSON(s) }
+    begin
+      raise TypeError, "test me"
+    rescue TypeError => e
+      e_json = JSON.generate e
+      e_again = JSON e_json
+      assert_kind_of TypeError, e_again
+      assert_equal e.message, e_again.message
+      assert_equal e.backtrace, e_again.backtrace
+    end
+    assert_equal /foo/, JSON(JSON(/foo/))
+    assert_equal /foo/i, JSON(JSON(/foo/i))
   end
 end

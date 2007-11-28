@@ -115,6 +115,9 @@ module JSON
   # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
   #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
   #   to false.
+  # * *create_additions*: If set to false, the Parser doesn't create
+  #   additions even if a matchin class and create_id was found. This option
+  #   defaults to true.
   def parse(source, opts = {})
     JSON.parser.new(source, opts).parse
   end
@@ -131,6 +134,9 @@ module JSON
   # * *allow_nan*: If set to true, allow NaN, Infinity, and -Infinity in
   #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
   #   to true.
+  # * *create_additions*: If set to false, the Parser doesn't create
+  #   additions even if a matchin class and create_id was found. This option
+  #   defaults to true.
   def parse!(source, opts = {})
     opts = {
       :max_nesting => false,
@@ -161,6 +167,9 @@ module JSON
   # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
   #   generated, otherwise an exception is thrown, if these values are
   #   encountered. This options defaults to false.
+  # * *max_nesting*: The maximum depth of nesting allowed in the data
+  #   structures from which JSON is to be generated. Disable depth checking
+  #   with :max_nesting => false, it defaults to 19.
   #
   # See also the fast_generate for the fastest creation method with the least
   # amount of sanity checks, and the pretty_generate method for some

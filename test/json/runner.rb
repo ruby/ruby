@@ -8,6 +8,7 @@ require 'test_json'
 require 'test_json_generate'
 require 'test_json_unicode'
 require 'test_json_addition'
+require 'test_json_rails'
 require 'test_json_fixtures'
 
 class TS_AllTests
@@ -17,6 +18,7 @@ class TS_AllTests
     suite << TC_JSON.suite
     suite << TC_JSONUnicode.suite
     suite << TC_JSONAddition.suite
+    suite << TC_JSONRails.suite
     suite << TC_JSONFixtures.suite
   end
 end

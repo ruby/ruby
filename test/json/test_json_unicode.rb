@@ -7,7 +7,6 @@ class TC_JSONUnicode < Test::Unit::TestCase
   include JSON
 
   def setup
-    $KCODE = 'UTF8'
   end
 
   def test_unicode
