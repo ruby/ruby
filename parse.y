@@ -398,15 +398,15 @@ compstmt	: stmts opt_terms
 stmts		: none
 		| stmt
 		    {
-			$$ = newline_node($1);
+			$$ = newline_node(remove_begin($1));
 		    }
 		| stmts terms stmt
 		    {
-			$$ = block_append($1, newline_node($3));
+			$$ = block_append($1, newline_node(remove_begin($3)));
 		    }
 		| error stmt
 		    {
-			$$ = $2;
+			$$ = remove_begin($2);
 		    }
 		;
 
@@ -436,7 +436,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kIF_MOD expr_value
 		    {
-			$$ = NEW_IF(cond($3), $1, 0);
+			$$ = NEW_IF(cond($3), remove_begin($1), 0);
 		        fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_else = $$->nd_body;
@@ -445,7 +445,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kUNLESS_MOD expr_value
 		    {
-			$$ = NEW_UNLESS(cond($3), $1, 0);
+			$$ = NEW_UNLESS(cond($3), remove_begin($1), 0);
 		        fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_body = $$->nd_else;
@@ -478,7 +478,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kRESCUE_MOD stmt
 		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+			NODE *resq = NEW_RESBODY(0, remove_begin($3), 0);
+			$$ = NEW_RESCUE(remove_begin($1), resq, 0);
 		    }
 		| klBEGIN
 		    {
@@ -5206,7 +5207,7 @@ void_stmts(node)
 
     for (;;) {
 	if (!node->nd_next) return;
-	void_expr(node->nd_head);
+	void_expr0(node->nd_head);
 	node = node->nd_next;
     }
 }

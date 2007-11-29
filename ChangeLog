@@ -1,3 +1,7 @@
+Thu Nov 29 16:59:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): remove unnecessary NODE_BEGIN.  [ruby-core:13814]
+
 Wed Nov 28 14:43:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): use dldflags instead of DLDFLAGS to
