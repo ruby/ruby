@@ -345,7 +345,8 @@ static int value_expr_gen(struct parser_params*,NODE*);
 static void void_expr_gen(struct parser_params*,NODE*);
 static NODE *remove_begin(NODE*);
 #define value_expr(node) value_expr_gen(parser, (node) = remove_begin(node))
-#define void_expr(node) void_expr_gen(parser, (node) = remove_begin(node))
+#define void_expr0(node) void_expr_gen(parser, (node))
+#define void_expr(node) void_expr0((node) = remove_begin(node))
 static void void_stmts_gen(struct parser_params*,NODE*);
 #define void_stmts(node) void_stmts_gen(parser, node)
 static void reduce_nodes_gen(struct parser_params*,NODE**);
@@ -798,10 +799,9 @@ compstmt	: stmts opt_terms
 		    {
 		    /*%%%*/
 			void_stmts($1);
-			$$ = $1;
 		    /*%
-			$$ = $1;
 		    %*/
+			$$ = $1;
 		    }
 		;
 
@@ -884,7 +884,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt modifier_if expr_value
 		    {
 		    /*%%%*/
-			$$ = NEW_IF(cond($3), $1, 0);
+			$$ = NEW_IF(cond($3), remove_begin($1), 0);
 			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 			    $$->nd_else = $$->nd_body;
@@ -897,7 +897,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt modifier_unless expr_value
 		    {
 		    /*%%%*/
-			$$ = NEW_UNLESS(cond($3), $1, 0);
+			$$ = NEW_UNLESS(cond($3), remove_begin($1), 0);
 			fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 			    $$->nd_body = $$->nd_else;
@@ -942,7 +942,8 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt modifier_rescue stmt
 		    {
 		    /*%%%*/
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+			NODE *resq = NEW_RESBODY(0, remove_begin($3), 0);
+			$$ = NEW_RESCUE(remove_begin($1), resq, 0);
 		    /*%
 			$$ = dispatch2(rescue_mod, $3, $1);
 		    %*/
@@ -7943,7 +7944,7 @@ void_stmts_gen(struct parser_params *parser, NODE *node)
 
     for (;;) {
 	if (!node->nd_next) return;
-	void_expr(node->nd_head);
+	void_expr0(node->nd_head);
 	node = node->nd_next;
     }
 }
