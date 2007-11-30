@@ -114,11 +114,16 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 	rb_block_call(obj, id_each, 0, 0, count_i, (VALUE)&args);
 	return INT2NUM(args[1]);
     }
-    else {
-	long n = 0;
+    else if (argc == 0) {
+	long n;
 
+	RETURN_ENUMERATOR(obj, 0, 0);
+	n = 0;
 	rb_block_call(obj, id_each, 0, 0, count_iter_i, (VALUE)&n);
 	return INT2NUM(n);
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &argv[0]);
     }
 }
 
