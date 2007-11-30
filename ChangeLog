@@ -1,3 +1,9 @@
+Fri Nov 30 16:42:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_take_while): returns Enumerator if no block given.
+
+	* enum.c (enum_drop_while): ditto.
+
 Thu Nov 29 16:59:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): remove unnecessary NODE_BEGIN.  [ruby-core:13814]
