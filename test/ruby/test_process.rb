@@ -36,6 +36,6 @@ class TestProcess < Test::Unit::TestCase
       exit 1
     }
     Process.wait pid
-    assert_equal(0, $?.to_i)
+    assert_equal(0, $?.to_i, "#{$?}")
   end
 end
