@@ -1,3 +1,7 @@
+Sat Dec  1 03:34:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (newline_node): always remove NODE_BEGIN.
+
 Fri Nov 30 23:48:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (ruby_signal): use SA_SIGINFO if available.

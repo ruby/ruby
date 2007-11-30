@@ -817,7 +817,7 @@ stmts		: none
 		| stmt
 		    {
 		    /*%%%*/
-			$$ = newline_node(remove_begin($1));
+			$$ = newline_node($1);
 		    /*%
 			$$ = dispatch2(stmts_add, dispatch0(stmts_new), $1);
 		    %*/
@@ -825,7 +825,7 @@ stmts		: none
 		| stmts terms stmt
 		    {
 		    /*%%%*/
-			$$ = block_append($1, newline_node(remove_begin($3)));
+			$$ = block_append($1, newline_node($3));
 		    /*%
 			$$ = dispatch2(stmts_add, $1, $3);
 		    %*/
@@ -7281,6 +7281,7 @@ static NODE*
 newline_node(NODE *node)
 {
     if (node) {
+	node = remove_begin(node);
 	node->flags |= NODE_NEWLINE;
     }
     return node;
