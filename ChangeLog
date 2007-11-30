@@ -1,3 +1,8 @@
+Fri Nov 30 23:48:07 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (ruby_signal): use SA_SIGINFO if available.
+	  [ ruby-Patches-6418 ]
+
 Fri Nov 30 22:52:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (trap_signm): SIGVTALRM no longer used for green

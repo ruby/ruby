@@ -472,7 +472,7 @@ VALUE rb_f_kill(int, VALUE*);
 void rb_gc_mark_trap_list(void);
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
-void posix_signal(int, RETSIGTYPE (*)(int));
+RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
 #endif
 void ruby_sig_finalize(void);
 void rb_trap_exit(void);

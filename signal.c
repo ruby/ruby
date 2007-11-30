@@ -414,9 +414,15 @@ ruby_signal(int signum, sighandler_t handler)
 
     rb_trap_accept_nativethreads[signum] = 0;
 
-    sigact.sa_handler = handler;
     sigemptyset(&sigact.sa_mask);
+#ifdef SA_SIGINFO
+    sigact.sa_sigaction = (void (*)(int, siginfo_t*, void*))handler;
+    sigact.sa_flags = SA_SIGINFO;
+#else
+    sigact.sa_handler = handler;
     sigact.sa_flags = 0;
+#endif
+
 #ifdef SA_NOCLDWAIT
     if (signum == SIGCHLD && handler == SIG_IGN)
 	sigact.sa_flags |= SA_NOCLDWAIT;
@@ -425,7 +431,7 @@ ruby_signal(int signum, sighandler_t handler)
     return old.sa_handler;
 }
 
-void
+sighandler_t
 posix_signal(int signum, sighandler_t handler)
 {
     ruby_signal(signum, handler);
