@@ -1,3 +1,9 @@
+Fri Nov 30 21:02:15 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/json.rb, lib/json/add/{core.rb, rails.rb},
+	  test/json/test_json_rails.rb: additional files of JSON 1.1.2.
+	  [ruby-dev:32405]
+
 Fri Nov 30 19:33:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (rb_syck_mktime): avoid segmentation fault.
