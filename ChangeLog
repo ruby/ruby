@@ -1,3 +1,16 @@
+Fri Nov 30 21:53:28 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.0 -> 0.2.1.
+
+	* lib/rss/content.rb, lib/rss/content/1.0.rb,
+	lib/rss/content/2.0.rb, lib/rss/maker/content.rb,
+	test/rss/rss-testcase.rb, test/rss/test_content.rb,
+	test/rss/test_maker_content.rb: supported content:encoded with RSS
+	2.0.
+	Suggested by Sam Lown. Thanks.
+
+	* NEWS: added the above changes.
+
 Thu Nov 29 16:59:10 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): remove unnecessary NODE_BEGIN.  [ruby-core:13814]

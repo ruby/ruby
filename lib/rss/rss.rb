@@ -52,7 +52,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.2.0"
+  VERSION = "0.2.1"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -207,7 +207,7 @@ EOC
                              disp_name=nil)
       name ||= tag_name
       disp_name ||= name
-      self::ELEMENTS << name
+      self::ELEMENTS << name unless self::ELEMENTS.include?(name)
       add_need_initialize_variable(name)
       install_model(tag_name, uri, occurs, name)
 

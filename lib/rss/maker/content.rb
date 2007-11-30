@@ -1,5 +1,6 @@
 require 'rss/content'
 require 'rss/maker/1.0'
+require 'rss/maker/2.0'
 
 module RSS
   module Maker

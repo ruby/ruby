@@ -82,7 +82,7 @@ with all sufficient information, see the ChangeLog file.
 
 * rss
 
-  * 0.1.6 -> 0.2.0
+  * 0.1.6 -> 0.2.1
 
   * Fix image module URI
 
@@ -91,6 +91,8 @@ with all sufficient information, see the ChangeLog file.
   * ITunes module support
 
   * Slash module support
+
+  * content:encoded with RSS 2.0 support
 
 === Compatibility issues (excluding feature bug fixes)
 
