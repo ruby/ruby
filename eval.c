@@ -143,7 +143,7 @@ ruby_finalize_0(void)
 static void
 ruby_finalize_1(void)
 {
-    signal(SIGINT, SIG_DFL);
+    ruby_sig_finalize();
     GET_THREAD()->errinfo = Qnil;
     rb_gc_call_finalizer_at_exit();
 }

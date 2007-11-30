@@ -474,6 +474,7 @@ void rb_gc_mark_trap_list(void);
 #define posix_signal ruby_posix_signal
 void posix_signal(int, RETSIGTYPE (*)(int));
 #endif
+void ruby_sig_finalize(void);
 void rb_trap_exit(void);
 void rb_trap_exec(void);
 const char *ruby_signal_name(int);

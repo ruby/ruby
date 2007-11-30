@@ -1,3 +1,11 @@
+Fri Nov 30 22:52:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (trap_signm): SIGVTALRM no longer used for green
+	  thread.  [ruby-talk:281318]
+
+	* signal.c (ruby_sig_finalize): do not install SIG_DFL handler if
+	  previous handler is sighandler().
+
 Fri Nov 30 21:02:15 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json.rb, lib/json/add/{core.rb, rails.rb},

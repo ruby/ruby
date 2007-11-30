@@ -783,12 +783,6 @@ trap_signm(VALUE vsig)
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
 	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
     }
-
-#if defined(HAVE_SETITIMER)
-    if (sig == SIGVTALRM) {
-	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; can't set handler");
-    }
-#endif
     return sig;
 }
 
@@ -992,6 +986,18 @@ init_sigchld(int sig)
     trap_last_mask = mask;
 #endif
 }
+
+void
+ruby_sig_finalize()
+{
+    sighandler_t oldfunc;
+
+    oldfunc = ruby_signal(SIGINT, SIG_IGN);
+    if (oldfunc == sighandler) {
+	ruby_signal(SIGINT, SIG_DFL);
+    }
+}
+
 
 #ifdef RUBY_DEBUG_ENV
 int ruby_enable_coredump = 0;
