@@ -1,3 +1,8 @@
+Fri Nov 30 19:33:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (rb_syck_mktime): avoid segmentation fault.
+	  [ruby-core:13735]
+
 Fri Nov 30 19:05:55 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_count): precise argument number check.

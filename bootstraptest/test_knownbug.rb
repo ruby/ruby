@@ -3,6 +3,7 @@
 # So all tests will cause failure.
 #
 
+$:.unshift File.join(File.dirname(__FILE__), "../.ext/#{RUBY_PLATFORM}")
 assert_normal_exit %q{
   STDERR.reopen(STDOUT)
   require 'yaml'
