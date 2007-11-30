@@ -62,6 +62,13 @@ require 'json/common'
 # you
 #   require 'json/add/core'
 #
+# After requiring this you can, e. g., serialise/deserialise Ruby ranges:
+#
+#   JSON JSON(1..10) # => 1..10
+#
+# To find out how to add JSON support to other or your own classes, read the
+# Examples section below.
+#
 # To get the best compatibility to rails' JSON implementation, you can
 #   require 'json/add/rails'
 #
@@ -125,11 +132,6 @@ require 'json/common'
 #  json = JSON.generate [1, 2, {"a"=>3.141}, false, true, nil, 4..10]
 #  # => "[1,2,{\"a\":3.141},false,true,null,\"4..10\"]"
 #
-# It's also possible to call the #to_json method directly.
-#
-#  json = [1, 2, {"a"=>3.141}, false, true, nil, 4..10].to_json
-#  # => "[1,2,{\"a\":3.141},false,true,null,\"4..10\"]"
-#
 # To create a valid JSON text you have to make sure, that the output is
 # embedded in either a JSON array [] or a JSON object {}. The easiest way to do
 # this, is by putting your values in a Ruby Array or Hash instance.
@@ -145,10 +147,10 @@ require 'json/common'
 # or arbitrary classes. In this case the json library falls back to call
 # Object#to_json, which is the same as #to_s.to_json.
 #
-# It's possible to extend JSON to support serialization of arbitrary classes by
+# It's possible to add JSON support serialization to arbitrary classes by
 # simply implementing a more specialized version of the #to_json method, that
-# should return a JSON object (a hash converted to JSON with #to_json)
-# like this (don't forget the *a for all the arguments):
+# should return a JSON object (a hash converted to JSON with #to_json) like
+# this (don't forget the *a for all the arguments):
 #
 #  class Range
 #    def to_json(*a)
@@ -159,15 +161,15 @@ require 'json/common'
 #    end
 #  end
 #
-# The hash key 'json_class' is the class, that will be asked to deserialize the
+# The hash key 'json_class' is the class, that will be asked to deserialise the
 # JSON representation later. In this case it's 'Range', but any namespace of
 # the form 'A::B' or '::A::B' will do. All other keys are arbitrary and can be
-# used to store the necessary data to configure the object to be deserialized.
+# used to store the necessary data to configure the object to be deserialised.
 #
 # If a the key 'json_class' is found in a JSON object, the JSON parser checks
 # if the given class responds to the json_create class method. If so, it is
 # called with the JSON object converted to a Ruby hash. So a range can
-# be deserialized by implementing Range.json_create like this:
+# be deserialised by implementing Range.json_create like this:
 # 
 #  class Range
 #    def self.json_create(o)
@@ -175,7 +177,7 @@ require 'json/common'
 #    end
 #  end
 #
-# Now it possible to serialize/deserialize ranges as well:
+# Now it possible to serialise/deserialise ranges as well:
 #
 #  json = JSON.generate [1, 2, {"a"=>3.141}, false, true, nil, 4..10]
 #  # => "[1,2,{\"a\":3.141},false,true,null,{\"json_class\":\"Range\",\"data\":[4,10,false]}]"
