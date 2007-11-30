@@ -1,3 +1,8 @@
+Sat Dec  1 03:30:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (newline_node): set line from outermost node before removing
+	  NODE_BEGIN.  [ruby-dev:32406]
+
 Fri Nov 30 21:53:28 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.0 -> 0.2.1.

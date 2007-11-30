@@ -398,11 +398,11 @@ compstmt	: stmts opt_terms
 stmts		: none
 		| stmt
 		    {
-			$$ = newline_node(remove_begin($1));
+			$$ = newline_node($1);
 		    }
 		| stmts terms stmt
 		    {
-			$$ = block_append($1, newline_node(remove_begin($3)));
+			$$ = block_append($1, newline_node($3));
 		    }
 		| error stmt
 		    {
@@ -4549,10 +4549,13 @@ newline_node(node)
 {
     NODE *nl = 0;
     if (node) {
+	int line;
 	if (nd_type(node) == NODE_NEWLINE) return node;
-        nl = NEW_NEWLINE(node);
-        fixpos(nl, node);
-        nl->nd_nth = nd_line(node);
+	line = nd_line(node);
+	node = remove_begin(node);
+	nl = NEW_NEWLINE(node);
+	nd_set_line(nl, line);
+	nl->nd_nth = line;
     }
     return nl;
 }
