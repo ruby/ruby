@@ -782,16 +782,6 @@ nil_to_s(VALUE obj)
  *     nil.to_a   #=> []
  */
 
-/*
- * Document-method: to_splat
- *
- *  call-seq:
- *     nil.to_splat   => []
- *  
- *  Always returns an empty array.
- *     
- */
-
 static VALUE
 nil_to_a(VALUE obj)
 {
@@ -2382,7 +2372,6 @@ Init_Object(void)
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
-    rb_define_method(rb_cNilClass, "to_splat", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);

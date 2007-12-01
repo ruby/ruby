@@ -13,6 +13,13 @@ Sat Dec  1 13:24:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_block.rb: ditto.
 
+Sat Dec  1 09:44:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* insns.def (concatarray, splatarray): use to_a instead of
+	  to_splat.
+
+	* insnhelper.ci (caller_setup_args): ditto.
+
 Sat Dec  1 03:34:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (newline_node): always remove NODE_BEGIN.

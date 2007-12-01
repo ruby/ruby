@@ -652,19 +652,6 @@ range_to_s(VALUE range)
 
 /*
  * call-seq:
- *   rng.to_splat   => array
- *
- * Convert this range object to an array to splat.
- */
-
-static VALUE
-range_to_splat(VALUE range)
-{
-    return rb_convert_type(range, T_ARRAY, "Array", "to_a");
-}
-
-/*
- * call-seq:
  *   rng.inspect  => string
  *
  * Convert this range object to a printable form (using 
@@ -908,12 +895,10 @@ Init_Range(void)
     rb_define_method(rb_cRange, "max", range_max, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
-    rb_define_method(rb_cRange, "to_splat", range_to_splat, 0);
 
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
 
     rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
-
 }

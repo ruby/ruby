@@ -236,7 +236,7 @@ caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
 	VALUE ary = *(cfp->sp - 1);
 	VALUE *ptr;
 	int i;
-	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
+	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_a");
 
 	if (NIL_P(tmp)) {
 	    /* do nothing */

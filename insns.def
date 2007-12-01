@@ -468,8 +468,8 @@ concatarray
 (VALUE ary)
 {
     VALUE ary2 = ary2st;
-    VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_splat");
-    VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_splat");
+    VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_a");
+    VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_a");
 
     if (NIL_P(tmp1)) {
 	tmp1 = rb_ary_new3(1, ary1);
@@ -488,7 +488,7 @@ concatarray
 /**
   @c put
   @e splat array
-  @j 配列 ary に対して to_splat を呼び出す。
+  @j 配列 ary に対して to_a を呼び出す。
  */
 DEFINE_INSN
 splatarray
@@ -496,7 +496,7 @@ splatarray
 (VALUE ary)
 (VALUE obj)
 {
-    VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_splat");
+    VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_a");
     if (NIL_P(tmp)) {
 	tmp = rb_ary_new3(1, ary);
     }
