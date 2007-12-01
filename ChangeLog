@@ -1,3 +1,11 @@
+Sat Dec  1 19:52:57 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (Time#to_datetime): use nsec instead of usec.
+
+	* lib/date.rb (DateTime#to_time): second minute as an argument to
+	  Time::utc contains fractional part in rational; hence Time
+	  object may keep resolution at most nanosecond.
+
 Sat Dec  1 14:36:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: move fixed bugs.

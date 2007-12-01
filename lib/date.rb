@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.31 2007-09-08 08:30:25+09 tadf Exp $
+# $Id: date.rb,v 2.32 2007-12-01 18:51:16+09 tadf Exp $
 #++
 #
 # == Overview
@@ -1734,7 +1734,7 @@ class Time
   def to_datetime
     jd = DateTime.__send__(:civil_to_jd, year, mon, mday, DateTime::ITALY)
     fr = DateTime.__send__(:time_to_day_fraction, hour, min, [sec, 59].min) +
-	 usec.to_r/86400_000_000
+      nsec.to_r/86400_000_000_000
     of = utc_offset.to_r/86400
     DateTime.new!(DateTime.__send__(:jd_to_ajd, jd, fr, of),
 		  of, DateTime::ITALY)
@@ -1767,8 +1767,8 @@ class DateTime < Date
   def to_time
     d = new_offset(0)
     d.instance_eval do
-      Time.utc(year, mon, mday, hour, min, sec,
-	       (sec_fraction * 1_000_000).to_i)
+      Time.utc(year, mon, mday, hour, min, sec +
+	       sec_fraction)
     end.
 	getlocal
   end
