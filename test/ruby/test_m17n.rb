@@ -25,6 +25,17 @@ class TestM17N < Test::Unit::TestCase
     assert_encoding("EUC-JP", eval(e(%{"\\x80"})).encoding)
   end
 
+  def test_string_mixed_unicode
+    assert_raise(SyntaxError) { eval(a(%{"\xc0\xa0\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(e(%{"\xc0\xa0\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(s(%{"\xc0\xa0\\u{6666}"})) }
+    assert_nothing_raised { eval(u(%{"\xc0\xa0\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(a(%{"\\u{6666}\xc0\xa0"})) }
+    assert_raise(SyntaxError) { eval(e(%{"\\u{6666}\xc0\xa0"})) }
+    assert_raise(SyntaxError) { eval(s(%{"\\u{6666}\xc0\xa0"})) }
+    assert_nothing_raised { eval(u(%{"\\u{6666}\xc0\xa0"})) }
+  end
+
   def test_regexp_too_short_multibyte_character
     assert_raise(SyntaxError) { eval('/\xfe/e') }
     assert_raise(SyntaxError) { eval('/\x8e/e') }
@@ -38,11 +49,12 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xfc\x80\x80\x80\x80/u') }
 
     # raw 8bit
-    #assert_raise(SyntaxError) { eval("/\xfe/e") }
-    #assert_raise(SyntaxError) { eval("/\xc0/u") }
+    assert_raise(SyntaxError) { eval("/\xfe/e") }
+    assert_raise(SyntaxError) { eval("/\xc0/u") }
 
     # invalid suffix
-    #assert_raise(SyntaxError) { eval('/\xc0\xff/u') }
+    assert_raise(SyntaxError) { eval('/\xc0\xff/u') }
+    assert_raise(SyntaxError) { eval('/\xc0 /u') }
     #assert_raise(SyntaxError) { eval('/\xc0\x20/u') }
   end
 
@@ -94,6 +106,9 @@ class TestM17N < Test::Unit::TestCase
   def test_regexp_generic
     assert_regexp_generic_ascii(/a/)
     assert_regexp_generic_ascii(Regexp.new(a("a")))
+    assert_regexp_generic_ascii(Regexp.new(e("a")))
+    assert_regexp_generic_ascii(Regexp.new(s("a")))
+    assert_regexp_generic_ascii(Regexp.new(u("a")))
 
     [/a/, Regexp.new(a("a"))].each {|r|
       assert_equal(0, r =~ a("a"))
@@ -112,7 +127,7 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_ascii8bit(/\xc0\xa1/n)
     assert_regexp_fixed_ascii8bit(eval(a(%{/\xc0\xa1/})))
     assert_regexp_fixed_ascii8bit(eval(a(%{/\xc0\xa1/n})))
-    # assert_regexp_fixed_ascii8bit(eval(a(%q{/\xc0\xa1/})))
+    assert_regexp_fixed_ascii8bit(eval(a(%q{/\xc0\xa1/})))
 
     [/a/n].each {|r|
       assert_equal(0, r =~ a("a"))
@@ -139,12 +154,11 @@ class TestM17N < Test::Unit::TestCase
 
   def test_regexp_euc
     assert_regexp_fixed_eucjp(/a/e)
-    assert_regexp_fixed_eucjp(Regexp.new(e("a")))
     assert_regexp_fixed_eucjp(/\xc0\xa1/e)
     assert_regexp_fixed_eucjp(eval(e(%{/\xc0\xa1/})))
     assert_regexp_fixed_eucjp(eval(e(%q{/\xc0\xa1/})))
 
-    [/a/e, Regexp.new(e("a"))].each {|r|
+    [/a/e].each {|r|
       assert_equal(0, r =~ a("a"))
       assert_equal(0, r =~ e("a"))
       assert_equal(0, r =~ s("a"))
@@ -169,7 +183,6 @@ class TestM17N < Test::Unit::TestCase
 
   def test_regexp_sjis
     assert_regexp_fixed_sjis(/a/s)
-    assert_regexp_fixed_sjis(Regexp.new(s("a")))
     assert_regexp_fixed_sjis(/\xc0\xa1/s)
     assert_regexp_fixed_sjis(eval(s(%{/\xc0\xa1/})))
     assert_regexp_fixed_sjis(eval(s(%q{/\xc0\xa1/})))

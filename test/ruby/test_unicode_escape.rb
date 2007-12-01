@@ -68,47 +68,74 @@ EOS
   def test_regexp
 
     # Compare regexps to regexps
-    assert_equal(/Yukihiro Matsumoto - 松本行弘/,
+    assert_not_equal(/Yukihiro Matsumoto - 松本行弘/,
       /Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18/)
-    assert_equal(/Yukihiro Matsumoto - 松本行弘/,
-                 /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/)
-    assert_equal(/Matz - まつもと ゆきひろ/,
+    assert_not_equal(/Yukihiro Matsumoto - 松本行弘/,
+      /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/)
+    assert_not_equal(/Matz - まつもと ゆきひろ/,
       /Matz - \u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D/)
-    assert_equal(/Aoyama Gakuin University - 青山学院大学/,
+    assert_not_equal(/Aoyama Gakuin University - 青山学院大学/,
       /Aoyama Gakuin University - \u9752\u5C71\u5B66\u9662\u5927\u5B66/)
-    assert_equal(/青山学院大学/, /\u9752\u5C71\u5B66\u9662\u5927\u5B66/)
-    assert_equal(/Martin Dürst/, /Martin D\u00FCrst/)
-    assert_equal(/ü/, /\u00FC/)
-    assert_equal(/Martin Dürst/, /Martin D\u{FC}rst/)
-    assert_equal(/ü/, /\u{FC}/)
-    assert_equal(/ü/, %r{\u{FC}})
-    assert_equal(/ü/i, %r{\u00FC}i)
+    assert_not_equal(/青山学院大学/, /\u9752\u5C71\u5B66\u9662\u5927\u5B66/)
+    assert_not_equal(/Martin Dürst/, /Martin D\u00FCrst/)
+    assert_not_equal(/ü/, /\u00FC/)
+    assert_not_equal(/Martin Dürst/, /Martin D\u{FC}rst/)
+    assert_not_equal(/ü/, /\u{FC}/)
+    assert_not_equal(/ü/, %r{\u{FC}})
+    assert_not_equal(/ü/i, %r{\u00FC}i)
+
+    assert_equal('Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18',
+      /Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18/.source)
+    assert_equal('Yukihiro Matsumoto - \u{677E 672C 884C 5F18}',
+      /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/.source)
+    assert_equal('Matz - \u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D',
+      /Matz - \u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D/.source)
+    assert_equal('Aoyama Gakuin University - \u9752\u5C71\u5B66\u9662\u5927\u5B66',
+      /Aoyama Gakuin University - \u9752\u5C71\u5B66\u9662\u5927\u5B66/.source)
+    assert_equal('\u9752\u5C71\u5B66\u9662\u5927\u5B66',
+      /\u9752\u5C71\u5B66\u9662\u5927\u5B66/.source)
+    assert_equal('Martin D\u00FCrst', /Martin D\u00FCrst/.source)
+    assert_equal('\u00FC', /\u00FC/.source)
+    assert_equal('Martin D\u{FC}rst', /Martin D\u{FC}rst/.source)
+    assert_equal('\u{FC}', /\u{FC}/.source)
+    assert_equal('\u{FC}', %r{\u{FC}}.source)
+    assert_equal('\u00FC', %r{\u00FC}i.source)
 
     # match strings to regexps
-    assert_equal("Yukihiro Matsumoto - 松本行弘" =~ /Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18/, 0)
-    assert_equal("Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18" =~ /Yukihiro Matsumoto - \u677E\u672C\u884C/, 0)
-    assert_equal("Yukihiro Matsumoto - 松本行弘" =~            /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/, 0)
-    assert_equal(%Q{Yukihiro Matsumoto - \u{677E 672C 884C 5F18}} =~ /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/, 0)
-    assert_equal("Matz - まつもと ゆきひろ" =~ /Matz - \u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D/, 0)
-    assert_equal("Aoyama Gakuin University - 青山学院大学" =~ /Aoyama Gakuin University - \u9752\u5C71\u5B66\u9662\u5927\u5B66/, 0)
-    assert_equal("青山学院大学" =~ /\u9752\u5C71\u5B66\u9662\u5927\u5B66/, 0)
-    assert_equal("Martin Dürst" =~ /Martin D\u00FCrst/, 0)
-    assert_equal("ü" =~ /\u00FC/, 0)
-    assert_equal("Martin Dürst" =~ /Martin D\u{FC}rst/, 0)
-    assert_equal("ü" =~ %r{\u{FC}}, 0)
-    assert_equal("ü" =~ %r{\u00FC}i, 0)
+    assert_equal(0, "Yukihiro Matsumoto - 松本行弘" =~ /Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18/)
+    assert_equal(0, "Yukihiro Matsumoto - \u677E\u672C\u884C\u5F18" =~ /Yukihiro Matsumoto - \u677E\u672C\u884C/)
+    assert_equal(0, "Yukihiro Matsumoto - 松本行弘" =~            /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/)
+    assert_equal(0, %Q{Yukihiro Matsumoto - \u{677E 672C 884C 5F18}} =~ /Yukihiro Matsumoto - \u{677E 672C 884C 5F18}/)
+    assert_equal(0, "Matz - まつもと ゆきひろ" =~ /Matz - \u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D/)
+    assert_equal(0, "Aoyama Gakuin University - 青山学院大学" =~ /Aoyama Gakuin University - \u9752\u5C71\u5B66\u9662\u5927\u5B66/)
+    assert_equal(0, "青山学院大学" =~ /\u9752\u5C71\u5B66\u9662\u5927\u5B66/)
+    assert_equal(0, "Martin Dürst" =~ /Martin D\u00FCrst/)
+    assert_equal(0, "ü" =~ /\u00FC/)
+    assert_equal(0, "Martin Dürst" =~ /Martin D\u{FC}rst/)
+    assert_equal(0, "ü" =~ %r{\u{FC}})
+    assert_equal(0, "ü" =~ %r{\u00FC}i)
 
     # Flip order of the two operands
-    assert_equal(/Martin D\u00FCrst/ =~ "Martin Dürst", 0)
-    assert_equal(/\u00FC/ =~ "testü", 4)
-    assert_equal(/Martin D\u{FC}rst/ =~ "fooMartin Dürstbar", 3)
-    assert_equal(%r{\u{FC}} =~ "fooübar", 3)
+    assert_equal(0, /Martin D\u00FCrst/ =~ "Martin Dürst")
+    assert_equal(4, /\u00FC/ =~ "testü")
+    assert_equal(3, /Martin D\u{FC}rst/ =~ "fooMartin Dürstbar")
+    assert_equal(3, %r{\u{FC}} =~ "fooübar")
 
     # Put \u in strings, literal character in regexp
-    assert_equal("Martin D\u00FCrst" =~ /Martin Dürst/, 0)
-    assert_equal("test\u00FC" =~ /ü/, 4)
-    assert_equal("fooMartin D\u{FC}rstbar" =~ /Martin Dürst/, 3)
-    assert_equal(%Q{foo\u{FC}bar} =~ %r<ü>, 3)
+    assert_equal(0, "Martin D\u00FCrst" =~ /Martin Dürst/)
+    assert_equal(4, "test\u00FC" =~ /ü/)
+    assert_equal(3, "fooMartin D\u{FC}rstbar" =~ /Martin Dürst/)
+    assert_equal(3, %Q{foo\u{FC}bar} =~ %r<ü>)
+
+    assert_match(eval('/\u{2a}/'), "*")
+    assert_raise(SyntaxError) { eval('/\u{6666}/n') }
+    assert_raise(SyntaxError) { eval('/\u{6666}/e') }
+    assert_raise(SyntaxError) { eval('/\u{6666}/s') }
+    assert_nothing_raised { eval('/\u{6666}/u') }
+  end
+
+  def test_dynamic_regexp
+    assert_match(Regexp.new("Martin D\\u{FC}rst"), "Martin Dürst")
   end
   
   def test_syntax_variants

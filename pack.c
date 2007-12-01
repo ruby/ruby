@@ -365,7 +365,6 @@ static const char toofew[] = "too few arguments";
 static void encodes(VALUE,const char*,long,int);
 static void qpencode(VALUE,VALUE,long);
 
-static int uv_to_utf8(char*,unsigned long);
 static unsigned long utf8_to_uv(const char*,long*);
 
 /*
@@ -872,7 +871,7 @@ pack_pack(VALUE ary, VALUE fmt)
 		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}
-		le = uv_to_utf8(buf, l);
+		le = rb_uv_to_utf8(buf, l);
 		rb_str_buf_cat(res, (char*)buf, le);
 	    }
 	    break;
@@ -1991,8 +1990,8 @@ pack_unpack(VALUE str, VALUE fmt)
 
 #define BYTEWIDTH 8
 
-static int
-uv_to_utf8(char *buf, unsigned long uv)
+int
+rb_uv_to_utf8(char buf[6], unsigned long uv)
 {
     if (uv <= 0x7f) {
 	buf[0] = (char)uv;

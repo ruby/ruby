@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "regint.h"
 #include <ctype.h>
 
@@ -715,6 +716,10 @@ rb_reg_fixed_encoding_p(VALUE re)
         return Qfalse;
 }
 
+static VALUE
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err);
+
 static void
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
@@ -740,13 +745,19 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 	OnigErrorInfo einfo;
 	regex_t *reg, *reg2;
 	UChar *pattern;
+        VALUE unescaped;
+        rb_encoding *fixed_enc = 0;
 
 	rb_reg_check(re);
 	reg = RREGEXP(re)->ptr;
 	pattern = ((UChar*)RREGEXP(re)->str);
 
-	r = onig_new(&reg2, (UChar* )pattern,
-		     (UChar* )(pattern + RREGEXP(re)->len),
+        unescaped = rb_reg_preprocess(
+            RREGEXP(re)->str, RREGEXP(re)->str + RREGEXP(re)->len, enc,
+            &fixed_enc, err);
+
+	r = onig_new(&reg2, (UChar* )RSTRING_PTR(unescaped),
+		     (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
 		     reg->options, enc,
 		     OnigDefaultSyntax, &einfo);
 	if (r) {
@@ -756,6 +767,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
 	RREGEXP(re)->ptr = reg2;
 	onig_free(reg);
+        RB_GC_GUARD(unescaped);
     }
 }
 
@@ -1236,12 +1248,407 @@ match_inspect(VALUE match)
 VALUE rb_cRegexp;
 
 static int
+read_escaped_byte(const char **pp, const char *end, onig_errmsg_buffer err)
+{
+    const char *p = *pp;
+    int code;
+    int meta_prefix = 0, ctrl_prefix = 0;
+    int len;
+    int retbyte;
+
+    retbyte = -1;
+    if (p == end || *p++ != '\\') {
+        strcpy(err, "too short escaped multibyte character");
+        return -1;
+    }
+
+again:
+    if (p == end) {
+        strcpy(err, "too short escape sequence");
+        return -1;
+    }
+    switch (*p++) {
+      case '\\': code = '\\'; break;
+      case 'n': code = '\n'; break;
+      case 't': code = '\t'; break;
+      case 'r': code = '\r'; break;
+      case 'f': code = '\f'; break;
+      case 'v': code = '\013'; break;
+      case 'a': code = '\007'; break;
+      case 'e': code = '\033'; break;
+
+      /* \OOO */
+      case '0': case '1': case '2': case '3':
+      case '4': case '5': case '6': case '7':
+        p--;
+        code = ruby_scan_oct(p, end < p+3 ? end-p : 3, &len);
+        p += len;
+        break;
+
+      case 'x': /* \xHH */
+        code = ruby_scan_hex(p, end < p+2 ? end-p : 2, &len);
+        if (len < 1) {
+            strcpy(err, "invalid hex escape");
+            return -1;
+        }
+        p += len;
+        break;
+
+      case 'M': /* \M-X, \M-\C-X, \M-\cX */
+        if (meta_prefix) {
+            strcpy(err, "duplicate meta escape");
+            return -1;
+        }
+        meta_prefix = 1;
+        if (p+1 < end && *p++ == '-' && (*p & 0x80) == 0) {
+            if (*p == '\\') {
+                p++;
+                goto again;
+            }
+            else {
+                code = *p++;
+                break;
+            }
+        }
+        strcpy(err, "too short meta escape");
+        return -1;
+
+      case 'C': /* \C-X, \C-\M-X */
+        if (p == end || *p++ != '-') {
+            strcpy(err, "too short control escape");
+            return -1;
+        }
+      case 'c': /* \cX, \c\M-X */
+        if (ctrl_prefix) {
+            strcpy(err, "duplicate control escape");
+            return -1;
+        }
+        ctrl_prefix = 1;
+        if (p < end && (*p & 0x80) == 0) {
+            if (*p == '\\') {
+                p++;
+                goto again;
+            }
+            else {
+                code = *p++;
+                break;
+            }
+        }
+        strcpy(err, "too short control escape");
+        return -1;
+
+      default:
+        strcpy(err, "unexpected escape sequence");
+        return -1;
+    }
+    if (code < 0 || 0xff < code) {
+        strcpy(err, "invalid escape code");
+        return -1;
+    }
+
+    if (ctrl_prefix)
+        code &= 0x1f;
+    if (meta_prefix)
+        code |= 0x80;
+
+    *pp = p;
+    return code;
+}
+
+static int
+unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+{
+    const char *p = *pp;
+    int chmaxlen = rb_enc_mbmaxlen(enc);
+    char *chbuf = ALLOCA_N(char, chmaxlen);
+    int chlen = 0;
+    int byte;
+
+    memset(chbuf, 0, chmaxlen);
+
+    byte = read_escaped_byte(&p, end, err);
+    if (byte == -1) {
+        return -1;
+    }
+
+    chbuf[chlen++] = byte;
+    while (chlen < chmaxlen && chlen != mbclen(chbuf, chbuf+chmaxlen, enc)) {
+        byte = read_escaped_byte(&p, end, err);
+        if (byte == -1) {
+            return -1;
+        }
+        chbuf[chlen++] = byte;
+    }
+
+    if (chlen != mbclen(chbuf, chbuf+chmaxlen, enc)) {
+        strcpy(err, "invalid multibyte escape");
+        return -1;
+    }
+
+    if (1 < chlen || (chbuf[0] & 0x80)) {
+        rb_str_buf_cat(buf, chbuf, chlen);
+
+        if (*encp == 0)
+            *encp = enc;
+        else if (*encp != enc) {
+            strcpy(err, "character encodings differ");
+            return -1;
+        }
+    }
+    else {
+        char escbuf[5];
+        snprintf(escbuf, sizeof(escbuf), "\\x%02x", chbuf[0]&0xff);
+        rb_str_buf_cat(buf, escbuf, 4);
+    }
+    *pp = p;
+    return 0;
+}
+
+static int
+append_utf8(unsigned long uv,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+{
+    if (uv < 0x80) {
+        char escbuf[5];
+        snprintf(escbuf, sizeof(escbuf), "\\x%02x", (int)uv);
+        rb_str_buf_cat(buf, escbuf, 4);
+    }
+    else {
+        int len;
+        char utf8buf[6];
+        len = rb_uv_to_utf8(utf8buf, uv);
+        rb_str_buf_cat(buf, utf8buf, len);
+
+        if (*encp == 0)
+            *encp = rb_enc_find("utf-8");
+        else if (*encp != rb_enc_find("utf-8")) {
+            strcpy(err, "character encodings differ");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static int
+unescape_unicode_list(const char **pp, const char *end,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+{
+    const char *p = *pp;
+    int has_unicode = 0;
+    unsigned long code;
+    int len;
+
+    while (p < end && ISSPACE(*p)) p++;
+
+    while (1) {
+        code = ruby_scan_hex(p, end-p, &len);
+        if (len == 0)
+            break;
+        if (6 < len) { /* max 10FFFF */
+            strcpy(err, "invalid unicode range");
+            return -1;
+        }
+        if (0x10ffff < code) {
+            strcpy(err, "invalid unicode range");
+            return -1;
+        }
+        p += len;
+        if (append_utf8(code, buf, encp, err) != 0)
+            return -1;
+        has_unicode = 1;
+
+        while (p < end && ISSPACE(*p)) p++;
+    }
+
+    if (has_unicode == 0) {
+        strcpy(err, "invalid unicode list");
+        return -1;
+    }
+
+    *pp = p;
+
+    return 0;
+}
+
+static int
+unescape_unicode_bmp(const char **pp, const char *end,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+{
+    const char *p = *pp;
+    int len;
+    unsigned long code;
+
+    if (end < p+4) {
+        strcpy(err, "invalid unicode escape");
+        return -1;
+    }
+    code = ruby_scan_hex(p, 4, &len);
+    if (len != 4) {
+        strcpy(err, "invalid unicode escape");
+        return -1;
+    }
+    if (append_utf8(code, buf, encp, err) != 0)
+        return -1;
+    *pp = p + 4;
+    return 0;
+}
+
+static int
+unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
+        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+{
+    char c;
+    char smallbuf[2];
+
+    while (p < end) {
+        int chlen = mbclen(p, end, enc);
+        if (1 < chlen || (*p & 0x80)) {
+            if (end < p + chlen) {
+                strcpy(err, "too short multibyte character");
+                return -1;
+            }
+            /* xxx: validate the non-ascii character */
+            rb_str_buf_cat(buf, p, chlen);
+            p += chlen;
+            if (*encp == 0)
+                *encp = enc;
+            else if (*encp != enc) {
+                strcpy(err, "character encodings differ");
+                return -1;
+            }
+            continue;
+        }
+
+        switch (c = *p++) {
+          case '\\':
+            if (p == end) {
+                strcpy(err, "too short escape sequence");
+                return -1;
+            }
+            switch (c = *p++) {
+              case '1': case '2': case '3':
+              case '4': case '5': case '6': case '7': /* \O, \OO, \OOO or backref */
+                {
+                    int octlen;
+                    if (ruby_scan_oct(p-1, end-(p-1), &octlen) <= 0177) {
+                        /* backref or 7bit octal.
+                           no need to unescape anyway.
+                           re-escaping may break backref */
+                        goto escape_asis;
+                    }
+                }
+                /* xxx: How about more than 199 subexpressions? */ 
+
+              case '0': /* \0, \0O, \0OO */
+
+              case 'x': /* \xHH */
+              case 'c': /* \cX, \c\M-X */
+              case 'C': /* \C-X, \C-\M-X */
+              case 'M': /* \M-X, \M-\C-X, \M-\cX */
+                p = p-2;
+                if (unescape_escaped_nonascii(&p, end, enc, buf, encp, err) != 0)
+                    return -1;
+                break;
+
+              case 'u':
+                if (p == end) {
+                    strcpy(err, "too short escape sequence");
+                    return -1;
+                }
+                if (*p == '{') {
+                    /* \u{H HH HHH HHHH HHHHH HHHHHH ...} */
+                    p++;
+                    if (unescape_unicode_list(&p, end, buf, encp, err) != 0)
+                        return -1;
+                    if (p == end || *p++ != '}') {
+                        strcpy(err, "invalid unicode list");
+                        return -1;
+                    }
+                    break;
+                }
+                else {
+                    /* \uHHHH */
+                    if (unescape_unicode_bmp(&p, end, buf, encp, err) != 0)
+                        return -1;
+                    break;
+                }
+
+              default: /* \n, \\, \d, \9, etc. */
+escape_asis:
+                smallbuf[0] = '\\';
+                smallbuf[1] = c;
+                rb_str_buf_cat(buf, smallbuf, 2);
+                break;
+            }
+            break;
+
+          default:
+            rb_str_buf_cat(buf, &c, 1);
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static VALUE
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err)
+{
+    VALUE buf;
+
+    buf = rb_str_buf_new(0);
+
+    *fixed_enc = 0;
+    if (unescape_nonascii(p, end, enc, buf, fixed_enc, err) != 0)
+        return Qnil;
+
+    if (fixed_enc) {
+        rb_enc_associate(buf, *fixed_enc);
+    }
+
+    return buf;
+}
+
+#if 0
+static VALUE
+rb_reg_preprocess_obj(VALUE str,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err)
+{
+    VALUE buf;
+    char *p, *end;
+    rb_encoding *enc;
+
+    StringValue(str);
+    p = RSTRING_PTR(str);
+    end = p + RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+
+    buf = rb_reg_preprocess(p, end, enc, fixed_enc, err);
+    RB_GC_GUARD(str);
+    return buf;
+}
+
+static VALUE
+rb_reg_preprocess_m(VALUE klass, VALUE obj)
+{
+    rb_encoding *fixed_enc = 0;
+    onig_errmsg_buffer err;
+    VALUE str = rb_reg_preprocess_obj(obj, &fixed_enc, err);
+    if (str == Qnil)
+        rb_raise(rb_eArgError, "%s", err);
+    return rb_assoc_new(str, fixed_enc ? Qtrue : Qfalse);
+}
+#endif
+
+static int
 rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 		  int options, onig_errmsg_buffer err)
 {
     struct RRegexp *re = RREGEXP(obj);
-    int raw8bit;
-    long i;
+    VALUE unescaped;
+    rb_encoding *fixed_enc = 0;
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
@@ -1253,33 +1660,38 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     re->ptr = 0;
     re->str = 0;
 
-    raw8bit = 0;
-    for (i = 0; i < len; i++) {
-        if (s[i] & 0x80) {
-            raw8bit = 1;
-            break;
-        }
+    unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
+    if (unescaped == Qnil)
+        return -1;
+
+    if (fixed_enc && (options & ARG_ENCODING_FIXED) && fixed_enc != enc) {
+        strcpy(err, "character encodings differ");
+        return -1;
     }
 
+    if (fixed_enc)
+        enc = fixed_enc;
+    else if (!(options & ARG_ENCODING_FIXED))
+        enc = rb_default_encoding();
+    
     rb_enc_associate((VALUE)re, enc);
-    if (options & ARG_ENCODING_FIXED || raw8bit) {
+    if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
 	re->basic.flags |= KCODE_FIXED;
     }
-    re->ptr = make_regexp(s, len, enc, options & ARG_REG_OPTION_MASK, err);
+    re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
+            options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
+    RB_GC_GUARD(unescaped);
     return 0;
 }
 
 static int
 rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
 {
-    if (!rb_enc_str_asciionly_p(str)) {
-	options |= ARG_ENCODING_FIXED;
-    }
     return rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str),
 			     options, err);
 }
@@ -2182,6 +2594,10 @@ Init_Regexp(void)
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
     rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
+
+#if 0
+    rb_define_singleton_method(rb_cRegexp, "preprocess", rb_reg_preprocess_m, 1);
+#endif
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "initialize_copy", rb_reg_init_copy, 1);

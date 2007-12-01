@@ -1,3 +1,31 @@
+Sun Dec  2 01:39:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_uv_to_utf8): declared.
+
+	* re.c (rb_reg_preprocess): new function for dynamic regexp with
+	  \u{} such as Regexp.new("\\u{6666}").
+	  (rb_reg_prepare_re): preprocess regexp for recompiling.
+	  (read_escaped_byte): new function.
+	  (unescape_escaped_nonascii): new function.
+	  (append_utf8): new function.
+	  (unescape_unicode_list): new function.
+	  (unescape_unicode_bmp): new function.
+	  (unescape_nonascii): new function.
+	  (rb_reg_initialize): preprocess regexp.
+
+	* pack.c (rb_uv_to_utf8): renamed from uv_to_utf8.
+
+	* parse.y (STR_NEW3): take func instead of has8 and hasmb.
+	  (parser_str_new): use default coderange mechanism except for regexp.
+	  (parser_tokadd_utf8): copy regexp source as-is.
+	  (parser_read_escape): UTF-8 stuff removed.
+	  (parser_tokadd_escape): has8bit and hasmb removed.
+	  (parser_tokadd_string): fix 8-bit single byte character with \u.
+	  (parser_parse_string): has8bit and hasmb removed.
+	  (parser_here_document): has8bit and hasmb removed.
+	  (parser_yylex): call parser_tokadd_utf8 instead of read_escape for
+	  UTF-8 character.
+
 Wed Dec  2 01:00:07 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server#server): Improve signal handling so

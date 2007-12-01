@@ -269,7 +269,7 @@ struct parser_params {
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_str_new(0,0)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,e,has8,hasmb) parser_str_new2((p),(n),(e),(has8),(hasmb))
+#define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
@@ -4488,7 +4488,7 @@ none		: /* none */
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
 static int parser_regx_options(struct parser_params*);
-static int parser_tokadd_string(struct parser_params*,int,int,int,long*,int*,int*,rb_encoding**);
+static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**);
 static void parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc);
 static int parser_parse_string(struct parser_params*,NODE*);
 static int parser_here_document(struct parser_params*,NODE*);
@@ -4500,11 +4500,10 @@ static int parser_here_document(struct parser_params*,NODE*);
 # define tokspace(n)               parser_tokspace(parser, n)
 # define tokadd(c)                 parser_tokadd(parser, c)
 # define tok_hex(numlen)           parser_tok_hex(parser, numlen)
-# define tok_utf8(numlen,e)        parser_tok_utf8(parser, numlen, e)
-# define read_escape(flags,has8,hasmb,e)    parser_read_escape(parser, flags, has8, hasmb, e)
-# define tokadd_escape(t,has8,hasmb,e)      parser_tokadd_escape(parser, t, has8,hasmb, e)
+# define read_escape(flags,e)      parser_read_escape(parser, flags, e)
+# define tokadd_escape(t,e)        parser_tokadd_escape(parser, t, e)
 # define regx_options()            parser_regx_options(parser)
-# define tokadd_string(f,t,p,n,has8bit,hasmb,e) parser_tokadd_string(parser,f,t,p,n,has8bit,hasmb,e)
+# define tokadd_string(f,t,p,n,e)  parser_tokadd_string(parser,f,t,p,n,e)
 # define parse_string(n)           parser_parse_string(parser,n)
 # define tokaddmbc(c, enc)         parser_tokaddmbc(parser, c, enc)
 # define here_document(n)          parser_here_document(parser,n)
@@ -4821,35 +4820,37 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
 }
 #endif  /* !RIPPER */
 
+#define STR_FUNC_ESCAPE 0x01
+#define STR_FUNC_EXPAND 0x02
+#define STR_FUNC_REGEXP 0x04
+#define STR_FUNC_QWORDS 0x08
+#define STR_FUNC_SYMBOL 0x10
+#define STR_FUNC_INDENT 0x20
+
+enum string_type {
+    str_squote = (0),
+    str_dquote = (STR_FUNC_EXPAND),
+    str_xquote = (STR_FUNC_EXPAND),
+    str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
+    str_sword  = (STR_FUNC_QWORDS),
+    str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
+    str_ssym   = (STR_FUNC_SYMBOL),
+    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
+};
+
 static VALUE
-parser_str_new(const char *p, long n, rb_encoding *enc, int coderange)
+parser_str_new(const char *p, long n, rb_encoding *enc, int func)
 {
-    VALUE str = rb_enc_str_new(p, n, enc);
-    ENC_CODERANGE_SET(str, coderange);
+    VALUE str;
+
+    str = rb_enc_str_new(p, n, enc);
+    if (!(func & STR_FUNC_REGEXP) &&
+        rb_enc_asciicompat(enc) &&
+        rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+        rb_enc_associate(str, rb_default_encoding());
+    }
+
     return str;
-}
-
-static VALUE
-parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
-{
-    /*
-     * Set coderange bit flags based on the presence of 8-bit and 
-     * multi-byte characters in the string
-     */
-    int coderange = ENC_CODERANGE_7BIT;
-    if (hasmb) coderange = ENC_CODERANGE_8BIT;
-    else if (has8bit) coderange = ENC_CODERANGE_UNKNOWN;
-
-    /*
-     * If it is all single byte characters with the 8th bit clear,
-     * and if the specified encoding is ASCII-compatible, then this
-     * string is in the ASCII subset, and we just use the ASCII encoding
-     * instead.
-     */
-    if ((coderange == ENC_CODERANGE_7BIT) && rb_enc_asciicompat(enc))
-	enc = rb_default_encoding();
-
-    return parser_str_new(p, n, enc, coderange);
 }
 
 static inline int
@@ -4979,9 +4980,11 @@ parser_tok_hex(struct parser_params *parser, int *numlen)
     return c;
 }
 
+#define tokcopy(n) memcpy(tokspace(n), lex_p - (n), (n))
+
 static int
-parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
-		   rb_encoding **encp, int string_literal, int symbol_literal)
+parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
+                   int string_literal, int symbol_literal, int regexp_literal)
 {
     /*
      * If string_literal is true, then we allow multiple codepoints
@@ -4993,8 +4996,11 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
     int codepoint;
     int numlen;
 
+    if (regexp_literal) { tokadd('\\'); tokadd('u'); }
+
     if (peek('{')) {  /* handle \u{...} form */
 	do {
+            if (regexp_literal) { tokadd(*lex_p); }
 	    nextc();
 	    codepoint = scan_hex(lex_p, 6, &numlen);
 	    if (numlen == 0)  {
@@ -5006,8 +5012,10 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 		return 0;
 	    }
 	    lex_p += numlen;
-	    if (codepoint >= 0x80) {
-		*hasmb = 1;
+            if (regexp_literal) {
+                tokcopy(numlen);
+            }
+            else if (codepoint >= 0x80) {
 		*encp = UTF8_ENC();
 		if (string_literal) tokaddmbc(codepoint, *encp);
 	    }
@@ -5026,6 +5034,7 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 	    return 0;
 	}
 
+        if (regexp_literal) { tokadd('}'); }
 	nextc();
     }
     else {			/* handle \uxxxx form */
@@ -5035,8 +5044,10 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 	    return 0;
 	}
 	lex_p += 4;
-	if (codepoint >= 0x80) {
-	    *hasmb = 1;
+        if (regexp_literal) {
+            tokcopy(4);
+        }
+	else if (codepoint >= 0x80) {
 	    *encp = UTF8_ENC();
 	    if (string_literal) tokaddmbc(codepoint, *encp);
 	}
@@ -5058,7 +5069,7 @@ parser_tokadd_utf8(struct parser_params *parser, int *hasmb,
 
 static int
 parser_read_escape(struct parser_params *parser, int flags,
-		   int *has8bit, int *hasmb, rb_encoding **encp)
+		   rb_encoding **encp)
 {
     int c;
     int numlen;
@@ -5098,19 +5109,12 @@ parser_read_escape(struct parser_params *parser, int flags,
 	    c = scan_oct(lex_p, 3, &numlen);
 	    lex_p += numlen;
 	}
-	if (c >= 0200) *has8bit = 1;
 	return c;
 
       case 'x':	/* hex constant */
 	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
 	c = tok_hex(&numlen);
 	if (numlen == 0) return 0;
-	if (c >= 0x80) *has8bit = 1;
-	return c;
-
-      case 'u':	/* unicode constant: here only for char literal */
-	if (flags & (ESCAPE_CONTROL|ESCAPE_META)) goto eof;
-	c = parser_tokadd_utf8(parser, hasmb, encp, 0, 0);
 	return c;
 
       case 'b':	/* backspace */
@@ -5126,13 +5130,10 @@ parser_read_escape(struct parser_params *parser, int flags,
 	    goto eof;
 	}
 	if ((c = nextc()) == '\\') {
-	    int tmp;
-	    *has8bit = 1;
-	    return read_escape(flags|ESCAPE_META, &tmp, &tmp, encp) | 0x80;
+	    return read_escape(flags|ESCAPE_META, encp) | 0x80;
 	}
 	else if (c == -1 || !ISASCII(c)) goto eof;
 	else {
-            *has8bit = 1;
 	    return ((c & 0xff) | 0x80);
 	}
 
@@ -5144,8 +5145,7 @@ parser_read_escape(struct parser_params *parser, int flags,
       case 'c':
 	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc())== '\\') {
-	    int tmp;
-	    c = read_escape(flags|ESCAPE_CONTROL, has8bit, &tmp, encp);
+	    c = read_escape(flags|ESCAPE_CONTROL, encp);
 	}
 	else if (c == '?')
 	    return 0177;
@@ -5162,8 +5162,6 @@ parser_read_escape(struct parser_params *parser, int flags,
     }
 }
 
-#define tokcopy(n) memcpy(tokspace(n), lex_p - (n), (n))
-
 static void
 parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc)
 {
@@ -5173,7 +5171,7 @@ parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc)
 
 static int
 parser_tokadd_escape(struct parser_params *parser, int term,
-		     int *has8bit, int *hasmb, rb_encoding **encp)
+		     rb_encoding **encp)
 {
     int c;
     int flags = 0;
@@ -5194,7 +5192,6 @@ parser_tokadd_escape(struct parser_params *parser, int term,
 	    if (numlen == 0) goto eof;
 	    lex_p += numlen;
 	    tokcopy(numlen + 1);
-	    if (oct >= 0200) *has8bit = 1;
 	}
 	return 0;
 
@@ -5207,7 +5204,6 @@ parser_tokadd_escape(struct parser_params *parser, int term,
 	    hex = tok_hex(&numlen);
 	    if (numlen == 0) goto eof;
 	    tokcopy(numlen + 2);
-	    if (hex >= 0x80) *has8bit = 1;
 	}
 	return 0;
 
@@ -5218,7 +5214,6 @@ parser_tokadd_escape(struct parser_params *parser, int term,
 	    goto eof;
 	}
 	tokcopy(3);
-	*has8bit = 1;
 	flags |= ESCAPE_META;
 	goto escaped;
 
@@ -5287,24 +5282,6 @@ parser_regx_options(struct parser_params *parser)
     return options | RE_OPTION_ENCODING(kcode);
 }
 
-#define STR_FUNC_ESCAPE 0x01
-#define STR_FUNC_EXPAND 0x02
-#define STR_FUNC_REGEXP 0x04
-#define STR_FUNC_QWORDS 0x08
-#define STR_FUNC_SYMBOL 0x10
-#define STR_FUNC_INDENT 0x20
-
-enum string_type {
-    str_squote = (0),
-    str_dquote = (STR_FUNC_EXPAND),
-    str_xquote = (STR_FUNC_EXPAND),
-    str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
-    str_sword  = (STR_FUNC_QWORDS),
-    str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
-    str_ssym   = (STR_FUNC_SYMBOL),
-    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
-};
-
 static void
 dispose_string(VALUE str)
 {
@@ -5328,10 +5305,10 @@ parser_tokadd_mbchar(struct parser_params *parser, int c)
 static int
 parser_tokadd_string(struct parser_params *parser,
 		     int func, int term, int paren, long *nest,
-		     int *has8bit, int *hasmb, rb_encoding **encp)
+		     rb_encoding **encp)
 {
     int c;
-    int has_mb = 0;
+    int has_nonascii = 0;
     rb_encoding *enc = *encp;
     char *errbuf = 0;
     static const char mixed_msg[] = "%s mixed within %s source";
@@ -5390,9 +5367,10 @@ parser_tokadd_string(struct parser_params *parser,
 		    tokadd('\\');
 		    break;
 		}
-		parser_tokadd_utf8(parser, hasmb, &enc, 1,
-				   func & STR_FUNC_SYMBOL);
-		if (has_mb && enc != *encp) {
+		parser_tokadd_utf8(parser, &enc, 1,
+				   func & STR_FUNC_SYMBOL,
+                                   func & STR_FUNC_REGEXP);
+		if (has_nonascii && enc != *encp) {
 		    mixed_escape(beg, enc, *encp);
 		}
 		continue;
@@ -5400,28 +5378,17 @@ parser_tokadd_string(struct parser_params *parser,
 	      default:
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
-		    if ((c = tokadd_escape(term, has8bit, hasmb, &enc)) < 0)
+		    if ((c = tokadd_escape(term, &enc)) < 0)
 			return -1;
-		    if (has_mb && enc != *encp) {
+		    if (has_nonascii && enc != *encp) {
 			mixed_escape(beg, enc, *encp);
 		    }
 		    continue;
 		}
 		else if (func & STR_FUNC_EXPAND) {
-		    int tmb = 0;
 		    pushback(c);
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
-		    c = read_escape(0, has8bit, &tmb, &enc);
-		    if (tmb) {
-			*hasmb = tmb;
-			if (has_mb && enc != *encp) {
-			    mixed_escape(beg, enc, *encp);
-			}
-			else {
-			    tokaddmbc(c, enc);
-			}
-			continue;
-		    }
+		    c = read_escape(0, &enc);
 		}
 		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 		    /* ignore backslashed spaces in %w */
@@ -5432,13 +5399,12 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (parser_ismbchar()) {
-	    has_mb = 1;
+	    has_nonascii = 1;
 	    if (enc != *encp) {
 		mixed_error(enc, *encp);
 		continue;
 	    }
 	    tokadd_mbchar(c);
-            if (hasmb) *hasmb = 1;
 	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
@@ -5450,6 +5416,13 @@ parser_tokadd_string(struct parser_params *parser,
 	    compile_error(PARSER_ARG "symbol cannot contain '\\0'");
 	    continue;
 	}
+        if (c & 0x80) {
+            has_nonascii = 1;
+	    if (enc != *encp) {
+		mixed_error(enc, *encp);
+		continue;
+	    }
+        }
 	tokadd(c);
     }
     *encp = enc;
@@ -5465,7 +5438,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int func = quote->nd_func;
     int term = nd_term(quote);
     int paren = nd_paren(quote);
-    int c, space = 0, has8bit=0, hasmb=0;
+    int c, space = 0;
     rb_encoding *enc = parser->enc;
 
     if (func == -1) return tSTRING_END;
@@ -5501,7 +5474,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
     pushback(c);
     if (tokadd_string(func, term, paren, &quote->nd_nest,
-		      &has8bit, &hasmb, &enc) == -1) {
+		      &enc) == -1) {
 	ruby_sourceline = nd_line(quote);
 	if (func & STR_FUNC_REGEXP) {
 	    compile_error(PARSER_ARG "unterminated regexp meets end of file");
@@ -5514,7 +5487,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
 
     tokfix();
-    set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit, hasmb));
+    set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
     return tSTRING_CONTENT;
 }
 
@@ -5678,7 +5651,6 @@ parser_here_document(struct parser_params *parser, NODE *here)
     }
     else {
 	/*	int mb = ENC_CODERANGE_7BIT, *mbp = &mb;*/
-        int has8bit=0, hasmb=0;
 	rb_encoding *enc = parser->enc;
 	newtok();
 	if (c == '#') {
@@ -5695,16 +5667,16 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	do {
 	    pushback(c);
 	    if ((c = tokadd_string(func, '\n', 0, NULL,
-				   &has8bit, &hasmb, &enc)) == -1) goto error;
+				   &enc)) == -1) goto error;
 	    if (c != '\n') {
-		set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit,hasmb));
+		set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
 	    /*	    if (mbp && mb == ENC_CODERANGE_UNKNOWN) mbp = 0;*/
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
-	str = STR_NEW3(tok(), toklen(), enc, has8bit,hasmb);
+	str = STR_NEW3(tok(), toklen(), enc, func);
     }
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
@@ -5966,7 +5938,6 @@ parser_yylex(struct parser_params *parser)
     int cmd_state;
     enum lex_state_e last_state;
     rb_encoding *enc;
-    int has8bit = 0, hasmb = 0;
     int mb;
 #ifdef RIPPER
     int fallthru = Qfalse;
@@ -6317,26 +6288,33 @@ parser_yylex(struct parser_params *parser)
 	newtok();
 	enc = parser->enc;
 	if (parser_ismbchar()) {
-	    hasmb = 1;
 	    tokadd_mbchar(c);
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
 		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
 	    goto ternary;
 	}
-	else if (c == '\\' && (c = read_escape(0, &has8bit, &hasmb, &enc)) >= 0x80) {
-	    if (hasmb) {
-		tokaddmbc(c, enc);
-	    }
-	    else {
-		tokadd(c);
-	    }
-	}
-	else {
+        else if (c == '\\') {
+            if (peek('u')) {
+                nextc();
+                c = parser_tokadd_utf8(parser, &enc, 0, 0, 0);
+                if (0x80 <= c) {
+                    tokaddmbc(c, enc);
+                }
+                else {
+                    tokadd(c);
+                }
+            }
+            else {
+                c = read_escape(0, &enc);
+                tokadd(c);
+            }
+        }
+        else {
 	    tokadd(c);
-	}
+        }
 	tokfix();
-	set_yylval_str(STR_NEW3(tok(), toklen(), enc, has8bit, hasmb));
+	set_yylval_str(STR_NEW3(tok(), toklen(), enc, 0));
 	lex_state = EXPR_ENDARG;
 	return tCHAR;
 
@@ -8481,7 +8459,6 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));
 	return Qnil;
     }
-    if (str) rb_enc_copy(re, str);
     return re;
 }
 
