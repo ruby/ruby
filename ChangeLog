@@ -1,3 +1,9 @@
+Wed Dec  2 01:00:07 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb (XMLRPC::Server#server): Improve signal handling so
+	  pressing control-c in the controlling terminal or sending SIGTERM stops
+	  the XML-RPC server.
+
 Sat Dec  1 23:04:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c: rename primary_encoding -> default_external (encoding).
