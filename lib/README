@@ -27,7 +27,6 @@ gserver.rb	general TCP server
 importenv.rb	imports environment variables as global variables
 ipaddr.rb	defines the IPAddr class
 irb.rb		interactive ruby
-jcode.rb	Japanese text handling (replace String methods)
 logger.rb	simple logging utility
 mailread.rb	reads mail headers
 mathn.rb	extended math operation
