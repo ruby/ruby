@@ -141,6 +141,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("-0000Inf", sprintf("% 08f", -inf))
     assert_equal("-Inf    ", sprintf("%- 08f", -inf))
     assert_equal("-0000Inf", sprintf("%+ 08f", -inf))
+    assert_equal('..f00000000',
+      sprintf("%x", -2**32), '[ruby-dev:32351]')
+    assert_equal("..101111111111111111111111111111111",
+      sprintf("%b", -2147483649), '[ruby-dev:32365]')
   end
 
   def test_invalid

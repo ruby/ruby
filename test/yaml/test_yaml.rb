@@ -34,6 +34,14 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 	end
 
     def assert_cycle( obj )
+      if Time === obj
+        x = YAML::load( obj.to_yaml )
+        y = obj
+        STDERR.puts [y.tv_sec, y.tv_usec, y.tv_nsec].inspect
+        STDERR.puts [x.tv_sec, x.tv_usec, x.tv_nsec].inspect
+        STDERR.puts [obj.<=>(x)]
+        STDERR.puts [obj.eql?(x)].inspect
+      end
         assert_equal( obj, YAML::load( obj.to_yaml ) )
     end
 
@@ -1279,6 +1287,11 @@ EOY
       omap = YAML::Omap.new
       1000.times { |i| omap["key_#{i}"] = { "value" => i } }
       raise "id collision in ordered map" if omap.to_yaml =~ /id\d+/
+    end
+
+    def test_normal_exit
+      YAML.load("2000-01-01 00:00:00.#{"0"*1000} +00:00\n")
+      # '[ruby-core:13735]'
     end
 end
 
