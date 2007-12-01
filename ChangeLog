@@ -1,3 +1,8 @@
+Sat Dec  1 15:13:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/resolv.rb: documentation update.  backported from 1.9.
+	  [ruby-core:13273]
+
 Sat Dec  1 03:30:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (newline_node): set line from outermost node before removing
