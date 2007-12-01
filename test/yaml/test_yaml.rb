@@ -34,14 +34,6 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 	end
 
     def assert_cycle( obj )
-      if Time === obj
-        x = YAML::load( obj.to_yaml )
-        y = obj
-        STDERR.puts [y.tv_sec, y.tv_usec, y.tv_nsec].inspect
-        STDERR.puts [x.tv_sec, x.tv_usec, x.tv_nsec].inspect
-        STDERR.puts [obj.<=>(x)]
-        STDERR.puts [obj.eql?(x)].inspect
-      end
         assert_equal( obj, YAML::load( obj.to_yaml ) )
     end
 
@@ -1198,6 +1190,7 @@ EOY
         #
         require 'yaml'
         t = Time.now
+        t = Time.at(t.tv_sec, t.tv_usec)
         5.times do
             assert_cycle(t)
         end
