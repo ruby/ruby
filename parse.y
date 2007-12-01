@@ -4847,7 +4847,7 @@ parser_str_new2(const char *p, long n, rb_encoding *enc, int has8bit,int hasmb)
      * instead.
      */
     if ((coderange == ENC_CODERANGE_7BIT) && rb_enc_asciicompat(enc))
-	enc = rb_enc_default();
+	enc = rb_default_encoding();
 
     return parser_str_new(p, n, enc, coderange);
 }

@@ -163,7 +163,7 @@ locale_encoding(void)
 	enc = rb_enc_from_index(idx);
 	if (enc) return enc;
     }
-    return rb_enc_default();
+    return rb_default_encoding();
 }
 
 extern VALUE rb_load_path;
@@ -1033,7 +1033,7 @@ process_options(VALUE arg)
     else {
 	enc = locale_encoding();
     }
-    rb_set_primary_encoding(rb_enc_from_encoding(enc));
+    rb_enc_set_default_external(rb_enc_from_encoding(enc));
 
     return (VALUE)tree;
 }

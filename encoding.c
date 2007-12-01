@@ -586,10 +586,8 @@ enc_load(VALUE klass, VALUE str)
     return enc_find(klass, str);
 }
 
-static int primary_encoding_index;
-
 rb_encoding *
-rb_enc_default(void)
+rb_default_encoding(void)
 {
     if (!enc_table) {
 	rb_enc_init();
@@ -597,28 +595,30 @@ rb_enc_default(void)
     return enc_table[0].enc;
 }
 
+static int default_external_index;
+
 rb_encoding *
-rb_enc_primary(void)
+rb_default_external_encoding(void)
 {
-    return rb_enc_from_index(primary_encoding_index);
+    return rb_enc_from_index(default_external_index);
 }
 
 VALUE
-rb_get_primary_encoding(void)
+rb_enc_default_external(void)
 {
-    return rb_enc_from_encoding(rb_enc_primary());
+    return rb_enc_from_encoding(rb_default_external_encoding());
 }
 
 static VALUE
-get_primary_encoding(VALUE klass)
+get_default_external(VALUE klass)
 {
-    return rb_get_primary_encoding();
+    return rb_enc_default_external();
 }
 
 void
-rb_set_primary_encoding(VALUE encoding)
+rb_enc_set_default_external(VALUE encoding)
 {
-    primary_encoding_index = rb_enc_to_index(rb_to_encoding(encoding));
+    default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
 }
 
 static void
@@ -689,7 +689,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "_dump", enc_dump, -1);
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
-    rb_define_singleton_method(rb_cEncoding, "primary_encoding", get_primary_encoding, 0);
+    rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
 
     /* should be imported from Oniguruma */
     rb_enc_replicate("ISO-8859-1", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
