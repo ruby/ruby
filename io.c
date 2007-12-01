@@ -3782,20 +3782,20 @@ rb_io_s_sysopen(int argc, VALUE *argv)
 static VALUE
 rb_f_open(int argc, VALUE *argv)
 {
+    ID to_open;
+    int redirect = Qfalse;
+
     if (argc >= 1) {
-	ID to_open = rb_intern("to_open");
-
+	to_open = rb_intern("to_open");
 	if (rb_respond_to(argv[0], to_open)) {
-	    VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
-
-	    if (rb_block_given_p()) {
-		return rb_ensure(rb_yield, io, io_close, io);
-	    }
-	    return io;
+	    redirect = Qtrue;
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(argv[0]);
-	    if (!NIL_P(tmp)) {
+	    if (NIL_P(tmp)) {
+		redirect = Qtrue;
+	    }
+	    else {
 		char *str = StringValuePtr(tmp);
 		if (str && str[0] == '|') {
 		    argv[0] = rb_str_new(str+1, RSTRING_LEN(tmp)-1);
@@ -3804,6 +3804,14 @@ rb_f_open(int argc, VALUE *argv)
 		}
 	    }
 	}
+    }
+    if (redirect) {
+	VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
+
+	if (rb_block_given_p()) {
+	    return rb_ensure(rb_yield, io, io_close, io);
+	}
+	return io;
     }
     return rb_io_s_open(argc, argv, rb_cFile);
 }
