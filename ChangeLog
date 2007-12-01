@@ -1,3 +1,18 @@
+Sat Dec  1 13:24:47 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_yield_with_cfunc): fix to passing argc on third
+	  parameter of IFUNC.  [ruby-dev:32329]
+
+	* enumerator.c: fix to pass exact number of argument.
+
+	* eval.c (rb_yield_values2): added.
+
+	* include/ruby/ruby.h: ditto.
+
+	* bootstraptest/test_knownbug.rb: move a fixed test.
+
+	* bootstraptest/test_block.rb: ditto.
+
 Sat Dec  1 03:34:32 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (newline_node): always remove NODE_BEGIN.

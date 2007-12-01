@@ -953,6 +953,12 @@ rb_yield_values(int n, ...)
 }
 
 VALUE
+rb_yield_values2(int argc, VALUE *argv)
+{
+    return rb_yield_0(argc, argv);
+}
+
+VALUE
 rb_yield_splat(VALUE values)
 {
     VALUE tmp = rb_check_array_type(values);

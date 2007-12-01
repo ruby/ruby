@@ -661,7 +661,7 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
-    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, Qnil);
+    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, (VALUE) argc);
 
     th->cfp++;
     return val;

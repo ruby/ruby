@@ -36,7 +36,7 @@ proc_call(VALUE proc, VALUE args)
 }
 
 struct enumerator;
-typedef VALUE enum_iter(VALUE, struct enumerator *);
+typedef VALUE enum_iter(VALUE, struct enumerator *, VALUE);
 
 struct enumerator {
     VALUE method;
@@ -77,7 +77,7 @@ enumerator_ptr(VALUE obj)
 }
 
 static VALUE
-enumerator_iter_i(VALUE i, struct enumerator *e)
+enumerator_iter_i(VALUE i, struct enumerator *e, VALUE argc)
 {
     return rb_yield(proc_call(e->proc, i));
 }
@@ -225,6 +225,17 @@ enumerator_allocate(VALUE klass)
 }
 
 static VALUE
+enumerator_each_i(VALUE v, VALUE enum_obj, VALUE argc)
+{
+    if (argc == 1) {
+	return rb_yield(v);
+    }
+    else {
+	return rb_yield_values2(argc, RARRAY_PTR(v));
+    }
+}
+
+static VALUE
 enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr = enumerator_ptr(enum_obj);
@@ -235,7 +246,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 	ptr->iter = enumerator_iter_i;
     }
     else {
-	ptr->iter = (enum_iter *)rb_yield;
+	ptr->iter = (enum_iter *)enumerator_each_i;
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;

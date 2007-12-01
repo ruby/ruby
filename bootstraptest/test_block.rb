@@ -441,4 +441,17 @@ assert_equal 'ok', %q{
     :ng
   end
 }, '[ruby-dev:31472]'
+assert_equal 'ok', %q{
+  class C
+    def each
+      yield [1,2]
+      yield 1,2
+    end
+  end
+  vs1 = []
+  C.new.each {|*v| vs1 << v }
+  vs2 = []               
+  C.new.to_enum.each {|*v| vs2 << v }
+  vs1 == vs2 ? :ok : :ng
+}, '[ruby-dev:32329]'
 
