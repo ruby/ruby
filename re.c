@@ -1373,7 +1373,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     }
 
     chbuf[chlen++] = byte;
-    while (chlen < chmaxlen && chlen != mbclen(chbuf, chbuf+chmaxlen, enc)) {
+    while (chlen < chmaxlen && chlen != mbclen(chbuf, chbuf+chlen, enc)) {
         byte = read_escaped_byte(&p, end, err);
         if (byte == -1) {
             return -1;
@@ -1381,7 +1381,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         chbuf[chlen++] = byte;
     }
 
-    if (chlen != mbclen(chbuf, chbuf+chmaxlen, enc)) {
+    if (chlen != mbclen(chbuf, chbuf+chlen, enc)) {
         strcpy(err, "invalid multibyte escape");
         return -1;
     }

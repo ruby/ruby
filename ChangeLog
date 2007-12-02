@@ -1,3 +1,7 @@
+Sun Dec  2 20:43:22 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (unescape_escaped_nonascii): fix mbclen argument.
+
 Sun Dec  2 15:47:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_mbchar): check insufficient multibyte char.
