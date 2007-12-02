@@ -1221,6 +1221,19 @@ match_string(VALUE match)
     return RMATCH(match)->str;	/* str is frozen */
 }
 
+/*
+ * call-seq:
+ *    mtch.inspect   => str
+ *
+ * Returns a printable version of <i>mtch</i>.
+ *
+ *     /.$/ =~ "foo"; puts $~.inspect
+ *     #=> #<MatchData "o">
+ *
+ *     /(.)(.)(.)/ =~ "foo"; puts $~.inspect
+ *     #=> #<MatchData "foo" "f" "o" "o">
+ */
+
 static VALUE
 match_inspect(VALUE match)
 {
