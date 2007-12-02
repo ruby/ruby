@@ -5300,13 +5300,18 @@ dispose_string(VALUE str)
     rb_gc_force_recycle(str);
 }
 
-static void
+static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_mbclen();
+    if (lex_p + len > lex_pend) {
+	compile_error(PARSER_ARG "illegal multibyte char");
+	return -1;
+    }
     tokadd(c);
     lex_p += --len;
     if (len > 0) tokcopy(len);
+    return c;
 }
 
 #define tokadd_mbchar(c) parser_tokadd_mbchar(parser, c)
@@ -5413,7 +5418,7 @@ parser_tokadd_string(struct parser_params *parser,
 		mixed_error(enc, *encp);
 		continue;
 	    }
-	    tokadd_mbchar(c);
+	    if (tokadd_mbchar(c) == -1) return -1;
 	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
@@ -5521,8 +5526,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
-	    len = parser_mbclen();
-	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
+	    if (tokadd_mbchar(c) == -1) return 0;
 	}
 	if (c == -1) {
 	    compile_error(PARSER_ARG "unterminated here document identifier");
@@ -5542,8 +5546,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	term = '"';
 	tokadd(func |= str_dquote);
 	do {
-	    len = parser_mbclen();
-	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
+	    if (tokadd_mbchar(c) == -1) return 0;
 	} while ((c = nextc()) != -1 && parser_is_identchar());
 	pushback(c);
 	break;
@@ -6297,7 +6300,7 @@ parser_yylex(struct parser_params *parser)
 	newtok();
 	enc = parser->enc;
 	if (parser_ismbchar()) {
-	    tokadd_mbchar(c);
+	    if (tokadd_mbchar(c) == -1) return 0;
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
 		 lex_p < lex_pend && is_identchar(lex_p, lex_pend, parser->enc)) {
@@ -6994,7 +6997,7 @@ parser_yylex(struct parser_params *parser)
 	    tokadd(c);
 	    c = nextc();
 	    if (parser_is_identchar()) {
-		tokadd_mbchar(c);
+		if (tokadd_mbchar(c) == -1) return 0;
 	    }
 	    else {
 		pushback(c);
@@ -7091,7 +7094,7 @@ parser_yylex(struct parser_params *parser)
     mb = ENC_CODERANGE_7BIT;
     do {
 	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
-	tokadd_mbchar(c);
+	if (tokadd_mbchar(c) == -1) return 0;
 	c = nextc();
     } while (parser_is_identchar());
     if ((c == '!' || c == '?') && !peek('=')) {
