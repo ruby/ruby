@@ -1,3 +1,14 @@
+Sun Dec  2 15:42:16 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.1 -> 0.2.2.
+
+	* lib/rss/maker/itunes.rb: fixed new_itunes_category.
+	* lib/rss/maker/taxonomy.rb: new_taxo_topic -> new_topic because
+	of consistency.
+
+	* test/rss/test_maker_itunes.rb, test/rss/test_itunes.rb: removed
+	needless UTF-8 characters.
+
 Sun Dec  2 15:18:37 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_callee_setup_arg): fix error message.

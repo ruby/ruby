@@ -66,7 +66,8 @@ EOC
       end
 
       class TaxonomyTopicsBase < Base
-        def_array_element("taxo_topic", nil, "TaxonomyTopic")
+        def_array_element("topic", nil, "TaxonomyTopic")
+        alias_method(:new_taxo_topic, :new_topic) # For backward compatibility
 
         class TaxonomyTopicBase < Base
           include DublinCoreModel

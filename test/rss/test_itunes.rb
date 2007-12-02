@@ -338,7 +338,7 @@ module RSS
                                "of your answers here.",
                                readers, &rss20_maker)
         _assert_itunes_summary("This week we talk about surviving in a " +
-                               "Red state if you’re a Blue person. Or " +
+                               "Red state if you're a Blue person. Or " +
                                "vice versa.",
                                readers, &rss20_maker)
       end
