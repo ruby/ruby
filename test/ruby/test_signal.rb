@@ -12,7 +12,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signal
-    return unless Process.method_defined?(:kill)
+    return unless Process.respond_to?(:kill)
     begin
       x = 0
       oldtrap = Signal.trap(:INT) {|sig| x = 2 }
