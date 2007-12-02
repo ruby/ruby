@@ -144,8 +144,10 @@ EOR
       end
 
       @topic_nodes.each_with_index do |node, i|
-        expected = REXML::Document.new(node).root
-        actual = REXML::Document.new(@rss.taxo_topics[i].to_s(true, "")).root
+        expected_xml = taxo_xmlns_container(node)
+        expected = REXML::Document.new(expected_xml).root.elements[1]
+        actual_xml = taxo_xmlns_container(@rss.taxo_topics[i].to_s(true, ""))
+        actual = REXML::Document.new(actual_xml).root.elements[1]
         expected_elems = expected.reject {|x| x.is_a?(REXML::Text)}
         actual_elems = actual.reject {|x| x.is_a?(REXML::Text)}
         expected_elems.sort! {|x, y| x.name <=> y.name}
@@ -154,6 +156,16 @@ EOR
                      actual_elems.collect {|x| x.to_s})
         assert_equal(expected.attributes.sort, actual.attributes.sort)
       end
+    end
+
+    private
+    def taxo_xmlns_container(content)
+      xmlns_container({
+                        @prefix => @uri,
+                        "dc" => "http://purl.org/dc/elements/1.1/",
+                        "rdf" => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                      },
+                      content)
     end
   end
 end

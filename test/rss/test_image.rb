@@ -163,19 +163,23 @@ EOR
 
     def test_favicon_to_s
       favicon = @rss.channel.image_favicon
-      expected = REXML::Document.new(make_element("#{@prefix}:favicon",
-                                                  @favicon_attrs,
-                                                  @favicon_contents))
-      actual = REXML::Document.new(favicon.to_s(false, ""))
+      expected_xml = image_xmlns_container(make_element("#{@prefix}:favicon",
+                                                        @favicon_attrs,
+                                                        @favicon_contents))
+      expected = REXML::Document.new(expected_xml)
+      actual_xml = image_xmlns_container(favicon.to_s(false, ""))
+      actual = REXML::Document.new(actual_xml)
       assert_equal(expected.to_s, actual.to_s)
     end
 
     def test_item_to_s
       @rss.items.each_with_index do |item, i|
         attrs, contents = @items[i]
-        expected_s = make_element("#{@prefix}:item", attrs, contents)
-        expected = REXML::Document.new(expected_s)
-        actual = REXML::Document.new(item.image_item.to_s(false, ""))
+        expected_xml = make_element("#{@prefix}:item", attrs, contents)
+        expected_xml = image_xmlns_container(expected_xml)
+        expected = REXML::Document.new(expected_xml)
+        actual_xml = image_xmlns_container(item.image_item.to_s(false, ""))
+        actual = REXML::Document.new(actual_xml)
 
         assert_equal(expected[0].attributes, actual[0].attributes)
         
@@ -187,5 +191,14 @@ EOR
       end
     end
 
+    private
+    def image_xmlns_container(content)
+      xmlns_container({
+                        @prefix => @uri,
+                        "dc" => "http://purl.org/dc/elements/1.1/",
+                        "rdf" => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                      },
+                      content)
+    end
   end
 end

@@ -1,3 +1,9 @@
+Mon Dec  3 08:13:52 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_taxonomy.rb, test/rss/test_parser_1.0.rb,
+	  test/rss/test_image.rb, test/rss/rss-testcase.rb: ensured
+	  declaring XML namespaces.
+
 Sun Sep 23 21:57:25 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>  
 
 	* lib/net/http.rb: an SSL verification (the server hostname should
