@@ -313,7 +313,7 @@ rb_reg_source(VALUE re)
  * <code>#inspect</code> actually produces the more natural version of
  * the string than <code>#to_s</code>.
  *
- *     /ab+c/ix.to_s         #=> /ab+c/ix
+ *     /ab+c/ix.inspect         #=> /ab+c/ix
 */
 
 static VALUE
@@ -329,7 +329,7 @@ rb_reg_inspect(VALUE re)
  *     rxp.to_s   => str
  *
  *  Returns a string containing the regular expression and its options (using the
- *  <code>(?xxx:yyy)</code> notation. This string can be fed back in to
+ *  <code>(?opts:source)</code> notation. This string can be fed back in to
  *  <code>Regexp::new</code> to a regular expression with the same semantics as
  *  the original. (However, <code>Regexp#==</code> may not return true when
  *  comparing the two, as the source of the regular expression itself may
