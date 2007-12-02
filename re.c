@@ -1446,11 +1446,11 @@ unescape_unicode_list(const char **pp, const char *end,
         if (len == 0)
             break;
         if (6 < len) { /* max 10FFFF */
-            strcpy(err, "invalid unicode range");
+            strcpy(err, "invalid Unicode range");
             return -1;
         }
         if (0x10ffff < code) {
-            strcpy(err, "invalid unicode range");
+            strcpy(err, "invalid Unicode range");
             return -1;
         }
         p += len;
@@ -1462,7 +1462,7 @@ unescape_unicode_list(const char **pp, const char *end,
     }
 
     if (has_unicode == 0) {
-        strcpy(err, "invalid unicode list");
+        strcpy(err, "invalid Unicode list");
         return -1;
     }
 
@@ -1480,12 +1480,12 @@ unescape_unicode_bmp(const char **pp, const char *end,
     unsigned long code;
 
     if (end < p+4) {
-        strcpy(err, "invalid unicode escape");
+        strcpy(err, "invalid Unicode escape");
         return -1;
     }
     code = ruby_scan_hex(p, 4, &len);
     if (len != 4) {
-        strcpy(err, "invalid unicode escape");
+        strcpy(err, "invalid Unicode escape");
         return -1;
     }
     if (append_utf8(code, buf, encp, err) != 0)
@@ -1562,7 +1562,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                     if (unescape_unicode_list(&p, end, buf, encp, err) != 0)
                         return -1;
                     if (p == end || *p++ != '}') {
-                        strcpy(err, "invalid unicode list");
+                        strcpy(err, "invalid Unicode list");
                         return -1;
                     }
                     break;

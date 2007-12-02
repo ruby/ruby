@@ -15,7 +15,7 @@ class TestM17N < Test::Unit::TestCase
     assert_encoding("ASCII-8BIT", eval(a(%{"a"})).encoding)
   end
 
-  def test_string_euc_literal
+  def test_string_eucjp_literal
     assert_encoding("ASCII-8BIT", eval(e(%{""})).encoding)
     assert_encoding("ASCII-8BIT", eval(e(%{"a"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\xa1\xa1"})).encoding)
@@ -302,11 +302,79 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
-  def test_dynamic_euc_regexp
-    assert_encoding("EUC-JP", /#{}\xc0\xa1/e.encoding)
-    assert_raise(RegexpError) { eval('/\xa1#{}/e') }
-    assert_raise(RegexpError) { eval('/#{}\xa1/e') }
-    #assert_raise(SyntaxError) { eval('/\xa1#{}\xa1/e') }
-    #assert_raise(SyntaxError) { s = e('\xa1'); /#{s}#{s}/ }
+  def test_dynamic_ascii_regexp
+    assert_regexp_fixed_ascii8bit(/#{}/n)
+    assert_regexp_fixed_ascii8bit(/#{}\xc0\xa1/n)
+    assert_regexp_fixed_ascii8bit(/\xc0\xa1#{}/n)
+    #assert_raise(SyntaxError) { eval('/\xc0#{}\xa1/s') }
+    #assert_raise(SyntaxError) { s1, s2 = s('\xc0'), s('\xa1'); /#{s1}#{s2}/ }
+  end
+
+  def test_dynamic_eucjp_regexp
+    assert_regexp_fixed_eucjp(/#{}/e)
+    assert_regexp_fixed_eucjp(/#{}\xc0\xa1/e)
+    assert_regexp_fixed_eucjp(/\xc0\xa1#{}/e)
+    assert_raise(RegexpError) { eval('/\xc0#{}/e') }
+    assert_raise(RegexpError) { eval('/#{}\xc0/e') }
+    #assert_raise(SyntaxError) { eval('/\xc0#{}\xa1/e') }
+    #assert_raise(SyntaxError) { s1, s2 = e('\xc0'), e('\xa1'); /#{s1}#{s2}/ }
+  end
+
+  def test_dynamic_sjis_regexp
+    assert_regexp_fixed_sjis(/#{}/s)
+    assert_regexp_fixed_sjis(/#{}\xc0\xa1/s)
+    assert_regexp_fixed_sjis(/\xc0\xa1#{}/s)
+    assert_raise(RegexpError) { eval('/\x81#{}/s') }
+    assert_raise(RegexpError) { eval('/#{}\x81/s') }
+    #assert_raise(SyntaxError) { eval('/\x81#{}\xa1/s') }
+    #assert_raise(SyntaxError) { s1, s2 = s('\x81'), s('\xa1'); /#{s1}#{s2}/ }
+  end
+
+  def test_dynamic_utf8_regexp
+    assert_regexp_fixed_utf8(/#{}/u)
+    assert_regexp_fixed_utf8(/#{}\xc0\xa1/u)
+    assert_regexp_fixed_utf8(/\xc0\xa1#{}/u)
+    assert_raise(RegexpError) { eval('/\xc0#{}/u') }
+    assert_raise(RegexpError) { eval('/#{}\xc0/u') }
+    #assert_raise(SyntaxError) { eval('/\xc0#{}\xa1/u') }
+    #assert_raise(SyntaxError) { s1, s2 = u('\xc0'), u('\xa1'); /#{s1}#{s2}/ }
+  end
+
+  def test_regexp_mixed_unicode
+    assert_raise(SyntaxError) { eval(a(%{/\xc0\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\xc0\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\xc0\xa0\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\xc0\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\xc0\xa0/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\xc0\xa0/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\xc0\xa0/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}\xc0\xa0/})) }
+
+    assert_raise(SyntaxError) { eval(a(%{/\\xc0\\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\xc0\\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\xc0\\xa0\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\\xc0\\xa0\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\\xc0\\xa0/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\\xc0\\xa0/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\\xc0\\xa0/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}\\xc0\\xa0/})) }
+
+    assert_raise(SyntaxError) { eval(a(%{/\xc0\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\xc0\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\xc0\xa0#{}\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\xc0\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\xc0\xa0/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\xc0\xa0/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\xc0\xa0/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\xc0\xa0/})) }
+
+    assert_raise(SyntaxError) { eval(a(%{/\\xc0\\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\xc0\\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\xc0\\xa0#{}\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\\xc0\\xa0#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\\xc0\\xa0/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\\xc0\\xa0/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\\xc0\\xa0/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc0\\xa0/})) }
   end
 end
