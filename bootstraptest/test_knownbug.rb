@@ -9,3 +9,8 @@ assert_equal '0', %q{
   Process.wait pid
   $?.to_i
 }, '[ruby-dev:32404]'
+
+assert_match /unterminated string meets end of file/, %q{
+  STDERR.reopen(STDOUT)
+  eval("\"\xfd".force_encoding("utf-8"))
+}
