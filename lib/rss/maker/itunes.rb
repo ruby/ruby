@@ -27,7 +27,7 @@ module RSS
           full_plural_name = "#{RSS::ITUNES_PREFIX}_#{plural_name}"
           klass_name = "ITunes#{Utils.to_class_name(name)}"
           plural_klass_name = "ITunes#{Utils.to_class_name(plural_name)}"
-          def_elements_class_accessor(klass, full_name, full_plural_name,
+          def_elements_class_accessor(klass, name, full_name, full_plural_name,
                                       klass_name, plural_klass_name,
                                       recommended_attribute_name)
         end
@@ -55,7 +55,7 @@ module RSS
         klass.def_csv_element(full_name)
       end
 
-      def def_elements_class_accessor(klass, full_name, full_plural_name,
+      def def_elements_class_accessor(klass, name, full_name, full_plural_name,
                                       klass_name, plural_klass_name,
                                       recommended_attribute_name=nil)
         if recommended_attribute_name
@@ -66,7 +66,7 @@ module RSS
         end
         klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)
           def new_#{full_name}(text=nil)
-            #{full_name} = @#{full_plural_name}.new_#{full_name}
+            #{full_name} = @#{full_plural_name}.new_#{name}
             #{full_name}.text = text
             if block_given?
               yield #{full_name}
