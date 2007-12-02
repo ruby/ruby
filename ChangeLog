@@ -1,3 +1,8 @@
+Sun Dec  2 09:12:48 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (regexp): fix /#{}\xa1\xa2/e to be EUC-JP. 
+	  (reg_fragment_setenc_gen): extracted from reg_compile_gen.
+
 Sun Dec  2 01:39:51 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_uv_to_utf8): declared.

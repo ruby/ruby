@@ -301,4 +301,12 @@ class TestM17N < Test::Unit::TestCase
       }
     }
   end
+
+  def test_dynamic_euc_regexp
+    assert_encoding("EUC-JP", /#{}\xc0\xa1/e.encoding)
+    assert_raise(RegexpError) { eval('/\xa1#{}/e') }
+    assert_raise(RegexpError) { eval('/#{}\xa1/e') }
+    #assert_raise(SyntaxError) { eval('/\xa1#{}\xa1/e') }
+    #assert_raise(SyntaxError) { s = e('\xa1'); /#{s}#{s}/ }
+  end
 end

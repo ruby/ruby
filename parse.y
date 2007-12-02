@@ -442,6 +442,8 @@ extern int rb_parse_in_eval(void);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, str, options)
+static void reg_fragment_setenc_gen(struct parser_params*, VALUE, int);
+#define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, str, options)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -3642,6 +3644,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 		    /*%%%*/
 			int options = $3;
 			NODE *node = $2;
+                        NODE *list;
 			if (!node) {
 			    node = NEW_LIT(reg_compile(STR_NEW0(), options));
 			}
@@ -3663,6 +3666,12 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 				nd_set_type(node, NODE_DREGX);
 			    }
 			    node->nd_cflag = options & RE_OPTION_MASK;
+                            reg_fragment_setenc(node->nd_lit, options);
+                            for (list = node->nd_next; list; list = list->nd_next) {
+                                if (nd_type(list->nd_head) == NODE_STR) {
+                                    reg_fragment_setenc(list->nd_head->nd_lit, options);
+                                }
+                            }
 			    break;
 			}
 			$$ = node;
@@ -8436,10 +8445,9 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 
 VALUE rb_reg_compile(VALUE str, int options);
 
-static VALUE
-reg_compile_gen(struct parser_params* parser, VALUE str, int options)
+static void
+reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
 {
-    VALUE re;
     int c = RE_OPTION_ENCODING_IDX(options);
 
     if (c) {
@@ -8453,6 +8461,14 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 	}
 	ENCODING_SET(str, idx);
     }
+}
+
+static VALUE
+reg_compile_gen(struct parser_params* parser, VALUE str, int options)
+{
+    VALUE re;
+
+    reg_fragment_setenc(str, options);
     re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
 	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
