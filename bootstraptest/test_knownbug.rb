@@ -13,4 +13,4 @@ assert_equal '0', %q{
 assert_match /unterminated string meets end of file/, %q{
   STDERR.reopen(STDOUT)
   eval("\"\xfd".force_encoding("utf-8"))
-}
+}, '[ruby-dev:32429]'
