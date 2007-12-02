@@ -5304,7 +5304,7 @@ static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_mbclen();
-    if (lex_p + len > lex_pend) {
+    if (len <= 0 || lex_p + len - 1 > lex_pend) {
 	compile_error(PARSER_ARG "illegal multibyte char");
 	return -1;
     }
@@ -5491,11 +5491,13 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 		      &enc) == -1) {
 	ruby_sourceline = nd_line(quote);
 	if (func & STR_FUNC_REGEXP) {
-	    compile_error(PARSER_ARG "unterminated regexp meets end of file");
+	    if (parser->eofp)
+		compile_error(PARSER_ARG "unterminated regexp meets end of file");
 	    return tREGEXP_END;
 	}
 	else {
-	    compile_error(PARSER_ARG "unterminated string meets end of file");
+	    if (parser->eofp)
+		compile_error(PARSER_ARG "unterminated string meets end of file");
 	    return tSTRING_END;
 	}
     }
@@ -5625,6 +5627,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     if ((c = nextc()) == -1) {
       error:
 	compile_error(PARSER_ARG "can't find string \"%s\" anywhere before EOF", eos);
+      restore:
 	heredoc_restore(lex_strterm);
 	lex_strterm = 0;
 	return 0;
@@ -5678,8 +5681,10 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0, NULL,
-				   &enc)) == -1) goto error;
+	    if ((c = tokadd_string(func, '\n', 0, NULL, &enc)) == -1) {
+		if (parser->eofp) goto error;
+		goto restore;
+	    }
 	    if (c != '\n') {
 		set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
 		return tSTRING_CONTENT;

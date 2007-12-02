@@ -1,3 +1,10 @@
+Sun Dec  2 22:08:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_mbchar): fix for ASCII chars.  [ruby-dev:32432]
+
+	* parse.y (parser_parse_string, parser_here_document): prevent false
+	  error messages.
+
 Sun Dec  2 20:43:22 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (unescape_escaped_nonascii): fix mbclen argument.
