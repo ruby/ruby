@@ -1,3 +1,8 @@
+Sun Dec  2 15:18:37 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_callee_setup_arg): fix error message.
+	  [ruby-dev:32430]
+
 Sun Dec  2 09:12:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (regexp): fix /#{}\xa1\xa2/e to be EUC-JP. 

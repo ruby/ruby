@@ -142,7 +142,8 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 	    const int opts = iseq->arg_opts - 1 /* no opt */;
 
 	    if (iseq->arg_rest == -1 && argc > opts) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", orig_argc, m + opts);
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+			 orig_argc, m + opts + iseq->arg_post_len);
 	    }
 
 	    if (argc > opts) {
