@@ -1,3 +1,9 @@
+Mon Dec  3 11:51:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/Win32API/*: removed or moved to ext/dl/win32.
+
+	* ext/dl/win32/*: new. [ruby-dev:32387]
+
 Sun Dec  2 22:08:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_mbchar): fix for ASCII chars.  [ruby-dev:32432]
