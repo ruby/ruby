@@ -1,3 +1,7 @@
+Tue Dec  4 14:34:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): reverted c flag.
+
 Tue Dec  4 11:23:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing

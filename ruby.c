@@ -1018,6 +1018,11 @@ process_options(VALUE arg)
 	FL_UNSET(rb_load_path, FL_TAINT);
     }
 
+    if (opt->do_check) {
+	printf("Syntax OK\n");
+	return Qtrue;
+    }
+
     if (tree) {
 	if (opt->do_print) {
 	    tree = rb_parser_append_print(parser, tree);
