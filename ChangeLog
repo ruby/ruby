@@ -1,3 +1,13 @@
+Tue Dec  4 16:34:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_create): achieve target encoding.
+
+	* ext/iconv/iconv.c (iconv_convert, iconv_finish, iconv_iconv,
+	  iconv_conv): set result string encoding.  [ruby-dev:32446]
+
+	* ext/iconv/iconv.c (iconv_initialize, iconv_s_open): set encoding to
+	  Iconv instance.
+
 Tue Dec  4 14:34:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): reverted c flag.
