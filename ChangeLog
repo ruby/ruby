@@ -1,3 +1,7 @@
+Tue Dec  4 17:07:25 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/json.rb, lib/json/*: moved to ext/json/lib.
+
 Tue Dec  4 16:34:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): achieve target encoding.
