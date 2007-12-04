@@ -20,6 +20,7 @@
 #include <assert.h>
 #include "ruby/st.h"
 #include "ruby/intern.h"
+#include "ruby/encoding.h"
 
 /*
  * Document-class: Iconv
@@ -80,6 +81,7 @@ struct iconv_env_t
     int argc;
     VALUE *argv;
     VALUE ret;
+    int toidx;
     VALUE (*append)_((VALUE, VALUE));
 };
 
@@ -104,7 +106,7 @@ static VALUE iconv_failure_initialize _((VALUE error, VALUE mesg, VALUE success,
 static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
 
-static iconv_t iconv_create _((VALUE to, VALUE from, struct rb_iconv_opt_t *opt));
+static iconv_t iconv_create _((VALUE to, VALUE from, struct rb_iconv_opt_t *opt, int *idx));
 static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
@@ -149,13 +151,15 @@ map_charset(VALUE *code)
 }
 
 static iconv_t
-iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt)
+iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt, int *idx)
 {
     const char* tocode = map_charset(&to);
     const char* fromcode = map_charset(&from);
+    iconv_t cd;
 
-    iconv_t cd = iconv_open(tocode, fromcode);
+    *idx = rb_enc_find_index(tocode);
 
+    cd = iconv_open(tocode, fromcode);
     if (cd == (iconv_t)-1) {
 	switch (errno) {
 	  case EMFILE:
@@ -181,17 +185,16 @@ iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt)
     }
 
     if (opt) {
-	int flag;
 #ifdef ICONV_SET_TRANSLITERATE
 	if (opt->transliterate != Qundef) {
-	    flag = RTEST(opt->transliterate);
+	    int flag = RTEST(opt->transliterate);
 	    if (iconvctl(cd, ICONV_SET_TRANSLITERATE, (void *)&flag))
 		rb_sys_fail("ICONV_SET_TRANSLITERATE");
 	}
 #endif
 #ifdef ICONV_SET_DISCARD_ILSEQ
 	if (opt->discard_ilseq != Qundef) {
-	    flag = RTEST(opt->discard_ilseq);
+	    int flag = RTEST(opt->discard_ilseq);
 	    if (iconvctl(cd, ICONV_SET_DISCARD_ILSEQ, (void *)&flag))
 		rb_sys_fail("ICONV_SET_DISCARD_ILSEQ");
 	}
@@ -313,8 +316,6 @@ rb_str_derive(VALUE str, const char* ptr, int len)
 
     if (NIL_P(str))
 	return rb_str_new(ptr, len);
-    if (RSTRING_PTR(str) == ptr && RSTRING_LEN(str) == len)
-	return str;
     if (RSTRING_PTR(str) + RSTRING_LEN(str) == ptr + len)
 	ret = rb_str_substr(str, ptr - RSTRING_PTR(str), len);
     else
@@ -401,6 +402,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	    {
 		if (NIL_P(str)) {
 		    ret = rb_str_new(buffer, outlen);
+		    if (env) rb_enc_associate_index(ret, env->toidx);
 		}
 		else {
 		    if (ret) {
@@ -408,6 +410,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 		    }
 		    else {
 			ret = rb_str_new(instart, tmpstart - instart);
+			if (env) rb_enc_associate_index(ret, env->toidx);
 			OBJ_INFECT(ret, str);
 		    }
 		    ret = rb_str_buf_cat(ret, buffer, outlen);
@@ -427,10 +430,13 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	if (RTEST(error)) {
 	    long len = 0;
 
-	    if (!ret)
+	    if (!ret) {
 		ret = rb_str_derive(str, instart, inptr - instart);
-	    else if (inptr > instart)
+		if (env) rb_enc_associate_index(ret, env->toidx);
+	    }
+	    else if (inptr > instart) {
 		rb_str_cat(ret, instart, inptr - instart);
+	    }
 	    str = rb_str_derive(str, inptr, inlen);
 	    rescue = iconv_fail(error, ret, str, env, errmsg);
 	    if (TYPE(rescue) == T_ARRAY) {
@@ -450,10 +456,13 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	}
     } while (inlen > 0);
 
-    if (!ret)
+    if (!ret) {
 	ret = rb_str_derive(str, instart, inptr - instart);
-    else if (inptr > instart)
+	if (env) rb_enc_associate_index(ret, env->toidx);
+    }
+    else if (inptr > instart) {
 	rb_str_cat(ret, instart, inptr - instart);
+    }
     return ret;
 }
 
@@ -468,6 +477,8 @@ get_iconv_opt_i(VALUE i, VALUE arg)
 {
     struct rb_iconv_opt_t *opt = (struct rb_iconv_opt_t *)arg;
     VALUE name, val;
+
+    (void)opt;
     i = rb_Array(i);
     name = rb_ary_entry(i, 0);
     val = rb_ary_entry(i, 1);
@@ -554,12 +565,14 @@ iconv_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE to, from, options;
     struct rb_iconv_opt_t opt;
+    int idx;
 
     rb_scan_args(argc, argv, "21", &to, &from, &options);
     get_iconv_opt(&opt, options);
     iconv_free(check_iconv(self));
     DATA_PTR(self) = NULL;
-    DATA_PTR(self) = (void *)ICONV2VALUE(iconv_create(to, from, &opt));
+    DATA_PTR(self) = (void *)ICONV2VALUE(iconv_create(to, from, &opt, &idx));
+    if (idx >= 0) ENCODING_SET(self, idx);
     return self;
 }
 
@@ -576,12 +589,15 @@ iconv_s_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE to, from, options, cd;
     struct rb_iconv_opt_t opt;
+    int idx;
 
     rb_scan_args(argc, argv, "21", &to, &from, &options);
     get_iconv_opt(&opt, options);
-    cd = ICONV2VALUE(iconv_create(to, from, &opt));
+    cd = ICONV2VALUE(iconv_create(to, from, &opt, &idx));
 
     self = Data_Wrap_Struct(self, NULL, ICONV_FREE, (void *)cd);
+    if (idx >= 0) ENCODING_SET(self, idx);
+
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, self, (VALUE(*)())iconv_finish, self);
     }
@@ -639,7 +655,7 @@ iconv_s_iconv(int argc, VALUE *argv, VALUE self)
     arg.argv = argv + 2;
     arg.append = rb_ary_push;
     arg.ret = rb_ary_new2(argc);
-    arg.cd = iconv_create(argv[0], argv[1], NULL);
+    arg.cd = iconv_create(argv[0], argv[1], NULL, &arg.toidx);
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
@@ -660,7 +676,7 @@ iconv_s_conv(VALUE self, VALUE to, VALUE from, VALUE str)
     arg.argv = &str;
     arg.append = rb_str_append;
     arg.ret = rb_str_new(0, 0);
-    arg.cd = iconv_create(to, from, NULL);
+    arg.cd = iconv_create(to, from, NULL, &arg.toidx);
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
@@ -749,11 +765,14 @@ static VALUE
 iconv_finish(VALUE self)
 {
     VALUE cd = check_iconv(self);
+    VALUE str;
 
     if (!cd) return Qnil;
     DATA_PTR(self) = NULL;
 
-    return rb_ensure(iconv_init_state, cd, iconv_free, cd);
+    str = rb_ensure(iconv_init_state, cd, iconv_free, cd);
+    ENCODING_SET(str, ENCODING_GET(self));
+    return str;
 }
 
 /*
@@ -792,10 +811,12 @@ iconv_iconv(int argc, VALUE *argv, VALUE self)
     n1 = n2 = Qnil;
     rb_scan_args(argc, argv, "12", &str, &n1, &n2);
 
-    return iconv_convert(VALUE2ICONV(cd), str,
-			 NIL_P(n1) ? 0 : NUM2INT(n1),
-			 NIL_P(n2) ? -1 : NUM2INT(n2),
-			 NULL);
+    str = iconv_convert(VALUE2ICONV(cd), str,
+			NIL_P(n1) ? 0 : NUM2INT(n1),
+			NIL_P(n2) ? -1 : NUM2INT(n2),
+			NULL);
+    ENCODING_SET(str, ENCODING_GET(self));
+    return str;
 }
 
 /*
@@ -813,19 +834,16 @@ iconv_conv(int argc, VALUE *argv, VALUE self)
     VALUE str, s;
 
     str = iconv_convert(cd, Qnil, 0, 0, NULL);
+    ENCODING_SET(str, ENCODING_GET(self));
     if (argc > 0) {
 	do {
 	    s = iconv_convert(cd, *argv++, 0, -1, NULL);
 	    if (RSTRING_LEN(s))
 		rb_str_buf_append(str, s);
-	    else
-		str = s;
 	} while (--argc);
 	s = iconv_convert(cd, Qnil, 0, 0, NULL);
 	if (RSTRING_LEN(s))
 	    rb_str_buf_append(str, s);
-	else
-	    str = s;
     }
 
     return str;
