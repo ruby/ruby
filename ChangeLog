@@ -1,3 +1,8 @@
+Tue Dec  4 17:34:17 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (tojis, tosjis, toeuc, toutf8):
+	  set encoding. [ruby-dev:32447]
+
 Tue Dec  4 17:07:25 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json.rb, lib/json/*: moved to ext/json/lib.

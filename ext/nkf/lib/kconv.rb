@@ -146,7 +146,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-jxm0', str).
   def tojis(str)
-    ::NKF::nkf('-jm', str)
+    ::NKF::nkf('-jm', str).force_encoding("iso-2022-JP")
   end
   module_function :tojis
 
@@ -160,7 +160,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc(str)
-    ::NKF::nkf('-em', str)
+    ::NKF::nkf('-em', str).force_encoding("EUC-JP")
   end
   module_function :toeuc
 
@@ -174,7 +174,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-sxm0', str).
   def tosjis(str)
-    ::NKF::nkf('-sm', str)
+    ::NKF::nkf('-sm', str).force_encoding("Shift_JIS")
   end
   module_function :tosjis
 
@@ -188,7 +188,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-wxm0', str).
   def toutf8(str)
-    ::NKF::nkf('-wm', str)
+    ::NKF::nkf('-wm', str).force_encoding("UTF-8")
   end
   module_function :toutf8
 
