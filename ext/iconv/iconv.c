@@ -336,9 +336,12 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
     char buffer[BUFSIZ];
     char *outptr;
     size_t outlen;
+    int toidx = -1;
 
     if (cd == (iconv_t)-1)
 	rb_raise(rb_eArgError, "closed iconv");
+
+    if (env) toidx = env->toidx;
 
     if (NIL_P(str)) {
 	/* Reset output pointer or something. */
@@ -402,7 +405,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 	    {
 		if (NIL_P(str)) {
 		    ret = rb_str_new(buffer, outlen);
-		    if (env) rb_enc_associate_index(ret, env->toidx);
+		    if (toidx >= 0) rb_enc_associate_index(ret, toidx);
 		}
 		else {
 		    if (ret) {
@@ -410,7 +413,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 		    }
 		    else {
 			ret = rb_str_new(instart, tmpstart - instart);
-			if (env) rb_enc_associate_index(ret, env->toidx);
+			if (toidx >= 0) rb_enc_associate_index(ret, toidx);
 			OBJ_INFECT(ret, str);
 		    }
 		    ret = rb_str_buf_cat(ret, buffer, outlen);
@@ -432,7 +435,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 
 	    if (!ret) {
 		ret = rb_str_derive(str, instart, inptr - instart);
-		if (env) rb_enc_associate_index(ret, env->toidx);
+		if (toidx >= 0) rb_enc_associate_index(ret, toidx);
 	    }
 	    else if (inptr > instart) {
 		rb_str_cat(ret, instart, inptr - instart);
@@ -458,7 +461,7 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
 
     if (!ret) {
 	ret = rb_str_derive(str, instart, inptr - instart);
-	if (env) rb_enc_associate_index(ret, env->toidx);
+	if (toidx >= 0) rb_enc_associate_index(ret, toidx);
     }
     else if (inptr > instart) {
 	rb_str_cat(ret, instart, inptr - instart);
