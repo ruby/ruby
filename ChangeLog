@@ -1,3 +1,8 @@
+Tue Dec  4 11:23:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing
+	  preceeding 0s.  [ruby-core:13873]
+
 Mon Dec  3 11:51:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/Win32API/*: removed or moved to ext/dl/win32.

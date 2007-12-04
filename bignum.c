@@ -472,7 +472,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     }
     if (*str == '0') {		/* squeeze preceeding 0s */
 	while (*++str == '0');
-	if (!*str) --str;
+	if (!(c = *str) || ISSPACE(c)) --str;
     }
     c = *str;
     c = conv_digit(c);
