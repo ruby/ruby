@@ -1,3 +1,8 @@
+Wed Dec  5 15:15:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (step_i, range_step): support non-fixnum steps.
+	  [ruby-talk:282100]
+
 Wed Dec  5 14:25:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix typo.

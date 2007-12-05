@@ -247,10 +247,16 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), VALUE v, VALUE e,
 static VALUE
 step_i(VALUE i, void *arg)
 {
-    long *iter = (long *)arg;
+    VALUE *iter = arg;
 
-    iter[0]--;
-    if (iter[0] == 0) {
+    if (FIXNUM_P(iter[0])) {
+	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
+    }
+    else {
+	VALUE one = INT2FIX(1);
+	iter[0] = rb_funcall(iter[0], '-', 1, &one);
+    }
+    if (iter[0] == INT2FIX(0)) {
 	rb_yield(i);
 	iter[0] = iter[1];
     }
@@ -297,15 +303,22 @@ range_step(int argc, VALUE *argv, VALUE range)
     e = RANGE_END(range);
     if (rb_scan_args(argc, argv, "01", &step) == 0) {
 	step = INT2FIX(1);
+	unit = 1;
     }
-
-    unit = NUM2LONG(step);
+    else if (FIXNUM_P(step)) {
+	unit = NUM2LONG(step);
+    }
+    else {
+	VALUE tmp = rb_to_int(step);
+	unit = rb_cmpint(tmp, step, INT2FIX(0));
+	step = tmp;
+    }
     if (unit < 0) {
 	rb_raise(rb_eArgError, "step can't be negative");
-    } 
+    }
     if (unit == 0)
 	rb_raise(rb_eArgError, "step can't be 0");
-    if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
+    if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
 	long end = FIX2LONG(e);
 	long i;
 
@@ -322,14 +335,13 @@ range_step(int argc, VALUE *argv, VALUE range)
 	VALUE tmp = rb_check_string_type(b);
 
 	if (!NIL_P(tmp)) {
-	    VALUE args[2];
-	    long iter[2];
+	    VALUE args[2], iter[2];
 
 	    b = tmp;
 	    args[0] = e;
 	    args[1] = EXCL(range) ? Qtrue : Qfalse;
-	    iter[0] = 1;
-	    iter[1] = unit;
+	    iter[0] = INT2FIX(1);
+	    iter[1] = step;
 	    rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
 	}
 	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
@@ -343,14 +355,14 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    }
 	}
 	else {
-	    long args[2];
+	    VALUE args[2];
 
 	    if (!rb_respond_to(b, id_succ)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(b));
 	    }
-	    args[0] = 1;
-	    args[1] = unit;
+	    args[0] = INT2FIX(1);
+	    args[1] = step;
 	    range_each_func(range, step_i, b, e, args);
 	}
     }
@@ -866,8 +878,6 @@ range_alloc(VALUE klass)
 void
 Init_Range(void)
 {
-    VALUE members;
-
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");
     id_beg = rb_intern("begin");
