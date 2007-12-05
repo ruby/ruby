@@ -1,3 +1,8 @@
+Wed Dec  5 15:15:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (step_i, range_step): support non-fixnum steps.
+	  [ruby-talk:282100]
+
 Tue Dec  4 11:23:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing
