@@ -347,7 +347,7 @@ str_end_hash(st_strend_key* x)
 extern hash_table_type*
 onig_st_init_strend_table_with_size(int size)
 {
-  static struct st_hash_type hashType = {
+  static const struct st_hash_type hashType = {
     str_end_cmp,
     str_end_hash,
   };
@@ -4808,10 +4808,7 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
       }
       else {
 	/* /(?i:[^A-C])/.match("a") ==> fail. */
-	if (IS_NCCLASS_NOT(cc))
-	  BITSET_CLEAR_BIT(bs, *to);
-	else
-	  BITSET_SET_BIT(bs, *to);
+	BITSET_SET_BIT(bs, *to);
       }
     }
   }
