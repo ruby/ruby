@@ -3338,7 +3338,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      ADD_SEQ(ret, args);
 	  }
 	  else {
-	      argc = FIX2INT(0);
+	      argc = INT2FIX(0);
 	  }
 	  ADD_INSN1(ret, nd_line(node), dupn, INT2FIX(FIX2INT(argc)+1));
 	  ADD_SEND_R(ret, nd_line(node), ID2SYM(idAREF), argc, Qfalse, LONG2FIX(flag));

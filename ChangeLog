@@ -1,3 +1,7 @@
+Wed Dec  5 14:25:11 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): fix typo.
+
 Wed Dec  5 13:41:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yycompile): get rid of tracing while parsing.
