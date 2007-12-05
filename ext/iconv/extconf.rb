@@ -24,6 +24,7 @@ if have_func("iconv", "iconv.h") or
     $defs.push('-DICONV_INPTR_CONST')
   end
   have_func("iconvlist", "iconv.h")
+  have_func("__iconv_free_list", "iconv.h")
   if conf
     prefix = '$(srcdir)'
     prefix =  $nmake ? "{#{prefix}}" : "#{prefix}/"

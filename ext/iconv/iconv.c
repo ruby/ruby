@@ -741,6 +741,24 @@ iconv_s_list(void)
     state = *(int *)args;
     if (state) rb_jump_tag(state);
     if (args[1]) return args[1];
+#elif defined(HAVE___ICONV_FREE_LIST)
+    char **list;
+    size_t sz, i;
+    VALUE ary;
+
+    if (__iconv_get_list(&list, &sz)) return Qnil;
+
+    ary = rb_ary_new2(sz);
+    for (i = 0; i < sz; i++) {
+	rb_ary_push(ary, rb_str_new2(list[i]));
+    }
+    __iconv_free_list(list, sz);
+
+    if (!rb_block_given_p())
+	return ary;
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	rb_yield(RARRAY_PTR(ary)[i]);
+    }
 #else
     rb_notimplement();
 #endif
