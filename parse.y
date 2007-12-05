@@ -8876,31 +8876,19 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	}
     }
     if (m - name < len) id = ID_JUNK;
-    /*
-     * davidflanagan: commented out because this just doesn't make sense.
-     *
-     * If we were called with a non-ascii encoding, then change
-     * the encoding to ASCII, unless the symbol had multi-byte characters
-     * and there are trailing non-identifier characters that are 
-     * outside of ASCII. But all multi-byte characters
-     * are identifier chars, so there will never be trailing characters
-     * so this clause always changes the encoding of the string.
-     *
-     * The upshot is that the symbol is placed in the hashtable with
-     * an ASCII encoding, but is queried (at the top of this function)
-     * with its real encoding.  So :x == :x is false when x is a
-     * multi-byte character. 
-     *
-    if (enc != rb_enc_from_index(0)) {
+    if (enc != rb_default_encoding()) {
+	/*
+	 * this clause makes sense only when called from other than
+	 * rb_intern_str() taking care of code-range.
+	 */
 	if (!mb) {
 	    for (; m <= name + len; ++m) {
 		if (!ISASCII(*m)) goto mbstr;
 	    }
+	    enc = rb_default_encoding();
 	}
-	enc = rb_enc_from_index(0);
       mbstr:;
     }
-    */
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:

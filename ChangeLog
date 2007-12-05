@@ -1,3 +1,8 @@
+Wed Dec  5 15:25:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern3): fix to changing encoding to default, and
+	  uncommented r13835, which is rare but not impossible.
+
 Wed Dec  5 15:15:21 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (step_i, range_step): support non-fixnum steps.
