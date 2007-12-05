@@ -1,3 +1,11 @@
+Wed Dec  5 13:41:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): get rid of tracing while parsing.
+	  [ruby-dev:31351]
+
+	* thread.c (ruby_suppress_tracing): added a new parameter, which
+	  directs to call func always.
+
 Tue Dec  4 19:56:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_convert): should not set encoding unless

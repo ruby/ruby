@@ -4656,15 +4656,15 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
-VALUE ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg);
+VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 
 static VALUE
-debug_lines(VALUE f)
+debug_lines(const char *f)
 {
     if (rb_const_defined_at(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash = rb_const_get_at(rb_cObject, rb_intern("SCRIPT_LINES__"));
 	if (TYPE(hash) == T_HASH) {
-	    VALUE fname = rb_str_new2((const char *)f);
+	    VALUE fname = rb_str_new2(f);
 	    VALUE lines = rb_hash_lookup(hash, fname);
 	    if (NIL_P(lines)) {
 		lines = rb_ary_new();
@@ -4676,17 +4676,18 @@ debug_lines(VALUE f)
     return 0;
 }
 
-static NODE*
-yycompile(struct parser_params *parser, const char *f, int line)
+static VALUE
+yycompile0(VALUE arg, int tracing)
 {
     int n;
     NODE *tree;
+    struct parser_params *parser = (struct parser_params *)arg;
 
     if (!compile_for_eval && rb_safe_level() == 0) {
-	ruby_debug_lines = ruby_suppress_tracing(debug_lines, (VALUE)f);
-	if (ruby_debug_lines && line > 1) {
+	ruby_debug_lines = debug_lines(ruby_sourcefile);
+	if (ruby_debug_lines && ruby_sourceline > 0) {
 	    VALUE str = rb_str_new(0, 0);
-	    n = line - 1;
+	    n = ruby_sourceline;
 	    do {
 		rb_ary_push(ruby_debug_lines, str);
 	    } while (--n);
@@ -4694,8 +4695,6 @@ yycompile(struct parser_params *parser, const char *f, int line)
     }
 
     parser->enc = rb_enc_get(lex_input);
-    ruby_sourcefile = rb_source_filename(f);
-    ruby_sourceline = line - 1;
     parser_prepare(parser);
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
@@ -4715,12 +4714,20 @@ yycompile(struct parser_params *parser, const char *f, int line)
         if (scope) {
 	    scope->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, scope->nd_body);
 	}
-	return scope;
+	tree = scope;
     }
     else {
-	return ruby_eval_tree;
+	tree = ruby_eval_tree;
     }
-    return tree;
+    return (VALUE)tree;
+}
+
+static NODE*
+yycompile(struct parser_params *parser, const char *f, int line)
+{
+    ruby_sourcefile = rb_source_filename(f);
+    ruby_sourceline = line - 1;
+    return (NODE *)ruby_suppress_tracing(yycompile0, (VALUE)parser, Qtrue);
 }
 #endif /* !RIPPER */
 

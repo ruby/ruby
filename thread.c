@@ -2880,7 +2880,7 @@ get_event_name(rb_event_flag_t event)
     }
 }
 
-VALUE ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg);
+VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 
 struct call_trace_func_args {
     rb_event_flag_t event;
@@ -2891,7 +2891,7 @@ struct call_trace_func_args {
 };
 
 static VALUE
-call_trace_proc(VALUE args)
+call_trace_proc(VALUE args, int tracing)
 {
     struct call_trace_func_args *p = (struct call_trace_func_args *)args;
     VALUE eventname = rb_str_new2(get_event_name(p->event));
@@ -2935,17 +2935,17 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     args.self = self;
     args.id = id;
     args.klass = klass;
-    ruby_suppress_tracing(call_trace_proc, (VALUE)&args);
+    ruby_suppress_tracing(call_trace_proc, (VALUE)&args, Qfalse);
 }
 
 VALUE
-ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg)
+ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 {
     rb_thread_t *th = GET_THREAD();
-    int state, raised;
+    int state, raised, tracing;
     VALUE result = Qnil;
 
-    if (th->tracing) {
+    if ((tracing = th->tracing) != 0 && !always) {
 	return Qnil;
     }
     else {
@@ -2956,7 +2956,7 @@ ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg)
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	result = (*func)(arg);
+	result = (*func)(arg, tracing);
     }
 
     if (raised) {
@@ -2964,7 +2964,7 @@ ruby_suppress_tracing(VALUE (*func)(ANYARGS), VALUE arg)
     }
     POP_TAG();
 
-    th->tracing = 0;
+    th->tracing = tracing;
     if (state) {
 	JUMP_TAG(state);
     }
