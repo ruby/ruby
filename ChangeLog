@@ -1,3 +1,7 @@
+Wed Dec  5 23:38:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_each): followed step_i change.
+
 Wed Dec  5 18:08:45 2007  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_odd_p): new method Integer#odd?.

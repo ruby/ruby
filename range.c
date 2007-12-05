@@ -428,11 +428,10 @@ range_each(range)
 	}
     }
     else if (TYPE(beg) == T_STRING) {
-	VALUE args[5];
-	long iter[2];
+	VALUE args[5], iter[2];
 
 	args[0] = beg; args[1] = end; args[2] = range;
-	iter[0] = 1; iter[1] = 1;
+	iter[0] = INT2FIX(1); iter[1] = INT2FIX(1);
 	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
 		   (VALUE)iter);
     }
