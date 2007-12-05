@@ -1786,6 +1786,39 @@ int_int_p(num)
 
 /*
  *  call-seq:
+ *     int.odd? -> true or false
+ *
+ *  Returns <code>true</code> if <i>int</i> is an odd number.
+ */
+
+static VALUE
+int_odd_p(VALUE num)
+{
+    if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     int.even? -> true or false
+ *
+ *  Returns <code>true</code> if <i>int</i> is an even number.
+ */
+
+static VALUE
+int_even_p(VALUE num)
+{
+    if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+
+/*
+ *  call-seq:
  *     int.next    => integer
  *     int.succ    => integer
  *
@@ -1804,6 +1837,26 @@ int_succ(num)
 	return LONG2NUM(i);
     }
     return rb_funcall(num, '+', 1, INT2FIX(1));
+}
+
+/*
+ *  call-seq:
+ *     int.pred    => integer
+ *
+ *  Returns the <code>Integer</code> equal to <i>int</i> - 1.
+ *
+ *     1.pred      #=> 0
+ *     (-1).pred   #=> -2
+ */
+
+static VALUE
+int_pred(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+        long i = FIX2LONG(num) - 1;
+        return LONG2NUM(i);
+    }
+    return rb_funcall(num, '-', 1, INT2FIX(1));
 }
 
 /*
@@ -2260,15 +2313,6 @@ int_pow(x, y)
     } while (--y);
     if (neg) z = -z;
     return LONG2NUM(z);
-}
-
-static VALUE
-int_even_p(VALUE num)
-{
-    if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
-	return Qtrue;
-    }
-    return Qfalse;
 }
 
 /*
@@ -2907,6 +2951,38 @@ fix_zero_p(num)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     fix.odd? -> true or false
+ *
+ *  Returns <code>true</code> if <i>fix</i> is an odd number.
+ */
+
+static VALUE
+fix_odd_p(VALUE num)
+{
+    if (num & 2) {
+        return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     fix.even? -> true or false
+ *
+ *  Returns <code>true</code> if <i>fix</i> is an even number.
+ */
+
+static VALUE
+fix_even_p(VALUE num)
+{
+    if (num & 2) {
+        return Qfalse;
+    }
+    return Qtrue;
+}
+
 void
 Init_Numeric()
 {
@@ -2961,12 +3037,15 @@ Init_Numeric()
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
 
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
+    rb_define_method(rb_cInteger, "odd?", int_odd_p, 0);
+    rb_define_method(rb_cInteger, "even?", int_even_p, 0);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "times", int_dotimes, 0);
     rb_include_module(rb_cInteger, rb_mPrecision);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
+    rb_define_method(rb_cInteger, "pred", int_pred, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
     rb_define_method(rb_cInteger, "ord", int_ord, 0);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
@@ -3020,6 +3099,8 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
     rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
+    rb_define_method(rb_cFixnum, "odd?", fix_odd_p, 0);
+    rb_define_method(rb_cFixnum, "even?", fix_even_p, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 
