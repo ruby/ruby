@@ -2665,7 +2665,7 @@ Sun Sep 23 09:05:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Sep 23 08:58:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_method.ci (rb_attr): should not use alloca for unknown size
-	  input.  [ruby-dev:31816]
+	  input.  [ruby-dev:31818]
 
 	* parse.y (rb_intern_str): prevent str from optimization.
 
