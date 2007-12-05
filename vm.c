@@ -1664,11 +1664,14 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     VALUE volatile obj;
-    //rb_thread_t *th = thread_recycle_struct();
-    //obj = Data_Wrap_Struct(klass, rb_thread_mark, thread_free, th);
+#ifdef USE_THREAD_RECYCLE
+    rb_thread_t *th = thread_recycle_struct();
+    obj = Data_Wrap_Struct(klass, rb_thread_mark, thread_free, th);
+#else
     rb_thread_t *th;
     obj = Data_Make_Struct(klass, rb_thread_t,
 			   rb_thread_mark, thread_free, th);
+#endif
     return obj;
 }
 

@@ -304,9 +304,12 @@ proc_new(VALUE klass, int is_lambda)
  */
 
 static VALUE
-rb_proc_s_new(VALUE klass)
+rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    return proc_new(klass, Qfalse);
+    VALUE block = proc_new(klass, Qfalse);
+
+    rb_obj_call_init(block, argc, argv);
+    return block;
 }
 
 /*
@@ -469,6 +472,36 @@ int
 rb_proc_arity(VALUE proc)
 {
     return FIX2INT(proc_arity(proc));
+}
+
+static rb_iseq_t *
+get_proc_iseq(VALUE self)
+{
+    rb_proc_t *proc;
+    rb_iseq_t *iseq;
+
+    GetProcPtr(self, proc);
+    iseq = proc->block.iseq;
+    if (!RUBY_VM_NORMAL_ISEQ_P(iseq))
+	return 0;
+    return iseq;
+}
+
+VALUE
+rb_proc_location(VALUE self)
+{
+    rb_iseq_t *iseq = get_proc_iseq(self);
+    VALUE loc[2];
+
+    if (!iseq) return Qnil;
+    loc[0] = iseq->filename;
+    if (iseq->insn_info_table) {
+	loc[1] = INT2FIX(iseq->insn_info_table[0].line_no);
+    }
+    else {
+	loc[1] = Qnil;
+    }
+    return rb_ary_new4(2, loc);
 }
 
 /*
@@ -1438,7 +1471,7 @@ Init_Proc(void)
     /* Proc */
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);
-    rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, 0);
+    rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
     rb_define_method(rb_cProc, "call", proc_call, -1);
     rb_define_method(rb_cProc, "[]", proc_call, -1);
     rb_define_method(rb_cProc, "yield", proc_yield, -1);

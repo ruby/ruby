@@ -1,3 +1,14 @@
+Wed Dec  5 16:18:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_s_new): call initialize.  [ruby-core:13824]
+
+	* proc.c (rb_proc_location): return file name and line number where
+	  the proc is defined.
+
+	* thread.c (thread_s_new): call initialize.  [ruby-core:13835]
+
+	* thread.c (thread_initialize): split initialize method.
+
 Wed Dec  5 15:25:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern3): fix to changing encoding to default, and

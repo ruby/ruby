@@ -373,13 +373,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 }
 
 static VALUE
-thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS))
+thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 {
     rb_thread_t *th;
-    VALUE thval;
 
-    /* create thread object */
-    thval = rb_thread_alloc(klass);
     GetThreadPtr(thval, th);
 
     /* setup thread environment */
@@ -407,15 +404,55 @@ thread_create_core(VALUE klass, VALUE args, VALUE (*fn)(ANYARGS))
  */
 
 static VALUE
-thread_s_new(VALUE klass, VALUE args)
+thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    return thread_create_core(klass, args, 0);
+    rb_thread_t *th;
+    VALUE thread = rb_thread_alloc(klass);
+    rb_obj_call_init(thread, argc, argv);
+    GetThreadPtr(thread, th);
+    if (!th->first_args) {
+	rb_raise(rb_eThreadError, "uninitialized thread - check `%s#initialize'",
+		 rb_class2name(klass));
+    }
+    return thread;
+}
+
+static VALUE
+thread_start(VALUE klass, VALUE args)
+{
+    return thread_create_core(rb_thread_alloc(klass), args, 0);
+}
+
+static VALUE
+thread_initialize(VALUE thread, VALUE args)
+{
+    rb_thread_t *th;
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eThreadError, "must be called with a block");
+    }
+    GetThreadPtr(thread, th);
+    if (th->first_args) {
+	VALUE rb_proc_location(VALUE self);
+	VALUE proc = th->first_proc, line, loc;
+	const char *file;
+        if (!proc || !RTEST(loc = rb_proc_location(proc))) {
+            rb_raise(rb_eThreadError, "already initialized thread");
+        }
+	fn = RSTRING_PTR(RARRAY_PTR(loc)[0]);
+	if (NIL_P(line = RARRAY_PTR(loc)[1])) {
+	    rb_raise(rb_eThreadError, "already initialized thread - %s",
+		     file);
+	}
+        rb_raise(rb_eThreadError, "already initialized thread - %s:%d",
+                 file, NUM2INT(line));
+    }
+    return thread_create_core(thread, args, 0);
 }
 
 VALUE
 rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 {
-    return thread_create_core(rb_cThread, (VALUE)arg, fn);
+    return thread_create_core(rb_thread_alloc(rb_cThread), (VALUE)arg, fn);
 }
 
 
@@ -2986,9 +3023,9 @@ Init_Thread(void)
 {
     VALUE cThGroup;
 
-    rb_define_singleton_method(rb_cThread, "new", thread_s_new, -2);
-    rb_define_singleton_method(rb_cThread, "start", thread_s_new, -2);
-    rb_define_singleton_method(rb_cThread, "fork", thread_s_new, -2);
+    rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);
+    rb_define_singleton_method(rb_cThread, "start", thread_start, -2);
+    rb_define_singleton_method(rb_cThread, "fork", thread_start, -2);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_s_main, 0);
     rb_define_singleton_method(rb_cThread, "current", thread_s_current, 0);
     rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
@@ -3005,6 +3042,7 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
 #endif
 
+    rb_define_method(rb_cThread, "initialize", thread_initialize, -2);
     rb_define_method(rb_cThread, "raise", thread_raise_m, -1);
     rb_define_method(rb_cThread, "join", thread_join_m, -1);
     rb_define_method(rb_cThread, "value", thread_value, 0);
