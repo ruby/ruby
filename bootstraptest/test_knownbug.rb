@@ -18,3 +18,12 @@ assert_match /unterminated string meets end of file/, %q{
 assert_normal_exit %q{
   "abcd\xf0".force_encoding("utf-8").reverse.inspect
 }, '[ruby-dev:32448]'
+
+assert_equal 'hi', %q{
+  class C
+    define_method(:foo) { |arg, &block|
+      if block then block.call else arg end
+    }
+  end
+  C.new.foo("ng") {"ok"}
+}, '[ruby-talk:266422]'
