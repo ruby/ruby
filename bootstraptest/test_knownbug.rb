@@ -10,20 +10,27 @@ assert_equal '0', %q{
   $?.to_i
 }, '[ruby-dev:32404]'
 
-assert_match /unterminated string meets end of file/, %q{
-  STDERR.reopen(STDOUT)
-  eval("\"\xfd".force_encoding("utf-8"))
-}, '[ruby-dev:32429]'
-
 assert_normal_exit %q{
   "abcd\xf0".force_encoding("utf-8").reverse.inspect
 }, '[ruby-dev:32448]'
 
-assert_equal 'hi', %q{
+assert_equal 'ok', %q{
   class C
-    define_method(:foo) { |arg, &block|
+    define_method(:foo) do |arg, &block|
       if block then block.call else arg end
-    }
+    end
   end
   C.new.foo("ng") {"ok"}
 }, '[ruby-talk:266422]'
+
+assert_equal 'ok', %q{
+  STDERR.reopen(STDOUT)
+  class C
+    define_method(:foo) do |&block|
+      block.call if block
+    end
+    result = "ng"
+    new.foo() {result = "ok"}
+    result
+  end
+}
