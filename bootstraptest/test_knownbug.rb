@@ -11,7 +11,7 @@ assert_equal '0', %q{
 }, '[ruby-dev:32404]'
 
 assert_normal_exit %q{
-  "abcd\xf0".force_encoding("utf-8").reverse.inspect
+  "abcdefghij\xf0".force_encoding("utf-8").reverse.inspect
 }, '[ruby-dev:32448]'
 
 assert_equal 'ok', %q{
