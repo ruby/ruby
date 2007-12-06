@@ -31,6 +31,8 @@ Thu Dec  6 18:22:11 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_getc): use rb_enc_precise_mbclen.
 
+	[ruby-dev:32438]
+
 Thu Dec  6 01:37:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.c (i_apply_case_fold): fix for negative character class.  a
