@@ -2919,9 +2919,19 @@ rb_str_inspect(VALUE str)
     str_cat_char(result, '"', enc);
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
-	int c = rb_enc_codepoint(p, pend, enc);
-	int n = rb_enc_codelen(c, enc);
+	int c;
+	int n;
 	int cc;
+
+        n = rb_enc_precise_mbclen(p, pend, enc);
+        if (!MBCLEN_CHARFOUND(n)) {
+            p++;
+            n = 1;
+            goto escape_codepoint;
+        }
+
+	c = rb_enc_codepoint(p, pend, enc);
+	n = rb_enc_codelen(c, enc);
 
 	p += n;
 	if (c == '"'|| c == '\\' ||
@@ -2954,19 +2964,21 @@ rb_str_inspect(VALUE str)
 	    prefix_escape(result, 'e', enc);
 	}
 	else if (rb_enc_isprint(c, enc)) {
-	    char buf[5];
-
-	    rb_enc_mbcput(c, buf, enc);
-	    rb_str_buf_cat(result, buf, n);
+	    rb_str_buf_cat(result, p-n, n);
 	}
 	else {
 	    char buf[5];
-	    char *s = buf;
+	    char *s;
+            char *q;
 
-	    sprintf(buf, "\\%03o", c & 0377);
-	    while (*s) {
-		str_cat_char(result, *s++, enc);
-	    }
+escape_codepoint:
+            for (q = p-n; q < p; q++) {
+                s = buf;
+                sprintf(buf, "\\%03o", *q & 0377);
+                while (*s) {
+                    str_cat_char(result, *s++, enc);
+                }
+            }
 	}
     }
     str_cat_char(result, '"', enc);
@@ -5232,6 +5244,25 @@ rb_str_force_encoding(VALUE str, VALUE enc)
     return str;
 }
 
+static VALUE
+rb_str_valid_encoding_p(VALUE str)
+{
+    char *p = RSTRING_PTR(str);
+    char *pend = RSTRING_END(str);
+    rb_encoding *enc = rb_enc_get(str);
+
+    while (p < pend) {
+	int n;
+
+        n = rb_enc_precise_mbclen(p, pend, enc);
+        if (!MBCLEN_CHARFOUND(n)) {
+            return Qfalse;
+        }
+        p += n;
+    }
+    return Qtrue;
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -5644,6 +5675,7 @@ Init_String(void)
 
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
+    rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
 
     id_to_s = rb_intern("to_s");
 

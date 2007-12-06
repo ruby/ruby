@@ -68,8 +68,14 @@ rb_encoding * rb_enc_find(const char *name);
 #define rb_enc_mbminlen(enc) (enc)->min_enc_len
 #define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
 
-/* ptr,encoding -> mbclen */
+/* ptr,endptr,encoding -> mbclen */
 int rb_enc_mbclen(const char*, const char *, rb_encoding*);
+
+/* ptr,endptr,encoding -> chlen, invalid or needmore */
+int rb_enc_precise_mbclen(const char*, const char *, rb_encoding*);
+#define MBCLEN_CHARFOUND(ret)     ONIGENC_MBCLEN_CHARFOUND(ret)
+#define MBCLEN_INVALID(ret)       ONIGENC_MBCLEN_INVALID(ret)
+#define MBCLEN_NEEDMORE(ret)      ONIGENC_MBCLEN_NEEDMORE(ret)
 
 /* code,encoding -> codelen */
 int rb_enc_codelen(int, rb_encoding*);

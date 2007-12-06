@@ -1,3 +1,36 @@
+Thu Dec  6 18:22:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_precise_mbclen): new function for mbclen with
+	  validation.
+
+	* include/ruby/encoding.h (rb_enc_precise_mbclen): declared.
+	  (MBCLEN_CHARFOUND): new macro.
+	  (MBCLEN_INVALID): new macro.
+	  (MBCLEN_NEEDMORE): new macro.
+
+	* include/ruby/oniguruma.h (OnigEncodingTypeST): replace mbc_enc_len
+	  by precise_mbc_enc_len.
+	  (ONIGENC_PRECISE_MBC_ENC_LEN): new macro.
+	  (ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND): new macro.
+	  (ONIGENC_CONSTRUCT_MBCLEN_INVALID): new macro.
+	  (ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE): new macro.
+	  (ONIGENC_MBCLEN_CHARFOUND): new macro.
+	  (ONIGENC_MBCLEN_INVALID): new macro.
+	  (ONIGENC_MBCLEN_NEEDMORE): new macro.
+	  (ONIGENC_MBC_ENC_LEN): use ONIGENC_PRECISE_MBC_ENC_LEN.
+
+	* enc/euc_jp.c: validation implemented.
+
+	* enc/sjis.c: ditto.
+
+	* enc/utf8.c: ditto.
+
+	* string.c (rb_str_inspect): use rb_enc_precise_mbclen for invalid
+	  encoding.
+	  (rb_str_valid_encoding_p): new method String#valid_encoding?.
+
+	* io.c (rb_io_getc): use rb_enc_precise_mbclen.
+
 Thu Dec  6 01:37:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.c (i_apply_case_fold): fix for negative character class.  a

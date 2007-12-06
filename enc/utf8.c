@@ -56,13 +56,189 @@ static const int EncLen_UTF8[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-  4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
+  4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
+
+typedef enum {
+  FAILURE = -2,
+  ACCEPT,
+  S0, S1, S2, S3,
+  S4, S5, S6, S7
+} state_t;
+#define A ACCEPT
+#define F FAILURE
+static const signed char trans[][0x100] = {
+  { /* S0   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 1 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 2 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 3 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 4 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 5 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 6 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 7 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 8 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 9 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* a */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* b */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* c */ F, F, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* e */ 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3,
+    /* f */ 5, 6, 6, 6, 7, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S1   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 9 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* a */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* b */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S2   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 9 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* a */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* b */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S3   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 9 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* a */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* b */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S4   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 9 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* a */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* b */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S5   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 9 */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* a */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* b */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S6   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* 9 */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* a */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* b */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+  { /* S7   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 5 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 6 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 7 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 8 */ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    /* 9 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* a */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* b */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* c */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* d */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* e */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* f */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F 
+  },
+};
+#undef A
+#undef F
 
 static int
 utf8_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
-  return EncLen_UTF8[*p];
+  int firstbyte = *p++;
+  state_t s;
+  s = trans[0][firstbyte];
+  if (s < 0) return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1) :
+                                  ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_UTF8[firstbyte]-1);
+  s = trans[s][*p++];
+  if (s < 0) return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(2) :
+                                  ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_UTF8[firstbyte]-2);
+  s = trans[s][*p++];
+  if (s < 0) return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(3) :
+                                  ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_UTF8[firstbyte]-3);
+  s = trans[s][*p++];
+  return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(4) :
+                       ONIGENC_CONSTRUCT_MBCLEN_INVALID();
 }
 
 static int

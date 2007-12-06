@@ -70,10 +70,62 @@ static const char SJIS_CAN_BE_TRAIL_TABLE[256] = {
 #define SJIS_ISMB_FIRST(byte)  (EncLen_SJIS[byte] > 1)
 #define SJIS_ISMB_TRAIL(byte)  SJIS_CAN_BE_TRAIL_TABLE[(byte)]
 
+typedef enum { FAILURE = -2, ACCEPT = -1, S0 = 0, S1 } state_t;
+#define A ACCEPT
+#define F FAILURE
+static const signed char trans[][0x100] = {
+  { /* S0   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 1 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 2 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 3 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 4 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 5 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 6 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 7 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 8 */ F, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* 9 */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* a */ F, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* b */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* c */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* e */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F, F, F
+  },
+  { /* S1   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+    /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 1 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 2 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 3 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
+    /* 4 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 5 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 6 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 7 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F,
+    /* 8 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* 9 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* a */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* b */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* c */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* e */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
+    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, F, F, F
+  }
+};
+#undef A
+#undef F
+
 static int
 mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
-  return EncLen_SJIS[*p];
+  int firstbyte = *p++;
+  state_t s;
+  s = trans[0][firstbyte];
+  if (s < 0) return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1) :
+                                  ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_SJIS[firstbyte]-1);
+  s = trans[s][*p++];
+  return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(2) :
+                       ONIGENC_CONSTRUCT_MBCLEN_INVALID();
 }
 
 static int

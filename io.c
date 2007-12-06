@@ -2127,7 +2127,7 @@ rb_io_getc(VALUE io)
 {
     rb_encoding *enc;
     rb_io_t *fptr;
-    int n, left;
+    int r, n;
     VALUE str;
 
     GetOpenFile(io, fptr);
@@ -2138,22 +2138,30 @@ rb_io_getc(VALUE io)
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    n = rb_enc_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_len, enc);
-    if (n < fptr->rbuf_len) {
+    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+    if ((n = MBCLEN_CHARFOUND(r)) != 0 && n <= fptr->rbuf_len) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
 	fptr->rbuf_off += n;
 	fptr->rbuf_len -= n;
     }
+    else if (MBCLEN_NEEDMORE(r)) {
+	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
+        fptr->rbuf_len = 0;
+getc_needmore:
+        if (io_fillbuf(fptr) != -1) {
+            rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
+            fptr->rbuf_off++;
+            fptr->rbuf_len--;
+            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
+            if (MBCLEN_NEEDMORE(r)) {
+                goto getc_needmore;
+            }
+        }
+    }
     else {
-	str = rb_str_new(0, n);
-	left = fptr->rbuf_len;
-	MEMCPY(RSTRING_PTR(str), fptr->rbuf+fptr->rbuf_off, char, left);
-	if (io_fillbuf(fptr) < 0) {
-	    return Qnil;
-	}
-	MEMCPY(RSTRING_PTR(str)+left, fptr->rbuf, char, n-left);
-	fptr->rbuf_off += left;
-	fptr->rbuf_len -= left;
+	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
+	fptr->rbuf_off++;
+	fptr->rbuf_len--;
     }
     rb_enc_associate(str, enc);
 

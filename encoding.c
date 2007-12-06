@@ -495,6 +495,12 @@ rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 }
 
 int
+rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
+{
+    return ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
+}
+
+int
 rb_enc_codelen(int c, rb_encoding *enc)
 {
     int n = ONIGENC_CODE_TO_MBCLEN(enc,c);
