@@ -1,3 +1,7 @@
+Fri Dec  7 15:44:40 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb: use Hash for recursion check as inspect.
+
 Fri Dec  7 15:04:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (flatten): some performance improvements, based on a patch

@@ -111,13 +111,13 @@ class PP < PrettyPrint
       end
 
       if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = []
+        Thread.current[:__recursive_key__][:inspect] = {}
       end
 
       save = Thread.current[:__recursive_key__][:inspect]
 
       begin
-        Thread.current[:__recursive_key__][:inspect] = []
+        Thread.current[:__recursive_key__][:inspect] = {}
         yield
       ensure
         Thread.current[:__recursive_key__][:inspect] = save
@@ -130,10 +130,10 @@ class PP < PrettyPrint
       Thread.current[:__recursive_key__][:inspect].include?(id)
     end
     def push_inspect_key(id)
-      Thread.current[:__recursive_key__][:inspect] << id
+      Thread.current[:__recursive_key__][:inspect][id] = true
     end
-    def pop_inspect_key
-      Thread.current[:__recursive_key__][:inspect].pop
+    def pop_inspect_key(id)
+      Thread.current[:__recursive_key__][:inspect].delete id
     end
 
     # Adds +obj+ to the pretty printing buffer
@@ -153,7 +153,7 @@ class PP < PrettyPrint
         push_inspect_key(id)
         group {obj.pretty_print self}
       ensure
-        pop_inspect_key unless PP.sharing_detection
+        pop_inspect_key(id) unless PP.sharing_detection
       end
     end
 
