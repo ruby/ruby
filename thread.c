@@ -2583,26 +2583,25 @@ rb_barrier_release(VALUE self)
 static ID recursive_key;
 
 static VALUE
-recursive_check(VALUE obj)
+recursive_check(VALUE hash, VALUE obj)
 {
-    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
-
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
 	return Qfalse;
     }
     else {
 	VALUE list = rb_hash_aref(hash, ID2SYM(rb_frame_this_func()));
 
-	if (NIL_P(list) || TYPE(list) != T_ARRAY)
+	if (NIL_P(list) || TYPE(list) != T_HASH)
 	    return Qfalse;
-	return rb_ary_includes(list, rb_obj_id(obj));
+	if (NIL_P(rb_hash_lookup(list, rb_obj_id(obj))))
+	    return Qfalse;
+	return Qtrue;
     }
 }
 
-static void
-recursive_push(VALUE obj)
+static VALUE
+recursive_push(VALUE hash, VALUE obj)
 {
-    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE list, sym;
 
     sym = ID2SYM(rb_frame_this_func());
@@ -2614,17 +2613,17 @@ recursive_push(VALUE obj)
     else {
 	list = rb_hash_aref(hash, sym);
     }
-    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
-	list = rb_ary_new();
+    if (NIL_P(list) || TYPE(list) != T_HASH) {
+	list = rb_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
-    rb_ary_push(list, rb_obj_id(obj));
+    rb_hash_aset(list, rb_obj_id(obj), Qtrue);
+    return hash;
 }
 
 static void
-recursive_pop(void)
+recursive_pop(VALUE hash, VALUE obj)
 {
-    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE list, sym;
 
     sym = ID2SYM(rb_frame_this_func());
@@ -2638,32 +2637,34 @@ recursive_pop(void)
 		 StringValuePtr(symname), StringValuePtr(thrname));
     }
     list = rb_hash_aref(hash, sym);
-    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
+    if (NIL_P(list) || TYPE(list) != T_HASH) {
 	VALUE symname = rb_inspect(sym);
 	VALUE thrname = rb_inspect(rb_thread_current());
 	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
 		 StringValuePtr(symname), StringValuePtr(thrname));
     }
-    rb_ary_pop(list);
+    rb_hash_delete(list, obj);
 }
 
 VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
-    if (recursive_check(obj)) {
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+
+    if (recursive_check(hash, obj)) {
 	return (*func) (obj, arg, Qtrue);
     }
     else {
 	VALUE result = Qundef;
 	int state;
 
-	recursive_push(obj);
+	hash = recursive_push(hash, obj);
 	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func) (obj, arg, Qfalse);
 	}
 	POP_TAG();
-	recursive_pop();
+	recursive_pop(hash, obj);
 	if (state)
 	    JUMP_TAG(state);
 	return result;
