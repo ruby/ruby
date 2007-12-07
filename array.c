@@ -2755,35 +2755,51 @@ rb_ary_nitems(VALUE ary)
     return LONG2NUM(n);
 }
 
-static long
-flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
+static VALUE
+flatten(VALUE ary, int level, int *modified)
 {
-    VALUE id;
-    long i = idx;
-    long n, lim = idx + RARRAY_LEN(ary2);
+    long i = 0;
+    VALUE stack, result, tmp, elt;
+    st_table *memo;
+    st_data_t id;
 
-    level--;
-    id = rb_obj_id(ary2);
-    if (rb_ary_includes(memo, id)) {
-	rb_raise(rb_eArgError, "tried to flatten recursive array");
-    }
-    rb_ary_push(memo, id);
-    rb_ary_splice(ary, idx, 1, ary2);
-    if (level != 0) {
-    while (i < lim) {
-	VALUE tmp;
+    stack = rb_ary_new();
+    result = rb_ary_new();
+    memo = st_init_numtable();
+    st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
+    *modified = 0;
 
-	tmp = rb_check_array_type(rb_ary_elt(ary, i));
-	if (!NIL_P(tmp)) {
-		n = flatten(ary, i, tmp, memo, level);
-	    i += n; lim += n;
+    while (1) {
+	while (i < RARRAY_LEN(ary)) {
+	    elt = RARRAY_PTR(ary)[i++];
+	    tmp = rb_check_array_type(elt);
+	    if (NIL_P(tmp) || (level >= 0 && RARRAY_LEN(stack) / 2 >= level)) {
+		rb_ary_push(result, elt);
+	    }
+	    else {
+		*modified = 1;
+		id = (st_data_t)tmp;
+		if (st_lookup(memo, id, 0)) {
+		    rb_raise(rb_eArgError, "tried to flatten recursive array");
+		}
+		st_insert(memo, id, (st_data_t)Qtrue);
+		rb_ary_push(stack, ary);
+		rb_ary_push(stack, LONG2NUM(i));
+		ary = tmp;
+		i = 0;
+	    }
 	}
-	i++;
+	if (RARRAY_LEN(stack) == 0) {
+	    break;
+	}
+	id = (st_data_t)ary;
+	st_delete(memo, &id, 0);
+	tmp = rb_ary_pop(stack);
+	i = NUM2LONG(tmp);
+	ary = rb_ary_pop(stack);
     }
-    }
-    rb_ary_pop(memo);
 
-    return lim - idx - 1;	/* returns number of increased items */
+    return result;
 }
 
 /*
@@ -2807,30 +2823,17 @@ flatten(VALUE ary, long idx, VALUE ary2, VALUE memo, int level)
 static VALUE
 rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 {
-    long i = 0;
-    int mod = 0;
-    int level = -1;
-    VALUE memo = Qnil;
-    VALUE lv;
+    int mod = 0, level = -1;
+    VALUE result, lv;
 
     rb_scan_args(argc, argv, "01", &lv);
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return ary;
-    while (i<RARRAY_LEN(ary)) {
-	VALUE ary2 = RARRAY_PTR(ary)[i];
-	VALUE tmp;
 
-	tmp = rb_check_array_type(ary2);
-	if (!NIL_P(tmp)) {
-	    if (NIL_P(memo)) {
-		memo = rb_ary_new();
-	    }
-	    i += flatten(ary, i, tmp, memo, level);
-	    mod = 1;
-	}
-	i++;
-    }
+    result = flatten(ary, level, &mod);
     if (mod == 0) return Qnil;
+    rb_ary_replace(ary, result);
+
     return ary;
 }
 
@@ -2855,9 +2858,17 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 {
-    ary = rb_ary_dup(ary);
-    rb_ary_flatten_bang(argc, argv, ary);
-    return ary;
+    int mod = 0, level = -1;
+    VALUE result, lv;
+
+    rb_scan_args(argc, argv, "01", &lv);
+    if (!NIL_P(lv)) level = NUM2INT(lv);
+    if (level == 0) return ary;
+
+    result = flatten(ary, level, &mod);
+    if (OBJ_TAINTED(ary)) OBJ_TAINT(result);
+
+    return result;
 }
 
 /*
