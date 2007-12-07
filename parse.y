@@ -2035,12 +2035,7 @@ arg		: lhs '=' arg
 		| tUPLUS arg
 		    {
 		    /*%%%*/
-			if ($2 && nd_type($2) == NODE_LIT) {
-			    $$ = $2;
-			}
-			else {
-			    $$ = call_uni_op($2, tUPLUS);
-			}
+			$$ = call_uni_op($2, tUPLUS);
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("+@"), $2);
 		    %*/
