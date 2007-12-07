@@ -34,3 +34,16 @@ assert_equal 'ok', %q{
     result
   end
 }
+
+assert_equal 'ok', %q{
+  begin
+    if ("\xa1\xa2\xa1\xa3").force_encoding("euc-jp").split(//) ==
+      ["\xa1\xa2".force_encoding("euc-jp"), "\xa1\xa3".force_encoding("euc-jp")]
+      :ok
+    else
+      :ng
+    end
+  rescue
+    :ng
+  end
+}, '[ruby-dev:32452]'
