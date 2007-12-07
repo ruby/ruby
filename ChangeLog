@@ -1,3 +1,8 @@
+Fri Dec  7 20:21:35 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/net/ftptls.rb, ext/openssl/lib/net/telnets.rb:
+	  half-finished libraries are discontinued.
+
 Fri Dec  7 15:44:40 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb: use Hash for recursion check as inspect.
