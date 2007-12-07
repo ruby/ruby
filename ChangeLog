@@ -1,4 +1,4 @@
-Fri Dec  7 12:27:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec  7 15:04:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (flatten): some performance improvements, based on a patch
 	  from Yusuke ENDOH <mame AT tsg.ne.jp> in [ruby-core:13877].
@@ -6,6 +6,8 @@ Fri Dec  7 12:27:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_exec_recursive): use Hash instead of Array for
 	  performance improvement.  [ruby-core:13898]
+
+	* thread.c (recursive_pop): use object ID.
 
 Thu Dec  6 19:52:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

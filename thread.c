@@ -2593,7 +2593,7 @@ recursive_check(VALUE hash, VALUE obj)
 
 	if (NIL_P(list) || TYPE(list) != T_HASH)
 	    return Qfalse;
-	if (NIL_P(rb_hash_lookup(list, rb_obj_id(obj))))
+	if (NIL_P(rb_hash_lookup(list, obj)))
 	    return Qfalse;
 	return Qtrue;
     }
@@ -2617,7 +2617,7 @@ recursive_push(VALUE hash, VALUE obj)
 	list = rb_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
-    rb_hash_aset(list, rb_obj_id(obj), Qtrue);
+    rb_hash_aset(list, obj, Qtrue);
     return hash;
 }
 
@@ -2650,21 +2650,22 @@ VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
     VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE objid = rb_obj_id(obj);
 
-    if (recursive_check(hash, obj)) {
+    if (recursive_check(hash, objid)) {
 	return (*func) (obj, arg, Qtrue);
     }
     else {
 	VALUE result = Qundef;
 	int state;
 
-	hash = recursive_push(hash, obj);
+	hash = recursive_push(hash, objid);
 	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func) (obj, arg, Qfalse);
 	}
 	POP_TAG();
-	recursive_pop(hash, obj);
+	recursive_pop(hash, objid);
 	if (state)
 	    JUMP_TAG(state);
 	return result;
