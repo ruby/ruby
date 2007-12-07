@@ -2053,7 +2053,7 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			$$ = call_bin_op($1, '|', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('!'), $3);
+			$$ = dispatch3(binary, $1, ID2SYM('|'), $3);
 		    %*/
 		    }
 		| arg '^' arg
