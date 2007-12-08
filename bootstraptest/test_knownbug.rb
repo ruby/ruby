@@ -60,6 +60,6 @@ assert_equal 'ok', %q{
 assert_equal 'ok', %q{
   s1 = "\x81\x41".force_encoding("sjis")
   s2 = "\x81\x61".force_encoding("sjis")
-  s1.casecmp(s2) ? :ng : :ok
+  s1.casecmp(s2) == 0 ? :ng : :ok
 }
 
