@@ -1,3 +1,7 @@
+Sat Dec  8 17:22:16 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_pkcs7.rb: Remove redundant module namespace.
+
 Sat Dec  8 17:07:10 2007  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (proc_options): make rb_raise format as a string literal to
