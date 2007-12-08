@@ -1,3 +1,7 @@
+Sat Dec  8 17:59:40 2007  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (posix_signal): return value.
+
 Sat Dec  8 17:22:16 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_pkcs7.rb: Remove redundant module namespace.
