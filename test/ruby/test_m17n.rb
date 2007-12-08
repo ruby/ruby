@@ -68,6 +68,65 @@ class TestM17N < Test::Unit::TestCase
     assert_equal('"\374"', u("\xfc").inspect)
   end
 
+  def test_validate_redundant_utf8
+    bits_0x10ffff = "11110100 10001111 10111111 10111111"
+    [
+      "0xxxxxxx",
+      "110XXXXx 10xxxxxx",
+      "1110XXXX 10Xxxxxx 10xxxxxx",
+      "11110XXX 10XXxxxx 10xxxxxx 10xxxxxx",
+      "111110XX 10XXXxxx 10xxxxxx 10xxxxxx 10xxxxxx",
+      "1111110X 10XXXXxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx",
+      "11111110 10XXXXXx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx",
+      "11111111 10XXXXXX 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx",
+    ].each {|pat0|
+      [
+        pat0.gsub(/x/, '1'),
+        pat0.gsub(/x/, '0')
+      ].each {|pat1|
+        [
+          pat1.sub(/X([^X]*)\z/, '1\1').gsub(/X/, "0"),
+          pat1.gsub(/X/, "1"),
+        ].each {|pat2|
+          s = [pat2.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
+          if pat2 <= bits_0x10ffff
+            assert(s.valid_encoding?, "#{pat2}")
+          else
+            assert(!s.valid_encoding?, "#{pat2}")
+          end
+        }
+        if / / =~ pat0
+          pat3 = pat1.gsub(/X/, "0")
+          s = [pat3.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
+          assert(!s.valid_encoding?, "#{pat3}")
+        end
+      }
+    }
+  end
+
+  def test_validate_surrogate
+    #  1110XXXX 10Xxxxxx 10xxxxxx : 3 bytes UTF-8
+    pats = [
+      "11101101 10011111 10111111", # just before surrogate high
+      "11101101 1010xxxx 10xxxxxx", # surrogate high
+      "11101101 1011xxxx 10xxxxxx", # surrogate low
+      "11101110 10000000 10000000", # just after surrogate low
+    ]
+    pats.values_at(1,2).each {|pat0|
+      [
+        pat0.gsub(/x/, '0'),
+        pat0.gsub(/x/, '1'),
+      ].each {|pat1|
+        s = [pat1.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
+        assert(!s.valid_encoding?, "#{pat1}")
+      }
+    }
+    pats.values_at(0,3).each {|pat|
+      s = [pat.gsub(/ /, "")].pack("B*").force_encoding("utf-8")
+      assert(s.valid_encoding?, "#{pat}")
+    }
+  end
+
   def test_regexp_too_short_multibyte_character
     assert_raise(SyntaxError) { eval('/\xfe/e') }
     assert_raise(SyntaxError) { eval('/\x8e/e') }
