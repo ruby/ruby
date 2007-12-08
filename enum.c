@@ -123,7 +123,9 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 	return INT2NUM(n);
     }
     else {
-	rb_scan_args(argc, argv, "1", &argv[0]);
+        VALUE v;
+	rb_scan_args(argc, argv, "1", &v);
+        return Qnil; /* not reached */
     }
 }
 
