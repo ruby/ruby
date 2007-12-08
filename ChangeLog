@@ -1,3 +1,8 @@
+Sun Dec  9 03:29:02 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_mbclen): return 1 if underlying implementation
+	  returns a length longer than e-p.
+
 Sat Dec  8 17:59:40 2007  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (posix_signal): return value.

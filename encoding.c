@@ -486,7 +486,8 @@ int
 rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
     int n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
-    if (MBCLEN_CHARFOUND(n))
+    n = MBCLEN_CHARFOUND(n);
+    if (0 < n && n <= e-p)
         return n;
     else
         return 1;
