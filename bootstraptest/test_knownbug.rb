@@ -47,3 +47,12 @@ assert_equal 'ok', %q{
     :ng
   end
 }, '[ruby-dev:32452]'
+
+assert_equal 'ok', %q{
+  begin
+    "\xa1\xa1".force_encoding("euc-jp") + "\xa1".force_encoding("ascii-8bit")
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
