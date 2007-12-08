@@ -4090,9 +4090,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ALIAS:{
-	  VALUE s1, s2;
-	  enum node_type t;
-
 	  COMPILE(ret, "alias arg1", node->u1.node);
 	  COMPILE(ret, "alias arg2", node->u2.node);
 
