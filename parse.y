@@ -444,6 +444,8 @@ static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, str, options)
 static void reg_fragment_setenc_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, str, options)
+static void reg_fragment_check_gen(struct parser_params*, VALUE, int);
+#define reg_fragment_check(str,options) reg_fragment_check_gen(parser, str, options)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -3661,10 +3663,10 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 				nd_set_type(node, NODE_DREGX);
 			    }
 			    node->nd_cflag = options & RE_OPTION_MASK;
-                            reg_fragment_setenc(node->nd_lit, options);
+                            reg_fragment_check(node->nd_lit, options);
                             for (list = node->nd_next; list; list = list->nd_next) {
                                 if (nd_type(list->nd_head) == NODE_STR) {
-                                    reg_fragment_setenc(list->nd_head->nd_lit, options);
+                                    reg_fragment_check(list->nd_head->nd_lit, options);
                                 }
                             }
 			    break;
@@ -8456,6 +8458,7 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 }
 
 VALUE rb_reg_compile(VALUE str, int options);
+VALUE rb_reg_check_preprocess(VALUE);
 
 static void
 reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
@@ -8472,6 +8475,19 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
 			  c, rb_enc_name(rb_enc_get(str)));
 	}
 	ENCODING_SET(str, idx);
+    }
+}
+
+static void
+reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
+{
+    VALUE err;
+    reg_fragment_setenc_gen(parser, str, options);
+    err = rb_reg_check_preprocess(str);
+    if (err != Qnil) {
+        err = rb_obj_as_string(err);
+        compile_error(PARSER_ARG "%s", RSTRING_PTR(err));
+	RB_GC_GUARD(err);
     }
 }
 

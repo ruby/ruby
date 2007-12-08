@@ -279,6 +279,22 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_sjis(eval(s(%q{/\xc2\xa1/})))
   end
 
+  def test_regexp_embed
+    r = eval(e("/\xc2\xa1/"))
+    assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
+    assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
+
+    r = /\xc2\xa1/e
+    #assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
+    #assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
+
+    r = eval(e("/\xc2\xa1/"))
+    #assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+
+    r = /\xc2\xa1/e
+    #assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+  end
+
   def test_begin_end_offset
     str = e("\244\242\244\244\244\246\244\250\244\252a")
     assert(/(a)/ =~ str)
@@ -397,7 +413,6 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_ascii8bit(/#{}/n)
     assert_regexp_fixed_ascii8bit(/#{}\xc2\xa1/n)
     assert_regexp_fixed_ascii8bit(/\xc2\xa1#{}/n)
-    #assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/s') }
     #assert_raise(SyntaxError) { s1, s2 = s('\xc2'), s('\xa1'); /#{s1}#{s2}/ }
   end
 
@@ -405,9 +420,9 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_eucjp(/#{}/e)
     assert_regexp_fixed_eucjp(/#{}\xc2\xa1/e)
     assert_regexp_fixed_eucjp(/\xc2\xa1#{}/e)
-    assert_raise(RegexpError) { eval('/\xc2#{}/e') }
-    assert_raise(RegexpError) { eval('/#{}\xc2/e') }
-    #assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/e') }
+    assert_raise(SyntaxError) { eval('/\xc2#{}/e') }
+    assert_raise(SyntaxError) { eval('/#{}\xc2/e') }
+    assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/e') }
     #assert_raise(SyntaxError) { s1, s2 = e('\xc2'), e('\xa1'); /#{s1}#{s2}/ }
   end
 
@@ -415,9 +430,9 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_sjis(/#{}/s)
     assert_regexp_fixed_sjis(/#{}\xc2\xa1/s)
     assert_regexp_fixed_sjis(/\xc2\xa1#{}/s)
-    assert_raise(RegexpError) { eval('/\x81#{}/s') }
-    assert_raise(RegexpError) { eval('/#{}\x81/s') }
-    #assert_raise(SyntaxError) { eval('/\x81#{}\xa1/s') }
+    assert_raise(SyntaxError) { eval('/\x81#{}/s') }
+    assert_raise(SyntaxError) { eval('/#{}\x81/s') }
+    assert_raise(SyntaxError) { eval('/\x81#{}\xa1/s') }
     #assert_raise(SyntaxError) { s1, s2 = s('\x81'), s('\xa1'); /#{s1}#{s2}/ }
   end
 
@@ -425,9 +440,9 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_utf8(/#{}/u)
     assert_regexp_fixed_utf8(/#{}\xc2\xa1/u)
     assert_regexp_fixed_utf8(/\xc2\xa1#{}/u)
-    assert_raise(RegexpError) { eval('/\xc2#{}/u') }
-    assert_raise(RegexpError) { eval('/#{}\xc2/u') }
-    #assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/u') }
+    assert_raise(SyntaxError) { eval('/\xc2#{}/u') }
+    assert_raise(SyntaxError) { eval('/#{}\xc2/u') }
+    assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/u') }
     #assert_raise(SyntaxError) { s1, s2 = u('\xc2'), u('\xa1'); /#{s1}#{s2}/ }
   end
 

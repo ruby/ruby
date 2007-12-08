@@ -1629,6 +1629,29 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
     return buf;
 }
 
+VALUE
+rb_reg_check_preprocess(VALUE str)
+{
+    rb_encoding *fixed_enc = 0;
+    onig_errmsg_buffer err;
+    VALUE buf;
+    char *p, *end;
+    rb_encoding *enc;
+
+    StringValue(str);
+    p = RSTRING_PTR(str);
+    end = p + RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+
+    buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
+    RB_GC_GUARD(str);
+
+    if (buf == Qnil) {
+	return rb_reg_error_desc(str, 0, err);
+    }
+    return Qnil;
+}
+
 #if 0
 static VALUE
 rb_reg_preprocess_obj(VALUE str,

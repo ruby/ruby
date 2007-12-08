@@ -1,3 +1,12 @@
+Sat Dec  8 16:18:16 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_check_preprocess): new function for validating regexp
+	  fragment.
+
+	* parse.y (regexp): invoke reg_fragment_check.
+	  (reg_fragment_check): defined.
+	  (reg_fragment_check_gen): defined.
+
 Sat Dec  8 11:06:29 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_mbclen): make it never fail.
