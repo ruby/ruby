@@ -856,16 +856,16 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  default:
 	    {
-		const char *format;
 		if (ISPRINT(*s)) {
-		    format =
-			"invalid option -%c  (-h will show valid options)";
+                    rb_raise(rb_eRuntimeError,
+			"invalid option -%c  (-h will show valid options)",
+                        (int)(unsigned char)*s);
 		}
 		else {
-		    format =
-			"invalid option -\\%03o  (-h will show valid options)";
+                    rb_raise(rb_eRuntimeError,
+			"invalid option -\\%03o  (-h will show valid options)",
+                        (int)(unsigned char)*s);
 		}
-		rb_raise(rb_eRuntimeError, format, (int)(unsigned char)*s);
 	    }
 	    goto switch_end;
 

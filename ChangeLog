@@ -1,3 +1,8 @@
+Sat Dec  8 17:07:10 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (proc_options): make rb_raise format as a string literal to
+	  avoid warning.
+
 Sat Dec  8 16:18:16 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_check_preprocess): new function for validating regexp
