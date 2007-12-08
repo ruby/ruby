@@ -1,7 +1,9 @@
-Sun Dec  9 03:29:02 2007  Tanaka Akira  <akr@fsij.org>
+Sun Dec  9 04:01:28 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_mbclen): return 1 if underlying implementation
 	  returns a length longer than e-p.
+	  (rb_enc_precise_mbclen): return needmore if underlying
+	  implementation returns a length longer than e-p.
 
 Sat Dec  8 17:59:40 2007  Tanaka Akira  <akr@fsij.org>
 
