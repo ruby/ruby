@@ -4583,9 +4583,11 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 #endif
 
 #define parser_mbclen()  mbclen((lex_p-1),lex_pend,parser->enc)
-#define is_identchar(p,e,enc) (rb_enc_isalnum(*p,enc) || (*p) == '_' || ismbchar(p,e,enc))
-#define parser_ismbchar() ismbchar((lex_p-1), lex_pend, parser->enc)
+#define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,parser->enc)
+#define is_identchar(p,e,enc) (rb_enc_isalnum(*p,enc) || (*p) == '_' || !ISASCII(*p))
 #define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,parser->enc))
+
+#define parser_isascii() ISASCII(*(lex_p-1))
 
 static int
 parser_yyerror(struct parser_params *parser, const char *msg)
@@ -5305,8 +5307,8 @@ dispose_string(VALUE str)
 static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
-    int len = parser_mbclen();
-    if (len <= 0 || lex_p + len - 1 > lex_pend) {
+    int len = parser_precise_mbclen();
+    if (!MBCLEN_CHARFOUND(len)) {
 	compile_error(PARSER_ARG "illegal multibyte char");
 	return -1;
     }
@@ -5414,7 +5416,7 @@ parser_tokadd_string(struct parser_params *parser,
 		}
 	    }
 	}
-	else if (parser_ismbchar()) {
+	else if (!parser_isascii()) {
 	    has_nonascii = 1;
 	    if (enc != *encp) {
 		mixed_error(enc, *encp);
@@ -6306,7 +6308,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	newtok();
 	enc = parser->enc;
-	if (parser_ismbchar()) {
+	if (!parser_isascii()) {
 	    if (tokadd_mbchar(c) == -1) return 0;
 	}
 	else if ((rb_enc_isalnum(c, parser->enc) || c == '_') &&
@@ -6889,7 +6891,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    else {
 		term = nextc();
-		if (rb_enc_isalnum(term, parser->enc) || parser_ismbchar()) {
+		if (rb_enc_isalnum(term, parser->enc) || !parser_isascii()) {
 		    yyerror("unknown type of %string");
 		    return 0;
 		}
@@ -8693,7 +8695,7 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 	break;
       case '-':
 	++m;
-	if (is_identchar(m, e, enc)) {
+	if (m < e && is_identchar(m, e, enc)) {
 	    if (!ISASCII(*m)) mb = 1;
 	    m += rb_enc_mbclen(m, e, enc);
 	}
@@ -8776,9 +8778,9 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
       default:
 	localid = !rb_enc_isupper(*m, enc);
       id:
-	if (*m != '_' && !rb_enc_isalpha(*m, enc) && !ismbchar(m, e, enc))
+	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m)))
 		  return Qfalse;
-	while (is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
+	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	if (localid) {
 	    switch (*m) {
 	      case '!': case '?': case '=': ++m;

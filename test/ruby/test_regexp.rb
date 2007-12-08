@@ -20,7 +20,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_yoshidam_net_20041111_2
     assert_raise(RegexpError) do
-      s = "[\xFF-\xFF]"
+      s = "[\xFF-\xFF]".force_encoding("utf-8")
       Regexp.new(s, nil, "u")
     end
   end
@@ -42,8 +42,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal :ok, begin
       Regexp.union(
         "a",
-        Regexp.new("\x80".force_encoding("euc-jp")),
-        Regexp.new("\x80".force_encoding("utf-8")))
+        Regexp.new("\xc2\xa1".force_encoding("euc-jp")),
+        Regexp.new("\xc2\xa1".force_encoding("utf-8")))
       :ng
     rescue ArgumentError
       :ok

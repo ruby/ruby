@@ -459,7 +459,6 @@ rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
 	for (c=0; p<e && nth--; c++) {
 	    int n = rb_enc_mbclen(p, e, enc);
 
-	    if (n == 0) return 0;
 	    p += n;
 	}
     }
@@ -478,7 +477,6 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     for (c=0; p<e; c++) {
 	int n = rb_enc_mbclen(p, e, enc);
 
-	if (n == 0) return -1;
 	p += n;
     }
     return c;
@@ -487,17 +485,37 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
-    int n = ONIGENC_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
-    if (n == 0) {
-	rb_raise(rb_eArgError, "invalid mbstring sequence");
-    }
-    return n;
+    int n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
+    if (MBCLEN_CHARFOUND(n))
+        return n;
+    else
+        return 1;
 }
 
 int
 rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
+    if (e <= p)
+        return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
     return ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
+}
+
+int rb_enc_get_ascii(const char *p, const char *e, rb_encoding *enc)
+{
+    int c, l;
+    if (e <= p)
+        return -1;
+    if (rb_enc_asciicompat(enc)) {
+        c = (unsigned char)*p;
+        return ISASCII(c) ? c : -1;
+    }
+    l = rb_enc_precise_mbclen(p, e, enc);
+    if (!MBCLEN_CHARFOUND(l))
+        return -1;
+    c = rb_enc_codepoint(p, e, enc);
+    if (rb_enc_isascii(c, enc))
+        return c;
+    return -1;
 }
 
 int

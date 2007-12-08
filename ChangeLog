@@ -1,3 +1,42 @@
+Sat Dec  8 11:06:29 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_mbclen): make it never fail.
+	  (rb_enc_nth): don't check the return value of rb_enc_mbclen.
+	  (rb_enc_strlen): ditto.
+	  (rb_enc_precise_mbclen): return needmore(1) if e <= p.
+	  (rb_enc_get_ascii): new function for extracting ASCII character.
+
+	* include/ruby/encoding.h (rb_enc_get_ascii): declared.
+
+	* include/ruby/regex.h (ismbchar): removed.
+
+	* re.c (rb_reg_expr_str): use rb_enc_get_ascii.
+	  (unescape_escaped_nonascii): use rb_enc_precise_mbclen to determine
+	  the termination of escaped non-ASCII character.
+	  (unescape_nonascii): use rb_enc_precise_mbclen.
+	  (rb_reg_quote): use rb_enc_get_ascii.
+	  (rb_reg_regsub): use rb_enc_get_ascii.
+
+	* string.c (rb_str_reverse) don't check the return value of
+	  rb_enc_mbclen.
+	  (rb_str_split_m): don't call rb_enc_mbclen with e <= p.
+
+	* parse.y (is_identchar): use ISASCII.
+	  (parser_ismbchar): removed.
+	  (parser_precise_mbclen): new macro.
+	  (parser_isascii): new macro.
+	  (parser_tokadd_mbchar): use parser_precise_mbclen to check invalid
+	  character precisely.
+	  (parser_tokadd_string): use parser_isascii.
+	  (parser_yylex): ditto.
+	  (is_special_global_name): don't call is_identchar with e <= p.
+	  (rb_enc_symname_p): ditto.
+
+	  [ruby-dev:32455]
+
+	* ext/tk/sample/tkextlib/vu/canvSticker2.rb: remove coding cookie
+	  because the encoding is not UTF-8.  [ruby-dev:32475]
+
 Fri Dec  7 20:21:35 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/net/ftptls.rb, ext/openssl/lib/net/telnets.rb:

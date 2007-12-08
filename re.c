@@ -218,10 +218,12 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
     rb_encoding *enc = rb_enc_get(str);
     const char *p, *pend;
     int need_escape = 0;
+    int c;
 
     p = s; pend = p + len;
     while (p<pend) {
-	if (*p == '/' || (!rb_enc_isprint(*p, enc) && !ismbchar(p, pend, enc))) {
+        c = rb_enc_get_ascii(p, pend, enc);
+	if (c == '/' || (c != -1 && !rb_enc_isprint(c, enc))) {
 	    need_escape = 1;
 	    break;
 	}
@@ -233,29 +235,31 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
     else {
 	p = s;
 	while (p<pend) {
-	    if (*p == '\\') {
+            c = rb_enc_get_ascii(p, pend, enc);
+	    if (c == '\\') {
 		int n = mbclen(p+1, pend, enc) + 1;
 		rb_str_buf_cat(str, p, n);
 		p += n;
 		continue;
 	    }
-	    else if (*p == '/') {
+	    else if (c == '/') {
 		char c = '\\';
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else if (ismbchar(p, pend, enc)) {
-	    	rb_str_buf_cat(str, p, mbclen(p, pend, enc));
-		p += mbclen(p, pend, enc);
+	    else if (c == -1) {
+                int l = mbclen(p, pend, enc);
+	    	rb_str_buf_cat(str, p, l);
+		p += l;
 		continue;
 	    }
-	    else if (rb_enc_isprint(*p, enc)) {
+	    else if (rb_enc_isprint(c, enc)) {
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else if (!rb_enc_isspace(*p, enc)) {
+	    else if (!rb_enc_isspace(c, enc)) {
 		char b[8];
 
-		sprintf(b, "\\%03o", *p & 0377);
+		sprintf(b, "\\%03o", c);
 		rb_str_buf_cat(str, b, 4);
 	    }
 	    else {
@@ -1377,6 +1381,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     char *chbuf = ALLOCA_N(char, chmaxlen);
     int chlen = 0;
     int byte;
+    int l;
 
     memset(chbuf, 0, chmaxlen);
 
@@ -1386,7 +1391,8 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     }
 
     chbuf[chlen++] = byte;
-    while (chlen < chmaxlen && chlen != mbclen(chbuf, chbuf+chlen, enc)) {
+    while (chlen < chmaxlen &&
+           MBCLEN_NEEDMORE(rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc))) {
         byte = read_escaped_byte(&p, end, err);
         if (byte == -1) {
             return -1;
@@ -1394,11 +1400,11 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         chbuf[chlen++] = byte;
     }
 
-    if (chlen != mbclen(chbuf, chbuf+chlen, enc)) {
+    l = rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc);
+    if (MBCLEN_INVALID(l)) {
         strcpy(err, "invalid multibyte escape");
         return -1;
     }
-
     if (1 < chlen || (chbuf[0] & 0x80)) {
         rb_str_buf_cat(buf, chbuf, chlen);
 
@@ -1515,13 +1521,12 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
     char smallbuf[2];
 
     while (p < end) {
-        int chlen = mbclen(p, end, enc);
+        int chlen = rb_enc_precise_mbclen(p, end, enc);
+        if (!MBCLEN_CHARFOUND(chlen)) {
+            strcpy(err, "invalid multibyte character");
+            return -1;
+        }
         if (1 < chlen || (*p & 0x80)) {
-            if (end < p + chlen) {
-                strcpy(err, "too short multibyte character");
-                return -1;
-            }
-            /* xxx: validate the non-ascii character */
             rb_str_buf_cat(buf, p, chlen);
             p += chlen;
             if (*encp == 0)
@@ -2093,8 +2098,8 @@ rb_reg_quote(VALUE str)
     s = RSTRING_PTR(str);
     send = s + RSTRING_LEN(str);
     for (; s < send; s++) {
-	c = *s;
-	if (ismbchar(s, send, enc)) {
+        c = rb_enc_get_ascii(s, send, enc);
+	if (c == -1) {
 	    int n = mbclen(s, send, enc);
 
 	    while (n-- && s < send)
@@ -2129,8 +2134,8 @@ rb_reg_quote(VALUE str)
     t += s - RSTRING_PTR(str);
 
     for (; s < send; s++) {
-	c = *s;
-	if (ismbchar(s, send, enc)) {
+        c = rb_enc_get_ascii(s, send, enc);
+	if (c == -1) {
 	    int n = mbclen(s, send, enc);
 
 	    while (n-- && s < send)
@@ -2397,13 +2402,14 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
+        int c = rb_enc_get_ascii(s, e, enc);
 	char *ss = s++;
 
-	if (ismbchar(ss, e, enc)) {
+	if (c == -1) {
 	    s += mbclen(ss, e, enc) - 1;
 	    continue;
 	}
-	if (*ss != '\\' || s == e) continue;
+	if (c != '\\' || s == e) continue;
 
 	if (!val) {
 	    val = rb_str_buf_new(ss-p);

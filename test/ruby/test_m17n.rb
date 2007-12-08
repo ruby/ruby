@@ -77,8 +77,8 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xc2/u') }
     assert_raise(SyntaxError) { eval('/\xe0\x80/u') }
     assert_raise(SyntaxError) { eval('/\xf0\x80\x80/u') }
-    #assert_raise(SyntaxError) { eval('/\xf8\x80\x80\x80/u') }
-    #assert_raise(SyntaxError) { eval('/\xfc\x80\x80\x80\x80/u') }
+    assert_raise(SyntaxError) { eval('/\xf8\x80\x80\x80/u') }
+    assert_raise(SyntaxError) { eval('/\xfc\x80\x80\x80\x80/u') }
 
     # raw 8bit
     assert_raise(SyntaxError) { eval("/\xfe/e") }
@@ -87,7 +87,7 @@ class TestM17N < Test::Unit::TestCase
     # invalid suffix
     assert_raise(SyntaxError) { eval('/\xc2\xff/u') }
     assert_raise(SyntaxError) { eval('/\xc2 /u') }
-    #assert_raise(SyntaxError) { eval('/\xc2\x20/u') }
+    assert_raise(SyntaxError) { eval('/\xc2\x20/u') }
   end
 
   def assert_regexp_generic_encoding(r)

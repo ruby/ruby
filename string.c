@@ -2725,9 +2725,6 @@ rb_str_reverse(VALUE str)
 	    while (s < e) {
 		int clen = rb_enc_mbclen(s, e, enc);
 
-		if (clen == 0) {
-		    rb_raise(rb_eArgError, "invalid mbstring sequence");
-		}
 		p -= clen;
 		memcpy(p, s, clen);
 		s += clen;
@@ -4079,7 +4076,10 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    beg = start;
 		}
 		else {
-		    start += rb_enc_mbclen(RSTRING_PTR(str)+start,RSTRING_END(str),enc);
+                    if (RSTRING_PTR(str)+start == RSTRING_END(str))
+                        start++;
+                    else
+                        start += rb_enc_mbclen(RSTRING_PTR(str)+start,RSTRING_END(str),enc);
 		    last_null = 1;
 		    continue;
 		}
