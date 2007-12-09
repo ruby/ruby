@@ -1,3 +1,15 @@
+Mon Dec 10 01:35:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (expr): redefinable not (!) operator.
+
+	* parse.y (arg): ditto.
+
+	* object.c (rb_obj_not): new method "!".
+
+	* object.c (rb_obj_not_equal): new method "!=".
+
+	* object.c (rb_obj_not_match): new method "!~".
+
 Sun Dec  9 22:31:36 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_s_last_match): accept named capture's name.

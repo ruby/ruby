@@ -67,8 +67,6 @@ enum node_type {
 #define NODE_AND         NODE_AND
     NODE_OR,
 #define NODE_OR          NODE_OR
-    NODE_NOT,
-#define NODE_NOT         NODE_NOT
     NODE_MASGN,
 #define NODE_MASGN       NODE_MASGN
     NODE_LASGN,
@@ -390,7 +388,6 @@ typedef struct RNode {
 #define NEW_ARRAY(a) NEW_NODE(NODE_ARRAY,a,1,0)
 #define NEW_ZARRAY() NEW_NODE(NODE_ZARRAY,0,0,0)
 #define NEW_HASH(a)  NEW_NODE(NODE_HASH,a,0,0)
-#define NEW_NOT(a)   NEW_NODE(NODE_NOT,0,a,0)
 #define NEW_MASGN(l,r)   NEW_NODE(NODE_MASGN,l,0,r)
 #define NEW_GASGN(v,val) NEW_NODE(NODE_GASGN,v,val,rb_global_entry(v))
 #define NEW_LASGN(v,val) NEW_NODE(NODE_LASGN,v,val,0)

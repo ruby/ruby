@@ -949,7 +949,6 @@ gc_mark_children(VALUE ptr, int lev)
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_FBODY:	/* 2 */
-	  case NODE_NOT:
 	  case NODE_GASGN:
 	  case NODE_LASGN:
 	  case NODE_DASGN:

@@ -336,8 +336,6 @@ static NODE *cond_gen(struct parser_params*,NODE*);
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
 #define logop(type,node1,node2) logop_gen(parser, type, node1, node2)
 
-static int cond_negative(NODE**);
-
 static NODE *newline_node(NODE*);
 static void fixpos(NODE*,NODE*);
 
@@ -387,8 +385,6 @@ static NODE *ret_args_gen(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield_gen(struct parser_params*,NODE*);
 #define new_yield(node) new_yield_gen(parser, node)
-static NODE *new_not_gen(struct parser_params*,NODE*);
-#define new_not(node) new_not_gen(parser, node)
 
 static NODE *gettable_gen(struct parser_params*,ID);
 #define gettable(id) gettable_gen(parser,id)
@@ -890,10 +886,6 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%%%*/
 			$$ = NEW_IF(cond($3), remove_begin($1), 0);
 			fixpos($$, $3);
-			if (cond_negative(&$$->nd_cond)) {
-			    $$->nd_else = $$->nd_body;
-			    $$->nd_body = 0;
-			}
 		    /*%
 			$$ = dispatch2(if_mod, $3, $1);
 		    %*/
@@ -903,10 +895,6 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($3), remove_begin($1), 0);
 			fixpos($$, $3);
-			if (cond_negative(&$$->nd_cond)) {
-			    $$->nd_body = $$->nd_else;
-			    $$->nd_else = 0;
-			}
 		    /*%
 			$$ = dispatch2(unless_mod, $3, $1);
 		    %*/
@@ -920,9 +908,6 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			else {
 			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
-			if (cond_negative(&$$->nd_cond)) {
-			    nd_set_type($$, NODE_UNTIL);
-			}
 		    /*%
 			$$ = dispatch2(while_mod, $3, $1);
 		    %*/
@@ -935,9 +920,6 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			}
 			else {
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
-			}
-			if (cond_negative(&$$->nd_cond)) {
-			    nd_set_type($$, NODE_WHILE);
 			}
 		    /*%
 			$$ = dispatch2(until_mod, $3, $1);
@@ -1166,7 +1148,7 @@ expr		: command_call
 		| keyword_not expr
 		    {
 		    /*%%%*/
-			$$ = new_not($2);
+			$$ = call_uni_op($2, '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), $2);
 		    %*/
@@ -1174,9 +1156,9 @@ expr		: command_call
 		| '!' command_call
 		    {
 		    /*%%%*/
-			$$ = new_not($2);
+			$$ = call_uni_op($2, '!');
 		    /*%
-			$$ = dispatch2(unary, ID2SYM('!'), $2);
+			$$ = dispatch2(unary, ripper_id2sym('!'), $2);
 		    %*/
 		    }
 		| arg
@@ -1749,10 +1731,12 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| tEQ		{ ifndef_ripper($$ = tEQ); }
 		| tEQQ		{ ifndef_ripper($$ = tEQQ); }
 		| tMATCH	{ ifndef_ripper($$ = tMATCH); }
+		| tNMATCH	{ ifndef_ripper($$ = tNMATCH); }
 		| '>'		{ ifndef_ripper($$ = '>'); }
 		| tGEQ		{ ifndef_ripper($$ = tGEQ); }
 		| '<'		{ ifndef_ripper($$ = '<'); }
 		| tLEQ		{ ifndef_ripper($$ = tLEQ); }
+		| tNEQ		{ ifndef_ripper($$ = tNEQ); }
 		| tLSHFT	{ ifndef_ripper($$ = tLSHFT); }
 		| tRSHFT	{ ifndef_ripper($$ = tRSHFT); }
 		| '+'		{ ifndef_ripper($$ = '+'); }
@@ -1762,6 +1746,7 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '/'		{ ifndef_ripper($$ = '/'); }
 		| '%'		{ ifndef_ripper($$ = '%'); }
 		| tPOW		{ ifndef_ripper($$ = tPOW); }
+		| '!'		{ ifndef_ripper($$ = '!'); }
 		| '~'		{ ifndef_ripper($$ = '~'); }
 		| tUPLUS	{ ifndef_ripper($$ = tUPLUS); }
 		| tUMINUS	{ ifndef_ripper($$ = tUMINUS); }
@@ -2133,7 +2118,7 @@ arg		: lhs '=' arg
 		| arg tNEQ arg
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(call_bin_op($1, tEQ, $3));
+			$$ = call_bin_op($1, tNEQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("!="), $3);
 		    %*/
@@ -2149,7 +2134,7 @@ arg		: lhs '=' arg
 		| arg tNMATCH arg
 		    {
 		    /*%%%*/
-			$$ = NEW_NOT(match_op($1, $3));
+			$$ = call_bin_op($1, tNMATCH, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("!~"), $3);
 		    %*/
@@ -2157,7 +2142,7 @@ arg		: lhs '=' arg
 		| '!' arg
 		    {
 		    /*%%%*/
-			$$ = new_not($2);
+			$$ = call_uni_op($2, '!');
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
@@ -2659,11 +2644,6 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_IF(cond($2), $4, $5);
 			fixpos($$, $2);
-			if (cond_negative(&$$->nd_cond)) {
-			    NODE *tmp = $$->nd_body;
-			    $$->nd_body = $$->nd_else;
-			    $$->nd_else = tmp;
-			}
 		    /*%
 			$$ = dispatch3(if, $2, $4, escape_Qundef($5));
 		    %*/
@@ -2676,11 +2656,6 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 			fixpos($$, $2);
-			if (cond_negative(&$$->nd_cond)) {
-			    NODE *tmp = $$->nd_body;
-			    $$->nd_body = $$->nd_else;
-			    $$->nd_else = tmp;
-			}
 		    /*%
 			$$ = dispatch3(unless, $2, $4, escape_Qundef($5));
 		    %*/
@@ -2692,9 +2667,6 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_WHILE(cond($3), $6, 1);
 			fixpos($$, $3);
-			if (cond_negative(&$$->nd_cond)) {
-			    nd_set_type($$, NODE_UNTIL);
-			}
 		    /*%
 			$$ = dispatch2(while, $3, $6);
 		    %*/
@@ -2706,9 +2678,6 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_UNTIL(cond($3), $6, 1);
 			fixpos($$, $3);
-			if (cond_negative(&$$->nd_cond)) {
-			    nd_set_type($$, NODE_WHILE);
-			}
 		    /*%
 			$$ = dispatch2(until, $3, $6);
 		    %*/
@@ -6115,8 +6084,17 @@ parser_yylex(struct parser_params *parser)
 	return c;
 
       case '!':
-	lex_state = EXPR_BEG;
-	if ((c = nextc()) == '=') {
+	c = nextc();
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
+	    if (c != '@') {
+		pushback(c);
+	    }
+	}
+	else {
+	    lex_state = EXPR_BEG;
+	}
+	if (c == '=') {
 	    return tNEQ;
 	}
 	if (c == '~') {
@@ -6796,12 +6774,10 @@ parser_yylex(struct parser_params *parser)
 	    if ((c = nextc()) != '@') {
 		pushback(c);
 	    }
+	    lex_state = EXPR_ARG;
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
+	else {
+	    lex_state = EXPR_BEG;
 	}
 	return '~';
 
@@ -8193,20 +8169,6 @@ logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *r
     return NEW_NODE(type, left, right, 0);
 }
 
-static int
-cond_negative(NODE **nodep)
-{
-    NODE *c = *nodep;
-
-    if (!c) return 0;
-    switch (nd_type(c)) {
-      case NODE_NOT:
-	*nodep = c->nd_body;
-	return 1;
-    }
-    return 0;
-}
-
 static void
 no_blockarg(struct parser_params *parser, NODE *node)
 {
@@ -8247,13 +8209,6 @@ new_yield_gen(struct parser_params *parser, NODE *node)
         state = Qfalse;
     }
     return NEW_YIELD(node, state);
-}
-
-static NODE *
-new_not_gen(struct parser_params *parser, NODE *node)
-{
-    value_expr(node);
-    return NEW_NOT(cond(node));
 }
 
 static NODE*
@@ -8605,6 +8560,7 @@ static const struct {
     {'|',	"|"},
     {'^',	"^"},
     {'&',	"&"},
+    {'!',	"!"},
     {tCMP,	"<=>"},
     {'>',	">"},
     {tGEQ,	">="},
@@ -8615,12 +8571,12 @@ static const struct {
     {tNEQ,	"!="},
     {tMATCH,	"=~"},
     {tNMATCH,	"!~"},
-    {'!',	"!"},
     {'~',	"~"},
-    {'!',	"!(unary)"},
     {'~',	"~(unary)"},
-    {'!',	"!@"},
     {'~',	"~@"},
+    {'!',	"!"},
+    {'!',	"!(unary)"},
+    {'!',	"!@"},
     {tAREF,	"[]"},
     {tASET,	"[]="},
     {tLSHFT,	"<<"},

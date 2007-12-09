@@ -96,6 +96,33 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     !obj    => true or false
+ *
+ *  Boolean negate.
+ */
+
+static VALUE
+rb_obj_not(VALUE obj)
+{
+    return RTEST(obj) ? Qfalse : Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     obj != other        => true or false
+ *
+ *  Returns true if two objects are not-equal, otherwise false.
+ */
+
+static VALUE
+rb_obj_not_equal(VALUE obj1, VALUE obj2)
+{
+    VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
+    return RTEST(result) ? Qfalse : Qtrue;
+}
+
 VALUE
 rb_class_real(VALUE cl)
 {
@@ -991,9 +1018,22 @@ rb_false(VALUE obj)
  */
 
 static VALUE
-rb_obj_pattern_match(VALUE obj1, VALUE obj2)
+rb_obj_match(VALUE obj1, VALUE obj2)
 {
     return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     obj !~ other  => nil
+ *  
+ *  Returns true if two objects does not match, using <i>=~</i> method.
+ */
+
+static VALUE
+rb_obj_not_match(VALUE obj1, VALUE obj2)
+{
+    return Qtrue;
 }
 
 
@@ -2307,6 +2347,8 @@ Init_Object(void)
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
+    rb_define_method(rb_cBasicObject, "!@", rb_obj_not, 0);
+    rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
@@ -2319,12 +2361,11 @@ Init_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1); 
-    rb_define_method(rb_mKernel, "=~", rb_obj_pattern_match, 1);
-
+    rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
+    rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
-
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);

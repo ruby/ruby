@@ -1796,11 +1796,6 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 			 LABEL *then_label, LABEL *else_label)
 {
     switch (nd_type(cond)) {
-      case NODE_NOT:
-	compile_branch_condition(iseq, ret, cond->nd_body, else_label,
-				 then_label);
-	break;
-
       case NODE_AND:
 	{
 	    LABEL *label = NEW_LABEL(nd_line(cond));
@@ -3207,14 +3202,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	COMPILE_(ret, "nd_2nd", node->nd_2nd, poped);
 	ADD_LABEL(ret, end_label);
-	break;
-      }
-      case NODE_NOT:{
-	COMPILE(ret, "value", node->nd_body);
-	ADD_INSN(ret, nd_line(node), putnot);
-	if (poped) {
-	    ADD_INSN(ret, nd_line(node), pop);
-	}
 	break;
       }
 
