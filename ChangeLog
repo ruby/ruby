@@ -1,7 +1,12 @@
+Sun Dec  9 14:59:15 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h (CHECK_STACK_OVERFLOW): reserve frame size.
+	  [ruby-dev:32485]
+
 Sun Dec  9 14:38:25 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_thread_mark): use rb_gc_mark_maybe() for
-	  VM stack specified by mark_stack_len.
+	  VM stack specified by mark_stack_len.  [ruby-dev:32462]
 
 	* insnhelper.ci: clear vm stack extended by opt value.
 

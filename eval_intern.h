@@ -187,7 +187,7 @@ char *strrchr _((const char *, const char));
 }
 
 #define CHECK_STACK_OVERFLOW(cfp, margin) do \
-  if (((VALUE *)(cfp)->sp) + (margin) >= ((VALUE *)cfp)) { \
+  if (((VALUE *)(cfp)->sp) + (margin) + sizeof(rb_control_frame_t) >= ((VALUE *)cfp)) { \
       rb_exc_raise(sysstack_error); \
   } \
 while (0)
