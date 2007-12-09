@@ -2971,7 +2971,7 @@ rb_str_inspect(VALUE str)
 escape_codepoint:
             for (q = p-n; q < p; q++) {
                 s = buf;
-                sprintf(buf, "\\%03o", *q & 0377);
+                sprintf(buf, "\\x%02x", *q & 0377);
                 while (*s) {
                     str_cat_char(result, *s++, enc);
                 }
@@ -3083,7 +3083,7 @@ rb_str_dump(VALUE str)
 	}
 	else {
 	    *q++ = '\\';
-	    sprintf(q, "%03o", c&0xff);
+	    sprintf(q, "x%02x", c&0xff);
 	    q += 3;
 	}
     }

@@ -259,7 +259,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	    else if (!rb_enc_isspace(c, enc)) {
 		char b[8];
 
-		sprintf(b, "\\%03o", c);
+		sprintf(b, "\\x%02x", c);
 		rb_str_buf_cat(str, b, 4);
 	    }
 	    else {

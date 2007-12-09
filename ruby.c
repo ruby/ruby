@@ -863,7 +863,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		}
 		else {
                     rb_raise(rb_eRuntimeError,
-			"invalid option -\\%03o  (-h will show valid options)",
+			"invalid option -\\x%02x  (-h will show valid options)",
                         (int)(unsigned char)*s);
 		}
 	    }

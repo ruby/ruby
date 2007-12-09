@@ -444,7 +444,7 @@ class TestString < Test::Unit::TestCase
 
   def test_dump
     a= S("Test") << 1 << 2 << 3 << 9 << 13 << 10
-    assert_equal(S('"Test\\001\\002\\003\\t\\r\\n"'), a.dump)
+    assert_equal(S('"Test\\x01\\x02\\x03\\t\\r\\n"'), a.dump)
   end
 
   def test_dup

@@ -37,7 +37,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_to_s
-    assert_equal '(?-mix:\000)', Regexp.new("\0").to_s
+    assert_equal '(?-mix:\x00)', Regexp.new("\0").to_s
   end
 
   def test_union

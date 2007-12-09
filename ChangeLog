@@ -1,3 +1,20 @@
+Mon Dec 10 06:44:47 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_expr_str): use \xHH instead of \OOO.
+
+	* regerror.c (to_ascii): ditto.
+	  (onig_snprintf_with_pattern): ditto.
+	  (onig_snprintf_with_pattern): ditto.
+
+	* string.c (rb_str_inspect): ditto.
+	  (rb_str_dump): ditto.
+
+	* parse.y (parser_yylex): ditto.
+
+	* ruby.c (proc_options): ditto.
+
+	* file.c (rb_f_test): ditto.
+
 Mon Dec 10 06:41:00 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_names): new method Regexp#names.

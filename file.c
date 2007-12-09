@@ -3486,7 +3486,7 @@ rb_f_test(int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "unknown command ?%c", cmd);
     }
     else {
-	rb_raise(rb_eArgError, "unknown command ?\\%03o", cmd);
+	rb_raise(rb_eArgError, "unknown command ?\\x%02x", cmd);
     }
     return Qnil;		/* not reached */
 }
