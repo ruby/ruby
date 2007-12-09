@@ -1,3 +1,8 @@
+Sun Dec  9 12:39:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb (read_multipart): exclude blanks from header values.
+	  [ruby-list:44327]
+
 Wed Dec  5 23:38:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_each): followed step_i change.
