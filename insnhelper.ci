@@ -114,6 +114,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     else {
 	VALUE * const dst = argv;
 	int opt_pc = 0;
+
 	th->mark_stack_len = iseq->arg_size;
 
 	/* mandatory */
@@ -152,6 +153,10 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 		opt_pc = iseq->arg_opt_table[opts]; /* no opt */
 	    }
 	    else {
+		int i;
+		for (i = argc; i<opts; i++) {
+		    dst[i + m] = Qnil;
+		}
 		opt_pc = iseq->arg_opt_table[argc];
 		argc = 0;
 	    }
@@ -190,6 +195,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 	    dst[iseq->arg_block] = blockval; /* Proc or nil */
 	}
+
 	th->mark_stack_len = 0;
 	return opt_pc;
     }
@@ -423,14 +429,13 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 {
     rb_iseq_t *iseq;
     int opt_pc, i;
-    VALUE *rsp = cfp->sp - argc;
-    VALUE *sp;
+    VALUE *sp, *rsp = cfp->sp - argc;
 
     /* TODO: eliminate it */
     GetISeqPtr(iseqval, iseq);
+    sp = rsp + iseq->arg_size;
 
     opt_pc = vm_callee_setup_arg(th, iseq, argc, rsp, &blockptr);
-    sp = rsp + iseq->arg_size;
 
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max + 0x10);
@@ -778,7 +783,6 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 	    }
 
 	    argv[iseq->arg_block] = procval;
-	    th->mark_stack_len = iseq->arg_block + 1;
 	}
 
 	th->mark_stack_len = 0;

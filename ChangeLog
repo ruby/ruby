@@ -1,3 +1,10 @@
+Sun Dec  9 14:38:25 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_thread_mark): use rb_gc_mark_maybe() for
+	  VM stack specified by mark_stack_len.
+
+	* insnhelper.ci: clear vm stack extended by opt value.
+
 Sun Dec  9 14:08:47 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (FilePathStringValue): defined.  similar to

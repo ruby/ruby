@@ -1616,14 +1616,15 @@ rb_thread_mark(void *ptr)
 	th = ptr;
 	if (th->stack) {
 	    VALUE *p = th->stack;
-	    VALUE *sp = th->cfp->sp + th->mark_stack_len;
+	    VALUE *sp = th->cfp->sp;
 	    rb_control_frame_t *cfp = th->cfp;
-	    rb_control_frame_t *limit_cfp =
-	      (void *)(th->stack + th->stack_size);
+	    rb_control_frame_t *limit_cfp = (void *)(th->stack + th->stack_size);
 
 	    while (p < sp) {
 		rb_gc_mark(*p++);
 	    }
+	    rb_gc_mark_locations(p, p + th->mark_stack_len);
+
 	    while (cfp != limit_cfp) {
 		rb_gc_mark(cfp->proc);
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
