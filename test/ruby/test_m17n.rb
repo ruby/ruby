@@ -446,6 +446,16 @@ class TestM17N < Test::Unit::TestCase
     #assert_raise(SyntaxError) { s1, s2 = u('\xc2'), u('\xa1'); /#{s1}#{s2}/ }
   end
 
+  def test_regexp_unicode
+    assert_nothing_raised { eval '/\u{0}/' }
+    assert_nothing_raised { eval '/\u{D7FF}/' }
+    assert_raise(SyntaxError) { eval '/\u{D800}/' }
+    assert_raise(SyntaxError) { eval '/\u{DFFF}/' }
+    assert_nothing_raised { eval '/\u{E000}/' }
+    assert_nothing_raised { eval '/\u{10FFFF}/' }
+    assert_raise(SyntaxError) { eval '/\u{110000}/' }
+  end
+
   def test_regexp_mixed_unicode
     assert_raise(SyntaxError) { eval(a(%{/\xc2\xa0\\u{6666}/})) }
     assert_raise(SyntaxError) { eval(e(%{/\xc2\xa0\\u{6666}/})) }

@@ -1425,9 +1425,22 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
 }
 
 static int
+check_unicode_range(unsigned long code, onig_errmsg_buffer err)
+{
+    if ((0xd800 <= code && code <= 0xdfff) || /* Surrogates */
+        0x10ffff < code) {
+        strcpy(err, "invalid Unicode range");
+        return -1;
+    }
+    return 0;
+}
+
+static int
 append_utf8(unsigned long uv,
         VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
 {
+    if (check_unicode_range(uv, err) != 0)
+        return -1;
     if (uv < 0x80) {
         char escbuf[5];
         snprintf(escbuf, sizeof(escbuf), "\\x%02x", (int)uv);
@@ -1465,10 +1478,6 @@ unescape_unicode_list(const char **pp, const char *end,
         if (len == 0)
             break;
         if (6 < len) { /* max 10FFFF */
-            strcpy(err, "invalid Unicode range");
-            return -1;
-        }
-        if (0x10ffff < code) {
             strcpy(err, "invalid Unicode range");
             return -1;
         }
