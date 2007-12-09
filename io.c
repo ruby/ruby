@@ -3799,7 +3799,8 @@ rb_f_open(int argc, VALUE *argv)
 	    redirect = Qtrue;
 	}
 	else {
-	    VALUE tmp = rb_check_string_type(argv[0]);
+	    VALUE tmp = argv[0];
+	    FilePathValue(tmp);
 	    if (NIL_P(tmp)) {
 		redirect = Qtrue;
 	    }

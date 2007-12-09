@@ -1,3 +1,11 @@
+Sun Dec  9 12:18:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_get_path): use the original object if to_path method is
+	  not defined.  [ruby-dev:32473]
+
+	* io.c (rb_f_open): call to_open on non-string objects, instead of
+	  to_str.  [ruby-dev:32473]
+
 Sun Dec  9 12:12:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_find): returns true if no characters to be removed is

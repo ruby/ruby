@@ -111,6 +111,9 @@ rb_get_path(VALUE obj)
     if (rb_respond_to(obj, to_path)) {
 	tmp = rb_funcall(obj, to_path, 0, 0);
     }
+    else {
+	tmp = obj;
+    }
   exit:
     StringValueCStr(tmp);
     if (obj != tmp) {
