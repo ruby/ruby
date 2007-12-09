@@ -95,13 +95,13 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
-VALUE
-rb_get_path(VALUE obj)
+static VALUE
+rb_get_path_check(VALUE obj, int check)
 {
     VALUE tmp;
     static ID to_path;
 
-    rb_check_safe_obj(obj);
+    if (check) rb_check_safe_obj(obj);
     tmp = rb_check_string_type(obj);
     if (!NIL_P(tmp)) goto exit;
 
@@ -116,10 +116,22 @@ rb_get_path(VALUE obj)
     }
   exit:
     StringValueCStr(tmp);
-    if (obj != tmp) {
+    if (check && obj != tmp) {
 	rb_check_safe_obj(tmp);
     }
     return rb_str_new4(tmp);
+}
+
+VALUE
+rb_get_path_no_checksafe(VALUE obj)
+{
+    return rb_get_path_check(obj, 0);
+}
+
+VALUE
+rb_get_path(VALUE obj)
+{
+    return rb_get_path_check(obj, 1);
 }
 
 static long
@@ -2809,7 +2821,7 @@ rb_file_s_basename(int argc, VALUE *argv)
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
 	StringValue(fext);
     }
-    StringValue(fname);
+    FilePathStringValue(fname);
     if (RSTRING_LEN(fname) == 0 || !*(name = RSTRING_PTR(fname)))
 	return fname;
     name = skipprefix(name);
@@ -2874,6 +2886,7 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
     const char *name, *root, *p;
     VALUE dirname;
 
+    FilePathStringValue(fname);
     name = StringValueCStr(fname);
     root = skiproot(name);
 #ifdef DOSISH_UNC
@@ -2926,6 +2939,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     char *name, *p, *e;
     VALUE extname;
 
+    FilePathStringValue(fname);
     name = StringValueCStr(fname);
     p = strrdirsep(name);	/* get the last path component */
     if (!p)
@@ -2972,7 +2986,7 @@ rb_file_s_path(VALUE klass, VALUE fname)
 static VALUE
 rb_file_s_split(VALUE klass, VALUE path)
 {
-    StringValue(path);		/* get rid of converting twice */
+    FilePathStringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
 }
 
@@ -3027,7 +3041,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    }
 	    break;
 	  default:
-	    FilePathValue(tmp);
+	    FilePathStringValue(tmp);
 	}
 	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep)) {

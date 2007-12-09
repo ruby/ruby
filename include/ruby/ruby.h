@@ -326,6 +326,9 @@ void rb_check_safe_str(VALUE);
 VALUE rb_get_path(VALUE);
 #define FilePathValue(v) ((v) = rb_get_path(v))
 
+VALUE rb_get_path_no_checksafe(VALUE);
+#define FilePathStringValue(v) ((v) = rb_get_path_no_checksafe(v))
+
 void rb_secure(int);
 int rb_safe_level(void);
 void rb_set_safe_level(int);

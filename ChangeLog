@@ -1,3 +1,18 @@
+Sun Dec  9 14:08:47 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (FilePathStringValue): defined.  similar to
+	  FilePathValue but no taint check.
+
+	* file.c (rb_get_path_no_checksafe): implementation of
+	  FilePathStringValue.
+	  (rb_file_s_basename): use FilePathStringValue.
+	  (rb_file_s_dirname): ditto.
+	  (rb_file_s_extname): ditto.
+	  (rb_file_s_split): ditto.
+	  (rb_file_join): ditto.
+
+	* dir.c (file_s_fnmatch): ditto.
+
 Sun Dec  9 12:49:34 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (append_utf8): check unicode range.

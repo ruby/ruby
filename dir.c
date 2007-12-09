@@ -1849,7 +1849,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 	flags = 0;
 
     StringValue(pattern);
-    StringValue(path);
+    FilePathStringValue(path);
 
     if (fnmatch(RSTRING_PTR(pattern), RSTRING_PTR(path), flags) == 0)
 	return Qtrue;

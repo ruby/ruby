@@ -475,4 +475,32 @@ class TestPathname < Test::Unit::TestCase
   def test_kernel_pathname
     assert_equal(Pathname.new("a"), Pathname("a"))
   end
+
+  def test_file_basename
+    assert_equal("bar", File.basename(Pathname.new("foo/bar")))
+  end
+
+  def test_file_dirname
+    assert_equal("foo", File.dirname(Pathname.new("foo/bar")))
+  end
+
+  def test_file_split
+    assert_equal(["foo", "bar"], File.split(Pathname.new("foo/bar")))
+  end
+
+  def test_file_extname
+    assert_equal(".baz", File.extname(Pathname.new("bar.baz")))
+  end
+
+  def test_file_fnmatch
+    assert(File.fnmatch("*.*", Pathname.new("bar.baz")))
+  end
+
+  def test_file_join
+    assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar")))
+    lambda {
+      $SAFE = 1
+      assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
+    }.call
+  end
 end
