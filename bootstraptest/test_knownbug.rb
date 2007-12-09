@@ -63,3 +63,61 @@ assert_equal 'ok', %q{
   s1.casecmp(s2) == 0 ? :ng : :ok
 }
 
+assert_equal 'EUC-JP', %q{ ("\xc2\xa1 %s".force_encoding("EUC-JP") % "foo").encoding.name }
+assert_equal 'true', %q{ "\xa1\xa2\xa3\xa4".force_encoding("euc-jp")["\xa2\xa3".force_encoding("euc-jp")] == nil }
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s["\xb0\xa3"] = "foo"
+    :ng
+  rescue IndexError
+    :ok
+  end
+}
+
+assert_equal 'EUC-JP', %q{ "\xa3\xb0".force_encoding("EUC-JP").center(10).encoding.name }
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s.chomp("\xa3\xb4".force_encoding("shift_jis"))
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s.count("\xa3\xb0".force_encoding("ascii-8bit"))
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s.delete("\xa3\xb2".force_encoding("ascii-8bit")) 
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s.each_line("\xa3\xb1".force_encoding("ascii-8bit")) {|l| }    
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal 'true', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  s.gsub(/\xa3\xb1/e, "z") == "\xa3\xb0z\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+}
