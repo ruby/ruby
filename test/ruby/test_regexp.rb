@@ -2,7 +2,9 @@ require 'test/unit'
 
 class TestRegexp < Test::Unit::TestCase
   def test_ruby_dev_24643
-    assert_nothing_raised("[ruby-dev:24643]") { /(?:(?:[a]*[a])?b)*a*$/ =~ "aabaaca" }
+    assert_nothing_raised("[ruby-dev:24643]") {
+      /(?:(?:[a]*[a])?b)*a*$/ =~ "aabaaca"
+    }
   end
 
   def test_ruby_talk_116455
@@ -58,7 +60,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(8, m.end(:foo))
     assert_equal([5,8], m.offset(:foo))
 
-    assert_equal("aaa [amp] yyy", "aaa &amp; yyy".sub(/&(?<foo>.*?);/, '[\k<foo>]'))
+    assert_equal("aaa [amp] yyy",
+      "aaa &amp; yyy".sub(/&(?<foo>.*?);/, '[\k<foo>]'))
 
     assert_equal('#<MatchData "&amp; y" foo:"amp">',
       /&(?<foo>.*?); (y)/.match("aaa &amp; yyy").inspect)
@@ -72,9 +75,29 @@ class TestRegexp < Test::Unit::TestCase
     /(?<id>[A-Za-z_]+)/ =~ "!abc"
     assert_equal("abc", Regexp.last_match(:id))
 
-    /a/ =~ "b"
+    /a/ =~ "b" # doesn't match.
     assert_equal(nil, Regexp.last_match)
     assert_equal(nil, Regexp.last_match(1))
     assert_equal(nil, Regexp.last_match(:foo))
+
+    assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.names)
+    assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.names)
+    assert_equal([], /(.)(.)/.names)
+
+    assert_equal(["foo", "bar"], /(?<foo>.)(?<bar>.)/.match("ab").names)
+    assert_equal(["foo"], /(?<foo>.)(?<foo>.)/.match("ab").names)
+    assert_equal([], /(.)(.)/.match("ab").names)
+
+    assert_equal({"foo"=>[1], "bar"=>[2]},
+                 /(?<foo>.)(?<bar>.)/.named_captures)
+    assert_equal({"foo"=>[1, 2]},
+                 /(?<foo>.)(?<foo>.)/.named_captures)
+    assert_equal({}, /(.)(.)/.named_captures)
+  end
+
+  def test_match_regexp
+    r = /./
+    m = r.match("a")
+    assert_equal(r, m.regexp)
   end
 end

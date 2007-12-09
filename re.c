@@ -523,6 +523,84 @@ rb_reg_options_m(VALUE re)
     return INT2NUM(options);
 }
 
+static int
+reg_names_iter(const OnigUChar *name, const OnigUChar *name_end,
+          int back_num, int *back_refs, OnigRegex regex, void *arg)
+{
+    VALUE ary = (VALUE)arg;
+    rb_ary_push(ary, rb_str_new((const char *)name, name_end-name));
+    return 0;
+}
+
+/*
+ * call-seq:
+ *    rxp.names   => [name1, name2, ...]
+ *
+ * Returns a list of names of captures as an array of strings.
+ *
+ *     /(?<foo>.)(?<bar>.)(?<baz>.)/.names
+ *     #=> ["foo", "bar", "baz"]
+ *
+ *     /(?<foo>.)(?<foo>.)/.names
+ *     #=> ["foo"]
+ *
+ *     /(.)(.)/.names' 
+ *     #=> []
+ */
+
+static VALUE
+rb_reg_names(VALUE re)
+{
+    VALUE ary = rb_ary_new();
+    onig_foreach_name(RREGEXP(re)->ptr, reg_names_iter, (void*)ary);
+    return ary;
+}
+
+static int
+reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
+          int back_num, int *back_refs, OnigRegex regex, void *arg)
+{
+    VALUE hash = (VALUE)arg;
+    VALUE ary = rb_ary_new2(back_num);
+    int i;
+
+    for(i = 0; i < back_num; i++)
+        rb_ary_store(ary, i, INT2NUM(back_refs[i]));
+
+    rb_hash_aset(hash, rb_str_new((const char*)name, name_end-name),ary);
+
+    return 0;
+}
+
+/*
+ * call-seq:
+ *    rxp.named_captures  => hash
+ *
+ * Returns a hash representing information about named captures of <i>rxp</i>.
+ *
+ * A key of the hash is a name of the named captures.
+ * A value of the hash is an array which is list of indexes of corresponding
+ * named captures.
+ * 
+ *    /(?<foo>.)(?<bar>.)/.named_captures
+ *    #=> {"foo"=>[1], "bar"=>[2]}
+ *
+ *    /(?<foo>.)(?<foo>.)/.named_captures'
+ *    #=> {"foo"=>[1, 2]}
+ *
+ * If there are no named captures, an empty hash is returned.
+ *
+ *    /(.)(.)/.named_captures' 
+ *    #=> {}
+ */
+
+static VALUE
+rb_reg_named_captures(VALUE re)
+{
+    VALUE hash = rb_hash_new();
+    onig_foreach_name(RREGEXP(re)->ptr, reg_named_captures_iter, (void*)hash);
+    return hash;
+}
 
 static Regexp*
 make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_buffer err)
@@ -602,6 +680,42 @@ match_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
+
+/*
+ * call-seq:
+ *    mtch.regexp   => regexp
+ *
+ * Returns the regexp.
+ *
+ *     m = /a.*b/.match("abc")
+ *     m.regexp #=> /a.*b/
+ */
+
+static VALUE
+match_regexp(VALUE match)
+{
+    return RMATCH(match)->regexp;
+}
+
+/*
+ * call-seq:
+ *    mtch.names   => [name1, name2, ...]
+ *
+ * Returns a list of names of captures as an array of strings.
+ * It is same as mtch.regexp.names.
+ *
+ *     /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").names
+ *     #=> ["foo", "bar", "baz"]
+ *
+ *     m = /(?<x>.)(?<y>.)?/.match("a") #=> #<MatchData "a" x:"a" y:nil>
+ *     m.names                          #=> ["x", "y"]
+ */
+
+static VALUE
+match_names(VALUE match)
+{
+    return rb_reg_names(RMATCH(match)->regexp);
+}
 
 /*
  *  call-seq:
@@ -1362,11 +1476,12 @@ match_inspect(VALUE match)
     int i;
     int num_regs = RMATCH(match)->regs->num_regs;
     struct backref_name_tag *names;
+    VALUE regexp = RMATCH(match)->regexp;
 
     names = ALLOCA_N(struct backref_name_tag, num_regs);
     MEMZERO(names, struct backref_name_tag, num_regs);
 
-    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr,
+    onig_foreach_name(RREGEXP(regexp)->ptr,
             match_inspect_name_iter, names);
 
     str = rb_str_buf_new2("#<");
@@ -2818,6 +2933,8 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "options", rb_reg_options_m, 0);
     rb_define_method(rb_cRegexp, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cRegexp, "fixed_encoding?", rb_reg_fixed_encoding_p, 0);
+    rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
+    rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(ONIG_OPTION_EXTEND));
@@ -2830,6 +2947,8 @@ Init_Regexp(void)
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
     rb_define_method(rb_cMatch, "initialize_copy", match_init_copy, 1);
+    rb_define_method(rb_cMatch, "regexp", match_regexp, 0);
+    rb_define_method(rb_cMatch, "names", match_names, 0);
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);

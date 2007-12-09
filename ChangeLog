@@ -1,3 +1,12 @@
+Mon Dec 10 06:41:00 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_names): new method Regexp#names.
+	  (rb_reg_named_captures): new method Regexp#named_captures
+	  (match_regexp): new method MatchData#regexp.
+	  (match_names): new method MatchData#names.
+
+	* lib/pp.rb (MatchData#pretty_print): show names of named captures.
+
 Mon Dec 10 01:35:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (expr): redefinable not (!) operator.

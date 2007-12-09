@@ -473,10 +473,24 @@ end
 
 class MatchData
   def pretty_print(q)
+    nc = []
+    self.regexp.named_captures.each {|name, indexes|
+      indexes.each {|i| nc[i] = name }
+    }
     q.object_group(self) {
       q.breakable
-      q.seplist(1..self.size, lambda { q.breakable }) {|i|
-        q.pp self[i-1]
+      q.seplist(0...self.size, lambda { q.breakable }) {|i|
+        if i == 0
+          q.pp self[i]
+        else
+          if nc[i]
+            q.text nc[i]
+          else
+            q.pp i
+          end
+          q.text ':'
+          q.pp self[i]
+        end
       }
     }
   end
