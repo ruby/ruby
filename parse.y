@@ -5860,7 +5860,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 	    }
 	}
 	else {
-	    for (vbeg = str; len > 0 && *str != '"' && !ISSPACE(*str); --len, str++);
+	    for (vbeg = str; len > 0 && *str != '"' && *str != ';' && !ISSPACE(*str); --len, str++);
 	    vend = str;
 	}
 	while (len > 0 && (*str == ';' || ISSPACE(*str))) --len, str++;

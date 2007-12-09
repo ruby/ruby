@@ -1,3 +1,7 @@
+Sun Dec  9 12:03:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): delimits with a semicolon.
+
 Sun Dec  9 11:29:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): get rid of segfaults when has mulitbytes but
