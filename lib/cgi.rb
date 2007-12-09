@@ -978,7 +978,7 @@ class CGI
     def read_multipart(boundary, content_length)
       params = Hash.new([])
       boundary = "--" + boundary
-      quoted_boundary = Regexp.quote(boundary, "n")
+      quoted_boundary = Regexp.quote(boundary)
       buf = ""
       bufsize = 10 * 1024
       boundary_end=""
@@ -1029,13 +1029,13 @@ class CGI
           if "--" == $2
             content_length = -1
           end
-         boundary_end = $2.dup
+          boundary_end = $2.dup
           ""
         end
 
         body.rewind
 
-        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;]*))/ni.match(head)
+        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"\s])*)"|([^;\s]*))/ni.match(head)
 	filename = ($1 or $2 or "")
 	if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
 	    /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and
@@ -1043,7 +1043,7 @@ class CGI
 	  filename = CGI::unescape(filename)
 	end
         
-        /Content-Type: (.*)/ni.match(head)
+        /Content-Type: ([^\s]*)/ni.match(head)
         content_type = ($1 or "")
 
         (class << body; self; end).class_eval do
@@ -1052,7 +1052,7 @@ class CGI
           define_method(:content_type) {content_type.dup.taint}
         end
 
-        /Content-Disposition:.* name="?([^\";]*)"?/ni.match(head)
+        /Content-Disposition:.* name="?([^\";\s]*)"?/ni.match(head)
         name = ($1 || "").dup
 
         if params.has_key?(name)
