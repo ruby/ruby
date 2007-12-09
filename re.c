@@ -291,11 +291,16 @@ rb_reg_desc(const char *s, long len, VALUE re)
 
 /*
  *  call-seq:
- *     rxp.source   => str
+ *      rxp.source   => str
  *
  *  Returns the original string of the pattern.
  *
- *     /ab+c/ix.source   #=> "ab+c"
+ *      /ab+c/ix.source #=> "ab+c"
+ *
+ *  Note that escape sequences are retained as is.
+ *
+ *     /\x20\+/.source  #=> "\\x20\\+"
+ *
  */
 
 static VALUE
@@ -317,7 +322,8 @@ rb_reg_source(VALUE re)
  * <code>#inspect</code> actually produces the more natural version of
  * the string than <code>#to_s</code>.
  *
- *     /ab+c/ix.inspect         #=> /ab+c/ix
+ *      /ab+c/ix.inspect        #=> "/ab+c/ix"
+ *
 */
 
 static VALUE
@@ -340,12 +346,12 @@ rb_reg_inspect(VALUE re)
  *  differ, as the example shows).  <code>Regexp#inspect</code> produces a
  *  generally more readable version of <i>rxp</i>.
  *
- *     r1 = /ab+c/ix         #=> /ab+c/ix
- *     s1 = r1.to_s          #=> "(?ix-m:ab+c)"
- *     r2 = Regexp.new(s1)   #=> /(?ix-m:ab+c)/
- *     r1 == r2              #=> false
- *     r1.source             #=> "ab+c"
- *     r2.source             #=> "(?ix-m:ab+c)"
+ *      r1 = /ab+c/ix           #=> /ab+c/ix
+ *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
+ *      r2 = Regexp.new(s1)     #=> /(?ix-m:ab+c)/
+ *      r1 == r2                #=> false
+ *      r1.source               #=> "ab+c"
+ *      r2.source               #=> "(?ix-m:ab+c)"
  */
 
 static VALUE
@@ -472,6 +478,10 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
  *     rxp.casefold?   => true or false
  *
  *  Returns the value of the case-insensitive flag.
+ *
+ *      /a/.casefold?           #=> false
+ *      /a/i.casefold?          #=> true
+ *      /(?i:a)/.casefold?      #=> false
  */
 
 static VALUE
@@ -497,10 +507,10 @@ rb_reg_casefold_p(VALUE re)
  *     Regexp::EXTENDED                    #=> 2
  *     Regexp::MULTILINE                   #=> 4
  *
- *     /cat/.options                       #=> 128
- *     /cat/ix.options                     #=> 131
- *     Regexp.new('cat', true).options     #=> 129
- *     Regexp.new('cat', 0, 's').options   #=> 384
+ *     /cat/.options                       #=> 0
+ *     /cat/ix.options                     #=> 3
+ *     Regexp.new('cat', true).options     #=> 1
+ *     /\xa1\xa2/e.options                 #=> 16
  *
  *     r = /cat/ix
  *     Regexp.new(r.source, r.options)     #=> /cat/ix
@@ -551,11 +561,10 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *
  *  <code>MatchData</code> is the type of the special variable <code>$~</code>,
  *  and is the type of the object returned by <code>Regexp#match</code> and
- *  <code>Regexp#last_match</code>. It encapsulates all the results of a pattern
+ *  <code>Regexp.last_match</code>. It encapsulates all the results of a pattern
  *  match, results normally accessed through the special variables
  *  <code>$&</code>, <code>$'</code>, <code>$`</code>, <code>$1</code>,
- *  <code>$2</code>, and so on. <code>Matchdata</code> is also known as
- *  <code>MatchingData</code>.
+ *  <code>$2</code>, and so on.
  *
  */
 
@@ -662,10 +671,11 @@ match_backref_number(VALUE match, VALUE backref)
  *
  *  Returns a two-element array containing the beginning and ending offsets of
  *  the <em>n</em>th match.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.offset(0)   #=> [1, 7]
- *     m.offset(4)   #=> [6, 7]
+ *     m.offset(0)      #=> [1, 7]
+ *     m.offset(4)      #=> [6, 7]
  *
  *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
  *     p m.offset(:foo) #=> [0, 1]
@@ -695,10 +705,11 @@ match_offset(VALUE match, VALUE n)
  *
  *  Returns the offset of the start of the <em>n</em>th element of the match
  *  array in the string.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.begin(0)   #=> 1
- *     m.begin(2)   #=> 2
+ *     m.begin(0)       #=> 1
+ *     m.begin(2)       #=> 2
  *
  *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
  *     p m.begin(:foo)  #=> 0
@@ -726,10 +737,11 @@ match_begin(VALUE match, VALUE n)
  *
  *  Returns the offset of the character immediately following the end of the
  *  <em>n</em>th element of the match array in the string.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.end(0)   #=> 7
- *     m.end(2)   #=> 3
+ *     m.end(0)         #=> 7
+ *     m.end(2)         #=> 3
  *
  *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
  *     p m.end(:foo)    #=> 1
@@ -762,25 +774,29 @@ rb_match_busy(VALUE match)
  *  call-seq:
  *     rxp.fixed_encoding?   => true or false
  *
- *  Returns true if rxp is only applicable to
- *  a string encoded as rxp.encoding.
+ *  Returns false if rxp is applicable to
+ *  a string with any ASCII compatible encoding.
+ *  Returns true otherwise.
  *
  *      r = /a/
  *      r.fixed_encoding?                               #=> false
  *      r =~ "\u{6666} a"                               #=> 2
  *      r =~ "\xa1\xa2 a".force_encoding("euc-jp")      #=> 2
+ *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /a/u
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> <Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 2
  *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /\u{6666}/
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> <Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 0
  *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ *      r =~ "abc".force_encoding("euc-jp")             #=> nil
  */
 
 static VALUE
@@ -1181,12 +1197,14 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *  of the matched backreferences (portions of the pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
  *     m[0]       #=> "HX1138"
  *     m[1, 2]    #=> ["H", "X"]
  *     m[1..3]    #=> ["H", "X", "113"]
  *     m[-3, 2]   #=> ["X", "113"]
  *
  *     m = /(?<foo>a+)b/.match("ccaaab")
+ *     m          #=> #<MatchData "aaab" foo:"aaa">
  *     m["foo"]   #=> "aaa"
  *     m[:foo]    #=> "aaa"
  */
@@ -1327,6 +1345,9 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *
  *     puts /(.)(.)(.)/.match("foo").inspect
  *     #=> #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *
+ *     puts /(.)(.)?(.)/.match("fo").inspect
+ *     #=> #<MatchData "fo" 1:"f" 2:nil 3:"o">
  *
  *     puts /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").inspect
  *     #=> #<MatchData "hog" foo:"h" bar:"o" baz:"g">
@@ -1951,6 +1972,7 @@ rb_reg_hash(VALUE re)
  *
  *     /abc/  == /abc/x   #=> false
  *     /abc/  == /abc/i   #=> false
+ *     /abc/  == /abc/n   #=> false
  *     /abc/u == /abc/n   #=> false
  */
 
@@ -1960,6 +1982,7 @@ rb_reg_equal(VALUE re1, VALUE re2)
     if (re1 == re2) return Qtrue;
     if (TYPE(re2) != T_REGEXP) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
+    if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP(re1)->ptr->options != RREGEXP(re2)->ptr->options) return Qfalse;
     if (RREGEXP(re1)->len != RREGEXP(re2)->len) return Qfalse;
     if (ENCODING_GET(re1) != ENCODING_GET(re2)) return Qfalse;
@@ -2016,6 +2039,7 @@ rb_reg_match_pos(VALUE re, VALUE str, long pos)
  *  Match---Matches <i>rxp</i> against <i>str</i>.
  *
  *     /at/ =~ "input data"   #=> 7
+ *     /ax/ =~ "input data"   #=> nil
  */
 
 VALUE
@@ -2165,14 +2189,12 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  more of the constants <code>Regexp::EXTENDED</code>,
  *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
  *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
- *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
- *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
- *  `E' = EUC, `s', `S' = SJIS, `u', `U' = UTF-8.
+ *  <code>nil</code>, the regexp will be case insensitive.
  *
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
  *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
- *     r4 = Regexp.new(r2)                        #=>n /cat/i
+ *     r4 = Regexp.new(r2)                        #=> /cat/i
  */
 
 static VALUE
@@ -2331,15 +2353,16 @@ rb_reg_quote(VALUE str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   => a_str
- *     Regexp.quote(str)    => a_str
+ *     Regexp.escape(str)   => string
+ *     Regexp.quote(str)    => string
  *
  *  Escapes any characters that would have special meaning in a regular
  *  expression. Returns a new escaped string, or self if no characters are
  *  escaped.  For any string,
- *  <code>Regexp.escape(<i>str</i>)=~<i>str</i></code> will be true.
+ *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
  *
- *     Regexp.escape('\\*?{}.')   #=> \\\\\*\?\{\}\.
+ *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
+ *
  */
 
 static VALUE
@@ -2373,8 +2396,14 @@ rb_check_regexp_type(VALUE re)
  *  Returns converted regexp or nil if <i>obj</i> cannot be converted
  *  for any reason.
  *
- *     Regexp.try_convert(/re/)      # => /re/
- *     Regexp.try_convert("re")      # => nil
+ *     Regexp.try_convert(/re/)         #=> /re/
+ *     Regexp.try_convert("re")         #=> nil
+ *
+ *     o = Object.new
+ *     Regexp.try_convert(o)            #=> nil
+ *     def o.to_regexp() /foo/ end
+ *     Regexp.try_convert(o)            #=> /foo/
+ *
  */
 static VALUE
 rb_reg_s_try_convert(VALUE dummy, VALUE re)
@@ -2696,18 +2725,24 @@ match_setter(VALUE val)
 /*
  *  call-seq:
  *     Regexp.last_match           => matchdata
- *     Regexp.last_match(fixnum)   => str
+ *     Regexp.last_match(n)        => str
  *
  *  The first form returns the <code>MatchData</code> object generated by the
  *  last successful pattern match. Equivalent to reading the global variable
- *  <code>$~</code>. The second form returns the nth field in this
+ *  <code>$~</code>. The second form returns the <i>n</i>th field in this
  *  <code>MatchData</code> object.
+ *  <em>n</em> can be a string or symbol to reference a named capture.
  *
- *     /c(.)t/ =~ 'cat'       #=> 0
- *     Regexp.last_match      #=> #<MatchData "cat" "a">
- *     Regexp.last_match(0)   #=> "cat"
- *     Regexp.last_match(1)   #=> "a"
- *     Regexp.last_match(2)   #=> nil
+ *     /c(.)t/ =~ 'cat'        #=> 0
+ *     Regexp.last_match       #=> #<MatchData "cat" "a">
+ *     Regexp.last_match(0)    #=> "cat"
+ *     Regexp.last_match(1)    #=> "a"
+ *     Regexp.last_match(2)    #=> nil
+ *
+ *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "var = val"
+ *     Regexp.last_match       #=> #<MatchData "var = val" lhs:"var" rhs:"val">
+ *     Regexp.last_match(:lhs) #=> "var"
+ *     Regexp.last_match(:rhs) #=> "val"
  */
 
 static VALUE
@@ -2716,7 +2751,11 @@ rb_reg_s_last_match(int argc, VALUE *argv)
     VALUE nth;
 
     if (rb_scan_args(argc, argv, "01", &nth) == 1) {
-	return rb_reg_nth_match(NUM2INT(nth), rb_backref_get());
+        VALUE match = rb_backref_get();
+        int n;
+        if (NIL_P(match)) return Qnil;
+        n = match_backref_number(match, nth);
+	return rb_reg_nth_match(n, match);
     }
     return match_getter();
 }

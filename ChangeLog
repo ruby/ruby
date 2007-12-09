@@ -1,3 +1,7 @@
+Sun Dec  9 22:31:36 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_s_last_match): accept named capture's name.
+
 Sun Dec  9 15:57:53 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (match_backref_number): new function for converting a backref
