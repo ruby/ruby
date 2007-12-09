@@ -57,7 +57,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(5, m.begin(:foo))
     assert_equal(8, m.end(:foo))
     assert_equal([5,8], m.offset(:foo))
-    #assert_equal(["amp"], m.values_at(:foo))
 
     assert_equal("aaa [amp] yyy", "aaa &amp; yyy".sub(/&(?<foo>.*?);/, '[\k<foo>]'))
 

@@ -666,6 +666,11 @@ match_backref_number(VALUE match, VALUE backref)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.offset(0)   #=> [1, 7]
  *     m.offset(4)   #=> [6, 7]
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+ *     p m.offset(:foo) #=> [0, 1]
+ *     p m.offset(:bar) #=> [2, 3]
+ *
  */
 
 static VALUE
@@ -694,6 +699,10 @@ match_offset(VALUE match, VALUE n)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.begin(0)   #=> 1
  *     m.begin(2)   #=> 2
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+ *     p m.begin(:foo)  #=> 0
+ *     p m.begin(:bar)  #=> 2
  */
 
 static VALUE
@@ -721,6 +730,10 @@ match_begin(VALUE match, VALUE n)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.end(0)   #=> 7
  *     m.end(2)   #=> 3
+ *
+ *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+ *     p m.end(:foo)    #=> 1
+ *     p m.end(:bar)    #=> 3
  */
 
 static VALUE
@@ -1284,11 +1297,15 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
  *
  * Returns a printable version of <i>mtch</i>.
  *
- *     /.$/ =~ "foo"; puts $~.inspect
+ *     puts /.$/.match("foo").inspect
  *     #=> #<MatchData "o">
  *
- *     /(.)(.)(.)/ =~ "foo"; puts $~.inspect
- *     #=> #<MatchData "foo" "f" "o" "o">
+ *     puts /(.)(.)(.)/.match("foo").inspect
+ *     #=> #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *
+ *     puts /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").inspect
+ *     #=> #<MatchData "hog" foo:"h" bar:"o" baz:"g">
+ *
  */
 
 static VALUE
