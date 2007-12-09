@@ -49,4 +49,27 @@ class TestRegexp < Test::Unit::TestCase
       :ok
     end
   end
+
+  def test_named_capture
+    m = /&(?<foo>.*?);/.match("aaa &amp; yyy")
+    assert_equal("amp", m["foo"])
+    assert_equal("amp", m[:foo])
+    assert_equal(5, m.begin(:foo))
+    assert_equal(8, m.end(:foo))
+    assert_equal([5,8], m.offset(:foo))
+    #assert_equal(["amp"], m.values_at(:foo))
+
+    assert_equal("aaa [amp] yyy", "aaa &amp; yyy".sub(/&(?<foo>.*?);/, '[\k<foo>]'))
+
+    assert_equal('#<MatchData "&amp; y" foo:"amp">',
+      /&(?<foo>.*?); (y)/.match("aaa &amp; yyy").inspect)
+    assert_equal('#<MatchData "&amp; y" 1:"amp" 2:"y">',
+      /&(.*?); (y)/.match("aaa &amp; yyy").inspect)
+    assert_equal('#<MatchData "&amp; y" foo:"amp" bar:"y">',
+      /&(?<foo>.*?); (?<bar>y)/.match("aaa &amp; yyy").inspect)
+    assert_equal('#<MatchData "&amp; y" foo:"amp" foo:"y">',
+      /&(?<foo>.*?); (?<foo>y)/.match("aaa &amp; yyy").inspect)
+
+    # MatchData#keys
+  end
 end

@@ -1,3 +1,13 @@
+Sun Dec  9 15:57:53 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (match_backref_number): new function for converting a backref
+	  name/number to an integer.
+	  (match_offset): use match_backref_number.
+	  (match_begin): ditto.
+	  (match_end): ditto.
+	  (name_to_backref_number): raise IndexError instead of RuntimeError.
+	  (match_inspect): show capture index.
+
 Sun Dec  9 14:59:15 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h (CHECK_STACK_OVERFLOW): reserve frame size.

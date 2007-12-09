@@ -621,6 +621,40 @@ match_sublen(VALUE str, int offset)
     return INT2FIX(i);
 }
 
+static int
+match_backref_number(VALUE match, VALUE backref)
+{
+    const char *name;
+    int num;
+
+    struct re_registers *regs = RMATCH(match)->regs;
+    VALUE regexp = RMATCH(match)->regexp;
+
+    switch(TYPE(backref)) {
+      default:
+        return NUM2INT(backref);
+
+      case T_SYMBOL:
+        name = rb_id2name(SYM2ID(backref));
+        break;
+
+      case T_STRING:
+        name = StringValueCStr(backref);
+        break;
+    }
+
+    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+              (const unsigned char*)name,
+              (const unsigned char*)name + strlen(name),
+              regs);
+
+    if (num < 1) {
+        rb_raise(rb_eIndexError, "undefined group name reference: %s", name);
+    }
+
+    return num;
+}
+
 
 /*
  *  call-seq:
@@ -637,7 +671,7 @@ match_sublen(VALUE str, int offset)
 static VALUE
 match_offset(VALUE match, VALUE n)
 {
-    int i = NUM2INT(n);
+    int i = match_backref_number(match, n);
 
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
@@ -665,7 +699,7 @@ match_offset(VALUE match, VALUE n)
 static VALUE
 match_begin(VALUE match, VALUE n)
 {
-    int i = NUM2INT(n);
+    int i = match_backref_number(match, n);
 
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
@@ -692,7 +726,7 @@ match_begin(VALUE match, VALUE n)
 static VALUE
 match_end(VALUE match, VALUE n)
 {
-    int i = NUM2INT(n);
+    int i = match_backref_number(match, n);
 
     if (i < 0 || RMATCH(match)->regs->num_regs <= i)
 	rb_raise(rb_eIndexError, "index %d out of matches", i);
@@ -1090,8 +1124,8 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
   }
   else {
     VALUE s = rb_str_new(name, (long )(name_end - name));
-    rb_raise(rb_eRuntimeError, "undefined group name reference: %s",
-                                StringValuePtr(s));
+    rb_raise(rb_eIndexError, "undefined group name reference: %s",
+                             StringValuePtr(s));
   }
 }
 
@@ -1225,6 +1259,25 @@ match_string(VALUE match)
     return RMATCH(match)->str;	/* str is frozen */
 }
 
+struct backref_name_tag {
+    const UChar *name;
+    long len;
+};
+
+static int
+match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
+          int back_num, int *back_refs, OnigRegex regex, void *arg0)
+{
+    struct backref_name_tag *arg = (struct backref_name_tag *)arg0;
+    int i;
+
+    for (i = 0; i < back_num; i++) {
+        arg[back_refs[i]].name = name;
+        arg[back_refs[i]].len = name_end - name;
+    }
+    return 0;
+}
+
 /*
  * call-seq:
  *    mtch.inspect   => str
@@ -1244,13 +1297,31 @@ match_inspect(VALUE match)
     char *cname = rb_obj_classname(match);
     VALUE str;
     int i;
+    int num_regs = RMATCH(match)->regs->num_regs;
+    struct backref_name_tag *names;
+
+    names = ALLOCA_N(struct backref_name_tag, num_regs);
+    MEMZERO(names, struct backref_name_tag, num_regs);
+
+    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr,
+            match_inspect_name_iter, names);
 
     str = rb_str_buf_new2("#<");
     rb_str_buf_cat2(str, cname);
 
-    for (i = 0; i < RMATCH(match)->regs->num_regs; i++) {
+    for (i = 0; i < num_regs; i++) {
         VALUE v;
         rb_str_buf_cat2(str, " ");
+        if (0 < i) {
+            if (names[i].name)
+                rb_str_buf_cat(str, (const char *)names[i].name, names[i].len);
+            else {
+                char buf[sizeof(i)*3+1];
+                snprintf(buf, sizeof(buf), "%d", i);
+                rb_str_buf_cat2(str, buf);
+            }
+            rb_str_buf_cat2(str, ":");
+        }
         v = rb_reg_nth_match(i, match);
         if (v == Qnil)
             rb_str_buf_cat2(str, "nil");
