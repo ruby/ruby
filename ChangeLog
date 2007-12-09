@@ -1,3 +1,7 @@
+Mon Dec 10 07:48:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): wrong token was generated.  [ruby-dev:32498]
+
 Mon Dec 10 06:44:47 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_expr_str): use \xHH instead of \OOO.

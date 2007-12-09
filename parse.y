@@ -6087,8 +6087,8 @@ parser_yylex(struct parser_params *parser)
 	c = nextc();
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    lex_state = EXPR_ARG;
-	    if (c != '@') {
-		pushback(c);
+	    if (c == '@') {
+		return '!';
 	    }
 	}
 	else {

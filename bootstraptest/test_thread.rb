@@ -169,9 +169,9 @@ assert_equal %q{11}, %q{
     Thread.current[:a]
   }.value + Thread.current[:a]
 }
-assert_equal %q{1000}, %q{
+assert_equal %q{100}, %q{
 begin
-  1000.times do |i|
+  100.times do |i|
     begin
       Thread.start(Thread.current) {|u| u.raise }
       raise
@@ -180,6 +180,6 @@ begin
     end
   end
 rescue
-  1000
+  100
 end
 }, '[ruby-dev:31371]'
