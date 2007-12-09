@@ -758,6 +758,31 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+/*
+ *  call-seq:
+ *     rxp.fixed_encoding?   => true or false
+ *
+ *  Returns true if rxp is only applicable to
+ *  a string encoded as rxp.encoding.
+ *
+ *      r = /a/
+ *      r.fixed_encoding?                               #=> false
+ *      r =~ "\u{6666} a"                               #=> 2
+ *      r =~ "\xa1\xa2 a".force_encoding("euc-jp")      #=> 2
+ *
+ *      r = /a/u
+ *      r.fixed_encoding?                               #=> true
+ *      r.encoding                                      #=> <Encoding:UTF-8>
+ *      r =~ "\u{6666} a"                               #=> 2
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ *
+ *      r = /\u{6666}/
+ *      r.fixed_encoding?                               #=> true
+ *      r.encoding                                      #=> <Encoding:UTF-8>
+ *      r =~ "\u{6666} a"                               #=> 0
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ */
+
 static VALUE
 rb_reg_fixed_encoding_p(VALUE re)
 {
