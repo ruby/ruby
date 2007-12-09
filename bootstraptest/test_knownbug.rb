@@ -121,3 +121,52 @@ assert_equal 'true', %q{
   s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
   s.gsub(/\xa3\xb1/e, "z") == "\xa3\xb0z\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
 }
+
+assert_equal 'false', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  s.include?("\xb0\xa3".force_encoding("euc-jp"))
+}
+
+assert_equal 'nil', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  s.index("\xb3\xa3".force_encoding("euc-jp"))
+}
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  s.insert(-1, "a")
+  :ok
+}
+
+assert_finish 1, %q{ "\xa3\xfe".force_encoding("euc-jp").next }
+
+assert_equal 'ok', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  begin
+    s.rindex("\xb1\xa3".force_encoding("ascii-8bit"))
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal 'true', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  s.split("\xa3\xb1".force_encoding("euc-jp")) == [
+    "\xa3\xb0".force_encoding("euc-jp")
+    "\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+  ]
+}
+
+assert_equal 'true', %q{
+  s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp") 
+  s.squeeze == "\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp") 
+}
+
+assert_normal_exit %q{
+  "\x81\x41".force_encoding("shift_jis").tr("A", "B")
+}
+
+assert_normal_exit %q{
+  "\x81\x41".force_encoding("shift_jis").tr_s("A", "B")
+}
