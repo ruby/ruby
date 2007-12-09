@@ -32,7 +32,7 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
-static ID id_eq, id_eql, id_inspect, id_init_copy;
+static ID id_eq, id_eql, id_match, id_inspect, id_init_copy;
 
 /*
  *  call-seq:
@@ -1033,7 +1033,8 @@ rb_obj_match(VALUE obj1, VALUE obj2)
 static VALUE
 rb_obj_not_match(VALUE obj1, VALUE obj2)
 {
-    return Qtrue;
+    VALUE result = rb_funcall(obj1, id_match, 1, obj2);
+    return RTEST(result) ? Qfalse : Qtrue;
 }
 
 
@@ -2501,6 +2502,7 @@ Init_Object(void)
 
     id_eq = rb_intern("==");
     id_eql = rb_intern("eql?");
+    id_match = rb_intern("=~");
     id_inspect = rb_intern("inspect");
     id_init_copy = rb_intern("initialize_copy");
 }
