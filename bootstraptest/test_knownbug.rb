@@ -162,11 +162,3 @@ assert_equal 'true', %q{
   s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp") 
   s.squeeze == "\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp") 
 }
-
-assert_normal_exit %q{
-  "\x81\x41".force_encoding("shift_jis").tr("A", "B")
-}
-
-assert_normal_exit %q{
-  "\x81\x41".force_encoding("shift_jis").tr_s("A", "B")
-}

@@ -483,4 +483,10 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\\xc2\\xa0/})) }
     assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa0/})) }
   end
+
+  def test_tr
+    s = "\x81\x41".force_encoding("shift_jis")
+    assert_equal(s.tr("A", "B"), s)
+    assert_equal(s.tr_s("A", "B"), s)
+  end
 end

@@ -3466,7 +3466,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		v = trans[c] >= 0 ? trans[c] : Qnil;
 	    }
 	    else {
-		v = rb_hash_aref(hash, INT2NUM(c));
+		v = hash ? rb_hash_aref(hash, INT2NUM(c)) : Qnil;
 	    }
 	    if (!NIL_P(v)) {
 		if (!cflag) {
@@ -3531,7 +3531,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		v = trans[c] >= 0 ? trans[c] : Qnil;
 	    }
 	    else {
-		v = rb_hash_aref(hash, INT2NUM(c));
+		v = hash ? rb_hash_aref(hash, INT2NUM(c)) : Qnil;
 	    }
 	    if (!NIL_P(v)) {
 		if (!cflag) {
