@@ -489,4 +489,9 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(s.tr("A", "B"), s)
     assert_equal(s.tr_s("A", "B"), s)
   end
+
+  def test_squeeze
+    s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+    assert_equal("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp"), s.squeeze)
+  end
 end

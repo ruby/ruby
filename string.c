@@ -3674,8 +3674,8 @@ tr_find(int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = INT2NUM(c);
 
-	if ((del && !NIL_P(rb_hash_aref(del, v))) &&
-	    (!nodel || NIL_P(rb_hash_aref(nodel, v)))) {
+	if ((!del || !NIL_P(rb_hash_lookup(del, v))) &&
+	    (!nodel || NIL_P(rb_hash_lookup(nodel, v)))) {
 	    return Qtrue;
 	}
 	return Qfalse;
