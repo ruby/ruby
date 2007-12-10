@@ -1895,8 +1895,18 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	return arg2;
     }
 
-    if (!FIXNUM_P(arg1) && rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 1)) {
-	goto delete_pos_len;
+    if (!FIXNUM_P(arg1)) {
+	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
+	  case Qtrue:
+	    /* valid range */
+	    goto delete_pos_len;
+	  case Qnil:
+	    /* invalid range */
+	    return Qnil;
+	  default:
+	    /* not a range */
+	    break;
+	}
     }
 
     return rb_ary_delete_at(ary, NUM2LONG(arg1));

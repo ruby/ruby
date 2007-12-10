@@ -1031,6 +1031,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[10, 11, 12], a.slice(9, 3))
     assert_equal(@cls[10, 11, 12], a.slice(-91, 3))
 
+    assert_nil(a.slice(-101, 2))
+
     assert_equal(@cls[1],   a.slice(0..0))
     assert_equal(@cls[100], a.slice(99..99))
     assert_equal(@cls[],    a.slice(100..100))
@@ -1041,6 +1043,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[10, 11, 12], a.slice(9..11))
     assert_equal(@cls[10, 11, 12], a.slice(-91..-89))
     
+    assert_nil(a.slice(-101..-1))
+
     assert_nil(a.slice(10, -3))
     # Ruby 1.8 feature change:
     # Array#slice[size..x] always returns [].
@@ -1071,6 +1075,18 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[1, 2, 3, 4, 5]
     assert_equal(nil, a.slice!(20))
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    assert_equal(nil, a.slice!(-6))
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    assert_equal(nil, a.slice!(-6..4))
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    assert_equal(nil, a.slice!(-6,2))
     assert_equal(@cls[1, 2, 3, 4, 5], a)
   end
 

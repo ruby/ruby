@@ -1,3 +1,8 @@
+Mon Dec 10 22:08:47 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): If an invalid range is given, do
+	  not raise an exception but return nil just like slice() does.
+
 Mon Dec 10 21:47:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_transcode): allow non-registered encodings.
