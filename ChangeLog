@@ -1,3 +1,24 @@
+Tue Dec 11 00:04:05 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): If an invalid negative index (<=
+	  -size) is given, do not raise an exception but return nil just
+	  like slice() does.
+
+	* test/ruby/test_array.rb (TestArray::test_slice,
+	  TestArray::test_slice!): Pull in test cases from trunk.
+
+Mon Dec 10 21:47:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_transcode): allow non-registered encodings.
+	  [ruby-dev:32520]
+
+Mon Dec 10 21:00:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_slice_bang): should return nil if position out
+	  of range.  a patch from Akinori MUSHA <knu AT iDaemons.org>.
+	  [ruby-dev:32518]
+
+
 Mon Dec 10 18:28:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::REGEXP::PATTERN): typo in REG_NAME

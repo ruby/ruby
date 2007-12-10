@@ -1963,14 +1963,25 @@ rb_ary_slice_bang(argc, argv, ary)
       delete_pos_len:
 	if (pos < 0) {
 	    pos = RARRAY(ary)->len + pos;
+	    if (pos < 0) return Qnil;
 	}
 	arg2 = rb_ary_subseq(ary, pos, len);
 	rb_ary_splice(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
 
-    if (!FIXNUM_P(arg1) && rb_range_beg_len(arg1, &pos, &len, RARRAY(ary)->len, 1)) {
-	goto delete_pos_len;
+    if (!FIXNUM_P(arg1)) {
+	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
+	  case Qtrue:
+	    /* valid range */
+	    goto delete_pos_len;
+	  case Qnil:
+	    /* invalid range */
+	    return Qnil;
+	  default:
+	    /* not a range */
+	    break;
+	}
     }
 
     return rb_ary_delete_at(ary, NUM2LONG(arg1));
