@@ -7626,20 +7626,24 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 static void
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
-     if (dyna_in_block()) {
-	 if (dvar_curr(name)) {
-	     yyerror("duplicated argument name");
-	 }
-	 else if (dvar_defined(name) || local_id(name)) {
-	     rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
-	     vtable_add(lvtbl->vars, name);
-	 }
-     }
-     else {
-	 if (local_id(name)) {
-	     yyerror("duplicated argument name");
-	 }
-     }
+    static ID uscore;
+
+    if (!uscore) uscore = rb_intern("_");
+    if (uscore == name) return;
+    if (dyna_in_block()) {
+	if (dvar_curr(name)) {
+	    yyerror("duplicated argument name");
+	}
+	else if (dvar_defined(name) || local_id(name)) {
+	    rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+	    vtable_add(lvtbl->vars, name);
+	}
+    }
+    else {
+	if (local_id(name)) {
+	    yyerror("duplicated argument name");
+	}
+    }
 }
 
 static void

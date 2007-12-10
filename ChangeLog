@@ -1,3 +1,7 @@
+Tue Dec 11 01:21:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (shadowing_lvar_gen): no duplicate error for "_".
+
 Mon Dec 10 22:08:47 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): If an invalid range is given, do
