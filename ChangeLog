@@ -1,3 +1,9 @@
+Tue Dec 11 01:51:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP::get): now supports gzip
+	  content-encoding.  a patch from Hugh Sasse <hgs AT dmu.ac.uk>.
+	  [ruby-core:13451]
+
 Tue Dec 11 01:21:21 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (shadowing_lvar_gen): no duplicate error for "_".

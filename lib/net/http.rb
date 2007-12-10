@@ -287,6 +287,13 @@ module Net   #:nodoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     @newimpl = true
+    begin
+      require 'zlib'
+      require 'stringio'  #for our purposes (unpacking gzip) lump these together
+      HAVE_ZLIB=true
+    rescue LoadError
+      HAVE_ZLIB=false
+    end
     # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
@@ -477,6 +484,7 @@ module Net   #:nodoc:
       @use_ssl = false
       @ssl_context = nil
       @enable_post_connection_check = true
+      @compression = nil
     end
 
     def inspect
@@ -740,7 +748,18 @@ module Net   #:nodoc:
     public
 
     # Gets data from +path+ on the connected-to host.
-    # +header+ must be a Hash like { 'Accept' => '*/*', ... }.
+    # +initheader+ must be a Hash like { 'Accept' => '*/*', ... },
+    # and it defaults to an empty hash.
+    # If +initheader+ doesn't have the key 'accept-encoding', then
+    # a value of "gzip;q=1.0,deflate;q=0.6,identity;q=0.3" is used,
+    # so that gzip compression is used in preference to deflate 
+    # compression, which is used in preference to no compression. 
+    # Ruby doesn't have libraries to support the compress (Lempel-Ziv)
+    # compression, so that is not supported.  The intent of this is
+    # to reduce bandwidth by default.   If this routine sets up
+    # compression, then it does the decompression also, removing
+    # the header as well to prevent confusion.  Otherwise
+    # it leaves the body as it found it. 
     #
     # In version 1.1 (ruby 1.6), this method returns a pair of objects,
     # a Net::HTTPResponse object and the entity body string.
@@ -774,10 +793,33 @@ module Net   #:nodoc:
     #       end
     #     }
     #
-    def get(path, initheader = nil, dest = nil, &block) # :yield: +body_segment+
+    def get(path, initheader = {}, dest = nil, &block) # :yield: +body_segment+
       res = nil
+      if HAVE_ZLIB
+        unless  initheader.keys.any?{|k| k.downcase == "accept-encoding"}
+          initheader["accept-encoding"] = "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+          @compression = true
+        end
+      end
       request(Get.new(path, initheader)) {|r|
-        r.read_body dest, &block
+        if r.key?("content-encoding") and @compression
+          @compression = nil # Clear it till next set.
+          the_body = r.read_body dest, &block
+          case r["content-encoding"]
+          when "gzip"
+            r.body= Zlib::GzipReader.new(StringIO.new(the_body)).read
+            r.delete("content-encoding")
+          when "deflate"
+            r.body= Zlib::Inflate.inflate(the_body);
+            r.delete("content-encoding")
+          when "identity"
+            ; # nothing needed
+          else 
+            ; # Don't do anything dramatic, unless we need to later
+          end
+        else
+          r.read_body dest, &block
+        end
         res = r
       }
       unless @newimpl
@@ -2259,6 +2301,12 @@ module Net   #:nodoc:
     #
     def body
       read_body()
+    end
+
+    # Because it may be necessary to modify the body, Eg, decompression
+    # this method facilitates that.
+    def body=(value)
+      @body = value
     end
 
     alias entity body   #:nodoc: obsolete
