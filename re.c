@@ -2124,13 +2124,15 @@ reg_operand(VALUE s, int check)
 }
 
 static long
-rb_reg_match_pos(VALUE re, VALUE str, long pos)
+reg_match_pos(VALUE re, VALUE *strp, long pos)
 {
+    VALUE str = *strp;
+
     if (NIL_P(str)) {
 	rb_backref_set(Qnil);
 	return -1;
     }
-    str = reg_operand(str, Qtrue);
+    *strp = str = reg_operand(str, Qtrue);
     if (pos != 0) {
 	if (pos < 0) {
 	    pos += RSTRING_LEN(str);
@@ -2156,7 +2158,7 @@ rb_reg_match_pos(VALUE re, VALUE str, long pos)
 VALUE
 rb_reg_match(VALUE re, VALUE str)
 {
-    long pos = rb_reg_match_pos(re, str, 0);
+    long pos = reg_match_pos(re, &str, 0);
     if (pos < 0) return Qnil;
     pos = rb_str_sublen(str, pos);
     return LONG2FIX(pos);
@@ -2270,7 +2272,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 	pos = 0;
     }
 
-    pos = rb_reg_match_pos(re, str, pos);
+    pos = reg_match_pos(re, &str, pos);
     if (pos < 0) {
 	rb_backref_set(Qnil);
 	return Qnil;

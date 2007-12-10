@@ -1,3 +1,8 @@
+Mon Dec 10 19:02:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_match): should calculate offset by converted
+	  operand.  [ruby-cvs:21416]
+
 Mon Dec 10 18:28:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::REGEXP::PATTERN): typo in REG_NAME
