@@ -157,3 +157,5 @@ assert_equal 'true', %q{
     "\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
   ]
 }, '[ruby-dev:32452]'
+
+assert_normal_exit %q{ // =~ :a }
