@@ -65,6 +65,8 @@ COMMONOBJS    = array.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
+		transcode.$(OBJEXT) \
+		transcode_data_iso_8859.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -530,7 +532,7 @@ sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
 st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}st.h {$(VPATH)}defines.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}encoding.h 
+  {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}encoding.h
 struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
@@ -540,6 +542,9 @@ thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
   {$(VPATH)}signal.h {$(VPATH)}st.h {$(VPATH)}dln.h
+transcode.$(OBJEXT): {$(VPATH)}transcode.c {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h  {$(VPATH)}encoding.h
+transcode_data_iso_8859.$(OBJEXT): {$(VPATH)}transcode_data_iso_8859.c {$(VPATH)}transcode_data.h
 cont.$(OBJEXT):  {$(VPATH)}cont.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \

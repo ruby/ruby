@@ -1,3 +1,8 @@
+Mon Dec 10 14:00:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* transcode.c: new file to provide encoding conversion features.
+	  code contributed by Martin Duerst.
+
 Mon Dec 10 13:50:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_search): return byte offset.  [ruby-dev:32452]

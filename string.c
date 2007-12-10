@@ -179,7 +179,7 @@ str_alloc(VALUE klass)
     return (VALUE)str;
 }
 
-static VALUE
+VALUE
 str_new(VALUE klass, const char *ptr, long len)
 {
     VALUE str;
@@ -625,7 +625,7 @@ str_modifiable(VALUE str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
 
-static int
+int
 str_independent(VALUE str)
 {
     str_modifiable(str);
