@@ -1,3 +1,9 @@
+Mon Dec 10 18:28:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::REGEXP::PATTERN): typo in REG_NAME
+	  regular expression.  a patch from Ueda Satoshi
+	  <s-ueda AT livedoor.jp>.  [ruby-dev:32514]
+
 Sun Dec  9 12:39:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (read_multipart): exclude blanks from header values.
