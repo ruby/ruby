@@ -1412,7 +1412,7 @@ static long
 rb_str_index(VALUE str, VALUE sub, long offset)
 {
     long pos;
-    char *s;
+    char *s, *sptr;
     long len, slen;
     rb_encoding *enc;
 
@@ -1424,12 +1424,27 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 	if (offset < 0) return -1;
     }
     if (len - offset < slen) return -1;
+    s = RSTRING_PTR(str);
+    if (offset) {
+	s = str_nth(s, RSTRING_END(str), offset, enc);
+	offset = s - RSTRING_PTR(str);
+    }
     if (slen == 0) return offset;
-    s = offset ? str_nth(RSTRING_PTR(str), RSTRING_END(str), offset, enc) : RSTRING_PTR(str);
     /* need proceed one character at a time */
-    pos = rb_memsearch(RSTRING_PTR(sub), RSTRING_LEN(sub),
-		       s, RSTRING_LEN(str)-(s - RSTRING_PTR(str)));
-    if (pos < 0) return pos;
+    sptr = RSTRING_PTR(sub);
+    slen = RSTRING_LEN(sub);
+    len = RSTRING_LEN(str) - offset;
+    for (;;) {
+	char *t;
+	pos = rb_memsearch(sptr, slen, s, len);
+	if (pos < 0) return pos;
+	t = (char *)onigenc_get_right_adjust_char_head(enc, (const UChar *)s,
+						       (const UChar *)s + pos);
+	if (t == s) break;
+	if ((len -= t - s) <= 0) return -1;
+	offset += t - s;
+	s = t;
+    }
     return pos + offset;
 }
 
@@ -4024,34 +4039,35 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     if (awk_split) {
 	char *ptr = RSTRING_PTR(str);
 	char *eptr = RSTRING_END(str);
+	char *bptr = ptr;
 	int skip = 1;
 	int c;
 
 	end = beg;
 	while (ptr < eptr) {
 	    c = rb_enc_codepoint(ptr, eptr, enc);
+	    ptr += rb_enc_mbclen(ptr, eptr, enc);
 	    if (skip) {
 		if (rb_enc_isspace(c, enc)) {
-		    beg++;
+		    beg = ptr - bptr;
 		}
 		else {
-		    end = beg+1;
+		    end = ptr - bptr;
 		    skip = 0;
 		    if (!NIL_P(limit) && lim <= i) break;
 		}
 	    }
 	    else {
 		if (rb_enc_isspace(c, enc)) {
-		    rb_ary_push(result, rb_str_substr(str, beg, end-beg));
+		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
 		    skip = 1;
-		    beg = end + 1;
+		    beg = ptr - bptr;
 		    if (!NIL_P(limit)) ++i;
 		}
 		else {
-		    end++;
+		    end = ptr - bptr;
 		}
 	    }
-	    ptr += rb_enc_codelen(c, enc);
 	}
     }
     else {
@@ -5114,14 +5130,13 @@ rb_str_partition(VALUE str, VALUE sep)
       failed:
 	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
     }
-    pos = rb_str_sublen(str, pos);
     if (regex) {
 	sep = rb_str_subpat(str, sep, 0);
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
     }
-    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+    return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
-		          rb_str_substr(str, pos+RSTRING_LEN(sep),
+		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
 					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
 }
 
@@ -5162,13 +5177,12 @@ rb_str_rpartition(VALUE str, VALUE sep)
     if (pos < 0) {
 	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);
     }
-    pos = rb_str_sublen(str, pos);
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
     }
-    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+    return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
-		          rb_str_substr(str, pos+RSTRING_LEN(sep),
+		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
 					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
 }
 

@@ -1,3 +1,14 @@
+Mon Dec 10 13:50:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_search): return byte offset.  [ruby-dev:32452]
+
+	* re.c (rb_reg_match, rb_reg_match2, rb_reg_match_m): convert byte
+	  offset to char index.
+
+	* string.c (rb_str_index): return byte offset.  [ruby-dev:32472]
+
+	* string.c (rb_str_split_m): calculate in byte offset.
+
 Mon Dec 10 09:56:29 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_neq.rb, bm_vm1_not.rb: added.
