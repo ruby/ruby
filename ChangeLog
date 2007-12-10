@@ -1,3 +1,8 @@
+Mon Dec 10 21:47:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_transcode): allow non-registered encodings.
+	  [ruby-dev:32520]
+
 Mon Dec 10 21:00:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_slice_bang): should return nil if position out

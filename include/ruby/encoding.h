@@ -38,6 +38,7 @@
 
 typedef OnigEncodingType rb_encoding;
 
+int rb_enc_replicate(const char *, rb_encoding *);
 int rb_enc_to_index(rb_encoding*);
 int rb_enc_get_index(VALUE obj);
 int rb_enc_find_index(const char *name);

@@ -257,28 +257,45 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     char *buf, *bp, *sp, *fromp;
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
+    int from_encidx, to_encidx;
+    VALUE from_encval, to_encval;
     transcoder *my_transcoder;
     transcoding my_transcoding;
 
     if (argc<1 || argc>2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
-    to_enc = rb_to_encoding(argv[0]);
-    to_e = rb_enc_name(to_enc);
-    if (argc==1) {
-        from_enc = rb_enc_get(str);
+    if ((to_encidx = rb_to_encoding_index(to_encval = argv[0])) < 0) {
+	to_enc = 0;
+	to_e = StringValueCStr(to_encval);
     }
     else {
-        from_enc = rb_to_encoding(argv[1]);
+	to_enc = rb_enc_from_index(to_encidx);
+	to_e = rb_enc_name(to_enc);
     }
-    from_e = rb_enc_name(from_enc);
+    if (argc==1) {
+        from_encidx = rb_enc_get_index(str);
+	from_enc = rb_enc_from_index(from_encidx);
+	from_e = rb_enc_name(from_enc);
+    }
+    else if ((from_encidx = rb_to_encoding_index(from_encval = argv[1])) < 0) {
+	from_enc = 0;
+	from_e = StringValueCStr(from_encval);
+    }
+    else {
+	from_enc = rb_enc_from_index(from_encidx);
+	from_e = rb_enc_name(from_enc);
+    }
 
-    if (from_enc == to_enc) {
+    if (from_enc && from_enc == to_enc) {
 	return Qnil;
     }
-    if (rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
+    if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
 	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
 	    return Qnil;
+    }
+    if (strcasecmp(from_e, to_e) == 0) {
+	return Qnil;
     }
     if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
 	rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
@@ -302,6 +319,10 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     rb_str_set_len(dest, bp - buf);
 
     /* set encoding */
+    if (!to_enc) {
+	to_encidx = rb_enc_replicate(to_e, rb_default_encoding());
+	to_enc = rb_enc_from_index(to_encidx);
+    }
     rb_enc_associate(dest, to_enc);
 
     return dest;
