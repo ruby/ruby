@@ -1,3 +1,8 @@
+Tue Dec 11 02:23:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_method_missing): RDoc update patch from Hugh Sasse
+	  <hgs AT dmu.ac.uk>.  [ruby-core:12932]
+
 Tue Dec 11 01:51:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP::get): now supports gzip

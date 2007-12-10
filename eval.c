@@ -1269,6 +1269,9 @@ stack_check(void)
  *  are any arguments that were passed to it. By default, the interpreter
  *  raises an error when this method is called. However, it is possible
  *  to override the method to provide more dynamic behavior.
+ *  If it is decided that a particular method should not be handled, then
+ *  <i>super</i> should be called, so that ancestors can pick up the
+ *  missing method.
  *  The example below creates
  *  a class <code>Roman</code>, which responds to methods with names
  *  consisting of roman numerals, returning the corresponding integer
