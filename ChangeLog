@@ -1,3 +1,9 @@
+Mon Dec 10 18:28:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::REGEXP::PATTERN): typo in REG_NAME
+	  regular expression.  a patch from Ueda Satoshi
+	  <s-ueda AT livedoor.jp>.  [ruby-dev:32514]
+
 Mon Dec 10 17:46:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_tmp_new): creates hidden temporary buffer.
