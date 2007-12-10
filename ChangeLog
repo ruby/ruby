@@ -1,3 +1,16 @@
+Mon Dec 10 17:46:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_tmp_new): creates hidden temporary buffer.
+
+	* transcode.c (transcoding): added a pointer to function to flush.
+
+	* transcode.c (transcode_loop): do not use string internal.
+	  [ruby-dev:32512]
+
+	* transcode.c (str_transcode): allow Encoding objects.
+
+	* transcode_data.h (BYTE_LOOKUP): use actual struct name.
+
 Mon Dec 10 16:52:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_insert): should not add length in bytes to index in

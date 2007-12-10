@@ -20,7 +20,7 @@ from_ISO_8859_1_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_1_infos[129] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -101,7 +101,7 @@ to_ISO_8859_1_C2_offsets[64] = {
      32, 33, 34, 35, 36, 37, 38, 39,   40, 41, 42, 43, 44, 45, 46, 47,
      48, 49, 50, 51, 52, 53, 54, 55,   56, 57, 58, 59, 60, 61, 62, 63,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_1_C2_infos[64] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -133,7 +133,7 @@ to_ISO_8859_1_C3_offsets[64] = {
      32, 33, 34, 35, 36, 37, 38, 39,   40, 41, 42, 43, 44, 45, 46, 47,
      48, 49, 50, 51, 52, 53, 54, 55,   56, 57, 58, 59, 60, 61, 62, 63,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_1_C3_infos[64] = {
      output1('\xC0'), output1('\xC1'), output1('\xC2'), output1('\xC3'),
      output1('\xC4'), output1('\xC5'), output1('\xC6'), output1('\xC7'),
@@ -177,7 +177,7 @@ to_ISO_8859_1_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_1_infos[3] = {
                  NOMAP, &to_ISO_8859_1_C2, &to_ISO_8859_1_C3,
 };
@@ -206,7 +206,7 @@ from_ISO_8859_2_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_2_infos[129] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -287,7 +287,7 @@ to_ISO_8859_2_C2_offsets[64] = {
      32, -1, -1, -1, 33, -1, -1, 34,   35, -1, -1, -1, -1, 36, -1, -1,
      37, -1, -1, -1, 38, -1, -1, -1,   39, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_C2_infos[40] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -313,7 +313,7 @@ to_ISO_8859_2_C3_offsets[64] = {
      -1, 16, 17, -1, 18, -1, -1, 19,   -1, 20, -1, 21, -1, 22, 23, -1,
      -1, -1, -1, 24, 25, -1, 26, 27,   -1, -1, 28, -1, 29, 30, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_C3_infos[31] = {
      output1('\xC1'), output1('\xC2'), output1('\xC4'), output1('\xC7'),
      output1('\xC9'), output1('\xCB'), output1('\xCD'), output1('\xCE'),
@@ -337,7 +337,7 @@ to_ISO_8859_2_C4_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, 16, 17, -1, -1, 18, 19, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_C4_infos[20] = {
      output1('\xC3'), output1('\xE3'), output1('\xA1'), output1('\xB1'),
      output1('\xC6'), output1('\xE6'), output1('\xC8'), output1('\xE8'),
@@ -358,7 +358,7 @@ to_ISO_8859_2_C5_offsets[64] = {
      16, 17, 18, 19, 20, 21, -1, -1,   -1, -1, -1, -1, -1, -1, 22, 23,
      24, 25, -1, -1, -1, -1, -1, -1,   -1, 26, 27, 28, 29, 30, 31, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_C5_infos[32] = {
      output1('\xA3'), output1('\xB3'), output1('\xD1'), output1('\xF1'),
      output1('\xD2'), output1('\xF2'), output1('\xD5'), output1('\xF5'),
@@ -382,7 +382,7 @@ to_ISO_8859_2_CB_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_CB_infos[5] = {
      output1('\xB7'), output1('\xA2'), output1('\xFF'), output1('\xB2'),
      output1('\xBD'),
@@ -412,7 +412,7 @@ to_ISO_8859_2_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_2_infos[6] = {
                  NOMAP, &to_ISO_8859_2_C2, &to_ISO_8859_2_C3, &to_ISO_8859_2_C4,
      &to_ISO_8859_2_C5, &to_ISO_8859_2_CB,
@@ -442,7 +442,7 @@ from_ISO_8859_3_offsets[256] = {
      92, 93, 94, -1, 95, 96, 97, 98,   99,100,101,102,103,104,105,106,
      -1,107,108,109,110,111,112,113,  114,115,116,117,118,119,120,121,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_3_infos[122] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -519,7 +519,7 @@ to_ISO_8859_3_C2_offsets[64] = {
      32, -1, -1, 33, 34, -1, -1, 35,   36, -1, -1, -1, -1, 37, -1, -1,
      38, -1, 39, 40, 41, 42, -1, 43,   44, -1, -1, -1, -1, 45, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_C2_infos[46] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -547,7 +547,7 @@ to_ISO_8859_3_C3_offsets[64] = {
      24, 25, 26, -1, 27, -1, -1, 28,   29, 30, 31, 32, 33, 34, 35, 36,
      -1, 37, 38, 39, 40, -1, 41, 42,   -1, 43, 44, 45, 46, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_C3_infos[47] = {
      output1('\xC0'), output1('\xC1'), output1('\xC2'), output1('\xC4'),
      output1('\xC7'), output1('\xC8'), output1('\xC9'), output1('\xCA'),
@@ -575,7 +575,7 @@ to_ISO_8859_3_C4_offsets[64] = {
       8,  9, -1, -1, 10, 11, 12, 13,   -1, -1, -1, -1, -1, -1, -1, -1,
      14, 15, -1, -1, 16, 17, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_C4_infos[18] = {
      output1('\xC6'), output1('\xE6'), output1('\xC5'), output1('\xE5'),
      output1('\xD8'), output1('\xF8'), output1('\xAB'), output1('\xBB'),
@@ -596,7 +596,7 @@ to_ISO_8859_3_C5_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1,  4,  5, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1,  6,  7, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_C5_infos[8] = {
      output1('\xDE'), output1('\xFE'), output1('\xAA'), output1('\xBA'),
      output1('\xDD'), output1('\xFD'), output1('\xAF'), output1('\xBF'),
@@ -614,7 +614,7 @@ to_ISO_8859_3_CB_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_CB_infos[2] = {
      output1('\xA2'), output1('\xFF'),
 };
@@ -643,7 +643,7 @@ to_ISO_8859_3_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_3_infos[6] = {
                  NOMAP, &to_ISO_8859_3_C2, &to_ISO_8859_3_C3, &to_ISO_8859_3_C4,
      &to_ISO_8859_3_C5, &to_ISO_8859_3_CB,
@@ -673,7 +673,7 @@ from_ISO_8859_4_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_4_infos[129] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -754,7 +754,7 @@ to_ISO_8859_4_C2_offsets[64] = {
      32, -1, -1, -1, 33, -1, -1, 34,   35, -1, -1, -1, -1, 36, -1, 37,
      38, -1, -1, -1, 39, -1, -1, -1,   40, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_C2_infos[41] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -781,7 +781,7 @@ to_ISO_8859_4_C3_offsets[64] = {
      -1, 19, 20, 21, 22, 23, 24, -1,   -1, 25, -1, 26, -1, 27, 28, -1,
      -1, -1, -1, -1, 29, 30, 31, 32,   33, -1, 34, 35, 36, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_C3_infos[37] = {
      output1('\xC1'), output1('\xC2'), output1('\xC3'), output1('\xC4'),
      output1('\xC5'), output1('\xC6'), output1('\xC9'), output1('\xCB'),
@@ -807,7 +807,7 @@ to_ISO_8859_4_C4_offsets[64] = {
      -1, -1, 14, 15, -1, -1, -1, -1,   16, 17, 18, 19, -1, -1, 20, 21,
      -1, -1, -1, -1, -1, -1, 22, 23,   24, -1, -1, 25, 26, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_C4_infos[27] = {
      output1('\xC0'), output1('\xE0'), output1('\xA1'), output1('\xB1'),
      output1('\xC8'), output1('\xE8'), output1('\xD0'), output1('\xF0'),
@@ -830,7 +830,7 @@ to_ISO_8859_4_C5_offsets[64] = {
       8,  9, -1, -1, -1, -1, 10, 11,   12, 13, 14, 15, -1, -1, -1, -1,
      -1, -1, 16, 17, -1, -1, -1, -1,   -1, -1, -1, -1, -1, 18, 19, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_C5_infos[20] = {
      output1('\xD1'), output1('\xF1'), output1('\xBD'), output1('\xBF'),
      output1('\xD2'), output1('\xF2'), output1('\xA3'), output1('\xB3'),
@@ -851,7 +851,7 @@ to_ISO_8859_4_CB_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_CB_infos[3] = {
      output1('\xB7'), output1('\xFF'), output1('\xB2'),
 };
@@ -880,7 +880,7 @@ to_ISO_8859_4_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_4_infos[6] = {
                  NOMAP, &to_ISO_8859_4_C2, &to_ISO_8859_4_C3, &to_ISO_8859_4_C4,
      &to_ISO_8859_4_C5, &to_ISO_8859_4_CB,
@@ -910,7 +910,7 @@ from_ISO_8859_5_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_5_infos[129] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -991,7 +991,7 @@ to_ISO_8859_5_C2_offsets[64] = {
      32, -1, -1, -1, -1, -1, -1, 33,   -1, -1, -1, -1, -1, 34, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_C2_infos[35] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -1016,7 +1016,7 @@ to_ISO_8859_5_D0_offsets[64] = {
      30, 31, 32, 33, 34, 35, 36, 37,   38, 39, 40, 41, 42, 43, 44, 45,
      46, 47, 48, 49, 50, 51, 52, 53,   54, 55, 56, 57, 58, 59, 60, 61,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_D0_infos[62] = {
      output1('\xA1'), output1('\xA2'), output1('\xA3'), output1('\xA4'),
      output1('\xA5'), output1('\xA6'), output1('\xA7'), output1('\xA8'),
@@ -1048,7 +1048,7 @@ to_ISO_8859_5_D1_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_D1_infos[30] = {
      output1('\xE0'), output1('\xE1'), output1('\xE2'), output1('\xE3'),
      output1('\xE4'), output1('\xE5'), output1('\xE6'), output1('\xE7'),
@@ -1072,7 +1072,7 @@ to_ISO_8859_5_E2_84_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_E2_84_infos[1] = {
      output1('\xF0'),
 };
@@ -1089,7 +1089,7 @@ to_ISO_8859_5_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_E2_infos[1] = {
      &to_ISO_8859_5_E2_84,
 };
@@ -1118,7 +1118,7 @@ to_ISO_8859_5_offsets[256] = {
      -1, -1,  4, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_5_infos[5] = {
                  NOMAP, &to_ISO_8859_5_C2, &to_ISO_8859_5_D0, &to_ISO_8859_5_D1,
      &to_ISO_8859_5_E2,
@@ -1148,7 +1148,7 @@ from_ISO_8859_6_offsets[256] = {
      65, 66, 67, 68, 69, 70, 71, 72,   73, 74, 75, 76, 77, 78, 79, 80,
      81, 82, 83, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_6_infos[84] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -1206,7 +1206,7 @@ to_ISO_8859_6_C2_offsets[64] = {
      32, -1, -1, -1, 33, -1, -1, -1,   -1, -1, -1, -1, -1, 34, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_6_C2_infos[35] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -1231,7 +1231,7 @@ to_ISO_8859_6_D8_offsets[64] = {
      -1,  3,  4,  5,  6,  7,  8,  9,   10, 11, 12, 13, 14, 15, 16, 17,
      18, 19, 20, 21, 22, 23, 24, 25,   26, 27, 28, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_6_D8_infos[29] = {
      output1('\xAC'), output1('\xBB'), output1('\xBF'), output1('\xC1'),
      output1('\xC2'), output1('\xC3'), output1('\xC4'), output1('\xC5'),
@@ -1255,7 +1255,7 @@ to_ISO_8859_6_D9_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_6_D9_infos[19] = {
      output1('\xE0'), output1('\xE1'), output1('\xE2'), output1('\xE3'),
      output1('\xE4'), output1('\xE5'), output1('\xE6'), output1('\xE7'),
@@ -1288,7 +1288,7 @@ to_ISO_8859_6_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_6_infos[4] = {
                  NOMAP, &to_ISO_8859_6_C2, &to_ISO_8859_6_D8, &to_ISO_8859_6_D9,
 };
@@ -1317,7 +1317,7 @@ from_ISO_8859_7_offsets[256] = {
      95, 96, 97, 98, 99,100,101,102,  103,104,105,106,107,108,109,110,
     111,112,113,114,115,116,117,118,  119,120,121,122,123,124,125, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_7_infos[126] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -1396,7 +1396,7 @@ to_ISO_8859_7_C2_offsets[64] = {
      32, -1, -1, 33, -1, -1, 34, 35,   36, 37, -1, 38, 39, 40, -1, -1,
      41, 42, 43, 44, -1, -1, -1, 45,   -1, -1, -1, 46, -1, 47, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_C2_infos[48] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -1424,7 +1424,7 @@ to_ISO_8859_7_CD_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1,  0, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_CD_infos[1] = {
      output1('\xAA'),
 };
@@ -1441,7 +1441,7 @@ to_ISO_8859_7_CE_offsets[64] = {
      25, 26, -1, 27, 28, 29, 30, 31,   32, 33, 34, 35, 36, 37, 38, 39,
      40, 41, 42, 43, 44, 45, 46, 47,   48, 49, 50, 51, 52, 53, 54, 55,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_CE_infos[56] = {
      output1('\xB4'), output1('\xB5'), output1('\xB6'), output1('\xB8'),
      output1('\xB9'), output1('\xBA'), output1('\xBC'), output1('\xBE'),
@@ -1471,7 +1471,7 @@ to_ISO_8859_7_CF_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_CF_infos[15] = {
      output1('\xF0'), output1('\xF1'), output1('\xF2'), output1('\xF3'),
      output1('\xF4'), output1('\xF5'), output1('\xF6'), output1('\xF7'),
@@ -1491,7 +1491,7 @@ to_ISO_8859_7_E2_80_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_E2_80_infos[3] = {
      output1('\xAF'), output1('\xA1'), output1('\xA2'),
 };
@@ -1508,7 +1508,7 @@ to_ISO_8859_7_E2_82_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1,  0, -1, -1,  1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_E2_82_infos[2] = {
      output1('\xA4'), output1('\xA5'),
 };
@@ -1525,7 +1525,7 @@ to_ISO_8859_7_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_E2_infos[2] = {
      &to_ISO_8859_7_E2_80, &to_ISO_8859_7_E2_82,
 };
@@ -1554,7 +1554,7 @@ to_ISO_8859_7_offsets[256] = {
      -1, -1,  5, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_7_infos[6] = {
                  NOMAP, &to_ISO_8859_7_C2, &to_ISO_8859_7_CD, &to_ISO_8859_7_CE,
      &to_ISO_8859_7_CF, &to_ISO_8859_7_E2,
@@ -1584,7 +1584,7 @@ from_ISO_8859_8_offsets[256] = {
      64, 65, 66, 67, 68, 69, 70, 71,   72, 73, 74, 75, 76, 77, 78, 79,
      80, 81, 82, 83, 84, 85, 86, 87,   88, 89, 90, -1, -1, 91, 92, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_8_infos[93] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -1647,7 +1647,7 @@ to_ISO_8859_8_C2_offsets[64] = {
      32, -1, 33, 34, 35, 36, 37, 38,   39, 40, -1, 41, 42, 43, 44, 45,
      46, 47, 48, 49, 50, 51, 52, 53,   54, 55, -1, 56, 57, 58, 59, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_C2_infos[60] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -1678,7 +1678,7 @@ to_ISO_8859_8_C3_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1,  1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_C3_infos[2] = {
      output1('\xAA'), output1('\xBA'),
 };
@@ -1695,7 +1695,7 @@ to_ISO_8859_8_D7_offsets[64] = {
      16, 17, 18, 19, 20, 21, 22, 23,   24, 25, 26, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_D7_infos[27] = {
      output1('\xE0'), output1('\xE1'), output1('\xE2'), output1('\xE3'),
      output1('\xE4'), output1('\xE5'), output1('\xE6'), output1('\xE7'),
@@ -1718,7 +1718,7 @@ to_ISO_8859_8_E2_80_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_E2_80_infos[3] = {
      output1('\xFD'), output1('\xFE'), output1('\xDF'),
 };
@@ -1735,7 +1735,7 @@ to_ISO_8859_8_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_E2_infos[1] = {
      &to_ISO_8859_8_E2_80,
 };
@@ -1764,7 +1764,7 @@ to_ISO_8859_8_offsets[256] = {
      -1, -1,  4, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_8_infos[5] = {
                  NOMAP, &to_ISO_8859_8_C2, &to_ISO_8859_8_C3, &to_ISO_8859_8_D7,
      &to_ISO_8859_8_E2,
@@ -1794,7 +1794,7 @@ from_ISO_8859_9_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_9_infos[129] = {
                       NOMAP, output2('\xC2','\x80'),
      output2('\xC2','\x81'), output2('\xC2','\x82'),
@@ -1875,7 +1875,7 @@ to_ISO_8859_9_C2_offsets[64] = {
      32, 33, 34, 35, 36, 37, 38, 39,   40, 41, 42, 43, 44, 45, 46, 47,
      48, 49, 50, 51, 52, 53, 54, 55,   56, 57, 58, 59, 60, 61, 62, 63,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_9_C2_infos[64] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -1907,7 +1907,7 @@ to_ISO_8859_9_C3_offsets[64] = {
      29, 30, 31, 32, 33, 34, 35, 36,   37, 38, 39, 40, 41, 42, 43, 44,
      -1, 45, 46, 47, 48, 49, 50, 51,   52, 53, 54, 55, 56, -1, -1, 57,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_9_C3_infos[58] = {
      output1('\xC0'), output1('\xC1'), output1('\xC2'), output1('\xC3'),
      output1('\xC4'), output1('\xC5'), output1('\xC6'), output1('\xC7'),
@@ -1938,7 +1938,7 @@ to_ISO_8859_9_C4_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
       2,  3, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_9_C4_infos[4] = {
      output1('\xD0'), output1('\xF0'), output1('\xDD'), output1('\xFD'),
 };
@@ -1955,7 +1955,7 @@ to_ISO_8859_9_C5_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_9_C5_infos[2] = {
      output1('\xDE'), output1('\xFE'),
 };
@@ -1984,7 +1984,7 @@ to_ISO_8859_9_offsets[256] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_9_infos[5] = {
                  NOMAP, &to_ISO_8859_9_C2, &to_ISO_8859_9_C3, &to_ISO_8859_9_C4,
      &to_ISO_8859_9_C5,
@@ -2014,7 +2014,7 @@ from_ISO_8859_10_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_10_infos[129] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -2095,7 +2095,7 @@ to_ISO_8859_10_C2_offsets[64] = {
      32, -1, -1, -1, -1, -1, -1, 33,   -1, -1, -1, -1, -1, 34, -1, -1,
      35, -1, -1, -1, -1, -1, -1, 36,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_C2_infos[37] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -2121,7 +2121,7 @@ to_ISO_8859_10_C3_offsets[64] = {
      -1, 23, 24, 25, 26, 27, 28, -1,   -1, 29, -1, 30, -1, 31, 32, 33,
      34, -1, -1, 35, 36, 37, 38, -1,   39, -1, 40, 41, 42, 43, 44, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_C3_infos[45] = {
      output1('\xC1'), output1('\xC2'), output1('\xC3'), output1('\xC4'),
      output1('\xC5'), output1('\xC6'), output1('\xC9'), output1('\xCB'),
@@ -2149,7 +2149,7 @@ to_ISO_8859_10_C4_offsets[64] = {
      -1, -1, 14, 15, -1, -1, -1, -1,   16, 17, 18, 19, -1, -1, 20, 21,
      -1, -1, -1, -1, -1, -1, 22, 23,   24, -1, -1, 25, 26, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_C4_infos[27] = {
      output1('\xC0'), output1('\xE0'), output1('\xA1'), output1('\xB1'),
      output1('\xC8'), output1('\xE8'), output1('\xA9'), output1('\xB9'),
@@ -2172,7 +2172,7 @@ to_ISO_8859_10_C5_offsets[64] = {
       6,  7, -1, -1, -1, -1,  8,  9,   10, 11, 12, 13, -1, -1, -1, -1,
      -1, -1, 14, 15, -1, -1, -1, -1,   -1, -1, -1, -1, -1, 16, 17, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_C5_infos[18] = {
      output1('\xD1'), output1('\xF1'), output1('\xAF'), output1('\xBF'),
      output1('\xD2'), output1('\xF2'), output1('\xAA'), output1('\xBA'),
@@ -2193,7 +2193,7 @@ to_ISO_8859_10_E2_80_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_E2_80_infos[1] = {
      output1('\xBD'),
 };
@@ -2210,7 +2210,7 @@ to_ISO_8859_10_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_E2_infos[1] = {
      &to_ISO_8859_10_E2_80,
 };
@@ -2239,7 +2239,7 @@ to_ISO_8859_10_offsets[256] = {
      -1, -1,  5, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_10_infos[6] = {
                   NOMAP, &to_ISO_8859_10_C2, &to_ISO_8859_10_C3, &to_ISO_8859_10_C4,
      &to_ISO_8859_10_C5, &to_ISO_8859_10_E2,
@@ -2269,7 +2269,7 @@ from_ISO_8859_11_offsets[256] = {
      93, 94, 95, 96, 97, 98, 99,100,  101,102,103,104,105,106,107,108,
     109,110,111,112,113,114,115,116,  117,118,119,120, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_11_infos[121] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -2346,7 +2346,7 @@ to_ISO_8859_11_C2_offsets[64] = {
      32, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_11_C2_infos[33] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -2371,7 +2371,7 @@ to_ISO_8859_11_E0_B8_offsets[64] = {
      31, 32, 33, 34, 35, 36, 37, 38,   39, 40, 41, 42, 43, 44, 45, 46,
      47, 48, 49, 50, 51, 52, 53, 54,   55, 56, 57, -1, -1, -1, -1, 58,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_11_E0_B8_infos[59] = {
      output1('\xA1'), output1('\xA2'), output1('\xA3'), output1('\xA4'),
      output1('\xA5'), output1('\xA6'), output1('\xA7'), output1('\xA8'),
@@ -2402,7 +2402,7 @@ to_ISO_8859_11_E0_B9_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_11_E0_B9_infos[28] = {
      output1('\xE0'), output1('\xE1'), output1('\xE2'), output1('\xE3'),
      output1('\xE4'), output1('\xE5'), output1('\xE6'), output1('\xE7'),
@@ -2425,7 +2425,7 @@ to_ISO_8859_11_E0_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,    0,  1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_11_E0_infos[2] = {
      &to_ISO_8859_11_E0_B8, &to_ISO_8859_11_E0_B9,
 };
@@ -2454,7 +2454,7 @@ to_ISO_8859_11_offsets[256] = {
       2, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_11_infos[3] = {
                   NOMAP, &to_ISO_8859_11_C2, &to_ISO_8859_11_E0,
 };
@@ -2483,7 +2483,7 @@ from_ISO_8859_13_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_13_infos[129] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -2564,7 +2564,7 @@ to_ISO_8859_13_C2_offsets[64] = {
      32, -1, 33, 34, 35, -1, 36, 37,   -1, 38, -1, 39, 40, 41, 42, -1,
      43, 44, 45, 46, -1, 47, 48, 49,   -1, 50, -1, 51, 52, 53, 54, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_C2_infos[55] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -2594,7 +2594,7 @@ to_ISO_8859_13_C3_offsets[64] = {
      -1, -1, -1, -1, 11, 12, 13, -1,   -1, 14, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, 15, -1, 16, 17, 18,   19, -1, -1, -1, 20, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_C3_infos[21] = {
      output1('\xC4'), output1('\xC5'), output1('\xAF'), output1('\xC9'),
      output1('\xD3'), output1('\xD5'), output1('\xD6'), output1('\xD7'),
@@ -2616,7 +2616,7 @@ to_ISO_8859_13_C4_offsets[64] = {
      -1, -1, 14, 15, -1, -1, -1, -1,   -1, -1, 16, 17, -1, -1, 18, 19,
      -1, -1, -1, -1, -1, -1, 20, 21,   -1, -1, -1, 22, 23, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_C4_infos[24] = {
      output1('\xC2'), output1('\xE2'), output1('\xC0'), output1('\xE0'),
      output1('\xC3'), output1('\xE3'), output1('\xC8'), output1('\xE8'),
@@ -2638,7 +2638,7 @@ to_ISO_8859_13_C5_offsets[64] = {
      12, 13, -1, -1, -1, -1, -1, -1,   -1, -1, 14, 15, -1, -1, -1, -1,
      -1, -1, 16, 17, -1, -1, -1, -1,   -1, 18, 19, 20, 21, 22, 23, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_C5_infos[24] = {
      output1('\xD9'), output1('\xF9'), output1('\xD1'), output1('\xF1'),
      output1('\xD2'), output1('\xF2'), output1('\xD4'), output1('\xF4'),
@@ -2660,7 +2660,7 @@ to_ISO_8859_13_E2_80_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_E2_80_infos[4] = {
      output1('\xFF'), output1('\xB4'), output1('\xA1'), output1('\xA5'),
 };
@@ -2677,7 +2677,7 @@ to_ISO_8859_13_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_E2_infos[1] = {
      &to_ISO_8859_13_E2_80,
 };
@@ -2706,7 +2706,7 @@ to_ISO_8859_13_offsets[256] = {
      -1, -1,  5, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_13_infos[6] = {
                   NOMAP, &to_ISO_8859_13_C2, &to_ISO_8859_13_C3, &to_ISO_8859_13_C4,
      &to_ISO_8859_13_C5, &to_ISO_8859_13_E2,
@@ -2736,7 +2736,7 @@ from_ISO_8859_14_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_14_infos[129] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -2817,7 +2817,7 @@ to_ISO_8859_14_C2_offsets[64] = {
      32, -1, -1, 33, -1, -1, -1, 34,   -1, 35, -1, -1, -1, 36, 37, -1,
      -1, -1, -1, -1, -1, -1, 38, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_C2_infos[39] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -2843,7 +2843,7 @@ to_ISO_8859_14_C3_offsets[64] = {
      29, 30, 31, 32, 33, 34, 35, 36,   37, 38, 39, 40, 41, 42, 43, 44,
      -1, 45, 46, 47, 48, 49, 50, -1,   51, 52, 53, 54, 55, 56, -1, 57,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_C3_infos[58] = {
      output1('\xC0'), output1('\xC1'), output1('\xC2'), output1('\xC3'),
      output1('\xC4'), output1('\xC5'), output1('\xC6'), output1('\xC7'),
@@ -2874,7 +2874,7 @@ to_ISO_8859_14_C4_offsets[64] = {
       2,  3, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_C4_infos[4] = {
      output1('\xA4'), output1('\xA5'), output1('\xB2'), output1('\xB3'),
 };
@@ -2891,7 +2891,7 @@ to_ISO_8859_14_C5_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1,  0,  1,  2,  3,    4, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_C5_infos[5] = {
      output1('\xD0'), output1('\xF0'), output1('\xDE'), output1('\xFE'),
      output1('\xAF'),
@@ -2909,7 +2909,7 @@ to_ISO_8859_14_E1_B8_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_E1_B8_infos[6] = {
      output1('\xA1'), output1('\xA2'), output1('\xA6'), output1('\xAB'),
      output1('\xB0'), output1('\xB1'),
@@ -2927,7 +2927,7 @@ to_ISO_8859_14_E1_B9_offsets[64] = {
       4,  5, -1, -1, -1, -1, -1, -1,   -1, -1,  6,  7, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_E1_B9_infos[8] = {
      output1('\xB4'), output1('\xB5'), output1('\xB7'), output1('\xB9'),
      output1('\xBB'), output1('\xBF'), output1('\xD7'), output1('\xF7'),
@@ -2945,7 +2945,7 @@ to_ISO_8859_14_E1_BA_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_E1_BA_infos[6] = {
      output1('\xA8'), output1('\xB8'), output1('\xAA'), output1('\xBA'),
      output1('\xBD'), output1('\xBE'),
@@ -2963,7 +2963,7 @@ to_ISO_8859_14_E1_BB_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1,  0,  1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_E1_BB_infos[2] = {
      output1('\xAC'), output1('\xBC'),
 };
@@ -2980,7 +2980,7 @@ to_ISO_8859_14_E1_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,    0,  1,  2,  3, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_E1_infos[4] = {
      &to_ISO_8859_14_E1_B8, &to_ISO_8859_14_E1_B9,
      &to_ISO_8859_14_E1_BA, &to_ISO_8859_14_E1_BB,
@@ -3010,7 +3010,7 @@ to_ISO_8859_14_offsets[256] = {
      -1,  5, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_14_infos[6] = {
                   NOMAP, &to_ISO_8859_14_C2, &to_ISO_8859_14_C3, &to_ISO_8859_14_C4,
      &to_ISO_8859_14_C5, &to_ISO_8859_14_E1,
@@ -3040,7 +3040,7 @@ from_ISO_8859_15_offsets[256] = {
      97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
     113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
 };
-static const void* const
+static const struct byte_lookup* const
 from_ISO_8859_15_infos[129] = {
                              NOMAP,        output2('\xC2','\x80'),
             output2('\xC2','\x81'),        output2('\xC2','\x82'),
@@ -3121,7 +3121,7 @@ to_ISO_8859_15_C2_offsets[64] = {
      32, 33, 34, 35, -1, 36, -1, 37,   -1, 38, 39, 40, 41, 42, 43, 44,
      45, 46, 47, 48, -1, 49, 50, 51,   -1, 52, 53, 54, -1, -1, -1, 55,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_C2_infos[56] = {
      output1('\x80'), output1('\x81'), output1('\x82'), output1('\x83'),
      output1('\x84'), output1('\x85'), output1('\x86'), output1('\x87'),
@@ -3151,7 +3151,7 @@ to_ISO_8859_15_C3_offsets[64] = {
      32, 33, 34, 35, 36, 37, 38, 39,   40, 41, 42, 43, 44, 45, 46, 47,
      48, 49, 50, 51, 52, 53, 54, 55,   56, 57, 58, 59, 60, 61, 62, 63,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_C3_infos[64] = {
      output1('\xC0'), output1('\xC1'), output1('\xC2'), output1('\xC3'),
      output1('\xC4'), output1('\xC5'), output1('\xC6'), output1('\xC7'),
@@ -3183,7 +3183,7 @@ to_ISO_8859_15_C5_offsets[64] = {
       2,  3, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,    4, -1, -1, -1, -1,  5,  6, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_C5_infos[7] = {
      output1('\xBC'), output1('\xBD'), output1('\xA6'), output1('\xA8'),
      output1('\xBE'), output1('\xB4'), output1('\xB8'),
@@ -3201,7 +3201,7 @@ to_ISO_8859_15_E2_82_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1,  0, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_E2_82_infos[1] = {
      output1('\xA4'),
 };
@@ -3218,7 +3218,7 @@ to_ISO_8859_15_E2_offsets[64] = {
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_E2_infos[1] = {
      &to_ISO_8859_15_E2_82,
 };
@@ -3247,7 +3247,7 @@ to_ISO_8859_15_offsets[256] = {
      -1, -1,  4, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
      -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1,
 };
-static const void* const
+static const struct byte_lookup* const
 to_ISO_8859_15_infos[5] = {
                   NOMAP, &to_ISO_8859_15_C2, &to_ISO_8859_15_C3, &to_ISO_8859_15_C5,
      &to_ISO_8859_15_E2,

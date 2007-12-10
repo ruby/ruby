@@ -16,55 +16,8 @@
 #include "transcode_data.h"
 
 
-/*
- * prototypes and macros copied from string.c (temporarily !!!)
- */
-VALUE str_new(VALUE klass, const char *ptr, long len);
-int str_independent(VALUE str);
-#define STR_NOCAPA_P(s) (FL_TEST(s,STR_NOEMBED) && FL_ANY(s,ELTS_SHARED|STR_ASSOC))
-#define STR_NOEMBED FL_USER1
-#define STR_ASSOC   FL_USER3
-#define STR_SET_NOEMBED(str) do {\
-    FL_SET(str, STR_NOEMBED);\
-    STR_SET_EMBED_LEN(str, 0);\
-} while (0)
-#define STR_UNSET_NOCAPA(s) do {\
-    if (FL_TEST(s,STR_NOEMBED)) FL_UNSET(s,(ELTS_SHARED|STR_ASSOC));\
-} while (0)
-#define STR_SET_EMBED_LEN(str, n) do { \
-    long tmp_n = (n);\
-    RBASIC(str)->flags &= ~RSTRING_EMBED_LEN_MASK;\
-    RBASIC(str)->flags |= (tmp_n) << RSTRING_EMBED_LEN_SHIFT;\
-} while (0)
-#define STR_SET_LEN(str, n) do { \
-    if (STR_EMBED_P(str)) {\
-	STR_SET_EMBED_LEN(str, n);\
-    }\
-    else {\
-	RSTRING(str)->as.heap.len = (n);\
-    }\
-} while (0) 
-#define STR_EMBED_P(str) (!FL_TEST(str, STR_NOEMBED))
-#define RESIZE_CAPA(str,capacity) do {\
-    if (STR_EMBED_P(str)) {\
-	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
-	    char *tmp = ALLOC_N(char, capacity+1);\
-	    memcpy(tmp, RSTRING_PTR(str), RSTRING_LEN(str));\
-	    RSTRING(str)->as.heap.ptr = tmp;\
-	    RSTRING(str)->as.heap.len = RSTRING_LEN(str);\
-            STR_SET_NOEMBED(str);\
-	    RSTRING(str)->as.heap.aux.capa = (capacity);\
-	}\
-    }\
-    else {\
-	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+1);\
-	if (!STR_NOCAPA_P(str))\
-	    RSTRING(str)->as.heap.aux.capa = (capacity);\
-    }\
-} while (0)
-/* end of copied prototypes and macros */
-
-
+VALUE rb_str_tmp_new(long);
+VALUE rb_str_shared_replace(VALUE, VALUE);
 
 /*
  *  Dispatch data and logic
@@ -123,7 +76,7 @@ static transcoder transcoder_table[MAX_TRANSCODERS];
 /* maybe the code here can be removed (changed to simple initialization) */
 /* if we move this to another file???? */
 static void
-register_transcoder (const char *from_e, const char *to_e,
+register_transcoder(const char *from_e, const char *to_e,
     const BYTE_LOOKUP *tree_start, int max_output, int from_utf8)
 {
     static int n = 0;
@@ -141,7 +94,7 @@ register_transcoder (const char *from_e, const char *to_e,
 }
 
 static void
-init_transcoder_table (void)
+init_transcoder_table(void)
 {
     register_transcoder("ISO-8859-1",  "UTF-8", &from_ISO_8859_1, 2, 0);
     register_transcoder("ISO-8859-2",  "UTF-8", &from_ISO_8859_2, 2, 0);
@@ -176,7 +129,7 @@ init_transcoder_table (void)
 
 
 static transcoder*
-transcode_dispatch (char* from_encoding, char* to_encoding)
+transcode_dispatch(const char* from_encoding, const char* to_encoding)
 {
     transcoder *candidate = transcoder_table;
     
@@ -190,9 +143,10 @@ transcode_dispatch (char* from_encoding, char* to_encoding)
 
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
-typedef struct {
+typedef struct transcoding {
     VALUE ruby_string_dest; /* the String used as the conversion destination,
                                or NULL if something else is being converted */
+    char *(*flush_func)(struct transcoding*, int, int);
 } transcoding;
 
 
@@ -200,85 +154,75 @@ typedef struct {
  *  Transcoding engine logic
  */
 static void
-transcode_loop (unsigned char **in_pos, unsigned char **out_pos,
-                unsigned char *in_stop, unsigned char *out_stop,
-                transcoder *my_transcoder,
-                transcoding *my_transcoding)
+transcode_loop(char **in_pos, char **out_pos,
+	       char *in_stop, char *out_stop,
+	       transcoder *my_transcoder,
+	       transcoding *my_transcoding)
 {
-    unsigned char *input = *in_pos, *output = *out_pos;
-    unsigned char *in_p = *in_pos, *out_p = *out_pos;
-    BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
-    BYTE_LOOKUP *next_table;
+    char *in_p = *in_pos, *out_p = *out_pos;
+    const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
+    const BYTE_LOOKUP *next_table;
     unsigned int next_offset;
-    unsigned int next_info;
+    VALUE next_info;
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
-    unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
+    char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
-        unsigned char *char_start = in_p;
         next_table = conv_tree_start;
         if (out_p >= out_s) {
-            VALUE dest_string = my_transcoding->ruby_string_dest;
-            if (!dest_string) {
-	        rb_raise(rb_eArgError /*@@@change exception*/, "Unable to obtain more space for transcoding");
-	    }
-	    else {
-	        int len = (out_p - *out_pos);
-	        int new_len = (len + my_transcoder->max_output) * 2;
-		RESIZE_CAPA(dest_string, new_len);
-		STR_SET_LEN(dest_string, new_len);
-		*out_pos = RSTRING_PTR(dest_string);
-		out_p = *out_pos + len;
-		out_s = *out_pos + new_len - my_transcoder->max_output;
-	    }
+	    int len = (out_p - *out_pos);
+	    int new_len = (len + my_transcoder->max_output) * 2;
+	    *out_pos = (*my_transcoding->flush_func)(my_transcoding, len, new_len);
+	    out_p = *out_pos + len;
+	    out_s = *out_pos + new_len - my_transcoder->max_output;
         }
-        next_byte = *in_p++;
+        next_byte = (unsigned char)*in_p++;
       follow_byte:
         next_offset = next_table->base[next_byte];
-        next_info = (unsigned int)next_table->info[next_offset];
+        next_info = (VALUE)next_table->info[next_offset];
         switch (next_info & 0x1F) {
-            case NOMAP:
-                *out_p++ = next_byte;
-                continue;
-            case 0x00: case 0x04: case 0x08: case 0x0C:
-            case 0x10: case 0x14: case 0x18: case 0x1C:
-                if (in_p >= in_stop) {
-                    /* todo: deal with the case of backtracking */
-                    /* todo: deal with incomplete input (streaming) */
-                    goto illegal;
-                }
-                next_byte = *in_p++;
-                if (from_utf8) {
-                    if ((next_byte&0xC0) == 0x80)
-                        next_byte -= 0x80;
-                    else
-                        goto illegal;
-                }
-                next_table = (BYTE_LOOKUP*)next_info;
-                goto follow_byte;
+	  case NOMAP:
+	    *out_p++ = next_byte;
+	    continue;
+	  case 0x00: case 0x04: case 0x08: case 0x0C:
+	  case 0x10: case 0x14: case 0x18: case 0x1C:
+	    if (in_p >= in_stop) {
+		/* todo: deal with the case of backtracking */
+		/* todo: deal with incomplete input (streaming) */
+		goto illegal;
+	    }
+	    next_byte = (unsigned char)*in_p++;
+	    if (from_utf8) {
+		if ((next_byte&0xC0) == 0x80)
+		    next_byte -= 0x80;
+		else
+		    goto illegal;
+	    }
+	    next_table = next_table->info[next_offset];
+	    goto follow_byte;
             /* maybe rewrite the following cases to use fallthrough???? */
-            case ZERObt: /* drop input */
-                continue;
-            case ONEbt:
-                *out_p++ = getBT1(next_info);
-                continue;
-            case TWObt:
-                *out_p++ = getBT1(next_info);
-                *out_p++ = getBT2(next_info);
-                continue;
-            case FOURbt:
-                *out_p++ = getBT0(next_info);
-            case THREEbt: /* fall through */
-                *out_p++ = getBT1(next_info);
-                *out_p++ = getBT2(next_info);
-                *out_p++ = getBT3(next_info);
-                continue;
-            case ILLEGAL:
-                goto illegal;
-            case UNDEF:
-                /* todo: add code for alternative behaviors */
-                rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence");
-                continue;
+	  case ZERObt: /* drop input */
+	    continue;
+	  case ONEbt:
+	    *out_p++ = getBT1(next_info);
+	    continue;
+	  case TWObt:
+	    *out_p++ = getBT1(next_info);
+	    *out_p++ = getBT2(next_info);
+	    continue;
+	  case FOURbt:
+	    *out_p++ = getBT0(next_info);
+	  case THREEbt: /* fall through */
+	    *out_p++ = getBT1(next_info);
+	    *out_p++ = getBT2(next_info);
+	    *out_p++ = getBT3(next_info);
+	    continue;
+	  case ILLEGAL:
+	    goto illegal;
+	  case UNDEF:
+	    /* todo: add code for alternative behaviors */
+	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence");
+	    continue;
         }
         continue;
       illegal:
@@ -297,38 +241,44 @@ transcode_loop (unsigned char **in_pos, unsigned char **out_pos,
  *  String-specific code
  */
 
+static char *
+str_transcoding_resize(transcoding *my_transcoding, int len, int new_len)
+{
+    VALUE dest_string = my_transcoding->ruby_string_dest;
+    rb_str_resize(dest_string, new_len);
+    return RSTRING_PTR(dest_string);
+}
+
 static VALUE
-str_transcode(int argc, VALUE *argv, VALUE str, int bang)
+str_transcode(int argc, VALUE *argv, VALUE str)
 {
     VALUE dest;
-    long blen, slen, len;
+    long blen, slen;
     char *buf, *bp, *sp, *fromp;
-    int tainted = 0;
     rb_encoding *from_enc, *to_enc;
-    char *from_e, *to_e;
+    const char *from_e, *to_e;
     transcoder *my_transcoder;
-    int idx;
     transcoding my_transcoding;
 
     if (argc<1 || argc>2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
-    to_enc = NULL; /* todo: work out later, 'to' parameter may be Encoding,
-                      or we want an encoding to set on result */
-    to_e = RSTRING_PTR(StringValue(argv[0]));
+    to_enc = rb_to_encoding(argv[0]);
+    to_e = rb_enc_name(to_enc);
     if (argc==1) {
         from_enc = rb_enc_get(str);
-        from_e = (char *)rb_enc_name(from_enc);
     }
     else {
-        from_enc = NULL; /* todo: work out later, 'from' parameter may be Encoding */
-        from_e = RSTRING_PTR(StringValue(argv[1]));
+        from_enc = rb_to_encoding(argv[1]);
     }
+    from_e = rb_enc_name(from_enc);
 
-    /* strcasecmp: hope we are in C locale or locale-insensitive */
-    if (0==strcasecmp(from_e, to_e)) { /* TODO: add tests for US-ASCII-clean data and ASCII-compatible encodings */
-	if (bang) return str;
-	return rb_str_dup(str);
+    if (from_enc == to_enc) {
+	return Qnil;
+    }
+    if (rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
+	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+	    return Qnil;
     }
     if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
 	rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
@@ -337,51 +287,24 @@ str_transcode(int argc, VALUE *argv, VALUE str, int bang)
     fromp = sp = RSTRING_PTR(str);
     slen = RSTRING_LEN(str);
     blen = slen + 30; /* len + margin */
-    dest = str_new(0, 0, blen);
-    bp = buf = RSTRING_PTR(dest);
+    dest = rb_str_tmp_new(blen);
+    bp = RSTRING_PTR(dest);
     my_transcoding.ruby_string_dest = dest;
+    my_transcoding.flush_func = str_transcoding_resize;
 
-    rb_str_locktmp(dest);
-    
     /* for simple testing: */
-    transcode_loop((unsigned char **)&fromp, (unsigned char **)&bp,
-                   (unsigned char*)(sp+slen), (unsigned char*)(bp+blen),
-                   my_transcoder, &my_transcoding);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
     if (fromp != sp+slen) {
 	rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
     }
     buf = RSTRING_PTR(dest);
-    blen = RSTRING_LEN(dest);
     *bp = '\0';
-    rb_str_unlocktmp(dest);
-    if (bang) {
-	if (str_independent(str) && !STR_EMBED_P(str)) {
-	    free(RSTRING_PTR(str));
-	}
-	STR_SET_NOEMBED(str);
-	STR_UNSET_NOCAPA(str);
-	RSTRING(str)->as.heap.ptr = buf;
-	RSTRING(str)->as.heap.aux.capa = blen;
-	RSTRING(dest)->as.heap.ptr = 0;
-	RSTRING(dest)->as.heap.len = 0;
-    }
-    else {
-	RBASIC(dest)->klass = rb_obj_class(str);
-	OBJ_INFECT(dest, str);
-	str = dest;
-    }
-    STR_SET_LEN(str, bp - buf);
+    rb_str_set_len(dest, bp - buf);
 
-    /* set encoding */ /* would like to have an easier way to do this */
-    if ((idx = rb_enc_find_index(to_e)) < 0) {
-        if ((idx = rb_enc_find_index("ASCII-8BIT")) < 0) {
-	    rb_raise(rb_eArgError, "unknown encoding name: ASCII-8BIT");
-	}
-    }
-    rb_enc_associate(str, rb_enc_from_index(idx));
+    /* set encoding */
+    rb_enc_associate(dest, to_enc);
 
-    if (tainted) OBJ_TAINT(str); /* is this needed??? */
-    return str;
+    return dest;
 }
 
 /*
@@ -399,7 +322,10 @@ str_transcode(int argc, VALUE *argv, VALUE str, int bang)
 static VALUE
 rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 {
-    return str_transcode(argc, argv, str, 1);
+    VALUE newstr = str_transcode(argc, argv, str);
+    if (NIL_P(newstr)) return str;
+    rb_str_shared_replace(str, newstr);
+    return str;
 }
 
 /*
@@ -415,18 +341,11 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_transcode(int argc, VALUE *argv, VALUE str)
 {
-    return str_transcode(argc, argv, str, 0);
-}
-
-/* function to fool the optimizer (avoid inlining transcode_loop) */
-void
-transcode_fool_the_optimizer (void)
-{
-    unsigned char **in_pos, **out_pos, *in_stop, *out_stop;
-    transcoder *my_transcoder;
-    transcoding *my_transcoding;
-    transcode_loop(in_pos, out_pos, in_stop, out_stop,
-                   my_transcoder, my_transcoding);
+    VALUE newstr = str_transcode(argc, argv, str);
+    if (NIL_P(newstr)) return rb_str_dup(str);
+    RBASIC(newstr)->klass = rb_obj_class(str);
+    OBJ_INFECT(newstr, str);
+    return newstr;
 }
 
 void

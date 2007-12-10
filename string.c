@@ -179,7 +179,7 @@ str_alloc(VALUE klass)
     return (VALUE)str;
 }
 
-VALUE
+static VALUE
 str_new(VALUE klass, const char *ptr, long len)
 {
     VALUE str;
@@ -370,6 +370,12 @@ rb_str_buf_new2(const char *ptr)
     return str;
 }
 
+VALUE
+rb_str_tmp_new(long len)
+{
+    return str_new(0, 0, len);
+}
+
 void
 rb_str_free(VALUE str)
 {
@@ -384,7 +390,7 @@ rb_str_to_str(VALUE str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
-static void
+void
 rb_str_shared_replace(VALUE str, VALUE str2)
 {
     if (str == str2) return;
@@ -625,7 +631,7 @@ str_modifiable(VALUE str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
 
-int
+static int
 str_independent(VALUE str)
 {
     str_modifiable(str);

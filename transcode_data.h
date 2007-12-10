@@ -1,14 +1,13 @@
 typedef unsigned char base_element;
-typedef const void * const info_element; 
 
 typedef struct byte_lookup {
     const base_element *base;
-    const void * const * const info;
+    const struct byte_lookup *const *info;
 } BYTE_LOOKUP;
 
 #ifdef TRANSCODE_DATA
 /* data file needs to treat this as a pointer, to remove warnings */
-#define PType (const void * const)
+#define PType (const BYTE_LOOKUP *)
 #else
 /* in code, this is treated as just an integer */
 #define PType (int)
@@ -23,10 +22,10 @@ typedef struct byte_lookup {
 #define UNDEF   (PType 0x09)   /* legal but undefined */
 #define ZERObt  (PType 0x0A)   /* zero bytes of payload, i.e. remove */
 
-#define output1(b1)          ((void*)((((unsigned char)(b1))<<8)|ONEbt))
-#define output2(b1,b2)       ((void*)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
-#define output3(b1,b2,b3)    ((void*)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt))
-#define output4(b0,b1,b2,b3) ((void*)((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt))
+#define output1(b1)          ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|ONEbt))
+#define output2(b1,b2)       ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
+#define output3(b1,b2,b3)    ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt))
+#define output4(b0,b1,b2,b3) ((const BYTE_LOOKUP *)((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt))
 
 #define getBT1(a)      (((a)>> 8)&0xFF)
 #define getBT2(a)      (((a)>>16)&0xFF)
