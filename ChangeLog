@@ -1,3 +1,9 @@
+Mon Dec 10 21:00:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_slice_bang): should return nil if position out
+	  of range.  a patch from Akinori MUSHA <knu AT iDaemons.org>.
+	  [ruby-dev:32518]
+
 Mon Dec 10 19:02:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_match): should calculate offset by converted

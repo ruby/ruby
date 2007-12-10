@@ -1888,6 +1888,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
       delete_pos_len:
 	if (pos < 0) {
 	    pos = RARRAY_LEN(ary) + pos;
+	    if (pos < 0) return Qnil;
 	}
 	arg2 = rb_ary_subseq(ary, pos, len);
 	rb_ary_splice(ary, pos, len, Qundef);	/* Qnil/rb_ary_new2(0) */
