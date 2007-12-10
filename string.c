@@ -2247,7 +2247,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
     long pos = NUM2LONG(idx);
 
     if (pos == -1) {
-	pos = RSTRING_LEN(str);
+	return rb_str_append(str, str2);
     }
     else if (pos < 0) {
 	pos++;
@@ -2655,9 +2655,9 @@ rb_str_replace(VALUE str, VALUE str2)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), len+1);
-	    FL_SET(str, STR_ASSOC);
+	FL_SET(str, STR_ASSOC);
 	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
-	}
+    }
     else {
 	rb_str_modify(str);
 	rb_str_resize(str, len);
