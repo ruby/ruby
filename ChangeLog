@@ -1,6 +1,6 @@
 Tue Dec 11 00:04:05 2007  Akinori MUSHA  <knu@iDaemons.org>
 
-	* array.c (rb_ary_slice_bang): If an invalid negative index (<=
+	* array.c (rb_ary_slice_bang): If an invalid negative index (<
 	  -size) is given, do not raise an exception but return nil just
 	  like slice() does.
 
