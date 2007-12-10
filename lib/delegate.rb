@@ -115,7 +115,7 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  preserved = [:__id__, :object_id, :__send__, :invoke_method, :respond_to?, :send]
+  preserved = [:__id__, :object_id, :__send__, :public_send, :respond_to?, :send]
   instance_methods.each do |m|
     next if preserved.include?(m)
     undef_method m
@@ -262,7 +262,7 @@ def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.public_instance_methods(true)
   methods -= [
-    :__id__, :object_id, :__send__, :invoke_method, :respond_to?, :send,
+    :__id__, :object_id, :__send__, :public_send, :respond_to?, :send,
     :==, :equal?, :initialize, :method_missing, :__getobj__, :__setobj__,
     :clone, :dup, :marshal_dump, :marshal_load,
   ]

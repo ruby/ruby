@@ -1509,27 +1509,19 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     obj.invoke_method(symbol [, args...])  => obj
+ *     obj.public_send(symbol [, args...])  => obj
  *
  *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. Unlike send, invoke_method calls public
- *  methods only, unless it's invoked in a function call style.
+ *  arguments specified. Unlike send, public_send calls public
+ *  methods only.
  *
- *     1.invoke_method(:puts, "hello")  # causes NoMethodError
+ *     1.public_send(:puts, "hello")  # causes NoMethodError
  */
 
 VALUE
-rb_invoke_method(int argc, VALUE *argv, VALUE recv)
+rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 {
-    int rb_vm_cfunc_funcall_p(rb_control_frame_t *);
-    int scope = NOEX_PUBLIC;
-    rb_thread_t *th = GET_THREAD();
-
-    if (rb_vm_cfunc_funcall_p(th->cfp)) {
-	scope = NOEX_NOSUPER | NOEX_PRIVATE;
-    }
-
-    return send_internal(argc, argv, recv, scope);
+    return send_internal(argc, argv, recv, NOEX_PUBLIC);
 }
 
 VALUE
@@ -2760,7 +2752,7 @@ Init_eval(void)
 
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
-    rb_define_method(rb_mKernel, "invoke_method", rb_invoke_method, -1);
+    rb_define_method(rb_mKernel, "public_send", rb_f_public_send, -1);
 
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
     rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
