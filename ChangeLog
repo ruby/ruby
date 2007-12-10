@@ -1,3 +1,7 @@
+Mon Dec 10 09:56:29 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_neq.rb, bm_vm1_not.rb: added.
+
 Mon Dec 10 07:48:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): wrong token was generated.  [ruby-dev:32498]
