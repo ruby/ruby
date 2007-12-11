@@ -285,7 +285,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingGB18030;
 
 #define ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(n)   (n)
 #define ONIGENC_CONSTRUCT_MBCLEN_INVALID()      (-1)
-#define ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n)    (-1-n)
+#define ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n)    (-1-(n))
 
 static inline int onigenc_mbclen_charfound(int r) { return 0 < r ? r : 0; }
 static inline int onigenc_mbclen_needmore(int r) { return r < -1 ? -1 - r : 0; }

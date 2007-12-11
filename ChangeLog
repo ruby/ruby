@@ -1,3 +1,8 @@
+Tue Dec 11 09:40:21 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE):
+	  parenthesize an argument.
+
 Tue Dec 11 02:23:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_method_missing): RDoc update patch from Hugh Sasse
