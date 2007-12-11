@@ -1,3 +1,10 @@
+Tue Dec 11 23:04:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): RDoc update.  a patch from Gary Wright
+	  <radar2002 AT gmail.com>.  [ruby-core:13998]
+
+	* pack.c (pack_unpack): ditto.
+
 Tue Dec 11 16:37:47 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_ascget): renamed from rb_enc_get_ascii.

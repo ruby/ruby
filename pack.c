@@ -395,8 +395,8 @@ static unsigned long utf8_to_uv(const char*,long*);
  *   Directive    Meaning
  *   ---------------------------------------------------------------
  *       @     |  Moves to absolute position
- *       A     |  ASCII string (space padded, count is width)
- *       a     |  ASCII string (null padded, count is width)
+ *       A     |  arbitrary binary string (space padded, count is width)
+ *       a     |  arbitrary binary string (null padded, count is width)
  *       B     |  Bit string (descending bit order)
  *       b     |  Bit string (ascending bit order)
  *       C     |  Unsigned char
@@ -519,8 +519,8 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	    switch (type) {
 	      case 'a':		/* arbitrary binary string (null padded)  */
-	      case 'A':		/* ASCII string (space padded) */
-	      case 'Z':		/* null terminated ASCII string  */
+	      case 'A':         /* arbitrary binary string (ASCII space padded) */
+	      case 'Z':         /* null terminated string  */
 		if (plen >= len) {
 		    rb_str_buf_cat(res, ptr, len);
 		    if (p[-1] == '*' && type == 'Z')
@@ -1176,9 +1176,10 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *
  *     Format | Returns | Function
  *     -------+---------+-----------------------------------------
- *       A    | String  | with trailing nulls and spaces removed
+ *       A    | String  | arbitrary binary string with trailing
+ *            |         | nulls and ASCII spaces removed
  *     -------+---------+-----------------------------------------
- *       a    | String  | string
+ *       a    | String  | arbitrary binary string
  *     -------+---------+-----------------------------------------
  *       B    | String  | extract bits from each character (msb first)
  *     -------+---------+-----------------------------------------
