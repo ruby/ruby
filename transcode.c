@@ -61,7 +61,7 @@ extern const BYTE_LOOKUP to_ISO_8859_15;
 typedef struct {
     const char *from_encoding;
     const char *to_encoding;
-    BYTE_LOOKUP *conv_tree_start;
+    const BYTE_LOOKUP *conv_tree_start;
     int max_output;
     int from_utf8;
 } transcoder;
@@ -86,7 +86,7 @@ register_transcoder(const char *from_e, const char *to_e,
     }
     transcoder_table[n].from_encoding = from_e;
     transcoder_table[n].to_encoding = to_e;
-    transcoder_table[n].conv_tree_start = (BYTE_LOOKUP *)tree_start;
+    transcoder_table[n].conv_tree_start = tree_start;
     transcoder_table[n].max_output = max_output;
     transcoder_table[n].from_utf8 = from_utf8;
 
@@ -168,19 +168,20 @@ transcode_loop(char **in_pos, char **out_pos,
     int from_utf8 = my_transcoder->from_utf8;
     char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
-        next_table = conv_tree_start;
-        if (out_p >= out_s) {
+	next_table = conv_tree_start;
+	if (out_p >= out_s) {
 	    int len = (out_p - *out_pos);
 	    int new_len = (len + my_transcoder->max_output) * 2;
 	    *out_pos = (*my_transcoding->flush_func)(my_transcoding, len, new_len);
 	    out_p = *out_pos + len;
 	    out_s = *out_pos + new_len - my_transcoder->max_output;
-        }
-        next_byte = (unsigned char)*in_p++;
+	}
+	next_byte = (unsigned char)*in_p++;
       follow_byte:
-        next_offset = next_table->base[next_byte];
-        next_info = (VALUE)next_table->info[next_offset];
-        switch (next_info & 0x1F) {
+	next_offset = next_table->base[next_byte];
+	if (next_offset == (base_element)-1) goto illegal;
+	next_info = (VALUE)next_table->info[next_offset];
+	switch (next_info & 0x1F) {
 	  case NOMAP:
 	    *out_p++ = next_byte;
 	    continue;
@@ -223,13 +224,13 @@ transcode_loop(char **in_pos, char **out_pos,
 	    /* todo: add code for alternative behaviors */
 	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence");
 	    continue;
-        }
-        continue;
+	}
+	continue;
       illegal:
-        /* deal with illegal byte sequence */
-        /* todo: add code for alternative behaviors */
-        rb_raise(rb_eRuntimeError /*change exception*/, "illegal byte sequence");
-        continue;
+	/* deal with illegal byte sequence */
+	/* todo: add code for alternative behaviors */
+	rb_raise(rb_eRuntimeError /*change exception*/, "illegal byte sequence");
+	continue;
     }
     /* cleanup */
     *in_pos  = in_p;
@@ -346,6 +347,7 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
     VALUE newstr = str_transcode(argc, argv, str);
     if (NIL_P(newstr)) return str;
     rb_str_shared_replace(str, newstr);
+    rb_enc_copy(str, newstr);
     return str;
 }
 
