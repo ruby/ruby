@@ -2731,10 +2731,11 @@ Init_eval(void)
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
 
+    rb_define_private_method(rb_cBasicObject, "method_missing", rb_method_missing, -1);
+
     rb_define_global_function("eval", rb_f_eval, -1);
     rb_define_global_function("iterator?", rb_f_block_given_p, 0);
     rb_define_global_function("block_given?", rb_f_block_given_p, 0);
-    rb_define_global_function("method_missing", rb_method_missing, -1);
     rb_define_global_function("loop", rb_f_loop, 0);
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);

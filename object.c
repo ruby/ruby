@@ -2351,6 +2351,10 @@ Init_Object(void)
     rb_define_method(rb_cBasicObject, "!@", rb_obj_not, 0);
     rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
+    rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy, 1);
+
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
@@ -2395,10 +2399,6 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
-
-    rb_define_private_method(rb_mKernel, "singleton_method_added", rb_obj_dummy, 1);
-    rb_define_private_method(rb_mKernel, "singleton_method_removed", rb_obj_dummy, 1);
-    rb_define_private_method(rb_mKernel, "singleton_method_undefined", rb_obj_dummy, 1);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
     rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */

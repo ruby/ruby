@@ -1,3 +1,11 @@
+Tue Dec 11 15:20:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): singleton_method_{added,removed,undefined}
+	  hooks should be defined for BasicObject.  [ruby-dev:32531]
+
+	* eval.c (Init_eval): method_missing should be defined for all
+	  objects; moved to BasicObject.
+
 Tue Dec 11 14:27:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_loop): get rid of SEGV at sequence can not be
