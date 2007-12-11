@@ -505,7 +505,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
     return n;
 }
 
-int rb_enc_get_ascii(const char *p, const char *e, int *len, rb_encoding *enc)
+int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
     int c, l;
     if (e <= p)

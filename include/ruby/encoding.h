@@ -79,7 +79,7 @@ int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 #define MBCLEN_NEEDMORE(ret)      ONIGENC_MBCLEN_NEEDMORE(ret)
 
 /* -> 0x00..0x7f, -1 */
-int rb_enc_get_ascii(const char *p, const char *e, int *len, rb_encoding *enc);
+int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
 /* code,encoding -> codelen */
 int rb_enc_codelen(int, rb_encoding*);

@@ -222,7 +222,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 
     p = s; pend = p + len;
     while (p<pend) {
-        c = rb_enc_get_ascii(p, pend, &clen, enc);
+        c = rb_enc_ascget(p, pend, &clen, enc);
         if (c == -1) {
             p += mbclen(p, pend, enc);
         }
@@ -240,7 +240,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
     else {
 	p = s;
 	while (p<pend) {
-            c = rb_enc_get_ascii(p, pend, &clen, enc);
+            c = rb_enc_ascget(p, pend, &clen, enc);
 	    if (c == '\\' && p+clen < pend) {
 		int n = clen + mbclen(p+clen, pend, enc);
 		rb_str_buf_cat(str, p, n);
@@ -2387,7 +2387,7 @@ rb_reg_quote(VALUE str)
     s = RSTRING_PTR(str);
     send = s + RSTRING_LEN(str);
     while (s < send) {
-        c = rb_enc_get_ascii(s, send, &clen, enc);
+        c = rb_enc_ascget(s, send, &clen, enc);
 	if (c == -1) {
             s += mbclen(s, send, enc);
 	    continue;
@@ -2420,7 +2420,7 @@ rb_reg_quote(VALUE str)
     t += s - RSTRING_PTR(str);
 
     while (s < send) {
-        c = rb_enc_get_ascii(s, send, &clen, enc);
+        c = rb_enc_ascget(s, send, &clen, enc);
 	if (c == -1) {
 	    int n = mbclen(s, send, enc);
 
@@ -2694,7 +2694,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
-        int c = rb_enc_get_ascii(s, e, &clen, enc);
+        int c = rb_enc_ascget(s, e, &clen, enc);
 	char *ss;
 
 	if (c == -1) {
@@ -2711,7 +2711,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	}
         rb_str_buf_cat(val, p, ss-p);
 
-        c = rb_enc_get_ascii(s, e, &clen, enc);
+        c = rb_enc_ascget(s, e, &clen, enc);
         if (c == -1) {
             s += mbclen(s, e, enc);
 	    rb_str_buf_cat(val, ss, s-ss);
@@ -2732,12 +2732,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
           case 'k':
-            if (s < e && rb_enc_get_ascii(s, e, &clen, enc) == '<') {
+            if (s < e && rb_enc_ascget(s, e, &clen, enc) == '<') {
                 char *name, *name_end;
                
                 name_end = name = s + clen;
                 while (name_end < e) {
-                    c = rb_enc_get_ascii(name_end, e, &clen, enc);
+                    c = rb_enc_ascget(name_end, e, &clen, enc);
                     if (c == '>') break;
                     name_end += c == -1 ? mbclen(name_end, e, enc) : clen;
                 }
