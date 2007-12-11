@@ -505,22 +505,26 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
     return n;
 }
 
-int rb_enc_get_ascii(const char *p, const char *e, rb_encoding *enc)
+int rb_enc_get_ascii(const char *p, const char *e, int *len, rb_encoding *enc)
 {
     int c, l;
     if (e <= p)
         return -1;
     if (rb_enc_asciicompat(enc)) {
         c = (unsigned char)*p;
-        return ISASCII(c) ? c : -1;
+        if (!ISASCII(c))
+            return -1;
+        if (len) *len = 1;
+        return c;
     }
     l = rb_enc_precise_mbclen(p, e, enc);
     if (!MBCLEN_CHARFOUND(l))
         return -1;
     c = rb_enc_codepoint(p, e, enc);
-    if (rb_enc_isascii(c, enc))
-        return c;
-    return -1;
+    if (!rb_enc_isascii(c, enc))
+        return -1;
+    if (len) *len = l;
+    return c;
 }
 
 int

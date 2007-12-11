@@ -218,16 +218,21 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
     rb_encoding *enc = rb_enc_get(str);
     const char *p, *pend;
     int need_escape = 0;
-    int c;
+    int c, clen;
 
     p = s; pend = p + len;
     while (p<pend) {
-        c = rb_enc_get_ascii(p, pend, enc);
-	if (c == '/' || (c != -1 && !rb_enc_isprint(c, enc))) {
+        c = rb_enc_get_ascii(p, pend, &clen, enc);
+        if (c == -1) {
+            p += mbclen(p, pend, enc);
+        }
+        else if (c != '/' && rb_enc_isprint(c, enc)) {
+            p += clen;
+        }
+        else {
 	    need_escape = 1;
 	    break;
-	}
-	p += mbclen(p, pend, enc);
+        }
     }
     if (!need_escape) {
 	rb_str_buf_cat(str, s, len);
@@ -235,9 +240,9 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
     else {
 	p = s;
 	while (p<pend) {
-            c = rb_enc_get_ascii(p, pend, enc);
-	    if (c == '\\') {
-		int n = mbclen(p+1, pend, enc) + 1;
+            c = rb_enc_get_ascii(p, pend, &clen, enc);
+	    if (c == '\\' && p+clen < pend) {
+		int n = clen + mbclen(p+clen, pend, enc);
 		rb_str_buf_cat(str, p, n);
 		p += n;
 		continue;
@@ -245,7 +250,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	    else if (c == '/') {
 		char c = '\\';
 		rb_str_buf_cat(str, &c, 1);
-		rb_str_buf_cat(str, p, 1);
+		rb_str_buf_cat(str, p, clen);
 	    }
 	    else if (c == -1) {
                 int l = mbclen(p, pend, enc);
@@ -254,7 +259,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 		continue;
 	    }
 	    else if (rb_enc_isprint(c, enc)) {
-		rb_str_buf_cat(str, p, 1);
+		rb_str_buf_cat(str, p, clen);
 	    }
 	    else if (!rb_enc_isspace(c, enc)) {
 		char b[8];
@@ -263,9 +268,9 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 		rb_str_buf_cat(str, b, 4);
 	    }
 	    else {
-		rb_str_buf_cat(str, p, 1);
+		rb_str_buf_cat(str, p, clen);
 	    }
-	    p++;
+	    p += clen;
 	}
     }
 }
@@ -2376,19 +2381,15 @@ rb_reg_quote(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
     char *s, *send, *t;
     VALUE tmp;
-    int c;
+    int c, clen;
     int ascii_only = rb_enc_str_asciionly_p(str);
 
     s = RSTRING_PTR(str);
     send = s + RSTRING_LEN(str);
-    for (; s < send; s++) {
-        c = rb_enc_get_ascii(s, send, enc);
+    while (s < send) {
+        c = rb_enc_get_ascii(s, send, &clen, enc);
 	if (c == -1) {
-	    int n = mbclen(s, send, enc);
-
-	    while (n-- && s < send)
-		s++;
-	    s--;
+            s += mbclen(s, send, enc);
 	    continue;
 	}
 	switch (c) {
@@ -2400,6 +2401,7 @@ rb_reg_quote(VALUE str)
 	  case '\t': case '\f': case '\v': case '\n': case '\r':
 	    goto meta_found;
 	}
+        s += clen;
     }
     if (ascii_only && rb_enc_get_index(str) != 0) {
         str = rb_str_new3(str);
@@ -2417,16 +2419,16 @@ rb_reg_quote(VALUE str)
     memcpy(t, RSTRING_PTR(str), s - RSTRING_PTR(str));
     t += s - RSTRING_PTR(str);
 
-    for (; s < send; s++) {
-        c = rb_enc_get_ascii(s, send, enc);
+    while (s < send) {
+        c = rb_enc_get_ascii(s, send, &clen, enc);
 	if (c == -1) {
 	    int n = mbclen(s, send, enc);
 
-	    while (n-- && s < send)
+	    while (n--)
 		*t++ = *s++;
-	    s--;
 	    continue;
 	}
+        s += clen;
 	switch (c) {
 	  case '[': case ']': case '{': case '}':
 	  case '(': case ')': case '|': case '-':
@@ -2684,8 +2686,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 {
     VALUE val = 0;
     char *p, *s, *e;
-    unsigned char uc;
-    int no;
+    int no, clen;
     rb_encoding *enc = rb_enc_check(str, src);
 
     rb_enc_check(str, regexp);
@@ -2693,56 +2694,64 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
-        int c = rb_enc_get_ascii(s, e, enc);
-	char *ss = s++;
+        int c = rb_enc_get_ascii(s, e, &clen, enc);
+	char *ss;
 
 	if (c == -1) {
-	    s += mbclen(ss, e, enc) - 1;
+	    s += mbclen(s, e, enc);
 	    continue;
 	}
+	ss = s;
+        s += clen;
+
 	if (c != '\\' || s == e) continue;
 
 	if (!val) {
 	    val = rb_str_buf_new(ss-p);
-	    rb_str_buf_cat(val, p, ss-p);
 	}
-	else {
-	    rb_str_buf_cat(val, p, ss-p);
-	}
+        rb_str_buf_cat(val, p, ss-p);
 
-	uc = (unsigned char)*s++;
+        c = rb_enc_get_ascii(s, e, &clen, enc);
+        if (c == -1) {
+            s += mbclen(s, e, enc);
+	    rb_str_buf_cat(val, ss, s-ss);
+	    continue;
+        }
+        s += clen;
+
 	p = s;
-	switch (uc) {
+	switch (c) {
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
             if (onig_noname_group_capture_is_active(RREGEXP(regexp)->ptr)) {
-              no = uc - '0';
+                no = c - '0';
             }
             else {
-              continue;
+                continue;
             }
 	    break;
 
           case 'k':
-            if (s < e && *s == '<') {
-              char *name, *name_end;
-
-              name_end = name = s + 1;
-              while (name_end < e) {
-                if (*name_end == '>') break;
-                name_end += mbclen(name_end, e, enc);
-              }
-              if (name_end < e) {
-                no = name_to_backref_number(regs, regexp, name, name_end);
-                p = s = name_end + 1;
-                break;
-              }
-              else {
-                rb_raise(rb_eRuntimeError, "invalid group name reference format");
-              }
+            if (s < e && rb_enc_get_ascii(s, e, &clen, enc) == '<') {
+                char *name, *name_end;
+               
+                name_end = name = s + clen;
+                while (name_end < e) {
+                    c = rb_enc_get_ascii(name_end, e, &clen, enc);
+                    if (c == '>') break;
+                    name_end += c == -1 ? mbclen(name_end, e, enc) : clen;
+                }
+                if (name_end < e) {
+                    no = name_to_backref_number(regs, regexp, name, name_end);
+                    p = s = name_end + clen;
+                    break;
+                }
+                else {
+                    rb_raise(rb_eRuntimeError, "invalid group name reference format");
+                }
             }
 
-            rb_str_buf_cat(val, s-2, 2);
+            rb_str_buf_cat(val, ss, s-ss);
             continue;
 
           case '0':
@@ -2765,11 +2774,11 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
 	  case '\\':
-	    rb_str_buf_cat(val, s-1, 1);
+	    rb_str_buf_cat(val, s-clen, clen);
 	    continue;
 
 	  default:
-	    rb_str_buf_cat(val, s-2, 2);
+	    rb_str_buf_cat(val, ss, s-ss);
 	    continue;
 	}
 
@@ -2783,11 +2792,8 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     if (p < e) {
 	if (!val) {
 	    val = rb_str_buf_new(e-p);
-	    rb_str_buf_cat(val, p, e-p);
 	}
-	else {
-	    rb_str_buf_cat(val, p, e-p);
-	}
+        rb_str_buf_cat(val, p, e-p);
     }
     if (!val) return str;
 

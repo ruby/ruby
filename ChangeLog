@@ -1,3 +1,14 @@
+Tue Dec 11 12:05:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_get_ascii): add an argument to provide the
+	  length of the returned character.
+
+	* include/ruby/encoding.h (rb_enc_get_ascii): add the argument.
+
+	* re.c (rb_reg_expr_str): modify rb_enc_get_ascii call.
+	  (rb_reg_quote): ditto.
+	  (rb_reg_regsub): ditto.
+
 Tue Dec 11 09:40:21 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE):

@@ -72,14 +72,14 @@ rb_encoding * rb_enc_find(const char *name);
 /* ptr,endptr,encoding -> mbclen */
 int rb_enc_mbclen(const char*, const char *, rb_encoding*);
 
-/* ptr,endptr,encoding -> chlen, invalid or needmore */
-int rb_enc_precise_mbclen(const char*, const char *, rb_encoding*);
+/* -> chlen, invalid or needmore */
+int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 #define MBCLEN_CHARFOUND(ret)     ONIGENC_MBCLEN_CHARFOUND(ret)
 #define MBCLEN_INVALID(ret)       ONIGENC_MBCLEN_INVALID(ret)
 #define MBCLEN_NEEDMORE(ret)      ONIGENC_MBCLEN_NEEDMORE(ret)
 
-/* ptr,endptr,encoding -> 0x00..0x7f, -1 */
-int rb_enc_get_ascii(const char*, const char *, rb_encoding*);
+/* -> 0x00..0x7f, -1 */
+int rb_enc_get_ascii(const char *p, const char *e, int *len, rb_encoding *enc);
 
 /* code,encoding -> codelen */
 int rb_enc_codelen(int, rb_encoding*);
