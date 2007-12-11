@@ -1,9 +1,12 @@
-Tue Dec 11 13:57:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Dec 11 14:27:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_loop): get rid of SEGV at sequence can not be
 	  converted.
 
 	* transcode.c (rb_str_transcode_bang): copy encoding.  [ruby-dev:32532]
+
+	* test/ruby/test_transcode.rb: added tests from Martin Duerst <duerst
+	  AT it.aoyama.ac.jp>.  [ruby-dev:32532]
 
 Tue Dec 11 12:05:51 2007  Tanaka Akira  <akr@fsij.org>
 
