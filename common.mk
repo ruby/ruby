@@ -355,8 +355,9 @@ PHONY:
 
 {$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) -o y.tab.c $<
-	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
-	@$(RM) y.tab.c
+	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
+	@$(RM) $@ y.tab.c
+	@$(MV) $@.new $@
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c

@@ -67,6 +67,8 @@ BASERUBY = ruby
 PURIFY =
 AUTOCONF = autoconf
 RM = $(srcdir:/=\)\win32\rm.bat
+CP = copy > nul
+MV = ren > nul
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86

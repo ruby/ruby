@@ -44,6 +44,8 @@ AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
 RM = $(srcdir)\win32\rm.bat
+CP = copy > nul
+MV = ren > nul
 !if !defined(BASERUBY)
 BASERUBY = ruby
 !endif

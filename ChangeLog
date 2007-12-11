@@ -1,3 +1,10 @@
+Tue Dec 11 16:19:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, */Makefile.sub (CP, MV): added.
+
+	* common.mk (.y.c): not discard the old target until successfully
+	  created.
+
 Tue Dec 11 15:20:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (Init_Object): singleton_method_{added,removed,undefined}

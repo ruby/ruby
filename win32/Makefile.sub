@@ -50,6 +50,8 @@ AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+CP = copy > nul
+MV = ren > nul
 !if !defined(BASERUBY)
 BASERUBY = ruby
 !endif

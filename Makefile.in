@@ -81,6 +81,8 @@ ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
 
+CP            = cp
+MV            = mv
 RM            = rm -f
 NM            = @NM@
 AR            = @AR@
