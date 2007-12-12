@@ -1,3 +1,8 @@
+Wed Dec 12 21:26:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_method.ci (rb_alias): no need to skip aliasing when new
+	  equals to old.  [ruby-core:13990]
+
 Wed Dec 12 16:34:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_check_readable): set default external encoding to

@@ -563,8 +563,6 @@ rb_alias(VALUE klass, ID name, ID def)
     st_data_t data;
 
     rb_frozen_class_p(klass);
-    if (name == def)
-	return;
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
