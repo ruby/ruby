@@ -1267,6 +1267,16 @@ remain_size(rb_io_t *fptr)
 }
 
 static VALUE
+io_enc_str(VALUE str, rb_io_t *fptr)
+{
+    OBJ_TAINT(str);
+    if (fptr->enc) {
+	rb_enc_associate(str, fptr->enc);
+    }
+    return str;
+}
+
+static VALUE
 read_all(rb_io_t *fptr, long siz, VALUE str)
 {
     long bytes = 0;
@@ -1291,9 +1301,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 	rb_str_resize(str, siz);
     }
     if (bytes != siz) rb_str_resize(str, bytes);
-    OBJ_TAINT(str);
-
-    return str;
+    return io_enc_str(str, fptr);
 }
 
 void rb_io_set_nonblock(rb_io_t *fptr)
@@ -1521,16 +1529,6 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     return LONG2FIX(n);
 }
 
-static VALUE
-io_enc_str(VALUE str, rb_io_t *fptr)
-{
-    OBJ_TAINT(str);
-    if (fptr->enc) {
-	rb_enc_associate(str, fptr->enc);
-    }
-    return str;
-}
-
 /*
  *  call-seq:
  *     ios.read([length [, buffer]])    => string, buffer, or nil
@@ -1597,7 +1595,8 @@ io_read(int argc, VALUE *argv, VALUE io)
         return Qnil;
     }
     rb_str_resize(str, n);
-    return io_enc_str(str, fptr);
+
+    return str;
 }
 
 static int
