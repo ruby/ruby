@@ -379,7 +379,7 @@ module Gem::Package
       end
 
       alias_method :is_directory, :is_directory?
-      alias_method :is_file, :is_file
+      alias_method :is_file, :is_file?
 
       def bytes_read
         @read

@@ -2132,15 +2132,17 @@ rb_io_getc(VALUE io)
     rb_io_t *fptr;
     int r, n;
     VALUE str;
+    rb_encoding *enc;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
+    enc = fptr->enc ? fptr->enc : rb_default_external_encoding();
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, fptr->enc);
+    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
     if ((n = MBCLEN_CHARFOUND(r)) != 0 && n <= fptr->rbuf_len) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
 	fptr->rbuf_off += n;
@@ -2154,7 +2156,7 @@ getc_needmore:
             rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
             fptr->rbuf_off++;
             fptr->rbuf_len--;
-            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), fptr->enc);
+            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
             if (MBCLEN_NEEDMORE(r)) {
                 goto getc_needmore;
             }
