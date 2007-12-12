@@ -1148,7 +1148,7 @@ expr		: command_call
 		| keyword_not expr
 		    {
 		    /*%%%*/
-			$$ = call_uni_op($2, '!');
+			$$ = call_uni_op(cond($2), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), $2);
 		    %*/
@@ -1156,7 +1156,7 @@ expr		: command_call
 		| '!' command_call
 		    {
 		    /*%%%*/
-			$$ = call_uni_op($2, '!');
+			$$ = call_uni_op(cond($2), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_id2sym('!'), $2);
 		    %*/
@@ -2142,7 +2142,7 @@ arg		: lhs '=' arg
 		| '!' arg
 		    {
 		    /*%%%*/
-			$$ = call_uni_op($2, '!');
+			$$ = call_uni_op(cond($2), '!');
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/

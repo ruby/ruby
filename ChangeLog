@@ -1,3 +1,8 @@
+Wed Dec 12 12:44:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (expr): 'not' and '!' should act as conditional
+	  expression.   [ruby-dev:32548]
+
 Wed Dec 12 12:11:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): should copy encoding.
