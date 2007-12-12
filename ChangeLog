@@ -1,3 +1,8 @@
+Wed Dec 12 22:21:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_mode_enc): allow specifying external encoding in
+	  open mode, e.g. open(path, "r:utf-8").
+
 Wed Dec 12 21:26:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_method.ci (rb_alias): no need to skip aliasing when new

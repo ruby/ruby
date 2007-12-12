@@ -2932,14 +2932,16 @@ rb_io_mode_flags(const char *mode)
 
     while (*m) {
         switch (*m++) {
-        case 'b':
+	  case 'b':
             flags |= FMODE_BINMODE;
             break;
-        case '+':
+	  case '+':
             flags |= FMODE_READWRITE;
             break;
-        default:
+	  default:
             goto error;
+	  case ':':
+	    return flags;
         }
     }
 
@@ -3001,16 +3003,18 @@ rb_io_mode_modenum(const char *mode)
 
     while (*m) {
         switch (*m++) {
-        case 'b':
+	  case 'b':
 #ifdef O_BINARY
             flags |= O_BINARY;
 #endif
             break;
-        case '+':
+	  case '+':
             flags = (flags & ~O_ACCMODE) | O_RDWR;
             break;
-        default:
+	  default:
             goto error;
+	  case ':':
+	    return flags;
         }
     }
 
@@ -3043,6 +3047,26 @@ rb_io_modenum_mode(int flags)
     }
     rb_raise(rb_eArgError, "illegal access modenum %o", flags);
     return NULL;		/* not reached */
+}
+
+void
+rb_io_mode_enc(rb_io_t *fptr, const char *mode)
+{
+    const char *p0, *p1;
+    int idx;
+    
+    p0 = strrchr(mode, ':');
+    if (p0) {
+	idx = rb_enc_find_index(p0+1);
+	if (idx >= 0) {
+	    fptr->enc = rb_enc_from_index(idx);
+	}
+#if 0
+	p1 = strchr(mode, ':');
+	if (p1 < p0) {
+	}
+#endif
+    }
 }
 
 struct sysopen_struct {
@@ -3163,6 +3187,7 @@ rb_file_open_internal(VALUE io, const char *fname, const char *mode)
     rb_io_t *fptr;
 
     MakeOpenFile(io, fptr);
+    rb_io_mode_enc(fptr, mode);
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
     fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
@@ -3471,6 +3496,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 
     port = io_alloc(rb_cIO);
     MakeOpenFile(port, fptr);
+    rb_io_mode_enc(fptr, mode);
     fptr->fd = fd;
     fptr->stdio_file = fp;
     fptr->mode = modef | FMODE_SYNC|FMODE_DUPLEX;
@@ -3585,7 +3611,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
-	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
+	mode = StringValuePtr(pmode);
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -3639,6 +3665,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 	rb_file_sysopen_internal(io, RSTRING_PTR(fname), flags, fmode);
     }
     else {
+
 	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
 	rb_file_open_internal(io, RSTRING_PTR(fname), mode);
     }
@@ -3975,6 +4002,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 		     rb_io_flags_mode(flags));
 	}
 	fptr->mode = flags;
+	rb_io_mode_enc(fptr, StringValuePtr(nmode));
     }
 
     if (fptr->path) {
