@@ -2370,15 +2370,19 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
 	if (iter) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
+	    rb_encoding *enc;
 
 	    rb_match_busy(match);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    enc = rb_enc_check(str, repl);
 	    str_mod_check(str, p, len);
 	    str_frozen_check(str);
 	    rb_backref_set(match);
+	    rb_enc_associate(str, enc);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
+	    rb_enc_copy(str, repl);
 	}
 	rb_str_modify(str);
 	if (OBJ_TAINTED(repl)) tainted = 1;
@@ -2490,17 +2494,22 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 	if (iter) {
+	    rb_encoding *enc;
+
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    enc = rb_enc_check(str, val);
 	    str_mod_check(str, sp, slen);
 	    if (bang) str_frozen_check(str);
 	    if (val == dest) { 	/* paranoid chack [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	    rb_backref_set(match);
+	    rb_enc_associate(str, enc);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs, pat);
+	    rb_enc_copy(str, val);
 	}
 	if (OBJ_TAINTED(val)) tainted = 1;
 	len = (bp - buf) + (beg - offset) + RSTRING_LEN(val) + 3;

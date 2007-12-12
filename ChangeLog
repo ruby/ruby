@@ -1,3 +1,10 @@
+Wed Dec 12 12:11:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_regsub): should copy encoding.
+
+	* string.c (rb_str_sub_bang, str_gsub): should check and copy encoding
+	  to be replaced.
+
 Tue Dec 11 23:04:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): RDoc update.  a patch from Gary Wright
