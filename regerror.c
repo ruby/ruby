@@ -197,7 +197,7 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
       code = ONIGENC_MBC_TO_CODE(enc, p, end);
       if (code >= 0x80) {
 	if (len + 5 <= buf_size) {
-	  sprintf((char* )(&(buf[len])), "\\x%02x",
+	  sprintf((char* )(&(buf[len])), "\\x%02X",
 		  (unsigned int )(code & 0377));
 	  len += 5;
 	}
@@ -346,7 +346,7 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
           int blen;
 
           while (len-- > 0) {
-            sprintf((char* )bs, "\\x%02x", *p++ & 0377);
+            sprintf((char* )bs, "\\x%02X", *p++ & 0377);
             blen = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
             bp = bs;
             while (blen-- > 0) *s++ = *bp++;
@@ -355,7 +355,7 @@ onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
 	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
-	sprintf((char* )bs, "\\x%02x", *p++ & 0377);
+	sprintf((char* )bs, "\\x%02X", *p++ & 0377);
 	len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, bs);
         bp = bs;
 	while (len-- > 0) *s++ = *bp++;

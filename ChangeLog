@@ -1,3 +1,8 @@
+Wed Dec 12 23:22:58 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c, regerror.c, string.c, parse.y, ruby.c, file.c:
+	  use capital letter for \xHH notation.  [ruby-dev:32511]
+
 Wed Dec 12 22:21:34 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_mode_enc): allow specifying external encoding in

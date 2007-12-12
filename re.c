@@ -264,7 +264,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len)
 	    else if (!rb_enc_isspace(c, enc)) {
 		char b[8];
 
-		sprintf(b, "\\x%02x", c);
+		sprintf(b, "\\x%02X", c);
 		rb_str_buf_cat(str, b, 4);
 	    }
 	    else {
@@ -1671,7 +1671,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     }
     else {
         char escbuf[5];
-        snprintf(escbuf, sizeof(escbuf), "\\x%02x", chbuf[0]&0xff);
+        snprintf(escbuf, sizeof(escbuf), "\\x%02X", chbuf[0]&0xff);
         rb_str_buf_cat(buf, escbuf, 4);
     }
     *pp = p;
@@ -1697,7 +1697,7 @@ append_utf8(unsigned long uv,
         return -1;
     if (uv < 0x80) {
         char escbuf[5];
-        snprintf(escbuf, sizeof(escbuf), "\\x%02x", (int)uv);
+        snprintf(escbuf, sizeof(escbuf), "\\x%02X", (int)uv);
         rb_str_buf_cat(buf, escbuf, 4);
     }
     else {

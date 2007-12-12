@@ -7070,7 +7070,7 @@ parser_yylex(struct parser_params *parser)
 
       default:
 	if (!parser_is_identchar()) {
-	    rb_compile_error(PARSER_ARG  "Invalid char `\\x%02x' in expression", c);
+	    rb_compile_error(PARSER_ARG  "Invalid char `\\x%02X' in expression", c);
 	    goto retry;
 	}
 
