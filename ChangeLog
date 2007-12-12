@@ -1,3 +1,10 @@
+Wed Dec 12 16:34:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_check_readable): set default external encoding to
+	  STDIN.
+
+	* io.c (io_enc_str): associate encoding to output string.
+
 Wed Dec 12 12:44:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (expr): 'not' and '!' should act as conditional

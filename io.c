@@ -356,6 +356,9 @@ rb_io_check_readable(rb_io_t *fptr)
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
+    if (!fptr->enc && fptr->fd == 0) {
+	fptr->enc = rb_default_external_encoding();
+    }
 }
 
 void
@@ -1518,6 +1521,16 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     return LONG2FIX(n);
 }
 
+static VALUE
+io_enc_str(VALUE str, rb_io_t *fptr)
+{
+    OBJ_TAINT(str);
+    if (fptr->enc) {
+	rb_enc_associate(str, fptr->enc);
+    }
+    return str;
+}
+
 /*
  *  call-seq:
  *     ios.read([length [, buffer]])    => string, buffer, or nil
@@ -1561,7 +1574,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     }
 
     if (NIL_P(str)) {
-	str = rb_tainted_str_new(0, len);
+	str = rb_str_new(0, len);
     }
     else {
 	StringValue(str);
@@ -1584,9 +1597,7 @@ io_read(int argc, VALUE *argv, VALUE io)
         return Qnil;
     }
     rb_str_resize(str, n);
-    OBJ_TAINT(str);
-
-    return str;
+    return io_enc_str(str, fptr);
 }
 
 static int
@@ -1679,7 +1690,7 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit, rb_encoding *enc)
+rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
 {
     VALUE str = Qnil;
     int c, nolimit = 0;
@@ -1694,14 +1705,12 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit, rb_encoding *
     }
 
     if (!NIL_P(str)) {
-	rb_enc_associate(str, enc);
+	str = io_enc_str(str, fptr);
 	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
-	OBJ_TAINT(str);
     }
-
     return str;
 }
 
@@ -1743,23 +1752,21 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
 static VALUE
 rb_io_getline_1(VALUE rs, long limit, VALUE io)
 {
-    rb_encoding *enc;
     VALUE str = Qnil;
     rb_io_t *fptr;
     int nolimit = 0;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    enc = rb_enc_get(io);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
     else if (limit == 0) {
-	return rb_enc_str_new(0, 0, enc);
+	return rb_enc_str_new(0, 0, fptr->enc);
     }
     else if (rs == rb_default_rs) {
-	return rb_io_getline_fast(fptr, '\n', limit, enc);
+	return rb_io_getline_fast(fptr, '\n', limit);
     }
     else {
 	int c, newline;
@@ -1775,8 +1782,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    swallow(fptr, '\n');
 	}
 	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0],
-				      limit, enc);
+	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0], limit);
 	}
 	else {
 	    rsptr = RSTRING_PTR(rs);
@@ -1804,12 +1810,11 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     }
 
     if (!NIL_P(str)) {
-	rb_enc_associate(str, enc);
+	str = io_enc_str(str, fptr);
 	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
 	}
-	OBJ_TAINT(str);
     }
 
     return str;
@@ -1832,7 +1837,7 @@ rb_io_gets(VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr, '\n', 0, rb_enc_get(io));
+    return rb_io_getline_fast(fptr, '\n', 0);
 }
 
 /*
@@ -2125,20 +2130,18 @@ rb_io_bytes(VALUE str)
 static VALUE
 rb_io_getc(VALUE io)
 {
-    rb_encoding *enc;
     rb_io_t *fptr;
     int r, n;
     VALUE str;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    enc = rb_enc_get(io);
 
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, fptr->enc);
     if ((n = MBCLEN_CHARFOUND(r)) != 0 && n <= fptr->rbuf_len) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
 	fptr->rbuf_off += n;
@@ -2152,7 +2155,7 @@ getc_needmore:
             rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
             fptr->rbuf_off++;
             fptr->rbuf_len--;
-            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
+            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), fptr->enc);
             if (MBCLEN_NEEDMORE(r)) {
                 goto getc_needmore;
             }
@@ -2163,9 +2166,7 @@ getc_needmore:
 	fptr->rbuf_off++;
 	fptr->rbuf_len--;
     }
-    rb_enc_associate(str, enc);
-
-    return str;
+    return io_enc_str(str, fptr);
 }
 
 int
