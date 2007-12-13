@@ -390,8 +390,11 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     }
     if (BUILTIN_TYPE(str1) != T_STRING) {
 	VALUE tmp = str1;
+	int idx0 = idx1;
 	str1 = str2;
 	str2 = tmp;
+	idx1 = idx2;
+	idx2 = idx0;
     }
     if (BUILTIN_TYPE(str1) == T_STRING) {
 	int cr1, cr2;

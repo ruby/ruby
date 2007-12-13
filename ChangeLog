@@ -1,3 +1,7 @@
+Thu Dec 13 17:03:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): should swap encoding indexes too.
+
 Thu Dec 13 16:41:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): should not judge compatibility
