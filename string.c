@@ -4091,7 +4091,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	int last_null = 0;
 	struct re_registers *regs;
 
-	enc = rb_enc_check(str, spat);
+	if (RREGEXP(spat)->len != 0) {
+	    enc = rb_enc_check(str, spat);
+	}
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
 	    regs = RMATCH(rb_backref_get())->regs;
 	    if (start == end && BEG(0) == END(0)) {
@@ -4456,6 +4458,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     }
     if (NIL_P(rs)) return Qnil;
     StringValue(rs);
+    rb_enc_check(str, rs);
     len = RSTRING_LEN(str);
     if (len == 0) return Qnil;
     p = RSTRING_PTR(str);
@@ -4992,11 +4995,6 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
-#if 0
-    else if (!m17n_asciicompat(enc)) {
-	rb_raise(rb_eArgError, "character encodings differ");
-    }
-#endif
     len = str_strlen(str, enc);
     if (width < 0 || len >= width) return rb_str_dup(str);
     n = width - len;
@@ -5046,6 +5044,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     STR_SET_LEN(res, p-RSTRING_PTR(res));
     OBJ_INFECT(res, str);
     if (!NIL_P(pad)) OBJ_INFECT(res, pad);
+    rb_enc_associate(res, enc);
     return res;
 }
 
