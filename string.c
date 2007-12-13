@@ -402,10 +402,10 @@ rb_str_shared_replace(VALUE str, VALUE str2)
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
 	return;
     }
-    STR_SET_NOEMBED(str);
     if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
 	free(RSTRING_PTR(str));
     }
+    STR_SET_NOEMBED(str);
     STR_UNSET_NOCAPA(str);
     RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
     RSTRING(str)->as.heap.len = RSTRING_LEN(str2);

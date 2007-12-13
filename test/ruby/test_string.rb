@@ -1091,6 +1091,9 @@ class TestString < Test::Unit::TestCase
     a = S("**")
     assert_equal(S("*+"), a.succ!)
     assert_equal(S("*+"), a)
+
+    assert_equal("aaaaaaaaaaaa", "zzzzzzzzzzz".succ!)
+    assert_equal("aaaaaaaaaaaaaaaaaaaaaaaa", "zzzzzzzzzzzzzzzzzzzzzzz".succ!)
   end
 
   def test_sum

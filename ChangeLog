@@ -1,3 +1,7 @@
+Thu Dec 13 20:31:28 2007  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_shared_replace): make str noembed after free.
+
 Thu Dec 13 20:09:09 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_protect): restore root_jmpbuf to avoid SEGV by
