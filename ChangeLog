@@ -1,4 +1,4 @@
-Thu Dec 13 17:26:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Dec 13 17:51:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_split_m): need not to check encoding if regexp
 	  is empty.
@@ -8,6 +8,10 @@ Thu Dec 13 17:26:17 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_chomp_bang): need to check encoding of record
 	  separator.
+
+	* string.c (str_gsub): should copy encoding to the result.
+
+	* sprintf.c (rb_str_format): ditto.
 
 Thu Dec 13 17:03:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

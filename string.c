@@ -2490,11 +2490,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
     rb_str_locktmp(dest);
     do {
+	rb_encoding *enc;
+
 	n++;
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 	if (iter) {
-	    rb_encoding *enc;
 
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
@@ -2505,12 +2506,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	    rb_backref_set(match);
-	    rb_enc_associate(str, enc);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs, pat);
-	    rb_enc_copy(str, val);
+	    enc = rb_enc_check(str, val);
 	}
+	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(val)) tainted = 1;
 	len = (bp - buf) + (beg - offset) + RSTRING_LEN(val) + 3;
 	if (blen < len) {
@@ -2570,6 +2571,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     else {
 	RBASIC(dest)->klass = rb_obj_class(str);
 	OBJ_INFECT(dest, str);
+	rb_enc_copy(dest, str);
 	str = dest;
     }
     STR_SET_LEN(str, bp - buf);

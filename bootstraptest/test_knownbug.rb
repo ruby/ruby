@@ -70,7 +70,7 @@ assert_equal 'ok', %q{
   begin
     s["\xb0\xa3"] = "foo"
     :ng
-  rescue IndexError
+  rescue ArgumentError
     :ok
   end
 }

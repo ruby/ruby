@@ -848,6 +848,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_resize(result, blen);
 
     if (tainted) OBJ_TAINT(result);
+    rb_enc_associate(result, enc);
     return result;
 }
 
