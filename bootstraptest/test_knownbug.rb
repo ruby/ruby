@@ -159,3 +159,13 @@ assert_equal 'true', %q{
 }, '[ruby-dev:32452]'
 
 assert_normal_exit %q{ // =~ :a }
+
+assert_equal '[nil, []]', %q{
+  def m() yield nil,[] end
+  l = lambda {|*v| v}
+  GC.stress=true
+  r = m(&l)      
+  GC.stress=false
+  r.inspect             
+}, '[ruby-dev:32567]'
+
