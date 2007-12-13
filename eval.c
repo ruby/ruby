@@ -1176,17 +1176,17 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     struct rb_vm_trap_tag trap_tag;
+    rb_jmpbuf_t org_jmpbuf;
 
     trap_tag.prev = th->trap_tag;
 
     PUSH_TAG();
     th->trap_tag = &trap_tag;
+    MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((status = EXEC_TAG()) == 0) {
-        rb_jmpbuf_t org_jmpbuf;
-        MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
-        MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     }
+    MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->trap_tag = trap_tag.prev;
     POP_TAG();
 
