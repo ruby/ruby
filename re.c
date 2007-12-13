@@ -144,6 +144,7 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 #define ARG_KCODE_EUC 	      1
 #define ARG_KCODE_SJIS	      2
 #define ARG_KCODE_UTF8	      3
+#define ARG_KCODE_MASK	      3
 
 static int
 char_to_option(int c)
@@ -1968,7 +1969,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (unescaped == Qnil)
         return -1;
 
-    if (fixed_enc && (options & ARG_ENCODING_FIXED) && fixed_enc != enc) {
+    if (fixed_enc && fixed_enc != enc) {
         strcpy(err, "character encodings differ");
         return -1;
     }

@@ -1,3 +1,8 @@
+Thu Dec 13 22:16:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): encoding should never fall back
+	  to ASCII-8BIT unless both encodings are ASCII-8BIT.
+
 Thu Dec 13 20:31:28 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_shared_replace): make str noembed after free.

@@ -447,13 +447,13 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_regexp_unicode
-    assert_nothing_raised { eval '/\u{0}/' }
-    assert_nothing_raised { eval '/\u{D7FF}/' }
-    assert_raise(SyntaxError) { eval '/\u{D800}/' }
-    assert_raise(SyntaxError) { eval '/\u{DFFF}/' }
-    assert_nothing_raised { eval '/\u{E000}/' }
-    assert_nothing_raised { eval '/\u{10FFFF}/' }
-    assert_raise(SyntaxError) { eval '/\u{110000}/' }
+    assert_nothing_raised { eval '/\u{0}/u' }
+    assert_nothing_raised { eval '/\u{D7FF}/u' }
+    assert_raise(SyntaxError) { eval '/\u{D800}/u' }
+    assert_raise(SyntaxError) { eval '/\u{DFFF}/u' }
+    assert_nothing_raised { eval '/\u{E000}/u' }
+    assert_nothing_raised { eval '/\u{10FFFF}/u' }
+    assert_raise(SyntaxError) { eval '/\u{110000}/u' }
   end
 
   def test_regexp_mixed_unicode

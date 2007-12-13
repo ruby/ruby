@@ -397,7 +397,10 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 		if (cr1 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx2);
 		if (cr2 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx1);
 	    }
-	    if (cr1 == ENC_CODERANGE_7BIT) return rb_enc_from_index(0);
+	    if (cr2 == ENC_CODERANGE_7BIT) {
+		if (idx1 == 0) return rb_enc_from_index(idx2);
+		if (idx2 == 0) return rb_enc_from_index(idx1);
+	    }
 	}
 	if (cr1 == ENC_CODERANGE_7BIT &&
 	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
