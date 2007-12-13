@@ -1,3 +1,8 @@
+Thu Dec 13 13:09:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/io.h (MakeOpenFile): fptr->enc should be
+	  intialized to zero.  [ruby-dev:32569]
+
 Thu Dec 13 08:56:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_getc): use default external encoding if fptr->enc is

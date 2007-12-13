@@ -90,6 +90,7 @@ typedef struct rb_io_t {
     fp->rbuf_len = 0;\
     fp->rbuf_capa = 0;\
     fp->tied_io_for_writing = 0;\
+    fp->enc = 0;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
