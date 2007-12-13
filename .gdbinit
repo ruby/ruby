@@ -61,12 +61,13 @@ define rp
             (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
     if !($flags & RUBY_FL_USER1)
       printf "(embed) "
-    end
-    if ($flags & RUBY_FL_USER2)
-      printf "(shared) "
-    end
-    if ($flags & RUBY_FL_USER3)
-      printf "(assoc) "
+    else
+      if ($flags & RUBY_FL_USER2)
+        printf "(shared) "
+      end
+      if ($flags & RUBY_FL_USER3)
+        printf "(assoc) "
+      end
     end
     printf "encoding:%d ", ($flags & (RUBY_FL_USER8|RUBY_FL_USER9|RUBY_FL_USER10|RUBY_FL_USER11)) >> RUBY_ENCODING_SHIFT
     if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == 0
