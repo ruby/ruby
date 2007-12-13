@@ -37,35 +37,35 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_string_inspect
-    assert_equal('"\xfe"', e("\xfe").inspect)
-    assert_equal('"\x8e"', e("\x8e").inspect)
-    assert_equal('"\x8f"', e("\x8f").inspect)
-    assert_equal('"\x8f\xa1"', e("\x8f\xa1").inspect)
-    assert_equal('"\xef"', s("\xef").inspect)
-    assert_equal('"\xc2"', u("\xc2").inspect)
-    assert_equal('"\xe0\x80"', u("\xe0\x80").inspect)
-    assert_equal('"\xf0\x80\x80"', u("\xf0\x80\x80").inspect)
-    assert_equal('"\xf8\x80\x80\x80"', u("\xf8\x80\x80\x80").inspect)
-    assert_equal('"\xfc\x80\x80\x80\x80"', u("\xfc\x80\x80\x80\x80").inspect)
+    assert_equal('"\xFE"', e("\xfe").inspect)
+    assert_equal('"\x8E"', e("\x8e").inspect)
+    assert_equal('"\x8F"', e("\x8f").inspect)
+    assert_equal('"\x8F\xA1"', e("\x8f\xa1").inspect)
+    assert_equal('"\xEF"', s("\xef").inspect)
+    assert_equal('"\xC2"', u("\xc2").inspect)
+    assert_equal('"\xE0\x80"', u("\xe0\x80").inspect)
+    assert_equal('"\xF0\x80\x80"', u("\xf0\x80\x80").inspect)
+    assert_equal('"\xF8\x80\x80\x80"', u("\xf8\x80\x80\x80").inspect)
+    assert_equal('"\xFC\x80\x80\x80\x80"', u("\xfc\x80\x80\x80\x80").inspect)
 
-    assert_equal('"\xfe "', e("\xfe ").inspect)
-    assert_equal('"\x8e "', e("\x8e ").inspect)
-    assert_equal('"\x8f "', e("\x8f ").inspect)
-    assert_equal('"\x8f\xa1 "', e("\x8f\xa1 ").inspect)
-    assert_equal('"\xef "', s("\xef ").inspect)
-    assert_equal('"\xc2 "', u("\xc2 ").inspect)
-    assert_equal('"\xe0\x80 "', u("\xe0\x80 ").inspect)
-    assert_equal('"\xf0\x80\x80 "', u("\xf0\x80\x80 ").inspect)
-    assert_equal('"\xf8\x80\x80\x80 "', u("\xf8\x80\x80\x80 ").inspect)
-    assert_equal('"\xfc\x80\x80\x80\x80 "', u("\xfc\x80\x80\x80\x80 ").inspect)
+    assert_equal('"\xFE "', e("\xfe ").inspect)
+    assert_equal('"\x8E "', e("\x8e ").inspect)
+    assert_equal('"\x8F "', e("\x8f ").inspect)
+    assert_equal('"\x8F\xA1 "', e("\x8f\xa1 ").inspect)
+    assert_equal('"\xEF "', s("\xef ").inspect)
+    assert_equal('"\xC2 "', u("\xc2 ").inspect)
+    assert_equal('"\xE0\x80 "', u("\xe0\x80 ").inspect)
+    assert_equal('"\xF0\x80\x80 "', u("\xf0\x80\x80 ").inspect)
+    assert_equal('"\xF8\x80\x80\x80 "', u("\xf8\x80\x80\x80 ").inspect)
+    assert_equal('"\xFC\x80\x80\x80\x80 "', u("\xfc\x80\x80\x80\x80 ").inspect)
 
 
-    assert_equal(e("\"\\xa1\x8f\xa1\xa1\""), e("\xa1\x8f\xa1\xa1").inspect)
+    assert_equal(e("\"\\xA1\x8f\xA1\xA1\""), e("\xa1\x8f\xa1\xa1").inspect)
 
     assert_equal('"\x81."', s("\x81.").inspect)
     assert_equal(s("\"\x81@\""), s("\x81@").inspect)
 
-    assert_equal('"\xfc"', u("\xfc").inspect)
+    assert_equal('"\xFC"', u("\xfc").inspect)
   end
 
   def test_validate_redundant_utf8
