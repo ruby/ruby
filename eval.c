@@ -1182,7 +1182,10 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
     PUSH_TAG();
     th->trap_tag = &trap_tag;
     if ((status = EXEC_TAG()) == 0) {
+        rb_jmpbuf_t org_jmpbuf;
+        MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
+        MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     }
     th->trap_tag = trap_tag.prev;
     POP_TAG();
