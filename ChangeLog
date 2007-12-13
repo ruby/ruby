@@ -1,3 +1,8 @@
+Fri Dec 14 02:05:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_synchronized): should check if initialized.
+	  [ruby-dev:32585]
+
 Fri Dec 14 00:54:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): embedded string may override encoding

@@ -3301,6 +3301,7 @@ pipe_finalize(rb_io_t *fptr, int noraise)
 void
 rb_io_synchronized(rb_io_t *fptr)
 {
+    rb_io_check_initialized(fptr);
     fptr->mode |= FMODE_SYNC;
 }
 
