@@ -68,16 +68,6 @@ enc_check_encoding(VALUE obj)
     return index;
 }
 
-static rb_encoding *
-enc_get_encoding(VALUE obj)
-{
-    if (enc_check_encoding(obj) < 0) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding)",
-		 rb_obj_classname(obj));
-    }
-    return RDATA(obj)->data;
-}
-
 int
 rb_to_encoding_index(VALUE enc)
 {
