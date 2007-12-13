@@ -1,3 +1,8 @@
+Thu Dec 13 16:41:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): should not judge compatibility
+	  based on rb_enc_asciicompat().
+
 Thu Dec 13 13:09:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/io.h (MakeOpenFile): fptr->enc should be
