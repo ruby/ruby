@@ -1811,6 +1811,7 @@ rb_str_succ(VALUE orig)
     VALUE str;
     char *sbeg, *s, *e;
     int c = -1;
+    unsigned int cc = 0;
     long n = 0, o = 0, l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN];
 
@@ -1824,7 +1825,7 @@ rb_str_succ(VALUE orig)
     s = e = sbeg + RSTRING_LEN(str);
 
     while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
-	unsigned int cc = rb_enc_codepoint(s, e, enc);
+	cc = rb_enc_codepoint(s, e, enc);
 	if (rb_enc_isalnum(cc, enc)) {
 	    if (isascii(cc)) {
 		if ((c = succ_char(s)) == 0) break;
@@ -1834,12 +1835,16 @@ rb_str_succ(VALUE orig)
 	    }
 	    n = s - sbeg;
 	}
+	else {
+	    break;
+	}
     }
     if (c == -1) {		/* str contains no alnum */
 	c = '\001';
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, e, enc)) != 0) {
-	    unsigned int cc = rb_enc_codepoint(s, e, enc) + 1;
+	    if (cc == 0) cc = rb_enc_codepoint(s, e, enc);
+	    cc += 1;
 	    l = rb_enc_mbcput(cc, carry, enc);
 	    if (l > 0) {
 		if (l == (o = e - s)) goto overlay;

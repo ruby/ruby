@@ -13,6 +13,9 @@ Thu Dec 13 17:51:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): ditto.
 
+	* string.c (rb_str_succ): should not enter infinite loop for
+	  non-ASCII, non-alphanumeric character at the bottom.
+
 Thu Dec 13 17:03:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): should swap encoding indexes too.

@@ -127,9 +127,9 @@ assert_equal 'false', %q{
   s.include?("\xb0\xa3".force_encoding("euc-jp"))
 }
 
-assert_equal 'nil', %q{
+assert_equal 'ok', %q{
   s = "\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
-  s.index("\xb3\xa3".force_encoding("euc-jp"))
+  s.index("\xb3\xa3".force_encoding("euc-jp")) or :ok
 }
 
 assert_equal 'ok', %q{
