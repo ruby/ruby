@@ -1954,6 +1954,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     struct RRegexp *re = RREGEXP(obj);
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
+    rb_encoding *d_enc = rb_default_encoding();
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
@@ -1969,15 +1970,19 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (unescaped == Qnil)
         return -1;
 
-    if (fixed_enc && fixed_enc != enc) {
-        strcpy(err, "character encodings differ");
-        return -1;
+    if (fixed_enc) {
+	if (fixed_enc != enc && enc != d_enc && fixed_enc != d_enc) {
+	    strcpy(err, "character encodings differ");
+	    return -1;
+	}
+        if (fixed_enc != d_enc) {
+	    options |= ARG_ENCODING_FIXED;
+	    enc = fixed_enc;
+	}
     }
-
-    if (fixed_enc)
-        enc = fixed_enc;
-    else if (!(options & ARG_ENCODING_FIXED))
-        enc = rb_default_encoding();
+    else if (!(options & ARG_ENCODING_FIXED)) {
+        enc = d_enc;
+    }
     
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {

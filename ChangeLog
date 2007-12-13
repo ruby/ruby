@@ -1,3 +1,11 @@
+Fri Dec 14 00:54:40 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): embedded string may override encoding
+	  of the regular expression.
+
+	* re.c (rb_reg_initialize): fix encoding of regular expression if
+	  embedded string has its own encoding specified.
+
 Thu Dec 13 22:16:46 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): encoding should never fall back
