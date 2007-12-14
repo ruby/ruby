@@ -1410,7 +1410,7 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
-    long i, len;
+    long len;
     int retval;
     rb_encoding *enc;
     char *p1, *p1end, *p2, *p2end;

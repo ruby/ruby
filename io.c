@@ -4333,7 +4333,9 @@ rb_p(VALUE obj) /* for debug print within C code */
 
 /*
  *  call-seq:
- *     p(obj, ...)    => nil
+ *     p(obj)              => obj
+ *     p(obj1, obj2, ...)  => [obj, ...]
+ *     p()                 => nil
  *
  *  For each object, directly writes
  *  _obj_.+inspect+ followed by the current output
