@@ -1,4 +1,4 @@
-Fri Dec 14 11:54:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 14 12:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined
 	  and its type.
@@ -8,6 +8,9 @@ Fri Dec 14 11:54:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* missing/strftime.c (strftime): fix for timezone.  [ruby-dev:32536]
 
 	* lib/mkmf.rb (try_var): should fail for functions.
+
+	* ext/readline/extconf.rb: should use have_func for functions instead
+	  of have_var.
 
 Tue Dec 11 00:04:05 2007  Akinori MUSHA  <knu@iDaemons.org>
 
