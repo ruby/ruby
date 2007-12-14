@@ -1,3 +1,9 @@
+Fri Dec 14 18:18:31 2007  Tanaka Akira  <akr@fsij.org>
+
+	* thread_pthread.ci (native_thread_create): twice the stack size.
+	  512KB is not enough to complete test-all on Debian GNU/Linux on
+	  IA64.
+	  
 Fri Dec 14 16:10:50 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_p): RDoc update.  a patch from murphy <murphy AT rubychan.de>.
