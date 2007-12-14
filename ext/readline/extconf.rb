@@ -42,9 +42,9 @@ else
   end
 end
 
-have_readline_var("rl_filename_completion_function")
-have_readline_var("rl_username_completion_function")
-have_readline_var("rl_completion_matches")
+have_func("rl_filename_completion_function")
+have_func("rl_username_completion_function")
+have_func("rl_completion_matches")
 have_readline_var("rl_deprep_term_function")
 have_readline_var("rl_completion_append_character")
 have_readline_var("rl_basic_word_break_characters")
@@ -59,7 +59,6 @@ have_func("rl_cleanup_after_signal")
 have_func("rl_clear_signals")
 have_func("rl_vi_editing_mode")
 have_func("rl_emacs_editing_mode")
-have_func("rl_clear_signals")
 have_func("replace_history_entry")
 have_func("remove_history")
 create_makefile("readline")
