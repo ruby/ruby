@@ -1,3 +1,11 @@
+Fri Dec 14 13:47:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ruby.imp): fix for circular dependency.  a patch from
+	  Yutaka Kanemoto <kinpoco AT gmail.com> in [ruby-dev:32590].
+
+	* regint.h, st.c, ext/json/ext/generator/generator.c: suppress
+	  warnings on AIX.
+
 Fri Dec 14 12:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined

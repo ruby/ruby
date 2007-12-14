@@ -1,9 +1,9 @@
 /* vim: set cin et sw=4 ts=4: */
 
-#include <string.h>
 #include "ruby.h"
 #include "ruby/st.h"
 #include "unicode.h"
+#include <string.h>
 #include <math.h>
 
 #define check_max_nesting(state, depth) do {                                   \

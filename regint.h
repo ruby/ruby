@@ -194,7 +194,7 @@
 #include <stdlib.h>
 #endif
 
-#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
+#if defined(HAVE_ALLOCA_H) && (defined(_AIX) || !defined(__GNUC__))
 #include <alloca.h>
 #endif
 
