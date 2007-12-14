@@ -639,13 +639,14 @@ AC_CACHE_CHECK([for external $1], rb_cv_var_$1,
   [rb_cv_var_$1=no
   AC_TRY_COMPILE([#define _XOPEN_SOURCE 1
     $2
-    void *t;],
+    const volatile void *volatile t;],
     [t = &(&$1)[0];],
     [for t in $3; do
       AC_TRY_COMPILE([#define _XOPEN_SOURCE 1
         $2
-        extern $t $1;],
-        [void *t = &(&$1)[0];],
+        extern $t $1;
+        const volatile void *volatile t;],
+        [t = &(&$1)[0];],
         [rb_cv_var_$1=$t; break])
     done])])
 if test "[$rb_cv_var_]$1" != no; then

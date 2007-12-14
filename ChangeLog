@@ -1,4 +1,4 @@
-Fri Dec 14 10:01:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 14 11:54:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined
 	  and its type.
@@ -6,6 +6,8 @@ Fri Dec 14 10:01:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (timezone, altzone): check for recent cygwin.
 
 	* missing/strftime.c (strftime): fix for timezone.  [ruby-dev:32536]
+
+	* lib/mkmf.rb (try_var): should fail for functions.
 
 Fri Dec 14 08:17:24 2007  Tanaka Akira  <akr@fsij.org>
 
