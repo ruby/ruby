@@ -1,3 +1,9 @@
+Fri Dec 14 16:06:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cmp): encoding aware comparison.
+
+	* string.c (rb_str_casecmp): ditto.
+
 Fri Dec 14 13:47:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ruby.imp): fix for circular dependency.  a patch from

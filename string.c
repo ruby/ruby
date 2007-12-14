@@ -118,7 +118,7 @@ rb_enc_str_coderange(VALUE str)
 	    while (p < e) {
 		int c = (unsigned char)*p;
 
-		if (!isascii(c)) {
+		if (!rb_enc_isascii(c, enc)) {
 		    cr = ENC_CODERANGE_8BIT;
 		    break;
 		}
@@ -1276,12 +1276,18 @@ rb_str_cmp(VALUE str1, VALUE str2)
 {
     long len;
     int retval;
+    rb_encoding *enc;
 
-    rb_enc_check(str1, str2);	/* xxxx error-less encoding check? */
+    enc = rb_enc_compatible(str1, str2);
     len = lesser(RSTRING_LEN(str1), RSTRING_LEN(str2));
     retval = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
     if (retval == 0) {
-	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return 0;
+	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
+	    if (!enc) {
+		return rb_enc_get_index(str1) - rb_enc_get_index(str2);
+	    }
+	    return 0;
+	}
 	if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return 1;
 	return -1;
     }
@@ -1404,19 +1410,35 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
-    long len;
+    long i, len;
     int retval;
+    rb_encoding *enc;
+    char *p1, *p1end, *p2, *p2end;
 
     StringValue(str2);
-    len = lesser(RSTRING_LEN(str1), RSTRING_LEN(str2));
-    retval = rb_memcicmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
-    if (retval == 0) {
-	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
-	if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
-	return INT2FIX(-1);
+    enc = rb_enc_compatible(str1, str2);
+    if (!enc) {
+	return rb_str_cmp(str1, str2);
     }
-    if (retval == 0) return INT2FIX(0);
-    if (retval > 0) return INT2FIX(1);
+
+    p1 = RSTRING_PTR(str1); p1end = RSTRING_END(p1);
+    p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
+    while (p1 < p1end && p2 < p2end) {
+	int c1 = rb_enc_codepoint(p1, p1end, enc);
+	int c2 = rb_enc_codepoint(p2, p2end, enc);
+
+	if (c1 != c2) {
+	    c1 = rb_enc_toupper(c1, enc);
+	    c2 = rb_enc_toupper(c2, enc);
+	    if (c1 > c2) return INT2FIX(1);
+	    if (c1 < c2) return INT2FIX(-1);
+	}
+	len = rb_enc_codelen(c1, enc);
+	p1 += len;
+	p2 += len;
+    }
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
+    if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
     return INT2FIX(-1);
 }
 
@@ -1834,7 +1856,7 @@ rb_str_succ(VALUE orig)
     while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
 	cc = rb_enc_codepoint(s, e, enc);
 	if (rb_enc_isalnum(cc, enc)) {
-	    if (isascii(cc)) {
+	    if (rb_enc_isascii(cc, enc)) {
 		if ((c = succ_char(s)) == 0) break;
 	    }
 	    else {
