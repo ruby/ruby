@@ -1,3 +1,12 @@
+Fri Dec 14 10:01:40 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined
+	  and its type.
+
+	* configure.in (timezone, altzone): check for recent cygwin.
+
+	* missing/strftime.c (strftime): fix for timezone.  [ruby-dev:32536]
+
 Tue Dec 11 00:04:05 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): If an invalid negative index (<

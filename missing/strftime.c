@@ -115,17 +115,22 @@ extern char *strchr();
 
 #define range(low, item, hi)	max(low, min(item, hi))
 
-#if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
-extern char *tzname[2];
-extern int daylight;
-#ifdef SOLARIS
-extern long timezone, altzone;
-#else
-#ifdef __hpux
-extern long timezone;
-#else
-extern int timezone, altzone;
+#ifdef __CYGWIN__
+#define DLL_IMPORT __declspec(dllimport)
 #endif
+#ifdef __WIN32__
+#define DLL_IMPORT __declspec(dllimport)
+#endif
+#if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
+extern DLL_IMPORT char *tzname[2];
+#ifdef HAVE_DAYLIGHT
+extern DLL_IMPORT int daylight;
+#endif
+#ifdef HAVE_VAR_TIMEZONE
+extern DLL_IMPORT TYPEOF_VAR_TIMEZONE timezone;
+#endif
+#ifdef HAVE_VAR_ALTZONE
+extern DLL_IMPORT TYPEOF_VAR_ALTZONE altzone;
 #endif
 #endif
 
@@ -189,16 +194,8 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #endif /* POSIX_SEMANTICS */
 #ifndef HAVE_TM_ZONE
 #ifndef HAVE_TM_NAME
-#ifndef HAVE_TZNAME
-	extern char *timezone();
 	struct timeval tv;
 	struct timezone zone;
-#else
-#ifdef __hpux
-	struct timeval tv;
-	struct timezone zone;
-#endif
-#endif /* HAVE_TZNAME */
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 
@@ -422,21 +419,18 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 */
 			off = timeptr->tm_gmtoff / 60;
 #else /* !HAVE_TM_ZONE */
-#if HAVE_TZNAME
-			/*
-			 * Systems with tzname[] probably have timezone as
-			 * secs west of GMT.  Convert to mins east of GMT.
-			 */
-#ifdef __hpux
+#ifdef HAVE_GETTIMEOFDAY
 			gettimeofday(&tv, &zone);
 			off = -zone.tz_minuteswest;
 #else
+#if HAVE_VAR_TIMEZONE
+#if HAVE_VAR_ALTZONE
 			off = -(daylight ? timezone : altzone) / 60;
+#else
+			off = -timezone / 60;
 #endif
-#else /* !HAVE_TZNAME */
-			gettimeofday(&tv, &zone);
-			off = -zone.tz_minuteswest;
-#endif /* !HAVE_TZNAME */
+#endif
+#endif
 #endif /* !HAVE_TM_ZONE */
 #endif /* !HAVE_TM_NAME */
 			if (off < 0) {
@@ -460,13 +454,15 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 #ifdef HAVE_TM_NAME
 			strcpy(tbuf, timeptr->tm_name);
 #else
+#ifdef HAVE_TIMEZONE
 			gettimeofday(& tv, & zone);
-#ifdef __CYGWIN__
+#ifdef TIMEZONE_VOID
 			strcpy(tbuf, timezone());
 #else
 			strcpy(tbuf, timezone(zone.tz_minuteswest,
 						timeptr->tm_isdst > 0));
-#endif
+#endif /* TIMEZONE_VOID */
+#endif /* HAVE_TIMEZONE */
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 #endif /* HAVE_TZNAME */
@@ -645,7 +641,7 @@ iso8601wknum(const struct tm *timeptr)
 	 * main body of the standard. Thus it requires week 53.
 	 */
 
-	int weeknum, jan1day, diff;
+	int weeknum, jan1day;
 
 	/* get week number, Monday as first day of the week */
 	weeknum = weeknumber(timeptr, 1);
