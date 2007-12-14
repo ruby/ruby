@@ -1,3 +1,12 @@
+Sat Dec 15 01:57:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc/options.rb (Options::parse): do not access $KCODE any
+	  longer.  [ruby-core:14079]
+
+	* lib/irb/init.rb (IRB::IRB.parse_opts): ditto.
+
+	* lib/cgi.rb (CGI::CGI): ditto.
+
 Fri Dec 14 18:18:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* thread_pthread.ci (native_thread_create): twice the stack size.

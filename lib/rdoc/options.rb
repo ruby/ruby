@@ -375,14 +375,7 @@ class Options
       @css = nil
       @webcvs = nil
 
-      @charset = case $KCODE
-                 when /^S/i
-                   'Shift_JIS'
-                 when /^E/i
-                   'EUC-JP'
-                 else
-                   'iso-8859-1'
-                 end
+      @charset = 'iso-8859-1'
 
       accessors = []
 

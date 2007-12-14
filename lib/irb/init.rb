@@ -140,8 +140,6 @@ module IRB
       when /^-I(.+)?/
         opt = $1 || ARGV.shift
 	load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
-      when /^-K(.)/
-	$KCODE = $1
       when "--inspect"
 	@CONF[:INSPECT_MODE] = true
       when "--noinspect"
