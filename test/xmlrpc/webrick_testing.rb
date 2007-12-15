@@ -10,7 +10,7 @@ module WEBrick_Testing
     raise "already started" if @__server
     @__started = false
 
-    Thread.new {
+    @__server_thread = Thread.new {
       @__server = WEBrick::HTTPServer.new(
         { 
           :Logger => DummyLog.new,
@@ -32,6 +32,7 @@ module WEBrick_Testing
       @__server.shutdown
       Thread.pass while @__started # wait until the server is down
     }
+    @__server_thread.join
     @__server = nil
   end
 end
