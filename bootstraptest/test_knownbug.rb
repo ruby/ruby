@@ -170,10 +170,9 @@ assert_equal '[nil, []]', %q{
 }, '[ruby-dev:32567]'
 
 assert_normal_exit %q{
-  require 'stringio'
-  s = ""
+  e = [1,2,3].each
   10000.times {
-    s = "a".instance_eval { @a = StringIO.new(s); self }
+    e = [e].each
   }
   Thread.new { GC.start }.join
 }, '[ruby-dev:32604]'
