@@ -18,12 +18,6 @@ MAINOBJ	      = main.$(OBJEXT)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
 
-ENCOBJS       = ascii.$(OBJEXT) \
-		euc_jp.$(OBJEXT) \
-		sjis.$(OBJEXT) \
-		unicode.$(OBJEXT) \
-		utf8.$(OBJEXT)
-
 COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
@@ -79,7 +73,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		id.$(OBJEXT) \
-		$(ENCOBJS) \
+		$(BUILTIN_ENCOBJS) \
 		$(MISSING)
 
 OBJS          = dln.$(OBJEXT) \

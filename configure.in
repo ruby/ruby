@@ -1203,6 +1203,7 @@ n=`expr "$DLEXT2" : '.*'`; test "$n" -gt "$len" && len=$n
 AC_DEFINE_UNQUOTED(DLEXT_MAXLEN, `expr $len + 1`)
 test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
 test ".$DLEXT2" = "." || AC_DEFINE_UNQUOTED(DLEXT2, ".$DLEXT2")
+AC_SUBST(DLEXT)
 
 AC_SUBST(STRIP)dnl
 if test "$with_dln_a_out" = yes; then
@@ -1578,7 +1579,7 @@ AC_SUBST(EXPORT_PREFIX)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 
-MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'`"
+MAKEFILES="Makefile `echo $FIRSTMAKEFILE | sed 's/:.*//'` enc/GNUmakefile"
 MAKEFILES="`echo $MAKEFILES`"
 AC_SUBST(MAKEFILES)
 
@@ -1734,7 +1735,37 @@ else
 fi
 tr -d '\015' < largefile.h > confdefs.h
 
+test -d enc || mkdir enc
+BUILTIN_ENCS="`sed -n '/^BUILTIN_ENCS[ 	]*=/{s///;:l;/\\\\$/N;s/\\\\\\n/ /;t l;p}' \"${srcdir}/enc/Makefile.in\"`"
+BUILTIN_ENCS="`echo $BUILTIN_ENCS`"
+EXTERNAL_ENCS=
+for e in "${srcdir}/enc"/*.c; do
+    e=`basename "$e" .c`
+    case " $BUILTIN_ENCS " in
+      *" $e "*) ;;
+      *) EXTERNAL_ENCS="$EXTERNAL_ENCS $e";;
+    esac
+done
+echo $EX
+BUILTIN_ENCOBJS=
+for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS $e"'.$(OBJEXT)'; done
+EXTERNAL_ENCOBJS=
+for e in $EXTERNAL_ENCS; do EXTERNAL_ENCOBJS="$EXTERNAL_ENCOBJS $e"'.$(OBJEXT)'; done
+ENCSOS=
+for e in $EXTERNAL_ENCS; do ENCSOS="$ENCSOS "'$(ENCSODIR)/'"$e"'.$(DLEXT)'; done 
+
+AC_SUBST(BUILTIN_ENCOBJS)
+AC_SUBST(EXTERNAL_ENCOBJS)
+AC_SUBST(ENCSOS)
+
 AC_CONFIG_FILES($FIRSTMAKEFILE)
+AC_CONFIG_FILES(enc/Makefile, [{
+  for e in $ENCS; do
+    echo ''
+    echo '$(ENCSODIR)/'"$e"'.$(DLEXT): '"$e"'.$(OBJEXT)'
+    echo '	$(LDSHARED) $(DLDFLAGS) $< $(OUTFLAG)$''@'
+  done >> enc/Makefile
+}], [ENCS="$EXTERNAL_ENCS"])
 AC_CONFIG_FILES(Makefile, [{
 	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'

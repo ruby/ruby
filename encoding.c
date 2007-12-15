@@ -155,7 +155,7 @@ enc_register(const char *name, rb_encoding *encoding)
 }
 
 static VALUE enc_based_encoding(VALUE);
-#define rb_enc_registered(name) rb_enc_find_index(name)
+int rb_enc_registered(const char *name);
 
 int
 rb_enc_register(const char *name, rb_encoding *encoding)
@@ -252,7 +252,7 @@ rb_enc_from_index(int index)
 }
 
 int
-rb_enc_find_index(const char *name)
+rb_enc_registered(const char *name)
 {
     int i;
     st_data_t alias = 0;
@@ -276,6 +276,26 @@ rb_enc_find_index(const char *name)
 	}
     }
     return -1;
+}
+
+static VALUE
+require_enc(VALUE enclib)
+{
+    return rb_require_safe(enclib, rb_safe_level());
+}
+
+int
+rb_enc_find_index(const char *name)
+{
+    int i = rb_enc_registered(name);
+    if (i < 0) {
+	VALUE enclib = rb_sprintf("enc/%s", name);
+	OBJ_FREEZE(enclib);
+	if (RTEST(rb_protect(require_enc, enclib, 0)))
+	    i = rb_enc_registered(name);
+	rb_set_errinfo(Qnil);
+    }
+    return i;
 }
 
 rb_encoding *

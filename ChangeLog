@@ -1,3 +1,16 @@
+Sat Dec 15 18:56:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (enc/Makefile): add external encoding objects list.
+
+	* common.mk (BUILTIN_ENCOBJS): renamed from ENCOBJS.
+
+	* Makefile.in (BUILTIN_ENCOBJS): substitued by autoconf.
+
+	* enc/Makefile.in: new file to compile external encoding sources.
+
+	* encoding.c (rb_enc_find_index): auto-load external encoding objects
+	  as "ext/ENCODING_NAME".  [ruby-dev:32606]
+
 Sat Dec 15 13:04:30 2007  Tanaka Akira  <akr@fsij.org>
 
 	* vm_core.h (rb_thread_t): new member machine_stack_maxsize and
