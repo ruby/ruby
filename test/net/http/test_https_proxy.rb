@@ -6,6 +6,7 @@ require 'test/unit'
 
 class HTTPSProxyTest < Test::Unit::TestCase
   def test_https_proxy_authentication
+    t = nil
     TCPServer.open("127.0.0.1", 0) {|serv|
       _, port, _, _ = serv.addr
       t = Thread.new {
@@ -13,7 +14,10 @@ class HTTPSProxyTest < Test::Unit::TestCase
         http = proxy.new("foo.example.org", 8000)
         http.use_ssl = true
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        http.start
+        begin
+          http.start
+        rescue EOFError
+        end
       }
       sock = serv.accept
       proxy_request = sock.gets("\r\n\r\n")
@@ -24,7 +28,10 @@ class HTTPSProxyTest < Test::Unit::TestCase
         "\r\n",
         proxy_request,
         "[ruby-dev:25673]")
+      sock.close
     }
+  ensure
+    t.join if t
   end
 end if defined?(OpenSSL)
  
