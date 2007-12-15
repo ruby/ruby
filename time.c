@@ -67,7 +67,7 @@ time_modify(VALUE time)
  *  Document-method: now
  *
  *  Synonym for <code>Time.new</code>. Returns a +Time+ object
- *  initialized tot he current system time.
+ *  initialized to the current system time.
  */
 
 /*
