@@ -17,7 +17,7 @@ module MarshalTestLib
 
   def marshaltest(o1)
     str = encode(o1)
-    print str, "\n" if $DEBUG
+    print str.dump, "\n" if $DEBUG
     o2 = decode(str)
     o2
   end
