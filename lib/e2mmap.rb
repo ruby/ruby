@@ -55,15 +55,9 @@ module Exception2MessageMapper
 
   def E2MM.extend_object(cl)
     super
-    cl.bind(self) unless cl == E2MM
+    cl.bind(self) unless cl < E2MM
   end
   
-  # backward compatibility
-  def E2MM.extend_to(b)
-    c = eval("self", b)
-    c.extend(self)
-  end
-
   def bind(cl)
     self.module_eval %[
       def Raise(err = nil, *rest)
@@ -86,20 +80,6 @@ module Exception2MessageMapper
   end
   alias Fail Raise
 
-  # backward compatibility
-  alias fail! fail
-  def fail(err = nil, *rest)
-    begin 
-      E2MM.Fail(self, err, *rest)
-    rescue E2MM::ErrNotRegisteredException
-      super
-    end
-  end
-  class << self
-    public :fail
-  end
-
-  
   # def_e2message(c, m)
   #	    c:  exception
   #	    m:  message_form
@@ -157,12 +137,11 @@ module Exception2MessageMapper
   #
   def E2MM.Raise(klass = E2MM, err = nil, *rest)
     if form = e2mm_message(klass, err)
-      $! = err.new(sprintf(form, *rest))
-      $@ = caller(1) if $@.nil?
+      b = $@.nil? ? caller(1) : $@
       #p $@
       #p __FILE__
-      $@.shift if $@[0] =~ /^#{Regexp.quote(__FILE__)}:/
-      raise
+      b.shift if b[0] =~ /^#{Regexp.quote(__FILE__)}:/
+      raise err, sprintf(form, *rest), b
     else
       E2MM.Fail E2MM, ErrNotRegisteredException, err.inspect
     end

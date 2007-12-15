@@ -91,6 +91,11 @@ Fri Dec 14 12:36:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/readline/extconf.rb: should use have_func for functions instead
 	  of have_var.
 
+Fri Dec 14 10:25:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/e2mmap.rb (Exception2MessageMapper::E2MM.Raise): $! no
+	  longer modifiable in 1.9. 
+
 Fri Dec 14 08:17:24 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_protect): restore root_jmpbuf even if proc exits by
