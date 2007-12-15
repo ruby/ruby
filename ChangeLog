@@ -1,3 +1,8 @@
+Sat Dec 15 22:27:39 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (BUILTIN_ENCS): splitted command line instead of
+	  semicolons for Solaris.
+
 Sat Dec 15 21:38:24 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/timeout.rb: join the background thread to make sure it is dead.
