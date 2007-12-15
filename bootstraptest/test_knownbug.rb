@@ -176,3 +176,20 @@ assert_normal_exit %q{
   }
   Thread.new { GC.start }.join
 }, '[ruby-dev:32604]'
+
+assert_equal 'nil', %q{
+  doit = false
+  exc = nil
+  t = Thread.new {
+    begin
+      doit = true
+      sleep 10
+    ensure
+      exc = $!
+    end
+  }
+  Thread.pass until doit
+  t.kill
+  t.join
+  exc.inspect
+}, '[ruby-dev:32608]'
