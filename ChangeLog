@@ -52,6 +52,23 @@ Fri Dec 14 16:06:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_casecmp): ditto.
 
+Fri Dec 14 15:25:30 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * transcode.c (encoding_equal): new function.
+
+	* transcode.c (str_transcode, transcode_dispatch): added two-step
+          conversion logic via UTF-8.
+
+	* trancode.c: some minor formatting fixes
+
+	* transcode_data.h, transcode_data_iso_8859.c: Shortened
+	  extremely frequently used macros to shorten file length.
+
+	* test/ruby/test_transcode.rb: Fixed name of test class;
+	  added setup method to ensure all necessary encodings exist;
+	  split tests into more test methods; added tests; fixed ordering
+	  of arguments in assert_equal to have expected result first.
+
 Fri Dec 14 13:47:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ruby.imp): fix for circular dependency.  a patch from

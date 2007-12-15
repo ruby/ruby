@@ -81,8 +81,8 @@ register_transcoder(const char *from_e, const char *to_e,
 {
     static int n = 0;
     if (n >= MAX_TRANSCODERS) {
-        /* we are initializing, is it okay to use rb_raise here? */
-        rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
+	/* we are initializing, is it okay to use rb_raise here? */
+	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
     }
     transcoder_table[n].from_encoding = from_e;
     transcoder_table[n].to_encoding = to_e;
@@ -127,25 +127,37 @@ init_transcoder_table(void)
     register_transcoder(NULL, NULL, NULL, 0, 0);
 }
 
+static int
+encoding_equal(const char* encoding1, const char* encoding2)
+{
+    return 0==strcasecmp(encoding1, encoding2);
+}
 
 static transcoder*
 transcode_dispatch(const char* from_encoding, const char* to_encoding)
 {
     transcoder *candidate = transcoder_table;
     
-    for (candidate = transcoder_table; candidate->from_encoding; candidate++)
-        if (0==strcasecmp(from_encoding, candidate->from_encoding)
-            && 0==strcasecmp(to_encoding, candidate->to_encoding))
-                break;
-    /* in the future, add multistep transcoding logic here */
-    return candidate->from_encoding ? candidate : NULL;
+    for (candidate = transcoder_table; candidate->from_encoding; candidate++) {
+	if (encoding_equal(from_encoding, candidate->from_encoding)
+	    && encoding_equal(to_encoding, candidate->to_encoding)) {
+		return candidate;
+	}
+    }
+    /* multistep logic, via UTF-8 */
+    if (!encoding_equal(from_encoding, "UTF-8")
+	&& !encoding_equal(to_encoding, "UTF-8")
+	&& transcode_dispatch("UTF-8", to_encoding)) {  /* check that we have a second step */
+	    return transcode_dispatch(from_encoding, "UTF-8"); /* return first step */
+    }
+    return NULL;
 }
 
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
 typedef struct transcoding {
     VALUE ruby_string_dest; /* the String used as the conversion destination,
-                               or NULL if something else is being converted */
+			       or NULL if something else is being converted */
     char *(*flush_func)(struct transcoding*, int, int);
 } transcoding;
 
@@ -201,7 +213,7 @@ transcode_loop(char **in_pos, char **out_pos,
 	    }
 	    next_table = next_table->info[next_offset];
 	    goto follow_byte;
-            /* maybe rewrite the following cases to use fallthrough???? */
+	    /* maybe rewrite the following cases to use fallthrough???? */
 	  case ZERObt: /* drop input */
 	    continue;
 	  case ONEbt:
@@ -262,6 +274,7 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     VALUE from_encval, to_encval;
     transcoder *my_transcoder;
     transcoding my_transcoding;
+    int final_encoding = 0;
 
     if (argc<1 || argc>2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
@@ -275,7 +288,7 @@ str_transcode(int argc, VALUE *argv, VALUE str)
 	to_e = rb_enc_name(to_enc);
     }
     if (argc==1) {
-        from_encidx = rb_enc_get_index(str);
+	from_encidx = rb_enc_get_index(str);
 	from_enc = rb_enc_from_index(from_encidx);
 	from_e = rb_enc_name(from_enc);
     }
@@ -298,33 +311,44 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     if (strcasecmp(from_e, to_e) == 0) {
 	return Qnil;
     }
-    if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
-	rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
+
+    while (!final_encoding) /* loop for multistep transcoding */
+    {                       /* later, maybe use smaller intermediate strings for very long strings */
+	if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
+	    rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
+	}
+
+	fromp = sp = RSTRING_PTR(str);
+	slen = RSTRING_LEN(str);
+	blen = slen + 30; /* len + margin */
+	dest = rb_str_tmp_new(blen);
+	bp = RSTRING_PTR(dest);
+	my_transcoding.ruby_string_dest = dest;
+	my_transcoding.flush_func = str_transcoding_resize;
+
+	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	if (fromp != sp+slen) {
+	    rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
+	}
+	buf = RSTRING_PTR(dest);
+	*bp = '\0';
+	rb_str_set_len(dest, bp - buf);
+
+	rb_enc_associate(dest, to_enc);
+	
+	if (encoding_equal(my_transcoder->to_encoding, to_e)) {
+	    final_encoding = 1;
+	}
+	else {
+	    from_e = my_transcoder->to_encoding;
+	    str = dest;
+	}
     }
-
-    fromp = sp = RSTRING_PTR(str);
-    slen = RSTRING_LEN(str);
-    blen = slen + 30; /* len + margin */
-    dest = rb_str_tmp_new(blen);
-    bp = RSTRING_PTR(dest);
-    my_transcoding.ruby_string_dest = dest;
-    my_transcoding.flush_func = str_transcoding_resize;
-
-    /* for simple testing: */
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
-    if (fromp != sp+slen) {
-	rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
-    }
-    buf = RSTRING_PTR(dest);
-    *bp = '\0';
-    rb_str_set_len(dest, bp - buf);
-
     /* set encoding */
     if (!to_enc) {
 	to_encidx = rb_enc_replicate(to_e, rb_default_encoding());
 	to_enc = rb_enc_from_index(to_encidx);
     }
-    rb_enc_associate(dest, to_enc);
 
     return dest;
 }

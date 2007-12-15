@@ -22,10 +22,10 @@ typedef struct byte_lookup {
 #define UNDEF   (PType 0x09)   /* legal but undefined */
 #define ZERObt  (PType 0x0A)   /* zero bytes of payload, i.e. remove */
 
-#define output1(b1)          ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|ONEbt))
-#define output2(b1,b2)       ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
-#define output3(b1,b2,b3)    ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt))
-#define output4(b0,b1,b2,b3) ((const BYTE_LOOKUP *)((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt))
+#define o1(b1)          ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|ONEbt))
+#define o2(b1,b2)       ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
+#define o3(b1,b2,b3)    ((const BYTE_LOOKUP *)((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt))
+#define o4(b0,b1,b2,b3) ((const BYTE_LOOKUP *)((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt))
 
 #define getBT1(a)      (((a)>> 8)&0xFF)
 #define getBT2(a)      (((a)>>16)&0xFF)
