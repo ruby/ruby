@@ -14,7 +14,10 @@ class HTTPSProxyTest < Test::Unit::TestCase
         http = proxy.new("foo.example.org", 8000)
         http.use_ssl = true
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        http.start
+        begin
+          http.start
+        rescue EOFError
+        end
       }
       sock = serv.accept
       proxy_request = sock.gets("\r\n\r\n")
@@ -28,12 +31,7 @@ class HTTPSProxyTest < Test::Unit::TestCase
       sock.close
     }
   ensure
-    if t
-      begin
-        t.join
-      rescue EOFError
-      end
-    end
+    t.join if t
   end
 end if defined?(OpenSSL)
  
