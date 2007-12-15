@@ -45,7 +45,10 @@ module Timeout
       }
       return yield(sec)
     ensure
-      y.kill if y and y.alive?
+      if y and y.alive?
+        y.kill 
+        y.join # make sure y is dead.
+      end
     end
   end
 
