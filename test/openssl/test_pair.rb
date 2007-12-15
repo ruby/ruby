@@ -54,6 +54,11 @@ module SSLPair
     else
       return c, s
     end
+  ensure
+    if th && th.alive?
+      th.kill
+      th.join 
+    end
   end
 end
 

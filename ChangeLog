@@ -1,3 +1,8 @@
+Sat Dec 15 23:58:46 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_pair.rb (SSLPair#ssl_pair): join the thread, even
+	  on an error.
+
 Sat Dec 15 23:50:31 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/xmlrpc/webrick_testing.rb: join webrick server thread.
