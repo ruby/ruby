@@ -1,3 +1,8 @@
+Sun Dec 16 00:36:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MAKEFILES): should be enc/Makefile, not GNUmakefile.
+	  [ruby-dev:32609]
+
 Sat Dec 15 23:58:46 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_pair.rb (SSLPair#ssl_pair): join the thread, even
