@@ -129,7 +129,8 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     struct rb_encoding_entry *ent = &enc_table[index];
 
     ent->name = name;
-    *(ent->enc = malloc(sizeof(rb_encoding))) = *encoding;
+    if (!ent->enc) ent->enc = malloc(sizeof(rb_encoding));
+    *ent->enc = *encoding;
     encoding = ent->enc;
     encoding->name = name;
     if (rb_cEncoding) {
@@ -142,8 +143,8 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     return index;
 }
 
-int
-rb_enc_register(const char *name, rb_encoding *encoding)
+static int
+enc_register(const char *name, rb_encoding *encoding)
 {
     int index = enc_table_count;
 
@@ -153,12 +154,40 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     return enc_register_at(index - 1, name, encoding);
 }
 
+static VALUE enc_based_encoding(VALUE);
+#define rb_enc_registered(name) rb_enc_find_index(name)
+
+int
+rb_enc_register(const char *name, rb_encoding *encoding)
+{
+    int index = rb_enc_registered(name);
+
+    if (index >= 0) {
+	rb_encoding *oldenc = rb_enc_from_index(index);
+	if (strcasecmp(name, rb_enc_name(oldenc))) {
+	    st_data_t key = (st_data_t)name, alias;
+	    st_delete(enc_table_alias, &key, &alias);
+	}
+	else if (enc_initialized_p(oldenc) &&
+		 !NIL_P(enc_based_encoding(ENC_FROM_ENCODING(encoding)))) {
+	    return enc_register_at(index, name, encoding);
+	}
+	else {
+	    rb_raise(rb_eArgError, "encoding %s is already registered", name);
+	}
+    }
+    return enc_register(name, encoding);
+}
+
 int
 rb_enc_replicate(const char *name, rb_encoding *encoding)
 {
     VALUE enc, origenc;
     int index = enc_table_size;
 
+    if (rb_enc_registered(name) >= 0) {
+	rb_raise(rb_eArgError, "encoding %s is already registered", name);
+    }
     if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
     if (enc_table_expand(index + 1) < 0) return -1;
     enc_register_at(index, name, encoding);
@@ -168,8 +197,8 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
     return index;
 }
 
-int
-rb_enc_alias(const char *alias, const char *orig)
+static int
+enc_alias(const char *alias, const char *orig)
 {
     st_data_t data;
     int idx;
@@ -186,19 +215,28 @@ rb_enc_alias(const char *alias, const char *orig)
     return idx;
 }
 
+int
+rb_enc_alias(const char *alias, const char *orig)
+{
+    if (rb_enc_registered(alias) >= 0) {
+	rb_raise(rb_eArgError, "encoding %s is already registered", alias);
+    }
+    return enc_alias(alias, orig);
+}
+
 void
 rb_enc_init(void)
 {
-#define ENC_REGISTER(enc) rb_enc_register(rb_enc_name(enc), enc)
+#define ENC_REGISTER(enc) enc_register(rb_enc_name(enc), enc)
     ENC_REGISTER(ONIG_ENCODING_ASCII);
     ENC_REGISTER(ONIG_ENCODING_EUC_JP);
     ENC_REGISTER(ONIG_ENCODING_SJIS);
     ENC_REGISTER(ONIG_ENCODING_UTF8);
 #undef ENC_REGISTER
-    rb_enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
-    rb_enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
-    rb_enc_alias("US-ASCII", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
-    rb_enc_alias("SJIS", rb_enc_name(ONIG_ENCODING_SJIS));
+    enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
+    enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
+    enc_alias("US-ASCII", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
+    enc_alias("SJIS", rb_enc_name(ONIG_ENCODING_SJIS));
 }
 
 rb_encoding *
