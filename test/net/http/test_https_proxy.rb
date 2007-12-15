@@ -25,9 +25,15 @@ class HTTPSProxyTest < Test::Unit::TestCase
         "\r\n",
         proxy_request,
         "[ruby-dev:25673]")
+      sock.close
     }
   ensure
-    t.join if t
+    if t
+      begin
+        t.join
+      rescue EOFError
+      end
+    end
   end
 end if defined?(OpenSSL)
  
