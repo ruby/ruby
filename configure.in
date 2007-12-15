@@ -1736,7 +1736,7 @@ fi
 tr -d '\015' < largefile.h > confdefs.h
 
 test -d enc || mkdir enc
-BUILTIN_ENCS="`sed -n '/^BUILTIN_ENCS[ 	]*=/{s///;:l;/\\\\$/N;s/\\\\\\n/ /;t l;p}' \"${srcdir}/enc/Makefile.in\"`"
+BUILTIN_ENCS=["`sed -n '/^BUILTIN_ENCS[ 	]*=/{s///;:l;/\\\\$/N;s/\\\\\\n/ /;t l;p}' \"${srcdir}/enc/Makefile.in\"`"]
 BUILTIN_ENCS="`echo $BUILTIN_ENCS`"
 EXTERNAL_ENCS=
 for e in "${srcdir}/enc"/*.c; do
