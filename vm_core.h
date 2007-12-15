@@ -431,9 +431,11 @@ struct rb_thread_struct
     /* for GC */
     VALUE *machine_stack_start;
     VALUE *machine_stack_end;
+    size_t machine_stack_maxsize;
 #ifdef __ia64
     VALUE *machine_register_stack_start;
     VALUE *machine_register_stack_end;
+    size_t machine_register_stack_maxsize;
 #endif
     jmp_buf machine_regs;
     int mark_stack_len;

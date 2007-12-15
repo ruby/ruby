@@ -1,3 +1,26 @@
+Sat Dec 15 13:04:30 2007  Tanaka Akira  <akr@fsij.org>
+
+	* vm_core.h (rb_thread_t): new member machine_stack_maxsize and
+	  machine_register_stack_maxsize.
+
+	* gc.c (rb_gc_stack_maxsize): new global variable for the thread size
+	  of the main thread.
+	  (STACK_LEVEL_MAX): use machine_stack_maxsize of current thread.
+	  (ruby_stack_check): check IA64 register stack.
+	  (ruby_set_stack_size): set rb_gc_stack_maxsize.
+	  (Init_stack): set rb_gc_stack_maxsize.
+
+	* thread_pthread.ci (native_thread_create): initialize
+	  th->machine_stack_maxsize and th->machine_register_stack_maxsize.
+
+	* vm.c (Init_BareVM): initialize th->machine_stack_maxsize and
+	  th->machine_register_stack_maxsize.
+
+	* thread_win32.ci (native_thread_create): initialize
+	  th->machine_stack_maxsize.  not tested.  just a guess at all.
+
+	[ruby-dev:32604]
+
 Sat Dec 15 12:58:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_register, rb_enc_replicate, rb_enc_alias): check

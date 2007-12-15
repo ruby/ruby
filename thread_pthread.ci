@@ -280,12 +280,20 @@ native_thread_create(rb_thread_t *th)
     }
     else {
 	pthread_attr_t attr;
-	size_t stack_size = 1024 * 1024; /* 1024KB */
+	size_t stack_size = 512 * 1024; /* 512KB */
+        size_t space;
 
 #ifdef PTHREAD_STACK_MIN
 	if (stack_size < PTHREAD_STACK_MIN) {
 	    stack_size = PTHREAD_STACK_MIN * 2;
 	}
+#endif
+        space = stack_size/5;
+        if (space > 1024*1024) space = 1024*1024;
+        th->machine_stack_maxsize = stack_size - space;
+#ifdef __ia64
+        th->machine_stack_maxsize /= 2;
+        th->machine_register_stack_maxsize = th->machine_stack_maxsize;
 #endif
 
 	CHECK_ERR(pthread_attr_init(&attr));

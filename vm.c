@@ -1738,6 +1738,7 @@ rb_thread_alloc(VALUE klass)
 
 VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
+extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
 extern VALUE *rb_gc_register_stack_start;
 #endif
@@ -1872,8 +1873,11 @@ Init_BareVM(void)
     th_init2(th);
     th->vm = vm;
     th->machine_stack_start = rb_gc_stack_start;
+    th->machine_stack_maxsize = rb_gc_stack_maxsize;
 #ifdef __ia64
     th->machine_register_stack_start = rb_gc_register_stack_start;
+    th->machine_stack_maxsize /= 2;
+    th->machine_register_stack_maxsize = th->machine_stack_maxsize;
 #endif
     rb_thread_set_current_raw(th);
 }

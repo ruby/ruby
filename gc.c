@@ -171,15 +171,9 @@ unsigned int _stklen = 0x180000; /* 1.5 kB */
 #endif
 
 #if defined(DJGPP) || defined(_WIN32_WCE)
-static unsigned int STACK_LEVEL_MAX = 65535;
-#elif defined(__human68k__)
-unsigned int _stacksize = 262144;
-# define STACK_LEVEL_MAX (_stacksize - 4096)
-# undef HAVE_GETRLIMIT
-#elif defined(HAVE_GETRLIMIT) || defined(_WIN32)
-static unsigned int STACK_LEVEL_MAX = 655300;
+size_t rb_gc_stack_maxsize = 65535*sizeof(VALUE);
 #else
-# define STACK_LEVEL_MAX 655300
+size_t rb_gc_stack_maxsize = 655300*sizeof(VALUE);
 #endif
 
 
@@ -579,6 +573,7 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 
 #define STACK_START (th->machine_stack_start)
 #define STACK_END (th->machine_stack_end)
+#define STACK_LEVEL_MAX (th->machine_stack_maxsize/sizeof(VALUE))
 
 #if defined(sparc) || defined(__sparc__)
 # define STACK_LENGTH  (STACK_START - STACK_END + 0x80)
@@ -611,11 +606,6 @@ stack_grow_direction(VALUE *addr)
 
 #define GC_WATER_MARK 512
 
-#define CHECK_STACK(ret) do {\
-    SET_STACK_END;\
-    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK);\
-} while (0)
-
 int
 ruby_stack_length(VALUE **p)
 {
@@ -628,10 +618,17 @@ ruby_stack_length(VALUE **p)
 int
 ruby_stack_check(void)
 {
-  int ret;
-  rb_thread_t *th = GET_THREAD();
-  CHECK_STACK(ret);
-  return ret;
+    int ret;
+    rb_thread_t *th = GET_THREAD();
+    SET_STACK_END;
+    ret = STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK;
+#ifdef __ia64
+    if (!ret) {
+        ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
+              th->machine_register_stack_maxsize/sizeof(VALUE) + GC_WATER_MARK;
+    }
+#endif
+    return ret;
 }
 
 static void
@@ -1576,9 +1573,7 @@ rb_gc_start(void)
 void
 ruby_set_stack_size(size_t size)
 {
-#ifndef STACK_LEVEL_MAX
-    STACK_LEVEL_MAX = size/sizeof(VALUE);
-#endif
+    rb_gc_stack_maxsize = size;
 }
 
 void
@@ -1638,7 +1633,7 @@ Init_stack(VALUE *addr)
 	    unsigned int space = rlim.rlim_cur/5;
 
 	    if (space > 1024*1024) space = 1024*1024;
-	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
+	    rb_gc_stack_maxsize = rlim.rlim_cur - space;
 	}
     }
 #endif
@@ -1670,7 +1665,7 @@ void ruby_init_stack(VALUE *addr
 	    unsigned int space = rlim.rlim_cur/5;
 
 	    if (space > 1024*1024) space = 1024*1024;
-	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
+	    rb_gc_stack_maxsize = rlim.rlim_cur - space;
 	}
     }
 #elif defined _WIN32
@@ -1683,7 +1678,7 @@ void ruby_init_stack(VALUE *addr
 	    size = (char *)mi.BaseAddress - (char *)mi.AllocationBase;
 	    space = size / 5;
 	    if (space > 1024*1024) space = 1024*1024;
-	    STACK_LEVEL_MAX = (size - space) / sizeof(VALUE);
+            rb_gc_stack_maxsize = size - space;
 	}
     }
 #endif
