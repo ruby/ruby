@@ -1,7 +1,9 @@
-Sun Dec 16 00:36:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 16 14:51:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MAKEFILES): should be enc/Makefile, not GNUmakefile.
 	  [ruby-dev:32609]
+
+	* configure.in (BUILTIN_ENCS): removed escapes for OpenBSD.
 
 Sat Dec 15 23:58:46 2007  Tanaka Akira  <akr@fsij.org>
 
