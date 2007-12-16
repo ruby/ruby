@@ -193,3 +193,64 @@ assert_equal 'nil', %q{
   t.join
   exc.inspect
 }, '[ruby-dev:32608]'
+
+assert_equal 'true', %q{
+  "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp")) ==
+  "a\xa1\xa1c".force_encoding("euc-jp")
+}
+
+assert_equal 'ok', %q{
+  begin
+    "%s%s" % ["\xc2\xa1".force_encoding("sjis"), "\xc2\xa1".force_encoding("euc-jp")]
+  rescue ArgumentError
+    :ok
+  end
+}
+
+assert_equal '0', %q{
+  "\xa1\xa2".force_encoding("euc-jp").count("z")
+}
+
+assert_equal '1', %q{
+  "\xa1\xa2".force_encoding("euc-jp").delete("z").length
+}
+
+assert_equal 'false', %q{
+  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").include?("\xa3".force_encoding("euc-jp"))
+}
+
+assert_equal 'nil', %q{
+  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").index("\xa3".force_encoding("euc-jp"))
+}
+
+assert_equal 'nil', %q{
+  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").rindex("\xa3".force_encoding("euc-jp"))
+}
+
+assert_equal 'false', %q{
+  s1 = "\xa1\xa1".force_encoding("euc-jp")
+  s2 = s1.dup
+  (94*94+94).times { s2.next! }
+  s1 == s2
+}
+
+assert_equal 'ok', %q{
+  "\xa1\xa2a\xa3\xa4".force_encoding("euc-jp").scan(/a/)
+  :ok
+}
+
+assert_equal 'ok', %q{
+  "\xa1\xa2a\xa3\xa4".force_encoding("euc-jp").split(/a/)
+  :ok
+}
+
+assert_equal 'ok', %q{
+  s1 = "\xa1\xa2".force_encoding("euc-jp")
+  s2 = "\xa1\xa2".force_encoding("sjis")
+  begin
+    s1.upto(s2) {|x| break }
+    :ng
+  rescue ArgumentError
+    :ok
+  end
+}
