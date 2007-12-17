@@ -1,0 +1,3 @@
+all: $(ENCSOS)
+
+$(ENCOBJS): regenc.h oniguruma.h config.h defines.h
