@@ -1,3 +1,13 @@
+Tue Dec 18 02:30:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (BUILTIN_ENCS): removed.
+
+	* common.mk (enc.mk): pass BUILTIN_ENCS from command line.
+
+	* enc/depend: ditto.
+
+	* enc/make_encmake.rb: ditto.
+
 Tue Dec 18 01:46:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): need to clear output buffer to avoid

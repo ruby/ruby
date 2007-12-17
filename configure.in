@@ -1738,11 +1738,8 @@ tr -d '\015' < largefile.h > confdefs.h
 BUILTIN_ENCS=["`sed -n -e '/^BUILTIN_ENCS[ 	]*=/{' \
 	-e s/// -e :l -e '/\\\\$/N' -e 's/\\\\\\n/ /' -e 't l' -e p \
 	-e '}' "${srcdir}/enc/Makefile.in"`"]
-BUILTIN_ENCS="`echo $BUILTIN_ENCS`"
 BUILTIN_ENCOBJS=
 for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS `basename $e .c`"'.$(OBJEXT)'; done
-
-AC_SUBST(BUILTIN_ENCS)
 AC_SUBST(BUILTIN_ENCOBJS)
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)

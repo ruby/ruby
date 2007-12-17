@@ -344,7 +344,7 @@ encs: enc.mk
 
 enc.mk: miniruby$(EXEEXT) $(srcdir)/enc/make_encmake.rb \
 	$(srcdir)/enc/Makefile.in $(srcdir)/enc/depend $(srcdir)/lib/mkmf.rb
-	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb $@
+	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
 
 .PRECIOUS: $(MKFILES)
 
