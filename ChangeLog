@@ -1,3 +1,12 @@
+Mon Dec 17 13:56:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (tr_find): wrong condition fixed.
+
+	* sprintf.c (rb_str_format): check encoding based on result, not
+	  the format string.
+
+	* string.c (rb_str_upto): add encoding check.
+
 Mon Dec 17 12:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (RUNRUBY): added RUNRUBYOPT.

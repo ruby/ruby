@@ -1945,6 +1945,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     int n, excl;
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
+    rb_enc_check(beg, end);
     excl = RTEST(exclusive);
     succ = rb_intern("succ");
     StringValue(end);
@@ -3741,11 +3742,12 @@ tr_find(int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = INT2NUM(c);
 
-	if ((!del || !NIL_P(rb_hash_lookup(del, v))) &&
-	    (!nodel || NIL_P(rb_hash_lookup(nodel, v)))) {
-	    return Qtrue;
+	if (!del || NIL_P(rb_hash_lookup(del, v))) {
+	    return Qfalse;
 	}
-	return Qfalse;
+	if (nodel && NIL_P(rb_hash_lookup(nodel, v)))
+	    return Qfalse;
+	return Qtrue;
     }
 }
 

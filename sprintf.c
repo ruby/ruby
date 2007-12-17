@@ -296,6 +296,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
+    rb_enc_copy(result, fmt);
     buf = RSTRING_PTR(result);
 
     for (; p < end; p++) {
@@ -459,7 +460,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
-		enc = rb_enc_check(fmt, str);
+		enc = rb_enc_check(result, str);
 		if (flags&(FPREC|FWIDTH)) {
 		    slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
 		    if (slen < 0) {
@@ -497,6 +498,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		PUSH(RSTRING_PTR(str), len);
+		rb_enc_associate(result, enc);
 	    }
 	    break;
 
