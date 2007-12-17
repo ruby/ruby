@@ -56,6 +56,16 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert(req.query.empty?)
   end
 
+  def test_request_uri_too_large
+    msg = <<-_end_of_message_
+      GET /#{"a"*1024} HTTP/1.1
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    assert_raises(WEBrick::HTTPStatus::RequestURITooLarge){
+      req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    }
+  end
+
   def test_parse_headers
     msg = <<-_end_of_message_
       GET /path HTTP/1.1

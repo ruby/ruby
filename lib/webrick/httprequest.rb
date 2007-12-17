@@ -219,7 +219,10 @@ module WEBrick
     private
 
     def read_request_line(socket)
-      @request_line = read_line(socket) if socket
+      @request_line = read_line(socket, 1024) if socket
+      if @request_line.size >= 1024 and @request_line[-1, 1] != LF
+        raise HTTPStatus::RequestURITooLarge
+      end
       @request_time = Time.now
       raise HTTPStatus::EOFError unless @request_line
       if /^(\S+)\s+(\S+)(?:\s+HTTP\/(\d+\.\d+))?\r?\n/mo =~ @request_line
@@ -317,10 +320,10 @@ module WEBrick
       @remaining_size = 0
     end
 
-    def _read_data(io, method, arg)
+    def _read_data(io, method, *arg)
       begin
         WEBrick::Utils.timeout(@config[:RequestTimeout]){
-          return io.__send__(method, arg)
+          return io.__send__(method, *arg)
         }
       rescue Errno::ECONNRESET
         return nil
@@ -329,8 +332,8 @@ module WEBrick
       end
     end
 
-    def read_line(io)
-      _read_data(io, :gets, LF)
+    def read_line(io, size=4096)
+      _read_data(io, :gets, LF, size)
     end
 
     def read_data(io, size)

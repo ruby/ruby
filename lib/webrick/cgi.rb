@@ -196,8 +196,8 @@ module WEBrick
         [nil, @server_port, @server_name, @server_addr]
       end
   
-      def gets(eol=LF)
-        input.gets(eol)
+      def gets(eol=LF, size=nil)
+        input.gets(eol, size)
       end
   
       def read(size=nil)

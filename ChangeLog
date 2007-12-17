@@ -1,3 +1,8 @@
+Mon Dec 17 16:02:30 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb, lib/webrick/cgi.rb: Request-Line or
+	  header fields shold be read with maximum length. [ruby-talk:231745]
+
 Mon Dec 17 14:03:39 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ENC_CODERANGE_VALID): rename from
@@ -25,7 +30,7 @@ Mon Dec 17 11:38:59 2007  Tanaka Akira  <akr@fsij.org>
 
 Sun Dec 16 17:07:35 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * transcode.c (transcode_loop): removed special case (-1)
+	* transcode.c (transcode_loop): removed special case (-1)
 	  for undefined conversions.
 
 	* transcode_data_iso_8859.c: Changed from character constants
@@ -132,10 +137,10 @@ Fri Dec 14 16:06:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Dec 14 15:25:30 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * transcode.c (encoding_equal): new function.
+	* transcode.c (encoding_equal): new function.
 
 	* transcode.c (str_transcode, transcode_dispatch): added two-step
-          conversion logic via UTF-8.
+	  conversion logic via UTF-8.
 
 	* trancode.c: some minor formatting fixes
 
@@ -1903,7 +1908,7 @@ Thu Nov  8 17:09:55 2007  David Flanagan  <davidflanagan@ruby-lang.org>
 Thu Nov  8 15:13:56 2007 David Flanagan <davidflanagan@ruby-lang.org>
 
 	* parse.y: fix segfault with \x escapes in regexps
-                   delete unused #if 0 code regions from previous patch
+	  delete unused #if 0 code regions from previous patch
 	
 Thu Nov  8 12:12:10 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
