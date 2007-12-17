@@ -1,3 +1,10 @@
+Mon Dec 17 14:03:39 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ENC_CODERANGE_VALID): rename from
+	  ENC_CODERANGE_8BIT.
+
+	* string.c (rb_enc_str_coderange): follow the renaming.
+
 Mon Dec 17 13:56:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_find): wrong condition fixed.

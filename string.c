@@ -106,7 +106,7 @@ rb_enc_str_coderange(VALUE str)
 	rb_encoding *enc = rb_enc_get(str);
 
 	if (!rb_enc_asciicompat(enc)) {
-	    cr = ENC_CODERANGE_8BIT;
+	    cr = ENC_CODERANGE_VALID;
 	    ENC_CODERANGE_SET(str, cr);
 	    return cr;
 	}
@@ -119,7 +119,7 @@ rb_enc_str_coderange(VALUE str)
 		int c = (unsigned char)*p;
 
 		if (!rb_enc_isascii(c, enc)) {
-		    cr = ENC_CODERANGE_8BIT;
+		    cr = ENC_CODERANGE_VALID;
 		    break;
 		}
 		p++;
