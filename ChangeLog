@@ -65,7 +65,7 @@ Mon Dec 17 20:53:27 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Dec 17 18:42:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (scan_once): need no encoding compatibility check.
-	  it's done inside of re_reg_seach().
+	  it's done inside of re_reg_search().
 
 	* string.c (rb_str_split_m): ditto.
 
