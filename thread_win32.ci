@@ -429,7 +429,7 @@ native_thread_create(rb_thread_t *th)
     size_t stack_size = 4 * 1024; /* 4KB */
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
 
-    th->machine_stack_maxsize = 64 * 1024; /* not tested.  just a guess at all. */
+    th->machine_stack_maxsize = rb_gc_stack_maxsize; /* not tested. */
 
     if ((th->thread_id) == 0) {
 	st_delete_wrap(th->vm->living_threads, th->self);

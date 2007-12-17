@@ -1,3 +1,8 @@
+Mon Dec 17 11:38:59 2007  Tanaka Akira  <akr@fsij.org>
+
+	* thread_win32.ci (native_thread_create): initialize
+	  th->machine_stack_maxsize as rb_gc_stack_maxsize.
+
 Sun Dec 16 17:07:35 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
         * transcode.c (transcode_loop): removed special case (-1)
