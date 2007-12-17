@@ -105,27 +105,26 @@ rb_enc_str_coderange(VALUE str)
     if (cr == ENC_CODERANGE_UNKNOWN) {
 	rb_encoding *enc = rb_enc_get(str);
 
-	if (!rb_enc_asciicompat(enc)) {
-	    cr = ENC_CODERANGE_VALID;
-	    ENC_CODERANGE_SET(str, cr);
-	    return cr;
-	}
-	else {
-	    const char *p = RSTRING_PTR(str);
-	    const char *e = p + RSTRING_LEN(str);
+        const char *p = RSTRING_PTR(str);
+        const char *e = p + RSTRING_LEN(str);
 
-	    cr = ENC_CODERANGE_7BIT;
-	    while (p < e) {
-		int c = (unsigned char)*p;
+        cr = rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+        while (p < e) {
+            int ret = rb_enc_precise_mbclen(p, e, enc);
+            int len = MBCLEN_CHARFOUND(ret);
 
-		if (!rb_enc_isascii(c, enc)) {
-		    cr = ENC_CODERANGE_VALID;
-		    break;
-		}
-		p++;
-	    }
-	    ENC_CODERANGE_SET(str, cr);
-	}
+            if (len) {
+                if (len != 1 || !rb_enc_isascii((unsigned char)*p, enc)) {
+                    cr = ENC_CODERANGE_VALID;
+                }
+                p += len;
+            }
+            else {
+                cr = ENC_CODERANGE_BROKEN;
+                break;
+            }
+        }
+        ENC_CODERANGE_SET(str, cr);
     }
     return cr;
 }
@@ -5316,20 +5315,9 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
-    char *p = RSTRING_PTR(str);
-    char *pend = RSTRING_END(str);
-    rb_encoding *enc = rb_enc_get(str);
+    int cr = rb_enc_str_coderange(str);
 
-    while (p < pend) {
-	int n;
-
-        n = rb_enc_precise_mbclen(p, pend, enc);
-        if (!MBCLEN_CHARFOUND(n)) {
-            return Qfalse;
-        }
-        p += n;
-    }
-    return Qtrue;
+    return cr == ENC_CODERANGE_BROKEN ? Qfalse : Qtrue;
 }
 
 /**********************************************************************
