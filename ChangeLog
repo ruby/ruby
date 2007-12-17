@@ -1,3 +1,12 @@
+Mon Dec 17 18:42:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (scan_once): need no encoding compatibility check.
+	  it's done inside of re_reg_seach().
+
+	* string.c (rb_str_split_m): ditto.
+
+	* re.c (rb_reg_regsub): ditto.
+
 Mon Dec 17 17:50:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_index): check if substring is broken.

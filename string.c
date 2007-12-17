@@ -4129,9 +4129,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	int last_null = 0;
 	struct re_registers *regs;
 
-	if (RREGEXP(spat)->len != 0) {
-	    enc = rb_enc_check(str, spat);
-	}
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
 	    regs = RMATCH(rb_backref_get())->regs;
 	    if (start == end && BEG(0) == END(0)) {
@@ -4733,7 +4730,7 @@ scan_once(VALUE str, VALUE pat, long *start)
     struct re_registers *regs;
     long i;
 
-    enc = rb_enc_check(str, pat);
+    enc = rb_enc_get(str);
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
