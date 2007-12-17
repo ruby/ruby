@@ -94,15 +94,15 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_connect_and_close
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       assert(ssl.connect)
       ssl.close
       assert(!sock.closed?)
       sock.close
 
-      sock = TCPSocket.new("127.0.0.1", p)
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true  # !!
       assert(ssl.connect)
@@ -112,8 +112,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_read_and_write
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true
       ssl.connect
@@ -162,9 +162,9 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
   def test_client_auth
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
-    start_server(PORT, vflag, true){|s, p|
+    start_server(PORT, vflag, true){|server, port|
       assert_raises(OpenSSL::SSL::SSLError){
-        sock = TCPSocket.new("127.0.0.1", p)
+        sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.connect
       }
@@ -172,7 +172,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.key = @cli_key
       ctx.cert = @cli_cert
-      sock = TCPSocket.new("127.0.0.1", p)
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       ssl.sync_close = true
       ssl.connect
@@ -186,7 +186,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         called = true
         [@cli_cert, @cli_key]
       }
-      sock = TCPSocket.new("127.0.0.1", p)
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       ssl.sync_close = true
       ssl.connect
@@ -198,8 +198,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_starttls
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true
       str = "x" * 1000 + "\n"
@@ -222,10 +222,10 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
   def test_parallel
     GC.start
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       ssls = []
       10.times{
-        sock = TCPSocket.new("127.0.0.1", p)
+        sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.connect
         ssl.sync_close = true
@@ -242,17 +242,72 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     }
   end
 
+  def test_verify_result
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.build
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+      assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.build(
+        :verify_callback => Proc.new do |preverify_ok, store_ctx|
+          store_ctx.error = OpenSSL::X509::V_OK
+          true
+        end
+      )
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.connect
+      assert_equal(OpenSSL::X509::V_OK, ssl.verify_result)
+
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.build(
+        :verify_callback => Proc.new do |preverify_ok, store_ctx|
+          store_ctx.error = OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION
+          false
+        end
+      )
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+      assert_equal(OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION, ssl.verify_result)
+    }
+  end
+
+  def test_sslctx_build
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.build
+      assert_equal(OpenSSL::SSL::VERIFY_PEER, ctx.verify_mode)
+      assert_equal(OpenSSL::SSL::OP_ALL, ctx.options)
+      ciphers = ctx.ciphers
+      ciphers_versions = ciphers.collect{|_, v, _, _| v }
+      ciphers_names = ciphers.collect{|v, _, _, _| v }
+      assert(ciphers_names.all?{|v| /ADH/ !~ v })
+      assert(ciphers_versions.all?{|v| /SSLv2/ !~ v })
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
+      assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
+    }
+  end
+
   def test_post_connection_check
     sslerr = OpenSSL::SSL::SSLError
 
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect
       assert_raises(sslerr){ssl.post_connection_check("localhost.localdomain")}
       assert_raises(sslerr){ssl.post_connection_check("127.0.0.1")}
       assert(ssl.post_connection_check("localhost"))
       assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+
+      cert = ssl.peer_cert
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "127.0.0.1"))
+      assert(OpenSSL::SSL.verify_certificate_identity(cert, "localhost"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "foo.example.com"))
     }
 
     now = Time.now
@@ -263,14 +318,20 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ]
     @svr_cert = issue_cert(@svr, @svr_key, 4, now, now+1800, exts,
                            @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect
       assert(ssl.post_connection_check("localhost.localdomain"))
       assert(ssl.post_connection_check("127.0.0.1"))
       assert_raises(sslerr){ssl.post_connection_check("localhost")}
       assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+
+      cert = ssl.peer_cert
+      assert(OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
+      assert(OpenSSL::SSL.verify_certificate_identity(cert, "127.0.0.1"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "localhost"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "foo.example.com"))
     }
 
     now = Time.now
@@ -280,14 +341,19 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     ]
     @svr_cert = issue_cert(@svr, @svr_key, 5, now, now+1800, exts,
                            @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
-      sock = TCPSocket.new("127.0.0.1", p)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.connect
       assert(ssl.post_connection_check("localhost.localdomain"))
       assert_raises(sslerr){ssl.post_connection_check("127.0.0.1")}
       assert_raises(sslerr){ssl.post_connection_check("localhost")}
       assert_raises(sslerr){ssl.post_connection_check("foo.example.com")}
+      cert = ssl.peer_cert
+      assert(OpenSSL::SSL.verify_certificate_identity(cert, "localhost.localdomain"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "127.0.0.1"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "localhost"))
+      assert(!OpenSSL::SSL.verify_certificate_identity(cert, "foo.example.com"))
     }
   end
 end
