@@ -1,3 +1,12 @@
+Tue Dec 18 00:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): raise error if non-Unicode fixed
+	  encoding option is specified for regexp literals with \u{}
+	  escapes.
+
+	* string.c (rb_str_squeeze_bang): should squeeze multibyte
+	  characters as well.
+
 Mon Dec 17 21:41:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/enc-setup.mak: extracts BUILTIN_ENCOBJS.

@@ -3846,7 +3846,6 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     int i;
 
     if (argc == 0) {
-	memset(squeez, 1, sizeof(squeez));
 	enc = rb_enc_get(str);
     }
     else {
@@ -3868,7 +3867,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
 
-	if (c != save || !tr_find(c, squeez, del, nodel)) {
+	if (c != save || (argc > 0 && !tr_find(c, squeez, del, nodel))) {
 	    if (t != s) rb_enc_mbcput(c, t, enc);
 	    save = c;
 	    t += clen;

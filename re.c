@@ -1971,7 +1971,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
         return -1;
 
     if (fixed_enc) {
-	if (fixed_enc != enc && enc != d_enc && fixed_enc != d_enc) {
+	if (fixed_enc != enc && (options & ARG_ENCODING_FIXED)) {
 	    strcpy(err, "character encodings differ");
 	    return -1;
 	}
