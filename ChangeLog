@@ -3,6 +3,10 @@ Mon Dec 17 13:43:15 2007  Tanaka Akira  <akr@fsij.org>
 	* gc.c (stack_end_address): use local variable address instead of
 	  __builtin_frame_address(0) to avoid SEGV on SunOS 5.11 on x86 with 
 	  gcc (GCC) 3.4.3 (csl-sol210-3_4-20050802).
+	  stack_end_address returned a frame address of garbage_collect
+	  since stack_end_address doesn't create its own frame.
+	  So register saved VALUE pushed into the stack at the beginning of
+	  garbage_collect is not marked.
 
 Mon Dec 17 12:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
