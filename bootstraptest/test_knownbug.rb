@@ -219,12 +219,12 @@ assert_equal 'false', %q{
   "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").include?("\xa3".force_encoding("euc-jp"))
 }
 
-assert_equal 'nil', %q{
-  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").index("\xa3".force_encoding("euc-jp"))
+assert_equal 'ok', %q{
+  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").index("\xa3".force_encoding("euc-jp")) or :ok
 }
 
-assert_equal 'nil', %q{
-  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").rindex("\xa3".force_encoding("euc-jp"))
+assert_equal 'ok', %q{
+  "\xa1\xa2\xa3\xa4".force_encoding("euc-jp").rindex("\xa3".force_encoding("euc-jp")) or :ok
 }
 
 assert_equal 'false', %q{

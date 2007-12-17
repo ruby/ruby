@@ -1,3 +1,11 @@
+Mon Dec 17 17:50:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_index): check if substring is broken.
+
+	* string.c (rb_str_rindex): ditto.
+
+	* string.c (rb_str_succ): should carry over.
+
 Mon Dec 17 17:47:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (encs): new target to compile external encodings.

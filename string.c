@@ -94,6 +94,7 @@ VALUE rb_cSymbol;
 
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define IS_7BIT(str) (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+#define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 
 VALUE rb_fs;
 
@@ -1443,6 +1444,9 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
+    if (is_broken_string(sub)) {
+	return -1;
+    }
     len = str_strlen(str, enc);
     slen = str_strlen(sub, enc);
     if (offset < 0) {
@@ -1553,6 +1557,9 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     int asc = IS_7BIT(str);
 
     enc = rb_enc_check(str, sub);
+    if (is_broken_string(sub)) {
+	return -1;
+    }
     len = str_strlen(str, enc);
     slen = str_strlen(sub, enc);
     /* substring longer than string */
@@ -1863,7 +1870,7 @@ rb_str_succ(VALUE orig)
     if (c == -1) {		/* str contains no alnum */
 	c = '\001';
 	s = e;
-	while ((s = rb_enc_prev_char(sbeg, e, enc)) != 0) {
+	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
 	    if (cc == 0) cc = rb_enc_codepoint(s, e, enc);
 	    cc += 1;
 	    l = rb_enc_mbcput(cc, carry, enc);
