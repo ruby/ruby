@@ -1,3 +1,7 @@
+Tue Dec 18 05:54:26 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/Env.rb, lib/base64.rb, lib/importenv.rb, lib/eregex.rb: removed.
+
 Tue Dec 18 02:30:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BUILTIN_ENCS): removed.

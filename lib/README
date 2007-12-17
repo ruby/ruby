@@ -1,7 +1,5 @@
 English.rb	lets Perl'ish global variables have English names
-Env.rb		loads importenv.rb
 README		this file
-base64.rb	encodes/decodes base64 (obsolete)
 benchmark.rb	a benchmark utility
 cgi-lib.rb	simple CGI support library (old style)
 cgi.rb		CGI support library
@@ -15,7 +13,6 @@ delegate.rb	delegates messages to other object
 drb.rb		distributed Ruby
 e2mmap.rb	exception utilities
 erb.rb		tiny eRuby library
-eregex.rb	extended regular expression (just a proof of concept)
 fileutils.rb	file utilities
 finalize.rb	adds finalizer to the object
 find.rb		traverses directory tree
@@ -24,7 +21,6 @@ ftools.rb	file tools
 getoptlong.rb	GNU getoptlong compatible
 getopts.rb	parses command line options (use getoptlong)
 gserver.rb	general TCP server
-importenv.rb	imports environment variables as global variables
 ipaddr.rb	defines the IPAddr class
 irb.rb		interactive ruby
 logger.rb	simple logging utility
