@@ -27,6 +27,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(ArgumentError) { 'abc'.encode!('foo', 'bar') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode('foo') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode!('foo') }
+    assert_raise(RuntimeError) { "\xA5".encode('utf-8','iso-8859-3') }
   end
 
   def test_arguments

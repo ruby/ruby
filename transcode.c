@@ -191,7 +191,6 @@ transcode_loop(char **in_pos, char **out_pos,
 	next_byte = (unsigned char)*in_p++;
       follow_byte:
 	next_offset = next_table->base[next_byte];
-	if (next_offset == (base_element)-1) goto illegal;
 	next_info = (VALUE)next_table->info[next_offset];
 	switch (next_info & 0x1F) {
 	  case NOMAP:
@@ -234,7 +233,7 @@ transcode_loop(char **in_pos, char **out_pos,
 	    goto illegal;
 	  case UNDEF:
 	    /* todo: add code for alternative behaviors */
-	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence");
+	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe illegal byte sequence)");
 	    continue;
 	}
 	continue;

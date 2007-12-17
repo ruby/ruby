@@ -1,3 +1,16 @@
+Sun Dec 16 17:07:35 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * transcode.c (transcode_loop): removed special case (-1)
+	  for undefined conversions.
+
+	* transcode_data_iso_8859.c: Changed from character constants
+	  ('\xC2') to integer contants (0xC2) for shorter files and
+	  better readability; eliminated duplicated tables; changed
+	  from -1 offset to actual UNDEF entry (not yet distinguishing
+	  UNDEF and ILLEGAL correctly).
+
+	* test/ruby/test_transcode.rb: added a test for UNDEF conversion.
+
 Sun Dec 16 14:51:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MAKEFILES): should be enc/Makefile, not GNUmakefile.
