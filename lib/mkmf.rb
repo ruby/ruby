@@ -74,6 +74,15 @@ def dir_re(dir)
   Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$(?:\(target_prefix\)|\{target_prefix\}))?')
 end
 
+def relative_from(path, base)
+  dir = File.join(path, "")
+  if File.expand_path(dir) == File.expand_path(dir, base)
+    path
+  else
+    File.join(base, path)
+  end
+end
+
 INSTALL_DIRS = [
   [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
   [dir_re('sitedir'), "$(RUBYCOMMONDIR)"],
@@ -136,7 +145,7 @@ end
 
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
-$extmk = File.expand_path($0)[0, extdir.size+1] == extdir+"/"
+$extmk = File.expand_path($0)[0, topdir.size+1] == topdir+"/"
 if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
   $topdir = $hdrdir
   $top_srcdir = $hdrdir
@@ -1257,6 +1266,60 @@ all install static install-so install-rb: Makefile
 RULES
 end
 
+def depend_rules(depend)
+  suffixes = []
+  depout = []
+  depout << "$(OBJS): $(RUBY_EXTCONF_H)\n\n" if $extconf_h
+  unless suffixes.empty?
+     depout << ".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n"
+  end
+  open(depend, "r") do |dfile|
+    cont = implicit = nil
+    impconv = proc do
+      COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
+      implicit = nil
+    end
+    ruleconv = proc do |line|
+      if implicit
+        if /\A\t/ =~ line
+          implicit[1] << line
+          next
+        else
+          impconv[]
+        end
+      end
+      if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
+        suffixes << m[1] << m[2]
+        implicit = [[m[1], m[2]], [m.post_match]]
+        next
+      elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
+        line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
+      end
+      depout << line
+    end
+    while line = dfile.gets()
+      line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+      line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
+      line.gsub!(%r"\$\(hdrdir\)/(?!ruby/)", '\&ruby/')
+      if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
+        (cont ||= []) << line
+        next
+      elsif cont
+        line = (cont << line).join
+        cont = nil
+      end
+      ruleconv.call(line)
+    end
+    if cont
+      ruleconv.call(cont.join)
+    elsif implicit
+      impconv.call
+    end
+  end
+  depout.flatten!
+  depout
+end
+
 # Generates the Makefile for your extension, passing along any options and
 # preprocessor constants that you may have generated through other methods.
 #
@@ -1518,57 +1581,7 @@ site-install-rb: install-rb
 
   depend = File.join(srcdir, "depend")
   if File.exist?(depend)
-    suffixes = []
-    depout = []
-    open(depend, "r") do |dfile|
-      mfile.printf "###\n"
-      cont = implicit = nil
-      impconv = proc do
-	COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
-	implicit = nil
-      end
-      ruleconv = proc do |line|
-	if implicit
-	  if /\A\t/ =~ line
-	    implicit[1] << line
-	    next
-	  else
-	    impconv[]
-	  end
-	end
-	if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
-          suffixes << m[1] << m[2]
-	  implicit = [[m[1], m[2]], [m.post_match]]
-	  next
-	elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
-	end
-	depout << line
-      end
-      while line = dfile.gets()
-	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
-	line.gsub!(%r"\$\(hdrdir\)/(?!ruby/)", '\&ruby/')
-	if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
-	  (cont ||= []) << line
-	  next
-	elsif cont
-	  line = (cont << line).join
-	  cont = nil
-	end
-	ruleconv.call(line)
-      end
-      if cont
-	ruleconv.call(cont.join)
-      elsif implicit
-	impconv.call
-      end
-    end
-    unless suffixes.empty?
-      mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
-    end
-    mfile.print "$(OBJS): $(RUBY_EXTCONF_H)\n\n" if $extconf_h
-    mfile.print(*depout.flatten)
+    mfile.print("###\n", *depend_rules(depend))
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST

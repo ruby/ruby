@@ -42,15 +42,6 @@ def sysquote(x)
   @quote ? x.quote : x
 end
 
-def relative_from(path, base)
-  dir = File.join(path, "")
-  if File.expand_path(dir) == File.expand_path(dir, base)
-    path
-  else
-    File.join(base, path)
-  end
-end
-
 def extract_makefile(makefile, keep = true)
   m = File.read(makefile)
   if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])

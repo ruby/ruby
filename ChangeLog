@@ -1,3 +1,20 @@
+Mon Dec 17 17:47:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs): new target to compile external encodings.
+
+	* enc/Makefile.in: became a serb template.
+
+	* enc/make_encmake.rb: creates enc.mk from enc/Makefile.in using serb.
+
+	* lib/mkmf.rb (relative_from): moved from ext/extmk.rb.
+
+	* lib/mkmf.rb ($extmk): true if under to top source directory, not
+	  only ext.
+
+	* lib/mkmf.rb (depend_rules): extracted from create_makefile.
+
+	* tool/serb.rb (serb): splitted from tool/compile_prelude.rb.
+
 Mon Dec 17 17:32:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MAKEFILES): removed enc/Makefile.

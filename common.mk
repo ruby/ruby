@@ -96,7 +96,7 @@ TESTWORKDIR   = testwork
 
 BOOTSTRAPRUBY = $(BASERUBY)
 
-all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
+all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
@@ -338,6 +338,12 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 	@$(MINIRUBY) $(srcdir)/mkconfig.rb -timestamp=$@ \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
+
+encs: enc.mk
+	$(MAKE) -f enc.mk
+
+enc.mk: miniruby$(EXEEXT)
+	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb $@
 
 .PRECIOUS: $(MKFILES)
 
