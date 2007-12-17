@@ -1,4 +1,6 @@
-Mon Dec 17 17:17:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 17 17:32:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MAKEFILES): removed enc/Makefile.
 
 	* configure.in (EXTERNAL_ENCOBJS, ENCSOS): removed.
 
