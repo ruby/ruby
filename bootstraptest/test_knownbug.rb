@@ -254,3 +254,10 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_equal 'true', %q{
+  "%s" % "\xa1\xa1".force_encoding("euc-jp") ==
+  "\xa1\xa1".force_encoding("euc-jp")
+}
+
+

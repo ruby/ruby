@@ -5,10 +5,16 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding.find(encname), actual, message)
   end
 
-  def a(str) str.force_encoding("ASCII-8BIT") end
-  def e(str) str.force_encoding("EUC-JP") end
-  def s(str) str.force_encoding("Shift_JIS") end
-  def u(str) str.force_encoding("UTF-8") end
+  def a(str) str.dup.force_encoding("ASCII-8BIT") end
+  def e(str) str.dup.force_encoding("EUC-JP") end
+  def s(str) str.dup.force_encoding("Shift_JIS") end
+  def u(str) str.dup.force_encoding("UTF-8") end
+
+  def assert_strenc(bytes, encname, actual, message=nil)
+    assert_instance_of(String, actual, message)
+    assert_equal(Encoding.find(encname), actual.encoding, message)
+    assert_equal(a(bytes), a(actual), message)
+  end
 
   def test_string_ascii_literal
     assert_encoding("ASCII-8BIT", eval(a(%{""})).encoding)
@@ -494,6 +500,174 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa0/})) }
   end
 
+  def test_str_new
+    assert_strenc('a', 'ASCII-8BIT', String.new(a("a")))
+    assert_strenc('a', 'EUC-JP', String.new(e("a")))
+    assert_strenc('a', 'Shift_JIS', String.new(s("a")))
+    assert_strenc('a', 'UTF-8', String.new(u("a")))
+    assert_strenc("\xc2\xa1", 'ASCII-8BIT', String.new(a("\xc2\xa1")))
+    assert_strenc("\xc2\xa1", 'EUC-JP', String.new(e("\xc2\xa1")))
+    assert_strenc("\xc2\xa1", 'Shift_JIS', String.new(s("\xc2\xa1")))
+    assert_strenc("\xc2\xa1", 'UTF-8', String.new(u("\xc2\xa1")))
+  end
+
+  def test_str_times
+    assert_strenc('', 'ASCII-8BIT', a("a") * 0)
+    assert_strenc('', 'EUC-JP', e("a") * 0)
+    assert_strenc('', 'Shift_JIS', s("a") * 0)
+    assert_strenc('', 'UTF-8', u("a") * 0)
+    assert_strenc('a', 'ASCII-8BIT', a("a") * 1)
+    assert_strenc('a', 'EUC-JP', e("a") * 1)
+    assert_strenc('a', 'Shift_JIS', s("a") * 1)
+    assert_strenc('a', 'UTF-8', u("a") * 1)
+    assert_strenc('aa', 'ASCII-8BIT', a("a") * 2)
+    assert_strenc('aa', 'EUC-JP', e("a") * 2)
+    assert_strenc('aa', 'Shift_JIS', s("a") * 2)
+    assert_strenc('aa', 'UTF-8', u("a") * 2)
+    assert_strenc("\xc2\xa1\xc2\xa1", 'ASCII-8BIT', a("\xc2\xa1") * 2)
+    assert_strenc("\xc2\xa1\xc2\xa1", 'EUC-JP', e("\xc2\xa1") * 2)
+    assert_strenc("\xc2\xa1\xc2\xa1", 'Shift_JIS', s("\xc2\xa1") * 2)
+    assert_strenc("\xc2\xa1\xc2\xa1", 'UTF-8', u("\xc2\xa1") * 2)
+  end
+
+  def test_sprintf_c
+    assert_strenc("\x80", 'ASCII-8BIT', a("%c") % 128)
+    #assert_raise(ArgumentError) { a("%c") % 0xc2a1 }
+    assert_strenc("\xc2\xa1", 'EUC-JP', e("%c") % 0xc2a1)
+    assert_raise(ArgumentError) { e("%c") % 0xc2 }
+    assert_strenc("\xc2", 'Shift_JIS', s("%c") % 0xc2)
+    #assert_raise(ArgumentError) { s("%c") % 0xc2a1 }
+    assert_strenc("\u{c2a1}", 'UTF-8', u("%c") % 0xc2a1)
+    assert_strenc("\u{c2}", 'UTF-8', u("%c") % 0xc2)
+  end
+
+  def test_sprintf_s
+    assert_strenc("", 'ASCII-8BIT', a("%s") % a(""))
+    assert_strenc("", 'EUC-JP', e("%s") % e(""))
+    assert_strenc("", 'Shift_JIS', s("%s") % s(""))
+    assert_strenc("", 'UTF-8', u("%s") % u(""))
+
+    #assert_strenc("", 'EUC-JP', "%s" % e(""))
+
+    assert_strenc("\xc2\xa1", 'ASCII-8BIT', a("%s") % a("\xc2\xa1"))
+    assert_strenc("\xc2\xa1", 'EUC-JP', "%s" % e("\xc2\xa1"))
+    assert_strenc("\xc2\xa1", 'Shift_JIS', "%s" % s("\xc2\xa1"))
+    assert_strenc("\xc2\xa1", 'UTF-8', "%s" % u("\xc2\xa1"))
+  end
+
+  def test_sprintf_p
+    assert_strenc('""', 'ASCII-8BIT', a("%p") % a(""))
+    assert_strenc('""', 'EUC-JP', e("%p") % e(""))
+    assert_strenc('""', 'Shift_JIS', s("%p") % s(""))
+    assert_strenc('""', 'UTF-8', u("%p") % u(""))
+
+    assert_strenc('"a"', 'ASCII-8BIT', a("%p") % a("a"))
+    assert_strenc('"a"', 'EUC-JP', e("%p") % e("a"))
+    assert_strenc('"a"', 'Shift_JIS', s("%p") % s("a"))
+    assert_strenc('"a"', 'UTF-8', u("%p") % u("a"))
+
+    assert_strenc('"\xC2\xA1"', 'ASCII-8BIT', a("%p") % a("\xc2\xa1"))
+    assert_strenc("\"\xC2\xA1\"", 'EUC-JP', e("%p") % e("\xc2\xa1"))
+    #assert_strenc("\"\xC2\xA1\"", 'Shift_JIS', s("%p") % s("\xc2\xa1"))
+    assert_strenc("\"\xC2\xA1\"", 'UTF-8', u("%p") % u("\xc2\xa1"))
+
+    assert_strenc('"\x00"', 'ASCII-8BIT', a("%p") % a("\x00"))
+    assert_strenc('"\x00"', 'EUC-JP', e("%p") % e("\x00"))
+    assert_strenc('"\x00"', 'Shift_JIS', s("%p") % s("\x00"))
+    assert_strenc('"\x00"', 'UTF-8', u("%p") % u("\x00"))
+  end
+
+  def test_str_eq
+    empty = [a(""), e(""), s(""), u("")]
+    empty.each {|s1|
+      empty.each {|s2|
+        assert_equal(s1, s2)
+        assert(s1 == s2)
+        assert(!(s1 != s2))
+        assert(s1 <=> s2)
+      }
+    }
+
+    ascii = [a("a"), e("a"), s("a"), u("a")]
+    ascii.each {|s1|
+      ascii.each {|s2|
+        assert(s1 == s2)
+        assert(!(s1 != s2))
+        assert(s1 <=> s2)
+      }
+    }
+
+    nonascii = [a("\xc2\xa1"), e("\xc2\xa1"), s("\xc2\xa1"), u("\xc2\xa1")]
+    nonascii.each_with_index {|s1, i1|
+      nonascii.each_with_index {|s2, i2|
+        if i1 == i2
+          assert(s1 == s2)
+          assert(!(s1 != s2))
+          assert(s1 <=> s2)
+        else
+          assert(s1 != s2)
+          assert(!(s1 == s2))
+          assert(0 != (s1 <=> s2))
+        end
+      }
+    }
+  end
+
+  def test_str_cmp
+    assert(a("a") < a("\xa1"))
+    assert(a("a") < s("\xa1"))
+    assert(s("a") < a("\xa1"))
+  end
+
+  def test_str_concat
+    s = a("a")
+    s << e("\xc2\xa1")
+    assert_strenc("a\xc2\xa1", "EUC-JP", s)
+    assert_raise(ArgumentError) { s << s("\xc2\xa1") }
+  end
+
+  def test_str_aref
+    assert_equal(a("\xc2"), a("\xc2\xa1")[0])
+    assert_equal(a("\xa1"), a("\xc2\xa1")[1])
+    assert_equal(nil,       a("\xc2\xa1")[2])
+    assert_equal(e("\xc2\xa1"), e("\xc2\xa1")[0])
+    assert_equal(nil,           e("\xc2\xa1")[1])
+    assert_equal(s("\xc2"), s("\xc2\xa1")[0])
+    assert_equal(s("\xa1"), s("\xc2\xa1")[1])
+    assert_equal(nil,       s("\xc2\xa1")[2])
+    assert_equal(u("\xc2\xa1"), u("\xc2\xa1")[0])
+    assert_equal(nil,           u("\xc2\xa1")[1])
+  end
+
+  def test_str_aref_len
+    assert_equal(a("\xa1"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 1])
+    assert_equal(a("\xa1\xc2"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 2])
+
+    assert_equal(e("\xc2\xa2"), e("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 1])
+    assert_equal(e("\xc2\xa2\xc2\xa3"), e("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 2])
+
+    assert_equal(s("\xa1"), s("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 1])
+    assert_equal(s("\xa1\xc2"), s("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 2])
+
+    assert_equal(u("\xc2\xa2"), u("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 1])
+    assert_equal(u("\xc2\xa2\xc2\xa3"), u("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 2])
+  end
+
+  def test_str_aref_substr
+    assert_equal(a("\xa1\xc2"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")])
+    assert_raise(ArgumentError) { a("\xc2\xa1\xc2\xa2\xc2\xa3")[e("\xa1\xc2")] }
+
+    assert_equal(nil, e("\xc2\xa1\xc2\xa2\xc2\xa3")[e("\xa1\xc2")])
+    assert_raise(ArgumentError) { e("\xc2\xa1\xc2\xa2\xc2\xa3")[s("\xa1\xc2")] }
+
+    assert_equal(s("\xa1\xc2"), s("\xc2\xa1\xc2\xa2\xc2\xa3")[s("\xa1\xc2")])
+    assert_raise(ArgumentError) { s("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")] }
+
+    assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
+    assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
+
+  end
+
   def test_tr
     s = "\x81\x41".force_encoding("shift_jis")
     assert_equal(s.tr("A", "B"), s)
@@ -503,5 +677,10 @@ class TestM17N < Test::Unit::TestCase
   def test_squeeze
     s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
     assert_equal("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp"), s.squeeze)
+  end
+
+  def test_sub
+    s = "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
+    assert_encoding("EUC-JP", s.encoding)
   end
 end
