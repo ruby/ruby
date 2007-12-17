@@ -74,10 +74,10 @@ define rp
       printf "coderange:unknown "
     else
     if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER12
-      printf "coderange:single "
+      printf "coderange:7bit "
     else
     if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER13
-      printf "coderange:multi "
+      printf "coderange:valid "
     else
       printf "coderange:broken "
     end
@@ -90,7 +90,14 @@ define rp
     set print address off
     output ((struct RRegexp*)$arg0)->str
     set print address on
-    printf " "
+    printf " len:%d ", ((struct RRegexp*)$arg0)->len
+    if $flags & RUBY_FL_USER5
+      printf "(literal) "
+    end
+    if $flags & RUBY_FL_USER4
+      printf "(fixed) "
+    end
+    printf "encoding:%d ", ($flags & (RUBY_FL_USER8|RUBY_FL_USER9|RUBY_FL_USER10|RUBY_FL_USER11)) >> RUBY_ENCODING_SHIFT
     print (struct RRegexp *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
