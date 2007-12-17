@@ -5,8 +5,8 @@ Mon Dec 17 13:43:15 2007  Tanaka Akira  <akr@fsij.org>
 	  gcc (GCC) 3.4.3 (csl-sol210-3_4-20050802).
 	  stack_end_address returned a frame address of garbage_collect
 	  since stack_end_address doesn't create its own frame.
-	  So register saved VALUE pushed into the stack at the beginning of
-	  garbage_collect is not marked.
+	  So a VALUE stored in a callee saved register, %edi, pushed into
+	  the stack at the beginning of garbage_collect was not marked.
 
 Mon Dec 17 12:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
