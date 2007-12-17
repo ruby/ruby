@@ -638,7 +638,7 @@ bm_mark(struct METHOD *data)
 NODE *rb_get_method_body(VALUE klass, ID id, ID *idp);
 
 static VALUE
-mnew(VALUE klass, VALUE obj, ID id, VALUE mclass)
+mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE method;
     NODE *body;
@@ -648,7 +648,10 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass)
 
   again:
     if ((body = rb_get_method_body(klass, id, 0)) == 0) {
-	print_undef(rclass, oid);
+	rb_print_undef(rclass, oid, 0);
+    }
+    if (scope && (body->nd_noex & NOEX_MASK) != NOEX_PUBLIC) {
+	rb_print_undef(rclass, oid, (body->nd_noex & NOEX_MASK));
     }
 
     klass = body->nd_clss;
@@ -864,7 +867,13 @@ method_owner(VALUE obj)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod);
+    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, Qfalse);
+}
+
+VALUE
+rb_obj_public_method(VALUE obj, VALUE vid)
+{
+    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, Qtrue);
 }
 
 /*
@@ -900,9 +909,15 @@ rb_obj_method(VALUE obj, VALUE vid)
  */
 
 static VALUE
-rb_mod_method(VALUE mod, VALUE vid)
+rb_mod_instance_method(VALUE mod, VALUE vid)
 {
-    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod);
+    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, Qfalse);
+}
+
+static VALUE
+rb_mod_public_instance_method(VALUE mod, VALUE vid)
+{
+    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, Qtrue);
 }
 
 /*
@@ -1518,6 +1533,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "owner", method_owner, 0);
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
+    rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
 
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);
@@ -1535,7 +1551,8 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
 
     /* Module#*_method */
-    rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
+    rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
+    rb_define_method(rb_cModule, "public_instance_method", rb_mod_public_instance_method, 1);
     rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     /* Kernel */

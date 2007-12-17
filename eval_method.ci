@@ -385,7 +385,7 @@ rb_export_method(VALUE klass, ID name, ID noex)
 	fbody = search_method(rb_cObject, name, &origin);
     }
     if (!fbody || !fbody->nd_body) {
-	print_undef(klass, name);
+	rb_print_undef(klass, name, 0);
     }
     if (fbody->nd_body->nd_noex != noex) {
 	if (klass == origin) {
@@ -573,7 +573,7 @@ rb_alias(VALUE klass, ID name, ID def)
 	}
     }
     if (!orig_fbody || !orig_fbody->nd_body) {
-	print_undef(klass, def);
+	rb_print_undef(klass, def, 0);
     }
     if (FL_TEST(klass, FL_SINGLETON)) {
 	singleton = rb_iv_get(klass, "__attached__");

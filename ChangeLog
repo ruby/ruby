@@ -1,3 +1,18 @@
+Tue Dec 18 07:56:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (rb_obj_public_method): Object#public_method to retrieve
+	  public method object.
+
+	* proc.c (rb_mod_public_instance_method): Module#public_instance_method 
+	  to retrieve public instance method from class / module.
+	
+	* proc.c (mnew): visibility check added.
+
+	* eval_error.ci (rb_print_undef): add rb_ prefix.
+
+	* eval_error.ci (rb_print_undef): add visibility in the error
+	  message. 
+
 Tue Dec 18 05:54:26 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/Env.rb, lib/base64.rb, lib/importenv.rb, lib/eregex.rb: removed.

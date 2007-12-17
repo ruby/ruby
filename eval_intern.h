@@ -204,7 +204,7 @@ VALUE rb_make_exception _((int argc, VALUE *argv));
 NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_raise_jump _((VALUE)));
-NORETURN(void print_undef _((VALUE, ID)));
+NORETURN(void rb_print_undef _((VALUE, ID, int)));
 NORETURN(void vm_localjump_error(const char *, VALUE, int));
 NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 

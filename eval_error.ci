@@ -207,9 +207,17 @@ ruby_error_print(void)
 }
 
 void
-print_undef(VALUE klass, ID id)
+rb_print_undef(VALUE klass, ID id, int scope)
 {
-    rb_name_error(id, "undefined method `%s' for %s `%s'",
+    char *v;
+
+    switch (scope) {
+      default:
+      case NOEX_PUBLIC: v = ""; break;
+      case NOEX_PRIVATE: v = " private"; break;
+      case NOEX_PROTECTED: v = " protected"; break;
+    }
+    rb_name_error(id, "undefined%s method `%s' for %s `%s'", v,
 		  rb_id2name(id),
 		  (TYPE(klass) == T_MODULE) ? "module" : "class",
 		  rb_class2name(klass));
