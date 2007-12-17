@@ -1,3 +1,7 @@
+Mon Dec 17 12:21:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (RUNRUBY): added RUNRUBYOPT.
+
 Mon Dec 17 11:38:59 2007  Tanaka Akira  <akr@fsij.org>
 
 	* thread_win32.ci (native_thread_create): initialize
