@@ -1,7 +1,6 @@
 English.rb	lets Perl'ish global variables have English names
 README		this file
 benchmark.rb	a benchmark utility
-cgi-lib.rb	simple CGI support library (old style)
 cgi.rb		CGI support library
 cgi/session.rb	CGI session class
 complex.rb	complex number support
@@ -45,7 +44,6 @@ ostruct.rb	python style object
 parsearg.rb	argument parser using getopts
 parsedate.rb	parses date string (obsolete)
 pathname.rb	Object-Oriented Pathname Class
-ping.rb		checks whether host is up, using TCP echo.
 pp.rb		pretty print objects
 prettyprint.rb	pretty printing algorithm
 profile.rb	runs ruby profiler
@@ -54,7 +52,6 @@ pstore.rb	persistent object strage using marshal
 racc/parser.rb	racc (Ruby yACC) runtime
 rational.rb	rational number support
 rdoc            source-code documentation tool
-readbytes.rb	define IO#readbytes
 resolv-replace.rb	replace Socket DNS by resolve.rb
 resolv.rb	DNS resolver in Ruby
 rexml		an XML parser for Ruby, in Ruby
