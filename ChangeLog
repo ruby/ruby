@@ -1,3 +1,25 @@
+Mon Dec 17 21:24:04 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* common.mk (miniprelude.c): add -I$(srcdir).
+
+Mon Dec 17 20:53:27 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_set_ssl_version):
+	  new method OpenSSL::SSL::SSLContext#ssl_version to wrap
+	  SSL_CTX_set_ssl_version.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_get_verify_result):
+	  new method OpenSSL::SSL::SSLSocket#verify_result to wrap
+	  SSL_get_verrify_result.
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLContext.build):
+	  new method to build OpenSSL::SSL::SSLContext with Hash parameters.
+	  this method provides safety default parameters than SSLContext.new.
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL.verify_cetificate_identity):
+	  new module function: pull out identity verification process
+	  from OpenSSL::SSL::SSLSocket#post_connection_check.
+
 Mon Dec 17 18:42:23 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (scan_once): need no encoding compatibility check.
