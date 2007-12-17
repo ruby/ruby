@@ -1,3 +1,24 @@
+! encs = (Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - CONFIG["BUILTIN_ENCS"].split).each {|e| e.chomp!(".c")}
+
+VPATH = <% %w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join(CONFIG["PATH_SEPARATOR"]) %>
+
+ENCOBJS = <%encs.map {|e|"#{e}.$(OBJEXT)"}.join(" \\\n\t  ")+"\n"%>
+
+ENCSOS = <%encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")+"\n"%>
+
 all: $(ENCSOS)
 
+.c.$(OBJEXT):
+	<%COMPILE_C%>
+
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
+
+! encs.each do |e|
+
+$(ENCSODIR)/<%e%>.$(DLEXT): <%e%>.$(OBJEXT)
+	<%LINK_SO.gsub(/\n/, "\n\t")%>
+! end
+
+! encs.each do |e|
+<%e%>.$(OBJEXT): <%e%>.c
+! end

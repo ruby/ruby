@@ -1273,48 +1273,46 @@ def depend_rules(depend)
   unless suffixes.empty?
      depout << ".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n"
   end
-  open(depend, "r") do |dfile|
-    cont = implicit = nil
-    impconv = proc do
-      COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
-      implicit = nil
-    end
-    ruleconv = proc do |line|
-      if implicit
-        if /\A\t/ =~ line
-          implicit[1] << line
-          next
-        else
-          impconv[]
-        end
-      end
-      if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
-        suffixes << m[1] << m[2]
-        implicit = [[m[1], m[2]], [m.post_match]]
+  cont = implicit = nil
+  impconv = proc do
+    COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
+    implicit = nil
+  end
+  ruleconv = proc do |line|
+    if implicit
+      if /\A\t/ =~ line
+        implicit[1] << line
         next
-      elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-        line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
+      else
+        impconv[]
       end
-      depout << line
     end
-    while line = dfile.gets()
-      line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-      line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
-      line.gsub!(%r"\$\(hdrdir\)/(?!ruby/)", '\&ruby/')
-      if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
-        (cont ||= []) << line
-        next
-      elsif cont
-        line = (cont << line).join
-        cont = nil
-      end
-      ruleconv.call(line)
+    if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
+      suffixes << m[1] << m[2]
+      implicit = [[m[1], m[2]], [m.post_match]]
+      next
+    elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
+      line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
     end
-    if cont
-      ruleconv.call(cont.join)
-    elsif implicit
-      impconv.call
+    depout << line
+  end
+  depend.each_line do |line|
+    line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+    line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
+    line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))", '\&ruby/') if /^\s*\w+\s*=/ !~ line
+    if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
+      (cont ||= []) << line
+      next
+    elsif cont
+      line = (cont << line).join
+      cont = nil
     end
+    ruleconv.call(line)
+  end
+  if cont
+    ruleconv.call(cont.join)
+  elsif implicit
+    impconv.call
   end
   depout.flatten!
   depout
@@ -1581,7 +1579,7 @@ site-install-rb: install-rb
 
   depend = File.join(srcdir, "depend")
   if File.exist?(depend)
-    mfile.print("###\n", *depend_rules(depend))
+    mfile.print("###\n", *depend_rules(File.read(depend)))
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST

@@ -3,21 +3,17 @@
 dir = File.expand_path("../..", __FILE__)
 $:.unshift(File.join(dir, "lib"))
 $:.unshift(dir)
-File.directory?("enc") || File.mkdir("enc")
 $:.unshift(".")
 require 'mkmf'
 require 'tool/serb'
 
-encdir = File.join($top_srcdir, "enc")
-
-encs = Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}
-encs -= CONFIG["BUILTIN_ENCS"].split
-encs.each {|e| e.chomp!(".c")}
-mkin = File.read(File.join(encdir, "Makefile.in"))
-mkin.gsub!(/^\#!\# ?/, '')
-mkin.gsub!(/@(#{RbConfig::MAKEFILE_CONFIG.keys.join('|')})@/) {CONFIG[$1]}
-tmp = ''
-eval(serb(mkin, 'tmp'))
+mkin = File.read(File.join($srcdir, "Makefile.in"))
+mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
+if File.exist?(depend = File.join($srcdir, "depend"))
+  tmp = ''
+  eval(serb(File.read(depend), 'tmp'))
+  mkin << "\n#### depend ####\n\n" << depend_rules(tmp).join
+end
 open(ARGV[0], 'w') {|f|
-  f.puts tmp
+  f.puts mkin
 }

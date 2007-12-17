@@ -1,3 +1,13 @@
+Tue Dec 18 01:15:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs): added dependencies.
+
+	* enc/Makefile.in, enc/depend, enc/make_encmake.rb: moved serb code.
+
+	* lib/mkmf.rb (depend_rules): now takes content string, not file name.
+
+	* win32/enc-setup.mak: overrides default target.
+
 Tue Dec 18 00:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_initialize): raise error if non-Unicode fixed

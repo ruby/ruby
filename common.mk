@@ -342,7 +342,8 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 encs: enc.mk
 	$(MAKE) -f enc.mk
 
-enc.mk: miniruby$(EXEEXT)
+enc.mk: miniruby$(EXEEXT) $(srcdir)/enc/make_encmake.rb \
+	$(srcdir)/enc/Makefile.in $(srcdir)/enc/depend $(srcdir)/lib/mkmf.rb
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb $@
 
 .PRECIOUS: $(MKFILES)

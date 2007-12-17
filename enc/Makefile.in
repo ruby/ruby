@@ -4,7 +4,6 @@ arch = @arch@
 EXTOUT = @EXTOUT@
 hdrdir = $(top_srcdir)/include
 arch_hdrdir = $(EXTOUT)/include/$(arch)
-VPATH = <% %w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join("@PATH_SEPARATOR@") %>
 ENCSODIR = $(EXTOUT)/$(arch)/enc
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
@@ -13,30 +12,15 @@ BUILTIN_ENCS	= ascii.c \
 		  euc_jp.c sjis.c \
 		  unicode.c utf8.c
 
-ENCOBJS = <%encs.map {|e|"#{e}.$(OBJEXT)"}.join(" \\\n\t  ")+"\n"%>
-ENCSOS = <%encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")+"\n"%>
 empty =
 CC = @CC@
 OUTFLAG = @OUTFLAG@$(empty)
 CFLAGS = @CFLAGS@ @ARCH_FLAG@
-XCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir) @XCFLAGS@
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
+DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
 LIBS = @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@ $(EXTLDFLAGS) @ARCH_FLAG@
-
-#!#! if File.exist?(depend = File.join($srcdir, "depend"))
-#### depend ####
-#!#<%  depend_rules(depend).join%>
-#!#! end
-#!#! encs.each do |e|
-#!#
-#!#$(ENCSODIR)/<%e%>.$(DLEXT): <%e%>.$(OBJEXT)
-#!#	<%LINK_SO.gsub(/\n/, "\n\t")%>
-#!#! end
-#!#! encs.each do |e|
-#!#
-#!#<%e%>.$(OBJEXT): <% (RULE_SUBST || "%s") % "#{e}.c" %>
-#!#! end
