@@ -5704,6 +5704,24 @@ lvar_defined_gen(struct parser_params *parser, ID id)
 }
 
 /* emacsen -*- hack */
+static int
+parser_encode_length(struct parser_params *parser, const char *name, int len)
+{
+    int nlen;
+
+    if (len > 5 && name[nlen = len - 5] == '-') {
+	if (rb_memcicmp(name + nlen + 1, "unix", 4) == 0)
+	    return nlen;
+    }
+    if (len > 4 && name[nlen = len - 5] == '-') {
+	if (rb_memcicmp(name + nlen + 1, "dos", 3) == 0)
+	    return nlen;
+	if (rb_memcicmp(name + nlen + 1, "mac", 3) == 0)
+	    return nlen;
+    }
+    return len;
+}
+
 static void
 parser_set_encode(struct parser_params *parser, const char *name)
 {
@@ -5715,6 +5733,7 @@ parser_set_encode(struct parser_params *parser, const char *name)
 }
 
 #ifndef RIPPER
+typedef int (*rb_magic_comment_length_t)(struct parser_params *parser, const char *name, int len);
 typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
 static void
@@ -5728,11 +5747,12 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
 struct magic_comment {
     const char *name;
     rb_magic_comment_setter_t func;
+    rb_magic_comment_length_t length;
 };
 
 static const struct magic_comment magic_comments[] = {
-    {"coding", magic_comment_encoding},
-    {"encoding", magic_comment_encoding},
+    {"coding", magic_comment_encoding, parser_encode_length},
+    {"encoding", magic_comment_encoding, parser_encode_length},
 };
 #endif
 
@@ -5839,7 +5859,11 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 #ifndef RIPPER
 	do {
 	    if (strncasecmp(p->name, RSTRING_PTR(name), n) == 0) {
-		str_copy(val, vbeg, vend - vbeg);
+		n = vend - vbeg;
+		if (p->length) {
+		    n = (*p->length)(parser, vbeg, n);
+		}
+		str_copy(val, vbeg, n);
 		(*p->func)(parser, RSTRING_PTR(name), RSTRING_PTR(val));
 		break;
 	    }
@@ -5890,7 +5914,7 @@ set_file_encoding(struct parser_params *parser, const char *str, const char *sen
     }
     beg = str;
     while ((*str == '-' || *str == '_' || ISALNUM(*str)) && ++str < send);
-    s = rb_str_new(beg, str - beg);
+    s = rb_str_new(beg, parser_encode_length(parser, beg, str - beg));
     parser_set_encode(parser, RSTRING_PTR(s));
     rb_str_resize(s, 0);
 }

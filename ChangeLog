@@ -1,3 +1,11 @@
+Tue Dec 18 01:21:19 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_encode_length): chomp eol style modifiers.
+
+	* parse.y (parser_magic_comment): ditto.
+
+	* parse.y (set_file_encoding): ditto.
+
 Tue Dec 18 01:15:44 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (encs): added dependencies.
