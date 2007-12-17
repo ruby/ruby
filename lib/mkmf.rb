@@ -1299,7 +1299,7 @@ def depend_rules(depend)
   depend.each_line do |line|
     line.gsub!(/\.o\b/, ".#{$OBJEXT}")
     line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
-    line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))", '\&ruby/') if /^\s*\w+\s*=/ !~ line
+    line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
     if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
       (cont ||= []) << line
       next
