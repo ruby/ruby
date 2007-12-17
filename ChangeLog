@@ -1,3 +1,13 @@
+Mon Dec 17 17:17:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (EXTERNAL_ENCOBJS, ENCSOS): removed.
+
+	* enc/Makefile.in (BUILTIN_ENCS): includes .c suffix.
+
+	* enc/depend: splitted from Makefile.in.
+
+	* {bcc32,win32,wince}/setup.mak (-encs-): extracts BUILTIN_ENCOBJS.
+
 Mon Dec 17 17:07:53 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_str_asciionly_p): use rb_enc_str_coderange.

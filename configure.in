@@ -1735,39 +1735,17 @@ else
 fi
 tr -d '\015' < largefile.h > confdefs.h
 
-test -d enc || mkdir enc
 BUILTIN_ENCS=["`sed -n -e '/^BUILTIN_ENCS[ 	]*=/{' \
 	-e s/// -e :l -e '/\\\\$/N' -e 's/\\\\\\n/ /' -e 't l' -e p \
 	-e '}' "${srcdir}/enc/Makefile.in"`"]
 BUILTIN_ENCS="`echo $BUILTIN_ENCS`"
-EXTERNAL_ENCS=
-for e in "${srcdir}/enc"/*.c; do
-    e=`basename "$e" .c`
-    case " $BUILTIN_ENCS " in
-      *" $e "*) ;;
-      *) EXTERNAL_ENCS="$EXTERNAL_ENCS $e";;
-    esac
-done
-echo $EX
 BUILTIN_ENCOBJS=
-for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS $e"'.$(OBJEXT)'; done
-EXTERNAL_ENCOBJS=
-for e in $EXTERNAL_ENCS; do EXTERNAL_ENCOBJS="$EXTERNAL_ENCOBJS $e"'.$(OBJEXT)'; done
-ENCSOS=
-for e in $EXTERNAL_ENCS; do ENCSOS="$ENCSOS "'$(ENCSODIR)/'"$e"'.$(DLEXT)'; done 
+for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS `basename $e .c`"'.$(OBJEXT)'; done
 
+AC_SUBST(BUILTIN_ENCS)
 AC_SUBST(BUILTIN_ENCOBJS)
-AC_SUBST(EXTERNAL_ENCOBJS)
-AC_SUBST(ENCSOS)
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
-AC_CONFIG_FILES(enc/Makefile, [{
-  for e in $ENCS; do
-    echo ''
-    echo '$(ENCSODIR)/'"$e"'.$(DLEXT): '"$e"'.$(OBJEXT)'
-    echo '	$(LDSHARED) $(DLDFLAGS) $< $(OUTFLAG)$''@'
-  done >> enc/Makefile
-}], [ENCS="$EXTERNAL_ENCS"])
 AC_CONFIG_FILES(Makefile, [{
 	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'

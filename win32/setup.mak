@@ -197,6 +197,11 @@ $(CPU) = $(PROCESSOR_LEVEL)
 -i686-: -ix86-
 	@$(APPEND) $(CPU) = 6
 
+-epilogue-: -encs-
+
+-encs-: nul
+	@$(MAKE) -l -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
+
 -epilogue-: nul
 !if exist(confargs.c)
 	@$(CPP) confargs.c >> $(MAKEFILE)

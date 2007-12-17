@@ -1,7 +1,7 @@
 srcdir = @srcdir@
 top_srcdir = $(srcdir:/enc=)
 arch = @arch@
-EXTOUT = $(top_srcdir)/@EXTOUT@
+EXTOUT = @EXTOUT@
 hdrdir = $(top_srcdir)/include
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(top_srcdir):$(srcdir)
@@ -9,9 +9,9 @@ ENCSODIR = $(EXTOUT)/$(arch)/enc
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 
-BUILTIN_ENCS	= ascii \
-		  euc_jp sjis \
-		  unicode utf8
+BUILTIN_ENCS	= ascii.c \
+		  euc_jp.c sjis.c \
+		  unicode.c utf8.c
 
 ENCOBJS = @EXTERNAL_ENCOBJS@
 ENCSOS = @ENCSOS@
@@ -26,8 +26,3 @@ XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
 LIBS = @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@ $(EXTLDFLAGS) @ARCH_FLAG@
-
-all: $(ENCOBJS) $(ENCSOS)
-
-.c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c $<

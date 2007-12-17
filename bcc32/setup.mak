@@ -147,6 +147,11 @@ $(BANG)endif
 	@$(APPEND) PROCESSOR_LEVEL = 6
 	@$(APPEND) !endif
 
+-epilogue-: -encs-
+
+-encs-: nul
+	@$(MAKE) -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
+
 -epilogue-: nul
 	@type >> $(MAKEFILE) &&|
 

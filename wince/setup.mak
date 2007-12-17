@@ -219,6 +219,11 @@ INCLUDE = $$(CE_TOOLS4_DIR)/wce410/sigmarionIII SDK/include/$$(ARCHFOLDER)
 LIB = $$(CE_TOOLS4_DIR)/wce410/sigmarionIII SDK/lib/$$(ARCHFOLDER)
 <<
 
+-epilogue-: -encs-
+
+-encs-: nul
+	@$(MAKE) -l -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
+
 -epilogue-: nul
 	@type << >>$(MAKEFILE)
 !ifdef RUBY_INSTALL_NAME
