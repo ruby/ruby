@@ -1,3 +1,9 @@
+Mon Dec 17 21:41:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/enc-setup.mak: extracts BUILTIN_ENCOBJS.
+
+	* tool/compile_prelude.rb: needs srcdir.
+
 Mon Dec 17 21:24:04 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* common.mk (miniprelude.c): add -I$(srcdir).

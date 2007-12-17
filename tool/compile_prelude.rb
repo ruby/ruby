@@ -4,6 +4,8 @@
 # Since $(BASERUBY) may be older than Ruby 1.9,
 # Ruby 1.9 feature should not be used.
 
+$:.unshift(File.expand_path("../..", __FILE__))
+
 preludes = ARGV.dup
 outfile = preludes.pop
 
