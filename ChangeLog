@@ -1,3 +1,8 @@
+Tue Dec 18 01:46:48 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): need to clear output buffer to avoid
+	  broken encoding compatibility check.
+
 Tue Dec 18 01:40:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (depend_rules): inserts ruby to only headers.

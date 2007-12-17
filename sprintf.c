@@ -298,6 +298,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     result = rb_str_buf_new(bsiz);
     rb_enc_copy(result, fmt);
     buf = RSTRING_PTR(result);
+    memset(buf, 0, bsiz);
 
     for (; p < end; p++) {
 	const char *t;
@@ -850,7 +851,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_resize(result, blen);
 
     if (tainted) OBJ_TAINT(result);
-    rb_enc_associate(result, enc);
     return result;
 }
 
