@@ -1,3 +1,8 @@
+Mon Dec 17 16:04:16 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#gets): added second
+	  optional argument to specify maximum length limit.
+
 Mon Dec 17 16:02:30 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb, lib/webrick/cgi.rb: Request-Line or

@@ -136,6 +136,11 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         str = "x" * 100 + "\n"
         ssl.puts(str)
         assert_equal(str, ssl.gets)
+
+        str = "x" * 100
+        ssl.puts(str)
+        assert_equal(str, ssl.gets("\n", 100))
+        assert_equal("\n", ssl.gets)
       }
 
       # read and write

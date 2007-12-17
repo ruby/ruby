@@ -99,7 +99,7 @@ module Buffering
     ret
   end
 
-  def gets(eol=$/)
+  def gets(eol=$/, limit=nil)
     idx = @rbuffer.index(eol)
     until @eof
       break if idx
@@ -110,6 +110,9 @@ module Buffering
       size = idx ? idx+$&.size : nil
     else
       size = idx ? idx+eol.size : nil
+    end
+    if limit and limit >= 0
+      size = [size, limit].min
     end
     consume_rbuff(size)
   end
