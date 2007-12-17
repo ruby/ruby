@@ -133,16 +133,10 @@ int rb_enc_str_asciionly_p(VALUE str)
 {
     rb_encoding *enc = rb_enc_get(str);
 
-    if (rb_enc_asciicompat(enc) &&
-        rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
-        char *ptr = RSTRING_PTR(str);
-        long len = RSTRING_LEN(str);
-        long i;
-        for (i = 0; i < len; i++)
-            if (ptr[i] & 0x80)
-                return Qfalse;
+    if (!rb_enc_asciicompat(enc))
+        return Qfalse;
+    else if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
         return Qtrue;
-    }
     return Qfalse;
 }
 
@@ -1410,7 +1404,6 @@ static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
     long len;
-    int retval;
     rb_encoding *enc;
     char *p1, *p1end, *p2, *p2end;
 
