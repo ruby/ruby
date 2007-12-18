@@ -544,20 +544,21 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	rb_iseq_t *iseq = block->iseq;
+	rb_control_frame_t *cfp = th->cfp;
+	const int arg_size = iseq->arg_size;
+	const int type = block_proc_is_lambda(block->proc) ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
 	int i, opt_pc;
-	int type = block_proc_is_lambda(block->proc) ?
-	  FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
 
 	rb_vm_set_finish_env(th);
 
-	CHECK_STACK_OVERFLOW(th->cfp, argc + iseq->stack_max);
+	CHECK_STACK_OVERFLOW(cfp, argc + iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
-	    th->cfp->sp[i] = argv[i];
+	    cfp->sp[i] = argv[i];
 	}
 
 	if (iseq->arg_block == -1) {
-	    opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp, 0,
+	    opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, 0,
 					 type == FRAME_MAGIC_LAMBDA);
 	}
 	else {
@@ -569,16 +570,15 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 		GetProcPtr(procval, proc);
 		blockptr = &proc->block;
 	    }
-	    opt_pc = vm_yield_setup_args(th, iseq, argc, th->cfp->sp,
+	    opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp,
 					 blockptr, type == FRAME_MAGIC_LAMBDA);
 	}
-	argc = iseq->arg_size;
-	th->cfp->sp += argc;
 
 	vm_push_frame(th, iseq, type,
 		      self, GC_GUARDED_PTR(block->dfp),
-		      iseq->iseq_encoded + opt_pc, th->cfp->sp, block->lfp,
-		      iseq->local_size - argc);
+		      iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, block->lfp,
+		      iseq->local_size - arg_size);
+
 	val = vm_eval_body(th);
     }
     else {

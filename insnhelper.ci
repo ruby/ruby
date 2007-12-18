@@ -114,8 +114,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
     else {
 	VALUE * const dst = argv;
 	int opt_pc = 0;
-
-	th->mark_stack_len = iseq->arg_size;
+	th->mark_stack_len = argc + iseq->arg_size;
 
 	/* mandatory */
 	if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
@@ -433,12 +432,12 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
     /* TODO: eliminate it */
     GetISeqPtr(iseqval, iseq);
-    sp = rsp + iseq->arg_size;
-
     opt_pc = vm_callee_setup_arg(th, iseq, argc, rsp, &blockptr);
 
     /* stack overflow check */
-    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max + 0x10);
+    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+
+    sp = rsp + iseq->arg_size;
 
     if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
 	if (0) printf("local_size: %d, arg_size: %d\n",
@@ -807,20 +806,19 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;
+	const int arg_size = iseq->arg_size;
+	VALUE *rsp = GET_SP() - argc;
+	SET_SP(rsp);
 
 	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
-	DEC_SP(argc);
-	opt_pc = vm_yield_setup_args(th, iseq, argc, GET_SP(), 0,
+	opt_pc = vm_yield_setup_args(th, iseq, argc, rsp, 0,
 				     block_proc_is_lambda(block->proc));
-	argc = iseq->arg_size;
-	INC_SP(argc);
 
 	vm_push_frame(th, iseq,
 		      FRAME_MAGIC_BLOCK, block->self, (VALUE) block->dfp,
-		      iseq->iseq_encoded + opt_pc, GET_SP(), block->lfp,
-		      iseq->local_size - argc);
+		      iseq->iseq_encoded + opt_pc, rsp + arg_size, block->lfp,
+		      iseq->local_size - arg_size);
 
-	reg_cfp->sp -= argc;
 	return Qundef;
     }
     else {

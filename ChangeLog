@@ -1,3 +1,8 @@
+Tue Dec 18 22:12:35 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci, vm.c: rewrite sp manipulation around method/block
+	  invocation.  [ruby-dev:32547]
+
 Tue Dec 18 22:11:23 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/win32/lib/win32/sspi.rb: use pack/unpack("m") instead of
