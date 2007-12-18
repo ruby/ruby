@@ -1,3 +1,7 @@
+Tue Dec 18 14:05:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend: get rid of target expanded as empty for nmake.
+
 Tue Dec 18 07:56:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (rb_obj_public_method): Object#public_method to retrieve
