@@ -11,7 +11,6 @@
 #
 
 require 'Win32API'
-require 'base64'
 
 # Implements bindings to Win32 SSPI functions, focused on authentication to a proxy server over HTTP.
 module Win32
@@ -213,7 +212,7 @@ module Win32
 			REQUEST_FLAGS = ISC_REQ_CONFIDENTIALITY | ISC_REQ_REPLAY_DETECT | ISC_REQ_CONNECTION
 
 			# NTLM tokens start with this header always. Encoding alone adds "==" and newline, so remove those
-			B64_TOKEN_PREFIX = Base64.encode64("NTLMSSP").delete("=\n")  
+      B64_TOKEN_PREFIX = ["NTLMSSP"].pack("m").delete("=\n")  
 
 			# Given a connection and a request path, performs authentication as the current user and returns
 			# the response from a GET request. The connnection should be a Net::HTTP object, and it should
@@ -281,7 +280,7 @@ module Win32
 
 				if token.include? B64_TOKEN_PREFIX 
 					# indicates base64 encoded token
-					token = Base64.decode64(token.strip)
+          token = token.strip.unpack("m")[0]
 				end
 	      
 				outputBuffer = SecurityBuffer.new
@@ -324,7 +323,7 @@ module Win32
 
 			def encode_token(t)
 				# encode64 will add newlines every 60 characters so we need to remove those.
-				Base64.encode64(t).delete("\n")
+        [t].pack("m").delete("\n")
 			end
 		end
 	end
