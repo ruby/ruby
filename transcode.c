@@ -261,10 +261,11 @@ str_transcoding_resize(transcoding *my_transcoding, int len, int new_len)
     return RSTRING_PTR(dest_string);
 }
 
-static VALUE
-str_transcode(int argc, VALUE *argv, VALUE str)
+static int
+str_transcode(int argc, VALUE *argv, VALUE *self)
 {
     VALUE dest;
+    VALUE str = *self;
     long blen, slen;
     char *buf, *bp, *sp, *fromp;
     rb_encoding *from_enc, *to_enc;
@@ -301,14 +302,15 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     }
 
     if (from_enc && from_enc == to_enc) {
-	return Qnil;
+	return -1;
     }
     if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
-	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
-	    return Qnil;
+	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+	    return to_encidx;
+	}
     }
     if (strcasecmp(from_e, to_e) == 0) {
-	return Qnil;
+	return -1;
     }
 
     while (!final_encoding) /* loop for multistep transcoding */
@@ -333,8 +335,6 @@ str_transcode(int argc, VALUE *argv, VALUE str)
 	*bp = '\0';
 	rb_str_set_len(dest, bp - buf);
 
-	rb_enc_associate(dest, to_enc);
-	
 	if (encoding_equal(my_transcoder->to_encoding, to_e)) {
 	    final_encoding = 1;
 	}
@@ -346,10 +346,10 @@ str_transcode(int argc, VALUE *argv, VALUE str)
     /* set encoding */
     if (!to_enc) {
 	to_encidx = rb_enc_replicate(to_e, rb_default_encoding());
-	to_enc = rb_enc_from_index(to_encidx);
     }
+    *self = dest;
 
-    return dest;
+    return to_encidx;
 }
 
 /*
@@ -367,10 +367,12 @@ str_transcode(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE newstr = str_transcode(argc, argv, str);
-    if (NIL_P(newstr)) return str;
+    VALUE newstr = str;
+    int encidx = str_transcode(argc, argv, &newstr);
+
+    if (encidx < 0) return Qnil;
     rb_str_shared_replace(str, newstr);
-    rb_enc_copy(str, newstr);
+    rb_enc_associate_index(str, encidx);
     return str;
 }
 
@@ -387,10 +389,18 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_transcode(int argc, VALUE *argv, VALUE str)
 {
-    VALUE newstr = str_transcode(argc, argv, str);
-    if (NIL_P(newstr)) return rb_str_dup(str);
-    RBASIC(newstr)->klass = rb_obj_class(str);
-    OBJ_INFECT(newstr, str);
+    VALUE newstr = str;
+    int encidx = str_transcode(argc, argv, &newstr);
+
+    if (newstr == str) {
+	newstr = rb_str_new3(str);
+	if (encidx >= 0) rb_enc_associate_index(newstr, encidx);
+    }
+    else {
+	RBASIC(newstr)->klass = rb_obj_class(str);
+	OBJ_INFECT(newstr, str);
+	rb_enc_associate_index(newstr, encidx);
+    }
     return newstr;
 }
 

@@ -1,3 +1,9 @@
+Tue Dec 18 17:04:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_str_transcode_bang, rb_str_transcode): set new
+	  encoding even if no conversion is done because of 7bit only.
+	  [ruby-dev:32591]
+
 Tue Dec 18 15:43:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (encs, ext/ripper/ripper.c): other options must come
