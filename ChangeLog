@@ -1,3 +1,7 @@
+Tue Dec 18 23:53:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): fix for segfault.  [ruby-dev:31372]
+
 Tue Dec 18 23:44:32 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/net/http/utils.rb: split TestNetHTTPUtils module from

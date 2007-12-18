@@ -188,3 +188,8 @@ assert_equal %q{[10, main]}, %q{
   C.new(&$pr)
   $ans
 }
+
+assert_match /Illegal break/, %q{
+  STDERR.reopen(STDOUT)
+  eval "0 rescue break"
+}, '[ruby-dev:31372]'

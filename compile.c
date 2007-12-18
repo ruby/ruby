@@ -2946,7 +2946,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    rb_iseq_t *ip = iseq->parent_iseq;
-	    while (ip) {
+	    while (ip && ip->compile_data) {
 		level++;
 		if (ip->compile_data->redo_label != 0) {
 		    level = 0x8000;
