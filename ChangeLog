@@ -1,3 +1,9 @@
+Tue Dec 18 18:09:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): propagate encoding.
+
+	* string.c (rb_str_subpat_set): ditto.
+
 Tue Dec 18 17:27:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_freeze): preserve frozen state of immediate

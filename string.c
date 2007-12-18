@@ -2142,6 +2142,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
     beg = p - RSTRING_PTR(str);	/* physical position */
     len = e - p;		/* physical length */
     rb_str_splice_0(str, beg, len, val);
+    rb_enc_associate(str, enc);
 }
 
 void
@@ -2155,6 +2156,7 @@ rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
 {
     VALUE match;
     long start, end, len;
+    rb_encoding *enc;
 
     if (rb_reg_search(re, str, 0, 0) < 0) {
 	rb_raise(rb_eIndexError, "regexp not matched");
@@ -2178,8 +2180,9 @@ rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
     end = RMATCH(match)->END(nth);
     len = end - start;
     StringValue(val);
-    rb_enc_check(str, val);
+    enc = rb_enc_check(str, val);
     rb_str_splice_0(str, start, len, val);
+    rb_enc_associate(str, enc);
 }
 
 static VALUE
