@@ -152,6 +152,10 @@ module OpenSSL
         @svr.listen(backlog)
       end
 
+      def shutdown(how=Socket::SHUT_RDWR)
+        @svr.listen(how)
+      end
+
       def accept
         sock = @svr.accept
         begin

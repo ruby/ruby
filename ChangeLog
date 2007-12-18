@@ -1,3 +1,8 @@
+Tue Dec 18 22:51:47 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#shutdown): 
+	  new method which calls TCPSocket#shutdown of the underlying socket.
+
 Tue Dec 18 22:11:50 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/rss/parser.rb, lib/rss/atom.rb, lib/rss/rss.rb,
