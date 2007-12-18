@@ -1,3 +1,13 @@
+Tue Dec 18 20:22:44 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (arg tMATCH arg): call reg_named_capture_assign_gen if regexp
+	  literal is used.
+	  (reg_named_capture_assign_gen): assign the result of named capture
+	  into local variables.
+	  [ruby-dev:32588]
+
+	* re.c: document the assignment by named captures.
+
 Tue Dec 18 18:09:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_splice): propagate encoding.

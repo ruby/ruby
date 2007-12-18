@@ -95,6 +95,13 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({}, /(.)(.)/.named_captures)
   end
 
+  def test_assign_named_capture
+    assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
+    assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))
+    assert_equal("a", eval('1.times {|foo| /(?<foo>.)/ =~ "a"; break foo }'))
+    assert_raise(SyntaxError) { eval('/(?<Foo>.)/ =~ "a"') }
+  end
+
   def test_match_regexp
     r = /./
     m = r.match("a")

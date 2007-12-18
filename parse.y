@@ -21,6 +21,7 @@
 #include "ruby/node.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "id.h"
 #include "regenc.h"
 #include <stdio.h>
 #include <errno.h>
@@ -442,6 +443,8 @@ static void reg_fragment_setenc_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, str, options)
 static void reg_fragment_check_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_check(str,options) reg_fragment_check_gen(parser, str, options)
+static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
+#define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,regexp,match)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -2127,6 +2130,9 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			$$ = match_op($1, $3);
+                        if (nd_type($1) == NODE_LIT && TYPE($1->nd_lit) == T_REGEXP) {
+                            $$ = reg_named_capture_assign($1->nd_lit, $$);
+                        }
 		    /*%
 			$$ = dispatch3(binary, $1, ripper_intern("=~"), $3);
 		    %*/
@@ -8472,6 +8478,82 @@ reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
         compile_error(PARSER_ARG "%s", RSTRING_PTR(err));
 	RB_GC_GUARD(err);
     }
+}
+
+typedef struct {
+    struct parser_params* parser;
+    rb_encoding *enc;
+    NODE *succ_block;
+    NODE *fail_block;
+    int num;
+} reg_named_capture_assign_t;
+
+static int
+reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
+          int back_num, int *back_refs, OnigRegex regex, void *arg0)
+{
+    reg_named_capture_assign_t *arg = (reg_named_capture_assign_t*)arg0;
+    struct parser_params* parser = arg->parser;
+
+    arg->num++;
+
+    if (arg->succ_block == 0) {
+        arg->succ_block = NEW_BEGIN(0);
+        arg->fail_block = NEW_BEGIN(0);
+    }
+
+    ID var = rb_intern3((const char *)name, name_end-name, arg->enc);
+    if (!is_local_id(var)) {
+        compile_error(PARSER_ARG "named capture with a non local variable - %s",
+                      rb_id2name(var));
+        return ST_CONTINUE;
+    }
+    if (dvar_defined(var) || local_id(var)) {
+        rb_warningS("named capture conflicts a local variable - %s", 
+                    rb_id2name(var));
+    }
+    arg->succ_block = block_append(arg->succ_block,
+        newline_node(node_assign(assignable(var,0),
+            NEW_CALL(
+              gettable(rb_intern("$~")),
+              idAREF,
+              NEW_LIST(NEW_LIT(ID2SYM(var))))
+            )));
+    arg->fail_block = block_append(arg->fail_block,
+        newline_node(node_assign(assignable(var,0), NEW_LIT(Qnil))));
+    return ST_CONTINUE;
+}
+
+static NODE *
+reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match)
+{
+    reg_named_capture_assign_t arg;
+
+    arg.parser = parser;
+    arg.enc = rb_enc_get(regexp);
+    arg.succ_block = 0;
+    arg.fail_block = 0;
+    arg.num = 0;
+    onig_foreach_name(RREGEXP(regexp)->ptr, reg_named_capture_assign_iter, (void*)&arg);
+
+    if (arg.num == 0)
+        return match;
+
+    return 
+        block_append(
+            newline_node(match),
+            NEW_IF(gettable(rb_intern("$~")),
+                block_append(
+                    newline_node(arg.succ_block),
+                    newline_node(
+                        NEW_CALL(
+                          gettable(rb_intern("$~")),
+                          rb_intern("begin"),
+                          NEW_LIST(NEW_LIT(INT2FIX(0)))))),
+                block_append(
+                    newline_node(arg.fail_block),
+                    newline_node(
+                        NEW_LIT(Qnil)))));
 }
 
 static VALUE

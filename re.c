@@ -2164,6 +2164,37 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
  *
  *     /at/ =~ "input data"   #=> 7
  *     /ax/ =~ "input data"   #=> nil
+ *
+ *  If <code>=~</code> is used with a regexp literal with named captures,
+ *  captured strings (or nil) is assigned to local variables named by
+ *  the capture names.
+ *
+ *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = y  "
+ *     p lhs    #=> "x"
+ *     p rhs    #=> "y"
+ *
+ *  If it is not matched, nil is assigned for the variables.
+ *
+ *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = "   
+ *     p lhs    #=> nil
+ *     p rhs    #=> nil
+ *
+ *  This assignment is implemented in the Ruby parser.
+ *  So a regexp literal is required for the assignment. 
+ *  The assignment is not occur if the regexp is not a literal.
+ *
+ *     re = /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
+ *     re =~ "  x = "
+ *     p lhs    # undefined local variable
+ *     p rhs    # undefined local variable
+ *
+ *  A regexp interpolation, <code>#{}</code>, also disables
+ *  the assignment.
+ *
+ *     rhs_pat = /(?<rhs>\w+)/
+ *     /(?<lhs>\w+)\s*=\s*#{rhs_pat}/ =~ "x = y"
+ *     p lhs    # undefined local variable
+ *
  */
 
 VALUE
